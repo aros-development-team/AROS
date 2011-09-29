@@ -2,8 +2,10 @@
 
 @interface DisplayController : UIViewController
 {
-    BOOL Portrait;
+    unsigned char FixedOrientation;
 }
+
+@property(nonatomic) unsigned char FixedOrientation;
 
 -(id)initWithSize:(CGRect)screenSize;
 

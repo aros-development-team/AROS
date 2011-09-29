@@ -1,6 +1,4 @@
-#import <UIKit/UIKit.h>
-
-#include "host_alert.h"
+#import "alertdelegate.h"
 
 @implementation AlertDelegate
 
@@ -28,13 +26,3 @@
 }
 
 @end
-
-/* This is our interface function */
-void DisplayAlert(char *text)
-{
-    AlertDelegate *ad = [[AlertDelegate alloc] init];
-    NSString *alert = [NSString stringWithCString:text encoding:NSISOLatin1StringEncoding];
-
-    [ad DisplayAlert:alert];
-    [ad release];
-}

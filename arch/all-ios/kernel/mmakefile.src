@@ -1,9 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM kernel-kernel-darwin-ios: kernel-kernel-ios-native
-#MM kernel-kernel-darwin-ios-quick: kernel-kernel-ios-native
-
 FILES   := _displayalert
 MAINDIR := rom/kernel
 
@@ -15,36 +12,5 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-darwin/kernel \
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
   arch=darwin-ios files=$(FILES)
-
-NATIVE_BINDIR := $(BINDIR)/Libs/Host
-NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)
-
-NATIVE_FILES   := host_alert
-NATIVE_LIBNAME := alert.dylib
-
-NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework Foundation -framework UIKit -shared
-# This cancels -nostdinc (contained in $(KERNEL_INCLUDES))
-USER_CFLAGS    :=
-
-OBJS := $(addsuffix .o,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
-DEPS := $(addsuffix .d,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
-
-#MM
-kernel-kernel-ios-native : $(NATIVE_BINDIR) $(NATIVE_BINDIR)/$(NATIVE_LIBNAME)
-
-$(NATIVE_BINDIR):
-	@$(MKDIR) $(NATIVE_BINDIR)
-
-$(OBJDIR$)/%.o : %.m
-	%compile_q cmd=$(KERNEL_CC) opt="$(CFLAGS) $(KERNEL_CFLAGS) $(KERNEL_OBJCFLAGS) $(IOS_CFLAGS)"
-
-$(OBJDIR)/%.d : %.m
-	%mkdepend_q cc=$(KERNEL_CC) flags="$(CFLAGS) $(IOS_CFLAGS)"
-
-%rule_link_prog prog=$(NATIVE_BINDIR)/$(NATIVE_LIBNAME) \
-    objs="$(OBJS)" ldflags="$(LDFLAGS) $(NATIVE_LDFLAGS)" \
-    linker=kernel
-
-%include_deps depstargets="kernel-kernel-ios-native" deps=$(DEPS)
 
 %common

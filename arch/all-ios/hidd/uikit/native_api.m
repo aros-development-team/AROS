@@ -1,8 +1,9 @@
+#import <objc/runtime.h>
 #import <UIKit/UIKit.h>
 
-#include <objc/runtime.h>
-
-#include "native_api.h"
+#import "alertdelegate.h"
+#import "displaywindow.h"
+#import "native_api.h"
 
 static UIScreen *getScreen(unsigned int scrNo)
 {
@@ -52,33 +53,43 @@ void GetMetrics(struct DisplayMetrics *data)
 {
     UIScreen *screen = [UIScreen mainScreen];
     CGRect screenbar = [UIApplication sharedApplication].statusBarFrame;
+    UIInterfaceOrientation o = [UIApplication sharedApplication].statusBarOrientation;
 
     data->width       = screen.bounds.size.width;
     data->height      = screen.bounds.size.height;
-    data->orientation = [UIApplication sharedApplication].statusBarOrientation;
-    data->screenbar   = UIInterfaceOrientationIsLandscape(data->orientation) ? screenbar.size.width : screenbar.size.height;
+    
+    if (UIInterfaceOrientationIsLandscape(o))
+    {
+    	data->orientation = O_LANDSCAPE;
+    	data->screenbar   = screenbar.size.width;
+    }
+    else
+    {
+    	data->orientation = O_PORTRAIT;
+    	data->screenbar   = screenbar.size.height;
+    }
 }
 
-UIWindow *OpenDisplay(unsigned int scrNo)
+DisplayWindow *OpenDisplay(unsigned int scrNo)
 {
     UIScreen *screen = getScreen(scrNo);
-    UIWindow *win;
+    DisplayWindow *win;
 
     if (!screen)
     	return nil;
 
-    win = [[UIWindow alloc] initWithFrame:screen.bounds];
+    win = [[DisplayWindow alloc] initWithFrame:screen.bounds];
     [win makeKeyAndVisible];
 
     return win;
 }
 
-void CloseDisplay(UIWindow *win)
+void CloseDisplay(DisplayWindow *win)
 {
     [win release];
 }
 
-UIView *NewBitMap(UIWindow *win, unsigned int w, unsigned int h)
+UIView *NewBitMap(DisplayWindow *win, unsigned int w, unsigned int h)
 {
     UIView *bmView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, w, h)];
 
@@ -90,4 +101,13 @@ void DisposeBitMap(UIView *bitmap)
 {
     [bitmap removeFromSuperview];
     [bitmap release];
+}
+
+void DisplayAlert(const char *text)
+{
+    AlertDelegate *ad = [[AlertDelegate alloc] init];
+    NSString *alert = [NSString stringWithCString:text encoding:NSISOLatin1StringEncoding];
+
+    [ad DisplayAlert:alert];
+    [ad release];
 }

@@ -1,10 +1,12 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: Cocoa Touch display HIDD for AROS
     Lang: English.
 */
+
+#define DEBUG 1
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -20,10 +22,10 @@
 
 #include "classbase.h"
 #include "gfxclass.h"
-#include "uikit.h"
 
 /****************************************************************************************/
 
+OOP_AttrBase HiddChunkyBMAttrBase;
 OOP_AttrBase HiddBitMapAttrBase;  
 OOP_AttrBase HiddSyncAttrBase;
 OOP_AttrBase HiddPixFmtAttrBase;
@@ -32,6 +34,7 @@ OOP_AttrBase HiddAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {
+    { IID_Hidd_ChunkyBM , &HiddChunkyBMAttrBase },
     { IID_Hidd_BitMap	, &HiddBitMapAttrBase	},
     { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
     { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase	},
@@ -120,8 +123,7 @@ OOP_Object *UIKit__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     	return NULL;
     }
 
-    if ((base->metrics.orientation == UIInterfaceOrientationLandscapeLeft) ||
-        (base->metrics.orientation == UIInterfaceOrientationLandscapeRight))
+    if (base->metrics.orientation == O_LANDSCAPE)
     {
     	l_synctags[0].ti_Data = base->metrics.width;
     	l_synctags[1].ti_Data = base->metrics.height - base->metrics.screenbar;
@@ -168,9 +170,30 @@ VOID UIKit__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 /****************************************************************************************/
 
 OOP_Object *UIKit__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
-{  
-    /* TODO */
-    return NULL;
+{
+    struct UIKitBase *base = cl->UserData;
+    HIDDT_ModeID modeid;
+    struct pHidd_Gfx_NewBitMap p;
+    struct TagItem tags[] =
+    {
+	{TAG_IGNORE, 0			},
+	{TAG_MORE  , (IPTR)msg->attrList}
+    };
+
+    /* Here we select a class for the bitmap to create */
+    modeid = GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
+    if (modeid != vHidd_ModeID_Invalid)
+    {
+        tags[0].ti_Tag  = aHidd_BitMap_ClassPtr;
+        tags[0].ti_Data = (IPTR)base->bmclass;
+
+	D(bug("[UIKitGfx] ModeID: 0x%08lX, ClassPtr: 0x%p\n", modeid, tags[0].ti_Data));
+    }
+
+    p.mID = msg->mID;
+    p.attrList = tags;
+
+    return (OOP_Object *)OOP_DoSuperMethod(cl, o, &p.mID);
 }
 
 /****************************************************************************************/
@@ -184,6 +207,7 @@ VOID UIKit__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     	switch (idx)
 	{
 	    case aoHidd_Gfx_IsWindowed:
+	    case aoHidd_Gfx_NoFrameBuffer:
 	    	*msg->storage = TRUE;
 		return;
 
