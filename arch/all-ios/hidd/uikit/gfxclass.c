@@ -262,8 +262,8 @@ static const char *symbols[] =
     "GetMetrics",
     "OpenDisplay",
     "CloseDisplay",
-    "NewBitMap",
-    "DisposeBitMap",
+    "NewContext",
+    "DisposeContext",
     NULL
 };
 

@@ -4,6 +4,7 @@
 #import "alertdelegate.h"
 #import "displaywindow.h"
 #import "native_api.h"
+#import "bitmapclass.h"
 
 static UIScreen *getScreen(unsigned int scrNo)
 {
@@ -110,4 +111,17 @@ void DisplayAlert(const char *text)
 
     [ad DisplayAlert:alert];
     [ad release];
+}
+
+void NewContext(struct bitmap_data *bitmap)
+{
+    CGColorSpaceRef colspace = CGColorSpaceCreateDeviceRGB();
+
+    bitmap->context = CGBitmapContextCreate(bitmap->pixels, bitmap->width, bitmap->height, 8, bitmap->mod, colspace, kCGImageAlphaNoneSkipFirst);
+    CGColorSpaceRelease(colspace);
+}
+
+void DisposeContext(CGContextRef ctx)
+{
+    CGContextRelease(ctx);
 }
