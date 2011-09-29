@@ -49,10 +49,10 @@ static int Alert_Init(void)
      * We use local variable for the handle because we never expunge
      * so we will never close it
      */
-    libHandle = HostIFace->hostlib_Open("Libs/Host/alert.dylib", &err);
+    libHandle = HostIFace->hostlib_Open("Libs/Host/uikit_hidd.dylib", &err);
     if (!libHandle)
     {
-    	bug("Failed to load alert.dylib: %s\n", err);
+    	bug("Failed to load uikit_hidd.dylib: %s\n", err);
 	return FALSE;
     }
 

@@ -1,6 +1,9 @@
 #import "displaycontroller.h"
+#import "native_api.h"
 
 @implementation DisplayController
+
+@synthesize FixedOrientation;
 
 -(id)initWithSize:(CGRect)screenSize
 {
@@ -17,7 +20,17 @@
 
 -(BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)o
 {
-    return Portrait ? UIInterfaceOrientationIsPortrait(o) : UIInterfaceOrientationIsLandscape(o);
+    switch (FixedOrientation)
+    {
+    case O_PORTRAIT:
+    	return UIInterfaceOrientationIsPortrait(o);
+
+    case O_LANDSCAPE:
+    	return UIInterfaceOrientationIsLandscape(o);
+
+    default:	/* Unspecified */
+    	return YES;
+    }
 }
 
 @end

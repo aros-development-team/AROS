@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 41656 2011-09-28 08:38:28Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 #MM kernel-hidd-uikit: kernel-hidd-uikit-native
@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-hidd-uikit-kobj: kernel-hidd-uikit-native
 #MM kernel-hidd-uikit-kobj-quick: kernel-hidd-uikit-native
 
-FILES := gfxclass startup
+FILES := gfxclass bitmapclass startup
 
 %build_module mmake=kernel-hidd-uikit \
   modname=uikit modtype=hidd \
@@ -15,7 +15,7 @@ FILES := gfxclass startup
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)
 
-NATIVE_FILES   := native_api displaycontroller
+NATIVE_FILES   := native_api alertdelegate displaycontroller displaywindow
 NATIVE_LIBNAME := uikit_hidd.dylib
 
 NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework Foundation -framework UIKit -shared
