@@ -10,6 +10,7 @@
 
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
+#include <dos/dos.h>
 #include <graphics/displayinfo.h>
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
@@ -264,11 +265,16 @@ static const char *symbols[] =
     "CloseDisplay",
     "NewContext",
     "DisposeContext",
+    "PollEvents",
     NULL
 };
 
 static int UIKit_Init(struct UIKitBase *base) 
 {
+    ULONG r;
+
+    D(bug("[UIKit] Initializing, base 0x%p\n", base));
+
     if (!OOP_ObtainAttrBases(attrbases))
     	return FALSE;
 
@@ -280,9 +286,15 @@ static int UIKit_Init(struct UIKitBase *base)
     if (!base->hostlib)
     	return FALSE;
 
-    base->iface = (struct UIKitInterface *)HostLib_GetInterface(base->hostlib, symbols, NULL);
+    base->iface = (struct UIKitInterface *)HostLib_GetInterface(base->hostlib, symbols, &r);
     if (!base->iface)
     	return FALSE;
+
+    if (r)
+    {
+    	D(bug("[UIKit] Failed to resolve %u symbols in native library\n", r));
+    	return FALSE;
+    }
 
     D(bug("[UIKit] Native library loaded succesfully\n"));
 
@@ -296,6 +308,15 @@ static int UIKit_Init(struct UIKitBase *base)
 
     D(bug("[UIKit] Display %u x %u points, screenbar size %u\n", base->metrics.width, base->metrics.height, base->metrics.screenbar));
 
+    base->eventTask = NewCreateTask(TASKTAG_PC  , EventTask,
+    				    TASKTAG_NAME, "Cocoa Touch events poll",
+    				    TASKTAG_PRI , 50,
+    				    TASKTAG_ARG1, base,
+    				    TAG_DONE);
+
+    if (!base->eventTask)
+    	return FALSE;
+
     return TRUE;
 }
 
@@ -307,6 +328,12 @@ static int UIKit_Expunge(struct UIKitBase *base)
 
     if (!HostLibBase)
     	return TRUE;
+
+    if (base->eventTask)
+    {
+    	Signal(base->eventTask, SIGBREAKF_CTRL_C);
+    	/* FIXME: Response needed */
+    }
 
     if (base->iface)
 	HostLib_DropInterface((void **)base->iface);

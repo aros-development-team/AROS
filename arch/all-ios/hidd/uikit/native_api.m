@@ -1,5 +1,4 @@
 #import <objc/runtime.h>
-#import <UIKit/UIKit.h>
 
 #import "alertdelegate.h"
 #import "displaywindow.h"
@@ -124,4 +123,9 @@ void NewContext(struct bitmap_data *bitmap)
 void DisposeContext(CGContextRef ctx)
 {
     CGContextRelease(ctx);
+}
+
+void PollEvents(unsigned int dummy)
+{
+    CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, TRUE);
 }

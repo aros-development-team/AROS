@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-hidd-uikit-kobj: kernel-hidd-uikit-native
 #MM kernel-hidd-uikit-kobj-quick: kernel-hidd-uikit-native
 
-FILES := gfxclass bitmapclass startup
+FILES := gfxclass bitmapclass eventtask startup
 
 %build_module mmake=kernel-hidd-uikit \
   modname=uikit modtype=hidd \
