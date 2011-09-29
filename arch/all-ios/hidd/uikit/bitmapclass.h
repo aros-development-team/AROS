@@ -4,14 +4,14 @@
 
 struct bitmap_data
 {
-    LONG     bm_left;		/* Physical coordinates of top-left corner */
-    LONG     bm_top;
-    ULONG    win_width;		/* Display window size			   */
-    ULONG    win_height;
-    ULONG    bm_width;		/* Bitmap size				   */
-    ULONG    bm_height;
-    ULONG    mod;		/* Bytes per line			   */
-    APTR     pixels;		/* Address in memory			   */
-    APTR     context;		/* Core Graphics context		   */
-    UBYTE    orientation;	/* Orientation (portrait on landscape)	   */
+    int            left;		/* Physical coordinates of top-left corner */
+    int            top;
+    unsigned int   width;		/* Bitmap size				   */
+    unsigned int   height;
+    unsigned int   mod;			/* Bytes per line			   */
+    unsigned int   win_width;		/* Display window size			   */
+    unsigned int   win_height;
+    void	  *pixels;		/* Address in memory			   */
+    void	  *context;		/* Core Graphics context		   */
+    unsigned char  orientation;		/* Orientation (portrait on landscape)	   */
 };

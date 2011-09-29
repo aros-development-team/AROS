@@ -18,7 +18,7 @@ NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)
 NATIVE_FILES   := native_api alertdelegate displaycontroller displaywindow
 NATIVE_LIBNAME := uikit_hidd.dylib
 
-NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework Foundation -framework UIKit -shared
+NATIVE_LDFLAGS := $(IOS_LDFLAGS) -framework CoreGraphics -framework Foundation -framework UIKit -shared
 
 OBJS := $(addsuffix .o,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))
 DEPS := $(addsuffix .d,$(addprefix $(NATIVE_OBJDIR)/,$(notdir $(NATIVE_FILES))))

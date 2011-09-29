@@ -3,13 +3,15 @@
 
 #include "native_api.h"
 
+struct bitmap_data;
+
 struct UIKitInterface
 {
-    void (*GetMetrics)(struct DisplayMetrics *data);
+    void  (*GetMetrics)(struct DisplayMetrics *data);
     void *(*OpenDisplay)(unsigned int scrNo);
-    void (*CloseDisplay)(void *display);
-    void *(*NewBitMap)(void *display, unsigned int w, unsigned int h);
-    void (*DisposeBitMap)(void *bitmap);
+    void  (*CloseDisplay)(void *display);
+    void  (*NewContext)(struct bitmap_data *bitmap);
+    void  (*DisposeContext)(void *context);
 };
 
 struct UIKitBase
