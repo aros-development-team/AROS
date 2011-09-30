@@ -57,7 +57,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    /* Just dump the whole lot */
+    /*
+     * Just dump the whole lot.
+     * FIXME: This is known to trigger system cold reset on Archos-70
+     * Android tablet. Likely hardware quirk. Needs to be investigated.
+     */
     CacheClearE(0, ~0, CACRF_ClearI | CACRF_ClearD);
 
     AROS_LIBFUNC_EXIT
