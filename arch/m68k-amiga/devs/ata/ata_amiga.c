@@ -130,7 +130,7 @@ static BOOL custom_check(APTR addr)
 
 static UBYTE *getport(struct amiga_driverdata *ddata)
 {
-    UBYTE id, status;
+    UBYTE id, status1, status2;
     volatile UBYTE *port, *altport;
     struct GfxBase *gfx;
 
@@ -157,31 +157,45 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
     	return NULL;
 
     altport = port + 0x1010;
-    status = port[ata_Status * 4];
-    D(bug("[ATA] Status=%02x\n", status));
+    Disable();
+    port[atapi_DevSel * 4] = ATAF_ERROR;
+    /* If nothing connected, we get back what we wrote, ATAF_ERROR set */
+    status1 = port[ata_Status * 4];
+    port[atapi_DevSel * 4] = ATAF_DATAREQ;
+    status2 = port[ata_Status * 4];
+    port[atapi_DevSel * 4] = 0;
+    Enable();
+    D(bug("[ATA] Status=%02x,%02x\n", status1, status2));
     // BUSY and DRDY both active or ERROR/DATAREQ = no drive(s) = do not install driver
-    if (((status & (ATAF_BUSY | ATAF_DRDY)) == (ATAF_BUSY | ATAF_DRDY))
-    	|| (status & (ATAF_ERROR | ATAF_DATAREQ))) {
+    if (   (((status1 | status2) & (ATAF_BUSY | ATAF_DRDY)) == (ATAF_BUSY | ATAF_DRDY))
+    	|| ((status1 | status2) & (ATAF_ERROR | ATAF_DATAREQ)))
+    {
     	D(bug("[ATA] Drives not detected\n"));
     	return NULL;
     }
     if (ddata->doubler) {
-    	UBYTE v1, v2, v3;
+    	UBYTE v1, v2;
     	/* check if AltControl is both readable and writable
     	 * It is either floating or DevHead if IDE doubler is connected.
+    	 * AltControl = DevHead (R)
+    	 * Device Control = DevHead (W)
     	 */
-	v3 = altport[ata_AltControl * 4];
+    	Disable();
 	altport[ata_AltControl * 4] = 0;
+    	port[atapi_DevSel * 4] = 1;
 	v1 = altport[ata_AltControl * 4];
 	altport[ata_AltControl * 4] = 2;
+    	port[atapi_DevSel * 4] = 4;
 	v2 = altport[ata_AltControl * 4];
-	altport[ata_AltControl * 4] = v3;
-	if ((v1 == 0 && v2 == 2) || (v1 == 0xff && v2 == 0xff)) {
+	altport[ata_AltControl * 4] = 0;
+    	port[atapi_DevSel * 4] = 0;
+	Enable();
+	if ((v1 == 0 && v2 == 2) || (v1 == 1 && v2 == 4) || (v1 == 0xff && v2 == 0xff)) {
     	    ddata->doubler = 2;
-	    D(bug("[ATA] IDE doubler detected\n"));
 	} else {
     	    ddata->doubler = 0;
 	}
+	D(bug("[ATA] IDE doubler check (%02x, %02X)\n", v1, v2));
     }
     /* we may have connected drives */
     return (UBYTE*)port;
