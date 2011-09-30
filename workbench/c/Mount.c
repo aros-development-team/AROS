@@ -534,7 +534,7 @@ ULONG		Status;
   }
   UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 
-  DEBUG_CHECK(KPrintF("CheckDevice: object %sexist\n", Status ? "does" : "doesn't "));
+  DEBUG_CHECK(KPrintF("CheckDevice: object %s exist\n", Status ? "does" : "doesn't"));
 
   return Status;
 }
