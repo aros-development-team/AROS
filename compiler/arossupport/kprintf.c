@@ -9,22 +9,48 @@
 #include <aros/config.h>
 #include <aros/arossupportbase.h>
 #include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
+
 #include <aros/system.h>
 #include <dos/bptr.h>
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 #undef kprintf
 #undef vkprintf
-#include <unistd.h>
 #include <exec/execbase.h>
 
-#define AROSBase	((struct AROSBase *)(SysBase->DebugData))
-
-/* Can't use ctypt.h *sigh* */
+/* Can't use ctype.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
 #define isprint(x)      (((x) >= ' ' && (x) <= 128) || (x) >= 160)
+
+/* Nor string.h */
+static inline int my_strlen(const char *c)
+{
+    int i = 0;
+    while (*(c++)) i++;
+    return i;
+}
+
+/* Nor atoi */
+static inline int atoi(const char *c)
+{
+    int i;
+    int isneg = 0;
+
+    if (*c == '+')
+        c++;
+
+    if (*c == '-') {
+        isneg = 1;
+        c++;
+    }
+
+    for (i = 0; *c && isdigit(*c); c++) {
+        i *= 10;
+        i += *c - '0';
+    }
+
+    return (isneg) ? -i : i;
+}
 
 /*****************************************************************************
 
@@ -193,7 +219,7 @@ int vkprintf (const UBYTE * fmt, va_list args)
 		if (precision)
 		    len = precision;
 		else
-		    len = strlen (str);
+		    len = my_strlen (str);
 
 		RawPutChars (str, len);
 		ret += len;

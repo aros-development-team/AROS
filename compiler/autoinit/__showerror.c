@@ -63,15 +63,12 @@ void __showerror(char *format, const IPTR *args)
     }
     else
     {
-        if (name)
-            kprintf("%s: ", name);
-
-        if (args)
-        {
-            RawDoFmt(format, (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
-            kprintf("\n");
+        if (name) {
+            IPTR args[] = { (IPTR)name };
+            RawDoFmt("%s: ", (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
         }
-        else
-            kprintf("%s\n", format);
+
+        RawDoFmt(format, (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+        RawPutChar('\n');
     }
 }

@@ -85,8 +85,8 @@ BOOL WriteStruct (struct Hook *, APTR   data, void * stream, const IPTR * desc);
 void FreeStruct  (APTR s,  const IPTR * desc);
 
 
-/* don't use SysBase->kprintf on AmigaOS */
-#ifndef __amigaos__
+/* don't use SysBase->kprintf on AmigaOS, or AROS m68k */
+#if defined(__AROS__) && !defined(__mc68000)
 #   define kprintf     (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
 #   define rkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 #   define vkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf)
