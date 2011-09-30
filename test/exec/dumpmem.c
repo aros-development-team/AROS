@@ -149,7 +149,7 @@ int main(int argc, char **argv)
                     }
                 }
 
-		outfunc = serial_out ? kprintf : printf;
+		outfunc = serial_out ? (APTR)kprintf : (APTR)printf;
 		
                 if ( PROGRAM_ERROR != RETURN_FAIL )
                 {
