@@ -502,6 +502,90 @@ VOID AmigaVideoBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_BitMap_GetImageLUT *msg)
+{
+    WORD    	    	    x, y, d;
+    UBYTE   	    	    *pixarray = (UBYTE *)msg->pixels;
+    UBYTE   	    	    **plane;
+    ULONG   	    	    planeoffset;
+    struct amigabm_data    *data;  
+    UBYTE   	    	    prefill;
+    
+    data = OOP_INST_DATA(cl, o);
+
+    bug("[%s] Get %dx%d to %dx%d from %d planes to buffer at %p\n", __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1, data->depth, msg->pixels);
+
+    planeoffset = msg->y * data->bytesperrow + msg->x / 8;
+
+    prefill = 0;
+    for (d = 0; d < data->depth; d++)
+    {
+    	if (data->planes[d] == (UBYTE *)-1)
+	{
+	    prefill |= (1L << d);
+	}
+    }
+
+    for (y = 0; y < msg->height; y++)
+    {
+    	UBYTE *dest = pixarray;
+
+    	plane = data->planes;
+	for(x = 0; x < msg->width; x++)
+	{
+	    dest[x] = prefill;
+	}
+	
+    	for (d = 0; d < data->depth; d++)
+	{
+	    ULONG dmask = 1L << d;
+	    ULONG pmask = 0x80 >> (msg->x & 7);
+	    UBYTE *pl = *plane;
+
+	    if (pl == (UBYTE *)-1) continue;
+	    if (pl == NULL) continue;
+
+	    pl += planeoffset;
+
+    	    for (x = 0; x < msg->width; x++)
+	    {
+	    	if (*pl & pmask)
+		{
+		    dest[x] |= dmask;
+		}
+		else
+		{
+		    dest[x] &= ~dmask;
+		}
+		
+		if (pmask == 0x1)
+		{
+		    pmask = 0x80;
+		    pl++;
+		}
+		else
+		{
+		    pmask >>= 1;
+		}
+		
+	    } /* for(x = 0; x < msg->width; x++) */
+	    
+	    plane++;
+	    
+	} /* for(d = 0; d < data->depth; d++) */
+	
+	pixarray    += msg->modulo;
+	planeoffset += data->bytesperrow;
+	
+    } /* for(y = 0; y < msg->height; y++) */
+
+    bug("[%s] Got %d\n", __func__, *(UBYTE *)msg->pixels);
+}
+
+
+/****************************************************************************************/
+
 VOID AmigaVideoBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutImage *msg)
 {
