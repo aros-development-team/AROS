@@ -109,17 +109,20 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
     	    	    	  LONG x, LONG y, struct GfxBase *GfxBase)
 {
     struct prlut8_render_data *prlrd;
+    UBYTE pen;
        
     prlrd = (struct prlut8_render_data *)prlr_data;
     
     if (NULL != prlrd->pixlut)
     {
-	HIDD_BM_GetImageLUT(bm, (UBYTE *)&prlrd->pen, 1, x, y, 1, 1, prlrd->pixlut);
+	HIDD_BM_GetImageLUT(bm, &pen, 1, x, y, 1, 1, prlrd->pixlut);
     }
     else
     {
-    	prlrd->pen = HIDD_BM_GetPixel(bm, x, y);
+    	pen = HIDD_BM_GetPixel(bm, x, y);
     }
+
+    prlrd->pen = pen;
 
     return 0;
 }
