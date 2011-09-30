@@ -31,6 +31,7 @@ Q ?= @
 #MM     kernel-misc-kobj \
 #MM     kernel-partition-kobj \
 #MM     kernel-potgo-kobj \
+#MM     kernel-cardres-kobj \
 #MM     kernel-shell-kobj \
 #MM     kernel-usb-amiga-m68k \
 #MM     kernel-workbench-devs-amiga-m68k \
@@ -88,7 +89,7 @@ KLIBS   := exec aros dos utility oop expansion partition debug
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
-KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell
+KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres
 KHOOKS  :=
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -256,7 +257,7 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := cdrom con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
-           FileSystem misc shell shellcommands workbook wbtag
+           FileSystem misc shell shellcommands workbook wbtag cardres
 KHOOKS  := alert
 
 KOBJS_any := \
