@@ -520,7 +520,7 @@ ULONG CheckDevice(char *name)
 struct DosList	*dl;
 ULONG		Status;
 
-  DEBUG_CHECK(Printf("CheckDevice: <%s>\n",
+  DEBUG_CHECK(KPrintF("CheckDevice: <%s>\n",
                      name));
 
   dl = LockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
@@ -534,7 +534,7 @@ ULONG		Status;
   }
   UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 
-  DEBUG_CHECK(Printf("CheckDevice: object %sexist\n", Status ? "does" : "doesn't "));
+  DEBUG_CHECK(KPrintF("CheckDevice: object %sexist\n", Status ? "does" : "doesn't "));
 
   return Status;
 }
@@ -1695,7 +1695,7 @@ struct RDArgs rda;
 	if (res == ITEM_NOTHING &&
 	    rda.RDA_Source.CS_CurChr == rda.RDA_Source.CS_Length)
 	{
-	    return 0;
+	    return ERR_DEVICENOTFOUND;
 	}
 
 	if (res != ITEM_QUOTED && res != ITEM_UNQUOTED)
