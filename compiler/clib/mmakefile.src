@@ -454,11 +454,14 @@ ROM_STATIC := \
 	stcd_l \
 	stch_l \
 	stcl_d \
+	strchr \
 	strerror_rom \
+	strspn \
 	strtol \
 	strtoll \
 	strtoul \
 	strtoull \
+	strtok \
 	vsnprintf \
 	vsprintf \
 	vsscanf
