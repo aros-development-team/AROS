@@ -127,15 +127,13 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     	/* Card inserted */
     	CARDDEBUG(bug("Inserted PCMCIA card detected\n"));
     	pcmcia_cardreset(CardResource);
-   	CardResource->removed = FALSE;
+    	CardResource->removed = FALSE;
     	if (checkcard(CardResource)) {
     	    CardResource->resetberr = GAYLE_IRQ_RESET;
     	    pcmcia_clear_requests(CardResource);
     	    /* Installed as Fast RAM. Do not initialize resource */
     	    return 0;
     	}
-	pcmcia_clear_requests(CardResource);
-    	pcmcia_enable_interrupts(CardResource);
     }
 
     CardResource->task = NewCreateTask(
@@ -158,7 +156,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     intr->is_Code = (APTR)card_level2;
     intr->is_Data = CardResource;
     AddIntServer(INTB_PORTS, intr);
-    
+
     intr = &CardResource->level6;
     intr->is_Node.ln_Pri = -127;
     intr->is_Node.ln_Type = NT_INTERRUPT;
@@ -166,7 +164,10 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     intr->is_Code = (APTR)card_level6;
     intr->is_Data = CardResource;
     AddIntServer(INTB_EXTER, intr);
-    
+
+    pcmcia_clear_requests(CardResource);
+    pcmcia_enable_interrupts(CardResource);
+
     Enable();
 
     return TRUE;
