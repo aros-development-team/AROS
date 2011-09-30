@@ -135,20 +135,23 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
     struct GfxBase *gfx;
 
     port = NULL;
+    gfx = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    Disable();
     id = ReadGayle();
     if (id) {
         port = (UBYTE*)GAYLE_BASE_1200;
 	ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
     } else {
-    	gfx = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
     	// in AGA this area is never custom mirror but lets make sure..
     	if (!custom_check((APTR)0xdd2000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
             port = (UBYTE*)GAYLE_BASE_4000;
 	    ddata->a4000 = TRUE;
 	    ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
         }
-        CloseLibrary((struct Library*)gfx);
     }
+    Enable();
+    CloseLibrary((struct Library*)gfx);
+
     D(bug("[ATA] Gayle ID=%02x. Possible IDE port=%08x.\n", id, (ULONG)port & ~3));
     if (port == NULL)
     	return NULL;
@@ -200,7 +203,7 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
 	if (ddata->bus[1] && ddata->bus[1]->intena)
 	    ata_HandleIRQ(ddata->bus[1]->bus);
 	/* Clear interrupt */
-	*ddata->gayleirqbase = irqmask & ~GAYLE_IRQ_IDE;
+	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
     }
     return 0;
 
