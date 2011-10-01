@@ -223,6 +223,7 @@ struct e1000Unit {
     OOP_Object              *e1ku_PCIDriver;
     IPTR                    e1ku_IRQ;
 
+    UWORD		    e1ku_PCIeCap;
     int                     e1ku_open_count;
     struct SignalSemaphore  e1ku_unit_lock;
     
