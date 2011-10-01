@@ -27,16 +27,16 @@ AROS_UFH4(ULONG, card_level6,
     UBYTE intreq, intena;
 
     intreq = gio->intreq;
-    if (CardResource->disabled) {
-    	pcmcia_reset(CardResource);
-    	return 0; /* huh? shouldn't happen */
-    }
     if (!(intreq & GAYLE_IRQ_CCDET) )
 	return 0; /* not ours */
     intena = gio->intena;
     gio->intreq = ~GAYLE_IRQ_CCDET;
     if (!(intena & GAYLE_IRQ_CCDET))
     	return 0; /* not ours either */
+    if (CardResource->disabled) {
+    	pcmcia_reset(CardResource);
+    	return 0; /* huh? shouldn't happen */
+    }
 
     CardResource->disabled = TRUE;
     pcmcia_reset(CardResource);
@@ -68,32 +68,30 @@ AROS_UFH4(ULONG, card_level2,
     UBYTE intreq, intena, status;
 
     intreq = gio->intreq & INTMASK;
-    if (CardResource->disabled) {
-    	pcmcia_reset(CardResource);
-    	return 0; /* huh? shouldn't happen */
-    }
     if (!intreq)
     	return 0; /* not ours */
     intena = gio->intena;
     if (!(intena & intreq)) {
     	return 0; /* not ours either */
     }
+    if (CardResource->disabled) {
+    	pcmcia_reset(CardResource);
+    	return 0; /* huh? shouldn't happen */
+    }
     intreq &= intena;
 
     status = intreq;
-    if (CardResource->ownedcard && !CardResource->removed) {
-    	if (CardResource->ownedcard->cah_CardStatus) {
-	    status = AROS_UFC4(UBYTE, CardResource->ownedcard->cah_CardStatus->is_Code,
-		AROS_UFCA(UBYTE, intreq, D0),
-		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Data, A1),
-		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Code, A5),
-		AROS_UFCA(struct ExecBase *, mySysBase, A6));
-	}
+    if (CardResource->ownedcard && !CardResource->removed && CardResource->ownedcard->cah_CardStatus) {
+	status = AROS_UFC4(UBYTE, CardResource->ownedcard->cah_CardStatus->is_Code,
+	    AROS_UFCA(UBYTE, intreq, D0),
+	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Data, A1),
+	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Code, A5),
+	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
     }
-    status = (status ^ INTMASK) & INTMASK;
-    gio->intreq = status | NOINTMASK | CardResource->resetberr;
-
-    CARDDEBUG(bug("PCMCIA Level 2 interrupt. INTREQ=%02X STATUS=%02X\n", intreq, status));
+    if (status) {
+	status = (status ^ INTMASK) & INTMASK;
+	gio->intreq = status | NOINTMASK | CardResource->resetberr;
+    }
 
     return 1;
 
@@ -104,17 +102,19 @@ void pcmcia_reset(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     
+    /* Reset PCMCIA configuration, disable interrupts */
     gio->config = 0;
     gio->status = 0;
-    /* Disable all PCMCIA related interrupts */
+    /* Disable all PCMCIA interrupts */
     gio->intena &= ~(GAYLE_INT_CCDET | GAYLE_INT_BVD1 | GAYLE_INT_BVD2 | GAYLE_INT_WR | GAYLE_INT_BSY);
-    gio->intreq = GAYLE_IRQ_IDE | CardResource->resetberr;
+    pcmcia_clear_requests(CardResource);
 }
 
 void pcmcia_clear_requests(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
+    /* Clear all interrupt requests except IDE interrupt */
     gio->intreq = GAYLE_IRQ_IDE | CardResource->resetberr;
 }
 
@@ -122,6 +122,7 @@ void pcmcia_enable_interrupts(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
+    /* Enable Card Change and Card IRQ interrupts */
     gio->intena |= GAYLE_INT_CCDET | GAYLE_INT_BSY;
 }
 

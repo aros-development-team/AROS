@@ -10,7 +10,8 @@
 
 #include "card_intern.h"
 
-#define ALLOWMASK (GAYLE_INT_BVD1 | GAYLE_INT_BVD2 | GAYLE_INT_WR | GAYLE_INT_BSY)
+#define STATUSMASK (GAYLE_CS_WR | GAYLE_CS_DAEN)
+#define IRQMASK (GAYLE_INT_BVD1 | GAYLE_INT_BVD2 | GAYLE_INT_BSY)
 
 AROS_LH2(UBYTE, CardMiscControl,
 	AROS_LHA(struct CardHandle*, handle, A1),
@@ -27,27 +28,17 @@ AROS_LH2(UBYTE, CardMiscControl,
     if (!ISMINE)
     	return 0;
 
-    val = control_bits & ALLOWMASK;
-    
+    val = control_bits & IRQMASK;
+
     Disable();
 
+    gio->status = control_bits & STATUSMASK;
+
     control = gio->intena;
-
-    if (control_bits & CARD_ENABLEF_DIGAUDIO)
-    	control |= GAYLE_INT_DA;
-    else
-    	control &= ~GAYLE_INT_DA;
-
-    if (control_bits & CARD_DISABLEF_WP)
-    	control &= ~GAYLE_INT_WR;
-    else
-    	control |= GAYLE_INT_WR;
-
     if (control_bits & CARD_INTF_SETCLR)
     	control |= val;
     else
     	control &= ~val;
-
     gio->intena = control;
 
     Enable();    	
