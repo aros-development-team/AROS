@@ -278,7 +278,7 @@ struct e1000_rx_ring {
 	unsigned int next_to_use;
 	/* next descriptor to check for DD status bit */
 	unsigned int next_to_clean;
-	struct e1000_buffer *buffer_info;
+	struct e1000_rx_buffer *buffer_info;
 
 	UWORD rdh;
 	UWORD rdt;
