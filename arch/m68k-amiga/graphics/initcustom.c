@@ -58,6 +58,11 @@ static UWORD gethighestline(UWORD linecnt)
 	return highest;
 }	
 
+static ULONG donothing(void)
+{
+	return 0;
+}
+
 static int InitCustom(struct GfxBase *gfx)
 {
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -103,6 +108,16 @@ static int InitCustom(struct GfxBase *gfx)
 	gfx->ChipRevBits0 = chipflags;
 
 	SysBase->VBlankFrequency = (flags & PAL) ? 50 : 60;
+
+	/* Patch unimplemented, undocumented AOS functions
+	 * used by AOS monitor drivers:
+	 * AddDisplayInfo()
+	 * AddDisplayInfoData()
+	 * SetDisplayInfoData()
+	 */
+	SetFunction((struct Library*)gfx, -123 * 6, (APTR)donothing);
+	SetFunction((struct Library*)gfx, -124 * 6, (APTR)donothing);
+	SetFunction((struct Library*)gfx, -125 * 6, (APTR)donothing);
 
 	return TRUE;
 }
