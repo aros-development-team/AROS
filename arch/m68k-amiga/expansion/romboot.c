@@ -61,8 +61,10 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 			while (romptr <= romend) {
 				res = (struct Resident*)romptr;
 				if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res) {
-					D(bug("Diag board %08x InitResident %08x (%d %02x '%s')\n",
-						configDev->cd_BoardAddr, res, res->rt_Pri, res->rt_Flags, res->rt_Name));
+					D(bug("Diag board %p InitResident %p (V=%d P=%d F=%02x '%s' '%s')\n",
+						configDev->cd_BoardAddr, res, res->rt_Version, res->rt_Pri, res->rt_Flags,
+						res->rt_Name != NULL ? (char*)res->rt_Name : "<null>",
+						res->rt_IdString != NULL ? (char*)res->rt_IdString : "<null>"));
 					InitResident(res, BNULL);
 					break; /* must not keep looking */
 				}
