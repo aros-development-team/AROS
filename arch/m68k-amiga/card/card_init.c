@@ -120,7 +120,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     CARDDEBUG(bug("PCMCIA slot enabled\n"));
     
     pcmcia_reset(CardResource);
-    pcmcia_enable(CardResource);
+    pcmcia_enable();
     
     CardResource->removed = TRUE;
     if (gio->status & GAYLE_CS_CCDET) {
@@ -166,7 +166,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     AddIntServer(INTB_EXTER, intr);
 
     pcmcia_clear_requests(CardResource);
-    pcmcia_enable_interrupts(CardResource);
+    pcmcia_enable_interrupts();
 
     Enable();
 

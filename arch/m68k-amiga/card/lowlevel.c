@@ -64,8 +64,10 @@ AROS_UFH4(ULONG, card_level2,
     AROS_USERFUNC_INIT
 
     struct CardResource *CardResource = (struct CardResource*)data;
+    struct CardHandle *cah = CardResource->ownedcard;
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     UBYTE intreq, intena, status;
+    BOOL poststatus = FALSE;
 
     intreq = gio->intreq & INTMASK;
     if (!intreq)
@@ -81,17 +83,26 @@ AROS_UFH4(ULONG, card_level2,
     intreq &= intena;
 
     status = intreq;
-    if (CardResource->ownedcard && !CardResource->removed && CardResource->ownedcard->cah_CardStatus) {
-	status = AROS_UFC4(UBYTE, CardResource->ownedcard->cah_CardStatus->is_Code,
+    if (cah && !CardResource->removed && cah->cah_CardStatus) {
+    	if (cah->cah_CardFlags & CARDF_POSTSTATUS)
+    	    poststatus = TRUE;
+	status = AROS_UFC4(UBYTE, cah->cah_CardStatus->is_Code,
 	    AROS_UFCA(UBYTE, intreq, D0),
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Data, A1),
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardStatus->is_Code, A5),
+	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
+	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
 	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
     }
     if (status) {
 	status = (status ^ INTMASK) & INTMASK;
 	gio->intreq = status | NOINTMASK | CardResource->resetberr;
     }
+    if (poststatus) {
+	AROS_UFC4(void, cah->cah_CardStatus->is_Code,
+	    AROS_UFCA(UBYTE, 0, D0),
+	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
+	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
+	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
+    }    	
 
     return 1;
 
@@ -118,7 +129,7 @@ void pcmcia_clear_requests(struct CardResource *CardResource)
     gio->intreq = GAYLE_IRQ_IDE | CardResource->resetberr;
 }
 
-void pcmcia_enable_interrupts(struct CardResource *CardResource)
+void pcmcia_enable_interrupts(void)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
@@ -126,21 +137,21 @@ void pcmcia_enable_interrupts(struct CardResource *CardResource)
     gio->intena |= GAYLE_INT_CCDET | GAYLE_INT_BSY;
 }
 
-BOOL pcmcia_havecard(struct CardResource *CardResource)
+BOOL pcmcia_havecard(void)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
     return gio->status & GAYLE_CS_CCDET;
 }
 
-void pcmcia_disable(struct CardResource *CardResource)
+void pcmcia_disable(void)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
     gio->status = GAYLE_CS_DIS;
 }
 
-void pcmcia_enable(struct CardResource *CardResource)
+void pcmcia_enable(void)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 

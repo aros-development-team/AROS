@@ -23,6 +23,8 @@ static BOOL getbyte(ULONG addr, UBYTE *out)
     	TUPLEDEBUG2(bug("getbyte from invalid address %p\n", addr));
 	return FALSE;
     }
+    if (!pcmcia_havecard())
+    	return FALSE;
     p = (UBYTE*)addr;
     *out = *p;
     return TRUE;
@@ -79,7 +81,7 @@ AROS_LH4(ULONG, CopyTuple,
     UWORD nextbyte, tuplecnt;
     ULONG nextjump;
     UBYTE oldconfig;
-    BOOL ret;
+    BOOL ret, first;
 
     CARDDEBUG(bug("CopyTuple(%p,%p,%08x,%d)\n", handle, buffer, tuplecode, size));
     
@@ -100,6 +102,7 @@ AROS_LH4(ULONG, CopyTuple,
     nextjump = GAYLE_RAM;
     addr = GAYLE_ATTRIBUTE;
     nextbyte = 2;
+    first = TRUE;
 
     for (;;) {
     	BOOL final = FALSE;
@@ -110,6 +113,11 @@ AROS_LH4(ULONG, CopyTuple,
 	    break;
 
 	TUPLEDEBUG(bug("PCMCIA Tuple %02x @%p\n", type, addr));
+
+	/* First attribute memory tuple must be CISTPL_DEVICE */
+	if (first && type != CISTPL_DEVICE)
+	    final = TRUE;
+	first = FALSE;
 
     	switch (type)
     	{
@@ -163,7 +171,7 @@ AROS_LH4(ULONG, CopyTuple,
 	}
 
         tuplesize = 0;
-        if (type != CISTPL_NULL) {
+        if (!final && type != CISTPL_NULL) {
             if (!getbyte(addr + nextbyte, &tuplesize))
             	goto end;
             if (tuplesize == 0xff)
