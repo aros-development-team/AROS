@@ -639,7 +639,8 @@ D(bug("[e1000] CreateUnit()\n"));
                                 Flash_Base = (IPTR)NULL,
                                 MMIO_Base = (IPTR)NULL,
                                 Flash_Size = 0,
-                                MMIO_Size = 0;
+                                MMIO_Size = 0,
+				PCIe_Cap = 0;
         OOP_Object              *driver;
 
         unit->e1ku_UnitNum = e1KBase->e1kb_UnitCount++;
@@ -677,9 +678,13 @@ D(bug("[e1000] CreateUnit()\n"));
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_RevisionID, &RevisionID);
         OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (APTR)&driver);
 
+	OOP_GetAttr(pciDevice, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIe_Cap);
+	
         unit->e1ku_device     = e1KBase;
         ((struct e1000_hw *)unit->e1ku_Private00)->device_id         = DeviceID;
         ((struct e1000_hw *)unit->e1ku_Private00)->revision_id       = RevisionID;
+
+	unit->e1ku_PCIeCap = (UWORD)PCIe_Cap;
 
         unit->e1ku_mtu        = unit->e1ku_Sana2Info.MTU;
         unit->rx_buffer_len   = MAXIMUM_ETHERNET_VLAN_SIZE;
