@@ -72,11 +72,14 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
     	CARDDEBUG(bug("CardTask woken up\n"));
     	
     	CardResource->changecount++;
+    	
+    	Forbid();
     	/* Removal */
     	if (CardResource->removed == FALSE) {
 	    CardResource->removed = TRUE;
 	    pcmcia_removeowner(CardResource);
 	}
+	Permit();
 
 	gotstatus = FALSE;
 	status = 0;
@@ -86,25 +89,32 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 	    CardResource->timerio->tr_time.tv_secs = 0;
 	    CardResource->timerio->tr_time.tv_micro = 100000;
 	    DoIO((struct IORequest*)CardResource->timerio);
-	    if (gotstatus && status == pcmcia_havecard(CardResource))
+	    if (gotstatus && status == pcmcia_havecard())
 		break;
-	    status = pcmcia_havecard(CardResource);
+	    status = pcmcia_havecard();
 	    gotstatus = TRUE;
 	}
 
+    	CARDDEBUG(bug("PCMCIA changecnt=%d removed=%d\n", CardResource->changecount, status == FALSE));
+
+	Forbid();
+
+	SetSignal(0, CardResource->signalmask);
+
     	CardResource->removed = status == FALSE;
 
-    	CARDDEBUG(bug("PCMCIA changecnt=%d removed=%d\n", CardResource->changecount, CardResource->removed));
-
 	pcmcia_reset(CardResource);
+
 	CardResource->disabled = FALSE;
-	pcmcia_enable_interrupts(CardResource);
+	pcmcia_enable_interrupts();
 
 	/* Insert */
 	if (CardResource->removed == FALSE) {
 	    pcmcia_cardreset(CardResource);
 	    pcmcia_newowner(CardResource);
 	}
+
+	Permit();
 
     }
 }

@@ -158,13 +158,13 @@ struct CardResource
 };
 
 void pcmcia_reset(struct CardResource*);
-void pcmcia_disable(struct CardResource*);
-void pcmcia_enable(struct CardResource*);
+void pcmcia_disable(void);
+void pcmcia_enable(void);
 void pcmcia_cardreset(struct CardResource*);
 BOOL pcmcia_newowner(struct CardResource*);
 void pcmcia_removeowner(struct CardResource*);
-void pcmcia_enable_interrupts(struct CardResource*);
+void pcmcia_enable_interrupts(void);
 void pcmcia_clear_requests(struct CardResource*);
-BOOL pcmcia_havecard(struct CardResource *CardResource);
+BOOL pcmcia_havecard(void);
 
 #endif //CARD_INTERN_H

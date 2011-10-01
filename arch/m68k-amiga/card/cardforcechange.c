@@ -26,16 +26,16 @@ AROS_LH0(ULONG, CardForceChange,
     CardResource->removed = TRUE;
     pcmcia_removeowner(CardResource);
 
-    if (pcmcia_havecard(CardResource)) {
+    if (pcmcia_havecard()) {
     	/* Simulate re-insertion of current card */
     	CardResource->disabled = TRUE;
     	if (cah != NULL)
 	    Enqueue(&CardResource->handles, &cah->cah_CardNode);
     	pcmcia_cardreset(CardResource);
-    	pcmcia_enable_interrupts(CardResource);
+    	pcmcia_enable_interrupts();
     	Signal(CardResource->task, CardResource->signalmask);
     } else {
-    	pcmcia_enable_interrupts(CardResource);
+    	pcmcia_enable_interrupts();
     }
     	
     return TRUE;
