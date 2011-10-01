@@ -8,6 +8,7 @@
 #MM     devs-networks-drivers-rtl8169-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-etherlink3 \
 #MM     devs-networks-drivers-intelpro100 \
+#MM     devs-networks-drivers-e1000-$(AROS_TARGET_CPU) \
 #MM     devs-networks-drivers-prism2 \
 #MM     devs-networks-drivers-rtl8029 \
 #MM     devs-networks-drivers-atheros5000 \
