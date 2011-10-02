@@ -238,7 +238,10 @@ static char *skipword(char *s)
 static char *checkquotes(char *s)
 {
     char *s2;
-    
+    char s3[256];
+    BOOL escaped = 0;
+    int i = 0;
+
     if (*s != '"')
     {
     	s2 = skipword(s);
@@ -248,11 +251,28 @@ static char *checkquotes(char *s)
     }
     
     s++;
+
     
-    s2 = s;
-    while((*s2 != '"') && (*s2 != '\0')) s2++;
-    *s2 = '\0';
-    
+    while ((i < 256) && (s3[i] = *s))
+    {
+        if (!escaped)
+        {
+            if (*s == '\\')
+            {
+                escaped = !escaped;
+                i--;
+            }
+            else if (*s == '"')
+                break;
+        }
+        else
+            escaped = !escaped;
+        i++;
+        s++;
+    }
+    s3[i] = '\0';
+    s = s3;
+
     return s;
 }
 
