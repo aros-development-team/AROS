@@ -9318,7 +9318,7 @@ static const ULONG PsdPipePT[] =
     PACK_ENTRY(PPA_Dummy, PPA_Actual, PsdPipe, pp_IOReq.iouh_Actual, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PPA_Dummy, PPA_EndpointNum, PsdPipe, pp_IOReq.iouh_Endpoint, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PPA_Dummy, PPA_DeviceAddress, PsdPipe, pp_IOReq.iouh_DevAddr, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
-    PACK_ENTRY(PPA_Dummy, PPA_MaxPktSize, PsdPipe, pp_IOReq.iouh_MaxPktSize, PKCTRL_ULONG|PKCTRL_UNPACKONLY),
+    PACK_ENTRY(PPA_Dummy, PPA_MaxPktSize, PsdPipe, pp_IOReq.iouh_MaxPktSize, PKCTRL_UWORD|PKCTRL_UNPACKONLY),
     PACK_ENTRY(PPA_Dummy, PPA_NakTimeoutTime, PsdPipe, pp_IOReq.iouh_NakTimeout, PKCTRL_ULONG|PKCTRL_PACKUNPACK),
     PACK_ENTRY(PPA_Dummy, PPA_Interval, PsdPipe, pp_IOReq.iouh_Interval, PKCTRL_UWORD|PKCTRL_PACKUNPACK),
     PACK_WORDBIT(PPA_Dummy, PPA_NoShortPackets, PsdPipe, pp_IOReq.iouh_Flags, PKCTRL_BIT|PKCTRL_PACKUNPACK, UHFF_NOSHORTPKT),
