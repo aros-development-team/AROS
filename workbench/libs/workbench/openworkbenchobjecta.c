@@ -717,7 +717,22 @@ static BOOL HandleProject
         lock = Lock(name, ACCESS_READ);
         if (lock != BNULL)
             parent = ParentDir(lock);
-
+        else
+        /* 
+         *  A project icon (without a project file) is actually enough for
+         *  original Workbench (ie to launch the supplied tool)
+         */
+        {
+            STRPTR iconname;
+            if ((iconname = AllocVec(strlen(name) + 5, MEMF_ANY)) == NULL)
+                return success;
+            iconname[0] = '\0';
+            strcat(iconname, name);
+            strcat(iconname, ".info");
+            if ((lock = Lock(iconname, ACCESS_READ)) != BNULL)
+                parent = ParentDir(lock);
+            FreeVec(iconname);
+        }
         if (parent != BNULL)
         {
             IPTR stacksize = icon->do_StackSize;
@@ -821,6 +836,8 @@ static BOOL HandleProject
             UnLock(parent);
             UnLock(lock);
         }
+        else
+            D(bug("[WBLIB] OpenWorkbenchObjectA: Couldn't get parent dir!\n"));
     }
 
     if (!success)
