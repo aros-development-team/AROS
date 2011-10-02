@@ -933,7 +933,10 @@ static ULONG ohciScheduleBulkTDs(struct PCIController *hc)
             otd = ohciAllocTD(hc);
             if(!otd)
             {
-                predotd->otd_Succ = NULL;
+                if(predotd != NULL)
+                {
+                    predotd->otd_Succ = NULL;
+                }
                 break;
             }
             otd->otd_ED = oed;
