@@ -586,7 +586,7 @@ psdSaveCfgToDisk
 poseidon.library/--background--               poseidon.library/--background--
 
    PURPOSE
-        Poseidon is an USB protocol stack for the Amiga. It serves as a
+        Poseidon is a USB protocol stack for the Amiga. It serves as a
         manager and interface between the USB host controller drivers
         (usbhardware.device) and the class drivers.
 
@@ -617,7 +617,7 @@ psdSaveCfgToDisk
                         active at a time. Each configuration must have at
                         least one interface.
 
-        PsdInterface  - Description of the interfaces, the device supports in
+        PsdInterface  - Description of the interfaces the device supports in
         (pif)           the chosen configuration. Each interface can have
                         0 to 15 endpoints (endpoint 0 is always available).
 
@@ -632,13 +632,13 @@ psdSaveCfgToDisk
         (pp)            many pipes to an endpoint as you like, but each pipe
                         may be used for only one transfer at a time.
 
-        PsdUsbClass   - An usb class driver. There is hopefully no limitation
+        PsdUsbClass   - A usb class driver. There is hopefully no limitation
         (puc)           to what a class driver wants to do with an interface
                         or an device.
 
         PsdAppBinding - An application binding node. Whenever using a class
         (pab)           driver is not appropriate, application programmers
-                        can use the AppBinding interface to claim an USB
+                        can use the AppBinding interface to claim a USB
                         device.
 
         PsdErrorMsg   - Supportive structure for postponing an error message.
@@ -646,12 +646,12 @@ psdSaveCfgToDisk
 
         As all these structures are private (except for the information that
         they all have a Node structure for linking) and subject to change,
-        the information can only be read (and in some cases written aswell)
+        the information can only be read (and in some cases written as well)
         by a call to psdGetAttrs() (and changed using psdSetAttrs()) which
-        use TagLists. This ensures future compatibilty with all extensions
+        uses TagLists. This ensures future compatibilty with all extensions
         and changes made.
 
-        Class drivers are libraries aswell. Whenever a new device is detected
+        Class drivers are libraries as well. Whenever a new device is detected
         by the stack, all classes will be asked whether they want to
         establish an interface or even the whole binding (that is, if they
         know the interface protocol and therefore can add its features to the
@@ -670,7 +670,7 @@ psdSaveCfgToDisk
         programs to bypass the class interface to claim device bindings. Note
         that his is not the preferred way to add functionality and should be
         avoided, if you also could go through the class library interface
-        aswell.
+        as well.
 
    FILES
         The poseidon.library itself resides in LIBS:, the USB hardware
@@ -680,7 +680,7 @@ psdSaveCfgToDisk
    BUGS
         The stack is not finished yet. Some features never have been tested.
         There will be a lot of bugs hiding in all places. An event handler
-        (mainly for the use by the GUI) is going to be added, aswell as some
+        (mainly for use by the GUI) is going to be added, as well as some
         configuration and GUI hooks for the classes.
 
         This version is meant to be a working frame for developers to test
@@ -727,7 +727,7 @@ psdSaveCfgToDisk
 poseidon.library/psdAddClass                     poseidon.library/psdAddClass
 
    NAME
-        psdAddClass -- add an usb class library to the stack
+        psdAddClass -- add a usb class library to the stack
 
    SYNOPSIS
         puc = psdAddClass(name, version);
@@ -737,11 +737,11 @@ psdSaveCfgToDisk
 
    FUNCTION
 
-        psdAddClass() tries to open and add an usb class driver to the stack.
+        psdAddClass() tries to open and add a usb class driver to the stack.
         Be sure only to add libraries to the stack which are really Poseidon
         compatible usb classes, else a crash is very probable.
 
-        The opening the library succeeds, the class will be added to the
+        If opening the library succeeds, the class will be added to the
         class list.
 
         Usually class libraries will be stored in SYS:Classes/USB.
@@ -891,7 +891,7 @@ psdSaveCfgToDisk
 
         Pipes allocated with this function are automatically assigned to the
         given endpoint. If you want to establish a pipe to the default
-        control pipe, use an NULL pointer for ep. The settings of the pipe
+        control pipe, use a NULL pointer for ep. The settings of the pipe
         will be read from the endpoint configuration. Additional flags like
         PPA_NakTimeout can be changed using psdSetAttrs().
 
@@ -951,7 +951,7 @@ psdSaveCfgToDisk
 poseidon.library/psdClaimAppBinding       poseidon.library/psdClaimAppBinding
 
    NAME
-        psdClaimAppBindingA -- try to establish a binding to an usb device
+        psdClaimAppBindingA -- try to establish a binding to a usb device
         psdClaimAppBinding -- varargs stub for psdClaimAppBinding()
 
    SYNOPSIS
@@ -967,7 +967,7 @@ psdSaveCfgToDisk
    FUNCTION
         This function tries to claim a device binding to a given device.
         psdClaimAppBinding() is normally only used by applications, which
-        want to bypass the class modell for the bindings.
+        want to bypass the class model for the bindings.
 
         The call will return a pointer to an internal AppBinding structure.
         This chunk of data will be available only as long as the binding
@@ -1142,7 +1142,7 @@ psdSaveCfgToDisk
         length - number of bytes to transfer
 
    RESULT
-        ioerr - zero, if everthing went okay, else the IO error code.
+        ioerr - zero, if everything went okay, else the IO error code.
 
    SEE ALSO
         psdPipeSetup(), psdSendPipe(), psdAbortPipe(), psdWaitPipe()
@@ -1324,8 +1324,8 @@ psdSaveCfgToDisk
         Deallocate a pipe created with psdAllocPipe() before. The pp pointer
         becomes invalid right after this call.
 
-        Be sure that there is no request pending for this pipe. If you ever
-        done asynchronous IO, you should call psdAbortPipe() and
+        Be sure that there is no request pending for this pipe. If you have
+        ever done asynchronous IO, you should call psdAbortPipe() and
         psdWaitPipe() before psdFreePipe() to be on the safe side.
 
    INPUTS
@@ -1379,7 +1379,7 @@ psdSaveCfgToDisk
         Acquires attribute information from an internal stack structure,
         according to the attributes chosen in the tag list. For each entry in
         the tag list, ti_Tag identifies the attribute and ti_Data is a
-        pointer to the long variable where you wish the result to be stored.
+        pointer to the IPTR variable where you wish the result to be stored.
 
         There are currently a number of ten different system structures which
         can be accessed in this way. To avoid adding multiple functions with
@@ -1588,7 +1588,7 @@ psdSaveCfgToDisk
             after the time given with PPA_NakTimeoutTime, when the device
             constantly replies with NAKs. This could be the case if no data
             is available at the endpoint, or the usb device is broken in some
-            kind. Default is FALSE, which means that the pipe will never be
+            way. Default is FALSE, which means that the pipe will never be
             retired due to NAKs. Can be both read and written.
         PPA_NakTimeoutTime (ULONG) - time to wait in milliseconds until the
             request is retired due to NAK timeout (see above). This field can
@@ -1781,7 +1781,7 @@ psdSaveCfgToDisk
         lock, but not the other way round!
 
    SEE ALSO
-        psdUnlockPBase(), psdLockWritePBase(), psdGetNextDevice()
+        psdUnlockDevice(), psdLockWriteDevice(), psdGetNextDevice()
 
 
 poseidon.library/psdLockReadPBase           poseidon.library/psdLockReadPBase
@@ -1991,7 +1991,7 @@ psdSaveCfgToDisk
         If you want to terminate using a device, you must release the binding
         previously acquired by psdClaimAppBinding(). This is done with a
         corresponding call to psdReleaseAppBinding(). The function will call
-        the your Hook function to allow you take the correct actions to avoid
+        your Hook function to allow you take the correct actions to avoid
         further calls to the device, as psdReleaseAppBinding() might also be
         called by the stack itself, when the device gets unplugged.
 
@@ -2157,7 +2157,7 @@ psdSaveCfgToDisk
 
         It is illegal to reuse a pipe request while it is still pending! The
         contents of the pipe may not be altered during this phase. The
-        restrictions are somewhat similar to the IORequests send by the exec
+        restrictions are somewhat similar to the IORequests sent by the exec
         function SendIO().
 
         If you don't want to wait for the termination of a transfer, you can

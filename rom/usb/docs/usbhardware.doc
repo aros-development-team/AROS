@@ -32,14 +32,14 @@ usbhardware.device/UHCMD_USBSUSPEND
        and reassemble multiple packets from the USB.
 
        USB protocol error recovery is done inside the device (NAK handling,
-       retrial on error) without explicit interaction from the caller.
+       retry on error) without explicit interaction from the caller.
 
        The device must support the four transfer types interrupt, control,
        bulk and isochroneous, it must be able to handle lowspeed devices
-       aswell as fullspeed devices.
+       as well as fullspeed devices.
 
        Also, USB constraints on the bus bandwidth allocation should be
-       be followed.
+       followed.
 
    ROOT HUB
        The root hub must appear after a bus reset as default device on the
@@ -90,7 +90,7 @@ usbhardware.device/UHCMD_USBSUSPEND
        the NAK TIMEOUT timer needs to be reset.
 
    USB 2.0
-       With the emerge of USB 2.0, Poseidon has added support for this by
+       With the emergence of USB 2.0, Poseidon has added support for this by
        extending the IORequest structure slightly with V3.x. New flags
        include UHFF_HIGHSPEED (which has been there since the beginning)
        and UHFF_SPLITTRANS. Poseidon V3.6 also adds UHFF_MULTI_1,
@@ -252,8 +252,8 @@ usbhardware.device/UHCMD_USBSUSPEND
                             the time in milliseconds until the request will
                             be retired with UHIOERR_NAKTIMEOUT due to the
                             endpoint constantly denying the request with
-                            NAKs. This can be used to avoid hangs on broken
-                            USB unit 1000 (1 second) is a reasonable value.
+                            NAKs. This can be used to avoid hangs on a broken
+                            USB unit. 1000 (1 second) is a reasonable value.
 
 
    OUTPUTS
