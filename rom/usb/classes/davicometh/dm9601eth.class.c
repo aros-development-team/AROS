@@ -56,7 +56,7 @@ static int libInit(LIBBASETYPEPTR nh)
                 ret = nh;
             }
         } else {
-            KPRINTF(20, ("failed to create usbparallel.device\n"));
+            KPRINTF(20, ("failed to create dm9601eth.device\n"));
         }
         if(!ret)
         {
@@ -1282,7 +1282,7 @@ void nSetOnline(struct NepClassEth *ncp)
     switch(ncp->ncp_CDC->cdc_MediaType)
     {
         case MT_AUTO:
-            KPRINTF(10, ("Autonegotiaton!\n"));
+            KPRINTF(10, ("Autonegotiation!\n"));
             bmcr = BMCR_ANENABLE|BMCR_ANRESTART;
             autoneg = TRUE;
             break;
@@ -1513,7 +1513,7 @@ BOOL nWritePacket(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
 
     writelen += 2;
     KPRINTF(10, ("PktOut[%ld] %ld\n", ncp->ncp_WriteBufNum, writelen));
-    // unfortunately, it looks like the adapter does not correctly accepts
+    // unfortunately, it looks like the adapter does not correctly accept
     // zero length packets as end of transfer, so make the last packet a
     // one byte length one.
     if(!(writelen & (ncp->ncp_EPOutMaxPktSize-1)))
@@ -1564,7 +1564,7 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
     if(ioreq->ios2_Req.io_Flags & SANA2IOF_RAW)
     {
         /* ShapeShifter won't work with `sizeof(struct etherpacket_hdr)'
-           here. This is most likely because it want the RAW ethernet
+           here. This is most likely because it wants the RAW ethernet
            packet checksum size (4) added to the packet size. */
         copyfrom = (UBYTE *) eph;
         datasize += sizeof(struct EtherPacketHeader) + 4;

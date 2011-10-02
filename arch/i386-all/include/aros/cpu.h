@@ -6,7 +6,7 @@
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: machine.h include file for Linux/i386 and FreeBSD/i386
+    Desc: CPU-specific definitions for x86 processors
     Lang: english
 */
 
@@ -52,7 +52,7 @@
 #endif
 
 /*
-    One entry in a libraries' jumptable. For assembler compatibility, the
+    One entry in a library's jumptable. For assembler compatibility, the
     field jmp should contain the code for an absolute jmp to a 32bit
     address. There are also a couple of macros which you should use to
     access the vector table from C.
