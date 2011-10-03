@@ -1,3 +1,8 @@
+If EXISTS boot/AROSBootstrap
+  If EXISTS boot/aros.elf.gz
+    boot/AROSBootstrap ROM boot/aros.elf.gz
+  EndIf
+EndIf
 SetClock LOAD
 
 FailAt 21
