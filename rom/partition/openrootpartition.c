@@ -52,6 +52,9 @@
 
     struct PartitionHandle *ph;
 
+    if (Device == NULL)
+        return NULL;
+
     ph = AllocMem(sizeof(struct PartitionHandle), MEMF_PUBLIC | MEMF_CLEAR);
     if (ph)
     {
