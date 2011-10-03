@@ -2,7 +2,7 @@
 #define _REQUESTERS_H_
     
 /*
-    Copyright © 2002-2003 The MorphOS Development Team, All Rights Reserved.
+    Copyright © 2002-2011 The AROS Development Team, All Rights Reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -108,6 +108,8 @@ AROS_UFP2(void, RequesterPutChar,
 //horiz space between win border and requester's box
 #define GADGETGADGETSPACING 8
 //space between gadgets
+#define GADGETGADGETSPACING_Y 8
+//vert space  between gadgets
 #define TEXTGADGETSPACING   4
 //space between textbox and gadgets row
 #define TEXTBOXBORDER_X     16
