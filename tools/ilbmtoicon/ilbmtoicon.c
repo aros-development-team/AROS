@@ -16,7 +16,12 @@
 #include <ctype.h>
 #include <memory.h>
 
+#include <png.h>
+
 /****************************************************************************************/
+
+#define TRUE    ~0
+#define FALSE   0
 
 #define MAKE_ID(a,b,c,d) (((a)<<24) | ((b)<<16) | ((c)<<8) | ((d)))
 
@@ -29,11 +34,13 @@
 #define ID_ICON MAKE_ID('I','C','O','N')
 #define ID_FACE MAKE_ID('F','A','C','E')
 #define ID_IMAG MAKE_ID('I','M','A','G')
+#define ID_PNG  MAKE_ID('p','n','g',' ')
 
 #define CMP_NONE     0
 #define CMP_BYTERUN1 1
 
 #define MSK_HASMASK  1
+#define MSK_HASTRANS 2
 
 /****************************************************************************************/
 
@@ -81,6 +88,8 @@ struct ILBMImage
     LONG    	    	cmapentries, bpr, totdepth;
     UBYTE   	    	rgb[256][3];
     UBYTE   	    	remaptable[256];
+    APTR                png;
+    ULONG               png_size;
 };
 
 /****************************************************************************************/
@@ -88,7 +97,7 @@ struct ILBMImage
 struct Palette
 {
     UWORD numentries;
-    UBYTE rgb[256][3];
+    UBYTE rgb[][3];
 };
 
 /****************************************************************************************/
@@ -97,10 +106,52 @@ struct Palette std4colpal =
 {
     4,
     {
-	{0xB3, 0xB3, 0xB3},
-	{0x00, 0x00, 0x00},
-	{0xFF, 0xFF, 0xFF},
-	{0x66, 0x88, 0xBB}
+	{0x95, 0x95, 0x95},     /* Gray (and transparent!) */
+	{0x00, 0x00, 0x00},     /* Black */
+	{0xFF, 0xFF, 0xFF},     /* White */
+	{0x3b, 0x67, 0xa2}      /* Blue */
+    }
+};
+
+/****************************************************************************************/
+
+struct Palette magicwb8colpal =
+{
+    8,
+    {
+	{0x95, 0x95, 0x95},     /* Gray (and transparent!) */
+	{0x00, 0x00, 0x00},     /* Black */
+	{0xFF, 0xFF, 0xFF},     /* White */
+	{0x3b, 0x67, 0xa2},     /* Blue */
+	{0x7b, 0x7b, 0x7b},     /* Dk. Gray */
+	{0xaf, 0xaf, 0xaf},     /* Lt. Gray */
+	{0xaa, 0x90, 0x7c},     /* Brown */
+	{0xff, 0xa9, 0x97}      /* Pink */
+    }
+};
+
+/****************************************************************************************/
+
+struct Palette scalos16colpal =
+{
+    16,
+    {   
+	{ 0x9c, 0x9c, 0x9c },   /*  0 - Gray */
+	{ 0x00, 0x00, 0x00 },   /*  1 - Black */
+	{ 0xFF, 0xFF, 0xFF },   /*  2 - White */
+	{ 0x3a, 0x3a, 0xd7 },   /*  3 - Blue */
+	{ 0x75, 0x75, 0x75 },   /*  4 - Med. Gray */
+	{ 0xc4, 0xc4, 0xc4 },   /*  5 - Lt. Gray */
+	{ 0xd7, 0xb0, 0x75 },   /*  6 - Peach */
+	{ 0xeb, 0x62, 0x9c },   /*  7 - Pink */
+	{ 0x13, 0x75, 0x27 },   /*  8 - Dk. Green */
+	{ 0x75, 0x3a, 0x00 },   /*  9 - Brown */
+	{ 0xff, 0xd7, 0x13 },   /* 10 - Yellow */
+	{ 0x3a, 0x3a, 0x3a },   /* 11 - Dk. Gray */
+	{ 0xc4, 0x13, 0x27 },   /* 12 - Red */
+	{ 0x27, 0xb0, 0x3a },   /* 13 - Lt. Green */
+	{ 0x3a, 0x75, 0xff },   /* 14 - Lt. Blue */
+	{ 0xd7, 0x75, 0x27 },   /* 15 - Orange */
     }
 };
 
@@ -123,15 +174,15 @@ static LONG 	    	    typeoption = 3; /* WBTOOL */
 static LONG 	    	    iconleftoption = 0x80000000; /* NO_ICON_POSITION */
 static LONG 	    	    icontopoption = 0x80000000; /* NO_ICON_POSITION */
 static LONG 	    	    stackoption = 4096;
-static LONG 	    	    drawerleftoption = 0;
-static LONG 	    	    drawertopoption = 20;
-static LONG 	    	    drawerwidthoption = 300;
+static LONG 	    	    drawerleftoption = 50;
+static LONG 	    	    drawertopoption = 50;
+static LONG 	    	    drawerwidthoption = 400;
 static LONG 	    	    drawerheightoption = 100;
 static LONG 	    	    drawervleftoption = 0;
 static LONG 	    	    drawervtopoption = 0;
 static LONG 	    	    drawershowoption = 0;
 static LONG 	    	    drawershowasoption = 0;
-static LONG 	    	    transparentoption = 0;
+static LONG 	    	    transparentoption = -1;
 
 static BOOL		    dualpng; /* png file contains second image */
 static unsigned char	    *dualpngstart; /* address of 2nd image in filebuffer */
@@ -579,10 +630,17 @@ static void checkimage(struct ILBMImage *img)
 
     ULONG id;
     ULONG size;
-    
+   
+    if (dualpng) {
+        img->png = dualpngstart;
+        img->png_size = filesize - (dualpngstart - filebuffer);
+        return;
+    }
+
     if (memcmp(filebuffer, pngsig, 8) == 0)
     {
     	is_png = 1;
+    	img->png = filebuffer;
 	
 	/* search for second image */
 	for
@@ -598,6 +656,10 @@ static void checkimage(struct ILBMImage *img)
 		break;
 	    }
 	}
+	if (dualpng)
+	    img->png_size = dualpngstart - filebuffer;
+        else
+            img->png_size = filesize;
     }
     else if (is_png == 0)
     {   
@@ -614,7 +676,123 @@ static void checkimage(struct ILBMImage *img)
     {
     	cleanup("Second image must be a PNG image, too!", 1);
     }
+
 }
+
+/****************************************************************************************/
+
+static void my_read_fn(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+    png_bytep *pdata = png_get_io_ptr(png_ptr);
+
+    if (*pdata-filebuffer >= filesize)
+        png_error(png_ptr, "Read past end of file");
+
+    memcpy(data, *pdata, length);
+    *pdata += length;
+}
+
+static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b, BOOL notrans);
+
+static void loadpng(struct ILBMImage *img, struct Palette *pal)
+{
+    png_structp png_ptr;
+    png_infop info_ptr, end_info;
+    png_bytep fpos, *row_pointers;
+    UBYTE *chunkrow;
+    UWORD width, height;
+    int x, y;
+
+    if (png_sig_cmp(img->png, 0, img->png_size) != 0)
+        cleanup("I thought it was a PNG, but I was wrong.", 1);
+
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+                        0,      /* error ptr */
+                        0,
+                        0);
+    if (!png_ptr)
+        cleanup("png_create_read_struct() failed", 1);
+
+    info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        png_destroy_read_struct(&png_ptr, NULL, NULL);
+        cleanup("png_create_info_struct() failed", 1);
+    }
+
+    end_info = png_create_info_struct(png_ptr);
+    if (!end_info) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+        cleanup("png_create_info_struct() failed", 1);
+    }
+
+    fpos = img->png;
+    png_set_read_fn(png_ptr, &fpos, my_read_fn);
+
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+        cleanup("png read failed", 1);
+    }
+
+    /* Read the PNG as RGBA */
+    png_set_add_alpha(png_ptr, 255, PNG_FILLER_AFTER); 
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
+
+    row_pointers = png_get_rows(png_ptr, info_ptr);
+
+    width = png_get_image_width(png_ptr, info_ptr);
+    height = png_get_image_height(png_ptr, info_ptr);
+
+    img->bmh.bmh_Width  = width;
+    img->bmh.bmh_Height = height;
+    img->bmh.bmh_Left   = 0;
+    img->bmh.bmh_Top    = 0;
+    img->bmh.bmh_Depth  = 8;
+    img->bmh.bmh_Masking = MSK_HASTRANS;
+    img->bmh.bmh_Compression = CMP_NONE;
+    img->bmh.bmh_Pad         = 0;
+    img->bmh.bmh_XAspect     = 1;
+    img->bmh.bmh_YAspect     = 1;
+    img->bmh.bmh_PageWidth   = 320;
+    img->bmh.bmh_PageHeight  = 200;
+
+    img->planarbmh;
+    img->bpr = ((img->bmh.bmh_Width + 15) & ~15) / 8;
+    img->totdepth = 0;
+
+    /* Transform the RGBA data into chunky */
+    img->cmapentries = pal->numentries;
+    memcpy(img->rgb, pal->rgb, sizeof(img->rgb[0])*pal->numentries);
+
+    img->chunkybuffer = malloc(width * height * sizeof(UBYTE));
+    if (!img->chunkybuffer)
+        cleanup("Can't allocate the chunky buffer", 1);
+
+    chunkrow = img->chunkybuffer;
+    for (y = 0; y < height; y++) {
+        png_bytep row = row_pointers[y];
+        for (x = 0; x < width; x++, row += 4, chunkrow++) {
+            UBYTE r,g,b;
+
+            /* Opacity of 0? Use the transparency color */
+            if (row[3] == 0) {
+                if (transparentoption < 0)
+                        transparentoption = 0;
+                *chunkrow = transparentoption;
+            } else {
+                r = row[0];
+                g = row[1];
+                b = row[2];
+
+                *chunkrow = findcolor(pal, r, g, b, TRUE);
+            }
+        }
+    }
+
+    img->bmh.bmh_Transparent = transparentoption;
+
+    png_destroy_read_struct(&png_ptr, &info_ptr, &end_info);
+}
+
 
 /****************************************************************************************/
 
@@ -626,6 +804,14 @@ static void scanimage(struct ILBMImage *img)
     have_cmap = 0;
     have_body = 0;
     
+    if (img->png) {
+        /* Load the PNG, using the Scalos 16-color pallette,
+         * into the Chunky buffer.
+         */
+        loadpng(img, &scalos16colpal);
+        return;
+    }
+
     for(;;)
     {
     	ULONG id;
@@ -944,6 +1130,9 @@ static void convertbody(struct ILBMImage *img)
 {
     LONG unpackedsize = img->bpr * img->bmh.bmh_Height * img->totdepth;
     
+    if (is_png)
+        return;
+
     img->planarbuffer = malloc(unpackedsize);
     if (!img->planarbuffer) cleanup("Memory allocation for planar buffer failed!", 1);
     
@@ -970,7 +1159,7 @@ static void convertbody(struct ILBMImage *img)
 
 /****************************************************************************************/
 
-static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b)
+static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b, BOOL notrans)
 {
     ULONG dist, bestdist = 0xFFFFFFFF;
     UBYTE i, besti = 0;
@@ -978,6 +1167,9 @@ static UBYTE findcolor(struct Palette *pal, ULONG r, ULONG g, ULONG b)
     for(i = 0; i < pal->numentries; i++)
     {
     	LONG r1, g1, b1, r2, g2, b2, dr, dg, db;
+
+    	if (notrans && i == transparentoption)
+    	    continue;
 	
 	r1 = (LONG)r;
 	g1 = (LONG)g;
@@ -1015,7 +1207,7 @@ static void remapplanar(struct ILBMImage *img, struct Palette *pal)
     
     for(i = 0; i < img->cmapentries; i++)
     {
-    	img->remaptable[i] = findcolor(pal, img->rgb[i][0], img->rgb[i][1], img->rgb[i][2]);
+    	img->remaptable[i] = findcolor(pal, img->rgb[i][0], img->rgb[i][1], img->rgb[i][2], FALSE);
     }
     
     for(i = 0; i < img->bmh.bmh_Width * img->bmh.bmh_Height; i++)
@@ -1031,7 +1223,8 @@ static void remapplanar(struct ILBMImage *img, struct Palette *pal)
     
     if (newdepth > img->totdepth)
     {
-	free(img->planarbuffer);
+        if (img->planarbuffer)
+            free(img->planarbuffer);
 	
 	img->planarbuffer = malloc(img->bpr * img->bmh.bmh_Height * newdepth);
 	if (!img->planarbuffer)
@@ -1040,7 +1233,9 @@ static void remapplanar(struct ILBMImage *img, struct Palette *pal)
 	    cleanup("Error re-allocating planar buffer!", 1);	
     	}
     }
-    
+  
+    img->planarbmh.bmh_Width = img->bmh.bmh_Width;
+    img->planarbmh.bmh_Height= img->bmh.bmh_Height;
     img->planarbmh.bmh_Depth = newdepth;
     
     memset(img->planarbuffer, 0, img->bpr * img->bmh.bmh_Height * newdepth);
@@ -1060,11 +1255,8 @@ static void loadimage(char *name, struct ILBMImage *img)
     
     openimage(img);
     checkimage(img);
-    if (!is_png)
-    {
-    	scanimage(img);
-    	convertbody(img);
-    }    
+    scanimage(img);
+    convertbody(img);
 }
 
 /****************************************************************************************/
@@ -1169,6 +1361,11 @@ struct image
 static void writediskobject(void)
 {
     struct diskobject dobj;
+
+    if (typeoption == 2)        /* DRAWER */
+    {
+        drawerdataoption = "YES";
+    }
    
 #define ACT_STRUCT dobj
     
@@ -1191,8 +1388,8 @@ static void writediskobject(void)
     	SET_WORD(do_gadget_flags, 4);
     }
     
-    SET_WORD(do_gadget_activation, 0);
-    SET_WORD(do_gadget_gadgettype, 0);
+    SET_WORD(do_gadget_activation, 1);
+    SET_WORD(do_gadget_gadgettype, 1);
     SET_LONG(do_gadget_gadgetrender, BOOL_YES);
     
     if (image2option)
@@ -1268,20 +1465,20 @@ static void writeolddrawerdata(void)
     SET_WORD(dd_newwindow_topedge, drawertopoption);
     SET_WORD(dd_newwindow_width, drawerwidthoption);
     SET_WORD(dd_newwindow_height, drawerheightoption);
-    SET_BYTE(dd_newwindow_detailpen, 0);
-    SET_BYTE(dd_newwindow_blockpen, 0);
+    SET_BYTE(dd_newwindow_detailpen, 255);
+    SET_BYTE(dd_newwindow_blockpen, 255);
     SET_LONG(dd_newwindow_idcmpflags, 0);
-    SET_LONG(dd_newwindow_flags, 0);
+    SET_LONG(dd_newwindow_flags, 0x240027f);
     SET_LONG(dd_newwindow_firstgadget, 0);
     SET_LONG(dd_newwindow_checkmark, 0);
     SET_LONG(dd_newwindow_title, 0);
     SET_LONG(dd_newwindow_screen, 0);
     SET_LONG(dd_newwindow_bitmap, 0);
-    SET_WORD(dd_newwindow_minwidth, 0);
-    SET_WORD(dd_newwindow_minheight, 0);
-    SET_WORD(dd_newwindow_maxwidth, 0);
-    SET_WORD(dd_newwindow_maxheight, 0);
-    SET_WORD(dd_newwindow_type, 0);
+    SET_WORD(dd_newwindow_minwidth, 90);
+    SET_WORD(dd_newwindow_minheight, 40);
+    SET_WORD(dd_newwindow_maxwidth, 65535);
+    SET_WORD(dd_newwindow_maxheight, 65535);
+    SET_WORD(dd_newwindow_type, 1);
     SET_LONG(dd_currentx, drawervleftoption);
     SET_LONG(dd_currenty, drawervtopoption);
 
@@ -1663,7 +1860,7 @@ static void write35data(void)
 {
     LONG formsize = 4;
     LONG formsizeseek;
-    
+
     writelong(ID_FORM);
     formsizeseek = ftell(outfile);
     writelong(0x12345678);
@@ -1672,6 +1869,30 @@ static void write35data(void)
     formsize += writefacechunk();
     formsize += writeimagchunk(&img1);
     if (image2option) formsize += writeimagchunk(&img2);
+
+    if (img1.png) {
+        writelong(ID_PNG);
+        writelong(img1.png_size);
+        fwrite(img1.png, 1, img1.png_size, outfile);
+        if (img1.png_size & 1) {
+            char c = 0;
+            fwrite(&c, 1, 1, outfile);
+            img1.png_size++;
+        }
+        formsize += 8 + img1.png_size;
+    }
+
+    if (img2.png) {
+        writelong(ID_PNG);
+        writelong(img2.png_size);
+        fwrite(img2.png, 1, img2.png_size, outfile);
+        if (img2.png_size & 1) {
+            char c = 0;
+            fwrite(&c, 1, 1, outfile);
+            img2.png_size++;
+        }
+        formsize += 8 + img2.png_size;
+    }
     
     fseek(outfile, formsizeseek, SEEK_SET);
     writelong(formsize);
@@ -1720,246 +1941,6 @@ static void writeicon(void)
 
 /****************************************************************************************/
 
-/* Table of CRCs of all 8-bit messages. */
-unsigned long crc_table[256];
-   
-/* Flag: has the table been computed? Initially false. */
-int crc_table_computed = 0;
-
-/* Make the table for a fast CRC. */
-void make_crc_table(void)
-{
-    unsigned long c;
-    int n, k;
-
-    for (n = 0; n < 256; n++)
-    {
-	c = (unsigned long) n;
-	for (k = 0; k < 8; k++)
-	{
-	    if (c & 1)
-        	c = 0xedb88320L ^ (c >> 1);
-	    else
-        	c = c >> 1;
-	}
-	crc_table[n] = c;
-    }
-    crc_table_computed = 1;
-}
-
-/* Update a running CRC with the bytes buf[0..len-1]--the CRC
-   should be initialized to all 1's, and the transmitted value
-   is the 1's complement of the final running CRC (see the
-   crc() routine below)). */
-
-unsigned long update_crc(unsigned long crc, unsigned char *buf,
-                         int len)
-{
-      unsigned long c = crc;
-      int n;
-
-      if (!crc_table_computed)
-	  make_crc_table();
-	  
-      for (n = 0; n < len; n++)
-      {
-	  c = crc_table[(c ^ buf[n]) & 0xff] ^ (c >> 8);
-      }
-      return c;
-}
-
-/* Return the CRC of the bytes buf[0..len-1]. */
-unsigned long crc(unsigned char *buf, int len)
-{
-  return update_crc(0xffffffffL, buf, len) ^ 0xffffffffL;
-}
-
-/****************************************************************************************/
-
-static void writepngiconattr(ULONG id, ULONG val, ULONG *chunksize, ULONG *crc)
-{
-    UBYTE buf[8];
-    
-    buf[0] = id >> 24;
-    buf[1] = id >> 16;
-    buf[2] = id >> 8;
-    buf[3] = id;
-    buf[4] = val >> 24;
-    buf[5] = val >> 16;
-    buf[6] = val >> 8;
-    buf[7] = val;
-    
-    writelong(id);
-    writelong(val);
-    *chunksize += 8;
-    *crc = update_crc(*crc, buf, 8);    
-}
-
-/****************************************************************************************/
-
-static void writepngiconstrattr(ULONG id, char *val, ULONG *chunksize, ULONG *crc)
-{
-    UBYTE buf[4];
-    int len = strlen(val) + 1;
-    
-    buf[0] = id >> 24;
-    buf[1] = id >> 16;
-    buf[2] = id >> 8;
-    buf[3] = id;
-    
-    writelong(id);
-    *crc = update_crc(*crc, buf, 4);    
-    
-    
-    writenormalstring(val);    
-    *crc = update_crc(*crc, val, len);    
-
-    *chunksize += 4 + len;
-}
-
-
-/****************************************************************************************/
-
-static void writepngiconchunk(void)
-{
-    ULONG crc = 0xffffffff;
-    ULONG chunksize = 0;
-    ULONG sizeseek = ftell(outfile);
-    UBYTE iconid[] = {'i', 'c', 'O', 'n'};
-    
-    writelong(0x12345678);
-    writelong(MAKE_ID('i', 'c', 'O', 'n'));
-
-    crc = update_crc(crc, iconid, 4);
-        
-    if (iconleftoption != 0x80000000)
-    {
-    	writepngiconattr(0x80001001, iconleftoption, &chunksize, &crc);
-    }
-    
-    if (icontopoption != 0x80000000)
-    {
-    	writepngiconattr(0x80001002, icontopoption, &chunksize, &crc);
-    }
-    
-    if (drawerdataoption)
-    {
-    	ULONG flags = 0;
-		
-    	writepngiconattr(0x80001003, drawerleftoption, &chunksize, &crc);
-    	writepngiconattr(0x80001004, drawertopoption, &chunksize, &crc);
-    	writepngiconattr(0x80001005, drawerwidthoption, &chunksize, &crc);
-    	writepngiconattr(0x80001006, drawerheightoption, &chunksize, &crc);
-	
-	if (drawershowoption == 2) flags |= 1;
-	
-	if (drawershowasoption < 2)
-	{
-	    flags |= 2;
-	}
-	else
-	{
-	    flags |= ((drawershowasoption - 2) << 2);
-	}
-    	writepngiconattr(0x80001007, flags, &chunksize, &crc);	
-    }
-    
-    writepngiconattr(0x80001009, stackoption, &chunksize, &crc);
-    
-    if (defaulttooloption)
-    {
-    	writepngiconstrattr(0x8000100a, defaulttooloption, &chunksize, &crc);
-    }    
-    
-    if (tooltypesoption)
-    {
-    	char **tt;
-	
-	for(tt = tooltypesoption; *tt; tt++)
-	{
-	    writepngiconstrattr(0x8000100b, *tt, &chunksize, &crc);
-	}
-    }
-    
-    writelong(crc ^ 0xffffffff);
-    fseek(outfile, sizeseek, SEEK_SET);
-    writelong(chunksize);
-    fseek(outfile, 0, SEEK_END);
-    
-}
-
-/****************************************************************************************/
-
-static void writepngicon(void)
-{
-    UBYTE *filepos;
-    BOOL   done = 0;
-    
-    outfile = fopen(outfilename, "wb");
-    if (!outfile) cleanup("Can't open output file for writing!", 1);
-
-    if (fwrite(filebuffer, 1, 8, outfile) != 8) 
-    {
-    	cleanup("Error writing PNG signature!", 1);
-    }
-    
-    filepos = filebuffer + 8;
-    
-    while(!done)
-    {
-    	ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
-	    	    	  (filepos[2] << 8) | filepos[3];
-    	ULONG chunktype = (filepos[4] << 24) | (filepos[5] << 16) |
-	    	    	  (filepos[6] << 8) | filepos[7];
-	
-	chunksize += 12;
-	
-	if (chunktype == MAKE_ID('I', 'E', 'N', 'D'))
-	{
-	    writepngiconchunk();
-	    done = 1;
-	}
-	
-	if (chunktype != MAKE_ID('i', 'c', 'O', 'n'))
-	{
-	    if (fwrite(filepos, 1, chunksize, outfile) != chunksize)
-	    {
-	    	cleanup("Error writing PNG icon file!", 1);
-	    }
-	}
-	
-	filepos += chunksize;
-    }
-
-    /* Create icons with two images */
-    if (image2option && strcasecmp(image1option, image2option))
-    {
-	/* If filenames are different, cat/attach the 2nd
-	   file onto the first one. */
-	
-    	freeimage(&img1);
-	
-	loadimage(image2option, &img2);
-	
-	if (fwrite(filebuffer, 1, filesize, outfile) != filesize)
-	{
-	    cleanup("Error writing 2nd PNG Image!", 1);
-	}
-    }
-    else if (dualpng)
-    {
-	/* Handle the case where 2 PNG images are just joined together
-	   to one file. */
-	long bytecnt = filebuffer + filesize - dualpngstart;
-	if (fwrite(dualpngstart, 1, bytecnt, outfile) != bytecnt)
-	{
-	    cleanup("Error writing dual PNG icon file!", 1);
-	}
-    }
-}
-
-/****************************************************************************************/
-
 static void remapicon(void)
 {
     remapplanar(&img1, &std4colpal);
@@ -1973,16 +1954,9 @@ int main(int argc, char **argv)
     getarguments(argc, argv);
     parseiconsource();
     loadimage(image1option, &img1);
-    if (!is_png)
-    {
-    	if (image2option) loadimage(image2option, &img2);
-    	remapicon();
-    	writeicon();
-    }
-    else
-    {
-    	writepngicon();
-    }
+    if (image2option) loadimage(image2option, &img2);
+    remapicon();
+    writeicon();
     
     cleanup(0, 0);
 }
