@@ -3,11 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := examine writetooltypes
+FILES  := examine writetooltypes diskobj render
 EXEDIR := $(AROS_TESTS)/Icon
 
 #MM- test : test-icon
-#MM test-icon
+#MM test-icon:
+#MM test-icon-quick:
 
 %build_progs mmake=test-icon \
     files=$(FILES) targetdir=$(EXEDIR) \
