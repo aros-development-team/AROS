@@ -17,8 +17,6 @@ static STRPTR RemoveToolType(STRPTR *tt)
     
     if (ret)
     {
-    	//FreeVec(ret);
-	
     	for(;;)
     	{
        	    tt[0] = tt[1];
@@ -37,7 +35,7 @@ static STRPTR RemoveToolType(STRPTR *tt)
 
 /****************************************************************************************/
 
-static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WORD which, BOOL is_palette)
+static char *DecodeNI(struct DiskObject *icon, STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WORD which, BOOL is_palette, APTR IconBase)
 {
     LONG   numbits = 0, curentry = 0, bitbuf = 0, loop = 0, mask, val;
     UBYTE  byte;
@@ -67,7 +65,6 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 	    {
 	    	if (dead)
 		{
-		    FreeVec(dead);
 		    dead = NULL;
 		}
               	src = *tt;
@@ -86,7 +83,6 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 	    
 	    if(!byte)
 	    {
-	    	if (dead) FreeVec(dead);
 	    	return "NewIcon data invalid";
 	    }
 	    else if(byte < 0xA0)
@@ -118,8 +114,6 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 	}
     }
     
-    if (dead) FreeVec(dead);
-    
     return 0;
 }
 
@@ -128,13 +122,13 @@ static char *DecodeNI(STRPTR *tt, UBYTE *outbuffer, LONG bits, LONG entries, WOR
 static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     	    	    	struct IconBase *IconBase)
 {
-    struct Image35 *img;
+    struct NativeIconImage *img;
     STRPTR  	    tt;
     LONG    	    width, height, numcols;
     ULONG   	    size;
     BOOL    	    transp;
 
-    img = which ? &icon->icon35.img2 : &icon->icon35.img1;
+    img = which ? &icon->ni_Image[1] : &icon->ni_Image[0];
     
     while((tt = *tooltypes))
     {
@@ -155,7 +149,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     height = tt[2] - 0x21;
 
     /* Selected image must have same size as normal image otherwise ignore it. */
-    if (which && ((width != icon->icon35.width) || (height != icon->icon35.height)))
+    if (which && ((width != icon->ni_Width) || (height != icon->ni_Height)))
     {
     	return FALSE;
     }
@@ -164,39 +158,28 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     transp = (tt[0] =='B') ? TRUE : FALSE;
    
     size = width * height;
-    size += numcols * sizeof(struct ColorRegister);
-    if (transp) size += RASSIZE(width, height);
     
-    img->imagedata = AllocVec(size, MEMF_ANY);
-    if (!img->imagedata) return FALSE;
+    img->ImageData = AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC);
+    if (!img->ImageData) return FALSE;
 
     if (!which)
     {
-    	icon->icon35.width  = width;
-	icon->icon35.height = height;
-	icon->icon35.flags  = ICON35F_FRAMELESS;
-	icon->icon35.aspect = PACK_ICON_ASPECT_RATIO(1,1);
+    	icon->ni_Width  = width;
+	icon->ni_Height = height;
+	icon->ni_Frameless = TRUE;
+	icon->ni_Aspect = PACK_ICON_ASPECT_RATIO(1,1);
     }
     
-    img->palette = img->imagedata + width * height;
-    img->mask = transp ? (img->palette + numcols * sizeof(struct ColorRegister)) : 
-    	    	    	 NULL;
-    img->flags = transp ? (IMAGE35F_HASPALETTE | IMAGE35F_HASTRANSPARENTCOLOR) :
-    	    	    	  IMAGE35F_HASPALETTE;
-    img->transparentcolor = 0;
-    img->numcolors = numcols;
+    size = numcols * sizeof(struct ColorRegister);
+    img->Palette = AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC);
+    if (!img->Palette) return FALSE;
 
-    img->depth = 1;    
-    while((1L << img->depth) < img->numcolors)
-    {	
-    	img->depth++;
-    }
+    img->TransparentColor = transp ? -1 : 0;
+    img->Pens = numcols;
 
-    DecodeNI(tooltypes, img->palette, 8, img->numcolors * sizeof(struct ColorRegister), which, TRUE);
-    DecodeNI(tooltypes, img->imagedata, img->depth, width * height, which, FALSE);
+    DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->Palette, 8, img->Pens * sizeof(struct ColorRegister), which, TRUE, IconBase);
+    DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->ImageData, 8, width * height, which, FALSE, IconBase);
     
-    if (transp) MakeMask35(img->imagedata, img->mask, 0, width, height);
-
     return TRUE;
 }
 			
@@ -210,13 +193,13 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook,
     
     D(bug("ReadIconNI\n"));
         
-    if (icon->icon35.img1.imagedata)
+    if (icon->ni_Image[0].ImageData)
     {
     	/* It's an 3.5 style icon. Ignore possible NewIcon */
     	return TRUE;
     }
     
-    tooltypes = icon->dobj.do_ToolTypes;
+    tooltypes = icon->ni_DiskObject.do_ToolTypes;
     if ( ! tooltypes) return TRUE;
     while ((tt = *tooltypes))
     {
@@ -230,10 +213,11 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook,
     
     if (!tt) return TRUE;
 
-    FreeVec(RemoveToolType(tooltypes));
-    
-    ReadImageNI(icon, 0, tooltypes, IconBase);
-    ReadImageNI(icon, 1, tooltypes, IconBase);
+    if (!ReadImageNI(icon, 0, tooltypes, IconBase))
+        return FALSE;
+
+    if (!ReadImageNI(icon, 1, tooltypes, IconBase))
+        return FALSE;
         
     return TRUE;   
 }

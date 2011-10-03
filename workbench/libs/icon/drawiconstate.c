@@ -63,13 +63,49 @@
 {
     AROS_LIBFUNC_INIT
     LONG wDelta,textTop,textLeft;
-    LONG iconWidth = 0, iconHeight = 0;
-    struct NativeIcon *nativeicon;
+    struct NativeIcon *ni;
+    struct Rectangle rect = { };
+    ULONG bmdepth;
+    struct DrawInfo *DrawInfo;
+    BOOL EraseBackground;
+    BOOL Frameless;
+    BOOL Borderless;
+    BOOL selected = (state == IDS_SELECTED);
+    UWORD Pens[NUMDRIPENS];
+    int i;
 
-    IconControl(icon, ICONCTRLA_GetWidth,  (IPTR)&iconWidth,
-                      ICONCTRLA_GetHeight, (IPTR)&iconHeight,
-                      TAG_DONE);
-    nativeicon = GetNativeIcon(icon, LB(IconBase));
+    /* No GfxBase? No RastPort? Then we can't draw anything. */
+    if (!GfxBase || !rp)
+        return;
+
+    ni = GetNativeIcon(icon, LB(IconBase));
+
+    Frameless = GetTagData(ICONDRAWA_Frameless, IconBase->ib_Frameless || ni->ni_Frameless, tags);
+    Borderless = GetTagData(ICONDRAWA_Borderless, FALSE, tags);
+    EraseBackground = GetTagData(ICONDRAWA_EraseBackground, !(IconBase->ib_Frameless || ni->ni_Frameless), tags);
+    DrawInfo = (struct DrawInfo *)GetTagData(ICONDRAWA_DrawInfo, (IPTR)NULL, tags);
+
+    for (i = 0; i < NUMDRIPENS; i++) {
+        if (DrawInfo && DrawInfo->dri_NumPens > i)
+            Pens[i] = DrawInfo->dri_Pens[i];
+        else
+            Pens[i] = ni->ni_Pens[i];
+    }
+
+    bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+
+    if (!Borderless) {
+        rect = IconBase->ib_EmbossRectangle;
+        if (!Frameless) {
+            EraseBackground = TRUE;
+            rect.MinX -= 1;
+            rect.MinY -= 1;
+            rect.MaxX += 1;
+            rect.MaxY += 1;
+        }
+    } else {
+        Frameless = TRUE;
+    }
 
     wDelta = 0;
     textTop = 0;
@@ -77,11 +113,15 @@
 
     if (label != NULL) {
         struct TextExtent extent;
+        LONG txtlen = strlen(label);
 
-        wDelta = iconWidth;
-        textTop = iconHeight;
+        if (txtlen > IconBase->ib_MaxNameLength)
+            txtlen = IconBase->ib_MaxNameLength;
 
-        TextExtent(rp, label, strlen(label), &extent);
+        wDelta = ni->ni_Width + (rect.MaxX - rect.MinX);
+        textTop = ni->ni_Height + (rect.MaxY - rect.MinY);
+
+        TextExtent(rp, label, txtlen, &extent);
 
         /* wDelta will be the centering offset for the icon */
         /* textLeft is the horiz offset for the text */
@@ -94,162 +134,150 @@
             wDelta = 0;
         }
 
-        /* textTop is adjusted downwards by the size of the font */
+        /* textTop is adjusted downwards by the size of the font,
+         */
         textTop += extent.te_Height;
 
+        SetAPen(rp, Pens[FILLTEXTPEN]);
+        SetOutlinePen(rp, selected ? Pens[HIGHLIGHTTEXTPEN] : Pens[TEXTPEN]);
+        SetBPen(rp, Pens[BACKGROUNDPEN]);
+
         Move(rp, leftEdge + textLeft, topEdge + textTop);
-        Text(rp, label, strlen(label));
+        Text(rp, label, txtlen);
+    }
+    
+    topEdge -= rect.MinY;
+    leftEdge -=  rect.MinX;
+
+    leftEdge += wDelta;
+
+    if (EraseBackground) {
+        SetAPen(rp, Pens[BACKGROUNDPEN]);
+        RectFill(rp, leftEdge + rect.MinX, topEdge + rect.MinY,
+                     leftEdge + ni->ni_Width + rect.MaxX - 1, topEdge + ni->ni_Height + rect.MaxY - 1);
     }
 
-    if (nativeicon && GfxBase)
+    D(bug("[%s] Target bitmap depth: %d\n", __func__, bmdepth));
+
+    if (ni)
     {
+        struct NativeIconImage *image;
+        int id;
+        struct BitMap *bm;
+        PLANEPTR mask;
+
+        id = selected ? 1 : 0;
+        image = &ni->ni_Image[id];
+           
 #ifndef FORCE_LUT_ICONS
-	ULONG bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
-
-	D(bug("[Icon] Target bitmap depth: %d\n", bmdepth));
-
-        if (CyberGfxBase && (bmdepth >= 8))
+        if ((bmdepth > 8) && CyberGfxBase)
 	{
-	    /*
-	     * If it's PNG iton, and target is >8bpp, use alpha blending.
-	     * There's actually no sense to layout icon for such screens.
-	     * Layout is basically remapping.
-	     */
-	    APTR img;
+	    if (ni->ni_Extra.Offset[id].PNG >= 0 && image->ARGB == NULL) {
+                image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[id].PNG, &ni->ni_Width, &ni->ni_Height, NULL, NULL, IconBase);
+            }
+            if (image->ARGB) {
+                D(bug("[%s] ARGB[%d] = %p\n", __func__, id, image->ARGB));
 
-	    if ((state == IDS_SELECTED) && nativeicon->iconPNG.img2)
-	        img = nativeicon->iconPNG.img2;
-	    else
-	        img = nativeicon->iconPNG.img1;
-
-	    D(bug("[Icon] PNG alpha image: 0x%p\n", img));
-
-	    if (img)
-	    {
-            	// OLD MODE
-            	WritePixelArrayAlpha(img, 0, 0, nativeicon->iconPNG.width * sizeof(ULONG),
-                		     rp, leftEdge + wDelta, topEdge,
-                		     iconWidth,  iconHeight, 0);
-
-	    	return;
-	    }
+                WritePixelArrayAlpha((APTR)image->ARGB, 0, 0, ni->ni_Width * sizeof(ULONG),
+                                     rp, leftEdge, topEdge,
+                                     ni->ni_Width,  ni->ni_Height, 0);
+                goto emboss;
+            }
 	}
 #endif
 
-	if (nativeicon->iconscr)
-	{
-	    /* Already laid out (hopefully for this screen) ? */
-            struct BitMap *bm;
-
-            if ((state == IDS_SELECTED) && nativeicon->iconbm2)
-                bm = nativeicon->iconbm2;
-            else
-                bm = nativeicon->iconbm1;
-
-	    if (bm)
-	    {
-            	BltBitMapRastPort(bm, 0, 0, rp, leftEdge + wDelta, topEdge,
-                              	  iconWidth, iconHeight, 0x00C0);
-            	return;
-            }
+        /* If we don't have selected bitmap,
+         * use the normal bitmap
+         */
+        bm = image->BitMap;
+        mask = image->BitMask;
+        if (bm == NULL) {
+            bm = ni->ni_Image[0].BitMap;
+            mask = ni->ni_Image[0].BitMask;
         }
 
-        if (nativeicon->icon35.img1.imagedata && GfxBase && CyberGfxBase)
+        /* Planar maps */
+	if (bm)
 	{
-	    if (bmdepth >= 4)
-	    {
-	        struct Image35 *img;
-		ULONG	    	*cgfxcoltab;
-		    
-		if (state == IDS_SELECTED && nativeicon->icon35.img2.imagedata)
-		    img = &nativeicon->icon35.img2;
-		else
-		    img = &nativeicon->icon35.img1;
+	    int i;
+	    D(bug("[%s] Using Bitmap: 0x%p, BitMask 0x%p\n", __func__, bm, mask));
+	    for (i = 0; i < bmdepth; i++) {
+	        D(bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]));
+            }
 
-		if ((cgfxcoltab = AllocVecPooled(POOL, img->numcolors * sizeof(ULONG))))
-		{
-		    struct ColorRegister *cr;
-		    WORD i;
-		            
-		    cr = (struct ColorRegister *)img->palette;
-		    for(i = 0; i < img->numcolors; i++)
-		    {
-                        struct ColorRegister color = *cr;
-                        
-                        if (state == IDS_SELECTED)
-                            ChangeToSelectedIconColor(&color);
-                            
-		        cgfxcoltab[i] = (color.red << 16) | (color.green << 8) | color.blue;
-			cr++;
-		    }
-		            
-		    if (img->mask)
-		    {
-			struct BitMap *bm = AllocBitMap(nativeicon->icon35.width, nativeicon->icon35.height,
-							0, 0, rp->BitMap);
+	    if (mask) {
+                BltMaskBitMapRastPort(bm, 0, 0,
+                                      rp, leftEdge, topEdge,
+                                      ni->ni_Width, ni->ni_Height, ABC|ABNC|ANBC, mask);
+            } else {
+                BltBitMapRastPort(bm, 0, 0,
+                                  rp, leftEdge, topEdge,
+                                  ni->ni_Width, ni->ni_Height, ABC|ABNC);
+            }
+            goto emboss;
+        }
+    }
 
-			if (bm)
-			{
-		            struct RastPort bmrp;
-
-			    InitRastPort(&bmrp);
-			    bmrp.BitMap = bm;
-			    WriteLUTPixelArray(img->imagedata, 0, 0, nativeicon->icon35.width,
-					       &bmrp, cgfxcoltab, 0, 0, nativeicon->icon35.width, nativeicon->icon35.height,
-					       CTABFMT_XRGB8);
-    
-			    BltMaskBitMapRastPort(bm, 0, 0, rp,
-			    	    leftEdge + wDelta,
-			    	    topEdge,
-			    	    nativeicon->icon35.width,
-			    	    nativeicon->icon35.height,
-			    	    0xE0, img->mask);
-		    
-			    DeinitRastPort(&bmrp);
-        
-			    FreeBitMap(bm);
-                            FreeVecPooled(POOL, cgfxcoltab);
-			    return;
-			} /* if (bm) */ 
-		    } /* if (img->mask) */
-
-		    WriteLUTPixelArray
-                    (
-                        img->imagedata, 0, 0, nativeicon->icon35.width,
-                        rp, cgfxcoltab,
-                        leftEdge + wDelta,
-                        topEdge,
-                        nativeicon->icon35.width,
-                        nativeicon->icon35.height,
-                        CTABFMT_XRGB8
-                    );
-
-		    FreeVecPooled(POOL, cgfxcoltab);
-		    return;
-		} /* if (cgfxcoltab != NULL) */
-
-	    } /* if (bmdepth >= 4) */
-	} /* if (nativeicon->icon35.img1.imagedata) */
-    } /* if (nativeicon && GfxBase && CyberGfxBase) */
-
-    if (state == IDS_SELECTED && icon->do_Gadget.SelectRender)
+    SetBPen(rp, Pens[BACKGROUNDPEN]);
+    if (selected && icon->do_Gadget.SelectRender)
     {
+        D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.SelectRender));
         DrawImage
         (
             rp, (struct Image *)icon->do_Gadget.SelectRender,
-            leftEdge + wDelta, topEdge
+            leftEdge, topEdge
         );
+
+        goto emboss;
     }
     else if (icon->do_Gadget.GadgetRender)
     {
         if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
         {
+            D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.GadgetRender));
             DrawImage
             (
                 rp, (struct Image *) icon->do_Gadget.GadgetRender,
-                leftEdge + wDelta, topEdge
+                leftEdge, topEdge
             );
+            goto emboss;
         }
+    }
+
+    /* Uh. No icon? Just draw a square.
+     */
+    D(bug("[Icon] No image present\n"));
+    SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[BACKGROUNDPEN]);
+    RectFill(rp, leftEdge, topEdge,
+                 leftEdge + ni->ni_Width - 1,
+                 topEdge + ni->ni_Height - 1);
+
+emboss:
+    /* Draw the 3D border */
+    if (!Frameless) {
+        D(bug("[Icon] Embossing\n"));
+
+        rect.MinX += leftEdge;
+        rect.MaxX += leftEdge + ni->ni_Width - 1;
+        rect.MinY += topEdge;
+        rect.MaxY += topEdge + ni->ni_Height - 1;
+
+        /* Draw the left and top lines */
+        SetAPen(rp, selected ? Pens[SHADOWPEN] : Pens[SHINEPEN]);
+        Move(rp, rect.MinX, rect.MaxY - 1);
+        Draw(rp, rect.MinX, rect.MinY);
+        Draw(rp, rect.MaxX - 1, rect.MinY);
+
+        /* Draw the right and bottom lines */
+        SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[SHADOWPEN]);
+        Move(rp, rect.MaxX, rect.MinY + 1);
+        Draw(rp, rect.MaxX, rect.MaxY);
+        Draw(rp, rect.MinX + 1, rect.MaxY);
+
+        SetAPen(rp, Pens[BACKGROUNDPEN]);
+        WritePixel(rp, rect.MinX, rect.MaxY);
+        WritePixel(rp, rect.MaxX, rect.MinY);
+
     }
 
     AROS_LIBFUNC_EXIT

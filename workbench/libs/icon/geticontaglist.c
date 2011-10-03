@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include <workbench/icon.h>
 
 #include "icon_intern.h"
@@ -67,15 +68,17 @@
     IPTR                  failIfUnavailable = TRUE;
     LONG                 *isDefaultIcon     = NULL;
     
-    IPTR                  getPaletteMappedIcon = TRUE; // FIXME: not used
+    IPTR                  getPaletteMappedIcon = TRUE;
     IPTR                  remapIcon            = TRUE;
-    IPTR                  generateImageMasks   = TRUE; // FIXME: not used
-    struct Screen        *screen               = NULL; // FIXME: not used
+    IPTR                  generateImageMasks   = TRUE;
+    struct Screen        *screen               = NULL;
     STRPTR                label                = NULL; // FIXME: not used
     LONG                 error                 = 0;
     LONG                 *errorCode            = NULL;
     
 #   define SET_ISDEFAULTICON(value) (isDefaultIcon != NULL ? *isDefaultIcon = (value) : (value))
+
+    D(bug("[%s] name %s, tags %p\n", __func__, name, tags));
 
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
@@ -133,31 +136,36 @@
 	{
             BPTR file = OpenDefaultIcon(defaultName, MODE_OLDFILE);
             
+            D(bug("[%s] Find default icon '%s'\n", __func__, defaultName));
             if (file != BNULL)
 	    {
+	        D(bug("[%s] Found default icon '%s'\n", __func__, defaultName));
 	    	icon = ReadIcon(file);
 		CloseDefaultIcon(file);
+		SET_ISDEFAULTICON(TRUE);
 	    }
-            
-            SET_ISDEFAULTICON(TRUE);
 	}
 
 	if (icon == NULL && defaultType != -1 && defaultName == NULL)
 	{
             CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);
             
+            D(bug("[%s] Find default icon type %d\n", __func__, defaultType));
             if (defaultIconName != NULL)
             {
                 icon = GetIconTags
                 (
                     NULL,
                     ICONGETA_GetDefaultName, (IPTR) defaultIconName,
-                    TAG_MORE,                (IPTR) tags
+                    TAG_END
                 );
+                D(bug("[%s] Find default icon type %d as %p\n", __func__, defaultType, icon));
                 
                 if (icon == NULL)
                 {
                     icon = GetBuiltinIcon(defaultType);
+                    D(bug("[%s] Using builtin icon %p\n", __func__, icon));
+                    SET_ISDEFAULTICON(TRUE);
                 }
             }
         }
@@ -166,8 +174,10 @@
     {
         BPTR file = OpenIcon(name, MODE_OLDFILE);
         
+        D(bug("[%s] Find custom icon '%s'\n", __func__, name));
         if (file != BNULL)
         {
+            D(bug("[%s] Found custom icon '%s'\n", __func__, name));
             icon = ReadIcon(file);
             CloseIcon(file);
             
@@ -184,93 +194,130 @@
                 }
             }
         }
-        else if (!failIfUnavailable)
-        {
-            struct IconIdentifyMsg iim;
-            
-            if ((iim.iim_FileLock = LockObject(name, ACCESS_READ)) != BNULL)
-            {
-                if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
-                {
-                    if (Examine(iim.iim_FileLock, iim.iim_FIB))
-                    {
-                        iim.iim_SysBase     = (struct Library *) SysBase;
-                        iim.iim_DOSBase     = (struct Library *) DOSBase;
-                        iim.iim_UtilityBase = (struct Library *) UtilityBase;
-                        iim.iim_IconBase    = (struct Library *) IconBase;
-                        iim.iim_Tags        = tags;
-                        
-                        iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
-                        if (iim.iim_ParentLock == BNULL && IoErr() == 0)
-                            iim.iim_FIB->fib_DirEntryType = ST_ROOT;
-                        iim.iim_FileHandle  = Open(name, MODE_OLDFILE);
-                        
-                        if (LB(IconBase)->ib_IdentifyHook != NULL)
-                        {
-                            /* Use user-provided identify hook */
-                            icon = (struct DiskObject *) CALLHOOKPKT
-                            (
-                                LB(IconBase)->ib_IdentifyHook, NULL, &iim
-                            );
-                            
-                            if (icon != NULL)
-                            {
-                                /*
-                                    Sanity check since we don't trust the 
-                                    user-provided hook too much. ;-)
-                                */
-                                
-                                LONG type = FindType(iim.iim_FileLock);
-                                if (type != -1) icon->do_Type = type;
-                            }
-                        }
-                        
-                        if (icon == NULL)
-                        {
-                            /* Fall back to the default identify function */
-                            icon = FindDefaultIcon(&iim);
-                        }
-                        
-                        if (iim.iim_ParentLock != BNULL) UnLock(iim.iim_ParentLock);
-                        if (iim.iim_FileHandle != BNULL) Close(iim.iim_FileHandle);
-                    }
-                    
-                    FreeDosObject(DOS_FIB, iim.iim_FIB);
-                }
-                else
-                {
-                    error = IoErr();
-                }
-                
-                UnLockObject(iim.iim_FileLock);
-            }
-        }
     } else {
     	/* NULL name = return empty DiskObject */
-    	struct DiskObject temp = { 0 };
-    	icon = DupDiskObjectA(&temp, NULL);
+    	D(bug("[%s] Get an empty DiskObject\n", __func__));
+    	icon = NewDiskObject(0);
     }
+
+    /* Try to identify it by name or type */
+    if (icon == NULL && !failIfUnavailable)
+    {
+        struct IconIdentifyMsg iim;
+
+        D(bug("[%s] Falling back to default icon for %s\n", __func__, name));
+       
+        if (name && (iim.iim_FileLock = LockObject(name, ACCESS_READ)) != BNULL)
+        {
+            D(bug("[%s] Locked %s, identifying\n", __func__, name));
+            if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
+            {
+                if (Examine(iim.iim_FileLock, iim.iim_FIB))
+                {
+                    iim.iim_SysBase     = (struct Library *) SysBase;
+                    iim.iim_DOSBase     = (struct Library *) DOSBase;
+                    iim.iim_UtilityBase = (struct Library *) UtilityBase;
+                    iim.iim_IconBase    = (struct Library *) IconBase;
+                    iim.iim_Tags        = tags;
+                    
+                    iim.iim_ParentLock  = ParentDir(iim.iim_FileLock);
+                    if (iim.iim_ParentLock == BNULL && IoErr() == 0)
+                        iim.iim_FIB->fib_DirEntryType = ST_ROOT;
+                    iim.iim_FileHandle  = Open(name, MODE_OLDFILE);
+                    
+                    if (LB(IconBase)->ib_IdentifyHook != NULL)
+                    {
+                        /* Use user-provided identify hook */
+                        icon = (struct DiskObject *) CALLHOOKPKT
+                        (
+                            LB(IconBase)->ib_IdentifyHook, NULL, &iim
+                        );
+                        
+                        if (icon != NULL)
+                        {
+                            /*
+                                Sanity check since we don't trust the 
+                                user-provided hook too much. ;-)
+                            */
+                            
+                            LONG type = FindType(iim.iim_FileLock);
+                            if (type != -1) icon->do_Type = type;
+                        }
+                    }
+                    
+                    if (icon == NULL)
+                    {
+                        /* Fall back to the default identify function */
+                        D(bug("[%s] Finding default icon for iim %p\n", __func__, &iim));
+                        icon = FindDefaultIcon(&iim);
+                    }
+                    
+                    if (iim.iim_ParentLock != BNULL) UnLock(iim.iim_ParentLock);
+                    if (iim.iim_FileHandle != BNULL) Close(iim.iim_FileHandle);
+                }
+                
+                FreeDosObject(DOS_FIB, iim.iim_FIB);
+            }
+            else
+            {
+                error = IoErr();
+            }
+            
+            UnLockObject(iim.iim_FileLock);
+        }
+
+        if (icon == NULL && defaultType > 0) {
+            icon = GetBuiltinIcon(defaultType);
+            D(bug("[%s] Using builtin icon %p\n", __func__, icon));
+        }
+
+        if (icon == NULL) {
+            LONG type = (name && Stricmp("Disk", name)==0) ? WBDISK : WBPROJECT;
+            icon = GetBuiltinIcon(type);
+            D(bug("[%s] Using builtin icon %p, type %d\n",  __func__, icon, type));
+        }
+    }
+
+
+    if (!icon)
+        goto exit;
 
     if (label != NULL) {
         /* TODO: Add the label specified in 'label' to the icon */
     }
 
-    if (remapIcon || screen != NULL) {
-        LayoutIconA(icon, screen, (struct TagItem *)tags);
-    }
-
     if (generateImageMasks) {
-        /* TODO: Generate the image masks */
+        D(bug("[%s] %p: Generate image masks\n", __func__, icon));
+        /* A side effect of pallette mapping the icon... */
+        getPaletteMappedIcon = TRUE;
     }
 
     if (getPaletteMappedIcon) {
-        /* TODO: Palette map the icon */
+        D(bug("[%s] %p: Generate palette mapped icon\n", __func__, icon));
+        /* A side effect of remapping the icon to the DefaultPubScreen */
+        remapIcon = TRUE;
     }
 
+    if (remapIcon) {
+        if (screen == NULL)
+            IconControl(NULL, ICONCTRLA_GetGlobalScreen, &screen, TAG_END);
+    } else {
+        screen = NULL;
+    }
+
+    /* Any last-minute fixups */
+    PrepareIcon(icon);
+
+    D(bug("[%s] %p: Performing initial layout for screen %p\n", __func__, icon, screen));
+    LayoutIconA(icon, screen, (struct TagItem *)tags);
+
+exit:
     /* Set error code */
     if (errorCode != NULL)
         *errorCode = error;
     SetIoErr(error);
+
+    D(bug("[%s] name %s, tags %p => %p\n", __func__, name, tags, icon));
 
     return icon;
 

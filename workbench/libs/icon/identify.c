@@ -33,7 +33,7 @@
 #endif
 
 /*** Prototypes *************************************************************/
-BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, APTR *theDOSBase);
+BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, BPTR lock, APTR *theDOSBase);
 struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, const struct TagItem *tags, struct IconBase *IconBase);
 struct DiskObject *__GetDefaultIconFromType_WB(LONG type, const struct TagItem *tags, struct IconBase *IconBase);
 LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase);
@@ -53,6 +53,8 @@ LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
     {
         if (Examine(lock, fib))
         {
+            D(bug("[%s] Examine says: fib_DirEntryType=%d\n", __func__, fib->fib_DirEntryType));
+            D(bug("[%s] Examine says: fib_Protection=%x\n", __func__, fib->fib_Protection));
             /* Identify object ---------------------------------------------*/
             if (fib->fib_DirEntryType == ST_ROOT)
             {
@@ -138,7 +140,7 @@ struct DiskObject *__FindDefaultIcon_WB
             FindDeviceName
             (
                 device, MAXFILENAMELENGTH, 
-                iim->iim_FIB->fib_FileName
+                iim->iim_FileLock
             )
         )
         {
@@ -154,7 +156,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 else if (strncasecmp(device, "RAD", 3) == 0)
                 {
                     icon = GetDefaultIconFromName("RAD", iim->iim_Tags);
-                } /*
+                }
                 else if (strncasecmp(device, "DF", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
@@ -162,7 +164,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 else if (strncasecmp(device, "CD", 2) == 0)
                 {
                     icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
-                } */
+                }
                 else if
                 (
                        strncasecmp(device, "DH",  2) == 0 
@@ -423,7 +425,7 @@ LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase)
 
 BOOL __FindDeviceName_WB
 (
-    STRPTR buffer, LONG length, CONST_STRPTR volume, 
+    STRPTR buffer, LONG length, BPTR lock,
     APTR *theDOSBase
 )
 {
@@ -435,35 +437,21 @@ BOOL __FindDeviceName_WB
     if (dl != NULL)
     {
         struct DosList *dol = dl;
+        struct MsgPort *port = ((struct FileLock *) BADDR(lock))->fl_Task;
         
         while ((dol = NextDosEntry(dol, LDF_DEVICES | LDF_READ)) != NULL)
         {
             STRPTR devname = AROS_BSTR_ADDR(dol->dol_Name);
             ULONG len = AROS_BSTR_strlen(dol->dol_Name);
             TEXT device[len + 2];
-            BPTR lock;
 
-	    CopyMem(devname, device, len);
-	    device[len    ] = ':';
-	    device[len + 1] = 0;
-                
-            if (IsFileSystem(device) && (lock = Lock(device, ACCESS_READ)) != BNULL)
-            {
-                    if (NameFromLock(lock, buffer, length))
-                    {
-                        buffer[strlen(buffer) - 1] = '\0'; /* Remove trailing ':' */
-                        if (strcasecmp(volume, buffer) == 0)
-                        {
-                            if (strlcpy(buffer, device, length) < length)
-                            {
-                                success = TRUE;
-                            }
-                            UnLock(lock);
-                            break;
-                        }
-                    }
-                    
-                UnLock(lock);
+            if (dol->dol_Task == port) {
+                CopyMem(devname, device, len);
+                device[len    ] = ':';
+                device[len + 1] = 0;
+
+                success = TRUE;
+                break;
             }
         }
         
@@ -482,7 +470,7 @@ struct DiskObject *__GetDefaultIconFromName_WB
     (
         NULL, 
         ICONGETA_GetDefaultName, (IPTR) name, 
-        TAG_MORE,                (IPTR) tags
+        TAG_END,
     );
 }
 
@@ -495,6 +483,6 @@ struct DiskObject *__GetDefaultIconFromType_WB
     (
         NULL,
         ICONGETA_GetDefaultType,        type,
-        TAG_MORE,                (IPTR) tags
+        TAG_END,
     );
 }

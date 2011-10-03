@@ -33,7 +33,7 @@
 #define ICONA_BASE                          (TAG_USER+0x9000)
 
 /*** Error reporting ********************************************************/
-/* Errorcode (LONG *) */
+/* Errorcode (SIPTR *) */
 #define ICONA_ErrorCode                      (ICONA_BASE+1)
 
 /* Points to the tag item that caused the error (struct TagItem **). */
@@ -133,7 +133,9 @@
 
 /* Image data: In RECTFMT_ARGB32 format (ULONG **) */
 #define ICONCTRLA_GetARGBImageData1 	(ICONA_BASE+301)
+#define ICONCTRLA_SetARGBImageData1 	(ICONA_BASE+302)
 #define ICONCTRLA_GetARGBImageData2 	(ICONA_BASE+303)
+#define ICONCTRLA_SetARGBImageData2 	(ICONA_BASE+304)
 
 /*
     Check if this icon was allocated by icon.library or if it consists

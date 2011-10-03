@@ -18,7 +18,6 @@
 
 #include "icon_intern.h"
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #define ATTR_ICONX   	    0x80001001
@@ -112,130 +111,85 @@ static ULONG dd_to_flags(struct DiskObject *dobj)
     return drawerflags;
 }
 
-/****************************************************************************************/
-
-STATIC BOOL MakePlanarImage(struct NativeIcon *icon, struct Image **img,
-    	    	    	    UBYTE *src, struct IconBase *IconBase)
+/* Returns an ARGB image.
+ * Set &width == -1 and &height == -1 to get the size.
+ * Otherwise, sets the image size of width & height
+ */
+ULONG *ReadMemPNG(struct DiskObject *icon, APTR stream, LONG *width, LONG *height, const CONST_STRPTR *chunknames, APTR *chunkpointer, struct IconBase *IconBase)
 {
-    LONG width16 = (icon->iconPNG.width + 15) & ~15;
-    LONG bpr = width16 / 8;
-    LONG planesize = bpr * icon->iconPNG.height;
-    LONG x, y;
-    UWORD *p1, *p2;
-    ULONG *s = (ULONG *)src;
-    
-    *img = (struct Image *)AllocPooled(icon->pool, sizeof(struct Image) + planesize * 2);
-    if (*img == NULL) return FALSE;
-    
-    (*img)->Width     = icon->iconPNG.width;
-    (*img)->Height    = icon->iconPNG.height;
-    (*img)->Depth     = 2;
-    (*img)->ImageData = (UWORD *)(*img + 1);
-    (*img)->PlanePick = 3; 
-    
-    p1 = (UWORD *)(*img)->ImageData;
-    p2 = p1 + planesize / 2;
+    APTR PNGBase = OpenLibrary("SYS:Classes/datatypes/png.datatype", 41);
+    APTR handle;
+    ULONG *argb = NULL;
 
-    for(y = 0; y < icon->iconPNG.height; y++)
-    {
-    	ULONG pixelmask = 0x8000;
-	UWORD plane1dat = 0;
-	UWORD plane2dat = 0;
-	
-    	for(x = 0; x < icon->iconPNG.width; x++)
-	{
-	    ULONG pixel = *s++;
-	    
-	#if AROS_BIG_ENDIAN
-	    if ((pixel & 0xFF000000) > 0x80000000)
-	    {
-	    	pixel = (((pixel & 0x00FF0000) >> 16) +
-		    	 ((pixel & 0x0000FF00) >> 8)  +
-			 ((pixel & 0x000000FF)) +
-			 127) / 256;
-	#else
-	    if ((pixel & 0x000000FF) > 0x80)
-    	    {
-	    	pixel = (((pixel & 0x0000FF00) >> 8) +
-		    	 ((pixel & 0x00FF0000) >> 16)  +
-			 ((pixel & 0xFF000000) >> 24) +
-			 127) / 256;
-	#endif
-	    		    
-		if (pixel == 3)
-		{
-	    	    /* Col 2: White */
-	    	    plane2dat |= pixelmask;
-		}
-		else if ((pixel == 2) || (pixel == 1))
-		{
-	    	    /* Col 3: Amiga Blue */
-	    	    plane1dat |= pixelmask;
-		    plane2dat |= pixelmask;
-		}
-		else
-		{
-	    	    /* Col 1: Black */
-		    plane1dat |= pixelmask;
-		}
-	    }
-	    
-    	    pixelmask >>= 1;
-	    if (!pixelmask)
-	    {
-	    	pixelmask = 0x8000;
-		*p1++ = AROS_WORD2BE(plane1dat);
-		*p2++ = AROS_WORD2BE(plane2dat);
-		
-		plane1dat = plane2dat = 0;
-		
-	    }
-	    
-	}
-	
-	if (pixelmask != 0x8000)
-	{
-	    *p1++ = AROS_WORD2BE(plane1dat);
-    	    *p2++ = AROS_WORD2BE(plane2dat);	    
+    if (!PNGBase) {
+        D(bug("[%s] Can't open png.datatype\n", __func__));
+        return NULL;
+    }
 
-	}
-		
-    } /* for(y = 0; y < icon->iconPNG.height; y++) */
-    
-    return TRUE;
-    
+    handle = PNG_LoadImageMEM(stream, -1, chunknames, chunkpointer, TRUE);
+    if (handle) {
+        ULONG *src, *dst;
+        LONG w = 0, h = 0;
+        LONG x,y, xoff, yoff;
+
+        PNG_GetImageInfo(handle, &w, &h, NULL, NULL);
+        D(bug("[%s] Dest (%d x %d), Image (%d x %d)\n", __func__,
+                    *width, *height, w, h));
+        if (*width == -1 && *height == -1) {
+            *width = w;
+            *height = h;
+        }
+
+        PNG_GetImageData(handle, (APTR *)&src, NULL);
+
+        argb = AllocMemIcon(icon, (*width) * (*height) * sizeof(ULONG), MEMF_PUBLIC);
+        if (argb) {
+            xoff = ((*width) - w)/2;
+            yoff = ((*height) - h)/2;
+
+            dst = argb;
+            for (y = 0; y < *height; y++) {
+                LONG sy = y + yoff;
+
+                if (sy < 0)
+                    sy = 0;
+
+                if (sy >= h)
+                    sy = h-1;
+
+                for (x = 0; x < *width; x++, dst++) {
+                    LONG sx = x + xoff;
+
+                    if (sx < 0)
+                        sx = 0;
+
+                    if (sx >= w)
+                        sx = w-1;
+
+                    *dst = src[sy*w+sx];
+                }
+            }
+        }
+
+        PNG_FreeImage(handle);
+    } else {
+        D(bug("[%s] PNG datatype can't parse data\n", __func__));
+    }
+
+    CloseLibrary(PNGBase);
+    return argb;
 }
 
+
 /****************************************************************************************/
 
-STATIC BOOL MakePlanarImages(struct NativeIcon *icon, struct IconBase *IconBase)
+static void GetChunkInfo(APTR *stream, APTR *chunkdata, ULONG *chunksize)
 {
-    if (!MakePlanarImage(icon,
-    	    	    	 (struct Image **)&icon->dobj.do_Gadget.GadgetRender,
-			 icon->iconPNG.img1,
-			 IconBase))
-    {
-    	return FALSE;
-    }
-    
-    icon->dobj.do_Gadget.Flags |= GFLG_GADGIMAGE;
-    
-    if (!icon->iconPNG.img2) return TRUE;
-    
-    if (MakePlanarImage(icon,
-    	    	    	 (struct Image **)&icon->dobj.do_Gadget.SelectRender,
-			 icon->iconPNG.img1,
-			 IconBase))
-    {
-    	icon->dobj.do_Gadget.Flags |= GFLG_GADGHIMAGE;
-    }
-        
-    return TRUE;
+    *chunksize = AROS_BE2LONG(*(ULONG *)stream);
+    *chunkdata = stream+8;
 }
 
-/****************************************************************************************/
-
-BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
+BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 {
     static CONST_STRPTR const chunknames[] =
     {
@@ -250,60 +204,50 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
     
     struct NativeIcon  *icon;
     ULONG   	    	filesize;
-    APTR    	    	pool;
+    APTR    	    	data;
 
-    if (PNGBase == NULL)
-    	return FALSE;
+    icon = NATIVEICON(dobj);
+
+    D(bug("%s: File stream %p\n", __func__, file));
 
     if (Seek(file, 0, OFFSET_END) < 0) return FALSE;
     if ((filesize = Seek(file, 0, OFFSET_BEGINNING)) < 0) return FALSE;
 
-    pool = CreatePool(MEMF_ANY | MEMF_CLEAR, 1024, 1024);
-    if (!pool) return FALSE;
-    
-    icon = AllocPooled(pool, sizeof(struct NativeIcon) + filesize);
-    if (!icon)
-    {
-    	DeletePool(pool);
-	return FALSE;
-    }
-    
-    icon->pool = pool;
-    
-    icon->iconPNG.filebuffer = (UBYTE *)(icon + 1);
-    icon->iconPNG.filebuffersize = filesize;
-    
+    D(bug("[%s] Inspecting a %d byte file\n", __func__, filesize));
+
     /* Need a copy of whole file in memory for icon saving :-\ Because
        that should save file back as it was, only with modified or new
        icOn chunk. And it must also work when loading an icon and then
        saving it using another name. */
-       
-    if (Read(file, icon->iconPNG.filebuffer, filesize) != filesize)
-    {
-    	DeletePool(pool);
-	return FALSE;
-    }
-    
-    icon->iconPNG.handle = PNG_LoadImageMEM(icon->iconPNG.filebuffer, filesize,
-    	    	    	    	    	    chunknames, chunkpointer, TRUE);
 
-    if (!icon->iconPNG.handle)
+    data = AllocMemIcon(&icon->ni_DiskObject, filesize, MEMF_PUBLIC);
+    if (!data)
+        return FALSE;
+
+    if (Read(file, data, filesize) != filesize)
     {
-    	FreeIconPNG(&icon->dobj, IconBase);
-	return FALSE;
+        D(bug("[%s] Can't read from file\n", __func__));
+        return FALSE;
     }
+
+    icon->ni_Extra.Data = data;
+    icon->ni_Extra.Size = filesize;
+    
+    icon->ni_Extra.Offset[0].PNG = 0;
     
     {
-    	LONG width, height;
+    	ULONG width = ~0, height = ~0;
 	
-	PNG_GetImageInfo(icon->iconPNG.handle, &width, &height, NULL, NULL);
+	icon->ni_Image[0].ARGB = ReadMemPNG(&icon->ni_DiskObject, icon->ni_Extra.Data + icon->ni_Extra.Offset[0].PNG, &width, &height, chunknames, chunkpointer, IconBase);
+	if (icon->ni_Image[0].ARGB == NULL) {
+	    D(bug("[%s] Can't parse PNG image at 0\n", __func__));
+	    return FALSE;
+        }
 
-	icon->iconPNG.width  = width;
-	icon->iconPNG.height = height;
+	icon->ni_Width  = width;
+	icon->ni_Height = height;
 	
-	PNG_GetImageData(icon->iconPNG.handle, (APTR *)&icon->iconPNG.img1, NULL);
-	
-	#define DO(x) (&x->dobj)
+	#define DO(x) (&x->ni_DiskObject)
 	
 	DO(icon)->do_Magic    	    = WB_DISKMAGIC;
 	DO(icon)->do_Version  	    = (WB_DISKVERSION << 8) | WB_DISKREVISION;
@@ -322,7 +266,7 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	    ULONG  ttarraysize = 0;
 	    BOOL   ok = TRUE;
 	    
-	    PNG_GetChunkInfo(chunkpointer[0], (APTR *)&chunkdata, &chunksize);
+	    GetChunkInfo(chunkpointer[0], (APTR *)&chunkdata, &chunksize);
 	    
 	    while(chunksize >= 4)
 	    {
@@ -392,7 +336,7 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		
 		if (need_drawerdata && !(DO(icon)->do_DrawerData))
 		{
-		    DO(icon)->do_DrawerData = AllocPooled(pool, sizeof(struct DrawerData));
+		    DO(icon)->do_DrawerData = AllocMemIcon(DO(icon), sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
 		    if (!(DO(icon)->do_DrawerData))
 		    {
 		    	ok = FALSE;
@@ -441,7 +385,7 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 			break;
 
     	    	    case ATTR_DEFAULTTOOL:
-		    	DO(icon)->do_DefaultTool = AllocPooled(pool, strlen((char *)val) + 1);
+		    	DO(icon)->do_DefaultTool = AllocMemIcon(DO(icon), strlen((char *)val) + 1, MEMF_PUBLIC | MEMF_CLEAR);
 			if (DO(icon)->do_DefaultTool)
 			{
 			    strcpy(DO(icon)->do_DefaultTool, (char *)val);
@@ -451,17 +395,18 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 			    ok = FALSE;
 			}
 			break;
-			
+		    case ATTR_FRAMELESS:
+		        NATIVEICON(icon)->ni_Frameless = val ? TRUE : FALSE;
+		        break;
 		    case ATTR_TOOLTYPE:
 		    	ttnum++;
 			if (ttarraysize < ttnum + 1)
 			{
 			    STRPTR *old_tooltypes = DO(icon)->do_ToolTypes;
-			    ULONG  old_ttarraysize = ttarraysize;
 			    
 			    ttarraysize += 10;
 			    
-			    DO(icon)->do_ToolTypes = AllocPooled(pool, ttarraysize * sizeof(APTR));
+			    DO(icon)->do_ToolTypes = AllocMemIcon(DO(icon), ttarraysize * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
 			    if (DO(icon)->do_ToolTypes)
 			    {
 			    	if (old_tooltypes)
@@ -473,13 +418,11 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 			    {
 			    	ok = FALSE;
 			    }
-			    
-			    if (old_tooltypes) FreePooled(pool, old_tooltypes, old_ttarraysize * sizeof(APTR));			    
 			}
 			
 			if (!ok) break;
 			
-			DO(icon)->do_ToolTypes[ttnum - 1] = AllocPooled(pool, strlen((char *)val) + 1);
+			DO(icon)->do_ToolTypes[ttnum - 1] = AllocMemIcon(DO(icon), strlen((char *)val) + 1, MEMF_PUBLIC | MEMF_CLEAR);
 			if (DO(icon)->do_ToolTypes[ttnum - 1])
 			{
 			    strcpy(DO(icon)->do_ToolTypes[ttnum - 1], (char *)val);
@@ -496,12 +439,10 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 		
 	    } /* while(chunksize >= 4) */
 	    
-	    PNG_FreeChunk(chunkpointer[0]);
-	    
 	    if (!ok)
 	    {
     	    	D(bug("=== Failure during icOn chunk parsing ===\n"));
-    	    	FreeIconPNG(&icon->dobj, IconBase);
+    	    	FreeIconPNG(&icon->ni_DiskObject, IconBase);
 	    	return FALSE;
 	    }
 	    
@@ -519,13 +460,13 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	 */
 
 #if 0	
-	if (icon->dobj.do_DrawerData &&
-	    (icon->dobj.do_Type != WBDISK) &&
-	    (icon->dobj.do_Type != WBDRAWER) &&
-	    (icon->dobj.do_Type != WBGARBAGE))
+	if (icon->ni_DiskObject.do_DrawerData &&
+	    (icon->ni_DiskObject.do_Type != WBDISK) &&
+	    (icon->ni_DiskObject.do_Type != WBDRAWER) &&
+	    (icon->ni_DiskObject.do_Type != WBGARBAGE))
 	{
-	    FreePooled(pool, icon->dobj.do_DrawerData, sizeof(struct DrawerData));
-	    icon->dobj.do_DrawerData = NULL;
+	    FreePooled(pool, icon->ni_DiskObject.do_DrawerData, sizeof(struct DrawerData));
+	    icon->ni_DiskObject.do_DrawerData = NULL;
 	}
 #endif
 	
@@ -533,10 +474,10 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
     
     /* Look for a possible 2nd PNG image attached onto the first one */
     {
-    	UBYTE *filepos = icon->iconPNG.filebuffer + 8;
+    	UBYTE *filepos = icon->ni_Extra.Data + icon->ni_Extra.Offset[0].PNG + 8;
     	BOOL done = FALSE;
 	
-	while(!done)
+	while(!done && filepos < ((UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size))
 	{
     	    ULONG chunksize = (filepos[0] << 24) | (filepos[1] << 16) |
 	    	    	      (filepos[2] << 8) | filepos[3];
@@ -553,43 +494,25 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	    filepos += chunksize;
 	}
 	
-	if (filepos + 8 < icon->iconPNG.filebuffer + icon->iconPNG.filebuffersize)
+	if (filepos + 8 < (UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size)
 	{
-	    ULONG offset = filepos - icon->iconPNG.filebuffer;
+	    ULONG offset = filepos - (UBYTE *)icon->ni_Extra.Data;
 	    
-	    icon->iconPNG.handle2 = PNG_LoadImageMEM(filepos, filesize - offset, 0, 0, TRUE);
-	    
-	    if (icon->iconPNG.handle2)
-	    {
-    	    	LONG width, height;
-	
-	    	PNG_GetImageInfo(icon->iconPNG.handle2, &width, &height, NULL, NULL);
-		
-		if ((width == icon->iconPNG.width) &&
-		    (height == icon->iconPNG.height))
-		{
-		    PNG_GetImageData(icon->iconPNG.handle2, (APTR *)&icon->iconPNG.img2, NULL);
-		}
-		else
-		{
-		    PNG_FreeImage(icon->iconPNG.handle2);
-		    icon->iconPNG.handle2 = NULL;
-		}
-	    	
-	    }
+	    icon->ni_Extra.Offset[1].PNG = offset;
+	    icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Width, &icon->ni_Height, NULL, NULL, IconBase);
 	}
     	
     } /**/
-    
+
     /* If there's no image for selected-state, generate one */
-    if (!icon->iconPNG.img2)
+    if (!icon->ni_Image[1].ARGB)
     {
-    	ULONG size = icon->iconPNG.width * icon->iconPNG.height;
+    	ULONG size = icon->ni_Width * icon->ni_Height;
 	
-    	if ((icon->iconPNG.img2 = AllocPooled(pool, size * sizeof(ULONG))))
+    	if ((icon->ni_Image[1].ARGB = AllocMemIcon(&icon->ni_DiskObject, size * sizeof(ULONG), MEMF_PUBLIC)))
 	{
-	    ULONG *src = (ULONG *)icon->iconPNG.img1;
-	    ULONG *dst = (ULONG *)icon->iconPNG.img2;
+	    ULONG *src = (ULONG *)icon->ni_Image[0].ARGB;
+	    ULONG *dst = (ULONG *)icon->ni_Image[1].ARGB;
 	    
 	    while(size--)
 	    {
@@ -631,17 +554,6 @@ BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase)
 	    }
 	}
     }
-    
-    /* Make fallback planar images */
-    
-    if (!MakePlanarImages(icon, IconBase))
-    {
-    	D(bug("Planar image creation failed\n"));
-    	FreeIconPNG(&icon->dobj, IconBase);
-	return FALSE;
-    }
-        
-    *ret = &icon->dobj;
     
     return TRUE;
     
@@ -749,6 +661,12 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
     if (Write(file, buf, 8) != 8) return FALSE;
     
     crc = UpdateCRC(crc, buf + 4, 4, IconBase); /* chunksize is excluded from CRC */
+
+    /* Write Frameless */
+    if (!WriteIconAttr(file, ATTR_FRAMELESS, NATIVEICON(dobj)->ni_Frameless, &chunksize, &crc, IconBase))
+    {
+	return FALSE;
+    }
 
     /* Write Stack Size */
 
@@ -861,11 +779,10 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
 BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 {
     struct NativeIcon 	*nativeicon = NATIVEICON(dobj);
-    struct IconPNG  	*iconpng = &nativeicon->iconPNG;
-    UBYTE   	    	*mempos = iconpng->filebuffer;
+    UBYTE   	    	*mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.Offset[0].PNG;
     BOOL    	    	 done = FALSE;
     
-    if (PNGBase == NULL)
+    if (nativeicon->ni_Extra.Data == NULL)
     	return FALSE;
 
     ObtainSemaphore(&IconBase->iconlistlock);   
@@ -876,7 +793,7 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     	return FALSE;
 
     /* Write PNG header */
-    if (Write(file, iconpng->filebuffer, 8) != 8) return FALSE;
+    if (Write(file, mempos, 8) != 8) return FALSE;
     
     mempos += 8;
     
@@ -907,13 +824,13 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 	
     }
 
-    if (mempos < iconpng->filebuffer + iconpng->filebuffersize)
+    if (nativeicon->ni_Extra.Offset[1].PNG > 0)
     {
-    	ULONG size = iconpng->filebuffer + iconpng->filebuffersize - mempos;
-	
+    	ULONG size = nativeicon->ni_Extra.Size - nativeicon->ni_Extra.Offset[1].PNG;
+
     	/* 2nd PNG Image attached */
-	
-	if (Write(file, mempos, size) != size) return FALSE;
+
+	if (Write(file, nativeicon->ni_Extra.Data + nativeicon->ni_Extra.Offset[1].PNG, size) != size) return FALSE;
     }
         
     return TRUE;
@@ -923,25 +840,6 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 
 VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase)
 {
-    if (PNGBase == NULL)
-    	return;
-
-    if (dobj)
-    {
-    	struct NativeIcon *nativeicon = NATIVEICON(dobj);
-    
-    	if (nativeicon->iconPNG.handle)
-	{
-	    PNG_FreeImage(nativeicon->iconPNG.handle);
-	}
-
-    	if (nativeicon->iconPNG.handle2)
-	{
-	    PNG_FreeImage(nativeicon->iconPNG.handle2);
-	}
-	
-	if (nativeicon->pool) DeletePool(nativeicon->pool);
-    }    
 }
 
 /****************************************************************************************/

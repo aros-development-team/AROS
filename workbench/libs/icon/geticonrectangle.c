@@ -51,26 +51,46 @@
     AROS_LIBFUNC_INIT
 
     struct NativeIcon *nativeicon;
+    BOOL isFrameless;
+    BOOL isBorderless;
+    struct Rectangle rect = { 0, 0, 0, 0};
+
+    isFrameless = GetTagData(ICONDRAWA_Frameless, FALSE, tags);
+    isBorderless = GetTagData(ICONDRAWA_Borderless, FALSE, tags);
+
+    if (!isBorderless) {
+        rect = LB(IconBase)->ib_EmbossRectangle;
+        if (!isFrameless) {
+            rect.MinX -= 1;
+            rect.MinY -= 1;
+            rect.MaxX += 1;
+            rect.MaxY += 1;
+        }
+    }
 
     nativeicon = GetNativeIcon(icon, LB(IconBase));
-    if (nativeicon && nativeicon->icon35.img1.imagedata)
+    if (nativeicon && nativeicon->ni_Screen)
     {
-	rectangle->MinX = 0;
-	rectangle->MinY = 0;
-	rectangle->MaxX = nativeicon->icon35.width - 1;
-	rectangle->MaxY = nativeicon->icon35.height - 1;
+	rectangle->MinX = rect.MinX + 0;
+	rectangle->MinY = rect.MinY + 0;
+	rectangle->MaxX = rect.MaxX + nativeicon->ni_Width - 1;
+	rectangle->MaxY = rect.MaxY + nativeicon->ni_Height - 1;
     } else
     {
-	rectangle->MinX = 0;
-	rectangle->MinY = 0;
-	rectangle->MaxX = icon->do_Gadget.Width - 1;
-	rectangle->MaxY = icon->do_Gadget.Height - 1;
+	rectangle->MinX = rect.MinX + 0;
+	rectangle->MinY = rect.MinY + 0;
+	rectangle->MaxX = rect.MaxX + icon->do_Gadget.Width - 1;
+	rectangle->MaxY = rect.MaxY + icon->do_Gadget.Height - 1;
     }
 
     if (label != NULL) {
     	struct TextExtent extent;
+        LONG txtlen = strlen(label);
 
-    	TextExtent(rp, label, strlen(label), &extent);
+        if (txtlen > IconBase->ib_MaxNameLength)
+            txtlen = IconBase->ib_MaxNameLength;
+
+    	TextExtent(rp, label, txtlen, &extent);
 
     	rectangle->MaxY += extent.te_Height;
 
