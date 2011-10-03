@@ -6,6 +6,8 @@
     Lang: English.
 */
 
+#define DEBUG 1
+
 #define __OOP_NOATTRBASES__
 
 #include <sys/types.h>
