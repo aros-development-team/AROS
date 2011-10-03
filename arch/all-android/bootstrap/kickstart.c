@@ -19,7 +19,7 @@
 #include "kickstart.h"
 #include "platform.h"
 
-#define D(x)
+#define D(x) x
 
 /*
  * This is Android-hosted kicker.
