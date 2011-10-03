@@ -159,6 +159,9 @@
     	    offsetof(struct ExAllData,ed_OwnerUID),
     	    sizeof(struct ExAllData)
 	};
+
+	/* Reset the 'fake' error */
+	err = 0;
 	
 	/* Allocate the FIB structure, if not allocated yet. It will be deallocated
 	   by DeleteDosObject().  */
