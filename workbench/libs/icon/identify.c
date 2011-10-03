@@ -174,7 +174,7 @@ struct DiskObject *__FindDefaultIcon_WB
                 {
                     icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
                 }
-                else if (strcasecmp(device, "HOME:") == 0)
+                else if (strcasecmp(device, "HOME") == 0)
                 {
                     icon = GetDefaultIconFromName("Home", iim->iim_Tags);
                 }
@@ -425,7 +425,7 @@ LONG __FindDiskType_WB(STRPTR volname, BPTR lock, struct IconBase *IconBase)
 
 BOOL __FindDeviceName_WB
 (
-    STRPTR buffer, LONG length, BPTR lock,
+    STRPTR device, LONG length, BPTR lock,
     APTR *theDOSBase
 )
 {
@@ -443,12 +443,11 @@ BOOL __FindDeviceName_WB
         {
             STRPTR devname = AROS_BSTR_ADDR(dol->dol_Name);
             ULONG len = AROS_BSTR_strlen(dol->dol_Name);
-            TEXT device[len + 2];
 
             if (dol->dol_Task == port) {
                 CopyMem(devname, device, len);
-                device[len    ] = ':';
-                device[len + 1] = 0;
+                device[len++] = ':';
+                device[len] = 0;
 
                 success = TRUE;
                 break;
