@@ -131,7 +131,6 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
 {
     struct NativeIcon *ni = NATIVEICON(icon);
     struct NativeIconImage *image;
-    int i;
 
     /* Ensure that do_DrawerData exists for WBDISK and WBDRAWER objects */
     if ((icon->do_Type == WBDISK || icon->do_Type == WBDRAWER) &&
@@ -152,6 +151,7 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
         icon->do_DrawerData->dd_NewWindow.BitMap = NULL;
     }
 
+#if 0 /* Commented out - safe, but too slow */
     /* If we have ARGB imagery, but no Palettized imagery,
      * synthesize some. Use an EHB palette, similar to the
      * VGA-16 color pallette.
@@ -209,10 +209,12 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
             }
         }
     }
+#endif
 
 
     /* Prepate ARGB selected imagery, if needed */
     image = &ni->ni_Image[1];
+#if 0 /* Commented out - safe, but too slow */
     if (image->ARGB == NULL &&
         ni->ni_Extra.Offset[0].PNG >= 0 && 
         ni->ni_Extra.Offset[1].PNG < 0) {
@@ -238,6 +240,7 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
                 }
         }
     }
+#endif
 
     /* Do the same for the palette mapped icon data */
     if (image->Palette == NULL &&
