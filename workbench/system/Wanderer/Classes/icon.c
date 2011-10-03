@@ -175,7 +175,7 @@ D(bug("[Icon]: %s(icon @ %p)\n", __PRETTY_FUNCTION__, icon));
 #endif
 
     /* Get basic width/height */    
-    GetIconRectangleA(NULL, data->IcD_DiskObj, NULL, rect, NULL);
+    GetIconRectangleA(NULL, data->IcD_DiskObj, NULL, rect, __iconList_DrawIconStateTags);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
 D(bug("[Icon] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 #endif

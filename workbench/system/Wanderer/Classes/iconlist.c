@@ -476,7 +476,7 @@ static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *da
 #endif
 
     /* Get basic width/height */    
-    GetIconRectangleA(NULL, entry->ie_DiskObj, NULL, rect, NULL);
+    GetIconRectangleA(NULL, entry->ie_DiskObj, NULL, rect, __iconList_DrawIconStateTags);
 #if defined(DEBUG_ILC_ICONPOSITIONING)
     D(bug("[IconList] %s: MinX %d, MinY %d      MaxX %d, MaxY %d\n", __PRETTY_FUNCTION__, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY));
 #endif
