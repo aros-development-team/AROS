@@ -36,6 +36,13 @@ struct wbIcon {
     struct timeval LastActive;
 };
 
+const struct TagItem wbIcon_DrawTags[] = {
+    { ICONDRAWA_Frameless, TRUE, },
+    { ICONDRAWA_Borderless, FALSE, },
+    { ICONDRAWA_EraseBackground, FALSE, },
+    { TAG_DONE },
+};
+
 void wbIcon_Update(Class *cl, Object *obj)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
@@ -47,9 +54,7 @@ void wbIcon_Update(Class *cl, Object *obj)
     /* Update the parent's idea of how big we are
      */
     InitRastPort(&rp);
-    GetIconRectangle(&rp, my->Icon, (STRPTR)my->Label, &rect,
-	ICONDRAWA_Borderless, FALSE,
-	TAG_END);
+    GetIconRectangleA(&rp, my->Icon, (STRPTR)my->Label, &rect, (struct TagItem *)wbIcon_DrawTags);
     DeinitRastPort(&rp);
 
     w = (rect.MaxX - rect.MinX) + 1;
@@ -182,10 +187,6 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     struct RastPort *rp = gpr->gpr_RPort;
     struct Gadget *gadget = (struct Gadget *)obj;	/* Legal for 'gadgetclass' */
     WORD x,y;
-    struct TagItem tags[] = {
-	{ ICONDRAWA_DrawInfo, (IPTR)gpr->gpr_GInfo->gi_DrInfo, },
-	{ ICONDRAWA_Frameless, FALSE, },
-	{ TAG_END } };
 
     x = gadget->LeftEdge;
     y = gadget->TopEdge;
@@ -195,14 +196,8 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     	    gadget->LeftEdge + gadget->Width - 1,
     	    gadget->TopEdge + gadget->Height - 1);
 
-    /* FIXME: Setting the icon's text color this way doesn't feel right...
-     */
-    SetAPen(rp, 1);
-    SetBPen(rp, 0);
-    SetOutlinePen(rp, 2);
-
     DrawIconStateA(rp, my->Icon, (STRPTR)my->Label, x, y,
-    	(gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, tags);
+    	(gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, (struct TagItem *)wbIcon_DrawTags);
 
     return 0;
 }
