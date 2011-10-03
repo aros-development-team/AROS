@@ -38,6 +38,7 @@ Q ?= @
 #MM     kernel-workbook-kobj \
 #MM     workbench-libs-gadtools-kobj \
 #MM     workbench-libs-icon-kobj \
+#MM     workbench-libs-iffparse-kobj \
 #MM     workbench-libs-mathffp-kobj \
 #MM     workbench-libs-mathieeesingbas-kobj \
 #MM     workbench-libs-workbench-kobj \
@@ -108,7 +109,7 @@ $(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0 \
+KLIBS   :=  keymap graphics layers intuition gadtools icon iffparse workbench 680x0 \
             mathffp mathieeesingbas
 KDEVS   := 
 KHNDLRS := cdrom
@@ -252,7 +253,7 @@ FILES   :=
 AFILES  := ext_entry
 
 KLIBS   := aros dos utility oop mathffp mathieeesingbas partition \
-           keymap graphics layers intuition gadtools icon workbench 680x0
+           keymap graphics layers intuition gadtools icon iffparse workbench 680x0
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := cdrom con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
