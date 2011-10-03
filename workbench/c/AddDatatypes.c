@@ -801,7 +801,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 	}
 	else
 	{
-	    struct FileDataTypeHeader *fdh;
+	    struct FileDataTypeHeader *fdh = NULL;
 	    UBYTE *memptr = (UBYTE *)prop->sp_Data;
 	    struct Hook hook;
 	    

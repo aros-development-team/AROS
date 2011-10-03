@@ -41,7 +41,7 @@ struct ReadLevel
 
     INPUTS
 	hook - Streamhook
-	dataptr - Put the data here
+	dataptr - Put the data here. If NULL, a new memory block is allocated
 	stream - Read from this stream
 	sd - Description of the structure to be read. The first element
 		is the size of the structure.
@@ -71,6 +71,7 @@ struct ReadLevel
 {
     struct MinList     _list;
     struct ReadLevel * curr;
+    BOOL pre_alloc = (*dataptr) ? TRUE : FALSE;
 
 #   define list     ((struct List *)&_list)
 
@@ -83,7 +84,7 @@ struct ReadLevel
 
     curr->sd  = sd;
     curr->pos = 0;
-    curr->s   = NULL;
+    curr->s   = *dataptr;
 
 #   define DESC     curr->sd[curr->pos]
 #   define IDESC    curr->sd[curr->pos ++]
@@ -92,9 +93,10 @@ struct ReadLevel
     {
 	if (!curr->pos)
 	{
-	    if (!(curr->s = AllocMem (IDESC, MEMF_CLEAR)) )
+	    IPTR size = IDESC;
+	    if (!curr->s && !(curr->s = AllocMem (size, MEMF_CLEAR)) )
 		goto error;
-	}
+        }
 
 	if (DESC == SDT_END)
 	    break;
@@ -350,7 +352,7 @@ struct ReadLevel
 error:
     curr = (struct ReadLevel *)GetHead (list);
 
-    if (curr && curr->s)
+    if (curr && curr->s && !pre_alloc)
 	FreeStruct (curr->s, curr->sd);
 
     while ((curr = (struct ReadLevel *)RemTail (list)))
