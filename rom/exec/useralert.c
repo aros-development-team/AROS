@@ -1,5 +1,6 @@
 #include <aros/debug.h>
 #include <exec/alerts.h>
+#include <exec/rawfmt.h>
 #include <intuition/intuition.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -9,12 +10,44 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
+static LONG SafeEasyRequest(struct EasyStruct *es, BOOL full, struct IntuitionBase *IntuitionBase)
+{
+    LONG result;
+    APTR req = BuildEasyRequestArgs(NULL, es, 0, NULL);
+
+    if (!req)
+    {
+    	/* Return -1 if requester creation failed. This makes us to fallback to safe-mode alert. */
+	return -1;
+    }
+
+    do
+    {
+	result = SysReqHandler(req, NULL, TRUE);
+	
+	if (full)
+	{
+	    switch (result)
+	    {
+	    case 1:
+	    	NewRawDoFmt("*** Logged alert:\n%s\n", RAWFMTFUNC_SERIAL, NULL, es->es_TextFormat);
+	    	result = -2;
+	    	break;
+	    }
+	}
+    }
+    while (result == -2);
+
+    FreeSysRequest(req);
+    return result;
+}
+
 static const char startstring[] = "Program failed\n";
 static const char endstring[]   = "\nWait for disk activity to finish.";
-static const char deadend_buttons[]     = "More...|Suspend|Reboot|Power off";
-static const char recoverable_buttons[] = "More...|Continue";
-
-#define MORE_SKIP 8
+static const char deadend_buttons[]          = "More...|Suspend|Reboot|Power off";
+static const char recoverable_buttons[]      = "More...|Continue";
+static const char full_deadend_buttons[]     = "Log|Suspend|Reboot|Power off";
+static const char full_recoverable_buttons[] = "Log|Continue";
 
 static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBase)
 {
@@ -49,7 +82,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 	    es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? deadend_buttons : recoverable_buttons;
 
 	    D(bug("[UserAlert] Body text:\n%s\n", buffer));
-	    choice = EasyRequestArgs(NULL, &es, NULL, NULL);
+	    choice = SafeEasyRequest(&es, FALSE, IntuitionBase);
 
 	    if (choice == 1)
 	    {
@@ -57,11 +90,9 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 		FormatAlertExtra(end, iet->iet_AlertStack, iet->iet_AlertType, &iet->iet_AlertData, SysBase);
 
 		/* Re-post the alert, without 'More...' this time */
-		es.es_GadgetFormat += MORE_SKIP;
-		choice = EasyRequestArgs(NULL, &es, NULL, NULL);
-		
-		if (choice)
-		    choice++;
+		es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
+
+		choice = SafeEasyRequest(&es, TRUE, IntuitionBase);
 	    }
 
 	    FreeMem(buffer, ALERT_BUFFER_SIZE);
