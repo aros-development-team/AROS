@@ -159,16 +159,9 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
             }
 
             /* build the devproc for return */
-            dp->dvp_Port = ((struct FileHandle *) BADDR(lock))->fh_Type;
+            dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
             dp->dvp_Lock = lock;
             dp->dvp_Flags = DVPF_UNLOCK; /* remember to unlock in FreeDeviceNode() */
-
-            /* finding the device node
-             * XXX this is naive - if the device appears on the doslist twice
-             * we have no way to tell which one is ours.  we can't even use
-             * NameFromLock() to get the volume name and then find the doslist
-             * entry from that as console handlers probably don't even
-             * implement names. bring on packets I say */
 
             dl = LockDosList(LDF_ALL | LDF_READ);
             while (dl != NULL && dl->dol_Task != dp->dvp_Port)
