@@ -1,2 +1,2 @@
 DIR="$( cd "$( dirname "$0" )" && pwd )"
-cp -Rfu $DIR/../* ../
+cp -Rf $DIR/../* ../
