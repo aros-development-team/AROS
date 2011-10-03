@@ -37,6 +37,7 @@ struct reqdims
     UWORD fontheight;  /* height of the default font */
     UWORD fontxheight; /* extra height */
     UWORD textleft;
+    UWORD textheight;  /* Height of text frame */
     WORD  gadgets;     /* number of gadgets */
     UWORD gadgetwidth; /* width of a gadget */
 };
@@ -127,11 +128,8 @@ static int charsinstring(CONST_STRPTR string, char c);
     struct IntRequestUserData	*requserdata;
     APTR    	    	    	 nextarg;
     
-    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: window 0x%lx easystruct 0x%lx IDCMPFlags 0x%lx args 0x%lx\n",
-                                   (ULONG) RefWindow,
-                                   (ULONG) easyStruct,
-                                   IDCMP,
-                                   (ULONG) Args));
+    DEBUG_BUILDEASYREQUEST(dprintf("intrequest_buildeasyrequest: window 0x%p easystruct 0x%p IDCMPFlags 0x08%x args 0x%p\n",
+                                   RefWindow, easyStruct, IDCMP, Args));
 
     if (!easyStruct)
         return FALSE;
@@ -276,9 +274,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
         {IA_Left    	, req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
         {IA_Top         , req->BorderTop + OUTERSPACING_Y                    	    	    	},
         {IA_Width    	, req->Width - req->BorderLeft - req->BorderRight - OUTERSPACING_X * 2  },
-        {IA_Height    	, req->Height - req->BorderTop - req->BorderBottom -
-            	    	  dims->fontheight - OUTERSPACING_Y * 2 -
-            	    	  TEXTGADGETSPACING - BUTTONBORDER_Y * 2                    	    	},
+        {IA_Height    	, dims->textheight			                    	    	},
         {IA_Recessed    , TRUE                                      	    	    	    	},
         {IA_EdgesOnly   , FALSE                                     	    	    	    	},
         {TAG_DONE                                           	    	    	    	    	}
@@ -444,23 +440,16 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     if (dims->fontxheight < 1) dims->fontxheight = 1;
 
     textlines = charsinstring(formattedtext, '\n') + 1;
-    dims->height = scr->WBorTop + dims->fontheight + 1 +
-                   OUTERSPACING_Y +
-                   TEXTBOXBORDER_Y +
-                   textlines * (dims->fontheight + dims->fontxheight) - dims->fontxheight +
-                   TEXTBOXBORDER_Y +
-                   TEXTGADGETSPACING +
-                   BUTTONBORDER_Y +
-                   dims->fontheight +
-                   BUTTONBORDER_Y +
-                   OUTERSPACING_Y +
-                   scr->WBorBottom;
-
-    if (dims->height > scr->Height)
-    {
-        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Too high (requester %u, screen %u)\n", dims->height, scr->Height));
-        dims->height = scr->Height;
-    }
+    dims->textheight = TEXTBOXBORDER_Y +
+                       textlines * (dims->fontheight + dims->fontxheight) - dims->fontxheight +
+                       TEXTBOXBORDER_Y;
+    dims->height     = scr->WBorTop + dims->fontheight + 1 +
+                       OUTERSPACING_Y +
+                       dims->textheight +
+                       TEXTGADGETSPACING +
+                       /* Width of gadgets is not counted here. It's counted in buildeasyreq_makegadgets(). */
+                       OUTERSPACING_Y +
+                       scr->WBorBottom;
 
     /* calculate width of text-box */
     textline = formattedtext;
@@ -496,8 +485,11 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
             dims->gadgetwidth = gadgetwidth;
         currentgadget++;
     }
+
     dims->gadgetwidth += BUTTONBORDER_X * 2;
     gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * dims->gadgets - GADGETGADGETSPACING;
+
+    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_calculatedims: Textbox %u gadgets %u\n", textboxwidth, gadgetswidth));
 
     /* calculate width of requester and position of requester text */
     dims->textleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
@@ -529,74 +521,129 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
                     struct Screen *scr,
                     struct IntuitionBase *IntuitionBase)
 {
-    struct TagItem   frame_tags[] =
-    {
-        {IA_FrameType   , FRAME_BUTTON                          },
-        {IA_Width       , dims->gadgetwidth                     },
-        {IA_Height      , dims->fontheight + BUTTONBORDER_Y * 2 },
-        {TAG_DONE                                               }
-    };
+    UWORD gadgetheight = dims->fontheight + BUTTONBORDER_Y * 2;
     struct Gadget   *gadgetlist, *thisgadget = NULL;
     struct Image    *gadgetframe;
     WORD      	     currentgadget;
-    UWORD            xoffset, spacing;
+    UWORD            xoffset, yoffset, spacing, gadgetswidth, gadgetsheight, ngadgets, nrows;
+    UWORD	     x, y;
     struct DrawInfo *dri;
 
     if (gadgetlabels[0] == NULL)
         return NULL;
 
-    gadgetframe = (struct Image *)NewObjectA(NULL, FRAMEICLASS, frame_tags);
+    gadgetframe = (struct Image *)NewObject(NULL, FRAMEICLASS, IA_FrameType, FRAME_BUTTON,
+							       IA_Width    , dims->gadgetwidth,
+							       IA_Height   , gadgetheight,
+        						       TAG_DONE);
+
     if (!gadgetframe)
         return NULL;
 
+    ngadgets = dims->gadgets;
+    gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * ngadgets - GADGETGADGETSPACING;
     spacing = dims->width - scr->WBorLeft - scr->WBorRight - OUTERSPACING_X * 2;
-    xoffset = scr->WBorLeft + OUTERSPACING_X;
 
-    if (dims->gadgets == 1)
-        xoffset += (spacing - dims->gadgetwidth) / 2;
-    else
-        spacing = (spacing - dims->gadgetwidth) / (dims->gadgets - 1);
+    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Gadgets width %u, avalable space %u\n", gadgetswidth, spacing));
+
+    /* 
+     * At this point 'spacing' holds total width of inner space available for use by gadgets.
+     * If gadgets would occupy more space than we have (window/screen is too narrow),
+     * we will rearrange gadgets in several rows.
+     * First we need to calculate how many gadgets per row will fit on the screen.
+     */
+    while (gadgetswidth > spacing)
+    {
+	if (ngadgets == 1)
+	{
+	    /* Only one gadget left? Too bad... */
+	    break;
+	}
+
+    	ngadgets--;
+    	gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * ngadgets - GADGETGADGETSPACING;
+    	DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Trying %u gadgets per row, width %u\n", ngadgets, gadgetswidth));
+    }
+
+    nrows = dims->gadgets / ngadgets;
+    if (nrows * ngadgets < dims->gadgets)
+    	nrows++;
+
+    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Gadgets arranged in %u rows\n", nrows));
+
+    /* Now calculate spacing between gadgets */
+    if (ngadgets > 1)
+        spacing = (spacing - dims->gadgetwidth) / (ngadgets - 1);
 
     dri = GetScreenDrawInfo(scr);
 
-    gadgetlist = NULL;
+    /* Now we know how much space our gadgets will occupy. Add the required height to the requester. */
+    gadgetheight += GADGETGADGETSPACING_Y;
+    gadgetsheight = nrows * gadgetheight - GADGETGADGETSPACING_Y;
+    dims->height += gadgetsheight;
 
-    for (currentgadget = 0; gadgetlabels[currentgadget]; currentgadget++)
+    DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Resulting requester height: %u\n", dims->height));
+
+    /* Check if the resulting height fits on the screen. */
+    if (dims->height > scr->Height)
     {
-        WORD           gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
-        struct TagItem gad_tags[] =
-        {
-            {GA_ID          , gadgetid	    	    	    	    },
-            {GA_Previous    , (IPTR)thisgadget                	    },
-            {GA_Left        , xoffset                       	    },
-            {GA_Top         , dims->height -
-             	    	      scr->WBorBottom - dims->fontheight -
-             	    	      OUTERSPACING_Y - BUTTONBORDER_Y * 2   },
-            {GA_Image       , (IPTR)gadgetframe                     },
-            {GA_RelVerify   , TRUE                          	    },
-            {GA_DrawInfo    , (IPTR)dri                     	    },
-            {TAG_DONE                               	    	    }
-        };
-        struct TagItem gad2_tags[] =
-        {
-            {GA_Text        , (IPTR)gadgetlabels[currentgadget]     },
-            {TAG_DONE                                               }
-        };
-        
-        thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
+        DEBUG_BUILDEASYREQUEST(bug("buildeasyreq_makegadgets: Too high (screen %u)\n", scr->Height));
 
-        if (currentgadget == 0)
-            gadgetlist = thisgadget;
+	/* Decrease height of the requester at the expense of textbox */
+        dims->height = scr->Height;
+        dims->textheight = dims->height - scr->WBorTop - dims->fontheight - 1 -
+        		   OUTERSPACING_Y -
+        		   TEXTGADGETSPACING -
+			   gadgetsheight -
+        		   OUTERSPACING_Y -
+        		   scr->WBorBottom;
+    }
 
-        if (!thisgadget)
-        {
-            intrequest_freegadgets(gadgetlist, IntuitionBase);
-            return NULL;
+    gadgetlist = NULL;
+    currentgadget = 0;
+    yoffset = dims->height - scr->WBorBottom - OUTERSPACING_Y - gadgetsheight;
+
+    for (y = 0; y < nrows; y++)
+    {
+    	xoffset = scr->WBorLeft + OUTERSPACING_X;
+    	if (ngadgets == 1)
+            xoffset += (spacing - dims->gadgetwidth) / 2;
+
+    	for (x = 0; x < ngadgets; x++)
+    	{
+            WORD gadgetid = (currentgadget == (dims->gadgets - 1)) ? 0 : currentgadget + 1;
+
+            thisgadget = NewObject(NULL, FRBUTTONCLASS, GA_ID	    , gadgetid,
+            						GA_Previous , thisgadget,
+            						GA_Left     , xoffset,
+            						GA_Top      , yoffset,
+            						GA_Image    , gadgetframe,
+            						GA_RelVerify, TRUE,
+            						GA_DrawInfo ,dri,
+            						TAG_DONE);
+            if (currentgadget == 0)
+            	gadgetlist = thisgadget;
+
+            if (!thisgadget)
+            {
+            	intrequest_freegadgets(gadgetlist, IntuitionBase);
+            	return NULL;
+            }
+
+            SetAttrs(thisgadget, GA_Text, gadgetlabels[currentgadget++], TAG_DONE);
+
+	    if (currentgadget == dims->gadgets)
+	    {
+	    	/*
+	    	 * The last row can be incomplete, if number of gadgets does not
+	    	 * divide on number of rows.
+	    	 */
+	    	break;
+	    }
+
+            xoffset += spacing;
         }
-
-        SetAttrsA(thisgadget, gad2_tags);
-
-        xoffset += spacing;
+        yoffset += gadgetheight;
     }
 
     FreeScreenDrawInfo(scr, dri);
