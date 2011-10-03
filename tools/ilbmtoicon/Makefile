@@ -18,7 +18,7 @@ all : $(ILBMTOICON) $(INFOINFO)
 
 $(ILBMTOICON) : ilbmtoicon.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ -lpng
 	@$(HOST_STRIP) $@
 
 $(INFOINFO) : infoinfo.c
