@@ -24,13 +24,8 @@ const LONG IFFParseBase_version = 39,
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
 {
     LONG i;
+    struct IconBase *IconBase;
 
-     /* Initialize memory pool ----------------------------------------------*/
-    if (!(LB(lh)->ib_MemoryPool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 8194, 8194)))
-    {
-        return FALSE;
-    }
-    
     LB(lh)->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LB(lh)->dsh.h_Data  = lh;
 
@@ -41,23 +36,20 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     }
     
     /* Setup default global settings ---------------------------------------*/
-    LB(lh)->ib_Screen               = NULL; // FIXME: better default
+    LB(lh)->ib_Screen               = NULL;
     LB(lh)->ib_Precision            = PRECISION_ICON;
-    LB(lh)->ib_EmbossRectangle.MinX = 0; // FIXME: better default
-    LB(lh)->ib_EmbossRectangle.MaxX = 0; 
-    LB(lh)->ib_EmbossRectangle.MinY = 0; 
-    LB(lh)->ib_EmbossRectangle.MaxY = 0; 
-    LB(lh)->ib_Frameless            = TRUE;
+    LB(lh)->ib_EmbossRectangle.MinX = -4;
+    LB(lh)->ib_EmbossRectangle.MaxX = 4;
+    LB(lh)->ib_EmbossRectangle.MinY = -4;
+    LB(lh)->ib_EmbossRectangle.MaxY = 4; 
+    LB(lh)->ib_Frameless            = FALSE;
     LB(lh)->ib_IdentifyHook         = NULL;
     LB(lh)->ib_MaxNameLength        = 25;
     LB(lh)->ib_NewIconsSupport      = TRUE;
     LB(lh)->ib_ColorIconSupport     = TRUE;
-    
-    return TRUE;
-}
 
-static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE)
-{
+    IconBase = LB(lh);
+    
     UtilityBase = OpenLibrary("utility.library", 0);
     if (UtilityBase != NULL) {
     	DOSBase = OpenLibrary("dos.library", 0);
@@ -66,37 +58,33 @@ static int GM_UNIQUENAME(Open)(LIBBASETYPEPTR LIBBASE)
     	    if (GfxBase != NULL) {
     	    	IntuitionBase = OpenLibrary("intuition.library", 0);
     	    	if (IntuitionBase != NULL) {
-		    /* Optional libraries */
-		    CyberGfxBase = (APTR)OpenLibrary("cybergraphics.library", CyberGfxBase_version);
-		    IFFParseBase = OpenLibrary("iffparse.library", IFFParseBase_version);
-		    DataTypesBase = OpenLibrary("datatypes.library", 0);
+                    /* Optional libraries */
+                    CyberGfxBase = (APTR)OpenLibrary("cybergraphics.library", CyberGfxBase_version);
+                    IFFParseBase = OpenLibrary("iffparse.library", IFFParseBase_version);
+                    DataTypesBase = OpenLibrary("datatypes.library", 0);
 
 
-    	    	    return TRUE;
+                    return TRUE;
     	    	}
     	    	CloseLibrary(GfxBase);
     	    }
     	    CloseLibrary(DOSBase);
     	}
         CloseLibrary(UtilityBase);
-    }
+    } 
 
     return FALSE;
 }
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    DeletePool(LB(LIBBASE)->ib_MemoryPool);
-   
-    /* Drop dynamic libraries */
-    if (PNGBase) CloseLibrary(PNGBase);
-
     /* Drop optional libraries */
     if (CyberGfxBase)  CloseLibrary(CyberGfxBase);
     if (DataTypesBase) CloseLibrary(DataTypesBase);
     if (IFFParseBase)  CloseLibrary(IFFParseBase);
 
     /* Drop the rest */
+    if (WorkbenchBase) CloseLibrary(WorkbenchBase);
     if (IntuitionBase) CloseLibrary(IntuitionBase);
     if (GfxBase)       CloseLibrary(GfxBase);
     if (DOSBase)       CloseLibrary(DOSBase);
@@ -105,7 +93,5 @@ static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
     return TRUE;
 }
 
-
 ADD2INITLIB(GM_UNIQUENAME(Init), 0);
-ADD2OPENLIB(GM_UNIQUENAME(Open), 0);
 ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0);

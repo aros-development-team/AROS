@@ -40,8 +40,6 @@
 /* Number of entries in the mementrys in the freelists */
 #define FREELIST_MEMLISTENTRIES 10
 
-#define ICONDUPA_JustLoadedFromDisk ICONA_Reserved1
-
 /* This must be a power of 2 */
 #ifdef __mc68000
 #define ICONLIST_HASHSIZE 32	/* Save space on small memory m68k machines */
@@ -63,62 +61,67 @@ struct IconInternalMemList
     struct MemEntry 	iiml_ME[FREELIST_MEMLISTENTRIES];
 };
 
-struct Image35
-{
-    UBYTE *imagedata;
-    UBYTE *palette;
-    UBYTE *mask;
-    WORD  numcolors;
-    WORD  depth;
-    WORD  flags;
-    UBYTE transparentcolor;
-    
-};
-
 #define IMAGE35F_HASTRANSPARENTCOLOR 1
 #define IMAGE35F_HASPALETTE 	     2
 
-struct Icon35
-{
-    struct Image35 img1;
-    struct Image35 img2;
-    WORD    	   width;
-    WORD    	   height;
-    WORD    	   flags;
-    WORD    	   aspect;
-};
-
 #define ICON35F_FRAMELESS   	    1
-
-struct IconPNG
-{
-    APTR   handle;
-    APTR   handle2;
-    UBYTE *filebuffer;
-    ULONG  filebuffersize;
-    UBYTE *img1;
-    UBYTE *img2;
-    WORD   width;
-    WORD   height;    
-};
 
 struct NativeIcon
 {
-    struct MinNode    node;
-    APTR    	      pool;
-    struct DiskObject dobj;
-    ULONG   	      readstruct_state;
-    struct Icon35     icon35;
-    struct IconPNG    iconPNG;
-    APTR    	      iconbase;
-    struct BitMap    *iconbm1;
-    struct BitMap    *iconbm2;
-    struct Screen    *iconscr;
-    struct ViewPort  *iconvp;
-    struct ColorMap  *iconcm;
-    WORD    	      iconbmwidth;
-    WORD    	      iconbmheight;
-    WORD    	      iconbmdepth;    
+    struct MinNode    ni_Node;
+    struct DiskObject ni_DiskObject;
+    struct FreeList   ni_FreeList;
+    ULONG   	      ni_ReadStruct_State;
+
+    /* Source icon data */
+    struct {
+        APTR          Data;       /* Raw IFF or PNG stream */
+        ULONG         Size;
+        struct {
+            LONG         IMAG;      /* Offset of the IMAG chunks */
+            LONG         PNG;       /* Offset of the PNG chunks */
+        } Offset[2];
+    } ni_Extra;
+
+    /* Parameters */
+    BOOL              ni_IsDefault;
+    BOOL              ni_Frameless;
+    UBYTE             ni_Aspect;        /* Source aspect ratio */
+
+    /* The 'laid out' icon. The laid out data will
+     * also be resized for the screen's aspect ratio,
+     * so the nil_Width and nil_Height will probably
+     * be different then the original image on some
+     * screens.
+     */
+    struct Screen    *ni_Screen;      /* Screen for the layout */
+    ULONG             ni_Width;       /* Dimension of the aspect */
+    ULONG             ni_Height;      /* ratio corrected icon */
+
+    /* Pens for drawing the border and frame */
+    UWORD ni_Pens[NUMDRIPENS];        /* Copied from DrawInfo for the screen */
+
+    struct NativeIconImage {
+        /* This data was either allocated during icon load
+         * (and is in the ni_FreeList), or was provided by
+         * the user via IconControlA().
+         */
+        LONG           TransparentColor;
+        ULONG          Pens;        /* Pens allocated for the layout */
+        const struct ColorRegister *Palette;      /*  one entry per pen */
+        const UBYTE         *ImageData;   /* 'ChunkyPixels' image */
+        const ULONG         *ARGB;        /* RGB+Alpha (A 0=transparent) */
+
+        /* Dynamically allocated by LayoutIconA(), and are
+         * _not_ in the ni_FreeList.
+         *
+         * You must call LayoutIconA(icon, NULL, NULL) or
+         * FreeDiskObject() to free this memory.
+         */
+        ULONG         *Pen;         /* Pallete n to Pen m mapping */
+        struct BitMap *BitMap;      /* 'friend' of the Screen */
+        PLANEPTR       BitMask;     /* TransparentColor >= 0 bitmask */
+    } ni_Image[2];
 };
 
 #define RSS_OLDDRAWERDATA_READ  (1 << 0)
@@ -128,7 +131,17 @@ struct NativeIcon
 #define RSS_TOOLWINDOW_READ	(1 << 4)
 #define RSS_TOOLTYPES_READ	(1 << 5)
 
-#define NATIVEICON(icon) ((struct NativeIcon *)((UBYTE *)(icon) - offsetof(struct NativeIcon, dobj)))
+#define NATIVEICON(icon) ((struct NativeIcon *)((UBYTE *)(icon) - offsetof(struct NativeIcon, ni_DiskObject)))
+
+/* Allocate, and save to an icon's freelist
+ */
+#define AllocMemIcon(icon, size, req) \
+    ({ APTR _ret; struct DiskObject *_icon = (icon); \
+       ULONG _size = (ULONG)(size); \
+       ULONG _req = (ULONG)(req); \
+       _ret = AllocMem(_size, _req); \
+       if (_ret) AddFreeList((struct FreeList *)&_icon[1], _ret, _size); \
+       _ret; })
 
 struct IconBase
 {
@@ -138,7 +151,6 @@ struct IconBase
     struct SignalSemaphore  iconlistlock;
     struct MinList          iconlists[ICONLIST_HASHSIZE];
     
-    APTR                    ib_MemoryPool;
     ULONG   	    	    *ib_CRCTable;
     
     /* Global settings -----------------------------------------------------*/
@@ -159,12 +171,10 @@ struct IconBase
     APTR                    ib_IFFParseBase;
     APTR                    ib_IntuitionBase;
     APTR                    ib_UtilityBase;
+    APTR                    ib_WorkbenchBase;
 
     /* Optional external libraries */
     APTR                    ib_CyberGfxBase;
-
-    /* Dynamic external libraries */
-    APTR                    ib_PNGBase;
 };
 
 typedef struct IconBase IconBase_T;
@@ -178,8 +188,8 @@ typedef struct IconBase IconBase_T;
 #define GfxBase		(IconBase->ib_GfxBase)
 #define IFFParseBase	(IconBase->ib_IFFParseBase)
 #define IntuitionBase	(IconBase->ib_IntuitionBase)
-#define PNGBase 	(IconBase->ib_PNGBase)
 #define UtilityBase	(IconBase->ib_UtilityBase)
+#define WorkbenchBase	(IconBase->ib_WorkbenchBase)
 
 /****************************************************************************************/
 
@@ -207,13 +217,17 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook, void *stream, 
 BOOL WriteIconNI(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIconNI(struct NativeIcon *icon, struct IconBase *IconBase);
 
-BOOL ReadIconPNG(struct DiskObject **ret, BPTR file, struct IconBase *IconBase);
+/* Returns an ARGB image.
+ * Set &width == ~0 and &height == ~0 to get the size.
+ * Otherwise, sets the image size of width & height
+ */
+ULONG *ReadMemPNG(struct DiskObject *icon, APTR stream, LONG *width, LONG *height, const CONST_STRPTR *chunknames, APTR *chunkpointer, struct IconBase *IconBase);
+
+BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase);
 BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase);
 VOID FreeIconPNG(struct DiskObject *dobj, struct IconBase *IconBase);
 
 
 #define LB(ib)          ((struct IconBase *) (ib))
-
-#define POOL            (((struct IconBase *) IconBase)->ib_MemoryPool)
 
 #endif /* ICON_INTERN_H */

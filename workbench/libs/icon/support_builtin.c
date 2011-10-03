@@ -198,6 +198,7 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     temp.do_Gadget.Width         = ICON_HEIGHT;
     temp.do_Gadget.Height        = ICON_HEIGHT;
     temp.do_Gadget.Flags        |= GFLG_GADGIMAGE;
+    temp.do_DefaultTool          = (type == WBDISK) ? "SYS:System/DiskCopy" : "";
     // FIXME: probably need to setup some more fields 
    
     img1.Depth     = ICON_DEPTH;
@@ -222,16 +223,8 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
             break;
     }
 
-    dobj = DupDiskObject(&temp,
-    	    ICONDUPA_DuplicateImages, TRUE,
-    	    ICONDUPA_DuplicateImageData, FALSE,
-    	    TAG_END);
-
-    if (dobj == NULL)
-    	return NULL;
-
-    gad = dobj->do_Gadget.GadgetRender;
-    sel = dobj->do_Gadget.SelectRender;
+    gad = temp.do_Gadget.GadgetRender;
+    sel = temp.do_Gadget.SelectRender;
 
     switch (type)
     {
@@ -255,6 +248,11 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
             sel->ImageData     = (UWORD *) tool_data_2;
             break;
     }
+
+    dobj = DupDiskObject(&temp,
+    	    ICONDUPA_DuplicateImages, TRUE,
+    	    ICONDUPA_DuplicateImageData, TRUE,
+    	    TAG_END);
 
     return dobj;
 }

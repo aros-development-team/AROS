@@ -22,6 +22,7 @@
 #define ID_ICON MAKE_ID('I','C','O','N')
 #define ID_FACE MAKE_ID('F','A','C','E')
 #define ID_IMAG MAKE_ID('I','M','A','G')
+#define ID_png  MAKE_ID('p','n','g',' ')
 
 /****************************************************************************************/
 
@@ -48,8 +49,7 @@ struct FileImageChunk
 
 /****************************************************************************************/
 
-#if 1
-LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStreamCmd * cmd)
+static LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStreamCmd * cmd)
 {
     LONG error = 0;
 
@@ -78,7 +78,40 @@ LONG MyDOSStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStr
     
     return error;
 }
-#endif
+
+static LONG MyMemStreamHandler(struct Hook *hook, struct IFFHandle * iff, struct IFFStreamCmd * cmd)
+{
+    LONG error = 0;
+    APTR *buffp = (APTR *)iff->iff_Stream;
+    APTR buff = *buffp;
+
+    switch(cmd->sc_Command)
+    {
+    	case IFFCMD_INIT:
+	case IFFCMD_CLEANUP:
+	    error = 0;
+	    break;
+	    
+	case IFFCMD_READ:
+	    error = 0;
+	    CopyMem(buff, cmd->sc_Buf, cmd->sc_NBytes);
+	    (*buffp) += cmd->sc_NBytes;
+	    break;
+	    
+	case IFFCMD_WRITE:
+	    error = 0;
+	    CopyMem(cmd->sc_Buf, buff, cmd->sc_NBytes);
+	    (*buffp) += cmd->sc_NBytes;
+	    break;
+	    
+	case IFFCMD_SEEK:
+	    (*buffp) += cmd->sc_NBytes;
+	    error = 0;
+	    break;
+    }
+    
+    return error;
+}
 
 /****************************************************************************************/
 
@@ -158,7 +191,7 @@ VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, 
 
 	for(x = 0; x < imagew; x++)
 	{
-	    if (*src++ == transpcolor)
+	    if (*(src++) == transpcolor)
 	    {
 		*dstx &= ~mask;
 	    }
@@ -178,11 +211,12 @@ VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, 
 
 /****************************************************************************************/
 
-STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
+STATIC BOOL ReadImage35(struct DiskObject *icon, struct IFFHandle *iff, struct FileFaceChunk *fc,
     	    	    	struct FileImageChunk *ic, UBYTE **imgdataptr,
-			UBYTE **imgpalptr, UBYTE **imgmaskptr, struct IconBase *IconBase)
+			struct ColorRegister **imgpalptr, struct IconBase *IconBase)
 {
-    UBYTE *src, *mem, *imgdata, *imgpal = NULL, *imgmask = NULL;
+    UBYTE *src, *mem, *imgdata = NULL;
+    struct ColorRegister *imgpal = NULL;
     LONG size, imgsize, palsize, imagew, imageh, numcols;
 
     imagew = fc->Width + 1;
@@ -199,35 +233,32 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     	palsize = 0;
     }
 
+    D(bug("[%s] Image size is %dx%d, %d bytes\n", __func__, imagew, imageh, imgsize));
+    D(bug("[%s] Palette size is %d colors, %d bytes\n", __func__, numcols, palsize));
+
     size = imgsize + palsize;
         
-    src = mem = AllocVec(size, MEMF_ANY);
+    src = mem = AllocMemIcon(icon, size, MEMF_PUBLIC);
     if (!src) return FALSE;
     
     if (ReadChunkBytes(iff, src, size) != size)
     {
-    	FreeVec(src);
 	return FALSE;
     }
     
-    size = imagew * imageh;
-    
     if (ic->Flags & IMAGE35F_HASPALETTE)
     {
-    	size += numcols * sizeof(struct ColorRegister);
+        if (numcols < 1 || numcols > 256)
+            return FALSE;
+    
+    	size = numcols * sizeof(struct ColorRegister);
+    	imgpal = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    	if (!imgpal) goto fail;
     }
 
-    if (ic->Flags & IMAGE35F_HASTRANSPARENTCOLOR)
-    {
-    	size += RASSIZE(imagew, imageh);
-    }
-    
-    imgdata = AllocVec(size, MEMF_ANY);
-    if (!imgdata)
-    {
-    	FreeVec(src);
-    	return FALSE;
-    }
+    size = imagew * imageh;
+    imgdata = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    if (!imgdata) goto fail;
     
     if (ic->ImageFormat == 0)
     {
@@ -237,17 +268,15 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     {
     	Decode35(src, imgdata, imgsize, ic->Depth, imagew * imageh);
     }
+    src += imgsize;
 
     if (ic->Flags & IMAGE35F_HASPALETTE)
     {
     	struct ColorRegister *dst;
 	
-    	src += imgsize;
-	
-	imgpal = imgdata + imagew * imageh;
-	
-	dst = (struct ColorRegister *)imgpal;
-	
+	dst = imgpal;
+
+        D(bug("[%s] PaletteFormat %d, src %p\n", __func__, ic->PaletteFormat, src));
 	if (ic->PaletteFormat == 0)
 	{
 	    ULONG i, r, g, b;
@@ -266,14 +295,23 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 	}
 	else
 	{
-	    Decode35(src, imgpal, palsize, 8, 3 * numcols);
+	    CONST_STRPTR err;
+	    
+	    err = Decode35(src, (UBYTE *)imgpal, palsize, 8, 3 * numcols);
+	    if (err) {
+	        D(bug("[%s] Palette decode error: %s\n", __func__, err));
+	        imgpal = NULL;
+            }
+
 	    	    
-	    if (sizeof(struct ColorRegister) != 3)
+	    if (imgpal && sizeof(struct ColorRegister) != 3)
 	    {
 	    	struct ColorRegister 	*dst;
 	    	UWORD 	    	    	 i, r, g, b;
+
+	    	D(bug("[%s] Realigning ColorRegister\n", __func__));
 	
-	    	src = imgpal + 3 * numcols;
+	    	src = (APTR)imgpal + 3 * numcols;
 	    	dst = (struct ColorRegister *)(imgpal + sizeof(struct ColorRegister) * numcols);
 	    
 		for (i = 0; i < numcols; i++)
@@ -293,24 +331,13 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 
     } /* if (ic->Flags & IMAGE35F_HASPALETTE) */
 
-    if (ic->Flags & IMAGE35F_HASTRANSPARENTCOLOR)
-    {
-    	imgmask = imgdata + imagew * imageh;
-	if (ic->Flags & IMAGE35F_HASPALETTE)
-	{
-	    imgmask += numcols * sizeof(struct ColorRegister);
-	}
-	
-	MakeMask35(imgdata, imgmask,ic->TransparentColor, imagew, imageh);
-    }
-    
     *imgdataptr = imgdata;
     *imgpalptr  = imgpal;
-    *imgmaskptr = imgmask;
-    
-    FreeVec(mem);
     
     return TRUE;
+
+fail:
+    return FALSE;
 }
 
 /****************************************************************************************/
@@ -321,33 +348,62 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     static const LONG const stopchunks[] =
     {
     	ID_ICON, ID_FACE,
-	ID_ICON, ID_IMAG
+	ID_ICON, ID_IMAG,
+	ID_ICON, ID_png,
     };
     
     struct IFFHandle 	    *iff;
     struct Hook     	     iffhook;
     struct FileFaceChunk     fc;
     struct FileImageChunk    ic1, ic2;
-    UBYTE   	    	    *img1data = NULL, *img2data = NULL,
-    	    	    	    *img1pal = NULL, *img2pal = NULL,
-			    *img1mask = NULL, *img2mask = NULL;
+    UBYTE   	    	    *img1data = NULL, *img2data = NULL;
+    struct ColorRegister    *img1pal = NULL, *img2pal = NULL;
     BOOL  have_face = FALSE, have_imag1 = FALSE, have_imag2 = FALSE;
+    int have_png = 0;
+    LONG here, extrasize;
+    APTR data;
     
-    D(bug("ReadIcon35\n"));
+    D(bug("ReadIcon35, stream %p\n", stream));
+
+    here = Seek((BPTR)stream, 0, OFFSET_CURRENT);
+    D(bug("[%s] Extra data starts at %d\n", __func__, here));
+    Seek((BPTR)stream, 0, OFFSET_END);
+    extrasize = Seek((BPTR)stream, 0, OFFSET_CURRENT);
+    D(bug("[%s] Extra data ends at %d\n", __func__, extrasize));
+    extrasize -= here;
+    Seek((BPTR)stream, here, OFFSET_BEGINNING);
+    D(bug("[%s]   .. %d bytes\n", __func__, extrasize));
+
+    /* No extra data? That's fine. */
+    if (extrasize <= 0) {
+        D(bug("[%s] No extra data\n", __func__));
+        return TRUE;
+    }
 
     if (IFFParseBase == NULL)
     	return FALSE;
     
-    
+    data = AllocMemIcon(&icon->ni_DiskObject, extrasize, MEMF_PUBLIC);
+    if (data == NULL)
+        return FALSE;
+
+    if (Read((BPTR)stream, data, extrasize) != extrasize) {
+        D(bug("[%s] Can't read extra data\n", __func__));
+        return FALSE;
+    }
+
+    icon->ni_Extra.Data = data;
+    icon->ni_Extra.Size = extrasize;
+
     iffhook.h_Entry    = (HOOKFUNC)HookEntry;
-    iffhook.h_SubEntry = (HOOKFUNC)MyDOSStreamHandler;
+    iffhook.h_SubEntry = (HOOKFUNC)MyMemStreamHandler;
     iffhook.h_Data     = (APTR)IconBase;
-    
+   
     if ((iff = AllocIFF()))
     {
     	D(bug("ReadIcon35. AllocIFF okay\n"));
  
-    	iff->iff_Stream = (IPTR)stream;
+    	iff->iff_Stream = (IPTR)&data;
 	
 	InitIFF(iff, IFFF_RSEEK, &iffhook);
 	
@@ -355,7 +411,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	{
     	    D(bug("ReadIcon35. OpenIFF okay\n"));
 	    
-	    if (!StopChunks(iff, stopchunks, 2))
+	    if (!StopChunks(iff, stopchunks, 3))
 	    {
 	    	LONG error;
 		
@@ -383,21 +439,29 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 			{
 			    if (have_imag1)
 			    {
-			    	if (ReadImage35(iff, &fc, &ic2, &img2data, &img2pal, &img2mask, IconBase))
+			    	if (ReadImage35(&icon->ni_DiskObject, iff, &fc, &ic2, &img2data, &img2pal, IconBase))
 				{
 			    	    have_imag2 = TRUE;
 				}
 			    }
 			    else
 			    {
-			    	if (ReadImage35(iff, &fc, &ic1, &img1data, &img1pal, &img1mask, IconBase))
+			    	if (ReadImage35(&icon->ni_DiskObject, iff, &fc, &ic1, &img1data, &img1pal, IconBase))
 				{
 			    	    have_imag1 = TRUE;
 				}
 			    }
 			    
 			}
-			
+                    } else if (cn->cn_ID == ID_png) {
+                        if (have_png < 2) {
+                            LONG here = data - icon->ni_Extra.Data;
+                            D(bug("[%s] Found PNG image %d\n", __func__, have_png));
+                            icon->ni_Extra.Offset[have_png].PNG = here;
+                        } else {
+                            D(bug("[%s] Ignoring PNG image %d\n", __func__, have_png));
+                        }
+                        have_png++;
 		    }
 		    
 		    
@@ -410,39 +474,39 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	FreeIFF(iff);
 	
     } /* if ((iff = AllocIFF())) */
-    
+
     if (have_imag1)
     {
-    	icon->icon35.width  = fc.Width + 1;
-	icon->icon35.height = fc.Height + 1;
-	icon->icon35.flags  = fc.Flags;
-	icon->icon35.aspect = fc.Aspect;
+    	icon->ni_Width  = fc.Width + 1;
+	icon->ni_Height = fc.Height + 1;
+	//icon->icon35.flags  = fc.Flags;
+	icon->ni_Aspect = fc.Aspect;
 	
-	icon->icon35.img1.imagedata 	    = img1data;
-	icon->icon35.img1.palette  	    = img1pal;
-	icon->icon35.img1.mask	    	    = img1mask;
-	icon->icon35.img1.numcolors 	    = ic1.NumColors + 1;
-	icon->icon35.img1.depth     	    = ic1.Depth;
-	icon->icon35.img1.flags     	    = ic1.Flags;
-	icon->icon35.img1.transparentcolor  = ic1.TransparentColor;
+	icon->ni_Image[0].ImageData 	    = img1data;
+	icon->ni_Image[0].Palette  	    = img1pal;
+	icon->ni_Image[0].Pens  	    = ic1.NumColors + 1;
+	icon->ni_Image[0].TransparentColor  = ic1.TransparentColor;
+
+	if (icon->ni_Image[0].Pens < 1 || icon->ni_Image[0].Pens > 256)
+	    return FALSE;
 	
 	if (have_imag2)
 	{
-	    icon->icon35.img2.imagedata     	= img2data;
-	    icon->icon35.img2.mask  	    	= img2mask;
-	    icon->icon35.img2.depth 	    	= ic2.Depth;
-	    icon->icon35.img2.flags 	    	= ic2.Flags;
-	    icon->icon35.img2.transparentcolor	= ic2.TransparentColor;
+            icon->ni_Image[1].ImageData         = img2data;
+            icon->ni_Image[1].TransparentColor  = ic2.TransparentColor;
 	    
 	    if (img2pal)
 	    {
-	    	icon->icon35.img2.palette   = img2pal;
-		icon->icon35.img2.numcolors = ic2.NumColors + 1;		
+                icon->ni_Image[1].Palette       = img2pal;
+                icon->ni_Image[1].Pens          = ic2.NumColors + 1;
+                if (icon->ni_Image[1].Pens < 1 || icon->ni_Image[0].Pens > 256)
+                    return FALSE;
+	
 	    }
 	    else
 	    {
-	    	icon->icon35.img2.palette   = icon->icon35.img1.palette;
-		icon->icon35.img2.numcolors = icon->icon35.img1.numcolors;
+                icon->ni_Image[1].Palette       = img1pal;
+                icon->ni_Image[1].Pens          = ic1.NumColors + 1;
 	    }
 	}
     }
@@ -456,14 +520,14 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
 /****************************************************************************************/
 
-static UBYTE *Encode35(ULONG depth, UBYTE *dtype, LONG *dsize, ULONG size, UBYTE *src)
+static UBYTE *Encode35(struct DiskObject *icon, ULONG depth, UBYTE *dtype, LONG *dsize, ULONG size, CONST UBYTE *src, APTR IconBase)
 {
     int   i, j, k;
     ULONG bitbuf, numbits;
     UBYTE *buf;
     LONG  ressize, numcopy, numequal;
 
-    buf = AllocVec(size * 2, MEMF_ANY);
+    buf = AllocMemIcon(icon, size * 2, MEMF_PUBLIC);
     if (!buf) return NULL;
 
     numcopy = 0;
@@ -549,43 +613,40 @@ static UBYTE *Encode35(ULONG depth, UBYTE *dtype, LONG *dsize, ULONG size, UBYTE
 
 /****************************************************************************************/
 
-static BOOL WriteImage35(struct IFFHandle *iff, struct Icon35 *icon35,
-    	    	    	 struct Image35 *img, struct IconBase *IconBase)
+static BOOL WriteImage35(struct IFFHandle *iff, struct NativeIcon *icon,
+    	    	    	 struct NativeIconImage *img, struct IconBase *IconBase)
 {
     struct FileImageChunk   ic;
     UBYTE   	    	    *imagedata, *pal = NULL;
     LONG    	    	    imagesize, palsize = 0;
     UBYTE   	    	    imagepacked, palpacked = 0;
-    UBYTE   	    	    imageflags;
+    UBYTE   	    	    imageflags = 0;
     BOOL    	    	    ok = FALSE;
 
-    imageflags = img->flags;
-    
-    if (img->palette && (img->flags & IMAGE35F_HASPALETTE))
+    if (img->Palette)
     {
-    	pal = Encode35(8, &palpacked, &palsize, img->numcolors * 3, img->palette);
+    	pal = Encode35(&icon->ni_DiskObject, 8, &palpacked, &palsize, img->Pens * 3, (APTR)img->Palette, IconBase);
 	if (!pal) return FALSE;
-    }
-    else
-    {
-    	imageflags &= ~IMAGE35F_HASPALETTE;
+    	imageflags |= IMAGE35F_HASPALETTE;
     }
     
-    imagedata = Encode35(img->depth, &imagepacked, &imagesize,
-    	    	    	 icon35->width * icon35->height, img->imagedata);
+    if (img->TransparentColor >= 0)
+        imageflags |= IMAGE35F_HASTRANSPARENTCOLOR;
+    
+    imagedata = Encode35(&icon->ni_DiskObject, 8, &imagepacked, &imagesize,
+    	    	    	 icon->ni_Width * icon->ni_Height, img->ImageData, IconBase);
 		    
     if (!imagedata)
     {
-    	if (pal) FreeVec(pal);
 	return FALSE;
     }
     
-    ic.TransparentColor     = img->transparentcolor;
-    ic.NumColors    	    = img->numcolors - 1;
+    ic.TransparentColor     = (imageflags & IMAGE35F_HASTRANSPARENTCOLOR) ? 255 : img->TransparentColor;
+    ic.NumColors    	    = img->Pens - 1;
     ic.Flags	    	    = imageflags;
     ic.ImageFormat  	    = imagepacked;
     ic.PaletteFormat	    = palpacked;
-    ic.Depth	    	    = img->depth;
+    ic.Depth	    	    = 8;
     ic.NumImageBytes[0]	    = (imagesize - 1) / 256;
     ic.NumImageBytes[1]     = (imagesize - 1) & 255;
     ic.NumPaletteBytes[0]   = (palsize - 1) / 256;
@@ -621,9 +682,6 @@ static BOOL WriteImage35(struct IFFHandle *iff, struct Icon35 *icon35,
 	
     } /* if (!PushChunk(iff, ID_ICON, ID_IMAG, IFFSIZE_UNKNOWN)) */
     
-    FreeVec(imagedata);
-    if (pal) FreeVec(pal);
-    
     return ok;
 }
 
@@ -642,12 +700,12 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     if (IFFParseBase == NULL)
     	return FALSE;
     
-    if (!GetNativeIcon(&icon->dobj, IconBase))
+    if (!GetNativeIcon(&icon->ni_DiskObject, IconBase))
     {
     	return TRUE;
     }
     
-    if (icon->icon35.img1.imagedata == NULL)
+    if (icon->ni_Image[0].ImageData == NULL)
     {
     	return TRUE;
     }
@@ -678,20 +736,19 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
    	    	
 		    D(bug("WriteIcon35. PushChunk(ID_ICON, ID_FACE) okay\n"));
 		    
-		    fc.Width  = icon->icon35.width - 1;
-		    fc.Height = icon->icon35.height - 1;
-		    fc.Flags  = icon->icon35.flags;
-		    fc.Aspect = icon->icon35.aspect;
+		    fc.Width  = icon->ni_Width - 1;
+		    fc.Height = icon->ni_Height - 1;
+		    fc.Flags  = (icon->ni_Frameless) ? ICON35F_FRAMELESS : 0;
+		    fc.Aspect = icon->ni_Aspect;
 		    
-		    cmapentries = icon->icon35.img1.numcolors;
+		    cmapentries = icon->ni_Image[0].Pens;
 		    
-		    if (icon->icon35.img2.imagedata &&
-		        icon->icon35.img2.palette &&
-			(icon->icon35.img2.flags & IMAGE35F_HASPALETTE))
+		    if (icon->ni_Image[1].ImageData &&
+		        icon->ni_Image[1].Palette)
 		    {
-		    	if (icon->icon35.img2.numcolors > cmapentries)
+		    	if (icon->ni_Image[1].Pens > cmapentries)
 			{
-			    cmapentries = icon->icon35.img2.numcolors;
+			    cmapentries = icon->ni_Image[1].Pens;
 			}
 		    }
 		    
@@ -706,26 +763,26 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 			
 			PopChunk(iff);
 			
-			if (WriteImage35(iff, &icon->icon35, &icon->icon35.img1, IconBase))
+			if (WriteImage35(iff, icon, &icon->ni_Image[0], IconBase))
 			{
 		    	    D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
 			    
-			    if (icon->icon35.img2.imagedata)
+			    if (icon->ni_Image[1].ImageData)
 			    {
-			    	if (WriteImage35(iff, &icon->icon35, &icon->icon35.img2, IconBase))
+			    	if (WriteImage35(iff, icon, &icon->ni_Image[1], IconBase))
 				{
 		    	    	    D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
 				    
 				    ok = TRUE;
 				}
 				
-			    } /* if (icon->icon35.img2.imagedata) */
+			    } /* if (icon->ni_Image[1].ImageData) */
 			    else
 			    {
 			    	ok = TRUE;
 			    }
 			    
-			} /* if (WriteImage35(iff, &icon->icon35, &icon->icon35.img1, IconBase)) */
+			} /* if (WriteImage35(iff, &icon, &icon->ni_Image[0], IconBase)) */
 			
 		    } /* if (WriteChunkBytes(iff, &fc, sizeof(fc)) == sizeof(fc)) */
 		    else
@@ -750,18 +807,6 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase)
 {
-    if (IFFParseBase == NULL)
-    	return;
-    
-    if (icon->icon35.img1.imagedata) FreeVec(icon->icon35.img1.imagedata);
-    if (icon->icon35.img2.imagedata) FreeVec(icon->icon35.img2.imagedata);
-    
-    icon->icon35.img1.imagedata = NULL;
-    icon->icon35.img2.imagedata = NULL;
-    
-    /* We don't free img.palette/img.mask because imagedata/palette/mask
-       were allocated together in one AllocVec() call */
-    
 }
 
 /****************************************************************************************/

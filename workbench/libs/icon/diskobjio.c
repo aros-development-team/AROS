@@ -33,12 +33,6 @@
 
 /****************************************************************************************/
 
-AROS_UFP3S(ULONG, ProcessClearMem,
-    AROS_UFPA(struct Hook *,   hook, A0),
-    AROS_UFPA(struct Hook *,   streamhook, A2),
-    AROS_UFPA(struct SDData *, data, A1)
-);
-
 AROS_UFP3S(ULONG, ProcessCheckFileType,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
@@ -105,10 +99,7 @@ AROS_UFP3S(ULONG, ProcessIconNI,
     AROS_UFPA(struct SDData *, data, A1)
 );
 
-static const struct Hook ProcessClearMemHook =
-{
-    { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessClearMem), NULL, NULL
-},
+const struct Hook
 ProcessCheckFileTypeHook =
 {
     { NULL, NULL}, (HOOKFUNC)AROS_ASMSYMNAME(ProcessCheckFileType), NULL, NULL
@@ -234,7 +225,6 @@ static const IPTR ImageDesc[] =
 const IPTR IconDesc[] =
 {
     sizeof (struct NativeIcon),
-    SDM_SPECIAL(0,&ProcessClearMemHook),
     SDM_STRUCT(0,DiskObjectDesc),
     SDM_SPECIAL(0,&ProcessCheckFileTypeHook),
     SDM_SPECIAL(0,&ProcessOldDrawerDataHook),
@@ -346,29 +336,6 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
 
 /****************************************************************************************/
 
-AROS_UFH3S(ULONG, ProcessClearMem,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
-)
-{
-    AROS_USERFUNC_INIT
-    
-    if (data->sdd_Mode == SDV_SPECIALMODE_READ)
-    {
-    	memset(data->sdd_Dest, 0, sizeof(struct NativeIcon));
-	
-	NATIVEICON(DO(data->sdd_Dest))->iconbase = (struct IconBase *)streamhook->h_Data;
-    }
-    
-    return TRUE;
-    
-    AROS_USERFUNC_EXIT
-    
-}
-
-/****************************************************************************************/
-
 AROS_UFH3S(ULONG, ProcessCheckFileType,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
@@ -376,10 +343,12 @@ AROS_UFH3S(ULONG, ProcessCheckFileType,
 )
 {
     AROS_USERFUNC_INIT
+
+    struct DiskObject *icon = DO(data->sdd_Dest);
     
     if (data->sdd_Mode == SDV_SPECIALMODE_READ)
     {
-    	if ((DO(data->sdd_Dest)->do_Magic != WB_DISKMAGIC))
+    	if ((icon->do_Magic != WB_DISKMAGIC))
 	{
 	    return FALSE;
 	}
@@ -400,46 +369,49 @@ AROS_UFH3S(ULONG, ProcessOldDrawerData,
 )
 {
     AROS_USERFUNC_INIT
+
+    APTR ptr;
+    struct IconBase *IconBase = streamhook->h_Data;
+    struct DiskObject *icon = DO(data->sdd_Dest);
+
 #if 0
 kprintf ("ProcessOldDrawerData\n");
 #endif
 
-/*    if (DO(data->sdd_Dest)->do_Type == WBDRAWER)
+/*    if (icon->do_Type == WBDRAWER)
 */
     /* sba: all icons which have do_DrawerData set actually contain
      * also the drawer data */
 
-    if (DO(data->sdd_Dest)->do_DrawerData)
+    if (icon->do_DrawerData)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
+	    ptr = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC);
+	    if (ptr == NULL)
+	        return FALSE;
+
 	    if (ReadStruct (streamhook
-		, (APTR *)&(DO(data->sdd_Dest)->do_DrawerData)
+		, (APTR *)&ptr
 		, data->sdd_Stream
 		, OldDrawerDataDesc
 	    	))
 	    {
-    	    	NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_OLDDRAWERDATA_READ;	    	
+	        icon->do_DrawerData = ptr;
+    	    	NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_OLDDRAWERDATA_READ;	    	
     	    	return TRUE;
 	    }
 	    return FALSE;
 
 	case SDV_SPECIALMODE_WRITE:
 	    return WriteStruct (streamhook
-		, DO(data->sdd_Dest)->do_DrawerData
+		, icon->do_DrawerData
 		, data->sdd_Stream
 		, OldDrawerDataDesc
 	    );
-
-	case SDV_SPECIALMODE_FREE:
-	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_OLDDRAWERDATA_READ)
-	    {
-		FreeStruct (DO(data->sdd_Dest)->do_DrawerData
-		    , OldDrawerDataDesc
-		);
-	    }
-	    break;
+        case SDV_SPECIALMODE_FREE:
+	    return TRUE;
 	}
     }
 
@@ -450,14 +422,19 @@ kprintf ("ProcessOldDrawerData\n");
 
 /****************************************************************************************/
 
-static struct Image * ReadImage (struct Hook * streamhook, BPTR file)
+static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamhook, BPTR file)
 {
     struct Image * image;
     ULONG	   size;
     ULONG	   t;
+    struct IconBase *IconBase = streamhook->h_Data;
+
+    image = AllocMemIcon(icon, sizeof(struct Image), MEMF_PUBLIC | MEMF_CLEAR);
+    if (!image)
+        return NULL;
 
     if (!ReadStruct (streamhook, (APTR *)&image, (APTR)file, ImageDesc))
-	return NULL;
+        return NULL;
 
     /* Size of imagedata in bytes */
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
@@ -473,11 +450,8 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 
     if (size)
     {
-	if (!(image->ImageData = AllocMem (size, MEMF_CHIP)) )
-	{
-	    FreeStruct (image, ImageDesc);
+	if (!(image->ImageData = AllocMemIcon(icon, size, MEMF_PUBLIC | MEMF_CHIP)) )
 	    return NULL;
-	}
 
 	size >>= 1;
 
@@ -493,7 +467,7 @@ kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
 
 	if (t != size)
 	{
-	    FreeStruct (image, ImageDesc);
+	    D(bug("[%s] Strange. Short read at %d, expected %d\n", t, size));
 	    return NULL;
 	}
     }
@@ -537,23 +511,6 @@ kprintf ("WriteImage: %dx%dx%d (%d bytes)\n"
 
 /****************************************************************************************/
 
-static void FreeImage (struct Image * image)
-{
-    ULONG size;
-
-    /* Get size in bytes */
-    size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
-
-    if (size)
-    {
-	FreeMem (image->ImageData, size);
-    }
-    
-    FreeStruct (image, ImageDesc);
-} /* FreeImage */
-
-/****************************************************************************************/
-
 AROS_UFH3S(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
@@ -563,35 +520,36 @@ AROS_UFH3S(ULONG, ProcessGadgetRender,
     AROS_USERFUNC_INIT
 
     struct Image * image;
+    struct DiskObject *icon = DO(data->sdd_Dest);
 
 #if 0
 kprintf ("ProcessGadgetRender\n");
 #endif
 
-    switch (data->sdd_Mode)
+    if (icon->do_Gadget.GadgetRender || (icon->do_Gadget.Flags & GFLG_GADGIMAGE))
     {
-    case SDV_SPECIALMODE_READ:
-	image = ReadImage (streamhook, (BPTR)data->sdd_Stream);
+        switch (data->sdd_Mode)
+        {
+        case SDV_SPECIALMODE_READ:
+            image = ReadImage (icon, streamhook, (BPTR)data->sdd_Stream);
 
-	if (!image)
-	    return FALSE;
+            if (!image)
+                return FALSE;
 
-	DO(data->sdd_Dest)->do_Gadget.GadgetRender = image;
-    	NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_GADGETIMAGE_READ;
-	break;
+            icon->do_Gadget.GadgetRender = image;
+            NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_GADGETIMAGE_READ;
+            break;
 
-    case SDV_SPECIALMODE_WRITE:
-	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
+        case SDV_SPECIALMODE_WRITE:
+            image = icon->do_Gadget.GadgetRender;
+            if (!image)
+                return TRUE;
 
-	return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
+            return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
 
-    case SDV_SPECIALMODE_FREE:
-	image = DO(data->sdd_Dest)->do_Gadget.GadgetRender;
-    	if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_GADGETIMAGE_READ)
-	{
-	    FreeImage (image);
-    	}
-	break;
+        case SDV_SPECIALMODE_FREE:
+            break;
+        }
     }
 
     return TRUE;
@@ -610,6 +568,7 @@ AROS_UFH3S(ULONG, ProcessSelectRender,
     AROS_USERFUNC_INIT
 
     struct Image * image;
+    struct DiskObject *icon = DO(data->sdd_Dest);
 
 #if 0
 kprintf ("ProcessSelectRender\n");
@@ -617,32 +576,26 @@ kprintf ("ProcessSelectRender\n");
 
     /* Not all icon with second image seem to have GFLG_GADGHIMAGE set */
     
-    // if (DO(data->sdd_Dest)->do_Gadget.Flags & GFLG_GADGHIMAGE)    
-    if (DO(data->sdd_Dest)->do_Gadget.SelectRender)
+    if (icon->do_Gadget.SelectRender || (icon->do_Gadget.Flags & GFLG_GADGHIMAGE))
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    image = ReadImage (streamhook, (BPTR)data->sdd_Stream);
+	    image = ReadImage (icon, streamhook, (BPTR)data->sdd_Stream);
 
 	    if (!image)
 		return FALSE;
 
-	    DO(data->sdd_Dest)->do_Gadget.SelectRender = image;
-    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_SELECTIMAGE_READ;
+	    icon->do_Gadget.SelectRender = image;
+    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_SELECTIMAGE_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE:
-	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
+	    image = icon->do_Gadget.SelectRender;
 
 	    return WriteImage (streamhook, (BPTR)data->sdd_Stream, image);
 
 	case SDV_SPECIALMODE_FREE:
-	    image = DO(data->sdd_Dest)->do_Gadget.SelectRender;
-    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_SELECTIMAGE_READ)
-	    {
-	    	FreeImage (image);
-    	    }
 	    break;
 	}
     }
@@ -663,12 +616,11 @@ AROS_UFH3S(ULONG, ProcessFlagPtr,
     AROS_USERFUNC_INIT
 
     LONG ptr;
-    struct IconBase *IconBase;
+    struct IconBase *IconBase = streamhook->h_Data;
 
     switch (data->sdd_Mode)
     {
     case SDV_SPECIALMODE_READ:
-    	IconBase = streamhook->h_Data;
 	if (FRead ((BPTR)data->sdd_Stream, &ptr, 1, 4) != 4)
 	    return FALSE;
 
@@ -704,7 +656,7 @@ kprintf ("ProcessFlagPtr: %08lx %ld\n", ptr);
 
 /****************************************************************************************/
 
-static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
+static STRPTR ReadIconString (struct DiskObject *icon, struct Hook * streamhook, BPTR file)
 {
     ULONG  len;
     STRPTR str;
@@ -714,14 +666,13 @@ static STRPTR ReadIconString (struct Hook * streamhook, BPTR file)
     if (!ReadLong (streamhook, &len, (APTR)file))
 	return NULL;
 
-    str = AllocVec (len, MEMF_ANY);
+    str = AllocMemIcon(icon, len, MEMF_PUBLIC);
 
     if (!str)
 	return NULL;
 
     if (FRead ((BPTR)file, str, len, 1) == EOF)
     {
-	FreeVec (str);
 	return NULL;
     }
 
@@ -759,38 +710,34 @@ AROS_UFH3S(ULONG, ProcessDefaultTool,
     AROS_USERFUNC_INIT
 
     STRPTR str;
+    struct DiskObject *icon = DO(data->sdd_Dest);
 
 #if 0
 kprintf ("ProcessDefaultTool\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_DefaultTool)
+    if (icon->do_DefaultTool)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (streamhook, (BPTR) data->sdd_Stream);
+	    str = ReadIconString (icon, streamhook, (BPTR) data->sdd_Stream);
 
 	    if (!str)
 		return FALSE;
 
-	    DO(data->sdd_Dest)->do_DefaultTool = str;
-    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_DEFAULTTOOL_READ;
+	    icon->do_DefaultTool = str;
+    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_DEFAULTTOOL_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
-	    str = DO(data->sdd_Dest)->do_DefaultTool;
+	    str = icon->do_DefaultTool;
 
 	    WriteIconString (streamhook, (BPTR) data->sdd_Stream, str);
 
 	    break; }
 
 	case SDV_SPECIALMODE_FREE:
-	    str = DO(data->sdd_Dest)->do_DefaultTool;
-    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_DEFAULTTOOL_READ)
-	    {
-	    	FreeVec (str);
-    	    }
 	    break;
 	}
     }
@@ -811,38 +758,34 @@ AROS_UFH3S(ULONG, ProcessToolWindow,
     AROS_USERFUNC_INIT
 
     STRPTR str;
+    struct DiskObject *icon = DO(data->sdd_Dest);
 
 #if 0
 kprintf ("ProcessToolWindow\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_ToolWindow)
+    if (icon->do_ToolWindow)
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    str = ReadIconString (streamhook, (BPTR)data->sdd_Stream);
+	    str = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
 
 	    if (!str)
 		return FALSE;
 
-	    DO(data->sdd_Dest)->do_ToolWindow = str;
-    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_TOOLWINDOW_READ;
+	    icon->do_ToolWindow = str;
+    	    NATIVEICON(data->sdd_Dest)->ni_ReadStruct_State |= RSS_TOOLWINDOW_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
-	    str = DO(data->sdd_Dest)->do_ToolWindow;
+	    str = icon->do_ToolWindow;
 
 	    WriteIconString (streamhook, (BPTR)data->sdd_Stream, str);
 
 	    break; }
 
 	case SDV_SPECIALMODE_FREE:
-	    str = DO(data->sdd_Dest)->do_ToolWindow;
-    	    if (NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_TOOLWINDOW_READ)
-	    {
-	    	FreeVec (str);
-    	    }
 	    break;
 	}
     }
@@ -862,11 +805,14 @@ AROS_UFH3S(ULONG, ProcessToolTypes,
 {
     AROS_USERFUNC_INIT
 
+    struct IconBase *IconBase = streamhook->h_Data;
+    struct DiskObject *icon = DO(data->sdd_Dest);
+
 #if 0
 kprintf ("ProcessToolTypes\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_ToolTypes)
+    if (icon->do_ToolTypes)
     {
 	ULONG	 t;
 	ULONG	 count;
@@ -884,11 +830,11 @@ kprintf ("ProcessToolTypes\n");
 
     	    if ((LONG)count < 0)
 	    {
-	    	DO(data->sdd_Dest)->do_ToolTypes = NULL;
+	    	icon->do_ToolTypes = NULL;
 	    	return TRUE;
 	    }
 
-	    ttarray = AllocVec ((count+1)*sizeof(STRPTR), MEMF_ANY);
+	    ttarray = AllocMemIcon(icon, (count+1)*sizeof(STRPTR), MEMF_PUBLIC);
 	    if (!ttarray) return FALSE;
 
 #if 0
@@ -897,36 +843,25 @@ kprintf ("Read %d tooltypes (tt=%p)\n", count, ttarray);
 
 	    for (t=0; t<count; t++)
 	    {
-		ttarray[t] = ReadIconString (streamhook, (BPTR)data->sdd_Stream);
+		ttarray[t] = ReadIconString (icon, streamhook, (BPTR)data->sdd_Stream);
 #if 0
 kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 #endif
 
 		if (!ttarray[t])
-		{
-		    ULONG i;
-
-		    for (i=0; i<t; i++)
-		    {
-			FreeVec(ttarray[t]);
-		    }
-
-		    FreeVec (ttarray);
-
 		    return FALSE;
-		}
 	    }
 
 	    ttarray[t] = NULL;
 
-	    DO(data->sdd_Dest)->do_ToolTypes = (STRPTR *)ttarray;
-    	    NATIVEICON(data->sdd_Dest)->readstruct_state |= RSS_TOOLTYPES_READ;
+	    icon->do_ToolTypes = (STRPTR *)ttarray;
+    	    NATIVEICON(icon)->ni_ReadStruct_State |= RSS_TOOLTYPES_READ;
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: {
 	    ULONG size;
 
-	    ttarray = (STRPTR *)DO(data->sdd_Dest)->do_ToolTypes;
+	    ttarray = (STRPTR *)icon->do_ToolTypes;
 
 	    for (count=0; ttarray[count]; count++);
 
@@ -951,26 +886,6 @@ kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
 	    break; }
 
 	case SDV_SPECIALMODE_FREE:
-	    ttarray = (STRPTR *)DO(data->sdd_Dest)->do_ToolTypes;
-
-    	    if (!(NATIVEICON(data->sdd_Dest)->readstruct_state & RSS_TOOLTYPES_READ))
-	    {
-	    	break;
-	    }
-		
-#if 0
-kprintf ("Free tooltypes (%p)\n", count, ttarray);
-#endif
-
-	    for (t=0; ttarray[t]; t++)
-	    {
-#if 0
-kprintf ("String %d=%p=%s\n", t, ttarray[t], ttarray[t]);
-#endif
-		FreeVec(ttarray[t]);
-	    }
-	    FreeVec (ttarray);
-
 	    break;
 	}
     }
@@ -994,29 +909,30 @@ AROS_UFH3S(ULONG, ProcessNewDrawerData,
 {
     AROS_USERFUNC_INIT
 
-    IPTR rev = (IPTR)DO(data->sdd_Dest)->do_Gadget.UserData & WB_DISKREVISIONMASK;
+    struct DiskObject *icon = DO(data->sdd_Dest);
+    IPTR rev = (IPTR)icon->do_Gadget.UserData & WB_DISKREVISIONMASK;
 #if 0
 kprintf ("ProcessNewDrawerData\n");
 #endif
 
-    if (DO(data->sdd_Dest)->do_DrawerData && (rev > 0) && (rev <= WB_DISKREVISION))
+    if (icon->do_DrawerData && (rev > 0) && (rev <= WB_DISKREVISION))
     {
 	switch (data->sdd_Mode)
 	{
 	case SDV_SPECIALMODE_READ:
-	    if (!ReadLong(streamhook, &DO(data->sdd_Dest)->do_DrawerData->dd_Flags, data->sdd_Stream))
+	    if (!ReadLong(streamhook, &icon->do_DrawerData->dd_Flags, data->sdd_Stream))
 		return FALSE;
 
-    	    if (!ReadWord(streamhook, &DO(data->sdd_Dest)->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+    	    if (!ReadWord(streamhook, &icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
 	    	return FALSE;
 		
 	    break;
 
 	case SDV_SPECIALMODE_WRITE: 
-	    if (!WriteLong(streamhook, DO(data->sdd_Dest)->do_DrawerData->dd_Flags, data->sdd_Stream))
+	    if (!WriteLong(streamhook, icon->do_DrawerData->dd_Flags, data->sdd_Stream))
 		return FALSE;
 
-    	    if (!WriteWord(streamhook, DO(data->sdd_Dest)->do_DrawerData->dd_ViewModes, data->sdd_Stream))
+    	    if (!WriteWord(streamhook, icon->do_DrawerData->dd_ViewModes, data->sdd_Stream))
 	    	return FALSE;
 	    break;
 	}
@@ -1054,7 +970,7 @@ kprintf ("ProcessIcon35\n");
     	    break;	    
 
     	case SDV_SPECIALMODE_FREE:
-	    FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), (IconBase_T *)NATIVEICON(DO(data->sdd_Dest))->iconbase);
+	    FreeIcon35(NATIVEICON(DO(data->sdd_Dest)), IconBase);
 	    break;
 
     	case SDV_SPECIALMODE_WRITE:
@@ -1091,7 +1007,7 @@ kprintf ("ProcessIconNI\n");
     	    break;	    
 
     	case SDV_SPECIALMODE_FREE:
-	    FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), (IconBase_T *)NATIVEICON(DO(data->sdd_Dest))->iconbase);
+	    FreeIconNI(NATIVEICON(DO(data->sdd_Dest)), IconBase);
 	    break;
 
     	case SDV_SPECIALMODE_WRITE:

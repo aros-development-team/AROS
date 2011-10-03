@@ -46,11 +46,32 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    /* TODO: Implement icon/NewDiskObject() */
-    aros_print_not_implemented("icon/NewDiskObject()");
 
-    return NULL;
+    int i;
+    APTR pool;
+    struct NativeIcon *ni;
+    
+    pool = CreatePool(0,1024,1024);
+    if (!pool) return NULL;
+
+    /* AROS doesn't need the gfx to be placed in chip niory, so we can use pools */
+    ni = (struct NativeIcon *)AllocPooled(pool, sizeof(struct NativeIcon));
+    if (!ni) return NULL;
+
+    memset(ni, 0, sizeof(*ni));
+
+    ni->ni_DiskObject.do_Type = type;
+    
+    NEWLIST(&ni->ni_FreeList.fl_MemList);
+    for (i = 0; i < 2; i++) {
+        ni->ni_Extra.Offset[i].IMAG = -1;
+        ni->ni_Extra.Offset[i].PNG = -1;
+        ni->ni_Image[i].TransparentColor = -1;
+    }
+
+    AddIconToList(ni, IconBase);
+
+    return &ni->ni_DiskObject;
     
     AROS_LIBFUNC_EXIT
 } /* NewDiskObject() */

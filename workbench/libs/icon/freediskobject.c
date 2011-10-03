@@ -57,17 +57,15 @@ extern const IPTR IconDesc[];
     
     nativeicon = NATIVEICON(diskobj);
    
-    /* The LayoutIconA() BitMaps are not in our pool.
+    /* Remove all layout specific data
+     * (ie displayable bitmaps, pen allocations, etc)
      */
-    if (nativeicon->iconbm1)
-        FreeBitMap(nativeicon->iconbm1);
-    if (nativeicon->iconbm2)
-        FreeBitMap(nativeicon->iconbm2);
+    LayoutIconA(diskobj, NULL, NULL);
 
     RemoveIconFromList(nativeicon, LB(IconBase));
-    
-    /* It's enough to free our pool */
-    DeletePool(nativeicon->pool);
+
+    /* It's enough to free our FreeList */
+    FreeFreeList(&nativeicon->ni_FreeList);
 
     AROS_LIBFUNC_EXIT
     

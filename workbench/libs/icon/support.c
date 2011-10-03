@@ -37,7 +37,7 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
     else
     {
         ULONG  length = nameLength + 5 /* strlen(".info") */ + 1 /* '\0' */;
-        STRPTR path   = AllocVecPooled(POOL, length);
+        STRPTR path   = AllocVec(length, MEMF_PUBLIC);
         
         if(path != NULL)
         {
@@ -46,7 +46,7 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
             
             file = Open(path, mode);
             
-            FreeVecPooled(POOL, path);
+            FreeVec(path);
         }
         else
         {
@@ -103,81 +103,308 @@ BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase)
     return Close(file);
 }
 
-struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
+static const struct ColorRegister ehb_palette[] = 
 {
-    struct DiskObject *temp = NULL, /* Temporary icon data */
-                      *icon = NULL; /* Final icon data */
-            
-    if (ReadStruct(&(LB(IconBase)->dsh), (APTR *) &temp, (APTR)file, IconDesc))
-    {
-        // FIXME: consistency checks! (ie that WBDISK IS for a disk, WBDRAWER for a dir, WBTOOL for an executable)
-        /*
-            Duplicate the disk object so it can be freed with 
-            FreeDiskObject(). 
-        */
-        // FIXME: is there any way to avoid this?
-        icon = DupDiskObject
-        (
-            temp,
-            ICONDUPA_JustLoadedFromDisk, TRUE,
-            TAG_DONE
-        );
+    { 0x00, 0x00, 0x00 },
+    { 0x00, 0x00, 0x7f },
+    { 0x00, 0x7f, 0x00 },
+    { 0x00, 0x7f, 0x7f },
+    { 0x7f, 0x00, 0x00 },
+    { 0x7f, 0x00, 0x7f },
+    { 0x7f, 0x7f, 0x00 },
+    { 0x7f, 0x7f, 0x7f },
+    { 0xb0, 0xb0, 0xb0 },
+    { 0x00, 0x00, 0xf0 },
+    { 0x00, 0xf0, 0x00 },
+    { 0x00, 0xf0, 0xf0 },
+    { 0xf0, 0x00, 0x00 },
+    { 0xf0, 0x00, 0xf0 },
+    { 0xf0, 0xf0, 0x00 },
+    { 0xf0, 0xf0, 0xf0 },
+    { 0x00, 0x00, 0x00 },       /* 'Transparent' */
+};
+
+/* Any last-minute changes to the Icon go here before it
+ * is returned.
+ */
+VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
+{
+    struct NativeIcon *ni = NATIVEICON(icon);
+    struct NativeIconImage *image;
+    int i;
+
+    /* Ensure that do_DrawerData exists for WBDISK and WBDRAWER objects */
+    if ((icon->do_Type == WBDISK || icon->do_Type == WBDRAWER) &&
+        icon->do_DrawerData == NULL) {
+        icon->do_DrawerData = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
+        icon->do_DrawerData->dd_NewWindow.LeftEdge = 50;
+        icon->do_DrawerData->dd_NewWindow.TopEdge = 50;
+        icon->do_DrawerData->dd_NewWindow.Width = 400;
+        icon->do_DrawerData->dd_NewWindow.Height = 150;
     }
-    
-    // FIXME: Read/FreeStruct seem a bit broken in memory handling
-    // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
-    if (temp != NULL) FreeStruct(temp, IconDesc);
-    
-    if (!icon)
-    {
-    	if (!PNGBase) {
-	    PNGBase = OpenLibrary("SYS:Classes/datatypes/png.datatype", 0);
-	    D(bug("[ReadIcon] PNGBase is 0x%p\n", PNGBase));
-	}
-	
-    	if (PNGBase && ReadIconPNG(&temp, file, IconBase))
-	{
-            /*
-        	Duplicate the disk object so it can be freed with 
-        	FreeDiskObject(). 
-            */
-            // FIXME: is there any way to avoid this?
-            icon = DupDiskObject
-            (
-        	temp,
-        	ICONDUPA_JustLoadedFromDisk, TRUE,
-        	TAG_DONE
-            );
-	    
-	    D(bug("[ReadIcon] Freeing PNG icon\n"));
-	    FreeIconPNG(temp, IconBase);
-	}
-	
+
+    /* Clean out dangling pointers that should no long be
+     * present
+     */
+    if (icon->do_DrawerData) {
+        icon->do_DrawerData->dd_NewWindow.FirstGadget = NULL;
+        icon->do_DrawerData->dd_NewWindow.Screen = NULL;
+        icon->do_DrawerData->dd_NewWindow.BitMap = NULL;
     }
-    
-    D(bug("[ReadIcon] Returning 0x%p\n", icon));
-    return icon;
+
+    /* If we have ARGB imagery, but no Palettized imagery,
+     * synthesize some. Use an EHB palette, similar to the
+     * VGA-16 color pallette.
+     *
+     * The goal here is to be fast & usable, not slow and accurate.
+     */
+    for (i = 0; i < 2; i++) {
+        UBYTE *pixel, *idata;
+        ULONG count;
+        image = &ni->ni_Image[i];
+
+        if (image->ImageData)
+            continue;
+
+        if (image->ARGB == NULL && ni->ni_Extra.Offset[i].PNG >= 0) {
+            image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
+                                         &ni->ni_Width, &ni->ni_Height,
+                                         NULL, NULL, IconBase);
+        }
+
+        if (!image->ARGB)
+            continue;
+
+        image->ImageData = AllocMemIcon(icon, ni->ni_Width * ni->ni_Height, MEMF_PUBLIC);
+        image->Pens = 17;
+        image->Palette = ehb_palette;
+        image->TransparentColor = 17;
+        pixel = (UBYTE *)image->ARGB;
+        idata = (UBYTE *)image->ImageData;
+        for (count = 0; count < ni->ni_Width * ni->ni_Height; count++, pixel+=4, idata++) {
+            if (pixel[0] == 0) {
+                *idata = image->TransparentColor;
+            } else {
+                UBYTE i,r,g,b;
+
+                r = pixel[1];
+                g = pixel[2];
+                b = pixel[3];
+
+                /* Determine max intensity */
+                i = (r > g) ? r : g;
+                i = (i > b) ? i : b;
+
+                /* Rescale by the intensity */
+                if (i == 0) {
+                    *idata = 0;
+                } else {
+                    r = (r > (i/4*3)) ? 1 : 0;
+                    g = (g > (i/4*3)) ? 1 : 0;
+                    b = (b > (i/4*3)) ? 1 : 0;
+                    i = (i > 0xd0) ? 1 : 0;
+
+                    *idata = (i << 3) | (r << 2) | (g << 1) | (b << 0);
+                }
+            }
+        }
+    }
+
+
+    /* Prepate ARGB selected imagery, if needed */
+    image = &ni->ni_Image[1];
+    if (image->ARGB == NULL &&
+        ni->ni_Extra.Offset[0].PNG >= 0 && 
+        ni->ni_Extra.Offset[1].PNG < 0) {
+
+        image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
+                                     &ni->ni_Width, &ni->ni_Height,
+                                     NULL, NULL, IconBase);
+        if (image->ARGB) {
+                ULONG size = ni->ni_Width * ni->ni_Height * sizeof(ULONG);
+                UBYTE *pixel;
+                for (pixel = (UBYTE *)image->ARGB; pixel - (UBYTE *)image->ARGB  < size; pixel+=4) {
+                    struct ColorRegister cr = {
+                        .red = pixel[1],
+                        .green = pixel[2],
+                        .blue = pixel[3],
+                    };
+
+                    ChangeToSelectedIconColor(&cr);
+
+                    pixel[1] = cr.red;
+                    pixel[2] = cr.green;
+                    pixel[3] = cr.blue;
+                }
+        }
+    }
+
+    /* Do the same for the palette mapped icon data */
+    if (image->Palette == NULL &&
+        image->ImageData == NULL &&
+        ni->ni_Image[0].Palette != NULL &&
+        ni->ni_Image[0].ImageData != NULL) {
+
+        ULONG pens = ni->ni_Image[0].Pens;
+        struct ColorRegister *newpal;
+
+        newpal = AllocMemIcon(icon, sizeof(struct ColorRegister)*pens, MEMF_PUBLIC);
+        if (newpal) {
+            ULONG i;
+
+            image->Pens = pens;
+            image->TransparentColor = ni->ni_Image[0].TransparentColor;
+            image->ImageData = ni->ni_Image[0].ImageData;
+            CopyMem(ni->ni_Image[0].Palette, newpal, sizeof(struct ColorRegister)*image->Pens);
+            for (i = 0; i < image->Pens; i++) {
+                if (i == image->TransparentColor)
+                    continue;
+                ChangeToSelectedIconColor(&newpal[i]);
+            }
+            image->Palette = newpal;
+        }
+    }
+
+    return;
 }
 
-BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase)
+
+
+struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
 {
-    struct NativeIcon *nativeicon = GetNativeIcon(icon, IconBase);
-    
-    if (nativeicon && nativeicon->iconPNG.handle)
+    struct DiskObject *icon;
+
+    icon = NewDiskObject(0);
+    if (icon == NULL)
+        return NULL;
+
+    Seek(file, 0, OFFSET_BEGINNING);
+    if (ReadStruct(&(LB(IconBase)->dsh), (APTR *) &icon, (APTR)file, IconDesc))
     {
-    	return WriteIconPNG(file, icon, IconBase);
+        D(bug("[ReadIcon] Return classic icon %p\n", icon));
+        return icon;
+    }
+    FreeDiskObject(icon);
+
+    if (CyberGfxBase) {
+        /* PNG icons don't have any fallback renders, so if we
+         * don't have CyberGfxBase, we couldn't draw them on-screen
+         * anyway.
+         */
+        icon = NewDiskObject(0);
+        if (icon == NULL)
+            return NULL;
+
+        if (ReadIconPNG(icon, file, IconBase))
+        {
+            D(bug("[ReadIcon] Return PNG icon %p\n", icon));
+            return icon;
+        }
+        
+        FreeDiskObject(icon);
+    }
+
+    D(bug("[ReadIcon] No icon found\n"));
+
+    return NULL;
+}
+
+/* Absolute offsets for the 'only update position' mode */
+#define OFFSET_DO_CURRENTX      0x3a
+#define OFFSET_DO_CURRENTY      0x3e
+
+BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, struct IconBase *IconBase)
+{
+    struct NativeIcon *ni;
+    struct DiskObject *itmp, *oldicon = NULL;
+    BOOL success;
+
+    /* Fast position update */
+    if (GetTagData(ICONPUTA_OnlyUpdatePosition, FALSE, tags)) {
+        LONG tmp;
+        Seek(file, OFFSET_DO_CURRENTX, OFFSET_BEGINNING);
+        tmp = AROS_LONG2BE((LONG)icon->do_CurrentX);
+        if (Write(file, &tmp, sizeof(tmp)) == sizeof(tmp)) {
+            Seek(file, OFFSET_DO_CURRENTY, OFFSET_BEGINNING);
+            if (Write(file, &tmp, sizeof(tmp)) == sizeof(tmp)) {
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
+
+    itmp = DupDiskObject(icon, ICONDUPA_DuplicateImages, TRUE,
+                               ICONDUPA_DuplicateImageData, TRUE,
+                               TAG_END);
+
+    ni = GetNativeIcon(itmp, IconBase);
+
+    if (GetTagData(ICONPUTA_DropPlanarIconImage, FALSE, tags)) {
+        itmp->do_Gadget.Flags &= ~(GFLG_GADGIMAGE | GFLG_GADGHIMAGE);
+        itmp->do_Gadget.GadgetRender = NULL;
+        itmp->do_Gadget.SelectRender = NULL;
+    } else {
+        if (itmp->do_Gadget.GadgetRender == NULL) {
+            SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+            return FALSE;
+        }
+    }
+
+    if (ni && GetTagData(ICONPUTA_DropChunkyIconImage, FALSE, tags)) {
+        ni->ni_Image[0].ImageData = NULL;
+        ni->ni_Image[1].ImageData = NULL;
+    }
+
+    if (itmp->do_ToolTypes && GetTagData(ICONPUTA_DropNewIconToolTypes, FALSE, tags)) {
+        int i;
+        for (i = 0; itmp->do_ToolTypes[i] != NULL; i++) {
+            if (strcmp(itmp->do_ToolTypes[i],"*** DON'T EDIT THE FOLLOWING LINES!! ***") == 0) {
+                itmp->do_ToolTypes[i] = NULL;
+                break;
+            }
+        }
+    }
+
+    if (ni && GetTagData(ICONPUTA_OptimizeImageSpace, FALSE, tags)) {
+        /* TODO: Compress the palette for the icon */
+    }
+
+    if (ni && GetTagData(ICONPUTA_PreserveOldIconImages, TRUE, tags)) {
+        oldicon = ReadIcon(file);
+        Seek(file, 0, OFFSET_BEGINNING);
+        if (oldicon) {
+            itmp->do_Gadget.GadgetRender = oldicon->do_Gadget.GadgetRender;
+            itmp->do_Gadget.SelectRender = oldicon->do_Gadget.SelectRender;
+        }
+    }
+
+    if (ni && ni->ni_Extra.Data && ni->ni_Extra.Offset[0].PNG == 0)
+    {
+    	success = WriteIconPNG(file, itmp, IconBase);
     }
     else
     {
-    	return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, (APTR) file, IconDesc);
+    	success = WriteStruct(&(LB(IconBase)->dsh), (APTR) itmp, (APTR) file, IconDesc);
     }
+
+    if (oldicon)
+        FreeDiskObject(oldicon);
+
+    FreeDiskObject(itmp);
+
+    return success;
 }
 
 BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
-    BPTR lock = Lock(name, mode);
+    BPTR lock;
+   
+    if (name == NULL)
+        return BNULL;
+
+    lock = Lock(name, mode);
     
-    if (lock == BNULL && strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
+    if (lock == BNULL && (strlen(name) >= 5) && strcasecmp(name + strlen(name) - 5, ":Disk") == 0)
     {
         // FIXME: perhaps allocate buffer from heap?
         TEXT  buffer[256];               /* Path buffer */
@@ -197,7 +424,6 @@ VOID __UnLockObject_WB(BPTR lock, struct IconBase *IconBase)
 {
     if (lock != BNULL) UnLock(lock);
 }
-
 
 CONST_STRPTR GetDefaultIconName(LONG type)
 {
@@ -248,17 +474,17 @@ VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     LONG hash;
     
-    hash = CalcIconHash(&icon->dobj);
+    hash = CalcIconHash(&icon->ni_DiskObject);
     
     ObtainSemaphore(&IconBase->iconlistlock);
-    AddTail((struct List *)&IconBase->iconlists[hash], (struct Node *)&icon->node);
+    AddTail((struct List *)&IconBase->iconlists[hash], (struct Node *)&icon->ni_Node);
     ReleaseSemaphore(&IconBase->iconlistlock);
 }
 
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase)
 {
     ObtainSemaphore(&IconBase->iconlistlock);
-    Remove((struct Node *)&icon->node);
+    Remove((struct Node *)&icon->ni_Node);
     ReleaseSemaphore(&IconBase->iconlistlock);   
 }
 
@@ -274,7 +500,7 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     ForeachNode((struct List *)&IconBase->iconlists[hash], icon)
     {
         i++;
-    	if (dobj == &icon->dobj)
+    	if (dobj == &icon->ni_DiskObject)
 	{
 	    reticon = icon;
 	    break;
@@ -284,3 +510,6 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
     
     return reticon;
 }
+
+
+
