@@ -17,7 +17,8 @@
 
 const LONG IFFParseBase_version = 39,
            GfxBase_version      = 39,
-           CyberGfxBase_version = 41;
+           CyberGfxBase_version = 41,
+           DataTypesBase_version = 0;
 
 /****************************************************************************************/
 
@@ -58,12 +59,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
     	    if (GfxBase != NULL) {
     	    	IntuitionBase = OpenLibrary("intuition.library", 0);
     	    	if (IntuitionBase != NULL) {
-                    /* Optional libraries */
-                    CyberGfxBase = (APTR)OpenLibrary("cybergraphics.library", CyberGfxBase_version);
-                    IFFParseBase = OpenLibrary("iffparse.library", IFFParseBase_version);
-                    DataTypesBase = OpenLibrary("datatypes.library", 0);
-
-
+                    /* Optional libraries are loaded dynamically if needed */
                     return TRUE;
     	    	}
     	    	CloseLibrary(GfxBase);
@@ -79,12 +75,12 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR lh)
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
     /* Drop optional libraries */
-    if (CyberGfxBase)  CloseLibrary(CyberGfxBase);
-    if (DataTypesBase) CloseLibrary(DataTypesBase);
-    if (IFFParseBase)  CloseLibrary(IFFParseBase);
+    if (LIBBASE->ib_CyberGfxBase)  CloseLibrary(LIBBASE->ib_CyberGfxBase);
+    if (LIBBASE->ib_DataTypesBase) CloseLibrary(LIBBASE->ib_DataTypesBase);
+    if (LIBBASE->ib_IFFParseBase)  CloseLibrary(LIBBASE->ib_IFFParseBase);
+    if (LIBBASE->ib_WorkbenchBase) CloseLibrary(LIBBASE->ib_WorkbenchBase);
 
     /* Drop the rest */
-    if (WorkbenchBase) CloseLibrary(WorkbenchBase);
     if (IntuitionBase) CloseLibrary(IntuitionBase);
     if (GfxBase)       CloseLibrary(GfxBase);
     if (DOSBase)       CloseLibrary(DOSBase);
