@@ -49,9 +49,6 @@
     BOOL    success = FALSE;
     BPTR lock, parent;
 
-    if (!WorkbenchBase)
-        WorkbenchBase = TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
-
     if (!(infofilename = (UBYTE*)AllocVec (strlen(name) + 6,
 	MEMF_ANY | MEMF_CLEAR)
     ) )

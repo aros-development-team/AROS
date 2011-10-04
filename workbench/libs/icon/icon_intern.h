@@ -166,15 +166,15 @@ struct IconBase
 
     /* Required External libraries */
     APTR                    ib_DOSBase;
-    APTR                    ib_DataTypesBase;
     APTR                    ib_GfxBase;
-    APTR                    ib_IFFParseBase;
     APTR                    ib_IntuitionBase;
     APTR                    ib_UtilityBase;
-    APTR                    ib_WorkbenchBase;
 
     /* Optional external libraries */
     APTR                    ib_CyberGfxBase;
+    APTR                    ib_IFFParseBase;
+    APTR                    ib_DataTypesBase;
+    APTR                    ib_WorkbenchBase;
 };
 
 typedef struct IconBase IconBase_T;
@@ -182,18 +182,36 @@ typedef struct IconBase IconBase_T;
 /* FIXME: Remove these #define xxxBase hacks
    Do not use this in new code !
 */
-#define CyberGfxBase	(IconBase->ib_CyberGfxBase)
 #define DOSBase		(IconBase->ib_DOSBase)
-#define DataTypesBase	(IconBase->ib_DataTypesBase)
 #define GfxBase		(IconBase->ib_GfxBase)
-#define IFFParseBase	(IconBase->ib_IFFParseBase)
 #define IntuitionBase	(IconBase->ib_IntuitionBase)
 #define UtilityBase	(IconBase->ib_UtilityBase)
-#define WorkbenchBase	(IconBase->ib_WorkbenchBase)
 
 /****************************************************************************************/
 
 extern struct ExecBase *SysBase;
+
+/****************************************************************************************/
+/* On-demand open of optional libraries. Just that is
+ * non-NULL before you use it!
+ */
+extern const LONG IFFParseBase_version,
+                  GfxBase_version,
+                  CyberGfxBase_version,
+                  DataTypesBase_version;
+
+static inline APTR DemandOpenLibrary(struct Library **libp, CONST_STRPTR libname, ULONG version)
+{
+    if (*libp == NULL)
+        *libp = OpenLibrary(libname, version);
+
+    return *libp;
+}
+
+#define IFFParseBase	DemandOpenLibrary((struct Library **)&IconBase->ib_IFFParseBase, "iffparse.library", IFFParseBase_version)
+#define CyberGfxBase	DemandOpenLibrary((struct Library **)&IconBase->ib_CyberGfxBase, "cybergraphics.library", CyberGfxBase_version)
+#define DataTypesBase	DemandOpenLibrary((struct Library **)&IconBase->ib_DataTypesBase, "datatypes.library", DataTypesBase_version)
+#define WorkbenchBase	DemandOpenLibrary((struct Library **)&IconBase->ib_WorkbenchBase, "workbench.library", 0)
 
 /****************************************************************************************/
 

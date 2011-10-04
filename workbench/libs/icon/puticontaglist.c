@@ -61,9 +61,6 @@
     /* Check input parameters ----------------------------------------------*/
     if (icon == NULL) return FALSE;
 
-    if (!WorkbenchBase)
-        WorkbenchBase = TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
-    
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
