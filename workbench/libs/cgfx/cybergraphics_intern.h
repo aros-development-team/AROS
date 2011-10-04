@@ -60,8 +60,12 @@ struct IntCGFXBase
 #define __IHidd_Gfx         GetCGFXBase(CyberGfxBase)->hiddGfxAttrBase
 
 /* Pixelbuffer, the same as in graphics.library */
+#ifdef __mc68000
+#define NUMPIX 4096 	/* Not that much room to spare */
+#else
+#define NUMPIX 100000
+#endif
 
-#define NUMPIX 50000
 #define PIXELBUF_SIZE (NUMPIX * 4)
 
 #define LOCK_PIXBUF ObtainSemaphore(&CyberGfxBase->pixbuf_sema);
