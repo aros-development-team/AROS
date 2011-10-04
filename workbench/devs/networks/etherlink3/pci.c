@@ -38,7 +38,7 @@ MA 02111-1307, USA.
 #include "prometheus_protos.h"
 #include "powerpci_protos.h"
 #include "expansion_protos.h"
-/*#include "openpci_protos.h"*/
+#include "openpci_protos.h"
 #include "unit_protos.h"
 
 
