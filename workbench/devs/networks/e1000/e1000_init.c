@@ -389,8 +389,9 @@ static int GM_UNIQUENAME(Close)
 
 D(bug("[e1000] CloseDevice(unit @ %p, unitno %d)\n", unit, unit->e1ku_UnitNum));
 
-#warning "TODO: CloseDevice->stop"
+/* FIXME: CloseDevice->stop */
 //    unit->stop(unit);
+    (void)unit;
 
     opener = (APTR)req->ios2_BufferManagement;
     if ((APTR)req->ios2_BufferManagement != NULL)

@@ -84,30 +84,24 @@ void e1000_msec_delay_irq(struct net_device *unit, ULONG msec)
 
 void MMIO_W8(APTR addr, UBYTE val8)
 {
-    UBYTE tmp;
-    
     *((volatile UBYTE *)(addr)) = (val8);
 
-    tmp = MMIO_R8(addr);
+    MMIO_R8(addr);
 }
 
 void MMIO_W16(APTR addr, UWORD val16)
 {
-    UWORD tmp;
-    
     *((volatile UWORD *)(addr)) = (val16);
 
-    tmp = MMIO_R16(addr);
+    MMIO_R16(addr);
     
 }
 
 void MMIO_W32(APTR addr, ULONG val32)
 {
-    ULONG tmp;
-    
     *((volatile ULONG *)(addr)) = (val32);
 
-    tmp = MMIO_R32(addr);
+    MMIO_R32(addr);
 }
 
 static BOOL e1000func_check_64k_bound(struct net_device *unit,
@@ -128,21 +122,18 @@ static BOOL e1000func_check_64k_bound(struct net_device *unit,
 
 void e1000func_irq_disable(struct net_device *unit)
 {
-    ULONG tmp;
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMC, ~0);
-    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 }
 
 void e1000func_irq_enable(struct net_device *unit)
 {
-    ULONG tmp;
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_IMS, IMS_ENABLE_MASK);
-    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 }
 
 static void e1000func_enter_82542_rst(struct net_device *unit)
 {
-    ULONG tmp;
     ULONG rctl;
 
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type != e1000_82542)
@@ -155,7 +146,7 @@ static void e1000func_enter_82542_rst(struct net_device *unit)
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
     rctl |= E1000_RCTL_RST;
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl);
-    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 5);
 
@@ -165,7 +156,6 @@ static void e1000func_enter_82542_rst(struct net_device *unit)
 
 static void e1000func_leave_82542_rst(struct net_device *unit)
 {
-    ULONG tmp;
     ULONG rctl;
 
     if (((struct e1000_hw *)unit->e1ku_Private00)->mac.type != e1000_82542)
@@ -176,7 +166,7 @@ static void e1000func_leave_82542_rst(struct net_device *unit)
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
     rctl &= ~E1000_RCTL_RST;
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl);
-    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 5);
 
@@ -345,7 +335,6 @@ static void e1000func_setup_rctl(struct net_device *unit)
 
 static void e1000func_configure_rx(struct net_device *unit)
 {
-    ULONG tmp;
     ULONG rdlen, rctl, rxcsum;
     UQUAD rdba;
     int i;
@@ -355,7 +344,7 @@ static void e1000func_configure_rx(struct net_device *unit)
     /* disable receivers while setting up the descriptors */
     rctl = E1000_READ_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL);
     E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RCTL, rctl & ~E1000_RCTL_EN);
-    tmp = E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
+    E1000_WRITE_FLUSH((struct e1000_hw *)unit->e1ku_Private00);
 
     e1000_msec_delay(unit, 10);
 
@@ -587,7 +576,6 @@ int e1000func_set_mac(struct net_device *unit)
 
 void e1000func_set_multi(struct net_device *unit)
 {
-    struct e1000_mac_info *mac = &((struct e1000_hw *)unit->e1ku_Private00)->mac;
     struct AddressRange *range;
     UBYTE  *mta_list;
     ULONG rctl, mc_count;
@@ -637,9 +625,9 @@ void e1000func_set_multi(struct net_device *unit)
 	e1000func_leave_82542_rst(unit);
 }
 
-static void e1000func_deinitialize(struct net_device *unit)
-{
-}
+// static void e1000func_deinitialize(struct net_device *unit)
+// {
+// }
 
 int request_irq(struct net_device *unit)
 {
@@ -665,6 +653,7 @@ int request_irq(struct net_device *unit)
     return 1;
 }
 
+#if 0
 static void free_irq(struct net_device *unit)
 {
     OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
@@ -675,6 +664,7 @@ static void free_irq(struct net_device *unit)
         OOP_DisposeObject(irq);
     }
 }
+#endif
 
 static int e1000func_setup_tx_resources(struct net_device *unit,
                                     struct e1000_tx_ring *tx_ring)
@@ -965,6 +955,7 @@ void e1000func_free_rx_resources(struct net_device *unit,
     rx_ring->dma = rx_ring->desc = NULL;
 }
 
+#if 0
 static int e1000func_close(struct net_device *unit)
 {
     unit->e1ku_ifflags &= ~IFF_UP;
@@ -993,6 +984,7 @@ static int e1000func_close(struct net_device *unit)
 
     return 0;
 }
+#endif
 
 void e1000func_alloc_rx_buffers(struct net_device *unit,
                                    struct e1000_rx_ring *rx_ring,
@@ -1069,7 +1061,7 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
     unsigned int i, eop;
     BOOL cleaned = FALSE;
     BOOL retval = FALSE;
-    unsigned int total_tx_bytes=0, total_tx_packets=0;
+    unsigned int total_tx_packets=0;
 
     D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
 
@@ -1088,9 +1080,7 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
 
 	    if (cleaned) {
 		retval = TRUE;
-//				struct eth_frame *frame = buffer_info->buffer;
 		total_tx_packets++;
-//				total_tx_bytes += frame->len;
 	    }
 	    e1000func_unmap_and_free_tx_resource(unit, buffer_info);
 	    tx_desc->upper.data = 0;
@@ -1141,7 +1131,6 @@ BOOL e1000func_clean_tx_irq(struct net_device *unit,
 	}
     }
     unit->e1ku_stats.PacketsSent += total_tx_packets;
-//	adapter->total_tx_bytes += total_tx_bytes;
 //	adapter->total_tx_packets += total_tx_packets;
     return retval;
 }
@@ -1150,7 +1139,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
                                     struct e1000_rx_ring *rx_ring)
 {
     struct e1000_rx_desc *rx_desc, *next_rxd;
-    struct e1000_rx_buffer *buffer_info, *next_buffer;
+    D(struct e1000_rx_buffer *buffer_info, *next_buffer;)
     struct Opener *opener, *opener_tail;
     struct IOSana2Req *request, *request_tail;
     struct eth_frame *frame;
@@ -1163,7 +1152,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 
     i = rx_ring->next_to_clean;
     rx_desc = E1000_RX_DESC(rx_ring, i);
-    buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
+    D(buffer_info = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];)
 
     D(bug("[%s] %s: Starting at %d, Rx Desc @ %p, Buffer Info @ %p\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, rx_desc, buffer_info));
     
@@ -1175,7 +1164,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 	if (++i == rx_ring->count) i = 0;
 	next_rxd = E1000_RX_DESC(rx_ring, i);
 
-	next_buffer = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];
+	D(next_buffer = (struct e1000_rx_buffer *)&rx_ring->buffer_info[i];);
 
 	cleaned_count++;
 
@@ -1298,7 +1287,7 @@ next_desc:
 
 	/* use prefetched values */
 	rx_desc = next_rxd;
-	buffer_info = next_buffer;
+	D(buffer_info = next_buffer);
     }
     rx_ring->next_to_clean = i;
 

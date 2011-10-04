@@ -617,7 +617,7 @@ D(bug("[%s] e1000func_Schedular: Handle incomming signal.\n", unit->e1ku_name));
 /*
  * Create new e1000 ethernet device unit
  */
-#warning "TODO: Handle cleanup on failure in CreateUnit more elegantly"
+/* TODO: Handle cleanup on failure in CreateUnit more elegantly */
 struct e1000Unit *CreateUnit(struct e1000Base *e1KBase, OOP_Object *pciDevice)
 {
     struct e1000Unit *unit;
@@ -652,14 +652,14 @@ D(bug("[e1000] CreateUnit()\n"));
         if ((unit->e1ku_Private00 = (IPTR)AllocMem(sizeof(struct e1000_hw), MEMF_PUBLIC | MEMF_CLEAR)) == (IPTR)NULL)
         {
             FreeMem(unit, sizeof(struct e1000Unit));
-            return (IPTR)NULL;
+            return NULL;
         }
 
-        if ((unit->e1ku_hw_stats = (struct e1000_hw_stats *)AllocMem(sizeof(struct e1000_hw_stats), MEMF_PUBLIC | MEMF_CLEAR)) == (IPTR)NULL)
+        if ((unit->e1ku_hw_stats = (struct e1000_hw_stats *)AllocMem(sizeof(struct e1000_hw_stats), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         {
-            FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
+            FreeMem((APTR)unit->e1ku_Private00, sizeof(struct e1000_hw));
             FreeMem(unit, sizeof(struct e1000Unit));
-            return (IPTR)NULL;
+            return NULL;
         }
 
         ((struct e1000_hw *)unit->e1ku_Private00)->back = unit;
@@ -667,9 +667,9 @@ D(bug("[e1000] CreateUnit()\n"));
         if ((unit->e1ku_name = AllocVec(6 + (unit->e1ku_UnitNum/10) + 2, MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
         {
             FreeMem(unit->e1ku_hw_stats, sizeof(struct e1000_hw_stats));
-            FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
+            FreeMem((APTR)unit->e1ku_Private00, sizeof(struct e1000_hw));
             FreeMem(unit, sizeof(struct e1000Unit));
-            return (IPTR)NULL;
+            return NULL;
         }
 
         sprintf((char *)unit->e1ku_name, "e1000.%d", unit->e1ku_UnitNum);
@@ -766,7 +766,7 @@ D(bug("[%s] CreateUnit: Mapped Flash Memory @ %p [%d bytes]\n", unit->e1ku_name,
 D(bug("[%s] CreateUnit: Called on unsupported NIC type!!\n", unit->e1ku_name));
                 e1KBase->e1kb_UnitCount = unit->e1ku_UnitNum;
                 FreeVec(unit->e1ku_name);
-                FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
+                FreeMem((APTR)unit->e1ku_Private00, sizeof(struct e1000_hw));
                 FreeMem(unit, sizeof(struct e1000Unit));
                 return NULL;
             }
@@ -776,7 +776,7 @@ D(bug("[%s] CreateUnit: Called on unsupported NIC type!!\n", unit->e1ku_name));
             unit->e1ku_txRing_QueueSize = 1;
             if ((unit->e1ku_txRing = AllocMem(sizeof(struct e1000_tx_ring) * unit->e1ku_txRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
             {
-#warning "TODO: Handle Tx Queue allocation failure more elegantly!"
+/* TODO: Handle Tx Queue allocation failure more elegantly! */
 D(bug("[%s] CreateUnit: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name));
                 return NULL;
             }
@@ -785,7 +785,7 @@ D(bug("[%s] CreateUnit: Failed to Allocate Tx Ring Queue!!!\n", unit->e1ku_name)
             unit->e1ku_rxRing_QueueSize = 1;
             if ((unit->e1ku_rxRing = AllocMem(sizeof(struct e1000_rx_ring) * unit->e1ku_rxRing_QueueSize, MEMF_PUBLIC|MEMF_CLEAR)) == NULL)
             {
-#warning "TODO: Handle Rx Queue allocation failure more elegantly!"
+/* TODO: Handle Rx Queue allocation failure more elegantly! */
 D(bug("[%s] CreateUnit: Failed to Allocate Rx Ring Queue!!!\n", unit->e1ku_name));
                 return NULL;
             }
@@ -964,12 +964,12 @@ D(bug("[%s]  CreateUnit: Device Initialised. Unit %d @ %p\n", unit->e1ku_name, u
         }
         else
         {
-            if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) == (IPTR)NULL)
+            if ((((struct e1000_hw *)unit->e1ku_Private00)->io_base) == 0)
             {
 D(bug("[%s]  CreateUnit: PANIC! Couldn't find IO area. Aborting\n", unit->e1ku_name));
             }
 
-            if ((((struct e1000_hw *)unit->e1ku_Private00)->hw_addr) == (IPTR)NULL)
+            if ((((struct e1000_hw *)unit->e1ku_Private00)->hw_addr) == NULL)
             {
 D(bug("[%s]  CreateUnit: PANIC! Couldn't get MMIO area. Aborting\n", unit->e1ku_name));
             }
@@ -1016,7 +1016,7 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
                                         (APTR)((struct e1000_hw *)unit->e1ku_Private00)->hw_addr,
                                         unit->e1ku_MMIOSize);
             }
-            FreeMem(unit->e1ku_Private00, sizeof(struct e1000_hw));
+            FreeMem((APTR)unit->e1ku_Private00, sizeof(struct e1000_hw));
         }
 
         if (unit->e1ku_name)
