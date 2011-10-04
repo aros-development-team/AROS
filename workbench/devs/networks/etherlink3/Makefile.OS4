@@ -1,12 +1,13 @@
 CFLAGS = -O3 -Wall -Wno-uninitialized -Wno-parentheses -D__USE_INLINE__ -D__USE_BASETYPE__ -D__NOLIBBASE__ -D__NOGLOBALIFACE__
 CC = gcc $(CFLAGS)
 MAKEFILE = Makefile.OS4
+#LINKER = ld -e Main -s -lauto
 LINKER = gcc
-AMIGA_LIB =
-C_LIB = -lamiga -lauto
+#AMIGA_LIB = -lamiga
+#C_LIB = -lauto
 
 DEV_NAME = etherlink3.device
-OBJS = os4_device.o unit.o request.o pci.o expansion.o
+OBJS = os4_device.o device.o unit.o request.o pci.o expansion.o pccard.o
 HDRS = device.h endian.h io.h
 
 all: $(DEV_NAME)

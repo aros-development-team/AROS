@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2005 Neil Cafferkey
+Copyright (C) 2000-2008 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,9 +30,9 @@ MA 02111-1307, USA.
 #include <proto/pccard.h>
 
 #include "device.h"
-/*#include "io.h"*/
 
 #include "pccard_protos.h"
+#include "device_protos.h"
 #include "unit_protos.h"
 
 #define MAX_TUPLE_SIZE 0xff
@@ -273,6 +273,12 @@ static struct DevUnit *CreatePCCardUnit(ULONG index,
 
    if(success)
    {
+      if(!(WrapInt(&unit->status_int, base)
+         && WrapInt(&unit->rx_int, base)
+         && WrapInt(&unit->tx_int, base)
+         && WrapInt(&unit->tx_end_int, base)))
+         success = FALSE;
+
       unit->insertion_function = (APTR)CardInsertedHook;
       unit->removal_function = (APTR)CardRemovedHook;
    }
@@ -321,6 +327,10 @@ VOID DeletePCCardUnit(struct DevUnit *unit, struct DevBase *base)
 
    if(unit != NULL)
    {
+      UnwrapInt(&unit->tx_end_int, base);
+      UnwrapInt(&unit->tx_int, base);
+      UnwrapInt(&unit->rx_int, base);
+      UnwrapInt(&unit->status_int, base);
       context = unit->card;
       DeleteUnit(unit, base);
       FreeCard(context, base);
@@ -376,7 +386,6 @@ static struct BusContext *AllocCard(struct DevBase *base)
       card_handle->cah_CardNode.ln_Pri = HANDLE_PRIORITY;
       card_handle->cah_CardNode.ln_Name =
          base->device.dd_Library.lib_Node.ln_Name;
-/*      card_handle->cah_CardFlags = CARDF_IFAVAILABLE | CARDF_POSTSTATUS;*/
       card_handle->cah_CardFlags = CARDF_POSTSTATUS;
 
       card_handle->cah_CardRemoved = card_removed_int =
@@ -404,6 +413,14 @@ static struct BusContext *AllocCard(struct DevBase *base)
       card_status_int->is_Code = (APTR)CardStatusInt;
       card_status_int->is_Data = context;
 
+      if(!(WrapInt(card_removed_int, base)
+         && WrapInt(card_inserted_int, base)
+         && WrapInt(card_status_int, base)))
+         success = FALSE;
+   }
+
+   if(success)
+   {
       if(OwnCard(card_handle) != 0)
          success = FALSE;
    }
@@ -453,6 +470,9 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
          CardResetCard(card_handle);
       }
       ReleaseCard(card_handle, CARDF_REMOVEHANDLE);
+      UnwrapInt(card_handle->cah_CardStatus, base);
+      UnwrapInt(card_handle->cah_CardInserted, base);
+      UnwrapInt(card_handle->cah_CardRemoved, base);
 
       FreeVec(card_handle->cah_CardStatus);
       FreeVec(card_handle->cah_CardInserted);
@@ -607,7 +627,7 @@ static BOOL InitialiseCard(struct BusContext *context,
 
       window_count = GetTagData(PCCARD_IOWinCount, 0, tuple_tags);
 
-      for(i = 0; (i < window_count) && (io_base_offset == 0); i++)
+      for(i = 0; i < window_count && io_base_offset == 0; i++)
          if(io_lengths[i] == IO_WINDOW_SIZE)
             io_base_offset = io_bases[i];
    }

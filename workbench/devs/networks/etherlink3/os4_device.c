@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2006 Neil Cafferkey
+Copyright (C) 2000-2008 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -179,13 +179,13 @@ static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
    base->device.dd_Library.lib_Revision = REVISION;
    base->device.dd_Library.lib_IdString = (TEXT *)version_string;
 
-
    base->utility_base = (APTR)OpenLibrary(utility_name, UTILITY_VERSION);
    base->expansion_base = OpenLibrary(expansion_name, EXPANSION_VERSION);
    if(base->utility_base == NULL || base->expansion_base == NULL)
       success = FALSE;
-   base->card_base = (APTR)OpenResource(card_name);
    base->pccard_base = (APTR)OpenLibrary(pccard_name, PCCARD_VERSION);
+   if(base->pccard_base != NULL)
+      base->card_base = (APTR)OpenResource(card_name);
 
    if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0) !=
       0)
@@ -198,13 +198,20 @@ static struct DevBase *OS4DevInit(struct DevBase *dev_base, APTR seg_list,
    if(success)
    {
       base->i_utility =
-        (APTR)GetInterface((APTR)UtilityBase, "main", 1, NULL);
-      base->i_pci =
-        (APTR)GetInterface(ExpansionBase, "pci", 1, NULL);
-      base->i_timer =
-        (APTR)GetInterface((APTR)TimerBase, "main", 1, NULL);
-      if(base->i_utility == NULL || base->i_pci == NULL
-         || base->i_timer == NULL)
+         (APTR)GetInterface((APTR)UtilityBase, "main", 1, NULL);
+      base->i_pci = (APTR)GetInterface(ExpansionBase, "pci", 1, NULL);
+      if(CardResource != NULL)
+      {
+         base->i_pccard =
+           (APTR)GetInterface(PCCardBase, "main", 1, NULL);
+         base->i_card =
+           (APTR)GetInterface(CardResource, "main", 1, NULL);
+//         if(base->i_pccard == NULL || base->i_card == NULL)
+         if(base->i_card == NULL)
+            success = FALSE;
+      }
+      base->i_timer = (APTR)GetInterface((APTR)TimerBase, "main", 1, NULL);
+      if(base->i_utility == NULL || base->i_timer == NULL)
          success = FALSE;
    }
 
@@ -465,6 +472,8 @@ static VOID DeleteDevice(struct DevBase *base)
    /* Close interfaces */
 
    DropInterface((APTR)base->i_timer);
+   DropInterface((APTR)base->i_card);
+   DropInterface((APTR)base->i_pccard);
    DropInterface((APTR)base->i_pci);
    DropInterface((APTR)base->i_utility);
 
@@ -474,6 +483,8 @@ static VOID DeleteDevice(struct DevBase *base)
 
    /* Close libraries */
 
+   if(base->pccard_base != NULL)
+      CloseLibrary(base->pccard_base);
    if(base->expansion_base != NULL)
       CloseLibrary(base->expansion_base);
    if(base->utility_base != NULL)

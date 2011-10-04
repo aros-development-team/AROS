@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2006 Neil Cafferkey
+Copyright (C) 2000-2008 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ MA 02111-1307, USA.
 #include "initializers.h"
 
 #include <proto/exec.h>
-/*#include <proto/alib.h>*/
 #include <clib/alib_protos.h>
 #include <proto/utility.h>
 
@@ -41,10 +40,6 @@ MA 02111-1307, USA.
 
 /* Private prototypes */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
-   REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base));
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
-static APTR DevReserved();
 static VOID DeleteDevice(struct DevBase *base);
 
 
@@ -82,7 +77,7 @@ static const APTR vectors[] =
 #ifdef __MORPHOS__
 #pragma pack(2)
 #endif
-static const struct
+const struct
 {
    SMALLINITBYTEDEF(type);
    SMALLINITPINTDEF(name);
@@ -161,7 +156,7 @@ static const ULONG tx_tags[] =
 *
 */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
+struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base))
 {
    BOOL success = TRUE;
@@ -181,25 +176,16 @@ static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    base->prometheus_base = OpenLibrary(prometheus_name, PROMETHEUS_VERSION);
    if(base->prometheus_base == NULL)
       base->powerpci_base = OpenLibrary(powerpci_name, POWERPCI_VERSION);
-#ifdef __MORPHOS__
-   base->openpci_base = OpenLibrary(openpci_name, OPENPCI_VERSION);
-#endif
    base->pccard_base = OpenLibrary(pccard_name, PCCARD_VERSION);
    if(base->pccard_base != NULL)
       base->card_base = OpenResource(card_name);
 
-   if(base->utility_base == NULL || base->prometheus_base == NULL
-      && base->powerpci_base == NULL && base->openpci_base == NULL
-      && (base->pccard_base == NULL || base->card_base == NULL))
+   if(base->utility_base == NULL)
       success = FALSE;
 
    if(OpenDevice(timer_name, UNIT_ECLOCK, (APTR)&base->timer_request, 0)
       != 0)
       success = FALSE;
-
-#ifdef __MORPHOS__
-   base->wrapper_int_code = (APTR)&int_trap;
-#endif
 
    if(!success)
    {
@@ -368,7 +354,7 @@ APTR DevClose(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
+APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 {
    APTR seg_list;
 
@@ -403,7 +389,7 @@ static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 *
 */
 
-static APTR DevReserved()
+APTR DevReserved()
 {
    return NULL;
 }
@@ -545,7 +531,7 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
    struct DevUnit *unit;
    struct Opener *opener;
 
-   /* Free buffer-management resources */
+   /* Decrement device usage count and free buffer-management resources */
 
    base->device.dd_Library.lib_OpenCnt--;
    opener = (APTR)request->ios2_BufferManagement;
@@ -637,20 +623,21 @@ struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
 {
    BOOL success = TRUE;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
    APTR *int_data;
 
-   int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
-   if(int_data != NULL)
+   if(base->wrapper_int_code != NULL)
    {
-      int_data[0] = interrupt->is_Code;
-      int_data[1] = interrupt->is_Data;
-      interrupt->is_Code = base->wrapper_int_code;
-      interrupt->is_Data = int_data;
+      int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
+      if(int_data != NULL)
+      {
+         int_data[0] = interrupt->is_Code;
+         int_data[1] = interrupt->is_Data;
+         interrupt->is_Code = base->wrapper_int_code;
+         interrupt->is_Data = int_data;
+      }
+      else
+         success = FALSE;
    }
-   else
-      success = FALSE;
-#endif
 
    return success;
 }

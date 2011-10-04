@@ -24,7 +24,6 @@ $(OBJS) startup.o: $(MAKEFILE) $(HDRS)
 $(OBJS): $(HDRS)
 unit.o: etherlink3.h mii.h
 pci.o prometheus.o powerpci.o: pci.h
-pccard.o: io.h
 
 install: all
 	Copy "$(DEV_NAME)" "DEVS:networks/" CLONE

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2006 Neil Cafferkey
+Copyright (C) 2006-2008 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,11 +25,15 @@ MA 02111-1307, USA.
 
 #include "device.h"
 
+struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
+   REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base));
 BYTE DevOpen(REG(a1, struct IOSana2Req *request),
    REG(d0, ULONG unit_num), REG(d1, ULONG flags),
    REG(BASE_REG, struct DevBase *base));
 APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
+APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
+APTR DevReserved();
 VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
