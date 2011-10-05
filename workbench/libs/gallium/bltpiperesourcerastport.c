@@ -5,6 +5,7 @@
 
 #include "gallium_intern.h"
 #include <graphics/rastport.h>
+#include <hidd/graphics.h>
 #include <proto/layers.h>
 #include <proto/graphics.h>
 #include <gallium/pipe/p_state.h>
