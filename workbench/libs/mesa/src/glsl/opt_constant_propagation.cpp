@@ -51,11 +51,23 @@ public:
       this->var = var;
       this->write_mask = write_mask;
       this->constant = constant;
+      this->initial_values = write_mask;
+   }
+
+   acp_entry(const acp_entry *src)
+   {
+      this->var = src->var;
+      this->write_mask = src->write_mask;
+      this->constant = src->constant;
+      this->initial_values = src->initial_values;
    }
 
    ir_variable *var;
    ir_constant *constant;
    unsigned write_mask;
+
+   /** Mask of values initially available in the constant. */
+   unsigned initial_values;
 };
 
 
@@ -78,13 +90,13 @@ public:
    ir_constant_propagation_visitor()
    {
       progress = false;
-      mem_ctx = talloc_new(0);
+      mem_ctx = ralloc_context(0);
       this->acp = new(mem_ctx) exec_list;
       this->kills = new(mem_ctx) exec_list;
    }
    ~ir_constant_propagation_visitor()
    {
-      talloc_free(mem_ctx);
+      ralloc_free(mem_ctx);
    }
 
    virtual ir_visitor_status visit_enter(class ir_loop *);
@@ -172,7 +184,7 @@ ir_constant_propagation_visitor::handle_rvalue(ir_rvalue **rvalue)
       for (int j = 0; j < 4; j++) {
 	 if (j == channel)
 	    break;
-	 if (found->write_mask & (1 << j))
+	 if (found->initial_values & (1 << j))
 	    rhs_channel++;
       }
 
@@ -195,7 +207,7 @@ ir_constant_propagation_visitor::handle_rvalue(ir_rvalue **rvalue)
       }
    }
 
-   *rvalue = new(talloc_parent(deref)) ir_constant(type, &data);
+   *rvalue = new(ralloc_parent(deref)) ir_constant(type, &data);
    this->progress = true;
 }
 
@@ -285,8 +297,7 @@ ir_constant_propagation_visitor::handle_if_block(exec_list *instructions)
    /* Populate the initial acp with a constant of the original */
    foreach_iter(exec_list_iterator, iter, *orig_acp) {
       acp_entry *a = (acp_entry *)iter.get();
-      this->acp->push_tail(new(this->mem_ctx) acp_entry(a->var, a->write_mask,
-							a->constant));
+      this->acp->push_tail(new(this->mem_ctx) acp_entry(a));
    }
 
    visit_list_elements(this, instructions);
@@ -398,11 +409,8 @@ ir_constant_propagation_visitor::add_constant(ir_assignment *ir)
 {
    acp_entry *entry;
 
-   if (ir->condition) {
-      ir_constant *condition = ir->condition->as_constant();
-      if (!condition || !condition->value.b[0])
-	 return;
-   }
+   if (ir->condition)
+      return;
 
    if (!ir->write_mask)
       return;

@@ -33,14 +33,15 @@
 #include "main/imports.h"
 #include "main/image.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 
 #include "st_context.h"
 #include "st_texture.h"
 #include "st_cb_blit.h"
 #include "st_cb_fbo.h"
+#include "st_atom.h"
 
 #include "util/u_blit.h"
-#include "util/u_inlines.h"
 
 
 void
@@ -75,6 +76,8 @@ st_BlitFramebuffer(struct gl_context *ctx,
    struct gl_framebuffer *readFB = ctx->ReadBuffer;
    struct gl_framebuffer *drawFB = ctx->DrawBuffer;
 
+   st_validate_state(st);
+
    if (!_mesa_clip_blit(ctx, &srcX0, &srcY0, &srcX1, &srcY1,
                         &dstX0, &dstY0, &dstX1, &dstY1)) {
       return; /* nothing to draw/blit */
@@ -106,6 +109,11 @@ st_BlitFramebuffer(struct gl_context *ctx,
       dstY1 = tmp;
    }
 
+   /* Disable conditional rendering. */
+   if (st->render_condition) {
+      st->pipe->render_condition(st->pipe, NULL, 0);
+   }
+
    if (mask & GL_COLOR_BUFFER_BIT) {
       struct gl_renderbuffer_attachment *srcAtt =
          &readFB->Attachment[readFB->_ColorReadBufferIndex];
@@ -118,7 +126,7 @@ st_BlitFramebuffer(struct gl_context *ctx,
          struct pipe_surface *dstSurf = dstRb->surface;
 
          if (!srcObj->pt)
-            return;
+            goto done;
 
          util_blit_pixels(st->blit, srcObj->pt, srcAtt->TextureLevel,
                           srcX0, srcY0, srcX1, srcY1,
@@ -195,6 +203,13 @@ st_BlitFramebuffer(struct gl_context *ctx,
             _mesa_problem(ctx, "st_BlitFramebuffer(STENCIL) not completed");
          }
       }
+   }
+
+done:
+   /* Restore conditional rendering state. */
+   if (st->render_condition) {
+      st->pipe->render_condition(st->pipe, st->render_condition,
+                                 st->condition_mode);
    }
 }
 

@@ -33,6 +33,8 @@
 #include "sp_state.h"
 
 #include "util/u_memory.h"
+#include "util/u_inlines.h"
+#include "util/u_transfer.h"
 #include "draw/draw_context.h"
 
 
@@ -84,8 +86,9 @@ softpipe_set_vertex_buffers(struct pipe_context *pipe,
 
    assert(count <= PIPE_MAX_ATTRIBS);
 
-   memcpy(softpipe->vertex_buffer, buffers, count * sizeof(buffers[0]));
-   softpipe->num_vertex_buffers = count;
+   util_copy_vertex_buffers(softpipe->vertex_buffer,
+                            &softpipe->num_vertex_buffers,
+                            buffers, count);
 
    softpipe->dirty |= SP_NEW_VERTEX;
 
@@ -117,4 +120,5 @@ softpipe_init_vertex_funcs(struct pipe_context *pipe)
 
    pipe->set_vertex_buffers = softpipe_set_vertex_buffers;
    pipe->set_index_buffer = softpipe_set_index_buffer;
+   pipe->redefine_user_buffer = u_default_redefine_user_buffer;
 }

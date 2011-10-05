@@ -36,10 +36,11 @@
 
 #include "main/compiler.h"
 #include "main/glheader.h"
-#include "main/mtypes.h"
 
 struct _mesa_index_buffer;
 struct _mesa_prim;
+struct gl_client_array;
+struct gl_context;
 struct st_context;
 
 void st_init_draw( struct st_context *st );
@@ -68,7 +69,7 @@ st_feedback_draw_vbo(struct gl_context *ctx,
 
 /* Internal function:
  */
-extern GLuint
+extern enum pipe_format
 st_pipe_vertex_format(GLenum type, GLuint size, GLenum format,
                       GLboolean normalized);
 

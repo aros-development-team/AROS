@@ -41,13 +41,17 @@
 
 #include "glheader.h"
 #include "hash.h"
+#include "image.h"
 #include "imports.h"
 #include "context.h"
+#include "mfeatures.h"
 #if FEATURE_ARB_vertex_buffer_object
 #include "bufferobj.h"
 #endif
 #include "arrayobj.h"
 #include "macros.h"
+#include "mtypes.h"
+#include "varray.h"
 #include "main/dispatch.h"
 
 
@@ -204,6 +208,7 @@ init_array(struct gl_context *ctx,
    array->Ptr = NULL;
    array->Enabled = GL_FALSE;
    array->Normalized = GL_FALSE;
+   array->_ElementSize = size * _mesa_sizeof_type(type);
 #if FEATURE_ARB_vertex_buffer_object
    /* Vertex array buffers */
    _mesa_reference_buffer_object(ctx, &array->BufferObj,
@@ -232,7 +237,7 @@ _mesa_initialize_array_object( struct gl_context *ctx,
    init_array(ctx, &obj->Weight, 1, GL_FLOAT);
    init_array(ctx, &obj->Normal, 3, GL_FLOAT);
    init_array(ctx, &obj->Color, 4, GL_FLOAT);
-   init_array(ctx, &obj->SecondaryColor, 4, GL_FLOAT);
+   init_array(ctx, &obj->SecondaryColor, 3, GL_FLOAT);
    init_array(ctx, &obj->FogCoord, 1, GL_FLOAT);
    init_array(ctx, &obj->Index, 1, GL_FLOAT);
    for (i = 0; i < Elements(obj->TexCoord); i++) {
@@ -278,46 +283,16 @@ remove_array_object( struct gl_context *ctx, struct gl_array_object *obj )
 
 
 /**
- * Compute the index of the last array element that can be safely accessed
- * in a vertex array.  We can really only do this when the array lives in
- * a VBO.
- * The array->_MaxElement field will be updated.
- * Later in glDrawArrays/Elements/etc we can do some bounds checking.
- */
-static void
-compute_max_element(struct gl_client_array *array)
-{
-   if (array->BufferObj->Name) {
-      /* Compute the max element we can access in the VBO without going
-       * out of bounds.
-       */
-      array->_MaxElement = ((GLsizeiptrARB) array->BufferObj->Size
-                            - (GLsizeiptrARB) array->Ptr + array->StrideB
-                            - array->_ElementSize) / array->StrideB;
-      if (0)
-         printf("%s Object %u  Size %u  MaxElement %u\n",
-		__FUNCTION__,
-		array->BufferObj->Name,
-		(GLuint) array->BufferObj->Size,
-		array->_MaxElement);
-   }
-   else {
-      /* user-space array, no idea how big it is */
-      array->_MaxElement = 2 * 1000 * 1000 * 1000; /* just a big number */
-   }
-}
-
-
-/**
  * Helper for update_arrays().
  * \return  min(current min, array->_MaxElement).
  */
 static GLuint
 update_min(GLuint min, struct gl_client_array *array)
 {
-   compute_max_element(array);
-   if (array->Enabled)
+   if (array->Enabled) {
+      _mesa_update_array_max_element(array);
       return MIN2(min, array->_MaxElement);
+   }
    else
       return min;
 }
@@ -495,7 +470,8 @@ _mesa_DeleteVertexArraysAPPLE(GLsizei n, const GLuint *ids)
  * \param vboOnly Will arrays have to reside in VBOs?
  */
 static void 
-gen_vertex_arrays(struct gl_context *ctx, GLsizei n, GLuint *arrays, GLboolean vboOnly)
+gen_vertex_arrays(struct gl_context *ctx, GLsizei n, GLuint *arrays,
+                  GLboolean vboOnly)
 {
    GLuint first;
    GLint i;

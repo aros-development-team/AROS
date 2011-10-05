@@ -233,16 +233,7 @@ def clamp_expr(src_channel, dst_channel, dst_native_type, value):
     dst_max_native = value_to_native(src_channel, dst_max)
 
     if src_min < dst_min and src_max > dst_max:
-        if src_channel.type == UNSIGNED:
-            return 'CLAMP(%s, %sUL, %sUL)' % (value, dst_min_native, dst_max_native)
-        elif src_channel.type == SIGNED:
-            return 'CLAMP(%s, %sL, %sL)' % (value, dst_min_native, dst_max_native)
-        elif src_channel.type != FLOAT:
-            return 'CLAMP(%s, %s, %s)' % (value, dst_min_native, dst_max_native)
-        elif dst_min_native == -2147483648: # Evil workaround for C
-            return 'CLAMP(%s, (-2147483647-1), %sUL)' % (value, dst_max_native)
-        else:
-            return 'CLAMP(%s, %sL, %sUL)' % (value, dst_min_native, dst_max_native)
+        return 'CLAMP(%s, %s, %s)' % (value, dst_min_native, dst_max_native)
 
     if src_max > dst_max:
         return 'MIN2(%s, %s)' % (value, dst_max_native)
@@ -641,7 +632,7 @@ def generate_format_fetch(format, dst_channel, dst_native_type, dst_suffix):
 
 
 def is_format_hand_written(format):
-    return format.layout in ('s3tc', 'subsampled', 'other') or format.colorspace == ZS
+    return format.layout in ('s3tc', 'rgtc', 'subsampled', 'other') or format.colorspace == ZS
 
 
 def generate(formats):

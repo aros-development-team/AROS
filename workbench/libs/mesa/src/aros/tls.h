@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,13 +19,19 @@ VOID DestroyTLS(struct TaskLocalStorage * tls);
 
 #define DECLARE_STATIC_TLS(tls)                 \
 static struct TaskLocalStorage * tls = NULL;    \
-static void auto_crate_##tls()                  \
+static LONG auto_crate_##tls()                  \
 {                                               \
     tls = CreateTLS();                          \
+    if (tls)                                    \
+        return 1;                               \
+    else                                        \
+        return 0;                               \
 }                                               \
-static void auto_destroy_##tls()                \
+                                                \
+static VOID auto_destroy_##tls()                \
 {                                               \
-    DestroyTLS(tls);                            \
+    if (tls)                                    \
+        DestroyTLS(tls);                        \
 }                                               \
 ADD2INIT(auto_crate_##tls, 5);                  \
 ADD2EXIT(auto_destroy_##tls, 5);

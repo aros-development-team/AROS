@@ -58,8 +58,7 @@ extern GLfloat _mesa_ubyte_to_float_color_tab[256];
 #define BYTE_TO_FLOAT_TEX(B)    ((B) == -128 ? -1.0F : (B) * (1.0F/127.0F))
 
 /** Convert GLfloat in [-1.0,1.0] to GLbyte in [-128,127], texture/fb data */
-#define FLOAT_TO_BYTE_TEX(X)    ( (GLint) (127.0F * (X)) )
-
+#define FLOAT_TO_BYTE_TEX(X)    CLAMP( (GLint) (127.0F * (X)), -128, 127 )
 
 /** Convert GLushort in [0,65535] to GLfloat in [0.0,1.0] */
 #define USHORT_TO_FLOAT(S)  ((GLfloat) (S) * (1.0F / 65535.0F))
@@ -669,6 +668,10 @@ do {                                    \
 
 /** Maximum of two values: */
 #define MAX2( A, B )   ( (A)>(B) ? (A) : (B) )
+
+/** Minimum and maximum of three values: */
+#define MIN3( A, B, C ) ((A) < (B) ? MIN2(A, C) : MIN2(B, C))
+#define MAX3( A, B, C ) ((A) > (B) ? MAX2(A, C) : MAX2(B, C))
 
 /** Dot product of two 2-element vectors */
 #define DOT2( a, b )  ( (a)[0]*(b)[0] + (a)[1]*(b)[1] )

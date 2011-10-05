@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-/* #define NV50PC_DEBUG */
-
 #include "nv50_pc.h"
 #include "nv50_program.h"
 
@@ -180,6 +178,7 @@ nv50_op_can_write_flags(uint opcode)
    switch (opcode) { /* obvious ones like KIL, CALL, etc. not included */
    case NV_OP_PHI:
    case NV_OP_MOV:
+   case NV_OP_SELECT:
    case NV_OP_LINTERP:
    case NV_OP_PINTERP:
    case NV_OP_LDA:
@@ -307,7 +306,10 @@ nv_pc_pass_in_order(struct nv_basic_block *root, nv_pc_pass_func f, void *priv)
             bb[p++] = b->out[j];
             break;
          case CFG_EDGE_LOOP_LEAVE:
-            bbb[pp++] = b->out[j];
+            if (!b->out[j]->priv) {
+               bbb[pp++] = b->out[j];
+               b->out[j]->priv = 1;
+            }
             break;
          default:
             assert(0);
@@ -364,7 +366,7 @@ nv_print_program(struct nv_pc *pc)
          nv_print_function(pc->root[i]);
 }
 
-#ifdef NV50PC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_CFLOW
 static void
 nv_do_print_cfgraph(struct nv_pc *pc, FILE *f, struct nv_basic_block *b)
 {
@@ -422,7 +424,7 @@ nv_print_cfgraph(struct nv_pc *pc, const char *filepath, int subr)
 
    fclose(f);
 }
-#endif
+#endif /* NV50_DEBUG_PROG_CFLOW */
 
 static INLINE void
 nvcg_show_bincode(struct nv_pc *pc)
@@ -443,7 +445,7 @@ nv50_emit_program(struct nv_pc *pc)
    uint32_t *code = pc->emit;
    int n;
 
-   NV50_DBGMSG("emitting program: size = %u\n", pc->bin_size);
+   NV50_DBGMSG(SHADER, "emitting program: size = %u\n", pc->bin_size);
 
    for (n = 0; n < pc->num_blocks; ++n) {
       struct nv_instruction *i;
@@ -469,7 +471,7 @@ nv50_emit_program(struct nv_pc *pc)
    pc->emit = code;
    code[pc->bin_size / 4 - 1] |= 1;
 
-#ifdef NV50PC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_SHADER
    nvcg_show_bincode(pc);
 #endif
 
@@ -497,7 +499,7 @@ nv50_generate_code(struct nv50_translation_info *ti)
    ret = nv50_tgsi_to_nc(pc, ti);
    if (ret)
       goto out;
-#ifdef NV50PC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_IR
    nv_print_program(pc);
 #endif
 
@@ -507,7 +509,7 @@ nv50_generate_code(struct nv50_translation_info *ti)
    ret = nv_pc_exec_pass0(pc);
    if (ret)
       goto out;
-#ifdef NV50PC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_IR
    nv_print_program(pc);
 #endif
 
@@ -515,7 +517,7 @@ nv50_generate_code(struct nv50_translation_info *ti)
    ret = nv_pc_exec_pass1(pc);
    if (ret)
       goto out;
-#ifdef NV50PC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_CFLOW
    nv_print_program(pc);
    nv_print_cfgraph(pc, "nv50_shader_cfgraph.dot", 0);
 #endif
@@ -549,7 +551,7 @@ nv50_generate_code(struct nv50_translation_info *ti)
 
    ti->p->uses_lmem = ti->store_to_memory;
 
-   NV50_DBGMSG("SHADER TRANSLATION - %s\n", ret ? "failure" : "success");
+   NV50_DBGMSG(SHADER, "SHADER TRANSLATION - %s\n", ret ? "failed" : "success");
 
 out:
    nv_pc_free_refs(pc);
@@ -621,6 +623,9 @@ nvbb_insert_tail(struct nv_basic_block *b, struct nv_instruction *i)
 
    i->bb = b;
    b->num_instructions++;
+
+   if (i->prev && i->prev->is_terminator)
+      nv_nvi_permute(i->prev, i);
 }
 
 void
@@ -666,7 +671,7 @@ nv_nvi_delete(struct nv_instruction *nvi)
 
    if (nvi == b->phi) {
       if (nvi->opcode != NV_OP_PHI)
-         NV50_DBGMSG("NOTE: b->phi points to non-PHI instruction\n");
+         NV50_DBGMSG(PROG_IR, "NOTE: b->phi points to non-PHI instruction\n");
 
       assert(!nvi->prev);
       if (!nvi->next || nvi->next->opcode != NV_OP_PHI)

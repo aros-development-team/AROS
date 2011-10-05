@@ -42,6 +42,7 @@ if env['drm']:
     #     SConscript([
     #         'drivers/nouveau/SConscript', 
     #         'drivers/nv50/SConscript', 
+    #         'drivers/nvc0/SConscript', 
     #         'drivers/nvfx/SConscript',
     #     ])
 
@@ -52,9 +53,9 @@ if env['drm']:
 # Needed by some state trackers
 SConscript('winsys/sw/null/SConscript')
 
-SConscript('state_trackers/python/SConscript')
-if env['platform'] != 'embedded':
+if not env['embedded']:
     SConscript('state_trackers/vega/SConscript')
+    SConscript('state_trackers/egl/SConscript')
 
     if env['x11']:
         SConscript('state_trackers/glx/xlib/SConscript')
@@ -65,11 +66,8 @@ if env['platform'] != 'embedded':
     if env['dri'] and env['xorg']:
         SConscript('state_trackers/xorg/SConscript')
 
-if env['platform'] == 'windows':
-    SConscript([
-        'state_trackers/egl/SConscript',
-        'state_trackers/wgl/SConscript',
-    ])
+    if env['platform'] == 'windows':
+        SConscript('state_trackers/wgl/SConscript')
 
 #
 # Winsys
@@ -85,51 +83,55 @@ SConscript([
     'targets/graw-null/SConscript',
 ])
 
-if env['x11']:
+if not env['embedded']:
     SConscript([
-        'targets/graw-xlib/SConscript',
-        'targets/libgl-xlib/SConscript',
+        'targets/egl-static/SConscript'
     ])
 
-if env['platform'] == 'windows':
-    SConscript([
-        'targets/graw-gdi/SConscript',
-        'targets/libgl-gdi/SConscript',
-        #'egl-gdi/SConscript',
-    ])
-
-if env['dri']:
-    SConscript([
-        'targets/SConscript.dri',
-        'targets/dri-swrast/SConscript',
-        'targets/dri-vmwgfx/SConscript',
-        #'targets/dri-nouveau/SConscript',
-    ])
-    if env['drm_intel']:
+    if env['x11']:
         SConscript([
-            'targets/dri-i915/SConscript',
-            'targets/dri-i965/SConscript',
-        ])
-    if env['drm_radeon']:
-        SConscript([
-            'targets/dri-r300/SConscript',
-            'targets/dri-r600/SConscript',
+            'targets/graw-xlib/SConscript',
+            'targets/libgl-xlib/SConscript',
         ])
 
-if env['xorg'] and env['drm']:
-    SConscript([
-        #'targets/xorg-i915/SConscript',
-        #'targets/xorg-i965/SConscript',
-        #'targets/xorg-nouveau/SConscript',
-        #'targets/xorg-radeon/SConscript',
-        'targets/xorg-vmwgfx/SConscript',
-    ])
+    if env['platform'] == 'windows':
+        SConscript([
+            'targets/graw-gdi/SConscript',
+            'targets/libgl-gdi/SConscript',
+        ])
+
+    if env['dri']:
+        SConscript([
+            'targets/SConscript.dri',
+            'targets/dri-swrast/SConscript',
+            'targets/dri-vmwgfx/SConscript',
+            #'targets/dri-nouveau/SConscript',
+        ])
+        if env['drm_intel']:
+            SConscript([
+                'targets/dri-i915/SConscript',
+                'targets/dri-i965/SConscript',
+            ])
+        if env['drm_radeon']:
+            SConscript([
+                'targets/dri-r300/SConscript',
+                'targets/dri-r600/SConscript',
+            ])
+
+    if env['xorg'] and env['drm']:
+        SConscript([
+            #'targets/xorg-i915/SConscript',
+            #'targets/xorg-i965/SConscript',
+            #'targets/xorg-nouveau/SConscript',
+            #'targets/xorg-radeon/SConscript',
+            'targets/xorg-vmwgfx/SConscript',
+        ])
 
 
 #
 # Unit tests & tools
 #
 
-if env['platform'] != 'embedded':
+if not env['embedded']:
     SConscript('tests/unit/SConscript')
     SConscript('tests/graw/SConscript')

@@ -39,6 +39,8 @@
 #include "dlopen.h"
 #include "image.h"
 #include "macros.h"
+#include "mfeatures.h"
+#include "mtypes.h"
 #include "texcompress.h"
 #include "texcompress_s3tc.h"
 #include "texstore.h"
@@ -161,9 +163,6 @@ GLboolean
 _mesa_texstore_rgb_dxt1(TEXSTORE_PARAMS)
 {
    const GLchan *pixels;
-#if 0 /* unused */
-   GLint srcRowStride;
-#endif
    GLubyte *dst;
    const GLint texWidth = dstRowStride * 4 / 8; /* a bit of a hack */
    const GLchan *tempImage = NULL;
@@ -190,17 +189,10 @@ _mesa_texstore_rgb_dxt1(TEXSTORE_PARAMS)
       if (!tempImage)
          return GL_FALSE; /* out of memory */
       pixels = tempImage;
-#if 0 /* unused */
-      srcRowStride = 3 * srcWidth;
-#endif
       srcFormat = GL_RGB;
    }
    else {
       pixels = (const GLchan *) srcAddr;
-#if 0 /* unused */
-      srcRowStride = _mesa_image_row_stride(srcPacking, srcWidth, srcFormat,
-                                            srcType) / sizeof(GLchan);
-#endif
    }
 
    dst = _mesa_compressed_image_address(dstXoffset, dstYoffset, 0,
@@ -230,9 +222,6 @@ GLboolean
 _mesa_texstore_rgba_dxt1(TEXSTORE_PARAMS)
 {
    const GLchan *pixels;
-#if 0 /* unused */
-   GLint srcRowStride;
-#endif
    GLubyte *dst;
    const GLint texWidth = dstRowStride * 4 / 8; /* a bit of a hack */
    const GLchan *tempImage = NULL;
@@ -259,17 +248,10 @@ _mesa_texstore_rgba_dxt1(TEXSTORE_PARAMS)
       if (!tempImage)
          return GL_FALSE; /* out of memory */
       pixels = tempImage;
-#if 0 /* unused */
-      srcRowStride = 4 * srcWidth;
-#endif
       srcFormat = GL_RGBA;
    }
    else {
       pixels = (const GLchan *) srcAddr;
-#if 0 /* unused */
-      srcRowStride = _mesa_image_row_stride(srcPacking, srcWidth, srcFormat,
-                                            srcType) / sizeof(GLchan);
-#endif
    }
 
    dst = _mesa_compressed_image_address(dstXoffset, dstYoffset, 0,
@@ -298,9 +280,6 @@ GLboolean
 _mesa_texstore_rgba_dxt3(TEXSTORE_PARAMS)
 {
    const GLchan *pixels;
-#if 0 /* unused */
-   GLint srcRowStride;
-#endif
    GLubyte *dst;
    const GLint texWidth = dstRowStride * 4 / 16; /* a bit of a hack */
    const GLchan *tempImage = NULL;
@@ -327,16 +306,9 @@ _mesa_texstore_rgba_dxt3(TEXSTORE_PARAMS)
       if (!tempImage)
          return GL_FALSE; /* out of memory */
       pixels = tempImage;
-#if 0 /* unused */
-      srcRowStride = 4 * srcWidth;
-#endif
    }
    else {
       pixels = (const GLchan *) srcAddr;
-#if 0 /* unused */
-      srcRowStride = _mesa_image_row_stride(srcPacking, srcWidth, srcFormat,
-                                            srcType) / sizeof(GLchan);
-#endif
    }
 
    dst = _mesa_compressed_image_address(dstXoffset, dstYoffset, 0,
@@ -365,9 +337,6 @@ GLboolean
 _mesa_texstore_rgba_dxt5(TEXSTORE_PARAMS)
 {
    const GLchan *pixels;
-#if 0 /* unused */
-   GLint srcRowStride;
-#endif
    GLubyte *dst;
    const GLint texWidth = dstRowStride * 4 / 16; /* a bit of a hack */
    const GLchan *tempImage = NULL;
@@ -394,16 +363,9 @@ _mesa_texstore_rgba_dxt5(TEXSTORE_PARAMS)
       if (!tempImage)
          return GL_FALSE; /* out of memory */
       pixels = tempImage;
-#if 0 /* unused */
-      srcRowStride = 4 * srcWidth;
-#endif
    }
    else {
       pixels = (const GLchan *) srcAddr;
-#if 0 /* unused */
-      srcRowStride = _mesa_image_row_stride(srcPacking, srcWidth, srcFormat,
-                                            srcType) / sizeof(GLchan);
-#endif
    }
 
    dst = _mesa_compressed_image_address(dstXoffset, dstYoffset, 0,

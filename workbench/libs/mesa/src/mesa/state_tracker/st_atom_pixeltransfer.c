@@ -94,12 +94,12 @@ create_color_map_texture(struct gl_context *ctx)
    const uint texSize = 256; /* simple, and usually perfect */
 
    /* find an RGBA texture format */
-   format = st_choose_format(pipe->screen, GL_RGBA,
+   format = st_choose_format(pipe->screen, GL_RGBA, GL_NONE, GL_NONE,
                              PIPE_TEXTURE_2D, 0, PIPE_BIND_SAMPLER_VIEW);
 
    /* create texture for color map/table */
    pt = st_texture_create(st, PIPE_TEXTURE_2D, format, 0,
-                          texSize, texSize, 1, PIPE_BIND_SAMPLER_VIEW);
+                          texSize, texSize, 1, 1, PIPE_BIND_SAMPLER_VIEW);
    return pt;
 }
 
@@ -121,7 +121,7 @@ load_color_map_texture(struct gl_context *ctx, struct pipe_resource *pt)
    uint *dest;
    uint i, j;
 
-   transfer = pipe_get_transfer(st_context(ctx)->pipe,
+   transfer = pipe_get_transfer(pipe,
                                 pt, 0, 0, PIPE_TRANSFER_WRITE,
                                 0, 0, texSize, texSize);
    dest = (uint *) pipe_transfer_map(pipe, transfer);
@@ -187,7 +187,7 @@ get_pixel_transfer_program(struct gl_context *ctx, const struct state_key *key)
    inst[ic].TexSrcTarget = TEXTURE_2D_INDEX;
    ic++;
    fp->Base.InputsRead = (1 << FRAG_ATTRIB_TEX0);
-   fp->Base.OutputsWritten = (1 << FRAG_RESULT_COLOR);
+   fp->Base.OutputsWritten = BITFIELD64_BIT(FRAG_RESULT_COLOR);
    fp->Base.SamplersUsed = 0x1;  /* sampler 0 (bit 0) is used */
 
    if (key->scaleAndBias) {
@@ -195,21 +195,7 @@ get_pixel_transfer_program(struct gl_context *ctx, const struct state_key *key)
          { STATE_INTERNAL, STATE_PT_SCALE, 0, 0, 0 };
       static const gl_state_index bias_state[STATE_LENGTH] =
          { STATE_INTERNAL, STATE_PT_BIAS, 0, 0, 0 };
-#if 0 /* unused */
-      GLfloat scale[4], bias[4];
-#endif
       GLint scale_p, bias_p;
-
-#if 0 /* unused */
-      scale[0] = ctx->Pixel.RedScale;
-      scale[1] = ctx->Pixel.GreenScale;
-      scale[2] = ctx->Pixel.BlueScale;
-      scale[3] = ctx->Pixel.AlphaScale;
-      bias[0] = ctx->Pixel.RedBias;
-      bias[1] = ctx->Pixel.GreenBias;
-      bias[2] = ctx->Pixel.BlueBias;
-      bias[3] = ctx->Pixel.AlphaBias;
-#endif
 
       scale_p = _mesa_add_state_reference(params, scale_state);
       bias_p = _mesa_add_state_reference(params, bias_state);

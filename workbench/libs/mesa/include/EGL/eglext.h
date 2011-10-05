@@ -34,7 +34,7 @@ extern "C" {
 
 /* Header file version number */
 /* Current version at http://www.khronos.org/registry/egl/ */
-/* $Revision$ on $Date$ */
+/* $Revision: 12124 $ on $Date: 2010-07-27 20:12:35 -0700 (Tue, 27 Jul 2010) $ */
 #define EGL_EGLEXT_VERSION 7
 
 #ifndef EGL_KHR_config_attribs
@@ -131,6 +131,7 @@ typedef EGLBoolean (EGLAPIENTRYP PFNEGLDESTROYIMAGEKHRPROC) (EGLDisplay dpy, EGL
 /* EGL_DRM_BUFFER_USE_MESA bits */
 #define EGL_DRM_BUFFER_USE_SCANOUT_MESA		0x0001
 #define EGL_DRM_BUFFER_USE_SHARE_MESA		0x0002
+#define EGL_DRM_BUFFER_USE_CURSOR_MESA		0x0004
 
 #define EGL_DRM_BUFFER_MESA			0x31D3  /* eglCreateImageKHR target */
 #define EGL_DRM_BUFFER_STRIDE_MESA		0x31D4	/* eglCreateImageKHR attribute */
@@ -141,6 +142,19 @@ EGLAPI EGLBoolean EGLAPIENTRY eglExportDRMImageMESA(EGLDisplay dpy, EGLImageKHR 
 #endif
 typedef EGLImageKHR (EGLAPIENTRYP PFNEGLCREATEDRMIMAGEMESA) (EGLDisplay dpy, const EGLint *attrib_list);
 typedef EGLBoolean (EGLAPIENTRYP PFNEGLEXPORTDRMIMAGEMESA) (EGLDisplay dpy, EGLImageKHR image, EGLint *name, EGLint *handle, EGLint *stride);
+#endif
+
+#ifndef EGL_WL_bind_wayland_display
+#define EGL_WL_bind_wayland_display 1
+
+#define EGL_WAYLAND_BUFFER_WL			0x31D5 /* eglCreateImageKHR target */
+struct wl_display;
+#ifdef EGL_EGLEXT_PROTOTYPES
+EGLAPI EGLBoolean EGLAPIENTRY eglBindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display);
+EGLAPI EGLBoolean EGLAPIENTRY eglUnbindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display);
+#endif
+typedef EGLBoolean (EGLAPIENTRYP PFNEGLBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
+typedef EGLBoolean (EGLAPIENTRYP PFNEGLUNBINDWAYLANDDISPLAYWL) (EGLDisplay dpy, struct wl_display *display);
 #endif
 
 #if KHRONOS_SUPPORT_INT64   /* EGLTimeKHR requires 64-bit uint support */

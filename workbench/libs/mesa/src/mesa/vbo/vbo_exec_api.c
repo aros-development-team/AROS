@@ -34,6 +34,7 @@ USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "main/bufferobj.h"
 #include "main/context.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 #include "main/vtxfmt.h"
 #include "main/dlist.h"
 #include "main/eval.h"
@@ -158,8 +159,7 @@ static void vbo_exec_copy_to_current( struct vbo_exec_context *exec )
                        exec->vtx.attrsz[i], 
                        exec->vtx.attrptr[i]);
          
-         if (memcmp(current, tmp, sizeof(tmp)) != 0)
-         { 
+         if (memcmp(current, tmp, sizeof(tmp)) != 0) { 
             memcpy(current, tmp, sizeof(tmp));
 	 
             /* Given that we explicitly state size here, there is no need
@@ -168,6 +168,8 @@ static void vbo_exec_copy_to_current( struct vbo_exec_context *exec )
              * directly.
              */
             vbo->currval[i].Size = exec->vtx.attrsz[i];
+            assert(vbo->currval[i].Type == GL_FLOAT);
+            vbo->currval[i]._ElementSize = vbo->currval[i].Size * sizeof(GLfloat);
 
             /* This triggers rather too much recalculation of Mesa state
              * that doesn't get used (eg light positions).
@@ -191,14 +193,18 @@ static void vbo_exec_copy_to_current( struct vbo_exec_context *exec )
 }
 
 
-static void vbo_exec_copy_from_current( struct vbo_exec_context *exec )
+/**
+ * Copy current vertex attribute values into the current vertex.
+ */
+static void
+vbo_exec_copy_from_current(struct vbo_exec_context *exec)
 {
    struct gl_context *ctx = exec->ctx;
    struct vbo_context *vbo = vbo_context(ctx);
    GLint i;
 
-   for (i = VBO_ATTRIB_POS+1 ; i < VBO_ATTRIB_MAX ; i++) {
-      const GLfloat *current = (GLfloat *)vbo->currval[i].Ptr;
+   for (i = VBO_ATTRIB_POS + 1; i < VBO_ATTRIB_MAX; i++) {
+      const GLfloat *current = (GLfloat *) vbo->currval[i].Ptr;
       switch (exec->vtx.attrsz[i]) {
       case 4: exec->vtx.attrptr[i][3] = current[3];
       case 3: exec->vtx.attrptr[i][2] = current[2];
@@ -212,17 +218,21 @@ static void vbo_exec_copy_from_current( struct vbo_exec_context *exec )
 
 /**
  * Flush existing data, set new attrib size, replay copied vertices.
+ * This is called when we transition from a small vertex attribute size
+ * to a larger one.  Ex: glTexCoord2f -> glTexCoord4f.
+ * We need to go back over the previous 2-component texcoords and insert
+ * zero and one values.
  */ 
-static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
-					  GLuint attr,
-					  GLuint newsz )
+static void
+vbo_exec_wrap_upgrade_vertex(struct vbo_exec_context *exec,
+                             GLuint attr, GLuint newSize )
 {
    struct gl_context *ctx = exec->ctx;
    struct vbo_context *vbo = vbo_context(ctx);
-   GLint lastcount = exec->vtx.vert_count;
+   const GLint lastcount = exec->vtx.vert_count;
    GLfloat *old_attrptr[VBO_ATTRIB_MAX];
-   GLuint old_vtx_size = exec->vtx.vertex_size;
-   GLuint oldsz = exec->vtx.attrsz[attr];
+   const GLuint old_vtx_size = exec->vtx.vertex_size; /* floats per vertex */
+   const GLuint oldSize = exec->vtx.attrsz[attr];
    GLuint i;
 
    /* Run pipeline on current vertices, copy wrapped vertices
@@ -238,7 +248,7 @@ static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
       memcpy(old_attrptr, exec->vtx.attrptr, sizeof(old_attrptr));
    }
 
-   if (unlikely(oldsz)) {
+   if (unlikely(oldSize)) {
       /* Do a COPY_TO_CURRENT to ensure back-copying works for the
        * case when the attribute already exists in the vertex and is
        * having its size increased.
@@ -250,21 +260,21 @@ static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
     * begin/end so that they don't bloat the vertices.
     */
    if (ctx->Driver.CurrentExecPrimitive == PRIM_OUTSIDE_BEGIN_END &&
-       !oldsz && lastcount > 8 && exec->vtx.vertex_size) {
+       !oldSize && lastcount > 8 && exec->vtx.vertex_size) {
       vbo_exec_copy_to_current( exec );
       reset_attrfv( exec );
    }
 
    /* Fix up sizes:
     */
-   exec->vtx.attrsz[attr] = newsz;
-   exec->vtx.vertex_size += newsz - oldsz;
+   exec->vtx.attrsz[attr] = newSize;
+   exec->vtx.vertex_size += newSize - oldSize;
    exec->vtx.max_vert = ((VBO_VERT_BUFFER_SIZE - exec->vtx.buffer_used) / 
                          (exec->vtx.vertex_size * sizeof(GLfloat)));
    exec->vtx.vert_count = 0;
    exec->vtx.buffer_ptr = exec->vtx.buffer_map;
 
-   if (unlikely(oldsz)) {
+   if (unlikely(oldSize)) {
       /* Size changed, recalculate all the attrptr[] values
        */
       GLfloat *tmp = exec->vtx.vertex;
@@ -282,11 +292,11 @@ static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
        * values.
        */
       vbo_exec_copy_from_current( exec );
-
-   } else {
+   }
+   else {
       /* Just have to append the new attribute at the end */
       exec->vtx.attrptr[attr] = exec->vtx.vertex +
-	 exec->vtx.vertex_size - newsz;
+	 exec->vtx.vertex_size - newSize;
    }
 
    /* Replay stored vertices to translate them
@@ -310,10 +320,10 @@ static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
 	       GLint new_offset = exec->vtx.attrptr[j] - exec->vtx.vertex;
 
 	       if (j == attr) {
-		  if (oldsz) {
+		  if (oldSize) {
 		     GLfloat tmp[4];
-		     COPY_CLEAN_4V(tmp, oldsz, data + old_offset);
-		     COPY_SZ_4V(dest + new_offset, newsz, tmp);
+		     COPY_CLEAN_4V(tmp, oldSize, data + old_offset);
+		     COPY_SZ_4V(dest + new_offset, newSize, tmp);
 		  } else {
 		     GLfloat *current = (GLfloat *)vbo->currval[j].Ptr;
 		     COPY_SZ_4V(dest + new_offset, sz, current);
@@ -336,74 +346,86 @@ static void vbo_exec_wrap_upgrade_vertex( struct vbo_exec_context *exec,
 }
 
 
-static void vbo_exec_fixup_vertex( struct gl_context *ctx,
-				   GLuint attr, GLuint sz )
+/**
+ * This is when a vertex attribute transitions to a different size.
+ * For example, we saw a bunch of glTexCoord2f() calls and now we got a
+ * glTexCoord4f() call.  We promote the array from size=2 to size=4.
+ */
+static void
+vbo_exec_fixup_vertex(struct gl_context *ctx, GLuint attr, GLuint newSize)
 {
    struct vbo_exec_context *exec = &vbo_context(ctx)->exec;
-   int i;
 
-   if (sz > exec->vtx.attrsz[attr]) {
+   if (newSize > exec->vtx.attrsz[attr]) {
       /* New size is larger.  Need to flush existing vertices and get
        * an enlarged vertex format.
        */
-      vbo_exec_wrap_upgrade_vertex( exec, attr, sz );
+      vbo_exec_wrap_upgrade_vertex( exec, attr, newSize );
    }
-   else if (sz < exec->vtx.active_sz[attr]) {
+   else if (newSize < exec->vtx.active_sz[attr]) {
       static const GLfloat id[4] = { 0, 0, 0, 1 };
+      GLuint i;
 
       /* New size is smaller - just need to fill in some
        * zeros.  Don't need to flush or wrap.
        */
-      for (i = sz ; i <= exec->vtx.attrsz[attr] ; i++)
+      for (i = newSize; i <= exec->vtx.attrsz[attr]; i++)
 	 exec->vtx.attrptr[attr][i-1] = id[i-1];
    }
 
-   exec->vtx.active_sz[attr] = sz;
+   exec->vtx.active_sz[attr] = newSize;
 
    /* Does setting NeedFlush belong here?  Necessitates resetting
     * vtxfmt on each flush (otherwise flags won't get reset
     * afterwards).
     */
    if (attr == 0) 
-      exec->ctx->Driver.NeedFlush |= FLUSH_STORED_VERTICES;
+      ctx->Driver.NeedFlush |= FLUSH_STORED_VERTICES;
 }
 
 
-/* 
+/**
+ * This macro is used to implement all the glVertex, glColor, glTexCoord,
+ * glVertexAttrib, etc functions.
  */
-#define ATTR( A, N, V0, V1, V2, V3 )				\
-do {								\
-   struct vbo_exec_context *exec = &vbo_context(ctx)->exec;	\
+#define ATTR( A, N, V0, V1, V2, V3 )					\
+do {									\
+   struct vbo_exec_context *exec = &vbo_context(ctx)->exec;		\
 									\
-   if (unlikely(!(exec->ctx->Driver.NeedFlush & FLUSH_UPDATE_CURRENT))) \
-      ctx->Driver.BeginVertices( ctx );                                 \
+   if (unlikely(!(ctx->Driver.NeedFlush & FLUSH_UPDATE_CURRENT)))	\
+      ctx->Driver.BeginVertices( ctx );					\
+   									\
    if (unlikely(exec->vtx.active_sz[A] != N))				\
       vbo_exec_fixup_vertex(ctx, A, N);					\
    									\
-   {								\
-      GLfloat *dest = exec->vtx.attrptr[A];			\
-      if (N>0) dest[0] = V0;					\
-      if (N>1) dest[1] = V1;					\
-      if (N>2) dest[2] = V2;					\
-      if (N>3) dest[3] = V3;					\
-   }								\
-								\
-   if ((A) == 0) {						\
-      GLuint i;							\
-								\
-      for (i = 0; i < exec->vtx.vertex_size; i++)		\
-	 exec->vtx.buffer_ptr[i] = exec->vtx.vertex[i];		\
-								\
+   {									\
+      GLfloat *dest = exec->vtx.attrptr[A];				\
+      if (N>0) dest[0] = V0;						\
+      if (N>1) dest[1] = V1;						\
+      if (N>2) dest[2] = V2;						\
+      if (N>3) dest[3] = V3;						\
+   }									\
+									\
+   if ((A) == 0) {							\
+      /* This is a glVertex call */					\
+      GLuint i;								\
+									\
+      for (i = 0; i < exec->vtx.vertex_size; i++)			\
+	 exec->vtx.buffer_ptr[i] = exec->vtx.vertex[i];			\
+									\
       exec->vtx.buffer_ptr += exec->vtx.vertex_size;			\
-      exec->ctx->Driver.NeedFlush |= FLUSH_STORED_VERTICES;	\
-								\
-      if (++exec->vtx.vert_count >= exec->vtx.max_vert)		\
-	 vbo_exec_vtx_wrap( exec );				\
-   }								\
+									\
+      /* Set FLUSH_STORED_VERTICES to indicate that there's now */	\
+      /* something to draw (not just updating a color or texcoord).*/	\
+      ctx->Driver.NeedFlush |= FLUSH_STORED_VERTICES;			\
+									\
+      if (++exec->vtx.vert_count >= exec->vtx.max_vert)			\
+	 vbo_exec_vtx_wrap( exec );					\
+   }									\
 } while (0)
 
 
-#define ERROR() _mesa_error( ctx, GL_INVALID_ENUM, __FUNCTION__ )
+#define ERROR(err) _mesa_error( ctx, err, __FUNCTION__ )
 #define TAG(x) vbo_##x
 
 #include "vbo_attrib_tmp.h"
@@ -513,6 +535,24 @@ static void GLAPIENTRY vbo_exec_EvalPoint2( GLint i, GLint j )
 
 
 /**
+ * Flush (draw) vertices.
+ * \param  unmap - leave VBO unmapped after flushing?
+ */
+static void
+vbo_exec_FlushVertices_internal(struct vbo_exec_context *exec, GLboolean unmap)
+{
+   if (exec->vtx.vert_count || unmap) {
+      vbo_exec_vtx_flush( exec, unmap );
+   }
+
+   if (exec->vtx.vertex_size) {
+      vbo_exec_copy_to_current( exec );
+      reset_attrfv( exec );
+   }
+}
+
+
+/**
  * Called via glBegin.
  */
 static void GLAPIENTRY vbo_exec_Begin( GLenum mode )
@@ -538,7 +578,7 @@ static void GLAPIENTRY vbo_exec_Begin( GLenum mode )
        * begin/end pairs.
        */
       if (exec->vtx.vertex_size && !exec->vtx.attrsz[0]) 
-	 vbo_exec_FlushVertices_internal( ctx, GL_FALSE );
+	 vbo_exec_FlushVertices_internal(exec, GL_FALSE);
 
       i = exec->vtx.prim_count++;
       exec->vtx.prim[i].mode = mode;
@@ -568,11 +608,15 @@ static void GLAPIENTRY vbo_exec_End( void )
 
    if (ctx->Driver.CurrentExecPrimitive != PRIM_OUTSIDE_BEGIN_END) {
       struct vbo_exec_context *exec = &vbo_context(ctx)->exec;
-      int idx = exec->vtx.vert_count;
-      int i = exec->vtx.prim_count - 1;
 
-      exec->vtx.prim[i].end = 1; 
-      exec->vtx.prim[i].count = idx - exec->vtx.prim[i].start;
+      if (exec->vtx.prim_count > 0) {
+         /* close off current primitive */
+         int idx = exec->vtx.vert_count;
+         int i = exec->vtx.prim_count - 1;
+
+         exec->vtx.prim[i].end = 1; 
+         exec->vtx.prim[i].count = idx - exec->vtx.prim[i].start;
+      }
 
       ctx->Driver.CurrentExecPrimitive = PRIM_OUTSIDE_BEGIN_END;
 
@@ -801,6 +845,19 @@ void vbo_use_buffer_objects(struct gl_context *ctx)
 }
 
 
+/**
+ * If this function is called, all VBO buffers will be unmapped when
+ * we flush.
+ * Otherwise, if a simple command like glColor3f() is called and we flush,
+ * the current VBO may be left mapped.
+ */
+void
+vbo_always_unmap_buffers(struct gl_context *ctx)
+{
+   struct vbo_exec_context *exec = &vbo_context(ctx)->exec;
+   exec->begin_vertices_flags |= FLUSH_STORED_VERTICES;
+}
+
 
 void vbo_exec_vtx_init( struct vbo_exec_context *exec )
 {
@@ -824,7 +881,7 @@ void vbo_exec_vtx_init( struct vbo_exec_context *exec )
 
    /* Hook our functions into the dispatch table.
     */
-   _mesa_install_exec_vtxfmt( exec->ctx, &exec->vtxfmt );
+   _mesa_install_exec_vtxfmt( ctx, &exec->vtxfmt );
 
    for (i = 0 ; i < VBO_ATTRIB_MAX ; i++) {
       ASSERT(i < Elements(exec->vtx.attrsz));
@@ -856,6 +913,8 @@ void vbo_exec_vtx_init( struct vbo_exec_context *exec )
    }
 
    exec->vtx.vertex_size = 0;
+
+   exec->begin_vertices_flags = FLUSH_UPDATE_CURRENT;
 }
 
 
@@ -893,32 +952,25 @@ void vbo_exec_vtx_destroy( struct vbo_exec_context *exec )
    _mesa_reference_buffer_object(ctx, &exec->vtx.bufferobj, NULL);
 }
 
+
+/**
+ * Called upon first glVertex, glColor, glTexCoord, etc.
+ */
 void vbo_exec_BeginVertices( struct gl_context *ctx )
 {
    struct vbo_exec_context *exec = &vbo_context(ctx)->exec;
-   if (0) printf("%s\n", __FUNCTION__);
+
    vbo_exec_vtx_map( exec );
 
-   assert((exec->ctx->Driver.NeedFlush & FLUSH_UPDATE_CURRENT) == 0);
-   exec->ctx->Driver.NeedFlush |= FLUSH_UPDATE_CURRENT;
-}
+   assert((ctx->Driver.NeedFlush & FLUSH_UPDATE_CURRENT) == 0);
+   assert(exec->begin_vertices_flags);
 
-void vbo_exec_FlushVertices_internal( struct gl_context *ctx, GLboolean unmap )
-{
-   struct vbo_exec_context *exec = &vbo_context(ctx)->exec;
-
-   if (exec->vtx.vert_count || unmap) {
-      vbo_exec_vtx_flush( exec, unmap );
-   }
-
-   if (exec->vtx.vertex_size) {
-      vbo_exec_copy_to_current( exec );
-      reset_attrfv( exec );
-   }
+   ctx->Driver.NeedFlush |= exec->begin_vertices_flags;
 }
 
 
 /**
+ * Called via ctx->Driver.FlushVertices()
  * \param flags  bitmask of FLUSH_STORED_VERTICES, FLUSH_UPDATE_CURRENT
  */
 void vbo_exec_FlushVertices( struct gl_context *ctx, GLuint flags )
@@ -931,10 +983,8 @@ void vbo_exec_FlushVertices( struct gl_context *ctx, GLuint flags )
    assert(exec->flush_call_depth == 1);
 #endif
 
-   if (0) printf("%s\n", __FUNCTION__);
-
-   if (exec->ctx->Driver.CurrentExecPrimitive != PRIM_OUTSIDE_BEGIN_END) {
-      if (0) printf("%s - inside begin/end\n", __FUNCTION__);
+   if (ctx->Driver.CurrentExecPrimitive != PRIM_OUTSIDE_BEGIN_END) {
+      /* We've had glBegin but not glEnd! */
 #ifdef DEBUG
       exec->flush_call_depth--;
       assert(exec->flush_call_depth == 0);
@@ -942,14 +992,12 @@ void vbo_exec_FlushVertices( struct gl_context *ctx, GLuint flags )
       return;
    }
 
-   vbo_exec_FlushVertices_internal( ctx, GL_TRUE );
+   /* Flush (draw), and make sure VBO is left unmapped when done */
+   vbo_exec_FlushVertices_internal(exec, GL_TRUE);
 
    /* Need to do this to ensure BeginVertices gets called again:
     */
-   if (exec->ctx->Driver.NeedFlush & FLUSH_UPDATE_CURRENT)
-      exec->ctx->Driver.NeedFlush &= ~FLUSH_UPDATE_CURRENT;
-
-   exec->ctx->Driver.NeedFlush &= ~flags;
+   ctx->Driver.NeedFlush &= ~(FLUSH_UPDATE_CURRENT | flags);
 
 #ifdef DEBUG
    exec->flush_call_depth--;
@@ -1020,7 +1068,7 @@ VertexAttrib4f_nopos(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
    if (index < MAX_VERTEX_GENERIC_ATTRIBS)
       ATTR(VBO_ATTRIB_GENERIC0 + index, 4, x, y, z, w);
    else
-      ERROR();
+      ERROR(GL_INVALID_VALUE);
 }
 
 void GLAPIENTRY

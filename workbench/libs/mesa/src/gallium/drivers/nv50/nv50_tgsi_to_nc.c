@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-/* #define NV50_TGSI2NC_DEBUG */
-
 #include <unistd.h>
 
 #include "nv50_context.h"
@@ -213,7 +211,7 @@ static INLINE void
 bld_warn_uninitialized(struct bld_context *bld, int kind,
                        struct bld_value_stack *stk, struct nv_basic_block *b)
 {
-#ifdef NV50_TGSI2NC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_IR
    long i = (stk - &bld->tvs[0][0]) / 4;
    long c = (stk - &bld->tvs[0][0]) & 3;
 
@@ -271,6 +269,12 @@ fetch_by_bb(struct bld_value_stack *stack,
    for (i = 0; i < b->num_in; ++i)
       if (!IS_WALL_EDGE(b->in_kind[i]))
          fetch_by_bb(stack, vals, n, b->in[i]);
+}
+
+static INLINE boolean
+nvbb_is_terminated(struct nv_basic_block *bb)
+{
+   return bb->exit && bb->exit->is_terminator;
 }
 
 static INLINE struct nv_value *
@@ -476,6 +480,7 @@ bld_loop_end(struct bld_context *bld, struct nv_basic_block *bb)
       stk = (struct bld_value_stack *)phi->target;
       phi->target = NULL;
 
+      /* start with s == 1, src[0] is from outside the loop */
       for (s = 1, n = 0; n < bb->num_in; ++n) {
          if (bb->in_kind[n] != CFG_EDGE_BACK)
             continue;
@@ -487,8 +492,11 @@ bld_loop_end(struct bld_context *bld, struct nv_basic_block *bb)
          for (i = 0; i < 4; ++i)
             if (phi->src[i] && phi->src[i]->value == val)
                break;
-         if (i == 4)
+         if (i == 4) {
+            /* skip values we do not want to replace */
+            for (; phi->src[s] && phi->src[s]->value != phi->def[0]; ++s);
             nv_reference(bld->pc, &phi->src[s++], val);
+         }
       }
       bld->pc->current_block = save;
 
@@ -1102,9 +1110,8 @@ emit_fetch(struct bld_context *bld, const struct tgsi_full_instruction *insn,
 
    switch (src->Register.File) {
    case TGSI_FILE_CONSTANT:
-      dim_idx = src->Dimension.Index ? src->Dimension.Index + 2 : 1;
-      assert(dim_idx < 14);
-      assert(dim_idx == 1); /* for now */
+      dim_idx = src->Dimension.Index;
+      assert(dim_idx < 15);
 
       res = new_value(bld->pc, NV_FILE_MEM_C(dim_idx), type);
       SET_TYPE(res, type);
@@ -1130,7 +1137,7 @@ emit_fetch(struct bld_context *bld, const struct tgsi_full_instruction *insn,
    case TGSI_FILE_INPUT:
       res = bld_saved_input(bld, idx, swz);
       if (res && (insn->Instruction.Opcode != TGSI_OPCODE_TXP))
-         return res;
+         break;
 
       res = new_value(bld->pc, bld->ti->input_file, type);
       res->reg.id = bld->ti->input_map[idx][swz];
@@ -1155,6 +1162,13 @@ emit_fetch(struct bld_context *bld, const struct tgsi_full_instruction *insn,
       break;
    case TGSI_FILE_PREDICATE:
       res = bld_fetch_global(bld, &bld->pvs[idx][swz]);
+      break;
+   case TGSI_FILE_SYSTEM_VALUE:
+      res = new_value(bld->pc, bld->ti->input_file, NV_TYPE_U32);
+      res->reg.id = bld->ti->sysval_map[idx];
+      res = bld_insn_1(bld, NV_OP_LDA, res);
+      res = bld_insn_1(bld, NV_OP_CVT, res);
+      res->reg.type = NV_TYPE_F32;
       break;
    default:
       NOUVEAU_ERR("illegal/unhandled src reg file: %d\n", src->Register.File);
@@ -1468,7 +1482,7 @@ bld_tex(struct bld_context *bld, struct nv_value *dst0[4],
    uint opcode = translate_opcode(insn->Instruction.Opcode);
    int arg = 0, dim = 0, c;
    const int tic = insn->Src[1].Register.Index;
-   const int tsc = 0;
+   const int tsc = tic;
    const int cube = (insn->Texture.Texture  == TGSI_TEXTURE_CUBE) ? 1 : 0;
 
    get_tex_dim(insn, &dim, &arg);
@@ -1538,6 +1552,8 @@ static void
 bld_instruction(struct bld_context *bld,
                 const struct tgsi_full_instruction *insn)
 {
+   struct nv50_program *prog = bld->ti->p;
+   const struct tgsi_full_dst_register *dreg = &insn->Dst[0];
    struct nv_value *src0;
    struct nv_value *src1;
    struct nv_value *src2;
@@ -1546,7 +1562,7 @@ bld_instruction(struct bld_context *bld,
    int c;
    uint opcode = translate_opcode(insn->Instruction.Opcode);
 
-#ifdef NV50_TGSI2NC_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_PROG_IR
    debug_printf("bld_instruction:"); tgsi_dump_instruction(insn, 1);
 #endif
 	
@@ -1717,6 +1733,9 @@ bld_instruction(struct bld_context *bld,
    {
       struct nv_basic_block *b = new_basic_block(bld->pc);
 
+      if (!nvbb_is_terminated(bld->pc->current_block))
+         bld_flow(bld, NV_OP_BRA, NV_CC_TR, NULL, b, FALSE);
+
       --bld->cond_lvl;
       nvbb_attach_block(bld->pc->current_block, b, bld->out_kind);
       nvbb_attach_block(bld->cond_bb[bld->cond_lvl], b, CFG_EDGE_FORWARD);
@@ -1786,7 +1805,8 @@ bld_instruction(struct bld_context *bld,
    {
       struct nv_basic_block *bb = bld->loop_bb[bld->loop_lvl - 1];
 
-      bld_flow(bld, NV_OP_BRA, NV_CC_TR, NULL, bb, FALSE);
+      if (!nvbb_is_terminated(bld->pc->current_block))
+         bld_flow(bld, NV_OP_BRA, NV_CC_TR, NULL, bb, FALSE);
 
       nvbb_attach_block(bld->pc->current_block, bb, CFG_EDGE_BACK);
 
@@ -1923,6 +1943,7 @@ bld_instruction(struct bld_context *bld,
          dst0[c] = bld_insn_2(bld, NV_OP_XOR, temp, temp);
          dst0[c]->insn->cc = NV_CC_EQ;
          nv_reference(bld->pc, &dst0[c]->insn->flags_src, src1);
+         dst0[c] = bld_insn_2(bld, NV_OP_SELECT, dst0[c], temp);
       }
       break;
    case TGSI_OPCODE_SUB:
@@ -1971,6 +1992,31 @@ bld_instruction(struct bld_context *bld,
 
    FOR_EACH_DST0_ENABLED_CHANNEL(c, insn)
       emit_store(bld, insn, c, dst0[c]);
+
+   if (prog->type == PIPE_SHADER_VERTEX && prog->vp.clpd_nr &&
+       dreg->Register.File == TGSI_FILE_OUTPUT && !dreg->Register.Indirect &&
+       prog->out[dreg->Register.Index].sn == TGSI_SEMANTIC_POSITION) {
+
+      int p;
+      for (p = 0; p < prog->vp.clpd_nr; p++) {
+         struct nv_value *clipd = NULL;
+
+         for (c = 0; c < 4; c++) {
+            temp = new_value(bld->pc, NV_FILE_MEM_C(15), NV_TYPE_F32);
+            temp->reg.id = p * 4 + c;
+            temp = bld_insn_1(bld, NV_OP_LDA, temp);
+
+            clipd = clipd ?
+                        bld_insn_3(bld, NV_OP_MAD, dst0[c], temp, clipd) :
+                        bld_insn_2(bld, NV_OP_MUL, dst0[c], temp);
+         }
+
+         temp = bld_insn_1(bld, NV_OP_MOV, clipd);
+         temp->reg.file = NV_FILE_OUT;
+         temp->reg.id = bld->ti->p->vp.clpd + p;
+         temp->insn->fixed = 1;
+      }
+   }
 }
 
 static INLINE void

@@ -73,13 +73,6 @@ void u_default_transfer_flush_region( struct pipe_context *pipe,
     */
 }
 
-unsigned u_default_is_resource_referenced( struct pipe_context *pipe,
-                                           struct pipe_resource *resource,
-                                           unsigned level, int layer)
-{
-   return 0;
-}
-
 struct pipe_transfer * u_default_get_transfer(struct pipe_context *context,
                                               struct pipe_resource *resource,
                                               unsigned level,
@@ -112,3 +105,10 @@ void u_default_transfer_destroy(struct pipe_context *pipe,
    FREE(transfer);
 }
 
+void u_default_redefine_user_buffer(struct pipe_context *ctx,
+                                    struct pipe_resource *resource,
+                                    unsigned offset,
+                                    unsigned size)
+{
+   resource->width0 = MAX2(resource->width0, offset + size);
+}

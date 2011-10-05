@@ -27,7 +27,7 @@
  */
 
 
-#  if defined(__GNUC__) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590)) && defined(__ELF__)
+#  if (defined(__GNUC__) && !defined(__CYGWIN__) && !defined(__MINGW32__)) || (defined(__SUNPRO_C) && (__SUNPRO_C >= 0x590) && defined(__ELF__))
 #    define HIDDEN  __attribute__((visibility("hidden")))
 #  else
 #    define HIDDEN
@@ -2597,7 +2597,7 @@ KEYWORD1 void KEYWORD2 NAME(ClampColor)(GLenum target, GLenum clamp)
    DISPATCH(ClampColor, (target, clamp), (F, "glClampColor(0x%x, 0x%x);\n", target, clamp));
 }
 
-KEYWORD1 void KEYWORD2 NAME(ClearBufferfi)(GLenum buffer, GLint drawbuffer, const GLfloat depth, const GLint stencil)
+KEYWORD1 void KEYWORD2 NAME(ClearBufferfi)(GLenum buffer, GLint drawbuffer, GLfloat depth, GLint stencil)
 {
    DISPATCH(ClearBufferfi, (buffer, drawbuffer, depth, stencil), (F, "glClearBufferfi(0x%x, %d, %f, %d);\n", buffer, drawbuffer, depth, stencil));
 }
@@ -3857,6 +3857,11 @@ KEYWORD1 void KEYWORD2 NAME(DrawBuffersATI)(GLsizei n, const GLenum * bufs)
    DISPATCH(DrawBuffersARB, (n, bufs), (F, "glDrawBuffersATI(%d, %p);\n", n, (const void *) bufs));
 }
 
+KEYWORD1 void KEYWORD2 NAME(ClampColorARB)(GLenum target, GLenum clamp)
+{
+   DISPATCH(ClampColorARB, (target, clamp), (F, "glClampColorARB(0x%x, 0x%x);\n", target, clamp));
+}
+
 KEYWORD1 void KEYWORD2 NAME(DrawArraysInstancedARB)(GLenum mode, GLint first, GLsizei count, GLsizei primcount)
 {
    DISPATCH(DrawArraysInstancedARB, (mode, first, count, primcount), (F, "glDrawArraysInstancedARB(0x%x, %d, %d, %d);\n", mode, first, count, primcount));
@@ -3912,6 +3917,11 @@ KEYWORD1 void KEYWORD2 NAME(ProgramParameteriARB)(GLuint program, GLenum pname, 
    DISPATCH(ProgramParameteriARB, (program, pname, value), (F, "glProgramParameteriARB(%d, 0x%x, %d);\n", program, pname, value));
 }
 
+KEYWORD1 void KEYWORD2 NAME(VertexAttribDivisorARB)(GLuint index, GLuint divisor)
+{
+   DISPATCH(VertexAttribDivisorARB, (index, divisor), (F, "glVertexAttribDivisorARB(%d, %d);\n", index, divisor));
+}
+
 KEYWORD1 void KEYWORD2 NAME(FlushMappedBufferRange)(GLenum target, GLintptr offset, GLsizeiptr length)
 {
    DISPATCH(FlushMappedBufferRange, (target, offset, length), (F, "glFlushMappedBufferRange(0x%x, %d, %d);\n", target, offset, length));
@@ -3920,6 +3930,11 @@ KEYWORD1 void KEYWORD2 NAME(FlushMappedBufferRange)(GLenum target, GLintptr offs
 KEYWORD1 GLvoid * KEYWORD2 NAME(MapBufferRange)(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
    RETURN_DISPATCH(MapBufferRange, (target, offset, length, access), (F, "glMapBufferRange(0x%x, %d, %d, %d);\n", target, offset, length, access));
+}
+
+KEYWORD1 void KEYWORD2 NAME(TexBufferARB)(GLenum target, GLenum internalFormat, GLuint buffer)
+{
+   DISPATCH(TexBufferARB, (target, internalFormat, buffer), (F, "glTexBufferARB(0x%x, 0x%x, %d);\n", target, internalFormat, buffer));
 }
 
 KEYWORD1 void KEYWORD2 NAME(BindVertexArray)(GLuint array)
@@ -3977,6 +3992,11 @@ KEYWORD1 void KEYWORD2 NAME(DrawElementsBaseVertex)(GLenum mode, GLsizei count, 
    DISPATCH(DrawElementsBaseVertex, (mode, count, type, indices, basevertex), (F, "glDrawElementsBaseVertex(0x%x, %d, 0x%x, %p, %d);\n", mode, count, type, (const void *) indices, basevertex));
 }
 
+KEYWORD1 void KEYWORD2 NAME(DrawElementsInstancedBaseVertex)(GLenum mode, GLsizei count, GLenum type, const GLvoid * indices, GLsizei primcount, GLint basevertex)
+{
+   DISPATCH(DrawElementsInstancedBaseVertex, (mode, count, type, indices, primcount, basevertex), (F, "glDrawElementsInstancedBaseVertex(0x%x, %d, 0x%x, %p, %d, %d);\n", mode, count, type, (const void *) indices, primcount, basevertex));
+}
+
 KEYWORD1 void KEYWORD2 NAME(DrawRangeElementsBaseVertex)(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid * indices, GLint basevertex)
 {
    DISPATCH(DrawRangeElementsBaseVertex, (mode, start, end, count, type, indices, basevertex), (F, "glDrawRangeElementsBaseVertex(0x%x, %d, %d, %d, 0x%x, %p, %d);\n", mode, start, end, count, type, (const void *) indices, basevertex));
@@ -3985,6 +4005,116 @@ KEYWORD1 void KEYWORD2 NAME(DrawRangeElementsBaseVertex)(GLenum mode, GLuint sta
 KEYWORD1 void KEYWORD2 NAME(MultiDrawElementsBaseVertex)(GLenum mode, const GLsizei * count, GLenum type, const GLvoid ** indices, GLsizei primcount, const GLint * basevertex)
 {
    DISPATCH(MultiDrawElementsBaseVertex, (mode, count, type, indices, primcount, basevertex), (F, "glMultiDrawElementsBaseVertex(0x%x, %p, 0x%x, %p, %d, %p);\n", mode, (const void *) count, type, (const void *) indices, primcount, (const void *) basevertex));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendEquationSeparateiARB)(GLuint buf, GLenum modeRGB, GLenum modeA)
+{
+   DISPATCH(BlendEquationSeparateiARB, (buf, modeRGB, modeA), (F, "glBlendEquationSeparateiARB(%d, 0x%x, 0x%x);\n", buf, modeRGB, modeA));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendEquationSeparateIndexedAMD)(GLuint buf, GLenum modeRGB, GLenum modeA)
+{
+   DISPATCH(BlendEquationSeparateiARB, (buf, modeRGB, modeA), (F, "glBlendEquationSeparateIndexedAMD(%d, 0x%x, 0x%x);\n", buf, modeRGB, modeA));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendEquationiARB)(GLuint buf, GLenum mode)
+{
+   DISPATCH(BlendEquationiARB, (buf, mode), (F, "glBlendEquationiARB(%d, 0x%x);\n", buf, mode));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendEquationIndexedAMD)(GLuint buf, GLenum mode)
+{
+   DISPATCH(BlendEquationiARB, (buf, mode), (F, "glBlendEquationIndexedAMD(%d, 0x%x);\n", buf, mode));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendFuncSeparateiARB)(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcA, GLenum dstA)
+{
+   DISPATCH(BlendFuncSeparateiARB, (buf, srcRGB, dstRGB, srcA, dstA), (F, "glBlendFuncSeparateiARB(%d, 0x%x, 0x%x, 0x%x, 0x%x);\n", buf, srcRGB, dstRGB, srcA, dstA));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendFuncSeparateIndexedAMD)(GLuint buf, GLenum srcRGB, GLenum dstRGB, GLenum srcA, GLenum dstA)
+{
+   DISPATCH(BlendFuncSeparateiARB, (buf, srcRGB, dstRGB, srcA, dstA), (F, "glBlendFuncSeparateIndexedAMD(%d, 0x%x, 0x%x, 0x%x, 0x%x);\n", buf, srcRGB, dstRGB, srcA, dstA));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendFunciARB)(GLuint buf, GLenum src, GLenum dst)
+{
+   DISPATCH(BlendFunciARB, (buf, src, dst), (F, "glBlendFunciARB(%d, 0x%x, 0x%x);\n", buf, src, dst));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BlendFuncIndexedAMD)(GLuint buf, GLenum src, GLenum dst)
+{
+   DISPATCH(BlendFunciARB, (buf, src, dst), (F, "glBlendFuncIndexedAMD(%d, 0x%x, 0x%x);\n", buf, src, dst));
+}
+
+KEYWORD1 void KEYWORD2 NAME(BindSampler)(GLuint unit, GLuint sampler)
+{
+   DISPATCH(BindSampler, (unit, sampler), (F, "glBindSampler(%d, %d);\n", unit, sampler));
+}
+
+KEYWORD1 void KEYWORD2 NAME(DeleteSamplers)(GLsizei count, const GLuint * samplers)
+{
+   DISPATCH(DeleteSamplers, (count, samplers), (F, "glDeleteSamplers(%d, %p);\n", count, (const void *) samplers));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GenSamplers)(GLsizei count, GLuint * samplers)
+{
+   DISPATCH(GenSamplers, (count, samplers), (F, "glGenSamplers(%d, %p);\n", count, (const void *) samplers));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetSamplerParameterIiv)(GLuint sampler, GLenum pname, GLint * params)
+{
+   DISPATCH(GetSamplerParameterIiv, (sampler, pname, params), (F, "glGetSamplerParameterIiv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetSamplerParameterIuiv)(GLuint sampler, GLenum pname, GLuint * params)
+{
+   DISPATCH(GetSamplerParameterIuiv, (sampler, pname, params), (F, "glGetSamplerParameterIuiv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetSamplerParameterfv)(GLuint sampler, GLenum pname, GLfloat * params)
+{
+   DISPATCH(GetSamplerParameterfv, (sampler, pname, params), (F, "glGetSamplerParameterfv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetSamplerParameteriv)(GLuint sampler, GLenum pname, GLint * params)
+{
+   DISPATCH(GetSamplerParameteriv, (sampler, pname, params), (F, "glGetSamplerParameteriv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 GLboolean KEYWORD2 NAME(IsSampler)(GLuint sampler)
+{
+   RETURN_DISPATCH(IsSampler, (sampler), (F, "glIsSampler(%d);\n", sampler));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameterIiv)(GLuint sampler, GLenum pname, const GLint * params)
+{
+   DISPATCH(SamplerParameterIiv, (sampler, pname, params), (F, "glSamplerParameterIiv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameterIuiv)(GLuint sampler, GLenum pname, const GLuint * params)
+{
+   DISPATCH(SamplerParameterIuiv, (sampler, pname, params), (F, "glSamplerParameterIuiv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameterf)(GLuint sampler, GLenum pname, GLfloat param)
+{
+   DISPATCH(SamplerParameterf, (sampler, pname, param), (F, "glSamplerParameterf(%d, 0x%x, %f);\n", sampler, pname, param));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameterfv)(GLuint sampler, GLenum pname, const GLfloat * params)
+{
+   DISPATCH(SamplerParameterfv, (sampler, pname, params), (F, "glSamplerParameterfv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameteri)(GLuint sampler, GLenum pname, GLint param)
+{
+   DISPATCH(SamplerParameteri, (sampler, pname, param), (F, "glSamplerParameteri(%d, 0x%x, %d);\n", sampler, pname, param));
+}
+
+KEYWORD1 void KEYWORD2 NAME(SamplerParameteriv)(GLuint sampler, GLenum pname, const GLint * params)
+{
+   DISPATCH(SamplerParameteriv, (sampler, pname, params), (F, "glSamplerParameteriv(%d, 0x%x, %p);\n", sampler, pname, (const void *) params));
 }
 
 KEYWORD1 void KEYWORD2 NAME(BindTransformFeedback)(GLenum target, GLuint id)
@@ -4020,6 +4150,131 @@ KEYWORD1 void KEYWORD2 NAME(PauseTransformFeedback)(void)
 KEYWORD1 void KEYWORD2 NAME(ResumeTransformFeedback)(void)
 {
    DISPATCH(ResumeTransformFeedback, (), (F, "glResumeTransformFeedback();\n"));
+}
+
+KEYWORD1 void KEYWORD2 NAME(ClearDepthf)(GLclampf depth)
+{
+   DISPATCH(ClearDepthf, (depth), (F, "glClearDepthf(%f);\n", depth));
+}
+
+KEYWORD1 void KEYWORD2 NAME(DepthRangef)(GLclampf zNear, GLclampf zFar)
+{
+   DISPATCH(DepthRangef, (zNear, zFar), (F, "glDepthRangef(%f, %f);\n", zNear, zFar));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetShaderPrecisionFormat)(GLenum shadertype, GLenum precisiontype, GLint * range, GLint * precision)
+{
+   DISPATCH(GetShaderPrecisionFormat, (shadertype, precisiontype, range, precision), (F, "glGetShaderPrecisionFormat(0x%x, 0x%x, %p, %p);\n", shadertype, precisiontype, (const void *) range, (const void *) precision));
+}
+
+KEYWORD1 void KEYWORD2 NAME(ReleaseShaderCompiler)(void)
+{
+   DISPATCH(ReleaseShaderCompiler, (), (F, "glReleaseShaderCompiler();\n"));
+}
+
+KEYWORD1 void KEYWORD2 NAME(ShaderBinary)(GLsizei n, const GLuint * shaders, GLenum binaryformat, const GLvoid * binary, GLsizei length)
+{
+   DISPATCH(ShaderBinary, (n, shaders, binaryformat, binary, length), (F, "glShaderBinary(%d, %p, 0x%x, %p, %d);\n", n, (const void *) shaders, binaryformat, (const void *) binary, length));
+}
+
+KEYWORD1 GLenum KEYWORD2 NAME(GetGraphicsResetStatusARB)(void)
+{
+   RETURN_DISPATCH(GetGraphicsResetStatusARB, (), (F, "glGetGraphicsResetStatusARB();\n"));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnColorTableARB)(GLenum target, GLenum format, GLenum type, GLsizei bufSize, GLvoid * table)
+{
+   DISPATCH(GetnColorTableARB, (target, format, type, bufSize, table), (F, "glGetnColorTableARB(0x%x, 0x%x, 0x%x, %d, %p);\n", target, format, type, bufSize, (const void *) table));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnCompressedTexImageARB)(GLenum target, GLint lod, GLsizei bufSize, GLvoid * img)
+{
+   DISPATCH(GetnCompressedTexImageARB, (target, lod, bufSize, img), (F, "glGetnCompressedTexImageARB(0x%x, %d, %d, %p);\n", target, lod, bufSize, (const void *) img));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnConvolutionFilterARB)(GLenum target, GLenum format, GLenum type, GLsizei bufSize, GLvoid * image)
+{
+   DISPATCH(GetnConvolutionFilterARB, (target, format, type, bufSize, image), (F, "glGetnConvolutionFilterARB(0x%x, 0x%x, 0x%x, %d, %p);\n", target, format, type, bufSize, (const void *) image));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnHistogramARB)(GLenum target, GLboolean reset, GLenum format, GLenum type, GLsizei bufSize, GLvoid * values)
+{
+   DISPATCH(GetnHistogramARB, (target, reset, format, type, bufSize, values), (F, "glGetnHistogramARB(0x%x, %d, 0x%x, 0x%x, %d, %p);\n", target, reset, format, type, bufSize, (const void *) values));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnMapdvARB)(GLenum target, GLenum query, GLsizei bufSize, GLdouble * v)
+{
+   DISPATCH(GetnMapdvARB, (target, query, bufSize, v), (F, "glGetnMapdvARB(0x%x, 0x%x, %d, %p);\n", target, query, bufSize, (const void *) v));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnMapfvARB)(GLenum target, GLenum query, GLsizei bufSize, GLfloat * v)
+{
+   DISPATCH(GetnMapfvARB, (target, query, bufSize, v), (F, "glGetnMapfvARB(0x%x, 0x%x, %d, %p);\n", target, query, bufSize, (const void *) v));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnMapivARB)(GLenum target, GLenum query, GLsizei bufSize, GLint * v)
+{
+   DISPATCH(GetnMapivARB, (target, query, bufSize, v), (F, "glGetnMapivARB(0x%x, 0x%x, %d, %p);\n", target, query, bufSize, (const void *) v));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnMinmaxARB)(GLenum target, GLboolean reset, GLenum format, GLenum type, GLsizei bufSize, GLvoid * values)
+{
+   DISPATCH(GetnMinmaxARB, (target, reset, format, type, bufSize, values), (F, "glGetnMinmaxARB(0x%x, %d, 0x%x, 0x%x, %d, %p);\n", target, reset, format, type, bufSize, (const void *) values));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnPixelMapfvARB)(GLenum map, GLsizei bufSize, GLfloat * values)
+{
+   DISPATCH(GetnPixelMapfvARB, (map, bufSize, values), (F, "glGetnPixelMapfvARB(0x%x, %d, %p);\n", map, bufSize, (const void *) values));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnPixelMapuivARB)(GLenum map, GLsizei bufSize, GLuint * values)
+{
+   DISPATCH(GetnPixelMapuivARB, (map, bufSize, values), (F, "glGetnPixelMapuivARB(0x%x, %d, %p);\n", map, bufSize, (const void *) values));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnPixelMapusvARB)(GLenum map, GLsizei bufSize, GLushort * values)
+{
+   DISPATCH(GetnPixelMapusvARB, (map, bufSize, values), (F, "glGetnPixelMapusvARB(0x%x, %d, %p);\n", map, bufSize, (const void *) values));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnPolygonStippleARB)(GLsizei bufSize, GLubyte * pattern)
+{
+   DISPATCH(GetnPolygonStippleARB, (bufSize, pattern), (F, "glGetnPolygonStippleARB(%d, %p);\n", bufSize, (const void *) pattern));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnSeparableFilterARB)(GLenum target, GLenum format, GLenum type, GLsizei rowBufSize, GLvoid * row, GLsizei columnBufSize, GLvoid * column, GLvoid * span)
+{
+   DISPATCH(GetnSeparableFilterARB, (target, format, type, rowBufSize, row, columnBufSize, column, span), (F, "glGetnSeparableFilterARB(0x%x, 0x%x, 0x%x, %d, %p, %d, %p, %p);\n", target, format, type, rowBufSize, (const void *) row, columnBufSize, (const void *) column, (const void *) span));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnTexImageARB)(GLenum target, GLint level, GLenum format, GLenum type, GLsizei bufSize, GLvoid * img)
+{
+   DISPATCH(GetnTexImageARB, (target, level, format, type, bufSize, img), (F, "glGetnTexImageARB(0x%x, %d, 0x%x, 0x%x, %d, %p);\n", target, level, format, type, bufSize, (const void *) img));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnUniformdvARB)(GLhandleARB program, GLint location, GLsizei bufSize, GLdouble * params)
+{
+   DISPATCH(GetnUniformdvARB, (program, location, bufSize, params), (F, "glGetnUniformdvARB(%d, %d, %d, %p);\n", program, location, bufSize, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnUniformfvARB)(GLhandleARB program, GLint location, GLsizei bufSize, GLfloat * params)
+{
+   DISPATCH(GetnUniformfvARB, (program, location, bufSize, params), (F, "glGetnUniformfvARB(%d, %d, %d, %p);\n", program, location, bufSize, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnUniformivARB)(GLhandleARB program, GLint location, GLsizei bufSize, GLint * params)
+{
+   DISPATCH(GetnUniformivARB, (program, location, bufSize, params), (F, "glGetnUniformivARB(%d, %d, %d, %p);\n", program, location, bufSize, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(GetnUniformuivARB)(GLhandleARB program, GLint location, GLsizei bufSize, GLuint * params)
+{
+   DISPATCH(GetnUniformuivARB, (program, location, bufSize, params), (F, "glGetnUniformuivARB(%d, %d, %d, %p);\n", program, location, bufSize, (const void *) params));
+}
+
+KEYWORD1 void KEYWORD2 NAME(ReadnPixelsARB)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLsizei bufSize, GLvoid * data)
+{
+   DISPATCH(ReadnPixelsARB, (x, y, width, height, format, type, bufSize, data), (F, "glReadnPixelsARB(%d, %d, %d, %d, 0x%x, 0x%x, %d, %p);\n", x, y, width, height, format, type, bufSize, (const void *) data));
 }
 
 KEYWORD1 void KEYWORD2 NAME(PolygonOffsetEXT)(GLfloat factor, GLfloat bias)
@@ -5897,6 +6152,11 @@ KEYWORD1 void KEYWORD2 NAME(FramebufferTextureLayer)(GLenum target, GLenum attac
    DISPATCH(FramebufferTextureLayerEXT, (target, attachment, texture, level, layer), (F, "glFramebufferTextureLayer(0x%x, 0x%x, %d, %d, %d);\n", target, attachment, texture, level, layer));
 }
 
+KEYWORD1 void KEYWORD2 NAME(FramebufferTextureLayerARB)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer)
+{
+   DISPATCH(FramebufferTextureLayerEXT, (target, attachment, texture, level, layer), (F, "glFramebufferTextureLayerARB(0x%x, 0x%x, %d, %d, %d);\n", target, attachment, texture, level, layer));
+}
+
 KEYWORD1 void KEYWORD2 NAME(FramebufferTextureLayerEXT)(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer)
 {
    DISPATCH(FramebufferTextureLayerEXT, (target, attachment, texture, level, layer), (F, "glFramebufferTextureLayerEXT(0x%x, 0x%x, %d, %d, %d);\n", target, attachment, texture, level, layer));
@@ -6145,6 +6405,11 @@ KEYWORD1 GLuint KEYWORD2 NAME(CreateShaderProgramEXT)(GLenum type, const GLchar 
 KEYWORD1 void KEYWORD2 NAME(UseShaderProgramEXT)(GLenum type, GLuint program)
 {
    DISPATCH(UseShaderProgramEXT, (type, program), (F, "glUseShaderProgramEXT(0x%x, %d);\n", type, program));
+}
+
+KEYWORD1 void KEYWORD2 NAME(TextureBarrierNV)(void)
+{
+   DISPATCH(TextureBarrierNV, (), (F, "glTextureBarrierNV();\n"));
 }
 
 KEYWORD1 void KEYWORD2 NAME(StencilFuncSeparateATI)(GLenum frontfunc, GLenum backfunc, GLint ref, GLuint mask)
@@ -6881,14 +7146,17 @@ _glapi_proc DISPATCH_TABLE_NAME[] = {
    TABLE_ENTRY(GetActiveAttribARB),
    TABLE_ENTRY(GetAttribLocationARB),
    TABLE_ENTRY(DrawBuffersARB),
+   TABLE_ENTRY(ClampColorARB),
    TABLE_ENTRY(DrawArraysInstancedARB),
    TABLE_ENTRY(DrawElementsInstancedARB),
    TABLE_ENTRY(RenderbufferStorageMultisample),
    TABLE_ENTRY(FramebufferTextureARB),
    TABLE_ENTRY(FramebufferTextureFaceARB),
    TABLE_ENTRY(ProgramParameteriARB),
+   TABLE_ENTRY(VertexAttribDivisorARB),
    TABLE_ENTRY(FlushMappedBufferRange),
    TABLE_ENTRY(MapBufferRange),
+   TABLE_ENTRY(TexBufferARB),
    TABLE_ENTRY(BindVertexArray),
    TABLE_ENTRY(GenVertexArrays),
    TABLE_ENTRY(CopyBufferSubData),
@@ -6900,8 +7168,27 @@ _glapi_proc DISPATCH_TABLE_NAME[] = {
    TABLE_ENTRY(IsSync),
    TABLE_ENTRY(WaitSync),
    TABLE_ENTRY(DrawElementsBaseVertex),
+   TABLE_ENTRY(DrawElementsInstancedBaseVertex),
    TABLE_ENTRY(DrawRangeElementsBaseVertex),
    TABLE_ENTRY(MultiDrawElementsBaseVertex),
+   TABLE_ENTRY(BlendEquationSeparateiARB),
+   TABLE_ENTRY(BlendEquationiARB),
+   TABLE_ENTRY(BlendFuncSeparateiARB),
+   TABLE_ENTRY(BlendFunciARB),
+   TABLE_ENTRY(BindSampler),
+   TABLE_ENTRY(DeleteSamplers),
+   TABLE_ENTRY(GenSamplers),
+   TABLE_ENTRY(GetSamplerParameterIiv),
+   TABLE_ENTRY(GetSamplerParameterIuiv),
+   TABLE_ENTRY(GetSamplerParameterfv),
+   TABLE_ENTRY(GetSamplerParameteriv),
+   TABLE_ENTRY(IsSampler),
+   TABLE_ENTRY(SamplerParameterIiv),
+   TABLE_ENTRY(SamplerParameterIuiv),
+   TABLE_ENTRY(SamplerParameterf),
+   TABLE_ENTRY(SamplerParameterfv),
+   TABLE_ENTRY(SamplerParameteri),
+   TABLE_ENTRY(SamplerParameteriv),
    TABLE_ENTRY(BindTransformFeedback),
    TABLE_ENTRY(DeleteTransformFeedbacks),
    TABLE_ENTRY(DrawTransformFeedback),
@@ -6909,6 +7196,31 @@ _glapi_proc DISPATCH_TABLE_NAME[] = {
    TABLE_ENTRY(IsTransformFeedback),
    TABLE_ENTRY(PauseTransformFeedback),
    TABLE_ENTRY(ResumeTransformFeedback),
+   TABLE_ENTRY(ClearDepthf),
+   TABLE_ENTRY(DepthRangef),
+   TABLE_ENTRY(GetShaderPrecisionFormat),
+   TABLE_ENTRY(ReleaseShaderCompiler),
+   TABLE_ENTRY(ShaderBinary),
+   TABLE_ENTRY(GetGraphicsResetStatusARB),
+   TABLE_ENTRY(GetnColorTableARB),
+   TABLE_ENTRY(GetnCompressedTexImageARB),
+   TABLE_ENTRY(GetnConvolutionFilterARB),
+   TABLE_ENTRY(GetnHistogramARB),
+   TABLE_ENTRY(GetnMapdvARB),
+   TABLE_ENTRY(GetnMapfvARB),
+   TABLE_ENTRY(GetnMapivARB),
+   TABLE_ENTRY(GetnMinmaxARB),
+   TABLE_ENTRY(GetnPixelMapfvARB),
+   TABLE_ENTRY(GetnPixelMapuivARB),
+   TABLE_ENTRY(GetnPixelMapusvARB),
+   TABLE_ENTRY(GetnPolygonStippleARB),
+   TABLE_ENTRY(GetnSeparableFilterARB),
+   TABLE_ENTRY(GetnTexImageARB),
+   TABLE_ENTRY(GetnUniformdvARB),
+   TABLE_ENTRY(GetnUniformfvARB),
+   TABLE_ENTRY(GetnUniformivARB),
+   TABLE_ENTRY(GetnUniformuivARB),
+   TABLE_ENTRY(ReadnPixelsARB),
    TABLE_ENTRY(PolygonOffsetEXT),
    TABLE_ENTRY(GetPixelTexGenParameterfvSGIS),
    TABLE_ENTRY(GetPixelTexGenParameterivSGIS),
@@ -7183,6 +7495,7 @@ _glapi_proc DISPATCH_TABLE_NAME[] = {
    TABLE_ENTRY(ActiveProgramEXT),
    TABLE_ENTRY(CreateShaderProgramEXT),
    TABLE_ENTRY(UseShaderProgramEXT),
+   TABLE_ENTRY(TextureBarrierNV),
    TABLE_ENTRY(StencilFuncSeparateATI),
    TABLE_ENTRY(ProgramEnvParameters4fvEXT),
    TABLE_ENTRY(ProgramLocalParameters4fvEXT),
@@ -7492,6 +7805,10 @@ _glapi_proc UNUSED_TABLE_NAME[] = {
    TABLE_ENTRY(DrawElementsInstancedEXT),
    TABLE_ENTRY(DrawElementsInstanced),
    TABLE_ENTRY(RenderbufferStorageMultisampleEXT),
+   TABLE_ENTRY(BlendEquationSeparateIndexedAMD),
+   TABLE_ENTRY(BlendEquationIndexedAMD),
+   TABLE_ENTRY(BlendFuncSeparateIndexedAMD),
+   TABLE_ENTRY(BlendFuncIndexedAMD),
    TABLE_ENTRY(SampleMaskEXT),
    TABLE_ENTRY(SamplePatternEXT),
    TABLE_ENTRY(PointParameterf),
@@ -7624,6 +7941,7 @@ _glapi_proc UNUSED_TABLE_NAME[] = {
    TABLE_ENTRY(VertexAttribI4usv),
    TABLE_ENTRY(VertexAttribIPointer),
    TABLE_ENTRY(FramebufferTextureLayer),
+   TABLE_ENTRY(FramebufferTextureLayerARB),
    TABLE_ENTRY(ColorMaski),
    TABLE_ENTRY(Disablei),
    TABLE_ENTRY(Enablei),

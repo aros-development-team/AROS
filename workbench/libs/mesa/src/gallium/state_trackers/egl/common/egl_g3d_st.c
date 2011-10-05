@@ -240,7 +240,7 @@ egl_g3d_st_framebuffer_validate(struct st_framebuffer_iface *stfbi,
       gsurf->base.Height = h;
       return FALSE;
    }
-
+   
    for (i = 0; i < count; i++) {
       struct pipe_resource *tex;
       int natt;

@@ -15,6 +15,7 @@
 #include "main/imports.h"
 #include "main/image.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 #include "program/program.h"
 #include "program/prog_print.h"
 
@@ -138,6 +139,7 @@ st_DrawTex(struct gl_context *ctx, GLfloat x, GLfloat y, GLfloat z,
 
    /* create the vertex buffer */
    vbuffer = pipe_buffer_create(pipe->screen, PIPE_BIND_VERTEX_BUFFER,
+                                PIPE_USAGE_STREAM,
                                 numAttribs * 4 * 4 * sizeof(GLfloat));
 
    /* load vertex buffer */
@@ -220,7 +222,7 @@ st_DrawTex(struct gl_context *ctx, GLfloat x, GLfloat y, GLfloat z,
          }
       }
 
-      pipe_buffer_unmap(pipe, vbuffer, vbuffer_transfer);
+      pipe_buffer_unmap(pipe, vbuffer_transfer);
 
 #undef SET_ATTRIB
    }
@@ -229,6 +231,7 @@ st_DrawTex(struct gl_context *ctx, GLfloat x, GLfloat y, GLfloat z,
    cso_save_viewport(cso);
    cso_save_vertex_shader(cso);
    cso_save_vertex_elements(cso);
+   cso_save_vertex_buffers(cso);
 
    {
       void *vs = lookup_shader(pipe, numAttribs,
@@ -263,7 +266,7 @@ st_DrawTex(struct gl_context *ctx, GLfloat x, GLfloat y, GLfloat z,
    }
 
 
-   util_draw_vertex_buffer(pipe, vbuffer,
+   util_draw_vertex_buffer(pipe, cso, vbuffer,
                            0,  /* offset */
                            PIPE_PRIM_TRIANGLE_FAN,
                            4,  /* verts */
@@ -276,6 +279,7 @@ st_DrawTex(struct gl_context *ctx, GLfloat x, GLfloat y, GLfloat z,
    cso_restore_viewport(cso);
    cso_restore_vertex_shader(cso);
    cso_restore_vertex_elements(cso);
+   cso_restore_vertex_buffers(cso);
 }
 
 

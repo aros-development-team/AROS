@@ -726,6 +726,16 @@ void x86_movzx16(struct x86_function *p, struct x86_reg dst, struct x86_reg src 
    emit_modrm(p, dst, src);
 }
 
+void x86_cmovcc( struct x86_function *p,
+                 struct x86_reg dst,
+                 struct x86_reg src,
+                 enum x86_cc cc)
+{
+   DUMP_RRI( dst, src, cc );
+   emit_2ub( p, 0x0f, 0x40 + cc );
+   emit_modrm( p, dst, src );
+}
+
 void x86_xor( struct x86_function *p,
 	      struct x86_reg dst,
 	      struct x86_reg src )
@@ -2132,7 +2142,8 @@ struct x86_reg x86_fn_arg( struct x86_function *p,
       return x86_make_disp(x86_make_reg(file_REG32, reg_SP),
 			p->stack_offset + arg * 4);	/* ??? */
    default:
-      abort();
+      assert(0 && "Unexpected x86 target ABI in x86_fn_arg");
+      return x86_make_reg(file_REG32, reg_CX); /* not used / silence warning */
    }
 }
 

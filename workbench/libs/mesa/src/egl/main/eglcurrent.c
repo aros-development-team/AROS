@@ -1,3 +1,31 @@
+/**************************************************************************
+ *
+ * Copyright 2009-2010 Chia-I Wu <olvaffe@gmail.com>
+ * All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+
 #include <stdlib.h>
 #include <string.h>
 #include "egllog.h"
@@ -85,6 +113,12 @@ static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
 #include "aros/tls.h"
 
 static struct TaskLocalStorage * tls = NULL;
+static void (*_egl_FreeTSD)(_EGLThreadInfo *);
+
+static INLINE void _eglFiniTSD(void)
+{
+    DestroyTLS(tls);
+}
 
 static INLINE void _eglSetTSD(const _EGLThreadInfo *t)
 {
@@ -98,16 +132,30 @@ static INLINE _EGLThreadInfo *_eglGetTSD(void)
 
 static INLINE EGLBoolean _eglInitTSD(void (*dtor)(_EGLThreadInfo *))
 {
-    /* FIXME: What to do with dtor? */
-    /* FIXME: atexit -> clear from TLS */
     if (!tls)
+    {
         tls = CreateTLS();
+        _egl_FreeTSD = dtor;
+        _eglAddAtExitCall(_eglFiniTSD);
+    }
 
     if (tls)
         return EGL_TRUE;
     else
         return EGL_FALSE;
 }
+
+#include <aros/symbolsets.h>
+
+static VOID _egl_FreeTSD_fn()
+{
+    _EGLThreadInfo *t = _eglGetTSD();
+
+    if (t && _egl_FreeTSD)
+        _egl_FreeTSD((void *) t);
+    ClearFromTLS(tls);
+}
+ADD2CLOSELIB(_egl_FreeTSD_fn, 10)
 
 #else /* PTHREADS */
 static const _EGLThreadInfo *_egl_TSD;
@@ -315,6 +363,9 @@ _eglError(EGLint errCode, const char *msg)
       case EGL_BAD_SURFACE:
          s = "EGL_BAD_SURFACE";
          break;
+      case EGL_NOT_INITIALIZED:
+         s = "EGL_NOT_INITIALIZED";
+         break;
 #ifdef EGL_MESA_screen_surface
       case EGL_BAD_SCREEN_MESA:
          s = "EGL_BAD_SCREEN_MESA";
@@ -324,7 +375,7 @@ _eglError(EGLint errCode, const char *msg)
          break;
 #endif
       default:
-         s = "other";
+         s = "other EGL error";
       }
       _eglLog(_EGL_DEBUG, "EGL user error 0x%x (%s) in %s\n", errCode, s, msg);
    }

@@ -35,8 +35,12 @@
 #include "context.h"
 #include "formats.h"
 #include "image.h"
+#include "mfeatures.h"
+#include "mtypes.h"
 #include "pack.h"
+#include "pbo.h"
 #include "texgetimage.h"
+#include "texfetch.h"
 #include "teximage.h"
 
 
@@ -71,6 +75,7 @@ get_tex_color_index(struct gl_context *ctx, GLuint dimensions,
    const GLint width = texImage->Width;
    const GLint height = texImage->Height;
    const GLint depth = texImage->Depth;
+   const GLint rowstride = texImage->RowStride;
    const GLuint indexBits =
       _mesa_get_format_bits(texImage->TexFormat, GL_TEXTURE_INDEX_SIZE_EXT);
    const GLbitfield transferOps = 0x0;
@@ -86,14 +91,14 @@ get_tex_color_index(struct gl_context *ctx, GLuint dimensions,
 
          if (indexBits == 8) {
             const GLubyte *src = (const GLubyte *) texImage->Data;
-            src += width * (img * texImage->Height + row);
+            src += rowstride * (img * height + row);
             for (col = 0; col < width; col++) {
                indexRow[col] = src[col];
             }
          }
          else if (indexBits == 16) {
             const GLushort *src = (const GLushort *) texImage->Data;
-            src += width * (img * texImage->Height + row);
+            src += rowstride * (img * height + row);
             for (col = 0; col < width; col++) {
                indexRow[col] = src[col];
             }
@@ -156,6 +161,7 @@ get_tex_depth_stencil(struct gl_context *ctx, GLuint dimensions,
    const GLint width = texImage->Width;
    const GLint height = texImage->Height;
    const GLint depth = texImage->Depth;
+   const GLint rowstride = texImage->RowStride;
    const GLuint *src = (const GLuint *) texImage->Data;
    GLint img, row;
 
@@ -169,7 +175,7 @@ get_tex_depth_stencil(struct gl_context *ctx, GLuint dimensions,
             _mesa_swap4((GLuint *) dest, width);
          }
 
-         src += width * row + width * height * img;
+         src += rowstride;
       }
    }
 }
@@ -215,124 +221,53 @@ get_tex_ycbcr(struct gl_context *ctx, GLuint dimensions,
 }
 
 
-#if FEATURE_EXT_texture_sRGB
-
-
 /**
- * Convert a float value from linear space to a
- * non-linear sRGB value in [0, 255].
- * Not terribly efficient.
- */
-static INLINE GLfloat
-linear_to_nonlinear(GLfloat cl)
-{
-   /* can't have values outside [0, 1] */
-   GLfloat cs;
-   if (cl < 0.0031308f) {
-      cs = 12.92f * cl;
-   }
-   else {
-      cs = (GLfloat)(1.055 * pow(cl, 0.41666) - 0.055);
-   }
-   return cs;
-}
-
-
-/**
- * glGetTexImagefor sRGB pixels;
- */
-static void
-get_tex_srgb(struct gl_context *ctx, GLuint dimensions,
-             GLenum format, GLenum type, GLvoid *pixels,
-             const struct gl_texture_image *texImage)
-{
-   const GLint width = texImage->Width;
-   const GLint height = texImage->Height;
-   const GLint depth = texImage->Depth;
-   const GLbitfield transferOps = 0x0;
-   GLint img, row;
-   GLfloat (*rgba)[4] = (GLfloat (*)[4]) malloc(4 * width * sizeof(GLfloat));
-
-   if (!rgba) {
-      _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage");
-      return;
-   }
-
-   for (img = 0; img < depth; img++) {
-      for (row = 0; row < height; row++) {
-         void *dest = _mesa_image_address(dimensions, &ctx->Pack, pixels,
-                                          width, height, format, type,
-                                          img, row, 0);
-
-         GLint col;
-
-         /* convert row to RGBA format */
-         for (col = 0; col < width; col++) {
-            texImage->FetchTexelf(texImage, col, row, img, rgba[col]);
-            if (texImage->_BaseFormat == GL_LUMINANCE) {
-               rgba[col][RCOMP] = linear_to_nonlinear(rgba[col][RCOMP]);
-               rgba[col][GCOMP] = 0.0;
-               rgba[col][BCOMP] = 0.0;
-            }
-            else if (texImage->_BaseFormat == GL_LUMINANCE_ALPHA) {
-               rgba[col][RCOMP] = linear_to_nonlinear(rgba[col][RCOMP]);
-               rgba[col][GCOMP] = 0.0;
-               rgba[col][BCOMP] = 0.0;
-            }
-            else if (texImage->_BaseFormat == GL_RGB ||
-                     texImage->_BaseFormat == GL_RGBA) {
-               rgba[col][RCOMP] = linear_to_nonlinear(rgba[col][RCOMP]);
-               rgba[col][GCOMP] = linear_to_nonlinear(rgba[col][GCOMP]);
-               rgba[col][BCOMP] = linear_to_nonlinear(rgba[col][BCOMP]);
-            }
-         }
-         _mesa_pack_rgba_span_float(ctx, width, (GLfloat (*)[4]) rgba,
-                                    format, type, dest,
-                                    &ctx->Pack, transferOps);
-      }
-   }
-
-   free(rgba);
-}
-
-
-#else /* FEATURE_EXT_texture_sRGB */
-
-
-static INLINE void
-get_tex_srgb(struct gl_context *ctx, GLuint dimensions,
-             GLenum format, GLenum type, GLvoid *pixels,
-             const struct gl_texture_image *texImage)
-{
-   ASSERT_NO_FEATURE();
-}
-
-
-#endif /* FEATURE_EXT_texture_sRGB */
-
-
-/**
- * glGetTexImagefor RGBA, Luminance, etc. pixels.
+ * glGetTexImage for (s)RGBA, Luminance, etc. pixels.
  * This is the slow way since we use texture sampling.
  */
 static void
 get_tex_rgba(struct gl_context *ctx, GLuint dimensions,
              GLenum format, GLenum type, GLvoid *pixels,
-             const struct gl_texture_image *texImage)
+             struct gl_texture_image *texImage)
 {
    const GLint width = texImage->Width;
    const GLint height = texImage->Height;
    const GLint depth = texImage->Depth;
+   const GLenum dataType = _mesa_get_format_datatype(texImage->TexFormat);
    /* Normally, no pixel transfer ops are performed during glGetTexImage.
     * The only possible exception is component clamping to [0,1].
     */
    GLbitfield transferOps = 0x0;
    GLint img, row;
    GLfloat (*rgba)[4] = (GLfloat (*)[4]) malloc(4 * width * sizeof(GLfloat));
+   const GLboolean is_sampler_srgb_decode =
+       _mesa_get_format_color_encoding(texImage->TexFormat) == GL_SRGB &&
+       texImage->TexObject->Sampler.sRGBDecode == GL_DECODE_EXT;
 
    if (!rgba) {
       _mesa_error(ctx, GL_OUT_OF_MEMORY, "glGetTexImage");
       return;
+   }
+
+   /* Clamping does not apply to GetTexImage (final conversion)?
+    * Looks like we need clamp though when going from format
+    * containing negative values to unsigned format.
+    */
+   if (format == GL_LUMINANCE || format == GL_LUMINANCE_ALPHA) {
+      transferOps |= IMAGE_CLAMP_BIT;
+   }
+   else if (!type_with_negative_values(type) &&
+            (dataType == GL_FLOAT ||
+             dataType == GL_SIGNED_NORMALIZED)) {
+      transferOps |= IMAGE_CLAMP_BIT;
+   }
+
+   /* glGetTexImage always returns sRGB data for sRGB textures. Make sure the
+    * fetch functions return sRGB data without linearizing it.
+    */
+   if (is_sampler_srgb_decode) {
+      texImage->TexObject->Sampler.sRGBDecode = GL_SKIP_DECODE_EXT;
+      _mesa_set_fetch_functions(texImage, dimensions);
    }
 
    for (img = 0; img < depth; img++) {
@@ -341,20 +276,6 @@ get_tex_rgba(struct gl_context *ctx, GLuint dimensions,
                                           width, height, format, type,
                                           img, row, 0);
          GLint col;
-         GLenum dataType = _mesa_get_format_datatype(texImage->TexFormat);
-
-         /* clamp does not apply to GetTexImage (final conversion)?
-          * Looks like we need clamp though when going from format
-          * containing negative values to unsigned format.
-          */
-         if (format == GL_LUMINANCE || format == GL_LUMINANCE_ALPHA) {
-            transferOps |= IMAGE_CLAMP_BIT;
-         }
-         else if (!type_with_negative_values(type) &&
-                  (dataType == GL_FLOAT ||
-                   dataType == GL_SIGNED_NORMALIZED)) {
-            transferOps |= IMAGE_CLAMP_BIT;
-         }
 
          for (col = 0; col < width; col++) {
             texImage->FetchTexelf(texImage, col, row, img, rgba[col]);
@@ -382,6 +303,11 @@ get_tex_rgba(struct gl_context *ctx, GLuint dimensions,
                                     format, type, dest,
                                     &ctx->Pack, transferOps);
       }
+   }
+
+   if (is_sampler_srgb_decode) {
+      texImage->TexObject->Sampler.sRGBDecode = GL_DECODE_EXT;
+      _mesa_set_fetch_functions(texImage, dimensions);
    }
 
    free(rgba);
@@ -413,28 +339,41 @@ get_tex_memcpy(struct gl_context *ctx, GLenum format, GLenum type, GLvoid *pixel
         texObj->Target == GL_TEXTURE_RECTANGLE ||
         (texObj->Target >= GL_TEXTURE_CUBE_MAP_POSITIVE_X &&
          texObj->Target <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z))) {
-      if (texImage->TexFormat == MESA_FORMAT_ARGB8888 &&
+      if ((texImage->TexFormat == MESA_FORMAT_ARGB8888 ||
+             texImage->TexFormat == MESA_FORMAT_SARGB8) &&
           format == GL_BGRA &&
-          type == GL_UNSIGNED_BYTE &&
+          (type == GL_UNSIGNED_BYTE || type == GL_UNSIGNED_INT_8_8_8_8_REV) &&
           !ctx->Pack.SwapBytes &&
           _mesa_little_endian()) {
          memCopy = GL_TRUE;
       }
-      else if (texImage->TexFormat == MESA_FORMAT_AL88 &&
+      else if ((texImage->TexFormat == MESA_FORMAT_AL88 ||
+                  texImage->TexFormat == MESA_FORMAT_SLA8) &&
                format == GL_LUMINANCE_ALPHA &&
                type == GL_UNSIGNED_BYTE &&
                !ctx->Pack.SwapBytes &&
                _mesa_little_endian()) {
          memCopy = GL_TRUE;
       }
-      else if (texImage->TexFormat == MESA_FORMAT_L8 &&
+      else if ((texImage->TexFormat == MESA_FORMAT_L8 ||
+                  texImage->TexFormat == MESA_FORMAT_SL8) &&
                format == GL_LUMINANCE &&
                type == GL_UNSIGNED_BYTE) {
+         memCopy = GL_TRUE;
+      }
+      else if (texImage->TexFormat == MESA_FORMAT_L16 &&
+               format == GL_LUMINANCE &&
+               type == GL_UNSIGNED_SHORT) {
          memCopy = GL_TRUE;
       }
       else if (texImage->TexFormat == MESA_FORMAT_A8 &&
                format == GL_ALPHA &&
                type == GL_UNSIGNED_BYTE) {
+         memCopy = GL_TRUE;
+      }
+      else if (texImage->TexFormat == MESA_FORMAT_A16 &&
+               format == GL_ALPHA &&
+               type == GL_UNSIGNED_SHORT) {
          memCopy = GL_TRUE;
       }
    }
@@ -530,9 +469,6 @@ _mesa_get_teximage(struct gl_context *ctx, GLenum target, GLint level,
    else if (format == GL_YCBCR_MESA) {
       get_tex_ycbcr(ctx, dimensions, format, type, pixels, texImage);
    }
-   else if (_mesa_get_format_color_encoding(texImage->TexFormat) == GL_SRGB) {
-      get_tex_srgb(ctx, dimensions, format, type, pixels, texImage);
-   }
    else {
       get_tex_rgba(ctx, dimensions, format, type, pixels, texImage);
    }
@@ -608,11 +544,13 @@ _mesa_get_compressed_teximage(struct gl_context *ctx, GLenum target, GLint level
  */
 static GLboolean
 getteximage_error_check(struct gl_context *ctx, GLenum target, GLint level,
-                        GLenum format, GLenum type, GLvoid *pixels )
+                        GLenum format, GLenum type, GLsizei clientMemSize,
+                        GLvoid *pixels )
 {
    struct gl_texture_object *texObj;
    struct gl_texture_image *texImage;
    const GLint maxLevels = _mesa_max_texture_levels(ctx, target);
+   const GLuint dimensions = (target == GL_TEXTURE_3D) ? 3 : 2;
    GLenum baseFormat;
 
    if (maxLevels == 0) {
@@ -715,17 +653,21 @@ getteximage_error_check(struct gl_context *ctx, GLenum target, GLint level,
       return GL_TRUE;
    }
 
-   if (_mesa_is_bufferobj(ctx->Pack.BufferObj)) {
-      /* packing texture image into a PBO */
-      const GLuint dimensions = (target == GL_TEXTURE_3D) ? 3 : 2;
-      if (!_mesa_validate_pbo_access(dimensions, &ctx->Pack, texImage->Width,
-                                     texImage->Height, texImage->Depth,
-                                     format, type, pixels)) {
+   if (!_mesa_validate_pbo_access(dimensions, &ctx->Pack, texImage->Width,
+                                  texImage->Height, texImage->Depth,
+                                  format, type, clientMemSize, pixels)) {
+      if (_mesa_is_bufferobj(ctx->Pack.BufferObj)) {
          _mesa_error(ctx, GL_INVALID_OPERATION,
-                     "glGetTexImage(out of bounds PBO write)");
-         return GL_TRUE;
+                     "glGetTexImage(out of bounds PBO access)");
+      } else {
+         _mesa_error(ctx, GL_INVALID_OPERATION,
+                     "glGetnTexImageARB(out of bounds access:"
+                     " bufSize (%d) is too small)", clientMemSize);
       }
+      return GL_TRUE;
+   }
 
+   if (_mesa_is_bufferobj(ctx->Pack.BufferObj)) {
       /* PBO should not be mapped */
       if (_mesa_bufferobj_mapped(ctx->Pack.BufferObj)) {
          _mesa_error(ctx, GL_INVALID_OPERATION,
@@ -746,18 +688,20 @@ getteximage_error_check(struct gl_context *ctx, GLenum target, GLint level,
  * \param level image level.
  * \param format pixel data format for returned image.
  * \param type pixel data type for returned image.
+ * \param bufSize size of the pixels data buffer.
  * \param pixels returned pixel data.
  */
 void GLAPIENTRY
-_mesa_GetTexImage( GLenum target, GLint level, GLenum format,
-                   GLenum type, GLvoid *pixels )
+_mesa_GetnTexImageARB( GLenum target, GLint level, GLenum format,
+                       GLenum type, GLsizei bufSize, GLvoid *pixels )
 {
    struct gl_texture_object *texObj;
    struct gl_texture_image *texImage;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END_AND_FLUSH(ctx);
 
-   if (getteximage_error_check(ctx, target, level, format, type, pixels)) {
+   if (getteximage_error_check(ctx, target, level, format, type,
+                               bufSize, pixels)) {
       return;
    }
 
@@ -787,18 +731,26 @@ _mesa_GetTexImage( GLenum target, GLint level, GLenum format,
 }
 
 
+void GLAPIENTRY
+_mesa_GetTexImage( GLenum target, GLint level, GLenum format,
+                   GLenum type, GLvoid *pixels )
+{
+   _mesa_GetnTexImageARB(target, level, format, type, INT_MAX, pixels);
+}
+
 
 /**
  * Do error checking for a glGetCompressedTexImage() call.
  * \return GL_TRUE if any error, GL_FALSE if no errors.
  */
 static GLboolean
-getcompressedteximage_error_check(struct gl_context *ctx, GLenum target, GLint level,
-                                  GLvoid *img)
+getcompressedteximage_error_check(struct gl_context *ctx, GLenum target,
+                                  GLint level, GLsizei clientMemSize, GLvoid *img)
 {
    struct gl_texture_object *texObj;
    struct gl_texture_image *texImage;
    const GLint maxLevels = _mesa_max_texture_levels(ctx, target);
+   GLuint compressedSize;
 
    if (maxLevels == 0) {
       _mesa_error(ctx, GL_INVALID_ENUM, "glGetCompressedTexImage(target=0x%x)",
@@ -840,26 +792,31 @@ getcompressedteximage_error_check(struct gl_context *ctx, GLenum target, GLint l
       return GL_TRUE;
    }
 
-   if (_mesa_is_bufferobj(ctx->Pack.BufferObj)) {
-      GLuint compressedSize;
+   compressedSize = _mesa_format_image_size(texImage->TexFormat,
+                                            texImage->Width,
+                                            texImage->Height,
+                                            texImage->Depth);
+
+   if (!_mesa_is_bufferobj(ctx->Pack.BufferObj)) {
+      /* do bounds checking on writing to client memory */
+      if (clientMemSize < compressedSize) {
+         _mesa_error(ctx, GL_INVALID_OPERATION,
+                     "glGetnCompressedTexImageARB(out of bounds access:"
+                     " bufSize (%d) is too small)", clientMemSize);
+      }
+   } else {
+      /* do bounds checking on PBO write */
+      if ((const GLubyte *) img + compressedSize >
+          (const GLubyte *) ctx->Pack.BufferObj->Size) {
+         _mesa_error(ctx, GL_INVALID_OPERATION,
+                     "glGetCompressedTexImage(out of bounds PBO access)");
+         return GL_TRUE;
+      }
 
       /* make sure PBO is not mapped */
       if (_mesa_bufferobj_mapped(ctx->Pack.BufferObj)) {
          _mesa_error(ctx, GL_INVALID_OPERATION,
                      "glGetCompressedTexImage(PBO is mapped)");
-         return GL_TRUE;
-      }
-
-      compressedSize = _mesa_format_image_size(texImage->TexFormat,
-                                               texImage->Width,
-                                               texImage->Height,
-                                               texImage->Depth);
-
-      /* do bounds checking on PBO write */
-      if ((const GLubyte *) img + compressedSize >
-          (const GLubyte *) ctx->Pack.BufferObj->Size) {
-         _mesa_error(ctx, GL_INVALID_OPERATION,
-                     "glGetCompressedTexImage(out of bounds PBO write)");
          return GL_TRUE;
       }
    }
@@ -869,14 +826,15 @@ getcompressedteximage_error_check(struct gl_context *ctx, GLenum target, GLint l
 
 
 void GLAPIENTRY
-_mesa_GetCompressedTexImageARB(GLenum target, GLint level, GLvoid *img)
+_mesa_GetnCompressedTexImageARB(GLenum target, GLint level, GLsizei bufSize,
+                                GLvoid *img)
 {
    struct gl_texture_object *texObj;
    struct gl_texture_image *texImage;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END_AND_FLUSH(ctx);
 
-   if (getcompressedteximage_error_check(ctx, target, level, img)) {
+   if (getcompressedteximage_error_check(ctx, target, level, bufSize, img)) {
       return;
    }
 
@@ -902,4 +860,10 @@ _mesa_GetCompressedTexImageARB(GLenum target, GLint level, GLvoid *img)
                                         texObj, texImage);
    }
    _mesa_unlock_texture(ctx, texObj);
+}
+
+void GLAPIENTRY
+_mesa_GetCompressedTexImageARB(GLenum target, GLint level, GLvoid *img)
+{
+   _mesa_GetnCompressedTexImageARB(target, level, INT_MAX, img);
 }

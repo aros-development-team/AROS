@@ -27,6 +27,7 @@
 #define RENDERBUFFER_H
 
 #include "glheader.h"
+#include "mtypes.h"
 
 struct gl_context;
 struct gl_framebuffer;
@@ -45,6 +46,8 @@ _mesa_delete_renderbuffer(struct gl_renderbuffer *rb);
 extern struct gl_renderbuffer *
 _mesa_new_soft_renderbuffer(struct gl_context *ctx, GLuint name);
 
+extern void
+_mesa_set_renderbuffer_accessors(struct gl_renderbuffer *rb);
 
 extern GLboolean
 _mesa_soft_renderbuffer_storage(struct gl_context *ctx, struct gl_renderbuffer *rb,
@@ -95,17 +98,15 @@ _mesa_add_soft_renderbuffers(struct gl_framebuffer *fb,
 
 extern void
 _mesa_add_renderbuffer(struct gl_framebuffer *fb,
-                       GLuint bufferName, struct gl_renderbuffer *rb);
+                       gl_buffer_index bufferName, struct gl_renderbuffer *rb);
 
 extern void
-_mesa_remove_renderbuffer(struct gl_framebuffer *fb, GLuint bufferName);
+_mesa_remove_renderbuffer(struct gl_framebuffer *fb,
+                          gl_buffer_index bufferName);
 
 extern void
 _mesa_reference_renderbuffer(struct gl_renderbuffer **ptr,
                              struct gl_renderbuffer *rb);
-
-extern struct gl_renderbuffer *
-_mesa_new_depthstencil_renderbuffer(struct gl_context *ctx, GLuint name);
 
 
 #endif /* RENDERBUFFER_H */

@@ -4,6 +4,7 @@
 */
 
 #include "arosmesa_funcs.h"
+#include "arosmesa_funcs_gallium.h"
 #include <proto/exec.h>
 #include <proto/gallium.h>
 #include <aros/debug.h>

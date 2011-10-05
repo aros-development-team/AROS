@@ -50,6 +50,7 @@ struct draw_jit_texture
    uint32_t width;
    uint32_t height;
    uint32_t depth;
+   uint32_t first_level;
    uint32_t last_level;
    uint32_t row_stride[PIPE_MAX_TEXTURE_LEVELS];
    uint32_t img_stride[PIPE_MAX_TEXTURE_LEVELS];
@@ -64,6 +65,7 @@ enum {
    DRAW_JIT_TEXTURE_WIDTH = 0,
    DRAW_JIT_TEXTURE_HEIGHT,
    DRAW_JIT_TEXTURE_DEPTH,
+   DRAW_JIT_TEXTURE_FIRST_LEVEL,
    DRAW_JIT_TEXTURE_LAST_LEVEL,
    DRAW_JIT_TEXTURE_ROW_STRIDE,
    DRAW_JIT_TEXTURE_IMG_STRIDE,
@@ -133,11 +135,8 @@ struct draw_jit_context
 #define draw_jit_vbuffer_stride(_gallivm, _ptr)         \
    lp_build_struct_get(_gallivm, _ptr, 0, "stride")
 
-#define draw_jit_vbuffer_max_index(_gallivm, _ptr)      \
-   lp_build_struct_get(_gallivm, _ptr, 1, "max_index")
-
 #define draw_jit_vbuffer_offset(_gallivm, _ptr)         \
-   lp_build_struct_get(_gallivm, _ptr, 2, "buffer_offset")
+   lp_build_struct_get(_gallivm, _ptr, 1, "buffer_offset")
 
 
 typedef int
@@ -165,6 +164,7 @@ struct draw_llvm_variant_key
 {
    unsigned nr_vertex_elements:8;
    unsigned nr_samplers:8;
+   unsigned clamp_vertex_color:1;
    unsigned clip_xy:1;
    unsigned clip_z:1;
    unsigned clip_user:1;
@@ -172,7 +172,7 @@ struct draw_llvm_variant_key
    unsigned bypass_viewport:1;
    unsigned need_edgeflags:1;
    unsigned nr_planes:4;
-   unsigned pad:6;
+   unsigned pad:5;
 
    /* Variable number of vertex elements:
     */
@@ -229,7 +229,6 @@ struct draw_llvm_variant
 
    /* key is variable-sized, must be last */
    struct draw_llvm_variant_key key;
-   /* key is variable-sized, must be last */
 };
 
 struct llvm_vertex_shader {
@@ -299,7 +298,7 @@ void
 draw_llvm_set_mapped_texture(struct draw_context *draw,
                              unsigned sampler_idx,
                              uint32_t width, uint32_t height, uint32_t depth,
-                             uint32_t last_level,
+                             uint32_t first_level, uint32_t last_level,
                              uint32_t row_stride[PIPE_MAX_TEXTURE_LEVELS],
                              uint32_t img_stride[PIPE_MAX_TEXTURE_LEVELS],
                              const void *data[PIPE_MAX_TEXTURE_LEVELS]);

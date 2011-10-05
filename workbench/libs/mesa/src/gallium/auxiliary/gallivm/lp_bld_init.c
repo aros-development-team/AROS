@@ -30,6 +30,7 @@
 #include "util/u_cpu_detect.h"
 #include "util/u_debug.h"
 #include "util/u_memory.h"
+#include "util/u_simple_list.h"
 #include "lp_bld_debug.h"
 #include "lp_bld_init.h"
 
@@ -221,10 +222,11 @@ free_gallivm_state(struct gallivm_state *gallivm)
 static boolean
 init_gallivm_state(struct gallivm_state *gallivm)
 {
-   assert(gallivm_initialized);
    assert(!gallivm->context);
    assert(!gallivm->module);
    assert(!gallivm->provider);
+
+   lp_build_init();
 
    gallivm->context = LLVMContextCreate();
    if (!gallivm->context)
@@ -291,12 +293,12 @@ struct callback
 {
    garbage_collect_callback_func func;
    void *cb_data;
+   struct callback *prev, *next;
 };
 
 
-#define MAX_CALLBACKS 32
-static struct callback Callbacks[MAX_CALLBACKS];
-static unsigned NumCallbacks = 0;
+/** list of all garbage collector callbacks */
+static struct callback callback_list = {NULL, NULL, NULL, NULL};
 
 
 /**
@@ -307,20 +309,24 @@ void
 gallivm_register_garbage_collector_callback(garbage_collect_callback_func func,
                                             void *cb_data)
 {
-   unsigned i;
+   struct callback *cb;
 
-   for (i = 0; i < NumCallbacks; i++) {
-      if (Callbacks[i].func == func && Callbacks[i].cb_data == cb_data) {
-         /* already in list: no-op */
-         return;
-      }
+   if (!callback_list.prev) {
+      make_empty_list(&callback_list);
    }
 
-   assert(NumCallbacks < MAX_CALLBACKS);
-   if (NumCallbacks < MAX_CALLBACKS) {
-      Callbacks[NumCallbacks].func = func;
-      Callbacks[NumCallbacks].cb_data = cb_data;
-      NumCallbacks++;
+   /* see if already in list */
+   foreach(cb, &callback_list) {
+      if (cb->func == func && cb->cb_data == cb_data)
+         return;
+   }
+
+   /* add to list */
+   cb = CALLOC_STRUCT(callback);
+   if (cb) {
+      cb->func = func;
+      cb->cb_data = cb_data;
+      insert_at_head(&callback_list, cb);
    }
 }
 
@@ -332,15 +338,13 @@ void
 gallivm_remove_garbage_collector_callback(garbage_collect_callback_func func,
                                           void *cb_data)
 {
-   unsigned i;
+   struct callback *cb;
 
-   for (i = 0; i < NumCallbacks; i++) {
-      if (Callbacks[i].func == func && Callbacks[i].cb_data == cb_data) {
-         /* found, now remove it */
-         NumCallbacks--;
-         for ( ; i < NumCallbacks; i++) {
-            Callbacks[i] = Callbacks[i + 1];
-         }
+   /* search list */
+   foreach(cb, &callback_list) {
+      if (cb->func == func && cb->cb_data == cb_data) {
+         /* found, remove it */
+         remove_from_list(cb);
          return;
       }
    }
@@ -354,10 +358,9 @@ gallivm_remove_garbage_collector_callback(garbage_collect_callback_func func,
 static void
 call_garbage_collector_callbacks(void)
 {
-   unsigned i;
-
-   for (i = 0; i < NumCallbacks; i++) {
-      Callbacks[i].func(Callbacks[i].cb_data);
+   struct callback *cb;
+   foreach(cb, &callback_list) {
+      cb->func(cb->cb_data);
    }
 }
 
@@ -385,6 +388,9 @@ gallivm_garbage_collect(struct gallivm_state *gallivm)
 void
 lp_build_init(void)
 {
+   if (gallivm_initialized)
+      return;
+
 #ifdef DEBUG
    gallivm_debug = debug_get_option_gallivm_debug();
 #endif

@@ -1,3 +1,33 @@
+/**************************************************************************
+ *
+ * Copyright 2008 Tungsten Graphics, Inc., Cedar Park, Texas.
+ * Copyright 2009-2010 Chia-I Wu <olvaffe@gmail.com>
+ * Copyright 2010-2011 LunarG, Inc.
+ * All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+
 #ifndef EGLAPI_INCLUDED
 #define EGLAPI_INCLUDED
 
@@ -12,7 +42,7 @@ typedef void (*_EGLProc)(void);
  */
 
 /* driver funcs */
-typedef EGLBoolean (*Initialize_t)(_EGLDriver *, _EGLDisplay *dpy, EGLint *major, EGLint *minor);
+typedef EGLBoolean (*Initialize_t)(_EGLDriver *, _EGLDisplay *dpy);
 typedef EGLBoolean (*Terminate_t)(_EGLDriver *, _EGLDisplay *dpy);
 
 /* config funcs */
@@ -95,6 +125,12 @@ typedef _EGLImage *(*CreateDRMImageMESA_t)(_EGLDriver *drv, _EGLDisplay *disp, c
 typedef EGLBoolean (*ExportDRMImageMESA_t)(_EGLDriver *drv, _EGLDisplay *disp, _EGLImage *img, EGLint *name, EGLint *handle, EGLint *stride);
 #endif
 
+#ifdef EGL_WL_bind_wayland_display
+struct wl_display;
+typedef EGLBoolean (*BindWaylandDisplayWL_t)(_EGLDriver *drv, _EGLDisplay *disp, struct wl_display *display);
+typedef EGLBoolean (*UnbindWaylandDisplayWL_t)(_EGLDriver *drv, _EGLDisplay *disp, struct wl_display *display);
+#endif
+
 /**
  * The API dispatcher jumps through these functions
  */
@@ -168,6 +204,11 @@ struct _egl_api
 #ifdef EGL_MESA_drm_image
    CreateDRMImageMESA_t CreateDRMImageMESA;
    ExportDRMImageMESA_t ExportDRMImageMESA;
+#endif
+
+#ifdef EGL_WL_bind_wayland_display
+   BindWaylandDisplayWL_t BindWaylandDisplayWL;
+   UnbindWaylandDisplayWL_t UnbindWaylandDisplayWL;
 #endif
 };
 

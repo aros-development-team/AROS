@@ -28,6 +28,6 @@
     each gallium hidd driver client.
 */
 
-#define GALLIUM_INTERFACE_VERSION   4
+#define GALLIUM_INTERFACE_VERSION   5
 
 #endif

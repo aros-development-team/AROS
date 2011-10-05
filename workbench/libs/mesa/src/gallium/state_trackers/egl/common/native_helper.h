@@ -3,6 +3,7 @@
  * Version:  7.9
  *
  * Copyright (C) 2010 LunarG Inc.
+ * Copyright (C) 2011 VMware Inc. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -24,6 +25,7 @@
  *
  * Authors:
  *    Chia-I Wu <olv@lunarg.com>
+ *    Thomas Hellstrom <thellstrom@vmware.com>
  */
 
 #include "native.h"
@@ -51,6 +53,11 @@ resource_surface_add_resources(struct resource_surface *rsurf,
                                uint resource_mask);
 
 void
+resource_surface_import_resource(struct resource_surface *rsurf,
+                                 enum native_attachment which,
+                                 struct pipe_resource *pres);
+
+void
 resource_surface_get_resources(struct resource_surface *rsurf,
                                struct pipe_resource **resources,
                                uint resource_mask);
@@ -69,3 +76,41 @@ boolean
 resource_surface_present(struct resource_surface *rsurf,
                          enum native_attachment which,
                          void *winsys_drawable_handle);
+
+/**
+ * Perform a gallium copy blit between the back left and front left
+ * surfaces. Needs to be followed by a call to resource_surface_flush.
+ */
+boolean
+resource_surface_copy_swap(struct resource_surface *rsurf,
+			   struct native_display *ndpy);
+
+/**
+ * Throttle on outstanding rendering using the copy context. For example
+ * copy swaps.
+ */
+boolean
+resource_surface_throttle(struct resource_surface *rsurf);
+
+/**
+ * Flush pending rendering using the copy context. This function saves a
+ * marker for upcoming throttles.
+ */
+boolean
+resource_surface_flush(struct resource_surface *rsurf,
+		       struct native_display *ndpy);
+/**
+ * Wait for all rendering using the copy context to be complete. Frees all
+ * throttle markers saved using resource_surface_flush.
+ */
+void
+resource_surface_wait(struct resource_surface *rsurf);
+
+struct pipe_resource *
+drm_display_import_native_buffer(struct native_display *ndpy,
+                                 struct native_buffer *nbuf);
+
+boolean
+drm_display_export_native_buffer(struct native_display *ndpy,
+                                 struct pipe_resource *res,
+                                 struct native_buffer *nbuf);

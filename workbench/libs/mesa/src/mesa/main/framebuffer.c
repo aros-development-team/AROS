@@ -522,7 +522,8 @@ _mesa_update_draw_buffer_bounds(struct gl_context *ctx)
  * integer Z values.
  */
 void
-_mesa_update_framebuffer_visual(struct gl_framebuffer *fb)
+_mesa_update_framebuffer_visual(struct gl_context *ctx,
+				struct gl_framebuffer *fb)
 {
    GLuint i;
 
@@ -542,17 +543,30 @@ _mesa_update_framebuffer_visual(struct gl_framebuffer *fb)
          const struct gl_renderbuffer *rb = fb->Attachment[i].Renderbuffer;
          const GLenum baseFormat = _mesa_get_format_base_format(rb->Format);
          const gl_format fmt = rb->Format;
-         
-         if (baseFormat == GL_RGBA || baseFormat == GL_RGB ||
-	     baseFormat == GL_ALPHA) {
+
+         if (_mesa_is_legal_color_format(ctx, baseFormat)) {
             fb->Visual.redBits = _mesa_get_format_bits(fmt, GL_RED_BITS);
             fb->Visual.greenBits = _mesa_get_format_bits(fmt, GL_GREEN_BITS);
             fb->Visual.blueBits = _mesa_get_format_bits(fmt, GL_BLUE_BITS);
             fb->Visual.alphaBits = _mesa_get_format_bits(fmt, GL_ALPHA_BITS);
             fb->Visual.rgbBits = fb->Visual.redBits
                + fb->Visual.greenBits + fb->Visual.blueBits;
-            fb->Visual.floatMode = GL_FALSE;
             fb->Visual.samples = rb->NumSamples;
+            if (_mesa_get_format_color_encoding(fmt) == GL_SRGB)
+                fb->Visual.sRGBCapable = ctx->Const.sRGBCapable;
+            break;
+         }
+      }
+   }
+
+   fb->Visual.floatMode = GL_FALSE;
+   for (i = 0; i < BUFFER_COUNT; i++) {
+      if (fb->Attachment[i].Renderbuffer) {
+         const struct gl_renderbuffer *rb = fb->Attachment[i].Renderbuffer;
+         const gl_format fmt = rb->Format;
+
+         if (_mesa_get_format_datatype(fmt) == GL_FLOAT) {
+            fb->Visual.floatMode = GL_TRUE;
             break;
          }
       }
@@ -792,9 +806,6 @@ update_framebuffer(struct gl_context *ctx, struct gl_framebuffer *fb)
          _mesa_drawbuffers(ctx, ctx->Const.MaxDrawBuffers,
                            ctx->Color.DrawBuffer, NULL);
       }
-      if (fb->ColorReadBuffer != ctx->Pixel.ReadBuffer) {
-         
-      }
    }
    else {
       /* This is a user-created framebuffer.
@@ -890,6 +901,8 @@ _mesa_source_buffer_exists(struct gl_context *ctx, GLenum format)
       }
       ASSERT(_mesa_get_format_bits(ctx->ReadBuffer->_ColorReadBuffer->Format, GL_RED_BITS) > 0 ||
              _mesa_get_format_bits(ctx->ReadBuffer->_ColorReadBuffer->Format, GL_ALPHA_BITS) > 0 ||
+             _mesa_get_format_bits(ctx->ReadBuffer->_ColorReadBuffer->Format, GL_TEXTURE_LUMINANCE_SIZE) > 0 ||
+             _mesa_get_format_bits(ctx->ReadBuffer->_ColorReadBuffer->Format, GL_TEXTURE_INTENSITY_SIZE) > 0 ||
              _mesa_get_format_bits(ctx->ReadBuffer->_ColorReadBuffer->Format, GL_INDEX_BITS) > 0);
       break;
    case GL_DEPTH:
@@ -1060,12 +1073,12 @@ _mesa_print_framebuffer(const struct gl_framebuffer *fb)
    for (i = 0; i < BUFFER_COUNT; i++) {
       const struct gl_renderbuffer_attachment *att = &fb->Attachment[i];
       if (att->Type == GL_TEXTURE) {
-         const struct gl_texture_image *texImage;
+         const struct gl_texture_image *texImage =
+            _mesa_get_attachment_teximage_const(att);
          fprintf(stderr,
                  "  %2d: Texture %u, level %u, face %u, slice %u, complete %d\n",
                  i, att->Texture->Name, att->TextureLevel, att->CubeMapFace,
                  att->Zoffset, att->Complete);
-         texImage = att->Texture->Image[att->CubeMapFace][att->TextureLevel];
          fprintf(stderr, "       Size: %u x %u x %u  Format %s\n",
                  texImage->Width, texImage->Height, texImage->Depth,
                  _mesa_get_format_name(texImage->TexFormat));

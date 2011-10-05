@@ -35,6 +35,7 @@
 #include "util/u_memory.h"
 #include "util/u_math.h"
 #include "util/u_cpu_detect.h"
+#include "util/u_inlines.h"
 #include "draw_context.h"
 #include "draw_vs.h"
 #include "draw_gs.h"
@@ -87,8 +88,14 @@ draw_create_gallivm(struct pipe_context *pipe, struct gallivm_state *gallivm)
       goto fail;
 
 #if HAVE_LLVM
-   if (draw_get_option_use_llvm() && gallivm) {
-      draw->llvm = draw_llvm_create(draw, gallivm);
+   if (draw_get_option_use_llvm()) {
+      if (!gallivm) {
+         gallivm = gallivm_create();
+         draw->own_gallivm = gallivm;
+      }
+
+      if (gallivm)
+         draw->llvm = draw_llvm_create(draw, gallivm);
    }
 #endif
 
@@ -121,8 +128,8 @@ boolean draw_init(struct draw_context *draw)
    ASSIGN_4V( draw->plane[4],  0,  0,  1, 1 ); /* yes these are correct */
    ASSIGN_4V( draw->plane[5],  0,  0, -1, 1 ); /* mesa's a bit wonky */
    draw->nr_planes = 6;
-   draw->clip_xy = 1;
-   draw->clip_z = 1;
+   draw->clip_xy = TRUE;
+   draw->clip_z = TRUE;
 
 
    draw->reduced_prim = ~0; /* != any of PIPE_PRIM_x */
@@ -164,6 +171,10 @@ void draw_destroy( struct draw_context *draw )
       }
    }
 
+   for (i = 0; i < draw->pt.nr_vertex_buffers; i++) {
+      pipe_resource_reference(&draw->pt.vertex_buffer[i].buffer, NULL);
+   }
+
    /* Not so fast -- we're just borrowing this at the moment.
     * 
    if (draw->render)
@@ -175,8 +186,11 @@ void draw_destroy( struct draw_context *draw )
    draw_vs_destroy( draw );
    draw_gs_destroy( draw );
 #ifdef HAVE_LLVM
-   if(draw->llvm)
+   if (draw->llvm)
       draw_llvm_destroy( draw->llvm );
+
+   if (draw->own_gallivm)
+      gallivm_destroy(draw->own_gallivm);
 #endif
 
    FREE( draw );
@@ -307,8 +321,9 @@ draw_set_vertex_buffers(struct draw_context *draw,
 {
    assert(count <= PIPE_MAX_ATTRIBS);
 
-   memcpy(draw->pt.vertex_buffer, buffers, count * sizeof(buffers[0]));
-   draw->pt.nr_vertex_buffers = count;
+   util_copy_vertex_buffers(draw->pt.vertex_buffer,
+                            &draw->pt.nr_vertex_buffers,
+                            buffers, count);
 }
 
 
@@ -395,7 +410,7 @@ void
 draw_wide_line_threshold(struct draw_context *draw, float threshold)
 {
    draw_do_flush( draw, DRAW_FLUSH_STATE_CHANGE );
-   draw->pipeline.wide_line_threshold = threshold;
+   draw->pipeline.wide_line_threshold = roundf(threshold);
 }
 
 
@@ -736,7 +751,7 @@ void
 draw_set_mapped_texture(struct draw_context *draw,
                         unsigned sampler_idx,
                         uint32_t width, uint32_t height, uint32_t depth,
-                        uint32_t last_level,
+                        uint32_t first_level, uint32_t last_level,
                         uint32_t row_stride[PIPE_MAX_TEXTURE_LEVELS],
                         uint32_t img_stride[PIPE_MAX_TEXTURE_LEVELS],
                         const void *data[PIPE_MAX_TEXTURE_LEVELS])
@@ -745,7 +760,7 @@ draw_set_mapped_texture(struct draw_context *draw,
    if(draw->llvm)
       draw_llvm_set_mapped_texture(draw,
                                 sampler_idx,
-                                width, height, depth, last_level,
+                                width, height, depth, first_level, last_level,
                                 row_stride, img_stride, data);
 #endif
 }

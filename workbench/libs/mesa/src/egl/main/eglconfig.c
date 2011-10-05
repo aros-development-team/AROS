@@ -1,3 +1,33 @@
+/**************************************************************************
+ *
+ * Copyright 2008 Tungsten Graphics, Inc., Cedar Park, Texas.
+ * Copyright 2009-2010 Chia-I Wu <olvaffe@gmail.com>
+ * Copyright 2010-2011 LunarG, Inc.
+ * All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+
 /**
  * EGL Configuration (pixel format) functions.
  */
@@ -456,8 +486,6 @@ _eglIsConfigAttribValid(_EGLConfig *conf, EGLint attr)
       return EGL_FALSE;
 
    switch (attr) {
-   case EGL_MATCH_NATIVE_PIXMAP:
-      return EGL_FALSE;
    case EGL_Y_INVERTED_NOK:
       return conf->Display->Extensions.NOK_texture_from_pixmap;
    default:
@@ -672,7 +700,7 @@ _eglSortConfigs(const _EGLConfig **configs, EGLint count,
 }
 
 
-static EGLint 
+static EGLint
 _eglFallbackCompare(const _EGLConfig *conf1, const _EGLConfig *conf2,
                    void *priv_data)
 {
@@ -739,6 +767,16 @@ _eglGetConfigAttrib(_EGLDriver *drv, _EGLDisplay *dpy, _EGLConfig *conf,
 {
    if (!_eglIsConfigAttribValid(conf, attribute))
       return _eglError(EGL_BAD_ATTRIBUTE, "eglGetConfigAttrib");
+
+   /* nonqueryable attributes */
+   switch (attribute) {
+   case EGL_MATCH_NATIVE_PIXMAP:
+      return _eglError(EGL_BAD_ATTRIBUTE, "eglGetConfigAttrib");
+      break;
+   default:
+      break;
+   }
+
    if (!value)
       return _eglError(EGL_BAD_PARAMETER, "eglGetConfigAttrib");
 

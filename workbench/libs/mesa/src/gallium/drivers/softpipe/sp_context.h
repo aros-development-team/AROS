@@ -58,7 +58,7 @@ struct softpipe_context {
 
    /** Constant state objects */
    struct pipe_blend_state *blend;
-   struct pipe_sampler_state *sampler[PIPE_MAX_SAMPLERS];
+   struct pipe_sampler_state *fragment_samplers[PIPE_MAX_SAMPLERS];
    struct pipe_sampler_state *vertex_samplers[PIPE_MAX_VERTEX_SAMPLERS];
    struct pipe_sampler_state *geometry_samplers[PIPE_MAX_GEOMETRY_SAMPLERS];
    struct pipe_depth_stencil_alpha_state *depth_stencil;
@@ -77,7 +77,7 @@ struct softpipe_context {
    struct pipe_framebuffer_state framebuffer;
    struct pipe_poly_stipple poly_stipple;
    struct pipe_scissor_state scissor;
-   struct pipe_sampler_view *sampler_views[PIPE_MAX_SAMPLERS];
+   struct pipe_sampler_view *fragment_sampler_views[PIPE_MAX_SAMPLERS];
    struct pipe_sampler_view *vertex_sampler_views[PIPE_MAX_VERTEX_SAMPLERS];
    struct pipe_sampler_view *geometry_sampler_views[PIPE_MAX_GEOMETRY_SAMPLERS];
    struct pipe_viewport_state viewport;
@@ -91,8 +91,8 @@ struct softpipe_context {
    } so_target;
    struct pipe_query_data_so_statistics so_stats;
 
-   unsigned num_samplers;
-   unsigned num_sampler_views;
+   unsigned num_fragment_samplers;
+   unsigned num_fragment_sampler_views;
    unsigned num_vertex_samplers;
    unsigned num_vertex_sampler_views;
    unsigned num_geometry_samplers;
@@ -154,9 +154,9 @@ struct softpipe_context {
 
    /** TGSI exec things */
    struct {
-      struct sp_sampler_varient *geom_samplers_list[PIPE_MAX_GEOMETRY_SAMPLERS];
-      struct sp_sampler_varient *vert_samplers_list[PIPE_MAX_VERTEX_SAMPLERS];
-      struct sp_sampler_varient *frag_samplers_list[PIPE_MAX_SAMPLERS];
+      struct sp_sampler_variant *geom_samplers_list[PIPE_MAX_GEOMETRY_SAMPLERS];
+      struct sp_sampler_variant *vert_samplers_list[PIPE_MAX_VERTEX_SAMPLERS];
+      struct sp_sampler_variant *frag_samplers_list[PIPE_MAX_SAMPLERS];
    } tgsi;
 
    struct tgsi_exec_machine *fs_machine;
@@ -174,7 +174,7 @@ struct softpipe_context {
    struct softpipe_tile_cache *zsbuf_cache;
 
    unsigned tex_timestamp;
-   struct softpipe_tex_tile_cache *tex_cache[PIPE_MAX_SAMPLERS];
+   struct softpipe_tex_tile_cache *fragment_tex_cache[PIPE_MAX_SAMPLERS];
    struct softpipe_tex_tile_cache *vertex_tex_cache[PIPE_MAX_VERTEX_SAMPLERS];
    struct softpipe_tex_tile_cache *geometry_tex_cache[PIPE_MAX_GEOMETRY_SAMPLERS];
 
@@ -192,10 +192,19 @@ softpipe_context( struct pipe_context *pipe )
 }
 
 void
-softpipe_reset_sampler_varients(struct softpipe_context *softpipe);
+softpipe_reset_sampler_variants(struct softpipe_context *softpipe);
 
 struct pipe_context *
 softpipe_create_context( struct pipe_screen *, void *priv );
 
+
+#define SP_UNREFERENCED         0
+#define SP_REFERENCED_FOR_READ  (1 << 0)
+#define SP_REFERENCED_FOR_WRITE (1 << 1)
+
+unsigned int
+softpipe_is_resource_referenced( struct pipe_context *pipe,
+                                 struct pipe_resource *texture,
+                                 unsigned level, int layer);
 
 #endif /* SP_CONTEXT_H */

@@ -39,6 +39,44 @@
 
 
 /**
+ * All vertex buffers should be in an unmapped state when we're about
+ * to draw.  This debug function checks that.
+ */
+static void
+check_buffers_are_unmapped(const struct gl_client_array **inputs)
+{
+#ifdef DEBUG
+   GLuint i;
+
+   for (i = 0; i < VERT_ATTRIB_MAX; i++) {
+      if (inputs[i]) {
+         struct gl_buffer_object *obj = inputs[i]->BufferObj;
+         assert(!_mesa_bufferobj_mapped(obj));
+         (void) obj;
+      }
+   }
+#endif
+}
+
+
+/**
+ * A debug function that may be called from other parts of Mesa as
+ * needed during debugging.
+ */
+void
+vbo_check_buffers_are_unmapped(struct gl_context *ctx)
+{
+   struct vbo_context *vbo = vbo_context(ctx);
+   struct vbo_exec_context *exec = &vbo->exec;
+   /* check the current vertex arrays */
+   check_buffers_are_unmapped(exec->array.inputs);
+   /* check the current glBegin/glVertex/glEnd-style VBO */
+   assert(!_mesa_bufferobj_mapped(exec->vtx.bufferobj));
+}
+
+
+
+/**
  * Compute min and max elements by scanning the index buffer for
  * glDraw[Range]Elements() calls.
  * If primitive restart is enabled, we need to ignore restart
@@ -299,7 +337,8 @@ print_draw_arrays(struct gl_context *ctx,
 	  mode, start, count);
 
    for (i = 0; i < 32; i++) {
-      GLuint bufName = exec->array.inputs[i]->BufferObj->Name;
+      struct gl_buffer_object *bufObj = exec->array.inputs[i]->BufferObj;
+      GLuint bufName = bufObj->Name;
       GLint stride = exec->array.inputs[i]->Stride;
       printf("attr %2d: size %d stride %d  enabled %d  "
 	     "ptr %p  Bufobj %u\n",
@@ -312,9 +351,8 @@ print_draw_arrays(struct gl_context *ctx,
 	     bufName);
 
       if (bufName) {
-         struct gl_buffer_object *buf = _mesa_lookup_bufferobj(ctx, bufName);
          GLubyte *p = ctx->Driver.MapBuffer(ctx, GL_ARRAY_BUFFER_ARB,
-                                            GL_READ_ONLY_ARB, buf);
+                                            GL_READ_ONLY_ARB, bufObj);
          int offset = (int) (GLintptr) exec->array.inputs[i]->Ptr;
          float *f = (float *) (p + offset);
          int *k = (int *) f;
@@ -326,7 +364,7 @@ print_draw_arrays(struct gl_context *ctx,
          for (i = 0; i < n; i++) {
             printf("    float[%d] = 0x%08x %f\n", i, k[i], f[i]);
          }
-         ctx->Driver.UnmapBuffer(ctx, GL_ARRAY_BUFFER_ARB, buf);
+         ctx->Driver.UnmapBuffer(ctx, GL_ARRAY_BUFFER_ARB, bufObj);
       }
    }
 }
@@ -423,6 +461,14 @@ recalculate_input_bindings(struct gl_context *ctx)
 	 inputs[VERT_ATTRIB_GENERIC0 + i] = &vbo->generic_currval[i];
          const_inputs |= 1 << (VERT_ATTRIB_GENERIC0 + i);
       }
+
+      /* There is no need to make _NEW_ARRAY dirty here for the TnL program,
+       * because it already takes care of invalidating the state necessary
+       * to revalidate vertex arrays. Not marking the state as dirty also
+       * improves performance (quite significantly in some apps).
+       */
+      if (!ctx->VertexProgram._MaintainTnlProgram)
+         ctx->NewState |= _NEW_ARRAY;
       break;
 
    case VP_NV:
@@ -448,6 +494,8 @@ recalculate_input_bindings(struct gl_context *ctx)
 	 inputs[i] = &vbo->generic_currval[i - VERT_ATTRIB_GENERIC0];
          const_inputs |= 1 << i;
       }
+
+      ctx->NewState |= _NEW_ARRAY;
       break;
 
    case VP_ARB:
@@ -483,8 +531,9 @@ recalculate_input_bindings(struct gl_context *ctx)
 	    inputs[VERT_ATTRIB_GENERIC0 + i] = &vbo->generic_currval[i];
             const_inputs |= 1 << (VERT_ATTRIB_GENERIC0 + i);
          }
-
       }
+
+      ctx->NewState |= _NEW_ARRAY;
       break;
    }
 
@@ -502,8 +551,13 @@ recalculate_input_bindings(struct gl_context *ctx)
 static void
 bind_arrays(struct gl_context *ctx)
 {
+   if (!ctx->Array.RebindArrays) {
+      return;
+   }
+
    bind_array_obj(ctx);
    recalculate_input_bindings(ctx);
+   ctx->Array.RebindArrays = GL_FALSE;
 }
 
 
@@ -531,15 +585,11 @@ vbo_draw_arrays(struct gl_context *ctx, GLenum mode, GLint start,
    if (ctx->NewState)
       _mesa_update_state(ctx);
 
+   /* init most fields to zero */
+   memset(prim, 0, sizeof(prim));
    prim[0].begin = 1;
    prim[0].end = 1;
-   prim[0].weak = 0;
-   prim[0].pad = 0;
    prim[0].mode = mode;
-   prim[0].start = 0; /* filled in below */
-   prim[0].count = 0; /* filled in below */
-   prim[0].indexed = 0;
-   prim[0].basevertex = 0;
    prim[0].num_instances = numInstances;
 
    /* Implement the primitive restart index */
@@ -576,6 +626,7 @@ vbo_draw_arrays(struct gl_context *ctx, GLenum mode, GLint start,
 
       if (primCount > 0) {
          /* draw one or two prims */
+         check_buffers_are_unmapped(exec->array.inputs);
          vbo->draw_prims(ctx, exec->array.inputs, prim, primCount, NULL,
                          GL_TRUE, start, start + count - 1);
       }
@@ -585,6 +636,7 @@ vbo_draw_arrays(struct gl_context *ctx, GLenum mode, GLint start,
       prim[0].start = start;
       prim[0].count = count;
 
+      check_buffers_are_unmapped(exec->array.inputs);
       vbo->draw_prims(ctx, exec->array.inputs, prim, 1, NULL,
                       GL_TRUE, start, start + count - 1);
    }
@@ -629,15 +681,15 @@ vbo_exec_DrawArrays(GLenum mode, GLint start, GLsizei count)
  */
 static void GLAPIENTRY
 vbo_exec_DrawArraysInstanced(GLenum mode, GLint start, GLsizei count,
-                             GLsizei primcount)
+                             GLsizei numInstances)
 {
    GET_CURRENT_CONTEXT(ctx);
 
    if (MESA_VERBOSE & VERBOSE_DRAW)
       _mesa_debug(ctx, "glDrawArraysInstanced(%s, %d, %d, %d)\n",
-                  _mesa_lookup_enum_by_nr(mode), start, count, primcount);
+                  _mesa_lookup_enum_by_nr(mode), start, count, numInstances);
 
-   if (!_mesa_validate_DrawArraysInstanced(ctx, mode, start, count, primcount))
+   if (!_mesa_validate_DrawArraysInstanced(ctx, mode, start, count, numInstances))
       return;
 
    FLUSH_CURRENT( ctx, 0 );
@@ -649,7 +701,7 @@ vbo_exec_DrawArraysInstanced(GLenum mode, GLint start, GLsizei count,
    if (0)
       check_draw_arrays_data(ctx, start, count);
 
-   vbo_draw_arrays(ctx, mode, start, count, primcount);
+   vbo_draw_arrays(ctx, mode, start, count, numInstances);
 
    if (0)
       print_draw_arrays(ctx, mode, start, count);
@@ -724,7 +776,7 @@ vbo_validated_drawrangeelements(struct gl_context *ctx, GLenum mode,
 				GLuint start, GLuint end,
 				GLsizei count, GLenum type,
 				const GLvoid *indices,
-				GLint basevertex, GLint primcount)
+				GLint basevertex, GLint numInstances)
 {
    struct vbo_context *vbo = vbo_context(ctx);
    struct vbo_exec_context *exec = &vbo->exec;
@@ -757,7 +809,7 @@ vbo_validated_drawrangeelements(struct gl_context *ctx, GLenum mode,
    prim[0].count = count;
    prim[0].indexed = 1;
    prim[0].basevertex = basevertex;
-   prim[0].num_instances = primcount;
+   prim[0].num_instances = numInstances;
 
    /* Need to give special consideration to rendering a range of
     * indices starting somewhere above zero.  Typically the
@@ -790,6 +842,7 @@ vbo_validated_drawrangeelements(struct gl_context *ctx, GLenum mode,
     * for the latter case elsewhere.
     */
 
+   check_buffers_are_unmapped(exec->array.inputs);
    vbo->draw_prims( ctx, exec->array.inputs, prim, 1, &ib,
 		    index_bounds_valid, start, end );
 }
@@ -886,8 +939,13 @@ vbo_exec_DrawRangeElementsBaseVertex(GLenum mode,
       /* Set 'end' to the max possible legal value */
       assert(ctx->Array.ArrayObj->_MaxElement >= 1);
       end = ctx->Array.ArrayObj->_MaxElement - 1;
+
+      if (end < start) {
+         return;
+      }
    }
-   else if (0) {
+
+   if (0) {
       printf("glDraw[Range]Elements{,BaseVertex}"
 	     "(start %u, end %u, type 0x%x, count %d) ElemBuf %u, "
 	     "base %d\n",
@@ -977,21 +1035,45 @@ vbo_exec_DrawElementsBaseVertex(GLenum mode, GLsizei count, GLenum type,
  */
 static void GLAPIENTRY
 vbo_exec_DrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
-                               const GLvoid *indices, GLsizei primcount)
+                               const GLvoid *indices, GLsizei numInstances)
 {
    GET_CURRENT_CONTEXT(ctx);
 
    if (MESA_VERBOSE & VERBOSE_DRAW)
       _mesa_debug(ctx, "glDrawElementsInstanced(%s, %d, %s, %p, %d)\n",
                   _mesa_lookup_enum_by_nr(mode), count,
-                  _mesa_lookup_enum_by_nr(type), indices, primcount);
+                  _mesa_lookup_enum_by_nr(type), indices, numInstances);
 
    if (!_mesa_validate_DrawElementsInstanced(ctx, mode, count, type, indices,
-                                             primcount))
+                                             numInstances, 0))
       return;
 
    vbo_validated_drawrangeelements(ctx, mode, GL_FALSE, ~0, ~0,
-				   count, type, indices, 0, primcount);
+				   count, type, indices, 0, numInstances);
+}
+
+/**
+ * Called by glDrawElementsInstancedBaseVertex() in immediate mode.
+ */
+static void GLAPIENTRY
+vbo_exec_DrawElementsInstancedBaseVertex(GLenum mode, GLsizei count, GLenum type,
+                               const GLvoid *indices, GLsizei numInstances,
+                               GLint basevertex)
+{
+   GET_CURRENT_CONTEXT(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_DRAW)
+      _mesa_debug(ctx, "glDrawElementsInstancedBaseVertex(%s, %d, %s, %p, %d; %d)\n",
+                  _mesa_lookup_enum_by_nr(mode), count,
+                  _mesa_lookup_enum_by_nr(type), indices,
+                  numInstances, basevertex);
+
+   if (!_mesa_validate_DrawElementsInstanced(ctx, mode, count, type, indices,
+                                             numInstances, basevertex))
+      return;
+
+   vbo_validated_drawrangeelements(ctx, mode, GL_FALSE, ~0, ~0,
+				   count, type, indices, basevertex, numInstances);
 }
 
 
@@ -1106,6 +1188,7 @@ vbo_validated_multidrawelements(struct gl_context *ctx, GLenum mode,
 	    prim[i].basevertex = 0;
       }
 
+      check_buffers_are_unmapped(exec->array.inputs);
       vbo->draw_prims(ctx, exec->array.inputs, prim, primcount, &ib,
 		      GL_FALSE, ~0, ~0);
    } else {
@@ -1130,6 +1213,7 @@ vbo_validated_multidrawelements(struct gl_context *ctx, GLenum mode,
 	 else
 	    prim[0].basevertex = 0;
 
+         check_buffers_are_unmapped(exec->array.inputs);
          vbo->draw_prims(ctx, exec->array.inputs, prim, 1, &ib,
                          GL_FALSE, ~0, ~0);
       }
@@ -1200,6 +1284,7 @@ vbo_exec_array_init( struct vbo_exec_context *exec )
    exec->vtxfmt.MultiDrawElementsBaseVertex = vbo_exec_MultiDrawElementsBaseVertex;
    exec->vtxfmt.DrawArraysInstanced = vbo_exec_DrawArraysInstanced;
    exec->vtxfmt.DrawElementsInstanced = vbo_exec_DrawElementsInstanced;
+   exec->vtxfmt.DrawElementsInstancedBaseVertex = vbo_exec_DrawElementsInstancedBaseVertex;
 }
 
 

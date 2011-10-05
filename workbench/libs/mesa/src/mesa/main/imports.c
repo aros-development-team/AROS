@@ -46,6 +46,7 @@
 
 #include "imports.h"
 #include "context.h"
+#include "mtypes.h"
 #include "version.h"
 
 #ifdef _GNU_SOURCE
@@ -452,6 +453,7 @@ _mesa_inv_sqrtf(float n)
 #endif
 }
 
+#if !defined(__GNUC__) || defined(__AROS__)
 /**
  * Find the first bit set in a word.
  */
@@ -495,9 +497,6 @@ _mesa_ffs(int32_t i)
 int
 _mesa_ffsll(int64_t val)
 {
-#ifdef ffsll
-   return ffsll(val);
-#else
    int bit;
 
    assert(sizeof(val) == 8);
@@ -511,28 +510,24 @@ _mesa_ffsll(int64_t val)
       return 32 + bit;
 
    return 0;
-#endif
 }
+#endif
 
-
+#if !defined(__GNUC__) || defined(__AROS__) ||\
+   ((_GNUC__ == 3 && __GNUC_MINOR__ < 4) && __GNUC__ < 4)
 /**
  * Return number of bits set in given GLuint.
  */
 unsigned int
 _mesa_bitcount(unsigned int n)
 {
-/* AROS: don't use __builtin_popcount */
-#if !defined(__AROS__) && defined(__GNUC__) && \
-	((_GNUC__ == 3 && __GNUC_MINOR__ >= 4) || __GNUC__ >= 4)
-   return __builtin_popcount(n);
-#else
    unsigned int bits;
    for (bits = 0; n > 0; n = n >> 1) {
       bits += (n & 1);
    }
    return bits;
-#endif
 }
+#endif
 
 
 /**
@@ -935,14 +930,20 @@ _mesa_problem( const struct gl_context *ctx, const char *fmtString, ... )
 {
    va_list args;
    char str[MAXSTRING];
+   static int numCalls = 0;
+
    (void) ctx;
 
-   va_start( args, fmtString );  
-   vsnprintf( str, MAXSTRING, fmtString, args );
-   va_end( args );
+   if (numCalls < 50) {
+      numCalls++;
 
-   fprintf(stderr, "Mesa %s implementation error: %s\n", MESA_VERSION_STRING, str);
-   fprintf(stderr, "Please report at bugzilla.freedesktop.org\n");
+      va_start( args, fmtString );  
+      vsnprintf( str, MAXSTRING, fmtString, args );
+      va_end( args );
+      fprintf(stderr, "Mesa %s implementation error: %s\n",
+              MESA_VERSION_STRING, str);
+      fprintf(stderr, "Please report at bugs.freedesktop.org\n");
+   }
 }
 
 

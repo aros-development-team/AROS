@@ -31,6 +31,7 @@
 
 #include "pipe/p_compiler.h"
 #include "pipe/p_state.h"
+#include "pipe/p_shader_tokens.h"
 
 #if defined __cplusplus
 extern "C" {
@@ -181,6 +182,8 @@ struct tgsi_sampler
 /* The maximum total number of vertices */
 #define TGSI_MAX_TOTAL_VERTICES (TGSI_MAX_PRIM_VERTICES * TGSI_MAX_PRIMITIVES * PIPE_MAX_ATTRIBS)
 
+#define TGSI_MAX_MISC_INPUTS 8
+
 /** function call/activation record */
 struct tgsi_call_record
 {
@@ -225,8 +228,12 @@ struct tgsi_exec_machine
 
    float                         ImmArray[TGSI_EXEC_NUM_IMMEDIATES][4];
 
-   struct tgsi_exec_vector       Inputs[TGSI_MAX_PRIM_VERTICES * PIPE_MAX_ATTRIBS];
-   struct tgsi_exec_vector       Outputs[TGSI_MAX_TOTAL_VERTICES];
+   struct tgsi_exec_vector       *Inputs;
+   struct tgsi_exec_vector       *Outputs;
+
+   /* System values */
+   unsigned                      SysSemanticToIndex[TGSI_SEMANTIC_COUNT];
+   float                         SystemValue[TGSI_MAX_MISC_INPUTS][4];
 
    struct tgsi_exec_vector       *Addrs;
    struct tgsi_exec_vector       *Predicates;
@@ -301,6 +308,9 @@ struct tgsi_exec_machine
    struct tgsi_full_declaration *Declarations;
    uint NumDeclarations;
 
+   struct tgsi_declaration_resource Resources[PIPE_MAX_SHADER_RESOURCES];
+
+   boolean UsedGeometryShader;
 };
 
 struct tgsi_exec_machine *

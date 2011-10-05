@@ -424,7 +424,6 @@ struct rbug_proto_texture_list * rbug_demarshal_texture_list(struct rbug_proto_h
 	ret->header.__message = header;
 	ret->header.opcode = header->opcode;
 
-
 	return ret;
 }
 

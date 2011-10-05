@@ -72,6 +72,7 @@ static void init_legacy_currval(struct gl_context *ctx)
       cl->Type = GL_FLOAT;
       cl->Format = GL_RGBA;
       cl->Ptr = (const void *)ctx->Current.Attrib[i];
+      cl->_ElementSize = cl->Size * sizeof(GLfloat);
       _mesa_reference_buffer_object(ctx, &cl->BufferObj,
                                     ctx->Shared->NullBufferObj);
    }
@@ -98,6 +99,7 @@ static void init_generic_currval(struct gl_context *ctx)
       cl->Stride = 0;
       cl->StrideB = 0;
       cl->Enabled = 1;
+      cl->_ElementSize = cl->Size * sizeof(GLfloat);
       _mesa_reference_buffer_object(ctx, &cl->BufferObj,
                                     ctx->Shared->NullBufferObj);
    }
@@ -143,6 +145,7 @@ static void init_mat_currval(struct gl_context *ctx)
       cl->Stride = 0;
       cl->StrideB = 0;
       cl->Enabled = 1;
+      cl->_ElementSize = cl->Size * sizeof(GLfloat);
       _mesa_reference_buffer_object(ctx, &cl->BufferObj,
                                     ctx->Shared->NullBufferObj);
    }
@@ -209,7 +212,6 @@ GLboolean _vbo_CreateContext( struct gl_context *ctx )
 
 void _vbo_InvalidateState( struct gl_context *ctx, GLuint new_state )
 {
-   _ae_invalidate_state(ctx, new_state);
    vbo_exec_invalidate_state(ctx, new_state);
 }
 

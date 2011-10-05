@@ -95,9 +95,16 @@ vs_exec_run_linear( struct draw_vertex_shader *shader,
    struct tgsi_exec_machine *machine = evs->machine;
    unsigned int i, j;
    unsigned slot;
+   boolean clamp_vertex_color = shader->draw->rasterizer->clamp_vertex_color;
 
    tgsi_exec_set_constant_buffers(machine, PIPE_MAX_CONSTANT_BUFFERS,
                                   constants, const_size);
+
+   if (shader->info.uses_instanceid) {
+      unsigned i = machine->SysSemanticToIndex[TGSI_SEMANTIC_INSTANCEID];
+      assert(i < Elements(machine->SystemValue));
+      machine->SystemValue[i][0] = shader->draw->instance_id;
+   }
 
    for (i = 0; i < count; i += MAX_TGSI_VERTICES) {
       unsigned int max_vertices = MIN2(MAX_TGSI_VERTICES, count - i);
@@ -145,11 +152,22 @@ vs_exec_run_linear( struct draw_vertex_shader *shader,
        */
       for (j = 0; j < max_vertices; j++) {
          for (slot = 0; slot < shader->info.num_outputs; slot++) {
-            output[slot][0] = machine->Outputs[slot].xyzw[0].f[j];
-            output[slot][1] = machine->Outputs[slot].xyzw[1].f[j];
-            output[slot][2] = machine->Outputs[slot].xyzw[2].f[j];
-            output[slot][3] = machine->Outputs[slot].xyzw[3].f[j];
-
+            unsigned name = shader->info.output_semantic_name[slot];
+            if(clamp_vertex_color &&
+                  (name == TGSI_SEMANTIC_COLOR || name == TGSI_SEMANTIC_BCOLOR))
+            {
+               output[slot][0] = CLAMP(machine->Outputs[slot].xyzw[0].f[j], 0.0f, 1.0f);
+               output[slot][1] = CLAMP(machine->Outputs[slot].xyzw[1].f[j], 0.0f, 1.0f);
+               output[slot][2] = CLAMP(machine->Outputs[slot].xyzw[2].f[j], 0.0f, 1.0f);
+               output[slot][3] = CLAMP(machine->Outputs[slot].xyzw[3].f[j], 0.0f, 1.0f);
+            }
+            else
+            {
+               output[slot][0] = machine->Outputs[slot].xyzw[0].f[j];
+               output[slot][1] = machine->Outputs[slot].xyzw[1].f[j];
+               output[slot][2] = machine->Outputs[slot].xyzw[2].f[j];
+               output[slot][3] = machine->Outputs[slot].xyzw[3].f[j];
+            }
          }
 
 #if 0
@@ -203,7 +221,7 @@ draw_create_vs_exec(struct draw_context *draw,
    vs->base.prepare = vs_exec_prepare;
    vs->base.run_linear = vs_exec_run_linear;
    vs->base.delete = vs_exec_delete;
-   vs->base.create_varient = draw_vs_create_varient_generic;
+   vs->base.create_variant = draw_vs_create_variant_generic;
    vs->machine = draw->vs.machine;
 
    return &vs->base;

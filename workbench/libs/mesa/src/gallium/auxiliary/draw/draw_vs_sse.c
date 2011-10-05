@@ -71,6 +71,12 @@ vs_sse_prepare( struct draw_vertex_shader *base,
    struct tgsi_exec_machine *machine = shader->machine;
 
    machine->Samplers = draw->vs.samplers;
+
+   if (base->info.uses_instanceid) {
+      unsigned i = machine->SysSemanticToIndex[TGSI_SEMANTIC_INSTANCEID];
+      assert(i < Elements(machine->SystemValue));
+      machine->SystemValue[i][0] = base->draw->instance_id;
+   }
 }
 
 
@@ -166,9 +172,9 @@ draw_create_vs_sse(struct draw_context *draw,
 
    vs->base.draw = draw;
    if (1)
-      vs->base.create_varient = draw_vs_create_varient_aos_sse;
+      vs->base.create_variant = draw_vs_create_variant_aos_sse;
    else
-      vs->base.create_varient = draw_vs_create_varient_generic;
+      vs->base.create_variant = draw_vs_create_variant_generic;
    vs->base.prepare = vs_sse_prepare;
    vs->base.run_linear = vs_sse_run_linear;
    vs->base.delete = vs_sse_delete;
@@ -194,7 +200,8 @@ draw_create_vs_sse(struct draw_context *draw,
    return &vs->base;
 
 fail:
-   debug_error("tgsi_emit_sse2() failed, falling back to interpreter\n");
+   if (0)
+      debug_warning("tgsi_emit_sse2() failed, falling back to interpreter\n");
 
    x86_release_func( &vs->sse2_program );
    

@@ -38,7 +38,11 @@
 #include "texcompress.h"
 #include "texcompress_fxt1.h"
 #include "texcompress_s3tc.h"
+#include "texcompress_rgtc.h"
 #include "texfetch.h"
+#include "teximage.h"
+#include "../../gallium/auxiliary/util/u_format_rgb9e5.h"
+#include "../../gallium/auxiliary/util/u_format_r11g11b10f.h"
 
 
 /**
@@ -237,6 +241,13 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       store_texel_argb1555_rev
    },
    {
+      MESA_FORMAT_AL44,
+      fetch_texel_1d_f_al44,
+      fetch_texel_2d_f_al44,
+      fetch_texel_3d_f_al44,
+      store_texel_al44
+   },
+   {
       MESA_FORMAT_AL88,
       fetch_texel_1d_f_al88,
       fetch_texel_2d_f_al88,
@@ -279,6 +290,13 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       store_texel_a8
    },
    {
+      MESA_FORMAT_A16,
+      fetch_texel_1d_f_a16,
+      fetch_texel_2d_f_a16,
+      fetch_texel_3d_f_a16,
+      store_texel_a16
+   },
+   {
       MESA_FORMAT_L8,
       fetch_texel_1d_f_l8,
       fetch_texel_2d_f_l8,
@@ -286,11 +304,25 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       store_texel_l8
    },
    {
+      MESA_FORMAT_L16,
+      fetch_texel_1d_f_l16,
+      fetch_texel_2d_f_l16,
+      fetch_texel_3d_f_l16,
+      store_texel_l16
+   },
+   {
       MESA_FORMAT_I8,
       fetch_texel_1d_f_i8,
       fetch_texel_2d_f_i8,
       fetch_texel_3d_f_i8,
       store_texel_i8
+   },
+   {
+      MESA_FORMAT_I16,
+      fetch_texel_1d_f_i16,
+      fetch_texel_2d_f_i16,
+      fetch_texel_3d_f_i16,
+      store_texel_i16
    },
    {
       MESA_FORMAT_CI8,
@@ -354,6 +386,13 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       fetch_texel_2d_f_rg1616_rev,
       fetch_texel_3d_f_rg1616_rev,
       store_texel_rg1616_rev,
+   },
+   {
+      MESA_FORMAT_ARGB2101010,
+      fetch_texel_1d_f_argb2101010,
+      fetch_texel_2d_f_argb2101010,
+      fetch_texel_3d_f_argb2101010,
+      store_texel_argb2101010
    },
    {
       MESA_FORMAT_Z24_S8,
@@ -594,6 +633,34 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       fetch_texel_3d_f_intensity_f16,
       store_texel_intensity_f16
    },
+   {
+      MESA_FORMAT_R_FLOAT32,
+      fetch_texel_1d_f_r_f32,
+      fetch_texel_2d_f_r_f32,
+      fetch_texel_3d_f_r_f32,
+      store_texel_r_f32
+   },
+   {
+      MESA_FORMAT_R_FLOAT16,
+      fetch_texel_1d_f_r_f16,
+      fetch_texel_2d_f_r_f16,
+      fetch_texel_3d_f_r_f16,
+      store_texel_r_f16
+   },
+   {
+      MESA_FORMAT_RG_FLOAT32,
+      fetch_texel_1d_f_rg_f32,
+      fetch_texel_2d_f_rg_f32,
+      fetch_texel_3d_f_rg_f32,
+      store_texel_rg_f32
+   },
+   {
+      MESA_FORMAT_RG_FLOAT16,
+      fetch_texel_1d_f_rg_f16,
+      fetch_texel_2d_f_rg_f16,
+      fetch_texel_3d_f_rg_f16,
+      store_texel_rg_f16
+   },
 
    /* non-normalized, signed int */
    {
@@ -659,11 +726,11 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       store_texel_signed_r8
    },
    {
-      MESA_FORMAT_SIGNED_RG88,
-      fetch_texel_1d_signed_rg88,
-      fetch_texel_2d_signed_rg88,
-      fetch_texel_3d_signed_rg88,
-      store_texel_signed_rg88
+      MESA_FORMAT_SIGNED_RG88_REV,
+      fetch_texel_1d_signed_rg88_rev,
+      fetch_texel_2d_signed_rg88_rev,
+      fetch_texel_3d_signed_rg88_rev,
+      store_texel_signed_rg88_rev
    },
    {
       MESA_FORMAT_SIGNED_RGBX8888,
@@ -687,18 +754,18 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       store_texel_signed_rgba8888_rev
    },
    {
-      MESA_FORMAT_SIGNED_R_16,
-      fetch_texel_1d_signed_r_16,
-      fetch_texel_2d_signed_r_16,
-      fetch_texel_3d_signed_r_16,
-      store_texel_signed_r_16
+      MESA_FORMAT_SIGNED_R16,
+      fetch_texel_1d_signed_r16,
+      fetch_texel_2d_signed_r16,
+      fetch_texel_3d_signed_r16,
+      store_texel_signed_r16
    },
    {
-      MESA_FORMAT_SIGNED_RG_16,
-      fetch_texel_1d_signed_rg_16,
-      fetch_texel_2d_signed_rg_16,
-      fetch_texel_3d_signed_rg_16,
-      store_texel_signed_rg_16
+      MESA_FORMAT_SIGNED_GR1616,
+      fetch_texel_1d_signed_rg1616,
+      fetch_texel_2d_signed_rg1616,
+      fetch_texel_3d_signed_rg1616,
+      store_texel_signed_rg1616
    },
    {
       MESA_FORMAT_SIGNED_RGB_16,
@@ -720,11 +787,137 @@ texfetch_funcs[MESA_FORMAT_COUNT] =
       fetch_texel_2d_rgba_16,
       fetch_texel_3d_rgba_16,
       store_texel_rgba_16
+   },
+   {
+      MESA_FORMAT_RED_RGTC1,
+      NULL,
+      _mesa_fetch_texel_2d_f_red_rgtc1,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_SIGNED_RED_RGTC1,
+      NULL,
+      _mesa_fetch_texel_2d_f_signed_red_rgtc1,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_RG_RGTC2,
+      NULL,
+      _mesa_fetch_texel_2d_f_rg_rgtc2,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_SIGNED_RG_RGTC2,
+      NULL,
+      _mesa_fetch_texel_2d_f_signed_rg_rgtc2,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_L_LATC1,
+      NULL,
+      _mesa_fetch_texel_2d_f_l_latc1,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_SIGNED_L_LATC1,
+      NULL,
+      _mesa_fetch_texel_2d_f_signed_l_latc1,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_LA_LATC2,
+      NULL,
+      _mesa_fetch_texel_2d_f_la_latc2,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_SIGNED_LA_LATC2,
+      NULL,
+      _mesa_fetch_texel_2d_f_signed_la_latc2,
+      NULL,
+      NULL
+   },
+   {
+      MESA_FORMAT_SIGNED_A8,
+      fetch_texel_1d_signed_a8,
+      fetch_texel_2d_signed_a8,
+      fetch_texel_3d_signed_a8,
+      store_texel_signed_a8
+   },
+   {
+      MESA_FORMAT_SIGNED_L8,
+      fetch_texel_1d_signed_l8,
+      fetch_texel_2d_signed_l8,
+      fetch_texel_3d_signed_l8,
+      store_texel_signed_l8
+   },
+   {
+      MESA_FORMAT_SIGNED_AL88,
+      fetch_texel_1d_signed_al88,
+      fetch_texel_2d_signed_al88,
+      fetch_texel_3d_signed_al88,
+      store_texel_signed_al88
+   },
+   {
+      MESA_FORMAT_SIGNED_I8,
+      fetch_texel_1d_signed_i8,
+      fetch_texel_2d_signed_i8,
+      fetch_texel_3d_signed_i8,
+      store_texel_signed_i8
+   },
+   {
+      MESA_FORMAT_SIGNED_A16,
+      fetch_texel_1d_signed_a16,
+      fetch_texel_2d_signed_a16,
+      fetch_texel_3d_signed_a16,
+      store_texel_signed_a16
+   },
+   {
+      MESA_FORMAT_SIGNED_L16,
+      fetch_texel_1d_signed_l16,
+      fetch_texel_2d_signed_l16,
+      fetch_texel_3d_signed_l16,
+      store_texel_signed_l16
+   },
+   {
+      MESA_FORMAT_SIGNED_AL1616,
+      fetch_texel_1d_signed_al1616,
+      fetch_texel_2d_signed_al1616,
+      fetch_texel_3d_signed_al1616,
+      store_texel_signed_al1616
+   },
+   {
+      MESA_FORMAT_SIGNED_I16,
+      fetch_texel_1d_signed_i16,
+      fetch_texel_2d_signed_i16,
+      fetch_texel_3d_signed_i16,
+      store_texel_signed_i16
+   },
+   {
+      MESA_FORMAT_RGB9_E5_FLOAT,
+      fetch_texel_1d_rgb9_e5,
+      fetch_texel_2d_rgb9_e5,
+      fetch_texel_3d_rgb9_e5,
+      store_texel_rgb9_e5
+   },
+   {
+      MESA_FORMAT_R11_G11_B10_FLOAT,
+      fetch_texel_1d_r11_g11_b10f,
+      fetch_texel_2d_r11_g11_b10f,
+      fetch_texel_3d_r11_g11_b10f,
+      store_texel_r11_g11_b10f
    }
 };
 
 
-static FetchTexelFuncF
+FetchTexelFuncF
 _mesa_get_texel_fetch_func(gl_format format, GLuint dims)
 {
 #ifdef DEBUG
@@ -822,13 +1015,36 @@ fetch_texel_chan_to_float(const struct gl_texture_image *texImage,
 void
 _mesa_set_fetch_functions(struct gl_texture_image *texImage, GLuint dims)
 {
+   gl_format format = texImage->TexFormat;
+
    ASSERT(dims == 1 || dims == 2 || dims == 3);
 
-   texImage->FetchTexelf =
-      _mesa_get_texel_fetch_func(texImage->TexFormat, dims);
+   if (texImage->TexObject->Sampler.sRGBDecode == GL_SKIP_DECODE_EXT &&
+       _mesa_get_format_color_encoding(format) == GL_SRGB) {
+      format = _mesa_get_srgb_format_linear(format);
+   }
+
+   texImage->FetchTexelf = _mesa_get_texel_fetch_func(format, dims);
 
    texImage->FetchTexelc = fetch_texel_float_to_chan;
 
    ASSERT(texImage->FetchTexelc);
    ASSERT(texImage->FetchTexelf);
+}
+
+void
+_mesa_update_fetch_functions(struct gl_texture_object *texObj)
+{
+   GLuint face, i;
+   GLuint dims;
+
+   dims = _mesa_get_texture_dimensions(texObj->Target);
+
+   for (face = 0; face < 6; face++) {
+      for (i = 0; i < MAX_TEXTURE_LEVELS; i++) {
+         if (texObj->Image[face][i]) {
+	    _mesa_set_fetch_functions(texObj->Image[face][i], dims);
+         }
+      }
+   }
 }

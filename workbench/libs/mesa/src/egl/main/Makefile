@@ -52,11 +52,39 @@ OBJECTS = $(SOURCES:.c=.o)
 
 # use dl*() to load drivers
 LOCAL_CFLAGS = -D_EGL_OS_UNIX=1
+LOCAL_LIBS =
+
+# egl_dri2 and egl_glx are built-ins
+ifeq ($(filter dri2, $(EGL_DRIVERS_DIRS)),dri2)
+LOCAL_CFLAGS += -D_EGL_BUILT_IN_DRIVER_DRI2
+LOCAL_LIBS += $(TOP)/src/egl/drivers/dri2/libegl_dri2.a
+ifneq ($(findstring x11, $(EGL_PLATFORMS)),)
+EGL_LIB_DEPS += $(XCB_DRI2_LIBS)
+endif
+ifneq ($(findstring drm, $(EGL_PLATFORMS)),)
+EGL_LIB_DEPS += -lgbm
+endif
+EGL_LIB_DEPS += $(LIBUDEV_LIBS) $(DLOPEN_LIBS) $(LIBDRM_LIB) $(WAYLAND_LIBS)
+endif
+
+
+ifneq ($(findstring wayland, $(EGL_PLATFORMS)),)
+LOCAL_LIBS += $(TOP)/src/egl/wayland/wayland-drm/libwayland-drm.a
+endif
+
+ifeq ($(filter glx, $(EGL_DRIVERS_DIRS)),glx)
+LOCAL_CFLAGS += -D_EGL_BUILT_IN_DRIVER_GLX
+LOCAL_LIBS += $(TOP)/src/egl/drivers/glx/libegl_glx.a
+EGL_LIB_DEPS += $(X11_LIBS) $(DLOPEN_LIBS)
+endif
 
 # translate --with-egl-platforms to _EGLPlatformType
 EGL_NATIVE_PLATFORM=_EGL_INVALID_PLATFORM
 ifeq ($(firstword $(EGL_PLATFORMS)),x11)
 EGL_NATIVE_PLATFORM=_EGL_PLATFORM_X11
+endif
+ifeq ($(firstword $(EGL_PLATFORMS)),wayland)
+EGL_NATIVE_PLATFORM=_EGL_PLATFORM_WAYLAND
 endif
 ifeq ($(firstword $(EGL_PLATFORMS)),drm)
 EGL_NATIVE_PLATFORM=_EGL_PLATFORM_DRM
@@ -80,11 +108,12 @@ default: depend library
 # EGL Library
 library: $(TOP)/$(LIB_DIR)/$(EGL_LIB_NAME)
 
-$(TOP)/$(LIB_DIR)/$(EGL_LIB_NAME): $(OBJECTS)
+$(TOP)/$(LIB_DIR)/$(EGL_LIB_NAME): $(OBJECTS) $(LOCAL_LIBS)
 	$(MKLIB) -o $(EGL_LIB) -linker '$(CC)' -ldflags '$(LDFLAGS)' \
 		-major $(EGL_MAJOR) -minor $(EGL_MINOR) \
 		-install $(TOP)/$(LIB_DIR) $(MKLIB_OPTIONS) \
-		$(EGL_LIB_DEPS) $(OBJECTS)
+		-L$(TOP)/$(LIB_DIR) $(EGL_LIB_DEPS) \
+		$(OBJECTS) $(LOCAL_LIBS)
 
 install-headers:
 	$(INSTALL) -d $(DESTDIR)$(INSTALL_INC_DIR)/KHR

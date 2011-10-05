@@ -27,8 +27,20 @@
  */
 
 #include <string.h>
-#include "u_execmem.h"
 #include "u_macros.h"
+
+#ifdef __linux__
+__asm__(".section .note.ABI-tag, \"a\"\n\t"
+        ".p2align 2\n\t"
+        ".long 1f - 0f\n\t"      /* name length */
+        ".long 3f - 2f\n\t"      /* data length */
+        ".long 1\n\t"            /* note length */
+        "0: .asciz \"GNU\"\n\t"  /* vendor name */
+        "1: .p2align 2\n\t"
+        "2: .long 0\n\t"         /* note data: the ABI tag */
+        ".long 2,4,20\n\t"       /* Minimum kernel version w/TLS */
+        "3: .p2align 2\n\t");    /* pad out section */
+#endif /* __linux__ */
 
 __asm__(".text");
 
@@ -37,14 +49,15 @@ __asm__("x86_current_tls:\n\t"
         "1:\n\t"
         "popl %eax\n\t"
 	"addl $_GLOBAL_OFFSET_TABLE_+[.-1b], %eax\n\t"
-	"movl u_current_table_tls@GOTNTPOFF(%eax), %eax\n\t"
+	"movl " ENTRY_CURRENT_TABLE "@GOTNTPOFF(%eax), %eax\n\t"
 	"ret");
 
 #ifndef GLX_X86_READONLY_TEXT
-__asm__(".section wtext, \"awx\", @progbits\n"
-        ".balign 16\n"
-        "x86_entry_start:");
+__asm__(".section wtext, \"awx\", @progbits");
 #endif /* GLX_X86_READONLY_TEXT */
+
+__asm__(".balign 16\n"
+        "x86_entry_start:");
 
 #define STUB_ASM_ENTRY(func)     \
    ".globl " func "\n"           \
@@ -66,15 +79,20 @@ __asm__(".balign 16\n"
 __asm__(".text");
 #endif /* GLX_X86_READONLY_TEXT */
 
+#ifndef MAPI_MODE_BRIDGE
+
+#include "u_execmem.h"
+
 extern unsigned long
 x86_current_tls();
+
+static char x86_entry_start[];
+static char x86_entry_end[];
 
 void
 entry_patch_public(void)
 {
 #ifndef GLX_X86_READONLY_TEXT
-   extern char x86_entry_start[];
-   extern char x86_entry_end[];
    char patch[8] = {
       0x65, 0xa1, 0x00, 0x00, 0x00, 0x00, /* movl %gs:0x0, %eax */
       0x90, 0x90                          /* nop's */
@@ -86,6 +104,12 @@ entry_patch_public(void)
    for (entry = x86_entry_start; entry < x86_entry_end; entry += 16)
       memcpy(entry, patch, sizeof(patch));
 #endif
+}
+
+mapi_func
+entry_get_public(int slot)
+{
+   return (mapi_func) (x86_entry_start + slot * 16);
 }
 
 void
@@ -118,3 +142,5 @@ entry_generate(int slot)
 
    return entry;
 }
+
+#endif /* MAPI_MODE_BRIDGE */

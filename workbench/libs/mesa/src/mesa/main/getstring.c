@@ -29,6 +29,8 @@
 #include "get.h"
 #include "enums.h"
 #include "extensions.h"
+#include "mfeatures.h"
+#include "mtypes.h"
 
 
 /**
@@ -248,4 +250,21 @@ _mesa_GetError( void )
    ctx->ErrorValue = (GLenum) GL_NO_ERROR;
    ctx->ErrorDebugCount = 0;
    return e;
+}
+
+/**
+ * Returns an error code specified by GL_ARB_robustness, or GL_NO_ERROR.
+ * \return current context status
+ */
+GLenum GLAPIENTRY
+_mesa_GetGraphicsResetStatusARB( void )
+{
+   GET_CURRENT_CONTEXT(ctx);
+   GLenum status = ctx->ResetStatus;
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetGraphicsResetStatusARB"
+                       "(always returns GL_NO_ERROR)\n");
+
+   return status;
 }

@@ -75,6 +75,7 @@ enum tgsi_file_type {
    TGSI_FILE_SYSTEM_VALUE        =9,
    TGSI_FILE_IMMEDIATE_ARRAY     =10,
    TGSI_FILE_TEMPORARY_ARRAY     =11,
+   TGSI_FILE_RESOURCE            =12,
    TGSI_FILE_COUNT      /**< how many TGSI_FILE_ types */
 };
 
@@ -153,6 +154,14 @@ struct tgsi_declaration_semantic
    unsigned Padding        : 8;
 };
 
+struct tgsi_declaration_resource {
+   unsigned Resource    : 8; /**< one of TGSI_TEXTURE_ */
+   unsigned ReturnTypeX : 6; /**< one of enum pipe_type */
+   unsigned ReturnTypeY : 6; /**< one of enum pipe_type */
+   unsigned ReturnTypeZ : 6; /**< one of enum pipe_type */
+   unsigned ReturnTypeW : 6; /**< one of enum pipe_type */
+};
+
 #define TGSI_IMM_FLOAT32   0
 #define TGSI_IMM_UINT32    1
 #define TGSI_IMM_INT32     2
@@ -177,7 +186,8 @@ union tgsi_immediate_data
 #define TGSI_PROPERTY_GS_MAX_OUTPUT_VERTICES 2
 #define TGSI_PROPERTY_FS_COORD_ORIGIN        3
 #define TGSI_PROPERTY_FS_COORD_PIXEL_CENTER  4
-#define TGSI_PROPERTY_COUNT                  5
+#define TGSI_PROPERTY_FS_COLOR0_WRITES_ALL_CBUFS 5
+#define TGSI_PROPERTY_COUNT                  6
 
 struct tgsi_property {
    unsigned Type         : 4;  /**< TGSI_TOKEN_TYPE_PROPERTY */
@@ -338,7 +348,22 @@ struct tgsi_property_data {
 #define TGSI_OPCODE_CASE                142
 #define TGSI_OPCODE_DEFAULT             143
 #define TGSI_OPCODE_ENDSWITCH           144
-#define TGSI_OPCODE_LAST                145
+
+/* resource related opcodes */
+#define TGSI_OPCODE_LOAD                145
+#define TGSI_OPCODE_LOAD_MS             146
+#define TGSI_OPCODE_SAMPLE              147
+#define TGSI_OPCODE_SAMPLE_B            148
+#define TGSI_OPCODE_SAMPLE_C            149
+#define TGSI_OPCODE_SAMPLE_C_LZ         150
+#define TGSI_OPCODE_SAMPLE_D            151
+#define TGSI_OPCODE_SAMPLE_L            152
+#define TGSI_OPCODE_GATHER4             153
+#define TGSI_OPCODE_RESINFO             154
+#define TGSI_OPCODE_SAMPLE_POS          155
+#define TGSI_OPCODE_SAMPLE_INFO         156
+
+#define TGSI_OPCODE_LAST                157
 
 #define TGSI_SAT_NONE            0  /* do not saturate */
 #define TGSI_SAT_ZERO_ONE        1  /* clamp to [0,1] */
@@ -405,7 +430,9 @@ struct tgsi_instruction_label
 #define TGSI_TEXTURE_SHADOW1D       6
 #define TGSI_TEXTURE_SHADOW2D       7
 #define TGSI_TEXTURE_SHADOWRECT     8
-#define TGSI_TEXTURE_COUNT          9
+#define TGSI_TEXTURE_1D_ARRAY       9
+#define TGSI_TEXTURE_2D_ARRAY      10
+#define TGSI_TEXTURE_COUNT         11
 
 struct tgsi_instruction_texture
 {

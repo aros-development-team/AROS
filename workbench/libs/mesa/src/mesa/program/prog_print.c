@@ -72,6 +72,8 @@ _mesa_register_file_name(gl_register_file f)
       return "ADDR";
    case PROGRAM_SAMPLER:
       return "SAMPLER";
+   case PROGRAM_SYSTEM_VALUE:
+      return "SYSVAL";
    case PROGRAM_UNDEFINED:
       return "UNDEFINED";
    default:
@@ -309,6 +311,9 @@ reg_string(gl_register_file f, GLint index, gl_prog_print_mode mode,
          break;
       case PROGRAM_UNIFORM: /* extension */
          sprintf(str, "uniform[%s%d]", addr, index);
+         break;
+      case PROGRAM_SYSTEM_VALUE:
+         sprintf(str, "sysvalue[%s%d]", addr, index);
          break;
       case PROGRAM_STATE_VAR:
          {
@@ -642,6 +647,7 @@ _mesa_fprint_instruction_opt(FILE *f,
    case OPCODE_TXP:
    case OPCODE_TXL:
    case OPCODE_TXB:
+   case OPCODE_TXD:
       fprintf(f, "%s", _mesa_opcode_string(inst->Opcode));
       if (inst->SaturateMode == SATURATE_ZERO_ONE)
          fprintf(f, "_SAT");
@@ -649,6 +655,12 @@ _mesa_fprint_instruction_opt(FILE *f,
       fprint_dst_reg(f, &inst->DstReg, mode, prog);
       fprintf(f, ", ");
       fprint_src_reg(f, &inst->SrcReg[0], mode, prog);
+      if (inst->Opcode == OPCODE_TXD) {
+         fprintf(f, ", ");
+         fprint_src_reg(f, &inst->SrcReg[1], mode, prog);
+         fprintf(f, ", ");
+         fprint_src_reg(f, &inst->SrcReg[2], mode, prog);
+      }
       fprintf(f, ", texture[%d], ", inst->TexSrcUnit);
       switch (inst->TexSrcTarget) {
       case TEXTURE_1D_INDEX:   fprintf(f, "1D");    break;

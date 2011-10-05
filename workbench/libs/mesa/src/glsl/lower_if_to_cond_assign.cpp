@@ -149,10 +149,8 @@ ir_visitor_status
 ir_if_to_cond_assign_visitor::visit_leave(ir_if *ir)
 {
    /* Only flatten when beyond the GPU's maximum supported nesting depth. */
-   if (this->depth <= this->max_depth)
+   if (this->depth-- <= this->max_depth)
       return visit_continue;
-
-   this->depth--;
 
    bool found_control_flow = false;
    ir_variable *cond_var;
@@ -171,7 +169,7 @@ ir_if_to_cond_assign_visitor::visit_leave(ir_if *ir)
    if (found_control_flow)
       return visit_continue;
 
-   void *mem_ctx = talloc_parent(ir);
+   void *mem_ctx = ralloc_parent(ir);
 
    /* Store the condition to a variable so the assignment conditions are
     * simpler.

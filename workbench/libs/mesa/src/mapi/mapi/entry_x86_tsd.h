@@ -26,13 +26,13 @@
  *    Chia-I Wu <olv@lunarg.com>
  */
 
-#include <string.h>
-#include "u_execmem.h"
 #include "u_macros.h"
 
 #define X86_ENTRY_SIZE 32
 
-__asm__(".text");
+__asm__(".text\n"
+        ".balign 32\n"
+        "x86_entry_start:");
 
 #define STUB_ASM_ENTRY(func)        \
    ".globl " func "\n"              \
@@ -41,23 +41,37 @@ __asm__(".text");
    func ":"
 
 #define STUB_ASM_CODE(slot)         \
-   "movl u_current_table, %eax\n\t" \
+   "movl " ENTRY_CURRENT_TABLE ", %eax\n\t" \
    "testl %eax, %eax\n\t"           \
    "je 1f\n\t"                      \
    "jmp *(4 * " slot ")(%eax)\n"    \
    "1:\n\t"                         \
-   "call u_current_get_internal\n\t"\
+   "call " ENTRY_CURRENT_TABLE_GET "\n\t" \
    "jmp *(4 * " slot ")(%eax)"
 
 #define MAPI_TMP_STUB_ASM_GCC
 #include "mapi_tmp.h"
 
+#ifndef MAPI_MODE_BRIDGE
+
 __asm__(".balign 32\n"
         "x86_entry_end:");
+
+#include <string.h>
+#include "u_execmem.h"
+
+static const char x86_entry_start[];
+static const char x86_entry_end[];
 
 void
 entry_patch_public(void)
 {
+}
+
+mapi_func
+entry_get_public(int slot)
+{
+   return (mapi_func) (x86_entry_start + slot * X86_ENTRY_SIZE);
 }
 
 void
@@ -72,7 +86,6 @@ entry_patch(mapi_func entry, int slot)
 mapi_func
 entry_generate(int slot)
 {
-   extern const char x86_entry_end[];
    const char *code_templ = x86_entry_end - X86_ENTRY_SIZE;
    void *code;
    mapi_func entry;
@@ -87,3 +100,5 @@ entry_generate(int slot)
 
    return entry;
 }
+
+#endif /* MAPI_MODE_BRIDGE */

@@ -71,8 +71,15 @@ get_static_proc_address(const char *funcName)
    }
 }
 
+/* Put declaration here since it should not be present in GL/arosmesa.h */
+
+APTR AROSMesaGetProcAddressInternal(const GLubyte * procname);
+
 AROSMesaProc AROSMesaGetProcAddress(const GLubyte * procname)
 {
-    return get_static_proc_address(procname);
+    if (AROSMesaGetProcAddressInternal(procname) == NULL)
+        return NULL;
+    else
+        return get_static_proc_address(procname);
 }
 

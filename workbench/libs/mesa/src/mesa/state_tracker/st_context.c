@@ -27,6 +27,7 @@
 
 #include "main/imports.h"
 #include "main/context.h"
+#include "main/samplerobj.h"
 #include "main/shaderobj.h"
 #include "program/prog_cache.h"
 #include "vbo/vbo.h"
@@ -51,7 +52,9 @@
 #include "st_cb_texture.h"
 #include "st_cb_xformfb.h"
 #include "st_cb_flush.h"
+#include "st_cb_syncobj.h"
 #include "st_cb_strings.h"
+#include "st_cb_texturebarrier.h"
 #include "st_cb_viewport.h"
 #include "st_atom.h"
 #include "st_draw.h"
@@ -130,9 +133,6 @@ st_create_context_priv( struct gl_context *ctx, struct pipe_context *pipe )
    else
       st->internal_target = PIPE_TEXTURE_RECT;
 
-   for (i = 0; i < PIPE_MAX_SAMPLERS; i++)
-      st->state.sampler_list[i] = &st->state.samplers[i];
-
    for (i = 0; i < 3; i++) {
       memset(&st->velems_util_draw[i], 0, sizeof(struct pipe_vertex_element));
       st->velems_util_draw[i].src_offset = i * 4 * sizeof(float);
@@ -178,7 +178,7 @@ struct st_context *st_create_context(gl_api api, struct pipe_context *pipe,
    memset(&funcs, 0, sizeof(funcs));
    st_init_driver_functions(&funcs);
 
-   ctx = _mesa_create_context_for_api(api, visual, shareCtx, &funcs, NULL);
+   ctx = _mesa_create_context(api, visual, shareCtx, &funcs, NULL);
 
    /* XXX: need a capability bit in gallium to query if the pipe
     * driver prefers DP4 or MUL/MAD for vertex transformation.
@@ -203,14 +203,13 @@ static void st_destroy_context_priv( struct st_context *st )
    st_destroy_drawpix(st);
    st_destroy_drawtex(st);
 
-   for (i = 0; i < Elements(st->state.sampler_views); i++) {
-      pipe_sampler_view_reference(&st->state.sampler_views[i], NULL);
+   /* Unreference any user vertex buffers. */
+   for (i = 0; i < st->num_user_attribs; i++) {
+      pipe_resource_reference(&st->user_attrib[i].buffer, NULL);
    }
 
-   for (i = 0; i < Elements(st->state.constants); i++) {
-      if (st->state.constants[i]) {
-         pipe_resource_reference(&st->state.constants[i], NULL);
-      }
+   for (i = 0; i < Elements(st->state.sampler_views); i++) {
+      pipe_sampler_view_reference(&st->state.sampler_views[i], NULL);
    }
 
    if (st->default_texture) {
@@ -245,12 +244,13 @@ void st_destroy_context( struct st_context *st )
 
    for (i = 0; i < PIPE_SHADER_TYPES; i++) {
       pipe->set_constant_buffer(pipe, i, 0, NULL);
-      pipe_resource_reference(&st->state.constants[i], NULL);
    }
 
    _mesa_delete_program_cache(st->ctx, st->pixel_xfer.cache);
 
    _vbo_DestroyContext(st->ctx);
+
+   st_destroy_program_variants(st);
 
    _mesa_free_context_data(ctx);
 
@@ -267,6 +267,7 @@ void st_destroy_context( struct st_context *st )
 void st_init_driver_functions(struct dd_function_table *functions)
 {
    _mesa_init_shader_object_functions(functions);
+   _mesa_init_sampler_object_functions(functions);
 
    st_init_accum_functions(functions);
    st_init_blit_functions(functions);
@@ -287,11 +288,13 @@ void st_init_driver_functions(struct dd_function_table *functions)
    st_init_cond_render_functions(functions);
    st_init_readpixels_functions(functions);
    st_init_texture_functions(functions);
+   st_init_texture_barrier_functions(functions);
    st_init_flush_functions(functions);
    st_init_string_functions(functions);
    st_init_viewport_functions(functions);
 
    st_init_xformfb_functions(functions);
+   st_init_syncobj_functions(functions);
 
    functions->UpdateState = st_invalidate_state;
 }

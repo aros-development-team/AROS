@@ -62,6 +62,7 @@ extern "C" {
 #define PIPE_MAX_GEOMETRY_SAMPLERS  16
 #define PIPE_MAX_SHADER_INPUTS    32
 #define PIPE_MAX_SHADER_OUTPUTS   32
+#define PIPE_MAX_SHADER_RESOURCES 32
 #define PIPE_MAX_TEXTURE_LEVELS   16
 #define PIPE_MAX_SO_BUFFERS        4
 
@@ -80,6 +81,8 @@ struct pipe_rasterizer_state
 {
    unsigned flatshade:1;
    unsigned light_twoside:1;
+   unsigned clamp_vertex_color:1;
+   unsigned clamp_fragment_color:1;
    unsigned front_ccw:1;
    unsigned cull_face:2;      /**< PIPE_FACE_x */
    unsigned fill_front:2;     /**< PIPE_POLYGON_MODE_x */
@@ -91,24 +94,21 @@ struct pipe_rasterizer_state
    unsigned poly_smooth:1;
    unsigned poly_stipple_enable:1;
    unsigned point_smooth:1;
-   unsigned sprite_coord_enable:PIPE_MAX_SHADER_OUTPUTS;
    unsigned sprite_coord_mode:1;     /**< PIPE_SPRITE_COORD_ */
    unsigned point_quad_rasterization:1; /** points rasterized as quads or points */
    unsigned point_size_per_vertex:1; /**< size computed in vertex shader */
    unsigned multisample:1;         /* XXX maybe more ms state in future */
    unsigned line_smooth:1;
    unsigned line_stipple_enable:1;
-   unsigned line_stipple_factor:8;  /**< [1..256] actually */
-   unsigned line_stipple_pattern:16;
    unsigned line_last_pixel:1;
 
-   /** 
+   /**
     * Use the first vertex of a primitive as the provoking vertex for
     * flat shading.
     */
-   unsigned flatshade_first:1;   
+   unsigned flatshade_first:1;
 
-   /** 
+   /**
     * When true, triangle rasterization uses (0.5, 0.5) pixel centers
     * for determining pixel ownership.
     *
@@ -120,6 +120,11 @@ struct pipe_rasterizer_state
     * center for that test.
     */
    unsigned gl_rasterization_rules:1;
+
+   unsigned line_stipple_factor:8;  /**< [1..256] actually */
+   unsigned line_stipple_pattern:16;
+
+   unsigned sprite_coord_enable:PIPE_MAX_SHADER_OUTPUTS;
 
    float line_width;
    float point_size;           /**< used when no per-vertex size */
@@ -264,6 +269,7 @@ struct pipe_sampler_state
    unsigned compare_func:3;      /**< PIPE_FUNC_x */
    unsigned normalized_coords:1; /**< Are coords normalized to [0,1]? */
    unsigned max_anisotropy:6;
+   unsigned seamless_cube_map:1;
    float lod_bias;               /**< LOD/lambda bias */
    float min_lod, max_lod;       /**< LOD clamp range, after bias */
    float border_color[4];
@@ -366,19 +372,21 @@ struct pipe_resource
    unsigned flags;           /**< bitmask of PIPE_RESOURCE_FLAG_x */
 };
 
+
+/**
+ * Stream output for vertex transform feedback.
+ */
 struct pipe_stream_output_state
 {
-   /**< number of the output buffer to insert each element into */
+   /** number of the output buffer to insert each element into */
    int output_buffer[PIPE_MAX_SHADER_OUTPUTS];
-   /**< which register to grab each output from */
+   /** which register to grab each output from */
    int register_index[PIPE_MAX_SHADER_OUTPUTS];
-   /**< TGSI_WRITEMASK signifying which components to output */
+   /** TGSI_WRITEMASK signifying which components to output */
    ubyte register_mask[PIPE_MAX_SHADER_OUTPUTS];
-   /**< number of outputs */
+   /** number of outputs */
    int num_outputs;
-
-   /**< stride for an entire vertex, only used if all output_buffers
-    * are 0 */
+   /** stride for an entire vertex, only used if all output_buffers are 0 */
    unsigned stride;
 };
 
@@ -389,11 +397,11 @@ struct pipe_stream_output_state
 struct pipe_transfer
 {
    struct pipe_resource *resource; /**< resource to transfer to/from  */
-   unsigned level;
+   unsigned level;                 /**< texture mipmap level */
    enum pipe_transfer_usage usage;
-   struct pipe_box box;
-   unsigned stride;
-   unsigned layer_stride;
+   struct pipe_box box;            /**< region of the resource to access */
+   unsigned stride;                /**< row stride in bytes */
+   unsigned layer_stride;          /**< image/layer stride in bytes */
    void *data;
 };
 
@@ -407,7 +415,6 @@ struct pipe_transfer
 struct pipe_vertex_buffer
 {
    unsigned stride;    /**< stride to same attrib in next vertex, in bytes */
-   unsigned max_index;   /**< number of vertices in this buffer */
    unsigned buffer_offset;  /**< offset to start of data in buffer, in bytes */
    struct pipe_resource *buffer;  /**< the actual buffer */
 };

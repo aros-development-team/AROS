@@ -240,7 +240,6 @@ struct rbug_proto_noop * rbug_demarshal_noop(struct rbug_proto_header *header)
 	ret->header.__message = header;
 	ret->header.opcode = header->opcode;
 
-
 	return ret;
 }
 
@@ -259,7 +258,6 @@ struct rbug_proto_ping * rbug_demarshal_ping(struct rbug_proto_header *header)
 
 	ret->header.__message = header;
 	ret->header.opcode = header->opcode;
-
 
 	return ret;
 }

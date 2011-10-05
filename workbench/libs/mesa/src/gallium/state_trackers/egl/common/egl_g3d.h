@@ -56,7 +56,6 @@ struct egl_g3d_display {
 
    const struct egl_g3d_loader *loader;
    struct st_manager *smapi;
-   struct pipe_context *pipe;
 };
 
 struct egl_g3d_context {
@@ -126,5 +125,13 @@ struct egl_g3d_screen {
 _EGL_DRIVER_TYPECAST(egl_g3d_screen, _EGLScreen, obj)
 
 #endif /* EGL_MESA_screen_surface */
+
+static INLINE struct st_api *
+egl_g3d_get_st_api(_EGLDriver *drv, enum st_api_type api)
+{
+   struct egl_g3d_driver *gdrv = egl_g3d_driver(drv);
+
+   return gdrv->loader->get_st_api(api);
+}
 
 #endif /* _EGL_G3D_H_ */

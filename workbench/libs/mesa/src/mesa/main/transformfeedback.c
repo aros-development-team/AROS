@@ -34,13 +34,14 @@
 #include "bufferobj.h"
 #include "context.h"
 #include "hash.h"
+#include "mfeatures.h"
+#include "mtypes.h"
 #include "transformfeedback.h"
 #include "shaderapi.h"
 #include "shaderobj.h"
 #include "main/dispatch.h"
 
 #include "program/prog_parameter.h"
-//#include "program/shader_api.h"
 
 
 #if FEATURE_EXT_transform_feedback
@@ -505,7 +506,7 @@ _mesa_BindBufferBase(GLenum target, GLuint index, GLuint buffer)
 
    if (obj->Active) {
       _mesa_error(ctx, GL_INVALID_OPERATION,
-                  "glBindBufferRange(transform feedback active)");
+                  "glBindBufferBase(transform feedback active)");
       return;
    }
 
@@ -553,7 +554,7 @@ _mesa_BindBufferOffsetEXT(GLenum target, GLuint index, GLuint buffer,
 
    if (obj->Active) {
       _mesa_error(ctx, GL_INVALID_OPERATION,
-                  "glBindBufferRange(transform feedback active)");
+                  "glBindBufferOffsetEXT(transform feedback active)");
       return;
    }
 
@@ -883,7 +884,7 @@ _mesa_ResumeTransformFeedback(void)
 
    if (!obj->Active || !obj->Paused) {
       _mesa_error(ctx, GL_INVALID_OPERATION,
-               "glPauseTransformFeedback(feedback not active or not paused)");
+               "glResumeTransformFeedback(feedback not active or not paused)");
       return;
    }
 
@@ -928,17 +929,6 @@ _mesa_DrawTransformFeedback(GLenum mode, GLuint name)
    assert(ctx->Driver.DrawTransformFeedback);
    ctx->Driver.DrawTransformFeedback(ctx, mode, obj);
 }
-
-
-/*
-XXX misc to do:
-
-glGet*() for
-
-GL_TRANSFORM_FEEDBACK_BUFFER_PAUSED
-GL_TRANSFORM_FEEDBACK_BUFFER_ACTIVE
-GL_TRANSFORM_FEEDBACK_BINDING
-*/
 
 
 #endif /* FEATURE_EXT_transform_feedback */

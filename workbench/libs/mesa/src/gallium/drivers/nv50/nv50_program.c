@@ -20,8 +20,6 @@
  * SOFTWARE.
  */
 
-/* #define NV50_PROGRAM_DEBUG */
-
 #include "nv50_program.h"
 #include "nv50_pc.h"
 #include "nv50_context.h"
@@ -328,10 +326,15 @@ prog_decl(struct nv50_translation_info *ti,
       }
       break;
    case TGSI_FILE_SYSTEM_VALUE:
+      /* For VP/GP inputs, they are put in s[] after the last normal input.
+       * Let sysval_map reflect the order of the sysvals in s[] and fixup later.
+       */
       switch (decl->Semantic.Name) {
       case TGSI_SEMANTIC_FACE:
          break;
       case TGSI_SEMANTIC_INSTANCEID:
+         ti->p->vp.attrs[2] |= NV50_3D_VP_GP_BUILTIN_ATTR_EN_INSTANCE_ID;
+         ti->sysval_map[first] = 2;
          break;
       case TGSI_SEMANTIC_PRIMID:
          break;
@@ -392,6 +395,21 @@ nv50_vertprog_prepare(struct nv50_translation_info *ti)
       }
    }
 
+   p->vp.clpd = p->max_out;
+   p->max_out += p->vp.clpd_nr;
+
+   for (i = 0; i < TGSI_SEMANTIC_COUNT; ++i) {
+      switch (ti->sysval_map[i]) {
+      case 2:
+         if (!(ti->p->vp.attrs[2] & NV50_3D_VP_GP_BUILTIN_ATTR_EN_VERTEX_ID))
+            ti->sysval_map[i] = 1;
+         ti->sysval_map[i] = (ti->sysval_map[i] - 1) + num_inputs;
+         break;
+      default:
+         break;
+      }
+   }
+
    if (p->vp.psiz < 0x40)
       p->vp.psiz = p->out[p->vp.psiz].hw;
 
@@ -411,11 +429,11 @@ nv50_fragprog_prepare(struct nv50_translation_info *ti)
 
    if (ti->scan.writes_z) {
       p->fp.flags[1] = 0x11;
-      p->fp.flags[0] |= NV50TCL_FP_CONTROL_EXPORTS_Z;
+      p->fp.flags[0] |= NV50_3D_FP_CONTROL_EXPORTS_Z;
    }
 
    if (ti->scan.uses_kill)
-      p->fp.flags[0] |= NV50TCL_FP_CONTROL_USES_KIL;
+      p->fp.flags[0] |= NV50_3D_FP_CONTROL_USES_KIL;
 
    /* FP inputs */
 
@@ -469,7 +487,7 @@ nv50_fragprog_prepare(struct nv50_translation_info *ti)
       ++nintp;
    }
 
-   p->fp.colors = (1 << 24) | 4; /* CLAMP, FFC0_ID = 4 */
+   p->fp.colors = 4 << NV50_3D_MAP_SEMANTIC_0_FFC0_ID__SHIFT; /* after HPOS */
 
    for (i = 0; i < p->in_nr; ++i) {
       int j = p->in[i].id;
@@ -490,13 +508,13 @@ nv50_fragprog_prepare(struct nv50_translation_info *ti)
    if (n < m)
       nvary -= p->in[n].hw;
 
-   p->fp.interp |= nvary << NV50TCL_FP_INTERPOLANT_CTRL_COUNT_NONFLAT_SHIFT;
-   p->fp.interp |= nintp << NV50TCL_FP_INTERPOLANT_CTRL_COUNT_SHIFT;
+   p->fp.interp |= nvary << NV50_3D_FP_INTERPOLANT_CTRL_COUNT_NONFLAT__SHIFT;
+   p->fp.interp |= nintp << NV50_3D_FP_INTERPOLANT_CTRL_COUNT__SHIFT;
 
    /* FP outputs */
 
    if (p->out_nr > (1 + (ti->scan.writes_z ? 1 : 0)))
-      p->fp.flags[0] |= NV50TCL_FP_CONTROL_MULTIPLE_RESULTS;
+      p->fp.flags[0] |= NV50_3D_FP_CONTROL_MULTIPLE_RESULTS;
 
    depr = p->out_nr;
    for (i = 0; i < p->out_nr; ++i) {
@@ -547,7 +565,7 @@ nv50_prog_scan(struct nv50_translation_info *ti)
 
    tgsi_scan_shader(p->pipe.tokens, &ti->scan);
 
-#ifdef NV50_PROGRAM_DEBUG
+#if NV50_DEBUG & NV50_DEBUG_SHADER
    tgsi_dump(p->pipe.tokens, 0);
 #endif
 
@@ -608,7 +626,7 @@ nv50_prog_scan(struct nv50_translation_info *ti)
 }
 
 boolean
-nv50_program_tx(struct nv50_program *p)
+nv50_program_translate(struct nv50_program *p)
 {
    struct nv50_translation_info *ti;
    int ret;
@@ -646,9 +664,8 @@ out:
 void
 nv50_program_destroy(struct nv50_context *nv50, struct nv50_program *p)
 {
-   nouveau_bo_ref(NULL, &p->bo);
-
-   so_ref(NULL, &p->so);
+   if (p->res)
+      nouveau_resource_free(&p->res);
 
    if (p->code)
       FREE(p->code);

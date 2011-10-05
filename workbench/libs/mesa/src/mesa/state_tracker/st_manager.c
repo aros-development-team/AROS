@@ -38,6 +38,7 @@
 
 #include "main/mtypes.h"
 #include "main/context.h"
+#include "main/mfeatures.h"
 #include "main/texobj.h"
 #include "main/teximage.h"
 #include "main/texstate.h"
@@ -425,18 +426,12 @@ st_framebuffer_create(struct st_framebuffer_iface *stfbi)
    struct gl_config mode;
    gl_buffer_index idx;
 
+   if (!stfbi)
+      return NULL;
+
    stfb = CALLOC_STRUCT(st_framebuffer);
    if (!stfb)
       return NULL;
-
-   /* for FBO-only context */
-   if (!stfbi) {
-      struct gl_framebuffer *base = _mesa_get_incomplete_framebuffer();
-
-      stfb->Base = *base;
-
-      return stfb;
-   }
 
    st_visual_to_context_mode(stfbi->visual, &mode);
    _mesa_initialize_window_framebuffer(&stfb->Base, &mode);
@@ -507,13 +502,14 @@ st_context_flush(struct st_context_iface *stctxi, unsigned flags,
                  struct pipe_fence_handle **fence)
 {
    struct st_context *st = (struct st_context *) stctxi;
-   st_flush(st, flags, fence);
-   if (flags & PIPE_FLUSH_RENDER_CACHE)
+   st_flush(st, fence);
+   if (flags & ST_FLUSH_FRONT)
       st_manager_flush_frontbuffer(st);
 }
 
 static boolean
-st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target,
+st_context_teximage(struct st_context_iface *stctxi,
+                    enum st_texture_type target,
                     int level, enum pipe_format internal_format,
                     struct pipe_resource *tex, boolean mipmap)
 {
@@ -579,7 +575,7 @@ st_context_teximage(struct st_context_iface *stctxi, enum st_texture_type target
          internalFormat = GL_RGB;
 
       texFormat = st_ChooseTextureFormat(ctx, internalFormat,
-                                         GL_RGBA, GL_UNSIGNED_BYTE);
+                                         GL_BGRA, GL_UNSIGNED_BYTE);
 
       _mesa_init_teximage_fields(ctx, target, texImage,
                                  tex->width0, tex->height0, 1, 0,
@@ -688,8 +684,9 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
    if (attribs->major > 1 || attribs->minor > 0) {
       _mesa_compute_version(st->ctx);
 
-      if (st->ctx->VersionMajor < attribs->major ||
-          st->ctx->VersionMajor < attribs->minor) {
+      /* is the actual version less than the requested version? */
+      if (st->ctx->VersionMajor * 10 + st->ctx->VersionMinor <
+          attribs->major * 10 + attribs->minor) {
          st_destroy_context(st);
          return NULL;
       }
@@ -710,41 +707,65 @@ st_api_create_context(struct st_api *stapi, struct st_manager *smapi,
    return &st->iface;
 }
 
+static struct st_context_iface *
+st_api_get_current(struct st_api *stapi)
+{
+   GET_CURRENT_CONTEXT(ctx);
+   struct st_context *st = (ctx) ? ctx->st : NULL;
+
+   return (st) ? &st->iface : NULL;
+}
+
+static struct st_framebuffer *
+st_framebuffer_reuse_or_create(struct gl_framebuffer *fb,
+                               struct st_framebuffer_iface *stfbi)
+{
+   struct st_framebuffer *cur = st_ws_framebuffer(fb), *stfb = NULL;
+
+   if (cur && cur->iface == stfbi) {
+      /* reuse the current stfb */
+      st_framebuffer_reference(&stfb, cur);
+   }
+   else {
+      /* create a new one */
+      stfb = st_framebuffer_create(stfbi);
+   }
+
+   return stfb;
+}
+
 static boolean
 st_api_make_current(struct st_api *stapi, struct st_context_iface *stctxi,
                     struct st_framebuffer_iface *stdrawi,
                     struct st_framebuffer_iface *streadi)
 {
    struct st_context *st = (struct st_context *) stctxi;
-   struct st_framebuffer *stdraw, *stread, *stfb;
+   struct st_framebuffer *stdraw, *stread;
    boolean ret;
 
    _glapi_check_multithread();
 
    if (st) {
-      /* reuse/create the draw fb */
-      stfb = st_ws_framebuffer(st->ctx->WinSysDrawBuffer);
-      if (stfb && stfb->iface == stdrawi) {
-         stdraw = NULL;
-         st_framebuffer_reference(&stdraw, stfb);
+      /* reuse or create the draw fb */
+      stdraw = st_framebuffer_reuse_or_create(st->ctx->WinSysDrawBuffer,
+                                              stdrawi);
+      if (streadi != stdrawi) {
+         /* do the same for the read fb */
+         stread = st_framebuffer_reuse_or_create(st->ctx->WinSysReadBuffer,
+                                                 streadi);
       }
       else {
-         stdraw = st_framebuffer_create(stdrawi);
-      }
-
-      /* reuse/create the read fb */
-      stfb = st_ws_framebuffer(st->ctx->WinSysReadBuffer);
-      if (!stfb || stfb->iface != streadi)
-         stfb = stdraw;
-      if (stfb && stfb->iface == streadi) {
          stread = NULL;
-         st_framebuffer_reference(&stread, stfb);
-      }
-      else {
-         stread = st_framebuffer_create(streadi);
+         /* reuse the draw fb for the read fb */
+         if (stdraw)
+            st_framebuffer_reference(&stread, stdraw);
       }
 
       if (stdraw && stread) {
+         if (stctxi != st_api_get_current(stapi)) {
+            p_atomic_set(&stdraw->revalidate, TRUE);
+            p_atomic_set(&stread->revalidate, TRUE);
+         }
          st_framebuffer_validate(stdraw, st);
          if (stread != stdraw)
             st_framebuffer_validate(stread, st);
@@ -762,7 +783,8 @@ st_api_make_current(struct st_api *stapi, struct st_context_iface *stctxi,
          ret = _mesa_make_current(st->ctx, &stdraw->Base, &stread->Base);
       }
       else {
-         ret = FALSE;
+         struct gl_framebuffer *incomplete = _mesa_get_incomplete_framebuffer();
+         ret = _mesa_make_current(st->ctx, incomplete, incomplete);
       }
 
       st_framebuffer_reference(&stdraw, NULL);
@@ -773,15 +795,6 @@ st_api_make_current(struct st_api *stapi, struct st_context_iface *stctxi,
    }
 
    return ret;
-}
-
-static struct st_context_iface *
-st_api_get_current(struct st_api *stapi)
-{
-   GET_CURRENT_CONTEXT(ctx);
-   struct st_context *st = (ctx) ? ctx->st : NULL;
-
-   return (st) ? &st->iface : NULL;
 }
 
 static st_proc_t
@@ -865,7 +878,8 @@ st_manager_validate_framebuffers(struct st_context *st)
  * Add a color renderbuffer on demand.
  */
 boolean
-st_manager_add_color_renderbuffer(struct st_context *st, struct gl_framebuffer *fb,
+st_manager_add_color_renderbuffer(struct st_context *st,
+                                  struct gl_framebuffer *fb,
                                   gl_buffer_index idx)
 {
    struct st_framebuffer *stfb = st_ws_framebuffer(fb);

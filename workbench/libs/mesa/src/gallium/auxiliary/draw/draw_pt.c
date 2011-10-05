@@ -459,10 +459,9 @@ draw_vbo(struct draw_context *draw,
       }
       debug_printf("Buffers:\n");
       for (i = 0; i < draw->pt.nr_vertex_buffers; i++) {
-         debug_printf("  %u: stride=%u maxindex=%u offset=%u ptr=%p\n",
+         debug_printf("  %u: stride=%u offset=%u ptr=%p\n",
                       i,
                       draw->pt.vertex_buffer[i].stride,
-                      draw->pt.vertex_buffer[i].max_index,
                       draw->pt.vertex_buffer[i].buffer_offset,
                       draw->pt.user.vbuffer[i]);
       }
@@ -470,6 +469,17 @@ draw_vbo(struct draw_context *draw,
 
    if (0)
       draw_print_arrays(draw, info->mode, info->start, MIN2(info->count, 20));
+
+   draw->pt.max_index = util_draw_max_index(draw->pt.vertex_buffer,
+                                            draw->pt.nr_vertex_buffers,
+                                            draw->pt.vertex_element,
+                                            draw->pt.nr_vertex_elements,
+                                            info);
+
+   /*
+    * TODO: We could use draw->pt.max_index to further narrow
+    * the min_index/max_index hints given by the state tracker.
+    */
 
    for (instance = 0; instance < info->instance_count; instance++) {
       draw->instance_id = instance + info->start_instance;
