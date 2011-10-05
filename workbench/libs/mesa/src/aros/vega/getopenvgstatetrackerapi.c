@@ -10,7 +10,7 @@
 /*  SYNOPSIS */ 
 
 /*  LOCATION */
-      struct Library *, VegaBase, 0, Vega)
+      struct Library *, VegaBase, 5, Vega)
 
 /*  FUNCTION
         This is a PRIVATE function used by egl.library to receive pointer to
