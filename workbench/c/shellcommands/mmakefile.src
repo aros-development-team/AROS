@@ -8,6 +8,7 @@ FILES	:= \
     Alias \
     Ask \
     CD \
+    Cut \
     Echo \
     Else \
     EndCLI \
