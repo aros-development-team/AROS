@@ -43,7 +43,7 @@ OOP_Object * SelectGalliumDriver(ULONG requestedinterfaceversion, struct Library
 
     /* 2. Everything else failed. Let's try loading softpipe */
     if (!GB(GalliumBase)->drivermodule)
-        GB(GalliumBase)->drivermodule = OpenLibrary("softpipe.hidd", 7);
+        GB(GalliumBase)->drivermodule = OpenLibrary("softpipe.hidd", 9);
 
     if (GB(GalliumBase)->drivermodule)
     {
