@@ -247,7 +247,8 @@ struct HIDDg33BridgeDeviceData
 #define min(a,b)                        ((a) < (b) ? (a) : (b))
 #define max(a,b)                        ((a) > (b) ? (a) : (b))
 
-VOID flushcpucache();
+/* Note: Both Linux and BSD codes use full wbinvd. CacheClearU gurantees a full flush */
+#define flushcpucache()                 CacheClearU()
 
 /* Config area access */
 UBYTE readconfigbyte(OOP_Object * pciDevice, UBYTE where);
