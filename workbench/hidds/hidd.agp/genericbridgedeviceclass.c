@@ -86,14 +86,6 @@ VOID writeconfigword(OOP_Object * pciDevice, UBYTE where, UWORD val)
     OOP_DoMethod(pciDevice, (OOP_Msg)msg); 
 }
 
-VOID Wbinvd(); /* Implemented in assembler */
-
-VOID flushcpucache()
-{
-    /* Don't use clflush here. Both linux and BSD codes use full wbinvd */
-    Supervisor((ULONG_FUNC)Wbinvd);
-}
-
 AROS_UFH3(void, HiddAgpPciDevicesEnumerator,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(OOP_Object *, pciDevice, A2),
