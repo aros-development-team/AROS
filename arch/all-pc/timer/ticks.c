@@ -16,8 +16,26 @@
  * This code uses two channels of the PIT for simplicity:
  * Channel 0 - sends IRQ 0 on terminal count. We use it as alarm clock.
  * Channel 2 is used as EClock counter. It counts all the time and is never reloaded.
+ *	     We initialize it in timer_init.c.
  */
 
+/*
+ * The math magic behing this is:
+ *
+ * 1. Theoretical value of microseconds is: tick * 1000000 / tb_eclock_rate.
+ * 2. tb_eclock_rate is constant and equal to 1193180Hz (frequency of PIT's master quartz).
+ * 3. tick2usec() is called much more frequently than usec2tick(). And multiplication is faster than division.
+ *
+ * So let's get rid of division:
+ *
+ * a) Multiply both divident and divisor of the initial equation by 0x100000000 (4294967296 in decimal). In asm this
+ *    can be accomplished simply by using 64-bit math ops and using upper half instead of lower:
+ *    usec = (tick * 1000000 * 0x100000000) / (1193180 * 0x100000000) = tick * (1000000 * 0x100000000 / 1193180) / 0x100000000.
+ * b) Calculate the constant part in brackets: 1000000 * 4294967296 / 1193180 = 3599597124.
+ * c) So: usec = tick * 3599597124 / 0x100000000 = (tick * 3599597124) >> 32.
+ *
+ *	(c) Michal Schulz.
+ */
 const ULONG TIMER_RPROK = 3599597124UL;
 
 static inline ULONG tick2usec(ULONG tick)
