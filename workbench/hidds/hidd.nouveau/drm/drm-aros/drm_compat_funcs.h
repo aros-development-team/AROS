@@ -60,6 +60,7 @@
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
 #define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
+#define EREMOTEIO						EIO
 
 
 APTR HIDDNouveauAlloc(ULONG size);
