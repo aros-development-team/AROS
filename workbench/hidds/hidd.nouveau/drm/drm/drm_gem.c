@@ -35,6 +35,7 @@
 #include <linux/module.h>
 #include <linux/mman.h>
 #include <linux/pagemap.h>
+#include <linux/shmem_fs.h>
 #endif
 #include "drmP.h"
 
@@ -106,7 +107,7 @@ drm_gem_init(struct drm_device *dev)
 
 	dev->mm_private = mm;
 
-	if (drm_ht_create(&mm->offset_hash, 19)) {
+	if (drm_ht_create(&mm->offset_hash, 12)) {
 		kfree(mm);
 		return -ENOMEM;
 	}
@@ -136,7 +137,7 @@ drm_gem_destroy(struct drm_device *dev)
 #endif
 
 /**
- * Initialize an already allocate GEM object of the specified size with
+ * Initialize an already allocated GEM object of the specified size with
  * shmfs backing store.
  */
 int drm_gem_object_init(struct drm_device *dev,
@@ -161,6 +162,27 @@ int drm_gem_object_init(struct drm_device *dev,
 	return 0;
 }
 EXPORT_SYMBOL(drm_gem_object_init);
+
+/**
+ * Initialize an already allocated GEM object of the specified size with
+ * no GEM provided backing store. Instead the caller is responsible for
+ * backing the object and handling it.
+ */
+int drm_gem_private_object_init(struct drm_device *dev,
+			struct drm_gem_object *obj, size_t size)
+{
+	BUG_ON((size & (PAGE_SIZE - 1)) != 0);
+
+	obj->dev = dev;
+	obj->filp = NULL;
+
+	kref_init(&obj->refcount);
+	atomic_set(&obj->handle_count, 0);
+	obj->size = size;
+
+	return 0;
+}
+EXPORT_SYMBOL(drm_gem_private_object_init);
 
 /**
  * Allocate a GEM object of the specified size with shmfs backing store
@@ -196,9 +218,10 @@ EXPORT_SYMBOL(drm_gem_object_alloc);
 /**
  * Removes the mapping from handle to filp for this object.
  */
-static int
+int
 drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 {
+	struct drm_device *dev;
 	struct drm_gem_object *obj;
 
 	/* This is gross. The idr system doesn't let us try a delete and
@@ -218,15 +241,19 @@ drm_gem_handle_delete(struct drm_file *filp, u32 handle)
 		spin_unlock(&filp->table_lock);
 		return -EINVAL;
 	}
+	dev = obj->dev;
 
 	/* Release reference and decrement refcount. */
 	idr_remove(&filp->object_idr, handle);
 	spin_unlock(&filp->table_lock);
 
+	if (dev->driver->gem_close_object)
+		dev->driver->gem_close_object(obj, filp);
 	drm_gem_object_handle_unreference_unlocked(obj);
 
 	return 0;
 }
+EXPORT_SYMBOL(drm_gem_handle_delete);
 
 /**
  * Create a handle for this object. This adds a handle reference
@@ -238,7 +265,8 @@ drm_gem_handle_create(struct drm_file *file_priv,
 		       struct drm_gem_object *obj,
 		       u32 *handlep)
 {
-	int	ret;
+	struct drm_device *dev = obj->dev;
+	int ret;
 
 	/*
 	 * Get the user-visible handle using idr.
@@ -259,6 +287,15 @@ again:
 		return ret;
 
 	drm_gem_object_handle_reference(obj);
+
+	if (dev->driver->gem_open_object) {
+		ret = dev->driver->gem_open_object(obj, file_priv);
+		if (ret) {
+			drm_gem_handle_delete(file_priv, *handlep);
+			return ret;
+		}
+	}
+
 	return 0;
 }
 EXPORT_SYMBOL(drm_gem_handle_create);
@@ -414,7 +451,12 @@ drm_gem_open(struct drm_device *dev, struct drm_file *file_private)
 static int
 drm_gem_object_release_handle(int id, void *ptr, void *data)
 {
+	struct drm_file *file_priv = data;
 	struct drm_gem_object *obj = ptr;
+	struct drm_device *dev = obj->dev;
+
+	if (dev->driver->gem_close_object)
+		dev->driver->gem_close_object(obj, file_priv);
 
 	drm_gem_object_handle_unreference_unlocked(obj);
 
@@ -430,7 +472,7 @@ void
 drm_gem_release(struct drm_device *dev, struct drm_file *file_private)
 {
 	idr_for_each(&file_private->object_idr,
-		     &drm_gem_object_release_handle, NULL);
+		     &drm_gem_object_release_handle, file_private);
 
 	idr_remove_all(&file_private->object_idr);
 	idr_destroy(&file_private->object_idr);
@@ -441,7 +483,8 @@ void
 drm_gem_object_release(struct drm_gem_object *obj)
 {
 #if !defined(__AROS__)
-	fput(obj->filp);
+	if (obj->filp)
+	    fput(obj->filp);
 #endif
 }
 EXPORT_SYMBOL(drm_gem_object_release);
@@ -516,11 +559,12 @@ EXPORT_SYMBOL(drm_gem_vm_open);
 void drm_gem_vm_close(struct vm_area_struct *vma)
 {
 	struct drm_gem_object *obj = vma->vm_private_data;
+	struct drm_device *dev = obj->dev;
 
-	mutex_lock(&obj->dev->struct_mutex);
+	mutex_lock(&dev->struct_mutex);
 	drm_vm_close_locked(vma);
 	drm_gem_object_unreference(obj);
-	mutex_unlock(&obj->dev->struct_mutex);
+	mutex_unlock(&dev->struct_mutex);
 }
 EXPORT_SYMBOL(drm_gem_vm_close);
 

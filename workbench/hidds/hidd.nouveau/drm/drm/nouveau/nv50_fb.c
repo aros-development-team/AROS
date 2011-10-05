@@ -15,7 +15,7 @@ nv50_fb_destroy(struct drm_device *dev)
 	struct nouveau_fb_engine *pfb = &dev_priv->engine.fb;
 	struct nv50_fb_priv *priv = pfb->priv;
 
-	if (pfb->tag_heap.free_stack.next)
+	if (drm_mm_initialized(&pfb->tag_heap))
 		drm_mm_takedown(&pfb->tag_heap);
 
 	if (priv->r100c08_page) {

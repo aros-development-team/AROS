@@ -37,9 +37,9 @@ static inline int do_alpha(int a, int v)
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is mapped */
 VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
-    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
-    ULONG x,y;
+    LONG x,y;
     
     for(y = 0; y < height; y++)
     {
@@ -117,9 +117,9 @@ VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes buffer is mapped */
 VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
-    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
-    ULONG x,y;
+    LONG x,y;
     
     for(y = 0; y < height; y++)
     {
@@ -198,7 +198,7 @@ VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
 /* NOTE: Assumes buffer is mapped */
 VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
-    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     WORD        x, y;
     UBYTE       *pixarray = srcalpha;
@@ -416,7 +416,7 @@ VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
 /* NOTE: Assumes buffer is mapped */
 VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
-    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height)
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height)
 {
     WORD        x, y;
     UBYTE       *pixarray = srcalpha;
@@ -860,7 +860,7 @@ BOOL HiddNouveauReadIntoRAM(
 
 static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata, 
     struct HIDDNouveauBitMapData * dstdata, ULONG gartpitch,
-    ULONG x, ULONG y, ULONG width, ULONG height)
+    LONG x, LONG y, LONG width, LONG height)
 {
     struct HIDDNouveauBitMapData srcdata;
 
@@ -899,7 +899,7 @@ static inline VOID HiddNouveau3DCopyBoxFromGART(struct CardData * carddata,
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
@@ -988,7 +988,7 @@ BOOL HiddNouveauAccelARGBUpload3D(
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
     struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(cl, o);
@@ -1052,5 +1052,177 @@ BOOL HiddNouveauAccelAPENUpload3D(
     }
 
     return TRUE;
+}
+
+#define POINT_OUTSIDE_CLIP(gc, x, y)	\
+	(  (x) < GC_CLIPX1(gc)		\
+	|| (x) > GC_CLIPX2(gc)		\
+	|| (y) < GC_CLIPY1(gc)		\
+	|| (y) > GC_CLIPY2(gc) )
+
+/* NOTE: Assumes lock on bitmap is already made */
+/* NOTE: Assumes buffer is mapped */
+VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
+    OOP_Object * gc, LONG destX1, LONG destY1, LONG destX2, LONG destY2)
+{
+    WORD        i;
+    LONG        x1, y1, x2, y2;
+    ULONG       fg; /* foreground pen   */
+    BOOL        doclip;
+
+    IPTR map = (IPTR)bmdata->bo->map;
+
+    doclip = GC_DOCLIP(gc);
+    fg = GC_FG(gc);
+
+    /* Normalize coords */
+    if (destX1 > destX2)
+    {
+        x1 = destX2; x2 = destX1;
+    }
+    else
+    {
+        x1 = destX1; x2 = destX2;
+    }
+
+    if (destY1 > destY2)
+    {
+        y1 = destY2; y2 = destY1;
+    }
+    else
+    {
+        y1 = destY1; y2 = destY2;
+    }
+
+    if (doclip)
+    {
+        /* If line is not inside cliprect, then just return */
+        if (    x1 > GC_CLIPX2(gc)
+             || x2 < GC_CLIPX1(gc)
+             || y1 > GC_CLIPY2(gc)
+             || y2 < GC_CLIPY1(gc) )
+        {
+    
+             /* Line is not inside cliprect, so just return */
+             return;
+        }
+    }
+
+    if (y1 == y2)
+    {
+        /*
+            Horizontal line drawing code.
+        */
+        IPTR addr = map + (bmdata->pitch * y1) + (x1 * bmdata->bytesperpixel);
+    
+        for(i = x1; i != x2; i++)
+        {    
+            /* Pixel inside ? */
+            if ((!doclip) || (!POINT_OUTSIDE_CLIP(gc, i, y1)))
+            {
+                if (bmdata->bytesperpixel == 2)
+                    writew(fg, (APTR)addr);
+                else
+                    writel(fg, (APTR)addr);
+            }
+            addr += bmdata->bytesperpixel;
+        }
+    }
+    else if (x1 == x2)
+    {
+        /*
+            Vertical line drawing code.
+        */
+        IPTR addr = map + (bmdata->pitch * y1) + (x1 * bmdata->bytesperpixel);
+    
+        for(i = y1; i != y2; i++)
+        {    
+            /* Pixel inside ? */
+            if (!doclip || !POINT_OUTSIDE_CLIP(gc, x1, i ))
+            {
+                if (bmdata->bytesperpixel == 2)
+                    writew(fg, (APTR)addr);
+                else
+                    writel(fg, (APTR)addr);
+            }
+            addr += bmdata->pitch;
+        }
+    }
+    else
+    {
+        /*
+            Generic line drawing code.
+        */
+        WORD dx, dy, x, y, incrE, incrNE, d, s1, s2, t;
+        IPTR addr;
+        
+        /* Restore original coordinates - important for non-straight lines as 
+           normalization might have switched them */
+        x1 = destX1;
+        y1 = destY1;
+        x2 = destX2;
+        y2 = destY2;
+
+        /* Calculate slope */
+        dx = abs(x2 - x1);
+        dy = abs(y2 - y1);
+    
+        /* which direction? */
+        if((x2 - x1) > 0) s1 = 1; else s1 = - 1;
+        if((y2 - y1) > 0) s2 = 1; else s2 = - 1;
+    
+        /* change axes if dx < dy */
+        if(dx < dy)
+        {
+            d = dx;
+            dx = dy;
+            dy = d;
+            t = 0;
+        }
+        else
+        {
+           t = 1;
+        }
+    
+        d  = 2 * dy - dx;        /* initial value of d */
+    
+        incrE  = 2 * dy;         /* Increment use for move to E  */
+        incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
+    
+        x = x1; y = y1;
+        
+        for(i = 0; i <= dx; i++)
+        {    
+            /* Pixel inside ? */
+            if (!doclip || !POINT_OUTSIDE_CLIP(gc, x, y ))
+            {
+                addr = map + (x * bmdata->bytesperpixel) + (bmdata->pitch * y);
+                if (bmdata->bytesperpixel == 2)
+                    writew(fg, (APTR)addr);
+                else
+                    writel(fg, (APTR)addr);
+            }
+    
+            if(d <= 0)
+            {
+                if(t == 1)
+                {
+                    x = x + s1;
+                }
+                else
+                {
+                    y = y + s2;
+                }
+    
+                d = d + incrE;
+            }
+            else
+            {
+                x = x + s1;
+                y = y + s2;
+                d = d + incrNE;
+            }
+        }
+    }
 }
 

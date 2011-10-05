@@ -41,6 +41,7 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     OOP_Object * pf;
     struct HIDDNouveauBitMapData * bmdata = NULL;
     HIDDT_StdPixFmt stdfmt = vHidd_StdPixFmt_Unknown;
+    struct CardData * carddata = &(SD(cl)->carddata);
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
@@ -62,6 +63,8 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdfmt);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
     OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+    
+    D(bug("[Nouveau] BitMap New: %d x %d x %d\n", width, height, depth));
 
     /* Check if requested format is one of the supported ones */
     if ((stdfmt != vHidd_StdPixFmt_BGR032) && (stdfmt != vHidd_StdPixFmt_RGB16_LE))
@@ -80,8 +83,12 @@ OOP_Object * METHOD(NouveauBitMap, Root, New)
     bmdata->height = height;
     bmdata->depth = depth;
     bmdata->bytesperpixel = bytesperpixel;
-    bmdata->pitch = (bmdata->width + 63) & ~63;
-    bmdata->pitch *= bmdata->bytesperpixel;
+    bmdata->pitch = bmdata->width * bmdata->bytesperpixel;
+    if (carddata->architecture >= NV_ARCH_50)
+        bmdata->pitch = (bmdata->pitch + 255) & ~255; 
+    else
+        bmdata->pitch = (bmdata->pitch + 63) & ~63;
+
     if (displayable) bmdata->displayable = TRUE; else bmdata->displayable = FALSE;
     InitSemaphore(&bmdata->semaphore);
 
@@ -225,7 +232,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPixel)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
-    
+
     /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
     IPTR map = (IPTR)bmdata->bo->map;
     
@@ -262,7 +269,7 @@ HIDDT_Pixel METHOD(NouveauBitMap, Hidd_BitMap, GetPixel)
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     IPTR addr = (msg->x * bmdata->bytesperpixel) + (bmdata->pitch * msg->y);
     HIDDT_Pixel pixel = 0;
-    
+
     /* FIXME "Optimistics" synchronization (yes, I know it's wrong) */
     IPTR map = (IPTR)bmdata->bo->map;
 
@@ -321,7 +328,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, Clear)
                     0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     case(NV_ARCH_C0):
-        ret = FALSE; /* TODO:NVC0: IMPLEMENT */
+        ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
+                    0, 0, bmdata->width - 1, bmdata->height - 1, GC_DRMD(msg->gc), GC_BG(msg->gc));
         break;
     }    
 
@@ -362,7 +370,8 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, FillRect)
                     msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
     case(NV_ARCH_C0):
-        ret = FALSE; /* TODO:NVCO: IMPLEMENT */
+        ret = HIDDNouveauNVC0FillSolidRect(carddata, bmdata, 
+                    msg->minX, msg->minY, msg->maxX, msg->maxY, GC_DRMD(msg->gc), GC_FG(msg->gc));
         break;
     }
 
@@ -392,18 +401,10 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutImage)
 
         ObtainSemaphore(&carddata->gartsemaphore);
         
-        if (carddata->architecture >= NV_ARCH_C0)
-        {
-            /* TODO:NVCO: IMPLEMENT */
-            result = FALSE;
-        }
-        else
-        {
-            result = HiddNouveauNVAccelUploadM2MF(
-                        msg->pixels, msg->modulo, msg->pixFmt,
-                        msg->x, msg->y, msg->width, msg->height, 
-                        cl, o);
-        }
+        result = HiddNouveauNVAccelUploadM2MF(
+                    msg->pixels, msg->modulo, msg->pixFmt,
+                    msg->x, msg->y, msg->width, msg->height, 
+                    cl, o);
         
         ReleaseSemaphore(&carddata->gartsemaphore);
 
@@ -452,18 +453,10 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, GetImage)
 
         ObtainSemaphore(&carddata->gartsemaphore);
         
-        if (carddata->architecture >= NV_ARCH_C0)
-        {
-            /* TODO:NVCO: IMPLEMENT */
-            result = FALSE;
-        }
-        else
-        {
-            result = HiddNouveauNVAccelDownloadM2MF(
-                        msg->pixels, msg->modulo, msg->pixFmt,
-                        msg->x, msg->y, msg->width, msg->height, 
-                        cl, o);
-        }
+        result = HiddNouveauNVAccelDownloadM2MF(
+                    msg->pixels, msg->modulo, msg->pixFmt,
+                    msg->x, msg->y, msg->width, msg->height, 
+                    cl, o);
 
         ReleaseSemaphore(&carddata->gartsemaphore);
 
@@ -816,6 +809,28 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutPattern)
         break;
     } /* switch(bmdata->bytesperpixel) */
 
+    UNLOCK_BITMAP
+}
+
+VOID METHOD(NouveauBitMap, Hidd_BitMap, DrawLine)
+{
+    struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
+
+    LOCK_BITMAP
+
+    if ((GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Copy) && (GC_COLMASK(msg->gc) == ~0))
+    {
+        MAP_BUFFER
+
+        HIDDNouveauBitMapDrawSolidLine(bmdata, msg->gc, msg->x1, msg->y1, msg->x2, msg->y2);
+
+        UNLOCK_BITMAP
+
+        return;
+    }
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+    
     UNLOCK_BITMAP
 }
 

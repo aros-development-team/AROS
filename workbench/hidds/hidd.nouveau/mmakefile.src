@@ -6,6 +6,9 @@ include $(SRCDIR)/$(CURDIR)/drm/sources.drm.mak
 
 GALLIUM_NOUVEUA_SOURCES = \
             drivers/nouveau/nouveau_screen \
+            drivers/nouveau/nouveau_fence \
+            drivers/nouveau/nouveau_mm \
+            drivers/nouveau/nouveau_buffer \
             drivers/nvfx/nv04_2d \
             drivers/nvfx/nvfx_buffer \
             drivers/nvfx/nvfx_context \
@@ -27,30 +30,51 @@ GALLIUM_NOUVEUA_SOURCES = \
             drivers/nvfx/nvfx_transfer \
             drivers/nvfx/nvfx_vbo \
             drivers/nvfx/nvfx_vertprog \
-            drivers/nv50/nv50_buffer \
-            drivers/nv50/nv50_clear \
             drivers/nv50/nv50_context \
             drivers/nv50/nv50_draw \
             drivers/nv50/nv50_formats \
             drivers/nv50/nv50_miptree \
-            drivers/nv50/nv50_pc \
-            drivers/nv50/nv50_pc_emit \
-            drivers/nv50/nv50_pc_optimize \
-            drivers/nv50/nv50_pc_print \
-            drivers/nv50/nv50_pc_regalloc \
-            drivers/nv50/nv50_program \
-            drivers/nv50/nv50_push \
-            drivers/nv50/nv50_query \
             drivers/nv50/nv50_resource \
             drivers/nv50/nv50_screen \
-            drivers/nv50/nv50_shader_state \
             drivers/nv50/nv50_state \
             drivers/nv50/nv50_state_validate \
             drivers/nv50/nv50_surface \
             drivers/nv50/nv50_tex \
-            drivers/nv50/nv50_tgsi_to_nc \
             drivers/nv50/nv50_transfer \
             drivers/nv50/nv50_vbo \
+            drivers/nv50/nv50_program \
+            drivers/nv50/nv50_shader_state \
+            drivers/nv50/nv50_pc \
+            drivers/nv50/nv50_pc_print \
+            drivers/nv50/nv50_pc_emit \
+            drivers/nv50/nv50_tgsi_to_nc \
+            drivers/nv50/nv50_pc_optimize \
+            drivers/nv50/nv50_pc_regalloc \
+            drivers/nv50/nv50_push \
+            drivers/nv50/nv50_query \
+            drivers/nvc0/nvc0_context \
+            drivers/nvc0/nvc0_draw \
+            drivers/nvc0/nvc0_formats \
+            drivers/nvc0/nvc0_miptree \
+            drivers/nvc0/nvc0_resource \
+            drivers/nvc0/nvc0_screen \
+            drivers/nvc0/nvc0_state \
+            drivers/nvc0/nvc0_state_validate \
+            drivers/nvc0/nvc0_surface \
+            drivers/nvc0/nvc0_tex \
+            drivers/nvc0/nvc0_transfer \
+            drivers/nvc0/nvc0_vbo \
+            drivers/nvc0/nvc0_program \
+            drivers/nvc0/nvc0_shader_state \
+            drivers/nvc0/nvc0_pc \
+            drivers/nvc0/nvc0_pc_print \
+            drivers/nvc0/nvc0_pc_emit \
+            drivers/nvc0/nvc0_tgsi_to_nc \
+            drivers/nvc0/nvc0_pc_optimize \
+            drivers/nvc0/nvc0_pc_regalloc \
+            drivers/nvc0/nvc0_push \
+            drivers/nvc0/nvc0_push2 \
+            drivers/nvc0/nvc0_query \
 
 XF86_NOUVEAU_SOURCES = \
             nv_accel_common \
@@ -61,6 +85,9 @@ XF86_NOUVEAU_SOURCES = \
             nv10_exa \
             nv50_exa \
             nouveau_exa \
+            nvc0_accel \
+            nvc0_exa \
+            nv04_exa \
 
 GALLIUM_PATH = $(SRCDIR)/workbench/libs/mesa/src/gallium/
 
@@ -74,8 +101,6 @@ NOUVEAU_HIDD_SOURCES := \
             nouveau_init \
             nouveaubitmapclass \
             nouveaugalliumclass \
-            nouveau_nv04_accel \
-            nouveau_nv50_accel \
             nouveau_accel \
             nouveaui2c \
             arosc_emul \
@@ -97,6 +122,7 @@ USER_INCLUDES := \
                 -I$(AROS_DEVELOPMENT)/include/gallium       \
                 -I$(GALLIUM_PATH)/include                   \
                 -I$(DRM_PATH)/libdrm                        \
+                -I$(DRM_PATH)/libdrm/nouveau                \
                 -I$(XF86_NOUVEAU_PATH)                      \
 
 USER_CFLAGS := -std=gnu99
@@ -104,12 +130,5 @@ USER_CFLAGS := -std=gnu99
 %build_module mmake=hidd-nouveau \
     modname=nouveau modtype=hidd \
     files="$(NOUVEAU_HIDD_SOURCES)" \
-    uselibs="oop amiga hiddstubs galliumauxiliary rom"
+    uselibs="oop amiga hiddgraphicsstubs hiddstubs galliumauxiliary rom"
 
-%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd_hack \
-    maindir=$(CURDIR) arch=i386 modulename=nouveau
-
-%build_archspecific mainmmake=hidd-nouveau asmfiles=aros_wbinvd64_hack \
-    maindir=$(CURDIR) arch=x86_64 modulename=nouveau
-
-%common

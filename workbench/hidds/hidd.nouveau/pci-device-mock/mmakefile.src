@@ -1,0 +1,17 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES	:= \
+    irqmockclass \
+    pcimockdriverclass \
+    pcimockhardwareclass \
+    NV44A \
+    NVG86 \
+    NVGTS250 \
+    NVGF100 \
+    SIS661FX \
+
+USER_INCLUDES := -I$(SRCDIR)/rom/hidds/hidd.pci/
+
+%build_module mmake=hidd-pci-mock modname=pcimock modtype=hidd \
+    files=$(FILES) uselibs="oop rom amiga"

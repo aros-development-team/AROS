@@ -40,6 +40,8 @@
 #include "nouveau_drm.h"
 #if !defined(__AROS__)
 #include "nouveau_fbcon.h"
+#else
+#include "nouveau_fb.h"
 #endif
 #include "nouveau_ramht.h"
 #include "nouveau_pm.h"
@@ -71,14 +73,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->timer.takedown		= nv04_timer_takedown;
 		engine->fb.init			= nv04_fb_init;
 		engine->fb.takedown		= nv04_fb_takedown;
-		engine->graph.init		= nv04_graph_init;
-		engine->graph.takedown		= nv04_graph_takedown;
-		engine->graph.fifo_access	= nv04_graph_fifo_access;
-		engine->graph.channel		= nv04_graph_channel;
-		engine->graph.create_context	= nv04_graph_create_context;
-		engine->graph.destroy_context	= nv04_graph_destroy_context;
-		engine->graph.load_context	= nv04_graph_load_context;
-		engine->graph.unload_context	= nv04_graph_unload_context;
 		engine->fifo.channels		= 16;
 		engine->fifo.init		= nv04_fifo_init;
 		engine->fifo.takedown		= nv04_fifo_fini;
@@ -104,9 +98,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_get		= nv04_pm_clock_get;
 		engine->pm.clock_pre		= nv04_pm_clock_pre;
 		engine->pm.clock_set		= nv04_pm_clock_set;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
 		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.takedown		= nouveau_stub_takedown;
 		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x10:
@@ -129,15 +122,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->fb.init_tile_region	= nv10_fb_init_tile_region;
 		engine->fb.set_tile_region	= nv10_fb_set_tile_region;
 		engine->fb.free_tile_region	= nv10_fb_free_tile_region;
-		engine->graph.init		= nv10_graph_init;
-		engine->graph.takedown		= nv10_graph_takedown;
-		engine->graph.channel		= nv10_graph_channel;
-		engine->graph.create_context	= nv10_graph_create_context;
-		engine->graph.destroy_context	= nv10_graph_destroy_context;
-		engine->graph.fifo_access	= nv04_graph_fifo_access;
-		engine->graph.load_context	= nv10_graph_load_context;
-		engine->graph.unload_context	= nv10_graph_unload_context;
-		engine->graph.set_tile_region	= nv10_graph_set_tile_region;
 		engine->fifo.channels		= 32;
 		engine->fifo.init		= nv10_fifo_init;
 		engine->fifo.takedown		= nv04_fifo_fini;
@@ -163,9 +147,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_get		= nv04_pm_clock_get;
 		engine->pm.clock_pre		= nv04_pm_clock_pre;
 		engine->pm.clock_set		= nv04_pm_clock_set;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
 		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.takedown		= nouveau_stub_takedown;
 		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x20:
@@ -188,15 +171,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->fb.init_tile_region	= nv10_fb_init_tile_region;
 		engine->fb.set_tile_region	= nv10_fb_set_tile_region;
 		engine->fb.free_tile_region	= nv10_fb_free_tile_region;
-		engine->graph.init		= nv20_graph_init;
-		engine->graph.takedown		= nv20_graph_takedown;
-		engine->graph.channel		= nv10_graph_channel;
-		engine->graph.create_context	= nv20_graph_create_context;
-		engine->graph.destroy_context	= nv20_graph_destroy_context;
-		engine->graph.fifo_access	= nv04_graph_fifo_access;
-		engine->graph.load_context	= nv20_graph_load_context;
-		engine->graph.unload_context	= nv20_graph_unload_context;
-		engine->graph.set_tile_region	= nv20_graph_set_tile_region;
 		engine->fifo.channels		= 32;
 		engine->fifo.init		= nv10_fifo_init;
 		engine->fifo.takedown		= nv04_fifo_fini;
@@ -222,9 +196,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_get		= nv04_pm_clock_get;
 		engine->pm.clock_pre		= nv04_pm_clock_pre;
 		engine->pm.clock_set		= nv04_pm_clock_set;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
 		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.takedown		= nouveau_stub_takedown;
 		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x30:
@@ -247,15 +220,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->fb.init_tile_region	= nv30_fb_init_tile_region;
 		engine->fb.set_tile_region	= nv10_fb_set_tile_region;
 		engine->fb.free_tile_region	= nv30_fb_free_tile_region;
-		engine->graph.init		= nv30_graph_init;
-		engine->graph.takedown		= nv20_graph_takedown;
-		engine->graph.fifo_access	= nv04_graph_fifo_access;
-		engine->graph.channel		= nv10_graph_channel;
-		engine->graph.create_context	= nv20_graph_create_context;
-		engine->graph.destroy_context	= nv20_graph_destroy_context;
-		engine->graph.load_context	= nv20_graph_load_context;
-		engine->graph.unload_context	= nv20_graph_unload_context;
-		engine->graph.set_tile_region	= nv20_graph_set_tile_region;
 		engine->fifo.channels		= 32;
 		engine->fifo.init		= nv10_fifo_init;
 		engine->fifo.takedown		= nv04_fifo_fini;
@@ -283,9 +247,8 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->pm.clock_set		= nv04_pm_clock_set;
 		engine->pm.voltage_get		= nouveau_voltage_gpio_get;
 		engine->pm.voltage_set		= nouveau_voltage_gpio_set;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
 		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.takedown		= nouveau_stub_takedown;
 		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x40:
@@ -309,15 +272,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->fb.init_tile_region	= nv30_fb_init_tile_region;
 		engine->fb.set_tile_region	= nv40_fb_set_tile_region;
 		engine->fb.free_tile_region	= nv30_fb_free_tile_region;
-		engine->graph.init		= nv40_graph_init;
-		engine->graph.takedown		= nv40_graph_takedown;
-		engine->graph.fifo_access	= nv04_graph_fifo_access;
-		engine->graph.channel		= nv40_graph_channel;
-		engine->graph.create_context	= nv40_graph_create_context;
-		engine->graph.destroy_context	= nv40_graph_destroy_context;
-		engine->graph.load_context	= nv40_graph_load_context;
-		engine->graph.unload_context	= nv40_graph_unload_context;
-		engine->graph.set_tile_region	= nv40_graph_set_tile_region;
 		engine->fifo.channels		= 32;
 		engine->fifo.init		= nv40_fifo_init;
 		engine->fifo.takedown		= nv04_fifo_fini;
@@ -340,21 +294,36 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->gpio.get		= nv10_gpio_get;
 		engine->gpio.set		= nv10_gpio_set;
 		engine->gpio.irq_enable		= NULL;
-		engine->pm.clock_get		= nv04_pm_clock_get;
-		engine->pm.clock_pre		= nv04_pm_clock_pre;
-		engine->pm.clock_set		= nv04_pm_clock_set;
+		engine->pm.clocks_get		= nv40_pm_clocks_get;
+		engine->pm.clocks_pre		= nv40_pm_clocks_pre;
+		engine->pm.clocks_set		= nv40_pm_clocks_set;
 		engine->pm.voltage_get		= nouveau_voltage_gpio_get;
 		engine->pm.voltage_set		= nouveau_voltage_gpio_set;
 		engine->pm.temp_get		= nv40_temp_get;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
+		switch (dev_priv->chipset) {
+		case 0x40:
+		case 0x49:
+			engine->pm.fanspeed_get	= nv40_pm_fanspeed_get;
+			engine->pm.fanspeed_set	= nv40_pm_fanspeed_set;
+			break;
+		case 0x42:
+		case 0x43:
+		case 0x47:
+		case 0x4b:
+			engine->pm.fanspeed_get	= nv41_pm_fanspeed_get;
+			engine->pm.fanspeed_set	= nv41_pm_fanspeed_set;
+			break;
+		default:
+			break;
+		}
 		engine->vram.init		= nouveau_mem_detect;
+		engine->vram.takedown		= nouveau_stub_takedown;
 		engine->vram.flags_valid	= nouveau_mem_flags_valid;
 		break;
 	case 0x50:
 	case 0x80: /* gotta love NVIDIA's consistency.. */
 	case 0x90:
-	case 0xA0:
+	case 0xa0:
 		engine->instmem.init		= nv50_instmem_init;
 		engine->instmem.takedown	= nv50_instmem_takedown;
 		engine->instmem.suspend		= nv50_instmem_suspend;
@@ -374,23 +343,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->timer.takedown		= nv04_timer_takedown;
 		engine->fb.init			= nv50_fb_init;
 		engine->fb.takedown		= nv50_fb_takedown;
-		engine->graph.init		= nv50_graph_init;
-		engine->graph.takedown		= nv50_graph_takedown;
-		engine->graph.fifo_access	= nv50_graph_fifo_access;
-		engine->graph.channel		= nv50_graph_channel;
-		engine->graph.create_context	= nv50_graph_create_context;
-		engine->graph.destroy_context	= nv50_graph_destroy_context;
-		engine->graph.load_context	= nv50_graph_load_context;
-		engine->graph.unload_context	= nv50_graph_unload_context;
-		if (dev_priv->chipset != 0x86)
-			engine->graph.tlb_flush	= nv50_graph_tlb_flush;
-		else {
-			/* from what i can see nvidia do this on every
-			 * pre-NVA3 board except NVAC, but, we've only
-			 * ever seen problems on NV86
-			 */
-			engine->graph.tlb_flush	= nv86_graph_tlb_flush;
-		}
 		engine->fifo.channels		= 128;
 		engine->fifo.init		= nv50_fifo_init;
 		engine->fifo.takedown		= nv50_fifo_takedown;
@@ -431,9 +383,9 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 			engine->pm.clock_set	= nv50_pm_clock_set;
 			break;
 		default:
-			engine->pm.clock_get	= nva3_pm_clock_get;
-			engine->pm.clock_pre	= nva3_pm_clock_pre;
-			engine->pm.clock_set	= nva3_pm_clock_set;
+			engine->pm.clocks_get	= nva3_pm_clocks_get;
+			engine->pm.clocks_pre	= nva3_pm_clocks_pre;
+			engine->pm.clocks_set	= nva3_pm_clocks_set;
 			break;
 		}
 		engine->pm.voltage_get		= nouveau_voltage_gpio_get;
@@ -442,30 +394,15 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 			engine->pm.temp_get	= nv84_temp_get;
 		else
 			engine->pm.temp_get	= nv40_temp_get;
-		switch (dev_priv->chipset) {
-		case 0x84:
-		case 0x86:
-		case 0x92:
-		case 0x94:
-		case 0x96:
-		case 0xa0:
-			engine->crypt.init	= nv84_crypt_init;
-			engine->crypt.takedown	= nv84_crypt_fini;
-			engine->crypt.create_context = nv84_crypt_create_context;
-			engine->crypt.destroy_context = nv84_crypt_destroy_context;
-			engine->crypt.tlb_flush	= nv84_crypt_tlb_flush;
-			break;
-		default:
-			engine->crypt.init	= nouveau_stub_init;
-			engine->crypt.takedown	= nouveau_stub_takedown;
-			break;
-		}
+		engine->pm.fanspeed_get		= nv50_pm_fanspeed_get;
+		engine->pm.fanspeed_set		= nv50_pm_fanspeed_set;
 		engine->vram.init		= nv50_vram_init;
+		engine->vram.takedown		= nv50_vram_fini;
 		engine->vram.get		= nv50_vram_new;
 		engine->vram.put		= nv50_vram_del;
 		engine->vram.flags_valid	= nv50_vram_flags_valid;
 		break;
-	case 0xC0:
+	case 0xc0:
 		engine->instmem.init		= nvc0_instmem_init;
 		engine->instmem.takedown	= nvc0_instmem_takedown;
 		engine->instmem.suspend		= nvc0_instmem_suspend;
@@ -482,14 +419,6 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->timer.takedown		= nv04_timer_takedown;
 		engine->fb.init			= nvc0_fb_init;
 		engine->fb.takedown		= nvc0_fb_takedown;
-		engine->graph.init		= nvc0_graph_init;
-		engine->graph.takedown		= nvc0_graph_takedown;
-		engine->graph.fifo_access	= nvc0_graph_fifo_access;
-		engine->graph.channel		= nvc0_graph_channel;
-		engine->graph.create_context	= nvc0_graph_create_context;
-		engine->graph.destroy_context	= nvc0_graph_destroy_context;
-		engine->graph.load_context	= nvc0_graph_load_context;
-		engine->graph.unload_context	= nvc0_graph_unload_context;
 		engine->fifo.channels		= 128;
 		engine->fifo.init		= nvc0_fifo_init;
 		engine->fifo.takedown		= nvc0_fifo_takedown;
@@ -513,17 +442,82 @@ static int nouveau_init_engine_ptrs(struct drm_device *dev)
 		engine->gpio.irq_register	= nv50_gpio_irq_register;
 		engine->gpio.irq_unregister	= nv50_gpio_irq_unregister;
 		engine->gpio.irq_enable		= nv50_gpio_irq_enable;
-		engine->crypt.init		= nouveau_stub_init;
-		engine->crypt.takedown		= nouveau_stub_takedown;
 		engine->vram.init		= nvc0_vram_init;
+		engine->vram.takedown		= nv50_vram_fini;
 		engine->vram.get		= nvc0_vram_new;
 		engine->vram.put		= nv50_vram_del;
 		engine->vram.flags_valid	= nvc0_vram_flags_valid;
+		engine->pm.temp_get		= nv84_temp_get;
+		engine->pm.clocks_get		= nvc0_pm_clocks_get;
+		engine->pm.voltage_get		= nouveau_voltage_gpio_get;
+		engine->pm.voltage_set		= nouveau_voltage_gpio_set;
+		engine->pm.fanspeed_get		= nv50_pm_fanspeed_get;
+		engine->pm.fanspeed_set		= nv50_pm_fanspeed_set;
+		break;
+	case 0xd0:
+		engine->instmem.init		= nvc0_instmem_init;
+		engine->instmem.takedown	= nvc0_instmem_takedown;
+		engine->instmem.suspend		= nvc0_instmem_suspend;
+		engine->instmem.resume		= nvc0_instmem_resume;
+		engine->instmem.get		= nv50_instmem_get;
+		engine->instmem.put		= nv50_instmem_put;
+		engine->instmem.map		= nv50_instmem_map;
+		engine->instmem.unmap		= nv50_instmem_unmap;
+		engine->instmem.flush		= nv84_instmem_flush;
+		engine->mc.init			= nv50_mc_init;
+		engine->mc.takedown		= nv50_mc_takedown;
+		engine->timer.init		= nv04_timer_init;
+		engine->timer.read		= nv04_timer_read;
+		engine->timer.takedown		= nv04_timer_takedown;
+		engine->fb.init			= nvc0_fb_init;
+		engine->fb.takedown		= nvc0_fb_takedown;
+		engine->fifo.channels		= 128;
+		engine->fifo.init		= nvc0_fifo_init;
+		engine->fifo.takedown		= nvc0_fifo_takedown;
+		engine->fifo.disable		= nvc0_fifo_disable;
+		engine->fifo.enable		= nvc0_fifo_enable;
+		engine->fifo.reassign		= nvc0_fifo_reassign;
+		engine->fifo.channel_id		= nvc0_fifo_channel_id;
+		engine->fifo.create_context	= nvc0_fifo_create_context;
+		engine->fifo.destroy_context	= nvc0_fifo_destroy_context;
+		engine->fifo.load_context	= nvc0_fifo_load_context;
+		engine->fifo.unload_context	= nvc0_fifo_unload_context;
+		engine->display.early_init	= nouveau_stub_init;
+		engine->display.late_takedown	= nouveau_stub_takedown;
+		engine->display.create		= nvd0_display_create;
+		engine->display.init		= nvd0_display_init;
+		engine->display.destroy		= nvd0_display_destroy;
+		engine->gpio.init		= nv50_gpio_init;
+		engine->gpio.takedown		= nouveau_stub_takedown;
+		engine->gpio.get		= nvd0_gpio_get;
+		engine->gpio.set		= nvd0_gpio_set;
+		engine->gpio.irq_register	= nv50_gpio_irq_register;
+		engine->gpio.irq_unregister	= nv50_gpio_irq_unregister;
+		engine->gpio.irq_enable		= nv50_gpio_irq_enable;
+		engine->vram.init		= nvc0_vram_init;
+		engine->vram.takedown		= nv50_vram_fini;
+		engine->vram.get		= nvc0_vram_new;
+		engine->vram.put		= nv50_vram_del;
+		engine->vram.flags_valid	= nvc0_vram_flags_valid;
+		engine->pm.clocks_get		= nvc0_pm_clocks_get;
+		engine->pm.voltage_get		= nouveau_voltage_gpio_get;
+		engine->pm.voltage_set		= nouveau_voltage_gpio_set;
 		break;
 	default:
 		NV_ERROR(dev, "NV%02x unsupported\n", dev_priv->chipset);
 		return 1;
 	}
+
+#if !defined(__AROS__)
+	/* headless mode */
+	if (nouveau_modeset == 2) {
+		engine->display.early_init = nouveau_stub_init;
+		engine->display.late_takedown = nouveau_stub_takedown;
+		engine->display.create = nouveau_stub_init;
+		engine->display.init = nouveau_stub_init;
+		engine->display.destroy = nouveau_stub_takedown;
+	}
+#endif
 
 	return 0;
 }
@@ -547,21 +541,6 @@ nouveau_vga_set_decode(void *priv, bool state)
 		return VGA_RSRC_NORMAL_IO | VGA_RSRC_NORMAL_MEM;
 }
 #endif
-
-static int
-nouveau_card_init_channel(struct drm_device *dev)
-{
-	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	int ret;
-
-	ret = nouveau_channel_alloc(dev, &dev_priv->channel,
-				    (struct drm_file *)-2, NvDmaFB, NvDmaTT);
-	if (ret)
-		return ret;
-
-	mutex_unlock(&dev_priv->channel->mutex);
-	return 0;
-}
 
 #if !defined(__AROS__)
 static void nouveau_switcheroo_set_state(struct pci_dev *pdev,
@@ -607,7 +586,7 @@ nouveau_card_init(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_engine *engine;
-	int ret;
+	int ret, e = 0;
 
 #if !defined(__AROS__)
 	vga_client_register(dev->pdev, dev, NULL, nouveau_vga_set_decode);
@@ -624,6 +603,7 @@ nouveau_card_init(struct drm_device *dev)
 	spin_lock_init(&dev_priv->channels.lock);
 	spin_lock_init(&dev_priv->tile.lock);
 	spin_lock_init(&dev_priv->context_switch_lock);
+	spin_lock_init(&dev_priv->vm_lock);
 
 	/* Make the CRTCs and I2C buses accessible */
 	ret = engine->display.early_init(dev);
@@ -639,7 +619,7 @@ nouveau_card_init(struct drm_device *dev)
 	nouveau_pm_init(dev);
 #endif
 
-	ret = nouveau_mem_vram_init(dev);
+	ret = engine->vram.init(dev);
 	if (ret)
 		goto out_bios;
 
@@ -651,9 +631,13 @@ nouveau_card_init(struct drm_device *dev)
 	if (ret)
 		goto out_gpuobj;
 
-	ret = nouveau_mem_gart_init(dev);
+	ret = nouveau_mem_vram_init(dev);
 	if (ret)
 		goto out_instmem;
+
+	ret = nouveau_mem_gart_init(dev);
+	if (ret)
+		goto out_ttmvram;
 
 	/* PMC */
 	ret = engine->mc.init(dev);
@@ -675,80 +659,180 @@ nouveau_card_init(struct drm_device *dev)
 	if (ret)
 		goto out_timer;
 
-	if (nouveau_noaccel)
-		engine->graph.accel_blocked = true;
-	else {
-		/* PGRAPH */
-		ret = engine->graph.init(dev);
-		if (ret)
-			goto out_fb;
+	if (!dev_priv->noaccel) {
+		switch (dev_priv->card_type) {
+		case NV_04:
+			nv04_graph_create(dev);
+			break;
+		case NV_10:
+			nv10_graph_create(dev);
+			break;
+		case NV_20:
+		case NV_30:
+			nv20_graph_create(dev);
+			break;
+		case NV_40:
+			nv40_graph_create(dev);
+			break;
+		case NV_50:
+			nv50_graph_create(dev);
+			break;
+		case NV_C0:
+			nvc0_graph_create(dev);
+			break;
+		default:
+			break;
+		}
 
-		/* PCRYPT */
-		ret = engine->crypt.init(dev);
-		if (ret)
-			goto out_graph;
+		switch (dev_priv->chipset) {
+		case 0x84:
+		case 0x86:
+		case 0x92:
+		case 0x94:
+		case 0x96:
+		case 0xa0:
+			nv84_crypt_create(dev);
+			break;
+		case 0x98:
+		case 0xaa:
+		case 0xac:
+			nv98_crypt_create(dev);
+			break;
+		}
+
+		switch (dev_priv->card_type) {
+		case NV_50:
+			switch (dev_priv->chipset) {
+			case 0xa3:
+			case 0xa5:
+			case 0xa8:
+			case 0xaf:
+				nva3_copy_create(dev);
+				break;
+			}
+			break;
+		case NV_C0:
+			nvc0_copy_create(dev, 0);
+			nvc0_copy_create(dev, 1);
+			break;
+		default:
+			break;
+		}
+
+		if (dev_priv->chipset >= 0xa3 || dev_priv->chipset == 0x98) {
+			nv84_bsp_create(dev);
+			nv84_vp_create(dev);
+			nv98_ppp_create(dev);
+		} else
+		if (dev_priv->chipset >= 0x84) {
+			nv50_mpeg_create(dev);
+			nv84_bsp_create(dev);
+			nv84_vp_create(dev);
+		} else
+		if (dev_priv->chipset >= 0x50) {
+			nv50_mpeg_create(dev);
+		} else
+		if (dev_priv->card_type == NV_40 ||
+		    dev_priv->chipset == 0x31 ||
+		    dev_priv->chipset == 0x34 ||
+		    dev_priv->chipset == 0x36) {
+			nv31_mpeg_create(dev);
+		}
+
+		for (e = 0; e < NVOBJ_ENGINE_NR; e++) {
+			if (dev_priv->eng[e]) {
+				ret = dev_priv->eng[e]->init(dev, e);
+				if (ret)
+					goto out_engine;
+			}
+		}
 
 		/* PFIFO */
 		ret = engine->fifo.init(dev);
 		if (ret)
-			goto out_crypt;
+			goto out_engine;
+	}
+
+	ret = nouveau_irq_init(dev);
+	if (ret)
+		goto out_fifo;
+
+	/* initialise general modesetting */
+	drm_mode_config_init(dev);
+	drm_mode_create_scaling_mode_property(dev);
+	drm_mode_create_dithering_property(dev);
+	dev->mode_config.funcs = (void *)&nouveau_mode_config_funcs;
+	dev->mode_config.fb_base = pci_resource_start(dev->pdev, 1);
+	dev->mode_config.min_width = 0;
+	dev->mode_config.min_height = 0;
+	if (dev_priv->card_type < NV_10) {
+		dev->mode_config.max_width = 2048;
+		dev->mode_config.max_height = 2048;
+	} else
+	if (dev_priv->card_type < NV_50) {
+		dev->mode_config.max_width = 4096;
+		dev->mode_config.max_height = 4096;
+	} else {
+		dev->mode_config.max_width = 8192;
+		dev->mode_config.max_height = 8192;
 	}
 
 	ret = engine->display.create(dev);
 	if (ret)
-		goto out_fifo;
+		goto out_irq;
 
-#if !defined(__AROS__)
-	ret = drm_vblank_init(dev, nv_two_heads(dev) ? 2 : 1);
-	if (ret)
-		goto out_vblank;
-#endif
+	nouveau_backlight_init(dev);
 
-	ret = nouveau_irq_init(dev);
-	if (ret)
-		goto out_vblank;
-
-	/* what about PVIDEO/PCRTC/PRAMDAC etc? */
-
-	if (!engine->graph.accel_blocked) {
+	if (dev_priv->eng[NVOBJ_ENGINE_GR]) {
 		ret = nouveau_fence_init(dev);
 		if (ret)
-			goto out_irq;
+			goto out_disp;
 
-		ret = nouveau_card_init_channel(dev);
+		ret = nouveau_channel_alloc(dev, &dev_priv->channel, NULL,
+					    NvDmaFB, NvDmaTT);
 		if (ret)
 			goto out_fence;
+
+		mutex_unlock(&dev_priv->channel->mutex);
 	}
 
-	ret = nouveau_backlight_init(dev);
-	if (ret)
-		NV_ERROR(dev, "Error %d registering backlight\n", ret);
-
 #if !defined(__AROS__)
-	nouveau_fbcon_init(dev);
-	drm_kms_helper_poll_init(dev);
+	if (dev->mode_config.num_crtc) {
+		ret = drm_vblank_init(dev, dev->mode_config.num_crtc);
+		if (ret)
+			goto out_chan;
+
+		nouveau_fbcon_init(dev);
+		drm_kms_helper_poll_init(dev);
+	}
 #endif
+
 	return 0;
 
+#if !defined(__AROS__)
+out_chan:
+	nouveau_channel_put_unlocked(&dev_priv->channel);
+#endif
 out_fence:
 	nouveau_fence_fini(dev);
+out_disp:
+	nouveau_backlight_exit(dev);
+	engine->display.destroy(dev);
 out_irq:
 	nouveau_irq_fini(dev);
-out_vblank:
-#if !defined(__AROS__)
-	drm_vblank_cleanup(dev);
-#endif
-	engine->display.destroy(dev);
 out_fifo:
-	if (!nouveau_noaccel)
+	if (!dev_priv->noaccel)
 		engine->fifo.takedown(dev);
-out_crypt:
-	if (!nouveau_noaccel)
-		engine->crypt.takedown(dev);
-out_graph:
-	if (!nouveau_noaccel)
-		engine->graph.takedown(dev);
-out_fb:
+out_engine:
+	if (!dev_priv->noaccel) {
+		for (e = e - 1; e >= 0; e--) {
+			if (!dev_priv->eng[e])
+				continue;
+			dev_priv->eng[e]->fini(dev, e, false);
+			dev_priv->eng[e]->destroy(dev,e );
+		}
+	}
+
 	engine->fb.takedown(dev);
 out_timer:
 	engine->timer.takedown(dev);
@@ -758,12 +842,14 @@ out_mc:
 	engine->mc.takedown(dev);
 out_gart:
 	nouveau_mem_gart_fini(dev);
+out_ttmvram:
+	nouveau_mem_vram_fini(dev);
 out_instmem:
 	engine->instmem.takedown(dev);
 out_gpuobj:
 	nouveau_gpuobj_takedown(dev);
 out_vram:
-	nouveau_mem_vram_fini(dev);
+	engine->vram.takedown(dev);
 out_bios:
 #if !defined(__AROS__)
 	nouveau_pm_fini(dev);
@@ -782,18 +868,33 @@ static void nouveau_card_takedown(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_engine *engine = &dev_priv->engine;
+	int e;
 
-	nouveau_backlight_exit(dev);
+#if !defined(__AROS__)
+	if (dev->mode_config.num_crtc) {
+		drm_kms_helper_poll_fini(dev);
+		nouveau_fbcon_fini(dev);
+		drm_vblank_cleanup(dev);
+	}
+#endif
 
-	if (!engine->graph.accel_blocked) {
-		nouveau_fence_fini(dev);
+	if (dev_priv->channel) {
 		nouveau_channel_put_unlocked(&dev_priv->channel);
+		nouveau_fence_fini(dev);
 	}
 
-	if (!nouveau_noaccel) {
+	nouveau_backlight_exit(dev);
+	engine->display.destroy(dev);
+	drm_mode_config_cleanup(dev);
+
+	if (!dev_priv->noaccel) {
 		engine->fifo.takedown(dev);
-		engine->crypt.takedown(dev);
-		engine->graph.takedown(dev);
+		for (e = NVOBJ_ENGINE_NR - 1; e >= 0; e--) {
+			if (dev_priv->eng[e]) {
+				dev_priv->eng[e]->fini(dev, e, false);
+				dev_priv->eng[e]->destroy(dev,e );
+			}
+		}
 	}
 	engine->fb.takedown(dev);
 	engine->timer.takedown(dev);
@@ -801,20 +902,23 @@ static void nouveau_card_takedown(struct drm_device *dev)
 	engine->mc.takedown(dev);
 	engine->display.late_takedown(dev);
 
+	if (dev_priv->vga_ram) {
+		nouveau_bo_unpin(dev_priv->vga_ram);
+		nouveau_bo_ref(NULL, &dev_priv->vga_ram);
+	}
+
 	mutex_lock(&dev->struct_mutex);
 	ttm_bo_clean_mm(&dev_priv->ttm.bdev, TTM_PL_VRAM);
 	ttm_bo_clean_mm(&dev_priv->ttm.bdev, TTM_PL_TT);
 	mutex_unlock(&dev->struct_mutex);
 	nouveau_mem_gart_fini(dev);
+	nouveau_mem_vram_fini(dev);
 
 	engine->instmem.takedown(dev);
 	nouveau_gpuobj_takedown(dev);
-	nouveau_mem_vram_fini(dev);
+	engine->vram.takedown(dev);
 
 	nouveau_irq_fini(dev);
-#if !defined(__AROS__)
-	drm_vblank_cleanup(dev);
-#endif
 
 #if !defined(__AROS__)
 	nouveau_pm_fini(dev);
@@ -826,11 +930,54 @@ static void nouveau_card_takedown(struct drm_device *dev)
 #endif
 }
 
+int
+nouveau_open(struct drm_device *dev, struct drm_file *file_priv)
+{
+	struct drm_nouveau_private *dev_priv = dev->dev_private;
+	struct nouveau_fpriv *fpriv;
+	int ret;
+
+	fpriv = kzalloc(sizeof(*fpriv), GFP_KERNEL);
+	if (unlikely(!fpriv))
+		return -ENOMEM;
+
+	spin_lock_init(&fpriv->lock);
+	INIT_LIST_HEAD(&fpriv->channels);
+
+	if (dev_priv->card_type == NV_50) {
+		ret = nouveau_vm_new(dev, 0, (1ULL << 40), 0x0020000000ULL,
+				     &fpriv->vm);
+		if (ret) {
+			kfree(fpriv);
+			return ret;
+		}
+	} else
+	if (dev_priv->card_type >= NV_C0) {
+		ret = nouveau_vm_new(dev, 0, (1ULL << 40), 0x0008000000ULL,
+				     &fpriv->vm);
+		if (ret) {
+			kfree(fpriv);
+			return ret;
+		}
+	}
+
+	file_priv->driver_priv = fpriv;
+	return 0;
+}
+
 /* here a client dies, release the stuff that was allocated for its
  * file_priv */
 void nouveau_preclose(struct drm_device *dev, struct drm_file *file_priv)
 {
 	nouveau_channel_cleanup(dev, file_priv);
+}
+
+void
+nouveau_postclose(struct drm_device *dev, struct drm_file *file_priv)
+{
+	struct nouveau_fpriv *fpriv = nouveau_fpriv(file_priv);
+	nouveau_vm_ref(NULL, &fpriv->vm, NULL);
+	kfree(fpriv);
 }
 
 /* first module load, setup the mmio/fb mapping */
@@ -910,7 +1057,7 @@ static int nouveau_remove_conflicting_drivers(struct drm_device *dev)
 int nouveau_load(struct drm_device *dev, unsigned long flags)
 {
 	struct drm_nouveau_private *dev_priv;
-	uint32_t reg0;
+	uint32_t reg0, strap;
 	resource_size_t mmio_start_offs;
 	int ret;
 
@@ -924,13 +1071,8 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 
 	dev_priv->flags = flags & NOUVEAU_FLAGS;
 
-#if !defined(__AROS__)
 	NV_DEBUG(dev, "vendor: 0x%X device: 0x%X class: 0x%X\n",
 		 dev->pci_vendor, dev->pci_device, dev->pdev->class);
-#else
-	NV_DEBUG(dev, "vendor: 0x%X device: 0x%X\n",
-		 dev->pci_vendor, dev->pci_device);
-#endif
 
 	/* resource 0 is mmio regs */
 	/* resource 1 is linear FB */
@@ -951,8 +1093,8 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 
 #ifdef __BIG_ENDIAN
 	/* Put the card in BE mode if it's not */
-	if (nv_rd32(dev, NV03_PMC_BOOT_1))
-		nv_wr32(dev, NV03_PMC_BOOT_1, 0x00000001);
+	if (nv_rd32(dev, NV03_PMC_BOOT_1) != 0x01000001)
+		nv_wr32(dev, NV03_PMC_BOOT_1, 0x01000001);
 
 	DRM_MEMORYBARRIER();
 #endif
@@ -973,10 +1115,6 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 	} else
 		dev_priv->chipset = 0xff;
 
-#if defined(HOSTED_BUILD)
-    dev_priv->chipset = HOSTED_BUILD_CHIPSET;
-#endif
- 
 	switch (dev_priv->chipset & 0xf0) {
 	case 0x00:
 	case 0x10:
@@ -996,19 +1134,54 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		break;
 	case 0xc0:
 		dev_priv->card_type = NV_C0;
-#if defined(__AROS__)
-        /* TODO:NVC0: Implement acceleration */
-        nouveau_noaccel = 1; /* FORCE UNTIL FIRMWARE CAN BE LOADED */
-#endif
+		break;
+	case 0xd0:
+		dev_priv->card_type = NV_D0;
 		break;
 	default:
 		NV_INFO(dev, "Unsupported chipset 0x%08x\n", reg0);
 		ret = -EINVAL;
 		goto err_mmio;
 	}
-  
+
 	NV_INFO(dev, "Detected an NV%2x generation card (0x%08x)\n",
 		dev_priv->card_type, reg0);
+
+	/* determine frequency of timing crystal */
+	strap = nv_rd32(dev, 0x101000);
+	if ( dev_priv->chipset < 0x17 ||
+	    (dev_priv->chipset >= 0x20 && dev_priv->chipset <= 0x25))
+		strap &= 0x00000040;
+	else
+		strap &= 0x00400040;
+
+	switch (strap) {
+	case 0x00000000: dev_priv->crystal = 13500; break;
+	case 0x00000040: dev_priv->crystal = 14318; break;
+	case 0x00400000: dev_priv->crystal = 27000; break;
+	case 0x00400040: dev_priv->crystal = 25000; break;
+	}
+
+	NV_DEBUG(dev, "crystal freq: %dKHz\n", dev_priv->crystal);
+
+	/* Determine whether we'll attempt acceleration or not, some
+	 * cards are disabled by default here due to them being known
+	 * non-functional, or never been tested due to lack of hw.
+	 */
+	dev_priv->noaccel = !!nouveau_noaccel;
+	if (nouveau_noaccel == -1) {
+		switch (dev_priv->chipset) {
+		case 0xc1: /* known broken */
+		case 0xc8: /* never tested */
+			NV_INFO(dev, "acceleration disabled by default, pass "
+				     "noaccel=0 to force enable\n");
+			dev_priv->noaccel = true;
+			break;
+		default:
+			dev_priv->noaccel = false;
+			break;
+		}
+	}
 
 #if !defined(__AROS__)
 	ret = nouveau_remove_conflicting_drivers(dev);
@@ -1016,7 +1189,7 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 		goto err_mmio;
 #endif
 
-	/* Map PRAMIN BAR, or on older cards, the aperture withing BAR0 */
+	/* Map PRAMIN BAR, or on older cards, the aperture within BAR0 */
 	if (dev_priv->card_type >= NV_40) {
 		int ramin_bar = 2;
 		if (pci_resource_len(dev->pdev, ramin_bar) == 0)
@@ -1027,7 +1200,7 @@ int nouveau_load(struct drm_device *dev, unsigned long flags)
 			ioremap(pci_resource_start(dev->pdev, ramin_bar),
 				dev_priv->ramin_size);
 		if (!dev_priv->ramin) {
-			NV_ERROR(dev, "Failed to PRAMIN BAR");
+			NV_ERROR(dev, "Failed to map PRAMIN BAR\n");
 			ret = -ENOMEM;
 			goto err_mmio;
 		}
@@ -1078,23 +1251,27 @@ void nouveau_lastclose(struct drm_device *dev)
 int nouveau_unload(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
-	struct nouveau_engine *engine = &dev_priv->engine;
 
 #if !defined(__AROS__)
-	drm_kms_helper_poll_fini(dev);
-	nouveau_fbcon_fini(dev);
-#endif
-	engine->display.destroy(dev);
 	nouveau_card_takedown(dev);
 
-    if (dev_priv)
-    {
-	    iounmap(dev_priv->mmio);
-	    iounmap(dev_priv->ramin);
-        
-	    kfree(dev_priv);
-	    dev->dev_private = NULL;
+	iounmap(dev_priv->mmio);
+	iounmap(dev_priv->ramin);
+
+	kfree(dev_priv);
+	dev->dev_private = NULL;
+#else
+	if (dev_priv)
+	{
+		nouveau_card_takedown(dev);
+
+		iounmap(dev_priv->mmio);
+		iounmap(dev_priv->ramin);
+
+		kfree(dev_priv);
+		dev->dev_private = NULL;
 	}
+#endif
 	return 0;
 }
 
@@ -1115,9 +1292,9 @@ int nouveau_ioctl_getparam(struct drm_device *dev, void *data,
 		getparam->value = dev->pci_device;
 		break;
 	case NOUVEAU_GETPARAM_BUS_TYPE:
-		if (drm_device_is_agp(dev))
+		if (drm_pci_device_is_agp(dev))
 			getparam->value = NV_AGP;
-		else if (drm_device_is_pcie(dev))
+		else if (pci_is_pcie(dev->pdev))
 			getparam->value = NV_PCIE;
 		else
 			getparam->value = NV_PCI;
@@ -1138,8 +1315,42 @@ int nouveau_ioctl_getparam(struct drm_device *dev, void *data,
 		getparam->value = 1;
 		break;
 	case NOUVEAU_GETPARAM_HAS_PAGEFLIP:
-		getparam->value = 1;
+		getparam->value = dev_priv->card_type < NV_D0;
 		break;
+#if defined(__AROS__)
+    case NOUVEAU_GETPARAM_VRAM_SIZE:
+        {
+            struct ttm_mem_type_manager * man = &dev_priv->ttm.bdev.man[TTM_PL_VRAM];
+            getparam->value = 0;
+            if (man && man->func)
+                getparam->value = man->size * 4096;
+        }
+        break;
+    case NOUVEAU_GETPARAM_GART_SIZE:
+        {
+            struct ttm_mem_type_manager * man = &dev_priv->ttm.bdev.man[TTM_PL_TT];
+            getparam->value = 0;
+            if (man)
+                getparam->value = man->size * 4096;
+        }
+        break;
+    case NOUVEAU_GETPARAM_VRAM_FREE:
+        {
+            struct ttm_mem_type_manager * man = &dev_priv->ttm.bdev.man[TTM_PL_VRAM];
+            getparam->value = 0;
+            if (man && man->func)
+                getparam->value = man->func->get_free_space_size(man) * 4096;
+        }
+        break;
+    case NOUVEAU_GETPARAM_GART_FREE:
+        {
+            struct ttm_mem_type_manager * man = &dev_priv->ttm.bdev.man[TTM_PL_TT];
+            getparam->value = 0;
+            if (man && man->func)
+                getparam->value = man->func->get_free_space_size(man) * 4096;
+        }
+        break;
+#endif
 	case NOUVEAU_GETPARAM_GRAPH_UNITS:
 		/* NV40 and NV50 versions are quite different, but register
 		 * address is the same. User is supposed to know the card
@@ -1177,7 +1388,7 @@ bool
 nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
 		uint32_t reg, uint32_t mask, uint32_t val)
 {
-#if !defined(HOSTED_BUILD)
+#if !defined(MOCK_HARDWARE) /* Needed by NV50 and up */
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
 	uint64_t start = ptimer->read(dev);
@@ -1189,7 +1400,7 @@ nouveau_wait_eq(struct drm_device *dev, uint64_t timeout,
 
 	return false;
 #else
-    return true;
+	return true;
 #endif
 }
 
@@ -1198,7 +1409,7 @@ bool
 nouveau_wait_ne(struct drm_device *dev, uint64_t timeout,
 		uint32_t reg, uint32_t mask, uint32_t val)
 {
-#if !defined(HOSTED_BUILD)
+#if !defined(MOCK_HARDWARE) /* Needed by NV50 and up */
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
 	uint64_t start = ptimer->read(dev);
@@ -1210,8 +1421,25 @@ nouveau_wait_ne(struct drm_device *dev, uint64_t timeout,
 
 	return false;
 #else
-    return true;
+	return true;
 #endif
+}
+
+/* Wait until cond(data) == true, up until timeout has hit */
+bool
+nouveau_wait_cb(struct drm_device *dev, u64 timeout,
+		bool (*cond)(void *), void *data)
+{
+	struct drm_nouveau_private *dev_priv = dev->dev_private;
+	struct nouveau_timer_engine *ptimer = &dev_priv->engine.timer;
+	u64 start = ptimer->read(dev);
+
+	do {
+		if (cond(data) == true)
+			return true;
+	} while (ptimer->read(dev) - start < timeout);
+
+	return false;
 }
 
 /* Waits for PGRAPH to go completely idle */
@@ -1231,3 +1459,4 @@ bool nouveau_wait_for_idle(struct drm_device *dev)
 
 	return true;
 }
+

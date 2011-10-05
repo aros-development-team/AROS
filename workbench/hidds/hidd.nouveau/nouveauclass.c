@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,6 +18,7 @@
 
 #undef HiddPixFmtAttrBase
 #undef HiddGfxAttrBase
+#undef HiddGfxNouveauAttrBase
 #undef HiddSyncAttrBase
 #undef HiddBitMapAttrBase
 #undef HiddCompositingAttrBase
@@ -25,6 +26,7 @@
 
 #define HiddPixFmtAttrBase          (SD(cl)->pixFmtAttrBase)
 #define HiddGfxAttrBase             (SD(cl)->gfxAttrBase)
+#define HiddGfxNouveauAttrBase      (SD(cl)->gfxNouveauAttrBase)
 #define HiddSyncAttrBase            (SD(cl)->syncAttrBase)
 #define HiddBitMapAttrBase          (SD(cl)->bitMapAttrBase)
 #define HiddCompositingAttrBase     (SD(cl)->compositingAttrBase)
@@ -127,11 +129,11 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         return NULL;
         
     /* Allocate enough structures */
-    syncs = AllocVec(sizeof(struct TagItem) * modescount, MEMF_ANY);
+    syncs = HIDDNouveauAlloc(sizeof(struct TagItem) * modescount);
     
     for (i = 0; i < modescount; i++)
     {
-        struct TagItem * sync = AllocVec(sizeof(struct TagItem) * 15, MEMF_ANY);
+        struct TagItem * sync = HIDDNouveauAlloc(sizeof(struct TagItem) * 15);
         LONG j = 0;
         
         drmModeModeInfoPtr mode = &connector->modes[i];
@@ -153,7 +155,7 @@ static struct TagItem * HIDDNouveauCreateSyncTagsFromConnector(OOP_Class * cl, d
         sync[j].ti_Tag = aHidd_Sync_VMax;           sync[j++].ti_Data = MAX_BITMAP_HEIGHT;
         
         /* Name */
-        STRPTR syncname = AllocVec(32, MEMF_ANY | MEMF_CLEAR);
+        STRPTR syncname = HIDDNouveauAlloc(32);
         sprintf(syncname, "NV:%dx%d@%d", mode->hdisplay, mode->vdisplay, mode->vrefresh);
         
         sync[j].ti_Tag = aHidd_Sync_Description;   sync[j++].ti_Data = (IPTR)syncname;
@@ -329,16 +331,10 @@ OOP_Object * METHOD(Nouveau, Root, New)
     LONG ret;
     ULONG selectedcrtcid;
 
-    nouveau_init();
-    D(bug("[Nouveau] nouveau_init() done\n"));
+    if (nouveau_init() < 0)
+        return NULL;
 
-    if (nouveau_device_open(&dev, ""))
-    {
-    	D(bug("[Nouveau] Failed to open device\n"));
-    	return NULL;
-    }
-
-    D(bug("[Nouveau] Opened device 0x%p\n", dev));
+    nouveau_device_open(&dev, "");
     nvdev = nouveau_device(dev);
 
     /* Select crtc and connector */
@@ -347,8 +343,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
         D(bug("[Nouveau] Not able to select connector and crtc\n"));
         return NULL;
     }
-
-    D(bug("[Nouveau] Selected CRTC 0x%p\n", selectedcrtc));
+    
     selectedcrtcid = selectedcrtc->crtc_id;
     drmModeFreeCrtc(selectedcrtc);
 
@@ -421,7 +416,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
 
         o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-        D(bug("Nouveau::New\n"));
+        D(bug("[Nouveau] GFX New\n"));
 
         if (o)
         {
@@ -472,27 +467,21 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 carddata->IsPCIE = TRUE;
             else
                 carddata->IsPCIE = FALSE;
-            
 
-            if (carddata->architecture != NV_ARCH_C0)
+            /* Allocate dma channel */
+            ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
+                24 * 1024, &carddata->chan);
+            if (ret < 0)
             {
-                /* Allocate dma channel */
-                ret = nouveau_channel_alloc(carddata->dev, NvDmaFB, NvDmaTT, 
-                    24 * 1024, &carddata->chan);
-                if (ret < 0) {
                 /* TODO: Check ret, how to handle ? */
-                }
-
-                /* Initialize acceleration objects */
-            
-                ret = HIDDNouveauAccelCommonInit(carddata);
-                if (ret < 0) {
-                /* TODO: Check ret, how to handle ? */
-                }
             }
-            else
+
+            /* Initialize acceleration objects */
+        
+            ret = HIDDNouveauAccelCommonInit(carddata);
+            if (ret < 0)
             {
-               /* TODO:NVC0: Implement acceleration */
+                /* TODO: Check ret, how to handle ? */
             }
 
             /* Allocate buffer object for cursor */
@@ -527,7 +516,7 @@ OOP_Object * METHOD(Nouveau, Root, New)
                 HIDDNouveauNV50SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             case(NV_ARCH_C0):
-                /* TODO:NVCO IMPLEMENT */
+                HIDDNouveauNVC0SetPattern(carddata, ~0, ~0, ~0, ~0);
                 break;
             }
 
@@ -599,14 +588,12 @@ OOP_Object * METHOD(Nouveau, Hidd_Gfx, NewBitMap)
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-#define IS_NOUVEAU_CLASS(x) (x == SD(cl)->bmclass)
-
 VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
 {
     OOP_Class * srcclass = OOP_OCLASS(msg->src);
     OOP_Class * destclass = OOP_OCLASS(msg->dest);
     
-    if (IS_NOUVEAU_CLASS(srcclass) && IS_NOUVEAU_CLASS(destclass))
+    if (IS_NOUVEAU_BM_CLASS(srcclass) && IS_NOUVEAU_BM_CLASS(destclass))
     {
         /* FIXME: add checks for pixel format, etc */
         struct HIDDNouveauBitMapData * srcdata = OOP_INST_DATA(srcclass, msg->src);
@@ -614,6 +601,8 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
         struct CardData * carddata = &(SD(cl)->carddata);
         BOOL ret = FALSE;
         
+        D(bug("[Nouveau] CopyBox 0x%x -> 0x%x\n", msg->src, msg->dest));
+ 
         LOCK_MULTI_BITMAP
         LOCK_BITMAP_BM(srcdata)
         LOCK_BITMAP_BM(destdata)
@@ -639,7 +628,9 @@ VOID METHOD(Nouveau, Hidd_Gfx, CopyBox)
                         msg->width, msg->height, GC_DRMD(msg->gc));
             break;
         case(NV_ARCH_C0):
-            ret = FALSE; /* TODO:NVCO IMPLEMENT */
+            ret = HIDDNouveauNVC0CopySameFormat(carddata, srcdata, destdata, 
+                        msg->srcX, msg->srcY, msg->destX, msg->destY, 
+                        msg->width, msg->height, GC_DRMD(msg->gc));
             break;
         }
 
@@ -678,6 +669,41 @@ VOID METHOD(Nouveau, Root, Get)
     		return;
         }
     }
+    
+    if (IS_GFXNOUVEAU_ATTR(msg->attrID, idx))
+    {
+        switch(idx)
+        {
+            case(aoHidd_Gfx_Nouveau_VRAMSize):
+            {
+                UQUAD value;
+                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_SIZE, &value);
+                *msg->storage = (IPTR)value;
+                return;
+            }
+            case(aoHidd_Gfx_Nouveau_GARTSize):
+            {
+                UQUAD value;
+                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_SIZE, &value);
+                *msg->storage = (IPTR)value;
+                return;
+            }
+            case(aoHidd_Gfx_Nouveau_VRAMFree):
+            {
+                UQUAD value;
+                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_VRAM_FREE, &value);
+                *msg->storage = (IPTR)value;
+                return;
+            }
+            case(aoHidd_Gfx_Nouveau_GARTFree):
+            {
+                UQUAD value;
+                nouveau_device_get_param(SD(cl)->carddata.dev, NOUVEAU_GETPARAM_GART_FREE, &value);
+                *msg->storage = (IPTR)value;
+                return;
+            }
+        }
+    }
 
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -691,7 +717,7 @@ ULONG METHOD(Nouveau, Hidd_Gfx, ShowViewPorts)
         data : msg->Data
     };
     
-    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", msg->Data->Bitmap));
+    D(bug("[Nouveau] ShowViewPorts enter TopLevelBM %x\n", (msg->Data ? (msg->Data->Bitmap) : NULL)));
 
     OOP_DoMethod(gfxdata->compositing, (OOP_Msg)&bscmsg);
 

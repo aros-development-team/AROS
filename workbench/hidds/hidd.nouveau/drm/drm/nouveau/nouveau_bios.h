@@ -58,6 +58,8 @@ struct dcb_i2c_entry {
 enum dcb_gpio_tag {
 	DCB_GPIO_TVDAC0 = 0xc,
 	DCB_GPIO_TVDAC1 = 0x2d,
+	DCB_GPIO_PWM_FAN = 0x9,
+	DCB_GPIO_FAN_SENSE = 0x3d,
 };
 
 struct dcb_gpio_entry {
@@ -82,6 +84,7 @@ enum dcb_connector_type {
 	DCB_CONNECTOR_DVI_I = 0x30,
 	DCB_CONNECTOR_DVI_D = 0x31,
 	DCB_CONNECTOR_LVDS = 0x40,
+	DCB_CONNECTOR_LVDS_SPWG = 0x41,
 	DCB_CONNECTOR_DP = 0x46,
 	DCB_CONNECTOR_eDP = 0x47,
 	DCB_CONNECTOR_HDMI_0 = 0x60,
@@ -288,8 +291,8 @@ struct nvbios {
 
 	struct {
 		struct dcb_entry *output;
+		int crtc;
 		uint16_t script_table_ptr;
-		uint16_t dp_table_ptr;
 	} display;
 
 	struct {

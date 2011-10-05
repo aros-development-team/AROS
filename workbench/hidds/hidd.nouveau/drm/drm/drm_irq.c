@@ -82,23 +82,13 @@ int drm_irq_by_busid(struct drm_device *dev, void *data,
 {
 	struct drm_irq_busid *p = data;
 
-	if (drm_core_check_feature(dev, DRIVER_USE_PLATFORM_DEVICE))
+	if (!dev->driver->bus->irq_by_busid)
 		return -EINVAL;
 
 	if (!drm_core_check_feature(dev, DRIVER_HAVE_IRQ))
 		return -EINVAL;
 
-	if ((p->busnum >> 8) != drm_get_pci_domain(dev) ||
-	    (p->busnum & 0xff) != dev->pdev->bus->number ||
-	    p->devnum != PCI_SLOT(dev->pdev->devfn) || p->funcnum != PCI_FUNC(dev->pdev->devfn))
-		return -EINVAL;
-
-	p->irq = dev->pdev->irq;
-
-	DRM_DEBUG("%d:%d:%d => IRQ %d\n", p->busnum, p->devnum, p->funcnum,
-		  p->irq);
-
-	return 0;
+	return dev->driver->bus->irq_by_busid(dev, p);
 }
 
 /*
@@ -309,11 +299,14 @@ static void drm_irq_vgaarb_nokms(void *cookie, bool state)
 	if (!dev->irq_enabled)
 		return;
 
-	if (state)
-		dev->driver->irq_uninstall(dev);
-	else {
-		dev->driver->irq_preinstall(dev);
-		dev->driver->irq_postinstall(dev);
+	if (state) {
+		if (dev->driver->irq_uninstall)
+			dev->driver->irq_uninstall(dev);
+	} else {
+		if (dev->driver->irq_preinstall)
+			dev->driver->irq_preinstall(dev);
+		if (dev->driver->irq_postinstall)
+			dev->driver->irq_postinstall(dev);
 	}
 }
 #endif
@@ -358,7 +351,8 @@ int drm_irq_install(struct drm_device *dev)
 	DRM_DEBUG("irq=%d\n", drm_dev_to_irq(dev));
 
 	/* Before installing handler */
-	dev->driver->irq_preinstall(dev);
+	if (dev->driver->irq_preinstall)
+		dev->driver->irq_preinstall(dev);
 
 	/* Install handler */
 	if (drm_core_check_feature(dev, DRIVER_IRQ_SHARED))
@@ -383,18 +377,22 @@ int drm_irq_install(struct drm_device *dev)
 		vga_client_register(dev->pdev, (void *)dev, drm_irq_vgaarb_nokms, NULL);
 
 	/* After installing handler */
-	ret = dev->driver->irq_postinstall(dev);
+	if (dev->driver->irq_postinstall)
+		ret = dev->driver->irq_postinstall(dev);
+
 	if (ret < 0) {
 		mutex_lock(&dev->struct_mutex);
 		dev->irq_enabled = 0;
 		mutex_unlock(&dev->struct_mutex);
+		if (!drm_core_check_feature(dev, DRIVER_MODESET))
+			vga_client_register(dev->pdev, NULL, NULL, NULL);
+		free_irq(drm_dev_to_irq(dev), dev);
 	}
 
 	return ret;
 }
 EXPORT_SYMBOL(drm_irq_install);
 #else
-#if !defined(HOSTED_BUILD)
 static void interrupt_handler(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
 {
     struct drm_device *dev = (struct drm_device*)irq->h_Data;
@@ -403,13 +401,9 @@ static void interrupt_handler(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
     if (dev->driver->irq_handler)
         dev->driver->irq_handler(dev);
 }
-#endif
 
 int drm_irq_install(struct drm_device *dev)
 {
-#if defined(HOSTED_BUILD)
-    return 0;
-#else    
     struct OOP_Object *o = NULL;
     IPTR INTLine = 0;
     int retval = -EINVAL;
@@ -424,7 +418,7 @@ int drm_irq_install(struct drm_device *dev)
     if (dev->driver->irq_preinstall)
         dev->driver->irq_preinstall(dev);
 
-    dev->IntHandler = (HIDDT_IRQ_Handler *)AllocVec(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC | MEMF_CLEAR);
+    dev->IntHandler = (HIDDT_IRQ_Handler *)HIDDNouveauAlloc(sizeof(HIDDT_IRQ_Handler));
     
     if (dev->IntHandler)
     {
@@ -433,11 +427,11 @@ int drm_irq_install(struct drm_device *dev)
         dev->IntHandler->h_Code = interrupt_handler;
         dev->IntHandler->h_Data = dev;
 
-        OOP_GetAttr(dev->pdev, aHidd_PCIDevice_INTLine, &INTLine);
+        OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
         DRM_DEBUG("INTLine: %d\n", INTLine);
-        
+
         o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-        
+
         if (o)
         {
             struct pHidd_IRQ_AddHandler __msg__ = {
@@ -473,7 +467,6 @@ int drm_irq_install(struct drm_device *dev)
     }
     
     return retval;
-#endif    
 }
 #endif
 
@@ -501,13 +494,16 @@ int drm_irq_uninstall(struct drm_device *dev)
 	/*
 	 * Wake up any waiters so they don't hang.
 	 */
-	spin_lock_irqsave(&dev->vbl_lock, irqflags);
-	for (i = 0; i < dev->num_crtcs; i++) {
-		DRM_WAKEUP(&dev->vbl_queue[i]);
-		dev->vblank_enabled[i] = 0;
-		dev->last_vblank[i] = dev->driver->get_vblank_counter(dev, i);
+	if (dev->num_crtcs) {
+		spin_lock_irqsave(&dev->vbl_lock, irqflags);
+		for (i = 0; i < dev->num_crtcs; i++) {
+			DRM_WAKEUP(&dev->vbl_queue[i]);
+			dev->vblank_enabled[i] = 0;
+			dev->last_vblank[i] =
+				dev->driver->get_vblank_counter(dev, i);
+		}
+		spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 	}
-	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 
 	if (!irq_enabled)
 		return -EINVAL;
@@ -517,7 +513,8 @@ int drm_irq_uninstall(struct drm_device *dev)
 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
 		vga_client_register(dev->pdev, NULL, NULL, NULL);
 
-	dev->driver->irq_uninstall(dev);
+	if (dev->driver->irq_uninstall)
+		dev->driver->irq_uninstall(dev);
 
 	free_irq(drm_dev_to_irq(dev), dev);
 
@@ -527,9 +524,6 @@ EXPORT_SYMBOL(drm_irq_uninstall);
 #else
 int drm_irq_uninstall(struct drm_device *dev)
 {
-#if defined(HOSTED_BUILD)
-    return 0;
-#else      
     int irq_enabled;
     struct OOP_Object *o = NULL;
     int retval = -EINVAL;
@@ -546,7 +540,7 @@ int drm_irq_uninstall(struct drm_device *dev)
         dev->driver->irq_uninstall(dev);
 
     o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    
+
     if (o)
     {
         struct pHidd_IRQ_RemHandler __msg__ = {
@@ -556,7 +550,7 @@ int drm_irq_uninstall(struct drm_device *dev)
 
         if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
         {
-            FreeVec(dev->IntHandler);
+            HIDDNouveauFree(dev->IntHandler);
             dev->IntHandler = NULL;
             retval = 0;
         }
@@ -565,7 +559,6 @@ int drm_irq_uninstall(struct drm_device *dev)
     }
 
     return retval;
-#endif
 }
 #endif
 
@@ -833,10 +826,11 @@ int drm_calc_vbltimestamp_from_scanoutpos(struct drm_device *dev, int crtc,
 	 */
 	*vblank_time = ns_to_timeval(timeval_to_ns(&raw_time) - delta_ns);
 
-	DRM_DEBUG("crtc %d : v %d p(%d,%d)@ %d.%d -> %d.%d [e %d us, %d rep]\n",
-		  crtc, (int) vbl_status, hpos, vpos, raw_time.tv_sec,
-		  raw_time.tv_usec, vblank_time->tv_sec, vblank_time->tv_usec,
-		  (int) duration_ns/1000, i);
+	DRM_DEBUG("crtc %d : v %d p(%d,%d)@ %ld.%ld -> %ld.%ld [e %d us, %d rep]\n",
+		  crtc, (int)vbl_status, hpos, vpos,
+		  (long)raw_time.tv_sec, (long)raw_time.tv_usec,
+		  (long)vblank_time->tv_sec, (long)vblank_time->tv_usec,
+		  (int)duration_ns/1000, i);
 
 	vbl_status = DRM_VBLANKTIME_SCANOUTPOS_METHOD;
 	if (invbl)
@@ -1081,11 +1075,34 @@ EXPORT_SYMBOL(drm_vblank_put);
 
 void drm_vblank_off(struct drm_device *dev, int crtc)
 {
+	struct drm_pending_vblank_event *e, *t;
+	struct timeval now;
 	unsigned long irqflags;
+	unsigned int seq;
 
 	spin_lock_irqsave(&dev->vbl_lock, irqflags);
 	vblank_disable_and_save(dev, crtc);
 	DRM_WAKEUP(&dev->vbl_queue[crtc]);
+
+	/* Send any queued vblank events, lest the natives grow disquiet */
+	seq = drm_vblank_count_and_time(dev, crtc, &now);
+	list_for_each_entry_safe(e, t, &dev->vblank_event_list, base.link) {
+		if (e->pipe != crtc)
+			continue;
+		DRM_DEBUG("Sending premature vblank event on disable: \
+			  wanted %d, current %d\n",
+			  e->event.sequence, seq);
+
+		e->event.sequence = seq;
+		e->event.tv_sec = now.tv_sec;
+		e->event.tv_usec = now.tv_usec;
+		drm_vblank_put(dev, e->pipe);
+		list_move_tail(&e->base.link, &e->base.file_priv->event_list);
+		wake_up_interruptible(&e->base.file_priv->event_wait);
+		trace_drm_vblank_event_delivered(e->base.pid, e->pipe,
+						 e->event.sequence);
+	}
+
 	spin_unlock_irqrestore(&dev->vbl_lock, irqflags);
 }
 EXPORT_SYMBOL(drm_vblank_off);
@@ -1274,7 +1291,7 @@ int drm_wait_vblank(struct drm_device *dev, void *data,
 {
 	union drm_wait_vblank *vblwait = data;
 	int ret = 0;
-	unsigned int flags, seq, crtc;
+	unsigned int flags, seq, crtc, high_crtc;
 
 	if ((!drm_dev_to_irq(dev)) || (!dev->irq_enabled))
 		return -EINVAL;
@@ -1283,16 +1300,21 @@ int drm_wait_vblank(struct drm_device *dev, void *data,
 		return -EINVAL;
 
 	if (vblwait->request.type &
-	    ~(_DRM_VBLANK_TYPES_MASK | _DRM_VBLANK_FLAGS_MASK)) {
+	    ~(_DRM_VBLANK_TYPES_MASK | _DRM_VBLANK_FLAGS_MASK |
+	      _DRM_VBLANK_HIGH_CRTC_MASK)) {
 		DRM_ERROR("Unsupported type value 0x%x, supported mask 0x%x\n",
 			  vblwait->request.type,
-			  (_DRM_VBLANK_TYPES_MASK | _DRM_VBLANK_FLAGS_MASK));
+			  (_DRM_VBLANK_TYPES_MASK | _DRM_VBLANK_FLAGS_MASK |
+			   _DRM_VBLANK_HIGH_CRTC_MASK));
 		return -EINVAL;
 	}
 
 	flags = vblwait->request.type & _DRM_VBLANK_FLAGS_MASK;
-	crtc = flags & _DRM_VBLANK_SECONDARY ? 1 : 0;
-
+	high_crtc = (vblwait->request.type & _DRM_VBLANK_HIGH_CRTC_MASK);
+	if (high_crtc)
+		crtc = high_crtc >> _DRM_VBLANK_HIGH_CRTC_SHIFT;
+	else
+		crtc = flags & _DRM_VBLANK_SECONDARY ? 1 : 0;
 	if (crtc >= dev->num_crtcs)
 		return -EINVAL;
 

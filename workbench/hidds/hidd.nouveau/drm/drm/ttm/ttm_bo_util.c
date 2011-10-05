@@ -82,15 +82,9 @@ int ttm_mem_io_lock(struct ttm_mem_type_manager *man, bool interruptible)
 	if (likely(man->io_reserve_fastpath))
 		return 0;
 
-	if (interruptible)
 #if !defined(__AROS__)
+	if (interruptible)
 		return mutex_lock_interruptible(&man->io_reserve_mutex);
-#else
-    {
-        IMPLEMENT("Calling mutex_lock_interruptible\n");
-        mutex_lock(&man->io_reserve_mutex);
-        return 0;
-    }
 #endif
 
 	mutex_lock(&man->io_reserve_mutex);

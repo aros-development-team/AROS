@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,6 +35,7 @@
 #if !defined(DRMP_H)
 #define DRMP_H
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "drm.h"
@@ -56,6 +57,11 @@
 #define DRM_INFO(fmt, ...)  bug("[" DRM_NAME "(INFO)] " fmt, ##__VA_ARGS__)
 #define DRM_DEBUG_DRIVER    DRM_DEBUG
 
+#define DRM_UT_CORE     0x01
+#define DRM_UT_DRIVER   0x02
+#define DRM_UT_KMS      0x04
+
+extern unsigned int drm_debug;
 
 /*
  * DRM_READMEMORYBARRIER() prevents reordering of reads.
@@ -239,6 +245,8 @@ struct drm_driver
     int         (*gem_init_object) (struct drm_gem_object *obj);
     void        (*gem_free_object) (struct drm_gem_object *obj);
     void        (*gem_free_object_unlocked) (struct drm_gem_object *obj);
+    int         (*gem_open_object) (struct drm_gem_object *, struct drm_file *);
+    void        (*gem_close_object) (struct drm_gem_object *, struct drm_file *);
 
     int                     version_patchlevel;
     unsigned int            driver_features;
@@ -262,6 +270,8 @@ struct drm_device
     struct address_space *dev_mapping;
     struct drm_mode_config mode_config;
     
+    struct pci_dev * pdev;
+    
     /* GEM information */
     spinlock_t object_name_lock;
     struct idr object_name_idr;
@@ -269,7 +279,6 @@ struct drm_device
     uint32_t flush_domains;         /* domains pending flush */
 
     /* AROS specific fields */
-    OOP_Object              *pdev;
     HIDDT_IRQ_Handler       *IntHandler;
 };
 
@@ -357,23 +366,8 @@ static __inline__ int drm_device_is_pcie(struct drm_device *dev)
     return dev->driver->IsPCIE;
 }
 
-static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
-{
-    return AllocVec(nmemb * size, MEMF_ANY | MEMF_CLEAR);
-}
-
-static __inline__ void drm_free_large(void *ptr)
-{
-    FreeVec(ptr);
-}
-
 /* drm_bufs.c */
 int drm_order(unsigned long size);
-resource_size_t drm_get_resource_len(struct drm_device *dev,
-                        unsigned int resource);
-resource_size_t drm_get_resource_start(struct drm_device *dev,
-                        unsigned int resource);
- 
 
 /* drm_drv.c */
 void drm_exit(struct drm_driver *driver);
@@ -391,11 +385,6 @@ int drm_vblank_get(struct drm_device *dev, int crtc);
 void drm_vblank_put(struct drm_device *dev, int crtc);
 void drm_handle_vblank(struct drm_device *dev, int crtc);
 u32 drm_vblank_count(struct drm_device *dev, int crtc);
-
-/* drm_pci.c */
-drm_dma_handle_t *drm_pci_alloc(struct drm_device *dev, size_t size,
-				       size_t align, dma_addr_t maxaddr);
-void drm_pci_free(struct drm_device * dev, drm_dma_handle_t * dmah);
 
 /* drm_memory.c */
 void drm_core_ioremap(struct drm_local_map *map, struct drm_device *dev);
@@ -435,6 +424,7 @@ struct drm_gem_object *drm_gem_object_lookup(struct drm_device *dev,
                          struct drm_file *filp,
                          u32 handle);
 
+int drm_gem_handle_delete(struct drm_file *filp, u32 handle);
                          
 static inline void
 drm_gem_object_reference(struct drm_gem_object *obj)
@@ -538,6 +528,11 @@ static inline int mtrr_add(unsigned long base, unsigned long size,
                     unsigned int type, char increment)
 {
     return -ENODEV;
+}
+
+static inline int drm_pci_device_is_agp(struct drm_device *dev)
+{
+    return (int)dev->driver->IsAGP;
 }
 
 #endif

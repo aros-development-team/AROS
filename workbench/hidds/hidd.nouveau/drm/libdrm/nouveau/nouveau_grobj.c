@@ -112,6 +112,7 @@ nouveau_grobj_free(struct nouveau_grobj **grobj)
 void
 nouveau_grobj_autobind(struct nouveau_grobj *grobj)
 {
+	struct nouveau_channel *chan = grobj->channel;
 	struct nouveau_subchannel *subc = NULL;
 	int i;
 
@@ -134,7 +135,13 @@ nouveau_grobj_autobind(struct nouveau_grobj *grobj)
 	subc->gr->bound = NOUVEAU_GROBJ_BOUND;
 	subc->gr->subc  = subc - &grobj->channel->subc[0];
 
-	BEGIN_RING(grobj->channel, grobj, 0x0000, 1);
-	OUT_RING  (grobj->channel, grobj->handle);
+	WAIT_RING(chan, 2);
+	if (chan->device->chipset < 0xc0) {
+		OUT_RING (chan, (1 << 18) | (grobj->subc << 13));
+		OUT_RING (chan, grobj->handle);
+	} else {
+		OUT_RING (chan, (2 << 28) | (1 << 16) | (grobj->subc << 13));
+		OUT_RING (chan, grobj->grclass);
+	}
 }
 

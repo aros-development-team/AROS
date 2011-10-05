@@ -14,11 +14,35 @@
 #include "nouveau/nouveau_channel.h"
 #include "nouveau/nouveau_notifier.h"
 #include "nouveau/nouveau_grobj.h"
-#include "nouveau/nouveau_pushbuf.h"
 
 #include LC_LIBDEFS_FILE
 
 #define CLID_Hidd_Gfx_Nouveau           "hidd.gfx.nouveau"
+#define IID_Hidd_Gfx_Nouveau            "hidd.gfx.nouveau"
+
+#define HiddGfxNouveauAttrBase          __IHidd_Gfx_Nouveau
+
+#ifndef __OOP_NOATTRBASES__
+extern OOP_AttrBase HiddGfxNouveauAttrBase;
+#endif
+
+enum
+{
+    aoHidd_Gfx_Nouveau_VRAMSize,        /* [G..] The amount of total VRAM in bytes */
+    aoHidd_Gfx_Nouveau_GARTSize,        /* [G..] The amount of total GART in bytes */
+    aoHidd_Gfx_Nouveau_VRAMFree,        /* [G..] The amount of free VRAM in bytes */
+    aoHidd_Gfx_Nouveau_GARTFree,        /* [G..] The amount of free GART in bytes */
+    
+    num_Hidd_Gfx_Nouveau_Attrs
+};
+
+#define aHidd_Gfx_Nouveau_VRAMSize      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_VRAMSize)
+#define aHidd_Gfx_Nouveau_GARTSize      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_GARTSize)
+#define aHidd_Gfx_Nouveau_VRAMFree      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_VRAMFree)
+#define aHidd_Gfx_Nouveau_GARTFree      (HiddGfxNouveauAttrBase + aoHidd_Gfx_Nouveau_GARTFree)
+
+#define IS_GFXNOUVEAU_ATTR(attr, idx) \
+    (((idx) = (attr) - HiddGfxNouveauAttrBase) < num_Hidd_Gfx_Nouveau_Attrs)
 
 struct HIDDNouveauData
 {
@@ -143,6 +167,7 @@ struct staticdata
     
     OOP_AttrBase    pixFmtAttrBase;
     OOP_AttrBase    gfxAttrBase;
+    OOP_AttrBase    gfxNouveauAttrBase;
     OOP_AttrBase    syncAttrBase;
     OOP_AttrBase    bitMapAttrBase;
     OOP_AttrBase    planarAttrBase;
@@ -204,6 +229,8 @@ LIBBASETYPE
 #define MAP_BUFFER                  { if (!bmdata->bo->map) nouveau_bo_map(bmdata->bo, NOUVEAU_BO_RDWR); }
 #define MAP_BUFFER_BM(bmdata)       { if (!(bmdata)->bo->map) nouveau_bo_map((bmdata)->bo, NOUVEAU_BO_RDWR); }
 
+#define IS_NOUVEAU_BM_CLASS(x)      ((x) == SD(cl)->bmclass)
+
 #define writel(val, addr)           (*(volatile ULONG*)(addr) = (val))
 #define readl(addr)                 (*(volatile ULONG*)(addr))
 #define writew(val, addr)           (*(volatile UWORD*)(addr) = (val))
@@ -242,48 +269,66 @@ enum DMAObjects
 #define NV_ARCH_50  0x50
 #define NV_ARCH_C0  0xC0
 
+#define BLENDOP_SOLID           1
+#define BLENDOP_ALPHA_PREMULT   3
+#define BLENDOP_ALPHA           13
+
 /* nv_accel_common.c */
 BOOL HIDDNouveauAccelCommonInit(struct CardData * carddata);
 VOID HIDDNouveauAccelFree(struct CardData * carddata);
 
 BOOL NVAccelGetCtxSurf2DFormatFromPixmap(struct HIDDNouveauBitMapData * bmdata, LONG *fmt_ret);
 
-VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, ULONG clr0, ULONG clr1,
-		  ULONG pat0, ULONG pat1);
+/* nv04_exa.c */
+VOID HIDDNouveauNV04SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+		  LONG pat0, LONG pat1);
+BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
 BOOL HIDDNouveauNV04CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode);
-BOOL HIDDNouveauNV04FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
-    ULONG maxY, ULONG drawmode, ULONG color);
 
-#define BLENDOP_SOLID           1
-#define BLENDOP_ALPHA_PREMULT   3
-#define BLENDOP_ALPHA           13
-
-BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
-    ULONG blendop);
-BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
-    ULONG blendop);
+/* nv10_exa.c */
 BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop);
 
+/* nv30_exa.c */
+BOOL HIDDNouveauNV303DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG blendop);
+
+/* nv40_exa.c */
+BOOL HIDDNouveauNV403DCopyBox(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG blendop);
+
+/* nv50_exa.c */
 VOID HIDDNouveauNV50SetPattern(struct CardData * carddata, LONG col0, 
     LONG col1, LONG pat0, LONG pat1);
+BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
 BOOL HIDDNouveauNV50CopySameFormat(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG drawmode);
-BOOL HIDDNouveauNV50FillSolidRect(struct CardData * carddata,
-    struct HIDDNouveauBitMapData * bmdata, ULONG minX, ULONG minY, ULONG maxX,
-    ULONG maxY, ULONG drawmode, ULONG color);
+
+/* nvc0_exa.c */
+VOID HIDDNouveauNVC0SetPattern(struct CardData * carddata, LONG clr0, LONG clr1,
+		  LONG pat0, LONG pat1);
+BOOL HIDDNouveauNVC0FillSolidRect(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * bmdata, LONG minX, LONG minY, LONG maxX,
+    LONG maxY, ULONG drawmode, ULONG color);
+BOOL HIDDNouveauNVC0CopySameFormat(struct CardData * carddata,
+    struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
+    ULONG drawmode);
 
 /* nouveau_accel.c */
 BOOL HiddNouveauWriteFromRAM(
@@ -298,31 +343,33 @@ BOOL HiddNouveauReadIntoRAM(
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauAccelARGBUpload3D(
     UBYTE * srcpixels, ULONG srcpitch,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauAccelAPENUpload3D(
     UBYTE * srcalpha, BOOL srcinvertalpha, ULONG srcpitch, ULONG srcpenrgb,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
 VOID HIDDNouveauBitMapPutAlphaImage32(struct HIDDNouveauBitMapData * bmdata,
-    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
 VOID HIDDNouveauBitMapPutAlphaImage16(struct HIDDNouveauBitMapData * bmdata,
-    APTR srcbuff, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+    APTR srcbuff, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
 VOID HIDDNouveauBitMapPutAlphaTemplate32(struct HIDDNouveauBitMapData * bmdata,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
-    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
 VOID HIDDNouveauBitMapPutAlphaTemplate16(struct HIDDNouveauBitMapData * bmdata,
     OOP_Object * gc, OOP_Object * bm, BOOL invertalpha,
-    UBYTE * srcalpha, ULONG srcpitch, ULONG destX, ULONG destY, ULONG width, ULONG height);
+    UBYTE * srcalpha, ULONG srcpitch, LONG destX, LONG destY, LONG width, LONG height);
+VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
+    OOP_Object * gc, LONG destX1, LONG destY1, LONG destX2, LONG destY2);
 
 /* nouveau_exa.c */
 BOOL HiddNouveauNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
 BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o);
 
 VOID HIDDNouveauShowCursor(OOP_Object * gfx, BOOL visible);
@@ -331,5 +378,9 @@ VOID HIDDNouveauSetOffsets(OOP_Object * bm, LONG newxoffset, LONG newyoffset);
 
 /* Declaration of nouveau initialization function */
 extern int nouveau_init(void);
+
+/* Commom memory allocation */
+APTR HIDDNouveauAlloc(ULONG size);
+VOID HIDDNouveauFree(APTR memory);
 
 #endif /* _NOUVEAU_INTERN_H */

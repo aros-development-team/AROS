@@ -92,11 +92,8 @@ drm_clflush_pages(struct page *pages[], unsigned long num_pages)
 		kunmap_atomic(page_virtual, KM_USER0);
 	}
 #elif defined(__AROS__)
-    /* TODO: Detect if cpu has clflush. Use it if present */
-#if !defined(HOSTED_BUILD)
-    VOID HACK_Wbinvd(); /* Implemented in assembler */
-    Supervisor((ULONG_FUNC)HACK_Wbinvd);
-#endif
+	/* TODO: Detect if cpu has clflush. If yes, use ClearCacheE on each page */
+	CacheClearU();
 #else
 	printk(KERN_ERR "Architecture has no drm_cache.c support\n");
 	WARN_ON_ONCE(1);

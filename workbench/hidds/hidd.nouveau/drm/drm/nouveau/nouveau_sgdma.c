@@ -15,6 +15,7 @@ struct nouveau_sgdma_be {
 
 	dma_addr_t *pages;
 	unsigned nr_pages;
+	bool unmap_pages;
 
 	u64 offset;
 	bool bound;
@@ -22,31 +23,33 @@ struct nouveau_sgdma_be {
 
 static int
 nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
-		       struct page **pages, struct page *dummy_read_page)
+		       struct page **pages, struct page *dummy_read_page,
+		       dma_addr_t *dma_addrs)
 {
 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
+	struct drm_device *dev = nvbe->dev;
+	int i;
 
 	NV_DEBUG(nvbe->dev, "num_pages = %ld\n", num_pages);
 
-	if (nvbe->pages)
-		return -EINVAL;
+	nvbe->pages = dma_addrs;
+	nvbe->nr_pages = num_pages;
+	nvbe->unmap_pages = true;
 
-	nvbe->pages = kmalloc(sizeof(dma_addr_t) * num_pages, GFP_KERNEL);
-	if (!nvbe->pages)
-		return -ENOMEM;
+	/* this code path isn't called and is incorrect anyways */
+	if (0) { /* dma_addrs[0] != DMA_ERROR_CODE) { */
+		nvbe->unmap_pages = false;
+		return 0;
+	}
 
-	nvbe->nr_pages = 0;
-	while (num_pages--) {
-		nvbe->pages[nvbe->nr_pages] =
-			pci_map_page(dev->pdev, pages[nvbe->nr_pages], 0,
-				     PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
-		if (pci_dma_mapping_error(dev->pdev,
-					  nvbe->pages[nvbe->nr_pages])) {
+	for (i = 0; i < num_pages; i++) {
+		nvbe->pages[i] = pci_map_page(dev->pdev, pages[i], 0,
+					      PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+		if (pci_dma_mapping_error(dev->pdev, nvbe->pages[i])) {
+			nvbe->nr_pages = --i;
 			be->func->clear(be);
 			return -EFAULT;
 		}
-
-		nvbe->nr_pages++;
 	}
 
 	return 0;
@@ -56,22 +59,16 @@ static void
 nouveau_sgdma_clear(struct ttm_backend *be)
 {
 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
-	struct drm_device *dev;
+	struct drm_device *dev = nvbe->dev;
 
-	if (nvbe && nvbe->pages) {
-		dev = nvbe->dev;
-		NV_DEBUG(dev, "\n");
+	if (nvbe->bound)
+		be->func->unbind(be);
 
-		if (nvbe->bound)
-			be->func->unbind(be);
-
+	if (nvbe->unmap_pages) {
 		while (nvbe->nr_pages--) {
 			pci_unmap_page(dev->pdev, nvbe->pages[nvbe->nr_pages],
 				       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
 		}
-		kfree(nvbe->pages);
-		nvbe->pages = NULL;
-		nvbe->nr_pages = 0;
 	}
 }
 
@@ -110,7 +107,7 @@ nv04_sgdma_bind(struct ttm_backend *be, struct ttm_mem_reg *mem)
 
 		for (j = 0; j < PAGE_SIZE / NV_CTXDMA_PAGE_SIZE; j++, pte++) {
 			nv_wo32(gpuobj, (pte * 4) + 0, offset_l | 3);
-			dma_offset += NV_CTXDMA_PAGE_SIZE;
+			offset_l += NV_CTXDMA_PAGE_SIZE;
 		}
 	}
 
@@ -413,7 +410,7 @@ nouveau_sgdma_init(struct drm_device *dev)
 	u32 aper_size, align;
 	int ret;
 
-	if (dev_priv->card_type >= NV_50 || drm_device_is_pcie(dev))
+	if (dev_priv->card_type >= NV_40 && pci_is_pcie(dev->pdev))
 		aper_size = 512 * 1024 * 1024;
 	else
 		aper_size = 64 * 1024 * 1024;
@@ -446,8 +443,8 @@ nouveau_sgdma_init(struct drm_device *dev)
 		dev_priv->gart_info.type = NOUVEAU_GART_HW;
 		dev_priv->gart_info.func = &nv50_sgdma_backend;
 	} else
-	if (drm_device_is_pcie(dev) &&
-	    dev_priv->chipset != 0x40 && dev_priv->chipset != 0x45) {
+	if (0 && pci_is_pcie(dev->pdev) &&
+	    dev_priv->chipset > 0x40 && dev_priv->chipset != 0x45) {
 		if (nv44_graph_class(dev)) {
 			dev_priv->gart_info.func = &nv44_sgdma_backend;
 			align = 512 * 1024;

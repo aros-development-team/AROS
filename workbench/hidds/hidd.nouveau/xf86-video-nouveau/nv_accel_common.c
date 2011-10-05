@@ -21,16 +21,9 @@
  */
 
 #include "nv_include.h"
-#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
-#else
-
+#if defined(__AROS__)
 #include <aros/debug.h>
-
-/* Some overriding defines for AROS */
-#define NOUVEAU_CREATE_PIXMAP_ZETA      0x10000000
-#define NOUVEAU_CREATE_PIXMAP_TILED     0x20000000
-#define NOUVEAU_CREATE_PIXMAP_SCANOUT   0x40000000
 #endif
 
 #if !defined(__AROS__)
@@ -254,7 +247,7 @@ NVAccelGetCtxSurf2DFormatFromPixmap(PixmapPtr pPix, int *fmt_ret)
 #if !defined(__AROS__)
 	switch (pPix->drawable.bitsPerPixel) {
 #else
-    switch (pPix->bytesperpixel * 8) {
+	switch (pPix->depth) {
 #endif
 	case 32:
 		*fmt_ret = NV04_CONTEXT_SURFACES_2D_FORMAT_A8R8G8B8;
@@ -690,25 +683,19 @@ NVAccelCommonInit(ScrnInfoPtr pScrn)
 	if (pNv->Architecture < NV_ARCH_C0) {
 		INIT_CONTEXT_OBJECT(2D_NV50);
 	} else {
-#if !defined(__AROS__)
 		INIT_CONTEXT_OBJECT(2D_NVC0);
-#endif
 	}
 
 	if (pNv->Architecture < NV_ARCH_C0)
 		INIT_CONTEXT_OBJECT(MemFormat);
-#if !defined(__AROS__)
 	else
 		INIT_CONTEXT_OBJECT(M2MF_NVC0);
-#endif
 
 	/* 3D init */
 	switch (pNv->Architecture) {
-#if !defined(__AROS__)
 	case NV_ARCH_C0:
 		INIT_CONTEXT_OBJECT(3D_NVC0);
 		break;
-#endif
 	case NV_ARCH_50:
 		INIT_CONTEXT_OBJECT(NV50TCL);
 		break;

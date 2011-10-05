@@ -166,7 +166,7 @@ nv_crtc_dpms(struct drm_crtc *crtc, int mode)
 	NV_DEBUG_KMS(dev, "Setting dpms mode %d on CRTC %d\n", mode,
 							nv_crtc->index);
 
-	if (nv_crtc->last_dpms == mode) /* Don't do unnecesary mode changes. */
+	if (nv_crtc->last_dpms == mode) /* Don't do unnecessary mode changes. */
 		return;
 
 	nv_crtc->last_dpms = mode;
@@ -378,7 +378,10 @@ nv_crtc_mode_set_vga(struct drm_crtc *crtc, struct drm_display_mode *mode)
 	 */
 
 	/* framebuffer can be larger than crtc scanout area. */
-	regp->CRTC[NV_CIO_CRE_RPC0_INDEX] = XLATE(fb->pitch / 8, 8, NV_CIO_CRE_RPC0_OFFSET_10_8);
+	regp->CRTC[NV_CIO_CRE_RPC0_INDEX] =
+		XLATE(fb->pitch / 8, 8, NV_CIO_CRE_RPC0_OFFSET_10_8);
+	regp->CRTC[NV_CIO_CRE_42] =
+		XLATE(fb->pitch / 8, 11, NV_CIO_CRE_42_OFFSET_11);
 	regp->CRTC[NV_CIO_CRE_RPC1_INDEX] = mode->crtc_hdisplay < 1280 ?
 					    MASK(NV_CIO_CRE_RPC1_LARGE) : 0x00;
 	regp->CRTC[NV_CIO_CRE_LSR_INDEX] = XLATE(horizBlankEnd, 6, NV_CIO_CRE_LSR_HBE_6) |
@@ -681,7 +684,7 @@ static void nv_crtc_prepare(struct drm_crtc *crtc)
 
 	NVBlankScreen(dev, nv_crtc->index, true);
 
-	/* Some more preperation. */
+	/* Some more preparation. */
 	NVWriteCRTC(dev, nv_crtc->index, NV_PCRTC_CONFIG, NV_PCRTC_CONFIG_START_ADDRESS_NON_VGA);
 	if (dev_priv->card_type == NV_40) {
 		uint32_t reg900 = NVReadRAMDAC(dev, nv_crtc->index, NV_PRAMDAC_900);
@@ -784,10 +787,19 @@ nv04_crtc_do_mode_set_base(struct drm_crtc *crtc,
 	struct drm_device *dev = crtc->dev;
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nv04_crtc_reg *regp = &dev_priv->mode_reg.crtc_reg[nv_crtc->index];
-	struct drm_framebuffer *drm_fb = nv_crtc->base.fb;
-	struct nouveau_framebuffer *fb = nouveau_framebuffer(drm_fb);
+	struct drm_framebuffer *drm_fb;
+	struct nouveau_framebuffer *fb;
 	int arb_burst, arb_lwm;
 	int ret;
+
+	NV_DEBUG_KMS(dev, "index %d\n", nv_crtc->index);
+
+	/* no fb bound */
+	if (!atomic && !crtc->fb) {
+		NV_DEBUG_KMS(dev, "No FB bound\n");
+		return 0;
+	}
+
 
 	/* If atomic, we want to switch to the fb we were passed, so
 	 * now we update pointers to do that.  (We don't pin; just
@@ -796,8 +808,9 @@ nv04_crtc_do_mode_set_base(struct drm_crtc *crtc,
 	if (atomic) {
 		drm_fb = passed_fb;
 		fb = nouveau_framebuffer(passed_fb);
-	}
-	else {
+	} else {
+		drm_fb = crtc->fb;
+		fb = nouveau_framebuffer(crtc->fb);
 		/* If not atomic, we can go ahead and pin, and unpin the
 		 * old fb we were passed.
 		 */
@@ -831,8 +844,11 @@ nv04_crtc_do_mode_set_base(struct drm_crtc *crtc,
 	regp->CRTC[NV_CIO_CR_OFFSET_INDEX] = drm_fb->pitch >> 3;
 	regp->CRTC[NV_CIO_CRE_RPC0_INDEX] =
 		XLATE(drm_fb->pitch >> 3, 8, NV_CIO_CRE_RPC0_OFFSET_10_8);
+	regp->CRTC[NV_CIO_CRE_42] =
+		XLATE(drm_fb->pitch / 8, 11, NV_CIO_CRE_42_OFFSET_11);
 	crtc_wr_cio_state(crtc, regp, NV_CIO_CRE_RPC0_INDEX);
 	crtc_wr_cio_state(crtc, regp, NV_CIO_CR_OFFSET_INDEX);
+	crtc_wr_cio_state(crtc, regp, NV_CIO_CRE_42);
 
 	/* Update the framebuffer location. */
 	regp->fb_start = nv_crtc->fb.offset & ~3;
@@ -952,13 +968,13 @@ nv04_crtc_cursor_set(struct drm_crtc *crtc, struct drm_file *file_priv,
 	struct drm_gem_object *gem;
 	int ret = 0;
 
-	if (width != 64 || height != 64)
-		return -EINVAL;
-
 	if (!buffer_handle) {
 		nv_crtc->cursor.hide(nv_crtc, true);
 		return 0;
 	}
+
+	if (width != 64 || height != 64)
+		return -EINVAL;
 
 	gem = drm_gem_object_lookup(dev, file_priv, buffer_handle);
 	if (!gem)
@@ -1038,7 +1054,7 @@ nv04_crtc_create(struct drm_device *dev, int crtc_num)
 	drm_crtc_helper_add(&nv_crtc->base, &nv04_crtc_helper_funcs);
 	drm_mode_crtc_set_gamma_size(&nv_crtc->base, 256);
 
-	ret = nouveau_bo_new(dev, NULL, 64*64*4, 0x100, TTM_PL_FLAG_VRAM,
+	ret = nouveau_bo_new(dev, 64*64*4, 0x100, TTM_PL_FLAG_VRAM,
 			     0, 0x0000, &nv_crtc->cursor.nvbo);
 	if (!ret) {
 		ret = nouveau_bo_pin(nv_crtc->cursor.nvbo, TTM_PL_FLAG_VRAM);
