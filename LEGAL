@@ -26,7 +26,6 @@ GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
 The following components are distributed under the terms of version 3.0 of the
 GNU Lesser General Public License. Please read the relevant "LEGAL" files that 
 accompanies these components' sources.
-+ [workbench/libs/mesa/src/talloc]
 + [workbench/libs/identify]
 
 
