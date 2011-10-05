@@ -56,23 +56,25 @@ static BOOL checkcard(struct CardResource *CardResource)
 
 	    BeginCardAccess(ch);
 
-	    CopyTuple(ch, NULL, 0, 0); /* debug log all tuples */
-
-	    res = IfAmigaXIP(ch);
-	    if (res) {
-	    	CARDDEBUG(bug("CISTPL_AMIGAXIP found\n"));
-	    } else if (CopyTuple(ch, device, CISTPL_DEVICE, sizeof(device) - 2)) {
-	    	if (DeviceTuple(device, &dtd)) {
-	    	    if (dtd.dtd_DTtype == DTYPE_SRAM || dtd.dtd_DTtype == DTYPE_DRAM) {
-			CARDDEBUG(bug("RAM card found, size %d bytes, speed %d\n", dtd.dtd_DTsize, dtd.dtd_DTspeed));
-			if (!CopyTuple(ch, device, CISTPL_FORMAT, 0) && !CopyTuple(ch, device, CISTPL_GEOMETRY, 0) && dtd.dtd_DTspeed <= 250) {
-			    if (addpcmciaram(CardResource, ch, &dtd)) {
-			    	CardAccessSpeed(ch, dtd.dtd_DTspeed);
-				CARDDEBUG(bug("Mapped as System RAM.\n"));
-			    	sysram = TRUE;
+	    if (!CopyTuple(ch, NULL, 0, 0)) { /* debug log all tuples, check if tuple chain is valid */
+	    	CARDDEBUG(bug("Invalid tuple chain detected\n"));
+	    } else {
+	    	res = IfAmigaXIP(ch);
+	    	if (res) {
+	    	    CARDDEBUG(bug("CISTPL_AMIGAXIP found\n"));
+	    	} else if (CopyTuple(ch, device, CISTPL_DEVICE, sizeof(device) - 2)) {
+	    	    if (DeviceTuple(device, &dtd)) {
+	    	    	if (dtd.dtd_DTtype == DTYPE_SRAM || dtd.dtd_DTtype == DTYPE_DRAM) {
+			    CARDDEBUG(bug("RAM card found, size %d bytes, speed %d\n", dtd.dtd_DTsize, dtd.dtd_DTspeed));
+			    if (!CopyTuple(ch, device, CISTPL_FORMAT, 0) && !CopyTuple(ch, device, CISTPL_GEOMETRY, 0) && dtd.dtd_DTspeed <= 250) {
+			    	if (addpcmciaram(CardResource, ch, &dtd)) {
+			    	    CardAccessSpeed(ch, dtd.dtd_DTspeed);
+				    CARDDEBUG(bug("Mapped as System RAM.\n"));
+			    	    sysram = TRUE;
+			    	}
+			    } else {
+			    	CARDDEBUG(bug("Not usable as System RAM.\n"));
 			    }
-			} else {
-			    CARDDEBUG(bug("Not usable as System RAM.\n"));
 			}
 		    }
 		}
