@@ -181,8 +181,11 @@ AROS_LH4(ULONG, CopyTuple,
     	if (final) {
     	    UBYTE buf[5];
     	    TUPLEDEBUG(bug("Next link %08x\n", nextjump));
-	    if (nextjump == 0xffffffff)
+	    if (nextjump == 0xffffffff) {
+	    	if (buffer == NULL)
+	    	    ret = TRUE;
 	    	break;
+	    }
 	    addr = nextjump;
 	    nextbyte = nextjump < GAYLE_ATTRIBUTE ? 1 : 2;
 	    nextjump = 0xffffffff;
