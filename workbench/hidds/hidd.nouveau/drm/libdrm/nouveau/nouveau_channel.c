@@ -75,20 +75,23 @@ nouveau_channel_alloc(struct nouveau_device *dev, uint32_t fb_ctxdma,
 		nvchan->base.subc[i].gr = &gr->base;
 	}
 
-	ret = nouveau_bo_wrap(dev, nvchan->drm.notifier_handle,
-			      &nvchan->notifier_bo);
-	if (!ret)
-		ret = nouveau_bo_map(nvchan->notifier_bo, NOUVEAU_BO_RDWR);
-	if (ret) {
-		nouveau_channel_free((void *)&nvchan);
-		return ret;
-	}
+	if (dev->chipset < 0xc0) {
+		ret = nouveau_bo_wrap(dev, nvchan->drm.notifier_handle,
+				      &nvchan->notifier_bo);
+		if (!ret)
+			ret = nouveau_bo_map(nvchan->notifier_bo,
+					     NOUVEAU_BO_RDWR);
+		if (ret) {
+			nouveau_channel_free((void *)&nvchan);
+			return ret;
+		}
 
-	ret = nouveau_grobj_alloc(&nvchan->base, 0x00000000, 0x0030,
-				  &nvchan->base.nullobj);
-	if (ret) {
-		nouveau_channel_free((void *)&nvchan);
-		return ret;
+		ret = nouveau_grobj_alloc(&nvchan->base, 0x00000000, 0x0030,
+					  &nvchan->base.nullobj);
+		if (ret) {
+			nouveau_channel_free((void *)&nvchan);
+			return ret;
+		}
 	}
 
 	ret = nouveau_pushbuf_init(&nvchan->base, pushbuf_size);
@@ -119,8 +122,10 @@ nouveau_channel_free(struct nouveau_channel **chan)
 	FIRE_RING(&nvchan->base);
 
 	nouveau_pushbuf_fini(&nvchan->base);
-	nouveau_bo_unmap(nvchan->notifier_bo);
-	nouveau_bo_ref(NULL, &nvchan->notifier_bo);
+	if (nvchan->notifier_bo) {
+		nouveau_bo_unmap(nvchan->notifier_bo);
+		nouveau_bo_ref(NULL, &nvchan->notifier_bo);
+	}
 
 	for (i = 0; i < nvchan->drm.nr_subchan; i++)
 		free(nvchan->base.subc[i].gr);

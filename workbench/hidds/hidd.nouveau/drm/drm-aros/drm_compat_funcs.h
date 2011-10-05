@@ -19,13 +19,13 @@
 #define readw(addr)                     (*(volatile UWORD*)(addr))
 #define writeb(val, addr)               (*(volatile UBYTE*)(addr) = (val))
 #define readb(addr)                     (*(volatile UBYTE*)(addr))
-#define kzalloc(size, flags)            AllocVec(size, MEMF_ANY | MEMF_CLEAR)
-#define kcalloc(count, size, flags)     AllocVec((count) * (size), MEMF_ANY | MEMF_CLEAR);
-#define kmalloc(size, flags)            AllocVec(size, MEMF_ANY)
-#define vmalloc_user(size)              AllocVec(size, MEMF_ANY | MEMF_CLEAR)
-#define vmalloc(size)                   AllocVec(size, MEMF_ANY)
-#define kfree(objp)                     FreeVec(objp)
-#define vfree(objp)                     FreeVec(objp)
+#define kzalloc(size, flags)            HIDDNouveauAlloc(size)
+#define kcalloc(count, size, flags)     HIDDNouveauAlloc((count) * (size))
+#define kmalloc(size, flags)            HIDDNouveauAlloc(size)
+#define vmalloc_user(size)              HIDDNouveauAlloc(size)
+#define vmalloc(size)                   HIDDNouveauAlloc(size)
+#define kfree(objp)                     HIDDNouveauFree(objp)
+#define vfree(objp)                     HIDDNouveauFree(objp)
 #define capable(p)                      TRUE
 #define roundup(x, y)                   ((((x) + ((y) - 1)) / (y)) * (y))
 #define round_up(x, y)                  roundup(x, y)
@@ -59,10 +59,11 @@
 #define get_user(x, p)                  ({u32 ret = 0; x = *(p); ret;})
 #define put_user(x, p)                  ({u32 ret = 0; *(p) = x; ret;})
 #define rounddown(x, y)                 (((x)/(y))*(y))
-#define request_firmware(fw, name, x)   _request_firmware(fw, name)
+#define DIV_ROUND_UP(x, y)              (((x) + (y) - 1) / (y))
 
-#define MODULE_FIRMWARE(x)
 
+APTR HIDDNouveauAlloc(ULONG size);
+VOID HIDDNouveauFree(APTR memory);
 
 void iowrite32(u32 val, void * addr);
 unsigned int ioread32(void * addr);
@@ -120,8 +121,8 @@ static inline IPTR IS_ERR(APTR ptr)
 #define KERN_ERR
 #define KERN_DEBUG
 #define KERN_WARNING
-#define KERN_NOTICE
 #define KERN_INFO
+#define KERN_NOTICE
 #define printk(fmt, ...)                bug(fmt, ##__VA_ARGS__)
 #define IMPLEMENT(fmt, ...)             bug("------IMPLEMENT(%s): " fmt, __func__ , ##__VA_ARGS__)
 #define TRACE(fmt, ...)                 D(bug("[TRACE](%s): " fmt, __func__ , ##__VA_ARGS__))
@@ -137,13 +138,15 @@ void * ioremap(resource_size_t offset, unsigned long size);
 #define ioremap_nocache                 ioremap
 #define ioremap_wc                      ioremap
 void iounmap(void * addr);
-resource_size_t pci_resource_start(void * pdev, unsigned int barnum);
-unsigned long pci_resource_len(void * pdev, unsigned int barnum);
+resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int barnum);
+unsigned long pci_resource_len(struct pci_dev * pdev, unsigned int barnum);
 #define PCI_DEVFN(dev, fun)             dev, fun
 void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun);
-int pci_read_config_word(void *dev, int where, u16 *val);
-int pci_read_config_dword(void *dev, int where, u32 *val);
-int pci_write_config_dword(void *dev, int where, u32 val);
+int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val);
+int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val);
+int pci_write_config_dword(struct pci_dev * pdev, int where, u32 val);
+#define pci_name(pdev)                  ((const char *)pdev->name)
+int pci_is_pcie(struct pci_dev * pdev);
 
 
 
@@ -345,14 +348,14 @@ void agp_flush_chipset(struct agp_bridge_data * bridge);
 #define io_mapping_unmap_atomic(address)
 static inline struct io_mapping * io_mapping_create_wc(resource_size_t base, unsigned long size)
 {
-    struct io_mapping * mapping = AllocVec(sizeof(struct io_mapping), MEMF_PUBLIC | MEMF_CLEAR);
+    struct io_mapping * mapping = HIDDNouveauAlloc(sizeof(struct io_mapping));
     mapping->address = (IPTR)ioremap(base, size);
     return mapping;
 }
 static inline void io_mapping_free(struct io_mapping *mapping)
 {
     iounmap((APTR)mapping->address);
-    FreeVec(mapping);
+    HIDDNouveauFree(mapping);
 }
 
 /* I2C handling */
@@ -376,10 +379,6 @@ unsigned long get_jiffies();
     IMPLEMENT("\n");                            \
     __ret;                                      \
 })
-
-/* Firmware */
-int _request_firmware(const struct firmware ** pfw, char * name);
-void release_firmware(const struct firmware * fw);
 
 /* other */
 #define do_div(n,base) ({ \

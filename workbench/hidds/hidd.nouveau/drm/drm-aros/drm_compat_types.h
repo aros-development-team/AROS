@@ -24,6 +24,7 @@
 #define u16                         UWORD
 #define s16                         WORD
 #define u32                         ULONG
+#define s32                         LONG
 #define u64                         UQUAD
 #define s64                         QUAD
 #define u8                          UBYTE
@@ -74,7 +75,13 @@ struct page
 #define ALIGN(val, align)       (val + align - 1) & (~(align - 1))
 #define BITS_TO_LONGS(x)        ((x / (sizeof(long) * 8)) + 1)
 
-
+/* PCI support */
+struct pci_dev
+{
+    ULONG class;
+    APTR oopdev;
+    TEXT name[16];
+};
 
 /* io_mapping support */
 struct io_mapping

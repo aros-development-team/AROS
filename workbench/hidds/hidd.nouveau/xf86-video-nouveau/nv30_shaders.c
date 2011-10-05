@@ -21,9 +21,7 @@
  */
 
 #include "nv30_shaders.h"
-#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
-#endif
 
 void NV30_UploadFragProg(NVPtr pNv, nv_shader_t *shader, int *hw_offset)
 {

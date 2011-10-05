@@ -40,6 +40,10 @@ int nouveau_agpmode = -1;
 int nouveau_msi = 0;
 /* Force POST */
 int nouveau_force_post = 0;
+/* DRM Debug, Bits: 0x01 | 0x02 | 0x04 */
+unsigned int drm_debug = 0;
+/* Use external firmware */
+int nouveau_ctxfw = 0;
 
 
 extern struct drm_ioctl_desc nouveau_ioctls[];
@@ -56,7 +60,7 @@ static struct drm_driver driver =
     .driver_features = DRIVER_MODESET | DRIVER_GEM | DRIVER_USE_AGP,
     .load = nouveau_load,
     .firstopen = nouveau_firstopen,
-    .open = NULL,
+    .open = nouveau_open,
     .preclose = nouveau_preclose,
     .postclose = NULL,
     .lastclose = nouveau_lastclose,
@@ -69,6 +73,8 @@ static struct drm_driver driver =
     .ioctls = nouveau_ioctls,
     .gem_init_object = nouveau_gem_object_new,
     .gem_free_object = nouveau_gem_object_del,
+    .gem_open_object = nouveau_gem_object_open,
+    .gem_close_object = nouveau_gem_object_close,
 };
 
 void nouveau_exit(void)

@@ -1,6 +1,6 @@
-diff -ur -x .svn drm-2.4.23/nouveau/nouveau_bo.c libdrm/nouveau/nouveau_bo.c
---- drm-2.4.23/nouveau/nouveau_bo.c	2010-12-10 04:10:46.000000000 +0100
-+++ libdrm/nouveau/nouveau_bo.c	2010-12-17 21:56:19.000000000 +0100
+diff -ur drm-2.4.26/nouveau/nouveau_bo.c libdrm/nouveau/nouveau_bo.c
+--- drm-2.4.26/nouveau/nouveau_bo.c	2011-06-04 05:01:50.000000000 +0200
++++ libdrm/nouveau/nouveau_bo.c	2011-09-01 17:11:21.000000000 +0200
 @@ -28,7 +28,9 @@
  #include <errno.h>
  #include <assert.h>
@@ -52,9 +52,9 @@ diff -ur -x .svn drm-2.4.23/nouveau/nouveau_bo.c libdrm/nouveau/nouveau_bo.c
  
  	do {
  		ret = drmCommandWrite(nvdev->fd, DRM_NOUVEAU_GEM_CPU_PREP,
-diff -ur -x .svn drm-2.4.23/nouveau/nouveau_drmif.h libdrm/nouveau/nouveau_drmif.h
---- drm-2.4.23/nouveau/nouveau_drmif.h	2010-12-10 04:10:46.000000000 +0100
-+++ libdrm/nouveau/nouveau_drmif.h	2010-12-17 21:56:19.000000000 +0100
+diff -ur drm-2.4.26/nouveau/nouveau_drmif.h libdrm/nouveau/nouveau_drmif.h
+--- drm-2.4.26/nouveau/nouveau_drmif.h	2011-06-04 05:01:50.000000000 +0200
++++ libdrm/nouveau/nouveau_drmif.h	2011-09-01 17:11:21.000000000 +0200
 @@ -24,7 +24,7 @@
  #define __NOUVEAU_DRMIF_H__
  
@@ -64,9 +64,9 @@ diff -ur -x .svn drm-2.4.23/nouveau/nouveau_drmif.h libdrm/nouveau/nouveau_drmif
  
  #include "nouveau_device.h"
  
-diff -ur -x .svn drm-2.4.23/nouveau/nouveau_private.h libdrm/nouveau/nouveau_private.h
---- drm-2.4.23/nouveau/nouveau_private.h	2010-12-10 04:10:46.000000000 +0100
-+++ libdrm/nouveau/nouveau_private.h	2010-12-17 21:56:19.000000000 +0100
+diff -ur drm-2.4.26/nouveau/nouveau_private.h libdrm/nouveau/nouveau_private.h
+--- drm-2.4.26/nouveau/nouveau_private.h	2011-06-04 05:01:50.000000000 +0200
++++ libdrm/nouveau/nouveau_private.h	2011-09-01 17:11:21.000000000 +0200
 @@ -24,7 +24,7 @@
  #define __NOUVEAU_PRIVATE_H__
  

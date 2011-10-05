@@ -40,7 +40,8 @@ void drm_exit(struct drm_driver * driver)
     
     drm_aros_pci_shutdown(driver);
     
-    FreeVec(driver->dev);
+    HIDDNouveauFree(driver->dev->pdev);
+    HIDDNouveauFree(driver->dev);
     driver->dev = NULL;
     current_drm_driver = NULL;
 }
@@ -48,7 +49,7 @@ void drm_exit(struct drm_driver * driver)
 static int drm_init_device(struct drm_driver * driver)
 {
     /* If this function is called, the card was already found */
-    driver->dev = AllocVec(sizeof(struct drm_device), MEMF_ANY | MEMF_CLEAR);
+    driver->dev = HIDDNouveauAlloc(sizeof(struct drm_device));
     struct drm_device * dev = driver->dev;
     
     /* Init fields */
@@ -58,7 +59,8 @@ static int drm_init_device(struct drm_driver * driver)
     dev->driver = driver;
     dev->pci_vendor = driver->VendorID;
     dev->pci_device = driver->ProductID;
-    dev->pdev = driver->pciDevice;
+    dev->pdev = HIDDNouveauAlloc(sizeof(struct pci_dev));
+    dev->pdev->oopdev = driver->pciDevice;
     int ret;
 
     if (drm_core_has_AGP(dev)) {
@@ -103,20 +105,9 @@ int drm_init(struct drm_driver * driver)
     if (drm_aros_pci_init(driver))
         return -1;
 
-#if !defined(HOSTED_BUILD)
     if (drm_aros_pci_find_supported_video_card(driver))
         return -1;
-#else
-#if HOSTED_BUILD_BUS == HOSTED_BUILD_BUS_PCI
-    driver->IsAGP = FALSE;
-#endif
-#if HOSTED_BUILD_BUS == HOSTED_BUILD_BUS_AGP
-    driver->IsAGP = TRUE;
-#endif
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_NVIDIA
-    if (driver->VendorID != 0x10de) return -1;
-#endif
-#endif
+
     if (drm_init_device(driver))
     {
         drm_exit(driver);

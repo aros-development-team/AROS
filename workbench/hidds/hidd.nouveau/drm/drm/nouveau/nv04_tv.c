@@ -60,6 +60,7 @@ int nv04_tv_identify(struct drm_device *dev, int i2c_index)
 				    NULL, i2c_index);
 }
 
+
 #define PLLSEL_TV_CRTC1_MASK				\
 	(NV_PRAMDAC_PLL_COEFF_SELECT_TV_VSCLK1		\
 	 | NV_PRAMDAC_PLL_COEFF_SELECT_TV_PCLK1)
@@ -265,4 +266,3 @@ fail_free:
     return 0;
 #endif
 }
-

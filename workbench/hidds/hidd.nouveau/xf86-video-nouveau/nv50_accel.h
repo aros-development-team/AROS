@@ -1,9 +1,7 @@
 #ifndef __NV50_ACCEL_H__
 #define __NV50_ACCEL_H__
 
-#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
-#endif
 
 /* "Tesla scratch buffer" offsets */
 #define PVP_OFFSET  0x00000000 /* Vertex program */

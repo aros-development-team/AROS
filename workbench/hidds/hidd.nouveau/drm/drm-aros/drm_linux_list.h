@@ -56,8 +56,16 @@ list_is_singular(struct list_head *head) {
     return !list_empty(head) && ((head)->next == (head->prev));
 }
 
-#define list_add(entry, head) list_add_tail(entry, head)
+/* Insert just after head (at start of list) */
+static __inline__ void
+list_add(struct list_head *entry, struct list_head *head) {
+    (head)->next->prev = entry;
+    (entry)->next = (head)->next;
+    (head)->next = entry;
+    (entry)->prev = head;
+}
 
+/* Insert just before head (at end of list) */
 static __inline__ void
 list_add_tail(struct list_head *entry, struct list_head *head) {
 	(entry)->prev = (head)->prev;
@@ -71,6 +79,15 @@ list_del(struct list_head *entry) {
 	(entry)->next->prev = (entry)->prev;
 	(entry)->prev->next = (entry)->next;
 }
+
+static __inline__ void
+list_replace(struct list_head *old, struct list_head *head) {
+	(head)->next = (old)->next;
+	(head)->next->prev = head;
+	(head)->prev = (old)->prev;
+	(head)->prev->next = head;
+}
+
 
 #define list_for_each(entry, head)				\
     for (entry = (head)->next; entry != head; entry = (entry)->next)
@@ -109,6 +126,12 @@ static inline void list_move_tail(struct list_head *list,
 {
 	list_del(list);
 	list_add_tail(list, head);
+}
+
+static inline void list_move(struct list_head *list, struct list_head *head)
+{
+	list_del(list);
+	list_add(list, head);
 }
 
 static inline void list_sort(void * priv, struct list_head *head,

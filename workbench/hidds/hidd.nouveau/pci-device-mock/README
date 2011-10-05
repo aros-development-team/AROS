@@ -1,0 +1,32 @@
+pcimock.hidd
+
+This module mocks a PCI subsystem and allows mocking PCI devices. The goal is
+to "run" a hardware driver under AROS-hosted environment with as little changes
+as possible.
+
+"Running" of course does not meak "making it work", but "making code paths
+execute". This king of running has a great capability to bring to surface most
+critical problems like segmentation fauls and missing/not correclty ported or
+written functionality.
+
+The mock hardware is capable of proving all PCI config data as well as IO/MMIO
+regions. Required memory address in those regions can be pre-filled with needed
+data.
+
+The mock hardware is also capable of reacting to writes into its config space,
+IO/MMIO regions. The reaction needs to be implemented in the 
+MemoryChangedAtAddress method. This method is automatically invoked and doing
+writes into config space. In case of writes of to IO/MMIO this method would
+have to be invoked from write functions in the driver itself (*).
+
+Note that there always will be cases where driver's code will have to be
+modified to allow execution in hosted environment. The goal of this mock
+system is not to totally remove the need for driver modification, but to remove 
+the 80%-90% of cases where the modfication would be needed.
+
+The configuration of the system is done in the PCIMock_InitClass.
+
+(*) - in current version there is no facility to forward a call from hardware 
+driver to mock hardware's MemoryChangedAtAddress. Probably a separate dispatcher
+HIDD object needs to be created, because the mock hardware HIDD object is hidden
+under pci device HIDD object and pci driver hidd object.

@@ -79,11 +79,7 @@ nouveau_reloc_emit(struct nouveau_channel *chan, struct nouveau_bo *reloc_bo,
 	if (!(nvbo->flags & (NOUVEAU_BO_GART | NOUVEAU_BO_VRAM)))
 		nvbo->flags |= (flags & (NOUVEAU_BO_GART | NOUVEAU_BO_VRAM));
 
-	rpbbo = nouveau_bo_emit_buffer(chan, reloc_bo);
-	if (!rpbbo)
-		return -ENOMEM;
-	nouveau_bo(reloc_bo)->pending_refcnt++;
-
+	/* add buffer to validation list */
 	pbbo = nouveau_bo_emit_buffer(chan, bo);
 	if (!pbbo) {
 		fprintf(stderr, "buffer emit fail :(\n");
@@ -91,10 +87,13 @@ nouveau_reloc_emit(struct nouveau_channel *chan, struct nouveau_bo *reloc_bo,
 	}
 	nouveau_bo(bo)->pending_refcnt++;
 
-	if (flags & NOUVEAU_BO_VRAM)
-		domains |= NOUVEAU_GEM_DOMAIN_VRAM;
-	if (flags & NOUVEAU_BO_GART)
-		domains |= NOUVEAU_GEM_DOMAIN_GART;
+	if (flags & (NOUVEAU_BO_VRAM | NOUVEAU_BO_GART)) {
+		if (flags & NOUVEAU_BO_VRAM)
+			domains |= NOUVEAU_GEM_DOMAIN_VRAM;
+		if (flags & NOUVEAU_BO_GART)
+			domains |= NOUVEAU_GEM_DOMAIN_GART;
+	} else
+		domains |= nvbo->domain;
 
 	if (!(pbbo->valid_domains & domains)) {
 		fprintf(stderr, "no valid domains remain!\n");
@@ -110,6 +109,23 @@ nouveau_reloc_emit(struct nouveau_channel *chan, struct nouveau_bo *reloc_bo,
 		pbbo->write_domains |= domains;
 		nvbo->write_marker = 1;
 	}
+
+	/* nvc0 gallium driver uses reloc_emit() with NULL target buffer
+	 * to inform bufmgr of a buffer's use - however, we need something
+	 * to track, so create a reloc for now, and hope it never triggers
+	 * (it shouldn't, constant virtual address..)..
+	 */
+	if (!reloc_bo) {
+		reloc_bo  = nvpb->buffer[nvpb->current];
+		reloc_offset = 0;
+		reloc_ptr = NULL;
+	}
+
+	/* add reloc target bo to validation list, and create the reloc */
+	rpbbo = nouveau_bo_emit_buffer(chan, reloc_bo);
+	if (!rpbbo)
+		return -ENOMEM;
+	nouveau_bo(reloc_bo)->pending_refcnt++;
 
 	r = nvpb->relocs + nvpb->nr_relocs++;
 	r->reloc_bo_index = rpbbo - nvpb->buffers;

@@ -38,7 +38,7 @@
 #include <linux/mm.h>
 #include <linux/file.h>
 #include <linux/module.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #endif
 
 #define TTM_ASSERT_LOCKED(param)
@@ -615,7 +615,7 @@ retry:
 	 * eviction.
 	 */
 
-	if (unlikely(bo->sync_obj != NULL)) {
+	if (unlikely(bo->sync_obj)) {
 		atomic_set(&bo->reserved, 0);
 		wake_up_all(&bo->event_queue);
 		spin_unlock(&glob->lru_lock);
@@ -1204,7 +1204,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 		uint32_t page_alignment,
 		unsigned long buffer_start,
 		bool interruptible,
-		struct file *persistant_swap_storage,
+		struct file *persistent_swap_storage,
 		size_t acc_size,
 		void (*destroy) (struct ttm_buffer_object *))
 {
@@ -1247,7 +1247,7 @@ int ttm_bo_init(struct ttm_bo_device *bdev,
 	bo->priv_flags = 0;
 	bo->mem.placement = (TTM_PL_FLAG_SYSTEM | TTM_PL_FLAG_CACHED);
 	bo->seq_valid = false;
-	bo->persistant_swap_storage = persistant_swap_storage;
+	bo->persistent_swap_storage = persistent_swap_storage;
 	bo->acc_size = acc_size;
 	atomic_inc(&bo->glob->bo_count);
 
@@ -1297,7 +1297,7 @@ int ttm_bo_create(struct ttm_bo_device *bdev,
 			uint32_t page_alignment,
 			unsigned long buffer_start,
 			bool interruptible,
-			struct file *persistant_swap_storage,
+			struct file *persistent_swap_storage,
 			struct ttm_buffer_object **p_bo)
 {
 	struct ttm_buffer_object *bo;
@@ -1319,7 +1319,7 @@ int ttm_bo_create(struct ttm_bo_device *bdev,
 
 	ret = ttm_bo_init(bdev, bo, size, type, placement, page_alignment,
 				buffer_start, interruptible,
-				persistant_swap_storage, acc_size, NULL);
+				persistent_swap_storage, acc_size, NULL);
 	if (likely(ret == 0))
 		*p_bo = bo;
 
@@ -1950,7 +1950,7 @@ static int ttm_bo_swapout(struct ttm_mem_shrink *shrink)
 	if (bo->bdev->driver->swap_notify)
 		bo->bdev->driver->swap_notify(bo);
 
-	ret = ttm_tt_swapout(bo->ttm, bo->persistant_swap_storage);
+	ret = ttm_tt_swapout(bo->ttm, bo->persistent_swap_storage);
 out:
 
 	/**

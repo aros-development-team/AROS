@@ -20,5 +20,9 @@
 #define nouveau_bo_map                      _redefined_nouveau_bo_map
 #define nouveau_bo_unmap                    _redefined_nouveau_bo_unmap
 
+#define nouveau_fence_new                   _redefined_nouveau_fence_new
+#define nouveau_fence_emit                  _redefined_nouveau_fence_emit
+#define nouveau_fence_work                  _redefined_nouveau_fence_work
+#define nouveau_fence_update                _redefined_nouveau_fence_update
 #endif
 

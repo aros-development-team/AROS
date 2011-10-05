@@ -28,9 +28,7 @@
 #endif
 
 #include "nv_include.h"
-#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
-#endif
 
 /* Texture/Render target formats. */
 static struct pict_format {
@@ -64,15 +62,13 @@ static struct pict_format {
 	{},
 };
 
-#if !defined(__AROS__)
 static int
 get_tex_format(PicturePtr pict)
 {
+#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[pict->pDrawable->pScreen->myNum];
 #else
-static int
-get_tex_format(PicturePtr pict, ScrnInfoPtr pScrn)
-{
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 
@@ -399,11 +395,7 @@ setup_texture(NVPtr pNv, int unit, PicturePtr pict, PixmapPtr pixmap)
 		NV10TCL_TX_FORMAT_WRAP_S_CLAMP_TO_EDGE |
 		log2i(w) << 20 | log2i(h) << 16 |
 		1 << 12 | /* lod == 1 */
-#if !defined(__AROS__)
 		get_tex_format(pict) |
-#else
-		get_tex_format(pict, pNv) |
-#endif
 		0x50 /* UNK */;
 
 	BEGIN_RING(chan, celsius, NV10TCL_TX_OFFSET(unit), 1);
@@ -624,7 +616,6 @@ NV10StateCompositeReemit(struct nouveau_channel *chan)
 }
 #endif
 
-#if !defined(__AROS__)
 Bool
 NV10EXAPrepareComposite(int op,
 			PicturePtr pict_src,
@@ -634,17 +625,10 @@ NV10EXAPrepareComposite(int op,
 			PixmapPtr mask,
 			PixmapPtr dst)
 {
+#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[dst->drawable.pScreen->myNum];
 #else
-static Bool
-NV10EXAPrepareComposite(int op,
-			PicturePtr pict_src,
-			PicturePtr pict_mask,
-			PicturePtr pict_dst,
-			PixmapPtr src,
-			PixmapPtr mask,
-			PixmapPtr dst, ScrnInfoPtr pScrn)
-{
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -779,8 +763,9 @@ NV10EXAComposite(PixmapPtr pix_dst,
 		 int maskX, int maskY,
 		 int dstX, int dstY,
 		 int width, int height, 
-		 ScrnInfoPtr pScrn, PicturePtr src, PicturePtr mask)
+		 PicturePtr src, PicturePtr mask)
 {
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -1081,22 +1066,22 @@ NVAccelInitNV10TCL(ScrnInfoPtr pScrn)
 /* NOTE: Allows different formats of source and destination */
 BOOL HIDDNouveauNV103DCopyBox(struct CardData * carddata,
     struct HIDDNouveauBitMapData * srcdata, struct HIDDNouveauBitMapData * destdata,
-    ULONG srcX, ULONG srcY, ULONG destX, ULONG destY, ULONG width, ULONG height,
+    LONG srcX, LONG srcY, LONG destX, LONG destY, LONG width, LONG height,
     ULONG blendop)
 {
     struct Picture sPict, dPict;
-    ULONG maskX = 0; ULONG maskY = 0;
+    LONG maskX = 0; LONG maskY = 0;
 
     HIDDNouveauFillPictureFromBitMapData(&sPict, srcdata);   
     HIDDNouveauFillPictureFromBitMapData(&dPict, destdata);
 
     if (NV10EXAPrepareComposite(blendop,
-        &sPict, NULL, &dPict, srcdata, NULL, destdata, carddata))
+        &sPict, NULL, &dPict, srcdata, NULL, destdata))
     {
         NV10EXAComposite(destdata, srcX, srcY,
 				      maskX, maskY,
 				      destX , destY,
-				      width, height, carddata, &sPict, NULL);
+				      width, height, &sPict, NULL);
         return TRUE;
     }
     

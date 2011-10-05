@@ -13,6 +13,7 @@
 #include "nouveau/nouveau_winsys.h"
 #include "nv50/nv50_resource.h"
 #include "nvfx/nvfx_resource.h"
+#include "nvc0/nvc0_resource.h"
 
 #undef HiddGalliumAttrBase
 #define HiddGalliumAttrBase   (SD(cl)->galliumAttrBase)
@@ -68,6 +69,10 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
             bo = nv50_miptree(resource)->base.bo;
             pitch = nv50_miptree(resource)->level[0].pitch;
             break;
+        case NV_ARCH_C0:
+            bo = nvc0_miptree(resource)->base.bo;
+            pitch = nvc0_miptree(resource)->level[0].pitch;
+            break;
     }
     
     if ((bo == NULL) || (pitch == 0))
@@ -77,8 +82,9 @@ HIDDNouveauWrapResource(struct CardData * carddata, struct pipe_resource * resou
     {
     case PIPE_FORMAT_B8G8R8A8_UNORM:
     case PIPE_FORMAT_A8R8G8B8_UNORM:
-        depth = 32;
-        break;
+        /* For purpose of blitting render buffer to screen, 32-bit render
+           buffer is treated as 24-bit surface. This is needed so that checks
+           (src->depth == dst->depth) pass. */
     case PIPE_FORMAT_B8G8R8X8_UNORM:
     case PIPE_FORMAT_X8R8G8B8_UNORM:
         depth = 24;
@@ -173,6 +179,9 @@ APTR METHOD(NouveauGallium, Hidd_Gallium, CreatePipeScreen)
     case 0xa0:
         init = nv50_screen_create;
         break;
+    case 0xc0:
+        init = nvc0_screen_create;
+        break;
     default:
         D(bug("%s: unknown chipset nv%02x\n", __func__,
                  dev->chipset));
@@ -206,7 +215,12 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     struct CardData * carddata = &(SD(cl)->carddata);
     struct HIDDNouveauBitMapData srcdata;
     OOP_Object * bm = HIDD_BM_OBJ(msg->bitmap);
-    struct HIDDNouveauBitMapData * dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
+    struct HIDDNouveauBitMapData * dstdata;
+
+    if (!IS_NOUVEAU_BM_CLASS(OOP_OCLASS(bm))) /* Check if bitmap is really nouveau bitmap */
+        return;
+
+    dstdata = OOP_INST_DATA(OOP_OCLASS(bm), bm);
 
     if (!HIDDNouveauWrapResource(carddata, msg->resource, &srcdata))
         return;
@@ -223,18 +237,28 @@ VOID METHOD(NouveauGallium, Hidd_Gallium, DisplayResource)
     /* XXX HACK XXX */
     UNMAP_BUFFER_BM(dstdata)
 
-    if (carddata->architecture < NV_ARCH_50)
+    switch(carddata->architecture)
     {
+    case NV_ARCH_30:
+    case NV_ARCH_40:
         HIDDNouveauNV04CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
-    }
-    else
-    {
+        break;
+    case NV_ARCH_50:
         HIDDNouveauNV50CopySameFormat(carddata, &srcdata, dstdata, 
             msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
             0x03 /* vHidd_GC_DrawMode_Copy */);
+        break;    
+    case NV_ARCH_C0:
+        HIDDNouveauNVC0CopySameFormat(carddata, &srcdata, dstdata, 
+            msg->srcx, msg->srcy, msg->dstx, msg->dsty, msg->width, msg->height, 
+            0x03 /* vHidd_GC_DrawMode_Copy */);
+    default:
+        /* TODO: Report error */
+        break;
     }
+
 
     UNLOCK_BITMAP_BM(dstdata)
 }

@@ -166,17 +166,17 @@ ADD2EXIT(deinit_timer, 5);
 void __free_page(struct page * p)
 {
     if (p->allocated_buffer)
-        FreeVec(p->allocated_buffer);
+        HIDDNouveauFree(p->allocated_buffer);
     p->allocated_buffer = NULL;
     p->address = NULL;
-    FreeVec(p);
+    HIDDNouveauFree(p);
 }
 
 struct page * create_page_helper()
 {
     struct page * p;
-    p = AllocVec(sizeof(*p), MEMF_PUBLIC | MEMF_CLEAR);
-    p->allocated_buffer = AllocVec(PAGE_SIZE + PAGE_SIZE - 1, MEMF_PUBLIC | MEMF_CLEAR);
+    p = HIDDNouveauAlloc(sizeof(*p));
+    p->allocated_buffer = HIDDNouveauAlloc(PAGE_SIZE + PAGE_SIZE - 1);
     p->address = PAGE_ALIGN(p->allocated_buffer);
     return p;
 }
@@ -188,7 +188,7 @@ int idr_pre_get_internal(struct idr *idp)
     {
         /* Create new table */
         ULONG newsize = idp->size ? idp->size * 2 : 128;
-        IPTR * newtab = AllocVec(newsize * sizeof(IPTR), MEMF_PUBLIC | MEMF_CLEAR);
+        IPTR * newtab = HIDDNouveauAlloc(newsize * sizeof(IPTR));
         
         if (newtab == NULL)
             return 0;
@@ -200,7 +200,7 @@ int idr_pre_get_internal(struct idr *idp)
             CopyMem(idp->pointers, newtab, idp->size * sizeof(IPTR));
             
             /* Release old table */
-            FreeVec(idp->pointers);
+            HIDDNouveauFree(idp->pointers);
         }
         
         idp->pointers = newtab;
@@ -254,6 +254,7 @@ void idr_init(struct idr *idp)
     idp->last_starting_id = 0;
 }
 
+/* PCI handling */
 #include "drm_aros.h"
 #include <aros/libcall.h>
 #include <proto/oop.h>
@@ -262,7 +263,6 @@ void idr_init(struct idr *idp)
 
 void *ioremap(resource_size_t offset, unsigned long size)
 {
-#if !defined(HOSTED_BUILD)
     if (pciDriver)
     {
         struct pHidd_PCIDriver_MapPCI mappci,*msg = &mappci;
@@ -276,19 +276,10 @@ void *ioremap(resource_size_t offset, unsigned long size)
         bug("BUG: ioremap used without acquiring pciDriver\n");
         return NULL;
     }
-#else
-    /* For better simulation:
-    a) make a list of already "mapped" buffers keyed by APTR buf
-    b) check if a request (buf + size) is inside of already mapped region -> return pointer in mapped region
-    Why: sometimes the same range is mapped more than once
-    */
-    return AllocVec(size, MEMF_PUBLIC | MEMF_CLEAR); /* This will leak */
-#endif
 }
 
 void iounmap(void * addr)
 {
-#if !defined(HOSTED_BUILD)
     if (pciDriver)
     {
         struct pHidd_PCIDriver_UnmapPCI unmappci,*msg=&unmappci;
@@ -299,48 +290,27 @@ void iounmap(void * addr)
 
         OOP_DoMethod(pciDriver, (OOP_Msg)msg);
     }
-#else
-    /* If "better simulation" is implemented (see ioremap) memory
-    can only be freed if there is no other mappings to this buffer */
-    FreeVec(addr);
-#endif
 }
 
-resource_size_t pci_resource_start(void * pdev, unsigned int resource)
+resource_size_t pci_resource_start(struct pci_dev * pdev, unsigned int resource)
 {
-#if !defined(HOSTED_BUILD)    
     APTR start = (APTR)NULL;
     switch(resource)
     {
-        case(0): OOP_GetAttr(pdev, aHidd_PCIDevice_Base0, (APTR)&start); break;
-        case(1): OOP_GetAttr(pdev, aHidd_PCIDevice_Base1, (APTR)&start); break;
-        case(2): OOP_GetAttr(pdev, aHidd_PCIDevice_Base2, (APTR)&start); break;
-        case(3): OOP_GetAttr(pdev, aHidd_PCIDevice_Base3, (APTR)&start); break;
-        case(4): OOP_GetAttr(pdev, aHidd_PCIDevice_Base4, (APTR)&start); break;
-        case(5): OOP_GetAttr(pdev, aHidd_PCIDevice_Base5, (APTR)&start); break;
+        case(0): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base0, (APTR)&start); break;
+        case(1): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base1, (APTR)&start); break;
+        case(2): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base2, (APTR)&start); break;
+        case(3): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base3, (APTR)&start); break;
+        case(4): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base4, (APTR)&start); break;
+        case(5): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Base5, (APTR)&start); break;
         default: bug("ResourceID %d not supported\n", resource);
     }
     
     return (resource_size_t)start;
-#else
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_NVIDIA
-#if HOSTED_BUILD_CHIPSET >= 0x40
-if (resource == 0) return (resource_size_t)0xcf000000;
-if (resource == 1) return (resource_size_t)0xb0000000;
-if (resource == 3) return (resource_size_t)0xce000000;
-#else
-if (resource == 0) return (resource_size_t)0xe7000000;
-if (resource == 1) return (resource_size_t)0xf0000000;
-if (resource == 2) return (resource_size_t)0xef800000;
-#endif
-#endif
-return (resource_size_t)0;
-#endif
 }
 
-unsigned long pci_resource_len(void * pdev, unsigned int resource)
+unsigned long pci_resource_len(struct pci_dev * pdev, unsigned int resource)
 {
-#if !defined(HOSTED_BUILD)    
     IPTR len = (IPTR)0;
     
     if (pci_resource_start(pdev, resource) != 0)
@@ -354,31 +324,17 @@ unsigned long pci_resource_len(void * pdev, unsigned int resource)
         
         switch(resource)
         {
-            case(0): OOP_GetAttr(pdev, aHidd_PCIDevice_Size0, (APTR)&len); break;
-            case(1): OOP_GetAttr(pdev, aHidd_PCIDevice_Size1, (APTR)&len); break;
-            case(2): OOP_GetAttr(pdev, aHidd_PCIDevice_Size2, (APTR)&len); break;
-            case(3): OOP_GetAttr(pdev, aHidd_PCIDevice_Size3, (APTR)&len); break;
-            case(4): OOP_GetAttr(pdev, aHidd_PCIDevice_Size4, (APTR)&len); break;
-            case(5): OOP_GetAttr(pdev, aHidd_PCIDevice_Size5, (APTR)&len); break;
+            case(0): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size0, (APTR)&len); break;
+            case(1): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size1, (APTR)&len); break;
+            case(2): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size2, (APTR)&len); break;
+            case(3): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size3, (APTR)&len); break;
+            case(4): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size4, (APTR)&len); break;
+            case(5): OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_Size5, (APTR)&len); break;
             default: bug("ResourceID %d not supported\n", resource);
         }
     }
     
     return len;
-#else
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_NVIDIA
-#if HOSTED_BUILD_CHIPSET >= 0x40
-if (resource == 0) return (IPTR)0x1000000;
-if (resource == 1) return (IPTR)0x10000000;
-if (resource == 3) return (IPTR)0x1000000;
-#else
-if (resource == 0) return (IPTR)0x1000000;
-if (resource == 1) return (IPTR)0x8000000;
-if (resource == 2) return (IPTR)0x80000;
-#endif
-#endif
-return (IPTR)0;
-#endif
 }
 
 struct GetBusSlotEnumeratorData
@@ -421,7 +377,6 @@ AROS_UFH3(void, GetBusSlotEnumerator,
 }   
 void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun)
 {
-#if !defined(HOSTED_BUILD)
     OOP_Object * pciDevice = NULL;
 
     if (pciBus)
@@ -452,58 +407,53 @@ void * pci_get_bus_and_slot(unsigned int bus, unsigned int dev, unsigned int fun
     }
     
     return pciDevice;
-#else
-    return AllocVec(1, MEMF_ANY);
-#endif
 }
 
-int pci_read_config_word(void *dev, int where, u16 *val)
+int pci_read_config_word(struct pci_dev * pdev, int where, u16 *val)
 {
-#if !defined(HOSTED_BUILD)
     struct pHidd_PCIDevice_ReadConfigWord rcwmsg = {
     mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord),
     reg: (UBYTE)where,
     }, *msg = &rcwmsg;
     
-    *val = (UWORD)OOP_DoMethod((OOP_Object*)dev, (OOP_Msg)msg);
-#else
-#endif
-    bug("pci_read_config_word: %d -> %d\n", where, *val);
+    *val = (UWORD)OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
+    D(bug("pci_read_config_word: %d -> %d\n", where, *val));
     
     return 0;
 }
 
-int pci_read_config_dword(void *dev, int where, u32 *val)
+int pci_read_config_dword(struct pci_dev * pdev, int where, u32 *val)
 {
-#if !defined(HOSTED_BUILD)
     struct pHidd_PCIDevice_ReadConfigLong rclmsg = {
     mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
     reg: (UBYTE)where,
     }, *msg = &rclmsg;
     
-    *val = (ULONG)OOP_DoMethod((OOP_Object*)dev, (OOP_Msg)msg);
-#else
-#endif
-    bug("pci_read_config_dword: %d -> %d\n", where, *val);
+    *val = (ULONG)OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
+    D(bug("pci_read_config_dword: %d -> %d\n", where, *val));
     
     return 0;
 }
 
-int pci_write_config_dword(void *dev, int where, u32 val)
+int pci_write_config_dword(struct pci_dev * pdev, int where, u32 val)
 {
-#if !defined(HOSTED_BUILD)
     struct pHidd_PCIDevice_WriteConfigLong wclmsg = {
     mID: OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigLong),
     reg: (UBYTE)where,
     val: val,
     }, *msg = &wclmsg;
     
-    OOP_DoMethod((OOP_Object*)dev, (OOP_Msg)msg);
-#else
-#endif
-    bug("pci_write_config_dword: %d -> %d\n", where, val);
+    OOP_DoMethod((OOP_Object*)pdev->oopdev, (OOP_Msg)msg);
+    D(bug("pci_write_config_dword: %d -> %d\n", where, val));
     
     return 0;
+}
+
+int pci_is_pcie(struct pci_dev * pdev)
+{
+    IPTR PCIECap;
+    OOP_GetAttr((OOP_Object *)pdev->oopdev, aHidd_PCIDevice_CapabilityPCIE, (APTR)&PCIECap);
+    return PCIECap;
 }
 
 #include <hidd/agp.h>
@@ -529,8 +479,8 @@ void agp_backend_release(struct agp_bridge_data * bridge)
 
 void agp_free_memory(struct agp_memory * mem)
 {
-    FreeVec(mem->pages);
-    FreeVec(mem);
+    HIDDNouveauFree(mem->pages);
+    HIDDNouveauFree(mem);
 }
 
 struct agp_memory *agp_allocate_memory(struct agp_bridge_data * bridge, 
@@ -542,8 +492,8 @@ struct agp_memory *agp_allocate_memory(struct agp_bridge_data * bridge,
         return NULL;
     }
     
-    struct agp_memory * mem = AllocVec(sizeof(struct agp_memory), MEMF_PUBLIC | MEMF_CLEAR);
-    mem->pages = AllocVec(sizeof(struct page *) * num_pages, MEMF_PUBLIC | MEMF_CLEAR);
+    struct agp_memory * mem = HIDDNouveauAlloc(sizeof(struct agp_memory));
+    mem->pages = HIDDNouveauAlloc(sizeof(struct page *) * num_pages);
     mem->page_count = 0; /* Not a typo, will be filled later */
     mem->type = type;
     mem->is_flushed = FALSE;
@@ -570,14 +520,11 @@ int agp_copy_info(struct agp_bridge_data * bridge, struct agp_kern_info * info)
 
 struct agp_bridge_data * agp_find_bridge(void * dev)
 {
-#if !defined(HOSTED_BUILD)
     OOP_Object * agpbus = NULL;
-#endif
 
     if (global_agp_bridge)
         return global_agp_bridge;
 
-#if !defined(HOSTED_BUILD)
     if (!HiddAgpBase)
     {
         HiddAgpBase = OpenLibrary("agp.hidd", 1);
@@ -593,7 +540,7 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
         mID : OOP_GetMethodID(IID_Hidd_AGP, moHidd_AGP_GetBridgeDevice)
         };
         OOP_Object * bridgedevice = NULL;
-        
+
         bridgedevice = (OOP_Object*)OOP_DoMethod(agpbus, (OOP_Msg)&gbdmsg);
         
         OOP_DisposeObject(agpbus);
@@ -603,8 +550,7 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
         {
             IPTR mode = 0, aperbase = 0, apersize = 0;
 
-            global_agp_bridge = AllocVec(sizeof(struct agp_bridge_data), 
-                                                MEMF_PUBLIC | MEMF_CLEAR);
+            global_agp_bridge = HIDDNouveauAlloc(sizeof(struct agp_bridge_data));
             global_agp_bridge->agpbridgedevice = (IPTR)bridgedevice;
 
             OOP_GetAttr(bridgedevice, aHidd_AGPBridgeDevice_Mode, (APTR)&mode);
@@ -618,17 +564,6 @@ struct agp_bridge_data * agp_find_bridge(void * dev)
         }
     }
 
-#else
-    global_agp_bridge = AllocVec(sizeof(struct agp_bridge_data), 
-                                        MEMF_PUBLIC | MEMF_CLEAR);
-    global_agp_bridge->agpbridgedevice = (IPTR)NULL;
-#if HOSTED_BUILD_HARDWARE == HOSTED_BUILD_HARDWARE_NVIDIA
-    global_agp_bridge->mode = 0x1f004e1b;
-    global_agp_bridge->aperturebase = 0xd8000000;
-    global_agp_bridge->aperturesize = 64;
-#endif
-#endif
-
     return global_agp_bridge;
 }
 
@@ -637,14 +572,12 @@ void agp_enable(struct agp_bridge_data * bridge, u32 mode)
     if (!bridge || !bridge->agpbridgedevice)
         return;
 
-#if !defined(HOSTED_BUILD)
     struct pHidd_AGPBridgeDevice_Enable emsg = {
     mID:            OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_Enable),
     requestedmode:  mode
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&emsg);
-#endif
 }
 
 int agp_bind_memory(struct agp_memory * mem, off_t offset)
@@ -658,7 +591,6 @@ int agp_bind_memory(struct agp_memory * mem, off_t offset)
         return -EINVAL;
     }
 
-#if !defined(HOSTED_BUILD)
     if (!mem->is_flushed)
     {
         /* TODO: Flush memory */
@@ -677,7 +609,7 @@ int agp_bind_memory(struct agp_memory * mem, off_t offset)
     };
     
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&bmmsg);
-#endif
+
     mem->is_bound = TRUE;
     mem->pg_start = offset;
     return 0;
@@ -687,7 +619,7 @@ int agp_unbind_memory(struct agp_memory * mem)
 {
     if (!mem || !mem->is_bound)
         return -EINVAL;
-#if !defined(HOSTED_BUILD)
+
     struct pHidd_AGPBridgeDevice_UnBindMemory ubmmsg = {
     mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_UnBindMemory),
     offset:     mem->pg_start,
@@ -697,7 +629,7 @@ int agp_unbind_memory(struct agp_memory * mem)
     OOP_DoMethod((OOP_Object *)global_agp_bridge->agpbridgedevice, (OOP_Msg)&ubmmsg);
 
     /* TODO: agp_unmap_memory */
-#endif
+
     mem->is_bound = FALSE;
     mem->pg_start = 0;
     return 0;
@@ -708,13 +640,11 @@ void agp_flush_chipset(struct agp_bridge_data * bridge)
     if (!bridge || !bridge->agpbridgedevice)
         return;
 
-#if !defined(HOSTED_BUILD)
     struct pHidd_AGPBridgeDevice_FlushChipset fcmsg = {
     mID:        OOP_GetMethodID(IID_Hidd_AGPBridgeDevice, moHidd_AGPBridgeDevice_FlushChipset),
     };
     
     OOP_DoMethod((OOP_Object *)bridge->agpbridgedevice, (OOP_Msg)&fcmsg);
-#endif
 }
 
 /* jiffies handling */
@@ -858,29 +788,6 @@ int i2c_del_adapter(struct i2c_adapter * adap)
 {
     IMPLEMENT("\n");
     return 0;
-}
-
-/* Firmware */
-int _request_firmware(const struct firmware ** pfw, char * name)
-{
-    struct firmware * fw = AllocVec(sizeof(struct firmware), MEMF_ANY | MEMF_CLEAR);
-    fw->size = 100;
-    fw->data = AllocMem(fw->size, MEMF_ANY | MEMF_CLEAR);
-    *pfw = fw;
-
-    return 8; /* TODO: fixme, signal error for now */
-}
-
-void release_firmware(const struct firmware * fw)
-{
-    if (fw)
-    {
-        if (fw->data)
-        {
-            FreeMem(fw->data, fw->size);
-        }
-        FreeVec((APTR)fw);
-    }
 }
 
 /* Other */

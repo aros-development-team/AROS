@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright 2010, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -64,14 +64,11 @@ drmOpen(const char *name, const char *busid)
 {
     int i;
 
-    if (!current_drm_driver)
-    	return -EINVAL;
-
     for (i = 0; i < 128; i++)
     {
         if (drm_files[i] == NULL)
         {
-            drm_files[i] = AllocVec(sizeof(struct drm_file), MEMF_PUBLIC | MEMF_CLEAR);
+            drm_files[i] = HIDDNouveauAlloc(sizeof(struct drm_file));
             spin_lock_init(&drm_files[i]->table_lock);
             INIT_LIST_HEAD(&drm_files[i]->fbs);
             if (current_drm_driver->open)
@@ -99,7 +96,7 @@ drmClose(int fd)
     if (current_drm_driver->postclose)
         current_drm_driver->postclose(current_drm_driver->dev, f);
 
-    FreeVec(f);
+    HIDDNouveauFree(f);
     
     return 0;
 }
@@ -191,11 +188,10 @@ int drmIoctl(int fd, unsigned long request, void *arg)
 
 void *drmMalloc(int size)
 {
-    return AllocVec(size, MEMF_ANY | MEMF_CLEAR);
+    return HIDDNouveauAlloc(size);
 }
 
 void drmFree(void *pt)
 {
-    if (pt)
-        FreeVec(pt);
+    HIDDNouveauFree(pt);
 }

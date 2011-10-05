@@ -5,10 +5,7 @@
 
 #include <aros/symbolsets.h>
 #include <proto/dos.h>
-#include <proto/oop.h>
 #include <proto/timer.h>
-
-#include <hidd/pci.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -32,11 +29,11 @@
 
 /* malloc/calloc/realloc/free */
 
-/* This is a copy of implementation from arosc.library so that mesa.library uses its 
+/* This is a copy of implementation from arosc.library so that module uses its 
    own space for malloc/calloc/realloc calls */
 
 #define MEMALIGN_MAGIC ((size_t) 0x57E2CB09)
-APTR __mempool = NULL;
+extern APTR NouveauMemPool;
 
 void * malloc (size_t size)
 {
@@ -44,7 +41,7 @@ void * malloc (size_t size)
 
     D(bug("arosc_emul_malloc\n"));
     /* Allocate the memory */
-    mem = AllocPooled (__mempool, size + AROS_ALIGN(sizeof(size_t)));
+    mem = AllocPooled (NouveauMemPool, size + AROS_ALIGN(sizeof(size_t)));
     if (mem)
     {
         *((size_t *)mem) = size;
@@ -72,7 +69,7 @@ void free (void * memory)
         else 
         {
             size += AROS_ALIGN(sizeof(size_t));
-            FreePooled (__mempool, mem, size);
+            FreePooled (NouveauMemPool, mem, size);
         }
     }
 }
@@ -139,20 +136,6 @@ char *getenv (const char *name)
     return NULL;
 }
 
-const char *pci_name(OOP_Object *pdev)
-{
-    static char name[16];
-    IPTR bus = 0, dev = 0, sub = 0;
-    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &bus);
-    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &dev);
-    OOP_GetAttr(pdev, aHidd_PCIDevice_Bus, &sub);
-    snprintf(name, sizeof(name), "%x:%2x.%x\n",
-    	    (unsigned)bus, (unsigned)dev, (unsigned)sub);
-    name[sizeof(name)-1] = 0;
-    return name;
-}
-
-struct timeval;
 struct timezone;
 
 int gettimeofday (struct timeval * tv,struct timezone * tz)
@@ -184,8 +167,7 @@ int gettimeofday (struct timeval * tv,struct timezone * tz)
 __noreturn void abort (void)
 {
     IMPLEMENT();
-    Alert(AT_DeadEnd | AO_HiddLib);
-    for (;;);
+    for(;;);
 }
 
 /* File operations */
@@ -213,9 +195,22 @@ int fprintf (FILE * fh, const char * format, ...)
     return 0;
 }
 
+int vfprintf(FILE * restrict stream, const char * restrict format,
+	va_list arg)
+{
+    IMPLEMENT();
+    return 0;
+}
+
 double atof (const char * str)
 {
     return strtod (str, (char **)NULL);
+}
+
+int puts (const char * str)
+{
+    bug("%s\n", str);
+    return 1;
 }
 
 /* private function to get the upper or lower bound (depending on the architecture) of the stack */
@@ -229,29 +224,4 @@ void *__alloca_get_stack_limit(void)
     return FindTask(NULL)->tc_SPUpper;
     #endif
 }
-	
-int __init_emul(void)
-{
-    /* malloc/calloc/realloc/free */
-    __mempool = CreatePool(MEMF_ANY | MEMF_SEM_PROTECTED, 65536L, 4096L);
 
-    if (!__mempool)
-    {
-        return 0;
-    }
-
-    return 1;
-}
-
-
-void __exit_emul(void)
-{
-    /* malloc/calloc/realloc/free */
-    if (__mempool)
-    {
-        DeletePool(__mempool);
-    }
-}
-
-ADD2INIT(__init_emul, 0);
-ADD2EXIT(__exit_emul, 0);

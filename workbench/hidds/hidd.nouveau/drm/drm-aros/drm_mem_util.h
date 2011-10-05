@@ -6,21 +6,21 @@
 #ifndef _DRM_MEM_UTIL_H_
 #define _DRM_MEM_UTIL_H_
 
-#include <proto/exec.h>
+#include "drm_compat_funcs.h"
 
-static __inline__ void *drm_calloc_large(size_t nmemb, size_t size)
+static inline void *drm_calloc_large(size_t nmemb, size_t size)
 {
-    return AllocVec(nmemb * size, MEMF_ANY | MEMF_CLEAR);
+    return HIDDNouveauAlloc(nmemb * size);
 }
 
-static __inline__ void *drm_malloc_ab(size_t nmemb, size_t size)
+static inline void *drm_malloc_ab(size_t nmemb, size_t size)
 {
-    return AllocVec(nmemb * size, MEMF_ANY);
+    return HIDDNouveauAlloc(nmemb * size);
 }
 
-static __inline void drm_free_large(void *ptr)
+static inline void drm_free_large(void *ptr)
 {
-    FreeVec(ptr);
+    HIDDNouveauFree(ptr);
 }
 
 #endif

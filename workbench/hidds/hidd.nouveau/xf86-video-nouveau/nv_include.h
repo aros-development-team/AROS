@@ -21,6 +21,8 @@
 #define ErrorF(msg, ...)            bug(msg, ##__VA_ARGS__)
 #define PictFormatShort             LONG
 #define PictTransformPtr            APTR
+#define Pixel                       HIDDT_Pixel
+#define CARD32                      LONG
 
 struct Picture
 {
@@ -32,6 +34,11 @@ struct Picture
 };
 
 typedef struct Picture * PicturePtr;
+
+/* This construction is implemented so that original EXA funtion calls don't 
+   have to be extended with ScrnInfoPtr parameter which makes code harder to
+   maintain */
+extern struct CardData * globalcarddataptr;
 
 #define PictFilterNearest   1
 #define PictFilterBilinear  2
@@ -74,7 +81,10 @@ Bool NVAccelInitNV50TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV40TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV30TCL(ScrnInfoPtr pScrn);
 Bool NVAccelInitNV10TCL(ScrnInfoPtr pScrn);
-Bool nv50_style_tiled_pixmap(PixmapPtr ppix, ScrnInfoPtr pScrn);
+Bool NVAccelInitM2MF_NVC0(ScrnInfoPtr pScrn);
+Bool NVAccelInit2D_NVC0(ScrnInfoPtr pScrn);
+Bool NVAccelInit3D_NVC0(ScrnInfoPtr pScrn);
+Bool nv50_style_tiled_pixmap(PixmapPtr ppix);
 
 
 static inline BOOL PICT_FORMAT_A(int format)

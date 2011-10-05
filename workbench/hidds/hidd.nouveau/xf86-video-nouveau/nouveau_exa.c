@@ -21,8 +21,8 @@
  */
 
 #include "nv_include.h"
-#if !defined(__AROS__)
 #include "nv04_pushbuf.h"
+#if !defined(__AROS__)
 #include "exa.h"
 
 static inline Bool
@@ -53,8 +53,9 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 static inline Bool
 NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 		    char *dst, unsigned dst_pitch,
-		    ScrnInfoPtr pScrn, HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
+		    HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o)
 {
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -63,18 +64,14 @@ NVAccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
 #if !defined(__AROS__)
 	unsigned cpp = pspix->drawable.bitsPerPixel / 8;
 #else
-	unsigned cpp = pspix->bytesperpixel;
+	unsigned cpp = pspix->depth > 16 ? 4 : 2;
 #endif
 	unsigned line_len = w * cpp;
 	unsigned src_offset = 0, src_pitch = 0, linear = 0;
 	/* Maximum DMA transfer */
 	unsigned line_count = pNv->GART->size / line_len;
 
-#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(pspix)) {
-#else
-	if (!nv50_style_tiled_pixmap(pspix, pScrn)) {
-#endif
 		linear     = 1;
 		src_pitch  = exaGetPixmapPitch(pspix);
 		src_offset += (y * src_pitch) + (x * cpp);
@@ -198,8 +195,9 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 static inline Bool
 NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 		  const char *src, int src_pitch, 
-		  ScrnInfoPtr pScrn, HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
+		  HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o)
 {
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
@@ -208,18 +206,14 @@ NVAccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
 #if !defined(__AROS__)
 	unsigned cpp = pdpix->drawable.bitsPerPixel / 8;
 #else
-	unsigned cpp = pdpix->bytesperpixel;
+	unsigned cpp = pdpix->depth > 16 ? 4 : 2;
 #endif
 	unsigned line_len = w * cpp;
 	unsigned dst_offset = 0, dst_pitch = 0, linear = 0;
 	/* Maximum DMA transfer */
 	unsigned line_count = pNv->GART->size / line_len;
 
-#if !defined(__AROS__)
 	if (!nv50_style_tiled_pixmap(pdpix)) {
-#else
-	if (!nv50_style_tiled_pixmap(pdpix, pScrn)) {
-#endif
 		linear     = 1;
 		dst_pitch  = exaGetPixmapPitch(pdpix);
 		dst_offset += (y * dst_pitch) + (x * cpp);
@@ -417,15 +411,13 @@ nouveau_exa_destroy_pixmap(ScreenPtr pScreen, void *priv)
 }
 #endif
 
-#if !defined(__AROS__)
-bool
+Bool
 nv50_style_tiled_pixmap(PixmapPtr ppix)
 {
+#if !defined(__AROS__)
 	ScrnInfoPtr pScrn = xf86Screens[ppix->drawable.pScreen->myNum];
 #else
-Bool
-nv50_style_tiled_pixmap(PixmapPtr ppix, ScrnInfoPtr pScrn)
-{
+	ScrnInfoPtr pScrn = globalcarddataptr;
 #endif
 	NVPtr pNv = NVPTR(pScrn);
 
@@ -671,33 +663,50 @@ nouveau_exa_init(ScreenPtr pScreen)
 
 /* AROS CODE */
 
+Bool NVC0AccelUploadM2MF(PixmapPtr pdpix, int x, int y, int w, int h,
+		    const char *src, int src_pitch,
+		    HIDDT_StdPixFmt srcPixFmt, OOP_Class *cl, OOP_Object *o);
+
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauNVAccelUploadM2MF(
     UBYTE * srcpixels, ULONG srcpitch, HIDDT_StdPixFmt srcPixFmt,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
-
-    return NVAccelUploadM2MF(bmdata, x, y, width, height,
-		  srcpixels, srcpitch, carddata, srcPixFmt, cl, o);
+    
+    if (carddata->architecture >= NV_ARCH_C0)
+        return NVC0AccelUploadM2MF(bmdata, x, y, width, height,
+		        srcpixels, srcpitch, srcPixFmt, cl, o);
+    else
+        return NVAccelUploadM2MF(bmdata, x, y, width, height,
+		        srcpixels, srcpitch, srcPixFmt, cl, o);
 }
 
+Bool
+NVC0AccelDownloadM2MF(PixmapPtr pspix, int x, int y, int w, int h,
+		      char *dst, unsigned dst_pitch,
+		      HIDDT_StdPixFmt dstPixFmt, OOP_Class *cl, OOP_Object *o);
+		      
 /* NOTE: Assumes lock on bitmap is already made */
 /* NOTE: Assumes lock on GART object is already made */
 /* NOTE: Assumes buffer is not mapped */
 BOOL HiddNouveauNVAccelDownloadM2MF(
     UBYTE * dstpixels, ULONG dstpitch, HIDDT_StdPixFmt dstPixFmt,
-    ULONG x, ULONG y, ULONG width, ULONG height, 
+    LONG x, LONG y, LONG width, LONG height, 
     OOP_Class *cl, OOP_Object *o)  
 {
     struct HIDDNouveauBitMapData * bmdata = OOP_INST_DATA(cl, o);
     struct CardData * carddata = &(SD(cl)->carddata);
 
-    return NVAccelDownloadM2MF(bmdata, x, y, width, height,
-		    dstpixels, dstpitch, carddata, dstPixFmt, cl, o);
+    if (carddata->architecture >= NV_ARCH_C0)
+        return NVC0AccelDownloadM2MF(bmdata, x, y, width, height,
+		        dstpixels, dstpitch, dstPixFmt, cl, o);
+    else
+        return NVAccelDownloadM2MF(bmdata, x, y, width, height,
+		        dstpixels, dstpitch, dstPixFmt, cl, o);
 }
 
