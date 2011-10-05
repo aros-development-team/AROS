@@ -488,19 +488,22 @@ namespace glstubgenerator
 		private bool addRegSaveRest;
 		private string baseName;
 		private string functionPrefix;
+		private int firstFunctionLVO;
 		
-		public StubsFileWriter(bool addRegSaveRest, string libraryName)
+		public StubsFileWriter(bool addRegSaveRest, string libraryName, int firstFunctionLVO)
 		{
 			this.addRegSaveRest = addRegSaveRest;
 			this.baseName = libraryName + "Base";
 			this.functionPrefix = libraryName.ToLower();
 			this.functionPrefix = char.ToUpper(this.functionPrefix[0]) + this.functionPrefix.Substring(1);
+			this.firstFunctionLVO = firstFunctionLVO;
 			
 		}
 
 		public override void Write (string path, FunctionList functions)
 		{
 			StreamWriter swStubs = new StreamWriter(path, false);
+			int lvo = firstFunctionLVO;
 			
 			foreach (Function f in functions)
 			{
@@ -509,7 +512,7 @@ namespace glstubgenerator
 				{
 					swStubs.WriteLine("    AROS_LHA({0}, {1}, {2}),", a.Type, a.Name, a.Register);
 				}
-				swStubs.WriteLine("    struct Library *, {0}, 0, {1})", baseName, functionPrefix);
+				swStubs.WriteLine("    struct Library *, {0}, {1}, {2})", baseName, lvo++ ,functionPrefix);
 				swStubs.WriteLine("{");
 				swStubs.WriteLine("    AROS_LIBFUNC_INIT");
 				swStubs.WriteLine();
@@ -643,7 +646,7 @@ namespace glstubgenerator
 			
 			foreach (Function f in functions)
 			{
-				swMangledHeader.Write("{0} m{1} (", f.ReturnType, f.Name);
+				swMangledHeader.Write("APIMINLINE {0} m{1} (", f.ReturnType, f.Name);
 				if (f.Arguments.Count > 0)
 				{
 					int i = 0;
@@ -668,7 +671,7 @@ namespace glstubgenerator
 
 			foreach (Function f in functions)
 			{
-				swMangledImplementation.Write("{0} m{1} (", f.ReturnType, f.Name);
+				swMangledImplementation.Write("inline {0} m{1} (", f.ReturnType, f.Name);
 				if (f.Arguments.Count > 0)
 				{
 					int i = 0;
@@ -739,7 +742,7 @@ namespace glstubgenerator
 	{
 		public static void Main(string[] args)
 		{
-			string PATH_TO_MESA = @"/data/deadwood/gitV0AROSCONTRIB/AROS/workbench/libs/mesa/";
+			string PATH_TO_MESA = @"/data/deadwood/gitV0AROS/AROS/workbench/libs/mesa/";
 			GLApiTempParser apiParser = new GLApiTempParser();
 			FunctionNameDictionary implementedFunctions = 
 				apiParser.Parse(PATH_TO_MESA + @"/src/mapi/glapi/glapitemp.h");
@@ -791,7 +794,7 @@ namespace glstubgenerator
 			functionsfinal.ReorderToMatch(orderedExistingFunctions);
 			
 			
-			StubsFileWriter sfw = new StubsFileWriter(false, "Mesa");
+			StubsFileWriter sfw = new StubsFileWriter(false, "Mesa", 35);
 			sfw.Write(@"/data/deadwood/temp/arosmesa_library_api.c", functionsfinal);
 			
 			ConfFileWriter cfw = new ConfFileWriter();
@@ -832,7 +835,7 @@ namespace glstubgenerator
 			MangledHeaderFileWriter eglmhfw = new MangledHeaderFileWriter();
 			eglmhfw.Write(@"/data/deadwood/temp/eglapim.h", functionsfinal);
 
-			StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL");
+			StubsFileWriter eglsfw = new StubsFileWriter(false, "EGL", 35);
 			eglsfw.Write(@"/data/deadwood/temp/egl_library_api.c", functionsfinal);
 			
 			ConfFileWriter eglcfw = new ConfFileWriter();
@@ -865,7 +868,7 @@ namespace glstubgenerator
 			MangledHeaderFileWriter vgmhfw = new MangledHeaderFileWriter();
 			vgmhfw.Write(@"/data/deadwood/temp/vgapim.h", functionsfinal);
 
-			StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega");
+			StubsFileWriter vgsfw = new StubsFileWriter(false, "Vega", 35);
 			vgsfw.Write(@"/data/deadwood/temp/vega_library_api.c", functionsfinal);
 			
 			ConfFileWriter vgcfw = new ConfFileWriter();
@@ -896,7 +899,7 @@ namespace glstubgenerator
 			MangledHeaderFileWriter glumhfw = new MangledHeaderFileWriter();
 			glumhfw.Write(@"/data/deadwood/temp/gluapim.h", functionsfinal);
 
-			StubsFileWriter glusfw = new StubsFileWriter(false, "GLU");
+			StubsFileWriter glusfw = new StubsFileWriter(false, "GLU", 35);
 			glusfw.Write(@"/data/deadwood/temp/glu_library_api.c", functionsfinal);
 			
 			ConfFileWriter glucfw = new ConfFileWriter();
