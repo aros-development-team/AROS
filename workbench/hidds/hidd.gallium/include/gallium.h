@@ -23,6 +23,10 @@
 #   include <gallium/pipe/p_aros_version.h>
 #endif
 
+#ifndef _STDINT_H_
+#   include <stdint.h>
+#endif
+
 #ifndef U_SIMPLE_SCREEN_H
 #   include <gallium/util/u_simple_screen.h>
 #endif
