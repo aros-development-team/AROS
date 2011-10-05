@@ -46,66 +46,6 @@
 #include "util/u_debug.h"
 
 
-#if (defined(PIPE_OS_WINDOWS) && !defined(PIPE_CC_MSVC)) || defined(PIPE_OS_EMBDDED)
-
-#include "llvm/Support/raw_ostream.h"
-
-class raw_debug_ostream :
-   public llvm::raw_ostream
-{
-   uint64_t pos;
-
-   void write_impl(const char *Ptr, size_t Size);
-   uint64_t current_pos() { return pos; }
-   uint64_t current_pos() const { return pos; }
-
-#if HAVE_LLVM >= 0x207
-   uint64_t preferred_buffer_size() { return 512; }
-#else
-   size_t preferred_buffer_size() { return 512; }
-#endif
-};
-
-
-void
-raw_debug_ostream::write_impl(const char *Ptr, size_t Size)
-{
-   if (Size > 0) {
-      char *lastPtr = (char *)&Ptr[Size];
-      char last = *lastPtr;
-      *lastPtr = 0;
-      _debug_printf("%*s", Size, Ptr);
-      *lastPtr = last;
-      pos += Size;
-   }
-}
-
-
-/**
- * Same as LLVMDumpValue, but through our debugging channels.
- */
-extern "C" void
-lp_debug_dump_value(LLVMValueRef value)
-{
-   raw_debug_ostream os;
-   llvm::unwrap(value)->print(os);
-   os.flush();
-}
-
-
-#else
-
-
-extern "C" void
-lp_debug_dump_value(LLVMValueRef value)
-{
-   LLVMDumpValue(value);
-}
-
-
-#endif
-
-
 /**
  * Register the engine with oprofile.
  *
@@ -133,6 +73,23 @@ lp_set_target_options(void)
 #endif
 #endif
 
+   /*
+    * LLVM revision 123367 switched the default stack alignment to 16 bytes on
+    * Linux (and several other Unices in later revisions), to match recent gcc
+    * versions.
+    *
+    * However our drivers can be loaded by old binary applications, still
+    * maintaining a 4 bytes stack alignment.  Therefore we must tell LLVM here
+    * to only assume a 4 bytes alignment for backwards compatibility.
+    */
+#if defined(PIPE_ARCH_X86)
+#if HAVE_LLVM >= 0x0300
+   llvm::StackAlignmentOverride = 4;
+#else
+   llvm::StackAlignment = 4;
+#endif
+#endif
+
 #if defined(DEBUG) || defined(PROFILE)
    llvm::NoFramePointerElim = true;
 #endif
@@ -144,6 +101,7 @@ lp_set_target_options(void)
    llvm::UnsafeFPMath = true;
 #endif
 
+#if HAVE_LLVM < 0x0209
    /*
     * LLVM will generate MMX instructions for vectors <= 64 bits, leading to
     * innefficient code, and in 32bit systems, to the corruption of the FPU
@@ -152,16 +110,27 @@ lp_set_target_options(void)
     * See also:
     * - http://llvm.org/bugs/show_bug.cgi?id=3287
     * - http://l4.me.uk/post/2009/06/07/llvm-wrinkle-3-configuration-what-configuration/
+    *
+    * The -disable-mmx global option can be specified only once  since we
+    * dynamically link against LLVM it will reside in a separate shared object,
+    * which may or not be delete when this shared object is, so we use the
+    * llvm::DisablePrettyStackTrace variable (which we set below and should
+    * reside in the same shared library) to determine whether the -disable-mmx
+    * option has been set or not.
+    *
+    * Thankfully this ugly hack is not necessary on LLVM 2.9 onwards.
     */
-   static boolean first = TRUE;
-   if (first) {
+   if (!llvm::DisablePrettyStackTrace) {
+      static boolean first = TRUE;
       static const char* options[] = {
          "prog",
          "-disable-mmx"
       };
+      assert(first);
       llvm::cl::ParseCommandLineOptions(2, const_cast<char**>(options));
       first = FALSE;
    }
+#endif
 
    /*
     * By default LLVM adds a signal handler to output a pretty stack trace.

@@ -78,6 +78,9 @@
 #include "polygon.h"
 #include "queryobj.h"
 #include "readpix.h"
+#if FEATURE_ARB_sampler_objects
+#include "samplerobj.h"
+#endif
 #include "scissor.h"
 #include "stencil.h"
 #include "texenv.h"
@@ -87,6 +90,7 @@
 #include "texobj.h"
 #include "texparam.h"
 #include "texstate.h"
+#include "texturebarrier.h"
 #include "transformfeedback.h"
 #include "mtypes.h"
 #include "varray.h"
@@ -361,6 +365,10 @@ _mesa_create_exec_table(void)
    SET_PointParameterfvEXT(exec, _mesa_PointParameterfv);
 #endif
 
+   /* 95. GL_ARB_ES2_compatibility */
+   SET_ClearDepthf(exec, _mesa_ClearDepthf);
+   SET_DepthRangef(exec, _mesa_DepthRangef);
+
    /* 97. GL_EXT_compiled_vertex_array */
 #if _HAVE_FULL_GL
    SET_LockArraysEXT(exec, _mesa_LockArraysEXT);
@@ -494,6 +502,9 @@ _mesa_create_exec_table(void)
    SET_CompressedTexSubImage2DARB(exec, _mesa_CompressedTexSubImage2DARB);
    SET_CompressedTexSubImage1DARB(exec, _mesa_CompressedTexSubImage1DARB);
    SET_GetCompressedTexImageARB(exec, _mesa_GetCompressedTexImageARB);
+
+   /* ARB 104. GL_ARB_robustness */
+   SET_GetnCompressedTexImageARB(exec, _mesa_GetnCompressedTexImageARB);
 #endif
 
    /* ARB 14. GL_ARB_point_parameters */
@@ -588,6 +599,12 @@ _mesa_create_exec_table(void)
 #if FEATURE_draw_read_buffer
    SET_DrawBuffersARB(exec, _mesa_DrawBuffersARB);
 #endif
+
+   /* ARB 104. GL_ARB_robustness */
+   SET_GetGraphicsResetStatusARB(exec, _mesa_GetGraphicsResetStatusARB);
+   SET_GetnPolygonStippleARB(exec, _mesa_GetnPolygonStippleARB);
+   SET_GetnTexImageARB(exec, _mesa_GetnTexImageARB);
+   SET_ReadnPixelsARB(exec, _mesa_ReadnPixelsARB);
 
    /* GL_ARB_sync */
    _mesa_init_sync_dispatch(exec);
@@ -686,6 +703,8 @@ _mesa_create_exec_table(void)
    SET_FramebufferTextureFaceARB(exec, _mesa_FramebufferTextureFaceARB);
 #endif
 
+   SET_ClampColorARB(exec, _mesa_ClampColorARB);
+
    /* GL_EXT_texture_integer */
    SET_ClearColorIiEXT(exec, _mesa_ClearColorIiEXT);
    SET_ClearColorIuiEXT(exec, _mesa_ClearColorIuiEXT);
@@ -707,6 +726,24 @@ _mesa_create_exec_table(void)
    SET_GetStringi(exec, _mesa_GetStringi);
    SET_ClampColor(exec, _mesa_ClampColorARB);
 
+   /* GL_ARB_instanced_arrays */
+   SET_VertexAttribDivisorARB(exec, _mesa_VertexAttribDivisor);
+
+   /* GL_ARB_draw_buffer_blend */
+   SET_BlendFunciARB(exec, _mesa_BlendFunci);
+   SET_BlendFuncSeparateiARB(exec, _mesa_BlendFuncSeparatei);
+   SET_BlendEquationiARB(exec, _mesa_BlendEquationi);
+   SET_BlendEquationSeparateiARB(exec, _mesa_BlendEquationSeparatei);
+
+   /* GL_NV_texture_barrier */
+   SET_TextureBarrierNV(exec, _mesa_TextureBarrierNV);
+ 
+   /* GL_ARB_texture_buffer_object */
+   SET_TexBufferARB(exec, _mesa_TexBuffer);
+
+#if FEATURE_ARB_sampler_objects
+   _mesa_init_sampler_object_dispatch(exec);
+#endif
 
    return exec;
 }

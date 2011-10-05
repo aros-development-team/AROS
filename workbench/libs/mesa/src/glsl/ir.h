@@ -26,13 +26,10 @@
 #ifndef IR_H
 #define IR_H
 
-#include <cstdio>
-#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
 
-extern "C" {
-#include <talloc.h>
-}
-
+#include "ralloc.h"
 #include "glsl_types.h"
 #include "list.h"
 #include "ir_visitor.h"
@@ -233,6 +230,8 @@ enum ir_variable_mode {
    ir_var_in,
    ir_var_out,
    ir_var_inout,
+   ir_var_const_in,	/**< "in" param that must be a constant expression */
+   ir_var_system_value, /**< Ex: front-face, instance-id, etc. */
    ir_var_temporary	/**< Temporary variable generated during compilation. */
 };
 
@@ -242,6 +241,35 @@ enum ir_variable_interpolation {
    ir_var_noperspective
 };
 
+/**
+ * \brief Layout qualifiers for gl_FragDepth.
+ *
+ * The AMD_conservative_depth extension allows gl_FragDepth to be redeclared
+ * with a layout qualifier.
+ */
+enum ir_depth_layout {
+    ir_depth_layout_none, /**< No depth layout is specified. */
+    ir_depth_layout_any,
+    ir_depth_layout_greater,
+    ir_depth_layout_less,
+    ir_depth_layout_unchanged
+};
+
+/**
+ * \brief Convert depth layout qualifier to string.
+ */
+const char*
+depth_layout_string(ir_depth_layout layout);
+
+/**
+ * Description of built-in state associated with a uniform
+ *
+ * \sa ir_variable::state_slots
+ */
+struct ir_state_slot {
+   int tokens[5];
+   int swizzle;
+};
 
 class ir_variable : public ir_instruction {
 public:
@@ -303,6 +331,15 @@ public:
    unsigned invariant:1;
 
    /**
+    * Has this variable been used for reading or writing?
+    *
+    * Several GLSL semantic checks require knowledge of whether or not a
+    * variable has been used.  For example, it is an error to redeclare a
+    * variable as invariant after it has been used.
+    */
+   unsigned used:1;
+
+   /**
     * Storage class of the variable.
     *
     * \sa ir_variable_mode
@@ -333,6 +370,14 @@ public:
    /*@}*/
 
    /**
+    * \brief Layout qualifier for gl_FragDepth.
+    *
+    * This is not equal to \c ir_depth_layout_none if and only if this
+    * variable is \c gl_FragDepth and a layout qualifier is specified.
+    */
+   ir_depth_layout depth_layout;
+
+   /**
     * Was the location explicitly set in the shader?
     *
     * If the location is explicitly set in the shader, it \b cannot be changed
@@ -357,6 +402,22 @@ public:
     * slot has not been assigned, the value will be -1.
     */
    int location;
+
+   /**
+    * Built-in state that backs this uniform
+    *
+    * Once set at variable creation, \c state_slots must remain invariant.
+    * This is because, ideally, this array would be shared by all clones of
+    * this variable in the IR tree.  In other words, we'd really like for it
+    * to be a fly-weight.
+    *
+    * If the variable is not a uniform, \c num_state_slots will be zero and
+    * \c state_slots will be \c NULL.
+    */
+   /*@{*/
+   unsigned num_state_slots;    /**< Number of state slots used */
+   ir_state_slot *state_slots;  /**< State descriptors. */
+   /*@}*/
 
    /**
     * Emit a warning if this variable is accessed.
@@ -936,6 +997,7 @@ public:
       assert(callee->return_type != NULL);
       type = callee->return_type;
       actual_parameters->move_nodes_to(& this->actual_parameters);
+      this->use_builtin = callee->is_builtin;
    }
 
    virtual ir_call *clone(void *mem_ctx, struct hash_table *ht) const;
@@ -957,7 +1019,7 @@ public:
    /**
     * Get a generic ir_call object when an error occurs
     *
-    * Any allocation will be performed with 'ctx' as talloc owner.
+    * Any allocation will be performed with 'ctx' as ralloc owner.
     */
    static ir_call *get_error_instruction(void *ctx);
 
@@ -998,6 +1060,9 @@ public:
 
    /* List of ir_rvalue of paramaters passed in this call. */
    exec_list actual_parameters;
+
+   /** Should this call only bind to a built-in function? */
+   bool use_builtin;
 
 private:
    ir_call()
@@ -1164,21 +1229,21 @@ enum ir_texture_opcode {
  * selected from \c ir_texture_opcodes.  In the printed IR, these will
  * appear as:
  *
- *                              Texel offset
- *                              |       Projection divisor
- *                              |       |   Shadow comparitor
- *                              |       |   |
- *                              v       v   v
- * (tex (sampler) (coordinate) (0 0 0) (1) ( ))
- * (txb (sampler) (coordinate) (0 0 0) (1) ( ) (bias))
- * (txl (sampler) (coordinate) (0 0 0) (1) ( ) (lod))
- * (txd (sampler) (coordinate) (0 0 0) (1) ( ) (dPdx dPdy))
- * (txf (sampler) (coordinate) (0 0 0)         (lod))
+ *                                    Texel offset (0 or an expression)
+ *                                    | Projection divisor
+ *                                    | |  Shadow comparitor
+ *                                    | |  |
+ *                                    v v  v
+ * (tex <type> <sampler> <coordinate> 0 1 ( ))
+ * (txb <type> <sampler> <coordinate> 0 1 ( ) <bias>)
+ * (txl <type> <sampler> <coordinate> 0 1 ( ) <lod>)
+ * (txd <type> <sampler> <coordinate> 0 1 ( ) (dPdx dPdy))
+ * (txf <type> <sampler> <coordinate> 0       <lod>)
  */
 class ir_texture : public ir_rvalue {
 public:
    ir_texture(enum ir_texture_opcode op)
-      : op(op), projector(NULL), shadow_comparitor(NULL)
+      : op(op), projector(NULL), shadow_comparitor(NULL), offset(NULL)
    {
       this->ir_type = ir_type_texture;
    }
@@ -1199,8 +1264,8 @@ public:
     */
    const char *opcode_string();
 
-   /** Set the sampler and infer the type. */
-   void set_sampler(ir_dereference *sampler);
+   /** Set the sampler and type. */
+   void set_sampler(ir_dereference *sampler, const glsl_type *type);
 
    /**
     * Do a reverse-lookup to translate a string into an ir_texture_opcode.
@@ -1232,8 +1297,8 @@ public:
     */
    ir_rvalue *shadow_comparitor;
 
-   /** Explicit texel offsets. */
-   signed char offsets[3];
+   /** Texel offset. */
+   ir_rvalue *offset;
 
    union {
       ir_rvalue *lod;		/**< Floating point LOD */
@@ -1576,6 +1641,32 @@ visit_exec_list(exec_list *list, ir_visitor *visitor);
  */
 void validate_ir_tree(exec_list *instructions);
 
+struct _mesa_glsl_parse_state;
+struct gl_shader_program;
+
+/**
+ * Detect whether an unlinked shader contains static recursion
+ *
+ * If the list of instructions is determined to contain static recursion,
+ * \c _mesa_glsl_error will be called to emit error messages for each function
+ * that is in the recursion cycle.
+ */
+void
+detect_recursion_unlinked(struct _mesa_glsl_parse_state *state,
+			  exec_list *instructions);
+
+/**
+ * Detect whether a linked shader contains static recursion
+ *
+ * If the list of instructions is determined to contain static recursion,
+ * \c link_error_printf will be called to emit error messages for each function
+ * that is in the recursion cycle.  In addition,
+ * \c gl_shader_program::LinkStatus will be set to false.
+ */
+void
+detect_recursion_linked(struct gl_shader_program *prog,
+			exec_list *instructions);
+
 /**
  * Make a clone of each IR instruction in a list
  *
@@ -1590,8 +1681,7 @@ _mesa_glsl_initialize_variables(exec_list *instructions,
 				struct _mesa_glsl_parse_state *state);
 
 extern void
-_mesa_glsl_initialize_functions(exec_list *instructions,
-				struct _mesa_glsl_parse_state *state);
+_mesa_glsl_initialize_functions(_mesa_glsl_parse_state *state);
 
 extern void
 _mesa_glsl_release_functions(void);
@@ -1610,5 +1700,9 @@ ir_has_call(ir_instruction *ir);
 
 extern void
 do_set_program_inouts(exec_list *instructions, struct gl_program *prog);
+
+extern char *
+prototype_string(const glsl_type *return_type, const char *name,
+		 exec_list *parameters);
 
 #endif /* IR_H */

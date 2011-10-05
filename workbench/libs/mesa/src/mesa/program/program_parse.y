@@ -935,7 +935,7 @@ addrRegRelOffset:              { $$ = 0; }
 
 addrRegPosOffset: INTEGER
 	{
-	   if (($1 < 0) || ($1 > 4095)) {
+	   if (($1 < 0) || ($1 > (state->limits->MaxAddressOffset - 1))) {
               char s[100];
               _mesa_snprintf(s, sizeof(s),
                              "relative address offset too large (%d)", $1);
@@ -949,7 +949,7 @@ addrRegPosOffset: INTEGER
 
 addrRegNegOffset: INTEGER
 	{
-	   if (($1 < 0) || ($1 > 4096)) {
+	   if (($1 < 0) || ($1 > state->limits->MaxAddressOffset)) {
               char s[100];
               _mesa_snprintf(s, sizeof(s),
                              "relative address offset too large (%d)", $1);
@@ -1258,7 +1258,11 @@ optArraySize:
 	| INTEGER
         {
 	   if (($1 < 1) || ((unsigned) $1 > state->limits->MaxParameters)) {
-	      yyerror(& @1, state, "invalid parameter array size");
+              char msg[100];
+              _mesa_snprintf(msg, sizeof(msg),
+                             "invalid parameter array size (size=%d max=%u)",
+                             $1, state->limits->MaxParameters);
+	      yyerror(& @1, state, msg);
 	      YYERROR;
 	   } else {
 	      $$ = $1;
@@ -2060,9 +2064,42 @@ resultColBinding: COLOR optResultFaceType optResultColorType
 
 optResultFaceType:
 	{
-	   $$ = (state->mode == ARB_vertex)
-	      ? VERT_RESULT_COL0
-	      : FRAG_RESULT_COLOR;
+	   if (state->mode == ARB_vertex) {
+	      $$ = VERT_RESULT_COL0;
+	   } else {
+	      if (state->option.DrawBuffers)
+		 $$ = FRAG_RESULT_DATA0;
+	      else
+		 $$ = FRAG_RESULT_COLOR;
+	   }
+	}
+	| '[' INTEGER ']'
+	{
+	   if (state->mode == ARB_vertex) {
+	      yyerror(& @1, state, "invalid program result name");
+	      YYERROR;
+	   } else {
+	      if (!state->option.DrawBuffers) {
+		 /* From the ARB_draw_buffers spec (same text exists
+		  * for ATI_draw_buffers):
+		  *
+		  *     If this option is not specified, a fragment
+		  *     program that attempts to bind
+		  *     "result.color[n]" will fail to load, and only
+		  *     "result.color" will be allowed.
+		  */
+		 yyerror(& @1, state,
+			 "result.color[] used without "
+			 "`OPTION ARB_draw_buffers' or "
+			 "`OPTION ATI_draw_buffers'");
+		 YYERROR;
+	      } else if ($2 >= state->MaxDrawBuffers) {
+		 yyerror(& @1, state,
+			 "result.color[] exceeds MAX_DRAW_BUFFERS_ARB");
+		 YYERROR;
+	      }
+	      $$ = FRAG_RESULT_DATA0 + $2;
+	   }
 	}
 	| FRONT
 	{
@@ -2681,6 +2718,7 @@ _mesa_parse_arb_program(struct gl_context *ctx, GLenum target, const GLubyte *st
    state->MaxClipPlanes = ctx->Const.MaxClipPlanes;
    state->MaxLights = ctx->Const.MaxLights;
    state->MaxProgramMatrices = ctx->Const.MaxProgramMatrices;
+   state->MaxDrawBuffers = ctx->Const.MaxDrawBuffers;
 
    state->state_param_enum = (target == GL_VERTEX_PROGRAM_ARB)
       ? STATE_VERTEX_PROGRAM : STATE_FRAGMENT_PROGRAM;

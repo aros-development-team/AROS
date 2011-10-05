@@ -473,6 +473,10 @@ util_format_colormask(const struct util_format_description *desc)
 }
 
 
+boolean
+util_format_is_float(enum pipe_format format);
+
+
 /**
  * Whether the src format can be blitted to destation format with a simple
  * memcpy.
@@ -481,6 +485,12 @@ boolean
 util_is_format_compatible(const struct util_format_description *src_desc,
                           const struct util_format_description *dst_desc);
 
+/**
+ * Whether the format is supported by Gallium for the given bindings.
+ * This covers S3TC textures and floating-point render targets.
+ */
+boolean
+util_format_is_supported(enum pipe_format format, unsigned bind);
 
 /**
  * Whether this format is a rgab8 variant.
@@ -673,7 +683,8 @@ util_format_has_alpha(enum pipe_format format)
 }
 
 /**
- * Return the matching SRGB format, or PIPE_FORMAT_NONE if none.
+ * Given a linear RGB colorspace format, return the corresponding SRGB
+ * format, or PIPE_FORMAT_NONE if none.
  */
 static INLINE enum pipe_format
 util_format_srgb(enum pipe_format format)
@@ -707,6 +718,45 @@ util_format_srgb(enum pipe_format format)
       return PIPE_FORMAT_DXT5_SRGBA;
    default:
       return PIPE_FORMAT_NONE;
+   }
+}
+
+/**
+ * Given an sRGB format, return the corresponding linear colorspace format.
+ * For non sRGB formats, return the format unchanged.
+ */
+static INLINE enum pipe_format
+util_format_linear(enum pipe_format format)
+{
+   switch (format) {
+   case PIPE_FORMAT_L8_SRGB:
+      return PIPE_FORMAT_L8_UNORM;
+   case PIPE_FORMAT_L8A8_SRGB:
+      return PIPE_FORMAT_L8A8_UNORM;
+   case PIPE_FORMAT_R8G8B8_SRGB:
+      return PIPE_FORMAT_R8G8B8_UNORM;
+   case PIPE_FORMAT_A8B8G8R8_SRGB:
+      return PIPE_FORMAT_A8B8G8R8_UNORM;
+   case PIPE_FORMAT_X8B8G8R8_SRGB:
+      return PIPE_FORMAT_X8B8G8R8_UNORM;
+   case PIPE_FORMAT_B8G8R8A8_SRGB:
+      return PIPE_FORMAT_B8G8R8A8_UNORM;
+   case PIPE_FORMAT_B8G8R8X8_SRGB:
+      return PIPE_FORMAT_B8G8R8X8_UNORM;
+   case PIPE_FORMAT_A8R8G8B8_SRGB:
+      return PIPE_FORMAT_A8R8G8B8_UNORM;
+   case PIPE_FORMAT_X8R8G8B8_SRGB:
+      return PIPE_FORMAT_X8R8G8B8_UNORM;
+   case PIPE_FORMAT_DXT1_SRGB:
+      return PIPE_FORMAT_DXT1_RGB;
+   case PIPE_FORMAT_DXT1_SRGBA:
+      return PIPE_FORMAT_DXT1_RGBA;
+   case PIPE_FORMAT_DXT3_SRGBA:
+      return PIPE_FORMAT_DXT3_RGBA;
+   case PIPE_FORMAT_DXT5_SRGBA:
+      return PIPE_FORMAT_DXT5_RGBA;
+   default:
+      return format;
    }
 }
 

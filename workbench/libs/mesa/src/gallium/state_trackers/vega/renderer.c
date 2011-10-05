@@ -140,7 +140,7 @@ static VGboolean renderer_can_support(struct renderer *renderer,
    struct pipe_screen *screen = renderer->pipe->screen;
 
    return screen->is_format_supported(screen,
-         res->format, res->target, 0, bindings, 0);
+         res->format, res->target, 0, bindings);
 }
 
 /**
@@ -174,6 +174,7 @@ static void renderer_set_mvp(struct renderer *renderer,
    pipe_resource_reference(&cbuf, NULL);
    cbuf = pipe_buffer_create(renderer->pipe->screen,
                              PIPE_BIND_CONSTANT_BUFFER,
+                             PIPE_USAGE_STATIC,
                              sizeof(consts));
    if (cbuf) {
       pipe_buffer_write(renderer->pipe, cbuf,
@@ -474,7 +475,8 @@ static void renderer_set_custom_fs(struct renderer *renderer,
          pipe_resource_reference(&cbuf, NULL);
 
          cbuf = pipe_buffer_create(renderer->pipe->screen,
-               PIPE_BIND_CONSTANT_BUFFER, const_buffer_len);
+               PIPE_BIND_CONSTANT_BUFFER, PIPE_USAGE_STATIC,
+               const_buffer_len);
          pipe_buffer_write(renderer->pipe, cbuf, 0,
                const_buffer_len, const_buffer);
          renderer->pipe->set_constant_buffer(renderer->pipe,
@@ -572,7 +574,7 @@ static void renderer_quad_draw(struct renderer *r)
                                  sizeof(r->vertices),
                                  PIPE_BIND_VERTEX_BUFFER);
    if (buf) {
-      util_draw_vertex_buffer(r->pipe, buf, 0,
+      util_draw_vertex_buffer(r->pipe, r->cso, buf, 0,
                               PIPE_PRIM_TRIANGLE_FAN,
                               Elements(r->vertices),     /* verts */
                               Elements(r->vertices[0])); /* attribs/vert */
@@ -1050,7 +1052,7 @@ void renderer_polygon_stencil(struct renderer *renderer,
 {
    assert(renderer->state == RENDERER_STATE_POLYGON_STENCIL);
 
-   renderer->pipe->set_vertex_buffers(renderer->pipe, 1, vbuf);
+   cso_set_vertex_buffers(renderer->cso, 1, vbuf);
 
    if (!renderer->u.polygon_stencil.manual_two_sides) {
       util_draw_arrays(renderer->pipe, mode, start, count);
@@ -1461,11 +1463,11 @@ void renderer_copy_surface(struct renderer *ctx,
    }
 
    assert(screen->is_format_supported(screen, src->format, PIPE_TEXTURE_2D,
-                                      0, PIPE_BIND_SAMPLER_VIEW, 0));
+                                      0, PIPE_BIND_SAMPLER_VIEW));
    assert(screen->is_format_supported(screen, dst->format, PIPE_TEXTURE_2D,
-                                      0, PIPE_BIND_SAMPLER_VIEW, 0));
+                                      0, PIPE_BIND_SAMPLER_VIEW));
    assert(screen->is_format_supported(screen, dst->format, PIPE_TEXTURE_2D,
-                                      0, PIPE_BIND_RENDER_TARGET, 0));
+                                      0, PIPE_BIND_RENDER_TARGET));
 
    /*
     * XXX for now we're always creating a temporary texture.

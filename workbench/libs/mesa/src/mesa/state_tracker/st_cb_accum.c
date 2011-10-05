@@ -33,6 +33,7 @@
 #include "main/imports.h"
 #include "main/image.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 
 #include "st_debug.h"
 #include "st_context.h"
@@ -41,6 +42,7 @@
 #include "st_texture.h"
 #include "pipe/p_context.h"
 #include "pipe/p_defines.h"
+#include "util/u_format.h"
 #include "util/u_inlines.h"
 #include "util/u_tile.h"
 
@@ -145,7 +147,9 @@ accum_accum(struct st_context *st, GLfloat value,
 
    buf = (GLfloat *) malloc(width * height * 4 * sizeof(GLfloat));
 
-   pipe_get_tile_rgba(pipe, color_trans, 0, 0, width, height, buf);
+   pipe_get_tile_rgba_format(pipe, color_trans, 0, 0, width, height,
+                             util_format_linear(color_strb->texture->format),
+                             buf);
 
    switch (acc_strb->format) {
    case PIPE_FORMAT_R16G16B16A16_SNORM:
@@ -182,7 +186,6 @@ accum_load(struct st_context *st, GLfloat value,
    GLubyte *data = acc_strb->data;
    GLfloat *buf;
 
-
    if (ST_DEBUG & DEBUG_FALLBACK)
       debug_printf("%s: fallback processing\n", __FUNCTION__);
 
@@ -193,7 +196,9 @@ accum_load(struct st_context *st, GLfloat value,
 
    buf = (GLfloat *) malloc(width * height * 4 * sizeof(GLfloat));
 
-   pipe_get_tile_rgba(pipe, color_trans, 0, 0, width, height, buf);
+   pipe_get_tile_rgba_format(pipe, color_trans, 0, 0, width, height,
+                             util_format_linear(color_strb->texture->format),
+                             buf);
 
    switch (acc_strb->format) {
    case PIPE_FORMAT_R16G16B16A16_SNORM:
@@ -231,6 +236,7 @@ accum_return(struct gl_context *ctx, GLfloat value,
    size_t stride = acc_strb->stride;
    const GLubyte *data = acc_strb->data;
    GLfloat *buf;
+   enum pipe_format format = util_format_linear(color_strb->texture->format);
 
    if (ST_DEBUG & DEBUG_FALLBACK)
       debug_printf("%s: fallback processing\n", __FUNCTION__);
@@ -242,14 +248,15 @@ accum_return(struct gl_context *ctx, GLfloat value,
    else
       usage = PIPE_TRANSFER_WRITE;
 
-   color_trans = pipe_get_transfer(st_context(ctx)->pipe,
+   color_trans = pipe_get_transfer(pipe,
                                    color_strb->texture, 0, 0,
                                    usage,
                                    xpos, ypos,
                                    width, height);
 
    if (usage & PIPE_TRANSFER_READ)
-      pipe_get_tile_rgba(pipe, color_trans, 0, 0, width, height, buf);
+      pipe_get_tile_rgba_format(pipe, color_trans, 0, 0, width, height,
+                                format, buf);
 
    switch (acc_strb->format) {
    case PIPE_FORMAT_R16G16B16A16_SNORM:
@@ -278,7 +285,8 @@ accum_return(struct gl_context *ctx, GLfloat value,
       _mesa_problem(NULL, "unexpected format in st_clear_accum_buffer()");
    }
 
-   pipe_put_tile_rgba(pipe, color_trans, 0, 0, width, height, buf);
+   pipe_put_tile_rgba_format(pipe, color_trans, 0, 0, width, height,
+                             format, buf);
 
    free(buf);
    pipe->transfer_destroy(pipe, color_trans);

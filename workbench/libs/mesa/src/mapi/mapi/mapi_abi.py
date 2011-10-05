@@ -45,6 +45,7 @@ class ABIEntry(object):
         self.slot = attrs['slot']
         self.hidden = attrs['hidden']
         self.alias = attrs['alias']
+        self.handcode = attrs['handcode']
 
     def c_prototype(self):
         return '%s %s(%s)' % (self.c_return(), self.name, self.c_params())
@@ -125,6 +126,61 @@ class ABIEntry(object):
 
         return res
 
+def abi_parse_xml(xml):
+    """Parse a GLAPI XML file for ABI entries."""
+    import os
+    GLAPI = "./%s/../glapi/gen" % (os.path.dirname(sys.argv[0]))
+    sys.path.append(GLAPI)
+    import gl_XML, glX_XML
+
+    api = gl_XML.parse_GL_API(xml, glX_XML.glx_item_factory())
+
+    entry_dict = {}
+    for func in api.functionIterateByOffset():
+        # make sure func.name appear first
+        entry_points = func.entry_points[:]
+        entry_points.remove(func.name)
+        entry_points.insert(0, func.name)
+
+        for name in entry_points:
+            attrs = {
+                    'slot': func.offset,
+                    'hidden': not func.is_static_entry_point(name),
+                    'alias': None if name == func.name else func.name,
+                    'handcode': bool(func.has_different_protocol(name)),
+            }
+
+            # post-process attrs
+            if attrs['alias']:
+                try:
+                    alias = entry_dict[attrs['alias']]
+                except KeyError:
+                    raise Exception('failed to alias %s' % attrs['alias'])
+                if alias.alias:
+                    raise Exception('recursive alias %s' % ent.name)
+                attrs['alias'] = alias
+            if attrs['handcode']:
+                attrs['handcode'] = func.static_glx_name(name)
+            else:
+                attrs['handcode'] = None
+
+            if entry_dict.has_key(name):
+                raise Exception('%s is duplicated' % (name))
+
+            cols = []
+            cols.append(func.return_type)
+            cols.append(name)
+            params = func.get_parameter_string(name)
+            cols.extend([p.strip() for p in params.split(',')])
+
+            ent = ABIEntry(cols, attrs)
+            entry_dict[ent.name] = ent
+
+    entries = entry_dict.values()
+    entries.sort()
+
+    return entries
+
 def abi_parse_line(line):
     cols = [col.strip() for col in line.split(',')]
 
@@ -132,6 +188,7 @@ def abi_parse_line(line):
             'slot': -1,
             'hidden': False,
             'alias': None,
+            'handcode': None,
     }
 
     # extract attributes from the first column
@@ -144,6 +201,8 @@ def abi_parse_line(line):
             attrs['hidden'] = True
         elif val.startswith('alias='):
             attrs['alias'] = val[6:]
+        elif val.startswith('handcode='):
+            attrs['handcode'] = val[9:]
         elif not val:
             pass
         else:
@@ -166,10 +225,13 @@ def abi_parse(filename):
         # post-process attributes
         if attrs['alias']:
             try:
-                ent = entry_dict[attrs['alias']]
-                slot = ent.slot
+                alias = entry_dict[attrs['alias']]
             except KeyError:
                 raise Exception('failed to alias %s' % attrs['alias'])
+            if alias.alias:
+                raise Exception('recursive alias %s' % ent.name)
+            slot = alias.slot
+            attrs['alias'] = alias
         else:
             slot = next_slot
             next_slot += 1
@@ -187,20 +249,38 @@ def abi_parse(filename):
     entries = entry_dict.values()
     entries.sort()
 
-    # sanity check
+    return entries
+
+def abi_sanity_check(entries):
+    if not entries:
+        return
+
+    all_names = []
+    last_slot = entries[-1].slot
     i = 0
-    for slot in xrange(next_slot):
+    for slot in xrange(last_slot + 1):
         if entries[i].slot != slot:
             raise Exception('entries are not ordered by slots')
         if entries[i].alias:
             raise Exception('first entry of slot %d aliases %s'
-                    % (slot, entries[i].alias))
+                    % (slot, entries[i].alias.name))
+        handcode = None
         while i < len(entries) and entries[i].slot == slot:
+            ent = entries[i]
+            if not handcode and ent.handcode:
+                handcode = ent.handcode
+            elif ent.handcode != handcode:
+                raise Exception('two aliases with handcode %s != %s',
+                        ent.handcode, handcode)
+
+            if ent.name in all_names:
+                raise Exception('%s is duplicated' % (ent.name))
+            if ent.alias and ent.alias.name not in all_names:
+                raise Exception('failed to alias %s' % (ent.alias.name))
+            all_names.append(ent.name)
             i += 1
     if i < len(entries):
         raise Exception('there are %d invalid entries' % (len(entries) - 1))
-
-    return entries
 
 class ABIPrinter(object):
     """MAPI Printer"""
@@ -215,6 +295,7 @@ class ABIPrinter(object):
         self.indent = ' ' * 3
         self.noop_warn = 'noop_warn'
         self.noop_generic = 'noop_generic'
+        self.current_get = 'entry_current_get'
 
         self.api_defines = []
         self.api_headers = ['"KHR/khrplatform.h"']
@@ -222,30 +303,52 @@ class ABIPrinter(object):
         self.api_entry = 'KHRONOS_APIENTRY'
         self.api_attrs = 'KHRONOS_APIATTRIBUTES'
 
-    def c_header(self):
+        self.c_header = ''
+
+        self.lib_need_table_size = True
+        self.lib_need_noop_array = True
+        self.lib_need_stubs = True
+        self.lib_need_all_entries = True
+        self.lib_need_non_hidden_entries = False
+
+    def c_notice(self):
         return '/* This file is automatically generated by mapi_abi.py.  Do not modify. */'
 
-    def c_includes(self):
+    def c_public_includes(self):
         """Return includes of the client API headers."""
         defines = ['#define ' + d for d in self.api_defines]
         includes = ['#include ' + h for h in self.api_headers]
         return "\n".join(defines + includes)
 
+    def need_entry_point(self, ent):
+        """Return True if an entry point is needed for the entry."""
+        # non-handcode hidden aliases may share the entry they alias
+        use_alias = (ent.hidden and ent.alias and not ent.handcode)
+        return not use_alias
+
+    def c_public_declarations(self, prefix):
+        """Return the declarations of public entry points."""
+        decls = []
+        for ent in self.entries:
+            if not self.need_entry_point(ent):
+                continue
+            export = self.api_call if not ent.hidden else ''
+            decls.append(self._c_decl(ent, prefix, True, export) + ';')
+
+        return "\n".join(decls)
+
     def c_mapi_table(self):
         """Return defines of the dispatch table size."""
-        num_static_entries = 0
-        for ent in self.entries:
-            if not ent.alias:
-                num_static_entries += 1
-
+        num_static_entries = self.entries[-1].slot + 1
         return ('#define MAPI_TABLE_NUM_STATIC %d\n' + \
                 '#define MAPI_TABLE_NUM_DYNAMIC %d') % (
                         num_static_entries, ABI_NUM_DYNAMIC_ENTRIES)
 
     def c_mapi_table_initializer(self, prefix):
         """Return the array initializer for mapi_table_fill."""
-        entries = [ent.name for ent in self.entries if not ent.alias]
-        pre = self.indent + '(mapi_proc) ' + prefix
+        entries = [self._c_function(ent, prefix)
+                for ent in self.entries if not ent.alias]
+        pre = self.indent + '(mapi_proc) '
         return pre + (',\n' + pre).join(entries)
 
     def c_mapi_table_spec(self):
@@ -263,11 +366,38 @@ class ABIPrinter(object):
 
         return self.indent + self.indent.join(specv1)
 
-    def _c_decl(self, ent, prefix, need_attr=True):
+    def _c_function(self, ent, prefix, mangle=False, stringify=False):
+        """Return the function name of an entry."""
+        formats = {
+                True: { True: '%s_STR(%s)', False: '%s(%s)' },
+                False: { True: '"%s%s"', False: '%s%s' },
+        }
+        fmt = formats[prefix.isupper()][stringify]
+        name = ent.name
+        if mangle and ent.hidden:
+            name = '_dispatch_stub_' + str(ent.slot)
+        return fmt % (prefix, name)
+
+    def _c_function_call(self, ent, prefix):
+        """Return the function name used for calling."""
+        if ent.handcode:
+            # _c_function does not handle this case
+            formats = { True: '%s(%s)', False: '%s%s' }
+            fmt = formats[prefix.isupper()]
+            name = fmt % (prefix, ent.handcode)
+        elif self.need_entry_point(ent):
+            name = self._c_function(ent, prefix, True)
+        else:
+            name = self._c_function(ent.alias, prefix, True)
+        return name
+
+    def _c_decl(self, ent, prefix, mangle=False, export=''):
         """Return the C declaration for the entry."""
-        decl = '%s %s %s%s(%s)' % (ent.c_return(), self.api_entry,
-                prefix, ent.name, ent.c_params())
-        if need_attr and self.api_attrs:
+        decl = '%s %s %s(%s)' % (ent.c_return(), self.api_entry,
+                self._c_function(ent, prefix, mangle), ent.c_params())
+        if export:
+            decl = export + ' ' + decl
+        if self.api_attrs:
             decl += ' ' + self.api_attrs
 
         return decl
@@ -281,36 +411,59 @@ class ABIPrinter(object):
 
     def c_private_declarations(self, prefix):
         """Return the declarations of private functions."""
-        decls = [self._c_decl(ent, prefix)
+        decls = [self._c_decl(ent, prefix) + ';'
                 for ent in self.entries if not ent.alias]
 
-        return ";\n".join(decls) + ";"
+        return "\n".join(decls)
 
-    def c_public_dispatches(self, prefix):
+    def c_public_dispatches(self, prefix, no_hidden):
         """Return the public dispatch functions."""
         dispatches = []
         for ent in self.entries:
-            if ent.hidden:
+            if ent.hidden and no_hidden:
                 continue
 
-            proto = self.api_call + ' ' + self._c_decl(ent, prefix)
+            if not self.need_entry_point(ent):
+                continue
+
+            export = self.api_call if not ent.hidden else ''
+
+            proto = self._c_decl(ent, prefix, True, export)
             cast = self._c_cast(ent)
 
             ret = ''
             if ent.ret:
                 ret = 'return '
             stmt1 = self.indent
-            stmt1 += 'const struct mapi_table *tbl = u_current_get();'
+            stmt1 += 'const struct mapi_table *_tbl = %s();' % (
+                    self.current_get)
             stmt2 = self.indent
-            stmt2 += 'mapi_func func = ((const mapi_func *) tbl)[%d];' % (
+            stmt2 += 'mapi_func _func = ((const mapi_func *) _tbl)[%d];' % (
                     ent.slot)
             stmt3 = self.indent
-            stmt3 += '%s((%s) func)(%s);' % (ret, cast, ent.c_args())
+            stmt3 += '%s((%s) _func)(%s);' % (ret, cast, ent.c_args())
 
             disp = '%s\n{\n%s\n%s\n%s\n}' % (proto, stmt1, stmt2, stmt3)
+
+            if ent.handcode:
+                disp = '#if 0\n' + disp + '\n#endif'
+
             dispatches.append(disp)
 
         return '\n\n'.join(dispatches)
+
+    def c_public_initializer(self, prefix):
+        """Return the initializer for public dispatch functions."""
+        names = []
+        for ent in self.entries:
+            if ent.alias:
+                continue
+
+            name = '%s(mapi_func) %s' % (self.indent,
+                    self._c_function_call(ent, prefix))
+            names.append(name)
+
+        return ',\n'.join(names)
 
     def c_stub_string_pool(self):
         """Return the string pool for use by stubs."""
@@ -334,8 +487,8 @@ class ABIPrinter(object):
         """Return the initializer for struct mapi_stub array."""
         stubs = []
         for ent in self.entries_sorted_by_names:
-            stubs.append('%s{ (mapi_func) %s%s, %d, (void *) %d }' % (
-                self.indent, prefix, ent.name, ent.slot, pool_offsets[ent]))
+            stubs.append('%s{ (void *) %d, %d, NULL }' % (
+                self.indent, pool_offsets[ent], ent.slot))
 
         return ',\n'.join(stubs)
 
@@ -346,10 +499,10 @@ class ABIPrinter(object):
             if ent.alias:
                 continue
 
-            proto = 'static ' + self._c_decl(ent, prefix)
+            proto = self._c_decl(ent, prefix, False, 'static')
 
-            stmt1 = self.indent + '%s("%s%s");' % (
-                    self.noop_warn, warn_prefix, ent.name)
+            stmt1 = self.indent + '%s(%s);' % (self.noop_warn,
+                    self._c_function(ent, warn_prefix, False, True))
 
             if ent.ret:
                 stmt2 = self.indent + 'return (%s) 0;' % (ent.ret)
@@ -363,7 +516,8 @@ class ABIPrinter(object):
 
     def c_noop_initializer(self, prefix, use_generic):
         """Return an initializer for the noop dispatch table."""
-        entries = [prefix + ent.name for ent in self.entries if not ent.alias]
+        entries = [self._c_function(ent, prefix)
+                for ent in self.entries if not ent.alias]
         if use_generic:
             entries = [self.noop_generic] * len(entries)
 
@@ -372,86 +526,138 @@ class ABIPrinter(object):
         pre = self.indent + '(mapi_func) '
         return pre + (',\n' + pre).join(entries)
 
-    def c_asm_gcc(self, prefix):
+    def c_asm_gcc(self, prefix, no_hidden):
         asm = []
-        to_name = None
 
-        asm.append('__asm__(')
         for ent in self.entries:
-            name = prefix + ent.name
+            if ent.hidden and no_hidden:
+                continue
+
+            if not self.need_entry_point(ent):
+                continue
+
+            name = self._c_function(ent, prefix, True, True)
+
+            if ent.handcode:
+                asm.append('#if 0')
 
             if ent.hidden:
-                asm.append('".hidden %s\\n"' % (name))
+                asm.append('".hidden "%s"\\n"' % (name))
 
-            if ent.alias:
-                asm.append('".globl %s\\n"' % (name))
-                asm.append('".set %s, %s\\n"' % (name, to_name))
+            if ent.alias and not (ent.alias.hidden and no_hidden):
+                asm.append('".globl "%s"\\n"' % (name))
+                asm.append('".set "%s", "%s"\\n"' % (name,
+                    self._c_function(ent.alias, prefix, True, True)))
             else:
-                asm.append('STUB_ASM_ENTRY("%s")"\\n"' % (name))
+                asm.append('STUB_ASM_ENTRY(%s)"\\n"' % (name))
                 asm.append('"\\t"STUB_ASM_CODE("%d")"\\n"' % (ent.slot))
-                to_name = name
-        asm.append(');')
+
+            if ent.handcode:
+                asm.append('#endif')
+            asm.append('')
 
         return "\n".join(asm)
 
     def output_for_lib(self):
-        print self.c_header()
+        print self.c_notice()
+
+        if self.c_header:
+            print
+            print self.c_header
+
         print
         print '#ifdef MAPI_TMP_DEFINES'
-        print self.c_includes()
+        print self.c_public_includes()
+        print
+        print self.c_public_declarations(self.prefix_lib)
         print '#undef MAPI_TMP_DEFINES'
         print '#endif /* MAPI_TMP_DEFINES */'
-        print
-        print '#ifdef MAPI_TMP_TABLE'
-        print self.c_mapi_table()
-        print '#undef MAPI_TMP_TABLE'
-        print '#endif /* MAPI_TMP_TABLE */'
-        print
 
-        pool, pool_offsets = self.c_stub_string_pool()
-        print '#ifdef MAPI_TMP_PUBLIC_STUBS'
-        print 'static const char public_string_pool[] ='
-        print pool
-        print
-        print 'static const struct mapi_stub public_stubs[] = {'
-        print self.c_stub_initializer(self.prefix_lib, pool_offsets)
-        print '};'
-        print '#undef MAPI_TMP_PUBLIC_STUBS'
-        print '#endif /* MAPI_TMP_PUBLIC_STUBS */'
-        print
+        if self.lib_need_table_size:
+            print
+            print '#ifdef MAPI_TMP_TABLE'
+            print self.c_mapi_table()
+            print '#undef MAPI_TMP_TABLE'
+            print '#endif /* MAPI_TMP_TABLE */'
 
-        print '#ifdef MAPI_TMP_PUBLIC_ENTRIES'
-        print self.c_public_dispatches(self.prefix_lib)
-        print '#undef MAPI_TMP_PUBLIC_ENTRIES'
-        print '#endif /* MAPI_TMP_PUBLIC_ENTRIES */'
-        print
+        if self.lib_need_noop_array:
+            print
+            print '#ifdef MAPI_TMP_NOOP_ARRAY'
+            print '#ifdef DEBUG'
+            print
+            print self.c_noop_functions(self.prefix_noop, self.prefix_warn)
+            print
+            print 'const mapi_func table_%s_array[] = {' % (self.prefix_noop)
+            print self.c_noop_initializer(self.prefix_noop, False)
+            print '};'
+            print
+            print '#else /* DEBUG */'
+            print
+            print 'const mapi_func table_%s_array[] = {' % (self.prefix_noop)
+            print self.c_noop_initializer(self.prefix_noop, True)
+            print '};'
+            print
+            print '#endif /* DEBUG */'
+            print '#undef MAPI_TMP_NOOP_ARRAY'
+            print '#endif /* MAPI_TMP_NOOP_ARRAY */'
 
-        print '#ifdef MAPI_TMP_NOOP_ARRAY'
-        print '#ifdef DEBUG'
-        print
-        print self.c_noop_functions(self.prefix_noop, self.prefix_lib)
-        print
-        print 'const mapi_func table_%s_array[] = {' % (self.prefix_noop)
-        print self.c_noop_initializer(self.prefix_noop, False)
-        print '};'
-        print
-        print '#else /* DEBUG */'
-        print
-        print 'const mapi_func table_%s_array[] = {' % (self.prefix_noop)
-        print self.c_noop_initializer(self.prefix_noop, True)
-        print '};'
-        print '#endif /* DEBUG */'
-        print '#undef MAPI_TMP_NOOP_ARRAY'
-        print '#endif /* MAPI_TMP_NOOP_ARRAY */'
-        print
+        if self.lib_need_stubs:
+            pool, pool_offsets = self.c_stub_string_pool()
+            print
+            print '#ifdef MAPI_TMP_PUBLIC_STUBS'
+            print 'static const char public_string_pool[] ='
+            print pool
+            print
+            print 'static const struct mapi_stub public_stubs[] = {'
+            print self.c_stub_initializer(self.prefix_lib, pool_offsets)
+            print '};'
+            print '#undef MAPI_TMP_PUBLIC_STUBS'
+            print '#endif /* MAPI_TMP_PUBLIC_STUBS */'
 
-        print '#ifdef MAPI_TMP_STUB_ASM_GCC'
-        print self.c_asm_gcc(self.prefix_lib)
-        print '#undef MAPI_TMP_STUB_ASM_GCC'
-        print '#endif /* MAPI_TMP_STUB_ASM_GCC */'
+        if self.lib_need_all_entries:
+            print
+            print '#ifdef MAPI_TMP_PUBLIC_ENTRIES'
+            print self.c_public_dispatches(self.prefix_lib, False)
+            print
+            print 'static const mapi_func public_entries[] = {'
+            print self.c_public_initializer(self.prefix_lib)
+            print '};'
+            print '#undef MAPI_TMP_PUBLIC_ENTRIES'
+            print '#endif /* MAPI_TMP_PUBLIC_ENTRIES */'
+
+            print
+            print '#ifdef MAPI_TMP_STUB_ASM_GCC'
+            print '__asm__('
+            print self.c_asm_gcc(self.prefix_lib, False)
+            print ');'
+            print '#undef MAPI_TMP_STUB_ASM_GCC'
+            print '#endif /* MAPI_TMP_STUB_ASM_GCC */'
+
+        if self.lib_need_non_hidden_entries:
+            all_hidden = True
+            for ent in self.entries:
+                if not ent.hidden:
+                    all_hidden = False
+                    break
+            if not all_hidden:
+                print
+                print '#ifdef MAPI_TMP_PUBLIC_ENTRIES_NO_HIDDEN'
+                print self.c_public_dispatches(self.prefix_lib, True)
+                print
+                print '/* does not need public_entries */'
+                print '#undef MAPI_TMP_PUBLIC_ENTRIES_NO_HIDDEN'
+                print '#endif /* MAPI_TMP_PUBLIC_ENTRIES_NO_HIDDEN */'
+
+                print
+                print '#ifdef MAPI_TMP_STUB_ASM_GCC_NO_HIDDEN'
+                print '__asm__('
+                print self.c_asm_gcc(self.prefix_lib, True)
+                print ');'
+                print '#undef MAPI_TMP_STUB_ASM_GCC_NO_HIDDEN'
+                print '#endif /* MAPI_TMP_STUB_ASM_GCC_NO_HIDDEN */'
 
     def output_for_app(self):
-        print self.c_header()
+        print self.c_notice()
         print
         print self.c_private_declarations(self.prefix_app)
         print
@@ -469,8 +675,9 @@ class ABIPrinter(object):
 class GLAPIPrinter(ABIPrinter):
     """OpenGL API Printer"""
 
-    def __init__(self, entries):
-        super(GLAPIPrinter, self).__init__(entries)
+    def __init__(self, entries, api=None):
+        api_entries = self._get_api_entries(entries, api)
+        super(GLAPIPrinter, self).__init__(api_entries)
 
         self.api_defines = ['GL_GLEXT_PROTOTYPES']
         self.api_headers = ['"GL/gl.h"', '"GL/glext.h"']
@@ -478,33 +685,539 @@ class GLAPIPrinter(ABIPrinter):
         self.api_entry = 'APIENTRY'
         self.api_attrs = ''
 
-        self.prefix_lib = 'gl'
+        self.lib_need_table_size = False
+        self.lib_need_noop_array = False
+        self.lib_need_stubs = False
+        self.lib_need_all_entries = False
+        self.lib_need_non_hidden_entries = True
+
+        self.prefix_lib = 'GLAPI_PREFIX'
         self.prefix_app = '_mesa_'
         self.prefix_noop = 'noop'
+        self.prefix_warn = self.prefix_lib
 
-    def output_for_app(self):
-        # not used
-        pass
+        self.c_header = self._get_c_header()
+
+    def _get_api_entries(self, entries, api):
+        """Override the entry attributes according to API."""
+        import copy
+
+        # no override
+        if api is None:
+            return entries
+
+        api_entries = {}
+        for ent in entries:
+            ent = copy.copy(ent)
+
+            # override 'hidden' and 'handcode'
+            ent.hidden = ent.name not in api
+            ent.handcode = False
+            if ent.alias:
+                ent.alias = api_entries[ent.alias.name]
+
+            api_entries[ent.name] = ent
+
+        # sanity check
+        missed = [name for name in api if name not in api_entries]
+        if missed:
+            raise Exception('%s is missing' % str(missed))
+
+        entries = api_entries.values()
+        entries.sort()
+
+        return entries
+
+    def _get_c_header(self):
+        header = """#ifndef _GLAPI_TMP_H_
+#define _GLAPI_TMP_H_
+#ifdef USE_MGL_NAMESPACE
+#define GLAPI_PREFIX(func)  mgl##func
+#define GLAPI_PREFIX_STR(func)  "mgl"#func
+#else
+#define GLAPI_PREFIX(func)  gl##func
+#define GLAPI_PREFIX_STR(func)  "gl"#func
+#endif /* USE_MGL_NAMESPACE */
+
+typedef int GLfixed;
+typedef int GLclampx;
+#endif /* _GLAPI_TMP_H_ */"""
+
+        return header
 
 class ES1APIPrinter(GLAPIPrinter):
     """OpenGL ES 1.x API Printer"""
 
     def __init__(self, entries):
-        super(ES1APIPrinter, self).__init__(entries)
+        es1_api = [
+                # OpenGL ES 1.1
+                'ActiveTexture',
+                'AlphaFunc',
+                'AlphaFuncx',
+                'BindBuffer',
+                'BindTexture',
+                'BlendFunc',
+                'BufferData',
+                'BufferSubData',
+                'Clear',
+                'ClearColor',
+                'ClearColorx',
+                'ClearDepthf',
+                'ClearDepthx',
+                'ClearStencil',
+                'ClientActiveTexture',
+                'ClipPlanef',
+                'ClipPlanex',
+                'Color4f',
+                'Color4ub',
+                'Color4x',
+                'ColorMask',
+                'ColorPointer',
+                'CompressedTexImage2D',
+                'CompressedTexSubImage2D',
+                'CopyTexImage2D',
+                'CopyTexSubImage2D',
+                'CullFace',
+                'DeleteBuffers',
+                'DeleteTextures',
+                'DepthFunc',
+                'DepthMask',
+                'DepthRangef',
+                'DepthRangex',
+                'Disable',
+                'DisableClientState',
+                'DrawArrays',
+                'DrawElements',
+                'Enable',
+                'EnableClientState',
+                'Finish',
+                'Flush',
+                'Fogf',
+                'Fogfv',
+                'Fogx',
+                'Fogxv',
+                'FrontFace',
+                'Frustumf',
+                'Frustumx',
+                'GenBuffers',
+                'GenTextures',
+                'GetBooleanv',
+                'GetBufferParameteriv',
+                'GetClipPlanef',
+                'GetClipPlanex',
+                'GetError',
+                'GetFixedv',
+                'GetFloatv',
+                'GetIntegerv',
+                'GetLightfv',
+                'GetLightxv',
+                'GetMaterialfv',
+                'GetMaterialxv',
+                'GetPointerv',
+                'GetString',
+                'GetTexEnvfv',
+                'GetTexEnviv',
+                'GetTexEnvxv',
+                'GetTexParameterfv',
+                'GetTexParameteriv',
+                'GetTexParameterxv',
+                'Hint',
+                'IsBuffer',
+                'IsEnabled',
+                'IsTexture',
+                'Lightf',
+                'Lightfv',
+                'LightModelf',
+                'LightModelfv',
+                'LightModelx',
+                'LightModelxv',
+                'Lightx',
+                'Lightxv',
+                'LineWidth',
+                'LineWidthx',
+                'LoadIdentity',
+                'LoadMatrixf',
+                'LoadMatrixx',
+                'LogicOp',
+                'Materialf',
+                'Materialfv',
+                'Materialx',
+                'Materialxv',
+                'MatrixMode',
+                'MultiTexCoord4f',
+                'MultiTexCoord4x',
+                'MultMatrixf',
+                'MultMatrixx',
+                'Normal3f',
+                'Normal3x',
+                'NormalPointer',
+                'Orthof',
+                'Orthox',
+                'PixelStorei',
+                'PointParameterf',
+                'PointParameterfv',
+                'PointParameterx',
+                'PointParameterxv',
+                'PointSize',
+                'PointSizex',
+                'PolygonOffset',
+                'PolygonOffsetx',
+                'PopMatrix',
+                'PushMatrix',
+                'ReadPixels',
+                'Rotatef',
+                'Rotatex',
+                'SampleCoverage',
+                'SampleCoveragex',
+                'Scalef',
+                'Scalex',
+                'Scissor',
+                'ShadeModel',
+                'StencilFunc',
+                'StencilMask',
+                'StencilOp',
+                'TexCoordPointer',
+                'TexEnvf',
+                'TexEnvfv',
+                'TexEnvi',
+                'TexEnviv',
+                'TexEnvx',
+                'TexEnvxv',
+                'TexImage2D',
+                'TexParameterf',
+                'TexParameterfv',
+                'TexParameteri',
+                'TexParameteriv',
+                'TexParameterx',
+                'TexParameterxv',
+                'TexSubImage2D',
+                'Translatef',
+                'Translatex',
+                'VertexPointer',
+                'Viewport',
+                # GL_OES_EGL_image
+                'EGLImageTargetTexture2DOES',
+                'EGLImageTargetRenderbufferStorageOES',
+                # GL_OES_mapbuffer
+                'GetBufferPointervOES',
+                'MapBufferOES',
+                'UnmapBufferOES',
+                # GL_EXT_multi_draw_arrays
+                'MultiDrawArraysEXT',
+                'MultiDrawElementsEXT',
+                # GL_OES_blend_equation_separate
+                'BlendEquationSeparateOES',
+                # GL_OES_blend_func_separate
+                'BlendFuncSeparateOES',
+                # GL_OES_blend_subtract
+                'BlendEquationOES',
+                # GL_OES_draw_texture
+                'DrawTexiOES',
+                'DrawTexivOES',
+                'DrawTexfOES',
+                'DrawTexfvOES',
+                'DrawTexsOES',
+                'DrawTexsvOES',
+                'DrawTexxOES',
+                'DrawTexxvOES',
+                # GL_OES_fixed_point
+                'AlphaFuncxOES',
+                'ClearColorxOES',
+                'ClearDepthxOES',
+                'Color4xOES',
+                'DepthRangexOES',
+                'FogxOES',
+                'FogxvOES',
+                'FrustumxOES',
+                'LightModelxOES',
+                'LightModelxvOES',
+                'LightxOES',
+                'LightxvOES',
+                'LineWidthxOES',
+                'LoadMatrixxOES',
+                'MaterialxOES',
+                'MaterialxvOES',
+                'MultiTexCoord4xOES',
+                'MultMatrixxOES',
+                'Normal3xOES',
+                'OrthoxOES',
+                'PointSizexOES',
+                'PolygonOffsetxOES',
+                'RotatexOES',
+                'SampleCoveragexOES',
+                'ScalexOES',
+                'TexEnvxOES',
+                'TexEnvxvOES',
+                'TexParameterxOES',
+                'TranslatexOES',
+                'ClipPlanexOES',
+                'GetClipPlanexOES',
+                'GetFixedvOES',
+                'GetLightxvOES',
+                'GetMaterialxvOES',
+                'GetTexEnvxvOES',
+                'GetTexParameterxvOES',
+                'PointParameterxOES',
+                'PointParameterxvOES',
+                'TexParameterxvOES',
+                # GL_OES_framebuffer_object
+                'BindFramebufferOES',
+                'BindRenderbufferOES',
+                'CheckFramebufferStatusOES',
+                'DeleteFramebuffersOES',
+                'DeleteRenderbuffersOES',
+                'FramebufferRenderbufferOES',
+                'FramebufferTexture2DOES',
+                'GenerateMipmapOES',
+                'GenFramebuffersOES',
+                'GenRenderbuffersOES',
+                'GetFramebufferAttachmentParameterivOES',
+                'GetRenderbufferParameterivOES',
+                'IsFramebufferOES',
+                'IsRenderbufferOES',
+                'RenderbufferStorageOES',
+                # GL_OES_point_size_array
+                'PointSizePointerOES',
+                # GL_OES_query_matrix
+                'QueryMatrixxOES',
+                # GL_OES_single_precision
+                'ClearDepthfOES',
+                'DepthRangefOES',
+                'FrustumfOES',
+                'OrthofOES',
+                'ClipPlanefOES',
+                'GetClipPlanefOES',
+                # GL_OES_texture_cube_map
+                'GetTexGenfvOES',
+                'GetTexGenivOES',
+                'GetTexGenxvOES',
+                'TexGenfOES',
+                'TexGenfvOES',
+                'TexGeniOES',
+                'TexGenivOES',
+                'TexGenxOES',
+                'TexGenxvOES',
+        ]
 
-        self.api_headers = ['"GLES/gl.h"', '"GLES/glext.h"']
-        self.api_call = 'GL_API'
-        self.api_entry = 'GL_APIENTRY'
+        super(ES1APIPrinter, self).__init__(entries, es1_api)
+        self.prefix_lib = 'gl'
+        self.prefix_warn = 'gl'
+
+    def _get_c_header(self):
+        header = """#ifndef _GLAPI_TMP_H_
+#define _GLAPI_TMP_H_
+typedef int GLfixed;
+typedef int GLclampx;
+#endif /* _GLAPI_TMP_H_ */"""
+
+        return header
 
 class ES2APIPrinter(GLAPIPrinter):
     """OpenGL ES 2.x API Printer"""
 
     def __init__(self, entries):
-        super(ES2APIPrinter, self).__init__(entries)
+        es2_api = [
+                # OpenGL ES 2.0
+                "ActiveTexture",
+                "AttachShader",
+                "BindAttribLocation",
+                "BindBuffer",
+                "BindFramebuffer",
+                "BindRenderbuffer",
+                "BindTexture",
+                "BlendColor",
+                "BlendEquation",
+                "BlendEquationSeparate",
+                "BlendFunc",
+                "BlendFuncSeparate",
+                "BufferData",
+                "BufferSubData",
+                "CheckFramebufferStatus",
+                "Clear",
+                "ClearColor",
+                "ClearDepthf",
+                "ClearStencil",
+                "ColorMask",
+                "CompileShader",
+                "CompressedTexImage2D",
+                "CompressedTexSubImage2D",
+                "CopyTexImage2D",
+                "CopyTexSubImage2D",
+                "CreateProgram",
+                "CreateShader",
+                "CullFace",
+                "DeleteBuffers",
+                "DeleteFramebuffers",
+                "DeleteProgram",
+                "DeleteRenderbuffers",
+                "DeleteShader",
+                "DeleteTextures",
+                "DepthFunc",
+                "DepthMask",
+                "DepthRangef",
+                "DetachShader",
+                "Disable",
+                "DisableVertexAttribArray",
+                "DrawArrays",
+                "DrawElements",
+                "Enable",
+                "EnableVertexAttribArray",
+                "Finish",
+                "Flush",
+                "FramebufferRenderbuffer",
+                "FramebufferTexture2D",
+                "FrontFace",
+                "GenBuffers",
+                "GenerateMipmap",
+                "GenFramebuffers",
+                "GenRenderbuffers",
+                "GenTextures",
+                "GetActiveAttrib",
+                "GetActiveUniform",
+                "GetAttachedShaders",
+                "GetAttribLocation",
+                "GetBooleanv",
+                "GetBufferParameteriv",
+                "GetError",
+                "GetFloatv",
+                "GetFramebufferAttachmentParameteriv",
+                "GetIntegerv",
+                "GetProgramInfoLog",
+                "GetProgramiv",
+                "GetRenderbufferParameteriv",
+                "GetShaderInfoLog",
+                "GetShaderiv",
+                "GetShaderPrecisionFormat",
+                "GetShaderSource",
+                "GetString",
+                "GetTexParameterfv",
+                "GetTexParameteriv",
+                "GetUniformfv",
+                "GetUniformiv",
+                "GetUniformLocation",
+                "GetVertexAttribfv",
+                "GetVertexAttribiv",
+                "GetVertexAttribPointerv",
+                "Hint",
+                "IsBuffer",
+                "IsEnabled",
+                "IsFramebuffer",
+                "IsProgram",
+                "IsRenderbuffer",
+                "IsShader",
+                "IsTexture",
+                "LineWidth",
+                "LinkProgram",
+                "PixelStorei",
+                "PolygonOffset",
+                "ReadPixels",
+                "ReleaseShaderCompiler",
+                "RenderbufferStorage",
+                "SampleCoverage",
+                "Scissor",
+                "ShaderBinary",
+                "ShaderSource",
+                "StencilFunc",
+                "StencilFuncSeparate",
+                "StencilMask",
+                "StencilMaskSeparate",
+                "StencilOp",
+                "StencilOpSeparate",
+                "TexImage2D",
+                "TexParameterf",
+                "TexParameterfv",
+                "TexParameteri",
+                "TexParameteriv",
+                "TexSubImage2D",
+                "Uniform1f",
+                "Uniform1fv",
+                "Uniform1i",
+                "Uniform1iv",
+                "Uniform2f",
+                "Uniform2fv",
+                "Uniform2i",
+                "Uniform2iv",
+                "Uniform3f",
+                "Uniform3fv",
+                "Uniform3i",
+                "Uniform3iv",
+                "Uniform4f",
+                "Uniform4fv",
+                "Uniform4i",
+                "Uniform4iv",
+                "UniformMatrix2fv",
+                "UniformMatrix3fv",
+                "UniformMatrix4fv",
+                "UseProgram",
+                "ValidateProgram",
+                "VertexAttrib1f",
+                "VertexAttrib1fv",
+                "VertexAttrib2f",
+                "VertexAttrib2fv",
+                "VertexAttrib3f",
+                "VertexAttrib3fv",
+                "VertexAttrib4f",
+                "VertexAttrib4fv",
+                "VertexAttribPointer",
+                "Viewport",
+                # GL_OES_EGL_image
+                'EGLImageTargetTexture2DOES',
+                'EGLImageTargetRenderbufferStorageOES',
+                # GL_OES_mapbuffer
+                'GetBufferPointervOES',
+                'MapBufferOES',
+                'UnmapBufferOES',
+                # GL_EXT_multi_draw_arrays
+                'MultiDrawArraysEXT',
+                'MultiDrawElementsEXT',
+                # GL_OES_texture_3D
+                'CompressedTexImage3DOES',
+                'CompressedTexSubImage3DOES',
+                'CopyTexSubImage3DOES',
+                'FramebufferTexture3DOES',
+                'TexImage3DOES',
+                'TexSubImage3DOES',
+                # GL_OES_get_program_binary
+                'GetProgramBinaryOES',
+                'ProgramBinaryOES',
+        ]
 
-        self.api_headers = ['"GLES2/gl2.h"', '"GLES2/gl2ext.h"']
-        self.api_call = 'GL_APICALL'
-        self.api_entry = 'GL_APIENTRY'
+        super(ES2APIPrinter, self).__init__(entries, es2_api)
+        self.prefix_lib = 'gl'
+        self.prefix_warn = 'gl'
+
+    def _get_c_header(self):
+        header = """#ifndef _GLAPI_TMP_H_
+#define _GLAPI_TMP_H_
+typedef int GLfixed;
+typedef int GLclampx;
+#endif /* _GLAPI_TMP_H_ */"""
+
+        return header
+
+class SharedGLAPIPrinter(GLAPIPrinter):
+    """Shared GLAPI API Printer"""
+
+    def __init__(self, entries):
+        super(SharedGLAPIPrinter, self).__init__(entries, [])
+
+        self.lib_need_table_size = True
+        self.lib_need_noop_array = True
+        self.lib_need_stubs = True
+        self.lib_need_all_entries = True
+        self.lib_need_non_hidden_entries = False
+
+        self.prefix_lib = 'shared'
+        self.prefix_warn = 'gl'
+
+    def _get_c_header(self):
+        header = """#ifndef _GLAPI_TMP_H_
+#define _GLAPI_TMP_H_
+typedef int GLfixed;
+typedef int GLclampx;
+#endif /* _GLAPI_TMP_H_ */"""
+
+        return header
 
 class VGAPIPrinter(ABIPrinter):
     """OpenVG API Printer"""
@@ -521,9 +1234,10 @@ class VGAPIPrinter(ABIPrinter):
         self.prefix_lib = 'vg'
         self.prefix_app = 'vega'
         self.prefix_noop = 'noop'
+        self.prefix_warn = 'vg'
 
 def parse_args():
-    printers = ['glapi', 'es1api', 'es2api', 'vgapi']
+    printers = ['vgapi', 'glapi', 'es1api', 'es2api', 'shared-glapi']
     modes = ['lib', 'app']
 
     parser = OptionParser(usage='usage: %prog [options] <filename>')
@@ -545,12 +1259,18 @@ def main():
         'vgapi': VGAPIPrinter,
         'glapi': GLAPIPrinter,
         'es1api': ES1APIPrinter,
-        'es2api': ES2APIPrinter
+        'es2api': ES2APIPrinter,
+        'shared-glapi': SharedGLAPIPrinter,
     }
 
     filename, options = parse_args()
 
-    entries = abi_parse(filename)
+    if filename.endswith('.xml'):
+        entries = abi_parse_xml(filename)
+    else:
+        entries = abi_parse(filename)
+    abi_sanity_check(entries)
+
     printer = printers[options.printer](entries)
     if options.mode == 'lib':
         printer.output_for_lib()

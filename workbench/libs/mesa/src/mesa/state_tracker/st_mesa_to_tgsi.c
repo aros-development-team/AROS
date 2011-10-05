@@ -72,6 +72,7 @@ struct st_translate {
    struct ureg_src inputs[PIPE_MAX_SHADER_INPUTS];
    struct ureg_dst address[1];
    struct ureg_src samplers[PIPE_MAX_SAMPLERS];
+   struct ureg_src systemValues[SYSTEM_VALUE_MAX];
 
    /* Extra info for handling point size clamping in vertex shader */
    struct ureg_dst pointSizeResult; /**< Actual point size output register */
@@ -101,6 +102,13 @@ struct st_translate {
    unsigned procType;  /**< TGSI_PROCESSOR_VERTEX/FRAGMENT */
 
    boolean error;
+};
+
+
+/** Map Mesa's SYSTEM_VALUE_x to TGSI_SEMANTIC_x */
+static unsigned mesa_sysval_to_semantic[SYSTEM_VALUE_MAX] = {
+   TGSI_SEMANTIC_FACE,
+   TGSI_SEMANTIC_INSTANCEID
 };
 
 
@@ -216,9 +224,9 @@ src_register( struct st_translate *t,
 
    case PROGRAM_TEMPORARY:
       assert(index >= 0);
+      assert(index < Elements(t->temps));
       if (ureg_dst_is_undef(t->temps[index]))
          t->temps[index] = ureg_DECL_temporary( t->ureg );
-      assert(index < Elements(t->temps));
       return ureg_src(t->temps[index]);
 
    case PROGRAM_NAMED_PARAM:
@@ -244,6 +252,10 @@ src_register( struct st_translate *t,
 
    case PROGRAM_ADDRESS:
       return ureg_src(t->address[index]);
+
+   case PROGRAM_SYSTEM_VALUE:
+      assert(index < Elements(t->systemValues));
+      return t->systemValues[index];
 
    default:
       debug_assert( 0 );
@@ -274,6 +286,8 @@ translate_texture_target( GLuint textarget,
    case TEXTURE_3D_INDEX:   return TGSI_TEXTURE_3D;
    case TEXTURE_CUBE_INDEX: return TGSI_TEXTURE_CUBE;
    case TEXTURE_RECT_INDEX: return TGSI_TEXTURE_RECT;
+   case TEXTURE_1D_ARRAY_INDEX:   return TGSI_TEXTURE_1D_ARRAY;
+   case TEXTURE_2D_ARRAY_INDEX:   return TGSI_TEXTURE_2D_ARRAY;
    default:
       debug_assert( 0 );
       return TGSI_TEXTURE_1D;
@@ -738,35 +752,15 @@ compile_instruction(
 
 
 /**
- * Emit the TGSI instructions to adjust the WPOS pixel center convention
- */
-static void
-emit_adjusted_wpos( struct st_translate *t,
-                    const struct gl_program *program, GLfloat value)
-{
-   struct ureg_program *ureg = t->ureg;
-   struct ureg_dst wpos_temp = ureg_DECL_temporary(ureg);
-   struct ureg_src wpos_input = t->inputs[t->inputMapping[FRAG_ATTRIB_WPOS]];
-
-   /* Note that we bias X and Y and pass Z and W through unchanged.
-    * The shader might also use gl_FragCoord.w and .z.
-    */
-   ureg_ADD(ureg, wpos_temp, wpos_input,
-            ureg_imm4f(ureg, value, value, 0.0f, 0.0f));
-
-   t->inputs[t->inputMapping[FRAG_ATTRIB_WPOS]] = ureg_src(wpos_temp);
-}
-
-
-/**
- * Emit the TGSI instructions for inverting the WPOS y coordinate.
+ * Emit the TGSI instructions for inverting and adjusting WPOS.
  * This code is unavoidable because it also depends on whether
  * a FBO is bound (STATE_FB_WPOS_Y_TRANSFORM).
  */
 static void
-emit_wpos_inversion( struct st_translate *t,
-                     const struct gl_program *program,
-                     boolean invert)
+emit_wpos_adjustment( struct st_translate *t,
+                      const struct gl_program *program,
+                      boolean invert,
+                      GLfloat adjX, GLfloat adjY[2])
 {
    struct ureg_program *ureg = t->ureg;
 
@@ -785,18 +779,38 @@ emit_wpos_inversion( struct st_translate *t,
                                                        wposTransformState);
 
    struct ureg_src wpostrans = ureg_DECL_constant( ureg, wposTransConst );
-   struct ureg_dst wpos_temp;
+   struct ureg_dst wpos_temp = ureg_DECL_temporary( ureg );
    struct ureg_src wpos_input = t->inputs[t->inputMapping[FRAG_ATTRIB_WPOS]];
 
-   /* MOV wpos_temp, input[wpos]
-    */
-   if (wpos_input.File == TGSI_FILE_TEMPORARY)
-      wpos_temp = ureg_dst(wpos_input);
-   else {
-      wpos_temp = ureg_DECL_temporary( ureg );
+   /* First, apply the coordinate shift: */
+   if (adjX || adjY[0] || adjY[1]) {
+      if (adjY[0] != adjY[1]) {
+         /* Adjust the y coordinate by adjY[1] or adjY[0] respectively
+          * depending on whether inversion is actually going to be applied
+          * or not, which is determined by testing against the inversion
+          * state variable used below, which will be either +1 or -1.
+          */
+         struct ureg_dst adj_temp = ureg_DECL_temporary(ureg);
+
+         ureg_CMP(ureg, adj_temp,
+                  ureg_scalar(wpostrans, invert ? 2 : 0),
+                  ureg_imm4f(ureg, adjX, adjY[0], 0.0f, 0.0f),
+                  ureg_imm4f(ureg, adjX, adjY[1], 0.0f, 0.0f));
+         ureg_ADD(ureg, wpos_temp, wpos_input, ureg_src(adj_temp));
+      } else {
+         ureg_ADD(ureg, wpos_temp, wpos_input,
+                  ureg_imm4f(ureg, adjX, adjY[0], 0.0f, 0.0f));
+      }
+      wpos_input = ureg_src(wpos_temp);
+   } else {
+      /* MOV wpos_temp, input[wpos]
+       */
       ureg_MOV( ureg, wpos_temp, wpos_input );
    }
 
+   /* Now the conditional y flip: STATE_FB_WPOS_Y_TRANSFORM.xy/zw will be
+    * inversion/identity, or the other way around if we're drawing to an FBO.
+    */
    if (invert) {
       /* MAD wpos_temp.y, wpos_input, wpostrans.xxxx, wpostrans.yyyy
        */
@@ -833,12 +847,44 @@ emit_wpos(struct st_context *st,
    const struct gl_fragment_program *fp =
       (const struct gl_fragment_program *) program;
    struct pipe_screen *pscreen = st->pipe->screen;
+   GLfloat adjX = 0.0f;
+   GLfloat adjY[2] = { 0.0f, 0.0f };
    boolean invert = FALSE;
 
+   /* Query the pixel center conventions supported by the pipe driver and set
+    * adjX, adjY to help out if it cannot handle the requested one internally.
+    *
+    * The bias of the y-coordinate depends on whether y-inversion takes place
+    * (adjY[1]) or not (adjY[0]), which is in turn dependent on whether we are
+    * drawing to an FBO (causes additional inversion), and whether the the pipe
+    * driver origin and the requested origin differ (the latter condition is
+    * stored in the 'invert' variable).
+    *
+    * For height = 100 (i = integer, h = half-integer, l = lower, u = upper):
+    *
+    * center shift only:
+    * i -> h: +0.5
+    * h -> i: -0.5
+    *
+    * inversion only:
+    * l,i -> u,i: ( 0.0 + 1.0) * -1 + 100 = 99
+    * l,h -> u,h: ( 0.5 + 0.0) * -1 + 100 = 99.5
+    * u,i -> l,i: (99.0 + 1.0) * -1 + 100 = 0
+    * u,h -> l,h: (99.5 + 0.0) * -1 + 100 = 0.5
+    *
+    * inversion and center shift:
+    * l,i -> u,h: ( 0.0 + 0.5) * -1 + 100 = 99.5
+    * l,h -> u,i: ( 0.5 + 0.5) * -1 + 100 = 99
+    * u,i -> l,h: (99.0 + 0.5) * -1 + 100 = 0.5
+    * u,h -> l,i: (99.5 + 0.5) * -1 + 100 = 0
+    */
    if (fp->OriginUpperLeft) {
+      /* Fragment shader wants origin in upper-left */
       if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_ORIGIN_UPPER_LEFT)) {
+         /* the driver supports upper-left origin */
       }
       else if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_ORIGIN_LOWER_LEFT)) {
+         /* the driver supports lower-left origin, need to invert Y */
          ureg_property_fs_coord_origin(ureg, TGSI_FS_COORD_ORIGIN_LOWER_LEFT);
          invert = TRUE;
       }
@@ -846,28 +892,42 @@ emit_wpos(struct st_context *st,
          assert(0);
    }
    else {
+      /* Fragment shader wants origin in lower-left */
       if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_ORIGIN_LOWER_LEFT))
+         /* the driver supports lower-left origin */
          ureg_property_fs_coord_origin(ureg, TGSI_FS_COORD_ORIGIN_LOWER_LEFT);
       else if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_ORIGIN_UPPER_LEFT))
+         /* the driver supports upper-left origin, need to invert Y */
          invert = TRUE;
       else
          assert(0);
    }
    
    if (fp->PixelCenterInteger) {
-      if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_INTEGER))
+      /* Fragment shader wants pixel center integer */
+      if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_INTEGER)) {
+         /* the driver supports pixel center integer */
+         adjY[1] = 1.0f;
          ureg_property_fs_coord_pixel_center(ureg, TGSI_FS_COORD_PIXEL_CENTER_INTEGER);
-      else if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER))
-         emit_adjusted_wpos(t, program, invert ? 0.5f : -0.5f);
+      }
+      else if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER)) {
+         /* the driver supports pixel center half integer, need to bias X,Y */
+         adjX = -0.5f;
+         adjY[0] = -0.5f;
+         adjY[1] = 0.5f;
+      }
       else
          assert(0);
    }
    else {
+      /* Fragment shader wants pixel center half integer */
       if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_HALF_INTEGER)) {
+         /* the driver supports pixel center half integer */
       }
       else if (pscreen->get_param(pscreen, PIPE_CAP_TGSI_FS_COORD_PIXEL_CENTER_INTEGER)) {
+         /* the driver supports pixel center integer, need to bias X,Y */
+         adjX = adjY[0] = adjY[1] = 0.5f;
          ureg_property_fs_coord_pixel_center(ureg, TGSI_FS_COORD_PIXEL_CENTER_INTEGER);
-         emit_adjusted_wpos(t, program, invert ? -0.5f : 0.5f);
       }
       else
          assert(0);
@@ -875,7 +935,7 @@ emit_wpos(struct st_context *st,
 
    /* we invert after adjustment so that we avoid the MOV to temporary,
     * and reuse the adjustment ADD instead */
-   emit_wpos_inversion(t, program, invert);
+   emit_wpos_adjustment(t, program, invert, adjX, adjY);
 }
 
 
@@ -1087,6 +1147,21 @@ st_translate_mesa_program(
    if (program->NumAddressRegs > 0) {
       debug_assert( program->NumAddressRegs == 1 );
       t->address[0] = ureg_DECL_address( ureg );
+   }
+
+   /* Declare misc input registers
+    */
+   {
+      GLbitfield sysInputs = program->SystemValuesRead;
+      unsigned numSys = 0;
+      for (i = 0; sysInputs; i++) {
+         if (sysInputs & (1 << i)) {
+            unsigned semName = mesa_sysval_to_semantic[i];
+            t->systemValues[i] = ureg_DECL_system_value(ureg, numSys, semName, 0);
+            numSys++;
+            sysInputs &= ~(1 << i);
+         }
+      }
    }
 
    if (program->IndirectRegisterFiles & (1 << PROGRAM_TEMPORARY)) {

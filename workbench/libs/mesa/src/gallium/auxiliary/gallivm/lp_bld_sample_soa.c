@@ -187,8 +187,6 @@ lp_build_sample_texel_soa(struct lp_build_sample_context *bld,
                                            border_chan_vec, texel_out[chan]);
       }
    }
-
-   apply_sampler_swizzle(bld, texel_out);
 }
 
 
@@ -834,14 +832,14 @@ lp_build_sample_mipmap(struct lp_build_sample_context *bld,
                        LLVMValueRef *colors_out)
 {
    LLVMBuilderRef builder = bld->gallivm->builder;
-   LLVMValueRef size0;
-   LLVMValueRef size1;
-   LLVMValueRef row_stride0_vec;
-   LLVMValueRef row_stride1_vec;
-   LLVMValueRef img_stride0_vec;
-   LLVMValueRef img_stride1_vec;
-   LLVMValueRef data_ptr0;
-   LLVMValueRef data_ptr1;
+   LLVMValueRef size0 = NULL;
+   LLVMValueRef size1 = NULL;
+   LLVMValueRef row_stride0_vec = NULL;
+   LLVMValueRef row_stride1_vec = NULL;
+   LLVMValueRef img_stride0_vec = NULL;
+   LLVMValueRef img_stride1_vec = NULL;
+   LLVMValueRef data_ptr0 = NULL;
+   LLVMValueRef data_ptr1 = NULL;
    LLVMValueRef colors0[4], colors1[4];
    unsigned chan;
 
@@ -945,6 +943,7 @@ lp_build_sample_general(struct lp_build_sample_context *bld,
    LLVMValueRef ilevel0, ilevel1 = NULL;
    LLVMValueRef face_ddx[4], face_ddy[4];
    LLVMValueRef texels[4];
+   LLVMValueRef first_level;
    LLVMValueRef i32t_zero = lp_build_const_int32(bld->gallivm, 0);
    unsigned chan;
 
@@ -1011,7 +1010,9 @@ lp_build_sample_general(struct lp_build_sample_context *bld,
          lp_build_nearest_mip_level(bld, unit, lod_ipart, &ilevel0);
       }
       else {
-         ilevel0 = i32t_zero;
+         first_level = bld->dynamic_state->first_level(bld->dynamic_state,
+                                                       bld->gallivm, unit);
+         ilevel0 = first_level;
       }
       break;
    case PIPE_TEX_MIPFILTER_NEAREST:
@@ -1070,7 +1071,7 @@ lp_build_sample_general(struct lp_build_sample_context *bld,
          lp_build_sample_mipmap(bld, unit,
                                 mag_filter, PIPE_TEX_MIPFILTER_NONE,
                                 s, t, r,
-                                i32t_zero, NULL, NULL,
+                                ilevel0, NULL, NULL,
                                 texels);
       }
       lp_build_endif(&if_ctx);
@@ -1109,6 +1110,11 @@ lp_build_sample_compare(struct lp_build_sample_context *bld,
       lp_build_printf(bld->gallivm, "shadow compare coord %f to texture %f\n",
                       coord, tex);
    }
+
+   /* Clamp p coords to [0,1] */
+   p = lp_build_clamp(&bld->coord_bld, p,
+                      bld->coord_bld.zero,
+                      bld->coord_bld.one);
 
    /* result = (p FUNC texel) ? 1 : 0 */
    res = lp_build_cmp(texel_bld, bld->static_state->compare_func,
@@ -1268,4 +1274,6 @@ lp_build_sample_soa(struct gallivm_state *gallivm,
    }
 
    lp_build_sample_compare(&bld, r, texel_out);
+
+   apply_sampler_swizzle(&bld, texel_out);
 }

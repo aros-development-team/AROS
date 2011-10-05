@@ -25,9 +25,11 @@
 
 #include "glheader.h"
 #include "context.h"
+#include "enums.h"
 #include "hash.h"
 #include "imports.h"
 #include "queryobj.h"
+#include "mfeatures.h"
 #include "mtypes.h"
 #include "main/dispatch.h"
 
@@ -143,6 +145,11 @@ get_query_binding_point(struct gl_context *ctx, GLenum target)
          return &ctx->Query.CurrentOcclusionObject;
       else
          return NULL;
+   case GL_ANY_SAMPLES_PASSED:
+      if (ctx->Extensions.ARB_occlusion_query2)
+         return &ctx->Query.CurrentOcclusionObject;
+      else
+         return NULL;
    case GL_TIME_ELAPSED_EXT:
       if (ctx->Extensions.EXT_timer_query)
          return &ctx->Query.CurrentTimerObject;
@@ -166,12 +173,15 @@ get_query_binding_point(struct gl_context *ctx, GLenum target)
 }
 
 
-void GLAPIENTRY
+static void GLAPIENTRY
 _mesa_GenQueriesARB(GLsizei n, GLuint *ids)
 {
    GLuint first;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGenQueries(%d)\n", n);
 
    if (n < 0) {
       _mesa_error(ctx, GL_INVALID_VALUE, "glGenQueriesARB(n < 0)");
@@ -202,12 +212,16 @@ _mesa_GenQueriesARB(GLsizei n, GLuint *ids)
 }
 
 
-void GLAPIENTRY
+static void GLAPIENTRY
 _mesa_DeleteQueriesARB(GLsizei n, const GLuint *ids)
 {
    GLint i;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+   FLUSH_VERTICES(ctx, 0);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glDeleeteQueries(%d)\n", n);
 
    if (n < 0) {
       _mesa_error(ctx, GL_INVALID_VALUE, "glDeleteQueriesARB(n < 0)");
@@ -234,11 +248,14 @@ _mesa_DeleteQueriesARB(GLsizei n, const GLuint *ids)
 }
 
 
-GLboolean GLAPIENTRY
+static GLboolean GLAPIENTRY
 _mesa_IsQueryARB(GLuint id)
 {
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END_WITH_RETVAL(ctx, GL_FALSE);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glIsQuery(%u)\n", id);
 
    if (id && _mesa_lookup_query_object(ctx, id))
       return GL_TRUE;
@@ -253,6 +270,10 @@ _mesa_BeginQueryARB(GLenum target, GLuint id)
    struct gl_query_object *q, **bindpt;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glBeginQuery(%s, %u)\n",
+                  _mesa_lookup_enum_by_nr(target), id);
 
    FLUSH_VERTICES(ctx, _NEW_DEPTH);
 
@@ -305,6 +326,9 @@ _mesa_EndQueryARB(GLenum target)
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
 
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glEndQuery(%s)\n", _mesa_lookup_enum_by_nr(target));
+
    FLUSH_VERTICES(ctx, _NEW_DEPTH);
 
    bindpt = get_query_binding_point(ctx, target);
@@ -328,12 +352,17 @@ _mesa_EndQueryARB(GLenum target)
 }
 
 
-void GLAPIENTRY
+static void GLAPIENTRY
 _mesa_GetQueryivARB(GLenum target, GLenum pname, GLint *params)
 {
    struct gl_query_object *q, **bindpt;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetQueryiv(%s, %s)\n",
+                  _mesa_lookup_enum_by_nr(target),
+                  _mesa_lookup_enum_by_nr(pname));
 
    bindpt = get_query_binding_point(ctx, target);
    if (!bindpt) {
@@ -357,12 +386,16 @@ _mesa_GetQueryivARB(GLenum target, GLenum pname, GLint *params)
 }
 
 
-void GLAPIENTRY
+static void GLAPIENTRY
 _mesa_GetQueryObjectivARB(GLuint id, GLenum pname, GLint *params)
 {
    struct gl_query_object *q = NULL;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetQueryObjectiv(%u, %s)\n", id,
+                  _mesa_lookup_enum_by_nr(pname));
 
    if (id)
       q = _mesa_lookup_query_object(ctx, id);
@@ -378,11 +411,18 @@ _mesa_GetQueryObjectivARB(GLuint id, GLenum pname, GLint *params)
          if (!q->Ready)
             ctx->Driver.WaitQuery(ctx, q);
          /* if result is too large for returned type, clamp to max value */
-         if (q->Result > 0x7fffffff) {
-            *params = 0x7fffffff;
-         }
-         else {
-            *params = (GLint)q->Result;
+         if (q->Target == GL_ANY_SAMPLES_PASSED) {
+            if (q->Result)
+               *params = GL_TRUE;
+            else
+               *params = GL_FALSE;
+         } else {
+            if (q->Result > 0x7fffffff) {
+               *params = 0x7fffffff;
+            }
+            else {
+               *params = (GLint)q->Result;
+            }
          }
          break;
       case GL_QUERY_RESULT_AVAILABLE_ARB:
@@ -397,12 +437,16 @@ _mesa_GetQueryObjectivARB(GLuint id, GLenum pname, GLint *params)
 }
 
 
-void GLAPIENTRY
+static void GLAPIENTRY
 _mesa_GetQueryObjectuivARB(GLuint id, GLenum pname, GLuint *params)
 {
    struct gl_query_object *q = NULL;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetQueryObjectuiv(%u, %s)\n", id,
+                  _mesa_lookup_enum_by_nr(pname));
 
    if (id)
       q = _mesa_lookup_query_object(ctx, id);
@@ -418,11 +462,18 @@ _mesa_GetQueryObjectuivARB(GLuint id, GLenum pname, GLuint *params)
          if (!q->Ready)
             ctx->Driver.WaitQuery(ctx, q);
          /* if result is too large for returned type, clamp to max value */
-         if (q->Result > 0xffffffff) {
-            *params = 0xffffffff;
-         }
-         else {
-            *params = (GLuint)q->Result;
+         if (q->Target == GL_ANY_SAMPLES_PASSED) {
+            if (q->Result)
+               *params = GL_TRUE;
+            else
+               *params = GL_FALSE;
+         } else {
+            if (q->Result > 0xffffffff) {
+               *params = 0xffffffff;
+            }
+            else {
+               *params = (GLuint)q->Result;
+            }
          }
          break;
       case GL_QUERY_RESULT_AVAILABLE_ARB:
@@ -446,6 +497,10 @@ _mesa_GetQueryObjecti64vEXT(GLuint id, GLenum pname, GLint64EXT *params)
    struct gl_query_object *q = NULL;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetQueryObjecti64v(%u, %s)\n", id,
+                  _mesa_lookup_enum_by_nr(pname));
 
    if (id)
       q = _mesa_lookup_query_object(ctx, id);
@@ -483,6 +538,10 @@ _mesa_GetQueryObjectui64vEXT(GLuint id, GLenum pname, GLuint64EXT *params)
    struct gl_query_object *q = NULL;
    GET_CURRENT_CONTEXT(ctx);
    ASSERT_OUTSIDE_BEGIN_END(ctx);
+
+   if (MESA_VERBOSE & VERBOSE_API)
+      _mesa_debug(ctx, "glGetQueryObjectui64v(%u, %s)\n", id,
+                  _mesa_lookup_enum_by_nr(pname));
 
    if (id)
       q = _mesa_lookup_query_object(ctx, id);

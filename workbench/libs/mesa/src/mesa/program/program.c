@@ -32,6 +32,7 @@
 #include "main/glheader.h"
 #include "main/context.h"
 #include "main/hash.h"
+#include "main/mfeatures.h"
 #include "program.h"
 #include "prog_cache.h"
 #include "prog_parameter.h"
@@ -70,11 +71,14 @@ _mesa_init_program(struct gl_context *ctx)
    ASSERT(ctx->Const.VertexProgram.MaxUniformComponents <= 4 * MAX_UNIFORMS);
    ASSERT(ctx->Const.FragmentProgram.MaxUniformComponents <= 4 * MAX_UNIFORMS);
 
+   ASSERT(ctx->Const.VertexProgram.MaxAddressOffset <= (1 << INST_INDEX_BITS));
+   ASSERT(ctx->Const.FragmentProgram.MaxAddressOffset <= (1 << INST_INDEX_BITS));
+
    /* If this fails, increase prog_instruction::TexSrcUnit size */
-   ASSERT(MAX_TEXTURE_UNITS < (1 << 5));
+   ASSERT(MAX_TEXTURE_UNITS <= (1 << 5));
 
    /* If this fails, increase prog_instruction::TexSrcTarget size */
-   ASSERT(NUM_TEXTURE_TARGETS < (1 << 3));
+   ASSERT(NUM_TEXTURE_TARGETS <= (1 << 3));
 
    ctx->Program.ErrorPos = -1;
    ctx->Program.ErrorString = _mesa_strdup("");
@@ -553,7 +557,6 @@ _mesa_clone_program(struct gl_context *ctx, const struct gl_program *prog)
          const struct gl_fragment_program *fp
             = (const struct gl_fragment_program *) prog;
          struct gl_fragment_program *fpc = (struct gl_fragment_program *) clone;
-         fpc->FogOption = fp->FogOption;
          fpc->UsesKill = fp->UsesKill;
          fpc->OriginUpperLeft = fp->OriginUpperLeft;
          fpc->PixelCenterInteger = fp->PixelCenterInteger;
@@ -807,7 +810,7 @@ _mesa_combine_programs(struct gl_context *ctx,
       /* Connect color outputs of fprogA to color inputs of fprogB, via a
        * new temporary register.
        */
-      if ((progA->OutputsWritten & (1 << FRAG_RESULT_COLOR)) &&
+      if ((progA->OutputsWritten & BITFIELD64_BIT(FRAG_RESULT_COLOR)) &&
           (progB_inputsRead & FRAG_BIT_COL0)) {
          GLint tempReg = _mesa_find_free_register(usedTemps, MAX_PROGRAM_TEMPS,
                                                   firstTemp);
@@ -830,7 +833,7 @@ _mesa_combine_programs(struct gl_context *ctx,
 
       /* compute combined program's InputsRead */
       inputsB = progB_inputsRead;
-      if (progA->OutputsWritten & (1 << FRAG_RESULT_COLOR)) {
+      if (progA->OutputsWritten & BITFIELD64_BIT(FRAG_RESULT_COLOR)) {
          inputsB &= ~(1 << FRAG_ATTRIB_COL0);
       }
       newProg->InputsRead = progA->InputsRead | inputsB;

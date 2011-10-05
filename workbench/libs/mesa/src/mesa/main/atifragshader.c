@@ -26,6 +26,7 @@
 #include "main/hash.h"
 #include "main/imports.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 #include "main/enums.h"
 #include "main/mtypes.h"
 #include "main/dispatch.h"
@@ -316,6 +317,7 @@ _mesa_DeleteFragmentShaderATI(GLuint id)
       if (prog) {
 	 prog->RefCount--;
 	 if (prog->RefCount <= 0) {
+	    assert(prog != &DummyShader);
 	    free(prog);
 	 }
       }
@@ -492,7 +494,7 @@ _mesa_PassTexCoordATI(GLuint dst, GLuint coord, GLenum swizzle)
       }
    }
 
-   curProg->regsAssigned[curProg->cur_pass >> 1] |=  1 << (dst - GL_REG_0_ATI);
+   curProg->regsAssigned[curProg->cur_pass >> 1] |= 1 << (dst - GL_REG_0_ATI);
    new_tex_inst(curProg);
 
    /* add the instructions */
@@ -565,7 +567,7 @@ _mesa_SampleMapATI(GLuint dst, GLuint interp, GLenum swizzle)
       }
    }
 
-   curProg->regsAssigned[curProg->cur_pass >> 1] |=  1 << (dst - GL_REG_0_ATI);
+   curProg->regsAssigned[curProg->cur_pass >> 1] |= 1 << (dst - GL_REG_0_ATI);
    new_tex_inst(curProg);
 
    /* add the instructions */

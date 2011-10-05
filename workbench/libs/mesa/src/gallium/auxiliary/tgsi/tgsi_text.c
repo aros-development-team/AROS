@@ -36,6 +36,7 @@
 #include "tgsi_parse.h"
 #include "tgsi_sanity.h"
 #include "tgsi_util.h"
+#include "tgsi_dump.h"
 
 static boolean is_alpha_underscore( const char *cur )
 {
@@ -136,7 +137,7 @@ static boolean parse_identifier( const char **pcur, char *ret )
    int i = 0;
    if (is_alpha_underscore( cur )) {
       ret[i++] = *cur++;
-      while (is_alpha_underscore( cur ))
+      while (is_alpha_underscore( cur ) || is_digit( cur ))
          ret[i++] = *cur++;
       ret[i++] = '\0';
       *pcur = cur;
@@ -282,7 +283,8 @@ static const char *file_names[TGSI_FILE_COUNT] =
    "PRED",
    "SV",
    "IMMX",
-   "TEMPX"
+   "TEMPX",
+   "RES"
 };
 
 static boolean
@@ -827,6 +829,15 @@ static const char *texture_names[TGSI_TEXTURE_COUNT] =
    "SHADOWRECT"
 };
 
+static const char *type_names[] =
+{
+   "UNORM",
+   "SNORM",
+   "SINT",
+   "UINT",
+   "FLOAT"
+};
+
 static boolean
 match_inst_mnemonic(const char **pcur,
                     const struct tgsi_opcode_info *info)
@@ -1103,42 +1114,113 @@ static boolean parse_declaration( struct translate_ctx *ctx )
    cur = ctx->cur;
    eat_opt_white( &cur );
    if (*cur == ',' && !is_vs_input) {
-      uint i;
+      uint i, j;
 
       cur++;
       eat_opt_white( &cur );
-      for (i = 0; i < TGSI_SEMANTIC_COUNT; i++) {
-         if (str_match_no_case( &cur, semantic_names[i] )) {
-            const char *cur2 = cur;
-            uint index;
-
-            if (is_digit_alpha_underscore( cur ))
-               continue;
-            eat_opt_white( &cur2 );
-            if (*cur2 == '[') {
-               cur2++;
-               eat_opt_white( &cur2 );
-               if (!parse_uint( &cur2, &index )) {
-                  report_error( ctx, "Expected literal integer" );
-                  return FALSE;
+      if (file == TGSI_FILE_RESOURCE) {
+         for (i = 0; i < TGSI_TEXTURE_COUNT; i++) {
+            if (str_match_no_case(&cur, texture_names[i])) {
+               if (!is_digit_alpha_underscore(cur)) {
+                  decl.Resource.Resource = i;
+                  break;
                }
-               eat_opt_white( &cur2 );
-               if (*cur2 != ']') {
-                  report_error( ctx, "Expected `]'" );
-                  return FALSE;
-               }
-               cur2++;
-
-               decl.Semantic.Index = index;
-
-               cur = cur2;
             }
+         }
+         if (i == TGSI_TEXTURE_COUNT) {
+            report_error(ctx, "Expected texture target");
+            return FALSE;
+         }
+         eat_opt_white( &cur );
+         if (*cur != ',') {
+            report_error( ctx, "Expected `,'" );
+            return FALSE;
+         }
+         ++cur;
+         eat_opt_white( &cur );
+         for (j = 0; j < 4; ++j) {
+            for (i = 0; i < PIPE_TYPE_COUNT; ++i) {
+               if (str_match_no_case(&cur, type_names[i])) {
+                  if (!is_digit_alpha_underscore(cur)) {
+                     switch (j) {
+                     case 0:
+                        decl.Resource.ReturnTypeX = i;
+                        break;
+                     case 1:
+                        decl.Resource.ReturnTypeY = i;
+                        break;
+                     case 2:
+                        decl.Resource.ReturnTypeZ = i;
+                        break;
+                     case 3:
+                        decl.Resource.ReturnTypeW = i;
+                        break;
+                     default:
+                        assert(0);
+                     }
+                     break;
+                  }
+               }
+            }
+            if (i == PIPE_TYPE_COUNT) {
+               if (j == 0 || j >  2) {
+                  report_error(ctx, "Expected type name");
+                  return FALSE;
+               }
+               break;
+            } else {
+               const char *cur2 = cur;
+               eat_opt_white( &cur2 );
+               if (*cur2 == ',') {
+                  cur2++;
+                  eat_opt_white( &cur2 );
+                  cur = cur2;
+                  continue;
+               } else
+                  break;
+            }
+         }
+         if (j < 4) {
+            decl.Resource.ReturnTypeY =
+               decl.Resource.ReturnTypeZ =
+               decl.Resource.ReturnTypeW =
+               decl.Resource.ReturnTypeX;
+         }
+         ctx->cur = cur;
+      } else {
+         for (i = 0; i < TGSI_SEMANTIC_COUNT; i++) {
+            if (str_match_no_case( &cur, semantic_names[i] )) {
+               const char *cur2 = cur;
+               uint index;
 
-            decl.Declaration.Semantic = 1;
-            decl.Semantic.Name = i;
+               if (is_digit_alpha_underscore( cur ))
+                  continue;
+               eat_opt_white( &cur2 );
+               if (*cur2 == '[') {
+                  cur2++;
+                  eat_opt_white( &cur2 );
+                  if (!parse_uint( &cur2, &index )) {
+                     report_error( ctx, "Expected literal integer" );
+                     return FALSE;
+                  }
+                  eat_opt_white( &cur2 );
+                  if (*cur2 != ']') {
+                     report_error( ctx, "Expected `]'" );
+                     return FALSE;
+                  }
+                  cur2++;
 
-            ctx->cur = cur;
-            break;
+                  decl.Semantic.Index = index;
+
+                  cur = cur2;
+               }
+
+               decl.Declaration.Semantic = 1;
+               decl.Semantic.Name = i;
+
+               ctx->cur = cur;
+               break;
+            }
          }
       }
    } else if (is_imm_array) {
@@ -1258,42 +1340,6 @@ static boolean parse_immediate( struct translate_ctx *ctx )
    return TRUE;
 }
 
-static const char *property_names[] =
-{
-   "GS_INPUT_PRIMITIVE",
-   "GS_OUTPUT_PRIMITIVE",
-   "GS_MAX_OUTPUT_VERTICES",
-   "FS_COORD_ORIGIN",
-   "FS_COORD_PIXEL_CENTER"
-};
-
-static const char *primitive_names[] =
-{
-   "POINTS",
-   "LINES",
-   "LINE_LOOP",
-   "LINE_STRIP",
-   "TRIANGLES",
-   "TRIANGLE_STRIP",
-   "TRIANGLE_FAN",
-   "QUADS",
-   "QUAD_STRIP",
-   "POLYGON"
-};
-
-static const char *fs_coord_origin_names[] =
-{
-   "UPPER_LEFT",
-   "LOWER_LEFT"
-};
-
-static const char *fs_coord_pixel_center_names[] =
-{
-   "HALF_INTEGER",
-   "INTEGER"
-};
-
-
 static boolean
 parse_primitive( const char **pcur, uint *primitive )
 {
@@ -1302,7 +1348,7 @@ parse_primitive( const char **pcur, uint *primitive )
    for (i = 0; i < PIPE_PRIM_MAX; i++) {
       const char *cur = *pcur;
 
-      if (str_match_no_case( &cur, primitive_names[i])) {
+      if (str_match_no_case( &cur, tgsi_primitive_names[i])) {
          *primitive = i;
          *pcur = cur;
          return TRUE;
@@ -1316,10 +1362,10 @@ parse_fs_coord_origin( const char **pcur, uint *fs_coord_origin )
 {
    uint i;
 
-   for (i = 0; i < sizeof(fs_coord_origin_names) / sizeof(fs_coord_origin_names[0]); i++) {
+   for (i = 0; i < Elements(tgsi_fs_coord_origin_names); i++) {
       const char *cur = *pcur;
 
-      if (str_match_no_case( &cur, fs_coord_origin_names[i])) {
+      if (str_match_no_case( &cur, tgsi_fs_coord_origin_names[i])) {
          *fs_coord_origin = i;
          *pcur = cur;
          return TRUE;
@@ -1333,10 +1379,10 @@ parse_fs_coord_pixel_center( const char **pcur, uint *fs_coord_pixel_center )
 {
    uint i;
 
-   for (i = 0; i < sizeof(fs_coord_pixel_center_names) / sizeof(fs_coord_pixel_center_names[0]); i++) {
+   for (i = 0; i < Elements(tgsi_fs_coord_pixel_center_names); i++) {
       const char *cur = *pcur;
 
-      if (str_match_no_case( &cur, fs_coord_pixel_center_names[i])) {
+      if (str_match_no_case( &cur, tgsi_fs_coord_pixel_center_names[i])) {
          *fs_coord_pixel_center = i;
          *pcur = cur;
          return TRUE;
@@ -1364,7 +1410,7 @@ static boolean parse_property( struct translate_ctx *ctx )
    }
    for (property_name = 0; property_name < TGSI_PROPERTY_COUNT;
         ++property_name) {
-      if (streq_nocase_uprcase(property_names[property_name], id)) {
+      if (streq_nocase_uprcase(tgsi_property_names[property_name], id)) {
          break;
       }
    }
@@ -1398,6 +1444,7 @@ static boolean parse_property( struct translate_ctx *ctx )
          return FALSE;
       }
       break;
+   case TGSI_PROPERTY_FS_COLOR0_WRITES_ALL_CBUFS:
    default:
       if (!parse_uint(&ctx->cur, &values[0] )) {
          report_error( ctx, "Expected unsigned integer as property!" );

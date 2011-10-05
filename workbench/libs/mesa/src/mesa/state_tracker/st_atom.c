@@ -56,6 +56,7 @@ static const struct st_tracked_state *atoms[] =
    &st_update_scissor,
    &st_update_blend,
    &st_update_sampler,
+   &st_update_vertex_texture,
    &st_update_texture,
    &st_update_framebuffer,
    &st_update_msaa,
@@ -147,7 +148,11 @@ void st_validate_state( struct st_context *st )
 
    /*printf("%s %x/%x\n", __FUNCTION__, state->mesa, state->st);*/
 
+#ifdef NDEBUG
+   if (0) {
+#else
    if (1) {
+#endif
       /* Debug version which enforces various sanity checks on the
        * state flags which are generated and checked to help ensure
        * state atoms are ordered correctly in the list.

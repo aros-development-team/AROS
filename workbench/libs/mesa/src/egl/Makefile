@@ -3,8 +3,13 @@
 TOP = ../..
 include $(TOP)/configs/current
 
-SUBDIRS = main drivers
+SUBDIRS =
 
+ifneq ($(findstring wayland, $(EGL_PLATFORMS)),)
+SUBDIRS += wayland
+endif
+
+SUBDIRS += drivers main
 
 default: subdirs
 

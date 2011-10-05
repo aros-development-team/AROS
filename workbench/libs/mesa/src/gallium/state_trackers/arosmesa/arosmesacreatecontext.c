@@ -4,6 +4,7 @@
 */
 
 #include "arosmesa_funcs.h"
+#include "arosmesa_funcs_gallium.h"
 #include <proto/exec.h>
 #include <aros/debug.h>
 #include <proto/gallium.h>
@@ -44,8 +45,8 @@
 
 *****************************************************************************/
 {
-  AROS_SLOWSTACKTAGS_PRE_AS(Tag1, AROSMesaContext)
-  retval = AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
+  AROS_SLOWSTACKTAGS_PRE(Tag1)
+  retval = (IPTR)AROSMesaCreateContext(AROS_SLOWSTACKTAGS_ARG(Tag1));
   AROS_SLOWSTACKTAGS_POST
 }
 

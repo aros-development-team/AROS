@@ -658,13 +658,88 @@ namespace glstubgenerator
 			
 			swMangledHeader.Close();
 		}
-	}	
+	}
+	
+	class MangledImplementationFileWriter : ArosFileWriter
+	{
+		public override void Write (string path, FunctionList functions)
+		{
+			StreamWriter swMangledImplementation = new StreamWriter(path, false);
+
+			foreach (Function f in functions)
+			{
+				swMangledImplementation.Write("{0} m{1} (", f.ReturnType, f.Name);
+				if (f.Arguments.Count > 0)
+				{
+					int i = 0;
+					for (i = 0; i < f.Arguments.Count - 1; i++)
+						swMangledImplementation.Write("{0} {1}, ", f.Arguments[i].Type, f.Arguments[i].Name);
+					swMangledImplementation.Write("{0} {1}", f.Arguments[i].Type, f.Arguments[i].Name);
+				}
+				swMangledImplementation.WriteLine(")");
+				swMangledImplementation.WriteLine("{");
+				if (f.ReturnsVoid())
+					swMangledImplementation.Write("    GLCALL({0}", f.Name);
+				else
+					swMangledImplementation.Write("    return GLCALL({0}", f.Name);
+				if (f.Arguments.Count > 0)
+				{
+					int i = 0;
+					for (i = 0; i < f.Arguments.Count; i++)
+						swMangledImplementation.Write(", {0}", f.Arguments[i].Name);
+				}
+				swMangledImplementation.WriteLine(");");
+
+				swMangledImplementation.WriteLine("}");
+				swMangledImplementation.WriteLine();
+			}
+
+			swMangledImplementation.Close();
+		}
+	}
+	
+	class GLFUNCFileWriter : ArosFileWriter
+	{
+		public override void Write (string path, FunctionList functions)
+		{
+			StreamWriter swGLFUNC = new StreamWriter(path, false);
+
+			swGLFUNC.WriteLine("struct gl_func {");
+
+			foreach (Function f in functions)
+			{
+				swGLFUNC.Write("    {0} (*{1}) (", f.ReturnType, f.Name);
+				if (f.Arguments.Count > 0)
+				{
+					int i = 0;
+					for (i = 0; i < f.Arguments.Count - 1; i++)
+						swGLFUNC.Write("{0} {1}, ", f.Arguments[i].Type, f.Arguments[i].Name);
+					swGLFUNC.Write("{0} {1}", f.Arguments[i].Type, f.Arguments[i].Name);
+				}
+				swGLFUNC.WriteLine(");");
+			}
+			
+			swGLFUNC.WriteLine("};");
+			
+			swGLFUNC.WriteLine();swGLFUNC.WriteLine();swGLFUNC.WriteLine();swGLFUNC.WriteLine();
+			
+			swGLFUNC.WriteLine("static const char *gl_func_names[] = {");
+			foreach (Function f in functions)
+			{
+				swGLFUNC.WriteLine("    \"{0}\",", f.Name);
+			}
+			swGLFUNC.WriteLine("    NULL");
+			swGLFUNC.WriteLine("};");
+			
+			swGLFUNC.Close();
+		}
+	}
 	
 	class MainClass
 	{
 		public static void Main(string[] args)
 		{
-			string PATH_TO_MESA = @"/data/deadwood/gitAROS/AROS/workbench/libs/mesa/";
+			string PATH_TO_MESA = @"/data/deadwood/gitV0AROSCONTRIB/AROS/workbench/libs/mesa/";
 			GLApiTempParser apiParser = new GLApiTempParser();
 			FunctionNameDictionary implementedFunctions = 
 				apiParser.Parse(PATH_TO_MESA + @"/src/mapi/glapi/glapitemp.h");
@@ -727,6 +802,12 @@ namespace glstubgenerator
 
 			MangledHeaderFileWriter glmhfw = new MangledHeaderFileWriter();
 			glmhfw.Write(@"/data/deadwood/temp/arosmesaapim.h", functionsfinal);
+			
+			MangledImplementationFileWriter glmifw = new MangledImplementationFileWriter();
+			glmifw.Write(@"/data/deadwood/temp/hostgl_gl_api.c", functionsfinal);
+
+			GLFUNCFileWriter glfuncfw = new GLFUNCFileWriter();
+			glfuncfw.Write(@"/data/deadwood/temp/gl_func.ch", functionsfinal);
 			
 			/* EGL */
 			FunctionList functionseglh = p.Parse(PATH_TO_MESA + @"/include/EGL/egl.h", APIHeaderParser.EGLAPI, APIHeaderParser.EGLAPIENTRY);

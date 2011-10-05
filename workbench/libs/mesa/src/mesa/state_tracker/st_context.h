@@ -1,4 +1,3 @@
-//struct dd_function_table;
 /**************************************************************************
  * 
  * Copyright 2003 Tungsten Graphics, Inc., Cedar Park, Texas.
@@ -91,29 +90,26 @@ struct st_context
       struct pipe_depth_stencil_alpha_state depth_stencil;
       struct pipe_rasterizer_state          rasterizer;
       struct pipe_sampler_state             samplers[PIPE_MAX_SAMPLERS];
-      struct pipe_sampler_state             *sampler_list[PIPE_MAX_SAMPLERS];
+      struct pipe_sampler_state             vertex_samplers[PIPE_MAX_VERTEX_SAMPLERS];
       struct pipe_clip_state clip;
-      struct pipe_resource *constants[PIPE_SHADER_TYPES];
+      struct {
+         void *ptr;
+         unsigned size;
+      } constants[PIPE_SHADER_TYPES];
       struct pipe_framebuffer_state framebuffer;
       struct pipe_sampler_view *sampler_views[PIPE_MAX_SAMPLERS];
+      struct pipe_sampler_view *sampler_vertex_views[PIPE_MAX_VERTEX_SAMPLERS];
       struct pipe_scissor_state scissor;
       struct pipe_viewport_state viewport;
       unsigned sample_mask;
 
       GLuint num_samplers;
+      GLuint num_vertex_samplers;
       GLuint num_textures;
+      GLuint num_vertex_textures;
 
       GLuint poly_stipple[32];  /**< In OpenGL's bottom-to-top order */
    } state;
-
-   struct {
-      struct st_tracked_state tracked_state[PIPE_SHADER_TYPES];
-   } constants;
-
-   /* XXX unused: */
-   struct {
-      struct gl_fragment_program *fragment_program;
-   } cb;
 
    char vendor[100];
    char renderer[100];
@@ -130,7 +126,9 @@ struct st_context
    struct st_fragment_program *fp;  /**< Currently bound fragment program */
    struct st_geometry_program *gp;  /**< Currently bound geometry program */
 
-   struct st_vp_varient *vp_varient;
+   struct st_vp_variant *vp_variant;
+   struct st_fp_variant *fp_variant;
+   struct st_gp_variant *gp_variant;
 
    struct gl_texture_object *default_texture;
 
@@ -160,7 +158,7 @@ struct st_context
 
    /** for glDraw/CopyPixels */
    struct {
-      struct st_fragment_program *shaders[4];
+      struct gl_fragment_program *shaders[4];
       void *vert_shaders[2];   /**< ureg shaders */
    } drawpix;
 
@@ -190,6 +188,22 @@ struct st_context
 
    int force_msaa;
    void *winsys_drawable_handle;
+
+   /* User vertex buffers. */
+   struct {
+      struct pipe_resource *buffer;
+
+      /** Element size */
+      GLuint element_size;
+
+      /** Attribute stride */
+      GLsizei stride;
+   } user_attrib[PIPE_MAX_ATTRIBS];
+   unsigned num_user_attribs;
+
+   /* Active render condition. */
+   struct pipe_query *render_condition;
+   unsigned condition_mode;
 };
 
 

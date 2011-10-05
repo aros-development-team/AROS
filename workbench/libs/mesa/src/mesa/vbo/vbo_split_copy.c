@@ -222,6 +222,7 @@ begin( struct copy_context *copy, GLenum mode, GLboolean begin_flag )
 
    prim->mode = mode;
    prim->begin = begin_flag;
+   prim->num_instances = 1;
 }
 
 
@@ -518,6 +519,7 @@ replay_init( struct copy_context *copy )
       dst->Enabled = GL_TRUE;
       dst->Normalized = src->Normalized; 
       dst->BufferObj = ctx->Shared->NullBufferObj;
+      dst->_ElementSize = src->_ElementSize;
       dst->_MaxElement = copy->dstbuf_size; /* may be less! */
 
       offset += copy->varying[i].size;

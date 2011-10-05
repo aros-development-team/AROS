@@ -63,14 +63,6 @@
  *
  * \author Ian Romanick <ian.d.romanick@intel.com>
  */
-#include <cstdlib>
-#include <cstdio>
-#include <cstdarg>
-#include <climits>
-
-extern "C" {
-#include <talloc.h>
-}
 
 #include "main/core.h"
 #include "glsl_symbol_table.h"
@@ -176,9 +168,9 @@ linker_error_printf(gl_shader_program *prog, const char *fmt, ...)
 {
    va_list ap;
 
-   prog->InfoLog = talloc_strdup_append(prog->InfoLog, "error: ");
+   ralloc_strcat(&prog->InfoLog, "error: ");
    va_start(ap, fmt);
-   prog->InfoLog = talloc_vasprintf_append(prog->InfoLog, fmt, ap);
+   ralloc_vasprintf_append(&prog->InfoLog, fmt, ap);
    va_end(ap);
 }
 
@@ -303,6 +295,7 @@ mode_string(const ir_variable *var)
    case ir_var_out:     return "shader output";
    case ir_var_inout:   return "shader inout";
 
+   case ir_var_const_in:
    case ir_var_temporary:
    default:
       assert(!"Should not get here.");
@@ -360,11 +353,8 @@ cross_validate_globals(struct gl_shader_program *prog,
 		   && (var->type->fields.array == existing->type->fields.array)
 		   && ((var->type->length == 0)
 		       || (existing->type->length == 0))) {
-		  if (existing->type->length == 0) {
+		  if (var->type->length != 0) {
 		     existing->type = var->type;
-		     existing->max_array_access =
-			MAX2(existing->max_array_access,
-			     var->max_array_access);
 		  }
 	       } else {
 		  linker_error_printf(prog, "%s `%s' declared as type "
@@ -388,6 +378,32 @@ cross_validate_globals(struct gl_shader_program *prog,
 	       existing->location = var->location;
 	       existing->explicit_location = true;
 	    }
+
+        /* Validate layout qualifiers for gl_FragDepth.
+         *
+         * From the AMD_conservative_depth spec:
+         *    "If gl_FragDepth is redeclared in any fragment shader in
+         *    a program, it must be redeclared in all fragment shaders in that
+         *    program that have static assignments to gl_FragDepth. All
+         *    redeclarations of gl_FragDepth in all fragment shaders in
+         *    a single program must have the same set of qualifiers."
+         */
+        if (strcmp(var->name, "gl_FragDepth") == 0) {
+           bool layout_declared = var->depth_layout != ir_depth_layout_none;
+           bool layout_differs = var->depth_layout != existing->depth_layout;
+           if (layout_declared && layout_differs) {
+              linker_error_printf(prog,
+                 "All redeclarations of gl_FragDepth in all fragment shaders "
+                 "in a single program must have the same set of qualifiers.");
+           }
+           if (var->used && layout_differs) {
+              linker_error_printf(prog,
+                    "If gl_FragDepth is redeclared with a layout qualifier in"
+                    "any fragment shader, it must be redeclared with the same"
+                    "layout qualifier in all fragment shaders that have"
+                    "assignments to gl_FragDepth");
+           }
+        }
 
 	    /* FINISHME: Handle non-constant initializers.
 	     */
@@ -413,7 +429,7 @@ cross_validate_globals(struct gl_shader_program *prog,
 		   * FINISHME: will fail.
 		   */
 		  existing->constant_value =
-		     var->constant_value->clone(talloc_parent(existing), NULL);
+		     var->constant_value->clone(ralloc_parent(existing), NULL);
 	    }
 
 	    if (existing->invariant != var->invariant) {
@@ -422,6 +438,12 @@ cross_validate_globals(struct gl_shader_program *prog,
 	                           mode_string(var), var->name);
 	       return false;
 	    }
+            if (existing->centroid != var->centroid) {
+               linker_error_printf(prog, "declarations for %s `%s' have "
+                                   "mismatching centroid qualifiers\n",
+                                   mode_string(var), var->name);
+               return false;
+            }
 	 } else
 	    variables.add_variable(var);
       }
@@ -488,7 +510,7 @@ cross_validate_outputs_to_inputs(struct gl_shader_program *prog,
 	  */
 	 if (input->type != output->type) {
 	    /* There is a bit of a special case for gl_TexCoord.  This
-	     * built-in is unsized by default.  Appliations that variable
+	     * built-in is unsized by default.  Applications that variable
 	     * access it must redeclare it with a size.  There is some
 	     * language in the GLSL spec that implies the fragment shader
 	     * and vertex shader do not have to agree on this size.  Other
@@ -888,30 +910,29 @@ link_intrastage_shaders(void *mem_ctx,
 
    free(linking_shaders);
 
-   /* Make a pass over all global variables to ensure that arrays with
+   /* Make a pass over all variable declarations to ensure that arrays with
     * unspecified sizes have a size specified.  The size is inferred from the
     * max_array_access field.
     */
    if (linked != NULL) {
-      foreach_list(node, linked->ir) {
-	 ir_variable *const var = ((ir_instruction *) node)->as_variable();
+      class array_sizing_visitor : public ir_hierarchical_visitor {
+      public:
+	 virtual ir_visitor_status visit(ir_variable *var)
+	 {
+	    if (var->type->is_array() && (var->type->length == 0)) {
+	       const glsl_type *type =
+		  glsl_type::get_array_instance(var->type->fields.array,
+						var->max_array_access + 1);
 
-	 if (var == NULL)
-	    continue;
+	       assert(type != NULL);
+	       var->type = type;
+	    }
 
-	 if ((var->mode != ir_var_auto) && (var->mode != ir_var_temporary))
-	    continue;
+	    return visit_continue;
+	 }
+      } v;
 
-	 if (!var->type->is_array() || (var->type->length != 0))
-	    continue;
-
-	 const glsl_type *type =
-	    glsl_type::get_array_instance(var->type->fields.array,
-					  var->max_array_access);
-
-	 assert(type != NULL);
-	 var->type = type;
-      }
+      v.run(linked->ir);
    }
 
    return linked;
@@ -973,6 +994,19 @@ update_array_sizes(struct gl_shader_program *prog)
 	 }
 
 	 if (size + 1 != var->type->fields.array->length) {
+	    /* If this is a built-in uniform (i.e., it's backed by some
+	     * fixed-function state), adjust the number of state slots to
+	     * match the new array size.  The number of slots per array entry
+	     * is not known.  It seems safe to assume that the total number of
+	     * slots is an integer multiple of the number of array elements.
+	     * Determine the number of slots per array element by dividing by
+	     * the old (total) size.
+	     */
+	    if (var->num_state_slots > 0) {
+	       var->num_state_slots = (size + 1)
+		  * (var->num_state_slots / var->type->length);
+	    }
+
 	    var->type = glsl_type::get_array_instance(var->type->fields.array,
 						      size + 1);
 	    /* FINISHME: We should update the types of array
@@ -991,7 +1025,7 @@ add_uniform(void *mem_ctx, exec_list *uniforms, struct hash_table *ht,
    if (type->is_record()) {
       for (unsigned int i = 0; i < type->length; i++) {
 	 const glsl_type *field_type = type->fields.structure[i].type;
-	 char *field_name = talloc_asprintf(mem_ctx, "%s.%s", name,
+	 char *field_name = ralloc_asprintf(mem_ctx, "%s.%s", name,
 					    type->fields.structure[i].name);
 
 	 add_uniform(mem_ctx, uniforms, ht, field_name, field_type,
@@ -1007,7 +1041,7 @@ add_uniform(void *mem_ctx, exec_list *uniforms, struct hash_table *ht,
 	 /* Array of structures. */
 	 if (array_elem_type->is_record()) {
 	    for (unsigned int i = 0; i < type->length; i++) {
-	       char *elem_name = talloc_asprintf(mem_ctx, "%s[%d]", name, i);
+	       char *elem_name = ralloc_asprintf(mem_ctx, "%s[%d]", name, i);
 	       add_uniform(mem_ctx, uniforms, ht, elem_name, array_elem_type,
 			   shader_type, next_shader_pos, total_uniforms);
 	    }
@@ -1069,7 +1103,7 @@ assign_uniform_locations(struct gl_shader_program *prog)
    unsigned total_uniforms = 0;
    hash_table *ht = hash_table_ctor(32, hash_table_string_hash,
 				    hash_table_string_compare);
-   void *mem_ctx = talloc_new(NULL);
+   void *mem_ctx = ralloc_context(NULL);
 
    for (unsigned i = 0; i < MESA_SHADER_TYPES; i++) {
       if (prog->_LinkedShaders[i] == NULL)
@@ -1098,7 +1132,7 @@ assign_uniform_locations(struct gl_shader_program *prog)
       }
    }
 
-   talloc_free(mem_ctx);
+   ralloc_free(mem_ctx);
 
    gl_uniform_list *ul = (gl_uniform_list *)
       calloc(1, sizeof(gl_uniform_list));
@@ -1129,7 +1163,7 @@ assign_uniform_locations(struct gl_shader_program *prog)
 
 
 /**
- * Find a contiguous set of available bits in a bitmask
+ * Find a contiguous set of available bits in a bitmask.
  *
  * \param used_mask     Bits representing used (1) and unused (0) locations
  * \param needed_count  Number of contiguous bits needed.
@@ -1160,23 +1194,50 @@ find_available_slots(unsigned used_mask, unsigned needed_count)
 }
 
 
+/**
+ * Assign locations for either VS inputs for FS outputs
+ *
+ * \param prog          Shader program whose variables need locations assigned
+ * \param target_index  Selector for the program target to receive location
+ *                      assignmnets.  Must be either \c MESA_SHADER_VERTEX or
+ *                      \c MESA_SHADER_FRAGMENT.
+ * \param max_index     Maximum number of generic locations.  This corresponds
+ *                      to either the maximum number of draw buffers or the
+ *                      maximum number of generic attributes.
+ *
+ * \return
+ * If locations are successfully assigned, true is returned.  Otherwise an
+ * error is emitted to the shader link log and false is returned.
+ *
+ * \bug
+ * Locations set via \c glBindFragDataLocation are not currently supported.
+ * Only locations assigned automatically by the linker, explicitly set by a
+ * layout qualifier, or explicitly set by a built-in variable (e.g., \c
+ * gl_FragColor) are supported for fragment shaders.
+ */
 bool
-assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index)
+assign_attribute_or_color_locations(gl_shader_program *prog,
+				    unsigned target_index,
+				    unsigned max_index)
 {
-   /* Mark invalid attribute locations as being used.
+   /* Mark invalid locations as being used.
     */
-   unsigned used_locations = (max_attribute_index >= 32)
-      ? ~0 : ~((1 << max_attribute_index) - 1);
+   unsigned used_locations = (max_index >= 32)
+      ? ~0 : ~((1 << max_index) - 1);
 
-   gl_shader *const sh = prog->_LinkedShaders[0];
-   assert(sh->Type == GL_VERTEX_SHADER);
+   assert((target_index == MESA_SHADER_VERTEX)
+	  || (target_index == MESA_SHADER_FRAGMENT));
+
+   gl_shader *const sh = prog->_LinkedShaders[target_index];
+   if (sh == NULL)
+      return true;
 
    /* Operate in a total of four passes.
     *
     * 1. Invalidate the location assignments for all vertex shader inputs.
     *
     * 2. Assign locations for inputs that have user-defined (via
-    *    glBindVertexAttribLocation) locatoins.
+    *    glBindVertexAttribLocation) locations.
     *
     * 3. Sort the attributes without assigned locations by number of slots
     *    required in decreasing order.  Fragmentation caused by attribute
@@ -1186,9 +1247,16 @@ assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index
     * 4. Assign locations to any inputs without assigned locations.
     */
 
-   invalidate_variable_locations(sh, ir_var_in, VERT_ATTRIB_GENERIC0);
+   const int generic_base = (target_index == MESA_SHADER_VERTEX)
+      ? (int) VERT_ATTRIB_GENERIC0 : (int) FRAG_RESULT_DATA0;
 
-   if (prog->Attributes != NULL) {
+   const enum ir_variable_mode direction =
+      (target_index == MESA_SHADER_VERTEX) ? ir_var_in : ir_var_out;
+
+
+   invalidate_variable_locations(sh, direction, generic_base);
+
+   if ((target_index == MESA_SHADER_VERTEX) && (prog->Attributes != NULL)) {
       for (unsigned i = 0; i < prog->Attributes->NumParameters; i++) {
 	 ir_variable *const var =
 	    sh->symbols->get_variable(prog->Attributes->Parameters[i].Name);
@@ -1275,15 +1343,15 @@ assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index
    foreach_list(node, sh->ir) {
       ir_variable *const var = ((ir_instruction *) node)->as_variable();
 
-      if ((var == NULL) || (var->mode != ir_var_in))
+      if ((var == NULL) || (var->mode != (unsigned) direction))
 	 continue;
 
       if (var->explicit_location) {
 	 const unsigned slots = count_attribute_slots(var->type);
 	 const unsigned use_mask = (1 << slots) - 1;
-	 const int attr = var->location - VERT_ATTRIB_GENERIC0;
+	 const int attr = var->location - generic_base;
 
-	 if ((var->location >= (int)(max_attribute_index + VERT_ATTRIB_GENERIC0))
+	 if ((var->location >= (int)(max_index + generic_base))
 	     || (var->location < 0)) {
 	    linker_error_printf(prog,
 				"invalid explicit location %d specified for "
@@ -1291,7 +1359,7 @@ assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index
 				(var->location < 0) ? var->location : attr,
 				var->name);
 	    return false;
-	 } else if (var->location >= VERT_ATTRIB_GENERIC0) {
+	 } else if (var->location >= generic_base) {
 	    used_locations |= (use_mask << attr);
 	 }
       }
@@ -1315,14 +1383,16 @@ assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index
 
    qsort(to_assign, num_attr, sizeof(to_assign[0]), temp_attr::compare);
 
-   /* VERT_ATTRIB_GENERIC0 is a psdueo-alias for VERT_ATTRIB_POS.  It can only
-    * be explicitly assigned by via glBindAttribLocation.  Mark it as reserved
-    * to prevent it from being automatically allocated below.
-    */
-   find_deref_visitor find("gl_Vertex");
-   find.run(sh->ir);
-   if (find.variable_found())
-      used_locations |= (1 << 0);
+   if (target_index == MESA_SHADER_VERTEX) {
+      /* VERT_ATTRIB_GENERIC0 is a pseudo-alias for VERT_ATTRIB_POS.  It can
+       * only be explicitly assigned by via glBindAttribLocation.  Mark it as
+       * reserved to prevent it from being automatically allocated below.
+       */
+      find_deref_visitor find("gl_Vertex");
+      find.run(sh->ir);
+      if (find.variable_found())
+	 used_locations |= (1 << 0);
+   }
 
    for (unsigned i = 0; i < num_attr; i++) {
       /* Mask representing the contiguous slots that will be used by this
@@ -1333,14 +1403,17 @@ assign_attribute_locations(gl_shader_program *prog, unsigned max_attribute_index
       int location = find_available_slots(used_locations, to_assign[i].slots);
 
       if (location < 0) {
+	 const char *const string = (target_index == MESA_SHADER_VERTEX)
+	    ? "vertex shader input" : "fragment shader output";
+
 	 linker_error_printf(prog,
 			     "insufficient contiguous attribute locations "
-			     "available for vertex shader input `%s'",
-			     to_assign[i].var->name);
+			     "available for %s `%s'",
+			     string, to_assign[i].var->name);
 	 return false;
       }
 
-      to_assign[i].var->location = VERT_ATTRIB_GENERIC0 + location;
+      to_assign[i].var->location = generic_base + location;
       used_locations |= (use_mask << location);
    }
 
@@ -1371,8 +1444,9 @@ demote_shader_inputs_and_outputs(gl_shader *sh, enum ir_variable_mode mode)
 }
 
 
-void
-assign_varying_locations(struct gl_shader_program *prog,
+bool
+assign_varying_locations(struct gl_context *ctx,
+			 struct gl_shader_program *prog,
 			 gl_shader *producer, gl_shader *consumer)
 {
    /* FINISHME: Set dynamically when geometry shader support is added. */
@@ -1428,6 +1502,8 @@ assign_varying_locations(struct gl_shader_program *prog,
       }
    }
 
+   unsigned varying_vectors = 0;
+
    foreach_list(node, consumer->ir) {
       ir_variable *const var = ((ir_instruction *) node)->as_variable();
 
@@ -1458,24 +1534,48 @@ assign_varying_locations(struct gl_shader_program *prog,
 	  * value is written by the previous stage.
 	  */
 	 var->mode = ir_var_auto;
+      } else {
+	 /* The packing rules are used for vertex shader inputs are also used
+	  * for fragment shader inputs.
+	  */
+	 varying_vectors += count_attribute_slots(var->type);
       }
    }
+
+   if (ctx->API == API_OPENGLES2 || prog->Version == 100) {
+      if (varying_vectors > ctx->Const.MaxVarying) {
+	 linker_error_printf(prog, "shader uses too many varying vectors "
+			     "(%u > %u)\n",
+			     varying_vectors, ctx->Const.MaxVarying);
+	 return false;
+      }
+   } else {
+      const unsigned float_components = varying_vectors * 4;
+      if (float_components > ctx->Const.MaxVarying * 4) {
+	 linker_error_printf(prog, "shader uses too many varying components "
+			     "(%u > %u)\n",
+			     float_components, ctx->Const.MaxVarying * 4);
+	 return false;
+      }
+   }
+
+   return true;
 }
 
 
 void
 link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
 {
-   void *mem_ctx = talloc_init("temporary linker context");
+   void *mem_ctx = ralloc_context(NULL); // temporary linker context
 
    prog->LinkStatus = false;
    prog->Validated = false;
    prog->_Used = false;
 
    if (prog->InfoLog != NULL)
-      talloc_free(prog->InfoLog);
+      ralloc_free(prog->InfoLog);
 
-   prog->InfoLog = talloc_strdup(NULL, "");
+   prog->InfoLog = ralloc_strdup(NULL, "");
 
    /* Separate the shaders into groups based on their type.
     */
@@ -1576,7 +1676,7 @@ link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
 	    break;
       }
 
-      /* Validate the inputs of each stage with the output of the preceeding
+      /* Validate the inputs of each stage with the output of the preceding
        * stage.
        */
       for (unsigned i = prev + 1; i < MESA_SHADER_TYPES; i++) {
@@ -1602,6 +1702,10 @@ link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
       if (prog->_LinkedShaders[i] == NULL)
 	 continue;
 
+      detect_recursion_linked(prog, prog->_LinkedShaders[i]->ir);
+      if (!prog->LinkStatus)
+	 goto done;
+
       while (do_common_optimization(prog->_LinkedShaders[i]->ir, true, 32))
 	 ;
    }
@@ -1610,16 +1714,19 @@ link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
 
    assign_uniform_locations(prog);
 
-   if (prog->_LinkedShaders[MESA_SHADER_VERTEX] != NULL) {
-      /* FINISHME: The value of the max_attribute_index parameter is
-       * FINISHME: implementation dependent based on the value of
-       * FINISHME: GL_MAX_VERTEX_ATTRIBS.  GL_MAX_VERTEX_ATTRIBS must be
-       * FINISHME: at least 16, so hardcode 16 for now.
-       */
-      if (!assign_attribute_locations(prog, 16)) {
-	 prog->LinkStatus = false;
-	 goto done;
-      }
+   /* FINISHME: The value of the max_attribute_index parameter is
+    * FINISHME: implementation dependent based on the value of
+    * FINISHME: GL_MAX_VERTEX_ATTRIBS.  GL_MAX_VERTEX_ATTRIBS must be
+    * FINISHME: at least 16, so hardcode 16 for now.
+    */
+   if (!assign_attribute_or_color_locations(prog, MESA_SHADER_VERTEX, 16)) {
+      prog->LinkStatus = false;
+      goto done;
+   }
+
+   if (!assign_attribute_or_color_locations(prog, MESA_SHADER_FRAGMENT, ctx->Const.MaxDrawBuffers)) {
+      prog->LinkStatus = false;
+      goto done;
    }
 
    unsigned prev;
@@ -1632,9 +1739,13 @@ link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
       if (prog->_LinkedShaders[i] == NULL)
 	 continue;
 
-      assign_varying_locations(prog,
-			       prog->_LinkedShaders[prev],
-			       prog->_LinkedShaders[i]);
+      if (!assign_varying_locations(ctx, prog,
+				    prog->_LinkedShaders[prev],
+				    prog->_LinkedShaders[i])) {
+	 prog->LinkStatus = false;
+	 goto done;
+      }
+
       prev = i;
    }
 
@@ -1657,6 +1768,20 @@ link_shaders(struct gl_context *ctx, struct gl_shader_program *prog)
       demote_shader_inputs_and_outputs(sh, ir_var_in);
    }
 
+   /* OpenGL ES requires that a vertex shader and a fragment shader both be
+    * present in a linked program.  By checking for use of shading language
+    * version 1.00, we also catch the GL_ARB_ES2_compatibility case.
+    */
+   if (ctx->API == API_OPENGLES2 || prog->Version == 100) {
+      if (prog->_LinkedShaders[MESA_SHADER_VERTEX] == NULL) {
+	 linker_error_printf(prog, "program lacks a vertex shader\n");
+	 prog->LinkStatus = false;
+      } else if (prog->_LinkedShaders[MESA_SHADER_FRAGMENT] == NULL) {
+	 linker_error_printf(prog, "program lacks a fragment shader\n");
+	 prog->LinkStatus = false;
+      }
+   }
+
    /* FINISHME: Assign fragment shader output locations. */
 
 done:
@@ -1670,5 +1795,5 @@ done:
       reparent_ir(prog->_LinkedShaders[i]->ir, prog->_LinkedShaders[i]->ir);
    }
 
-   talloc_free(mem_ctx);
+   ralloc_free(mem_ctx);
 }

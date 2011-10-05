@@ -32,9 +32,6 @@ EGL_SOURCES = \
             egl/main/eglstring \
             egl/main/eglsurface \
             egl/main/eglsync \
-            gallium/targets/egl/egl \
-            gallium/targets/egl/st_GL \
-            gallium/targets/egl/st_OpenVG \
             gallium/state_trackers/egl/common/egl_g3d \
             gallium/state_trackers/egl/common/egl_g3d_api \
             gallium/state_trackers/egl/common/egl_g3d_image \
@@ -42,6 +39,10 @@ EGL_SOURCES = \
             gallium/state_trackers/egl/common/egl_g3d_sync \
             gallium/state_trackers/egl/common/native_helper \
             gallium/state_trackers/egl/aros/native_aros \
+            gallium/targets/egl-static/egl \
+            gallium/targets/egl-static/egl_st \
+            gallium/targets/egl-static/st_GL \
+            gallium/targets/egl-static/st_OpenVG \
 
 LIBRARY_SOURCES = \
             $(addprefix ../../, $(EGL_SOURCES)) \
@@ -52,15 +53,19 @@ USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/egl \
+            -I$(SRCDIR)/$(CURDIR)/../../gallium/state_trackers/vega \
             -I$(SRCDIR)/$(CURDIR)/../../egl/main \
+            -I$(SRCDIR)/$(CURDIR)/../../mesa \
             -I$(SRCDIR)/$(CURDIR)/../../gallium/include \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
 USER_CFLAGS :=  -DFEATURE_GL=1 \
                 -DFEATURE_VG=1 \
+                -D_EGL_BUILT_IN_DRIVER_GALLIUM \
                 -D_EGL_NATIVE_PLATFORM=_EGL_PLATFORM_AROS \
                 -D_EGL_OS_AROS=1 \
                 -DHAVE_AROS_BACKEND \
+                -D_EGL_MAIN=_eglBuiltInDriverGALLIUM \
 
 %build_module mmake=workbench-libs-egl \
     modname=egl modtype=library linklibname=EGL conffile=egl.conf \

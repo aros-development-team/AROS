@@ -28,7 +28,9 @@
 
 #include "pipe/p_config.h"
 
-#if defined(PIPE_ARCH_X86)
+#include "tgsi/tgsi_sse2.h"
+
+#if defined(PIPE_ARCH_X86) && 0 /* See FIXME notes below */
 
 #include "util/u_debug.h"
 #include "pipe/p_shader_tokens.h"
@@ -42,7 +44,6 @@
 #include "tgsi/tgsi_util.h"
 #include "tgsi/tgsi_dump.h"
 #include "tgsi/tgsi_exec.h"
-#include "tgsi/tgsi_sse2.h"
 
 #include "rtasm/rtasm_x86sse.h"
 
@@ -118,6 +119,7 @@ get_machine_base( void )
 static struct x86_reg
 get_input_base( void )
 {
+   /* FIXME: tgsi_exec_machine::Inputs is a pointer now! */
    return x86_make_disp(
       get_machine_base(),
       Offset(struct tgsi_exec_machine, Inputs) );
@@ -126,6 +128,7 @@ get_input_base( void )
 static struct x86_reg
 get_output_base( void )
 {
+   /* FIXME: tgsi_exec_machine::Ouputs is a pointer now! */
    return x86_make_disp(
       get_machine_base(),
       Offset(struct tgsi_exec_machine, Outputs) );
@@ -161,6 +164,14 @@ get_immediate_base( void )
    return x86_make_reg(
       file_REG32,
       reg_DX );
+}
+
+static struct x86_reg
+get_system_value_base( void )
+{
+   return x86_make_disp(
+      get_machine_base(),
+      Offset(struct tgsi_exec_machine, SystemValue) );
 }
 
 
@@ -226,6 +237,16 @@ get_temp(
    return x86_make_disp(
       get_temp_base(),
       (vec * 4 + chan) * 16 );
+}
+
+static struct x86_reg
+get_system_value(
+   unsigned vec,
+   unsigned chan )
+{
+   return x86_make_disp(
+      get_system_value_base(), /* base */
+      (vec * 4 + chan) * 4 );  /* byte offset from base */
 }
 
 static struct x86_reg
@@ -420,6 +441,30 @@ emit_tempf(
       func,
       make_xmm( xmm ),
       get_temp( vec, chan ) );
+}
+
+/**
+ * Copy a system value to xmm register
+ * \param xmm  the destination xmm register
+ * \param vec  the source system value register
+ * \param chan  src channel to fetch (X, Y, Z or W)
+ */
+static void
+emit_system_value(
+   struct x86_function *func,
+   unsigned xmm,
+   unsigned vec,
+   unsigned chan )
+{
+   sse_movss(
+      func,
+      make_xmm( xmm ),
+      get_system_value( vec, chan ) );
+   sse_shufps(
+      func,
+      make_xmm( xmm ),
+      make_xmm( xmm ),
+      SHUF( 0, 0, 0, 0 ) );
 }
 
 /**
@@ -1281,8 +1326,15 @@ emit_fetch(
             swizzle );
          break;
 
-      case TGSI_FILE_INPUT:
       case TGSI_FILE_SYSTEM_VALUE:
+         emit_system_value(
+            func,
+            xmm,
+            reg->Register.Index,
+            swizzle );
+         break;
+
+      case TGSI_FILE_INPUT:
          emit_inputf(
             func,
             xmm,
@@ -1465,6 +1517,7 @@ emit_tex( struct x86_function *func,
       break;
    case TGSI_TEXTURE_2D:
    case TGSI_TEXTURE_RECT:
+   case TGSI_TEXTURE_1D_ARRAY:
       count = 2;
       break;
    case TGSI_TEXTURE_SHADOW1D:
@@ -1472,6 +1525,7 @@ emit_tex( struct x86_function *func,
    case TGSI_TEXTURE_SHADOWRECT:
    case TGSI_TEXTURE_3D:
    case TGSI_TEXTURE_CUBE:
+   case TGSI_TEXTURE_2D_ARRAY:
       count = 3;
       break;
    default:
@@ -2636,8 +2690,7 @@ emit_declaration(
    struct x86_function *func,
    struct tgsi_full_declaration *decl )
 {
-   if( decl->Declaration.File == TGSI_FILE_INPUT ||
-       decl->Declaration.File == TGSI_FILE_SYSTEM_VALUE ) {
+   if( decl->Declaration.File == TGSI_FILE_INPUT ) {
       unsigned first, last, mask;
       unsigned i, j;
 
@@ -2710,6 +2763,7 @@ static void aos_to_soa( struct x86_function *func,
 
    x86_mov( func, aos_input,  x86_fn_arg( func, arg_aos ) );
    x86_mov( func, soa_input,  x86_fn_arg( func, arg_machine ) );
+   /* FIXME: tgsi_exec_machine::Inputs is a pointer now! */
    x86_lea( func, soa_input,  
 	    x86_make_disp( soa_input, 
 			   Offset(struct tgsi_exec_machine, Inputs) ) );
@@ -2778,6 +2832,7 @@ static void soa_to_aos( struct x86_function *func,
 
    x86_mov( func, aos_output, x86_fn_arg( func, arg_aos ) );
    x86_mov( func, soa_output, x86_fn_arg( func, arg_machine ) );
+   /* FIXME: tgsi_exec_machine::Ouputs is a pointer now! */
    x86_lea( func, soa_output, 
 	    x86_make_disp( soa_output, 
 			   Offset(struct tgsi_exec_machine, Outputs) ) );
@@ -3032,4 +3087,16 @@ tgsi_emit_sse2(
    return ok;
 }
 
-#endif /* PIPE_ARCH_X86 */
+#else /* !PIPE_ARCH_X86 */
+
+unsigned
+tgsi_emit_sse2(
+   const struct tgsi_token *tokens,
+   struct x86_function *func,
+   float (*immediates)[4],
+   boolean do_swizzles )
+{
+   return 0;
+}
+
+#endif /* !PIPE_ARCH_X86 */

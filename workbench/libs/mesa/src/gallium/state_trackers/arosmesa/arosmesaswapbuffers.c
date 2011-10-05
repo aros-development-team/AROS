@@ -4,6 +4,7 @@
 */
 
 #include "arosmesa_funcs.h"
+#include "arosmesa_funcs_gallium.h"
 #include <proto/exec.h>
 #include <proto/gallium.h>
 #include <gallium/pipe/p_screen.h>
@@ -44,7 +45,7 @@
     if (amesa->framebuffer->render_resource) 
     {
         /* Flush rendering cache before blitting */
-        amesa->st->flush(amesa->st, PIPE_FLUSH_RENDER_CACHE | PIPE_FLUSH_FRAME, NULL);
+        amesa->st->flush(amesa->st, ST_FLUSH_FRONT, NULL);
 
         BltPipeResourceRastPort(amesa->framebuffer->render_resource, 0, 0, 
             amesa->visible_rp, amesa->left, amesa->top, 

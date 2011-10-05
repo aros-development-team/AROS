@@ -176,12 +176,24 @@ static INLINE float logf( float f )
 
 #define isfinite(x) _finite((double)(x))
 #define isnan(x) _isnan((double)(x))
-#endif
+#endif /* _MSC_VER < 1400 && !defined(__cplusplus) */
 
 static INLINE double log2( double x )
 {
    const double invln2 = 1.442695041;
    return log( x ) * invln2;
+}
+
+static INLINE double
+round(double x)
+{
+   return x >= 0.0 ? floor(x + 0.5) : ceil(x - 0.5);
+}
+
+static INLINE float
+roundf(float x)
+{
+   return x >= 0.0f ? floorf(x + 0.5f) : ceilf(x - 0.5f);
 }
 
 #endif /* _MSC_VER */
@@ -403,22 +415,6 @@ unsigned ffs( unsigned u )
 #define ffs __builtin_ffs
 #endif
 
-#ifdef __MINGW32__
-#define ffs __builtin_ffs
-#endif
-
-
-/* Could also binary search for the highest bit.
- */
-static INLINE unsigned
-util_unsigned_logbase2(unsigned n)
-{
-   unsigned log2 = 0;
-   while (n >>= 1)
-      ++log2;
-   return log2;
-}
-
 
 /**
  * Return float bits.
@@ -465,6 +461,17 @@ float_to_ubyte(float f)
    }
 }
 
+static INLINE float
+byte_to_float_tex(int8_t b)
+{
+   return (b == -128) ? -1.0F : b * 1.0F / 127.0F;
+}
+
+static INLINE int8_t
+float_to_byte_tex(float f)
+{
+   return (int8_t) (127.0F * f);
+}
 
 /**
  * Calc log base 2
@@ -472,10 +479,17 @@ float_to_ubyte(float f)
 static INLINE unsigned
 util_logbase2(unsigned n)
 {
-   unsigned log2 = 0;
-   while (n >>= 1)
-      ++log2;
-   return log2;
+#if defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 304)
+   return ((sizeof(unsigned) * 8 - 1) - __builtin_clz(n | 1));
+#else
+   unsigned pos = 0;
+   if (n >= 1<<16) { n >>= 16; pos += 16; }
+   if (n >= 1<< 8) { n >>=  8; pos +=  8; }
+   if (n >= 1<< 4) { n >>=  4; pos +=  4; }
+   if (n >= 1<< 2) { n >>=  2; pos +=  2; }
+   if (n >= 1<< 1) {           pos +=  1; }
+   return pos;
+#endif
 }
 
 
@@ -485,17 +499,29 @@ util_logbase2(unsigned n)
 static INLINE unsigned
 util_next_power_of_two(unsigned x)
 {
-   unsigned i;
+#if defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 304)
+   if (x <= 1)
+       return 1;
 
-   if (x == 0)
+   return (1 << ((sizeof(unsigned) * 8) - __builtin_clz(x - 1)));
+#else
+   unsigned val = x;
+
+   if (x <= 1)
       return 1;
 
-   --x;
+   if (util_is_power_of_two(x))
+      return x;
 
-   for (i = 1; i < sizeof(unsigned) * 8; i <<= 1)
-      x |= x >> i;
-
-   return x + 1;
+   val--;
+   val = (val >> 1) | val;
+   val = (val >> 2) | val;
+   val = (val >> 4) | val;
+   val = (val >> 8) | val;
+   val = (val >> 16) | val;
+   val++;
+   return val;
+#endif
 }
 
 
@@ -505,14 +531,16 @@ util_next_power_of_two(unsigned x)
 static INLINE unsigned
 util_bitcount(unsigned n)
 {
+#if defined(PIPE_CC_GCC) && (PIPE_CC_GCC_VERSION >= 304)
 #if defined(PIPE_OS_AROS)
    unsigned int bits;
    for (bits = 0; n > 0; n = n >> 1) {
       bits += (n & 1);
    }
    return bits;
-#elif defined(PIPE_CC_GCC)
+#else
    return __builtin_popcount(n);
+#endif
 #else
    /* K&R classic bitcount.
     *
@@ -566,11 +594,11 @@ util_bswap16(uint16_t n)
 #define MIN2( A, B )   ( (A)<(B) ? (A) : (B) )
 #define MAX2( A, B )   ( (A)>(B) ? (A) : (B) )
 
-#define MIN3( A, B, C ) MIN2( MIN2( A, B ), C )
-#define MAX3( A, B, C ) MAX2( MAX2( A, B ), C )
+#define MIN3( A, B, C ) ((A) < (B) ? MIN2(A, C) : MIN2(B, C))
+#define MAX3( A, B, C ) ((A) > (B) ? MAX2(A, C) : MAX2(B, C))
 
-#define MIN4( A, B, C, D ) MIN2( MIN2( A, B ), MIN2(C, D) )
-#define MAX4( A, B, C, D ) MAX2( MAX2( A, B ), MAX2(C, D) )
+#define MIN4( A, B, C, D ) ((A) < (B) ? MIN3(A, C, D) : MIN3(B, C, D))
+#define MAX4( A, B, C, D ) ((A) > (B) ? MAX3(A, C, D) : MAX3(B, C, D))
 
 
 /**

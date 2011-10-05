@@ -24,7 +24,7 @@ Number
 
 Dependencies
 
-    Reguires EGL 1.4 or later.  This extension is written against the
+    Requires EGL 1.4 or later.  This extension is written against the
     wording of the EGL 1.4 specification.
 
     EGL_KHR_base_image is required.
@@ -66,6 +66,7 @@ New Tokens
 
         EGL_DRM_BUFFER_USE_SCANOUT_MESA		0x0001
         EGL_DRM_BUFFER_USE_SHARE_MESA		0x0002
+        EGL_DRM_BUFFER_USE_CURSOR_MESA		0x0004
 
     Accepted in the <target> parameter of eglCreateImageKHR:
 
@@ -89,13 +90,16 @@ Additions to the EGL 1.4 Specification:
     extension is EGL_DRM_BUFFER_FORMAT_ARGB32_MESA, where each pixel
     is a CPU-endian, 32-bit quantity, with alpha in the upper 8 bits,
     then red, then green, then blue.  The bit values accepted by
-    EGL_DRM_BUFFER_USE_MESA are EGL_DRM_BUFFER_USE_SCANOUT_MESA and
-    EGL_DRM_BUFFER_USE_SHARE_MESA.  EGL_DRM_BUFFER_USE_SCANOUT_MESA
-    requests that the created EGLImage should be usable as a scanout
-    buffer with the DRM kernel modesetting API.  The
-    EGL_DRM_BUFFER_USE_SHARE_MESA bit requests that the EGLImage can
-    be shared with other processes by passing the underlying DRM
-    buffer name.
+    EGL_DRM_BUFFER_USE_MESA are EGL_DRM_BUFFER_USE_SCANOUT_MESA,
+    EGL_DRM_BUFFER_USE_SHARE_MESA and EGL_DRM_BUFFER_USE_CURSOR_MESA.
+    EGL_DRM_BUFFER_USE_SCANOUT_MESA requests that the created EGLImage
+    should be usable as a scanout buffer with the DRM kernel
+    modesetting API.  EGL_DRM_BUFFER_USE_SHARE_MESA requests that the
+    EGLImage can be shared with other processes by passing the
+    underlying DRM buffer name.  EGL_DRM_BUFFER_USE_CURSOR_MESA
+    requests that the image must be usable as a cursor with KMS.  When
+    EGL_DRM_BUFFER_USE_CURSOR_MESA is set, width and height must both
+    be 64.
 
     To create a process local handle or a global DRM name for a
     buffer, call
@@ -134,7 +138,7 @@ Issues
         RESOLVED: The eglQueryImage function has been proposed often,
         but it goes against the EGLImage design.  EGLImages are opaque
         handles to a 2D array of pixels, which can be passed between
-        client APIs.  By referenceing an EGLImage in a client API, the
+        client APIs.  By referencing an EGLImage in a client API, the
         EGLImage target (a texture, a renderbuffer or such) can be
         used to query the attributes of the EGLImage.  We don't have a
         full client API for creating and querying DRM buffers, though,

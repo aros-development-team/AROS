@@ -1,5 +1,6 @@
 #include "pipe/p_screen.h"
 #include "pipe/p_state.h"
+#include "util/u_format.h"
 #include "util/u_format_s3tc.h"
 #include "util/u_simple_screen.h"
 
@@ -32,6 +33,9 @@ nvfx_screen_get_param(struct pipe_screen *pscreen, enum pipe_cap param)
 		return 1;
 	case PIPE_CAP_GLSL:
 		return 1;
+	case PIPE_CAP_SM3:
+		/* TODO: >= nv4x support Shader Model 3.0 */
+		return 0;
 	case PIPE_CAP_ANISOTROPIC_FILTER:
 		return 1;
 	case PIPE_CAP_POINT_SPRITE:
@@ -79,8 +83,16 @@ nvfx_screen_get_param(struct pipe_screen *pscreen, enum pipe_cap param)
 		return 0; // TODO: implement depth clamp
 	case PIPE_CAP_PRIMITIVE_RESTART:
 		return 0; // TODO: implement primitive restart
+	case PIPE_CAP_ARRAY_TEXTURES:
+	case PIPE_CAP_TGSI_INSTANCEID:
+	case PIPE_CAP_VERTEX_ELEMENT_INSTANCE_DIVISOR:
+	case PIPE_CAP_FRAGMENT_COLOR_CLAMP_CONTROL:
+	case PIPE_CAP_SEAMLESS_CUBE_MAP:
+	case PIPE_CAP_SEAMLESS_CUBE_MAP_PER_TEXTURE:
 	case PIPE_CAP_SHADER_STENCIL_EXPORT:
 		return 0;
+	case PIPE_CAP_MIXED_COLORBUFFER_FORMATS:
+                return 0;
 	default:
 		NOUVEAU_ERR("Warning: unknown PIPE_CAP %d\n", param);
 		return 0;
@@ -202,9 +214,12 @@ nvfx_screen_is_format_supported(struct pipe_screen *pscreen,
 				     enum pipe_format format,
 				     enum pipe_texture_target target,
 				     unsigned sample_count,
-				     unsigned bind, unsigned geom_flags)
+                                     unsigned bind)
 {
 	struct nvfx_screen *screen = nvfx_screen(pscreen);
+
+        if (!util_format_is_supported(format, bind))
+                return FALSE;
 
 	 if (sample_count > 1)
 		return FALSE;
@@ -292,6 +307,7 @@ nvfx_screen_destroy(struct pipe_screen *pscreen)
 	nouveau_notifier_free(&screen->sync);
 	nouveau_grobj_free(&screen->eng3d);
 	nvfx_screen_surface_takedown(pscreen);
+	nouveau_bo_ref(NULL, &screen->fence);
 
 	nouveau_screen_fini(&screen->base);
 
@@ -455,6 +471,12 @@ nvfx_screen_create(struct pipe_winsys *ws, struct nouveau_device *dev)
 	pscreen->get_paramf = nvfx_screen_get_paramf;
 	pscreen->is_format_supported = nvfx_screen_is_format_supported;
 	pscreen->context_create = nvfx_create;
+
+	ret = nouveau_bo_new(dev, NOUVEAU_BO_VRAM, 0, 4096, &screen->fence);
+	if (ret) {
+		nvfx_screen_destroy(pscreen);
+		return NULL;
+	}
 
 	switch (dev->chipset & 0xf0) {
 	case 0x30:

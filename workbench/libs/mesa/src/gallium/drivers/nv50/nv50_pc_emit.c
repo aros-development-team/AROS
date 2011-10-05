@@ -744,8 +744,8 @@ emit_add_a16(struct nv_pc *pc, struct nv_instruction *i)
 
    set_pred(pc, i);
 
-   if (i->src[1])
-      set_a16_bits(pc, SREG(i->src[1])->id + 1);
+   if (s && i->src[0])
+      set_a16_bits(pc, SREG(i->src[0])->id);
 }
 
 static void
@@ -762,7 +762,8 @@ emit_flow(struct nv_pc *pc, struct nv_instruction *i, ubyte flow_op)
       new_fixup(pc, NV50_FIXUP_CODE_RELOC, 0, pos, 0xffff << 11, 9);
       new_fixup(pc, NV50_FIXUP_CODE_RELOC, 1, pos, 0x3f << 14, -4);
 
-      pc->emit[0] |= (pos / 4) << 11;
+      pc->emit[0] |= ((pos >>  2) & 0xffff) << 11;
+      pc->emit[1] |= ((pos >> 18) & 0x003f) << 14;
    }
 }
 

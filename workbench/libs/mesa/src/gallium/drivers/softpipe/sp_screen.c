@@ -81,7 +81,7 @@ softpipe_get_param(struct pipe_screen *screen, enum pipe_cap param)
    case PIPE_CAP_SM3:
       return 1;
    case PIPE_CAP_ANISOTROPIC_FILTER:
-      return 0;
+      return 1;
    case PIPE_CAP_POINT_SPRITE:
       return 1;
    case PIPE_CAP_MAX_RENDER_TARGETS:
@@ -123,6 +123,11 @@ softpipe_get_param(struct pipe_screen *screen, enum pipe_cap param)
       return 0;
    case PIPE_CAP_SHADER_STENCIL_EXPORT:
       return 1;
+   case PIPE_CAP_TGSI_INSTANCEID:
+   case PIPE_CAP_VERTEX_ELEMENT_INSTANCE_DIVISOR:
+      return 1;
+   case PIPE_CAP_ARRAY_TEXTURES:
+      return 1;
    default:
       return 0;
    }
@@ -156,7 +161,7 @@ softpipe_get_paramf(struct pipe_screen *screen, enum pipe_cap param)
    case PIPE_CAP_MAX_POINT_WIDTH_AA:
       return 255.0; /* arbitrary */
    case PIPE_CAP_MAX_TEXTURE_ANISOTROPY:
-      return 16.0; /* not actually signficant at this time */
+      return 16.0;
    case PIPE_CAP_MAX_TEXTURE_LOD_BIAS:
       return 16.0; /* arbitrary */
    default:
@@ -175,15 +180,16 @@ softpipe_is_format_supported( struct pipe_screen *screen,
                               enum pipe_format format,
                               enum pipe_texture_target target,
                               unsigned sample_count,
-                              unsigned bind,
-                              unsigned geom_flags )
+                              unsigned bind)
 {
    struct sw_winsys *winsys = softpipe_screen(screen)->winsys;
    const struct util_format_description *format_desc;
 
    assert(target == PIPE_BUFFER ||
           target == PIPE_TEXTURE_1D ||
+          target == PIPE_TEXTURE_1D_ARRAY ||
           target == PIPE_TEXTURE_2D ||
+          target == PIPE_TEXTURE_2D_ARRAY ||
           target == PIPE_TEXTURE_RECT ||
           target == PIPE_TEXTURE_3D ||
           target == PIPE_TEXTURE_CUBE);

@@ -107,7 +107,11 @@ typedef struct {
 		for func in api.functionIterateByOffset():
 			for n in func.entry_points:
 				if n != func.name:
-					name = func.dispatch_name()
+					# AROS: call into a static dispach instead of alliased function dispatch
+					# This will be needed as long as gl_procs.h is used to generate the
+					# AROSMesaGetProcAddress function table which is located in libGL.a
+					# name = func.dispatch_name()
+					name = n
 					self.printFunctionString( n )
 					
 					if func.has_different_protocol(n):

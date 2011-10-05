@@ -37,26 +37,6 @@
 #include "texobj.h"
 
 
-/**
- * Primitive names
- */
-const char *_mesa_prim_name[GL_POLYGON+4] = {
-   "GL_POINTS",
-   "GL_LINES",
-   "GL_LINE_LOOP",
-   "GL_LINE_STRIP",
-   "GL_TRIANGLES",
-   "GL_TRIANGLE_STRIP",
-   "GL_TRIANGLE_FAN",
-   "GL_QUADS",
-   "GL_QUAD_STRIP",
-   "GL_POLYGON",
-   "outside begin/end",
-   "inside unknown primitive",
-   "unknown state"
-};
-
-
 static const char *
 tex_target_name(GLenum tgt)
 {
@@ -85,13 +65,12 @@ void
 _mesa_print_state( const char *msg, GLuint state )
 {
    _mesa_debug(NULL,
-	   "%s: (0x%x) %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
+	   "%s: (0x%x) %s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 	   msg,
 	   state,
 	   (state & _NEW_MODELVIEW)       ? "ctx->ModelView, " : "",
 	   (state & _NEW_PROJECTION)      ? "ctx->Projection, " : "",
 	   (state & _NEW_TEXTURE_MATRIX)  ? "ctx->TextureMatrix, " : "",
-	   (state & _NEW_ACCUM)           ? "ctx->Accum, " : "",
 	   (state & _NEW_COLOR)           ? "ctx->Color, " : "",
 	   (state & _NEW_DEPTH)           ? "ctx->Depth, " : "",
 	   (state & _NEW_EVAL)            ? "ctx->Eval/EvalMap, " : "",
@@ -204,7 +183,7 @@ static void add_debug_flags( const char *debug )
 
    MESA_VERBOSE = 0x0;
    for (i = 0; i < Elements(debug_opt); i++) {
-      if (strstr(debug, debug_opt[i].name))
+      if (strstr(debug, debug_opt[i].name) || strcmp(debug, "all") == 0)
          MESA_VERBOSE |= debug_opt[i].flag;
    }
 
@@ -234,16 +213,6 @@ void
 _mesa_init_debug( struct gl_context *ctx )
 {
    char *c;
-
-   /* Dither disable */
-   ctx->NoDither = _mesa_getenv("MESA_NO_DITHER") ? GL_TRUE : GL_FALSE;
-   if (ctx->NoDither) {
-      if (_mesa_getenv("MESA_DEBUG")) {
-         _mesa_debug(ctx, "MESA_NO_DITHER set - dithering disabled\n");
-      }
-      ctx->Color.DitherFlag = GL_FALSE;
-   }
-
    c = _mesa_getenv("MESA_DEBUG");
    if (c)
       add_debug_flags(c);
@@ -281,6 +250,9 @@ write_ppm(const char *filename, const GLubyte *buffer, int width, int height,
          }
       }
       fclose(f);
+   }
+   else {
+      fprintf(stderr, "Unable to create %s in write_ppm()\n", filename);
    }
 }
 
@@ -327,8 +299,8 @@ write_texture_image(struct gl_texture_object *texObj,
 /**
  * Write renderbuffer image to a ppm file.
  */
-static void
-write_renderbuffer_image(const struct gl_renderbuffer *rb)
+void
+_mesa_write_renderbuffer_image(const struct gl_renderbuffer *rb)
 {
    GET_CURRENT_CONTEXT(ctx);
    GLubyte *buffer;
@@ -345,6 +317,10 @@ write_renderbuffer_image(const struct gl_renderbuffer *rb)
       type = GL_UNSIGNED_INT_24_8;
    }
    else {
+      _mesa_debug(NULL,
+                  "Unsupported BaseFormat 0x%x in "
+                  "_mesa_write_renderbuffer_image()\n",
+                  rb->_BaseFormat);
       return;
    }
 
@@ -355,8 +331,12 @@ write_renderbuffer_image(const struct gl_renderbuffer *rb)
 
    /* make filename */
    _mesa_snprintf(s, sizeof(s), "/tmp/renderbuffer%u.ppm", rb->Name);
+   _mesa_snprintf(s, sizeof(s), "C:\\renderbuffer%u.ppm", rb->Name);
 
    printf("  Writing renderbuffer image to %s\n", s);
+
+   _mesa_debug(NULL, "  Writing renderbuffer image to %s\n", s);
+
    write_ppm(s, buffer, rb->Width, rb->Height, 4, 0, 1, 2, GL_TRUE);
 
    free(buffer);
@@ -443,7 +423,7 @@ dump_renderbuffer(const struct gl_renderbuffer *rb, GLboolean writeImage)
 	  rb->Name, rb->Width, rb->Height,
 	  _mesa_lookup_enum_by_nr(rb->InternalFormat));
    if (writeImage) {
-      write_renderbuffer_image(rb);
+      _mesa_write_renderbuffer_image(rb);
    }
 }
 
@@ -569,6 +549,27 @@ _mesa_dump_stencil_buffer(const char *filename)
 
    free(buf);
    free(buf2);
+}
+
+
+void
+_mesa_dump_image(const char *filename, const void *image, GLuint w, GLuint h,
+                 GLenum format, GLenum type)
+{
+   GLboolean invert = GL_TRUE;
+
+   if (format == GL_RGBA && type == GL_UNSIGNED_BYTE) {
+      write_ppm(filename, image, w, h, 4, 0, 1, 2, invert);
+   }
+   else if (format == GL_BGRA && type == GL_UNSIGNED_BYTE) {
+      write_ppm(filename, image, w, h, 4, 2, 1, 0, invert);
+   }
+   else if (format == GL_LUMINANCE_ALPHA && type == GL_UNSIGNED_BYTE) {
+      write_ppm(filename, image, w, h, 2, 1, 0, 0, invert);
+   }
+   else {
+      _mesa_problem(NULL, "Unsupported format/type in _mesa_dump_image()");
+   }
 }
 
 

@@ -23,8 +23,7 @@ include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 #MM- test-mesa : workbench-libs-mesa-module
 
 #MM workbench-libs-mesa-module : includes linklibs-galliumauxiliary \
-#MM workbench-libs-gallium workbench-libs-mesa-module-generated \
-#MM workbench-libs-mesa-module-cpp
+#MM workbench-libs-gallium workbench-libs-mesa-module-cpp
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
@@ -37,26 +36,23 @@ AROSMESA_SOURCES = \
             gallium/state_trackers/arosmesa/arosmesaswapbuffers \
             gallium/state_trackers/arosmesa/arosmesagetcurrentcontext \
             gallium/state_trackers/arosmesa/arosmesa_funcs \
+            gallium/state_trackers/arosmesa/arosmesa_funcs_gallium \
             gallium/state_trackers/arosmesa/arosmesa_init \
             gallium/state_trackers/arosmesa/arosmesagetopenglstatetrackerapi \
             gallium/state_trackers/arosmesa/arosmesasetrast \
             gallium/state_trackers/arosmesa/arosmesagetconfig \
+            gallium/state_trackers/arosmesa/arosmesagetprocaddressinternal \
 
 GLSL_LIBGLCPP_SOURCES = \
             glcpp/glcpp-lex.c \
             glcpp/glcpp-parse.c \
             glcpp/pp.c
 
-GLSL_GLCPP_SOURCES = \
-            $(GLSL_LIBGLCPP_SOURCES) \
-            strtod.c \
-
 GLSL_CXX_SOURCES = \
             ast_expr.cpp \
             ast_function.cpp \
             ast_to_hir.cpp \
             ast_type.cpp \
-            builtin_function.cpp \
             glsl_lexer.cpp \
             glsl_parser.cpp \
             glsl_parser_extras.cpp \
@@ -69,6 +65,7 @@ GLSL_CXX_SOURCES = \
             ir.cpp \
             ir_expression_flattening.cpp \
             ir_function_can_inline.cpp \
+            ir_function_detect_recursion.cpp \
             ir_function.cpp \
             ir_hierarchical_visitor.cpp \
             ir_hv_accept.cpp \
@@ -101,6 +98,7 @@ GLSL_CXX_SOURCES = \
             opt_constant_propagation.cpp \
             opt_constant_variable.cpp \
             opt_copy_propagation.cpp \
+            opt_copy_propagation_elements.cpp \
             opt_dead_code.cpp \
             opt_dead_code_local.cpp \
             opt_dead_functions.cpp \
@@ -113,6 +111,14 @@ GLSL_CXX_SOURCES = \
             opt_swizzle_swizzle.cpp \
             opt_tree_grafting.cpp \
             s_expression.cpp \
+
+GLSL_GENERATED_CXX_SOURCES = \
+    builtin_function.cpp \
+
+GLSL_C_SOURCES = \
+            $(GLSL_LIBGLCPP_SOURCES) \
+            strtod.c \
+            ralloc.c \
 
 USER_INCLUDES := \
             -I$(AROS_DEVELOPMENT)/include/gallium \
@@ -127,21 +133,22 @@ USER_INCLUDES := \
             -I$(SRCDIR)/$(CURDIR)/../../aros \
             -I$(SRCDIR)/$(CURDIR)/../.. \
 
-USER_CFLAGS := -ffast-math -DMAPI_GLAPI_CURRENT -DFEATURE_GL=1
+USER_CFLAGS := -ffast-math -DMAPI_MODE_UTIL -DFEATURE_GL=1 \
+                -DAROSMESA_TYPES='"arosmesa_types.h"' -DAPIMINLINE='' \
+                -DMAPI_ABI_HEADER=\"glapi/glapi_mapi_tmp.h\"
 
 LIB_MESA_SOURCES = \
             $(addprefix mesa/, $(MESA_GALLIUM_SOURCES:.c=)) \
+            $(addprefix mapi/mapi/, $(MAPI_UTIL_SOURCES:.c=)) \
             $(addprefix mapi/glapi/, $(GLAPI_SOURCES:.c=)) \
-            $(addprefix mapi/mapi/, $(MAPI_GLAPI_SOURCES:.c=)) \
-            talloc/talloc \
-            $(addprefix glsl/, $(GLSL_GLCPP_SOURCES:.c=)) \
-
+            $(addprefix glsl/, $(GLSL_C_SOURCES:.c=)) \
             
 # Compilation of C++ GLSL compiler
 
 CXX_SOURCES := \
-    $(addprefix ../../mesa/, $(SHADER_CXX_SOURCES:.cpp=)) \
+    $(addprefix ../../mesa/, $(MESA_CXX_SOURCES:.cpp=)) \
     $(addprefix ../../glsl/, $(GLSL_CXX_SOURCES:.cpp=)) \
+    $(addprefix ../../glsl/, $(GLSL_GENERATED_CXX_SOURCES:.cpp=)) \
     ../../aros/emul_cpp \
 
 CXX_OBJECTS := $(addprefix $(OBJDIR)/cpp/, $(addsuffix .o, $(notdir $(CXX_SOURCES))))
@@ -193,13 +200,16 @@ LIBRARY_SOURCES = \
 
 # NOTE: Both files have been generate and added to AROS repository. Once all 
 # build machines support python 2.5 with libxml2, these targets can be enabled
-##MM
-#workbench-libs-mesa-module-generated : $(SRCDIR)/$(CURDIR)/main/api_exec_es1.c $(SRCDIR)/$(CURDIR)/main/api_exec_es2.c
-#
-#$(SRCDIR)/$(CURDIR)/main/api_exec_es1.c :
-#	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES1.1 > $@
-#
-#$(SRCDIR)/$(CURDIR)/main/api_exec_es2.c :
-#	@$(PYTHON) $(SRCDIR)/$(CURDIR)/main/es_generator.py -S $(SRCDIR)/$(CURDIR)/main/APIspec.xml -V GLES2.0 > $@
+
+MESA_MAIN := $(SRCDIR)/$(CURDIR)/../../mesa/main
+
+#MM
+workbench-libs-mesa-module-generated : $(MESA_MAIN)/api_exec_es1.c $(MESA_MAIN)/api_exec_es2.c
+
+$(MESA_MAIN)/api_exec_es1.c :
+	@$(PYTHON) $(MESA_MAIN)/es_generator.py -S $(MESA_MAIN)/APIspec.xml -V GLES1.1 > $@
+
+$(SRCDIR)/$(CURDIR)/../../mesa/main/api_exec_es2.c :
+	@$(PYTHON) $(MESA_MAIN)/es_generator.py -S $(MESA_MAIN)/APIspec.xml -V GLES2.0 > $@
 
 %common

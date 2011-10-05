@@ -104,7 +104,8 @@ tgsi_file_names[TGSI_FILE_COUNT] =
    "PRED",
    "SV",
    "IMMX",
-   "TEMPX"
+   "TEMPX",
+   "RES"
 };
 
 static const char *interpolate_names[] =
@@ -138,7 +139,7 @@ static const char *immediate_type_names[] =
 };
 
 const char *
-tgsi_swizzle_names[] =
+tgsi_swizzle_names[4] =
 {
    "x",
    "y",
@@ -147,7 +148,7 @@ tgsi_swizzle_names[] =
 };
 
 const char *
-tgsi_texture_names[] =
+tgsi_texture_names[TGSI_TEXTURE_COUNT] =
 {
    "UNKNOWN",
    "1D",
@@ -157,19 +158,31 @@ tgsi_texture_names[] =
    "RECT",
    "SHADOW1D",
    "SHADOW2D",
-   "SHADOWRECT"
+   "SHADOWRECT",
+   "1DARRAY",
+   "2DARRAY"
 };
 
-static const char *property_names[] =
+const char *tgsi_property_names[TGSI_PROPERTY_COUNT] =
 {
    "GS_INPUT_PRIMITIVE",
    "GS_OUTPUT_PRIMITIVE",
    "GS_MAX_OUTPUT_VERTICES",
    "FS_COORD_ORIGIN",
-   "FS_COORD_PIXEL_CENTER"
+   "FS_COORD_PIXEL_CENTER",
+   "FS_COLOR0_WRITES_ALL_CBUFS",
 };
 
-static const char *primitive_names[] =
+static const char *tgsi_type_names[] =
+{
+   "UNORM",
+   "SNORM",
+   "SINT",
+   "UINT",
+   "FLOAT"
+};
+
+const char *tgsi_primitive_names[PIPE_PRIM_MAX] =
 {
    "POINTS",
    "LINES",
@@ -187,13 +200,13 @@ static const char *primitive_names[] =
    "TRIANGLE_STRIP_ADJACENCY"
 };
 
-static const char *fs_coord_origin_names[] =
+const char *tgsi_fs_coord_origin_names[2] =
 {
    "UPPER_LEFT",
    "LOWER_LEFT"
 };
 
-static const char *fs_coord_pixel_center_names[] =
+const char *tgsi_fs_coord_pixel_center_names[2] =
 {
    "HALF_INTEGER",
    "INTEGER"
@@ -392,6 +405,26 @@ iter_declaration(
       }
    }
 
+   if (decl->Declaration.File == TGSI_FILE_RESOURCE) {
+      TXT(", ");
+      ENM(decl->Resource.Resource, tgsi_texture_names);
+      TXT(", ");
+      if ((decl->Resource.ReturnTypeX == decl->Resource.ReturnTypeY) &&
+          (decl->Resource.ReturnTypeX == decl->Resource.ReturnTypeZ) &&
+          (decl->Resource.ReturnTypeX == decl->Resource.ReturnTypeW)) {
+         ENM(decl->Resource.ReturnTypeX, tgsi_type_names);
+      } else {
+         ENM(decl->Resource.ReturnTypeX, tgsi_type_names);
+         TXT(", ");
+         ENM(decl->Resource.ReturnTypeY, tgsi_type_names);
+         TXT(", ");
+         ENM(decl->Resource.ReturnTypeZ, tgsi_type_names);
+         TXT(", ");
+         ENM(decl->Resource.ReturnTypeW, tgsi_type_names);
+      }
+
+   }
+
    if (iter->processor.Processor == TGSI_PROCESSOR_FRAGMENT &&
        decl->Declaration.File == TGSI_FILE_INPUT)
    {
@@ -484,10 +517,10 @@ iter_property(
    int i;
    struct dump_ctx *ctx = (struct dump_ctx *)iter;
 
-   assert(Elements(property_names) == TGSI_PROPERTY_COUNT);
+   assert(Elements(tgsi_property_names) == TGSI_PROPERTY_COUNT);
 
    TXT( "PROPERTY " );
-   ENM(prop->Property.PropertyName, property_names);
+   ENM(prop->Property.PropertyName, tgsi_property_names);
 
    if (prop->Property.NrTokens > 1)
       TXT(" ");
@@ -496,13 +529,13 @@ iter_property(
       switch (prop->Property.PropertyName) {
       case TGSI_PROPERTY_GS_INPUT_PRIM:
       case TGSI_PROPERTY_GS_OUTPUT_PRIM:
-         ENM(prop->u[i].Data, primitive_names);
+         ENM(prop->u[i].Data, tgsi_primitive_names);
          break;
       case TGSI_PROPERTY_FS_COORD_ORIGIN:
-         ENM(prop->u[i].Data, fs_coord_origin_names);
+         ENM(prop->u[i].Data, tgsi_fs_coord_origin_names);
          break;
       case TGSI_PROPERTY_FS_COORD_PIXEL_CENTER:
-         ENM(prop->u[i].Data, fs_coord_pixel_center_names);
+         ENM(prop->u[i].Data, tgsi_fs_coord_pixel_center_names);
          break;
       default:
          SID( prop->u[i].Data );

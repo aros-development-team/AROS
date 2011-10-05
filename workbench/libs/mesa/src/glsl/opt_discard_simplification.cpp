@@ -95,6 +95,7 @@ public:
 
    ir_visitor_status visit_enter(ir_if *);
    ir_visitor_status visit_enter(ir_loop *);
+   ir_visitor_status visit_enter(ir_assignment *);
 
    bool progress;
 };
@@ -103,9 +104,23 @@ static ir_discard *
 find_unconditional_discard(exec_list &instructions)
 {
    foreach_list(n, &instructions) {
-      ir_discard *ir = ((ir_instruction *) n)->as_discard();
-      if (ir != NULL && ir->condition == NULL)
-	 return ir;
+      ir_instruction *ir = (ir_instruction *)n;
+
+      if (ir->ir_type == ir_type_return ||
+	  ir->ir_type == ir_type_loop_jump)
+	 return NULL;
+
+      /* So far, this code doesn't know how to look inside of flow
+       * control to see if a discard later on at this level is
+       * unconditional.
+       */
+      if (ir->ir_type == ir_type_if ||
+	  ir->ir_type == ir_type_loop)
+	 return NULL;
+
+      ir_discard *discard = ir->as_discard();
+      if (discard != NULL && discard->condition == NULL)
+	 return discard;
    }
    return NULL;
 }
@@ -115,6 +130,15 @@ is_only_instruction(ir_discard *discard)
 {
    return (discard->prev->is_head_sentinel() &&
 	   discard->next->is_tail_sentinel());
+}
+
+/* We only care about the top level instructions, so don't descend
+ * into expressions.
+ */
+ir_visitor_status
+discard_simplifier::visit_enter(ir_assignment *ir)
+{
+   return visit_continue_with_parent;
 }
 
 ir_visitor_status

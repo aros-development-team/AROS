@@ -123,7 +123,7 @@ void
 draw_set_mapped_texture(struct draw_context *draw,
                         unsigned sampler_idx,
                         uint32_t width, uint32_t height, uint32_t depth,
-                        uint32_t last_level,
+                        uint32_t first_level, uint32_t last_level,
                         uint32_t row_stride[PIPE_MAX_TEXTURE_LEVELS],
                         uint32_t img_stride[PIPE_MAX_TEXTURE_LEVELS],
                         const void *data[PIPE_MAX_TEXTURE_LEVELS]);
@@ -243,7 +243,7 @@ boolean draw_need_pipeline(const struct draw_context *draw,
                            unsigned prim );
 
 static INLINE int
-draw_get_shader_param(unsigned shader, enum pipe_cap param)
+draw_get_shader_param(unsigned shader, enum pipe_shader_cap param)
 {
    switch(shader) {
    case PIPE_SHADER_VERTEX:

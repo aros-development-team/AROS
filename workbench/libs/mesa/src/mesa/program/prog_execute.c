@@ -159,6 +159,10 @@ get_src_register_pointer(const struct prog_src_register *source,
          return ZeroVec;
       return prog->Parameters->ParameterValues[reg];
 
+   case PROGRAM_SYSTEM_VALUE:
+      assert(reg < Elements(machine->SystemValues));
+      return machine->SystemValues[reg];
+
    default:
       _mesa_problem(NULL,
          "Invalid src register file %d in get_src_register_pointer()",
@@ -1669,6 +1673,18 @@ _mesa_execute_program(struct gl_context * ctx,
             lodBias = texcoord[3];
 
             fetch_texel(ctx, machine, inst, texcoord, lodBias, color);
+
+            if (DEBUG_PROG) {
+               printf("TXB (%g, %g, %g, %g) = texture[%d][%g %g %g %g]"
+                      "  bias %g\n",
+                      color[0], color[1], color[2], color[3],
+                      inst->TexSrcUnit,
+                      texcoord[0],
+                      texcoord[1],
+                      texcoord[2],
+                      texcoord[3],
+                      lodBias);
+            }
 
             store_vector4(inst, machine, color);
          }

@@ -35,6 +35,8 @@
 #include "image.h"
 #include "imports.h"
 #include "macros.h"
+#include "mfeatures.h"
+#include "mtypes.h"
 
 
 /**
@@ -66,6 +68,7 @@ _mesa_type_is_packed(GLenum type)
    switch (type) {
    case GL_UNSIGNED_BYTE_3_3_2:
    case GL_UNSIGNED_BYTE_2_3_3_REV:
+   case MESA_UNSIGNED_BYTE_4_4:
    case GL_UNSIGNED_SHORT_5_6_5:
    case GL_UNSIGNED_SHORT_5_6_5_REV:
    case GL_UNSIGNED_SHORT_4_4_4_4:
@@ -79,6 +82,8 @@ _mesa_type_is_packed(GLenum type)
    case GL_UNSIGNED_SHORT_8_8_MESA:
    case GL_UNSIGNED_SHORT_8_8_REV_MESA:
    case GL_UNSIGNED_INT_24_8_EXT:
+   case GL_UNSIGNED_INT_5_9_9_9_REV:
+   case GL_UNSIGNED_INT_10F_11F_11F_REV:
       return GL_TRUE;
    }
 
@@ -192,6 +197,8 @@ _mesa_sizeof_packed_type( GLenum type )
          return sizeof(GLubyte);
       case GL_UNSIGNED_BYTE_2_3_3_REV:
          return sizeof(GLubyte);
+      case MESA_UNSIGNED_BYTE_4_4:
+         return sizeof(GLubyte);
       case GL_UNSIGNED_SHORT_5_6_5:
          return sizeof(GLushort);
       case GL_UNSIGNED_SHORT_5_6_5_REV:
@@ -216,6 +223,10 @@ _mesa_sizeof_packed_type( GLenum type )
       case GL_UNSIGNED_SHORT_8_8_REV_MESA:
          return sizeof(GLushort);      
       case GL_UNSIGNED_INT_24_8_EXT:
+         return sizeof(GLuint);
+      case GL_UNSIGNED_INT_5_9_9_9_REV:
+         return sizeof(GLuint);
+      case GL_UNSIGNED_INT_10F_11F_11F_REV:
          return sizeof(GLuint);
       default:
          return -1;
@@ -358,6 +369,16 @@ _mesa_bytes_per_pixel( GLenum format, GLenum type )
             return sizeof(GLuint);
          else
             return -1;
+      case GL_UNSIGNED_INT_5_9_9_9_REV:
+         if (format == GL_RGB)
+            return sizeof(GLuint);
+         else
+            return -1;
+      case GL_UNSIGNED_INT_10F_11F_11F_REV:
+         if (format == GL_RGB)
+            return sizeof(GLuint);
+         else
+            return -1;
       default:
          return -1;
    }
@@ -453,6 +474,10 @@ _mesa_is_legal_format_and_type(const struct gl_context *ctx,
                return GL_TRUE;
             case GL_HALF_FLOAT_ARB:
                return ctx->Extensions.ARB_half_float_pixel;
+            case GL_UNSIGNED_INT_5_9_9_9_REV:
+               return ctx->Extensions.EXT_texture_shared_exponent;
+            case GL_UNSIGNED_INT_10F_11F_11F_REV:
+               return ctx->Extensions.EXT_packed_float;
             default:
                return GL_FALSE;
          }
@@ -738,9 +763,11 @@ _mesa_is_color_format(GLenum format)
       case GL_COMPRESSED_SIGNED_RED_RGTC1:
       case GL_COMPRESSED_RG_RGTC2:
       case GL_COMPRESSED_SIGNED_RG_RGTC2:
-      /* signed, normalized texture formats */
-      case GL_RGBA_SNORM:
-      case GL_RGBA8_SNORM:
+      case GL_COMPRESSED_LUMINANCE_LATC1_EXT:
+      case GL_COMPRESSED_SIGNED_LUMINANCE_LATC1_EXT:
+      case GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT:
+      case GL_COMPRESSED_SIGNED_LUMINANCE_ALPHA_LATC2_EXT:
+      case GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI:
       /* generic integer formats */
       case GL_RED_INTEGER_EXT:
       case GL_GREEN_INTEGER_EXT:
@@ -789,6 +816,33 @@ _mesa_is_color_format(GLenum format)
       case GL_INTENSITY8I_EXT:
       case GL_LUMINANCE8I_EXT:
       case GL_LUMINANCE_ALPHA8I_EXT:
+      /* signed, normalized texture formats */
+      case GL_RED_SNORM:
+      case GL_R8_SNORM:
+      case GL_R16_SNORM:
+      case GL_RG_SNORM:
+      case GL_RG8_SNORM:
+      case GL_RG16_SNORM:
+      case GL_RGB_SNORM:
+      case GL_RGB8_SNORM:
+      case GL_RGB16_SNORM:
+      case GL_RGBA_SNORM:
+      case GL_RGBA8_SNORM:
+      case GL_RGBA16_SNORM:
+      case GL_ALPHA_SNORM:
+      case GL_ALPHA8_SNORM:
+      case GL_ALPHA16_SNORM:
+      case GL_LUMINANCE_SNORM:
+      case GL_LUMINANCE8_SNORM:
+      case GL_LUMINANCE16_SNORM:
+      case GL_LUMINANCE_ALPHA_SNORM:
+      case GL_LUMINANCE8_ALPHA8_SNORM:
+      case GL_LUMINANCE16_ALPHA16_SNORM:
+      case GL_INTENSITY_SNORM:
+      case GL_INTENSITY8_SNORM:
+      case GL_INTENSITY16_SNORM:
+      case GL_RGB9_E5:
+      case GL_R11F_G11F_B10F:
          return GL_TRUE;
       case GL_YCBCR_MESA:  /* not considered to be RGB */
          /* fall-through */
@@ -1020,6 +1074,13 @@ _mesa_is_compressed_format(struct gl_context *ctx, GLenum format)
    case GL_COMPRESSED_RG_RGTC2:
    case GL_COMPRESSED_SIGNED_RG_RGTC2:
       return ctx->Extensions.ARB_texture_compression_rgtc;
+   case GL_COMPRESSED_LUMINANCE_LATC1_EXT:
+   case GL_COMPRESSED_SIGNED_LUMINANCE_LATC1_EXT:
+   case GL_COMPRESSED_LUMINANCE_ALPHA_LATC2_EXT:
+   case GL_COMPRESSED_SIGNED_LUMINANCE_ALPHA_LATC2_EXT:
+      return ctx->Extensions.EXT_texture_compression_latc;
+   case GL_COMPRESSED_LUMINANCE_ALPHA_3DC_ATI:
+      return ctx->Extensions.ATI_texture_compression_3dc;
    default:
       return GL_FALSE;
    }
@@ -1579,8 +1640,8 @@ _mesa_clip_drawpixels(const struct gl_context *ctx,
  * scissor box is ignored, and we use the bounds of the current readbuffer
  * surface.
  *
- * \return  GL_TRUE if image is ready for drawing or
- *          GL_FALSE if image was completely clipped away (draw nothing)
+ * \return  GL_TRUE if region to read is in bounds
+ *          GL_FALSE if region is completely out of bounds (nothing to read)
  */
 GLboolean
 _mesa_clip_readpixels(const struct gl_context *ctx,

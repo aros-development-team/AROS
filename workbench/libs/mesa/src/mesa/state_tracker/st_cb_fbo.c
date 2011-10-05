@@ -38,6 +38,7 @@
 #include "main/fbobject.h"
 #include "main/framebuffer.h"
 #include "main/macros.h"
+#include "main/mfeatures.h"
 #include "main/renderbuffer.h"
 
 #include "pipe/p_context.h"
@@ -61,7 +62,8 @@
  * during window resize.
  */
 static GLboolean
-st_renderbuffer_alloc_storage(struct gl_context * ctx, struct gl_renderbuffer *rb,
+st_renderbuffer_alloc_storage(struct gl_context * ctx,
+                              struct gl_renderbuffer *rb,
                               GLenum internalFormat,
                               GLuint width, GLuint height)
 {
@@ -72,16 +74,20 @@ st_renderbuffer_alloc_storage(struct gl_context * ctx, struct gl_renderbuffer *r
    enum pipe_format format;
    struct pipe_surface surf_tmpl;
 
-   if (strb->format != PIPE_FORMAT_NONE)
-      format = strb->format;
-   else
-      format = st_choose_renderbuffer_format(screen, internalFormat, rb->NumSamples);
-      
+   format = st_choose_renderbuffer_format(screen, internalFormat,
+                                          rb->NumSamples);
+
+   if (format == PIPE_FORMAT_NONE) {
+      return FALSE;
+   }
+
    /* init renderbuffer fields */
    strb->Base.Width  = width;
    strb->Base.Height = height;
    strb->Base.Format = st_pipe_format_to_mesa_format(format);
+   strb->Base._BaseFormat = _mesa_base_fbo_format(ctx, internalFormat);
    strb->Base.DataType = st_format_datatype(format);
+   strb->format = format;
 
    strb->defined = GL_FALSE;  /* undefined contents now */
 
@@ -231,6 +237,7 @@ st_new_renderbuffer_fb(enum pipe_format format, int samples, boolean sw)
    strb->Base.ClassID = 0x4242; /* just a unique value */
    strb->Base.NumSamples = samples;
    strb->Base.Format = st_pipe_format_to_mesa_format(format);
+   strb->Base._BaseFormat = _mesa_get_format_base_format(strb->Base.Format);
    strb->Base.DataType = st_format_datatype(format);
    strb->format = format;
    strb->software = sw;
@@ -263,7 +270,8 @@ st_new_renderbuffer_fb(enum pipe_format format, int samples, boolean sw)
       strb->Base.InternalFormat = GL_STENCIL_INDEX8_EXT;
       break;
    case PIPE_FORMAT_R16G16B16A16_SNORM:
-      strb->Base.InternalFormat = GL_RGBA16;
+      /* accum buffer */
+      strb->Base.InternalFormat = GL_RGBA16_SNORM;
       break;
    case PIPE_FORMAT_R8_UNORM:
       strb->Base.InternalFormat = GL_R8;
@@ -344,7 +352,7 @@ st_render_texture(struct gl_context *ctx,
       return;
 
    /* get pointer to texture image we're rendeing to */
-   texImage = att->Texture->Image[att->CubeMapFace][att->TextureLevel];
+   texImage = _mesa_get_attachment_teximage(att);
 
    /* create new renderbuffer which wraps the texture image */
    rb = st_new_renderbuffer(ctx, 0);
@@ -387,7 +395,7 @@ st_render_texture(struct gl_context *ctx,
 
    /* new surface for rendering into the texture */
    memset(&surf_tmpl, 0, sizeof(surf_tmpl));
-   surf_tmpl.format = strb->texture->format;
+   surf_tmpl.format = ctx->Color.sRGBEnabled ? strb->texture->format : util_format_linear(strb->texture->format);
    surf_tmpl.usage = PIPE_BIND_RENDER_TARGET;
    surf_tmpl.u.tex.level = strb->rtt_level;
    surf_tmpl.u.tex.first_layer = strb->rtt_face + strb->rtt_slice;
@@ -422,13 +430,10 @@ static void
 st_finish_render_texture(struct gl_context *ctx,
                          struct gl_renderbuffer_attachment *att)
 {
-   struct st_context *st = st_context(ctx);
    struct st_renderbuffer *strb = st_renderbuffer(att->Renderbuffer);
 
    if (!strb)
       return;
-
-   st_flush(st, PIPE_FLUSH_RENDER_CACHE, NULL);
 
    strb->rtt = NULL;
 
@@ -445,11 +450,14 @@ st_finish_render_texture(struct gl_context *ctx,
  * Validate a renderbuffer attachment for a particular set of bindings.
  */
 static GLboolean
-st_validate_attachment(struct pipe_screen *screen,
+st_validate_attachment(struct gl_context *ctx,
+		       struct pipe_screen *screen,
 		       const struct gl_renderbuffer_attachment *att,
 		       unsigned bindings)
 {
    const struct st_texture_object *stObj = st_texture_object(att->Texture);
+   enum pipe_format format;
+   gl_format texFormat;
 
    /* Only validate texture attachments for now, since
     * st_renderbuffer_alloc_storage makes sure that
@@ -461,9 +469,21 @@ st_validate_attachment(struct pipe_screen *screen,
    if (!stObj)
       return GL_FALSE;
 
-   return screen->is_format_supported(screen, stObj->pt->format,
+   format = stObj->pt->format;
+   texFormat = _mesa_get_attachment_teximage_const(att)->TexFormat;
+
+   /* If the encoding is sRGB and sRGB rendering cannot be enabled,
+    * check for linear format support instead.
+    * Later when we create a surface, we change the format to a linear one. */
+   if (!ctx->Const.sRGBCapable &&
+       _mesa_get_format_color_encoding(texFormat) == GL_SRGB) {
+      const gl_format linearFormat = _mesa_get_srgb_format_linear(texFormat);
+      format = st_mesa_format_to_pipe_format(linearFormat);
+   }
+
+   return screen->is_format_supported(screen, format,
                                       PIPE_TEXTURE_2D,
-                                      stObj->pt->nr_samples, bindings, 0);
+                                      stObj->pt->nr_samples, bindings);
 }
 
 
@@ -507,6 +527,9 @@ st_validate_framebuffer(struct gl_context *ctx, struct gl_framebuffer *fb)
    const struct gl_renderbuffer_attachment *stencil =
          &fb->Attachment[BUFFER_STENCIL];
    GLuint i;
+   enum pipe_format first_format = PIPE_FORMAT_NONE;
+   boolean mixed_formats =
+         screen->get_param(screen, PIPE_CAP_MIXED_COLORBUFFER_FORMATS) != 0;
 
    if (depth->Type && stencil->Type && depth->Type != stencil->Type) {
       fb->_Status = GL_FRAMEBUFFER_UNSUPPORTED_EXT;
@@ -525,24 +548,47 @@ st_validate_framebuffer(struct gl_context *ctx, struct gl_framebuffer *fb)
       return;
    }
 
-   if (!st_validate_attachment(screen,
+   if (!st_validate_attachment(ctx,
+                               screen,
                                depth,
 			       PIPE_BIND_DEPTH_STENCIL)) {
       fb->_Status = GL_FRAMEBUFFER_UNSUPPORTED_EXT;
       return;
    }
-   if (!st_validate_attachment(screen,
+   if (!st_validate_attachment(ctx,
+                               screen,
                                stencil,
 			       PIPE_BIND_DEPTH_STENCIL)) {
       fb->_Status = GL_FRAMEBUFFER_UNSUPPORTED_EXT;
       return;
    }
    for (i = 0; i < ctx->Const.MaxColorAttachments; i++) {
-      if (!st_validate_attachment(screen,
-				  &fb->Attachment[BUFFER_COLOR0 + i],
+      struct gl_renderbuffer_attachment *att =
+            &fb->Attachment[BUFFER_COLOR0 + i];
+      enum pipe_format format;
+
+      if (!st_validate_attachment(ctx,
+                                  screen,
+				  att,
 				  PIPE_BIND_RENDER_TARGET)) {
 	 fb->_Status = GL_FRAMEBUFFER_UNSUPPORTED_EXT;
 	 return;
+      }
+
+      if (!mixed_formats) {
+         /* Disallow mixed formats. */
+         if (att->Type != GL_NONE) {
+            format = st_renderbuffer(att->Renderbuffer)->surface->format;
+         } else {
+            continue;
+         }
+
+         if (first_format == PIPE_FORMAT_NONE) {
+            first_format = format;
+         } else if (format != first_format) {
+            fb->_Status = GL_FRAMEBUFFER_UNSUPPORTED_EXT;
+            return;
+         }
       }
    }
 }

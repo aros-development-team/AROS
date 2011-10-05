@@ -116,14 +116,36 @@ check_valid_to_render(struct gl_context *ctx, const char *function)
       break;
 #endif
 
-#if FEATURE_ES1 || FEATURE_GL
+#if FEATURE_ES1
    case API_OPENGLES:
-   case API_OPENGL:
-      /* For regular OpenGL, only draw if we have vertex positions
-       * (regardless of whether or not we have a vertex program/shader). */
-      if (!ctx->Array.ArrayObj->Vertex.Enabled &&
-	  !ctx->Array.ArrayObj->VertexAttrib[0].Enabled)
+      /* For OpenGL ES, only draw if we have vertex positions
+       */
+      if (!ctx->Array.ArrayObj->Vertex.Enabled)
 	 return GL_FALSE;
+      break;
+#endif
+
+#if FEATURE_GL
+   case API_OPENGL:
+      {
+         const struct gl_shader_program *vsProg =
+            ctx->Shader.CurrentVertexProgram;
+         GLboolean haveVertexShader = (vsProg && vsProg->LinkStatus);
+         GLboolean haveVertexProgram = ctx->VertexProgram._Enabled;
+         if (haveVertexShader || haveVertexProgram) {
+            /* Draw regardless of whether or not we have any vertex arrays.
+             * (Ex: could draw a point using a constant vertex pos)
+             */
+            return GL_TRUE;
+         }
+         else {
+            /* Draw if we have vertex positions (GL_VERTEX_ARRAY or generic
+             * array [0]).
+             */
+            return (ctx->Array.ArrayObj->Vertex.Enabled ||
+                    ctx->Array.ArrayObj->VertexAttrib[0].Enabled);
+         }
+      }
       break;
 #endif
 
@@ -329,7 +351,7 @@ _mesa_validate_DrawArrays(struct gl_context *ctx,
 
 GLboolean
 _mesa_validate_DrawArraysInstanced(struct gl_context *ctx, GLenum mode, GLint first,
-                                   GLsizei count, GLsizei primcount)
+                                   GLsizei count, GLsizei numInstances)
 {
    ASSERT_OUTSIDE_BEGIN_END_WITH_RETVAL(ctx, GL_FALSE);
 
@@ -346,10 +368,10 @@ _mesa_validate_DrawArraysInstanced(struct gl_context *ctx, GLenum mode, GLint fi
       return GL_FALSE;
    }
 
-   if (primcount <= 0) {
-      if (primcount < 0)
+   if (numInstances <= 0) {
+      if (numInstances < 0)
          _mesa_error(ctx, GL_INVALID_VALUE,
-                     "glDrawArraysInstanced(primcount=%d)", primcount);
+                     "glDrawArraysInstanced(numInstances=%d)", numInstances);
       return GL_FALSE;
    }
 
@@ -374,7 +396,8 @@ _mesa_validate_DrawArraysInstanced(struct gl_context *ctx, GLenum mode, GLint fi
 GLboolean
 _mesa_validate_DrawElementsInstanced(struct gl_context *ctx,
                                      GLenum mode, GLsizei count, GLenum type,
-                                     const GLvoid *indices, GLsizei primcount)
+                                     const GLvoid *indices, GLsizei numInstances,
+                                     GLint basevertex)
 {
    ASSERT_OUTSIDE_BEGIN_END_WITH_RETVAL(ctx, GL_FALSE);
 
@@ -399,10 +422,10 @@ _mesa_validate_DrawElementsInstanced(struct gl_context *ctx,
       return GL_FALSE;
    }
 
-   if (primcount <= 0) {
-      if (primcount < 0)
+   if (numInstances <= 0) {
+      if (numInstances < 0)
          _mesa_error(ctx, GL_INVALID_VALUE,
-                     "glDrawElementsInstanced(primcount=%d)", primcount);
+                     "glDrawElementsInstanced(numInstances=%d)", numInstances);
       return GL_FALSE;
    }
 
@@ -425,7 +448,7 @@ _mesa_validate_DrawElementsInstanced(struct gl_context *ctx,
          return GL_FALSE;
    }
 
-   if (!check_index_bounds(ctx, count, type, indices, 0))
+   if (!check_index_bounds(ctx, count, type, indices, basevertex))
       return GL_FALSE;
 
    return GL_TRUE;

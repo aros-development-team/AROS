@@ -35,9 +35,7 @@
 
 #include "pipe/p_config.h"
 
-#if !defined(PIPE_OS_EMBEDDED)
-
-#if defined(PIPE_OS_LINUX) || defined(PIPE_OS_BSD) || defined(PIPE_OS_SOLARIS) || defined(PIPE_OS_APPLE) || defined(PIPE_OS_HAIKU) || defined(PIPE_OS_CYGWIN) || defined(PIPE_OS_AROS)
+#if defined(PIPE_OS_UNIX) || defined(PIPE_OS_AROS)
 #  include <sys/time.h> /* timeval */
 #elif defined(PIPE_SUBSYSTEM_WINDOWS_DISPLAY)
 #  include <windows.h>
@@ -123,6 +121,3 @@ os_time_sleep(int64_t usecs)
 }
 
 #endif
-
-
-#endif /* !PIPE_OS_EMBEDDED */

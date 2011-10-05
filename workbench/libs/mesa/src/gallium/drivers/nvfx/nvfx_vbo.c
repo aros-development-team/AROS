@@ -2,6 +2,7 @@
 #include "pipe/p_state.h"
 #include "util/u_inlines.h"
 #include "util/u_format.h"
+#include "util/u_transfer.h"
 #include "translate/translate.h"
 
 #include "nvfx_context.h"
@@ -9,8 +10,7 @@
 #include "nvfx_resource.h"
 
 #include "nouveau/nouveau_channel.h"
-
-#include "nouveau/nouveau_pushbuf.h"
+#include "nouveau/nv04_pushbuf.h"
 
 static inline unsigned
 util_guess_unique_indices_count(unsigned mode, unsigned indices)
@@ -592,18 +592,10 @@ nvfx_set_vertex_buffers(struct pipe_context *pipe, unsigned count,
 {
 	struct nvfx_context *nvfx = nvfx_context(pipe);
 
-	for(unsigned i = 0; i < count; ++i)
-	{
-		pipe_resource_reference(&nvfx->vtxbuf[i].buffer, vb[i].buffer);
-		nvfx->vtxbuf[i].buffer_offset = vb[i].buffer_offset;
-		nvfx->vtxbuf[i].max_index = vb[i].max_index;
-		nvfx->vtxbuf[i].stride = vb[i].stride;
-	}
+        util_copy_vertex_buffers(nvfx->vtxbuf,
+                                 &nvfx->vtxbuf_nr,
+                                 vb, count);
 
-	for(unsigned i = count; i < nvfx->vtxbuf_nr; ++i)
-		pipe_resource_reference(&nvfx->vtxbuf[i].buffer, 0);
-
-	nvfx->vtxbuf_nr = count;
 	nvfx->use_vertex_buffers = -1;
 	nvfx->draw_dirty |= NVFX_NEW_ARRAYS;
 }
@@ -640,4 +632,6 @@ nvfx_init_vbo_functions(struct nvfx_context *nvfx)
 	nvfx->pipe.create_vertex_elements_state = nvfx_vtxelts_state_create;
 	nvfx->pipe.delete_vertex_elements_state = nvfx_vtxelts_state_delete;
 	nvfx->pipe.bind_vertex_elements_state = nvfx_vtxelts_state_bind;
+
+	nvfx->pipe.redefine_user_buffer = u_default_redefine_user_buffer;
 }

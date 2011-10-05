@@ -67,7 +67,7 @@ struct gen_mipmap_state
    struct pipe_vertex_element velem[2];
 
    void *vs;
-   void *fs1d, *fs2d, *fs3d, *fsCube;
+   void *fs[TGSI_TEXTURE_COUNT]; /**< Not all are used, but simplifies code */
 
    struct pipe_resource *vbuf;  /**< quad vertices */
    unsigned vbuf_slot;
@@ -1301,27 +1301,6 @@ util_create_gen_mipmap(struct pipe_context *pipe,
       ctx->velem[i].src_format = PIPE_FORMAT_R32G32B32A32_FLOAT;
    }
 
-   /* vertex shader - still needed to specify mapping from fragment
-    * shader input semantics to vertex elements 
-    */
-   {
-      const uint semantic_names[] = { TGSI_SEMANTIC_POSITION,
-                                      TGSI_SEMANTIC_GENERIC };
-      const uint semantic_indexes[] = { 0, 0 };
-      ctx->vs = util_make_vertex_passthrough_shader(pipe, 2, semantic_names,
-                                                    semantic_indexes);
-   }
-
-   /* fragment shader */
-   ctx->fs1d = util_make_fragment_tex_shader(pipe, TGSI_TEXTURE_1D,
-                                             TGSI_INTERPOLATE_LINEAR);
-   ctx->fs2d = util_make_fragment_tex_shader(pipe, TGSI_TEXTURE_2D,
-                                             TGSI_INTERPOLATE_LINEAR);
-   ctx->fs3d = util_make_fragment_tex_shader(pipe, TGSI_TEXTURE_3D,
-                                               TGSI_INTERPOLATE_LINEAR);
-   ctx->fsCube = util_make_fragment_tex_shader(pipe, TGSI_TEXTURE_CUBE,
-                                               TGSI_INTERPOLATE_LINEAR);
-
    /* vertex data that doesn't change */
    for (i = 0; i < 4; i++) {
       ctx->vertices[i][0][2] = 0.0f; /* z */
@@ -1332,6 +1311,44 @@ util_create_gen_mipmap(struct pipe_context *pipe,
    /* Note: the actual vertex buffer is allocated as needed below */
 
    return ctx;
+}
+
+
+/**
+ * Helper function to set the fragment shaders.
+ */
+static INLINE void
+set_fragment_shader(struct gen_mipmap_state *ctx, uint type)
+{
+   if (!ctx->fs[type])
+      ctx->fs[type] =
+         util_make_fragment_tex_shader(ctx->pipe, type,
+                                       TGSI_INTERPOLATE_LINEAR);
+
+   cso_set_fragment_shader_handle(ctx->cso, ctx->fs[type]);
+}
+
+
+/**
+ * Helper function to set the vertex shader.
+ */
+static INLINE void
+set_vertex_shader(struct gen_mipmap_state *ctx)
+{
+   /* vertex shader - still required to provide the linkage between
+    * fragment shader input semantics and vertex_element/buffers.
+    */
+   if (!ctx->vs)
+   {
+      const uint semantic_names[] = { TGSI_SEMANTIC_POSITION,
+                                      TGSI_SEMANTIC_GENERIC };
+      const uint semantic_indexes[] = { 0, 0 };
+      ctx->vs = util_make_vertex_passthrough_shader(ctx->pipe, 2,
+                                                    semantic_names,
+                                                    semantic_indexes);
+   }
+
+   cso_set_vertex_shader_handle(ctx->cso, ctx->vs);
 }
 
 
@@ -1350,6 +1367,7 @@ get_next_slot(struct gen_mipmap_state *ctx)
    if (!ctx->vbuf) {
       ctx->vbuf = pipe_buffer_create(ctx->pipe->screen,
                                      PIPE_BIND_VERTEX_BUFFER,
+                                     PIPE_USAGE_STREAM,
                                      max_slots * sizeof ctx->vertices);
    }
    
@@ -1389,8 +1407,25 @@ set_vertex_data(struct gen_mipmap_state *ctx,
       util_map_texcoords2d_onto_cubemap(layer, &st[0][0], 2,
                                         &ctx->vertices[0][1][0], 8);
    }
-   else {
-      /* 1D/2D/3D */
+   else if (tex_target == PIPE_TEXTURE_1D_ARRAY) {
+      /* 1D texture array  */
+      ctx->vertices[0][1][0] = 0.0f; /*s*/
+      ctx->vertices[0][1][1] = r; /*t*/
+      ctx->vertices[0][1][2] = 0.0f;    /*r*/
+
+      ctx->vertices[1][1][0] = 1.0f;
+      ctx->vertices[1][1][1] = r;
+      ctx->vertices[1][1][2] = 0.0f;
+
+      ctx->vertices[2][1][0] = 1.0f;
+      ctx->vertices[2][1][1] = r;
+      ctx->vertices[2][1][2] = 0.0f;
+
+      ctx->vertices[3][1][0] = 0.0f;
+      ctx->vertices[3][1][1] = r;
+      ctx->vertices[3][1][2] = 0.0f;
+   } else {
+      /* 1D/2D/3D/2D array */
       ctx->vertices[0][1][0] = 0.0f; /*s*/
       ctx->vertices[0][1][1] = 0.0f; /*t*/
       ctx->vertices[0][1][2] = r;    /*r*/
@@ -1425,12 +1460,14 @@ void
 util_destroy_gen_mipmap(struct gen_mipmap_state *ctx)
 {
    struct pipe_context *pipe = ctx->pipe;
+   unsigned i;
 
-   pipe->delete_fs_state(pipe, ctx->fsCube);
-   pipe->delete_fs_state(pipe, ctx->fs3d);
-   pipe->delete_fs_state(pipe, ctx->fs2d);
-   pipe->delete_fs_state(pipe, ctx->fs1d);
-   pipe->delete_vs_state(pipe, ctx->vs);
+   for (i = 0; i < Elements(ctx->fs); i++)
+      if (ctx->fs[i])
+         pipe->delete_fs_state(pipe, ctx->fs[i]);
+
+   if (ctx->vs)
+      pipe->delete_vs_state(pipe, ctx->vs);
 
    pipe_resource_reference(&ctx->vbuf, NULL);
 
@@ -1469,9 +1506,9 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
    struct pipe_screen *screen = pipe->screen;
    struct pipe_framebuffer_state fb;
    struct pipe_resource *pt = psv->texture;
-   void *fs;
    uint dstLevel;
    uint offset;
+   uint type;
 
    /* The texture object should have room for the levels which we're
     * about to generate.
@@ -1486,27 +1523,31 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
 
    switch (pt->target) {
    case PIPE_TEXTURE_1D:
-      fs = ctx->fs1d;
+      type = TGSI_TEXTURE_1D;
       break;
    case PIPE_TEXTURE_2D:
-      fs = ctx->fs2d;
+      type = TGSI_TEXTURE_2D;
       break;
    case PIPE_TEXTURE_3D:
-      fs = ctx->fs3d;
+      type = TGSI_TEXTURE_3D;
       break;
    case PIPE_TEXTURE_CUBE:
-      fs = ctx->fsCube;
+      type = TGSI_TEXTURE_CUBE;
       break;
    case PIPE_TEXTURE_1D_ARRAY:
+      type = TGSI_TEXTURE_1D_ARRAY;
+      break;
    case PIPE_TEXTURE_2D_ARRAY:
+      type = TGSI_TEXTURE_2D_ARRAY;
+      break;
    default:
       assert(0);
-      fs = ctx->fs2d;
+      type = TGSI_TEXTURE_2D;
    }
 
    /* check if we can render in the texture's format */
    if (!screen->is_format_supported(screen, psv->format, pt->target,
-                                    pt->nr_samples, PIPE_BIND_RENDER_TARGET, 0)) {
+                                    pt->nr_samples, PIPE_BIND_RENDER_TARGET)) {
       fallback_gen_mipmap(ctx, pt, face, baseLevel, lastLevel);
       return;
    }
@@ -1531,8 +1572,8 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
    cso_set_clip(ctx->cso, &ctx->clip);
    cso_set_vertex_elements(ctx->cso, 2, ctx->velem);
 
-   cso_set_fragment_shader_handle(ctx->cso, fs);
-   cso_set_vertex_shader_handle(ctx->cso, ctx->vs);
+   set_fragment_shader(ctx, type);
+   set_vertex_shader(ctx);
 
    /* init framebuffer state */
    memset(&fb, 0, sizeof(fb));
@@ -1554,6 +1595,8 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
 
       if (pt->target == PIPE_TEXTURE_3D)
          nr_layers = u_minify(pt->depth0, dstLevel);
+      else if (pt->target == PIPE_TEXTURE_2D_ARRAY || pt->target == PIPE_TEXTURE_1D_ARRAY)
+	 nr_layers = pt->array_size;
       else
          nr_layers = 1;
 
@@ -1563,11 +1606,12 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
             /* in theory with geom shaders and driver with full layer support
                could do that in one go. */
             layer = i;
-            offset = 1.0f / (float)(nr_layers * 2);
             /* XXX hmm really? */
             rcoord = (float)layer / (float)nr_layers + 1.0f / (float)(nr_layers * 2);
-         }
-         else
+         } else if (pt->target == PIPE_TEXTURE_2D_ARRAY || pt->target == PIPE_TEXTURE_1D_ARRAY) {
+	    layer = i;
+	    rcoord = (float)layer;
+	 } else
             layer = face;
 
          memset(&surf_templ, 0, sizeof(surf_templ));
@@ -1616,14 +1660,13 @@ util_gen_mipmap(struct gen_mipmap_state *ctx,
                                   face,
                                   rcoord);
 
-         util_draw_vertex_buffer(ctx->pipe, 
+         util_draw_vertex_buffer(ctx->pipe,
+                                 ctx->cso,
                                  ctx->vbuf,
                                  offset,
                                  PIPE_PRIM_TRIANGLE_FAN,
                                  4,  /* verts */
                                  2); /* attribs/vert */
-
-         pipe->flush(pipe, PIPE_FLUSH_RENDER_CACHE, NULL);
 
          /* need to signal that the texture has changed _after_ rendering to it */
          pipe_surface_reference( &surf, NULL );

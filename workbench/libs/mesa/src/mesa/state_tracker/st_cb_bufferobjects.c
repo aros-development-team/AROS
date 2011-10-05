@@ -171,7 +171,7 @@ st_bufferobj_data(struct gl_context *ctx,
    struct st_context *st = st_context(ctx);
    struct pipe_context *pipe = st->pipe;
    struct st_buffer_object *st_obj = st_buffer_object(obj);
-   unsigned buffer_usage;
+   unsigned bind, pipe_usage;
 
    st_obj->Base.Size = size;
    st_obj->Base.Usage = usage;
@@ -179,30 +179,50 @@ st_bufferobj_data(struct gl_context *ctx,
    switch(target) {
    case GL_PIXEL_PACK_BUFFER_ARB:
    case GL_PIXEL_UNPACK_BUFFER_ARB:
-      buffer_usage = PIPE_BIND_RENDER_TARGET;
+      bind = PIPE_BIND_RENDER_TARGET | PIPE_BIND_SAMPLER_VIEW;
       break;
    case GL_ARRAY_BUFFER_ARB:
-      buffer_usage = PIPE_BIND_VERTEX_BUFFER;
+      bind = PIPE_BIND_VERTEX_BUFFER;
       break;
    case GL_ELEMENT_ARRAY_BUFFER_ARB:
-      buffer_usage = PIPE_BIND_INDEX_BUFFER;
+      bind = PIPE_BIND_INDEX_BUFFER;
       break;
    default:
-      buffer_usage = 0;
+      bind = 0;
+   }
+
+   switch (usage) {
+   case GL_STATIC_DRAW:
+   case GL_STATIC_READ:
+   case GL_STATIC_COPY:
+      pipe_usage = PIPE_USAGE_STATIC;
+      break;
+   case GL_DYNAMIC_DRAW:
+   case GL_DYNAMIC_READ:
+   case GL_DYNAMIC_COPY:
+      pipe_usage = PIPE_USAGE_DYNAMIC;
+      break;
+   case GL_STREAM_DRAW:
+   case GL_STREAM_READ:
+   case GL_STREAM_COPY:
+      pipe_usage = PIPE_USAGE_STREAM;
+      break;
+   default:
+      pipe_usage = PIPE_USAGE_DEFAULT;
    }
 
    pipe_resource_reference( &st_obj->buffer, NULL );
 
    if (size != 0) {
-      st_obj->buffer = pipe_buffer_create(pipe->screen, buffer_usage, size);
+      st_obj->buffer = pipe_buffer_create(pipe->screen, bind,
+                                          pipe_usage, size);
 
       if (!st_obj->buffer) {
          return GL_FALSE;
       }
 
       if (data)
-         pipe_buffer_write(st_context(ctx)->pipe, st_obj->buffer, 0,
-				       size, data);
+         pipe_buffer_write(pipe, st_obj->buffer, 0, size, data);
       return GL_TRUE;
    }
 
@@ -280,11 +300,15 @@ st_bufferobj_map_range(struct gl_context *ctx, GLenum target,
    if (access & GL_MAP_FLUSH_EXPLICIT_BIT)
       flags |= PIPE_TRANSFER_FLUSH_EXPLICIT;
 
-   if (access & GL_MAP_INVALIDATE_RANGE_BIT)
-      flags |= PIPE_TRANSFER_DISCARD;
-
-   if (access & GL_MAP_INVALIDATE_BUFFER_BIT)
-      flags |= PIPE_TRANSFER_DISCARD;
+   if (access & GL_MAP_INVALIDATE_BUFFER_BIT) {
+      flags |= PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE;
+   }
+   else if (access & GL_MAP_INVALIDATE_RANGE_BIT) {
+      if (offset == 0 && length == obj->Size)
+         flags |= PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE;
+      else
+         flags |= PIPE_TRANSFER_DISCARD_RANGE;
+   }
    
    if (access & GL_MAP_UNSYNCHRONIZED_BIT)
       flags |= PIPE_TRANSFER_UNSYNCHRONIZED;
@@ -360,7 +384,7 @@ st_bufferobj_unmap(struct gl_context *ctx, GLenum target, struct gl_buffer_objec
    struct st_buffer_object *st_obj = st_buffer_object(obj);
 
    if (obj->Length)
-      pipe_buffer_unmap(pipe, st_obj->buffer, st_obj->transfer);
+      pipe_buffer_unmap(pipe, st_obj->transfer);
 
    st_obj->transfer = NULL;
    obj->Pointer = NULL;
@@ -383,9 +407,7 @@ st_copy_buffer_subdata(struct gl_context *ctx,
    struct pipe_context *pipe = st_context(ctx)->pipe;
    struct st_buffer_object *srcObj = st_buffer_object(src);
    struct st_buffer_object *dstObj = st_buffer_object(dst);
-   struct pipe_transfer *src_transfer;
-   struct pipe_transfer *dst_transfer;
-   ubyte *srcPtr, *dstPtr;
+   struct pipe_box box;
 
    if(!size)
       return;
@@ -394,23 +416,10 @@ st_copy_buffer_subdata(struct gl_context *ctx,
    assert(!src->Pointer);
    assert(!dst->Pointer);
 
-   srcPtr = (ubyte *) pipe_buffer_map_range(pipe,
-                                            srcObj->buffer,
-                                            readOffset, size,
-                                            PIPE_TRANSFER_READ,
-					    &src_transfer);
+   u_box_1d(readOffset, size, &box);
 
-   dstPtr = (ubyte *) pipe_buffer_map_range(pipe,
-                                            dstObj->buffer,
-                                            writeOffset, size,
-                                            PIPE_TRANSFER_WRITE,
-					    &dst_transfer);
-
-   if (srcPtr && dstPtr)
-      memcpy(dstPtr + writeOffset, srcPtr + readOffset, size);
-
-   pipe_buffer_unmap(pipe, srcObj->buffer, src_transfer);
-   pipe_buffer_unmap(pipe, dstObj->buffer, dst_transfer);
+   pipe->resource_copy_region(pipe, dstObj->buffer, 0, writeOffset, 0, 0,
+                              srcObj->buffer, 0, &box);
 }
 
 

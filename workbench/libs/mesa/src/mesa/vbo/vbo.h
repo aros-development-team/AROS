@@ -32,15 +32,19 @@
 #ifndef _VBO_H
 #define _VBO_H
 
-#include "main/mtypes.h"
+#include "main/glheader.h"
+
+struct gl_client_array;
+struct gl_context;
 
 struct _mesa_prim {
-   GLuint mode:8;
+   GLuint mode:8;    /**< GL_POINTS, GL_LINES, GL_QUAD_STRIP, etc */
    GLuint indexed:1;
    GLuint begin:1;
    GLuint end:1;
    GLuint weak:1;
-   GLuint pad:20;
+   GLuint no_current_update:1;
+   GLuint pad:19;
 
    GLuint start;
    GLuint count;
@@ -123,8 +127,11 @@ vbo_get_minmax_index(struct gl_context *ctx, const struct _mesa_prim *prim,
 
 void vbo_use_buffer_objects(struct gl_context *ctx);
 
+void vbo_always_unmap_buffers(struct gl_context *ctx);
 
 void vbo_set_draw_func(struct gl_context *ctx, vbo_draw_func func);
+
+void vbo_check_buffers_are_unmapped(struct gl_context *ctx);
 
 
 void GLAPIENTRY

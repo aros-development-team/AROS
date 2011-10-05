@@ -123,6 +123,7 @@ parameter_lists_match(const exec_list *list_a, const exec_list *list_b)
 	 assert(0);
 	 return -1;
 
+      case ir_var_const_in:
       case ir_var_in:
 	 score = type_compare(param->type, actual->type);
 	 break;
@@ -164,7 +165,18 @@ ir_function_signature *
 ir_function::matching_signature(const exec_list *actual_parameters)
 {
    ir_function_signature *match = NULL;
+   bool multiple_inexact_matches = false;
 
+   /* From page 42 (page 49 of the PDF) of the GLSL 1.20 spec:
+    *
+    * "If an exact match is found, the other signatures are ignored, and
+    *  the exact match is used.  Otherwise, if no exact match is found, then
+    *  the implicit conversions in Section 4.1.10 "Implicit Conversions" will
+    *  be applied to the calling arguments if this can make their types match
+    *  a signature.  In this case, it is a semantic error if there are
+    *  multiple ways to apply these conversions to the actual arguments of a
+    *  call such that the call can be made to match multiple signatures."
+    */
    foreach_iter(exec_list_iterator, iter, signatures) {
       ir_function_signature *const sig =
 	 (ir_function_signature *) iter.get();
@@ -172,16 +184,27 @@ ir_function::matching_signature(const exec_list *actual_parameters)
       const int score = parameter_lists_match(& sig->parameters,
 					      actual_parameters);
 
+      /* If we found an exact match, simply return it */
       if (score == 0)
 	 return sig;
 
       if (score > 0) {
-	 if (match != NULL)
-	    return NULL;
-
-	 match = sig;
+	 if (match == NULL)
+	    match = sig;
+	 else
+	    multiple_inexact_matches = true;
       }
    }
+
+   /* There is no exact match (we would have returned it by now).  If there
+    * are multiple inexact matches, the call is ambiguous, which is an error.
+    *
+    * FINISHME: Report a decent error.  Returning NULL will likely result in
+    * FINISHME: a "no matching signature" error; it should report that the
+    * FINISHME: call is ambiguous.  But reporting errors from here is hard.
+    */
+   if (multiple_inexact_matches)
+      return NULL;
 
    return match;
 }

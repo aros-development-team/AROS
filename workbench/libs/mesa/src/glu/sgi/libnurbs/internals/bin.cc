@@ -119,7 +119,7 @@ Bin::adopt()
  */
 
 void
-Bin::show( const char *name )
+Bin::show( char *name )
 {
 #ifndef NDEBUG
     _glu_dprintf( "%s\n", name );

@@ -26,15 +26,24 @@
  *    Chia-I Wu <olv@lunarg.com>
  */
 
-#include <string.h>
-#include "u_execmem.h"
 #include "u_macros.h"
 
-__asm__(".text");
+#ifdef __linux__
+__asm__(".section .note.ABI-tag, \"a\"\n\t"
+        ".p2align 2\n\t"
+        ".long 1f - 0f\n\t"      /* name length */
+        ".long 3f - 2f\n\t"      /* data length */
+        ".long 1\n\t"            /* note length */
+        "0: .asciz \"GNU\"\n\t"  /* vendor name */
+        "1: .p2align 2\n\t"
+        "2: .long 0\n\t"         /* note data: the ABI tag */
+        ".long 2,4,20\n\t"       /* Minimum kernel version w/TLS */
+        "3: .p2align 2\n\t");    /* pad out section */
+#endif /* __linux__ */
 
-__asm__("x86_64_current_tls:\n\t"
-	"movq u_current_table_tls@GOTTPOFF(%rip), %rax\n\t"
-	"ret");
+__asm__(".text\n"
+        ".balign 32\n"
+        "x86_64_entry_start:");
 
 #define STUB_ASM_ENTRY(func)                             \
    ".globl " func "\n"                                   \
@@ -43,19 +52,37 @@ __asm__("x86_64_current_tls:\n\t"
    func ":"
 
 #define STUB_ASM_CODE(slot)                              \
-   "movq u_current_table_tls@GOTTPOFF(%rip), %rax\n\t"   \
+   "movq " ENTRY_CURRENT_TABLE "@GOTTPOFF(%rip), %rax\n\t"  \
    "movq %fs:(%rax), %r11\n\t"                           \
    "jmp *(8 * " slot ")(%r11)"
 
 #define MAPI_TMP_STUB_ASM_GCC
 #include "mapi_tmp.h"
 
+#ifndef MAPI_MODE_BRIDGE
+
+__asm__("x86_64_current_tls:\n\t"
+	"movq " ENTRY_CURRENT_TABLE "@GOTTPOFF(%rip), %rax\n\t"
+	"ret");
+
 extern unsigned long
 x86_64_current_tls();
+
+#include <string.h>
+#include "u_execmem.h"
 
 void
 entry_patch_public(void)
 {
+}
+
+static char
+x86_64_entry_start[];
+
+mapi_func
+entry_get_public(int slot)
+{
+   return (mapi_func) (x86_64_entry_start + slot * 32);
 }
 
 void
@@ -95,3 +122,5 @@ entry_generate(int slot)
 
    return entry;
 }
+
+#endif /* MAPI_MODE_BRIDGE */

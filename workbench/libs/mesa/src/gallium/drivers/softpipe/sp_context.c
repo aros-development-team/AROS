@@ -91,10 +91,17 @@ softpipe_destroy( struct pipe_context *pipe )
    if (softpipe->draw)
       draw_destroy( softpipe->draw );
 
-   softpipe->quad.shade->destroy( softpipe->quad.shade );
-   softpipe->quad.depth_test->destroy( softpipe->quad.depth_test );
-   softpipe->quad.blend->destroy( softpipe->quad.blend );
-   softpipe->quad.pstipple->destroy( softpipe->quad.pstipple );
+   if (softpipe->quad.shade)
+      softpipe->quad.shade->destroy( softpipe->quad.shade );
+
+   if (softpipe->quad.depth_test)
+      softpipe->quad.depth_test->destroy( softpipe->quad.depth_test );
+
+   if (softpipe->quad.blend)
+      softpipe->quad.blend->destroy( softpipe->quad.blend );
+
+   if (softpipe->quad.pstipple)
+      softpipe->quad.pstipple->destroy( softpipe->quad.pstipple );
 
    for (i = 0; i < PIPE_MAX_COLOR_BUFS; i++) {
       sp_destroy_tile_cache(softpipe->cbuf_cache[i]);
@@ -105,8 +112,8 @@ softpipe_destroy( struct pipe_context *pipe )
    pipe_surface_reference(&softpipe->framebuffer.zsbuf, NULL);
 
    for (i = 0; i < PIPE_MAX_SAMPLERS; i++) {
-      sp_destroy_tex_tile_cache(softpipe->tex_cache[i]);
-      pipe_sampler_view_reference(&softpipe->sampler_views[i], NULL);
+      sp_destroy_tex_tile_cache(softpipe->fragment_tex_cache[i]);
+      pipe_sampler_view_reference(&softpipe->fragment_sampler_views[i], NULL);
    }
 
    for (i = 0; i < PIPE_MAX_VERTEX_SAMPLERS; i++) {
@@ -129,6 +136,10 @@ softpipe_destroy( struct pipe_context *pipe )
       }
    }
 
+   for (i = 0; i < softpipe->num_vertex_buffers; i++) {
+      pipe_resource_reference(&softpipe->vertex_buffer[i].buffer, NULL);
+   }
+
    tgsi_exec_machine_destroy(softpipe->fs_machine);
 
    FREE( softpipe );
@@ -137,13 +148,13 @@ softpipe_destroy( struct pipe_context *pipe )
 
 /**
  * if (the texture is being used as a framebuffer surface)
- *    return PIPE_REFERENCED_FOR_WRITE
+ *    return SP_REFERENCED_FOR_WRITE
  * else if (the texture is a bound texture source)
- *    return PIPE_REFERENCED_FOR_READ
+ *    return SP_REFERENCED_FOR_READ
  * else
- *    return PIPE_UNREFERENCED
+ *    return SP_UNREFERENCED
  */
-static unsigned int
+unsigned int
 softpipe_is_resource_referenced( struct pipe_context *pipe,
                                  struct pipe_resource *texture,
                                  unsigned level, int layer)
@@ -152,40 +163,40 @@ softpipe_is_resource_referenced( struct pipe_context *pipe,
    unsigned i;
 
    if (texture->target == PIPE_BUFFER)
-      return PIPE_UNREFERENCED;
+      return SP_UNREFERENCED;
 
    /* check if any of the bound drawing surfaces are this texture */
    if (softpipe->dirty_render_cache) {
       for (i = 0; i < softpipe->framebuffer.nr_cbufs; i++) {
          if (softpipe->framebuffer.cbufs[i] && 
              softpipe->framebuffer.cbufs[i]->texture == texture) {
-            return PIPE_REFERENCED_FOR_WRITE;
+            return SP_REFERENCED_FOR_WRITE;
          }
       }
       if (softpipe->framebuffer.zsbuf && 
           softpipe->framebuffer.zsbuf->texture == texture) {
-         return PIPE_REFERENCED_FOR_WRITE;
+         return SP_REFERENCED_FOR_WRITE;
       }
    }
    
    /* check if any of the tex_cache textures are this texture */
    for (i = 0; i < PIPE_MAX_SAMPLERS; i++) {
-      if (softpipe->tex_cache[i] &&
-          softpipe->tex_cache[i]->texture == texture)
-         return PIPE_REFERENCED_FOR_READ;
+      if (softpipe->fragment_tex_cache[i] &&
+          softpipe->fragment_tex_cache[i]->texture == texture)
+         return SP_REFERENCED_FOR_READ;
    }
    for (i = 0; i < PIPE_MAX_VERTEX_SAMPLERS; i++) {
       if (softpipe->vertex_tex_cache[i] &&
           softpipe->vertex_tex_cache[i]->texture == texture)
-         return PIPE_REFERENCED_FOR_READ;
+         return SP_REFERENCED_FOR_READ;
    }
    for (i = 0; i < PIPE_MAX_GEOMETRY_SAMPLERS; i++) {
       if (softpipe->geometry_tex_cache[i] &&
           softpipe->geometry_tex_cache[i]->texture == texture)
-         return PIPE_REFERENCED_FOR_READ;
+         return SP_REFERENCED_FOR_READ;
    }
 
-   return PIPE_UNREFERENCED;
+   return SP_UNREFERENCED;
 }
 
 
@@ -219,7 +230,7 @@ softpipe_create_context( struct pipe_screen *screen,
    softpipe->use_sse = FALSE;
 #endif
 
-   softpipe->dump_fs = debug_get_bool_option( "GALLIUM_DUMP_FS", FALSE );
+   softpipe->dump_fs = debug_get_bool_option( "SOFTPIPE_DUMP_FS", FALSE );
    softpipe->dump_gs = debug_get_bool_option( "SOFTPIPE_DUMP_GS", FALSE );
 
    softpipe->pipe.winsys = NULL;
@@ -244,9 +255,7 @@ softpipe_create_context( struct pipe_screen *screen,
    softpipe->pipe.draw_stream_output = softpipe_draw_stream_output;
 
    softpipe->pipe.clear = softpipe_clear;
-   softpipe->pipe.flush = softpipe_flush;
-
-   softpipe->pipe.is_resource_referenced = softpipe_is_resource_referenced;
+   softpipe->pipe.flush = softpipe_flush_wrapped;
 
    softpipe->pipe.render_condition = softpipe_render_condition;
 
@@ -258,13 +267,22 @@ softpipe_create_context( struct pipe_screen *screen,
       softpipe->cbuf_cache[i] = sp_create_tile_cache( &softpipe->pipe );
    softpipe->zsbuf_cache = sp_create_tile_cache( &softpipe->pipe );
 
-   for (i = 0; i < PIPE_MAX_SAMPLERS; i++)
-      softpipe->tex_cache[i] = sp_create_tex_tile_cache( &softpipe->pipe );
+   for (i = 0; i < PIPE_MAX_SAMPLERS; i++) {
+      softpipe->fragment_tex_cache[i] = sp_create_tex_tile_cache( &softpipe->pipe );
+      if (!softpipe->fragment_tex_cache[i])
+         goto fail;
+   }
+
    for (i = 0; i < PIPE_MAX_VERTEX_SAMPLERS; i++) {
       softpipe->vertex_tex_cache[i] = sp_create_tex_tile_cache( &softpipe->pipe );
+      if (!softpipe->vertex_tex_cache[i])
+         goto fail;
    }
+
    for (i = 0; i < PIPE_MAX_GEOMETRY_SAMPLERS; i++) {
       softpipe->geometry_tex_cache[i] = sp_create_tex_tile_cache( &softpipe->pipe );
+      if (!softpipe->geometry_tex_cache[i])
+         goto fail;
    }
 
    softpipe->fs_machine = tgsi_exec_machine_create();
@@ -295,7 +313,7 @@ softpipe_create_context( struct pipe_screen *screen,
                          (struct tgsi_sampler **)
                             softpipe->tgsi.geom_samplers_list);
 
-   if (debug_get_bool_option( "SP_NO_RAST", FALSE ))
+   if (debug_get_bool_option( "SOFTPIPE_NO_RAST", FALSE ))
       softpipe->no_rast = TRUE;
 
    softpipe->vbuf_backend = sp_create_vbuf_backend(softpipe);

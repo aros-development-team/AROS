@@ -7,25 +7,38 @@
 #include "nvfx_resource.h"
 
 static void
-nvfx_flush(struct pipe_context *pipe, unsigned flags,
+nvfx_flush(struct pipe_context *pipe,
 	   struct pipe_fence_handle **fence)
 {
 	struct nvfx_context *nvfx = nvfx_context(pipe);
 	struct nvfx_screen *screen = nvfx->screen;
 	struct nouveau_channel *chan = screen->base.channel;
-	struct nouveau_grobj *eng3d = screen->eng3d;
+	/*struct nouveau_grobj *eng3d = screen->eng3d;*/
 
 	/* XXX: we need to actually be intelligent here */
-	if (flags & PIPE_FLUSH_TEXTURE_CACHE) {
+        /* XXX This flag wasn't set by the state tracker anyway. */
+        /*if (flags & PIPE_FLUSH_TEXTURE_CACHE) {
 		BEGIN_RING(chan, eng3d, 0x1fd8, 1);
 		OUT_RING(chan, 2);
 		BEGIN_RING(chan, eng3d, 0x1fd8, 1);
 		OUT_RING(chan, 1);
-	}
+        }*/
 
-	FIRE_RING(chan);
-	if (fence)
+	if (fence) {
+		/* horrific hack to make glFinish() work in the absence of
+		 * having proper fences in nvfx.  a pending rewrite will
+		 * fix this properly, but may be a while off.
+		 */
+		MARK_RING(chan, 1, 1);
+		OUT_RELOC(chan, screen->fence, 0, NOUVEAU_BO_WR |
+				NOUVEAU_BO_DUMMY, 0, 0);
+		FIRE_RING(chan);
+		nouveau_bo_map(screen->fence, NOUVEAU_BO_RDWR);
+		nouveau_bo_unmap(screen->fence);
 		*fence = NULL;
+	} else {
+		FIRE_RING(chan);
+	}
 }
 
 static void

@@ -39,6 +39,9 @@
 #include "main/glheader.h"
 #include "main/context.h"
 #include "main/dispatch.h"
+#include "main/image.h"
+#include "main/mfeatures.h"
+#include "main/mtypes.h"
 #include "main/shaderapi.h"
 #include "main/shaderobj.h"
 #include "main/uniforms.h"
@@ -80,238 +83,6 @@ base_uniform_type(GLenum type)
    }
 }
 
-static struct gl_builtin_uniform_element gl_DepthRange_elements[] = {
-   {"near", {STATE_DEPTH_RANGE, 0, 0}, SWIZZLE_XXXX},
-   {"far", {STATE_DEPTH_RANGE, 0, 0}, SWIZZLE_YYYY},
-   {"diff", {STATE_DEPTH_RANGE, 0, 0}, SWIZZLE_ZZZZ},
-};
-
-static struct gl_builtin_uniform_element gl_ClipPlane_elements[] = {
-   {NULL, {STATE_CLIPPLANE, 0, 0}, SWIZZLE_XYZW}
-};
-
-static struct gl_builtin_uniform_element gl_Point_elements[] = {
-   {"size", {STATE_POINT_SIZE}, SWIZZLE_XXXX},
-   {"sizeMin", {STATE_POINT_SIZE}, SWIZZLE_YYYY},
-   {"sizeMax", {STATE_POINT_SIZE}, SWIZZLE_ZZZZ},
-   {"fadeThresholdSize", {STATE_POINT_SIZE}, SWIZZLE_WWWW},
-   {"distanceConstantAttenuation", {STATE_POINT_ATTENUATION}, SWIZZLE_XXXX},
-   {"distanceLinearAttenuation", {STATE_POINT_ATTENUATION}, SWIZZLE_YYYY},
-   {"distanceQuadraticAttenuation", {STATE_POINT_ATTENUATION}, SWIZZLE_ZZZZ},
-};
-
-static struct gl_builtin_uniform_element gl_FrontMaterial_elements[] = {
-   {"emission", {STATE_MATERIAL, 0, STATE_EMISSION}, SWIZZLE_XYZW},
-   {"ambient", {STATE_MATERIAL, 0, STATE_AMBIENT}, SWIZZLE_XYZW},
-   {"diffuse", {STATE_MATERIAL, 0, STATE_DIFFUSE}, SWIZZLE_XYZW},
-   {"specular", {STATE_MATERIAL, 0, STATE_SPECULAR}, SWIZZLE_XYZW},
-   {"shininess", {STATE_MATERIAL, 0, STATE_SHININESS}, SWIZZLE_XXXX},
-};
-
-static struct gl_builtin_uniform_element gl_BackMaterial_elements[] = {
-   {"emission", {STATE_MATERIAL, 1, STATE_EMISSION}, SWIZZLE_XYZW},
-   {"ambient", {STATE_MATERIAL, 1, STATE_AMBIENT}, SWIZZLE_XYZW},
-   {"diffuse", {STATE_MATERIAL, 1, STATE_DIFFUSE}, SWIZZLE_XYZW},
-   {"specular", {STATE_MATERIAL, 1, STATE_SPECULAR}, SWIZZLE_XYZW},
-   {"shininess", {STATE_MATERIAL, 1, STATE_SHININESS}, SWIZZLE_XXXX},
-};
-
-static struct gl_builtin_uniform_element gl_LightSource_elements[] = {
-   {"ambient", {STATE_LIGHT, 0, STATE_AMBIENT}, SWIZZLE_XYZW},
-   {"diffuse", {STATE_LIGHT, 0, STATE_DIFFUSE}, SWIZZLE_XYZW},
-   {"specular", {STATE_LIGHT, 0, STATE_SPECULAR}, SWIZZLE_XYZW},
-   {"position", {STATE_LIGHT, 0, STATE_POSITION}, SWIZZLE_XYZW},
-   {"halfVector", {STATE_LIGHT, 0, STATE_HALF_VECTOR}, SWIZZLE_XYZW},
-   {"spotDirection", {STATE_LIGHT, 0, STATE_SPOT_DIRECTION},
-    MAKE_SWIZZLE4(SWIZZLE_X,
-		  SWIZZLE_Y,
-		  SWIZZLE_Z,
-		  SWIZZLE_Z)},
-   {"spotCosCutoff", {STATE_LIGHT, 0, STATE_SPOT_DIRECTION}, SWIZZLE_WWWW},
-   {"spotCutoff", {STATE_LIGHT, 0, STATE_SPOT_CUTOFF}, SWIZZLE_XXXX},
-   {"spotExponent", {STATE_LIGHT, 0, STATE_ATTENUATION}, SWIZZLE_WWWW},
-   {"constantAttenuation", {STATE_LIGHT, 0, STATE_ATTENUATION}, SWIZZLE_XXXX},
-   {"linearAttenuation", {STATE_LIGHT, 0, STATE_ATTENUATION}, SWIZZLE_YYYY},
-   {"quadraticAttenuation", {STATE_LIGHT, 0, STATE_ATTENUATION}, SWIZZLE_ZZZZ},
-};
-
-static struct gl_builtin_uniform_element gl_LightModel_elements[] = {
-   {"ambient", {STATE_LIGHTMODEL_AMBIENT, 0}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_FrontLightModelProduct_elements[] = {
-   {"sceneColor", {STATE_LIGHTMODEL_SCENECOLOR, 0}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_BackLightModelProduct_elements[] = {
-   {"sceneColor", {STATE_LIGHTMODEL_SCENECOLOR, 1}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_FrontLightProduct_elements[] = {
-   {"ambient", {STATE_LIGHTPROD, 0, 0, STATE_AMBIENT}, SWIZZLE_XYZW},
-   {"diffuse", {STATE_LIGHTPROD, 0, 0, STATE_DIFFUSE}, SWIZZLE_XYZW},
-   {"specular", {STATE_LIGHTPROD, 0, 0, STATE_SPECULAR}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_BackLightProduct_elements[] = {
-   {"ambient", {STATE_LIGHTPROD, 0, 1, STATE_AMBIENT}, SWIZZLE_XYZW},
-   {"diffuse", {STATE_LIGHTPROD, 0, 1, STATE_DIFFUSE}, SWIZZLE_XYZW},
-   {"specular", {STATE_LIGHTPROD, 0, 1, STATE_SPECULAR}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_TextureEnvColor_elements[] = {
-   {NULL, {STATE_TEXENV_COLOR, 0}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_EyePlaneS_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_EYE_S}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_EyePlaneT_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_EYE_T}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_EyePlaneR_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_EYE_R}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_EyePlaneQ_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_EYE_Q}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_ObjectPlaneS_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_OBJECT_S}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_ObjectPlaneT_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_OBJECT_T}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_ObjectPlaneR_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_OBJECT_R}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_ObjectPlaneQ_elements[] = {
-   {NULL, {STATE_TEXGEN, 0, STATE_TEXGEN_OBJECT_Q}, SWIZZLE_XYZW},
-};
-
-static struct gl_builtin_uniform_element gl_Fog_elements[] = {
-   {"color", {STATE_FOG_COLOR}, SWIZZLE_XYZW},
-   {"density", {STATE_FOG_PARAMS}, SWIZZLE_XXXX},
-   {"start", {STATE_FOG_PARAMS}, SWIZZLE_YYYY},
-   {"end", {STATE_FOG_PARAMS}, SWIZZLE_ZZZZ},
-   {"scale", {STATE_FOG_PARAMS}, SWIZZLE_WWWW},
-};
-
-static struct gl_builtin_uniform_element gl_NormalScale_elements[] = {
-   {NULL, {STATE_NORMAL_SCALE}, SWIZZLE_XXXX},
-};
-
-#define MATRIX(name, statevar, modifier)				\
-   static struct gl_builtin_uniform_element name ## _elements[] = {	\
-      { NULL, { statevar, 0, 0, 0, modifier}, SWIZZLE_XYZW },		\
-      { NULL, { statevar, 0, 1, 1, modifier}, SWIZZLE_XYZW },		\
-      { NULL, { statevar, 0, 2, 2, modifier}, SWIZZLE_XYZW },		\
-      { NULL, { statevar, 0, 3, 3, modifier}, SWIZZLE_XYZW },		\
-   }
-
-MATRIX(gl_ModelViewMatrix,
-       STATE_MODELVIEW_MATRIX, STATE_MATRIX_TRANSPOSE);
-MATRIX(gl_ModelViewMatrixInverse,
-       STATE_MODELVIEW_MATRIX, STATE_MATRIX_INVTRANS);
-MATRIX(gl_ModelViewMatrixTranspose,
-       STATE_MODELVIEW_MATRIX, 0);
-MATRIX(gl_ModelViewMatrixInverseTranspose,
-       STATE_MODELVIEW_MATRIX, STATE_MATRIX_INVERSE);
-
-MATRIX(gl_ProjectionMatrix,
-       STATE_PROJECTION_MATRIX, STATE_MATRIX_TRANSPOSE);
-MATRIX(gl_ProjectionMatrixInverse,
-       STATE_PROJECTION_MATRIX, STATE_MATRIX_INVTRANS);
-MATRIX(gl_ProjectionMatrixTranspose,
-       STATE_PROJECTION_MATRIX, 0);
-MATRIX(gl_ProjectionMatrixInverseTranspose,
-       STATE_PROJECTION_MATRIX, STATE_MATRIX_INVERSE);
-
-MATRIX(gl_ModelViewProjectionMatrix,
-       STATE_MVP_MATRIX, STATE_MATRIX_TRANSPOSE);
-MATRIX(gl_ModelViewProjectionMatrixInverse,
-       STATE_MVP_MATRIX, STATE_MATRIX_INVTRANS);
-MATRIX(gl_ModelViewProjectionMatrixTranspose,
-       STATE_MVP_MATRIX, 0);
-MATRIX(gl_ModelViewProjectionMatrixInverseTranspose,
-       STATE_MVP_MATRIX, STATE_MATRIX_INVERSE);
-
-MATRIX(gl_TextureMatrix,
-       STATE_TEXTURE_MATRIX, STATE_MATRIX_TRANSPOSE);
-MATRIX(gl_TextureMatrixInverse,
-       STATE_TEXTURE_MATRIX, STATE_MATRIX_INVTRANS);
-MATRIX(gl_TextureMatrixTranspose,
-       STATE_TEXTURE_MATRIX, 0);
-MATRIX(gl_TextureMatrixInverseTranspose,
-       STATE_TEXTURE_MATRIX, STATE_MATRIX_INVERSE);
-
-static struct gl_builtin_uniform_element gl_NormalMatrix_elements[] = {
-   { NULL, { STATE_MODELVIEW_MATRIX, 0, 0, 0, STATE_MATRIX_INVERSE},
-     SWIZZLE_XYZW },
-   { NULL, { STATE_MODELVIEW_MATRIX, 0, 1, 1, STATE_MATRIX_INVERSE},
-     SWIZZLE_XYZW },
-   { NULL, { STATE_MODELVIEW_MATRIX, 0, 2, 2, STATE_MATRIX_INVERSE},
-     SWIZZLE_XYZW },
-};
-
-#undef MATRIX
-
-#define STATEVAR(name) {#name, name ## _elements, Elements(name ## _elements)}
-
-const struct gl_builtin_uniform_desc _mesa_builtin_uniform_desc[] = {
-   STATEVAR(gl_DepthRange),
-   STATEVAR(gl_ClipPlane),
-   STATEVAR(gl_Point),
-   STATEVAR(gl_FrontMaterial),
-   STATEVAR(gl_BackMaterial),
-   STATEVAR(gl_LightSource),
-   STATEVAR(gl_LightModel),
-   STATEVAR(gl_FrontLightModelProduct),
-   STATEVAR(gl_BackLightModelProduct),
-   STATEVAR(gl_FrontLightProduct),
-   STATEVAR(gl_BackLightProduct),
-   STATEVAR(gl_TextureEnvColor),
-   STATEVAR(gl_EyePlaneS),
-   STATEVAR(gl_EyePlaneT),
-   STATEVAR(gl_EyePlaneR),
-   STATEVAR(gl_EyePlaneQ),
-   STATEVAR(gl_ObjectPlaneS),
-   STATEVAR(gl_ObjectPlaneT),
-   STATEVAR(gl_ObjectPlaneR),
-   STATEVAR(gl_ObjectPlaneQ),
-   STATEVAR(gl_Fog),
-
-   STATEVAR(gl_ModelViewMatrix),
-   STATEVAR(gl_ModelViewMatrixInverse),
-   STATEVAR(gl_ModelViewMatrixTranspose),
-   STATEVAR(gl_ModelViewMatrixInverseTranspose),
-
-   STATEVAR(gl_ProjectionMatrix),
-   STATEVAR(gl_ProjectionMatrixInverse),
-   STATEVAR(gl_ProjectionMatrixTranspose),
-   STATEVAR(gl_ProjectionMatrixInverseTranspose),
-
-   STATEVAR(gl_ModelViewProjectionMatrix),
-   STATEVAR(gl_ModelViewProjectionMatrixInverse),
-   STATEVAR(gl_ModelViewProjectionMatrixTranspose),
-   STATEVAR(gl_ModelViewProjectionMatrixInverseTranspose),
-
-   STATEVAR(gl_TextureMatrix),
-   STATEVAR(gl_TextureMatrixInverse),
-   STATEVAR(gl_TextureMatrixTranspose),
-   STATEVAR(gl_TextureMatrixInverseTranspose),
-
-   STATEVAR(gl_NormalMatrix),
-   STATEVAR(gl_NormalScale),
-
-   {NULL, NULL, 0}
-};
 
 static GLboolean
 is_boolean_type(GLenum type)
@@ -338,12 +109,16 @@ is_sampler_type(GLenum type)
    case GL_SAMPLER_CUBE:
    case GL_SAMPLER_1D_SHADOW:
    case GL_SAMPLER_2D_SHADOW:
+   case GL_SAMPLER_CUBE_SHADOW:
    case GL_SAMPLER_2D_RECT_ARB:
    case GL_SAMPLER_2D_RECT_SHADOW_ARB:
    case GL_SAMPLER_1D_ARRAY_EXT:
    case GL_SAMPLER_2D_ARRAY_EXT:
    case GL_SAMPLER_1D_ARRAY_SHADOW_EXT:
    case GL_SAMPLER_2D_ARRAY_SHADOW_EXT:
+   case GL_SAMPLER_CUBE_MAP_ARRAY:
+   case GL_SAMPLER_CUBE_MAP_ARRAY_SHADOW:
+   case GL_SAMPLER_BUFFER:
       return GL_TRUE;
    default:
       return GL_FALSE;
@@ -351,32 +126,72 @@ is_sampler_type(GLenum type)
 }
 
 
-static struct gl_program_parameter *
-get_uniform_parameter(const struct gl_shader_program *shProg, GLuint index)
+/**
+ * Given a uniform index, return the vertex/geometry/fragment program
+ * that has that parameter, plus the position of the parameter in the
+ * parameter/constant buffer.
+ * \param shProg  the shader program
+ * \param index  the uniform index in [0, NumUniforms-1]
+ * \param progOut  returns containing program
+ * \param posOut  returns position of the uniform in the param/const buffer
+ * \return GL_TRUE for success, GL_FALSE for invalid index
+ */
+static GLboolean
+find_uniform_parameter_pos(struct gl_shader_program *shProg, GLint index,
+                           struct gl_program **progOut, GLint *posOut)
 {
-   const struct gl_program *prog = NULL;
-   GLint progPos;
+   struct gl_program *prog = NULL;
+   GLint pos;
 
-   progPos = shProg->Uniforms->Uniforms[index].VertPos;
-   if (progPos >= 0) {
+   if (!shProg->Uniforms ||
+       index < 0 ||
+       index >= (GLint) shProg->Uniforms->NumUniforms) {
+      return GL_FALSE;
+   }
+
+   pos = shProg->Uniforms->Uniforms[index].VertPos;
+   if (pos >= 0) {
       prog = &shProg->VertexProgram->Base;
    }
    else {
-      progPos = shProg->Uniforms->Uniforms[index].FragPos;
-      if (progPos >= 0) {
+      pos = shProg->Uniforms->Uniforms[index].FragPos;
+      if (pos >= 0) {
          prog = &shProg->FragmentProgram->Base;
-      } else {
-         progPos = shProg->Uniforms->Uniforms[index].GeomPos;
-         if (progPos >= 0) {
+      }
+      else {
+         pos = shProg->Uniforms->Uniforms[index].GeomPos;
+         if (pos >= 0) {
             prog = &shProg->GeometryProgram->Base;
          }
       }
    }
 
-   if (!prog || progPos < 0)
-      return NULL; /* should never happen */
+   if (!prog || pos < 0)
+      return GL_FALSE; /* should really never happen */
 
-   return &prog->Parameters->Parameters[progPos];
+   *progOut = prog;
+   *posOut = pos;
+
+   return GL_TRUE;
+}
+
+
+/**
+ * Return pointer to a gl_program_parameter which corresponds to a uniform.
+ * \param shProg  the shader program
+ * \param index  the uniform index in [0, NumUniforms-1]
+ * \return gl_program_parameter point or NULL if index is invalid
+ */
+static const struct gl_program_parameter *
+get_uniform_parameter(struct gl_shader_program *shProg, GLint index)
+{
+   struct gl_program *prog;
+   GLint progPos;
+
+   if (find_uniform_parameter_pos(shProg, index, &prog, &progPos))
+      return &prog->Parameters->Parameters[progPos];
+   else
+      return NULL;
 }
 
 
@@ -388,12 +203,10 @@ _mesa_get_active_uniform(struct gl_context *ctx, GLuint program, GLuint index,
                          GLsizei maxLength, GLsizei *length, GLint *size,
                          GLenum *type, GLchar *nameOut)
 {
-   const struct gl_shader_program *shProg;
-   const struct gl_program *prog = NULL;
+   struct gl_shader_program *shProg =
+      _mesa_lookup_shader_program_err(ctx, program, "glGetActiveUniform");
    const struct gl_program_parameter *param;
-   GLint progPos;
 
-   shProg = _mesa_lookup_shader_program_err(ctx, program, "glGetActiveUniform");
    if (!shProg)
       return;
 
@@ -402,27 +215,9 @@ _mesa_get_active_uniform(struct gl_context *ctx, GLuint program, GLuint index,
       return;
    }
 
-   progPos = shProg->Uniforms->Uniforms[index].VertPos;
-   if (progPos >= 0) {
-      prog = &shProg->VertexProgram->Base;
-   }
-   else {
-      progPos = shProg->Uniforms->Uniforms[index].FragPos;
-      if (progPos >= 0) {
-         prog = &shProg->FragmentProgram->Base;
-      } else {
-         progPos = shProg->Uniforms->Uniforms[index].GeomPos;
-         if (progPos >= 0) {
-            prog = &shProg->GeometryProgram->Base;
-         }
-      }
-   }
-
-   if (!prog || progPos < 0)
-      return; /* should never happen */
-
-   ASSERT(progPos < prog->Parameters->NumParameters);
-   param = &prog->Parameters->Parameters[progPos];
+   param = get_uniform_parameter(shProg, index);
+   if (!param)
+      return;
 
    if (nameOut) {
       _mesa_copy_string(nameOut, maxLength, length, param->Name);
@@ -448,6 +243,36 @@ _mesa_get_active_uniform(struct gl_context *ctx, GLuint program, GLuint index,
 }
 
 
+static unsigned
+get_vector_elements(GLenum type)
+{
+   switch (type) {
+   case GL_FLOAT:
+   case GL_INT:
+   case GL_BOOL:
+   case GL_UNSIGNED_INT:
+   default: /* Catch all the various sampler types. */
+      return 1;
+
+   case GL_FLOAT_VEC2:
+   case GL_INT_VEC2:
+   case GL_BOOL_VEC2:
+   case GL_UNSIGNED_INT_VEC2:
+      return 2;
+
+   case GL_FLOAT_VEC3:
+   case GL_INT_VEC3:
+   case GL_BOOL_VEC3:
+   case GL_UNSIGNED_INT_VEC3:
+      return 3;
+
+   case GL_FLOAT_VEC4:
+   case GL_INT_VEC4:
+   case GL_BOOL_VEC4:
+   case GL_UNSIGNED_INT_VEC4:
+      return 4;
+   }
+}
 
 static void
 get_matrix_dims(GLenum type, GLint *rows, GLint *cols)
@@ -506,70 +331,14 @@ get_uniform_rows_cols(const struct gl_program_parameter *p,
    get_matrix_dims(p->DataType, rows, cols);
    if (*rows == 0 && *cols == 0) {
       /* not a matrix type, probably a float or vector */
-      if (p->Size <= 4) {
-         *rows = 1;
-         *cols = p->Size;
-      }
-      else {
-         *rows = p->Size / 4 + 1;
-         if (p->Size % 4 == 0)
-            *cols = 4;
-         else
-            *cols = p->Size % 4;
-      }
+      *rows = 1;
+      *cols = get_vector_elements(p->DataType);
    }
 }
 
 
 /**
- * Helper for get_uniform[fi]v() functions.
- * Given a shader program name and uniform location, return a pointer
- * to the shader program and return the program parameter position.
- */
-static void
-lookup_uniform_parameter(struct gl_context *ctx, GLuint program, GLint location,
-                         struct gl_program **progOut, GLint *paramPosOut)
-{
-   struct gl_shader_program *shProg
-      = _mesa_lookup_shader_program_err(ctx, program, "glGetUniform[if]v");
-   struct gl_program *prog = NULL;
-   GLint progPos = -1;
-
-   /* if shProg is NULL, we'll have already recorded an error */
-
-   if (shProg) {
-      if (!shProg->Uniforms ||
-          location < 0 ||
-          location >= (GLint) shProg->Uniforms->NumUniforms) {
-         _mesa_error(ctx, GL_INVALID_OPERATION,  "glGetUniformfv(location)");
-      }
-      else {
-         /* OK, find the gl_program and program parameter location */
-         progPos = shProg->Uniforms->Uniforms[location].VertPos;
-         if (progPos >= 0) {
-            prog = &shProg->VertexProgram->Base;
-         }
-         else {
-            progPos = shProg->Uniforms->Uniforms[location].FragPos;
-            if (progPos >= 0) {
-               prog = &shProg->FragmentProgram->Base;
-            } else {
-               progPos = shProg->Uniforms->Uniforms[location].GeomPos;
-               if (progPos >= 0) {
-                  prog = &shProg->GeometryProgram->Base;
-               }
-            }
-         }
-      }
-   }
-
-   *progOut = prog;
-   *paramPosOut = progPos;
-}
-
-
-/**
- * GLGL uniform arrays and structs require special handling.
+ * GLSL uniform arrays and structs require special handling.
  *
  * The GL_ARB_shader_objects spec says that if you use
  * glGetUniformLocation to get the location of an array, you CANNOT
@@ -617,99 +386,95 @@ split_location_offset(GLint *location, GLint *offset)
 
 
 /**
- * Called via glGetUniformfv().
+ * Called via glGetUniform[fiui]v() to get the current value of a uniform.
  */
 static void
-_mesa_get_uniformfv(struct gl_context *ctx, GLuint program, GLint location,
-                    GLfloat *params)
+get_uniform(struct gl_context *ctx, GLuint program, GLint location,
+            GLsizei bufSize, GLenum returnType, GLvoid *paramsOut)
 {
+   struct gl_shader_program *shProg =
+      _mesa_lookup_shader_program_err(ctx, program, "glGetUniformfv");
    struct gl_program *prog;
-   GLint paramPos;
-   GLint offset;
+   GLint paramPos, offset;
+
+   if (!shProg)
+      return;
 
    split_location_offset(&location, &offset);
 
-   lookup_uniform_parameter(ctx, program, location, &prog, &paramPos);
-
-   if (prog) {
-      const struct gl_program_parameter *p =
-         &prog->Parameters->Parameters[paramPos];
-      GLint rows, cols, i, j, k;
-
-      get_uniform_rows_cols(p, &rows, &cols);
-
-      k = 0;
-      for (i = 0; i < rows; i++) {
-         for (j = 0; j < cols; j++ ) {
-            params[k++] = prog->Parameters->ParameterValues[paramPos+i][j];
-         }
-      }
+   if (!find_uniform_parameter_pos(shProg, location, &prog, &paramPos)) {
+      _mesa_error(ctx, GL_INVALID_OPERATION,  "glGetUniformfv(location)");
    }
-}
-
-
-/**
- * Called via glGetUniformiv().
- * \sa _mesa_get_uniformfv, only difference is a cast.
- */
-static void
-_mesa_get_uniformiv(struct gl_context *ctx, GLuint program, GLint location,
-                    GLint *params)
-{
-   struct gl_program *prog;
-   GLint paramPos;
-   GLint offset;
-
-   split_location_offset(&location, &offset);
-
-   lookup_uniform_parameter(ctx, program, location, &prog, &paramPos);
-
-   if (prog) {
+   else {
       const struct gl_program_parameter *p =
          &prog->Parameters->Parameters[paramPos];
       GLint rows, cols, i, j, k;
+      GLsizei numBytes;
 
       get_uniform_rows_cols(p, &rows, &cols);
 
-      k = 0;
-      for (i = 0; i < rows; i++) {
-         for (j = 0; j < cols; j++ ) {
-            params[k++] = (GLint) prog->Parameters->ParameterValues[paramPos+i][j];
-         }
+      numBytes = rows * cols * _mesa_sizeof_type(returnType);
+      if (bufSize < numBytes) {
+         _mesa_error( ctx, GL_INVALID_OPERATION,
+                     "glGetnUniformfvARB(out of bounds: bufSize is %d,"
+                     " but %d bytes are required)", bufSize, numBytes );
+         return;
       }
-   }
-}
 
-
-/**
- * Called via glGetUniformuiv().
- * New in GL_EXT_gpu_shader4, OpenGL 3.0
- * \sa _mesa_get_uniformfv, only difference is a cast.
- */
-static void
-_mesa_get_uniformuiv(struct gl_context *ctx, GLuint program, GLint location,
-                     GLuint *params)
-{
-   struct gl_program *prog;
-   GLint paramPos;
-   GLint offset;
-
-   split_location_offset(&location, &offset);
-
-   lookup_uniform_parameter(ctx, program, location, &prog, &paramPos);
-
-   if (prog) {
-      const struct gl_program_parameter *p =
-         &prog->Parameters->Parameters[paramPos];
-      GLint rows, cols, i, j, k;
-
-      get_uniform_rows_cols(p, &rows, &cols);
-
-      k = 0;
-      for (i = 0; i < rows; i++) {
-         for (j = 0; j < cols; j++ ) {
-            params[k++] = (GLuint) prog->Parameters->ParameterValues[paramPos+i][j];
+      switch (returnType) {
+      case GL_FLOAT:
+         {
+            GLfloat *params = (GLfloat *) paramsOut;
+            k = 0;
+            for (i = 0; i < rows; i++) {
+               const int base = paramPos + offset + i;
+               for (j = 0; j < cols; j++ ) {
+                  params[k++] = prog->Parameters->ParameterValues[base][j];
+               }
+            }
          }
+         break;
+      case GL_DOUBLE:
+         {
+            GLfloat *params = (GLfloat *) paramsOut;
+            k = 0;
+            for (i = 0; i < rows; i++) {
+               const int base = paramPos + offset + i;
+               for (j = 0; j < cols; j++ ) {
+                  params[k++] = (GLdouble)
+                     prog->Parameters->ParameterValues[base][j];
+               }
+            }
+         }
+         break;
+      case GL_INT:
+         {
+            GLint *params = (GLint *) paramsOut;
+            k = 0;
+            for (i = 0; i < rows; i++) {
+               const int base = paramPos + offset + i;
+               for (j = 0; j < cols; j++ ) {
+                  params[k++] = (GLint)
+                     prog->Parameters->ParameterValues[base][j];
+               }
+            }
+         }
+         break;
+      case GL_UNSIGNED_INT:
+         {
+            GLuint *params = (GLuint *) paramsOut;
+            k = 0;
+            for (i = 0; i < rows; i++) {
+               const int base = paramPos + offset + i;
+               for (j = 0; j < cols; j++ ) {
+                  params[k++] = (GLuint)
+                     prog->Parameters->ParameterValues[base][j];
+               }
+            }
+         }
+         break;
+      default:
+         _mesa_problem(ctx, "bad returnType in get_uniform()");
       }
    }
 }
@@ -722,7 +487,8 @@ _mesa_get_uniformuiv(struct gl_context *ctx, GLuint program, GLint location,
  * offset (used for arrays, structs).
  */
 GLint
-_mesa_get_uniform_location(struct gl_context *ctx, struct gl_shader_program *shProg,
+_mesa_get_uniform_location(struct gl_context *ctx,
+                           struct gl_shader_program *shProg,
 			   const GLchar *name)
 {
    GLint offset = 0, location = -1;
@@ -759,8 +525,8 @@ _mesa_get_uniform_location(struct gl_context *ctx, struct gl_shader_program *shP
             const GLint element = atoi(c + 1);
             if (element > 0) {
                /* get type of the uniform array element */
-               struct gl_program_parameter *p;
-               p = get_uniform_parameter(shProg, location);
+               const struct gl_program_parameter *p =
+                  get_uniform_parameter(shProg, location);
                if (p) {
                   GLint rows, cols;
                   get_matrix_dims(p->DataType, &rows, &cols);
@@ -903,8 +669,8 @@ set_program_uniform(struct gl_context *ctx, struct gl_program *program,
 
       /* loop over number of samplers to change */
       for (i = 0; i < count; i++) {
-         GLuint sampler =
-            (GLuint) program->Parameters->ParameterValues[index + offset + i][0];
+         GLuint sampler = (GLuint)
+            program->Parameters->ParameterValues[index + offset + i][0];
          GLuint texUnit = ((GLuint *) values)[i];
 
          /* check that the sampler (tex unit index) is legal */
@@ -956,7 +722,9 @@ set_program_uniform(struct gl_context *ctx, struct gl_program *program,
          /* we'll ignore extra data below */
       }
       else {
-         /* non-array: count must be at most one; count == 0 is handled by the loop below */
+         /* non-array: count must be at most one; count == 0 is handled
+          * by the loop below
+          */
          if (count > 1) {
             _mesa_error(ctx, GL_INVALID_OPERATION,
                         "glUniform(uniform '%s' is not an array)",
@@ -1020,6 +788,8 @@ _mesa_uniform(struct gl_context *ctx, struct gl_shader_program *shProg,
 {
    struct gl_uniform *uniform;
    GLint elems, offset;
+
+   ASSERT_OUTSIDE_BEGIN_END(ctx);
 
    if (!shProg || !shProg->LinkStatus) {
       _mesa_error(ctx, GL_INVALID_OPERATION, "glUniform(program not linked)");
@@ -1125,7 +895,8 @@ set_program_uniform_matrix(struct gl_context *ctx, struct gl_program *program,
 {
    GLuint mat, row, col;
    GLuint src = 0;
-   const struct gl_program_parameter * param = &program->Parameters->Parameters[index];
+   const struct gl_program_parameter *param =
+      &program->Parameters->Parameters[index];
    const GLuint slots = (param->Size + 3) / 4;
    const GLint typeSize = _mesa_sizeof_glsl_type(param->DataType);
    GLint nr, nc;
@@ -1139,7 +910,9 @@ set_program_uniform_matrix(struct gl_context *ctx, struct gl_program *program,
    }
 
    if ((GLint) param->Size <= typeSize) {
-      /* non-array: count must be at most one; count == 0 is handled by the loop below */
+      /* non-array: count must be at most one; count == 0 is handled
+       * by the loop below
+       */
       if (count > 1) {
          _mesa_error(ctx, GL_INVALID_OPERATION,
                      "glUniformMatrix(uniform is not an array)");
@@ -1193,6 +966,8 @@ _mesa_uniform_matrix(struct gl_context *ctx, struct gl_shader_program *shProg,
 {
    struct gl_uniform *uniform;
    GLint offset;
+
+   ASSERT_OUTSIDE_BEGIN_END(ctx);
 
    if (!shProg || !shProg->LinkStatus) {
       _mesa_error(ctx, GL_INVALID_OPERATION,
@@ -1553,29 +1328,69 @@ _mesa_UniformMatrix4x3fv(GLint location, GLsizei count, GLboolean transpose,
 
 
 void GLAPIENTRY
-_mesa_GetUniformfvARB(GLhandleARB program, GLint location, GLfloat *params)
+_mesa_GetnUniformfvARB(GLhandleARB program, GLint location,
+                       GLsizei bufSize, GLfloat *params)
 {
    GET_CURRENT_CONTEXT(ctx);
-   _mesa_get_uniformfv(ctx, program, location, params);
+   get_uniform(ctx, program, location, bufSize, GL_FLOAT, params);
+}
+
+void GLAPIENTRY
+_mesa_GetUniformfvARB(GLhandleARB program, GLint location, GLfloat *params)
+{
+   _mesa_GetnUniformfvARB(program, location, INT_MAX, params);
 }
 
 
 void GLAPIENTRY
-_mesa_GetUniformivARB(GLhandleARB program, GLint location, GLint *params)
+_mesa_GetnUniformivARB(GLhandleARB program, GLint location,
+                       GLsizei bufSize, GLint *params)
 {
    GET_CURRENT_CONTEXT(ctx);
-   _mesa_get_uniformiv(ctx, program, location, params);
+   get_uniform(ctx, program, location, bufSize, GL_INT, params);
+}
+
+void GLAPIENTRY
+_mesa_GetUniformivARB(GLhandleARB program, GLint location, GLint *params)
+{
+   _mesa_GetnUniformivARB(program, location, INT_MAX, params);
 }
 
 
 /* GL3 */
 void GLAPIENTRY
-_mesa_GetUniformuiv(GLhandleARB program, GLint location, GLuint *params)
+_mesa_GetnUniformuivARB(GLhandleARB program, GLint location,
+                        GLsizei bufSize, GLuint *params)
 {
    GET_CURRENT_CONTEXT(ctx);
-   _mesa_get_uniformuiv(ctx, program, location, params);
+   get_uniform(ctx, program, location, bufSize, GL_UNSIGNED_INT, params);
 }
 
+void GLAPIENTRY
+_mesa_GetUniformuiv(GLhandleARB program, GLint location, GLuint *params)
+{
+   _mesa_GetnUniformuivARB(program, location, INT_MAX, params);
+}
+
+
+/* GL4 */
+void GLAPIENTRY
+_mesa_GetnUniformdvARB(GLhandleARB program, GLint location,
+                        GLsizei bufSize, GLdouble *params)
+{
+   GET_CURRENT_CONTEXT(ctx);
+   /*
+   get_uniform(ctx, program, location, bufSize, GL_DOUBLE, params);
+   */
+   _mesa_error(ctx, GL_INVALID_OPERATION, "glGetUniformdvARB"
+               "(GL_ARB_gpu_shader_fp64 not implemented)");
+}
+
+void GLAPIENTRY
+_mesa_GetUniformdv(GLhandleARB program, GLint location, GLdouble *params)
+{
+   _mesa_GetnUniformdvARB(program, location, INT_MAX, params);
+}
 
 
 GLint GLAPIENTRY
@@ -1646,7 +1461,6 @@ _mesa_init_shader_uniform_dispatch(struct _glapi_table *exec)
    SET_UniformMatrix4x3fv(exec, _mesa_UniformMatrix4x3fv);
 
    /* OpenGL 3.0 */
-   /* XXX finish dispatch */
    SET_Uniform1uiEXT(exec, _mesa_Uniform1ui);
    SET_Uniform2uiEXT(exec, _mesa_Uniform2ui);
    SET_Uniform3uiEXT(exec, _mesa_Uniform3ui);
@@ -1657,6 +1471,11 @@ _mesa_init_shader_uniform_dispatch(struct _glapi_table *exec)
    SET_Uniform4uivEXT(exec, _mesa_Uniform4uiv);
    SET_GetUniformuivEXT(exec, _mesa_GetUniformuiv);
 
+   /* GL_ARB_robustness */
+   SET_GetnUniformfvARB(exec, _mesa_GetnUniformfvARB);
+   SET_GetnUniformivARB(exec, _mesa_GetnUniformivARB);
+   SET_GetnUniformuivARB(exec, _mesa_GetnUniformuivARB);
+   SET_GetnUniformdvARB(exec, _mesa_GetnUniformdvARB); /* GL 4.0 */
 
 #endif /* FEATURE_GL */
 }

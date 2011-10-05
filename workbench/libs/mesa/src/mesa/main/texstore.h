@@ -81,6 +81,15 @@ _mesa_make_temp_chan_image(struct gl_context *ctx, GLuint dims,
                            const GLvoid *srcAddr,
                            const struct gl_pixelstore_attrib *srcPacking);
 
+GLfloat *
+_mesa_make_temp_float_image(struct gl_context *ctx, GLuint dims,
+			    GLenum logicalBaseFormat,
+			    GLenum textureBaseFormat,
+			    GLint srcWidth, GLint srcHeight, GLint srcDepth,
+			    GLenum srcFormat, GLenum srcType,
+			    const GLvoid *srcAddr,
+			    const struct gl_pixelstore_attrib *srcPacking,
+			    GLbitfield transferOps);
 
 extern void
 _mesa_store_teximage1d(struct gl_context *ctx, GLenum target, GLint level,
@@ -195,24 +204,6 @@ _mesa_store_compressed_texsubimage3d(struct gl_context *ctx, GLenum target,
                                 GLsizei imageSize, const GLvoid *data,
                                 struct gl_texture_object *texObj,
                                 struct gl_texture_image *texImage);
-
-
-extern const GLvoid *
-_mesa_validate_pbo_teximage(struct gl_context *ctx, GLuint dimensions,
-			    GLsizei width, GLsizei height, GLsizei depth,
-			    GLenum format, GLenum type, const GLvoid *pixels,
-			    const struct gl_pixelstore_attrib *unpack,
-			    const char *funcName);
-
-extern const GLvoid *
-_mesa_validate_pbo_compressed_teximage(struct gl_context *ctx,
-                                    GLsizei imageSize, const GLvoid *pixels,
-                                    const struct gl_pixelstore_attrib *packing,
-                                    const char *funcName);
-
-extern void
-_mesa_unmap_teximage_pbo(struct gl_context *ctx,
-                         const struct gl_pixelstore_attrib *unpack);
 
 
 #endif

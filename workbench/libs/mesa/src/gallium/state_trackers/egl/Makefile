@@ -6,6 +6,7 @@ common_INCLUDES = \
 	-I$(TOP)/src/gallium/include \
 	-I$(TOP)/src/gallium/auxiliary \
 	-I$(TOP)/src/egl/main \
+	-I$(TOP)/src/egl/wayland/wayland-drm/ \
 	-I$(TOP)/include
 
 common_SOURCES = $(wildcard common/*.c)
@@ -23,8 +24,17 @@ x11_SOURCES = $(wildcard x11/*.c) \
 	      $(TOP)/src/glx/dri2.c
 x11_OBJECTS = $(x11_SOURCES:.c=.o)
 
+wayland_INCLUDES = \
+	-I$(TOP)/src/gallium/winsys \
+	-I$(TOP)/src/egl/wayland/wayland-egl \
+	-I$(TOP)/src/egl/wayland/wayland-drm \
+	$(shell pkg-config --cflags-only-I libdrm wayland-client)
 
-drm_INCLUDES = -I$(TOP)/src/gallium/winsys $(shell pkg-config --cflags-only-I libdrm)
+wayland_SOURCES = $(wildcard wayland/*.c)
+wayland_OBJECTS = $(wayland_SOURCES:.c=.o)
+
+drm_INCLUDES = -I$(TOP)/src/gallium/winsys $(shell pkg-config --cflags-only-I libdrm) \
+	       -I$(TOP)/src/gbm/main -I$(TOP)/src/gallium/state_trackers/gbm
 drm_SOURCES = $(wildcard drm/*.c)
 drm_OBJECTS = $(drm_SOURCES:.c=.o)
 
@@ -44,6 +54,11 @@ EGL_CPPFLAGS = $(common_INCLUDES)
 ifneq ($(findstring x11, $(EGL_PLATFORMS)),)
 EGL_OBJECTS += $(x11_OBJECTS)
 EGL_CPPFLAGS += -DHAVE_X11_BACKEND
+endif
+ifneq ($(findstring wayland, $(EGL_PLATFORMS)),)
+EGL_OBJECTS += $(wayland_OBJECTS)
+EGL_CPPFLAGS += -DHAVE_WAYLAND_BACKEND
+DEFINES += -DHAVE_WAYLAND_BACKEND
 endif
 ifneq ($(findstring drm, $(EGL_PLATFORMS)),)
 EGL_OBJECTS += $(drm_OBJECTS)
@@ -86,6 +101,9 @@ $(common_OBJECTS): %.o: %.c
 
 $(x11_OBJECTS): %.o: %.c
 	$(call egl-cc,x11)
+
+$(wayland_OBJECTS): %.o: %.c
+	$(call egl-cc,wayland)
 
 $(drm_OBJECTS): %.o: %.c
 	$(call egl-cc,drm)

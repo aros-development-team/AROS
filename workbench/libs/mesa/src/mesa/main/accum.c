@@ -27,6 +27,7 @@
 #include "context.h"
 #include "imports.h"
 #include "macros.h"
+#include "mfeatures.h"
 #include "state.h"
 #include "mtypes.h"
 #include "main/dispatch.h"
@@ -50,7 +51,6 @@ _mesa_ClearAccum( GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha )
    if (TEST_EQ_4V(tmp, ctx->Accum.ClearColor))
       return;
 
-   FLUSH_VERTICES(ctx, _NEW_ACCUM);
    COPY_4FV( ctx->Accum.ClearColor, tmp );
 }
 

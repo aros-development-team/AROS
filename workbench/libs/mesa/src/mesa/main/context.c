@@ -96,6 +96,7 @@
 #include "fbobject.h"
 #include "feedback.h"
 #include "fog.h"
+#include "formats.h"
 #include "framebuffer.h"
 #include "hint.h"
 #include "hash.h"
@@ -190,7 +191,8 @@ _mesa_notifySwapBuffers(struct gl_context *ctx)
  * is acceptable but the actual depth type will be GLushort or GLuint as
  * needed.
  * \param stencilBits requested minimum bits per stencil buffer value
- * \param accumRedBits, accumGreenBits, accumBlueBits, accumAlphaBits number of bits per color component in accum buffer.
+ * \param accumRedBits, accumGreenBits, accumBlueBits, accumAlphaBits number
+ * of bits per color component in accum buffer.
  * \param indexBits number of bits per pixel if \p rgbFlag is GL_FALSE
  * \param redBits number of bits per color component in frame buffer for RGB(A)
  * mode.  We always use 8 in core Mesa though.
@@ -199,8 +201,8 @@ _mesa_notifySwapBuffers(struct gl_context *ctx)
  * \param alphaBits same as above.
  * \param numSamples not really used.
  * 
- * \return pointer to new struct gl_config or NULL if requested parameters can't be
- * met.
+ * \return pointer to new struct gl_config or NULL if requested parameters
+ * can't be met.
  *
  * \note Need to add params for level and numAuxBuffers (at least)
  */
@@ -417,6 +419,10 @@ one_time_init( struct gl_context *ctx )
 		     MESA_VERSION_STRING, __DATE__, __TIME__);
       }
 #endif
+
+#ifdef DEBUG
+      _mesa_test_formats();
+#endif
    }
 
    /* per-API one-time init */
@@ -438,7 +444,7 @@ one_time_init( struct gl_context *ctx )
    /* Hopefully atexit() is widely available.  If not, we may need some
     * #ifdef tests here.
     */
-//TODO FIXME   atexit(_mesa_destroy_shader_compiler);
+   atexit(_mesa_destroy_shader_compiler);
 
    dummy_enum_func();
 }
@@ -481,30 +487,26 @@ init_program_limits(GLenum type, struct gl_program_constants *prog)
    prog->MaxTemps = MAX_PROGRAM_TEMPS;
    prog->MaxEnvParams = MAX_PROGRAM_ENV_PARAMS;
    prog->MaxLocalParams = MAX_PROGRAM_LOCAL_PARAMS;
-   prog->MaxUniformComponents = 4 * MAX_UNIFORMS;
+   prog->MaxAddressOffset = MAX_PROGRAM_LOCAL_PARAMS;
 
    switch (type) {
    case GL_VERTEX_PROGRAM_ARB:
       prog->MaxParameters = MAX_VERTEX_PROGRAM_PARAMS;
       prog->MaxAttribs = MAX_NV_VERTEX_PROGRAM_INPUTS;
       prog->MaxAddressRegs = MAX_VERTEX_PROGRAM_ADDRESS_REGS;
+      prog->MaxUniformComponents = 4 * MAX_UNIFORMS;
       break;
    case GL_FRAGMENT_PROGRAM_ARB:
       prog->MaxParameters = MAX_NV_FRAGMENT_PROGRAM_PARAMS;
       prog->MaxAttribs = MAX_NV_FRAGMENT_PROGRAM_INPUTS;
       prog->MaxAddressRegs = MAX_FRAGMENT_PROGRAM_ADDRESS_REGS;
+      prog->MaxUniformComponents = 4 * MAX_UNIFORMS;
       break;
    case MESA_GEOMETRY_PROGRAM:
       prog->MaxParameters = MAX_NV_VERTEX_PROGRAM_PARAMS;
       prog->MaxAttribs = MAX_NV_VERTEX_PROGRAM_INPUTS;
       prog->MaxAddressRegs = MAX_VERTEX_PROGRAM_ADDRESS_REGS;
-
-      prog->MaxGeometryTextureImageUnits = MAX_GEOMETRY_TEXTURE_IMAGE_UNITS;
-      prog->MaxGeometryVaryingComponents = MAX_GEOMETRY_VARYING_COMPONENTS;
-      prog->MaxVertexVaryingComponents = MAX_VERTEX_VARYING_COMPONENTS;
-      prog->MaxGeometryUniformComponents = MAX_GEOMETRY_UNIFORM_COMPONENTS;
-      prog->MaxGeometryOutputVertices = MAX_GEOMETRY_OUTPUT_VERTICES;
-      prog->MaxGeometryTotalOutputComponents = MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS;
+      prog->MaxUniformComponents = MAX_GEOMETRY_UNIFORM_COMPONENTS;
       break;
    default:
       assert(0 && "Bad program type in init_program_limits()");
@@ -521,6 +523,25 @@ init_program_limits(GLenum type, struct gl_program_constants *prog)
    prog->MaxNativeTemps = 0;
    prog->MaxNativeAddressRegs = 0;
    prog->MaxNativeParameters = 0;
+
+   /* Set GLSL datatype range/precision info assuming IEEE float values.
+    * Drivers should override these defaults as needed.
+    */
+   prog->MediumFloat.RangeMin = 127;
+   prog->MediumFloat.RangeMax = 127;
+   prog->MediumFloat.Precision = 23;
+   prog->LowFloat = prog->HighFloat = prog->MediumFloat;
+
+   /* Assume ints are stored as floats for now, since this is the least-common
+    * denominator.  The OpenGL ES spec implies (page 132) that the precision
+    * of integer types should be 0.  Practically speaking, IEEE
+    * single-precision floating point values can only store integers in the
+    * range [-0x01000000, 0x01000000] without loss of precision.
+    */
+   prog->MediumInt.RangeMin = 24;
+   prog->MediumInt.RangeMax = 24;
+   prog->MediumInt.Precision = 0;
+   prog->LowInt = prog->HighInt = prog->MediumInt;
 }
 
 
@@ -547,6 +568,7 @@ _mesa_init_constants(struct gl_context *ctx)
                                      ctx->Const.MaxTextureImageUnits);
    ctx->Const.MaxTextureMaxAnisotropy = MAX_TEXTURE_MAX_ANISOTROPY;
    ctx->Const.MaxTextureLodBias = MAX_TEXTURE_LOD_BIAS;
+   ctx->Const.MaxTextureBufferSize = 65536;
    ctx->Const.MaxArrayLockSize = MAX_ARRAY_LOCK_SIZE;
    ctx->Const.SubPixelBits = SUB_PIXEL_BITS;
    ctx->Const.MinPointSize = MIN_POINT_SIZE;
@@ -594,6 +616,13 @@ _mesa_init_constants(struct gl_context *ctx)
    ctx->Const.MaxCombinedTextureImageUnits = MAX_COMBINED_TEXTURE_IMAGE_UNITS;
    ctx->Const.MaxVarying = MAX_VARYING;
 #endif
+#if FEATURE_ARB_geometry_shader4
+   ctx->Const.MaxGeometryTextureImageUnits = MAX_GEOMETRY_TEXTURE_IMAGE_UNITS;
+   ctx->Const.MaxVertexVaryingComponents = MAX_VERTEX_VARYING_COMPONENTS;
+   ctx->Const.MaxGeometryVaryingComponents = MAX_GEOMETRY_VARYING_COMPONENTS;
+   ctx->Const.MaxGeometryOutputVertices = MAX_GEOMETRY_OUTPUT_VERTICES;
+   ctx->Const.MaxGeometryTotalOutputComponents = MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS;
+#endif
 
    /* Shading language version */
    if (ctx->API == API_OPENGL) {
@@ -629,6 +658,9 @@ _mesa_init_constants(struct gl_context *ctx)
    /** GL_EXT_gpu_shader4 */
    ctx->Const.MinProgramTexelOffset = -8;
    ctx->Const.MaxProgramTexelOffset = 7;
+
+   /* GL_ARB_robustness */
+   ctx->Const.ResetStrategy = GL_NO_RESET_NOTIFICATION_ARB;
 }
 
 
@@ -764,6 +796,7 @@ init_attrib_groups(struct gl_context *ctx)
    /* Miscellaneous */
    ctx->NewState = _NEW_ALL;
    ctx->ErrorValue = (GLenum) GL_NO_ERROR;
+   ctx->ResetStatus = (GLenum) GL_NO_ERROR;
    ctx->varying_vp_inputs = ~0;
 
    return GL_TRUE;
@@ -862,12 +895,12 @@ _mesa_alloc_dispatch_table(int size)
  * \param driverContext pointer to driver-specific context data
  */
 GLboolean
-_mesa_initialize_context_for_api(struct gl_context *ctx,
-				 gl_api api,
-				 const struct gl_config *visual,
-				 struct gl_context *share_list,
-				 const struct dd_function_table *driverFunctions,
-				 void *driverContext)
+_mesa_initialize_context(struct gl_context *ctx,
+                         gl_api api,
+                         const struct gl_config *visual,
+                         struct gl_context *share_list,
+                         const struct dd_function_table *driverFunctions,
+                         void *driverContext)
 {
    struct gl_shared_state *shared;
    int i;
@@ -955,6 +988,14 @@ _mesa_initialize_context_for_api(struct gl_context *ctx,
       ctx->FragmentProgram._MaintainTexEnvProgram = GL_TRUE;
    }
 
+   /* Mesa core handles all the formats that mesa core knows about.
+    * Drivers will want to override this list with just the formats
+    * they can handle, and confirm that appropriate fallbacks exist in
+    * _mesa_choose_tex_format().
+    */
+   memset(&ctx->TextureFormatSupported, GL_TRUE,
+	  sizeof(ctx->TextureFormatSupported));
+
    switch (ctx->API) {
    case API_OPENGL:
 #if FEATURE_dlist
@@ -997,25 +1038,6 @@ _mesa_initialize_context_for_api(struct gl_context *ctx,
 
 
 /**
- * Initialize an OpenGL context.
- */
-GLboolean
-_mesa_initialize_context(struct gl_context *ctx,
-                         const struct gl_config *visual,
-                         struct gl_context *share_list,
-                         const struct dd_function_table *driverFunctions,
-                         void *driverContext)
-{
-   return _mesa_initialize_context_for_api(ctx,
-					   API_OPENGL,
-					   visual,
-					   share_list,
-					   driverFunctions,
-					   driverContext);
-}
-
-
-/**
  * Allocate and initialize a struct gl_context structure.
  * Note that the driver needs to pass in its dd_function_table here since
  * we need to at least call driverFunctions->NewTextureObject to initialize
@@ -1031,11 +1053,11 @@ _mesa_initialize_context(struct gl_context *ctx,
  * \return pointer to a new __struct gl_contextRec or NULL if error.
  */
 struct gl_context *
-_mesa_create_context_for_api(gl_api api,
-			     const struct gl_config *visual,
-			     struct gl_context *share_list,
-			     const struct dd_function_table *driverFunctions,
-			     void *driverContext)
+_mesa_create_context(gl_api api,
+                     const struct gl_config *visual,
+                     struct gl_context *share_list,
+                     const struct dd_function_table *driverFunctions,
+                     void *driverContext)
 {
    struct gl_context *ctx;
 
@@ -1046,30 +1068,14 @@ _mesa_create_context_for_api(gl_api api,
    if (!ctx)
       return NULL;
 
-   if (_mesa_initialize_context_for_api(ctx, api, visual, share_list,
-					driverFunctions, driverContext)) {
+   if (_mesa_initialize_context(ctx, api, visual, share_list,
+                                driverFunctions, driverContext)) {
       return ctx;
    }
    else {
       free(ctx);
       return NULL;
    }
-}
-
-
-/**
- * Create an OpenGL context.
- */
-struct gl_context *
-_mesa_create_context(const struct gl_config *visual,
-		     struct gl_context *share_list,
-		     const struct dd_function_table *driverFunctions,
-		     void *driverContext)
-{
-   return _mesa_create_context_for_api(API_OPENGL, visual,
-				       share_list,
-				       driverFunctions,
-				       driverContext);
 }
 
 
@@ -1185,7 +1191,8 @@ _mesa_destroy_context( struct gl_context *ctx )
  * structures.
  */
 void
-_mesa_copy_context( const struct gl_context *src, struct gl_context *dst, GLuint mask )
+_mesa_copy_context( const struct gl_context *src, struct gl_context *dst,
+                    GLuint mask )
 {
    if (mask & GL_ACCUM_BUFFER_BIT) {
       /* OK to memcpy */
@@ -1423,7 +1430,8 @@ _mesa_make_current( struct gl_context *newCtx,
    }
 
    if (curCtx && 
-      (curCtx->WinSysDrawBuffer || curCtx->WinSysReadBuffer) && /* make sure this context is valid for flushing */
+      (curCtx->WinSysDrawBuffer || curCtx->WinSysReadBuffer) &&
+       /* make sure this context is valid for flushing */
       curCtx != newCtx)
       _mesa_flush(curCtx);
 
@@ -1438,8 +1446,6 @@ _mesa_make_current( struct gl_context *newCtx,
       _glapi_set_dispatch(newCtx->CurrentDispatch);
 
       if (drawBuffer && readBuffer) {
-	 /* TODO: check if newCtx and buffer's visual match??? */
-
          ASSERT(drawBuffer->Name == 0);
          ASSERT(readBuffer->Name == 0);
          _mesa_reference_framebuffer(&newCtx->WinSysDrawBuffer, drawBuffer);
@@ -1450,23 +1456,12 @@ _mesa_make_current( struct gl_context *newCtx,
           * or not bound to a user-created FBO.
           */
          if (!newCtx->DrawBuffer || newCtx->DrawBuffer->Name == 0) {
-            /* KW: merge conflict here, revisit. 
-             */
-            /* fix up the fb fields - these will end up wrong otherwise
-             * if the DRIdrawable changes, and everything relies on them.
-             * This is a bit messy (same as needed in _mesa_BindFramebufferEXT)
-             */
-            unsigned int i;
-            GLenum buffers[MAX_DRAW_BUFFERS];
-
             _mesa_reference_framebuffer(&newCtx->DrawBuffer, drawBuffer);
-
-            for(i = 0; i < newCtx->Const.MaxDrawBuffers; i++) {
-               buffers[i] = newCtx->Color.DrawBuffer[i];
-            }
-
-            _mesa_drawbuffers(newCtx, newCtx->Const.MaxDrawBuffers,
-                              buffers, NULL);
+            /* Update the FBO's list of drawbuffers/renderbuffers.
+             * For winsys FBOs this comes from the GL state (which may have
+             * changed since the last time this FBO was bound).
+             */
+            _mesa_update_draw_buffers(newCtx);
          }
          if (!newCtx->ReadBuffer || newCtx->ReadBuffer->Name == 0) {
             _mesa_reference_framebuffer(&newCtx->ReadBuffer, readBuffer);

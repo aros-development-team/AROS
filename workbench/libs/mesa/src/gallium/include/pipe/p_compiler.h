@@ -171,6 +171,18 @@ typedef unsigned char boolean;
 #  define __FUNCTION__ "<unknown>"
 # endif
 #endif
+#ifndef __func__
+#  if (__STDC_VERSION__ >= 199901L) || \
+      (defined(__SUNPRO_C) && defined(__C99FEATURES__))
+       /* __func__ is part of C99 */
+#  elif defined(_MSC_VER)
+#    if _MSC_VER >= 1300
+#      define __func__ __FUNCTION__
+#    else
+#      define __func__ "<unknown>"
+#    endif
+#  endif
+#endif
 
 
 
@@ -280,12 +292,14 @@ void _ReadWriteBarrier(void);
  * Note that profile guided optimization can offer better results, but
  * needs an appropriate coverage suite and does not inform human readers.
  */
-#ifdef __GNUC__
-#define likely(x) __builtin_expect(!!(x), 1)
-#define unlikely(x) __builtin_expect(!!(x), 0)
-#else
-#define likely(x) !!(x)
-#define unlikely(x) !!(x)
+#ifndef likely
+#  if defined(__GNUC__)
+#    define likely(x)   __builtin_expect(!!(x), 1)
+#    define unlikely(x) __builtin_expect(!!(x), 0)
+#  else
+#    define likely(x)   (x)
+#    define unlikely(x) (x)
+#  endif
 #endif
 
 

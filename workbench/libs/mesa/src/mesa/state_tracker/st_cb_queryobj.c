@@ -35,6 +35,7 @@
 
 #include "main/imports.h"
 #include "main/context.h"
+#include "main/mfeatures.h"
 
 #include "pipe/p_context.h"
 #include "pipe/p_defines.h"
@@ -84,6 +85,8 @@ st_BeginQuery(struct gl_context *ctx, struct gl_query_object *q)
 
    /* convert GL query type to Gallium query type */
    switch (q->Target) {
+   case GL_ANY_SAMPLES_PASSED:
+      /* fall-through */
    case GL_SAMPLES_PASSED_ARB:
       type = PIPE_QUERY_OCCLUSION_COUNTER;
       break;

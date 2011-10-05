@@ -44,7 +44,7 @@ C_SOURCES = \
 	draw/draw_vs_exec.c \
 	draw/draw_vs_ppc.c \
 	draw/draw_vs_sse.c \
-	draw/draw_vs_varient.c \
+	draw/draw_vs_variant.c \
 	indices/u_indices_gen.c \
 	indices/u_unfilled_gen.c \
 	os/os_misc.c \
@@ -107,10 +107,13 @@ C_SOURCES = \
 	util/u_caps.c \
 	util/u_cpu_detect.c \
 	util/u_dl.c \
+	util/u_draw.c \
 	util/u_draw_quad.c \
 	util/u_format.c \
 	util/u_format_other.c \
+	util/u_format_latc.c \
 	util/u_format_s3tc.c \
+	util/u_format_rgtc.c \
 	util/u_format_srgb.c \
 	util/u_format_table.c \
 	util/u_format_tests.c \
@@ -129,6 +132,7 @@ C_SOURCES = \
 	util/u_network.c \
 	util/u_math.c \
 	util/u_mm.c \
+	util/u_pstipple.c \
 	util/u_rect.c \
 	util/u_ringbuffer.c \
 	util/u_sampler.c \
@@ -142,7 +146,8 @@ C_SOURCES = \
 	util/u_tile.c \
 	util/u_transfer.c \
 	util/u_resource.c \
-	util/u_upload_mgr.c
+	util/u_upload_mgr.c \
+	util/u_vbuf_mgr.c
 
 	# Disabling until pipe-video branch gets merged in
 	#vl/vl_bitstream_parser.c \
@@ -157,7 +162,6 @@ GALLIVM_SOURCES = \
         gallivm/lp_bld_bitarit.c \
         gallivm/lp_bld_const.c \
         gallivm/lp_bld_conv.c \
-        gallivm/lp_bld_debug.c \
         gallivm/lp_bld_flow.c \
         gallivm/lp_bld_format_aos.c \
         gallivm/lp_bld_format_soa.c \
@@ -185,6 +189,7 @@ GALLIVM_SOURCES = \
         draw/draw_pt_fetch_shade_pipeline_llvm.c
 
 GALLIVM_CPP_SOURCES = \
+	gallivm/lp_bld_debug.cpp \
 	gallivm/lp_bld_misc.cpp
 
 GENERATED_SOURCES = \

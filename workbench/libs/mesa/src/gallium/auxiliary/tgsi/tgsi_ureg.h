@@ -43,29 +43,29 @@ struct ureg_program;
  */
 struct ureg_src
 {
-   unsigned File        : 4;  /* TGSI_FILE_ */
-   unsigned SwizzleX    : 2;  /* TGSI_SWIZZLE_ */
-   unsigned SwizzleY    : 2;  /* TGSI_SWIZZLE_ */
-   unsigned SwizzleZ    : 2;  /* TGSI_SWIZZLE_ */
-   unsigned SwizzleW    : 2;  /* TGSI_SWIZZLE_ */
-   unsigned Indirect    : 1;  /* BOOL */
-   unsigned DimIndirect : 1;  /* BOOL */
-   unsigned Dimension   : 1;  /* BOOL */
-   unsigned Absolute    : 1;  /* BOOL */
-   unsigned Negate      : 1;  /* BOOL */
-   int      Index       : 16; /* SINT */
+   unsigned File             : 4;  /* TGSI_FILE_ */
+   unsigned SwizzleX         : 2;  /* TGSI_SWIZZLE_ */
+   unsigned SwizzleY         : 2;  /* TGSI_SWIZZLE_ */
+   unsigned SwizzleZ         : 2;  /* TGSI_SWIZZLE_ */
+   unsigned SwizzleW         : 2;  /* TGSI_SWIZZLE_ */
+   unsigned Indirect         : 1;  /* BOOL */
+   unsigned DimIndirect      : 1;  /* BOOL */
+   unsigned Dimension        : 1;  /* BOOL */
+   unsigned Absolute         : 1;  /* BOOL */
+   unsigned Negate           : 1;  /* BOOL */
    unsigned IndirectFile     : 4;  /* TGSI_FILE_ */
-   int      IndirectIndex    : 16; /* SINT */
    unsigned IndirectSwizzle  : 2;  /* TGSI_SWIZZLE_ */
-   int      DimensionIndex   : 16; /* SINT */
    unsigned DimIndFile       : 4;  /* TGSI_FILE_ */
-   int      DimIndIndex      : 16; /* SINT */
    unsigned DimIndSwizzle    : 2;  /* TGSI_SWIZZLE_ */
+   int      Index            : 16; /* SINT */
+   int      IndirectIndex    : 16; /* SINT */
+   int      DimensionIndex   : 16; /* SINT */
+   int      DimIndIndex      : 16; /* SINT */
 };
 
 /* Very similar to a tgsi_dst_register, removing unsupported fields
  * and adding a Saturate flag.  It's easier to push saturate into the
- * destination register than to try and create a _SAT varient of each
+ * destination register than to try and create a _SAT variant of each
  * instruction function.
  */
 struct ureg_dst
@@ -152,6 +152,10 @@ ureg_property_fs_coord_origin(struct ureg_program *ureg,
 void
 ureg_property_fs_coord_pixel_center(struct ureg_program *ureg,
                             unsigned fs_coord_pixel_center);
+
+void
+ureg_property_fs_color0_writes_all_cbufs(struct ureg_program *ureg,
+                            unsigned fs_color0_writes_all_cbufs);
 
 /***********************************************************************
  * Build shader declarations:
@@ -265,6 +269,15 @@ ureg_DECL_predicate(struct ureg_program *);
 struct ureg_src
 ureg_DECL_sampler( struct ureg_program *,
                    unsigned index );
+
+struct ureg_src
+ureg_DECL_resource(struct ureg_program *,
+                   unsigned index,
+                   unsigned target,
+                   unsigned return_type_x,
+                   unsigned return_type_y,
+                   unsigned return_type_z,
+                   unsigned return_type_w );
 
 
 static INLINE struct ureg_src
@@ -421,7 +434,7 @@ ureg_fixup_label(struct ureg_program *ureg,
 
 
 /* Generic instruction emitter.  Use if you need to pass the opcode as
- * a parameter, rather than using the emit_OP() varients below.
+ * a parameter, rather than using the emit_OP() variants below.
  */
 void
 ureg_insn(struct ureg_program *ureg,
@@ -726,6 +739,66 @@ static INLINE void ureg_##op( struct ureg_program *ureg,                \
    ureg_emit_src( ureg, src2 );                                         \
    ureg_emit_src( ureg, src3 );                                         \
    ureg_fixup_insn_size( ureg, insn.insn_token );                       \
+}
+
+
+#define OP14( op )                                                      \
+static INLINE void ureg_##op( struct ureg_program *ureg,                \
+                              struct ureg_dst dst,                      \
+                              struct ureg_src src0,                     \
+                              struct ureg_src src1,                     \
+                              struct ureg_src src2,                     \
+                              struct ureg_src src3 )                    \
+{                                                                       \
+   unsigned opcode = TGSI_OPCODE_##op;                                  \
+   unsigned insn = ureg_emit_insn(ureg,                                 \
+                                  opcode,                               \
+                                  dst.Saturate,                         \
+                                  dst.Predicate,                        \
+                                  dst.PredNegate,                       \
+                                  dst.PredSwizzleX,                     \
+                                  dst.PredSwizzleY,                     \
+                                  dst.PredSwizzleZ,                     \
+                                  dst.PredSwizzleW,                     \
+                                  1,                                    \
+                                  4).insn_token;                        \
+   ureg_emit_dst( ureg, dst );                                          \
+   ureg_emit_src( ureg, src0 );                                         \
+   ureg_emit_src( ureg, src1 );                                         \
+   ureg_emit_src( ureg, src2 );                                         \
+   ureg_emit_src( ureg, src3 );                                         \
+   ureg_fixup_insn_size( ureg, insn );                                  \
+}
+
+
+#define OP15( op )                                                      \
+static INLINE void ureg_##op( struct ureg_program *ureg,                \
+                              struct ureg_dst dst,                      \
+                              struct ureg_src src0,                     \
+                              struct ureg_src src1,                     \
+                              struct ureg_src src2,                     \
+                              struct ureg_src src3,                     \
+                              struct ureg_src src4 )                    \
+{                                                                       \
+   unsigned opcode = TGSI_OPCODE_##op;                                  \
+   unsigned insn = ureg_emit_insn(ureg,                                 \
+                                  opcode,                               \
+                                  dst.Saturate,                         \
+                                  dst.Predicate,                        \
+                                  dst.PredNegate,                       \
+                                  dst.PredSwizzleX,                     \
+                                  dst.PredSwizzleY,                     \
+                                  dst.PredSwizzleZ,                     \
+                                  dst.PredSwizzleW,                     \
+                                  1,                                    \
+                                  5).insn_token;                        \
+   ureg_emit_dst( ureg, dst );                                          \
+   ureg_emit_src( ureg, src0 );                                         \
+   ureg_emit_src( ureg, src1 );                                         \
+   ureg_emit_src( ureg, src2 );                                         \
+   ureg_emit_src( ureg, src3 );                                         \
+   ureg_emit_src( ureg, src4 );                                         \
+   ureg_fixup_insn_size( ureg, insn );                                  \
 }
 
 

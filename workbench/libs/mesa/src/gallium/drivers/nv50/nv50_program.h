@@ -47,12 +47,9 @@ struct nv50_program {
    boolean translated;
    boolean uses_lmem;
 
-   struct nouveau_bo *bo;
-   struct nouveau_stateobj *so;
-
    uint32_t *code;
    unsigned code_size;
-   unsigned code_start; /* offset inside bo */
+   unsigned code_base;
    uint32_t *immd;
    unsigned immd_size;
    unsigned parm_size; /* size limit of uniform buffer */
@@ -89,6 +86,8 @@ struct nv50_program {
    /* relocation records */
    void *fixups;
    unsigned num_fixups;
+
+   struct nouveau_resource *res;
 };
 
 #define NV50_INTERP_LINEAR   (1 << 0)
@@ -112,6 +111,7 @@ struct nv50_translation_info {
    ubyte output_file;
    ubyte input_map[PIPE_MAX_SHADER_INPUTS][4];
    ubyte output_map[PIPE_MAX_SHADER_OUTPUTS][4];
+   ubyte sysval_map[TGSI_SEMANTIC_COUNT];
    ubyte interp_mode[PIPE_MAX_SHADER_INPUTS];
    int input_access[PIPE_MAX_SHADER_INPUTS][4];
    int output_access[PIPE_MAX_SHADER_OUTPUTS][4];

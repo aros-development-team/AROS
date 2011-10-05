@@ -1,3 +1,33 @@
+/**************************************************************************
+ *
+ * Copyright 2008 Tungsten Graphics, Inc., Cedar Park, Texas.
+ * Copyright 2009-2010 Chia-I Wu <olvaffe@gmail.com>
+ * Copyright 2010-2011 LunarG, Inc.
+ * All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the
+ * "Software"), to deal in the Software without restriction, including
+ * without limitation the rights to use, copy, modify, merge, publish,
+ * distribute, sub license, and/or sell copies of the Software, and to
+ * permit persons to whom the Software is furnished to do so, subject to
+ * the following conditions:
+ *
+ * The above copyright notice and this permission notice (including the
+ * next paragraph) shall be included in all copies or substantial portions
+ * of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ *
+ **************************************************************************/
+
+
 /**
  * Public EGL API entrypoints
  *
@@ -57,7 +87,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "eglstring.h"
 #include "eglcontext.h"
 #include "egldisplay.h"
 #include "egltypedefs.h"
@@ -294,16 +323,14 @@ eglInitialize(EGLDisplay dpy, EGLint *major, EGLint *minor)
       if (!_eglMatchDriver(disp, EGL_FALSE))
          RETURN_EGL_ERROR(disp, EGL_NOT_INITIALIZED, EGL_FALSE);
 
-      _eglsnprintf(disp->Version, sizeof(disp->Version), "%d.%d (%s)",
-            disp->APImajor, disp->APIminor, disp->Driver->Name);
       /* limit to APIs supported by core */
-      disp->ClientAPIsMask &= _EGL_API_ALL_BITS;
+      disp->ClientAPIs &= _EGL_API_ALL_BITS;
    }
 
    /* Update applications version of major and minor if not NULL */
    if ((major != NULL) && (minor != NULL)) {
-      *major = disp->APImajor;
-      *minor = disp->APIminor;
+      *major = disp->VersionMajor;
+      *minor = disp->VersionMinor;
    }
 
    RETURN_EGL_SUCCESS(disp, EGL_TRUE);
@@ -917,6 +944,10 @@ eglGetProcAddress(const char *procname)
       { "eglCreateDRMImageMESA", (_EGLProc) eglCreateDRMImageMESA },
       { "eglExportDRMImageMESA", (_EGLProc) eglExportDRMImageMESA },
 #endif
+#ifdef EGL_WL_bind_wayland_display
+      { "eglBindWaylandDisplayWL", (_EGLProc) eglBindWaylandDisplayWL },
+      { "eglUnbindWaylandDisplayWL", (_EGLProc) eglUnbindWaylandDisplayWL },
+#endif
       { NULL, NULL }
    };
    EGLint i;
@@ -1167,7 +1198,7 @@ eglQueryModeStringMESA(EGLDisplay dpy, EGLModeMESA mode)
 EGLDisplay EGLAPIENTRY
 eglGetDRMDisplayMESA(int fd)
 {
-   _EGLDisplay *dpy = _eglFindDisplay(_EGL_PLATFORM_DRM, (void *) (IPTR) fd);
+   _EGLDisplay *dpy = _eglFindDisplay(_EGL_PLATFORM_DRM, (void *) (intptr_t) fd);
    return _eglGetDisplayHandle(dpy);
 }
 
@@ -1493,4 +1524,44 @@ eglExportDRMImageMESA(EGLDisplay dpy, EGLImageKHR image,
    RETURN_EGL_EVAL(disp, ret);
 }
 
+#endif
+
+#ifdef EGL_WL_bind_wayland_display
+struct wl_display;
+
+EGLBoolean EGLAPIENTRY
+eglBindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display)
+{
+   _EGLDisplay *disp = _eglLockDisplay(dpy);
+   _EGLDriver *drv;
+   EGLBoolean ret;
+
+   _EGL_CHECK_DISPLAY(disp, EGL_FALSE, drv);
+   assert(disp->Extensions.WL_bind_wayland_display);
+
+   if (!display)
+      RETURN_EGL_ERROR(disp, EGL_BAD_PARAMETER, EGL_FALSE);
+
+   ret = drv->API.BindWaylandDisplayWL(drv, disp, display);
+
+   RETURN_EGL_EVAL(disp, ret);
+}
+
+EGLBoolean EGLAPIENTRY
+eglUnbindWaylandDisplayWL(EGLDisplay dpy, struct wl_display *display)
+{
+   _EGLDisplay *disp = _eglLockDisplay(dpy);
+   _EGLDriver *drv;
+   EGLBoolean ret;
+
+   _EGL_CHECK_DISPLAY(disp, EGL_FALSE, drv);
+   assert(disp->Extensions.WL_bind_wayland_display);
+
+   if (!display)
+      RETURN_EGL_ERROR(disp, EGL_BAD_PARAMETER, EGL_FALSE);
+
+   ret = drv->API.UnbindWaylandDisplayWL(drv, disp, display);
+
+   RETURN_EGL_EVAL(disp, ret);
+}
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright 2009, The AROS Development Team. All rights reserved.
+    Copyright 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -163,13 +163,13 @@ __noreturn void abort (void)
     IMPLEMENT();
     for (;;);
 }
-
+ 
 __noreturn void exit (int code)
 {
     IMPLEMENT();
     for (;;);
 }
-	
+
 int puts (const char * str)
 {
     bug("%s\n", str);
@@ -189,14 +189,14 @@ char * strdup (const char * orig)
 
     if ((copy = malloc (strlen (orig)+1)))
     {
-	ptr = copy;
+        ptr = copy;
 
-	while ((*ptr ++ = *orig ++));
+        while ((*ptr ++ = *orig ++));
     }
 
     return copy;
 }
-	
+
 int printf (const char * format, ...)
 {
     IMPLEMENT();
@@ -279,6 +279,12 @@ int fprintf (FILE * fh, const char * format, ...)
     return 0;
 }
 
+int vfprintf(FILE * restrict stream, const char * restrict format,
+    va_list arg)
+{
+    IMPLEMENT();
+    return 0;
+}
 
 double strtod (const char * str,char ** endptr)
 {
@@ -368,13 +374,13 @@ double strtod (const char * str,char ** endptr)
     return val;
 } /* strtod */
 
-char * strchr (const char * str, int	     c)
+char * strchr (const char * str, int c)
 {
     do
     {
         /* those casts are needed to compare chars > 127 */
-	if ((unsigned char)*str == (unsigned char)c)
-	    return ((char *)str);
+        if ((unsigned char)*str == (unsigned char)c)
+            return ((char *)str);
     } while (*(str++));
 
     return NULL;
@@ -386,33 +392,33 @@ size_t strcspn (const char * str, const char * reject)
 
     while (*str && !strchr (reject, *str))
     {
-	str ++;
-	n ++;
+        str ++;
+        n ++;
     }
 
     return n;
 } /* strcspn */
 
-char * strtok (char	   * str, const char * sep)
+char * strtok (char * str, const char * sep)
 {
     static char * t;
 
     if (str != NULL)
-	t = str;
+        t = str;
     else
-	str = t;
+        str = t;
 
     str += strspn (str, sep);
 
     if (*str == '\0')
-	return NULL;
+        return NULL;
 
     t = str;
 
     t += strcspn (str, sep);
 
     if (*t != '\0')
-	*t ++ = '\0';
+        *t ++ = '\0';
 
     return str;
 } /* strtok */
@@ -428,6 +434,24 @@ int fscanf (FILE * fh,const char * format, ...)
     return 0;
 }
 
+/*
+    This implementation of atexit is different than the definition of atexit
+    function due to how libraries work in AROS.
+   
+    Under Linux, when an .so file is used by an application, libraries code is
+    beeing shared but libraries data (global, static variables) are COPIED for
+    each process. Then, a atexit call inside .so will only operate on COPY of data
+    and thus can for example free memory allocated by one process without
+    influencing other processes.
+   
+    Under AROS, when a .library file is used by an application, library code AND
+    library data is shared. This means, an atexit call inside .library which was
+    initially coded under Linux cannot be executed when process is finishing 
+    (for example at CloseLibrary) because such call will most likelly free shared 
+    data which will make other processes crash. The best approximation of atexit
+    in case of .library is to call the atexit functions at library expunge/exit.
+*/
+
 static struct exit_list {
     struct exit_list *next;
     void (*func)(void);
@@ -439,7 +463,7 @@ int atexit(void (*function)(void))
 
     el = malloc(sizeof(*el));
     if (el == NULL)
-    	return -1;
+        return -1;
 
     el->next = exit_list;
     el->func = function;
@@ -447,7 +471,7 @@ int atexit(void (*function)(void))
 
     return 0;
 }
-	
+
 int __init_emul(void)
 {
     /* malloc/calloc/realloc/free */
@@ -464,11 +488,11 @@ int __init_emul(void)
 void __exit_emul(void)
 {
     while (exit_list) {
-    	struct exit_list *el = exit_list->next;
+        struct exit_list *el = exit_list->next;
 
-    	exit_list->func();
-    	free(exit_list);
-    	exit_list = el;
+        exit_list->func();
+        free(exit_list);
+        exit_list = el;
     }
 
     /* malloc/calloc/realloc/free */

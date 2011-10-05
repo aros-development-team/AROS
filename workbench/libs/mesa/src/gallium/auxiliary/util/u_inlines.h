@@ -160,6 +160,21 @@ pipe_surface_init(struct pipe_context *ctx, struct pipe_surface* ps,
    pipe_surface_reset(ctx, ps, pt, level, layer, flags);
 }
 
+/* Return true if the surfaces are equal. */
+static INLINE boolean
+pipe_surface_equal(struct pipe_surface *s1, struct pipe_surface *s2)
+{
+   return s1->texture == s2->texture &&
+          s1->format == s2->format &&
+          (s1->texture->target != PIPE_BUFFER ||
+           (s1->u.buf.first_element == s2->u.buf.first_element &&
+            s1->u.buf.last_element == s2->u.buf.last_element)) &&
+          (s1->texture->target == PIPE_BUFFER ||
+           (s1->u.tex.level == s2->u.tex.level &&
+            s1->u.tex.first_layer == s2->u.tex.first_layer &&
+            s1->u.tex.last_layer == s2->u.tex.last_layer));
+}
+
 /*
  * Convenience wrappers for screen buffer functions.
  */
@@ -167,6 +182,7 @@ pipe_surface_init(struct pipe_context *ctx, struct pipe_surface* ps,
 static INLINE struct pipe_resource *
 pipe_buffer_create( struct pipe_screen *screen,
 		    unsigned bind,
+		    unsigned usage,
 		    unsigned size )
 {
    struct pipe_resource buffer;
@@ -174,7 +190,7 @@ pipe_buffer_create( struct pipe_screen *screen,
    buffer.target = PIPE_BUFFER;
    buffer.format = PIPE_FORMAT_R8_UNORM; /* want TYPELESS or similar */
    buffer.bind = bind;
-   buffer.usage = PIPE_USAGE_DEFAULT;
+   buffer.usage = usage;
    buffer.flags = 0;
    buffer.width0 = size;
    buffer.height0 = 1;
@@ -220,6 +236,7 @@ pipe_buffer_map_range(struct pipe_context *pipe,
    map = pipe->transfer_map( pipe, *transfer );
    if (map == NULL) {
       pipe->transfer_destroy( pipe, *transfer );
+      *transfer = NULL;
       return NULL;
    }
 
@@ -242,7 +259,6 @@ pipe_buffer_map(struct pipe_context *pipe,
 
 static INLINE void
 pipe_buffer_unmap(struct pipe_context *pipe,
-                  struct pipe_resource *buf,
                   struct pipe_transfer *transfer)
 {
    if (transfer) {
@@ -283,13 +299,20 @@ pipe_buffer_write(struct pipe_context *pipe,
                   const void *data)
 {
    struct pipe_box box;
+   unsigned usage = PIPE_TRANSFER_WRITE;
+
+   if (offset == 0 && size == buf->width0) {
+      usage |= PIPE_TRANSFER_DISCARD_WHOLE_RESOURCE;
+   } else {
+      usage |= PIPE_TRANSFER_DISCARD_RANGE;
+   }
 
    u_box_1d(offset, size, &box);
 
    pipe->transfer_inline_write( pipe,
                                 buf,
                                 0,
-                                PIPE_TRANSFER_WRITE,
+                                usage,
                                 &box,
                                 data,
                                 size,
@@ -341,7 +364,7 @@ pipe_buffer_read(struct pipe_context *pipe,
    if (map)
       memcpy(data, map + offset, size);
 
-   pipe_buffer_unmap(pipe, buf, src_transfer);
+   pipe_buffer_unmap(pipe, src_transfer);
 }
 
 static INLINE struct pipe_transfer *
@@ -399,6 +422,34 @@ static INLINE boolean util_get_offset(
       assert(0);
       return FALSE;
    }
+}
+
+/**
+ * This function is used to copy an array of pipe_vertex_buffer structures,
+ * while properly referencing the pipe_vertex_buffer::buffer member.
+ *
+ * \sa util_copy_framebuffer_state
+ */
+static INLINE void util_copy_vertex_buffers(struct pipe_vertex_buffer *dst,
+                                            unsigned *dst_count,
+                                            const struct pipe_vertex_buffer *src,
+                                            unsigned src_count)
+{
+   unsigned i;
+
+   /* Reference the buffers of 'src' in 'dst'. */
+   for (i = 0; i < src_count; i++) {
+      pipe_resource_reference(&dst[i].buffer, src[i].buffer);
+   }
+   /* Unreference the rest of the buffers in 'dst'. */
+   for (; i < *dst_count; i++) {
+      pipe_resource_reference(&dst[i].buffer, NULL);
+   }
+
+   /* Update the size of 'dst' and copy over the other members
+    * of pipe_vertex_buffer. */
+   *dst_count = src_count;
+   memcpy(dst, src, src_count * sizeof(struct pipe_vertex_buffer));
 }
 
 #ifdef __cplusplus

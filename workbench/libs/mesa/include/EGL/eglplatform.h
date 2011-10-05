@@ -25,7 +25,7 @@
 */
 
 /* Platform-specific types and definitions for egl.h
- * $Revision$ on $Date$
+ * $Revision: 9724 $ on $Date: 2009-12-02 02:05:33 -0800 (Wed, 02 Dec 2009) $
  *
  * Adopters may modify khrplatform.h and this file to suit their platform.
  * You are encouraged to submit all modifications to the Khronos group so that
@@ -77,6 +77,18 @@ typedef HWND    EGLNativeWindowType;
 typedef int   EGLNativeDisplayType;
 typedef void *EGLNativeWindowType;
 typedef void *EGLNativePixmapType;
+
+#elif defined(WL_EGL_PLATFORM)
+
+typedef struct wl_display     *EGLNativeDisplayType;
+typedef struct wl_egl_pixmap  *EGLNativePixmapType;
+typedef struct wl_egl_window  *EGLNativeWindowType;
+
+#elif defined(__GBM__)
+
+typedef struct gbm_device  *EGLNativeDisplayType;
+typedef struct gbm_bo      *EGLNativePixmapType;
+typedef void               *EGLNativeWindowType;
 
 #elif defined(__AROS__)
 

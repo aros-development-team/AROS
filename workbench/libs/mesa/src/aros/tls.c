@@ -1,5 +1,5 @@
 /*
-    Copyright 2010, The AROS Development Team. All rights reserved.
+    Copyright 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,13 +23,9 @@ struct TaskLocalStorage
 /* Implementation uses locking only when adding objects. Objects are always added
    at head. The list is never reordered, thus reading can be done without locking */
 
-/* Idea: can consider adding list trimming when holding insert lock: instead of
-   adding an object to head of existing list, a new list would be created where
-   object would be copies (not pointer to!) of objects on current list. During
-   copying objects with NULL data items would not be copied. Once copying done,
-   new list would be put in place of old list. The old list however would then
-   leak. Maybe this leak could be fixed by implementing smart pointers/reference
-   counting on TaskLocalNode - this could however make iterations slowe */
+/* This approach is used to achieve acceptable performance. With semaphore-locking
+   of read path, the performance was degraded several times. The TLS is used to
+   hold current per-task GL context - retrieving this context MUST BE fast */
 
 struct TaskLocalStorage * CreateTLS()
 {
@@ -77,6 +73,14 @@ VOID InsertIntoTLS(struct TaskLocalStorage * tls, APTR ptr)
 
     /* Set the passed value */
     selected->tl_Data = ptr;
+}
+
+VOID ClearFromTLS(struct TaskLocalStorage * tls)
+{
+    /* Clearing is inserting a NULL. Element can't be removed from list - since
+       there is no read locking, altering structure of list when other tasks
+       are reading it, would cause crashes */
+    InsertIntoTLS(tls, NULL);
 }
 
 APTR GetFromTLS(struct TaskLocalStorage * tls)
