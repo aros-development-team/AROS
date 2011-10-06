@@ -5,9 +5,12 @@ MEMORY {
 
 SECTIONS 
 {
-  .ext                        : { _ext_start = .;
+  .start.MEMF_LOCAL           : {
+INCLUDE ../../../bin/amiga-m68k/gen/start_objs.ld
+                                } >valid
+  .kick                       : { _kick_start = .;
 INCLUDE ../../../bin/amiga-m68k/gen/any_objs.ld
-                                  _ext_end = .; 
+                                  _kick_end = .; 
                                 } >valid
   .rom.MEMF_LOCAL             : { _rom_start = .;
 INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
@@ -15,6 +18,8 @@ INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
                                   *(.text .rodata .rodata.*)
                                   *(.eh_frame)
                                   _rom_end = .;   
+                                  _ext_start = .;   
+                                  _ext_end = .;   
                                 } >valid
   /* SS, typically at 0x800-0x1000. Since MEMF_CHIP RAM starts at
    * 0x1000, this is a good place for it. Only used until after

@@ -31,7 +31,7 @@
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
 
-#define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode"
+#define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode mungwall"
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
@@ -555,53 +555,66 @@ static void RTGPatch(struct Resident *r, BPTR seg)
     	WriteF("Library path patched\n");
 }
 
-static struct Resident *LoadFindResident(BPTR seg)
+#define RESLIST_CHUNK   100
+#define LRF_NOPATCH      (1 << 0)        /* If set, don't patch the struct Resident */
+
+static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG *resleft, ULONG flags)
 {
-    BPTR seglist = seg;
-    while (seglist) {
-    	ULONG *ptr = BADDR(seglist);
-    	UWORD *res;
-    	LONG len = ptr[-1] - sizeof(BPTR);
-    	
- 	res = (UWORD*)(ptr + 1);
-    	while (len >= offsetof(struct Resident, rt_Init) + sizeof(APTR)) {
-    	    if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
-    	    	struct Resident *r = (struct Resident*)res;
-    	    	/* Set RTF_COLDSTART if no initialization flags set */
-    	    	if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
-    	    	    r->rt_Flags |= RTF_COLDSTART;
-    	    	if (r->rt_Pri < 10)
-    	    	    r->rt_Pri = 10;
-    	    	RTGPatch(r, seg);
-    	    	return r;
-    	    }
-    	    res++;
-    	    len -= 2;
-    	}
-    	seglist = *((BPTR*)BADDR(seglist));
+    ULONG *ptr = BADDR(seg);
+    UWORD *res;
+    LONG len = ptr[-1] - sizeof(BPTR);
+    
+    res = (UWORD*)(ptr + 1);
+    while (len >= offsetof(struct Resident, rt_Init) + sizeof(APTR)) {
+        if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
+            struct Resident *r = (struct Resident*)res;
+            if (!(flags & LRF_NOPATCH)) {
+                /* Set RTF_COLDSTART if no initialization flags set */
+                if (!(r->rt_Flags & (RTF_COLDSTART | RTF_SINGLETASK | RTF_AFTERDOS)))
+                    r->rt_Flags |= RTF_COLDSTART;
+                if (r->rt_Pri < 10)
+                    r->rt_Pri = 10;
+                RTGPatch(r, seg);
+            }
+
+            if (*resleft == 0) {
+                struct Resident **resnew;
+                resnew = aosAllocMem(RESLIST_CHUNK * sizeof(struct Resident*), MEMF_CLEAR, SysBase);
+                if (!resnew)
+                    return 0;
+
+                *reslist = (APTR)((IPTR)resnew | RESLIST_NEXT);
+                reslist = resnew;
+                *resleft = RESLIST_CHUNK - 1;
+            }
+            WriteF("Resident structure found @%X8\n", r);
+            *(reslist++) = r;
+            (*resleft)--;
+        }
+        res++;
+        len -= 2;
     }
-    return NULL;
+
+    return reslist;
 }
 
-static struct Resident **LoadResidents(BPTR *namearray)
+static struct Resident **LoadResidents(BPTR *namearray, struct Resident **resnext, ULONG *resleft)
 {
-    UBYTE rescnt, i;
-    struct Resident **reslist = NULL;
+    UBYTE i;
     SIPTR funcarray[] = {
     	(SIPTR)aosRead,
     	(SIPTR)aosAlloc,
     	(SIPTR)aosFree,
     	(SIPTR)aosSeek,
     };
-    rescnt = 0;
+   
     for (i = 0; namearray[i]; i++) {
-	struct Resident *resident;
 	LONG stack;
 	BPTR handle;
 	BPTR seglist = BNULL;
 	BPTR bname;
     	UBYTE *name;
-    	
+    
     	bname = namearray[i];
     	name = ConvertBSTR(bname);
     	if (name) {
@@ -611,25 +624,18 @@ static struct Resident **LoadResidents(BPTR *namearray)
 		Close(handle);
 	    }
 	    if (seglist) {
+	        BPTR seg;
 		WriteF("Loaded '%S'\n", bname);
-		resident = LoadFindResident(seglist);
-		if (resident) {
-		    if (!reslist) {
-			reslist = aosAllocMem(100 * sizeof(struct Resident*), MEMF_CLEAR, SysBase);
-			if (!reslist)
-			    return NULL;
-		    }
-		    WriteF("Resident structure found @%X8\n", resident);
-		    reslist[rescnt++] = resident;
-		}
+		for (seg = seglist; seg != BNULL; seg = *((BPTR*)BADDR(seg)))
+		    resnext = LoadResident(seg, resnext, resleft, 0);
 	    } else {
 		WriteF("Failed to load '%S', error %N\n", bname, IoErr());
 	    }
 	    FreeString(name);
 	}
     }
-    reslist[rescnt] = 0;
-    return reslist;
+
+    return resnext;
 }
 
 #define FAKEBASE 0x200
@@ -985,17 +991,23 @@ __startup static AROS_ENTRY(int, startup,
 
             ROMSegList = ROMLoad(args[ARG_ROM]);
             if (ROMSegList != BNULL) {
+                ULONG resleft = 0;
                 struct Resident **ResidentList;
                 struct TagItem *KernelTags;
                 WriteF("Successfully loaded ROM\n");
                 ROM_Loaded = TRUE;
+                struct Resident **resnext, *reshead = NULL;
 
-                ResidentList = LoadResidents(&args[ARG_MODULES]);
+                resnext = &reshead;
+                /* Only scan the 2nd section of the ROM segment */
+                resnext = LoadResident(*((BPTR *)BADDR(ROMSegList)), resnext, &resleft, LRF_NOPATCH);
+                resnext = LoadResidents(&args[ARG_MODULES], resnext, &resleft);
                 KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
 
                 WriteF("Booting...\n");
                 Delay(50);
 
+                ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
                 BootROM(ROMSegList, ResidentList, KernelTags);
 
                 UnLoadSeg(ROMSegList);
