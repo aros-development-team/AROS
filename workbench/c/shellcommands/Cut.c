@@ -225,8 +225,6 @@ static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase)
 
     D(bug("[Cut] getBoundaries() buffer = '%s'\n", buffer));
 
-    ;
-
     if ((bounds = AllocVec(sizeof(struct Bounds), MEMF_ANY | MEMF_CLEAR)) != NULL)
     {
         if (*buffer != '-')
