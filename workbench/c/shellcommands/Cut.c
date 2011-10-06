@@ -104,8 +104,8 @@ extract one word (with another separator).
 
 #ifdef AROS_SHAH
 #undef AROS_SHAH
-#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def, __SHA_OPT(type,abbr,name,modf,def,help) "\t" help "\n"
 #endif
+#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def, __SHA_OPT(type,abbr,name,modf,def,help) "\t" help "\n"
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 #define max(x,y) (((x) > (y)) ? (x) : (y))
@@ -119,7 +119,7 @@ struct Bounds
 
 static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase);
 
-AROS_SH4H(Cut,41.1,        "extract some characters or words from a string\n",
+AROS_SH4H(Cut,50.1,        "extract some characters or words from a string\n",
 AROS_SHAH(STRPTR,  ,STRING   ,/A,NULL,"Quoted string from which to extract characters or words"),
 AROS_SHAH(STRPTR,C=,CHAR     ,/K,NULL,"Use begin/end values defined in characters"),
 AROS_SHAH(STRPTR,W=,WORD     ,/K,NULL,"Extract any number of words separated by SEPARATOR"),
@@ -141,9 +141,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K, " ", "Specify a string of any length to be use
 
     if (SHArg(WORD))
     {
-        wordBounds = getBoundaries(SHArg(WORD), DOSBase);
-
-        if (NULL != wordBounds)
+        if ((wordBounds = getBoundaries(SHArg(WORD), DOSBase)) != NULL)
         {
             if (0 != wordBounds->Start)
             {
@@ -174,7 +172,6 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K, " ", "Specify a string of any length to be use
                     else
                         break;
                 }
-                
             }
 
             FreeVec(wordBounds);
@@ -184,9 +181,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K, " ", "Specify a string of any length to be use
 
     if (SHArg(CHAR))
     {
-        charBounds = getBoundaries(SHArg(CHAR), DOSBase);
-
-        if (NULL != charBounds)
+        if ((charBounds = getBoundaries(SHArg(CHAR), DOSBase)) != NULL)
         {
             if (0 != charBounds->Start)
                 stringBuf += charBounds->Start - 1;
@@ -222,19 +217,17 @@ static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase)
     CONST_STRPTR buffer;
     struct Bounds *bounds;
 
-    if (NULL == String)
+    if ((buffer = String) == NULL)
     {
         SetIoErr(ERROR_BAD_TEMPLATE);
         return NULL;
     }
 
-    buffer = String;
-
     D(bug("[Cut] getBoundaries() buffer = '%s'\n", buffer));
 
-    bounds = AllocVec(sizeof(struct Bounds), MEMF_ANY | MEMF_CLEAR);
+    ;
 
-    if (NULL != bounds)
+    if ((bounds = AllocVec(sizeof(struct Bounds), MEMF_ANY | MEMF_CLEAR)) != NULL)
     {
         if (*buffer != '-')
         {
