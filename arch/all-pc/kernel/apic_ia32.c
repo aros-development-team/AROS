@@ -11,7 +11,7 @@
 
 #include <inttypes.h>
 
-#include "apic_driver.h"
+#include "apic.h"
 #include "apic_ia32.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -207,7 +207,7 @@ UBYTE core_APIC_GetID(IPTR _APICBase)
     UBYTE _apic_id;
 
     /* The actual ID is in 8 most significant bits */
-    _apic_id = APIC_REG(_APICBase, APIC_ID) >> 24;
+    _apic_id = APIC_REG(_APICBase, APIC_ID) >> APIC_ID_SHIFT;
     D(bug("[APIC] _APIC_IA32_GetID: APIC ID %d\n", _apic_id));
 
     return _apic_id;

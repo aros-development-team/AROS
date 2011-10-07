@@ -21,7 +21,6 @@
 #include "kernel_intern.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
-#include "acpi.h"
 #include "apic.h"
 #include "smp.h"
 #include "tls.h"
@@ -429,13 +428,13 @@ void kernel_cstart(const struct TagItem *msg)
      * Now we can use ACPI information in order to set up advanced things (SMP, APIC, etc).
      * Interrupts are still disabled and we are still supervisor.
      */
-    core_ACPIInitialise();
+    acpi_Initialize();
 
-    /*
-     * The last thing to do is to start up secondary CPU cores.
-     * This function uses the information previously gathered by ACPI routines.
-     */
-    smp_Wake();
+    /* Now initialize our interrupt controller (XT-PIC or APIC) */
+    ictl_Initialize();
+
+    /* The last thing to do is to start up secondary CPU cores (if any) */
+    smp_Initialize();
 
     /* Drop privileges down to user mode before calling RTF_COLDSTART */
     D(bug("[Kernel] Leaving supervisor mode\n"));
