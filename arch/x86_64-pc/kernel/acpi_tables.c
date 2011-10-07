@@ -22,8 +22,6 @@
 ULONG acpi_Initialize(void)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
-    ULONG result;
-    struct ACPI_TABLE_TYPE_MADT *madt;
     struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
 
     D(bug("[Kernel] core_ACPIInitialise()\n"));
