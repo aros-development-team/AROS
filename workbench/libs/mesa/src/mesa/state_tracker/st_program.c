@@ -621,6 +621,7 @@ st_translate_fragment_program(struct st_context *st,
                                         outputMapping,
                                         fs_output_semantic_name,
                                         fs_output_semantic_index, FALSE );
+      (void)error; /* ignored */
 
       stfp->tgsi.tokens = ureg_get_tokens( ureg, NULL );
       ureg_destroy( ureg );
@@ -910,6 +911,7 @@ st_translate_geometry_program(struct st_context *st,
                                      gs_output_semantic_name,
                                      gs_output_semantic_index,
                                      FALSE);
+   (void)error; /* ignored */
 
    stgp->num_inputs = gs_num_inputs;
    stgp->tgsi.tokens = ureg_get_tokens( ureg, NULL );
