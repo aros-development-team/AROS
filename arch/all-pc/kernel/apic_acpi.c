@@ -91,6 +91,14 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
     AROS_USERFUNC_EXIT
 }
 
+#define INTF_POLARITY_DEFAULT   0
+#define INTF_POLARITY_HIGH      1
+#define INTF_POLARITY_LOW       3
+
+#define INTF_TRIGGER_DEFAULT    0
+#define INTF_TRIGGER_EDGE       1
+#define INTF_TRIGGER_LEVEL      3
+
 /* Process the 'Local APIC Non-Maskable Interrupt' MADT Table */
 AROS_UFH3(IPTR, ACPI_hook_Table_LAPIC_NMI_Parse,
 	  AROS_UFHA(struct Hook *, table_hook, A0),

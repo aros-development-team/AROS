@@ -83,7 +83,6 @@ void PCPCI__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 static int PCPCI_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *pci;
-    ULONG temp;
     
     D(bug("[PCI.PC] Driver initialization\n"));
 

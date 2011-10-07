@@ -106,7 +106,6 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
 
 BOOL core_APIC_Init(IPTR __APICBase)
 {
-    ULONG APIC_VAL;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
 
