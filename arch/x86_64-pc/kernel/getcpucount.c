@@ -5,12 +5,12 @@
 #include "kernel_intern.h"
 #include "apic.h"
 
-AROS_LH0(unsigned int, KrnGetCPUNumber,
-	 struct KernelBase *, KernelBase, 37, Kernel)
+AROS_LH0(unsigned int, KrnGetCPUCount,
+	 struct KernelBase *, KernelBase, 36, Kernel)
 {
     AROS_LIBFUNC_INIT
 
-    return core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
+    return KernelBase->kb_PlatformData->kb_APIC->count;
 
     AROS_LIBFUNC_EXIT
 }

@@ -44,6 +44,9 @@
 #define APIC_ERROR_VEC	 0x370	/* Error vector table entry			*/
 #define APIC_TIMER_DIV	 0x3E0	/* Timer divide configuration register		*/
 
+/* ID shift value */
+#define APIC_ID_SHIFT 24
+
 /* Version register */
 #define APIC_VERSION_MASK 0x000000FF	/* The actual version number			     */
 #define APIC_LVT_MASK 	  0x00FF0000	/* Number of entries in local vector table minus one */

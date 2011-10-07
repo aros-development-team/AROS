@@ -408,3 +408,33 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
     if (KernelBase->kb_Interrupts[irq].lh_Type == KBL_XTPIC)
         XTPIC_EnableIRQ(irq, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
 }
+
+void ictl_Initialize(void)
+{
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+
+    if (!pdata->kb_APIC)
+    {
+	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
+	pdata->kb_APIC = core_APIC_Probe();
+    }
+
+    if (!pdata)
+    {
+    	/* We are x86-64 and we always have APIC. */
+    	krnPanic("Failed to allocate APIC descriptor\n.The system is low on memory.");
+    }
+
+    if (pdata->kb_APIC->flags & APF_8259)
+    {
+    	/*
+    	 * Initialize legacy 8529A PIC.
+    	 * TODO: We obey ACPI information about its presence, however currently we don't have
+    	 * IOAPIC support. Switching to IOAPIC requires full ACPI support including AML.
+    	 */
+
+    	XTPIC_Init(&pdata->kb_XTPIC_Mask);
+    }
+
+    D(bug("[Kernel] kernel_cstart: Interrupts redirected. We will go back in a minute ;)\n"));
+}

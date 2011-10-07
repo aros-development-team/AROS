@@ -13,6 +13,8 @@
 #define PAGE_SIZE	0x1000
 #define PAGE_MASK	0x0FFF
 
+struct APICData;
+
 /*
  * Boot-time private data.
  * This structure is write-protected in user mode and survives warm restarts.
@@ -40,12 +42,9 @@ extern struct KernBootPrivate *__KernBootPrivate;
 /* Platform-specific part of KernelBase */
 struct PlatformData
 {
-    APTR                kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
-    uint16_t            kb_XTPIC_Mask;		/* Current XT-PIC interrupt mask			*/
-    UWORD               *kb_APIC_IDMap;         /* ACPI_ID << 8 | LOGICAL_ID	      			*/
-    IPTR                *kb_APIC_BaseMap;
-    int                 kb_APIC_IRQ_Model;
-    int                 kb_ACPI_IOAPIC;
+    APTR     kb_APIC_TrampolineBase;	/* Starting address of secondary core bootstrap code	*/
+    uint16_t kb_XTPIC_Mask;		/* Current XT-PIC interrupt mask			*/
+    struct   APICData *kb_APIC;		/* APIC global data					*/
 };
 
 #define KBL_INTERNAL    0
@@ -63,6 +62,8 @@ void core_SetupMMU(struct KernBootPrivate *);
 void core_CPUSetup(UBYTE, IPTR);
 void core_ProtKernelArea(intptr_t addr, intptr_t length, char p, char rw, char us);
 void core_DefaultIRETQ();
+ULONG acpi_Initialize(void);
+void ictl_Initialize(void);
 
 struct ExceptionContext;
 

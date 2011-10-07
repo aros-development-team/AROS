@@ -33,7 +33,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     /* Find out ourselves */
     _APICBase = core_APIC_GetBase();
     _APICID   = core_APIC_GetID(_APICBase);
-    _APICNO   = core_APIC_GetNumber(KernelBase, _APICBase);
+    _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
 
     D(bug("[SMP] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
     D(bug("[SMP] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
@@ -42,7 +42,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     /* Set up GDT and LDT for our core */
     core_CPUSetup(_APICID, stackBase);
 
-    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_CPUCount);
+    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC->count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -54,27 +54,15 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     while (1) asm volatile("hlt");
 }
 
-int smp_Setup(IPTR num)
+static int smp_Setup(void)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     /* Low memory header is in the tail of memory list - see kernel_startup.c */
     struct MemHeader *lowmem = (struct MemHeader *)SysBase->MemList.lh_TailPred;
-    UWORD *idmap;
-    IPTR *basemap;
     APTR smpboot;
     struct SMPBootstrap *bs;
 
-    D(bug("[SMP] Setup for %lu cores\n", num));
-
-    idmap = AllocMem(num * sizeof(UWORD), MEMF_CLEAR);
-    if (!idmap)
-    	return 0;
-
-    basemap = AllocMem(num * sizeof(IPTR), MEMF_CLEAR);
-    if (!basemap)
-    	return 0;
-
-    D(bug("[SMP] Allocated IDMap @ %p, BaseMap @ %p\n", idmap, basemap));
+    D(bug("[SMP] Setup\n"));
 
     /*
      * Allocate space for SMP bootstrap code in low memory. Its address must be page-aligned.
@@ -86,17 +74,6 @@ int smp_Setup(IPTR num)
     	D(bug("[SMP] Failed to allocate space for SMP bootstrap\n"));
     	return 0;
     }
-
-    /* Old maps have only one entry - for boot CPU */
-    idmap[0]   = pdata->kb_APIC_IDMap[0];
-    basemap[0] = pdata->kb_APIC_BaseMap[0];
-
-    /* Replace maps */
-    FreeMem(pdata->kb_APIC_IDMap, sizeof(UWORD));
-    FreeMem(pdata->kb_APIC_BaseMap, sizeof(IPTR));
-
-    pdata->kb_APIC_IDMap   = idmap;
-    pdata->kb_APIC_BaseMap = basemap;
 
     /* Install SMP bootstrap code */
     bs = (APTR)AROS_ROUNDUP2((IPTR)smpboot, PAGE_SIZE);
@@ -121,10 +98,11 @@ int smp_Setup(IPTR num)
 /*
  * Here we wake up our secondary cores.
  */
-int smp_Wake(void)
+static int smp_Wake(void)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct SMPBootstrap *bs = pdata->kb_APIC_TrampolineBase;
+    struct APICData *apic = pdata->kb_APIC;
     APTR _APICStackBase;
     IPTR wakeresult;
     UBYTE i;
@@ -133,10 +111,10 @@ int smp_Wake(void)
     D(bug("[SMP] Ready spinlock at 0x%p\n", &apicready));
 
     /* Core number 0 is our bootstrap core, so we start from No 1 */
-    for (i = 1; i < KernelBase->kb_CPUCount; i++)
+    for (i = 1; i < apic->count; i++)
     {
 	/* Less significant byte of our IDMap entry holds logical ID. */
-    	UBYTE apic_id = pdata->kb_APIC_IDMap[i];
+    	UBYTE apic_id = apic->IDMap[i];
 
     	D(bug("[SMP] Launching APIC %u (ID %u)\n", i, apic_id));
  
@@ -158,7 +136,7 @@ int smp_Wake(void)
 	apicready = 0;
 
 	/* Start IPI sequence */
-	wakeresult = core_APIC_Wake(bs, apic_id, __KernBootPrivate->_APICBase);
+	wakeresult = core_APIC_Wake(bs, apic_id, apic->lapicBase);
 	/* wakeresult != 0 means error */
 	if (!wakeresult)
 	{
@@ -179,5 +157,26 @@ int smp_Wake(void)
 
     D(bug("[SMP] Done\n"));
 
+    return 1;
+}
+
+int smp_Initialize(void)
+{
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+
+    if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
+    {
+    	if (!smp_Setup())
+    	{
+    	    D(bug("[SMP] Failed to prepare the environment!\n"));
+
+    	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
+    	    return 0;
+    	}
+    	    
+    	return smp_Wake();
+    }
+
+    /* This is not an SMP machine, but it's okay */
     return 1;
 }

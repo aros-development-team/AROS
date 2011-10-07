@@ -14,5 +14,4 @@ struct SMPBootstrap
     APTR  IP;		/* Address to jump to		   */
 };
 
-int smp_Setup(IPTR num);
-int smp_Wake(void);
+int smp_Initialize(void);
