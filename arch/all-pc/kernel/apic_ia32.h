@@ -54,6 +54,16 @@
 #define APIC_INTEGRATED(ver) (ver & 0x000000F0)
 #define APIC_LVT(ver)	     ((ver & APIC_LVT_MASK) >> APIC_LVT_SHIFT)
 
+/* LDR shift value */
+#define LDR_ID_SHIFT 24
+
+/* Destination format (interrupt model) */
+#define DFR_CLUSTER (0x0 << 28)
+#define DFR_FLAT    (0xF << 28)
+
+#define SVR_VEC_MASK 0xFF
+#define SVR_ASE	     (1 << 8)
+#define SVR_FCC	     (1 << 9)
 
 /* Error register */
 #define ERR_SAE (1 << 2) /* Sent accept error	     */
@@ -69,6 +79,20 @@
 #define ICR_DS		  0x1000	/* Delivery status flag				*/
 #define ICR_INT_LEVELTRIG 0x8000	/* Send level-triggered interrupt		*/
 #define ICR_INT_ASSERT    0x4000	/* Assert (set) or deassert (reset)		*/
+
+/* Local vector table entry fields */
+#define LVT_VEC_MASK   0x0000FF		/* Vector no				*/
+#define LVT_MT_MASK    0x000700		/* Message type				*/
+#define LVT_MT_FIXED   0x000000
+#define LVT_MT_SMI     0x000200
+#define LVT_MT_NMI     0x000400
+#define LVT_MT_EXT     0x000700
+#define LVT_DS	       0x001000		/* Delivery status bit 			*/
+#define LVT_ACTIVE_LOW 0x002000		/* Polarity flag (1 = low active)	*/
+#define LVT_RIR	       0x004000		/* Remote IRR				*/
+#define LVT_TGM_LEVEL  0x008000		/* Level-trigger mode			*/
+#define LVT_MASK       0x010000		/* Mask bit				*/
+#define LVT_TMM_PERIOD 0x020000		/* Periodic timer mode			*/
 
 /* Register access macro to make the code more readable */
 #define APIC_REG(base, reg) *((volatile ULONG *)(base + reg))

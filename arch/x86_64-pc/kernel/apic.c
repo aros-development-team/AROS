@@ -21,7 +21,7 @@ UBYTE core_APIC_GetNumber(struct KernelBase *KernelBase, IPTR __APICBase)
     UBYTE __APICLogicalID;
     UBYTE __APICNo;
 
-    __APICLogicalID = __KernBootPrivate->kbp_APIC_Driver->getid(__APICBase);
+    __APICLogicalID = core_APIC_GetID(__APICBase);
 
     for (__APICNo = 0; __APICNo < KernelBase->kb_CPUCount; __APICNo++)
     {

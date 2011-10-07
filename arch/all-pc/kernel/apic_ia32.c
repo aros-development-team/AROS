@@ -104,53 +104,34 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
                         Driver functions
  **********************************************************/
 
-static IPTR _APIC_IA32_probe(void)
-{
-    return 1; /* should be called last. */
-} 
-
-static IPTR _APIC_IA32_init(IPTR __APICBase)
+BOOL core_APIC_Init(IPTR __APICBase)
 {
     ULONG APIC_VAL;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
 
+#ifdef CONFIG_LEGACY
     /* 82489DX doesnt report no. of LVT entries. */
     if (!APIC_INTEGRATED(apic_ver))
     	maxlvt = 2;
+#endif
 
-    APIC_REG(__APICBase, APIC_DFR) = 0xFFFFFFFF; /* Put the APIC into flat delivery mode */
+    /* Use flat interrupt model with logical destination ID = 1 */
+    APIC_REG(__APICBase, APIC_DFR) = DFR_FLAT;
+    APIC_REG(__APICBase, APIC_LDR) = 1 << LDR_ID_SHIFT;
 
-    /* Set up the logical destination ID.  */
-    APIC_VAL = APIC_REG(__APICBase, APIC_LDR) & ~(0xFF<<24);
-    APIC_VAL |= (1 << 24);
-    APIC_REG(__APICBase, APIC_LDR) = APIC_VAL;
-    D(bug("[APIC] _APIC_IA32_init: APIC Logical Destination ID: %lx\n", APIC_VAL));
+    /* Set Task Priority to 'accept all interrupts' */
+    APIC_REG(__APICBase, APIC_TPR) = 0;
 
-    /* Set Task Priority to 'accept all' */
-    APIC_VAL = APIC_REG(__APICBase, APIC_TPR) & ~0xFF;
-    APIC_REG(__APICBase, APIC_TPR) = APIC_VAL;
+    /* Set spurious IRQ vector to 0xFF. APIC enabled, focus check disabled. */
+    APIC_REG(__APICBase, APIC_SVR) = SVR_ASE|SVR_FCC|0xFF;
 
-    D(bug("[APIC] _APIC_IA32_init: APIC TPR=%08x\n", APIC_REG(__APICBase, APIC_TPR)));
-    /* ??? What's 0x314 ??? */
-    D(bug("[APIC] _APIC_IA32_init: APIC ICR=%08x%08x\n", APIC_REG(__APICBase, 0x314), APIC_REG(__APICBase, APIC_ICRH)));
-
-    APIC_VAL = APIC_REG(__APICBase, APIC_SVR) & ~0xFF;
-    APIC_VAL |= (1 << 8); /* Enable APIC */
-    APIC_VAL |= (1 << 9); /* Disable focus processor (bit==1) */
-    APIC_VAL |= 0xFF; /* Set spurious IRQ vector */
-    APIC_REG(__APICBase, APIC_SVR) = APIC_VAL;
-    D(bug("[APIC] _APIC_IA32_init: APIC SVR=%08x\n", APIC_REG(__APICBase, APIC_SVR)));
-
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer divide=%08x\n", APIC_REG(__APICBase, APIC_TIMER_DIV)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", APIC_REG(__APICBase, APIC_TIMER_VEC)));
-
-    APIC_REG(__APICBase, APIC_LINT0_VEC) = 0x700;
-    /* only the BSP should see the LINT1 NMI signal.  */
-    APIC_REG(__APICBase, APIC_LINT1_VEC) = 0x400;
-
-    D(bug("[APIC] _APIC_IA32_init: APIC LVT0=%08x\n", APIC_REG(__APICBase, APIC_LINT0_VEC)));
-    D(bug("[APIC] _APIC_IA32_init: APIC LVT1=%08x\n", APIC_REG(__APICBase, APIC_LINT1_VEC)));
+    /*
+     * Set LINT0 to external and LINT1 to NMI.
+     * These are common defaults and they are going to be overriden by ACPI tables.
+     */
+    APIC_REG(__APICBase, APIC_LINT0_VEC) = LVT_MT_EXT;
+    APIC_REG(__APICBase, APIC_LINT1_VEC) = LVT_MT_NMI;
 
 #ifdef CONFIG_LEGACY
     /* Due to the Pentium erratum 3AP. */
@@ -159,14 +140,18 @@ static IPTR _APIC_IA32_init(IPTR __APICBase)
 #endif
 
     D(bug("[APIC] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
- 
-    APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe; /* Enable error sending, interrupt 0xFE */
+
+    /* Set APIC error interrupt to fixed vector 0xFE interrupt on APIC error */
+    APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe;
 
     /* spec says clear errors after enabling vector. */
     if (maxlvt > 3)
        	 APIC_REG(__APICBase, APIC_ESR) = 0;
 
     D(bug("[APIC] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
+
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer divide=%08x\n", APIC_REG(__APICBase, APIC_TIMER_DIV)));
+    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", APIC_REG(__APICBase, APIC_TIMER_VEC)));
 
 /*
     ULONG *localAPIC = (ULONG*)__APICBase + 0x320;
@@ -196,7 +181,7 @@ static IPTR _APIC_IA32_init(IPTR __APICBase)
     return TRUE;
 } 
 
-static IPTR _APIC_IA32_GetMSRAPICBase(void)
+IPTR core_APIC_GetBase(void)
 {
     IPTR _apic_base = 0;
 
@@ -217,7 +202,7 @@ static IPTR _APIC_IA32_GetMSRAPICBase(void)
     return _apic_base;
 }
 
-static IPTR _APIC_IA32_GetID(IPTR _APICBase)
+UBYTE core_APIC_GetID(IPTR _APICBase)
 {
     UBYTE _apic_id;
 
@@ -228,7 +213,7 @@ static IPTR _APIC_IA32_GetID(IPTR _APICBase)
     return _apic_id;
 }
 
-static void _APIC_IA32_Ack(UBYTE intnum)
+void core_APIC_AckIntr(void)
 {
     /* Write zero to EOI of current APIC */
     IPTR apic_base = rdmsri(MSR_LAPIC_BASE) & APIC_BASE_MASK;
@@ -236,7 +221,7 @@ static void _APIC_IA32_Ack(UBYTE intnum)
     APIC_REG(apic_base, APIC_EOI) = 0;
 }
 
-static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
+ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
 {
     ULONG status_ipisend, status_ipirecv;
     ULONG start_count;
@@ -374,16 +359,3 @@ static IPTR _APIC_IA32_wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __AP
      */
     return (status_ipisend | status_ipirecv);
 }
-
-/**********************************************************/
-
-const struct GenericAPIC apic_ia32_default =
-{
-    name        : "IA32 default",
-    probe       : (APTR)_APIC_IA32_probe,
-    getbase     : (APTR)_APIC_IA32_GetMSRAPICBase,
-    getid       : (APTR)_APIC_IA32_GetID,
-    wake        : (APTR)_APIC_IA32_wake,
-    init        : (APTR)_APIC_IA32_init,
-    ack		: (APTR)_APIC_IA32_Ack
-};

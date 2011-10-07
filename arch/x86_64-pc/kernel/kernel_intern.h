@@ -19,7 +19,6 @@
  */
 struct KernBootPrivate
 {
-    const struct GenericAPIC *kbp_APIC_Driver;	/* Probed APIC driver		       			*/
     IPTR		_APICBase;		/* Bootstrap APIC base address				*/
     UWORD               kbp_APIC_BSPID;		/* Bootstrap APIC logical ID				*/
     unsigned short	debug_y_resolution;	/* Parameters of screen's lower half ('vesahack' mode)	*/
@@ -58,9 +57,6 @@ void core_Kick(struct TagItem *msg, void *target);
 void kernel_cstart(const struct TagItem *msg);
 
 /** CPU Functions **/
-IPTR core_APICProbe(struct KernBootPrivate *);
-UBYTE core_APICGetTotal();
-UBYTE core_APICGetNumber();
 void core_SetupIDT(struct KernBootPrivate *);
 void core_SetupGDT(struct KernBootPrivate *);
 void core_SetupMMU(struct KernBootPrivate *);
