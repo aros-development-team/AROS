@@ -38,7 +38,8 @@ AROS_LH0(unsigned int, KrnGetCPUCount,
 {
     AROS_LIBFUNC_INIT
 
-    return KernelBase->kb_CPUCount;
+    /* The implementation of this function is architecture-specific */
+    return 1;
 
     AROS_LIBFUNC_EXIT
 }
