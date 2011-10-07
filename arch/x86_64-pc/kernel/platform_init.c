@@ -12,7 +12,6 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
-#include "acpi.h"
 #include "apic.h"
 #include "xtpic.h"
 
