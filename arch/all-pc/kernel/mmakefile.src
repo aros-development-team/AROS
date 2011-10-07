@@ -2,8 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FUNCS	 := displayalert
-FILES    := apic_driver xtpic cpu_traps kernel_memory _displayalert
-APICS    := apic_ia32
+FILES    := apic_ia32 xtpic cpu_traps kernel_memory _displayalert
 ASMFILES := cli sti
 
 MAINDIR	      := rom/kernel
@@ -19,6 +18,6 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc files="$(FILES) $(APICS)" asmfiles=$(ASMFILES)
+  arch=pc files="$(FILES)" asmfiles=$(ASMFILES)
 
 %common

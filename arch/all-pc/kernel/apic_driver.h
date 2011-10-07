@@ -6,15 +6,8 @@
     Lang: english
 */
 
-struct GenericAPIC
-{
-    const char *name;
-    IPTR      (*probe)(void);
-    IPTR      (*getbase)(void);
-    IPTR      (*getid)(IPTR base);
-    IPTR      (*wake)(APTR startrip, UBYTE apicid, IPTR base);
-    IPTR      (*init)(IPTR base);
-    void      (*ack)(UBYTE intnum);
-};
-
-const struct GenericAPIC *core_APIC_Probe(void);
+ULONG core_APIC_Wake(APTR start_addr, UBYTE id, IPTR base);
+IPTR  core_APIC_GetBase(void);
+UBYTE core_APIC_GetID(IPTR base);
+BOOL  core_APIC_Init(IPTR base);
+void  core_APIC_AckIntr(void);

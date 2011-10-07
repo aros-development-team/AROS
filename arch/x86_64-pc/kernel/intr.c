@@ -367,7 +367,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     	    switch (KernelBase->kb_Interrupts[irq_number].lh_Type)
     	    {
     	    case KBL_APIC:
-            	core_APIC_AckIntr(irq_number);
+            	core_APIC_AckIntr();
             	krnRunIRQHandlers(irq_number);
             	break;
 
