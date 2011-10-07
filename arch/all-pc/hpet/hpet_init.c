@@ -52,7 +52,6 @@ static const struct Hook enumHook =
 static int hpet_Init(struct HPETBase *base)
 {
     struct ACPIBase *ACPIBase;
-    ULONG count;
 
     ACPIBase = OpenResource("acpi.resource");
     if (!ACPIBase)
