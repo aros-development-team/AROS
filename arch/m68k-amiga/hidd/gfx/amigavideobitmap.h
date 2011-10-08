@@ -35,6 +35,8 @@ struct amigabm_data
     WORD topedge, leftedge;
     BOOL disp;
     WORD align;
+    WORD displaywidth;
+    WORD displayheight;
     /* pixel read/write cache */
     ULONG pixelcacheoffset;
     UBYTE pixelcache[32];
