@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2008 Neil Cafferkey
+Copyright (C) 2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@ MA 02111-1307, USA.
 
 #include <exec/types.h>
 #include <exec/resident.h>
-#include <utility/utility.h>
-
-#include <proto/exec.h>
+#include <aros/asmcall.h>
+#include <aros/libcall.h>
+#include "initializers.h"
 
 #include "device.h"
 
@@ -33,17 +33,34 @@ MA 02111-1307, USA.
 
 /* Private prototypes */
 
-static struct DevBase *MOSDevInit(struct DevBase *dev_base, APTR seg_list,
-   struct DevBase *base);
-static BYTE MOSDevOpen();
-static APTR MOSDevClose();
-static APTR MOSDevExpunge();
-static VOID MOSDevBeginIO();
-static VOID MOSDevAbortIO();
+AROS_LD2(struct DevBase *, AROSDevInit,
+   AROS_LDA(struct DevBase *, dev_base, D0),
+   AROS_LDA(struct DevBase *, seg_list, A0),
+   struct DevBase *, base, 0, S2);
+AROS_LD3(BYTE, AROSDevOpen,
+   AROS_LDA(struct IOSana2Req *, request, A1),
+   AROS_LDA(LONG, unit_num, D0),
+   AROS_LDA(ULONG, flags, D1),
+   struct DevBase *, base, 1, S2);
+AROS_LD1(APTR, AROSDevClose,
+   AROS_LDA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 2, S2);
+AROS_LD0(APTR, AROSDevExpunge,
+   struct DevBase *, base, 3, S2);
+AROS_LD0(APTR, AROSDevReserved,
+   struct DevBase *, base, 4, S2);
+AROS_LD1(VOID, AROSDevBeginIO,
+   AROS_LDA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 5, S2);
+AROS_LD1(VOID, AROSDevAbortIO,
+   AROS_LDA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 6, S2);
 static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size);
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size);
 static UBYTE *DMATXFunction(struct IOSana2Req *request);
-static BOOL MOSInt();
+AROS_UFP2(BOOL, AROSInt,
+   AROS_UFPA(APTR *, int_data, A1),
+   AROS_UFPA(APTR, this_code, A5));
 
 extern const APTR init_data;
 extern const struct Resident rom_tag;
@@ -51,98 +68,93 @@ extern const TEXT device_name[];
 extern const TEXT version_string[];
 
 
-static const TEXT openpci_name[] = "openpci.library";
-
-
-static const APTR mos_vectors[] =
+static const APTR vectors[] =
 {
-   (APTR)FUNCARRAY_32BIT_NATIVE,
-   (APTR)MOSDevOpen,
-   (APTR)MOSDevClose,
-   (APTR)MOSDevExpunge,
-   (APTR)DevReserved,
-   (APTR)MOSDevBeginIO,
-   (APTR)MOSDevAbortIO,
+   (APTR)AROS_SLIB_ENTRY(AROSDevOpen, S2, 1),
+   (APTR)AROS_SLIB_ENTRY(AROSDevClose, S2, 2),
+   (APTR)AROS_SLIB_ENTRY(AROSDevExpunge, S2, 3),
+   (APTR)AROS_SLIB_ENTRY(AROSDevReserved, S2, 4),
+   (APTR)AROS_SLIB_ENTRY(AROSDevBeginIO, S2, 5),
+   (APTR)AROS_SLIB_ENTRY(AROSDevAbortIO, S2, 6),
    (APTR)-1
 };
 
 
-static const APTR mos_init_table[] =
+static const APTR init_table[] =
 {
    (APTR)sizeof(struct DevBase),
-   (APTR)mos_vectors,
+   (APTR)vectors,
    (APTR)&init_data,
-   (APTR)MOSDevInit
+   (APTR)AROS_SLIB_ENTRY(AROSDevInit, S2, 0),
 };
 
 
-const struct Resident mos_rom_tag =
+const struct Resident aros_rom_tag =
 {
    RTC_MATCHWORD,
-   (struct Resident *)&mos_rom_tag,
+   (struct Resident *)&aros_rom_tag,
    (APTR)(&rom_tag + 1),
-   RTF_AUTOINIT | RTF_PPC,
+   RTF_AUTOINIT,
    VERSION,
    NT_DEVICE,
    0,
-   (STRPTR)device_name,
-   (STRPTR)version_string,
-   (APTR)mos_init_table
-};
-
-
-static const struct EmulLibEntry int_trap =
-{
-   TRAP_LIB,
-   0,
-   (APTR)MOSInt
+   (TEXT *)device_name,
+   (TEXT *)version_string,
+   (APTR)init_table
 };
 
 
 
-/****i* etherlink3.device/MOSDevInit ***************************************
+/****i* etherlink3.device/AROSDevInit **************************************
 *
 *   NAME
-*	MOSDevInit
+*       AROSDevInit
 *
 ****************************************************************************
 *
 */
 
-static struct DevBase *MOSDevInit(struct DevBase *dev_base, APTR seg_list,
-   struct DevBase *base)
+AROS_LH2(struct DevBase *, AROSDevInit,
+   AROS_LHA(struct DevBase *, dev_base, D0),
+   AROS_LHA(struct DevBase *, seg_list, A0),
+   struct DevBase *, base, 0, S2)
 {
+   AROS_LIBFUNC_INIT
+
    base = DevInit(dev_base, seg_list, base);
 
    if(base != NULL)
-   {
-      base->openpci_base = OpenLibrary(openpci_name, OPENPCI_VERSION);
-      base->wrapper_int_code = (APTR)&int_trap;
-   }
+      base->wrapper_int_code = (APTR)AROSInt;
    return base;
+
+   AROS_LIBFUNC_EXIT
 }
 
 
 
-/****i* etherlink3.device/MOSDevOpen ***************************************
+/****i* etherlink3.device/AROSDevOpen **************************************
 *
 *   NAME
-*	MOSDevOpen
+*       AROSDevOpen
 *
 ****************************************************************************
 *
 */
 
-static BYTE MOSDevOpen()
+AROS_LH3(BYTE, AROSDevOpen,
+   AROS_LHA(struct IOSana2Req *, request, A1),
+   AROS_LHA(LONG, unit_num, D0),
+   AROS_LHA(ULONG, flags, D1),
+   struct DevBase *, base, 1, S2)
 {
-   struct IOSana2Req *request;
+   AROS_LIBFUNC_INIT
+
    struct Opener *opener;
    BYTE error;
 
-   request = (APTR)REG_A1;
-   error = DevOpen(request, REG_D0, REG_D1, (APTR)REG_A6);
+   error = DevOpen(request, unit_num, flags, base);
 
-   /* Set up wrapper hooks to hide 68k emulation */
+   /* Set up wrapper hooks to hide register-call functions */
 
    if(error == 0)
    {
@@ -159,54 +171,90 @@ static BYTE MOSDevOpen()
    }
 
    return error;
+
+   AROS_LIBFUNC_EXIT
 }
 
 
 
-/****i* etherlink3.device/MOSDevClose **************************************
+/****i* etherlink3.device/AROSDevClose *************************************
 *
 *   NAME
-*	MOSDevClose
+*       AROSDevClose
 *
 ****************************************************************************
 *
 */
 
-static APTR MOSDevClose()
+AROS_LH1(APTR, AROSDevClose,
+   AROS_LHA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 2, S2)
 {
-   return DevClose((APTR)REG_A1, (APTR)REG_A6);
+   AROS_LIBFUNC_INIT
+
+   return DevClose(request, base);
+
+   AROS_LIBFUNC_EXIT
 }
 
 
 
-/****i* etherlink3.device/MOSDevExpunge ************************************
+/****i* etherlink3.device/AROSDevExpunge ***********************************
 *
 *   NAME
-*	MOSDevExpunge
+*       AROSDevExpunge
 *
 ****************************************************************************
 *
 */
 
-static APTR MOSDevExpunge()
+AROS_LH0(APTR, AROSDevExpunge,
+   struct DevBase *, base, 3, S2)
 {
-   return DevExpunge((APTR)REG_A6);
+   AROS_LIBFUNC_INIT
+
+   return DevExpunge(base);
+
+   AROS_LIBFUNC_EXIT
 }
 
 
 
-/****i* etherlink3.device/MOSDevBeginIO ************************************
+/****i* etherlink3.device/AROSDevReserved **********************************
 *
 *   NAME
-*	MOSDevBeginIO
+*       AROSDevReserved
 *
 ****************************************************************************
 *
 */
 
-static VOID MOSDevBeginIO()
+AROS_LH0(APTR, AROSDevReserved,
+   struct DevBase *, base, 4, S2)
 {
-   struct IOSana2Req *request = (APTR)REG_A1;
+   AROS_LIBFUNC_INIT
+
+   return DevReserved(base);
+
+   AROS_LIBFUNC_EXIT
+}
+
+
+
+/****i* etherlink3.device/AROSDevBeginIO ***********************************
+*
+*   NAME
+*       AROSDevBeginIO
+*
+****************************************************************************
+*
+*/
+
+AROS_LH1(VOID, AROSDevBeginIO,
+   AROS_LHA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 5, S2)
+{
+   AROS_LIBFUNC_INIT
 
    /* Replace caller's cookie with our own */
 
@@ -221,25 +269,31 @@ static VOID MOSDevBeginIO()
       request->ios2_Data = request;
    }
 
-   DevBeginIO(request, (APTR)REG_A6);
+   DevBeginIO(request, base);
 
-   return;
+   AROS_LIBFUNC_EXIT
 }
 
 
 
-/****i* etherlink3.device/MOSDevAbortIO ************************************
+/****i* etherlink3.device/AROSDevAbortIO ***********************************
 *
 *   NAME
-*	MOSDevAbortIO -- Try to stop a request.
+*       AROSDevAbortIO -- Try to stop a request.
 *
 ****************************************************************************
 *
 */
 
-static VOID MOSDevAbortIO()
+AROS_LH1(VOID, AROSDevAbortIO,
+   AROS_LHA(struct IOSana2Req *, request, A1),
+   struct DevBase *, base, 6, S2)
 {
-   DevAbortIO((APTR)REG_A1, (APTR)REG_A6);
+   AROS_LIBFUNC_INIT
+
+   DevAbortIO(request, base);
+
+   AROS_LIBFUNC_EXIT
 }
 
 
@@ -256,7 +310,6 @@ static VOID MOSDevAbortIO()
 static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
 {
    struct DevBase *base;
-   struct EmulCaos context;
    struct Opener *opener;
    APTR cookie;
 
@@ -265,11 +318,10 @@ static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
 
-   context.caos_Un.Function = (APTR)opener->real_rx_function;
-   context.reg_a0 = (ULONG)cookie;
-   context.reg_a1 = (ULONG)buffer;
-   context.reg_d0 = size;
-   return MyEmulHandle->EmulCall68k(&context);
+   return AROS_UFC3(BOOL, (APTR)opener->real_rx_function,
+      AROS_UFCA(APTR, cookie, A0),
+      AROS_UFCA(APTR, buffer, A1),
+      AROS_UFCA(ULONG, size, D0));
 }
 
 
@@ -286,7 +338,6 @@ static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
 {
    struct DevBase *base;
-   struct EmulCaos context;
    struct Opener *opener;
    APTR cookie;
 
@@ -295,11 +346,10 @@ static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
 
-   context.caos_Un.Function = (APTR)opener->real_tx_function;
-   context.reg_a0 = (ULONG)buffer;
-   context.reg_a1 = (ULONG)cookie;
-   context.reg_d0 = size;
-   return MyEmulHandle->EmulCall68k(&context);
+   return AROS_UFC3(BOOL, (APTR)opener->real_tx_function,
+      AROS_UFCA(APTR, buffer, A0),
+      AROS_UFCA(APTR, cookie, A1),
+      AROS_UFCA(ULONG, size, D0));
 }
 
 
@@ -316,7 +366,6 @@ static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
 static UBYTE *DMATXFunction(struct IOSana2Req *request)
 {
    struct DevBase *base;
-   struct EmulCaos context;
    struct Opener *opener;
    APTR cookie;
 
@@ -325,30 +374,33 @@ static UBYTE *DMATXFunction(struct IOSana2Req *request)
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
 
-   context.caos_Un.Function = (APTR)opener->real_dma_tx_function;
-   context.reg_a0 = (ULONG)cookie;
-   return (UBYTE *)MyEmulHandle->EmulCall68k(&context);
+   return AROS_UFC1(UBYTE *, (APTR)opener->real_dma_tx_function,
+      AROS_UFCA(APTR, cookie, A0));
 }
 
 
 
-/****i* etherlink3.device/MOSInt *******************************************
+/****i* etherlink3.device/AROSInt ******************************************
 *
 *   NAME
-*	MOSInt
+*	AROSInt
 *
 ****************************************************************************
 *
 */
 
-static BOOL MOSInt()
+AROS_UFH2(BOOL, AROSInt,
+   AROS_UFHA(APTR *, int_data, A1),
+   AROS_UFHA(APTR, this_code, A5))
 {
-   APTR *int_data;
+   AROS_USERFUNC_INIT
+
    BOOL (*int_code)(APTR, APTR);
 
-   int_data = (APTR)REG_A1;
    int_code = int_data[0];
    return int_code(int_data[1], int_code);
+
+   AROS_USERFUNC_EXIT
 }
 
 
