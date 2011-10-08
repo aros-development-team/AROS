@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2008 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -736,12 +736,16 @@ static VOID CardRemovedInt(REG(a1, struct BusContext *context),
    /* Record loss of card and get our task to call ReleaseCard() */
 
    unit = context->unit;
-   base = unit->device;
-   if((unit->flags & UNITF_ONLINE) != 0)
-      unit->flags |= UNITF_WASONLINE;
-   unit->flags &= ~(UNITF_HAVEADAPTER | UNITF_ONLINE);
+   if(unit != NULL)
+   {
+      base = unit->device;
+      if((unit->flags & UNITF_ONLINE) != 0)
+         unit->flags |= UNITF_WASONLINE;
+      unit->flags &= ~(UNITF_HAVEADAPTER | UNITF_ONLINE);
+   }
    context->have_card = FALSE;
-   Signal(unit->task, unit->card_removed_signal);
+   if(unit != NULL)
+      Signal(unit->task, unit->card_removed_signal);
 
    return;
 }
