@@ -124,14 +124,18 @@ static void setpalntsc(struct amigavideo_staticdata *data, ULONG modeid)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
-    if (!data->ecs_agnus)
+    data->palmode = (data->gfxbase->DisplayFlags & NTSC) == 0;
+    if (!data->ecs_agnus)	
     	return;
-    if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID)
+    if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID) {
  	custom->beamcon0 = 0x0020;
-    else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID)
+ 	data->palmode = TRUE;
+    } else if ((modeid & MONITOR_ID_MASK) == NTSC_MONITOR_ID) {
  	custom->beamcon0 = 0x0000;
-    else
+ 	data->palmode = FALSE;
+    } else {
     	custom->beamcon0 = (data->gfxbase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
+    }
 }
 
 void resetmode(struct amigavideo_staticdata *data)
@@ -162,6 +166,23 @@ void resetmode(struct amigavideo_staticdata *data)
     data->depth = 0;
 }
 
+/* Use nominal screen height. Overscan is not supported yet. */
+static WORD limitheight(struct amigavideo_staticdata *data, WORD y, BOOL maxlimit)
+{
+    if (data->palmode) {
+    	if (maxlimit && y > 311)
+    	    y = 311;
+    	else if (!maxlimit && y > 256)
+    	    y = 256;
+    } else {
+    	if (maxlimit && y > 261)
+    	    y = 261;
+    	else if (!maxlimit && y > 200)
+    	    y = 200;
+    }
+    return y;
+}
+
 static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct copper2data *c2d, BOOL odd)
 {
     UWORD *copptr = c2d->copper2_scroll, *copbpl;
@@ -185,9 +206,8 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     xdelay = x & (fmodewidth - 1);
     xscroll = -x;
     
-    yend = y + (bm->height >> data->interlace);
-    if (yend > 312)
-    	yend = 312;
+    yend = y + (bm->displayheight >> data->interlace);
+    yend = limitheight(data, yend, TRUE);
     ystart = y - data->extralines;
     	
     modulo = (data->interlace ? bm->bytesperrow : 0) + data->modulo;
@@ -229,9 +249,8 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     copptr[13] = modulo;
     copptr[15] = modulo;
 
-    yend = y + data->height + yscroll;
-    if (yend > 312)
-    	yend = 312;
+    yend = y + bm->displayheight + yscroll;
+    yend = limitheight(data, yend, TRUE);
     copptr = c2d->copper2_bplcon0;
     copptr[4] = (yend << 8) | 0x05;
     if (yend < 256 || ystart >= 256) {
@@ -490,6 +509,9 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->depth = bm->depth;
     setpalntsc(data, data->modeid);
     custom->bplcon0 = data->bplcon0_null;
+
+    bm->displaywidth = viewwidth;
+    bm->displayheight = limitheight(data, data->height, FALSE);
 
     data->mode = 1;
     while (data->mode);
