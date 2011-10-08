@@ -40,18 +40,18 @@ AROS_SLIB_ENTRY(SDivMod32,Utility,25):
     tst.l   %d1
     bpl.s   nisneg
     neg.l   %d1
-    bsr.s   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    jsr     AROS_SLIB_ENTRY(UDivMod32,Utility,26)
     neg.l   %d1
     rts
 nisneg:
-    bsr.s   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    jsr     AROS_SLIB_ENTRY(UDivMod32,Utility,26)
     neg.l   %d1
     neg.l   %d0
     rts
 nispos:
     tst.l   %d1
-    bpl.s   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    bpl.l   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
     neg.l   %d1
-    bsr.s   AROS_SLIB_ENTRY(UDivMod32,Utility,26)
+    jsr     AROS_SLIB_ENTRY(UDivMod32,Utility,26)
     neg.l   %d0
     rts

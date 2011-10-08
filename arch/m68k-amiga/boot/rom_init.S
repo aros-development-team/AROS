@@ -74,7 +74,7 @@ rom_init:
 	move.l	%a5,%a4	/* Space for CPU/FPU data array */
 	addq.l	#8,%a5
 	move.l	%a4,%a0
-	bsr		_cpu_detect
+	jsr	_cpu_detect
 	/* High word = gayle flag, low word = AttnFlags */
 	move.w	%a4@(2),%d6
 
