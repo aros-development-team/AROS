@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2008 Neil Cafferkey
+Copyright (C) 2001-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -161,7 +161,7 @@ struct DevUnit
    APTR card;
    BOOL (*insertion_function)(APTR, struct DevBase *);
    VOID (*removal_function)(APTR, struct DevBase *);
-   ULONG (*ByteIn)(APTR, UBYTE);
+   UBYTE (*ByteIn)(APTR, UBYTE);
    ULONG (*LongIn)(APTR, ULONG);
    VOID (*ByteOut)(APTR, ULONG, UBYTE);
    VOID (*WordOut)(APTR, ULONG, UWORD);
@@ -224,7 +224,7 @@ struct Opener
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__) || defined(__MORPHOS__)|| defined(__AROS__)
    const VOID *real_rx_function;
    const VOID *real_tx_function;
    const VOID *real_dma_tx_function;
