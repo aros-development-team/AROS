@@ -1,8 +1,10 @@
-CFLAGS = -O3 -Wall -Wno-uninitialized -Wno-parentheses -D__USE_INLINE__ -D__USE_BASETYPE__ -D__NOLIBBASE__ -D__NOGLOBALIFACE__
+CFLAGS = -O3 -Wall -Wno-uninitialized -Wno-parentheses \
+	-D__USE_INLINE__ -D__USE_BASETYPE__ -D__NOLIBBASE__ \
+	-D__NOGLOBALIFACE__
 CC = gcc $(CFLAGS)
 MAKEFILE = Makefile.OS4
 #LINKER = ld -e Main -s -lauto
-LINKER = gcc
+LINKER = gcc -nostdlib
 #AMIGA_LIB = -lamiga
 #C_LIB = -lauto
 

@@ -34,9 +34,9 @@ MA 02111-1307, USA.
 #include "io.h"
 
 #define DEVICE_NAME "etherlink3.device"
-#define VERSION 0
-#define REVISION 9
-#define DATE "5.7.2008"
+#define VERSION 1
+#define REVISION 1
+#define DATE "9.10.2011"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
@@ -275,9 +275,6 @@ struct AddressRange
 
 /* Library and device bases */
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
 #define SysBase (base->sys_base)
 #define CardResource (base->card_base)
 #define UtilityBase (base->utility_base)

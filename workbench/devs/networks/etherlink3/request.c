@@ -1199,7 +1199,7 @@ static BOOL CmdOnline(struct IOSana2Req *request, struct DevBase *base)
 
    /* Clear global and special stats and put adapter back online */
 
-   if((error == 0) && ((unit->flags & UNITF_ONLINE) == 0))
+   if(error == 0 && (unit->flags & UNITF_ONLINE) == 0)
    {
       unit->stats.PacketsReceived = 0;
       unit->stats.PacketsSent = 0;
