@@ -1,5 +1,4 @@
-FailAt 21
-boot/AROSBootstrap ROM boot/aros.elf.gz
+boot/AROSBootstrap ROM boot/aros.hunk.gz
 
 MakeDir RAM:ENV
 MakeDir RAM:T

@@ -216,13 +216,13 @@ DEPS		:= $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 
 BOOTDIR := $(BINDIR)/boot
 
-#MM- kernel-link-amiga-m68k: kernel-boot-elf-gz
-#MM- kernel-link-amiga-m68k-quick: kernel-boot-elf-gz-quick
+#MM- kernel-link-amiga-m68k: kernel-boot-elf
+#MM- kernel-link-amiga-m68k-quick: kernel-boot-elf-quick
 
-#MM kernel-boot-elf-gz:
-#MM kernel-boot-elf-gz-quick:
-kernel-boot-elf-gz: $(BOOTDIR)/aros.elf.gz
-kernel-boot-elf-gz-quick: $(BOOTDIR)/aros.elf.gz
+#MM kernel-boot-elf:
+#MM kernel-boot-elf-quick:
+kernel-boot-elf: $(BOOTDIR)/aros.elf
+kernel-boot-elf-quick: $(BOOTDIR)/aros.elf
 
 # Main ROM, that must live in MEMF_LOCAL memory
 
@@ -290,14 +290,11 @@ $(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.sr
 		-L$(LIBDIR) $(LIBS) -lgcc
 
 
-$(BOOTDIR)/aros.elf.gz: $(DISTDIR)/aros-amiga-m68k-ram.elf \
+$(BOOTDIR)/aros.elf: $(DISTDIR)/aros-amiga-m68k-ram.elf \
 	$(SRCDIR)/$(CURDIR)/mmakefile.src
-	$(Q)$(MKDIR) $(GENDIR)/$(CURDIR)
+	$(Q)$(MKDIR) $(BOOTDIR)
 	$(Q)$(TARGET_OBJCOPY) \
 	    --strip-unneeded \
-	    $< $(GENDIR)/$(CURDIR)/aros.elf
-	$(Q)$(MKDIR) $(BOOTDIR)
-	$(Q)gzip -c $(GENDIR)/$(CURDIR)/aros.elf >$@
-	$(Q)$(RM) -f $(GENDIR)/$(CURDIR)/aros.elf
+	    $< $@
 
 %common
