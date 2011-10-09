@@ -1,0 +1,22 @@
+# $Id: mmakefile.src $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/card \
+		 -I$(SRCDIR)/arch/all-$(ARCH)/card
+USER_INCLUDES += -I$(SRCDIR)/rom/card
+
+#MM kernel-card : includes kernel-card-$(ARCH)-$(CPU)
+
+FUNCTIONS := card_init
+# lowlevel task \
+#	owncard releasecard readcardstatus ifamigaxip getcardmap \
+#	begincardaccess endcardaccess cardresetremove \
+#	cardmiscontrol cardaccessspeed cardprogramvoltage \
+#	cardresetcard copytuple devicetuple cardforcechange \
+#	cardchangecount cardinterface
+
+%build_module mmake=kernel-cardres \
+    modname=cardres modtype=resource \
+    files="$(FUNCTIONS)"
+
+%common
