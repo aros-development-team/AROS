@@ -303,7 +303,7 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     size += sizeof(struct MemChunk) + sizeof(struct MemList);
     mem = AllocMem(size, flags);
     if (mem == NULL) {
-    	WriteF("AOS: Failed to allocate %N bytes of type %X4\n", size, flags);
+    	WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
     	return NULL;
     }
 
@@ -396,6 +396,7 @@ static AROS_UFH3(APTR, elfAlloc,
     APTR mem;
     struct MemList *ml;
 
+    D(WriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     /* Since we don't know if we need to wrap the memory
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
@@ -412,18 +413,23 @@ static AROS_UFH3(APTR, elfAlloc,
             flags |= MEMF_KICK;
         else {
             /* Ok, can't use MEMF_KICK.
-             * Fall back to MEMF_LOCAL.
+             * Hope and pray that MEMF_FAST is available
+             * after expansion.library is done.
              */
-            flags |= MEMF_LOCAL;
+            flags |= MEMF_FAST;
         }
     }
 
     /* Hmm. MEMF_LOCAL is only available on v36 and later.
      * Use MEMF_CHIP if we have to.
      */
-    if ((flags & MEMF_LOCAL) & (SysBase->LibNode.lib_Version < 36)) {
+    if ((flags & MEMF_LOCAL) && (SysBase->LibNode.lib_Version < 36)) {
     	flags &= ~MEMF_LOCAL;
     	flags |= MEMF_CHIP;
+    }
+
+    if ((flags & MEMF_31BIT) && (SysBase->LibNode.lib_Version < 36)) {
+    	flags &= ~MEMF_31BIT;
     }
 
     /* If ROM allocation, always allocate from top of memory if possible */
@@ -587,7 +593,7 @@ static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG
                 reslist = resnew;
                 *resleft = RESLIST_CHUNK - 1;
             }
-            WriteF("Resident structure found @%X8\n", r);
+            D(WriteF("Resident structure found @%X8\n", r));
             *(reslist++) = r;
             (*resleft)--;
         }
