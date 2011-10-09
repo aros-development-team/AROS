@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2006 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -393,6 +393,11 @@ static struct BusContext *AllocCard(ULONG index, struct DevBase *base)
 *
 *   NAME
 *	FreeCard -- Release a card
+*
+*   SYNOPSIS
+*	FreeCard(context)
+*
+*	VOID FreeCard(struct BusContext *);
 *
 ****************************************************************************
 *

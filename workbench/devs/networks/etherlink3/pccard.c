@@ -72,8 +72,8 @@ static VOID CardRemovedInt(REG(a1, struct BusContext *context),
    REG(a6, APTR int_code));
 static VOID CardInsertedInt(REG(a1, struct BusContext *context),
    REG(a6, APTR int_code));
-static UBYTE CardStatusInt(REG(d0, UBYTE mask),
-   REG(a1, struct BusContext *context), REG(a6, APTR int_code));
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask));
 static UBYTE ByteInHook(struct BusContext *context, ULONG offset);
 static ULONG LongInHook(struct BusContext *context, ULONG offset);
 static VOID ByteOutHook(struct BusContext *context, ULONG offset,
@@ -162,6 +162,7 @@ ULONG GetPCCardCount(struct DevBase *base)
 }
 
 
+
 /****i* etherlink3.device/GetPCCardUnit ************************************
 *
 *   NAME
@@ -200,7 +201,7 @@ struct DevUnit *GetPCCardUnit(ULONG index, struct DevBase *base)
 *	FindPCCardUnit -- Find a unit by number.
 *
 *   SYNOPSIS
-*	unit = FindPCCardUnit(unit_num)
+*	unit = FindPCCardUnit(index)
 *
 *	struct DevUnit *FindPCCardUnit(ULONG);
 *
@@ -333,6 +334,7 @@ VOID DeletePCCardUnit(struct DevUnit *unit, struct DevBase *base)
       UnwrapInt(&unit->status_int, base);
       context = unit->card;
       DeleteUnit(unit, base);
+      context->unit = NULL;
       FreeCard(context, base);
    }
 
@@ -719,9 +721,9 @@ static BOOL CardInsertedHook(struct BusContext *context,
 *	CardRemovedInt
 *
 *   SYNOPSIS
-*	CardRemovedInt(unit)
+*	CardRemovedInt(context, int_code)
 *
-*	VOID CardRemovedInt(struct DevUnit *);
+*	VOID CardRemovedInt(struct BusContext *, APTR);
 *
 ****************************************************************************
 *
@@ -758,9 +760,9 @@ static VOID CardRemovedInt(REG(a1, struct BusContext *context),
 *	CardInsertedInt
 *
 *   SYNOPSIS
-*	CardInsertedInt(unit)
+*	CardInsertedInt(context, int_code)
 *
-*	VOID CardInsertedInt(struct DevUnit *);
+*	VOID CardInsertedInt(struct BusContext *, APTR);
 *
 ****************************************************************************
 *
@@ -788,9 +790,9 @@ static VOID CardInsertedInt(REG(a1, struct BusContext *context),
 *	CardStatusInt
 *
 *   SYNOPSIS
-*	mask = CardStatusInt(mask, unit)
+*	mask = CardStatusInt(context, int_code, mask)
 *
-*	UBYTE CardStatusInt(UBYTE mask, struct DevUnit *);
+*	UBYTE CardStatusInt(struct BusContext *, APTR, UBYTE);
 *
 ****************************************************************************
 *
@@ -799,8 +801,8 @@ static VOID CardInsertedInt(REG(a1, struct BusContext *context),
 *
 */
 
-static UBYTE CardStatusInt(REG(d0, UBYTE mask),
-   REG(a1, struct BusContext *context), REG(a6, APTR int_code))
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask))
 {
    if(context->resource_version < 39)
    {

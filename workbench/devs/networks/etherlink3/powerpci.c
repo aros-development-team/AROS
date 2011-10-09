@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -164,9 +164,9 @@ VOID FreePowerPCICard(struct BusContext *context, struct DevBase *base)
 *	AddPowerPCIIntServer
 *
 *   SYNOPSIS
-*	context = AddPowerPCIIntServer(index)
+*	success = AddPowerPCIIntServer(card, interrupt)
 *
-*	struct BusContext *AddPowerPCIIntServer(ULONG);
+*	BOOL AddPowerPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -186,9 +186,9 @@ BOOL AddPowerPCIIntServer(APTR card, struct Interrupt *interrupt,
 *	RemPowerPCIIntServer
 *
 *   SYNOPSIS
-*	RemPowerPCIIntServer()
+*	RemPowerPCIIntServer(card, interrupt)
 *
-*	VOID RemPowerPCIIntServer(ULONG);
+*	VOID RemPowerPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *

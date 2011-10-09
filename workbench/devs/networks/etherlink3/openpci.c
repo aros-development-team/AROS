@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004-2008 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -167,9 +167,9 @@ VOID FreeOpenPCICard(struct BusContext *context, struct DevBase *base)
 *	AddOpenPCIIntServer
 *
 *   SYNOPSIS
-*	context = AddOpenPCIIntServer(index)
+*	success = AddOpenPCIIntServer(card, interrupt)
 *
-*	struct BusContext *AddOpenPCIIntServer(ULONG);
+*	BOOL AddOpenPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -189,9 +189,9 @@ BOOL AddOpenPCIIntServer(APTR card, struct Interrupt *interrupt,
 *	RemOpenPCIIntServer
 *
 *   SYNOPSIS
-*	RemOpenPCIIntServer()
+*	RemOpenPCIIntServer(card, interrupt)
 *
-*	VOID RemOpenPCIIntServer(ULONG);
+*	VOID RemOpenPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *

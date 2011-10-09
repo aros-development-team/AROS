@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -269,13 +269,7 @@ static struct DevUnit *CreatePCIUnit(ULONG index, struct DevBase *base)
    if(success)
    {
       if(context->unit_tags == NULL)
-      {
          context->unit_tags = unit_tags;
-      }
-   }
-
-   if(success)
-   {
       context->device = base;
       context->unit = unit = CreateUnit(index, context, context->unit_tags,
          context->generation, PCI_BUS, base);
@@ -442,9 +436,9 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
 *	AddPCIIntServer
 *
 *   SYNOPSIS
-*	context = AddPCIIntServer(index)
+*	success = AddPCIIntServer(card, interrupt)
 *
-*	struct BusContext *AddPCIIntServer(ULONG);
+*	BOOL AddPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -483,9 +477,9 @@ static BOOL AddPCIIntServer(APTR card, struct Interrupt *interrupt,
 *	RemPCIIntServer
 *
 *   SYNOPSIS
-*	RemPCIIntServer()
+*	RemPCIIntServer(card, interrupt)
 *
-*	VOID RemPCIIntServer(ULONG);
+*	VOID RemPCIIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *

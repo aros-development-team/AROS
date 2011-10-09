@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2004,2005 Neil Cafferkey
+Copyright (C) 2004-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -226,9 +226,9 @@ VOID FreeExpansionCard(struct BusContext *context, struct DevBase *base)
 *	AddExpansionIntServer
 *
 *   SYNOPSIS
-*	context = AddExpansionIntServer(index)
+*	success = AddExpansionIntServer(card, interrupt)
 *
-*	struct BusContext *AddExpansionIntServer(ULONG);
+*	BOOL AddExpansionIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *
@@ -249,9 +249,9 @@ BOOL AddExpansionIntServer(APTR card, struct Interrupt *interrupt,
 *	RemExpansionIntServer
 *
 *   SYNOPSIS
-*	RemExpansionIntServer()
+*	RemExpansionIntServer(card, interrupt)
 *
-*	VOID RemExpansionIntServer(ULONG);
+*	VOID RemExpansionIntServer(APTR, struct Interrupt *);
 *
 ****************************************************************************
 *

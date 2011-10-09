@@ -1,8 +1,6 @@
 /*
 
-File: startup.c
-Author: Neil Cafferkey
-Copyright (C) 2000 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -31,6 +29,15 @@ int main(void)
 {
    return Main();
 }
+
+
+
+#if defined(__mc68000__) && !defined(__AROS__)
+int __main(void)
+{
+   return 0;
+}
+#endif
 
 
 

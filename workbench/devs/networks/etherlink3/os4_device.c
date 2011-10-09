@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2008 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -439,8 +439,6 @@ static VOID OS4DevBeginIO(struct Interface *self,
 *
 ****************************************************************************
 *
-* Disable() used instead of a semaphore because device uses interrupts.
-*
 */
 
 static VOID OS4DevAbortIO(struct Interface *self,
@@ -589,10 +587,10 @@ static UBYTE *DMATXFunction(struct IOSana2Req *request)
 static ULONG OS4Int(struct ExceptionContext ex_context,
    struct ExecBase *sys_base, APTR *int_data)
 {
-   BOOL (*int_code)(APTR, APTR);
+   BOOL (*int_code)(APTR, APTR, UBYTE);
 
    int_code = int_data[0];
-   return int_code(int_data[1], int_code);
+   return int_code(int_data[1], int_code, 0x4);
 }
 
 
