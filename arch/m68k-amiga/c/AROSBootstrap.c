@@ -31,7 +31,11 @@
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
 
+#if defined(DEBUG) && DEBUG
 #define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode mungwall"
+#else
+#define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode"
+#endif
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
 #define NO_SYSBASE_REMAP
@@ -154,6 +158,19 @@ static ULONG RdArgs(BSTR format, BPTR args, ULONG max_arg)
     return doBCPL(BCPL_RdArgs, format, args, max_arg, 0, NULL, 0);
 }
 
+void meminfo(void)
+{
+    struct MemHeader *mh;
+    ForeachNode(&SysBase->MemList, mh) {
+        char bstr[256];
+        bstr[0] = strlen(mh->mh_Node.ln_Name) & 0xff;
+        strncpy(&bstr[1], mh->mh_Node.ln_Name, bstr[0]);
+        WriteF("@$%X8-$%X8 ATTR $%X4 FREE $%X8 (%S)\n",
+                mh->mh_Lower, mh->mh_Upper, mh->mh_Attributes,
+                mh->mh_Free, MKBADDR(bstr));
+    }
+}
+
 /* Allocate MMU page aligned memory chunks */
 
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
@@ -166,6 +183,7 @@ static APTR AllocPageAligned(ULONG *psize, ULONG flags)
     size = *psize;
     size += ALLOCPADDING;
     ret = AllocMem(size + 2 * PAGE_SIZE, flags);
+    D(WriteF("AllocPageAligned: $%X8, %X4 => %X8\n", size + 2 * PAGE_SIZE, flags, ret));
     if (ret == NULL)
     	return NULL;
     Forbid();
@@ -176,7 +194,7 @@ static APTR AllocPageAligned(ULONG *psize, ULONG flags)
     if (ret == NULL)
     	return NULL;
     *psize = size;
-     return ret;
+    return ret;
 }
 static void FreePageAligned(APTR addr, ULONG size)
 {
@@ -304,6 +322,7 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     mem = AllocMem(size, flags);
     if (mem == NULL) {
     	WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
+    	meminfo();
     	return NULL;
     }
 
@@ -401,21 +420,18 @@ static AROS_UFH3(APTR, elfAlloc,
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
      */
-     size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    size += sizeof(struct MemChunk) + sizeof(struct MemList);
 
     /* If it's MEMF_LOCAL or MEMF_CHIP, our Exec init
      * will automatically protect it from allocation after reset.
-     *
-     * Otherwise, we'll need to use a MEMF_KICK region.
      */
-    if (!(flags & MEMF_LOCAL)) {
-        if (SysBase->LibNode.lib_Version >= 39)
-            flags |= MEMF_KICK;
-        else {
+    if (flags & MEMF_KICK) {
+        if (SysBase->LibNode.lib_Version < 39) {
             /* Ok, can't use MEMF_KICK.
              * Hope and pray that MEMF_FAST is available
              * after expansion.library is done.
              */
+            flags &= ~MEMF_KICK;
             flags |= MEMF_FAST;
         }
     }
@@ -428,18 +444,22 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags |= MEMF_CHIP;
     }
 
-    if ((flags & MEMF_31BIT) && (SysBase->LibNode.lib_Version < 36)) {
+    /* MEMF_31BIT is not available on AOS */
+    if ((flags & MEMF_31BIT)) {
     	flags &= ~MEMF_31BIT;
     }
 
     /* If ROM allocation, always allocate from top of memory if possible */
-    if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36)
+    if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36) {
+        WriteF("Reverse alloc: %N\n", size);
     	flags |= MEMF_REVERSE;
+    }
 
-    D(WriteF("ELF: Attempt to allocate %N bytes of type %X4\n", size, flags));
+    D(WriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     mem = AllocPageAligned(&size, flags);
     if (mem == NULL) {
-    	D(WriteF("ELF: Failed to allocate %N bytes of type %X4\n", size, flags));
+    	D(WriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
+    	meminfo();
     	return NULL;
     }
     D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
@@ -988,7 +1008,9 @@ __startup static AROS_ENTRY(int, startup,
         WriteF("   : %S\n", args[1]);
         WriteF("   : %S\n", args[2]);
         WriteF("   : %S\n", args[3]);
+
 #endif
+        meminfo();
 
         if (!IoErr()) {
             /* Load ROM image */
