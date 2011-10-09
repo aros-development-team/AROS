@@ -45,6 +45,29 @@ typedef char *   STRPTR;
 #define TRUE (!FALSE)
 #endif
 
+/* Memory allocation flags */
+#define MEMF_ANY           0L
+#define MEMF_PUBLIC        (1L<<0)
+#define MEMF_CHIP          (1L<<1)
+#define MEMF_FAST          (1L<<2)
+#define MEMF_EXECUTABLE    (1L<<4)  /* AmigaOS v4 compatible */
+#define MEMF_LOCAL         (1L<<8)
+#define MEMF_24BITDMA      (1L<<9)
+#define MEMF_KICK          (1L<<10)
+#define MEMF_31BIT         (1L<<12) /* Low address space (<2GB). Effective only on 64 bit machines. */
+#define MEMF_CLEAR         (1L<<16) /* Explicitly clear memory after allocation */
+#define MEMF_LARGEST       (1L<<17)
+#define MEMF_REVERSE       (1L<<18)
+#define MEMF_TOTAL         (1L<<19)
+#define MEMF_HWALIGNED     (1L<<20) /* For AllocMem() - align address and size to physical page boundary */
+#define MEMF_SEM_PROTECTED (1L<<20) /* For CreatePool() - add semaphore protection to the pool */
+#define MEMF_NO_EXPUNGE    (1L<<31)
+
+#define HUNKF_ADVISORY     (1L<<29)
+#define HUNKF_CHIP         (1L<<30)
+#define HUNKF_FAST         (1L<<31)
+
+
 #define HUNK_CODE	1001
 #define HUNK_DATA	1002
 #define HUNK_BSS	1003
@@ -419,6 +442,7 @@ static int load_header(int file, struct elfheader *eh)
 
 struct hunkheader {
     ULONG type;
+    ULONG memflags; /* Memory flags */
     ULONG size;	/* Size in ULONGs */
     void *data;
     ULONG relocs;
@@ -695,9 +719,11 @@ static int copy_to(int in, int out)
 
 int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 {
+    const __attribute__((unused)) char *names[3]={ "CODE", "DATA", "BSS" };
     struct hunkheader **hh;
     struct elfheader  eh;
     struct sheader   *sh;
+    char *strtab;
     int symtab_shndx = -1;
     int err;
     ULONG  i;
@@ -723,7 +749,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         return EXIT_FAILURE;
 
     /* load section headers */
-    D(bug("Load Section Headers @0x%08x\n", (int)eh.shoff));
+    D(bug("Load %d Section Headers @0x%08x\n", int_shnum, (int)eh.shoff));
     if (!(sh = load_block(file, eh.shoff, int_shnum * eh.shentsize)))
         return EXIT_FAILURE;
 
@@ -734,6 +760,15 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
      */
     hh = calloc(sizeof(*hh), int_shnum);
 
+    /* Look for the string table */
+    D(bug("Look for string table\n"));
+    for (i = 0; i < int_shnum; i++) {
+        if (sh[i].type == SHT_STRTAB) {
+            strtab = load_block(file, sh[i].offset, sh[i].size);
+            break;
+        }
+    }
+ 
     /* Iterate over the section headers in order to do some stuff... */
     D(bug("Look for symbol tables\n"));
     for (i = 0; i < int_shnum; i++)
@@ -751,6 +786,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         {
             hh[i] = calloc(sizeof(struct hunkheader), 1);
             hh[i]->type = (sh[i].type == SHT_SYMTAB) ? HUNK_SYMBOL : 0;
+            hh[i]->memflags = 0;
             hh[i]->hunk = -1;
             hh[i]->data = load_block(file, sh[i].offset, sh[i].size);
             if (!hh[i]->data)
@@ -774,6 +810,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
             if (sh[i].type == SHT_NOBITS) {
             	/* BSS area */
             	hh[i]->type = HUNK_BSS;
+            	hh[i]->memflags = 0;
             	hh[i]->data = NULL;
             } else {
             	if (sh[i].flags & SHF_EXECINSTR) {
@@ -784,6 +821,24 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
             	}
             	hh[i]->data = load_block(file, sh[i].offset, sh[i].size);
 	    }
+
+            if (strtab) {
+                const char *nameext;
+
+                D(bug("section %s\n", strtab + sh[i].name));
+                nameext = strrchr(strtab + sh[i].name, '.');
+                if (nameext) {
+                    if (strcmp(nameext, ".MEMF_CHIP")==0) {
+                        hh[i]->memflags |= MEMF_CHIP;
+                    } else if (strcmp(nameext, ".MEMF_LOCAL")==0) {
+                        hh[i]->memflags |= MEMF_LOCAL;
+                    } else if (strcmp(nameext, ".MEMF_FAST")==0) {
+                        hh[i]->memflags |= MEMF_FAST;
+                    } else if (strcmp(nameext, ".MEMF_PUBLIC")==0) {
+                        hh[i]->memflags |= MEMF_PUBLIC;
+                    }
+                }
+            }
         }
     }
 
@@ -822,7 +877,7 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 
     /* Write all allocatable hunk sizes */
     for (i = 0; i < int_shnum; i++) {
-    	const __attribute__((unused)) char *names[3]={ "CODE", "DATA", "BSS" };
+
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
 
@@ -833,15 +888,35 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
     	int s;
+    	ULONG type;
 
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
 
+    	type = hh[i]->type;
+    	switch (hh[i]->memflags) {
+    	case MEMF_CHIP:
+    	    type |= HUNKF_CHIP;
+    	    break;
+    	case MEMF_FAST:
+    	    type |= HUNKF_FAST;
+    	    break;
+    	case 0:
+    	    break;
+    	default:
+    	    type |= HUNKF_ADVISORY;
+    	    break;
+    	}
+
+    	wlong(hunk_fd, type);
+    	wlong(hunk_fd, (hh[i]->size + 4) / 4);
+
+    	if (type & HUNKF_ADVISORY)
+    	    wlong(hunk_fd, hh[i]->memflags);
+
     	switch (hh[i]->type) {
     	case HUNK_BSS:
     	    D(bug("HUNK_BSS: %d longs\n", (int)((hh[i]->size + 4) / 4)));
-    	    wlong(hunk_fd, hh[i]->type);
-    	    wlong(hunk_fd, (hh[i]->size + 4) / 4);
 if (0) {
     	    for (s = 0; s < int_shnum; s++) {
     	    	if (hh[s] && hh[s]->type == HUNK_SYMBOL)
@@ -854,8 +929,6 @@ if (0) {
     	case HUNK_CODE:
     	case HUNK_DATA:
     	    D(bug("#%d HUNK_%s: %d longs\n", hh[i]->hunk, hh[i]->type == HUNK_CODE ? "CODE" : "DATA", (int)((hh[i]->size + 4) / 4)));
-    	    wlong(hunk_fd, hh[i]->type);
-    	    wlong(hunk_fd, (hh[i]->size + 4)/4);
     	    err = write(hunk_fd, hh[i]->data, ((hh[i]->size + 4)/4)*4);
     	    if (err < 0)
     	    	return EXIT_FAILURE;
@@ -887,6 +960,9 @@ if (0) {
     }
     free(hh);
     free(sh);
+
+    if (strtab)
+        free(strtab)
 
     D(bug("All good, all done.\n"));
     return EXIT_SUCCESS;
