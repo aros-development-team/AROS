@@ -11,7 +11,7 @@ include $(TOP)/config/make.cfg
 
 BOOT_FILES := \
     boot/AROSBootstrap \
-    boot/aros.elf.gz \
+    boot/aros.hunk.gz \
     C/Assign \
     C/Avail \
     C/Copy \
@@ -73,9 +73,17 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence:
 	@$(CP) $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot $@
 	@$(CHMOD) +x $@
 
+$(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot
+	@$(CP) $< $@
+	@$(CHMOD) +x $@
+
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	%mkdirs_q $(dir $@)
 	@$(ELF2HUNK) $< $@
+
+$(BOOT_DEST_DIR)/%.hunk.gz : $(BOOT_SRC_DIR)/%.elf
+	%mkdirs_q $(dir $@)
+	@$(ELF2HUNK) $< - | gzip -c - >$@
 
 $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU): $(SRCDIR)/$(CURDIR)/install.c
 	echo $(GENDIR)/$(CURDIR)
