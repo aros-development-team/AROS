@@ -8,7 +8,7 @@ SECTIONS
   .start.MEMF_LOCAL           : {
 INCLUDE ../../../bin/amiga-m68k/gen/start_objs.ld
                                 } >valid
-  .kick                       : { _kick_start = .;
+  .kick.MEMF_KICK             : { _kick_start = .;
 INCLUDE ../../../bin/amiga-m68k/gen/any_objs.ld
                                   _kick_end = .; 
                                 } >valid
@@ -19,6 +19,7 @@ INCLUDE ../../../bin/amiga-m68k/gen/local_objs.ld
                                   *(.eh_frame)
                                   _rom_end = .;   
                                   _ext_start = .;   
+                                  /* Intentionally empty */
                                   _ext_end = .;   
                                 } >valid
   /* SS, typically at 0x800-0x1000. Since MEMF_CHIP RAM starts at
