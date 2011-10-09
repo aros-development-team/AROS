@@ -12,6 +12,7 @@ include $(TOP)/config/make.cfg
 BOOT_FILES := \
     boot/AROSBootstrap \
     boot/aros.hunk.gz \
+    Disk.info \
     C/Assign \
     C/Avail \
     C/Copy \
@@ -80,6 +81,10 @@ $(BOOT_DEST_DIR)/S/Startup-Sequence: $(SRCDIR)/$(CURDIR)/Startup-Sequence.boot
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	%mkdirs_q $(dir $@)
 	@$(ELF2HUNK) $< $@
+
+$(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
+	%mkdirs_q $(dir $@)
+	@$(ILBMTOICON) --no-iff $^ $@
 
 $(BOOT_DEST_DIR)/%.hunk.gz : $(BOOT_SRC_DIR)/%.elf
 	%mkdirs_q $(dir $@)
