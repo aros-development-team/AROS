@@ -11,7 +11,7 @@
 AROS_LH2(LONG, CardProgramVoltage,
 	AROS_LHA(struct CardHandle*, handle, A1),
 	AROS_LHA(ULONG, voltage, D0),
-	struct CardResBase*, CardResBase, 10, Cardres)
+	struct CardResource*, CardResource, 10, Cardres)
 {
     AROS_LIBFUNC_INIT
 

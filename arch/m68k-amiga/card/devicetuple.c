@@ -13,7 +13,7 @@
 AROS_LH2(ULONG, DeviceTuple,
 	AROS_LHA(UBYTE*, tuple_data, A0),
 	AROS_LHA(struct DeviceTData*, storage, A1),
-	struct CardResBase*, CardResBase, 13, Cardres)
+	struct CardResource*, CardResource, 13, Cardres)
 {
     AROS_LIBFUNC_INIT
 
