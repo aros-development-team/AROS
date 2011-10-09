@@ -66,7 +66,9 @@ __startup static AROS_ENTRY(LONG, _entry,                       \
                                                                \
     if (!DOSBase)                                              \
     {                                                          \
-        SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);              \
+        /* Can't use SetIOErr(), since DOSBase is not open! */ \
+        ((struct Process *)FindTask(NULL))->pr_Result2 =       \
+                              ERROR_INVALID_RESIDENT_LIBRARY;  \
 	goto __exit;                                           \
     }                                                          \
 							       \
