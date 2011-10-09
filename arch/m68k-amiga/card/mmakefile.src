@@ -1,8 +1,6 @@
 # $Id: mmakefile.src $
 include $(TOP)/config/make.cfg
 
-#MM kernel-card : includes kernel-card-$(ARCH)-$(CPU)
-
 FUNCTIONS := card_init lowlevel task \
 	owncard releasecard readcardstatus ifamigaxip getcardmap \
 	begincardaccess endcardaccess cardresetremove \
@@ -10,8 +8,13 @@ FUNCTIONS := card_init lowlevel task \
 	cardresetcard copytuple devicetuple cardforcechange \
 	cardchangecount cardinterface
 
-%build_module mmake=kernel-cardres \
-    modname=cardres modtype=resource \
-    files="$(FUNCTIONS)"
+%build_archspecific \
+  mainmmake=kernel-cardres maindir=rom/card \
+  arch=amiga-m68k \
+  files="$(FUNCTIONS)"
+
+#%build_module mmake=kernel-cardres \
+#    modname=cardres modtype=resource \
+#    files="$(FUNCTIONS)"
 
 %common

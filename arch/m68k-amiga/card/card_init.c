@@ -89,9 +89,7 @@ static BOOL checkcard(struct CardResource *CardResource)
     return sysram;
 }
 
-#include LC_LIBDEFS_FILE
-
-static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
+static int Cardres_Init(struct CardResource *CardResource)
 {
     UBYTE gayle;
     struct CardMemoryMap *cmm;
@@ -175,4 +173,4 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR CardResource)
     return TRUE;
 }
 
-ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2INITLIB(Cardres_Init, 0)

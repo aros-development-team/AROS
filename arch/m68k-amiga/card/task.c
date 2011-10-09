@@ -97,6 +97,10 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 
     	CARDDEBUG(bug("PCMCIA changecnt=%d removed=%d\n", CardResource->changecount, status == FALSE));
 
+	CardResource->timerio->tr_time.tv_secs = 0;
+	CardResource->timerio->tr_time.tv_micro = 10000;
+	DoIO((struct IORequest*)CardResource->timerio);
+ 
 	Forbid();
 
 	SetSignal(0, CardResource->signalmask);
