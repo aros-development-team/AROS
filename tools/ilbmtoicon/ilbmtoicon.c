@@ -186,6 +186,8 @@ static LONG 	    	    transparentoption = -1;
 
 static BOOL		    dualpng; /* png file contains second image */
 static unsigned char	    *dualpngstart; /* address of 2nd image in filebuffer */
+static BOOL		    nosavePNG; /* Don't save the original PNG data */
+static BOOL		    nosaveIFF; /* Don't save any IFF data */
 
 /****************************************************************************************/
 
@@ -238,6 +240,18 @@ static void cleanup(char *msg, int rc)
 static void getarguments(int argc, char **argv)
 {
     WORD i;
+
+    for (; argc > 1 && argv[1][0] == '-'; argc--, argv++) {
+        if (strcmp(argv[1],"--no-png") == 0) {
+            nosavePNG = 1;
+            continue;
+        }
+        if (strcmp(argv[1],"--no-iff") == 0) {
+            nosaveIFF = 1;
+            continue;
+        }
+    }
+
     
     if ((argc != 4) && (argc != 5))
     {
@@ -1861,6 +1875,9 @@ static void write35data(void)
     LONG formsize = 4;
     LONG formsizeseek;
 
+    if (nosaveIFF)
+        return;
+
     writelong(ID_FORM);
     formsizeseek = ftell(outfile);
     writelong(0x12345678);
@@ -1870,7 +1887,7 @@ static void write35data(void)
     formsize += writeimagchunk(&img1);
     if (image2option) formsize += writeimagchunk(&img2);
 
-    if (img1.png) {
+    if (!nosavePNG && img1.png) {
         writelong(ID_PNG);
         writelong(img1.png_size);
         fwrite(img1.png, 1, img1.png_size, outfile);
@@ -1882,7 +1899,7 @@ static void write35data(void)
         formsize += 8 + img1.png_size;
     }
 
-    if (img2.png) {
+    if (!nosavePNG && img2.png) {
         writelong(ID_PNG);
         writelong(img2.png_size);
         fwrite(img2.png, 1, img2.png_size, outfile);
