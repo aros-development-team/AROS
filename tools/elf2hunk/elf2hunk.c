@@ -832,10 +832,10 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
                         hh[i]->memflags |= MEMF_CHIP;
                     } else if (strcmp(nameext, ".MEMF_LOCAL")==0) {
                         hh[i]->memflags |= MEMF_LOCAL;
+                    } else if (strcmp(nameext, ".MEMF_KICK")==0) {
+                        hh[i]->memflags |= MEMF_KICK;
                     } else if (strcmp(nameext, ".MEMF_FAST")==0) {
                         hh[i]->memflags |= MEMF_FAST;
-                    } else if (strcmp(nameext, ".MEMF_PUBLIC")==0) {
-                        hh[i]->memflags |= MEMF_PUBLIC;
                     }
                 }
             }
@@ -877,42 +877,42 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
 
     /* Write all allocatable hunk sizes */
     for (i = 0; i < int_shnum; i++) {
+        ULONG count;
 
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
 
+    	count = (hh[i]->size + 4) / 4;
+    	switch (hh[i]->memflags) {
+    	case MEMF_CHIP:
+    	    count |= HUNKF_CHIP;
+    	    break;
+    	case MEMF_FAST:
+    	    count |= HUNKF_FAST;
+    	    break;
+    	case 0:
+    	    break;
+    	default:
+    	    count |= HUNKF_ADVISORY;
+    	    break;
+    	}
+
     	D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(hh[i]->size+4)/4));
-    	wlong(hunk_fd, (hh[i]->size + 4) / 4);
+    	wlong(hunk_fd, count);
+
+    	if (count & HUNKF_ADVISORY)
+    	    wlong(hunk_fd, hh[i]->memflags | MEMF_PUBLIC | MEMF_CLEAR);
     }
 
     /* Write all hunks */
     for (i = hunks = 0; i < int_shnum; i++) {
     	int s;
-    	ULONG type;
 
     	if (hh[i]==NULL || hh[i]->hunk < 0)
     	    continue;
 
-    	type = hh[i]->type;
-    	switch (hh[i]->memflags) {
-    	case MEMF_CHIP:
-    	    type |= HUNKF_CHIP;
-    	    break;
-    	case MEMF_FAST:
-    	    type |= HUNKF_FAST;
-    	    break;
-    	case 0:
-    	    break;
-    	default:
-    	    type |= HUNKF_ADVISORY;
-    	    break;
-    	}
-
-    	wlong(hunk_fd, type);
+    	wlong(hunk_fd, hh[i]->type);
     	wlong(hunk_fd, (hh[i]->size + 4) / 4);
-
-    	if (type & HUNKF_ADVISORY)
-    	    wlong(hunk_fd, hh[i]->memflags);
 
     	switch (hh[i]->type) {
     	case HUNK_BSS:
@@ -962,7 +962,7 @@ if (0) {
     free(sh);
 
     if (strtab)
-        free(strtab)
+        free(strtab);
 
     D(bug("All good, all done.\n"));
     return EXIT_SUCCESS;
