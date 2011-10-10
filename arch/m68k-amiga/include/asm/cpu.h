@@ -22,5 +22,6 @@
 #define INSTALL_TRAP_HANDLER(vectoraddress, routineaddress) \
 	*(ULONG *)vectoraddress = (ULONG)routineaddress
 
+#define HALT asm volatile("stop #0x2700");
 
 #endif
