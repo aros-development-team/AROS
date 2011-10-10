@@ -819,7 +819,9 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    	"or.b	#2,0xbfe001\n"
 	    	"move.l %0,%%usp\n"
 	    	"move.w #0,%%sr\n"
+	    	"pea.l 0f\n"
 	    	"jmp %1@\n"
+	    	"0:\n"
 	    	:
 	    	: "a" (&usp[size-3]),
 	    	  "a" (doInitCode)
