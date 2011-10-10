@@ -55,7 +55,6 @@
     BOOL ret;
     int i, j;
     const ULONG bflags = BMF_CLEAR;
-
     ni = GetNativeIcon(icon, LB(IconBase));
     if (!ni)
         return TRUE;
@@ -131,8 +130,8 @@
             { OBP_FailIfBad, FALSE },
             { TAG_MORE, (IPTR)tags },
         };
-        CONST UBYTE *idata;
-        ULONG x,y;
+        UBYTE *idata;
+        ULONG x;
 
         /* This should have been loaded earlier */
         if (!image->ImageData)
@@ -169,22 +168,29 @@
             image->Pen[j] = (UBYTE)pen;
         }
 
-        /* Draw the normal state
-         * We *could* allocate a new ImageData, remap its
-         * contents to the new Pen mapping, and then use
-         * WriteChunkyPixels() to send it to the bitmap..
-         * .. but this method has one less memory allocation
-         * that could fail.
+        /* Draw the selected state into the screen's pens
+         *
+         * We take the risk of yet another memory allocation
+         * so that we can use WriteChunkyPixels(), which is
+         * GOBS faster than WritePixel().
          */
+        idata = AllocVec(ni->ni_Height * ni->ni_Width, MEMF_ANY);
+        if (idata == NULL) {
+            FreeBitMap(image->BitMap);
+            image->BitMap = NULL;
+            SetIoErr(ERROR_NO_FREE_STORE);
+            ret = FALSE;
+            goto exit;
+        }
+        CopyMem(image->ImageData, idata, ni->ni_Height * ni->ni_Width);
+        for (x = 0; x < (ni->ni_Height * ni->ni_Width); x++) {
+            idata[x] = image->Pen[image->ImageData[x]];
+        }
         InitRastPort(&rp);
         rp.BitMap = image->BitMap;
-        idata = image->ImageData;
-        for (y = 0; y < ni->ni_Height; y++) {
-            for (x = 0; x < ni->ni_Width; x++, idata++) {
-                SetAPen(&rp, image->Pen[*idata]);
-                WritePixel(&rp, x, y);
-            }
-        }
+        WriteChunkyPixels(&rp, 0, 0, ni->ni_Width - 1, ni->ni_Height - 1,
+                          idata, ni->ni_Width);
+        FreeVec(idata);
 
         /* Synthesize a bitmask for transparentcolor icons */
         if (image->TransparentColor >= 0) {
