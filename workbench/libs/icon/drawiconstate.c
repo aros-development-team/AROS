@@ -221,14 +221,17 @@
     SetBPen(rp, Pens[BACKGROUNDPEN]);
     if (selected && icon->do_Gadget.SelectRender)
     {
-        D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.SelectRender));
-        DrawImage
-        (
-            rp, (struct Image *)icon->do_Gadget.SelectRender,
-            leftEdge, topEdge
-        );
+        if (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)
+        {
+            D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.SelectRender));
+            DrawImage
+            (
+                rp, (struct Image *)icon->do_Gadget.SelectRender,
+                leftEdge, topEdge
+            );
 
-        goto emboss;
+            goto emboss;
+        }
     }
     else if (icon->do_Gadget.GadgetRender)
     {
