@@ -468,18 +468,9 @@ static AROS_UFH3(APTR, elfAlloc,
     ml->ml_ME[0].me_Addr = (APTR)mem;
     ml->ml_ME[0].me_Length = size;
 
-    /* If we're loading the ROM, it will automatically protect
-     * memory in the MEMF_CHIP and MEMF_LOCAL regions.
-     */
-    if (ROM_Loaded || ((TypeOfMem(mem) & (MEMF_CHIP | MEMF_LOCAL)) == 0)) {
-        AddTail(&mlist, (struct Node*)ml);
-        D(WriteF("ELF: Got KICK memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
-    } else {
-        /* Dummy node, so that we can unconditionally call Remove() on it */
-        ml->ml_Node.ln_Pred = &ml->ml_Node;
-        ml->ml_Node.ln_Succ = &ml->ml_Node;
-        D(WriteF("ELF: Got LOCAL memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
-    }
+    /* Add to the KickMem list */
+    AddTail(&mlist, (struct Node*)ml);
+    D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
 
     return &ml[1];
 
