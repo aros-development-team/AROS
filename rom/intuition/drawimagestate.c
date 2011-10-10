@@ -213,7 +213,7 @@
                                   rp,
                                   leftOffset + image->LeftEdge, topOffset + image->TopEdge,
                                   image->Width, image->Height,
-                                  0xC0);
+                                  (state == IDS_SELECTED) ? 0x30 : 0xC0);
             }
 
     	#else
