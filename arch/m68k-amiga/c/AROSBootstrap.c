@@ -65,6 +65,7 @@ static inline void bug(const char *fmt, ...)
 struct DosLibrary *DOSBase;
 
 static BOOL ROM_Loaded = FALSE;
+static BOOL forceFAST = FALSE;
 static struct List mlist;
 
 /* KS 1.3 (and earlier) don't have a dos.library with
@@ -428,11 +429,14 @@ static AROS_UFH3(APTR, elfAlloc,
     if (flags & MEMF_KICK) {
         if (SysBase->LibNode.lib_Version < 39) {
             /* Ok, can't use MEMF_KICK.
-             * Hope and pray that MEMF_FAST is available
-             * after expansion.library is done.
+             * We are forced to use MEMF_CHIP, unless
+             * the user has specified FORCEFAST
              */
-            flags &= ~MEMF_KICK;
-            flags |= MEMF_FAST;
+            flags &= ~(MEMF_KICK | MEMF_CHIP | MEMF_FAST);
+            if (forceFAST)
+                flags |= MEMF_FAST;
+            else
+                flags |= MEMF_CHIP;
         }
     }
 
@@ -986,15 +990,15 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCEFAST = 18, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
     	 * So only 16 modules are supported
     	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K");
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCEFAST/S");
     	/* Make sure the args are in .bss, not stack */
-    	static ULONG args[16 + 2 + 256] __attribute__((aligned(4))) = { };
+    	static ULONG args[16 + 3 + 256] __attribute__((aligned(4))) = { };
 
     	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
@@ -1003,12 +1007,14 @@ __startup static AROS_ENTRY(int, startup,
 #if DEBUG
         WriteF("ROM: %S\n", args[ARG_ROM]);
         WriteF("CMD: %S\n", args[ARG_CMD]);
+        WriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
         WriteF("MOD: %S\n", args[0]);
         WriteF("   : %S\n", args[1]);
         WriteF("   : %S\n", args[2]);
         WriteF("   : %S\n", args[3]);
 
 #endif
+        forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
         meminfo();
 
         if (!IoErr()) {
