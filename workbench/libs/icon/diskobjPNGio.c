@@ -251,7 +251,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 	
 	DO(icon)->do_Magic    	    = WB_DISKMAGIC;
 	DO(icon)->do_Version  	    = (WB_DISKVERSION << 8) | WB_DISKREVISION;
-	DO(icon)->do_Type     	    = WBPROJECT;
+	DO(icon)->do_Type     	    = 0;  /* Invalid */
 	DO(icon)->do_CurrentX 	    = NO_ICON_POSITION;
 	DO(icon)->do_CurrentY 	    = NO_ICON_POSITION;
 	DO(icon)->do_Gadget.Width   = width;
