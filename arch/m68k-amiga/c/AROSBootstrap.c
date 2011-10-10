@@ -451,7 +451,6 @@ static AROS_UFH3(APTR, elfAlloc,
 
     /* If ROM allocation, always allocate from top of memory if possible */
     if ((flags & MEMF_PUBLIC) && SysBase->LibNode.lib_Version >= 36) {
-        WriteF("Reverse alloc: %N\n", size);
     	flags |= MEMF_REVERSE;
     }
 
