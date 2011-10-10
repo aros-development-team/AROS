@@ -237,12 +237,19 @@
     {
         if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
         {
-            D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.GadgetRender));
-            DrawImage
+            struct Image img = *(struct Image *)icon->do_Gadget.GadgetRender;
+
+            D(bug("[%s] Gadget Image 0x%p%s\n", __func__, icon->do_Gadget.GadgetRender, selected ? " (selected)" : ""));
+
+            DrawImageState
             (
-                rp, (struct Image *) icon->do_Gadget.GadgetRender,
-                leftEdge, topEdge
+                rp, &img,
+                leftEdge, topEdge,
+                selected ? IDS_SELECTED : IDS_NORMAL,
+                NULL
             );
+
+            /* Invert if selected */
             goto emboss;
         }
     }
