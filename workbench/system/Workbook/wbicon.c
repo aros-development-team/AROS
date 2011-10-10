@@ -49,13 +49,10 @@ void wbIcon_Update(Class *cl, Object *obj)
     struct wbIcon *my = INST_DATA(cl, obj);
     struct Rectangle rect;
     UWORD w,h;
-    struct RastPort rp;
 
     /* Update the parent's idea of how big we are
      */
-    InitRastPort(&rp);
-    GetIconRectangleA(&rp, my->Icon, (STRPTR)my->Label, &rect, (struct TagItem *)wbIcon_DrawTags);
-    DeinitRastPort(&rp);
+    GetIconRectangleA(my->Screen->RastPort, my->Icon, (STRPTR)my->Label, &rect, (struct TagItem *)wbIcon_DrawTags);
 
     w = (rect.MaxX - rect.MinX) + 1;
     h = (rect.MaxY - rect.MinY) + 1;

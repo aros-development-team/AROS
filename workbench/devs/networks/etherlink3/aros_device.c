@@ -310,11 +310,9 @@ AROS_LH1(VOID, AROSDevAbortIO,
 
 static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
 {
-   struct DevBase *base;
    struct Opener *opener;
    APTR cookie;
 
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    opener = request->ios2_BufferManagement;
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
@@ -338,11 +336,9 @@ static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size)
 
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
 {
-   struct DevBase *base;
    struct Opener *opener;
    APTR cookie;
 
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    opener = request->ios2_BufferManagement;
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
@@ -366,11 +362,9 @@ static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size)
 
 static UBYTE *DMATXFunction(struct IOSana2Req *request)
 {
-   struct DevBase *base;
    struct Opener *opener;
    APTR cookie;
 
-   base = (struct DevBase *)request->ios2_Req.io_Device;
    opener = request->ios2_BufferManagement;
    cookie = request->ios2_StatData;
    request->ios2_Data = cookie;
