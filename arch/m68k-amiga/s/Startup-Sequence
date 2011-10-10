@@ -66,11 +66,11 @@ EndIf
 
 AddDatatypes REFRESH QUIET
 IPrefs
-Run <NIL: >NIL: ConClip
+Run >NIL: QUIET ConClip
 
 If EXISTS C:RexxMast
     Assign REXX: S:
-    Run <NIL: >NIL: C:RexxMast
+    Run >NIL: QUIET C:RexxMast
 EndIf
 
 Assign EXISTS Extras: >NIL:
