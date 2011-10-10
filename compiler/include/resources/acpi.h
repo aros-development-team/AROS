@@ -238,10 +238,18 @@ enum ACPI_MADT_TYPES
 
 typedef struct 
 {
-    UWORD			            polarity:2;
-    UWORD			            trigger:2;
-    UWORD			            reserved:12;
+    UWORD polarity:2;	/* See below */
+    UWORD trigger:2;	/* See below */
+    UWORD reserved:12;
 }  ACPI_INT_FLAGS;
+
+/* Polarity and trigger mode values */
+#define INTF_POLARITY_BUS  0	/* Bus default	*/
+#define INTF_POLARITY_HIGH 1	/* Active high	*/
+#define INTF_POLARITY_LOW  3	/* Active low	*/
+#define INTF_TRIGGER_BUS   0	/* Bus default	*/
+#define INTF_TRIGGER_EDGE  1
+#define INTF_TRIGGER_LEVEL 3
 
 struct ACPI_TABLE_TYPE_LAPIC 
 {
