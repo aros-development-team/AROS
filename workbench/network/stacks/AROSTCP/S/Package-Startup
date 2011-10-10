@@ -9,11 +9,11 @@ Protect S/stopnet s add quiet
 if ${AROSTCP/AutoRun} eq "True"
 
 if ${AROSTCP/WirelessAutoRun} eq "True"
-  Run <NIL: >NIL: C:WirelessManager ${AROSTCP/WirelessDevice}
+  Run >NIL: QUIET C:WirelessManager ${AROSTCP/WirelessDevice}
 EndIf
 
 if ${AROSTCP/MobileAutorun} eq "True"
-  Run <NIL: >NIL: C:ModemManager
+  Run >NIL: QUIET C:ModemManager
 EndIf
 
   C:Execute S/startnet
