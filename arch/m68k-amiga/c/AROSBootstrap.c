@@ -829,6 +829,7 @@ static void doreboot(void)
 	"sub.l %a0@(-0x14),%a0\n"
 	"move.l %a0@(4),%a0\n"
 	"subq.l #2,%a0\n"
+	".balign 8\n"   /* Workaround for E-UAE emulation bug */
 	"reset\n"
 	"jmp (%a0)\n"
     );
