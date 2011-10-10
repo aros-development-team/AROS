@@ -968,10 +968,18 @@ __startup static AROS_ENTRY(int, startup,
 {
     AROS_USERFUNC_INIT
 
+    APTR lowmem;
+
     /* See if we're already running on AROS.
      */
     if (OpenResource("kernel.resource"))
     	return RETURN_OK;
+
+    /* Allocate some low MEMF_CHIP ram, as a buffer
+     * against overlapping allocations with the initial
+     * stack.
+     */
+    lowmem = AllocMem(4096, MEMF_CHIP);
     	
     NEWLIST(&mlist);
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
@@ -1040,9 +1048,9 @@ __startup static AROS_ENTRY(int, startup,
     	CloseLibrary((APTR)DOSBase);
     }
 
+    FreeMem(lowmem, 4096);
+
     return IoErr();
 
     AROS_USERFUNC_EXIT
 }
-
-
