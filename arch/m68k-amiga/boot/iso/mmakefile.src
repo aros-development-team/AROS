@@ -10,11 +10,16 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
 #MM			kernel-oop  \
 #MM			kernel-package-amiga-m68k	\
 #MM			kernel-bootstrap-amiga-m68k	\
-#MM			AROS-amiga-m68k-drivers	
+#MM			AROS-amiga-m68k-drivers \
+#MM			bootdisk-amiga-m68k
 
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
 
+$(AROSDIR)/Emergency-Boot.adf: $(DISTDIR)/bootdisk-amiga-m68k.adf
+		@$(CP) $< $@
+
+#MM
 bootiso-amiga-m68k: $(TARGET_ISO)
 
 #MM
@@ -24,7 +29,7 @@ bootiso-amiga-m68k-quick: $(TARGET_ISO)
 
 $(warning LANG = $(LANG))
 
-$(TARGET_ISO): $(AROSDIR)/.backdrop
+$(TARGET_ISO): $(AROSDIR)/.backdrop $(AROSDIR)/Emergency-Boot.adf
 	%mkdirs_q $(AROSDIR)/S
 	@$(MKDIR) -p "$(DISTDIR)"
 	@$(MKDIR) -p "$(AROSDIR).HUNK"

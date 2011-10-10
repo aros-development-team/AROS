@@ -45,7 +45,7 @@ BOOT_FILES := \
     S/Startup-Sequence
 
 BOOT_SRC_DIR  := $(AROSDIR)
-BOOT_DEST_DIR := $(OSGENDIR)/boot/bootdisk
+BOOT_DEST_DIR := $(AROSDIR)/Emergency-Boot
 
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
@@ -85,6 +85,7 @@ $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 $(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
 	%mkdirs_q $(dir $@)
 	@$(ILBMTOICON) --no-iff $^ $@
+	@$(CP) $@ $(BOOT_DEST_DIR).info
 
 $(BOOT_DEST_DIR)/%.hunk.gz : $(BOOT_SRC_DIR)/%.elf
 	%mkdirs_q $(dir $@)
