@@ -179,7 +179,6 @@ static const UBYTE tool_data_2[] =
 struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
 {
     struct DiskObject  temp = { 0 };
-    struct DrawerData  dd   = { { 0 }, 0 };
     struct Image       img1 = { 0 };
     struct Image       img2 = { 0 };
     struct Image      *gad,*sel;
@@ -211,17 +210,8 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     img2.Height    = ICON_HEIGHT;
     img2.PlanePick  = (1 << ICON_DEPTH) - 1;
     img2.PlaneOnOff = (1 << ICON_DEPTH) - 1;
-            
-    switch (type)
-    {
-        case WBDISK:
-            temp.do_DrawerData =           &dd;
-            break;
-        
-        case WBDRAWER:
-            temp.do_DrawerData =           &dd;
-            break;
-    }
+
+    /* Default drawer data will be filled in by PrepareIcon() */
 
     gad = temp.do_Gadget.GadgetRender;
     sel = temp.do_Gadget.SelectRender;
