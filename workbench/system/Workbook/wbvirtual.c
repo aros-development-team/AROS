@@ -87,7 +87,8 @@ static BOOL wbMoveTo(Class *cl, Object *obj, WORD left, WORD top)
     WORD dLeft, dTop;
 
     D(bug("GadgetSize %dx%d\n", gadget->Width, gadget->Width));
-    D(bug("wbMoveTo(%d,%d) =", left,top));
+    D(bug("  VirtSize %dx%d\n", my->Virt.Width, my->Virt.Height));
+    D(bug("  wbMoveTo(%d,%d) =", left,top));
 
     if (left > (my->Virt.Width - gadget->Width))
     	left = max(0, my->Virt.Width - gadget->Width);

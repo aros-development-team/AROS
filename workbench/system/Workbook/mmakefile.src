@@ -15,7 +15,7 @@ FILES := workbook \
 #MM- workbench-system : workbench-system-workbook
 
 %build_prog mmake=workbench-system-workbook \
-    progname=Workbook targetdir=$(AROS_SYSTEM)/Workbook \
+    progname=Workbook targetdir=$(AROS_SYSTEM) \
     files="main $(FILES)" uselibs="amiga rom" \
     detach=no
 
