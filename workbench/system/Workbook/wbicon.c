@@ -52,12 +52,12 @@ void wbIcon_Update(Class *cl, Object *obj)
 
     /* Update the parent's idea of how big we are
      */
-    GetIconRectangleA(my->Screen->RastPort, my->Icon, (STRPTR)my->Label, &rect, (struct TagItem *)wbIcon_DrawTags);
+    GetIconRectangleA(&my->Screen->RastPort, my->Icon, (STRPTR)my->Label, &rect, (struct TagItem *)wbIcon_DrawTags);
 
     w = (rect.MaxX - rect.MinX) + 1;
     h = (rect.MaxY - rect.MinY) + 1;
 
-    D(bug("%s: %dx%d @%d,%d\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY));
+    D(bug("%s: %dx%d @%d,%d (%s)\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY, my->Label));
     SetAttrs(obj,
     	GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
     	GA_Top, (my->Icon->do_CurrentY == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentY,
@@ -100,14 +100,17 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 
 	strcpy(my->File, file);
 
+	label = FilePart(my->File);
+
 	oldLock = CurrentDir(my->Lock);
-	my->Icon = GetDiskObjectNew(my->File);
+	my->Icon = GetIconTags(my->File,
+	                       ICONGETA_Screen, my->Screen,
+	                       ICONGETA_FailIfUnavailable, FALSE,
+	                       TAG_END);
 	CurrentDir(oldLock);
 	if (my->Icon == NULL)
 	    goto error;
 
-	LayoutIconA(my->Icon, my->Screen, NULL);
-	label = FilePart(my->File);
     }
 
     my->Label = StrDup((CONST_STRPTR)GetTagData(WBIA_Label, (IPTR)label, ops->ops_AttrList));
@@ -187,11 +190,6 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
 
     x = gadget->LeftEdge;
     y = gadget->TopEdge;
-
-    EraseRect(rp, 
-    	    gadget->LeftEdge, gadget->TopEdge,
-    	    gadget->LeftEdge + gadget->Width - 1,
-    	    gadget->TopEdge + gadget->Height - 1);
 
     DrawIconStateA(rp, my->Icon, (STRPTR)my->Label, x, y,
     	(gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, (struct TagItem *)wbIcon_DrawTags);

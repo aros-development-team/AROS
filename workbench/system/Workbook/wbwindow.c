@@ -27,10 +27,11 @@
 #include <libraries/gadtools.h>
 #include <exec/rawfmt.h>
 
-
 #include "workbook_intern.h"
 #include "workbook_menu.h"
 #include "classes.h"
+
+#include <clib/boopsistubs.h>
 
 static inline WORD max(WORD a, WORD b)
 {
@@ -316,6 +317,7 @@ static void wbRedimension(Class *cl, Object *obj)
     struct wbWindow *my = INST_DATA(cl, obj);
     struct Window *win = my->Window;
     struct IBox    real;     /* pos & size of the inner window area */
+    IPTR setWidth = 0, setHeight = 0;
 
     real.Left = win->BorderLeft;
     real.Top  = win->BorderTop;
@@ -348,12 +350,13 @@ static void wbRedimension(Class *cl, Object *obj)
     	                  GA_Height, real.Height,
     	                  TAG_END);
 
-    {
-    	IPTR tot = 0, vis = 0;
-    	GetAttr(PGA_Visible, my->ScrollV, &vis);
-    	GetAttr(PGA_Total, my->ScrollV, &tot);
-    	D(bug("%s: VScroll Total=%d Visible=%d\n", __func__, tot, vis));
-    }
+    GetAttr(GA_Width, my->Set, &setWidth);
+    GetAttr(GA_Height, my->Set, &setHeight);
+    UpdateAttrs(obj, NULL, 0,
+                     WBVA_VirtWidth, setWidth,
+                     WBVA_VirtHeight, setHeight,
+                     TAG_END);
+
 }
 
 /* Rescan the Lock for new entries */
@@ -406,11 +409,6 @@ const struct TagItem scrollh2window[] = {
 	{ PGA_Top, WBVA_VirtLeft },
 	{ TAG_END, 0 },
 };
-const struct TagItem set2window[] = {
-	{ GA_Width, WBVA_VirtWidth },
-	{ GA_Height, WBVA_VirtHeight },
-	{ TAG_END, 0 },
-};
 
 static void wbFixBorders(struct Window *win)
 {
@@ -461,8 +459,6 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     /* Create icon set */
     my->Set = NewObject(WBSet, NULL,
-    		ICA_TARGET, (IPTR)obj,
-    		ICA_MAP, (IPTR)set2window,
     		TAG_END);
 
     idcmp = IDCMP_MENUPICK | IDCMP_INTUITICKS;
@@ -573,8 +569,6 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     /* Send first intuitick */
     DoMethod(obj, WBWM_INTUITICK);
 
-    wbRescan(cl, obj);
-
     my->Menu = CreateMenusA((struct NewMenu *)WBWindow_menu, NULL);
     if (my->Menu == NULL)
     	goto error;
@@ -601,6 +595,8 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
 
     SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
     RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
+
+    wbRescan(cl, obj);
 
     return rc;
 

@@ -54,11 +54,6 @@ static void rearrange(Class *cl, Object *obj)
     struct wbSetNode *node;
     struct IBox sbox;
     WORD CurrRight, CurrBottom;
-    struct TagItem tags[3] = {
-    	{ GA_Width, },
-    	{ GA_Height, },
-    	{ TAG_END, },
-    };
 
     /* First, remove all autoobjects from the superclass */
     ForeachNode(&my->AutoObjects, node) {
@@ -98,11 +93,6 @@ static void rearrange(Class *cl, Object *obj)
 
     	DoSuperMethod(cl, obj, OM_ADDMEMBER, iobj);
     }
-
-    /* Notify that our size changed */
-    GetAttr(GA_Width, obj, &tags[0].ti_Data);
-    GetAttr(GA_Height, obj, &tags[1].ti_Data);
-    DoMethod(obj, OM_NOTIFY, tags, NULL, 0);
 }
 
 // OM_ADDMEMBER
