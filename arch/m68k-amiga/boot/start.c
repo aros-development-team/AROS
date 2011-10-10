@@ -34,6 +34,8 @@ extern const struct Resident Exec_resident;
 
 extern void __clear_bss(const struct KernelBSS *bss);
 
+static void protectKick(struct MemHeader *mh, struct MemList *ml);
+
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
 #define _AS_STRING(x)	#x
@@ -187,13 +189,11 @@ static void protectROM(struct MemHeader *mh)
     DEBUGPUTHEX(("Protect", (IPTR)mh));
     protectAlloc(mh, &_ss, &_ss_end, "SS", FALSE);
     protectAlloc(mh, &_bss, &_bss_end, "BSS", FALSE);
-    protectAlloc(mh, &_rom_start, &_rom_end, "ROM", TRUE);
-    protectAlloc(mh, &_ext_start, &_ext_end, "EXT", TRUE);
     DEBUGPUTHEX(("First  ", (IPTR)mh->mh_First));
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
 
-static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
+static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct MemList *ml)
 {
 	if (size < 65536)
 		return NULL;
@@ -208,6 +208,9 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size)
 			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | (startaddr < 0x01000000 ? MEMF_24BITDMA : 0));
 	}
 
+        /* Must be done first, in case BSS and SS are in it */
+	protectKick((struct MemHeader*)startaddr, ml);
+
 	protectROM((struct MemHeader*)startaddr);
 	return (struct MemHeader*)startaddr;
 }
@@ -221,18 +224,88 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
     return GetSysBaseChkSum(sysbase) == 0xffff;
 }
 
-static BOOL InitKickMem(struct ExecBase *SysBase)
+/* In the following functions, we use bit 0 of the
+ * MemEntry->me_Addr to indicate whether or not
+ * that MemEntry in the MemList has been 'locked down'
+ *
+ *  (addr & 1) = unallocated
+ * !(addr & 1) = allocated
+ */
+
+/* Remove all bit 0 marks
+ */
+/* We support up to 32 KickMemPtr tags in pre-expansion.library RAM */
+static ULONG protectKickBits;
+
+static void markKick(struct MemList *ml)
 {
-    struct MemList *ml = SysBase->KickMemPtr;
-    DEBUGPUTHEX(("KickMemPtr", (IPTR)ml));
+    int ndx;
+    for (ndx = 0; ml ; ml = (struct MemList*)ml->ml_Node.ln_Succ) {
+        int i;
+        for (i = 0; i < ml->ml_NumEntries; i++, ndx++) {
+            if (ndx < 32)
+                protectKickBits |= (1 << ndx);
+        }
+    }
+}
+
+static void protectKick(struct MemHeader *mh, struct MemList *ml)
+{
+    int ndx = 0;
+
+    DEBUGPUTHEX(("protectKick", (IPTR)ml));
+
+    if (!mh)
+        return;
+
     while (ml) {
 	int i;
 	DEBUGPUTHEX(("NumEntries", ml->ml_NumEntries));
-	for (i = 0; i < ml->ml_NumEntries; i++) {
-	    DEBUGPUTHEX(("      Addr", (IPTR)ml->ml_ME[i].me_Addr));
-	    DEBUGPUTHEX(("       Len", ml->ml_ME[i].me_Length));
+	for (i = 0; i < ml->ml_NumEntries; i++, ndx++) {
+	    APTR start = (APTR)((IPTR)ml->ml_ME[i].me_Addr & ~1);
+	    APTR end = start + ml->ml_ME[i].me_Length;
+
+            /* Already allocated? */
+	    if (ndx >= 32 || !(protectKickBits & (1 << ndx)))
+	        continue;
+
+	    if ((mh->mh_Lower > start)  ||
+	        (mh->mh_Upper < end))
+	        continue;
+
+            if (protectAlloc(mh, start, end, ml->ml_Node.ln_Name, FALSE)) {
+                protectKickBits &= ~(1 << ndx);
+            }
+	}
+	ml = (struct MemList*)ml->ml_Node.ln_Succ;
+    }
+
+    return;
+}
+
+static BOOL InitKickMem(struct ExecBase *SysBase)
+{
+    int ndx = 0;
+    struct MemList *ml = SysBase->KickMemPtr;
+
+    DEBUGPUTHEX(("KickMemPtr", (IPTR)ml));
+
+    while (ml) {
+	int i;
+	DEBUGPUTHEX(("NumEntries", ml->ml_NumEntries));
+	for (i = 0; i < ml->ml_NumEntries; i++,ndx++) {
+	    APTR start = ml->ml_ME[i].me_Addr;
+	    ULONG len = ml->ml_ME[i].me_Length;
+
+            /* Already allocated? */
+	    if (ndx < 32 && !(protectKickBits & (1 << ndx)))
+	        continue;
+
+	    DEBUGPUTHEX(("      Addr", (IPTR)start));
+	    DEBUGPUTHEX(("       Len", len));
+
 	    /* Use the non-mungwalling AllocAbs */
-	    if (!InternalAllocAbs(ml->ml_ME[i].me_Addr, ml->ml_ME[i].me_Length, SysBase))
+	    if (!InternalAllocAbs(start, len, SysBase))
 		return FALSE;
 	}
 	ml = (struct MemList*)ml->ml_Node.ln_Succ;
@@ -543,14 +616,18 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
-	mh = addmemoryregion(membanks[0], membanks[1]);
+	/* Clear the BSS. */
+	__clear_bss(&kbss[0]);
+
+        /* Mark all the kick memory as 'unprotected' */
+	markKick(KickMemPtr);
+
+	mh = addmemoryregion(membanks[0], membanks[1], KickMemPtr);
 	if (mh == NULL) {
 	    DEBUGPUTS(("Can't create initial memory header!\n"));
 	    Early_Alert(AT_DeadEnd | AG_NoMemory);
 	}
 
-	/* Clear the BSS. */
-	__clear_bss(&kbss[0]);
 	BootMsg = bootmsgptr;
 
 	/*
@@ -625,7 +702,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 		DEBUGPUTHEX(("RAM Addr: ", addr));
 		DEBUGPUTHEX(("RAM Size: ", size));
-		mh = addmemoryregion(addr, size);
+		mh = addmemoryregion(addr, size, KickMemPtr);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 
 		/* Adjust MaxLocMem and MaxExtMem as needed */
