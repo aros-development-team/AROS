@@ -181,7 +181,7 @@
             icon = ReadIcon(file);
             CloseIcon(file);
             
-            if (icon != NULL)
+            if (icon != NULL && icon->do_Type == 0)
             {
                 /* Force the icon type */
                 BPTR lock = LockObject(name, ACCESS_READ);
