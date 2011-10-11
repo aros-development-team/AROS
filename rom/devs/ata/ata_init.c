@@ -141,6 +141,36 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
+static AROS_UFH3(void, ATAResetHandler,
+    AROS_UFHA(struct ata_Bus *, bus, A1),
+    AROS_UFHA(APTR, int_code, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    struct ata_Unit *unit;
+    UWORD i;
+
+    /* Stop DMA */
+    for (i = 0; i < MAX_BUSUNITS; i++)
+    {
+        unit = bus->ab_Units[i];
+        if (unit != NULL)
+        {
+            if(unit->au_DMAPort != 0)
+            {
+                dma_StopDMA(unit);
+                ATA_OUTL(0, dma_PRD, unit->au_DMAPort);
+            }
+        }
+    }
+
+    /* Disable interrupts */
+    ATA_OUT(0x2, ata_AltControl, bus->ab_Alt);
+
+    AROS_USERFUNC_EXIT
+}
+
 /*
  * This routine needs to be called by bus probe code in order to register a device.
  * IOBase     - base address of primary I/O registers on your bus.
@@ -213,6 +243,13 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
        	    DMABase = 0;
        	}
     }
+
+    /*
+     * add reset handler for this bus
+     */
+    ab->ab_ResetInt.is_Code = ATAResetHandler;
+    ab->ab_ResetInt.is_Data = ab;
+    AddResetCallback(&ab->ab_ResetInt);
 
     /*
      * scan bus - try to locate all devices (disables irq)
