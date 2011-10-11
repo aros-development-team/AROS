@@ -871,7 +871,7 @@ void initcustom(struct amigavideo_staticdata *data)
     data->starty = 0x28;
 
     vposr = custom->vposr & 0x7f00;
-    data->aga = vposr >= 0x2200;
+    data->aga = (vposr & 0x0f00) >= 0x0200;
     data->ecs_agnus = vposr >= 0x2000;
     val = custom->deniseid;
     custom->deniseid = 0x0000;
