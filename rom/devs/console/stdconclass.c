@@ -26,13 +26,14 @@ struct stdcondata
     struct DrawInfo *dri;
     WORD    	    rendercursorcount;
     BOOL    	    cursorvisible;
+
+    /* Libraries */
+    struct Library *scd_GfxBase;
 };
 
 
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
-
-
 
 /***********  StdCon::New()  **********************/
 
@@ -49,17 +50,20 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 	*/
 	memset(data, 0, sizeof (struct stdcondata));
 
-	data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
-	if (data->dri)
-	{
-	    CU(o)->cu_BgPen = data->dri->dri_Pens[BACKGROUNDPEN];
-	    CU(o)->cu_FgPen = data->dri->dri_Pens[TEXTPEN];
+	data->scd_GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+	if (data->scd_GfxBase) {
+            data->dri = GetScreenDrawInfo(CU(o)->cu_Window->WScreen);
+            if (data->dri)
+            {
+                CU(o)->cu_BgPen = data->dri->dri_Pens[BACKGROUNDPEN];
+                CU(o)->cu_FgPen = data->dri->dri_Pens[TEXTPEN];
 
-    	    data->cursorvisible = TRUE;
-	    Console_RenderCursor(o);
+                data->cursorvisible = TRUE;
+                Console_RenderCursor(o);
 
-	    ReturnPtr("StdCon::New", Object *, o);
-	}
+                ReturnPtr("StdCon::New", Object *, o);
+            }
+        }
     	CoerceMethodA(cl, o, (Msg)&dispmid);
     }
     ReturnPtr("StdCon::New", Object *, NULL);
@@ -71,6 +75,10 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
 {
     struct stdcondata *data= INST_DATA(cl, o);
+
+    if (data->scd_GfxBase)
+        CloseLibrary(data->scd_GfxBase);
+
     if (data->dri)
     	FreeScreenDrawInfo(CU(o)->cu_Window->WScreen, data->dri);
 
@@ -85,11 +93,11 @@ static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
 static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 
 {
-
     struct Window   	*w  = CU(o)->cu_Window;
     struct RastPort 	*rp = w->RPort;
     IPTR 		*params = msg->Params;
     struct stdcondata 	*data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
 
     EnterFunc(bug("StdCon::DoCommand(o=%p, cmd=%d, params=%p)\n",
     	o, msg->Command, params));
@@ -597,6 +605,7 @@ static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCur
 {
     struct RastPort   *rp = RASTPORT(o);
     struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
 
     /* SetAPen(rp, data->dri->dri_Pens[FILLPEN]); */
 
@@ -620,6 +629,7 @@ static VOID stdcon_unrendercursor(Class *cl, Object *o, struct P_Console_UnRende
 {
     struct RastPort *rp = RASTPORT(o);
     struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
     
     data->rendercursorcount--;
     
@@ -645,6 +655,7 @@ static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *m
 {
      struct RastPort *rp = RASTPORT(o);
      struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
      
      SetAPen(rp, data->dri->dri_Pens[BACKGROUNDPEN]);
      SetDrMd(rp, JAM1);
@@ -663,6 +674,7 @@ static VOID stdcon_newwindowsize(Class *cl, Object *o, struct P_Console_NewWindo
 {
     struct RastPort *rp = RASTPORT(o);
   struct stdcondata *data = INST_DATA(cl, o);
+    struct Library *GfxBase = data->scd_GfxBase;
     WORD old_xmax = CHAR_XMAX(o);
     WORD old_ymax = CHAR_YMAX(o);
     WORD old_xcp = XCP;

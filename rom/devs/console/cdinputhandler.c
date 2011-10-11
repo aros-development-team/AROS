@@ -149,6 +149,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 
 #undef ConsoleDevice
+#undef IntuitionBase
 
 /***********************
 **  Support funtions  **
@@ -160,6 +161,7 @@ static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
 static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
 {
+    struct IntuitionBase *IntuitionBase = (APTR)ConsoleDevice->cb_IntuitionBase;
     struct Window *activewin;
     Object *o, *ostate;
     ULONG lock;
@@ -213,6 +215,8 @@ static Object *obtainconunit(struct ConsoleBase *ConsoleDevice)
 
 static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice)
 {
+    struct IntuitionBase *IntuitionBase = (APTR)ConsoleDevice->cb_IntuitionBase;
+
     /* Lock all units */
     ObtainSemaphore(&ConsoleDevice->unitListLock);
 

@@ -96,6 +96,9 @@ struct charmapcondata
 
   /* Active gadget */
   APTR activeGad;
+
+  /* Libraries */
+  struct Library *ccd_GfxBase;
 };
 
 
@@ -133,6 +136,8 @@ CONST struct Scroll ScrollBar = {
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
+#undef GfxBase
+#define GfxBase         (((struct charmapcondata *)INST_DATA(cl, o))->ccd_GfxBase)
 
 static VOID charmapcon_refresh(Class *cl, Object * o, LONG off);
 
@@ -311,6 +316,10 @@ void charmapcon_free_prop(Class * cl, Object * o)
 static Object *charmapcon_new(Class *cl, Object *o, struct opSet *msg)
 {
     EnterFunc(bug("CharMapCon::New()\n"));
+    APTR newGfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    if (newGfxBase == NULL)
+        return NULL;
+
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
@@ -322,10 +331,13 @@ static Object *charmapcon_new(Class *cl, Object *o, struct opSet *msg)
 	memset(data, 0, sizeof (struct charmapcondata));
 
 	data->scrollback_max = 500; /* FIXME: Don't hardcode it */
+	data->ccd_GfxBase = newGfxBase;
 	charmapcon_add_prop(cl,o);
 
 	ReturnPtr("CharMapCon::New", Object *, o);
-	}
+    }
+
+    CloseLibrary(newGfxBase);
     ReturnPtr("CharMapCon::New", Object *, NULL);
 
 }
@@ -336,8 +348,11 @@ static VOID charmapcon_dispose(Class *cl, Object *o, Msg msg)
 {
     struct charmapcondata *data= INST_DATA(cl, o);
 
-	charmap_dispose_lines(data->top_of_scrollback);
-	charmapcon_free_prop(cl,o);
+    charmap_dispose_lines(data->top_of_scrollback);
+    charmapcon_free_prop(cl,o);
+
+    CloseLibrary(data->ccd_GfxBase);
+
     DoSuperMethodA(cl, o, msg);
 }
 

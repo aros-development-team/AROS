@@ -41,7 +41,6 @@ struct consoledata
 #undef ConsoleDevice
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
-
 /*********************
 **  Console::New()  **
 *********************/
@@ -49,12 +48,19 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 {
     struct Window *win;
     EnterFunc(bug("Console::New()\n"));
+    struct Library *UtilityBase;
+
+    UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!UtilityBase)
+        ReturnPtr ("Console::New", Object *, NULL);
     
     /* Get console window */
     win = (struct Window *)GetTagData(A_Console_Window, 0, msg->ops_AttrList);
-    if (!win)
-    	ReturnPtr ("Console::New", Object *, NULL);
-	
+    CloseLibrary(UtilityBase);
+    if (!win) {
+        ReturnPtr ("Console::New", Object *, NULL);
+    }
+
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
@@ -120,8 +126,6 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     ReturnPtr("Console::New", Object *, o);
 }
  
-
-
 /**********************
 **  Console::Left()  **
 **********************/
