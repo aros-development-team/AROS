@@ -161,7 +161,7 @@ void pcmcia_reset(struct CardResource*);
 void pcmcia_disable(void);
 void pcmcia_enable(void);
 void pcmcia_cardreset(struct CardResource*);
-BOOL pcmcia_newowner(struct CardResource*);
+BOOL pcmcia_newowner(struct CardResource*, BOOL doInt);
 void pcmcia_removeowner(struct CardResource*);
 void pcmcia_enable_interrupts(void);
 void pcmcia_clear_requests(struct CardResource*);

@@ -12,7 +12,7 @@
 
 #include "card_intern.h"
     
-BOOL pcmcia_newowner(struct CardResource *CardResource)
+BOOL pcmcia_newowner(struct CardResource *CardResource, BOOL doInt)
 {
     if (CardResource->ownedcard)
     	return FALSE;
@@ -115,7 +115,7 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 	/* Insert */
 	if (CardResource->removed == FALSE) {
 	    pcmcia_cardreset(CardResource);
-	    pcmcia_newowner(CardResource);
+	    pcmcia_newowner(CardResource, TRUE);
 	}
 
 	Permit();
