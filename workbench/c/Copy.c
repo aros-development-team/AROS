@@ -303,13 +303,9 @@
 #define DEBUG 0
 #define D(x)
 
-/* Enabled softlinks check for testing. Define this to 0 in case of problems.
-   Pavel Fedin <sonic_amiga@rambler.ru> */
 #define USE_SOFTLINKCHECK               1
-
 #define USE_ALWAYSVERBOSE               1
 #define USE_BOGUSEOFWORKAROUND          0
-
 
 #include <aros/asmcall.h>
 #include <exec/devices.h>
@@ -1348,17 +1344,17 @@ void PatCopy(STRPTR name, struct CopyData *cd)
     
                         if (buffer)
                         {
-                    	    BPTR lock;
                             struct DevProc *dvp = GetDeviceProc("", NULL);
 
-                            CurrentDir(APath->ap_Current->an_Lock);
                             if (ReadLink(dvp->dvp_Port, APath->ap_Current->an_Lock, APath->ap_Info.fib_FileName, buffer, BUFFERSIZE - 1) > 0)
                             {
                                 BOOL link_ok = FALSE;
+                                BPTR dir, lock;
 
                                 buffer[BUFFERSIZE - 1] = '\0';
                                 D(Printf("Softlink target: %s\n", buffer));
 
+				dir = CurrentDir(APath->ap_Current->an_Lock);
                                 lock = Lock(buffer, SHARED_LOCK);
                                 if (lock)
                                 {
@@ -1386,13 +1382,15 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                     	    	    UnLock(lock);
                                 }
 
+                                CurrentDir(dir);
+
                                 if (!link_ok)
                                 {
                                     Printf("Warning: Skipping dangling softlink %s -> %s\n",
                                                APath->ap_Info.fib_FileName, buffer);
                                 }
-                            	FreeDeviceProc(dvp);
                             }
+                            FreeDeviceProc(dvp);
                             FreeMem(buffer, BUFFERSIZE);
                         }
 		    }
