@@ -149,6 +149,8 @@ struct ata_Bus
    struct PRDEntry         *ab_PRD;
    struct IORequest	   *ab_Timer;	   /* timer stuff */
 
+   struct Interrupt        ab_ResetInt;
+
    /* functions go here */
    void                   (*ab_HandleIRQ)(struct ata_Unit* unit, UBYTE status);
    
