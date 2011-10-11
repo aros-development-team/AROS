@@ -24,7 +24,7 @@ AROS_LH1(struct CardHandle*, OwnCard,
 
     if (handle->cah_CardFlags & CARDF_DELAYOWNERSHIP) {
     	Enqueue(&CardResource->handles, &handle->cah_CardNode);
-	pcmcia_newowner(CardResource);
+	pcmcia_newowner(CardResource, TRUE);
 	ret = (struct CardHandle*)-1;
     } else if (handle->cah_CardFlags & CARDF_IFAVAILABLE) {
     	if (CardResource->removed)
@@ -38,7 +38,7 @@ AROS_LH1(struct CardHandle*, OwnCard,
 	    ret = (struct CardHandle*)-1;
 	else if (CardResource->ownedcard == NULL) {
 	    AddHead(&CardResource->handles, &handle->cah_CardNode);
-	    pcmcia_newowner(CardResource);
+	    pcmcia_newowner(CardResource, FALSE);
 	} else
 	    ret = 0;
     }
