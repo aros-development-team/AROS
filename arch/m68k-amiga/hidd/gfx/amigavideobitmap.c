@@ -530,7 +530,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
     
     data = OOP_INST_DATA(cl, o);
 
-    bug("[%s] Get %dx%d to %dx%d from %d planes to buffer at %p\n", __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1, data->depth, msg->pixels);
+    D(bug("[%s] Get %dx%d to %dx%d from %d planes to buffer at %p\n", __func__, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1, data->depth, msg->pixels));
 
     planeoffset = msg->y * data->bytesperrow + msg->x / 8;
 
@@ -596,7 +596,7 @@ VOID AmigaVideoBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 	
     } /* for(y = 0; y < msg->height; y++) */
 
-    bug("[%s] Got %d\n", __func__, *(UBYTE *)msg->pixels);
+    D(bug("[%s] Got %d\n", __func__, *(UBYTE *)msg->pixels));
 }
 
 
