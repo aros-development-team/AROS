@@ -404,6 +404,22 @@ VOID AmigaVideoBM__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
     	    y1 = y2;
     	    y2 = tmp;
     	}
+    	if (x2 < 0)
+    	    return;
+    	if (y2 < 0)
+    	    return;
+    	if (x1 >= data->width)
+    	    return;
+    	if (y1 >= data->height)
+    	    return;
+    	if (x1 < 0)
+    	    x1 = 0;
+    	if (y1 < 0)
+    	    y1 = 0;
+    	if (x2 >= data->width)
+    	    x2 = data->width - 1;
+    	if (y2 >= data->height)
+    	    y2 = data->height - 1;
 	if (!blit_fillrect(csd, data, x1, y1, x2, y2, fg, mode))
     	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     } else {
