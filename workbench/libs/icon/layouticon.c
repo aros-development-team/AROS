@@ -133,22 +133,67 @@
         UBYTE *idata;
         ULONG x;
 
-        /* This should have been loaded earlier */
-        if (!image->ImageData)
-            continue;
-
-        if (!image->Pen)
-            image->Pen = AllocVec(image->Pens * sizeof(image->Pen[0]), MEMF_PUBLIC | MEMF_CLEAR);
-
-        if (!image->Pen) {
+        /* Allocate a bitmap, which is a 'friend' of the screen */
+        image->BitMap = AllocBitMap(ni->ni_Width, ni->ni_Height, dri->dri_Depth, bflags, screen->RastPort.BitMap);
+        if (image->BitMap == NULL) {
             SetIoErr(ERROR_NO_FREE_STORE);
             ret = FALSE;
             goto exit;
         }
 
-        /* Allocate a bitmap, which is a 'friend' of the screen */
-        image->BitMap = AllocBitMap(ni->ni_Width, ni->ni_Height, dri->dri_Depth, bflags, screen->RastPort.BitMap);
-        if (image->BitMap == NULL) {
+        /* This should have been loaded earlier */
+        if (!image->ImageData) {
+            struct Image *gi;
+            ULONG state;
+            BOOL flood;
+
+            if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)) {
+                gi = icon->do_Gadget.SelectRender;
+            } else {
+                gi = icon->do_Gadget.GadgetRender;
+            }
+
+            if (gi == NULL)
+                continue;
+
+            if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHCOMP))
+                state = IDS_SELECTED;
+            else
+                state = IDS_NORMAL;
+
+            if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGBACKFILL)) {
+                state = IDS_SELECTED;
+                flood = TRUE;
+            }
+
+            InitRastPort(&rp);
+            rp.BitMap = image->BitMap;
+            DrawImageState(&rp, gi, 0, 0, state, dri);
+
+            if (flood) {
+                /* Ugh. The TmpRas game. */
+                struct TmpRas tr;
+                ULONG trsize = RASSIZE(ni->ni_Width, ni->ni_Height);
+                APTR trbuf;
+
+                trbuf = AllocMem(trsize, MEMF_CHIP);
+                if (trbuf) {
+                    InitTmpRas(&tr, trbuf, trsize);
+                    rp.TmpRas = &tr;
+                    SetAPen(&rp, dri->dri_Pens[BACKGROUNDPEN]);
+                    Flood(&rp, 1, 0, 0);
+                    FreeMem(trbuf, trsize);
+                }
+            }
+
+            continue;
+        }
+
+        /* Palettized image processing */
+        if (!image->Pen)
+            image->Pen = AllocVec(image->Pens * sizeof(image->Pen[0]), MEMF_PUBLIC | MEMF_CLEAR);
+
+        if (!image->Pen) {
             SetIoErr(ERROR_NO_FREE_STORE);
             ret = FALSE;
             goto exit;

@@ -218,43 +218,7 @@
         }
     }
 
-    SetBPen(rp, Pens[BACKGROUNDPEN]);
-    if (selected && icon->do_Gadget.SelectRender)
-    {
-        if (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)
-        {
-            D(bug("[%s] Gadget Image 0x%p\n", __func__, icon->do_Gadget.SelectRender));
-            DrawImage
-            (
-                rp, (struct Image *)icon->do_Gadget.SelectRender,
-                leftEdge, topEdge
-            );
-
-            goto emboss;
-        }
-    }
-    else if (icon->do_Gadget.GadgetRender)
-    {
-        if (icon->do_Gadget.Flags & GFLG_GADGIMAGE)
-        {
-            struct Image img = *(struct Image *)icon->do_Gadget.GadgetRender;
-
-            D(bug("[%s] Gadget Image 0x%p%s\n", __func__, icon->do_Gadget.GadgetRender, selected ? " (selected)" : ""));
-
-            DrawImageState
-            (
-                rp, &img,
-                leftEdge, topEdge,
-                selected ? IDS_SELECTED : IDS_NORMAL,
-                NULL
-            );
-
-            /* Invert if selected */
-            goto emboss;
-        }
-    }
-
-    /* Uh. No icon? Just draw a square.
+    /* Uh. No layout? Just draw a square.
      */
     D(bug("[Icon] No image present\n"));
     SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[BACKGROUNDPEN]);
