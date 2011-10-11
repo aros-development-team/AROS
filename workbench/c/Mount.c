@@ -60,8 +60,8 @@
 #include <exec/devices.h>
 #include <exec/io.h>
 #include <exec/memory.h>
+#include <exec/rawfmt.h>
 #include <exec/semaphores.h>
-#include <exec/types.h>
 #include <dos/dosextens.h>
 #include <dos/exall.h>
 #include <dos/filehandler.h>
@@ -212,7 +212,7 @@ typedef struct UtilityBase *UtilityBase_t;
 #endif
 
 static const int __nocommandline;
-const TEXT version[] = "\0$VER: " PROGNAME " 50.14 (10.1.2008)";
+const TEXT version[] = "\0$VER: " PROGNAME " 50.14 (" ADATE ")";
 
 ULONG CheckDevice(char *name);
 void  InitParams(IPTR *params);
@@ -223,13 +223,13 @@ void preparefile(STRPTR buf, LONG size);
 LONG parsemountfile(IPTR *params, STRPTR buf, LONG size);
 LONG parsemountlist(IPTR *params, STRPTR name, STRPTR buf, LONG	size);
 LONG mount(IPTR	*params, STRPTR	name);
-void ShowErrorArgs(char *s, IPTR *ap);
+void ShowErrorArgs(STRPTR name, char *s, IPTR *ap);
 void ShowFault(LONG code, char *s, ...);
 
-#define ShowError(s, ...)	\
+#define ShowError(name, s, ...)	\
 {				\
     IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-    ShowErrorArgs(s, __args);	\
+    ShowErrorArgs(name, s, __args);	\
 }
 
 struct DosLibrary *DOSBase;
@@ -252,6 +252,7 @@ char *DeviceString;
 BOOL  IsEHandler, IsFilesystem;
 BOOL  IsCli;
 BOOL flagargs[NUM_ARGS];
+char txtBuf[256];
 extern struct WBStartup *_WBenchMsg;
 
 int main(void)
@@ -693,330 +694,267 @@ ULONG	Sign;
 
 ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 {
-	struct DosEnvec *vec;
-	IPTR args[NUM_ARGS];
-	struct RDArgs *MyRDA;
-	ULONG result = RETURN_OK;
-	int i;
-	char *s = NULL;
+    struct DosEnvec *vec;
+    IPTR args[NUM_ARGS];
+    struct RDArgs *MyRDA;
+    ULONG result = RETURN_OK;
+    int i;
+    char *s = NULL;
 
-	DEBUG_MOUNT(KPrintF("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
+    DEBUG_MOUNT(KPrintF("ReadMountArgs:\n%s\n\n", (IPTR)&rda->RDA_Source.CS_Buffer[rda->RDA_Source.CS_CurChr]));
 
-	memset(&args, 0, sizeof(args));
+    memset(&args, 0, sizeof(args));
 
-	if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
+    if (!(MyRDA = ReadArgs((STRPTR)options, &args[0], rda)))
+    {
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: ReadArgs failed, error %u\n", IoErr()));
+	return  ERR_INVALIDKEYWORD;
+    }
+
+    for (i = 0; i < NUM_ARGS; i++)
+    {
+	if (args[i] != 0)
+	    flagargs[i] = TRUE;
+    }
+
+    if (args[ARG_HANDLER] != 0)
+    {
+	s = (STRPTR)args[ARG_HANDLER];
+	IsEHandler = FALSE;
+	IsFilesystem = FALSE;
+    }
+    else if (args[ARG_EHANDLER] != 0)
+    {
+	s = (STRPTR)args[ARG_EHANDLER];
+	IsEHandler = TRUE;
+	IsFilesystem = FALSE;
+    }
+    else if (args[ARG_FILESYSTEM] != 0)
+    {
+	s = (STRPTR)args[ARG_FILESYSTEM];
+	IsEHandler = TRUE;
+	IsFilesystem = TRUE;
+    } else
+	s = NULL;
+
+    if (s)
+    {
+	int len;
+
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: Handler <%s>\n",s));
+	len = strlen(s);
+
+	if (HandlerString)
+	    FreeVec(HandlerString);
+
+	if ((HandlerString = AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
+	    bstrcpy(HandlerString, s, len);
+    }
+
+    if (args[ARG_STACKSIZE] != 0)
+	StackSize = GetValue(args[ARG_STACKSIZE], NULL);
+
+    if (args[ARG_PRIORITY] != 0)
+	Priority = GetValue(args[ARG_PRIORITY], NULL);
+
+    if (args[ARG_GLOBVEC] != 0)
+	GlobalVec = GetValue(args[ARG_GLOBVEC], NULL);
+
+    if (args[ARG_FORCELOAD] != 0)
+	ForceLoad = GetValue(args[ARG_FORCELOAD], NULL);
+
+    if (args[ARG_ACTIVATE] != 0)
+	Activate = GetValue(args[ARG_ACTIVATE], NULL);
+
+    if (args[ARG_DEVICE] != 0)
+    {
+	int len;
+
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: Device <%s>\n",(STRPTR)args[ARG_DEVICE]));
+
+	len = strlen((STRPTR)args[ARG_DEVICE]);
+
+	if (DeviceString)
+	    FreeVec(DeviceString);
+	
+	if ((DeviceString = AllocVec(len+1,MEMF_PUBLIC|MEMF_CLEAR)))
+	    strcpy(DeviceString, (STRPTR)args[ARG_DEVICE]);
+    }
+
+    if (args[ARG_UNIT] != 0)
+    {
+	if (UnitString)
 	{
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: ReadArgs failed, error %u\n", IoErr()));
-		//return (ULONG) IoErr();
-		return  ERR_INVALIDKEYWORD;
+	    FreeVec(UnitString);
+	    UnitString = NULL;
+	}
+	params[2] = GetValue(args[ARG_UNIT], &s);
+	if (*s)
+	{
+	    int len = strlen((STRPTR)args[ARG_UNIT]);
+
+	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
+
+	    if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
+	    {
+		strcpy(UnitString, (STRPTR)args[ARG_UNIT]);
+		params[2] = (IPTR)UnitString;
+		DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
+	    }
+	    else
+	    {
+		result = ERROR_NO_FREE_STORE;
+		goto error;
+	    }
+	}
+        else
+	    DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit Value %ld\n",params[2]));
+    }
+
+    if (args[ARG_FLAGS] != 0)
+    {
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags <%s>\n",(STRPTR)args[ARG_FLAGS]));
+	if (FlagsString)
+	{
+	    FreeVec(FlagsString);
+	    FlagsString = NULL;
 	}
 
-	for (i = 0; i < NUM_ARGS; i++)
+	params[3] = GetValue(args[ARG_FLAGS], &s);
+	if (*s)
 	{
-		if (args[i] != 0)
-		{
-			flagargs[i] = TRUE;
-		}
+	    int len = strlen((STRPTR)args[ARG_FLAGS]);
+
+	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
+
+	    if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
+	    {
+		strcpy(FlagsString, (STRPTR)args[ARG_FLAGS]);
+		params[3] = (IPTR) FlagsString;
+		DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
+	    }
+	    else
+	    {
+		result = ERROR_NO_FREE_STORE;
+		goto error;
+	    }
+	}
+        else
+	    DEBUG_MOUNT(KPrintF("ReadMountArgs: Flag Value %ld\n",params[3]));
+    }
+
+    vec = (struct DosEnvec *)&params[4];
+
+    if (args[ARG_BLOCKSIZE] != 0)
+	vec->de_SizeBlock = GetValue(args[ARG_BLOCKSIZE], NULL) >> 2;
+
+    if (args[ARG_SURFACES] != 0)
+	vec->de_Surfaces = GetValue(args[ARG_SURFACES], NULL);
+
+    if (args[ARG_SECTORSPERBLOCK] != 0)
+	vec->de_SectorPerBlock = GetValue(args[ARG_SECTORSPERBLOCK], NULL);
+
+    if (args[ARG_BLOCKSPERTRACK] != 0)
+	vec->de_BlocksPerTrack = GetValue(args[ARG_BLOCKSPERTRACK], NULL);
+
+    if (args[ARG_RESERVED] != 0)
+	vec->de_Reserved = GetValue(args[ARG_RESERVED], NULL);
+
+    if (args[ARG_PREALLOC] != 0)
+	vec->de_PreAlloc = GetValue(args[ARG_PREALLOC], NULL);
+
+    if (args[ARG_INTERLEAVE] != 0)
+	vec->de_Interleave = GetValue(args[ARG_INTERLEAVE], NULL);
+
+    if (args[ARG_LOWCYL] != 0)
+	vec->de_LowCyl = GetValue(args[ARG_LOWCYL], NULL);
+
+    if (args[ARG_HIGHCYL] != 0)
+	vec->de_HighCyl	= GetValue(args[ARG_HIGHCYL], NULL);
+
+    if (args[ARG_BUFFERS] != 0)
+	vec->de_NumBuffers = GetValue(args[ARG_BUFFERS], NULL);
+
+    if (args[ARG_BUFMEMTYPE] != 0)
+	vec->de_BufMemType = GetValue(args[ARG_BUFMEMTYPE], NULL);
+
+    if (args[ARG_BOOTPRI] != 0)
+	vec->de_BootPri	= GetValue(args[ARG_BOOTPRI], NULL);
+
+    if (args[ARG_BAUD] != 0)
+	vec->de_Baud = GetValue(args[ARG_BAUD], NULL);
+
+    if (args[ARG_MAXTRANSFER] != 0)
+	vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
+
+    if (args[ARG_MASK] != 0)
+	vec->de_Mask = GetValue(args[ARG_MASK], NULL);
+
+    if (args[ARG_DOSTYPE] != 0)
+	vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
+
+    if (args[ARG_CONTROL] != 0)
+    {
+	int len;
+
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
+	if (ControlString)
+	{
+	    FreeVec(ControlString);
+	    ControlString = NULL;
 	}
 
-	if (args[ARG_HANDLER] != 0)
+	len = strlen((STRPTR)args[ARG_CONTROL]);
+	if (len < 0x100)
 	{
-		s = (STRPTR)args[ARG_HANDLER];
-		IsEHandler = FALSE;
-		IsFilesystem = FALSE;
+	    if ((ControlString=AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
+	    {
+		bstrcpy(ControlString, (STRPTR)args[ARG_CONTROL], len);
+		vec->de_Control	= (IPTR)MKBADDR(ControlString);
+	    }
+	    else
+	    {
+		result = ERROR_NO_FREE_STORE;
+		goto error;
+	    }
 	}
-	else if (args[ARG_EHANDLER] != 0)
+	else
 	{
-		s = (STRPTR)args[ARG_EHANDLER];
-		IsEHandler = TRUE;
-		IsFilesystem = FALSE;
+	    result = ERROR_LINE_TOO_LONG;
+	    SetIoErr(result);
+	    goto error;
 	}
-	else if (args[ARG_FILESYSTEM] != 0)
+    }
+
+    if (args[ARG_STARTUP] != 0)
+    {
+	DEBUG_MOUNT(KPrintF("ReadMountArgs: Startup <%s>\n",args[ARG_STARTUP]));
+	if (StartupString)
 	{
-		s = (STRPTR)args[ARG_FILESYSTEM];
-		IsEHandler = TRUE;
-		IsFilesystem = TRUE;
-	} else
-		s = NULL;
-	if (s)
-	{
-		int len;
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: Handler <%s>\n",s));
-		len = strlen(s);
-		if (HandlerString)
-		{
-			FreeVec(HandlerString);
-		}
-		if ((HandlerString = AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
-		{
-			bstrcpy(HandlerString, s, len);
-		}
-	}
-	if (args[ARG_STACKSIZE] != 0)
-	{
-		StackSize = GetValue(args[ARG_STACKSIZE], NULL);
+	    FreeVec(StartupString);
+	    StartupString = NULL;
 	}
 
-	if (args[ARG_PRIORITY] != 0)
+	StartupValue = GetValue(args[ARG_STARTUP], &s);
+	if (*s)
 	{
-		Priority = GetValue(args[ARG_PRIORITY], NULL);
+	    int len = strlen((STRPTR)args[ARG_STARTUP]);
+
+	    DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
+
+	    if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
+		strcpy(StartupString,(STRPTR)args[ARG_STARTUP]);
+	    else
+	    {
+		result = ERROR_NO_FREE_STORE;
+		goto error;
+	    }
 	}
-
-	if (args[ARG_GLOBVEC] != 0)
-	{
-		GlobalVec = GetValue(args[ARG_GLOBVEC], NULL);
-	}
-
-	if (args[ARG_FORCELOAD] != 0)
-	{
-		ForceLoad = GetValue(args[ARG_FORCELOAD], NULL);
-	}
-
-	if (args[ARG_ACTIVATE] != 0)
-	{
-		Activate = GetValue(args[ARG_ACTIVATE], NULL);
-	}
-
-	if (args[ARG_DEVICE] != 0)
-	{
-		int len;
-
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: Device <%s>\n",(STRPTR)args[ARG_DEVICE]));
-
-		len = strlen((STRPTR)args[ARG_DEVICE]);
-
-		if (DeviceString)
-		{
-			FreeVec(DeviceString);
-		}
-		if ((DeviceString = AllocVec(len+1,MEMF_PUBLIC|MEMF_CLEAR)))
-		{
-			//Printf("copying...\n");
-
-			strcpy(DeviceString, (STRPTR)args[ARG_DEVICE]);
-		}
-	}
-
-	if (args[ARG_UNIT] != 0)
-	{
-		if (UnitString)
-		{
-			FreeVec(UnitString);
-			UnitString = NULL;
-		}
-		params[2] = GetValue(args[ARG_UNIT], &s);
-		if (*s)
-		{
-			int len;
-
-			len = strlen((STRPTR)args[ARG_UNIT]);
-
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
-
-			if ((UnitString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-			{
-				strcpy(UnitString, (STRPTR)args[ARG_UNIT]);
-				params[2] = (IPTR)UnitString;
-				DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit String <%s>\n", (STRPTR)params[2]));
-			}
-			else
-			{
-				result = ERROR_NO_FREE_STORE;
-				goto error;
-			}
-		}
-        	else
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: Unit Value %ld\n",params[2]));
-	}
-	if (args[ARG_FLAGS] != 0)
-	{
-//			char *String;
-
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags <%s>\n",(STRPTR)args[ARG_FLAGS]));
-		if (FlagsString)
-		{
-			FreeVec(FlagsString);
-			FlagsString = NULL;
-		}
-/*
-		String	=	args[ARG_FLAGS];
-
-		if ((*String >= 0x30) && (*String <= 0x39))
-		{
-			params[3] = GetValue(String);
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: Flag Value %ld\n",params[3]));
-		}
-		else
-*/
-		params[3] = GetValue(args[ARG_FLAGS], &s);
-		if (*s)
-		{
-			int len;
-
-			len = strlen((STRPTR)args[ARG_FLAGS]);
-
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
-
-			if ((FlagsString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-			{
-				strcpy(FlagsString, (STRPTR)args[ARG_FLAGS]);
-				params[3] = (IPTR) FlagsString;
-				DEBUG_MOUNT(KPrintF("ReadMountArgs: Flags String <%s>\n",(STRPTR)params[3]));
-			}
-			else
-			{
-				result = ERROR_NO_FREE_STORE;
-				goto error;
-			}
-		}
-        	else
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: Flag Value %ld\n",params[3]));
-	}
-
-        vec = (struct DosEnvec *)&params[4];
-
-	if (args[ARG_BLOCKSIZE] != 0)
-	{
-		vec->de_SizeBlock = GetValue(args[ARG_BLOCKSIZE], NULL) >> 2;
-	}
-	if (args[ARG_SURFACES] != 0)
-	{
-		vec->de_Surfaces = GetValue(args[ARG_SURFACES], NULL);
-	}
-	if (args[ARG_SECTORSPERBLOCK] != 0)
-	{
-		vec->de_SectorPerBlock = GetValue(args[ARG_SECTORSPERBLOCK], NULL);
-	}
-	if (args[ARG_BLOCKSPERTRACK] != 0)
-	{
-		vec->de_BlocksPerTrack = GetValue(args[ARG_BLOCKSPERTRACK], NULL);
-	}
-	if (args[ARG_RESERVED] != 0)
-	{
-		vec->de_Reserved = GetValue(args[ARG_RESERVED], NULL);
-	}
-	if (args[ARG_PREALLOC] != 0)
-	{
-		vec->de_PreAlloc = GetValue(args[ARG_PREALLOC], NULL);
-	}
-	if (args[ARG_INTERLEAVE] != 0)
-	{
-		vec->de_Interleave = GetValue(args[ARG_INTERLEAVE], NULL);
-	}
-	if (args[ARG_LOWCYL] != 0)
-	{
-		vec->de_LowCyl = GetValue(args[ARG_LOWCYL], NULL);
-	}
-	if (args[ARG_HIGHCYL] != 0)
-	{
-		vec->de_HighCyl	= GetValue(args[ARG_HIGHCYL], NULL);
-	}
-	if (args[ARG_BUFFERS] != 0)
-	{
-		vec->de_NumBuffers = GetValue(args[ARG_BUFFERS], NULL);
-	}
-	if (args[ARG_BUFMEMTYPE] != 0)
-	{
-		vec->de_BufMemType = GetValue(args[ARG_BUFMEMTYPE], NULL);
-	}
-	if (args[ARG_BOOTPRI] != 0)
-	{
-		vec->de_BootPri	= GetValue(args[ARG_BOOTPRI], NULL);
-	}
-	if (args[ARG_BAUD] != 0)
-	{
-		vec->de_Baud = GetValue(args[ARG_BAUD], NULL);
-	}
-	if (args[ARG_MAXTRANSFER] != 0)
-	{
-		vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
-	}
-	if (args[ARG_MASK] != 0)
-	{
-		vec->de_Mask = GetValue(args[ARG_MASK], NULL);
-	}
-
-	if (args[ARG_DOSTYPE] != 0)
-	{
-		vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
-	}
-
-	if (args[ARG_CONTROL] != 0)
-	{
-		int len;
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: Control <%s>\n",args[ARG_CONTROL]));
-		if (ControlString)
-		{
-			FreeVec(ControlString);
-			ControlString =	NULL;
-		}
-		len = strlen((STRPTR)args[ARG_CONTROL]);
-		if (len < 0x100)
-		{
-			if ((ControlString=AllocVec(len + BSTR_EXTRA, MEMF_PUBLIC|MEMF_CLEAR)))
-			{
-				bstrcpy(ControlString, (STRPTR)args[ARG_CONTROL], len);
-				vec->de_Control	= (IPTR)MKBADDR(ControlString);
-			}
-			else
-			{
-				ShowError("Unable to allocate Control string");
-				result = ERROR_NO_FREE_STORE;
-				goto error;
-			}
-		}
-		else
-		{
-		        result = ERROR_LINE_TOO_LONG;
-			SetIoErr(result);
-//			ShowError("Control string too long");
-			goto error;
-		}
-	}
-
-	if (args[ARG_STARTUP] != 0)
-	{
-//		      char *String;
-
-		DEBUG_MOUNT(KPrintF("ReadMountArgs: Startup <%s>\n",args[ARG_STARTUP]));
-		if (StartupString)
-		{
-			FreeVec(StartupString);
-			StartupString = NULL;
-		}
-/*
-		String = args[ARG_STARTUP];
-		if ((*String >= 0x30) && (*String <= 0x39))
-		{
-			StartupValue = GetValue(String);
-		}
-		else
-*/
-		StartupValue = GetValue(args[ARG_STARTUP], &s);
-		if (*s)
-		{
-			int len;
-
-			len = strlen((STRPTR)args[ARG_STARTUP]);
-
-			DEBUG_MOUNT(KPrintF("ReadMountArgs: len %ld\n",len));
-
-			if ((StartupString = AllocVec(len + 1, MEMF_PUBLIC|MEMF_CLEAR)))
-			{
-				strcpy(StartupString,(STRPTR)args[ARG_STARTUP]);
-			}
-			else
-			{
-				result = ERROR_NO_FREE_STORE;
-				goto error;
-			}
-		}
-	}
+    }
 
 error:
-	FreeArgs(MyRDA);
-
-	return result;
+    FreeArgs(MyRDA);
+    return result;
 }
 
 /************************************************************************************************/
@@ -1062,7 +1000,7 @@ ULONG	error;
       {
         case ERR_DEVICENOTFOUND:
         case ERR_INVALIDKEYWORD:
-	  ShowError("Device '%s:' not found in file '%s'", name, mountlist);
+	  ShowError(name, "Device not found in file '%s'", name, mountlist);
           break;
       }
     }
@@ -1766,7 +1704,7 @@ struct RDArgs rda;
 /************************************************************************************************/
 /************************************************************************************************/
 
-LONG checkmount(IPTR *params)
+static LONG checkmount(STRPTR name, IPTR *params)
 {
 struct DosEnvec *vec;
 
@@ -1778,33 +1716,33 @@ struct DosEnvec *vec;
             || !flagargs[ARG_SURFACES] || !flagargs[ARG_BLOCKSPERTRACK]
             || !flagargs[ARG_LOWCYL] || !flagargs[ARG_HIGHCYL]))
 	{
-		ShowError("Could not find some of the following keywords:\n"
-		   "       Surfaces, BlocksPerTrack, LowCyl, HighCyl, Device");
+		ShowError(name, "Could not find some of the following keywords:\n"
+				"       Surfaces, BlocksPerTrack, LowCyl, HighCyl, Device");
 		return ERR_INVALIDKEYWORD;
 	}
 	/* bootpri -129 shouldn't be started and not automatic mounted..whatever that means */
 	if ((vec->de_BootPri < -129) || (vec->de_BootPri > 127))
 	{
-	    ShowError("BootPri %ld is not allowed. Legal range is -128..127",vec->de_BootPri);
+	    ShowError(name, "BootPri %ld is not allowed. Legal range is -128..127", vec->de_BootPri);
 	    return ERROR_BAD_NUMBER;
 	}
 
 	if (flagargs[ARG_GLOBVEC])
 	{
-		if ((GlobalVec != -1) && (GlobalVec != -2))
-		{
-		    ShowError("Globvec %ld is not supported. Only -1 and -2 are supported here", GlobalVec);
-		    return ERROR_BAD_NUMBER;
-		}
+	    if ((GlobalVec != -1) && (GlobalVec != -2))
+	    {
+		ShowError(name, "Globvec %ld is not supported. Only -1 and -2 are supported here", GlobalVec);
+		return ERROR_BAD_NUMBER;
+	    }
 	}
 
 	if (flagargs[ARG_STARTUP] && !StartupString)
 	{
-		if (StartupValue >= 0x100)
-		{
-			ShowError("Startup uses a too large numerical number %ld",StartupValue);
-			return ERROR_BAD_NUMBER;
-		}
+	    if (StartupValue >= 0x100)
+	    {
+		ShowError(name, "Startup uses too large numeric value %ld", StartupValue);
+		return ERROR_BAD_NUMBER;
+	    }
 	}
 
 	return RETURN_OK;
@@ -1823,9 +1761,9 @@ LONG mount(IPTR	*params, STRPTR	name)
     for (cp = name; *cp != 0; cp++)
         *cp = ToUpper(*cp);
     
-    DEBUG_MOUNT(KPrintF("MountDev: <%s>\n", (IPTR)name));
+    DEBUG_MOUNT(KPrintF("MountDev: <%s>\n", name));
 
-    if ((error=checkmount(params))!=RETURN_OK)
+    if ((error=checkmount(name, params))!=RETURN_OK)
     {
 	DEBUG_MOUNT(KPrintF("MountDev: checkmount failed\n"));
 	return error;
@@ -1954,32 +1892,35 @@ LONG mount(IPTR	*params, STRPTR	name)
     return error;
 }
 
-void ShowErrorArgs(char *s, IPTR *ap)
+void ShowErrorArgs(STRPTR name, char *s, IPTR *ap)
 {
-	if (IsCli)
-	{
-		PutStr("ERROR: ");
-		VPrintf(s, ap);
-		PutStr("\n");
-	}
-	else
-	{
-		struct EasyStruct es =
-		{
-			sizeof(struct EasyStruct),
-			0,
-			"Mount Failure",
-			s,
-			"OK"
-		};
+    NewRawDoFmt("Error mounting '%s'", RAWFMTFUNC_STRING, txtBuf, name);
 
-		IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
-		if (IntuitionBase)
-		{
-			EasyRequestArgs(NULL, &es, NULL, ap);
-			CloseLibrary((struct Library *)IntuitionBase);
-		}
+    if (IsCli)
+    {
+	PutStr(txtBuf);
+	PutStr(": ");
+	VPrintf(s, ap);
+	PutStr("\n");
+    }
+    else
+    {
+	struct EasyStruct es =
+	{
+	    sizeof(struct EasyStruct),
+	    0,
+	    txtBuf,
+	    s,
+	    "OK"
+	};
+
+	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
+	if (IntuitionBase)
+	{
+	    EasyRequestArgs(NULL, &es, NULL, ap);
+	    CloseLibrary((struct Library *)IntuitionBase);
 	}
+    }
 }
 
 void ShowFault(LONG code, char *s, ...)
