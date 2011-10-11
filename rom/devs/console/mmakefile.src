@@ -7,6 +7,11 @@ FUNCS	:=  cdinputhandler rawkeyconvert setconsnip getconsnip addconsniphook remc
 
 #MM- kernel-console : includes linklibs
 
+USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__ \
+               -D__INTUITION_NOLIBBASE__ \
+               -D__KEYMAP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
+
 %build_module mmake=kernel-console \
   modname=console modtype=device \
   files="console $(FUNCS) $(FILES)" \

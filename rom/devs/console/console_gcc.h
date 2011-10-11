@@ -295,10 +295,18 @@ struct ConsoleBase
     struct SignalSemaphore copyBufferLock;
     struct MinList sniphooks;
 
+    struct Library *cb_IntuitionBase;
+    struct Library *cb_KeymapBase;
 };
 
 #undef CB
 #define CB(x) ((struct ConsoleBase *)x)
+
+#undef IntuitionBase
+#define IntuitionBase (((const struct ConsoleBase *)ConsoleDevice)->cb_IntuitionBase)
+
+#undef KeymapBase
+#define KeymapBase (((const struct ConsoleBase *)ConsoleDevice)->cb_KeymapBase)
 
 #endif /* CONSOLE_GCC_H */
 

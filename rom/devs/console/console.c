@@ -63,6 +63,15 @@ static const UWORD SupportedCommands[] =
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 {
+    ConsoleDevice->cb_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION);
+    if (!ConsoleDevice->cb_IntuitionBase)
+        return FALSE;
+    ConsoleDevice->cb_KeymapBase = TaggedOpenLibrary(TAGGEDOPEN_KEYMAP);
+    if (!ConsoleDevice->cb_KeymapBase) {
+        CloseLibrary(ConsoleDevice->cb_IntuitionBase);
+        return FALSE;
+    }
+
     NEWLIST(&ConsoleDevice->unitList);
     NEWLIST(&ConsoleDevice->sniphooks);
     InitSemaphore(&ConsoleDevice->unitListLock);
@@ -91,6 +100,15 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR ConsoleDevice)
 					       TAG_DONE);
 
     return ConsoleDevice->consoleTask ? TRUE : FALSE;
+}
+
+/****************************************************************************************/
+
+static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR ConsoleDevice)
+{
+    CloseLibrary(ConsoleDevice->cb_IntuitionBase);
+    CloseLibrary(ConsoleDevice->cb_KeymapBase);
+    return TRUE;
 }
 
 /****************************************************************************************/
@@ -220,6 +238,7 @@ static int GM_UNIQUENAME(Close)
 /****************************************************************************************/
 
 ADD2INITLIB(GM_UNIQUENAME(Init),0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge),0)
 ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
 
