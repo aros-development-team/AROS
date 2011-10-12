@@ -11,6 +11,8 @@
 #include "kernel_intern.h"
 #include "apic.h"
 
+#define D(x)
+
 /* Initialize APIC by probing */
 struct APICData *core_APIC_Probe(void)
 {
