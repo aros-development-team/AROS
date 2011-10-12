@@ -127,6 +127,28 @@ static ULONG doBCPL(int index, ULONG d1, ULONG d2, ULONG d3, ULONG d4, const IPT
     return ret;
 }
 
+#if DEBUG
+static BSTR ConvertCSTR(const UBYTE *name)
+{
+    UBYTE *bname = AllocMem(256 + 1, MEMF_CLEAR);
+    UWORD len = strlen(name), i;
+    
+    if (len > 255)
+    	len = 255;
+    bname[0] = len;
+    strcpy(bname + 1, name);
+    for (i = 0; i < len; i++) {
+    	if (bname[1 + i] == 13 || bname[1 + i] == 10)
+    	    bname[i + 1] = ' ';
+    }
+    return MKBADDR(bname);
+}
+static void FreeBSTR(BSTR bstr)
+{
+    FreeMem(BADDR(bstr), 256 + 1);
+}
+#endif
+
 static UBYTE *ConvertBSTR(BSTR bname)
 {
     UBYTE *name = BADDR(bname);
@@ -914,6 +936,7 @@ void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
     kicktags = reslist;
     kerneltags = tags;
 
+
 #if 0
      /* Debug testing code */
     if (mlist.lh_Head->ln_Succ) {
@@ -941,6 +964,47 @@ void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
 
     Supervisor((ULONG_FUNC)supercode);
 }
+
+#if DEBUG
+static void DumpKickMems(ULONG num, struct MemList *ml)
+{
+    if (num == 0)
+    	WriteF("Original KickMemList:\n");
+    else
+    	WriteF("AROS KickMemList:\n");
+    /* List is single-linked but last link gets cleared later, so test ln_Succ too */
+    while (ml && ml->ml_Node.ln_Succ) {
+    	WORD i;
+    	WriteF("%X8:%N\n", ml, ml->ml_NumEntries);
+    	for (i = 0; i < ml->ml_NumEntries; i++) {
+    	    WriteF("  %N: %X8, %N\n", i, ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length);
+    	}
+    	ml = (struct MemList*)ml->ml_Node.ln_Succ;
+    }
+    WriteF("End of List\n");
+}
+
+static void DumpKickTags(ULONG num, struct Resident **list)
+{
+    if (num == 0)
+    	WriteF("Original KickTagList:\n");
+    else
+    	WriteF("AROS KickTagList:\n");
+    while (*list) {
+    	BSTR bname;
+    	if ((ULONG)list & 0x80000000) {
+    	    WriteF("Redirected to %X8\n", (ULONG)list & ~0x80000000);
+    	    list = (struct Resident**)((ULONG)list & ~0x80000000);
+    	    continue;
+    	}
+    	bname = ConvertCSTR((*list)->rt_IdString);
+    	WriteF("%X8: %X8 %S\n", list, *list, bname);
+    	FreeBSTR(bname);
+    	list++;
+    }
+    WriteF("End of List\n");
+}
+#endif
 
 #define KERNELTAGS_SIZE 10
 #define CMDLINE_SIZE 512
@@ -989,7 +1053,7 @@ __startup static AROS_ENTRY(int, startup,
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
-    	BSTR name = AROS_CONST_BSTR("aros.elf.gz");
+    	BSTR name = AROS_CONST_BSTR("aros.elf");
     	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCEFAST = 18, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
@@ -1036,11 +1100,17 @@ __startup static AROS_ENTRY(int, startup,
                 resnext = LoadResident(*((BPTR *)BADDR(ROMSegList)), resnext, &resleft, LRF_NOPATCH);
                 resnext = LoadResidents(&args[ARG_MODULES], resnext, &resleft);
                 KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
+                ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
 
-                WriteF("Booting...\n");
+#if DEBUG
+		DumpKickMems(0, SysBase->KickMemPtr);
+		DumpKickMems(1, (struct MemList*)mlist.lh_Head);
+		DumpKickTags(0, SysBase->KickTagPtr);
+		DumpKickTags(1, ResidentList);
+#endif
+		WriteF("Booting...\n");
                 Delay(50);
 
-                ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
                 BootROM(ROMSegList, ResidentList, KernelTags);
 
                 UnLoadSeg(ROMSegList);
