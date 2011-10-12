@@ -581,6 +581,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 			    bdrp_currfile_dob = GetIconTags
 			      (
 				bdrp_fullfile, 
+                                ICONGETA_Screen, _screen(self),
 				ICONGETA_FailIfUnavailable, FALSE,
 				ICONGETA_Label,             bdrp_namepart,
 				TAG_DONE
