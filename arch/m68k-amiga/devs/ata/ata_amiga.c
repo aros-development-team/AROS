@@ -212,12 +212,12 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
     struct amiga_driverdata *ddata = data;
     UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
+	/* Clear interrupt */
+	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
 	if (ddata->bus[0] && ddata->bus[0]->intena)
 	    ata_HandleIRQ(ddata->bus[0]->bus);
 	if (ddata->bus[1] && ddata->bus[1]->intena)
 	    ata_HandleIRQ(ddata->bus[1]->bus);
-	/* Clear interrupt */
-	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
     }
     return 0;
 
