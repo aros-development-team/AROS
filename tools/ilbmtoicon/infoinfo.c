@@ -19,7 +19,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#else
 #include <arpa/inet.h>
+#endif
 
 #define HAS_DRAWERDATA     (1 << 0)
 #define HAS_GADGETRENDER   (1 << 1)
