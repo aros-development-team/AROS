@@ -58,11 +58,18 @@ else
     Assign THEME: THEMES:OS3.1/
 endif
 
+Touch >NIL: FONTS:__TEST__
+If WARN
+    Makedir RAM:Fonts
+    Assign FONTS: RAM:Fonts
+    Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
+Endif
+
 Assign >NIL: FONTS: FONTS:Russian ADD
 
-If NOT EXISTS FONTS:fixed.font
-    FixFonts
-EndIf
+IF EXISTS FONTS:__TEST__
+    Delete FONTS:__TEST__ QUIET
+Endif
 
 AddDatatypes REFRESH QUIET
 IPrefs
