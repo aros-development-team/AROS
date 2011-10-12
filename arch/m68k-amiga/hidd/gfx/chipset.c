@@ -167,8 +167,10 @@ void resetmode(struct amigavideo_staticdata *data)
 }
 
 /* Use nominal screen height. Overscan is not supported yet. */
-static WORD limitheight(struct amigavideo_staticdata *data, WORD y, BOOL maxlimit)
+static WORD limitheight(struct amigavideo_staticdata *data, WORD y, BOOL lace, BOOL maxlimit)
 {
+    if (lace)
+    	y /= 2;
     if (data->palmode) {
     	if (maxlimit && y > 311)
     	    y = 311;
@@ -180,6 +182,8 @@ static WORD limitheight(struct amigavideo_staticdata *data, WORD y, BOOL maxlimi
     	else if (!maxlimit && y > 200)
     	    y = 200;
     }
+    if (lace)
+    	y *= 2;
     return y;
 }
 
@@ -207,7 +211,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     xscroll = -x;
     
     yend = y + (bm->displayheight >> data->interlace);
-    yend = limitheight(data, yend, TRUE);
+    yend = limitheight(data, yend, FALSE, TRUE);
     ystart = y - data->extralines;
     	
     modulo = (data->interlace ? bm->bytesperrow : 0) + data->modulo;
@@ -250,7 +254,7 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
     copptr[15] = modulo;
 
     yend = y + bm->displayheight + yscroll;
-    yend = limitheight(data, yend, TRUE);
+    yend = limitheight(data, yend, FALSE, TRUE);
     copptr = c2d->copper2_bplcon0;
     copptr[4] = (yend << 8) | 0x05;
     if (yend < 256 || ystart >= 256) {
@@ -457,7 +461,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     	data->res = 2;
     else if ((data->modeid & SUPER_KEY) == HIRES_KEY)
     	data->res = 1;
-    data->interlace = (data->modeid & LORESLACE_KEY) != 0;
+    data->interlace = (data->modeid & LORESLACE_KEY) ? 1 : 0;
     data->fmode_bpl = data->aga ? 2 : 0;
     data->width = bm->width;
     data->height = data->interlace ? (bm->height + 1) / 2 : bm->height;
@@ -511,7 +515,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     custom->bplcon0 = data->bplcon0_null;
 
     bm->displaywidth = viewwidth;
-    bm->displayheight = limitheight(data, data->height, FALSE);
+    bm->displayheight = limitheight(data, bm->height, data->interlace, FALSE);
 
     data->mode = 1;
     while (data->mode);
