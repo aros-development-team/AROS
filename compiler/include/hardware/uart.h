@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
  
     Desc: IBM PC-compatible UART (16x50) specific definitions
     Lang: english
