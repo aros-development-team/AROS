@@ -397,6 +397,7 @@ D(bug("[Wanderer:IconWindow] %s: Opening Drawer Window '%s'\n", __PRETTY_FUNCTIO
         }
 
         drawericon = GetIconTags(_newIconWin__Title,
+                                ICONGETA_Screen, _screen(self),
                                 ICONGETA_FailIfUnavailable, FALSE,
                                 ICONGETA_IsDefaultIcon, &geticon_isdefault,
                                 ICONA_ErrorCode, &geticon_error,
