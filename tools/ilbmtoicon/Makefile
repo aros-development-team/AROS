@@ -23,6 +23,10 @@ ifeq ($(AROS_HOST_ARCH),darwin)
     HOST_LDFLAGS += -L/opt/local/lib/
 endif
 
+ifeq ($(AROS_HOST_ARCH),mingw32)
+    EXTRALIBS := -lws2_32
+endif
+
 all : $(ILBMTOICON) $(INFOINFO)
 
 $(ILBMTOICON) : ilbmtoicon.c
@@ -32,7 +36,7 @@ $(ILBMTOICON) : ilbmtoicon.c
 
 $(INFOINFO) : infoinfo.c
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ $(EXTRALIBS)
 	@$(HOST_STRIP) $@
 
 clean:
