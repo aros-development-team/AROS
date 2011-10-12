@@ -7,6 +7,7 @@
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
+#include <dos/dostags.h>
 #include <rexx/storage.h>
 #include <rexx/errors.h>
 #include <workbench/startup.h>
@@ -16,9 +17,12 @@
 #include <proto/rexxsyslib.h>
 #include <proto/alib.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
+#ifndef __AROS__
+#define IPTR void *
+#endif
 
 static struct RexxMsg *msg = NULL;
 static struct MsgPort *rexxport = NULL, *replyport = NULL;
@@ -30,7 +34,7 @@ static BOOL init(void)
 {
 #ifdef __AROS__
     out = ErrorOutput();
-#else 
+#else
     out = Output();
 #endif
     
@@ -94,7 +98,8 @@ int main(int argc, char **argv)
     
     if (argc == 1)
     {
-	FPuts(out, "Required argument missing\n");
+	FPuts(out, "Usage: RX <filename> [arguments]\n"
+	           "       RX \"commands\"\n");
 	cleanup();
 	return RC_ERROR;
     }
