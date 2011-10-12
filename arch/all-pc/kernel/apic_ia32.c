@@ -16,6 +16,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_syscall.h"
+#include "kernel_timer.h"
 
 #define D(x)
 /* #define DEBUG_WAIT */
@@ -26,42 +27,6 @@
  */
 #ifdef __i386__
 #define CONFIG_LEGACY
-#endif
-
-#if 1
-/*  FIXME: udelay doesn't work - fix! */
-void udelay(LONG usec)
-{
-}
-#else
-static ULONG usec2tick(ULONG usec)
-{
-    ULONG ret, timer_rpr = 3599597124UL;
-    asm volatile("movl $0,%%eax; divl %2":"=a"(ret):"d"(usec),"m"(timer_rpr));
-    return ret;
-}
- 
-void udelay(LONG usec)
-{
-
-    int tick_start, tick;
-    usec = usec2tick(usec);
-
-    outb(0x80, 0x43);
-    tick_start = inb(0x42);
-    tick_start += inb(0x42) << 8;
-
-    while (usec > 0) 
-    { 
-        outb(0x80, 0x43);
-        tick = inb(0x42);
-        tick += inb(0x42) << 8;
-
-        usec -= (tick_start - tick);
-        if (tick > tick_start) usec -= 0x10000;
-        tick_start = tick;
-    }
-}
 #endif
 
 static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
@@ -82,7 +47,7 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
 
     for (ipisend_timeout = 1000; ipisend_timeout > 0; ipisend_timeout--)
     {
-        udelay(100);
+        pit_udelay(100);
 #ifdef DEBUG_WAIT
         if ((ipisend_timeout % 100) == 0)
         {
@@ -274,7 +239,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
     }
 
     /* Deassert INIT after a small delay */
-    udelay(10 * 1000);
+    pit_udelay(10 * 1000);
 
     /* Deassert INIT */
     status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_INT_LEVELTRIG | ICR_DM_INIT);
@@ -315,7 +280,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
         status_ipisend = DoIPI(__APICBase, wake_apicid, ICR_DM_STARTUP | ((IPTR)wake_apicstartrip >> 12));
 
         /* Allow the target APIC to accept the IPI */
-        udelay(200);
+        pit_udelay(200);
 
 #ifdef CONFIG_LEGACY
 	/* Pentium erratum 3AP quirk */
