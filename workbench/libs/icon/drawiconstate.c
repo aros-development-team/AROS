@@ -221,7 +221,7 @@
     /* Uh. No layout? Just draw a square.
      */
     D(bug("[Icon] No image present\n"));
-    SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[BACKGROUNDPEN]);
+    SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[SHADOWPEN]);
     RectFill(rp, leftEdge, topEdge,
                  leftEdge + ni->ni_Width - 1,
                  topEdge + ni->ni_Height - 1);
