@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FUNCS	 := displayalert
-FILES    := apic apic_acpi apic_ia32 xtpic cpu_traps kernel_memory _displayalert
+FILES    := apic apic_acpi apic_ia32 xtpic cpu_traps kernel_memory kernel_timer _displayalert
 ASMFILES := cli sti
 
 MAINDIR	      := rom/kernel
