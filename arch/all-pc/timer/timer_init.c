@@ -80,8 +80,6 @@ static int hw_Init(struct TimerBase *LIBBASE)
     if (!LIBBASE->tb_TimerIRQHandle)
     	return FALSE;
 
-    /* Shut off kernel's VBlank emulation */
-    KrnSetSystemAttr(KATTR_VBlankEnable, FALSE);
 #endif
     D(bug("[Timer] Initializing hardware...\n"));
 
