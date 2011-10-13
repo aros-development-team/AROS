@@ -1,5 +1,11 @@
 #!/bin/sh -x
 
+FETCH_ONLY=no
+if [ "$1" = "--fetch-only" ]; then
+	FETCH_ONLY=yes
+	shift
+fi
+
 PREFIX="$1"
 if [ -z "$PREFIX" ]; then
 	PREFIX="/opt/m68k-elf"
@@ -83,6 +89,10 @@ fetch ftp://ftp.gnu.org/pub/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.bz2
 fetch http://www.evillabs.net/AROS/gcc-4.5.1-amiga-elf.patch
 fetch ftp://gcc.gnu.org/pub/gcc/infrastructure/mpc-${MPC_VERSION}.tar.gz
 (gzip -dc download/mpc-${MPC_VERSION}.tar.gz | bzip2 -c >download/mpc-${MPC_VERSION}.tar.bz2) || exit 1
+
+if [ "$FETCH_ONLY" = "yes" ]; then
+	exit 0
+fi
 
 unpack binutils-${BINUTILS_VERSION}
 unpack gcc-core-${GCC_VERSION} gcc-${GCC_VERSION}
