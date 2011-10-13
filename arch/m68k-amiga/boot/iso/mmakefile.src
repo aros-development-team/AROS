@@ -13,11 +13,30 @@ TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
 #MM			AROS-amiga-m68k-drivers \
 #MM			bootdisk-amiga-m68k
 
+TAR ?= tar
+Q ?= @
+
 $(AROSDIR)/.backdrop: $(SRCDIR)/workbench/.backdrop
 		@$(CP) $< $@
 
 $(AROSDIR)/Emergency-Boot.adf: $(DISTDIR)/bootdisk-amiga-m68k.adf
 		@$(CP) $< $@
+
+$(AROSDIR)/Sources: FORCE $(AROSDIR)/Sources.info $(AROSDIR)/Sources/README.txt.info
+	$(Q)$(MKDIR) $(AROSDIR)/Sources
+	$(Q)$(CP) -a $(SRCDIR)/arch/m68k-amiga/doc/. $(AROSDIR)/Sources/.
+	$(Q)$(TAR) -C $(SRCDIR) -czf $(AROSDIR)/Sources/AROS.tar.gz \
+		--transform='s/^\./AROS/' .
+	$(Q)(cd $(AROSDIR)/Sources; ./build-toolchain.sh --fetch-only)
+
+$(AROSDIR)/Sources.info: Sources.info.src Sources.png
+	@$(MKDIR) $(AROSDIR)/Sources
+	@$(ILBMTOICON) $^ $@
+
+$(AROSDIR)/Sources/README.txt.info: Sources-README.txt.info.src \
+		         Sources-README.txt.png
+	@$(MKDIR) $(AROSDIR)/Sources
+	@$(ILBMTOICON) $^ $@
 
 #MM
 bootiso-amiga-m68k: $(TARGET_ISO)
@@ -29,7 +48,9 @@ bootiso-amiga-m68k-quick: $(TARGET_ISO)
 
 $(warning LANG = $(LANG))
 
-$(TARGET_ISO): $(AROSDIR)/.backdrop $(AROSDIR)/Emergency-Boot.adf
+$(TARGET_ISO): $(AROSDIR)/.backdrop \
+		$(AROSDIR)/Emergency-Boot.adf \
+		$(AROSDIR)/Sources
 	%mkdirs_q $(AROSDIR)/S
 	@$(MKDIR) -p "$(DISTDIR)"
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
@@ -48,3 +69,6 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop $(AROSDIR)/Emergency-Boot.adf
                 -l -J -r \
 		"$(AROSDIR).HUNK"
 
+FORCE:
+
+%common

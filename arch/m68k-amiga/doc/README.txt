@@ -1,19 +1,28 @@
-Amiga M68K Toolchain
---------------------
+These are the sources to the AROS amiga-m68k AmiWest 2011 release
 
-Run the 'build-toolchain.sh' script to fetch,
-patch, compile, and build the Binutils 2.10
-and GCC 4.5.1 toolchains, and install them
-to the directory of your choice:
+They are designed to used for cross-compilation from a Linux
+environment.
 
-$ ./build-toolchain.sh /some/path
+To build the AROS amiga-m68k crosscompiler:
+-------------------------------------------
 
-If '/some/path' is not supplied, /opt/m68k-elf is
-the default.
+* ./build-toolchain.sh </toolpath>
+  - This builds a new AROS amiga-m68k toolchain, and
+    installs it to </toolpath>
+  - You need to have permission to modify </toolpath>
 
-The generated toolchain will only build ELFs, but
-the AROS ROM image can load both ELF and HUNK
-binaries.
+To build from the AROS sources:
+-------------------------------
 
---
-Jason S. McMullan
+* Make sure that you have the libpng development headers and libraries
+  installed on your build system
+* Unpack the AROS sources into `AROS'
+* mkdir AROS-build
+* cd AROS-build
+* export PATH=/toolpath:$PATH
+* ../AROS/configure --target=amiga-m68k --with-optimization=-Os --serial-debug --enable-debug
+* make -s bootiso
+
+ROM images, the AROS boot disk, and the ISO image will be in
+AROS-build/distfiles/
+
