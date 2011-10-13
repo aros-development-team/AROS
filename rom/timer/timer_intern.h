@@ -14,8 +14,10 @@
 #include <exec/interrupts.h>
 #include <exec/io.h>
 #include <exec/devices.h>
+#include <exec/interrupts.h>
 #include <devices/timer.h>
 #include <dos/bptr.h>
+#include <hardware/intbits.h>
 #include <aros/asmcall.h>
 
 /* Platform-specific portion */
@@ -69,5 +71,19 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 void handleVBlank(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 void EClockUpdate(struct TimerBase *TimerBase);
 void EClockSet(struct TimerBase *TimerBase);
+
+/* Call exec VBlank vector, if present */
+static inline void vblank_Cause(struct ExecBase *SysBase)
+{
+    struct IntVector *iv = &SysBase->IntVects[INTB_VERTB];
+
+    if (iv->iv_Code)
+        AROS_UFC5(void, iv->iv_Code,
+		  AROS_UFCA(ULONG, INTF_VERTB, D1),
+		  AROS_UFCA(APTR, NULL, A0),
+		  AROS_UFCA(APTR, iv->iv_Data, A1),
+		  AROS_UFCA(APTR, iv->iv_Code, A5),
+		  AROS_UFCA(struct ExecBase *, SysBase, A6));
+}
 
 #endif /* _TIMER_INTERN_H */
