@@ -19,9 +19,10 @@ struct APICData *core_APIC_Probe(void)
     struct APICData *data;
 #ifdef __i386__
     /* Only i386 needs detection. On x86-64 APIC is always present. */
+    ULONG arg = 1;
     ULONG res;
 
-    asm volatile("cpuid":"=d"(res):"a"(1):"eax", "ebx", "ecx", "edx");
+    asm volatile("cpuid":"+a"(arg),"=d"(res)::"%ebx", "%ecx");
     
     if (!(res & (1 << 9)))
     	return NULL;
