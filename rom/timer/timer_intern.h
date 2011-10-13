@@ -18,6 +18,9 @@
 #include <dos/bptr.h>
 #include <aros/asmcall.h>
 
+/* Platform-specific portion */
+#include <timer_platform.h>
+
 /*
  * First two of these correspond to UNIT_MICROHZ and UNIT_VBLANK.
  * This is important.
@@ -38,10 +41,8 @@ struct TimerBase
     struct timeval	 tb_Elapsed;		/* Relative system time. Used for measuring intervals.	*/
 
     /* This is required for hardware-specific code */
-    LONG		 tb_TimerIRQNum;	/* Timer IRQ number					*/
     APTR		 tb_TimerIRQHandle;	/* Timer IRQ handle					*/
     struct Interrupt	 tb_VBlankInt;		/* Used by older implementations, needs to be removed	*/
-    struct timeval	 tb_VBlankTime;		/* Software-emulated periodic timer interval		*/
 
     /* Request queues */
     struct MinList	 tb_Lists[NUM_LISTS];
@@ -56,6 +57,8 @@ struct TimerBase
 #ifdef USE_VBLANK_EMU
     struct timerequest   tb_vblank_timerequest; /* VBlank emulation request				*/
 #endif
+
+    struct PlatformTimer tb_Platform;		/* Platform-specific data				*/
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))
