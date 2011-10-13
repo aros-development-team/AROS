@@ -29,7 +29,6 @@ struct KernelInterface
     int     (*sigprocmask)(int how, const sigset_t *set, sigset_t *oldset);
     int     (*sigsuspend)(const sigset_t *mask);
     int     (*sigaction)(int signum, const struct sigaction *act, struct sigaction *oldact);
-    int     (*setitimer)(int which, const struct itimerval *value, struct itimerval *ovalue);
     int     (*mprotect)(const void *addr, size_t len, int prot);
     ssize_t (*read)(int fd, void *buf, size_t count);
     int	    (*fcntl)(int fd, int cmd, ...);

@@ -1,0 +1,13 @@
+# $Id: mmakefile.src 40932 2011-08-28 16:35:02Z sonic $
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer \
+		 -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
+		 -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
+
+%build_archspecific \
+  mainmmake=kernel-timer maindir=rom/timer \
+  arch=unix modulename=timer \
+  files="timer_init"
+
+%common

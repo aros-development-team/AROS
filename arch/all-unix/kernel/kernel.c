@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/time.h>
 #include <unistd.h>
 #undef timeval
 
@@ -161,9 +160,6 @@ static void core_IRQ(int sig, regs_t *sc)
     if (sig < IRQ_COUNT)
 	krnRunIRQHandlers(sig);
 
-    if (sig == SIGALRM)
-	core_TimerTick();
-
     if (KernelBase->kb_PlatformData->supervisor == 1)
 	core_ExitInterrupt(sc);
 
@@ -185,11 +181,9 @@ extern struct HostInterface *HostIFace;
 static int InitCore(struct KernelBase *KernelBase)
 {
     struct PlatformData *pd;
-    struct itimerval interval;
     struct sigaction sa;
     struct SignalTranslation *s;
     sigset_t tmp_mask;
-    int ret;
 
     D(bug("[KRN] InitCore()\n"));
 
@@ -284,18 +278,8 @@ static int InitCore(struct KernelBase *KernelBase)
     SIGADDSET(&tmp_mask, SIGUSR2);
     KernelIFace.sigprocmask(SIG_UNBLOCK, &tmp_mask, NULL);
     AROS_HOST_BARRIER
-    
-    /* Set up the "pseudo" vertical blank interrupt. */
-    D(bug("[InitCore] Timer frequency is %d\n", SysBase->ex_EClockFrequency));
-    interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
-    interval.it_interval.tv_usec =
-    interval.it_value.tv_usec = 1000000 / SysBase->ex_EClockFrequency;
 
-    ret = KernelIFace.setitimer(ITIMER_REAL, &interval, NULL);
-    AROS_HOST_BARRIER
-    D(bug("[KRN] setitimer() returned %d, errno %d\n", ret, *pd->errnoPtr));
-
-    return !ret;
+    return TRUE;
 }
 
 ADD2INITLIB(InitCore, 10);
@@ -310,13 +294,4 @@ void krnSysCall(unsigned char n)
     DSC(bug("[KRN] SysCall %d\n", n));
     KernelIFace.raise(SIGUSR1);
     AROS_HOST_BARRIER
-}
-
-/*
- * This little function is used by base code in rom/kernel
- * to get correct signal number, defined in host OS headers.
- */
-int krnTimerIRQ(void)
-{
-    return SIGALRM;
 }

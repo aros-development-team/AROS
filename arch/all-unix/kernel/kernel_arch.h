@@ -1,14 +1,8 @@
 /* Our IRQs are UNIX signals */
 #define IRQ_COUNT 32
-/*
- * A little hack to get correct SIGALRM number.
- * This definition is used by base code in rom/kernel. We can't simply #define it
- * to SIGALRM because this would require including host OS headers and we want to
- * avoid it in the base code.
- * So we #define it to a small subroutine implemented in UNIX-specific part. This
- * subroutine simply returns SIGALRM number.
- */
-#define IRQ_TIMER krnTimerIRQ()
+
+/* Disable old kernel software timer. Obsolete and will be removed. */
+#define NO_VBLANK_EMU
 
 /* We have no interrupt controller */
 #define ictl_enable_irq(irq, base)
