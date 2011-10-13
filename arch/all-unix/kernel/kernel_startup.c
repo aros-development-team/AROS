@@ -51,7 +51,6 @@ static const char *kernel_functions[] =
     "sigprocmask",
     "sigsuspend",
     "sigaction",
-    "setitimer",
     "mprotect",
     "read",
     "fcntl",
