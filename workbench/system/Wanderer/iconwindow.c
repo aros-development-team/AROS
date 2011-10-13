@@ -3,7 +3,7 @@
   $Id$
 */
 
-#define DEBUG 0
+#define DEBUG
 #define DOPENWINDOW(x) /* Window positioning and size */
 
 #define ZCC_QUIET
@@ -378,6 +378,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         IPTR                    current_DispFlags = 0;
 /*      IPTR			current_SortFlags = 0; */
         IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
+        BOOL			isVolume;
 
         _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
         _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
@@ -386,23 +387,17 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
 
         _newIconWin__Title = (STRPTR) GetTagData(MUIA_IconWindow_Location, (IPTR)NULL, message->ops_AttrList);
         _newIconWin__TitleLen = strlen(_newIconWin__Title);
+        isVolume = (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':');
 
-        if (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':')
-        {
-D(bug("[Wanderer:IconWindow] %s: Opening Volume Root Window '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
-        }
-        else
-        {
-D(bug("[Wanderer:IconWindow] %s: Opening Drawer Window '%s'\n", __PRETTY_FUNCTION__, _newIconWin__Title));
-        }
+	D(bug("[Wanderer:IconWindow] %s: Opening %s Window '%s'\n", __PRETTY_FUNCTION__, isVolume ? "Volume Root" : "Drawer", _newIconWin__Title));
 
         drawericon = GetIconTags(_newIconWin__Title,
-                                ICONGETA_Screen, _screen(self),
+                                ICONGETA_Screen, _newIconWin__Screen,
                                 ICONGETA_FailIfUnavailable, FALSE,
                                 ICONGETA_IsDefaultIcon, &geticon_isdefault,
                                 ICONA_ErrorCode, &geticon_error,
                                 TAG_DONE);
-  
+
         if ((drawericon) && (drawericon->do_DrawerData))
         {
 D(bug("[Wanderer:IconWindow] %s: Directory Icon has DRAWER data!\n", __PRETTY_FUNCTION__));
@@ -494,7 +489,7 @@ D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
 D(bug("]\n"));
         }
 
-        if ((_newIconWin__Title[_newIconWin__TitleLen - 1] == ':') &&
+        if (isVolume &&
                 (((geticon_isdefault) && (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo)) ||
                 (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
         {
@@ -845,7 +840,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
                         _IconWin__NewWindowHeight -= _IconWin__NewWindowTop;
 
-                        D(bug("[Wanderer:IconWindow] %s: New Window dimensions ..  %d x %d @ %d, %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight, _IconWin__NewWindowLeft, _IconWin__NewWindowTop));
+                        D(bug("[Wanderer:IconWindow] %s: New Window dimensions ..  %d x %d @ %d, %d\n", __PRETTY_FUNCTION__, _IconWin__NewWindowWidth, _IconWin__NewWindowHeight, 0, _IconWin__NewWindowTop));
 
                         SET(self, MUIA_Window_Width, _IconWin__NewWindowWidth);
                         SET(self, MUIA_Window_Height, _IconWin__NewWindowHeight);
