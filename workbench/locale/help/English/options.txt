@@ -10,13 +10,19 @@
  Applicable: All hosted.
 ----------------------------------------------------------------------------------------------
 
+ tickrate=N
+
+ Set main system timer frequency to NxVBlank Hz. This can be used to improve timer.device
+accuracy. Default value is 4.
+ Applicable: UNIX-hosted.
+----------------------------------------------------------------------------------------------
+
  eclock=N
 
- Set emulated EClock frequency to N hz. N is rounded down to the nearest integer
-multiple of vblank. EClock is the system's master timer which is used by timer.device
+ Set emulated EClock frequency to N hz. EClock is the system's master timer which is used by timer.device
 to measure time intervals. The greater this value is, the more precise is time measurement
-but more CPU load is caused by AROS.
- Applicable: All hosted
+but more CPU load is caused by AROS. Default value is 100.
+ Applicable: Windows-hosted
 -----------------------------------------------------------------------------------------------
 
  debug=<debug output string>
@@ -128,3 +134,10 @@ from this device. Do not add ':' at the end.
 
  Force power on all OHCI USB ports to ON and disable overcurrent detection. Known to be needed on
 Intel MacMini. Try this if your USB doesn't work.
+
+ acpi.resource
+================================================================================================
+
+ noacpi
+
+ Totally disables ACPI subsystem. acpi.resource is not initialized.
