@@ -3,7 +3,7 @@
   $Id$
 */
 
-#define DEBUG
+#define DEBUG 0
 #define DOPENWINDOW(x) /* Window positioning and size */
 
 #define ZCC_QUIET
