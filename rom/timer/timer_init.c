@@ -46,8 +46,8 @@ AROS_UFH4(static ULONG, VBlankInt,
      * there are no other interrupts that are allowed to interrupt us
      * that can do anything with this.
      */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_VBlankTime);
     TimerBase->tb_ticks_total++;
 
     /*
@@ -69,8 +69,8 @@ static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
      * We duplicate code here in order to make things
      * a little bit faster.
      */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_VBlankTime);
+    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_VBlankTime);
     TimerBase->tb_ticks_total++;
 
     handleMicroHZ(TimerBase, SysBase);
@@ -82,25 +82,25 @@ static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     LIBBASE->tb_eclock_rate = SysBase->ex_EClockFrequency;
-    LIBBASE->tb_TimerIRQNum = -1;
+    LIBBASE->tb_Platform.tb_TimerIRQNum = -1;
 
     if (KernelBase && LIBBASE->tb_eclock_rate)
-	LIBBASE->tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
+	LIBBASE->tb_Platform.tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
 
-    if (LIBBASE->tb_TimerIRQNum == -1)
+    if (LIBBASE->tb_Platform.tb_TimerIRQNum == -1)
 	LIBBASE->tb_eclock_rate = SysBase->VBlankFrequency;
 
-    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_TimerIRQNum, LIBBASE->tb_eclock_rate));
+    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_Platform.tb_TimerIRQNum, LIBBASE->tb_eclock_rate));
 
     /* Calculate timer period in us */
-    LIBBASE->tb_VBlankTime.tv_secs  = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_eclock_rate;
+    LIBBASE->tb_Platform.tb_VBlankTime.tv_secs  = 0;
+    LIBBASE->tb_Platform.tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_eclock_rate;
 
     D(kprintf("Timer period: %ld secs, %ld micros\n",
-	LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
+	LIBBASE->tb_Platform.tb_VBlankTime.tv_secs, LIBBASE->tb_Platform.tb_VBlankTime.tv_micro));
 
     /* Start up the interrupt server */
-    if (LIBBASE->tb_TimerIRQNum == -1)
+    if (LIBBASE->tb_Platform.tb_TimerIRQNum == -1)
     {
 	/*
 	 * If we don't have periodic timer IRQ number from
@@ -113,7 +113,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     	    return FALSE;
 
 	is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
-	
+
 	if (is)
 	{
 	    is->is_Node.ln_Pri = 0;
@@ -127,29 +127,11 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	LIBBASE->tb_TimerIRQHandle = is;
     }
     else
-	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_TimerIRQNum, TimerTick, LIBBASE, SysBase);
+	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_Platform.tb_TimerIRQNum, TimerTick, LIBBASE, SysBase);
 
     return LIBBASE->tb_TimerIRQHandle ? TRUE : FALSE;
 }
 
 /****************************************************************************************/
 
-static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
-{
-    if (LIBBASE->tb_TimerIRQHandle)
-    {
-	if (LIBBASE->tb_TimerIRQNum == -1)
-	{
-	    RemIntServer(INTB_VERTB, LIBBASE->tb_TimerIRQHandle);
-	    FreeMem(LIBBASE->tb_TimerIRQHandle, sizeof(struct Interrupt));
-	}
-	else
-	    KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
-    }
-    return TRUE;
-}
-
-/****************************************************************************************/
-
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
-ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
