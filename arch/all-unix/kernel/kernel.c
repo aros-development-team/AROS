@@ -27,7 +27,6 @@
 #include "kernel_intern.h"
 #include "kernel_interrupts.h"
 #include "kernel_scheduler.h"
-#include "kernel_timer.h"
 
 #include <stdio.h>
 #include <string.h>
