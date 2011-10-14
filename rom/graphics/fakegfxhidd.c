@@ -580,6 +580,50 @@ static void gfx_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
     UFB(data);
 }
 
+static IPTR gfx_copyboxmasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
+{
+    struct gfx_data *data;
+    OOP_Object *src = NULL;
+    OOP_Object *dest = NULL;
+    BOOL inside = FALSE;
+    BOOL ret;
+
+    data = OOP_INST_DATA(cl, o);
+    LFB(data);
+
+    /* De-masquerade bitmap objects, every of which can be fakefb object */
+    OOP_GetAttr(msg->src, aHidd_FakeFB_RealBitMap, (IPTR *)&src);
+    OOP_GetAttr(msg->dest, aHidd_FakeFB_RealBitMap, (IPTR *)&dest);
+    if (!src)
+	src = msg->src;
+    if (!dest)
+	dest = msg->dest;
+
+    /*
+     * FIXME: other bitmap may belong to another instance of fakegfx which can be on
+     *        display on another monitor. In this case mouse cursor should be handled also
+     *        there. Needs further reengineering.
+     */
+    if ((msg->src == data->fakefb) && WRECT_INSIDE(data, msg->srcX, msg->srcY, msg->width, msg->height))
+	inside = TRUE;
+
+    if ((msg->dest == data->fakefb) && WRECT_INSIDE(data, msg->destX, msg->destY, msg->width, msg->height))
+	inside = TRUE;
+
+    if (inside)
+    	draw_cursor(data, FALSE, FALSE, GfxBase);
+
+    ret = HIDD_Gfx_CopyBoxMasked(data->gfxhidd, src, msg->srcX, msg->srcY,
+				 dest, msg->destX, msg->destY, msg->width, msg->height, msg->mask, msg->gc);
+
+    if (inside)
+    	draw_cursor(data, TRUE, FALSE, GfxBase);
+
+    UFB(data);
+
+    return ret;
+}
+
 static OOP_Object *gfx_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
     OOP_Object *ret;
@@ -1484,6 +1528,7 @@ static OOP_Class *init_fakegfxhiddclass (struct GfxBase *GfxBase)
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_MakeViewPort	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_CleanViewPort	},
 	{(IPTR (*)())gfx_fwd		   , moHidd_Gfx_PrepareViewPorts},
+	{(IPTR (*)())gfx_copyboxmasked 	   , moHidd_Gfx_CopyBoxMasked	},
         {NULL	    	    	    	   , 0UL   	    	    	}
     };
     
