@@ -195,6 +195,10 @@
             bm = ni->ni_Image[0].BitMap;
             mask = ni->ni_Image[0].BitMask;
         }
+#ifdef __mc68000 /* AGA support */
+        /* Get the 64 bit aligned mask */
+        mask = (APTR)(((IPTR)mask + 7) & ~7);
+#endif
 
         /* Planar maps */
 	if (bm)
