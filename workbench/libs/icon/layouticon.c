@@ -243,7 +243,7 @@
             UBYTE *row;
             CONST UBYTE *img;
             UWORD bpr = image->BitMap->BytesPerRow;
-            image->BitMask = AllocVec(bpr * ni->ni_Height, MEMF_PUBLIC | MEMF_CHIP | MEMF_CLEAR);
+            image->BitMask = AllocVec(bpr * ni->ni_Height + 4, MEMF_PUBLIC | MEMF_CHIP | MEMF_CLEAR);
             if (!image->BitMask) {
                 SetIoErr(ERROR_NO_FREE_STORE);
                 return FALSE;
@@ -251,6 +251,9 @@
 
             img = image->ImageData;
             row = image->BitMask;
+#ifdef __mc68000 /* AGA support */
+            row = (APTR)(((IPTR)row + 7) & ~7);
+#endif
             for (y = 0; y < ni->ni_Height; y++, row += bpr) {
                 for (x = 0; x < ni->ni_Width; x++, img++) {
                     if ((*img != image->TransparentColor)) {
