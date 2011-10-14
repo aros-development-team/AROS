@@ -2,12 +2,16 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Timer startup and device commands, generic hardware-independent version
+    Desc: Timer startup and device commands, reference code
+    
+    This code uses VBlank interrupt as a source for both units. This can be
+    considered a reference code for building basic timer.device implementations,
+    using a periodic timer. However, in real life you'll want better timing source
+    than 50 Hz, so you'll likely replace this with your own code.
 */
 
 /****************************************************************************************/
 
-#include <aros/kernel.h>
 #include <exec/types.h>
 #include <exec/io.h>
 #include <exec/errors.h>
@@ -18,7 +22,6 @@
 #include <hardware/intbits.h>
 
 #include <proto/exec.h>
-#include <proto/kernel.h>
 #include <proto/timer.h>
 
 #include <aros/symbolsets.h>
@@ -27,10 +30,6 @@
 #include LC_LIBDEFS_FILE
 
 #include "timer_macros.h"
-
-#define KernelBase LIBBASE->tb_KernelBase
-
-void TimerIRQ(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 /* exec.library VBlank interrupt handler  */
 AROS_UFH4(static ULONG, VBlankInt,
@@ -62,35 +61,19 @@ AROS_UFH4(static ULONG, VBlankInt,
     AROS_USERFUNC_EXIT
 }
 
-/* Another entry point, for kernel.resource */
-static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
-{
-    /*
-     * We duplicate code here in order to make things
-     * a little bit faster.
-     */
-    ADDTIME(&TimerBase->tb_CurrentTime, &TimerBase->tb_Platform.tb_VBlankTime);
-    ADDTIME(&TimerBase->tb_Elapsed, &TimerBase->tb_Platform.tb_VBlankTime);
-    TimerBase->tb_ticks_total++;
-
-    handleMicroHZ(TimerBase, SysBase);
-    handleVBlank(TimerBase, SysBase);
-}
-
 /****************************************************************************************/
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    LIBBASE->tb_eclock_rate = SysBase->ex_EClockFrequency;
-    LIBBASE->tb_Platform.tb_TimerIRQNum = -1;
+    struct Interrupt *is;
 
-    if (KernelBase && LIBBASE->tb_eclock_rate)
-	LIBBASE->tb_Platform.tb_TimerIRQNum = KrnGetSystemAttr(KATTR_TimerIRQ);
+    /*
+     * Here we do no checks, we simply assume we have working VBlank interrupt,
+     * from whatever source it is.
+     */
 
-    if (LIBBASE->tb_Platform.tb_TimerIRQNum == -1)
-	LIBBASE->tb_eclock_rate = SysBase->VBlankFrequency;
-
-    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_Platform.tb_TimerIRQNum, LIBBASE->tb_eclock_rate));
+    LIBBASE->tb_eclock_rate = SysBase->VBlankFrequency;
+    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_eclock_rate));
 
     /* Calculate timer period in us */
     LIBBASE->tb_Platform.tb_VBlankTime.tv_secs  = 0;
@@ -100,36 +83,22 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	LIBBASE->tb_Platform.tb_VBlankTime.tv_secs, LIBBASE->tb_Platform.tb_VBlankTime.tv_micro));
 
     /* Start up the interrupt server */
-    if (LIBBASE->tb_Platform.tb_TimerIRQNum == -1)
+    is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
+    if (is)
     {
-	/*
-	 * If we don't have periodic timer IRQ number from
-	 * kernel.resource, we can possibly use exec VBlank
-	 */
-	struct Interrupt *is;
+	is->is_Node.ln_Pri = 0;
+	is->is_Node.ln_Type = NT_INTERRUPT;
+	is->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+	is->is_Code = (void *)VBlankInt;
+	is->is_Data = LIBBASE;
 
-        /* Check if VBlank works */
-	if (!KrnGetSystemAttr(KATTR_VBlankEnable))
-    	    return FALSE;
-
-	is = AllocMem(sizeof(struct Interrupt), MEMF_PUBLIC);
-
-	if (is)
-	{
-	    is->is_Node.ln_Pri = 0;
-	    is->is_Node.ln_Type = NT_INTERRUPT;
-	    is->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-	    is->is_Code = (void *)VBlankInt;
-	    is->is_Data = LIBBASE;
-
-	    AddIntServer(INTB_VERTB, is);
-	}
+	AddIntServer(INTB_VERTB, is);
 	LIBBASE->tb_TimerIRQHandle = is;
+	
+	return TRUE;
     }
-    else
-	LIBBASE->tb_TimerIRQHandle = KrnAddIRQHandler(LIBBASE->tb_Platform.tb_TimerIRQNum, TimerTick, LIBBASE, SysBase);
 
-    return LIBBASE->tb_TimerIRQHandle ? TRUE : FALSE;
+    return FALSE;
 }
 
 /****************************************************************************************/
