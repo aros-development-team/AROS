@@ -778,6 +778,26 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);   
 }
 
+BOOL AmigaVideoCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
+{
+    struct amigavideo_staticdata *csd = CSD(cl);
+    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
+    IPTR src, dst;
+    BOOL ok = FALSE;
+ 
+    OOP_GetAttr(msg->src,  aHidd_AmigaVideoBitMap_Drawable, &src);
+    OOP_GetAttr(msg->dest, aHidd_AmigaVideoBitMap_Drawable, &dst);
+    if (src && dst) {
+        struct amigabm_data *sdata = OOP_INST_DATA(OOP_OCLASS(msg->src), msg->src);
+    	struct amigabm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
+    	ok = blit_copybox_mask(csd, sdata, ddata, msg->srcX, msg->srcY, msg->width, msg->height, msg->destX, msg->destY, mode, msg->mask);
+    }
+    if (!ok)
+	return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+
+    return TRUE;
+}
+
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
