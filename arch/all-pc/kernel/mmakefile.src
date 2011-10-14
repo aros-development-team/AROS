@@ -12,9 +12,9 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
 #MM- kernel-kernel-pc : linklibs-bootconsole kernel-kernel-native
 #MM- kernel-kernel-pc-kobj : linklibs-bootconsole kernel-kernel-native
 #MM- kernel-kernel-pc-pkg : linklibs-bootconsole kernel-kernel-native
-#MM- kernel-kernel-pc-quick : kernel-kernel-native
-#MM- kernel-kernel-pc-kobj-quick : kernel-kernel-native
-#MM- kernel-kernel-pc-pkg-quick : kernel-kernel-native
+#MM- kernel-kernel-pc-quick : kernel-kernel-native-quick
+#MM- kernel-kernel-pc-kobj-quick : kernel-kernel-native-quick
+#MM- kernel-kernel-pc-pkg-quick : kernel-kernel-native-quick
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
