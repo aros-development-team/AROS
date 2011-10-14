@@ -176,6 +176,8 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 		$(DISTDIR)/aros-amiga-m68k.elf $@
 	$(Q)echo -n "$*: "
 	$(Q)$(HOSTGENDIR)/tools/romcheck $@
+	$(Q)$(MKDIR) $(AROSDIR)/boot
+	$(Q)$(CP) $@ $(AROSDIR)/boot/aros-$*.bin
 
 #MM
 clean ::
