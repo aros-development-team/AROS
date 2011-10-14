@@ -38,6 +38,15 @@ $(AROSDIR)/Sources/README.txt.info: Sources-README.txt.info.src \
 	@$(MKDIR) $(AROSDIR)/Sources
 	@$(ILBMTOICON) $^ $@
 
+$(AROSDIR)/README.txt.info: README.txt.info.src \
+		            README.txt.png
+	@$(MKDIR) $(AROSDIR)
+	@$(ILBMTOICON) $^ $@
+
+$(AROSDIR)/README.txt: README.txt
+	@$(MKDIR) $(AROSDIR)
+	@$(CP) $^ $@
+
 #MM
 bootiso-amiga-m68k: $(TARGET_ISO)
 
@@ -50,7 +59,9 @@ $(warning LANG = $(LANG))
 
 $(TARGET_ISO): $(AROSDIR)/.backdrop \
 		$(AROSDIR)/Emergency-Boot.adf \
-		$(AROSDIR)/Sources
+		$(AROSDIR)/Sources \
+		$(AROSDIR)/README.txt.info  \
+		$(AROSDIR)/README.txt
 	%mkdirs_q $(AROSDIR)/S
 	@$(MKDIR) -p "$(DISTDIR)"
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
