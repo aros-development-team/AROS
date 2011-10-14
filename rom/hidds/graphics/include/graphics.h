@@ -357,7 +357,7 @@ struct pHidd_Gfx_CopyBoxMasked
     STACKED OOP_Object      *dest;
     STACKED WORD            destX, destY;
     STACKED UWORD           width, height;
-    STACKED APTR            mask;
+    STACKED UBYTE           *mask;
 };
 
 /* Flags */
