@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -194,7 +195,30 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
 
+    brd = (struct bltmask_render_data *)bltmask_rd;
+
     OOP_GetAttr(dstbm_obj, aHidd_BitMap_PixFmt, (IPTR *)&dest_pf);
+    /* See if we can use an optimized masked copybox */
+    {
+        Object *src_gfxhidd = NULL, *dst_gfxhidd = NULL;
+        struct TagItem tags[] = { { aHidd_GC_DrawMode, 0 } , { TAG_END }};
+        OOP_GetAttr(brd->srcbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&src_gfxhidd);
+        OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&dst_gfxhidd);
+        if (src_gfxhidd == dst_gfxhidd) {
+            BOOL ok;
+            HIDDT_DrawMode old_drmd = 0, drmd = MINTERM_TO_GCDRMD(brd->minterm);
+	    OOP_GetAttr(dst_gc, aHidd_GC_DrawMode, &old_drmd);
+	    tags[0].ti_Data = (IPTR)drmd;
+	    OOP_SetAttrs(dst_gc, tags);
+
+            ok = HIDD_Gfx_CopyBoxMasked(dst_gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, x1, y1, width, height, brd->mask, dst_gc);
+	    tags[0].ti_Data = (IPTR)old_drmd;
+	    OOP_SetAttrs(dst_gc, tags);
+            if (ok)
+                return width * height;
+        }
+    }
+
     {
     	IPTR attr;
 	
@@ -202,7 +226,6 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 	dest_colmod = (HIDDT_ColorModel)attr;
     }
 
-    brd = (struct bltmask_render_data *)bltmask_rd;
     if ((brd->src_colmod == vHidd_ColorModel_Palette) && (dest_colmod == vHidd_ColorModel_Palette))
     {
     }

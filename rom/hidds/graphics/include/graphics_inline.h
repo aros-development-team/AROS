@@ -361,6 +361,31 @@ static inline VOID HIDD_Gfx_CopyBox_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_
 }
 
 /***************************************************************/
+#define HIDD_Gfx_CopyBoxMasked(obj, src, srcX, srcY, dest, destX, destY, width, height, mask, gc) \
+	({OOP_Object *__obj = obj;\
+	  HIDD_Gfx_CopyBoxMasked_(HiddGfxBase, __obj, src, srcX, srcY, dest, destX, destY, width, height, mask, gc); })
+
+static inline BOOL HIDD_Gfx_CopyBoxMasked_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *src, WORD srcX, WORD srcY, OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, PLANEPTR mask, OOP_Object *gc)
+{
+    struct pHidd_Gfx_CopyBoxMasked p;
+    
+    p.mID = GfxBase + moHidd_Gfx_CopyBoxMasked;
+
+    p.src    = src;
+    p.srcX   = srcX;
+    p.srcY   = srcY;
+    p.dest   = dest;
+    p.destX  = destX;
+    p.destY  = destY;
+    p.width  = width;
+    p.height = height;
+    p.mask   = mask;
+    p.gc     = gc;
+
+    return (BOOL)OOP_DoMethod(obj, &p.mID);
+}
+
+/***************************************************************/
 
 #define HIDD_Gfx_ModeProperties(obj, modeID, props, propsLen) \
 	({OOP_Object *__obj = obj;\

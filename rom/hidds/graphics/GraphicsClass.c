@@ -2978,6 +2978,72 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 /*****************************************************************************************
 
     NAME
+	moHidd_Gfx_CopyBoxMasked
+
+    SYNOPSIS
+        IPTR OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg);
+
+	IPTR HIDD_Gfx_CopyBoxMasked(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY,
+	                      OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, 
+	                      UWORD minterm, PLANEPTR masked,
+	                      OOP_Object *gc);
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Perform rectangle copy (blit) operation from one bitmap to another,
+	using a cookie cutter mask.
+    
+	Given bitmaps must be on the same display driver.
+    
+	A GC is used in order to specify raster operation performed between the source
+	and destination according to its aHidd_GC_DrawMode attribute value.
+
+    INPUTS
+	gfxHidd - a display driver object that you are going to use for copying
+	src     - a pointer to source bitmap object
+	srcX    - an X coordinate of the source rectangle
+	srcY    - an Y coordinate of the source rectangle
+	dest    - a pointer to destination bitmap object
+	destX   - an X coordinate of the destination rectangle
+	destY   - an Y coordinate of the destination rectangle
+	width   - width of the rectangle to copy
+	height  - height of the rectangle to copy
+	minterm - Amiga style minterm (see graphics.library/BltBitMap())
+	mask    - single bitplane mask
+	gc      - graphics context holding draw mode on the destination
+
+    RESULT
+	TRUE if performed, FALSE if not supported
+
+    NOTES
+	You must specify valid coordinates (non-negative and inside the actual bitmap
+	area), no checks are done.
+	
+	It is valid to specify two overlapped areas of the same bitmap as source
+	and destination.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************************/
+
+IPTR GFX__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg)
+{
+    D(bug("GFX::CopyBoxMasked not implemnted, using software fallback\n"));
+    return FALSE;
+}
+
+
+/*****************************************************************************************
+
+    NAME
 	moHidd_Gfx_ShowImminentReset
 
     SYNOPSIS
