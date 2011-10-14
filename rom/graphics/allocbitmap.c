@@ -377,6 +377,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 	    {
 		IPTR width = sizex;
 		IPTR height = sizey;
+		IPTR bpr = WIDTH_TO_BYTES(width);
 		HIDDT_ColorModel colmod = -1;
 
 		if (alloc)
@@ -388,12 +389,13 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_Depth, &bmdepth);
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &bpr);
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
     		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 
     		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld\n", width, height, bmdepth));
+		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld (%d bytes per row)\n", width, height, bmdepth, bpr));
 
     		    /* 
     		     * It is possible that the HIDD had to allocate a larger depth than that supplied, so
@@ -418,7 +420,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		HIDD_BM_HIDDMODE(nbm)   = hiddmode;
 
     		nbm->Rows   = height;
-    		nbm->BytesPerRow = WIDTH_TO_BYTES(width);
+    		nbm->BytesPerRow = bpr;
 #if BMDEPTH_COMPATIBILITY
 		nbm->Depth  = (depth > 8) ? 8 : depth;
 #else
