@@ -375,27 +375,12 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
     	    if (ok)
 	    {
-		IPTR width = sizex;
-		IPTR height = sizey;
-		IPTR bpr = WIDTH_TO_BYTES(width);
+		ULONG		 align  = 15;
 		HIDDT_ColorModel colmod = -1;
 
 		if (alloc)
 		{
     		    OOP_Object *pf;
-    		    OOP_Object *colmap = NULL;
-		    IPTR bmdepth;
-
-		    OOP_GetAttr(bm_obj, aHidd_BitMap_Width, &width);
-		    OOP_GetAttr(bm_obj, aHidd_BitMap_Height, &height);
-		    OOP_GetAttr(bm_obj, aHidd_BitMap_Depth, &bmdepth);
-		    OOP_GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &bpr);
-		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
-
-    		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-
-		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld (%d bytes per row)\n", width, height, bmdepth, bpr));
 
     		    /* 
     		     * It is possible that the HIDD had to allocate a larger depth than that supplied, so
@@ -404,32 +389,42 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
     		     * store obscured areas, and those offscreen bitmaps should be of the same depth as
     		     * onscreen ones.
     		     */
-		    depth = bmdepth;
+		    sizex = OOP_GET(bm_obj, aHidd_BitMap_Width);
+		    sizey = OOP_GET(bm_obj, aHidd_BitMap_Height);
+		    depth = OOP_GET(bm_obj, aHidd_BitMap_Depth);
+		    align = OOP_GET(bm_obj, aHidd_BitMap_Align) - 1;
+
+		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld (%ld px-aligned)\n", width, height, bmdepth, align));
 
     		    /* Store object and supplementary data in plane array */
     		    HIDD_BM_OBJ(nbm)        = bm_obj;
     		    HIDD_BM_COLMOD(nbm)     = colmod;
-    		    HIDD_BM_COLMAP(nbm)     = colmap;
+    		    HIDD_BM_COLMAP(nbm)     = (OOP_Object *)OOP_GET(bm_obj, aHidd_BitMap_ColorMap);
 		    HIDD_BM_REALDEPTH(nbm)  = depth;
 		}
 		else
+		{
 		    /* There's nothing to clear if we don't allocate an object */
 		    clear = FALSE;
+		}
 
-		HIDD_BM_DRVDATA(nbm)    = drv;
-		HIDD_BM_HIDDMODE(nbm)   = hiddmode;
+		HIDD_BM_DRVDATA(nbm)  = drv;
+		HIDD_BM_HIDDMODE(nbm) = hiddmode;
 
-    		nbm->Rows   = height;
-    		nbm->BytesPerRow = bpr;
+    		nbm->Rows	 = sizey;
+    		nbm->BytesPerRow = (((sizex + align) & ~align) >> 3);
 #if BMDEPTH_COMPATIBILITY
-		nbm->Depth  = (depth > 8) ? 8 : depth;
+		nbm->Depth	 = (depth > 8) ? 8 : depth;
 #else
-    		nbm->Depth  = depth;
+    		nbm->Depth	 = depth;
 #endif
-    		nbm->Flags  = flags | BMF_SPECIALFMT;
+    		nbm->Flags	 = flags | BMF_SPECIALFMT;
 
     		/* If this is a displayable bitmap, create a color table for it */
-    		if (alloc && (friend_bitmap ||
+    		if (bm_obj && (friend_bitmap ||
                     (flags & BMF_REQUESTVMEM) == BMF_REQUESTVMEM))
 		{
 		    HIDD_BM_FLAGS(nbm) |= HIDD_BMF_SCREEN_BITMAP;
@@ -443,7 +438,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
                            as the colortab mem will no longer be valid */
 			OOP_Object *oldcolmap;
 			    
-			oldcolmap = HIDD_BM_SetColorMap(HIDD_BM_OBJ(nbm), HIDD_BM_COLMAP(friend_bitmap));
+			oldcolmap = HIDD_BM_SetColorMap(bm_obj, HIDD_BM_COLMAP(friend_bitmap));
 			if (oldcolmap)
 			    OOP_DisposeObject(oldcolmap);
 
@@ -478,7 +473,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 				numcolors = 1L << ((depth <= 8) ? depth : 8);
 
     				/* Set palette to all black */
-    				for (i = 0; i < numcolors; i ++) {
+    				for (i = 0; i < numcolors; i ++)
+    				{
     				    HIDD_BM_SetColors(bm_obj, &col, i, 1);
     	    	    	    	    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
     				}
@@ -492,7 +488,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
     		if (ok)
 		{
 		    if (clear)
-		    	BltBitMap(nbm, 0, 0, nbm, 0, 0, width, height, 0x00, 0xFF, NULL);
+		    	BltBitMap(nbm, 0, 0, nbm, 0, 0, sizex, sizey, 0x00, 0xFF, NULL);
+
     		    ReturnPtr("AllocBitMap", struct BitMap *, nbm);
     		}
 
