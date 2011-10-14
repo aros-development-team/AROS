@@ -438,7 +438,7 @@ BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, L
     BOOL colmaps_ok = TRUE;
 
     drmd = MINTERM_TO_GCDRMD(minterm);
-    
+
     /* We must lock any HIDD_BM_SetColorMap calls */
     LOCK_BLIT
 

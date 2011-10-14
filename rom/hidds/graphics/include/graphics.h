@@ -105,6 +105,8 @@ enum
     moHidd_Gfx_CleanViewPort,
     moHidd_Gfx_PrepareViewPorts,
 
+    moHidd_Gfx_CopyBoxMasked,
+
     num_Hidd_Gfx_Methods
 };
 
@@ -344,6 +346,18 @@ struct pHidd_Gfx_CopyBox
     OOP_Object      *dest;
     WORD            destX, destY;
     UWORD           width, height;
+};
+
+struct pHidd_Gfx_CopyBoxMasked
+{
+    STACKED OOP_MethodID    mID;
+    STACKED OOP_Object	    *src;
+    STACKED OOP_Object	    *gc;
+    STACKED WORD            srcX, srcY;
+    STACKED OOP_Object      *dest;
+    STACKED WORD            destX, destY;
+    STACKED UWORD           width, height;
+    STACKED APTR            mask;
 };
 
 /* Flags */
