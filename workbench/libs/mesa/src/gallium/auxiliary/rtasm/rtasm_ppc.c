@@ -106,7 +106,7 @@ ppc_dump_func(const struct ppc_function *p)
 {
    uint i;
    for (i = 0; i < p->num_inst; i++) {
-      debug_printf("%3u: 0x%08x\n", i, p->store[i]);
+      debug_printf("%3u: 0x%08x\n", i, (unsigned int)p->store[i]);
    }
 }
 
