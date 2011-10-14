@@ -20,7 +20,7 @@ ifneq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/timer/make.opts
 endif
 
-FILES := common_init timer_init lowlevel ticks
+FILES := common_init timer_init lowlevel ticks timervblank
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 %build_module mmake=kernel-timer \

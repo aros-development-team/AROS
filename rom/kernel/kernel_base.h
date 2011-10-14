@@ -21,8 +21,6 @@ struct KernelBase
     struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
     struct List            kb_Interrupts[IRQ_COUNT];
     unsigned char	   kb_VBlankEnable;
-    unsigned int	   kb_VBlankTicks;
-    unsigned int	   kb_TimerCount;
     ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
     ULONG		   kb_ContextSize;	/* Total length of CPU context  */
     ULONG		   kb_PageSize;		/* Physical memory page size	*/

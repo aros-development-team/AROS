@@ -23,10 +23,10 @@ FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext delet
              displayalert dispatch getbootinfo getscheduler issuper mapglobal		    \
 	     remexceptionhandler remirqhandler schedule setprotection setscheduler sti      \
 	     switch unmapglobal virtualtophysical obtaininput releaseinput 		    \
-	     putchar maygetchar allocpages freepages getsystemattr setsystemattr	    \
+	     putchar maygetchar allocpages freepages getsystemattr			    \
 	     initmemory statmemory _bug _displayalert getcpucount getcpunumber
 FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr \
-	     kernel_memory kernel_romtags kernel_scheduler kernel_timer
+	     kernel_memory kernel_romtags kernel_scheduler
 MMU_FILES := kernel_mm
 # You can replace this with own algorithm
 ALLOCATOR := mm_linear

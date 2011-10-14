@@ -17,6 +17,7 @@
  */
 #define D(x)	 /* Init debug		*/
 #define DS(x)    /* Task switcher debug */
+#define DINT(x)	 /* Interrupts debug    */
 
 HANDLE MainThread;
 DWORD MainThreadId;
@@ -116,25 +117,24 @@ DWORD WINAPI TaskSwitcher()
 {
     DWORD obj;
     CONTEXT MainCtx;
-    DS(DWORD res);
 
     for (;;)
     {
         obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
 	PendingInts[obj] = 1;
-        DS(printf("[Task switcher] Object %lu signalled\n", obj));
+        DINT(printf("[Task switcher] Object %lu signalled\n", obj));
 
 	/* Stop main thread if it's not sleeping */
         if (Sleep_Mode != SLEEP_MODE_ON)
 	{
-            DS(res =) SuspendThread(MainThread);
-    	    DS(printf("[Task switcher] Suspend thread result: %lu\n", res));
-	    /* People say that on SMP systems thread is not stopped immediately by SuspendThread().
-	       So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
-	       guarantees it. */
+            SuspendThread(MainThread);
+	    /*
+	     * People say that on SMP systems thread is not stopped immediately by SuspendThread().
+	     * So we have to do our best to ensure that is is really stopped. I hope GetThreadContext()
+	     * guarantees it.
+	     */
 	    CONTEXT_INIT_FLAGS(&MainCtx);
-    	    DS(res =) GetThreadContext(MainThread, &MainCtx);
-    	    DS(printf("[Task switcher] Get context result: %lu\n", res));
+    	    GetThreadContext(MainThread, &MainCtx);
     	}
 
 	/* Process interrupts if we are allowed to */
@@ -164,8 +164,7 @@ DWORD WINAPI TaskSwitcher()
 	    {
     	        DS(printf("[Task switcher] new CPU context: ****\n"));
     	        DS(PRINT_CPUCONTEXT(&MainCtx));
-    	        DS(res =)SetThreadContext(MainThread, &MainCtx);
-    	        DS(printf("[Task switcher] Set context result: %lu\n", res));
+    	        SetThreadContext(MainThread, &MainCtx);
     	    }
 
 	    /* Leave supervisor mode. Interrupt state is already updated by IRQVector(). */
@@ -176,8 +175,7 @@ DWORD WINAPI TaskSwitcher()
         if (Sleep_Mode == SLEEP_MODE_OFF)
 	{
 	    DS(printf("[Task switcher] Resuming main thread\n"));
-            DS(res =) ResumeThread(MainThread);
-            DS(printf("[Task switcher] Resume thread result: %lu\n", res));
+            ResumeThread(MainThread);
         }
 	else
 	    /* We've entered sleep mode */
@@ -202,6 +200,16 @@ void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
     while (Sleep_Mode);
 }
 
+unsigned long __declspec(dllexport)StartClock(unsigned int irq, unsigned int TimerPeriod)
+{
+    LARGE_INTEGER TimerValue;
+
+    TimerPeriod = 1000 / TimerPeriod;
+    TimerValue.QuadPart  = -10000 * (LONGLONG)TimerPeriod;
+
+    return SetWaitableTimer(IntObjects[irq], &TimerValue, TimerPeriod, NULL, NULL, 0);
+}
+
 /*
  * Start up virtual machine.
  * Initializes IRQ engine, runs virtual supervisor thread and starts up main system timer.
@@ -211,7 +219,6 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;
-    LARGE_INTEGER VBLPeriod;
     void *MainTEB;
     int i;
     DWORD SwitcherId;
@@ -235,15 +242,18 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
     conout = GetStdHandle(STD_OUTPUT_HANDLE);
 
     /* Statically allocate main system timer */
-    IntObjects[IRQ_TIMER] = CreateWaitableTimer(NULL, 0, NULL);
-    if (!IntObjects[IRQ_TIMER])
+    for (i = 0; i < 2; i++)
     {
-	D(printf("[KRN] Failed to create timer interrupt\n");)
-	return 0;
+	IntObjects[i] = CreateWaitableTimer(NULL, FALSE, NULL);
+	if (!IntObjects[i])
+	{
+	    D(printf("[KRN] Failed to create timer %u\n", i));
+	    return 0;
+	}
+	AllocatedInts[i] = 1;
+	PendingInts[i]   = 0;
     }
-    AllocatedInts[IRQ_TIMER] = 1;
-    PendingInts[IRQ_TIMER] = 0;
-    Ints_Num = 1;
+    Ints_Num = 2;
 
     ThisProcess = GetCurrentProcess();
     if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS))
@@ -299,14 +309,9 @@ int __declspec(dllexport) core_init(unsigned int TimerPeriod)
 	    SYSTEM_INFO info;
 
 	    D(printf("[KRN] Task switcher started, ID %lu\n", SwitcherId));
-#ifdef SLOW
-	    TimerPeriod = 5000;
-#else
-	    TimerPeriod = 1000/TimerPeriod;
-#endif
-	    VBLPeriod.QuadPart = -10000*(LONGLONG)TimerPeriod;
 
-	    if (!SetWaitableTimer(IntObjects[IRQ_TIMER], &VBLPeriod, TimerPeriod, NULL, NULL, 0))
+	    /* Start timer 0 */
+	    if (!StartClock(0, TimerPeriod))
 		return 0;
 
 	    /* Return system page size */
