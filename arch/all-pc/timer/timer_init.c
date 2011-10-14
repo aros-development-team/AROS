@@ -83,7 +83,8 @@ static int hw_Init(struct TimerBase *LIBBASE)
 #endif
     D(bug("[Timer] Initializing hardware...\n"));
 
-    /* We have fixed EClock rate */
+    /* We have fixed EClock rate. VBlank will be emulated at 50Hz, can be changed at runtime. */
+    SysBase->VBlankFrequency    = 50;
     SysBase->ex_EClockFrequency = 1193180;
     LIBBASE->tb_eclock_rate     = 1193180;
     LIBBASE->tb_prev_tick       = 0xffff;

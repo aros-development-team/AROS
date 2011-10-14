@@ -195,9 +195,12 @@ static const char *kernel_functions[] =
 
 static int Platform_Init(struct KernelBase *KernelBase)
 {
-    /* Our VBlank is software-driven, we can ask the user what frequency to use */
-    char *args = (char *)LibGetTagData(KRN_CmdLine, 0, BootMsg);
+    char *args;
 
+    /* Our VBlank is software-driven, we can ask the user what frequency to use. Default is 50 Hz. */
+    SysBase->VBlankFrequency = 50;
+
+    args = (char *)LibGetTagData(KRN_CmdLine, 0, BootMsg);
     if (args)
     {
 	char *s = strstr(args, "vblank=");

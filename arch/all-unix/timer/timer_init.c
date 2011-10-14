@@ -93,7 +93,8 @@ static int Timer_Init(struct TimerBase *TimerBase)
     if (!TimerBase->tb_TimerIRQHandle)
     	return FALSE;
 
-    /* By default we want 4xVBlank timer rate. 1xVBlank gives very poor results. */
+    /* Our defaults: 50 Hz VBlank and 4x timer rate. 1x gives very poor results. */
+    SysBase->VBlankFrequency = 50;
     TimerBase->tb_Platform.tb_VBlankTicks = 4;
 
     /*
