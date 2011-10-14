@@ -1,8 +1,6 @@
 /*
  * This code probes Amiga hardware timings, and
  * configures SysBase with those settings.
- *
- * On Amiga(tm) we have hardware VBlank interrupt, so we have no emulation code.
  */
 
 #include <aros/symbolsets.h>
@@ -50,14 +48,6 @@ static int Timer_Init(struct KernelBase *KernelBase)
     	SysBase->PowerSupplyFrequency = 50;
     else
     	SysBase->PowerSupplyFrequency = 60;
-
-    /*
-     * Our VBlank is always enabled, it's from hardware
-     * TODO: move here frequency check from graphics.library
-     * custom part. Need to figure out how to pass chip flags
-     * on to graphics.library.
-     */
-    KernelBase->kb_VBlankEnable = 1;
 
     return TRUE;
 }
