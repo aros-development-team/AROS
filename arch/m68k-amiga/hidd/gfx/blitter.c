@@ -204,7 +204,6 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
 BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *srcbm, struct amigabm_data *dstbm,
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, APTR maskplane)
 {
-    UBYTE *maskptr;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = data->gfxbase;
     ULONG srcoffset, dstoffset;
@@ -268,7 +267,6 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     	}
     	srcoffset += srcbm->bytesperrow * (h - 1) + (width - 1) * 2;
     	dstoffset += dstbm->bytesperrow * (h - 1) + (width - 1) * 2;
-    	maskptr = (UBYTE*)maskplane + (h - 1) * (width - 1) * 2;
     } else {
      	if (dstwidth > srcwidth) {
     	    width = dstwidth;
@@ -279,7 +277,6 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
      	    afwm = 0xffff;
     	    alwm = 0xffff;
     	}
-    	maskptr = maskplane;
     }
 
     D(bug("shift=%d rev=%d sw=%d dw=%d sbpr=%d %04x %04x\n", shift, reverse, srcwidth, dstwidth, srcbm->bytesperrow, afwm, alwm));
@@ -289,7 +286,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
 
     custom->bltafwm = afwm;
     custom->bltalwm = alwm;
-    custom->bltamod = srcbm->bytesperrow - dstwidth * 2;
+    custom->bltamod = srcbm->bytesperrow - width * 2;
     custom->bltbmod = srcbm->bytesperrow - width * 2;
     custom->bltcmod = dstbm->bytesperrow - width * 2;
     custom->bltdmod = dstbm->bytesperrow - width * 2;
@@ -311,7 +308,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
      	    custom->bltbpt = (APTR)(srcbm->planes[i] + srcoffset);
      	}
     	custom->bltcon0 = bltcon0b;
-    	custom->bltapt = (APTR)maskptr;
+    	custom->bltapt = (APTR)(maskplane + srcoffset);
     	custom->bltcpt = (APTR)(dstbm->planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(dstbm->planes[i] + dstoffset);
     	startblitter(data, width, h);
