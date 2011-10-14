@@ -64,6 +64,7 @@ bootdisk-amiga-m68k-quick : bootdisk-setup-amiga-m68k bootdisk-amiga-m68k
 $(DISTDIR)/bootdisk-amiga-m68k.adf: \
 	    bootdisk-setup-amiga-m68k \
 	    $(BOOT_DEST_FILES) $(BOOT_EXTRA_FILES) \
+	    $(BOOT_DEST_DIR).info \
 	    $(GENDIR)/$(CURDIR)/install-$(AROS_HOST_ARCH)-$(AROS_HOST_CPU)
 	@$(MKDIR) -p "$(DISTDIR)"
 	$(RM) $@
@@ -85,7 +86,9 @@ $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 $(BOOT_DEST_DIR)/Disk.info: $(SRCDIR)/$(CURDIR)/AROSBoot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
 	%mkdirs_q $(dir $@)
 	@$(ILBMTOICON) --no-iff $^ $@
-	@$(CP) $@ $(BOOT_DEST_DIR).info
+
+$(BOOT_DEST_DIR).info: $(SRCDIR)/$(CURDIR)/Emergency-Boot.info.src $(SRCDIR)/$(CURDIR)/AROSBoot.png
+	@$(ILBMTOICON) $^ $@
 
 $(BOOT_DEST_DIR)/%.hunk.gz : $(BOOT_SRC_DIR)/%.elf
 	%mkdirs_q $(dir $@)
