@@ -2212,6 +2212,7 @@ VOID BM__Hidd_BitMap__FillPolygon(OOP_Class *cl, OOP_Object *obj, struct pHidd_B
 VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
 			       struct pHidd_BitMap_DrawText *msg)
 {
+#ifdef __RESERVED__
     OOP_Object      *gc = msg->gc;
     struct TextFont *font  = GC_FONT(gc);
     UBYTE   	    *charPatternPtr = font->tf_CharData;
@@ -2276,7 +2277,7 @@ VOID BM__Hidd_BitMap__DrawText(OOP_Class *cl, OOP_Object *obj,
             xMem = xMem + font->tf_XSize;
         }
     }
-
+#endif
     ReturnVoid("BitMap::DrawText");
 }
 
