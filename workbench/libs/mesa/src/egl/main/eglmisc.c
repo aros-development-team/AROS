@@ -151,7 +151,7 @@ _eglQueryString(_EGLDriver *drv, _EGLDisplay *dpy, EGLint name)
       return _EGL_VENDOR_STRING;
    case EGL_VERSION:
       _eglsnprintf(dpy->VersionString, sizeof(dpy->VersionString),
-              "%d.%d (%s)", dpy->VersionMajor, dpy->VersionMinor,
+              "%d.%d (%s)", (int)dpy->VersionMajor, (int)dpy->VersionMinor,
               dpy->Driver->Name);
       return dpy->VersionString;
    case EGL_EXTENSIONS:
