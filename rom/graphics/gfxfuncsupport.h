@@ -163,9 +163,6 @@ do                                  \
 struct render_special_info
 {
     struct BitMap *curbm;
-    BOOL    	  onscreen;
-    LONG    	  layer_rel_srcx;
-    LONG    	  layer_rel_srcy;
 };
 
 #define RSI(x) ((struct render_special_info *)x)
