@@ -2985,8 +2985,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 
 	IPTR HIDD_Gfx_CopyBoxMasked(OOP_Object *gfxHidd, OOP_Object *src, WORD srcX, WORD srcY,
 	                      OOP_Object *dest, WORD destX, WORD destY, UWORD width, UWORD height, 
-	                      UWORD minterm, PLANEPTR masked,
-	                      OOP_Object *gc);
+	                      PLANEPTR mask, OOP_Object *gc);
 
     LOCATION
 	hidd.graphics.graphics
@@ -3010,19 +3009,21 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 	destY   - an Y coordinate of the destination rectangle
 	width   - width of the rectangle to copy
 	height  - height of the rectangle to copy
-	minterm - Amiga style minterm (see graphics.library/BltBitMap())
 	mask    - single bitplane mask
 	gc      - graphics context holding draw mode on the destination
 
     RESULT
-	TRUE if performed, FALSE if not supported
+	TRUE is the operation succeeded and FALSE in case of some error, for example
+	if the system was too low on memory.
 
     NOTES
 	You must specify valid coordinates (non-negative and inside the actual bitmap
 	area), no checks are done.
-	
+
 	It is valid to specify two overlapped areas of the same bitmap as source
 	and destination.
+
+	Mask size must correspond to full source bitmap size (including alignment).
 
     EXAMPLE
 
@@ -3034,10 +3035,205 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 
 *****************************************************************************************/
 
+/* Nominal size of the pixel conversion buffer */
+#ifdef __mc68000
+#define NUMPIX 4096 	/* Not that much room to spare */
+#else
+#define NUMPIX 100000
+#endif
+
 IPTR GFX__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
-    D(bug("GFX::CopyBoxMasked not implemnted, using software fallback\n"));
-    return FALSE;
+    ULONG pixfmt = vHidd_StdPixFmt_Native32;
+    OOP_Object *src_pf, *dest_pf;
+    HIDDT_ColorModel src_colmod, dest_colmod;
+    HIDDT_Color *ctab = NULL;
+    ULONG bytes_per_line, lines_per_step, doing_lines, lines_done;
+    IPTR mask_align, mask_bpr;
+    UBYTE *srcbuf;
+
+    OOP_GetAttr(msg->src , aHidd_BitMap_PixFmt, (IPTR *)&src_pf);
+    OOP_GetAttr(msg->dest, aHidd_BitMap_PixFmt, (IPTR *)&dest_pf);
+
+    OOP_GetAttr(src_pf,  aHidd_PixFmt_ColorModel, &src_colmod);
+    OOP_GetAttr(dest_pf, aHidd_PixFmt_ColorModel, &dest_colmod);
+
+    if ((src_colmod == vHidd_ColorModel_Palette) && (dest_colmod == vHidd_ColorModel_TrueColor))
+    {
+	/*
+	 * LUT->truecolor conversion. We need a colormap (palette).
+	 * If the source is displayable (screen) bitmap, it will have own palette. In this case
+	 * we should use it.
+	 * If it's just a bitmap in memory, it won't have a palette (colmap will be NULL). In this
+	 * case destination bitmap needs to have a palette. This will happen if it's either a displayable
+	 * bitmap, or is a friend of displayable bitmap (will share friend's palette then).
+	 */
+    	HIDDT_ColorLUT *colmap = (HIDDT_ColorLUT *)HBM(msg->src)->colmap;
+
+    	if (!colmap)
+    	    colmap = (HIDDT_ColorLUT *)HBM(msg->dest)->colmap;
+
+	if (!colmap)
+	{
+	    D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
+	    return FALSE;
+	}
+
+	ctab = colmap->colors;
+    }
+    else if ((src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_TrueColor))
+    {
+    	if (src_pf != dest_pf)
+    	{
+    	    /*
+    	     * Pixelformats are different, conversion needed.
+    	     * First, we use two operations on destination bitmap (get and put), and only one
+    	     * operation on source bitmap (get).
+    	     * Second, we map LUT source pixels on destination bitmap's pixelformat.
+    	     * Resume: we use destination's pixelformat for the whole operation. Conversion
+    	     * happens during GetImage on the source bitmap.
+    	     */
+    	    OOP_GetAttr(dest_pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&pixfmt);
+    	}
+    }
+    else if ((src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_Palette))
+    {
+    	D(bug("BltMaskBitMapRastPort from truecolor bitmap to palette bitmap not supported!"));
+    	return FALSE;
+    }
+
+    /* Mask width in pixels corresponds to full bitmap width (including alignment) */
+    OOP_GetAttr(msg->src, aHidd_BitMap_Width, &mask_bpr);
+    OOP_GetAttr(msg->src, aHidd_BitMap_Align, &mask_align);
+
+    mask_align--;
+    mask_bpr = ((mask_bpr + mask_align) & ~mask_align) >> 3;
+
+    /*
+     * TODO: Here we use a temporary buffer to perform the operation. This is slow and
+     * actually unnecessary is many cases. If one of source or destination bitmaps is
+     * directly accessible, we should use their own buffers. This will increase the speed
+     * and decrease memory usage, because of omitted copy operations.
+     */
+
+    /* Based on the NUMPIX advice, figure out how many
+     * lines per step we can allocate
+     */
+    bytes_per_line = msg->width * sizeof(HIDDT_Pixel);
+    lines_per_step = NUMPIX / bytes_per_line;
+    if (lines_per_step == 0)
+    	lines_per_step = 1;
+
+    /* Allocate a temporary buffer */
+    srcbuf = AllocMem(2 * lines_per_step * bytes_per_line, MEMF_ANY);
+
+    /* Try line-at-a-time if we can't allocate a big buffer */
+    if (!srcbuf && lines_per_step > 1)
+    {
+    	lines_per_step = 1;
+    	srcbuf = AllocMem(2 * lines_per_step * bytes_per_line, MEMF_ANY);
+    }
+
+    if (srcbuf)
+    {
+    	UBYTE *destbuf = srcbuf + lines_per_step * bytes_per_line;
+    	HIDDT_DrawMode drawmode = GC_DRMD(msg->gc);
+
+	/* PutImage needs to be called in Copy mode for proper operation */
+	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
+
+	for (lines_done = 0; lines_done != msg->height; lines_done += doing_lines)
+	{
+	    HIDDT_Pixel *srcpixelbuf;
+	    HIDDT_Pixel *destpixelbuf;
+	    UBYTE   	*mask;
+	    ULONG	 x, y;
+
+	    doing_lines = lines_per_step;
+	    if (lines_done + doing_lines > msg->height)
+	    	doing_lines = msg->height - lines_done;
+
+	    HIDD_BM_GetImage(msg->src, srcbuf, bytes_per_line,
+			     msg->srcX, msg->srcY + lines_done,
+			     msg->width, doing_lines, pixfmt);
+
+	    HIDD_BM_GetImage(msg->dest, destbuf, bytes_per_line,
+			     msg->destX, msg->destY + lines_done,
+			     msg->width, doing_lines, pixfmt);
+
+	    mask = &msg->mask[COORD_TO_BYTEIDX(0, msg->srcY + lines_done, mask_bpr)];
+
+	    srcpixelbuf  = (HIDDT_Pixel *)srcbuf;
+	    destpixelbuf = (HIDDT_Pixel *)destbuf;
+
+	    switch (drawmode)
+	    {
+	    case vHidd_GC_DrawMode_Or:	 /* (ABC|ABNC|ANBC) if copy source and blit thru mask */
+	    case vHidd_GC_DrawMode_Copy: /* (ABC|ABNC = 0xC0) - compatibility with AOS3 */
+		for (y = 0; y < doing_lines; y++)
+		{
+		    for (x = 0; x < msg->width; x++)
+		    {
+			if (mask[XCOORD_TO_BYTEIDX(msg->srcX + x)] & XCOORD_TO_MASK(msg->srcX + x))
+			{
+			    HIDDT_Pixel pix = *srcpixelbuf;
+
+			    if (ctab)
+			    {
+			    	/*
+			    	 * TODO:
+			    	 * Here and in several other places we use colormap data for palette->truecolor conversion.
+			    	 * The algorithm is as follows: take LUT pixel value (which is effectively color index), find RGB
+			    	 * entry in the LUT, then compose a pixel from RGB triplet using MapColor method on the destination
+			    	 * bitmap.
+			    	 * This two-step operation is slow. graphics.library internally uses cached version of the palette
+			    	 * (HIDDT_PixLut), where all colors are already decoded into pixel values.
+			    	 * Since HIDD subsystem also needs this, this pixlut (called pixtab - pixel table in graphics.library),
+			    	 * should be moved here. In fact a good place for it is a bitmap object (since pixlut = colormap + pixfmt,
+			    	 * and pixfmt is a bitmap's property.
+			    	 * graphics.library has pixlut attached to a BitMap structure (using HIDD_BM_PIXTAB() macro).
+			    	 */
+				pix = HIDD_BM_MapColor(msg->dest, &ctab[pix]);
+			    }
+
+			    *destpixelbuf = pix;
+			}
+			srcpixelbuf++;
+			destpixelbuf++;
+		    }
+		    mask += mask_bpr;
+		}
+	 	break;
+
+	    case vHidd_GC_DrawMode_AndInverted: /* (ANBC) if invert source and blit thru mask */
+		D(bug("CopyBoxMasked does not support ANBC minterm yet"));
+		break;
+
+	    default:
+		D(bug("CopyBoxMasked: DrawMode 0x%x not handled.\n", drawmode));
+		break;
+	    }
+
+	    HIDD_BM_PutImage(msg->dest, msg->gc, destbuf, bytes_per_line, 
+			     msg->destX, msg->destY + lines_done,
+			     msg->width, doing_lines, pixfmt);
+
+	} /* for(lines_done = 0; lines_done != height; lines_done += doing_lines) */
+
+	/* Restore GC state */
+	GC_DRMD(msg->gc) = drawmode;
+
+    	/* Free our temporary buffer */
+    	FreeMem(srcbuf, 2 * lines_per_step * bytes_per_line);
+
+	return TRUE;
+    } /* if (lines_per_step) */
+    else
+    {
+    	/* urk :-( pixelbuffer too small to hold two lines) */
+	D(bug("BltMaskBitMapRastPort found pixelbuffer to be too small"));
+	return FALSE;
+    }    
 }
 
 

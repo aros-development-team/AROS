@@ -9,29 +9,17 @@
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
-#include <hardware/blit.h>
-
-/* Nominal size of the pixel conversion buffer
- */
-#ifdef __mc68000
-#define NUMPIX 4096 	/* Not that much room to spare */
-#else
-#define NUMPIX 100000
-#endif
+#include "graphics_driver.h"
 
 struct bltmask_render_data
 {
     struct render_special_info rsi;
     struct BitMap   	       *srcbm;
     OOP_Object      	       *srcbm_obj;
-    OOP_Object	    	       *srcpf;
-    HIDDT_ColorModel	       src_colmod;
     PLANEPTR	    	       mask;
-    ULONG   	    	       mask_bpr;
-    ULONG   	    	       minterm;
-    BOOL    	    	       samebitmapformat;
 };
 
 static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
@@ -125,7 +113,6 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
     	return;
 
-    brd.minterm	= minterm;
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)
     {
@@ -136,21 +123,10 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     brd.srcbm = srcBitMap;
     brd.mask  = bltMask;
 
-    /* The mask has always the same size as the source bitmap */    
-    brd.mask_bpr = 2 * WIDTH_TO_WORDS(GetBitMapAttr(srcBitMap, BMA_WIDTH));
-
-    OOP_GetAttr(brd.srcbm_obj, aHidd_BitMap_PixFmt, (IPTR *)&brd.srcpf);
-    {
-    	IPTR attr;
-	
-	OOP_GetAttr(brd.srcpf, aHidd_PixFmt_ColorModel, &attr);
-	brd.src_colmod = (HIDDT_ColorModel)attr;
-    }
-    
     gc = GetDriverData(destRP)->dd_GC;
     OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
 
-    gc_tags[0].ti_Data = vHidd_GC_DrawMode_Copy;
+    gc_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
     OOP_SetAttrs(gc, gc_tags);
 
     rr.MinX = xDest;
@@ -182,199 +158,16 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     	    	    	    OOP_Object *dstbm_obj, OOP_Object *dst_gc,
 			    LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
 {
-    struct bltmask_render_data 	*brd;
-    OOP_Object	    	    	*dest_pf;
-    HIDDT_ColorModel	    	dest_colmod;
-    HIDDT_Pixel     	    	*pixtab = NULL;
-    ULONG   	    	    	x, y, width, height;
-    LONG    	    	    	lines_done, lines_per_step, doing_lines;
-    BOOL    	    	    	pal_to_true = FALSE;
-    ULONG			pixfmt = vHidd_StdPixFmt_Native32;
-    UBYTE			*srcbuf;
+    struct bltmask_render_data *brd = bltmask_rd;
+    ULONG width  = x2 - x1 + 1;
+    ULONG height = y2 - y1 + 1;
+    OOP_Object *gfxhidd;
+    BOOL ok;
 
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
+    gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
+    ok = HIDD_Gfx_CopyBoxMasked(gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, x1, y1, width, height, brd->mask, dst_gc);
 
-    brd = (struct bltmask_render_data *)bltmask_rd;
-
-    OOP_GetAttr(dstbm_obj, aHidd_BitMap_PixFmt, (IPTR *)&dest_pf);
-    /* See if we can use an optimized masked copybox */
-    {
-        Object *src_gfxhidd = NULL, *dst_gfxhidd = NULL;
-        struct TagItem tags[] = { { aHidd_GC_DrawMode, 0 } , { TAG_END }};
-        OOP_GetAttr(brd->srcbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&src_gfxhidd);
-        OOP_GetAttr(dstbm_obj, aHidd_BitMap_GfxHidd, (IPTR *)&dst_gfxhidd);
-        if (src_gfxhidd == dst_gfxhidd) {
-            BOOL ok;
-            HIDDT_DrawMode old_drmd = 0, drmd = MINTERM_TO_GCDRMD(brd->minterm);
-	    OOP_GetAttr(dst_gc, aHidd_GC_DrawMode, &old_drmd);
-	    tags[0].ti_Data = (IPTR)drmd;
-	    OOP_SetAttrs(dst_gc, tags);
-
-            ok = HIDD_Gfx_CopyBoxMasked(dst_gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, x1, y1, width, height, brd->mask, dst_gc);
-	    tags[0].ti_Data = (IPTR)old_drmd;
-	    OOP_SetAttrs(dst_gc, tags);
-            if (ok)
-                return width * height;
-        }
-    }
-
-    {
-    	IPTR attr;
-	
-    	OOP_GetAttr(dest_pf, aHidd_PixFmt_ColorModel, &attr);
-	dest_colmod = (HIDDT_ColorModel)attr;
-    }
-
-    if ((brd->src_colmod == vHidd_ColorModel_Palette) && (dest_colmod == vHidd_ColorModel_Palette))
-    {
-    }
-    else if ((brd->src_colmod == vHidd_ColorModel_Palette) && (dest_colmod == vHidd_ColorModel_TrueColor))
-    {
-    	pixtab = IS_HIDD_BM(brd->srcbm) ? HIDD_BM_PIXTAB(brd->srcbm) : NULL;
-	if (!pixtab) pixtab = IS_HIDD_BM(brd->rsi.curbm) ? HIDD_BM_PIXTAB(brd->rsi.curbm) : NULL;
-	
-	if (!pixtab)
-	{
-	    D(bug("BltMaskBitMapRastPort could not retrieve pixel table for blit from palette to truecolor bitmap"));
-	    return width * height;
-	}
-	
-    	pal_to_true = TRUE;
-    }
-    else if ((brd->src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_TrueColor))
-    {
-    	if (brd->srcpf != dest_pf)
-	{
-	    pixfmt = vHidd_StdPixFmt_ARGB32;
-	}
-    }
-    else if ((brd->src_colmod == vHidd_ColorModel_TrueColor) && (dest_colmod == vHidd_ColorModel_Palette))
-    {
-    	D(bug("BltMaskBitMapRastPort from truecolor bitmap to palette bitmap not supported!"));
-    	return width * height;
-    }
-
-    /* Based on the NUMPIX advice, figure out how many
-     * lines per step we can allocate
-     */
-    lines_per_step = NUMPIX / (width * sizeof(HIDDT_Pixel));
-    if (lines_per_step == 0)
-    	lines_per_step = 1;
-
-    /* Allocate a temporary buffer */
-    srcbuf = AllocMem(2 * lines_per_step * width * sizeof(HIDDT_Pixel), MEMF_ANY);
-
-    /* Try line-at-a-time if we can't allocate a big buffer */
-    if (!srcbuf && lines_per_step > 1) {
-    	lines_per_step = 1;
-    	srcbuf = AllocMem(2 * lines_per_step * width * sizeof(HIDDT_Pixel), MEMF_ANY);
-    }
-
-    if (srcbuf)
-    {
-    	UBYTE *destbuf;
-	
-	destbuf = srcbuf;
-	destbuf += lines_per_step * width * sizeof(HIDDT_Pixel);
-	
-	for(lines_done = 0; lines_done != height; lines_done += doing_lines)
-	{
-	    HIDDT_Pixel *srcpixelbuf;
-	    HIDDT_Pixel *destpixelbuf;
-	    UBYTE   	*mask;
-	    
-	    doing_lines = lines_per_step;
-	    if (lines_done + doing_lines > height) doing_lines = height - lines_done;
-	    
-	    HIDD_BM_GetImage(brd->srcbm_obj,
-	    	    	     srcbuf,
-			     width * sizeof(HIDDT_Pixel),
-			     srcx, srcy + lines_done,
-			     width, doing_lines,
-			     pixfmt);
-			     
-	    HIDD_BM_GetImage(dstbm_obj,
-	    	    	     destbuf,
-			     width * sizeof(HIDDT_Pixel),
-			     x1, y1 + lines_done,
-			     width, doing_lines,
-			     pixfmt);
-		
-	    mask = &brd->mask[COORD_TO_BYTEIDX(0, srcy + lines_done, brd->mask_bpr)];
-	    
-	    srcpixelbuf  = (HIDDT_Pixel *)srcbuf;
-	    destpixelbuf = (HIDDT_Pixel *)destbuf;
-	    
-	    switch(brd->minterm)
-	    {
-	    	case (ABC|ABNC|ANBC): /* (ABC|ABNC|ANBC) if copy source and blit thru mask */
-		case 0xC0: /* compatibility with AOS3 */
-		    if (pal_to_true)
-		    {
-		    	for(y = 0; y < doing_lines; y++)
-			{
-		    	    for(x = 0; x < width; x++)
-			    {
-			    	if (mask[XCOORD_TO_BYTEIDX(srcx + x)] & XCOORD_TO_MASK(srcx + x))
-				{
-				    *destpixelbuf = pixtab[*srcpixelbuf];
-				}
-				srcpixelbuf++;
-				destpixelbuf++;
-			    }
-			    mask += brd->mask_bpr;
-			}
-		    }
-		    else
-		    {
-		    	for(y = 0; y < doing_lines; y++)
-			{
-		    	    for(x = 0; x < width; x++)
-			    {
-			    	if (mask[XCOORD_TO_BYTEIDX(srcx + x)] & XCOORD_TO_MASK(srcx + x))
-				{
-				    *destpixelbuf = *srcpixelbuf;
-				}
-				srcpixelbuf++;
-				destpixelbuf++;
-			    }
-			    mask += brd->mask_bpr;
-			}
-		    }
-		    break;
-		    
-		case ANBC: /* (ANBC) if invert source and blit thru mask */
-		    D(bug("BltMaskBitMapRastPort does not support ANBC minterm yet"));
-		    break;
-
-		default:
-		    D(bug("BltMaskBitMapRastPort: minterm 0x%x not handled.\n", brd->minterm));
-		    break;
-	    } /* switch(brd->minterm) */
-	    
-	    HIDD_BM_PutImage(dstbm_obj,
-	    	    	     dst_gc,
-	    	    	     destbuf,
-			     width * sizeof(HIDDT_Pixel),
-			     x1, y1 + lines_done,
-			     width, doing_lines,
-			     pixfmt);
-			     
-	} /* for(lines_done = 0; lines_done != height; lines_done += doing_lines) */
-
-    	/* Free our temporary buffer */
-    	FreeMem(srcbuf, 2 * lines_per_step * width * sizeof(HIDDT_Pixel));
-
-    } /* if (lines_per_step) */
-    else
-    {
-    	/* urk :-( pixelbuffer too small to hold two lines) */
-	
-	D(bug("BltMaskBitMapRastPort found pixelbuffer to be too small"));
-    }
-    
-    return width * height;
+    return ok ? width * height : 0;
 }
 
 /****************************************************************************************/
