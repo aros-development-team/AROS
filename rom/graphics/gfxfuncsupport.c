@@ -127,10 +127,7 @@ ULONG do_render_func(struct RastPort *rp
 	
 	if (get_special_info)
 	{
-	    RSI(funcdata)->curbm    = rp->BitMap;
-	    RSI(funcdata)->onscreen = TRUE;
-	    RSI(funcdata)->layer_rel_srcx = srcx;
-	    RSI(funcdata)->layer_rel_srcy = srcy;
+	    RSI(funcdata)->curbm = rp->BitMap;
 	}
 
 	pixwritten = CallRenderFunc(render_func, funcdata, srcx, srcy,
@@ -173,17 +170,11 @@ ULONG do_render_func(struct RastPort *rp
 		    xoffset = intersect.MinX - torender.MinX;
 		    yoffset = intersect.MinY - torender.MinY;
 
-		    if (get_special_info) {
-			 RSI(funcdata)->layer_rel_srcx = intersect.MinX - L->bounds.MinX + L->Scroll_X;
-			 RSI(funcdata)->layer_rel_srcy = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
-		    }
-
 	            if (NULL == CR->lobs)
 		    {
 			if (get_special_info)
 			{
 			    RSI(funcdata)->curbm = bm;
-			    RSI(funcdata)->onscreen = TRUE;
 			}
 
 			pixwritten += CallRenderFunc(render_func, funcdata, srcx + xoffset, srcy + yoffset,
@@ -204,7 +195,6 @@ ULONG do_render_func(struct RastPort *rp
 		    	    if (get_special_info)
 			    {
 				RSI(funcdata)->curbm = CR->BitMap;
-				RSI(funcdata)->onscreen = FALSE;
 		    	    }
 
 			    intersect.MinX = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
