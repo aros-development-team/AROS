@@ -227,6 +227,16 @@ VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	case aoHidd_BitMap_Align:
 	    *msg->storage = csd->aga ? 64 : 16;
 	    return;
+	case aoHidd_BitMap_BytesPerRow:
+	    if (data->bytesperrow == 0) {
+	        IPTR width = 0;
+	        IPTR align = csd->aga ? 64 : 16;
+	        OOP_GetAttr(o, aHidd_BitMap_Width, &width);
+	        *msg->storage = ((width + align - 1) & ~(align - 1)) / 8;
+            } else {
+	        *msg->storage = data->bytesperrow;
+            }
+	    return;
 	}
     }
     DB2(bug("AmigaVideoBM__Root__Get Exit\n"));
