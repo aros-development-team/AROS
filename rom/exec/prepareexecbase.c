@@ -192,10 +192,6 @@ void InitExecBase(struct ExecBase *SysBase, ULONG negsize, struct TagItem *msg)
     SysBase->TaskSigAlloc   = 0xFFFF;
     SysBase->TaskTrapAlloc  = 0;
 
-    /* Default frequencies. FIXME: PowerSupplyFrequency is still used as a multiplier in i386-pc port. */
-    SysBase->VBlankFrequency      = 50;
-    SysBase->PowerSupplyFrequency = 1;
-
     /* Parse some arguments from command line */
     args = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
     if (args)
