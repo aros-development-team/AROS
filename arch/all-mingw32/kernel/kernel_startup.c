@@ -10,6 +10,7 @@
 #include <proto/exec.h>
 
 #include <inttypes.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "hostinterface.h"
@@ -192,15 +193,25 @@ static const char *kernel_functions[] =
     NULL
 };
 
-
 static int Platform_Init(struct KernelBase *KernelBase)
 {
-    D(bug("[Kernel] initializing host-side kernel module, timer frequency is %u\n", SysBase->ex_EClockFrequency));
+    /* Our VBlank is software-driven, we can ask the user what frequency to use */
+    char *args = (char *)LibGetTagData(KRN_CmdLine, 0, BootMsg);
+
+    if (args)
+    {
+	char *s = strstr(args, "vblank=");
+
+	if (s)
+	    SysBase->VBlankFrequency = atoi(&s[7]);
+    }
+
+    D(bug("[Kernel] initializing host-side kernel module, timer frequency is %u\n", SysBase->VBlankFrequency));
 
     *KernelIFace.TrapVector = core_TrapHandler;
     *KernelIFace.IRQVector  = core_IRQHandler;
 
-    KernelBase->kb_PageSize = KernelIFace.core_init(SysBase->ex_EClockFrequency);
+    KernelBase->kb_PageSize = KernelIFace.core_init(SysBase->VBlankFrequency);
     D(bug("[Kernel] System page size: %u\n", KernelBase->kb_PageSize));
 
     /* core_init() returns 0 on failure */

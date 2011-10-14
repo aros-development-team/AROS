@@ -17,7 +17,6 @@
 #include "kernel_mingw32.h"
 #include "kernel_scheduler.h"
 #include "kernel_syscall.h"
-#include "kernel_timer.h"
 #include "kernel_traps.h"
 
 #define D(x) /* This may lock up. See notes in host_intr.c */
@@ -85,9 +84,9 @@ int core_IRQHandler(unsigned char *irqs, CONTEXT *regs)
             h(in->in_HandlerData, in->in_HandlerData2);
     }
 
-    /* Timer IRQ is also used to emulate exec VBlank */
-    if (irqs[IRQ_TIMER])
-	core_TimerTick();
+    /* IRQ 0 is exec VBlank timer */
+    if (irqs[0])
+	core_Cause(INTB_VERTB, 1L << INTB_VERTB);
 
     /* Reschedule tasks and exit */
     core_ExitInterrupt(regs);
