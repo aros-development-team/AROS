@@ -193,6 +193,8 @@ static int load_hunk
                 memflags |= MEMF_CHIP;
             } else if (strcmp(nameext, ".MEMF_LOCAL")==0) {
                 memflags |= MEMF_LOCAL;
+            } else if (strcmp(nameext, ".MEMF_KICK")==0) {
+                memflags |= MEMF_KICK;
             } else if (strcmp(nameext, ".MEMF_FAST")==0) {
                 memflags |= MEMF_FAST;
             } else if (strcmp(nameext, ".MEMF_PUBLIC")==0) {
