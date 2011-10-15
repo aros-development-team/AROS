@@ -34,6 +34,8 @@ static BOOL init(void)
 {
 #ifdef __AROS__
     out = ErrorOutput();
+    if (out == BNULL)
+        out = Output();
 #else
     out = Output();
 #endif
