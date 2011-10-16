@@ -13,7 +13,7 @@ include $(TOP)/config/make.cfg
 #MM			bootloader-$(AROS_TARGET_BOOTLOADER)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 
 SYSTEM_FILES := \
-    C/Shell \
+    C/NewShell \
     C/Unpack \
     Libs/locale.library \
     Libs/iffparse.library \
