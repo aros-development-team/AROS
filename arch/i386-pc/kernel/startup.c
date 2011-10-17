@@ -13,6 +13,7 @@
 #include <asm/segments.h>
 #include <exec/resident.h>
 #include <proto/arossupport.h>
+#include <proto/exec.h>
 
 #include <bootconsole.h>
 #include <string.h>
@@ -370,6 +371,12 @@ void kernel_cstart(const struct TagItem *msg)
      * will initialize the rest of hardware.
      */
     InitCode(RTF_SINGLETASK, 0);
+
+    /*
+     * After RTF_SINGLETASK we can have various interesting things like ACPI.
+     * Secondary platform initialization code makes use of them.
+     */
+    PlatformPostInit();
 
     /* This is remains of old exec.library code. */
     exec_boot(BootMsg);
