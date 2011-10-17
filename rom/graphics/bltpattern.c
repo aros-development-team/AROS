@@ -117,8 +117,8 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	bprd.maskmodulo     = byteCnt;
 	bprd.patterndepth   = (rp->AreaPtSz >= 0) ? 1 : rp->BitMap->Depth;
 	bprd.patternheight  = 1L << ((rp->AreaPtSz >= 0) ? rp->AreaPtSz : -rp->AreaPtSz);
-	bprd.renderx1	    = xMin - RP_PATORIGINX(rp);
-	bprd.rendery1	    = yMin - RP_PATORIGINY(rp);	
+	bprd.renderx1	    = xMin;
+	bprd.rendery1	    = yMin;
 	bprd.invertpattern  = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
     	bprd.pixlut.entries = bprd.patterndepth;
 	bprd.pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
