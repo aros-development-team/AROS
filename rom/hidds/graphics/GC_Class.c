@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics gc class implementation.
@@ -28,58 +28,6 @@
 #undef  DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-/*****************************************************************************************
-
-    NAME
-        aoHidd_GC_UserData
-
-    SYNOPSIS
-        [.SG]
-
-    LOCATION
-        hidd.graphics.gc
-
-    FUNCTION
-        User data
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-    aoHidd_GC_BitMap
-
-    SYNOPSIS
-        [I.G]
-
-    LOCATION
-        hidd.graphics.gc
-
-    FUNCTION
-        Bitmap which this gc uses.
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
 
 /*****************************************************************************************
 
@@ -146,32 +94,6 @@
 
     FUNCTION
         Draw mode
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
-        aoHidd_GC_Font
-
-    SYNOPSIS
-        [.SG]
-
-    LOCATION
-        hidd.graphics.gc
-
-    FUNCTION
-        Current font
 
     NOTES
 
@@ -266,32 +188,6 @@
 /*****************************************************************************************
 
     NAME
-        aoHidd_GC_PlaneMask
-
-    SYNOPSIS
-        [.SG]
-
-    LOCATION
-        hidd.graphics.gc
-
-    FUNCTION
-        Shape bitmap 
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-*****************************************************************************************/
-
-/*****************************************************************************************
-
-    NAME
         aoHidd_GC_ColorExpansionMode
 
     SYNOPSIS
@@ -315,7 +211,6 @@
 
 *****************************************************************************************/
 
-
 VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
 
 #define IS_GC_ATTR(attr, idx) ( ( (idx) = (attr) - HiddGCAttrBase) < num_Hidd_GC_Attrs)
@@ -335,17 +230,12 @@ OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
         data = OOP_INST_DATA(cl, obj);
     
         /* clear all data and set some default values */
-
-        memset(data, 0, sizeof (*data));
-
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
         data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
         data->colExp    = vHidd_GC_ColExp_Opaque;    /* color expansion mode   */
-        data->font      = NULL;     /* current fonts                           */
         data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
         data->linePat   = ~0;       /* LinePattern                             */
-        data->planeMask = NULL;     /* Pointer to a shape bitMap               */
 
         /* Override defaults with user suplied attrs */
 
@@ -386,10 +276,6 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 		    data->drMode = tag->ti_Data;
 		    break;
 		    
-                case aoHidd_GC_Font:
-		    data->font = (APTR) tag->ti_Data;
-		    break;
-		    
                 case aoHidd_GC_ColorMask:
 		    data->colMask = tag->ti_Data;
 		    break;
@@ -400,10 +286,6 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 
                 case aoHidd_GC_LinePatternCnt: 
 		    data->linePatCnt = (UWORD) tag->ti_Data;
-		    break;
-		    
-                case aoHidd_GC_PlaneMask:
-		    data->planeMask = (APTR) tag->ti_Data;
 		    break;
 
                 case aoHidd_GC_ColorExpansionMode:
@@ -440,25 +322,17 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
             case aoHidd_GC_DrawMode:
 	    	*msg->storage = data->drMode;
 		break;
-		
-            case aoHidd_GC_Font:
-	    	*msg->storage = (IPTR)data->font;
-		break;
-		
+
             case aoHidd_GC_ColorMask:
 	    	*msg->storage = data->colMask;
 		break;
-		
+
             case aoHidd_GC_LinePattern:
 	    	*msg->storage = data->linePat;
 		break;
 
             case aoHidd_GC_LinePatternCnt:
 	    	*msg->storage = data->linePatCnt;
-		break;
-		
-            case aoHidd_GC_PlaneMask:
-	    	*msg->storage = (IPTR)data->planeMask;
 		break;
 		
             case aoHidd_GC_ColorExpansionMode:
@@ -491,17 +365,20 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         hidd.graphics.gc
 
     FUNCTION
+    	Install a clipping rectangle on a GC.
 
     INPUTS
-        obj -
-        x1  -
-        y1  -
-        x2  -
-        y2  -
+        obj    - a GC object
+        x1, y1 - top-left coordinate of the clipping rectangle
+        x2, y2 - bottom-right coordinate of the clipping rectangle
 
     RESULT
+    	None
 
     NOTES
+    	Since the GC is just a data container, installing clipping rectangle doesn't magically
+    	applies it to all operations. Graphics driver method which uses the GC needs to support
+    	it explicitly. Currently clipping is supported only by Draw and DrawEllipse methods.
 
     EXAMPLE
 
@@ -513,18 +390,23 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 *****************************************************************************************/
 
-VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
+BOOL GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
 {
-     HIDDT_GC_Intern *data;
-     
-     data = OOP_INST_DATA(cl, o);
-     
-     data->clipX1 = msg->x1;
-     data->clipY1 = msg->y1;
-     data->clipX2 = msg->x2;
-     data->clipY2 = msg->y2;
-     
-     data->doClip = TRUE;
+     struct gc_data *data = OOP_INST_DATA(cl, o);
+
+     /* A space for struct Rectangle has been allocated together with the object */
+     data->cr.MinX = msg->x1;
+     data->cr.MinY = msg->y1;
+     data->cr.MaxX = msg->x2;
+     data->cr.MaxY = msg->y2;
+
+     /*
+      * Set clipRect pointer to our own rectangle.
+      * clipRect is intentionally a pointer, not embedded structure. This is done
+      * in order to support temporary GCs embedded in a RastPort for graphics.library.
+      * There's not enough space to hold struct Rectangle in embedded GC.
+      */
+     data->prot.clipRect = &data->cr;
 }
 
 /*****************************************************************************************
@@ -541,11 +423,13 @@ VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetC
         hidd.graphics.gc
 
     FUNCTION
+    	Uninstalls the clipping rectangle (whatever it is) from the GC.
 
     INPUTS
-        obj -
+        obj - a GC object
 
     RESULT
+    	None
 
     NOTES
 
@@ -561,10 +445,8 @@ VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetC
 
 VOID GC__Hidd_GC__UnsetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_UnsetClipRect *msg)
 {
-     HIDDT_GC_Intern *data;
-     
-     data = OOP_INST_DATA(cl, o);
-     
-     data->doClip = FALSE;
-    
+     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, o);
+
+     /* Reset clipRect pointer */
+     data->clipRect = NULL;
 }

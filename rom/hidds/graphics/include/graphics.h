@@ -9,17 +9,9 @@
     Lang: english
 */
 
-#ifndef EXEC_TYPES_H
-#   include <exec/types.h>
-#endif
-#ifndef HIDD_HIDD_H
-#   include <hidd/hidd.h>
-#endif
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-
-
+#include <graphics/gfx.h>
+#include <hidd/hidd.h>
+#include <oop/oop.h>
 #include <utility/utility.h>
 
 
@@ -1480,39 +1472,32 @@ struct pHidd_GC_UnsetClipRect
 enum
 {
     /* Attributes for a graphics context */
-
-    aoHidd_GC_UserData,            /* [.SG] User data                          */
-    aoHidd_GC_BitMap,              /* [I.G] Bitmap which this gc uses          */
+    aoHidd_GC_Reserved0,
+    aoHidd_GC_Reserved1,
     aoHidd_GC_Foreground,          /* [.SG] Foreground color                   */
     aoHidd_GC_Background,          /* [.SG] Background color                   */
     aoHidd_GC_DrawMode,            /* [.SG] Draw mode                          */
-    aoHidd_GC_Font,                /* [.SG] Current font                       */
+    aoHidd_GC_Reserved2,
     aoHidd_GC_ColorMask,           /* [.SG] Prevents some color bits from      */
                                    /*       changing                           */
     aoHidd_GC_LinePattern,         /* [.SG] Pattern for line drawing           */
     aoHidd_GC_LinePatternCnt,	   /* [.SG] Pattern start bit for line drawing */
-    aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
+    aoHidd_GC_Reserved3,
     aoHidd_GC_ColorExpansionMode,  /* [.SG] Mode for color expansion 	       */
-    
+
     num_Hidd_GC_Attrs
 };
 
-#define aHidd_GC_UserData    	    (HiddGCAttrBase + aoHidd_GC_UserData)
-#define aHidd_GC_BitMap      	    (HiddGCAttrBase + aoHidd_GC_BitMap)
 #define aHidd_GC_Foreground  	    (HiddGCAttrBase + aoHidd_GC_Foreground)
 #define aHidd_GC_Background  	    (HiddGCAttrBase + aoHidd_GC_Background)
 #define aHidd_GC_DrawMode    	    (HiddGCAttrBase + aoHidd_GC_DrawMode)
-#define aHidd_GC_Font        	    (HiddGCAttrBase + aoHidd_GC_Font)
 #define aHidd_GC_ColorMask   	    (HiddGCAttrBase + aoHidd_GC_ColorMask)
 #define aHidd_GC_LinePattern 	    (HiddGCAttrBase + aoHidd_GC_LinePattern)
 #define aHidd_GC_LinePatternCnt	    (HiddGCAttrBase + aoHidd_GC_LinePatternCnt)
-#define aHidd_GC_PlaneMask   	    (HiddGCAttrBase + aoHidd_GC_PlaneMask)
 #define aHidd_GC_ColorExpansionMode  (HiddGCAttrBase + aoHidd_GC_ColorExpansionMode)
 
 
 /* Drawmodes for a graphics context */
-
-
 #define vHidd_GC_DrawMode_Clear 	0x00 /* 0   	    	    */
 #define vHidd_GC_DrawMode_And 		0x01 /* src AND dst	    */
 #define vHidd_GC_DrawMode_AndReverse	0x02 /* src AND NOT dst     */
@@ -1529,7 +1514,6 @@ enum
 #define vHidd_GC_DrawMode_OrInverted	0x0D /* NOT src OR dst	    */
 #define vHidd_GC_DrawMode_Nand	    	0x0E /* NOT src OR NOT dst  */
 #define vHidd_GC_DrawMode_Set	    	0x0F /* 1   	    	    */
-
 
 #define vHidd_GC_ColExp_Transparent	(1 << 0)
 #define vHidd_GC_ColExp_Opaque		(1 << 1)
@@ -1563,46 +1547,30 @@ struct _hidd_bitmap_protected
 
 typedef struct
 {
-    HIDDT_Pixel     fg;        /* foreground color                                 */
-    HIDDT_Pixel     bg;        /* background color                                 */
-    HIDDT_DrawMode  drMode;    /* drawmode                                         */
-    /* WARNING: type of font could be change */
-    APTR    	    font;      /* current fonts                                    */
-    ULONG   	    colMask;   /* ColorMask prevents some color bits from changing */
-    UWORD   	    linePat;   /* LinePattern                                      */
-    UWORD   	    linePatCnt; /* LinePattern start bit    	    	    	   */
-    APTR    	    planeMask; /* Pointer to a shape bitMap                        */
-    ULONG   	    colExp;
-    
-    BOOL    	    doClip;
-
-    LONG    	    clipX1;
-    LONG    	    clipY1;
-    LONG      	    clipX2;
-    LONG    	    clipY2;
- 
+    struct Rectangle *clipRect;
+    HIDDT_Pixel       fg;         /* foreground color                                 */
+    HIDDT_Pixel       bg;         /* background color                                 */
+    ULONG   	      colMask;    /* ColorMask prevents some color bits from changing */
+    UWORD   	      linePat;    /* LinePattern                                      */
+    UBYTE   	      linePatCnt; /* LinePattern start bit    	    	    	      */
+    UBYTE	      drMode;     /* drawmode                                         */
+    UBYTE   	      colExp;
 } HIDDT_GC_Intern;
 
 #define GCINT(gc)	    ((HIDDT_GC_Intern *)gc)
 #define GC_FG(gc)	    (GCINT(gc)->fg)
 #define GC_BG(gc)	    (GCINT(gc)->bg)
 #define GC_DRMD(gc)	    (GCINT(gc)->drMode)
-#define GC_FONT(gc)	    (GCINT(gc)->font)
 #define GC_COLMASK(gc)	    (GCINT(gc)->colMask)
 #define GC_LINEPAT(gc)	    (GCINT(gc)->linePat)
 #define GC_LINEPATCNT(gc)   (GCINT(gc)->linePatCnt)
-#define GC_PLANEMASK(gc)    (GCINT(gc)->planeMask)
 #define GC_COLEXP(gc)	    (GCINT(gc)->colExp)
 
-#define GC_DOCLIP(gc)	    (GCINT(gc)->doClip)
-#define GC_CLIPX1(gc)	    (GCINT(gc)->clipX1)
-#define GC_CLIPY1(gc)	    (GCINT(gc)->clipY1)
-#define GC_CLIPX2(gc)	    (GCINT(gc)->clipX2)
-#define GC_CLIPY2(gc)	    (GCINT(gc)->clipY2)
-
-#define GC_(gc)	    	    (GCINT(gc)->)
-
-
+#define GC_DOCLIP(gc)	    (GCINT(gc)->clipRect)
+#define GC_CLIPX1(gc)	    (GCINT(gc)->clipRect->MinX)
+#define GC_CLIPY1(gc)	    (GCINT(gc)->clipRect->MinY)
+#define GC_CLIPX2(gc)	    (GCINT(gc)->clipRect->MaxX)
+#define GC_CLIPY2(gc)	    (GCINT(gc)->clipRect->MaxY)
 
 /****************** PixFmt definitions **************************/
 
