@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -9,14 +9,11 @@
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
-#include <proto/oop.h>
 
-static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
-    	    	    	       OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			       LONG x1, LONG y1, LONG x2, LONG y2,
-			       struct GfxBase *GfxBase);
+/****************************************************************************************/
 
 struct bp_render_data
 {
@@ -30,7 +27,31 @@ struct bp_render_data
     WORD    	     rendery1;
     UBYTE   	     invertpattern;
 };
-	
+
+static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
+    	    	    	       OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+    	    	    	       struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct bp_render_data *bprd = bpr_data;
+    ULONG		   width  = rect->MaxX - rect->MinX + 1;
+    ULONG		   height = rect->MaxY - rect->MinY + 1;
+    UBYTE		  *mask = bprd->mask + bprd->maskmodulo * srcy;
+    WORD		   patsrcx = (srcx + bprd->renderx1) % 16;
+    WORD		   patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
+
+    if (patsrcx < 0)
+    	patsrcx += 16;
+    if (patsrcy < 0)
+    	patsrcy += bprd->patternheight;
+
+    HIDD_BM_PutPattern(dstbm_obj, dst_gc, bprd->pattern,
+    	    	       patsrcx, patsrcy, bprd->patternheight, bprd->patterndepth,
+		       &bprd->pixlut, bprd->invertpattern, mask, bprd->maskmodulo,
+		       srcx, rect->MinX, rect->MinY, width, height);
+
+    return width * height;
+}
+
 /*****************************************************************************
 
     NAME */
@@ -110,8 +131,6 @@ struct bp_render_data
 	do_render_func(rp, NULL, &rr, bltpattern_render, &bprd, TRUE, FALSE, GfxBase);
 
 	RELEASE_DRIVERDATA(rp, GfxBase);
-
-
     }
     else
     {
@@ -135,45 +154,3 @@ struct bp_render_data
     AROS_LIBFUNC_EXIT
 
 } /* BltPattern */
-
-/****************************************************************************************/
-
-static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
-    	    	    	    	OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-				LONG x1, LONG y1, LONG x2, LONG y2,
-				struct GfxBase *GfxBase)
-{
-    struct bp_render_data  *bprd;
-    ULONG   	    	    width, height;
-    WORD    	    	    patsrcx, patsrcy;
-    UBYTE   	    	   *mask;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-
-    bprd = (struct bp_render_data *)bpr_data;
-     
-    mask = bprd->mask + bprd->maskmodulo * srcy;
-    
-    patsrcx = (srcx + bprd->renderx1) % 16;
-    patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
-    if (patsrcx < 0) patsrcx += 16;
-    if (patsrcy < 0) patsrcy += bprd->patternheight;
-    
-    HIDD_BM_PutPattern(dstbm_obj, dst_gc, bprd->pattern,
-    	    	       patsrcx,
-		       patsrcy,
-		       bprd->patternheight, bprd->patterndepth,
-		       &bprd->pixlut,
-		       bprd->invertpattern,
-		       mask,
-		       bprd->maskmodulo,
-		       srcx,
-		       x1,
-		       y1,
-		       width,
-		       height);
-		       
-		    
-    return width * height;
-}

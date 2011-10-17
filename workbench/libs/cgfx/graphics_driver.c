@@ -73,31 +73,17 @@ struct wpaa_render_data
     ULONG modulo;
 };
 
-static ULONG wpaa_render(APTR wpaar_data
-	, LONG srcx, LONG srcy
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
+static ULONG wpaa_render(struct wpaa_render_data *wpaard, LONG srcx, LONG srcy,
+			 OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			 struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct wpaa_render_data *wpaard;
-    ULONG   	    	     width, height;
-    UBYTE   	    	    *array;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    wpaard = (struct wpaa_render_data *)wpaar_data;
-    
-    array = wpaard->array + wpaard->modulo * srcy + 4 * srcx;
-    
-    HIDD_BM_PutAlphaImage(dstbm_obj
-    	, dst_gc, array
-	, wpaard->modulo
-	, x1, y1
-	, width, height
-    );
-    
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = wpaard->array + wpaard->modulo * srcy + 4 * srcx;
+
+    HIDD_BM_PutAlphaImage(dstbm_obj, dst_gc, array, wpaard->modulo,
+    			  rect->MinX, rect->MinY, width, height);
+
     return width * height;
 }
 
@@ -108,32 +94,17 @@ struct bta_render_data
     UBYTE  invertalpha;
 };
 
-static ULONG bta_render(APTR bta_data
-	, LONG srcx, LONG srcy
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
+static ULONG bta_render(struct bta_render_data *btard, LONG srcx, LONG srcy,
+			OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct bta_render_data *btard;
-    ULONG   	    	    width, height;
-    UBYTE   	    	   *array;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    btard = (struct bta_render_data *)bta_data;
-    
-    array = btard->array + btard->modulo * srcy + srcx;
-    
-    HIDD_BM_PutAlphaTemplate(dstbm_obj
-    	, dst_gc, array
-	, btard->modulo
-	, x1, y1
-	, width, height
-	, btard->invertalpha
-    );
-    
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = btard->array + btard->modulo * srcy + srcx;
+
+    HIDD_BM_PutAlphaTemplate(dstbm_obj, dst_gc, array, btard->modulo,
+			     rect->MinX, rect->MinY, width, height, btard->invertalpha);
+
     return width * height;
 }
 
@@ -144,121 +115,25 @@ struct rpa_render_data {
     ULONG bppix;
 };
 
-static ULONG rpa_render(APTR rpar_data
-	, LONG srcx, LONG srcy
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
+static ULONG rpa_render(struct rpa_render_data *rpard, LONG srcx, LONG srcy,
+			OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct rpa_render_data *rpard;
-    ULONG width, height;
-    UBYTE *array;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    rpard = (struct rpa_render_data *)rpar_data;
-    
-    array = rpard->array + rpard->modulo * srcy + rpard->bppix * srcx;
-    
-    HIDD_BM_GetImage(dstbm_obj
-    	, array
-	, rpard->modulo
-	, x1, y1
-	, width, height
-	, rpard->pixfmt
-    );
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array = rpard->array + rpard->modulo * srcy + rpard->bppix * srcx;
+
+    HIDD_BM_GetImage(dstbm_obj, array, rpard->modulo,
+    		     rect->MinX, rect->MinY, width, height, rpard->pixfmt);
     
     return width * height;
 }
 
-static LONG pix_read(APTR pr_data
-	, OOP_Object *bm, OOP_Object *gc
-	, LONG x, LONG y
-	, struct GfxBase *GfxBase)
-{
-    struct rgbpix_render_data *prd;
-    
-    prd = (struct rgbpix_render_data *)pr_data;
-    
+static LONG pix_read(struct rgbpix_render_data *prd, OOP_Object *bm, OOP_Object *gc,
+		     LONG x, LONG y, struct GfxBase *GfxBase)
+{   
     prd->pixel = HIDD_BM_GetPixel(bm, x, y);
-
-    
     return 0;
-}
-
-
-struct extcol_render_data
-{
-    struct BitMap *curbm;
-    struct BitMap *destbm;
-    HIDDT_Pixel pixel;
-    struct IntCGFXBase *CyberGfxBase;
-};
-
-
-static VOID buf_to_extcol(struct extcol_render_data *ecrd
-	, LONG srcx, LONG srcy
-	, LONG dstx, LONG dsty
-	, ULONG width, ULONG height
-	, HIDDT_Pixel *pixbuf
-	, OOP_Object *bm_obj)
-{
-    LONG y;
-    struct BitMap *bm;
-    bm = ecrd->destbm;
-    for (y = 0; y < height; y ++) {
-    	LONG x;
-	
-    	for (x = 0; x < width; x ++) {
-	    if (*pixbuf ++ == ecrd->pixel) {
-	    	
-	    	UBYTE *plane;
-		ULONG i;
-	    	/* Set the according bit in the bitmap */
-		for (i = 0; i < bm->Depth; i ++) {
-		    plane = bm->Planes[i];
-		    if (NULL != plane) {
-		    	UBYTE mask;
-			
-			plane += COORD_TO_BYTEIDX(x + dstx, y + dsty, bm->BytesPerRow);
-			mask = XCOORD_TO_MASK(x + dstx);
-			
-			/* Set the pixel */
-			*plane |= mask;
-		    
-		    } /* if (plane allocated) */
-		} /* for (plane) */
-	    } /* if (color match) */
-	} /* for (x) */
-    } /* for (y) */
-    
-    return;
-}
-
-static ULONG extcol_render(APTR funcdata
-	, LONG dstx, LONG dsty
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
-{
-    /* Get the info from the hidd */
-    struct extcol_render_data *ecrd = (struct extcol_render_data *)funcdata;
-    struct IntCGFXBase *CyberGfxBase = ecrd->CyberGfxBase;
-     
-    hidd2buf_fast(ecrd->curbm
-     	, x1, y1
-	, (APTR)ecrd
-	, dstx, dsty
-	, x2 - x1 + 1
-	, y2 - y1 + 1
-	, buf_to_extcol
-	, CyberGfxBase
-    );
-		
-    return (x2 - x1 + 1) * (y2 - y1 + 1);
 }
 
 struct dm_message {
@@ -283,27 +158,22 @@ struct dm_render_data {
 };
 
 
-static ULONG dm_render(APTR dmr_data
-	, LONG srcx, LONG srcy
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
+static ULONG dm_render(struct dm_render_data *dmrd, LONG srcx, LONG srcy,
+		       OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+		       struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct dm_render_data *dmrd = (struct dm_render_data *)dmr_data;
     struct IntCGFXBase *CyberGfxBase = dmrd->CyberGfxBase;
+    struct dm_message *msg = &dmrd->msg;
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
     UBYTE *addr;
-    struct dm_message *msg;
-    IPTR bytesperpixel, bytesperrow;
-    ULONG width, height, fb_width, fb_height;
-    ULONG banksize, memsize;
+    IPTR   bytesperpixel, bytesperrow;
+    ULONG  fb_width, fb_height;
+    ULONG  banksize, memsize;
 
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;;
-    msg = &dmrd->msg;
 #if 1
-    msg->offsetx = x1;
-    msg->offsety = y1;
+    msg->offsetx = rect->MinX;
+    msg->offsety = rect->MinY;
 #else
     #warning "Not sure about this one . Set it to 0 since we adjust msg->memptr to x1/y1 lower down"
     msg->offsetx = 0; // x1;
@@ -379,22 +249,14 @@ static ULONG dm_render(APTR dmr_data
 	    msg->bytesperpix = (UWORD)bytesperpixel;
 
 LOCK_PIXBUF
-	    HIDD_BM_GetImage(dstbm_obj
-		, (UBYTE *)CyberGfxBase->pixel_buf
-		, bytesperrow
-		, x1, y1 + height - lines_todo, width, lines_todo
-		, dmrd->stdpf
-	    );
-    	    
+	    HIDD_BM_GetImage(dstbm_obj, (UBYTE *)CyberGfxBase->pixel_buf, bytesperrow,
+			     rect->MinX, rect->MinY + height - lines_todo, width, lines_todo, dmrd->stdpf);
+
 	    /* Use the hook to set some pixels */
 	    CallHookPkt(dmrd->hook, dmrd->rp, msg);
 
-	    HIDD_BM_PutImage(dstbm_obj, gc
-		, (UBYTE *)CyberGfxBase->pixel_buf
-		, bytesperrow
-		, x1, y1 + height - lines_todo, width, lines_todo
-		, dmrd->stdpf
-	    );
+	    HIDD_BM_PutImage(dstbm_obj, gc, (UBYTE *)CyberGfxBase->pixel_buf, bytesperrow,
+	    		     rect->MinX, rect->MinY + height - lines_todo, width, lines_todo, dmrd->stdpf);
 
 ULOCK_PIXBUF
 
@@ -680,62 +542,6 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     return pix;
 }
-
-ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
-	, ULONG color, ULONG srcx, ULONG srcy, ULONG width, ULONG height
-	, struct IntCGFXBase *CyberGfxBase)
-{
-    struct Rectangle rr;
-    LONG pixread = 0;
-    struct extcol_render_data ecrd;
-    OOP_Object *pf;
-    IPTR colmod;
-    
-    if (!IS_HIDD_BM(rp->BitMap))
-    {
-    	D(bug("!!! CALLING ExtractColor() ON NO-HIDD BITMAP !!!\n"));
-	return FALSE;
-    }
-
-    rr.MinX = srcx;
-    rr.MinY = srcy;
-    rr.MaxX = srcx + width  - 1;
-    rr.MaxY = srcy + height - 1;
-    
-    OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
-    
-    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, (IPTR *)&colmod);
-    
-    if (vHidd_ColorModel_Palette == colmod)
-    {
-        ecrd.pixel = color;
-    }
-    else
-    {
-	HIDDT_Color col;
-	
-	col.alpha = (color >> 16) & 0x0000FF00;
-	col.red	  = (color >> 8 ) & 0x0000FF00;
-	col.green = color & 0x0000FF00;
-	col.blue  = (color << 8) & 0x0000FF00;
-	
-	ecrd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
-    
-    }
-    
-    ecrd.curbm  = rp->BitMap;
-    ecrd.destbm = bm;
-    ecrd.CyberGfxBase = CyberGfxBase;
-    
-    pixread = DoRenderFunc(rp, NULL, &rr, extcol_render, &ecrd, FALSE);
-    
-    if (pixread != (width * height))
-    	return FALSE;
-	
-    return TRUE;
-}
-
-
 
 VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct IntCGFXBase *CyberGfxBase)
 {

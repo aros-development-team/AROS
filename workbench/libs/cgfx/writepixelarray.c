@@ -21,29 +21,17 @@ struct wpa_render_data
     ULONG bppix;
 };
 
-static ULONG wpa_render(struct wpa_render_data *wpard
-	, LONG srcx, LONG srcy
-	, OOP_Object *dstbm_obj
-	, OOP_Object *dst_gc
-	, LONG x1, LONG y1, LONG x2, LONG y2
-	, struct GfxBase *GfxBase)
+static ULONG wpa_render(struct wpa_render_data *wpard, LONG srcx, LONG srcy,
+			OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    ULONG width, height;
-    UBYTE *array;
+    ULONG  width  = rect->MaxX - rect->MinX + 1;
+    ULONG  height = rect->MaxY - rect->MinY + 1;
+    UBYTE *array  = wpard->array + wpard->modulo * srcy + wpard->bppix * srcx;
 
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
+    HIDD_BM_PutImage(dstbm_obj, dst_gc, array, wpard->modulo,
+    		     rect->MinX, rect->MinY, width, height, wpard->pixfmt);
 
-    array = wpard->array + wpard->modulo * srcy + wpard->bppix * srcx;
-    
-    HIDD_BM_PutImage(dstbm_obj
-    	, dst_gc, array
-	, wpard->modulo
-	, x1, y1
-	, width, height
-	, wpard->pixfmt
-    );
-    
     return width * height;
 }
 
