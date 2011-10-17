@@ -203,11 +203,13 @@
         /* Planar maps */
 	if (bm)
 	{
+#if DEBUG
 	    int i;
-	    D(bug("[%s] Using Bitmap: 0x%p, BitMask 0x%p\n", __func__, bm, mask));
-	    for (i = 0; i < bmdepth; i++) {
-	        D(bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]));
-            }
+
+	    bug("[%s] Using Bitmap: 0x%p, BitMask 0x%p\n", __func__, bm, mask);
+	    for (i = 0; i < bm->Depth; i++)
+	        bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]);
+#endif
 
 	    if (mask) {
                 BltMaskBitMapRastPort(bm, 0, 0,
