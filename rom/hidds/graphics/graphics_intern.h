@@ -96,6 +96,12 @@ struct sync_data
 #define SYNC_FREE_SPECIALMONITOR 0x0002 /* Allocated own SpecialMonitor				*/
 #define SYNC_VARIABLE		 0x0004 /* Signal timings can be changed			*/
 
+struct gc_data
+{
+    HIDDT_GC_Intern  prot;
+    struct Rectangle cr;
+};
+
 struct mode_bm {
     UBYTE *bm;
     UWORD bpr;
