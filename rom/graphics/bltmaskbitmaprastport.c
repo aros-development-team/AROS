@@ -14,6 +14,8 @@
 #include "gfxfuncsupport.h"
 #include "graphics_driver.h"
 
+/****************************************************************************************/
+
 struct bltmask_render_data
 {
     struct render_special_info rsi;
@@ -24,7 +26,19 @@ struct bltmask_render_data
 
 static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     	    	    	    OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			    LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+    	    	    	    struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct bltmask_render_data *brd = bltmask_rd;
+    ULONG width  = rect->MaxX - rect->MinX + 1;
+    ULONG height = rect->MaxY - rect->MinY + 1;
+    OOP_Object *gfxhidd;
+    BOOL ok;
+
+    gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
+    ok = HIDD_Gfx_CopyBoxMasked(gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, rect->MinX, rect->MinY, width, height, brd->mask, dst_gc);
+
+    return ok ? width * height : 0;
+}
 
 /*****************************************************************************
 
@@ -151,23 +165,3 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     AROS_LIBFUNC_EXIT
     
 } /* BltMaskBitMapRastPort */
-
-/****************************************************************************************/
-
-static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
-    	    	    	    OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			    LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
-{
-    struct bltmask_render_data *brd = bltmask_rd;
-    ULONG width  = x2 - x1 + 1;
-    ULONG height = y2 - y1 + 1;
-    OOP_Object *gfxhidd;
-    BOOL ok;
-
-    gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
-    ok = HIDD_Gfx_CopyBoxMasked(gfxhidd, brd->srcbm_obj, srcx, srcy, dstbm_obj, x1, y1, width, height, brd->mask, dst_gc);
-
-    return ok ? width * height : 0;
-}
-
-/****************************************************************************************/

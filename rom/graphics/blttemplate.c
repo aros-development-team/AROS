@@ -1,20 +1,19 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
-static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
-    	    	    	    	OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-				LONG x1, LONG y1, LONG x2, LONG y2,
-			        struct GfxBase *GfxBase);
+/****************************************************************************************/
 
 struct bt_render_data
 {
@@ -23,6 +22,22 @@ struct bt_render_data
     WORD   srcx;
     UBYTE  inverttemplate;
 };
+
+static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
+    	    	    	    	OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+    	    	    	    	struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct bt_render_data *btrd = btr_data;
+    ULONG   	    	   width  = rect->MaxX - rect->MinX + 1;
+    ULONG		   height = rect->MaxY - rect->MinY + 1;
+    UBYTE		   x = srcx + btrd->srcx;
+    UBYTE   	    	  *template = btrd->template + btrd->modulo * srcy;
+    
+    HIDD_BM_PutTemplate(dstbm_obj, dst_gc, template, btrd->modulo,
+    	    	    	x, rect->MinX, rect->MinY, width, height, btrd->inverttemplate);
+
+    return width * height;
+}
 			 
 /*****************************************************************************
 
@@ -108,29 +123,3 @@ struct bt_render_data
     AROS_LIBFUNC_EXIT
     
 } /* BltTemplate */
-
-/****************************************************************************************/
-
-static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
-    	    	    	    	OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-				LONG x1, LONG y1, LONG x2, LONG y2,
-				struct GfxBase *GfxBase)
-{
-    struct bt_render_data  *btrd;
-    ULONG   	    	    width, height;
-    WORD    	    	    x;
-    UBYTE   	    	   *template;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-
-    btrd = (struct bt_render_data *)btr_data;
-    x = srcx + btrd->srcx;
-    
-    template = btrd->template + btrd->modulo * srcy;
-    
-    HIDD_BM_PutTemplate(dstbm_obj, dst_gc, template, btrd->modulo,
-    	    	    	x, x1, y1, width, height, btrd->inverttemplate);
-
-    return width * height;
-}

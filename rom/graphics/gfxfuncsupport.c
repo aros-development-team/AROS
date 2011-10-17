@@ -69,8 +69,7 @@ static ULONG CallRenderFunc(RENDERFUNC render_func, APTR funcdata, ULONG srcx, U
     if (!bm_obj)
     	return 0;
 
-    pixwritten = render_func(funcdata, srcx, srcy, bm_obj, gc,
-				   rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, GfxBase);
+    pixwritten = render_func(funcdata, srcx, srcy, bm_obj, gc, rect, GfxBase);
 
     if (do_update)
         update_bitmap(bm, bm_obj, rect->MinX, rect->MinY,
@@ -354,13 +353,11 @@ ULONG do_pixel_func(struct RastPort *rp
 
 static ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
     	    	    	     OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			     LONG x1, LONG y1, LONG x2, LONG y2,
-			     struct GfxBase *GfxBase)
+    	    	    	     struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-
-    HIDD_BM_FillRect(dstbm_obj, dst_gc, x1, y1, x2, y2);
+    HIDD_BM_FillRect(dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
     
-    return (x2 - x1 + 1) * (y2 - y1 + 1);
+    return (rect->MaxX - rect->MinX + 1) * (rect->MaxY - rect->MinY + 1);
 }
 
 /****************************************************************************************/
@@ -607,28 +604,19 @@ struct wp8_render_data
 };
 
 static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
-    	    	    	OOP_Object *dst_gc, LONG x1, LONG y1, LONG x2, LONG y2,
-			struct GfxBase *GfxBase)
+    	    	    	OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct wp8_render_data *wp8rd;
-    ULONG   	    	    width, height;
+    struct wp8_render_data *wp8rd = wp8r_data;
+    ULONG		    width  = rect->MaxX - rect->MinX + 1;
+    ULONG		    height = rect->MaxY - rect->MinY + 1;
 
-    wp8rd = (struct wp8_render_data *)wp8r_data;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    HIDD_BM_PutImageLUT(dstbm_obj
-    	, dst_gc
-	, wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo)
-	, wp8rd->modulo
-	, x1, y1
-	, width, height
-	, wp8rd->pixlut
-    );
-    
+    HIDD_BM_PutImageLUT(dstbm_obj, dst_gc,
+			wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo), wp8rd->modulo,
+			rect->MinX, rect->MinY, width, height, wp8rd->pixlut);
+
     return width * height;
 }
+
 /****************************************************************************************/
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
@@ -703,27 +691,16 @@ struct wtp8_render_data
 };
 
 static ULONG wtp8_render(APTR wtp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
-    	    	    	OOP_Object *dst_gc, LONG x1, LONG y1, LONG x2, LONG y2,
-			struct GfxBase *GfxBase)
+    	    	    	OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
 {
-    struct wtp8_render_data *wtp8rd;
-    ULONG   	    	     width, height;
+    struct wtp8_render_data *wtp8rd = wtp8r_data;
+    ULONG   	    	     width  = rect->MaxX - rect->MinX + 1;
+    ULONG		     height = rect->MaxY - rect->MinY + 1;
+    
+    HIDD_BM_PutTranspImageLUT(dstbm_obj, dst_gc,
+    			      wtp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wtp8rd->modulo), wtp8rd->modulo,
+			      rect->MinX, rect->MinY,width, height, wtp8rd->pixlut, wtp8rd->transparent);
 
-    wtp8rd = (struct wtp8_render_data *)wtp8r_data;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    HIDD_BM_PutTranspImageLUT(dstbm_obj
-    	, dst_gc
-	, wtp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wtp8rd->modulo)
-	, wtp8rd->modulo
-	, x1, y1
-	, width, height
-	, wtp8rd->pixlut
-	, wtp8rd->transparent
-    );
-    
     return width * height;
 }
 /****************************************************************************************/

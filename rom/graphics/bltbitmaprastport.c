@@ -12,18 +12,39 @@
 #include "gfxfuncsupport.h"
 #include "graphics_driver.h"
 
+/****************************************************************************************/
+
 struct bitmap_render_data
 {
     struct render_special_info rsi;
     ULONG   	    	       minterm;
-    struct BitMap   	       *srcbm;
-    OOP_Object      	       *srcbm_obj;
-
+    struct BitMap   	      *srcbm;
+    OOP_Object      	      *srcbm_obj;
 };
 
 static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct bitmap_render_data *brd = bitmap_rd;
+    OOP_Object		      *gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
+    ULONG		       width  = rect->MaxX - rect->MinX + 1;
+    ULONG		       height = rect->MaxY - rect->MinY + 1;
+    BOOL		       res;
+
+//    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
+//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
+
+    /*
+     * Get some info on the colormaps. We have to make sure
+     * that we have the appropriate mapping tables set.
+     */
+    res = int_bltbitmap(brd->srcbm, brd->srcbm_obj, srcx, srcy,
+    			brd->rsi.curbm, dstbm_obj, rect->MinX, rect->MinY,
+    			width, height, brd->minterm, gfxhidd, dst_gc, GfxBase);
+
+   return res ? width * height : 0;
+}
 
 /*****************************************************************************
 
@@ -143,40 +164,3 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     AROS_LIBFUNC_EXIT
     
 } /* BltBitMapRastPort */
-
-/****************************************************************************************/
-
-static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
-{
-    struct bitmap_render_data *brd = bitmap_rd;
-    OOP_Object		      *gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
-    ULONG		       width  = x2 - x1 + 1;
-    ULONG		       height = y2 - y1 + 1;
-
-//    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
-//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
-
-    /*
-     * Get some info on the colormaps. We have to make sure
-     * that we have the appropriate mapping tables set.
-     */
-    if (!int_bltbitmap(brd->srcbm
-    	, brd->srcbm_obj
-	, srcx, srcy
-	, brd->rsi.curbm
-	, dstbm_obj
-	, x1, y1
-	, x2 - x1 + 1, y2 - y1 + 1
-	, brd->minterm
-	, gfxhidd
-	, dst_gc
-	, GfxBase
-    ))
-    	return 0;
-
-   return width * height;
-}
-
-/****************************************************************************************/

@@ -1,16 +1,20 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function DrawEllipse
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <clib/macros.h>
-#include "graphics_intern.h"
 #include <graphics/rastport.h>
+
+#include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "intregions.h"
+
+/****************************************************************************************/
 
 struct ellipse_render_data
 {
@@ -20,7 +24,19 @@ struct ellipse_render_data
 
 static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
     	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct ellipse_render_data *erd = ellipse_rd;
+
+    HIDD_GC_SetClipRect(dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+
+    HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + rect->MinX - srcx, erd->b + rect->MinY - srcy,
+					   erd->a, erd->b);
+
+    HIDD_GC_UnsetClipRect(dst_gc);
+
+    return 0;
+}
 
 /*****************************************************************************
 
@@ -97,25 +113,3 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
     AROS_LIBFUNC_EXIT
     
 } /* DrawEllipse */
-
-/****************************************************************************************/
-
-static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
-{
-    struct ellipse_render_data *erd;
-
-    erd = (struct ellipse_render_data *)ellipse_rd;
-
-    HIDD_GC_SetClipRect(dst_gc, x1, y1, x2, y2);
-
-    HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + x1 - srcx, erd->b + y1 - srcy,
-					   erd->a, erd->b); 
-
-    HIDD_GC_UnsetClipRect(dst_gc);
-   
-    return 0;
-}
-
-/****************************************************************************************/

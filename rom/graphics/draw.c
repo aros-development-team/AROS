@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function Draw()
@@ -16,15 +16,30 @@
 #include "intregions.h"
 #include <stdlib.h>
 
+/****************************************************************************************/
+
 struct draw_render_data
 {
-    struct render_special_info rsi;
     LONG x1, y1, x2, y2;    
 };
 
 static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
     	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
+    	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct draw_render_data *drd = draw_rd;
+
+    HIDD_GC_SetClipRect(dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+
+    HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + rect->MinX - srcx,
+    	    	    	    	    	drd->y1 + rect->MinY - srcy,
+					drd->x2 + rect->MinX - srcx,
+					drd->y2 + rect->MinY - srcy); 
+
+    HIDD_GC_UnsetClipRect(dst_gc);
+
+    return 0;
+}
 
 /*****************************************************************************
 
@@ -136,7 +151,7 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
     drd.x2 = x - rr.MinX;
     drd.y2 = y - rr.MinY;
     
-    do_render_func(rp, NULL, &rr, draw_render, &drd, TRUE, TRUE, GfxBase);
+    do_render_func(rp, NULL, &rr, draw_render, &drd, TRUE, FALSE, GfxBase);
         
     dx = (drd.x2 > drd.y2) ? drd.x2 : drd.y2;
     
@@ -150,27 +165,3 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
     AROS_LIBFUNC_EXIT
     
 } /* Draw */
-
-/****************************************************************************************/
-
-static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
-    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
-{
-    struct draw_render_data *drd;
-
-    drd = (struct draw_render_data *)draw_rd;
-
-    HIDD_GC_SetClipRect(dst_gc, x1, y1, x2, y2);
-
-    HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + x1 - srcx,
-    	    	    	    	    	drd->y1 + y1 - srcy,
-					drd->x2 + x1 - srcx,
-					drd->y2 + y1 - srcy); 
-
-    HIDD_GC_UnsetClipRect(dst_gc);
-   
-    return 0;
-}
-
-/****************************************************************************************/
