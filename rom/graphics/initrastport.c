@@ -1,50 +1,18 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$	$Log
 
     Desc: Graphics function InitRastPort()
     Lang: english
 */
-#include "graphics_intern.h"
+
 #include <graphics/rastport.h>
 #include <proto/exec.h>
 
-#include "gfxfuncsupport.h"
+#include <string.h>
 
-static const struct RastPort defaultRastPort =
-{
-    NULL, /* Layer */
-    NULL, /* BitMap */
-    NULL, /* AreaPtrn */
-    NULL, /* TmpRas */
-    NULL, /* AreaInfo */
-    NULL, /* GelsInfo */
-    ~0, /* Mask */
-    ~0, /* FgPen */
-    0, /* BgPen */
-    ~0, /* AOlPen */
-    JAM2, /* DrawMode */
-    0, /* AreaPtSz */
-    0, /* linpatcnt */
-    0, /* dummy */
-    0, /* Flags */
-    ~0, /* LinePtrn */
-    0,0, /* cp_x, cp_y */
-    { 0,0,0,0, 0,0,0,0 }, /* minterms[] */
-    0, /* PenWidth */
-    0, /* PenHeight */
-    NULL, /* Font */
-    0, /* AlgoStyle */
-    0, /* TxFlags */
-    0, /* TxHeight */
-    0, /* TxWidth */
-    0, /* TxBaseline */
-    0, /* TxSpacing */
-    NULL, /* RP_User */
-    { 0,0 }, /* longreserved */
-    { 0,0,0,0, 0,0,0 }, /* wordreserved */
-    { 0,0,0,0, 0,0,0,0 }, /* reserved */
-};
+#include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -91,7 +59,14 @@ static const struct RastPort defaultRastPort =
 {
     AROS_LIBFUNC_INIT
 
-    CopyMem ((UBYTE *)&defaultRastPort, rp, sizeof (struct RastPort));
+    /* Zero out everything, then set some valid defaults */
+    memset(rp, 0, sizeof(struct RastPort));    
+    rp->Mask     = 0xFF;
+    rp->FgPen    = -1;
+    rp->AOlPen   = -1;
+    rp->DrawMode = JAM2;
+    rp->LinePtrn = 0xFFFF;
+
     RP_BACKPOINTER(rp) = rp; /* Mark rastport as valid (no manual clone) */
     
     SetFont (rp, GfxBase->DefaultFont);

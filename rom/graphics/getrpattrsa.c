@@ -1,16 +1,17 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function GetRPAttrsA()
     Lang: english
 */
+
 #include <graphics/rpattr.h>
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
-#include "graphics_intern.h"
 #include <proto/utility.h>
 
+#include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -48,18 +49,20 @@
 	RPTAG_WriteMask	(ULONG)	        - Bit Mask for writing
 	RPTAG_MaxPen (ULONG)            - Maximum pen to render (see SetMaxPen())
 
-	AROS extensions
+	MorphOS- and AmigaOSv4- compatible extensions:
+
 	RPTAG_FgColor (ULONG)           - Primary rendering color in A8R8G8B8 format.
 		                          Only working on hicolor/truecolor bitmaps/screens.
     	RPTAG_BgColor (ULONG)           - Secondary rendering color in A8R8G8B8 format.
 		    	    	          Only working on hicolor/truecolor bitmaps/screens.
-    	RPTAG_PatternOriginX (WORD)     - X Origin of fill pattern.
-	RPTAG_PatternOriginY (WORD)     - Y Origin of fill pattern.
+    	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to their color
+					  on hicolor/truecolor screens.
+
+	AROS-specific extensions:
+
 	RPTAG_ClipRectangle (struct Rectangle *) - Rectangle to clip rendering to. Rectangle will
 		                                   be cloned.
 	RPTAG_ClipRectangleFlags (LONG) - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see <graphics/rpattr.h>)
-    	RPTAG_RemapColorFonts (BOOL)    - Automatically remap colorfonts to their color
-					  on hicolor/truecolor screens.
 		
     RESULT
 
@@ -143,14 +146,6 @@
 		
 	    case RPTAG_BgColor:
 	    	*((IPTR *)tag->ti_Data) = RP_BGCOLOR(rp);
-		break;
-		
-	    case RPTAG_PatternOriginX:
-	    	*((IPTR *)tag->ti_Data) = RP_PATORIGINX(rp);
-	    	break;
-		
-	    case RPTAG_PatternOriginY:
-	    	*((IPTR *)tag->ti_Data) = RP_PATORIGINY(rp);
 		break;
 	    	    
 	    case RPTAG_ClipRectangle:

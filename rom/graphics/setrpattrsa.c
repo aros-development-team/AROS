@@ -1,13 +1,15 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function SetRPAttrsA()
     Lang: english
 */
-#include "graphics_intern.h"
+
 #include <proto/utility.h>
 #include <proto/oop.h>
+
+#include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -41,18 +43,20 @@
 	RPTAG_DrMd (UBYTE)                    - Drawing mode (graphics/rastport.h)
 	RPTAG_OutlinePen (UBYTE)              - Area Outline pen
 	RPTAG_WriteMask (ULONG)               - Bit mask for writing
-	
-	AROS extensions
+
+	The following tags are compatible with MorphOS and AmigaOSv4 (V51) :
+
 	RPTAG_FgColor (ULONG)                 - Primary rendering color in A8R8G8B8 format.
 		                                Only working on hicolor/truecolor bitmaps/screens.
 	RPTAG_BgColor (ULONG)                 - Secondary rendering color in A8R8G8B8 format.
 		    	    	    	        Only working on hicolor/truecolor bitmaps/screens.
-	RPTAG_PatternOriginX (WORD)           - X origin of pattern
-	RPTAG_PatternOriginY (WORD)           - Y origin of pattern
-	RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
-	RPTAG_ClipRectangleFlags (LONG)       - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see graphics/rpattrs.h)
 	RPTAG_RemapColorFonts (BOOL)          - Automatically remap colorfonts to their color
 						on hicolor/truecolor screens.
+
+	AROS-specific extensions
+
+	RPTAG_ClipRectangle (struct Rectangle *) - Clipping rectangle
+	RPTAG_ClipRectangleFlags (LONG)       - RPCRF_RELRIGHT | RPCRF_RELBOTTOM (see graphics/rpattrs.h)
 
     RESULT
 
@@ -158,14 +162,6 @@
 		break;
 		
 	    } /**/
-	    
-	    case RPTAG_PatternOriginX:
-	    	RP_PATORIGINX(rp) = (WORD)tag->ti_Data;
-		break;
-		
-	    case RPTAG_PatternOriginY:
-	    	RP_PATORIGINY(rp) = (WORD)tag->ti_Data;
-		break;
 
 	    case RPTAG_ClipRectangle:
 	    	if (!havedriverdata)
