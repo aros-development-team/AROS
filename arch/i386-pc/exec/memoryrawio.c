@@ -240,9 +240,10 @@ static struct LogBlock *next_block = NULL;
 
     if (data->block_pos != data->block->length)
     {
-        if (chr != '\03')
-            ((UBYTE *)data->block)[sizeof(struct LogBlock) + data->block_pos++] =
-                chr;
+        if (chr && (chr != '\03'))
+	{
+            ((UBYTE *)data->block)[sizeof(struct LogBlock) + data->block_pos++] = chr;
+	}
     }
     else
         data_missed = TRUE;
