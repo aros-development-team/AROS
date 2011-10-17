@@ -1,13 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Draw the list of gels
     Lang: english
 */
+
 #include <aros/debug.h>
 #include <proto/graphics.h>
+
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 #include "gels_internal.h"
 
 /*****************************************************************************
@@ -98,9 +101,8 @@
 			 * VSprite/Bob did not move since it could have
 			 * changed its appearance.
 			 */
-			if (0 != (CurVSprite->Flags & SAVEBACK) &&
-			    NULL != CurVSprite->VSBob) {
-
+			if (0 != (CurVSprite->Flags & SAVEBACK) && NULL != CurVSprite->VSBob)
+			{
 				BltRastPortBitMap(rp,
 		                        	  CurVSprite->X,
 		                        	  CurVSprite->Y,
@@ -109,7 +111,7 @@
 		                        	  0,
 		                        	  CurVSprite->Width << 4,
 		                        	  CurVSprite->Height,
-		                        	  0x0c0);
+		                        	  0x0c0, GfxBase);
 
 				CurVSprite->Flags |= BACKSAVED;
 			}

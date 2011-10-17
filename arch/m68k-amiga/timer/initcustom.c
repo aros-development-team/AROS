@@ -13,21 +13,8 @@
 #include <hardware/custom.h>
 #include <hardware/cia.h>
 
-/*
- * TODO: it's not architecturally good to have hardware-specific code in graphics.library.
- * During init graphics.library instantiates default graphics driver. One of ideas is to
- * instantiate Amiga(tm) chipset driver instead on appropriate hardware. In this case the
- * driver will be able to do this stuff for us.
- * At the other hand, what if the user owns an Amiga with VGA monitor and graphics card and
- * intentionally doesn't want to use chipset driver at all (assuming loadable modular kickstart)?
- * This stuff is vital for correct functioning of timer.device, so it's logical to move this
- * code to kernel.resource instead. But in this case we would have to: a) duplicate the code
- * to set DisplayFlags and ChipsetFlags; or b) Add these flags to the list of kernel.resource
- * attributes (which is again not quite good because these things are very Amiga-specific).
- * UPD: c) We could move this code to something like amigacustom.resource which would be
- * totally hardware-specific part. Presence of this resource would clearly indicate to the 
- * software that it's actually running on Amiga hardware.
- */
+#include <timer_platform.h>
+
 static UWORD getline(void)
 {
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -56,14 +43,9 @@ static UWORD gethighestline(UWORD linecnt)
 			highest = vpos;
 	}
 	return highest;
-}	
-
-static ULONG donothing(void)
-{
-	return 0;
 }
 
-static int InitCustom(struct GfxBase *gfx)
+void InitCustom(struct GfxBase *gfx)
 {
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
 	UWORD vposr, deniseid;
@@ -108,19 +90,4 @@ static int InitCustom(struct GfxBase *gfx)
 	gfx->ChipRevBits0 = chipflags;
 
 	SysBase->VBlankFrequency = (flags & PAL) ? 50 : 60;
-
-	/* Patch unimplemented, undocumented AOS functions
-	 * used by AOS monitor drivers:
-	 * AddDisplayInfo()
-	 * AddDisplayInfoData()
-	 * SetDisplayInfoData()
-	 */
-	SetFunction((struct Library*)gfx, -123 * 6, (APTR)donothing);
-	SetFunction((struct Library*)gfx, -124 * 6, (APTR)donothing);
-	SetFunction((struct Library*)gfx, -125 * 6, (APTR)donothing);
-
-	return TRUE;
 }
-
-/* This is run before the main init routine */
-ADD2INITLIB(InitCustom, -5);

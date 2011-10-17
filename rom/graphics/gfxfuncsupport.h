@@ -232,6 +232,11 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 
 void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height, struct GfxBase *GfxBase);
 
+void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc, 
+		       struct BitMap *destBitMap, LONG xDest, LONG yDest,
+		       ULONG xSize, ULONG ySize, ULONG minterm,
+		       struct GfxBase *GfxBase);
+
 /****************************************************************************************/
 
 #endif
