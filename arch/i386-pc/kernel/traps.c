@@ -13,6 +13,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "apic.h"
 #include "traps.h"
 #include "exec_extern.h"
 
@@ -45,6 +46,7 @@ BUILD_TRAP(0x10)
 BUILD_TRAP(0x11)
 BUILD_TRAP(0x12)
 BUILD_TRAP(0x13)
+BUILD_TRAP(0xFE)
 
 typedef void (*trap_type)(void);
 
@@ -101,8 +103,16 @@ void set_system_gate(unsigned int n, void *addr)
 
 void handleException(struct ExceptionContext *ctx, unsigned long error_code, unsigned long irq_number)
 {
-    /* Currently we support only traps here */
-    cpu_Trap(ctx, error_code, irq_number);
+    if (irq_number < 20)
+    {
+	/* These are CPU traps */
+	cpu_Trap(ctx, error_code, irq_number);
+    }
+    else if (irq_number == 0xFE)
+    {
+	/* APIC error vector */
+        core_APIC_AckIntr();
+    }
 }
 
 void Init_Traps(struct PlatformData *data)
@@ -121,4 +131,6 @@ void Init_Traps(struct PlatformData *data)
 
     /* Create user interrupt used to enter supervisor mode */
     _set_gate(&data->idt[0x80], 14, 3, Exec_SystemCall);
+    /* Create APIC erroe vector */
+    _set_gate(&data->idt[0xFE], 14, 0, TRAP0xFE_trap);
 }

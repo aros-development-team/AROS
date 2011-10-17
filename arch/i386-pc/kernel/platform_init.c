@@ -1,11 +1,13 @@
 #include <aros/symbolsets.h>
 #include <asm/cpu.h>
 #include <exec/execbase.h>
+#include <resources/acpi.h>
 #include <proto/exec.h>
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "apic.h"
 #include "traps.h"
 #include "utils.h"
 #include "xtpic.h"
@@ -20,9 +22,12 @@ static int PlatformInit(struct KernelBase *KernelBase)
     data = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC);
     if (!data)
 	return FALSE;
-
+	
     D(bug("[Kernel] Allocated platform data at 0x%p\n", data));
     KernelBase->kb_PlatformData = data;
+
+    /* By default we have no APIC data */
+    data->kb_APIC = NULL;
 
     /*
      * Now we have a complete memory list and working AllocMem().
@@ -68,12 +73,44 @@ static int PlatformInit(struct KernelBase *KernelBase)
 	::"m"(idtr),"ax"(0x30)
     );
 
-    D(bug("System restored\n"));
-    
-    /* Initialize our PIC */
-    XTPIC_Init(&data->xtpic_mask);
+    D(bug("[Kernel] System restored\n"));
 
     return TRUE;
 }
 
 ADD2INITLIB(PlatformInit, 10);
+
+void PlatformPostInit(void)
+{
+    struct PlatformData *pdata = KernelBase->kb_PlatformData;
+    struct ACPIBase *ACPIBase = OpenResource("acpi.resource");
+
+    if (ACPIBase)
+        pdata->kb_APIC = acpi_APIC_Init(ACPIBase);
+
+    if (!pdata->kb_APIC)
+    {
+	/* No APIC was discovered by ACPI/whatever else. Do the probe. */
+	pdata->kb_APIC = core_APIC_Probe();
+    }
+
+    if ((!pdata->kb_APIC) || (pdata->kb_APIC->flags & APF_8259))
+    {
+        /* Initialize our XT-PIC */
+	XTPIC_Init(&pdata->xtpic_mask);
+    }
+    
+    if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
+    {
+    	if (smp_Setup())
+    	{
+	    smp_Wake();
+	}
+	else
+	{
+    	    D(bug("[Kernel] Failed to prepare the environment!\n"));
+
+    	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
+    	}
+    }
+}

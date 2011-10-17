@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FUNCS   := 
-FILES   := startup kernel_debug platform_init traps utils
+FILES   := startup kernel_debug platform_init traps utils smp
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 
@@ -26,14 +26,14 @@ OUTDIR := $(GENDIR)/$(MAINDIR)/arch
 OBJDIR := $(GENDIR)/$(CURDIR)
 
 kernel-kernel-pc-i386 :: $(OUTDIR)/smpboot.bin.o 
+kernel-kernel-pc-i386-quick :: $(OUTDIR)/smpboot.bin.o 
 kernel-kernel-pc-i386-kobj :: $(OUTDIR)/smpboot.bin.o
+kernel-kernel-pc-i386-kobj-quick :: $(OUTDIR)/smpboot.bin.o
 
-%rule_compile basename=smpbootstrap targetdir=$(OBJDIR)
+%rule_assemble_multi basenames=smpbootstrap targetdir=$(OBJDIR)
 %rule_link_binary file=$(OUTDIR)/smpboot.bin.o name=smpbootstrap objs=$(OBJDIR)/smpbootstrap.o ldflags="-m elf_i386"
 
--include $(OBJDIR)/smpbootstrap.d
-
-$(OBJDIR)/smpbootstrap.o $(OBJDIR)/smpbootstrap.d : | $(OBJDIR)
+$(OBJDIR)/smpbootstrap.o : | $(OBJDIR)
 
 GLOB_MKDIRS += $(OUTDIR) $(OBJDIR)
 

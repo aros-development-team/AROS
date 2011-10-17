@@ -41,6 +41,7 @@ BUILD_IRQ(0x10)         // Floating-Point Exception
 BUILD_IRQ_ERR(0x11)     // Alignment-Check Exception
 BUILD_IRQ(0x12)         // Machine-Check Exception
 BUILD_IRQ(0x13)         // SIMD-Floating-Point Exception
+BUILD_IRQ(0xFE)         // APIC Error Exception
 
 	.align 16, 0x90
 	.globl core_Interrupt
