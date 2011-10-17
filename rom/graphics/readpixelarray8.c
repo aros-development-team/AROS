@@ -1,13 +1,18 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <aros/debug.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+
+/****************************************************************************************/
+
 
 struct rp8_render_data
 {
@@ -17,9 +22,18 @@ struct rp8_render_data
 };
 
 static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
-    	    	    	OOP_Object *srcbm_obj, OOP_Object *gc,
-			LONG x1, LONG y1, LONG x2, LONG y2,
-			struct GfxBase *GfxBase);
+    	    	        OOP_Object *srcbm_obj, OOP_Object *gc,
+    	    	        struct Rectangle *rect, struct GfxBase *GfxBase)
+{
+    struct rp8_render_data *rp8rd  = rp8r_data;
+    ULONG   	    	    width  = rect->MaxX - rect->MinX + 1;
+    ULONG		    height = rect->MaxY - rect->MinY + 1;
+    
+    HIDD_BM_GetImageLUT(srcbm_obj, rp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, rp8rd->modulo), rp8rd->modulo,
+    			rect->MinX, rect->MinY, width, height, rp8rd->pixlut);
+
+    return width * height;
+}
 
 /*****************************************************************************
 
@@ -121,31 +135,3 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     AROS_LIBFUNC_EXIT
 
 } /* ReadPixelArray8 */
-
-/****************************************************************************************/
-
-static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
-    	    	        OOP_Object *srcbm_obj, OOP_Object *gc,
-			LONG x1, LONG y1, LONG x2, LONG y2,
-			struct GfxBase *GfxBase)
-{
-    struct rp8_render_data *rp8rd;
-    ULONG   	    	    width, height;
-    
-    rp8rd = (struct rp8_render_data *)rp8r_data;
-    
-    width  = x2 - x1 + 1;
-    height = y2 - y1 + 1;
-    
-    HIDD_BM_GetImageLUT(srcbm_obj
-	, rp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, rp8rd->modulo)
-	, rp8rd->modulo
-	, x1, y1
-	, width, height
-	, rp8rd->pixlut
-    );
-    
-    return width * height;
-}
-
-/****************************************************************************************/
