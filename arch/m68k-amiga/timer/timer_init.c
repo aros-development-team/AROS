@@ -44,6 +44,7 @@
 #include LC_LIBDEFS_FILE
 
 #include <timer_intern.h>
+#include <timer_platform.h>
 
 AROS_UFP4(APTR, ciab_eclock,
     AROS_UFPA(ULONG, dummy, A0),
@@ -73,6 +74,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 
     GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 
+    InitCustom(GfxBase);
+
     LIBBASE->tb_eclock_rate = (GfxBase->DisplayFlags & REALLY_PAL) ? 709379 : 715909;
     LIBBASE->tb_vblank_rate = (GfxBase->DisplayFlags & PAL) ? 50 : 60;
     LIBBASE->tb_vblank_micros = 1000000 / LIBBASE->tb_vblank_rate;
@@ -83,12 +86,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
     CloseLibrary((struct Library*)GfxBase);
 
     BattClockBase = OpenResource("battclock.resource");
-    if (BattClockBase) {
-	ULONG t = ReadBattClock();
-	if (t) {
-	    LIBBASE->tb_CurrentTime.tv_secs = t;
-	}
-    }
+    if (BattClockBase)
+	LIBBASE->tb_CurrentTime.tv_secs = ReadBattClock();
 
     /* Initialise the lists */
     NEWLIST(&LIBBASE->tb_Lists[UNIT_VBLANK]);

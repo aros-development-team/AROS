@@ -24,6 +24,8 @@ FUNCTIONS := \
 	addanimob \
 	addbob \
 	adddisplaydrivera \
+	adddisplaydata \
+	adddisplayinfodata \
 	addfont \
 	addvsprite \
 	allocbitmap \
@@ -171,6 +173,7 @@ FUNCTIONS := \
 	setchiprev \
 	setcollision \
 	setdisplaydrivercallback \
+	setdisplayinfodata \
 	setdrmd \
 	setfont \
 	setmaxpen \

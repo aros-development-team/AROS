@@ -12,57 +12,11 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
-/*****************************************************************************
-
-    NAME */
-	#include <clib/graphics_protos.h>
-
-	AROS_LH9(void, BltRastPortBitMap,
-
-/*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, srcRastPort, A0),
-	AROS_LHA(LONG             , xSrc       , D0),
-	AROS_LHA(LONG             , ySrc       , D1),
-	AROS_LHA(struct BitMap *  , destBitMap , A1),
-	AROS_LHA(LONG             , xDest      , D2),
-	AROS_LHA(LONG             , yDest      , D3),
-	AROS_LHA(ULONG            , xSize      , D4),
-	AROS_LHA(ULONG            , ySize      , D5),
-	AROS_LHA(ULONG            , minterm    , D6),
-
-/*  LOCATION */
-	struct GfxBase *, GfxBase, 169, Graphics)
-
-/*  FUNCTION
-        Copies the content of the rast port into the bitmap.
-        Takes cliprects into consideration.
-
-    INPUTS
-	srcRastPort - Copy from this RastPort.
-	xSrc, ySrc - This is the upper left corner of the area to copy.
-	destBitMap - Destination BitMap.
-	xDest, yDest - Upper left corner where to place the copy
-	xSize, ySize - The size of the area to copy
-	minterm - How to copy. See BltBitMap() for an explanation.
-
-    RESULT
-
-    NOTES
-	This functions isn't part of AmigaOS3.1
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-*****************************************************************************/
+void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc, 
+		       struct BitMap *destBitMap, LONG xDest, LONG yDest,
+		       ULONG xSize, ULONG ySize, ULONG minterm,
+		       struct GfxBase *GfxBase)
 {
-	AROS_LIBFUNC_INIT
 	struct Layer * srcLayer;
 
     	FIX_GFXCOORD(xSrc);
@@ -244,6 +198,4 @@
 		UnlockLayerRom(srcLayer);
 	}
 	ReturnVoid("BltRastPortBitMap");
-
-	AROS_LIBFUNC_EXIT
-} /* BltBitMapRastPort */
+}
