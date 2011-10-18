@@ -228,8 +228,8 @@ kernel-boot-elf-quick: $(BOOTDIR)/aros.elf
 
 # Main ROM, that must live in MEMF_LOCAL memory
 
-FILES=start early debug mmu
-AFILES=rom_entry rom_init cpu_detect superstack_swap
+FILES=mmu
+AFILES=
 
 KLIBS   := exec expansion
 KDEVS   := 
@@ -248,6 +248,9 @@ KOBJS_local := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
 
 OBJS_local:= $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	    $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
+
+FILES=start early debug
+AFILES=rom_entry rom_init cpu_detect superstack_swap
 
 OBJS_start := $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(AFILES))) \
 	      $(addprefix $(KOBJSDIR)/,$(addsuffix .o,$(FILES)))
