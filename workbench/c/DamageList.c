@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -14,6 +14,7 @@
 #include <graphics/clip.h>
 #include <graphics/rastport.h>
 #include <graphics/regions.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>

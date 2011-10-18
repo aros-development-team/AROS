@@ -706,9 +706,6 @@ static BOOL DoChooseReq(struct filehandle *fh, struct completioninfo *ci)
 	    } /* if (gad) */
 
     	    FreeGadgets(gadlist);
-	    
-    	    DeinitRastPort(&temprp);
-	    
 	    FreeVisualInfo(vi);	
 	    
 	} /* if ((vi = GetVisualInfoA(ci->fh->window->WScreen, NULL))) */

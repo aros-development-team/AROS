@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <aros/debug.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
 
@@ -61,6 +62,9 @@
     RESULT
 
     NOTES
+    	Setting one of RPTAG_ClipRectangle or RPTAG_ClipRectangleFlags allocates internal extra data
+    	for the RastPort. After finishing using this RastPort, you need to manually deallocate
+    	the extra data using FreeVec(rp->RP_Extra).
 
     EXAMPLE
 
@@ -80,7 +84,7 @@
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag, *tstate = tags;
-    BOOL    	    havedriverdata = FALSE;
+    struct gfx_driverdata *driverdata;
     
     while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
@@ -115,87 +119,66 @@
 
 	    case RPTAG_DrawBounds:
 		break;
-	    
+
+	    case RPTAG_PenMode:
+	    	D(bug("[SetRPAttrs] RastPort 0x%p, PenMode set to %ld\n", rp, tag->ti_Data));
+	    	if (tag->ti_Data)
+		    rp->Flags &= ~RPF_NO_PENS;
+		else
+		    rp->Flags |= RPF_NO_PENS;
+		break;
+
 	    case RPTAG_FgColor:
 	    case RPTAG_BgColor:
-	    {
-	    	IPTR attr;
-		
-	    	if (tag->ti_Tag == RPTAG_FgColor)
+	    	D(bug("[SetRPAttrs] RastPort 0x%p, setting %sColor to 0x%08lX\n", rp, (tag->ti_Tag == RPTAG_FgColor) ? "Fg" : "Bg", tag->ti_Data));
+
+		if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
 		{
-		    attr = aHidd_GC_Foreground;
-		    RP_FGCOLOR(rp) = (ULONG)tag->ti_Data;
-		}
-		else
-		{
-		    attr = aHidd_GC_Background;
-		    RP_BGCOLOR(rp) = (ULONG)tag->ti_Data;
-		}
-		
-		if (!rp->BitMap) break;
-		if (!IS_HIDD_BM(rp->BitMap)) break;
-		
-	    	if (!havedriverdata)
-		{
-		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
-		}
-		
-		if (havedriverdata)
-		{
-		    struct TagItem col_tags[] =
-		    {
-		    	{ attr, 0   },
-			{ TAG_DONE  }
-		    };
+		    /* Map ARGB8888 color value to bitmap's format */
 		    HIDDT_Color col;
+		    HIDDT_Pixel pixval;
 		    ULONG rgb = (ULONG)tag->ti_Data;
-		    
+
 		    /* HIDDT_ColComp are 16 Bit */
 		    col.alpha	= (HIDDT_ColComp)((rgb >> 16) & 0x0000FF00);
 		    col.red	= (HIDDT_ColComp)((rgb >> 8) & 0x0000FF00);
 		    col.green	= (HIDDT_ColComp)(rgb & 0x0000FF00);
 		    col.blue	= (HIDDT_ColComp)((rgb << 8) & 0x0000FF00);
 
-		    col_tags[0].ti_Data = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
-    	    	    OOP_SetAttrs(RP_DRIVERDATA(rp)->dd_GC, col_tags);		    		    		    
-		}		
+		    pixval = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+
+	    	    if (tag->ti_Tag == RPTAG_FgColor)
+		    	RP_FGCOLOR(rp) = pixval;
+		    else
+		    	RP_BGCOLOR(rp) = pixval;
+		}
 		break;
-		
-	    } /**/
 
 	    case RPTAG_ClipRectangle:
-	    	if (!havedriverdata)
-		{
-		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
-		}
-	    	
-		if (havedriverdata)
-		{
-		    if (tag->ti_Data)
-		    {
-		    	RP_DRIVERDATA(rp)->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
-			RP_DRIVERDATA(rp)->dd_ClipRectangleFlags |= RPCRF_VALID;
+	    	driverdata = AllocDriverData(rp, tag->ti_Data, GfxBase);
+	    	if (driverdata)
+	    	{
+	    	    if (tag->ti_Data)
+	    	    {
+		    	driverdata->dd_ClipRectangle = *(struct Rectangle *)tag->ti_Data;
+			driverdata->dd_ClipRectangleFlags |= RPCRF_VALID;
 		    }
 		    else
 		    {
-		    	RP_DRIVERDATA(rp)->dd_ClipRectangleFlags &= ~RPCRF_VALID;
+		    	driverdata->dd_ClipRectangleFlags &= ~RPCRF_VALID;
 		    }
 		}
 		break;
-		
+
 	    case RPTAG_ClipRectangleFlags:
-	    	if (!havedriverdata)
+	    	driverdata = AllocDriverData(rp, TRUE, GfxBase);
+		if (driverdata)
 		{
-		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
-		}
-	    	
-		if (havedriverdata)
-		{
-		    RP_DRIVERDATA(rp)->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
-		    RP_DRIVERDATA(rp)->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
+		    driverdata->dd_ClipRectangleFlags &= ~(RPCRF_RELRIGHT | RPCRF_RELBOTTOM);
+		    driverdata->dd_ClipRectangleFlags |= (tag->ti_Data & (RPCRF_RELRIGHT | RPCRF_RELBOTTOM));
 		}
 	    	break;
-		
+
 	    case RPTAG_RemapColorFonts:
 	    	if (tag->ti_Data)
 		{
@@ -211,10 +194,5 @@
 	
     } /* while (tag) */
 
-    if (havedriverdata)
-    {
-    	RELEASE_DRIVERDATA(rp, GfxBase);
-    }
-    
     AROS_LIBFUNC_EXIT
 } /* SetRPAttrsA */

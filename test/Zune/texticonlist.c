@@ -1476,8 +1476,6 @@ static IPTR TextIconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cle
     LONG    	    	      i;
     
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-
-    DeinitRastPort(&data->temprp);
         
     for(i = 0; i < NUM_COLORS; i++)
     {

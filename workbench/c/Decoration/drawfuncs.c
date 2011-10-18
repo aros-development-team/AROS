@@ -1,14 +1,16 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright © 2011, The AROS Development Team.
     $Id$
 */
 
 #include <intuition/imageclass.h>
 #include <graphics/rpattr.h>
 #include <libraries/cybergraphics.h>
+#include <proto/arossupport.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/exec.h>
+
 #include <math.h>
 
 #include "drawfuncs.h"
@@ -960,7 +962,7 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
         if (c2 > 255) c2 = 255;
         if (c3 > 255) c3 = 255;
         c = (c3 << 24) | (c2 << 16) | (c1 << 8) | c0;
-        SetRPAttrs(rp, RPTAG_FgColor, c, TAG_DONE);
+        SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, c, TAG_DONE);
         Move(rp, x0, y0);
         Draw(rp, x1, y1);
     }

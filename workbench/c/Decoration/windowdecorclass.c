@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright © 2011, The AROS Development Team.
     $Id$
 */
 
@@ -9,6 +9,7 @@
 #include <intuition/extensions.h>
 #include <intuition/gadgetclass.h>
 #include <graphics/rpattr.h>
+#include <proto/arossupport.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>

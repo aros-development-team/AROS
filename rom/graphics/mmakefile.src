@@ -69,16 +69,13 @@ FUNCTIONS := \
 	clearregion \
 	clearscreen \
 	clipblit \
-	clonerastport \
 	closefont \
 	closemonitor \
 	cmove \
 	coercemode \
 	copyregion \
 	copysbitmap \
-	createrastport \
 	cwait \
-	deinitrastport \
 	disownblitter \
 	disposeregion \
 	docollision \
@@ -98,7 +95,6 @@ FUNCTIONS := \
 	freedbufinfo \
 	freegbuffers \
 	freeraster \
-	freerastport \
 	freesprite \
 	freespritedata \
 	freevportcoplists \

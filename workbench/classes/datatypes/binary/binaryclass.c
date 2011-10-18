@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <dos/dostags.h>
 #include <graphics/gfxbase.h>
@@ -368,11 +367,6 @@ IPTR Binary__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 		lines   = si->si_TotVert;
 		linelen = si->si_TotHoriz;
 	    }
-	    
-#ifdef __AROS__
-	    DeinitRastPort(&trp);
-#endif /* __AROS__ */
-	    
 	} /* if (buffer) */
 
 	/* Compute the lines and columns type information */

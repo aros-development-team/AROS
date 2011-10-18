@@ -8,9 +8,13 @@ FILES	:= \
     aros_altstack \
     aros_relbase \
     calcchecksum \
+    clonerastport \
     createbstr \
+    createrastport \
     createseglist \
     debugmem \
+    deinitrastport \
+    freerastport \
     freestruct \
     hexdump \
     isdosentrya \

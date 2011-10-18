@@ -10,11 +10,11 @@
 #include <clib/macros.h>
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
-#include <proto/oop.h>
+
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
+#include "graphics_driver.h"
 #include "intregions.h"
-#include <stdlib.h>
 
 /****************************************************************************************/
 
@@ -29,14 +29,22 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
 {
     struct draw_render_data *drd = draw_rd;
 
-    HIDD_GC_SetClipRect(dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+    /*
+     * This is a quick way to install ClipRect on a GC. Just set one pointer.
+     * This is why we have a struct Rectangle * in the GC.
+     */
+    GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawLine(dstbm_obj, dst_gc, drd->x1 + rect->MinX - srcx,
     	    	    	    	    	drd->y1 + rect->MinY - srcy,
 					drd->x2 + rect->MinX - srcx,
 					drd->y2 + rect->MinY - srcy); 
 
-    HIDD_GC_UnsetClipRect(dst_gc);
+    /*
+     * After we exit this routine, 'rect' will be not valid any more.
+     * So do not forget to reset the pointer!
+     */
+    GC_DOCLIP(dst_gc) = NULL;
 
     return 0;
 }
@@ -89,23 +97,17 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
 {
     AROS_LIBFUNC_INIT
 
-
     struct Rectangle 	    rr;
     OOP_Object      	    *gc;
     struct draw_render_data drd;
     LONG    	    	    dx;
     LONG    	    	    x1, y1;
-    
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return;
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
     
     x1 = rp->cp_x;
     y1 = rp->cp_y;
-    
-    gc = GetDriverData(rp)->dd_GC;
 
     if (x1 > x)
     {
@@ -129,39 +131,29 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
 	rr.MaxY = y;
     }
 
-    {
-    	UWORD lineptrn = rp->LinePtrn;
-	
-	if (rp->DrawMode & INVERSVID) lineptrn = ~lineptrn;
-	
-	{
-    	    struct TagItem gctags[] =
-	    {
-		{aHidd_GC_LinePattern   , lineptrn      },
-		{aHidd_GC_LinePatternCnt, rp->linpatcnt },
-		{TAG_DONE	    	    	    	}
-	    };
+    gc = GetDriverData(rp, GfxBase);
 
-	    OOP_SetAttrs( gc, gctags);
-    	}
-    }
-         
+    /* Only Draw() uses line pattern attributes, so we set them only here */
+    GC_LINEPAT(gc)    = (rp->DrawMode & INVERSVID) ? ~rp->LinePtrn : rp->LinePtrn;
+    GC_LINEPATCNT(gc) = rp->linpatcnt;
+
     drd.x1 = x1 - rr.MinX;
     drd.y1 = y1 - rr.MinY;
-    drd.x2 = x - rr.MinX;
-    drd.y2 = y - rr.MinY;
-    
-    do_render_func(rp, NULL, &rr, draw_render, &drd, TRUE, FALSE, GfxBase);
-        
+    drd.x2 = x  - rr.MinX;
+    drd.y2 = y  - rr.MinY;
+
+    D(bug("[Draw] (%d, %d) to (%d, %d)\n", rp->cp_x, rp->cp_y, x, y));
+    D(bug("[Draw] RastPort 0x%p, Flags 0x%04X, GC 0x%p, FG 0x%08lX, BG 0x%08lX\n", rp, rp->Flags, gc, GC_FG(gc), GC_BG(gc)));
+
+    do_render_with_gc(rp, NULL, &rr, draw_render, &drd, gc, TRUE, FALSE, GfxBase);
+
     dx = (drd.x2 > drd.y2) ? drd.x2 : drd.y2;
-    
+
     rp->linpatcnt = ((LONG)rp->linpatcnt - dx) & 15;
 
     rp->cp_x = x;
     rp->cp_y = y;
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
+
     AROS_LIBFUNC_EXIT
     
 } /* Draw */

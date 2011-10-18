@@ -171,8 +171,6 @@ static void layoutregister(struct Register *reg, struct Screen *scr,
    }
    
    reg->width = x + reg->slopew + REGISTER_SPACE_RIGHT;
-    
-   DeinitRastPort(&temprp);
 }
 
 /****************************************************************************************/

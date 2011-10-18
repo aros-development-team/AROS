@@ -1,13 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$    $Log
 
     Desc: Graphics function RectFill()
     Lang: english
 */
+
+#include <proto/oop.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
-#include <proto/oop.h>
+#include "graphics_driver.h"
 
 /*****************************************************************************
 
@@ -61,46 +64,31 @@
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
     FIX_GFXCOORD(yMax);
-    
+
     if ((xMax >= xMin) && (yMax >= yMin))
     {
 	if (rp->AreaPtrn)
 	{
     	    /* When rasport has areaptrn, let BltPattern do the job */
 	    BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
-
 	}
-	else if (OBTAIN_DRIVERDATA(rp, GfxBase))
+	else
 	{
-	    UBYTE   	    rp_drmd;
-	    HIDDT_DrawMode  drmd = 0;
-	    IPTR    	    pix;
+	    OOP_Object *gc  = GetDriverData(rp, GfxBase);
+	    struct Rectangle rr;
 
-	    /* Get drawmode */
-	    rp_drmd = GetDrMd(rp);
+	    if (rp->DrawMode & INVERSVID)
+	    	GC_FG(gc) = GC_BG(gc);
 
-	    OOP_GetAttr(RP_DRIVERDATA(rp)->dd_GC,
-	    	    	((rp_drmd & INVERSVID) ? aHidd_GC_Background : aHidd_GC_Foreground),
-			&pix);
+	    /* This is the same as fillrect_pendrmd() */
 
-	    if (rp_drmd & JAM2)
-	    {
-    		drmd = vHidd_GC_DrawMode_Copy;
-	    }
-	    else if (rp_drmd & COMPLEMENT)
-	    {
-    		drmd = vHidd_GC_DrawMode_Invert;
-	    }
-	    else if ((rp_drmd & (~INVERSVID)) == JAM1)
-	    {
-    		drmd = vHidd_GC_DrawMode_Copy;
-	    }
+	    rr.MinX = xMin;
+	    rr.MinY = yMin;
+	    rr.MaxX = xMax;
+	    rr.MaxY = yMax;
 
-	    fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, pix, drmd, TRUE, GfxBase);
-
-    	    RELEASE_DRIVERDATA(rp, GfxBase);
-	}
-	
+    	    do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, TRUE, FALSE, GfxBase);
+    	}
     } /* if ((xMax >= xMin) && (yMax >= yMin)) */
     
     AROS_LIBFUNC_EXIT

@@ -1,13 +1,13 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Basic help functions needed by gadtools.library.
     Lang: English.
 */
+
 #include <string.h>
 #include <proto/exec.h>
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
@@ -21,6 +21,7 @@
 #include <libraries/gadtools.h>
 #include <aros/debug.h>
 #include <intuition/gadgetclass.h>
+
 #include "gadtools_intern.h"
 
 /**********************************************************************************************/
@@ -169,8 +170,6 @@ struct IntuiText *makeitext(struct GadToolsBase_intern *GadToolsBase,
 	    SetFont(&temprp, font);
 	
 	    gtit->it2.LeftEdge = TextLength(&temprp, ng->ng_GadgetText, underscorelen);
-	    	
-	    DeinitRastPort(&temprp);
 	}
 	
 	gtit->it2.IText[0] = underscorepos[1];	

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for the colorwheel class
@@ -759,9 +759,6 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 	    DrawEllipse(&temprp, cx, cy, rx - 1, ry);
 	    DrawEllipse(&temprp, cx, cy, rx, ry - 1);
 	    DrawEllipse(&temprp, cx, cy, rx - 1, ry - 1);
-	    
-	    DeinitRastPort(&temprp);
-	    	    
 	} /* if (data->bm) */
 		
     } /* if (!data->bm || (box->Width != data->bmwidth) || (box->Height != data->bmheight)) */

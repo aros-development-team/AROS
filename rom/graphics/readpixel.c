@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function ReadPixel()
@@ -78,29 +78,24 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
-   
-    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return ((ULONG)-1);
-	
+
     if (IS_HIDD_BM(rp->BitMap))
     	prlrd.pixlut = &pixlut;
     else
     	prlrd.pixlut = NULL;
-	
+
     prlrd.pen = -1;
 
     ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, FALSE, GfxBase);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
+
     if (-1 == ret || -1 == (LONG)prlrd.pen)
     {
         D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
     	return (ULONG)-1;
     }
-	
+
     return prlrd.pen;
- 
+
     AROS_LIBFUNC_EXIT
   
 } /* ReadPixel */

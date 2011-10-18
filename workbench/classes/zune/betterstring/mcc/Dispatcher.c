@@ -287,11 +287,6 @@ IPTR Hide(struct IClass *cl, Object *obj, Msg msg)
 {
   struct InstData *data = (struct InstData *)INST_DATA(cl, obj);
 
-#ifdef __AROS__
-  if(isFlagSet(data->Flags, FLG_Shown))
-    DeinitRastPort(&data->rport);
-#endif
-
   clearFlag(data->Flags, FLG_Shown);
 
   // hide the selection pointer

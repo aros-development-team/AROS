@@ -118,9 +118,7 @@ static void makegadget(void)
     	/* Image is higher than font. Add some smaller extra height */
     	h = ih + 4; 
     }
-    
-    DeinitRastPort(&temprp);
-    
+
     /* Calc. inner window size */
     
     winwidth  = w + 8;

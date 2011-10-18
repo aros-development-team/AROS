@@ -105,42 +105,29 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
      
     struct bitmap_render_data 	brd;
     struct Rectangle 	    	rr;
-    HIDDT_DrawMode  	    	old_drmd;
     OOP_Object      	    	*gc;
     Point   	    	    	src;
 
-    struct TagItem gc_tags[] =
-    {
-    	{ aHidd_GC_DrawMode , 0UL },
-	{ TAG_DONE  	    	  }
-    };
-
     EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
     	, xSrc, ySrc, xDest, yDest, xSize, ySize));
-
-    if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
-    	return;
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
-    
-    brd.minterm	= minterm;
+
     brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
     if (NULL == brd.srcbm_obj)
     {
-    	RELEASE_DRIVERDATA(destRP, GfxBase);
     	return;
     }
-    
+
+    brd.minterm	= minterm;
     brd.srcbm = srcBitMap;
 
-    gc = GetDriverData(destRP)->dd_GC;
-    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
-
-    gc_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
-    OOP_SetAttrs(gc, gc_tags);
+    /* Get RastPort's GC and set the correct ROP */
+    gc = GetDriverData(destRP, GfxBase);
+    GC_DRMD(gc) = MINTERM_TO_GCDRMD(minterm);
 
     rr.MinX = xDest;
     rr.MinY = yDest;
@@ -150,17 +137,11 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     src.x = xSrc;
     src.y = ySrc;
 
-    do_render_func(destRP, &src, &rr, bitmap_render, &brd, TRUE, TRUE, GfxBase);
+    do_render_with_gc(destRP, &src, &rr, bitmap_render, &brd, gc, TRUE, TRUE, GfxBase);
 
     RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
-
-    gc_tags[0].ti_Data = old_drmd;
-    OOP_SetAttrs(gc, gc_tags);
-
-    RELEASE_DRIVERDATA(destRP, GfxBase);
-    
     ReturnVoid("BltBitMapRastPort");
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* BltBitMapRastPort */

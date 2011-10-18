@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <proto/exec.h>
 
@@ -14,15 +13,12 @@
 
     NAME */
 #include <graphics/rastport.h>
-#include <proto/graphics.h>
+#include <proto/arossupport.h>
 
-	AROS_LH1(void, FreeRastPort,
+	void FreeRastPort(
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-
-/*  LOCATION */
-	struct GfxBase *, GfxBase, 196, Graphics)
+	struct RastPort *rp)
 
 /*  FUNCTION
 	This frees a RastPort obtained with CloneRastPort() or
@@ -35,8 +31,6 @@
 	None.
 
     NOTES
-	This function is AROS specific. For compatibility, there is a function
-	with the same name in aros.lib on Amiga.
 
     EXAMPLE
 
@@ -53,11 +47,9 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
-    DeinitRastPort (rp);
+    if (rp->RP_Extra)
+    	FreeVec(rp->RP_Extra);
 
     FreeMem (rp, sizeof (struct RastPort));
 
-    AROS_LIBFUNC_EXIT
 } /* FreeRastPort */

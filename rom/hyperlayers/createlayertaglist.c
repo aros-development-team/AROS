@@ -30,7 +30,6 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   int visible = TRUE;
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
-  struct RastPort * rp;
   struct Region * layershape = NULL, *shape;
   const struct TagItem *tstate = tagList;
   struct TagItem *tag;
@@ -179,20 +178,18 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   /* Make shape region relative to screen */
   _TranslateRect(&shape->bounds, x0, y0);
   
-  l = AllocMem(sizeof(struct IntLayer), MEMF_CLEAR|MEMF_PUBLIC);
-  rp = CreateRastPort();
-  
-
-  if (l && rp)
+  l  = AllocMem(sizeof(struct IntLayer), MEMF_CLEAR|MEMF_PUBLIC);
+  if (l)
   {
     IL(l)->shapehook = shapehook;
     l->Window = win;
     l->shaperegion = layershape;
-    l->rp = rp;
+    l->rp = &IL(l)->rp;
 
-    rp->Layer = l;
-    rp->BitMap = bm;
-    
+    InitRastPort(l->rp);
+    l->rp->Layer = l;
+    l->rp->BitMap = bm;
+
     l->Flags = (WORD) flags;
     l->LayerInfo = li;
     
@@ -393,9 +390,6 @@ failexit:
       DisposeRegion(l->visibleshape);
     FreeMem(l, sizeof(struct IntLayer));
   }
-
-  if (rp)
-    FreeRastPort(rp);
 
   return NULL;
 } /* CreateBehindHookLayer */

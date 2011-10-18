@@ -117,8 +117,6 @@ static void makewin(void)
     	temprp.BitMap = bm;
 	
 	ClipBlit(win->RPort, win->BorderLeft, win->BorderTop, &temprp, 0, 0, win->GZZWidth, win->GZZHeight, 192);
-    	
-	DeinitRastPort(&temprp);
     }
 }
 
@@ -279,8 +277,6 @@ static void action(void)
 			    0);
 
 	    BltBitMapRastPort(bm, 0, SCREENHEIGHT, win->RPort, win->BorderLeft, win->BorderTop, win->GZZWidth, win->GZZHeight, 192);
-	    
-	    DeinitRastPort(&temprp);
 	}
 	else
 	{

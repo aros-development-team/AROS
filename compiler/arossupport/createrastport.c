@@ -6,24 +6,20 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <exec/memory.h>
-#include <graphics/rastport.h>
 #include <proto/exec.h>
-#include "gfxfuncsupport.h"
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
     NAME */
 #include <graphics/rastport.h>
-#include <proto/graphics.h>
+#include <proto/arossupport.h>
 
-	AROS_LH0(struct RastPort *, CreateRastPort,
+	struct RastPort *CreateRastPort(
 
 /*  SYNOPSIS */
-
-/*  LOCATION */
-	struct GfxBase *, GfxBase, 194, Graphics)
+	void)
 
 /*  FUNCTION
 	This function creates a new RastPort.
@@ -36,8 +32,6 @@
 	to perform the operation.
 
     NOTES
-	This function is AROS specific. For compatibility, there is a
-	function in aros.lib which does the same on Amiga.
 
     EXAMPLE
 
@@ -53,31 +47,11 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
-    struct RastPort * newRP;
-    BOOL    	      ok = FALSE;
-    
-    newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
+    struct RastPort *newRP = AllocMem (sizeof (struct RastPort), MEMF_ANY);
 
     if (newRP)
-    {
-	if (InitRastPort(newRP))
-	{
-	    /* Mark the rastport as being cleaned up by the
-	       user itself later on (through FreeRastPort()).
-	       No need for garbage collection */
-	    newRP->Flags |= RPF_SELF_CLEANUP;
-	    ok = TRUE;
-	}
-	   
-	if (!ok)
-	{
-	    FreeMem (newRP, sizeof (struct RastPort));
-	    newRP = NULL;
-	}
-    }
+	InitRastPort(newRP);
 
     return newRP;
-    AROS_LIBFUNC_EXIT
+
 } /* CreateRastPort */

@@ -87,7 +87,8 @@ struct RastPort
      * On 64-bit architectures this space is doubled.
      * Do not touch!!!
      */
-    IPTR              longreserved[7];
+    APTR	      RP_Extra;
+    IPTR              longreserved[6];
     UBYTE             reserved[2];
 };
 

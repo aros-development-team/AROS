@@ -40,10 +40,11 @@ LIBBASETYPE
 
 struct IntLayer
 {
-    struct Layer lay;
-    struct Hook  *shapehook;
-    IPTR         window;	/* This is passed to shape hook. Comes from Intuition. */
-    ULONG   	 intflags;
+    struct Layer    lay;
+    struct Hook	   *shapehook;
+    IPTR	    window;	/* This is passed to shape hook. Comes from Intuition. */
+    ULONG	    intflags;
+    struct RastPort rp;		/* lay.rp */
 };
 
 #define IL(x) ((struct IntLayer *)(x))

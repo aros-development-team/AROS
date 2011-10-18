@@ -108,9 +108,6 @@
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
 
-    if (!OBTAIN_DRIVERDATA(srcRP, GfxBase))
-    	return;
-
     /* overlapping and non-overlapping blits are handled differently. */
 
     if (srcRP->Layer &&
@@ -288,12 +285,7 @@
 exit:
 
     if (destRP->Layer && (destRP->Layer != srcRP->Layer)) UnlockLayerRom(destRP->Layer);
-
     if (srcRP->Layer)  UnlockLayerRom( srcRP->Layer);
-
-    RELEASE_DRIVERDATA(srcRP, GfxBase);
-
-    return;
 
     AROS_LIBFUNC_EXIT
 

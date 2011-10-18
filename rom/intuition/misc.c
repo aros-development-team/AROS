@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -118,10 +118,6 @@ struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionB
     return scr;
 }
 
-#ifdef __MORPHOS__
-
-/* TODO: there are no such functions in MorphOS/AmigaOS, may be we should make them private too? */
-
 struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
 {
     struct RastPort *newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
@@ -130,7 +126,7 @@ struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
     {
         InitRastPort(newrp);
     }
-    
+
     return newrp;
 }
 
@@ -143,9 +139,7 @@ struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, struct Ras
         newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
         if (newrp)
         {
-            // *newrp = *rp;
-
-            memcpy(newrp,rp,sizeof(struct RastPort));
+            CopyMem(rp, newrp, sizeof(struct RastPort));
         }
     }
 
@@ -154,8 +148,16 @@ struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, struct Ras
 
 void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp)
 {
+    if (rp->RP_Extra)
+    {
+    	/* Just in case... What if someone plays with ClipRects? */
+    	FreeVec(rp->RP_Extra);
+    }
+
     FreeMem(rp, sizeof(*rp));
 }
+
+#ifdef __MORPHOS__
 
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 {

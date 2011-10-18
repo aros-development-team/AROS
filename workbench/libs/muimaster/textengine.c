@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -516,8 +516,6 @@ void zune_text_get_bounds (ZText *text, Object *obj)
     text->height += line_node->lheight;
     text->width = MAX(text->width,line_node->lwidth);
     }
-    
-    DeinitRastPort(&rp);
 }
 
 /************************************************************/

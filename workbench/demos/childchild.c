@@ -140,11 +140,10 @@ static void InitBackfillHook(void)
     backfillhook.h_SubEntry = (HOOKFUNC)MyBackfillFunc;
 }
 
+static struct RastPort temprp;
 
 static void MakePattern(void)
 {
-    struct RastPort *temprp;
-
     if (!(patternbm = AllocBitMap(PATTERNWIDTH * 2,
 				  PATTERNHEIGHT * 2,
 				  GetBitMapAttr(scr->RastPort.BitMap,BMA_DEPTH),
@@ -154,31 +153,19 @@ static void MakePattern(void)
 	cleanup("Can't create pattern bitmap!");
     }
 
-    if (!(temprp = CreateRastPort()))
-    {
-	cleanup("Can't create rastport!");
-    }	
+    InitRastPort(&temprp);
 
-    temprp->BitMap = patternbm;
+    temprp.BitMap = patternbm;
 
-    SetAPen(temprp,dri->dri_Pens[PATTERNCOL1]);
+    SetAPen(&temprp,dri->dri_Pens[PATTERNCOL1]);
 
-    RectFill(temprp,0,0,10,10);
+    RectFill(&temprp, 0, 0, 10, 10);
+    RectFill(&temprp, 0, 0, PATTERNWIDTH - 1, PATTERNHEIGHT - 1);
 
-    RectFill(temprp,0,0,PATTERNWIDTH - 1,PATTERNHEIGHT - 1);
+    SetAPen(&temprp, dri->dri_Pens[PATTERNCOL2]);
 
-    SetAPen(temprp,dri->dri_Pens[PATTERNCOL2]);
-    RectFill(temprp,0,
-		    0,
-		    PATTERNWIDTH / 2 - 1,
-		    PATTERNHEIGHT / 2 - 1);
-
-    RectFill(temprp,PATTERNWIDTH / 2,
-		    PATTERNHEIGHT / 2,
-		    PATTERNWIDTH - 1,
-		    PATTERNHEIGHT - 1);
-
-    FreeRastPort(temprp);
+    RectFill(&temprp, 0, 0, PATTERNWIDTH / 2 - 1, PATTERNHEIGHT / 2 - 1);
+    RectFill(&temprp, PATTERNWIDTH / 2, PATTERNHEIGHT / 2, PATTERNWIDTH - 1, PATTERNHEIGHT - 1);
 }
 
 static void makewin(void)

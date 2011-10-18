@@ -8,64 +8,33 @@
     Lang: english
 */
 
-#ifndef AROS_LIBCALL_H
-#   include <aros/libcall.h>
-#endif
-#ifndef EXEC_EXECBASE_H
-#   include <exec/execbase.h>
-#endif
-#ifndef EXEC_LISTS_H
-#   include <exec/lists.h>
-#endif
-#ifndef EXEC_NODES_H
-#   include <exec/nodes.h>
-#endif
-#ifndef EXEC_SEMAPHORE_H
-#   include <exec/semaphores.h>
-#endif
-#ifndef GRAPHICS_GFXBASE_H
-#   include <graphics/gfxbase.h>
-#endif
-#ifndef GRAPHICS_TEXT_H
-#   include <graphics/text.h>
-#endif
-#ifndef GRAPHICS_RASTPORT_H
-#   include <graphics/rastport.h>
-#endif
-#ifndef GRAPHICS_REGIONS_H
-#   include <graphics/regions.h>
-#endif
-#ifndef OOP_OOP_H
-#   include <oop/oop.h>
-#endif
-#ifndef GRAPHICS_VIEW_H
-#   include <graphics/view.h>
-#endif
-#ifndef HIDD_GRAPHICS_H
-#   include <hidd/graphics.h>
-#endif
-
+#include <aros/libcall.h>
+#include <exec/execbase.h>
+#include <exec/lists.h>
+#include <exec/nodes.h>
+#include <exec/semaphores.h>
+#include <graphics/gfxbase.h>
+#include <graphics/text.h>
+#include <graphics/rastport.h>
+#include <graphics/regions.h>
+#include <oop/oop.h>
+#include <graphics/view.h>
+#include <hidd/graphics.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <graphics/scale.h>
+
 #include "fontsupport.h"
 #include "objcache.h"
 
 #define BITMAP_CLIPPING	    	1
-
 #define REGIONS_USE_MEMPOOL 	1
-
 /* Setting BMDEPTH_COMPATIBILITY to 1 will cause bitmap->Depth
    to be never bigger than 8. The same seems to be the case under
    AmigaOS with CyberGraphX/Picasso96. GetBitMapAttr() OTOH will
    actually return the real depth. */
-   
 #define BMDEPTH_COMPATIBILITY	1
-
-#define OBTAIN_DRIVERDATA(rp,libbase)   ObtainDriverData(rp, libbase)
-#define RELEASE_DRIVERDATA(rp,libbase)  ReleaseDriverData(rp, libbase)
-
-#define SIZERECTBUF 128
+#define SIZERECTBUF		128
 
 struct RegionRectangleExt
 {
@@ -161,12 +130,11 @@ struct common_driverdata
 
     ObjectCache     	      *planarbm_cache;		/* Planar bitmaps cache		   */
 
-    /* Fakegfx classes */
-    OOP_Class		      *fakegfxclass;
+    /* HIDD classes */
+    OOP_Class		      *fakegfxclass;		/* Fakegfx (SW sprite) classes	   */
     OOP_Class		      *fakefbclass;
-
-    /* Composer class */
-    OOP_Class		      *composerClass;
+    OOP_Class		      *composerClass;		/* Composer class		   */
+    OOP_Class		      *gcClass;			/* GC class			   */
 
     /* Attribute bases */
     OOP_AttrBase    	     hiddBitMapAttrBase;
@@ -219,11 +187,6 @@ struct GfxBase_intern
     APTR    	    	    	regionpool;
     struct MinList              ChunkPoolList;
 #endif
-
-    /* GC driverdata pool */
-    struct SignalSemaphore  	driverdatasem;
-    APTR    	    	    	driverdatapool;
-    struct MinList  	    	driverdatalist[DRIVERDATALIST_HASHSIZE];
 
     /* Semaphores */
     struct SignalSemaphore      blit_sema;
@@ -301,9 +264,7 @@ struct ViewPort;
 /* Hash index calculation */
 extern ULONG CalcHashIndex(IPTR n, UWORD size);
 
-BOOL ObtainDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
-void ReleaseDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
-void KillDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct GfxBase *GfxBase);
 
 /* a function needed by ClipBlit */
 void internal_ClipBlit(struct RastPort * srcRP,

@@ -28,12 +28,20 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
 {
     struct ellipse_render_data *erd = ellipse_rd;
 
-    HIDD_GC_SetClipRect(dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
+    /*
+     * This is a quick way to install ClipRect on a GC. Just set one pointer.
+     * This is why we have a struct Rectangle * in the GC.
+     */
+    GC_DOCLIP(dst_gc) = rect;
 
     HIDD_BM_DrawEllipse(dstbm_obj, dst_gc, erd->a + rect->MinX - srcx, erd->b + rect->MinY - srcy,
 					   erd->a, erd->b);
 
-    HIDD_GC_UnsetClipRect(dst_gc);
+    /*
+     * After we exit this routine, 'rect' will be not valid any more.
+     * So do not forget to reset the pointer!
+     */
+    GC_DOCLIP(dst_gc) = NULL;
 
     return 0;
 }
@@ -87,9 +95,6 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
 
     struct Rectangle 	rr;
     struct ellipse_render_data erd;
-    
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return;
 
     FIX_GFXCOORD(xCenter);
     FIX_GFXCOORD(yCenter);
@@ -107,8 +112,6 @@ static ULONG ellipse_render(APTR ellipse_rd, LONG srcx, LONG srcy,
     erd.b = b;
     
     do_render_func(rp, NULL, &rr, ellipse_render, &erd, TRUE, TRUE, GfxBase);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
     
     AROS_LIBFUNC_EXIT
     

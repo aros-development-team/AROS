@@ -502,8 +502,6 @@ IPTR Register__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	}
 	data->def_width += (textpixmax + TEXTSPACING + 1) * data->numitems;
 	data->def_width = MAX(data->min_width, data->def_width);
-	
-        DeinitRastPort(&temprp);
     }
 
     SetHardCoord(obj,data);

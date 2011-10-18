@@ -49,9 +49,7 @@ AROS_UFP4(ULONG, TOF_VBlank,
 BOOL InitROMFont(struct GfxBase *);
 
 static int GfxInit(struct GfxBase *LIBBASE)
-{
-    WORD i;
-    
+{    
     OOPBase = (APTR)OpenLibrary("oop.library", 41);
     if (OOPBase == NULL)
         return FALSE;
@@ -99,19 +97,6 @@ static int GfxInit(struct GfxBase *LIBBASE)
     NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
 #endif
 
-    InitSemaphore( &PrivGBase(GfxBase)->driverdatasem );
-    if (!(PrivGBase(GfxBase)->driverdatapool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR | MEMF_SEM_PROTECTED,
-    	    	    	    	    	    	          1024,
-    	    	    	    	    	    	          1024)))
-    {
-    	return FALSE;
-    }
-
-    for(i = 0; i < DRIVERDATALIST_HASHSIZE; i++)
-    {
-	NEWLIST((struct List *)&PrivGBase(GfxBase)->driverdatalist[i]);
-    }
-    
     if (!InitROMFont(LIBBASE)) return FALSE;
 
     return driver_init (LIBBASE);

@@ -13,6 +13,7 @@
 
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+#include "graphics_driver.h"
 
 /*****************************************************************************
 
@@ -74,7 +75,7 @@
     EXAMPLE
 
     BUGS
-	RPTAG_SoftStyle not supported, yet.
+	RPTAG_SoftStyle and RPTAG_DrawBounds are not supported yet.
 
     SEE ALSO
 	SetRPAttrsA(), GetAPen(), GetBPen(), GetOutLinePen(), graphics/rpattr.h
@@ -89,7 +90,8 @@
 
     struct TagItem *tag, *tstate = tags;
     ULONG   	    MaxPen, z;
-    BOOL    	    havedriverdata = FALSE;
+    struct gfx_driverdata *driverdata;
+    HIDDT_Color col;
 
     while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
@@ -134,59 +136,78 @@
 	    	break;
 
 	    case RPTAG_DrawBounds :
+	    	/* FIXME: Implement this */
 	    	((struct Rectangle *)tag->ti_Data)->MinX = 0;
 	    	((struct Rectangle *)tag->ti_Data)->MinY = 0;
 	    	((struct Rectangle *)tag->ti_Data)->MaxX = 0;
 	    	((struct Rectangle *)tag->ti_Data)->MaxY = 0;
 	    	break;
 
+	    case RPTAG_PenMode:
+	    	/* PenMode is applicable only if there's an RTG bitmap attached to the RastPort */
+	    	*((IPTR *)tag->ti_Data) = (rp->BitMap && IS_HIDD_BM(rp->BitMap) && (rp->Flags & RPF_NO_PENS)) ? TRUE : FALSE;
+	    	break;
+
     	    case RPTAG_FgColor:
-	    	*((IPTR *)tag->ti_Data) = RP_FGCOLOR(rp);
-		break;
-		
 	    case RPTAG_BgColor:
-	    	*((IPTR *)tag->ti_Data) = RP_BGCOLOR(rp);
-		break;
-	    	    
-	    case RPTAG_ClipRectangle:
-	    	if (!havedriverdata)
-		{
-		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
-		}
-	    	
-		if (havedriverdata)
-		{
-		    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
+
+		/* We return zero if not applicable */
+	    	col.alpha = 0;
+	    	col.red   = 0;
+	    	col.green = 0;
+	    	col.blue  = 0;
+	    
+		if (rp->BitMap && IS_HIDD_BM(rp->BitMap))
+		{   
+		    if (rp->Flags & RPF_NO_PENS)
 		    {
-			*((struct Rectangle **)tag->ti_Data) = &(RP_DRIVERDATA(rp)->dd_ClipRectangle);
+		    	/* Remap pixel value back from bitmap's format to ARGB8888 */
+		    	HIDDT_Pixel pixval = (tag->ti_Tag == RPTAG_FgColor) ? RP_FGCOLOR(rp) : RP_BGCOLOR(rp);
+
+			HIDD_BM_UnmapPixel(HIDD_BM_OBJ(rp->BitMap), pixval, &col);
 		    }
 		    else
 		    {
-		    	*((struct Rectangle **)tag->ti_Data) = NULL;
+		    	/* Pens are used. Get a corresponding LUT entry. */
+		    	if (HIDD_BM_COLMAP(rp->BitMap))
+		    	{
+		    	    ULONG pen = (tag->ti_Tag == RPTAG_FgColor) ? rp->FgPen : rp->BgPen;
+
+		    	    HIDD_CM_GetColor(HIDD_BM_COLMAP(rp->BitMap), pen & PEN_MASK, &col);
+		    	}
 		    }
+		}
+
+		*((IPTR *)tag->ti_Data) = ((col.alpha & 0xFF00) << 16) |
+		    			  ((col.red   & 0xFF00) <<  8) |
+		    			   (col.green & 0xFF00)	       |
+		    			  ((col.blue  & 0xFF00) >> 8);
+		break;
+
+	    case RPTAG_ClipRectangle:
+	    	driverdata = ObtainDriverData(rp);
+	    	if (driverdata && (driverdata->dd_ClipRectangleFlags & RPCRF_VALID))
+		{
+		    *((struct Rectangle **)tag->ti_Data) = &driverdata->dd_ClipRectangle;
 		}
 		else
 		{
-		    *((IPTR *)tag->ti_Data) = 0;
+		    *((struct Rectangle **)tag->ti_Data) = NULL;
 		}
 		break;
-		
+
 	    case RPTAG_ClipRectangleFlags:
-	    	if (!havedriverdata)
-		{
-		    havedriverdata = OBTAIN_DRIVERDATA(rp, GfxBase);
-		}
-	    	
-		if (havedriverdata)
-		{
-		    *((IPTR *)tag->ti_Data) = RP_DRIVERDATA(rp)->dd_ClipRectangleFlags;
+	    	driverdata = ObtainDriverData(rp);
+	    	if (driverdata)
+	    	{
+		    *((IPTR *)tag->ti_Data) = driverdata->dd_ClipRectangleFlags;
 		}
 		else
 		{
 		    *((IPTR *)tag->ti_Data) = 0;
 		}
 	    	break;
-		
+
 	    case RPTAG_RemapColorFonts:
 	    	*((IPTR *)tag->ti_Data) = (rp->Flags & RPF_REMAP_COLORFONTS) ? TRUE : FALSE;
 		break;
@@ -194,11 +215,6 @@
 	} /* switch(tag->ti_Tag) */
 	
     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
-
-    if (havedriverdata)
-    {
-    	RELEASE_DRIVERDATA(rp, GfxBase);
-    }
 
     AROS_LIBFUNC_EXIT
 } /* GetRPAttrsA */

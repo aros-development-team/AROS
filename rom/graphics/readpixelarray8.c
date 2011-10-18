@@ -106,10 +106,7 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     FIX_GFXCOORD(ystop);
     
     if ((xstart > xstop) || (ystart > ystop)) return 0;
-    
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return 0;
-	
+
     /* FIXME: ReadPixelArray8 on hi/truecolor screens or
      * a LUT for it does not really make sense
      */
@@ -125,11 +122,9 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
     rr.MinY = ystart;
     rr.MaxX = xstop;
     rr.MaxY = ystop;
-    
+
     pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, FALSE, GfxBase);
-	
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
+
     ReturnInt("ReadPixelArray8", LONG, pixread);
 
     AROS_LIBFUNC_EXIT
