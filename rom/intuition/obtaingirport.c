@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -8,6 +8,7 @@
 #include <proto/layers.h>
 #include <proto/exec.h>
 #include <graphics/rpattr.h>
+
 #include "intuition_intern.h"
 
 /*****************************************************************************
@@ -91,11 +92,7 @@
                 }
 
                 SetWriteMask(rp, 0xFF);
-    	    #ifdef __MORPHOS__
                 SetRPAttrs(rp,RPTAG_DrMd,JAM1,RPTAG_PenMode,TRUE,TAG_DONE);
-    	    #else
-                SetRPAttrs(rp,RPTAG_DrMd,JAM1,TAG_DONE);
-    	    #endif /* __MORPHOS__ */
             }
         }
 
