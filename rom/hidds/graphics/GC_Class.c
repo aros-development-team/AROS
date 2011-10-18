@@ -380,6 +380,11 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
     	applies it to all operations. Graphics driver method which uses the GC needs to support
     	it explicitly. Currently clipping is supported only by Draw and DrawEllipse methods.
 
+	Use this method if and only if the GC object was created by you. graphics.library
+	internally operates on temporary GC objects, which are allocated only partially. They
+	don't have storage space for clipping rectangle data, and attempt to use this
+	method on such a GC will result in memory trashing.
+
     EXAMPLE
 
     BUGS
