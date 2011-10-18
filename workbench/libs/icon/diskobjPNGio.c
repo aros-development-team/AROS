@@ -1,9 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 /****************************************************************************************/
+
+#define DEBUG 0
+#define DTT(x)
 
 #include <datatypes/datatypes.h>
 #include <intuition/intuition.h>
@@ -398,20 +401,27 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 		    case ATTR_FRAMELESS:
 		        NATIVEICON(icon)->ni_Frameless = val ? TRUE : FALSE;
 		        break;
+
 		    case ATTR_TOOLTYPE:
 		    	ttnum++;
+
+			D(bug("[Icon.PNG] Got tooltype number %u : %s\n", ttnum - 1, val));
+
 			if (ttarraysize < ttnum + 1)
 			{
 			    STRPTR *old_tooltypes = DO(icon)->do_ToolTypes;
-			    
+
 			    ttarraysize += 10;
-			    
+
 			    DO(icon)->do_ToolTypes = AllocMemIcon(DO(icon), ttarraysize * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
 			    if (DO(icon)->do_ToolTypes)
 			    {
+			    	D(bug("[Icon.PNG] Allocated array of %u entries @ 0x%p (old 0x%p)\n", ttarraysize, DO(icon)->do_ToolTypes, old_tooltypes));
 			    	if (old_tooltypes)
 				{
-				    memcpy(DO(icon)->do_ToolTypes, old_tooltypes, (ttnum - 1) * sizeof(APTR));				    
+				    CopyMemQuick(old_tooltypes, DO(icon)->do_ToolTypes, (ttnum - 1) * sizeof(APTR));
+
+				    /* TODO: Free old array */
 				}
 			    }
 			    else
@@ -419,7 +429,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 			    	ok = FALSE;
 			    }
 			}
-			
+
 			if (!ok) break;
 			
 			DO(icon)->do_ToolTypes[ttnum - 1] = AllocMemIcon(DO(icon), strlen((char *)val) + 1, MEMF_PUBLIC | MEMF_CLEAR);
