@@ -2,7 +2,7 @@
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 
-#include "timer_intern.h"
+#include <timer_intern.h>
 #include "timervblank.h"
 
 /* Define this in timer_platform.h in order to make use of this code */
