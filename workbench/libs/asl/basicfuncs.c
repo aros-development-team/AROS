@@ -289,8 +289,6 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	if (ld->ld_TextAttr.ta_Name)
 	    FreeVec(ld->ld_TextAttr.ta_Name);
 
-    	DeinitRastPort(&(ld->ld_DummyRP));
-
 	FreeMem(ld, sizeof (struct LayoutData));
     }
 

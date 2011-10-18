@@ -330,10 +330,6 @@ static IPTR mCleanup(struct IClass *cl, Object *obj, Msg msg)
 
   result = DoSuperMethodA(cl, obj, msg);
 
-#ifdef __AROS__
-  DeinitRastPort(&data->tmprp);
-#endif
-
   RETURN(result);
   return result;
 }
@@ -477,9 +473,6 @@ static IPTR mHide(struct IClass *cl, Object *obj, Msg msg)
   nnset(data->SuggestWindow, MUIA_Window_Open, FALSE);
   set(_win(obj), MUIA_Window_DisableKeys, 0L);
   MUIG_FreeBitMap(data->doublebuffer);
-#ifdef __AROS__
-  DeinitRastPort(&data->doublerp);
-#endif
   data->doublerp.BitMap = NULL;
   data->rport = NULL;
 

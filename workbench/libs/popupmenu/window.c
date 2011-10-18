@@ -10,9 +10,6 @@
 //
 struct RastPort *PM_CpyRPort(struct RastPort *rp)
 {
-#ifdef __AROS__
-    	return CloneRastPort(rp);
-#else
 	struct RastPort *rpc;
 
 	rpc=PM_Mem_Alloc(sizeof(struct RastPort));
@@ -21,7 +18,6 @@ struct RastPort *PM_CpyRPort(struct RastPort *rp)
 	}
 
 	return rpc;
-#endif
 }
 
 //
@@ -119,12 +115,8 @@ BOOL PM_OpenWindow(struct PM_Window *pw, int left, int top, int width, int heigh
 //
 void PM_CloseWindow(struct PM_Window *bw)
 {
-	if(bw->bg.BgArray) PM_Mem_Free(bw->bg.BgArray);
-#ifdef __AROS__
-	if(bw->te.RPort) FreeRastPort(bw->te.RPort);
-#else	
+	if(bw->bg.BgArray) PM_Mem_Free(bw->bg.BgArray);	
 	if(bw->te.RPort) PM_Mem_Free(bw->te.RPort);
-#endif
 	if(bw->te.BMap) FreeBitMap(bw->te.BMap);
 	if(bw->Wnd) CloseWindow(bw->Wnd);
 

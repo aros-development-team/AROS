@@ -17,6 +17,7 @@
 #include "objcache.h"
 #include "intregions.h"
 #include "gfxfuncsupport.h"
+#include "graphics_driver.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -80,26 +81,31 @@ static ULONG CallRenderFunc(RENDERFUNC render_func, APTR funcdata, ULONG srcx, U
     return pixwritten;
 }
 
-ULONG do_render_func(struct RastPort *rp
-	, Point *src
-	, struct Rectangle *rr
-	, RENDERFUNC render_func
-	, APTR funcdata
-        , BOOL do_update
-	, BOOL get_special_info
-	, struct GfxBase *GfxBase)
+ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
+		     RENDERFUNC render_func, APTR funcdata,
+		     BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase)
+{
+    OOP_Object *gc = GetDriverData(rp, GfxBase);
+
+    return do_render_with_gc(rp, src, rr, render_func, funcdata, gc, do_update, get_special_info, GfxBase);
+}
+
+/*
+ * GetDriverData() resets the GC to RastPort's values.
+ * This is another entry point which avoids that. Use it if you have already set up GC.
+ */
+ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
+			RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
+			BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase)
 {
 
     struct BitMap   	*bm = rp->BitMap;
     struct Layer    	*L = rp->Layer;
-    OOP_Object      	*gc;
     struct Rectangle 	 rp_clip_rectangle;
     BOOL    	    	 have_rp_cliprectangle;
     LONG    	     	 srcx, srcy;    
     LONG    	     	 pixwritten = 0;
-    
-    gc = GetDriverData(rp)->dd_GC;
-	
+
     if (NULL != src)
     {
         srcx = src->x;
@@ -253,8 +259,8 @@ ULONG do_pixel_func(struct RastPort *rp
     BOOL    	    	 have_rp_cliprectangle;
     ULONG   	     	 retval = -1;
    
-    gc = GetDriverData(rp)->dd_GC;
-   
+    gc = GetDriverData(rp, GfxBase);
+
     if (NULL == L)
     {
 	have_rp_cliprectangle = GetRPClipRectangleForBitMap(rp, bm, &rp_clip_rectangle, GfxBase);
@@ -341,22 +347,20 @@ ULONG do_pixel_func(struct RastPort *rp
 	    } /* if (cliprect intersects with area we want to draw to) */
 	    
 	} /* while (cliprects to examine) */
-
 	UnlockLayerRom( L );
-
     }
-    
+
     return retval;
 }
 
 /****************************************************************************************/
 
-static ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
-    	    	    	     OOP_Object *dstbm_obj, OOP_Object *dst_gc,
-    	    	    	     struct Rectangle *rect, struct GfxBase *GfxBase)
+ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
+    	    	      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+    	    	      struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     HIDD_BM_FillRect(dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY);
-    
+
     return (rect->MaxX - rect->MinX + 1) * (rect->MaxY - rect->MinY + 1);
 }
 
@@ -364,47 +368,20 @@ static ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
 
 LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
     	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase)
-{   
-    LONG    	    	pixwritten = 0;
-    
-    HIDDT_DrawMode  	old_drmd;
-    IPTR             	old_fg;
-    OOP_Object      	*gc;
-    struct Rectangle 	rr;
+{
+    OOP_Object      *gc;
+    struct Rectangle rr;
 
-    struct TagItem gc_tags[] =
-    {
-	{ aHidd_GC_DrawMode 	, drmd  },
-	{ aHidd_GC_Foreground	, pix 	},
-	{ TAG_DONE  	    	    	}
-    };
+    gc = GetDriverData(rp, GfxBase);
+    GC_FG(gc)   = pix;
+    GC_DRMD(gc) = drmd;
 
-
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return 0;
-	
-    gc = GetDriverData(rp)->dd_GC;
-	
-    OOP_GetAttr(gc, aHidd_GC_DrawMode,	(IPTR *)&old_drmd);
-    OOP_GetAttr(gc, aHidd_GC_Foreground,(IPTR *)&old_fg);
-    
-    OOP_SetAttrs(gc, gc_tags);
-    
     rr.MinX = x1;
     rr.MinY = y1;
     rr.MaxX = x2;
     rr.MaxY = y2;
-    
-    pixwritten = do_render_func(rp, NULL, &rr, fillrect_render, NULL, do_update, FALSE, GfxBase);
-    
-    /* Restore old GC values */
-    gc_tags[0].ti_Data = (IPTR)old_drmd;
-    gc_tags[1].ti_Data = (IPTR)old_fg;
-    OOP_SetAttrs(gc, gc_tags);
-	
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    return pixwritten;
+
+    return do_render_with_gc(rp, NULL, &rr, fillrect_render, NULL, gc, do_update, FALSE, GfxBase);
 }
 
 /****************************************************************************************/
@@ -623,18 +600,10 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
 		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
 {
-	
-    LONG pixwritten = 0;
     struct wp8_render_data wp8rd;
     struct Rectangle rr;
     OOP_Object *gc;
-    HIDDT_DrawMode old_drmd;
     HIDDT_PixelLUT bm_lut;
-    struct TagItem gc_tags[] =
-    {
-	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE, 0}
-    };
 
     /* If we haven't got a LUT, we obtain it from the bitmap */
     if ((!pixlut) && IS_HIDD_BM(rp->BitMap))
@@ -652,13 +621,8 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 #endif
     }
 
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return 0;
-
-    gc = GetDriverData(rp)->dd_GC;
-
-    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
-    OOP_SetAttrs(gc, gc_tags);
+    gc = GetDriverData(rp, GfxBase);
+    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
 
     wp8rd.modulo = modulo;
     wp8rd.array	 = array;
@@ -669,15 +633,7 @@ LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
     rr.MaxX = xstop;
     rr.MaxY = ystop;
 
-    pixwritten = do_render_func(rp, NULL, &rr, wp8_render, &wp8rd, do_update, FALSE, GfxBase);
-
-    /* Reset to preserved drawmode */
-    gc_tags[0].ti_Data = old_drmd;
-    OOP_SetAttrs(gc, gc_tags);
-
-    RELEASE_DRIVERDATA(rp, GfxBase);
-
-    return pixwritten;
+    return do_render_with_gc(rp, NULL, &rr, wp8_render, &wp8rd, gc, do_update, FALSE, GfxBase);
 }
 
 /****************************************************************************************/
@@ -710,50 +666,24 @@ LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
 			   BOOL do_update, struct GfxBase *GfxBase)
 {
-	
-    LONG pixwritten = 0;
-    
     struct wtp8_render_data wtp8rd;
-    struct Rectangle rr;
-    
+    struct Rectangle rr;    
     OOP_Object *gc;
-    HIDDT_DrawMode old_drmd;
 
-    struct TagItem gc_tags[] =
-    {
-	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE, 0}
-    };
-    
+    gc = GetDriverData(rp, GfxBase);
+    GC_DRMD(gc) = vHidd_GC_DrawMode_Copy;
 
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return 0;
-	
-    gc = GetDriverData(rp)->dd_GC;
-    
-    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
-    OOP_SetAttrs(gc, gc_tags);
-    
     wtp8rd.modulo   	= modulo;
     wtp8rd.array    	= array;
     wtp8rd.pixlut   	= pixlut;
     wtp8rd.transparent	= transparent;
-    
+
     rr.MinX = xstart;
     rr.MinY = ystart;
     rr.MaxX = xstop;
     rr.MaxY = ystop;
     
-    pixwritten = do_render_func(rp, NULL, &rr, wtp8_render, &wtp8rd, do_update, FALSE, GfxBase);
-    
-    /* Reset to preserved drawmode */
-    gc_tags[0].ti_Data = old_drmd;
-    OOP_SetAttrs(gc, gc_tags);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    return pixwritten;
-
+    return do_render_with_gc(rp, NULL, &rr, wtp8_render, &wtp8rd, gc, do_update, FALSE, GfxBase);
 }
 
 /****************************************************************************************/
@@ -806,9 +736,6 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
     if (0 == dx && 0 == dy)
     	return TRUE;
-
-    if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return FALSE;
 
     ScrollRect.MinX = x1;
     ScrollRect.MinY = y1;
@@ -1217,40 +1144,37 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         UnlockLayerRom(L);
     }
 
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
     return TRUE;
 }
 
 /****************************************************************************************/
 
-BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
-    	    	    	    	struct Rectangle *r, struct GfxBase *GfxBase)
+BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r)
 {
-    (void)GfxBase;
+    struct gfx_driverdata *dd = ObtainDriverData(rp);
     
-    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
+    if (dd && dd->dd_ClipRectangleFlags & RPCRF_VALID)
     {
-    	*r = RP_DRIVERDATA(rp)->dd_ClipRectangle;
+    	*r = dd->dd_ClipRectangle;
 	
-	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
+	if (dd->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
 	{
-	    r->MaxX += (lay->bounds.MaxX - lay->bounds.MinX + 1) - 1;
+	    r->MaxX += rect->MaxX - rect->MinX;
 	}
 	
-	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
+	if (dd->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
 	{
-	    r->MaxY += (lay->bounds.MaxY - lay->bounds.MinY + 1) - 1;
+	    r->MaxY += rect->MaxY - rect->MinY;
 	}
-	
-	r->MinX += lay->bounds.MinX;
-	r->MinY += lay->bounds.MinY;
-	r->MaxX += lay->bounds.MinX;
-	r->MaxY += lay->bounds.MinY;
+
+	r->MinX += rect->MinX;
+	r->MinY += rect->MinY;
+	r->MaxX += rect->MinX;
+	r->MaxY += rect->MinY;
 	
 	return TRUE;
     }
-    
+
     return FALSE;
 }
 
@@ -1259,47 +1183,27 @@ BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
     	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase)
 {
-    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
-    {
-	struct Rectangle bm_rect;
-	
-	bm_rect.MinX = 0;
-	bm_rect.MinY = 0;
-	bm_rect.MaxX = GetBitMapAttr(bm, BMA_WIDTH) - 1;
-	bm_rect.MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
-		
-    	*r = RP_DRIVERDATA(rp)->dd_ClipRectangle;
-	
-	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
-	{
-	    r->MaxX += bm_rect.MaxX;
-	}
-	
-	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
-	{
-	    r->MaxY += bm_rect.MaxY;
-	}
-	
-	if ((r->MaxX >= r->MinX) && (r->MaxY >= r->MinY))
-	{
-	    if (_AndRectRect(r, &bm_rect, r))
-	    {
-	    	return TRUE;
-	    }
-	}
-    }
+    struct Rectangle bm_rect;
+    BOOL res;
 
-    if (BITMAP_CLIPPING)
+    bm_rect.MinX = 0;
+    bm_rect.MinY = 0;
+    bm_rect.MaxX = GetBitMapAttr(bm, BMA_WIDTH)  - 1;
+    bm_rect.MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
+
+    res = GetRPClipRectangleForRect(rp, &bm_rect, r);
+
+#if BITMAP_CLIPPING
+    if (!res)
     {
-    	r->MinX = 0;
-	r->MinY = 0;
-	r->MaxX = GetBitMapAttr(bm, BMA_WIDTH) - 1;
-	r->MaxY = GetBitMapAttr(bm, BMA_HEIGHT) - 1;
-	
-	return TRUE;
+    	/*
+    	 * Set the rectangle to total bitmap size. This prevents trashing memory
+    	 * by hitting unallocated memory in HIDDs. They don't check bitmap bounds.
+    	 */
+    	*r = bm_rect;
+    	res = TRUE;
     }
-        
-    return FALSE;
+#endif
+
+    return res;
 }
-
-/****************************************************************************************/

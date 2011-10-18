@@ -10,6 +10,7 @@
 
 /****************************************************************************************/
 
+#include <graphics/clip.h>
 #include <hidd/graphics.h>
 
 #define PEN_BITS    8
@@ -106,35 +107,26 @@ do                                  \
     (_rect)->MaxY += (_dy);         \
 } while(0)
 
-/* Private Rastport flags */
+/****************************************************************************************/
 
-/* Flags that tells whether or not the driver has been inited */
-#define RPF_DRIVER_INITED   	(1L << 15)
-#define RPF_SELF_CLEANUP    	(1L << 14)
-/* Shall color fonts be automatically remapped? */
-#define RPF_REMAP_COLORFONTS 	(1L << 13)
+/* Private Rastport flags */
+#define RPF_NO_PENS	    	(1L << 14)	/* Are pens disabled?				*/
+#define RPF_REMAP_COLORFONTS 	(1L << 13)	/* Shall color fonts be automatically remapped? */
 
 #define AROS_PALETTE_SIZE   	256
 #define AROS_PALETTE_MEMSIZE 	(sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
 
-/* private AROS fields in RastPort struct:
-   
-   driverdata:  longreserved[0]
-   backpointer: longreserved[1]
-   fgcolor:     longreserved[2]
-   bgcolor: 	longreserved[3]
-*/   
+/*
+ * private AROS fields in RastPort struct:
+ * longreserved[0] - pointer to GC class (see oop's _OOP_OBJECT() macro)
+ * longreserved[1] - Enbedded hidd.graphics.gc object starts here
+ */
 
-#define RP_FGCOLOR(rp)	    ((rp)->longreserved[2])
-#define RP_BGCOLOR(rp)	    ((rp)->longreserved[3])
+#define RP_GC(rp)	    ((APTR)&((rp)->longreserved[1]))
+#define RP_FGCOLOR(rp)	    GC_FG(RP_GC(rp))
+#define RP_BGCOLOR(rp)	    GC_BG(RP_GC(rp))
 
-#define RP_BACKPOINTER(rp)  (*(struct RastPort **)&((rp)->longreserved[1]))
-#define RP_DRIVERDATA(rp)   (*(struct gfx_driverdata **)&((rp)->longreserved[0]))
-#define GetDriverData(rp)   RP_DRIVERDATA(rp)
-
-/* SetDriverData() should only be used when cloning RastPorts           */
-/* For other purposes just change the values directly in the struct.	*/
-#define SetDriverData(rp,dd) RP_DRIVERDATA(rp) = dd
+/****************************************************************************************/
 
 #define LOCK_BLIT ObtainSemaphore(&(PrivGBase(GfxBase)->blit_sema));
 #define ULOCK_BLIT ReleaseSemaphore(&(PrivGBase(GfxBase)->blit_sema));
@@ -159,13 +151,23 @@ struct render_special_info
 
 struct gfx_driverdata
 {
-    struct MinNode    dd_Node;
-    OOP_Object	    * dd_GC;
     struct RastPort * dd_RastPort;	/* This RastPort		*/
     struct Rectangle  dd_ClipRectangle;
-    WORD    	      dd_LockCount;
     UBYTE   	      dd_ClipRectangleFlags;    
 };
+
+static inline struct gfx_driverdata *ObtainDriverData(struct RastPort *rp)
+{
+    struct gfx_driverdata *dd = rp->RP_Extra;
+
+    if (dd && dd->dd_RastPort != rp)
+    {
+    	/* We have detected a cloned rastport. Detach extra data from it. */
+    	dd = NULL;
+    }
+
+    return dd;
+}
 
 typedef ULONG (*RENDERFUNC)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, struct Rectangle *, struct GfxBase *);
 typedef LONG (*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *);
@@ -178,9 +180,17 @@ ULONG do_render_func(struct RastPort *rp, Point *src, struct Rectangle *rr,
 	    	     RENDERFUNC render_func, APTR funcdata,
 	    	     BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
 
+ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
+			RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
+			BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
+
 ULONG do_pixel_func(struct RastPort *rp, LONG x, LONG y,
     	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
 		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
+
+ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
+    	    	      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+    	    	      struct Rectangle *rect, struct GfxBase *GfxBase);
 
 LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
     	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
@@ -208,8 +218,7 @@ void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src
 BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
 
-BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
-    	    	    	    	struct Rectangle *r, struct GfxBase *GfxBase);
+BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r);
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
     	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase);
 
@@ -221,5 +230,10 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc,
 		       struct GfxBase *GfxBase);
 
 /****************************************************************************************/
+
+static inline BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay, struct Rectangle *r, struct GfxBase *GfxBase)
+{
+    return GetRPClipRectangleForRect(rp, &lay->bounds, r);
+}
 
 #endif

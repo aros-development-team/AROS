@@ -84,6 +84,11 @@ BOOL WriteString (struct Hook *, STRPTR data, void * stream);
 BOOL WriteStruct (struct Hook *, APTR   data, void * stream, const IPTR * desc);
 void FreeStruct  (APTR s,  const IPTR * desc);
 
+/* RastPort manipulations */
+struct RastPort *CreateRastPort(void);
+struct RastPort *CloneRastPort(struct RastPort *rp);
+void DeinitRastPort(struct RastPort *rp);
+void FreeRastPort(struct RastPort *rp);
 
 /* don't use SysBase->kprintf on AmigaOS, or AROS m68k */
 #if defined(__AROS__) && !defined(__mc68000)

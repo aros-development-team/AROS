@@ -116,10 +116,6 @@ ULONG myTextLength(const char *str, struct TextAttr *attr, UBYTE *underscore,
 	}
 
     } /* if (str) */
-    
-#ifdef __AROS__
-    DeinitRastPort(&temprp);
-#endif
 
     if (font) CloseFont(font);
 

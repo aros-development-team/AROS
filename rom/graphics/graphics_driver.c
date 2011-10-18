@@ -66,189 +66,26 @@ struct ETextFont
     struct TextFont	etf_Font;
 };
 
+/* *********************** RastPort extra data handling *********************** */
 
-/* InitDriverData() just allocates memory for the struct. To use e.g.   */
-/* AreaPtrns, UpdateAreaPtrn() has to allocate the memory for the       */
-/* Pattern itself (and free previously used memory!)                    */
-
-static inline void AddDriverDataToList(struct gfx_driverdata *dd, struct GfxBase * GfxBase)
+struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct GfxBase *GfxBase)
 {
-    LONG hash;
-    
-    hash = CalcHashIndex((IPTR)dd, DRIVERDATALIST_HASHSIZE);
-    
-//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);
-    AddTail((struct List *)&PrivGBase(GfxBase)->driverdatalist[hash], (struct Node *)&dd->dd_Node);    
-//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
-    
-}
+    struct gfx_driverdata *dd = ObtainDriverData(rp);
 
-static inline void RemoveDriverDataFromList(struct gfx_driverdata *dd, struct GfxBase *GfxBase)
-{
-//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);
-    Remove((struct Node *)&dd->dd_Node);    
-//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
-}
-
-static inline BOOL FindDriverData(struct gfx_driverdata *dd, struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    struct gfx_driverdata *hn = NULL;
-    LONG    	     	  hash;
-    BOOL    	    	  retval = FALSE;
-    
-    hash = CalcHashIndex((IPTR)dd, DRIVERDATALIST_HASHSIZE);
-
-//  ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    ForeachNode((struct List *)&PrivGBase(GfxBase)->driverdatalist[hash], hn)
+    if (alloc && !dd)
     {
-    	if ((hn == dd) && (hn->dd_RastPort == rp))
-	{
-	    retval = TRUE;
-	    break;
-	}
-    }
-//  ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);
-    
-    return retval;
-}
-
-BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    struct gfx_driverdata *dd;
-    
-    if (RP_BACKPOINTER(rp) == rp)
-    {
-    	if (rp->Flags & RPF_SELF_CLEANUP)
-	{
-	    if (RP_DRIVERDATA(rp)) return TRUE;
-	}
-    }
-    else
-    {
-    	/* We have detected a manually cloned rastport. Mark it as 'valid'
-	   (backpointer to itself) but with NULL driverdata and non-self
-	   cleanup */
-    	RP_DRIVERDATA(rp) = NULL;
-	rp->Flags &= ~RPF_SELF_CLEANUP;
-	RP_BACKPOINTER(rp) = rp;
-    }
-    
-    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    dd = RP_DRIVERDATA(rp);
-    if (dd)
-    {
-    	if (!(rp->Flags & RPF_SELF_CLEANUP) && FindDriverData(dd, rp, GfxBase))
-	{
-	    dd->dd_LockCount++;
-	}
-	else
-	{
-	    RP_DRIVERDATA(rp) = NULL;
-	    dd = NULL;
-	}
-    }
-    
-    if (!dd)
-    {
-    	dd = AllocPooled(PrivGBase(GfxBase)->driverdatapool, sizeof(*dd));
-	if (dd)
-	{
-	    struct monitor_driverdata *sdd;
-	    struct TagItem gc_tags[] = {{ TAG_DONE}};
-
-	    if (rp->BitMap)
-	        sdd = GET_BM_DRIVERDATA(rp->BitMap);
-	    else
-	        sdd = (struct monitor_driverdata *)CDD(GfxBase);
-
-	    dd->dd_GC = HIDD_Gfx_NewGC(sdd->gfxhidd, gc_tags);
-	    if (dd->dd_GC)
-	    {
-   	    	dd->dd_RastPort = rp;
-		dd->dd_LockCount = 1;
-		
-    	    	RP_DRIVERDATA(rp) = dd;
-	    	rp->Flags |= RPF_DRIVER_INITED;
-
-    	    	if (!(rp->Flags & RPF_SELF_CLEANUP)) AddDriverDataToList(dd, GfxBase);
-		
-		if (rp->BitMap) SetABPenDrMd(rp, (UBYTE)rp->FgPen, (UBYTE)rp->BgPen, rp->DrawMode);
-	    }
-    	    else
-	    {
-	    	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd));
-		dd = NULL;
-	    }
-	    
-	} /* if (dd) */
-	
-    } /* if (!dd) */
-    
-    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    
-    return dd ? TRUE : FALSE;
-}
-
-void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    struct gfx_driverdata *dd = GetDriverData(rp);
-    
-    if (!(rp->Flags & RPF_SELF_CLEANUP))
-    {
-    /* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
-	/* CHECKME: stegerg 23 feb 2005: really?? */
-	
-    dd->dd_LockCount--;
-    
-    	// Don't do this:
-	//
-//    if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
-	//
-	// some garbage collection should later hunt for dd's with
-	// 0 lockcount and possibly non-usage for a certain amount
-	// of time and get rid of them.
-    }
-}
-
-void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    if (RP_BACKPOINTER(rp) == rp)
-    {
-        struct gfx_driverdata *dd = NULL;
-    
-    	if (rp->Flags & RPF_SELF_CLEANUP)
-	{
-	    dd = RP_DRIVERDATA(rp);
-	}
-    	else
+    	dd = AllocVec(sizeof(struct gfx_driverdata), MEMF_CLEAR);
+    	if (dd)
     	{
-    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    	    if (FindDriverData(RP_DRIVERDATA(rp), rp, GfxBase))
-	    {
-	    	dd = RP_DRIVERDATA(rp);
-	    	RemoveDriverDataFromList(dd, GfxBase);
-	    }
-    	    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    	    rp->RP_Extra    = dd;
+    	    dd->dd_RastPort = rp;
     	}
-    
-    if (dd)
-    {
-    	struct monitor_driverdata *sdd;
-
-    	/* rp->BitMap may not be valid anymore! */
-	if (0) // (rp->BitMap)
-	    sdd = GET_BM_DRIVERDATA(rp->BitMap);
-	else
-	    sdd = (struct monitor_driverdata *)CDD(GfxBase);
-
-    	HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
-	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
-	    RP_DRIVERDATA(rp) = NULL;
     }
-    
-    }
-        
-}
+
+    return dd;
+}    
+
+/* *********************** Display driver handling *********************** */
 
 int driver_init(struct GfxBase * GfxBase)
 {
@@ -271,7 +108,6 @@ int driver_init(struct GfxBase * GfxBase)
     __IHidd_PlanarBM 	= OOP_ObtainAttrBase(IID_Hidd_PlanarBM);
     __IHidd_Gfx     	= OOP_ObtainAttrBase(IID_Hidd_Gfx);
     __IHidd_FakeGfxHidd = OOP_ObtainAttrBase(IID_Hidd_FakeGfxHidd);
-    
 
     if (__IHidd_BitMap   &&
         __IHidd_GC       &&
@@ -281,6 +117,10 @@ int driver_init(struct GfxBase * GfxBase)
 	__IHidd_Gfx      &&
 	__IHidd_FakeGfxHidd)
     {
+        CDD(GfxBase)->gcClass = OOP_FindClass(CLID_Hidd_GC);
+    	if (!CDD(GfxBase)->gcClass)
+    	    return FALSE;
+
 	/* Init display mode database */
 	InitSemaphore(&CDD(GfxBase)->displaydb_sem);
 	CDD(GfxBase)->invalid_id = INVALID_ID;

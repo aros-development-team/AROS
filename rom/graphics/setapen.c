@@ -1,12 +1,12 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function SetAPen()
     Lang: english
 */
+
 #include "graphics_intern.h"
-#include <proto/oop.h>
 #include "gfxfuncsupport.h"
 
 /*****************************************************************************
@@ -34,6 +34,7 @@
     RESULT
 
     NOTES
+    	This functions turns on PenMode for the RastPort.
 
     EXAMPLE
 
@@ -51,28 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct gfx_driverdata *dd;
-
-    if (OBTAIN_DRIVERDATA(rp, GfxBase))
-    {
-	dd = GetDriverData(rp);
-	if (dd)
-	{
-            struct TagItem col_tags[]=
-	    {
-		{ aHidd_GC_Foreground, 0},
-		{ TAG_DONE	    	}
-	    };
-
-	    col_tags[0].ti_Data = rp->BitMap ? BM_PIXEL(rp->BitMap, pen & PEN_MASK) : pen;
-	    OOP_SetAttrs( dd->dd_GC, col_tags );
-
-	}
-	RELEASE_DRIVERDATA(rp, GfxBase);
-    }
-
-    rp->FgPen = pen;
+    rp->FgPen     = pen;
     rp->linpatcnt = 15;
+    rp->Flags    &= ~RPF_NO_PENS;
 
     AROS_LIBFUNC_EXIT
 } /* SetAPen */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2005, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Based on ascii.datatype
@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <dos/dostags.h>
 #include <graphics/gfxbase.h>
@@ -472,9 +471,6 @@ IPTR Html__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 
 	    /* Check to see if layout has been aborted */
 	    bsig = CheckSignal (SIGBREAKF_CTRL_C);
-
-	    DeinitRastPort(&trp);
-	    
         } /* if (buffer) */
 
         /* Compute the lines and columns type information */

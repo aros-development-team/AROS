@@ -1036,6 +1036,9 @@ extern void MySetPointerPos(struct IntuitionBase *IntuitionBase);
 extern BOOL ResetPointer(struct IntuitionBase *IntuitionBase);
 extern void ActivateMonitor(Object *newmonitor, WORD x, WORD y, struct IntuitionBase *IntuitionBase);
 extern struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionBase);
+extern struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase);
+extern struct RastPort *MyCloneRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp);
+extern void MyFreeRastPort(struct IntuitionBase *IntuitionBase, struct RastPort *rp);
 struct TextFont *SafeReopenFont(struct IntuitionBase *, struct TextFont **);
 extern Object *MakePointerFromPrefs(struct IntuitionBase *, struct Preferences *);
 extern Object *MakePointerFromData(struct IntuitionBase *, UWORD *, int, int, int, int);
@@ -1082,10 +1085,10 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 
 #ifdef __MORPHOS__
 #define DeinitRastPort(rp)  	    ((void)0)
+#endif
 #define CreateRastPort()            MyCreateRastPort(IntuitionBase)
 #define CloneRastPort(rp)           MyCloneRastPort(IntuitionBase, rp)
 #define FreeRastPort(rp)            MyFreeRastPort(IntuitionBase, rp)
-#endif
 
 /* Replacement for dos.library/DisplayError() */
 AROS_UFP3(LONG, Intuition_DisplayError,

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -225,9 +225,6 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	}
 	
     } /* for(y = 0; y < data->height; y++) */
-    
-    DeinitRastPort(&temprp);
-    DeinitRastPort(&bmrp);
 
     if (temprp.BitMap)
     {

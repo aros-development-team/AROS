@@ -1,6 +1,6 @@
 /*
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2010, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -202,8 +202,6 @@ IPTR Slider__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 			muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerBottom;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-    
-    DeinitRastPort(&rp);
     
     return TRUE;
 }

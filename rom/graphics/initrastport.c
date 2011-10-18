@@ -19,7 +19,7 @@
     NAME */
 #include <proto/graphics.h>
 
-	AROS_LH1(BOOL, InitRastPort,
+	AROS_LH1(void, InitRastPort,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -41,7 +41,6 @@
 	    The font is set to the standard system font
 
     NOTES
-	You must call DeinitRastPort() before you free the structure.
 
     EXAMPLE
 
@@ -60,18 +59,15 @@
     AROS_LIBFUNC_INIT
 
     /* Zero out everything, then set some valid defaults */
-    memset(rp, 0, sizeof(struct RastPort));    
+    memset(rp, 0, sizeof(struct RastPort));
+
     rp->Mask     = 0xFF;
     rp->FgPen    = -1;
     rp->AOlPen   = -1;
     rp->DrawMode = JAM2;
     rp->LinePtrn = 0xFFFF;
 
-    RP_BACKPOINTER(rp) = rp; /* Mark rastport as valid (no manual clone) */
-    
     SetFont (rp, GfxBase->DefaultFont);
-
-    return TRUE;
 
     AROS_LIBFUNC_EXIT
     

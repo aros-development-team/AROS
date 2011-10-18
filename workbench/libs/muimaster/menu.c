@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2011, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -595,7 +595,6 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
     struct Menu     *menu;
 
 #if MENUS_UNDERMOUSE
-    struct RastPort *temprp;
     WORD    	    w, maxw = 0;
 #endif
 
@@ -619,29 +618,25 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd)
 
 #if MENUS_UNDERMOUSE
 
-    if (!(temprp = CloneRastPort(&mhd->scr->RastPort))) return;
-    
     mhd->nummenubaritems = 0;
     for(menu = mhd->menu; menu; menu = menu->NextMenu)
     {
-        w = TextLength(temprp, menu->MenuName, strlen(menu->MenuName));
+        w = TextLength(&mhd->scr->RastPort, menu->MenuName, strlen(menu->MenuName));
 	if (w > maxw) maxw = w;
         mhd->nummenubaritems++;
     }
     
-    mhd->menubaritemwidth  = maxw + TextLength(temprp, subitemindicator, 1) + 
+    mhd->menubaritemwidth  = maxw + TextLength(&mhd->scr->RastPort, subitemindicator, 1) + 
     			     TEXT_AMIGAKEY_SPACING +
     			     ITEXT_EXTRA_LEFT +
 			     ITEXT_EXTRA_RIGHT;
-			     
-    mhd->menubaritemheight = temprp->TxHeight + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
-        
+
+    mhd->menubaritemheight = mhd->scr->RastPort.TxHeight + ITEXT_EXTRA_TOP + ITEXT_EXTRA_BOTTOM;
+
     win_tags[2].ti_Data = mhd->menubaritemwidth + mhd->scr->MenuHBorder * 2;
     win_tags[3].ti_Data = mhd->menubaritemheight * mhd->nummenubaritems + mhd->scr->MenuVBorder * 2;
     win_tags[0].ti_Data = mhd->scr->MouseX - win_tags[2].ti_Data / 2;
     win_tags[1].ti_Data = mhd->scr->MouseY;
-
-    FreeRastPort(temprp);
 
 #endif   
  

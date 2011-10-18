@@ -100,10 +100,7 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
 	
     FIX_GFXCOORD(xDest);
     FIX_GFXCOORD(yDest);
-	
-    if (!OBTAIN_DRIVERDATA(destRP, GfxBase))
-    	ReturnVoid("driver_BltTemplate");
-	
+
     btrd.template  	 = (UBYTE *)source;
     btrd.srcx	    	 = xSrc;
     btrd.modulo    	 = srcMod;
@@ -113,11 +110,8 @@ static ULONG blttemplate_render(APTR btr_data, LONG srcx, LONG srcy,
     rr.MinY = yDest;
     rr.MaxX = xDest + xSize  - 1;
     rr.MaxY = yDest + ySize - 1;
-    
-    do_render_func(destRP, NULL, &rr, blttemplate_render, &btrd, TRUE, FALSE, GfxBase);
-	
-    RELEASE_DRIVERDATA(destRP, GfxBase);
-    
+
+    do_render_func(destRP, NULL, &rr, blttemplate_render, &btrd, TRUE, FALSE, GfxBase);    
     ReturnVoid("driver_BltTemplate");
     
     AROS_LIBFUNC_EXIT

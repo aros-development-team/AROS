@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$	 $Log
 
     Desc: Graphics function WritePixel()
@@ -12,11 +12,6 @@
 
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
-
-struct pix_render_data
-{
-    HIDDT_Pixel pixel;
-};
 
 static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     	    	      LONG x, LONG y, struct GfxBase *GfxBase);
@@ -70,34 +65,23 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 {
     AROS_LIBFUNC_INIT
 
-    struct pix_render_data prd;
-    LONG    	    	   retval;
+    HIDDT_Pixel pix;
     
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
 
-    if(!OBTAIN_DRIVERDATA(rp, GfxBase))
-	return  -1L;
-	
-    prd.pixel = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
-    retval = do_pixel_func(rp, x, y, pix_write, &prd, TRUE, GfxBase);
-    
-    RELEASE_DRIVERDATA(rp, GfxBase);
-    
-    return retval;
-     
+    pix = BM_PIXEL(rp->BitMap, (UBYTE)rp->FgPen);
+
+    return do_pixel_func(rp, x, y, pix_write, (APTR)pix, TRUE, GfxBase);
+
     AROS_LIBFUNC_EXIT
 } /* WritePixel */
 
 
 static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     	    	      LONG x, LONG y, struct GfxBase *GfxBase)
-{
-    struct pix_render_data *prd;
-    
-    prd = (struct pix_render_data *)pr_data;
-    
-    HIDD_BM_PutPixel(bm, x, y, prd->pixel);
-    
+{   
+    HIDD_BM_PutPixel(bm, x, y, (HIDDT_Pixel)pr_data);
+
     return 0;
 }

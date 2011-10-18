@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,9 +87,7 @@ static BOOL make_bitmap(struct IClass *cl, Object *obj)
 		      data->height - 1,
 		      data->pixels,
 		      data->modulo);
-    
-    DeinitRastPort(&temprp);
-    
+
     return TRUE;
 }
 

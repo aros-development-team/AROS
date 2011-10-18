@@ -109,9 +109,6 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	FIX_GFXCOORD(xMin);
 	FIX_GFXCOORD(yMin);
 
-	if (!OBTAIN_DRIVERDATA(rp, GfxBase))
-    	    return;
-
 	bprd.pattern  	    = (UBYTE *)rp->AreaPtrn;
 	bprd.mask   	    = mask;
 	bprd.maskmodulo     = byteCnt;
@@ -129,8 +126,6 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	rr.MaxY = yMax;
 
 	do_render_func(rp, NULL, &rr, bltpattern_render, &bprd, TRUE, FALSE, GfxBase);
-
-	RELEASE_DRIVERDATA(rp, GfxBase);
     }
     else
     {
@@ -140,9 +135,9 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 	    
 	    if ((old_drawmode & ~INVERSVID) == JAM2)
 	    	SetDrMd(rp, JAM1 | (old_drawmode & INVERSVID));
-		
+
 	    BltTemplate(mask, 0, byteCnt, rp, xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
-	    
+
 	    SetDrMd(rp, old_drawmode);
 	}
 	else

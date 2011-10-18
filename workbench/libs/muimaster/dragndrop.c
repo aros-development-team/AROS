@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2011, The AROS Development Team. 
     All rights reserved.
     
     $Id$
@@ -845,7 +845,6 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
 */
 				BltBitMapNode(bmn, 0,0,rp,x,y,width,height);
 			}
-			DeinitRastPort(&temp_rp);
 		}
 	}
 
@@ -894,8 +893,7 @@ struct DragNDrop *CreateDragNDropA( struct TagItem *tlist )
 			rp->BitMap = 
 
 			if(dnd->dnd_Layer = CreateBehindLayer(dnd->dnd_LayerInfo,
-		
-                        DeinitRastPort(rp);
+
 			return dnd;
 		}
 		FreeMem( dnd, sizeof(struct DragNDrop ));*/
@@ -1263,8 +1261,7 @@ struct BitMap *CreateBitmapFromIcon(struct Screen *scr, struct DiskObject *dobj,
 			rp.BitMap = bmap;
 			SetRast(&rp,1);
 			DrawIconStateA(&rp,dobj,NULL,0,0,IDS_SELECTED,draw_tags);
-			DeinitRastPort(&rp);
-			
+
                         return bmap;
 		}
 	}

@@ -1,6 +1,6 @@
 /* 
-    Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2170,8 +2170,6 @@ static IPTR Area__MUIM_CreateDragImage(struct IClass *cl, Object *obj, struct MU
             muiRenderInfo(obj)->mri_RastPort = &temprp;
             zframe->draw(zframe->customframe, muiRenderInfo(obj), 0, 0, img->width, img->height, 0, 0, img->width, img->height);
             muiRenderInfo(obj)->mri_RastPort = rp_save;
-        
-            DeinitRastPort(&temprp);
         }
 
         img->touchx = msg->touchx;

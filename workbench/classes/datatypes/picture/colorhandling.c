@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rpattr.h>
@@ -109,9 +108,7 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
     {
 	success = ScaleArraySimple( pd, DestRP );
     }
-#ifdef __AROS__
-    DeinitRastPort( &DestRP );
-#endif
+
     return success ? TRUE : FALSE;
 }
 
@@ -142,9 +139,7 @@ BOOL ConvertCM2TC( struct Picture_Data *pd )
     {
 	success = ScaleArraySimple( pd, DestRP );
     }
-#ifdef __AROS__
-    DeinitRastPort( &DestRP );
-#endif
+
     return success ? TRUE : FALSE;
 }
 
@@ -171,9 +166,7 @@ BOOL ConvertCM2CM( struct Picture_Data *pd )
 			pd->SrcHeight-1,
 			pd->SrcBuffer,
 			pd->SrcWidthBytes );
-#ifdef __AROS__
-	DeinitRastPort( &DestRP );
-#endif
+
 	success = TRUE;
     }
     return success;
@@ -520,7 +513,6 @@ BOOL ConvertBitmap2Chunky( struct Picture_Data *pd )
 	ReadPixelLine8( &SrcRP, 0, y, width, &buffer[offset], NULL );
 	offset += pd->SrcWidthBytes;
     }
-    DeinitRastPort(&SrcRP);
 #else
     D(bug("picture.datatype/Bitmap2Chunky: Slow ReadPixel() conversion\n"));
     {
@@ -565,9 +557,6 @@ BOOL ConvertChunky2Bitmap( struct Picture_Data *pd )
 	InitRastPort( &SrcRP );
 	SrcRP.BitMap = pd->SrcBM;
 	WriteChunkyPixels( &SrcRP, 0, 0, pd->SrcWidth-1, pd->SrcHeight-1, pd->SrcBuffer, pd->SrcWidthBytes );
-#ifdef __AROS__
-	DeinitRastPort( &SrcRP );
-#endif
     }
     return TRUE;
 }
@@ -820,9 +809,7 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
 		}
 	    }
 	}
-    #ifdef __AROS__
-	DeinitRastPort( &DestRP );
-    #endif
+
 	FreeVec( (void *) srcline );
 	if( scale )
 	    FreeVec( (void *) destline );
@@ -981,9 +968,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
 		srcy += srcyinc;
 	    }
 	}
-#ifdef __AROS__
-	DeinitRastPort( &DestRP );
-#endif
+
 	FreeVec( (void *) srcline );
 	if( scale )
 	    FreeVec( (void *) destline );

@@ -166,9 +166,8 @@ UBYTE *colorfontbm_to_chunkybuffer(struct TextFont *font, struct GfxBase *GfxBas
 	rp.BitMap = &bm;
 	
 	ReadPixelArray8(&rp, 0, 0, width - 1, height - 1, chunky, NULL); 
-	DeinitRastPort(&rp);
     }
-       
+
     return chunky;
 }
 

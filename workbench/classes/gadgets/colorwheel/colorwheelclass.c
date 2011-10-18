@@ -1,14 +1,24 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS colorwheel gadget.
 */
 
-#include <exec/types.h>
-
 #ifdef __AROS__
+
 #define USE_BOOPSI_STUBS
+
+#include <aros/asmcall.h>
+#include <aros/debug.h>
+#include <clib/boopsistubs.h>
+
+#else
+
+#include "BoopsiStubs.h"
+
+#endif
+
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -26,40 +36,10 @@
 #include <gadgets/gradientslider.h>
 #include <utility/tagitem.h>
 #include <gadgets/colorwheel.h>
-#include <aros/asmcall.h>
+
 #include <stdlib.h> /* abs() */
+
 #include "colorwheel_intern.h"
-
-#undef SDEBUG
-#define SDEBUG 0
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
-
-#include <clib/boopsistubs.h>
-
-#else
-
-#include <intuition/classes.h>
-#include <intuition/classusr.h>
-#include <intuition/cghooks.h>
-#include <intuition/gadgetclass.h>
-#include <intuition/imageclass.h>
-#include <gadgets/colorwheel.h>
-#include <gadgets/gradientslider.h>
-#include <utility/tagitem.h>
-#include <gadgets/colorwheel.h>
-
-#include <inline/utility.h>
-#include <inline/intuition.h>
-#include <inline/graphics.h>
-#include <inline/colorwheel.h>
-#include <inline/exec.h>
-
-#include "BoopsiStubs.h"
-#include "colorwheel_intern.h"
-
-#endif
 
 #define ColorWheelBase ((struct Library *)(cl->cl_UserData))
 
@@ -477,8 +457,6 @@ VOID ColorWheel__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     	FreeBitMap(data->savebm );
 
     freePens(data);
-    
-    DeinitRastPort( &data->trp );
     
     DoSuperMethodA(cl, o, (Msg)msg);
 }

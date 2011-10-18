@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -207,7 +207,6 @@ IPTR Clock__MUIM_Cleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
     
     if (data->clockbm)
     {
-    	DeinitRastPort(&data->clockrp);
     	FreeBitMap(data->clockbm);
 	FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
 	data->clockbm = NULL;
@@ -341,7 +340,6 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     {
     	if (data->clockbm)
 	{
-	    DeinitRastPort(&data->clockrp);
 	    FreeBitMap(data->clockbm);
 	    FreeRaster(data->clockraster, data->clockbmw, data->clockbmh);
 	    data->clockraster = NULL;

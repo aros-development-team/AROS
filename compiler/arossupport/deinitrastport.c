@@ -7,28 +7,22 @@
 */
 
 #include <aros/debug.h>
-#include "graphics_intern.h"
 #include <graphics/rastport.h>
-#include "gfxfuncsupport.h"
-
-void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/graphics.h>
+#include <proto/arossupport.h>
 
-	AROS_LH1(void, DeinitRastPort,
+	void DeinitRastPort(
 
 /*  SYNOPSIS */
-	AROS_LHA(struct RastPort *, rp, A1),
-
-/*  LOCATION */
-	struct GfxBase *, GfxBase, 141, Graphics)
+	struct RastPort *rp)
 
 /*  FUNCTION
-	Frees the contents of a RastPort structure. The structure itself
-	is not freed.
+	Frees the extra contents associated with a RastPort structure.
+	The structure itself is not freed.
 
     INPUTS
 	rp - The RastPort which contents are to be freed.
@@ -37,9 +31,6 @@ void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
 	None.
 
     NOTES
-	You can initialize the RastPort again via InitRastPort() but
-	you must not use any other graphics function with it before
-	that.
 
     EXAMPLE
 
@@ -56,12 +47,12 @@ void obsolete_DeinitDriverData(struct RastPort *, struct GfxBase *);
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
     D(bug("DeInitRastPort()\n"));
 
-    KillDriverData(rp, GfxBase);
- 
-    AROS_LIBFUNC_EXIT
-    
+    if (rp->RP_Extra)
+    {
+    	FreeVec(rp->RP_Extra);
+    	rp->RP_Extra = NULL;
+    }
+
 } /* DeinitRastPort */

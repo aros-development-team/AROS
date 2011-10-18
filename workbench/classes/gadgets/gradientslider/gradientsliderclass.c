@@ -253,8 +253,6 @@ VOID GradientSlider__OM_DISPOSE(Class *cl, Object *o, Msg msg)
     	FreeVec(data->buffer);
     }
 
-    DeinitRastPort( &data->trp );
-     
     DoSuperMethodA(cl, o, msg);
 }
 

@@ -285,8 +285,6 @@ IPTR Calendar__MUIM_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 	w = TextLength(&rp, s, strlen(s));
 	if (w > data->cellwidth) data->cellwidth = w;
     }
-    
-    DeinitRastPort(&rp);
 
     data->cellwidth += CELL_EXTRAWIDTH;
     

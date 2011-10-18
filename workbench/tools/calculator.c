@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -295,10 +295,7 @@ static void InitGUI(void)
 	BUTTON_LED_SPACING +
 	ledheight +
 	INNER_SPACING_Y * 2;
-    
-#ifdef __AROS__
-    DeinitRastPort(&temprp);
-#endif
+
     strcpy(ledstring,"0");
 }
 

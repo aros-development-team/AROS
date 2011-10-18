@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -467,9 +467,6 @@ IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
                 total  = si->si_TotVert;
 		max_linelength = si->si_TotHoriz * si->si_HorizUnit;
             }
-	    
-	    DeinitRastPort(&trp);
-	    
         } /* if (buffer) */
 
         /* Compute the lines and columns type information */

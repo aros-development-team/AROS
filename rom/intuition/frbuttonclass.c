@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -220,8 +220,6 @@ void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
 
                     contents.Height = dri->dri_Font->tf_YSize;
                     contents.Width = LabelWidth(&rp, text, strlen(text), IntuitionBase);
-
-		    DeinitRastPort(&rp);
         	}
         	else
                     do_framebox = FALSE;
