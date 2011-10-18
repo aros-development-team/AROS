@@ -1432,7 +1432,7 @@ VOID BM__Hidd_BitMap__DrawLine
     LONG 	x1, y1, x2, y2;
     UWORD   	maskLine;  /* for line pattern */
     ULONG   	fg;   /* foreground pen   */
-    BOOL    	doclip;
+    APTR    	doclip;
     BOOL    	opaque;
     OOP_Object  *gc;
 
@@ -1841,7 +1841,7 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
     LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
     LONG    	d2 = (t1 >> 1) - t8 + t5;
 
-    BOOL    	doclip = GC_DOCLIP(gc);
+    APTR    	doclip = GC_DOCLIP(gc);
 
 
     EnterFunc(bug("BitMap::DrawEllipse()"));
