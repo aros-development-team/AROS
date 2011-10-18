@@ -395,7 +395,7 @@ VOID GC__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 
 *****************************************************************************************/
 
-BOOL GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
+VOID GC__Hidd_GC__SetClipRect(OOP_Class *cl, OOP_Object *o, struct pHidd_GC_SetClipRect *msg)
 {
      struct gc_data *data = OOP_INST_DATA(cl, o);
 
