@@ -83,7 +83,6 @@ struct monitor_driverdata
     ULONG		       id;		/* Card ID (part of display mode ID)		  */
     ULONG		       mask;		/* Mask of mode ID				  */
     OOP_Object      	      *gfxhidd;		/* Graphics driver to use (can be fakegfx object) */
-    ObjectCache     	      *gc_cache;	/* GC cache					  */
     UWORD		       flags;		/* Flags, see below				  */
 
     APTR		       userdata;	/* Associated data from notification callback	  */
@@ -120,7 +119,6 @@ struct common_driverdata
     ULONG		       invalid_id;		/* INVALID_ID, for GET_BM_MODEID() */
     ULONG		       last_id;			/* Last card ID		           */
     OOP_Object		      *memorygfx;		/* Memory graphics driver	   */
-    ObjectCache     	      *gc_cache;		/* GC cache			   */
     UWORD		       flags;			/* Always zero			   */
 
     /* End of driverdata */
@@ -128,6 +126,7 @@ struct common_driverdata
     APTR (*DriverNotify)(APTR obj, BOOL add, APTR userdata); /* Display driver notification callback */
     struct SignalSemaphore     displaydb_sem;		/* Display mode database semaphore */
 
+    ObjectCache     	      *gc_cache;		/* GC cache			   */
     ObjectCache     	      *planarbm_cache;		/* Planar bitmaps cache		   */
 
     /* HIDD classes */
