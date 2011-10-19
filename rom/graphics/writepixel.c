@@ -65,8 +65,8 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 {
     AROS_LIBFUNC_INIT
 
-    HIDDT_Pixel pix;
-    
+    IPTR pix;
+
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);
 
@@ -80,8 +80,8 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 
 static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
     	    	      LONG x, LONG y, struct GfxBase *GfxBase)
-{   
-    HIDD_BM_PutPixel(bm, x, y, (HIDDT_Pixel)pr_data);
+{
+    HIDD_BM_PutPixel(bm, x, y, (IPTR)pr_data);
 
     return 0;
 }
