@@ -143,13 +143,13 @@
 
         /* This should have been loaded earlier */
         if (!image->ImageData) {
-            struct Image *gi;
+            struct Image *gi = NULL;
             ULONG state;
             BOOL flood;
 
             if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)) {
                 gi = icon->do_Gadget.SelectRender;
-            } else {
+            } else if (icon->do_Gadget.Flags & GFLG_GADGIMAGE) {
                 gi = icon->do_Gadget.GadgetRender;
             }
 

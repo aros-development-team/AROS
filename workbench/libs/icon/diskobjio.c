@@ -439,14 +439,11 @@ static struct Image * ReadImage (struct DiskObject *icon, struct Hook * streamho
     /* Size of imagedata in bytes */
     size = ((image->Width + 15) >> 4) * image->Height * image->Depth * 2;
 
-#if 0
-kprintf ("ReadImage: %dx%dx%d (%d bytes)\n"
-    , image->Width
-    , image->Height
-    , image->Depth
-    , size
-);
-#endif
+    D(bug("%s: %dx%dx%d (%d bytes)\n", __func__
+	    , image->Width
+	    , image->Height
+	    , image->Depth
+	    , size));
 
     if (size)
     {
