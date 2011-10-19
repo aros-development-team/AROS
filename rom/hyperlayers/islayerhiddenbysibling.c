@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <aros/libcall.h>
@@ -12,7 +13,6 @@
 
 #include "layers_intern.h"
 #include "basicfuncs.h"
-#include "../graphics/intregions.h"
 
 /*****************************************************************************
 

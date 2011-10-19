@@ -23,7 +23,6 @@
 #include <proto/layers.h>
 #include <proto/arossupport.h>
 
-#include "../graphics/intregions.h"
 #include "layers_intern.h"
 #include "basicfuncs.h"
 
@@ -509,7 +508,7 @@ int _CopyClipRectsToClipRects(struct Layer * l,
       /*
        * Do the two rectangles overlap?
        */
-      if (_AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
+      if (AndRectRect(&_cr->bounds, &oldcr->bounds, &intersect))
       {
         LONG xSize = intersect.MaxX - intersect.MinX + 1;
 	LONG ySize = intersect.MaxY - intersect.MinY + 1;

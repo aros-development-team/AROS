@@ -86,6 +86,8 @@ LONG ObtainBestPen( struct ColorMap * cm, LONG R, LONG G, LONG B, ULONG tag1, ..
 void GetRPAttrs( struct RastPort * rp, Tag tag1, ...) __stackparm;
 #endif
 
+BOOL AndRectRect(struct Rectangle *rect1, struct Rectangle *rect2, struct Rectangle *intersect);
+
 /* Intuition */
 #ifndef SetWindowPointer 
 void SetWindowPointer( struct Window * window, ULONG tag1, ...) __stackparm;

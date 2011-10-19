@@ -32,7 +32,6 @@ FUNCTIONS := \
 	allocdbufinfo \
 	allocraster \
 	allocspritedataa \
-	andrectrect \
 	andrectregion \
         andrectregionnd \
 	andregionregion \
