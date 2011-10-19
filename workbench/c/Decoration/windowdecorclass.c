@@ -408,13 +408,6 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
     rp = CreateRastPort();
     if (rp)
     {
-    	struct Rectangle cliprect = {0, 0, window->Width - 1, window->BorderTop - 1};
-    	struct TagItem rptags[] =
-        {
-            {RPTAG_ClipRectangle, (IPTR)&cliprect},
-            {TAG_DONE	    	    	    	 }
-        };
-
         /* Reuse the bitmap if there was no size change (ie. only change of state) */        
         if (changetype == CHANGE_NO_SIZE_CHANGE)
             rp->BitMap = cachedtitlebarbitmap;
@@ -428,7 +421,6 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         }
 
         SetFont(rp, dri->dri_Font);
-    	SetRPAttrsA(rp, rptags);
     }
     else
         return;
@@ -1521,13 +1513,6 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
     rp = CreateRastPort();
     if (rp)
     {
-    	struct Rectangle cliprect = {0, 0, bx1 - bx0, by1 - by0};
-    	struct TagItem rptags[] =
-        {
-            {RPTAG_ClipRectangle, (IPTR)&cliprect},
-            {TAG_DONE	    	    	    	 }
-        };
-
         /* Reuse the bitmap if there was no size change (ie. only move of knob) */        
         if (changetype == CHANGE_NO_SIZE_CHANGE)
             rp->BitMap = cachedgadgetbitmap;
@@ -1539,8 +1524,6 @@ static IPTR windecor_draw_borderpropknob(Class *cl, Object *obj, struct wdpDrawB
             FreeRastPort(rp);
             return FALSE;
         }
-
-    	SetRPAttrsA(rp, rptags);
     }
     else
         return FALSE;
