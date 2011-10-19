@@ -37,11 +37,9 @@ COMMONTESTFILES := \
     monitorclass \
     newmatch \
     keymaptest \
-    layerstest \
     inquire \
     mathtest \
     cctest \
-    clippingtest \
     helloworld \
     oopdemo \
     scrollerwin \
