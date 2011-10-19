@@ -19,11 +19,12 @@
 #include <string.h>
 #include <setjmp.h>
 
-#define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S"
+#define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S,EXTRA/S"
 
 #define ARG_FAST    0
 #define ARG_NUMBERS 1
-#define NUM_ARGS    2
+#define ARG_EXTRA   2
+#define NUM_ARGS    3
 
 static struct Screen *scr;
 static struct Window *win;
@@ -60,33 +61,10 @@ static void GetArguments(void)
     }
 }
 
-static void Action(void)
+static void Show(struct RastPort *rp, struct ClipRect *cr)
 {
-    extern struct IntuitionBase *IntuitionBase;
-    struct RastPort *rp;
-    struct ClipRect *cr;
     WORD x, y, i, count = 0;
 
-    PutStr("Activate the window whose cliprects you want to see.\n");
-    PutStr("You have 3 seconds of time!\n\n");
-
-    Delay(3*50);
-
-    win = IntuitionBase->ActiveWindow;
-
-    if (!win) Cleanup("No active window!");
-
-    scr = win->WScreen;
-
-    if (!(rp = CloneRastPort(&scr->RastPort)))
-    {
-    	Cleanup("Can´t clone screen rastport!");
-    }
-    SetDrMd(rp,JAM1);
-
-    lay = win->WLayer;
-
-    cr = lay->ClipRect;
     while(cr)
     {
     	Printf("#%04ld (%4ld,%4ld) - (%4ld, %4ld)  Size: %4ld x %4ld  %s%s\n",
@@ -99,7 +77,15 @@ static void Action(void)
 		cr->bounds.MaxY - cr->bounds.MinY + 1,
 		(cr->lobs ? "HIDDEN " : ""),
 		(cr->BitMap ? "BITMAP ": ""));
-		
+
+	if (cr->BitMap && Args[ARG_EXTRA])
+	{
+	    ULONG w = GetBitMapAttr(cr->BitMap, BMA_WIDTH);
+	    ULONG h = GetBitMapAttr(cr->BitMap, BMA_HEIGHT);
+
+	    Printf("  -> BitMap 0x%p, size %ld x %ld\n", cr->BitMap, w, h);
+	}
+
 	for(i = 0; i < (Args[ARG_FAST] ? 1 : 8);i++)
 	{
 	    SetAPen(rp,1 + (i & 1));
@@ -147,7 +133,39 @@ static void Action(void)
 	}
     	cr = cr->Next;
     }
-    
+}
+
+static void Action(void)
+{
+    extern struct IntuitionBase *IntuitionBase;
+    struct RastPort *rp;
+
+    PutStr("Activate the window whose cliprects you want to see.\n");
+    PutStr("You have 3 seconds of time!\n\n");
+
+    Delay(3*50);
+
+    win = IntuitionBase->ActiveWindow;
+
+    if (!win) Cleanup("No active window!");
+
+    scr = win->WScreen;
+
+    if (!(rp = CloneRastPort(&scr->RastPort)))
+    {
+    	Cleanup("Can´t clone screen rastport!");
+    }
+    SetDrMd(rp,JAM1);
+
+    lay = win->WLayer;
+
+    Show(rp, lay->ClipRect);
+    if (lay->_cliprects)
+    {
+        PutStr("This window has ClipRegion installed. Listing hidden cliprects...\n");
+        Show(rp, lay->_cliprects);
+    }
+
     FreeRastPort(rp);
 }
 
