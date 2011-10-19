@@ -22,7 +22,7 @@
 
     FUNCTION
 
-        Extract some characters or words from a string.
+        Extracts some characters or words from a string.
 
     FORMAT
 
@@ -33,63 +33,50 @@
         Standard DOS return codes.
 
     NOTES
+ 
+ Both  CHAR  (character)  and WORD arguments allow to define a begin and an end
+position  in the original string. Words are strings separated by a SEPARATOR (a
+space character (" ") is the default), which can also be a string. 
 
-Quoted from http://www.titan.co.nz/amigaak/AA020844e2C.htm :
+ Positions  range  is specified using numbers with the form "P1-P2", where "P1"
+is  the position of the first character (resp. word) to extract in the original
+string, "-" is the hyphen-minus character, and "P2" is the position of the last
+character (resp. word) to extract.
 
-The extracted string is defined by a begin and an end position. Those values
-will be characters or words positions in the original string, i.e you may want
-to extract a string beginning with a character at position P1 and ending with a
-character at position P2. Behaviour is the same with words instead of
-characters.
+ If  only  one  position  is  supplied, then only one character (resp. word) is
+extracted,  unless  the  hyphen-minus  character is supplied too: P- extracts a 
+string  begining  at  the  character (resp. word) at position P in the original
+string until the end, and -P extracts a string starting at the beginning of the
+original  string,  and  ending with the character (resp. word) at position P in
+the original string.
 
-Use the CHAR argument if you want to use begin/end values defined in characters.
-Use the WORD argument if you want to extract any number of words. Words are
-strings separated by the "space" character (default). Using the SEPARATOR
-argument, you can specify a string of any length to be used to split the
-original string in words.
-
-The length of the string to extract will depend on the begin (P1) and the end
-(P2) position in the original string. This P1-P2 range to give after the CHAR
-(or WORD) argument follows the template:
-
-P1[-P2] | [P1-]P2 | [P1]-P2 | P1-[P2]
-
-The begin (P1) and end (P2) values are optional. This allows to extract only one
-character (or word) if you omit the end value. i.e with the argument like
-"CHAR P1" In order to extract several characters (or words), you need to specify
-a range with the "-" character like "CHAR P1-P2"
-
-You can omit P1 if you want a string starting at the beginning of <string> with
-"CHAR -P2". And you do not need to know the string length because P2 can be
-omitted like "CHAR P1-". This will extract the string beginning with character
-at position P1 and ending at the end of the original <string>.
 
     EXAMPLES
 
 Example 1:
-3.OS4:> CUT "Hello world" char 2
-e
+> Cut "A dummy sentence" CHAR 7
+y
 extract one character.
 
 Example 2:
-3.OS4:> CUT "Hello world" char 1-5
-Hello
-extract from character 1 to 5.
+> Cut "A dummy sentence" CHAR 6-12
+my sent
+extract from character 6 to 12.
 
 Example 3:
-3.OS4:> CUT "Hello world" char -5
-Hello
-extract from character 1 to 5 without specifying the beginning position.
+> Cut "A dummy sentence" CHAR -7
+A dummy
+extract from character 1 to 7 without specifying the beginning position.
 
 Example 4:
-3.OS4:> CUT "Hello world" char 7-
-world
-extract from character 7 of the string till the end.
+> Cut "A dummy sentence" CHAR 12-
+tence
+extract from character 12 of the string until the end.
 
 Example 5:
-3.OS4:> CUT "Hello world" word 1 separator "ll"
-He
-extract one word (with another separator).
+> Cut "A dummy sentence" WORD 2 SEPARATOR "en"
+t
+extract the second word (using an user-defined separator).
 
 
 ******************************************************************************/
@@ -101,11 +88,6 @@ extract one word (with another separator).
 #include <aros/debug.h>
 
 #include <aros/shcommands.h>
-
-#ifdef AROS_SHAH
-#undef AROS_SHAH
-#endif
-#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def, __SHA_OPT(type,abbr,name,modf,def,help) "\t" help "\n"
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 #define max(x,y) (((x) > (y)) ? (x) : (y))
@@ -119,19 +101,23 @@ struct Bounds
 
 static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase);
 
-AROS_SH4H(Cut,50.1,        "extract some characters or words from a string\n",
-AROS_SHAH(STRPTR,  ,STRING   ,/A,NULL,"Quoted string from which to extract characters or words"),
-AROS_SHAH(STRPTR,C=,CHAR     ,/K,NULL,"Use begin/end values defined in characters"),
-AROS_SHAH(STRPTR,W=,WORD     ,/K,NULL,"Extract any number of words separated by SEPARATOR"),
-AROS_SHAH(STRPTR,S=,SEPARATOR,/K, " ", "Specify a string of any length to be used to split\n"
-                                   "\t\tthe original string in words (default: space character)\n") )
+AROS_SH4H(Cut,50.1, "extract some characters or words from a string\n",
+AROS_SHAH(STRPTR,  ,STRING   ,/A,NULL,"Quoted string from which to extract CHARacters or WORDs"),
+AROS_SHAH(STRPTR,C=,CHAR     ,/K,NULL,"Extract one or a range of characters, form is P1-P2"),
+AROS_SHAH(STRPTR,W=,WORD     ,/K,NULL,"Extract one or a range of words separated by SEPARATOR"),
+AROS_SHAH(STRPTR,S=,SEPARATOR,/K," " ,"Specify a string of any length to be used to split\n"
+                                  "\t\tthe original STRING in WORDs (default: space character)"
+
+                             "\n\nExample: extract from character 6 to 12:\n"
+                                 "> Cut \"A dummy sentence\" CHAR 6-12\n"
+                                 "my sent\n") )
 {
     AROS_SHCOMMAND_INIT
 
-    LONG ioerr, stringLen, sepLen, wordCnt = 0;
     int  rc    = RETURN_FAIL;
+    LONG ioerr, stringLen, sepLen, wordCnt = 0;
     struct Bounds *charBounds, *wordBounds;
-    STRPTR stringBuf = SHArg(STRING), sepBuf/* = SHArg(SEPARATOR)*/;
+    STRPTR stringBuf = SHArg(STRING), sepBuf;
 
     if (!SHArg(CHAR) && !SHArg(WORD))
         SetIoErr(ERROR_BAD_TEMPLATE);
@@ -246,8 +232,6 @@ static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase)
         D(bug("[Cut] getBoundaries() bounds->Start = %ld, bounds->End = %ld\n",
             bounds->Start, bounds->End));
     }
-    else
-        SetIoErr(ERROR_NO_FREE_STORE);
 
     return bounds;
 }
