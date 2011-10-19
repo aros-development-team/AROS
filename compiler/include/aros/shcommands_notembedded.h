@@ -108,7 +108,7 @@ DEFINE_DOSBase_global                                          \
 __used static const UBYTE name##_version[] = "$VER: "          \
                                  stringify(name) " "           \
 		                 stringify(version) " "        \
-				 "(" ADATE ")\n";           \
+				 "(" ADATE ") © The AROS Development Team\n";\
                                                                \
 DEFINE_main(name)                                              \
 {
@@ -359,7 +359,7 @@ DEFINE_main(name)                                              \
 	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12)};
 
 #define AROS_SHA(type, abbr, name, modf, def) type,abbr,name,modf,def,""
-#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def,"\t" __SHA_OPT(type,abbr,name,modf,def,help) "\t\t" help "\n"
+#define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def, __SHA_OPT(type,abbr,name,modf,def,help) "\t" help "\n"
 
 #define __AROS_SHA(type, abbr, name, modf, def, help) type,abbr,name,modf,def,help
 
