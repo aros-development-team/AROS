@@ -12,8 +12,6 @@ FILES := \
     CheckMem \
     ConClip \
     CopyToPAR \
-    CRList \
-    DamageList \
     Date \
     Delete \
     DevList \
