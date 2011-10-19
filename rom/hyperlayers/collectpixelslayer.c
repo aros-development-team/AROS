@@ -1,19 +1,19 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
-#include <proto/exec.h>
-#include <exec/types.h>
+
 #include <aros/libcall.h>
+#include <utility/hooks.h>
+#include <proto/alib.h>
+#include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <utility/hooks.h>
 
 #include "layers_intern.h"
-#include "../graphics/intregions.h"
 #include "basicfuncs.h"
 
 #define DEBUG 1
@@ -126,8 +126,10 @@ struct CollectPixelsMsg
 							 * Check for overlap with _rect
 							 * Call callback with overlapping area!
 							 */
-							if (_AndRectRect(&_rect,&cr->bounds,&intersect)) {
+							if (AndRectRect(&_rect,&cr->bounds,&intersect))
+							{
 								struct CollectPixelsLayerMsg cplm;
+
 								cplm.xSrc    = intersect.MinX;
 								cplm.ySrc    = intersect.MinY;
 								cplm.width   = intersect.MaxX - intersect.MinX + 1;
@@ -172,7 +174,7 @@ struct CollectPixelsMsg
 							 * Check for overlap with _rect
 							 * Call callback with overlapping area!
 							 */
-							if (_AndRectRect(&_rect,&cr->bounds,&intersect)) {
+							if (AndRectRect(&_rect,&cr->bounds,&intersect)) {
 								struct CollectPixelsLayerMsg cplm;
 								D(bug("Overlapping: %d/%d-%d/%d\n",
 								      intersect.MinX,

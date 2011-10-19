@@ -12,6 +12,7 @@
 #include <exec/lists.h>
 #include <exec/libraries.h>
 #include <graphics/gfx.h>
+#include <graphics/gfxbase.h>
 #include <graphics/rastport.h>
 #include <graphics/clip.h>
 #include <graphics/layers.h>
@@ -21,8 +22,7 @@
 
 #include LC_LIBDEFS_FILE
 
-
-#include "../graphics/intregions.h"
+#include "intregions.h"
 
 LIBBASETYPE
 {
@@ -100,7 +100,6 @@ struct ResourceNode
 #define IS_SIMPLEREFRESH(l) (0 != ((l)->Flags & LAYERSIMPLE))
 #define IS_SMARTREFRESH(l)  (LAYERSMART == ((l)->Flags & (LAYERSMART|LAYERSUPER)))
 #define IS_SUPERREFRESH(l)  (0 != ((l)->Flags & LAYERSUPER))
-
 
 int _MoveLayerBehind(struct Layer *l,
                      struct Layer *lfront,
