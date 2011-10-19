@@ -115,6 +115,9 @@ static void Action(void)
     rect2.MinX =  80;rect2.MinY = 20;
     rect2.MaxX = 120;rect2.MaxY = 180;
 
+    Move(rp, 20, 20);
+    Draw(rp, 180, 180);
+
     clip = NewRegion();
     if (!clip) Cleanup("Can't create clip region!");
 
