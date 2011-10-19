@@ -1,15 +1,16 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy a rectangle in a bitmap to another place or another bitmap.
     Lang: english
 */
+
 #include <aros/debug.h>
-#include <string.h>
 #include <exec/memory.h>
 #include <graphics/gfx.h>
 #include <proto/exec.h>
+
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 #include "objcache.h"
@@ -217,7 +218,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	 * can be either fakegfx or hardware driver.
 	 */
 	
-	tmp_gc = obtain_cache_object(driver->gc_cache, GfxBase);
+	tmp_gc = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
 	if (NULL != tmp_gc)
 	{
 	    OOP_Object *srcbm_obj;
@@ -247,7 +248,7 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 
 		RELEASE_HIDD_BM(srcbm_obj, srcBitMap);
 	    }
-	    release_cache_object(driver->gc_cache, tmp_gc, GfxBase);
+	    release_cache_object(CDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
 	}
 
     	/* FIXME: dummy return value of 8 planes */

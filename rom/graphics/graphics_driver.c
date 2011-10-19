@@ -291,43 +291,34 @@ struct monitor_driverdata *driver_Setup(OOP_Object *gfxhidd, struct GfxBase *Gfx
     {
 	D(bug("[driver_Setup] Ok\n"));
 
-        /* FIXME: perhaps driver should be able to supply own GC class? */
-	mdd->gc_cache = create_object_cache(NULL, CLID_Hidd_GC, NULL, GfxBase);
-	if (mdd->gc_cache)
+	if (!noframebuffer)
 	{
-	    D(bug("[driver_Setup] GC Cache created\n"));
+	    /*
+	     * Instantiate framebuffer if needed.
+	     * Note that we perform this operation on fakegfx.hidd if it was plugged in.
+	     * This enables software mouse sprite on a framebuffer.
+	     */
+	    mdd->framebuffer = create_framebuffer(mdd, GfxBase);
+	    mdd->flags |= DF_DirectFB;
+	}
 
-	    if (!noframebuffer)
+	if (noframebuffer || mdd->framebuffer)
+	{
+	    D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
+
+	    if ((!compose) && can_compose)
 	    {
-	        /*
-	         * Instantiate framebuffer if needed.
-	         * Note that we perform this operation on fakegfx.hidd if it was plugged in.
-	         * This enables software mouse sprite on a framebuffer.
-		 */
-		mdd->framebuffer = create_framebuffer(mdd, GfxBase);
-		mdd->flags |= DF_DirectFB;
+		D(bug("[driver_Setup] Software screen composition required\n"));
+
+		mdd->flags |= DF_SoftCompose;
+		composer_Setup(mdd, GfxBase);
 	    }
 
-	    if (noframebuffer || mdd->framebuffer)
-	    {
-		D(bug("[driver_Setup] FRAMEBUFFER OK: %p\n", mdd->framebuffer));
+	    return mdd;
+	}
 
-		if ((!compose) && can_compose)
-		{
-		    D(bug("[driver_Setup] Software screen composition required\n"));
-
-		    mdd->flags |= DF_SoftCompose;
-		    composer_Setup(mdd, GfxBase);
-		}
-
-		return mdd;
-	    }
-
-	    if (mdd->framebuffer)
-		OOP_DisposeObject(mdd->framebuffer);
-
-	    delete_object_cache(mdd->gc_cache, GfxBase);
-	} /* if (gc object cache ok) */
+	if (mdd->framebuffer)
+	    OOP_DisposeObject(mdd->framebuffer);
     } /* if (fake gfx stuff ok) */
 
     if (mdd->flags & DF_UseFakeGfx)
@@ -358,9 +349,6 @@ void driver_Expunge(struct monitor_driverdata *mdd, struct GfxBase *GfxBase)
     /* Dispose associated stuff */
     OOP_DisposeObject(mdd->composer);
     OOP_DisposeObject(mdd->framebuffer);
-
-    if (mdd->gc_cache)
-	delete_object_cache(mdd->gc_cache, GfxBase );
 
     if (mdd->flags & DF_UseFakeGfx)
         OOP_DisposeObject(mdd->gfxhidd);

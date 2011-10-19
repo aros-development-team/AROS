@@ -97,12 +97,10 @@
     OOP_Object *srcbm_obj;
     OOP_Object *dstbm_obj;
     OOP_Object *tmp_gc;
-    ObjectCache *gc_cache;
 
     srcbm_obj = OBTAIN_HIDD_BM(bitScaleArgs->bsa_SrcBitMap);
     dstbm_obj = OBTAIN_HIDD_BM(bitScaleArgs->bsa_DestBitMap);
-    gc_cache = GET_BM_DRIVERDATA(bitScaleArgs->bsa_SrcBitMap)->gc_cache;
-    tmp_gc = obtain_cache_object(gc_cache, GfxBase);
+    tmp_gc    = obtain_cache_object(CDD(GfxBase)->gc_cache, GfxBase);
 
     /* We must lock any HIDD_BM_SetColorMap calls */
     LOCK_BLIT
@@ -223,7 +221,7 @@
          RELEASE_HIDD_BM(srcbm_obj, bitScaleArgs->bsa_SrcBitMap);
 
     if (tmp_gc)
-        release_cache_object(gc_cache, tmp_gc, GfxBase);
+        release_cache_object(CDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
 
     ULOCK_BLIT
 
