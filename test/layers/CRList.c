@@ -3,28 +3,33 @@
     $Id$
 */
 
+#include <aros/asmcall.h>
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/screens.h>
 #include <graphics/clip.h>
+#include <graphics/layers.h>
 #include <graphics/rastport.h>
+#include <utility/hooks.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
+#include <proto/layers.h>
 #include <proto/alib.h>
 
 #include <string.h>
 #include <setjmp.h>
 
-#define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S,EXTRA/S"
+#define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S,EXTRA/S,HOOK/S"
 
 #define ARG_FAST    0
 #define ARG_NUMBERS 1
 #define ARG_EXTRA   2
-#define NUM_ARGS    3
+#define ARG_HOOK    3
+#define NUM_ARGS    4
 
 static struct Screen *scr;
 static struct Window *win;
@@ -135,6 +140,24 @@ static void Show(struct RastPort *rp, struct ClipRect *cr)
     }
 }
 
+AROS_UFH3(static void, ClipRectHook,
+	  AROS_UFHA(struct Hook *, h, A0),
+	  AROS_UFHA(struct RastPort *, rp, A2),
+	  AROS_UFHA(struct BackFillMessage *, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    Printf("# RastPort 0x%p, BitMap 0x%p, Layer 0x%p\n", rp, rp->BitMap, msg->Layer);
+    Printf("  -> (%4ld,%4ld) - (%4ld, %4ld), Offset (%4ld, %4ld)\n", msg->Bounds.MinX, msg->Bounds.MinY, msg->Bounds.MaxX, msg->Bounds.MaxY, msg->OffsetX, msg->OffsetY);
+
+    AROS_USERFUNC_EXIT
+}
+
+static struct Hook crHook =
+{
+    .h_Entry = (HOOKFUNC)ClipRectHook
+};
+
 static void Action(void)
 {
     extern struct IntuitionBase *IntuitionBase;
@@ -164,6 +187,14 @@ static void Action(void)
     {
         PutStr("This window has ClipRegion installed. Listing hidden cliprects...\n");
         Show(rp, lay->_cliprects);
+    }
+
+    if (Args[ARG_HOOK])
+    {
+    	struct Rectangle rect = {20, 20, win->Width - 40 + 1, win->Height - 40 + 1};
+
+        Printf("Running ClipRectHook on Window's RastPort 0x%p, BitMap 0x%p, Layer 0x%p...\n", win->RPort, win->RPort->BitMap, lay);
+        DoHookClipRects(&crHook, win->RPort, &rect);
     }
 
     FreeRastPort(rp);
