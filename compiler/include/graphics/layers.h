@@ -55,4 +55,13 @@ struct Layer_Info
 
 #define LIFLG_SUPPORTS_OFFSCREEN_LAYERS     (1 << 8)	/* Same flag as AmigaOS hack PowerWindowsNG */
 
+/* Backfiil hook message */
+struct BackFillMessage
+{
+    struct Layer     *Layer;
+    struct Rectangle  Bounds;
+    LONG              OffsetX;
+    LONG              OffsetY;
+};
+
 #endif /* GRAPHICS_LAYERS_H */
