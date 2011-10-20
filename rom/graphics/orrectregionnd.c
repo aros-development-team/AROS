@@ -57,42 +57,31 @@
     AROS_LIBFUNC_INIT
 
     struct Region *Res = NewRegion();
-
-    if (IS_RECT_EVIL(Rect))
-    {
-    	return CopyRegion(Reg);
-    }
     
     if (Res)
     {
+    	if (IS_RECT_EVIL(Rect))
+    	{
+    	    /* Source Rect is empty. Make a plain copy of Reg. */
+    	    if (_CopyRegionRectangles(Reg, Res, GfxBase))
+    	    	return Res;
+    	}
+	else
+	{
+            struct RegionRectangle rr;
 
-        struct RegionRectangle rr;
+            rr.bounds = *Rect;
+	    rr.Next   = NULL;
+	    rr.Prev   = NULL;
 
-        rr.bounds = *Rect;
-        rr.Next   = NULL;
-        rr.Prev   = NULL;
+	    if (_DoOperationBandBand(_OrBandBand,
+			             MinX(Reg), 0, MinY(Reg), 0,
+				     Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase))
+            {
+            	_TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
 
-        if
-        (
-            _DoOperationBandBand
-            (
-                _OrBandBand,
-                MinX(Reg),
-                0,
-	        MinY(Reg),
-                0,
-                Reg->RegionRectangle,
-                &rr,
-                &Res->RegionRectangle,
-                &Res->bounds,
-                GfxBase
-            )
-        )
-        {
-
-            _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
-
-            return Res;
+            	return Res;
+            }
         }
 
         DisposeRegion(Res);

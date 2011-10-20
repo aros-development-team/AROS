@@ -2,6 +2,7 @@
 #include <dos/dos.h>
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>

@@ -1,14 +1,13 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <proto/exec.h>
-#include <exec/types.h>
 #include <exec/memory.h>
-#include <aros/libcall.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <utility/hooks.h>
@@ -134,7 +133,14 @@
      * installed. Let's cut it down to the actually visible part.
      */
     
-    l->shape = NewRectRegion(0,0,l->Width-1,l->Height-1);
+    l->shape = NewRegion();
+    if (l->shape)
+    {
+    	struct Rectangle r = {0, 0, l->Width - 1, l->Height - 1};
+
+    	OrRectRegion(l->shape, &r);
+    	/* FIXME: handle error here */
+    }
     
     if (l->shaperegion)
       AndRegionRegion(l->shaperegion, l->shape);

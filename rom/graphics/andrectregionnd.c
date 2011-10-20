@@ -6,10 +6,11 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <proto/exec.h>
 #include <clib/macros.h>
+
+#include "graphics_intern.h"
 #include "intregions.h"
 
 /*****************************************************************************
@@ -55,66 +56,52 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *Res;
+    struct Region *Res = NewRegion();
 
     if (IS_RECT_EVIL(Rect))
     {
-    	return NewRegion();
-    }
-    
-    if
-    (
-        /* Is the region empty? */
-	!Reg->RegionRectangle ||
-        (
-            /* Does the rectangle completely cover the region? */
-            Rect->MinX <= MinX(Reg) &&
-            Rect->MinY <= MinY(Reg) &&
-            Rect->MaxX >= MaxX(Reg) &&
-            Rect->MaxY >= MaxY(Reg)
-        )
-    )
-    {
-        return CopyRegion(Reg);
+    	return Res;
     }
 
-    Res = NewRegion();
+    if (!Reg->RegionRectangle)
+    {
+	/* The region is already empty, return empty copy */
+    	return Res;
+    }
 
     if (Res)
     {
-        struct RegionRectangle rr;
+	if (Rect->MinX <= MinX(Reg) &&
+            Rect->MinY <= MinY(Reg) &&
+            Rect->MaxX >= MaxX(Reg) &&
+            Rect->MaxY >= MaxY(Reg))
+    	{
+    	    /* The rectangle completely covers the region. Make a plain copy. */
+	    if (_CopyRegionRectangles(Reg, Res, GfxBase))
+	    	return Res;
+    	}
+    	else
+    	{
+            struct RegionRectangle rr;
 
-        rr.bounds = *Rect;
-        rr.Next   = NULL;
-        rr.Prev   = NULL;
+            rr.bounds = *Rect;
+            rr.Next   = NULL;
+            rr.Prev   = NULL;
 
-        if
-        (
-            _DoOperationBandBand
-            (
-                _AndBandBand,
-                MinX(Reg),
-                0,
-	        MinY(Reg),
-                0,
-                Reg->RegionRectangle,
-                &rr,
-                &Res->RegionRectangle,
-                &Res->bounds,
-                GfxBase
-            )
-        )
-        {
-            _TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
+            if (_DoOperationBandBand(_AndBandBand,
+				     MinX(Reg), 0, MinY(Reg), 0,
+			             Reg->RegionRectangle, &rr, &Res->RegionRectangle, &Res->bounds, GfxBase))
+            {
+            	_TranslateRegionRectangles(Res->RegionRectangle, -MinX(Res), -MinY(Res));
+
+            	return Res;
+            }
         }
-        else
-        {
-            DisposeRegion(Res);
-            Res = NULL;
-        }
+
+        DisposeRegion(Res);
     }
 
-    return Res;
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* AndRectRegion */

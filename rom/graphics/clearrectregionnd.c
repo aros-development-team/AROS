@@ -6,10 +6,11 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <graphics/regions.h>
 #include <proto/exec.h>
 #include <clib/macros.h>
+
+#include "graphics_intern.h"
 #include "intregions.h"
 
 /*****************************************************************************
@@ -55,31 +56,27 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *Res;
+    struct Region *Res = NewRegion();
 
-    if
-    (
-        !Reg->RegionRectangle        ||
+    if (!Res)
+    	return NULL;
+
+    if (!Reg->RegionRectangle        ||
 	IS_RECT_EVIL(Rect)           ||
-        !overlap(*Rect, Reg->bounds)
-    )
+        !overlap(*Rect, Reg->bounds))
     {
-        return CopyRegion(Reg);
+	/* Nothing to clear. Make a plain copy. */
+	if (!_CopyRegionRectangles(Reg, Res, GfxBase))
+	{
+	    DisposeRegion(Res);
+	    Res = NULL;
+	}
     }
 
-    Res = NewRegion();
-
-    if
-    (
-        Res &&
-        (
-            Rect->MinX > MinX(Reg) ||
-            Rect->MinY > MinY(Reg) ||
-            Rect->MaxX < MaxX(Reg) ||
-            Rect->MaxY < MaxY(Reg)
-        )
-    )
+    else if (Rect->MinX > MinX(Reg) || Rect->MinY > MinY(Reg) ||
+	     Rect->MaxX < MaxX(Reg) || Rect->MaxY < MaxY(Reg))
     {
+    	/* Partial overlapping detected. Do the complete algorithm. */
         struct RegionRectangle rr;
 
         rr.bounds = *Rect;
@@ -111,6 +108,7 @@
             Res = NULL;
         }
     }
+    /* If neither of two cases above were true, we've removed everything (Rect completely covers Reg). Return empty Res. */
 
     return Res;
 

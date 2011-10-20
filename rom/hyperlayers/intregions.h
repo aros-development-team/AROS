@@ -9,6 +9,8 @@
 #ifndef INTREGIONS_H
 #define INTREGIONS_H
 
+#include <proto/graphics.h>
+
 #define MinX(rr)   ((rr)->bounds.MinX)
 #define MaxX(rr)   ((rr)->bounds.MaxX)
 #define MinY(rr)   ((rr)->bounds.MinY)
@@ -44,5 +46,23 @@ do                                    \
     (region)->bounds.MaxY = 0;        \
     (region)->RegionRectangle = NULL; \
 } while (0)
+
+static inline struct Region *_NewRectRegion(WORD MinX, WORD MinY, WORD MaxX, WORD MaxY, struct GfxBase *GfxBase)
+{
+    struct Region *region = NewRegion();
+    
+    if (region)
+    {
+    	struct Rectangle rect = {MinX, MinY, MaxX, MaxY};
+
+    	if (OrRectRegion(region, &rect))
+	    return region;
+
+	DisposeRegion(region);
+    }
+
+    return NULL;
+
+} /* NewRectRegion */
 
 #endif /* !INTREGIONS_H */
