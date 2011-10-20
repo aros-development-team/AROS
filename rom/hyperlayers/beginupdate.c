@@ -75,7 +75,24 @@
   if (l->ClipRegion)
       damage_region = AndRegionRegionND(l->ClipRegion, l->DamageList);
   else
-      damage_region = CopyRegion(l->DamageList);
+  {
+      damage_region = NewRegion();
+      if (damage_region)
+      {
+      	if (!OrRegionRegion(l->DamageList, damage_region))
+      	{
+      	    DisposeRegion(damage_region);
+      	    damage_region = NULL;
+      	}
+      }
+  }
+
+  if (!damage_region)
+  {
+      /* CHECKME: Should we really unlock on error? */
+      UnlockLayer(l);
+      return FALSE;
+  }
 
   /* The DamageList is in layer coords. So convert it to screen coords */
 

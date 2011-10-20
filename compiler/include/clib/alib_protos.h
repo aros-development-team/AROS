@@ -87,6 +87,8 @@ void GetRPAttrs( struct RastPort * rp, Tag tag1, ...) __stackparm;
 #endif
 
 BOOL AndRectRect(struct Rectangle *rect1, struct Rectangle *rect2, struct Rectangle *intersect);
+struct Region *CopyRegion(struct Region *region);
+struct Region *NewRectRegion(WORD MinX,	WORD MinY, WORD MaxX, WORD MaxY);
 
 /* Intuition */
 #ifndef SetWindowPointer 

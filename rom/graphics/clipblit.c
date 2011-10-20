@@ -7,6 +7,7 @@
 */
 
 #include <aros/debug.h>
+#include <clib/macros.h>
 #include <exec/memory.h>
 #include <graphics/gfx.h>
 #include <proto/exec.h>
@@ -132,34 +133,37 @@
     /* check for overlapping blits */
     if ( srcRP == destRP )
     {
-	struct Region * R;
 	struct Rectangle Rect;
-	struct RegionRectangle * RR;
 
-    	if (!(R = NewRectRegion(xDest, yDest, xDest + xSize - 1, yDest + ySize - 1)))
-	{
-	    goto exit;
-	}
-
-	/* define the rectangle of the source */
-	Rect.MinX = xSrc;
-	Rect.MaxX = xSrc+xSize-1;
-	Rect.MinY = ySrc;
-	Rect.MaxY = ySrc+ySize-1;
-	/* combine them to check for overlapping areas */
-	AndRectRegion(R, &Rect); /* this call cannot fail! */
-
-	RR = R->RegionRectangle;
+	/* Combine source and destination rectangles to check for overlapping areas */
+    	Rect.MinX = MAX(xSrc, xDest);
+    	Rect.MinY = MAX(ySrc, yDest);
+    	Rect.MaxX = MIN(xSrc + xSize - 1, xDest + xSize - 1);
+    	Rect.MaxY = MIN(ySrc + ySize - 1, yDest + ySize - 1);
 
 	/* check whether they overlap */
-	if (NULL != RR)
+	if ((Rect.MaxX >= Rect.MinX) && (Rect.MaxY > Rect.MinY))
 	{
-	    int xs, ys;
 	    /*
-               It's overlapping; depending on how bad it is overlapping I
-               will have to split this up into several calls to the
-               internal ClipBlit routine
-	    */
+             * It's overlapping; depending on how bad it is overlapping I
+             * will have to split this up into several calls to the
+             * internal ClipBlit routine.
+             * The first thing to do is to convert our Rect into Region (we'll use XOR afterwards).
+	     */
+	    struct Region *R = NewRegion();
+	    struct RegionRectangle *RR;
+	    int xs, ys;
+
+	    if (!R)
+	    	goto exit;
+
+    	    if (!OrRectRegion(R, &Rect))
+    	    {
+    	    	DisposeRegion(R);
+    	    	goto exit;
+    	    }
+
+	    RR = R->RegionRectangle;
 
 	    xs = xDest-xSrc;
 	    ys = yDest-ySrc;
@@ -244,7 +248,9 @@
 
 	    }
 
-	} /* if (NULL != RR)*/
+	    DisposeRegion(R);
+
+	} /* if (src and dest overlap) */
 	else
 	{
 	  /* they don't overlap */
@@ -259,8 +265,6 @@
                             minterm,
                             GfxBase);
 	}
-
-	DisposeRegion(R);
 
     } /* if (destRP == srcRP) */
     else

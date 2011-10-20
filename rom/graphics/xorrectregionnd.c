@@ -6,8 +6,9 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <graphics/regions.h>
+
+#include "graphics_intern.h"
 #include "intregions.h"
 
 /*****************************************************************************
@@ -62,9 +63,16 @@
 
     if (IS_RECT_EVIL(Rect))
     {
-    	return CopyRegion(Reg);
+	/* Empty rectangle. Just make a plain copy of Reg. */
+    	struct Region *ret = NewRegion();
+
+	if (_CopyRegionRectangles(Reg, ret, GfxBase))
+	    return ret;
+
+	DisposeRegion(ret);
+	return NULL;
     }
-    
+
     InitRegion(&R);
 
     R.bounds = *Rect;

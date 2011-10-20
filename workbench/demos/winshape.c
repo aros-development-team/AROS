@@ -3,6 +3,7 @@
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
 #include <utility/tagitem.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>

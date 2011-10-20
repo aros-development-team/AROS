@@ -1,16 +1,17 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function OrRectRegion()
     Lang: english
 */
-#include <exec/types.h>
+
 #include <exec/memory.h>
 #include <graphics/regions.h>
 #include <proto/exec.h>
-#include "intregions.h"
+
 #include "graphics_intern.h"
+#include "intregions.h"
 
 /*****************************************************************************
 
@@ -60,43 +61,50 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region Res;
-    struct RegionRectangle rr;
-
     if (IS_RECT_EVIL(Rect)) return TRUE;
-    
-    InitRegion(&Res);
 
-    rr.bounds = *Rect;
-    rr.Next   = NULL;
-    rr.Prev   = NULL;
-
-    if
-    (
-        _DoOperationBandBand
-        (
-            _OrBandBand,
-            MinX(Reg),
-            0,
-	    MinY(Reg),
-            0,
-            Reg->RegionRectangle,
-            &rr,
-            &Res.RegionRectangle,
-            &Res.bounds,
-            GfxBase
-        )
-    )
+    if (Reg->RegionRectangle)
     {
-	ClearRegion(Reg);
+	/* Region is not empty. Do the complete algorithm. */
+    	struct Region Res;
+    	struct RegionRectangle rr;
 
-        *Reg = Res;
+	InitRegion(&Res);
 
-        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+	rr.bounds = *Rect;
+	rr.Next   = NULL;
+	rr.Prev   = NULL;
 
-        return TRUE;
+    	if (_DoOperationBandBand(_OrBandBand,
+			         MinX(Reg), 0, MinY(Reg), 0,
+				 Reg->RegionRectangle, &rr, &Res.RegionRectangle, &Res.bounds, GfxBase))
+    	{
+	    ClearRegion(Reg);
+
+            *Reg = Res;
+            _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+
+            return TRUE;
+    	}
     }
+    else
+    {
+	/* Optimized version for empty destination Region. Just add a single rectangle. */
+    	struct RegionRectangle *rr = _NewRegionRectangle(&Reg->RegionRectangle, GfxBase);
 
+    	if (rr)
+	{
+	    Reg->bounds = *Rect;
+
+	    rr->bounds.MinX = 0;
+	    rr->bounds.MinY = 0;
+	    rr->bounds.MaxX = Rect->MaxX - Rect->MinX;
+	    rr->bounds.MaxY = Rect->MaxY - Rect->MinY;
+
+	    return TRUE;
+	}
+    }
+    
     return FALSE;
 
     AROS_LIBFUNC_EXIT

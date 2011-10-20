@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
     Lang: english
 */
+
 #include <aros/libcall.h>
 #include <aros/debug.h>
 #include <proto/layers.h>
@@ -14,9 +15,9 @@
 #include <exec/memory.h>
 #include <graphics/rastport.h>
 #include <graphics/clip.h>
+
 #include "layers_intern.h"
 #include "basicfuncs.h"
-
 
 /*****************************************************************************
 
@@ -100,8 +101,10 @@
      
   if (IS_SIMPLEREFRESH(l))
   {
-    if ((olddamage = CopyRegion(l->DamageList)))
+    olddamage = NewRegion();
+    if (olddamage)
     {
+      OrRegionRegion(l->DamageList, olddamage);
       _TranslateRect(&olddamage->bounds, l->bounds.MinX, l->bounds.MinY);
       AndRegionRegion(l->VisibleRegion, olddamage);
       AndRegionRegion(l->visibleshape, olddamage);
@@ -418,11 +421,12 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
 
   if (olddamage)
   {
-    struct Region *newdamage = CopyRegion(l->DamageList);
-    
+    struct Region *newdamage = NewRegion();
+
     IL(l)->intflags &= ~INTFLAG_AVOID_BACKFILL;
     if (newdamage)
     {
+      OrRegionRegion(l->DamageList, newdamage);
       ClearRegionRegion(olddamage, newdamage);
       _TranslateRect(&newdamage->bounds, l->bounds.MinX, l->bounds.MinY);
       _BackFillRegion(l, newdamage, FALSE, LayersBase);

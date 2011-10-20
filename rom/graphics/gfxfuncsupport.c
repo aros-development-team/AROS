@@ -795,13 +795,21 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
             {
- 	        struct Region *Damage;
+ 	        struct Region *Damage = NewRegion();
 
-    	    #if 1
-                Damage = NewRectRegion(ScrollRect.MinX, ScrollRect.MinY, ScrollRect.MaxX, ScrollRect.MaxY);
-    	    #else
-                Damage = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
-    	    #endif
+		if (Damage)
+		{
+#if 1
+    	    	    BOOL res = OrRectRegion(&ScrollRect, Damage);
+#else
+    	    	    BOOL res = OrRectRegion(&Rect, Damage);
+#endif
+		    if (!res)
+		    {
+		    	DisposeRegion(Damage);
+		    	Damage = NULL;
+		    }
+		}
 
                 if (Damage)
                 {
@@ -918,15 +926,20 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		{
 		    struct BitMap          *srcbm;
 		    struct RegionRectangle *rr;
-                    struct Region          *RectRegion;
+                    struct Region          *RectRegion = NewRegion();
 		    struct Rectangle        Tmp;
 		    struct ClipRect        *HiddCR;
 		    WORD                    corrsrcx, corrsrcy;
 		    BOOL   dosrcsrc;
 
-		    RectRegion = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
 		    if (!RectRegion)
 		        goto failexit;
+
+		    if (!OrRectRegion(&Rect, RectRegion))
+		    {
+		    	DisposeRegion(RectRegion);
+		    	goto failexit;
+		    }
 
  		    if (SrcCR->lobs)
 		    {

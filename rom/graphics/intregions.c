@@ -1,23 +1,21 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for various operations on Regions and Rectangles
     Lang: English
 */
 
-
-#include <exec/types.h>
 #include <exec/memory.h>
 #include <graphics/regions.h>
 #include <graphics/gfxbase.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
-
 #include <clib/macros.h>
-#include "intregions.h"
+
 #include "graphics_intern.h"
+#include "intregions.h"
 
 #include <aros/debug.h>
 

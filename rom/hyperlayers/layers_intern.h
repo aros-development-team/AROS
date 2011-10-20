@@ -19,6 +19,7 @@
 #include <utility/utility.h>
 #include <setjmp.h>
 #include <dos/dos.h>   /* BPTR below */
+#include <proto/alib.h> /* We redefine NewRectRegion() */
 
 #include LC_LIBDEFS_FILE
 
@@ -108,5 +109,6 @@ int _MoveLayerToFront(struct Layer * l,
                       struct Layer * lbehind,
                       LIBBASETYPEPTR LayersBase);
 
+#define NewRectRegion(MinX, MinY, MaxX, MaxY) _NewRectRegion(MinX, MinY, MaxX, MaxY, LIBBASE->lb_GfxBase)
 
 #endif /* _LAYERS_INTERN_H */

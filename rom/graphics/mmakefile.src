@@ -72,7 +72,6 @@ FUNCTIONS := \
 	closemonitor \
 	cmove \
 	coercemode \
-	copyregion \
 	copysbitmap \
 	cwait \
 	disownblitter \
@@ -134,7 +133,6 @@ FUNCTIONS := \
 	move \
 	movesprite \
 	mrgcop \
-	newrectregion \
 	newregion \
 	nextdisplayinfo \
 	obtainbestpena \

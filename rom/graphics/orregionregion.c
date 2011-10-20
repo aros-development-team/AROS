@@ -1,12 +1,14 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Graphics function OrRegionRegion()
     Lang: english
 */
-#include "graphics_intern.h"
+
 #include <graphics/regions.h>
+
+#include "graphics_intern.h"
 #include "intregions.h"
 
 /*****************************************************************************
@@ -55,20 +57,18 @@
     struct Region R3;
 
     if (!R1->RegionRectangle)
+    {
+    	/* First region is empty, second left intact */
         return TRUE;
+    }
 
     if (!R2->RegionRectangle)
     {
-        if (_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase))
-        {
-            R2->RegionRectangle = &Chunk(R2->RegionRectangle)->FirstChunk->Rects[0].RR;
-            R2->bounds = R1->bounds;
-            return TRUE;
-        }
-
-        return FALSE;
+	/* Second region was empty. Make a plain copy. */
+    	return _CopyRegionRectangles(R1, R2, GfxBase);
     }
 
+    /* Do the complete slow thing here */
     InitRegion(&R3);
 
     if

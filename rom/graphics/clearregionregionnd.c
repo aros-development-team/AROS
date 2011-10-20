@@ -6,8 +6,9 @@
     Lang: english
 */
 
-#include "graphics_intern.h"
 #include <graphics/regions.h>
+
+#include "graphics_intern.h"
 #include "intregions.h"
 
 /*****************************************************************************
@@ -51,49 +52,41 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region *R3;
+    struct Region *R3 = NewRegion();
 
-    if
-    (
-        !R1->RegionRectangle            ||
-        !R2->RegionRectangle            ||
-        !overlap(R1->bounds, R2->bounds)
-    )
+    if (!R3)
     {
-        return CopyRegion(R2);
+    	/* Out of memory, failed */
+    	return NULL;
     }
 
-    R3 = NewRegion();
-    
-    if (R3)
+    if (!R2->RegionRectangle)
     {
-        if
-        (
-            _DoOperationBandBand
-            (
-                _ClearBandBand,
-                MinX(R1),
-                MinX(R2),
-	        MinY(R1),
-                MinY(R2),
-                R1->RegionRectangle,
-                R2->RegionRectangle,
-                &R3->RegionRectangle,
-                &R3->bounds,
-                GfxBase
-            )
-        )
-        {
+    	/* R2 is already empty, nothing to clear */
+    	return R3;
+    }
+
+    if (!R1->RegionRectangle            ||
+        !overlap(R1->bounds, R2->bounds))
+    {
+    	/* R2 is not empty, but there's nothing to clear. Make a plain copy. */
+    	if (_CopyRegionRectangles(R2, R3, GfxBase))
+    	    return R3;
+    }
+    else
+    {
+    	/* Some other case, do the complete algorighm */
+    	if (_DoOperationBandBand(_ClearBandBand,
+			          MinX(R1), MinX(R2), MinY(R1), MinY(R2),
+			          R1->RegionRectangle, R2->RegionRectangle, &R3->RegionRectangle, &R3->bounds, GfxBase))
+    	{
             _TranslateRegionRectangles(R3->RegionRectangle, -MinX(R3), -MinY(R3));
-        }
-        else
-        {
-            DisposeRegion(R3);
-            R3 = NULL;
-        }
+            return R3;
+    	}
     }
 
-    return R3;
+    DisposeRegion(R3);
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 }

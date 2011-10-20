@@ -153,6 +153,17 @@ do                                    \
     (region)->RegionRectangle = NULL; \
 } while (0)
 
+/* Copy RegionRectangles from R1 to R2. R2 will be overwritten!!! */
+static inline BOOL _CopyRegionRectangles(struct Region *R1, struct Region *R2, struct GfxBase *GfxBase)
+{
+    if (_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase))
+    {
+        R2->RegionRectangle = &Chunk(R2->RegionRectangle)->FirstChunk->Rects[0].RR;
+        R2->bounds = R1->bounds;
+        return TRUE;
+    }
+    return FALSE;
+}
 
 /* ugly hack, I know... */
 #ifndef GfxBase
