@@ -108,6 +108,7 @@ static void Action(void)
     struct Rectangle rect2;
     struct IntuiMessage *msg;
     WORD col = 1;
+    BOOL installed = TRUE;
     BOOL quitme = FALSE;
 
     rect1.MinX =  20;rect1.MinY = 80;
@@ -136,30 +137,49 @@ static void Action(void)
 	{
 	    switch(msg->Class)
 	    {
-		case IDCMP_CLOSEWINDOW:
-		    quitme = TRUE;
-		    break;
+	    case IDCMP_CLOSEWINDOW:
+		quitme = TRUE;
+		break;
 
-		case IDCMP_VANILLAKEY:
+	    case IDCMP_VANILLAKEY:
+	        switch (msg->Code)
+	        {
+	        case 'c':
+	        case 'C':
+	        if (installed)
+	        {
+	            InstallClipRegion(lay, oldclip);
+	            installed = FALSE;
+	        }
+	        else
+	        {
+	            oldclip = InstallClipRegion(lay, clip);
+	            installed = TRUE;
+	        }    
+		/* Fallthrough */
+
+	        default:
 		    col = 3 - col;
 		    SetAPen(rp,col);
 		    RectFill(rp,0,0,1000,1000);
 		    break;
+		}
 
-		case IDCMP_REFRESHWINDOW:
-		    BeginRefresh(win);
-		    SetAPen(rp,col);
-		    RectFill(rp,0,0,1000,1000);					
-		    EndRefresh(win,TRUE);
-		    break;
+	    case IDCMP_REFRESHWINDOW:
+		BeginRefresh(win);
+		SetAPen(rp,col);
+		RectFill(rp,0,0,1000,1000);					
+		EndRefresh(win,TRUE);
+		break;
 	    }
 
 	    ReplyMsg((struct Message *)msg);
 	}
     }
 
-    InstallClipRegion(lay, oldclip);
-
+    if (installed)
+	InstallClipRegion(lay, oldclip);
+    DisposeRegion(clip);
 }
 
 int main(void)
