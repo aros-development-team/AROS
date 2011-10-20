@@ -201,7 +201,10 @@ LONG parsePrefs(char *buffer, LONG size)
 
     while (csrc.CS_CurChr < csrc.CS_Length)
     {
+    	DB2(bug("[parsePrefs] Cur %d, Length %d\n", csrc.CS_CurChr, csrc.CS_Length));
         res = ReadItem(ident, 256, &csrc);
+
+	DB2(bug("[parsePrefs] Got item %d (%s)\n", res, ident));
 
         switch (res)
         {
@@ -372,6 +375,13 @@ LONG parsePrefs(char *buffer, LONG size)
             line++;
             break;
         }
+
+	/*
+	 * Intentional ReadItem() bug workaround.
+	 * Ungets '\n' every time, causing an infinite loop without this adjustment.
+	 */
+        if ((csrc.CS_CurChr < csrc.CS_Length) && (buffer[csrc.CS_CurChr] == '\n'))
+	    csrc.CS_CurChr++;
     }
 
    hdtbicon = GetIconTags("HDToolBox",
