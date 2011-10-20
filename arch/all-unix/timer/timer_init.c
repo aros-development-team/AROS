@@ -25,7 +25,6 @@
 
 #include <signal.h>
 #include <sys/time.h>
-#include <stdlib.h>
 #include <string.h>
 
 #undef timeval
@@ -46,6 +45,14 @@
 #ifndef LIBC_NAME
 #define LIBC_NAME "libc.so"
 #endif
+
+/*
+ * In Linux stdlib.h #define's atoi() to something internal, causing link failure
+ * because we link our kickstart binaries against AROS libraries, and not against
+ * host OS ones.
+ * Explicit prototype here avoids this.
+ */
+int atoi(const char *nptr);
 
 /* Handle periodic timer and drive exec VBlank */
 static void TimerTick(struct TimerBase *TimerBase, struct ExecBase *SysBase)
