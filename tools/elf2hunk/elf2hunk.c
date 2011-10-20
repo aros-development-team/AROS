@@ -521,7 +521,7 @@ static int relocate
 
         else {
             if (symtab_shndx < 0) {
-                D(bug("[ELF2HUNK] got symbol with shndx 0xfff, but there's no symtab shndx table\n"));
+                bug("[ELF2HUNK] got symbol with shndx 0xfff, but there's no symtab shndx table\n");
                 set_error(EINVAL);
                 return 0;
             }
@@ -534,12 +534,12 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                D(bug("[ELF2HUNK] Undefined symbol '%s'\n", symname));
+                bug("[ELF2HUNK] SHN_UNDEF symbol '%s' unsupported\n", symname);
                       set_error(EINVAL);
                 return 0;
 
             case SHN_COMMON:
-                D(bug("[ELF2HUNK] COMMON symbol '%s'\n", symname));
+                bug("[ELF2HUNK] SHN_COMMON symbol '%s' unsupported\n", symname);
                       set_error(EINVAL);
 		      
                 return 0;
@@ -853,7 +853,8 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
         {
 	    void *reloc = load_block(file, sh[i].offset, sh[i].size);
 	    
-	    relocate(&eh, sh, i, symtab_shndx, reloc, hh);
+	    if (!relocate(&eh, sh, i, symtab_shndx, reloc, hh))
+	    	    return EXIT_FAILURE;
 
 	    free(reloc);
         }
