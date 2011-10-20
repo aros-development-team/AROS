@@ -800,9 +800,9 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		if (Damage)
 		{
 #if 1
-    	    	    BOOL res = OrRectRegion(&ScrollRect, Damage);
+    	    	    BOOL res = OrRectRegion(Damage, &ScrollRect);
 #else
-    	    	    BOOL res = OrRectRegion(&Rect, Damage);
+    	    	    BOOL res = OrRectRegion(Damage, &Rect);
 #endif
 		    if (!res)
 		    {
