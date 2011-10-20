@@ -10,6 +10,7 @@
 */
 
 #include <exec/semaphores.h>
+#include <graphics/gfx.h>
 #include <graphics/layersext.h>
 
 struct Layer_Info
@@ -55,7 +56,7 @@ struct Layer_Info
 
 #define LIFLG_SUPPORTS_OFFSCREEN_LAYERS     (1 << 8)	/* Same flag as AmigaOS hack PowerWindowsNG */
 
-/* Backfiil hook message */
+/* Backfill hook message */
 struct BackFillMessage
 {
     struct Layer     *Layer;
