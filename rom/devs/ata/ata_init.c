@@ -160,13 +160,13 @@ static AROS_UFH3(void, ATAResetHandler,
             if(unit->au_DMAPort != 0)
             {
                 dma_StopDMA(unit);
-                ATA_OUTL(0, dma_PRD, unit->au_DMAPort);
+                BUS_OUTL(0, dma_PRD, unit->au_DMAPort);
             }
         }
     }
 
     /* Disable interrupts */
-    ATA_OUT(0x2, ata_AltControl, bus->ab_Alt);
+    BUS_OUT(0x2, ata_AltControl, bus->ab_Alt);
 
     AROS_USERFUNC_EXIT
 }

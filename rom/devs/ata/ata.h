@@ -392,6 +392,7 @@ typedef enum
 
 #define BUS_OUT(val, offset, port)  bus->ab_Driver->ata_out((val), (offset), (port), bus->ab_DriverData)
 #define BUS_IN(offset, port)        bus->ab_Driver->ata_in((offset), (port), bus->ab_DriverData)
+#define BUS_OUTL(val, offset, port) bus->ab_Driver->ata_outl((val), (offset), (port), bus->ab_DriverData)
 
 #define atapi_Error         1
 #define atapi_Features      1
