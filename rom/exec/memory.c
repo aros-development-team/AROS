@@ -271,7 +271,7 @@ void stdDealloc(struct MemHeader *freeList, APTR addr, IPTR size, struct TraceLo
     UBYTE *p4;
 
     /* Make sure the MemHeader is OK */
-    if (validateHeader(freeList, MM_FREE, addr, size, tp, SysBase))
+    if (!validateHeader(freeList, MM_FREE, addr, size, tp, SysBase))
     	return;
 
     /* Align size to the requirements */
