@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Allocate memory from a specific MemHeader.
@@ -8,13 +8,15 @@
 #define MDEBUG 1
 
 #include <aros/debug.h>
-#include "exec_intern.h"
-#include "memory.h"
 #include <exec/alerts.h>
 #include <aros/libcall.h>
 #include <aros/macros.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "memory.h"
 
 /*****************************************************************************
 
@@ -80,7 +82,8 @@ AROS_LH2(APTR, Allocate,
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
+
+    struct TraceLocation tp = CURRENT_LOCATION("Allocate");
     APTR res;
 
     D(bug("[exec] Allocate(0x%p, %u)\n", freeList, byteSize));
@@ -94,7 +97,7 @@ AROS_LH2(APTR, Allocate,
     if(freeList->mh_Free<byteSize)
 	return NULL;
 
-    res = stdAlloc(freeList, byteSize, 0, SysBase);
+    res = stdAlloc(freeList, byteSize, 0, &tp, SysBase);
 
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res) {
 	MUNGE_BLOCK(res, MEMFILL_ALLOC, byteSize);

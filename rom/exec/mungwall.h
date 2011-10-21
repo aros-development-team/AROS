@@ -26,6 +26,8 @@ struct MungwallHeader
 #define MUNGWALL_BLOCK_SHIFT (MUNGWALLHEADER_SIZE + MUNGWALL_SIZE)
 #define MUNGWALL_TOTAL_SIZE  (MUNGWALLHEADER_SIZE + MUNGWALL_SIZE * 2)
 
-APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, const char *function, APTR caller, struct ExecBase *SysBase);
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase);
-void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase);
+struct TraceLocation;
+
+APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, struct TraceLocation *trace, struct ExecBase *SysBase);
+APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *trace, struct ExecBase *SysBase);
+void MungWall_Scan(APTR pool, struct TraceLocation *trace, struct ExecBase *SysBase);

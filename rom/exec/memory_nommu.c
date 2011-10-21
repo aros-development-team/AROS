@@ -15,9 +15,10 @@
 #include <string.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 
-APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
+APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     APTR res = NULL;
     struct MemHeader *mh;
@@ -38,7 +39,7 @@ APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase)
 	        || mh->mh_Free < byteSize)
 	        continue;
 
-	res = stdAlloc(mh, byteSize, flags, SysBase);
+	res = stdAlloc(mh, byteSize, flags, loc, SysBase);
 	if (res)
 	    break;
     }
@@ -164,7 +165,7 @@ APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase)
     return ret;
 }
 
-void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
+void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     struct MemHeader *mh;
     APTR blockEnd;
@@ -184,7 +185,7 @@ void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase)
 	if (mh->mh_Lower > memoryBlock || mh->mh_Upper < blockEnd)
 	    continue;
 
-	stdDealloc(mh, memoryBlock, byteSize, SysBase);
+	stdDealloc(mh, memoryBlock, byteSize, loc, SysBase);
 
 	MEM_UNLOCK;
 	ReturnVoid ("nommu_FreeMem");

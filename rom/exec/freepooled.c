@@ -57,7 +57,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    InternalFreePooled(memory, memSize, "FreePooled", __builtin_return_address(0), CALLER_FRAME, SysBase);
+    struct TraceLocation tp = CURRENT_LOCATION("FreePooled");
+
+    InternalFreePooled(memory, memSize, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* FreePooled */

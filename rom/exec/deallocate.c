@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by Allocate().
@@ -10,9 +10,11 @@
 #include <exec/execbase.h>
 #include <exec/alerts.h>
 #include <aros/libcall.h>
-#include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
+
+#include "exec_util.h"
+#include "memory.h"
 
 /*****************************************************************************
 
@@ -55,6 +57,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("Deallocate");
+
     /* If there is no memory free nothing */
     if(!byteSize || !memoryBlock)
 	return;
@@ -73,7 +77,7 @@
     }
 #endif
 
-    stdDealloc(freeList, memoryBlock, byteSize, SysBase);
+    stdDealloc(freeList, memoryBlock, byteSize, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* Deallocate */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Create a memory pool.
@@ -11,6 +11,7 @@
 #include <clib/alib_protos.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -76,6 +77,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("CreatePool");
     struct MemHeader *firstPuddle = NULL;
     ULONG align = PrivExecBase(SysBase)->PageSize - 1;
 
@@ -100,7 +102,7 @@
     D(bug("[CreatePool] Aligned puddle size: %u (0x%08X)\n", puddleSize, puddleSize));
 
     /* Allocate the first puddle. It will contain pool header. */
-    firstPuddle = AllocMemHeader(puddleSize, requirements, SysBase);
+    firstPuddle = AllocMemHeader(puddleSize, requirements, &tp, SysBase);
     D(bug("[CreatePool] Initial puddle 0x%p\n", firstPuddle));
 
     if (firstPuddle)

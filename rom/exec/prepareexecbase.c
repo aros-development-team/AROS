@@ -283,7 +283,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     
     /* Allocate memory for library base */
     totalsize = negsize + sizeof(struct IntExecBase);
-    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL) + negsize);
+    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL, NULL) + negsize);
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */

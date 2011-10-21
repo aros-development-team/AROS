@@ -67,13 +67,15 @@
     AROS_LIBFUNC_INIT
 
     ULONG ret;
+    struct TraceLocation tp = CURRENT_LOCATION("AvailMem");
 
     ret = nommu_AvailMem(attributes, SysBase);
 
     if (attributes & MEMF_CLEAR)
-	MungWall_Scan(NULL, "AvailMem", __builtin_return_address(0), CALLER_FRAME, SysBase);
+	MungWall_Scan(NULL, &tp, SysBase);
 
     return ret;
+
     AROS_LIBFUNC_EXIT
 } /* AvailMem */
 

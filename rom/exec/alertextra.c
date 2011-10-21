@@ -13,6 +13,7 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "etask.h"
+#include "memory.h"
 
 #define TRACE_DEPTH 10
 
@@ -44,7 +45,11 @@ void FormatAlertExtra(char *buffer, APTR stack, UBYTE type, APTR data, struct Ex
 
     	break;
 
-    /* TODO: add more types (memory manager is the first candidate) */
+    case AT_MEMORY:
+    	buf = Alert_AddString(buf, "\nMemory manager data:\n");
+    	buf = FormatMMContext(buf, data, SysBase);
+
+    	break;
 
     }
 

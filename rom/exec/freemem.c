@@ -60,6 +60,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("FreeMem");
+
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
 
     /* If there is no memory free nothing */
@@ -68,12 +70,12 @@
 
     RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
-    memoryBlock = MungWall_Check(memoryBlock, byteSize, "FreeMem", __builtin_return_address(0), CALLER_FRAME, SysBase);
+    memoryBlock = MungWall_Check(memoryBlock, byteSize, &tp, SysBase);
 
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
         byteSize += MUNGWALL_TOTAL_SIZE;
 
-    InternalFreeMem(memoryBlock, byteSize, SysBase);
+    InternalFreeMem(memoryBlock, byteSize, &tp, SysBase);
 
     ReturnVoid ("FreeMem");
 
