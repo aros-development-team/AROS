@@ -53,7 +53,7 @@ struct ExpansionBase
     UBYTE               eb_Private1;
     IPTR                eb_Private2[5];
     IPTR                eb_BootFlags;   /* Boot Menu flags */
-    struct List         eb_Private3;
+    struct List         BoardList;      /* BoardList - private */
     struct List         MountList;      /* BootNode entries - public */
 };
 
