@@ -1,12 +1,15 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Allocate memory in a pool.
     Lang: english
 */
-#include "exec_intern.h"
+
 #include <aros/libcall.h>
+
+#include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 
 #include "exec_debug.h"
@@ -63,12 +66,13 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("AllocPooled");
     struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
 
     D(bug("AllocPooled 0x%P memsize %u by \"%s\"\n", poolHeader, memSize, SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Allocate from the specified pool with flags stored in pool header */
-    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, "AllocPooled", __builtin_return_address(0), SysBase);
+    return InternalAllocPooled(poolHeader, memSize, pool->Requirements, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
     

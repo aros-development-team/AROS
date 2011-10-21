@@ -68,6 +68,7 @@ static const ULONG contextSizes[] =
     0,
     sizeof(struct ExceptionContext),
     sizeof(struct MungwallContext),
+    sizeof(struct MMContext)
 };
 
 void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)

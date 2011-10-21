@@ -12,12 +12,14 @@
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
 
+#include "mmextra.h"
 #include "mungwallextra.h"
 
 /* Known alert context types */
 #define AT_NONE     0x00
 #define AT_CPU      0x01
 #define AT_MUNGWALL 0x02
+#define AT_MEMORY   0x03
 
 /* Alert data. Can have different contents, depending on what actually happened */
 struct AlertContext
@@ -26,6 +28,7 @@ struct AlertContext
     {
 	struct ExceptionContext acpu;
 	struct MungwallContext	amw;
+	struct MMContext	amm;
     } u;
 };
 

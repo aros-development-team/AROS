@@ -25,7 +25,7 @@
  * 'res' is a pointer to the beginning of a raw memory block (inside which walls will be constructed)
  * 'origSize' is ORIGINAL allocation size (before adding mungwall size)
  */
-APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, const char *function, APTR caller, struct ExecBase *SysBase)
+APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     if ((PrivExecBase(SysBase)->IntFlags & EXECF_MungWall) && res)
     {
@@ -47,9 +47,9 @@ APTR MungWall_Build(APTR res, APTR pool, IPTR origSize, ULONG requirements, cons
 	header->mwh_fault     = FALSE;
 	header->mwh_allocsize = origSize;
 	header->mwh_pool      = pool;
-	header->mwh_AllocFunc = function;
+	header->mwh_AllocFunc = loc->function;
 	header->mwh_Owner     = FindTask(NULL);
-	header->mwh_Caller    = caller;
+	header->mwh_Caller    = loc->caller;
 
 	/* Skip to the start of data space */
         res += MUNGWALL_BLOCK_SHIFT;
@@ -124,7 +124,7 @@ static APTR CheckWall(UBYTE *ptr, UBYTE fill, IPTR size, APTR *endptr)
     return start;
 }
 
-static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
+static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     struct MungwallContext mwdata;
 
@@ -155,8 +155,8 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
     {
     	/* Throw an alert with context */
     	mwdata.hdr      = header;
-	mwdata.freeFunc = function;
-    	Exec_ExtAlert(AN_MemoryInsane, caller, stack, AT_MUNGWALL, &mwdata, SysBase);
+	mwdata.freeFunc = loc->function;
+    	Exec_ExtAlert(AN_MemoryInsane, loc->caller, loc->stack, AT_MUNGWALL, &mwdata, SysBase);
 
     	/*
     	 * Our entry can be freed by another process while we are sitting in Alert().
@@ -178,7 +178,7 @@ static void CheckHeader(struct MungwallHeader *header, IPTR byteSize, const char
  *
  * Returns address of the raw block (what really needs to be deallocated)
  */
-APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
+APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -205,7 +205,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, const char *function, APTR 
 	/* Reset fault state in order to see who is freeing the bad entry */
 	header->mwh_fault = FALSE;
 
-	CheckHeader(header, byteSize, function, caller, stack, SysBase);
+	CheckHeader(header, byteSize, loc, SysBase);
 
 	/* Fill block with weird stuff to esploit bugs in applications
 	 *
@@ -234,7 +234,7 @@ APTR MungWall_Check(APTR memoryBlock, IPTR byteSize, const char *function, APTR 
  * Scan the whole allocations list, optionally removing entries
  * belonging to a particular pool.
  */
-void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase)
+void MungWall_Scan(APTR pool, struct TraceLocation *loc, struct ExecBase *SysBase)
 {
     if (PrivExecBase(SysBase)->IntFlags & EXECF_MungWall)
     {
@@ -262,7 +262,7 @@ void MungWall_Scan(APTR pool, const char *function, APTR caller, APTR stack, str
 	    	allocnode->mwh_fault = FALSE;
 	    }
 
-	    CheckHeader(allocnode, 0, function, caller, stack, SysBase);
+	    CheckHeader(allocnode, 0, loc, SysBase);
 	}
 
 	Permit();

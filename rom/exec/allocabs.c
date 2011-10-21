@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -67,6 +68,7 @@
 
     IPTR origSize = byteSize;
     APTR ret = NULL;
+    struct TraceLocation tp = CURRENT_LOCATION("AllocAbs");
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
@@ -90,7 +92,7 @@
      * We also specify MEMF_CLEAR because we do not want to destroy original
      * memory contents.
      */
-    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR, "AllocAbs", __builtin_return_address(0), SysBase);
+    return MungWall_Build(ret, NULL, origSize + location - ret, MEMF_CLEAR, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AllocAbs */

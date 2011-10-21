@@ -57,6 +57,7 @@
     /* It is legal to DeletePool(NULL) */
     if (poolHeader != NULL)
     {
+    	struct TraceLocation tp = CURRENT_LOCATION("DeletePool");
 	struct Pool *pool = poolHeader + MEMHEADER_TOTAL;
 	struct Node *p, *p2; /* Avoid casts */
 
@@ -64,12 +65,9 @@
 
 	/*
 	 * We are going to deallocate the whole pool.
-	 * Scan mungwall's allocations list and remove all chunks
-	 * belonging to the pool.
-	 * For mungwall we provide also called function name, return address and caller's stack frame.
-	 * This will be displayed in alerts.
+	 * Scan mungwall's allocations list and remove all chunks belonging to the pool.
 	 */
-	MungWall_Scan(pool, "DeletePool", __builtin_return_address(0), CALLER_FRAME, SysBase);
+	MungWall_Scan(pool, &tp, SysBase);
 
 	/*
 	 * Free the list of puddles.
@@ -85,14 +83,14 @@
     	    if (p != poolHeader)
 	    {
 		D(bug(" freeing"));
-    	    	FreeMemHeader(p, SysBase);
+    	    	FreeMemHeader(p, &tp, SysBase);
 	    }
 	    D(bug("\n"));
 	}
 
 	/* Free the last puddle, containing the pool header */
 	D(bug("[DeletePool] Freeing initial puddle 0x%p\n", poolHeader));
-	FreeMemHeader(poolHeader, SysBase);
+	FreeMemHeader(poolHeader, &tp, SysBase);
     }
 
     AROS_LIBFUNC_EXIT

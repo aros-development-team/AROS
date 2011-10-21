@@ -59,23 +59,25 @@ struct checkMemHandlersState
     struct MemHandlerData  cmhs_Data;
 };
 
+struct TraceLocation;
+
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase);
-APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct ExecBase *SysBase);
-void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
+APTR stdAlloc(struct MemHeader *mh, IPTR byteSize, ULONG requirements, struct TraceLocation *loc, struct ExecBase *SysBase);
+void stdDealloc(struct MemHeader *freeList, APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 
 APTR InternalAllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
-void InternalFreeMem(APTR location, IPTR byteSize, struct ExecBase *SysBase);
-APTR AllocMemHeader(IPTR size, ULONG flags, struct ExecBase *SysBase);
-void FreeMemHeader(APTR addr, struct ExecBase *SysBase);
+void InternalFreeMem(APTR location, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
+APTR AllocMemHeader(IPTR size, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase);
+void FreeMemHeader(APTR addr, struct TraceLocation *loc, struct ExecBase *SysBase);
 
-APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, const char *function, APTR caller, struct ExecBase *SysBase);
-void InternalFreePooled(APTR memory, IPTR memSize, const char *function, APTR caller, APTR stack, struct ExecBase *SysBase);
+APTR InternalAllocPooled(APTR poolHeader, IPTR memSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase);
+void InternalFreePooled(APTR memory, IPTR memSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 
 ULONG checkMemHandlers(struct checkMemHandlersState *cmhs, struct ExecBase *SysBase);
 
-APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct ExecBase *SysBase);
+APTR nommu_AllocMem(IPTR byteSize, ULONG flags, struct TraceLocation *loc, struct ExecBase *SysBase);
 APTR nommu_AllocAbs(APTR location, IPTR byteSize, struct ExecBase *SysBase);
-void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct ExecBase *SysBase);
+void nommu_FreeMem(APTR memoryBlock, IPTR byteSize, struct TraceLocation *loc, struct ExecBase *SysBase);
 IPTR nommu_AvailMem(ULONG attributes, struct ExecBase *SysBase);
 
 #define BLOCK_TOTAL \

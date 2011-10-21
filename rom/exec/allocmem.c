@@ -5,6 +5,7 @@
     Desc: Allocate some memory
     Lang: english
 */
+
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
@@ -30,6 +31,7 @@
 #endif
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "memory.h"
 #include "mungwall.h"
 
@@ -79,6 +81,7 @@
     APTR res = NULL;
     struct checkMemHandlersState cmhs;
     ULONG origSize         = byteSize;
+    struct TraceLocation loc = CURRENT_LOCATION("AllocMem");
 
     D(if (SysBase->DebugAROSBase))
     D(bug("Call AllocMem (%d, %08x)\n", byteSize, requirements));
@@ -108,14 +111,14 @@
 
     do
     {
-	res = nommu_AllocMem(byteSize, requirements, SysBase);
+	res = nommu_AllocMem(byteSize, requirements, &loc, SysBase);
     } while (res == NULL && checkMemHandlers(&cmhs, SysBase) == MEM_TRY_AGAIN);
 
 #if ENABLE_RT
     RT_Add (RTT_MEMORY, res, origSize);
 #endif  
 
-    res = MungWall_Build(res, NULL, origSize, requirements, "AllocMem", __builtin_return_address(0), SysBase);
+    res = MungWall_Build(res, NULL, origSize, requirements, &loc, SysBase);
 
     /* Set DOS error if called from a process */
     if (res == NULL)

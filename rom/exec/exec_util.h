@@ -66,6 +66,15 @@ struct List;
 struct IntETask;
 #endif
 
+struct TraceLocation
+{
+    const char *function;
+    APTR	caller;
+    APTR	stack;
+};
+
+#define CURRENT_LOCATION(name) {name, __builtin_return_address(0), CALLER_FRAME}
+
 /*
     Prototypes
 */
