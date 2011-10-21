@@ -1,1 +1,1 @@
-const char con_End = 1;
+void con_End(void) { };
