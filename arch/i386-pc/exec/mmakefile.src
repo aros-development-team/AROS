@@ -5,7 +5,7 @@ CFILES		:= \
 	exec_init enable switch preparecontext \
 	newaddtask cause dispatch debug supervisor reschedule permit \
 	wait remtask settaskpri signal setexcept superstate userstate \
-	core execfunctions cachecleare memoryrawio
+	core cachecleare memoryrawio
 
 AFILES		:= coldreboot corelow
 
