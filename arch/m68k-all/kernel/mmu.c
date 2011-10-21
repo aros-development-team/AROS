@@ -30,6 +30,13 @@ UBYTE *zeropagedescriptor;
 
 static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);
 
+
+static void map_pagetable(struct KernelBase *kb, void *addr, ULONG size)
+{
+	/* 68040+ MMU tables should be serialized */
+	map_region2(kb, addr, NULL, size, FALSE, FALSE, FALSE, CM_SERIALIZED);
+}
+
 /* Allocate MMU descriptor page, it needs to be (1 << bits) * sizeof(ULONG) aligned */
 static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, UBYTE level)
 {
@@ -45,22 +52,23 @@ static ULONG alloc_descriptor(struct KernelBase *kb, UBYTE mmutype, UBYTE bits, 
 	}
 	while (pd->page_free < size) {
 		/* allocate in aligned blocks of PAGE_SIZE */
-		UBYTE *mem = AllocMem(2 * ps, MEMF_PUBLIC);
+		UBYTE *mem, *newmem, *pagemem;
+
+		mem = AllocMem(2 * ps, MEMF_PUBLIC);
 		if (!mem)
 			return 0;
 		Forbid();
 		FreeMem(mem, 2 * ps);
-		mem = AllocAbs(ps, (APTR)((((ULONG)mem) + ps - 1) & ~(ps - 1)));
+		newmem = (UBYTE*)((((ULONG)mem) + ps - 1) & ~(ps - 1));
+		pagemem = AllocAbs(ps, newmem);
 		Permit();
-		if (!mem)
+		if (!pagemem)
 			return 0;
-		pd->page_ptr = mem;
+		pd->page_ptr = pagemem;
 		pd->page_free = ps;
-		// bug("New chunk %p-%p\n", mem, mem + ps - 1);
-		if (mmutype >= MMU040) {
-			/* 68040+ MMU tables should be serialized */
-			map_region2(kb, mem, NULL, ps, FALSE, FALSE, FALSE, CM_SERIALIZED);
-		}
+		// bug("New chunk %p-%p\n", pagemem, pagemem + ps - 1);
+		if (level > 0 && mmutype >= MMU040)
+			map_pagetable(kb, pagemem, ps);
 	}
 	desc = (ULONG*)pd->page_ptr;
 	for (i = 0; i < (1 << bits); i++)
@@ -87,6 +95,8 @@ BOOL init_mmu(struct KernelBase *kb)
 		kb->kb_PlatformData->mmu_type = 0;
 		return FALSE;
 	}
+	if (mmutype >= MMU040)
+		map_pagetable(kb, kb->kb_PlatformData->MMU_Level_A, 1 << PAGE_SIZE);
 	return TRUE;
 }
 
