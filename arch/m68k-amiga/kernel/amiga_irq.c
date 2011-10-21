@@ -132,22 +132,7 @@ static BOOL LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 		regs->pc += 2;	
 
 	     	/* AROS syscall */
-		switch (regs->d[0]) {
-		case SC_SCHEDULE:
-			if (!core_Schedule())
-				break;
-			/* FALLTHROUGH */
-		case SC_SWITCH:
-			cpu_Switch(regs);
-			/* FALLTHROUGH */
-		case SC_DISPATCH:
-			cpu_Dispatch(regs);
-			break;
-		case SC_CAUSE:
-			core_ExitInterrupt(regs);
-			break;
-		}
-
+	     	core_SysCall(regs->d[0], regs);
 		return TRUE;
 	}
 
