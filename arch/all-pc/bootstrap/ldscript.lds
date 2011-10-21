@@ -2,18 +2,18 @@ FORCE_COMMON_ALLOCATION
 
 SECTIONS
 {
-    . = 0x100000;
+    . = 0x00100000;
 
     .tables :
     {
-    *(.aros.tables)
+	*(.aros.tables)
     }
     
     _prot_lo = . ;
     
     .bsstables :
     {
-    *(.bss.aros.tables)
+	*(.bss.aros.tables)
     }
     
     _prot_hi = . ;
@@ -75,3 +75,4 @@ SECTIONS
 
     _end = . ;
 }
+

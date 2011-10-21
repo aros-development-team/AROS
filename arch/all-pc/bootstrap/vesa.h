@@ -12,6 +12,9 @@
 #include <aros/multiboot.h>
 #include <exec/types.h>
 
+/* Our trampoline code is linked at this address */
+#define VESA_START (void *)0x1000
+
 #ifndef _IMPLEMENTATION_
 
 asm (".set getControllerInfo,0x1000");
@@ -31,8 +34,6 @@ extern struct vbe_controller *controllerinfo;
 extern struct vbe_mode       *modeinfo;
 
 extern void *_binary_vesa_size, *_binary_vesa_start;
-
-unsigned char setupVesa(char *str, long *modePtr);
 
 #else
 
