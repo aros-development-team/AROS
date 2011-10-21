@@ -1,3 +1,11 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: High-level scheduler calling code
+    Lang: English
+*/
+
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
@@ -5,6 +13,7 @@
 #include <kernel_base.h>
 #include <kernel_intr.h>
 #include <kernel_scheduler.h>
+#include <kernel_syscall.h>
 
 /*
  * Leave the interrupt. This function recieves the interrupt register frame
@@ -39,5 +48,33 @@ void core_ExitInterrupt(regs_t *regs)
 		cpu_Dispatch(regs);
             }
 	}
+    }
+}
+
+/*
+ * This routine dispatches scheduler's SysCall, when some task wants to give up
+ * the CPU time explicitly.
+ * Similar to above, it should be called only when you're returning to user mode.
+ */
+void core_SysCall(int sc, regs_t *regs)
+{
+    switch (sc)
+    {
+    case SC_CAUSE:
+	core_ExitInterrupt(regs);
+        break;
+
+    case SC_SCHEDULE:
+        if (!core_Schedule())
+            break;
+        /* Fallthrough */
+
+    case SC_SWITCH:
+        cpu_Switch(regs);
+        /* Fallthrough */
+
+    case SC_DISPATCH:
+        cpu_Dispatch(regs);
+        break;
     }
 }

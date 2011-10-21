@@ -331,28 +331,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	    /* Disable interrupts for a while */
 	    __asm__ __volatile__("cli; cld;");
 
-            switch (sc)
-            {
-            case SC_CAUSE:
-	    	core_ExitInterrupt(regs);
-            	break;
-
-            case SC_SCHEDULE:
-            	DSYSCALL(bug("[Kernel] Schedule...\n"));
-            	if (!core_Schedule())
-                    break;
-            	/* Fallthrough */
-
-            case SC_SWITCH:
-            	DSYSCALL(bug("[Kernel] Switch...\n"));
-            	cpu_Switch(regs);
-            	/* Fallthrough */
-
-            case SC_DISPATCH:
-            	DSYSCALL(bug("[Kernel] Dispatch...\n"));
-                cpu_Dispatch(regs);
-            	break;
-            }
+	    core_SysCall(sc, regs);
         }
 
 	DSYSCALL(bug("[Kernel] Returning from syscall...\n"));

@@ -102,55 +102,6 @@ static void core_TrapHandler(int sig, regs_t *regs)
     AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
 }
 
-/*
- * We do not have enough user-defined signals to map
- * them to four required syscalls (CAUSE, SCHEDULE,
- * SWITCH, DISPATCH). We get around this by assigning
- * CAUSE to SIGUSR2 and others to SIGUSR1.
- *
- * What action is to be taken upon SIGUSR1 can be
- * figured out by looking at caller task's state.
- * exec.library calls KrnDispatch() only after task
- * has been actually disposed, with state set to TS_REMOVED.
- * Similarly, KrnSwitch() is called only in Wait(), after
- * setting state to TS_WAIT. In other cases it's KrnSchedule().
- */
-static void core_SysCall(int sig, regs_t *regs)
-{
-    struct Task *task = SysBase->ThisTask;
-
-    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
-
-    DSC(bug("[KRN] core_SysCall entered\n"));
-
-    krnRunIRQHandlers(sig);
-
-    switch(task->tc_State)
-    {
-    /* A running task needs to be put into TaskReady list first. It's SC_SCHEDULE. */
-    case TS_RUN:
-	if (!core_Schedule())
-	    break;
-
-    /* If the task is already in some list with appropriate state, it's SC_SWITCH */
-    case TS_READY:
-    case TS_WAIT:
-	cpu_Switch(regs);
-
-    /* If the task is removed, it's simply SC_DISPATCH */
-    case TS_REMOVED:
-	cpu_Dispatch(regs);
-	break;
-
-    /* Special state is used for returning from exception */
-    case TS_EXCEPT:
-	cpu_DispatchContext(task, regs);
-	break;
-    }
-
-    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
-}
-
 static void core_IRQ(int sig, regs_t *sc)
 {
     AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
