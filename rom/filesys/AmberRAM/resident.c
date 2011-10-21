@@ -46,6 +46,7 @@ MA 02111-1307, USA.
 #endif
 
 extern LONG AmberMain(void);
+extern void Ram_ROMTag_end(void);
 
 static AROS_UFP3 (APTR, Init,
 		  AROS_UFPA(struct Library *, lh, D0),
@@ -63,7 +64,7 @@ const struct Resident rom_tag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&rom_tag,
-   (APTR)(&rom_tag + 1),
+   (APTR)&Ram_ROMTag_end,
    RTF_AFTERDOS,
    VERSION,
    NT_PROCESS,

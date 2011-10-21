@@ -34,17 +34,12 @@ static AROS_UFP3(ULONG, Alerthook_init,
     AROS_UFPA(BPTR,		    dummy2,  A0),
     AROS_UFPA(struct ExecBase *,    SysBase, A6)
 );
-static const char Alerthook_end;
 
 STRPTR getGuruString(ULONG, STRPTR);
 
-int Alerthook_entry(void)
-{
-    /* If the hook was executed by accident return error code. */
-    return -1;
-}
+extern void Alerthook_end(void);
 
-const struct Resident Alerthook_resident __attribute__((section(".text"))) =
+const struct Resident Alerthook_resident =
 {
     RTC_MATCHWORD,
     (struct Resident *)&Alerthook_resident,
@@ -603,5 +598,3 @@ STRPTR getGuruString(ULONG alertnum, STRPTR buf)
 
     return buf;
 }
-
-static const char Alerthook_end = 1;

@@ -19,7 +19,7 @@ extern LONG CONMain(void);
 static const TEXT dev_name_con[] = "CON";
 static const TEXT dev_name_raw[] = "RAW";
 
-extern const char con_End;
+extern void con_End(void);
 static const TEXT version_string[];
 
 static AROS_UFP3 (APTR, con_Init,
@@ -31,7 +31,7 @@ const struct Resident con_romtag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&con_romtag,
-   (APTR)&con_End + 1,
+   (APTR)&con_End,
    RTF_AFTERDOS,
    VERSION,
    NT_PROCESS,

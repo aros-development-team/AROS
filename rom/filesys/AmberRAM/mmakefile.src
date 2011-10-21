@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-FILES := resident handler commands filesystem notification support
+FILES := resident handler commands filesystem notification support resident_end
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 

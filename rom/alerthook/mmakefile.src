@@ -5,6 +5,6 @@ include $(TOP)/config/make.cfg
 
 %build_module_simple mmake=kernel-alerthook \
   modname=alert modtype=hook \
-  files=alerthook compiler=target uselibs="rom"
+  files="alerthook resident_end" compiler=target uselibs="rom"
 
 %common
