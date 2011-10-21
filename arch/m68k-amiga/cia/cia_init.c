@@ -80,11 +80,13 @@ static AROS_UFP3 (APTR, Cia_Init,
 		  AROS_UFPA(BPTR, segList, A0),
 		  AROS_UFPA(struct ExecBase *, sysBase, A6));
 
+extern void Cia_End(void);
+
 struct Resident const Cia_ROMTag =
 {
     RTC_MATCHWORD,
     &Cia_ROMTag,
-    (APTR)(&Cia_ROMTag + 1),
+    (APTR)&Cia_End,
     RESIDENT_FLAGS,
     RESIDENT_VERSION,
     NT_RESOURCE,
