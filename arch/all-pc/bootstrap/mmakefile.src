@@ -1,0 +1,36 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- boot-pc-i386: kernel-bootstrap-pc-gz
+
+ifeq ($(CPU),x86_64)
+    ARCH_DEFS := -DMULTIBOOT_64BIT
+    ARCH_LIBS := -L$(GENDIR)/lib32 -nostdlib 
+else
+    ARCH_LIBS := -L$(GENDIR)/lib
+endif
+
+FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup
+USER_CFLAGS  := -m32 -isystem $(SRCDIR)/arch/all-native/bootconsole/include -isystem $(SRCDIR)/bootstrap/include \
+		$(CDEFS) -DAROS_CPU_$(CPU)
+USER_LDFLAGS := -m32 -Wl,-N,-e,kernel_bootstrap -Wl,-Map,$(GENDIR)/boot/bootstrap-pc.map \
+		-Wl,-T,$(SRCDIR)/$(CURDIR)/ldscript.lds -static-libgcc $(ARCH_LIBS)
+USER_OBJS    := $(OBJDIR)/vesa.bin.o
+EXEDIR       := $(BINDIR)/boot
+EXENAME      := bootstrap-pc
+
+%build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
+	files=$(FILES) targetdir=$(EXEDIR) \
+	uselibs="bootstrap bootconsole rom" usestartup=no linker=kernel
+
+%rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
+	start=0x1000 ldflags="-m elf_i386"
+
+%compress_file mmake=kernel-bootstrap-pc file=$(EXEDIR)/$(EXENAME)
+
+# Add $(GENDIR)/boot to file's dependencies	
+$(EXEDIR)/$(EXENAME) : $(GENDIR)/boot
+
+GLOB_MKDIRS += $(GENDIR)/boot
+
+%common
