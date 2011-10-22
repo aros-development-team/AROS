@@ -263,7 +263,7 @@ D(bug("[%s]: e1000func_TX_Int: packet %d [type = %d] queued for transmission.\n"
                 buffer_info->length = packet_size;
 
                 tx_desc = E1000_TX_DESC(tx_ring, i);
-                tx_desc->buffer_addr = (UQUAD)buffer_info->dma;
+                tx_desc->buffer_addr = (IPTR)buffer_info->dma;
                 tx_desc->lower.data = AROS_WORD2LE(txd_lower | buffer_info->length);
                 tx_desc->upper.data = AROS_WORD2LE(txd_upper);
                 tx_desc->lower.data |= AROS_WORD2LE(unit->txd_cmd);
