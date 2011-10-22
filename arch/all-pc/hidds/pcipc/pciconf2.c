@@ -82,6 +82,8 @@ static BOOL ProbeMech1(struct pci_staticdata *psd)
             return TRUE;
         }
     }
+
+    return FALSE;
 }
 
 void ProbePCI(struct pci_staticdata *psd)
