@@ -320,7 +320,7 @@ void irqSetup()
 int sys_Cause(struct pt_regs);
 int sys_Supervisor(struct pt_regs);
 int sys_None(struct pt_regs regs) { return 0; }
-void core_Reboot(void);
+int core_Reboot(struct pt_regs regs);
 
 int (*sys_call_table[])(struct pt_regs) __text =
 {
