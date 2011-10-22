@@ -26,11 +26,13 @@ static const TEXT name_string[] = NAME;
 static const TEXT version_string[] =
    NAME " " STR(VERSION) "." STR(REVISION) "\n";
 
+extern void mmu_end(void);
+
 const struct Resident rom_tag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&rom_tag,
-   (APTR)(&rom_tag + 1),
+   (APTR)&mmu_end,
    RTF_COLDSTART,
    VERSION,
    NT_UNKNOWN,
@@ -53,6 +55,12 @@ extern BYTE _bss_end;
 
 static void mmuprotect(void *KernelBase, ULONG addr, ULONG size)
 {
+	KrnSetProtection((void*)addr, size, MAP_Readable | MAP_Executable);
+}
+static void mmuprotectremap(void *KernelBase, ULONG addr, ULONG size)
+{
+	/* Set invalid first so that possible old mapping will be overridden */
+	KrnSetProtection((void*)addr, size, 0);
 	KrnSetProtection((void*)addr, size, MAP_Readable | MAP_Executable);
 }
 static void mmuram(void *KernelBase, ULONG addr, ULONG size)
@@ -96,6 +104,39 @@ static void swapvbr(APTR vbr)
 	"0:\n"
 	: : "m" (vbr) : "d0", "d1", "a5", "a6");
 }
+
+/* MMU protect ArosBootStrap loaded ROM modules */
+static void mmuprotectextrom(void *KernelBase)
+{
+    IPTR *list = SysBase->ResModules;
+    if (list)
+    {
+	while (*list)
+	{
+	    struct Resident *res;
+	    if (*list & RESLIST_NEXT)
+	    {
+	    	list = (IPTR *)(*list & ~RESLIST_NEXT); 
+            	continue;
+            }
+	    res = (struct Resident *)*list++;
+	    if (res->rt_Flags & (1 << 5)) {
+	    	ULONG start, end;
+	    	LONG size;
+		start = ((ULONG)res) & ~(PAGE_SIZE - 1);
+		if (!((start >= 0x00e00000 && start < 0x00e7ffff) || ((start >= 0x00f80000 && start < 0x00ffffff)))) {
+		    end = (((ULONG)res->rt_EndSkip) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+		    size = end - start;
+		    if (size > 0) {
+		    	//bug("start=%p end=%p size=%d %s", res, res->rt_EndSkip, (UBYTE*)res->rt_EndSkip - (UBYTE*)res, res->rt_IdString);
+			mmuprotectremap(KernelBase, start, size);
+		    }
+		}
+	    }
+	}
+    }
+}
+
 
 #define MAX_HEADERS 100
 
@@ -164,7 +205,7 @@ static AROS_UFH3 (APTR, Init,
 	D(bug("VBR %p\n", pages));
 	if (ZeroPageInvalid || ZeroPageProtect) {
 		/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
-	 	* want MMU special zero page handling */
+	 	 * want MMU special zero page handling */
 		for (i = 0; i < 64; i++) {
 			if (i != 1)
 				zero[i] = 0xdeadf00d;
@@ -218,8 +259,10 @@ static AROS_UFH3 (APTR, Init,
 		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_Writable);
 	}
 	/* Protect Supervisor stack if MMU debugging mode */
-	if (ZeroPageInvalid || ZeroPageProtect)
+	if (ZeroPageInvalid || ZeroPageProtect) {
+		KrnSetProtection(SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, 0);
 		KrnSetProtection(SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable | MAP_Supervisor); 
+	}
 #if 0
 	/* Remap BSS to Fast RAM, faster performance than Chip RAM */
 	KrnMapGlobal((void*)(0 + PAGE_SIZE), pages + 2 * PAGE_SIZE, PAGE_SIZE, MAP_Readable | MAP_Writable);
@@ -241,8 +284,9 @@ static AROS_UFH3 (APTR, Init,
 	/* ROM areas */
 	mmuprotect(KernelBase, 0x00e00000, 0x00080000);
 	mmuprotect(KernelBase, 0x00f80000, 0x00080000);
-	mmuprotect(KernelBase, (ULONG)&_rom_start & PAGE_MASK, (((ULONG)(&_rom_end - &_rom_start)) + PAGE_SIZE - 1) & PAGE_MASK);
-	mmuprotect(KernelBase, (ULONG)&_ext_start & PAGE_MASK, (((ULONG)(&_ext_end - &_ext_start)) + PAGE_SIZE - 1) & PAGE_MASK);
+
+	mmuprotectextrom(KernelBase);
+
 	/* Custom chipset & Clock & Mainboard IO */
 	addr = (ULONG)SysBase->MaxExtMem;
 	if (addr < 0x00d80000)
@@ -262,3 +306,5 @@ static AROS_UFH3 (APTR, Init,
 
 	return NULL;
 }
+
+void mmu_end(void) { };
