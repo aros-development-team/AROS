@@ -4,7 +4,8 @@ include $(TOP)/config/make.cfg
 ASMFILES := cli sti issuper
 
 MAINDIR	      := rom/kernel
-USER_AFLAGS   := -I $(SRCDIR)/$(MAINDIR) -I$(GENINCDIR)
+USER_AFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+               -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \

@@ -6,8 +6,8 @@ FILES    := apic apic_acpi apic_ia32 xtpic cpu_traps kernel_memory kernel_timer 
 ASMFILES := cli sti
 
 MAINDIR	      := rom/kernel
-USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/$(CURDIR) \
-		 -I$(SRCDIR)/$(MAINDIR) -isystem $(SRCDIR)/arch/all-native/bootconsole/include
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+		  -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 #MM- kernel-kernel-pc : linklibs-bootconsole kernel-kernel-native
 #MM- kernel-kernel-pc-kobj : linklibs-bootconsole kernel-kernel-native

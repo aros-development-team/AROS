@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   files="cachecleare" arch=linux-arm

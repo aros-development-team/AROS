@@ -16,8 +16,8 @@ CFILES          := \
 
 #MM kernel-exec-chrp-ppc : kernel-kernel-ppc-includes kernel-exec-includes 
 
-USER_CFLAGS     := -I$(SRCDIR)/rom/exec -Os
-USER_AFLAGS     := -I$(SRCDIR)/rom/exec -I$(GENINCDIR) -Os
+USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -Os
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=chrp-ppc \
   files=$(CFILES) modulename=exec

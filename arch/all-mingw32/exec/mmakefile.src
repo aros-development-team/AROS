@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 CFILES := cachecleare coldreboot platform_init \
           shutdowna
 
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/all-mingw32/kernel
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
 	mainmmake=kernel-exec maindir=rom/exec arch=mingw32 \

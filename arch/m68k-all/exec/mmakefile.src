@@ -12,7 +12,7 @@ AFILES=newstackswap stackswap \
        setsr cachecontrol_ \
        obtainquickvector
 
-USER_CFLAGS := -I$(SRCDIR)/rom/exec
+USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
 
 %build_archspecific \

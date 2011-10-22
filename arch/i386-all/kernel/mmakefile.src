@@ -3,14 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := cpu_init createcontext
 
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
-	       -I$(SRCDIR)/arch/all-$(ARCH)/kernel
-ifneq ($(FAMILY),)
-USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
-endif
-USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel \
-	       -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) \
-	       -D__AROS_EXEC_LIBRARY__
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+	         -I$(GENINCDIR) -D__AROS_EXEC_LIBRARY__
 
 %build_archspecific \
  mainmmake=kernel-kernel maindir=rom/kernel \

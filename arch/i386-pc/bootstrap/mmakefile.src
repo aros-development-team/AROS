@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-bootstrap-pc-i386: linklibs-bootconsole linklibs-bootstrap
 
-USER_INCLUDES := -isystem $(SRCDIR)/bootstrap/include
+USER_INCLUDES := -isystem $(SRCDIR)/bootstrap/include \
+                 -I$(GENDIR)/include
 
 %build_archspecific \
 	mainmmake=kernel-bootstrap-pc maindir=arch/all-pc/bootstrap arch=i386 \

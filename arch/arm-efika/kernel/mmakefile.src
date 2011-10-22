@@ -16,7 +16,8 @@ $(BINDIR)/boot/aros-efikamx: $(KOBJSDIR)/kernel_resource.o
 #MM kernel-kernel-efika-arm : includes
 #MM kernel-kernel-efika-arm-kobj : includes
 
-USER_INCLUDES := -I$(SRCDIR)/rom/kernel -I$(GENINCDIR) -I$(BINDIR)/Development/include -I$(SRCDIR)/rom/exec
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+                 -I$(GENINCDIR) -I$(BINDIR)/Development/include
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=rom/kernel arch=efika-arm \

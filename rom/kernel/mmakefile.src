@@ -4,15 +4,9 @@ include $(TOP)/config/make.cfg
 # Allow to override include files by placing them in arch-specific directories
 # Note that kernel_#?.h files must be included using #include <name>, not #include "name"
 # for this to work.
-USER_CFLAGS := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel \
-	       -I$(SRCDIR)/arch/all-$(ARCH)/kernel
-ifneq ($(FAMILY),)
-USER_CFLAGS += -I$(SRCDIR)/arch/all-$(FAMILY)/kernel
-endif
-USER_CFLAGS += -I$(SRCDIR)/arch/$(CPU)-all/kernel -I$(SRCDIR)/rom/kernel \
-	       -I$(SRCDIR)/rom/exec \
-	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
-	       -D__AROS_EXEC_LIBRARY__
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	        -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
