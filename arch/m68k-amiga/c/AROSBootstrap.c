@@ -597,6 +597,31 @@ static void RTGPatch(struct Resident *r, BPTR seg)
     	WriteF("Library path patched\n");
 }
 
+static BOOL PatchResidents(BPTR seg)
+{
+    while(seg) {
+	ULONG *ptr = BADDR(seg);
+	UWORD *res;
+	UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - offsetof(struct Resident, rt_Init) - sizeof(APTR));
+    
+	res = (UWORD*)(ptr + 1);
+	while (res < end) {
+	    if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
+		struct Resident *r = (struct Resident*)res;
+		r->rt_Flags |= 1 << 5;
+		if (r->rt_EndSkip <= (APTR)res) {
+		    WriteF("Invalid rt_EndSkip at %X8\n", r);
+		    return FALSE;
+		}
+		res = (UWORD*)r->rt_EndSkip - 1;
+	    }
+	    res++;
+	}
+	seg = (BPTR)ptr[0];
+    }
+    return TRUE;
+}
+
 #define RESLIST_CHUNK   100
 #define LRF_NOPATCH      (1 << 0)        /* If set, don't patch the struct Resident */
 
@@ -604,10 +629,10 @@ static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG
 {
     ULONG *ptr = BADDR(seg);
     UWORD *res;
-    LONG len = ptr[-1] - sizeof(BPTR);
+    UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - offsetof(struct Resident, rt_Init) - sizeof(APTR));
     
     res = (UWORD*)(ptr + 1);
-    while (len >= offsetof(struct Resident, rt_Init) + sizeof(APTR)) {
+    while (res < end) {
         if (*res == RTC_MATCHWORD && ((ULONG*)(res + 1))[0] == (ULONG)res) {
             struct Resident *r = (struct Resident*)res;
             if (!(flags & LRF_NOPATCH)) {
@@ -632,9 +657,10 @@ static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG
             D(WriteF("Resident structure found @%X8\n", r));
             *(reslist++) = r;
             (*resleft)--;
+
+            res = (UWORD*)r->rt_EndSkip - 1;
         }
         res++;
-        len -= 2;
     }
 
     return reslist;
@@ -1095,6 +1121,7 @@ __startup static AROS_ENTRY(int, startup,
                 ROM_Loaded = TRUE;
                 struct Resident **resnext, *reshead = NULL;
 
+		PatchResidents(ROMSegList);
                 resnext = &reshead;
                 /* Only scan the 2nd section of the ROM segment */
                 resnext = LoadResident(*((BPTR *)BADDR(ROMSegList)), resnext, &resleft, LRF_NOPATCH);
