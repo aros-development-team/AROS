@@ -556,11 +556,9 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base)
          case PCI_BUS:
             DeletePCIUnit(unit, base);
             break;
-#ifndef __AROS__
          case PCCARD_BUS:
             DeletePCCardUnit(unit, base);
             break;
-#endif
          }
       }
    }
@@ -588,21 +586,15 @@ struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
    ULONG pci_limit;
-#ifndef __AROS__
    ULONG pccard_limit;
-#endif
 
    pci_limit = GetPCICount(base);
-#ifndef __AROS__
    pccard_limit = pci_limit + GetPCCardCount(base);
-#endif
 
    if(unit_num < pci_limit)
       unit = GetPCIUnit(unit_num, base);
-#ifndef __AROS__
    else if(unit_num < pccard_limit)
       unit = GetPCCardUnit(unit_num - pci_limit, base);
-#endif
    else
       unit = NULL;
 

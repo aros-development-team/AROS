@@ -23,6 +23,7 @@ MA 02111-1307, USA.
 #include <exec/types.h>
 #include <utility/tagitem.h>
 #include <libraries/pccard.h>
+#include <resources/card.h>
 
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -775,9 +776,11 @@ static VOID CardInsertedInt(REG(a1, struct BusContext *context),
    struct DevUnit *unit;
 
    unit = context->unit;
-   base = unit->device;
-   context->have_card = TRUE;
-   Signal(unit->task, unit->card_inserted_signal);
+   if (unit != NULL) {
+      base = unit->device;
+      context->have_card = TRUE;
+      Signal(unit->task, unit->card_inserted_signal);
+   }
 
    return;
 }
