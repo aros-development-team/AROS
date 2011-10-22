@@ -4,14 +4,15 @@
 #include <aros/debug.h>
 #include <exec/types.h>
 #include <exec/resident.h>
-
-#include "expansion_intern.h"
+#include <proto/expansion.h>
+#include <aros/asmcall.h>
+#include <libraries/expansionbase.h>
+#include <libraries/configvars.h>
+#include <libraries/configregs.h>
 
 /* This is first RTF_COLDSTART resident.
  * Update eb_SysBase, call DAC_CONFIGTIME.
  */
-
-#undef SysBase
 
 #define _STR(A) #A
 #define STR(A) _STR(A)
@@ -27,13 +28,15 @@ static AROS_UFP3 (APTR, Init,
 
 static const TEXT name_string[] = NAME;
 static const TEXT version_string[] =
-   NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
+   NAME " " STR(VERSION) "." STR(REVISION) " " ADATE "\n";
+
+extern void diag_end(void);
 
 const struct Resident rom_tag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&rom_tag,
-   (APTR)(&rom_tag + 1),
+   (APTR)&diag_end,
    RTF_COLDSTART,
    VERSION,
    NT_UNKNOWN,
@@ -43,7 +46,7 @@ const struct Resident rom_tag =
    (APTR)Init
 };
 
-static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb, struct ConfigDev *configDev)
+static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
 	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
 	UWORD offset = diag->da_DiagPoint;
@@ -58,7 +61,7 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ExecBase *sb
 		AROS_UFCA(struct DiagArea*, diag, A2),
 		AROS_UFCA(struct ConfigDev*, configDev, A3),
 		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
-		AROS_UFCA(struct ExecBase*, sb, A6));
+		AROS_UFCA(struct ExecBase*, SysBase, A6));
 	return ret != 0;
 }
 
@@ -138,10 +141,10 @@ static void callroms(struct ExpansionBase *ExpansionBase)
 {
 	struct Node *node;
 	D(bug("callroms\n"));
-	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
+	ForeachNode(&ExpansionBase->BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
 		if (diagrom(ExpansionBase, configDev)) {
-			if (!calldiagrom(ExpansionBase, IntExpBase(ExpansionBase)->eb_SysBase, configDev)) {
+			if (!calldiagrom(ExpansionBase, configDev)) {
 				D(bug("failed\n"));
 				FreeMem(configDev->cd_Rom.er_DiagArea, configDev->cd_Rom.er_DiagArea->da_Size);
 				configDev->cd_Rom.er_DiagArea = NULL;
@@ -162,7 +165,8 @@ static AROS_UFH3 (APTR, Init,
    struct ExpansionBase *eb = (struct ExpansionBase*)FindName(&SysBase->LibList, "expansion.library");
    if (!eb)
 	Alert(AT_DeadEnd | AO_ExpansionLib);
-   ((struct IntExpansionBase*)eb)->eb_SysBase = SysBase;
+
+   eb->eb_Private2[0] = (IPTR)SysBase;
 
    callroms(eb);
 

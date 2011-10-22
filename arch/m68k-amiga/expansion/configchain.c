@@ -50,7 +50,7 @@ static void allocram(struct ExpansionBase *ExpansionBase)
 	
 	// we should merge address spaces, later..
 	D(bug("adding ram boards\n"));
-	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
+	ForeachNode(&ExpansionBase->BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
 		if ((configDev->cd_Rom.er_Type & ERTF_MEMLIST) && !(configDev->cd_Flags & CDF_SHUTUP) && !(configDev->cd_Flags & CDF_PROCESSED)) {
 			ULONG attr = MEMF_PUBLIC | MEMF_FAST | MEMF_KICK;
