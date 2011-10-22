@@ -186,11 +186,14 @@ $(DISTDIR)/aros-amiga-m68k-%.bin : $(DISTDIR)/aros-amiga-m68k.elf $(HOSTGENDIR)/
 clean ::
 	-$(RM) $(TESTS)
 
+USER_CFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS += $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+
 $(KOBJSDIR)/%.o : %.c
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/exec -I$(SRCDIR)/rom/exec -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(USER_CFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.o : %.S
-	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR) -I$(SRCDIR)/rom/exec -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel"
+	%compile_q cmd="$(KERNEL_CC)" opt="$(CFLAGS) $(AFLAGS) $(USER_AFLAGS) -I$(BINDIR)/Development/include -I$(GENINCDIR)"
 
 $(KOBJSDIR)/%.d : %.c
 	%mkdepend_q
