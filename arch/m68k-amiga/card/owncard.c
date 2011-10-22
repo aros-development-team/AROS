@@ -18,7 +18,7 @@ AROS_LH1(struct CardHandle*, OwnCard,
     
     struct CardHandle *ret = NULL;
 
-    CARDDEBUG(bug("OwnCard(%p)\n", handle));
+    CARDDEBUG(bug("OwnCard(%p,%08x)\n", handle, handle->cah_CardFlags));
 
     Disable();
 
@@ -44,6 +44,8 @@ AROS_LH1(struct CardHandle*, OwnCard,
     }
     	
     Enable();
+
+    CARDDEBUG(bug("=%p\n", ret));
 
     return ret;
 

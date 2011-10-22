@@ -17,14 +17,14 @@ AROS_LH2(void, ReleaseCard,
 {
     AROS_LIBFUNC_INIT
 
-    CARDDEBUG(bug("ReleaseCard(%p)\n", handle));
+    CARDDEBUG(bug("ReleaseCard(%p,%08x) owned=%p\n", handle, flags, CardResource->ownedcard));
 
     Disable();
 
     if (CardResource->ownedcard == handle) {
 	CardResource->ownedcard = NULL;
 	pcmcia_reset(CardResource);
-    } else if (flags & CARDF_REMOVEHANDLE) {
+    } else if ((flags & CARDF_REMOVEHANDLE) && CardResource->ownedcard != NULL) {
     	Remove(&handle->cah_CardNode);
     }
 
