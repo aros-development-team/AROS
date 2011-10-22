@@ -10,6 +10,8 @@ Q ?= @
 #MM     kernel-bsp-objs				\
 #MM     kernel-objs				\
 #MM     kernel-alerthook-kobj \
+#MM     kernel-romboot-kobj \
+#MM     kernel-diag-kobj \
 #MM     kernel-amiga-m68k-amigavideo-kobj \
 #MM     kernel-amiga-m68k-audio-kobj \
 #MM     kernel-amiga-m68k-devs \
@@ -90,7 +92,7 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock kernel processor lddemon dosboot cia potgo disk FileSystem misc shell cardres
-KHOOKS  :=
+KHOOKS  := diag romboot
 
 KOBJS_rom := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS))) \
@@ -141,7 +143,8 @@ $(HOSTGENDIR)/tools/romcheck: romcheck.c
 $(GENDIR)/%_objs.ld: $(SRCDIR)/$(CURDIR)/mmakefile.src
 	$(Q)rm -f $@
 	$(Q)for file in $(OBJS_$*) $(KOBJS_$*); do \
-		echo "$$file(.rodata .rodata.* .text)" >>$@; \
+		echo "$$file(.rodata .rodata.*)" >>$@; \
+		echo "$$file(.text)" >>$@; \
 	done
 
 $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.src \
@@ -235,7 +238,7 @@ KLIBS   := exec expansion
 KDEVS   := 
 KHNDLRS := 
 KHIDDS  := 
-KRSRCS  := kernel FileSystem
+KRSRCS  := kernel
 KHOOKS  :=
 
 KOBJS_local := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
@@ -266,8 +269,8 @@ KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := cdrom con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
-           misc shell shellcommands workbook wbtag cardres
-KHOOKS  := alert
+           misc shell shellcommands workbook wbtag cardres FileSystem
+KHOOKS  := alert diag romboot
 
 KOBJS_any := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS)  )) \
