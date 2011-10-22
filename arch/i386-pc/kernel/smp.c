@@ -26,7 +26,6 @@ static void smp_Entry(volatile UBYTE *apicready)
     IPTR _APICBase;
     UWORD _APICID;
     UBYTE _APICNO;
-    struct PlatformData *data = KernelBase->kb_PlatformData;
 
     /* Find out ourselves */
     _APICBase = core_APIC_GetBase();
