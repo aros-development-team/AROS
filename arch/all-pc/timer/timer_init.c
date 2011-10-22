@@ -47,6 +47,7 @@ AROS_UFH4(static ULONG, VBlankInt,
     AROS_USERFUNC_INIT
     
     TimerInt(TimerBase, SysBase);
+    return TRUE;
     
     AROS_USERFUNC_EXIT
 }
