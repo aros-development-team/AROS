@@ -1,6 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
+USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
 #MM- kernel-alerthook : includes linklibs kernel-bootloader-includes
 
 %build_module_simple mmake=kernel-alerthook \
