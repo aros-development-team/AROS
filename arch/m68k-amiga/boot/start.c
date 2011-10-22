@@ -31,7 +31,7 @@
 #define SS_STACK_SIZE	0x02000
 
 extern const struct Resident Exec_resident;
-
+extern APTR KickMemPtr_Store;
 extern void __clear_bss(const struct KernelBSS *bss);
 
 static void protectKick(struct MemHeader *mh, struct MemList *ml);
@@ -778,6 +778,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    	DEBUGPUTS(("[KickMem] Checksum mismatch\n"));
 		SysBase->KickTagPtr = NULL;
 	    }
+	    KickMemPtr_Store = SysBase->KickMemPtr;
 	    SysBase->KickMemPtr = NULL;
 	    SysBase->KickCheckSum = (APTR)SumKickData();
 	}

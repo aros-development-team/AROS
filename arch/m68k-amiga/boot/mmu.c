@@ -10,6 +10,8 @@
 #include <libraries/configvars.h>
 #include <hardware/cpu/memory.h>
 
+#define FASTREMAP 1
+
 #define _STR(A) #A
 #define STR(A) _STR(A)
 
@@ -42,6 +44,8 @@ const struct Resident rom_tag =
    (APTR)Init
 };
 
+APTR KickMemPtr_Store = 0;
+
 void enable_mmu(void *kb);
 void debug_mmu(void *kb);
 extern BOOL init_mmu(void *kb);
@@ -55,12 +59,6 @@ extern BYTE _bss_end;
 
 static void mmuprotect(void *KernelBase, ULONG addr, ULONG size)
 {
-	KrnSetProtection((void*)addr, size, MAP_Readable | MAP_Executable);
-}
-static void mmuprotectremap(void *KernelBase, ULONG addr, ULONG size)
-{
-	/* Set invalid first so that possible old mapping will be overridden */
-	KrnSetProtection((void*)addr, size, 0);
 	KrnSetProtection((void*)addr, size, MAP_Readable | MAP_Executable);
 }
 static void mmuram(void *KernelBase, ULONG addr, ULONG size)
@@ -79,7 +77,7 @@ static void mmuio(void *KernelBase, ULONG addr, ULONG size)
 static APTR AllocPagesAligned(ULONG pages)
 {
     APTR ret;
-    ret = AllocMem((pages + 1) * PAGE_SIZE, MEMF_CLEAR | MEMF_PUBLIC);
+    ret = AllocMem((pages + 1) * PAGE_SIZE, MEMF_CLEAR | MEMF_FAST | MEMF_REVERSE);
     if (ret == NULL)
     	return NULL;
     Forbid();
@@ -105,38 +103,53 @@ static void swapvbr(APTR vbr)
 	: : "m" (vbr) : "d0", "d1", "a5", "a6");
 }
 
+static void mmuprotectregion(void *KernelBase, APTR addr, ULONG size, ULONG flags)
+{
+    ULONG allocsize = (size +  PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
+    KrnSetProtection(addr, allocsize, 0);
+    if (FASTREMAP && TypeOfMem(addr) & MEMF_CHIP) {
+    	APTR newmem = AllocPagesAligned(allocsize / PAGE_SIZE);
+    	if (newmem) {
+    	    CopyMem(addr, newmem, size);
+    	    D(bug("Remapped %d byte Chip region to Fast, %p -> %p, flags %08x\n", size, addr, newmem, flags));
+	    KrnMapGlobal(addr, newmem, allocsize, flags);
+    	    return;
+    	}
+    }
+    D(bug("Protected %d byte region @%p using flags %08x\n", size, addr, flags));
+    KrnSetProtection(addr, allocsize, flags);
+}
+
 /* MMU protect ArosBootStrap loaded ROM modules */
 static void mmuprotectextrom(void *KernelBase)
 {
-    IPTR *list = SysBase->ResModules;
-    if (list)
-    {
-	while (*list)
-	{
-	    struct Resident *res;
-	    if (*list & RESLIST_NEXT)
+    struct MemList *mlist = (struct MemList*)KickMemPtr_Store;
+    UWORD i;
+    
+    while (mlist) {
+	for (i = 0; i < mlist->ml_NumEntries; i++) {
+	    IPTR *list = SysBase->ResModules;
+	    while (list && *list)
 	    {
-	    	list = (IPTR *)(*list & ~RESLIST_NEXT); 
-            	continue;
-            }
-	    res = (struct Resident *)*list++;
-	    if (res->rt_Flags & (1 << 5)) {
-	    	ULONG start, end;
-	    	LONG size;
-		start = ((ULONG)res) & ~(PAGE_SIZE - 1);
-		if (!((start >= 0x00e00000 && start < 0x00e7ffff) || ((start >= 0x00f80000 && start < 0x00ffffff)))) {
-		    end = (((ULONG)res->rt_EndSkip) + PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
-		    size = end - start;
-		    if (size > 0) {
-		    	//bug("start=%p end=%p size=%d %s", res, res->rt_EndSkip, (UBYTE*)res->rt_EndSkip - (UBYTE*)res, res->rt_IdString);
-			mmuprotectremap(KernelBase, start, size);
+    		APTR ptr;
+		struct Resident *res;
+		if (*list & RESLIST_NEXT) {
+	    	    list = (IPTR *)(*list & ~RESLIST_NEXT); 
+            	    continue;
+        	}
+        	ptr = (APTR)*list++;
+		res = (struct Resident *)ptr;
+		if (res->rt_Flags & (1 << 5)) {
+		    if (ptr >= mlist->ml_ME[i].me_Addr && ptr < mlist->ml_ME[i].me_Addr + mlist->ml_ME[i].me_Length) {
+			mmuprotectregion(KernelBase, mlist->ml_ME[i].me_Addr, mlist->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
+			break;
 		    }
 		}
 	    }
 	}
+	mlist = (struct MemList*)mlist->ml_Node.ln_Succ;
     }
 }
-
 
 #define MAX_HEADERS 100
 
@@ -158,7 +171,7 @@ static AROS_UFH3 (APTR, Init,
 	char *args;
 	BOOL ZeroPageInvalid = FALSE, ZeroPageProtect = FALSE;
 	BOOL mmucommandline = FALSE;
-	UBYTE *pages;
+	UBYTE *vbrpage;
 	ULONG *zero = (ULONG*)0;
 
 	if (!(SysBase->AttnFlags & AFF_68020))
@@ -195,20 +208,21 @@ static AROS_UFH3 (APTR, Init,
 
 	D(bug("Initializing MMU setup\n"));
 
-	pages = AllocPagesAligned(3);
-	if (!pages)
-		return NULL;
+	Disable();
 
-	/* Move VBR to Fast RAM */
-	CopyMem(zero, pages, PAGE_SIZE);
-	swapvbr(pages);
-	D(bug("VBR %p\n", pages));
-	if (ZeroPageInvalid || ZeroPageProtect) {
-		/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
-	 	 * want MMU special zero page handling */
-		for (i = 0; i < 64; i++) {
-			if (i != 1)
-				zero[i] = 0xdeadf00d;
+	vbrpage = AllocPagesAligned(1);
+	if (vbrpage) {
+		/* Move VBR to Fast RAM */
+		CopyMem(zero, vbrpage, PAGE_SIZE);
+		swapvbr(vbrpage);
+		D(bug("VBR %p\n", vbrpage));
+		if (ZeroPageInvalid || ZeroPageProtect) {
+			/* Corrupt original zero page vectors, makes bad programs crash faster if we don't
+	 	 	* want MMU special zero page handling */
+			for (i = 0; i < 64; i++) {
+				if (i != 1)
+					zero[i] = 0xdeadf00d;
+			}
 		}
 	}
 
@@ -253,20 +267,17 @@ static AROS_UFH3 (APTR, Init,
 		KrnSetProtection(0, PAGE_SIZE, 0);
 	} else if (ZeroPageProtect) {
 		/* Remap zero page to Fast RAM, faster SysBase access */
-		KrnMapGlobal(0, pages + PAGE_SIZE, PAGE_SIZE, MAP_Readable);
+		mmuprotectregion(KernelBase, 0, PAGE_SIZE, MAP_Readable);
 	} else {
 		/* No special protection, cacheable */
 		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_Writable);
 	}
 	/* Protect Supervisor stack if MMU debugging mode */
 	if (ZeroPageInvalid || ZeroPageProtect) {
-		KrnSetProtection(SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, 0);
-		KrnSetProtection(SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable | MAP_Supervisor); 
+		mmuprotectregion(KernelBase, SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable | MAP_Supervisor);
+	} else {
+		mmuprotectregion(KernelBase, SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable);
 	}
-#if 0
-	/* Remap BSS to Fast RAM, faster performance than Chip RAM */
-	KrnMapGlobal((void*)(0 + PAGE_SIZE), pages + 2 * PAGE_SIZE, PAGE_SIZE, MAP_Readable | MAP_Writable);
-#endif
 
 	/* Expansion IO devices */
 	ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
@@ -298,9 +309,10 @@ static AROS_UFH3 (APTR, Init,
 
 	//debug_mmu(KernelBase);
 
-	CopyMem(pages, pages + PAGE_SIZE, PAGE_SIZE);
-	CopyMem((APTR)((ULONG)_bss & PAGE_MASK), pages + 2 * PAGE_SIZE, PAGE_SIZE);
+   	CacheClearU();
 	enable_mmu(KernelBase);
+	
+	Enable();
 
 	AROS_USERFUNC_EXIT
 
