@@ -54,7 +54,7 @@ const struct Resident Alerthook_resident =
 };
 
 static const UBYTE Alerthook_name[] = "alert.hook\r\n";
-static const UBYTE Alerthook_version[] = "$VER: alert.hook 41.8 (6.3.2001)";
+static const UBYTE Alerthook_version[] = "$VER: alert.hook 41.8 " ADATE;
 static UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
 static UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
 static UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
