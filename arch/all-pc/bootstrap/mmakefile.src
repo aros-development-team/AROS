@@ -7,7 +7,7 @@ ifeq ($(CPU),x86_64)
     ARCH_DEFS := -DMULTIBOOT_64BIT
     ARCH_LIBS := -L$(GENDIR)/lib32 -nostdlib 
 else
-    ARCH_LIBS := -L$(GENDIR)/lib
+    ARCH_LIBS := -L$(BINDIR)/Development/lib -L$(GENDIR)/lib
 endif
 
 FILES	     := bootstrap memory_io multiboot1 multiboot2 support vesa_setup
