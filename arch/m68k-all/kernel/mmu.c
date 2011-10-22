@@ -342,23 +342,26 @@ static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG
 				}
 			}
 		} else {
+			BOOL wasinvalid = ISINVALID(descc);
 			pagedescriptor = ((ULONG)physaddr) & ~page_mask;
 			if (mmutype == MMU030) {
 				pagedescriptor |= 1; // page descriptor
-				if (writeprotect)
+				if (writeprotect || (!wasinvalid && (descc & 4)))
 					pagedescriptor |= 4; // write-protected
 				/* 68030 can only enable or disable caching */
-				if (cachemode >= CM_SERIALIZED)
+				if (cachemode >= CM_SERIALIZED || (!wasinvalid && (descc & (1 << 6))))
 					pagedescriptor |= 1 << 6;
 			} else {
 				pagedescriptor |= 3; // resident page
-				if (writeprotect)
+				if (writeprotect || (!wasinvalid && (descc & 4)))
 					pagedescriptor |= 4; // write-protected
-				if (supervisor)
+				if (supervisor || (!wasinvalid && (descc & (1 << 7))))
 					pagedescriptor |= 1 << 7;
 				// do not override non-cached
-				if ((descc & 3) == 0 || cachemode > ((descc >> 5) & 3))
+				if (wasinvalid || cachemode > ((descc >> 5) & 3))
 					pagedescriptor |= cachemode << 5;
+				else
+					pagedescriptor |= ((descc >> 5) & 3) << 5;
 				if (addr != 0 || size != page_size)
 					pagedescriptor |= 1 << 10; // global if not zero page
 			}
