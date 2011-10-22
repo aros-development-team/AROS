@@ -196,7 +196,7 @@ static void e1000func_configure_tx(struct net_device *unit)
 	D(bug("[%s] %s: Tx Queue %d @ %p)\n", unit->e1ku_name, __PRETTY_FUNCTION__, i, &unit->e1ku_txRing[i]));
 	D(bug("[%s] %s: Tx Queue count = %d)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_txRing[i].count));
 
-	tdba = (UQUAD)unit->e1ku_txRing[i].dma;
+	tdba = (IPTR)unit->e1ku_txRing[i].dma;
 	tdlen = (ULONG)(unit->e1ku_txRing[i].count * sizeof(struct e1000_tx_desc));
 	D(bug("[%s] %s: Tx Queue Ring Descriptor DMA @ %p [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_txRing[i].dma, tdlen));
 
@@ -366,7 +366,7 @@ static void e1000func_configure_rx(struct net_device *unit)
 	D(bug("[%s] %s: Rx Queue count = %d)\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_rxRing[i].count));
 
 	rdlen = (ULONG)(unit->e1ku_rxRing[i].count * sizeof(struct e1000_rx_desc));
-	rdba = (UQUAD)unit->e1ku_rxRing[i].dma;
+	rdba = (IPTR)unit->e1ku_rxRing[i].dma;
 	D(bug("[%s] %s: Rx Queue Ring Descriptor DMA @ %p, [%d bytes]\n", unit->e1ku_name, __PRETTY_FUNCTION__, unit->e1ku_rxRing[i].dma, rdlen));
 
 	E1000_WRITE_REG((struct e1000_hw *)unit->e1ku_Private00, E1000_RDBAL(i), (ULONG)(rdba & 0x00000000ffffffffULL));
@@ -1011,7 +1011,7 @@ void e1000func_alloc_rx_buffers(struct net_device *unit,
 
 	rx_desc = E1000_RX_DESC(rx_ring, i);
 //    		rx_desc->buffer_addr = cpu_to_le64(buffer_info->dma);
-	rx_desc->buffer_addr = (UQUAD)buffer_info->dma;
+	rx_desc->buffer_addr = (IPTR)buffer_info->dma;
     }
 
     if (++i == rx_ring->count)
@@ -1177,7 +1177,7 @@ BOOL e1000func_clean_rx_irq(struct net_device *unit,
 	    goto next_desc;
 	}
 
-        frame = (struct eth_frame *)rx_desc->buffer_addr;
+        frame = (struct eth_frame *)(IPTR)rx_desc->buffer_addr;
 
 	if (rx_desc->errors & E1000_RXD_ERR_FRAME_ERR_MASK){
 	    UBYTE last_byte = *(frame->eth_packet_data + length - 1);
