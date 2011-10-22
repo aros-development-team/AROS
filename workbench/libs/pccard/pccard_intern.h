@@ -11,8 +11,13 @@
 #include <libraries/pccard.h>
 
 #ifndef UPINT
+#ifdef __AROS__
+typedef IPTR UPINT;
+typedef SIPTR PINT;
+#else
 typedef ULONG UPINT;
 typedef LONG PINT;
+#endif
 #endif
 
 struct PCCardBase

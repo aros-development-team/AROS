@@ -360,7 +360,7 @@ VOID DeletePCCardUnit(struct DevUnit *unit, struct DevBase *base)
 
 static struct BusContext *AllocCard(struct DevBase *base)
 {
-   BOOL success = TRUE, have_card = FALSE;
+   BOOL success = TRUE;
    struct BusContext *context;
    struct CardHandle *card_handle;
    struct Interrupt *card_removed_int, *card_inserted_int, *card_status_int;
@@ -430,7 +430,7 @@ static struct BusContext *AllocCard(struct DevBase *base)
 
    if(success)
    {
-      have_card = TRUE;
+      context->have_card = TRUE;
       if(!IsCardCompatible(context, base))
          success = FALSE;
    }
