@@ -83,13 +83,6 @@ AROS_SLIB_ENTRY(CacheClearU_40,Exec,106):
 	lea.l	cacheclearusup_40,%a5
 	jmp	Supervisor(%a6)
 
-cacheclearusup_40:
-	cpusha	%bc	/* Push dirty cache lines to memory and invalidate both caches */
-	cinva	%bc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
-			   bit of CACR. Force an invalidation with CINV. */
-	move.l	%a1,%a5
-	rte
-
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)
@@ -99,14 +92,10 @@ AROS_SLIB_ENTRY(CacheClearU_60,Exec,106):
 	lea.l	cacheclearusup_60,%a5
 	jmp	Supervisor(%a6)
 
+cacheclearusup_40:
+	nop /* old 68040 revision bug workaround */
 cacheclearusup_60:
 	cpusha	%bc	/* Push dirty cache lines to memory and invalidate both caches */
-	cinva	%bc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
-			   bit of CACR. Force an invalidation with CINV. */
-	or.w	#0x0700,%sr
-	movec	%cacr,%d0
-	bset.l	#22,%d0		/* set CABC Clear All (entries in) Branch Cache bit */
-	movec	%d0,%cacr		/* clear Branch Cache */
 	move.l	%a1,%a5
 	rte
 
