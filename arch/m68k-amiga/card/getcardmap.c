@@ -13,7 +13,7 @@ AROS_LH0(struct CardMemoryMap*, GetCardMap,
 {
     AROS_LIBFUNC_INIT
 
-    CARDDEBUG(bug("CardMemoryMap()\n"));
+    CARDDEBUG(bug("GetCardMap()\n"));
 
     return &CardResource->cmm;
 
