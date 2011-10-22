@@ -4,8 +4,8 @@ include $(TOP)/config/make.cfg
 FILES   := displayalert _displayalert kernel_panic
 MAINDIR := rom/kernel
 
-USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-linux/kernel \
-	       -I$(SRCDIR)/arch/all-unix/kernel -I$(SRCDIR)/$(MAINDIR) \
+USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) \
+               $(PRIV_EXEC_INCLUDES) \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DHOST_OS_linux -DHOST_OS_android
 

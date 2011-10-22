@@ -14,7 +14,7 @@ FILES  := coldreboot supervisor
 #MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
 
 USER_AFLAGS := -isystem $(GENINCDIR)
-USER_CFLAGS := -I$(SRCDIR)/rom/exec -I$(SRCDIR)/rom/kernel
+USER_CFLAGS := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-x86_64 \

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/rom/exec
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR)
 USER_CFLAGS := -DHOST_OS_$(ARCH)
 

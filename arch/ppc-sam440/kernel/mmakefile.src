@@ -18,5 +18,5 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_libr
 
 %build_module mmake=kernel-kernel-sam440-ppc \
   modname=kernel modtype=resource            \
-  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"    \
+  cflags="$(CFLAGS) $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)"    \
   files="$(FILES)" uselibs="rom"

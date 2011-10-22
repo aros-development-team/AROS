@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES  := -I$(SRCDIR)/arch/all-$(ARCH)/kernel -I$(SRCDIR)/rom/kernel \
-		  -I$(SRCDIR)/rom/exec
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
 
 #MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
 

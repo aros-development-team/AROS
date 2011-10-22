@@ -5,7 +5,7 @@ FILES  := alert_cpu cpu_init newstackswap preparecontext
 AFILES := execstubs stackswap copymem_SSE
 
 USER_AFLAGS   := -I$(GENINCDIR)
-USER_INCLUDES := -I$(SRCDIR)/rom/exec
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \

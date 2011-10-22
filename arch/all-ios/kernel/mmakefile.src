@@ -4,8 +4,7 @@ include $(TOP)/config/make.cfg
 FILES   := _displayalert
 MAINDIR := rom/kernel
 
-USER_CFLAGS := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/arch/all-darwin/kernel \
-	       -I$(SRCDIR)/arch/all-unix/kernel -I$(SRCDIR)/$(MAINDIR) \
+USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DHOST_OS_darwin -DHOST_OS_ios
 

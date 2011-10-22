@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_CFLAGS	:= -I$(SRCDIR)/rom/exec
-USER_AFLAGS	:= -I$(SRCDIR)/rom/exec -I$(GENINCDIR)
+USER_CFLAGS	:= $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
