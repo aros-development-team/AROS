@@ -109,10 +109,14 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
-static void core_Reboot(void)
+struct pt_regs;
+static int core_Reboot(struct pt_regs *regs)
 {
     /* A second part of the double stack swap */
     core_Kick(BootMsg, kernel_cstart);
+
+    /* We should never get here */
+    return 0;
 }
 
 /* CPU exceptions are processed here */
