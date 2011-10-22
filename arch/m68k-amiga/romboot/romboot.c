@@ -6,10 +6,9 @@
 #include <exec/resident.h>
 #include <proto/expansion.h>
 #include <aros/asmcall.h>
-
-#include "expansion_intern.h"
-
-#undef SysBase
+#include <libraries/expansionbase.h>
+#include <libraries/configvars.h>
+#include <libraries/configregs.h>
 
 #define _STR(A) #A
 #define STR(A) _STR(A)
@@ -25,13 +24,15 @@ static AROS_UFP3 (APTR, Init,
 
 static const TEXT name_string[] = NAME;
 static const TEXT version_string[] =
-   NAME " " STR(VERSION) "." STR(REVISION) " (" ADATE ")\n";
+   NAME " " STR(VERSION) "." STR(REVISION) " " ADATE "\n";
+
+extern void romboot_end(void);
 
 const struct Resident rb_tag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&rb_tag,
-   (APTR)(&rb_tag + 1),
+   (APTR)&romboot_end,
    RTF_COLDSTART,
    VERSION,
    NT_UNKNOWN,
@@ -48,7 +49,7 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 	// look for possible romtags in expansion ROM image and InitResident() them if found
 	D(bug("romtaginit\n"));
 	ObtainConfigBinding();
-	ForeachNode(&IntExpBase(ExpansionBase)->eb_BoardList, node) {
+	ForeachNode(&ExpansionBase->BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
 		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME && (configDev->cd_Flags & CDF_CONFIGME)) {
 			struct Resident *res;
