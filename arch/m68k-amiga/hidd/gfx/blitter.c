@@ -567,22 +567,72 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     return TRUE;
 }
 
+static UBYTE getminterm(UBYTE type, UBYTE fg, UBYTE bg)
+{
+	UBYTE minterm = 0, tg;
+  	switch (type)
+  	{
+  	    case 0: // JAM1:
+  	    minterm = (NABC | NANBC) | (fg ? ABC | ABNC | ANBC : ANBC);
+  	    break;
+  	    case 1: // JAM1 | INVERSVID
+ 	    minterm = (NABC | NANBC) | (fg ? ANBC | ANBNC | ABC : ABC);
+  	    break;
+  	    case 2: // COMPLEMENT:
+  	    minterm = (NABC | NANBC) | (ANBC | ABNC);
+  	    break;
+  	    case 3: // COMPLEMENT | INVERSVID:
+  	    minterm = (NABC | NANBC) | (ABC | ANBNC);
+  	    break;
+   	    case 5: // JAM2 | INVERSVID
+   	    tg = fg;
+   	    fg = bg;
+   	    bg = tg;
+ 	    case 4: // JAM2
+  	    if (fg && bg) {
+  	    	minterm = (NABC | NANBC) | (ABC | ABNC);
+  	    } else if (!fg && !bg) {
+  	    	minterm = (NABC | NANBC);
+   	    } else if (fg) {
+  	    	minterm = (NABC | NANBC) | (ABC | ABNC);
+  	    } else {
+  	    	minterm = (NABC | NANBC) | (ANBC | ANBNC);
+  	    }
+  	    break;
+  	}
+  	return minterm;
+}
+
 BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct pHidd_BitMap_PutPattern *pat)
 {
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = csd->gfxbase;
+
     UBYTE type;
-    UBYTE fg = GC_FG(pat->gc);
-    UBYTE bg = GC_BG(pat->gc);
+    UBYTE fgpen = GC_FG(pat->gc);
+    UBYTE bgpen = GC_BG(pat->gc);
 
-    /* These are unused for the moment. */
-    (void)fg;
-    (void)bg;
+    UBYTE i;
+    BYTE shift;
+    UWORD shifta, shiftb;
+    UWORD afwm, alwm;
+    ULONG dstoffset;
+    WORD dstwidth;
+    WORD patcnt;
 
-    if (USE_BLITTER == 0 || 1)
+    WORD height = pat->height;
+    WORD dstx = pat->x;
+    WORD dsty = pat->y;
+    WORD dstx2 = pat->x + pat->width - 1;
+    
+    WORD patternymask =  pat->patternheight - 1;
+
+    if (USE_BLITTER == 0)
     	return FALSE;
 
     if (pat->mask)
     	return FALSE;
-    if (pat->patterndepth > 1)
+    if (pat->patterndepth != 1)
     	return FALSE;
 
     if (GC_COLEXP(pat->gc) == vHidd_GC_ColExp_Transparent)
@@ -593,6 +643,68 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
 	type = 4;
     if (pat->invertpattern)
     	type++;
-   
-    return FALSE;
+
+   D(bug("PutPattern(%dx%d,%dx%d,mask=%x,mod=%d,masksrcx=%d,P=%x,%dx%d,h=%d,T=%d)\n",
+	pat->x, pat->y, pat->width, pat->height,
+	pat->mask, pat->maskmodulo, pat->masksrcx,
+	pat->pattern, pat->patternsrcx, pat->patternsrcy, pat->patternheight, type));
+
+    dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
+    dstwidth = dstx2 / 16 - dstx / 16 + 1;
+
+    dstx &= 15;
+    dstx2 &= 15;
+
+    shift = dstx;
+    shifta = 0;
+    shiftb = 0;
+    afwm = leftmask[dstx];
+    alwm = rightmask[dstx2];
+
+    OwnBlitter();
+    WaitBlit();
+
+    custom->bltafwm = afwm;
+    custom->bltalwm = alwm;
+    custom->bltcmod = (bm->bytesperrow - dstwidth * 2) + bm->bytesperrow * (pat->patternheight - 1);
+    custom->bltdmod = (bm->bytesperrow - dstwidth * 2) + bm->bytesperrow * (pat->patternheight - 1);
+    custom->bltadat = 0xffff;
+    
+    for (i = 0; i < bm->depth; i++, fgpen >>= 1, bgpen >>= 1) {
+    	ULONG dstoffset2;
+    	UBYTE minterm;
+    	UWORD chmask;
+    	UBYTE fg, bg;
+
+    	if (bm->planes[i] == (UBYTE*)0x00000000 || bm->planes[i] == (UBYTE*)0xffffffff)
+  	    continue;
+
+  	fg = fgpen & 1;
+  	bg = bgpen & 1;
+    	
+  	chmask = 0x0300;
+ 
+ 	minterm = getminterm(type, fg, bg);
+ 
+   	WaitBlit();
+   	custom->bltcon0 = shifta | chmask | minterm;
+	custom->bltcon1 = shiftb;
+
+	for(patcnt = 0, dstoffset2 = 0; patcnt < pat->patternheight; patcnt++, dstoffset2 += bm->bytesperrow) {
+    	    UWORD blitheight = (height - patcnt + 1) / pat->patternheight;
+    	    UWORD pattern = ((UWORD*)pat->pattern)[(pat->patternsrcy + patcnt) & patternymask];
+    	    if (blitheight && pattern) {
+   		WaitBlit();
+	    	custom->bltbdat = pattern;
+    	    	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset + dstoffset2);
+    	    	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset + dstoffset2);
+    	    	startblitter(csd, dstwidth, blitheight);
+    	    }
+    	}
+    }
+
+    WaitBlit();
+    DisownBlitter();
+
+    return TRUE;
 }
