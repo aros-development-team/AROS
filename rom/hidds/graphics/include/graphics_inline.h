@@ -24,7 +24,7 @@
 
 /***************************************************************/
 
-#ifndef HiddGfxBase
+#if !defined(HiddGfxBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddGfxBase HIDD_Gfx_GetMethodBase(__obj)
 
 static inline OOP_MethodID HIDD_Gfx_GetMethodBase(OOP_Object *obj)
@@ -576,7 +576,7 @@ static inline ULONG HIDD_Gfx_PrepareViewPorts_(OOP_MethodID GfxBase, OOP_Object 
 
 /***************************************************************/
 
-#ifndef HiddBitMapBase
+#if !defined(HiddBitMapBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddBitMapBase HIDD_BitMap_GetMethodBase(__obj)
 
 static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj)
@@ -1977,7 +1977,7 @@ static inline VOID HIDD_BM_UpdateRect_(OOP_MethodID BitMapBase, OOP_Object *obj,
     OOP_DoMethod(obj, &p.mID);    
 }
 
-#ifndef HiddGCBase
+#if !defined(HiddGCBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddGCBase HIDD_GC_GetMethodBase(__obj)
 
 static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj)
@@ -2026,7 +2026,7 @@ static inline VOID HIDD_GC_UnsetClipRect_(OOP_MethodID GCBase, OOP_Object *obj)
     OOP_DoMethod(obj, &p.mID);
 }
 
-#ifndef HiddPlanarBMBase
+#if !defined(HiddPlanarBMBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddPlanarBMBase HIDD_PlanarBM_GetMethodBase(__obj)
 
 static inline OOP_MethodID HIDD_PlanarBM_GetMethodBase(OOP_Object *obj)
@@ -2075,7 +2075,7 @@ static inline BOOL HIDD_PlanarBM_GetBitMap_(OOP_MethodID PlanarBMBase, OOP_Objec
 
 /********* ColorMap *********************************/
 
-#ifndef HiddColorMapBase
+#if !defined(HiddColorMapBase) && !defined(__OOP_NOMETHODBASES__)
 #define HiddColorMapBase HIDD_ColorMap_GetMethodBase(__obj)
 
 static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj)
