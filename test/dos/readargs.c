@@ -372,6 +372,24 @@ int main(int argc, char **argv)
         VERIFY_STREQ(args[1],"val1 val2");
     TEST_ENDARGS();
 
+    TEST_READARGS("KEYA/S,KEYB/F","val1 \"val2\"");
+        VERIFY_EQ(ioerr, RETURN_OK);
+        VERIFY_STREQ(args[0],"inv1");
+        VERIFY_STREQ(args[1],"val1 \"val2\"");
+    TEST_ENDARGS();
+
+    TEST_READARGS("KEYA/S,KEYB/F","\"va\"l1 \"val2");
+        VERIFY_EQ(ioerr, RETURN_OK);
+        VERIFY_STREQ(args[0],"inv1");
+        VERIFY_STREQ(args[1],"val1 \"val2");
+    TEST_ENDARGS();
+
+    TEST_READARGS("KEYA/S,KEYB/F","\"va\"l1 \"val2\"");
+        VERIFY_EQ(ioerr, RETURN_OK);
+        VERIFY_STREQ(args[0],"inv1");
+        VERIFY_STREQ(args[1],"val1 \"val2\"");
+    TEST_ENDARGS();
+
     if (tests_failed == 0)
         Printf("All %ld test passed\n", (LONG)tests);
     else
