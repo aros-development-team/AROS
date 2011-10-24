@@ -109,6 +109,8 @@ int main(int argc, char **argv)
     RITEST("word=thing\n",ITEM_UNQUOTED,"word",5);
     RITEST("word crazy\n",ITEM_UNQUOTED,"word",5);
     RITEST("word\tcrazy\n",ITEM_UNQUOTED,"word",5);
+    RITEST("\"word\"",ITEM_QUOTED,"word",6);
+    RITEST("\"word word2\"",ITEM_QUOTED,"word word2",12);
     RITEST("\"word\"=thing\n",ITEM_QUOTED,"word",6);
     RITEST("\"word\" crazy\n",ITEM_QUOTED,"word",6);
     RITEST("\"word\"\tcrazy\n",ITEM_QUOTED,"word",6);
