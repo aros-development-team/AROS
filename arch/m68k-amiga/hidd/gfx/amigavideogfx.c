@@ -87,6 +87,7 @@ HIDDT_ModeID *AmigaVideoCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
     ULONG minwidth = 0, maxwidth = 0xFFFFFFFF;
     ULONG minheight = 0, maxheight = 0xFFFFFFFF;
     HIDDT_ModeID *modeids;
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     WORD cnt;
 
    if (csd->superforward)
@@ -248,6 +249,7 @@ static struct NativeChipsetMode *addmodeid(struct amigavideo_staticdata *csd, UL
 OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
 	struct amigavideo_staticdata *csd = CSD(cl);
+	struct Library *OOPBase = csd->cs_OOPBase;
 	struct TagItem mytags[2];
 	struct pRoot_New mymsg;
 	ULONG allocsize = 4000, allocsizebuf = 2000;
@@ -551,6 +553,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	struct NativeChipsetMode *node;
 	HIDDT_ModeID *midp;
 	UWORD pfcnt;
+	OOP_MethodID HiddGfxBase = csd->cs_HiddGfxBase;
 	OOP_Object *pixelformats[8] = { 0 };
 
 	D(bug("AGFX::New(): Got object from super\n"));
@@ -653,6 +656,7 @@ VOID AmigaVideoCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 OOP_Object *AmigaVideoCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {  
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     HIDDT_ModeID		modeid;
     struct pHidd_Gfx_NewBitMap   newbitmap;
     struct TagItem tags[2];
@@ -707,6 +711,7 @@ VOID AmigaVideoCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     struct TagItem  	    *tag;
     const struct TagItem    *tstate;
     tstate = msg->attrList;
@@ -734,6 +739,7 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
 ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ShowViewPorts *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     struct HIDD_ViewPortData *vpd = msg->Data;
     OOP_Object *bm = NULL;
 
@@ -763,6 +769,7 @@ ULONG AmigaVideoCl__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct
 VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     IPTR src, dst;
     BOOL ok = FALSE;
@@ -781,6 +788,7 @@ VOID AmigaVideoCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_
 BOOL AmigaVideoCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     IPTR src, dst;
     BOOL ok = FALSE;
@@ -801,6 +809,7 @@ BOOL AmigaVideoCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct 
 BOOL AmigaVideoCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     IPTR width, height;
     UWORD maxw, maxh;
 
@@ -846,6 +855,8 @@ ULONG AmigaVideoCl__Hidd_Gfx__MakeViewPort(OOP_Class *cl, OOP_Object *o, struct 
 
 void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CleanViewPort *msg)
 {
+    struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *GfxBase = csd->cs_GfxBase;
     struct HIDD_ViewPortData *vpd = msg->Data;
     struct ViewPort *vp = vpd->vpe->ViewPort;
 
@@ -870,6 +881,8 @@ void AmigaVideoCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct 
 
 static void freeattrbases(struct amigavideo_staticdata *csd)
 {
+    struct Library *OOPBase = csd->cs_OOPBase;
+
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     OOP_ReleaseAttrBase(IID_Hidd_PlanarBM);
     OOP_ReleaseAttrBase(IID_Hidd_AmigaVideoBitMap);
@@ -883,6 +896,7 @@ static void freeattrbases(struct amigavideo_staticdata *csd)
 int Init_AmigaVideoClass(LIBBASETYPEPTR LIBBASE)
 {
     struct amigavideo_staticdata *csd = &LIBBASE->csd;
+    struct Library *OOPBase = csd->cs_OOPBase;
     
     D(bug("Init_AmigaVideoClass\n"));
     __IHidd_BitMap  	= OOP_ObtainAttrBase(IID_Hidd_BitMap);

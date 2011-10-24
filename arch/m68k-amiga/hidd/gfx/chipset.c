@@ -123,8 +123,9 @@ static void setcoppercolors(struct amigavideo_staticdata *data)
 static void setpalntsc(struct amigavideo_staticdata *data, ULONG modeid)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
-    data->palmode = (data->gfxbase->DisplayFlags & NTSC) == 0;
+    data->palmode = (GfxBase->DisplayFlags & NTSC) == 0;
     if (!data->ecs_agnus)	
     	return;
     if ((modeid & MONITOR_ID_MASK) == PAL_MONITOR_ID) {
@@ -134,13 +135,14 @@ static void setpalntsc(struct amigavideo_staticdata *data, ULONG modeid)
  	custom->beamcon0 = 0x0000;
  	data->palmode = FALSE;
     } else {
-    	custom->beamcon0 = (data->gfxbase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
+    	custom->beamcon0 = (GfxBase->DisplayFlags & NTSC) ? 0x0000 : 0x0020;
     }
 }
 
 void resetmode(struct amigavideo_staticdata *data)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
     D(bug("resetmode\n"));
 
@@ -159,7 +161,7 @@ void resetmode(struct amigavideo_staticdata *data)
     FreeVec(data->copper2i.copper2);
     data->copper2i.copper2 = NULL;
 
-    data->gfxbase->LOFlist = data->gfxbase->SHFlist = data->copper2_backup;
+    GfxBase->LOFlist = GfxBase->SHFlist = data->copper2_backup;
 
     resetcustom(data);
 
@@ -449,6 +451,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
 BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     UWORD ddfstrt, ddfstop;
     UBYTE fetchunit, fetchstart, maxplanes;
     UWORD bplwidth, viewwidth;
@@ -502,10 +505,10 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     if (data->interlace)
     	data->copper2i.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     createcopperlist(data, bm, &data->copper2, FALSE);
-    data->gfxbase->LOFlist = data->copper2.copper2;
+    GfxBase->LOFlist = data->copper2.copper2;
     if (data->interlace) {
     	createcopperlist(data, bm, &data->copper2i, TRUE);
-    	data->gfxbase->SHFlist = data->copper2i.copper2;
+    	GfxBase->SHFlist = data->copper2i.copper2;
     }
  
     setfmode(data);
@@ -529,6 +532,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
 
 BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, struct pHidd_Gfx_SetCursorShape *shape)
 {
+    OOP_MethodID HiddBitMapBase = data->cs_HiddBitMapBase;
     UWORD fetchsize;
     UWORD bitmapwidth = width;
     UWORD y, *p;
@@ -666,7 +670,7 @@ static AROS_UFH4(ULONG, gfx_blit,
     AROS_USERFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     struct bltnode *bn = NULL;
     UBYTE v;
     UWORD dmaconr;
@@ -765,7 +769,7 @@ static AROS_UFH4(ULONG, gfx_beamsync,
 { 
     AROS_USERFUNC_INIT
 
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
     if (bqvar & BQ_BEAMSYNCWAITING) {
 	/* We only need to trigger blitter interrupt */
@@ -786,7 +790,7 @@ static AROS_UFH4(ULONG, gfx_vblank,
 { 
     AROS_USERFUNC_INIT
 
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
     data->framecounter++;
@@ -828,14 +832,29 @@ void initcustom(struct amigavideo_staticdata *data)
     UBYTE i;
     UWORD *c;
     UWORD vposr, val;
+    struct GfxBase *GfxBase;
+    struct Library *OOPBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 
     resetcustom(data);
     resetsprite(data);
 
-    data->gfxbase = (struct GfxBase*)TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
-    data->gfxbase->cia = OpenResource("ciab.resource");
+    /* data->cs_OOPBase was already set up.
+     * See amigavideo.conf's 'oopbase_field' config
+     */
+    OOPBase = data->cs_OOPBase;
+    data->cs_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    data->cs_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+
+    data->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!data->cs_UtilityBase)
+        Alert(AT_DeadEnd | AN_Hidd | AG_OpenLib | AO_UtilityLib);
+    data->cs_GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    if (!data->cs_GfxBase)
+        Alert(AT_DeadEnd | AN_Hidd | AG_OpenLib | AO_GraphicsLib);
+    GfxBase = ((struct GfxBase *)data->cs_GfxBase);
+    GfxBase->cia = OpenResource("ciab.resource");
 
     data->inter.is_Code         = (APTR)gfx_vblank;
     data->inter.is_Data         = data;
@@ -857,8 +876,8 @@ void initcustom(struct amigavideo_staticdata *data)
     GfxBase->timsrv.is_Node.ln_Name = "Beamsync";
     GfxBase->timsrv.is_Node.ln_Type = NT_INTERRUPT;
     Disable();
-    AddICRVector(data->gfxbase->cia, 2, &GfxBase->timsrv);
-    AbleICR(data->gfxbase->cia, 1 << 2);
+    AddICRVector(GfxBase->cia, 2, &GfxBase->timsrv);
+    AbleICR(GfxBase->cia, 1 << 2);
     ciab->ciacrb |= 0x80;
     ciab->ciatodhi = 0;
     /* TOD/ALARM CIA bug: http://eab.abime.net/showpost.php?p=277315&postcount=10 */
@@ -868,7 +887,7 @@ void initcustom(struct amigavideo_staticdata *data)
     ciab->ciatodhi = 0;
     ciab->ciatodmid = 0;
     ciab->ciatodlow = 0;
-    AbleICR(data->gfxbase->cia, 0x80 | (1 << 2));
+    AbleICR(GfxBase->cia, 0x80 | (1 << 2));
     Enable();
 
     data->startx = 0x80;
@@ -909,7 +928,7 @@ void initcustom(struct amigavideo_staticdata *data)
     custom->dmacon = 0x8000 | 0x0080 | 0x0040 | 0x0020;
     data->bplcon3 = ((data->res + 1) << 6) | 2; // spriteres + bordersprite
     
-    data->gfxbase->copinit = (struct copinit*)data->copper1;
+    GfxBase->copinit = (struct copinit*)data->copper1;
 
     D(bug("Copperlist0 %p\n", data->copper1));
 

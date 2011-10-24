@@ -54,6 +54,7 @@ static void setrtg(struct amigavideo_staticdata *csd, BOOL showrtg)
 OOP_Object *AmigaVideoBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     IPTR width, height, depth, disp;
     BOOL ok = TRUE;      
     struct amigabm_data *data;
@@ -146,6 +147,7 @@ VOID AmigaVideoBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
@@ -199,6 +201,7 @@ VOID AmigaVideoBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 VOID AmigaVideoBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct amigavideo_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     struct amigabm_data *data = OOP_INST_DATA(cl, o);
     ULONG idx;
 

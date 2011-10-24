@@ -75,7 +75,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG srcoffset, dstoffset;
     BYTE shift, i;
     WORD srcwidth, dstwidth, width;
@@ -205,7 +205,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     WORD srcx, WORD srcy, WORD w, WORD h, WORD dstx, WORD dsty, HIDDT_DrawMode mode, APTR maskplane)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG srcoffset, dstoffset;
     BYTE shift, i;
     WORD srcwidth, dstwidth, width;
@@ -333,7 +333,7 @@ static const UBYTE fill_minterm[] = { 0xca, 0x00, 0x00, 0xca, 0x00, 0x00, 0x00, 
 BOOL blit_fillrect(struct amigavideo_staticdata *data, struct amigabm_data *bm, WORD x1,WORD y1,WORD x2,WORD y2, HIDDT_Pixel pixel, HIDDT_DrawMode mode)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     ULONG offset;
     WORD width, height;
     UBYTE i;
@@ -406,7 +406,7 @@ struct pHidd_BitMap_PutTemplate
 BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *bm, struct pHidd_BitMap_PutTemplate *tmpl)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = data->gfxbase;
+    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     OOP_Object *gc = tmpl->gc;
     HIDDT_Pixel	fgpen = GC_FG(tmpl->gc);
     HIDDT_Pixel bgpen = GC_BG(tmpl->gc);
@@ -606,7 +606,7 @@ static UBYTE getminterm(UBYTE type, UBYTE fg, UBYTE bg)
 BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm, struct pHidd_BitMap_PutPattern *pat)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = csd->gfxbase;
+    struct GfxBase *GfxBase = (APTR)csd->cs_GfxBase;
 
     UBYTE type;
     UBYTE fgpen = GC_FG(pat->gc);
