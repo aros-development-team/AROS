@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 #MM kernel-bootloader-kobj: includes kernel-bootloader-includes
 #MM kernel-bootloader: includes kernel-bootloader-includes
 
+USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+
 %build_module mmake=kernel-bootloader \
     modname=bootloader modtype=resource \
     files="bootloader_init getbootinfo" uselibs="rom utility"
