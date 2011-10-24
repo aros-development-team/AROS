@@ -222,7 +222,7 @@ static inline BOOL ata_SelectUnit(struct ata_Unit* unit)
 
     do
     {
-        ata_WaitNano(400);
+        ata_WaitNano(400, bus->ab_Base);
         //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
     }
     while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
@@ -496,6 +496,7 @@ void ata_IRQPIOWriteAtapi(struct ata_Unit *unit, UBYTE status)
  */
 BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
 {
+    struct ata_Bus *bus = unit->au_Bus;
     UBYTE status;
     ULONG sigs = SIGBREAKF_CTRL_C;
     ULONG step = 0;
@@ -574,7 +575,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
                  * no timeout just yet, but it's not a good idea to keep
                  * spinning like that. let's give the system some time.
                  */
-                ata_WaitNano(400);
+                ata_WaitNano(400, bus->ab_Base);
             }
 
             status = ATA_IN(ata_AltStatus, unit->au_Bus->ab_Alt);
@@ -623,6 +624,7 @@ BOOL ata_WaitBusyTO(struct ata_Unit *unit, UWORD tout, BOOL irq, UBYTE *stout)
  */
 static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
 {
+    struct ata_Bus *bus = unit->au_Bus;
     ULONG port = unit->au_Bus->ab_Port;
     BYTE err = 0;
     APTR mem = block->buffer;
@@ -747,7 +749,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
      */
     DATA(bug("[ATA%02ld] ata_exec_cmd: Sending command\n", unit->au_UnitNum));
     ATA_OUT(block->command, ata_Command, port);
-    ata_WaitNano(400);
+    ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
     /*
@@ -808,6 +810,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
  */
 BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datalen, BOOL *dma, BOOL write)
 {
+    struct ata_Bus *bus = unit->au_Bus;
     *dma = *dma && (unit->au_XferModes & AF_XFER_DMA) ? TRUE : FALSE;
     LONG err = 0;
 
@@ -884,7 +887,7 @@ BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datale
     DATAPI(bug("[ATAPI] Issuing ATA_PACKET command.\n"));
     ata_IRQSetHandler(unit, &ata_IRQNoData, 0, 0, 0);
     ATA_OUT(ATA_PACKET, atapi_Command, port);
-    ata_WaitNano(400);
+    ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
 
     ata_WaitBusyTO(unit, TIMEOUT, (unit->au_Drive->id_General & 0x60) == 0x20,
@@ -912,7 +915,7 @@ BYTE atapi_SendPacket(struct ata_Unit *unit, APTR packet, APTR data, LONG datale
 
     DATAPI(bug("[ATAPI] Sending packet\n"));
     unit->au_outs(cmd, unit->au_Bus->ab_Port, 12, unit->au_Bus->ab_DriverData);
-    ata_WaitNano(400);
+    ata_WaitNano(400, bus->ab_Base);
     DATAPI(bug("[ATAPI] Status after packet: %lx\n",
         ata_ReadAltStatus(unit->au_Bus)));
 
@@ -2228,7 +2231,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
     D(bug("[ATA  ] ata_ReadSignature(%02ld)\n", unit));
 
     BUS_OUT(0xa0 | (unit << 4), ata_DevHead, port);
-    ata_WaitNano(400);
+    ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
     DINIT(bug("[ATA  ] ata_ReadSignature: Status %02lx Device %02lx\n",
@@ -2268,13 +2271,13 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
 
             ata_WaitTO(bus->ab_Timer, 0, 2000, 0);
             while (ata_ReadStatus(bus) & ATAF_BUSY)
-                ata_WaitNano(400);
+                ata_WaitNano(400, bus->ab_Base);
                 //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
             BUS_OUT(0xa0 | (unit << 4), ata_DevHead, port);
             do
             {
-                ata_WaitNano(400);
+                ata_WaitNano(400, bus->ab_Base);
                 //ata_WaitTO(unit->au_Bus->ab_Timer, 0, 1, 0);
             }
             while (0 != (ATAF_BUSY & ata_ReadStatus(bus)));
@@ -2303,7 +2306,7 @@ void ata_ResetBus(struct ata_Bus *bus)
      * register.  This causes device 0 be selected */
     DINIT(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
     BUS_OUT(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
-    ata_WaitNano(400);
+    ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
     BUS_OUT(0x04, ata_AltControl, alt);
@@ -2336,7 +2339,7 @@ void ata_ResetBus(struct ata_Bus *bus)
     if (DEV_NONE != bus->ab_Dev[1]) {
         DINIT(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
         BUS_OUT(0xa0 | (1 << 4), ata_DevHead, port);
-        ata_WaitNano(400);
+        ata_WaitNano(400, bus->ab_Base);
         //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
         TimeOut = 50;     /* Timeout 50ms (1ms x 50) */
@@ -2387,7 +2390,7 @@ void ata_InitBus(struct ata_Bus *bus)
     /*
      * initialize timer for the sake of scanning
      */
-    bus->ab_Timer = ata_OpenTimer();
+    bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
 
     DINIT(bug("[ATA  ] ata_InitBus(%d)\n", bus->ab_BusNum));
 

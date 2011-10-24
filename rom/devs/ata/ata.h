@@ -119,6 +119,9 @@ struct ataBase
     * memory pool
     */
    APTR                    ata_MemPool;
+
+   struct Device          *ata_TimerBase;
+   ULONG                   ata_ItersPer100ns;
 };
 
 /*

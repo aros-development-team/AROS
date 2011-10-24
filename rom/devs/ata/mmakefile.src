@@ -13,6 +13,8 @@ else
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/ata/make.opts
 endif
 
+USER_CFLAGS += -D__TIMER_NOLIBBASE__
+
 %build_module mmake=kernel-ata \
   modname=ata modtype=device \
   files="ata_init lowlevel ata dma_generic timer scsiemu $(BUS_DRIVERS)" \
