@@ -78,9 +78,9 @@ struct NativeIcon
         APTR          Data;       /* Raw IFF or PNG stream */
         ULONG         Size;
         struct {
-            LONG         IMAG;      /* Offset of the IMAG chunks */
-            LONG         PNG;       /* Offset of the PNG chunks */
-        } Offset[2];
+            LONG        Offset;
+            LONG        Size;
+        } PNG[2];
     } ni_Extra;
 
     /* Parameters */

@@ -457,7 +457,8 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
                         if (have_png < 2) {
                             LONG here = data - icon->ni_Extra.Data;
                             D(bug("[%s] Found PNG image %d\n", __func__, have_png));
-                            icon->ni_Extra.Offset[have_png].PNG = here;
+                            icon->ni_Extra.PNG[have_png].Offset = here;
+                            icon->ni_Extra.PNG[have_png].Size = cn->cn_Size;
                         } else {
                             D(bug("[%s] Ignoring PNG image %d\n", __func__, have_png));
                         }
@@ -791,6 +792,20 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 		    }
 		       
 		} /* if (!PushChunk(iff, ID_ICON, ID_FACE, sizeof(struct FileFaceChunk))) */
+
+		if (icon->ni_Extra.PNG[0].Size &&
+		    !PushChunk(iff, ID_ICON, ID_png, IFFSIZE_UNKNOWN)) {
+		    WriteChunkBytes(iff, icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset, icon->ni_Extra.PNG[0].Size);
+
+		    PopChunk(iff);
+                }
+
+		if (icon->ni_Extra.PNG[1].Size &&
+		    !PushChunk(iff, ID_ICON, ID_png, IFFSIZE_UNKNOWN)) {
+		    WriteChunkBytes(iff, icon->ni_Extra.Data + icon->ni_Extra.PNG[1].Offset, icon->ni_Extra.PNG[1].Size);
+
+		    PopChunk(iff);
+                }
 		
 	    	PopChunk(iff);
 		

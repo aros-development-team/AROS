@@ -235,12 +235,12 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
     icon->ni_Extra.Data = data;
     icon->ni_Extra.Size = filesize;
     
-    icon->ni_Extra.Offset[0].PNG = 0;
-    
+    icon->ni_Extra.PNG[0].Offset = 0;
+    icon->ni_Extra.PNG[0].Size = filesize;
     {
     	ULONG width = ~0, height = ~0;
 	
-	icon->ni_Image[0].ARGB = ReadMemPNG(&icon->ni_DiskObject, icon->ni_Extra.Data + icon->ni_Extra.Offset[0].PNG, &width, &height, chunknames, chunkpointer, IconBase);
+	icon->ni_Image[0].ARGB = ReadMemPNG(&icon->ni_DiskObject, icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset, &width, &height, chunknames, chunkpointer, IconBase);
 	if (icon->ni_Image[0].ARGB == NULL) {
 	    D(bug("[%s] Can't parse PNG image at 0\n", __func__));
 	    return FALSE;
@@ -483,7 +483,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
     
     /* Look for a possible 2nd PNG image attached onto the first one */
     {
-    	UBYTE *filepos = icon->ni_Extra.Data + icon->ni_Extra.Offset[0].PNG + 8;
+    	UBYTE *filepos = icon->ni_Extra.Data + icon->ni_Extra.PNG[0].Offset + 8;
     	BOOL done = FALSE;
 	
 	while(!done && filepos < ((UBYTE *)icon->ni_Extra.Data + icon->ni_Extra.Size))
@@ -507,7 +507,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 	{
 	    ULONG offset = filepos - (UBYTE *)icon->ni_Extra.Data;
 	    
-	    icon->ni_Extra.Offset[1].PNG = offset;
+	    icon->ni_Extra.PNG[0].Size = offset;
+	    icon->ni_Extra.PNG[1].Offset = offset;
+	    icon->ni_Extra.PNG[1].Size = (filesize - icon->ni_Extra.PNG[0].Size);
 	    icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Width, &icon->ni_Height, NULL, NULL, IconBase);
 	}
     	
@@ -788,7 +790,7 @@ STATIC BOOL WriteIconChunk(BPTR file, struct DiskObject *dobj, struct IconBase *
 BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 {
     struct NativeIcon 	*nativeicon = NATIVEICON(dobj);
-    UBYTE   	    	*mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.Offset[0].PNG;
+    UBYTE   	    	*mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[0].Offset;
     BOOL    	    	 done = FALSE;
     
     if (nativeicon->ni_Extra.Data == NULL)
@@ -833,13 +835,13 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
 	
     }
 
-    if (nativeicon->ni_Extra.Offset[1].PNG > 0)
+    if (nativeicon->ni_Extra.PNG[1].Offset > 0)
     {
-    	ULONG size = nativeicon->ni_Extra.Size - nativeicon->ni_Extra.Offset[1].PNG;
+    	ULONG size = nativeicon->ni_Extra.PNG[1].Size;
 
     	/* 2nd PNG Image attached */
 
-	if (Write(file, nativeicon->ni_Extra.Data + nativeicon->ni_Extra.Offset[1].PNG, size) != size) return FALSE;
+	if (Write(file, nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[1].Offset, size) != size) return FALSE;
     }
         
     return TRUE;

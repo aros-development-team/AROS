@@ -515,7 +515,7 @@
                 {
                     image1->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */
-                    nativeicon->ni_Extra.Offset[0].PNG = -1;
+                    nativeicon->ni_Extra.PNG[0].Size = 0;
                 }
                 SET_ERRORCODE(0);
                 processed++;
@@ -539,7 +539,7 @@
                 {
                     image2->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */
-                    nativeicon->ni_Extra.Offset[1].PNG = -1;
+                    nativeicon->ni_Extra.PNG[1].Size = 0;
                 }
                 SET_ERRORCODE(0);
                 processed++;
