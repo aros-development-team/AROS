@@ -703,6 +703,12 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "    AROS_USERFUNC_INIT\n"
 	    "\n"
 	    "    int ok;\n"
+    );
+    if (cfg->modtype != HANDLER)
+	fprintf(out,
+	    "    int initcalled = 0;\n"
+	);
+    fprintf(out,
 	    "\n"
     );
 
@@ -786,6 +792,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	    "        ok = 1;\n");
     else
     	fprintf(out,
+	    "        initcalled = 1;\n"
 	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);\n");
     fprintf(out,
 	    "    }\n"
@@ -798,7 +805,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
     
     if (cfg->modtype != HANDLER)
     	fprintf(out,
-	    "        set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n");
+	    "        if (initcalled)\n"
+	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n");
 
     fprintf(out,
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
