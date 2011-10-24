@@ -790,7 +790,7 @@ void DaemonCode(LIBBASETYPEPTR LIBBASE)
      * Prepare message ports and timer.device's request
      */
     myport = CreateMsgPort();
-    timer  = ata_OpenTimer();
+    timer  = ata_OpenTimer(LIBBASE);
     bus         = (struct ata_Bus*)LIBBASE->ata_Buses.mlh_Head;
 
     /*
@@ -912,7 +912,7 @@ void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphor
     ObtainSemaphoreShared(ssem);
     Signal(parent, SIGBREAKF_CTRL_C);
 
-    bus->ab_Timer = ata_OpenTimer();
+    bus->ab_Timer = ata_OpenTimer(bus->ab_Base);
 
     /* Get the signal used for sleeping */
     bus->ab_Task = FindTask(0);

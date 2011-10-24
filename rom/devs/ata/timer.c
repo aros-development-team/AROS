@@ -20,17 +20,17 @@
 #include <proto/exec.h>
 #include <aros/debug.h>
 #include <proto/timer.h>
+
 #include "timer.h"
+#include "ata.h"
 
-ULONG iters_per_100ns = 0;
-struct Device *TimerBase = 0;
-
-static BOOL ata_Calibrate(struct IORequest* tmr)
+static BOOL ata_Calibrate(struct IORequest* tmr, struct ataBase *base)
 {
     register ULONG x;
     register ULONG scale = 0x8000;	// min iterations...
     volatile register ULONG t = 1;
     struct timeval t1, t2;
+    struct Device *TimerBase = base->ata_TimerBase;
     
     D(bug("[ATA  ] Calibration started\n"));
 
@@ -70,11 +70,11 @@ static BOOL ata_Calibrate(struct IORequest* tmr)
     x = (x+9) / 10;
 
     bug("[ATA  ] Approximate number of iterations per 100 nanoseconds: %ld\n", x);
-    iters_per_100ns = x;
+    base->ata_ItersPer100ns = x;
     return TRUE;
 }
 
-struct IORequest *ata_OpenTimer()
+struct IORequest *ata_OpenTimer(struct ataBase *base)
 {
     struct MsgPort *p = CreateMsgPort();
     if (NULL != p)
@@ -90,10 +90,10 @@ struct IORequest *ata_OpenTimer()
 	     */
 	    if (0 == OpenDevice("timer.device", UNIT_MICROHZ, io, 0))	
 	    {
-		if (0 == TimerBase)
+		if (NULL == base->ata_TimerBase)
 		{
-		    TimerBase = io->io_Device;
-		    ata_Calibrate(io);
+		    base->ata_TimerBase = io->io_Device;
+		    ata_Calibrate(io, base);
 		}
 		return io;
 	    }
@@ -128,11 +128,11 @@ void ata_CloseTimer(struct IORequest *tmr)
     }
 }
 
-void ata_WaitNano(register ULONG ns)
+void ata_WaitNano(register ULONG ns, struct ataBase *base)
 {
     volatile register ULONG t = 1;
     ns = (ns + 99) / 100;
-    ns *= iters_per_100ns;
+    ns *= base->ata_ItersPer100ns;
     while (ns > 0)
     {
 	t = (((t + ns) * t) - ns) / ns;    // add, mul, sub, div, trivial benchmark.

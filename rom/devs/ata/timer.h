@@ -12,6 +12,8 @@
  * 2005-03-05  T. Wiszkowski       created file; initial benchmarked nanowait and timer-based micro/sec wait
  */
 
+struct ataBase;
+
 /*
  * ata_OpenTimer
  *   create timerequest to manage timed operations
@@ -20,7 +22,7 @@
  * note
  *   only one task can use given timerequest
  */
-struct IORequest *ata_OpenTimer();
+struct IORequest *ata_OpenTimer(struct ataBase *base);
 
 /*
  * ata_CloseTimer
@@ -55,5 +57,5 @@ ULONG ata_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs);
  * note
  *   rounds up ns to nearest multiple of 100
  */
-void ata_WaitNano(ULONG ns);
+void ata_WaitNano(ULONG ns, struct ataBase *base);
 
