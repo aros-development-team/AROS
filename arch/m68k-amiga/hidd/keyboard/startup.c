@@ -8,6 +8,7 @@ static int init_kbd(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *kbd;
     OOP_Object *drv = NULL;
+    struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
 
     kbd = OOP_NewObject(NULL, CLID_Hidd_Kbd, NULL);
     if (kbd) {
