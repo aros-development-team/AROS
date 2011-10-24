@@ -582,9 +582,13 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             }
         }
 
-        /* /F takes all the rest, including extra spaces, =, and '"' */
+        /* /F takes all the rest, including extra spaces, =, and '"'
+         * NOTE: If the item was quoted, this will strip off the
+         *       next '"' mark it sees.
+         */
         if ((flags[arg] & TYPEMASK) == REST)
         {
+            BOOL eat_quote = (it == ITEM_QUOTED) ? TRUE : FALSE;
             argbuf[arg] = s1;
 
             /* Skip past what ReadItem() just read.
@@ -607,9 +611,16 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                    strbuflen > 1 &&
                    *s2 &&
                    *s2 != '\n') {
+                cs->CS_CurChr++;
+
+                if (eat_quote && *s2 == '"') {
+                    s2++;
+                    eat_quote = FALSE;
+                    continue;
+                }
+
                 *(s1++) = *(s2++);
                 strbuflen--;
-                cs->CS_CurChr++;
             }
 
             *(s1++) = 0;
