@@ -10,10 +10,6 @@
 #include <oop/oop.h>
 #endif
 
-#ifndef AROS_CREATE_ROM
-#  define STATIC_MID static OOP_MethodID static_mid = 0;
-#else
-#  define STATIC_MID OOP_MethodID static_mid = 0;
-#endif
+#define STATIC_MID static OOP_MethodID static_mid = 0;
 
 #endif /* OOP_STATIC_MID_H */

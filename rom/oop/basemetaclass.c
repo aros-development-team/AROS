@@ -338,6 +338,7 @@
 */
 
 #define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
+#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
 #define IS_META_ATTR(attr, idx) ( (idx = attr - MetaAttrBase) < num_Meta_Attrs )
 /**********************
 **  BaseMeta::New()  **

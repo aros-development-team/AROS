@@ -66,13 +66,13 @@ struct hiddmeta_inst
 };
 
 #define OOPBase	((struct IntOOPBase *)cl->OOPBasePtr)
+#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
    
 /**********************
 **  HIDDMeta::New()  **
 **********************/
 static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
-
     IPTR (*domethod)(OOP_Object *, OOP_Msg) 			= NULL;
     IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
     IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
@@ -80,6 +80,9 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     
     EnterFunc(bug("HIDDMeta::New(cl=%s, msg = %p)\n",
     	cl->ClassNode.ln_Name, msg));
+
+    if (!UtilityBase)
+        ReturnPtr ("HIDDMeta::New", OOP_Object *, NULL);
 
     /* Analyze the taglist before object is allocated,
     ** so we can easily exit cleanly if some info is missing
@@ -123,7 +126,7 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	((OOP_Class *)o)->cl_DoSuperMethod	= dosupermethod;
 		  
     }
-    
+   
     ReturnPtr ("HIDDMeta::New", OOP_Object *, o);
 }
 

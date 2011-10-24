@@ -19,12 +19,12 @@
 
 BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr)
 {
-    STATIC_MID;
     struct P_meta_allocdisptabs p;
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Meta, MO_meta_allocdisptabs);
+    if (!OOPBase->ob_M_meta_allocdisptabs)
+        OOPBase->ob_M_meta_allocdisptabs = OOP_GetMethodID(IID_Meta, MO_meta_allocdisptabs);
     
-    p.mid = static_mid;
+    p.mid = OOPBase->ob_M_meta_allocdisptabs;
     p.superclass = super;
     p.ifdescr = ifdescr;
     
@@ -33,12 +33,12 @@ BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDes
 
 VOID meta_freedisptabs(OOP_Object *o)
 {
-    STATIC_MID;
     struct P_meta_freedisptabs p;
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Meta, MO_meta_freedisptabs);
+    if (!OOPBase->ob_M_meta_freedisptabs)
+        OOPBase->ob_M_meta_freedisptabs = OOP_GetMethodID(IID_Meta, MO_meta_freedisptabs);
 	
-    p.mid = static_mid;
+    p.mid = OOPBase->ob_M_meta_freedisptabs;
     
     OOP_DoMethod(o, (OOP_Msg)&p);
     
@@ -49,12 +49,12 @@ VOID meta_freedisptabs(OOP_Object *o)
 
 struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
 {
-    STATIC_MID;
     struct P_meta_iterateifs p;
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Meta, MO_meta_iterateifs);
+    if (!OOPBase->ob_M_meta_iterateifs)
+        OOPBase->ob_M_meta_iterateifs = OOP_GetMethodID(IID_Meta, MO_meta_iterateifs);
 	
-    p.mid		= static_mid;
+    p.mid		= OOPBase->ob_M_meta_iterateifs;
     p.iterval_ptr	= iterval_ptr;
     p.interface_id_ptr	= interface_id_ptr;
     p.num_methods_ptr	= num_methods_ptr;
@@ -65,12 +65,12 @@ struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR 
 
 struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG *num_methods_ptr)
 {
-    STATIC_MID;
     struct P_meta_getifinfo p;
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Meta, MO_meta_getifinfo);
+    if (!OOPBase->ob_M_meta_getifinfo)
+        OOPBase->ob_M_meta_getifinfo = OOP_GetMethodID(IID_Meta, MO_meta_getifinfo);
 	
-    p.mid		= static_mid;
+    p.mid		= OOPBase->ob_M_meta_getifinfo;
     p.interface_id	= interface_id;
     p.num_methods_ptr	= num_methods_ptr;
     
@@ -82,12 +82,13 @@ struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG 
 
 struct IFMethod *meta_findmethod(OOP_Object *o, OOP_MethodID method_to_find, struct Library *OOPBase)
 {
-    STATIC_MID;
+    struct IntOOPBase *iOOPBase = (APTR)OOPBase;
     struct P_meta_findmethod p;
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Meta, MO_meta_findmethod);
+    if (!iOOPBase->ob_M_meta_findmethod)
+        iOOPBase->ob_M_meta_findmethod = OOP_GetMethodID(IID_Meta, MO_meta_findmethod);
 	
-    p.mid		= static_mid;
+    p.mid		= iOOPBase->ob_M_meta_findmethod;
     p.method_to_find	= method_to_find;
     
     return (struct IFMethod *)OOP_DoMethod(o, (OOP_Msg)&p);
