@@ -230,6 +230,7 @@ VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg);
 
 OOP_Object *HIDDCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
     D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -303,7 +304,7 @@ VOID HIDDCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
-
+    struct Library  *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct TagItem  *tstate = msg->attrList;
     struct TagItem  *tag;
     struct HIDDData *hd = OOP_INST_DATA(cl, o);
@@ -543,6 +544,7 @@ VOID HIDDCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 static int init_hiddclass(LIBBASETYPEPTR lh)
 {
+    struct Library *OOPBase = GM_OOPBASE_FIELD(lh);
     struct  class_static_data *csd;
     ULONG   ok    = 0;
 
@@ -551,6 +553,9 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     /* If you are not running from ROM, don't use Alert() */
 
     csd = &lh->hd_csd;
+    csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!csd->cs_UtilityBase)
+        return FALSE;
 
     NEWLIST(&csd->hiddList);
     InitSemaphore(&csd->listLock);
@@ -574,6 +579,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
 
 static int free_hiddclass(LIBBASETYPEPTR lh)
 {
+    struct Library *OOPBase = GM_OOPBASE_FIELD(lh);
     struct class_static_data *csd = &lh->hd_csd;
 
     EnterFunc(bug("HIDD::Free()\n"));
@@ -583,6 +589,8 @@ static int free_hiddclass(LIBBASETYPEPTR lh)
 	OOP_ReleaseAttrBase(IID_Hidd);
 	csd->hiddAttrBase = 0;
     }
+
+    CloseLibrary(csd->cs_UtilityBase);
 
     ReturnInt("HIDD::Free", ULONG, TRUE);
 }
