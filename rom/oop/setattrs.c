@@ -59,15 +59,16 @@
     AROS_LIBFUNC_INIT
     
     struct pRoot_Set p;
-    STATIC_MID;
+    struct IntOOPBase *iOOPBase = (struct IntOOPBase *)OOPBase;
     
     EnterFunc(bug("OOP_SetAttrs())\n"));
     ASSERT_VALID_PTR(object);
     ASSERT_VALID_PTR_OR_NULL(attrList);
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Root, moRoot_Set);
+    if (!iOOPBase->ob_mRoot_Set)
+        iOOPBase->ob_mRoot_Set = OOP_GetMethodID(IID_Root, moRoot_Set);
 
-    p.mID	= static_mid;
+    p.mID	= iOOPBase->ob_mRoot_Set;
     p.attrList	= attrList;
 
     /* Call the Set() method on the object */ 

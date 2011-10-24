@@ -45,6 +45,10 @@ static int OOPInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("Enter OOPInit\n"));
 
+    LIBBASE->ob_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!LIBBASE->ob_UtilityBase)
+        return FALSE;
+
     NEWLIST(&LIBBASE->ob_ClassList);
     InitSemaphore(&LIBBASE->ob_ClassListLock);
 
@@ -103,7 +107,14 @@ static int OOPInit(LIBBASETYPEPTR LIBBASE)
     return (FALSE);
 }
 
+static int OOPExpunge(LIBBASETYPEPTR LIBBASE)
+{
+    CloseLibrary(LIBBASE->ob_UtilityBase);
+    return TRUE;
+}
+
 ADD2INITLIB(OOPInit, 0);
+ADD2EXPUNGELIB(OOPExpunge, 0);
 
 /**************************
 ** InitUtilityClasses()  **

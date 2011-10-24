@@ -76,6 +76,8 @@ static void dump_bucket(struct IFBucket *b)
 
 #endif	
 
+#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
+
 /********************
 **  IFMeta::New()  **
 ********************/

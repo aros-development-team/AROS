@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 #MM- core-linklibs : linklibs-oop
 
 FILES	  :=	hash hiddmetaclass metaclass basemetaclass  \
-		privatestubs rootclass support 
+		rootclass support privatestubs
 	
 FUNCS :=    addclass		\
 	    disposeobject	\
@@ -22,7 +22,8 @@ FUNCS :=    addclass		\
 	    removeclass		\
 	    setattrs
 
-USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__
+USER_CFLAGS := -DAROS_USE_OOP -D__OOP_NOLIBBASE__ \
+               -D__UTILITY_NOLIBBASE__
 
 #MM kernel-oop-includes : \
 #MM     kernel-exec-includes \

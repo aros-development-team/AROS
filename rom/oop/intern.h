@@ -317,6 +317,18 @@ struct IntOOPBase
     
     /* An array of the interface IDs used internally. */
     ULONG			 ob_InternIDs[NUM_Indexes];
+
+    /* We use UtilityBase frequently */
+    struct Library              *ob_UtilityBase;
+
+    /* Commonly used method IDs */
+    OOP_MethodID                 ob_mRoot_Set;
+    OOP_MethodID                 ob_mRoot_Get;
+    OOP_MethodID                 ob_M_meta_allocdisptabs;
+    OOP_MethodID                 ob_M_meta_freedisptabs;
+    OOP_MethodID                 ob_M_meta_iterateifs;
+    OOP_MethodID                 ob_M_meta_getifinfo;
+    OOP_MethodID                 ob_M_meta_findmethod;
 };
 
 #define ROOTCLASSPTR (& (OOPBase)->ob_RootClassObject.inst.data.public)

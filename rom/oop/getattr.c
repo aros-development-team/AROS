@@ -63,14 +63,15 @@
     AROS_LIBFUNC_INIT
     
     struct pRoot_Get p;
-    STATIC_MID;
+    struct IntOOPBase *iOOPBase = (struct IntOOPBase *)OOPBase;
     
     EnterFunc(bug("OOP_GetAttr())\n"));
     
-    if (!static_mid) static_mid = OOP_GetMethodID(IID_Root, moRoot_Get);
+    if (!iOOPBase->ob_mRoot_Get)
+        iOOPBase->ob_mRoot_Get = OOP_GetMethodID(IID_Root, moRoot_Get);
 	
 	
-    p.mID	= static_mid;
+    p.mID	= iOOPBase->ob_mRoot_Get;
     p.attrID	= attrID;
     p.storage	= storage;
     
