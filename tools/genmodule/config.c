@@ -627,7 +627,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"superclass_field", "residentpri", "options", "sysbase_field",
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
-		"initpri", "type", "getidfunc", "addromtag"
+		"initpri", "type", "getidfunc", "addromtag", "oopbase_field"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -1012,6 +1012,10 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 27: /* addromtag */
 	    	cfg->addromtag = strdup(s);
 	    	break;
+
+	    case 28: /* oopbase_field */
+	    	cfg->oopbase_field = strdup(s);
+	    	break;
 		    }
 	}
 	else /* Line starts with ## */
@@ -1058,6 +1062,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    exitfileerror(20, "sysbase_field specified when no libbasetype is given\n");
 	if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	    exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
+	if (cfg->oopbase_field != NULL && cfg->libbasetype == NULL)
+	    exitfileerror(20, "oopbase_field specified when no libbasetype is given\n");
         /* rootbase_field only allowed when duplicating base */
         if (cfg->rootbase_field != NULL && !(cfg->options & OPTION_DUPBASE))
             exitfileerror(20, "rootbasefield only valid for option peropenerbase or peridbase\n");

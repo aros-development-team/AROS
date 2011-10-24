@@ -113,6 +113,11 @@ void writeinclibdefs(struct config *cfg)
 		"#define GM_SYSBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		cfg->sysbase_field
 	);
+    if (cfg->oopbase_field != NULL)
+	fprintf(out,
+		"#define GM_OOPBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+		cfg->oopbase_field
+	);
     if (cfg->seglist_field != NULL)
 	fprintf(out,
 		"#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",

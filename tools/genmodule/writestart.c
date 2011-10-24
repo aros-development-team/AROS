@@ -714,6 +714,11 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "#ifdef GM_SYSBASE_FIELD\n"
                 "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
                 "#endif\n"
+                "#ifdef GM_OOPBASE_FIELD\n"
+                "    GM_OOPBASE_FIELD(lh) = OpenLibrary(\"oop.library\",0);\n"
+                "    if (GM_OOPBASE_FIELD(lh) == NULL)\n"
+                "        return NULL;\n"
+                "#endif\n"
         );
     }
 
@@ -1268,7 +1273,11 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 	if (cfg->classlist != NULL)
 	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
-	    fprintf(out, "        set_close_libraries();\n");
+	    fprintf(out, "        set_close_libraries();\n"
+	                 "#ifdef GM_OOPBASE_FIELD\n"
+	                 "        CloseLibrary((struct Library *)GM_OOPBASE_FIELD(lh));\n"
+	                 "#endif\n"
+	            );
 	if (cfg->options & OPTION_BASEREL)
 	    fprintf(out,
 	    	"\n"

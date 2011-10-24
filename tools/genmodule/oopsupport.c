@@ -54,6 +54,9 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         "/*** Library startup and shutdown *******************************************/\n"
         "static int OOP_%s_Startup(LIBBASETYPEPTR LIBBASE)\n"
         "{\n"
+        "#ifdef GM_OOPBASE_FIELD\n"
+        "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
+        "#endif\n"
         "    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);\n"
         "    OOP_Class *cl = NULL;\n"
         "\n",
@@ -185,6 +188,9 @@ void writeoopinit(FILE *out, struct classinfo *cl)
         out,
         "static void OOP_%s_Shutdown(LIBBASETYPEPTR LIBBASE)\n"
         "{\n"
+        "#ifdef GM_OOPBASE_FIELD\n"
+        "    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);\n"
+        "#endif\n"
         "    if (%s_CLASSPTR_FIELD(LIBBASE) != NULL)\n"
         "    {\n"
         "        OOP_RemoveClass(%s_CLASSPTR_FIELD(LIBBASE));\n"
