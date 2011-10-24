@@ -70,7 +70,7 @@ static const char ldDemonName[] = "Lib & Dev Loader Daemon";
     directories.
 */
 static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
-		   struct DosLibrary *DOSBase, struct ExecBase *SysBase)
+		   struct Library *DOSBase, struct ExecBase *SysBase)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
     BPTR seglist = BNULL;
@@ -259,11 +259,12 @@ static struct LDObjectNode *LDNewObjectNode(STRPTR name, struct ExecBase *SysBas
 
 static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPTR dir, struct List *list, struct ExecBase *SysBase)
 {
-    struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
     /*  We use FilePart() because the liblist is built from resident IDs,
 	and contain no path. Eg. The user can request gadgets/foo.gadget,
 	but the resident only contains foo.gadget
     */
+    struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct Library *DOSBase = ldBase->dl_DOSBase;
     STRPTR stripped_libname = FilePart(libname);
     struct Library *tmplib;
     struct LDObjectNode *object;
@@ -447,7 +448,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 {
     AROS_LIBFUNC_INIT
 
-    struct LDDemonBase *ldBase;
+    struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
     struct Library *library;
     struct LDObjectNode *object = LDRequestObject(libname, version, "libs", &SysBase->LibList, SysBase);
 
@@ -455,7 +456,6 @@ AROS_LH2(struct Library *, OpenLibrary,
     	return NULL;
 
     /* Call the EXEC's OpenLibrary function */
-    ldBase = SysBase->ex_RamLibPrivate;
     library = ExecOpenLibrary(object->ldon_Node.ln_Name, version);
 
     LDReleaseObject(object, SysBase);
@@ -475,12 +475,11 @@ AROS_LH4(LONG, OpenDevice,
     AROS_LIBFUNC_INIT
 
     struct LDObjectNode *object;
+    struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
 
     object = LDRequestObject(devname, 0, "devs", &SysBase->DeviceList, SysBase);
     if (object)
     {
-	struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
-
     	/* Call exec.library/OpenDevice(), it will do the job */
     	ExecOpenDevice(object->ldon_Node.ln_Name, unitNumber, iORequest, flags);
     	LDReleaseObject(object, SysBase);
@@ -506,6 +505,7 @@ AROS_LH1(void, CloseLibrary,
     AROS_LIBFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct Library *DOSBase = ldBase->dl_DOSBase;
     BPTR seglist;
 
     if( library != NULL )
@@ -531,6 +531,7 @@ AROS_LH1(void, CloseDevice,
 {
     AROS_LIBFUNC_INIT
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct Library *DOSBase = ldBase->dl_DOSBase;
     BPTR seglist = BNULL;
 
     Forbid();
@@ -557,6 +558,7 @@ AROS_LH1(void, RemLibrary,
     AROS_LIBFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct Library *DOSBase = ldBase->dl_DOSBase;
     BPTR seglist;
 
     Forbid();
@@ -662,6 +664,7 @@ static AROS_ENTRY(VOID, LDDemon,
     AROS_USERFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
+    struct Library *DOSBase = ldBase->dl_DOSBase;
     struct LDDMsg *ldd;
 
     for(;;)
@@ -683,6 +686,7 @@ static AROS_ENTRY(VOID, LDDemon,
 
 static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
 {
+    struct Library *DOSBase;
     struct TagItem tags[] =
     {
 	{ NP_Entry, (IPTR)LDDemon },
@@ -693,6 +697,11 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
 	{ NP_Priority, 5 },
 	{ TAG_END , 0 }
     };
+
+    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    if (!DOSBase) {
+	Alert( AN_RAMLib | AG_OpenLib | AO_DOSLib | AT_DeadEnd );
+    }
 
     if ((ldBase->dl_LDDemonPort = CreateMsgPort()) == NULL )
     {
@@ -706,6 +715,8 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
     ldBase->dl_LDHandler.is_Node.ln_Pri = 0;
     ldBase->dl_LDHandler.is_Code = (void (*)())LDFlush;
     ldBase->dl_LDHandler.is_Data = NULL;
+
+    ldBase->dl_DOSBase = DOSBase;
 
     NEWLIST(&ldBase->dl_LDObjectsList);
     InitSemaphore(&ldBase->dl_LDObjectsListSigSem);
