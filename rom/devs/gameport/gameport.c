@@ -169,6 +169,8 @@ static int GM_UNIQUENAME(open)
     ULONG flags
 )
 {
+    struct Library *OOPBase;
+
     /* Erroneous unit? */
     if (unitnum > GP_MAXUNIT)
     {
@@ -176,7 +178,7 @@ static int GM_UNIQUENAME(open)
 
 	return FALSE;
     }
-    
+   
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         D(bug("gameport.device/open: IORequest structure passed to OpenDevice "
@@ -209,6 +211,12 @@ static int GM_UNIQUENAME(open)
 
     gpUn->gpu_unitNum = unitnum;
         
+    OOPBase = OpenLibrary("oop.library", 0);
+    if (!OOPBase) {
+        ioreq->io_Error = IOERR_OPENFAIL;
+        return FALSE;
+    }
+
     if (!HiddMouseAB)
     {
         HiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
@@ -216,6 +224,7 @@ static int GM_UNIQUENAME(open)
 	if (!HiddMouseAB)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
+	    CloseLibrary(OOPBase);
 	    D(bug("gameport.device: Could not get attrbase\n"));
 
 	    return FALSE;
@@ -248,6 +257,7 @@ static int GM_UNIQUENAME(open)
 	}
 
     }
+    CloseLibrary(OOPBase);
 
     if(!GPBase->gp_MouseHiddBase)
     {
