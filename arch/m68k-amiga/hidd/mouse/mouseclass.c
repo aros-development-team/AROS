@@ -104,8 +104,13 @@ static AROS_UFH4(ULONG, mouse_vblank,
 OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
+    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
 
     EnterFunc(bug("_Mouse::New()\n"));
+
+    if (!UtilityBase) {
+        ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
+    }
 
     ObtainSemaphoreShared( &MSD(cl)->sema);
 
@@ -114,8 +119,10 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
     ReleaseSemaphore( &MSD(cl)->sema);
 
-    if (has_mouse_hidd) /* Cannot open twice */
+    if (has_mouse_hidd) { /* Cannot open twice */
+        CloseLibrary(UtilityBase);
         ReturnPtr("_Mouse::New", OOP_Object *, NULL); /* Should have some error code here */
+    }
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (o)
@@ -185,6 +192,7 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         ReleaseSemaphore( &MSD(cl)->sema);
     }
 
+    CloseLibrary(UtilityBase);
     return o;
 }
 
@@ -252,6 +260,7 @@ VOID AmigaMouse__Hidd_Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pH
 
 static int AmigaMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },
@@ -266,6 +275,7 @@ static int AmigaMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
 /*************** free_kbdclass()  **********************************/
 static int AmigaMouse_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
     struct OOP_ABDescr attrbases[] =
     {
         { IID_Hidd_Mouse, &LIBBASE->msd.hiddMouseAB },

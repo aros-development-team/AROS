@@ -8,6 +8,7 @@ static int init_mouse(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *ms;
     OOP_Object *drv = NULL;
+    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
     
     ms = OOP_NewObject(NULL, CLID_Hidd_Mouse, NULL);
     if (ms) {
