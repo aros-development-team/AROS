@@ -13,6 +13,7 @@
 #include <exec/rawfmt.h>
 
 #include "exec_debug.h"
+#include "exec_intern.h"
 
 #ifndef DEBUG_SetFunction
 #   define DEBUG_SetFunction 0
@@ -36,7 +37,6 @@ const ULONG m68k_count  = 0x52934e75;
  */
 const ULONG m68k_serial = 0x4eeefdfc;
 
-static APTR realRawDoFmt;
 static AROS_UFH5(APTR, myRawDoFmt,
 	AROS_UFHA(CONST_STRPTR, fmt, A0),
 	AROS_UFHA(APTR,        args, A1),
@@ -60,7 +60,7 @@ static AROS_UFH5(APTR, myRawDoFmt,
 	break;
     }
 
-    return AROS_UFC5(APTR, realRawDoFmt,
+    return AROS_UFC5(APTR, ((struct IntExecBase *)SysBase)->PlatformData.realRawDoFmt,
 	AROS_UFCA(CONST_STRPTR, fmt, A0),
 	AROS_UFCA(APTR,        args, A1),
 	AROS_UFCA(VOID_FUNC,  putch, A2),
@@ -69,7 +69,6 @@ static AROS_UFH5(APTR, myRawDoFmt,
 
     AROS_USERFUNC_EXIT
 }
-
 
 /*****************************************************************************
 
@@ -182,7 +181,7 @@ static AROS_UFH5(APTR, myRawDoFmt,
      * instructions of overhead.
      */
     if (library == (APTR)SysBase && funcOffset == (-87 * LIB_VECTSIZE)) {
-    	realRawDoFmt = newFunction;
+    	((struct IntExecBase *)SysBase)->PlatformData.realRawDoFmt = newFunction;
     	newFunction = myRawDoFmt;
     }
 
