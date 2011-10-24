@@ -12,4 +12,6 @@ struct LDDemonBase
     struct Library 	 * (*__OpenLibrary)();
     BYTE		   (*__OpenDevice)();
     ULONG		   dl_LDReturn;
+
+    struct Library       * dl_DOSBase;
 };
