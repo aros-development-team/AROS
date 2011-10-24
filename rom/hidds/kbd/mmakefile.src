@@ -12,6 +12,8 @@ clean ::
 FILES	:= kbdclass
 STUBS	:= kbd_stubs
 
+USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
+
 %build_module mmake=kernel-hidd-kbd \
     modname=keyboard modtype=hidd \
     files="$(FILES)" \

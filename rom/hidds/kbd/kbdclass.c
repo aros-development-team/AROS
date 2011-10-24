@@ -162,10 +162,16 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct kbd_data *data;
     struct TagItem *tag, *tstate;
+    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+
+    if (!UtilityBase)
+        return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (!o)
+    if (!o) {
+        CloseLibrary(UtilityBase);
         return NULL;
+    }
 
     data = OOP_INST_DATA(cl, o);
     data->callback = NULL;
@@ -205,6 +211,7 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	Enable();
     }
 
+    CloseLibrary(UtilityBase);
     return o;
 }
 
@@ -274,6 +281,7 @@ VOID KBD__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_AddHardwareDriver *Msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct TagItem tags[] = {
 	{ aHidd_Kbd_IrqHandler	  , (IPTR)GlobalCallback	},
 	{ aHidd_Kbd_IrqHandlerData, (IPTR)CSD(cl) 		},
@@ -324,6 +332,8 @@ OOP_Object *KBD__Hidd_Kbd__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struc
 
 void KBD__Hidd_Kbd__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_RemHardwareDriver *Msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+
     OOP_DisposeObject(Msg->driverObject);
 }
 
@@ -331,6 +341,8 @@ void KBD__Hidd_Kbd__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 static int KBD_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
+
     D(bug("[KBD] Base Class destruction\n"));
 
     OOP_ReleaseAttrBase(IID_Hidd_Kbd);
@@ -340,6 +352,8 @@ static int KBD_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 
 static int KBD_InitClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
+
     D(bug("[KBD] base class initialization\n"));
 
     LIBBASE->csd.hiddKbdAB = OOP_ObtainAttrBase(IID_Hidd_Kbd);

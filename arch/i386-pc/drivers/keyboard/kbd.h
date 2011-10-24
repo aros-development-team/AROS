@@ -20,6 +20,8 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+
+#include <dos/bptr.h>
 #include <hidd/irq.h>
 /****************************************************************************************/
 
@@ -138,6 +140,9 @@ struct kbd_staticdata
     
     OOP_AttrBase        hiddKbdAB;
     HIDDT_IRQ_Handler	*irq;
+
+    BPTR                cs_SegList;
+    struct Library     *cs_OOPBase;
 };
 
 struct kbdbase

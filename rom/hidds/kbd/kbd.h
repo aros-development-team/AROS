@@ -1,4 +1,5 @@
 #include <exec/lists.h>
+#include <dos/bptr.h>
 
 struct kbd_data
 {
@@ -13,6 +14,9 @@ struct kbd_staticdata
     OOP_Class		*kbdClass;
 
     struct MinList	callbacks;
+
+    BPTR                cs_SegList;
+    struct Library     *cs_OOPBase;
 };
 
 struct kbdbase
