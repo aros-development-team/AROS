@@ -45,6 +45,9 @@ struct class_static_data
 
     struct MinList               hiddList;
     struct SignalSemaphore       listLock;
+
+    struct Library              *cs_OOPBase;
+    struct Library              *cs_UtilityBase;
 };
 
 
