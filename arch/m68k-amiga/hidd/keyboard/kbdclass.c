@@ -90,8 +90,12 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     APTR    	    callback = NULL;
     APTR    	    callbackdata = NULL;
     BOOL has_kbd_hidd = FALSE;
+    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
     
     EnterFunc(bug("Kbd::New()\n"));
+
+    if (!UtilityBase)
+    	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
     ObtainSemaphoreShared( &XSD(cl)->sema);
 
@@ -100,8 +104,10 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 
     ReleaseSemaphore( &XSD(cl)->sema);
  
-    if (has_kbd_hidd) /* Cannot open twice */
+    if (has_kbd_hidd) { /* Cannot open twice */
+        CloseLibrary(UtilityBase);
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
+    }
 
     tstate = msg->attrList;
     D(bug("Kbd: tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));
@@ -130,7 +136,8 @@ OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         }
 	    
     } /* while (tags to process) */
-    
+    CloseLibrary(UtilityBase);
+
     if (NULL == callback)
     	ReturnPtr("Kbd::New", OOP_Object *, NULL); /* Should have some error code here */
 
@@ -195,6 +202,7 @@ VOID AmigaKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 static int AmigaKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
     struct OOP_ABDescr attrbases[] =
     {
         {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
@@ -208,6 +216,7 @@ static int AmigaKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 
 static int AmigaKbd_ExpungeAttrs(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
     struct OOP_ABDescr attrbases[] =
     {
         {IID_Hidd_Kbd	, &LIBBASE->ksd.hiddKbdAB   },
