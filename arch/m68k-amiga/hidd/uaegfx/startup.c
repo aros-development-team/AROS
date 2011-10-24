@@ -19,17 +19,26 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE);
 static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
 {
     ULONG err;
+    struct Library *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
  	
     D(bug("************************* UAEGFX_Init ******************************\n"));
 
-    if (!Init_UAEGFXClass(LIBBASE))
+    if (!GfxBase)
+        return FALSE;
+
+    if (!Init_UAEGFXClass(LIBBASE)) {
+        CloseLibrary(GfxBase);
     	return FALSE;
+    }
+
     LIBBASE->library.lib_OpenCnt = 1;
 
     err = AddDisplayDriver(LIBBASE->csd.gfxclass, NULL,
 			   DDRV_KeepBootMode, TRUE,
 			   DDRV_IDMask      , 0xF0000000,
 			   TAG_DONE);
+
+    CloseLibrary(GfxBase);
 
     D(bug("UAEGFXHIDD AddDisplayDriver() result: %u\n", err));
     return err ? FALSE : TRUE;

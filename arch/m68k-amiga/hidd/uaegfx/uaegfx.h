@@ -56,6 +56,7 @@ struct uaegfx_staticdata
 	struct Library *CardBase;
 	struct Library *cs_IntuitionBase;
 	struct Library *cs_UtilityBase;
+	struct Library *cs_OOPBase;
 	struct bm_data *disp;
 	APTR uaeromvector;
 	ULONG rgbformat;
@@ -92,6 +93,8 @@ struct UAEGFXclbase
     
     struct uaegfx_staticdata csd;
     IPTR                  cs_SegList;
+    struct Library       *cs_SysBase;
+    struct Library       *cs_OOPBase;
 };
 
 #undef CSD
