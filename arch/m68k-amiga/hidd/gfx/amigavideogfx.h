@@ -57,7 +57,6 @@ struct amigavideo_staticdata
 	
 	struct List nativemodelist;
 	BOOL superforward;
-	struct GfxBase *gfxbase;
 
 	struct amigabm_data *disp;
 	ULONG modeid;
@@ -104,6 +103,14 @@ struct amigavideo_staticdata
 
     void (*acb)(void *data, void *bm);
     APTR acbdata;
+
+    BPTR  cs_SegList;
+    struct Library *cs_OOPBase;
+    struct Library *cs_GfxBase;
+    struct Library *cs_UtilityBase;
+
+    OOP_MethodID    cs_HiddGfxBase;
+    OOP_MethodID    cs_HiddBitMapBase;
 };
 
 struct amigavideoclbase
