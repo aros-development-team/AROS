@@ -111,6 +111,9 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
         return FALSE;
     }
 
+    HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
 

@@ -603,10 +603,20 @@ struct IntIntuitionBase
     OOP_AttrBase		 HiddAttrBase;
     OOP_AttrBase		 HiddGfxAttrBase;
     OOP_AttrBase		 HiddPixFmtAttrBase;
+
+    OOP_MethodID		 ib_HiddGfxBase;
+    OOP_MethodID		 ib_HiddBitMapBase;
+
     struct IClass		*monitorclass;
     struct MinList		 MonitorList;
     struct SignalSemaphore	 MonitorListSem;
 };
+
+#undef HiddBitMapBase
+#undef HiddGfxBase
+
+#define HiddBitMapBase		(((struct IntIntuitionBase *)(IntuitionBase))->ib_HiddBitMapBase)
+#define HiddGfxBase		(((struct IntIntuitionBase *)(IntuitionBase))->ib_HiddGfxBase)
 
 struct SharedPointer
 {
