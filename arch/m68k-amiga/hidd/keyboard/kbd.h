@@ -25,6 +25,8 @@
 #   include <exec/interrupts.h>
 #endif
 
+#include <dos/bptr.h>
+
 /****************************************************************************************/
 
 /***** Kbd HIDD *******************/
@@ -64,6 +66,9 @@ struct kbd_staticdata
     OOP_Class *kbdclass;
     OOP_Object *kbdhidd;
     OOP_AttrBase hiddKbdAB;
+
+    BPTR                cs_SegList;
+    struct Library     *cs_OOPBase;
 };
 
 struct kbdbase
