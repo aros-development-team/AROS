@@ -28,6 +28,12 @@
 #include "support.h"
 #include "vesa.h"
 
+#ifdef MULTIBOOT_64BIT
+#define DEF_SYSBASE 8
+#else
+#define DEF_SYSBASE 4
+#endif
+
 /*
  * The Multiboot-compliant header has to be within the first 4KB (1KB??) of ELF file, 
  * therefore it will be packed into the .aros.startup section. I hope, that turning debug on
@@ -36,12 +42,13 @@
  * and new Multiboot v2 specification (EFI-compatible).
  */
 
-#ifdef AROS_CPU_x86_64
+#ifdef BOOTLOADER_grub2
 #define MB_FLAGS (MB_PAGE_ALIGN|MB_MEMORY_INFO|MB_VIDEO_MODE)
 #else
 /*
- * This makes the bootstrap working with GRUB 1
- * which doesn't support MB_VIDEO_MODE
+ * This makes the bootstrap working with GRUB 1 which doesn't
+ * support MB_VIDEO_MODE. However, this disables framebuffer support in the GRUB,
+ * so this would not work on Mac.
  */
 #define MB_FLAGS (MB_PAGE_ALIGN|MB_MEMORY_INFO)
 #endif
@@ -505,7 +512,7 @@ static void __bootstrap(unsigned int magic, void *mb)
      */
     fb_Mirror = __bs_malloc(0);
 
-#ifdef AROS_CPU_x86_64
+#ifdef MULTIBOOT_64BIT
     /*
      * tell the CPU that we will support SSE. We do it here because x86-64 compiler
      * with -m32 switch will use SSE for operations on long longs.
@@ -633,7 +640,7 @@ static void __bootstrap(unsigned int magic, void *mb)
 
     kprintf("[BOOT] Loading kickstart, data 0x%p, code 0x%p...\n", kstart, kbase);
 
-    if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, sizeof(void *), &kend, &kentry, &kdebug))
+    if (!LoadKernel(firstMod, (void *)kbase, (void *)kstart, (struct KernelBSS *)__bss_track, DEF_SYSBASE, &kend, &kentry, &kdebug))
     {
         panic("Failed to load the kickstart");
     }

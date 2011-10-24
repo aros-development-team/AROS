@@ -14,7 +14,7 @@
 #define D(x)    /* eps */
 #endif
 
-#ifdef AROS_CPU_x86_64
+#ifdef MULTIBOOT_64BIT
 
 /*
  * Our kickstart is 64-bit but we are being compiled in 32-bit mode.
