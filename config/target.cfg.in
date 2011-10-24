@@ -86,6 +86,9 @@ CPU             := $(AROS_TARGET_CPU)
 CC		:= $(TARGET_CC)
 AS		:= $(TARGET_AS)
 
+# Bootloader
+AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
+
 # Optional components
 X11_HIDD_TARGET       := @x11_hidd_target@
 SDL_HIDD_TARGET       := @sdl_hidd_target@
