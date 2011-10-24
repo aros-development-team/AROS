@@ -404,7 +404,7 @@ ULONG signals;
 LONG handlemessage(struct CDVDBase *global, ULONG signals) {
 register PACKET *packet;
 MSG     *msg;
-static void    *tmp = NULL;
+void    *tmp;
 char    buf[256];
 register WORD   error;
 UBYTE   notdone = 1;
@@ -481,7 +481,8 @@ UBYTE   notdone = 1;
 		packet = (PACKET *)msg->mn_Node.ln_Name;
 		packet->dp_Res1 = DOSTRUE;
 		packet->dp_Res2 = 0;
-		error = 0;	
+		error = 0;
+		tmp = NULL;
 		BUG(dbprintf(global, 
 			"[CDVDFS]\tPacket: %3ld %08lx %08lx %08lx %10s ",
 			packet->dp_Type,
