@@ -172,8 +172,8 @@
 #ifndef FORCE_LUT_ICONS
         if ((bmdepth > 8) && CyberGfxBase)
 	{
-	    if (ni->ni_Extra.Offset[id].PNG >= 0 && image->ARGB == NULL) {
-                image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[id].PNG, &ni->ni_Width, &ni->ni_Height, NULL, NULL, IconBase);
+	    if (ni->ni_Extra.PNG[id].Size && image->ARGB == NULL) {
+                image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.PNG[id].Offset, &ni->ni_Width, &ni->ni_Height, NULL, NULL, IconBase);
             }
             if (image->ARGB) {
                 D(bug("[%s] ARGB[%d] = %p\n", __func__, id, image->ARGB));

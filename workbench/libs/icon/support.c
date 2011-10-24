@@ -381,7 +381,9 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (ni && ni->ni_Extra.Data && ni->ni_Extra.Offset[0].PNG == 0)
+    if (ni && ni->ni_Extra.Data &&
+              ni->ni_Extra.PNG[0].Size &&
+              ni->ni_Extra.PNG[0].Offset == 0)
     {
     	success = WriteIconPNG(file, itmp, IconBase);
     }

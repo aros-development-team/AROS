@@ -64,8 +64,6 @@
     
     NEWLIST(&ni->ni_FreeList.fl_MemList);
     for (i = 0; i < 2; i++) {
-        ni->ni_Extra.Offset[i].IMAG = -1;
-        ni->ni_Extra.Offset[i].PNG = -1;
         ni->ni_Image[i].TransparentColor = -1;
     }
 
