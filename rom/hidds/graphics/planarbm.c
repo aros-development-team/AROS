@@ -114,6 +114,8 @@
 
 OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     IPTR height, bytesperrow;
     UBYTE depth;
     BOOL ok = FALSE;
@@ -306,6 +308,7 @@ static BOOL PBM_SetBitMap(OOP_Class *cl, OOP_Object *o, struct BitMap *bm)
 
 VOID PBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct TagItem *tag = FindTagItem(aHidd_PlanarBM_BitMap, msg->attrList);
 
     if (tag)

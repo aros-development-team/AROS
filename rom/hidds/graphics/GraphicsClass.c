@@ -139,6 +139,8 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrch
 
 OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDGraphicsData *data;
     BOOL    	    	    ok = FALSE;
     struct TagItem  	    *modetags;
@@ -207,6 +209,7 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
 VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data;
     
     data = OOP_INST_DATA(cl, o);
@@ -761,6 +764,7 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data;
     ULONG   	    	    idx;
 
@@ -851,6 +855,7 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewGC *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     OOP_Object *gc = NULL;
 
     EnterFunc(bug("HIDDGfx::NewGC()\n"));
@@ -904,6 +909,8 @@ OOP_Object *GFX__Hidd_Gfx__NewGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeGC *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+
     EnterFunc(bug("HIDDGfx::DisposeGC()\n"));
 
     if (NULL != msg->gc) OOP_DisposeObject(msg->gc);
@@ -1026,6 +1033,8 @@ VOID GFX__Hidd_Gfx__DisposeGC(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Dis
 OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     	    	    	    	      struct pHidd_Gfx_NewBitMap *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
 
     struct TagItem bmtags[] =
@@ -1311,6 +1320,8 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
 VOID GFX__Hidd_Gfx__DisposeBitMap(OOP_Class *cl, OOP_Object *o,
 				  struct pHidd_Gfx_DisposeBitMap *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+
     if (NULL != msg->bitMap)
 	OOP_DisposeObject(msg->bitMap);
 }
@@ -1422,6 +1433,7 @@ static BOOL alloc_mode_db(struct mode_db *mdb, ULONG numsyncs, ULONG numpfs, OOP
 
 static VOID free_mode_db(struct mode_db *mdb, OOP_Class *cl)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     ULONG i;
     
     ObtainSemaphore(&mdb->sema);
@@ -1507,6 +1519,8 @@ static VOID init_def_tags(struct TagItem *tags, ULONG numtags)
 
 static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetags)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct TagItem  	    *tag, *tstate;
     struct HIDDGraphicsData *data;
     
@@ -1905,6 +1919,7 @@ static HIDDT_ModeID *querymode(struct modequery *mq)
 HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
     	    	    	    	    	  struct pHidd_Gfx_QueryModeIDs *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct TagItem  	    *tag, *tstate;
     
     HIDDT_ModeID    	    *modeids;
@@ -2243,6 +2258,7 @@ BOOL GFX__Hidd_Gfx__SetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMo
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm,
     	    	    	       OOP_Object *dst_bm, ULONG width, ULONG height)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data;
     ULONG   	    	    i;
     IPTR                    numentries;
@@ -2352,6 +2368,7 @@ static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
 
 OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Show *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
     OOP_Object      	    *bm = msg->bitMap;
     IPTR oldwidth  = 0;
@@ -2716,6 +2733,7 @@ BOOL GFX__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBox *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     WORD    	    	    	    x, y;
     WORD    	    	    	    srcX = msg->srcX, destX = msg->destX;
     WORD    	    	    	    srcY = msg->srcY, destY = msg->destY;
@@ -3044,6 +3062,7 @@ VOID GFX__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 
 IPTR GFX__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_CopyBoxMasked *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     ULONG pixfmt = vHidd_StdPixFmt_Native32;
     OOP_Object *src_pf, *dest_pf;
     HIDDT_ColorModel src_colmod, dest_colmod;
@@ -3285,6 +3304,7 @@ VOID GFX__Hidd_Gfx__ShowImminentReset(OOP_Class *cl, OOP_Object *obj, OOP_Msg ms
 
 OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtTags)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     HIDDT_PixelFormat 	    cmp_pf;
     struct class_static_data *data;
     struct pixfmt_data 	    *retpf = NULL;
@@ -3361,6 +3381,7 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtT
 
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct class_static_data *data;
     struct pixfmt_data *pixfmt = (struct pixfmt_data *)pf;
 
@@ -3597,6 +3618,7 @@ OOP_Object *GFX__Hidd_Gfx__GetSync(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
 ULONG GFX__Hidd_Gfx__ModeProperties(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_ModeProperties *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDD_ModeProperties props = {0, 0, 0};
     IPTR has_hw_cursor = 0;
     ULONG len = msg->propsLen;
@@ -3809,6 +3831,7 @@ BOOL GFX__Hidd_Gfx__QueryHardware3D(OOP_Class *cl, OOP_Object *o, struct pHidd_G
 BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_GetMaxSpriteSize *msg)
 {
     IPTR types;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
 
     OOP_GetAttr(o, aHidd_Gfx_HWSpriteTypes, &types);
 
@@ -3863,6 +3886,7 @@ BOOL GFX__Hidd_Gfx__GetMaxSpriteSize(OOP_Class *cl, OOP_Object *o, struct pHidd_
 
 OOP_Object *GFX__Hidd_Gfx__NewOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewOverlay *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     ULONG *err = (ULONG *)GetTagData(aHidd_Overlay_Error, 0, msg->attrList);
 
     if (err)
@@ -3914,6 +3938,7 @@ OOP_Object *GFX__Hidd_Gfx__NewOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 VOID GFX__Hidd_Gfx__DisposeOverlay(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_DisposeOverlay *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     OOP_DisposeObject(msg->Overlay);
 }
 
@@ -4069,7 +4094,7 @@ ULONG GFX__Hidd_Gfx__PrepareViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd
 
 /****************************************************************************************/
 
-static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count)
+static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     ULONG failed = 0;
@@ -4084,7 +4109,7 @@ static ULONG ObtainAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULON
     return failed;
 }
 
-static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count)
+static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     
@@ -4095,7 +4120,7 @@ static void ReleaseAttrBases(OOP_AttrBase *bases, CONST_STRPTR *interfaces, ULON
     }
 }
 
-static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR *interfaces, ULONG count)
+static ULONG GetMethodBases(OOP_MethodID *bases, CONST_STRPTR *interfaces, ULONG count, struct Library *OOPBase)
 {
     ULONG i;
     ULONG failed = 0;
@@ -4126,13 +4151,19 @@ static CONST_STRPTR interfaces[NUM_ATTRBASES] =
 static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hdg_csd;
+    struct Library *OOPBase = csd->cs_OOPBase;
+
+    if (!(csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
+    {
+	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
+    }
  
-    if (ObtainAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES))
+    if (ObtainAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES, OOPBase))
     {
 	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
 
-    if (GetMethodBases(csd->methodBases, interfaces, NUM_METHODBASES))
+    if (GetMethodBases(csd->methodBases, interfaces, NUM_METHODBASES, OOPBase))
     {
 	ReturnInt("init_gfxhiddclass", ULONG, FALSE);
     }
@@ -4146,11 +4177,13 @@ static int GFX_ClassInit(LIBBASETYPEPTR LIBBASE)
 static int GFX_ClassFree(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hdg_csd;
+    struct Library *OOPBase = csd->cs_OOPBase;
     
     EnterFunc(bug("free_gfxhiddclass(csd=%p)\n", csd));
 
     delete_pixfmts(csd);
-    ReleaseAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES);
+    ReleaseAttrBases(csd->attrBases, interfaces, NUM_ATTRBASES, OOPBase);
+    CloseLibrary(csd->cs_UtilityBase);
 
     ReturnInt("free_gfxhiddclass", BOOL, TRUE);
 }
@@ -4204,6 +4237,7 @@ static BOOL create_std_pixfmts(struct class_static_data *csd)
 static VOID delete_pixfmts(struct class_static_data *csd)
 {
     struct Node *n, *safe;
+    struct Library *OOPBase = csd->cs_OOPBase;
 
     ForeachNodeSafe(&csd->pflist, n, safe)
 	OOP_DisposeObject((OOP_Object *)PIXFMT_OBJ(n));
@@ -4248,6 +4282,7 @@ BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf,
     	    	       ULONG ATTRCHECK(pixfmt), struct class_static_data *csd)
 {
     IPTR attrs[num_Hidd_PixFmt_Attrs] = {0};
+    struct Library *OOPBase = csd->cs_OOPBase;
 
     if (0 != OOP_ParseAttrs(tags, attrs, num_Hidd_PixFmt_Attrs,
     	    	    	    &ATTRCHECK(pixfmt), HiddPixFmtAttrBase))
@@ -4338,6 +4373,7 @@ static OOP_Object *create_and_init_object(OOP_Class *cl, UBYTE *data, ULONG data
     	    	    	    	    	  struct class_static_data *csd)
 {
     OOP_Object *o;
+    struct Library *OOPBase = csd->cs_OOPBase;
 			
     o = OOP_NewObject(cl, NULL, NULL);
     if (NULL == o)

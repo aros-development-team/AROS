@@ -26,7 +26,7 @@
 #include "graphics_intern.h"
 
 #undef csd
-#define GfxBase csd->GfxBase
+#define GfxBase csd->cs_GfxBase
 
 /****************************************************************************************/
 
@@ -37,6 +37,8 @@ static BOOL parse_sync_tags(struct class_static_data *csd, struct sync_data *dat
 OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct class_static_data *csd = CSD(cl);
+    struct Library *UtilityBase = csd->cs_UtilityBase;
+    struct Library *OOPBase = csd->cs_OOPBase;
     BOOL    	    	ok = TRUE;
 
     EnterFunc(bug("Sync::New()\n"));
@@ -464,6 +466,7 @@ static LONG do_monitor(struct MonitorSpec *mspc)
  */
 static BOOL parse_sync_tags(struct class_static_data *csd, struct sync_data *data, struct TagItem *tags, BOOL init)
 {
+    struct Library *UtilityBase = csd->cs_UtilityBase;
     UWORD hsync_start     = 0;
     UWORD vsync_start     = 0;
     UWORD hsync_end       = data->hdisp;

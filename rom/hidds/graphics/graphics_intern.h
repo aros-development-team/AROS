@@ -193,7 +193,11 @@ struct HIDDBitMapData
 
 struct class_static_data
 {
-    struct GfxBase	 *GfxBase;
+    struct GfxBase	 *cs_GfxBase;
+    struct Library	 *cs_UtilityBase;
+    struct Library	 *cs_OOPBase;
+    BPTR                  cs_SegList;
+
     struct SignalSemaphore sema;
 
     OOP_AttrBase	 attrBases[NUM_ATTRBASES];
