@@ -5,6 +5,8 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(SRCDIR)/rom/devs
 
+USER_CFLAGS += -D__OOP_NOLIBBASE__
+
 %build_module mmake=kernel-keyboard \
   modname=keyboard modtype=device \
   files=keyboard uselibs="oop rom"

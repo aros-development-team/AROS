@@ -138,6 +138,8 @@ static int GM_UNIQUENAME(Open)
     ULONG flags
 )
 {
+    struct Library *OOPBase = GM_OOPBASE_FIELD(KBBase);
+
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
         D(bug("keyport.device/open: IORequest structure passed to OpenDevice is too small!\n"));
