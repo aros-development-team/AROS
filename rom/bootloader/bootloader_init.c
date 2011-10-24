@@ -94,12 +94,18 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     const struct TagItem *bootinfo;
     struct TagItem *tag;
     APTR KernelBase;
+    struct Library *UtilityBase;
     struct vbe_mode *vmi = NULL;
     struct vbe_controller *vci = NULL;
     UWORD vmode = 0x00FF;	/* Dummy mode number by default		  */
     UBYTE palette = 0;		/* By default we don't know palette width */
 
     D(bug("[BootLdr] Init\n"));
+
+    UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    if (!UtilityBase)
+        return FALSE;
+
     NEWLIST(&(BootLoaderBase->Args));
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
@@ -202,6 +208,8 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 	    D(bug("[BootLdr] Init: Vesa mode direct color flags %02X\n", vmi->direct_color_mode_info));
 	}
     }
+
+    CloseLibrary(UtilityBase);
 
     return TRUE;
 }
