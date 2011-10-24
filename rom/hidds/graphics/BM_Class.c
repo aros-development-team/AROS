@@ -840,6 +840,7 @@
  */
 static ULONG GetBytesPerRow(struct HIDDBitMapData *data, struct class_static_data *csd)
 {
+    struct Library *OOPBase = csd->cs_OOPBase;
     ULONG align = data->align - 1;
     ULONG width = (data->width + align) & ~align;
     IPTR bytesperpixel, stdpf;
@@ -866,6 +867,9 @@ static ULONG GetBytesPerRow(struct HIDDBitMapData *data, struct class_static_dat
 
 OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+
     EnterFunc(bug("BitMap::New()\n"));
 
     obj  = (OOP_Object *)OOP_DoSuperMethod(cl, obj, (OOP_Msg) msg);
@@ -1083,6 +1087,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 void BM__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
     EnterFunc(bug("BitMap::Dispose()\n"));
@@ -1233,6 +1238,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
 BOOL BM__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     /* Copy the colors into the internal buffer */
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDBitMapData *data;
 
     data = OOP_INST_DATA(cl, o);
@@ -2413,6 +2419,7 @@ VOID BM__Hidd_BitMap__FillSpan(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitM
 
 VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_Clear *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     WORD  x, y;
     IPTR width, height;
 
@@ -2436,6 +2443,7 @@ VOID BM__Hidd_BitMap__Clear(OOP_Class *cl, OOP_Object *obj, struct pHidd_BitMap_
 
 static LONG inline getpixfmtbpp(OOP_Class *cl, OOP_Object *o, HIDDT_StdPixFmt stdpf)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     OOP_Object *pf;
     struct HIDDBitMapData *data;
     SIPTR bpp = -1;
@@ -4551,6 +4559,8 @@ ULONG BM__Hidd_BitMap__BytesPerLine(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 
 IPTR BM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
     if (data->framebuffer)
@@ -5140,6 +5150,7 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 /* This is a private form of Set method. Doesn't need a standard message. */
 void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, const struct TagItem *bitMapTags)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     struct TagItem *tag;
 

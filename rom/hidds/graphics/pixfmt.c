@@ -23,6 +23,7 @@
 
 OOP_Object *PF__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     DECLARE_ATTRCHECK(pixfmt);
     
     HIDDT_PixelFormat 	pf;

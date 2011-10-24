@@ -55,6 +55,8 @@
 
 OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct colormap_data    *data;
     ULONG   	    	    numentries;
     struct TagItem  	    *tag, *tstate;

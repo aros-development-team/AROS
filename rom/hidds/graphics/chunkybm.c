@@ -29,6 +29,8 @@
 
 OOP_Object *CBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct chunkybm_data    *data;
     OOP_Object      	    *pf;
     IPTR   	    	    bytesperrow, bytesperpixel;
@@ -951,6 +953,7 @@ VOID CBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct chunkybm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG idx;

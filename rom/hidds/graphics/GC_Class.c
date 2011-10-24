@@ -219,6 +219,7 @@ VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg);
 
 OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     HIDDT_GC_Intern *data;
 
     EnterFunc(bug("GC::New()\n"));
@@ -251,6 +252,7 @@ OOP_Object *GC__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 
 VOID GC__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
+    struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     HIDDT_GC_Intern *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;
