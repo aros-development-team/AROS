@@ -28,6 +28,8 @@ clean ::
 FILES	:= mouseclass
 STUBS	:= mouse_stubs
 
+USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
+
 %build_module mmake=kernel-hidd-mouse \
     modname=mouse modtype=hidd \
     files="$(FILES)" \

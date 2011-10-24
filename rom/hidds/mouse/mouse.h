@@ -1,5 +1,6 @@
 #include <exec/lists.h>
 #include <exec/semaphores.h>
+#include <dos/bptr.h>
 
 struct mouse_data
 {
@@ -26,6 +27,10 @@ struct mouse_staticdata
     struct MinList	   callbacks;
     struct MinList	   drivers;
     struct SignalSemaphore drivers_sem;
+
+    struct Library *cs_SysBase;
+    struct Library *cs_OOPBase;
+    BPTR cs_SegList;
 };
 
 struct mousebase

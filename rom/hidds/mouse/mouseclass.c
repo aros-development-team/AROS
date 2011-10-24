@@ -288,10 +288,16 @@ OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
 {
     struct mouse_data *data;
     struct TagItem *tag, *tstate;
+    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+
+    if (!UtilityBase)
+        return NULL;
 
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    if (!o)
+    if (!o) {
+        CloseLibrary(UtilityBase);
         return NULL;
+    }
 
     data = OOP_INST_DATA(cl, o);
     data->callback = NULL;
@@ -330,6 +336,8 @@ OOP_Object *Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
         AddTail((struct List *)&CSD(cl)->callbacks, (struct Node *)data);
 	Enable();
     }
+
+    CloseLibrary(UtilityBase);
 
     return o;
 }
@@ -430,6 +438,7 @@ VOID Mouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 
 OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_AddHardwareDriver *Msg)
 {
+    struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct TagItem tags[] = {
 	{ aHidd_Mouse_IrqHandler    , (IPTR)GlobalCallback},
 	{ aHidd_Mouse_IrqHandlerData, 0 		  },
@@ -517,6 +526,7 @@ OOP_Object *Mouse__Hidd_Mouse__AddHardwareDriver(OOP_Class *cl, OOP_Object *o, s
 void Mouse__Hidd_Mouse__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_RemHardwareDriver *Msg)
 {
     struct mouse_staticdata *csd = CSD(cl);
+    struct Library *OOPBase = csd->cs_OOPBase;
     struct driverNode *node;
 
     ObtainSemaphore(&csd->drivers_sem);
@@ -541,6 +551,7 @@ void Mouse__Hidd_Mouse__RemHardwareDriver(OOP_Class *cl, OOP_Object *o, struct p
 
 static int Mouse_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
     D(bug("[Mouse] Base Class destruction\n"));
 
     OOP_ReleaseAttrBase(IID_Hidd_Mouse);
@@ -550,6 +561,7 @@ static int Mouse_ExpungeClass(LIBBASETYPEPTR LIBBASE)
 
 static int Mouse_InitClass(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase = LIBBASE->csd.cs_OOPBase;
     D(bug("[Mouse] base class initialization\n"));
 
     LIBBASE->csd.hiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
