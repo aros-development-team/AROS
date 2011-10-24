@@ -25,6 +25,8 @@
 #   include <exec/interrupts.h>
 #endif
 
+#include <dos/bptr.h>
+
 #include <hidd/mouse.h>
 
 /* defines for buttonstate */
@@ -67,6 +69,10 @@ struct mouse_staticdata
     OOP_Class		*mouseclass;
 
     OOP_Object		*mousehidd;
+
+    struct Library *cs_SysBase;
+    struct Library *cs_OOPBase;
+    BPTR cs_SegList;
 };
 
 struct mousebase
