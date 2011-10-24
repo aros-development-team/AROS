@@ -54,6 +54,10 @@
     struct TagItem * passedTag = NULL;
     struct M68KProcessorInformation * processor = NULL;
     struct SystemProcessors * sysprocs = (struct SystemProcessors *)ProcessorBase->Private1;
+    struct Library *UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+
+    if (!UtilityBase)
+        return;
 
     /* GCIT_SelectedProcessor is ignored for now. In future it might be used to
        distinguish between M68K processor and PowerPC turbo card processor (?)*/
@@ -129,6 +133,8 @@
         }
         }
     }
+
+    CloseLibrary(UtilityBase);
 
     AROS_LIBFUNC_EXIT
 } /* GetCPUInfo() */
