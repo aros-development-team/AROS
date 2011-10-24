@@ -543,11 +543,15 @@ void ProcessEvents (struct inputbase *InputDevice)
 	if (wakeupsigs & InputDevice->ResetSig)
 	{
 	    struct IOStdReq resetio = *kbdio;
+	    struct Library *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
 	    
 	    InputDevice->ResetSig = 0;
 
 	    /* Blank screen(s) in order to indicate upcoming machine reset */
-    	    LoadView(NULL);
+	    if (GfxBase) {
+	        LoadView(NULL);
+	        CloseLibrary(GfxBase);
+	    }
 
 	    resetio.io_Command = KBD_RESETHANDLERDONE;
 	    resetio.io_Data = &resethandler;
