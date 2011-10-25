@@ -25,7 +25,7 @@ void pit_udelay(unsigned int usec)
 
     /*
      * Start up channel 0 in 'terminal count' mode (mode 0).
-     * It will count down to zero and stop. It will issue an interrupt,
+     * It will count down to zero, and then will issue an interrupt,
      * but we don't care about it since interrupts are neither used nor enabled.
      * It's safe to use the timer freely here. timer.device starts up long after
      * this code.
@@ -42,7 +42,7 @@ void pit_udelay(unsigned int usec)
     {
         outb(CH0|ACCESS_LATCH, PIT_CONTROL);
         tick = ch_read(PIT_CH0);
-    } while ((tick == 0) || (tick > start));
+    } while ((tick > 0) && (tick < start));
 
     D(bug("[PIT] udelay done\n"));
 }
