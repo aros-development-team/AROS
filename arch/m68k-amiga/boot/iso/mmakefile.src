@@ -25,7 +25,7 @@ $(AROSDIR)/Emergency-Boot.adf: $(DISTDIR)/bootdisk-amiga-m68k.adf
 $(AROSDIR)/Sources: FORCE $(AROSDIR)/Sources.info $(AROSDIR)/Sources/README.txt.info
 	$(Q)$(MKDIR) $(AROSDIR)/Sources
 	$(Q)$(CP) -a $(SRCDIR)/arch/m68k-amiga/doc/. $(AROSDIR)/Sources/.
-	$(Q)$(TAR) -C $(SRCDIR) -czf $(AROSDIR)/Sources/AROS.tar.gz .
+	$(Q)$(TAR) -C $(SRCDIR) --exclude=.svn -czf $(AROSDIR)/Sources/AROS.tar.gz .
 	$(Q)(cd $(AROSDIR)/Sources; ./build-toolchain.sh --fetch-only)
 
 $(AROSDIR)/Sources.info: Sources.info.src Sources.png
