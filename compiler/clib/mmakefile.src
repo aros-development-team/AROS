@@ -375,9 +375,6 @@ SHARED_ARCH := \
     vfork \
     vfork_longjmp
 
-SHARED_LINKLIB_ARCH := \
-    vfork
-
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
 #       or not.
@@ -508,7 +505,6 @@ ROM_COMMON_OBJS := $(addsuffix .o, \
 AROSC_LINKLIB_OBJS := $(addsuffix .o, \
     $(addprefix $(OBJDIR)/,$(COMMON)) \
     $(addprefix $(OBJDIR)/arch/,$(COMMON_ARCH)) \
-    $(addprefix $(OBJDIR)/shared/arch/,$(SHARED_LINKLIB_ARCH)) \
 )
 USER_LDFLAGS := -L$(OBJDIR)
 %build_module mmake=linklibs-clib-shared \
