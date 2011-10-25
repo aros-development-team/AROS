@@ -1,0 +1,10 @@
+# DataType Description for MP4 files
+Name=MP4
+Version=$VER: MP4 1.0 (21.10.2011)
+BaseName=mp4
+Pattern=#?
+Mask= 0x00 0x00 0x00 ANY 0x66 0x74 0x79 0x70 0x6D 0x70 0x34
+GroupID=movi
+ID=mp4
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
