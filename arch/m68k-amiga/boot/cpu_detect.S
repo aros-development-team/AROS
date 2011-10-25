@@ -56,9 +56,12 @@ cpu_detect_asm:
  	/* yes, it is 68040 or 68060 */
 	bmi.s	0f
  	/* enable 68020/030 code cache and 68030 data cache */
- 	move.w	#0x0101,%d0
+ 	move.l	#0x0101,%d0
 	movec	%d0,%cacr
 	movec	%cacr,%d0
+	/* disable caches */
+	moveq	#0,%d1
+	movec	%d1,%cacr
  	/* data cache bit still set? */
 	btst	#8,%d0
 	bne.s	1f /* yes, it is 68030 */
@@ -66,15 +69,16 @@ cpu_detect_asm:
 	move.w	#0x0003,%d0
 	bra cpu_detect_trap_illg
 	/* 68030 */
-1:	moveq	#0,%d0
-	/* disable caches */
-	movec	%d0,%cacr
+1:
 	move.w	#0x0007,%d0
 	bra cpu_detect_trap_illg
 	/* 68040 or 68060 */
-0:	moveq	#0,%d0
+0:
+	moveq	#0,%d0
 	/* disable caches */
 	movec	%d0,%cacr
+	/* data cache must be invalidated after reset */
+	cinva %dc
 	/* set transparent translation registers,
 	 * allow data caching only in 32-bit fast,
 	 * code caching allowed everywhere */
