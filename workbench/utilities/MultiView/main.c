@@ -7,11 +7,6 @@
 
 #include "global.h"
 
-#include <stdlib.h> /* for exit() */
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>  /*  toupper() */
-
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
@@ -113,7 +108,7 @@ void OutputMessage(CONST_STRPTR msg)
 	}
 	else
 	{
-	    printf("MultiView: %s\n", msg);
+	    Printf("MultiView: %s\n", msg);
 	}
     }
 }
@@ -181,11 +176,9 @@ void Cleanup(CONST_STRPTR msg)
     
     if (cd != BNULL)
         CurrentDir(cd); /* restore current directory */
-    
+
     CloseLibs();
     CleanupLocale();
-    
-    exit(prog_exitcode);
 }
 
 
@@ -199,7 +192,7 @@ static void OpenLibs(void)
     {
 	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
 	{
-	    sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
+	    __sprintf(s, MSG(MSG_CANT_OPEN_LIB), li->name, li->version);
 	    Cleanup(s);
 	}       
     }
@@ -646,7 +639,7 @@ static void OpenDTO(void)
 	    }
 
 	    if (errnum >= DTERROR_UNKNOWN_DATATYPE)
-	        sprintf(s, GetDTString(errnum), filename);
+	        __sprintf(s, GetDTString(errnum), filename);
 	    else
 	        Fault(errnum, 0, s, 256);
 
@@ -1165,12 +1158,12 @@ static void HandleAll(void)
 			    break;
 
                     } /* switch(msg->Code) */
-                    if (strchr(MSG(MSG_SHORTCUT_EDITOR), toupper(msg->Code)))
+                    if (strchr(MSG(MSG_SHORTCUT_EDITOR), ToUpper(msg->Code)))
 		    {
                         if ( (GetVar("editor", (STRPTR) editorvarbuffer, 299, GVF_GLOBAL_ONLY)) != -1L )
                         {
-                            sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filename );
-		            D(bug("[Multiview] editor command: \"%s\"\n", s));
+                            __sprintf(s, "Run QUIET \"%s\" \"%s\"", editorvarbuffer, filename );
+		            D(bug("[Multiview] editor command: '%s'\n", s));
                             if (SystemTags(s, TAG_END))
 		                DisplayBeep(NULL);
                         }
