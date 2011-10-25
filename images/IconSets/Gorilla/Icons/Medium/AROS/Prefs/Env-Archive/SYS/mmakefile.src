@@ -8,7 +8,7 @@ ICONS := \
     def_NDOSdisk def_NDOSCDROM def_NDOSharddisk \
     def_CDROM def_Disk def_Drawer def_Harddisk def_RAM \
     def_Project def_Picture def_Text def_Document def_Tool def_Authors \
-    def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_PDF def_Patch \
+    def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_Instrument def_PDF def_Patch \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
     def_XCF def_Sound def_Keymap def_DVD def_DataType def_RAD def_Installer \
     def_AudioMode def_Zune def_TrueType def_Otag def_A68K def_ADF def_Catalog \
