@@ -44,7 +44,7 @@ Currently the following 9 Keywords are defined:
                 
                 - wildcard matching any char: ANY
                 
-6)  GroupID     GroupID of the DataTypes group. This ID must complain to the rules.
+6)  GroupID     GroupID of the DataTypes group. This ID must comply to the rules.
                 createdtdesc doesn't check the validity. See <datatypes/datatypes.h>
                 for details.
 
