@@ -30,18 +30,18 @@ struct APICData *core_APIC_Probe(void)
     D(bug("[APIC] Detected by CPUID instruction\n"));
 #endif
 
-    data = AllocMem(sizeof(struct APICData) + sizeof(UWORD), MEMF_ANY);
+    /* Assuming uniprocessor IBM PC compatible */
+    data = AllocMem(sizeof(struct APICData) + sizeof(struct CPUData), MEMF_CLEAR);
     if (!data)
 	return NULL;
 
-    /* Assuming uniprocessor IBM PC compatible */
-    data->lapicBase = core_APIC_GetBase();
-    data->count     = 1;
-    data->flags     = APF_8259;
-    data->IDMap[0]  = core_APIC_GetID(data->lapicBase);
+    data->lapicBase	   = core_APIC_GetBase();
+    data->count		   = 1;
+    data->flags		   = APF_8259;
+    data->cores[0].lapicID = core_APIC_GetID(data->lapicBase);
 
     /* Just initialize to default state */
-    core_APIC_Init(data->lapicBase);
+    core_APIC_Init(data, 0);
     return data;
 }
 
@@ -60,7 +60,7 @@ UBYTE core_APIC_GetNumber(struct APICData *data)
 
     for (__APICNo = 0; __APICNo < data->count; __APICNo++)
     {
-        if ((data->IDMap[__APICNo] & 0xFF) == __APICLogicalID)
+        if (data->cores[__APICNo].lapicID == __APICLogicalID)
             return __APICNo;
     }
 

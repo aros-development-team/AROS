@@ -19,6 +19,7 @@
 #include "kernel_timer.h"
 
 #define D(x)
+#define DWAKE(x) /* Badly interferes with AP startup */
 /* #define DEBUG_WAIT */
 
 /*
@@ -69,10 +70,13 @@ static ULONG DoIPI(IPTR __APICBase, ULONG target, ULONG cmd)
                         Driver functions
  **********************************************************/
 
-BOOL core_APIC_Init(IPTR __APICBase)
+void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
 {
+    IPTR __APICBase = apic->lapicBase;
     ULONG apic_ver = APIC_REG(__APICBase, APIC_VERSION);
     ULONG maxlvt = APIC_LVT(apic_ver);
+    ULONG lapic_initial, lapic_final;
+    WORD pit_final;
 
 #ifdef CONFIG_LEGACY
     /* 82489DX doesnt report no. of LVT entries. */
@@ -103,7 +107,7 @@ BOOL core_APIC_Init(IPTR __APICBase)
        	 APIC_REG(__APICBase, APIC_ESR) = 0;
 #endif
 
-    D(bug("[APIC] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
+    D(bug("[APIC.%u] _APIC_IA32_init: APIC ESR before enabling vector: %08x\n", cpuNum, APIC_REG(__APICBase, APIC_ESR)));
 
     /* Set APIC error interrupt to fixed vector 0xFE interrupt on APIC error */
     APIC_REG(__APICBase, APIC_ERROR_VEC) = 0xfe;
@@ -112,37 +116,41 @@ BOOL core_APIC_Init(IPTR __APICBase)
     if (maxlvt > 3)
        	 APIC_REG(__APICBase, APIC_ESR) = 0;
 
-    D(bug("[APIC] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", APIC_REG(__APICBase, APIC_ESR)));
+    D(bug("[APIC.%u] _APIC_IA32_init: APIC ESR after enabling vector: %08x\n", cpuNum, APIC_REG(__APICBase, APIC_ESR)));
 
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer divide=%08x\n", APIC_REG(__APICBase, APIC_TIMER_DIV)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", APIC_REG(__APICBase, APIC_TIMER_VEC)));
+    /*
+     * Now the tricky thing - calibrate LAPIC timer frequency.
+     * In fact we could simply query CPU's clock frequency, but... x86 sucks. There's no
+     * unified way to get it on whatever CPU. Intel has own way, AMD has own way... Etc... Which, additionally,
+     * varies between CPU generations.
+     *
+     * The idea behing the calibration is to run the timer once, and see how much ticks passes in some defined
+     * period of time. Then calculate a proportion.
+     * We use 8253 PIT as our reference.
+     * This calibrarion algorighm is based on NetBSD one.
+     */
 
-/*
-    ULONG *localAPIC = (ULONG*)__APICBase + 0x320;
+    /* Set the timer to one-shot mode, no interrupt, 1:1 divisor */
+    APIC_REG(__APICBase, APIC_TIMER_VEC) = LVT_MASK;
+    APIC_REG(__APICBase, APIC_TIMER_DIV) = TIMER_DIV_1;
+    APIC_REG(__APICBase, APIC_TIMER_ICR) = 0x80000000;	/* Just some very large value */
 
-    asm volatile ("movl %0,(%1)"::"r"(0),"r"((volatile ULONG *)(__APICBase + 0xb0)));
-    
-    asm volatile ("movl %0,(%1)"::"r"(0x000000fe),"r"((volatile ULONG *)(__APICBase + 0x320)));
-    // *(volatile ULONG *)localAPIC = 0x000000fe;
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
-    
-    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
-    *(volatile ULONG *)(__APICBase + 0x380) = 0x11111111;
-    asm volatile ("movl %0,(%1)"::"r"(0x000200fe),"r"((volatile ULONG *)(__APICBase + 0x320)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Timer config=%08x\n", *(volatile ULONG *)(__APICBase + 0x320)));
-    
-    for (i=0; i < 0x10000000; i++) asm volatile("nop;");
-    
-    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
-    for (i=0; i < 0x1000000; i++) asm volatile("nop;");
-    D(bug("[APIC] _APIC_IA32_init: APIC Initial count=%08x\n", *(volatile ULONG *)(__APICBase + 0x380)));
-    D(bug("[APIC] _APIC_IA32_init: APIC Current count=%08x\n", *(volatile ULONG *)(__APICBase + 0x390)));
+    /*
+     * Now wait for 11931 PIT ticks, which is equal to 10 milliseconds.
+     * We don't use pit_udelay() here, because for improved accuracy we need to sample LAPIC timer counter twice,
+     * before and after our actual delay (PIT setup also takes up some time, so LAPIC will count away from its
+     * initial value).
+     */
+    pit_start(11931);
+    lapic_initial = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-    for (i=0; i < 0x1000000; i++) asm volatile("nop;"); */
+    pit_final   = pit_wait(11931);
+    lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-    return TRUE;
+    D(bug("[APIC.%u] LAPIC counted from %u to %u in 10ms + %u ticks\n", cpuNum, lapic_initial, lapic_final, -pit_final));
+
+    apic->cores[cpuNum].timerFreq = (lapic_initial - lapic_final) * 100;
+    D(bug("[APIC.%u] LAPIC frequency should be %lu Hz (%lu mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
 } 
 
 IPTR core_APIC_GetBase(void)
@@ -256,7 +264,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
     /* If it's 82489DX, we are done. */
     if (!APIC_INTEGRATED(apic_ver))
     {
-	D(bug("[APIC] _APIC_IA32_wake: 82489DX detected, wakeup done\n"));
+	DWAKE(bug("[APIC] _APIC_IA32_wake: 82489DX detected, wakeup done\n"));
     	return 0;
     }
 #endif
@@ -313,7 +321,7 @@ ULONG core_APIC_Wake(APTR wake_apicstartrip, UBYTE wake_apicid, IPTR __APICBase)
 	    break;
     }
 
-    D(bug("[APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
+    DWAKE(bug("[APIC] _APIC_IA32_wake: STARTUP run status 0x%08X, error 0x%08X\n", status_ipisend, status_ipirecv));
 
     /*
      * We return nonzero on error.

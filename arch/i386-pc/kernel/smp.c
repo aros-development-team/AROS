@@ -95,7 +95,7 @@ int smp_Wake(void)
     /* Core number 0 is our bootstrap core, so we start from No 1 */
     for (i = 1; i < apic->count; i++)
     {
-    	UBYTE apic_id = apic->IDMap[i];
+    	UBYTE apic_id = apic->cores[i].lapicID;
 
     	D(bug("[SMP] Launching APIC %u (ID 0x%02X)\n", i, apic_id));
  

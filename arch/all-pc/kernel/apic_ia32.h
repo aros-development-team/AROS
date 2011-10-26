@@ -42,6 +42,8 @@
 #define APIC_LINT0_VEC	 0x350	/* Local interrupt 0 vector table entry		*/
 #define APIC_LINT1_VEC	 0x360	/* Local interrupt 1 vector table entry		*/
 #define APIC_ERROR_VEC	 0x370	/* Error vector table entry			*/
+#define APIC_TIMER_ICR	 0x380	/* Timer initial count				*/
+#define APIC_TIMER_CCR	 0x390	/* Timer current count				*/
 #define APIC_TIMER_DIV	 0x3E0	/* Timer divide configuration register		*/
 
 /* ID shift value */
@@ -96,6 +98,16 @@
 #define LVT_TGM_LEVEL  0x008000		/* Level-trigger mode			*/
 #define LVT_MASK       0x010000		/* Mask bit				*/
 #define LVT_TMM_PERIOD 0x020000		/* Periodic timer mode			*/
+
+/* Timer divisors */
+#define TIMER_DIV_1   0x0B
+#define TIMER_DIV_2   0x00
+#define TIMER_DIV_4   0x01
+#define TIMER_DIV_8   0x02
+#define TIMER_DIV_16  0x03
+#define TIMER_DIV_32  0x08
+#define TIMER_DIV_64  0x09
+#define TIMER_DIV_128 0x0A
 
 /* Register access macro to make the code more readable */
 #define APIC_REG(base, reg) *((volatile ULONG *)(base + reg))
