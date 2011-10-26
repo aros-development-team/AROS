@@ -206,14 +206,7 @@ static AROS_UFH5(APTR, myRawDoFmt,
     *(UWORD *)vecaddr = 0x4ef9;
     *(ULONG *)(((ULONG)vecaddr)+2) = (ULONG)newFunction;
 
-#if 1
-    /* And clear the instruction cache. */
-    /* Simply clear the entire cache... */
-    CacheClearU();
-#else
-    /* ...or clear the vector address range specifically */
-    CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
-#endif
+    CacheClearE(vecaddr,LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
 
     /* Arbitration is no longer needed */
     Permit();
