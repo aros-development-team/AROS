@@ -89,7 +89,8 @@ static BOOL IsCompatible(UWORD product_id)
 static BOOL NeedsPhysicalCursor(UWORD product_id)
 {
     /* TRUE if one of i830, i85x, i915G(M), i945G(M) */
-    return product_id == 0x258a
+    return product_id == 0x2582
+        || product_id == 0x258a
         || product_id == 0x2592
         || product_id == 0x2772
         || product_id == 0x27a2
