@@ -26,7 +26,8 @@ FILES :=		\
     supertest		\
     tasktest		\
     tasktest2		\
-    traptest
+    traptest		\
+    vblank
 
 EXEDIR := $(AROS_TESTS)/exec
 
