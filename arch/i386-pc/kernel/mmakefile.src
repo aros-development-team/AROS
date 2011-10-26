@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FUNCS   := 
+FUNCS   := getcpucount getcpunumber
 FILES   := startup kernel_debug platform_init traps utils smp
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
