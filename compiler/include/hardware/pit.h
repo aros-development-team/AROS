@@ -1,6 +1,6 @@
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id:$
+    $Id$
  
     Desc: IBM PC-compatible PIT (8253) specific definitions
     Lang: english
@@ -33,7 +33,7 @@
 #define READBACK	0xC0
 
 /* Two useful macros for accessing counter values */
-#define ch_read(port) inb(port) | (inb(port) << 4)
-#define ch_write(val, port) outb(val, port); outb(val >> 4, port)
+#define ch_read(port) inb(port) | (inb(port) << 8)
+#define ch_write(val, port) outb(val, port); outb(val >> 8, port)
 
 #endif
