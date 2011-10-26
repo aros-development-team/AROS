@@ -147,11 +147,11 @@ void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
     pit_final   = pit_wait(11931);
     lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
-    D(bug("[APIC.%u] LAPIC counted from %u to %u in 10ms + %u ticks\n", cpuNum, lapic_initial, lapic_final, -pit_final));
+    D(bug("[APIC.%u] LAPIC counted from %u to %u in 10ms (%u ticks)\n", cpuNum, lapic_initial, lapic_final, 11931 - pit_final));
 
     apic->cores[cpuNum].timerFreq = (lapic_initial - lapic_final) * 100;
-    D(bug("[APIC.%u] LAPIC frequency should be %lu Hz (%lu mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
-} 
+    D(bug("[APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
+}
 
 IPTR core_APIC_GetBase(void)
 {
