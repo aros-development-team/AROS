@@ -8,7 +8,7 @@ FILES=offsets getcc preparecontext \
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
        forbid \
-       cacheclearu_ cachepostdma_ cachepredma_ \
+       cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
        setsr cachecontrol_ \
        obtainquickvector
 
