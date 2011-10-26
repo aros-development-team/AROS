@@ -15,7 +15,7 @@
  */
 struct CPUData
 {
-    UQUAD timerFreq;	/* Timer clock frequency			*/
+    ULONG timerFreq;	/* Timer clock frequency			*/
     UBYTE lapicID;	/* Local APIC ID				*/
     UBYTE sysID;	/* System (ACPI, whatever) ID, can differ	*/
 };
