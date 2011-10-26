@@ -117,11 +117,18 @@ AROS_LD3(void, CacheClearE,
 
        Note that we call this function directly because MakeFunctions() is also
        used for building ExecBase itself. */
-    AROS_CALL3(void, AROS_SLIB_ENTRY(CacheClearE, Exec, 107),
+    if (SysBase->LibNode.lib_Node.ln_Type != NT_LIBRARY) {
+        AROS_CALL3(void, AROS_SLIB_ENTRY(CacheClearE, Exec, 107),
 	      AROS_UFCA(APTR, lastvec, A0),
 	      AROS_UFCA(ULONG, n, D0),
 	      AROS_UFCA(ULONG, CACRF_ClearI|CACRF_ClearD, D1),
 	      struct ExecBase *, SysBase);
+    } else {
+	/* call CacheClearE() indirectly if SysBase is already valid.
+	 * CacheClearE may have been SetFunction()'d for specific CPU type.
+	 */
+    	CacheClearE(lastvec, n, CACRF_ClearI|CACRF_ClearD);
+    }
 #endif
 
     /* Return size of jumptable */
