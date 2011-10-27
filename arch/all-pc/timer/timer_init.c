@@ -25,7 +25,10 @@
 
 static void TimerInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 {
-    /* Sync up with the hardware */
+    /*
+     * Sync up with the hardware, we need the proper time value in order to
+     * process our requests correctly.
+     */
     EClockUpdate(TimerBase);
     /*
      * Process MICROHZ requests.
@@ -45,10 +48,10 @@ AROS_UFH4(static ULONG, VBlankInt,
 	  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     AROS_USERFUNC_INIT
-    
+
     TimerInt(TimerBase, SysBase);
     return TRUE;
-    
+
     AROS_USERFUNC_EXIT
 }
 #endif
@@ -88,9 +91,19 @@ static int hw_Init(struct TimerBase *LIBBASE)
     SysBase->VBlankFrequency    = 50;
     SysBase->ex_EClockFrequency = 1193180;
     LIBBASE->tb_eclock_rate     = 1193180;
-    LIBBASE->tb_prev_tick       = 0xffff;
+    LIBBASE->tb_prev_tick	= 0xFFFF;
 
-    /* Start the timer2 */
+    /* Start up the timer. Count the whole range for now. */
+    outb(CH0|ACCESS_FULL|MODE_SW_STROBE, PIT_CONTROL);  /* Software strobe mode, 16-bit access */
+    ch_write(0xFFFF, PIT_CH0);
+
+    /*
+     * Start the timer2.
+     * FIXME: This is not used by timer.device any more and must be removed.
+     * However PS/2 port driver uses polled microsecond delays via channel 2,
+     * and it relies on it being activated by us. This urgently needs to
+     * be fixed!
+     */
     outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
     outb(0xb4, 0x43);			/* Binary mode on Timer2, count mode 2 */
     outb(0x00, 0x42);			/* We're counting whole range */
@@ -114,20 +127,8 @@ static int hw_Init(struct TimerBase *LIBBASE)
 
 /****************************************************************************************/
 
-/* This is executed after common code (we have priority = 10) */
-static int hw_Open(struct TimerBase *LIBBASE, struct timerequest *tr, ULONG unitNum, ULONG flags)
-{
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-
-    return TRUE;
-}
-
-/****************************************************************************************/
-
 static int hw_Expunge(struct TimerBase *LIBBASE)
 {
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-
 #ifdef __i386__
     RemIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
 #else
@@ -140,5 +141,4 @@ static int hw_Expunge(struct TimerBase *LIBBASE)
 /****************************************************************************************/
 
 ADD2INITLIB(hw_Init, 0)
-ADD2OPENDEV(hw_Open, 10)
 ADD2EXPUNGELIB(hw_Expunge, 0)

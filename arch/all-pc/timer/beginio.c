@@ -31,7 +31,6 @@ AROS_LH1(void, BeginIO,
     {
 	D(bug("[Timereq 0x%p] Updating hardware interrupt request\n", timereq));
 
-//	outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
 	Disable();
 	Timer0Setup(TimerBase);
 	Enable();
