@@ -47,7 +47,7 @@ static inline ULONG tick2usec(ULONG tick)
     return ret;
 }
 
-static ULONG usec2tick(ULONG usec)
+static inline ULONG usec2tick(ULONG usec)
 {
     /*
      * This is important!!! EAX must be set to zero at input.
@@ -70,28 +70,19 @@ static ULONG usec2tick(ULONG usec)
     return ret;
 }
 
-void EClockUpdate(struct TimerBase *TimerBase)
+/*
+ * Calculate difference and add it to our current EClock value.
+ * PIT counters actually count backwards. This is why everything here looks reversed.
+ */
+static void EClockAdd(ULONG time, struct TimerBase *TimerBase)
 {
-    ULONG time, diff;
-
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    /* Latch the current time value */
-
-    outb(0x80, 0x43);
-    /* Read out current 16-bit time */
-    time = inb(0x42);
-    time += inb(0x42) << 8;
-
-    /*
-     * Calculate difference and add it to our current EClock value.
-     * PIT counters actually count backwards. This is why everything here looks reversed.
-     */
-    diff = (TimerBase->tb_prev_tick - time);
+    ULONG diff = (TimerBase->tb_prev_tick - time);
 
     if (time > TimerBase->tb_prev_tick)
+    {
+    	/* Handle PIT rollover through 0xFFFF */
         diff += 0x10000;
-
-    TimerBase->tb_prev_tick = time;
+    }
 
     /* Increment our time counters */
     TimerBase->tb_ticks_total += diff;
@@ -99,27 +90,31 @@ void EClockUpdate(struct TimerBase *TimerBase)
     INCTIME(TimerBase->tb_Elapsed, TimerBase->tb_ticks_elapsed, diff);
 }
 
-void EClockSet(struct TimerBase *TimerBase)
+void EClockUpdate(struct TimerBase *TimerBase)
 {
     ULONG time;
-    
+
+    outb(CH0|ACCESS_LATCH, PIT_CONTROL);	/* Latch the current time value */
+    time = ch_read(PIT_CH0);	    		/* Read out current 16-bit time */
+
+    EClockAdd(time, TimerBase);			/* Increment our time counters	*/
+    TimerBase->tb_prev_tick = time;		/* Remember last counter value as start of new interval */
+}
+
+void EClockSet(struct TimerBase *TimerBase)
+{
     TimerBase->tb_ticks_sec   = usec2tick(TimerBase->tb_CurrentTime.tv_micro);
     TimerBase->tb_ticks_total = TimerBase->tb_ticks_sec + (UQUAD)TimerBase->tb_CurrentTime.tv_secs * TimerBase->tb_eclock_rate;
 
-    /* Latch the current time value */
-    outb(0x80, 0x43);
-    /* Read out current 16-bit time */
-    time = inb(0x42);
-    time += inb(0x42) << 8;
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-
-    TimerBase->tb_prev_tick = time;
+    outb(CH0|ACCESS_LATCH, PIT_CONTROL);	/* Latch the current time value */
+    TimerBase->tb_prev_tick = ch_read(PIT_CH0);	/* Read out current 16-bit time */
 }
 
 void Timer0Setup(struct TimerBase *TimerBase)
 {
     struct timeval time;
     ULONG delay = 23864;
+    ULONG old_tick;
     struct timerequest *tr = (struct timerequest *)GetHead(&TimerBase->tb_Lists[TL_MICROHZ]);
 
     if (tr)
@@ -145,8 +140,21 @@ void Timer0Setup(struct TimerBase *TimerBase)
 
     if (delay < 2) delay = 2;
 
-    outb((inb(0x61) & 0xfd) | 1, 0x61); /* Enable the timer (set GATE on) */
-    outb(0x38, 0x43);   /* Binary, mode 4, LSB&MSB */
-    outb(delay & 0xff, 0x40);
-    outb(delay >> 8, 0x40);  
+    /*
+     * We are going to reload the counter. By this moment, some time has passed after the last EClockUpdate()pdate.
+     * In order to keep up with the precision, we pick up this time here.
+     */
+    outb(CH0|ACCESS_LATCH, PIT_CONTROL);	/* Latch the current time value */
+    old_tick = ch_read(PIT_CH0);	    	/* Read out current 16-bit time */
+
+    outb(CH0|ACCESS_FULL|MODE_SW_STROBE, PIT_CONTROL);  /* Software strobe mode, 16-bit access	*/
+    ch_write(delay, PIT_CH0);				/* Activate the new delay		*/
+
+    /*
+     * Now, when our new delay is already in progress, we can spend some time
+     * on adding previous value to our time counters.
+     */
+    EClockAdd(old_tick, TimerBase);
+    /* tb_prev_tick is used by EClockAdd(), so update it only now */
+    TimerBase->tb_prev_tick = delay;
 }
