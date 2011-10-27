@@ -35,6 +35,9 @@ struct KernelBase
 extern struct TagItem *BootMsg;
 extern struct KernelBase *KernelBase;
 
+/* KernelBase allocation function */
+struct KernelBase *AllocKernelBase(struct ExecBase *SysBase);
+
 /* Utility function to clear BSS segments. Call it before storing any globals!!! */
 void __clear_bss(const struct KernelBSS *bss);
 
