@@ -97,7 +97,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AROS_USERFUNC_INIT
 
     struct Task *t;
-    struct MemList *ml;
+/*  struct MemList *ml; */
     struct ExceptionContext *ctx;
     int i;
 
@@ -141,13 +141,12 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      */
     t = SysBase->ThisTask;
 
-    ml                        = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
     t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
     ctx                       = KrnCreateContext();
 
-    D(bug("[exec] MemList 0x%p, ETask 0x%p, CPU context 0x%p\n", ml, t->tc_UnionETask.tc_ETask, ctx));
+    D(bug("[exec] ETask 0x%p, CPU context 0x%p\n", t->tc_UnionETask.tc_ETask, ctx));
 
-    if (!ml || !t->tc_UnionETask.tc_ETask || !ctx)
+    if (!t->tc_UnionETask.tc_ETask || !ctx)
     {
 	DINIT("Not enough memory for first task");
 	return NULL;
@@ -157,10 +156,25 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      * Build a memory list for the task.
      * It doesn't include stack because it wasn't allocated by us.
      */
+    /*
+     * Temporarily disabled because of transition to MMU support.
+     * PrepareExecBase() can't use AllocMem(), so it uses Allocate()
+     * in order to create boot task. And Allocate()'d memory can't
+     * be FreeMem()ed because of either mungwall or MMU-based AllocMem().
+     * In the light of ABIv1 reimplementation boot task can be moved back here.
+     *
+    ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!ml)
+    {
+    	DINIT("Not enough memory for boot task's MemList");
+    	return NULL;
+    }
+
     ml->ml_NumEntries      = 1;
     ml->ml_ME[0].me_Addr   = t;
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
+    */
 
     InitETask(t, t->tc_UnionETask.tc_ETask);
 
