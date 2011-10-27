@@ -70,7 +70,7 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	if (data->cores[0].lapicID == processor->id)
 	{
 	    /* This is the BSP, slot 0 is always reserved for it. */
-	    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering ACPI ID 0x%02 for BSP\n", processor->acpi_id));
+	    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering ACPI ID 0x%02X for BSP\n", processor->acpi_id));
 
 	    data->cores[0].sysID = processor->acpi_id;
 	}
