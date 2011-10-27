@@ -45,15 +45,15 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
 
 /*
  * Create informational MemHeader for ROM region.
- * The header will be allocated inside another region, specified by 'ram' parameter.
+ * The header will be allocated from system's public memory lists.
  * It will be not possible to allocate memory from the created MemHeader.
  * The header will be added to the memory list.
  * This routine uses exec.library/Allocate() for memory allocation, so it is safe
  * to use before exec.library and kernel.resource memory management is initialized.
  */
-struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, APTR start, APTR end)
+struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end)
 {
-    struct MemHeader *mh = Allocate(ram, sizeof(struct MemHeader));
+    struct MemHeader *mh = AllocMem(sizeof(struct MemHeader), MEMF_ANY);
 
     if (mh)
     {

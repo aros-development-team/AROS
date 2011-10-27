@@ -157,14 +157,14 @@ int __startup startup(struct TagItem *msg, ULONG magic)
      * ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kickstart.
      */
-    krnCreateROMHeader(mh, "Kickstart ROM", ranges[0], ranges[1]);
+    krnCreateROMHeader("Kickstart ROM", ranges[0], ranges[1]);
 
     /*
      * Stack memory header. This special memory header covers a little part of the programs
      * stack so that TypeOfMem() will not return 0 for addresses pointing into the stack
      * during initialization.
      */
-    krnCreateROMHeader(mh, "Boot stack", _stack - AROS_STACKSIZE, _stack);
+    krnCreateROMHeader("Boot stack", _stack - AROS_STACKSIZE, _stack);
 
     D(bug("[Kernel] calling InitCode(RTF_SINGLETASK,0)\n"));
     InitCode(RTF_SINGLETASK, 0);

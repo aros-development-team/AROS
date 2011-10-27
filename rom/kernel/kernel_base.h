@@ -40,4 +40,4 @@ void __clear_bss(const struct KernelBSS *bss);
 
 /* Memory header initialization functions */
 void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags);
-struct MemHeader *krnCreateROMHeader(struct MemHeader *ram, CONST_STRPTR name, APTR start, APTR end);
+struct MemHeader *krnCreateROMHeader(CONST_STRPTR name, APTR start, APTR end);
