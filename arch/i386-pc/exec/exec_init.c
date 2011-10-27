@@ -250,7 +250,7 @@ void exec_boot(struct TagItem *msg)
     /* Complete boot task. */
     {
         struct Task *t = SysBase->ThisTask;
-        struct MemList *ml;
+/*      struct MemList *ml;
 
         ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
 
@@ -264,7 +264,7 @@ void exec_boot(struct TagItem *msg)
         ml->ml_ME[0].me_Length = sizeof(struct Task);
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
-
+*/
         t->tc_Flags |= TF_ETASK;
         t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_CLEAR);
 
