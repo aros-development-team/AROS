@@ -147,6 +147,10 @@ void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
     pit_final   = pit_wait(11931);
     lapic_final = APIC_REG(__APICBase, APIC_TIMER_CCR);
 
+    /*
+     * TODO: Upon exit from pit_wait() pit_final contains negated number of excessive ticks after 10ms has passed.
+     * This can be used to improve calibration quality (currently we report 265 mHz instead of 266).
+     */
     D(bug("[APIC.%u] LAPIC counted from %u to %u in 10ms (%u ticks)\n", cpuNum, lapic_initial, lapic_final, 11931 - pit_final));
 
     apic->cores[cpuNum].timerFreq = (lapic_initial - lapic_final) * 100;
