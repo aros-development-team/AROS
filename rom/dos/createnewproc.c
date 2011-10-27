@@ -477,7 +477,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Abuse pr_Result2 to point to the *real* entry point */
     process->pr_Result2 = (SIPTR)entry;
 
-    if (NewAddTask(&process->pr_Task, DosEntry,	NULL, NULL))
+    /* Use AddTask() instead of NewAddTask().
+     * Blizzard SCSI Kit boot ROM plays SetFunction() tricks with
+     * AddTask() and assumes it is called by a process early enough!
+     */
+    if (AddTask(&process->pr_Task, DosEntry, NULL))
     {
         if (process->pr_Flags & PRF_SYNCHRONOUS)
         {
