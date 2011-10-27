@@ -51,6 +51,7 @@ struct RegionRectangleExtChunk
 #define RRE(x)     ((struct RegionRectangleExt *)(x))
 #define Counter(x) (RRE(x)->Counter)
 #define Chunk(x)   ((x) ? ((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)]) : NULL)
+#define Head(x)    ((x) ? (&((struct RegionRectangleExtChunk *)&RRE(x)[-Counter(x)])->FirstChunk->Rects[0].RR) : NULL)
 
 /* PaletteExtra internals */
 

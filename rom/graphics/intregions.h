@@ -158,7 +158,7 @@ static inline BOOL _CopyRegionRectangles(struct Region *R1, struct Region *R2, s
 {
     if (_LinkRegionRectangleList(R1->RegionRectangle, &R2->RegionRectangle, GfxBase))
     {
-        R2->RegionRectangle = &Chunk(R2->RegionRectangle)->FirstChunk->Rects[0].RR;
+    	R2->RegionRectangle = Head(R2->RegionRectangle);
         R2->bounds = R1->bounds;
         return TRUE;
     }
