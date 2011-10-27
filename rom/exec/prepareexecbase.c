@@ -322,7 +322,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
      * PPC ports, which use own init code, which can be badly compatible with the base code. Merge is really
      * needed.
      */
-    t = AllocMem(sizeof(struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    t = Allocate(mh, sizeof(struct Task));
     D(bug("[exec] Boot task 0x%p\n", t));
     if (!t)
     {
@@ -330,6 +330,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 	return NULL;
     }
 
+    memset(t, 0, sizeof(struct Task));
     NEWLIST(&t->tc_MemEntry);
 
     t->tc_Node.ln_Name = "Boot Task";
