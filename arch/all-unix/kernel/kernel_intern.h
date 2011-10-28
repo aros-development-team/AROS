@@ -80,5 +80,7 @@ struct SignalTranslation
 
 extern struct SignalTranslation sigs[];
 extern struct KernelInterface KernelIFace;
+extern ULONG mm_PageSize;
 
 void cpu_DispatchContext(struct Task *task, regs_t *regs);
+APTR krnAllocSysMem(IPTR len);

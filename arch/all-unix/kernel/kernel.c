@@ -137,14 +137,6 @@ static int InitCore(struct KernelBase *KernelBase)
 
     D(bug("[KRN] InitCore()\n"));
 
-#ifdef HOST_OS_android
-    KernelBase->kb_PageSize = *KernelIFace.__page_size;
-#else
-    KernelBase->kb_PageSize = KernelIFace.getpagesize();
-    AROS_HOST_BARRIER
-#endif
-    D(bug("[KRN] Memory page size is %u\n", KernelBase->kb_PageSize));
-
     /*
      * We allocate PlatformData separately from KernelBase because
      * its definition relies on host includes (sigset_t), and
