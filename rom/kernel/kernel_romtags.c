@@ -213,6 +213,8 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     if (!sysBase)
     {
 	krnPanic("Failed to create ExecBase\n"
+		 "\n"
+		 "\n"
 		 "MemHeader 0x%p, First chunk 0x%p, %u bytes free",
 		 mh, mh->mh_First, mh->mh_Free);
 
