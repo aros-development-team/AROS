@@ -92,7 +92,6 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     struct MemHeader *bootmh;
     struct TagItem *tag;
     struct HostInterface *hif = NULL;
-    ULONG pageSize;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
     const struct TagItem *tstate = msg;
