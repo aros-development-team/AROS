@@ -110,11 +110,11 @@ static void SetBlockState(struct BlockHeader *head, IPTR first, IPTR pages, page
 }
 
 /* Allocate 'size' bytes from MemHeader mh */
-APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase)
+APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     APTR addr = NULL;
-    IPTR align = KernelBase->kb_PageSize - 1;
+    IPTR align = head->pageSize - 1;
     IPTR pages;
     IPTR p;
     IPTR candidate, candidate_size;
@@ -136,7 +136,7 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
-    pages = size / KernelBase->kb_PageSize;
+    pages = size / head->pageSize;
 
     ObtainSemaphore(&head->sem);
 
@@ -249,7 +249,7 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase
 	SetBlockState(head, candidate, pages, P_ALLOC);
 
 	/* Calculate starting address of the first page */
-	addr = head->start + candidate * KernelBase->kb_PageSize;
+	addr = head->start + candidate * head->pageSize;
 	/* Update free memory counter */
 	mh->mh_Free -= size;
     }
@@ -260,10 +260,10 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase
 }
 
 /* Allocate 'size' bytes starting at 'addr' from MemHeader mh */
-APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase)
+APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
-    IPTR align = KernelBase->kb_PageSize - 1;
+    IPTR align = head->pageSize - 1;
     IPTR pages;
     IPTR start, p;
     void *ret = NULL;
@@ -292,12 +292,12 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase 
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
-    pages = size / KernelBase->kb_PageSize;
+    pages = size / head->pageSize;
 
     ObtainSemaphore(&head->sem);
 
     /* Get start page number */
-    start = (addr - head->start) / KernelBase->kb_PageSize;
+    start = (addr - head->start) / head->pageSize;
 
     /* Check if we have enough free pages starting from the first one */
     p = start;
@@ -323,17 +323,17 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase 
 }
 
 /* Free 'size' bytes starting from address 'addr' in the MemHeader mh */
-void mm_Free(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase)
+void mm_Free(struct MemHeader *mh, APTR addr, IPTR size)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
     /* Calculate number of the starting page within the region */
-    IPTR first = (addr - head->start) / KernelBase->kb_PageSize;
-    IPTR align = KernelBase->kb_PageSize - 1;
+    IPTR first = (addr - head->start) / head->pageSize;
+    IPTR align = head->pageSize - 1;
     IPTR pages;
 
     /* Pad up size and convert it to number of pages */
     size = (size + align) & ~align;
-    pages = size / KernelBase->kb_PageSize;
+    pages = size / head->pageSize;
 
     ObtainSemaphore(&head->sem);
     
@@ -346,8 +346,14 @@ void mm_Free(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *Kern
     ReleaseSemaphore(&head->sem);
 }
 
-/* Iniialize memory management in a given MemHeader */
-void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
+/*
+ * Iniialize memory management in a given MemHeader.
+ * This routine takes into account only mh_Lower and mh_Upper, the rest is
+ * ignored.
+ * TODO: Currently it's assumed that the MemHeader itself is placed in the beginning
+ * of the region. In future this may be not true.
+ */
+void mm_Init(struct MemHeader *mh, ULONG pageSize)
 {
     struct BlockHeader *head;
     IPTR align;
@@ -356,15 +362,18 @@ void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
     IPTR mapsize;
     IPTR p;
     UBYTE free;
-    
-    head = (struct BlockHeader *)mh->mh_First;
-    align = KernelBase->kb_PageSize - 1;
-    
-    /* Fill in legacy MemChunk structure */
-    head->mc.mc_Next = NULL;
-    head->mc.mc_Bytes = 0;
 
-    InitSemaphore(&head->sem);
+    /*
+     * Currently we assume the struct MemHeader to be in the beginning
+     * our our region.
+     */
+    head = (APTR)mh + sizeof(struct MemHeader);
+    align = head->pageSize - 1;
+
+    /* Fill in the BlockHeader */
+    head->mc.mc_Next  = NULL;
+    head->mc.mc_Bytes = 0;
+    head->pageSize    = pageSize;
 
     /*
      * Page-align boundaries. 
@@ -377,12 +386,12 @@ void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
     do
     {
     	/* Skip one page. This reserves some space (one page or less) for allocations map. */
-    	head->start += KernelBase->kb_PageSize;
+    	head->start += pageSize;
     	/* Calculate resulting map size */
 	mapsize = (head->start - (APTR)head->map) / sizeof(ULONG);
 	/* Calculate number of free bytes and pages */
 	memsize = end - head->start;
-    	head->size = memsize / KernelBase->kb_PageSize;
+    	head->size = memsize / pageSize;
 	/*
 	 * Repeat the operation if there's not enough memory for allocations map.
 	 * This will take one more page from the area and use it for the map.
@@ -398,11 +407,24 @@ void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase)
 	    free++;
     } while (p > 0);
 
-    /* Set free space counter */
+    /* Set BlockHeader pointer and free space counter */
+    mh->mh_First = &head->mc;
     mh->mh_Free = memsize;
-    
-    /* Disable access to unallocated pages */
-    KrnSetProtection(head->start, memsize, 0);
+}
+
+/*
+ * Apply memory protection to the MemHeader.
+ * This is a separate routine because MMU by itself requires some memory to place its
+ * control structures, and they need to be allocated using already working allocator.
+ * Only once MMU is up and running, we can apply protection to our memory.
+ */
+void mm_Protect(struct MemHeader *mh, struct KernelBase *KernelBase)
+{
+    struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
+
+    InitSemaphore(&head->sem);
+
+    /* TODO */
 }
 
 #define SET_LARGEST(ptr, val)	\
@@ -492,7 +514,7 @@ void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct 
 	    /* Get total size and state of the current block */
 	    IPTR blksize = 0;
 	    page_t blkstate = P_STATUS(head->map[p]);
-	    
+
 	    do
 	    {
 		UBYTE cnt = P_COUNT(head->map[p]);	/* Get (partial) block length */

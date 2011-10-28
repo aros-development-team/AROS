@@ -44,7 +44,7 @@ AROS_LH1(void, KrnInitMemory,
 	return;
 
     /* Initialize the MemHeader */
-    mm_Init(mh, KernelBase);
+    mm_Init(mh, KernelBase->kb_PageSize);
 #endif
 
     AROS_LIBFUNC_EXIT

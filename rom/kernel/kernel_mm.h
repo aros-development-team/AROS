@@ -21,8 +21,8 @@ void mm_FreePages(void *addr, uintptr_t length, struct KernelBase *KernelBase);
  * Low-level functions, implemented by the allocator.
  * They will be different, depending on the allocator implementation.
  */
-APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags, struct KernelBase *KernelBase);
-APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size, struct KernelBase *KernelBase);
-void mm_Free(struct MemHeader *mh, APTR addr, IPTR size, struct KernelBase *KernelBase);
+APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags);
+APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size);
+void mm_Free(struct MemHeader *mh, APTR addr, IPTR size);
 void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct KernelBase *KernelBase);
-void mm_Init(struct MemHeader *mh, struct KernelBase *KernelBase);
+void mm_Init(struct MemHeader *mh, ULONG pageSize);

@@ -50,7 +50,7 @@ void *mm_AllocPages(void *addr, uintptr_t length, uint32_t flags, struct KernelB
 	     */
 	    if (addr >= mh->mh_Lower || addr + length <= mh->mh_Upper)
 	    {
-		res = mm_AllocAbs(mh, addr, length, KernelBase);
+		res = mm_AllocAbs(mh, addr, length);
 		break;
 	    }
 	}
@@ -60,7 +60,7 @@ void *mm_AllocPages(void *addr, uintptr_t length, uint32_t flags, struct KernelB
 	     * Otherwise try to allocate pages from every MemHeader.
 	     * Note that we still may fail if the memory is fragmented too much.
 	     */
-	    res = mm_Allocate(mh, length, flags, KernelBase);
+	    res = mm_Allocate(mh, length, flags);
 	    if (res)
 		break;
 	}
@@ -87,7 +87,7 @@ void mm_FreePages(void *addr, uintptr_t length, struct KernelBase *KernelBase)
 		/* Something is completely wrong. */
 		Alert(AN_MemCorrupt|AT_DeadEnd);
 
-	    mm_Free(mh, addr, length, KernelBase);
+	    mm_Free(mh, addr, length);
 	    break;
 	}
 

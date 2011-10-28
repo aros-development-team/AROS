@@ -55,6 +55,7 @@ struct BlockHeader
     struct MemChunk mc;		/* Backwards compatibility */
     APTR start;			/* Start address	   */
     ULONG size;			/* Total size in pages	   */
+    ULONG pageSize;		/* Page size in bytes	   */
     struct SignalSemaphore sem;	/* Access semaphore	   */
     page_t map[1];		/* Allocations map	   */
 };
