@@ -19,7 +19,7 @@ enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GAD
 };
 
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
-	         BIT_DUPBASE, BIT_DUPPERID, BIT_INCLUDES, BIT_NOINCLUDES,
+	         BIT_DUPBASE, BIT_PERTASKBASE, BIT_INCLUDES, BIT_NOINCLUDES,
                  BIT_STUBS, BIT_NOSTUBS, BIT_AUTOINIT, BIT_NOAUTOINIT,
 		 BIT_RESAUTOINIT, BIT_NOOPENCLOSE, BIT_SELFINIT, BIT_BASEREL
 };
@@ -29,7 +29,7 @@ enum optionflags
     OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
     OPTION_NORESIDENT = 1<<BIT_NORESIDENT,
     OPTION_DUPBASE = 1<<BIT_DUPBASE,
-    OPTION_DUPPERID = 1<<BIT_DUPPERID,
+    OPTION_PERTASKBASE = 1<<BIT_PERTASKBASE,
     OPTION_INCLUDES = 1<<BIT_INCLUDES,
     OPTION_NOINCLUDES = 1<<BIT_NOINCLUDES,
     OPTION_STUBS = 1<<BIT_STUBS,
@@ -150,9 +150,6 @@ struct config
 
     /* device specific data */
     char *beginiofunc, *abortiofunc;
-
-    /* For option peridbase */
-    char *getidfunc;
 
     /* The functions of this module */
     struct functionhead *funclist;

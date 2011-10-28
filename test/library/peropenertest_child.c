@@ -3,13 +3,13 @@
     $Id$
 */
 #include <proto/dos.h>
-#include <proto/perid.h>
+#include <proto/pertask.h>
 
 int main (int argc, char ** argv)
 {
-    FPuts(Output(), (STRPTR)"\nTesting perid.library in child\n");
+    FPuts(Output(), (STRPTR)"\nTesting pertask.library in child\n");
 
-    FPrintf(Output(), (STRPTR)"base=%lx, parent=%lx\n", PeridBase,
+    FPrintf(Output(), (STRPTR)"base=%lx, parent=%lx\n", PertaskBase,
             GetParentBase()
     );
     

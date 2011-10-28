@@ -252,96 +252,30 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#   error unsupported CPU type\n"
                 "#endif\n"
         );
-    if (cfg->options & OPTION_DUPPERID)
+
+    if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
-                "#ifdef __GM_OWNGETID\n"
-                "#include <dos/dosextens.h>\n"
-                "IPTR __GM_Id2(void)\n"
-                "{\n"
-                "    struct Process *process = (struct Process *)FindTask(NULL);\n"
-                "\n"
-                "    if (process->pr_Task.tc_Node.ln_Type == NT_PROCESS)\n"
-                "        return (IPTR)process->pr_ReturnAddr;\n"
-                "\n"
-                "        return (IPTR)NULL;\n"
-                "}\n"
-                "#endif\n"
-                "\n"
-                "#ifdef GM_GETID2\n"
-                "struct __GM_ID2Node\n"
-                "{\n"
-                "    struct MinNode node;\n"
-                "    IPTR id2;\n"
-                "    struct Library *lh;\n"
-                "    ULONG dupopencount;\n"
-                "};\n"
-                "#endif\n"
-                "\n"
-                "struct __GM_AVLNode {\n"
-                "    struct AVLNode node;\n"
-                "    IPTR id;\n"
-                "#ifndef GM_GETID2\n"
-                "    struct Library *lh;\n"
-                "    ULONG dupopencount;\n"
-                "#else\n"
-                "    struct MinList id2nodes;\n"
-                "#endif\n"
-                "};\n"
-                "struct __GM_BaseAVL {\n"
+                "struct __GM_TSBase {\n"
                 "    LIBBASETYPE base;\n"
-                "    struct __GM_AVLNode *avlnode, _avlnode;\n"
-                "#ifdef GM_GETID2\n"
-                "    struct __GM_ID2Node *id2node, _id2node;\n"
-                "#endif\n"
+                "    ULONG taskopencount;\n"
+                "    struct Task *task;\n"
+                "    APTR retaddr;\n"
+                "    LIBBASETYPEPTR oldbase;\n"
                 "};\n"
-                "static AROS_UFH2(LONG, __GM_CompKey,\n"
-                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode, A0),\n"
-                "    AROS_UFHA(AVLKey, _key, A1)\n"
-                ")\n"
+                "#define LIBBASESIZE sizeof(struct __GM_TSBase)\n"
+                "static int __tsslot;\n"
+                "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    AROS_USERFUNC_INIT\n"
-                "\n"
-                "    IPTR id = (IPTR)_key;\n"
-                "    if (gm_avlnode->id == id)\n"
-                "        return (LONG) 0;\n"
-                "    else if (gm_avlnode->id < id)\n"
-                "        return (LONG)-1;\n"
-                "    else\n"
-                "        return (LONG)1;\n"
-                "\n"
-                "    AROS_USERFUNC_EXIT\n"
+                "    return ((struct __GM_TSBase *)base)->oldbase;\n"
                 "}\n"
-                "static AROS_UFH2(LONG, __GM_CompNode,\n"
-                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode1, A0),\n"
-                "    AROS_UFHA(const struct __GM_AVLNode *, gm_avlnode2, A1)\n"
-                ")\n"
+                "static inline LIBBASETYPEPTR __GM_GetTSBase(void)\n"
                 "{\n"
-                "    AROS_USERFUNC_INIT\n"
-                "\n"
-                "    return AROS_UFC2(LONG, __GM_CompKey,\n"
-                "        AROS_UFPA(const struct __GM_AVLNode *, gm_avlnode1, A0),\n"
-                "        AROS_UFPA(AVLKey, (AVLKey)gm_avlnode2->id, A1)\n"
-                "    );\n"
-                "\n"
-                "    AROS_USERFUNC_EXIT\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__tsslot];\n"
                 "}\n"
-                "#define LIBBASESIZE sizeof(struct __GM_BaseAVL)\n"
-                "struct AVLNode *__GM_AVLRoot = NULL;\n"
-                "\n"
-                "#ifdef __GM_OWNPARENTBASEID2\n"
-                "LIBBASETYPEPTR GM_UNIQUENAME(__GetParentLibbase)(LIBBASETYPEPTR lh)\n"
+                "static inline void __GM_SetTSBase(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    struct __GM_ID2Node *id2node = ((struct __GM_BaseAVL *)lh)->id2node;\n"
-                "\n"
-                "    id2node = (struct __GM_ID2Node *)GetSucc(id2node);\n"
-                "\n"
-                "    if (id2node != NULL)\n"
-                "        return (LIBBASETYPEPTR)id2node->lh;\n"
-                "    else\n"
-                "        return (LIBBASETYPEPTR)NULL;\n"
+                "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__tsslot] = (IPTR)base;\n"
                 "}\n"
-                "#endif\n"
-                "\n"
         );
     else
         fprintf(out, "#define LIBBASESIZE sizeof(LIBBASETYPE)\n");
@@ -522,7 +456,23 @@ static void writeresident(FILE *out, struct config *cfg)
 
     if (cfg->options & OPTION_RESAUTOINIT)
     {
-        if (!(cfg->options & OPTION_DUPPERID))
+        if (cfg->options & OPTION_PERTASKBASE)
+        {
+            fprintf(out,
+                    "#define __freebase(lh)\\\n"
+                    "do { \\\n"
+                    "    UWORD negsize, possize;\\\n"
+                    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
+                    "    __GM_SetTSBase((LIBBASETYPEPTR)((struct __GM_TSBase *)lh)->oldbase);\\\n"
+                    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+                    "    negptr -= negsize;\\\n"
+                    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+                    "    FreeMem (negptr, negsize+possize);\\\n"
+                    "} while(0)\n"
+                    "\n"
+            );
+        }
+        else /* !pertaskbase */
         {
             fprintf(out,
                     "#define __freebase(lh)\\\n"
@@ -536,49 +486,6 @@ static void writeresident(FILE *out, struct config *cfg)
                     "} while(0)\n"
                     "\n"
        	    );
-        }
-        else
-        {
-            fprintf(out,
-                    "#ifndef GM_GETID2\n"
-                    "#define __freebase(lh)\\\n"
-                    "do {\\\n"
-                    "    UWORD negsize, possize;\\\n"
-                    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-                    "    struct __GM_AVLNode *avlnode = ((struct __GM_BaseAVL *)lh)->avlnode;\\\n"
-                    "    AVL_RemNodeByAddress(&__GM_AVLRoot, (struct AVLNode *)avlnode);\\\n"
-                    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-                    "    negptr -= negsize;\\\n"
-                    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-                    "    FreeMem (negptr, negsize+possize);\\\n"
-                    "} while(0)\n"
-                    "#else\n"
-                    "#define __freebase(lh)\\\n"
-                    "do {\\\n"
-                    "    UWORD negsize, possize;\\\n"
-                    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-                    "    struct __GM_AVLNode *avlnode = ((struct __GM_BaseAVL *)lh)->avlnode;\\\n"
-                    "    struct __GM_ID2Node *id2node = ((struct __GM_BaseAVL *)lh)->id2node;\\\n"
-                    "    BOOL remnode;\\\n"
-                    "    /* avlnode == NULL for original libbase provided to LibInit */\\\n"
-                    "    if (avlnode)\\\n"
-                    "    {\\\n"
-                    "        Remove((struct Node *)id2node);\\\n"
-                    "        remnode = GetHead((struct List *)&avlnode->id2nodes) == NULL;\\\n"
-                    "        if (remnode)\\\n"
-                    "            AVL_RemNodeByAddress(&__GM_AVLRoot, (struct AVLNode *)avlnode);\\\n"
-                    "        else if (avlnode == &((struct __GM_BaseAVL *)lh)->_avlnode)\\\n"
-                    "            /* Do not free as avlnode is still in the AVL Tree\\\n"
-                    "               This is causing a memory leak because sublibrary is not closed */\\\n"
-                    "            break;\\\n"
-                    "    }\\\n"
-                    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-                    "    negptr -= negsize;\\\n"
-                    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-                    "    FreeMem (negptr, negsize+possize);\\\n"
-                    "} while(0)\n"
-                    "#endif\n"
-            );
         }
     }
 	
@@ -868,6 +775,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "    __baseslot = AllocTaskStorageSlot();\n"
                 "    __GM_SetBase(lh);\n"
         );
+    if (cfg->options & OPTION_PERTASKBASE)
+        fprintf(out,
+                "    __tsslot = AllocTaskStorageSlot();\n"
+        );
 
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
 	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
@@ -1084,40 +995,25 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "    struct Library *newlib = NULL;\n"
 		    "    UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
             );
-            if (cfg->options & OPTION_DUPPERID)
+            if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
-                        "    struct __GM_AVLNode *avlnode = NULL;\n"
-                        "    IPTR id = GM_GETID;\n"
-                        "#ifdef GM_GETID2\n"
-                        "    struct __GM_ID2Node *id2node = NULL, *id2node_it;\n"
-                        "    IPTR id2 = GM_GETID2;\n"
-                        "#endif\n"
-                        "\n"
-                        "    avlnode = (struct __GM_AVLNode *)AVL_FindNode(__GM_AVLRoot, (AVLKey)id, (AVLKEYCOMP)__GM_CompKey);\n"
-                        "#ifndef GM_GETID2\n"
-                        "    if (avlnode != NULL)\n"
+                        "    struct Task *thistask = FindTask(NULL);\n"
+                        "    LIBBASETYPEPTR oldbase = __GM_GetTSBase();\n"
+                        "    newlib = (struct Library *)oldbase;\n"
+                        "    if (newlib)\n"
                         "    {\n"
-                        "        avlnode->dupopencount++;\n"
-                        "        newlib = avlnode->lh;\n"
+                        "        struct __GM_TSBase *tslib = (struct __GM_TSBase *)newlib;\n"
+                        "        if (tslib->task != thistask)\n"
+                        "            newlib = NULL;\n"
+                        "        else if (thistask->tc_Node.ln_Type == NT_PROCESS\n"
+                        "                 && tslib->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
+                        "        )\n"
+                        "            newlib = NULL;\n"
+                        "        else\n"
+                        "            tslib->taskopencount++;\n"
                         "    }\n"
-                        "#else\n"
-                        "    if (avlnode != NULL)\n"
-                        "    {\n"
-                        "        ForeachNode(&avlnode->id2nodes, id2node_it)\n"
-                        "        {\n"
-                        "            if (id2node_it->id2 == id2)\n"
-                        "                id2node = id2node_it;\n"
-                        "            break;\n"
-                        "        }\n"
-                        "    }\n"
-                        "    if (id2node != NULL)\n"
-                        "    {\n"
-                        "        id2node->dupopencount++;\n"
-                        "        newlib = id2node->lh;\n"
-                        "    }\n"
-                        "#endif\n"
-                        "\n"
                 );
+
             fprintf(out,
 		    "\n"
                     "    if (newlib == NULL)\n"
@@ -1134,39 +1030,15 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "        CopyMem(lh, newlib, possize);\n"
                     "        __GM_SetBase((LIBBASETYPEPTR)newlib);\n"
             );
-            if (cfg->options & OPTION_DUPPERID)
+            if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
-                        "#ifndef GM_GETID2\n"
-                        "        avlnode\n"
-                        "            = ((struct __GM_BaseAVL *)newlib)->avlnode\n"
-                        "            = &((struct __GM_BaseAVL *)newlib)->_avlnode;\n"
-                        "        avlnode->id = id;\n"
-                        "        avlnode->lh = newlib;\n"
-                        "        avlnode->dupopencount = 1;\n"
-                        "        AVL_AddNode((struct AVLNode **)&__GM_AVLRoot, (struct AVLNode *)avlnode, (AVLNODECOMP)__GM_CompNode);\n"
-                        "#else\n"
-                        "        if(avlnode == NULL)\n"
-                        "        {\n"
-                        "            /* avlnode does not exists yet, use the one in the allocated libbase */\n"
-                        "            avlnode\n"
-                        "                = ((struct __GM_BaseAVL *)newlib)->avlnode\n"
-                        "                = &((struct __GM_BaseAVL *)newlib)->_avlnode;\n"
-                        "            avlnode->id = id;\n"
-                        "            NEWLIST(&avlnode->id2nodes);\n"
-                        "            AVL_AddNode((struct AVLNode **)&__GM_AVLRoot, (struct AVLNode *)avlnode, (AVLNODECOMP)__GM_CompNode);\n"
-                        "        }\n"
-                        "        else\n"
-                        "            /* avlnode already in AVL tree, let avlnode pointer in libbase point to it */\n"
-                        "            ((struct __GM_BaseAVL *)newlib)->avlnode = avlnode;\n"
-                        "\n"
-                        "        id2node\n"
-                        "            = ((struct __GM_BaseAVL *)newlib)->id2node\n"
-                        "            = &((struct __GM_BaseAVL *)newlib)->_id2node;\n"
-                        "        id2node->id2 = id2;\n"
-                        "        id2node->lh = newlib;\n"
-                        "        id2node->dupopencount = 1;\n"
-                        "        AddHead((struct List *)&avlnode->id2nodes, (struct Node *)id2node);\n"
-                        "#endif\n"
+                        "        struct __GM_TSBase *tslib = (struct __GM_TSBase *)newlib;\n"
+                        "        tslib->task = thistask;\n"
+                        "        if (thistask->tc_Node.ln_Type == NT_PROCESS)\n"
+                        "             tslib->retaddr = ((struct Process *)thistask)->pr_ReturnAddr;\n"
+                        "        tslib->oldbase = oldbase;\n"
+                        "        tslib->taskopencount = 1;\n"
+                        "        __GM_SetTSBase((LIBBASETYPEPTR)newlib);\n"
                 );
 
 	    if (cfg->options & OPTION_BASEREL)
@@ -1279,19 +1151,12 @@ static void writecloselib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
         );
-        if (cfg->options & OPTION_DUPPERID)
+        if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "#ifndef GM_GETID2\n"
-                    "    struct __GM_AVLNode *avlnode = ((struct __GM_BaseAVL *)lh)->avlnode;\n"
-                    "    avlnode->dupopencount--;\n"
-                    "    if (avlnode->dupopencount != 0)\n"
+                    "    struct __GM_TSBase *tsbase = (struct __GM_TSBase *)lh;\n"
+                    "    tsbase->taskopencount--;\n"
+                    "    if (tsbase->taskopencount != 0)\n"
                     "        return BNULL;\n"
-                    "#else\n"
-                    "    struct __GM_ID2Node *id2node = ((struct __GM_BaseAVL *)lh)->id2node;\n"
-                    "    id2node->dupopencount--;\n"
-                    "    if (id2node->dupopencount != 0)\n"
-                    "        return BNULL;\n"
-                    "#endif\n"
             );
         fprintf(out,
                 "\n"
@@ -1389,6 +1254,11 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 	    fprintf(out,
 	    	"\n"
                 "        (void)AROS_SET_LIBBASE(oldbase);");
+        if (cfg->options & OPTION_PERTASKBASE)
+            fprintf(out,
+                    "        FreeTaskStorageSlot(__tsslot);\n"
+                    "        __tsslot = 0;\n"
+            );
         fprintf(out,
         	"\n"
 		"        __freebase(lh);\n"
@@ -1635,3 +1505,4 @@ static void writesets(FILE *out, struct config *cfg)
 	);
     fprintf(out, "\n");
 }
+

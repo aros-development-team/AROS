@@ -8,12 +8,12 @@
 #include LC_LIBDEFS_FILE
 
 AROS_LH0(struct Library *, GetParentBase,
-         struct Library *, PeridBase, 5, Perid
+         struct Library *, PertaskBase, 5, Pertask
 )
 {
     AROS_LIBFUNC_INIT
     
-    return GM_GETPARENTBASEID2(PeridBase);
+    return __GM_GetBaseParent(PertaskBase);
     
     AROS_LIBFUNC_EXIT
 }
