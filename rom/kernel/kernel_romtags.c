@@ -71,6 +71,9 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     IPTR  limit = chunkSize / sizeof(APTR);
     ULONG num = 0;
 
+    if (!RomTag)
+    	return NULL;
+
     /* Look in whole kickstart for resident modules */
     while (*ranges != (UWORD *)~0)
     {
