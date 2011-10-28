@@ -16,6 +16,7 @@
 #include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "taskstorage.h"
 
 /*
  * TODO: The following two functions are subject to removal.
@@ -253,6 +254,10 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     }
     Permit();
 
+    /* Allocate memory for task storage slots */
+    et->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+    et->et_TaskStorage[0] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
+    
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
     {

@@ -6,7 +6,10 @@
 #include <kernel_debug.h>
 #include <kernel_scheduler.h>
 
-#define D(x)
+/* FIXME: Can we remove usage of exec_intern.h ? */
+#include "exec_intern.h"
+
+//#define D(x)
 
 /*
  * Schedule the currently running task away. Put it into the TaskReady list 
@@ -99,6 +102,22 @@ struct Task *core_Dispatch(void)
     task->tc_State = TS_RUN;
 
     D(bug("[KRN] New task = %p (%s)\n", task, task->tc_Node.ln_Name));
+
+    /*
+     * Increase TaskStorage if it is not big enough
+     */
+    struct ETask *etask = task->tc_UnionETask.tc_ETask;
+    if ((int)etask->et_TaskStorage[0] < PrivExecBase(SysBase)->TaskStorageSize)
+    {
+        IPTR *oldstorage = etask->et_TaskStorage;
+        ULONG oldsize = (ULONG)oldstorage[0];
+
+        etask->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+        /* FIXME: Add fault handling */
+
+        CopyMem(oldstorage, etask->et_TaskStorage, oldsize);
+        FreeMem(oldstorage, oldsize);
+    }
 
     /*
      * Check the stack of the task we are about to launch.

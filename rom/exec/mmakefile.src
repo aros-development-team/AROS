@@ -30,7 +30,8 @@ ALL_FUNCTIONS := \
 	superstate supervisor switch taggedopenlibrary typeofmem userstate \
 	vacate wait waitio waitport allocvecpooled freevecpooled newallocentry \
 	newaddtask newminlist avl vnewrawdofmt shutdowna useralert \
-	addresetcallback remresetcallback doresetcallbacks newcreatetaska
+	addresetcallback remresetcallback doresetcallbacks newcreatetaska \
+        alloctaskstorageslot freetaskstorageslot
 
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \

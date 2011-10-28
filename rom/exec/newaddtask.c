@@ -75,6 +75,8 @@
 
     ASSERT_VALID_PTR(task);
 
+    struct Task *thistask = FindTask(NULL);
+
     /* Sigh - you should provide a name for your task. */
     if(task->tc_Node.ln_Name==NULL)
         task->tc_Node.ln_Name="unknown task";
@@ -138,6 +140,12 @@
         return NULL;
 
     InitETask(task, task->tc_UnionETask.tc_ETask);
+
+    /* Clone TaskStorage */
+    CopyMem(&thistask->tc_UnionETask.tc_ETask->et_TaskStorage[1],
+            &task->tc_UnionETask.tc_ETask->et_TaskStorage[1],
+            ((ULONG)thistask->tc_UnionETask.tc_ETask->et_TaskStorage[0])-sizeof(IPTR)
+    );
 
     /* Get new stackpointer. */
     if (task->tc_SPReg==NULL)
