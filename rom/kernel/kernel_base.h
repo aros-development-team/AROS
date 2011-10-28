@@ -1,5 +1,6 @@
 #define __KERNEL_NOLIBBASE__
 
+#include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <aros/kernel.h>
