@@ -36,49 +36,6 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 }
 
 /*
- * Our own, very simplified down boot-time chunk-based memory allocator.
- * It is okay to use this routine because this is one of the first allocations (actually
- * should be the first one) and it is never going to be freed.
- */
-
-/* Allocate boot-time chunk. Returns address and size of the usable area. */
-static inline APTR krnAllocBootChunk(struct MemHeader *mh, IPTR *size)
-{
-    /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
-    struct MemChunk *mc = mh->mh_First;
-
-    mh->mh_First = mc->mc_Next;
-    mh->mh_Free -= mc->mc_Bytes;
-
-    D(bug("[krnGetChunk] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
- 
-    *size = mc->mc_Bytes;
-    return mc;
-}
-
-/* Release unused boot-time memory. */
-static inline void krnFreeBootChunk(struct MemHeader *mh, APTR addr, IPTR chunkSize, IPTR allocSize)
-{
-    struct MemChunk *mc;
-
-    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
-    chunkSize -= allocSize;
-
-    D(bug("[krnReturnChunk] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
-
-    if (chunkSize < MEMCHUNK_TOTAL)
-    	return;
-
-    mc = addr + allocSize;
-
-    mc->mc_Next  = mh->mh_First;
-    mc->mc_Bytes = chunkSize - allocSize;
-
-    mh->mh_First = mc;
-    mh->mh_Free += mc->mc_Bytes;
-}
-
-/*
  * RomTag scanner.
  *
  * This function scans kernel for existing Resident modules. If two modules
@@ -110,7 +67,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
      * construct resident list in this area. After it's done, we return part of the used space to the system.
      */
     IPTR chunkSize;
-    struct Resident **RomTag = krnAllocBootChunk(mh, &chunkSize);;
+    struct Resident **RomTag = krnGetSysMem(mh, &chunkSize);
     IPTR  limit = chunkSize / sizeof(APTR);
     ULONG num = 0;
 
@@ -186,7 +143,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     RomTag[num] = NULL;
 
     /* Seal our used memory as allocated */
-    krnFreeBootChunk(mh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
+    krnReleaseSysMem(mh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
 
     /*
      * Building list is complete, sort RomTags according to their priority.
@@ -232,7 +189,12 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     struct ExecBase *sysBase;
     struct Resident **resList = krnRomTagScanner(mh, ranges);
 
-    /* krnRomTagScanner() never fails */
+    if (!resList)
+    {
+        krnPanic("Failed to create initial resident list\n"
+        	 "Not enough memory space provided");
+        return NULL;
+    }
 
     exec = krnFindResident(resList, "exec.library");
     if (!exec)
