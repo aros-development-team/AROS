@@ -40,6 +40,8 @@ struct IntExecBase
     struct MsgPort *RemTaskPort;                /* port used for RemTask() memory cleanup               */
     struct Exec_PlatformData PlatformData;	/* Platform-specific stuff   				*/
     char   AlertBuffer[ALERT_BUFFER_SIZE];	/* Buffer for alert text     				*/
+    int    TaskStorageSize;                     /* Size of buffer in tc_ETask->et_TaskStorage           */
+    struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot*/
 };
 
 #define PrivExecBase(base) ((struct IntExecBase *)base)
@@ -50,6 +52,8 @@ struct IntExecBase
 /* IntFlags */
 #define EXECF_MungWall   0x0001	/* This flag can't be changed at runtime */
 #define EXECF_StackSnoop 0x0002
+
+#define TASKSTORAGEPUDDLE 256*sizeof(IPTR)
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);

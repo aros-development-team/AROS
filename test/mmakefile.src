@@ -92,7 +92,8 @@ COMMONTESTFILES := \
     versionlib \
     runtests \
     fsresource \
-    altstack
+    altstack \
+    taskstorage
 
 HOSTEDTESTFILES :=  \
     hostlib

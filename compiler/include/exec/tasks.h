@@ -174,6 +174,7 @@ struct ETask
     APTR	   et_Result2;	    /* Result data pointer (AllocVec) */
     struct MsgPort et_TaskMsgPort;
 
+    IPTR          *et_TaskStorage;
     /* Internal fields follow */
 };
 

@@ -31,6 +31,7 @@
 #include "exec_util.h"
 #include "exec_debug.h"
 #include "exec_intern.h"
+#include "taskstorage.h"
 
 #undef kprintf /* This can't be used in the code here */
 
@@ -228,6 +229,9 @@ void InitExecBase(struct ExecBase *SysBase, ULONG negsize, struct TagItem *msg)
 	    SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
 
+    PrivExecBase(SysBase)->TaskStorageSize = TASKSTORAGEPUDDLE;
+    NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);
+
     SetSysBaseChkSum();
 }
 
@@ -309,6 +313,16 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     SysBase->KickCheckSum = KickCheckSum;
 
     SysBase->DebugAROSBase = PrepareAROSSupportBase(mh);
+
+    /* Initialize free task storage slots management */
+    struct TaskStorageFreeSlot *tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!tsfs)
+    {
+        DINIT("ERROR: Could not allocate free slot node!");
+        return NULL;
+    }
+    tsfs->FreeSlot = 1;
+    AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
     /*
      * Create boot task skeleton.
