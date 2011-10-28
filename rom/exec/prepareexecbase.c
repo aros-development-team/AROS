@@ -254,10 +254,10 @@ void InitExecBase(struct ExecBase *SysBase, ULONG negsize, struct TagItem *msg)
 struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 {
     ULONG negsize = 0;
-    ULONG totalsize;
     VOID  **fp = LIBFUNCTABLE;
     APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
     APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+    APTR mem;
     struct Task *t;
 
     /*
@@ -280,10 +280,13 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
     
     /* Align library base */
     negsize = AROS_ALIGN(negsize);
-    
+
     /* Allocate memory for library base */
-    totalsize = negsize + sizeof(struct IntExecBase);
-    SysBase = (struct ExecBase *)((UBYTE *)stdAlloc(mh, totalsize, MEMF_CLEAR, NULL, NULL) + negsize);
+    mem = stdAlloc(mh, negsize + sizeof(struct IntExecBase), MEMF_CLEAR, NULL, NULL);
+    if (!mem)
+    	return NULL;
+
+    SysBase = mem + negsize;
 
 #ifdef HAVE_PREPAREPLATFORM
     /* Setup platform-specific data */
@@ -323,12 +326,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
      * needed.
      */
     t = Allocate(mh, sizeof(struct Task));
-    D(bug("[exec] Boot task 0x%p\n", t));
     if (!t)
-    {
-	DINIT("ERROR: Cannot create Boot Task!");
 	return NULL;
-    }
 
     memset(t, 0, sizeof(struct Task));
     NEWLIST(&t->tc_MemEntry);
