@@ -85,7 +85,7 @@ AROS_LH2(BOOL, CardResetRemove,
 
 AROS_LH2(UBYTE, CardMiscControl,
 	AROS_LHA(struct CardHandle*, handle, A1),
-	AROS_LHA(UBYTE, control_bits, D0),
+	AROS_LHA(UBYTE, control_bits, D1),
 	struct CardResource*, CardResource, 8, Cardres)
 {
     AROS_LIBFUNC_INIT
