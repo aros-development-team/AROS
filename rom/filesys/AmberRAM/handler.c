@@ -112,6 +112,7 @@ LONG AmberMain(void)
       while((packet = GetPacket(proc_port)) != NULL)
       {
          result = DOSTRUE;
+         SetIoErr(0);
 
          switch(packet->dp_Type)
          {
