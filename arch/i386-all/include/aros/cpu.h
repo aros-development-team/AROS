@@ -116,20 +116,8 @@ struct JumpVec
 	asm volatile( \
 	    ".weak " #fname "\n" \
 	    #fname " :\n" \
-            /* return address is top of stack */ \
-            /* use as 2nd argument for aros_push2_relbase */ \
-            "\tmovl " #libbasename ", %%eax\n" \
-            "\tpushl %%eax\n" /* libbase on stack */ \
-            "\tcall aros_push2_relbase\n" \
-            "\tmovl (%%esp), %%eax\n" \
-            "\taddl $8,%%esp\n" /* original arguments */ \
-            "\tcall *%c0(%%eax)\n" \
-            "\tpushl %%eax\n" \
-            "\tcall aros_pop2_relbase\n" \
-            "\tmovl %%eax, %%ecx\n" \
-            "\tpopl %%eax\n" \
-            "\tmovl %%ecx, (%%esp)\n" \
-            "\tjmp *%%ecx" \
+            "\tmovl " #libbasename ", %%edx\n" \
+            "\tjmp *%c0(%%edx)\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
 	); \
     }
@@ -146,20 +134,10 @@ struct JumpVec
 	asm volatile( \
             ".weak " #fname "\n" \
             "\t" #fname " :\n" \
-            "\tcall aros_get_relbase\n" \
+            "\tcall __comp_get_relbase\n" \
             "\taddl " #libbasename "_offset, %%eax\n" \
-            "\tmovl (%%eax), %%eax\n" \
-            "\tpushl %%eax\n" \
-            "\tcall aros_push2_relbase\n" \
-            "\tmovl (%%esp), %%eax\n" \
-            "\taddl $8,%%esp\n" \
-            "\tcall *%c0(%%eax)\n" \
-            "\tpushl %%eax\n" \
-            "\tcall aros_pop2_relbase\n" \
-            "\tmovl %%eax, %%ecx\n" \
-            "\tpopl %%eax\n" \
-            "\tmovl %%ecx, (%%esp)\n" \
-            "\tjmp *%%ecx" \
+            "\tmovl (%%eax), %%edx\n" \
+            "\tjmp *%c0(%%edx)\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
 	); \
     }

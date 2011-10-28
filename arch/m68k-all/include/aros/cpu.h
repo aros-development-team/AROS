@@ -121,12 +121,11 @@ do                                                       \
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \
-	asm volatile( \
-	    ".weak " #fname "\n" \
-	    "\t" #fname ":\n" \
-	    "\tmove.l	" #libbasename ",%%d0\n" \
-	    "\tmove.l	#%c0,%%d1\n" \
-	    "\tjmp      aros_thunk_libfunc\n" \
+        asm volatile( \
+            ".weak " #fname "\n" \
+	    #fname ":\n" \
+	    "\tmove.l	" #libbasename ",%%a1\n" \
+	    "\tjmp %%a1@(%c0)\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
 	    : \
         ); \
@@ -141,15 +140,16 @@ do                                                       \
 #define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args) \
     { \
-	asm volatile( \
+        asm volatile( \
             ".weak " #fname "\n" \
-            "\t" #fname " :\n" \
-            "\tmove.l	" #libbasename "_offset, %%d0\n" \
-            "\tmove.l	#%c0,%%d1\n" \
-	    "\tjmp	aros_thunk_rellibfunc\n" \
-	    : : "i" ((-lvo*LIB_VECTSIZE)) \
-	    : \
-	); \
+            #fname " :\n" \
+            "\tjsr __comp_get_relbase\n" \
+            "\tmove.l " #libbasename "_offset, %%a0\n" \
+            "\tmove.l %%a0@(%%d0), %%a1\n" \
+            "\tjmp %%a1@(%c0)\n" \
+            : : "i" ((-lvo*LIB_VECTSIZE)) \
+            : \
+        ); \
     }
 #define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)

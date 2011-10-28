@@ -103,45 +103,25 @@ struct JumpVec
      return value will be old return address
    - pull return value from stack
    - jmp to old return address
-   
-   !!! WATCH OUT !!! LIB_VECTSIZE is hardcoded here as 4. C preprocessor
-   can't expand sizeof() into a number.
 */
-#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo)				\
-asm(										\
-	    "	.weak " #fname "\n"						\
-	    #fname " :\n"							\
-	    /* return address is in lr register */				\
-	    /* Up to four parameters are in r0 - r3 , the rest are on stack */	\
-	    "	push	{r0, r1, r2, r3}\n"					\
-	    /* r0 = libbase, r1 = lr */						\
-	    "	ldr	r12, 1f\n"						\
-            "	ldr	r0, [r12]\n"						\
-	    "	mov	r1, lr\n"						\
-	    /* aros_push2_relbase(r0, r1) */					\
-            "	ldr	r12, 2f\n"						\
-            "	blx	r12\n"							\
-            /* Restore original arguments */					\
-            "	pop	{r0, r1, r2, r3}\n"					\
-            /* Call library function */						\
-            "	ldr 	r12, 1f\n"						\
-            "	ldr	r12, [r12]\n"						\
-            "	ldr  	r12, [r12, #-" #lvo "* 4]\n"				\
-            "	blx	r12\n"							\
-            /* Push return value (possibly 64-bit one) */			\
-            "	push	{r0, r1}\n"						\
-	    /* lr = aros_pop2_relbase() */					\
-            "	ldr	r12, 3f\n"						\
-            "	blx	r12\n"							\            
-            "	mov	lr, r0\n"						\
-            /* Pop return value */						\
-            "	pop	{r0, r1}\n"						\
-            /* Return to the caller */						\
-            "	bx	lr\n"							\
-            "1:	.word	" #libbasename "\n"					\
-            "2:	.word	aros_push2_relbase\n"					\
-            "3:	.word	aros_pop2_relbase\n"					\
-);
+#define __AROS_LIBFUNCSTUB(fname, libbasename, lvo)                     \
+    void __ ## fname ## _ ## libbasename ## _wrapper(void)              \
+    {                                                                   \
+        asm volatile(                                                   \
+            ".weak " #fname "\n"                                        \
+	    #fname " :\n"						\
+	    /* r12 = libbase */                                         \
+	    "\tldr r12, 1f\n"                                           \
+            "\tldr r12, [r12]\n"                                        \
+            /* Put libbase on the stack */                              \
+            "\tpush {r12}\n"                                            \
+            /* Compute function address and jump */                     \
+            "\tldr r12, [r12, #%c0]\n"                                  \
+            "\tbx r12\n"                                                \
+            "1:	.word " #libbasename "\n"                               \
+            : : "i" ((-lvo*LIB_VECTSIZE))                               \
+        );                                                              \
+    }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
@@ -149,47 +129,34 @@ asm(										\
    Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
    the current libbase
 */
-#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)				\
-asm(										\
-	    "	.weak " #fname "\n"						\
-	    #fname " :\n"							\
-	    /* return address is in lr register */				\
-	    /* Up to four parameters are in r0 - r3 , the rest are on stack */	\
-	    "	push	{r0, r1, r2, r3}\n"					\
-	    "	push	{lr}\n"							\
-	    /* r0 = aros_get_relbase() (base of currently running library) */	\
-	    "	ldr	r12, 4f\n"						\
-	    "	blx	r12\n"							\
-	    /* r0 = libbase (we area asked for), r1 = lr (was pushed above) */	\
-	    "	ldr	r12, 1f\n"						\
-	    "	ldr	r12, [r12]\n"						\
-	    "	ldr	r0, [r0, r12]\n"					\
-	    "	pop	{r1}\n"							\
-	    /* aros_push2_relbase(r0, r1) */					\
-            "	ldr	r12, 2f\n"						\
-            "	blx	r12\n"							\
-            /* Restore original arguments */					\
-            "	pop	{r0, r1, r2, r3}\n"					\
-            /* Call library function */						\
-            "	ldr 	r12, 1f\n"						\
-            "	ldr	r12, [r12]\n"						\
-            "	ldr  	r12, [r12, #-" #lvo " * 4]\n"				\
-            "	blx	r12\n"							\
-            /* Push return value (possibly 64-bit one) */			\
-            "	push	{r0, r1}\n"						\
-	    /* lr = aros_pop2_relbase() */					\
-            "	ldr	r12, 3f\n"						\
-            "	blx	r12\n"							\            
-            "	mov	lr, r0\n"						\
-            /* Pop return value */						\
-            "	pop	{r0, r1}\n"						\
-            /* Return to the caller */						\
-            "	bx	lr\n"							\
-	    "1:	.word	" #libbasename "_offset\n"				\
-            "2:	.word	aros_push2_relbase\n"					\
-            "3:	.word	aros_pop2_relbase\n"					\
-            "4: .word	aros_get_relbase\n"					\
-);
+#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)                  \
+    void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args)      \
+    {                                                                   \
+        asm volatile(                                                   \
+	    ".weak " #fname "\n"					\
+            #fname " :\n"                                               \
+            /* return address is in lr register */                      \
+            /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
+            "\tpush {r0, r1, r2, r3}\n"                                 \
+            /* r0 = __comp_get_relbase() */                             \
+            "\tldr r12, 2f\n"                                           \
+            "\tblx r12\n"                                               \
+            /* r12 = libbase */                                         \
+            "\tldr r1, 1f\n"                                            \
+            "\tldr r1, [r1]\n"                                          \
+            "\tldr r12, [r0, r1]\n"                                     \
+            /* Restore original arguments */                            \
+            "\tpop {r0, r1, r2, r3}\n"                                  \
+            /* Put libbase on the stack */                              \
+            "\tpush {r12}\n"                                            \
+            /* Compute function address and jump */                     \
+            "\tldr r12, [r12, #%c0]\n"                                  \
+            "\tbx r12\n"                                                \
+	    "1:	.word " #libbasename "_offset\n"                        \
+            "2: .word __comp_get_relbase\n"                             \
+            : : "i" ((-lvo*LIB_VECTSIZE))                               \
+        );                                                              \
+    }
 #define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
 
