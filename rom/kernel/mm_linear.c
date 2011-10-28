@@ -370,7 +370,7 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
      * Currently we assume the struct MemHeader to be in the beginning
      * our our region.
      */
-    head  = (APTR)mh + sizeof(struct MemHeader);
+    head  = (APTR)mh + MEMHEADER_TOTAL;
     align = pageSize - 1;
 
     /* Fill in the BlockHeader */
