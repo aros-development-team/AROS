@@ -119,7 +119,7 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
     IPTR p;
     IPTR candidate, candidate_size;
 
-    D(bug("[krnAllocate] Request for %u bytes from BlockHeader %p\n", size, head));
+    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p, KernelBase 0x%p\n", size, head, KernelBase));
 
     /*
      * Safety checks.
@@ -138,7 +138,8 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
     size = (size + align) & ~align;
     pages = size / head->pageSize;
 
-    ObtainSemaphore(&head->sem);
+    if (KernelBase)
+    	ObtainSemaphore(&head->sem);
 
     /* Start looking up from page zero */
     p = 0;
@@ -169,7 +170,7 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 		Alert(AN_MemCorrupt);
 	}
 
-	D(bug("[krnAllocate] Have %u free pages starting from %u\n", free, start));
+	D(bug("[mm_Allocate] Have %u free pages starting from %u\n", free, start));
 
 	/* Does the block fit ? */
 	if (free >= pages)
@@ -183,10 +184,10 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 		 */
 		if (free <= candidate_size)
 		{
-		    D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
+		    D(bug("[mm_Allocate] Old candidate %u (size %d)\n", candidate, candidate_size));
 		    candidate = start;
 		    candidate_size = free;
-		    D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+		    D(bug("[mm_Allocate] New candidate %u (size %d)\n", candidate, candidate_size));
 		}
 	    }
 	    else
@@ -197,16 +198,16 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 		 */
 		if (free < candidate_size)
 		{
-		    D(bug("[krnAllocate] Old candidate %u (size %d)\n", candidate, candidate_size));
+		    D(bug("[mm_Allocate] Old candidate %u (size %d)\n", candidate, candidate_size));
 		    candidate = start;
 		    candidate_size = free;
-		    D(bug("[krnAllocate] New candidate %u (size %d)\n", candidate, candidate_size));
+		    D(bug("[mm_Allocate] New candidate %u (size %d)\n", candidate, candidate_size));
 		}
 
 		/* If found exact match, we can't do better, so stop searching */
 		if (free == pages)
 		{
-		    D(bug("[krnAllocate] Exact match\n"));
+		    D(bug("[mm_Allocate] Exact match\n"));
 		    break;
 		}
 	    }
@@ -219,11 +220,11 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 	 */
 	if (p == head->size)
 	{
-	    D(bug("[krnAllocate] Reached end of chunk\n"));
+	    D(bug("[mm_Allocate] Reached end of chunk\n"));
 	    break;
 	}
 
-	D(bug("[krnAllocate] Allocated block starts at %u\n", p));
+	D(bug("[mm_Allocate] Allocated block starts at %u\n", p));
 	/* Skip past the end of the allocated block */
 	while (P_STATUS(head->map[p]) == P_ALLOC)
 	{
@@ -231,13 +232,13 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
 
 	    if (p == head->size)
 	    {
-	    	D(bug("[krnAllocate] Reached end of chunk\n"));
+	    	D(bug("[mm_Allocate] Reached end of chunk\n"));
 		break;
 	    }
 	    if (p > head->size)
 		Alert(AN_MemCorrupt);
 	}
-	D(bug("[krnAllocate] Skipped up to page %u\n", p));
+	D(bug("[mm_Allocate] Skipped up to page %u\n", p));
 
     } while (p < head->size);
 
@@ -245,17 +246,19 @@ APTR mm_Allocate(struct MemHeader *mh, IPTR size, ULONG flags)
     if (candidate_size != -1)
     {
 	/* Mark the block as allocated */
-	D(bug("[krnAllocate] Allocating %u pages starting from %u\n", pages, candidate));
+	D(bug("[mm_Allocate] Allocating %u pages starting from %u\n", pages, candidate));
 	SetBlockState(head, candidate, pages, P_ALLOC);
 
 	/* Calculate starting address of the first page */
 	addr = head->start + candidate * head->pageSize;
 	/* Update free memory counter */
-	mh->mh_Free -= size;
+	mh->mh_Free -= size;	
     }
 
-    ReleaseSemaphore(&head->sem);
+    if (KernelBase)
+    	ReleaseSemaphore(&head->sem);
 
+    D(bug("[mm_Allocate] Allocated at address 0x%p\n", addr));
     return addr;
 }
 
@@ -268,7 +271,7 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size)
     IPTR start, p;
     void *ret = NULL;
 
-    D(bug("[krnAllocate] Request for %u bytes from BlockHeader %p\n", size, head));
+    D(bug("[mm_Allocate] Request for %u bytes from BlockHeader %p\n", size, head));
 
     /*
      * Safety checks.
@@ -367,8 +370,8 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
      * Currently we assume the struct MemHeader to be in the beginning
      * our our region.
      */
-    head = (APTR)mh + sizeof(struct MemHeader);
-    align = head->pageSize - 1;
+    head  = (APTR)mh + sizeof(struct MemHeader);
+    align = pageSize - 1;
 
     /* Fill in the BlockHeader */
     head->mc.mc_Next  = NULL;
@@ -382,6 +385,8 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
      */
     head->start = (APTR)((IPTR)head->map & ~align);
     end = (APTR)(((IPTR)mh->mh_Upper + 1) & ~align);
+
+    D(bug("[mm_Init] MemHeader 0x%p, BlockHeader 0x%p, usable 0x%p - 0x%p\n", mh, head, head->start, end));
 
     do
     {
@@ -398,6 +403,8 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
 	 */
     } while (mapsize < head->size);
 
+    D(bug("[mm_Init] Got %u usable pages\n", head->size));
+
     /* Mark all pages as free */
     p = head->size;
     free = 1;
@@ -409,7 +416,7 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
 
     /* Set BlockHeader pointer and free space counter */
     mh->mh_First = &head->mc;
-    mh->mh_Free = memsize;
+    mh->mh_Free  = memsize;
 }
 
 /*
