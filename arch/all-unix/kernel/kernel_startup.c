@@ -40,6 +40,7 @@
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
+ULONG mm_PageSize;
 
 /* Here we use INIT set. THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
 DEFINESET(INIT);
@@ -91,6 +92,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     struct MemHeader *bootmh;
     struct TagItem *tag;
     struct HostInterface *hif = NULL;
+    ULONG pageSize;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
     const struct TagItem *tstate = msg;
@@ -176,6 +178,15 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     /* Here we can add some variant-specific things. Android and iOS ports use this. */
     if (!set_call_funcs(SETNAME(INIT), 1, 1))
     	return -1;
+
+    /* Now query memory page size. We need in order to get our memory manager functional. */
+#ifdef HOST_OS_android
+    mm_PageSize = *KernelIFace.__page_size;
+#else
+    mm_PageSize = KernelIFace.getpagesize();
+    AROS_HOST_BARRIER
+#endif
+    D(bug("[KRN] Memory page size is %u\n", mm_PageSize));
 
     /* We know that memory map has only one RAM element */
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;
