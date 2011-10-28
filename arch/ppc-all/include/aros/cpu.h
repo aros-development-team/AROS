@@ -126,22 +126,44 @@ struct JumpVec
    unused junk code but otherwise we can't pass input arguments
    to the asm statement
 */
-#error the __AROS_LIBFUNCSTUB needs to be update for RELBASE handling
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \
 	asm volatile( \
 	    ".globl " #fname "\n" \
 	    "\t" #fname ":\n" \
-	    "\tlis   11," #libbasename "@ha\n" \
-	    "\tlwz   11," #libbasename "@l(11)\n" \
-	    "\tlwz   11,%c0(11)\n" \
+	    "\tlis   12," #libbasename "@ha\n" \
+	    "\tlwz   12," #libbasename "@l(12)\n" \
+	    "\tlwz   11,%c0(12)\n" \
 	    "\tmtctr 11\n" \
 	    "\tbctr\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
         ); \
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
+    __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
+
+/* Macro: AROS_RELLIBFUNCSTUB(functionname, libbasename, lvo)
+   Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
+   the current libbase
+*/
+#define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
+    void __ ## fname ## _ ## libbasename ## _relwrapper(void) \
+    { \
+	asm volatile( \
+	    ".globl " #fname "\n" \
+	    "\t" #fname ":\n" \
+            "\tbl __comp_get_relbase\n" \
+            "\tlwz 12, 3\n" \
+	    "\tlis 12," #libbasename "@ha\n" \
+	    "\tlwz 12," #libbasename "@l(12)\n" \
+	    "\tlwz 11,%c0(12)\n" \
+	    "\tmtctr 11\n" \
+	    "\tbctr\n" \
+	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+        ); \
+    }
+#define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
 
 /* Macro: AROS_FUNCALIAS(functionname, alias)

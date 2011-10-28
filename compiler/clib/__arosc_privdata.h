@@ -128,7 +128,8 @@ struct aroscbase
 
 /* !acb_flags */
 
-#define __get_aroscbase() ((struct aroscbase *)AROS_GET_LIBBASE)
+struct aroscbase *__GM_GetBase();
+#define __get_aroscbase() __GM_GetBase()
 
 #define __env_list                            (__get_aroscbase()->acb_env_list)
 #define __stdio_files                         (__get_aroscbase()->acb_stdio_files)

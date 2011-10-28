@@ -163,11 +163,18 @@ void writeinclibdefs(struct config *cfg)
 	);
     }
 	
-    if ((cfg->options & OPTION_DUPBASE) && cfg->rootbase_field != NULL)
-	fprintf(out,
-		"#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
-		cfg->rootbase_field
-	);
+    if (cfg->options & OPTION_DUPBASE)
+    {
+        if (cfg->rootbase_field != NULL)
+            fprintf(out,
+                    "#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+                    cfg->rootbase_field
+            );
+        fprintf(out,
+                "\n"
+                "LIBBASETYPEPTR __GM_GetBase(void);\n"
+        );
+    }
 
     if (cfg->options & OPTION_DUPPERID)
     {

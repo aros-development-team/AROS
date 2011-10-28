@@ -140,9 +140,8 @@ struct JumpVec
 	asm volatile( \
 	    ".weak " #fname "\n" \
 	    #fname " :\n" \
-            "\tmovq " #libbasename "(%%rip), %%r10\n" \
-            "\tmovq $%c0,%%r11\n" \
-            "\tjmp  aros_thunk_libfunc\n" \
+            "\tmovq " #libbasename "(%%rip), %%r11\n" \
+            "\tjmp  *%c0(%%r11)\n" \
 	    : : "i" ((-lvo)*LIB_VECTSIZE) \
 	); \
     }
@@ -159,9 +158,10 @@ struct JumpVec
 	asm volatile( \
             ".weak " #fname "\n" \
             "\t" #fname " :\n" \
-            "\tmovq " #libbasename "_offset(%%rip), %%r10\n" \
-            "\tmovq $%c0,%%r11\n" \
-            "\tjmp  aros_thunk_rellibfunc\n" \
+            "\tcall __comp_get_relbase\n" \
+            "\taddq " #libbasename "_offset(%%rip), %%rax\n" \
+            "\tmovq (%%rax),%%r11\n" \
+            "\tjmp  *%c0(%%r11)\n" \
 	    : : "i" ((-lvo)*LIB_VECTSIZE) \
 	); \
     }

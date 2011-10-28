@@ -348,6 +348,50 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	}
     }
 }
+
+void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *funclist)
+{
+    struct functionhead *funclistit;
+    struct functionarg *arglistit;
+    char *type, *name;
+    int first;
+
+    if (!(cfg->options & OPTION_DUPBASE))
+        return;
+
+    for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
+    {
+	switch (funclistit->libcall)
+	{
+	case STACK:
+	    fprintf(out, "%s %s_stub(", funclistit->type, funclistit->name);
+        
+	    for(arglistit = funclistit->arguments, first = 1;
+		arglistit != NULL;
+		arglistit = arglistit->next, first = 0
+	    )
+	    {
+		if (!first)
+		    fprintf(out, ", ");
+            
+		fprintf(out, "%s", arglistit->arg);
+	    }
+	    fprintf(out, ");\n");
+            fprintf(out, "GM_INTERNALFUNCSTUB(%s);\n", funclistit->internalname);
+	    break;
+	    
+	case REGISTER:
+	case REGISTERMACRO:
+            /* NOP */
+	    break;
+
+	default:
+	    fprintf(stderr, "Internal error: unhandled libcall in writefuncdefs\n");
+	    exit(20);
+	    break;
+	}
+    }
+}
     
 char *getargtype(const struct functionarg *funcarg)
 {
