@@ -65,7 +65,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        we avoid it.
        The cloning does not need to be performed if flags of parent have VFORK_PARENT
        or EXEC_PARENT flags */
-    paroscbase = GM_GETPARENTBASEID2(aroscbase);
+    paroscbase = __GM_GetBaseParent(aroscbase);
     if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
     {
         D(bug("__arosc_nixmain: Cloning LocalVars"));

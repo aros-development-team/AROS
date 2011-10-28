@@ -5,15 +5,15 @@ include $(TOP)/config/make.cfg
 #MM-     test-library-peropenertest_child
 #MM test-library-dummytest : test-library-dummylib
 #MM test-library-peropenertest : test-library-peropenerlib \
-#MM     test-library-peridlib
+#MM     test-library-pertasklib
 #MM test-library-peropenertest_child : \
-#MM     test-library-peridlib
+#MM     test-library-pertasklib
 #MM- test-library-clean : \
 #MM      test-library-dummytest-clean \
 #MM      test-library-peropenertest-clean \
 #MM      test-library-dummylib-clean \
 #MM      test-library-peropenerlib-clean \
-#MM      test-library-peridlib-clean
+#MM      test-library-pertasklib-clean
 
 TARGETDIR := $(AROSDIR)/Tests/Library
 
@@ -28,7 +28,7 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 
 %build_prog mmake=test-library-peropenertest_child \
     progname=peropenertest_child targetdir=$(TARGETDIR) \
-    uselibs="perid"
+    uselibs="pertask"
 
 %build_module mmake=test-library-dummylib \
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
@@ -36,5 +36,5 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 %build_module mmake=test-library-peropenerlib \
     modname=peropener modtype=library files=empty prefix=$(TARGETDIR)
 
-%build_module mmake=test-library-peridlib \
-    modname=perid modtype=library files=getparentbase prefix=$(TARGETDIR)
+%build_module mmake=test-library-pertasklib \
+    modname=pertask modtype=library files=getparentbase prefix=$(TARGETDIR)

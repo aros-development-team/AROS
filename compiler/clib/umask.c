@@ -49,8 +49,8 @@ static int __umask_init(void)
 {
     struct aroscbase *aroscbase = __get_aroscbase(),
                      *paroscbase;
-    
-    paroscbase = GM_GETPARENTBASEID2(aroscbase);
+
+    paroscbase = __GM_GetBaseParent(aroscbase);
 
     /* FIXME: Implement umask() properly */
 

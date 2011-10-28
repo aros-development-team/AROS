@@ -392,7 +392,7 @@ writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
     struct functionarg *arglistit;
 
     /* Only if no baserel. define can't handle libbase passing */
-    if (cfg->options & OPTION_BASEREL)
+    if (cfg->options & (OPTION_BASEREL | OPTION_PERTASKBASE))
     	return;
 
     fprintf(out, "#define %s ((%s (*)(", funclistit->name, funclistit->type);

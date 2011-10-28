@@ -627,7 +627,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"superclass_field", "residentpri", "options", "sysbase_field",
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
-		"initpri", "type", "getidfunc", "addromtag", "oopbase_field"
+		"initpri", "type", "addromtag", "oopbase_field"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -754,7 +754,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    static const char *optionnames[] =
 		    {
 			"noautolib", "noexpunge", "noresident", "peropenerbase",
-                        "peridbase", "includes", "noincludes", "nostubs",
+                        "pertaskbase", "includes", "noincludes", "nostubs",
                         "autoinit", "noautoinit", "resautoinit", "noopenclose",
                         "selfinit", "baserel"
 		    };
@@ -790,12 +790,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 			    cfg->options |= OPTION_NORESIDENT;
 			    cfg->firstlvo = 1;
 			    break;
-                        case 5: /* peridbase */
-                            cfg->options |= OPTION_DUPPERID;
+                        case 5: /* pertaskbase */
+                            cfg->options |= OPTION_PERTASKBASE;
                             /* Fall through */
 			case 4: /* peropenerbase */
                             if (cfg->options & OPTION_DUPBASE)
-                                exitfileerror(20, "Only one option peropenerbase or peridbase allowed\n");
+                                exitfileerror(20, "Only one option peropenerbase or pertaskbase allowed\n");
 			    cfg->options |= OPTION_DUPBASE;
 			    break;
                         case 6: /* includes */
@@ -834,7 +834,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 					exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
 			    cfg->options |= OPTION_SELFINIT;
 			    break;
-			case 14:
+			case 14: /* baserel */
 			    cfg->options |= OPTION_BASEREL;
 			    break;
 			}
@@ -1005,15 +1005,12 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    exit(20);
 		}
 		break;
-            case 26: /* getidfunc */
-		cfg->getidfunc = strdup(s);
-                break;
 
-	    case 27: /* addromtag */
+	    case 26: /* addromtag */
 	    	cfg->addromtag = strdup(s);
 	    	break;
 
-	    case 28: /* oopbase_field */
+	    case 27: /* oopbase_field */
 	    	cfg->oopbase_field = strdup(s);
 	    	break;
 		    }
@@ -1066,9 +1063,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    exitfileerror(20, "oopbase_field specified when no libbasetype is given\n");
         /* rootbase_field only allowed when duplicating base */
         if (cfg->rootbase_field != NULL && !(cfg->options & OPTION_DUPBASE))
-            exitfileerror(20, "rootbasefield only valid for option peropenerbase or peridbase\n");
-        if (cfg->getidfunc != NULL && !(cfg->options & OPTION_DUPPERID))
-            exitfileerror(20, "getidfunc only valid for option peridbase\n");
+            exitfileerror(20, "rootbasefield only valid for option peropenerbase or pertaskbase\n");
 
 	/* Set default date to current date */
 	if (cfg->datestring == NULL)

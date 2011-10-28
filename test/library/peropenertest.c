@@ -6,7 +6,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/peropener.h>
-#include <proto/perid.h>
+#include <proto/pertask.h>
 
 int main (int argc, char ** argv)
 {
@@ -25,10 +25,10 @@ int main (int argc, char ** argv)
     if (base2 != NULL)
         CloseLibrary(base2);
 
-    FPuts(Output(), (STRPTR)"\nTesting perid.library\n");
+    FPuts(Output(), (STRPTR)"\nTesting pertask.library\n");
 
-    base1=OpenLibrary((STRPTR)"perid.library",0);
-    base2=OpenLibrary((STRPTR)"perid.library",0);
+    base1=OpenLibrary((STRPTR)"pertask.library",0);
+    base2=OpenLibrary((STRPTR)"pertask.library",0);
     
     FPrintf(Output(), (STRPTR)"base1=%lx, base2=%lx\n", base1, base2);
 

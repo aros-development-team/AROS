@@ -123,8 +123,6 @@ void writeinclibdefs(struct config *cfg)
 		"#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		cfg->seglist_field
 	);
-    if (cfg->getidfunc != NULL)
-        fprintf(out, "#define GM_GETID ((IPTR)%s())\n", cfg->getidfunc);
     for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
     {
 	int storeptr;
@@ -176,28 +174,14 @@ void writeinclibdefs(struct config *cfg)
         );
     }
 
-    if (cfg->options & OPTION_DUPPERID)
+    if (cfg->options & OPTION_PERTASKBASE)
     {
         fprintf(out,
                 "\n"
-                "#ifndef GM_GETID\n"
-                "#define GM_GETID ((IPTR)FindTask(NULL))\n"
-                "\n"
-                "IPTR __GM_Id2(void);\n"
-                "#define GM_GETID2 __GM_Id2()\n"
-                "\n"
-                "#define __GM_OWNGETID\n"
-                "#endif\n"
-                "\n"
-                "#if defined(GM_GETID2) && !defined(GM_GETPARENTBASEID2)\n"
-                "LIBBASETYPEPTR GM_UNIQUENAME(__GetParentLibbase)(LIBBASETYPEPTR lh);\n"
-                "#define GM_GETPARENTBASEID2(lh) GM_UNIQUENAME(__GetParentLibbase)(lh)\n"
-                "\n"
-                "#define __GM_OWNPARENTBASEID2\n"
-                "#endif\n"
-         );
+                "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR);\n"
+        );
     }
-        
+
     fprintf
     (
         out,

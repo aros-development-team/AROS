@@ -32,6 +32,7 @@ void writestubs(struct config *cfg, int is_rel)
 	    "#define NOLIBINLINE\n"
 	    "#define NOLIBDEFINES\n"
 	    "#define AROS_BASEREL_LIBRARY\n"
+            "void *__comp_get_relbase(void);\n"
 	    "#ifndef __%s_NOLIBBASE__\n"
 	    "/* Do not include the libbase */\n"
 	    "#define __%s_NOLIBBASE__\n"
@@ -108,7 +109,7 @@ void writestubs(struct config *cfg, int is_rel)
                 );
                 if (is_rel) {
                     fprintf(out,
-                        "    %s %s = AROS_GET_RELBASE + %s_offset;\n",
+                        "    %s %s = __comp_get_relbase() + %s_offset;\n",
                         cfg->libbasetypeptrextern, cfg->libbase,
                         cfg->libbase
                     );
