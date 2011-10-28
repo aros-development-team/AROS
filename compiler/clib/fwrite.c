@@ -10,6 +10,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#define DEBUG 0
 #include <aros/debug.h>
 #include "__errno.h"
 #include "__stdio.h"
@@ -47,6 +48,10 @@
 ******************************************************************************/
 {
     size_t cnt;
+
+    D(bug("[fwrite]: buf=%p, size=%d, nblocks=%d, stream=%p\n",
+          buf, size, nblocks, stream
+    ));
 
     fdesc *fdesc = __getfdesc(stream->fd);
 
