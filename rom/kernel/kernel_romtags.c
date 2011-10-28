@@ -5,7 +5,6 @@
     ROMTag scanner.
 */
 
-#include <aros/debug.h>
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
@@ -21,6 +20,8 @@
 #include <kernel_debug.h>
 #include <kernel_romtags.h>
 
+#define D(x)
+
 static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 {
     ULONG i;
@@ -35,20 +36,46 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
 }
 
 /*
- * Our own, very simplified down memory allocator.
+ * Our own, very simplified down boot-time chunk-based memory allocator.
  * It is okay to use this routine because this is one of the first allocations (actually
  * should be the first one) and it is never going to be freed.
- * Additionally, in order to be able to discover exec.library (and its early init function)
- * dynamically, we want krnRomTagScanner() to work before ExecBase is created.
  */
-static inline void krnAllocBootMem(struct MemHeader *mh, struct MemChunk *next, IPTR chunkSize, IPTR allocSize)
-{
-    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
 
-    mh->mh_First          = (struct MemChunk *)((APTR)mh->mh_First + allocSize);
-    mh->mh_First->mc_Next = next;
-    mh->mh_Free          -= allocSize;
-    mh->mh_First->mc_Bytes = chunkSize - allocSize;
+/* Allocate boot-time chunk. Returns address and size of the usable area. */
+static inline APTR krnAllocBootChunk(struct MemHeader *mh, IPTR *size)
+{
+    /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
+    struct MemChunk *mc = mh->mh_First;
+
+    mh->mh_First = mc->mc_Next;
+    mh->mh_Free -= mc->mc_Bytes;
+
+    D(bug("[krnGetChunk] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
+ 
+    *size = mc->mc_Bytes;
+    return mc;
+}
+
+/* Release unused boot-time memory. */
+static inline void krnFreeBootChunk(struct MemHeader *mh, APTR addr, IPTR chunkSize, IPTR allocSize)
+{
+    struct MemChunk *mc;
+
+    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
+    chunkSize -= allocSize;
+
+    D(bug("[krnReturnChunk] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
+
+    if (chunkSize < MEMCHUNK_TOTAL)
+    	return;
+
+    mc = addr + allocSize;
+
+    mc->mc_Next  = mh->mh_First;
+    mc->mc_Bytes = chunkSize - allocSize;
+
+    mh->mh_First = mc;
+    mh->mh_Free += mc->mc_Bytes;
 }
 
 /*
@@ -77,21 +104,15 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     ULONG	    i;
     BOOL	    sorted;
     /* 
-     * We take the beginning of free memory from our boot MemHeader
-     * and construct resident list there.
-     * When we are done we know list length, so we can seal the used
-     * memory by allocating it from the MemHeader.
-     * This is 100% safe because we are here long before multitasking
-     * is started up. However in some situations we can already have several
-     * MemChunks in our MemHeader (this happens on softkicked m68k Amiga).
-     * So, we preserve origiinal chunk size and next chunk pointer.
-     * Note that we expect the first chunk in the MemHeader to have enough space for resident list.
+     * We don't know resident list size until it's created. Because of this, we use two-step memory allocation
+     * for this purpose.
+     * First we dequeue some space from the MemHeader, and remember its starting address and size. Then we
+     * construct resident list in this area. After it's done, we return part of the used space to the system.
      */
-    struct MemChunk *nextChunk = mh->mh_First->mc_Next;
-    IPTR chunkSize = mh->mh_First->mc_Bytes;
-    IPTR limit = chunkSize / sizeof(APTR);
-    struct Resident **RomTag = (struct Resident **)mh->mh_First;
-    ULONG	    num = 0;
+    IPTR chunkSize;
+    struct Resident **RomTag = krnAllocBootChunk(mh, &chunkSize);;
+    IPTR  limit = chunkSize / sizeof(APTR);
+    ULONG num = 0;
 
     /* Look in whole kickstart for resident modules */
     while (*ranges != (UWORD *)~0)
@@ -108,7 +129,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 	    if (res->rt_MatchWord == RTC_MATCHWORD && res->rt_MatchTag == res)
 	    {
 		/* Yes, it is Resident module. Check if there is module with such name already */
-		i = findname((struct Resident **)mh->mh_First, num, res->rt_Name);
+		i = findname(RomTag, num, res->rt_Name);
 		if (i != -1)
 		{
 		    struct Resident *old = RomTag[i];
@@ -165,15 +186,7 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
     RomTag[num] = NULL;
 
     /* Seal our used memory as allocated */
-    krnAllocBootMem(mh, nextChunk, chunkSize, (num + 1) * sizeof(struct Resident *));
-
-    /*
-     * By now we have valid list of kickstart resident modules.
-     *
-     * Now, we will have to analyze used-defined RomTags (via KickTagPtr and
-     * KickMemPtr)
-     */
-    /* TODO: Implement external modules! */
+    krnFreeBootChunk(mh, RomTag, chunkSize, (num + 1) * sizeof(struct Resident *));
 
     /*
      * Building list is complete, sort RomTags according to their priority.
