@@ -126,10 +126,10 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     /* Set globals only AFTER __clear_bss() */
-    BootMsg = msg;
+    BootMsg   = msg;
     HostIFace = hif;
 
-    /* If there's no HostIFace, we can't even say anything */
+    /* If there's no proper HostIFace, we can't even say anything */
     if (!HostIFace)
 	return -1;
 
@@ -145,6 +145,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
 	krnPanic("Not enough information from the bootstrap\n"
+		 "\n"
 		 "Kickstart start 0x%p, end 0x%p\n"
 		 "Memory map address: 0x%p",
 		 ranges[0], ranges[1], mmap);
