@@ -46,6 +46,8 @@
 						; the branch cache)
 */
 
+#define CACHEDEBUG 0
+
 	#include "aros/m68k/asm.h"
 
 	.text
@@ -92,7 +94,21 @@ AROS_SLIB_ENTRY(CacheClearU_60,Exec,106):
 	lea.l	cacheclearusup_60,%a5
 	jmp	Supervisor(%a6)
 
+#if CACHEDEBUG
+format:
+  .string "CU()\n"
+#endif
+
 cacheclearusup_40:
+
+#if CACHEDEBUG
+  movem.l %d0-%d1/%a0-%a1,-(%sp)
+  pea format
+  jsr kprintf
+  addq.l #4,%sp
+  movem.l (%sp)+,%d0-%d1/%a0-%a1
+#endif
+
 	nop /* old 68040 revision bug workaround */
 cacheclearusup_60:
 	cpusha	%bc	/* Push dirty cache lines to memory and invalidate both caches */
