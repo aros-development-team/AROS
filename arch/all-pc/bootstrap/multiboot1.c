@@ -1,3 +1,5 @@
+#define DEBUG
+
 #include <aros/kernel.h>
 
 #include <bootconsole.h>
@@ -38,7 +40,11 @@ static void setupFB(struct multiboot *mb)
     if (mb->flags & MB_FLAGS_GFX)
     {
     	kprintf("[Multiboot] Got VESA display mode 0x%x from the bootstrap\n", mb->vbe_mode);
-    	D(kprintf("[Multiboot] Mode info 0x%p, controller into 0x%p\n", mb->vbe_mode_info, mb->vbe_control_info));
+
+	D(kprintf("[Multiboot] Mode info 0x%p, controller into 0x%p\n", mb->vbe_mode_info, mb->vbe_control_info));
+	D(kprintf("[Multiboot] VBE version 0x%04X\n", ((struct vbe_controller *)mb->vbe_control_info)->version));
+	D(kprintf("[Multiboot} Mode flags 0x%04X, framebuffer 0x%p\n", ((struct vbe_mode  *)mb->vbe_mode_info)->mode_attributes, ((struct vbe_mode *)mb->vbe_mode_info)->phys_base));
+	D(kprintf("[Multiboot} Windows A 0x%04X B 0x%04X\n", ((struct vbe_mode *)mb->vbe_mode_info)->win_a_segment, ((struct vbe_mode *)mb->vbe_mode_info)->win_b_segment));
 
     	/*
 	 * We are already running in VESA mode set by the bootloader.
