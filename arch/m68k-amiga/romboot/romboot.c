@@ -154,6 +154,7 @@ static AROS_UFH3 (APTR, Init,
    // this is not the right place but we can't enable them
    // any earlier (memory detection, boot roms that breaks if
    // full 68060 caching enabled)
+   CacheClearU();
    if (SysBase->AttnFlags & AFF_68060) {
 	Supervisor((ULONG_FUNC)Enable68060SuperScalar);
    } else if (SysBase->AttnFlags & AFF_68040) {
