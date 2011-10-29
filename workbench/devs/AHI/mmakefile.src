@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 
 #MM- AHI       : workbench-devs-AHI
 
-#MM- workbench-devs-AHI : includes linklibs $(OSS_LIBRARY_TARGET) workbench-libs-muimaster
+#MM- workbench-devs-AHI : includes linklibs $(OSS_LIBRARY_TARGET) workbench-libs-muimaster-includes
 
 EXEDIR := $(AROSDIR)
 
