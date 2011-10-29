@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -148,7 +148,7 @@ restore_all:        RESTORE_REGS
 Exec_ExitIntr:      cmpw    $KERNEL_DS,R_ds(%esp)
                     je      restore_all
 		    cli
-                    movl    4,%eax
+                    movl    SysBase,%eax
 		    testw   $0x20,SysFlags(%eax)	/* SFF_SoftInt set? */
 		    je	    Exec_ExitIntr_NoSoftInts
 
@@ -170,7 +170,7 @@ Exec_ExitIntr_NoSoftInts:
 Exec_Schedule:      pushl   $0
                     SAVE_REGS
 Exec_Schedule_x:    cli     	    	    	    	    /* stegerg: added -> CHECKME */
-    	    	    movl    4,%edx
+    	    	    movl    SysBase,%edx
                     andw    $0xff7f,AttnResched(%edx)
                     movl    ThisTask(%edx),%eax
                     testb   $TF_EXCEPT,tc_Flags(%eax)
@@ -219,7 +219,7 @@ Exec_9_Switch:      cli                         /* Disable all interrupts */
 		    cld
                     SAVE_ALL                    /* Save context */
 
-                    movl    4,%eax              /* get ExecBase->ThisTask */
+                    movl    SysBase,%eax        /* get ExecBase->ThisTask */
                     movl    ThisTask(%eax),%eax
 
                     movl    %esp,%esi           /* Copy the context from stack */
@@ -231,7 +231,7 @@ Exec_9_Switch:      cli                         /* Disable all interrupts */
 
                     movl    $Exec_Restore_Gene,%edi
 
-Exec_Switch_Common: movl    4,%ebp
+Exec_Switch_Common: movl    SysBase,%ebp
                     movb    IDNestCnt(%ebp),%al
                     movb    $-1,IDNestCnt(%ebp)
 
@@ -255,7 +255,7 @@ Exec_Switch_Common: movl    4,%ebp
 Exec_9_Switch_FPU:  cli
 		    cld
                     SAVE_ALL
-                    movl    4,%eax
+                    movl    SysBase,%eax
                     movl    ThisTask(%eax),%eax
 
                     movl    %esp,%esi
@@ -277,7 +277,7 @@ Exec_9_Switch_FPU:  cli
 Exec_9_Switch_SSE:  cli
 		    cld
                     SAVE_ALL
-                    movl    4,%eax
+                    movl    SysBase,%eax
                     movl    ThisTask(%eax),%eax
 
                     movl    %esp,%esi
@@ -318,7 +318,7 @@ Exec_10_Dispatch_FPU:
 		    
 Exec_10_Dispatch:	SAVE_ALL
     	     	    movl    $Exec_Restore_Gene,%edi
-Exec_Dispatch_com:  movl    4,%ebp
+Exec_Dispatch_com:  movl    SysBase,%ebp
                     movb    $-1,IDNestCnt(%ebp)
 /*                    sti*/
 
