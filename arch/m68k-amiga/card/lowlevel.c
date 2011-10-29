@@ -12,6 +12,8 @@
 
 #include "card_intern.h"
 
+#define INTDEBUG(x) ;
+
 /* Card Change Detect interrupt */
 
 AROS_UFH4(ULONG, card_level6,
@@ -43,7 +45,7 @@ AROS_UFH4(ULONG, card_level6,
 
     Signal(CardResource->task, CardResource->signalmask);
 
-    CARDDEBUG(bug("PCMCIA Card Change Detect interrupt\n"));
+    INTDEBUG(bug("PCMCIA Card Change Detect interrupt\n"));
 
     return 1;
 
@@ -72,11 +74,18 @@ AROS_UFH4(ULONG, card_level2,
     intreq = gio->intreq & INTMASK;
     if (!intreq)
     	return 0; /* not ours */
+    status = ((intreq ^ INTMASK) & INTMASK) | NOINTMASK | CardResource->resetberr;
     intena = gio->intena;
+
+    INTDEBUG(bug("%02x %02x\n", intena, intreq));
+
     if (!(intena & intreq)) {
+    	gio->intreq = status;
     	return 0; /* not ours either */
     }
+
     if (CardResource->disabled) {
+    	gio->intreq = status;
     	pcmcia_reset(CardResource);
     	return 0; /* huh? shouldn't happen */
     }
@@ -86,23 +95,32 @@ AROS_UFH4(ULONG, card_level2,
     if (cah && !CardResource->removed && cah->cah_CardStatus) {
     	if (cah->cah_CardFlags & CARDF_POSTSTATUS)
     	    poststatus = TRUE;
+	INTDEBUG(bug("cah_CardStatus(%d,%x,%x)\n",
+	   intreq,
+	   cah->cah_CardStatus->is_Data,
+	   cah->cah_CardStatus->is_Code));
 	status = AROS_UFC4(UBYTE, cah->cah_CardStatus->is_Code,
 	    AROS_UFCA(UBYTE, intreq, D0),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
 	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
+	INTDEBUG(bug("returned=%d\n", status));
     }
     if (status) {
 	status = (status ^ INTMASK) & INTMASK;
 	gio->intreq = status | NOINTMASK | CardResource->resetberr;
     }
     if (poststatus) {
+    	INTDEBUG(bug("poststatus\n"));
 	AROS_UFC4(void, cah->cah_CardStatus->is_Code,
 	    AROS_UFCA(UBYTE, 0, D0),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
 	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
-    }    	
+	INTDEBUG(bug("returned\n"));
+    }
+
+    INTDEBUG(bug("exit\n"));
 
     return 1;
 
@@ -112,7 +130,7 @@ AROS_UFH4(ULONG, card_level2,
 void pcmcia_reset(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
-    
+
     /* Reset PCMCIA configuration, disable interrupts */
     gio->config = 0;
     gio->status = 0;
@@ -133,8 +151,8 @@ void pcmcia_enable_interrupts(void)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
-    /* Enable Card Change and Card IRQ interrupts */
-    gio->intena |= GAYLE_INT_CCDET | GAYLE_INT_BSY;
+    /* Enable all interrupts except BVD2 */
+    gio->intena |= GAYLE_INT_CCDET | GAYLE_INT_BVD1 | GAYLE_INT_WR | GAYLE_INT_BSY;
 }
 
 BOOL pcmcia_havecard(void)
@@ -162,16 +180,15 @@ void pcmcia_cardreset(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     APTR GfxBase;
-    UWORD vpos, i;
+    UWORD i;
 
-    gio->intreq = GAYLE_IRQ_IRQ_MASK | GAYLE_IRQ_CARD_RESET_MASK;
     GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
-    for (i = 0; i < 3; i++) {
-	vpos = VBeamPos();
-	while (VBeamPos() == vpos);
+    gio->intreq = GAYLE_IRQ_IRQ_MASK | GAYLE_IRQ_CARD_RESET_MASK;
+    for (i = 0; i < 15; i++) {
+    	WaitTOF();
     }
-    CloseLibrary(GfxBase);
     gio->intreq = GAYLE_IRQ_IRQ_MASK | CardResource->resetberr;
+    CloseLibrary(GfxBase);
     
     CARDDEBUG(bug("PCMCIA card reset\n"));
 }

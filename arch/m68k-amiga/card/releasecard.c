@@ -17,18 +17,27 @@ AROS_LH2(void, ReleaseCard,
 {
     AROS_LIBFUNC_INIT
 
-    CARDDEBUG(bug("ReleaseCard(%p,%08x) owned=%p\n", handle, flags, CardResource->ownedcard));
+    CARDDEBUG(bug("ReleaseCard(%p,%08x) flags=%02x owned=%p removed=%d\n",
+	handle, flags, handle->cah_CardFlags, CardResource->ownedcard, CardResource->removed));
 
-    Disable();
-
+    handle->cah_CardFlags &= ~CARDF_USED;
     if (CardResource->ownedcard == handle) {
+    	if (CardResource->removed == FALSE)
+	    handle->cah_CardFlags |= CARDF_USED;
 	CardResource->ownedcard = NULL;
 	pcmcia_reset(CardResource);
-    } else if ((flags & CARDF_REMOVEHANDLE) && CardResource->ownedcard != NULL) {
-    	Remove(&handle->cah_CardNode);
+	pcmcia_enable_interrupts();
+
+	if (CardResource->removed == FALSE)
+	    pcmcia_newowner(CardResource);
     }
 
-    Enable();
+    if (flags & CARDF_REMOVEHANDLE) {
+	Forbid();
+	Remove(&handle->cah_CardNode);
+	Permit();
+	handle->cah_CardFlags &= ~CARDF_USED;
+    }
 
     AROS_LIBFUNC_EXIT
 }

@@ -82,7 +82,7 @@ static BOOL checkcard(struct CardResource *CardResource)
 
 	    EndCardAccess(ch);
 
-	    ReleaseCard(ch, 0);
+	    ReleaseCard(ch, CARDF_REMOVEHANDLE);
 	}
 	FreeVec(ch);
     }

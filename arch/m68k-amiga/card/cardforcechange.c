@@ -29,8 +29,10 @@ AROS_LH0(ULONG, CardForceChange,
     if (pcmcia_havecard()) {
     	/* Simulate re-insertion of current card */
     	CardResource->disabled = TRUE;
+    	Forbid();
     	if (cah != NULL)
 	    Enqueue(&CardResource->handles, &cah->cah_CardNode);
+	Permit();
     	pcmcia_cardreset(CardResource);
     	pcmcia_enable_interrupts();
     	Signal(CardResource->task, CardResource->signalmask);
