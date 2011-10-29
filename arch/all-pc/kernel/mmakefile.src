@@ -18,6 +18,6 @@ USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 
 %build_archspecific \
   mainmmake=kernel-kernel maindir=$(MAINDIR) \
-  arch=pc files="$(FILES)" asmfiles=$(ASMFILES)
+  arch=pc files="$(FILES) $(FUNCS)" asmfiles=$(ASMFILES)
 
 %common
