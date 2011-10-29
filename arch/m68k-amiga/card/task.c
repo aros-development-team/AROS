@@ -12,37 +12,53 @@
 
 #include "card_intern.h"
     
-BOOL pcmcia_newowner(struct CardResource *CardResource, BOOL doInt)
+void pcmcia_newowner(struct CardResource *CardResource)
 {
-    if (CardResource->ownedcard)
-    	return FALSE;
-    if (CardResource->removed)
-    	return FALSE;
-    if (IsListEmpty(&CardResource->handles))
-    	return FALSE;
-    CardResource->ownedcard = (struct CardHandle*)RemHead(&CardResource->handles);
-    CARDDEBUG(bug("pcmcia_newowner: %p\n", CardResource->ownedcard));
-    if (CardResource->ownedcard->cah_CardInserted) {
-	AROS_UFC3(UBYTE, CardResource->ownedcard->cah_CardInserted->is_Code,
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardInserted->is_Data, A1),
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardInserted->is_Code, A5),
-	    AROS_UFCA(struct ExecBase*, SysBase, A6));
+    struct CardHandle *handle = NULL, *nexthandle;
+    CARDDEBUG(bug("pcmcia_newowner: owned=%x rem=%d listempty=%d\n",
+	CardResource->ownedcard, CardResource->removed, IsListEmpty(&CardResource->handles)));
+    Forbid();
+    ForeachNode(&CardResource->handles, nexthandle) {
+    	CARDDEBUG(bug("Possible node %p flags %02x\n", nexthandle, nexthandle->cah_CardFlags));
+	if (!(nexthandle->cah_CardFlags & CARDF_USED)) {
+	    handle = nexthandle;
+	    break;
+	}
     }
-    return TRUE;
+    if (handle != NULL && CardResource->ownedcard == NULL && CardResource->removed == FALSE) {
+	CardResource->ownedcard = handle;
+	CardResource->resetberr = (CardResource->ownedcard->cah_CardFlags & CARDF_RESETREMOVE) ? GAYLE_IRQ_RESET : 0;
+	CARDDEBUG(bug("pcmcia_newowner: %p\n", CardResource->ownedcard));
+	CardResource->ownedcard->cah_CardFlags |= CARDF_USED;
+	if (CardResource->ownedcard->cah_CardInserted) {
+	    CARDDEBUG(bug("Executing cah_CardInserted(%p, %p)\n",
+		CardResource->ownedcard->cah_CardInserted->is_Data,
+		CardResource->ownedcard->cah_CardInserted->is_Code));
+	    AROS_UFC3(UBYTE, CardResource->ownedcard->cah_CardInserted->is_Code,
+		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardInserted->is_Data, A1),
+		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardInserted->is_Code, A5),
+		AROS_UFCA(struct ExecBase*, SysBase, A6));
+	}
+    }
+    Permit();
 }
 
 void pcmcia_removeowner(struct CardResource *CardResource)
 {
-    if (CardResource->ownedcard == NULL)
-    	return;
-    CARDDEBUG(bug("pcmcia_removeowner: %p\n", CardResource->ownedcard));
-    if (CardResource->ownedcard->cah_CardRemoved) {
-	AROS_UFC3(UBYTE, CardResource->ownedcard->cah_CardRemoved->is_Code,
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardRemoved->is_Data, A1),
-	    AROS_UFCA(APTR, CardResource->ownedcard->cah_CardRemoved->is_Code, A5),
-	    AROS_UFCA(struct ExecBase*, SysBase, A6));
+    CARDDEBUG(bug("pcmcia_removeowner: owned=%p, newowner=%p\n", CardResource->ownedcard, CardResource->ownedcard));
+    Forbid();
+    if (CardResource->ownedcard != NULL) {
+	if (CardResource->ownedcard->cah_CardRemoved) {
+	    CARDDEBUG(bug("Executing cah_CardRemoved(%p, %p)\n",
+		CardResource->ownedcard->cah_CardRemoved->is_Data,
+		CardResource->ownedcard->cah_CardRemoved->is_Code));
+	    AROS_UFC3(UBYTE, CardResource->ownedcard->cah_CardRemoved->is_Code,
+		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardRemoved->is_Data, A1),
+		AROS_UFCA(APTR, CardResource->ownedcard->cah_CardRemoved->is_Code, A5),
+		AROS_UFCA(struct ExecBase*, SysBase, A6));
+	}
     }
-    CardResource->ownedcard = NULL;
+    Permit();
 }
 
 void CardTask(struct Task *parent, struct CardResource *CardResource)
@@ -101,8 +117,6 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 	CardResource->timerio->tr_time.tv_micro = 10000;
 	DoIO((struct IORequest*)CardResource->timerio);
  
-	Forbid();
-
 	SetSignal(0, CardResource->signalmask);
 
     	CardResource->removed = status == FALSE;
@@ -113,11 +127,11 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 	pcmcia_enable_interrupts();
 
 	/* Insert */
+	Forbid();
 	if (CardResource->removed == FALSE) {
 	    pcmcia_cardreset(CardResource);
-	    pcmcia_newowner(CardResource, TRUE);
+	    pcmcia_newowner(CardResource);
 	}
-
 	Permit();
 
     }

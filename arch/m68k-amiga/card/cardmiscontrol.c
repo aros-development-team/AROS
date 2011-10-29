@@ -34,16 +34,18 @@ AROS_LH2(UBYTE, CardMiscControl,
 
     gio->status = control_bits & STATUSMASK;
 
-    control = gio->intena;
-    if (control_bits & CARD_INTF_SETCLR)
-    	control |= val;
-    else
-    	control &= ~val;
-    gio->intena = control;
+    if (val) {
+	control = gio->intena;
+	if (control_bits & CARD_INTF_SETCLR)
+	    control |= val;
+	else
+	    control &= ~val;
+	gio->intena = control;
+    }
 
     Enable();    	
 
-    return control_bits;
+    return control_bits & (STATUSMASK | IRQMASK);
 
     AROS_LIBFUNC_EXIT
 }

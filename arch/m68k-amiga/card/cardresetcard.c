@@ -21,9 +21,7 @@ AROS_LH1(ULONG, CardResetCard,
     if (!ISMINE)
     	return FALSE;
 
-    Disable();
     pcmcia_cardreset(CardResource);
-    Enable();
 
     return TRUE;
 

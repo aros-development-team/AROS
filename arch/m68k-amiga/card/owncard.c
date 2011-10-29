@@ -20,11 +20,12 @@ AROS_LH1(struct CardHandle*, OwnCard,
 
     CARDDEBUG(bug("OwnCard(%p,%08x)\n", handle, handle->cah_CardFlags));
 
-    Disable();
-
+    handle->cah_CardFlags &= ~CARDF_USED;
     if (handle->cah_CardFlags & CARDF_DELAYOWNERSHIP) {
+    	Forbid();
     	Enqueue(&CardResource->handles, &handle->cah_CardNode);
-	pcmcia_newowner(CardResource, TRUE);
+    	Permit();
+	pcmcia_newowner(CardResource);
 	ret = (struct CardHandle*)-1;
     } else if (handle->cah_CardFlags & CARDF_IFAVAILABLE) {
     	if (CardResource->removed)
@@ -37,14 +38,14 @@ AROS_LH1(struct CardHandle*, OwnCard,
     	if (CardResource->removed)
 	    ret = (struct CardHandle*)-1;
 	else if (CardResource->ownedcard == NULL) {
+	    Forbid();
 	    AddHead(&CardResource->handles, &handle->cah_CardNode);
-	    pcmcia_newowner(CardResource, FALSE);
+	    Permit();
+	    pcmcia_newowner(CardResource);
 	} else
 	    ret = 0;
     }
     	
-    Enable();
-
     CARDDEBUG(bug("=%p\n", ret));
 
     return ret;
