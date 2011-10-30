@@ -34,6 +34,6 @@
 
 /* Two useful macros for accessing counter values */
 #define ch_read(port) inb(port) | (inb(port) << 8)
-#define ch_write(val, port) outb(val, port); outb(val >> 8, port)
+#define ch_write(val, port) outb((val) & 0xff, port); outb(((val) >> 8) & 0xff, port)
 
 #endif
