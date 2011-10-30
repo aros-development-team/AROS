@@ -35,7 +35,7 @@ struct nv31_mpeg_engine {
 static int
 nv31_mpeg_context_new(struct nouveau_channel *chan, int engine)
 {
-	struct nv31_mpeg_engine *pmpeg = nv_engine(chan->dev, engine);
+//FIXME	struct nv31_mpeg_engine *pmpeg = nv_engine(chan->dev, engine);
 
 //FIXME	if (!atomic_add_unless(&pmpeg->refcount, 1, 1))
 //FIXME		return -EBUSY;

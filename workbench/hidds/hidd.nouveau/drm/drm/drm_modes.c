@@ -192,6 +192,7 @@ struct drm_display_mode *drm_cvt_mode(struct drm_device *dev, int hdisplay,
 			vsyncandback_porch = tmp1;
 		/* 10. Find number of lines in back porch */
 		vback_porch = vsyncandback_porch - vsync;
+		(void)vback_porch; // Unused
 		drm_mode->vtotal = vdisplay_rnd + 2 * vmargin +
 				vsyncandback_porch + CVT_MIN_V_PORCH;
 		/* 5) Definition of Horizontal blanking time limitation */
@@ -387,13 +388,16 @@ drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
 	vsync_plus_bp = (vsync_plus_bp + 500) / 1000;
 	/*  9. Find the number of lines in V back porch alone: */
 	vback_porch = vsync_plus_bp - V_SYNC_RQD;
+	(void)vback_porch; // Unused
 	/*  10. Find the total number of lines in Vertical field period: */
 	vtotal_lines = vdisplay_rnd + top_margin + bottom_margin +
 			vsync_plus_bp + GTF_MIN_V_PORCH;
 	/*  11. Estimate the Vertical field frequency: */
 	vfieldrate_est = hfreq_est / vtotal_lines;
+	(void)vfieldrate_est; // Unused
 	/*  12. Find the actual horizontal period: */
 	hperiod = 1000000 / (vfieldrate_rqd * vtotal_lines);
+	(void)hperiod; // Unused
 
 	/*  13. Find the actual Vertical field frequency: */
 	vfield_rate = hfreq_est / vtotal_lines;
@@ -402,6 +406,7 @@ drm_gtf_mode_complex(struct drm_device *dev, int hdisplay, int vdisplay,
 		vframe_rate = vfield_rate / 2;
 	else
 		vframe_rate = vfield_rate;
+	(void)vframe_rate; // Unused
 	/*  15. Find number of pixels in left margin: */
 	if (margins)
 		left_margin = (hdisplay_rnd * GTF_MARGIN_PERCENTAGE + 500) /

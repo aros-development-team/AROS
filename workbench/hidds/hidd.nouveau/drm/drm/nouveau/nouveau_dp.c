@@ -199,6 +199,7 @@ nouveau_dp_tu_update(struct drm_device *dev, int or, int link, u32 clk, u32 bpp)
 	link_bw = dp_link_bw_get(dev, or, link);
 	link_ratio = link_data_rate * symbol;
 	r = do_div(link_ratio, link_bw);
+	(void)r; // Unused
 
 	for (TU = 64; TU >= 32; TU--) {
 		/* calculate average number of valid symbols in each TU */
