@@ -1068,7 +1068,7 @@ VOID HIDDNouveauBitMapDrawSolidLine(struct HIDDNouveauBitMapData * bmdata,
     WORD        i;
     LONG        x1, y1, x2, y2;
     ULONG       fg; /* foreground pen   */
-    BOOL        doclip;
+    APTR        doclip;
 
     IPTR map = (IPTR)bmdata->bo->map;
 

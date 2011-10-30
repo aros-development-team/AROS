@@ -974,6 +974,7 @@ nvd0_sor_create(struct drm_connector *connector, struct dcb_entry *dcbe)
 /******************************************************************************
  * IRQ
  *****************************************************************************/
+#ifdef FIXME
 static struct dcb_entry *
 lookup_dcb(struct drm_device *dev, int id, u32 mc)
 {
@@ -1154,6 +1155,7 @@ nvd0_display_bh(unsigned long data)
 	if (disp->modeset & 0x00000004)
 		nvd0_display_unk4_handler(dev, crtc, mask);
 }
+#endif
 
 static void
 nvd0_display_intr(struct drm_device *dev)
@@ -1335,7 +1337,7 @@ nvd0_display_destroy(struct drm_device *dev)
 {
 	struct drm_nouveau_private *dev_priv = dev->dev_private;
 	struct nvd0_display *disp = nvd0_display(dev);
-	struct pci_dev *pdev = dev->pdev;
+//FIXME	struct pci_dev *pdev = dev->pdev;
 
 	nvd0_display_fini(dev);
 
@@ -1354,7 +1356,7 @@ nvd0_display_create(struct drm_device *dev)
 	struct nouveau_instmem_engine *pinstmem = &dev_priv->engine.instmem;
 	struct dcb_table *dcb = &dev_priv->vbios.dcb;
 	struct drm_connector *connector, *tmp;
-	struct pci_dev *pdev = dev->pdev;
+//FIXME	struct pci_dev *pdev = dev->pdev;
 	struct nvd0_display *disp;
 	struct dcb_entry *dcbe;
 	int ret, i;

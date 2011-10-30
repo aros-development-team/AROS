@@ -27,7 +27,6 @@ nouveau_sgdma_populate(struct ttm_backend *be, unsigned long num_pages,
 		       dma_addr_t *dma_addrs)
 {
 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
-	struct drm_device *dev = nvbe->dev;
 	int i;
 
 	NV_DEBUG(nvbe->dev, "num_pages = %ld\n", num_pages);
@@ -59,7 +58,6 @@ static void
 nouveau_sgdma_clear(struct ttm_backend *be)
 {
 	struct nouveau_sgdma_be *nvbe = (struct nouveau_sgdma_be *)be;
-	struct drm_device *dev = nvbe->dev;
 
 	if (nvbe->bound)
 		be->func->unbind(be);
