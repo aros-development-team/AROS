@@ -22,7 +22,7 @@
 #define SERPER_BASE_PAL		3546895
 #define SERPER_BASE_NTSC	3579545
 #define SERPER			0x32
-#define   SERPER_BAUD(base, x)	(((base)/(x)-1) & 0x7fff)	/* Baud rate */
+#define   SERPER_BAUD(base, x)	((((base + (x)/2))/(x)-1) & 0x7fff)	/* Baud rate */
 #define SERDATR			0x18
 #define   SERDATR_OVRUN		(1 << 15)	/* Overrun */
 #define   SERDATR_RBF		(1 << 14)	/* Rx Buffer Full */
