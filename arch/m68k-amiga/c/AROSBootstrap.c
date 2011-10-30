@@ -342,7 +342,7 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     }
 
     size += sizeof(struct MemChunk) + sizeof(struct MemList);
-    mem = AllocMem(size, flags);
+    mem = AllocMem(size, flags | MEMF_CLEAR);
     if (mem == NULL) {
     	WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
     	meminfo();
@@ -481,7 +481,7 @@ static AROS_UFH3(APTR, elfAlloc,
     }
 
     D(WriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
-    mem = AllocPageAligned(&size, flags);
+    mem = AllocPageAligned(&size, flags | MEMF_CLEAR);
     if (mem == NULL) {
     	D(WriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
     	meminfo();

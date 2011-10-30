@@ -176,7 +176,10 @@ static APTR protectAlloc(struct MemHeader *mh, APTR start, APTR end, const UBYTE
     }
     tmp = Early_AllocAbs(mh, start, length);
     DEBUGPUTS(("* "));
-    DEBUGPUTS((name));
+    if (name)
+	DEBUGPUTS((name));
+    else
+    	DEBUGPUTS(("<no name>"));
     if (!tmp)
     	DEBUGPUTS((" !"));
     DEBUGPUTHEX(("\nStart  ", (ULONG)start));
