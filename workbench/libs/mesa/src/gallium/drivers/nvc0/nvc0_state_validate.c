@@ -3,6 +3,7 @@
 
 #include "nvc0_context.h"
 
+#ifdef USE_UNUSED_CODE
 static void
 nvc0_validate_zcull(struct nvc0_context *nvc0)
 {
@@ -52,6 +53,7 @@ nvc0_validate_zcull(struct nvc0_context *nvc0)
     BEGIN_RING(chan, RING_3D_(0x1958), 1);
     OUT_RING  (chan, 0); /* bits ~0 */
 }
+#endif
 
 static void
 nvc0_validate_fb(struct nvc0_context *nvc0)

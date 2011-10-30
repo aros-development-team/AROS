@@ -461,6 +461,7 @@ nvc0_vp_gen_header(struct nvc0_program *vp, struct nvc0_translation_info *ti)
    return nvc0_vp_gp_gen_header(vp, ti);
 }
 
+#ifdef USE_UNUSED_CODE
 static int
 nvc0_gp_gen_header(struct nvc0_program *gp, struct nvc0_translation_info *ti)
 {
@@ -514,6 +515,7 @@ nvc0_gp_gen_header(struct nvc0_program *gp, struct nvc0_translation_info *ti)
 
    return nvc0_vp_gp_gen_header(gp, ti);
 }
+#endif
 
 static int
 nvc0_fp_gen_header(struct nvc0_program *fp, struct nvc0_translation_info *ti)

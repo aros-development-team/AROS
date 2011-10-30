@@ -174,6 +174,7 @@ nvc0_m2mf_copy_linear(struct nouveau_context *nv,
    }
 }
 
+#ifdef USE_UNUSED_CODE
 static void
 nvc0_m2mf_push_rect(struct pipe_screen *pscreen,
                     const struct nvc0_m2mf_rect *dst,
@@ -228,6 +229,7 @@ nvc0_m2mf_push_rect(struct pipe_screen *pscreen,
       nblocksy -= line_count;
    }
 }
+#endif
 
 struct pipe_transfer *
 nvc0_miptree_transfer_new(struct pipe_context *pctx,
