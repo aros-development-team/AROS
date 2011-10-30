@@ -878,7 +878,7 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, DrawEllipse)
 	LONG    	d1 = t2 - t7 + (t4 >> 1);    /* error terms */
 	LONG    	d2 = (t1 >> 1) - t8 + t5;
 
-	BOOL    	doclip = GC_DOCLIP(gc);
+	APTR    	doclip = GC_DOCLIP(gc);
 
     src       = GC_FG(gc);
     mode      = GC_DRMD(gc);
