@@ -3,6 +3,10 @@
 
 include $(TOP)/config/make.cfg
 
+ifeq ($(CPU),ppc)
+CPU=powerpc-be
+endif
+
 HALTARGET=$(CPU)-elf
 
 include $(SRCDIR)/$(CURDIR)/amigaos/makefile.inc
