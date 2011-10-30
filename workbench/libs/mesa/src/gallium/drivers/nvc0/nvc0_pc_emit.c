@@ -59,6 +59,7 @@ nvc0_relocate_program(struct nvc0_program *prog,
    }
 }
 
+#ifdef USE_UNUSED_CODE
 static void
 create_fixup(struct nv_pc *pc, uint8_t ty,
              int w, uint32_t data, uint32_t m, int s)
@@ -81,6 +82,7 @@ create_fixup(struct nv_pc *pc, uint8_t ty,
 
    ++pc->num_relocs;
 }
+#endif
 
 static INLINE ubyte
 SSIZE(struct nv_instruction *nvi, int s)

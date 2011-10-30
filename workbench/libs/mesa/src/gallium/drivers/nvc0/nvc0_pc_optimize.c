@@ -876,6 +876,7 @@ nv_pass_mem_opt(struct pass_reld_elim *ctx, struct nv_basic_block *b)
    return 0;
 }
 
+#ifdef USE_UNUSED_CODE
 static void
 eliminate_store(struct mem_record *rec, struct nv_instruction *st)
 {
@@ -925,6 +926,7 @@ pass_store_elim(struct pass_reld_elim *ctx, struct nv_basic_block *b)
    DESCEND_ARBITRARY(s, nv_pass_mem_opt);
    return 0;
 }
+#endif
 
 /* TODO: properly handle loads from l[] memory in the presence of stores */
 static int
