@@ -470,6 +470,10 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	struct ExecBase *oldSysBase = *(APTR *)4;
 #define SysBase CANNOT_USE_SYSBASE_SYMBOL_HERE
 
+#ifdef AROS_SERIAL_DEBUG
+        DebugInit();
+#endif
+
 	trap = (APTR *)(NULL);
 
 	/* Set all the exceptions to the Early_Exception

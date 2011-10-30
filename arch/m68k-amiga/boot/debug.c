@@ -24,9 +24,9 @@ void DebugInit(void)
 
 int DebugPutChar(register int chr)
 {
-	DebugInit();
 	if (chr == '\n')
 		DebugPutChar('\r');
+
 	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
 	reg_w(INTREQ, INTF_TBE);
 
@@ -40,7 +40,6 @@ int DebugMayGetChar(void)
 {
 	int c;
 
-	DebugInit();
 	if ((reg_r(SERDATR) & SERDATR_RBF) == 0)
 	    return -1;
 
