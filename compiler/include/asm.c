@@ -195,7 +195,9 @@ int main(void) {
 #ifdef __mc68000
     DEFINE(eb_KernelBase, offsetof(struct IntExecBase, KernelBase));
     DEFINE(kb_PlatformData, offsetof(struct KernelBase, kb_PlatformData));
+    DEFINE(MMU_Level_A, offsetof(struct PlatformData, MMU_Level_A));
     DEFINE(zeropagedescriptor, offsetof(struct PlatformData, zeropagedescriptor));
+    DEFINE(cachemodestore, offsetof(struct PlatformData, cachemodestore));
 #endif
 
 #ifdef UseExecstubs

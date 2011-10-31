@@ -55,7 +55,9 @@
 
 	#include "aros/m68k/asm.h"
 
-    #define DMAB_NoModify   2
+	#define CACHEDEBUG 0
+
+	#define DMAB_NoModify   2
 
 	.text
 	.balign 4
@@ -88,23 +90,52 @@ cachepostdmasup_30:
 	movec	%d0,%cacr
 	rte
 
+#if CACHEDEBUG
+format:
+	.string "PostDMA(%p,%x,%x)\n"
+#endif
+
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128)
 	.type	AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128),@function
 AROS_SLIB_ENTRY(CachePostDMA_40,Exec,128):
-	btst.l	#DMAB_NoModify,%d0	/* Has DMA modified data in mem? */
-	bne.s	cpd_40_end		/* nope, just exit */
-	move.l	%a5,%sp@-			/* save a5 */
-	lea.l	cachepostdmasup_40,%a5
-	jsr	    Supervisor(%a6)
-	move.l  %sp@+,%a5
 
+#if CACHEDEBUG
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l %d0,-(%sp)
+	move.l (%a1),-(%sp)
+	move.l %a0,-(%sp)
+	pea format
+	jsr kprintf
+	lea 16(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+#endif
+
+	movem.l %a3/%a5,-(%sp)
+	move.l %a0,%d1
+	or.l %a1@,%d1
+	and.w #0x000f,%d1
+	beq.s 0f
+	/* Not cache line aligned.
+	 * Check CachePreDMA for details. */
+	move.l %a6@(eb_KernelBase),%a3
+	move.l %a3@(kb_PlatformData),%a3
+	tst.l MMU_Level_A(%a3)
+	beq.s 0f
+	move.b %a3@(cachemodestore),%d1
+	move.l %a1@,%d0
+	lea cacheprepostset,%a5
+	jsr Supervisor(%a6)
+	bra.s 1f
+0:
+	btst.l	#DMAB_NoModify,%d0	/* Has DMA modified data in mem? */
+	bne.s	1f		/* nope, just exit */
+	move.l #0x0800,%d1
+	move.l %a1@,%d0
+	jsr -0x282(%a6) /* CacheClearE() */
 cpd_40_end:
+1:
+	movem.l (%sp)+,%a3/%a5
 	rts
 
-cachepostdmasup_40:
-	/* A DMA device has changed data in main memory. We have to invalidate
-	   the data cache, so we get the chance to see this new data. */
-	cinva	%dc
-	rte

@@ -58,38 +58,125 @@
    XDEF AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)	; for 68040+
 */
 
+	#define CACHEDEBUG 0
+
 	#include "aros/m68k/asm.h"
 
-    #define DMAB_NoModify   2
+	#define DMAB_NoModify   2
 
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127)
 	.type	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127),@function
 AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127):
-#ifndef DoRegisterCalls
-    move.l  %sp(4), %a0
-#endif
 	move.l	%a0,%d0	/* return input address */
 	rts
+
+#if CACHEDEBUG
+format:
+	.string "PreDMA(%p,%x,%x)\n"
+#endif
 
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)
 	.type	AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127),@function
 AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127):
-#ifndef DoRegisterCalls
-    move.l  %sp(4), %a0
+
+#if CACHEDEBUG
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l %d0,-(%sp)
+	move.l (%a1),-(%sp)
+	move.l %a0,-(%sp)
+	pea format
+	jsr kprintf
+	lea 16(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
 #endif
-	move.l	%a5,%sp@-		/* save a5 */
-	lea.l	cachepredmasup_40,%a5
-	jsr 	Supervisor(%a6)
-	move.l  %sp@+,%a5
+
+	movem.l %a0/%a3/%a5,-(%sp)
+	move.l %a0,%d1
+	or.l %a1@,%d1
+	and.w #0x000f,%d1
+	beq.s 0f
+	/*
+	 * Not cache line aligned.
+	 *
+	 * Details can be read here:
+	 * http://groups.google.com/group/comp.sys.amiga.hardware/browse_thread/thread/6e5caefab6a68a1e/16f93d291b0b1440?hl=en&ie=UTF-8
+	 *
+	 * We assume MMU is already configured.
+	 */
+
+	move.l %a6@(eb_KernelBase),%a3
+	move.l %a3@(kb_PlatformData),%a3
+	tst.l MMU_Level_A(%a3)
+	beq.s 0f
+	move.l (%a1),%d0
+	/* Non-cacheable page descriptor bits */
+	move.b #0x40+0x20,%d1
+	lea cacheprepostset,%a5
+	jsr Supervisor(%a6)
+	/* Store for following CachePostDMA() call */
+	move.b %d0,%a3@(cachemodestore)
+	bra.s 1f
+0:
+	move.l #0x0800,%d1
+	move.l %a1@,%d0
+	jsr -0x282(%a6) /* CacheClearE() */
+1:
+	movem.l (%sp)+,%a0/%a3/%a5
+	move.l %a0,%d0
 	rts
 
-cachepredmasup_40:
-	cpusha	%dc	/* Push dirty data cache lines to memory and invalidate cache */
-	cinva	%dc	/* 68060 invalidates depending on DPI (Disable CPUSH invalidation)
-			   bit of CACR. Force an invalidation with CINV. */
-	move.l	%a0,%d0	/* return input address */
+.globl cacheprepostset
+cacheprepostset:
+	movem.l %d2/%d3/%a2,-(%sp)
+	move.l %d0,%d2
+	add.l %a0,%d2
+	move.l %a0,%d0
+	and.w #~4095,%d0
+	move.l %d0,%a2
+	move.b %d1,%d3
+	or.w #0x0700,%sr
+0:
+	nop
+	cpushp %dc,(%a2)
+	move.l %a2,%a0
+	bsr getpagedesc
+	/* adjust page descriptor cache flags */
+	move.b 3(%a0),%d0
+	and.b #~(0x40+0x20),3(%a0)
+	or.b %d3,3(%a0)
+	cpushl %dc,(%a0)
+	lea 4096(%a2),%a2
+	cmp.l %a2,%d2
+	bhi.s 0b
+	pflusha
+	and.b #0x40+0x20,%d0
+	movem.l (%sp)+,%d2/%d3/%a2
 	rte
+
+	/* Fetch page descriptor address. No error checks. */
+getpagedesc:
+	move.l MMU_Level_A(%a3),%a1
+	move.l %a0,%d0
+	moveq #32-7,%d1
+	lsr.l %d1,%d0
+	and.w #127,%d0
+	move.l 0(%a1,%d0.w*4),%d0
+	clr.b %d0
+	move.l %d0,%a1
+	move.l %a0,%d0
+	moveq #32-7-7,%d1
+	lsr.l %d1,%d0
+	and.w #127,%d0
+	move.l 0(%a1,%d0.w*4),%d0
+	clr.b %d0
+	move.l %d0,%a1
+	move.l %a0,%d0
+	moveq #32-7-7-6,%d1
+	lsr.l %d1,%d0
+	and.w #63,%d0
+	lea 0(%a1,%d0.w*4),%a0
+	rts
