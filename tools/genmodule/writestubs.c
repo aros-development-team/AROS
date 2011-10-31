@@ -31,7 +31,6 @@ void writestubs(struct config *cfg, int is_rel)
 	    "%s"
 	    "#define NOLIBINLINE\n"
 	    "#define NOLIBDEFINES\n"
-	    "#define AROS_BASEREL_LIBRARY\n"
             "void *__comp_get_relbase(void);\n"
 	    "#ifndef __%s_NOLIBBASE__\n"
 	    "/* Do not include the libbase */\n"

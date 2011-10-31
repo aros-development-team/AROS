@@ -1,4 +1,3 @@
-#include <aros/altstack.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
@@ -41,7 +40,7 @@ int main(void)
 
     me = FindTask(NULL);    
     printf("Task 0x%p (%s), stack 0x%p - 0x%p\n", me, me->tc_Node.ln_Name, me->tc_SPLower, me->tc_SPUpper);
-    printf("Function at 0x%p, altstack 0x%p\n", main, *((void **)me->tc_SPLower));
+    printf("Function at 0x%p%p\n", main);
     printf("Buffer at 0x%p (%u bytes)\n", buf, (unsigned int)sizeof(buf));
 
     HexDump((const UBYTE *)buf, sizeof(buf));

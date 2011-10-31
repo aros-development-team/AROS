@@ -2,13 +2,12 @@
 #define ___EXITFUNC_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
-#include <aros/relbase.h>
 
 struct AtExitNode
 {
@@ -18,7 +17,7 @@ struct AtExitNode
         void (*fvoid)(void);
         void (*fptr)(int, void *);
     } func;
-    void *ptr, *relbase;
+    void *ptr;
 };
 
 #define AEN_VOID 0

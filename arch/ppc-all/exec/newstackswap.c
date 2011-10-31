@@ -10,7 +10,6 @@
 
     NAME */
 #include <aros/debug.h>
-#include <aros/altstack.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
@@ -62,7 +61,6 @@
     ULONG *sp;
     ULONG *src;
     ULONG *dst;
-    IPTR oldtop;
 
     /* Get the real stack pointer */
     asm volatile ("mr %0,%1":"=r"(sp):"r"(real_sp));
@@ -87,11 +85,8 @@
 
     D(bug("In NewStackSwap() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
     D(bug("[sss] %08x %08x %08x\n", sss->stk_Lower, sss->stk_Pointer, sss->stk_Upper));
-
-    oldtop = aros_get_altstack(SysBase->ThisTask);
+    
     StackSwap(sss);
-    aros_init_altstack(SysBase->ThisTask);
-    aros_set_altstack(SyaBase->ThisTask, oldtop);
 
     D(bug("[sss] %08x %08x %08x\n", sss->stk_Lower, sss->stk_Pointer, sss->stk_Upper));
 

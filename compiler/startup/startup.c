@@ -15,7 +15,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
-#include <aros/libcall.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/startup.h>

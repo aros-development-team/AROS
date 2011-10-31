@@ -35,18 +35,13 @@ void writeincinline(struct config *cfg)
         "/*\n"
 	    "    Desc: Inline function for %s\n"
 	    "*/\n"
-	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
-    );
-    if (cfg->options & OPTION_BASEREL)
-    	fprintf(out,
-    	    "#define AROS_BASEREL_LIBRARY\n");
-    fprintf(out,
+	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
-	    "\n"
+	    "\n",
+	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
     freeBanner(banner);
 

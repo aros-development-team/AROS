@@ -818,7 +818,6 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 	    SysBase->ThisTask->tc_SPUpper = &usp[size];
 	    SysBase->ThisTask->tc_SPLower = usp;
-	    aros_init_altstack(SysBase->ThisTask);
 
 	    /* Leave supervisor mode, switch power led on */
 	    asm volatile (

@@ -22,11 +22,4 @@ AROS_CDEFNAME(longjmp):
 	fldmiad ip!, {d8-d15}					/* Restore VFP registers - we assume they are available! */
 	ldr     r1, [ip], #4					/* restore VFP status reg */
   	fmxr    fpscr, r1
-  	ldr	r1, [ip], #4					/* restore *(SysBase->ThisTask->tc_SPLower) */
-        ldr	r2, 1f
-        ldr	r2, [r2]
-        ldr	r2, [r2, ThisTask]
-        ldr	r2, [r2, tc_SPLower]
-        str	r1, [r2]
-	bx	lr						/* Done! */
-1:	.word	SysBase
+	bx      lr						/* Done! */

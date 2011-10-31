@@ -35,8 +35,6 @@ void __callexitfuncs(void)
         (aen = (struct AtExitNode *) REMHEAD((struct List *) &aroscbase->acb_atexit_list))
     )
     {
-        int _error = __arosc_startup_error;
-        void *oldrelbase = AROS_SET_RELBASE(aen->relbase);
         switch (aen->node.ln_Type)
         {
         case AEN_VOID:
@@ -44,10 +42,9 @@ void __callexitfuncs(void)
             break;
 
         case AEN_PTR:
-            aen->func.fptr(_error, aen->ptr);
+            aen->func.fptr(__arosc_startup_error, aen->ptr);
             break;
         }
-        AROS_SET_RELBASE(oldrelbase);
     }
 }
 

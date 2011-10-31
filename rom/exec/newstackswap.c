@@ -37,12 +37,11 @@
 	running on a new stack.
 
     NOTES
-        The end of the stack will be initialized for an alternative stack
-        overwriting possible available data there.
 
     EXAMPLE
 
     BUGS
+        Do not attempt to pass in a prebuilt stack - it will be erased.
 
     SEE ALSO
 	StackSwap()

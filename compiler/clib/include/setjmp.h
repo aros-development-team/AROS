@@ -11,17 +11,16 @@
 
 #include <aros/system.h>
 
-/* Room for registers and one extra for *(SysBase->ThisTask->tc_SPLower) */
 #ifdef __mc68000__
-#   define _JMPLEN 12+1
+#   define _JMPLEN 12
 #elif __i386__
-#   define _JMPLEN 7+1
+#   define _JMPLEN 7
 #elif __x86_64__
-#   define _JMPLEN 15+1
+#   define _JMPLEN 15
 #elif __powerpc__
-#   define _JMPLEN 58+1
+#   define _JMPLEN 58
 #elif __arm__
-#   define _JMPLEN 63+1
+#   define _JMPLEN 63
 #endif
 
 typedef struct __jmp_buf

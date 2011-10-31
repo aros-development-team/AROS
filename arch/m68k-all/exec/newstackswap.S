@@ -58,39 +58,15 @@
 AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
     /* Stackswap will clobber %d0, %d1, %a0, and %a1,
      * so we need to save %a0/%a1 in %a3/%a4
-     * also save %d2 to use the altstack top, and
-     * %a5 will hold the current Task.
      */
-    movem.l     %d2/%a3-%a5,%sp@-
+    movem.l     %a3/%a4,%sp@-
     move.l      %a0,%a3
     move.l      %a1,%a4
 
-    // Get current task pointer, save in A5
-    sub.l       %a1,%a1
-    jsr         %a6@(FindTask)
-    move.l      %d0,%a5
-
-    // Remember old stack top, save in D2
-    move.l      %a5,%sp@-
-    jsr         aros_get_altstack       /* SP: task */
-    addq.l      #4,%sp
-    move.l      %d0,%d2    
-
-    move.l      %a3,%a0
     jsr         %a6@(StackSwap)
 
-    // Initialize alternative stack
-    move.l      %a5,%sp@-
-    jsr         aros_init_altstack      /* SP: task */
-
-    // Set new top to old top */
-    move.l      %d2,%sp@
-    move.l      %a5,%sp@-
-    jsr         aros_set_altstack       /* SP: task, value */
-
-    // Put the C arguments on the stack, overwrite first two
-    move.l      %a2@(7*4),%sp@(1*4)
-    move.l      %a2@(6*4),%sp@(0*4)
+    move.l      %a2@(7*4),%sp@- // Put the C arguments on the stack
+    move.l      %a2@(6*4),%sp@-
     move.l      %a2@(5*4),%sp@-
     move.l      %a2@(4*4),%sp@-
     move.l      %a2@(3*4),%sp@-
@@ -107,7 +83,7 @@ AROS_SLIB_ENTRY(NewStackSwap,Exec,134):
     jsr         %a6@(StackSwap)
     move.l      %a4,%d0
 
-    /* Now we can restore %d2/%a3-%a5
+    /* Now we can restore %a3/%a4
      */
-    movem.l     %sp@+,%d2/%a3-%a5
+    movem.l     %sp@+,%a3/%a4
     rts

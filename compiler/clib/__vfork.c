@@ -74,8 +74,6 @@ LONG launcher()
 
     aroscbase->acb_flags |= VFORK_PARENT;
       
-    oldbase = AROS_SET_LIBBASE(aroscbase);
-
     udata->child_aroscbase = aroscbase;
     aroscbase->acb_parent_does_upath = pbase->acb_doupath;
 
@@ -150,8 +148,6 @@ LONG launcher()
         D(bug("launcher: freeing child_signal\n"));
         FreeSignal(child_signal);
     }
-
-    AROS_SET_LIBBASE(oldbase);
 
     CloseLibrary((struct Library *)aroscbase);
     
