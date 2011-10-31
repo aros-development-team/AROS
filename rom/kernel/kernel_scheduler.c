@@ -10,6 +10,7 @@
 #include "exec_intern.h"
 
 //#define D(x)
+#define DTSS(x)
 
 /*
  * Schedule the currently running task away. Put it into the TaskReady list 
@@ -105,6 +106,7 @@ struct Task *core_Dispatch(void)
 
     /*
      * Increase TaskStorage if it is not big enough
+     * URGENT FIXME: Move this out of interrupts. It's not a good place to do allocations!
      */
     struct ETask *etask = task->tc_UnionETask.tc_ETask;
     if ((int)etask->et_TaskStorage[0] < PrivExecBase(SysBase)->TaskStorageSize)
@@ -112,11 +114,15 @@ struct Task *core_Dispatch(void)
         IPTR *oldstorage = etask->et_TaskStorage;
         ULONG oldsize = (ULONG)oldstorage[0];
 
+	DTSS(bug("[KRN] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
+
         etask->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
         /* FIXME: Add fault handling */
 
         CopyMem(oldstorage, etask->et_TaskStorage, oldsize);
         FreeMem(oldstorage, oldsize);
+        
+        etask->et_TaskStorage[0] = PrivExecBase(SysBase)->TaskStorageSize;
     }
 
     /*
