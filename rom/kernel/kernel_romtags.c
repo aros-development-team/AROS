@@ -194,7 +194,7 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
 
     if (!resList)
     {
-        krnPanic("Failed to create initial resident list\n"
+        krnPanic(KernelBase, "Failed to create initial resident list\n"
         	 "Not enough memory space provided");
         return NULL;
     }
@@ -202,7 +202,7 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     exec = krnFindResident(resList, "exec.library");
     if (!exec)
     {
-	krnPanic("Failed to create ExecBase\n"
+	krnPanic(KernelBase, "Failed to create ExecBase\n"
 		 "exec.library is not found");
     	return NULL;
     }
@@ -210,7 +210,7 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     sysBase = krnInitResident(exec, mh, bootMsg);
     if (!sysBase)
     {
-	krnPanic("Failed to create ExecBase\n"
+	krnPanic(KernelBase, "Failed to create ExecBase\n"
 		 "\n"
 		 "MemHeader 0x%p, First chunk 0x%p, %u bytes free",
 		 mh, mh->mh_First, mh->mh_Free);

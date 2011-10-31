@@ -16,7 +16,7 @@ static char panicBuffer[1024];
 #define KERNEL_PANIC_BUFFER panicBuffer
 #endif
 
-void krnPanic(const char *fmt, ...)
+void krnPanic(struct KernelBase *KernelBase,const char *fmt, ...)
 {
     const char *hdr = "Critical boot failure\n";
     char *ptr = KERNEL_PANIC_BUFFER;

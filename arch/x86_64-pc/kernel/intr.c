@@ -351,12 +351,12 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     	    {
     	    case KBL_APIC:
             	core_APIC_AckIntr();
-            	krnRunIRQHandlers(irq_number);
+            	krnRunIRQHandlers(KernelBase, irq_number);
             	break;
 
             case KBL_XTPIC:
             	XTPIC_AckIntr(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
-	 	krnRunIRQHandlers(irq_number);
+	 	krnRunIRQHandlers(KernelBase, irq_number);
 
 		/*
 		 * Interrupt acknowledge on XT-PIC also disables this interrupt.
@@ -368,7 +368,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                 break;
 
             default:
-            	krnRunIRQHandlers(irq_number);
+            	krnRunIRQHandlers(KernelBase, irq_number);
             	break;
 	    }
 	}
@@ -405,7 +405,7 @@ void ictl_Initialize(void)
     if (!pdata)
     {
     	/* We are x86-64 and we always have APIC. */
-    	krnPanic("Failed to allocate APIC descriptor\n.The system is low on memory.");
+    	krnPanic(KernelBase, "Failed to allocate APIC descriptor\n.The system is low on memory.");
     }
 
     if (pdata->kb_APIC->flags & APF_8259)

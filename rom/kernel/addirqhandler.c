@@ -104,7 +104,7 @@ AROS_LH4(void *, KrnAddIRQHandler,
 }
 
 /* Run IRQ handlers */
-void krnRunIRQHandlers(uint8_t irq)
+void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t irq)
 {
     struct IntrNode *in, *in2;
 

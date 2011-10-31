@@ -20,5 +20,5 @@ enum intr_types
 };
 
 /* Functions to be called by machine-specific code */
-int krnRunExceptionHandlers(uint8_t exception, void *ctx); /* Run user-supplied exception handlers */
-void krnRunIRQHandlers(uint8_t exception);		   /* Run user-supplied IRQ handlers       */
+int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, void *ctx); /* Run user-supplied exception handlers */
+void krnRunIRQHandlers(struct KernelBase *KernelBase, uint8_t exception);		   /* Run user-supplied IRQ handlers       */

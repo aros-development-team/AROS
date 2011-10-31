@@ -67,7 +67,7 @@ void cpu_Trap(struct ExceptionContext *regs, unsigned long error_code, unsigned 
 {
     D(bug("[Kernel] Trap exception %u\n", irq_number));
 
-    if (krnRunExceptionHandlers(irq_number, regs))
+    if (krnRunExceptionHandlers(KernelBase, irq_number, regs))
 	return;
 
     D(bug("[Kernel] Passing on to exec, Amiga trap %d\n", AmigaTraps[irq_number]));

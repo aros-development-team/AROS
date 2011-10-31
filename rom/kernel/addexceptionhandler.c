@@ -108,7 +108,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
 }
 
 /* Run exception handlers and accumulate return value */
-int krnRunExceptionHandlers(uint8_t exception, void *ctx)
+int krnRunExceptionHandlers(struct KernelBase *KernelBase, uint8_t exception, void *ctx)
 {
     struct IntrNode *in, *in2;
     int ret = 0;

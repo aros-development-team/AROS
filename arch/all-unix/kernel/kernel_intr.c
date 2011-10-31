@@ -65,7 +65,7 @@ void core_SysCall(int sig, regs_t *regs)
 
     AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
-    krnRunIRQHandlers(sig);
+    krnRunIRQHandlers(KernelBase, sig);
 
     switch(task->tc_State)
     {

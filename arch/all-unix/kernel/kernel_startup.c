@@ -145,7 +145,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	krnPanic("Not enough information from the bootstrap\n"
+	krnPanic(KernelBase, "Not enough information from the bootstrap\n"
 		 "\n"
 		 "Kickstart start 0x%p, end 0x%p\n"
 		 "Memory map address: 0x%p",
@@ -157,7 +157,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     AROS_HOST_BARRIER
     if (!hostlib)
     {
-    	krnPanic("Failed to load %s\n%s", LIBC_NAME, errstr);
+    	krnPanic(KernelBase, "Failed to load %s\n%s", LIBC_NAME, errstr);
 	return -1;
     }
 
@@ -168,7 +168,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	AROS_HOST_BARRIER
         if (!func)
         {
-            krnPanic("Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
+            krnPanic(KernelBase, "Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
 	    return -1;
 	}
 	((void **)&KernelIFace)[i] = func;
@@ -240,7 +240,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     InitCode(RTF_COLDSTART, 0);
 
     /* If we returned here, something went wrong, and dos.library failed to take over */
-    krnPanic("Failed to start up the system");
+    krnPanic(KernelBase, "Failed to start up the system");
 
     HostIFace->hostlib_Close(hostlib, NULL);
     AROS_HOST_BARRIER
