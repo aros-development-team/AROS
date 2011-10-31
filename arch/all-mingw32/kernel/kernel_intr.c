@@ -172,7 +172,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
 	{
 	    if (ex->CPUTrap != -1)
 	    {
-		if (krnRunExceptionHandlers(ex->CPUTrap, &tmpContext))
+		if (krnRunExceptionHandlers(KernelBase, ex->CPUTrap, &tmpContext))
 		    break;
 	    }
 

@@ -171,7 +171,7 @@ void kernel_cstart(const struct TagItem *msg)
     	/* If kick_end is not set, this is our first start. */
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
-	    krnPanic("Incomplete information from the bootstrap\n"
+	    krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
 		     "Highest kickstart address is not supplied\n");
 
         /* Align kickstart top address (we are going to place a structure after it) */
@@ -259,7 +259,7 @@ void kernel_cstart(const struct TagItem *msg)
     /* Sanity check */
     if ((!kick_start) || (!mmap) || (!mmap_len))
     {
-	krnPanic("Incomplete information from the bootstrap\n"
+	krnPanic(KernelBase, "Incomplete information from the bootstrap\n"
 		 "Kickstart address : 0x%P\n"
 		 "Memory map address: 0x%P, length %ld\n",
 		 kick_start, mmap, mmap_len);
@@ -381,7 +381,7 @@ void kernel_cstart(const struct TagItem *msg)
     /* This is remains of old exec.library code. */
     exec_boot(BootMsg);
 
-    krnPanic("Failed to start up the system");
+    krnPanic(KernelBase, "Failed to start up the system");
 }
 
 /* Our boot-time stack. Safe to be in .bss. */

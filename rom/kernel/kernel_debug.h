@@ -15,7 +15,7 @@
 int krnPutC(int chr, struct KernelBase *KernelBase);
 int krnBug(const char *format, va_list args, APTR kernelBase);
 void krnDisplayAlert(const char *text, struct KernelBase *KernelBase);
-void krnPanic(const char *fmt, ...);
+void krnPanic(struct KernelBase *KernelBase, const char *fmt, ...);
 
 static inline void _bug(APTR kernelBase, const char *format, ...)
 {

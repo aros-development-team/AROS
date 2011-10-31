@@ -57,7 +57,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
     AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
 
     /* Just for completeness */
-    krnRunIRQHandlers(sig);
+    krnRunIRQHandlers(KernelBase, sig);
 
     bug("[KRN] Trap signal %d, SysBase %p, KernelBase %p\n", sig, SysBase, KernelBase);
     PRINT_SC(regs);
@@ -82,7 +82,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
     amigaTrap = s->AmigaTrap;
     if (s->CPUTrap != -1)
     {
-	if (krnRunExceptionHandlers(s->CPUTrap, &ctx))
+	if (krnRunExceptionHandlers(KernelBase, s->CPUTrap, &ctx))
 	    /* Do not call exec trap handler */
 	    amigaTrap = -1;
     }
@@ -108,7 +108,7 @@ static void core_IRQ(int sig, regs_t *sc)
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
-	krnRunIRQHandlers(sig);
+	krnRunIRQHandlers(KernelBase, sig);
 
     if (KernelBase->kb_PlatformData->supervisor == 1)
 	core_ExitInterrupt(sc);
