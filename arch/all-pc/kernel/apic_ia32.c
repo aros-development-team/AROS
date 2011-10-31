@@ -152,6 +152,7 @@ void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
      * This can be used to improve calibration quality (currently we report 265 mHz instead of 266).
      */
     D(bug("[APIC.%u] LAPIC counted from %u to %u in 10ms (%u ticks)\n", cpuNum, lapic_initial, lapic_final, 11931 - pit_final));
+    (void)pit_final; // Unused if not debugging - suppress compiler warning
 
     apic->cores[cpuNum].timerFreq = (lapic_initial - lapic_final) * 100;
     D(bug("[APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
