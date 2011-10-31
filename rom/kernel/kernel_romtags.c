@@ -191,6 +191,13 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     struct Resident *exec; 
     struct ExecBase *sysBase;
     struct Resident **resList = krnRomTagScanner(mh, ranges);
+#ifdef __mc68000
+    /* mc68000 doesn't have a global KernelBase, and
+     * KernelBase shouldn't even be non-NULL at this point,
+     * anyway.
+     */
+    struct KernelBase *KernelBase = NULL;
+#endif
 
     if (!resList)
     {
