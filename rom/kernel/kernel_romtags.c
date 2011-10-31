@@ -191,6 +191,7 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     struct Resident *exec; 
     struct ExecBase *sysBase;
     struct Resident **resList = krnRomTagScanner(mh, ranges);
+    struct MemHeader *bootmh;
 
     if (!resList)
     {
@@ -207,12 +208,7 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     	return NULL;
     }
 
-    /* Magic. Described in rom/exec/exec_init.c. */
-    sysBase = AROS_UFC3(struct ExecBase *, exec->rt_Init,
-                	AROS_UFCA(struct MemHeader *, mh, D0),
-                	AROS_UFCA(struct TagItem *, bootMsg, A0),
- 	                AROS_UFCA(struct ExecBase *, NULL, A6));
-
+    sysBase = krnInitResident(exec, mh, bootMsg);
     if (!sysBase)
     {
 	krnPanic("Failed to create ExecBase\n"

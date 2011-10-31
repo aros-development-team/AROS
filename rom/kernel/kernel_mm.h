@@ -26,3 +26,5 @@ APTR mm_AllocAbs(struct MemHeader *mh, void *addr, IPTR size);
 void mm_Free(struct MemHeader *mh, APTR addr, IPTR size);
 void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct KernelBase *KernelBase);
 void mm_Init(struct MemHeader *mh, ULONG pageSize);
+struct MemHeader *mm_GetBootHeader(struct MemHeader *mh);
+void mm_AllocBootHeader(struct MemHeader *mh, struct MemHeader *bootmh);

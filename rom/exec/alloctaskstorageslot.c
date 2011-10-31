@@ -14,7 +14,7 @@
         AROS_LH0(int, AllocTaskStorageSlot,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 177, Exec)
+	struct ExecBase *, SysBase, 139, Exec)
 
 /*  FUNCTION
         This function will allocate a slot in the taskstorage 
