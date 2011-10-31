@@ -422,7 +422,6 @@ void mm_Init(struct MemHeader *mh, ULONG pageSize)
 struct MemHeader *mm_GetBootHeader(struct MemHeader *mh)
 {
     struct BlockHeader *head = (struct BlockHeader *)mh->mh_First;
-    IPTR align = head->pageSize - 1;
     IPTR p;
 
     /*

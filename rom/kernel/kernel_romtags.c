@@ -191,7 +191,6 @@ struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struc
     struct Resident *exec; 
     struct ExecBase *sysBase;
     struct Resident **resList = krnRomTagScanner(mh, ranges);
-    struct MemHeader *bootmh;
 
     if (!resList)
     {
