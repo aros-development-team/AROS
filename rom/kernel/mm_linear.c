@@ -461,7 +461,7 @@ struct MemHeader *mm_GetBootHeader(struct MemHeader *mh)
 	    if (p == head->size)		/* Reached end of this memory chunk ? */
 		break;
 	    if (p > head->size)			/* Went past the chunk? This must never happen! */
-	    	krnPanic("Corrupted memory map");
+	    	krnPanic(KernelBase, "Corrupted memory map");
 	}
 
 	if (free)
@@ -518,7 +518,7 @@ struct MemHeader *mm_GetBootHeader(struct MemHeader *mh)
 		break;
 	    }
 	    if (p > head->size)
-		krnPanic("Corrupted memory map");
+		krnPanic(KernelBase, "Corrupted memory map");
 	}
 	D(bug("[mm_Allocate] Skipped up to page %u\n", p));
 
