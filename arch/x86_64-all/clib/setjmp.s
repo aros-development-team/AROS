@@ -31,13 +31,6 @@ AROS_CDEFNAME(setjmp):
 	mov %r15,112(%rdi)
 	mov %rsp,120(%rdi) /* %esp */
 
-	/* Save top of altstack */
-	mov SysBase(%rip),%rax
-	mov ThisTask(%rax),%rax
-	mov tc_SPLower(%rax),%rax
-	mov 0(%rax),%rax
-	mov %rax,128(%rdi)
-
 	mov retaddr(%rsp),%rax /* Save return address (%esp has changed) */
 	mov %rax,0(%rdi)
 

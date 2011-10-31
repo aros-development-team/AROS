@@ -103,20 +103,6 @@ do                                                       \
    Internals: a dummy function is used that will generate some
    unused junk code but otherwise we can't pass input arguments
    to the asm statement
-
-   Some asm trickery performed:
-   - function return address is top of stack,
-     leave it there to use as argument for aros_push2_relbase
-   - libbase is other argument to aros_push2_relbase
-   - call aros_push2_relbase
-   - put libbase back in %eax
-   - remove libbase and return address from stack
-   - Call lvo vector
-   - push return value on stack
-   - call aros_pop2_relbase,
-     return value will be old return address
-   - pull return value from stack
-   - jmp to old return address
 */
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
@@ -127,7 +113,6 @@ do                                                       \
 	    "\tmove.l	" #libbasename ",%%a1\n" \
 	    "\tjmp %%a1@(%c0)\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
-	    : \
         ); \
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
@@ -282,11 +267,6 @@ extern void aros_not_implemented ();
 
 /* Call a libary function which requires the libbase */
 #include <aros/m68k/libcall.h>
-
-#define AROS_LC_CALL(t,x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALL
-#define AROS_LC_CALLNR(x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLNR
-#define AROS_LC_CALLI(t,x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLI
-#define AROS_LC_CALLINR(x,bn)	ERROR IN DEFINITIONS - AROS_LC_CALLNR
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
 	AROS_LH2(t,n, \

@@ -756,7 +756,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 			"noautolib", "noexpunge", "noresident", "peropenerbase",
                         "pertaskbase", "includes", "noincludes", "nostubs",
                         "autoinit", "noautoinit", "resautoinit", "noopenclose",
-                        "selfinit", "baserel"
+                        "selfinit"
 		    };
 		    const unsigned int optionnums = sizeof(optionnames)/sizeof(char *);
 		    int optionnum;
@@ -833,9 +833,6 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 				if (cfg->options & OPTION_RESAUTOINIT)
 					exitfileerror(20, "option resautoinit and selfinit are incompatible\n");
 			    cfg->options |= OPTION_SELFINIT;
-			    break;
-			case 14: /* baserel */
-			    cfg->options |= OPTION_BASEREL;
 			    break;
 			}
 			while (isspace(*s)) s++;

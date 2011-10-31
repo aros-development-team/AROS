@@ -114,5 +114,4 @@ okret:
 	lwz %r31, 84(3)
 	lfd %f31,224(3)
 	mr %r3,%r4
-#error restore *(SysBase->ThisTask->tc_SPLower)
 	blr

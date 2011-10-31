@@ -23,7 +23,6 @@ COMMON	:= \
 	__alloca \
 	__filesystem_support \
 	__isinf \
-	atexit \
 	bcmp \
 	bcopy \
 	bzero \
@@ -41,7 +40,6 @@ COMMON	:= \
 	memcpy \
 	memmove \
 	memset \
-	on_exit \
 	putchar \
 	stccpy \
 	stpblk \
@@ -108,6 +106,7 @@ SHARED	:= \
 	access \
 	asctime \
         asctime_r \
+	atexit \
 	atof \
 	atoi \
 	atol \
@@ -257,6 +256,7 @@ SHARED	:= \
 	mrand48 \
 	nanosleep \
 	nrand48 \
+	on_exit \
 	open \
 	opendir \
 	pathconf \

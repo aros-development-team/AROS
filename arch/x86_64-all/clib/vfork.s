@@ -12,8 +12,8 @@
     _ALIGNMENT
     .globl AROS_CDEFNAME(vfork)
     _FUNCTION(AROS_CDEFNAME(vfork))
-    .set    bufsize, 17*8
-    .set    stack,   16*8
+    .set    bufsize, 16*8
+    .set    stack,   15*8
 
 AROS_CDEFNAME(vfork):
     lea     (-bufsize)(%rsp), %rsp /* _JMPLEN + 1 longs on the stack

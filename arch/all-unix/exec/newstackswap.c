@@ -8,7 +8,6 @@
 
 #include <aros/asmcall.h>
 #include <aros/debug.h>
-#include <aros/altstack.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
@@ -24,13 +23,8 @@
 #include <signal.h>
 #include <string.h>
 
-static void trampoline(struct Task *me, IPTR (*func)(), IPTR *ret, IPTR *args, IPTR oldtop)
+static void trampoline(IPTR (*func)(), IPTR *ret, IPTR *args)
 {
-    /* Init the environment for libbase passing if necessary */
-    aros_init_altstack(me);
-    /* Set new top to old top */
-    aros_set_altstack(me, oldtop);
-
     /* this was called from NewStackSwap() which also called Disable */
     Enable();
 
@@ -60,7 +54,7 @@ AROS_LH3(IPTR, NewStackSwap,
     AROS_LIBFUNC_INIT
 
     struct Task *me = FindTask(NULL);
-    IPTR ret, oldtop;
+    IPTR ret;
     volatile APTR splower, spupper;
     ucontext_t ucx, ucx_return;
 
@@ -85,9 +79,7 @@ AROS_LH3(IPTR, NewStackSwap,
 
     D(bug("[NewStackSwap] Prepared stack: 0x%p - 0x%p (size %u bytes)\n", sss->stk_Lower, sss->stk_Pointer, ucx.uc_stack.ss_size));
 
-    /* Remember old stack top */
-    oldtop = aros_get_altstack(me);
-    PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 5, me, entry, &ret, args->Args, oldtop);
+    PD(SysBase).SysIFace->makecontext(&ucx, (void *(*)()) trampoline, 3, entry, &ret, args->Args);
     AROS_HOST_BARRIER
 
     DB2(bug("[NewStackSwap] Prepared context, doing stack swap\n"));

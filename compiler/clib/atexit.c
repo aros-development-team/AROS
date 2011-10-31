@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -43,7 +43,6 @@
 
     aen->node.ln_Type = AEN_VOID;
     aen->func.fvoid = func;
-    aen->relbase = AROS_GET_RELBASE;
 
     return __addexitfunc(aen);
 }

@@ -82,15 +82,8 @@ AROS_CDEFNAME(setjmp):
 	movl %ebp,24(%eax) /* %ebp */
 	movl %esp,28(%eax) /* %esp */
 
-        pushl %ebx /* Remember ebx */
+	pushl %ebx
 
-        /* Save *(SysBase->ThisTask->tc_SPLower) */
-        movl SysBase,%ebx
-        movl ThisTask(%ebx),%ebx
-        movl tc_SPLower(%ebx),%ebx
-        movl (%ebx),%ebx
-        movl %ebx,32(%eax)
-        
 	movl retaddr+4(%esp), %ebx /* Save return address (%esp has changed) */
 	movl %ebx,0(%eax)
 

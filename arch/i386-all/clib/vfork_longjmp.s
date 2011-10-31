@@ -33,12 +33,6 @@ AROS_CDEFNAME(vfork_longjmp):
 
 	pushl %ebx /* Save return value on new stack */
 
-        /* Restore *(SysBase->ThisTask->tc_SPLower) */
-        movl SysBase,%ebx
-        movl ThisTask(%ebx),%ebx
-        movl tc_SPLower(%ebx),%ebx
-        movl 32(%eax),%edx
-        movl %edx,(%ebx)
 	/* Restore all registers */
 	movl 4(%eax),%ebx /* %ebx */
 	movl 8(%eax),%ecx /* %ecx */

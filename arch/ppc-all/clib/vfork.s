@@ -39,7 +39,6 @@
     _ALIGNMENT
     .globl AROS_CDEFNAME(vfork)
     _FUNCTION(AROS_CDEFNAME(vfork))
-#error jmpbuf size has changed !
     .set    bufsize, 60*4
     .set    retaddr, 2*4
     .set    stack,   0*4

@@ -57,5 +57,4 @@ AROS_CDEFNAME(vfork_longjmp):
 	lwz %r31,((3+17)*4)(%r3)
 	lfd %f31,((22+17*2)*4)(%r3)
 	mr %r3,%r4
-#error restore *(SysBase->ThisTask->tc_SPLower)
 	blr

@@ -18,17 +18,7 @@
 	.set	val, env+8
 
 AROS_CDEFNAME(vfork_longjmp):
-	/* Get the location of the bottom of the stack */
-	mov SysBase(%rip),%rax
-	mov ThisTask(%rax),%rax
-	mov tc_SPLower(%rax),%rax
-
-        /* Restore the altstack pointer */
-	mov 128(%rdi),%rcx
-	mov %rcx,0(%rax)
-
-	mov %rdi, %rax
-
+    mov %rdi, %rax
 	/* Restore stack pointer and all registers from env */
 	mov 120(%rax),%rsp /* Restore original stack */
 

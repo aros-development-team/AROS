@@ -1,7 +1,6 @@
 #ifndef ___AROSC_PRIVDATA_H
 #define ___AROSC_PRIVDATA_H
 
-#include <aros/relbase.h>
 #include <exec/semaphores.h>
 #include <exec/libraries.h>
 #include <devices/timer.h>

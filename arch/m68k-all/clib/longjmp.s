@@ -27,28 +27,8 @@ longjmp:
 	moveq.l	#1,%d0			/* make sure it isn't 0 */
 .okret:
 	move.l	48(%a0),%sp		/* restore sp */
-	move.l	%a0@+,%sp@		/* set return address */
-	movem.l	%a0@,%d2-%d7/%a2-%a6	/* restore all registers except scratch and sp */
-	lea.l	%a0@(48), %a0		/* skip sp, %a0 is now old RelBase */
-
-	/* Save %d0 and %a0@ for later */
-	move.l	%d0,%sp@-
-	move.l	%a0@,%d0
-	move.l	%d0,%sp@-
-
-	/* a1 = FindTask(NULL)->tc_SPLower */
-	move.l	SysBase,%a6
-	sub.l	%a1, %a1
-	jsr	%a6@(FindTask)
-	move.l	%d0, %a1
-	move.l	%a1@(tc_SPLower),%a1
-
-	/* %a1@ = %a0@ */
-	move.l	%sp@+,%d0
-	move.l	%d0,%a1@
-
-	/* Restore %d0 */
-	move.l	%sp@+, %d0
+	move.l	(%a0)+,(%sp)		/* set return address */
+	movem.l	(%a0),%d2-%d7/%a2-%a6	/* restore all registers except scratch and sp */
 	rts
 
 /*
@@ -68,5 +48,4 @@ longjmp:
 	[10]		40	a5
 	[11]		44	a6
 	[12]		48	old sp
-	[13]		52	*(ULONG *)(FindTask(NULL)->tc_SPLower)
 */

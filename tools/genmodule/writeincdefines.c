@@ -35,19 +35,15 @@ void writeincdefines(struct config *cfg)
 	    "/*\n"
 	    "    Desc: Defines for %s\n"
 	    "*/\n"
-	    "\n",
-	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename);
-    if (cfg->options & OPTION_BASEREL)
-    	fprintf(out,
-    	    "#define AROS_BASEREL_LIBRARY\n");
-    fprintf(out,
+	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
 	    "#include <aros/symbolsets.h>\n"
 	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n"
 	    "__BEGIN_DECLS\n"
-	    "\n"
+	    "\n",
+	    cfg->modulenameupper, cfg->modulenameupper, banner, cfg->modulename
     );
     freeBanner(banner);
 
@@ -391,8 +387,8 @@ writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
 
-    /* Only if no baserel. define can't handle libbase passing */
-    if (cfg->options & (OPTION_BASEREL | OPTION_PERTASKBASE))
+    /* Only if no peropener or pertask base */
+    if (cfg->options & OPTION_DUPBASE)
     	return;
 
     fprintf(out, "#define %s ((%s (*)(", funclistit->name, funclistit->type);

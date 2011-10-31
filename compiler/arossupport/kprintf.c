@@ -94,10 +94,6 @@ static inline int atoi(const char *c)
     va_list	 ap;
     int		 result;
 
-    /* Don't try to call RawPutChar if SysBase is not initialized */
-    if (!SysBase)
-        return 0;
-
     va_start (ap, fmt);
     result = vkprintf (fmt, ap);
     va_end (ap);
@@ -115,10 +111,6 @@ int vkprintf (const UBYTE * fmt, va_list args)
     char       * fill;
     unsigned long val;
     long	 lval = 0;
-
-    /* Don't try to call RawPutChar if SysBase is not initialized */
-    if (!SysBase)
-        return 0;
 
     if (!fmt)
     {
