@@ -73,7 +73,7 @@
             err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
         }
 
-        if (err != DOSTRUE) {
+        if (err == DOSFALSE) {
             FreeDosObject(DOS_FILEHANDLE, fh);
             fh = NULL;
         } else {
