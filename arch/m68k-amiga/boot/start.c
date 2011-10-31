@@ -635,8 +635,6 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    Early_Alert(AT_DeadEnd | AG_NoMemory);
 	}
 
-	BootMsg = bootmsgptr;
-
 	/*
 	 * Call the SysBase initialization.
 	 */

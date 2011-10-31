@@ -41,18 +41,15 @@ const struct Resident Kernel_resident =
 
 static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
 
-#ifdef __mc68000
-/* On m68k .data section doesn't exist */
-#define __data
-#else
+#ifndef __mc68000
 #define __data __attribute__((section(".data")))
+__data struct TagItem *BootMsg;
 #endif
 
 /*
  * Some globals we can't live without.
  * IMPORTANT: BootMsg should survive warm restarts, this is why it's placed in .data.
  */
-__data struct TagItem *BootMsg;
 struct KernelBase *KernelBase;
 
 void __clear_bss(const struct KernelBSS *bss)
