@@ -108,6 +108,9 @@ LONG __oflags2amode(int flags)
      * O_WRITE is on, that overrides O_READ.
      * Similarly, O_CREAT overrides O_WRITE.
      */
+    if (flags & O_RDONLY)   openmode = MODE_OLDFILE;
+    if (flags & O_WRONLY)   openmode = MODE_OLDFILE;
+    if (flags & O_RDWR)     openmode = MODE_OLDFILE;
     if (flags & O_READ)     openmode = MODE_OLDFILE;
     if (flags & O_WRITE)    openmode = MODE_READWRITE;
     if (flags & O_CREAT)    openmode = MODE_NEWFILE;
