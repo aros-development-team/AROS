@@ -96,19 +96,17 @@
 	    { NP_Name   	, (IPTR)name      },
 	    { NP_Priority	, pri	     	  },
 	    { NP_WindowPtr	, (IPTR)windowPtr },
-/*
- * CHECKME: Is this really correct here?
- * Specifying NULL input handle makes it impossible to pass arguments within that process.
- * Arguments are needed for AROSMonDrvs, which is executed from within boot process,
- * which is started using this function.
- *
+	    /* These arguments are necessary, for
+	     * AOS 3.x compatability. Specifically,
+	     * CreateProc() must *not* break Forbid()
+	     * locking.
+	     */
 	    { NP_CurrentDir	, 0		  },
 	    { NP_HomeDir	, 0	  	  },
 	    { NP_Input	        , 0		  },
 	    { NP_Output	        , 0		  },
 	    { NP_CloseInput	, FALSE		  },
 	    { NP_CloseOutput    , FALSE		  },
- */
 	    { TAG_DONE  	, 0    	      	  }
 	};
 	
