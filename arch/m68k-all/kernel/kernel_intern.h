@@ -16,6 +16,7 @@ struct PlatformData
 	UBYTE *page_ptr;
 	ULONG page_free;
 	UBYTE *zeropagedescriptor;
+	UBYTE cachemodestore; /* CachePreDMA()/CachePostDMA() */
 };
 
 extern BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);
