@@ -5,7 +5,7 @@
     4.4BSD function flock().
 */
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <exec/exec.h>
@@ -248,22 +248,34 @@ void RemoveFromList(struct SignalSemaphore *sem)
     }
 }
 
-int __init_flocks(void)
+int __init_flocks(struct aroscbase *base)
 {
-    NEWLIST((struct List *)&__flocks_list);
+    /*
+     * Uninitialized base is filled with zero bytes. We use this fact
+     * to see that the list needs initialization.
+     * FIXME: Can lock lists be inherited? If yes, we need full copy of the list, we can't share it.
+     */
+    if (!base->acb_file_locks.mlh_Head)
+    {
+    	NEWLIST(&base->acb_file_locks);
+    	D(bug("[flock] Initialized lock list at 0x%p\n", &base->acb_file_locks));
+    }
 
     return 1;
 }
 
-void __unlock_flocks(void)
+void __unlock_flocks(struct aroscbase *base)
 {
+    /* It's possible that the list has never been initialized (for global base for example). */
+    if (base->acb_file_locks.mlh_Head)
     {
 	struct FlockNode *lock;
 	struct SignalSemaphore *sem;
 
+	D(bug("[flock] Freeing lock list at 0x%p\n", &base->acb_file_locks));
+
 	Forbid();
-	while ((lock = (struct FlockNode *) REMHEAD(
-	    (struct List *) &__flocks_list)))
+	while ((lock = (struct FlockNode *) REMHEAD(&base->acb_file_locks)))
 	{
 	    sem = lock->sem;
     	    ReleaseSemaphore(sem);
@@ -283,5 +295,5 @@ void __unlock_flocks(void)
     }
 }
 
-ADD2INIT(__init_flocks, 1);
-ADD2EXIT(__unlock_flocks, 1);
+ADD2OPENLIB(__init_flocks, 1);
+ADD2EXPUNGELIB(__unlock_flocks, 1);
