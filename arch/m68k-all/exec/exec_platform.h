@@ -10,6 +10,7 @@ struct Exec_PlatformData
 {
 	APTR  realRawDoFmt;     /* AOS 3.1 locale.library workaround - see
 	                           exec.library/SetFunction() */
+	struct TagItem *BootMsg;
 };
 
 #endif
