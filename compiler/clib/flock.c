@@ -1,11 +1,9 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     4.4BSD function flock().
 */
-
-#define DEBUG 1
 
 #include <proto/exec.h>
 #include <exec/exec.h>
