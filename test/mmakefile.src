@@ -47,7 +47,6 @@ COMMONTESTFILES := \
     serialtest \
     unixio \
     opendiskfont \
-    openfromlock \
     partition \
     scantest \
     showvisregion \

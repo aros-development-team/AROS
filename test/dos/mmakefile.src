@@ -6,7 +6,8 @@ include $(TOP)/config/make.cfg
 FILES           := getenv namefromfh examinefh examinelock \
 		   isinteractive \
 		   notify setfiledate output setenv inhibit doslist \
-		   readargs readitem readitemloop runcommand
+		   readargs readitem readitemloop runcommand \
+                   openfromlock
 
 PURE_FILES	:= exit
 EXEDIR          := $(AROS_TESTS)/dos
