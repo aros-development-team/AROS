@@ -92,6 +92,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
         if (seg != BNULL)
         {
             STRPTR args = "";
+            BPTR oldin, oldout;
 
 	    /*
 	     * Argument strings MUST contain terminating LF because of ReadItem() bugs.
@@ -104,7 +105,15 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 
 	    D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
 
+            /* RunCommand needs a valid Input() handle
+             * for passing in its arguments.
+             */
+            oldin = SelectInput(Open("NIL:", MODE_OLDFILE));
+            oldout= SelectOutput(Open("NIL:", MODE_NEWFILE));
             RunCommand(seg, AROS_STACKSIZE, args, strlen(args));
+            SelectInput(oldin);
+            SelectOutput(oldout);
+
             /* We don't care about the return code */
             UnLoadSeg(seg);
         }
