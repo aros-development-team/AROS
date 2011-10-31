@@ -1,3 +1,6 @@
+#ifndef __EXEC_PLATFORM_H
+#define __EXEC_PLATFORM_H
+
 #ifdef HOST_OS_android
 /* Android is not a true Linux ;-) */
 #undef HOST_OS_linux
@@ -39,3 +42,5 @@ struct Exec_PlatformData
 };
 
 #define HostLibBase PD(SysBase).HostLibBase
+
+#endif /* __EXEC_PLATFORM_H */
