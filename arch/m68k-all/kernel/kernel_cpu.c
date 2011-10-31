@@ -70,7 +70,7 @@ void cpu_Dispatch(regs_t *regs)
 	/* Break IDNestCnt */
 	if (SysBase->IDNestCnt >= 0) {
 	    SysBase->IDNestCnt=-1;
-	    KrnSti();
+	    asm volatile ("move.w #0xc000,0xdff09a\n");
 	}
         asm volatile ("stop #0x2000\n"); // Wait for an interrupt
     }
@@ -86,10 +86,11 @@ void cpu_Dispatch(regs_t *regs)
     	    		    AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
     /* Re-enable interrupts if needed */
-    if (SysBase->IDNestCnt < 0)
-        KrnSti();
-    else
-        KrnCli();
+    if (SysBase->IDNestCnt < 0) {
+        asm volatile ("move.w #0xc000,0xdff09a\n");
+    } else {
+        asm volatile ("move.w #0x4000,0xdff09a\n");
+    }
 
     if (task->tc_Flags & TF_EXCEPT) {
     	/* Exec_Exception() will Enable() */
