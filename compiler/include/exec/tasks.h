@@ -146,15 +146,19 @@ struct StackSwapArgs
 
 struct ETask
 {
-    struct Message Message;
-    struct Task *  Parent;	    /* Pointer to task */
-    ULONG	   UniqueID;
-    struct MinList Children;     /* List of children */
-    UWORD	   TrapAlloc;
-    UWORD	   TrapAble;
-    ULONG	   Result1;	    /* First result */
-    APTR	   Result2;	    /* Result data pointer (AllocVec) */
-    struct MsgPort MsgPort;
+    struct Message  Message;
+    struct Task    *Parent;	  /* Pointer to task */
+    ULONG	    UniqueID;
+    struct MinList  Children;     /* List of children */
+    UWORD	    TrapAlloc;
+    UWORD	    TrapAble;
+    ULONG	    Result1;	  /* First result */
+    APTR	    Result2;	  /* Result data pointer (AllocVec) */
+    struct MsgPort  MsgPort;
+    void           *MemPool;
+    void	   *Reserved[2];
+    void	   *RegFrame;
+    IPTR	   *TaskStorage;
 
     /* Internal fields follow */
 };
@@ -164,17 +168,19 @@ struct ETask
 /* Extended Task structure */
 struct ETask
 {
-    struct Message et_Message;
-    APTR	   et_Parent;	    /* Pointer to task */
-    ULONG	   et_UniqueID;
-    struct MinList et_Children;     /* List of children */
-    UWORD	   et_TrapAlloc;
-    UWORD	   et_TrapAble;
-    ULONG	   et_Result1;	    /* First result */
-    APTR	   et_Result2;	    /* Result data pointer (AllocVec) */
-    struct MsgPort et_TaskMsgPort;
-
-    IPTR          *et_TaskStorage;
+    struct Message  et_Message;
+    APTR	    et_Parent;	     /* Pointer to parent task		*/
+    ULONG	    et_UniqueID;
+    struct MinList  et_Children;     /* List of children		*/
+    UWORD	    et_TrapAlloc;
+    UWORD	    et_TrapAble;
+    ULONG	    et_Result1;	    /* First result			*/
+    APTR	    et_Result2;	    /* Result data pointer (AllocVec)	*/
+    struct MsgPort  et_TaskMsgPort;
+    void	   *et_MemPool;	    /* Task's private memory pool	*/
+    void	   *et_Reserved[2]; /* PowerPC stack in MorphOS		*/
+    void	   *et_RegFrame;
+    IPTR           *et_TaskStorage; /* AROS-specific			*/
     /* Internal fields follow */
 };
 
