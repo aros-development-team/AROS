@@ -60,7 +60,10 @@ buserror040:
 	 * instruction in trace mode. Trace exception is used to restore
 	 * zero page descriptor back to original invalid state.
 	 */
-	move.l	zeropagedescriptor,%a0
+	move.l	SysBase,%a0
+	move.l	%a0@(eb_KernelBase),%a0
+	move.l	%a0@(kb_PlatformData),%a0
+	move.l	%a0@(zeropagedescriptor),%a0
 	/* Zero page -> resident */
 	or.b	#3,%a0@
 	cpushl	%dc,(%a0)

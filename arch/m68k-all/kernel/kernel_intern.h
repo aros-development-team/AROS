@@ -15,6 +15,7 @@ struct PlatformData
 	UBYTE mmu_type;
 	UBYTE *page_ptr;
 	ULONG page_free;
+	UBYTE *zeropagedescriptor;
 };
 
 extern BOOL map_region(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);

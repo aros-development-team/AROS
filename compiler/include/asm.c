@@ -15,6 +15,11 @@
 #include <stddef.h>
 
 #ifdef __mc68000
+#include "exec_intern.h"
+#undef KernelBase
+#include "kernel_base.h"
+#include "kernel_intern.h"
+
     /* m68k relative addresses must *not* start with a '#' */
 #define DEFINE(sym, val) \
     asm volatile("\n#define " #sym " %c0 ": : "i" (val))
@@ -184,7 +189,11 @@ int main(void) {
     DEFINE(reg_fs, offsetof(struct ExceptionContext, fs));
     DEFINE(reg_gs, offsetof(struct ExceptionContext, gs));
 #endif
-
+#ifdef __mc68000
+    DEFINE(eb_KernelBase, offsetof(struct IntExecBase, KernelBase));
+    DEFINE(kb_PlatformData, offsetof(struct KernelBase, kb_PlatformData));
+    DEFINE(zeropagedescriptor, offsetof(struct PlatformData, zeropagedescriptor));
+#endif
 
 #ifdef UseExecstubs
     asm volatile("\n#define UseExecstubs 1" ::);

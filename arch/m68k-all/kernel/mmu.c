@@ -26,8 +26,6 @@
 #define INVALID_DESCRIPTOR 0xDEAD0000
 #define ISINVALID(x) ((((ULONG)x) & 3) == 0)
 
-UBYTE *zeropagedescriptor;
-
 static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG size, BOOL invalid, BOOL writeprotect, BOOL supervisor, UBYTE cachemode);
 
 
@@ -331,7 +329,7 @@ static BOOL map_region2(struct KernelBase *kb, void *addr, void *physaddr, ULONG
 			pagedescriptor = INVALID_DESCRIPTOR;
 			if (addr == 0 && size == page_size) {
 				/* special case zero page handling */
-				zeropagedescriptor = (UBYTE*)(& LEVELC(descb, addr)) + 3;
+				pd->zeropagedescriptor = (UBYTE*)(& LEVELC(descb, addr)) + 3;
 				pagedescriptor = ((ULONG)physaddr) & ~page_mask;
 				if (mmutype == MMU030) {
 					pagedescriptor |= 4;
