@@ -5,6 +5,7 @@
     4.4BSD function flock().
 */
 
+#define DEBUG 0
 #include <proto/exec.h>
 #include <exec/exec.h>
 #include <proto/dos.h>
@@ -122,7 +123,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
             return -1;
         }
 
-        if(NameFromLock(fdesc->fcb->fh, (STRPTR) ((IPTR) buffer + 6), buffersize - 7))
+        if(NameFromFH(fdesc->fcb->fh, (STRPTR) ((IPTR) buffer + 6), buffersize - 7))
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
@@ -249,22 +250,18 @@ void RemoveFromList(struct SignalSemaphore *sem)
 int __init_flocks(struct aroscbase *base)
 {
     /*
-     * Uninitialized base is filled with zero bytes. We use this fact
-     * to see that the list needs initialization.
-     * FIXME: Can lock lists be inherited? If yes, we need full copy of the list, we can't share it.
+     * This function is called once each time a new libbase is created
      */
-    if (!base->acb_file_locks.mlh_Head)
-    {
-    	NEWLIST(&base->acb_file_locks);
-    	D(bug("[flock] Initialized lock list at 0x%p\n", &base->acb_file_locks));
-    }
+    NEWLIST(&base->acb_file_locks);
+
+    D(bug("[flock] Initialized lock list at 0x%p\n", &base->acb_file_locks));
 
     return 1;
 }
 
 void __unlock_flocks(struct aroscbase *base)
 {
-    /* It's possible that the list has never been initialized (for global base for example). */
+    /* This function is called once before libbase would be freed */
     if (base->acb_file_locks.mlh_Head)
     {
 	struct FlockNode *lock;
@@ -272,7 +269,6 @@ void __unlock_flocks(struct aroscbase *base)
 
 	D(bug("[flock] Freeing lock list at 0x%p\n", &base->acb_file_locks));
 
-	Forbid();
 	while ((lock = (struct FlockNode *) REMHEAD(&base->acb_file_locks)))
 	{
 	    sem = lock->sem;
@@ -289,9 +285,8 @@ void __unlock_flocks(struct aroscbase *base)
                 FreeVec(sem);
             }
 	}
-	Permit();
     }
 }
 
 ADD2OPENLIB(__init_flocks, 1);
-ADD2EXPUNGELIB(__unlock_flocks, 1);
+ADD2CLOSELIB(__unlock_flocks, 1);
