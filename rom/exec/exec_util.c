@@ -5,6 +5,8 @@
     Desc: Exec utility functions.
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/memory.h>
@@ -257,6 +259,8 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     /* Allocate memory for task storage slots */
     et->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
     et->et_TaskStorage[0] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
+
+    D(bug("[TSS] Task 0x%p (%s): created TSS with %d slots\n", task, task->tc_Node.ln_Name, et->et_TaskStorage[0])); 
     
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)

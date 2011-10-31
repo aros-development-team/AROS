@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <aros/debug.h>
+
 #include "exec_intern.h"
 #include "taskstorage.h"
 
@@ -54,22 +56,29 @@
 
     slot = tsfs->FreeSlot;
 
+    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name, slot));
+
     if ((slot + 1)*sizeof(IPTR) > PrivExecBase(SysBase)->TaskStorageSize)
     {
         struct ETask *etask = SysBase->ThisTask->tc_UnionETask.tc_ETask;
         IPTR *oldstorage = etask->et_TaskStorage;
+        IPTR *newstorage;
         ULONG oldsize = (ULONG)oldstorage[0];
+        ULONG newsize = PrivExecBase(SysBase)->TaskStorageSize + TASKSTORAGEPUDDLE;
 
-        PrivExecBase(SysBase)->TaskStorageSize += TASKSTORAGEPUDDLE;
-        
-        etask->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-        if (etask->et_TaskStorage == NULL)
+        newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+        if (newstorage == NULL)
         {
-            etask->et_TaskStorage = oldstorage;
             return 0;
         }
 
-        CopyMem(oldstorage, etask->et_TaskStorage, oldsize);
+        CopyMem(oldstorage, newstorage, oldsize);
+        newstorage[0] = newsize;
+
+	/* Swap storage, then size. This will avoid excessive increases in task scheduler (to be removed) */
+	etask->et_TaskStorage = newstorage;
+	PrivExecBase(SysBase)->TaskStorageSize = newsize;
+
         FreeMem(oldstorage, oldsize);
     }
 
