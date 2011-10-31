@@ -111,7 +111,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     /* Now we have core_alert(), krnDisplayAlert() works */
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	krnPanic("Not enough information from the bootstrap\n"
+	krnPanic(KernelBase, "Not enough information from the bootstrap\n"
 		 "Kickstart start 0x%p, end 0x%p\n"
 		 "Memory map address: 0x%p",
 		 ranges[0], ranges[1], mmap);
@@ -170,7 +170,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     InitCode(RTF_SINGLETASK, 0);
     InitCode(RTF_COLDSTART, 0);
 
-    krnPanic("Failed to start up the system");
+    krnPanic(KernelBase, "Failed to start up the system");
     HostIFace->hostlib_Close(hostlib, NULL);
     return 1;
 }
