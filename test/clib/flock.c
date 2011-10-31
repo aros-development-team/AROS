@@ -10,6 +10,7 @@
 #include "test.h"
 
 char *tmpname;
+struct SignalSemaphore sem;
 
 #define ITERATIONS 50
 #define NPROCS 10
@@ -19,16 +20,19 @@ LONG entry()
     struct Task *this = FindTask(NULL);
     Wait(SIGBREAKF_CTRL_C);
     int *counter = this->tc_UserData;
-    int i;
-    struct Library *aroscbase;
+    int i, fd;
+    struct Library *DOSBase;
     
-    aroscbase = OpenLibrary("arosc.library", 0);
-    if(!aroscbase)
-	return -1;
+    DOSBase = OpenLibrary("dos.library", 0);
+    if(!DOSBase)
+        return -1;
     
+    ObtainSemaphore(&sem);
+    fd = open(tmpname, O_RDONLY);
+    ReleaseSemaphore(&sem);
+
     for(i = 0; i < ITERATIONS; i++)
     {
-	int fd = open(tmpname, 0);
 	if(!flock(fd, LOCK_EX))
 	{
 	    int tmp = *counter;
@@ -42,14 +46,13 @@ LONG entry()
 	    close(fd);
 	    return -1;
 	}
-	close(fd);
     }
+
+    close(fd);
     
-    CloseLibrary(aroscbase);
+    CloseLibrary(DOSBase);
     return 0;
 }
-
-int fd;
 
 int main()
 {
@@ -86,6 +89,7 @@ int main()
     };
 
     int i;
+    InitSemaphore(&sem);
     for(i = 0; i < NPROCS; i++)
     {
 	procs[i] = CreateNewProc(tags);
@@ -109,6 +113,5 @@ int main()
 
 void cleanup()
 {
-    close(fd);
     remove(tmpname);
 }
