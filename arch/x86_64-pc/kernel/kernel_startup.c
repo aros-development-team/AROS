@@ -1,4 +1,3 @@
-#include <aros/altstack.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
 #include <asm/io.h>
@@ -368,14 +367,6 @@ void kernel_cstart(const struct TagItem *msg)
     }
 
     D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
-
-    /*
-     * Boot task skeleton is created by PrepareExecBase().
-     * Fill in stack limits.
-     */
-    SysBase->ThisTask->tc_SPLower = boot_stack;
-    SysBase->ThisTask->tc_SPUpper = boot_stack + STACK_SIZE;
-    aros_init_altstack(SysBase->ThisTask);
 
     /* Block all user's access to zero page */
     core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 0);

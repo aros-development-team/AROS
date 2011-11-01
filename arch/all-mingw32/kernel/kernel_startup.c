@@ -1,5 +1,3 @@
-#include <aros/altstack.h>
-#include <aros/arossupportbase.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <aros/symbolsets.h>
@@ -135,21 +133,6 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = 0x%p, msg = 0x%p\n", mh->mh_First, msg));
     if (!krnPrepareExecBase(ranges, mh, msg))
 	return -1;
-
-    /*
-     * Set up correct stack borders and altstack. Now our boot task can call relbase libraries.
-     * Explicit stack allocation in Windows is done by specifying stack size in executable file headers.
-     * For AROSBootstrap.exe we set initially committed size to 65536 (64K) - see bootstrap/make.opts.
-     * The bootstrap may have already used up some of this space, but 40KB should be okay here.
-     * We intentionally don't use AROS_STACKSIZE macro here, just in case if someone changes it.
-     * Attempt to access uncommitted stack space causes instant crash.
-     * TODO: The whole altstack thing can prove unfeasible. At least currently it failed
-     *	     as a system-wide ABI. Alternative stack is not interrupt-safe, while AROS
-     *	     libraries may be (and at least several are).
-     */
-    SysBase->ThisTask->tc_SPLower = _stack - 40960;
-    SysBase->ThisTask->tc_SPUpper = _stack;
-    aros_init_altstack(SysBase->ThisTask);
 
     D(bug("[Kernel] SysBase=0x%p, mh_First=0x%p\n", SysBase, mh->mh_First);)
 

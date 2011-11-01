@@ -23,6 +23,7 @@
 #include "exec_intern.h"
 #include "intservers.h"
 #include "memory.h"
+#include "taskstorage.h"
 
 #undef KernelBase
 #include "../kernel/kernel_intern.h"
@@ -102,6 +103,7 @@ DEFINESET(INITLIB)
 void exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase = NULL;
+    struct TaskStorageFreeSlot *tsfs;
     uintptr_t lowmem = 0;
     uint32_t mem;
     int i;
@@ -230,6 +232,9 @@ void exec_main(struct TagItem *msg, void *entry)
     InitSemaphore(&PrivExecBase(SysBase)->MemListSem);
     InitSemaphore(&PrivExecBase(SysBase)->LowMemSem);
 
+    PrivExecBase(SysBase)->TaskStorageSize = TASKSTORAGEPUDDLE;
+    NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);
+
     mem = exec_GetMemory();
     D(bug("[exec] Adding memory (%uM)\n", mem));
 
@@ -323,6 +328,14 @@ void exec_main(struct TagItem *msg, void *entry)
 
         SysBase->ChkSum = ~sum;
     }
+
+    tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!tsfs)
+    {
+        D(bug("[exec] ERROR: Cannot create Task Storage!\n"));
+    }
+    tsfs->FreeSlot = 1;
+    AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
     /* Create boot task.  Sigh, we actually create a Process sized Task,
         since DOS needs to call things which think it has a Process and
