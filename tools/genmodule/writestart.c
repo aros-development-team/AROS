@@ -454,37 +454,17 @@ static void writeresident(FILE *out, struct config *cfg)
 
     if (cfg->options & OPTION_RESAUTOINIT)
     {
-        if (cfg->options & OPTION_PERTASKBASE)
-        {
-            fprintf(out,
-                    "#define __freebase(lh)\\\n"
-                    "do { \\\n"
-                    "    UWORD negsize, possize;\\\n"
-                    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-                    "    __GM_SetTSBase((LIBBASETYPEPTR)((struct __GM_TSBase *)lh)->oldbase);\\\n"
-                    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-                    "    negptr -= negsize;\\\n"
-                    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-                    "    FreeMem (negptr, negsize+possize);\\\n"
-                    "} while(0)\n"
-                    "\n"
-            );
-        }
-        else /* !pertaskbase */
-        {
-            fprintf(out,
-                    "#define __freebase(lh)\\\n"
-                    "do {\\\n"
-                    "    UWORD negsize, possize;\\\n"
-                    "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-                    "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
-                    "    negptr -= negsize;\\\n"
-                    "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
-                    "    FreeMem (negptr, negsize+possize);\\\n"
-                    "} while(0)\n"
-                    "\n"
-       	    );
-        }
+         fprintf(out,
+            "#define __freebase(lh)\\\n"
+            "do {\\\n"
+            "    UWORD negsize, possize;\\\n"
+            "    UBYTE *negptr = (UBYTE *)lh;\\\n"
+            "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+            "    negptr -= negsize;\\\n"
+            "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+            "    FreeMem (negptr, negsize+possize);\\\n"
+            "} while(0)\n"
+            "\n");
     }
 	
     fprintf(out,
@@ -1037,7 +1017,11 @@ static void writeopenlib(FILE *out, struct config *cfg)
                     "              && set_call_libfuncs(SETNAME(OPENLIB), 1, 1, newlib)\n"
                     "             )\n"
                     "        )\n"
-		    "        {\n"
+		    "        {\n");
+	    if (cfg->options & OPTION_PERTASKBASE)
+	    	fprintf(out,
+                    "    	 __GM_SetTSBase(oldbase);\n");
+	    fprintf(out,
 		    "            __freebase(newlib);\n"
 		    "            return NULL;\n"
 		    "        }\n"
@@ -1128,7 +1112,11 @@ static void writecloselib(FILE *out, struct config *cfg)
         fprintf(out,
                 "\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
-                "    set_close_rellibraries(lh);\n"
+                "    set_close_rellibraries(lh);\n");
+        if (cfg->options & OPTION_PERTASKBASE)
+            fprintf(out,        
+                "    __GM_SetTSBase(((struct __GM_TSBase *)lh)->oldbase);\n");
+        fprintf(out,
                 "    __freebase(lh);\n"
 		"    lh = rootbase;\n"
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
