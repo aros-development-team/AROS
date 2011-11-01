@@ -180,7 +180,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#else\n"
                 "AROS_MAKE_ALIAS(__GM_GetBase, __comp_get_relbase);\n"
                 "#endif\n"
-                "static inline void __GM_SetBase(LIBBASETYPEPTR base)\n"
+                "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
                 "{\n"
                 "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__baseslot] = (IPTR)base;\n"
                 "}\n"
@@ -237,15 +237,17 @@ static void writedecl(FILE *out, struct config *cfg)
                 /* *r11 = r12 (== libbase) */
                 "        \"\\tstw 12,(11)\\n\"\\\n"
                 "        \"\\tb \" #fname \"\\n\"\\\n"
+                "    )\n"
                 "#elif defined __arm__\n"
                 "#define GM_INTERNALFUNCSTUB(fname)\\\n"
                 "    asm(#fname \"_stub :\\n\"\\\n"
                 "        \"\\tpop {r12}\\n\"\\\n"
                 "        \"\\tpush {r0, r1, r2, r3, lr}\\n\"\\\n"
-                "        \"\\tldr r0, r12\\n\"\\\n"
+                "        \"\\tmov r0, r12\\n\"\\\n"
                 "        \"\\tbl __GM_SetBase\\n\"\\\n" /* r12 may be scratched */
                 "        \"\\tpop {r0, r1, r2, r3, lr}\\n\"\\\n"
                 "        \"\\tb \" #fname \"\\n\"\\\n" /* call function */
+                "    )\n"
                 "#else\n"
                 "#   error unsupported CPU type\n"
                 "#endif\n"
