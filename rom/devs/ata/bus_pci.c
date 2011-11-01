@@ -6,8 +6,8 @@
     Lang: English
 */
 
-#define DEBUG 0
-#define DSATA(x)
+#define DEBUG 1
+#define DSATA(x) x
 
 /*
  * What is done here is currently a draft.
