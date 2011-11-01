@@ -2,7 +2,7 @@
 #define _PCI_H
 
 /*
-    Copyright © 2004-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,6 @@
 
 #include <oop/oop.h>
 
-#include <aros/arossupportbase.h>
 #include <exec/execbase.h>
 
 #include LC_LIBDEFS_FILE
