@@ -6,7 +6,6 @@
     Lang: english
  */
 
-#include <aros/altstack.h>
 #include <aros/kernel.h>
 #include <aros/debug.h>
 #include <exec/memory.h>
@@ -648,7 +647,6 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 	SysBase->ThisTask->tc_SPLower = &_ss;
         SysBase->ThisTask->tc_SPUpper = &_ss_end;
-        aros_init_altstack(SysBase->ThisTask);
 
     	if (wasvalid) {
     	    SysBase->ColdCapture = ColdCapture;
