@@ -6,9 +6,7 @@
     Lang: english
 */
 
-#include <aros/config.h>
 #include <aros/debug.h>
-#include <aros/altstack.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
 
@@ -26,7 +24,7 @@ AROS_LH3(IPTR, NewStackSwap,
     volatile IPTR *sp = sss->stk_Pointer;
     volatile APTR splower = t->tc_SPLower;
     volatile APTR spupper = t->tc_SPUpper;
-    IPTR ret, oldtop;
+    IPTR ret;
 
     /* Only last four arguments are put to stack in ARM */
     _PUSH(sp, args->Args[7]);
@@ -49,12 +47,9 @@ AROS_LH3(IPTR, NewStackSwap,
     D(bug("[NewStackSwap] SP 0x%p, entry point 0x%p\n", sp, entry));
     Disable();
 
-    oldtop = aros_get_altstack((struct Task *)t);
     /* Change limits. The rest is done in asm below */
     t->tc_SPLower = sss->stk_Lower;
     t->tc_SPUpper = sss->stk_Upper;
-    aros_init_altstack((struct Task *)t);
-    aros_set_altstack((struct Task *)t,oldtop);
 
     asm volatile
     (
