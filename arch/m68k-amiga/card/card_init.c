@@ -35,6 +35,8 @@ static BOOL addpcmciaram(struct CardResource *CardResource, struct CardHandle *c
     
     if (size < 262144)
     	return FALSE;
+    if (size > GAYLE_RAMSIZE)
+    	size = GAYLE_RAMSIZE;
     size -= 512;
     addr += 512;
     AddMemList(size, MEMF_FAST | MEMF_PUBLIC, -5, addr, CardResource->crb_LibNode.lib_Node.ln_Name);
@@ -65,7 +67,7 @@ static BOOL checkcard(struct CardResource *CardResource)
 	    	} else if (CopyTuple(ch, device, CISTPL_DEVICE, sizeof(device) - 2)) {
 	    	    if (DeviceTuple(device, &dtd)) {
 	    	    	if (dtd.dtd_DTtype == DTYPE_SRAM || dtd.dtd_DTtype == DTYPE_DRAM) {
-			    CARDDEBUG(bug("RAM card found, size %d bytes, speed %d\n", dtd.dtd_DTsize, dtd.dtd_DTspeed));
+			    CARDDEBUG(bug("Type %d RAM card found, size %d bytes, speed %d\n", dtd.dtd_DTtype, dtd.dtd_DTsize, dtd.dtd_DTspeed));
 			    if (!CopyTuple(ch, device, CISTPL_FORMAT, 0) && !CopyTuple(ch, device, CISTPL_GEOMETRY, 0) && dtd.dtd_DTspeed <= 250) {
 			    	if (addpcmciaram(CardResource, ch, &dtd)) {
 			    	    CardAccessSpeed(ch, dtd.dtd_DTspeed);
@@ -92,7 +94,6 @@ static BOOL checkcard(struct CardResource *CardResource)
 static int Cardres_Init(struct CardResource *CardResource)
 {
     UBYTE gayle;
-    struct CardMemoryMap *cmm;
     struct Interrupt *intr;
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
 
@@ -109,13 +110,6 @@ static int Cardres_Init(struct CardResource *CardResource)
     	return FALSE;
     
     NEWLIST(&CardResource->handles);
-    cmm = &CardResource->cmm;
-    cmm->cmm_CommonMemory = (UBYTE*)GAYLE_RAM;
-    cmm->cmm_AttributeMemory = (UBYTE*)GAYLE_ATTRIBUTE;
-    cmm->cmm_IOMemory = (UBYTE*)GAYLE_IO;
-    cmm->cmm_CommonMemSize = GAYLE_RAMSIZE;
-    cmm->cmm_AttributeMemSize = GAYLE_ATTRIBYTESIZE;
-    cmm->cmm_IOMemSize = GAYLE_IOSIZE;
 
     CARDDEBUG(bug("PCMCIA slot enabled\n"));
     

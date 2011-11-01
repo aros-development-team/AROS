@@ -179,16 +179,27 @@ void pcmcia_enable(void)
 void pcmcia_cardreset(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
-    APTR GfxBase;
-    UWORD i;
+    volatile UBYTE *cia = (UBYTE*)0xbfe001;
+    ULONG i;
+    UBYTE x, rb, intena;
 
-    GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
-    gio->intreq = GAYLE_IRQ_IRQ_MASK | GAYLE_IRQ_CARD_RESET_MASK;
-    for (i = 0; i < 15; i++) {
-    	WaitTOF();
-    }
-    gio->intreq = GAYLE_IRQ_IRQ_MASK | CardResource->resetberr;
-    CloseLibrary(GfxBase);
-    
-    CARDDEBUG(bug("PCMCIA card reset\n"));
+    Disable();
+    rb = CardResource->resetberr;
+    CardResource->resetberr = GAYLE_IRQ_CARD_RESET_MASK;
+    intena = gio->intena;
+    gio->intena = 0;
+    gio->intreq = GAYLE_IRQ_IDE | GAYLE_IRQ_CARD_RESET_MASK;
+    Enable();
+
+    for (i = 0; i < 100000; i++)
+	x = *cia;
+
+    Disable();
+    CardResource->resetberr = rb;
+    x = GAYLE_IRQ_IDE | CardResource->resetberr;
+    gio->intreq = x;
+    gio->intena = intena;
+    Enable();
+
+    CARDDEBUG(bug("PCMCIA card reset %02x\n", x));
 }

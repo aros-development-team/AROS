@@ -45,7 +45,7 @@ AROS_LH2(UBYTE, CardMiscControl,
 
     Enable();    	
 
-    return control_bits & (STATUSMASK | IRQMASK);
+    return control_bits & (STATUSMASK | IRQMASK | CARD_INTF_SETCLR);
 
     AROS_LIBFUNC_EXIT
 }
