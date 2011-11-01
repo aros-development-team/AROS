@@ -255,26 +255,26 @@ static void writedecl(FILE *out, struct config *cfg)
 
     if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
-                "struct __GM_TSBase {\n"
+                "struct __GM_PerTaskBase {\n"
                 "    LIBBASETYPE base;\n"
                 "    ULONG taskopencount;\n"
                 "    struct Task *task;\n"
                 "    APTR retaddr;\n"
                 "    LIBBASETYPEPTR oldbase;\n"
                 "};\n"
-                "#define LIBBASESIZE sizeof(struct __GM_TSBase)\n"
-                "static int __tsslot;\n"
+                "#define LIBBASESIZE sizeof(struct __GM_PerTaskBase)\n"
+                "static int __pertaskslot;\n"
                 "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    return ((struct __GM_TSBase *)base)->oldbase;\n"
+                "    return ((struct __GM_PerTaskBase *)base)->oldbase;\n"
                 "}\n"
-                "static inline LIBBASETYPEPTR __GM_GetTSBase(void)\n"
+                "static inline LIBBASETYPEPTR __GM_GetPerTaskBase(void)\n"
                 "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__tsslot];\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__pertaskslot];\n"
                 "}\n"
-                "static inline void __GM_SetTSBase(LIBBASETYPEPTR base)\n"
+                "static inline void __GM_SetPerTaskBase(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__tsslot] = (IPTR)base;\n"
+                "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__pertaskslot] = (IPTR)base;\n"
                 "}\n"
         );
     else
@@ -755,7 +755,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         );
     if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
-                "    __tsslot = AllocTaskStorageSlot();\n"
+                "    __pertaskslot = AllocTaskStorageSlot();\n"
         );
 
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
@@ -971,19 +971,19 @@ static void writeopenlib(FILE *out, struct config *cfg)
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
                         "    struct Task *thistask = FindTask(NULL);\n"
-                        "    LIBBASETYPEPTR oldbase = __GM_GetTSBase();\n"
+                        "    LIBBASETYPEPTR oldbase = __GM_GetPerTaskBase();\n"
                         "    newlib = (struct Library *)oldbase;\n"
                         "    if (newlib)\n"
                         "    {\n"
-                        "        struct __GM_TSBase *tslib = (struct __GM_TSBase *)newlib;\n"
-                        "        if (tslib->task != thistask)\n"
+                        "        struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)newlib;\n"
+                        "        if (pertaskbase->task != thistask)\n"
                         "            newlib = NULL;\n"
                         "        else if (thistask->tc_Node.ln_Type == NT_PROCESS\n"
-                        "                 && tslib->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
+                        "                 && pertaskbase->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
                         "        )\n"
                         "            newlib = NULL;\n"
                         "        else\n"
-                        "            tslib->taskopencount++;\n"
+                        "            pertaskbase->taskopencount++;\n"
                         "    }\n"
                 );
 
@@ -1005,13 +1005,13 @@ static void writeopenlib(FILE *out, struct config *cfg)
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
-                        "        struct __GM_TSBase *tslib = (struct __GM_TSBase *)newlib;\n"
-                        "        tslib->task = thistask;\n"
+                        "        struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)newlib;\n"
+                        "        pertaskbase->task = thistask;\n"
                         "        if (thistask->tc_Node.ln_Type == NT_PROCESS)\n"
-                        "             tslib->retaddr = ((struct Process *)thistask)->pr_ReturnAddr;\n"
-                        "        tslib->oldbase = oldbase;\n"
-                        "        tslib->taskopencount = 1;\n"
-                        "        __GM_SetTSBase((LIBBASETYPEPTR)newlib);\n"
+                        "             pertaskbase->retaddr = ((struct Process *)thistask)->pr_ReturnAddr;\n"
+                        "        pertaskbase->oldbase = oldbase;\n"
+                        "        pertaskbase->taskopencount = 1;\n"
+                        "        __GM_SetPerTaskBase((LIBBASETYPEPTR)newlib);\n"
                 );
             fprintf(out,
 		    "\n"
@@ -1022,7 +1022,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "        {\n");
 	    if (cfg->options & OPTION_PERTASKBASE)
 	    	fprintf(out,
-                    "    	 __GM_SetTSBase(oldbase);\n");
+                    "    	 __GM_SetPerTaskBase(oldbase);\n");
 	    fprintf(out,
 		    "            __freebase(newlib);\n"
 		    "            return NULL;\n"
@@ -1106,9 +1106,9 @@ static void writecloselib(FILE *out, struct config *cfg)
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    struct __GM_TSBase *tsbase = (struct __GM_TSBase *)lh;\n"
-                    "    tsbase->taskopencount--;\n"
-                    "    if (tsbase->taskopencount != 0)\n"
+                    "    struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)lh;\n"
+                    "    pertaskbase->taskopencount--;\n"
+                    "    if (pertaskbase->taskopencount != 0)\n"
                     "        return BNULL;\n"
             );
         fprintf(out,
@@ -1117,7 +1117,7 @@ static void writecloselib(FILE *out, struct config *cfg)
                 "    set_close_rellibraries(lh);\n");
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,        
-                "    __GM_SetTSBase(((struct __GM_TSBase *)lh)->oldbase);\n");
+                "    __GM_SetPerTaskBase(((struct __GM_PerTaskBase *)lh)->oldbase);\n");
         fprintf(out,
                 "    __freebase(lh);\n"
 		"    lh = rootbase;\n"
@@ -1194,8 +1194,8 @@ static void writeexpungelib(FILE *out, struct config *cfg)
 	            );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "        FreeTaskStorageSlot(__tsslot);\n"
-                    "        __tsslot = 0;\n"
+                    "        FreeTaskStorageSlot(__pertaskslot);\n"
+                    "        __pertaskslot = 0;\n"
             );
         fprintf(out,
         	"\n"
