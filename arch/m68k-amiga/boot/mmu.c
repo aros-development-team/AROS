@@ -103,7 +103,7 @@ static void swapvbr(APTR vbr)
 	: : "m" (vbr) : "d0", "d1", "a5", "a6");
 }
 
-static void mmuprotectregion(void *KernelBase, APTR addr, ULONG size, ULONG flags)
+static void mmuprotectregion(void *KernelBase, const UBYTE *name, APTR addr, ULONG size, ULONG flags)
 {
     ULONG allocsize = (size +  PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
     KrnSetProtection(addr, allocsize, 0);
@@ -111,12 +111,12 @@ static void mmuprotectregion(void *KernelBase, APTR addr, ULONG size, ULONG flag
     	APTR newmem = AllocPagesAligned(allocsize / PAGE_SIZE);
     	if (newmem) {
     	    CopyMem(addr, newmem, size);
-    	    D(bug("Remapped %d byte Chip region to Fast, %p -> %p, flags %08x\n", size, addr, newmem, flags));
+    	    D(bug("Remapped %d byte Chip region to Fast, %p -> %p (%s), flags %08x\n", size, addr, newmem, name, flags));
 	    KrnMapGlobal(addr, newmem, allocsize, flags);
     	    return;
     	}
     }
-    D(bug("Protected %d byte region @%p using flags %08x\n", size, addr, flags));
+    D(bug("Protected %d byte region @%p (%s) using flags %08x\n", size, addr, name, flags));
     KrnSetProtection(addr, allocsize, flags);
 }
 
@@ -141,7 +141,7 @@ static void mmuprotectextrom(void *KernelBase)
 		res = (struct Resident *)ptr;
 		if (res->rt_Flags & (1 << 5)) {
 		    if (ptr >= mlist->ml_ME[i].me_Addr && ptr < mlist->ml_ME[i].me_Addr + mlist->ml_ME[i].me_Length) {
-			mmuprotectregion(KernelBase, mlist->ml_ME[i].me_Addr, mlist->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
+			mmuprotectregion(KernelBase, "ROM", mlist->ml_ME[i].me_Addr, mlist->ml_ME[i].me_Length, MAP_Readable | MAP_Executable);
 			break;
 		    }
 		}
@@ -267,17 +267,14 @@ static AROS_UFH3 (APTR, Init,
 		KrnSetProtection(0, PAGE_SIZE, 0);
 	} else if (ZeroPageProtect) {
 		/* Remap zero page to Fast RAM, faster SysBase access */
-		mmuprotectregion(KernelBase, 0, PAGE_SIZE, MAP_Readable);
+		mmuprotectregion(KernelBase, "ZeroPage", 0, PAGE_SIZE, MAP_Readable);
 	} else {
 		/* No special protection, cacheable */
 		KrnSetProtection(0, PAGE_SIZE, MAP_Readable | MAP_Writable);
 	}
 	/* Protect Supervisor stack if MMU debugging mode */
-	if (ZeroPageInvalid || ZeroPageProtect) {
-		mmuprotectregion(KernelBase, SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable | MAP_Supervisor);
-	} else {
-		mmuprotectregion(KernelBase, SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower, MAP_Readable | MAP_Writable);
-	}
+	mmuprotectregion(KernelBase, "SS_Stack", SysBase->SysStkLower, SysBase->SysStkUpper - SysBase->SysStkLower,
+		MAP_Readable | MAP_Writable | ((ZeroPageInvalid || ZeroPageProtect) ? MAP_Supervisor : 0));
 
 	/* Expansion IO devices */
 	ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION);
