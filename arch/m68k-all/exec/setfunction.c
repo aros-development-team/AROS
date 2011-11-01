@@ -135,7 +135,7 @@ static AROS_UFH5(APTR, myRawDoFmt,
     APTR ret;
     ULONG *vecaddr;
 
-    D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
+    D(bug("SetFunction(%s, -%lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, -funcOffset, (ULONG)newFunction));
 
     /*
 	Fix dos.library/ramlib attempts to SetFunction() CloseDevice/
@@ -206,7 +206,14 @@ static AROS_UFH5(APTR, myRawDoFmt,
     *(UWORD *)vecaddr = 0x4ef9;
     *(ULONG *)(((ULONG)vecaddr)+2) = (ULONG)newFunction;
 
+#if 1
+    CacheClearU();
+#else
+    /* Can't use this because there are broken programs that
+     * copy code and then call SetFunction().
+     */
     CacheClearE(vecaddr,LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
+#endif
 
     /* Arbitration is no longer needed */
     Permit();
