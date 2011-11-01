@@ -6,7 +6,8 @@
     Lang: english
 */
 
-#include <exec/types.h>
+#define DEBUG 1
+
 #include <exec/lists.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
@@ -34,6 +35,7 @@
 #include "etask.h"
 #include "intservers.h"
 #include "memory.h"
+#include "taskstorage.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -96,8 +98,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 {
     AROS_USERFUNC_INIT
 
+    struct TaskStorageFreeSlot *tsfs;
     struct Task *t;
-/*  struct MemList *ml; */
+    struct MemList *ml;
     struct ExceptionContext *ctx;
     int i;
 
@@ -136,59 +139,70 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     /*
      * kernel.resource is up and running and memory list is complete.
-     * Global SysBase is set to its final value.
-     * Complete boot task with ETask and CPU context.
+     * Global SysBase is set to its final value. We've got KernelBase and AllocMem() works.
+     * Initialize free task storage slots management
      */
-    t = SysBase->ThisTask;
+    tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!tsfs)
+    {
+        DINIT("ERROR: Could not allocate free slot node!");
+        return NULL;
+    }
+    tsfs->FreeSlot = 1;
+    AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
-    t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_ANY|MEMF_CLEAR);
+    /* Now we are ready to become a Boot Task and turn on the multitasking */
+    t			      = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
+    ml			      = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
     ctx                       = KrnCreateContext();
 
-    D(bug("[exec] ETask 0x%p, CPU context 0x%p\n", t->tc_UnionETask.tc_ETask, ctx));
+    D(bug("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx));
 
-    if (!t->tc_UnionETask.tc_ETask || !ctx)
+    if (!t || !ml || !t->tc_UnionETask.tc_ETask || !ctx)
     {
 	DINIT("Not enough memory for first task");
 	return NULL;
     }
 
+    NEWLIST(&t->tc_MemEntry);
+
+    t->tc_Node.ln_Name = "Boot Task";
+    t->tc_Node.ln_Type = NT_TASK;
+    t->tc_Node.ln_Pri  = 0;
+    t->tc_State	       = TS_RUN;
+    t->tc_SigAlloc     = 0xFFFF;
+
+    /*
+     * Boot-time stack can be placed anywhere in memory.
+     * In order to avoid complex platform-dependent mechanism for querying its limits
+     * we simply shut up stack checking in kernel.resource by specifying the whole address
+     * space as limits.
+     */
+    t->tc_SPLower      = NULL;
+    t->tc_SPUpper      = (APTR)~0;
+
     /*
      * Build a memory list for the task.
      * It doesn't include stack because it wasn't allocated by us.
      */
-    /*
-     * Temporarily disabled because of transition to MMU support.
-     * PrepareExecBase() can't use AllocMem(), so it uses Allocate()
-     * in order to create boot task. And Allocate()'d memory can't
-     * be FreeMem()ed because of either mungwall or MMU-based AllocMem().
-     * In the light of ABIv1 reimplementation boot task can be moved back here.
-     *
-    ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!ml)
-    {
-    	DINIT("Not enough memory for boot task's MemList");
-    	return NULL;
-    }
-
     ml->ml_NumEntries      = 1;
     ml->ml_ME[0].me_Addr   = t;
     ml->ml_ME[0].me_Length = sizeof(struct Task);
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
-    */
 
+    /* Create a ETask structure and attach CPU context */
     InitETask(t, t->tc_UnionETask.tc_ETask);
+    t->tc_Flags = TF_ETASK;
+    GetIntETask(t)->iet_Context = ctx;
 
     /*
-     * These adjustments need to be done after InitETask():
-     * 1. Set et_Parent to NULL, InitETask() will set it to FindTask(NULL). At this moment
-     *    we have SysBase->ThisTask already set to incomplete "boot task".
-     * 2. Set TF_ETASK in tc_Flags. If it will be already set, InitETask() will try to add
-     *    a new ETask into children list of parent ETask (i. e. ourselves).
+     * Set the current task and elapsed time for it.
+     * Set ThisTask only AFTER InitETask() has been called. InitETask() sets et_Parent
+     * to FindTask(NULL). We must get NULL there, otherwise we'll get task looped on itself.
      */
-    t->tc_UnionETask.tc_ETask->et_Parent = NULL;
-    t->tc_Flags = TF_ETASK;
-
-    GetIntETask(t)->iet_Context = ctx;
+    SysBase->ThisTask = t;
+    SysBase->Elapsed  = SysBase->Quantum;
 
     /* Install the interrupt servers. Again, do it here because allocations are needed. */
     for (i=0; i < 16; i++)

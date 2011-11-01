@@ -75,6 +75,7 @@
 #include "exec_util.h"
 #include "intservers.h"
 #include "memory.h"
+#include "taskstorage.h"
 #include "traps.h"
 
 /* As long as we don't have CPU detection routine, assume FPU to be present */
@@ -184,6 +185,7 @@ AROS_UFH3S(struct ExecBase *, exec_init,
 void exec_boot(struct TagItem *msg)
 {
     char *cmdline = (char *)LibGetTagData(KRN_CmdLine, 0, msg);
+    struct TaskStorageFreeSlot *tsfs;
     int i;
 
     bug("Initializing library...");
@@ -239,35 +241,52 @@ void exec_boot(struct TagItem *msg)
 
     irqSetup();
     bug("IRQ services initialized\n");
-
-    /* Enable interrupts and set int disable level to -1 */
-    asm("sti");
-    SysBase->TDNestCnt = -1;
-    SysBase->IDNestCnt = -1;
-
-    bug("Creating the very first task...");
-
-    /* Complete boot task. */
+    
+    tsfs = AllocMem(sizeof(struct TaskStorageFreeSlot), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!tsfs)
     {
-        struct Task *t = SysBase->ThisTask;
-/*      struct MemList *ml;
+        D(bug("[exec] ERROR: Cannot create Task Storage!\n"));
+    }
+    tsfs->FreeSlot = 1;
+    AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
+    
+    bug("Creating the very first task...\n");
 
-        ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    /* Create boot task. */
+    {
+        struct Task *t     = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
+        struct MemList *ml = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
 
-        if(!ml)
+        if(!t || !ml)
         {
             bug("ERROR: Cannot create Boot Task!\n");
 	    for(;;);
         }
+
+	NEWLIST(&t->tc_MemEntry);
+
+	t->tc_Node.ln_Name = "Boot Task";
+	t->tc_Node.ln_Type = NT_TASK;
+	t->tc_Node.ln_Pri  = 0;
+	t->tc_State	   = TS_RUN;
+	t->tc_SigAlloc     = 0xFFFF;
+
+	/*
+	 * Boot-time stack can be placed anywhere in memory.
+	 * In order to avoid complex platform-dependent mechanism for querying its limits
+	 * we simply shut up stack checking in kernel.resource by specifying the whole address
+	 * space as limits.
+	 */
+	t->tc_SPLower = NULL;
+	t->tc_SPUpper = (APTR)~0;
+        
         ml->ml_NumEntries = 1;
         ml->ml_ME[0].me_Addr = t;
         ml->ml_ME[0].me_Length = sizeof(struct Task);
 
         AddHead(&t->tc_MemEntry,&ml->ml_Node);
-*/
-        t->tc_Flags |= TF_ETASK;
-        t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_CLEAR);
 
+        t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_CLEAR);
         if (!t->tc_UnionETask.tc_ETask)
         {
             bug("Not enough memory for first task\n");
@@ -276,18 +295,25 @@ void exec_boot(struct TagItem *msg)
 
         /* Initialise the ETask data. */
         InitETask(t, t->tc_UnionETask.tc_ETask);
-
         GetIntETask(t)->iet_Context = AllocTaskMem(t, SIZEOF_ALL_REGISTERS, MEMF_PUBLIC|MEMF_CLEAR);
-
         if (!GetIntETask(t)->iet_Context)
         {
             bug("Not enough memory for first task\n");
 	    for(;;);
         }
-	t->tc_UnionETask.tc_ETask->et_Parent = NULL;
+
+        t->tc_Flags = TF_ETASK;
+
+        SysBase->ThisTask = t;
+	SysBase->Elapsed  = SysBase->Quantum;
     }
 
     bug("Done\n");
+
+    /* Enable interrupts and set int disable level to -1 */
+    asm("sti");
+    SysBase->TDNestCnt = -1;
+    SysBase->IDNestCnt = -1;
 
     /*
 	Check whether the CPU supports SSE and FXSAVE.

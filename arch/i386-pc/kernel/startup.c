@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#include <aros/altstack.h>
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
@@ -334,15 +333,6 @@ void kernel_cstart(const struct TagItem *msg)
 
     krnPrepareExecBase(ranges, mh, BootMsg);
     D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
-
-    /*
-     * Boot task skeleton is created by PrepareExecBase().
-     * Fill in stack limits.
-     */
-    SysBase->ThisTask->tc_SPLower = boot_stack;
-    SysBase->ThisTask->tc_SPUpper = boot_stack + STACK_SIZE;
-    aros_init_altstack(SysBase->ThisTask);
-
 
     /*
      * Now we have working exec.library memory allocator.
