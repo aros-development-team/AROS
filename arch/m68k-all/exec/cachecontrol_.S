@@ -84,8 +84,8 @@ cachecontrolsup_40:
 	or.l	%d2,%d3
 	// documentation says caches must be
 	// flushed before modifying cache state.
+	nop
 	cpusha	%bc
-	cinva	%bc
 	nop
 	movec	%d3,%cacr
 	
@@ -95,12 +95,12 @@ cachecontrolsup_40:
     btst #15,%d1
     beq.s 1f
     // ->code+burst
-    or.w #0x2011,%d0 // CACRF_IBE|CACRF_WriteAllocate
+    or.w #0x2011,%d0 // CACRF_WriteAllocate|CACRF_IBE|CACRF_EnableI
 1:	// 040/060 data cache?
 	btst #31,%d1
 	beq.s 0f
 	// ->data+burst+copyback
-	or.l #0x80002100,%d0 // CACRF_CopyBack|CACRF_EnableE|CACRF_DBE
+	or.l #0x80002100,%d0 // CACRF_CopyBack|CACRF_DBE|CACRF_EnableE
 0:
 	movem.l (%sp)+,%d2/%d3
     rte
