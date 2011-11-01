@@ -12,11 +12,11 @@
 
 #include "card_intern.h"
     
-void pcmcia_newowner(struct CardResource *CardResource)
+void pcmcia_newowner(struct CardResource *CardResource, BOOL doNotify)
 {
     struct CardHandle *handle = NULL, *nexthandle;
-    CARDDEBUG(bug("pcmcia_newowner: owned=%x rem=%d listempty=%d\n",
-	CardResource->ownedcard, CardResource->removed, IsListEmpty(&CardResource->handles)));
+    CARDDEBUG(bug("pcmcia_newowner: n=%d owned=%x rem=%d listempty=%d\n",
+	doNotify, CardResource->ownedcard, CardResource->removed, IsListEmpty(&CardResource->handles)));
     Forbid();
     ForeachNode(&CardResource->handles, nexthandle) {
     	CARDDEBUG(bug("Possible node %p flags %02x\n", nexthandle, nexthandle->cah_CardFlags));
@@ -30,7 +30,7 @@ void pcmcia_newowner(struct CardResource *CardResource)
 	CardResource->resetberr = (CardResource->ownedcard->cah_CardFlags & CARDF_RESETREMOVE) ? GAYLE_IRQ_RESET : 0;
 	CARDDEBUG(bug("pcmcia_newowner: %p\n", CardResource->ownedcard));
 	CardResource->ownedcard->cah_CardFlags |= CARDF_USED;
-	if (CardResource->ownedcard->cah_CardInserted) {
+	if (doNotify && CardResource->ownedcard->cah_CardInserted) {
 	    CARDDEBUG(bug("Executing cah_CardInserted(%p, %p)\n",
 		CardResource->ownedcard->cah_CardInserted->is_Data,
 		CardResource->ownedcard->cah_CardInserted->is_Code));
@@ -124,13 +124,14 @@ void CardTask(struct Task *parent, struct CardResource *CardResource)
 	pcmcia_reset(CardResource);
 
 	CardResource->disabled = FALSE;
+	pcmcia_clear_requests(CardResource);
 	pcmcia_enable_interrupts();
 
 	/* Insert */
 	Forbid();
 	if (CardResource->removed == FALSE) {
 	    pcmcia_cardreset(CardResource);
-	    pcmcia_newowner(CardResource);
+	    pcmcia_newowner(CardResource, TRUE);
 	}
 	Permit();
 

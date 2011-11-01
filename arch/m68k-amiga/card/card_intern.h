@@ -50,15 +50,18 @@
 #define DTYPE_DRAM 7
 
 /* Gayle hardware addresses */
-#define GAYLE_BASE 0xda8000
-#define GAYLE_RAM 0x00600000
-#define GAYLE_RAMSIZE 0x00400000
-#define GAYLE_ATTRIBUTE 0x00a00000
-#define GAYLE_ATTRIBYTESIZE 0x00020000
-#define GAYLE_IO 0xa20000
-#define GAYLE_IOSIZE 0x00010000
-#define GAYLE_IO_8BITODD 0x00a30000
-#define GAYLE_RESET 0x00a40000
+#define GAYLE_BASE          0x00da8000
+
+#define GAYLE_RAM           0x00600000
+#define GAYLE_ATTRIBUTE     0x00a00000
+#define GAYLE_IO            0x00a20000
+
+#define GAYLE_RAMSIZE       0x00400000
+#define GAYLE_ATTRIBUTESIZE 0x00020000
+#define GAYLE_IOSIZE        0x00010000
+#define GAYLE_IO_8BITODD    0x00a30000
+
+#define GAYLE_RESET         0x00a40000
 
 /* DA8000 GAYLE STATUS
  * Read current state of signals.
@@ -150,7 +153,6 @@ struct CardResource
     struct MsgPort *timermp;
     BOOL removed;
     BOOL disabled;
-    struct CardMemoryMap cmm;
     ULONG changecount;
     struct Task *task;
     ULONG signalmask;
@@ -161,7 +163,7 @@ void pcmcia_reset(struct CardResource*);
 void pcmcia_disable(void);
 void pcmcia_enable(void);
 void pcmcia_cardreset(struct CardResource*);
-void pcmcia_newowner(struct CardResource*);
+void pcmcia_newowner(struct CardResource*,BOOL);
 void pcmcia_removeowner(struct CardResource*);
 void pcmcia_enable_interrupts(void);
 void pcmcia_clear_requests(struct CardResource*);

@@ -29,7 +29,7 @@ AROS_LH2(void, ReleaseCard,
 	pcmcia_enable_interrupts();
 
 	if (CardResource->removed == FALSE)
-	    pcmcia_newowner(CardResource);
+	    pcmcia_newowner(CardResource, TRUE);
     }
 
     if (flags & CARDF_REMOVEHANDLE) {
