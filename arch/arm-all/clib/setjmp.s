@@ -17,15 +17,15 @@ AROS_CDEFNAME(setjmp):
 	mov	ip, r0						/* Get the env address */
 	str	lr, [ip], #4					/* store return address explicitly */
 	stmia	ip!, {r4, r5, r6, r7, r8, r9, sl, fp, sp}	/* store non-scratch regs */
-	fstmiad	ip!, {d8-d15}					/* Store VFP registers - we assume they are available! */
+	fstd	d8, [ip]					/* Store VFP registers - we assume they are available! */
+	fstd	d9, [ip, #8]
+	fstd	d10, [ip, #16]
+	fstd	d11, [ip, #24]
+	fstd	d12, [ip, #32]
+	fstd	d13, [ip, #40]
+	fstd	d14, [ip, #48]
+	fstd	d15, [ip, #56]
 	fmrx	r2, fpscr					/* VFP condition codes */
-	str	r2, [ip], #4
-        ldr	r0, 1f						/* Save *(SysBase->ThisTask->tc_SPLower) */
-        ldr	r0, [r0]
-        ldr	r0, [r0, ThisTask]
-        ldr	r0, [r0, tc_SPLower]
-        ldr	r0, [r0]
-        str	r0, [ip], #4
+	str	r2, [ip, #64]
 	mov	r0, #0						/* return zero */
 	bx	lr
-1:	.word	SysBase
