@@ -6,6 +6,7 @@
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
+#include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_syscall.h"
 #include "apic.h"
@@ -17,7 +18,7 @@
 extern const void *_binary_smpbootstrap_start;
 extern const void *_binary_smpbootstrap_size;
 
-static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
+static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBase *KernelBase)
 {
     /*
      * This is the entry point for secondary cores.
@@ -54,7 +55,7 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready)
     while (1) asm volatile("hlt");
 }
 
-static int smp_Setup(void)
+static int smp_Setup(struct KernelBase *KernelBase)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     /* Low memory header is in the tail of memory list - see kernel_startup.c */
@@ -89,6 +90,7 @@ static int smp_Setup(void)
      * If AROS kickstart is ever loaded into high memory, we would need to take
      * a special care about it.
      */
+    bs->Arg3 = (IPTR)KernelBase;
     bs->PML4 = __KernBootPrivate->PML4;
     bs->IP   = smp_Entry;
 
@@ -98,7 +100,7 @@ static int smp_Setup(void)
 /*
  * Here we wake up our secondary cores.
  */
-static int smp_Wake(void)
+static int smp_Wake(struct KernelBase *KernelBase)
 {
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
     struct SMPBootstrap *bs = pdata->kb_APIC_TrampolineBase;
@@ -161,19 +163,20 @@ static int smp_Wake(void)
 
 int smp_Initialize(void)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
     if (pdata->kb_APIC && (pdata->kb_APIC->count > 1))
     {
-    	if (!smp_Setup())
+    	if (!smp_Setup(KernelBase))
     	{
     	    D(bug("[SMP] Failed to prepare the environment!\n"));
 
     	    pdata->kb_APIC->count = 1;	/* We have only one workinng CPU */
     	    return 0;
     	}
-    	    
-    	return smp_Wake();
+
+    	return smp_Wake(KernelBase);
     }
 
     /* This is not an SMP machine, but it's okay */

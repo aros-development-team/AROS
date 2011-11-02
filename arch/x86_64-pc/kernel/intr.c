@@ -11,6 +11,7 @@
 #include "kernel_base.h"
 #include "kernel_bootmem.h"
 #include "kernel_debug.h"
+#include "kernel_globals.h"
 #include "kernel_interrupts.h"
 #include "kernel_intern.h"
 #include "kernel_intr.h"
@@ -122,6 +123,8 @@ static int core_Reboot(struct pt_regs *regs)
 /* CPU exceptions are processed here */
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
+    struct KernelBase *KernelBase = getKernelBase();
+
 #ifdef EMULATE_SYSBASE
     if (irq_number == 0x0e)
     {
@@ -394,6 +397,7 @@ void ictl_enable_irq(unsigned char irq, struct KernelBase *KernelBase)
 
 void ictl_Initialize(void)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pdata = KernelBase->kb_PlatformData;
 
     if (!pdata->kb_APIC)

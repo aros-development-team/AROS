@@ -15,6 +15,7 @@
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
+#include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
 
@@ -156,7 +157,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     AROS_HOST_BARRIER
     if (!hostlib)
     {
-    	krnPanic(KernelBase, "Failed to load %s\n%s", LIBC_NAME, errstr);
+    	krnPanic(NULL, "Failed to load %s\n%s", LIBC_NAME, errstr);
 	return -1;
     }
 
@@ -167,7 +168,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	AROS_HOST_BARRIER
         if (!func)
         {
-            krnPanic(KernelBase, "Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
+            krnPanic(NULL, "Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
 	    return -1;
 	}
 	((void **)&KernelIFace)[i] = func;
@@ -204,7 +205,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
     if (!krnPrepareExecBase(ranges, bootmh, msg))
     {
-    	bug("[Kernel] Unable to create ExecBase!\n");
+    	/* Hosted krnPanic() returns, allowing us to drop back into bootstrap */
     	return -1;
     }
 
@@ -228,7 +229,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     InitCode(RTF_COLDSTART, 0);
 
     /* If we returned here, something went wrong, and dos.library failed to take over */
-    krnPanic(KernelBase, "Failed to start up the system");
+    krnPanic(getKernelBase(), "Failed to start up the system");
 
     HostIFace->hostlib_Close(hostlib, NULL);
     AROS_HOST_BARRIER
