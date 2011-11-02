@@ -377,6 +377,8 @@ BOOL FillRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD
 BOOL InvertRect(struct uaegfx_staticdata *csd, struct RenderInfo *ri, WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *risrc, struct RenderInfo *ridst,
     WORD sx, WORD sy, WORD dx, WORD dy, WORD w, WORD h, UBYTE opcode, ULONG rgbformat);
+BOOL BlitPattern(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Pattern *pat,
+    WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat);
 
@@ -391,6 +393,7 @@ ULONG GetPixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG in
 ULONG ResolvePixelClock(struct uaegfx_staticdata *csd, struct ModeInfo *mi, ULONG pixelclock, ULONG rgbformat);
 ULONG SetClock(struct uaegfx_staticdata *csd);
 void SetMemoryMode(struct uaegfx_staticdata *csd, ULONG rgbformat);
+void WaitBlitter(struct uaegfx_staticdata *csd);
 void SetInterrupt(struct uaegfx_staticdata *csd, ULONG state);
 void InitRTG(APTR boardinfo);
 

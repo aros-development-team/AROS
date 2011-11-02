@@ -72,6 +72,14 @@ BOOL InitCard(struct uaegfx_staticdata *csd)
 	    AROS_LCA(APTR, csd->boardinfo, A2));      // For older E-UAEs
 }
 
+void WaitBlitter(struct uaegfx_staticdata *csd)
+{
+    if (csd->CardBase)
+    	AROS_CALL1(void, gptr(csd, PSSO_BoardInfo_WaitBlitter),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    struct Library*, csd->CardBase);
+}
+
 void SetInterrupt(struct uaegfx_staticdata *csd, ULONG state)
 {
     if (csd->CardBase)
@@ -292,6 +300,35 @@ BOOL BlitRectNoMaskComplete(struct uaegfx_staticdata *csd, struct RenderInfo *ri
      	    AROS_LCA(UBYTE, opcode, D6),
     	    AROS_LCA(ULONG, rgbformat, D7));
 };
+BOOL BlitPattern(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Pattern *pat,
+    WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
+{
+    if (csd->CardBase) {
+    	AROS_CALL9(BOOL, gptr(csd, PSSO_BoardInfo_BlitPattern),
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(APTR, pat, A2),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7),
+    	    struct Library*, csd->CardBase);
+    	return gw (csd->boardinfo + PSSO_BoardInfo_AROSFlag);
+    } else
+	return P96_LC9(BOOL, csd->uaeromvector, 30,
+    	    AROS_LCA(APTR, csd->boardinfo, A0),
+    	    AROS_LCA(APTR, ri, A1),
+    	    AROS_LCA(APTR, pat, A2),
+    	    AROS_LCA(WORD, x, D0),
+    	    AROS_LCA(WORD, y, D1),
+    	    AROS_LCA(WORD, w, D2),
+    	    AROS_LCA(WORD, h, D3),
+     	    AROS_LCA(UBYTE, mask, D4),
+    	    AROS_LCA(ULONG, rgbformat, D7));
+}
+
 BOOL BlitTemplate(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct Template *tmpl,
     WORD x, WORD y, WORD w, WORD h, UBYTE mask, ULONG rgbformat)
 {

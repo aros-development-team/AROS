@@ -196,6 +196,8 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     data = OOP_INST_DATA(cl, o);
     memset(data, 0, sizeof  (*data));
 
+    WaitBlitter(csd);
+
     OOP_GetAttr(o, aHidd_BitMap_Width,	&width);
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
@@ -247,6 +249,7 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct bm_data    *data;
     
     data = OOP_INST_DATA(cl, o);
+    WaitBlitter(csd);
     
     DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
     if (data->disp)
@@ -423,6 +426,7 @@ BOOL UAEGFXBitmap__Hidd_BitMap__ObtainDirectAccess(OOP_Class *cl, OOP_Object *o,
     /* undocumented, just a guess.. */
     *msg->bankSizeReturn = *msg->memSizeReturn = data->bytesperline * data->height;
     data->locked++;
+    WaitBlitter(csd);
     return TRUE;
 }
 
@@ -440,6 +444,7 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
     
     if (!OOP_DoSuperMethod(cl, o, (OOP_Msg)msg))
     	return FALSE;
+    WaitBlitter(csd);
     clut = csd->boardinfo + PSSO_BoardInfo_CLUT;
     for (i = msg->firstColor, j = 0; j < msg->numColors; i++, j++) {
         clut[i * 3 + 0] = msg->colors[j].red >> 8;
@@ -454,11 +459,13 @@ BOOL UAEGFXBitmap__Hidd_BitMap__SetColors(OOP_Class *cl, OOP_Object *o, struct p
 VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 				struct pHidd_BitMap_PutPixel *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data *data = OOP_INST_DATA(cl, o);
     ULONG   	       offset;
     HIDDT_Pixel       pixel = msg->pixel;
     UBYTE   	      *mem;
     
+    WaitBlitter(csd);
     offset = (msg->x * data->bytesperpixel) + (msg->y * data->bytesperline);
     mem = data->VideoData + offset;
     
@@ -491,11 +498,13 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
 ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 				 struct pHidd_BitMap_GetPixel *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
     struct bm_data 	*data = OOP_INST_DATA(cl, o);
     HIDDT_Pixel     	 pixel = 0;
     ULONG   	    	 offset;
     UBYTE   	    	*mem;
     
+    WaitBlitter(csd);
     offset = (msg->x * data->bytesperpixel)  +(msg->y * data->bytesperline);
     mem = data->VideoData + offset;
     
@@ -524,11 +533,23 @@ ULONG UAEGFXBitmap__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+VOID UAEGFXBitmap__Hidd_BitMap__DrawLine(OOP_Class *cl, OOP_Object *o,
+				struct pHidd_BitMap_DrawLine *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
 VOID UAEGFXBitmap__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    WaitBlitter(csd);
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
@@ -674,6 +695,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    WaitBlitter(csd);
     switch(msg->pixFmt)
     {
     	case vHidd_StdPixFmt_Native:
@@ -819,6 +841,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct uaegfx_staticdata *csd = CSD(cl);
 
+    WaitBlitter(csd);
     switch(data->bytesperpixel)
     {
 	case 2:
@@ -875,6 +898,17 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
 /****************************************************************************************/
 
+VOID UAEGFXBitmap__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
+				   struct pHidd_BitMap_GetImageLUT *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
 VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     HIDDT_Pixel fg = GC_FG(msg->gc);
@@ -884,6 +918,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
     struct RenderInfo ri;
     BOOL v = FALSE;
 
+    WaitBlitter(csd);
     maybeputinvram(csd, data);
     if (data->invram) {
 	makerenderinfo(csd, &ri, data);
@@ -902,6 +937,90 @@ VOID UAEGFXBitmap__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pH
 
 /****************************************************************************************/
 
+VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
+				 struct pHidd_BitMap_PutPattern *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+    struct bm_data *data = OOP_INST_DATA(cl, o);
+    HIDDT_Pixel	fg = GC_FG(msg->gc);
+    HIDDT_Pixel bg = GC_BG(msg->gc);
+    struct Pattern pat;
+    struct RenderInfo ri;
+    UBYTE drawmode;
+    BOOL v = FALSE;
+    
+    WaitBlitter(csd);
+
+    DB2(bug("blitpattern(%d,%d)(%d,%d)(%x,%d,%d,%d,%d,%d)\n",
+	msg->x, msg->y, msg->width, msg->height,
+	msg->pattern, msg->patternsrcx, msg->patternsrcy, fg, bg, msg->patternheight));
+
+    if (msg->mask || msg->patterndepth > 1) {
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	return;
+    }
+
+    maybeputinvram(csd, data);
+    if (data->invram) {
+	makerenderinfo(csd, &ri, data);
+	if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+	     drawmode = JAM1;
+	else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+	     drawmode = COMPLEMENT;
+	else
+	    drawmode = JAM2;
+	if (msg->invertpattern)
+	     drawmode |= INVERSVID;
+
+	pat.Memory = msg->pattern;
+	pat.XOffset = msg->patternsrcx;
+	pat.YOffset = msg->patternsrcy;
+	pat.FgPen = fg;
+	pat.BgPen = bg;
+	switch (msg->patternheight)
+	{
+	    case 1:
+	    pat.Size = 0;
+	    break;
+	    case 2:
+	    pat.Size = 1;
+	    break;
+	    case 4:
+	    pat.Size = 2;
+	    break;
+	    case 8:
+	    pat.Size = 3;
+	    break;
+	    case 16:
+	    pat.Size = 4;
+	    break;
+	    case 32:
+	    pat.Size = 5;
+	    break;
+	    case 64:
+	    pat.Size = 6;
+	    break;
+	    case 128:
+	    pat.Size = 7;
+	    break;
+	    case 256:
+	    pat.Size = 8;
+	    break;
+	    default:
+	    pat.Size = 0xff;
+	}
+
+	if (pat.Size <= 8) {
+	    v = BlitPattern(csd, &ri, &pat, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
+	}
+    }
+
+    if (!v)
+	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+/****************************************************************************************/
+
 VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutTemplate *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
@@ -913,6 +1032,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     UBYTE drawmode;
     BOOL v = FALSE;
     
+    WaitBlitter(csd);
     maybeputinvram(csd, data);
     if (data->invram) {
 	makerenderinfo(csd, &ri, data);
@@ -931,7 +1051,6 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 	tmpl.DrawMode = drawmode;
 	tmpl.FgPen = fg;
 	tmpl.BgPen = bg;
-
 	v = BlitTemplate(csd, &ri, &tmpl, msg->x, msg->y, msg->width, msg->height, 0xff, data->rgbformat);
     }
     if (!v)
@@ -943,6 +1062,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 
 VOID UAEGFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UpdateRect *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -951,6 +1073,9 @@ VOID UAEGFXBitmap__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct 
 BOOL UAEGFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_SetBitMap *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -959,5 +1084,8 @@ BOOL UAEGFXBitmap__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 BOOL UAEGFXBitmap__Hidd_PlanarBM__GetBitMap(OOP_Class *cl, OOP_Object *o,
 				   struct pHidd_PlanarBM_GetBitMap *msg)
 {
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
     return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
