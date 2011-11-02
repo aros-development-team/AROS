@@ -18,6 +18,7 @@
 #include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_romtags.h"
+#include "kernel_unix.h"
 
 #define D(x)
 
@@ -40,7 +41,6 @@
 /* Some globals we can't live without */
 struct HostInterface *HostIFace;
 struct KernelInterface KernelIFace;
-ULONG mm_PageSize;
 
 /* Here we use INIT set. THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
 DEFINESET(INIT);
@@ -67,11 +67,9 @@ static const char *kernel_functions[] =
 #endif
 #endif
 #ifdef HOST_OS_android
-    "__page_size",
     "write",
     "sigwait",
 #else
-    "getpagesize",
     "sigemptyset",
     "sigfillset",
     "sigaddset",
@@ -88,6 +86,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     void* _stack = AROS_GET_SP;
     void *hostlib;
     char *errstr;
+    unsigned int mm_PageSize;
     unsigned int i;
     struct MemHeader *bootmh;
     struct TagItem *tag;
@@ -179,13 +178,14 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     	return -1;
 
     /* Now query memory page size. We need in order to get our memory manager functional. */
-#ifdef HOST_OS_android
-    mm_PageSize = *KernelIFace.__page_size;
-#else
-    mm_PageSize = KernelIFace.getpagesize();
-    AROS_HOST_BARRIER
-#endif
+    mm_PageSize = krnGetPageSize(hif, hostlib);
     D(bug("[KRN] Memory page size is %u\n", mm_PageSize));
+
+    if (!mm_PageSize)
+    {
+    	/* krnGetPageSize() panics itself */
+    	return -1;
+    }
 
     /* We know that memory map has only one RAM element */
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;

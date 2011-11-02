@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES   := displayalert _displayalert kernel_panic
+FILES   := displayalert _displayalert getpagesize kernel_panic
 MAINDIR := rom/kernel
 
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) \

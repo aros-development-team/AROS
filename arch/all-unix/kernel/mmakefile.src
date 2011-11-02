@@ -7,7 +7,7 @@ USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
-	 obtaininput releaseinput # allocpages freepages
+	 obtaininput releaseinput getpagesize
 FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
 
 %build_archspecific \
