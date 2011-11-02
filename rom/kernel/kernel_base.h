@@ -21,7 +21,6 @@ struct KernelBase
     struct Node            kb_Node;
     struct MinList         kb_Exceptions[EXCEPTIONS_COUNT];
     struct List            kb_Interrupts[IRQ_COUNT];
-    unsigned char	   kb_VBlankEnable;
     ULONG		   kb_ContextFlags;	/* Hints for KrnCreateContext() */
     ULONG		   kb_ContextSize;	/* Total length of CPU context  */
     ULONG		   kb_PageSize;		/* Physical memory page size	*/
@@ -37,7 +36,7 @@ extern struct TagItem *BootMsg;
 extern struct KernelBase *KernelBase;
 
 /* System memory allocation functions */
-struct KernelBase *AllocKernelBase(struct ExecBase *SysBase);
+struct KernelBase *AllocKernelBase(struct ExecBase *SysBase, int vecsize);
 APTR krnGetSysMem(struct MemHeader *mh, IPTR *size);
 void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IPTR allocSize);
 
