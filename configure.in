@@ -1809,6 +1809,10 @@ if test "$aros_kernel_includes" != "" ; then
             if test -d "$aros_kernel_cc_includes"-fixed; then
                 aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
             fi
+            # Check for specific includes directory. Neede for Ubuntu 11.10
+            if test -d "/usr/include/i386-linux-gnu"; then
+                aros_kernel_cc_includes+=" -isystem /usr/include/i386-linux-gnu"
+            fi
         else
             # The directory doesn't exist, we need to do some more work.
             aros_kernel_cc_includes=${PWD}/${aros_gendir}/cc_include
