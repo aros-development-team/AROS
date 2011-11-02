@@ -94,3 +94,14 @@ void mm_FreePages(void *addr, uintptr_t length, struct KernelBase *KernelBase)
 	D(bug("[KrnFreePages] No match!\n"));
     }
 }
+
+/* Allocate a space usable by exec.library/Allocate() inside kernel's MemHeader. */
+struct MemHeader *mm_AllocExecHeader(struct MemHeader *mh, STRPTR name, IPTR maxsize)
+{
+    struct MemHeader *bootmh = mm_Allocate(mh, maxsize, MEMF_ANY);
+    
+    if (bootmh)
+    	krnCreateMemHeader(name, mh->mh_Node.ln_Pri, bootmh, maxsize, mh->mh_Attributes);
+    
+    return bootmh;
+}

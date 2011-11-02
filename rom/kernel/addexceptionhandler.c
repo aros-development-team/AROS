@@ -7,7 +7,7 @@
 #include <kernel_cpu.h>
 #include <kernel_debug.h>
 #include <kernel_interrupts.h>
-#include <kernel_memory.h>
+#include <kernel_objects.h>
 
 /* We use own implementation of bug(), so we don't need aros/debug.h */
 #define D(x)
@@ -83,7 +83,7 @@ AROS_LH4(void *, KrnAddExceptionHandler,
         (void)goSuper();
 
 	/* Allocate protected memory, accessible only in supervisor mode */
-        handle = krnAllocMem(sizeof(struct IntrNode), 0);
+        handle = krnAllocIntrNode();
         D(bug("[KRN] handle=%012p\n", handle));
 
         if (handle)

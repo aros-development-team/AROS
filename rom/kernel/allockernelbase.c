@@ -2,8 +2,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#include LC_LIBDEFS_FILE
-
+#include <kernel_base.h>
 #include <kernel_debug.h>
 #include <kernel_mm.h>
 
@@ -15,13 +14,9 @@
  * allocator won't work without it, because it needs to request memory pages for us. On such systems
  * this code needs to be replaced.
  */
-struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
+struct KernelBase *AllocKernelBase(struct ExecBase *SysBase, int vecsize)
 {
-    int vecsize = FUNCTIONS_COUNT * LIB_VECTSIZE;
-    APTR mem;
-
-    vecsize = ((vecsize - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);
-    mem = AllocMem(vecsize + sizeof(struct KernelBase), MEMF_PUBLIC|MEMF_CLEAR);
+    APTR mem = AllocMem(vecsize + sizeof(struct KernelBase), MEMF_PUBLIC|MEMF_CLEAR);
 
     return mem ? mem + vecsize : NULL;
 }

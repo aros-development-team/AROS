@@ -1,9 +1,7 @@
 #include <aros/kernel.h>
-#include <aros/libcall.h>
+#include <proto/exec.h>
 
 #include <kernel_base.h>
-#include <kernel_cpu.h>
-#include <kernel_memory.h>
 
 /*****************************************************************************
 
@@ -43,11 +41,11 @@ AROS_LH1(void, KrnDeleteContext,
 {
     AROS_LIBFUNC_INIT
 
-    cpumode_t mode = goSuper();
-
-    krnFreeMem(context, KernelBase->kb_ContextSize);
-
-    goBack(mode);
+    /*
+     * This is actually a pair to krnAllocCPUContext().
+     * Needs to be reimplemented on a per-architecture basis if needed.
+     */
+    FreeMem(context, KernelBase->kb_ContextSize);
 
     AROS_LIBFUNC_EXIT
 }

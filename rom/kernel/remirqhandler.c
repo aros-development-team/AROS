@@ -3,13 +3,8 @@
 #include <proto/exec.h>
 
 #include <kernel_base.h>
-#include <kernel_debug.h>
-#include <kernel_cpu.h>
 #include <kernel_interrupts.h>
-#include <kernel_memory.h>
-
-/* We use own implementation of bug(), so we don't need aros/debug.h */
-#define D(x)
+#include <kernel_objects.h>
 
 /*****************************************************************************
 
@@ -63,7 +58,7 @@ AROS_LH1(void, KrnRemIRQHandler,
         }
         Enable();
 
-        krnFreeMem(h, sizeof(struct IntrNode));
+        krnFreeIntrNode(h);
 
         goUser();
     }
