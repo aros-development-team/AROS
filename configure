@@ -885,7 +885,6 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP
-CPPFLAGS
 XMKMF'
 
 
@@ -10854,6 +10853,10 @@ $as_echo_n "checking for the kernel compiler's include path... " >&6; }
             # the headers we need.
             if test -d "$aros_kernel_cc_includes"-fixed; then
                 aros_kernel_cc_includes+=" -isystem $aros_kernel_cc_includes"-fixed
+            fi
+            # Check for specific includes directory. Neede for Ubuntu 11.10
+            if test -d "/usr/include/i386-linux-gnu"; then
+                aros_kernel_cc_includes+=" -isystem /usr/include/i386-linux-gnu"
             fi
         else
             # The directory doesn't exist, we need to do some more work.
