@@ -16,6 +16,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
+#include "kernel_unix.h"
 #include "kernel_android.h"
 
 #define D(x)
@@ -53,12 +54,12 @@ AROS_LH2(void, KrnDisplayAlert,
 
     /*
      * Wait for SIGUSR2. Java side will deliver it to us after the alert was closed.
-     * Normally it's used for KrnCause(), so in order not to execute scheduler and
+     * Normally it's used for KrnCause(), and in order not to execute scheduler and
      * SoftInts, we artificially raise our virtual privilege level.
      */
-    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_INC(SupervisorCount);
     KernelIFace.sigwait(&sigs, &res);
-    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_DEC(SupervisorCount);
 
     D(bug("[KrnDisplayAlert] Resume execution\n"));
 
