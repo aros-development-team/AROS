@@ -86,7 +86,10 @@ buserror040:
 	.balign 4
 trace040:
 	move.l	%a0,-(%sp)
-	move.l	zeropagedescriptor,%a0
+	move.l	SysBase,%a0
+	move.l	%a0@(eb_KernelBase),%a0
+	move.l	%a0@(kb_PlatformData),%a0
+	move.l	%a0@(zeropagedescriptor),%a0
 	/* Zero page -> invalid */
 	and.b	#~3,%a0@
 	cpushl	%dc,(%a0)
