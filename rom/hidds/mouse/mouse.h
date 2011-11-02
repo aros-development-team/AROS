@@ -31,6 +31,10 @@ struct mouse_staticdata
     struct Library *cs_SysBase;
     struct Library *cs_OOPBase;
     BPTR cs_SegList;
+
+    /* Some useful method IDs */
+    OOP_MethodID    cs_mHidd_Mouse_AddHardwareDriver;
+    OOP_MethodID    cs_mHidd_Mouse_RemHardwareDriver;
 };
 
 struct mousebase
