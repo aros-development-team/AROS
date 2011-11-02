@@ -127,13 +127,6 @@ void core_Kick(struct TagItem *msg, void *target)
     		 "call *%2\n"::"D"(msg), "r"(boot_stack + STACK_SIZE), "r"(target));
 }
 
-/* Print panic string and halt */
-static void panic(void)
-{
-    bug("*** SYSTEM PANIC ***\n");
-    while (1);
-}
-
 /*
  * This is the main entry point.
  * We run from here both at first boot and upon reboot.
@@ -156,6 +149,7 @@ void kernel_cstart(const struct TagItem *msg)
 
     D(bug("[Kernel] Boot data: 0x%p\n", __KernBootPrivate));
     DSTACK(bug("[Kernel] Boot stack: 0x%p - 0x%p\n", boot_stack, boot_stack + STACK_SIZE));
+
     if (__KernBootPrivate == NULL)
     {
     	/* This is our first start. */
@@ -165,10 +159,8 @@ void kernel_cstart(const struct TagItem *msg)
 	tag = LibFindTagItem(KRN_KernelHighest, msg);
         if (!tag)
         {
-            bug("Incomplete information from the bootstrap\n");
-            bug("Highest kickstart address is not supplied\n");
-
-            panic();
+            krnPanic(NULL, "Incomplete information from the bootstrap\n"
+            	     	   "Highest kickstart address is not supplied\n");
         }
 
 	/*
@@ -315,11 +307,10 @@ void kernel_cstart(const struct TagItem *msg)
     /* Sanity check */
     if ((!klo) || (!addr) || (!mmap) || (!mmap_len))
     {
-        bug("Incomplete information from the bootstrap\n");
-        bug("Kickstart addresses: lowest  0x%p, base   0x%p", klo, addr);
-        bug("Memory map         : address 0x%p, length %lu\n", mmap, mmap_len);
-
-        panic();
+    	krnPanic(NULL, "Incomplete information from the bootstrap\n"
+    		       "\n"
+		       "Kickstart addresses: lowest  0x%p, base   0x%p\n"
+        	       "Memory map         : address 0x%p, length %lu\n", klo, addr, mmap, mmap_len);
     }
 
     /*
@@ -357,14 +348,10 @@ void kernel_cstart(const struct TagItem *msg)
 	}
     }
 
+    /* This handles failures itself */
     ranges[0] = (UWORD *)klo;
     ranges[1] = (UWORD *)khi;
-    if (!krnPrepareExecBase(ranges, mh, BootMsg))
-    {
-        bug("Failed to create exec.library base\n");
-
-        panic();
-    }
+    krnPrepareExecBase(ranges, mh, BootMsg);
 
     D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
 
@@ -449,8 +436,8 @@ void kernel_cstart(const struct TagItem *msg)
      */
     InitCode(RTF_COLDSTART, 0);
 
-    bug("[Kernel] ERROR: System Boot Failed!\n");
-    panic();
+    /* The above must not return */
+    krnPanic(KernelBase, "System Boot Failed!");
 }
 
 /* Small delay routine used by exec_cinit initializer */
