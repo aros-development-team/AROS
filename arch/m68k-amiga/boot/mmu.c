@@ -103,6 +103,19 @@ static void swapvbr(APTR vbr)
 	: : "m" (vbr) : "d0", "d1", "a5", "a6");
 }
 
+static BOOL ISA3000(void)
+{
+    if (!(SysBase->AttnFlags & AFF_68030))
+    	return FALSE;
+    if (SysBase->AttnFlags & AFF_68040)
+    	return FALSE;
+    if (ReadGayle())
+    	return FALSE;
+    /* We should check for RAMSEY.. Later.. */
+    /* 0x07000000 - 0x07ffffff is A3000-only RAM region */
+    return TypeOfMem((APTR)0x07ff0000) != 0;
+}
+
 static void mmuprotectregion(void *KernelBase, const UBYTE *name, APTR addr, ULONG size, ULONG flags)
 {
     ULONG allocsize = (size +  PAGE_SIZE - 1) & ~(PAGE_SIZE - 1);
@@ -170,7 +183,7 @@ static AROS_UFH3 (APTR, Init,
 	UWORD i, cnt;
 	char *args;
 	BOOL ZeroPageInvalid = FALSE, ZeroPageProtect = FALSE;
-	BOOL mmucommandline = FALSE;
+	BOOL usemmu = FALSE;
 	UBYTE *vbrpage;
 	ULONG *zero = (ULONG*)0;
 
@@ -187,18 +200,22 @@ static AROS_UFH3 (APTR, Init,
 		if (strstr(args, "nommu")) {
 			return NULL;
 		} else if (strstr(args, "debugmmu")) {
-			mmucommandline = TRUE;
+			usemmu = TRUE;
 			ZeroPageInvalid = TRUE;
 		} else if (strstr(args, "pmmu")) {
-			mmucommandline = TRUE;
+			usemmu = TRUE;
 			ZeroPageProtect = TRUE;
 		} else if (strstr(args, "mmu")) {
-			mmucommandline = TRUE;
+			usemmu = TRUE;
 		}
 	}
 
+	/* if 68030 A3000 = use MMU, we are guaranteed to have full 68030 */
+	if (!usemmu && ISA3000())
+		usemmu = TRUE;
+
 	/* 68030/68851: Only enable if mmu commandline detected. */
-	if (!(SysBase->AttnFlags & AFF_68040) && !mmucommandline)
+	if (!(SysBase->AttnFlags & AFF_68040) && !usemmu)
 		return FALSE;
 
 	if (!init_mmu(KernelBase)) {
