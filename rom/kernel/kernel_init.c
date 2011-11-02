@@ -72,13 +72,11 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     AROS_USERFUNC_INIT
 
     struct KernelBase *KernelBase;
-    int i = FUNCTIONS_COUNT * LIB_VECTSIZE;
+    int i;
 
-    i = ((i - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);
     D(bug("[KRN] Kernel_Init()\n"));
-
     /* We set our global KernelBase here */
-    KernelBase = AllocKernelBase(SysBase, i);
+    KernelBase = AllocKernelBase(SysBase, FUNCTIONS_COUNT);
     if (!KernelBase)
     	return NULL;
 
