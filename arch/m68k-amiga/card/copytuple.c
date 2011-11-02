@@ -19,7 +19,7 @@ static BOOL getbyte(ULONG addr, UBYTE *out)
     volatile UBYTE *p;
     
     *out = 0;
-    if (addr < GAYLE_RAM || (addr >= GAYLE_RAM + GAYLE_RAMSIZE && addr < GAYLE_ATTRIBUTE) || addr >= GAYLE_ATTRIBUTE + GAYLE_ATTRIBYTESIZE) {
+    if (addr < GAYLE_RAM || (addr >= GAYLE_RAM + GAYLE_RAMSIZE && addr < GAYLE_ATTRIBUTE) || addr >= GAYLE_ATTRIBUTE + GAYLE_ATTRIBUTESIZE) {
     	TUPLEDEBUG2(bug("getbyte from invalid address %p\n", addr));
 	return FALSE;
     }
@@ -136,7 +136,7 @@ AROS_LH4(ULONG, CopyTuple,
    	    if (!getlelong(addr, 2, nextbyte, &nextjump))
    	    	goto end;
 	    TUPLEDEBUG(bug("CISTPL_LONGLINK_A %08x\n", nextjump));
-	    if (nextjump >= GAYLE_ATTRIBYTESIZE)
+	    if (nextjump >= GAYLE_ATTRIBUTESIZE)
 	    	goto end;
 	    nextjump += GAYLE_ATTRIBUTE;
 	    break;
