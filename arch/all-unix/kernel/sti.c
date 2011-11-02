@@ -4,13 +4,14 @@
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
+#include "kernel_unix.h"
 
 AROS_LH0(void, KrnSti,
 	  struct KernelBase *, KernelBase, 10, Kernel)
 {
     AROS_LIBFUNC_INIT
 
-    if (!KernelBase->kb_PlatformData->supervisor)
+    if (!SupervisorCount)
     {
     	KernelIFace.sigprocmask(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
     	AROS_HOST_BARRIER
