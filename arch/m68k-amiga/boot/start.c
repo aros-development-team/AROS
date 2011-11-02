@@ -645,6 +645,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 #undef SysBase
 	DEBUGPUTHEX(("[SysBase at]", (ULONG)SysBase));
 
+        PrivExecBase(SysBase)->PlatformData.BootMsg = bootmsgptr;
 	SysBase->ThisTask->tc_SPLower = &_ss;
         SysBase->ThisTask->tc_SPUpper = &_ss_end;
 
