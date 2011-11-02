@@ -48,7 +48,6 @@ LONG launcher()
     struct vfork_data *udata = this->tc_UserData;
     BYTE child_signal;
     struct aroscbase *aroscbase = NULL, *pbase = udata->parent_aroscbase;
-    void *oldbase;
 
     /* Allocate signal for parent->child communication */
     child_signal = udata->child_signal = AllocSignal(-1);
