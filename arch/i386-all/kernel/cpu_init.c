@@ -1,4 +1,6 @@
+#include <aros/config.h>
 #include <aros/symbolsets.h>
+#include <asm/cpu.h>
 #include <exec/types.h>
 #include <aros/i386/cpucontext.h>
 
@@ -30,6 +32,14 @@ static int cpu_Init(struct KernelBase *KernelBase)
         case 2:
         case 1:
 	    /* FPU + SSE */
+
+#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+	    /* tell the CPU that we will support SSE */
+	    wrcr(cr4, rdcr(cr4) | (3 << 9));
+	    /* Clear the EM and MP flags of CR0 */
+	    wrcr(cr0, rdcr(cr0) & ~6);
+#endif
+
 #ifdef USE_LEGACY_8087
 	    KernelBase->kb_ContextFlags = ECF_FPU|ECF_FPX;
 	    KernelBase->kb_ContextSize += SIZEOF_8087_FRAME;		  /* Legacy 8087 frame with private portion */

@@ -27,10 +27,26 @@ AROS_LH0(void *, KrnCreateContext,
     {
 	IPTR fpdata = (IPTR)ctx + sizeof(struct AROSCPUContext);
 
-        ctx->Flags = KernelBase->kb_ContextFlags;
+        ctx->Flags = KernelBase->kb_ContextFlags;	
+	/* Set up default values for some registers */
+	ctx->eflags = 0x3202;
+
+/* These definitions may come from machine-specific kernel_cpu.h */
+#ifdef USER_CS
+	ctx->Flags |= ECF_SEGMENTS;
+	ctx->cs     = USER_CS;
+	ctx->ds     = USER_DS;
+	ctx->es     = USER_DS;
+	ctx->fs     = USER_DS;
+	ctx->gs     = USER_DS;
+	ctx->ss     = USER_DS;
+#endif
+
 	if (!ctx->Flags)
+	{
 	    /* Don't do any of the following if we don't support FPU at all */
 	    return ctx;
+	}
 
 	if (ctx->Flags & ECF_FPU)
 	{
