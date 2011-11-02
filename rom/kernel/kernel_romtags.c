@@ -35,6 +35,47 @@ static LONG findname(struct Resident **list, ULONG len, CONST_STRPTR name)
     return -1;
 }
 
+/* 
+ * Allocate memory space for boot-time usage. Returns address and size of the usable area.
+ * It's strongly adviced to return enough space to store resident list of sane length.
+ */
+static APTR krnGetSysMem(struct MemHeader *mh, IPTR *size)
+{
+    /* Just dequeue the first MemChunk. It's assumed that it has the required space for sure. */
+    struct MemChunk *mc = mh->mh_First;
+
+    mh->mh_First = mc->mc_Next;
+    mh->mh_Free -= mc->mc_Bytes;
+
+    D(bug("[RomTagScanner] Using chunk 0x%p of %lu bytes\n", mc, mc->mc_Bytes));
+ 
+    *size = mc->mc_Bytes;
+    return mc;
+}
+
+/* Release unused boot-time memory */
+static void krnReleaseSysMem(struct MemHeader *mh, APTR addr, IPTR chunkSize, IPTR allocSize)
+{
+    struct MemChunk *mc;
+
+    allocSize = AROS_ROUNDUP2(allocSize, MEMCHUNK_TOTAL);
+    chunkSize -= allocSize;
+
+    D(bug("[RomTagScanner] Chunk 0x%p, %lu of %lu bytes used\n", addr, allocSize, chunkSize));
+
+    if (chunkSize < MEMCHUNK_TOTAL)
+    	return;
+
+    mc = addr + allocSize;
+
+    mc->mc_Next  = mh->mh_First;
+    mc->mc_Bytes = chunkSize - allocSize;
+
+    mh->mh_First = mc;
+    mh->mh_Free += mc->mc_Bytes;
+}
+
+
 /*
  * RomTag scanner.
  *
@@ -184,63 +225,4 @@ struct Resident *krnFindResident(struct Resident **resList, const char *name)
     	    return resList[i];
     }
     return NULL;
-}
-
-struct ExecBase *krnPrepareExecBase(UWORD *ranges[], struct MemHeader *mh, struct TagItem *bootMsg)
-{
-    struct Resident *exec; 
-    struct ExecBase *sysBase;
-    struct Resident **resList = krnRomTagScanner(mh, ranges);
-#ifdef __mc68000
-    /* mc68000 doesn't have a global KernelBase, and
-     * KernelBase shouldn't even be non-NULL at this point,
-     * anyway.
-     */
-    struct KernelBase *KernelBase = NULL;
-#endif
-
-    if (!resList)
-    {
-        krnPanic(KernelBase, "Failed to create initial resident list\n"
-        	 "Not enough memory space provided");
-        return NULL;
-    }
-
-    exec = krnFindResident(resList, "exec.library");
-    if (!exec)
-    {
-	krnPanic(KernelBase, "Failed to create ExecBase\n"
-		 "exec.library is not found");
-    	return NULL;
-    }
-
-    sysBase = krnInitResident(exec, mh, bootMsg);
-    if (!sysBase)
-    {
-	krnPanic(KernelBase, "Failed to create ExecBase\n"
-		 "\n"
-		 "MemHeader 0x%p, First chunk 0x%p, %u bytes free",
-		 mh, mh->mh_First, mh->mh_Free);
-
-	return NULL;
-    }
-
-    sysBase->ResModules = resList;
-
-#ifndef NO_RUNTIME_DEBUG
-    /* Print out modules list if requested by the user */
-    if (SysBase->ex_DebugFlags & EXECDEBUGF_INITCODE)
-    {
-	ULONG i;
-
-	bug("Resident modules (addr: pri flags version name):\n");
-
-	for (i = 0; resList[i]; i++)
-	{
-	    bug("+ %p: %4d %02x %3d \"%s\"\n", resList[i], resList[i]->rt_Pri,
-		resList[i]->rt_Flags, resList[i]->rt_Version, resList[i]->rt_Name);
-	}
-    }
-#endif
-    return sysBase;
 }

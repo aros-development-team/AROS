@@ -11,13 +11,14 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-/*
- * 'access' parameter in krnAllocMem() is reserved to provide
- * user-mode access flags. In supervisor mode we assume to always
- * have RW access to the allocated memory. Also, current code assumes
- * krnAllocMem() will clear the memory (at least KrnCreateContext()
- * implementations and kernel.resource init code). Perhaps this is not good.
- */
+static inline struct KernelBase *AllocKernelBase(struct ExecBase *SysBase, int i)
+{
+    APTR mem;
 
-#define krnAllocMem(len, access) AllocMem(len, MEMF_PUBLIC|MEMF_CLEAR)
-#define krnFreeMem(addr, len) FreeMem(addr, len)
+    i *= LIB_VECTSIZE;
+    i  = ((i - 1) / sizeof(IPTR) + 1) * sizeof(IPTR);
+    
+    mem = AllocMem(i + sizeof(struct KernelBase), MEMF_PUBLIC|MEMF_CLEAR);
+
+    return mem ? mem + i : NULL;
+}
