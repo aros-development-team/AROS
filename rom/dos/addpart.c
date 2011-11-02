@@ -137,6 +137,7 @@
     }
     else
     {
+    	SetIoErr(ERROR_LINE_TOO_LONG);
     	return DOSFALSE;
     }
     
@@ -198,7 +199,8 @@
     if(gotfull == TRUE)
     {
 	/* +1 for NULL byte */
-	if( fidx + 1 > size )
+	if( fidx + 1 > size ) {
+	    SetIoErr(ERROR_LINE_TOO_LONG);
 	    return DOSFALSE;
 
 	while(*filename)
@@ -213,8 +215,10 @@
     else
     {
 	/* +1 for NULL byte, +1 for '/' */
-	if((didx + fidx + 2) > size)
+	if((didx + fidx + 2) > size) {
+	    SetIoErr(ERROR_LINE_TOO_LONG);
 	    return DOSFALSE;
+	}
 
 	/*
 	    Add a '/' onto the end of the current path, unless of course
