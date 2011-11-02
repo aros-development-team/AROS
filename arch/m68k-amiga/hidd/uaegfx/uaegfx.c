@@ -680,6 +680,7 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     struct bm_data *ddata = OOP_INST_DATA(OOP_OCLASS(msg->dest), msg->dest);
     struct RenderInfo risrc, ridst;
 
+    WaitBlitter(csd);
     if (sdata->rgbformat != ddata->rgbformat || !sdata->invram || !ddata->invram) {
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     	return;
@@ -690,6 +691,14 @@ VOID UAEGFXCl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
     	msg->srcX, msg->srcY, msg->destX, msg->destY,
     	msg->width, msg->height, modetable[mode], sdata->rgbformat))
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
+
+BOOL UAEGFXCl__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBoxMasked *msg)
+{
+    struct uaegfx_staticdata *csd = CSD(cl);
+
+    WaitBlitter(csd);
+    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
 BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct pHidd_Gfx_SetCursorShape *msg)
