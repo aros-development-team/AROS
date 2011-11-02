@@ -36,11 +36,9 @@ struct KernelInterface
     int     (*munmap)(void *addr, size_t length);
     int    *(*__error)(void);
 #ifdef HOST_OS_android
-    unsigned int *__page_size;
     ssize_t (*write)(int fd, void *buf, size_t count);
     int     (*sigwait)(const sigset_t *restrict set, int *restrict sig);
 #else
-    int     (*getpagesize)(void);
     int     (*SigEmptySet)(sigset_t *set);
     int     (*SigFillSet)(sigset_t *set);
     int     (*SigAddSet)(sigset_t *set, int signum);
