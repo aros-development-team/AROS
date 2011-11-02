@@ -518,14 +518,13 @@ LONG _AHIsub_GetAttr(ULONG attribute,
           return (LONG) "Davy Wentzler";
 
         case AHIDB_Copyright:
-          return (LONG) "(C) 2011 The AROS Dev Team";
+          return (LONG) "(C) 2010 Stephen Jones, (C) 2010-2011 The AROS Dev Team";
 
         case AHIDB_Version:
           return (LONG) LibIDString;
 
         case AHIDB_Annotation:
-          return (LONG)
-        "AROS HD Audio driver";
+          return (LONG) "HD Audio driver";
 
         case AHIDB_Record:
           return TRUE;
