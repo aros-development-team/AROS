@@ -34,3 +34,4 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
 }
 
 #define bug(...) _bug(KernelBase, __VA_ARGS__)
+#define nbug(...) _bug(NULL, __VA_ARGS__)
