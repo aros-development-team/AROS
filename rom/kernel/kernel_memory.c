@@ -14,36 +14,6 @@
 #include <kernel_base.h>
 
 /*
- * Create MemHeader structure for the specified RAM region.
- * The header will be placed in the beginning of the region itself.
- * The header will NOT be added to the memory list!
- */
-void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULONG flags)
-{
-    /* The MemHeader itself does not have to be aligned */
-    struct MemHeader *mh = start;
-
-    mh->mh_Node.ln_Succ    = NULL;
-    mh->mh_Node.ln_Pred    = NULL;
-    mh->mh_Node.ln_Type    = NT_MEMORY;
-    mh->mh_Node.ln_Name    = (STRPTR)name;
-    mh->mh_Node.ln_Pri     = pri;
-    mh->mh_Attributes      = flags;
-    /* The first MemChunk needs to be aligned. We do it by adding MEMHEADER_TOTAL. */
-    mh->mh_First           = start + MEMHEADER_TOTAL;
-    mh->mh_First->mc_Next  = NULL;
-    mh->mh_First->mc_Bytes = size - MEMHEADER_TOTAL;
-
-    /*
-     * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
-     * inside the region it describes, the region includes MemHeader.
-     */
-    mh->mh_Lower           = start;
-    mh->mh_Upper           = start + size;
-    mh->mh_Free            = mh->mh_First->mc_Bytes;
-}
-
-/*
  * Create informational MemHeader for ROM region.
  * The header will be allocated from system's public memory lists.
  * It will be not possible to allocate memory from the created MemHeader.
