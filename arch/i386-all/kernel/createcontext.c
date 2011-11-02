@@ -22,7 +22,7 @@ AROS_LH0(void *, KrnCreateContext,
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer struct AROSCPUContext only for size calculation.
      */
-    ctx = krnAllocMem(KernelBase->kb_ContextSize, 0);
+    ctx = AllocMem(KernelBase->kb_ContextSize, MEMF_PUBLIC|MEMF_CLEAR);
     if (ctx)
     {
 	IPTR fpdata = (IPTR)ctx + sizeof(struct AROSCPUContext);
