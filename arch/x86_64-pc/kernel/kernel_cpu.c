@@ -1,19 +1,15 @@
 #include <exec/lists.h>
-#include <exec/types.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
 
 #include "kernel_base.h"
-#include "kernel_debug.h"
 #include "kernel_intern.h"
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
 
 #include "etask.h"
-
-#define D(x)
 
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
@@ -41,15 +37,12 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     /* Get task's context */
     ctx = GetIntETask(task)->iet_Context;
 
-    D(bug("[Kernel] Dispatching context: \n"));
-    D(PRINT_CPUCONTEXT(ctx));
-
     /* 
      * Restore the fpu, mmx, xmm state
      * TODO: Change to the lazy saving of the XMM state!!!!
      */
     if (ctx->Flags & ECF_FPX)
-	asm volatile("fxrstor (%0)"::"D"(ctx->FXData));
+	asm volatile("fxrstor (%0)"::"r"(ctx->FXData));
 
     /*
      * Leave interrupt and jump to the new task.
@@ -74,7 +67,7 @@ void cpu_Switch(struct ExceptionContext *regs)
      * Copy the fpu, mmx, xmm state
      * TODO: Change to the lazy saving of the XMM state!!!!
      */
-    asm volatile("fxsave (%0)"::"D"(ctx->FXData));
+    asm volatile("fxsave (%0)"::"r"(ctx->FXData));
 
     /* We have the complete data now */
     ctx->Flags = ECF_SEGMENTS | ECF_FPX;
