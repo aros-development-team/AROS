@@ -41,17 +41,6 @@ const struct Resident Kernel_resident =
 
 static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
 
-/*
- * Some globals we can't live without.
- * IMPORTANT: BootMsg should survive warm restarts, this is why it's placed in .data.
- */
-#ifndef __mc68000
-struct KernelBase *KernelBase;
-#define __data __attribute__((section(".data")))
-__data struct TagItem *BootMsg;
-#endif
-
-
 void __clear_bss(const struct KernelBSS *bss)
 {
     while (bss->addr)
@@ -81,10 +70,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 )
 {
     AROS_USERFUNC_INIT
-#ifdef __mc68000
-    /* m68k doesn't have a global KernelBase */
     struct KernelBase *KernelBase;
-#endif
 
     int i;
 
