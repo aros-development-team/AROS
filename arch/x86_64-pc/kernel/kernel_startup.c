@@ -24,7 +24,7 @@
 #include "smp.h"
 #include "tls.h"
 
-#define D(x)
+#define D(x) x
 #define DSTACK(x)
 
 /* Common IBM PC memory layout */
@@ -156,18 +156,49 @@ void kernel_cstart(const struct TagItem *msg)
         struct vbe_mode *vmode = NULL;
         char *cmdline = NULL;
 
-	tag = LibFindTagItem(KRN_KernelHighest, msg);
-        if (!tag)
+	/* We need highest KS address and memory map to begin the work */
+	khi	 = LibGetTagData(KRN_KernelHighest, 0, msg);
+	mmap	 = (struct mb_mmap *)LibGetTagData(KRN_MMAPAddress, 0, msg);
+	mmap_len = LibGetTagData(KRN_MMAPLength, 0, msg);
+
+        if ((!khi) || (!mmap) || (!mmap_len))
         {
             krnPanic(NULL, "Incomplete information from the bootstrap\n"
-            	     	   "Highest kickstart address is not supplied\n");
+            		   "\n"
+            		   "Kickstart top: 0x%p\n"
+        	           "Memory map: address 0x%p, length %lu\n", khi, mmap, mmap, mmap_len);
         }
 
 	/*
-	 * Initialize boot-time memory allocator.
-	 * We know the bootstrap has reserved some space right beyond the kickstart.
+	 * Our boot taglist is located just somewhere in memory. Additionally, it's very fragmented
+	 * (its linked data, like VBE information, were also placed just somewhere, by GRUB.
+	 * Now we need some memory to gather these things together. This memory will be preserved
+	 * accross warm restarts.
+	 * We know the bootstrap has reserved some space right beyond the kickstart. We get our highest
+	 * address, and use memory map to locate topmost address of this area.
 	 */
-        BootMemPtr = (void *)AROS_ROUNDUP2(tag->ti_Data + 1, sizeof(APTR));
+	khi  = AROS_ROUNDUP2(khi + 1, sizeof(APTR));
+        mmap = mmap_FindRegion(khi, mmap, mmap_len);
+        
+        if (!mmap)
+        {
+            krnPanic(NULL, "Inconsistent memory map or kickstart placement\n"
+            		   "Kickstart region not found");
+        }
+        
+        if (mmap->type != MMAP_TYPE_RAM)
+        {
+            krnPanic(NULL, "Inconsistent memory map or kickstart placement\n"
+            		   "Reserved memory overwritten\n"
+            		   "Region 0x%p - 0x%p type %d\n"
+            		   "Kickstart top 0x%p", mmap->addr, mmap->addr + mmap->len - 1, mmap->type, khi);
+        }
+
+	/* Initialize boot-time memory allocator */
+        BootMemPtr   = (void *)khi;
+        BootMemLimit = (void *)mmap->addr + mmap->len;
+
+	D(bug("[Kernel] Bootinfo storage 0x%p - 0x%p\n", BootMemPtr, BootMemLimit));
 
 	/*
 	 * Our boot taglist is placed by the bootstrap just somewhere in memory.
@@ -176,12 +207,12 @@ void kernel_cstart(const struct TagItem *msg)
 
 	/* This will relocate the taglist itself */
 	RelocateBootMsg(msg);
+
 	/*
 	 * Now relocate linked data.
 	 * Here we actually process only tags we know about and expect to get.
 	 * For example, we are not going to receive KRN_HostInterface or KRN_OpenfirmwareTree.
 	 */
-	mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
 	msg = BootMsg;
 	while ((tag = LibNextTagItem(&msg)))
     	{
@@ -305,12 +336,11 @@ void kernel_cstart(const struct TagItem *msg)
     }
 
     /* Sanity check */
-    if ((!klo) || (!addr) || (!mmap) || (!mmap_len))
+    if ((!klo) || (!addr))
     {
     	krnPanic(NULL, "Incomplete information from the bootstrap\n"
     		       "\n"
-		       "Kickstart addresses: lowest  0x%p, base   0x%p\n"
-        	       "Memory map         : address 0x%p, length %lu\n", klo, addr, mmap, mmap_len);
+		       "Kickstart lowest 0x%p, base 0x%p\n", klo, addr);
     }
 
     /*
