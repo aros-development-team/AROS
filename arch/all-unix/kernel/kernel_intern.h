@@ -65,7 +65,6 @@ struct KernelInterface
 struct PlatformData
 {
     sigset_t	  sig_int_mask;			   /* Mask of signals that Disable() block */
-    unsigned int  supervisor;
     int		 *errnoPtr;
 };
 
@@ -78,7 +77,5 @@ struct SignalTranslation
 
 extern struct SignalTranslation sigs[];
 extern struct KernelInterface KernelIFace;
-extern ULONG mm_PageSize;
 
 void cpu_DispatchContext(struct Task *task, regs_t *regs);
-APTR krnAllocSysMem(IPTR len);

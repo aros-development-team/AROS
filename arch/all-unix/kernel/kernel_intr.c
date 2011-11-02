@@ -9,6 +9,7 @@
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
 #include "kernel_intern.h"
+#include "kernel_unix.h"
 
 /*
  * Leave the interrupt. This function recieves the interrupt register frame
@@ -63,7 +64,7 @@ void core_SysCall(int sig, regs_t *regs)
 {
     struct Task *task = SysBase->ThisTask;
 
-    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_INC(SupervisorCount);
 
     krnRunIRQHandlers(KernelBase, sig);
 
@@ -90,5 +91,5 @@ void core_SysCall(int sig, regs_t *regs)
 	break;
     }
 
-    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_DEC(SupervisorCount);
 }

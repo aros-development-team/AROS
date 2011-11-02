@@ -27,6 +27,7 @@
 #include "kernel_intern.h"
 #include "kernel_interrupts.h"
 #include "kernel_scheduler.h"
+#include "kernel_unix.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -48,13 +49,20 @@
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
+/*
+ * This is the only platform-specific read-write variable we need.
+ * In order to be able to make our kb_PlatformData read-only, we simply
+ * moved it here. Let it be static...
+ */
+unsigned int SupervisorCount;
+
 static void core_TrapHandler(int sig, regs_t *regs)
 {
     struct SignalTranslation *s;
     short amigaTrap;
     struct AROSCPUContext ctx;
 
-    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_INC(SupervisorCount);
 
     /* Just for completeness */
     krnRunIRQHandlers(KernelBase, sig);
@@ -99,21 +107,21 @@ static void core_TrapHandler(int sig, regs_t *regs)
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
 
-    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_DEC(SupervisorCount);
 }
 
 static void core_IRQ(int sig, regs_t *sc)
 {
-    AROS_ATOMIC_INC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_INC(SupervisorCount);
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
 	krnRunIRQHandlers(KernelBase, sig);
 
-    if (KernelBase->kb_PlatformData->supervisor == 1)
+    if (SupervisorCount == 1)
 	core_ExitInterrupt(sc);
 
-    AROS_ATOMIC_DEC(KernelBase->kb_PlatformData->supervisor);
+    AROS_ATOMIC_DEC(SupervisorCount);
 }
 
 /*
@@ -147,12 +155,13 @@ static int InitCore(struct KernelBase *KernelBase)
     if (!pd)
 	return FALSE;
 
-    pd->supervisor = 0;
     pd->errnoPtr   = KernelIFace.__error();
     AROS_HOST_BARRIER
 
     KernelBase->kb_PlatformData = pd;
-    
+
+    SupervisorCount = 0;
+
     /* We only want signal that we can handle at the moment */
     SIGFILLSET(&pd->sig_int_mask);
     SIGEMPTYSET(&sa.sa_mask);
