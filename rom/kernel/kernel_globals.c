@@ -18,9 +18,7 @@
  * IMPORTANT: BootMsg should survive warm restarts, this is why it's placed in .data.
  */
 struct KernelBase *KernelBase;
-#define __data __attribute__((section(".data")))
-__data struct TagItem *BootMsg;
-
+__attribute__((section(".data"))) struct TagItem *BootMsg;
 
 static int Kernel_init_globals(struct KernelBase *lh)
 {
@@ -29,4 +27,4 @@ static int Kernel_init_globals(struct KernelBase *lh)
     return TRUE;
 }
 
-ADD2INITLIB(Kernel_init_globals,0)
+ADD2INITLIB(Kernel_init_globals, -128)
