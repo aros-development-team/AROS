@@ -1,12 +1,19 @@
-#include <aros/debug.h>
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Create an empty usable CPU context, ARM version.
+    Lang: english
+*/
+
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
-#include <kernel_memory.h>
+#include <kernel_objects.h>
 
-AROS_LH0I(void *, KrnCreateContext,
-	  struct KernelBase *, KernelBase, 18, Kernel)
+AROS_LH0(void *, KrnCreateContext,
+	 struct KernelBase *, KernelBase, 18, Kernel)
 
 {
     AROS_LIBFUNC_INIT
@@ -20,7 +27,7 @@ AROS_LH0I(void *, KrnCreateContext,
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer struct AROSCPUContext only for size calculation.
      */
-    ctx = krnAllocMem(KernelBase->kb_ContextSize, 0);
+    ctx = krnAllocCPUContext();
     if (ctx)
     {
         ctx->FPUType    = KernelBase->kb_ContextFlags;
