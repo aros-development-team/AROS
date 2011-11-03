@@ -17,10 +17,6 @@ struct kbd_staticdata
 
     BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
-
-    /* Some useful HIDD methods */
-    OOP_MethodID        cs_mHidd_Kbd_AddHardwareDriver;
-    OOP_MethodID        cs_mHidd_Kbd_RemHardwareDriver;
 };
 
 struct kbdbase
