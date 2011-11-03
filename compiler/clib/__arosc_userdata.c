@@ -33,7 +33,6 @@ struct arosc_userdata *__get_arosc_userdata(void)
         __init = 1;
         
         aroscbase = &__aroscbase;
-        __ctype_init();
     }
 #endif
 #if !defined(AROSC_SHARED) && !defined(AROSC_STATIC)
