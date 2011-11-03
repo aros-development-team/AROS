@@ -157,6 +157,7 @@ $(DISTDIR)/aros-amiga-m68k-reloc.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-rom.ld \
@@ -296,6 +297,7 @@ $(DISTDIR)/aros-amiga-m68k-ram.elf : $(DEPLIBS) $(SRCDIR)/$(CURDIR)/mmakefile.sr
 	@$(ECHO) Linking $@...
 	$(Q)$(KERNEL_CC) -Wl,-r \
 		-static -nostartfiles -nostdlib \
+		-Wl,--defsym -Wl,start=0x0 \
 		-Wl,--defsym -Wl,SysBase=0x4 \
 		-m68000 \
 		-o $@ -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/aros-ram.ld \
