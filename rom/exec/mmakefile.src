@@ -33,7 +33,7 @@ ALL_FUNCTIONS := \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska \
         alloctaskstorageslot freetaskstorageslot
 
-INIT_FILES := exec_init prepareexecbase
+INIT_FILES := exec_init prepareexecbase exec_globals
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 	      memory memory_nommu mungwall traphandler exec_debug exec_util
 
