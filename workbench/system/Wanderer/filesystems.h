@@ -37,14 +37,14 @@
 
 /* FILEINFO CONSTANTS */
 
-#define DELMODE_ASK         0
-#define DELMODE_DELETE      1
-#define DELMODE_ALL         2
-#define DELMODE_NO          3
-#define DELMODE_NONE        4
+#define OPMODE_ASK          0
+#define OPMODE_DELETE       1
+#define OPMODE_ALL          2
+#define OPMODE_NO           3
+#define OPMODE_NONE         4
 
-#define ACCESS_SKIP         DELMODE_DELETE
-#define ACCESS_BREAK        DELMODE_NONE
+#define ACCESS_SKIP         OPMODE_DELETE
+#define ACCESS_BREAK        OPMODE_NONE
 
 #define FILEINFO_DIR        1
 #define FILEINFO_PROTECTED  2
@@ -115,9 +115,9 @@ struct FileEntry
     char    name[1];
 };
 
-struct DelActionHandle
+struct OpModes
 {
-    struct Hook *hook;
+    struct Hook *askhook;
     WORD        deletemode;
 };
 
@@ -128,6 +128,6 @@ WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWOR
 WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel);
 WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel);
 
-BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct DelActionHandle *delHandle, APTR userdata);
+BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct OpModes *opModes, APTR userdata);
 
 #endif /* WANDERER_FILESYSTEMS_H */

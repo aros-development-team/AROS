@@ -283,23 +283,23 @@ MakeStaticHook(Hook_DisplayCopyFunc,Wanderer__HookFunc_DisplayCopyFunc);
 #endif
 ///
 
-///Wanderer__HookFunc_AskDeleteFunc()
+///Wanderer__HookFunc_AskModeFunc()
 #ifdef __AROS__
 AROS_UFH3
 (
-    ULONG, Wanderer__HookFunc_AskDeleteFunc,
+    ULONG, Wanderer__HookFunc_AskModeFunc,
     AROS_UFHA(struct Hook *, hook, A0),
     AROS_UFHA(struct dCopyStruct *, obj, A2),
     AROS_UFHA(APTR, unused_param, A1)
 )
 {
 #else
-HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR unused_param)
+HOOKPROTO(Wanderer__HookFunc_AskModeFunc, ULONG, struct dCopyStruct *obj, APTR unused_param)
 {
 #endif
     AROS_USERFUNC_INIT
 
-    ULONG back = DELMODE_NONE;
+    ULONG back = OPMODE_NONE;
 
     UWORD    ret = 0;
     char     *string = NULL;
@@ -343,17 +343,17 @@ HOOKPROTO(Wanderer__HookFunc_AskDeleteFunc, ULONG, struct dCopyStruct *obj, APTR
         freeString(NULL, string);
     }
 
-    if (ret == 0) back = DELMODE_NONE;
-    else if (ret == 1) back = DELMODE_DELETE;
-    else if (ret == 2) back = DELMODE_ALL;
-    else if (ret == 3) back = DELMODE_NO;
+    if (ret == 0) back = OPMODE_NONE;
+    else if (ret == 1) back = OPMODE_DELETE;
+    else if (ret == 2) back = OPMODE_ALL;
+    else if (ret == 3) back = OPMODE_NO;
 
     return back;
 
     AROS_USERFUNC_EXIT
 }
 #ifndef __AROS__
-MakeStaticHook(Hook_AskDeleteFunc,Wanderer__HookFunc_AskDeleteFunc);
+MakeStaticHook(Hook_AskModeFunc,Wanderer__HookFunc_AskModeFunc);
 #endif
 ///
 
@@ -373,20 +373,20 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     {
         struct MUIDisplayObjects dobjects;
         struct IconList_Drop_SourceEntry *currententry;
-        struct DelActionHandle delHandle;
-        delHandle.deletemode = DELMODE_ASK;
+        struct OpModes opModes;
+        opModes.deletemode = OPMODE_ASK;
 #ifdef __AROS__
         struct Hook displayCopyHook;
-        struct Hook displayDelHook;
+        struct Hook displayAskHook;
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
-        displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
-        delHandle.hook = &displayDelHook;
+        displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
+        opModes.askhook = &displayAskHook;
 #else
         struct Hook *displayCopyHook;
-        struct Hook *displayDelHook;
+        struct Hook *displayAskHook;
         displayCopyHook = &Hook_DisplayCopyFunc;
-        displayDelHook = &Hook_AskDeleteFunc;
-        delHandle.hook = displayDelHook;
+        displayAskHook = &Hook_AskModeFunc;
+        opModes.askhook = displayAskHook;
 #endif
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
@@ -397,7 +397,7 @@ D(bug("[Wanderer] %s: Copying '%s' to '%s'\n", __PRETTY_FUNCTION__, currententry
 
                 CopyContent(NULL,
                             currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath,
-                            TRUE, ACTION_COPY, &displayCopyHook, &delHandle, (APTR) &dobjects);
+                            TRUE, ACTION_COPY, &displayCopyHook, &opModes, (APTR) &dobjects);
 
                 FreeVec(currententry->dropse_Node.ln_Name);
                 FreeMem(currententry, sizeof(struct IconList_Drop_SourceEntry));
@@ -2502,15 +2502,15 @@ void wanderer_menufunc_icon_delete(void)
     struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
-    struct Hook displayDelHook;
-    struct DelActionHandle delHandle;
+    struct Hook displayAskHook;
+    struct OpModes opModes;
     ULONG updatedIcons;
 
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
-    displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
-    delHandle.hook = &displayDelHook;
-    delHandle.deletemode = DELMODE_ASK;
+    displayAskHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskModeFunc;
+    opModes.askhook = &displayAskHook;
+    opModes.deletemode = OPMODE_ASK;
 
     updatedIcons = 0;
 
@@ -2523,7 +2523,7 @@ void wanderer_menufunc_icon_delete(void)
             {  
                 /* copy via filesystems.c */
                 D(bug("[Wanderer] Delete \"%s\"\n", entry->ile_IconEntry->ie_IconNode.ln_Name);)
-                CopyContent( NULL, entry->ile_IconEntry->ie_IconNode.ln_Name, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &delHandle, (APTR) &dobjects);
+                CopyContent( NULL, entry->ile_IconEntry->ie_IconNode.ln_Name, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &opModes, (APTR) &dobjects);
                 updatedIcons++;
             }
             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
