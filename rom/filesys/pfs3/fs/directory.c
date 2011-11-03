@@ -1669,6 +1669,7 @@ lockentry_t *NewDir(union objectinfo *parent, STRPTR dirname, SIPTR *error, glob
 
 	blk = MakeDirBlock(blocknr, info.file.direntry->anode,
 					   info.file.direntry->anode, parentnr, g);
+	(void)blk; // Unused
 
 	return (lockentry_t *)fileentry;
 }
