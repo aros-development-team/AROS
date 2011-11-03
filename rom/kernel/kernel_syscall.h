@@ -17,7 +17,6 @@
 #define SC_INVALIDATED  0x008
 #define SC_RTAS		0x009
 #define SC_SUPERVISOR	0x00A
-#define SC_RDMSR	0x00B
 #define SC_REBOOT	0x100
 
 #endif
