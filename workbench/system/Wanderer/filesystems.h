@@ -120,6 +120,7 @@ struct OpModes
     struct Hook *askhook;
     WORD        deletemode;
     WORD        protectmode;
+    WORD        overwritemode;
 };
 
 char  *CombineString(char *format, ...);

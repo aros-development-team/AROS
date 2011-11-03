@@ -376,6 +376,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         struct OpModes opModes;
         opModes.deletemode = OPMODE_ASK;
         opModes.protectmode = OPMODE_ASK;
+        opModes.overwritemode = OPMODE_ASK;
 #ifdef __AROS__
         struct Hook displayCopyHook;
         struct Hook displayAskHook;
@@ -2513,6 +2514,7 @@ void wanderer_menufunc_icon_delete(void)
     opModes.askhook = &displayAskHook;
     opModes.deletemode = OPMODE_ASK;
     opModes.protectmode = OPMODE_ASK;
+    opModes.overwritemode = OPMODE_ASK;
 
     updatedIcons = 0;
 
