@@ -57,10 +57,6 @@
 
     struct BEIOM_Read rd = {BEIO_READ};
 
-    assert (hook);
-    assert (stream);
-    assert (dataptr);
-
     /* High byte */
     c = CallHookA (hook, stream, &rd);
 
