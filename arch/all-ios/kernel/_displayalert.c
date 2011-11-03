@@ -17,9 +17,7 @@
 #include "kernel_base.h"
 #include "kernel_debug.h"
 #include "kernel_intern.h"
-
-/* This comes from kernel_startup.c */
-extern struct HostInterface *HostIFace;
+#include "kernel_unix.h"
 
 static void (*displayAlert)(const char *text) = NULL;
 
@@ -40,7 +38,7 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     AROS_HOST_BARRIER
 }
 
-static int Alert_Init(void)
+static int Alert_Init(void *libc)
 {
     APTR libHandle;
     char *err;
@@ -66,4 +64,4 @@ static int Alert_Init(void)
     return FALSE;
 }
 
-ADD2INIT(Alert_Init, 0);
+ADD2SET(Alert_Init, startup, 0);
