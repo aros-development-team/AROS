@@ -2,7 +2,7 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
-#include <kernel_memory.h>
+#include <kernel_objects.h>
 
 AROS_LH0I(void *, KrnCreateContext,
 	  struct KernelBase *, KernelBase, 18, Kernel)
@@ -13,7 +13,7 @@ AROS_LH0I(void *, KrnCreateContext,
     cpumode_t mode = goSuper();
 
     /* Our context is not accessible in user mode */
-    ctx = krnAllocMem(sizeof(struct AROSCPUContext), 0);
+    ctx = krnAllocCPUContext();
 
     /* Initialize the context */
     if (ctx)

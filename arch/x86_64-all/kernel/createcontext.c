@@ -10,7 +10,7 @@
 #include <aros/libcall.h>
 
 #include <kernel_base.h>
-#include <kernel_memory.h>
+#include <kernel_objects.h>
 
 AROS_LH0(void *, KrnCreateContext,
 	  struct KernelBase *, KernelBase, 18, Kernel)
@@ -25,7 +25,7 @@ AROS_LH0(void *, KrnCreateContext,
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer to struct AROSCPUContext only for size calculation.
      */
-    ctx = AllocMem(KernelBase->kb_ContextSize, MEMF_PUBLIC|MEMF_CLEAR);
+    ctx = krnAllocCPUContext();
     if (ctx)
     {
     	UBYTE current_xmm[512+15];
