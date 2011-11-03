@@ -44,15 +44,37 @@
 {
     AROS_LIBFUNC_INIT
 
-    BOOL res;
-    BPTR lock = DupLockFromFH(fh);
+    BOOL res = FALSE;
+    struct FileInfoBlock *fib;
+    BPTR parentlock = BNULL;
+    ULONG err = 0;
 
-    if (!lock)
-    	return DOSFALSE;
+    /* DupLock() calls are not allowed because they fail
+     * if FH has exclusive lock (MODE_NEWFILE)
+     */
 
-    res = namefrom_internal(DOSBase, lock, buffer, length);
-    UnLock(lock);
-	
+    fib = AllocDosObject(DOS_FIB, NULL);
+    if (fib) {
+	parentlock = ParentOfFH(fh);
+	if (parentlock) {
+	    if (NameFromLock(parentlock, buffer, length)) {
+	    	if (ExamineFH(fh, fib)) {
+	    	    if (AddPart(buffer, fib->fib_FileName, length)) {
+	    	    	res = TRUE;
+	    	    }
+	    	}
+	    }
+	}
+	err = IoErr(); /* UnLock() clears pr_Result2 */
+	FreeDosObject(DOS_FIB, fib);
+    } else {
+	err = ERROR_NO_FREE_STORE;
+    }
+
+    if (parentlock)
+	UnLock(parentlock);
+
+    SetIoErr(err);
     return res;
 
     AROS_LIBFUNC_EXIT
