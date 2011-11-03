@@ -412,6 +412,7 @@ static void MakeRootDir (globaldata *g)
 	blocknr = AllocReservedBlock (g);
 	anodenr = AllocAnode (0, g);
 	blk = MakeDirBlock (blocknr, anodenr, anodenr, 0, g);
+	(void)blk; // Unused
 }
 
 static const ULONG schijf[][2] =

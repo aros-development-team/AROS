@@ -687,7 +687,7 @@ static struct cindexblock *NewIndexBlock (UWORD seqnr, globaldata *g)
   struct volumedata *volume = g->currentvolume;
   ULONG  superblnr;
   LONG blocknr;
-  UWORD	 superoffset, oldlock;
+  UWORD	 superoffset;
 
 	DB(Trace(10,"NewIndexBlock", "seqnr = %ld\n", seqnr));
 
@@ -699,7 +699,6 @@ static struct cindexblock *NewIndexBlock (UWORD seqnr, globaldata *g)
 			if (!(superblok = NewSuperBlock (superblnr, g)))
 				return NULL;
 
-		oldlock = superblok->used;
 		LOCK(superblok);
 	}
 	else if (seqnr > MAXSMALLINDEXNR) {

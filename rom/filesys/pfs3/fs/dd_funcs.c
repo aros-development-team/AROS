@@ -526,7 +526,6 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 	SIPTR *error = &pkt->dp_Res2;
 	UBYTE pathname[PATHSIZE], *fullname, *filename;
 	BOOL found;
-	ULONG oldsize;
 #if MULTIUSER
 	struct extrafields extrafields;
 	ULONG flags;
@@ -667,7 +666,6 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 		case ACTION_FINDOUTPUT:
 			if (found)
 			{
-				oldsize = filefi.file.direntry->size / g->currentvolume->bytesperblock;
 #if MULTIUSER
 				if ((*error = muFS_CheckDeleteAccess(extrafields.prot, flags, g)))
 					return DOSFALSE;
@@ -903,7 +901,6 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 	// RES1 = BOOL Success/failure (DOSTRUE/DOSFALSE)
 
 	UBYTE newlabel[FNSIZE];
-	BOOL added;
 	struct volumedata *volume;
 	struct DeviceList *devlist;
 	listentry_t *fe;
@@ -947,7 +944,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 			devlist->dl_DiskType = volume->rootblk->disktype;
 
 			/* toevoegen */
-			added = AddDosEntry((struct DosList *)devlist);
+			AddDosEntry((struct DosList *)devlist);
 			volume->devlist = (struct DeviceList *)devlist;
 
 			/* alle locks veranderen */
