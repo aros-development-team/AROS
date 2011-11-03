@@ -72,6 +72,8 @@ int main()
     TEST((flock(fd, LOCK_EX) == 0));
     TEST((flock(fd, LOCK_UN) == 0));
 
+    close(fd);
+
     /* Create NPROCS processes increasing counter ITERATIONS times in an ugly 
        way */
     int counter = 0;
