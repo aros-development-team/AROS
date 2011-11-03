@@ -727,8 +727,10 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
 #endif
                     do 
                     {
+                        /* For each entry in directory ... */
                         Success=ExNext(NewLock,FIB);
 
+                        /* If OPMODE_NONE, stop all actions */
                         if ((flags & (ACTION_DELETE | ACTION_COPY)) == ACTION_DELETE) 
                         {
                             if (dmode == OPMODE_NONE) Success = FALSE;
@@ -738,9 +740,10 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                         {
                             if (FIB->fib_DirEntryType>0) 
                             {
-                                
+                                /* The entry is a directory */
                                 dname = NULL;
 
+                                /* If copying, check if the destination directory exists and create if needed */
                                 if (((flags & ACTION_COPY) != 0) && dest) 
                                 {
                                     dname = combinePath(pool, dest, FIB->fib_FileName);
@@ -774,6 +777,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                 unprotect = FALSE;
                                 del = FALSE;
 
+                                /* If deleting, ask for confirmation and ask to upprotect */
                                 if (delHook && (dmode != OPMODE_NONE) && ((flags & ACTION_DELETE) != 0))
                                 {
                                     if ((dmode == OPMODE_ASK) || (dmode == OPMODE_DELETE) || (dmode == OPMODE_ALL) || (dmode == OPMODE_NO))
@@ -824,6 +828,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                 om = omode;
                                 pm = pmode;
 
+                                /* Generate "stronger" modes that will be used for actions inside directory */
                                 if (om == OPMODE_NO) om = OPMODE_NONE;
                                 if (om == OPMODE_DELETE) om = OPMODE_ALL;
 
@@ -833,6 +838,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                 if (dm == OPMODE_NO) dm = OPMODE_NONE;
                                 if (dm == OPMODE_DELETE) dm = OPMODE_ALL;
 
+                                /* If directory was create or we are deleting, trawer deeper and repeat actions */
                                 if (created || ((flags & ACTION_DELETE) !=0)) 
                                 {
                                     if (((dmode == OPMODE_NO) || (dmode == OPMODE_NONE)) && (flags == ACTION_DELETE))
@@ -845,6 +851,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                     }
                                 }
 
+                                /* If deleting and all actions succeded in deeper directory, add the directory to "to be deleted" list */
                                 if (!quit && del && unprotect) 
                                 {
                                     if (FIB->fib_FileName) 
@@ -875,6 +882,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                             } 
                             else 
                             {
+                                /* The entry is a file */
                                 if (dHook) 
                                 {
                                     display.file = FIB->fib_FileName;
@@ -890,6 +898,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
 
                                 overwrite = TRUE;
 
+                                /* If copying, ask for overwrite destinatin and ask for unprotect destination */
                                 if (((flags & ACTION_COPY) != 0) && dest)
                                 {
                                     dpath = combinePath(pool, dest, FIB->fib_FileName);
@@ -944,6 +953,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                     if (dpath) freeString(pool, dpath);
                                 }
 
+                                /* Copy the file */
                                 failure = FALSE;
                                 if (!quit && ((flags & ACTION_COPY) !=0) && overwrite)
                                 {
@@ -951,6 +961,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                     failure = copyFile(pool, FIB->fib_FileName, dest, FIB, dHook, &display);
                                 }
 
+                                /* If failed, ask if process should continue */
                                 if (failure && !quit) 
                                 {
                                     if (delHook) 
@@ -965,6 +976,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                     else quit = FALSE;
                                 }
 
+                                /* If deleting ask for confirmation and ask to unprotect */
                                 if (!quit && delHook && (dmode != OPMODE_NONE) && ((flags & ACTION_DELETE) !=0))
                                 {
                                     if (
@@ -1005,7 +1017,8 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                                                 }
                                             } 
                                             else unprotect = TRUE;
-                                            
+
+                                            /* If file ready to be deleted, add it to "to be deleted" list */
                                             if (unprotect) 
                                             {
                                                 if (FIB->fib_FileName) 
@@ -1041,12 +1054,14 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
                         else 
                         {
                             DosError=IoErr();
+                            /* Is this the end of entries in directory ? */
                             if (DosError!=ERROR_NO_MORE_ENTRIES) Success=TRUE;
                         }
                     } 
                     while (Success && !quit);
                 }
 
+                /* Delete all directories and files which were put on the "to be deleted" list */
                 while (fef) 
                 {
                     len = strlen(fef->name);
