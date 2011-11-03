@@ -13,6 +13,10 @@
 #   include <oop/oop.h>
 #endif
 
+#ifndef PROTO_OOP_H
+#   include <proto/oop.h>
+#endif
+
 #define CLID_Hidd_Mouse "hidd.mouse"
 #define IID_Hidd_Mouse "hidd.mouse"
 
@@ -103,7 +107,50 @@ struct pHidd_Mouse_RemHardwareDriver
     OOP_Object	    *driverObject;
 };
 
-OOP_Object *HIDD_Mouse_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags);
-void HIDD_Mouse_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
+#if !defined(HiddMouseBase) && !defined(__OOP_NOMETHODBASES__)
+#define HiddMouseBase HIDD_Mouse_GetMethodBase(__obj)
 
+static inline OOP_MethodID HIDD_Mouse_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID MouseMethodBase;
+
+    if (!MouseMethodBase)
+    {
+        struct Library *OOPBase = (struct Library *)OOP_OOPBASE(obj);
+
+        MouseMethodBase = OOP_GetMethodID(IID_Hidd_Mouse, 0);
+    }
+
+    return MouseMethodBase;
+}
+#endif
+
+#define HIDD_Mouse_AddHardwareDriver(obj, driverClass, tags) \
+    ({OOP_Object *__obj = obj;\
+     HIDD_Mouse_AddHardwareDriver_(HiddMouseBase, __obj, driverClass, tags); })
+
+static inline OOP_Object *HIDD_Mouse_AddHardwareDriver_(OOP_MethodID MouseMethodBase, OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
+{
+    struct pHidd_Mouse_AddHardwareDriver p;
+
+    p.mID = MouseMethodBase + moHidd_Mouse_AddHardwareDriver;
+    p.driverClass = driverClass;
+    p.tags = tags;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+#define HIDD_Mouse_RemHardwareDriver(obj, driverObject) \
+    ({OOP_Object *__obj = obj; \
+     HIDD_Mouse_RemHardwareDriver_(HiddMouseBase, __obj, driverObject); })
+
+static inline void HIDD_Mouse_RemHardwareDriver_(OOP_MethodID MouseMethodBase, OOP_Object *obj, OOP_Object *driver)
+{
+    struct pHidd_Mouse_RemHardwareDriver p;
+
+    p.mID = MouseMethodBase + moHidd_Mouse_RemHardwareDriver;
+    p.driverObject = driver;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
 #endif /* HIDD_MOUSE_H */
