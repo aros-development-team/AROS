@@ -344,7 +344,7 @@ HOOKPROTO(Wanderer__HookFunc_AskModeFunc, ULONG, struct dCopyStruct *obj, APTR u
     }
 
     if (ret == 0) back = OPMODE_NONE;
-    else if (ret == 1) back = OPMODE_DELETE;
+    else if (ret == 1) back = OPMODE_YES;
     else if (ret == 2) back = OPMODE_ALL;
     else if (ret == 3) back = OPMODE_NO;
 
