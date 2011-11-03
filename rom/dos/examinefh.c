@@ -47,8 +47,16 @@
 
     /* Get pointer to filehandle */
     struct FileHandle *fh = BADDR(lock);
+    BOOL ret;
+
     D(bug("[ExamineFH] fh=%x fib=%x\n", fh, fib));
-    return dopacket2(DOSBase, NULL, fh->fh_Type, ACTION_EXAMINE_FH, fh->fh_Arg1, MKBADDR(fib));
+    ret = dopacket2(DOSBase, NULL, fh->fh_Type, ACTION_EXAMINE_FH, fh->fh_Arg1, MKBADDR(fib));
+    if (ret) {
+    	fixfib(fib);
+    	D(bug("[ExamineFH] '%s'\n", fib->fib_FileName));
+    }
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* ExamineFH */
