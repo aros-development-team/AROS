@@ -26,7 +26,6 @@ clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
 FILES	:= mouseclass
-STUBS	:= mouse_stubs
 
 USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
 
@@ -34,7 +33,5 @@ USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
     modname=mouse modtype=hidd \
     files="$(FILES)" \
     uselibs="oop rom amiga"
-
-%make_hidd_stubs hidd=mouse
 
 %common
