@@ -373,16 +373,20 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     {
         struct MUIDisplayObjects dobjects;
         struct IconList_Drop_SourceEntry *currententry;
+        struct DelActionHandle delHandle;
+        delHandle.deletemode = DELMODE_ASK;
 #ifdef __AROS__
         struct Hook displayCopyHook;
         struct Hook displayDelHook;
         displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
         displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
+        delHandle.hook = &displayDelHook;
 #else
         struct Hook *displayCopyHook;
         struct Hook *displayDelHook;
         displayCopyHook = &Hook_DisplayCopyFunc;
         displayDelHook = &Hook_AskDeleteFunc;
+        delHandle.hook = displayDelHook;
 #endif
 
         if (CreateCopyDisplay(ACTION_COPY, &dobjects))
@@ -393,7 +397,7 @@ D(bug("[Wanderer] %s: Copying '%s' to '%s'\n", __PRETTY_FUNCTION__, currententry
 
                 CopyContent(NULL,
                             currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath,
-                            TRUE, ACTION_COPY, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
+                            TRUE, ACTION_COPY, &displayCopyHook, &delHandle, (APTR) &dobjects);
 
                 FreeVec(currententry->dropse_Node.ln_Name);
                 FreeMem(currententry, sizeof(struct IconList_Drop_SourceEntry));
@@ -2499,11 +2503,14 @@ void wanderer_menufunc_icon_delete(void)
     struct MUIDisplayObjects dobjects;
     struct Hook displayCopyHook;
     struct Hook displayDelHook;
+    struct DelActionHandle delHandle;
     ULONG updatedIcons;
 
     DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
     displayCopyHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_DisplayCopyFunc;
     displayDelHook.h_Entry = (HOOKFUNC) Wanderer__HookFunc_AskDeleteFunc;
+    delHandle.hook = &displayDelHook;
+    delHandle.deletemode = DELMODE_ASK;
 
     updatedIcons = 0;
 
@@ -2516,7 +2523,7 @@ void wanderer_menufunc_icon_delete(void)
             {  
                 /* copy via filesystems.c */
                 D(bug("[Wanderer] Delete \"%s\"\n", entry->ile_IconEntry->ie_IconNode.ln_Name);)
-                CopyContent( NULL, entry->ile_IconEntry->ie_IconNode.ln_Name, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &displayDelHook, (APTR) &dobjects);
+                CopyContent( NULL, entry->ile_IconEntry->ie_IconNode.ln_Name, NULL, TRUE, ACTION_DELETE, &displayCopyHook, &delHandle, (APTR) &dobjects);
                 updatedIcons++;
             }
             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
