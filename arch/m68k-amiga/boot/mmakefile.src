@@ -69,18 +69,6 @@ USER_AFLAGS := -m68060 -DADATE="\"$(shell date "+%d.%m.%Y")\""
 # available RAM, and this 0x800-0x1000 area will be ignored.
 ROMLOC_ss  := 0x0000800
 
-# The BSS should be located as close as possible to the start of
-# MEMF_CHIP memory for the in-ROM version, to maximize the 
-# contigous available memory. It must physically abut the MemHeader,
-# so that mh->mh_First is *after* the .bss, otherwise krnRomTagScanner
-# will not be able to allocate any memory.
-#
-# This turns out to be:
-#
-# ChipRamStart + sizeof(MemHeader)
-#       0x1000 +       0x20
-ROMLOC_bss := 0x0001020
-
 # Main ROM (0xf80000 - 0xffffff)
 ROMLOC_rom := 0x0f80000
 
@@ -168,7 +156,6 @@ $(DISTDIR)/aros-amiga-m68k.elf: $(DISTDIR)/aros-amiga-m68k-reloc.elf
 	    --section-start .rom=$(ROMLOC_rom) \
 	    --section-start .ext=$(ROMLOC_ext) \
 	    --section-start .ss=$(ROMLOC_ss) \
-	    --section-start .bss=$(ROMLOC_bss) \
 	    $<
 	$(Q)$(TARGET_OBJDUMP) -h $@ | grep '[rea][oxm][mte]   '
 

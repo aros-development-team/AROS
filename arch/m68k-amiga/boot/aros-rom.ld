@@ -27,16 +27,10 @@ INCLUDE ../../../bin/amiga-m68k/gen/rom_objs.ld
                                   _ss_end = .;
                                  } >valid
 
-  /* BSS, typically at 0x1020
-   * The '+8' is to make sure not to overlap the
-   * inital memchunk with areas must be zeroed.
+  /* This should cause angry complaints if .data exists
+   * We don't want .bss, and we don't need it.
    */
-  .bss                        : {
-                                  _bss = .;
-                                  . = . + 0x8; /* Reserved for memchunk */
-                                  *(.bss)
-                                  _bss_end = .;
-                                 } >valid
+  .bss                        : { *(.bss) } >invalid
 
   /* This should cause angry complaints if .data exists
    * We don't want .data, and we don't need it.

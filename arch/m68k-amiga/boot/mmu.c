@@ -55,8 +55,6 @@ extern BYTE _rom_start;
 extern BYTE _rom_end;
 extern BYTE _ext_start;
 extern BYTE _ext_end;
-extern BYTE _bss;
-extern BYTE _bss_end;
 
 static void mmuprotect(void *KernelBase, ULONG addr, ULONG size)
 {

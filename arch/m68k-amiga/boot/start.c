@@ -30,7 +30,6 @@
 #define SS_STACK_SIZE	0x02000
 
 extern const struct Resident Exec_resident;
-extern void __clear_bss(const struct KernelBSS *bss);
 
 static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask);
 
@@ -154,8 +153,6 @@ extern BYTE _rom_start;
 extern BYTE _rom_end;
 extern BYTE _ext_start;
 extern BYTE _ext_end;
-extern BYTE _bss;
-extern BYTE _bss_end;
 extern BYTE _ss;
 extern BYTE _ss_end;
 
@@ -189,7 +186,6 @@ static void protectROM(struct MemHeader *mh)
 {
     DEBUGPUTHEX(("Protect", (IPTR)mh));
     protectAlloc(mh, &_ss, &_ss_end, "SS", FALSE);
-    protectAlloc(mh, &_bss, &_bss_end, "BSS", FALSE);
     DEBUGPUTHEX(("First  ", (IPTR)mh->mh_First));
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
@@ -209,7 +205,7 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct Mem
 			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | (startaddr < 0x01000000 ? MEMF_24BITDMA : 0));
 	}
 
-        /* Must be done first, in case BSS and SS are in it */
+        /* Must be done first, in case SS is in it */
 	protectKick((struct MemHeader*)startaddr, ml, mask);
 
 	protectROM((struct MemHeader*)startaddr);
@@ -454,15 +450,6 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	int i;
 	BOOL wasvalid;
 	UWORD *kickrom[8];
-	const struct KernelBSS kbss[2] = {
-		{
-			.addr = &_bss,
-			.len = &_bss_end - &_bss,
-		}, {
-			.addr = 0,
-			.len = 0,
-		}
-	};
 	struct MemHeader *mh;
 	LONG oldLastAlert[4];
 	ULONG oldmem;
@@ -620,15 +607,10 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	/* Clear alert marker */
 	trap[0] = 0;
 
-	DEBUGPUTHEX(("BSS lower", (ULONG)&_bss));
-	DEBUGPUTHEX(("BSS upper", (ULONG)&_bss_end - 1));
 	DEBUGPUTHEX(("SS  lower", (ULONG)&_ss));
 	DEBUGPUTHEX(("SS  upper", (ULONG)&_ss_end - 1));
 
 	Early_ScreenCode(CODE_RAM_CHECK);
-
-	/* Clear the BSS. */
-	__clear_bss(&kbss[0]);
 
         /* Mark all the kick memory as 'unprotected' */
 	markKick(KickMemPtr, &KickMemMask);
