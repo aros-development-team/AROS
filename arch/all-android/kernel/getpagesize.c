@@ -11,7 +11,7 @@
 #include "kernel_debug.h"
 #include "kernel_unix.h"
 
-unsigned int krnGetPageSize(struct HostInterface *HostIFace, void *hostlib)
+unsigned int krnGetPageSize(void *hostlib)
 {
     unsigned int *__page_size;
     char *errstr;

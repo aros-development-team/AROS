@@ -28,6 +28,7 @@
 #define goUser()
 #define goBack(mode)
 
-void krnSysCall(unsigned char n);
+void unix_SysCall(unsigned char n, struct KernelBase *KernelBase);
+#define krnSysCall(n) unix_SysCall(n, KernelBase)
 
 #endif

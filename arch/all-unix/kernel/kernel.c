@@ -6,36 +6,34 @@
     Lang: english
 */
 
-#include <exec/types.h>
 #include <exec/interrupts.h>
 #include <exec/execbase.h>
-#include <exec/alerts.h>
 #include <aros/asmcall.h>
 #include <aros/atomic.h>
 #include <aros/symbolsets.h>
 #include <hardware/intbits.h>
+#include <proto/exec.h>
+#include <proto/hostlib.h>
 
 #define timeval sys_timeval
-#include "etask.h"
-
-#include <stdarg.h>
 
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
+#include "kernel_globals.h"
 #include "kernel_intr.h"
 #include "kernel_intern.h"
 #include "kernel_interrupts.h"
 #include "kernel_scheduler.h"
 #include "kernel_unix.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#undef timeval
 
-#include <proto/exec.h>
+#undef timeval
 
 #define D(x)
 #define DSC(x)
@@ -58,6 +56,7 @@ unsigned int SupervisorCount;
 
 static void core_TrapHandler(int sig, regs_t *regs)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     struct SignalTranslation *s;
     short amigaTrap;
     struct AROSCPUContext ctx;
@@ -133,16 +132,12 @@ GLOBAL_SIGNAL_INIT(core_TrapHandler)
 GLOBAL_SIGNAL_INIT(core_SysCall)
 GLOBAL_SIGNAL_INIT(core_IRQ)
 
-extern struct HostInterface *HostIFace;
-
-/* Set up the kernel. */
+/* 
+ * Platform-specific initialization.
+ * Here we can't do much, we have no hostlib.resource yet. Just allocate PlatformData.
+ */
 static int InitCore(struct KernelBase *KernelBase)
 {
-    struct PlatformData *pd;
-    struct sigaction sa;
-    struct SignalTranslation *s;
-    sigset_t tmp_mask;
-
     D(bug("[KRN] InitCore()\n"));
 
     /*
@@ -150,17 +145,80 @@ static int InitCore(struct KernelBase *KernelBase)
      * its definition relies on host includes (sigset_t), and
      * we don't want generic code to depend on host includes
      */
-    pd = AllocMem(sizeof(struct PlatformData), MEMF_ANY);
-    D(bug("[KRN] PlatformData %p\n", pd));
-    if (!pd)
-	return FALSE;
+    KernelBase->kb_PlatformData = AllocMem(sizeof(struct PlatformData), MEMF_ANY);
+    D(bug("[KRN] PlatformData %p\n", KernelBase->kb_PlatformData));
 
-    pd->errnoPtr   = KernelIFace.__error();
+    return KernelBase->kb_PlatformData ? TRUE : FALSE;
+}
+
+ADD2INITLIB(InitCore, 10);
+
+/* libc functions that we use */
+static const char *kernel_functions[] =
+{
+    "raise",
+    "sigprocmask",
+    "sigsuspend",
+    "sigaction",
+    "mprotect",
+    "read",
+    "fcntl",
+    "mmap",
+    "munmap",
+#ifdef HOST_OS_linux
+    "__errno_location",
+#else
+#ifdef HOST_OS_android
+    "__errno",
+#else
+    "__error",
+#endif
+#endif
+#ifdef HOST_OS_android
+    "sigwait",
+#else
+    "sigemptyset",
+    "sigfillset",
+    "sigaddset",
+    "sigdelset",
+#endif
+    NULL
+};
+
+int core_Start(void *libc)
+{
+    struct KernelBase *KernelBase = getKernelBase();
+    struct PlatformData *pd = KernelBase->kb_PlatformData;
+    APTR HostLibBase;
+    struct sigaction sa;
+    struct SignalTranslation *s;
+    sigset_t tmp_mask;
+    ULONG r;
+
+    /* We have hostlib.resource. Obtain the complete set of needed functions. */
+    HostLibBase = OpenResource("hostlib.resource");
+    if (!HostLibBase)
+    {
+    	krnPanic(KernelBase, "Failed to open hostlib.resource");
+    	return FALSE;
+    }
+
+    pd->iface = (struct KernelInterface *)HostLib_GetInterface(libc, kernel_functions, &r);
+    if (!pd->iface)
+    {
+    	krnPanic(KernelBase, "Failed to allocate host-side libc interface");
+    	return FALSE;
+    }
+
+    if (r)
+    {
+    	krnPanic(KernelBase, "Failed to resove %u functions from host libc", r);
+    	return FALSE;
+    }
+
+    /* Cache errno pointer, for context switching */
+    pd->errnoPtr = pd->iface->__error();
     AROS_HOST_BARRIER
-
-    KernelBase->kb_PlatformData = pd;
-
-    SupervisorCount = 0;
 
     /* We only want signal that we can handle at the moment */
     SIGFILLSET(&pd->sig_int_mask);
@@ -177,7 +235,7 @@ static int InitCore(struct KernelBase *KernelBase)
     SETHANDLER(sa, core_TrapHandler);
     for (s = sigs; s->sig != -1; s++)
     {
-	KernelIFace.sigaction(s->sig, &sa, NULL);
+	pd->iface->sigaction(s->sig, &sa, NULL);
 	AROS_HOST_BARRIER
 	SIGDELSET(&pd->sig_int_mask, s->sig);
     }
@@ -199,23 +257,23 @@ static int InitCore(struct KernelBase *KernelBase)
 
     /* Install interrupt handlers */
     SETHANDLER(sa, core_IRQ);
-    KernelIFace.sigaction(SIGALRM, &sa, NULL);
+    pd->iface->sigaction(SIGALRM, &sa, NULL);
     AROS_HOST_BARRIER
-    KernelIFace.sigaction(SIGIO  , &sa, NULL);
+    pd->iface->sigaction(SIGIO  , &sa, NULL);
     AROS_HOST_BARRIER
 
     /* Software IRQs do not need to block themselves. Anyway we know when we send them. */
     sa.sa_flags |= SA_NODEFER;
 
-    KernelIFace.sigaction(SIGUSR2, &sa, NULL);
+    pd->iface->sigaction(SIGUSR2, &sa, NULL);
     AROS_HOST_BARRIER
 
     SETHANDLER(sa, core_SysCall);
-    KernelIFace.sigaction(SIGUSR1, &sa, NULL);
+    pd->iface->sigaction(SIGUSR1, &sa, NULL);
     AROS_HOST_BARRIER
 
     /* We need to start up with disabled interrupts */
-    KernelIFace.sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
+    pd->iface->sigprocmask(SIG_BLOCK, &pd->sig_int_mask, NULL);
     AROS_HOST_BARRIER
 
     /*
@@ -227,22 +285,24 @@ static int InitCore(struct KernelBase *KernelBase)
     SIGEMPTYSET(&tmp_mask);
     SIGADDSET(&tmp_mask, SIGUSR1);
     SIGADDSET(&tmp_mask, SIGUSR2);
-    KernelIFace.sigprocmask(SIG_UNBLOCK, &tmp_mask, NULL);
+    pd->iface->sigprocmask(SIG_UNBLOCK, &tmp_mask, NULL);
     AROS_HOST_BARRIER
 
     return TRUE;
 }
 
-ADD2INITLIB(InitCore, 10);
-
 /*
- * All syscalls are mapped to single SIGUSR1.
- * We look at task's tc_State to determine the
- * needed action
+ * All syscalls are mapped to single SIGUSR1. We look at task's tc_State
+ * to determine the needed action.
+ * This is not inlined because actual SIGUSR1 number is host-specific, it can
+ * differ between different UNIX variants, and even between different ports of the same
+ * OS (e. g. Linux). We need host OS includes in order to get the proper definition, and
+ * we include them only in arch-specific code.
  */
-void krnSysCall(unsigned char n)
+void unix_SysCall(unsigned char n, struct KernelBase *KernelBase)
 {
     DSC(bug("[KRN] SysCall %d\n", n));
-    KernelIFace.raise(SIGUSR1);
+
+    KernelBase->kb_PlatformData->iface->raise(SIGUSR1);
     AROS_HOST_BARRIER
 }

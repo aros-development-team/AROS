@@ -28,6 +28,7 @@ AROS_LH2(void, KrnDisplayAlert,
 {
     AROS_LIBFUNC_INIT
 
+    struct KernelInterface *KernelIFace = KernelBase->kb_PlatformData->iface;
     int res;
     sigset_t sigs;
 
@@ -52,13 +53,19 @@ AROS_LH2(void, KrnDisplayAlert,
 
     D(bug("[KrnDisplayAlert] Request sent, halting...\n"));
 
+    if (!KernelIFace)
+    {
+    	/* This is early alert, KernelBase is incomplete, and the condition is not recoverable. */
+    	ShutdownA(SD_ACTION_POWEROFF);
+    }
+
     /*
      * Wait for SIGUSR2. Java side will deliver it to us after the alert was closed.
      * Normally it's used for KrnCause(), and in order not to execute scheduler and
      * SoftInts, we artificially raise our virtual privilege level.
      */
     AROS_ATOMIC_INC(SupervisorCount);
-    KernelIFace.sigwait(&sigs, &res);
+    KernelIFace->sigwait(&sigs, &res);
     AROS_ATOMIC_DEC(SupervisorCount);
 
     D(bug("[KrnDisplayAlert] Resume execution\n"));

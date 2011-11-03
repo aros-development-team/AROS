@@ -5,12 +5,12 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-AROS_LH0I(void, KrnCause,
+AROS_LH0(void, KrnCause,
 	  struct KernelBase *, KernelBase, 3, Kernel)
 {
     AROS_LIBFUNC_INIT
 
-    KernelIFace.raise(SIGUSR2);
+    KernelBase->kb_PlatformData->iface->raise(SIGUSR2);
     AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT

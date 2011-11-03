@@ -5,7 +5,7 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-AROS_LH0I(int, KrnMayGetChar,
+AROS_LH0(int, KrnMayGetChar,
 	 struct KernelBase *, KernelBase, 26, Kernel)
 {
     AROS_LIBFUNC_INIT
@@ -13,7 +13,7 @@ AROS_LH0I(int, KrnMayGetChar,
     char c;
     int ret;
 
-    ret = KernelIFace.read (STDERR_FILENO, &c, 1);
+    ret = KernelBase->kb_PlatformData->iface->read (STDERR_FILENO, &c, 1);
     AROS_HOST_BARRIER
 
     return (ret == 1) ? c : -1;

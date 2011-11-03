@@ -36,7 +36,6 @@ struct KernelInterface
     int     (*munmap)(void *addr, size_t length);
     int    *(*__error)(void);
 #ifdef HOST_OS_android
-    ssize_t (*write)(int fd, void *buf, size_t count);
     int     (*sigwait)(const sigset_t *restrict set, int *restrict sig);
 #else
     int     (*SigEmptySet)(sigset_t *set);
@@ -56,16 +55,17 @@ struct KernelInterface
 #define SIGADDSET   sigaddset
 #define SIGDELSET   sigdelset
 #else
-#define SIGEMPTYSET(x)   KernelIFace.SigEmptySet(x); AROS_HOST_BARRIER
-#define SIGFILLSET(x)    KernelIFace.SigFillSet(x); AROS_HOST_BARRIER
-#define SIGADDSET(x,s)   KernelIFace.SigAddSet(x,s); AROS_HOST_BARRIER
-#define SIGDELSET(x,s)   KernelIFace.SigDelSet(x,s); AROS_HOST_BARRIER
+#define SIGEMPTYSET(x)   pd->iface->SigEmptySet(x); AROS_HOST_BARRIER
+#define SIGFILLSET(x)    pd->iface->SigFillSet(x); AROS_HOST_BARRIER
+#define SIGADDSET(x,s)   pd->iface->SigAddSet(x,s); AROS_HOST_BARRIER
+#define SIGDELSET(x,s)   pd->iface->SigDelSet(x,s); AROS_HOST_BARRIER
 #endif
 
 struct PlatformData
 {
-    sigset_t	  sig_int_mask;			   /* Mask of signals that Disable() block */
-    int		 *errnoPtr;
+    sigset_t		    sig_int_mask;   /* Mask of signals that Disable() block */
+    int			   *errnoPtr;
+    struct KernelInterface *iface;
 };
 
 struct SignalTranslation
@@ -76,6 +76,5 @@ struct SignalTranslation
 };
 
 extern struct SignalTranslation sigs[];
-extern struct KernelInterface KernelIFace;
 
-void cpu_DispatchContext(struct Task *task, regs_t *regs);
+void cpu_DispatchContext(struct Task *task, regs_t *regs, struct PlatformData *pdata);

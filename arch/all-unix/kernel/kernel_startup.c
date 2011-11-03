@@ -38,45 +38,11 @@
 #define ARCH_31BIT 0
 #endif
 
-/* Some globals we can't live without */
+/* Global HostIFace is needed for krnPutC() to work before KernelBase is set up */
 struct HostInterface *HostIFace;
-struct KernelInterface KernelIFace;
 
-/* Here we use INIT set. THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
-DEFINESET(INIT);
-
-/* libc functions that we use */
-static const char *kernel_functions[] =
-{
-    "raise",
-    "sigprocmask",
-    "sigsuspend",
-    "sigaction",
-    "mprotect",
-    "read",
-    "fcntl",
-    "mmap",
-    "munmap",
-#ifdef HOST_OS_linux
-    "__errno_location",
-#else
-#ifdef HOST_OS_android
-    "__errno",
-#else
-    "__error",
-#endif
-#endif
-#ifdef HOST_OS_android
-    "write",
-    "sigwait",
-#else
-    "sigemptyset",
-    "sigfillset",
-    "sigaddset",
-    "sigdelset",
-#endif
-    NULL
-};
+/* THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
+DEFINESET(STARTUP);
 
 /*
  * Kickstart entry point. Note that our code area is already made read-only by the bootstrap.
@@ -87,7 +53,6 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     void *hostlib;
     char *errstr;
     unsigned int mm_PageSize;
-    unsigned int i;
     struct MemHeader *bootmh;
     struct TagItem *tag;
     const struct TagItem *tstate = msg;
@@ -126,7 +91,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     }
 
     /* Set globals only AFTER __clear_bss() */
-    BootMsg = msg;
+    BootMsg   = msg;
     HostIFace = hif;
 
     /* If there's no proper HostIFace, we can't even say anything */
@@ -139,16 +104,16 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     if (HostIFace->Version < HOSTINTERFACE_VERSION)
 	return -1;
 
-    /* Host interface is okay. We have working krnPutC() and can talk now */
-    D(bug("[Kernel] Starting up...\n"));
+    /* Host interface is okay. We have working krnPutC() and can talk now. */
+    D(nbug("[Kernel] Starting up...\n"));
 
     if ((!ranges[0]) || (!ranges[1]) || (!mmap))
     {
-	krnPanic(KernelBase, "Not enough information from the bootstrap\n"
-		 "\n"
-		 "Kickstart start 0x%p, end 0x%p\n"
-		 "Memory map address: 0x%p",
-		 ranges[0], ranges[1], mmap);
+	krnPanic(NULL, "Not enough information from the bootstrap\n"
+		       "\n"
+		       "Kickstart start 0x%p, end 0x%p\n"
+		       "Memory map address: 0x%p",
+		       ranges[0], ranges[1], mmap);
 	return -1;
     }
 
@@ -160,30 +125,23 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	return -1;
     }
 
-    for (i = 0; kernel_functions[i]; i++)
+    /* Here we can add some variant-specific things. Android and iOS ports use this. */
+    if (!set_call_libfuncs(SETNAME(STARTUP), 1, 1, hostlib))
     {
-	void *func = HostIFace->hostlib_GetPointer(hostlib, kernel_functions[i], &errstr);
-
-	AROS_HOST_BARRIER
-        if (!func)
-        {
-            krnPanic(NULL, "Failed to find symbol %s in host-side libc\n%s", kernel_functions[i], errstr);
-	    return -1;
-	}
-	((void **)&KernelIFace)[i] = func;
+	HostIFace->hostlib_Close(hostlib, NULL);
+    	AROS_HOST_BARRIER
+	return -1;
     }
 
-    /* Here we can add some variant-specific things. Android and iOS ports use this. */
-    if (!set_call_funcs(SETNAME(INIT), 1, 1))
-    	return -1;
-
     /* Now query memory page size. We need in order to get our memory manager functional. */
-    mm_PageSize = krnGetPageSize(hif, hostlib);
-    D(bug("[KRN] Memory page size is %u\n", mm_PageSize));
+    mm_PageSize = krnGetPageSize(hostlib);
+    D(nbug("[KRN] Memory page size is %u\n", mm_PageSize));
 
     if (!mm_PageSize)
     {
     	/* krnGetPageSize() panics itself */
+    	HostIFace->hostlib_Close(hostlib, NULL);
+    	AROS_HOST_BARRIER
     	return -1;
     }
 
@@ -191,7 +149,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     bootmh = (struct MemHeader *)(IPTR)mmap->addr;
 
     /* Prepare the first mem header */
-    D(bug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
+    D(nbug("[Kernel] preparing first mem header at 0x%p (%u bytes)\n", bootmh, mmap->len));
     krnCreateMemHeader("Normal RAM", 0, bootmh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|ARCH_31BIT);
 
     /*
@@ -202,14 +160,16 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     	SysBase = NULL;
 
     /* Create SysBase. After this we can use basic exec services, like memory allocation, lists, etc */
-    D(bug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
+    D(nbug("[Kernel] calling krnPrepareExecBase(), mh_First = %p\n", bootmh->mh_First));
     if (!krnPrepareExecBase(ranges, bootmh, msg))
     {
     	/* Hosted krnPanic() returns, allowing us to drop back into bootstrap */
+    	HostIFace->hostlib_Close(hostlib, NULL);
+    	AROS_HOST_BARRIER
     	return -1;
     }
 
-    D(bug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
+    D(nbug("[Kernel] SysBase=%p, mh_First=%p\n", SysBase, bootmh->mh_First));
 
     /*
      * ROM memory header. This special memory header covers all ROM code and data sections
@@ -224,9 +184,10 @@ int __startup startup(struct TagItem *msg, ULONG magic)
      */
     krnCreateROMHeader("Boot stack", _stack - AROS_STACKSIZE, _stack);
 
-    /* Start up the system */
-    InitCode(RTF_SINGLETASK, 0);
-    InitCode(RTF_COLDSTART, 0);
+    /* The following is a typical AROS bootup sequence */
+    InitCode(RTF_SINGLETASK, 0);	/* Initialize early modules. This includes hostlib.resource. */
+    core_Start(hostlib);		/* Got hostlib.resource. Initialize our interrupt mechanism. */
+    InitCode(RTF_COLDSTART, 0);		/* Boot!						     */
 
     /* If we returned here, something went wrong, and dos.library failed to take over */
     krnPanic(getKernelBase(), "Failed to start up the system");
