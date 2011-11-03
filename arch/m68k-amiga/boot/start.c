@@ -30,6 +30,7 @@
 #define SS_STACK_SIZE	0x02000
 
 extern const struct Resident Exec_resident;
+extern struct ExecBase *AbsExecBase;
 
 static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask);
 
@@ -779,6 +780,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	     ((ULONG)SysBase >= 0x00a00000ul && (ULONG)SysBase < 0x01000000ul))) {
 	    /* Move execbase to real fast if available now */
 	    SysBase = PrepareExecBaseMove(SysBase);
+	    AbsExecBase = SysBase;
 	    DEBUGPUTHEX(("[Sysbase] now at", (ULONG)SysBase));
 	}
 
