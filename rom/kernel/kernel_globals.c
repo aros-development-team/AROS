@@ -19,12 +19,3 @@
  */
 struct KernelBase *KernelBase;
 __attribute__((section(".data"))) struct TagItem *BootMsg;
-
-static int Kernel_init_globals(struct KernelBase *lh)
-{
-    KernelBase = lh;
-
-    return TRUE;
-}
-
-ADD2INITLIB(Kernel_init_globals, -128)

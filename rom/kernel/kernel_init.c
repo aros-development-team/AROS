@@ -1,3 +1,11 @@
+/*
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Main kernel.resource initialization.
+    Lang: english
+*/
+
 #include <aros/asmcall.h>
 #include <aros/kernel.h>
 #include <aros/symbolsets.h>
@@ -12,7 +20,6 @@
 #include LC_LIBDEFS_FILE
 
 #include <kernel_debug.h>
-#include <kernel_memory.h>
 
 /* We have own bug(), so don't use aros/debug.h to avoid conflicts */
 #define D(x)
@@ -75,8 +82,8 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     int i;
 
     D(bug("[KRN] Kernel_Init()\n"));
-    /* We set our global KernelBase here */
-    KernelBase = AllocKernelBase(SysBase, FUNCTIONS_COUNT);
+
+    KernelBase = AllocKernelBase(SysBase);
     if (!KernelBase)
     	return NULL;
 
@@ -94,21 +101,17 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     for (i=0; i < IRQ_COUNT; i++)
         NEWLIST(&KernelBase->kb_Interrupts[i]);
 
+    /*
+     * Everything is ok, add our resource.
+     * exec.library catches this call and sets up its memory management.
+     * At this point kernel.resource's debug I/O and memory management must be
+     * fully functional. After this we'll be able to safely call CreatePool() etc.
+     */
+    AddResource(KernelBase);
+
     /* Call platform-specific init code */
     if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, KernelBase))
     	return NULL;
-
-    /* Everything is ok, add our resource */
-    AddResource(KernelBase);
-
-    /*
-     * exec.library catches our AddResource() and sets up its memory management.
-     * Before AddResource() kernel.resource must be fully functional and be able to
-     * report memory page size and perform page allocations.
-     * Here we can already safely call CreatePool() etc. If needed, a second symbol
-     * set can be added here. However, it's much more perspective to use a slab allocator
-     * being developed by Michal Schulz to handle kernel object allocations.
-     */
 
     D(bug("[KRN] Kernel_Init() done\n"));
 
