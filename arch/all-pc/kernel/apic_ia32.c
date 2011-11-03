@@ -158,27 +158,6 @@ void core_APIC_Init(struct APICData *apic, ULONG cpuNum)
     D(bug("[APIC.%u] LAPIC frequency should be %u Hz (%u mHz)\n", cpuNum, apic->cores[cpuNum].timerFreq, apic->cores[cpuNum].timerFreq / 1000000));
 }
 
-IPTR core_APIC_GetBase(void)
-{
-    IPTR _apic_base = 0;
-
-    if (IN_USER_MODE)
-    {
-        D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: Called in UserMode\n"));
-
-	__asm__ __volatile__ ("int $0x80":"=a"(_apic_base):"a"(SC_RDMSR),"c"(MSR_LAPIC_BASE));
-    }
-    else
-    {
-        _apic_base = rdmsri(MSR_LAPIC_BASE);
-    }
-
-    _apic_base &= APIC_BASE_MASK;
-
-    D(bug("[APIC] _APIC_IA32_GetMSRAPICBase: MSR APIC Base @ %p\n", _apic_base));
-    return _apic_base;
-}
-
 UBYTE core_APIC_GetID(IPTR _APICBase)
 {
     UBYTE _apic_id;
@@ -193,7 +172,7 @@ UBYTE core_APIC_GetID(IPTR _APICBase)
 void core_APIC_AckIntr(void)
 {
     /* Write zero to EOI of current APIC */
-    IPTR apic_base = rdmsri(MSR_LAPIC_BASE) & APIC_BASE_MASK;
+    IPTR apic_base = core_APIC_GetBase();
 
     APIC_REG(apic_base, APIC_EOI) = 0;
 }

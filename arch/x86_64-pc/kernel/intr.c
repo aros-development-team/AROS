@@ -317,15 +317,11 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	case SC_SUPERVISOR:
 	    /* This doesn't return */
 	    core_Supervisor(regs);
-
-	case SC_RDMSR:
-	    regs->rax = rdmsrq(regs->rcx);
-	    break;
 	}
 
 	/*
 	 * Scheduler can be called only from within user mode.
-	 * Every task has ss register initialized to a valid segment descriptor.\
+	 * Every task has ss register initialized to a valid segment descriptor.
 	 * The descriptor itself isn't used by x86-64, however when a privilege
 	 * level switch occurs upon an interrupt, ss is reset to zero. Old ss value
 	 * is always pushed to stack as part of interrupt context.

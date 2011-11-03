@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <asm/cpu.h>
 #include <resources/acpi.h>
 
 /*
@@ -34,10 +35,21 @@ struct APICData
 #define APF_8259 0x0001	/* Legacy PIC present				*/
 
 ULONG core_APIC_Wake(APTR start_addr, UBYTE id, IPTR base);
-IPTR  core_APIC_GetBase(void);
 UBYTE core_APIC_GetID(IPTR base);
 void  core_APIC_Init(struct APICData *data, ULONG cpuNum);
 void  core_APIC_AckIntr(void);
+
+#ifdef __x86_64__
+#define APIC_BASE_MASK 0x000FFFFFFFFFF000
+#else
+#define APIC_BASE_MASK 0xFFFFF000
+#endif
+
+/* This is callable in supervisor only */
+static inline IPTR core_APIC_GetBase(void)
+{
+    return rdmsri(0x1B) & APIC_BASE_MASK;
+}
 
 struct APICData *acpi_APIC_Init(struct ACPIBase *ACPIBase);
 struct APICData *core_APIC_Probe(void);
