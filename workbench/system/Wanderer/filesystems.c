@@ -1072,7 +1072,7 @@ BOOL  actionDir(APTR pool, ULONG flags, char *source, char *dest, BOOL quit, UWO
 ///
 
 ///CopyContent()
-BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct Hook *delHook, APTR userdata) 
+BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct DelActionHandle *delHandle, APTR userdata) 
 {
 
     struct  FileInfoBlock  *FIB;
@@ -1088,7 +1088,6 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
     BOOL       back = FALSE;
     BOOL       deletesrc, unprotectsrc;
     LONG       info;
-    UWORD      dmode = DELMODE_ASK;
     UWORD      pmode = DELMODE_ASK;
     UWORD      omode = DELMODE_ASK;
 
@@ -1188,7 +1187,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
 
     deletesrc = FALSE;
     unprotectsrc = TRUE;
-    if (delHook && ((flags & ACTION_DELETE) != 0) && ((makeparentdir && dir) || !dir)) 
+    if (delHandle && ((flags & ACTION_DELETE) != 0) && ((makeparentdir && dir) || !dir))
     {
         if (dir) 
         {
@@ -1203,15 +1202,15 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
         }
         delDisplay.type = 0;
 
-        dmode = CallHook(delHook, (Object *) &delDisplay, NULL);
-        if ((dmode == DELMODE_ALL) || (dmode == DELMODE_DELETE)) 
+        if (delHandle->deletemode != DELMODE_ALL) delHandle->deletemode = CallHook(delHandle->hook, (Object *) &delDisplay, NULL);
+        if ((delHandle->deletemode == DELMODE_ALL) || (delHandle->deletemode == DELMODE_DELETE))
         {
             deletesrc = TRUE;
             if ((info & (FILEINFO_PROTECTED|FILEINFO_WRITE)) != 0) 
             {
                 delDisplay.type = 1;
                 unprotectsrc = FALSE;
-                pmode = CallHook(delHook, (Object *) &delDisplay, NULL);
+                pmode = CallHook(delHandle->hook, (Object *) &delDisplay, NULL);
                 if ((pmode == DELMODE_ALL) || (pmode == DELMODE_DELETE)) 
                 {
                     SetProtection(s, 0);
@@ -1224,7 +1223,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
 
     if (dest) 
     {
-        if (delHook && !dir) 
+        if (delHandle && !dir)
         {
             dpath = combinePath(pool, d, FilePart(s));
             if (dpath) 
@@ -1232,7 +1231,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
                 info = GetFileInfo(dpath);
                 if (info != -1) 
                 {
-                    if (delHook && (omode != DELMODE_NONE)) 
+                    if (delHandle && (omode != DELMODE_NONE))
                     {
                         if (
                             (omode == DELMODE_ASK) || (omode == DELMODE_DELETE) || 
@@ -1242,7 +1241,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
                             delDisplay.spath = d;
                             delDisplay.file = FilePart(s);
                             delDisplay.type = 2;
-                            if (omode != DELMODE_ALL) omode = CallHook(delHook, (Object *) &delDisplay, NULL);
+                            if (omode != DELMODE_ALL) omode = CallHook(delHandle->hook, (Object *) &delDisplay, NULL);
                             if ((omode == DELMODE_ALL) || (omode == DELMODE_DELETE)) 
                             {
                                 if (((info & (FILEINFO_PROTECTED|FILEINFO_WRITE)) != 0) && (pmode != DELMODE_NONE)) 
@@ -1255,7 +1254,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
                                         delDisplay.spath = d;
                                         delDisplay.file = FilePart(s);
                                         delDisplay.type = 1;
-                                        if (pmode != DELMODE_ALL) pmode = CallHook(delHook, (Object *) &delDisplay, NULL);
+                                        if (pmode != DELMODE_ALL) pmode = CallHook(delHandle->hook, (Object *) &delDisplay, NULL);
                                         if ((pmode == DELMODE_ALL) || (pmode == DELMODE_DELETE)) 
                                         {
                                             SetProtection(dpath, 0);
@@ -1274,10 +1273,10 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
 
     if (dir) 
     {
-        if (dest || ((flags & ACTION_DELETE) != 0)) 
+        if (dest || ((flags & ACTION_DELETE) != 0))
         {
             if (
-                ((dmode == DELMODE_NONE) || (dmode == DELMODE_NO)) && 
+                ((delHandle->deletemode == DELMODE_NONE) || (delHandle->deletemode == DELMODE_NO)) &&
                 (flags & (ACTION_DELETE|ACTION_COPY)) == ACTION_DELETE
             ) 
             {
@@ -1286,7 +1285,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
             else 
             {
                 back = actionDir(
-                    pool, flags, s, dest, FALSE, dmode, pmode, omode, displayHook, delHook, userdata
+                    pool, flags, s, dest, FALSE, delHandle->deletemode, pmode, omode, displayHook, delHandle->hook, userdata
                 );
             }
         } 
@@ -1318,7 +1317,7 @@ BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, stru
         copyFile(pool, infoname, d, NULL, NULL, NULL);
     }
 
-    if (!back && delHook && (dmode != DELMODE_NONE) && ((flags & ACTION_DELETE) !=0)) 
+    if (!back && delHandle && (delHandle->deletemode != DELMODE_NONE) && ((flags & ACTION_DELETE) !=0))
     {
         if (unprotectsrc && deletesrc)
         {

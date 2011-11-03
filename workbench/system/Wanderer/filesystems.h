@@ -115,6 +115,12 @@ struct FileEntry
     char    name[1];
 };
 
+struct DelActionHandle
+{
+    struct Hook *hook;
+    WORD        deletemode;
+};
+
 char  *CombineString(char *format, ...);
 void freeString(APTR pool, char *str);
 
@@ -122,6 +128,6 @@ WORD AskChoiceNew(const char *title, const char *strg, const char *gadgets, UWOR
 WORD AskChoice(const char *title, const char *strg, const char *gadgets, UWORD sel);
 WORD AskChoiceCentered(const char *title, const char *strg, const char *gadgets, UWORD sel);
 
-BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct Hook *delHook, APTR userdata);
+BOOL CopyContent(APTR p, char *s, char *d, BOOL makeparentdir, ULONG flags, struct Hook *displayHook, struct DelActionHandle *delHandle, APTR userdata);
 
 #endif /* WANDERER_FILESYSTEMS_H */
