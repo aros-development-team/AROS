@@ -38,12 +38,12 @@
 /* FILEINFO CONSTANTS */
 
 #define OPMODE_ASK          0
-#define OPMODE_DELETE       1
+#define OPMODE_YES          1
 #define OPMODE_ALL          2
 #define OPMODE_NO           3
 #define OPMODE_NONE         4
 
-#define ACCESS_SKIP         OPMODE_DELETE
+#define ACCESS_SKIP         OPMODE_YES
 #define ACCESS_BREAK        OPMODE_NONE
 
 #define FILEINFO_DIR        1
