@@ -1,5 +1,5 @@
 #ifndef WANDERER_FILESYSTEMS_H
-#define	WANDERER_FILESYSTEMS_H
+#define WANDERER_FILESYSTEMS_H
 
 #ifndef __AROS__
 #include "portable_macros.h"
@@ -37,52 +37,51 @@
 
 /* FILEINFO CONSTANTS */
 
-#define	 DELMODE_ASK		  0
-#define	 DELMODE_DELETE		  1
-#define	 DELMODE_ALL		  2
-#define	 DELMODE_NO			  3
-#define	 DELMODE_NONE		  4
+#define DELMODE_ASK         0
+#define DELMODE_DELETE      1
+#define DELMODE_ALL         2
+#define DELMODE_NO          3
+#define DELMODE_NONE        4
 
-#define	 ACCESS_SKIP		  DELMODE_DELETE
-#define	 ACCESS_BREAK   	  DELMODE_NONE
+#define ACCESS_SKIP         DELMODE_DELETE
+#define ACCESS_BREAK        DELMODE_NONE
 
-#define	 FILEINFO_DIR		  1
-#define	 FILEINFO_PROTECTED	  2
-#define	 FILEINFO_WRITE		  4
+#define FILEINFO_DIR        1
+#define FILEINFO_PROTECTED  2
+#define FILEINFO_WRITE      4
 
-#define	 ACTION_COPY             1
-#define	 ACTION_DELETE           2
-#define	 ACTION_DIRTOABS         4
-#define	 ACTION_MAKEDIRS         8
-#define  ACTION_GETINFO          16
-#define  ACTION_UPDATE           (1 << 31)
+#define ACTION_COPY         1
+#define ACTION_DELETE       2
+#define ACTION_DIRTOABS     4
+#define ACTION_MAKEDIRS     8
+#define ACTION_GETINFO      16
+#define ACTION_UPDATE       (1 << 31)
 
-#define	 PATH_NOINFO			 0
-#define	 PATH_RECURSIVE			 1
-#define	 PATH_NONRECURSIVE		 2
-
-
-#define	 PATHBUFFERSIZE		2048
-#define	 COPYLEN            131072
-#define	 POOLSIZE           COPYLEN * 2
+#define PATH_NOINFO         0
+#define PATH_RECURSIVE      1
+#define PATH_NONRECURSIVE   2
 
 
-struct	 dCopyStruct 
+#define PATHBUFFERSIZE      2048
+#define COPYLEN             131072
+#define POOLSIZE            COPYLEN * 2
+
+
+struct dCopyStruct
 {
-		    char  *spath;
-		    char  *dpath;
-		    char  *file;
-            APTR            userdata;
-            ULONG           flags;
-            ULONG           filelen;
-            ULONG           actlen;
-            ULONG           totallen;
-            UWORD           type;
-            unsigned int    difftime;
-
+    char  *spath;
+    char  *dpath;
+    char  *file;
+    APTR            userdata;
+    ULONG           flags;
+    ULONG           filelen;
+    ULONG           actlen;
+    ULONG           totallen;
+    UWORD           type;
+    unsigned int    difftime;
 };
 
-struct  MUIDisplayObjects 
+struct MUIDisplayObjects
 {
     Object              *sourceObject;
     Object              *destObject;
@@ -103,7 +102,7 @@ struct  MUIDisplayObjects
     char                SpeedBuffer[32];
 };
 
-struct  FileInfo 
+struct FileInfo
 {
     ULONG   len;
     ULONG   protection;
