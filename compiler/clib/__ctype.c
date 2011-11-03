@@ -506,20 +506,38 @@ const int __ctype_tolower_array[384] =
 };
 
 #ifdef AROSC_SHARED
-static
-#endif
-int __ctype_init(void)
+static int __ctype_init(void)
 {
-    __ctype_b       = &__ctype_b_array[128];
-    __ctype_toupper = &__ctype_toupper_array[128];
-    __ctype_tolower = &__ctype_tolower_array[128];
+    struct arosc_userdata *acud = __get_arosc_userdata();
+
+    acud->acud_ctype.b       = &__ctype_b_array[128];
+    acud->acud_ctype.toupper = &__ctype_toupper_array[128];
+    acud->acud_ctype.tolower = &__ctype_tolower_array[128];
 
     return 1;
 }
 
-#ifdef AROSC_SHARED
 ADD2INIT(__ctype_init, 20);
 #endif
+
+/* Provide local arosc ctypes for the static version of arosc */
+#ifdef AROSC_STATIC
+const struct arosc_ctype __arosc_ctype = {
+    .b = &__ctype_b_array[128],
+    .toupper = &__ctype_toupper_array[128],
+    .tolower = &__ctype_tolower_array[128],
+};
+const struct arosc_ctype *__get_arosc_ctype(void)
+{
+    return &__arosc_ctype;
+}
+#else
+const struct arosc_ctype *__get_arosc_ctype(void)
+{
+    return &__get_arosc_userdata()->acud_ctype;
+}
+#endif
+
 
 /*****************************************************************************
 
