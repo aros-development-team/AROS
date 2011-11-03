@@ -41,12 +41,6 @@ void free(void *ptr)
     mem--;
     FreeMem(mem, mem[0]);
 }
-
-/* Since GDB can't patch 'start' in the ROM with 
- * 'trap #1' instructions, we make a fake 'start'
- * in the .bss segment.
- */
-UWORD start;
 #endif
 
 static int Debug_GdbInit(struct DebugBase *DebugBase)
