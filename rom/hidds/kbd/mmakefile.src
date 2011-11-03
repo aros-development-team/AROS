@@ -10,7 +10,6 @@ clean ::
 	-$(RM) $(OBJDIR) *.err $(LIB) *.s
 
 FILES	:= kbdclass
-STUBS	:= kbd_stubs
 
 USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
 
@@ -18,7 +17,5 @@ USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
     modname=keyboard modtype=hidd \
     files="$(FILES)" \
     uselibs="oop rom amiga"
-
-%make_hidd_stubs hidd=keyboard
 
 %common

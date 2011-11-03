@@ -9,6 +9,7 @@
     Lang: English.
 */
 
+#include <proto/oop.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 
@@ -54,7 +55,51 @@ struct pHidd_Kbd_RemHardwareDriver
     OOP_Object	    *driverObject;
 };
 
-OOP_Object *HIDD_Kbd_AddHardwareDriver(OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags);
-void HIDD_Kbd_RemHardwareDriver(OOP_Object *obj, OOP_Object *driver);
+#if !defined(HiddKbdBase) && !defined(__OOP_NOMETHODBASES__)
+#define HiddKbdBase HIDD_Kbd_GetMethodBase(__obj)
+
+static inline OOP_MethodID HIDD_Kbd_GetMethodBase(OOP_Object *obj)
+{
+    static OOP_MethodID KbdMethodBase;
+
+    if (!KbdMethodBase)
+    {
+        struct Library *OOPBase = (struct Library *)OOP_OOPBASE(obj);
+
+        KbdMethodBase = OOP_GetMethodID(IID_Hidd_Kbd, 0);
+    }
+
+    return KbdMethodBase;
+}
+#endif
+
+#define HIDD_Kbd_AddHardwareDriver(obj, driverClass, tags) \
+    ({OOP_Object *__obj = obj;\
+      HIDD_Kbd_AddHardwareDriver_(HiddKbdBase, __obj, driverClass, tags); })
+
+static inline OOP_Object *HIDD_Kbd_AddHardwareDriver_(OOP_MethodID KbdMethodBase, OOP_Object *obj, OOP_Class *driverClass, struct TagItem *tags)
+{
+    struct pHidd_Kbd_AddHardwareDriver p;
+
+    p.mID = KbdMethodBase + moHidd_Kbd_AddHardwareDriver;
+    p.driverClass = driverClass;
+    p.tags = tags;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+#define HIDD_Kbd_RemHardwareDriver(obj, driverObject) \
+    ({OOP_Object *__obj = obj;\
+      HIDD_Kbd_RemHardwareDriver_(HiddKbdBase, __obj, driverObject); })
+
+static inline OOP_Object *HIDD_Kbd_RemHardwareDriver_(OOP_MethodID KbdMethodBase, OOP_Object *obj, OOP_Object *driverObject)
+{
+    struct pHidd_Kbd_RemHardwareDriver p;
+
+    p.mID = KbdMethodBase + moHidd_Kbd_RemHardwareDriver;
+    p.driverObject = driverObject;
+
+    return (OOP_Object *)OOP_DoMethod(obj, (OOP_Msg) &p);
+}
 
 #endif /* HIDD_KEYBOARD_H */
