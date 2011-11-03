@@ -19,7 +19,7 @@ FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext delet
 	     switch unmapglobal virtualtophysical obtaininput releaseinput 		    \
 	     putchar maygetchar allocpages freepages getsystemattr formatstr		    \
 	     initmemory statmemory _bug _displayalert getcpucount getcpunumber		    \
-	     prepareexecbase
+	     allockernelbase prepareexecbase
 FILES     := kernel_init cpu_init kernel_cpu kernel_debug kernel_panic kernel_intr \
 	     kernel_memory kernel_romtags kernel_scheduler kernel_globals
 MMU_FILES := kernel_mm
