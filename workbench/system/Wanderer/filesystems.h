@@ -119,6 +119,7 @@ struct OpModes
 {
     struct Hook *askhook;
     WORD        deletemode;
+    WORD        protectmode;
 };
 
 char  *CombineString(char *format, ...);
