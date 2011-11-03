@@ -70,6 +70,8 @@ struct mouse_staticdata
 
     OOP_Object		*mousehidd;
 
+    OOP_MethodID         hiddMouseBase;
+
     struct Library *cs_SysBase;
     struct Library *cs_OOPBase;
     BPTR cs_SegList;
