@@ -2,26 +2,29 @@ handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
-define _debug_setup
-    set $_debug_DebugBase = 0
-    if AbsExecBase != 0
-        set $_debug_DebugBase = (struct DebugBase *)((*(struct IntExecBase **)&AbsExecBase))->DebugBase
-    end
+define _debug_init
+    init-if-undefined $AbsExecBase = (struct ExecBase *)SysBase
 
-    if $_debug_DebugBase != 0
-        set $_debug_ModList = $_debug_DebugBase->db_Modules
-        set $_debug_KickList = $_debug_DebugBase->db_KernelModules
-    else 
-        set $_debug_ModList = Debug_ModList
-        set $_debug_KickList = Debug_KickList
+    if AbsExecBase != 0
+        set $AbsExecBase = *(struct IntExecBase **)&AbsExecBase
+        set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
+
+        if $_debug_DebugBase != 0
+            set $_debug_ModList = $_debug_DebugBase->db_Modules
+            set $_debug_KickList = $_debug_DebugBase->db_KernelModules
+        end
+    else
+        init-if-undefined $_debug_ModList = Debug_ModList
+        init-if-undefined $_debug_KickList = Debug_KickList
     end
 end
-document _debug_setup
-Set up debugging pointers
+document _debug_init
+Initialize debugging convenience variables
 end
 
 define liblist
-    set $lib = ((struct ExecBase *)AbsExecBase)->LibList.lh_Head
+    _debug_init
+    set $lib = ((struct ExecBase *)$AbsExecBase)->LibList.lh_Head
 
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
@@ -38,7 +41,8 @@ List the current libraries in the system
 end
 
 define devlist
-    set $dev = ((struct ExecBase *)AbsExecBase)->DeviceList.lh_Head
+    _debug_init
+    set $dev = ((struct ExecBase *)$AbsExecBase)->DeviceList.lh_Head
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($dev->ln_Succ != 0)
@@ -54,7 +58,8 @@ List the current devices in the system
 end
 
 define resourcelist
-    set $res = ((struct ExecBase *)AbsExecBase)->ResourceList.lh_Head
+    _debug_init
+    set $res = ((struct ExecBase *)$AbsExecBase)->ResourceList.lh_Head
     printf "Base     Name\n"
     printf "---------------------------------------------------------------\n"
     while ($res->ln_Succ != 0)
@@ -67,7 +72,8 @@ List the current resources in the system
 end
 
 define residentlist
-    set $resp = (struct Resident **)((struct ExecBase *)AbsExecBase)->ResModules
+    _debug_init
+    set $resp = (struct Resident **)((struct ExecBase *)$AbsExecBase)->ResModules
     set $i = 0
 
     printf "Address    Pri Flags Vers Type  Name\n"
@@ -89,7 +95,8 @@ List the system resident list
 end
 
 define taskready
-    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->TaskReady.lh_Head
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->TaskReady.lh_Head
 
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
@@ -111,7 +118,8 @@ List of tasks currently ready to run
 end
 
 define taskwait
-    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->TaskWait.lh_Head
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->TaskWait.lh_Head
 
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
@@ -133,7 +141,8 @@ List of tasks currently waiting for an event
 end
 
 define thistask
-    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->ThisTask
+    _debug_init
+    set $task = (struct Task *)((struct ExecBase *)$AbsExecBase)->ThisTask
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
@@ -151,9 +160,9 @@ Print out information about the currently running task.
 end
 
 define modlist
+    _debug_init
     printf "Segment           Module\n"
 
-    _debug_setup
     if $_debug_ModList
         printf "---------------------------------------------------------------------\n"
         set $segnode = (struct segment *)$_debug_ModList->mlh_Head
@@ -189,10 +198,10 @@ List of all the modules currently loaded in memory
 end
 
 define findaddr
+    _debug_init
     set $cont = 1
 
     #first search in modules loaded from disk
-    _debug_setup
     printf "Searching in the loaded modules...\n"
     if $_debug_ModList
         set $segnode = (struct segment *)$_debug_ModList->mlh_Head
@@ -240,7 +249,7 @@ define findaddr
         printf "Searching in the resident list...\n"
     end
 
-    set $resp = (struct Resident **)((struct ExecBase *)AbsExecBase)->ResModules
+    set $resp = (struct Resident **)((struct ExecBase *)$AbsExecBase)->ResModules
     set $i = 0
 
     while (($resp)[$i] != 0) && $cont
@@ -327,8 +336,8 @@ define end_log
 end
 
 define loadseg
+  _debug_init
   dont-repeat
-  _debug_setup
   if $_debug_ModList
   set $step = 1
   set $segnode = (struct segment *)$_debug_ModList->mlh_Head
@@ -429,6 +438,7 @@ Loads the module that contains the given address
 end
 
 define seglistdump
+    _debug_init
     set $nextseg = $arg0
     set $count   = 1
 

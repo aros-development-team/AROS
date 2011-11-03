@@ -97,6 +97,7 @@ static struct TagItem km[] =
 
 /* Global SysBase */
 struct ExecBase *SysBase;
+APTR AbsExecBase = NULL;
 
 static char *GetConfigArg(char *str, char *option)
 {
