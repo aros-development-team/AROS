@@ -8,6 +8,7 @@ FILES	:= \
     Alias \
     Ask \
     CD \
+    Clip \
     Cut \
     Echo \
     Else \
@@ -25,6 +26,7 @@ FILES	:= \
     NewCLI \
     NewShell \
     Path \
+    PathPart \
     Prompt \
     Quit \
     Resident \
