@@ -359,9 +359,9 @@ MakeStaticHook(Hook_AskDeleteFunc,Wanderer__HookFunc_AskDeleteFunc);
 
 ///Wanderer__Func_CopyDropEntries()
 AROS_UFH3(void, Wanderer__Func_CopyDropEntries,
-	AROS_UFHA(STRPTR,              argPtr, A0),
-	AROS_UFHA(ULONG,               argSize, D0),
-	AROS_UFHA(struct ExecBase *,   SysBase, A6))
+        AROS_UFHA(STRPTR,              argPtr, A0),
+        AROS_UFHA(ULONG,               argSize, D0),
+        AROS_UFHA(struct ExecBase *,   SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
@@ -631,15 +631,15 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
 
         {
             wandererCopyProcess = CreateNewProcTags(
-				NP_Entry,       (IPTR)Wanderer__Func_CopyDropEntries,
-				NP_Name,        (IPTR)wand_copyprocnamestr,
-				NP_Synchronous, FALSE,
-				NP_UserData,    (IPTR)dropevent,
-				NP_StackSize,   40000,
-				TAG_DONE);
-	    if (wandererCopyProcess == NULL) {
-	        /* TODO: Handle failure to create the copy process */
-	    }
+                                NP_Entry,       (IPTR)Wanderer__Func_CopyDropEntries,
+                                NP_Name,        (IPTR)wand_copyprocnamestr,
+                                NP_Synchronous, FALSE,
+                                NP_UserData,    (IPTR)dropevent,
+                                NP_StackSize,   40000,
+                                TAG_DONE);
+            if (wandererCopyProcess == NULL) {
+                /* TODO: Handle failure to create the copy process */
+            }
         }
     }
     else if (msg->type == ICONWINDOW_ACTION_APPWINDOWDROP)
@@ -913,7 +913,7 @@ static void fmtlarge(UBYTE *buf, ULONG num)
         array.dec = 0;
         d = 0;
         //ch = 'B';
-		ch = _(MSG_MEM_B);
+                ch = _(MSG_MEM_B);
     }
 
     if (!array.dec && (d > array.val * 10))
@@ -1240,7 +1240,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     if (iconList != NULL)
     {
         DoMethod(iconList, MUIM_IconList_Update);
-	DoMethod(iconList, MUIM_IconList_Sort);
+        DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
 ///
@@ -1309,7 +1309,7 @@ D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, dir_name));
     {
         struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
         struct IconEntry      *node = NULL;
-        struct TagItem  	  icon_tags[] = 
+        struct TagItem            icon_tags[] = 
         {
             { ICONPUTA_OnlyUpdatePosition, TRUE },
             { TAG_DONE, 0                       }
@@ -1441,17 +1441,17 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     {
         IPTR display_bits = 0, menu_view_state = 0;
         GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
-	
-	display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
+        
+        display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
 
         GET(item, MUIA_Menuitem_Checked, &menu_view_state);
 
         if (menu_view_state == TRUE)
         {
-//	    if ( != LABELRIGHT)
-		display_bits |= ICONLIST_DISP_MODEDEFAULT;
-//	    else
-//	    	display_bits |= ICONLIST_DISP_MODELABELRIGHT;
+//            if ( != LABELRIGHT)
+                display_bits |= ICONLIST_DISP_MODEDEFAULT;
+//            else
+//                    display_bits |= ICONLIST_DISP_MODELABELRIGHT;
         }
 
         SET(iconList, MUIA_IconList_DisplayFlags, display_bits);
@@ -1472,8 +1472,8 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     {
         IPTR display_bits = 0, menu_view_state = 0;
         GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
-	
-	display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
+        
+        display_bits &= ~(ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST);
 
         GET(item, MUIA_Menuitem_Checked, &menu_view_state);
 
@@ -1865,7 +1865,7 @@ void wanderer_menufunc_icon_information()
     struct IconList_Entry *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
 
 D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, window, iconList));
-	
+        
     do
     {
         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
@@ -1875,48 +1875,48 @@ D(bug("[Wanderer] %s: Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, window
             BPTR lock, parent;
             STRPTR name, file;
 
-	    file = entry->ile_IconEntry->ie_IconNode.ln_Name;
+            file = entry->ile_IconEntry->ie_IconNode.ln_Name;
 D(bug("[Wanderer] %s: selected = '%s'\n", __PRETTY_FUNCTION__, file));
-	    
+            
 attemptlock:
-	    
+            
 D(bug("[Wanderer] %s: Trying with '%s'\n", __PRETTY_FUNCTION__, file));
 
             if ((lock = Lock(file, ACCESS_READ)) == BNULL)
-	    {
+            {
 D(bug("[Wanderer] %s: couldnt lock '%s'\n", __PRETTY_FUNCTION__, file));
-		if ((strlen(file) > 5)
-		    && (strcmp(file + strlen(file) - 5, ".info") != 0)
-		    && (file[strlen(file) -1] != ':'))
-		{
+                if ((strlen(file) > 5)
+                    && (strcmp(file + strlen(file) - 5, ".info") != 0)
+                    && (file[strlen(file) -1] != ':'))
+                {
 D(bug("[Wanderer] %s: not a '.info' file or device - check if there is a '.info'..\n", __PRETTY_FUNCTION__));
-		    file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 6, MEMF_CLEAR);
-		    sprintf(file, "%s.info", entry->ile_IconEntry->ie_IconNode.ln_Name);
-		    goto attemptlock;
-		}
-	    }
-	    else
-	    {
-		name = FilePart(file);
-		if (name[0])
-		{
-		    parent = ParentDir(lock);
-		    UnLock(lock);
-		}
-		else
-		{
-		    parent = lock;
-		}
+                    file = AllocVec(strlen(entry->ile_IconEntry->ie_IconNode.ln_Name) + 6, MEMF_CLEAR);
+                    sprintf(file, "%s.info", entry->ile_IconEntry->ie_IconNode.ln_Name);
+                    goto attemptlock;
+                }
+            }
+            else
+            {
+                name = FilePart(file);
+                if (name[0])
+                {
+                    parent = ParentDir(lock);
+                    UnLock(lock);
+                }
+                else
+                {
+                    parent = lock;
+                }
 
 D(bug("[Wanderer] %s: Calling WBInfo(name = '%s' parent lock = 0x%p)\n", __PRETTY_FUNCTION__, name, lock));
-		WBInfo(parent, name, NULL);
+                WBInfo(parent, name, NULL);
 
-		UnLock(parent);
-	    }
-	    if ((char *)file != entry->ile_IconEntry->ie_IconNode.ln_Name)
-	    {
-		FreeVec(file);
-	    }
+                UnLock(parent);
+            }
+            if ((char *)file != entry->ile_IconEntry->ie_IconNode.ln_Name)
+            {
+                FreeVec(file);
+            }
         }
         else
         {
@@ -1988,14 +1988,14 @@ struct DesktopLinkIcon_Entry
 ///wanderer_menufunc_icon_leaveout()
 void wanderer_menufunc_icon_leaveout(void)
 {
-    Object                		*window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
-    Object                		*iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    Object                		*rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
-    Object                		*rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
-    struct IconList_Entry 		*entry    = (IPTR)MUIV_IconList_NextIcon_Start;
-    // struct IconEntry      		*node     = NULL;
-    char				*leavout_dir = NULL;
-    struct DesktopLinkIcon_Entry	*bdrpeNode = NULL, *loiEntry = NULL;
+    Object                                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    Object                                *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
+    Object                                *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
+    struct IconList_Entry                 *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    // struct IconEntry                      *node     = NULL;
+    char                                *leavout_dir = NULL;
+    struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *loiEntry = NULL;
 
 D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -2004,135 +2004,135 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     if (leavout_dir != NULL)
     {
 D(bug("[Wanderer] %s: dir '%s'\n", __PRETTY_FUNCTION__, leavout_dir));
-	
-	char *entryVolume = NULL;
-	int i;
+        
+        char *entryVolume = NULL;
+        int i;
 
-	for (i = 0; i < strlen(leavout_dir); i++)
-	{
-	    if (leavout_dir[i] == ':')
-	    {
-		entryVolume = AllocVec(i + 2, MEMF_CLEAR);
-		CopyMem(leavout_dir, entryVolume, i + 1);
-	    }
-	}
-	
-	if (entryVolume != NULL)
-	{
+        for (i = 0; i < strlen(leavout_dir); i++)
+        {
+            if (leavout_dir[i] == ':')
+            {
+                entryVolume = AllocVec(i + 2, MEMF_CLEAR);
+                CopyMem(leavout_dir, entryVolume, i + 1);
+            }
+        }
+        
+        if (entryVolume != NULL)
+        {
 D(bug("[Wanderer] %s: Updating .backdrop file for volume '%s'.. \n", __PRETTY_FUNCTION__, entryVolume));
-	    char * bdrp_file = NULL;
+            char * bdrp_file = NULL;
 
-	    if ((bdrp_file = AllocVec(strlen(entryVolume) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-	    {
-		struct List bdrp_Entries;
-		BPTR 	bdrp_lock = BNULL;
-		BOOL	bdrp_changed = FALSE;
-		char	*linebuf = NULL;
+            if ((bdrp_file = AllocVec(strlen(entryVolume) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+            {
+                struct List bdrp_Entries;
+                BPTR         bdrp_lock = BNULL;
+                BOOL        bdrp_changed = FALSE;
+                char        *linebuf = NULL;
 
-		sprintf(bdrp_file, "%s.backdrop", entryVolume);
+                sprintf(bdrp_file, "%s.backdrop", entryVolume);
 
-		NEWLIST(&bdrp_Entries);
-		
-		if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
-		{
+                NEWLIST(&bdrp_Entries);
+                
+                if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
+                {
 D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __PRETTY_FUNCTION__, bdrp_file));
 
-		    if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
-		    {
-			while (FGets(bdrp_lock, linebuf, BDRPLINELEN_MAX))
-			{
-			    bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
-			    bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(linebuf) + 1, MEMF_CLEAR);
-			    CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
+                    if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
+                    {
+                        while (FGets(bdrp_lock, linebuf, BDRPLINELEN_MAX))
+                        {
+                            bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
+                            bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(linebuf) + 1, MEMF_CLEAR);
+                            CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
 
 D(bug("[Wanderer] %s:       Existing entry '%s'\n", __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
 
-			    AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
-			}
-		    }
-		    Close(bdrp_lock);
-		}
+                            AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
+                        }
+                    }
+                    Close(bdrp_lock);
+                }
 
-		do
-		{
-		    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
+                do
+                {
+                    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&entry);
 
-		    if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_FILE) || (entry->type == ST_USERDIR)))
-		    {
-			char *entryDIEString = (entry->ile_IconEntry->ie_IconNode.ln_Name + strlen(entryVolume) - 1);
+                    if (((IPTR)entry != MUIV_IconList_NextIcon_End) && ((entry->type == ST_FILE) || (entry->type == ST_USERDIR)))
+                    {
+                        char *entryDIEString = (entry->ile_IconEntry->ie_IconNode.ln_Name + strlen(entryVolume) - 1);
 D(bug("[Wanderer] %s:    Leave-Out Entry = '%s' @ %p ('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name, entry, entryDIEString));
-			loiEntry = NULL;
+                        loiEntry = NULL;
 
-			ForeachNode(&bdrp_Entries, bdrpeNode)
-			{
-			    
-			    if (strcmp(bdrpeNode->dlie_Node.ln_Name, entryDIEString) == 0)
-			    {
-				loiEntry = bdrpeNode;
-				break;
-			    }
-				
-			}
+                        ForeachNode(&bdrp_Entries, bdrpeNode)
+                        {
+                            
+                            if (strcmp(bdrpeNode->dlie_Node.ln_Name, entryDIEString) == 0)
+                            {
+                                loiEntry = bdrpeNode;
+                                break;
+                            }
+                                
+                        }
 
-			if (loiEntry == NULL)
-			{
-			    bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
-			    bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(entryDIEString) + 2, MEMF_CLEAR);
-			    CopyMem(entryDIEString, bdrpeNode->dlie_Node.ln_Name, strlen(entryDIEString));
+                        if (loiEntry == NULL)
+                        {
+                            bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
+                            bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(entryDIEString) + 2, MEMF_CLEAR);
+                            CopyMem(entryDIEString, bdrpeNode->dlie_Node.ln_Name, strlen(entryDIEString));
 
 D(bug("[Wanderer] %s:       Created new .backdrop entry for '%s'\n", __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
 
-			    AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
-			    bdrp_changed = TRUE;
-			}
-		    }
-		    else
-		    {
-			break;
-		    }
-		} while (TRUE);
-	    
-		if (bdrp_changed)
-		{
+                            AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
+                            bdrp_changed = TRUE;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                } while (TRUE);
+            
+                if (bdrp_changed)
+                {
 D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __PRETTY_FUNCTION__, entryVolume));
-		    // Write out the new backdrop file :
-		    //   this will cause a filesystem notification in the iconwindow_volumeiconlist
-		    //   class that will cause the changes to be noticed if the underlying
-		    //   filesystem supports it....
+                    // Write out the new backdrop file :
+                    //   this will cause a filesystem notification in the iconwindow_volumeiconlist
+                    //   class that will cause the changes to be noticed if the underlying
+                    //   filesystem supports it....
 
-		    if ((bdrp_lock = Open(bdrp_file, MODE_NEWFILE)))
-		    {
-			ForeachNode(&bdrp_Entries, bdrpeNode)
-			{
+                    if ((bdrp_lock = Open(bdrp_file, MODE_NEWFILE)))
+                    {
+                        ForeachNode(&bdrp_Entries, bdrpeNode)
+                        {
 D(bug("[Wanderer] %s:       Writing entry '%s'\n", __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
-			    bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
-			    FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
-			}
-			Close(bdrp_lock);
-		    }
-		    struct List		*iconList = NULL;
-		    struct IconEntry	*entry = NULL;
+                            bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
+                            FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
+                        }
+                        Close(bdrp_lock);
+                    }
+                    struct List                *iconList = NULL;
+                    struct IconEntry        *entry = NULL;
 
-		    GET(rooticonList, MUIA_Family_List, &iconList);
-		    ForeachNode(iconList, entry)
-		    {
-			if ((entry->ie_IconListEntry.type == ST_ROOT)
-			    && (strncmp(entry->ie_IconListEntry.label, entryVolume, strlen(entry->ie_IconListEntry.label)) == 0))
-			{
-			    struct VolumeIcon_Private   *volPrivate = entry->ie_IconListEntry.udata;;
-			    if (volPrivate && (volPrivate->vip_FSNotifyRequest.nr_Name == NULL))
-			    {
-				//Volumes filesystem couldnt handle fs notifications so we will have to force the update ..
+                    GET(rooticonList, MUIA_Family_List, &iconList);
+                    ForeachNode(iconList, entry)
+                    {
+                        if ((entry->ie_IconListEntry.type == ST_ROOT)
+                            && (strncmp(entry->ie_IconListEntry.label, entryVolume, strlen(entry->ie_IconListEntry.label)) == 0))
+                        {
+                            struct VolumeIcon_Private   *volPrivate = entry->ie_IconListEntry.udata;;
+                            if (volPrivate && (volPrivate->vip_FSNotifyRequest.nr_Name == NULL))
+                            {
+                                //Volumes filesystem couldnt handle fs notifications so we will have to force the update ..
 D(bug("[Wanderer] %s:    Forcing desktop redraw for volume '%s'\n", __PRETTY_FUNCTION__, entryVolume));
-				DoMethod(rooticonList, MUIM_IconList_Update);
-				DoMethod(rooticonList, MUIM_IconList_Sort);
-				break;
-			    }
-			}
-		    }
-		}
-	    }
-	}
+                                DoMethod(rooticonList, MUIM_IconList_Update);
+                                DoMethod(rooticonList, MUIM_IconList_Sort);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
 D(bug("[Wanderer] %s: finished ..\n", __PRETTY_FUNCTION__));
@@ -2147,15 +2147,15 @@ struct PutAwayIcon_Volume
 ///wanderer_menufunc_icon_putaway()
 void wanderer_menufunc_icon_putaway(void)
 {
-    Object                	*window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
-    Object                	*iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    Object                	*rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
-    Object                	*rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
-    struct IconList_Entry 	*entry    = (IPTR)MUIV_IconList_NextIcon_Start;
-    struct IconEntry      	*node = NULL;
-    struct PutAwayIcon_Volume	*paivNode = NULL, *paiVolume = NULL;
-    struct DesktopLinkIcon_Entry	*bdrpeNode = NULL, *paieNode = NULL, *paiEntry = NULL;
-    struct List            	putawayiconlists;
+    Object                        *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);   
+    Object                        *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    Object                        *rootwindow   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_WorkbenchWindow);
+    Object                        *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
+    struct IconList_Entry         *entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+    struct IconEntry              *node = NULL;
+    struct PutAwayIcon_Volume        *paivNode = NULL, *paiVolume = NULL;
+    struct DesktopLinkIcon_Entry        *bdrpeNode = NULL, *paieNode = NULL, *paiEntry = NULL;
+    struct List                    putawayiconlists;
 
 D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
@@ -2170,46 +2170,46 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
             node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
 D(bug("[Wanderer] %s: entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name, entry, node));
 
-	    char *entryVolume = NULL;
-	    int i;
+            char *entryVolume = NULL;
+            int i;
 
-	    for (i = 0; i < strlen(entry->ile_IconEntry->ie_IconNode.ln_Name); i++)
-	    {
-		if (entry->ile_IconEntry->ie_IconNode.ln_Name[i] == ':')
-		{
-		    entryVolume = AllocVec(i + 2, MEMF_CLEAR);
-		    CopyMem(entry->ile_IconEntry->ie_IconNode.ln_Name, entryVolume, i + 1);
-		}
-	    }
-	    
-	    if (entryVolume == NULL)
-	    {
+            for (i = 0; i < strlen(entry->ile_IconEntry->ie_IconNode.ln_Name); i++)
+            {
+                if (entry->ile_IconEntry->ie_IconNode.ln_Name[i] == ':')
+                {
+                    entryVolume = AllocVec(i + 2, MEMF_CLEAR);
+                    CopyMem(entry->ile_IconEntry->ie_IconNode.ln_Name, entryVolume, i + 1);
+                }
+            }
+            
+            if (entryVolume == NULL)
+            {
 D(bug("[Wanderer] %s: couldnt figure out the volume name.. ?????\n", __PRETTY_FUNCTION__));
-		continue;
-	    }
-	    
-	    ForeachNode(&putawayiconlists, paivNode)
-	    {
-		if (strcmp(paivNode->paiv_Node.ln_Name, entryVolume) == 0)
-		{
-		    paiVolume = paivNode;
-		}
-	    }
-	    
-	    if (paiVolume == NULL)
-	    {
-		paiVolume = AllocMem(sizeof(struct PutAwayIcon_Volume), MEMF_CLEAR);
-		paiVolume->paiv_Node.ln_Name = entryVolume;
-		NEWLIST(&paiVolume->paiv_Entries);
-		AddTail(&putawayiconlists, &paiVolume->paiv_Node);
-	    }
-	    else
-	    {
-		FreeVec(entryVolume);
-	    }
-	    
-	    paiEntry = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
-	    paiEntry->dlie_Node.ln_Name = entry->ile_IconEntry->ie_IconNode.ln_Name + strlen(paiVolume->paiv_Node.ln_Name) - 1;
+                continue;
+            }
+            
+            ForeachNode(&putawayiconlists, paivNode)
+            {
+                if (strcmp(paivNode->paiv_Node.ln_Name, entryVolume) == 0)
+                {
+                    paiVolume = paivNode;
+                }
+            }
+            
+            if (paiVolume == NULL)
+            {
+                paiVolume = AllocMem(sizeof(struct PutAwayIcon_Volume), MEMF_CLEAR);
+                paiVolume->paiv_Node.ln_Name = entryVolume;
+                NEWLIST(&paiVolume->paiv_Entries);
+                AddTail(&putawayiconlists, &paiVolume->paiv_Node);
+            }
+            else
+            {
+                FreeVec(entryVolume);
+            }
+            
+            paiEntry = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
+            paiEntry->dlie_Node.ln_Name = entry->ile_IconEntry->ie_IconNode.ln_Name + strlen(paiVolume->paiv_Node.ln_Name) - 1;
 
             AddTail(&paiVolume->paiv_Entries, &paiEntry->dlie_Node);
         }
@@ -2221,103 +2221,103 @@ D(bug("[Wanderer] %s: couldnt figure out the volume name.. ?????\n", __PRETTY_FU
 
     ForeachNode(&putawayiconlists, paivNode)
     {
-	// Open the Backdrop file and read in the existing contents ...
-	char *bdrp_file = NULL;
+        // Open the Backdrop file and read in the existing contents ...
+        char *bdrp_file = NULL;
 
 D(bug("[Wanderer] %s: Processing entries in .backdrop file for '%s' ..\n", __PRETTY_FUNCTION__, paivNode->paiv_Node.ln_Name));
-	if ((bdrp_file = AllocVec(strlen(paivNode->paiv_Node.ln_Name) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
-	{
-	    struct List bdrp_Entries;
-	    BPTR 	bdrp_lock = BNULL;
-	    BOOL	bdrp_changed = FALSE;
-	    char	*linebuf = NULL;
+        if ((bdrp_file = AllocVec(strlen(paivNode->paiv_Node.ln_Name) + 9 + 1, MEMF_CLEAR|MEMF_PUBLIC)) != NULL)
+        {
+            struct List bdrp_Entries;
+            BPTR         bdrp_lock = BNULL;
+            BOOL        bdrp_changed = FALSE;
+            char        *linebuf = NULL;
 
-	    sprintf(bdrp_file, "%s.backdrop", paivNode->paiv_Node.ln_Name);
+            sprintf(bdrp_file, "%s.backdrop", paivNode->paiv_Node.ln_Name);
 
-	    NEWLIST(&bdrp_Entries);
-	    
-	    if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
-	    {
+            NEWLIST(&bdrp_Entries);
+            
+            if ((bdrp_lock = Open(bdrp_file, MODE_OLDFILE)))
+            {
 D(bug("[Wanderer] %s:    Parsing backdrop file: '%s'\n", __PRETTY_FUNCTION__, bdrp_file));
 
-		if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
-		{
-		    while (FGets(bdrp_lock, linebuf, BDRPLINELEN_MAX))
-		    {
-			bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
-			bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(linebuf) + 1, MEMF_CLEAR);
-			CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
+                if ((linebuf = AllocMem(BDRPLINELEN_MAX, MEMF_PUBLIC)) != NULL)
+                {
+                    while (FGets(bdrp_lock, linebuf, BDRPLINELEN_MAX))
+                    {
+                        bdrpeNode = AllocMem(sizeof(struct DesktopLinkIcon_Entry), MEMF_CLEAR);
+                        bdrpeNode->dlie_Node.ln_Name = AllocVec(strlen(linebuf) + 1, MEMF_CLEAR);
+                        CopyMem(linebuf, bdrpeNode->dlie_Node.ln_Name, strlen(linebuf) - 1);
 
 D(bug("[Wanderer] %s:       Existing entry '%s'\n", __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
 
-			AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
-		    }
-		}
-		Close(bdrp_lock);
-	    }
-	    
-	    ForeachNode(&paivNode->paiv_Entries, paieNode)
-	    {
-		paiEntry = NULL;
-		bdrpeNode = NULL;
+                        AddTail(&bdrp_Entries, &bdrpeNode->dlie_Node);
+                    }
+                }
+                Close(bdrp_lock);
+            }
+            
+            ForeachNode(&paivNode->paiv_Entries, paieNode)
+            {
+                paiEntry = NULL;
+                bdrpeNode = NULL;
 D(bug("[Wanderer] %s:    Checking for '%s' ..\n", __PRETTY_FUNCTION__, paieNode->dlie_Node.ln_Name));
 
-		ForeachNode(&bdrp_Entries, bdrpeNode)
-		{
-		    
-		    if (strcmp(paieNode->dlie_Node.ln_Name, bdrpeNode->dlie_Node.ln_Name) == 0)
-		    {
-			paiEntry = bdrpeNode;
-			break;
-		    }
-			
-		}
-		//Find and remove the entry ...
-		if (paiEntry != NULL)
-		{
+                ForeachNode(&bdrp_Entries, bdrpeNode)
+                {
+                    
+                    if (strcmp(paieNode->dlie_Node.ln_Name, bdrpeNode->dlie_Node.ln_Name) == 0)
+                    {
+                        paiEntry = bdrpeNode;
+                        break;
+                    }
+                        
+                }
+                //Find and remove the entry ...
+                if (paiEntry != NULL)
+                {
 D(bug("[Wanderer] %s:       Removing entry '%s'\n", __PRETTY_FUNCTION__, paiEntry->dlie_Node.ln_Name));
-		    Remove(&paiEntry->dlie_Node);
-		    bdrp_changed = TRUE;
-		}
-	    }
-	    if (bdrp_changed)
-	    {
+                    Remove(&paiEntry->dlie_Node);
+                    bdrp_changed = TRUE;
+                }
+            }
+            if (bdrp_changed)
+            {
 D(bug("[Wanderer] %s:    Updating backdrop file for '%s' ..\n", __PRETTY_FUNCTION__, paivNode->paiv_Node.ln_Name));
-		// Write out the new backdrop file :
-		// this will cause a filesystem notification in the iconwindow_volumeiconlist
-		// class that will cause the changes to be noticed ....
-		if ((bdrp_lock = Open(bdrp_file, MODE_NEWFILE)))
-		{
-		    ForeachNode(&bdrp_Entries, bdrpeNode)
-		    {
+                // Write out the new backdrop file :
+                // this will cause a filesystem notification in the iconwindow_volumeiconlist
+                // class that will cause the changes to be noticed ....
+                if ((bdrp_lock = Open(bdrp_file, MODE_NEWFILE)))
+                {
+                    ForeachNode(&bdrp_Entries, bdrpeNode)
+                    {
 D(bug("[Wanderer] %s:       Writing entry '%s'\n", __PRETTY_FUNCTION__, bdrpeNode->dlie_Node.ln_Name));
-			bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
-			FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
-		    }
-		    Close(bdrp_lock);
-		}
-		struct List		*iconList = NULL;
-		struct IconEntry	*entry = NULL;
+                        bdrpeNode->dlie_Node.ln_Name[strlen(bdrpeNode->dlie_Node.ln_Name)] = '\n';
+                        FPuts(bdrp_lock, bdrpeNode->dlie_Node.ln_Name);
+                    }
+                    Close(bdrp_lock);
+                }
+                struct List                *iconList = NULL;
+                struct IconEntry        *entry = NULL;
 
-		GET(rooticonList, MUIA_Family_List, &iconList);
-		ForeachNode(iconList, entry)
-		{
-		    if ((entry->ie_IconListEntry.type == ST_ROOT)
-			&& (strncmp(entry->ie_IconListEntry.label, paivNode->paiv_Node.ln_Name, strlen(entry->ie_IconListEntry.label)) == 0))
-		    {
-			struct VolumeIcon_Private   *volPrivate = entry->ie_IconListEntry.udata;;
-			if (volPrivate && (volPrivate->vip_FSNotifyRequest.nr_Name == NULL))
-			{
-			    //Volumes filesystem couldnt handle fs notifications so we will have to force the update ..
+                GET(rooticonList, MUIA_Family_List, &iconList);
+                ForeachNode(iconList, entry)
+                {
+                    if ((entry->ie_IconListEntry.type == ST_ROOT)
+                        && (strncmp(entry->ie_IconListEntry.label, paivNode->paiv_Node.ln_Name, strlen(entry->ie_IconListEntry.label)) == 0))
+                    {
+                        struct VolumeIcon_Private   *volPrivate = entry->ie_IconListEntry.udata;;
+                        if (volPrivate && (volPrivate->vip_FSNotifyRequest.nr_Name == NULL))
+                        {
+                            //Volumes filesystem couldnt handle fs notifications so we will have to force the update ..
 D(bug("[Wanderer] %s:    Forcing desktop redraw for volume '%s'\n", __PRETTY_FUNCTION__, paivNode->paiv_Node.ln_Name));
-			    DoMethod(rooticonList, MUIM_IconList_Update);
-			    DoMethod(rooticonList, MUIM_IconList_Sort);
-			    break;
-			}
-		    }
-		}
-	    }
-	}
+                            DoMethod(rooticonList, MUIM_IconList_Update);
+                            DoMethod(rooticonList, MUIM_IconList_Sort);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
     }
 D(bug("[Wanderer] %s: Finished\n", __PRETTY_FUNCTION__));
 }
@@ -2529,7 +2529,7 @@ void wanderer_menufunc_icon_delete(void)
     {
         DoMethod(window, MUIM_IconWindow_UnselectAll);
         DoMethod(iconList, MUIM_IconList_Update);
-	DoMethod(iconList, MUIM_IconList_Sort);
+        DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
 ///
@@ -2546,10 +2546,10 @@ void wanderer_menufunc_icon_format(void)
     /* Process only first selected entry */
     if ((IPTR)entry != MUIV_IconList_NextIcon_End)
     {  
-	BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
+        BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
 D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name);)
-	/* Usually we pass object name and parent lock. Here we do the same thing.
-	   Just object name is empty string and its parent is device's root. */
+        /* Usually we pass object name and parent lock. Here we do the same thing.
+           Just object name is empty string and its parent is device's root. */
         OpenWorkbenchObject
           (
             "SYS:System/Format",
@@ -2557,8 +2557,8 @@ D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_Ic
             WBOPENA_ArgName, lock ? (IPTR)"" : (IPTR)entry->ile_IconEntry->ie_IconNode.ln_Name,
             TAG_DONE
           );
-	if (lock)
-	    UnLock(lock);
+        if (lock)
+            UnLock(lock);
     }
 }
 ///
@@ -2734,15 +2734,15 @@ void wanderer_menufunc_wanderer_shutdown(void)
     action = MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_SHUTDOWN_BUTTONS), _(MSG_SHUTDOWN_BODY), NULL);
     switch (action) {
     case 0:
-	return;
+        return;
     case 1:
-	ShutdownA(SD_ACTION_POWEROFF);
-	break;
+        ShutdownA(SD_ACTION_POWEROFF);
+        break;
     case 2:
-	ShutdownA(SD_ACTION_COLDREBOOT);
-	break;
+        ShutdownA(SD_ACTION_COLDREBOOT);
+        break;
     case 3:
-	ColdReboot();
+        ColdReboot();
     }
     MUI_RequestA(_WandererIntern_AppObj, NULL, 0, _(MSG_SHUTDOWN_TITLE), _(MSG_OK), _(MSG_ACTION_NOT_SUPPORTED), NULL);
 }
@@ -2787,84 +2787,84 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
     if (!strip) return;
 
     DoMenuNotify(strip, MEN_WANDERER_EXECUTE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_execute, path);
+                                wanderer_menufunc_wanderer_execute, path);
     DoMenuNotify(strip, MEN_WANDERER_SHELL, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_shell, path);
+                                wanderer_menufunc_wanderer_shell, path);
     DoMenuNotify(strip, MEN_WANDERER_AROS_GUISETTINGS, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_AROS_guisettings, NULL);
+                                wanderer_menufunc_wanderer_AROS_guisettings, NULL);
     DoMenuNotify(strip, MEN_WANDERER_AROS_ABOUT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_AROS_about, NULL);
+                                wanderer_menufunc_wanderer_AROS_about, NULL);
     DoMenuNotify(strip, MEN_WANDERER_ABOUT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_about, wanderer);
+                                wanderer_menufunc_wanderer_about, wanderer);
     DoMenuNotify(strip, MEN_WANDERER_QUIT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_quit, NULL);
+                                wanderer_menufunc_wanderer_quit, NULL);
     DoMenuNotify(strip, MEN_WANDERER_SHUTDOWN, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_wanderer_shutdown, NULL);
+                                wanderer_menufunc_wanderer_shutdown, NULL);
 
     DoMenuNotify(strip, MEN_WINDOW_NEW_DRAWER, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_newdrawer, path);
+                                wanderer_menufunc_window_newdrawer, path);
     DoMenuNotify(strip, MEN_WINDOW_OPEN_PARENT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_openparent, path);
+                                wanderer_menufunc_window_openparent, path);
     DoMenuNotify(strip, MEN_WINDOW_CLOSE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_close, NULL);
+                                wanderer_menufunc_window_close, NULL);
     DoMenuNotify(strip, MEN_WINDOW_UPDATE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_update, NULL);
+                                wanderer_menufunc_window_update, NULL);
     DoMenuNotify(strip, MEN_WINDOW_CLEAR, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_clear, NULL);
+                                wanderer_menufunc_window_clear, NULL);
 
     DoMenuNotify(strip, MEN_WINDOW_SNAP_WIN, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_snapshot, FALSE);
+                                wanderer_menufunc_window_snapshot, FALSE);
     DoMenuNotify(strip, MEN_WINDOW_SNAP_ALL, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_snapshot, (APTR)TRUE);
+                                wanderer_menufunc_window_snapshot, (APTR)TRUE);
 
     DoMenuNotify(strip, MEN_WINDOW_SELECT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_select, NULL);
-				
+                                wanderer_menufunc_window_select, NULL);
+                                
     DoMenuNotify(strip, MEN_WINDOW_VIEW_ICON, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_view_modeicon, strip);
+                                wanderer_menufunc_window_view_modeicon, strip);
     DoMenuNotify(strip, MEN_WINDOW_VIEW_DETAIL, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_view_modelist, strip);
+                                wanderer_menufunc_window_view_modelist, strip);
     DoMenuNotify(strip, MEN_WINDOW_VIEW_ALL, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_view_iconsonly, strip);
+                                wanderer_menufunc_window_view_iconsonly, strip);
 //    DoMenuNotify(strip, MEN_WINDOW_VIEW_HIDDEN, MUIA_Menuitem_Trigger,
-//				wanderer_menufunc_window_view_hidden, strip);
+//                                wanderer_menufunc_window_view_hidden, strip);
 
     
     DoMenuNotify(strip, MEN_WINDOW_SORT_NOW, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_cleanup, NULL); 
+                                wanderer_menufunc_window_cleanup, NULL); 
     DoMenuNotify(strip, MEN_WINDOW_SORT_ENABLE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_enable, strip);
+                                wanderer_menufunc_window_sort_enable, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_NAME, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_name, strip);
+                                wanderer_menufunc_window_sort_name, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_TYPE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_type, strip);
+                                wanderer_menufunc_window_sort_type, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_DATE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_date, strip);
+                                wanderer_menufunc_window_sort_date, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_SIZE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_size, strip);
+                                wanderer_menufunc_window_sort_size, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_REVERSE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_reverse, strip);
+                                wanderer_menufunc_window_sort_reverse, strip);
     DoMenuNotify(strip, MEN_WINDOW_SORT_TOPDRAWERS, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_window_sort_topdrawers, strip);
+                                wanderer_menufunc_window_sort_topdrawers, strip);
 
     DoMenuNotify(strip, MEN_ICON_OPEN, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_open, NULL);
+                                wanderer_menufunc_icon_open, NULL);
     DoMenuNotify(strip, MEN_ICON_RENAME, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_rename, NULL);
+                                wanderer_menufunc_icon_rename, NULL);
     DoMenuNotify(strip, MEN_ICON_INFORMATION, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_information, NULL);
+                                wanderer_menufunc_icon_information, NULL);
     DoMenuNotify(strip, MEN_ICON_SNAPSHOT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_snapshot, (APTR)TRUE);
+                                wanderer_menufunc_icon_snapshot, (APTR)TRUE);
     DoMenuNotify(strip, MEN_ICON_UNSNAPSHOT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_snapshot, FALSE);
+                                wanderer_menufunc_icon_snapshot, FALSE);
     DoMenuNotify(strip, MEN_ICON_LEAVEOUT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_leaveout, NULL);
+                                wanderer_menufunc_icon_leaveout, NULL);
     DoMenuNotify(strip, MEN_ICON_PUTAWAY, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_putaway, NULL);
+                                wanderer_menufunc_icon_putaway, NULL);
     DoMenuNotify(strip, MEN_ICON_DELETE, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_delete, NULL);
+                                wanderer_menufunc_icon_delete, NULL);
     DoMenuNotify(strip, MEN_ICON_FORMAT, MUIA_Menuitem_Trigger,
-				wanderer_menufunc_icon_format, NULL);
+                                wanderer_menufunc_icon_format, NULL);
 
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
@@ -3094,9 +3094,9 @@ HOOKPROTO(Wanderer__HookFunc_UpdateMenuStatesFunc, ULONG, struct dCopyStruct *ob
 #endif
     AROS_USERFUNC_INIT
 
-    __unused Object	*self = ( Object *)obj;
-    Object	*window = *( Object **)param;
-    Object	*iconlist = NULL;
+    __unused Object        *self = ( Object *)obj;
+    Object        *window = *( Object **)param;
+    Object        *iconlist = NULL;
 
 D(bug("[Wanderer]: %s(self @ %p, window @ %p)\n", __PRETTY_FUNCTION__, self, window));
 
@@ -3526,7 +3526,7 @@ D(bug("[Wanderer] %s: Drawer found: %s!\n", __PRETTY_FUNCTION__, child_drawer));
                                     if (iconlist != NULL)
                                     {
                                         DoMethod(iconlist, MUIM_IconList_Update);
-					DoMethod(iconlist, MUIM_IconList_Sort);
+                                        DoMethod(iconlist, MUIM_IconList_Sort);
                                     }
                                     break;
                                 }
@@ -3599,7 +3599,7 @@ D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __P
         {
 D(bug("[Wanderer] %s: Drawer Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
             DoMethod((Object *)notifyMessage_UserData, MUIM_IconList_Update);
-	    DoMethod((Object *)notifyMessage_UserData, MUIM_IconList_Sort);
+            DoMethod((Object *)notifyMessage_UserData, MUIM_IconList_Sort);
         }
 
         ForeachNode(&_WandererIntern_FSHandlerList, nodeFSHandler)
@@ -3645,7 +3645,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 #endif
                 {NM_ITEM,       _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_ABOUT },
                 {NM_ITEM,       _(MSG_MEN_QUIT) ,       _(MSG_MEN_SC_QUIT)      , 0                                     , 0, (APTR) MEN_WANDERER_QUIT },
-                {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                    , 0			                , 0, (APTR) MEN_WANDERER_SHUTDOWN },
+                {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                    , 0                                        , 0, (APTR) MEN_WANDERER_SHUTDOWN },
                 {NM_TITLE,      _(MSG_MEN_WINDOW),      NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_UPDATE),      NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_UPDATE },
                 {NM_ITEM,       NM_BARLABEL },
@@ -3704,7 +3704,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
 #endif
                 {NM_ITEM,       _(MSG_MEN_ABOUT),       NULL                    , 0                                     , 0, (APTR) MEN_WANDERER_ABOUT },
                 {NM_ITEM,       _(MSG_MEN_QUIT) ,       _(MSG_MEN_SC_QUIT)      , 0                                     , 0, (APTR) MEN_WANDERER_QUIT },
-                {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL		        , 0			                , 0, (APTR) MEN_WANDERER_SHUTDOWN },
+                {NM_ITEM,       _(MSG_MEN_SHUTDOWN),    NULL                        , 0                                        , 0, (APTR) MEN_WANDERER_SHUTDOWN },
             {NM_TITLE,          _(MSG_MEN_WINDOW),      NULL                    , 0 },
                 {NM_ITEM,       _(MSG_MEN_NEWDRAW),     _(MSG_MEN_SC_NEWDRAW)   , 0                                     , 0, (APTR) MEN_WINDOW_NEW_DRAWER },
                 {NM_ITEM,       _(MSG_MEN_OPENPAR),     NULL                    , 0                                     , 0, (APTR) MEN_WINDOW_OPEN_PARENT },
@@ -3720,7 +3720,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_VIEW)},
                     {NM_SUB,    _(MSG_MEN_ICVIEW),      NULL                    , CHECKIT|CHECKED                       ,~((1 << 0)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_ICON },
-                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT	               		,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
+                    {NM_SUB,    _(MSG_MEN_DCVIEW),      NULL                    , CHECKIT                                       ,~((1 << 1)|(1 << 3)), (APTR) MEN_WINDOW_VIEW_DETAIL },
                     {NM_SUB,    NM_BARLABEL },
                     {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL       , 0, (APTR) MEN_WINDOW_VIEW_ALL },
                 {NM_ITEM,       _(MSG_MEN_SORTIC)},
