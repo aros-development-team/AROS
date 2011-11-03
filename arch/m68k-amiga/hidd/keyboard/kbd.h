@@ -66,6 +66,7 @@ struct kbd_staticdata
     OOP_Class *kbdclass;
     OOP_Object *kbdhidd;
     OOP_AttrBase hiddKbdAB;
+    OOP_MethodID hiddKbdBase;
 
     BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
