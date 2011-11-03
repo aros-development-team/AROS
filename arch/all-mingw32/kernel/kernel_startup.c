@@ -197,11 +197,7 @@ static int Platform_Init(struct KernelBase *KernelBase)
     *KernelIFace.TrapVector = core_TrapHandler;
     *KernelIFace.IRQVector  = core_IRQHandler;
 
-    KernelBase->kb_PageSize = KernelIFace.core_init(SysBase->VBlankFrequency);
-    D(bug("[Kernel] System page size: %u\n", KernelBase->kb_PageSize));
-
-    /* core_init() returns 0 on failure */
-    return KernelBase->kb_PageSize;
+    return KernelIFace.core_init(SysBase->VBlankFrequency);
 }
 
 ADD2INITLIB(Platform_Init, 10);
