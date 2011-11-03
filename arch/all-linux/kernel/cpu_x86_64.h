@@ -101,7 +101,7 @@ struct ucontext;
     structure.
 */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
+#define SC_ENABLE(uc)  pd->iface->SigEmptySet(&uc->uc_sigmask)
 
 /*
     The names of the general purpose registers which are to be saved.

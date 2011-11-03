@@ -26,7 +26,7 @@ typedef void (*SIGHANDLER_T)(int);
 #define SC_DISABLE(sc)   sc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
 #define SC_ENABLE(sc)				\
 do {						\
-    KernelIFace.SigEmptySet(&(sc)->uc_sigmask);	\
+    pd->iface->SigEmptySet(&(sc)->uc_sigmask);	\
     AROS_HOST_BARRIER				\
 } while(0)
 

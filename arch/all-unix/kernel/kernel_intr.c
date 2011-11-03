@@ -6,6 +6,7 @@
 #include <kernel_base.h>
 #include <kernel_interrupts.h>
 #include <kernel_intr.h>
+#include <kernel_globals.h>
 #include <kernel_scheduler.h>
 #include <kernel_syscall.h>
 #include "kernel_intern.h"
@@ -62,6 +63,7 @@ void core_ExitInterrupt(regs_t *regs)
  */
 void core_SysCall(int sig, regs_t *regs)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = SysBase->ThisTask;
 
     AROS_ATOMIC_INC(SupervisorCount);
@@ -87,7 +89,7 @@ void core_SysCall(int sig, regs_t *regs)
 
     /* Special state is used for returning from exception */
     case TS_EXCEPT:
-	cpu_DispatchContext(task, regs);
+	cpu_DispatchContext(task, regs, KernelBase->kb_PlatformData);
 	break;
     }
 

@@ -24,7 +24,7 @@ AROS_LH3I(void, KrnSetProtection,
     if (flags & MAP_Executable)
 	flags_unix |= PROT_EXEC;
 
-    KernelIFace.mprotect(address, length, flags_unix);
+    KernelBase->kb_PlatformData->iface->mprotect(address, length, flags_unix);
     AROS_HOST_BARRIER
 
     AROS_LIBFUNC_EXIT

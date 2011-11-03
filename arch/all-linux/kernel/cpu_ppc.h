@@ -52,7 +52,7 @@ struct ucontext;
    has returned and the normal execution commences.
    On PowerPC this is the same as on x86-64. */
 #define SC_DISABLE(uc) uc->uc_sigmask = KernelBase->kb_PlatformData->sig_int_mask
-#define SC_ENABLE(uc)  KernelIFace.SigEmptySet(&uc->uc_sigmask)
+#define SC_ENABLE(uc)  pd->iface->SigEmptySet(&uc->uc_sigmask)
 
 /*
  * This macro saves all registers. Use this macro when you want

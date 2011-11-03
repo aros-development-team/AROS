@@ -10,10 +10,11 @@
 
 #include <unistd.h>
 
-#include "../exec/etask.h"
+#include "etask.h"
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
+#include "kernel_globals.h"
 #include "kernel_intern.h"
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
@@ -37,6 +38,7 @@
  */
 static void cpu_Exception(void)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
     char nestCnt = task->tc_IDNestCnt;
@@ -62,12 +64,13 @@ static void cpu_Exception(void)
     SysBase->ThisTask->tc_State = TS_EXCEPT;
 
     /* System call */
-    KernelIFace.raise(SIGUSR1);
+    KernelBase->kb_PlatformData->iface->raise(SIGUSR1);
     AROS_HOST_BARRIER
 }
 
 void cpu_Switch(regs_t *regs)
 {
+    struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = SysBase->ThisTask;
     struct AROSCPUContext *ctx = GetIntETask(task)->iet_Context;
 
@@ -82,15 +85,18 @@ void cpu_Switch(regs_t *regs)
 
 void cpu_Dispatch(regs_t *regs)
 {
+    struct KernelBase *KernelBase = getKernelBase();
+    struct PlatformData *pd = KernelBase->kb_PlatformData;
     struct Task *task;
     sigset_t sigs;
 
+    /* This macro relies on 'pd' being present */
     SIGEMPTYSET(&sigs);
 
     while (!(task = core_Dispatch()))
     {
         /* Sleep almost forever ;) */
-	KernelIFace.sigsuspend(&sigs);
+	KernelBase->kb_PlatformData->iface->sigsuspend(&sigs);
 	AROS_HOST_BARRIER
 
         if (SysBase->SysFlags & SFF_SoftInt)
@@ -98,15 +104,15 @@ void cpu_Dispatch(regs_t *regs)
     }
 
     D(bug("[KRN] cpu_Dispatch(), task %p (%s)\n", task, task->tc_Node.ln_Name));
-    cpu_DispatchContext(task, regs);
+    cpu_DispatchContext(task, regs, pd);
 }
 
-void cpu_DispatchContext(struct Task *task, regs_t *regs)
+void cpu_DispatchContext(struct Task *task, regs_t *regs, struct PlatformData *pd)
 {
     struct AROSCPUContext *ctx = GetIntETask(task)->iet_Context;
 
     RESTOREREGS(ctx, regs);
-    *KernelBase->kb_PlatformData->errnoPtr = ctx->errno_backup;
+    *pd->errnoPtr = ctx->errno_backup;
 
     D(PRINT_SC(regs));
 
@@ -120,10 +126,16 @@ void cpu_DispatchContext(struct Task *task, regs_t *regs)
 	PC(regs) = (IPTR)cpu_Exception;
     }
 
-    /* Adjust user mode interrupts state */
-    if (SysBase->IDNestCnt < 0) {
+    /*
+     * Adjust user mode interrupts state.
+     * Brackets MUST present, these are complex macros.
+     */
+    if (SysBase->IDNestCnt < 0)
+    {
 	SC_ENABLE(regs);
-    } else {
+    }
+    else
+    {
 	SC_DISABLE(regs);
     }
 }

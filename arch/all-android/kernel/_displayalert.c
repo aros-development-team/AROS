@@ -12,13 +12,12 @@
 #include <proto/exec.h>
 
 #include <inttypes.h>
-#include <signal.h>
 
 #include "hostinterface.h"
 #include "kernel_base.h"
 #include "kernel_debug.h"
-#include "kernel_intern.h"
 #include "kernel_android.h"
+#include "kernel_unix.h"
 
 #define D(x)
 
@@ -30,9 +29,8 @@ struct AlertRequest
     ULONG text;
 };
 
-/* This comes from kernel_startup.c */
-extern struct HostInterface *HostIFace;
-
+/* We hold our pointers in global variables because we haven't allocated anything yet */
+ssize_t (*host_write)(int fd, void *buf, size_t count);
 int alertPipe = -1;
 
 int SendAlert(uint32_t code, const char *text)
@@ -47,28 +45,38 @@ int SendAlert(uint32_t code, const char *text)
     req.text   = (IPTR)text;
 
     /* Send the packet */
-    res = KernelIFace.write(alertPipe, &req, sizeof(req));
+    res = host_write(alertPipe, &req, sizeof(req));
 
     /* Return zero on pipe error */
     return (res == sizeof(req));
 }
 
-/* This attaches to display server pipe */
-static int Alert_Init(void)
+/*
+ * This attaches to display server pipe.
+ * We do it very early, because we want startup errors to be reported via Android alerts rather
+ * than just dumped into console.
+ * Basically we need host's write() function and pipe fd.
+ */
+static int Alert_Init(void *libc)
 {
     APTR libHandle;
     int *ptr;
     char *err;
 
-    /*
-     * We use local variable for the handle because we never expunge,
-     * so we will never close it
-     */
+    /* write() is located in system's libc */
+    host_write = HostIFace->hostlib_GetPointer(libc, "write", &err);
+    if (!host_write)
+    {
+        krnPanic(NULL, "Failed to find \"write\" function\n%s", err);
+	return FALSE;
+    }
+
+    /* Now pick up display pipe fd from our bootstrap */
     libHandle = HostIFace->hostlib_Open("libAROSBootstrap.so", &err);
     D(bug("[Alert_Init] Bootstrap handle: 0x%p\n", libHandle));
     if (!libHandle)
     {
-    	bug("Failed to open libAROSBootstrap.so: %s\n", err);
+    	krnPanic(NULL, "Failed to open libAROSBootstrap.so\n%s\n", err);
 	return FALSE;
     }
 
@@ -88,5 +96,5 @@ static int Alert_Init(void)
     return TRUE;
 }
 
-/* kernel.resource's INIT set is executed on very early startup */
-ADD2INIT(Alert_Init, 0);
+/* kernel.resource's STARTUP set is executed on very early startup */
+ADD2SET(Alert_Init, startup, 0);
