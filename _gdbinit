@@ -3,7 +3,7 @@ handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
 define liblist
-    set $lib = ((struct ExecBase *)SysBase)->LibList.lh_Head
+    set $lib = ((struct ExecBase *)AbsExecBase)->LibList.lh_Head
 
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
@@ -20,7 +20,7 @@ List the current libraries in the system
 end
 
 define devlist
-    set $dev = ((struct ExecBase *)SysBase)->DeviceList.lh_Head
+    set $dev = ((struct ExecBase *)AbsExecBase)->DeviceList.lh_Head
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($dev->ln_Succ != 0)
@@ -36,7 +36,7 @@ List the current devices in the system
 end
 
 define resourcelist
-    set $res = ((struct ExecBase *)SysBase)->ResourceList.lh_Head
+    set $res = ((struct ExecBase *)AbsExecBase)->ResourceList.lh_Head
     printf "Base     Name\n"
     printf "---------------------------------------------------------------\n"
     while ($res->ln_Succ != 0)
@@ -49,7 +49,7 @@ List the current resources in the system
 end
 
 define residentlist
-    set $resp = (struct Resident **)((struct ExecBase *)SysBase)->ResModules
+    set $resp = (struct Resident **)((struct ExecBase *)AbsExecBase)->ResModules
     set $i = 0
 
     printf "Address    Pri Flags Vers Type  Name\n"
@@ -71,7 +71,7 @@ List the system resident list
 end
 
 define taskready
-    set $task = (struct Task *)((struct ExecBase *)SysBase)->TaskReady.lh_Head
+    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->TaskReady.lh_Head
 
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
@@ -93,7 +93,7 @@ List of tasks currently ready to run
 end
 
 define taskwait
-    set $task = (struct Task *)((struct ExecBase *)SysBase)->TaskWait.lh_Head
+    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->TaskWait.lh_Head
 
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
@@ -115,7 +115,7 @@ List of tasks currently waiting for an event
 end
 
 define thistask
-    set $task = (struct Task *)((struct ExecBase *)SysBase)->ThisTask
+    set $task = (struct Task *)((struct ExecBase *)AbsExecBase)->ThisTask
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
@@ -220,7 +220,7 @@ define findaddr
         printf "Searching in the resident list...\n"
     end
 
-    set $resp = (struct Resident **)((struct ExecBase *)SysBase)->ResModules
+    set $resp = (struct Resident **)((struct ExecBase *)AbsExecBase)->ResModules
     set $i = 0
 
     while (($resp)[$i] != 0) && $cont
