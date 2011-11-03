@@ -2,6 +2,24 @@ handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
+define _debug_setup
+    set $_debug_DebugBase = 0
+    if AbsExecBase != 0
+        set $_debug_DebugBase = (struct DebugBase *)((*(struct IntExecBase **)&AbsExecBase))->DebugBase
+    end
+
+    if $_debug_DebugBase != 0
+        set $_debug_ModList = $_debug_DebugBase->db_Modules
+        set $_debug_KickList = $_debug_DebugBase->db_KernelModules
+    else 
+        set $_debug_ModList = Debug_ModList
+        set $_debug_KickList = Debug_KickList
+    end
+end
+document _debug_setup
+Set up debugging pointers
+end
+
 define liblist
     set $lib = ((struct ExecBase *)AbsExecBase)->LibList.lh_Head
 
@@ -135,9 +153,10 @@ end
 define modlist
     printf "Segment           Module\n"
 
-    if Debug_ModList
+    _debug_setup
+    if $_debug_ModList
         printf "---------------------------------------------------------------------\n"
-        set $segnode = (struct segment *)Debug_ModList->mlh_Head
+        set $segnode = (struct segment *)$_debug_ModList->mlh_Head
 
         while ($segnode->s_node.mln_Succ != 0)
             printf "%p %12s %2u %32s\n", $segnode->s_lowest, $segnode->s_name, $segnode->s_num, $segnode->s_mod->m_name
@@ -147,7 +166,7 @@ define modlist
     end
 
     printf "---------------------------------------------------------------------\n"
-    set $kicknode = Debug_KickList
+    set $kicknode = $_debug_KickList
 
     while ($kicknode != 0)
         set $eh = $kicknode->eh
@@ -173,9 +192,10 @@ define findaddr
     set $cont = 1
 
     #first search in modules loaded from disk
+    _debug_setup
     printf "Searching in the loaded modules...\n"
-    if Debug_ModList
-        set $segnode = (struct segment *)Debug_ModList->mlh_Head
+    if $_debug_ModList
+        set $segnode = (struct segment *)$_debug_ModList->mlh_Head
 
         while ($segnode->s_node.mln_Succ != 0) && $cont
 	    if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
@@ -189,7 +209,7 @@ define findaddr
 
     if $cont
 	printf "Searching in the kickstart list...\n"
-    	set $kicknode = Debug_KickList
+    	set $kicknode = $_debug_KickList
 
 	while ($kicknode != 0) && $cont
             set $eh = $kicknode->eh
@@ -308,9 +328,10 @@ end
 
 define loadseg
   dont-repeat
-  if Debug_ModList
+  _debug_setup
+  if $_debug_ModList
   set $step = 1
-  set $segnode = (struct segment *)Debug_ModList->mlh_Head
+  set $segnode = (struct segment *)$_debug_ModList->mlh_Head
   while ($segnode->s_node.mln_Succ != 0) && $step == 1
     if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
       log_to_file segname.tmp on
@@ -341,7 +362,7 @@ define loadseg
     set $segnode = (struct segment *)$segnode->s_node.mln_Succ
   end
   if $step < 2
-    set $kicknode = Debug_KickList
+    set $kicknode = $_debug_KickList
 
     while ($kicknode != 0) && $step == 1
 	set $eh = $kicknode->eh
