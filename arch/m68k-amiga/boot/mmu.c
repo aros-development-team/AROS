@@ -10,6 +10,9 @@
 #include <libraries/configvars.h>
 #include <hardware/cpu/memory.h>
 
+#include "exec_intern.h"
+#undef KernelBase
+
 #define FASTREMAP 1
 
 #define _STR(A) #A
@@ -43,8 +46,6 @@ const struct Resident rom_tag =
    (STRPTR)version_string,
    (APTR)Init
 };
-
-APTR KickMemPtr_Store = 0;
 
 void enable_mmu(void *kb);
 void debug_mmu(void *kb);
@@ -136,7 +137,7 @@ static void mmuprotectregion(void *KernelBase, const UBYTE *name, APTR addr, ULO
 /* MMU protect ArosBootStrap loaded ROM modules */
 static void mmuprotectextrom(void *KernelBase)
 {
-    struct MemList *mlist = (struct MemList*)KickMemPtr_Store;
+    struct MemList *mlist = (struct MemList*)PrivExecBase(SysBase)->PlatformData.ep_KickMemPtr;
     UWORD i;
     
     while (mlist) {

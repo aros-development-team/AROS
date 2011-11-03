@@ -30,10 +30,9 @@
 #define SS_STACK_SIZE	0x02000
 
 extern const struct Resident Exec_resident;
-extern APTR KickMemPtr_Store;
 extern void __clear_bss(const struct KernelBSS *bss);
 
-static void protectKick(struct MemHeader *mh, struct MemList *ml);
+static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask);
 
 extern void __attribute__((interrupt)) Exec_Supervisor_Trap (void);
 
@@ -195,7 +194,7 @@ static void protectROM(struct MemHeader *mh)
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
 
-static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct MemList *ml)
+static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct MemList *ml, ULONG *mask)
 {
 	if (size < 65536)
 		return NULL;
@@ -211,7 +210,7 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct Mem
 	}
 
         /* Must be done first, in case BSS and SS are in it */
-	protectKick((struct MemHeader*)startaddr, ml);
+	protectKick((struct MemHeader*)startaddr, ml, mask);
 
 	protectROM((struct MemHeader*)startaddr);
 	return (struct MemHeader*)startaddr;
@@ -237,23 +236,22 @@ static BOOL IsSysBaseValidNoVersion(struct ExecBase *sysbase)
 /* Remove all bit 0 marks
  */
 /* We support up to 32 KickMemPtr tags in pre-expansion.library RAM */
-static ULONG protectKickBits;
-
-static void markKick(struct MemList *ml)
+static void markKick(struct MemList *ml, ULONG *mask)
 {
     int ndx;
     for (ndx = 0; ml ; ml = (struct MemList*)ml->ml_Node.ln_Succ) {
         int i;
         for (i = 0; i < ml->ml_NumEntries; i++, ndx++) {
             if (ndx < 32)
-                protectKickBits |= (1 << ndx);
+                (*mask) |= (1 << ndx);
         }
     }
 }
 
-static void protectKick(struct MemHeader *mh, struct MemList *ml)
+static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask)
 {
     int ndx = 0;
+    ULONG protectKickBits = *mask;
 
     DEBUGPUTHEX(("protectKick", (IPTR)ml));
 
@@ -282,13 +280,15 @@ static void protectKick(struct MemHeader *mh, struct MemList *ml)
 	ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
 
+    *mask = protectKickBits;
     return;
 }
 
-static BOOL InitKickMem(struct ExecBase *SysBase)
+static BOOL InitKickMem(ULONG *mask, struct ExecBase *SysBase)
 {
     int ndx = 0;
     struct MemList *ml = SysBase->KickMemPtr;
+    ULONG protectKickBits = *mask;
 
     DEBUGPUTHEX(("KickMemPtr", (IPTR)ml));
 
@@ -309,9 +309,13 @@ static BOOL InitKickMem(struct ExecBase *SysBase)
 	    /* Use the non-mungwalling AllocAbs */
 	    if (!InternalAllocAbs(start, len, SysBase))
 		return FALSE;
+
+	    protectKickBits |= (1 << ndx);
 	}
 	ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
+
+    *mask = protectKickBits;
 
     return TRUE;
 }
@@ -464,6 +468,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	ULONG oldmem;
 	UWORD attnflags;
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
+	ULONG KickMemMask = 0;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
 	/* We can't use the global 'SysBase' symbol, since
 	 * the compiler does not know that PrepareExecBase
@@ -626,9 +631,9 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	__clear_bss(&kbss[0]);
 
         /* Mark all the kick memory as 'unprotected' */
-	markKick(KickMemPtr);
+	markKick(KickMemPtr, &KickMemMask);
 
-	mh = addmemoryregion(membanks[0], membanks[1], KickMemPtr);
+	mh = addmemoryregion(membanks[0], membanks[1], KickMemPtr, &KickMemMask);
 	if (mh == NULL) {
 	    DEBUGPUTS(("Can't create initial memory header!\n"));
 	    Early_Alert(AT_DeadEnd | AG_NoMemory);
@@ -706,7 +711,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 		DEBUGPUTHEX(("RAM Addr: ", addr));
 		DEBUGPUTHEX(("RAM Size: ", size));
-		mh = addmemoryregion(addr, size, KickMemPtr);
+		mh = addmemoryregion(addr, size, KickMemPtr, &KickMemMask);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 
 		/* Adjust MaxLocMem and MaxExtMem as needed */
@@ -774,7 +779,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	 */
 	if (SysBase->KickCheckSum) {
 	    if (SysBase->KickCheckSum == (APTR)SumKickData()) {
-		if (!InitKickMem(SysBase)) {
+		if (!InitKickMem(&KickMemMask, SysBase)) {
 	    	    DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
 	    	    SysBase->KickTagPtr = NULL;
 	    	}
@@ -782,7 +787,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    	DEBUGPUTS(("[KickMem] Checksum mismatch\n"));
 		SysBase->KickTagPtr = NULL;
 	    }
-	    KickMemPtr_Store = SysBase->KickMemPtr;
+	    PrivExecBase(SysBase)->PlatformData.ep_KickMemPtr = SysBase->KickMemPtr;
 	    SysBase->KickMemPtr = NULL;
 	    SysBase->KickCheckSum = (APTR)SumKickData();
 	}
