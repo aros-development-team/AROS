@@ -1,0 +1,35 @@
+## version $VER: palette.catalog 2.0 (04.11.2011)
+## language français
+## codeset 0
+;
+;
+MSG_WINTITLE
+Préférences de palette
+;
+MSG_OK
+Ok
+;
+MSG_PEN0
+Pinceau 0
+;
+MSG_PEN1
+Pinceau 1
+;
+MSG_PEN2
+Pinceau 2
+;
+MSG_PEN3
+Pinceau 3
+;
+MSG_PEN4
+Pinceau 4
+;
+MSG_PEN5
+Pinceau 5
+;
+MSG_PEN6
+Pinceau 6
+;
+MSG_PEN7
+Pinceau 7
+;
