@@ -46,6 +46,18 @@ const struct Resident rom_tag =
    (APTR)Init
 };
 
+D(
+static void debugRAM(void)
+{
+	struct MemHeader *mh;
+	ForeachNode(&SysBase->MemList, mh) {
+		bug("%08x: %08x - %08x %08x %d '%s'\n",
+			mh, mh->mh_Lower, mh->mh_Upper, mh->mh_Attributes,
+			mh->mh_Node.ln_Pri, mh->mh_Node.ln_Name ? mh->mh_Node.ln_Name : "<null>");
+	}
+}
+)
+
 static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *configDev)
 {
 	struct DiagArea *diag = configDev->cd_Rom.er_DiagArea;
@@ -62,6 +74,7 @@ static BOOL calldiagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *c
 		AROS_UFCA(struct ConfigDev*, configDev, A3),
 		AROS_UFCA(struct ExpansionBase*, ExpansionBase, A5),
 		AROS_UFCA(struct ExecBase*, SysBase, A6));
+	D(bug(ret ? "->success\n" : "->failed\n"));
 	return ret != 0;
 }
 
@@ -145,7 +158,6 @@ static void callroms(struct ExpansionBase *ExpansionBase)
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
 		if (diagrom(ExpansionBase, configDev)) {
 			if (!calldiagrom(ExpansionBase, configDev)) {
-				D(bug("failed\n"));
 				FreeMem(configDev->cd_Rom.er_DiagArea, configDev->cd_Rom.er_DiagArea->da_Size);
 				configDev->cd_Rom.er_DiagArea = NULL;
 			}	
@@ -169,6 +181,8 @@ static AROS_UFH3 (APTR, Init,
    eb->eb_Private2[0] = (IPTR)SysBase;
 
    callroms(eb);
+
+   D(debugRAM());
 
    AROS_USERFUNC_EXIT
 
