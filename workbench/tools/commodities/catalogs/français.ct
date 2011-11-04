@@ -46,7 +46,7 @@ Impossible de créer un port de message !\n
 ; Can't create message port!\n
 ;
 MSG_CANT_ALLOCATE_SIGNAL
-Impossible d'allouer un signal!\n
+Impossible d'allouer un signal !\n
 ;
 MSG_CANT_CREATE_BROKER
 Impossible de créer un objet CxBroker !\n
@@ -147,7 +147,7 @@ Opaque
 ; Opaque
 ;
 MSG_OPAQUE_CXTITLE
-Fenêtres Opaques
+Fenêtres opaques
 ; Opaque windows
 ;
 MSG_OPAQUE_CXDESCR
@@ -175,7 +175,7 @@ Lanceur d'application système
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Menu lanceur d'applications 
+Menu lanceur d'applications
 ; Program launch commodity
 ;
 MSG_FKEY_CXNAME
@@ -261,7 +261,7 @@ NoCapsLock
 ; NoCapsLock
 ;
 MSG_NOCAPSLOCK_CXTITLE
-Pas de Verrouillage Majuscule:
+Pas de Verrouillage Majuscule :
 ; NoCapsLock:
 ;
 MSG_NOCAPSLOCK_CXDESCR
@@ -284,19 +284,19 @@ MSG_ALTKEYQ_CXTITLE
 Insertion de caractères
 ;
 MSG_ALTKEYQ_CXDESCR
-Usage de la touhe Alt comme MSDOS 
+Usage de la touche Alt comme MSDOS
 ;
 MSG_ASCIITABLE_CXNAME
 ASCIITable
 ;
 MSG_ASCIITABLE_CXTITLE
-Table ASCII:
+Table ASCII :
 ;
 MSG_ASCIITABLE_CXDESCR
 Choisir les touches
 ;
 MSG_ASCIITABLE_WINTITLE
-Table ASCII: Touche = <%s>
+Table ASCII : Touche = <%s>
 ;
 MSG_ASCIITABLE_GAD_COPY
 Copier
