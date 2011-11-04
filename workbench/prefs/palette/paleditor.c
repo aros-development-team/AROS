@@ -15,6 +15,7 @@
 #include <zune/customclasses.h>
 #include <zune/prefseditor.h>
 
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
@@ -32,10 +33,7 @@
 #include "paleditor.h"
 #include "prefs.h"
 
-STATIC CONST_STRPTR pennames[] =
-{
-    "Pen 0", "Pen 1", "Pen 2", "Pen 3", "Pen 4", "Pen 5", "Pen 6", "Pen 7"
-};
+STATIC CONST_STRPTR pennames[9];
 
 /*
     without this initial palette we can't later set MUIA_Palette_Entries.
@@ -70,6 +68,15 @@ STATIC VOID Gadgets2PalPrefs(struct PalEditor_DATA *data);
 Object *PalEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     Object *palpe_palette;
+
+pennames[0] = _(MSG_PEN0);
+pennames[1] = _(MSG_PEN1);
+pennames[2] = _(MSG_PEN2);
+pennames[3] = _(MSG_PEN3);
+pennames[4] = _(MSG_PEN4);
+pennames[5] = _(MSG_PEN5);
+pennames[6] = _(MSG_PEN6);
+pennames[7] = _(MSG_PEN7);
 
     self = (Object *) DoSuperNewTags
     (

@@ -7,7 +7,8 @@ FILES   := main locale paleditor prefs args misc
 EXEDIR  := $(AROSDIR)/Prefs
 
 ##MM- workbench-prefs : workbench-prefs-palette
-#MM workbench-prefs-palette : includes linklibs workbench-prefs-palette-catalogs
+#MM workbench-prefs-palette : includes linklibs workbench-prefs-palette-catalogs \
+#MM workbench-prefs-palette-icons
 
 %build_prog mmake=workbench-prefs-palette \
     progname=Palette targetdir=$(EXEDIR) \

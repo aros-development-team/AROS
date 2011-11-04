@@ -10,6 +10,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <proto/alib.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/utility.h>
@@ -35,7 +36,7 @@
 /* #define DEBUG 1 */
 #include <aros/debug.h>
 
-#define VERSION "$VER: Palette 1.0 (18.02.2010) AROS Dev Team"
+#define VERSION "$VER: Palette 1.1 (04.11.2011) AROS Dev Team"
 /*********************************************************************************************/
 
 int main(int argc, char **argv)
