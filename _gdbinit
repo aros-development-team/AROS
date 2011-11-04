@@ -29,11 +29,11 @@ define liblist
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($lib->ln_Succ != 0)
-	printf "%p %5d   %s\n", \
-	    $lib, \
-	    ((struct Library *)$lib)->lib_OpenCnt, \
-	    $lib->ln_Name
-	set $lib = $lib->ln_Succ
+    printf "%p %5d   %s\n", \
+        $lib, \
+        ((struct Library *)$lib)->lib_OpenCnt, \
+        $lib->ln_Name
+    set $lib = $lib->ln_Succ
     end
 end
 document liblist
@@ -46,11 +46,11 @@ define devlist
     printf "Base     OpenC   Name\n"
     printf "---------------------------------------------------------------\n"
     while ($dev->ln_Succ != 0)
-	printf "%p %5d   %s\n", \
-	    $dev, \
-	    ((struct Library *)$dev)->lib_OpenCnt, \
-	    $dev->ln_Name
-	set $dev = $dev->ln_Succ
+    printf "%p %5d   %s\n", \
+        $dev, \
+        ((struct Library *)$dev)->lib_OpenCnt, \
+        $dev->ln_Name
+    set $dev = $dev->ln_Succ
     end
 end
 document devlist
@@ -63,8 +63,8 @@ define resourcelist
     printf "Base     Name\n"
     printf "---------------------------------------------------------------\n"
     while ($res->ln_Succ != 0)
-	printf "%p %s\n", $res, $res->ln_Name
-	set $res = $res->ln_Succ
+    printf "%p %s\n", $res, $res->ln_Name
+    set $res = $res->ln_Succ
     end
 end
 document resourcelist
@@ -79,15 +79,15 @@ define residentlist
     printf "Address    Pri Flags Vers Type  Name\n"
     printf "--------------------------------------------------------------\n"
     while (($resp)[$i] != 0)
-	set $res = ($resp)[$i]
-	printf "%p  %4d    %02x  %3d  %3d  %s\n", \
-	    $res, \
-	    ((struct Resident *)$res)->rt_Pri, \
-	    ((struct Resident *)$res)->rt_Flags, \
-	    ((struct Resident *)$res)->rt_Version, \
-	    ((struct Resident *)$res)->rt_Type, \
-	    ((struct Resident *)$res)->rt_Name
-	set $i = $i + 1
+    set $res = ($resp)[$i]
+    printf "%p  %4d    %02x  %3d  %3d  %s\n", \
+        $res, \
+        ((struct Resident *)$res)->rt_Pri, \
+        ((struct Resident *)$res)->rt_Flags, \
+        ((struct Resident *)$res)->rt_Version, \
+        ((struct Resident *)$res)->rt_Type, \
+        ((struct Resident *)$res)->rt_Name
+    set $i = $i + 1
     end
 end
 document residentlist
@@ -101,16 +101,16 @@ define taskready
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     while ($task->tc_Node.ln_Succ != 0)
-	printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
-	    $task, \
-	    $task->tc_SigWait, \
-	    $task->tc_SigRecvd, \
-	    $task->tc_SPUpper - $task->tc_SPLower, \
-	    $task->tc_SPUpper - $task->tc_SPReg, \
-	    $task->tc_Node.ln_Pri, \
-	    $task->tc_Node.ln_Type, \
-	    $task->tc_Node.ln_Name
-	set $task = (struct Task *)$task->tc_Node.ln_Succ
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
+        $task, \
+        $task->tc_SigWait, \
+        $task->tc_SigRecvd, \
+        $task->tc_SPUpper - $task->tc_SPLower, \
+        $task->tc_SPUpper - $task->tc_SPReg, \
+        $task->tc_Node.ln_Pri, \
+        $task->tc_Node.ln_Type, \
+        $task->tc_Node.ln_Name
+    set $task = (struct Task *)$task->tc_Node.ln_Succ
     end
 end
 document taskready
@@ -124,16 +124,16 @@ define taskwait
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     while ($task->tc_Node.ln_Succ != 0)
-	printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
-	    $task, \
-	    $task->tc_SigWait, \
-	    $task->tc_SigRecvd, \
-	    $task->tc_SPUpper - $task->tc_SPLower, \
-	    $task->tc_SPUpper - $task->tc_SPReg, \
-	    $task->tc_Node.ln_Pri, \
-	    $task->tc_Node.ln_Type, \
-	    $task->tc_Node.ln_Name
-	set $task = (struct Task *)$task->tc_Node.ln_Succ
+    printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
+        $task, \
+        $task->tc_SigWait, \
+        $task->tc_SigRecvd, \
+        $task->tc_SPUpper - $task->tc_SPLower, \
+        $task->tc_SPUpper - $task->tc_SPReg, \
+        $task->tc_Node.ln_Pri, \
+        $task->tc_Node.ln_Type, \
+        $task->tc_Node.ln_Name
+    set $task = (struct Task *)$task->tc_Node.ln_Succ
     end
 end
 document taskwait
@@ -146,14 +146,14 @@ define thistask
     printf "Task     SigWait  SigRecvd StkSize   StkUsed Pri Type Name\n"
     printf "-----------------------------------------------------------------------------\n"
     printf "%p %p %p %8d %8d %3d  %3ld %s\n", \
-	$task, \
-	$task->tc_SigWait, \
-	$task->tc_SigRecvd, \
-	$task->tc_SPUpper - $task->tc_SPLower, \
-	$task->tc_SPUpper - $task->tc_SPReg, \
-	$task->tc_Node.ln_Pri, \
-	$task->tc_Node.ln_Type, \
-	$task->tc_Node.ln_Name
+    $task, \
+    $task->tc_SigWait, \
+    $task->tc_SigRecvd, \
+    $task->tc_SPUpper - $task->tc_SPLower, \
+    $task->tc_SPUpper - $task->tc_SPReg, \
+    $task->tc_Node.ln_Pri, \
+    $task->tc_Node.ln_Type, \
+    $task->tc_Node.ln_Name
 end
 document thistask
 Print out information about the currently running task.
@@ -185,11 +185,11 @@ define modlist
         set $i = 0
         while ($i < $shnum)
             if ($sh->addr != 0) && ($sh->size != 0)
-		printf "%p              %2u %32s\n", $sh->addr, $i, $kicknode->Name
-	    end
-	    set $sh = $sh + 1
-	    set $i = $i + 1
-	end
+        printf "%p              %2u %32s\n", $sh->addr, $i, $kicknode->Name
+        end
+        set $sh = $sh + 1
+        set $i = $i + 1
+    end
         set $kicknode = $kicknode->Next
     end
 end
@@ -207,7 +207,7 @@ define findaddr
         set $segnode = (struct segment *)$_debug_ModList->mlh_Head
 
         while ($segnode->s_node.mln_Succ != 0) && $cont
-	    if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
+        if $arg0 >= $segnode->s_lowest && $arg0 <= $segnode->s_highest
                 printf "Address found in %s, in segment %p.\nIf this is an executable, its .text section starts at %p.\n", $segnode->s_mod->m_name, $segnode->s_seg, $segnode->s_lowest
 
                 set $cont = 0
@@ -217,29 +217,29 @@ define findaddr
     end
 
     if $cont
-	printf "Searching in the kickstart list...\n"
-    	set $kicknode = $_debug_KickList
+    printf "Searching in the kickstart list...\n"
+        set $kicknode = $_debug_KickList
 
-	while ($kicknode != 0) && $cont
+    while ($kicknode != 0) && $cont
             set $eh = $kicknode->eh
             set $sh = $kicknode->sh
             set $shnum = $eh->shnum
 
             set $i = 0
             while ($i < $shnum) && $cont
-            	if ($sh->addr != 0) && ($sh->size != 0)
-		    set $lowest  = $sh->addr
-		    set $highest = $sh->addr + $sh->size - 1
+                if ($sh->addr != 0) && ($sh->size != 0)
+            set $lowest  = $sh->addr
+            set $highest = $sh->addr + $sh->size - 1
 
-		    if $arg0 >= $lowest && $arg0 <= $highest
-		    	printf "Address found in %s in section number %d starting at %p.\n", $kicknode->Name, $i, $lowest
-                    	set $cont = 0
+            if $arg0 >= $lowest && $arg0 <= $highest
+                printf "Address found in %s in section number %d starting at %p.\n", $kicknode->Name, $i, $lowest
+                        set $cont = 0
                     end
                 end
 
-		set $sh = $sh + 1
-		set $i = $i + 1
-	    end
+        set $sh = $sh + 1
+        set $i = $i + 1
+        end
             set $kicknode = $kicknode->Next
         end
     end
@@ -253,7 +253,7 @@ define findaddr
     set $i = 0
 
     while (($resp)[$i] != 0) && $cont
-	set $res = ($resp)[$i]
+    set $res = ($resp)[$i]
 
         if ($arg0 >= $res) && ($arg0 <= $res->rt_EndSkip)
             printf "Address found in %s, which resides at %p\n", $res->rt_Name, $res
@@ -305,19 +305,19 @@ define printtaglist
     printf "--------------------------------------\n"
 
     while $list->ti_Tag != 0
-	# Handle the possible control tag...
-	if $list->ti_Tag == 1
-	    printf "TAG_IGNORE\n"
-	else if $list->ti_Tag == 2
-	    printf "TAG_MORE    %p\n", $list->ti_Data
-	    set $list = (struct TagItem *)$list->ti_Data
-	else if $list->ti_Tag == 3
-	    printf "TAG_SKIP    %d\n", $list->ti_Data
-	    set $list = $list + $list->ti_Tag + 1
-	else
-	    printf "%p  %p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
-	    set $list = $list + 1
-	end
+    # Handle the possible control tag...
+    if $list->ti_Tag == 1
+        printf "TAG_IGNORE\n"
+    else if $list->ti_Tag == 2
+        printf "TAG_MORE    %p\n", $list->ti_Data
+        set $list = (struct TagItem *)$list->ti_Data
+    else if $list->ti_Tag == 3
+        printf "TAG_SKIP    %d\n", $list->ti_Data
+        set $list = $list + $list->ti_Tag + 1
+    else
+        printf "%p  %p      %9lu\n", $list->ti_Tag, $list->ti_Data, $list->ti_Data
+        set $list = $list + 1
+    end
     end
     printf "TAG_DONE\n"
 end
@@ -374,56 +374,56 @@ define loadseg
     set $kicknode = $_debug_KickList
 
     while ($kicknode != 0) && $step == 1
-	set $eh = $kicknode->eh
+    set $eh = $kicknode->eh
         set $sh = $kicknode->sh
         set $shnum = $eh->shnum
 
         set $i = 0
         while ($i < $shnum) && $cont
             if ($sh->addr != 0) && ($sh->size != 0)
-		set $lowest  = $sh->addr
-		set $highest = $sh->addr + $sh->size - 1
+        set $lowest  = $sh->addr
+        set $highest = $sh->addr + $sh->size - 1
 
-		if $arg0 >= $lowest && $arg0 <= $highest
-		
-		    set $shstrndx = $eh->shstrndx
-		    set $shstr = 0
+        if $arg0 >= $lowest && $arg0 <= $highest
 
-		    if ($shstrndx < 0xFF00)
-		    	set $shstr = $shstrndx
-		    if ($shstrndx > 0xFFFF)
-		    	set $shstr = $shstrndx - (0x10000 - 0xFF00)
+            set $shstrndx = $eh->shstrndx
+            set $shstr = 0
 
-		    log_to_file segname.tmp on
-		    printf "%s", $kicknode->s_module.m_name
-		    end_log
-		    shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
-		    log_to_file loadseg.tmp on
-		    printf "add-symbol-file "
-		    end_log
-		    shell head -n1 segname.tmp >>loadseg.tmp
-		    log_to_file loadseg.tmp off
-		    printf " %p", $s_lowest
+            if ($shstrndx < 0xFF00)
+                set $shstr = $shstrndx
+            if ($shstrndx > 0xFFFF)
+                set $shstr = $shstrndx - (0x10000 - 0xFF00)
 
-		    set $sh = $sh + 1
-		    set $i = $i + 1
-		    while ($i < $shnum)
-		        if ($sh->addr != 0) && ($sh->size != 0)
-		            set $segname = $kicknode->sh[$shstr] + $sh->name
-		            printf " -s %s %p", $segname, $sh->addr
-		        end
-		        set $step = $step + 1
-		    end
+            log_to_file segname.tmp on
+            printf "%s", $kicknode->s_module.m_name
+            end_log
+            shell sed -i 's/.*:\(.*\)/\1/' segname.tmp
+            log_to_file loadseg.tmp on
+            printf "add-symbol-file "
+            end_log
+            shell head -n1 segname.tmp >>loadseg.tmp
+            log_to_file loadseg.tmp off
+            printf " %p", $s_lowest
 
-		    end_log
-		    source loadseg.tmp
-		    loop_break
+            set $sh = $sh + 1
+            set $i = $i + 1
+            while ($i < $shnum)
+                if ($sh->addr != 0) && ($sh->size != 0)
+                    set $segname = $kicknode->sh[$shstr] + $sh->name
+                    printf " -s %s %p", $segname, $sh->addr
+                end
+                set $step = $step + 1
+            end
+
+            end_log
+            source loadseg.tmp
+            loop_break
                 end
             end
 
-	    set $sh = $sh + 1
-	    set $i = $i + 1
-	end
+        set $sh = $sh + 1
+        set $i = $i + 1
+    end
         set $kicknode = $kicknode->Next
     end
   end
