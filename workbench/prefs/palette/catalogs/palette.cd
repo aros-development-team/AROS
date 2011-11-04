@@ -4,3 +4,27 @@ Palette Preferences
 MSG_OK (//)
 Ok
 ;
+MSG_PEN0 (//)
+Pen 0
+;
+MSG_PEN1 (//)
+Pen 1
+;
+MSG_PEN2 (//)
+Pen 2
+;
+MSG_PEN3 (//)
+Pen 3
+;
+MSG_PEN4 (//)
+Pen 4
+;
+MSG_PEN5 (//)
+Pen 5
+;
+MSG_PEN6 (//)
+Pen 6
+;
+MSG_PEN7 (//)
+Pen 7
+;
