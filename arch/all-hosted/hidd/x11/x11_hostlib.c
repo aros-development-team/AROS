@@ -108,16 +108,18 @@ static const char *x11_func_names[] = {
     "XLookupString",
     "XQueryExtension",
     "XDefaultScreen",
-    "XRootWindow"
+    "XRootWindow",
+    "XAllocClassHint",
+    "XSetClassHint"
 #if DEBUG_X11_SYNCHRON
     , "XSynchronize"
 #endif
 };
 
 #if DEBUG_X11_SYNCHRON
-#define X11_NUM_FUNCS (79)
+#define X11_NUM_FUNCS (81)
 #else
-#define X11_NUM_FUNCS (78)
+#define X11_NUM_FUNCS (80)
 #endif
 
 

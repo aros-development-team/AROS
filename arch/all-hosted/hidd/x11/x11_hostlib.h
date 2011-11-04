@@ -93,6 +93,8 @@ struct x11_func {
     int (*XQueryExtension) (Display *, char*, int*, int*, int*);
     int (*XDefaultScreen) (Display *);
     Window (*XRootWindow) (Display *, int);
+    XClassHint * (*XAllocClassHint) ();
+    int (*XSetClassHint) (Display *, Window, XClassHint *);
 #if DEBUG_X11_SYNCHRON
     void (*XSynchronize)(Display *, Bool );
 #endif

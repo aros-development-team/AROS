@@ -173,8 +173,14 @@ BOOL X11BM_InitFB(OOP_Class *cl, OOP_Object *o, struct TagItem *attrList)
 #if !ADJUST_XWIN_SIZE
         XSizeHints sizehint;
 #endif
+        XClassHint *classhint;
 
         HostLib_Lock();
+
+        classhint = XCALL(XAllocClassHint);
+        classhint->res_name = "AROS";
+        classhint->res_class = "AROS";
+        XCALL(XSetClassHint, GetSysDisplay(), MASTERWIN(data), classhint);
 
     XCALL(XStoreName, GetSysDisplay(), MASTERWIN(data), "AROS");
     XCALL(XSetIconName, GetSysDisplay(), MASTERWIN(data), "AROS Screen");
