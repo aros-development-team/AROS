@@ -102,19 +102,19 @@ struct x11_func {
 
 /* Taken from xf86vmode.h */
 typedef struct {
-    unsigned int	dotclock;
-    unsigned short	hdisplay;
-    unsigned short	hsyncstart;
-    unsigned short	hsyncend;
-    unsigned short	htotal;
-    unsigned short	hskew;
-    unsigned short	vdisplay;
-    unsigned short	vsyncstart;
-    unsigned short	vsyncend;
-    unsigned short	vtotal;
-    unsigned int	flags;
-    int			privsize;
-    long		*c_private;
+    unsigned int    dotclock;
+    unsigned short    hdisplay;
+    unsigned short    hsyncstart;
+    unsigned short    hsyncend;
+    unsigned short    htotal;
+    unsigned short    hskew;
+    unsigned short    vdisplay;
+    unsigned short    vsyncstart;
+    unsigned short    vsyncend;
+    unsigned short    vtotal;
+    unsigned int    flags;
+    int            privsize;
+    long        *c_private;
 } XF86VidModeModeInfo;
 
 #endif
