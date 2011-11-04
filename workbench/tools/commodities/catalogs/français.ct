@@ -1,4 +1,4 @@
-## version $VER: Commodities.catalog 3.0 (30.08.2001)
+## version $VER: Commodities.catalog 3.1 (04.11.2011)
 ## language français
 ## codeset 0
 ;
@@ -267,6 +267,15 @@ Pas de Verrouillage Majuscule:
 MSG_NOCAPSLOCK_CXDESCR
 Bloque le verrouillage majuscule
 ; Renders the CAPS LOCK key ineffective
+;
+MSG_DEPTHMENU_CXNAME
+DepthMenu
+;
+MSG_DEPTHMENU_CXTITLE
+DepthMenu :
+;
+MSG_DEPTHMENU_CXDESCR
+Menu popup pour la profondeur d'écran
 ;
 MSG_ALTKEYQ_CXNAME
 AltKeyQ
