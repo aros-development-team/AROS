@@ -3883,6 +3883,10 @@ IPTR IconList__MUIM_IconList_Clear(struct IClass *CLASS, Object *obj, struct MUI
     data->icld_FocusIcon = NULL;
 
     data->icld_ViewX = data->icld_ViewY = data->icld_AreaWidth = data->icld_AreaHeight = 0;
+    data->icld_IconAreaLargestWidth = 0;
+    data->icld_IconAreaLargestHeight = 0;
+    data->icld_IconLargestHeight = 0;
+    data->icld_LabelLargestHeight = 0;
 
 #if defined(DEBUG_ILC_ICONRENDERING)
     D(bug("[IconList]: %s: call SetSuperAttrs()\n", __PRETTY_FUNCTION__));
