@@ -66,11 +66,11 @@ static Object *scriptobject, *pureobject, *archiveobject, *sizespace = NULL;
 
 struct DirScanProcess
 {
-    struct Process	*scanProcess;
-    Object 		*scanSizeObj;
-    char		*scanSize;
-    char		*scanDir;
-    IPTR		scanState;
+    struct Process    *scanProcess;
+    Object         *scanSizeObj;
+    char        *scanSize;
+    char        *scanDir;
+    IPTR        scanState;
 };
 
 static struct DirScanProcess *scanStruct = NULL;
@@ -91,98 +91,98 @@ void getReadableSize(UBYTE *buf, ULONG size)
     char *ch;
     struct
     {
-	IPTR val;
-	IPTR  dec;
+    IPTR val;
+    IPTR  dec;
     } array =
     {
-	size,
-	0
+    size,
+    0
     };
 
     /*
     if (size >= (1024 * 1024 * 1024 * 1024 * 1024 * 1024))
     {
-	//Exabytes
-	array.val = size >> 60;
-	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024 * 1024);
-	array.dec = d % 10;
-	ch = "EiB";
+    //Exabytes
+    array.val = size >> 60;
+    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024 * 1024);
+    array.dec = d % 10;
+    ch = "EiB";
     }
     if (size >= (1024 * 1024 * 1024 * 1024 * 1024))
     {
-	//Petabytes
-	array.val = size >> 50;
-	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024);
-	array.dec = d % 10;
-	ch = "PiB";
+    //Petabytes
+    array.val = size >> 50;
+    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024);
+    array.dec = d % 10;
+    ch = "PiB";
     }
     if (size >= (1024 * 1024 * 1024 * 1024))
     {
-	//Terabytes
-	array.val = size >> 40;
-	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024);
-	array.dec = d % 10;
-	ch = "TiB";
+    //Terabytes
+    array.val = size >> 40;
+    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024);
+    array.dec = d % 10;
+    ch = "TiB";
     }*/
     if (size >= (1024 * 1024 * 1024))
     {
-	//Gigabytes
-	array.val = size >> 30;
-	d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024);
-	array.dec = d % 10;
-	ch = "GiB";
+    //Gigabytes
+    array.val = size >> 30;
+    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024);
+    array.dec = d % 10;
+    ch = "GiB";
     }
     else if (size >= (1024 * 1024))
     {
-	//Megabytes
-	array.val = size >> 20;
-	d = ((UQUAD)size * 10 + ((1024 * 1024) / 2)) / (1024 * 1024);
-	array.dec = d % 10;
-	ch = "MiB";
+    //Megabytes
+    array.val = size >> 20;
+    d = ((UQUAD)size * 10 + ((1024 * 1024) / 2)) / (1024 * 1024);
+    array.dec = d % 10;
+    ch = "MiB";
     }
     else if (size >= 1024)
     {
-	//Kilobytes
-	array.val = size >> 10;
-	d = (size * 10 + (1024 / 2)) / 1024;
-	array.dec = d % 10;
-	ch = "KiB";
+    //Kilobytes
+    array.val = size >> 10;
+    d = (size * 10 + (1024 / 2)) / 1024;
+    array.dec = d % 10;
+    ch = "KiB";
     }
     else
     {
-	//Bytes
-	array.val = size;
-	array.dec = 0;
-	d = 0;
-	if (size == 1)
-	    ch = "Byte";
-	else
-	    ch = "Bytes";
+    //Bytes
+    array.val = size;
+    array.dec = 0;
+    d = 0;
+    if (size == 1)
+        ch = "Byte";
+    else
+        ch = "Bytes";
     }
 
     if (!array.dec && (d > array.val * 10))
     {
-	array.val++;
+    array.val++;
     }
 
     RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
 
     while (*buf)
     {
-	buf++;
+    buf++;
     }
 
     sprintf((char *)buf," %s", ch);
 }
 
-#define kExallBufSize  		(4096)
+#define kExallBufSize          (4096)
 
 ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory)
 {
-    UBYTE	*buffer = NULL;
-    BPTR	directoryLock = BNULL;
-    ULONG	directorySize = 0;
-    BOOL	loop = TRUE;
+    UBYTE    *buffer = NULL;
+    BPTR    directoryLock = BNULL;
+    ULONG    directorySize = 0;
+    BOOL    loop = TRUE;
 
 D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
 
@@ -203,32 +203,32 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
 
     do
     {
-	ead = oldEad;
-	loop = ExAll(directoryLock, ead, kExallBufSize, ED_COMMENT, eac);
+    ead = oldEad;
+    loop = ExAll(directoryLock, ead, kExallBufSize, ED_COMMENT, eac);
 
-	if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
+    if(!loop && IoErr() != ERROR_NO_MORE_ENTRIES) break;
 
-	if(eac->eac_Entries != 0)
-	{
-	    do
-	    {
+    if(eac->eac_Entries != 0)
+    {
+        do
+        {
                 if (ead->ed_Type == ST_FILE)
                 {
                     directorySize += ead->ed_Size;
-		    getReadableSize(scan->scanSize, (base + directorySize));
-		    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+            getReadableSize(scan->scanSize, (base + directorySize));
+            set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
                 }
                 else if (ead->ed_Type == ST_USERDIR)
                 {
-		    ULONG subdirlen = strlen(directory) + strlen(ead->ed_Name) + 1;
+            ULONG subdirlen = strlen(directory) + strlen(ead->ed_Name) + 1;
                     char * subdirectory = AllocVec(subdirlen + 1, MEMF_CLEAR);
-		    CopyMem(directory, subdirectory, strlen(directory));
-		    AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
+            CopyMem(directory, subdirectory, strlen(directory));
+            AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
                     directorySize += calculateDirectorySize(scan, (base + directorySize), subdirectory);
                 }
-		ead = ead->ed_Next;
-	    } while((ead != NULL) && (scan->scanState == SCANRUN)); 
-	}
+        ead = ead->ed_Next;
+        } while((ead != NULL) && (scan->scanState == SCANRUN)); 
+    }
     } while((loop) && (scan->scanState == SCANRUN)); 
 
     FreeDosObject(DOS_EXALLCONTROL, eac);
@@ -242,25 +242,25 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
  * child process to calculate directory content size..
  */
 AROS_UFH3(void, scanDir_Process,
-	AROS_UFHA(STRPTR,              argPtr, A0),
-	AROS_UFHA(ULONG,               argSize, D0),
-	AROS_UFHA(struct ExecBase *,   SysBase, A6))
+    AROS_UFHA(STRPTR,              argPtr, A0),
+    AROS_UFHA(ULONG,               argSize, D0),
+    AROS_UFHA(struct ExecBase *,   SysBase, A6))
 {
     AROS_USERFUNC_INIT
 
-    struct Task			*taskSelf = FindTask(NULL);
-    struct DirScanProcess	*scan = taskSelf->tc_UserData;
-    ULONG			directorySize = 0;
+    struct Task            *taskSelf = FindTask(NULL);
+    struct DirScanProcess    *scan = taskSelf->tc_UserData;
+    ULONG            directorySize = 0;
 
     if (scan->scanState == SCANRUN)
     {
-	D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
-	scan->scanSize = AllocVec(64, MEMF_CLEAR);
-	directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir);
-	D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
-	getReadableSize(scan->scanSize, directorySize);
-	set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
-	FreeVec(scan->scanSize);
+    D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
+    scan->scanSize = AllocVec(64, MEMF_CLEAR);
+    directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir);
+    D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
+    getReadableSize(scan->scanSize, directorySize);
+    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+    FreeVec(scan->scanSize);
     }
     scan->scanProcess = NULL;
     
@@ -279,24 +279,24 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
 
     if (!contents || !contents[0])
     {
-    	DeletePool(pool);
-	return NULL;
+        DeletePool(pool);
+    return NULL;
     }
     
     sp = contents;
     
     while((sp = strchr(sp, '\n')))
     {
-    	sp++;
-	lines++;
+        sp++;
+    lines++;
     }
     
     dst_ttypes = AllocPooled(pool, (lines + 3) * sizeof(STRPTR));
     if (!dst_ttypes)
     {
-    	FreeVec(contents);
-	DeletePool(pool);
-	return NULL;
+        FreeVec(contents);
+    DeletePool(pool);
+    return NULL;
     }
     
     *dst_ttypes++ = (STRPTR)pool;
@@ -304,12 +304,12 @@ UBYTE **BuildToolTypes(UBYTE **src_ttypes)
     
     for(sp = contents, lines = 0; sp; lines++)
     {
-	dst_ttypes[lines] = sp;
-    	sp = strchr(sp, '\n');
-	if (sp)
-	{
-	    *sp++ = '\0';
-	}
+    dst_ttypes[lines] = sp;
+        sp = strchr(sp, '\n');
+    if (sp)
+    {
+        *sp++ = '\0';
+    }
     }
     dst_ttypes[lines] = 0;
      
@@ -366,7 +366,7 @@ void FreeToolTypes(UBYTE **ttypes)
 #if USE_TEXTEDITOR
     if (ttypes)
     {
-	FreeVec((APTR)ttypes[-1]);
+    FreeVec((APTR)ttypes[-1]);
         DeletePool((APTR)ttypes[-2]);
     }
 #else
@@ -741,7 +741,7 @@ int main(int argc, char **argv)
         /* start from wanderer only */
         PrintFault(ERROR_FILE_NOT_OBJECT, argv[0]);
         retval = RETURN_FAIL;
-	goto funcmain_exit;
+    goto funcmain_exit;
     }
 
     startup = (struct WBStartup *) argv;
@@ -752,7 +752,7 @@ int main(int argc, char **argv)
         PrintFault(ERROR_REQUIRED_ARG_MISSING, argv[0]);
 D(bug("[WBInfo] required arg missing\n"));
         retval = RETURN_FAIL;
-	goto funcmain_exit;
+    goto funcmain_exit;
     }
 
     lock = startup->sm_ArgList[1].wa_Lock;
@@ -761,22 +761,22 @@ D(bug("[WBInfo] arg parent lock 0x%p: '%s'\n", lock, lname));
 
     if (startup->sm_ArgList[1].wa_Name != NULL)
     {
-	if ((name = AllocVec(strlen(startup->sm_ArgList[1].wa_Name) + 1, MEMF_CLEAR)) != NULL)
-	{
-	    CopyMem(startup->sm_ArgList[1].wa_Name, name, strlen(startup->sm_ArgList[1].wa_Name));
-	    if ((strlen(name) > 5)
-		&& (strcmp(name + strlen(name) - 5, ".info") == 0))
-	    {
-		file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
-		CopyMem(name, file , strlen(name) - 5);
-	    }
-	    else
-	    {
-		file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
-		CopyMem(name, file, strlen(name));
-	    }
+    if ((name = AllocVec(strlen(startup->sm_ArgList[1].wa_Name) + 1, MEMF_CLEAR)) != NULL)
+    {
+        CopyMem(startup->sm_ArgList[1].wa_Name, name, strlen(startup->sm_ArgList[1].wa_Name));
+        if ((strlen(name) > 5)
+        && (strcmp(name + strlen(name) - 5, ".info") == 0))
+        {
+        file = AllocVec(strlen(name) - 4, MEMF_CLEAR);
+        CopyMem(name, file , strlen(name) - 5);
+        }
+        else
+        {
+        file = AllocVec(strlen(name) + 1, MEMF_CLEAR);
+        CopyMem(name, file, strlen(name));
+        }
     D(bug("[WBInfo] arg name 0x%p: '%s', file = '%s'\n", name, name, file));
-	}
+    }
     }
     cd = CurrentDir(lock);
     if (name == NULL)
@@ -785,7 +785,7 @@ D(bug("[WBInfo] arg parent lock 0x%p: '%s'\n", lock, lname));
         PrintFault(ERROR_DIR_NOT_FOUND, argv[0]);
 D(bug("[WBInfo] dir not found\n"));
         retval = RETURN_FAIL;
-	goto funcmain_exit;
+    goto funcmain_exit;
     };
 
     ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
@@ -794,7 +794,7 @@ D(bug("[WBInfo] dir not found\n"));
         PrintFault(ERROR_NO_FREE_STORE, argv[0]);
 D(bug("[WBInfo] no free store\n"));
         retval = RETURN_FAIL;
-	goto funcmain_exit;
+    goto funcmain_exit;
     }
 
     ap->ap_Strlen = MAX_PATH_LEN;
@@ -809,7 +809,7 @@ D(bug("[WBInfo] pass to diskinfo\n"));
             TAG_DONE);
 
         retval = RETURN_OK;
-	goto funcmain_exit;
+    goto funcmain_exit;
     };
 
     ap->ap_BreakBits = SIGBREAKF_CTRL_C;
@@ -841,12 +841,12 @@ D(bug("[WBInfo] scan file\n"));
         /* fill protection */
         protection = ap->ap_Info.fib_Protection;
 
-	/* Convert the protection bits to a boolean */
+    /* Convert the protection bits to a boolean */
         flags[0] = protection & FIBF_SCRIPT  ? 1 : 0; /* s */
         flags[1] = protection & FIBF_PURE    ? 1 : 0; /* p */
         flags[2] = protection & FIBF_ARCHIVE ? 1 : 0; /* a */
 
-	/* The following flags are high-active! */
+    /* The following flags are high-active! */
         flags[3] = protection & FIBF_READ    ? 0 : 1; /* r */
         flags[4] = protection & FIBF_WRITE   ? 0 : 1; /* w */
         flags[5] = protection & FIBF_EXECUTE ? 0 : 1; /* e */
@@ -873,43 +873,43 @@ D(bug("[WBInfo] icon type is: %s\n", type));
     } else {
         PrintFault(ERROR_OBJECT_WRONG_TYPE, argv[0]);
 
-	retval = RETURN_FAIL;
+    retval = RETURN_FAIL;
         goto funcmain_exit;
     }
 
     if (icon->do_Type == 2)
     {
-	sizespace = (Object *)TextObject,
-		ButtonFrame,
-		MUIA_Background, MUII_TextBack,
-		MUIA_Text_PreParse, (IPTR) "\33r",
-		MUIA_Text_Contents, (IPTR) "?",
-		MUIA_InputMode, MUIV_InputMode_RelVerify,
-	    End;
-	
-	versionspace = (Object *)TextObject,
-		TextFrame,
-		MUIA_Background, MUII_TextBack,
-		MUIA_Text_PreParse, (IPTR) "\33r",
-		MUIA_Text_Contents, (IPTR) "N/A",
-	    End;
+    sizespace = (Object *)TextObject,
+        ButtonFrame,
+        MUIA_Background, MUII_TextBack,
+        MUIA_Text_PreParse, (IPTR) "\33r",
+        MUIA_Text_Contents, (IPTR) "?",
+        MUIA_InputMode, MUIV_InputMode_RelVerify,
+        End;
+    
+    versionspace = (Object *)TextObject,
+        TextFrame,
+        MUIA_Background, MUII_TextBack,
+        MUIA_Text_PreParse, (IPTR) "\33r",
+        MUIA_Text_Contents, (IPTR) "N/A",
+        End;
     }
     else
     {
-	sizespace = (Object *)TextObject,
-		TextFrame,
-		MUIA_Background, MUII_TextBack,
-		MUIA_Text_PreParse, (IPTR) "\33r",
-		MUIA_Text_Contents, (IPTR) size,
-	    End;
-	
-	versionspace = (Object *)TextObject,
-		ButtonFrame,
-		MUIA_Background, MUII_TextBack,
-		MUIA_Text_PreParse, (IPTR) "\33r",
-		MUIA_Text_Contents, (IPTR) "?",
-		MUIA_InputMode, MUIV_InputMode_RelVerify,
-	    End;
+    sizespace = (Object *)TextObject,
+        TextFrame,
+        MUIA_Background, MUII_TextBack,
+        MUIA_Text_PreParse, (IPTR) "\33r",
+        MUIA_Text_Contents, (IPTR) size,
+        End;
+    
+    versionspace = (Object *)TextObject,
+        ButtonFrame,
+        MUIA_Background, MUII_TextBack,
+        MUIA_Text_PreParse, (IPTR) "\33r",
+        MUIA_Text_Contents, (IPTR) "?",
+        MUIA_InputMode, MUIV_InputMode_RelVerify,
+        End;
     }
 
     application = (Object *)ApplicationObject,
@@ -977,12 +977,12 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                     End),
                                     Child, (IPTR) Label2(__(MSG_VERSION)),
                                     Child, (IPTR) (versiongrp = (Object *)HGroup,
-					Child, (IPTR) versionspace,
-				    End),
+                    Child, (IPTR) versionspace,
+                    End),
                                     Child, (IPTR) Label2(__(MSG_SIZE)),
                                     Child, (IPTR) (sizegrp = (Object *)HGroup,
-					Child, (IPTR) sizespace,
-				    End),
+                    Child, (IPTR) sizespace,
+                    End),
                                  End,
                             End,
                             Child, (IPTR) HVSpace,
@@ -1000,37 +1000,37 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                         End,
                     End, /* end hgroup information pannel */
                     Child, (IPTR) HGroup, /* hgroup protections pannel */
-			Child, (IPTR) HVSpace,
+            Child, (IPTR) HVSpace,
                         Child, (IPTR) VGroup,
-			    Child, (IPTR) HVSpace,
-			    Child, (IPTR) ColGroup(4),
-				Child, (IPTR) Label2(_(MSG_READ)),
-				Child, (IPTR) (readobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_SCRIPT)),
-				Child, (IPTR) (scriptobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_WRITE)),
-				Child, (IPTR) (writeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_PURE)),
-				Child, (IPTR) (pureobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_EXECUTE)),
-				Child, (IPTR) (executeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_ARCHIVED)),
-				Child, (IPTR) (archiveobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) Label2(_(MSG_DELETE)),
-				Child, (IPTR) (deleteobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
-				Child, (IPTR) HVSpace,
-				Child, (IPTR) HVSpace,
-			    End,
-			    Child, (IPTR) HVSpace,
+                Child, (IPTR) HVSpace,
+                Child, (IPTR) ColGroup(4),
+                Child, (IPTR) Label2(_(MSG_READ)),
+                Child, (IPTR) (readobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_SCRIPT)),
+                Child, (IPTR) (scriptobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_WRITE)),
+                Child, (IPTR) (writeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_PURE)),
+                Child, (IPTR) (pureobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_EXECUTE)),
+                Child, (IPTR) (executeobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_ARCHIVED)),
+                Child, (IPTR) (archiveobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) Label2(_(MSG_DELETE)),
+                Child, (IPTR) (deleteobject = MUI_MakeObject(MUIO_Checkmark,NULL)),
+                Child, (IPTR) HVSpace,
+                Child, (IPTR) HVSpace,
+                End,
+                Child, (IPTR) HVSpace,
                         End,
-			Child, (IPTR) HVSpace,
+            Child, (IPTR) HVSpace,
                     End, /* end hgroup protections pannel */
                     Child, (IPTR) HGroup, /* hgroup tooltypes pannel */
                         Child, (IPTR) VGroup,
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) VGroup,
                                 GroupSpacing(0),
-				#if !USE_TEXTEDITOR
+                #if !USE_TEXTEDITOR
                                     Child, (IPTR) ListviewObject,
                                         MUIA_Listview_List, (IPTR) (list = ListObject,
                                         InputListFrame,
@@ -1043,24 +1043,24 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                                         MUIA_Disabled, TRUE,
                                         StringFrame,
                                     End),
-				#else
-				    Child, (IPTR) HGroup,
-				        GroupSpacing(0),
-				    	Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
-				    	TAG_DONE)),
-					Child, (IPTR) (slider = (Object *)ScrollbarObject,
-					End),
-				    End,
-				#endif
+                #else
+                    Child, (IPTR) HGroup,
+                        GroupSpacing(0),
+                        Child, (IPTR) (editor = MUI_NewObject(MUIC_TextEditor,
+                        TAG_DONE)),
+                    Child, (IPTR) (slider = (Object *)ScrollbarObject,
+                    End),
+                    End,
+                #endif
                                 End,
                             End,
-			#if !USE_TEXTEDITOR
+            #if !USE_TEXTEDITOR
                             Child, (IPTR) HGroup,
                                 MUIA_Group_SameSize, TRUE,
                                 Child, (IPTR) (newkey = SimpleButton(__(MSG_NEW_KEY))),
                                 Child, (IPTR) (delkey = SimpleButton(__(MSG_DELETE_KEY))),
                             End,
-			#endif
+            #endif
                         End,
                     End, /* end hgroup tooltypes pannel */
                 End),
@@ -1129,9 +1129,9 @@ D(bug("[WBInfo] icon type is: %s\n", type));
         DoMethod(versionspace, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR) application, 2,
             MUIM_Application_ReturnID, RETURNID_QUERYVERSION);
-	DoMethod(sizespace, MUIM_Notify, MUIA_Pressed, FALSE,
-	    (IPTR) application, 2,
-	    MUIM_Application_ReturnID, RETURNID_SCANSIZE);
+    DoMethod(sizespace, MUIM_Notify, MUIA_Pressed, FALSE,
+        (IPTR) application, 2,
+        MUIM_Application_ReturnID, RETURNID_SCANSIZE);
         DoMethod(readobject, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
             (IPTR) application, 2,
             MUIM_Application_ReturnID, RETURNID_PROTECT);
@@ -1155,45 +1155,45 @@ D(bug("[WBInfo] icon type is: %s\n", type));
             MUIM_Application_ReturnID, RETURNID_PROTECT);
 
     #if USE_TEXTEDITOR
-    	set(editor, MUIA_TextEditor_Slider, slider);
+        set(editor, MUIA_TextEditor_Slider, slider);
 
         if (icon->do_ToolTypes)
         {
             char *tt = NULL, *contents;
             int   i  = 0;
-	    ULONG len = 0;
-	    
+        ULONG len = 0;
+        
             while ((tt = icon->do_ToolTypes[i]) != NULL)
             {
-	    	len += strlen(icon->do_ToolTypes[i]) + 1;
-		i++;
-	    }
-	    
-	    contents = AllocVec(len + 1, MEMF_ANY);
-	    if (contents)
-	    {
-	    	contents[0] = 0;
-		i = 0;
-		BOOL first = TRUE;
+            len += strlen(icon->do_ToolTypes[i]) + 1;
+        i++;
+        }
+        
+        contents = AllocVec(len + 1, MEMF_ANY);
+        if (contents)
+        {
+            contents[0] = 0;
+        i = 0;
+        BOOL first = TRUE;
 
-        	while ((icon->do_ToolTypes[i]) != NULL)
-        	{
-		    if ( ! first )
-		    {
-			strcat(contents, "\n");
-		    }
-		    first = FALSE;
-		    strcat(contents, icon->do_ToolTypes[i]);
+            while ((icon->do_ToolTypes[i]) != NULL)
+            {
+            if ( ! first )
+            {
+            strcat(contents, "\n");
+            }
+            first = FALSE;
+            strcat(contents, icon->do_ToolTypes[i]);
 
-		    i++;
-		}
+            i++;
+        }
 
-    	    	set(editor, MUIA_TextEditor_Contents, contents);
-		FreeVec(contents);
+                set(editor, MUIA_TextEditor_Contents, contents);
+        FreeVec(contents);
             }
         }
     #else
-    	
+        
         if (icon->do_ToolTypes)
         {
             char *tt = NULL;
@@ -1256,7 +1256,7 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         if (MUI_RequestA(application, NULL, 0,
                             _(MSG_ABOUT), _(MSG_OK), _(MSG_COPYRIGHT), NULL))
                         break;
-		#if !USE_TEXTEDITOR
+        #if !USE_TEXTEDITOR
                     case RETURNID_NEWKEY:
                         NewKey();
                         break;
@@ -1271,11 +1271,11 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         StringToKey();
                         icon_altered = TRUE;
                         break;
-		#endif
+        #endif
                     case RETURNID_SAVE:
-		    #if !USE_TEXTEDITOR
+            #if !USE_TEXTEDITOR
                         if (icon_altered)
-		    #endif
+            #endif
                             SaveIcon(icon, file, lock);
                         if (file_altered)
                             SaveFile(ap, lock);
@@ -1294,74 +1294,74 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         file_altered = TRUE;
                         break;
                     case RETURNID_QUERYVERSION:
-			{
-			    Object * oldversionspace = versionspace;
+            {
+                Object * oldversionspace = versionspace;
 
 D(bug("[WBInfo: RETURNID_QUERYVERSION\n"));
 
-			    versionspace = (Object *)TextObject,
-				    TextFrame,
-				    MUIA_Background, MUII_TextBack,
-				    MUIA_Text_SetMin, FALSE,
-				    MUIA_Text_PreParse, (IPTR) "\33r",
-				    MUIA_Text_Contents, (IPTR) GetVersion(name, lock),
-				End;
+                versionspace = (Object *)TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_SetMin, FALSE,
+                    MUIA_Text_PreParse, (IPTR) "\33r",
+                    MUIA_Text_Contents, (IPTR) GetVersion(name, lock),
+                End;
 
-			    DoMethod(versiongrp, MUIM_Group_InitChange);
-			    DoMethod(versiongrp, OM_REMMEMBER, oldversionspace);
-			    DoMethod(versiongrp, OM_ADDMEMBER, versionspace);
-			    DoMethod(versiongrp, MUIM_Group_ExitChange);
-			}
+                DoMethod(versiongrp, MUIM_Group_InitChange);
+                DoMethod(versiongrp, OM_REMMEMBER, oldversionspace);
+                DoMethod(versiongrp, OM_ADDMEMBER, versionspace);
+                DoMethod(versiongrp, MUIM_Group_ExitChange);
+            }
                         break;
-		    case RETURNID_SCANSIZE:
-			{
-			    Object * oldsizespace = sizespace;
+            case RETURNID_SCANSIZE:
+            {
+                Object * oldsizespace = sizespace;
 
 D(bug("[WBInfo]: RETURNID_SCANSIZE\n"));
-			    sizespace = (Object *)TextObject,
-				    TextFrame,
-				    MUIA_Background, MUII_TextBack,
-				    MUIA_Text_PreParse, (IPTR) "\33r",
-				End;
+                sizespace = (Object *)TextObject,
+                    TextFrame,
+                    MUIA_Background, MUII_TextBack,
+                    MUIA_Text_PreParse, (IPTR) "\33r",
+                End;
 
-			    DoMethod(sizegrp, MUIM_Group_InitChange);
-			    DoMethod(sizegrp, OM_REMMEMBER, oldsizespace);
-			    DoMethod(sizegrp, OM_ADDMEMBER, sizespace);
-			    DoMethod(sizegrp, MUIM_Group_ExitChange);
+                DoMethod(sizegrp, MUIM_Group_InitChange);
+                DoMethod(sizegrp, OM_REMMEMBER, oldsizespace);
+                DoMethod(sizegrp, OM_ADDMEMBER, sizespace);
+                DoMethod(sizegrp, MUIM_Group_ExitChange);
 
-			    if (scanStruct == NULL)
-				scanStruct = AllocMem(sizeof(struct DirScanProcess), MEMF_CLEAR);
+                if (scanStruct == NULL)
+                scanStruct = AllocMem(sizeof(struct DirScanProcess), MEMF_CLEAR);
 
-			    scanStruct->scanState = SCANDIE;
+                scanStruct->scanState = SCANDIE;
 waitscan:
 
-			    if (scanStruct->scanProcess != NULL)
-				goto waitscan;
+                if (scanStruct->scanProcess != NULL)
+                goto waitscan;
 
-			    ULONG dirnamelen = strlen(lname) + strlen(name);
-			    scanStruct->scanState = SCANRUN;
-			    scanStruct->scanDir = AllocVec(dirnamelen + 1, MEMF_CLEAR);
+                ULONG dirnamelen = strlen(lname) + strlen(name);
+                scanStruct->scanState = SCANRUN;
+                scanStruct->scanDir = AllocVec(dirnamelen + 1, MEMF_CLEAR);
 D(bug("[WBInfo]: lname '%s', name '%s', (%d bytes)\n", lname, name, dirnamelen));
 
-			    CopyMem(lname, scanStruct->scanDir, strlen(lname));
-			    AddPart(scanStruct->scanDir, name, dirnamelen + 1);
+                CopyMem(lname, scanStruct->scanDir, strlen(lname));
+                AddPart(scanStruct->scanDir, name, dirnamelen + 1);
 
-			    char * tmp_Name = AllocVec(strlen(scanStruct->scanDir) + 24, MEMF_CLEAR);
-			    sprintf(tmp_Name, "Calculating size of %s ..", scanStruct->scanDir);
+                char * tmp_Name = AllocVec(strlen(scanStruct->scanDir) + 24, MEMF_CLEAR);
+                sprintf(tmp_Name, "Calculating size of %s ..", scanStruct->scanDir);
 
-			    /* Fire up child process to perform scan of content size .. */
-			    scanStruct->scanProcess = CreateNewProcTags(
-				NP_Entry, (IPTR)scanDir_Process,
-				NP_Name, tmp_Name,
-				NP_Synchronous , FALSE,
-				NP_Priority, 0,
-				NP_UserData, (IPTR)scanStruct,
-				NP_StackSize, 140960,
-				TAG_DONE);
+                /* Fire up child process to perform scan of content size .. */
+                scanStruct->scanProcess = CreateNewProcTags(
+                NP_Entry, (IPTR)scanDir_Process,
+                NP_Name, tmp_Name,
+                NP_Synchronous , FALSE,
+                NP_Priority, 0,
+                NP_UserData, (IPTR)scanStruct,
+                NP_StackSize, 140960,
+                TAG_DONE);
 
-			    FreeVec(tmp_Name);
-			}
-			break;
+                FreeVec(tmp_Name);
+            }
+            break;
                     case RETURNID_PROTECT:
                         file_altered = TRUE;
 D(bug("[WBInfo: Protection bits changed\n"));
@@ -1376,21 +1376,21 @@ D(bug("[WBInfo: Protection bits changed\n"));
                 if(signals & SIGBREAKF_CTRL_C) break;
             }
 
-	    returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
+        returnid = ((LONG) DoMethod(application, MUIM_Application_NewInput, (IPTR) &signals));
         }
-	if (scanStruct)
-	{
-	    scanStruct->scanState = SCANDIE;
+    if (scanStruct)
+    {
+        scanStruct->scanState = SCANDIE;
 waitscan2:
-	    if (scanStruct->scanProcess != NULL)
-		goto waitscan2;
-	}
+        if (scanStruct->scanProcess != NULL)
+        goto waitscan2;
+    }
         SetAttrs(window, MUIA_Window_Open, FALSE, TAG_DONE);
         MUI_DisposeObject(application);
     } else {
         PrintFault(ERROR_INVALID_RESIDENT_LIBRARY, argv[0]);
 D(bug("[WBInfo: Couldn't create app\n"));
-	retval = RETURN_FAIL;
+    retval = RETURN_FAIL;
     }
    
 funcmain_exit:
