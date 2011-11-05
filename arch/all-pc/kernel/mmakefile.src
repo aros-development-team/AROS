@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FUNCS	 := displayalert
 FILES    := apic apic_acpi apic_ia32 xtpic cpu_traps kernel_memory kernel_timer _displayalert
-ASMFILES := cli sti
+ASMFILES := cli sti issuper
 
 MAINDIR	      := rom/kernel
 USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
