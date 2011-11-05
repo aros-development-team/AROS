@@ -133,7 +133,7 @@ HOOKPROTO(IconWindow__HookFunc_PrefsUpdatedFunc, void, APTR *obj, APTR param)
     {
         D(bug("[Wanderer:IconWindow] %s: Window contents have changed .. updating display ..\n", __PRETTY_FUNCTION__));
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-	DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
+        DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
         SET(self, MUIA_IconWindow_Changed, FALSE);
     }
 
@@ -376,9 +376,9 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         IPTR                    geticon_error = 0, geticon_isdefault = 0;
         IPTR                    _newIconWin__TitleLen = 0;
         IPTR                    current_DispFlags = 0;
-/*      IPTR			current_SortFlags = 0; */
+/*      IPTR                        current_SortFlags = 0; */
         IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
-        BOOL			isVolume;
+        BOOL                        isVolume;
 
         _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
         _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
@@ -389,7 +389,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         _newIconWin__TitleLen = strlen(_newIconWin__Title);
         isVolume = (_newIconWin__Title[_newIconWin__TitleLen - 1] == ':');
 
-	D(bug("[Wanderer:IconWindow] %s: Opening %s Window '%s'\n", __PRETTY_FUNCTION__, isVolume ? "Volume Root" : "Drawer", _newIconWin__Title));
+        D(bug("[Wanderer:IconWindow] %s: Opening %s Window '%s'\n", __PRETTY_FUNCTION__, isVolume ? "Volume Root" : "Drawer", _newIconWin__Title));
 
         drawericon = GetIconTags(_newIconWin__Title,
                                 ICONGETA_Screen, _newIconWin__Screen,
@@ -641,7 +641,7 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
 
         D(bug("[Wanderer:IconWindow] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
 
-	data->iwd_VolViewMode                           = _newIconWin__VOLVIEWMODE;
+        data->iwd_VolViewMode                           = _newIconWin__VOLVIEWMODE;
 
         data->iwd_Screen                                = _newIconWin__Screen;
         data->iwd_Title                                 = _newIconWin__Title;
@@ -874,7 +874,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 
                 D(bug("[Wanderer:IconWindow] %s: Force an update of the list ..\n", __PRETTY_FUNCTION__));
                 DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-		DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
+                DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
                 return rv;
             }
             break;
@@ -926,7 +926,7 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
     if (UpdateIconlist)
     {
         DoMethod(data->iwd_IconListObj, MUIM_IconList_Update);
-	DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
+        DoMethod(data->iwd_IconListObj, MUIM_IconList_Sort);
     }
 
     if (focusicon)
