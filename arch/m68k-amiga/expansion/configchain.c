@@ -44,10 +44,58 @@ static ULONG autosize(struct ExpansionBase *ExpansionBase, struct ConfigDev *con
 	return size;
 }
 
+static void findmbram(struct ExpansionBase *ExpansionBase)
+{
+	LONG ret;
+	ULONG step, start, end;
+
+	if (!(SysBase->AttnFlags & AFF_68020))
+		return;
+	if ((SysBase->AttnFlags & AFF_68020) && !(SysBase->AttnFlags & AFF_ADDR32))
+		return;
+
+	/* High MBRAM */
+	step =  0x00100000;
+	start = 0x08000000;
+	end =   0x7f000000;
+	ret = AROS_UFC3(LONG, MemoryTest,
+		AROS_UFCA(APTR, start, A0),
+		AROS_UFCA(APTR, end, A1),
+		AROS_UFCA(ULONG, step, D0));
+	if (ret < 0)
+		return;
+	if (ret > 0) {
+		AddMemList(ret, MEMF_KICK | MEMF_LOCAL | MEMF_FAST | MEMF_PUBLIC, 40, (APTR)start, "expansion.memory");
+		D(bug("MBRAM @%08x, size %08x\n", start, ret));
+	}
+
+	/* Low MBRAM, reversed detection needed */
+	step =  0x00100000;
+	start = 0x08000000;
+	end =   0x01000000;
+	for (;;) {
+		ret = AROS_UFC3(LONG, MemoryTest,
+			AROS_UFCA(APTR, start - step, A0),
+			AROS_UFCA(APTR, start, A1),
+			AROS_UFCA(ULONG, step, D0));
+		if (ret <= 0)
+			break;
+		if (end >= start - step)
+			break;
+		start -= step;
+	}
+	if (start != 0x08000000) {
+		ULONG size = 0x08000000 - start;
+		AddMemList(size, MEMF_KICK | MEMF_LOCAL | MEMF_FAST | MEMF_PUBLIC, 30, (APTR)start, "expansion.memory");
+		D(bug("MBRAM @%08x, size %08x\n", start, size));
+	}
+}
+
 static void allocram(struct ExpansionBase *ExpansionBase)
 {
 	struct Node *node;
 	
+	findmbram(ExpansionBase);
 	// we should merge address spaces, later..
 	D(bug("adding ram boards\n"));
 	ForeachNode(&ExpansionBase->BoardList, node) {

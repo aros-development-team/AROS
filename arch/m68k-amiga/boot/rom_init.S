@@ -78,6 +78,21 @@ rom_init:
 	/* High word = gayle flag, low word = AttnFlags */
 	move.w	%a4@(2),%d6
 
+	btst	#2,%d6		/* AttnFlags AFB_68030? */
+	bne.s	.is32bit
+	btst	#1,%d6		/* AttnFlags AFB_68020? */
+	beq.s	.test32bit
+	/* 32-bit CPU check only, no memory tested */
+	move.l	#0x08000000,%a0
+	move.l	#0x08000000,%a1
+	move.l	#0x00100000,%d0
+	bsr		.L_memtest
+	bmi.s	.test32bit
+.is32bit:
+	/* set AttnFlags AFB_ADDR32 */
+	or.w	#0x4000,%a4@(2)
+.test32bit:
+
 	/* Memory region array is put into the
 	 * system stack from the bottom up, so
 	 * we check the non-autoconfig memory areas
@@ -85,60 +100,6 @@ rom_init:
 	 * up the system stack in A5.
 	 */
 
-	btst	#1,%d6		/* AttnFlags AFB_68020 */
-	beq.s	.skip32bit
-
-	/* cpu slot ram (A3000/A4000) */
-	move.l	#0x08000000,%a0
-	move.l	#0x7f000000,%a1
-	move.l	#0x00100000,%d0
-	bsr		.L_memtest
-	bpl.s	.mbramtest
-
-	/* We have 68EC020 if N-flag set and AttnFlags = AFB_68020
-	 * but we ignore set N-flag if CPU is not 68020 because some
-	 * accelerator boards mirror unmapped 32-bit address space
-	 * to 24-bit space */
-    move.w	%d6,%d0
-    and.w	#0x8f,%d0
-	/* CPU=68020? */
-    cmp.w	#2,%d0
-    bne.s	.skip32bit
-	/* set AttnFlags AFB_ADDR32 */
-	or.w	#0x4000,%a4@(2)
-	bra.s	.skip32bit
-
-.mbramtest:
-	/* set AttnFlags AFB_ADDR32 */
-	or.w	#0x4000,%a4@(2)
-
-	/* mainboard ram (A3000) */
-	/* end is static 0x08000000, start addr is end - (size of ram) */
-	move.l	%a5,%a6
-	move.l	#-0x00100000,%d7
-.a3000test:
-	move.l	#0x08000000,%a1
-	move.l	#0x00100000,%d0
-	add.l	%d0,%d7
-	move.l	%a1,%a0
-	sub.l	%d0,%a0
-	sub.l	%d7,%a0
-	sub.l	%d7,%a1
-	move.l	%a6,%a5
-	lsr.l	#1,%d0
-	bsr		.L_memtest
-	bmi.s	.a3000noram
-	bne.s	.a3000test
-	move.l	%a6,%a5
-	tst.l	%d7
-	beq.s	.a3000noram
-	move.l	#0x08000000,%a1
-	sub.l	%d7,%a1
-	move.l	%a1,%a5@+
-	move.l	%d7,%a5@+
-.a3000noram:
-
-.skip32bit:
 	/* slow ram */
 	move.l	#0x00c00000,%a0
 	move.l	#0x00d80000,%a1
@@ -256,8 +217,16 @@ MemoryTest:
 	move.w	#0xc000,0xdff09a			/* Try the master enable */
 	nop
 	tst.w	%a0@(0x1c,%d1)				/* If still zero, not INTENAR */
-	bne.s	.L_memtest_done				/* It was a custom chip. */
+	bne 	.L_memtest_done				/* It was a custom chip. */
 .L_memtest_chipcheck_done:
+
+	move.l	%a0,%a2
+	add.l	%d1,%a2
+	cmp.l	#.L_memtest,%a2		/* Make sure we don't modify our own test code */
+	bcs.s	.L_memtest_nottestcode
+	cmp.l	#.L_memtest_end,%a2
+	bcs.s	.L_memtest_next
+.L_memtest_nottestcode:
 
 	move.l	%a0@(%d1),%d3		/* read old value */
 	move.l	%a0@,%a2			/* save mirror test contents */
@@ -302,7 +271,7 @@ MemoryTest:
 	move.l	%d3,%a0@(%d1)		/* write old value back */
 
 	move.l	%a2,%a0@			/* restore mirror test contents */
-
+.L_memtest_next:
 	add.l	%d5,%d1				/* next block */
 	bra		.L_memtest_loop
 
@@ -314,6 +283,7 @@ MemoryTest:
 .L_memtest_none:
 	move.l	%d1,%d0
 	rts
+.L_memtest_end:
 
 #define STACK_OFFSET (6*4)
 	.globl Early_Exception
