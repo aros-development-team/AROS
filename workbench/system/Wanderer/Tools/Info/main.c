@@ -1340,11 +1340,11 @@ waitscan:
 
                 ULONG dirnamelen = strlen(lname) + strlen(name);
                 scanStruct->scanState = SCANRUN;
-                scanStruct->scanDir = AllocVec(dirnamelen + 1, MEMF_CLEAR);
+                scanStruct->scanDir = AllocVec(dirnamelen + 2, MEMF_CLEAR); /* 2 == path separator + \0 at end */
 D(bug("[WBInfo]: lname '%s', name '%s', (%d bytes)\n", lname, name, dirnamelen));
 
                 CopyMem(lname, scanStruct->scanDir, strlen(lname));
-                AddPart(scanStruct->scanDir, name, dirnamelen + 1);
+                AddPart(scanStruct->scanDir, name, dirnamelen + 2);
 
                 char * tmp_Name = AllocVec(strlen(scanStruct->scanDir) + 24, MEMF_CLEAR);
                 sprintf(tmp_Name, "Calculating size of %s ..", scanStruct->scanDir);
