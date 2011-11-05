@@ -200,10 +200,9 @@ static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct Mem
 			(APTR)startaddr, size,
 			 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
 	} else {
-		krnCreateMemHeader(startaddr < 0x01000000 ? "memory" : "expansion memory",
-			startaddr < 0x01000000 ? -5 : (startaddr < 0x08000000 ? 30 : 40),
+		krnCreateMemHeader("memory", -5, 
 			(APTR)startaddr, size,
-			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | (startaddr < 0x01000000 ? MEMF_24BITDMA : 0));
+			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
 	}
 
         /* Must be done first, in case SS is in it */
@@ -257,7 +256,6 @@ static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask)
 
     while (ml) {
 	int i;
-	DEBUGPUTHEX(("NumEntries", ml->ml_NumEntries));
 	for (i = 0; i < ml->ml_NumEntries; i++, ndx++) {
 	    APTR start = (APTR)((IPTR)ml->ml_ME[i].me_Addr & ~1);
 	    APTR end = start + ml->ml_ME[i].me_Length;
@@ -291,7 +289,6 @@ static BOOL InitKickMem(ULONG *mask, struct ExecBase *SysBase)
 
     while (ml) {
 	int i;
-	DEBUGPUTHEX(("NumEntries", ml->ml_NumEntries));
 	for (i = 0; i < ml->ml_NumEntries; i++,ndx++) {
 	    APTR start = ml->ml_ME[i].me_Addr;
 	    ULONG len = ml->ml_ME[i].me_Length;
