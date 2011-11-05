@@ -119,7 +119,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.7 (18.08.2010)\n";
+const TEXT version[] = "$VER: List 41.8 (05.11.2011)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -608,30 +608,37 @@ int printFileData(struct AnchorPath *ap,
 
 /* Print directory summary information */
 void printSummary(CONST_STRPTR dirname, int files, int dirs, int nBlocks,
-		  BOOL noHead, BOOL PrintEmpty)
+                    BOOL noHead, BOOL PrintEmpty)
 {
-    if (noHead)
-	return;
+
+    if (noHead) return;
 
     if (files || dirs)
     {
-	if (files > 1)
-	    Printf("%ld files - ", files);
-	else if (files > 0)
-	    PutStr("1 file - ");
-	
-	if (dirs > 1)
-	    Printf("%ld directories - ", dirs);
-	else if (dirs > 0)
-	    PutStr("1 directory - ");
 
-	if (nBlocks > 1)
-	    Printf("%ld blocks used\n", nBlocks);
-	else if (nBlocks > 0)
-	    PutStr("1 block used\n");
+        if (files > 1)
+            Printf("%ld files", files);
+        else if (files > 0)
+            PutStr("1 file");
+        
+        if( files && (dirs || nBlocks) ) PutStr(" - ");
+
+        if (dirs > 1)
+            Printf("%ld directories", dirs);
+        else if (dirs > 0)
+            PutStr("1 directory");
+
+        if( dirs && nBlocks ) PutStr(" - ");
+
+        if (nBlocks > 1)
+            Printf("%ld blocks used\n", nBlocks);
+        else if (nBlocks > 0)
+            PutStr("1 block used\n");
+        else PutStr("\n");
+
     }
     else if (PrintEmpty)
-	Printf("Directory \"%s\" is empty\n", dirname);
+        Printf("Directory \"%s\" is empty\n", dirname);
 }
 
 
