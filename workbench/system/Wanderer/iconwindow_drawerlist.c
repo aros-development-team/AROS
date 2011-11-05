@@ -387,7 +387,7 @@ HOOKPROTO(IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
             {
                 D(bug("[Wanderer:DrawerList] %s: IconList Options have changed, causing an update ..\n", __PRETTY_FUNCTION__));
                 DoMethod(self, MUIM_IconList_Update);
-		DoMethod(self, MUIM_IconList_Sort);
+                DoMethod(self, MUIM_IconList_Sort);
             }
             else if (data->iwidld_IconWindow)
             {

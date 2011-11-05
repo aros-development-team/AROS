@@ -76,7 +76,7 @@
 #define MUIA_IconWindowExt_UserFiles_ShowFilesFolder            (MUIB_IconWindowExt_UserFiles | 0x00000001) /* ISG */
 #define MUIA_IconWindowExt_UserFiles_UseDesktopFolder           (MUIB_IconWindowExt_UserFiles | 0x00000002) /* ISG */
 
-#define MUIA_IconWindowExt_ScreenTitle_String         	        (MUIB_IconWindowExt_UserFiles | 0x00000003) /* ISG */
+#define MUIA_IconWindowExt_ScreenTitle_String                   (MUIB_IconWindowExt_UserFiles | 0x00000003) /* ISG */
 
 #define IWD_MAX_DIRECTORYPATHLEN                                1024
 
