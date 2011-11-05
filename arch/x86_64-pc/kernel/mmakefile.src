@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES    := kernel_startup platform_init kernel_cpu kernel_debug kernel_memory kernel_bootmem \
 	    intr acpi_tables mmu smp
 FUNCS	 := getcpucount getcpunumber
-ASMFILES := core_interrupts issuper
+ASMFILES := core_interrupts
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR)
