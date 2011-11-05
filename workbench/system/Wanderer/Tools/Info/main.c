@@ -924,7 +924,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.6 ("ADATE") © 2003-2010 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.7 ("ADATE") © 2003-2011 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
