@@ -85,7 +85,7 @@ BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
 
 /* TODO: Use UQUAD for size */
-void getReadableSize(UBYTE *buf, ULONG size)
+void getReadableSize(UBYTE *buf, ULONG size, BOOL accurate)
 {
     UQUAD d;
     char *ch;
@@ -165,19 +165,23 @@ void getReadableSize(UBYTE *buf, ULONG size)
     array.val++;
     }
 
+    if (!accurate)
+    {
+        buf[0] = '~';
+        buf++;
+    }
+
     RawDoFmt(array.dec ? "%lu.%lu" : "%lu", &array, NULL, buf);
 
     while (*buf)
-    {
-    buf++;
-    }
+        buf++;
 
     sprintf((char *)buf," %s", ch);
 }
 
 #define kExallBufSize          (4096)
 
-ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory)
+ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory, ULONG * lastrefreshsize)
 {
     UBYTE    *buffer = NULL;
     BPTR    directoryLock = BNULL;
@@ -212,21 +216,26 @@ D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
     {
         do
         {
-                if (ead->ed_Type == ST_FILE)
+            if (ead->ed_Type == ST_FILE)
+            {
+                directorySize += ead->ed_Size;
+                /* Refresh size only every 25% grow */
+                if ((((base + directorySize) * 100) / (*lastrefreshsize)) > 125) /* 25 % */
                 {
-                    directorySize += ead->ed_Size;
-            getReadableSize(scan->scanSize, (base + directorySize));
-            set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+                    getReadableSize(scan->scanSize, (base + directorySize), FALSE);
+                    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+                    *lastrefreshsize = base + directorySize;
                 }
-                else if (ead->ed_Type == ST_USERDIR)
-                {
-            ULONG subdirlen = strlen(directory) + strlen(ead->ed_Name) + 1;
-                    char * subdirectory = AllocVec(subdirlen + 1, MEMF_CLEAR);
-            CopyMem(directory, subdirectory, strlen(directory));
-            AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
-                    directorySize += calculateDirectorySize(scan, (base + directorySize), subdirectory);
-                }
-        ead = ead->ed_Next;
+            }
+            else if (ead->ed_Type == ST_USERDIR)
+            {
+                ULONG subdirlen = strlen(directory) + strlen(ead->ed_Name) + 1;
+                char * subdirectory = AllocVec(subdirlen + 1, MEMF_CLEAR);
+                CopyMem(directory, subdirectory, strlen(directory));
+                AddPart(subdirectory, ead->ed_Name, subdirlen + 1);
+                directorySize += calculateDirectorySize(scan, (base + directorySize), subdirectory, lastrefreshsize);
+            }
+            ead = ead->ed_Next;
         } while((ead != NULL) && (scan->scanState == SCANRUN)); 
     }
     } while((loop) && (scan->scanState == SCANRUN)); 
@@ -254,13 +263,14 @@ AROS_UFH3(void, scanDir_Process,
 
     if (scan->scanState == SCANRUN)
     {
-    D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
-    scan->scanSize = AllocVec(64, MEMF_CLEAR);
-    directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir);
-    D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
-    getReadableSize(scan->scanSize, directorySize);
-    set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
-    FreeVec(scan->scanSize);
+        ULONG lastrefreshsize = 1;
+        D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
+        scan->scanSize = AllocVec(64, MEMF_CLEAR);
+        directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir, &lastrefreshsize);
+        D(bug("[WBInfo] scanDir_Process: End size = %d bytes\n", directorySize));
+        getReadableSize(scan->scanSize, directorySize, TRUE);
+        set(sizespace, MUIA_Text_Contents, (IPTR) scan->scanSize);
+        FreeVec(scan->scanSize);
     }
     scan->scanProcess = NULL;
     
@@ -836,7 +846,7 @@ D(bug("[WBInfo] scan file\n"));
         sprintf(datetime, "%s %s", time, date);
 
         /* fill size */
-        getReadableSize(size, ap->ap_Info.fib_Size);
+        getReadableSize(size, ap->ap_Info.fib_Size, TRUE);
 
         /* fill protection */
         protection = ap->ap_Info.fib_Protection;
