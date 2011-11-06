@@ -162,7 +162,7 @@ static AROS_UFH3 (APTR, Init,
    } else if (SysBase->AttnFlags & AFF_68030) {
 	ULONG tc = Supervisor((ULONG_FUNC)Check68030MMU);
 	if (tc & (1 << 31)) { /* Only if MMU enabled */
-	    CacheControl(CACRF_EnableD, CACRF_EnableD);
+	    CacheControl(CACRF_EnableD | CACRF_WriteAllocate, CACRF_EnableD | CACRF_WriteAllocate);
 	}
    }
 
