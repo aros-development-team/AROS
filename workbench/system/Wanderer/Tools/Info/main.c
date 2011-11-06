@@ -84,86 +84,82 @@ static Object *list, *editor, *liststr;
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
 
-/* TODO: Use UQUAD for size */
-void getReadableSize(UBYTE *buf, ULONG size, BOOL accurate)
+void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
 {
     UQUAD d;
     char *ch;
     struct
     {
-    IPTR val;
-    IPTR  dec;
+        IPTR val;
+        IPTR dec;
     } array =
     {
-    size,
-    0
+        size,
+        0
     };
 
-    /*
-    if (size >= (1024 * 1024 * 1024 * 1024 * 1024 * 1024))
+    /*if (size >= (1024 * 1024 * 1024 * 1024 * 1024 * 1024))
     {
-    //Exabytes
-    array.val = size >> 60;
-    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024 * 1024);
-    array.dec = d % 10;
-    ch = "EiB";
+        //Exabytes
+        array.val = size >> 60;
+        d = (size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024 * 1024);
+        array.dec = d % 10;
+        ch = "EiB";
     }
-    if (size >= (1024 * 1024 * 1024 * 1024 * 1024))
+    else if (size >= (1024 * 1024 * 1024 * 1024 * 1024))
     {
-    //Petabytes
-    array.val = size >> 50;
-    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024);
-    array.dec = d % 10;
-    ch = "PiB";
+        //Petabytes
+        array.val = size >> 50;
+        d = (size * 10 + ((1024 * 1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024 * 1024);
+        array.dec = d % 10;
+        ch = "PiB";
     }
-    if (size >= (1024 * 1024 * 1024 * 1024))
+    else if (size >= (1024 * 1024 * 1024 * 1024))
     {
-    //Terabytes
-    array.val = size >> 40;
-    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024);
-    array.dec = d % 10;
-    ch = "TiB";
+        //Terabytes
+        array.val = size >> 40;
+        d = (size * 10 + ((1024 * 1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024 * 1024);
+        array.dec = d % 10;
+        ch = "TiB";
     }*/
     if (size >= (1024 * 1024 * 1024))
     {
-    //Gigabytes
-    array.val = size >> 30;
-    d = ((UQUAD)size * 10 + ((1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024);
-    array.dec = d % 10;
-    ch = "GiB";
+        //Gigabytes
+        array.val = size >> 30;
+        d = (size * 10 + ((1024 * 1024 * 1024) / 2)) / (1024 * 1024 * 1024);
+        array.dec = d % 10;
+        ch = "GiB";
     }
     else if (size >= (1024 * 1024))
     {
-    //Megabytes
-    array.val = size >> 20;
-    d = ((UQUAD)size * 10 + ((1024 * 1024) / 2)) / (1024 * 1024);
-    array.dec = d % 10;
-    ch = "MiB";
+        //Megabytes
+        array.val = size >> 20;
+        d = (size * 10 + ((1024 * 1024) / 2)) / (1024 * 1024);
+        array.dec = d % 10;
+        ch = "MiB";
     }
     else if (size >= 1024)
     {
-    //Kilobytes
-    array.val = size >> 10;
-    d = (size * 10 + (1024 / 2)) / 1024;
-    array.dec = d % 10;
-    ch = "KiB";
+        //Kilobytes
+        array.val = size >> 10;
+        d = (size * 10 + (1024 / 2)) / 1024;
+        array.dec = d % 10;
+        ch = "KiB";
     }
     else
     {
-    //Bytes
-    array.val = size;
-    array.dec = 0;
-    d = 0;
-    if (size == 1)
-        ch = "Byte";
-    else
-        ch = "Bytes";
+        //Bytes
+        array.val = size;
+        array.dec = 0;
+        d = 0;
+        if (size == 1)
+            ch = "Byte";
+        else
+            ch = "Bytes";
     }
 
     if (!array.dec && (d > array.val * 10))
-    {
-    array.val++;
-    }
+        array.val++;
 
     if (!accurate)
     {
@@ -181,11 +177,11 @@ void getReadableSize(UBYTE *buf, ULONG size, BOOL accurate)
 
 #define kExallBufSize          (4096)
 
-ULONG calculateDirectorySize(struct DirScanProcess *scan, ULONG base, CONST_STRPTR directory, ULONG * lastrefreshsize)
+UQUAD calculateDirectorySize(struct DirScanProcess *scan, UQUAD base, CONST_STRPTR directory, UQUAD * lastrefreshsize)
 {
     UBYTE    *buffer = NULL;
     BPTR    directoryLock = BNULL;
-    ULONG    directorySize = 0;
+    UQUAD    directorySize = 0;
     BOOL    loop = TRUE;
 
 D(bug("[WBInfo] calculateDirectorySize('%s')\n", directory));
@@ -257,13 +253,13 @@ AROS_UFH3(void, scanDir_Process,
 {
     AROS_USERFUNC_INIT
 
-    struct Task            *taskSelf = FindTask(NULL);
-    struct DirScanProcess    *scan = taskSelf->tc_UserData;
-    ULONG            directorySize = 0;
+    struct Task             *taskSelf = FindTask(NULL);
+    struct DirScanProcess   *scan = taskSelf->tc_UserData;
+    UQUAD                   directorySize = 0;
 
     if (scan->scanState == SCANRUN)
     {
-        ULONG lastrefreshsize = 1;
+        UQUAD lastrefreshsize = 1;
         D(bug("[WBInfo] scanDir_Process('%s')\n", scan->scanDir));
         scan->scanSize = AllocVec(64, MEMF_CLEAR);
         directorySize = calculateDirectorySize(scan, directorySize, scan->scanDir, &lastrefreshsize);
@@ -924,7 +920,7 @@ D(bug("[WBInfo] icon type is: %s\n", type));
 
     application = (Object *)ApplicationObject,
         MUIA_Application_Title,  __(MSG_TITLE),
-        MUIA_Application_Version, (IPTR) "$VER: Info 0.7 ("ADATE") © 2003-2011 The AROS Dev Team",
+        MUIA_Application_Version, (IPTR) "$VER: Info 0.8 ("ADATE") © 2003-2011 The AROS Dev Team",
         MUIA_Application_Description,  __(MSG_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "INFO",
         MUIA_Application_Menustrip, (IPTR) MenuitemObject,
