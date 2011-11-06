@@ -303,6 +303,11 @@ STRPTR fromClip(UBYTE clipUnit, struct Library *IFFParseBase)
                             filebuffer[filebuffer_size] = '\0';
                         } /* if ((cn->cn_Type == ID_FTXT) && (cn->cn_ID == ID_CHRS)) */
                     } /* for(;;) */
+
+                    if (filebuffer && !ok) {
+                        FreeVec(filebuffer);
+                        filebuffer = NULL;
+                    }
                 } /* if (!StopChunk(iff, ID_FTXT, ID_CHRS)) */
                 CloseIFF(iff);
             } /* if (!OpenIFF(iff, IFFF_READ)) */
