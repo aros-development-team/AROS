@@ -60,10 +60,8 @@ buserror040:
 	 * instruction in trace mode. Trace exception is used to restore
 	 * zero page descriptor back to original invalid state.
 	 */
-	move.l	SysBase,%a0
-	move.l	%a0@(eb_KernelBase),%a0
-	move.l	%a0@(kb_PlatformData),%a0
-	move.l	%a0@(zeropagedescriptor),%a0
+	movec	%vbr,%a0
+	move.l	253*4(%a0),%a0
 	/* Zero page -> resident */
 	or.b	#3,%a0@
 	cpushl	%dc,(%a0)
@@ -86,10 +84,8 @@ buserror040:
 	.balign 4
 trace040:
 	move.l	%a0,-(%sp)
-	move.l	SysBase,%a0
-	move.l	%a0@(eb_KernelBase),%a0
-	move.l	%a0@(kb_PlatformData),%a0
-	move.l	%a0@(zeropagedescriptor),%a0
+	movec	%vbr,%a0
+	move.l	253*4(%a0),%a0
 	/* Zero page -> invalid */
 	and.b	#~3,%a0@
 	cpushl	%dc,(%a0)

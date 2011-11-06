@@ -159,12 +159,13 @@ static void disable_mmu030(void)
 	"0:\n"
 	: : : "d0", "d1", "a5", "a6");
 }
-static void enable_mmu040(ULONG *levela, UBYTE cpu060)
+static void enable_mmu040(ULONG *levela, UBYTE cpu060, UBYTE *zeropagedescriptor)
 {
     asm volatile (
     	".chip 68060\n"
 	"move.l	%0,%%d0\n"
 	"move.b	%1,%%d1\n"
+	"move.l %2,%%a1\n"
 	"move.l 4.w,%%a6\n"
 	"lea	.esuper040(%%pc),%%a5\n"
 	"jsr	-0x1e(%%a6)\n"
@@ -173,6 +174,7 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060)
 	/* Do not interrupt us */
 	"or	#0x0700,%%sr\n"
 	"movec	%%vbr,%%a5\n"
+	"move.l %%a1,253*4(%%a5)\n"
 	"lea	buserror040,%%a6\n"
 	"tst.b	%%d1\n"
 	"beq.s	.cpu040\n"
@@ -198,7 +200,7 @@ static void enable_mmu040(ULONG *levela, UBYTE cpu060)
 	"movec	%%d1,%%dtt1\n"
     	"rte\n"
     	"0:\n"
-	: : "m" (levela), "m" (cpu060) : "d0", "d1", "a5", "a6");
+	: : "m" (levela), "m" (cpu060), "m" (zeropagedescriptor) : "d0", "d1", "a1", "a5", "a6");
 }
 
 static void disable_mmu040(void)
@@ -228,7 +230,7 @@ void enable_mmu(struct KernelBase *kb)
 	if (kb->kb_PlatformData->mmu_type == MMU030)
 		enable_mmu030(kb->kb_PlatformData->MMU_Level_A);
 	else
-		enable_mmu040(kb->kb_PlatformData->MMU_Level_A, kb->kb_PlatformData->mmu_type == MMU060);
+		enable_mmu040(kb->kb_PlatformData->MMU_Level_A, kb->kb_PlatformData->mmu_type == MMU060, kb->kb_PlatformData->zeropagedescriptor);
 }
 void disable_mmu(struct KernelBase *kb)
 {
@@ -276,14 +278,17 @@ void debug_mmu(struct KernelBase *kb)
 		if (i < totalpages)
 			desc = getdesc(kb, addr);
 		if ((desc & pagemask) != (odesc & pagemask) || i == totalpages) {
-			UBYTE cm;
-			if (mmutype == MMU030)
+			UBYTE cm, sp;
+			if (mmutype == MMU030) {
 				cm = (odesc >> 6) & 1;
-			else
+				sp = 0;
+			} else {
 				cm = (odesc >> 5) & 3;
-			bug("%p - %p: %p WP=%d CM=%d (%08x)\n",
+				sp = (odesc >> 7) & 1;
+			}
+			bug("%p - %p: %p WP=%d S=%d CM=%d (%08x)\n",
 				startaddr, addr - 1, odesc & ~((1 << PAGE_SIZE) - 1),
-				(odesc & 4) ? 1 : 0, cm, odesc);
+				(odesc & 4) ? 1 : 0, sp, cm, odesc);
 			startaddr = addr;
 			odesc = desc;
 		}
