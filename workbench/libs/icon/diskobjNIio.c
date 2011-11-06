@@ -127,6 +127,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     LONG    	    width, height, numcols;
     ULONG   	    size;
     BOOL    	    transp;
+    int bits;
 
     img = which ? &icon->ni_Image[1] : &icon->ni_Image[0];
     
@@ -178,7 +179,8 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     img->Pens = numcols;
 
     DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->Palette, 8, img->Pens * sizeof(struct ColorRegister), which, TRUE, IconBase);
-    DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->ImageData, 8, width * height, which, FALSE, IconBase);
+    for (bits = 1; (1 << bits) < numcols; bits++);
+    DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->ImageData, bits, width * height, which, FALSE, IconBase);
     
     return TRUE;
 }
