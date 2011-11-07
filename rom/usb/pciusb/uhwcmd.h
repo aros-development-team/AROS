@@ -85,8 +85,8 @@ static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
 static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
 
 /* ehcichip.c, in order of appearance */
-void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh);
-void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh);
+void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
+void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
 void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
 void ehciUpdateIntTree(struct PCIController *hc);
 void ehciHandleFinishedTDs(struct PCIController *hc);
