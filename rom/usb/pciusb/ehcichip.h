@@ -188,10 +188,12 @@ struct EhciTD
 {
     struct EhciTD  *etd_Succ;
     ULONG           etd_Unused0;
-    //struct EhciTD  *etd_Pred;
     ULONG           etd_Self;       /* LE PHYSICAL pointer to self */
     ULONG           etd_Length;     /* Number of bytes to transfer within this */
-    ULONG           etd_Unused[4];
+    ULONG           etd_Unused[3];
+#if __WORDSIZE != 64
+    ULONG	    etd_Unused1;
+#endif
 
     /* aligned to 32 bytes */
     ULONG           etd_NextTD;     /* LE PHYSICAL pointer to next qTD */
@@ -211,9 +213,9 @@ struct EhciQH
     struct IOUsbHWReq *eqh_IOReq;   /* IO Request this belongs to */
 
     struct EhciTD  *eqh_FirstTD;    /* First TD */
-    ULONG           eqh_Actual;     /* Number of bytes for successful completion in this QH */
-    ULONG           eqh_Unused0;
-    ULONG           eqh_Unused1;
+    IPTR            eqh_Actual;     /* Number of bytes for successful completion in this QH */
+    APTR            eqh_Buffer;	    /* Mirror buffer for data outside of DMA-accessible area */
+    APTR	    eqh_SetupBuf;   /* Mirror buffer for setup packet */
 
     /* aligned to 32 bytes */
     ULONG           eqh_NextQH;     /* LE PHYSICAL horizontal pointer to next QH */

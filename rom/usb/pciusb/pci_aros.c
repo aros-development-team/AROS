@@ -82,8 +82,8 @@ AROS_UFH3(void, pciEnumerator,
     	{
     	case HCITYPE_OHCI:
 #ifndef __powerpc__	/* It was not from me. Perhaps on PPC these drivers suffer from CPU cache problems? (sonic) */
-#ifndef __x86_64__	/* Not 64-bit-ready yet - sonic */
     	case HCITYPE_EHCI:
+#ifndef __x86_64__	/* Not 64-bit-ready yet - sonic */
     	case HCITYPE_UHCI:
 #endif
 #endif

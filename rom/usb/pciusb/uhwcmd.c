@@ -1854,10 +1854,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                 cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
                 while(((struct Node *) cmpioreq)->ln_Succ)
                 {
-                    Remove(&cmpioreq->iouh_Req.io_Message.mn_Node);
-                    devadrep = (cmpioreq->iouh_DevAddr<<5) + cmpioreq->iouh_Endpoint + ((cmpioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                    unit->hu_DevBusyReq[devadrep] = NULL;
-                    ehciFreeAsyncContext(hc, (struct EhciQH *) cmpioreq->iouh_DriverPrivate1);
+                    ehciFreeAsyncContext(hc, cmpioreq);
                     cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     ReplyMsg(&cmpioreq->iouh_Req.io_Message);
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
@@ -1865,10 +1862,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                 cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
                 while(((struct Node *) cmpioreq)->ln_Succ)
                 {
-                    Remove(&cmpioreq->iouh_Req.io_Message.mn_Node);
-                    devadrep = (cmpioreq->iouh_DevAddr<<5) + cmpioreq->iouh_Endpoint + ((cmpioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
-                    unit->hu_DevBusyReq[devadrep] = NULL;
-                    ehciFreePeriodicContext(hc, (struct EhciQH *) cmpioreq->iouh_DriverPrivate1);
+                    ehciFreePeriodicContext(hc, cmpioreq);
                     cmpioreq->iouh_Req.io_Error = IOERR_ABORTED;
                     ReplyMsg(&cmpioreq->iouh_Req.io_Message);
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
@@ -2095,14 +2089,15 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     {
                         if(ioreq == cmpioreq)
                         {
-                            foundit = TRUE;
-                            unit->hu_DevBusyReq[devadrep] = NULL;
                             /*
                              * CHECKME: Perhaps immediate freeing can cause issues similar to OHCI.
                              * Should synchronized abort routine be implemented here too ?
                              */
-                            ehciFreeAsyncContext(hc, (struct EhciQH *) ioreq->iouh_DriverPrivate1);
-                            break;
+                            ehciFreeAsyncContext(hc, ioreq);
+                            Enable();
+                            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                            TermIO(ioreq, base);
+                            return TRUE;
                         }
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
                     }
@@ -2111,10 +2106,11 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     {
                         if(ioreq == cmpioreq)
                         {
-                            foundit = TRUE;
-                            unit->hu_DevBusyReq[devadrep] = NULL;
-                            ehciFreePeriodicContext(hc, (struct EhciQH *) ioreq->iouh_DriverPrivate1);
-                            break;
+                            ehciFreePeriodicContext(hc, ioreq);
+                            Enable();
+                            ioreq->iouh_Req.io_Error = IOERR_ABORTED;
+                            TermIO(ioreq, base);
+                            return TRUE;
                         }
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
                     }

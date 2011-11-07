@@ -29,9 +29,12 @@ static AROS_UFH3(void, EhciResetHandler,
     AROS_USERFUNC_EXIT
 }
 
-void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh) {
+static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
+{
+    struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
+    UWORD devadrep;
+    UWORD dir;
 
-    KPRINTF(5, ("Unlinking AsyncContext %08lx\n", eqh));
     // unlink from schedule
     eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
     CacheClearE(&eqh->eqh_Pred->eqh_NextQH, 32, CACRF_ClearD);
@@ -40,6 +43,30 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh) {
     eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
     eqh->eqh_Pred->eqh_Succ = eqh->eqh_Succ;
     SYNC;
+
+    /* Deactivate the endpoint */
+    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+    devadrep = (ioreq->iouh_DevAddr<<5) + ioreq->iouh_Endpoint + ((ioreq->iouh_Dir == UHDIR_IN) ? 0x10 : 0);
+    unit->hu_DevBusyReq[devadrep] = NULL;
+
+    /* Release bounce buffers */
+    if (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER)
+    	dir = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT;
+    else
+    	dir = ioreq->iouh_Dir;
+
+    usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, ioreq->iouh_Actual, dir);
+    usbReleaseBuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 8, UHDIR_IN);
+    eqh->eqh_Buffer   = NULL;
+    eqh->eqh_SetupBuf = NULL;
+}
+
+void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
+{
+    struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
+
+    KPRINTF(5, ("Freeing AsyncContext 0x%p\n", eqh));
+    ehciFinishRequest(hc->hc_Unit, ioreq);
 
     // need to wait until an async schedule rollover before freeing these
     Disable();
@@ -50,26 +77,20 @@ void ehciFreeAsyncContext(struct PCIController *hc, struct EhciQH *eqh) {
     Enable();
 }
 
-void ehciFreePeriodicContext(struct PCIController *hc, struct EhciQH *eqh) {
-
+void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq)
+{
+    struct EhciQH *eqh = ioreq->iouh_DriverPrivate1;
     struct EhciTD *etd;
     struct EhciTD *nextetd;
 
-    KPRINTF(5, ("Unlinking PeriodicContext %08lx\n", eqh));
-    // unlink from schedule
-    eqh->eqh_Pred->eqh_NextQH = eqh->eqh_Succ->eqh_Self;
-    CacheClearE(&eqh->eqh_Pred->eqh_NextQH, 32, CACRF_ClearD);
-    SYNC;
-
-    eqh->eqh_Succ->eqh_Pred = eqh->eqh_Pred;
-    eqh->eqh_Pred->eqh_Succ = eqh->eqh_Succ;
-    SYNC;
+    KPRINTF(5, ("Freeing PeriodicContext 0x%p\n", eqh));
+    ehciFinishRequest(hc->hc_Unit, ioreq);
 
     Disable(); // avoid race condition with interrupt
     nextetd = eqh->eqh_FirstTD;
     while((etd = nextetd))
     {
-        KPRINTF(1, ("FreeTD %08lx\n", nextetd));
+        KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
         nextetd = etd->etd_Succ;
         ehciFreeTD(hc, etd);
     }
@@ -82,11 +103,11 @@ void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh) {
     struct EhciTD *etd = NULL;
     struct EhciTD *nextetd;
 
-    KPRINTF(5, ("Unlinking QContext %08lx\n", eqh));
+    KPRINTF(5, ("Unlinking QContext 0x%p\n", eqh));
     nextetd = eqh->eqh_FirstTD;
     while(nextetd)
     {
-        KPRINTF(1, ("FreeTD %08lx\n", nextetd));
+        KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
         etd = nextetd;
         nextetd = (struct EhciTD *) etd->etd_Succ;
         ehciFreeTD(hc, etd);
@@ -136,7 +157,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
     BOOL halted;
     BOOL updatetree = FALSE;
     BOOL zeroterm;
-    ULONG phyaddr;
+    IPTR phyaddr;
 
     KPRINTF(1, ("Checking for Async work done...\n"));
     ioreq = (struct IOUsbHWReq *) hc->hc_TDQueue.lh_Head;
@@ -145,7 +166,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
         eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
         if(eqh)
         {
-            KPRINTF(1, ("Examining IOReq=%08lx with EQH=%08lx\n", ioreq, eqh));
+            KPRINTF(1, ("Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh));
             SYNC;
 
             CacheClearE(&eqh->eqh_NextQH, 32, CACRF_InvalidateD);
@@ -163,7 +184,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 do
                 {
                     ctrlstatus = READMEM32_LE(&etd->etd_CtrlStatus);
-                    KPRINTF(1, ("AS: CS=%08lx SL=%08lx TD=%08lx\n", ctrlstatus, READMEM32_LE(&etd->etd_Self), etd));
+                    KPRINTF(1, ("AS: CS=%08lx SL=%08lx TD=0x%p\n", ctrlstatus, READMEM32_LE(&etd->etd_Self), etd));
                     if(ctrlstatus & ETCF_ACTIVE)
                     {
                         if(halted)
@@ -255,7 +276,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     KPRINTF(10, ("Reloading BULK at %ld/%ld\n", eqh->eqh_Actual, ioreq->iouh_Length));
                     // reload
                     ctrlstatus = (ioreq->iouh_Dir == UHDIR_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
-                    phyaddr = (IPTR) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
+                    phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer + ioreq->iouh_Actual);
                     predetd = etd = eqh->eqh_FirstTD;
 
                     CONSTWRITEMEM32_LE(&eqh->eqh_CurrTD, EHCI_TERMINATE);
@@ -269,7 +290,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                             len = 4*EHCI_PAGE_SIZE;
                         }
                         etd->etd_Length = len;
-                        KPRINTF(1, ("Reload Bulk TD %08lx len %ld (%ld/%ld) phy=%08lx\n",
+                        KPRINTF(1, ("Reload Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
                                     etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr));
                         WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
                         // FIXME need quark scatter gather mechanism here
@@ -278,6 +299,14 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                         WRITEMEM32_LE(&etd->etd_BufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
                         WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
                         WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+
+			// FIXME Make use of these on 64-bit-capable hardware
+                        etd->etd_ExtBufferPtr[0] = 0;
+                        etd->etd_ExtBufferPtr[1] = 0;
+                        etd->etd_ExtBufferPtr[2] = 0;
+                        etd->etd_ExtBufferPtr[3] = 0;
+                        etd->etd_ExtBufferPtr[4] = 0;
+                        
                         phyaddr += len;
                         eqh->eqh_Actual += len;
                         zeroterm = (len && (ioreq->iouh_Dir == UHDIR_OUT) && (eqh->eqh_Actual == ioreq->iouh_Length) && (!(ioreq->iouh_Flags & UHFF_NOSHORTPKT)) && ((eqh->eqh_Actual % ioreq->iouh_MaxPktSize) == 0));
@@ -309,10 +338,10 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     eqh->eqh_NextTD = etd->etd_Self;
                     SYNC;
                     unit->hu_NakTimeoutFrame[devadrep] = (ioreq->iouh_Flags & UHFF_NAKTIMEOUT) ? hc->hc_FrameCounter + (ioreq->iouh_NakTimeout<<3) : 0;
-                } else {
-                    unit->hu_DevBusyReq[devadrep] = NULL;
-                    Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                    ehciFreeAsyncContext(hc, eqh);
+                }
+                else
+                {
+                    ehciFreeAsyncContext(hc, ioreq);
                     // use next data toggle bit based on last successful transaction
                     KPRINTF(1, ("Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
                     unit->hu_DevDataToggle[devadrep] = (ctrlstatus & ETCF_DATA1) ? TRUE : FALSE;
@@ -329,7 +358,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 }
             }
         } else {
-            KPRINTF(20, ("IOReq=%08lx has no UQH!\n", ioreq));
+            KPRINTF(20, ("IOReq=0x%p has no UQH!\n", ioreq));
         }
         ioreq = nextioreq;
     }
@@ -341,7 +370,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
         eqh = (struct EhciQH *) ioreq->iouh_DriverPrivate1;
         if(eqh)
         {
-            KPRINTF(1, ("Examining IOReq=%08lx with EQH=%08lx\n", ioreq, eqh));
+            KPRINTF(1, ("Examining IOReq=0x%p with EQH=0x%p\n", ioreq, eqh));
             nexttd = READMEM32_LE(&eqh->eqh_NextTD);
             etd = eqh->eqh_FirstTD;
             ctrlstatus = READMEM32_LE(&eqh->eqh_CtrlStatus);
@@ -356,7 +385,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 do
                 {
                     ctrlstatus = READMEM32_LE(&etd->etd_CtrlStatus);
-                    KPRINTF(1, ("Periodic: TD=%08lx CS=%08lx\n", etd, ctrlstatus));
+                    KPRINTF(1, ("Periodic: TD=0x%p CS=%08lx\n", etd, ctrlstatus));
                     if(ctrlstatus & ETCF_ACTIVE)
                     {
                         if(halted)
@@ -427,9 +456,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                     ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
                 }
                 ioreq->iouh_Actual += actual;
-                unit->hu_DevBusyReq[devadrep] = NULL;
-                Remove(&ioreq->iouh_Req.io_Message.mn_Node);
-                ehciFreePeriodicContext(hc, eqh);
+                ehciFreePeriodicContext(hc, ioreq);
                 updatetree = TRUE;
                 // use next data toggle bit based on last successful transaction
                 KPRINTF(1, ("Old Toggle %04lx:%ld\n", devadrep, unit->hu_DevDataToggle[devadrep]));
@@ -438,7 +465,7 @@ void ehciHandleFinishedTDs(struct PCIController *hc) {
                 ReplyMsg(&ioreq->iouh_Req.io_Message);
             }
         } else {
-            KPRINTF(20, ("IOReq=%08lx has no UQH!\n", ioreq));
+            KPRINTF(20, ("IOReq=0x%p has no UQH!\n", ioreq));
         }
         ioreq = nextioreq;
     }
@@ -461,7 +488,7 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
     ULONG epcaps;
     ULONG ctrlstatus;
     ULONG len;
-    ULONG phyaddr;
+    IPTR phyaddr;
 
     /* *** CTRL Transfers *** */
     KPRINTF(1, ("Scheduling new CTRL transfers...\n"));
@@ -523,22 +550,31 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
 
         //termetd->etd_QueueHead = setupetd->etd_QueueHead = eqh;
 
-        KPRINTF(1, ("SetupTD=%08lx, TermTD=%08lx\n", setupetd, termetd));
+        KPRINTF(1, ("SetupTD=0x%p, TermTD=0x%p\n", setupetd, termetd));
 
         // fill setup td
         setupetd->etd_Length = 8;
 
         CONSTWRITEMEM32_LE(&setupetd->etd_CtrlStatus, (8<<ETSS_TRANSLENGTH)|ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_SETUP);
-        phyaddr = (IPTR) pciGetPhysical(hc, &ioreq->iouh_SetupData);
+        
+        eqh->eqh_SetupBuf = usbGetBuffer(&ioreq->iouh_SetupData, 8, UHDIR_OUT);
+        phyaddr = (IPTR) pciGetPhysical(hc, eqh->eqh_SetupBuf);
+
         WRITEMEM32_LE(&setupetd->etd_BufferPtr[0], phyaddr);
         WRITEMEM32_LE(&setupetd->etd_BufferPtr[1], (phyaddr + 8) & EHCI_PAGE_MASK); // theoretically, setup data may cross one page
         setupetd->etd_BufferPtr[2] = 0; // clear for overlay bits
+
+	// FIXME Make use of these on 64-bit-capable hardware
+	setupetd->etd_ExtBufferPtr[0] = 0;
+	setupetd->etd_ExtBufferPtr[1] = 0;
+	setupetd->etd_ExtBufferPtr[2] = 0;
 
         ctrlstatus = (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_IN) : (ETCF_3ERRORSLIMIT|ETCF_ACTIVE|ETCF_PIDCODE_OUT);
         predetd = setupetd;
         if(ioreq->iouh_Length)
         {
-            phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
+            eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
+            phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer);
             do
             {
                 dataetd = ehciAllocTD(hc);
@@ -564,6 +600,14 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
                 WRITEMEM32_LE(&dataetd->etd_BufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
                 WRITEMEM32_LE(&dataetd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
                 WRITEMEM32_LE(&dataetd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+
+		// FIXME Make use of these on 64-bit-capable hardware
+		dataetd->etd_ExtBufferPtr[0] = 0;
+		dataetd->etd_ExtBufferPtr[1] = 0;
+		dataetd->etd_ExtBufferPtr[2] = 0;
+		dataetd->etd_ExtBufferPtr[3] = 0;
+		dataetd->etd_ExtBufferPtr[4] = 0;
+
                 phyaddr += len;
                 eqh->eqh_Actual += len;
                 predetd = dataetd;
@@ -571,6 +615,8 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
             if(!dataetd)
             {
                 // not enough dataetds? try again later
+                usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
+                usbReleaseBuffer(eqh->eqh_SetupBuf, &ioreq->iouh_SetupData, 0, 0);
                 ehciFreeQHandTDs(hc, eqh);
                 ehciFreeTD(hc, termetd); // this one's not linked yet
                 break;
@@ -589,6 +635,9 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         termetd->etd_BufferPtr[0] = 0; // clear for overlay bits
         termetd->etd_BufferPtr[1] = 0; // clear for overlay bits
         termetd->etd_BufferPtr[2] = 0; // clear for overlay bits
+        termetd->etd_ExtBufferPtr[0] = 0; // clear for overlay bits
+        termetd->etd_ExtBufferPtr[1] = 0; // clear for overlay bits
+        termetd->etd_ExtBufferPtr[2] = 0; // clear for overlay bits
         termetd->etd_Succ = NULL;
 
         // due to sillicon bugs, we fill in the first overlay ourselves.
@@ -599,6 +648,9 @@ void ehciScheduleCtrlTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[0] = setupetd->etd_BufferPtr[0];
         eqh->eqh_BufferPtr[1] = setupetd->etd_BufferPtr[1];
         eqh->eqh_BufferPtr[2] = 0;
+	eqh->eqh_ExtBufferPtr[0] = setupetd->etd_ExtBufferPtr[0];
+	eqh->eqh_ExtBufferPtr[1] = setupetd->etd_ExtBufferPtr[1];
+	eqh->eqh_ExtBufferPtr[2] = 0;
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -640,7 +692,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
     ULONG ctrlstatus;
     ULONG splitctrl;
     ULONG len;
-    ULONG phyaddr;
+    IPTR phyaddr;
 
     /* *** INT Transfers *** */
     KPRINTF(1, ("Scheduling new INT transfers...\n"));
@@ -742,7 +794,8 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             ctrlstatus |= ETCF_DATA1;
         }
         predetd = NULL;
-        phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
+        eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        phyaddr = (IPTR) pciGetPhysical(hc, eqh->eqh_Buffer);
         do
         {
             etd = ehciAllocTD(hc);
@@ -773,6 +826,14 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&etd->etd_BufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+
+	    // FIXME Use these on 64-bit-capable hardware
+	    etd->etd_ExtBufferPtr[0] = 0;
+	    etd->etd_ExtBufferPtr[1] = 0;
+	    etd->etd_ExtBufferPtr[2] = 0;
+	    etd->etd_ExtBufferPtr[3] = 0;
+	    etd->etd_ExtBufferPtr[4] = 0;
+
             phyaddr += len;
             eqh->eqh_Actual += len;
             predetd = etd;
@@ -781,6 +842,7 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         if(!etd)
         {
             // not enough etds? try again later
+            usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
             ehciFreeQHandTDs(hc, eqh);
             break;
         }
@@ -802,6 +864,11 @@ void ehciScheduleIntTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
         eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
         eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
+	eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+	eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+	eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+	eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+	eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -843,7 +910,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
     ULONG ctrlstatus;
     ULONG splitctrl;
     ULONG len;
-    ULONG phyaddr;
+    IPTR phyaddr;
 
     /* *** BULK Transfers *** */
     KPRINTF(1, ("Scheduling new BULK transfers...\n"));
@@ -905,7 +972,8 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             ctrlstatus |= ETCF_DATA1;
         }
         predetd = NULL;
-        phyaddr = (IPTR) pciGetPhysical(hc, ioreq->iouh_Data);
+        eqh->eqh_Buffer = usbGetBuffer(ioreq->iouh_Data, ioreq->iouh_Length, ioreq->iouh_Dir);
+        phyaddr = (IPTR)pciGetPhysical(hc, eqh->eqh_Buffer);
         do
         {
             if((eqh->eqh_Actual >= EHCI_TD_BULK_LIMIT) && (eqh->eqh_Actual < ioreq->iouh_Length))
@@ -934,7 +1002,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
                 len = 4*EHCI_PAGE_SIZE;
             }
             etd->etd_Length = len;
-            KPRINTF(1, ("Bulk TD %08lx len %ld (%ld/%ld) phy=%08lx\n",
+            KPRINTF(1, ("Bulk TD 0x%p len %ld (%ld/%ld) phy=0x%p\n",
                          etd, len, eqh->eqh_Actual, ioreq->iouh_Length, phyaddr));
             WRITEMEM32_LE(&etd->etd_CtrlStatus, ctrlstatus|(len<<ETSS_TRANSLENGTH));
             // FIXME need quark scatter gather mechanism here
@@ -943,6 +1011,14 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
             WRITEMEM32_LE(&etd->etd_BufferPtr[2], (phyaddr & EHCI_PAGE_MASK) + (2*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[3], (phyaddr & EHCI_PAGE_MASK) + (3*EHCI_PAGE_SIZE));
             WRITEMEM32_LE(&etd->etd_BufferPtr[4], (phyaddr & EHCI_PAGE_MASK) + (4*EHCI_PAGE_SIZE));
+
+	    // FIXME Use these on 64-bit-capable hardware
+	    etd->etd_ExtBufferPtr[0] = 0;
+	    etd->etd_ExtBufferPtr[1] = 0;
+	    etd->etd_ExtBufferPtr[2] = 0;
+	    etd->etd_ExtBufferPtr[3] = 0;
+	    etd->etd_ExtBufferPtr[4] = 0;
+
             phyaddr += len;
             eqh->eqh_Actual += len;
 
@@ -952,6 +1028,7 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         if(!etd)
         {
             // not enough etds? try again later
+            usbReleaseBuffer(eqh->eqh_Buffer, ioreq->iouh_Data, 0, 0);
             ehciFreeQHandTDs(hc, eqh);
             break;
         }
@@ -973,6 +1050,11 @@ void ehciScheduleBulkTDs(struct PCIController *hc) {
         eqh->eqh_BufferPtr[2] = etd->etd_BufferPtr[2];
         eqh->eqh_BufferPtr[3] = etd->etd_BufferPtr[3];
         eqh->eqh_BufferPtr[4] = etd->etd_BufferPtr[4];
+	eqh->eqh_ExtBufferPtr[0] = etd->etd_ExtBufferPtr[0];
+	eqh->eqh_ExtBufferPtr[1] = etd->etd_ExtBufferPtr[1];
+	eqh->eqh_ExtBufferPtr[2] = etd->etd_ExtBufferPtr[2];
+	eqh->eqh_ExtBufferPtr[3] = etd->etd_ExtBufferPtr[3];
+	eqh->eqh_ExtBufferPtr[4] = etd->etd_ExtBufferPtr[4];
 
         Remove(&ioreq->iouh_Req.io_Message.mn_Node);
         ioreq->iouh_DriverPrivate1 = eqh;
@@ -1022,15 +1104,15 @@ void ehciCompleteInt(struct PCIController *hc) {
 
         hc->hc_AsyncAdvanced = FALSE;
 
-        KPRINTF(1, ("AsyncAdvance %08lx\n", hc->hc_EhciAsyncFreeQH));
+        KPRINTF(1, ("AsyncAdvance 0x%p\n", hc->hc_EhciAsyncFreeQH));
 
         while((eqh = hc->hc_EhciAsyncFreeQH))
         {
-            KPRINTF(1, ("FreeQH %08lx\n", eqh));
+            KPRINTF(1, ("FreeQH 0x%p\n", eqh));
             nextetd = eqh->eqh_FirstTD;
             while((etd = nextetd))
             {
-                KPRINTF(1, ("FreeTD %08lx\n", nextetd));
+                KPRINTF(1, ("FreeTD 0x%p\n", nextetd));
                 nextetd = etd->etd_Succ;
                 ehciFreeTD(hc, etd);
             }
@@ -1197,13 +1279,13 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     if(memptr) {
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
-        hc->hc_PCIVirtualAdjust = ((IPTR) pciGetPhysical(hc, memptr)) - ((IPTR) memptr);
+        hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, memptr) - (APTR)memptr;
         KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
         // align memory
         memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem) + EHCI_FRAMELIST_ALIGNMENT) & (~EHCI_FRAMELIST_ALIGNMENT));
         hc->hc_EhciFrameList = (ULONG *) memptr;
-        KPRINTF(10, ("FrameListBase 0x%08lx\n", hc->hc_EhciFrameList));
+        KPRINTF(10, ("FrameListBase 0x%p\n", hc->hc_EhciFrameList));
         memptr += sizeof(APTR) * EHCI_FRAMELIST_SIZE;
 
         // build up QH pool
@@ -1343,7 +1425,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         // we use the operational registers as RegBase.
         hc->hc_RegBase = (APTR) ((IPTR) pciregbase + READREG16_LE(pciregbase, EHCI_CAPLENGTH));
-        KPRINTF(10, ("RegBase = 0x%08lx\n", hc->hc_RegBase));
+        KPRINTF(10, ("RegBase = 0x%p\n", hc->hc_RegBase));
 
         KPRINTF(10, ("Resetting EHCI HC\n"));
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
@@ -1375,7 +1457,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         hc->hc_NumPorts = (hcsparams & EHSM_NUM_PORTS)>>EHSS_NUM_PORTS;
 
-        KPRINTF(20, ("Found EHCI Controller %08lx with %ld ports (%ld companions with %ld ports each)\n",
+        KPRINTF(20, ("Found EHCI Controller 0x%p with %ld ports (%ld companions with %ld ports each)\n",
                     hc->hc_PCIDeviceObject, hc->hc_NumPorts,
                     (hcsparams & EHSM_NUM_COMPANIONS)>>EHSS_NUM_COMPANIONS,
                     (hcsparams & EHSM_PORTS_PER_COMP)>>EHSS_PORTS_PER_COMP));
@@ -1399,6 +1481,8 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     (hccparams & EHCF_ASYNCSCHEDPARK) ? "Yes" : "No"));
                     hc->hc_EhciUsbCmd = (1UL<<EHUS_INTTHRESHOLD);
 
+	/* FIXME HERE: Process EHCF_64BITS flag and implement 64-bit addressing */
+
         if(hccparams & EHCF_ASYNCSCHEDPARK)
         {
             KPRINTF(20, ("Enabling AsyncSchedParkMode with MULTI_3\n"));
@@ -1409,7 +1493,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_FRAMECOUNT, 0);
 
-        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR) pciGetPhysical(hc, hc->hc_EhciFrameList));
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_PERIODICLIST, (IPTR)pciGetPhysical(hc, hc->hc_EhciFrameList));
         WRITEREG32_LE(hc->hc_RegBase, EHCI_ASYNCADDR, AROS_LONG2LE(hc->hc_EhciAsyncQH->eqh_Self));
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
 
@@ -1465,7 +1549,7 @@ void ehciFree(struct PCIController *hc, struct PCIUnit *hu) {
             {
                 UWORD portreg;
                 UWORD hciport;
-                KPRINTF(20, ("Shutting down EHCI %08lx\n", hc));
+                KPRINTF(20, ("Shutting down EHCI 0x%p\n", hc));
                 CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, 0);
                 // disable all ports
                 for(hciport = 0; hciport < hc->hc_NumPorts; hciport++)
