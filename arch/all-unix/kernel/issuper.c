@@ -8,7 +8,7 @@ AROS_LH0I(int, KrnIsSuper,
 {
     AROS_LIBFUNC_INIT
 
-    return SupervisorCount;
+    return UKB(KernelBase)->SupervisorCount;
 
     AROS_LIBFUNC_EXIT
 }

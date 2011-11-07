@@ -64,9 +64,9 @@ AROS_LH2(void, KrnDisplayAlert,
      * Normally it's used for KrnCause(), and in order not to execute scheduler and
      * SoftInts, we artificially raise our virtual privilege level.
      */
-    AROS_ATOMIC_INC(SupervisorCount);
+    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
     KernelIFace->sigwait(&sigs, &res);
-    AROS_ATOMIC_DEC(SupervisorCount);
+    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
 
     D(bug("[KrnDisplayAlert] Resume execution\n"));
 

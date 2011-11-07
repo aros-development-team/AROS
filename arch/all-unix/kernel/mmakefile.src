@@ -1,13 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+MAINDIR	    := rom/kernel
 USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+	       -I$(GENDIR)/$(MAINDIR)/include \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)
 
 FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
-	 obtaininput releaseinput getpagesize
+	 obtaininput releaseinput getpagesize allockernelbase
 FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
 
 %build_archspecific \

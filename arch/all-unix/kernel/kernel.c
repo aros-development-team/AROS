@@ -47,13 +47,6 @@
     sa.sa_handler = (SIGHANDLER_T)h ## _gate;
 #endif
 
-/*
- * This is the only platform-specific read-write variable we need.
- * In order to be able to make our kb_PlatformData read-only, we simply
- * moved it here. Let it be static...
- */
-unsigned int SupervisorCount;
-
 static void core_TrapHandler(int sig, regs_t *regs)
 {
     struct KernelBase *KernelBase = getKernelBase();
@@ -61,7 +54,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
     short amigaTrap;
     struct AROSCPUContext ctx;
 
-    AROS_ATOMIC_INC(SupervisorCount);
+    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
 
     /* Just for completeness */
     krnRunIRQHandlers(KernelBase, sig);
@@ -106,21 +99,21 @@ static void core_TrapHandler(int sig, regs_t *regs)
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
 
-    AROS_ATOMIC_DEC(SupervisorCount);
+    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
 }
 
 static void core_IRQ(int sig, regs_t *sc)
 {
-    AROS_ATOMIC_INC(SupervisorCount);
+    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
 	krnRunIRQHandlers(KernelBase, sig);
 
-    if (SupervisorCount == 1)
+    if (UKB(KernelBase)->SupervisorCount == 1)
 	core_ExitInterrupt(sc);
 
-    AROS_ATOMIC_DEC(SupervisorCount);
+    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
 }
 
 /*
@@ -131,27 +124,6 @@ static void core_IRQ(int sig, regs_t *sc)
 GLOBAL_SIGNAL_INIT(core_TrapHandler)
 GLOBAL_SIGNAL_INIT(core_SysCall)
 GLOBAL_SIGNAL_INIT(core_IRQ)
-
-/* 
- * Platform-specific initialization.
- * Here we can't do much, we have no hostlib.resource yet. Just allocate PlatformData.
- */
-static int InitCore(struct KernelBase *KernelBase)
-{
-    D(bug("[KRN] InitCore()\n"));
-
-    /*
-     * We allocate PlatformData separately from KernelBase because
-     * its definition relies on host includes (sigset_t), and
-     * we don't want generic code to depend on host includes
-     */
-    KernelBase->kb_PlatformData = AllocMem(sizeof(struct PlatformData), MEMF_ANY);
-    D(bug("[KRN] PlatformData %p\n", KernelBase->kb_PlatformData));
-
-    return KernelBase->kb_PlatformData ? TRUE : FALSE;
-}
-
-ADD2INITLIB(InitCore, 10);
 
 /* libc functions that we use */
 static const char *kernel_functions[] =
@@ -185,6 +157,11 @@ static const char *kernel_functions[] =
     NULL
 };
 
+/*
+ * Our post-SINGLETASK initialization code.
+ * At this point we are starting up interrupt subsystem.
+ * We have hostlib.resource and can use it in order to pick up all needed host OS functions.
+ */
 int core_Start(void *libc)
 {
     struct KernelBase *KernelBase = getKernelBase();

@@ -66,7 +66,7 @@ void core_SysCall(int sig, regs_t *regs)
     struct KernelBase *KernelBase = getKernelBase();
     struct Task *task = SysBase->ThisTask;
 
-    AROS_ATOMIC_INC(SupervisorCount);
+    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
 
     krnRunIRQHandlers(KernelBase, sig);
 
@@ -93,5 +93,5 @@ void core_SysCall(int sig, regs_t *regs)
 	break;
     }
 
-    AROS_ATOMIC_DEC(SupervisorCount);
+    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
 }
