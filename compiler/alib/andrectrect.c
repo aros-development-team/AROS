@@ -62,10 +62,12 @@
         return FALSE;
     else
     {
-        intersect->MinX = MinX;
-	intersect->MinY = MinY;
-	intersect->MaxX = MaxX;
-	intersect->MaxY = MaxY;
+        if (intersect) {
+            intersect->MinX = MinX;
+            intersect->MinY = MinY;
+            intersect->MaxX = MaxX;
+            intersect->MaxY = MaxY;
+        }
 
         return TRUE;
     }
