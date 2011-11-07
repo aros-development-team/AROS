@@ -239,7 +239,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 	STRPTR buf;
 	LONG   i;
 	BYTE   szeol = szEOL[eol];
-	LINE *ln; BPTR fh=NULL;
+	LINE *ln; BPTR fh=BNULL;
 	BYTE retval = 0;
 	BOOL newfile=FALSE;
 
