@@ -280,7 +280,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 #endif
 
     /* These exceptions are CPU traps */
-    if (irq_number < 19)
+    if (irq_number < 0x20)
     {
     	cpu_Trap(regs, error_code, irq_number);
     }
@@ -350,7 +350,6 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
     	    {
     	    case KBL_APIC:
             	core_APIC_AckIntr();
-            	krnRunIRQHandlers(KernelBase, irq_number);
             	break;
 
             case KBL_XTPIC:
@@ -365,10 +364,6 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
                     XTPIC_EnableIRQ(irq_number, &KernelBase->kb_PlatformData->kb_XTPIC_Mask);
 
                 break;
-
-            default:
-            	krnRunIRQHandlers(KernelBase, irq_number);
-            	break;
 	    }
 	}
 
