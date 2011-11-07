@@ -2228,7 +2228,8 @@ LONG nStartStop(struct NepClassMS *ncm, struct IOStdReq *ioreq)
     UBYTE sensedata[18];
     LONG ioerr;
 
-    if(ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI)
+    if((ncm->ncm_CDC->cdc_PatchFlags & PFF_SIMPLE_SCSI)
+        && ioreq->io_Command != TD_EJECT)
     {
         psdAddErrorMsg(RETURN_WARN, (STRPTR) GM_UNIQUENAME(libname), "Simple SCSI: Ignoring START_STOP_UNIT command");
         return(0);
@@ -2255,7 +2256,7 @@ LONG nStartStop(struct NepClassMS *ncm, struct IOStdReq *ioreq)
             break;
 
         case TD_EJECT:
-            cmd6[4] = ioreq->io_Length ? 0x03 : 0x02;
+            cmd6[4] = ioreq->io_Length ? 0x02 : 0x03;
             break;
     }
     cmd6[5] = 0;
@@ -3238,6 +3239,7 @@ LONG nScsiDirect(struct NepClassMS *ncm, struct SCSICmd *scsicmd)
             case SCSI_CD_GET_EVENT_STATUS_NOTIFICATION:
             case SCSI_CD_GET_PERFORMANCE:
             case SCSI_CD_LOAD_UNLOAD_MEDIUM:
+            case SCSI_DA_START_STOP_UNIT:
             case SCSI_CD_MECHANISM_STATUS:
             case SCSI_CD_PRE_FETCH:
             case SCSI_CD_PREVENT_ALLOW_MEDIUM_REMOVAL:
