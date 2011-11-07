@@ -535,6 +535,8 @@ void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct 
 		    Alert(AN_MemCorrupt);
 	    } while (P_STATUS(head->map[p]) == blkstate);
 
+	    blksize *= head->pageSize;			/* Convert to bytes */
+
 	    if (blkstate == P_ALLOC)
 	    {
 		SET_LARGEST(largest_alloc, blksize);
