@@ -239,12 +239,21 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 	STRPTR buf;
 	LONG   i;
 	BYTE   szeol = szEOL[eol];
-	LINE *ln; BPTR fh;
-        BYTE retval = 0;
+	LINE *ln; BPTR fh=NULL;
+	BYTE retval = 0;
+	BOOL newfile=FALSE;
 
 	BusyWindow(Wnd);
 
-	if( ( fh = Open(name, MODE_NEWFILE) ) )
+	/* first try if file already exist */
+	if( ! ( fh = Open(name, MODE_OLDFILE) ) )
+	{
+		/* No,open new file */
+		fh = Open(name, MODE_NEWFILE);
+		newfile=TRUE;
+	}
+
+	if( fh )
 	{
 		for(ln=svg, buf=NULL, i=0; ln; ln=ln->next)
 		{
@@ -256,7 +265,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 				/* Flush preceding unmodified buffer */
 				i -= szeol;
 				if( i>=0 && (FWrite(fh, buf,       i,     1) != 1 ||
-				             FWrite(fh, chEOL+eol, szeol, 1) != 1 ) )
+					FWrite(fh, chEOL+eol, szeol, 1) != 1 ) )
 				{
 					wrterr: ThrowDOSError(Wnd, name);
 					i=0;    break;
@@ -271,15 +280,18 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 		}
 		/* Flush buffer */
 		if( i>szeol && FWrite(fh,buf,i-szeol,1)!=1 ) goto wrterr;
+
 		FClose( fh );
-                retval = 1;
+		/* set protection flags, if file is new. */ 
+		if( newfile ) SetProtection(name, protection);
+
+		retval = 1;
 
 	} else if(IoErr() == ERROR_OBJECT_EXISTS)
 		ThrowError(Wnd, ErrMsg(ERR_WRONG_TYPE));
 	else
 		ThrowDOSError(Wnd, name);
 
-	SetProtection(name, protection);
 	WakeUp(Wnd);
 	return retval;
 }
