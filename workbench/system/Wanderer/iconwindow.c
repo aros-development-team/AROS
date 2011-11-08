@@ -1483,7 +1483,7 @@ IPTR IconWindow__MUIM_IconWindow_RateLimitRefresh
     GET(self, MUIA_IconWindow_IconList, &iconList);
 
     if (iconList != NULL)
-        return DoMethod(iconList, MUIM_IconWindowDrawerList_RateLimitRefresh);
+        return DoMethod(iconList, MUIM_IconWindowIconList_RateLimitRefresh);
 
     return (IPTR)FALSE;
 }

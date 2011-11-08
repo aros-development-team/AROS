@@ -10,17 +10,21 @@
 #include <libraries/mui.h>
 
 /*** Identifier Base ********************************************************/
-#define MUIB_IconWindowDrawerList                   (TAG_USER | 0x10000200)
-#define MUIB_IconWindowVolumeList                   (TAG_USER | 0x10000300)
-#define MUIB_IconWindowIconNetworkBrowserList       (TAG_USER | 0x10000A00)
+#define MUIB_IconWindowIconList                     (TAG_USER | 0x10000000)
+#define MUIB_IconWindowDrawerList                   (MUIB_IconWindowIconList | 0x00000200)
+#define MUIB_IconWindowVolumeList                   (MUIB_IconWindowIconList | 0x00000300)
+#define MUIB_IconWindowIconNetworkBrowserList       (MUIB_IconWindowIconList | 0x00000A00)
 
 /*** Public Attributes ******************************************************/
 #define MUIA_IconWindowVolumeList_ShowNetwork       (MUIB_IconWindowVolumeList | 0x00000010)
 #define MUIA_IconWindowVolumeList_ShowUserFiles     (MUIB_IconWindowVolumeList | 0x00000011)
 
 /*** Public Methods *********************************************************/
-#define MUIM_IconWindowDrawerList_FileSystemChanged (MUIB_IconWindowDrawerList | 0x00000001)
-#define MUIM_IconWindowDrawerList_RateLimitRefresh  (MUIB_IconWindowDrawerList | 0x00000002)
+#define MUIM_IconWindowIconList_RateLimitRefresh    (MUIB_IconWindowIconList    | 0x00000001)
+
+/*** Private Methods *********************************************************/
+#define MUIM_IconWindowDrawerList_FileSystemChanged (MUIB_IconWindowDrawerList  | 0x00000001)
+
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *IconWindowDrawerList_CLASS;
