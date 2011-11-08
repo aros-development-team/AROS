@@ -1,4 +1,4 @@
-CFG_PACKAGES=(documentation.svn.all amiga.svn.m68k)
+CFG_PACKAGES=(documentation.svn.all amiga.svn.m68k contrib.svn.amiga-m68k)
 
 CFG_MAIL_ENABLE=yes
 CFG_MAIL_CC=caffer@cs.ucc.ie
