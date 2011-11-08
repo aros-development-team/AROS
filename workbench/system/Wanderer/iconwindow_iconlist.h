@@ -18,8 +18,9 @@
 #define MUIA_IconWindowVolumeList_ShowNetwork       (MUIB_IconWindowVolumeList | 0x00000010)
 #define MUIA_IconWindowVolumeList_ShowUserFiles     (MUIB_IconWindowVolumeList | 0x00000011)
 
-/*** Private Methods ********************************************************/
+/*** Public Methods *********************************************************/
 #define MUIM_IconWindowDrawerList_FileSystemChanged (MUIB_IconWindowDrawerList | 0x00000001)
+#define MUIM_IconWindowDrawerList_RateLimitRefresh  (MUIB_IconWindowDrawerList | 0x00000002)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *IconWindowDrawerList_CLASS;
@@ -46,7 +47,8 @@ and temporarily placed here */
                            m4, m4_msg_type,                          \
                            m5, m5_msg_type,                          \
                            m6, m6_msg_type,                          \
-                           m7, m7_msg_type)                          \
+                           m7, m7_msg_type,                          \
+                           m8, m8_msg_type)                          \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -55,6 +57,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \
