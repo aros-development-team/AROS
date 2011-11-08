@@ -26,6 +26,7 @@
 #define MUIM_IconWindow_DirectoryUp                        (MUIB_IconWindow | 0x00000005)
 #define MUIM_IconWindow_AppWindowDrop                      (MUIB_IconWindow | 0x00000006)
 #define MUIM_IconWindow_Remove                             (MUIB_IconWindow | 0x00000007)
+#define MUIM_IconWindow_RateLimitRefresh                   (MUIB_IconWindow | 0x00000008)
 
 #define MUIM_IconWindow_BackFill_Register                  (MUIB_IconWindow | 0x00000010)
 #define MUIM_IconWindow_BackFill_Setup                     (MUIB_IconWindow | 0x00000012)
@@ -178,7 +179,8 @@ and temporarily placed here */
                            m16, m16_msg_type,                        \
                            m17, m17_msg_type,                        \
                            m18, m18_msg_type,                        \
-                           m19, m19_msg_type)                        \
+                           m19, m19_msg_type,                        \
+                           m20, m20_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -199,6 +201,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m17, m17, m17_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m18, m18, m18_msg_type); \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m19, m19, m19_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m20, m20, m20_msg_type); \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 IPTR IconWindow__MUIM_IconWindow_BackFill_Register(Class *CLASS, Object *self, struct MUIP_IconWindow_BackFill_Register *message);
