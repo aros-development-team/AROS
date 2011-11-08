@@ -58,6 +58,7 @@ static const struct MemRegion PC_Memory[] =
  * SysBase is intentionally put into .rodata. This way we prevent it from being modified.
  */
 __attribute__((section(".data"))) struct KernBootPrivate *__KernBootPrivate = NULL;
+__attribute__((section(".data"))) IPTR kick_highest = 0;
 __attribute__((section(".rodata"))) struct ExecBase *SysBase = NULL;
 
 static void boot_start(struct TagItem *msg);
@@ -139,7 +140,6 @@ void kernel_cstart(const struct TagItem *msg)
     IPTR mmap_len = 0;
     IPTR addr = 0;
     IPTR klo  = 0;
-    IPTR khi;
     struct TagItem *tag;
     UBYTE _APICID;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
@@ -155,6 +155,7 @@ void kernel_cstart(const struct TagItem *msg)
     	/* This is our first start. */
         struct vbe_mode *vmode = NULL;
         char *cmdline = NULL;
+        IPTR khi;
 
 	/* We need highest KS address and memory map to begin the work */
 	khi	 = LibGetTagData(KRN_KernelHighest, 0, msg);
@@ -179,13 +180,13 @@ void kernel_cstart(const struct TagItem *msg)
 	 */
 	khi  = AROS_ROUNDUP2(khi + 1, sizeof(APTR));
         mmap = mmap_FindRegion(khi, mmap, mmap_len);
-        
+
         if (!mmap)
         {
             krnPanic(NULL, "Inconsistent memory map or kickstart placement\n"
             		   "Kickstart region not found");
         }
-        
+
         if (mmap->type != MMAP_TYPE_RAM)
         {
             krnPanic(NULL, "Inconsistent memory map or kickstart placement\n"
@@ -266,8 +267,6 @@ void kernel_cstart(const struct TagItem *msg)
 	}
     }
 
-    D(bug("[Kernel] End of kickstart data area: 0x%p\n", BootMemPtr));
-
     /* Prepare GDT */
     core_SetupGDT(__KernBootPrivate);
 
@@ -301,10 +300,19 @@ void kernel_cstart(const struct TagItem *msg)
      * We won't do them again, for example on warm reboot. All our areas are stored in struct KernBootPrivate.
      * We are going to make this area read-only and reset-proof.
      */
-    khi = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
-    D(bug("[Kernel] Boot-time setup complete, end of kickstart area 0x%p\n", khi));
+    if (!kick_highest)
+    {
+	D(bug("[Kernel] Boot-time setup complete\n"));
+    	kick_highest = AROS_ROUNDUP2((IPTR)BootMemPtr, PAGE_SIZE);
+    }
 
-    /* Obtain the needed data from the boot taglist */
+    D(bug("[Kernel] End of kickstart area 0x%p\n", kick_highest));
+
+    /*
+     * Obtain the needed data from the boot taglist.
+     * We need to do this even on first boot, because the taglist and its data
+     * have been moved to the permanent storage.
+     */
     msg = BootMsg;
     while ((tag = LibNextTagItem(&msg)))
     {
@@ -348,7 +356,7 @@ void kernel_cstart(const struct TagItem *msg)
      * We reserve one page (PAGE_SIZE) at zero address. We will protect it.
      */
     NEWLIST(&memList);
-    mmap_InitMemory(mmap, mmap_len, &memList, klo, khi, PAGE_SIZE, PC_Memory);
+    mmap_InitMemory(mmap, mmap_len, &memList, klo, kick_highest, PAGE_SIZE, PC_Memory);
 
     D(bug("[Kernel] kernel_cstart: Booting exec.library...\n"));
 
@@ -380,17 +388,17 @@ void kernel_cstart(const struct TagItem *msg)
 
     /* This handles failures itself */
     ranges[0] = (UWORD *)klo;
-    ranges[1] = (UWORD *)khi;
+    ranges[1] = (UWORD *)kick_highest;
     krnPrepareExecBase(ranges, mh, BootMsg);
-
-    D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
-
-    /* Block all user's access to zero page */
-    core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 0);
 
     /*
      * Now we have working exec.library memory allocator.
      * Move console mirror buffer away from unused memory.
+     * WARNING!!! Do not report anything in the debug log before this is done. Remember that sequental
+     * AllocMem()s return sequental blocks! And right beyond our allocated area there will be MemChunk.
+     * Between krnPrepareExecBase() and this AllocMem() upon warm reboot console mirror buffer is set
+     * to an old value right above ExecBase. During krnPrepareExecBase() a MemChunk is built there,
+     * which can be overwritten by bootconsole, especially if the output scrolls.
      */
     if (scr_Type == SCR_GFX)
     {
@@ -398,6 +406,11 @@ void kernel_cstart(const struct TagItem *msg)
 
 	fb_SetMirror(mirror);
     }
+
+    D(bug("[Kernel] Created SysBase at 0x%p (pointer at 0x%p), MemHeader 0x%p\n", SysBase, &SysBase, mh));
+
+    /* Block all user's access to zero page */
+    core_ProtKernelArea(0, PAGE_SIZE, 1, 0, 0);
 
     /* Store important private data */
     TLS_SET(SysBase, SysBase);
@@ -411,7 +424,7 @@ void kernel_cstart(const struct TagItem *msg)
      * We do it only after ExecBase creation because SysBase pointer is put
      * into .rodata. This way we prevent it from ocassional modification by buggy software.
      */
-    core_ProtKernelArea(addr, khi - addr, 1, 0, 1);
+    core_ProtKernelArea(addr, kick_highest - addr, 1, 0, 1);
 
     /* Transfer the rest of memory list into SysBase */
     D(bug("[Kernel] Transferring memory list into SysBase...\n"));

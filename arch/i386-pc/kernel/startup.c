@@ -332,11 +332,15 @@ void kernel_cstart(const struct TagItem *msg)
     ranges[2] = (UWORD *)-1;
 
     krnPrepareExecBase(ranges, mh, BootMsg);
-    D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
 
     /*
      * Now we have working exec.library memory allocator.
      * Move console mirror buffer away from unused memory.
+     * WARNING!!! Do not report anything in the debug log before this is done. Remember that sequental
+     * AllocMem()s return sequental blocks! And right beyond our allocated area there will be MemChunk.
+     * Between krnPrepareExecBase() and this AllocMem() upon warm reboot console mirror buffer is set
+     * to an old value right above ExecBase. During krnPrepareExecBase() a MemChunk is built there,
+     * which can be overwritten by bootconsole, especially if the output scrolls.
      */
     if (scr_Type == SCR_GFX)
     {
@@ -344,6 +348,8 @@ void kernel_cstart(const struct TagItem *msg)
 
 	fb_SetMirror(mirror);
     }
+
+    D(bug("[Kernel] Created SysBase at 0x%p, MemHeader 0x%p\n", SysBase, mh));
 
     /* Transfer the rest of memory list into SysBase */
     D(bug("[Kernel] Transferring memory list into SysBase...\n"));

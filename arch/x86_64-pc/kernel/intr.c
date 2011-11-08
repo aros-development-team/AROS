@@ -110,16 +110,6 @@ void core_SetupIDT(struct KernBootPrivate *__KernBootPrivate)
     asm volatile ("lidt %0"::"m"(IDT_sel));
 }
 
-struct pt_regs;
-static int core_Reboot(struct pt_regs *regs)
-{
-    /* A second part of the double stack swap */
-    core_Kick(BootMsg, kernel_cstart);
-
-    /* We should never get here */
-    return 0;
-}
-
 /* CPU exceptions are processed here */
 void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, unsigned long irq_number)
 {
@@ -312,7 +302,7 @@ void core_IRQHandle(struct ExceptionContext *regs, unsigned long error_code, uns
 	    	"cld\n\t"
 	    	"movq %0, %%rsp\n\t"
 	    	"jmp *%1\n"
-	    	::"r"(__KernBootPrivate->SystemStack + STACK_SIZE), "r"(core_Reboot));
+	    	::"r"(__KernBootPrivate->SystemStack + STACK_SIZE), "r"(core_Kick), "D"(BootMsg), "S"(kernel_cstart));
 
 	case SC_SUPERVISOR:
 	    /* This doesn't return */
