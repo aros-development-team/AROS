@@ -1737,7 +1737,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
     if (cd->Flags & (COPYFLAG_SRCNOFILESYS|COPYFLAG_DESNOFILESYS))
     {
-        ULONG res = 0, kill = 1;
+        ULONG res = 0;
 	BPTR in, out;
         CONST_STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 
@@ -1746,22 +1746,20 @@ void DoWork(STRPTR name, struct CopyData *cd)
                cd->DestName);
 #endif
 
-        if ((out = Open(cd->DestName, MODE_NEWFILE)))
+        if ((in = Open(cd->FileName, MODE_OLDFILE)))
         {
             txt = cd->Mode == COPYMODE_MOVE ? TEXT_MOVED : TEXT_COPIED;
 
-            if ((in = Open(cd->FileName, MODE_OLDFILE)))
+            if ((out = Open(cd->DestName, MODE_NEWFILE)))
             {
                 ULONG h;
 
                 h = CopyFile(in, out, cd->BufferSize, cd);
-                Close(out); out = BNULL;
-                Close(in);
+                Close(out);
+                Close(in); in = BNULL;
 
                 if (!h)
                 {
-                    kill = 0;
-
                     if (cd->Mode == COPYMODE_MOVE)
                     {
                         if (KillFile(cd->FileName, cd->Flags & COPYFLAG_FORCEDELETE, cd))
@@ -1773,18 +1771,13 @@ void DoWork(STRPTR name, struct CopyData *cd)
                     {
                         res = 1;
                     }
+                } else {
+                    KillFileKeepErr(cd->DestName, 0, cd);
                 }
             }
 
-            if (out)
-            {
-                Close(out);
-            }
-
-            if (kill)
-            {
-                KillFileKeepErr(cd->DestName, 0, cd);
-            }
+            if (in != BNULL)
+                Close(in);
         }
 
         if (!res && !(cd->Flags & COPYFLAG_QUIET))
