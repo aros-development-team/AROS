@@ -2,7 +2,7 @@
 #define _ICONWINDOWICONLIST_H_
 
 /*
-    Copyright  2004, The AROS Development Team. All rights reserved.
+    Copyright  2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,12 +10,16 @@
 #include <libraries/mui.h>
 
 /*** Identifier Base ********************************************************/
-#define MUIB_IconWindowDrawerList                  (TAG_USER | 0x10000200)
-#define MUIB_IconWindowVolumeList                  (TAG_USER | 0x10000300)
-#define MUIB_IconWindowIconNetworkBrowserList          (TAG_USER | 0x10000A00)
+#define MUIB_IconWindowDrawerList                   (TAG_USER | 0x10000200)
+#define MUIB_IconWindowVolumeList                   (TAG_USER | 0x10000300)
+#define MUIB_IconWindowIconNetworkBrowserList       (TAG_USER | 0x10000A00)
 
-#define MUIA_IconWindowVolumeList_ShowNetwork      (TAG_USER | 0x10000310)
-#define MUIA_IconWindowVolumeList_ShowUserFiles    (TAG_USER | 0x10000311)
+/*** Public Attributes ******************************************************/
+#define MUIA_IconWindowVolumeList_ShowNetwork       (MUIB_IconWindowVolumeList | 0x00000010)
+#define MUIA_IconWindowVolumeList_ShowUserFiles     (MUIB_IconWindowVolumeList | 0x00000011)
+
+/*** Private Methods ********************************************************/
+#define MUIM_IconWindowDrawerList_FileSystemChanged (MUIB_IconWindowDrawerList | 0x00000001)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *IconWindowDrawerList_CLASS;
@@ -41,7 +45,8 @@ and temporarily placed here */
                            m3, m3_msg_type,                          \
                            m4, m4_msg_type,                          \
                            m5, m5_msg_type,                          \
-                           m6, m6_msg_type)                        \
+                           m6, m6_msg_type,                          \
+                           m7, m7_msg_type)                          \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -49,6 +54,7 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m4, m4, m4_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m5, m5, m5_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m6, m6, m6_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #define ICONWINDOWICONVOLUMELIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \

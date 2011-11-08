@@ -100,8 +100,11 @@ struct IconWindowDrawerList_DATA
 
     IPTR                        iwidld_ViewPrefs_ID;
     Object                      *iwidld_ViewPrefs_NotificationObject;
+
+    /* File System update handling */
     struct Wanderer_FSHandler   iwidld_FSHandler;
     struct NotifyRequest        iwidld_DrawerNotifyRequest;
+    ULONG                       iwidld_LastRefresh; /* In seconds */
 };
 
 // static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
@@ -505,9 +508,16 @@ IPTR IconWindowDrawerList__OM_GET(Class *CLASS, Object *self, struct opGet *mess
 
 IPTR IconWindowDrawerList__HandleFSUpdate(Object * iconwindow, struct NotifyMessage *msg)
 {
-    DoMethod(iconwindow, MUIM_IconList_Update);
-    DoMethod(iconwindow, MUIM_IconList_Sort);
-    return (IPTR)TRUE;
+    return DoMethod(iconwindow, MUIM_IconWindowDrawerList_FileSystemChanged);
+}
+
+ULONG GetCurrentTimeInSeconds()
+{
+    struct DateStamp stamp;
+
+    DateStamp(&stamp);
+
+    return (stamp.ds_Days * 60 * 60 * 24) + (stamp.ds_Minute * 60) + (stamp.ds_Tick / 50);
 }
 
 ///IconWindowDrawerList__MUIM_Setup()
@@ -674,6 +684,7 @@ IPTR IconWindowDrawerList__MUIM_Setup
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name                 = directory_path;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&drawerlist_data->iwidld_FSHandler;
+            drawerlist_data->iwidld_LastRefresh                                 = GetCurrentTimeInSeconds();
 
             if (StartNotify(&drawerlist_data->iwidld_DrawerNotifyRequest))
             {
@@ -774,6 +785,7 @@ IPTR IconWindowDrawerList__MUIM_Cleanup
     if (drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name != NULL)
     {
         D(bug("[Wanderer:DrawerList] %s: Removing  Drawer FS Notification Request\n", __PRETTY_FUNCTION__));
+        /* EndNotify also replies all already send messages, so they won't end up hitting dead space in handler->HandleFSUpdate */
         EndNotify(&drawerlist_data->iwidld_DrawerNotifyRequest);
     }
 
@@ -864,27 +876,51 @@ iwc_ParentBackground:
 }
 ///
 
+/// MUIM_IconWindowDrawerList_FileSystemChanged
+IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+
+    ULONG current = GetCurrentTimeInSeconds();
+
+    if (data->iwidld_LastRefresh <= current - 4) /* At most every 4 seconds */
+    {
+        DoMethod(self, MUIM_IconList_Update);
+        DoMethod(self, MUIM_IconList_Sort);
+        /* Record finish time */
+        data->iwidld_LastRefresh = GetCurrentTimeInSeconds();
+    }
+
+    return (IPTR)TRUE;
+}
+///
+
 /*** Setup ******************************************************************/
 #ifdef __AROS__
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
 (
     IconWindowDrawerList, NULL, MUIC_IconDrawerList, NULL,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           struct MUIP_DrawBackground *
+    OM_NEW,                                         struct opSet *,
+    OM_SET,                                         struct opSet *,
+    OM_GET,                                         struct opGet *,
+    MUIM_Setup,                                     Msg,
+    MUIM_Cleanup,                                   Msg,
+    MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
+    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg
 );
 #else
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
 (
     IconWindowDrawerList, NULL,  NULL, IconDrawerList_Class,
-    OM_NEW,                        struct opSet *,
-    OM_SET,                        struct opSet *,
-    OM_GET,                        struct opGet *,
-    MUIM_Setup,                    Msg,
-    MUIM_Cleanup,                  Msg,
-    MUIM_DrawBackground,           struct MUIP_DrawBackground *
+    OM_NEW,                                         struct opSet *,
+    OM_SET,                                         struct opSet *,
+    OM_GET,                                         struct opGet *,
+    MUIM_Setup,                                     Msg,
+    MUIM_Cleanup,                                   Msg,
+    MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
+    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg
 );
 #endif
