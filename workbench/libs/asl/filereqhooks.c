@@ -12,6 +12,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
+#include <proto/workbench.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <intuition/screens.h>
@@ -49,6 +50,7 @@
 STATIC BOOL  FRGadInit(struct LayoutData *, struct AslBase_intern *);
 STATIC BOOL  FRGadLayout(struct LayoutData *, struct AslBase_intern *);
 STATIC VOID  FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
+STATIC ULONG FRHandleAppWindow(struct LayoutData *, struct AslBase_intern *);
 STATIC ULONG FRHandleEvents(struct LayoutData *, struct AslBase_intern *);
 STATIC ULONG FRGetSelectedFiles(struct LayoutData *, struct AslBase_intern *AslBase);
 
@@ -417,6 +419,10 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 	    retval = (ULONG)FRHandleEvents(ld, ASLB(AslBase));
 	    break;
 
+	case LDCMD_HANDLEAPPWINDOW:
+	    retval = (ULONG)FRHandleAppWindow(ld, ASLB(AslBase));
+	    break;
+
 	case LDCMD_CLEANUP:
 	    FRGadCleanup(ld, ASLB(AslBase));
 	    retval = GHRET_OK;
@@ -427,7 +433,7 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 	    break;
     }
 
-    return (retval);
+    ReturnInt ("FRGadgetryHook(), retval", ULONG, retval);
 
     AROS_USERFUNC_EXIT
 }
@@ -991,6 +997,33 @@ STATIC VOID FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBa
 
 /*****************************************************************************************/
 
+STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    ULONG retval = GHRET_FAIL;
+    char  pathbuffer[MAX_PATH_LEN];
+
+    if (ld->ld_AppMsg && (ld->ld_AppMsg->am_Type == AMTYPE_APPWINDOW))
+    {
+	/* FIXME: Should we handle multiple droped icons in case of multiselect requester? */
+	if (ld->ld_AppMsg->am_NumArgs >= 1)
+	{
+	    if (ld->ld_AppMsg->am_ArgList->wa_Lock)
+	    {
+		NameFromLock(ld->ld_AppMsg->am_ArgList->wa_Lock, pathbuffer, MAX_PATH_LEN);
+		FRNewPath(pathbuffer, ld, AslBase);
+	    }
+	    if (ld->ld_AppMsg->am_ArgList->wa_Name)
+	    {
+		FRSetFile(ld->ld_AppMsg->am_ArgList->wa_Name, ld, AslBase);
+	    }
+	    retval = GHRET_OK;
+	}
+    }
+    ReturnInt ("FRHandleEvents(), retval", ULONG, retval);
+}
+
+/*****************************************************************************************/
+
 STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct IntuiMessage *imsg;
@@ -999,13 +1032,12 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
     struct IntFileReq 	*ifreq;
     WORD 		gadid;
 
-    EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
+//    EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
 
     udata = (struct FRUserData *)ld->ld_UserData;
     ifreq = (struct IntFileReq *)ld->ld_IntReq;
-    
-    imsg = ld->ld_Event;
 
+    if ((imsg = ld->ld_Event))
     switch (imsg->Class)
     {
 	case IDCMP_CLOSEWINDOW:

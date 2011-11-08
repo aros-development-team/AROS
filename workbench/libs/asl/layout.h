@@ -237,8 +237,9 @@ struct ASLLVFileReqNode
 #define LDCMD_LAYOUT		2 
 
 #define LDCMD_HANDLEEVENTS	3 
+#define LDCMD_HANDLEAPPWINDOW	4 
 /* Cleanup anything requester specific allocated in INIT, LAYOUT or HANDLEEVENTS */
-#define LDCMD_CLEANUP		4 
+#define LDCMD_CLEANUP		5 
 
 /* Special retuen value for HANDLEEVENTS to express that the
 user has successfully requested something and hit "OK" */
@@ -288,6 +289,12 @@ struct LayoutData
      * LDCMD_HANDLEEVENTS hooks
     */
     struct IntuiMessage *ld_Event;
+
+    /* Used for appwindow stuff
+    */
+    struct AppMessage   *ld_AppMsg;
+    struct MsgPort      *ld_AppMsgPort;
+    struct AppWindow    *ld_AppWindow;
 
 };
 
