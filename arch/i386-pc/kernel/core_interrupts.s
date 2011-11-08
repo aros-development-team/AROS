@@ -41,6 +41,36 @@ BUILD_IRQ(0x10)         // Floating-Point Exception
 BUILD_IRQ_ERR(0x11)     // Alignment-Check Exception
 BUILD_IRQ(0x12)         // Machine-Check Exception
 BUILD_IRQ(0x13)         // SIMD-Floating-Point Exception
+BUILD_IRQ(0x14)
+BUILD_IRQ(0x15)
+BUILD_IRQ(0x16)
+BUILD_IRQ(0x17)
+BUILD_IRQ(0x18)
+BUILD_IRQ(0x19)
+BUILD_IRQ(0x1a)
+BUILD_IRQ(0x1b)
+BUILD_IRQ(0x1c)
+BUILD_IRQ(0x1d)
+BUILD_IRQ(0x1e)
+BUILD_IRQ(0x1f)
+BUILD_IRQ(0x20)
+BUILD_IRQ(0x21)
+BUILD_IRQ(0x22)
+BUILD_IRQ(0x23)
+BUILD_IRQ(0x24)
+BUILD_IRQ(0x25)
+BUILD_IRQ(0x26)
+BUILD_IRQ(0x27)
+BUILD_IRQ(0x28)
+BUILD_IRQ(0x29)
+BUILD_IRQ(0x2a)
+BUILD_IRQ(0x2b)
+BUILD_IRQ(0x2c)
+BUILD_IRQ(0x2d)
+BUILD_IRQ(0x2e)
+BUILD_IRQ(0x2f)
+
+BUILD_IRQ(0x80)		// SysCall exception
 BUILD_IRQ(0xFE)         // APIC Error Exception
 
 	.align 16, 0x90
@@ -79,7 +109,7 @@ core_Interrupt:				// At this point two ULONGs for segment registers are
 	mov	%ax, %es
 
 	call	handleException		// Call C handler. EBX will be preserved.
-
+restoreRegs:
 	movl	Flags(%ebx), %eax	// Test if the context contains segment registers
 	test	$ECF_SEGMENTS, %eax
 	je	noSegments
@@ -108,3 +138,41 @@ noSegments:
 core_Unused_Int:
 	iret
 	.size core_Interrupt, .-core_Interrupt
+
+	.globl core_LeaveInterrupt
+	.type core_LeaveInterrupt, @function
+core_LeaveInterrupt:
+	popl	%ebx			// Remove return address
+	popl	%ebx			// Get argument
+	jmp	restoreRegs
+	.size core_LeaveInterrupt, .-core_LeaveInterrupt
+
+	.globl core_Supervisor
+	.type core_Supervisor, @function
+
+core_Supervisor:
+	popl	%ebx			// Similar to above, but chains to the routine
+	popl	%ebx			// pointed to by EDI
+	movl	Flags(%ebx), %eax	// Note that data segments will be reset back to user-mode values
+	test	$ECF_SEGMENTS, %eax
+	je	sv_noSegments
+	movl	reg_ds(%ebx), %eax
+	mov	%ax, %ds
+	movl	reg_es(%ebx), %eax
+	mov	%ax, %es
+	movl	reg_fs(%ebx), %eax
+	mov	%ax, %fs
+	movl	reg_gs(%ebx), %eax
+	mov	%ax, %gs
+sv_noSegments:
+	movl	%ebx, %esp
+	popl	%eax
+	popl	%eax
+	popl	%ebx
+	popl	%ecx
+	popl	%edx
+	popl	%esi
+	popl	%edi
+	popl	%ebp
+        addl	$16, %esp
+	jmp	*%edi

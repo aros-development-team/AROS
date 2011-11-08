@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FUNCS   := getcpucount getcpunumber
-FILES   := startup kernel_debug platform_init traps utils smp
+FILES   := startup kernel_debug platform_init ictl kernel_cpu traps utils smp
 AFILES  := core_interrupts reboot
 MAINDIR := rom/kernel
 

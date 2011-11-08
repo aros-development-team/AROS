@@ -1,9 +1,6 @@
 #ifndef _TRAPS_H
 #define _TRAPS_H
 
-#include <asm/irq.h>
-#include <asm/linkage.h>
-
 /* Here are some macros used to build trap table in core file. */
 
 #define TRAP_NAME2(nr) nr##_trap(void)

@@ -12,6 +12,8 @@
 
 #include <aros/i386/cpucontext.h>
 
+#include "segments.h"
+
 /*
  * We handle all 255 exception vectors. However vectors starting from 0x20
  * are hardware IRQs which are handled separately. So - 32 raw exceptions.
