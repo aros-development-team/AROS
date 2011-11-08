@@ -24,6 +24,7 @@
 /* This is needed in order to bring in definition of struct segment */
 #include "../../../rom/debug/debug_intern.h"
 
+APTR AbsExecBase = NULL;
 struct segment *seg = NULL;
 struct Resident *res = NULL;
 struct MinList *Debug_ModList = NULL;
