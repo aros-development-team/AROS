@@ -35,4 +35,10 @@ void PlatformPostInit(void);
 int smp_Setup(void);
 int smp_Wake(void);
 
+struct ExceptionContext;
+
+void core_LeaveInterrupt(struct ExceptionContext *);
+void core_Supervisor(struct ExceptionContext *);
+void core_Reboot(void);
+
 #endif /* KERNEL_INTERN_H_ */
