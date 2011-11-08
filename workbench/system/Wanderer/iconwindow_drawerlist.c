@@ -888,12 +888,12 @@ IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
 
     data->iwidld_FSChanged = TRUE;
 
-    return DoMethod(self, MUIM_IconWindowDrawerList_RateLimitRefresh);
+    return DoMethod(self, MUIM_IconWindowIconList_RateLimitRefresh );
 }
 ///
 
-/// IconWindowDrawerList__MUIM_IconWindowDrawerList_RateLimitRefresh
-IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_RateLimitRefresh
+/// IconWindowDrawerList__MUIM_IconWindowIconList_RateLimitRefresh
+IPTR IconWindowDrawerList__MUIM_IconWindowIconList_RateLimitRefresh
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -932,7 +932,7 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_Cleanup,                                   Msg,
     MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
     MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
-    MUIM_IconWindowDrawerList_RateLimitRefresh,     Msg
+    MUIM_IconWindowIconList_RateLimitRefresh,       Msg
 );
 #else
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
@@ -945,6 +945,6 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_Cleanup,                                   Msg,
     MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
     MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
-    MUIM_IconWindowDrawerList_RateLimitRefresh,     Msg
+    MUIM_IconWindowIconList_RateLimitRefresh,       Msg
 );
 #endif
