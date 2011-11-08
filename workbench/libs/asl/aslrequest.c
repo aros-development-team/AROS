@@ -9,6 +9,7 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
+#include <proto/workbench.h>
 #include <string.h>
 #include <intuition/intuition.h>
 #include "asl_intern.h"
@@ -275,7 +276,16 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			    intreq->ir_Flags |= IF_POPPEDTOFRONT;
 			}
 		    }
-		    
+
+		    /* Try to promote the window as an AppWindow */
+		    if ((ld->ld_AppMsgPort = CreateMsgPort()))
+		    {
+			if ((ld->ld_AppWindow = AddAppWindow(0, 0, win, ld->ld_AppMsgPort, NULL)))
+			{
+			    D(bug("[asl.library] AppWindow sucessful\n"));
+			}
+		    }
+
 		    /* Wait for the user to do something */	
 		    success = HandleEvents(ld, reqinfo, ASLB(AslBase));
 		

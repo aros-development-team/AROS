@@ -16,6 +16,7 @@
 #include <proto/gadtools.h>
 #include <proto/dos.h>
 #include <proto/locale.h>
+#include <proto/workbench.h>
 
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -256,6 +257,11 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	if (ld->ld_Window)
     	{
+	    if (ld->ld_AppWindow)
+		RemoveAppWindow(ld->ld_AppWindow);
+	    if (ld->ld_AppMsgPort)
+		DeleteMsgPort(ld->ld_AppMsgPort);
+
 	    if (ld->ld_IntReq->ir_Flags & IF_POPPEDTOFRONT)
 	    {
 	    	ld->ld_IntReq->ir_Flags &= ~IF_POPPEDTOFRONT;
@@ -264,11 +270,11 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    
 	    if ((ld->ld_IntReq->ir_Flags & IF_PRIVATEIDCMP) || (!ld->ld_IntReq->ir_Window))
 	    {
-	    	CloseWindow(ld->ld_Window);
+		CloseWindow(ld->ld_Window);
 	    }
 	    else
 	    {
-	    	CloseWindowSafely(ld->ld_Window, AslBase);
+		CloseWindowSafely(ld->ld_Window, AslBase);
 	    }
 	}
 
@@ -664,7 +670,9 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
     while (!terminated)
     {
-	if ((imsg = (struct IntuiMessage *)GetMsg(port)) != NULL)
+	Wait((1L << port->mp_SigBit) | (1L << ld->ld_AppMsgPort->mp_SigBit));
+
+	while ((imsg = (struct IntuiMessage *)GetMsg(port)))
 	{
 	    if ((imsg->IDCMPWindow == ld->ld_Window) ||
 	        (imsg->IDCMPWindow == ld->ld_Window2))
@@ -703,7 +711,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 			break;
 
 
-		} /* switch (imsg->Class */
+		} /* switch (imsg->Class) */
 	    
 	    } /* if (imsg->IDCMPWindow is ld->ld_Window or ld->ld_Window2) */
 	    else if (intreq->ir_IntuiMsgFunc)
@@ -720,12 +728,26 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 	    }
 	    ReplyMsg((struct Message *)imsg);
 
-	} /* if ((imsg = GetMsg(port)) != NULL) */
-	else
+	} /* while ((imsg = (struct IntuiMessage *)GetMsg(port))) */
+
+	while ((ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort)))
 	{
-	    Wait(1L << port->mp_SigBit);
-	}
-	
+	    ld->ld_Command = LDCMD_HANDLEAPPWINDOW;
+	    success = CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase));
+	    ReplyMsg ((struct Message *) ld->ld_AppMsg);
+	    ActivateWindow(ld->ld_Window);
+	    D(bug("GadgetryHook() returned, success = %d\n", success));
+	    if (success == LDRET_FINISHED)
+	    {
+		success    = TRUE;
+		terminated = TRUE;
+	    }
+	    if (!success)
+	    {
+		success = FALSE;
+		terminated = TRUE;
+	    }
+	} /* while ((ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort))) */
     } /* while (!terminated) */
     
     ReturnBool ("HandleEvents", success);
