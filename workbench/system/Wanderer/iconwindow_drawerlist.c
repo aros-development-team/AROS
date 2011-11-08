@@ -105,6 +105,7 @@ struct IconWindowDrawerList_DATA
     struct Wanderer_FSHandler   iwidld_FSHandler;
     struct NotifyRequest        iwidld_DrawerNotifyRequest;
     ULONG                       iwidld_LastRefresh; /* In seconds */
+    BOOL                        iwidld_FSChanged;
 };
 
 // static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
@@ -685,6 +686,7 @@ IPTR IconWindowDrawerList__MUIM_Setup
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&drawerlist_data->iwidld_FSHandler;
             drawerlist_data->iwidld_LastRefresh                                 = GetCurrentTimeInSeconds();
+            drawerlist_data->iwidld_FSChanged                                   = FALSE;
 
             if (StartNotify(&drawerlist_data->iwidld_DrawerNotifyRequest))
             {
@@ -876,7 +878,7 @@ iwc_ParentBackground:
 }
 ///
 
-/// MUIM_IconWindowDrawerList_FileSystemChanged
+/// IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
 IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
 (
     Class *CLASS, Object *self, Msg message
@@ -884,7 +886,25 @@ IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
 {
     SETUP_INST_DATA;
 
-    ULONG current = GetCurrentTimeInSeconds();
+    data->iwidld_FSChanged = TRUE;
+
+    return DoMethod(self, MUIM_IconWindowDrawerList_RateLimitRefresh);
+}
+///
+
+/// IconWindowDrawerList__MUIM_IconWindowDrawerList_RateLimitRefresh
+IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_RateLimitRefresh
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+    ULONG current = 0;
+
+    if (!data->iwidld_FSChanged)
+        return (IPTR)FALSE;
+
+    current = GetCurrentTimeInSeconds();
 
     if (data->iwidld_LastRefresh <= current - 4) /* At most every 4 seconds */
     {
@@ -892,9 +912,11 @@ IPTR IconWindowDrawerList__MUIM_IconWindowDrawerList_FileSystemChanged
         DoMethod(self, MUIM_IconList_Sort);
         /* Record finish time */
         data->iwidld_LastRefresh = GetCurrentTimeInSeconds();
+        data->iwidld_FSChanged = FALSE;
+        return (IPTR)TRUE;
     }
 
-    return (IPTR)TRUE;
+    return (IPTR)FALSE;
 }
 ///
 
@@ -909,7 +931,8 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_Setup,                                     Msg,
     MUIM_Cleanup,                                   Msg,
     MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
-    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg
+    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
+    MUIM_IconWindowDrawerList_RateLimitRefresh,     Msg
 );
 #else
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
@@ -921,6 +944,7 @@ ICONWINDOWICONDRAWERLIST_CUSTOMCLASS
     MUIM_Setup,                                     Msg,
     MUIM_Cleanup,                                   Msg,
     MUIM_DrawBackground,                            struct MUIP_DrawBackground *,
-    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg
+    MUIM_IconWindowDrawerList_FileSystemChanged,    Msg,
+    MUIM_IconWindowDrawerList_RateLimitRefresh,     Msg
 );
 #endif
