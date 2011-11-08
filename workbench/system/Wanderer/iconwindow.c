@@ -1472,6 +1472,23 @@ IPTR IconWindow__MUIM_IconWindow_BackFill_DrawBackground
 }
 ///
 
+///IconWindow__MUIM_IconWindow_RateLimitRefresh()
+IPTR IconWindow__MUIM_IconWindow_RateLimitRefresh
+(
+  Class *CLASS, Object *self, Msg message
+)
+{
+    Object * iconList = NULL;
+
+    GET(self, MUIA_IconWindow_IconList, &iconList);
+
+    if (iconList != NULL)
+        return DoMethod(iconList, MUIM_IconWindowDrawerList_RateLimitRefresh);
+
+    return (IPTR)FALSE;
+}
+///
+
 ///
 IPTR IconWindow__SetupClass()
 {
@@ -1504,6 +1521,7 @@ ICONWINDOW_CUSTOMCLASS
   MUIM_IconWindow_DirectoryUp,                Msg,
   MUIM_IconWindow_AppWindowDrop,              Msg,
   MUIM_IconWindow_Remove,                     Msg,
+  MUIM_IconWindow_RateLimitRefresh,           Msg,
   MUIM_IconWindow_BackFill_Register,          struct MUIP_IconWindow_BackFill_Register *,
   MUIM_IconWindow_BackFill_Setup,             struct MUIP_IconWindow_BackFill_Setup *,
   MUIM_IconWindow_BackFill_Cleanup,           struct MUIP_IconWindow_BackFill_Cleanup *,

@@ -3433,7 +3433,13 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
     STRPTR scr_title = GetUserScreenTitle(data->wd_Prefs);
 
     while ((child = NextObject(&cstate)))
+    {
+        /* Set the Wanderer title to each window's screen title */
         SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
+
+        /* Request rate-limited, conditional refresh */
+        DoMethod(child, MUIM_IconWindow_RateLimitRefresh);
+    }
 
     return TRUE;
 }
