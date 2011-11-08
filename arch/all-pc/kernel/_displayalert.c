@@ -83,16 +83,21 @@ void krnDisplayAlert(const char *text, struct KernelBase *KernelBase)
     for (i = 0; i < 3; i++)
     {
     	text = PrintCentered(text, KernelBase);
+    	if (*text == 0)	/* Handle early NULL terminator */
+    	    break;
     	text++;	/* Skip a newline */
     }
 
     PrintFrame(0xDC, KernelBase);
 
-    /* Print the rest of alert text */
-    PrintString(text, KernelBase);
+    /* Print the rest of alert text (if any) */
+    if (*text)
+    {
+    	PrintString(text, KernelBase);
 
-    /* Print a line in the bottom */
-    krnPutC('\n', KernelBase);
-    PrintChars(0xDC, scr_Width, KernelBase);
-    krnPutC('\n', KernelBase);
+	/* Print a line in the bottom */
+	krnPutC('\n', KernelBase);
+	PrintChars(0xDC, scr_Width, KernelBase);
+	krnPutC('\n', KernelBase);
+    }
 }
