@@ -40,6 +40,8 @@ struct AppW
 struct Wanderer_FSHandler
 {
     struct Node         fshn_Node;
+    Object              *target;                /* If not NULL, pass this as first parameter of handler */
+
     IPTR                (*HandleFSUpdate)(Object *, struct NotifyMessage *);
 };
 

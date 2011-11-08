@@ -100,6 +100,7 @@ struct IconWindowDrawerList_DATA
 
     IPTR                        iwidld_ViewPrefs_ID;
     Object                      *iwidld_ViewPrefs_NotificationObject;
+    struct Wanderer_FSHandler   iwidld_FSHandler;
     struct NotifyRequest        iwidld_DrawerNotifyRequest;
 };
 
@@ -502,6 +503,13 @@ IPTR IconWindowDrawerList__OM_GET(Class *CLASS, Object *self, struct opGet *mess
 }
 ///
 
+IPTR IconWindowDrawerList__HandleFSUpdate(Object * iconwindow, struct NotifyMessage *msg)
+{
+    DoMethod(iconwindow, MUIM_IconList_Update);
+    DoMethod(iconwindow, MUIM_IconList_Sort);
+    return (IPTR)TRUE;
+}
+
 ///IconWindowDrawerList__MUIM_Setup()
 IPTR IconWindowDrawerList__MUIM_Setup
 (
@@ -661,9 +669,11 @@ IPTR IconWindowDrawerList__MUIM_Setup
 
         if (drawerlist_data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
         {
+            drawerlist_data->iwidld_FSHandler.target                            = self;
+            drawerlist_data->iwidld_FSHandler.HandleFSUpdate                    = IconWindowDrawerList__HandleFSUpdate;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name                 = directory_path;
             drawerlist_data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)self;
+            drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&drawerlist_data->iwidld_FSHandler;
 
             if (StartNotify(&drawerlist_data->iwidld_DrawerNotifyRequest))
             {
@@ -854,21 +864,6 @@ iwc_ParentBackground:
 }
 ///
 
-///IconWindowDrawerList__MUIM_IconList_Update()
-IPTR IconWindowDrawerList__MUIM_IconList_Update
-(
-    Class *CLASS, Object *self, struct MUIP_IconList_Update *message
-)
-{
-    // SETUP_INST_DATA;
-
-    IPTR        retVal = (IPTR)TRUE;
-
-//    DoMethod(self, MUIM_IconList_Clear);
-
-    return retVal;
-}
-///
 /*** Setup ******************************************************************/
 #ifdef __AROS__
 ICONWINDOWICONDRAWERLIST_CUSTOMCLASS

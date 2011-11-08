@@ -3606,11 +3606,13 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify
         IPTR                  notifyMessage_UserData = notifyMessage->nm_NReq->nr_UserData;
 D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __PRETTY_FUNCTION__, notifyMessage->nm_NReq->nr_Name, notifyMessage, notifyMessage_UserData));
 
-        if (notifyMessage_UserData != (IPTR) NULL)
+        if (notifyMessage_UserData != (IPTR)NULL)
         {
-D(bug("[Wanderer] %s: Drawer Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
-            DoMethod((Object *)notifyMessage_UserData, MUIM_IconList_Update);
-            DoMethod((Object *)notifyMessage_UserData, MUIM_IconList_Sort);
+            /* Only IconWindowDrawerList class at the moment */
+            D(bug("[Wanderer] %s: Drawer Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
+            nodeFSHandler = (struct Wanderer_FSHandler *)notifyMessage_UserData;
+            nodeFSHandler->HandleFSUpdate(nodeFSHandler->target, notifyMessage);
+            continue;
         }
 
         ForeachNode(&_WandererIntern_FSHandlerList, nodeFSHandler)
