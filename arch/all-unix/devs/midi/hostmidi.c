@@ -114,7 +114,7 @@ SAVEDS ASM BOOL Init(REG(a6) APTR sysbase)
     OOPBase = OpenLibrary("oop.library", 0);
     if (!OOPBase) return FALSE;
 
-    UnixIOBase = OpenLibrary("unixio.library", 0);
+    UnixIOBase = OpenLibrary("unixio.hidd", 0);
     if (!UnixIOBase)
     {
     	CloseLibrary(OOPBase);
