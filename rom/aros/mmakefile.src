@@ -14,7 +14,7 @@ include $(TOP)/config/make.cfg
 #MM-     includes-copy
 #MM- core-linklibs: linklibs-aros
 
-USER_CFLAGS := -DVARIANT="\"$(AROS_TARGET_VARIANT)\"" -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
 
 %build_module mmake=kernel-aros \
   modname=aros modtype=library \
