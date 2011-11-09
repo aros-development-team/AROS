@@ -54,7 +54,7 @@
 ******************************************************************************/
 
 #include <aros/arosbase.h>
-#include <aros/config.h>
+#include <aros/debug.h>
 #include <aros/inquire.h>
 #include <proto/aros.h>
 
@@ -1062,13 +1062,18 @@ struct Node *findname(struct List *list, CONST_STRPTR name)
 static
 int createresidentver(struct Resident *MyResident)
 {
-	STRPTR buffer = NULL, tmpbuffer;
-	int error, pos = 0, foundver = FALSE;
+	STRPTR buffer = NULL;
+	CONST_STRPTR name = NULL;
+	STRPTR tmpbuffer;
+	int pos = 0;
+	int len = 0;
+	BOOL foundver = FALSE;
+	int error;
 
 	if (MyResident->rt_IdString)
 	{
 		buffer = skipwhites(MyResident->rt_IdString);
-		//Printf("createresidentver: buffer \"%s\"\n", (LONG) buffer);
+		D(Printf("createresidentver: buffer \"%s\"\n", buffer));
 
 		/* Locate version part */
 		while (buffer[pos])
@@ -1085,26 +1090,34 @@ int createresidentver(struct Resident *MyResident)
 			}
 			pos++;
 		}
-		//Printf("createresidentver: buffer: \"%s\"\n", (LONG) buffer);
-	}
+		D(Printf("createresidentver: buffer: \"%s\"\n", buffer));
 
+		name = MyResident->rt_IdString;
+		len = buffer - name;
+	}
 
 	/* If could not find any version info, use the resident rt_Name */
 	if (!foundver)
 		buffer = "";
 
-	//Printf("createresidentver: buffer: \"%s\"\n", (LONG) buffer);
+	D(Printf("createresidentver: buffer: \"%s\"\n", buffer));
 
-	tmpbuffer = AllocVec(strlen(MyResident->rt_Name) + strlen(buffer) + 1, MEMF_ANY);
+	if ((!args.arg_full) || (!name))
+	{
+	    name = MyResident->rt_Name;
+	    len = strlen(MyResident->rt_Name);
+	}
+
+	tmpbuffer = AllocVec(len + strlen(buffer) + 1, MEMF_ANY);
 	if (!tmpbuffer)
 	{
 		PrintFault(ERROR_NO_FREE_STORE, (STRPTR) ERROR_HEADER);
 		return RETURN_FAIL;
 	}
+	CopyMem(name, tmpbuffer, len);
+	strcpy(tmpbuffer + len, buffer);
+	D(Printf("createresidentver: tmpbuffer: \"%s\"\n", tmpbuffer));
 
-	strcpy(tmpbuffer, MyResident->rt_Name);
-	strcat(tmpbuffer, buffer);
-	//Printf("createresidentver: tmpbuffer: \"%s\"\n", (LONG) tmpbuffer);
 	error = makedatafromstring(tmpbuffer);
 
 	FreeVec(tmpbuffer);
