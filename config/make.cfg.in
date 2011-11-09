@@ -5,8 +5,16 @@
 
 ifneq ($(AROS_TARGET_VARIANT),)
 AROS_TARGET_SUFFIX=-$(AROS_TARGET_VARIANT)
+ifeq ($(AROS_TARGET_ARCH),pc)
+# 'pc' target has 'tiny' variant for boot floppy, which affects only GRUB options.
+# It should not affect AROS_TARGET_PLATFORM
+AROS_TARGET_PLATFORM := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+else
+AROS_TARGET_PLATFORM := $(AROS_TARGET_VARIANT)-$(AROS_TARGET_CPU)
+endif
 else
 AROS_TARGET_SUFFIX=
+AROS_TARGET_PLATFORM := $(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
 endif
 
 # All files corresponding to a specific host go here.
