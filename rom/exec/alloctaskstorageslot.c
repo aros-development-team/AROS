@@ -28,7 +28,7 @@
         The allocated slot, 0 if no slot could be allocated.
 
     NOTES
-        After this function FindTask(NULL)->tc_UnionETask.tc_ETask->et_TaskStorage[slot]
+        After this function FindTask(NULL)->tc_UnionETask.tc_TaskStorage[slot]
         may be used to store values with each slot. Data stored in a slot
         will be duplicated when a Task creates another Task. It is left up to the
         to implement a mechanism to check if this copied value is invalid.
@@ -56,14 +56,13 @@
 
     slot = tsfs->FreeSlot;
 
-    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", SysBase->ThisTask, SysBase->ThisTask->tc_Node.ln_Name, slot));
+    D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name, slot));
 
     if ((slot + 1)*sizeof(IPTR) > PrivExecBase(SysBase)->TaskStorageSize)
     {
-        struct ETask *etask = SysBase->ThisTask->tc_UnionETask.tc_ETask;
-        IPTR *oldstorage = etask->et_TaskStorage;
+        IPTR *oldstorage = FindTask(NULL)->tc_UnionETask.tc_TaskStorage;
         IPTR *newstorage;
-        ULONG oldsize = (ULONG)oldstorage[0];
+        ULONG oldsize = (ULONG)oldstorage[__TS_FIRSTSLOT];
         ULONG newsize = PrivExecBase(SysBase)->TaskStorageSize + TASKSTORAGEPUDDLE;
 
         newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
@@ -73,10 +72,10 @@
         }
 
         CopyMem(oldstorage, newstorage, oldsize);
-        newstorage[0] = newsize;
+        newstorage[__TS_FIRSTSLOT] = newsize;
 
 	/* Swap storage, then size. This will avoid excessive increases in task scheduler (to be removed) */
-	etask->et_TaskStorage = newstorage;
+	FindTask(NULL)->tc_UnionETask.tc_TaskStorage = newstorage;
 	PrivExecBase(SysBase)->TaskStorageSize = newsize;
 
         FreeMem(oldstorage, oldsize);
@@ -97,12 +96,12 @@
         ForeachNode(&SysBase->TaskReady, t)
         {
             if (t->tc_Flags & TF_ETASK)
-                t->tc_UnionETask.tc_ETask->et_TaskStorage[slot] = (IPTR)0;
+                t->tc_UnionETask.tc_TaskStorage[slot] = (IPTR)0;
         }
         ForeachNode(&SysBase->TaskWait, t)
         {
             if (t->tc_Flags & TF_ETASK)
-                t->tc_UnionETask.tc_ETask->et_TaskStorage[slot] = (IPTR)0;
+                t->tc_UnionETask.tc_TaskStorage[slot] = (IPTR)0;
         }
         Permit();
     }

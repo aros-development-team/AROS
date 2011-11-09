@@ -161,7 +161,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 "static int __baseslot;\n"
                 "LIBBASETYPEPTR __GM_GetBase(void)\n"
                 "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__baseslot];\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot];\n"
                 "}\n"
                 /* On AMD64 don't clobber registers used for argument passing,
                  * only clobber rax, r10 and r11
@@ -171,8 +171,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 "    \"__comp_get_relbase :\\n\"\n"
                 "    \"\\tmovq SysBase(%%rip), %%rax\\n\"\n"
                 "    \"\\tmovq 552(%%rax), %%rax\\n\"\n"
-                "    \"\\tmovq 56(%%rax), %%rax\\n\"\n"
-                "    \"\\tmovq 216(%%rax), %%r10\\n\"\n"
+                "    \"\\tmovq 56(%%rax), %%r10\\n\"\n"
                 "    \"\\tmovslq __baseslot(%%rip),%%r11\\n\"\n"
                 "    \"\\tmovq (%%r10,%%r11,8), %%rax\\n\"\n"
                 "    \"\\tret\\n\"\n"
@@ -182,7 +181,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#endif\n"
                 "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__baseslot] = (IPTR)base;\n"
+                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot] = (IPTR)base;\n"
                 "}\n"
                 "#if defined __i386__\n"
                 "#define GM_INTERNALFUNCSTUB(fname)\\\n"
@@ -197,15 +196,16 @@ static void writedecl(FILE *out, struct config *cfg)
                  * up with the parameters passed in registers
                  */
                 "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                /* On x86_64 we can use rax, r10 and r11 in between function call and entry
+                /* On x86_64 we can use r10 and r11 in between function call and entry
                    r11 contains libbase */
                 "    asm(#fname \"_stub :\\n\"\\\n"
+                "        \"\\tpushq %rax\\n\"\\\n"
                 "        \"\\tmovq SysBase(%%rip), %%rax\\n\"\\\n"
+                "        \"\\tmovslq __baseslot(%%rip),%%r10\\n\"\\\n"
                 "        \"\\tmovq 552(%%rax), %%rax\\n\"\\\n"
                 "        \"\\tmovq 56(%%rax), %%rax\\n\"\\\n"
-                "        \"\\tmovq 216(%%rax), %%r10\\n\"\\\n"
-                "        \"\\tmovslq __baseslot(%%rip),%%rax\\n\"\\\n"
-                "        \"\\tmovq %%r11, (%%r10,%%rax,8)\\n\"\\\n"
+                "        \"\\tmovq %r11,(%rax,%r10,8)\\n\"\\\n"
+                "        \"\\tpopq %rax\\n\"\\\n"
                 "        \"\\tjmp \" #fname \"\\n\"\\\n"
                 "    )\n"
                 "#elif defined __mc68000__\n"
@@ -224,12 +224,11 @@ static void writedecl(FILE *out, struct config *cfg)
                  * r12 contains libbase
                  */
                 "    asm(#fname \"_stub :\\n\"\\\n"
-                /* r0 = SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage */
+                /* r0 = SysBase->ThisTask->tc_UnionETask.tc_TaskStorage */
                 "        \"\\tlis 11, SysBase@ha\\n\"\\\n"
                 "        \"\\tlwz 11, SysBase@l(11)\\n\"\\\n"
                 "        \"\\tlwz 11, 284(11)\\n\"\\\n"
-                "        \"\\tlwz 11, 36(11)\\n\"\\\n"
-                "        \"\\tlwz 0, 112(11)\\n\"\\\n"
+                "        \"\\tlwz 0, 36(11)\\n\"\\\n"
                 /* r11 = r0 + __baseslot */
                 "        \"\\tlis 11, __baseslot@ha\\n\"\\\n"
                 "        \"\\tlwz 11, __baseslot@l(11)\\n\"\\\n"
@@ -270,11 +269,11 @@ static void writedecl(FILE *out, struct config *cfg)
                 "}\n"
                 "static inline LIBBASETYPEPTR __GM_GetPerTaskBase(void)\n"
                 "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__pertaskslot];\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot];\n"
                 "}\n"
                 "static inline void __GM_SetPerTaskBase(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_ETask->et_TaskStorage[__pertaskslot] = (IPTR)base;\n"
+                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot] = (IPTR)base;\n"
                 "}\n"
         );
     else
