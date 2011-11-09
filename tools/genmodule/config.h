@@ -106,6 +106,9 @@ struct config
     char *modulename, *modulenameupper;
     enum modtype modtype;
     char *suffix;
+
+    /* Extra string to include in version */
+    char *versionextra;
     
     /* firstlvo is the LVO number of the first user definable function
      * in the module
