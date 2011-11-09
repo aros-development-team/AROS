@@ -715,7 +715,7 @@ TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
 
 #------------------------------------------------------------------------------
 # Generate the libdefs.h include file for a module.
-%define rule_genmodule_genlibdefs modname=/A modtype=/A modsuffix= conffile= targetdir=
+%define rule_genmodule_genlibdefs modname=/A modtype=/A modsuffix= conffile= targetdir= version=
 
 TMP_TARGET := %(modname)_libdefs.h
 TMP_DEPS := $(GENMODULE)
@@ -733,6 +733,9 @@ endif
 ifneq (%(targetdir),)
     TMP_OPTS += -d %(targetdir)
     TMP_TARGET := %(targetdir)/$(TMP_TARGET)
+endif
+ifneq (%(version),)
+    TMP_OPTS += -v %(version)
 endif
 
 $(TMP_TARGET) : OPTS := $(TMP_OPTS)
@@ -1212,7 +1215,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #------------------------------------------------------------------------------
 # Build a module
 # Explanation of this macro is done in the developer's manual
-%define build_module mmake=/A modname=/A modtype=/A modsuffix= \
+%define build_module mmake=/A modname=/A modtype=/A modsuffix= version= \
   conffile= files="$(basename $(call WILDCARD, *.c))" \
   linklibfiles= linklibobjs= cflags=$(CFLAGS) dflags=$(BD_DEFDFLAGS) \
   objdir=$(OBJDIR) moduledir=$(BD_DEFMODDIR) prefix=$(AROSDIR) \
@@ -1315,7 +1318,7 @@ endif
 
 %rule_genmodule_genlibdefs modname=%(modname) modtype=%(modtype) \
 		 	   modsuffix=%(modsuffix) targetdir=%(objdir)/include \
-		 	   conffile=%(conffile)
+		 	   conffile=%(conffile) version=%(version)
 
 $(BD_DEFLIBDEFSINC) : FILENAME := $(BD_LIBDEFSINC)
 $(BD_DEFLIBDEFSINC) :
