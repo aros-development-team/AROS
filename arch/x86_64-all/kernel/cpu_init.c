@@ -5,8 +5,8 @@
 
 static int cpu_Init(struct KernelBase *KernelBase)
 {
-    /* All x86-64 processors have SSE. 15 bytes are added for alignment. */
-    KernelBase->kb_ContextSize = sizeof(struct AROSCPUContext) + sizeof(struct FPXContext) + 15;
+    /* All x86-64 processors have SSE */
+    KernelBase->kb_ContextSize = AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16) + sizeof(struct FPXContext);
     return TRUE;
 }
 
