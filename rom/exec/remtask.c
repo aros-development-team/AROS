@@ -90,13 +90,13 @@
      */
     task->tc_State = TS_REMOVED;
 
-    /* Uninitialize ETask structure */
+    /* Delete context */
     et = GetETask(task);
     if(et != NULL)
-    {
         KrnDeleteContext(((struct IntETask *)et)->iet_Context);
-        CleanupETask(task, et);
-    }
+
+    /* Uninitialize ETask structure */
+    CleanupETask(task);
 
     /*
      * Send task to task cleaner to clean up memory.

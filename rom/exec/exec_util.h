@@ -81,8 +81,9 @@ struct TraceLocation
 APTR Exec_AllocTaskMem (struct Task * task, ULONG size, ULONG flags, struct ExecBase *SysBase);
 void Exec_FreeTaskMem (struct Task * task, APTR mem, struct ExecBase *SysBase);
 
-void Exec_InitETask(struct Task *task, struct ETask *etask, struct ExecBase *SysBase);
-void Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase);
+void Exec_InitETask(struct Task *task, struct ExecBase *SysBase);
+void Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase);
+void Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase);
 struct ETask *Exec_FindChild(ULONG id, struct ExecBase *SysBase);
 struct IntETask *FindETask(struct List *, ULONG id, struct ExecBase *SysBase);
 
@@ -131,7 +132,8 @@ static inline void InitMsgPort(struct MsgPort *ret)
 #define FreeTaskMem(t,m)    Exec_FreeTaskMem(t,m,SysBase)
 #define FindChild(i)	    Exec_FindChild(i,SysBase)
 #define FindETask(l,i)	    Exec_FindETask(l,i,SysBase)
-#define InitETask(t,e)	    Exec_InitETask(t,e,SysBase)
-#define CleanupETask(t,e)   Exec_CleanupETask(t,e,SysBase)
+#define InitETask(t)	    Exec_InitETask(t,SysBase)
+#define CleanupETask(t)     Exec_CleanupETask(t,SysBase)
+#define ExpungeETask(e)	    Exec_ExpungeETask(e,SysBase)
 
 #endif /* _EXEC_UTIL_H */

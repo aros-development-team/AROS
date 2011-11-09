@@ -16,6 +16,7 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "exec_debug.h"
+#include "taskstorage.h"
 
 /*****************************************************************************
 
@@ -74,8 +75,6 @@
 
     ASSERT_VALID_PTR(task);
 
-    struct Task *thistask = FindTask(NULL);
-
     /* Sigh - you should provide a name for your task. */
     if(task->tc_Node.ln_Name==NULL)
         task->tc_Node.ln_Name="unknown task";
@@ -114,8 +113,6 @@
     if(task->tc_ExceptCode==NULL)
         task->tc_ExceptCode=SysBase->TaskExceptCode;
         
-    task->tc_Flags |= TF_ETASK;
-
     /*
      * EXECF_StackSnoop can be set or reset at runtime.
      * However task's stack is either snooped or not, it's problematic
@@ -124,27 +121,10 @@
     if (PrivExecBase(SysBase)->IntFlags & EXECF_StackSnoop)
     	task->tc_Flags |= TF_STACKCHK;
 
-    /*
-     *  We don't add this to the task memory, it isn't free'd by
-     *  RemTask(), rather by somebody else calling ChildFree().
-     *  Alternatively, an orphaned task will free its own ETask.
-     */
-    task->tc_UnionETask.tc_ETask = AllocVec
-    (
-        sizeof (struct IntETask),
-        MEMF_ANY|MEMF_CLEAR
-    );
-
+    /* Initialize ETask */
+    InitETask(task);
     if (!task->tc_UnionETask.tc_ETask)
         return NULL;
-
-    InitETask(task, task->tc_UnionETask.tc_ETask);
-
-    /* Clone TaskStorage */
-    CopyMem(&thistask->tc_UnionETask.tc_ETask->et_TaskStorage[1],
-            &task->tc_UnionETask.tc_ETask->et_TaskStorage[1],
-            ((ULONG)thistask->tc_UnionETask.tc_ETask->et_TaskStorage[0])-sizeof(IPTR)
-    );
 
     /* Get new stackpointer. */
     if (task->tc_SPReg==NULL)
