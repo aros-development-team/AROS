@@ -46,7 +46,7 @@ const struct Resident Kernel_resident =
     Kernel_Init
 };
 
-static const UBYTE version[] = VERSION_STRING AROS_ARCHITECTURE;
+static const UBYTE version[] = VERSION_STRING;
 
 void __clear_bss(const struct KernelBSS *bss)
 {

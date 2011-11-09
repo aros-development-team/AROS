@@ -31,7 +31,7 @@ ifeq ($(USE_MMU),1)
 endif
 
 %build_module mmake=kernel-kernel \
-  modname=kernel modtype=resource \
+  modname=kernel modtype=resource version=$(ARCH)-$(CPU) \
   files="$(FILES) $(FUNCS)" uselibs="rom $(USER_LIBS)" nostartup=no
 
 %common
