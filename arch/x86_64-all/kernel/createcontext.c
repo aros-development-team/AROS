@@ -24,15 +24,16 @@ AROS_LH0(void *, KrnCreateContext,
      * Allocate common data block and FPU data block in one chunk.
      * On native ports AROSCPUContext can be simply #define'd to ExceptionContext,
      * so we refer to struct AROSCPUContext only for size calculation.
+     * Below we rely on the fact that returned address is 16-byte-aligned.
+     * MemChunk is two IPTRs, so this is true.
      */
     ctx = krnAllocCPUContext();
     if (ctx)
     {
     	UBYTE current_xmm[512+15];
-	UBYTE *curr = (UBYTE *)(((IPTR)current_xmm + 15) & ~15);
-	IPTR fpdata = (IPTR)ctx + sizeof(struct AROSCPUContext);
+	UBYTE *curr = (UBYTE *)AROS_ROUNDUP2((IPTR)current_xmm, 16);
+	IPTR fpdata = (IPTR)ctx + AROS_ROUNDUP2(sizeof(struct AROSCPUContext), 16);
 
-	fpdata = (fpdata + 15) & ~15;
         ctx->Flags  = ECF_FPX;
 	ctx->FXData = (struct FPXContext *)fpdata;
 
