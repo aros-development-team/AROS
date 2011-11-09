@@ -9,7 +9,6 @@
 #include <aros/kernel.h>
 #include <aros/multiboot.h>
 #include <asm/cpu.h>
-#include <asm/segments.h>
 #include <exec/resident.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
@@ -24,7 +23,6 @@
 #include "kernel_intern.h"
 #include "kernel_mmap.h"
 #include "kernel_romtags.h"
-#include "exec_extern.h"
 
 #define D(x) x
 
@@ -121,10 +119,13 @@ static const struct MemRegion PC_Memory[] =
 
 /*
  * Our transient data.
- * They must survive warm restart, so we put then into .data section.
+ * They must survive warm restart, so we put them into .data section.
+ * We also have SysBase here, this way we move it away from zero page,
+ * making it harder to trash it.
  */
 __attribute__((section(".data"))) IPTR kick_end = 0;
 __attribute__((section(".data"))) struct segment_desc *GDT = NULL;
+__attribute__((section(".data"))) struct ExecBase *SysBase = NULL;
 
 /*
  * Static read-only copy of prebuilt GDT.
@@ -374,9 +375,23 @@ void kernel_cstart(const struct TagItem *msg)
      */
     PlatformPostInit();
 
-    /* This is remains of old exec.library code. */
-    exec_boot(BootMsg);
+#    define _stringify(x) #x
+#    define stringify(x) _stringify(x)
 
+    asm("movl $" stringify(USER_DS) ",%%eax\n\t"
+        "mov %%eax,%%ds\n\t"                         /* User DS */
+	"mov %%eax,%%es\n\t"                         /* User ES */
+	"movl %%esp,%%ebx\n\t"			/* Hold the esp value before pushing! */
+	"pushl %%eax\n\t"                           /* User SS */
+	"pushl %%ebx\n\t"                           /* Stack frame */
+	"pushl $0x3002\n\t"                        /* IOPL:3 */
+	"pushl $" stringify(USER_CS) "\n\t"        /* User CS */
+	"pushl $1f\n\t"                            /* Entry address */
+	"iret\n"                                   /* Go down to the user mode */
+	"1:":::"eax","ebx");
+
+    InitCode(RTF_COLDSTART, 0);
+	
     krnPanic(KernelBase, "Failed to start up the system");
 }
 

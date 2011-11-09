@@ -47,7 +47,11 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 
     /* Get task's context */
     ctx = GetIntETask(task)->iet_Context;
+    D(bug("[Kernel] Dispatch task %s, context 0x%p\n", task->tc_Node.ln_Name, ctx));
 
+    /* Restore GPRs first. CopyMemQuick() may use SSE. */
+    CopyMemQuick(ctx, regs, offsetof(struct ExceptionContext, FPData));
+    /* Then FPU */
     if (ctx->Flags & ECF_FPX)
     {
 	/*
@@ -61,16 +65,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     {
 	/* No SSE, plain 8087 */
 	asm volatile("frstor (%0)"::"r"(ctx->FPData));
-    }
-
-    D(bug("[Kernel] Dispatch task %s, context 0x%p\n", task->tc_Node.ln_Name, ctx));
-
-    /*
-     * Leave interrupt and jump to the new task.
-     * We will restore CPU state right from this buffer,
-     * so no need to copy anything.
-     */
-    core_LeaveInterrupt(ctx);
+    }    
 }
 
 void cpu_Switch(struct ExceptionContext *regs)
@@ -79,22 +74,24 @@ void cpu_Switch(struct ExceptionContext *regs)
     struct ExceptionContext *ctx = GetIntETask(task)->iet_Context;
 
     D(bug("[Kernel] cpu_Switch(), task %s\n", task->tc_Node.ln_Name));
-    
-    /*
-     * Copy current task's context into the ETask structure. Note that context on stack
-     * misses SSE data pointer.
-     */
-    CopyMemQuick(regs, ctx, offsetof(struct ExceptionContext, FPData));
 
-    /* Copy the fpu, mmx, xmm state */
+    /* 
+     * Copy the fpu, mmx, xmm state.
+     * Do this before CopyMemQuick(), because this function
+     * can use SSE itself.
+     */
     if (KernelBase->kb_ContextFlags & ECF_FPX)
 	asm volatile("fxsave (%0)"::"r"(ctx->FXData));
     if (KernelBase->kb_ContextFlags & ECF_FPU)
 	asm volatile("fnsave (%0)"::"r"(ctx->FPData));
 
+    /*
+     * Copy current task's context into the ETask structure. Note that context on stack
+     * misses SSE data pointer.
+     */
+    CopyMemQuick(regs, ctx, offsetof(struct ExceptionContext, FPData));
     /* We have the complete data now */
     ctx->Flags = ECF_SEGMENTS | KernelBase->kb_ContextFlags;
-
     /* Set task's tc_SPReg */
     task->tc_SPReg = (APTR)regs->esp;
 

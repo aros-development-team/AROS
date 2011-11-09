@@ -1,9 +1,10 @@
 # $Id: mmakefile.src 38294 2011-04-20 13:14:38Z sonic $
 include $(TOP)/config/make.cfg
 
-FILES := shutdowna
+FILES := coldreboot supervisor shutdowna
 
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+# From kernel.resource we need only kernel_syscalls.h
+USER_INCLUDES := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc \

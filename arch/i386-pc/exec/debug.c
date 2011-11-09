@@ -9,9 +9,7 @@
 #include "exec_intern.h"
 #include <proto/exec.h>
 #include <exec/types.h>
-#include <asm/ptrace.h>
 #include <asm/speaker.h>
-#include "etask.h"
 
 /****************************************************************************************/
 
@@ -163,8 +161,9 @@ int	get_irq_list(char *buf);
 			    t->tc_Flags,
 			    t->tc_SPReg);				
 	}
-	else if (strcmp(comm,"RI") == 0)
+/*	else if (strcmp(comm,"RI") == 0)
 	{
+
 	    struct pt_regs *r = (struct pt_regs *)
 			    GetIntETask(SysBase->ThisTask)->iet_Context;
 
@@ -174,8 +173,8 @@ int	get_irq_list(char *buf);
 			    "SS=%04.4lx  EFLAGS=%p\n",
 			    r->eax, r->ecx, r->edx,
 			    r->eip, r->xcs, r->xds, r->xes,
-			    r->xss, r->eflags);				
-	}
+			    r->xss, r->eflags);
+	} */
 	/* Enable command */
 	else if (strcmp(comm, "EN") == 0)
 	    Enable();

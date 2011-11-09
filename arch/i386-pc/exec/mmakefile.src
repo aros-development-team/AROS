@@ -1,13 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-CFILES		:= \
-	exec_init enable switch preparecontext \
-	newaddtask cause dispatch debug supervisor reschedule permit \
-	wait remtask settaskpri signal setexcept superstate userstate \
-	core cachecleare memoryrawio
-
-AFILES		:= coldreboot corelow
+CFILES := debug_init debug memoryrawio
+AFILES := userstate
 
 #MM kernel-exec-pc-i386 : kernel-kernel-includes kernel-exec-includes includes-asm_h-i386
 

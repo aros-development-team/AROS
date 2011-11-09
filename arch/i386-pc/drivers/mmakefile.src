@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-pc-i386-drivers : \
 #MM    kernel-pc-i386-trackdisk-kobj \
-#MM    kernel-pc-i386-irq-kobj \
 #MM    kernel-pc-i386-kbd-kobj \
 #MM    kernel-pc-i386-mouse-kobj \
 #MM    kernel-pc-i386-serial-kobj \

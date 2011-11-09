@@ -40,39 +40,10 @@ static void TimerInt(struct TimerBase *TimerBase, struct ExecBase *SysBase)
     Timer0Setup(TimerBase);
 }
 
-#ifdef __i386__
-AROS_UFH4(static ULONG, VBlankInt,
-	  AROS_UFHA(ULONG, dummy, A0),
-	  AROS_UFHA(struct TimerBase *, TimerBase, A1),
-	  AROS_UFHA(ULONG, dummy2, A5),
-	  AROS_UFHA(struct ExecBase *, SysBase, A6))
-{
-    AROS_USERFUNC_INIT
-
-    TimerInt(TimerBase, SysBase);
-    return TRUE;
-
-    AROS_USERFUNC_EXIT
-}
-#endif
-
 /****************************************************************************************/
 
 static int hw_Init(struct TimerBase *LIBBASE)
 {
-#ifdef __i386__
-    /*
-     * i386-pc still has incomplete kernel.resource, and doesn't have
-     * new IRQ API. So we still use INTB_TIMERTICK hack there.
-     */
-    LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
-    LIBBASE->tb_VBlankInt.is_Code = (APTR)VBlankInt;
-    LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
-
-    AddIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
-#else
     /* We must have kernel.resource */
     D(bug("[Timer] KernelBase = 0x%p\n", KernelBase));
     if (!KernelBase)
@@ -84,7 +55,6 @@ static int hw_Init(struct TimerBase *LIBBASE)
     if (!LIBBASE->tb_TimerIRQHandle)
     	return FALSE;
 
-#endif
     D(bug("[Timer] Initializing hardware...\n"));
 
     /* We have fixed EClock rate. VBlank will be emulated at 50Hz, can be changed at runtime. */
@@ -129,11 +99,7 @@ static int hw_Init(struct TimerBase *LIBBASE)
 
 static int hw_Expunge(struct TimerBase *LIBBASE)
 {
-#ifdef __i386__
-    RemIntServer(INTB_TIMERTICK, &LIBBASE->tb_VBlankInt);
-#else
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
-#endif
 
     return TRUE;
 }
