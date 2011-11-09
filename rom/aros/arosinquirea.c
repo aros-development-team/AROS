@@ -89,7 +89,7 @@ IPTR kickbase(void);
         Given in the format: <d>.<m>.<y>
 
     AI_ArosVariant IPTR
-        Configure time variant name.
+        Distribution name.
 
     AI_ArosArchitecture IPTR
         Return the target architecture.
@@ -201,10 +201,22 @@ IPTR kickbase(void);
         case AI_ArosBuildDate:
             SetData (tag, IPTR, (IPTR)__DATE__);
             break;
-        
+
+#ifdef VARIANT
+	/*
+	 * Reserved for distribution maintainers.
+	 * DO NOT set this to configure-time variant name. That name is used to identify
+	 * sub-architecture name, and changing it may break compatibility between
+	 * different AROS modules, especially on hosted. Full complete platform name
+	 * (including variant, if appropriate) is available via KATTR_Architecture
+	 * kernel's attribute.
+	 * Add one more configure option, or, better, provide some another way
+	 * (env variable, whatever).
+	 */
         case AI_ArosVariant:
             SetData (tag, IPTR, (IPTR) VARIANT);
             break;
+#endif
 
         case AI_ArosABIMajor:
             SetData (tag, IPTR, AROS_ABI_VERSION_MAJOR);
@@ -218,6 +230,13 @@ IPTR kickbase(void);
                 data = KrnGetSystemAttr(KATTR_Architecture);
             }
 #else
+	    /*
+	     * This is a legacy hack for old PPC-native kernel.resource implementations.
+	     * Please do not support this. aros.library is a part of base kickstart, and
+	     * it is platform-independent. Consequently, it should not include any hardcoded
+	     * references to platform name. Platform name is specified by kernel.resource.
+	     * See boot/modular_kickstart.txt for more info.
+	     */
             data = (IPTR)AROS_ARCHITECTURE;
 #endif
             SetData(tag, IPTR, data);
