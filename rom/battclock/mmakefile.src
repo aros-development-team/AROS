@@ -18,7 +18,7 @@ USER_INCLUDES += -I$(SRCDIR)/rom/battclock
 FUNCTIONS := readbattclock resetbattclock writebattclock
 
 %build_module mmake=kernel-battclock \
-    modname=battclock modtype=resource \
+    modname=battclock modtype=resource version=$(AROS_TARGET_PLATFORM) \
     files="$(FUNCTIONS)"
 
 %common

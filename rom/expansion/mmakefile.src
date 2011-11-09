@@ -20,7 +20,13 @@ FUNCS :=    addbootnode addconfigdev adddosnode allocboardmem \
 #MM      kernel-exec-includes \
 #MM      kernel-dos-includes
 
+ifeq ($(ARCH),amiga)
+# Non-Amiga expansion.library is actually a half-functional stub. Since the primary purpose
+# of this library is to handle Zorro bus, we tag only Amiga version of this library as architecture-specific
+VERSION := $(ARCH)-$(CPU)
+endif
+
 %build_module mmake=kernel-expansion \
-  modname=expansion modtype=library \
+  modname=expansion modtype=library version=$(VERSION) \
   files="expansion_init $(FUNCS)" \
   uselibs=rom

@@ -27,9 +27,9 @@ FILES := funcs
 %build_prog mmake=test-playoss \
     progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
-    modtype=library files="$(FILES) oss_init" linklibname=ossshared \
+    modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared \
     uselibs="amiga rom m oop"

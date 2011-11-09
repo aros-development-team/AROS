@@ -8,5 +8,7 @@ endif
 FUNCS := open close getpointer freeerrorstr getinterface dropinterface lock unlock
 
 %build_module mmake=kernel-hostlib \
-    modname=hostlib modtype=resource \
+    modname=hostlib modtype=resource version=$(AROS_TARGET_PLATFORM) \
     files="hostlib_init $(FUNCS)"
+
+%common

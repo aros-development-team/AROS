@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 #MM kernel-unixio-kobj : kernel-kernel-includes hidd-unixio-stubs
 
 USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
-	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug
@@ -14,7 +14,7 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT) \
 USER_CFLAGS += -Wno-attributes
 
 %build_module mmake=kernel-unixio \
-    modname=unixio modtype=hidd \
+    modname=unixio modtype=hidd version=$(AROS_TARGET_PLATFORM) \
     files=unixio_class uselibs="oop rom"
 
 MY_INCLS := $(call WILDCARD, include/*.h)

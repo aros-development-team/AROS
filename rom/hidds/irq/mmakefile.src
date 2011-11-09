@@ -5,7 +5,7 @@ FILES := irq_init irqclass irqtable
 STUBS := irq_stubs
 
 %build_module mmake=kernel-hidd-irq \
-  modname=irq modtype=hidd \
+  modname=irq modtype=hidd version=$(AROS_TARGET_PLATFORM) \
   files=$(FILES) uselibs=oop
 
 %make_hidd_stubs hidd=irq

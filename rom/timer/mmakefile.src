@@ -24,7 +24,7 @@ FILES := common_init timer_init lowlevel ticks timervblank
 FUNCS := abortio addtime beginio cmptime getsystime subtime readeclock
 
 %build_module mmake=kernel-timer \
-  modname=timer modtype=device \
+  modname=timer modtype=device version=$(AROS_TARGET_PLATFORM) \
   files="$(FUNCS) $(FILES)"
 
 %common

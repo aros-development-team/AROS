@@ -7,15 +7,14 @@ USER_INCLUDES := -I$(SRCDIR)/arch/$(CPU)-$(ARCH)/devs/ata -I$(SRCDIR)/rom/devs/a
 BUS_DRIVERS := bus_pci
 
 # Allow to add architecture-specific options
-ifeq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/ata/make.opts
-else
+ifeq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/ata/make.opts
 endif
 
 USER_CFLAGS += -D__TIMER_NOLIBBASE__
 
 %build_module mmake=kernel-ata \
-  modname=ata modtype=device \
+  modname=ata modtype=device version=$(AROS_TARGET_PLATFORM) \
   files="ata_init lowlevel ata dma_generic timer scsiemu $(BUS_DRIVERS)" \
   uselibs="rom oop"
