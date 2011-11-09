@@ -150,14 +150,13 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
     /* Now we are ready to become a Boot Task and turn on the multitasking */
-    t			      = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
-    ml			      = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
-    t->tc_UnionETask.tc_ETask = AllocVec(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
-    ctx                       = KrnCreateContext();
+    t   = AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
+    ml  = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
+    ctx = KrnCreateContext();
 
     D(bug("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx));
 
-    if (!t || !ml || !t->tc_UnionETask.tc_ETask || !ctx)
+    if (!t || !ml || !ctx)
     {
 	DINIT("Not enough memory for first task");
 	return NULL;
@@ -190,8 +189,12 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
     /* Create a ETask structure and attach CPU context */
-    InitETask(t, t->tc_UnionETask.tc_ETask);
-    t->tc_Flags = TF_ETASK;
+    InitETask(t);
+    if (!t->tc_UnionETask.tc_ETask)
+    {
+	DINIT("Not enough memory for first task");
+	return NULL;
+    }
     GetIntETask(t)->iet_Context = ctx;
 
     /*

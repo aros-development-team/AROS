@@ -215,8 +215,36 @@
 }
 
 void
-Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
+Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
 {
+    struct Task *thistask = FindTask(NULL);
+    /*
+     *  We don't add this to the task memory, it isn't free'd by
+     *  RemTask(), rather by somebody else calling ChildFree().
+     *  Alternatively, an orphaned task will free its own ETask.
+     */
+    struct ETask *et = AllocVec(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
+    IPTR *ts = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+    if (!et || !ts)
+    {
+        if (et)
+            FreeVec(et);
+        return;
+    }
+    et->et_TaskStorage = ts;
+    task->tc_UnionETask.tc_ETask = et;
+    task->tc_Flags |= TF_ETASK;
+
+    ts[0] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
+    if (thistask != NULL)
+    {
+        /* Clone TaskStorage */
+        CopyMem(&thistask->tc_UnionETask.tc_ETask->et_TaskStorage[1],
+                &task->tc_UnionETask.tc_ETask->et_TaskStorage[1],
+                ((ULONG)thistask->tc_UnionETask.tc_ETask->et_TaskStorage[0])-sizeof(IPTR)
+        );
+    }
+
     et->et_Parent = FindTask(NULL);
     NEWLIST(&et->et_Children);
 
@@ -255,12 +283,6 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 	Enable();
     }
     Permit();
-
-    /* Allocate memory for task storage slots */
-    et->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-    et->et_TaskStorage[0] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
-
-    D(bug("[TSS] Task 0x%p (%s): created TSS with %d slots\n", task, task->tc_Node.ln_Name, et->et_TaskStorage[0])); 
     
     /* Finally if the parent task is an ETask, add myself as its child */
     if(et->et_Parent && ((struct Task*) et->et_Parent)->tc_Flags & TF_ETASK)
@@ -272,10 +294,14 @@ Exec_InitETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 }
 
 void
-Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
+Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 {
-    struct ETask *child, *nextchild, *parent;
+    struct ETask *et = NULL, *child, *nextchild, *parent;
     struct Node *tmpNode;
+    BOOL expunge = TRUE;
+
+    if(task->tc_Flags & TF_ETASK)
+        et = task->tc_UnionETask.tc_ETask;
     if(!et)
 	return;
 
@@ -284,13 +310,7 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
     /* Clean up after all the children that the task didn't do itself. */
     ForeachNodeSafe(&et->et_TaskMsgPort.mp_MsgList, child, tmpNode)
     {
-        /* This is effectively ChildFree() */
-        if(child->et_Result2)
-            FreeVec(child->et_Result2);
-#ifdef DEBUG_ETASK
-	FreeVec(child->iet_Me);
-#endif
-        FreeVec(child);
+        ExpungeETask(child);
     }
 
     /* If we have an ETask parent, tell it we have exited. */
@@ -309,29 +329,18 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
 
         /* Notify parent only if child was created with NP_NotifyOnDeath set 
            to TRUE */
-        if(
-            parent != NULL && 
-            (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) && 
-            (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
-        )
+        if(parent != NULL)
         {
             REMOVE(et);
-            PutMsg(&parent->et_TaskMsgPort, (struct Message *)et);
-        }
-        else if(parent != NULL)
-        {
-#ifdef DEBUG_ETASK
-	    FreeVec(et->iet_Me);
-#endif
-	    REMOVE(et);
-            FreeVec(et);
-        }
-        else
-        {
-#ifdef DEBUG_ETASK
-	    FreeVec(et->iet_Me);
-#endif
-            FreeVec(et);
+
+            if(
+               (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS) && 
+               (((struct Process*) task)->pr_Flags & PRF_NOTIFYONDEATH)
+            )
+            {
+                PutMsg(&parent->et_TaskMsgPort, (struct Message *)et);
+                expunge = FALSE;
+            }
         }
     }
     else
@@ -339,14 +348,27 @@ Exec_CleanupETask(struct Task *task, struct ETask *et, struct ExecBase *SysBase)
         /* Orphan all our remaining children. */
         ForeachNode(&et->et_Children, child)
             child->et_Parent = NULL;
+    }
+
+    if(expunge)
+        ExpungeETask(et);
+
+    Permit();
+}
+
+void
+Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
+{
+    IPTR *ts = et->et_TaskStorage;
+
+    if(et->et_Result2)
+        FreeVec(et->et_Result2);
 
 #ifdef DEBUG_ETASK
-	FreeVec(et->iet_Me);
+    FreeVec(IntETask(et)->iet_Me);
 #endif
-        FreeVec(et);
-    }
-    
-    Permit();
+    FreeMem(ts, (ULONG)ts[0]);
+    FreeVec(et);
 }
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)

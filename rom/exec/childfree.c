@@ -6,6 +6,7 @@
 */
 #include "exec_intern.h"
 #include "exec_util.h"
+#include "etask.h"
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -57,13 +58,7 @@
     {
 	Remove((struct Node *)et);
 
-	if(et->et_Result2)
-	    FreeVec(et->et_Result2);
-
-#ifdef DEBUG_ETASK
-	FreeVec(IntETask(et)->iet_Me);
-#endif
-	FreeVec(et);
+        ExpungeETask(et);
     }
     Permit();
     
