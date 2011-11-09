@@ -680,11 +680,16 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         struct AppW *a = AllocVec(sizeof(struct AppW), MEMF_CLEAR);
                         if (a)
                         {
-                            a->name = AllocVec(strlen(ent->ile_IconEntry->ie_IconNode.ln_Name)+1, MEMF_CLEAR);
+                            a->name = AllocVec(strlen(ent->ile_IconEntry->ie_IconNode.ln_Name)+2, MEMF_CLEAR);
                             if (a->name)
                             {
                                 files++;
                                 strcpy(a->name, ent->ile_IconEntry->ie_IconNode.ln_Name);
+                                if((ent->type == ST_LINKDIR) || (ent->type == ST_USERDIR))
+                                {
+                                    D(bug("[Wanderer] %s: ent->type=%d\n", __PRETTY_FUNCTION__, ent->type));
+                                    strcat (a->name, "/");
+                                }
                                 AddTail(&AppList, (struct Node *) a);
                             }
                             else
@@ -714,8 +719,8 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                                 s =  succ;
                             }
 
-D(bug("[Wanderer] %s: win:%s files:%s mx:%d my:%d\n", __PRETTY_FUNCTION__,
-                                    win->Title, filelist,
+D(bug("[Wanderer] %s: win:<%s> first file:<%s> mx=%d my=%d\n", __PRETTY_FUNCTION__,
+                                    win->Title, *filelist,
                                     wscreen->MouseX - win->LeftEdge, wscreen->MouseY - win->TopEdge);)
 
                             /* send appwindow msg struct containing selected files to destination */
