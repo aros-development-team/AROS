@@ -8,16 +8,14 @@ include $(TOP)/config/make.cfg
 # and these files can me moved into arch/all-pc/exec.
 
 AFILES := userstate
-FILES  := coldreboot supervisor
 
 #MM kernel-exec : kernel-exec-pc-x86_64
 #MM kernel-exec-pc-x86_64 : kernel-kernel-pc-x86_64-includes kernel-exec-includes includes-asm_h-x86_64
 
 USER_AFLAGS := -isystem $(GENINCDIR)
-USER_CFLAGS := $(PRIV_EXEC_INCLUDES) -I$(SRCDIR)/rom/kernel
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=pc-x86_64 \
-  files="$(FILES)" asmfiles=$(AFILES) modulename=exec
+  asmfiles=$(AFILES) modulename=exec
 
 %common
