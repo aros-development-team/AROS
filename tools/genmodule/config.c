@@ -91,7 +91,7 @@ struct config *initconfig(int argc, char **argv)
 
     memset(cfg, 0, sizeof(struct config));
     
-    while ((c = getopt(argc, argv, ":c:s:d:")) != -1)
+    while ((c = getopt(argc, argv, ":c:s:d:v:")) != -1)
     {
 	if (c == ':')
 	{
@@ -104,15 +104,22 @@ struct config *initconfig(int argc, char **argv)
 	case 'c':
 	    cfg->conffile = optarg;
 	    break;
+
 	case 's':
 	    cfg->suffix = optarg;
 	    hassuffix = 1;
 	    break;
+
 	case 'd':
 	    /* Remove / at end if present */
 	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
 	    cfg->gendir = optarg;
 	    break;
+
+	case 'v':
+	    cfg->versionextra = optarg;
+	    break;
+
 	default:
 	    fprintf(stderr, "Internal error: Unhandled option\n");
 	    exit(20);

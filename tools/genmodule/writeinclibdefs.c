@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write libdefs.h. Part of genmodule.
@@ -82,19 +82,25 @@ void writeinclibdefs(struct config *cfg)
         "#define MAJOR_VERSION    %u\n"
         "#define REVISION_NUMBER  %u\n"
         "#define MINOR_VERSION    %u\n"
-        "#define VERSION_STRING   \"$VER: %s.%s %u.%u (%s)%s%s\\r\\n\"\n"
+        "#define VERSION_STRING   \"$VER: %s.%s ",
+	cfg->basename,
+        cfg->libbase, _libbasetype, _libbasetype,
+        cfg->modulename, sep, cfg->suffix,
+        cfg->majorversion, cfg->majorversion,
+        cfg->minorversion, cfg->minorversion,
+        cfg->modulename, cfg->suffix
+    );
+    if (cfg->versionextra)
+    	fprintf(out, "%s ", cfg->versionextra);
+    fprintf(out,
+        "%u.%u (%s)%s%s\\r\\n\"\n"
         "#define COPYRIGHT_STRING \"%s\"\n"
         "#define LIBEND           GM_UNIQUENAME(End)\n"
         "#define LIBFUNCTABLE     GM_UNIQUENAME(FuncTable)\n"
         "#define RESIDENTPRI      %d\n"
         "#define RESIDENTFLAGS    %s\n"
         "#define FUNCTIONS_COUNT  %u\n",
-        cfg->basename,
-        cfg->libbase, _libbasetype, _libbasetype,
-        cfg->modulename, sep, cfg->suffix,
-        cfg->majorversion, cfg->majorversion,
-        cfg->minorversion, cfg->minorversion,
-        cfg->modulename, cfg->suffix, cfg->majorversion, cfg->minorversion,
+        cfg->majorversion, cfg->minorversion,
         cfg->datestring, cfg->copyright[0] != '\0' ? " " : "", cfg->copyright,
         cfg->copyright,
         cfg->residentpri,
