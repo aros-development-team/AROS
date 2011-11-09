@@ -9,6 +9,6 @@ srcdir		= @srcdir@
 DRIVER		= hdaudio.audio
 MODEFILE	= HDAUDIO
 
-OBJECTS		= driver-init.o hdaudio.o misc.o accel.o interrupt.o pci_wrapper.o
+OBJECTS		= driver-init.o main.o misc.o accel.o interrupt.o pci_wrapper.o
 
 include ../Common/Makefile.common
