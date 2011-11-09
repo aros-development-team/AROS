@@ -223,29 +223,24 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
      *  RemTask(), rather by somebody else calling ChildFree().
      *  Alternatively, an orphaned task will free its own ETask.
      */
-    struct ETask *et = AllocVec(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
     IPTR *ts = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-    if (!et || !ts)
-    {
-        if (et)
-            FreeVec(et);
+    /* IntETask is embedded in TaskStorage */
+    struct ETask *et = (struct ETask *)ts;
+    task->tc_UnionETask.tc_TaskStorage = ts;
+    if (!ts)
         return;
-    }
-    et->et_TaskStorage = ts;
-    task->tc_UnionETask.tc_ETask = et;
     task->tc_Flags |= TF_ETASK;
 
-    ts[0] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
+    ts[__TS_FIRSTSLOT] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
     if (thistask != NULL)
     {
         /* Clone TaskStorage */
-        CopyMem(&thistask->tc_UnionETask.tc_ETask->et_TaskStorage[1],
-                &task->tc_UnionETask.tc_ETask->et_TaskStorage[1],
-                ((ULONG)thistask->tc_UnionETask.tc_ETask->et_TaskStorage[0])-sizeof(IPTR)
+        CopyMem(&thistask->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT+1],
+                &task->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT+1],
+                ((ULONG)thistask->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT])-(__TS_FIRSTSLOT+1)*sizeof(IPTR)
         );
     }
-
-    et->et_Parent = FindTask(NULL);
+    et->et_Parent = thistask;
     NEWLIST(&et->et_Children);
 
     /* Initialise the message list */
@@ -359,7 +354,7 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 void
 Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 {
-    IPTR *ts = et->et_TaskStorage;
+    IPTR *ts = (IPTR *)et;
 
     if(et->et_Result2)
         FreeVec(et->et_Result2);
@@ -367,8 +362,7 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);
 #endif
-    FreeMem(ts, (ULONG)ts[0]);
-    FreeVec(et);
+    FreeMem(ts, (ULONG)ts[__TS_FIRSTSLOT]);
 }
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)

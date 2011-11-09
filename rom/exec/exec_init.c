@@ -146,7 +146,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         DINIT("ERROR: Could not allocate free slot node!");
         return NULL;
     }
-    tsfs->FreeSlot = 1;
+    tsfs->FreeSlot = __TS_FIRSTSLOT+1;
     AddHead((struct List *)&PrivExecBase(SysBase)->TaskStorageSlots, (struct Node *)tsfs);
 
     /* Now we are ready to become a Boot Task and turn on the multitasking */

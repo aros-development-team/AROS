@@ -44,6 +44,7 @@ struct Task
 	    UWORD tc_ETrapAble;    /* Enabled traps */
 	} tc_ETrap;
 	struct ETask *tc_ETask;	   /* Valid if TF_ETASK is set */
+        IPTR *tc_TaskStorage;      /* Valid it TF_ETASK is set */
     }		tc_UnionETask;
     APTR	tc_ExceptData;	/* Exception data */
     APTR	tc_ExceptCode;	/* Exception code */
@@ -158,7 +159,6 @@ struct ETask
     void           *MemPool;
     void	   *Reserved[2];
     void	   *RegFrame;
-    IPTR	   *TaskStorage;
 
     /* Internal fields follow */
 };
@@ -180,7 +180,6 @@ struct ETask
     void	   *et_MemPool;	    /* Task's private memory pool	*/
     void	   *et_Reserved[2]; /* PowerPC stack in MorphOS		*/
     void	   *et_RegFrame;
-    IPTR           *et_TaskStorage; /* AROS-specific			*/
     /* Internal fields follow */
 };
 

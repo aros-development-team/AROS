@@ -8,14 +8,14 @@ static int slot1, slot2, slot3;
 
 static void printslot1(void)
 {
-    struct ETask *etask = FindTask(NULL)->tc_UnionETask.tc_ETask;
+    IPTR *ts = FindTask(NULL)->tc_UnionETask.tc_TaskStorage;
 
-    FPrintf(out, "Value slot %ld: %ld\n", slot1, (int)etask->et_TaskStorage[slot1]);
+    FPrintf(out, "Value slot %ld: %ld\n", slot1, (int)ts[slot1]);
 }
 
 int main(void)
 {
-    struct ETask *etask = FindTask(NULL)->tc_UnionETask.tc_ETask;
+    IPTR *ts = FindTask(NULL)->tc_UnionETask.tc_TaskStorage;
 
     out = Output();
 
@@ -34,7 +34,7 @@ int main(void)
     slot3 = AllocTaskStorageSlot();
     FPrintf(out, "Got slot %d\n", slot3);
 
-    etask->et_TaskStorage[slot1] = (IPTR)69;
+    ts[slot1] = (IPTR)69;
     FPrintf(out, "Stored value 69 in slot %d\n", slot1);
 
     FPrintf(out, "Checking value in subtask\n");

@@ -8,6 +8,8 @@
 
 /* FIXME: Can we remove usage of exec_intern.h ? */
 #include "exec_intern.h"
+/* FIXME: Can we remove usage of taskstorage.h ? */
+#include "taskstorage.h"
 
 //#define D(x)
 #define DTSS(x)
@@ -108,21 +110,21 @@ struct Task *core_Dispatch(void)
      * Increase TaskStorage if it is not big enough
      * URGENT FIXME: Move this out of interrupts. It's not a good place to do allocations!
      */
-    struct ETask *etask = task->tc_UnionETask.tc_ETask;
-    if ((int)etask->et_TaskStorage[0] < PrivExecBase(SysBase)->TaskStorageSize)
+    IPTR *oldstorage = task->tc_UnionETask.tc_TaskStorage;
+    if ((int)oldstorage[__TS_FIRSTSLOT] < PrivExecBase(SysBase)->TaskStorageSize)
     {
-        IPTR *oldstorage = etask->et_TaskStorage;
-        ULONG oldsize = (ULONG)oldstorage[0];
+        IPTR *newstorage;
+        ULONG oldsize = (ULONG)oldstorage[__TS_FIRSTSLOT];
 
 	DTSS(bug("[KRN] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
 
-        etask->et_TaskStorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+        newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
         /* FIXME: Add fault handling */
 
-        CopyMem(oldstorage, etask->et_TaskStorage, oldsize);
+        CopyMem(oldstorage, newstorage, oldsize);
+        newstorage[__TS_FIRSTSLOT] = PrivExecBase(SysBase)->TaskStorageSize;
+        task->tc_UnionETask.tc_TaskStorage = newstorage;
         FreeMem(oldstorage, oldsize);
-        
-        etask->et_TaskStorage[0] = PrivExecBase(SysBase)->TaskStorageSize;
     }
 
     /*
