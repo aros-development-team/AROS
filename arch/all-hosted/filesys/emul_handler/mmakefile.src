@@ -20,7 +20,7 @@ else
 endif
 
 %build_module mmake=kernel-fs-emul \
-    modname=emul modtype=resource modsuffix=handler \
+    modname=emul modtype=resource modsuffix=handler version=$(AROS_TARGET_PLATFORM) \
     files="$(FILES) $(FUNCS)" uselibs="rom"
 
 %common

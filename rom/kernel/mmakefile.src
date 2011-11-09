@@ -4,14 +4,22 @@ include $(TOP)/config/make.cfg
 # Allow to override include files by placing them in arch-specific directories
 # Note that kernel_#?.h files must be included using #include <name>, not #include "name"
 # for this to work.
+# __AROS_EXEC_LIBRARY__ definition is needed for UNIX-hosted builds. kernel_base.h includes
+# kernel_cpu.h, which needs host OS includes for some CPU-specific defintions (host OS CPU context).
+# The code in rom/kernel is plain AROS code, it must not depend on host includes in any way, in order
+# not to overcomplicate the build. This definition prevents kernel_cpu.h from including host-specific
+# stuff. The name of this definition is legacy, in ancient times exec.library included some private
+# kernel's stuff and needed this.
 USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	        -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/kernel/make.opts
+ifneq ($(AROS_TARGET_VARIANT),)
 -include $(SRCDIR)/arch/$(CPU)-$(ARCH)/$(AROS_TARGET_VARIANT)/kernel/make.opts
+endif
 
 FUNCS :=     addexceptionhandler addirqhandler bug cause cli createcontext deletecontext    \
              displayalert dispatch getbootinfo getscheduler issuper mapglobal		    \
@@ -31,7 +39,7 @@ ifeq ($(USE_MMU),1)
 endif
 
 %build_module mmake=kernel-kernel \
-  modname=kernel modtype=resource version=$(ARCH)-$(CPU) \
+  modname=kernel modtype=resource version=$(AROS_TARGET_PLATFORM) \
   files="$(FILES) $(FUNCS)" uselibs="rom $(USER_LIBS)" nostartup=no
 
 %common

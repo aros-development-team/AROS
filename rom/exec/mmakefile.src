@@ -41,7 +41,7 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
 
 %build_module mmake=kernel-exec \
-  modname=exec modtype=library version=$(ARCH)-$(CPU) \
+  modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) \
   files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)" \
   uselibs="arossupport rom"
 

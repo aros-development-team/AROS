@@ -34,7 +34,7 @@ FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
 #MM kernel-x11gfx-kobj : x11keymaptable devs-monitors-x11
 
 %build_module mmake=kernel-x11gfx \
-  modname=x11gfx modtype=hidd \
+  modname=x11gfx modtype=hidd version=$(AROS_TARGET_PLATFORM) \
   files=$(FILES) uselibs="oop hiddstubs"
 
 #MM x11keymaptable
