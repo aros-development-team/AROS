@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,14 +13,14 @@
 void InitLocale(STRPTR catname, ULONG version)
 {
 #ifdef __AROS__
-    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
+    LocaleBase = (struct LocaleBase *)OpenLibrary((STRPTR)"locale.library", 39);
 #else
     LocaleBase = (struct Library    *)OpenLibrary("locale.library", 39);
 #endif
     if (LocaleBase)
     {
-	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-					     TAG_DONE);
+        catalog = OpenCatalog(NULL, catname, OC_Version, version,
+                              TAG_DONE);
     }
 }
 
@@ -40,9 +40,11 @@ STRPTR MSG(ULONG id)
     
     if (catalog)
     {
-	retval = (STRPTR)GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } else {
-	retval = CatCompArray[id].cca_Str;
+        retval = (STRPTR)GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+    }
+    else 
+    {
+        retval = CatCompArray[id].cca_Str;
     }
     
     return retval;

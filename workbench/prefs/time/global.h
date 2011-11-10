@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -151,7 +151,7 @@ void Cleanup(STRPTR msg);
 /* misc.c */
 
 void InitMenus(void);
-LONG NumMonthDays(struct ClockData *cd);
+void my_sprintf(UBYTE *buffer, UBYTE *format, ...);
 
 /* locale.c */
 

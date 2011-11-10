@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -7,6 +7,6 @@
 */
 
 #define VERSION 	1
-#define REVISION 	0
-#define DATESTR 	"18.11.2002"
-#define VERSIONSTR	"$VER: Time 1.0 (" DATESTR ")"
+#define REVISION 	1
+#define DATESTR 	"10.11.2011"
+#define VERSIONSTR	"$VER: Time 1.1 (" DATESTR ")"
