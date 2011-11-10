@@ -1,0 +1,2 @@
+ As of 10.11.2011 irq.hidd is obsolete and deprecated. Please use kernel.resource functions KrnAddIRQHandler() and KrnRemIRQHandler().
+irq.hidd is being phased out and will eventually be removed.
