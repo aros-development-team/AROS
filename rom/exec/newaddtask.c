@@ -159,7 +159,7 @@
     /* Init new context. */
     if (!PrepareContext (task, initialPC, finalPC, tagList))
     {
-        FreeTaskMem (task, task->tc_UnionETask.tc_ETask);
+        CleanupETask(task);
         return NULL;
     }
 

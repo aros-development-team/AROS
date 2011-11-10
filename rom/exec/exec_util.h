@@ -125,11 +125,7 @@ static inline void InitMsgPort(struct MsgPort *ret)
     NEWLIST(&ret->mp_MsgList);
 }
 
-/*
- *  Pseudo-functions, including SysBase for nicer calling...
- */
-#define AllocTaskMem(t,s,f) Exec_AllocTaskMem(t,s,f,SysBase)
-#define FreeTaskMem(t,m)    Exec_FreeTaskMem(t,m,SysBase)
+/* Pseudo-functions, including SysBase for nicer calling */
 #define FindChild(i)	    Exec_FindChild(i,SysBase)
 #define FindETask(l,i)	    Exec_FindETask(l,i,SysBase)
 #define InitETask(t)	    Exec_InitETask(t,SysBase)
