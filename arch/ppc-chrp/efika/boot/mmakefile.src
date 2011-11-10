@@ -14,9 +14,9 @@ include $(TOP)/config/make.cfg
 
 #MM kernel-package-chrp-ppc-efika: \
 #MM     linklibs-clib \
-#MM     kernel-bootloader-chrp-ppc-efika \
+#MM     kernel-bootloader \
 #MM     kernel-bestcomm-chrp-ppc-efika \
-#MM     kernel-chrp-ppc-irq \
+#MM     kernel-hidd-irq \
 #MM     kernel-expansion \
 #MM     kernel-utility \
 #MM     kernel-openfirmware \

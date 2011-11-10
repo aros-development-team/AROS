@@ -36,7 +36,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-filesystem \
 #MM     kernel-fs-con \
 #MM     kernel-fs-afs \
-#MM     kernel-bootloader-sam440-ppc \
+#MM     kernel-bootloader \
 #MM     kernel-dos \
 #MM	kernel-lddemon \
 #MM     kernel-dosboot \
@@ -47,7 +47,7 @@ include $(TOP)/config/make.cfg
 #MM     hidd-usb \
 #MM     kernel-partition \
 #MM     workbench-libs-workbench \
-#MM     kernel-sam440-ppc-irq \
+#MM     kernel-hidd-irq \
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-amberram \
