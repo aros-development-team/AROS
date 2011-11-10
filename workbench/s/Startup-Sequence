@@ -33,7 +33,7 @@ If EXISTS SYS:DiskImages
     Assign FDSK: SYS:DiskImages
 EndIf
 
-Mount >NIL: DEVS:DOSDrivers/~(#?.info)
+Mount >NIL: DEVS:DOSDrivers/~((.#?)|(#?.info))
 
 Dir >NIL: PIPE:
 
