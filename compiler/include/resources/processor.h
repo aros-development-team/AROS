@@ -2,7 +2,7 @@
 #define RESOURCES_PROCESSOR_H
 
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
         
     Tags and defines for processors information queries
 */
@@ -19,7 +19,7 @@
 #define GCIT_Family                 (TAG_USER +   2)
 /* #define GCIT_Model              (TAG_USER +   3) */
 #define GCIT_ModelString            (TAG_USER +   4)
-/* #define GCIT_Version            (TAG_USER +   5) */
+#define GCIT_Version                (TAG_USER +   5)
 /* #define GCIT_VersionString      (TAG_USER +   6) */
 #define GCIT_FrontsideSpeed         (TAG_USER +   7)
 #define GCIT_ProcessorSpeed         (TAG_USER +   8)
@@ -38,11 +38,12 @@
 #define GCIT_Architecture           (TAG_USER + 104)
 #define GCIT_Endianness             (TAG_USER + 105)
 #define GCIT_ProcessorLoad          (TAG_USER + 106)
+#define GCIT_Vendor		    (TAG_USER + 107)
 
 /* Space [TAG_USER + 200, TAG_USER + 499] is reserved for boolean feature
    tags. Do no introduce non boolean, non feature tags in this space. */
 #define GCIT_FeaturesBase           (TAG_USER + 200)
-#define GCIT_SupportsFPU            (GCIT_FeaturesBase +   1)
+#define GCIT_SupportsFPU            (GCIT_FeaturesBase +   1) /* x86-specific */
 #define GCIT_SupportsAltiVec        (GCIT_FeaturesBase +   2)
 #define GCIT_SupportsVMX            (GCIT_FeaturesBase +   3)
 #define GCIT_SupportsMMX            (GCIT_FeaturesBase +   4)
@@ -72,6 +73,11 @@
 #define GCIT_SupportsNoExecutionBit (GCIT_FeaturesBase +  28)
 #define GCIT_Supports64BitMode      (GCIT_FeaturesBase +  29)
 #define GCIT_SupportsMSR            (GCIT_FeaturesBase +  30)
+#define GCIT_SupportsVFP	    (GCIT_FeaturesBase +   1) /* ARM-specific */
+#define GCIT_SupportsVFPv3	    (GCIT_FeaturesBase +   2)
+#define GCIT_SupportsNeon	    (GCIT_FeaturesBase +   3)
+#define GCIT_SupportsThumb	    (GCIT_FeaturesBase +   4)
+#define GCIT_SupportsThumbEE	    (GCIT_FeaturesBase +   5)
 #define GCIT_FeaturesLast           (TAG_USER + 499)
 
 /* Processor family defines */
@@ -91,10 +97,19 @@
 #define CPUFAMILY_INTEL_PENTIUM_PRO 108
 #define CPUFAMILY_INTEL_PENTIUM4    109
 #define CPUFAMILY_MOTOROLA_68000    110
+#define CPUFAMILY_ARM_3		    120	/* ARM family is architecture designation */
+#define CPUFAMILY_ARM_4		    121
+#define CPUFAMILY_ARM_4T	    122
+#define CPUFAMILY_ARM_5		    123
+#define CPUFAMILY_ARM_5T	    124
+#define CPUFAMILY_ARM_5TE	    125
+#define CPUFAMILY_ARM_5TEJ	    126
+#define CPUFAMILY_ARM_6		    127
+#define CPUFAMILY_ARM_7		    128
 
 /* Vector unit type */
 #define VECTORTYPE_NONE               0
-#define VECTORTYPE_ALTIVEC            1
+#define VECTORTYPE_ALTIVEC            1 /* X86-specific */
 #define VECTORTYPE_VMX                2
 #define VECTORTYPE_MMX              100
 #define VECTORTYPE_MMXEXT           101
@@ -107,6 +122,9 @@
 #define VECTORTYPE_SSE41            108
 #define VECTORTYPE_SSE42            109
 #define VECTORTYPE_SSE4A            110
+#define VECTORTYPE_VFP		    120 /* ARM-specific */
+#define VECTORTYPE_VFPv3	    121
+#define VECTORTYPE_NEON		    122
 
 /* Processor architecture defines */
 #define PROCESSORARCH_UNKNOWN         0
