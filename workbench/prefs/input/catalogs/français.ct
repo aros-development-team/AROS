@@ -1,5 +1,5 @@
-## version $VER: XX.catalog XX.XX ($TODAY)
-## language X
+## version $VER: Input.catalog 1.1 (10.11.2011)
+## language français
 ## codeset 0
 ;
 ;
@@ -36,7 +36,7 @@ Impossible d'allouer la mémoire pour l'applications (%s) !
 ; Can't allocate application memory (%s)!
 ;
 MSG_NAME
-Préférences d'entrées clavier & souris
+Préférences clavier & souris
 ; Input Preferences
 ;
 MSG_MENU_PREFERENCES
@@ -64,7 +64,7 @@ Ok
 ; Ok
 ;
 MSG_DESCRIPTION
-Préférences d'entrées clavier et souris
+Préférences clavier et souris
 ; Input preferences
 ;
 MSG_GAD_TAB_MOUSE
@@ -107,13 +107,13 @@ MSG_TIME_FORMAT
 %d.%02d s
 ; %d.%02d s
 ;
-MSG_GAD_MOUSE_BUTTON_MAPPING
+MSG_GAD_MOUSE_BUTTON_SETTINGS
 Assignation des boutons
-; Button mapping
+;Mouse buttons
 ;
-MSG_GAD_MOUSE_MAPPING_SELECT
-Action
-; Select
+MSG_GAD_LEFT_HANDED_MOUSE
+Souris pour gauchers
+;Left-handed mouse
 ;
 MSG_GAD_MOUSE_MAPPING_MENU
 Menu
@@ -128,26 +128,38 @@ Délai du double clic
 ; Double-Click Delay
 ;
 MSG_GAD_MOUSE_SPEED_SLOW
-Lent
+Lente
 ; Slow
 ;
 MSG_GAD_MOUSE_SPEED_NORMAL
-Normal
+Normale
 ; Normal
 ;
 MSG_GAD_MOUSE_SPEED_FAST
 Rapide
 ; Fast
 ;
-MSG_GAD_MOUSE_LEFT
-Bouton gauche
-; Left Button
+MSG_GAD_KEY_DEF
+Défaut
+;Default
 ;
-MSG_GAD_MOUSE_MIDDLE
-Bouton milieu
-; Middle Button
+MSG_GAD_KEY_ALT
+Optionnel
+;Alternate
 ;
-MSG_GAD_MOUSE_RIGHT
-Bouton droit
-; Right Button
+MSG_GAD_KEY_SET
+Choisir
+;Set
+;
+MSG_GAD_KEY_SWITCH
+Bascule disposition optionnelle
+;Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+Activée
+;Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+Raccourci
+;Hotkey
 ;
