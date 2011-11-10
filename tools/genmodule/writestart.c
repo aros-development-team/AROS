@@ -199,13 +199,13 @@ static void writedecl(FILE *out, struct config *cfg)
                 /* On x86_64 we can use r10 and r11 in between function call and entry
                    r11 contains libbase */
                 "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tpushq %rax\\n\"\\\n"
+                "        \"\\tpushq %%rax\\n\"\\\n"
                 "        \"\\tmovq SysBase(%%rip), %%rax\\n\"\\\n"
                 "        \"\\tmovslq __baseslot(%%rip),%%r10\\n\"\\\n"
                 "        \"\\tmovq 552(%%rax), %%rax\\n\"\\\n"
                 "        \"\\tmovq 56(%%rax), %%rax\\n\"\\\n"
-                "        \"\\tmovq %r11,(%rax,%r10,8)\\n\"\\\n"
-                "        \"\\tpopq %rax\\n\"\\\n"
+                "        \"\\tmovq %%r11,(%%rax,%%r10,8)\\n\"\\\n"
+                "        \"\\tpopq %%rax\\n\"\\\n"
                 "        \"\\tjmp \" #fname \"\\n\"\\\n"
                 "    )\n"
                 "#elif defined __mc68000__\n"
