@@ -40,6 +40,13 @@ asm("\ndelay:\t.short   0x00eb\n\tret");
 void XTPIC_DisableIRQ(uint8_t irqnum, uint16_t *irqmask)
 {
     irqnum &= 15;
+
+    if (irqnum == 2)
+    {
+    	/* IRQ2 must never be disabled. Doing so breaks communication between two 8259's */
+    	return;
+    }
+
     *irqmask |= 1 << irqnum;
 
     if (irqnum >= 8)
