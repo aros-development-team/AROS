@@ -10,15 +10,9 @@
 
 #include "global.h"
 #include <aros/macros.h>
-#include <libraries/locale.h>
-#include <proto/locale.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 
 /*********************************************************************************************/
 
@@ -54,19 +48,8 @@ BOOL UsePrefs(void)
 BOOL SavePrefs(void)
 {
     ULONG secs;
-    struct Locale *l;
 
     secs = Date2Amiga(&clockdata);
-
-    l = OpenLocale(NULL);
-    if (l)
-    {
-	if (l->loc_Flags & LOCF_GMT_CLOCK)
-	    secs += l->loc_GMTOffset * 60;
-
-	CloseLocale(l);
-    }
-    
     WriteBattClock(secs);
     UsePrefs();
 
