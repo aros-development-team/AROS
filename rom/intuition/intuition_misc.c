@@ -50,6 +50,9 @@ extern IPTR HookEntry();
 
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
+#ifdef __mc68000
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+#endif
     BYTE read_preferences = FALSE;
 #   ifdef SKINS
         static CONST UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1 , 1 , 0};
