@@ -470,6 +470,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
             /* open new window if root or classic navigation set */
             if ( (msg->isroot) || (XGET(prefs, MUIA_IconWindow_WindowNavigationMethod) == WPD_NAVIGATION_CLASSIC) )
             {
+                /* Check if the window for this drawer is already opened */
                 while ((child = NextObject(&cstate)))
                 {
                     if (XGET(child, MUIA_UserData))
@@ -493,13 +494,12 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         }
                     }
                 } 
-                /* Check if the window for this drawer is already opened */
                 DoMethod(_app(obj), MUIM_Wanderer_CreateDrawerWindow, (IPTR) buf);
                 // FIXME: error handling
             }
             else
             {
-                /* open drawer in same window */
+                /* Open drawer in same window */
                 SET(obj, MUIA_IconWindow_Location, (IPTR) buf);
             }
         } 
