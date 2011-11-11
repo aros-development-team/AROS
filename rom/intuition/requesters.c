@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -56,6 +56,7 @@ void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *Intuit
 /* render a standard requester */
 void render_requester(struct Requester *requester, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp = requester->ReqLayer->rp;
 
     if ((requester->Flags & NOREQBACKFILL) == 0)

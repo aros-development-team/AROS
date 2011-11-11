@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -102,6 +102,7 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
                        struct RastPort *rp, struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD            	numfit, max_disppos, numchars;
     struct TextExtent   te;
     BOOL            	cursor_at_end;
@@ -159,6 +160,7 @@ void UpdateDisp(struct Gadget       *gad,
 {
 
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TextExtent    te;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
     STRPTR          	 dispstr;
@@ -256,6 +258,7 @@ STATIC UWORD GetTextLeft(struct Gadget      *gad,
 {
     /* Gets left position of text in the string gadget */
 
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
     UWORD           	 text_left = 0;
     STRPTR          	 dispstr = &(strinfo->Buffer[strinfo->DispPos]);
@@ -305,6 +308,7 @@ STATIC UWORD GetTextRight(struct Gadget     *gad,
 {
     /* Gets right offset of text in the string gadget */
 
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
     UWORD           	 text_right = 0;
     STRPTR          	 dispstr = &(strinfo->Buffer[strinfo->DispPos]);
@@ -349,6 +353,7 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
                            struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
     BOOL    	     docursor = FALSE;
 
@@ -447,6 +452,8 @@ ULONG HandleStrInput(   struct Gadget       *gad,
                       UWORD         *imsgcode,
                       struct IntuitionBase  *IntuitionBase)
 {
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    struct Library      *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
     struct SGWork   	 sgw;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
     struct StringExtend *strext = NULL;
@@ -603,7 +610,7 @@ ULONG HandleStrInput(   struct Gadget       *gad,
                 method.gpr_RPort  = rp;
                 method.gpr_Redraw = GREDRAW_UPDATE;
 		
-                Custom_DoMethodA(gad, (Msg)&method);
+                Custom_DoMethodA(IntuitionBase, gad, (Msg)&method);
 
                 ReleaseGIRPort(rp);
             }
@@ -623,6 +630,7 @@ ULONG HandleStrInput(   struct Gadget       *gad,
 STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Gadget   	*gad;
     struct StringInfo   *strinfo;
     struct BBox     	 bbox;
@@ -752,6 +760,7 @@ VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
 STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Gadget   	*gad;
     struct StringInfo   *strinfo;
     UBYTE           	 letter;
@@ -1351,6 +1360,7 @@ VOID UpdateStrGadget(struct Gadget  *gad,
                      struct Requester   *req,
                      struct IntuitionBase   *IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo    gi;
     struct BBox     	 bbox;
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;

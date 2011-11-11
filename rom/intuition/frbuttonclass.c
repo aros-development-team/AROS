@@ -46,16 +46,13 @@
 
 /****************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/****************************************************************************/
-
 IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
     /* We will let the AROS gadgetclass test if it is safe to render */
     /* FIXME: if ( DoSuperMethodA(cl, o, (Msg *)msg) != 0)
 { */
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     UWORD   	    *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     struct RastPort *rp = msg->gpr_RPort;
     struct IBox      container;
@@ -186,6 +183,9 @@ IPTR FrButtonClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
 void frbutton_setsize(Class *cl, struct Gadget *g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Image *image = (struct Image *)g->GadgetRender;
 
     DEBUG_FRBUTTON(dprintf("frbutton_setsize: g %p\n", g));
@@ -313,6 +313,7 @@ IPTR FrButtonClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR FrButtonClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     IPTR retval = DoSuperMethodA(cl, o, (Msg)msg);
 
     DEBUG_FRBUTTON(dprintf("FrButtonClass__OM_SET()\n"));

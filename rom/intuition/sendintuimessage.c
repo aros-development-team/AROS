@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -70,6 +70,8 @@
 
     ASSERT_VALID_PTR(window);
     ASSERT_VALID_PTR(imsg);
+
+    struct Library *TimerBase = GetPrivIBase(IntuitionBase)->TimerBase;
 
     DEBUG_SENDINTUIMESSAGE(dprintf("SendIntuiMessage: Window 0x%lx Port 0x%lx Msg 0x%lx\n",
                                    window, window->UserPort, imsg));

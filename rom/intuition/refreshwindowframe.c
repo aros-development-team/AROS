@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -74,6 +74,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
                             struct IntuitionBase *IntuitionBase)
 {
     /* Draw a frame around the window */
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct RastPort *rp = window->BorderRPort;
     struct DrawInfo *dri;
     struct Region   *old_clipregion;
@@ -90,7 +91,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
         if (dri)
         {
             LOCK_REFRESH(window->WScreen);
-            LOCKGADGET
+            LOCKGADGET(IntuitionBase)
     	#if 1
             if ((rp->Layer==NULL) ||
                     ((!(window->Flags & WFLG_GIMMEZEROZERO)) && (rp->Layer != window->RPort->Layer)))
@@ -191,7 +192,7 @@ VOID int_RefreshWindowFrame(struct Window *window,
             rp->Layer->Scroll_Y = old_scroll_y;
 
             UnlockLayer(rp->Layer);
-            UNLOCKGADGET
+            UNLOCKGADGET(IntuitionBase)
 
             UNLOCK_REFRESH(window->WScreen);
 

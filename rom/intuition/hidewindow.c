@@ -79,6 +79,7 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 static VOID int_hidewindow(struct HideWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window  *window = msg->window;
 #ifdef CGXSHOWHIDESUPPORT
     struct Library *CGXSystemBase;

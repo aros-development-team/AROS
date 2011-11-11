@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -46,6 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     DEBUG_FREEINTUIMESSAGE(dprintf("FreeIntuiMessage: Msg 0x%lx\n", imsg));
 
     ASSERT_VALID_PTR_OR_NULL(imsg);

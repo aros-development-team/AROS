@@ -60,8 +60,6 @@
     Maybe we should correct the + 1 stupidity.
  
 *****************************************************************************/
-#define GPB(x) GetPrivIBase(x)
-
 {
     AROS_LIBFUNC_INIT
 

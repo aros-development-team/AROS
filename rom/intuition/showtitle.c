@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -82,6 +82,7 @@ static VOID int_showtitle(struct ShowTitleActionMsg *msg,
 static VOID int_showtitle(struct ShowTitleActionMsg *msg,
                           struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Screen *screen = msg->screen;
 
     if (!msg->showit)

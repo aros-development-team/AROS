@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -81,6 +81,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct IntScreenBuffer *ScreenBuffer = NULL;
 
     DEBUG_ALLOCSCREENBUFFER(dprintf("AllocScreenBuffer: Screen 0x%lx BitMap 0x%lx Flags 0x%lx\n",

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -67,6 +67,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD right = left + width - 1;
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;
@@ -164,13 +165,10 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
 /**************************************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/**************************************************************************************************/
-
 IPTR WinDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct windecor_data *data;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -213,9 +211,9 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
     ULONG def_low_width = DEFSIZE_WIDTH, def_low_height = DEFSIZE_HEIGHT;
     ULONG def_med_width = DEFSIZE_WIDTH, def_med_height = DEFSIZE_HEIGHT;
     ULONG def_high_width = DEFSIZE_WIDTH, def_high_height = DEFSIZE_HEIGHT;
-    
-    #define REFHEIGHT (msg->wdp_ReferenceFont->tf_YSize)
-    #define REFWIDTH  REFHEIGHT
+
+    ULONG refheight = msg->wdp_ReferenceFont->tf_YSize;
+    ULONG refwidth = refheight;
     
     switch(msg->wdp_Which)
     {
@@ -306,24 +304,24 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
 	case MENUCHECK:
             def_low_width  =
 	    def_med_width  =
-	    def_high_width = REFWIDTH / 2 + 4; // reffont->tf_XSize * 3 / 2;
+	    def_high_width = refwidth / 2 + 4; // reffont->tf_XSize * 3 / 2;
             def_low_height =
 	    def_med_height =
-	    def_high_height= REFHEIGHT;
+	    def_high_height= refheight;
             break;
 
 	case MXIMAGE:
             def_low_width  =
 	    def_med_width  =
-	    def_high_width = (REFWIDTH + 1) * 2; // reffont->tf_XSize * 3 - 1;
+	    def_high_width = (refwidth + 1) * 2; // reffont->tf_XSize * 3 - 1;
             def_low_height = 
 	    def_med_height =
-	    def_high_height= REFHEIGHT + 1;
+	    def_high_height= refheight + 1;
             break;
 
 	case CHECKIMAGE:
-            def_low_width  = (REFWIDTH + 3) * 2;//reffont->tf_XSize * 2;
-            def_low_height = REFHEIGHT + 3;
+            def_low_width  = (refwidth + 3) * 2;//reffont->tf_XSize * 2;
+            def_low_height = refheight + 3;
             break;
 	    
 	default:
@@ -356,6 +354,8 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
 
 IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysImage *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rp = msg->wdp_RPort;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->wdp_State;
@@ -916,6 +916,8 @@ static void findtitlearea(struct Window *win, LONG *left, LONG *right)
 
 IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Window   	 *window = msg->wdp_Window;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
@@ -961,6 +963,8 @@ IPTR INTERNAL_WDM_DRAW_WINTITLE(Class *cl, Object *obj, struct wdpDrawWinBorder 
 
 IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWinBorder *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Window   	 *window = msg->wdp_Window;
     UWORD   	    	 *pens = DRI(msg->wdp_Dri)->dri_Pens;
@@ -1166,6 +1170,8 @@ IPTR WinDecorClass__WDM_LAYOUT_BORDERGADGETS(Class *cl, Object *obj, struct wdpL
 
 IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDrawBorderPropBack *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	 *window = msg->wdp_Window;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Gadget   	 *gadget = msg->wdp_Gadget;
@@ -1198,6 +1204,8 @@ IPTR WinDecorClass__WDM_DRAW_BORDERPROPBACK(Class *cl, Object *obj, struct wdpDr
 
 IPTR WinDecorClass__WDM_DRAW_BORDERPROPKNOB(Class *cl, Object *obj, struct wdpDrawBorderPropKnob *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	 *window = msg->wdp_Window;
     struct RastPort 	 *rp = msg->wdp_RPort;
     struct Gadget   	 *gadget = msg->wdp_Gadget;

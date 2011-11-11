@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -43,6 +43,7 @@
 void printgadgetlabel(Class *cl, Object *o, struct gpRender *msg,
                       struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp = msg->gpr_RPort;
     struct IBox      container;
     UWORD           *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
@@ -153,6 +154,7 @@ VOID GetGadgetIBox(struct Gadget *g, struct GadgetInfo *gi, struct IBox *ibox)
 ULONG LabelWidth (struct RastPort * rp, STRPTR label, ULONG len,
                   struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG totalwidth, uscorewidth;
 
     totalwidth  = TextLength (rp, label, len);
@@ -175,6 +177,7 @@ ULONG LabelWidth (struct RastPort * rp, STRPTR label, ULONG len,
 void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
                   struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG renderlen;
     ULONG uscorewidth;
 
@@ -212,6 +215,7 @@ void RenderLabel (struct RastPort * rp, STRPTR label, ULONG len,
 VOID drawrect(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
               struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     Move(rp, x1, y1);
 
     /* We RectFill() because it is generally faster than Draw()
@@ -466,6 +470,8 @@ void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
     	    	    	BOOL onlydamagelist, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Gadget   *gad;
     struct Region   *old_clipregion = NULL; /* shut up the compiler */
     struct RastPort *rp, *rp2;
@@ -587,6 +593,7 @@ void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
 void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, WORD y1,
                            WORD x2, WORD y2, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     UWORD pen;
     UWORD pattern[] = { 0x8888, 0x2222 };
 

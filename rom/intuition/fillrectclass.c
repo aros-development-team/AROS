@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -35,16 +35,12 @@
 #include "intuition_intern.h"
 #endif /* !__MORPHOS__ */
 
-#ifdef IntuitionBase
-#    undef IntuitionBase
-#endif
-
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
 /****************************************************************************/
 
 IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     const struct TagItem *tstate = msg->ops_AttrList;
     struct TagItem  	*tag;
     struct FillRectData *data = INST_DATA(cl, obj);
@@ -79,6 +75,8 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR FillRectClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct FillRectData *data = INST_DATA(cl, obj);
     struct RastPort      rp;
     WORD            	 x1, y1, x2, y2;

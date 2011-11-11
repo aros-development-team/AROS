@@ -43,17 +43,15 @@
     INTERNALS
  
 *****************************************************************************/
-#define GPB(x) GetPrivIBase(x)
-
 {
     AROS_LIBFUNC_INIT
 
     DEBUG_LOCKPUBSCREENLIST(dprintf("LockPubScreenList: <%s>\n",
                                     FindTask(NULL)->tc_Node.ln_Name));
-    ObtainSemaphore(&GPB(IntuitionBase)->PubScrListLock);
+    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->PubScrListLock);
     DEBUG_LOCKPUBSCREENLIST(dprintf("LockPubScreenList: done\n"));
     
-    return (struct List *)&(GPB(IntuitionBase)->PubScreenList);
+    return (struct List *)&(GetPrivIBase(IntuitionBase)->PubScreenList);
 
     AROS_LIBFUNC_EXIT
 } /* LockPubScreenList */

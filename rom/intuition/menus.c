@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -136,6 +136,7 @@ void GetMenuBox(struct Window *win, struct MenuItem *item,
 UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
                        struct IntuitionBase *IntuitionBase)
 {
+    struct Library  *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct MenuItem *item, *sub;
     UWORD   	     menunum, itemnum = 0, subnum = 0;
     BOOL    	     found = FALSE;

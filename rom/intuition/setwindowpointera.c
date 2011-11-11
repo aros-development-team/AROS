@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -44,6 +44,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     DEBUG_SETPOINTER(dprintf("SetWindowPointer: window 0x%lx\n", window));
 
     if (window)

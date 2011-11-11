@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2007, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -223,6 +223,8 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
                      struct IntuitionBase *IntuitionBase)
 {
     /* Free everything except the applications messageport */
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window   *window, *win2;
     struct Screen   *screen;
     struct IIHData  *iihd;
@@ -458,6 +460,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
 void intui_CloseWindow (struct Window * w,
                         struct IntuitionBase * IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     KillWinSysGadgets(w, IntuitionBase);
 
     if (0 == (w->Flags & WFLG_GIMMEZEROZERO))

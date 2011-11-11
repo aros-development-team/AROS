@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -193,6 +193,8 @@ struct Window *buildsysreq_intern(struct Window *window, STRPTR reqtitle, struct
 
 LONG sysreqhandler_intern(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput, struct IntuitionBase *IntuitionBase)
 {
+    struct Library *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct IntuiMessage *msg;
     LONG                 result;
 
@@ -341,6 +343,7 @@ static void buildsysreq_draw(struct sysreqdims *dims, struct IntuiText *itext,
                              struct Gadget *gadgets,
                              struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TagItem   frame_tags[] =
     {
         {IA_Left        , req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
@@ -402,6 +405,7 @@ static BOOL buildsysreq_calculatedims(struct sysreqdims *dims,
                                       struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     LONG  currentgadget = 0;
     WORD  itextwidth, itextheight;
     UWORD textboxwidth = 0, gadgetswidth; /* width of upper/lower part */
@@ -563,6 +567,7 @@ static void ReqITextSize(struct Screen *scr, struct IntuiText *itext,
                          WORD *width, WORD *height,
                          struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD w, h;
 
     *width  = 0;
@@ -589,6 +594,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
                           struct RastPort *rp, struct IntuiText *itext, WORD x, WORD y,
                           struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+
     SetDrMd(rp, JAM1);
     SetAPen(rp, dri->dri_Pens[TEXTPEN]);
 

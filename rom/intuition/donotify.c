@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -110,6 +110,8 @@ static struct IntuiMessage *SendIDCMPUpdate(Class *cl, Object *o, struct opUpdat
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
 
     DEBUG_NOTIFY(dprintf("DoNotify: cl 0x%lx o 0x%lx ICData 0x%lx opUpdate 0x%lx\n",cl,o,ic,msg));
 

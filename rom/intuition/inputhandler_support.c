@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -193,6 +193,7 @@ BOOL fire_intuimessage(struct Window *w,
 
 BOOL fire_message(struct Window *w,ULONG Class, UWORD Code, APTR IAddress, struct IntuitionBase *IntuitionBase)
 {
+    struct Library         *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct ExtIntuiMessage *imsg;
     BOOL            	    result = FALSE;
 
@@ -434,6 +435,7 @@ BOOL ih_fire_intuimessage(struct Window * w,
  */
 IPTR Locked_DoMethodA (struct Window *w, struct Gadget *g, Msg message, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     IPTR rc;
     BOOL lock = w && (g->GadgetType & GTYP_SYSGADGET &&
             ((g->GadgetType & GTYP_SYSTYPEMASK) == GTYP_WDRAGGING ||
@@ -444,9 +446,9 @@ IPTR Locked_DoMethodA (struct Window *w, struct Gadget *g, Msg message, struct I
         LOCK_REFRESH(w->WScreen);
     }
     
-    LOCKGADGET
-    rc = Custom_DoMethodA(g, message);   
-    UNLOCKGADGET
+    LOCKGADGET(IntuitionBase)
+    rc = Custom_DoMethodA(IntuitionBase, g, message);   
+    UNLOCKGADGET(IntuitionBase)
 
     if (lock)
     {
@@ -458,7 +460,6 @@ IPTR Locked_DoMethodA (struct Window *w, struct Gadget *g, Msg message, struct I
 
 /*********************************************************************/
 
-#undef Custom_DoMethodA
 IPTR Custom_DoMethodA (struct IntuitionBase *IntuitionBase, struct Gadget *g, Msg message)
 {
     if (g->MutualExclude)
@@ -507,6 +508,7 @@ void PrepareGadgetInfo(struct GadgetInfo *gi, struct Screen *scr, struct Window 
 void SetGadgetInfoGadget(struct GadgetInfo *gi, struct Gadget *gad,
                          struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     SET_GI_RPORT(gi, gi->gi_Window, gi->gi_Requester, gad);
@@ -553,6 +555,7 @@ void SetGPIMouseCoords(struct gpInput *gpi, struct Gadget *gad)
 void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Screen *scr;
 
     switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
@@ -1437,6 +1440,7 @@ struct Window *FindActiveWindow(struct InputEvent *ie, struct Screen *scr, ULONG
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
     /* NOTE: may be called with NULL ie ptr! */
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Layer    *l;
     struct Window   *new_w;
     ULONG            lock;
@@ -1592,10 +1596,12 @@ BOOL FireMenuMessage(WORD code, struct Window *win,
 
 LONG Gad_BeginUpdate(struct Layer *layer, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+
     /* Must lock GadgetLock to avoid deadlocks with ObtainGirPort
        from other tasks, because ObtainGirPort first obtains
        GadgetLock and then layer lock through LockLayer!!!! */
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
     return BeginUpdate(layer);
 }
 
@@ -1603,8 +1609,10 @@ LONG Gad_BeginUpdate(struct Layer *layer, struct IntuitionBase *IntuitionBase)
 
 void Gad_EndUpdate(struct Layer *layer, UWORD flag, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+
     EndUpdate(layer, flag);
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 }
 
 /****************************************************************************************/

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -44,13 +44,10 @@
 
 /****************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/****************************************************************************/
-
 IPTR ITextIClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp = msg->imp_RPort;
     IPTR    	     retval = (IPTR)0;
 

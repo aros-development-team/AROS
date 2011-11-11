@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -48,6 +48,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     DEBUG_REFRESH(dprintf("EndRefresh: Window 0x%lx Complete %d\n", window, complete));
 
     SANITY_CHECK(window)

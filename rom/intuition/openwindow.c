@@ -91,6 +91,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Library              *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct OpenWindowActionMsg   msg;
     struct NewWindow        	 nw;
     struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
@@ -1238,6 +1240,8 @@ exit:
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase * GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase * LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window * w = msg->window;
     struct BitMap * SuperBitMap = msg->bitmap;
     struct Hook   * backfillhook = msg->backfillhook;

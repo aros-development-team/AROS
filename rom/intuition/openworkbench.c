@@ -13,6 +13,7 @@
 
 static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG modeid;
     struct TagItem modetags[] =
     {
@@ -77,6 +78,7 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Screen *wbscreen;
 
     DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: <%s>\n",

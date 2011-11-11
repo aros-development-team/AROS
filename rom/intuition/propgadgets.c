@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2003, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -31,11 +31,6 @@ extern IPTR HookEntry();
 #define DEBUG 0
 #   include <aros/debug.h>
 
-// static data moved to intuibase - Piru
-//static WORD clickoffset_x, clickoffset_y;
-#define clickoffset_x GetPrivIBase(IntuitionBase)->prop_clickoffset_x
-#define clickoffset_y GetPrivIBase(IntuitionBase)->prop_clickoffset_y
-
 BOOL isonborder(struct Gadget *gadget,struct Window *window);
 
 static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct DrawInfo *dri,
@@ -44,6 +39,9 @@ static void RenderPropBackground(struct Gadget *gad, struct Window *win, struct 
 				 struct RastPort *rp, BOOL onborder,
 				 struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+
     if (onborder)
     {
 	struct wdpDrawBorderPropBack msg;
@@ -139,8 +137,8 @@ VOID HandlePropSelectDown(struct Gadget *gadget, struct Window *w, struct Reques
     if (!CalcKnobSize (gadget, &knob))
         return;
 
-    clickoffset_x = mouse_x - knob.Left;
-    clickoffset_y = mouse_y - knob.Top;
+    GetPrivIBase(IntuitionBase)->prop_clickoffset_x = mouse_x - knob.Left;
+    GetPrivIBase(IntuitionBase)->prop_clickoffset_y = mouse_y - knob.Top;
 
     dx = pi->HorizPot;
     dy = pi->VertPot;
@@ -280,8 +278,8 @@ VOID HandlePropMouseMove(struct Gadget *gadget, struct Window *w,struct Requeste
                 anymore but relative to gadget
                 box */
 
-        dx = dx - clickoffset_x;
-        dy = dy - clickoffset_y;
+        dx = dx - GetPrivIBase(IntuitionBase)->prop_clickoffset_x;
+        dy = dy - GetPrivIBase(IntuitionBase)->prop_clickoffset_y;
 
         if (pi->Flags & FREEHORIZ
                 && pi->CWidth != knob.Width)
@@ -419,6 +417,7 @@ int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox)
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * req, struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct PropInfo 	*pi;
     struct DrawInfo  	*dri;
     struct GadgetInfo 	 gi;
@@ -535,6 +534,8 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
                             struct BBox * knob, struct Window * window, struct Requester * req,
                             struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct DrawInfo  	*dri;
     struct RastPort 	*rp;
     struct PropInfo 	*pi;

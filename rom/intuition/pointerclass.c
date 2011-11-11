@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -27,11 +27,6 @@
 
 /***********************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/***********************************************************************************/
-
 /* Empty sprite */
 const UWORD posctldata[] =
 {
@@ -46,6 +41,10 @@ const UWORD posctldata[] =
 
 IPTR PointerClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
+    OOP_MethodID HiddBitMapBase = ((struct IntIntuitionBase *)IntuitionBase)->ib_HiddBitMapBase;
     D(kprintf("PointerClass: OM_NEW\n"));
 
     if (cl)
@@ -215,6 +214,7 @@ IPTR PointerClass__OM_GET(Class *cl, Object *o, struct opGet *msg)
 
 IPTR PointerClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct PointerData *data = INST_DATA(cl, o);
     
     D(kprintf("PointerClass: OM_DISPOSE\n"));

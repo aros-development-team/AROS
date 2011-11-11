@@ -53,6 +53,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort  rp;
     struct TextFont *newfont = NULL;
     LONG    	     width;

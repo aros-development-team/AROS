@@ -79,6 +79,8 @@ const ULONG coltab[] =
 
 static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 {
+    struct Library *OOPBase;
+    struct GfxBase *GfxBase;
     struct OOP_ABDescr attrbases[] = {
 	{IID_Hidd       , &GetPrivIBase(LIBBASE)->HiddAttrBase      },
 	{IID_Hidd_Gfx   , &GetPrivIBase(LIBBASE)->HiddGfxAttrBase   },
@@ -89,30 +91,30 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
     DEBUG_INIT(dprintf("LIB_Init: base 0x%p\n", LIBBASE));
 
     /* Open our dependencies */
-    if (!(UtilityBase = (APTR)OpenLibrary("utility.library", 0))) {
+    if (!(GetPrivIBase(LIBBASE)->UtilityBase = OpenLibrary("utility.library", 0))) {
         return FALSE;
-    } else if (!(GfxBase = (APTR)OpenLibrary("graphics.library", 41))) {
-        CloseLibrary((APTR)UtilityBase);
+    } else if (!(GfxBase = GetPrivIBase(LIBBASE)->GfxBase = (APTR)OpenLibrary("graphics.library", 41))) {
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
-        CloseLibrary((APTR)GfxBase);
-        CloseLibrary((APTR)UtilityBase);
+    } else if (!(GetPrivIBase(LIBBASE)->LayersBase = (APTR)OpenLibrary("layers.library", 41))) {
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(KeymapBase = (APTR)OpenLibrary("keymap.library", 41))) {
-        CloseLibrary((APTR)LayersBase);
-        CloseLibrary((APTR)GfxBase);
-        CloseLibrary((APTR)UtilityBase);
+    } else if (!(GetPrivIBase(LIBBASE)->KeymapBase = (APTR)OpenLibrary("keymap.library", 41))) {
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->LayersBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
-    } else if (!(OOPBase = (APTR)OpenLibrary("oop.library", 41))) {
-        CloseLibrary((APTR)KeymapBase);
-        CloseLibrary((APTR)LayersBase);
-        CloseLibrary((APTR)GfxBase);
-        CloseLibrary((APTR)UtilityBase);
+    } else if (!(OOPBase = GetPrivIBase(LIBBASE)->OOPBase = (APTR)OpenLibrary("oop.library", 41))) {
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->KeymapBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->LayersBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->GfxBase);
+        CloseLibrary((APTR)GetPrivIBase(LIBBASE)->UtilityBase);
         return FALSE;
     }
 
-    HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
-    HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
+    LIBBASE->ib_HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
+    LIBBASE->ib_HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
 
     if (!OOP_ObtainAttrBases(attrbases))
 	return FALSE;
@@ -299,6 +301,7 @@ static int InitRootClass(LIBBASETYPEPTR LIBBASE)
 
 static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(LIBBASE)->GfxBase;
     DEBUG_OPEN(dprintf("LIB_Open: base 0x%lx\n", LIBBASE));
 
     /* Open the input device */
@@ -327,7 +330,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, 0))
 	{
 	    GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
-	    InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
+	    GetPrivIBase(LIBBASE)->InputBase = (struct Library *)GetPrivIBase(LIBBASE)->InputIO->io_Device;
 	}
 	else
 	{
@@ -361,7 +364,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 
 	if (!(ve = GfxNew(VIEW_EXTRA_TYPE)))
 	{
-	    GfxBase = NULL;
+	    GetPrivIBase(LIBBASE)->GfxBase = NULL;
 	    DEBUG_OPEN(dprintf("LIB_Open: can't create view extra\n"));
 	    return FALSE;
 	}
@@ -378,7 +381,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     }
     
     if (!GetPrivIBase(LIBBASE)->ScreenFont)
-	GetPrivIBase(LIBBASE)->ScreenFont = GfxBase->DefaultFont;
+	GetPrivIBase(LIBBASE)->ScreenFont = GetPrivIBase(LIBBASE)->GfxBase->DefaultFont;
 
 #if 0 /* CHECKME: stegerg: backport, disabled */
     if (!(GetPrivIBase(LIBBASE)->TopazFont))
@@ -388,27 +391,27 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
     }
 #endif
 
-    if (!TimerBase)
+    if (!GetPrivIBase(LIBBASE)->TimerBase)
     {
-	if (!(TimerMP = CreateMsgPort()))
+	if (!(GetPrivIBase(LIBBASE)->TimerMP = CreateMsgPort()))
 	{
 	    DEBUG_OPEN(dprintf("LIB_Open: can't create timer port\n"));
 	    return FALSE; /* don't close anything */
 	}
 	
-	if (!(TimerIO = (struct timerequest *)CreateIORequest(TimerMP, sizeof(struct timerequest))))
+	if (!(GetPrivIBase(LIBBASE)->TimerIO = (struct timerequest *)CreateIORequest(GetPrivIBase(LIBBASE)->TimerMP, sizeof(struct timerequest))))
 	{
 	    DEBUG_OPEN(dprintf("LIB_Open: can't create timer ioreq\n"));
 	    return FALSE; /* don't close anything */
 	}
 
-	if (OpenDevice(TIMERNAME,UNIT_VBLANK, (struct IORequest *)TimerIO,0))
+	if (OpenDevice(TIMERNAME,UNIT_VBLANK, (struct IORequest *)GetPrivIBase(LIBBASE)->TimerIO,0))
 	{
 	    DEBUG_OPEN(dprintf("LIB_Open: can't open timer.device\n"));
 	    return FALSE; /* don't close anything */
 	}
 
-	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
+	GetPrivIBase(LIBBASE)->TimerBase = (struct Library *)GetPrivIBase(LIBBASE)->TimerIO->tr_node.io_Device;
 
 	SetPrefs(GetPrivIBase(LIBBASE)->DefaultPreferences, sizeof(struct Preferences), FALSE);
     }

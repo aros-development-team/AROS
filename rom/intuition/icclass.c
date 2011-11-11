@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -34,6 +34,7 @@
 
 static void _om_set(struct ICData *ic, struct TagItem *tags, struct IntuitionBase *IntuitionBase)
 {
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *tag, *tstate = tags;
 
     while ((tag = NextTagItem((const struct TagItem **)&tstate)))

@@ -51,8 +51,6 @@
     HISTORY
 
 *****************************************************************************/
-#define GPB(x) GetPrivIBase(x)
-
 {
     AROS_LIBFUNC_INIT
 

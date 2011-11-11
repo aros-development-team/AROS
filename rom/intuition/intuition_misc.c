@@ -161,6 +161,7 @@ SetPrefs(GetPrivIBase(IntuitionBase)->DefaultPreferences,
 void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
                    struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
 
     if ((x2 >= x1) && (y2 >= y1))
     {
@@ -169,8 +170,6 @@ void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 }
 
 /**********************************************************************************/
-
-#define TITLEBAR_HEIGHT (w->BorderTop)
 
 Object* CreateStdSysImage(WORD which, WORD preferred_height, struct Screen *scr, APTR buffer,
     	    	    	  struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
@@ -216,6 +215,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
     struct DrawInfo *dri;
     BOOL    	     is_gzz;
+    ULONG            TitleHeight = w->BorderTop;
 
     EnterFunc(bug("CreateWinSysGadgets(w=%p)\n", w));
 
@@ -232,7 +232,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         db_width = 0; /* Georg Steger: was w->Width; */
 
         /* Relright of rightmost button */
-        //relright = - (TITLEBAR_HEIGHT - 1);
+        //relright = - (TitleHeight - 1);
 
         relright = 1;
 
@@ -298,9 +298,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
               //{GA_RelRight  	, relright          },
                 {GA_Top     	, 0                 },
 	    #if SQUARE_WIN_GADGETS
-                {GA_Width   	, TITLEBAR_HEIGHT   },
+                {GA_Width   	, TitleHeight       },
 	    #endif
-                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_Height  	, TitleHeight       },
                 {GA_SysGadget   , TRUE              },
                 {GA_SysGType    , GTYP_WDEPTH       },
                 {GA_TopBorder   , TRUE              },
@@ -310,7 +310,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(DEPTHIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(DEPTHIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -363,9 +363,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 //{GA_RelRight  , relright          },
                 {GA_Top     	, 0                 },
 	    #if SQUARE_WIN_GADGETS
-                {GA_Width   	, TITLEBAR_HEIGHT   },
+                {GA_Width   	, TitleHeight       },
 	    #endif
-                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_Height  	, TitleHeight       },
                 {GA_SysGadget   , TRUE              },
                 {GA_SysGType    , GTYP_WZOOM        },
                 {GA_TopBorder   , TRUE              },
@@ -376,7 +376,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
             Object *im;
 
-            im = CreateStdSysImage(ZOOMIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
+            im = CreateStdSysImage(ZOOMIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri, IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -464,9 +464,9 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                 {GA_Left    	, 0         	    },
                 {GA_Top     	, 0         	    },
 	    #if SQUARE_WIN_GADGETS
-                {GA_Width   	, TITLEBAR_HEIGHT   },
+                {GA_Width   	, TitleHeight       },
 	    #endif
-                {GA_Height  	, TITLEBAR_HEIGHT   },
+                {GA_Height  	, TitleHeight       },
                 {GA_SysGadget   , TRUE              },
                 {GA_SysGType    , GTYP_CLOSE        },
                 {GA_TopBorder   , TRUE              },
@@ -476,7 +476,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
             };
             Object *im;
 
-            im = CreateStdSysImage(CLOSEIMAGE, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
+            im = CreateStdSysImage(CLOSEIMAGE, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
             if (!im)
             {
                 sysgads_ok = FALSE;
@@ -511,7 +511,7 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
         	{GA_Left    	, 0/*db_left*/	    },
         	{GA_Top     	, 0         	    },
         	{GA_RelWidth    , 0/*db_width*/     },
-        	{GA_Height  	, TITLEBAR_HEIGHT   },
+        	{GA_Height  	, TitleHeight       },
         	{GA_SysGadget   , TRUE              },
         	{GA_SysGType    , GTYP_WDRAGGING    },
         	{GA_TopBorder   , TRUE              },
@@ -596,6 +596,8 @@ VOID KillWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
 void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     BOOL  front = TRUE;
     ULONG backdrop = LAYERBACKDROP;
     WORD  ypos = 0;
@@ -670,6 +672,8 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 
 void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+
     if (scr->BarLayer)
     {
         DeleteLayer(0, scr->BarLayer);
@@ -689,6 +693,8 @@ void KillScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
 void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct DrawInfo *dri = &((struct IntScreen *)scr)->DInfo.dri;
     struct RastPort *rp;
 
@@ -710,7 +716,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
         /* must lock GadgetLock to avoid deadlocks with ObtainGIRPort
            when calling refreshgadget inside layer update state */
         LockLayerInfo(scr->BarLayer->LayerInfo);
-        LOCKGADGET
+        LOCKGADGET(IntuitionBase)
         LockLayer(0, scr->BarLayer);
 
         D(bug("[intuition] RenderScreenBar: Layer locked\n"));
@@ -762,7 +768,7 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
         D(bug("[intuition] RenderScreenBar: Unlock Layer ..\n"));
 
         UnlockLayer(scr->BarLayer);
-        UNLOCKGADGET
+        UNLOCKGADGET(IntuitionBase)
         UnlockLayerInfo(scr->BarLayer->LayerInfo);
 
     } /* if (scr->BarLayer) */
@@ -889,12 +895,13 @@ WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Recta
 
 ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relright,ULONG imagetype,ULONG gadgetid,ULONG gadgettype,struct IntuitionBase *IntuitionBase)
 {
+    ULONG TitleHeight = w->BorderTop;
     struct TagItem gadget_tags[] =
     {
         {GA_Image   	, 0                 },
         {GA_ToggleSelect, FALSE             },
         {GA_Top     	, 0                 },
-        {GA_Height  	, TITLEBAR_HEIGHT   },
+        {GA_Height  	, TitleHeight       },
         {GA_TopBorder   , TRUE              },
         {GA_GZZGadget   , is_gzz            },
         {GA_ID      	, gadgetid          },
@@ -908,7 +915,7 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
     #else
         {IA_Left    	, -1            	    	    },
     #endif
-        {IA_Height  	, TITLEBAR_HEIGHT       	    },
+        {IA_Height  	, TitleHeight                       },
         {SYSIA_Which    , imagetype         	    	    },
         {SYSIA_DrawInfo , (IPTR)dri         	    	    },
         {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ?
@@ -1193,6 +1200,7 @@ AROS_UFH3(BOOL, DefaultWindowShapeFunc,
     AROS_USERFUNC_INIT
 
     struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)hook->h_Data;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	    *win = (struct Window *)hook->h_SubEntry;
     struct Region   	    *shape;
     struct wdpWindowShape    shapemsg;

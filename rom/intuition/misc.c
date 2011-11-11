@@ -120,6 +120,7 @@ struct Screen *FindFirstScreen(Object *monitor, struct IntuitionBase *IntuitionB
 
 struct RastPort *MyCreateRastPort(struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *newrp = AllocMem(sizeof(*newrp), MEMF_PUBLIC);
     
     if (newrp)
@@ -199,6 +200,7 @@ BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx)
 struct TextFont *SafeReopenFont(struct IntuitionBase *IntuitionBase,
                                 struct TextFont **fontptr)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TextFont *ret = NULL, *font;
 
     /* Atomically lock the font before, so it can't go away
@@ -310,6 +312,7 @@ void InstallPointer(struct IntuitionBase *IntuitionBase, UWORD which, Object **o
 
 void SetPointerColors(struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Color32 *p;
     int     	   k;
     ULONG   	   lock = LockIBase(0);
@@ -371,6 +374,7 @@ void ObtainSharedPointer(struct SharedPointer *pointer,
 void ReleaseSharedPointer(struct SharedPointer *pointer,
                           struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     ULONG lock = LockIBase(0);
     if (--pointer->ref_count == 0)
     {

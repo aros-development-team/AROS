@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -69,6 +69,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD right = left + width - 1;
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;
@@ -131,13 +132,10 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 
 /**************************************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/**************************************************************************************************/
-
 IPTR ScrDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct scrdecor_data *data;
 
     D(bug("[SCRDECOR] ScrDecorClass__OM_NEW()\n"));
@@ -233,6 +231,8 @@ IPTR ScrDecorClass__SDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct sdpGe
 
 IPTR ScrDecorClass__SDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct sdpDrawSysImage *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rp = msg->sdp_RPort;
     UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  state = msg->sdp_State;
@@ -379,6 +379,8 @@ IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScr
 
 IPTR ScrDecorClass__SDM_DRAW_SCREENBAR(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rp = msg->sdp_RPort;
     UWORD   	    	 *pens = DRI(msg->sdp_Dri)->dri_Pens;
     LONG    	    	  right, left;

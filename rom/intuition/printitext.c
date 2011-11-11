@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -69,6 +69,7 @@ void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
 		    struct IntuitionBase *IntuitionBase)
 {
 
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     IPTR   	     apen;
     IPTR   	     bpen;
     IPTR   	     drmd;
