@@ -1,3 +1,5 @@
+#define DEBUG
+
 #include <aros/kernel.h>
 #include <hardware/vbe.h>
 
@@ -22,7 +24,7 @@ void setupVESA(char *vesa)
 
     if (!tmp)
     {
-    	kprintf("[BOOT] VESA mode setup failed, not enough working memory\n");
+    	kprintf("[VESA] Setup failed, not enough working memory\n");
     	return;
     }
 
@@ -61,10 +63,10 @@ void setupVESA(char *vesa)
      * something useful, like kickstart modules or boot information.
      * So we preserve our region and put it back when we are done.
      */
-    D(kprintf("[BOOT] Backing up low memory, buffer at 0x%p\n", tmp));
+    D(kprintf("[VESA] Backing up low memory, buffer at 0x%p\n", tmp));
     memcpy(tmp, VESA_START, vesa_size);
 
-    D(kprintf("[BOOT] setupVESA: vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size));
+    D(kprintf("[VESA] vesa.bin @ %p [size=%d]\n", &_binary_vesa_start, &_binary_vesa_size));
     memcpy(VESA_START, vesa_start, vesa_size);
 
     kprintf("[VESA] BestModeMatch for %ldx%ldx%ld = ", x, y, d);
@@ -101,6 +103,12 @@ void setupVESA(char *vesa)
     	con_InitVESA(VBEControllerInfo.version, &VBEModeInfo);
     	AllocFB();
 
+	D(kprintf("[VESA] VBE version 0x%04X\n", VBEControllerInfo.version));
+	D(kprintf("[VESA] Resolution %d x %d\n", VBEModeInfo.x_resolution, VBEModeInfo.y_resolution));
+	D(kprintf("[VESA] %d bits per pixel, %d/%d bytes per line\n", VBEModeInfo.bits_per_pixel, VBEModeInfo.bytes_per_scanline, VBEModeInfo.linear_bytes_per_scanline));
+	D(kprintf("[VESA] Mode flags 0x%04X, framebuffer 0x%p\n", VBEModeInfo.mode_attributes, VBEModeInfo.phys_base));
+	D(kprintf("[VESA] Windows A 0x%04X B 0x%04X\n", VBEModeInfo.win_a_segment, VBEModeInfo.win_b_segment));
+
         tag->ti_Tag = KRN_VBEModeInfo;
         tag->ti_Data = KERNEL_OFFSET | (unsigned long)&VBEModeInfo;
         tag++;
@@ -118,5 +126,5 @@ void setupVESA(char *vesa)
         tag++;
     }
     
-    kprintf("[BOOT] setupVESA: VESA setup complete\n");
+    kprintf("[VESA] Setup complete\n");
 }
