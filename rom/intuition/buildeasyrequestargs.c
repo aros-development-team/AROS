@@ -269,6 +269,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
                               struct Gadget *gadgets,
                               struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TagItem   frame_tags[] =
     {
         {IA_Left    	, req->BorderLeft + OUTERSPACING_X  	    	    	    	    	},
@@ -429,6 +430,7 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
                                        STRPTR *gadgetlabels,
                                        struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     STRPTR  textline;
     int     textlines, line; /* number of lines in es_TextFormat */
     int     currentgadget = 0;

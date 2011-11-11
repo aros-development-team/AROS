@@ -96,7 +96,7 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
     }
 
 #ifdef USEGADGETLOCK
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
 #else
     LOCKWINDOWLAYERS(window);
 #endif
@@ -110,7 +110,7 @@ struct Gadget *findprevgadget(struct Gadget *gadget,struct Window *window,struct
                      IntuitionBase);
 
 #ifdef USEGADGETLOCK
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 #else
     UNLOCKWINDOWLAYERS(window);
 #endif
@@ -135,7 +135,7 @@ void int_refreshglist(struct Gadget *gadgets, struct Window *window,
 
     // in case we're not called from RefreshGList...
 #ifdef USEGADGETLOCK
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
 #else
     LOCKWINDOWLAYERS(window);
 #endif
@@ -181,7 +181,7 @@ void int_refreshglist(struct Gadget *gadgets, struct Window *window,
 #endif
 
 #ifdef USEGADGETLOCK
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 #else
     UNLOCKWINDOWLAYERS(window);
 #endif

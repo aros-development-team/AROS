@@ -52,16 +52,14 @@
     24-06-98    SDuvan  Implemented
  
 *****************************************************************************/
-#define GPB(x) GetPrivIBase(x)
-
 {
     AROS_LIBFUNC_INIT
 
     UWORD retval;
 
     Forbid();
-    retval = GPB(IntuitionBase)->pubScrGlobalMode;
-    GPB(IntuitionBase)->pubScrGlobalMode = modes;
+    retval = GetPrivIBase(IntuitionBase)->pubScrGlobalMode;
+    GetPrivIBase(IntuitionBase)->pubScrGlobalMode = modes;
     Permit();
 
     return retval;

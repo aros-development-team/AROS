@@ -65,6 +65,7 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct IntScreenNotify *notify;
 
     notify = (struct IntScreenNotify *) AllocVec(sizeof(struct IntScreenNotify), MEMF_CLEAR);

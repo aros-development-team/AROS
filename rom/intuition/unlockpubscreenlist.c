@@ -44,15 +44,13 @@
                 intuition_lib.fd and clib/intuition_protos.h
  
 *****************************************************************************/
-#define GPB(x) GetPrivIBase(x)
-
 {
     AROS_LIBFUNC_INIT
 
     DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: <%s>\n",
                                       FindTask(NULL)->tc_Node.ln_Name));
 
-    ReleaseSemaphore(&GPB(IntuitionBase)->PubScrListLock);
+    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->PubScrListLock);
 
     DEBUG_UNLOCKPUBSCREENLIST(dprintf("UnLockPubScreenList: done\n"));
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -86,6 +86,7 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo   *gi = &GetPrivIBase(IntuitionBase)->DoGadgetMethodGI;
     struct RastPort 	*rp = &GetPrivIBase(IntuitionBase)->DoGadgetMethodRP;
     IPTR            	 ret = 0;
@@ -122,12 +123,12 @@
             case OM_NOTIFY:
             case OM_UPDATE:
         	((struct opSet *)msg)->ops_GInfo = gi;
-        	ret = Custom_DoMethodA(gad, msg);
+        	ret = Custom_DoMethodA(IntuitionBase, gad, msg);
         	break;
 
             case GM_LAYOUT:
         	((struct gpLayout *)msg)->gpl_GInfo = gi;
-        	ret = Custom_DoMethodA(gad, msg);
+        	ret = Custom_DoMethodA(IntuitionBase, gad, msg);
         	break;
 
             case GM_RENDER:
@@ -163,7 +164,7 @@
 
 		    #endif
 
-                	ret = Custom_DoMethodA(gad, msg);
+                	ret = Custom_DoMethodA(IntuitionBase, gad, msg);
 
                 	ReleaseGIRPort(rport);
                     }
@@ -172,7 +173,7 @@
 
             default:
         	((struct gpRender *)msg)->gpr_GInfo = gi;
-        	ret = Custom_DoMethodA (gad, msg);
+        	ret = Custom_DoMethodA (IntuitionBase, gad, msg);
         	break;
 
         } /* switch (msg->MethodID) */

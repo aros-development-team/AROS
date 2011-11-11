@@ -15,8 +15,6 @@
 #include <utility/utility.h>
 #include "intuition_intern.h"
 
-#define IntuitionBase   (GetPrivIBase(cl->cl_UserData))
-
 #define ENABLE_MEM_POOL 1
 
 #if ENABLE_MEM_POOL

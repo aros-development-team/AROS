@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
     $Id$
  
     Get a copy of monitors list
@@ -60,6 +60,7 @@
 {
     AROS_LIBFUNC_INIT
     
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct MinNode *n;
     Object **res;
     ULONG num = 1;

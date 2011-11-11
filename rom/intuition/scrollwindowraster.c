@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -81,6 +81,7 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     DEBUG_SCROLLWINDOWRASTER(dprintf("ScrollWindowRaster: window 0x%lx dx %d dy %d (%d,%d)-(%d,%d)\n",
                      win, dx, dy, xmin, ymin, xmax, ymax));
 
@@ -187,6 +188,7 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     DEBUG_SCROLLWINDOWRASTER(dprintf("ScrollWindowRaster: window 0x%lx dx %d dy %d (%d,%d)-(%d,%d)\n",
                      win, dx, dy, xmin, ymin, xmax, ymax));
 
@@ -284,6 +286,7 @@ static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
 static VOID int_scrollwindowraster(struct ScrollWindowRasterMsg *msg,
                                    struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window *window = msg->window;
 
     LOCK_REFRESH(window->WScreen);

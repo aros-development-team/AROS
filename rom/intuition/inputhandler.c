@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -202,6 +202,7 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 
 static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *IntuitionBase)
 {
+    struct Library *TimerBase = GetPrivIBase(IntuitionBase)->TimerBase;
     struct IntuiMessage *im;
 
     while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort)))
@@ -416,6 +417,7 @@ struct Window *GetToolBoxWindow(struct InputEvent *ie, struct Screen *scr, struc
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
     /* NOTE: may be called with NULL ie ptr! */
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Layer    *l;
     struct Window   *new_w = NULL;
 
@@ -479,6 +481,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
 #endif
 				       struct IntuitionBase *IntuitionBase)
 {
+    struct Library *InputBase = GetPrivIBase(IntuitionBase)->InputBase;
     struct Requester *req = w ? w->FirstRequest : NULL;
 
     switch (ie->ie_Code) {
@@ -1802,6 +1805,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct InputEvent     *ie, *orig_ie, *next_ie, stackie;
     struct Gadget         *gadget = NULL, *boxgadget = NULL;
     struct IntuitionBase  *IntuitionBase = iihdata->IntuitionBase;
+    struct Library        *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
     struct Screen 	  *screen;
     //ULONG                lock;
     struct GadgetInfo     *gi = &iihdata->GadgetInfo;

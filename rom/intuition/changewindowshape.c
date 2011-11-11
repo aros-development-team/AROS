@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -95,6 +95,7 @@ static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
 static VOID int_changewindowshape(struct ChangeWindowShapeActionMsg *msg,
                                   struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window   *window = msg->window;
     struct Region   *shape = msg->shape;
     struct Hook     *callback = msg->callback;

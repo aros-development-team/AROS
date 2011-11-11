@@ -178,19 +178,20 @@ void * memclr(APTR, ULONG);
 
 #define MENUS_BACKFILL  TRUE
 
-#define MENUS_AMIGALOOK        ((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
+#define MENUS_AMIGALOOK(base)  ((GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
 /* --- Values --- */
 #define MENULOOK_3D            0
 #define MENULOOK_CLASSIC       1
 
-#define MENUS_UNDERMOUSE       (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_POPUPMENUS)
+#define MENUS_UNDERMOUSE(base) (GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_POPUPMENUS)
 
-#define AVOID_WINBORDERERASE   (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_AVOIDWINBORDERERASE)
+#define AVOID_WINBORDERERASE(base) \
+                               (GetPrivIBase(base)->IControlPrefs.ic_Flags & ICF_AVOIDWINBORDERERASE)
 
 /* --- Values --- */
 /* TRUE, FALSE */
 
-#define FRAME_SIZE             (GetPrivIBase(IntuitionBase)->FrameSize)
+#define FRAME_SIZE(base)       (GetPrivIBase(base)->FrameSize)
 /* --- Values --- */
 #define FRAMESIZE_THIN         0 /* 1:1 thin */
 #define FRAMESIZE_MEDRES       1 /* 2:1 medres like AmigaOS */
@@ -215,18 +216,18 @@ void * memclr(APTR, ULONG);
 
 #define USEWINDOWLOCK
 #ifdef USEWINDOWLOCK
-#define LOCKWINDOW  	    	    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
-#define UNLOCKWINDOW 	    	    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
+#define LOCKWINDOW(base)       ObtainSemaphore(&GetPrivIBase(base)->WindowLock);
+#define UNLOCKWINDOW(base)     ReleaseSemaphore(&GetPrivIBase(base)->WindowLock);
 #else
-#define LOCKWINDOW
-#define UNLOCKWINDOW
+#define LOCKWINDOW(base)
+#define UNLOCKWINDOW(base)
 #endif
 /* jDc: do NOT disable this! */
 
 #define USEGADGETLOCK
 #ifdef USEGADGETLOCK
-#define LOCKGADGET  	    	    	    ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
-#define UNLOCKGADGET 	    	    	    ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+#define LOCKGADGET(base)       ObtainSemaphore(&GetPrivIBase(base)->GadgetLock);
+#define UNLOCKGADGET(base)     ReleaseSemaphore(&GetPrivIBase(base)->GadgetLock);
 #define LOCKWINDOWLAYERS(w) ;
 #define UNLOCKWINDOWLAYERS(w) ;
 #else
@@ -612,12 +613,6 @@ struct IntIntuitionBase
     struct SignalSemaphore	 MonitorListSem;
 };
 
-#undef HiddBitMapBase
-#undef HiddGfxBase
-
-#define HiddBitMapBase		(((struct IntIntuitionBase *)(IntuitionBase))->ib_HiddBitMapBase)
-#define HiddGfxBase		(((struct IntIntuitionBase *)(IntuitionBase))->ib_HiddGfxBase)
-
 struct SharedPointer
 {
     struct ExtSprite   *sprite;
@@ -768,20 +763,6 @@ struct IntIntuiMessage
    before defining Utilitybase
 */
 #include <proto/utility.h>
-
-#define DOSBase			(GetPrivIBase(IntuitionBase)->DOSBase)
-#define UtilityBase   	    	(GetPrivIBase(IntuitionBase)->UtilityBase)
-#define LayersBase   	    	(GetPrivIBase(IntuitionBase)->LayersBase)
-#define OOPBase   	    	(GetPrivIBase(IntuitionBase)->OOPBase)
-#define GfxBase   	    	(GetPrivIBase(IntuitionBase)->GfxBase)
-#define KeymapBase   	    	(GetPrivIBase(IntuitionBase)->KeymapBase)
-#define InputBase   	    	(GetPrivIBase(IntuitionBase)->InputBase)
-#define TimerBase   	    	(GetPrivIBase(IntuitionBase)->TimerBase)
-#define TimerMP     	    	(GetPrivIBase(IntuitionBase)->TimerMP)
-#define TimerIO     	    	(GetPrivIBase(IntuitionBase)->TimerIO)
-
-#define PublicClassList     	((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
-
 
 /* stegerg: one can have sysgadgets outside of window border! All sysgadgets in window
             border must have set GACT_???BORDER and, if they are in a gzz window, also
@@ -1088,8 +1069,6 @@ IPTR Custom_DoMethodA(struct IntuitionBase *, struct Gadget *, Msg);
 #endif
 #define DoMethodA(x, ...)   	    (REG_A6=(LONG)IntuitionBase, DoMethodA(x, __VA_ARGS__))
 #endif
-
-#define Custom_DoMethodA(x, ...)    Custom_DoMethodA(IntuitionBase, x, __VA_ARGS__)
 
 #define HAS_CHILDREN(w)     	    (NULL != w->firstchild)
 

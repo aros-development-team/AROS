@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -103,6 +103,7 @@ static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen,
 
 void CheckLayers(struct Screen *screen, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Layer *L;
 
     LOCK_REFRESH(screen);
@@ -121,6 +122,8 @@ void CheckLayers(struct Screen *screen, struct IntuitionBase *IntuitionBase)
 void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
                                  struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase   *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Rectangle *clipto = NULL;
     struct Rectangle  final_innerrect;
     
@@ -130,7 +133,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 
     D(bug("********* WindowSizeWillChange ******** dx = %d  dy = %d\n", dx, dy));
 
-    if (AVOID_WINBORDERERASE)
+    if (AVOID_WINBORDERERASE(IntuitionBase))
     {
 	final_innerrect.MinX = targetwindow->BorderLeft;
 	final_innerrect.MinY = targetwindow->BorderTop;
@@ -175,7 +178,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
     	    OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
 
-    	    if (!AVOID_WINBORDERERASE || AndRectRect(&rect, &final_innerrect, &rect))
+    	    if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
 	    {
             	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
 	    }
@@ -193,7 +196,7 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 	    OrRectRegion(L->DamageList, &rect);
             L->Flags |= LAYERREFRESH;
 
-    	    if (!AVOID_WINBORDERERASE || AndRectRect(&rect, &final_innerrect, &rect))
+    	    if (!AVOID_WINBORDERERASE(IntuitionBase) || AndRectRect(&rect, &final_innerrect, &rect))
 	    {
             	EraseRect(rp, rect.MinX, rect.MinY, rect.MaxX, rect.MaxY);
     	    }
@@ -227,6 +230,8 @@ void WindowSizeWillChange(struct Window *targetwindow, WORD dx, WORD dy,
 void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
                                  BOOL is_sizewindow, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
     struct Layer    *lay;
 
@@ -264,7 +269,11 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 	innerrect.MaxX = targetwindow->Width - 1 - targetwindow->BorderRight;
 	innerrect.MaxY = targetwindow->Height - 1 - targetwindow->BorderBottom;
 	
-    	EraseRelGadgetArea(targetwindow, AVOID_WINBORDERERASE ? &innerrect : NULL, TRUE, IntuitionBase);
+    	EraseRelGadgetArea(
+            targetwindow,
+            AVOID_WINBORDERERASE(IntuitionBase) ? &innerrect : NULL,
+            TRUE, IntuitionBase
+        );
     }
 
     /* If new size is smaller than old size add right/bottom
@@ -398,6 +407,7 @@ void WindowSizeHasChanged(struct Window *targetwindow, WORD dx, WORD dy,
 void DoMoveSizeWindow(struct Window *targetwindow, LONG NewLeftEdge, LONG NewTopEdge,
                       LONG NewWidth, LONG NewHeight, BOOL send_newsize, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct IIHData  	*iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
   //struct IntWindow  	*w       = (struct IntWindow *)targetwindow;
     struct Layer    	*targetlayer = WLAYER(targetwindow)/*, *L*/;

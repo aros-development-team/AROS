@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -52,13 +52,10 @@
 
 /***********************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/***********************************************************************************/
-
 IPTR _om_set(Class *cl, struct Image *im, struct TagItem *tags)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *tstate = tags;
     struct TagItem *tag;
     IPTR   tidata;
@@ -215,6 +212,8 @@ IPTR ImageClass__IM_ERASE(Class *cl, struct Image *im, struct impErase *msg)
      * Both erase methods are documented as handled the same
      * at this level, so we will fall thru...
      */
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD left, top, width, height;
 
     D(kprintf("ImageClass IM_ERASE(FRAME)\n") );

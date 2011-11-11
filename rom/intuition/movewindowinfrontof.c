@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -77,6 +77,7 @@ static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
 static VOID int_movewindowinfrontof(struct MoveWindowInFrontOfActionMsg *msg,
                                     struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window   	*window = msg->window;
     struct Window   	*behindwindow = msg->behindwindow;
     struct Screen   	*screen = window->WScreen;

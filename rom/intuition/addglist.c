@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -118,7 +118,7 @@
 
     /* gadget list must NOT be modified while gadget accesses are possible */
 #ifdef USEGADGETLOCK
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
 #else
     LOCKWINDOWLAYERS(window);
 #endif
@@ -154,7 +154,7 @@
     }
 
 #ifdef USEGADGETLOCK
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 #else
     UNLOCKWINDOWLAYERS(window);
 #endif

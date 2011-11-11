@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -67,9 +67,6 @@
 
 /**************************************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
@@ -79,6 +76,9 @@ void menu_draw_thick_line(Class *cl, struct RastPort *rport,
                      LONG x1, LONG y1, LONG x2, LONG y2,
                      UWORD thickness)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+
     Move(rport, x1, y1);
     Draw(rport, x2, y2);
     /* Georg Steger */
@@ -88,6 +88,8 @@ void menu_draw_thick_line(Class *cl, struct RastPort *rport,
 
 IPTR MenuDecorClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct scrdecor_data *data;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -130,6 +132,8 @@ IPTR MenuDecorClass__OM_GET(Class *cl, Object *obj, struct opGet *msg)
 
 IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpGetDefSizeSysImage *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
 
     switch(msg->mdp_Which)
     {
@@ -164,6 +168,8 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
 
 IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSysImage *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase       *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	 *rport = msg->mdp_RPort;
     UWORD   	    	 *pens = DRI(msg->mdp_Dri)->dri_Pens;
     LONG    	     	  left = msg->mdp_X;
@@ -179,7 +185,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
     {
     	case SUBMENUIMAGE:
         {
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rport, pens[BARBLOCKPEN]);
             }
@@ -199,7 +205,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
 
     	case MENUCHECK:
         {
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rport, pens[BARBLOCKPEN]);
             }
@@ -222,7 +228,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             struct TextFont *oldfont;
             UBYTE   	     oldstyle;
             
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rport, pens[BARDETAILPEN]);
             }
@@ -233,7 +239,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
 
             RectFill(rport, left, top, right, bottom);
 
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rport, pens[BARBLOCKPEN]);
     

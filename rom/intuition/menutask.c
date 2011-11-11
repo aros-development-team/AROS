@@ -108,6 +108,7 @@ static void AddToSelection(struct MenuHandlerData *mhd, struct IntuitionBase *In
 void DefaultMenuHandler(struct MenuTaskParams *taskparams)
 {
     struct IntuitionBase    *IntuitionBase = taskparams->intuitionBase;
+    struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct MenuHandlerData  *mhd = NULL;
     UBYTE           	    *mem;
     struct MsgPort          *port = NULL;
@@ -259,6 +260,7 @@ BOOL InitDefaultMenuHandler(struct IntuitionBase *IntuitionBase)
 
 static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Layer    *lay;
     struct Window   *win = NULL;
     struct Menu     *menu;
@@ -387,6 +389,7 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 
 static void HandleSelection(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Layer *lay;
 
     LockLayerInfo(&mhd->scr->LayerInfo);
@@ -414,18 +417,17 @@ static void HandleSelection(struct MenuHandlerData *mhd, struct IntuitionBase *I
 
 /**************************************************************************************************/
 
-#define STICKY (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS)
-
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
                              struct IntuitionBase *IntuitionBase)
 {
-    BOOL die = FALSE;
+    BOOL die = FALSE,
+        sticky = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS;
 
     switch(ie->ie_Code)
     {
     case MENUUP:
     case SELECTDOWN:
-    	if (!STICKY)
+    	if (!sticky)
     	{
 	    HandleSelection(mhd, IntuitionBase);
 
@@ -436,7 +438,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
         break;
 
     case SELECTUP:
-    	if (STICKY)
+    	if (sticky)
     	{
     	    HandleSelection(mhd, IntuitionBase);
     	    die = TRUE;
@@ -444,7 +446,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
     	break;
 
     case MENUDOWN:
-	if (STICKY)
+	if (sticky)
 	{
 	    if (mhd->keepmenuup)
 		mhd->keepmenuup = FALSE;
@@ -543,6 +545,7 @@ static void HandleCheckItem(struct Window *win, struct MenuItem *item,
 
 static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     BOOL	customdraw = FALSE;
 
     if ((menu->Flags & MENUENABLED) && mhd->menubarwin)
@@ -550,7 +553,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         struct RastPort *rp = mhd->menubarwin->RPort;
         WORD x1, x2, y1, y2;
         
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             WORD i;
             struct Menu *m = mhd->menu;
@@ -574,7 +577,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         }
 
 
-        if (MENUS_AMIGALOOK)
+        if (MENUS_AMIGALOOK(IntuitionBase))
         {
             SetDrMd(rp, COMPLEMENT);
             RectFill(rp, x1, y1, x2, y2);
@@ -582,7 +585,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         else
         {
             menu->Flags ^= HIGHITEM;
-	    if (MENUS_UNDERMOUSE)
+	    if (MENUS_UNDERMOUSE(IntuitionBase))
        	    {
     		struct mdpDrawBackground  msg;
 
@@ -604,7 +607,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
 		customdraw = DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);	
 	    }
 
-            if (!MENUS_UNDERMOUSE) y1++;
+            if (!MENUS_UNDERMOUSE(IntuitionBase)) y1++;
 
 	    if (!customdraw) {
                 SetDrMd(rp, JAM1);
@@ -615,7 +618,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
     
             if ((menu->Flags & HIGHITEM) && !customdraw)
             {
-                if (MENUS_UNDERMOUSE)
+                if (MENUS_UNDERMOUSE(IntuitionBase))
                 {
                     RenderFrame(rp, x1, y1, x2, y2, IDS_SELECTED, mhd, IntuitionBase);
                 }
@@ -643,7 +646,7 @@ static struct Menu *FindMenu(WORD *var, struct MenuHandlerData *mhd, struct Intu
         mouse_x = mhd->scrmousex - mhd->menubarwin->LeftEdge;
         mouse_y = mhd->scrmousey - mhd->menubarwin->TopEdge;
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             menu = NULL;
     
@@ -757,6 +760,7 @@ static struct MenuItem *FindSubItem(WORD *var, struct MenuHandlerData *mhd)
 
 static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TagItem win_tags[] =
     {
         {WA_Left    	, 0 	    	    	  },
@@ -775,7 +779,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
     /* No entry to draw ? */
     if(mhd->menu == NULL) return;
 
-    if (MENUS_UNDERMOUSE)
+    if (MENUS_UNDERMOUSE(IntuitionBase))
     {
         struct RastPort *temprp;
         WORD w, maxw = 0;
@@ -909,7 +913,7 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         CloseWindow(mhd->menubarwin);
         mhd->menubarwin = NULL;
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             struct mdpExitMenu  msg;
 
@@ -933,6 +937,7 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 
 static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     if (mhd->menubarwin)
     {
         struct Menu *menu = mhd->menu;
@@ -940,13 +945,13 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 
         SetFont(rp, mhd->dri->dri_Font);
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             RenderMenuBG(mhd->menubarwin, mhd, IntuitionBase);
         }
         else
         {
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
             }
@@ -960,7 +965,7 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
             SetAPen(rp, mhd->dri->dri_Pens[BARTRIMPEN]);
             RectFill(rp, 0, mhd->menubarwin->Height - 1, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 1);
     
-            if (!MENUS_AMIGALOOK)
+            if (!MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
                 RectFill(rp, 0, 0, 0, mhd->menubarwin->Height - 2);
@@ -982,6 +987,7 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
                             struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp;
     WORD len = strlen(menu->MenuName);
     WORD x, y;
@@ -991,7 +997,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
         rp = mhd->menubarwin->RPort;
         SetDrMd(rp, JAM1);
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             struct Menu *m;
             WORD         yoff;
@@ -1011,7 +1017,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
             y = mhd->scr->BarVBorder;
         }
 
-        if (MENUS_AMIGALOOK)
+        if (MENUS_AMIGALOOK(IntuitionBase))
         {
             SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
         }
@@ -1023,7 +1029,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
         Move(rp, x, y + rp->TxBaseline);
         Text(rp, menu->MenuName, len);
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             if (menu->FirstItem)
             {
@@ -1038,7 +1044,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
             WORD y2 = y + rp->TxHeight - 1;
             WORD x2;
 
-            if (MENUS_UNDERMOUSE)
+            if (MENUS_UNDERMOUSE(IntuitionBase))
             {
                 x2 = mhd->scr->MenuHBorder + mhd->menubaritemwidth - 1;
             }
@@ -1083,7 +1089,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
     width += (mhd->menuinnerleft + mhd->menuinnerright);
     height += (mhd->menuinnertop + mhd->menuinnerbottom);
 
-    if (MENUS_UNDERMOUSE)
+    if (MENUS_UNDERMOUSE(IntuitionBase))
     {
         xpos = mhd->menubarwin->LeftEdge + mhd->menubarwin->Width - 16;
         ypos = mhd->menubarwin->TopEdge;
@@ -1092,7 +1098,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
     {
         xpos = mhd->activemenu->LeftEdge + mhd->scr->BarHBorder + mhd->activemenu->JazzX;
     
-        if (MENUS_AMIGALOOK)
+        if (MENUS_AMIGALOOK(IntuitionBase))
         {
             ypos = mhd->scr->BarHeight + 1 + mhd->activemenu->JazzY;
         }
@@ -1116,7 +1122,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
             {TAG_DONE       , 0                }
         };
 
-        if (MENUS_UNDERMOUSE)
+        if (MENUS_UNDERMOUSE(IntuitionBase))
         {
             win_tags[1].ti_Data += (mhd->menubaritemheight * mhd->activemenunum + mhd->scr->MenuVBorder) -
                                    height / 2;
@@ -1219,6 +1225,7 @@ static void KillMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
 
 static void RenderMenu(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
 
     if (mhd->menuwin)
     {
@@ -1370,6 +1377,7 @@ static void KillSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 
 static void RenderSubMenu(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
 
     if (mhd->submenuwin)
     {
@@ -1392,7 +1400,7 @@ static void RenderSubMenu(struct MenuHandlerData *mhd, struct IntuitionBase *Int
 static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *box,
                        struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
-
+    struct GfxBase  *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   *win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort *rp = win->RPort;
     WORD             offx = -box->MinX + mhd->menuinnerleft;
@@ -1419,7 +1427,7 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 
             struct IntuiText *it = (struct IntuiText *)item->ItemFill;
     
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 PrintIText(rp, it, offx + item->LeftEdge, offy + item->TopEdge);
             }
@@ -1479,6 +1487,8 @@ static void RenderItem(struct MenuItem *item, WORD itemtype,  struct Rectangle *
 static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
                          struct IntuitionBase *IntuitionBase)
 {
+
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort *rp = win->RPort;
     WORD    	     borderx, bordery;
     BOOL	     customdraw = FALSE;
@@ -1503,7 +1513,7 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
 
     if (customdraw) return;
 
-    if (MENUS_AMIGALOOK)
+    if (MENUS_AMIGALOOK(IntuitionBase))
     {
         borderx = mhd->scr->MenuHBorder / 2;
         bordery = mhd->scr->MenuVBorder / 2;
@@ -1516,7 +1526,7 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
 
     /* White background */
 
-    if (MENUS_AMIGALOOK)
+    if (MENUS_AMIGALOOK(IntuitionBase))
     {
         SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
     }
@@ -1532,7 +1542,7 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
     
     /* Black border frame */
 
-    if (MENUS_AMIGALOOK)
+    if (MENUS_AMIGALOOK(IntuitionBase))
     {
         SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
         RectFill(rp, 0, 0, win->Width - 1, bordery - 1);
@@ -1551,6 +1561,7 @@ static void RenderMenuBG(struct Window *win, struct MenuHandlerData *mhd,
 static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                             struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
@@ -1576,7 +1587,7 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
         }
         else
         {
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
             }
@@ -1617,6 +1628,7 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
 static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
@@ -1656,7 +1668,7 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
 
         x1 += mhd->amigakey->Width + AMIGAKEY_KEY_SPACING;
 
-        if (MENUS_AMIGALOOK)
+        if (MENUS_AMIGALOOK(IntuitionBase))
         {
             SetAPen(rp, mhd->dri->dri_Pens[BARDETAILPEN]);
         }
@@ -1683,11 +1695,12 @@ static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHand
 static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
                                   struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     static CONST UWORD pattern [] = {0x8888, 0x2222};
 
     SetDrMd(rp, JAM1);
     
-    if (MENUS_AMIGALOOK)
+    if (MENUS_AMIGALOOK(IntuitionBase))
     {
     	SetAPen(rp, mhd->dri->dri_Pens[BARBLOCKPEN]);
     }
@@ -1709,6 +1722,8 @@ static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2
 static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD state,
                         struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+
     SetAPen(rp, mhd->dri->dri_Pens[(state == IDS_SELECTED) ? SHADOWPEN : SHINEPEN]);
 
     RectFill(rp, x1, y1, x2, y1);
@@ -1723,6 +1738,7 @@ static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd,
                           struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Window   	*win = ((itemtype == ITEM_ITEM) ? mhd->menuwin : mhd->submenuwin);
     struct RastPort 	*rp = win->RPort;
     struct Rectangle    *box = ((itemtype == ITEM_ITEM) ? ((struct Rectangle *)&mhd->activemenu->JazzX) : &mhd->submenubox);
@@ -1781,7 +1797,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 		    ((struct IntuiText*) fill)->NextText = NULL;
 	        }
 
-                if (MENUS_AMIGALOOK)
+                if (MENUS_AMIGALOOK(IntuitionBase))
                 {
                     PrintIText(rp, (struct IntuiText *)fill, x1, y1);
                 }
@@ -1824,7 +1840,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 		    Forbid();
 		    ((struct IntuiText*) fill)->NextText = NULL;
 	        }
-                if (MENUS_AMIGALOOK)
+                if (MENUS_AMIGALOOK(IntuitionBase))
                 {
                     PrintIText(rp, (struct IntuiText *)fill, x1, y1);
                 }
@@ -1852,7 +1868,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
             break;
 
         case HIGHCOMP:
-            if (MENUS_AMIGALOOK)
+            if (MENUS_AMIGALOOK(IntuitionBase))
             {
                 SetDrMd(rp, COMPLEMENT);
                 RectFill(rp, x1, y1, x2, y2);
@@ -1905,6 +1921,7 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
                                 struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct TextExtent te;
     WORD maxwidth;
 

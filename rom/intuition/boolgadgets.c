@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -57,6 +57,7 @@
 static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct BBox *bbox,
                             struct DrawInfo *dri, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     /* FIXME: Amiga handmade (non-boopsi) bool gadgets do not seem to know anything about
      * GFLG_LABELSTRING/GFLG_LABELIMAGE. Instead they always assume GadgetText to
      * point to a struct IntuiText!!!
@@ -111,6 +112,7 @@ static void RenderBoolLabel(struct RastPort *rp, struct Gadget *gadget, struct B
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
                         struct Requester * requester, struct IntuitionBase * IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct RastPort 	*rp;
     struct GadgetInfo    gi;
     struct DrawInfo 	*dri;
@@ -214,6 +216,7 @@ This function is called by Intuition's InputHandler when the GFLG_SELECTED state
 void RefreshBoolGadgetState(struct Gadget * gadget, struct Window * window,
                             struct Requester * requester, struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo    gi;
     struct RastPort 	*rp;
     struct DrawInfo 	*dri;

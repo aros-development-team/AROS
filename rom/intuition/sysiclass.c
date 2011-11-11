@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -73,10 +73,6 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase);
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-
 /**************************************************************************************************/
 
 #define SYSIFLG_GADTOOLS 1
@@ -90,6 +86,8 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
                      LONG x1, LONG y1, LONG x2, LONG y2,
                      UWORD thickness)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     Move(rport, x1, y1);
     Draw(rport, x2, y2);
     /* Georg Steger */
@@ -101,6 +99,8 @@ void draw_thick_line(Class *cl, struct RastPort *rport,
 
 BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct SysIData 	*data = INST_DATA(cl, obj);
     struct TagItem  	*taglist, *tag;
     struct TextFont 	*reffont = NULL;
@@ -271,6 +271,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 
 Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct SysIData *data;
     Object  	    *obj;
 
@@ -373,6 +374,8 @@ Object *SysIClass__OM_NEW(Class *cl, Class *rootcl, struct opSet *msg)
 
 IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 {
+    struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct SysIData 	    *data = INST_DATA(cl, obj);
     struct RastPort 	    *rport = msg->imp_RPort;
     struct Window           *win = NULL;
@@ -1034,6 +1037,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
 IPTR SysIClass__OM_DISPOSE(Class *cl, Object *obj, Msg msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct SysIData *data = INST_DATA(cl, obj);
     
     DisposeObject(data->frame);
@@ -1048,10 +1052,6 @@ IPTR SysIClass__OM_SET(Class *cl, Object *obj, Msg msg)
 	DoMethodA((Object *)data->frame, msg);
     return DoSuperMethodA(cl, obj, msg);
 }
-
-/**************************************************************************************************/
-
-#undef IntuitionBase
 
 /**************************************************************************************************/
 
@@ -1101,6 +1101,7 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
                              WORD left, WORD top, WORD width, WORD height,
                              struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD right = left + width - 1;
     WORD bottom = top + height - 1;
     BOOL leftedgegodown = FALSE;

@@ -82,6 +82,7 @@ static VOID int_showwindow(struct ShowWindowActionMsg *msg,
 static VOID int_showwindow(struct ShowWindowActionMsg *msg,
                            struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Window  *window = msg->window;
 #ifdef CGXSHOWHIDESUPPORT
     struct Library *CGXSystemBase;

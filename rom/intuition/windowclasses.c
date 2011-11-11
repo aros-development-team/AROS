@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
     
@@ -42,8 +42,6 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define MOVEHACK (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_PRIVILEDGEDREFRESH)
-
 /*
 
 jDc: opaque resize code is NOT suitable for other apps than MUI, I have no intentions in fixing it so that
@@ -75,6 +73,7 @@ on screen.
 
 void MoveTask(struct dragbar_data *data,struct Window *w,struct Screen *screen,struct IntuitionBase *IntuitionBase)
 {
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     ULONG signals;
 
     for (;;)
@@ -179,6 +178,7 @@ static void cliprectfill(struct Screen *scr, struct RastPort *rp,
                          WORD x1, WORD y1, WORD x2, WORD y2,
                          struct IntuitionBase *IntuitionBase)
 {
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     WORD scrx2 = scr->Width  - 1;
     WORD scry2 = scr->Height - 1;
 
@@ -238,10 +238,6 @@ static void drawwindowframe(struct Screen *scr, struct RastPort *rp,
         cliprectfill(scr, rp, x1, y1 + DWF_THICK_Y, x1 + DWF_THICK_X - 1, y2 - DWF_THICK_Y, IntuitionBase);
     }
 }
-
-/***********************************************************************************/
-
-#define IntuitionBase ((struct IntuitionBase *)(cl)->cl_UserData)
 
 /***********************************************************************************/
 
@@ -340,6 +336,9 @@ IPTR DragBarClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender * msg)
 
 IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase    *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct InputEvent *ie = msg->gpi_IEvent;
     IPTR    	       retval = GMR_NOREUSE;
 
@@ -410,7 +409,8 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
                 data->drag_layerlock = TRUE;
     	    #endif
             } else {
-                if (MOVEHACK)
+                /* MOVEHACK ? */
+                if (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_PRIVILEDGEDREFRESH)
                 {
     	    	#ifdef __MORPHOS__
                     data->movetask =
@@ -560,6 +560,9 @@ IPTR DragBarClass__GM_MOVETEST(Class *cl, struct Gadget *g, struct gpInput *msg)
 
 IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase    *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct GadgetInfo *gi = msg->gpi_GInfo;
     IPTR    	       retval = GMR_MEACTIVE;
 
@@ -837,6 +840,9 @@ IPTR DragBarClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *m
 
 IPTR DragBarClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct dragbar_data *data;
     struct Window   	*w;
 
@@ -996,6 +1002,8 @@ IPTR DragBarClass__OM_NEW(Class *cl, Object *o, Msg msg)
 
 void smartresize(struct Window *w,struct sizebutton_data *data,Class *cl)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct IIHData  *iihdata = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     LockLayers(&w->WScreen->LayerInfo);
@@ -1056,6 +1064,9 @@ void smartresize(struct Window *w,struct sizebutton_data *data,Class *cl)
 
 IPTR SizeButtonClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct InputEvent   *ie = msg->gpi_IEvent;
     IPTR            	 retval = GMR_NOREUSE;
 
@@ -1234,6 +1245,8 @@ fail:
 
 IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo   *gi = msg->gpi_GInfo;
     IPTR            	 retval = GMR_MEACTIVE;
 
@@ -1520,6 +1533,9 @@ IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput
 
 IPTR SizeButtonClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
+    struct IntuitionBase    *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase       *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct sizebutton_data  *data;
     struct Window           *w;
 

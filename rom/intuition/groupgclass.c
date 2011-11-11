@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -32,10 +32,6 @@
 #include "intuition_intern.h"
 #endif /* !__MORPHOS__ */
 
-#ifdef IntuitionBase
-#    undef IntuitionBase
-#endif
-
 /****************************************************************************************/
 
 /* On the Amiga tabcycling between member (string) gadgets of a group
@@ -43,12 +39,11 @@
 
 #define SUPPORT_TABCYCLE    1
 
-#define IntuitionBase       ((struct IntuitionBase *)(cl->cl_UserData))
-
 /****************************************************************************************/
 
 static void recalcgroupsize(Class *cl, struct Gadget *g)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct Gadget      	*member, *memberstate;
     WORD            	 w, h, width = 0/*g->Width*/, height = 0/*g->Height*/;
@@ -77,6 +72,7 @@ static void recalcgroupsize(Class *cl, struct Gadget *g)
 
 struct Gadget *next_tabcycleobject(Class *cl, struct Gadget *g)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct Gadget      	*member, *memberstate, *actobj;
     struct Gadget      	*rc = NULL;
@@ -125,6 +121,7 @@ struct Gadget *next_tabcycleobject(Class *cl, struct Gadget *g)
 
 struct Gadget *prev_tabcycleobject(Class *cl, struct Gadget *g)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct Gadget      	*member, *memberstate, *actobj;
     struct Gadget      	*prevmember = NULL, *rc = NULL;
@@ -195,6 +192,7 @@ IPTR GroupGClass__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
 IPTR GroupGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct Gadget      	*member, *memberstate;
     WORD            	 dx, new_groupleft, old_groupleft = g->LeftEdge;
@@ -240,6 +238,7 @@ IPTR GroupGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
 IPTR GroupGClass__OM_DISPOSE(Class *cl, struct Gadget *g, Msg msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData *data = INST_DATA(cl, g);
 
     /* Free all members */
@@ -333,6 +332,7 @@ IPTR GroupGClass__OM_REMMEMBER(Class *cl, struct Gadget *g, struct opMember *msg
 
 IPTR GroupGClass__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct gpHitTest     m;
     struct Gadget      	*member, *memberstate;
@@ -381,6 +381,7 @@ IPTR GroupGClass__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest *msg)
 
 IPTR GroupGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData   *data = INST_DATA(cl, g);
     struct gpInput  	 m;
     IPTR            	 rc;
@@ -461,6 +462,7 @@ IPTR GroupGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive
 
 IPTR GroupGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GroupGData	*data = INST_DATA(cl, g);
     struct Gadget	*member, *memberstate;
 

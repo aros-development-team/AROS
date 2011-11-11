@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -42,11 +42,6 @@
 #define DEBUG_BUTTON(x) ;
 /***********************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/***********************************************************************************/
-
 static VOID notifypressed(Class *cl, struct Gadget *g, struct GadgetInfo *ginfo, ULONG flags)
 {
     struct opUpdate method;
@@ -71,6 +66,8 @@ static VOID notifypressed(Class *cl, struct Gadget *g, struct GadgetInfo *ginfo,
 
 IPTR ButtonGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *ti;
     struct Gadget *g;
         
@@ -97,6 +94,8 @@ IPTR ButtonGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 IPTR ButtonGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *ti;
     IPTR    	    retval;
         
@@ -143,6 +142,8 @@ IPTR ButtonGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
 IPTR ButtonGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     /* We will let the AROS gadgetclass test if it is safe to render */
     if ( DoSuperMethodA(cl, (Object *)g, (Msg)msg) != 0 && msg->gpr_GInfo)
     {
@@ -285,6 +286,7 @@ IPTR ButtonGClass__GM_HITTEST(Class *cl, struct Gadget *g, struct gpHitTest * ms
 
 IPTR ButtonGClass__GM_GOACTIVE(Class * cl, struct Gadget * g, struct gpInput * msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GadgetInfo *gi = msg->gpi_GInfo;
     IPTR    	       retval = GMR_NOREUSE;
 
@@ -332,6 +334,7 @@ IPTR ButtonGClass__GM_GOACTIVE(Class * cl, struct Gadget * g, struct gpInput * m
 
 IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput * msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GadgetInfo  *gi = msg->gpi_GInfo;
     IPTR    	    	retval = GMR_MEACTIVE;
 
@@ -472,6 +475,7 @@ IPTR ButtonGClass__GM_HANDLEINPUT(Class * cl, struct Gadget * g, struct gpInput 
 
 IPTR ButtonGClass__GM_GOINACTIVE(Class * cl, struct Gadget *g, struct gpGoInactive * msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct GadgetInfo *gi = msg->gpgi_GInfo;
 
     if (!(g->Activation & GACT_TOGGLESELECT))

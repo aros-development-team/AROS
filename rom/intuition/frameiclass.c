@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -47,17 +47,14 @@
 
 /****************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/****************************************************************************/
-
 /* This is utility function used by frameiclass to draw a simple
  * bevel.
  */
 static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD shadow,
     	    	      WORD left, WORD top, WORD width, WORD height, BOOL thicken)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     /*
     Here we attempt to render a bevel as quickly as possible using
     as few system calls as possible. Note the ORDER of the rendering
@@ -95,7 +92,7 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
 
     if (thicken)
     {
-        if (FRAME_SIZE == 1)
+        if (FRAME_SIZE(IntuitionBase) == 1)
         {
             /* Thicken Right Side */
             Move(rport, left + width - 1, top + height - 1);
@@ -106,7 +103,7 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
             Move(rport, left + 1, top + height - 1);
             Draw(rport, left + 1, top + 1);
         }
-        else if (FRAME_SIZE == 2)
+        else if (FRAME_SIZE(IntuitionBase) == 2)
         {
             /* Thicken Right Side */
             Move(rport, left + width - 1, top + 1);
@@ -134,6 +131,8 @@ static void DrawFrame(Class * cl, struct RastPort *rport, UWORD shine, UWORD sha
 /* frame attribute setting method */
 static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct FrameIData   *fid = INST_DATA(cl, o);
 
     struct TagItem  	*tstate = msg->ops_AttrList;
@@ -191,12 +190,12 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 
         	} /* switch(fid->fid_FrameType) */
 
-        	if (FRAME_SIZE > 0)
+        	if (FRAME_SIZE(IntuitionBase) > 0)
         	{
                     fid->fid_HOffset *= 2;
         	}
 		
-        	if (FRAME_SIZE == 2)
+        	if (FRAME_SIZE(IntuitionBase) == 2)
         	{
                     fid->fid_VOffset *= 2;
         	}
@@ -214,6 +213,8 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 /* frame render method */
 static IPTR draw_frameiclass(Class *cl, struct Image *im, struct impDraw *msg, WORD width, WORD height)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct FrameIData *fid = INST_DATA(cl, (Object *)im);
 
     /*

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -30,11 +30,6 @@
 
 /**********************************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuiBase *)(cl->cl_UserData))
-
-/**********************************************************************************************/
-
 IPTR ModelClass__OM_NEW(Class *cl, Object *o, Msg msg)
 {
     struct ModelData *data;
@@ -51,6 +46,7 @@ IPTR ModelClass__OM_NEW(Class *cl, Object *o, Msg msg)
 
 IPTR ModelClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct ModelData *data = (struct ModelData *)INST_DATA(cl, o);
 
     for(;;)
@@ -96,6 +92,8 @@ IPTR ModelClass__OM_REMMEMBER(Class *cl, Object *o, struct opMember *msg)
 
 IPTR ModelClass__OM_UPDATE(Class *cl, Object *o, struct opUpdate *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct ModelData *data = (struct ModelData *)INST_DATA(cl, o);
     
     /* send OM_UPDATE to all members without mapping the tags! */

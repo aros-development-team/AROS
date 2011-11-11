@@ -101,6 +101,9 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase          *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase       *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+    struct Library          *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct NewScreen 	     ns;
     struct TagItem   	    *tag, *tagList;
     IPTR		     vctl = 0;
@@ -1385,9 +1388,11 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
 
+        struct DosLibrary *DOSBase = GetPrivIBase(IntuitionBase)->DOSBase;
+
 	/* Open dos.library only once, when first needed */
 	if (!DOSBase)
-            DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+            GetPrivIBase(IntuitionBase)->DOSBase = DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
 
         if (DOSBase)
         {

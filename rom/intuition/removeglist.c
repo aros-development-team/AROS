@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -85,7 +85,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     if (!remPtr) return ~0;
 
 #ifdef USEGADGETLOCK
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
 #else
     LOCKWINDOWLAYERS(remPtr);
 #endif
@@ -138,7 +138,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     }
  
 #ifdef USEGADGETLOCK
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 #else
     UNLOCKWINDOWLAYERS(remPtr);
 #endif
@@ -198,7 +198,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     }
 
 #ifdef USEGADGETLOCK
-    LOCKGADGET
+    LOCKGADGET(IntuitionBase)
 #else
     LOCKWINDOWLAYERS(remPtr);
 #endif
@@ -273,7 +273,7 @@ static VOID int_removeglist(struct RemoveGListActionMsg *msg,
     }
 
 #ifdef USEGADGETLOCK
-    UNLOCKGADGET
+    UNLOCKGADGET(IntuitionBase)
 #else
     UNLOCKWINDOWLAYERS(remPtr);
 #endif

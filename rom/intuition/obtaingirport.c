@@ -61,6 +61,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
+    struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct RastPort *rp;
 
     DEBUG_OBTAINGIRPORT(dprintf("ObtainGIRPort: GInfo 0x%lx Task 0x%lx <%s>\n",
@@ -73,7 +75,7 @@
         if (rp)
         {
 
-            LOCKGADGET
+            LOCKGADGET(IntuitionBase)
             /*bug("+++++++++++++ OBTAIN rp=%p lay=%p font=%p origfont=%p\n",rp,rp->Layer,rp->Font,gInfo->gi_RastPort->Font);*/
 
             if (rp->Layer)

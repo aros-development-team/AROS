@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -99,11 +99,6 @@ prop box).
 AROS propgclass at the moment does not copy this behaviour!!!!
  
 *****************************************************************************************/
-
-#undef IntuitionBase
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
-/****************************************************************************************/
 
 #define SetGadgetType(gad, type)    ((struct Gadget *)gad)->GadgetType &= ~GTYP_GTYPEMASK; \
     	    	    	    	    ((struct Gadget *)gad)->GadgetType |= type;
@@ -223,6 +218,8 @@ static VOID UpdateTop(Class *cl, struct Gadget *g, struct GadgetInfo *gi, BOOL f
 
 IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     const struct TagItem *tstate;
     struct TagItem  	*tag;
     struct PropGData    *data;
@@ -433,6 +430,8 @@ IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 
 IPTR PropGClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
 
     D(bug("PropGClass: new %p\n", o));
@@ -540,6 +539,7 @@ IPTR PropGClass__OM_GET(Class *cl, struct Gadget *g,struct opGet *msg)
 
 IPTR PropGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     IPTR retval = GMR_NOREUSE;
 
     /* Was GOACTIVE caused by an input event ? */
@@ -607,6 +607,7 @@ IPTR PropGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 
 IPTR PropGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct InputEvent   *ie;
     struct PropGData    *data = INST_DATA(cl, g);
 
@@ -701,6 +702,7 @@ IPTR PropGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg
 
 IPTR PropGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct PropGData *data = INST_DATA(cl, g);
 
     DEBUG_PROP(dprintf("render_propgclass:\n"));
@@ -766,6 +768,7 @@ IPTR PropGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 
 IPTR PropGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     /* Gadget cancelled by intuition ? */
 
     if (msg->gpgi_Abort == 1)

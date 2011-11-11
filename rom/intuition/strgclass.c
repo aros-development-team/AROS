@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -24,9 +24,6 @@
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
-
-#undef IntuitionBase
-#define IntuitionBase 	    	((struct IntuitionBase *)(cl->cl_UserData))
 
 #define SFLG_BUFFER_ALLOCATED   (1 << 2)
 #define SFLG_WORKBUF_ALLOCATED  (1 << 3)
@@ -73,6 +70,8 @@ flagvar &= ~flag;
 
 STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     const struct TagItem  *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, g);
     IPTR    	     retval = (IPTR)0;
@@ -256,6 +255,8 @@ IPTR StrGClass__OM_GET(Class *cl, struct Gadget * g, struct opGet *msg)
 
 IPTR StrGClass__OM_NEW(Class *cl, Object * o, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct Gadget *g = (struct Gadget *)DoSuperMethodA(cl, o, (Msg)msg);
     if (g)
     {
@@ -365,6 +366,7 @@ IPTR StrGClass__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 *********************/
 IPTR StrGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     UpdateStrGadget(g,
         	    msg->gpr_GInfo->gi_Window,
         	    msg->gpr_GInfo->gi_Requester,
@@ -379,7 +381,7 @@ IPTR StrGClass__GM_RENDER(Class *cl, struct Gadget *g, struct gpRender *msg)
 **************************/
 IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
-
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     IPTR    	    	 ret;
     IPTR    	    	 retval = GMR_MEACTIVE;
     UWORD   	    	 imsgcode;
@@ -467,6 +469,7 @@ IPTR StrGClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 *************************/
 IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct RastPort *rp;
     struct opUpdate  nmsg;
     struct TagItem   tags[3];
@@ -521,6 +524,7 @@ IPTR StrGClass__GM_GOINACTIVE(Class *cl, struct Gadget *g, struct gpGoInactive *
 ***********************/
 IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     if (msg->gpi_IEvent)
     {
 	UWORD imsgcode;
@@ -564,6 +568,7 @@ IPTR StrGClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
 ******************/
 IPTR StrGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     IPTR retval;
     
     retval = DoSuperMethodA(cl, (Object *)g, (Msg)msg);

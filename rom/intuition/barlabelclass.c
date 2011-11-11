@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
  
@@ -45,12 +45,6 @@
 #   include "intuition_extend.h"
 #endif
 
-#ifdef IntuitionBase
-#    undef IntuitionBase
-#endif
-
-#define IntuitionBase   ((struct IntuitionBase *)(cl->cl_UserData))
-
 /*************************** BarLabelClass *****************************/
 
 IPTR MenuBarLabelClass__OM_NEW(Class *cl, Object *obj, Msg msg)
@@ -70,6 +64,8 @@ IPTR MenuBarLabelClass__OM_NEW(Class *cl, Object *obj, Msg msg)
 
 IPTR MenuBarLabelClass__OM_SET(Class *cl, struct Image *im, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct TagItem *ti;
     
     if ((ti = FindTagItem(SYSIA_DrawInfo, msg->ops_AttrList)))
@@ -86,10 +82,11 @@ IPTR MenuBarLabelClass__OM_SET(Class *cl, struct Image *im, struct opSet *msg)
 
 IPTR MenuBarLabelClass__OM_GET(Class *cl, struct Image *im, struct opGet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     switch(msg->opg_AttrID)
     {
     case IA_SupportsDisable:
-	if (MENUS_AMIGALOOK)
+	if (MENUS_AMIGALOOK(IntuitionBase))
 	{
 	    *(msg->opg_Storage) = 0;
 	}
@@ -108,6 +105,8 @@ IPTR MenuBarLabelClass__OM_GET(Class *cl, struct Image *im, struct opGet *msg)
 
 IPTR MenuBarLabelClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct MenuBarLabelData *data = INST_DATA(cl, im);
 
     if (data->dri)
@@ -125,7 +124,7 @@ IPTR MenuBarLabelClass__IM_DRAW(Class *cl, struct Image *im, struct impDraw *msg
 	y2 = y1 + im->Height - 1;
 
 	
-	if (MENUS_AMIGALOOK)
+	if (MENUS_AMIGALOOK(IntuitionBase))
 	{
 	    SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
 	    RectFill(rp, x1, y1, x2, y2);

@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2005, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -46,13 +46,12 @@ struct ICData;
 
 /****************************************************************************/
 
-#undef IntuitionBase
-#define IntuitionBase ((struct IntuitionBase *)cl->cl_UserData)
-
 /* set gadget attributes
 */
 static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+    struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     const struct TagItem *tstate = msg->ops_AttrList;
     struct TagItem  	 *tag;
     IPTR    	    	  tidata;
@@ -464,6 +463,7 @@ IPTR GadgetClass__OM_SET(Class *cl, struct ExtGadget *eg, struct opSet *msg)
 
 IPTR GadgetClass__OM_NOTIFY(Class *cl, struct GadgetData *gd, struct opUpdate *msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     DEBUG_GADGET(dprintf("dispatch_gadgetclass: OM_NOTIFY\n"));
     DoNotify(cl, (Object *)gd, &(gd->IC), msg);
     DEBUG_GADGET(dprintf("dispatch_gadgetclass: OM_NOTIFY done\n"));
@@ -473,6 +473,7 @@ IPTR GadgetClass__OM_NOTIFY(Class *cl, struct GadgetData *gd, struct opUpdate *m
 
 IPTR GadgetClass__OM_DISPOSE(Class *cl, struct GadgetData *gd, Msg msg)
 {
+    struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     FreeICData((struct ICData *)&gd->IC);
     return DoSuperMethodA(cl, (Object *)gd, (Msg)msg);
 }
