@@ -337,14 +337,14 @@
    it makes code of other metaclasses more consistent
 */
 
-#define OOPBase ((struct IntOOPBase *)(cl->OOPBasePtr))
-#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
 #define IS_META_ATTR(attr, idx) ( (idx = attr - MetaAttrBase) < num_Meta_Attrs )
 /**********************
 **  BaseMeta::New()  **
 **********************/
 static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
+    struct Library *UtilityBase = OOPBase->ob_UtilityBase;
     struct metadata *data;
 
     struct OOP_InterfaceDescr *ifdescr = NULL;
@@ -501,6 +501,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 **************************/
 static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     struct metadata *data = OOP_INST_DATA(cl, o);
     IPTR iterval = 0UL;
     CONST_STRPTR interface_id = NULL;
@@ -532,6 +533,7 @@ static VOID basemeta_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 ****************************/
 static struct IFMethod *basemeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_meta_getifinfo *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     struct IFMethod *mtab = NULL;
     EnterFunc(bug("BaseMeta::hasinterface(cl=%p, o=%p, iid=%s\n",
     	cl, o, msg->interface_id));
@@ -574,6 +576,7 @@ static struct IFMethod *basemeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct 
 static struct IFMethod *basemeta_iterateifs(
 			OOP_Class *cl, OOP_Object *o, struct P_meta_iterateifs *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     struct IFMethod *current_if = NULL;
     
     EnterFunc(bug("BaseMeta::iterateifs(o=%p)\n", o));
@@ -637,8 +640,6 @@ static struct IFMethod *basemeta_iterateifs(
     
 }			
 
-#undef OOPBase
-
 /*******************************
 **  BaseMeta DoSuperMethod()  **
 *******************************/
@@ -648,10 +649,9 @@ static struct IFMethod *basemeta_iterateifs(
    meta's UserData (IFMeta or HIDDMeta class
 */   
    
-#define OOPBase ((struct IntOOPBase *)cl->OOPBasePtr)
-
 IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     struct IFMethod *ifm;
     IPTR ret;
     
@@ -675,6 +675,7 @@ IPTR basemeta_dosupermethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 *******************************/
 IPTR basemeta_coercemethod(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     ULONG method_offset = *msg & METHOD_MASK;
     struct IFMethod *ifm;
     
@@ -710,7 +711,6 @@ IPTR basemeta_domethod(OOP_Object *o, OOP_Msg msg)
 {
     return basemeta_coercemethod(OOP_OCLASS(o), o, msg);
 }
-#undef OOPBase
 
 /**********************
 **  init_basemeta()  **

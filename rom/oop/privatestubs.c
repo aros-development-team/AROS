@@ -15,10 +15,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase (OOP_OOPBASE(o))
-
 BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDescr *ifdescr)
 {
+    struct IntOOPBase *OOPBase = OOP_OOPBASE(o);
     struct P_meta_allocdisptabs p;
     
     if (!OOPBase->ob_M_meta_allocdisptabs)
@@ -33,6 +32,7 @@ BOOL meta_allocdisptabs(OOP_Object *o, OOP_Class *super, struct OOP_InterfaceDes
 
 VOID meta_freedisptabs(OOP_Object *o)
 {
+    struct IntOOPBase *OOPBase = OOP_OOPBASE(o);
     struct P_meta_freedisptabs p;
     
     if (!OOPBase->ob_M_meta_freedisptabs)
@@ -49,6 +49,7 @@ VOID meta_freedisptabs(OOP_Object *o)
 
 struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR *interface_id_ptr, ULONG *num_methods_ptr)
 {
+    struct IntOOPBase *OOPBase = OOP_OOPBASE(o);
     struct P_meta_iterateifs p;
     
     if (!OOPBase->ob_M_meta_iterateifs)
@@ -65,6 +66,7 @@ struct IFMethod *meta_iterateifs(OOP_Object *o, IPTR *iterval_ptr, CONST_STRPTR 
 
 struct IFMethod *meta_getifinfo(OOP_Object *o, CONST_STRPTR interface_id, ULONG *num_methods_ptr)
 {
+    struct IntOOPBase *OOPBase = OOP_OOPBASE(o);
     struct P_meta_getifinfo p;
     
     if (!OOPBase->ob_M_meta_getifinfo)

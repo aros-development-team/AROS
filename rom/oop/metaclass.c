@@ -56,8 +56,6 @@ static ULONG calc_ht_entries(struct ifmeta_inst *cl ,OOP_Class *super,
 */   
    
    
-#define OOPBase (GetOBase(cl->OOPBasePtr))
-
 #ifdef DUMP_BUCKET
 
 static void dump_bucket(struct IFBucket *b)
@@ -76,13 +74,13 @@ static void dump_bucket(struct IFBucket *b)
 
 #endif	
 
-#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
-
 /********************
 **  IFMeta::New()  **
 ********************/
 static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
+    struct Library *UtilityBase = OOPBase->ob_UtilityBase;
     IPTR (*domethod)(OOP_Object *, OOP_Msg) = NULL;
     IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
     IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
@@ -165,6 +163,7 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 /* Allocates and initializes the interface hashtable, and the methodtables */
 static BOOL ifmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_allocdisptabs *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     ULONG num_if;
     
     struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
@@ -341,6 +340,7 @@ failure:
 static VOID ifmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
     /* This frees the hashtable + all buckets */
     
@@ -354,6 +354,7 @@ static VOID ifmeta_freedisptabs(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 **************************/
 static struct IFMethod *ifmeta_getifinfo(OOP_Class *cl, OOP_Object *o, struct P_meta_getifinfo *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     ULONG iid;
     struct ifmeta_inst *inst = (struct ifmeta_inst *)o;
     struct IFMethod *mtab = NULL;
@@ -485,8 +486,6 @@ loop:
     ReturnPtr ("IFMeta::findmethod", struct IFMethod *, NULL);
 
 }
-
-#undef OOPBase
 
 /**********
   Support
@@ -742,8 +741,6 @@ static BOOL expandbucket(struct IFBucket *b, ULONG num_methods)
 **  DoMethod()  **
 *****************/
 
-#define OOPBase ((struct IntOOPBase *)OOP_OOPBASE(object))
-
 static IPTR Meta_DoMethod(OOP_Object *object, OOP_Msg msg)
 {   
     D(bug("[META] DoMethod(0x%p), class 0x%p\n", object, OOP_OCLASS(object)));
@@ -808,5 +805,3 @@ static IPTR Meta_DoSuperMethod(OOP_Class *cl, OOP_Object *object, OOP_Msg msg)
 {
     return Meta_CoerceMethod(IFI(cl)->base.public.superclass, object, msg);
 }
-
-#undef OOPBase
