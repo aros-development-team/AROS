@@ -13,6 +13,8 @@
 
 #include <stdio.h>
 
+#include "cpuspecific.h"
+
 APTR ProcessorBase = NULL;
 
 ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod)
@@ -158,6 +160,8 @@ static VOID PrintProcessorInformation()
         if (cpuspeed)
             printf(" (%llu Mhz)", (unsigned long long)(cpuspeed / 1000000));
         printf("\n");
+
+        PrintCPUSpecificInfo(i, ProcessorBase);
     }
 }
 

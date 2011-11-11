@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES   := ShowConfig
+FILES   := ShowConfig cpu_i386
 EXEDIR  := $(AROS_TOOLS)
 
 #MM- workbench-tools : workbench-tools-showconfig
