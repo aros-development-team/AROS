@@ -155,7 +155,7 @@
 #define ARM_VENDOR_ARMLTD           0x41 /* ARM Ltd                 */
 #define ARM_VENDOR_DEC              0x44 /* Digital Equipment Corp  */
 #define ARM_VENDOR_MOTOROLA         0x4D /* Motorola/Freescale      */
-#define ARM_VENDOR_QUALLCOMM        0x51 /* Quallcomm               */
+#define ARM_VENDOR_QUALCOMM         0x51 /* Qualcomm                */
 #define ARM_VENDOR_MARVELL          0x56 /* Marvell Semi Inc        */
 #define ARM_VENDOR_INTEL            0x69 /* Intel corp              */
 
