@@ -3209,7 +3209,7 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 
         /* Setup timer handler ---------------------------------------------*/
         data->wd_TimerIHN.ihn_Flags  = MUIIHNF_TIMER;
-        data->wd_TimerIHN.ihn_Millis = 3000;
+        data->wd_TimerIHN.ihn_Millis = 1000;
         data->wd_TimerIHN.ihn_Object = self;
         data->wd_TimerIHN.ihn_Method = MUIM_Wanderer_HandleTimer;
 
@@ -3440,7 +3440,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
     while ((child = NextObject(&cstate)))
     {
         /* Set the Wanderer title to each window's screen title */
-        SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
+        STRPTR current_title = NULL;
+        GET(child, MUIA_Window_ScreenTitle, &current_title);
+        if (strcmp(current_title, scr_title) != 0) /* Limit the menu bar flickering */
+            SET(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
 
         /* Request rate-limited, conditional refresh */
         DoMethod(child, MUIM_IconWindow_RateLimitRefresh);
