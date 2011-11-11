@@ -926,7 +926,7 @@ IPTR IconWindowDrawerList__MUIM_IconWindowIconList_RateLimitRefresh
 
     current = GetCurrentTimeInSeconds();
 
-    if (data->iwidld_LastRefresh <= current - 4) /* At most every 4 seconds */
+    if (data->iwidld_LastRefresh <= current - 3) /* At most every 3 seconds */
     {
         DoMethod(self, MUIM_IconList_Update);
         DoMethod(self, MUIM_IconList_Sort);
