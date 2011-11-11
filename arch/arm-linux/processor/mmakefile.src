@@ -1,0 +1,12 @@
+# $Id: mmakefile.src 40246 2011-07-20 13:58:10Z sonic $
+#
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -DHOST_OS_$(AROS_TARGET_VARIANT) -I$(SRCDIR)/rom/processor
+
+FILES := arch_init getcpuinfo
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=linux-arm files=$(FILES)
+
+%common

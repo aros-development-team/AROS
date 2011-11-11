@@ -149,7 +149,15 @@
 #define VENDOR_UNKNOWN                0
 #define VENDOR_AMD                    1
 #define VENDOR_INTEL                  2
-#define VENDOR_MOTOROLA               3
+#define VENDOR_CYRIX                  3
+#define VENDOR_UMC                    4
+#define VENDOR_NEXGEN                 5
+#define VENDOR_CENTAUR                6
+#define VENDOR_RISE                   7
+#define VENDOR_SIS                    8
+#define VENDOR_TRANSMETA              9
+#define VENDOR_NSC                   10 /* National Semiconductor */
+#define VENDOR_MOTOROLA             256
 
 /* ARM implementer IDs */
 #define ARM_VENDOR_ARMLTD           0x41 /* ARM Ltd                 */
