@@ -42,9 +42,21 @@ void con_InitVESA(unsigned short version, struct vbe_mode *mode)
         scr_Width  = mode->x_resolution;
     	scr_Height = mode->y_resolution;
 
-    	/* CHECKME: is it correct? It should fall back to VGA buffer address for text modes */
+	/* CHECKME: is it correct? It should fall back to VGA buffer address for text modes */
     	if (!scr_FrameBuffer)
     	    scr_FrameBuffer = (void *)((unsigned long)mode->win_b_segment << 16);
+
+
+	/*
+	 * QEmu in text mode (VBE number 0x03) is known to supply a
+	 * struct vbe_mode filled with zeroes. This should work around it.
+	 */	
+	if (!scr_FrameBuffer)
+	    scr_FrameBuffer = VGA_TEXT_ADDR;
+	if (!scr_Width)
+	    scr_Width = VGA_TEXT_WIDTH;
+	if (!scr_Height)
+	    scr_Height = VGA_TEXT_HEIGHT;
 
 	txt_Clear();
     }
@@ -57,9 +69,9 @@ void con_InitVESA(unsigned short version, struct vbe_mode *mode)
 void con_InitVGA(void)
 {
     scr_Type        = SCR_TEXT;
-    scr_FrameBuffer = (void *)0xb8000;
-    scr_Width       = 80;
-    scr_Height      = 25;
+    scr_FrameBuffer = VGA_TEXT_ADDR;
+    scr_Width       = VGA_TEXT_WIDTH;
+    scr_Height      = VGA_TEXT_HEIGHT;
 
     txt_Clear();
 }
