@@ -107,7 +107,6 @@
 ************/
 OOP_Object *root_new(OOP_Class *root_cl, OOP_Class *cl, struct pRoot_New *param)
 {
-    struct IntOOPBase *OOPBase = (struct IntOOPBase *)root_cl->OOPBasePtr;
     struct _OOP_Object *o;
 
     EnterFunc(bug("Root::New(cl=%s, param = %p)\n",
