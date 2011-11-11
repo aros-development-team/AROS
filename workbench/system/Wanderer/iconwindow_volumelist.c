@@ -572,6 +572,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
                                     iconNode->ie_IconListEntry.udata = bdrp_direntry;
                                     D(bug("[Wanderer:VolumeList] %s: Reinserting '%s'\n", __PRETTY_FUNCTION__, iconNode->ie_IconNode.ln_Name));
                                     DoMethod(self, MUIM_Family_AddTail, (struct Node*)&iconNode->ie_IconNode);
+                                    /* retVal - this case is not considered a change */
                                     break;
                                 }
                             }
@@ -1296,10 +1297,15 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
     return retVal;
 }
 
+/* Notes:
+ * This handle only changes to .backdrop file. In theory we could just add notification on this file instead of whole root directory
+ * but this file is not guaranteed to exist - meaning that leavout dune during "first" session would not be visible until reboot
+ */
 IPTR IconWindowVolumeList__HandleFSUpdate(Object *target, struct NotifyMessage *msg)
 {
     struct List         *iconList = NULL, fsLeftOutList;
     struct IconEntry    *entry = NULL, *tmpEntry = NULL, *fsEntry = NULL;
+    BOOL                changed = FALSE;
 
     D(bug("[Wanderer:VolumeList]: %s(NotifyMessage @ %p -> '%s')\n", __PRETTY_FUNCTION__, msg, msg->nm_NReq->nr_Name));
 
@@ -1308,6 +1314,7 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *target, struct NotifyMessage *
     D(bug("[Wanderer:VolumeList] %s: IconWindowVolumeList, IconList @ %p\n", __PRETTY_FUNCTION__, target));
 
     GET(target, MUIA_Family_List, &iconList);
+    /* Find out which icon matches the volument that notified us */
     ForeachNode(iconList, entry)
     {
         if ((entry->ie_IconListEntry.type == ST_ROOT)
@@ -1322,6 +1329,7 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *target, struct NotifyMessage *
     {
         D(bug("[Wanderer:VolumeList] %s: Processing .backdrop for entry @ %p '%s'\n", __PRETTY_FUNCTION__, fsEntry, fsEntry->ie_IconNode.ln_Name));
 
+        /* Find other icons that are linked the the root icon */
         ForeachNodeSafe(iconList, entry,tmpEntry)
         {
             if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == fsEntry))
@@ -1332,16 +1340,21 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *target, struct NotifyMessage *
             }
         }
 
-        IconWindowVolumeList__Func_ParseBackdrop(target, fsEntry, &fsLeftOutList);
+        /* Parse .backdrop and add any of the existing icons back to family list */
+        changed = IconWindowVolumeList__Func_ParseBackdrop(target, fsEntry, &fsLeftOutList);
 
+        /* Destroy left-out entries which are no longer valid */
         ForeachNodeSafe(&fsLeftOutList, entry, tmpEntry)
         {
             D(bug("[Wanderer:VolumeList] %s: Destroying orphaned entry @ %p '%s'\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
             Remove(&entry->ie_IconNode);
             DoMethod(target, MUIM_IconList_DestroyEntry, entry);
+            changed = TRUE;
         }
 
-        DoMethod(target, MUIM_IconList_Sort);
+        /* Re-sort the list */
+        if (changed)
+            DoMethod(target, MUIM_IconList_Sort);
     }
     
     return 0;
