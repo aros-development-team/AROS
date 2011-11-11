@@ -269,8 +269,8 @@ IPTR panelToolBar__PrefsSetup(Class *CLASS, Object *self, struct opSet *message)
 #else
         panelToolBar__PrefsNotificationObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
 #endif
-	if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
-	{
+    if (GetVar(extension_PrefsFile, extension_PrefsData, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+    {
             D(bug("[IW.toolbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
         }
     }

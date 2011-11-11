@@ -206,20 +206,20 @@ static int IconDrawerList__ParseContents(struct IClass *CLASS, Object *obj)
                         }
                         this_Icon->ie_IconNode.ln_Pri = 0;
 
-			if (fib->fib_DirEntryType == ST_FILE)
-			{
+            if (fib->fib_DirEntryType == ST_FILE)
+            {
                             this_Icon->ie_IconListEntry.type = ST_FILE;
                             D(bug("[IconDrawerList] %s: ST_FILE Entry created\n", __PRETTY_FUNCTION__));
-			}
-			else if (fib->fib_DirEntryType == ST_USERDIR)
-			{
+            }
+            else if (fib->fib_DirEntryType == ST_USERDIR)
+            {
                             this_Icon->ie_IconListEntry.type = ST_USERDIR;
                             D(bug("[IconDrawerList] %s: ST_USERDIR Entry created\n", __PRETTY_FUNCTION__));
-			}
-			else
-			{
+            }
+            else
+            {
                             D(bug("[IconDrawerList] %s: Unknown Entry Type created\n", __PRETTY_FUNCTION__));
-			}
+            }
                     }
                     else
                     {
@@ -318,7 +318,7 @@ IPTR IconDrawerList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *mes
 
                     data->drawer = StrDup((char*)tag->ti_Data);
                     DoMethod(obj, MUIM_IconList_Update);
-		    DoMethod(obj, MUIM_IconList_Sort);
+            DoMethod(obj, MUIM_IconList_Sort);
 
                     break;
         }

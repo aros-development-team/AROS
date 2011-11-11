@@ -6,7 +6,7 @@
 /*** Instance data **********************************************************/
 struct IconDrawerList_DATA
 {
-	char *drawer;
+    char *drawer;
 };
 
 #endif /* _ICONDRAWERLIST_PRIVATE_H_ */

@@ -6,7 +6,7 @@
 /*** Instance data **********************************************************/
 struct IconVolumeList_DATA
 {
-	int dummy;
+    int dummy;
 };
 
 #endif /* _ICONVOLUMELIST_PRIVATE_H_ */

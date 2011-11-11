@@ -418,16 +418,16 @@ D(bug("[Icon] %s: Not visible or missing DOB\n", __PRETTY_FUNCTION__));
 ///Icon__LabelFunc_SplitLabel()
 void Icon__LabelFunc_SplitLabel(Object *obj, struct Icon_DATA *data, struct IconEntry *icon)
 {
-    ULONG   	labelSplit_MaxLabelLineLength = XGET(_parent(obj), MUIA_Icon_LabelText_MaxLineLen);
+    ULONG       labelSplit_MaxLabelLineLength = XGET(_parent(obj), MUIA_Icon_LabelText_MaxLineLen);
     ULONG       labelSplit_LabelLength = strlen(icon->IcD_Label_TXTBUFF);
     ULONG       txwidth;
     ULONG       labelSplit_FontY = data->icld_IconLabelFont->tf_YSize;
      int        labelSplit_CharsDone,   labelSplit_CharsSplit;
-    ULONG 		labelSplit_CurSplitWidth;
+    ULONG         labelSplit_CurSplitWidth;
 
-	if ((data->icld__Option_TrimVolumeNames) && 
-		((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[labelSplit_LabelLength - 1] == ':')))
-		labelSplit_LabelLength--;
+    if ((data->icld__Option_TrimVolumeNames) && 
+        ((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[labelSplit_LabelLength - 1] == ':')))
+        labelSplit_LabelLength--;
 
     if (labelSplit_MaxLabelLineLength >= labelSplit_LabelLength)
     {
@@ -600,9 +600,9 @@ D(bug("[Icon]: %s: Attempting to split label ..\n", __PRETTY_FUNCTION__));
 D(bug("[Icon]: %s: Building unsplit label (len = %d) ..\n", __PRETTY_FUNCTION__, IcD_LabelLength));
 #endif
 
-		if ((data->icld__Option_TrimVolumeNames) && 
-			((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[IcD_LabelLength - 1] == ':')))
-			IcD_LabelLength--;
+        if ((data->icld__Option_TrimVolumeNames) && 
+            ((icon->IcD_IconEntry.type == ST_ROOT) && (icon->IcD_Label_TXTBUFF[IcD_LabelLength - 1] == ':')))
+            IcD_LabelLength--;
 
         if(IcD_LabelLength > XGET(_parent(obj), MUIA_Icon_LabelText_MaxLineLen))
         {
@@ -874,16 +874,16 @@ D(bug("[Icon] %s: Font YSize %d Baseline %d\n", __PRETTY_FUNCTION__,data->icld_I
             }
             else if ((data->icld_SortFlags & ICONLIST_SORT_MASK) == ICONLIST_SORT_BY_DATE)
             {
-				if (message->icon->IcD_Flags & ICONENTRY_FLAG_TODAY)
-				{
-					buf  = message->icon->IcD_Time_TXTBUFF;
-					txwidth = message->icon->IcD_Time_Width;
-				}
-				else
-				{
-					buf = message->icon->IcD_Date_TXTBUFF;
-					txwidth = message->icon->IcD_Date_Width;
-				}
+                if (message->icon->IcD_Flags & ICONENTRY_FLAG_TODAY)
+                {
+                    buf  = message->icon->IcD_Time_TXTBUFF;
+                    txwidth = message->icon->IcD_Time_Width;
+                }
+                else
+                {
+                    buf = message->icon->IcD_Date_TXTBUFF;
+                    txwidth = message->icon->IcD_Date_Width;
+                }
             }
 
             if (buf)
@@ -970,7 +970,7 @@ D(bug("[Icon]: %s()\n", __PRETTY_FUNCTION__));
         (
             message->filename, 
             ICONGETA_FailIfUnavailable,        FALSE,
-			ICONGETA_GenerateImageMasks,       TRUE,
+            ICONGETA_GenerateImageMasks,       TRUE,
             ICONA_ErrorCode,                   &geticon_error,
             TAG_DONE
         );
@@ -1100,16 +1100,16 @@ D(bug("[Icon] %s: Failed to Allocate Entry label string Storage!\n", __PRETTY_FU
         entry->IcD_IconEntry.type = ST_USERDIR;
     }
 
-	/* Override type if specified during createntry */
-	if (message->type != 0)
-	{
-		entry->IcD_IconEntry.type = message->type;
+    /* Override type if specified during createntry */
+    if (message->type != 0)
+    {
+        entry->IcD_IconEntry.type = message->type;
 D(bug("[Icon] %s: Overide Entry Type. New Type = %x\n", __PRETTY_FUNCTION__, entry->IcD_IconEntry.type));
-	}
-	else
-	{
+    }
+    else
+    {
 D(bug("[Icon] %s: Entry Type = %x\n", __PRETTY_FUNCTION__, entry->IcD_IconEntry.type));
-	}
+    }
 
     strcpy(entry->IcD_IconEntry.filename, message->filename);
     strcpy(entry->IcD_Label_TXTBUFF, message->label);

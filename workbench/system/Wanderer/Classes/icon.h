@@ -2,8 +2,8 @@
 #define _WANDERER_CLASSES_ICON_H
 
 /*
-	Copyright  2002-2009, The AROS Development Team. All rights reserved.
-	$Id$
+    Copyright  2002-2009, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <string.h>

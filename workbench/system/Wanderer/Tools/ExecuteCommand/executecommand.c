@@ -152,9 +152,9 @@ Object *ExecuteCommand__OM_NEW
     /* Check if object creation succeeded */
     if (self == NULL)
     {
-    	if (unlockParent) UnLock(parent);
-	
-    	return NULL;
+        if (unlockParent) UnLock(parent);
+    
+        return NULL;
     }
     
     /* Store instance data -------------------------------------------------*/
@@ -301,7 +301,7 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     (
                         command,
                         
-                        SYS_Asynch,	       TRUE,
+                        SYS_Asynch,           TRUE,
                         SYS_Input,      (IPTR) console,
                         SYS_Output,     (IPTR) NULL,
                         SYS_Error,      (IPTR) NULL,

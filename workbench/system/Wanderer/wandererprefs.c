@@ -724,7 +724,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk()\n"));
   {
 D(bug("[Wanderer:Prefs] WandererPrefs_ProccessViewSettingsChunk: Updating Existing node @ 0x%p\n", _viewSettings_Node));
     if (_viewSettings_Node->wpbn_Background)
-		FreeVec((APTR)_viewSettings_Node->wpbn_Background);
+        FreeVec((APTR)_viewSettings_Node->wpbn_Background);
     /* TODO: Free any Cached backgrounds here .. */
   }
   else
