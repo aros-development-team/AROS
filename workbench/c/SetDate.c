@@ -93,7 +93,7 @@ int main(void)
 {
     struct AnchorPath *aPath;
     struct RDArgs  *rda;
-    IPTR            args[5] = { NULL, NULL, NULL, NULL, FALSE };
+    IPTR            args[5] = { (IPTR)NULL, (IPTR)NULL, (IPTR)NULL, (IPTR)NULL, (IPTR)FALSE };
     struct DateTime dt;
     LONG            error = 0;
     BPTR            oldCurDir;
@@ -148,7 +148,7 @@ int main(void)
         aPath->ap_Strlen    = MAX_PATH_LEN;
 
         /* Save the current dir */
-        oldCurDir = CurrentDir(NULL);
+        oldCurDir = CurrentDir(BNULL);
         CurrentDir(oldCurDir);
 
         error = MatchFirst((STRPTR)args[ARG_FILE], aPath);
