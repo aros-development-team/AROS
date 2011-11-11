@@ -448,6 +448,64 @@ Object *IconWindowDrawerList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
 }
 ///
 
+IPTR IconWindowDrawerList__HandleFSUpdate(Object * iconwindow, struct NotifyMessage *msg)
+{
+    return DoMethod(iconwindow, MUIM_IconWindowDrawerList_FileSystemChanged);
+}
+
+ULONG GetCurrentTimeInSeconds()
+{
+    struct DateStamp stamp;
+
+    DateStamp(&stamp);
+
+    return (stamp.ds_Days * 60 * 60 * 24) + (stamp.ds_Minute * 60) + (stamp.ds_Tick / 50);
+}
+
+VOID RemoveFSNotification(struct IconWindowDrawerList_DATA *data)
+{
+    if (data->iwidld_DrawerNotifyRequest.nr_Name != NULL)
+    {
+        D(bug("[Wanderer:DrawerList] %s: Removing  Drawer FS Notification Request\n", __PRETTY_FUNCTION__));
+        /* EndNotify also replies all already send messages, so they won't end up hitting dead space in handler->HandleFSUpdate */
+        EndNotify(&data->iwidld_DrawerNotifyRequest);
+        FreeVec(data->iwidld_DrawerNotifyRequest.nr_Name);
+        data->iwidld_DrawerNotifyRequest.nr_Name = NULL;
+    }
+}
+
+VOID UpdateFSNotification(STRPTR directory_path, struct IconWindowDrawerList_DATA *data, APTR target)
+{
+    /* Remove existing if present */
+    RemoveFSNotification(data);
+
+    /* Setup new */
+    if (directory_path != NULL)
+    {
+        if (data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
+        {
+            data->iwidld_FSHandler.target                            = target;
+            data->iwidld_FSHandler.HandleFSUpdate                    = IconWindowDrawerList__HandleFSUpdate;
+            data->iwidld_DrawerNotifyRequest.nr_Name                 = StrDup(directory_path);
+            data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
+            data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&data->iwidld_FSHandler;
+            data->iwidld_LastRefresh                                 = GetCurrentTimeInSeconds();
+            data->iwidld_FSChanged                                   = FALSE;
+
+            if (StartNotify(&data->iwidld_DrawerNotifyRequest))
+            {
+                D(bug("[Wanderer:DrawerList] %s: Drawer-notification setup on '%s'\n", __PRETTY_FUNCTION__, directory_path));
+            }
+            else
+            {
+                D(bug("[Wanderer:DrawerList] %s: FAILED to setup Drawer-notification on '%s'!\n", __PRETTY_FUNCTION__, directory_path));
+                FreeVec(data->iwidld_DrawerNotifyRequest.nr_Name);
+                data->iwidld_DrawerNotifyRequest.nr_Name = NULL;
+            }
+        }
+    }
+}
+
 ///OM_SET()
 IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
@@ -475,6 +533,12 @@ IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 D(bug("[Wanderer:DrawerList] %s: MUIA_IconList_BufferRastport @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
                 data->iwidld_RastPort = (struct RastPort *)tag->ti_Data;
                 break;
+            }
+        case MUIA_IconDrawerList_Drawer:
+            {
+                D(bug("[Wanderer:DrawerList] %s: MUIA_IconDrawerList_Drawer @ %p\n", __PRETTY_FUNCTION__, tag->ti_Data));
+                UpdateFSNotification((STRPTR)tag->ti_Data, data, self);
+                break; /* Fallthrough and handle this in parent class as well */
             }
         }
     }
@@ -506,20 +570,6 @@ IPTR IconWindowDrawerList__OM_GET(Class *CLASS, Object *self, struct opGet *mess
     return rv;
 }
 ///
-
-IPTR IconWindowDrawerList__HandleFSUpdate(Object * iconwindow, struct NotifyMessage *msg)
-{
-    return DoMethod(iconwindow, MUIM_IconWindowDrawerList_FileSystemChanged);
-}
-
-ULONG GetCurrentTimeInSeconds()
-{
-    struct DateStamp stamp;
-
-    DateStamp(&stamp);
-
-    return (stamp.ds_Days * 60 * 60 * 24) + (stamp.ds_Minute * 60) + (stamp.ds_Tick / 50);
-}
 
 ///IconWindowDrawerList__MUIM_Setup()
 IPTR IconWindowDrawerList__MUIM_Setup
@@ -674,31 +724,7 @@ IPTR IconWindowDrawerList__MUIM_Setup
     STRPTR directory_path = NULL;
     GET(self, MUIA_IconDrawerList_Drawer, &directory_path);
 
-    if (directory_path != NULL)
-    {
-        struct IconWindowDrawerList_DATA *drawerlist_data = (struct IconWindowDrawerList_DATA *)data;
-
-        if (drawerlist_data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
-        {
-            drawerlist_data->iwidld_FSHandler.target                            = self;
-            drawerlist_data->iwidld_FSHandler.HandleFSUpdate                    = IconWindowDrawerList__HandleFSUpdate;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name                 = directory_path;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
-            drawerlist_data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&drawerlist_data->iwidld_FSHandler;
-            drawerlist_data->iwidld_LastRefresh                                 = GetCurrentTimeInSeconds();
-            drawerlist_data->iwidld_FSChanged                                   = FALSE;
-
-            if (StartNotify(&drawerlist_data->iwidld_DrawerNotifyRequest))
-            {
-                D(bug("[Wanderer:DrawerList] %s: Drawer-notification setup on '%s'\n", __PRETTY_FUNCTION__, drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name));
-            }
-            else
-            {
-                D(bug("[Wanderer:DrawerList] %s: FAILED to setup Drawer-notification!\n", __PRETTY_FUNCTION__));
-                drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name = NULL;
-            }
-        }
-    }
+    UpdateFSNotification(directory_path, data, self);
 
     D(bug("[Wanderer:DrawerList] %s: Setup complete!\n", __PRETTY_FUNCTION__));
   
@@ -783,13 +809,7 @@ IPTR IconWindowDrawerList__MUIM_Cleanup
           );
     }
 
-    struct IconWindowDrawerList_DATA *drawerlist_data = (struct IconWindowDrawerList_DATA *)data;
-    if (drawerlist_data->iwidld_DrawerNotifyRequest.nr_Name != NULL)
-    {
-        D(bug("[Wanderer:DrawerList] %s: Removing  Drawer FS Notification Request\n", __PRETTY_FUNCTION__));
-        /* EndNotify also replies all already send messages, so they won't end up hitting dead space in handler->HandleFSUpdate */
-        EndNotify(&drawerlist_data->iwidld_DrawerNotifyRequest);
-    }
+    RemoveFSNotification(data);
 
     return DoSuperMethodA(CLASS, self, message);
 }
