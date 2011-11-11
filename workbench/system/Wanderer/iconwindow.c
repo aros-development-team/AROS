@@ -348,6 +348,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
         iconviewclass = IconWindowVolumeList_CLASS;
         _newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
                                                     MUIA_Font, (IPTR)_newIconWin__WindowFont,
+                                                    MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                                     TAG_DONE);
 
         _newIconWin__WindowWidth = _newIconWin__Screen->Width;
