@@ -2747,7 +2747,7 @@ endif
 %(file): LDLIBS := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
 	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
-	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS)
+	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS) -noarosc
 	@$(STRIP) $@
 
 %compress_file mmake=%(mmake) file=%(file)
