@@ -2,8 +2,8 @@
 #define _MUI_CLASSES_ICONLIST_H
 
 /*
-	Copyright  2002-2010, The AROS Development Team. All rights reserved.
-	$Id$
+    Copyright  2002-2010, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <string.h>
@@ -137,8 +137,8 @@ struct IconEntry
 
 struct VolumeIcon_Private
 {
-    ULONG				vip_FLags;
-    struct NotifyRequest	vip_FSNotifyRequest;
+    ULONG                vip_FLags;
+    struct NotifyRequest    vip_FSNotifyRequest;
 };
 
 extern const struct __MUIBuiltinClass _MUI_IconList_desc; /* PRIV */

@@ -333,8 +333,8 @@ static IPTR panelStatusBar__PrefsSetup(Class *CLASS, Object *self, struct opSet 
 #else
         panelStatusBar__PrefsNotificationObject = MUI_NewObject(MUIC_Notify, TAG_DONE);
 #endif
-	if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
-	{
+    if (GetVar(extension_PrefsFile, extension_PrefsData, STATUSBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+    {
             D(bug("[IW.statusbar] %s: Prefs contain '%s'\n", __PRETTY_FUNCTION__, extension_PrefsData));
         }
     }

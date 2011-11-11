@@ -28,7 +28,7 @@ STRPTR AllocateNameFromLock(BPTR lock);
 
 int main(int argc, char **argv)
 {
-	int result = RETURN_OK;
+    int result = RETURN_OK;
 
     if (argc == 0)
     {

@@ -24,7 +24,7 @@
                 WAIT=n        Wait n seconds after execution.
                               n can be between 0 and 60.  
                 
-                DONOTWAIT     don't wait till the program is finished.	
+                DONOTWAIT     don't wait till the program is finished.    
 
     EXAMPLE
     
@@ -90,33 +90,33 @@ checkIcon(STRPTR name, LONG *pri, ULONG *time, BOOL *notwait)
     struct DiskObject *dobj = GetDiskObject(name);
     if (dobj == NULL)
     {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nGetDiskObject failed for:\n%s", "OK"};
-	EasyRequest(0, &es, 0, name);
-	return FALSE;
+    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+        "Error", "ExecuteStartup\nGetDiskObject failed for:\n%s", "OK"};
+    EasyRequest(0, &es, 0, name);
+    return FALSE;
     }
 
     if ((dobj->do_Type == WBTOOL) || (dobj->do_Type == WBPROJECT))
     {
-	const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
-	STRPTR s;
-	if ((s = FindToolType(toolarray, "STARTPRI")))
-	{
-	    *pri = atol(s);
-	    if (*pri < -128) *pri = -128;
-	    if (*pri > 127) *pri = 127;
-	}
-	if ((s = FindToolType(toolarray, "WAIT")))
-	{
-	    *time = atol(s);
-	    if (*time > 60) *time = 60;
-	}
-	if ((s = FindToolType(toolarray, "DONOTWAIT")))
-	{
-	    *notwait = TRUE;
-	}
-	FreeDiskObject(dobj);
-	return TRUE;
+    const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+    STRPTR s;
+    if ((s = FindToolType(toolarray, "STARTPRI")))
+    {
+        *pri = atol(s);
+        if (*pri < -128) *pri = -128;
+        if (*pri > 127) *pri = 127;
+    }
+    if ((s = FindToolType(toolarray, "WAIT")))
+    {
+        *time = atol(s);
+        if (*time > 60) *time = 60;
+    }
+    if ((s = FindToolType(toolarray, "DONOTWAIT")))
+    {
+        *notwait = TRUE;
+    }
+    FreeDiskObject(dobj);
+    return TRUE;
     }
     return FALSE;
 }
@@ -129,61 +129,61 @@ searchInfo(struct List *infoList)
     struct AnchorPath *ap = AllocPooled(poolmem, sizeof(struct AnchorPath));
     if (ap)
     {
-	error = MatchFirst(STARTUPDIR "?#?.info", ap);
-	while (!error)
-	{
-	    strcpy(fileNameBuffer, ap->ap_Info.fib_FileName);
-	    BYTE * pointPos = strrchr(fileNameBuffer, '.');
-	    *pointPos = '\0';
+    error = MatchFirst(STARTUPDIR "?#?.info", ap);
+    while (!error)
+    {
+        strcpy(fileNameBuffer, ap->ap_Info.fib_FileName);
+        BYTE * pointPos = strrchr(fileNameBuffer, '.');
+        *pointPos = '\0';
 
-	    LONG pri;
-	    ULONG time;
-	    BOOL notwait;
-	    if (checkIcon(fileNameBuffer, &pri, &time, &notwait))
-	    {
-		struct InfoNode *newnode = AllocPooled(poolmem, sizeof (*newnode));
-		if (newnode == NULL)
-		{
-		    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-			"Error", "ExecuteStartup\nOut of memory for InfoNode", "OK"};
-		    EasyRequest(0, &es, 0);
-		    retvalue = FALSE;
-		    goto exit;
-		}
-		newnode->node.ln_Name = AllocPooled(poolmem, strlen(fileNameBuffer) + 1);
-		if (newnode->node.ln_Name == NULL)
-		{
-		    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-			"Error", "ExecuteStartup\nOut of memory for ln_Name", "OK"};
-		    EasyRequest(0, &es, 0);
-		    retvalue = FALSE;
-		    goto exit;
-		}
-		strcpy(newnode->node.ln_Name, fileNameBuffer);
-		newnode->node.ln_Pri = pri;
-		newnode->waittime = time;
-		newnode->donotwait = notwait;
-		Enqueue(infoList, (struct Node*)newnode);
-	    }
-	    error = MatchNext(ap);
+        LONG pri;
+        ULONG time;
+        BOOL notwait;
+        if (checkIcon(fileNameBuffer, &pri, &time, &notwait))
+        {
+        struct InfoNode *newnode = AllocPooled(poolmem, sizeof (*newnode));
+        if (newnode == NULL)
+        {
+            struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+            "Error", "ExecuteStartup\nOut of memory for InfoNode", "OK"};
+            EasyRequest(0, &es, 0);
+            retvalue = FALSE;
+            goto exit;
+        }
+        newnode->node.ln_Name = AllocPooled(poolmem, strlen(fileNameBuffer) + 1);
+        if (newnode->node.ln_Name == NULL)
+        {
+            struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+            "Error", "ExecuteStartup\nOut of memory for ln_Name", "OK"};
+            EasyRequest(0, &es, 0);
+            retvalue = FALSE;
+            goto exit;
+        }
+        strcpy(newnode->node.ln_Name, fileNameBuffer);
+        newnode->node.ln_Pri = pri;
+        newnode->waittime = time;
+        newnode->donotwait = notwait;
+        Enqueue(infoList, (struct Node*)newnode);
+        }
+        error = MatchNext(ap);
 
-	}
-	if (error != ERROR_NO_MORE_ENTRIES)
-	{
-	    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-		"Error", "ExecuteStartup\nError %ld occured while scanning directory", "OK"};
-	    EasyRequest(0, &es, 0, error);
-	    retvalue = FALSE;
-	    goto exit;
-	}
-	MatchEnd(ap);
+    }
+    if (error != ERROR_NO_MORE_ENTRIES)
+    {
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+        "Error", "ExecuteStartup\nError %ld occured while scanning directory", "OK"};
+        EasyRequest(0, &es, 0, error);
+        retvalue = FALSE;
+        goto exit;
+    }
+    MatchEnd(ap);
     }
     else
     {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "ExecuteStartup\nOut of memory for AnchorPath", "OK"};
-	EasyRequest(0, &es, 0);
-	retvalue = FALSE;
+    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+        "Error", "ExecuteStartup\nOut of memory for AnchorPath", "OK"};
+    EasyRequest(0, &es, 0);
+    retvalue = FALSE;
     }
 exit:
     return retvalue;
@@ -195,19 +195,19 @@ executePrograms(struct List *infolist)
     struct InfoNode *infonode;
     ForeachNode(infolist, infonode)
     {
-	D(bug("ExecuteStartup Name %s Pri %d Time %d Notwait %d\n",
-		    infonode->node.ln_Name, infonode->node.ln_Pri,
-		    infonode->waittime, infonode->donotwait));
-	if (OpenWorkbenchObject(infonode->node.ln_Name, TAG_END))
-	{
-	    Delay(infonode->waittime * 50);
-	}
-	else
-	{
-	    struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-		"Warning", "ExecuteStartup\nOpenWorkbenchObject failed for:\n%s", "OK"};
-	    EasyRequest(0, &es, 0, infonode->node.ln_Name);
-	}        
+    D(bug("ExecuteStartup Name %s Pri %d Time %d Notwait %d\n",
+            infonode->node.ln_Name, infonode->node.ln_Pri,
+            infonode->waittime, infonode->donotwait));
+    if (OpenWorkbenchObject(infonode->node.ln_Name, TAG_END))
+    {
+        Delay(infonode->waittime * 50);
+    }
+    else
+    {
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+        "Warning", "ExecuteStartup\nOpenWorkbenchObject failed for:\n%s", "OK"};
+        EasyRequest(0, &es, 0, infonode->node.ln_Name);
+    }        
     }
 }
 
@@ -227,47 +227,47 @@ executeWBStartup(void)
     {
         if (fib == NULL)
         {
-	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	       "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
-	   EasyRequest(0, &es, 0);
-	   break;
+       struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+           "Error", "ExecuteStartup\nOut of memory for FileInfoBlock", "OK"};
+       EasyRequest(0, &es, 0);
+       break;
         }
 
         if (poolmem == NULL)
         {
-	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-		"Error", "ExecuteStartup\nCouldn't create pool memory", "OK"};
-	   EasyRequest(0, &es, 0);
-	   break;
+       struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+        "Error", "ExecuteStartup\nCouldn't create pool memory", "OK"};
+       EasyRequest(0, &es, 0);
+       break;
         }
 
         if ( (startupdir = Lock(STARTUPDIR, ACCESS_READ) ) == 0)
         {
-	   D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
-	   break;
+       D(bug("ExecuteStartup: Couldn't lock " STARTUPDIR "\n"));
+       break;
         }        
 
         if ( ! Examine(startupdir, fib))
         {
-	   struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	       "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
-	   EasyRequest(0, &es, 0);
-	   break;
+       struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+           "Error", "ExecuteStartup\nCouldn't examine " STARTUPDIR, "OK"};
+       EasyRequest(0, &es, 0);
+       break;
         }
 
     // check if startupdir is a directory
         if (fib->fib_DirEntryType >= 0)
         {
-	   olddir = CurrentDir(startupdir);
-	   if (searchInfo(&infoList))
-	   {
-	       executePrograms(&infoList);
-	       retvalue = TRUE;
-	   }
+       olddir = CurrentDir(startupdir);
+       if (searchInfo(&infoList))
+       {
+           executePrograms(&infoList);
+           retvalue = TRUE;
+       }
         }        
         else
         {
-	   D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
+       D(bug("ExecuteStartup: " STARTUPDIR " isn't a directory\n"));
         }
         
         break;
