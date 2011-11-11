@@ -3622,8 +3622,8 @@ D(bug("[Wanderer] %s: got FS notification ('%s' @ 0x%p) userdata = 0x%p!\n", __P
 
         if (notifyMessage_UserData != (IPTR)NULL)
         {
-            /* Only IconWindowDrawerList class at the moment */
-            D(bug("[Wanderer] %s: Drawer Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
+            /* Only IconWindowDrawerList, IconWindowVolumeList class at the moment */
+            D(bug("[Wanderer] %s: Icon Window contents changed .. Updating\n", __PRETTY_FUNCTION__));
             nodeFSHandler = (struct Wanderer_FSHandler *)notifyMessage_UserData;
             nodeFSHandler->HandleFSUpdate(nodeFSHandler->target, notifyMessage);
             continue;
@@ -3842,7 +3842,7 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
                 MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
                 MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
                 isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
-                isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyPort, (IPTR)data->wd_NotifyPort,
+                MUIA_Wanderer_FileSysNotifyPort, (IPTR)data->wd_NotifyPort,
                 isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyList, (IPTR)&_WandererIntern_FSHandlerList,
                 MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
              End;
@@ -3858,7 +3858,8 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
                 MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
                 MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
                 isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
-                isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyPort, data->wd_NotifyPort,
+                MUIA_Wanderer_FileSysNotifyPort, data->wd_NotifyPort,
+                isWorkbenchWindow ? TAG_IGNORE : MUIA_Wanderer_FileSysNotifyList, (IPTR)&_WandererIntern_FSHandlerList,
                 MUIA_Window_IsSubWindow,              isWorkbenchWindow ? FALSE : TRUE,
              TAG_DONE);
 #endif

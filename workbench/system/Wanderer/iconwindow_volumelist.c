@@ -1296,21 +1296,18 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
     return retVal;
 }
 
-
-IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
+IPTR IconWindowVolumeList__HandleFSUpdate(Object *target, struct NotifyMessage *msg)
 {
-    Object                *rootwindow   = (Object *) XGET(WandererObj, MUIA_Wanderer_WorkbenchWindow);
-    Object                *rooticonList = (Object *) XGET(rootwindow, MUIA_IconWindow_IconList);
-    struct List                *iconList = NULL, fsLeftOutList;
-    struct IconEntry        *entry = NULL, *tmpEntry = NULL, *fsEntry = NULL;
+    struct List         *iconList = NULL, fsLeftOutList;
+    struct IconEntry    *entry = NULL, *tmpEntry = NULL, *fsEntry = NULL;
 
     D(bug("[Wanderer:VolumeList]: %s(NotifyMessage @ %p -> '%s')\n", __PRETTY_FUNCTION__, msg, msg->nm_NReq->nr_Name));
 
     NEWLIST(&fsLeftOutList);
     
-    D(bug("[Wanderer:VolumeList] %s: Desktop Window @ %p, IconList @ %p\n", __PRETTY_FUNCTION__, rootwindow, rooticonList));
+    D(bug("[Wanderer:VolumeList] %s: IconWindowVolumeList, IconList @ %p\n", __PRETTY_FUNCTION__, target));
 
-    GET(rooticonList, MUIA_Family_List, &iconList);
+    GET(target, MUIA_Family_List, &iconList);
     ForeachNode(iconList, entry)
     {
         if ((entry->ie_IconListEntry.type == ST_ROOT)
@@ -1335,33 +1332,30 @@ IPTR IconWindowVolumeList__HandleFSUpdate(Object *WandererObj, struct NotifyMess
             }
         }
 
-        IconWindowVolumeList__Func_ParseBackdrop(rooticonList, fsEntry, &fsLeftOutList);
+        IconWindowVolumeList__Func_ParseBackdrop(target, fsEntry, &fsLeftOutList);
 
         ForeachNodeSafe(&fsLeftOutList, entry, tmpEntry)
         {
             D(bug("[Wanderer:VolumeList] %s: Destroying orphaned entry @ %p '%s'\n", __PRETTY_FUNCTION__, entry, entry->ie_IconNode.ln_Name));
             Remove(&entry->ie_IconNode);
-            DoMethod(rooticonList, MUIM_IconList_DestroyEntry, entry);
+            DoMethod(target, MUIM_IconList_DestroyEntry, entry);
         }
 
-        DoMethod(rooticonList, MUIM_IconList_Sort);
+        DoMethod(target, MUIM_IconList_Sort);
     }
     
     return 0;
 }
 
-
-IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, struct MUIP_IconList_CreateEntry *message)
+IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *self, struct MUIP_IconList_CreateEntry *message)
 {
-    struct IconEntry                  *this_Icon = NULL;
-    struct VolumeIcon_Private   *volPrivate = NULL;
-    IPTR                        _volumeIcon__FSNotifyPort = 0;
-    struct List                 *_volumeIcon__FSNotifyList = NULL;
-    struct Wanderer_FSHandler        *_volumeIcon__FSNotifyHandler = NULL;
+    struct IconEntry                *this_Icon = NULL;
+    struct VolumeIcon_Private       *volPrivate = NULL;
+    struct Wanderer_FSHandler       *_volumeIcon__FSNotifyHandler = NULL;
 
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
 
-    this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
+    this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, self, (Msg) message);
 
     if (this_Icon)
     {
@@ -1371,16 +1365,17 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
 
         if ((this_Icon->ie_IconListEntry.type == ST_ROOT) && (volPrivate && ((volPrivate->vip_FLags & (ICONENTRY_VOL_OFFLINE|ICONENTRY_VOL_DISABLED)) == 0)))
         {
-            GET(_app(obj), MUIA_Wanderer_FileSysNotifyPort, &_volumeIcon__FSNotifyPort);
-            GET(_app(obj), MUIA_Wanderer_FileSysNotifyList, &_volumeIcon__FSNotifyList);
-
-            if (_volumeIcon__FSNotifyList && ((_volumeIcon__FSNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
+            if (((_volumeIcon__FSNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
             {
-                _volumeIcon__FSNotifyHandler->fshn_Node.ln_Name                 = this_Icon->ie_IconNode.ln_Name;
-                volPrivate->vip_FSNotifyRequest.nr_Name                                = _volumeIcon__FSNotifyHandler->fshn_Node.ln_Name;
-                volPrivate->vip_FSNotifyRequest.nr_Flags                        = NRF_SEND_MESSAGE;
-                volPrivate->vip_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port                = (struct MsgPort *)_volumeIcon__FSNotifyPort;
-                _volumeIcon__FSNotifyHandler->HandleFSUpdate                        = IconWindowVolumeList__HandleFSUpdate;
+                SETUP_INST_DATA;
+
+                _volumeIcon__FSNotifyHandler->target                        = self;
+                _volumeIcon__FSNotifyHandler->HandleFSUpdate                = IconWindowVolumeList__HandleFSUpdate;
+                volPrivate->vip_FSNotifyRequest.nr_Name                     = this_Icon->ie_IconNode.ln_Name;
+                volPrivate->vip_FSNotifyRequest.nr_Flags                    = NRF_SEND_MESSAGE;
+                volPrivate->vip_FSNotifyRequest.nr_stuff.nr_Msg.nr_Port     = data->iwvcd_FSNotifyPort;
+                volPrivate->vip_FSNotifyRequest.nr_UserData                 = (IPTR)_volumeIcon__FSNotifyHandler;
+                _volumeIcon__FSNotifyHandler->fshn_Node.ln_Name             = volPrivate->vip_FSNotifyRequest.nr_Name;
 
                 if (StartNotify(&volPrivate->vip_FSNotifyRequest))
                 {
@@ -1389,12 +1384,13 @@ IPTR IconWindowVolumeList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Objec
                 else
                 {
                     D(bug("[Wanderer:VolumeList] %s: FAILED to setup FSNotification", __PRETTY_FUNCTION__));
+                    FreeMem(_volumeIcon__FSNotifyHandler, sizeof(struct Wanderer_FSHandler));
                     volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
-                }
+                    volPrivate->vip_FSNotifyRequest.nr_UserData = (IPTR)NULL;
+                 }
                 D(bug(" for Volume '%s'\n", this_Icon->ie_IconNode.ln_Name));
-                AddTail(_volumeIcon__FSNotifyList, &_volumeIcon__FSNotifyHandler->fshn_Node);
             }
-            IconWindowVolumeList__Func_ParseBackdrop(obj, this_Icon, NULL);
+            IconWindowVolumeList__Func_ParseBackdrop(self, this_Icon, NULL);
         }
     }
     return (IPTR)this_Icon;
@@ -1416,9 +1412,11 @@ IPTR IconWindowVolumeList__MUIM_IconList_UpdateEntry(struct IClass *CLASS, Objec
         if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
         {
             EndNotify(&volPrivate->vip_FSNotifyRequest);
-            volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
-        }
 
+            FreeMem((struct Wanderer_FSHandler *)volPrivate->vip_FSNotifyRequest.nr_UserData, sizeof(struct Wanderer_FSHandler));
+            volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
+            volPrivate->vip_FSNotifyRequest.nr_UserData = (IPTR)NULL;
+        }
     }
 
     this_Icon = (struct IconEntry *)DoSuperMethodA(CLASS, obj, (Msg) message);
@@ -1440,7 +1438,9 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
         if (volPrivate->vip_FSNotifyRequest.nr_Name != NULL)
         {
             EndNotify(&volPrivate->vip_FSNotifyRequest);
-            //Remove(&_volumeIcon__FSNotifyHandler->fshn_Node);
+            FreeMem((struct Wanderer_FSHandler *)volPrivate->vip_FSNotifyRequest.nr_UserData, sizeof(struct Wanderer_FSHandler));
+            volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
+            volPrivate->vip_FSNotifyRequest.nr_UserData = (IPTR)NULL;
         }
 
         // Remove all the icons left out for this volume ..
