@@ -111,6 +111,9 @@ struct IconWindowVolumeList_DATA
     IPTR                        iwvcd_ShowNetworkBrowser;
     IPTR                        iwvcd_ShowUserFolder;
     char                        *iwvcd_UserFolderPath;
+
+    /* File System update handling */
+    struct MsgPort              *iwvcd_FSNotifyPort;
 };
 
 static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
@@ -618,15 +621,7 @@ BOOL IconWindowVolumeList__Func_ParseBackdrop(Object *self, struct IconEntry *bd
 ///OM_NEW()
 Object *IconWindowVolumeList__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
-#if 0 /* unused */
-    IPTR                            _newIconList__FSNotifyPort = 0;
-#endif
-
     D(bug("[Wanderer:VolumeList]: %s()\n", __PRETTY_FUNCTION__));
-
-#if 0 /* unused */
-    _newIconList__FSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
-#endif
 
     self = (Object *) DoSuperNewTags
       (
@@ -639,6 +634,8 @@ Object *IconWindowVolumeList__OM_NEW(Class *CLASS, Object *self, struct opSet *m
     {
         SETUP_INST_DATA;
         D(bug("[Wanderer:VolumeList] %s: SELF = 0x%p\n", __PRETTY_FUNCTION__, self));
+
+        data->iwvcd_FSNotifyPort = (struct MsgPort *)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
 
 #ifdef __AROS__
         data->iwcd_ProcessIconListPrefs_hook.h_Entry = ( HOOKFUNC )IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc;
