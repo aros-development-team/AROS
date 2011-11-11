@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	return RETURN_FAIL;
     }
 
-    if(AROSLIBREVISION < ArosBase->lib_Revision)
+    if(AROSLIBREVISION > ArosBase->lib_Revision)
     {
 	CloseLibrary(ArosBase);
 	printf (AROSLIBNAME" is too old! Need at least version %d.%d\n",
