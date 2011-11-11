@@ -146,9 +146,9 @@
 #define ENDIANNESS_BE                 2
 
 /* Some generic vendor IDs */
-#define VENDOR_UNKNOWN      	      0
-#define VENDOR_INTEL		      1
-#define VENDOR_AMD		      2
+#define VENDOR_UNKNOWN		      0
+#define VENDOR_AMD		      1
+#define VENDOR_INTEL    	      2
 #define VENDOR_MOTOROLA		      3
 
 /* ARM implementer IDs */
