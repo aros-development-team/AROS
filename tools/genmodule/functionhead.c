@@ -249,6 +249,15 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
     
     for(funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
+        fprintf(out,
+                "\n"
+                "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
+                "\n",
+                cfg->modulenameupper,
+                funclistit->version,
+                cfg->modulenameupper
+        );
+
 	switch (funclistit->libcall)
 	{
 	case STACK:
@@ -270,8 +279,10 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	case REGISTER:
 	case REGISTERMACRO:
 	    assert(cfg);
-	    if (funclistit->priv || funclistit->lvo < cfg->firstlvo)
-		continue;
+	    if (funclistit->priv || funclistit->lvo < cfg->firstlvo) {
+		fprintf(out, "/* private */\n");
+		break;
+	    }
 	    
 	    if (funclistit->arguments == NULL
 		|| strchr(funclistit->arguments->reg, '/') == NULL
@@ -346,6 +357,15 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	    exit(20);
 	    break;
 	}
+
+        fprintf(out,
+                "\n"
+                "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
+                "\n",
+                cfg->modulenameupper,
+                funclistit->version,
+                cfg->modulenameupper
+        );
     }
 }
 

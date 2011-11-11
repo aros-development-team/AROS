@@ -49,6 +49,15 @@ void writeincinline(struct config *cfg)
     {
         if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
         {
+            fprintf(out,
+                    "\n"
+                    "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
+                    "\n",
+                    cfg->modulenameupper,
+                    funclistit->version,
+                    cfg->modulenameupper
+            );
+
             if (funclistit->libcall != STACK)
             {
                 writeinlineregister(out, funclistit, cfg);
@@ -62,6 +71,15 @@ void writeincinline(struct config *cfg)
             }
 
             writealiases(out, funclistit, cfg);
+
+            fprintf(out,
+                    "\n"
+                    "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
+                    "\n",
+                    cfg->modulenameupper,
+                    funclistit->version,
+                    cfg->modulenameupper
+            );
         }
     }
 
