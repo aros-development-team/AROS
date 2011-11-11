@@ -182,7 +182,7 @@ static ULONG arch_Init(struct ProcessorBase *ProcessorBase)
 				    }
 				    else if ((val = getval("CPU implementer", buf)))
 				    {
-				    	data->Implementer = atoi(val);
+				    	data->Implementer = strtoul(val, NULL, 0);
 				    }
 				    else if ((val = getval("CPU architecture", buf)))
 				    {
@@ -199,15 +199,15 @@ static ULONG arch_Init(struct ProcessorBase *ProcessorBase)
 				    }
 				    else if ((val = getval("CPU variant", buf)))
 				    {
-				    	variant = atoi(val);
+				    	variant = strtoul(val, NULL, 0);
 				    }
 				    else if ((val = getval("CPU part", buf)))
 				    {
-				    	data->Part = atoi(val);
+				    	data->Part = strtoul(val, NULL, 0);
 				    }
 				    else if ((val = getval("CPU revision", buf)))
 				    {
-				    	revision = atoi(val);
+				    	revision = strtoul(val, NULL, 0);
 				    }
 				}
 		    	    }
