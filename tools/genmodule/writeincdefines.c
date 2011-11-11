@@ -51,6 +51,15 @@ void writeincdefines(struct config *cfg)
     {
 	if (!funclistit->priv && (funclistit->lvo >= cfg->firstlvo))
 	{
+            fprintf(out,
+                    "\n"
+                    "#if !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__)"
+                    "\n",
+                    cfg->modulenameupper,
+                    funclistit->version,
+                    cfg->modulenameupper
+            );
+
 	    if (funclistit->libcall != STACK)
 	    {
 		writedefineregister(out, funclistit, cfg);
@@ -63,6 +72,16 @@ void writeincdefines(struct config *cfg)
 	    }
 	    
 	    writealiases(out, funclistit, cfg);
+
+            fprintf(out,
+                    "\n"
+                    "#endif /* !defined(__%s_LIBAPI__) || (%d <= __%s_LIBAPI__) */"
+                    "\n",
+                    cfg->modulenameupper,
+                    funclistit->version,
+                    cfg->modulenameupper
+            );
+
 	}
     }
     fprintf(out,
