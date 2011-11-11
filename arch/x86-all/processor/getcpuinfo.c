@@ -129,6 +129,10 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
         case(GCIT_FrontsideSpeed):
             *((UQUAD *)passedTag->ti_Data) = processor->MaxFSBFrequency;
             break;
+
+        case GCIT_Vendor:
+            *((ULONG *)passedTag->ti_Data) = processor->Vendor;
+            break;
         }
         }
     }
