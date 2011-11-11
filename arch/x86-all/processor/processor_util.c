@@ -11,6 +11,21 @@
 
 #include "processor_arch_intern.h"
 
+static const char *vendors[] =
+{
+    "AuthenticAMD",
+    "GenuineIntel",
+    "CyrixInstead",
+    "UMC UMC UMC ",
+    "NexGenDriven",
+    "CentaurHauls",
+    "RiseRiseRise",
+    "SiS SiS SiS ",
+    "GenuineTMx86",
+    "Geode by NSC",
+    NULL
+};
+
 static void ReadVendorID(struct X86ProcessorInformation * info)
 {
     ULONG eax, ebx, ecx, edx;
@@ -31,10 +46,14 @@ D(bug("[processor.x86] :%s()\n", __PRETTY_FUNCTION__));
     ulongptr[index++] = ecx;info->VendorID[12] = 0;
 
     /* Select manufacturer based on Vendor ID */
-    if (strcmp(info->VendorID, "AuthenticAMD") == 0)
-        info->Vendor = VENDOR_AMD;
-    else if (strcmp(info->VendorID, "GenuineIntel") == 0)
-        info->Vendor = VENDOR_INTEL;
+    for (index = 0; vendors[index]; index++)
+    {
+        if (strcmp(info->VendorID, vendors[index]) == 0)
+        {
+            info->Vendor = index + VENDOR_AMD;
+            break;
+        }
+    }
 
     /* Reading Highest Extended Function */
     cpuid(0x80000000);
