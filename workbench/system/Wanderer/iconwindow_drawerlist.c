@@ -471,6 +471,7 @@ VOID RemoveFSNotification(struct IconWindowDrawerList_DATA *data)
         EndNotify(&data->iwidld_DrawerNotifyRequest);
         FreeVec(data->iwidld_DrawerNotifyRequest.nr_Name);
         data->iwidld_DrawerNotifyRequest.nr_Name = NULL;
+        data->iwidld_FSHandler.fshn_Node.ln_Name = NULL;
     }
 }
 
@@ -484,13 +485,14 @@ VOID UpdateFSNotification(STRPTR directory_path, struct IconWindowDrawerList_DAT
     {
         if (data->iwidld_DrawerNotifyRequest.nr_stuff.nr_Msg.nr_Port != NULL)
         {
-            data->iwidld_FSHandler.target                            = target;
-            data->iwidld_FSHandler.HandleFSUpdate                    = IconWindowDrawerList__HandleFSUpdate;
-            data->iwidld_DrawerNotifyRequest.nr_Name                 = StrDup(directory_path);
-            data->iwidld_DrawerNotifyRequest.nr_Flags                = NRF_SEND_MESSAGE;
-            data->iwidld_DrawerNotifyRequest.nr_UserData             = (IPTR)&data->iwidld_FSHandler;
-            data->iwidld_LastRefresh                                 = GetCurrentTimeInSeconds();
-            data->iwidld_FSChanged                                   = FALSE;
+            data->iwidld_FSHandler.target                   = target;
+            data->iwidld_FSHandler.HandleFSUpdate           = IconWindowDrawerList__HandleFSUpdate;
+            data->iwidld_DrawerNotifyRequest.nr_Name        = StrDup(directory_path);
+            data->iwidld_DrawerNotifyRequest.nr_Flags       = NRF_SEND_MESSAGE;
+            data->iwidld_DrawerNotifyRequest.nr_UserData    = (IPTR)&data->iwidld_FSHandler;
+            data->iwidld_LastRefresh                        = GetCurrentTimeInSeconds();
+            data->iwidld_FSChanged                          = FALSE;
+            data->iwidld_FSHandler.fshn_Node.ln_Name        = data->iwidld_DrawerNotifyRequest.nr_Name;
 
             if (StartNotify(&data->iwidld_DrawerNotifyRequest))
             {
@@ -501,6 +503,7 @@ VOID UpdateFSNotification(STRPTR directory_path, struct IconWindowDrawerList_DAT
                 D(bug("[Wanderer:DrawerList] %s: FAILED to setup Drawer-notification on '%s'!\n", __PRETTY_FUNCTION__, directory_path));
                 FreeVec(data->iwidld_DrawerNotifyRequest.nr_Name);
                 data->iwidld_DrawerNotifyRequest.nr_Name = NULL;
+                data->iwidld_FSHandler.fshn_Node.ln_Name = NULL;
             }
         }
     }
