@@ -57,10 +57,6 @@ VOID ReadProcessorInformation(struct X86ProcessorInformation * info);
 VOID ReadMaxFrequencyInformation(struct X86ProcessorInformation * info);
 UQUAD GetCurrentProcessorFrequency(struct X86ProcessorInformation * info);
 
-#define VENDOR_UNKNOWN  0
-#define VENDOR_AMD      1
-#define VENDOR_INTEL    2
-
 /* EDX 00000001 Flags */
 #define FEATB_FPU   0
 #define FEATB_VME   1
