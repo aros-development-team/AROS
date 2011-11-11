@@ -65,14 +65,13 @@ struct hiddmeta_inst
     } data;
 };
 
-#define OOPBase	((struct IntOOPBase *)cl->OOPBasePtr)
-#define UtilityBase	(((struct IntOOPBase *)cl->OOPBasePtr)->ob_UtilityBase)
-   
 /**********************
 **  HIDDMeta::New()  **
 **********************/
 static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
+    struct Library *UtilityBase = OOPBase->ob_UtilityBase;
     IPTR (*domethod)(OOP_Object *, OOP_Msg) 			= NULL;
     IPTR (*coercemethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
     IPTR (*dosupermethod)(OOP_Class *, OOP_Object *, OOP_Msg) 	= NULL;
@@ -135,6 +134,7 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 ********************************/
 static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_allocdisptabs *msg)
 {
+    struct IntOOPBase *OOPBase = (struct IntOOPBase *)cl->OOPBasePtr;
     ULONG disptab_size, total_num_methods = 0UL, total_num_ifs = 0UL;
     
     struct hiddmeta_data *data = OOP_INST_DATA(cl, o);
@@ -432,8 +432,6 @@ struct IFMethod *hiddmeta_findmethod(OOP_Class *cl, OOP_Object *o, struct P_meta
     
 }
 
-#undef OOPBase
-
 #define NUM_ROOT_METHODS 1
 #define NUM_META_METHODS 5
 
@@ -565,8 +563,6 @@ static VOID get_info_on_ifs(OOP_Class *super, const struct OOP_InterfaceDescr *i
     
     ReturnVoid("get_info_on_ifs");
 }
-
-#define OOPBase (cl->OOPBasePtr)
 
 /**********************
 **  HIDD_DoMethod()  **
