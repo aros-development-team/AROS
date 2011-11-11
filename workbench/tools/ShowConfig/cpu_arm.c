@@ -69,7 +69,7 @@ void PrintCPUSpecificInfo(ULONG i, APTR ProcessorBase)
     if (!found)
         printf("\t\tUnknown vendor (0x%X)", vendor);
 
-    printf(" 0x%X revision %d variant %d", part, ARM_REVISION(version), ARM_VARIANT(version));
+    printf(" 0x%X revision %d variant %d\n", part, ARM_REVISION(version), ARM_VARIANT(version));
 
     printf("\t\tFeatures: ");
 
