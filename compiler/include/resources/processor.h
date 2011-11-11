@@ -105,9 +105,7 @@
 #define CPUFAMILY_ARM_5TE	    125
 #define CPUFAMILY_ARM_5TEJ	    126
 #define CPUFAMILY_ARM_6		    127
-#define CPUFAMILY_ARM_6TE	    128
-#define CPUFAMILY_ARM_6TEJ	    129
-#define CPUFAMILY_ARM_7		    130
+#define CPUFAMILY_ARM_7		    128
 
 /* Vector unit type */
 #define VECTORTYPE_NONE               0
