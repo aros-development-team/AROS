@@ -234,7 +234,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 "        \"\\tlwz 11, __baseslot@l(11)\\n\"\\\n"
                 "        \"\\tadd 11,0,11\\n\"\\\n"
                 /* *r11 = r12 (== libbase) */
-                "        \"\\tstw 12,(11)\\n\"\\\n"
+                "        \"\\tstw 12, 0(11)\\n\"\\\n"
                 "        \"\\tb \" #fname \"\\n\"\\\n"
                 "    )\n"
                 "#elif defined __arm__\n"
