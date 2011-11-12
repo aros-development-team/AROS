@@ -1,46 +1,19 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX function vfork()
+    Desc: POSIX function vfork(), PowerPC version
     Lang: english
 */
 
-/******************************************************************************
-
-    NAME
-#include <unistd.h>
-
-	pid_t vfork ();
-
-    FUNCTION
-
-    INPUTS
-
-    RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    INTERNALS
-
-    HISTORY
-
-******************************************************************************/
-
-    #include "aros/ppc/asm.h"
+#include "aros/ppc/asm.h"
 
     .text
     _ALIGNMENT
     .globl AROS_CDEFNAME(vfork)
     _FUNCTION(AROS_CDEFNAME(vfork))
     .set    bufsize, 60*4
-    .set    retaddr, 2*4
+    .set    ret_addr, 2*4
     .set    stack,   0*4
 
 AROS_CDEFNAME(vfork):
@@ -59,7 +32,7 @@ AROS_CDEFNAME(vfork):
     blrl                   /* fill jmp_buf on the stack with
                               current register values */
     
-    stw   12, retaddr+8(1) /* set return address in jmp_buf */
+    stw   12, ret_addr+8(1) /* set return address in jmp_buf */
     mfctr 12
     stw   12, stack+8(1)   /* set stack value in jmp_buf */
     
