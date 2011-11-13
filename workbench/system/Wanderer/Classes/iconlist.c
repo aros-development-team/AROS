@@ -4396,6 +4396,24 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
 }
 ///
 
+/* Notes:
+ *
+ * LEFTDOWN
+ *  a) if clicked object is selected, nothing
+ *  b) if clicked object is not selected, unselect all, select object
+ *  c) if no clicked object, start lasso
+ * LEFTUP
+ *  a) if in lasso, finish lasso
+ * LEFTDOWN + SHIFT
+ *  a) if object is selected, unselect it (= remove from multiselection)
+ *  b) if object is not selected, select it (= add to multiselection)
+ *
+ *
+ * Expected behaviour:
+ * a) you can only "remove" multiselection by clicking on not selected object or on space where there is no icon
+ *
+ */
+
 static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, struct MUIP_HandleEvent *message,
         struct IconEntry *new_selected, BOOL *icon_doubleclicked)
 {
@@ -4404,7 +4422,20 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
     LONG                    mx = message->imsg->MouseX - _mleft(obj);
     LONG                    my = message->imsg->MouseY - _mtop(obj);
     struct IconList_DATA    *data = INST_DATA(CLASS, obj);
+    BOOL                    nounselection = (new_selected != NULL &&
+                                (new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED)); /* see notes above */
 
+
+    /* Check if this is not a double click */
+    if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
+    {
+        #if defined(DEBUG_ILC_EVENTS)
+        D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
+        #endif
+        *icon_doubleclicked = TRUE;
+    }
+
+    /* Deselection lopp */
 #if defined(__AROS__)
     ForeachNode(&data->icld_IconList, node)
 #else
@@ -4415,11 +4446,14 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
         {
             update_entry = FALSE;
 
-            /* If node that is beeing checked is selected and it is not the clicked node and no shift pressed, deselect it */
+            /* If node that is beeing checked is selected and it is not the clicked node
+             * and no shift pressed and
+             * clicked node is not part of selection (see notes above) or this is a double click */
             if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
             {
                 if ((new_selected != node) &&
-                    (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
+                    (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))) &&
+                    (!nounselection || *icon_doubleclicked))
                 {
                     Remove(&node->ie_SelectionNode);
                     node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
@@ -4427,6 +4461,7 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
                 }
             }
 
+            /* Remove focus */
             if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
             {
                 node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
@@ -4446,19 +4481,9 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
         }
     }
 
-    /* Check if this is not a double click */
-    if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
-    {
-        #if defined(DEBUG_ILC_EVENTS)
-        D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
-        #endif
-        *icon_doubleclicked = TRUE;
-    }
-
     if (new_selected != NULL)
     {
         /* Found clicked entry... */
-
         data->icld_LassoActive = FALSE;
         update_entry = FALSE;
 
@@ -4468,18 +4493,20 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
             AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
             new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
             update_entry = TRUE;
-
-            if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
-            {
-                new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                data->icld_FocusIcon = new_selected;
-            }
         }
         else if ((*icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
         {
             /* Unselect previously selected entry */
             Remove(&new_selected->ie_SelectionNode);
             new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+            update_entry = TRUE;
+        }
+
+        /* Set focus */
+        if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
+        {
+            new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+            data->icld_FocusIcon = new_selected;
             update_entry = TRUE;
         }
 
