@@ -977,6 +977,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 	pat.YOffset = msg->patternsrcy;
 	pat.FgPen = fg;
 	pat.BgPen = bg;
+	pat.DrawMode = drawmode;
 	switch (msg->patternheight)
 	{
 	    case 1:
