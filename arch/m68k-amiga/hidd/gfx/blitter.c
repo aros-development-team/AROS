@@ -97,7 +97,7 @@ BOOL blit_copybox(struct amigavideo_staticdata *data, struct amigabm_data *srcbm
     if (copy_minterm[mode] == 0)
     	return FALSE;
 
-    //D(bug("%x %x %dx%d %dx%d %dx%d %d\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
+    D(bug("copybox(%x %x %dx%d %dx%d %dx%d %d)\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode));
 
     if (srcbm == dstbm) {
 	intersect = !(srcx > dstx2 || srcx2 < dstx || srcy > dsty + h - 1 || srcy + h - 1 < dsty);
@@ -222,7 +222,7 @@ BOOL blit_copybox_mask(struct amigavideo_staticdata *data, struct amigabm_data *
     srcx2 = srcx + w - 1;
     dstx2 = dstx + w - 1;
 
-    D(bug("CopyBoxMasked %x %x %dx%d %dx%d %dx%d %d %x\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode, maskplane));
+    D(bug("CopyBoxMasked(%x %x %dx%d %dx%d %dx%d %d %x)\n", srcbm, dstbm, srcx, srcy, dstx, dsty, w, h, mode, maskplane));
 
     if (srcbm == dstbm) {
 	intersect = !(srcx > dstx2 || srcx2 < dstx || srcy > dsty + h - 1 || srcy + h - 1 < dsty);
@@ -437,13 +437,13 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     if (tmpl->inverttemplate)
     	type++;
 
-    D(bug("puttemplate: %x x=%d y=%d w=%d h=%d type=%d fg=%d bg=%d\n",
-	tmpl->Template, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
+    D(bug("puttemplate: %x srcx=%d x=%d y=%d w=%d h=%d type=%d fg=%d bg=%d\n",
+	tmpl->Template, tmpl->srcx, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
 
-    srcoffset = 0;
+    srcoffset = (srcx / 16) * 2;
     dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
 
-    srcwidth = srcx2 / 16;
+    srcwidth = srcx2 / 16 - srcx / 16 + 1;
     dstwidth = dstx2 / 16 - dstx / 16 + 1;
  
     dstx &= 15;
@@ -452,6 +452,9 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     srcx2 &= 15;
  
     shift = dstx - srcx;
+ 
+    D(bug("shift=%d srcwidth=%d dstwidth=%d\n", shift, srcwidth, dstwidth));
+ 
     if (shift < 0) {
      	reverse = TRUE;
     	shift = -shift;
