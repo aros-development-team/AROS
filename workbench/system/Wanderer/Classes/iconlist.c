@@ -4415,7 +4415,7 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
  */
 
 static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, struct MUIP_HandleEvent *message,
-        struct IconEntry *new_selected, BOOL *icon_doubleclicked)
+        struct IconEntry *new_selected, BOOL *doubleclicked)
 {
     struct IconEntry        *node = NULL;
     BOOL                    update_entry = FALSE;
@@ -4426,13 +4426,13 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
                                 (new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED)); /* see notes above */
 
 
-    /* Check if this is not a double click */
+    /* Check if this is a double click on icon or empty space */
     if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
     {
         #if defined(DEBUG_ILC_EVENTS)
         D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
         #endif
-        *icon_doubleclicked = TRUE;
+        *doubleclicked = TRUE;
     }
 
     /* Deselection lopp */
@@ -4453,7 +4453,7 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
             {
                 if ((new_selected != node) &&
                     (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))) &&
-                    (!nounselection || *icon_doubleclicked))
+                    (!nounselection || *doubleclicked))
                 {
                     Remove(&node->ie_SelectionNode);
                     node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
@@ -4494,7 +4494,7 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
             new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
             update_entry = TRUE;
         }
-        else if ((*icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+        else if ((*doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
         {
             /* Unselect previously selected entry */
             Remove(&new_selected->ie_SelectionNode);
@@ -5618,9 +5618,9 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     /* Check if mouse pressed on iconlist area */
                     if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
                     {
-            BOOL             icon_doubleclicked = FALSE;
-            struct IconEntry          *node = NULL;
-            struct IconEntry         *new_selected = NULL;
+                        BOOL                doubleclicked = FALSE; /* both icon and empty space */
+                        struct IconEntry    *node = NULL;
+                        struct IconEntry    *new_selected = NULL;
 
             if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
             {
@@ -5680,7 +5680,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 }
 
                                 /* Handle actions */
-                                IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &icon_doubleclicked);
+                                IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &doubleclicked);
                 }
             }
             else
@@ -5724,7 +5724,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 }
 
                             /* Handle actions */
-                            IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &icon_doubleclicked);
+                            IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &doubleclicked);
             }
         
             if (new_selected && (new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
@@ -5741,11 +5741,13 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
             data->icld_ClickEvent.entry = data->icld_SelectionLastClicked ? &data->icld_SelectionLastClicked->ie_IconListEntry : NULL;
             SET(obj, MUIA_IconList_Clicked, (IPTR)&data->icld_ClickEvent);
 
-            if (icon_doubleclicked)
+                        if (doubleclicked)
             {
                 SET(obj, MUIA_IconList_DoubleClick, TRUE);
             }
-            else if (!data->mouse_pressed)
+
+                        if ((!data->mouse_pressed) &&
+                                (!doubleclicked || (doubleclicked && (data->icld_SelectionLastClicked == NULL))))
             {
                 data->last_secs = message->imsg->Seconds;
                 data->last_mics = message->imsg->Micros;
@@ -5753,7 +5755,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 /* After a double click you often open a new window
                 * and since Zune doesn't not support the faking
                 * of SELECTUP events only change the Events
-                * if not doubleclicked */
+                            * if not doubleclicked on an icon */
 
                 data->mouse_pressed |= LEFT_BUTTON;
 
