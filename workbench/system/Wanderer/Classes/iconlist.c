@@ -4396,6 +4396,140 @@ static void DoWheelMove(struct IClass *CLASS, Object *obj, LONG wheelx, LONG whe
 }
 ///
 
+static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, struct MUIP_HandleEvent *message,
+        struct IconEntry *new_selected, BOOL *icon_doubleclicked)
+{
+    struct IconEntry        *node = NULL;
+    BOOL                    update_entry = FALSE;
+    LONG                    mx = message->imsg->MouseX - _mleft(obj);
+    LONG                    my = message->imsg->MouseY - _mtop(obj);
+    struct IconList_DATA    *data = INST_DATA(CLASS, obj);
+
+#if defined(__AROS__)
+    ForeachNode(&data->icld_IconList, node)
+#else
+    Foreach_Node(&data->icld_IconList, node);
+#endif
+    {
+        if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+        {
+            update_entry = FALSE;
+
+            /* If node that is beeing checked is selected and it is not the clicked node and no shift pressed, deselect it */
+            if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
+            {
+                if ((new_selected != node) &&
+                    (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
+                {
+                    Remove(&node->ie_SelectionNode);
+                    node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+                    update_entry = TRUE;
+                }
+            }
+
+            if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
+            {
+                node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
+                update_entry = TRUE;
+            }
+
+            /* Redraw list */
+            if (update_entry)
+            {
+                data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+                data->update_entry = node;
+                MUI_Redraw(obj, MADF_DRAWUPDATE);
+                #if defined(DEBUG_ILC_EVENTS)
+                D(bug("[IconList] %s: Rendered entry '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+                #endif
+            }
+        }
+    }
+
+    /* Check if this is not a double click */
+    if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
+    {
+        #if defined(DEBUG_ILC_EVENTS)
+        D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
+        #endif
+        *icon_doubleclicked = TRUE;
+    }
+
+    if (new_selected != NULL)
+    {
+        /* Found clicked entry... */
+
+        data->icld_LassoActive = FALSE;
+        update_entry = FALSE;
+
+        if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
+        {
+            /* Add new entry to selection */
+            AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
+            new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
+            update_entry = TRUE;
+
+            if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
+            {
+                new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
+                data->icld_FocusIcon = new_selected;
+            }
+        }
+        else if ((*icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+        {
+            /* Unselect previously selected entry */
+            Remove(&new_selected->ie_SelectionNode);
+            new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
+            update_entry = TRUE;
+        }
+
+        /* Redraw list */
+        if (update_entry)
+        {
+            data->icld_UpdateMode = UPDATE_SINGLEENTRY;
+            data->update_entry = new_selected;
+            MUI_Redraw(obj, MADF_DRAWUPDATE);
+            #if defined(DEBUG_ILC_EVENTS)
+            D(bug("[IconList] %s: Rendered 'new_selected' entry '%s'\n", __PRETTY_FUNCTION__, new_selected->ie_IconListEntry.label));
+            #endif
+        }
+    }
+    else
+    {
+        struct Window * thisWindow = NULL;
+        #if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
+        D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
+        #endif
+        /* No entry clicked on ... Start Lasso-selection */
+        data->icld_LassoActive = TRUE;
+        if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
+        {
+            data->icld_SelectionLastClicked = NULL;
+            data->icld_FocusIcon = NULL;
+        }
+        data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;
+        data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
+        data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
+        data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY;
+
+        /* Draw initial Lasso frame */
+        IconList_InvertLassoOutlines(obj, data, &data->icld_LassoRectangle);
+
+        /* Start handling INTUITICKS */
+        GET(obj, MUIA_Window, &thisWindow);
+        if (thisWindow)
+        {
+            ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
+            if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
+            {
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+                data->ehn.ehn_Events |= IDCMP_INTUITICKS;
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+            }
+        }
+    }
+}
+
 ///MUIM_HandleEvent()
 /**************************************************************************
 MUIM_HandleEvent
@@ -5458,7 +5592,6 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     if (mx >= 0 && mx < _width(obj) && my >= 0 && my < _height(obj))
                     {
             BOOL             icon_doubleclicked = FALSE;
-            BOOL             update_entry;
             struct IconEntry          *node = NULL;
             struct IconEntry         *new_selected = NULL;
 
@@ -5466,7 +5599,7 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
             {
                 /* LIST-VIEW HANDLING */
 
-                LONG clickColumn = -1, clickRow = -1;
+                            LONG clickColumn = -1;
     
                 LONG x = _mleft(obj) - data->icld_ViewX + LINE_SPACING_LEFT;
                 LONG index, w, i;
@@ -5508,124 +5641,19 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 {
                     if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                     {
-                    update_entry = FALSE;
-
                     /* Is this node clicked? */
                     if (current == index)
                     {
-                        clickRow = current;
                         new_selected = node;
-                    }
-                    else
-                    {
-                        /* If node that is beeing checked is selected and it is not the clicked node and no shift pressed, deselect it */
-                        if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                        {
-                        if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                        {
-                            Remove(&node->ie_SelectionNode);
-                            node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                            update_entry = TRUE;
-                        }
-                        }
-
-                        if (node->ie_Flags & ICONENTRY_FLAG_FOCUS)
-                        {
-                        node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                        update_entry = TRUE;
-                        }
-                    }
-                    if (update_entry)
-                    {
-                        data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                        data->update_entry = node;
-                        MUI_Redraw(obj, MADF_DRAWUPDATE);
-                        D(bug("[IconList] %s: Rendered entry '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
+                                            break;
                     }
 
                     current++;
                     }
                 }
 
-                /* Check if this is not a double click */
-                if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
-                {
-                    D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
-                    icon_doubleclicked = TRUE;
-                }
-                
-                if ((new_selected != NULL) && (clickRow != -1) && (clickColumn != -1))
-                {
-                    /* Found clicked entry... */
-                    D(bug("[IconList] %s: Clicked on Row %d Column %d ..\n", __PRETTY_FUNCTION__, clickRow, clickColumn));
-
-                    data->icld_LassoActive = FALSE;
-                    update_entry = FALSE;
-
-                    if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
-                    {
-                        /* Add new entry to selection */
-                    AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
-                    new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                    update_entry = TRUE;
-
-                    if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                    {
-                        new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                        data->icld_FocusIcon = new_selected;
-                    }
-                    }
-                    else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                    {
-                        /* Unselect previously selected entry */
-                    Remove(&new_selected->ie_SelectionNode);
-                    new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                    update_entry = TRUE;
-                    }
-
-                    /* Redraw list */
-                    if (update_entry)
-                    {
-                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                    data->update_entry = new_selected;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-                    D(bug("[IconList] %s: Rendered 'new_selected' entry '%s'\n", __PRETTY_FUNCTION__, new_selected->ie_IconListEntry.label));
-                    }
-                }
-                else
-                {
-                    struct Window * thisWindow = NULL;
-#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
-                    D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
-#endif
-                    /* No entry clicked on ... Start Lasso-selection */
-                    data->icld_LassoActive = TRUE;
-                    if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                    {
-                    data->icld_SelectionLastClicked = NULL;
-                    data->icld_FocusIcon = NULL;
-                    }
-                    data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
-                    data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
-                    data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
-                    data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
-
-                    /* Draw initial Lasso frame */
-                    IconList_InvertLassoOutlines(obj, data, &data->icld_LassoRectangle);
-
-                    /* Start handling INTUITICKS */
-                    GET(obj, MUIA_Window, &thisWindow);
-                    if (thisWindow)
-                    {
-                    ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
-                    if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
-                    {
-                        DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-                        data->ehn.ehn_Events |= IDCMP_INTUITICKS;
-                        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-                    }
-                    }
-                }
+                                /* Handle actions */
+                                IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &icon_doubleclicked);
                 }
             }
             else
@@ -5643,8 +5671,6 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                 {
                 if (node->ie_Flags & ICONENTRY_FLAG_VISIBLE)
                 {
-                    update_entry = FALSE;
-
                     /* Is this node clicked? */
                     rect.MinX = node->ie_IconX;
                     rect.MaxX = node->ie_IconX + node->ie_AreaWidth - 1;
@@ -5659,128 +5685,19 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     }
 
                     if ((((mx + data->icld_ViewX) >= rect.MinX) && ((mx + data->icld_ViewX) <= rect.MaxX )) &&
-                    (((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )) &&
-                    !new_selected)
+                                        (((my + data->icld_ViewY) >= rect.MinY) && ((my + data->icld_ViewY) <= rect.MaxY )))
                     {
                     new_selected = node;
 #if defined(DEBUG_ILC_EVENTS)
                     D(bug("[IconList] %s: Entry '%s' clicked on ..\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
 #endif
-                    }
-
-                    /* If node that is beeing checked is selected and it is not the clicked node and no shift pressed, deselect it */
-                    if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
-                    {
-                    if ((new_selected != node) &&
-                        (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))))
-                    {
-                        Remove(&node->ie_SelectionNode);
-                        node->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                        update_entry = TRUE;
-                    }
-                    }
-
-                    if ((node->ie_Flags & ICONENTRY_FLAG_FOCUS) && (new_selected != node))
-                    {
-                    node->ie_Flags &= ~ICONENTRY_FLAG_FOCUS;
-                    update_entry = TRUE;
-                    }
-
-                    /* Redraw list */
-                    if (update_entry)
-                    {
-                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                    data->update_entry = node;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-#if defined(DEBUG_ILC_EVENTS)
-                    D(bug("[IconList] %s: Rendered entry '%s'\n", __PRETTY_FUNCTION__, node->ie_IconListEntry.label));
-#endif
+                                        break;
                     }
                 }
                 }
 
-                /* Check if this is not a double click */
-                if ((DoubleClick(data->last_secs, data->last_mics, message->imsg->Seconds, message->imsg->Micros)) && (data->icld_SelectionLastClicked == new_selected))
-                {
-#if defined(DEBUG_ILC_EVENTS)
-                D(bug("[IconList] %s: Entry double-clicked\n", __PRETTY_FUNCTION__));
-#endif
-                icon_doubleclicked = TRUE;
-                }
-
-                if (new_selected != NULL)
-                {
-                    /* Found clicked entry... */
-
-                data->icld_LassoActive = FALSE;
-                update_entry = FALSE;
-
-                if (!(new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
-                {
-                    /* Add new entry to selection */
-                    AddTail(&data->icld_SelectionList, &new_selected->ie_SelectionNode);
-                    new_selected->ie_Flags |= ICONENTRY_FLAG_SELECTED;
-                    update_entry = TRUE;
-
-                    if (!(new_selected->ie_Flags & ICONENTRY_FLAG_FOCUS))
-                    {
-                    new_selected->ie_Flags |= ICONENTRY_FLAG_FOCUS;
-                    data->icld_FocusIcon = new_selected;
-                    }
-                }
-                else if ((icon_doubleclicked == FALSE) && (message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                {
-                    /* Unselect previously selected entry */
-                    Remove(&new_selected->ie_SelectionNode);
-                    new_selected->ie_Flags &= ~ICONENTRY_FLAG_SELECTED;
-                    update_entry = TRUE;
-                }
-
-                /* Redraw list */
-                if (update_entry != 0)
-                {
-                    data->icld_UpdateMode = UPDATE_SINGLEENTRY;
-                    data->update_entry = new_selected;
-                    MUI_Redraw(obj, MADF_DRAWUPDATE);
-#if defined(DEBUG_ILC_EVENTS)
-                    D(bug("[IconList] %s: Rendered 'new_selected' entry '%s'\n", __PRETTY_FUNCTION__, new_selected->ie_IconListEntry.label));
-#endif
-                }
-                }
-                else
-                {
-                struct Window * thisWindow = NULL;
-#if defined(DEBUG_ILC_EVENTS) || defined(DEBUG_ILC_LASSO)
-                D(bug("[IconList] %s: Starting Lasso\n", __PRETTY_FUNCTION__));
-#endif
-                /* No entry clicked on ... Start Lasso-selection */
-                data->icld_LassoActive = TRUE;
-                if (!(message->imsg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
-                {
-                    data->icld_SelectionLastClicked = NULL;
-                    data->icld_FocusIcon = NULL;
-                }
-                data->icld_LassoRectangle.MinX = mx - data->view_rect.MinX + data->icld_ViewX;  
-                data->icld_LassoRectangle.MinY = my - data->view_rect.MinY + data->icld_ViewY;
-                data->icld_LassoRectangle.MaxX = mx - data->view_rect.MinX + data->icld_ViewX;
-                data->icld_LassoRectangle.MaxY = my - data->view_rect.MinY + data->icld_ViewY; 
-
-                /* Draw initial Lasso frame */
-                IconList_InvertLassoOutlines(obj, data, &data->icld_LassoRectangle);
-
-                /* Start handling INTUITICKS */
-                GET(obj, MUIA_Window, &thisWindow);
-                if (thisWindow)
-                {
-                    ModifyIDCMP(thisWindow, (thisWindow->IDCMPFlags|IDCMP_INTUITICKS));
-                    if (!(data->ehn.ehn_Events & IDCMP_INTUITICKS))
-                    {
-                    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-                    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
-                    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-                    }
-                }
-                }
+                            /* Handle actions */
+                            IconList_HandleNewIconSelection(CLASS, obj, message, new_selected, &icon_doubleclicked);
             }
         
             if (new_selected && (new_selected->ie_Flags & ICONENTRY_FLAG_SELECTED))
