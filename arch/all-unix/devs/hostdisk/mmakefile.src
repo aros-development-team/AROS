@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-unix : workbench-devs-hostdisk
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)		\
 	       -I$(SRCDIR)/arch/all-hosted/devs/hostdisk -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
