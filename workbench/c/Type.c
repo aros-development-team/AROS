@@ -360,7 +360,7 @@ LONG dumpfile(struct file *in, struct file *out, BOOL showline)
 	
 	    if ((c == '\n') && CheckSignal(SIGBREAKF_CTRL_C))
 	    {
-	    	retval = RETURN_WARN;
+	    	retval = ERROR_BREAK;
 		break;
 	    }
 	    lastc = c;
