@@ -4,16 +4,16 @@ default 9
 title AROS64 with native Gfx
     kernel /boot/bootstrap-pc.gz ATA=32bit
     module /boot/aros-bsp-pc-x86_64.gz
-    module /boot/aros-fs.pkg.gz.gz
-    module /boot/aros-base.pkg.gz.gz
-    module /boot/poseidon.pkg.gz.gz
+    module /boot/aros-fs.pkg.gz
+    module /boot/aros-base.pkg.gz
+    module /boot/poseidon.pkg.gz
 
 title AROS64 with VESA Gfx @ 640x480-8bpp
     kernel /boot/bootstrap-pc.gz vesa=640x480x8 ATA=32bit nomonitors
     module /boot/aros-bsp-pc-x86_64.gz
-    module /boot/aros-fs.pkg.gz.gz
-    module /boot/aros-base.pkg.gz.gz
-    module /boot/poseidon.pkg.gz.gz
+    module /boot/aros-fs.pkg.gz
+    module /boot/aros-base.pkg.gz
+    module /boot/poseidon.pkg.gz
 
 title AROS64 with VESA Gfx @ 800x600-8bpp
     kernel /boot/bootstrap-pc.gz vesa=800x600x8 ATA=32bit nomonitors
