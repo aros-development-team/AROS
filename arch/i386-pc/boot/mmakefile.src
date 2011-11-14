@@ -9,9 +9,9 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-link-pc-i386 :	\
 #MM	kernel-bsp-pc-i386-gz	\
-#MM	kernel-link-base-gz	\
-#MM	kernel-link-usb-gz	\
-#MM	kernel-link-fs-gz
+#MM	kernel-package-base-gz	\
+#MM	kernel-package-usb-gz	\
+#MM	kernel-package-fs-gz
 
 #
 # Board support package
