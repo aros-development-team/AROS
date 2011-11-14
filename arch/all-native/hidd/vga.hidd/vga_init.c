@@ -2,7 +2,7 @@
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: vga gfx Hidd for standalone i386 AROS
+    Desc: vga gfx Hidd for standalone AROS
     Lang: english
 */
 
@@ -12,9 +12,10 @@
 #include <exec/lists.h>
 #include <graphics/driver.h>
 #include <graphics/gfxbase.h>
+#include <resources/acpi.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
-
+#include <proto/acpi.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
@@ -52,6 +53,7 @@ static struct OOP_ABDescr abd[] =
 
 static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
 {
+    struct ACPIBase *ACPIBase;
     struct GfxBase *GfxBase;
     struct vga_staticdata *xsd = &LIBBASE->vsd;
     struct vgaModeEntry *entry;
@@ -63,6 +65,18 @@ static int PCVGA_Init(LIBBASETYPEPTR LIBBASE)
     {
 	D(bug("[VGA] VESA driver found, not initializing VGA\n"));
 	return FALSE;
+    }
+
+    ACPIBase = OpenResource("acpi.resource");
+    if (ACPIBase)
+    {
+        struct ACPI_TABLE_TYPE_FADT *fadt = ACPI_FindSDT(ACPI_MAKE_ID('F','A','C','P'));
+
+        if (fadt && (fadt->pc_arch & FACP_PC_NO_VGA))
+        {
+            D(bug("[VGA] Disabled by ACPI\n"));
+            return FALSE;
+        }
     }
 
     InitSemaphore(&xsd->sema);
