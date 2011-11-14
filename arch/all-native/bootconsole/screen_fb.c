@@ -32,8 +32,8 @@ static unsigned int lineLen(const char *s)
 
     for (len = 0; len < scr_Width; len++)
     {
-    	if (s[len] == 0)
-    	    break;
+        if (s[len] == 0)
+            break;
     }
 
     return len;
@@ -51,7 +51,7 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
 
     /* Render zero bytes as spaces (do not depend on particular font) */
     if (c == '\0')
-    	c = ' ';
+        c = ' ';
 
     /* Now render it on the screen */
     for (y = 0; y < fontHeight; y++)
@@ -64,24 +64,30 @@ static void RenderChar(unsigned char c, unsigned int xc, unsigned int yc)
             /* Get pixel from the font data */
             int val = (in & 0x80) ? -1 : 0;
 
-	    /* Draw the pixel. Do it in a single VRAM access, again to speed up */
-	    switch (fb_BytesPerPix)
-	    {
-	    case 4:
-	    	*((int *)p) = val;
-	    	break;
+            /* Draw the pixel. Do it in a single VRAM access, again to speed up */
+            switch (fb_BytesPerPix)
+            {
+            case 4:
+                *((int *)p) = val;
+                break;
 
-	    case 2:
-	    	*((short *)p) = val;
-	    	break;
+            case 3:
+                /* qemu's truecolor modes are known to be 3 bytes per pixel */
+                *((short *)p) = val;
+                *((char *)p + 2) = val;
+                break;
 
-	    case 1:
-	    	*((char *)p) = val;
-	    	break;
-	    }
+            case 2:
+                *((short *)p) = val;
+                break;
 
-	    p += fb_BytesPerPix;
-	    in <<= 1;
+            case 1:
+                *((char *)p) = val;
+                break;
+            }
+
+            p += fb_BytesPerPix;
+            in <<= 1;
         }
         ptr += fb_BytesPerLine;
     }
@@ -115,8 +121,8 @@ void fb_Clear(void)
     /* Clear the framebuffer, line by line */
     for (i = 0; i < scr_Height * fontHeight; i++)
     {
-    	memset(ptr, 0, fb_BytesPerPix * scr_Width * fontWidth);
-    	ptr += fb_BytesPerLine;
+        memset(ptr, 0, fb_BytesPerPix * scr_Width * fontWidth);
+        ptr += fb_BytesPerLine;
     }
 
     /* Clear mirror buffer */
@@ -127,7 +133,7 @@ void fb_Putc(char chr)
 {
     /* Ignore null bytes, they are output by formatting routines as terminators */
     if (chr == 0)
-    	return;
+        return;
  
     /* Reached end of line ? New line if so. */
     if ((chr == '\n') || (scr_XPos >= scr_Width))
@@ -139,48 +145,48 @@ void fb_Putc(char chr)
     if (scr_YPos >= scr_Height)
     {
         /* destLen contains length of line being erased */
-    	unsigned int destLen = lineLen(fb_Mirror);
-    	/* ptr contains address of line being scrolled */
-    	char *ptr = fb_Mirror + scr_Width;
-    	unsigned int xc, yc;
+        unsigned int destLen = lineLen(fb_Mirror);
+        /* ptr contains address of line being scrolled */
+        char *ptr = fb_Mirror + scr_Width;
+        unsigned int xc, yc;
 
-	/* Reset line number */
-	scr_YPos = scr_Height - 1;
+        /* Reset line number */
+        scr_YPos = scr_Height - 1;
 
-	/*
-	 * Reprint the whole fb_Mirror (starting from the second line) at (0, 0).
-	 * Update only used parts in order to speed up the scrolling.
-	 */
+        /*
+         * Reprint the whole fb_Mirror (starting from the second line) at (0, 0).
+         * Update only used parts in order to speed up the scrolling.
+         */
         for (yc = 0; yc < scr_YPos; yc++)
         {
             /* Calculate length of the line being scrolled */
             unsigned int srcLen = lineLen(ptr);
 
-	    /*
-	     * The next line (being reprinted on top ot the current one)
-	     * must completely cover it, so we must copy a minimum of 'destLen' bytes.
-	     * Mirror buffer contains zero bytes at unused positions, they will be
-	     * rendered as blank spaces, erasing the previous text.
-	     */
-	    if (srcLen > destLen)
-	    	destLen = srcLen;
+            /*
+             * The next line (being reprinted on top ot the current one)
+             * must completely cover it, so we must copy a minimum of 'destLen' bytes.
+             * Mirror buffer contains zero bytes at unused positions, they will be
+             * rendered as blank spaces, erasing the previous text.
+             */
+            if (srcLen > destLen)
+                destLen = srcLen;
 
             for (xc = 0; xc < destLen; xc++)
-            	RenderChar(ptr[xc], xc, yc);
+                RenderChar(ptr[xc], xc, yc);
 
-	    /* Go to the next line in fb_Mirror buffer */
-	    ptr += scr_Width;
+            /* Go to the next line in fb_Mirror buffer */
+            ptr += scr_Width;
             /* Source becomes destination */
             destLen = srcLen;
         }
 
-	/* Clear the bottom line */
-	for (xc = 0; xc < destLen; xc++)
-	    RenderChar(0, xc, scr_YPos);
+        /* Clear the bottom line */
+        for (xc = 0; xc < destLen; xc++)
+            RenderChar(0, xc, scr_YPos);
     }
 
     if (chr == '\n')
-    	return;
+        return;
 
     /* Draw the character at current position and increment current column */
     RenderChar(chr, scr_XPos++, scr_YPos);
