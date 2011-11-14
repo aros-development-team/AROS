@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES       := ParallelClass ParallelUnitClass
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" \
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=workbench-hidd-unix-parallel \
@@ -12,3 +12,5 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)\"" 
   uselibs="amiga oop rom"
 
 #MM workbench-hidd-unix-parallel : kernel-unixio
+
+%common
