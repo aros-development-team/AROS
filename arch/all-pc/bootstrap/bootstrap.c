@@ -540,7 +540,7 @@ static void __bootstrap(unsigned int magic, void *mb)
     }
 
     D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
-    if (!mod_end)
+    if (!firstMod)
     {
     	panic("No kickstart modules found, nothing to run");
     }
