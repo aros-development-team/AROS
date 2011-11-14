@@ -4,48 +4,48 @@ default 3
 title AROS (native graphics)
     multiboot /dh0/boot/bootstrap-pc.gz ATA=32bit floppy=disabled
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics)
     multiboot /dh0/boot/bootstrap-pc.gz vesa=32bit ATA=32bit floppy=disabled nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 	
 title AROS (high colour VESA graphics)
     multiboot /dh0/boot/bootstrap-pc.gz vesa=16bit ATA=32bit floppy=disabled nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics, floppy drive)
     multiboot /dh0/boot/bootstrap-pc.gz vesa=32bit ATA=32bit nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics: 1024x768)
     multiboot /dh0/boot/bootstrap-pc.gz vesa=1024x768 ATA=32bit floppy=disabled nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (true colour VESA graphics: 1280x1024)
     multiboot /dh0/boot/bootstrap-pc.gz vesa=1280x1024 ATA=32bit floppy=disabled nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
 
 title AROS (VGA graphics, safe mode)
     multiboot /dh0/boot/bootstrap-pc.gz ATA=nodma debug=memory floppy=disabled nomonitors
     module /dh0/boot/aros-bsp-pc-i386.gz
-    module /dh0/boot/aros-base.gz
-    module /dh0/boot/aros-fs.gz
-    module /dh0/boot/poseidon.gz
+    module /dh0/boot/aros-base.pkg.gz
+    module /dh0/boot/aros-fs.pkg.gz
+    module /dh0/boot/poseidon.pkg.gz
