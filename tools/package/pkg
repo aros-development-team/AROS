@@ -97,7 +97,7 @@ def unpack( source, destination ):
         os.makedirs( destination )
     
     inputSize = os.path.getsize( source )
-    input     = open( source )
+    input     = open( source, 'rb' )
     
     oldwd = os.getcwd()
     os.chdir( destination )
@@ -113,7 +113,7 @@ def unpack( source, destination ):
         if directory != '' and not os.path.exists( directory ):
             os.makedirs( directory )
             
-        output = open( path, 'w' )
+        output = open( path, 'wb' )
         output.write( data )
         output.close()
         
@@ -123,7 +123,7 @@ def unpack( source, destination ):
 def pack( source, destination ):
     'pack( source, destination ) -> None'
     
-    output = open( destination, 'w' )
+    output = open( destination, 'wb' )
     
     oldwd = os.getcwd()
     os.chdir( source )
@@ -138,7 +138,7 @@ def pack( source, destination ):
     for path in files:
         print '» %s (%d bytes)' % (path, os.path.getsize( path ))
         
-        input = open( path )
+        input = open( path, 'rb' )
         writeFile( output, path, input.read() )
         input.close()
     
