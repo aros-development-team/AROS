@@ -54,6 +54,8 @@
 
 ******************************************************************************/
 
+#define ELF_32BIT /* This is needed for correct .ARM.Attributes parsing */
+
 #include <aros/arosbase.h>
 #include <aros/debug.h>
 #include <aros/inquire.h>
@@ -434,6 +436,8 @@ struct
     LONG   pv_version;
     LONG   pv_revision;
     UWORD  pv_arch;
+    UBYTE  pv_arm_cpu;
+    UBYTE  pv_arm_fpu;
     //LONG   pv_days;
     STRPTR pv_vername;
     STRPTR pv_revname;
@@ -442,7 +446,7 @@ struct
     STRPTR pv_extrastr;
     UBYTE  pv_md5sum[16];
 }
-parsedver = { NULL, 0, 0, 0, 0, NULL, NULL, NULL, NULL, NULL, {0}};
+parsedver = { NULL, 0, 0, 0, 0, -1, 0, NULL, NULL, NULL, NULL, NULL, {0}};
 
 #define PVF_MD5SUM      (1 << 0)
 #define PVF_NOVERSION   (1 << 1)
@@ -710,7 +714,7 @@ BOOL makedatefromstring(CONST_STRPTR *bufptr)
         }
     }
 
-    //Printf("date: \"%s\"\n", (LONG) newbuf);
+    D(Printf("date: \"%s\"\n", newbuf));
 
     dt.dat_Format  = FORMAT_CDN;
     dt.dat_Flags   = 0;
@@ -825,6 +829,33 @@ BOOL makeversionfromstring(CONST_STRPTR *bufptr)
     return TRUE;
 }
 
+static const char *arm_cpus[] =
+{
+    "ARM Pre-v4",
+    "ARMv4",
+    "ARMv4T",
+    "ARMv5T",
+    "ARMv5TE",
+    "ARMv5TEJ",
+    "ARMv6",
+    "ARMv6KZ",
+    "ARMv6T2",
+    "ARMv6K",
+    "ARMv7",
+    "ARMv6-M",
+    "ARMv6S-M",
+    "ARMv7E-M"
+};
+
+static const char *arm_fpus[] =
+{
+    "VFP",
+    "VFPv2",
+    "VFPv3",
+    "VFPv3 (D0 - D15)",
+    "VFPv4",
+    "VFPv4 (D0 - D15)"
+};
 
 static
 void printverstring(void)
@@ -880,7 +911,7 @@ void printverstring(void)
                    (IPTR) parsedver.pv_name, (IPTR) (*parsedver.pv_name ? " " : ""),
                    (IPTR) parsedver.pv_vername, (IPTR) parsedver.pv_revname,
                    (IPTR) (parsedver.pv_datestr ? (IPTR)parsedver.pv_datestr : (IPTR)""),
-                   (IPTR) (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)"\n"),
+                   (IPTR) (parsedver.pv_extralf ? (IPTR)parsedver.pv_extralf : (IPTR)""),
                    (IPTR) (parsedver.pv_extrastr ? (IPTR)parsedver.pv_extrastr : (IPTR)""));
         }
         else
@@ -894,40 +925,57 @@ void printverstring(void)
         {
             const char *arch;
 
-            switch (parsedver.pv_arch)
+            if (parsedver.pv_arch == EM_ARM)
             {
-            case 0:
-                /* No information available */
-                arch = NULL;
-                break;
-        
-            case EM_386:
-                arch = "I386";
-                break;
+                Printf("Architecture: ");
 
-            case EM_68K:
-                arch = "M68k";
-                break;
+                if (parsedver.pv_arm_cpu == -1)
+                    Printf("ARM (unspecified)");
+                else if (parsedver.pv_arm_cpu <= ELF_CPU_ARMv7EM)
+                    Printf(arm_cpus[parsedver.pv_arm_cpu]);
+                else
+                    Printf("Unknown ARM (%d)", parsedver.pv_arm_cpu);
 
-            case EM_PPC:
-                arch = "PowerPC";
-                break;
+                if (parsedver.pv_arm_fpu > 6)
+                    Printf(" Unknown FPU (%d)", parsedver.pv_arm_fpu);
+                else if (parsedver.pv_arm_fpu)
+                    Printf(" %s", arm_fpus[parsedver.pv_arm_fpu]);
 
-            case EM_ARM:
-                arch = "ARM";
-                break;
-
-            case EM_X86_64:
-                arch = "X86-64";
-                break;
-
-            default:
-                arch = "Unknown";
-                break;    
+                Printf("\n");
             }
+            else
+            {
+                switch (parsedver.pv_arch)
+                {
+                case 0:
+                    /* No information available */
+                    arch = NULL;
+                    break;
 
-            if (arch)
-                Printf("Architecture: %s\n", arch);
+                case EM_386:
+                    arch = "I386";
+                    break;
+
+                case EM_68K:
+                    arch = "M68k";
+                    break;
+
+                case EM_PPC:
+                    arch = "PowerPC";
+                    break;
+
+                case EM_X86_64:
+                    arch = "X86-64";
+                    break;
+
+                default:
+                    arch = "Unknown";
+                    break;    
+                }
+
+                if (arch)
+                    Printf("Architecture: %s\n", arch);
+            }
         }
     }
 }
@@ -936,7 +984,7 @@ void printverstring(void)
 static
 int makedata(CONST_STRPTR buffer, CONST_STRPTR ptr, int pos)
 {
-    //Printf("makedata: buffer \"%s\" prt \"%s\"\n", (LONG) buffer, (LONG) ptr);
+    D(Printf("makedata: buffer \"%s\" ptr \"%s\"\n", buffer, ptr));
 
     if (makeversionfromstring(&ptr))
     {
@@ -953,11 +1001,11 @@ int makedata(CONST_STRPTR buffer, CONST_STRPTR ptr, int pos)
         }
 
         /* Now find the date */
-        //Printf("makedatafromstring: ptr #1: \"%s\"\n", (LONG) ptr);
+        D(Printf("makedata: ptr #1: \"%s\"\n", ptr));
         doskip = strchr(ptr, '(') ? TRUE : FALSE;
         (void) makedatefromstring(&ptr);
 
-        //Printf("makedatafromstring: ptr #2: \"%s\"\n", (LONG) ptr);
+        D(Printf("makedata: ptr #2: \"%s\"\n", ptr));
         if (doskip)
             ptr = skipspaces(ptr);  /* NOTE: not skipwhites! */
         for (endp = ptr; *endp != '\0' && *endp != '\r' && *endp != '\n'; endp++)
@@ -972,6 +1020,7 @@ int makedata(CONST_STRPTR buffer, CONST_STRPTR ptr, int pos)
                 return RETURN_FAIL;
             }
 
+            D(Printf("makedata: Extra string: %s\n", parsedver.pv_extrastr));
             if (doskip)
                 parsedver.pv_extralf = "\n";
         }
@@ -1006,7 +1055,7 @@ int makedatafromstring(CONST_STRPTR buffer)
              * really is.
              */
 
-            //Printf("makedatafromstring: buffer + %ld: \"%s\"\n", pos, (LONG) buffer + pos);
+            D(Printf("makedatafromstring: buffer + %ld: \"%s\"\n", pos, buffer + pos));
 
             ptr = buffer + pos + 1;
 
@@ -1479,6 +1528,243 @@ int makedevicever(CONST_STRPTR name)
     return error;
 }
 
+static int elf_read_block(BPTR file, ULONG offset, APTR buffer, ULONG size)
+{
+    if (Seek(file, offset, OFFSET_BEGINNING) < 0)
+        return 0;
+
+    return Read(file, buffer, size);
+}
+
+static void *load_block(BPTR file, ULONG offset, ULONG size)
+{
+    void *block = AllocMem(size, MEMF_ANY);
+
+    if (block)
+    {
+        if (elf_read_block(file, offset, block, size) == size)
+            return block;
+
+        FreeMem(block, size);
+    }
+
+    return NULL;
+}
+
+static inline UWORD elf_read_word(UWORD data, struct elfheader *eh)
+{
+    switch (eh->ident[EI_DATA])
+    {
+    case ELFDATA2LSB:
+        return AROS_LE2WORD(data);
+
+    case ELFDATA2MSB:
+        return AROS_BE2WORD(data);
+
+    default:
+        return 0;
+    }
+}
+
+static inline ULONG elf_read_long(ULONG data, struct elfheader *eh)
+{
+    switch (eh->ident[EI_DATA])
+    {
+    case ELFDATA2LSB:
+        return AROS_LE2LONG(data);
+
+    case ELFDATA2MSB:
+        return AROS_BE2LONG(data);
+
+    default:
+        return 0;
+    }
+}
+
+static ULONG read_shnum(BPTR file, struct elfheader *eh)
+{
+    ULONG shnum = elf_read_word(eh->shnum, eh);
+
+    /* the ELF header only uses 16 bits to store the count of section headers,
+     * so it can't handle more than 65535 headers. if the count is 0, and an
+     * offset is defined, then the real count can be found in the first
+     * section header (which always exists).
+     *
+     * similarly, if the string table index is SHN_XINDEX, then the actual
+     * index is found in the first section header also.
+     *
+     * see the System V ABI 2001-04-24 draft for more details.
+     */
+    if (shnum == 0)
+    {
+        struct sheader sh;
+        ULONG shoff = elf_read_long(eh->shoff, eh);
+
+        if (shoff == 0)
+            return 0;
+
+        if (elf_read_block(file, shoff, &sh, sizeof(sh)) != sizeof(sh))
+            return 0;
+
+        /* wider section header count is in the size field */
+        shnum = elf_read_long(sh.size, eh);
+    }
+
+    return shnum;
+}
+
+static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct elfheader *eh)
+{
+    struct attrs_section *attrs;
+
+    if (data[0] != ATTR_VERSION_CURRENT)
+    {
+        D(Printf("Unknown attributes version: 0x%02\n", data[0]));
+        return FALSE;
+    }
+
+    attrs = (void *)data + 1;
+    while (len > 0)
+    {
+        ULONG attrs_size = elf_read_long(attrs->size, eh);
+
+        if (!strcmp(attrs->vendor, "aeabi"))
+        {
+            struct attrs_subsection *aeabi_attrs = (void *)attrs->vendor + 6;
+            ULONG aeabi_len = attrs_size - 10;
+
+            D(Printf("Found aeabi attributes @ 0x%p (length %u)\n", aeabi_attrs, aeabi_len));
+
+            while (aeabi_len > 0)
+            {
+                ULONG aeabi_attrs_size = elf_read_long(aeabi_attrs->size, eh);
+
+                if (aeabi_attrs->tag == Tag_File)
+                {
+                    UBYTE *file_subsection = (void *)aeabi_attrs + sizeof(struct attrs_subsection);
+                    UBYTE file_len = aeabi_attrs_size - sizeof(struct attrs_subsection);
+
+                    D(Printf("Found file-wide attributes @ 0x%p (length %u)\n", file_subsection, file_len));
+                            
+                    while (file_len > 0)
+                    {
+                        UBYTE tag, shift;
+                        ULONG val = 0;
+
+                        tag = *file_subsection++;
+                        file_len--;
+
+                        if (file_len == 0)
+                        {
+                            D(Printf("Mailformed attribute tag %d (no data)\n", tag));
+                            return FALSE;
+                        }
+
+                        switch (tag)
+                        {
+                        case Tag_CPU_raw_name:
+                        case Tag_CPU_name:
+                        case Tag_compatibility:
+                        case Tag_also_compatible_with:
+                        case Tag_conformance:
+                            /* These two are NULL-terminated strings. Just skip. */
+                            while (file_len)
+                            {
+                                file_len--;
+                                if (*file_subsection++ == 0)
+                                    break;
+                            }
+                            break;
+
+                        default:
+                            /* Read ULEB128 value */
+                            shift = 0;
+                            while (file_len)
+                            {
+                                UBYTE byte;
+
+                                byte = *file_subsection++;
+                                file_len--;
+
+                                val |= (byte & 0x7F) << shift;
+                                if (!(byte & 0x80))
+                                    break;
+
+                                shift += 7;
+                            }
+                        }
+                                
+                        switch (tag)
+                        {
+                        case Tag_CPU_arch:
+                            D(Printf("ARM CPU architecture set to %d\n", val));
+                            parsedver.pv_arm_cpu = val;
+                            break;
+
+                        case Tag_FP_arch:
+                            D(Printf("ARM FPU architecture set to %d\n", val));
+                            parsedver.pv_arm_fpu = val;
+                            break;
+                        }
+                    }
+
+                    return TRUE;
+                }
+                aeabi_attrs = (void *)aeabi_attrs + aeabi_attrs_size;
+                aeabi_len -= aeabi_attrs_size;
+            }
+
+            return FALSE;
+        }
+        attrs = (void *)attrs + attrs_size;
+        len -= attrs_size;
+    }
+    return FALSE;
+}
+
+static int arm_read_cpudata(BPTR file, struct elfheader *eh)
+{
+    struct sheader *sh;
+    ULONG int_shnum;
+    ULONG shoff;
+    UWORD shentsize;
+    ULONG i;
+
+    int_shnum = read_shnum(file, eh);
+    if (!int_shnum)
+        return 0;
+
+    shoff     = elf_read_long(eh->shoff, eh);
+    shentsize = elf_read_word(eh->shentsize, eh);
+
+    /* load section headers */
+    if (!(sh = load_block(file, shoff, int_shnum * shentsize)))
+        return 0;
+
+    for (i = 0; i < int_shnum; i++)
+    {
+        if (sh[i].type == SHT_ARM_ATTRIBUTES)
+        {
+            ULONG off = elf_read_long(sh[i].offset, eh);
+            ULONG len = elf_read_long(sh[i].size, eh);
+            void *data = load_block(file, off, len);
+
+            D(Printf("ARM ATTRIBUTES section %d loaded at 0x%p\n", i, data));
+
+            if (data)
+            {
+                ARM_ParseAttrs(data, len, eh);
+                FreeMem(data, len);
+            }
+            break;
+        }
+    }
+
+    FreeMem(sh, int_shnum * shentsize);
+
+    return 1;
+}
+
 
 /* Retrieve version information from file. Return 0 for success.
  */
@@ -1501,26 +1787,23 @@ int makefilever(CONST_STRPTR name)
 
             if (args.arg_arch)
             {
-                if (Read(file, buffer, 20) == 20)
+                ULONG len = Read(file, buffer, sizeof(struct elfheader));
+
+                if (len == sizeof(struct elfheader))
                 {
                     if (buffer[0] == 0x7f && buffer[1] == 'E' && buffer[2] == 'L' && buffer[3] == 'F')
                     {
                         /* It's a ELF file, read machine ID */
-                        UWORD arch = ((struct elfheader *)buffer)->machine;
+                        struct elfheader *eh = (struct elfheader *)buffer;
 
-                        /* Convert it to our native endianess */
-                        switch (buffer[EI_DATA])
-                        {
-                        case ELFDATA2LSB:
-                    	    parsedver.pv_arch = AROS_LE2WORD(arch);
-                    	    break;
-
-                    	case ELFDATA2MSB:
-                    	    parsedver.pv_arch = AROS_BE2WORD(arch);
-                    	    break;
-                    	}
+                        parsedver.pv_arch = elf_read_word(eh->machine, eh);
+                    	if (parsedver.pv_arch == EM_ARM)
+                    	    arm_read_cpudata(file, eh);
                     }
-                    else if (buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 0x03 && buffer[3] == 0xF3)
+                }
+                else if (len >= 4)
+                {
+                    if (buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 0x03 && buffer[3] == 0xF3)
                     {
                         /* It's AmigaOS hunk file. m68k obviously :) */
                         parsedver.pv_arch = EM_68K;
