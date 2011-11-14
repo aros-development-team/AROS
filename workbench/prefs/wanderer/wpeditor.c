@@ -178,6 +178,9 @@ static STRPTR        _wpeditor_intern_MainPageNames[4];
 static Class         *_wpeditor_intern_CLASS = NULL;
 static struct List   _wpeditor_intern_ViewSettings;
 
+static CONST_STRPTR  toolbar_PrefsFile = "ENV:SYS/Wanderer/toolbar.prefs";
+#define TOOLBAR_PREFSSIZE 1024
+
 /*** Macros *****************************************************************/
 #define SETUP_WPEDITOR_INST_DATA struct WPEditor_DATA *data = INST_DATA(CLASS, self)
 
@@ -2149,6 +2152,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ImportFH
     LONG                   error;
     IPTR                   iff_parse_mode = IFFPARSE_SCAN;
     UBYTE                  chunk_buffer[WP_IFF_CHUNK_BUFFER_SIZE];
+    STRPTR                  buffer = AllocVec(TOOLBAR_PREFSSIZE, MEMF_ANY | MEMF_CLEAR);
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ImportFH()\n"));
 
@@ -2274,7 +2278,23 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
 
     //Close((APTR)handle->iff_Stream);
     FreeIFF(handle);
-    
+
+    /* Importing toolbar preferences */
+    if (GetVar(toolbar_PrefsFile, buffer, TOOLBAR_PREFSSIZE, GVF_GLOBAL_ONLY) != -1)
+    {
+        SETUP_WPEDITOR_INST_DATA;
+
+        if ((strcasecmp(buffer, "True")) == 0)
+        {
+            SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, TRUE);
+        }
+        else
+        {
+            SET(data->wped_cm_ToolbarEnabled, MUIA_Selected, FALSE);
+        }
+    }
+    FreeVec(buffer);
+
     return success;
 }
 
@@ -2295,6 +2315,7 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
     struct WandererPrefsIFFChunkHeader     wanderer_chunkdata = { };
     BOOL                                   success = TRUE;
     LONG                                   error   = 0;
+    BOOL                                    toolbar_enabled = (BOOL)XGET(data->wped_cm_ToolbarEnabled, MUIA_Selected);
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH()\n"));
 
@@ -2702,6 +2723,12 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Closing Handles ..\n"));
 
         CloseIFF(handle);
         FreeIFF(handle);
+
+        /* Export toolbar preferences */
+        if (toolbar_enabled)
+            SetVar(toolbar_PrefsFile, "True", 4, GVF_GLOBAL_ONLY);
+        else
+            SetVar(toolbar_PrefsFile, "False", 5, GVF_GLOBAL_ONLY);
     }
     else // AllocIFF()
     {
