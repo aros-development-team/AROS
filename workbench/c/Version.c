@@ -1506,7 +1506,19 @@ int makefilever(CONST_STRPTR name)
                     if (buffer[0] == 0x7f && buffer[1] == 'E' && buffer[2] == 'L' && buffer[3] == 'F')
                     {
                         /* It's a ELF file, read machine ID */
-                    	parsedver.pv_arch = ((struct elfheader *)buffer)->machine;
+                        UWORD arch = ((struct elfheader *)buffer)->machine;
+
+                        /* Convert it to our native endianess */
+                        switch (buffer[EI_DATA])
+                        {
+                        case ELFDATA2LSB:
+                    	    parsedver.pv_arch = AROS_LE2WORD(arch);
+                    	    break;
+
+                    	case ELFDATA2MSB:
+                    	    parsedver.pv_arch = AROS_BE2WORD(arch);
+                    	    break;
+                    	}
                     }
                     else if (buffer[0] == 0 && buffer[1] == 0 && buffer[2] == 0x03 && buffer[3] == 0xF3)
                     {
