@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Copy file to parallel.device
@@ -48,38 +48,35 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <setjmp.h>
+/****************************************************************************************/
+
+#define ARG_TEMPLATE        "FILE/A,USB/S,QUIET/S"
+#define ARG_FILE            0
+#define ARG_USB             1
+#define ARG_QUIET           2
+#define NUM_ARGS            3
+
+#define BUFSIZE             4096
 
 /****************************************************************************************/
 
-#define ARG_TEMPLATE 	    "FILE/A,USB/S,QUIET/S"
-#define ARG_FILE    	    0
-#define ARG_USB     	    1
-#define ARG_QUIET   	    2
-#define NUM_ARGS    	    3
-
-#define BUFSIZE     	    4096
-
-/****************************************************************************************/
-
-struct MsgPort	*ParMP;
+struct MsgPort  *ParMP;
 struct IOStdReq *ParIO;
-BOOL	    	 ParOpen;
-BPTR	    	 fh;
-struct RDArgs 	*myargs;
-IPTR	         args[NUM_ARGS];
-UBYTE	         s[256];
-UBYTE	    	 buf[BUFSIZE];
-STRPTR		 devicename = "parallel.device";
-jmp_buf		 exit_buf;
+BOOL             ParOpen;
+BPTR             fh;
+struct RDArgs   *myargs;
+IPTR             args[NUM_ARGS];
+UBYTE            s[256];
+UBYTE            buf[BUFSIZE];
+STRPTR           devicename = "parallel.device";
 
 /****************************************************************************************/
 
-static void cleanup(char *msg, ULONG retcode)
+static void cleanup(char *msg)
 {
     if (msg && !args[ARG_QUIET]) 
     {
-    	Printf("CopyToPAR: %s\n", msg);
+        Printf("CopyToPAR: %s\n", msg);
     }
     
     if (fh) Close(fh);
@@ -88,54 +85,66 @@ static void cleanup(char *msg, ULONG retcode)
     if (ParOpen) CloseDevice((struct IORequest *)ParIO);
     if (ParIO) DeleteIORequest((struct IORequest *)ParIO);
     if (ParMP) DeleteMsgPort(ParMP);
-    
-    longjmp(exit_buf, retcode | (1 << 31));
 }
 
 /****************************************************************************************/
 
-static void getarguments(void)
+static ULONG getarguments(void)
 {
     if (!(myargs = ReadArgs(ARG_TEMPLATE, args, 0)))
     {
-    	Fault(IoErr(), 0, s, 255);
-	cleanup(s, RETURN_FAIL);
+        Fault(IoErr(), 0, s, 255);
+        cleanup(s);
+        return RETURN_FAIL;
     }
+    return 0;
 }
 
 /****************************************************************************************/
 
-static void openpar(void)
+static ULONG openpar(void)
 {
     ParMP = CreateMsgPort();
-    if (!ParMP) cleanup("Failed to create msgport", RETURN_ERROR);
+    if (!ParMP)
+    {
+        cleanup("Failed to create msgport");
+        return RETURN_ERROR;
+    }
     
     ParIO = (struct IOStdReq *)CreateIORequest(ParMP, sizeof(struct IOExtPar));
-    if (!ParIO) cleanup("Failed to create IO request", RETURN_ERROR);
+    if (!ParIO)
+    {
+        cleanup("Failed to create IO request");
+        return RETURN_ERROR;
+    }
 
     if (args[ARG_USB])
     {
-	devicename = "usbparallel.device";
+        devicename = "usbparallel.device";
     }
 
     if (OpenDevice(devicename, 0, (struct IORequest *)ParIO, 0))
     {
-	cleanup("Failed to open (usb)parallel.device", RETURN_ERROR);
+        cleanup("Failed to open (usb)parallel.device");
+        return RETURN_ERROR;
     }
 
-    ParOpen = TRUE;        
+    ParOpen = TRUE;
+    return 0;
 }
 
 /****************************************************************************************/
 
-static void openfile(void)
+static ULONG openfile(void)
 {
     fh = Open((STRPTR)args[ARG_FILE], MODE_OLDFILE);
     if (!fh)
     {
-    	Fault(IoErr(), 0, s, 255);
-	cleanup(s, RETURN_FAIL);
+        Fault(IoErr(), 0, s, 255);
+        cleanup(s);
+        return RETURN_FAIL;
     }
+    return 0;
 }
 
 /****************************************************************************************/
@@ -151,26 +160,29 @@ static BOOL WritePAR(APTR buf, ULONG size)
 
 /****************************************************************************************/
 
-static void docopy(void)
+static ULONG docopy(void)
 {
     LONG size;
     
     do
     {
-    	size = Read(fh, buf, BUFSIZE);
-	if (size == -1)
-	{
-	    Fault(IoErr(), 0, s, 255);
-	    cleanup(s, RETURN_FAIL);
-	}
-	
-	if (!WritePAR(buf, size))
-	{
-	    cleanup("Error writing to (usb)parallel.device", RETURN_FAIL);
-    	}
+        size = Read(fh, buf, BUFSIZE);
+        if (size == -1)
+        {
+            Fault(IoErr(), 0, s, 255);
+            cleanup(s);
+            return RETURN_FAIL;
+        }
+
+        if (!WritePAR(buf, size))
+        {
+            cleanup("Error writing to (usb)parallel.device");
+            return RETURN_FAIL;
+        }
 
     } while (size == BUFSIZE);
-        
+
+    return 0;
 }
 
 /****************************************************************************************/
@@ -179,15 +191,22 @@ int main(void)
 {
     int rc;
 
-    if ((rc = setjmp(exit_buf)) != 0) {
-        return rc & ~(1 << 31);
-    }
+    rc = getarguments();
+    if (rc)
+        return rc;
 
-    getarguments();
-    openpar();
-    openfile();
-    docopy();
-    cleanup(NULL, 0);
-    
+    rc = openpar();
+    if (rc)
+        return rc;
+
+    rc = openfile();
+    if (rc)
+        return rc;
+
+    rc = docopy();
+    if (rc)
+        return rc;
+
+    cleanup(NULL);    
     return 0;
 }
