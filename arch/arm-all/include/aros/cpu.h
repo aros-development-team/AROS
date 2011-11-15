@@ -113,11 +113,8 @@ struct JumpVec
 	    /* r12 = libbase */                                         \
 	    "\tldr r12, 1f\n"                                           \
             "\tldr r12, [r12]\n"                                        \
-            /* Put libbase on the stack */                              \
-            "\tpush {r12}\n"                                            \
             /* Compute function address and jump */                     \
-            "\tldr r12, [r12, #%c0]\n"                                  \
-            "\tbx r12\n"                                                \
+            "\tldr pc, [r12, #%c0]\n"                                   \
             "1:	.word " #libbasename "\n"                               \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
@@ -137,7 +134,7 @@ struct JumpVec
             #fname " :\n"                                               \
             /* return address is in lr register */                      \
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
-            "\tpush {r0, r1, r2, r3}\n"                                 \
+            "\tpush {r0, r1, r2, r3, lr}\n"                             \
             /* r0 = __comp_get_relbase() */                             \
             "\tldr r12, 2f\n"                                           \
             "\tblx r12\n"                                               \
@@ -146,12 +143,9 @@ struct JumpVec
             "\tldr r1, [r1]\n"                                          \
             "\tldr r12, [r0, r1]\n"                                     \
             /* Restore original arguments */                            \
-            "\tpop {r0, r1, r2, r3}\n"                                  \
-            /* Put libbase on the stack */                              \
-            "\tpush {r12}\n"                                            \
+            "\tpop {r0, r1, r2, r3, lr}\n"                              \
             /* Compute function address and jump */                     \
-            "\tldr r12, [r12, #%c0]\n"                                  \
-            "\tbx r12\n"                                                \
+            "\tldr pc, [r12, #%c0]\n"                                   \
 	    "1:	.word " #libbasename "_offset\n"                        \
             "2: .word __comp_get_relbase\n"                             \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
