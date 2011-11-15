@@ -291,6 +291,7 @@ struct attrs_subsection
 #define Tag_also_compatible_with 65
 #define Tag_conformance          67
 
+/* Tag_CPU_arch values */
 #define ELF_CPU_PREv4    0
 #define ELF_CPU_ARMv4    1 
 #define ELF_CPU_ARMv4T   2
@@ -305,6 +306,15 @@ struct attrs_subsection
 #define ELF_CPU_ARM_v6M  11
 #define ELF_CPU_ARMv6SM  12
 #define ELF_CPU_ARMv7EM  13
+
+/* Tag_FP_arch values */
+#define ELF_FP_None     0
+#define ELF_FP_v1       1
+#define ELF_FP_v2       2
+#define ELF_FP_v3       3
+#define ELF_FP_v3_Short 4
+#define ELF_FP_v4       5
+#define ELF_FP_v4_Short 6
 
 /* Machine's native values */
 #ifdef ELF_64BIT
