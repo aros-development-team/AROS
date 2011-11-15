@@ -31,23 +31,6 @@ struct MinList *Debug_ModList = NULL;
 #endif
 
 /*
- * Redirect debug output to stderr. This is especially
- * needed on iOS where reading stdout is only possible with
- * remote gdb, which is tied to XCode's own build system.
- * On other unixes this won't hurt either.
- */
-static int KPutC(int chr)
-{
-    int ret;
-
-    ret = fputc(chr, stderr);
-    if (chr == '\n')
-        fflush(stderr);
-    
-    return ret;
-}
-
-/*
  * Some helpful functions that link us to the underlying host OS.
  * Without them we would not be able to estabilish any interaction with it.
  */

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES         := main filesystem hostinterface kickstart runtime ui
+FILES         := main filesystem kputc kickstart runtime ui
 USER_INCLUDES := -I$(SRCDIR)/arch/all-unix/bootstrap \
 		 -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
