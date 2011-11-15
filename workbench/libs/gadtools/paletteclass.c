@@ -561,16 +561,8 @@ IPTR GTPalette__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
     struct PaletteData  *data   = INST_DATA(cl, g);
     struct IBox         *gbox   = &(data->pd_GadgetBox),
                         *pbox   = &(data->pd_PaletteBox),
-                        *indbox = &(data->pd_IndicatorBox);
-
-    
-    UWORD               cols, rows;
-
-    WORD                factor1, factor2, ratio;
-    UWORD               fault, smallest_so_far;
-    
-    UWORD               *largest, *smallest;
-    
+                        *indbox = &(data->pd_IndicatorBox); 
+    UWORD               cols, rows, cols_p2;
     WORD                leftover_width, leftover_height;
     
     EnterFunc(bug("Palette::Layout()\n"));
@@ -633,54 +625,21 @@ IPTR GTPalette__GM_LAYOUT(Class *cl, struct Gadget *g, struct gpLayout *msg)
 
     
     /* Compute initial aspect ratio */
-    if (pbox->Width > pbox->Height)
+    cols = 1;
+    cols_p2 = data->pd_NumColors * pbox->Width / pbox->Height;
+    while ((cols*cols) <= cols_p2)
     {
-        cols = pbox->Width / pbox->Height;
-        rows = 1;
-        largest  = &cols;
-        smallest = &rows;
+        cols++;
     }
-    else
+    if ((cols * cols) > cols_p2)
     {
-        rows = pbox->Height / pbox->Width;
-        cols = 1;
-        largest  = &rows;
-        smallest = &cols;
+        cols--;
     }
+    rows = (data->pd_NumColors + cols - 1) / cols;
 
-    D(bug("Biggest aspect: %d\n", *largest));
-    
-    ratio = *largest;
-    
-    smallest_so_far = 0xFFFF;
-    
-    factor1 = 1 << Colors2Depth(data->pd_NumColors);
-    factor2 = 1;
-    
-    while (factor1 >= factor2)
-    {
-
-        D(bug("trying aspect %dx%d\n", factor1, factor2));
-
-        fault = abs(ratio - (factor1 / factor2));
-        D(bug("Fault: %d, smallest fault so far: %d\n", fault, smallest_so_far));
-
-        if (fault < smallest_so_far)
-        {
-            *largest  = factor1;
-            *smallest = factor2;
-             
-            smallest_so_far = fault;
-        }
-
-        factor1 >>= 1;
-        factor2 <<= 1;
-            
-    }
-    
     data->pd_NumCols = (UBYTE)cols;
     data->pd_NumRows = (UBYTE)rows;
-    
+
     data->pd_ColWidth  = pbox->Width  / data->pd_NumCols;
     data->pd_RowHeight = pbox->Height / data->pd_NumRows;
     
