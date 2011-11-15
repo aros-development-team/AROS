@@ -714,7 +714,7 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     if (icon->ni_Extra.Size != 0) {
         LONG len;
         
-        len = FWrite(stream, icon->ni_Extra.Data, 1, icon->ni_Extra.Size);
+        len = FWrite((BPTR)stream, icon->ni_Extra.Data, 1, icon->ni_Extra.Size);
         if (len < 0 || (ULONG)len != icon->ni_Extra.Size)
             return FALSE;
 
