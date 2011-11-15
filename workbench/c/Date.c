@@ -59,6 +59,8 @@
 #include <dos/datetime.h>
 #include <devices/timer.h>
 
+#include <string.h>
+
 const TEXT version[] = "$VER: Date 41.4 (15.11.2011)\n";
 
 #define ARG_STRING "DAY,DATE,TIME,TO=VER/K"
