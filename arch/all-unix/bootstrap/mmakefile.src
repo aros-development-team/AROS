@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 EXEDIR  := $(BINDIR)/boot
 
-FILES         := hostinterface hostlib kickstart memory shutdown support
+FILES         := hostinterface hostlib kickstart kputc memory shutdown support
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-unix/kernel   \
 		 -I$(GENINCDIR) \
