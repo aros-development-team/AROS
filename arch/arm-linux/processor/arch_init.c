@@ -74,6 +74,7 @@ static const char *arch_ids[] =
     "4",
     "4T",
     "5",
+    "5T",
     "5TE",
     "5TEJ",
     "6TEJ",
