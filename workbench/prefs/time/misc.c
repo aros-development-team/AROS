@@ -34,7 +34,7 @@ void InitMenus(void)
     {
         if (actnm->nm_Label != NM_BARLABEL)
         {
-            ULONG  id = (ULONG)actnm->nm_Label;
+            ULONG  id = (ULONG)(IPTR)actnm->nm_Label;
             STRPTR str = MSG(id);
             
             if (actnm->nm_Type == NM_TITLE)
@@ -46,7 +46,7 @@ void InitMenus(void)
                 actnm->nm_Label = str + 2;
                 if (str[0] != ' ') actnm->nm_CommKey = str;
             }
-            actnm->nm_UserData = (APTR)id;
+            actnm->nm_UserData = (APTR)(IPTR)id;
             
         } /* if (actnm->nm_Label != NM_BARLABEL) */
 	
