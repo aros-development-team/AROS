@@ -420,8 +420,8 @@ static void HandleSelection(struct MenuHandlerData *mhd, struct IntuitionBase *I
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
                              struct IntuitionBase *IntuitionBase)
 {
-    BOOL die = FALSE,
-        sticky = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS;
+    BOOL  die = FALSE;
+    ULONG sticky = GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_STICKYMENUS; /* ic_Flags is ULONG */
 
     switch(ie->ie_Code)
     {
