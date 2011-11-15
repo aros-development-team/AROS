@@ -1,33 +1,29 @@
 #ifndef AROS_M68K_CPU_H
 #define AROS_M68K_CPU_H
 
-#include <aros/config.h>
-
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: machine.h
+    Desc:CPU-specific definitions for Motorola m68k processors
     Lang: english
 */
-
-#define EnableSetFunction	1
 
 /* Information about size and alignment,
  * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */
-#define AROS_BIG_ENDIAN 	   1 /* Big or little endian */
-#define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
-#define AROS_SIZEOFPTR		   4 /* Size of a PTR */
-#define AROS_WORDALIGN		   2 /* Alignment for WORD */
-#define AROS_LONGALIGN		   2 /* Alignment for LONG */
-#define AROS_QUADALIGN		   2 /* Alignment for QUAD */
-#define AROS_PTRALIGN		   2 /* Alignment for PTR */
-#define AROS_IPTRALIGN		   2 /* Alignment for IPTR */
-#define AROS_DOUBLEALIGN	   2 /* Alignment for double */
-#define AROS_WORSTALIGN 	   4 /* Worst case alignment */
+#define AROS_BIG_ENDIAN            1 /* Big or little endian */
+#define AROS_SIZEOFULONG           4 /* Size of an ULONG */
+#define AROS_SIZEOFPTR             4 /* Size of a PTR */
+#define AROS_WORDALIGN             2 /* Alignment for WORD */
+#define AROS_LONGALIGN             2 /* Alignment for LONG */
+#define AROS_QUADALIGN             2 /* Alignment for QUAD */
+#define AROS_PTRALIGN              2 /* Alignment for PTR */
+#define AROS_IPTRALIGN             2 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN           2 /* Alignment for double */
+#define AROS_WORSTALIGN            4 /* Worst case alignment */
 
 #define AROS_NOFPU 1
 
@@ -57,10 +53,10 @@ struct JumpVec
 
 
 /* Any jump to an unimplemented vector will cause an access to this address */
-#define _aros_empty_vector		0xc0ed0000
+#define _aros_empty_vector              0xc0ed0000
 
 /* Internal macros */
-#define __AROS_ASMJMP			0x4EF9
+#define __AROS_ASMJMP                   0x4EF9
 #define __AROS_SET_VEC(v,a)             ((v)->vec=(a))
 #define __AROS_GET_VEC(v)               ((v)->vec)
 #define __AROS_USE_FULLJMP
@@ -73,22 +69,19 @@ struct FullJumpVec
 #define __AROS_SET_FULLJMP(v,a)                          \
 do                                                       \
 {                                                        \
-	struct FullJumpVec *_v = v;                      \
-	_v->jmp = __AROS_ASMJMP;                         \
-	_v->vec = ((void *)(a));                         \
+        struct FullJumpVec *_v = v;                      \
+        _v->jmp = __AROS_ASMJMP;                         \
+        _v->vec = ((void *)(a));                         \
 } while(0)
 
 
 /* Use these to acces a vector table */
-#define LIB_VECTSIZE			(sizeof (struct JumpVec))
+#define LIB_VECTSIZE                    (sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        (&(((struct JumpVec *)(lib))[-(n)]))
 #define __AROS_GETVECADDR(lib,n)        ((void *)__AROS_GETJUMPVEC(lib,n))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
-					__AROS_SETVECADDR(lib,n,_aros_empty_vector | (n << 8) | 1)
-
-
-#define SIZEOF_ALL_REGISTERS		(20*4)
+                                        __AROS_SETVECADDR(lib,n,_aros_empty_vector | (n << 8) | 1)
 
 #define KERNEL_PANIC_BUFFER (char*)0x800
 
@@ -109,10 +102,10 @@ do                                                       \
     { \
         asm volatile( \
             ".weak " #fname "\n" \
-	    #fname ":\n" \
-	    "\tmove.l	" #libbasename ",%%a1\n" \
-	    "\tjmp %%a1@(%c0)\n" \
-	    : : "i" ((-lvo*LIB_VECTSIZE)) \
+            #fname ":\n" \
+            "\tmove.l   " #libbasename ",%%a1\n" \
+            "\tjmp %%a1@(%c0)\n" \
+            : : "i" ((-lvo*LIB_VECTSIZE)) \
         ); \
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
@@ -146,7 +139,7 @@ do                                                       \
 */
 #define __AROS_FUNCALIAS(fname, alias) \
     asm(".weak " #alias "\n" \
-	"\t.set " #alias "," #fname \
+        "\t.set " #alias "," #fname \
     );
 #define AROS_FUNCALIAS(fname, alias) \
     __AROS_FUNCALIAS(fname, alias)
@@ -161,9 +154,9 @@ do                                                       \
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
-	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
+        ((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
 #define AROS_CHECK_ALLOCENTRY(memList) \
-	(!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
+        (!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
 
 /*
     Find the next valid alignment for a structure if the next x bytes must
@@ -180,7 +173,7 @@ extern void aros_not_implemented ();
     Not so much, I think (schulz) ;-))
 */
 
-#define AROS_STACKSIZE	0x4000
+#define AROS_STACKSIZE  0x4000
 
 //#define AROS_NEEDS___MAIN
 
@@ -196,34 +189,29 @@ extern void aros_not_implemented ();
 #define __AROS_UFC_PREFIX   /* eps */
 #define __AROS_UFD_PREFIX   /* eps */
 
-#define AROS_COMPAT_SETD0(x)	do { asm volatile ( "move.l %0,%%d0\n" : "=g" (x)); return; } while (0)
+#define AROS_COMPAT_SETD0(x)    do { asm volatile ( "move.l %0,%%d0\n" : "=g" (x)); return; } while (0)
 
-#define A0	a0
-#define A1	a1
-#define A2	a2
-#define A3	a3
-#define A4	a4
-#define A5	a5
-#define A6	a6
-#define D0	d0
-#define D1	d1
-#define D2	d2
-#define D3	d3
-#define D4	d4
-#define D5	d5
-#define D6	d6
-#define D7	d7
+#define A0      a0
+#define A1      a1
+#define A2      a2
+#define A3      a3
+#define A4      a4
+#define A5      a5
+#define A6      a6
+#define D0      d0
+#define D1      d1
+#define D2      d2
+#define D3      d3
+#define D4      d4
+#define D5      d5
+#define D6      d6
+#define D7      d7
 
-#ifdef CONFIG_GCC_FP_A6
-#define __AROS_FP_REG	A6
-#define __AROS_FP_SREG	"A6"
-#else
-#define __AROS_FP_REG	A5
-#define __AROS_FP_SREG	"A5"
-#endif
+#define __AROS_FP_REG   A5
+#define __AROS_FP_SREG  "A5"
 
-#define ___AROS_ISREG(reg,regcmp)		(0x##reg == 0x##regcmp)
-#define __AROS_ISREG(type,name,reg,regcmp)	___AROS_ISREG(reg,regcmp)
+#define ___AROS_ISREG(reg,regcmp)               (0x##reg == 0x##regcmp)
+#define __AROS_ISREG(type,name,reg,regcmp)      ___AROS_ISREG(reg,regcmp)
 
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename
@@ -269,97 +257,97 @@ extern void aros_not_implemented ();
 #include <aros/m68k/libcall.h>
 
 #define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
-	AROS_LH2(t,n, \
-		AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
-		bt, bn, o, s) \
-		union { \
-			__AROS_LPAQUAD(a1) val; \
-			ULONG reg[2]; \
-		} __AROS_LTAQUAD(a1); \
-		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
-		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
-		__AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;
+        AROS_LH2(t,n, \
+                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
+                bt, bn, o, s) \
+                union { \
+                        __AROS_LPAQUAD(a1) val; \
+                        ULONG reg[2]; \
+                } __AROS_LTAQUAD(a1); \
+                __AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
+                __AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
+                __AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;
 
 #define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
-	AROS_LH4(t,n, \
-		AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \
-		bt, bn, o, s) \
-		union { \
-			__AROS_LPAQUAD(a1) val; \
-			ULONG reg[2]; \
-		} __AROS_LTAQUAD(a1); \
-		union { \
-			__AROS_LPAQUAD(a2) val; \
-			ULONG reg[2]; \
-		} __AROS_LTAQUAD(a2); \
-		__AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
-		__AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
-		__AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \
-		__AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
-		__AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
-		__AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;
+        AROS_LH4(t,n, \
+                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \
+                bt, bn, o, s) \
+                union { \
+                        __AROS_LPAQUAD(a1) val; \
+                        ULONG reg[2]; \
+                } __AROS_LTAQUAD(a1); \
+                union { \
+                        __AROS_LPAQUAD(a2) val; \
+                        ULONG reg[2]; \
+                } __AROS_LTAQUAD(a2); \
+                __AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \
+                __AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \
+                __AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \
+                __AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
+                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
+                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;
 
 #define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \
-	AROS_LH3(t,n, \
-		AROS_LHA(a1), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \
-		AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \
-		bt, bn, o, s) \
-		union { \
-			__AROS_LPAQUAD(a2) val; \
-			ULONG reg[2]; \
-		} __AROS_LTAQUAD(a2); \
-		__AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
-		__AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
-		__AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;
+        AROS_LH3(t,n, \
+                AROS_LHA(a1), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \
+                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \
+                bt, bn, o, s) \
+                union { \
+                        __AROS_LPAQUAD(a2) val; \
+                        ULONG reg[2]; \
+                } __AROS_LTAQUAD(a2); \
+                __AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \
+                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \
+                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;
 
 
 #define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
-	({ \
-		union { \
-			__AROS_LPAQUAD(a1) val; \
-			ULONG reg[2]; \
-		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
-	 	AROS_LC2##t(t, n,  \
-	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
-	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
-	 		bt, bn, o, s); \
-	 })
+        ({ \
+                union { \
+                        __AROS_LPAQUAD(a1) val; \
+                        ULONG reg[2]; \
+                } _q1 = { .val = __AROS_LCAQUAD(a1) }; \
+                AROS_LC2##t(t, n,  \
+                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
+                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
+                        bt, bn, o, s); \
+         })
 
 #define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
-	({ \
-		union { \
-			__AROS_LPAQUAD(a1) val; \
-			ULONG reg[2]; \
-		} _q1 = { .val = __AROS_LCAQUAD(a1) }; \
-		union { \
-			__AROS_LPAQUAD(a2) val; \
-			ULONG reg[2]; \
-		} _q2 = { .val = __AROS_LCAQUAD(a2) }; \
-	 	AROS_LC4##t(t, n,  \
-	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
-	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
-	 		AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \
-	 		AROS_LCA(ULONG, _q2.reg[1], __AROS_LRAQUAD2(a2)), \
-	 		bt, bn, o, s); \
-	 })
+        ({ \
+                union { \
+                        __AROS_LPAQUAD(a1) val; \
+                        ULONG reg[2]; \
+                } _q1 = { .val = __AROS_LCAQUAD(a1) }; \
+                union { \
+                        __AROS_LPAQUAD(a2) val; \
+                        ULONG reg[2]; \
+                } _q2 = { .val = __AROS_LCAQUAD(a2) }; \
+                AROS_LC4##t(t, n,  \
+                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \
+                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \
+                        AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \
+                        AROS_LCA(ULONG, _q2.reg[1], __AROS_LRAQUAD2(a2)), \
+                        bt, bn, o, s); \
+         })
 
 #define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \
-	({ \
-		union { \
-			__AROS_LPAQUAD(a2) val; \
-			ULONG reg[2]; \
-		} _q1 = { .val = __AROS_LCAQUAD(a2) }; \
-	 	AROS_LC3##t(t, n,  \
-	 		AROS_LCA(a1), \
-	 		AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a2)), \
-	 		AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a2)), \
-	 		bt, bn, o, s); \
-	 })
+        ({ \
+                union { \
+                        __AROS_LPAQUAD(a2) val; \
+                        ULONG reg[2]; \
+                } _q1 = { .val = __AROS_LCAQUAD(a2) }; \
+                AROS_LC3##t(t, n,  \
+                        AROS_LCA(a1), \
+                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a2)), \
+                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a2)), \
+                        bt, bn, o, s); \
+         })
 
 #define AROS_LC2double AROS_LC2D
 #define AROS_LC3double AROS_LC3D
@@ -369,22 +357,22 @@ extern void aros_not_implemented ();
 #define AROS_LC4LONG   AROS_LC4
 
 #   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \
-	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
-	__AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
+        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
+        __AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))
 #   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \
-	__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
-	__AROS_LDAQUAD(a1), \
-	__AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
+        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \
+        __AROS_LDAQUAD(a1), \
+        __AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))
 
 #define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
-		t n (__AROS_LPAQUAD(a1))
+                t n (__AROS_LPAQUAD(a1))
 #define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \
-		t n (__AROS_LPAQUAD(a1), __AROS_LPAQUAD(a2))
+                t n (__AROS_LPAQUAD(a1), __AROS_LPAQUAD(a2))
 
 /* Function declaration for program startup style code
  */
-#define AROS_ENTRY(t, n, a1, a2, bt, bn)	\
+#define AROS_ENTRY(t, n, a1, a2, bt, bn)        \
     AROS_UFH2(t, n, AROS_UFHA(a1), AROS_UFHA(a2)) \
-    	bt bn = *((bt *)4);
+        bt bn = *((bt *)4);
 
 #endif /* AROS_M68K_CPU_H */
