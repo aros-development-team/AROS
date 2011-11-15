@@ -699,15 +699,31 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     D(bug("WriteIcon35\n"));
     
     if (IFFParseBase == NULL)
+    {
+        D(bug("%s: IFFParseBase is NULL\n", __func__));
     	return FALSE;
+    }
     
     if (!GetNativeIcon(&icon->ni_DiskObject, IconBase))
     {
+        D(bug("%s: No native icon data\n", __func__));
     	return TRUE;
     }
     
+    /* If the extra imagery wasn't modified, just write it out. */
+    if (icon->ni_Extra.Size != 0) {
+        LONG len;
+        
+        len = FWrite(stream, icon->ni_Extra.Data, 1, icon->ni_Extra.Size);
+        if (len < 0 || (ULONG)len != icon->ni_Extra.Size)
+            return FALSE;
+
+        return TRUE;
+    }
+
     if (icon->ni_Image[0].ImageData == NULL)
     {
+        D(bug("%s: No image data to write\n", __func__));
     	return TRUE;
     }
     
