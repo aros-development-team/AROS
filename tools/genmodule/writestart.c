@@ -240,7 +240,6 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#elif defined __arm__\n"
                 "#define GM_INTERNALFUNCSTUB(fname)\\\n"
                 "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tpop {r12}\\n\"\\\n"
                 "        \"\\tpush {r0, r1, r2, r3, lr}\\n\"\\\n"
                 "        \"\\tmov r0, r12\\n\"\\\n"
                 "        \"\\tbl __GM_SetBase\\n\"\\\n" /* r12 may be scratched */
