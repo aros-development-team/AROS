@@ -44,9 +44,15 @@ struct IntDosBase
     struct Library *debugBase;
     struct RootNode rootNode  __attribute__((aligned(4)));
     struct ErrorString errors  __attribute__((aligned(4)));
+#ifdef __arm__
+    ULONG arm_Arch; /* ARM-specific info for ELF loader */
+    BOOL  arm_VFP;
+    BOOL  arm_VFP_v3;
+#endif
 };
 
-#define DebugBase ((struct IntDosBase *)DOSBase)->debugBase
+#define IDosBase(base) ((struct IntDosBase *)base)
+#define DebugBase IDosBase(DOSBase)->debugBase
 
 struct DAList
 {
