@@ -9,7 +9,7 @@
 #include "kernel_intern.h"
 #include "kernel_unix.h"
 
-#define D(x) x
+#define D(x)
 
 struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
 {
