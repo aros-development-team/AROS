@@ -29,8 +29,6 @@ typedef struct context {
     fpuregs_t   fpu;
 } context_t;
 
-#define SIZEOF_ALL_REGISTERS (sizeof(context_t))
-
 /* Machine State Register */
 #define MSR_POW 0x00040000
 #define MSR_TGPR 0x00020000

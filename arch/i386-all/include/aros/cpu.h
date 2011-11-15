@@ -1,34 +1,30 @@
 #ifndef AROS_I386_CPU_H
 #define AROS_I386_CPU_H
+
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: CPU-specific definitions for x86 processors
+    Desc: CPU-specific definitions for 32-bit x86 processors
     Lang: english
 */
-
-#define EnableSetFunction	1
 
 /* Information about size and alignment,
  * the defines have to be numeric constants */
 #define AROS_STACK_GROWS_DOWNWARDS 1 /* Stack direction */
-#define AROS_BIG_ENDIAN 	   0 /* Big or little endian */
-#define AROS_SIZEOFULONG	   4 /* Size of an ULONG */
-#define AROS_SIZEOFPTR		   4 /* Size of a PTR */
-#define AROS_WORDALIGN		   2 /* Alignment for WORD */
-#define AROS_LONGALIGN		   4 /* Alignment for LONG */
-#define AROS_QUADALIGN		   4 /* Alignment for QUAD */
-#define AROS_PTRALIGN		   4 /* Alignment for PTR */
-#define AROS_IPTRALIGN		   4 /* Alignment for IPTR */
-#define AROS_DOUBLEALIGN	   4 /* Alignment for double */
-#define AROS_WORSTALIGN 	   16 /* Worst case alignment */
-#define AROS_STACKALIGN		  16 /* Clean stack must be aligned to this */
-
-#define SIZEOF_FPU_STATE	512  /* 108 bytes are needed to store FPU, 512 bytes are needed to store SSE */
-#define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE + 16)  /* Size of iet_Context */
+#define AROS_BIG_ENDIAN            0 /* Big or little endian */
+#define AROS_SIZEOFULONG           4 /* Size of an ULONG */
+#define AROS_SIZEOFPTR             4 /* Size of a PTR */
+#define AROS_WORDALIGN             2 /* Alignment for WORD */
+#define AROS_LONGALIGN             4 /* Alignment for LONG */
+#define AROS_QUADALIGN             4 /* Alignment for QUAD */
+#define AROS_PTRALIGN              4 /* Alignment for PTR */
+#define AROS_IPTRALIGN             4 /* Alignment for IPTR */
+#define AROS_DOUBLEALIGN           4 /* Alignment for double */
+#define AROS_WORSTALIGN            16 /* Worst case alignment */
+#define AROS_STACKALIGN           16 /* Clean stack must be aligned to this */
 
 #define AROS_32BIT_TYPE         int
 
@@ -77,7 +73,7 @@ struct JumpVec
 };
 
 /* Use these to access a vector table */
-#define LIB_VECTSIZE			(sizeof (struct JumpVec))
+#define LIB_VECTSIZE                    (sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GETJUMPVEC(lib,n)->vec)
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
@@ -99,13 +95,13 @@ struct JumpVec
 #define __AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \
-	asm volatile( \
-	    ".weak " #fname "\n" \
-	    #fname " :\n" \
+        asm volatile( \
+            ".weak " #fname "\n" \
+            #fname " :\n" \
             "\tmovl " #libbasename ", %%edx\n" \
             "\tjmp *%c0(%%edx)\n" \
-	    : : "i" ((-lvo*LIB_VECTSIZE)) \
-	); \
+            : : "i" ((-lvo*LIB_VECTSIZE)) \
+        ); \
     }
 #define AROS_LIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
@@ -117,15 +113,15 @@ struct JumpVec
 #define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _relwrapper(void) \
     { \
-	asm volatile( \
+        asm volatile( \
             ".weak " #fname "\n" \
             "\t" #fname " :\n" \
             "\tcall __comp_get_relbase\n" \
             "\taddl " #libbasename "_offset, %%eax\n" \
             "\tmovl (%%eax), %%edx\n" \
             "\tjmp *%c0(%%edx)\n" \
-	    : : "i" ((-lvo*LIB_VECTSIZE)) \
-	); \
+            : : "i" ((-lvo*LIB_VECTSIZE)) \
+        ); \
     }
 #define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
@@ -136,7 +132,7 @@ struct JumpVec
 */
 #define __AROS_FUNCALIAS(fname, alias) \
     asm(".weak " #alias "\n" \
-	"\t.set " #alias "," #fname \
+        "\t.set " #alias "," #fname \
     );
 #define AROS_FUNCALIAS(fname, alias) \
     __AROS_FUNCALIAS(fname, alias)
@@ -151,9 +147,9 @@ struct JumpVec
 
 /* Macros to test/set failure of AllocEntry() */
 #define AROS_ALLOCENTRY_FAILED(memType) \
-	((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
+        ((struct MemList *)((IPTR)(memType) | 0x80ul<<(sizeof(APTR)-1)*8))
 #define AROS_CHECK_ALLOCENTRY(memList) \
-	(!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
+        (!((IPTR)(memList) & 0x80ul<<(sizeof(APTR)-1)*8))
 
 /*
     Find the next valid alignment for a structure if the next x bytes must
@@ -170,7 +166,7 @@ extern void aros_not_implemented ();
     Not so much, I think (schulz) ;-))
 */
 
-#define AROS_STACKSIZE	40960
+#define AROS_STACKSIZE  40960
 
 /* How to map function arguments to CPU registers */
 /*
