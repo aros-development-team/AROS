@@ -53,6 +53,9 @@ extern struct vbe_controller VBEControllerInfo;
 
 extern char _end;
 
+#define TOP_ADDR(a1, a2) ((unsigned long)a2 > a1 ? (unsigned long)a2 : a1)
+#define STR_TOP_ADDR(a1, s) TOP_ADDR(a1, s + strlen(s) + 1)
+
 void setup_mmu(void);
 void kick(void *kick_base, struct TagItem64 *km);
 
