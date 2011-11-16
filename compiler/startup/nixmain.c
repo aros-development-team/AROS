@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#include <proto/arosc.h>
+#include <sys/arosc.h>
 
 extern int main(int argc, char *argv[]);
 
