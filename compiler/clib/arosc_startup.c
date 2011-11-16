@@ -5,16 +5,12 @@
     Desc: autoinit library - arosc.library specific code
     Lang: english
 */
-#include <proto/arosc.h>
 
+#include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
-
-void __arosc_program_startup(void);
-void __arosc_program_end(void);
+#include <sys/arosc.h>
 
 static void __arosc_startup(void)
 {
