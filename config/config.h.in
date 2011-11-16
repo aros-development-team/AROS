@@ -4,7 +4,7 @@
     This is an automatically generated file.
     DO NOT EDIT!
 
-    Edit $(TOP)/configure.in and $(TOP)/config.h.in and rerun configure.
+    Edit $(TOP)/configure.in and $(TOP)/config/config.h.in and rerun configure.
 */
 
 #define AROS_FLAVOUR_NATIVE		1
