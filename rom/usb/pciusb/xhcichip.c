@@ -11,7 +11,7 @@
 
 #include "uhwcmd.h"
 
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 
 #undef HiddPCIDeviceAttrBase
 #define HiddPCIDeviceAttrBase (hd->hd_HiddPCIDeviceAB)
@@ -316,6 +316,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             }
         }while(extcap);
     }else{
+        KPRINTF(1000, ("No Supported Protocol found, failing!\n"));
         return FALSE;
     }
 
@@ -347,7 +348,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
             if(memptr) {
                 // PhysicalAddress - VirtualAdjust = VirtualAddress
                 // VirtualAddress  + VirtualAdjust = PhysicalAddress
-                hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+                hc->hc_PCIVirtualAdjust = pciGetPhysical(hc, memptr) - (APTR)memptr;
                 KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
                 hc->hc_CompleteInt.is_Node.ln_Type = NT_INTERRUPT;
@@ -393,7 +394,9 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                     FIXME: Fail gracefully on error (NULL memptr)
                 */
                 hc->xhc_dcbaa = AllocVecAlignedOn4KPage(&hc->xhc_dcbaa_original, (hc->xhc_maxslots + 1)*8, 64);
-                KPRINTF(1000, ("Allocated DCBAA\n"));
+                KPRINTF(1000, ("Allocated DCBAA %x\n", (UQUAD)hc->xhc_dcbaa));
+
+                opreg_writeq(XHCI_DCBAAP, (UQUAD)hc->xhc_dcbaa );
 
                 /*
                     If the Max Scratchpad Buffers field of the HCSPARAMS2 register is > ‘0’, then the first entry (entry_0) in

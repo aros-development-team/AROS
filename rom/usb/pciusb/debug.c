@@ -9,7 +9,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
 
   p = (unsigned char *) mem;
 
-  RawPutChar('\n');
+  KPrintF("\n");
 
   do
   {
@@ -26,7 +26,7 @@ void dumpmem_pciusb(void *mem, unsigned long int len)
 
     while (++b < 16)
     {
-      bug("   ");
+      KPrintF("   ");
     }
 
     KPrintF("  %s\n", str);

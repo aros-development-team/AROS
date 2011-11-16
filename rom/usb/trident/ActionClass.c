@@ -584,7 +584,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
     IPTR devproto;
     IPTR devislowspeed;
     IPTR devishighspeed;
-    #if (AROS_USB30_CODE)
+    #ifdef AROS_USB30_CODE
     IPTR devissuperspeed;
     #endif
     IPTR devisconnected;
@@ -640,7 +640,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_ProductName, strarr++,
                     DA_IsLowspeed, &devislowspeed,
                     DA_IsHighspeed, &devishighspeed,
-                    #if (AROS_USB30_CODE)
+                    #ifdef AROS_USB30_CODE
                     DA_IsSuperspeed, &devissuperspeed,
                     #endif
                     DA_IsConnected, &devisconnected,
@@ -657,7 +657,7 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     DA_ConfigList, &pclist,
                     TAG_END);
 
-        #if (AROS_USB30_CODE)
+        #ifdef AROS_USB30_CODE
         *strarr++ = (devislowspeed ? "Low" : (devissuperspeed ? "Super" : (devishighspeed ? "High" : "Full")));
         #else
         *strarr++ = (devislowspeed ? "Low" : (devishighspeed ? "High" : "Full"));
