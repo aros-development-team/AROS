@@ -207,6 +207,12 @@ extern void aros_not_implemented ();
 #define D6      d6
 #define D7      d7
 
+/* This must match your compiler's idea of where the
+ * Frame Pointer register is. AROS's m68k gcc patches
+ * set this as A5, but unpatched GCCs can be made to
+ * generate correct code by setting these two defines
+ * to 'A6' and '"A6"'
+ */
 #define __AROS_FP_REG   A5
 #define __AROS_FP_SREG  "A5"
 
