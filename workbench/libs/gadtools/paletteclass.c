@@ -93,18 +93,6 @@ STATIC UWORD GetPalettePen(struct PaletteData *data, UWORD idx)
 
 /**********************************************************************************************/
 
-STATIC UBYTE Colors2Depth(UWORD numcolors)
-{
-    UBYTE depth = 0;
-
-    while ((1 << depth) < numcolors)
-        depth ++;
-
-    return (depth);
-}
-
-/**********************************************************************************************/
-
 STATIC BOOL InsidePalette(struct PaletteData *data, WORD x, WORD y)
 {
     (void)data;
