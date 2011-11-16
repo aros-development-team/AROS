@@ -54,19 +54,19 @@ void writefd(struct config *cfg)
     if (cfg->modtype == DEVICE)
     {
         /* Skip BeginIO/EndIO */
-    	unsigned int i;
+        unsigned int i;
 
-    	for (i = 0; i < 2; i++)
-    	{
-    	    if (!funclistit)
-    	    	return;
+        for (i = 0; i < 2; i++)
+        {
+            if (!funclistit)
+                return;
 
-    	    funclistit = funclistit->next;
-    	}
+            funclistit = funclistit->next;
+        }
     }
 
     if (!funclistit)
-    	return;
+        return;
 
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
 
@@ -104,7 +104,7 @@ void writefd(struct config *cfg)
             switch (funclistit->libcall)
             {
             case  REGISTERMACRO:
-            	write_fd_func(out, funclistit, lvo);
+                write_fd_func(out, funclistit, lvo);
 
                 for (arglistit = funclistit->arguments;
                      arglistit != NULL;
@@ -124,14 +124,17 @@ void writefd(struct config *cfg)
                 fprintf(out, ")\n");
 
                 lvo = funclistit->lvo;
-            	break;
+                break;
             
             case STACK:
-            	write_fd_func(out, funclistit, lvo);
-            	/* TODO: Currently all SYSV ABI vectors are base-less */
-            	fprintf(out, "sysv)\n");
-            	lvo = funclistit->lvo;
-            	break;
+                write_fd_func(out, funclistit, lvo);
+                fprintf(out, "sysv");
+                if (cfg->options & OPTION_DUPBASE)
+                    fprintf(out, ",rbase");
+                fprintf(out, ")\n");
+
+                lvo = funclistit->lvo;
+                break;
             }
         }
 
