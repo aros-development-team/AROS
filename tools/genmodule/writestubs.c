@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write module_stubs.c. Part of genmodule.
 */
+
 #include "genmodule.h"
 
 void writestubs(struct config *cfg, int is_rel)
@@ -20,40 +21,40 @@ void writestubs(struct config *cfg, int is_rel)
     if (out == NULL)
     {
         perror(line);
-    	exit(20);
+        exit(20);
     }
 
     banner = getBanner(cfg);
     if (is_rel) {
-	fprintf
-	(
-	    out,
-	    "%s"
-	    "#define NOLIBINLINE\n"
-	    "#define NOLIBDEFINES\n"
+        fprintf
+        (
+            out,
+            "%s"
+            "#define NOLIBINLINE\n"
+            "#define NOLIBDEFINES\n"
             "void *__comp_get_relbase(void);\n"
-	    "#ifndef __%s_NOLIBBASE__\n"
-	    "/* Do not include the libbase */\n"
-	    "#define __%s_NOLIBBASE__\n"
-	    "#endif\n",
-	    banner, cfg->modulenameupper, cfg->modulenameupper
-	);
+            "#ifndef __%s_NOLIBBASE__\n"
+            "/* Do not include the libbase */\n"
+            "#define __%s_NOLIBBASE__\n"
+            "#endif\n",
+            banner, cfg->modulenameupper, cfg->modulenameupper
+        );
     } else {
-	fprintf
-	(
-	    out,
-	    "%s"
-	    "#define NOLIBINLINE\n"
-	    "#define NOLIBDEFINES\n"
-	    "/* Be sure that the libbases are included in the stubs file */\n"
-	    "#undef __NOLIBBASE__\n"
-	    "#undef __%s_NOLIBBASE__\n",
-	    banner, cfg->modulenameupper
-	);
+        fprintf
+        (
+            out,
+            "%s"
+            "#define NOLIBINLINE\n"
+            "#define NOLIBDEFINES\n"
+            "/* Be sure that the libbases are included in the stubs file */\n"
+            "#undef __NOLIBBASE__\n"
+            "#undef __%s_NOLIBBASE__\n",
+            banner, cfg->modulenameupper
+        );
     }
     freeBanner(banner);
 
-    if (cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
+    if (!(cfg->options & OPTION_NOINCLUDES))
     {
         fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
         if (is_rel)
@@ -64,43 +65,43 @@ void writestubs(struct config *cfg, int is_rel)
     (
         out,
         "#include <exec/types.h>\n"
-	"#include <aros/cpu.h>\n"
+        "#include <aros/cpu.h>\n"
         "#include <aros/libcall.h>\n"
         "\n"
     );
     
     for (funclistit = cfg->funclist;
-	 funclistit!=NULL;
-	 funclistit = funclistit->next
+         funclistit!=NULL;
+         funclistit = funclistit->next
     )
     {
         if (funclistit->lvo >= cfg->firstlvo)
-	{
-	    if (funclistit->libcall != STACK)
-	    {
-	    	int nargs = 0, nquad = 0;
-		int isvoid = strcmp(funclistit->type, "void") == 0
-		    || strcmp(funclistit->type, "VOID") == 0;
+        {
+            if (funclistit->libcall != STACK)
+            {
+                int nargs = 0, nquad = 0;
+                int isvoid = strcmp(funclistit->type, "void") == 0
+                    || strcmp(funclistit->type, "VOID") == 0;
 
-		fprintf(out,
-			"\n"
-			"%s %s(",
-			funclistit->type, funclistit->name
-		);
-		for (arglistit = funclistit->arguments;
-		     arglistit!=NULL;
-		     arglistit = arglistit->next
-		)
-		{
-		    if (arglistit != funclistit->arguments)
-			fprintf(out, ", ");
-		    fprintf(out, "%s", arglistit->arg);
-		    if (strchr(arglistit->reg, '/')) {
-		    	nquad++;
-		    } else {
-		    	nargs++;
-		    }
-		}
+                fprintf(out,
+                        "\n"
+                        "%s %s(",
+                        funclistit->type, funclistit->name
+                );
+                for (arglistit = funclistit->arguments;
+                     arglistit!=NULL;
+                     arglistit = arglistit->next
+                )
+                {
+                    if (arglistit != funclistit->arguments)
+                        fprintf(out, ", ");
+                    fprintf(out, "%s", arglistit->arg);
+                    if (strchr(arglistit->reg, '/')) {
+                        nquad++;
+                    } else {
+                        nargs++;
+                    }
+                }
 
                 fprintf(out,
                         ")\n"
@@ -113,7 +114,7 @@ void writestubs(struct config *cfg, int is_rel)
                         cfg->libbase
                     );
                 }
-		if (nquad == 0) {
+                if (nquad == 0) {
                     fprintf(out,
                             "    %sAROS_LC%d%s(%s, %s,\n",
                             (isvoid) ? "" : "return ",
@@ -129,7 +130,7 @@ void writestubs(struct config *cfg, int is_rel)
                         type = getargtype(arglistit);
                         name = getargname(arglistit);
                         assert(type != NULL && name != NULL);
-			    
+                            
                         fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
                                 type, name, arglistit->reg
                         );
@@ -167,13 +168,13 @@ void writestubs(struct config *cfg, int is_rel)
                         type = getargtype(arglistit);
                         name = getargname(arglistit);
                         assert(type != NULL && name != NULL);
-		
+                
                         if (quad2) {
                             *quad2 = 0;
                             fprintf(out,
                                     "         AROS_LCAQUAD(%s, %s, %s, %s), \\\n",
                                     type, name, arglistit->reg, quad2+1
-			    );
+                            );
                             *quad2 = '/';
                         }
                         else
@@ -186,30 +187,30 @@ void writestubs(struct config *cfg, int is_rel)
                         free(type);
                         free(name);
                     }
-		}
+                }
  
-		fprintf(out, "                    %s, %s, %u, %s);\n}\n",
-			cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
+                fprintf(out, "                    %s, %s, %u, %s);\n}\n",
+                        cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
                 );
-	    }
-	    else /* libcall==STACK */
-	    {
-		fprintf(out, "AROS_%sLIBFUNCSTUB(%s, %s, %d)\n",
-			is_rel ? "REL" : "",
-			funclistit->name, cfg->libbase,	funclistit->lvo
-		);
-	    }
-	
-	    for (aliasesit = funclistit->aliases;
-		 aliasesit != NULL;
-		 aliasesit = aliasesit->next
-	    )
-	    {
-		fprintf(out, "AROS_FUNCALIAS(%s, %s)\n",
-			funclistit->name, aliasesit->s
-		);
-	    }
-	}
+            }
+            else /* libcall==STACK */
+            {
+                fprintf(out, "AROS_%sLIBFUNCSTUB(%s, %s, %d)\n",
+                        is_rel ? "REL" : "",
+                        funclistit->name, cfg->libbase, funclistit->lvo
+                );
+            }
+        
+            for (aliasesit = funclistit->aliases;
+                 aliasesit != NULL;
+                 aliasesit = aliasesit->next
+            )
+            {
+                fprintf(out, "AROS_FUNCALIAS(%s, %s)\n",
+                        funclistit->name, aliasesit->s
+                );
+            }
+        }
     }
     fclose(out);
 }
