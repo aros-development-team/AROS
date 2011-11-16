@@ -289,7 +289,7 @@ MemoryTest:
 	.globl Early_Exception
 Early_Exception:
 	or.w	#0x0700,%sr
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 	movem.l	%d0-%d2/%a0-%a2,-(%sp)
 
 	lea		DebugPutHex,%a2

@@ -8,11 +8,13 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <aros/config.h>
+
 void DebugInit(void);
 int DebugPutChar(register int chr);
 int DebugMayGetChar(void);
 
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 void DebugPutStr(register const char *buff);
 void DebugPutHex(const char *what, ULONG val);
 void DebugPutDec(const char *what, ULONG val);
