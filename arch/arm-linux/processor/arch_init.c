@@ -21,7 +21,7 @@ static char *getval(const char *key, char *s)
 
     /* Skip whitespaces and colon */
     while (*s && (isspace(*s) || (*s == ':')))
-    	s++;
+        s++;
 
     return s;
 }
@@ -33,32 +33,32 @@ static ULONG ParseFlags(char *opts, const char * const *FlagNames)
 
     while (*opts)
     {
-	/* Remember beginning of the word */
-    	char *p = opts;
+        /* Remember beginning of the word */
+        char *p = opts;
 
-	/* Find end of the word */
-    	while (*opts && (!isspace(*opts)))
-	    opts++;
+        /* Find end of the word */
+        while (*opts && (!isspace(*opts)))
+            opts++;
 
-	if (*opts)
-	{
-	    /*
-	     * If this is not the end of line, split the string and advance to the next char.
-	     * Feature names are separated with one whitespace.
-	     */
-	    *opts++ = 0;
-	}
+        if (*opts)
+        {
+            /*
+             * If this is not the end of line, split the string and advance to the next char.
+             * Feature names are separated with one whitespace.
+             */
+            *opts++ = 0;
+        }
 
-	/* Decode flag name */
-	for (i = 0; FlagNames[i]; i++)
-    	{
-    	    if (!strcmp(p, FlagNames[i]))
-    	    {
-    	    	/* Set bit corresponding to number of flag name in the list */
-    	    	ret |= (1UL << i);
-    	    	break;
-    	    }
-    	}
+        /* Decode flag name */
+        for (i = 0; FlagNames[i]; i++)
+        {
+            if (!strcmp(p, FlagNames[i]))
+            {
+                /* Set bit corresponding to number of flag name in the list */
+                ret |= (1UL << i);
+                break;
+            }
+        }
     }
 
     return ret;
@@ -125,112 +125,127 @@ static ULONG arch_Init(struct ProcessorBase *ProcessorBase)
 
     HostLibBase = OpenResource("hostlib.resource");
     if (!HostLibBase)
-    	return FALSE;
+        return FALSE;
 
     libc = HostLib_Open(LIBC_NAME, NULL);
     if (!libc)
-    	return FALSE;
+        return FALSE;
 
     iface = (struct LibCInterface *)HostLib_GetInterface(libc, libc_symbols, &i);
     if (iface)
     {
-    	if (!i)
-    	{
-    	    char *buf = AllocMem(BUFFER_SIZE, MEMF_ANY);
+        if (!i)
+        {
+            char *buf = AllocMem(BUFFER_SIZE, MEMF_ANY);
 
-	    if (buf)
-    	    {
-    	    	data = AllocMem(sizeof(struct LinuxArmProcessor), MEMF_CLEAR);
-    	    	if (data)
-    	    	{
-		    UWORD variant  = 0;
-		    UWORD revision = 0;
-		    void *file;
+            if (buf)
+            {
+                data = AllocMem(sizeof(struct LinuxArmProcessor), MEMF_CLEAR);
+                if (data)
+                {
+                    UWORD variant  = 0;
+                    UWORD revision = 0;
+                    void *file;
 
-		    HostLib_Lock();
-		    file = iface->fopen("/proc/cpuinfo", "r");
-		    HostLib_Unlock();
+                    HostLib_Lock();
+                    file = iface->fopen("/proc/cpuinfo", "r");
+                    HostLib_Unlock();
 
-		    if (file)
-		    {
-			char *res;
+                    if (file)
+                    {
+                        char *res;
 
-		    	do
-		    	{
-			    HostLib_Lock();
-		    	    res = iface->fgets(buf, BUFFER_SIZE - 1, file);
-		    	    HostLib_Unlock();
+                        do
+                        {
+                            HostLib_Lock();
+                            res = iface->fgets(buf, BUFFER_SIZE - 1, file);
+                            HostLib_Unlock();
 
-		    	    if (res)
-		    	    {
-		    	        char *val;
+                            if (res)
+                            {
+                                char *val;
 
-		    	        i = strlen(buf);
-		    	        if (i)
-		    	        {
-				    /* Strip the newline */
-		    	            i--;
-		    	            if (buf[i] == 0x0A)
-		    	            	buf[i] = 0;
+                                i = strlen(buf);
+                                if (i)
+                                {
+                                    /* Strip the newline */
+                                    i--;
+                                    if (buf[i] == 0x0A)
+                                        buf[i] = 0;
 
-			    	    if ((val = getval("Processor", buf)))
-				    {
-				    	data->Model = StrDup(val);
-				    }
-				    else if ((val = getval("Features", buf)))
-				    {
-				    	data->Features = ParseFlags(val, feature_ids);
-				    }
-				    else if ((val = getval("CPU implementer", buf)))
-				    {
-				    	data->Implementer = strtoul(val, NULL, 0);
-				    }
-				    else if ((val = getval("CPU architecture", buf)))
-				    {
-			    	    	ULONG family;
+                                    if ((val = getval("Processor", buf)))
+                                    {
+                                        data->Model = StrDup(val);
+                                    }
+                                    else if ((val = getval("Features", buf)))
+                                    {
+                                        data->Features = ParseFlags(val, feature_ids);
+                                    }
+                                    else if ((val = getval("CPU implementer", buf)))
+                                    {
+                                        data->Implementer = strtoul(val, NULL, 0);
+                                    }
+                                    else if ((val = getval("CPU architecture", buf)))
+                                    {
+                                        ULONG family;
 
-				    	for (family = 0; arch_ids[family]; family++)
-				    	{
-				    	    if (!strcmp(arch_ids[family], val))
-				    	    {
-				    	   	data->Arch = family + CPUFAMILY_ARM_3;
-				    	   	break;
-				    	    }
-				        }
-				    }
-				    else if ((val = getval("CPU variant", buf)))
-				    {
-				    	variant = strtoul(val, NULL, 0);
-				    }
-				    else if ((val = getval("CPU part", buf)))
-				    {
-				    	data->Part = strtoul(val, NULL, 0);
-				    }
-				    else if ((val = getval("CPU revision", buf)))
-				    {
-				    	revision = strtoul(val, NULL, 0);
-				    }
-				}
-		    	    }
-		        } while (res);
+                                        for (family = 0; arch_ids[family]; family++)
+                                        {
+                                            if (!strcmp(arch_ids[family], val))
+                                            {
+                                                data->Arch = family + CPUFAMILY_ARM_3;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    else if ((val = getval("CPU variant", buf)))
+                                    {
+                                        variant = strtoul(val, NULL, 0);
+                                    }
+                                    else if ((val = getval("CPU part", buf)))
+                                    {
+                                        data->Part = strtoul(val, NULL, 0);
+                                    }
+                                    else if ((val = getval("CPU revision", buf)))
+                                    {
+                                        revision = strtoul(val, NULL, 0);
+                                    }
+                                }
+                            }
+                        } while (res);
 
-			HostLib_Lock();
-		    	iface->fclose(file);
-		    	HostLib_Unlock();
-		    }
-		    data->Version = (revision << 16) | variant;
-	    	}
+                        HostLib_Lock();
+                        iface->fclose(file);
+                        HostLib_Unlock();
+                    }
+                    data->Version = (revision << 16) | variant;
+                }
 
-		FreeMem(buf, BUFFER_SIZE);
-	    }
-	}
-	HostLib_DropInterface((void **)iface);
+                FreeMem(buf, BUFFER_SIZE);
+            }
+        }
+        HostLib_DropInterface((void **)iface);
     }
 
     HostLib_Close(libc, NULL);
 
     ProcessorBase->Private1 = data;
-    return data ? TRUE : FALSE;
+    if (data)
+    {
+        if (data->Features & (FF_VFP | FF_VFPv3))
+        {
+            /*
+             * Perhaps rather late, but i really would not like to duplicate this
+             * code in kernel.resource.
+             * Actually this definition can be used only by math code, i hope no
+             * floating-point operations are performed at early startup.
+             */
+            SysBase->AttnFlags |= AFF_FPU;
+        }
+        return TRUE;
+    }
+    else
+        return FALSE;
 }
 
 ADD2INITLIB(arch_Init, 1);
