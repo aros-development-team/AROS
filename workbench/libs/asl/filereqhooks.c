@@ -1037,7 +1037,10 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
     udata = (struct FRUserData *)ld->ld_UserData;
     ifreq = (struct IntFileReq *)ld->ld_IntReq;
 
+
     if ((imsg = ld->ld_Event))
+    {
+    D(bug("[ASL] FRHandleEvents() imsg->Code = '%d'\n", imsg->Code));
     switch (imsg->Class)
     {
 	case IDCMP_CLOSEWINDOW:
@@ -1089,7 +1092,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	case IDCMP_VANILLAKEY:
 	    switch(imsg->Code)
 	    {
-	        case 27:
+	        case 27: /* ESC */
 		    retval = FALSE;
 		    break;
 	    }
@@ -1193,7 +1196,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 				    FRSetFile(fp, ld, AslBase);
 
 				} else {
-				   FRNewPath(filestring, ld, AslBase);
+				   FRAddPath(filestring, ld, AslBase);
 				   FRSetFile("", ld, AslBase);
 				}
 			    }
@@ -1261,8 +1264,9 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		        	ActivateGadget((struct Gadget *)udata->FileGad, ld->ld_Window, NULL);
 			    }
 			}
-			GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
-			FRNewPath(dir, ld, AslBase);
+			GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&dir);
+			FRAddPath(dir, ld, AslBase);
+			FRSetFile("", ld, AslBase);
 		    }
 		    break;
 
@@ -1445,6 +1449,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    break; /* case IDCMP_MENUPICK: */
 	    
     } /* switch (imsg->Class) */
+    } /* if((imsg = ld->ld_Event)) */
 
     ReturnInt ("FRHandleEvents", ULONG, retval);
 }
