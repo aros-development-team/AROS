@@ -936,6 +936,10 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     iconrect.MaxX += offsetx;
 
     offsety = objY - data->icld_ViewY + message->entry->ie_IconY;
+        if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+            (message->entry->ie_AreaHeight < data->icld_IconAreaLargestHeight))
+            offsety += ((data->icld_IconAreaLargestHeight - message->entry->ie_AreaHeight)/2);
+
     iconrect.MinY += offsety;
     iconrect.MaxY += offsety;
 
