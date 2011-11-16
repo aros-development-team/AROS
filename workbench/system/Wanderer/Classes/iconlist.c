@@ -1340,6 +1340,10 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     iconlabelrect.MaxX += offsetx;
 
     offsety = (objY - data->icld_ViewY) + message->entry->ie_IconY + data->icld__Option_IconImageSpacing;
+    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+        (message->entry->ie_AreaHeight < data->icld_IconAreaLargestHeight))
+        offsety += ((data->icld_IconAreaLargestHeight - message->entry->ie_AreaHeight)/2);
+
     if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
     {
         offsety = offsety + data->icld_IconLargestHeight;
