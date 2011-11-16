@@ -436,7 +436,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 #endif
 
 	struct TagItem bootmsg[] = {
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
 #endif
             { KRN_KernelStackBase, (IPTR)&_ss },
@@ -462,7 +462,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	struct ExecBase *oldSysBase = *(APTR *)4;
 #define SysBase CANNOT_USE_SYSBASE_SYMBOL_HERE
 
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
         DebugInit();
 #endif
 
@@ -498,7 +498,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 			attnflags |= AFF_68881 | AFF_68882;
 	}
 
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 	DEBUGPUTS(("CPU: "));
 	if (attnflags & AFF_68060)
 		DEBUGPUTS(("68060"));
@@ -570,12 +570,14 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    oldSysBase = NULL;
 	}
 
+#if AROS_SERIAL_DEBUG
 	for (i = 0; membanks[i + 1]; i += 2) {
 		ULONG addr = membanks[i + 0];
 		ULONG size = membanks[i + 1];
 		DEBUGPUTHEX(("RAM lower", addr));
 		DEBUGPUTHEX(("RAM upper", addr + size - 1));
 	}
+#endif
 
 	kickrom[0] = (UWORD*)&_rom_start;
 	kickrom[1] = (UWORD*)&_rom_end;

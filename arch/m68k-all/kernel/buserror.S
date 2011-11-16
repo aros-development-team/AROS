@@ -127,7 +127,7 @@ buserror060:
 	 * A0 = fault address, D0 = MMU status flags
 	 * Following code MUST NOT access SysBase! */
 	 */
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 	
 	move.l	%a0,-(%sp)
 	
@@ -203,7 +203,7 @@ buserror060:
 	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
 
-#ifdef AROS_SERIAL_DEBUG
+#if AROS_SERIAL_DEBUG
 .berrstr1:
 	.string	"Bus error!\nStatus"
 .berrstr2:
