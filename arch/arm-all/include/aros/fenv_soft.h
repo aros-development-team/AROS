@@ -9,6 +9,8 @@
 #ifndef _FENV_SOFT_H_
 #define _FENV_SOFT_H_
 
+#include <aros/system.h>
+
 typedef unsigned int fenv_t;
 typedef unsigned int fexcept_t;
 
