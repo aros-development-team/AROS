@@ -1,9 +1,10 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write module_autoinit.c. Part of genmodule.
 */
+
 #include "genmodule.h"
 
 void writeautoinit(struct config *cfg, int is_rel)
@@ -18,57 +19,58 @@ void writeautoinit(struct config *cfg, int is_rel)
     if (out==NULL)
     {
         perror(line);
-    	exit(20);
+        exit(20);
     }
 
     /* Write the code to be added to startup provided in the config file */
     if (!is_rel) {
-	for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
-	{
-	    fprintf(out, "%s\n", linelistit->s);
-	}
+        for (linelistit = cfg->startuplines; linelistit != NULL; linelistit = linelistit->next)
+        {
+            fprintf(out, "%s\n", linelistit->s);
+        }
     }
 
     banner = getBanner(cfg);
-    fprintf(out,
-        "%s"
-	    "\n"
-	    "#include <proto/%s.h>\n"
-	    "#include <aros/symbolsets.h>\n"
-	    "\n"
- 	    "AROS_%sLIBSET(\"%s.%s\", %s, %s)\n",
-	    banner, cfg->modulename, is_rel ? "REL" : "",
-	    cfg->modulename, cfg->suffix,
-	    cfg->libbasetypeptrextern, cfg->libbase
-    );
+    fprintf(out, "%s\n", banner);
     freeBanner(banner);
 
+    if (!(cfg->options & OPTION_NOINCLUDES))
+        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
     fprintf(out,
-	    "AROS_IMPORT_ASM_SYM(int, dummy, __include%slibrarieshandling);\n",
-	    is_rel ? "rel" : ""
+            "#include <aros/symbolsets.h>\n"
+            "\n"
+            "AROS_%sLIBSET(\"%s.%s\", %s, %s)\n",
+            is_rel ? "REL" : "",
+            cfg->modulename, cfg->suffix,
+            cfg->libbasetypeptrextern, cfg->libbase
+    );
+
+    fprintf(out,
+            "AROS_IMPORT_ASM_SYM(int, dummy, __include%slibrarieshandling);\n",
+            is_rel ? "rel" : ""
     );
 
     if (cfg->forcelist!=NULL)
     {
-	struct stringlist * forcelistit;
-	
-	fprintf(out, "\n");
-	for (forcelistit = cfg->forcelist;
-	     forcelistit!=NULL;
-	     forcelistit = forcelistit->next
-	    )
-	{
-	    fprintf(out, "extern struct Library *%s;\n", forcelistit->s);
-	}
-	fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", cfg->modulename);
-	for (forcelistit = cfg->forcelist;
-	     forcelistit!=NULL;
-	     forcelistit = forcelistit->next
-	    )
-	{
-	    fprintf(out, "    %s = NULL;\n", forcelistit->s);
-	}
-	fprintf(out, "}\n");
+        struct stringlist * forcelistit;
+        
+        fprintf(out, "\n");
+        for (forcelistit = cfg->forcelist;
+             forcelistit!=NULL;
+             forcelistit = forcelistit->next
+            )
+        {
+            fprintf(out, "extern struct Library *%s;\n", forcelistit->s);
+        }
+        fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", cfg->modulename);
+        for (forcelistit = cfg->forcelist;
+             forcelistit!=NULL;
+             forcelistit = forcelistit->next
+            )
+        {
+            fprintf(out, "    %s = NULL;\n", forcelistit->s);
+        }
+        fprintf(out, "}\n");
     }
     fclose(out);
 }
