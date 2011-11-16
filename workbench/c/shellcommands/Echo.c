@@ -27,10 +27,10 @@
     INPUTS
 
         STRING -- the strings to display
-	NOLINE -- no newline at end of string
-	FIRST  -- first displayed character
-	LEN    -- number of characters to display
-	TO     -- file or device to output to 
+        NOLINE -- no newline at end of string
+        FIRST  -- first displayed character
+        LEN    -- number of characters to display
+        TO     -- file or device to output to
 
     RESULT
 
@@ -78,90 +78,91 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
 
     if (SHArg(LEN))
     {
-	max = *SHArg(LEN);
+        max = *SHArg(LEN);
     }
 
     if (SHArg(TO))
     {
-	out = Open(SHArg(TO),MODE_NEWFILE);
+        out = Open(SHArg(TO),MODE_NEWFILE);
 
-	if (!out)
-	{
-	    ERROR(RETURN_ERROR);
-	}
+        if (!out)
+        {
+            ERROR(RETURN_ERROR);
+        }
     }
 
     a = SHArg( );
 
     if (a) while (*a != NULL)
     {
-	b = *a;
+        b = *a;
 
-	while (*b++);
+        while (*b++);
 
-	l = b - *a - 1;
-	b = *a;
+        l = b - *a - 1;
+        b = *a;
 
-	if (SHArg(FIRST) && *SHArg(FIRST))
-	{
-	    if (*SHArg(FIRST) - 1 < l)
-	    {
-		b += *SHArg(FIRST)-1;
-	    }
-	    else
-	    {
-		b += l - 1; // Original Echo always prints at least the latest character
-	    }
-	}
-	else if(l > max)
-	{
-		b += l - max;
-	}
+        if (SHArg(FIRST) && *SHArg(FIRST))
+        {
+            if (*SHArg(FIRST) - 1 < l)
+            {
+                b += *SHArg(FIRST)-1;
+            }
+            else
+            {
+                b += l - 1; // Original Echo always prints at least the latest character
+            }
+        }
+        else if(l > max)
+        {
+                b += l - max;
+        }
 
-	l = max;
+        l = max;
 
-	while (l-- && *b)
-	{
-	    if (FPutC(out, *b++) < 0)
-	    {
-		ERROR(RETURN_ERROR);
-	    }
-	}
+        while (l-- && *b)
+        {
+            if (FPutC(out, *b++) < 0)
+            {
+                ERROR(RETURN_ERROR);
+            }
+        }
 
-	a++;
+        a++;
 
-	if(*a)
-	{
-	    if (FPutC(out,' ') < 0)
-	    {
-		ERROR(RETURN_ERROR);
-	    }
-	}
+        if(*a)
+        {
+            if (FPutC(out,' ') < 0)
+            {
+                ERROR(RETURN_ERROR);
+            }
+        }
     }
 
     if (!SHArg(NOLINE))
     {
-	if (FPutC(out, '\n') < 0)
-	{
-	    ERROR(RETURN_ERROR);
-	}
+        if (FPutC(out, '\n') < 0)
+        {
+            ERROR(RETURN_ERROR);
+        }
     }
 
     if (!Flush(out))
     {
-	ERROR(RETURN_ERROR);
+        ERROR(RETURN_ERROR);
     }
 
 end:
     if (SHArg(TO) && out)
     {
-	Close(out);
+        Close(out);
     }
 
     return error;
 
     AROS_SHCOMMAND_EXIT
 }
+
 
 
 
