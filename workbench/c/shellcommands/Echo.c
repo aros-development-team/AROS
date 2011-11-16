@@ -153,6 +153,8 @@ AROS_SHA(STRPTR,   , TO,     /K,   NULL))
     }
 
 end:
+    if (error) PrintFault( IoErr(), "Echo");
+
     if (SHArg(TO) && out)
     {
         Close(out);
