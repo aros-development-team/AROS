@@ -120,7 +120,7 @@ struct IOUsbHWBufferReq
 #define UHDIR_IN         2  /* This is a device to host transfer */
 
 /* Definitions for iouh_Flags */
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #define UHFB_LOWSPEED      0  /* Device operates at low speed */
 #define UHFB_HIGHSPEED     1  /* Device operates at high speed (USB 2.0) */
 #define UHFB_SUPERSPEED    2  /* Device operates at super speed (USB 3.0) */
@@ -186,7 +186,7 @@ struct IOUsbHWBufferReq
 #define UHA_Capabilities   (UHA_Dummy + 0x21)
 
 /* Capabilities as returned by UHA_Capabities */
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed */
 #define UHCB_USB30         1 /* Host controller supports USB 3.0 SuperSpeed */
 #define UHCB_ISO           2 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER) */

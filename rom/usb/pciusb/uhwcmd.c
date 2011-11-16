@@ -35,7 +35,7 @@ const struct UsbHubDesc    RHHubDesc = { 9,                                     
                                          1,                                              // 7 DeviceRemovable (size is variable)
                                          0                                               // x PortPwrCtrlMask (size is variable)
                                        };
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
                                            UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
                                            0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
@@ -423,7 +423,7 @@ WORD cmdQueryDevice(struct IOUsbHWReq *ioreq,
     }
     if((tag = FindTagItem(UHA_Copyright, taglist)))
     {
-        *((STRPTR *) tag->ti_Data) ="©2007-2009 Chris Hodges";
+        *((STRPTR *) tag->ti_Data) ="Â©2007-2009 Chris Hodges";
         count++;
     }
     if((tag = FindTagItem(UHA_Version, taglist)))
@@ -514,7 +514,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                     usdd->bDeviceProtocol = 1; // single TT
                                 }
-                                #if (AROS_USB30_CODE)
+                                #ifdef AROS_USB30_CODE
                                 if(unit->hu_RootHub30Ports)
                                 {
                                     struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
@@ -535,7 +535,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             if(unit->hu_RootHub20Ports)
                             {
                                 struct UsbStdEPDesc *usepd = (struct UsbStdEPDesc *) &tmpbuf[9+9];
-                                usepd->bInterval = 12; // 2048 µFrames
+                                usepd->bInterval = 12; // 2048 ÂµFrames
                             }
                             ioreq->iouh_Actual = (len > 9+9+7) ? 9+9+7 : len;
                             CopyMem(tmpbuf, ioreq->iouh_Data, ioreq->iouh_Actual);
@@ -998,7 +998,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             break;
                         }
 
-                        #if (AROS_USB30_CODE)
+                        #ifdef AROS_USB30_CODE
                         /* (URTF_CLASS|URTF_OTHER) USR_SET_FEATURE */
                         case HCITYPE_XHCI:
                         {
@@ -1235,7 +1235,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             break;
                         }
 
-                        #if (AROS_USB30_CODE)
+                        #ifdef AROS_USB30_CODE
                         /* (URTF_CLASS|URTF_OTHER) USR_CLEAR_FEATURE */
                         case HCITYPE_XHCI:
                         {
@@ -1401,7 +1401,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             return(0);
                         }
 
-                        #if (AROS_USB30_CODE)
+                        #ifdef AROS_USB30_CODE
                         /* (URTF_IN|URTF_CLASS|URTF_OTHER) USR_GET_STATUS */
                         case HCITYPE_XHCI:
                         {
@@ -1437,7 +1437,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     switch(val>>8)
                     {
 //FIXME: Add USB3.0 hub descriptor support
-                        #if (AROS_USB30_CODE) 
+                        #ifdef AROS_USB30_CODE 
                         case UDT_SSHUB:
                         {
                             ULONG hubdesclen = 12;
@@ -1868,7 +1868,7 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
                 }
                 break;
-            #if (AROS_USB30_CODE)
+            #ifdef AROS_USB30_CODE
             case HCITYPE_XHCI:
                 KPRINTF(1000, ("XHCI cmdFlush\n"));
                 break;
@@ -2116,7 +2116,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                     }
                     break;
 
-                #if (AROS_USB30_CODE)
+                #ifdef AROS_USB30_CODE
                 case HCITYPE_XHCI:
                     KPRINTF(1000, ("XHCI cmdAbortIO\n"));
                     break;
@@ -2393,7 +2393,7 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 }
                 break;
             }
-            #if (AROS_USB30_CODE)
+            #ifdef AROS_USB30_CODE
             case HCITYPE_XHCI:
             {
                 //KPRINTF(1000, ("XHCI uhwNakTimeoutInt\n"));

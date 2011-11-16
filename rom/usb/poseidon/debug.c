@@ -9,7 +9,7 @@ void dumpmem_poseidon(void *mem, unsigned long int len)
 
   p = (unsigned char *) mem;
 
-  bug("\n");
+  KPrintF("\n");
 
   do
   {
@@ -20,19 +20,19 @@ void dumpmem_poseidon(void *mem, unsigned long int len)
       c = *p++;
       str[b] = ((c >= ' ') && (c <= 'z')) ? c : '.';
       str[b + 1] = 0;
-      bug("%02lx ", c);
+      KPrintF("%02lx ", c);
       if (--len == 0) break;
     }
 
     while (++b < 16)
     {
-      bug("   ");
+      KPrintF("   ");
     }
 
-    bug("  %s\n", str);
+    KPrintF("  %s\n", str);
   } while (len);
 
-  bug("\n\n");
+  KPrintF("\n\n");
 }
 
 #endif /* DEBUG */

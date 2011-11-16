@@ -75,7 +75,7 @@ struct PCIUnit
     struct List           hu_Controllers;    /* List of controllers */
     UWORD                 hu_RootHub11Ports;
     UWORD                 hu_RootHub20Ports;
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
     UWORD                 hu_RootHub30Ports;
 #endif
     UWORD                 hu_RootHubPorts;
@@ -86,7 +86,7 @@ struct PCIUnit
 
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
     struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
     struct PCIController *hu_PortMap30[MAX_USB3_PORTS]; /* Maps from Global Port to USB 3.0 controller */
 #endif
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
@@ -101,7 +101,7 @@ struct PCIUnit
 #define HCITYPE_UHCI     0x00
 #define HCITYPE_OHCI     0x10
 #define HCITYPE_EHCI     0x20
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #define HCITYPE_XHCI     0x30
 #endif
 
@@ -121,7 +121,7 @@ struct PCIController
 
     volatile APTR         hc_RegBase;
 
-    #if (AROS_USB30_CODE)
+    #ifdef AROS_USB30_CODE
     volatile APTR         xhc_capregbase;
     volatile APTR         xhc_opregbase;
     ULONG                 xhc_pagesize;

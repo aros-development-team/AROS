@@ -2084,9 +2084,8 @@ dnl See if the user wants the usb3.0 code
 AC_MSG_CHECKING([if usb3.0 code is enabled])
 AC_ARG_ENABLE(usb30_code,AC_HELP_STRING([--enable-usb30-code],[Enable usb3.0 code (default=no)]),usb30_code="yes",usb30_code="no")
 if test "$usb30_code" = "yes" ; then
-    aros_usb30_code="1"
-else
-    aros_usb30_code="0"
+    aros_config_cflags="$aros_config_cflags -DAROS_USB30_CODE"
+    aros_kernel_cflags="$aros_kernel_cflags -DAROS_USB30_CODE"
 fi
 AC_MSG_RESULT($usb30_code)
 

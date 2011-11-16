@@ -211,7 +211,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
             UWORD *devlangarray;
             IPTR devislowspeed;
             IPTR devishighspeed;
-            #if (AROS_USB30_CODE)
+            #ifdef AROS_USB30_CODE
             IPTR devissuperspeed;
             #endif
             IPTR devisconnected;
@@ -285,7 +285,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
                             DA_LangIDArray, &devlangarray,
                             DA_IsLowspeed, &devislowspeed,
                             DA_IsHighspeed, &devishighspeed,
-                            #if (AROS_USB30_CODE)
+                            #ifdef AROS_USB30_CODE
                             DA_IsSuperspeed, &devissuperspeed,
                             #endif
                             DA_IsConnected, &devisconnected,
@@ -349,7 +349,7 @@ AROS_UFH3(IPTR, DevWinDispatcher,
 
                 psdSafeRawDoFmt(textbuf2, 1024, "%s%s\n%s\n%ld\nPort %ld at %s\n%ld (%s)\n%ld\n%ld\n%04lx",
                                 devstate, (devlowpower ? " (Lowpower)" : ""),
-                                #if (AROS_USB30_CODE)
+                                #ifdef AROS_USB30_CODE
                                 (devislowspeed ? "Lowspeed" : (devissuperspeed ? "Superspeed" : (devishighspeed ? "Highspeed" : "Fullspeed"))),
                                 #else
                                 (devislowspeed ? "Lowspeed" : (devishighspeed ? "Highspeed" : "Fullspeed")),

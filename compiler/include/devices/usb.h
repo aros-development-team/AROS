@@ -39,7 +39,7 @@
 #define USR_SET_INTERFACE     0x0b
 #define USR_SYNCH_FRAME       0x0c
 
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #define USR_SET_SEL           0x30
 #define USR_SET_ISOCH_DELAY   0x31
 #endif

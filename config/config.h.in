@@ -28,8 +28,6 @@
 
 #define AROS_PALM_DEBUG_HACK	    	@aros_palm_debug_hack@
 
-#define AROS_USB30_CODE                 @aros_usb30_code@
-
 #define AROS_NESTING_SUPERVISOR     	@aros_nesting_supervisor@
 
 #define AROS_MUNGWALL_DEBUG 	    	@aros_mungwall_debug@

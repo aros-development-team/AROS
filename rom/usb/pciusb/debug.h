@@ -8,7 +8,7 @@
 
 //#define DEBUG 1
 
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #undef DEBUG
 #undef DB_LEVEL
 #define DEBUG 1

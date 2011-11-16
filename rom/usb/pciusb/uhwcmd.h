@@ -7,7 +7,7 @@
 #include "uhcichip.h"
 #include "ohcichip.h"
 #include "ehcichip.h"
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 #include "xhcichip.h"
 #endif
 #include "pciusb.h"
@@ -104,7 +104,7 @@ static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
 static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
 static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
-#if (AROS_USB30_CODE)
+#ifdef AROS_USB30_CODE
 /* xhcichip.c, in order of appearance */
 void xhciCompleteInt(struct PCIController *hc);
 void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
