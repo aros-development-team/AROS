@@ -15,7 +15,6 @@
 #include <aros/system.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
-#include <kernel/scheduler.h>
 #include <proto/exec.h>
 
 #include <exec_platform.h>

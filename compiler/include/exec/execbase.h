@@ -37,34 +37,33 @@ struct ExecBase
     APTR  WarmCapture;
     APTR  SysStkUpper;  /* System Stack Bounds */
     APTR  SysStkLower;
-    IPTR  MaxLocMem;    /* Chip Memory Pointer */
+    IPTR  MaxLocMem;    /* Top address of Chip memory + 1, or Chip RAM size. Amiga-specific */
     APTR  DebugEntry;
     APTR  DebugData;
     APTR  AlertData;
-    APTR  MaxExtMem;    /* Extended Memory Pointer (may be NULL) */
+    APTR  MaxExtMem;    /* Top address of "Slow memory" + 1 (A500 only) */
     UWORD ChkSum;       /* SoftVer to MaxExtMem */
 
 /* Interrupts */
     struct IntVector IntVects[16];
 
 /* System Variables */
-    struct Task * ThisTask;       /* Pointer to currently running task
-                                     (readable) */
-    ULONG        IdleCount;
-    ULONG        DispCount;
-    UWORD        Quantum;        /* # of ticks, a task may run */
-    UWORD        Elapsed;        /* # of ticks, the current task has run */
-    UWORD        SysFlags;
-    BYTE         IDNestCnt;
-    BYTE         TDNestCnt;
-    UWORD        AttnFlags;      /* Attention Flags (see below) (readable) */
-    UWORD        AttnResched;
-    APTR         ResModules;
-    APTR         TaskTrapCode;
-    APTR         TaskExceptCode;
-    APTR         TaskExitCode;
-    ULONG        TaskSigAlloc;
-    UWORD        TaskTrapAlloc;
+    struct Task *ThisTask;       /* Pointer to currently running task (readable) */
+    ULONG        IdleCount;      /* Incremented when system goes idle            */
+    ULONG        DispCount;      /* Incremented when a task is dispatched        */
+    UWORD        Quantum;        /* # of ticks, a task may run                   */
+    UWORD        Elapsed;        /* # of ticks, the current task has run         */
+    UWORD        SysFlags;       /* Private flags                                */
+    BYTE         IDNestCnt;      /* Disable() nesting count                      */
+    BYTE         TDNestCnt;      /* Forbid() nesting count                       */
+    UWORD        AttnFlags;      /* Attention Flags (readable, see below)        */
+    UWORD        AttnResched;    /* Private scheduler flags                      */
+    APTR         ResModules;     /* Resident modules list                        */
+    APTR         TaskTrapCode;   /* Trap handling code                           */
+    APTR         TaskExceptCode; /* User-mode exception handling code            */
+    APTR         TaskExitCode;   /* Termination code                             */
+    ULONG        TaskSigAlloc;   /* Allocated signals bitmask                    */
+    UWORD        TaskTrapAlloc;  /* Allocated traps bitmask                      */
 
 /* PRIVATE Lists */
     struct List        MemList;
@@ -80,9 +79,8 @@ struct ExecBase
 /* Miscellaneous Stuff */
     LONG               LastAlert[4];
 
-    UBYTE              VBlankFrequency;      /* (readable) */
-    UBYTE              PowerSupplyFrequency; /* (readable) */
-    	    	    	    	    	     /* AROS PRIVATE: VBlankFreq * PowerSupplyFreq = Timer Tick Rate */
+    UBYTE              VBlankFrequency;      /* Readable                 */
+    UBYTE              PowerSupplyFrequency; /* Readable, Amiga-specific */
     struct List        SemaphoreList;
 
 /* Kickstart */
@@ -97,10 +95,10 @@ struct ExecBase
     ULONG          ex_EClockFrequency; /* (readable) */
     ULONG          ex_CacheControl;    /* PRIVATE */
     ULONG          ex_TaskID;
-    ULONG          ex_Reserved1[5];
+    IPTR           ex_Reserved1[5];
     APTR           ex_MMULock;         /* PRIVATE */
-    ULONG          ex_Reserved2[2];
-    ULONG	   ex_DebugFlags;
+    IPTR           ex_Reserved2[2];
+    ULONG          ex_DebugFlags;
     struct MinList ex_MemHandlers;
     APTR           ex_MemHandler;      /* PRIVATE */
 
@@ -129,10 +127,23 @@ struct ExecBase
 #define AFF_FPU40   (1L<<6)
 #define AFB_ADDR32       14 /* AROS extension, CPU has 32-bit addressing */
 #define AFF_ADDR32  (1L<<14)
-#define AFB_PRIVATE      15 /* Private, AOS sets this if any FPU type detected */
+#define AFB_PRIVATE      15 /* See below */
 #define AFF_PRIVATE (1L<<15)
+/*
+ * AFB_PRIVATE is actually FPU presence flag with architecture-specific meaning:
+ * m68k   - Set if any FPU type detected. AmigaOS-compatible, however considered private.
+ * ARM    - Set if VFP is present. Considered public.
+ * Others - not used.
+ */
 #define AFB_FPU     AFB_PRIVATE
 #define AFF_FPU     AFF_PRIVATE
+
+/* SysFlags. Private and AROS-specific. */
+#define SFF_SoftInt         (1L<<5)  /* There is a software interrupt pending */
+#define SFF_QuantumOver     (1L<<13) /* Task's time slice is over	      */
+
+/* AttnResched. AmigaOS(tm)-compatible, but private. */
+#define ARF_AttnSwitch      (1L<<7)  /* Delayed task switch pending */
 
 /* Cache */
 #define CACRF_EnableI       (1L<<0)
@@ -157,15 +168,15 @@ struct ExecBase
  * Runtime debug output flags, MorphOS-compatible.
  * Most of them are reserved for now.
  */
-#define EXECDEBUGF_INITRESIDENT     0x00000001	/* Single resident initialization	*/
-#define EXECDEBUGF_INITCODE         0x00000002	/* Kickstart initialization		*/
-#define EXECDEBUGF_FINDRESIDENT     0x00000004	/* Resident search			*/
-#define EXECDEBUGF_CREATELIBRARY    0x00000010	/* Library creation			*/
-#define EXECDEBUGF_SETFUNCTION      0x00000020	/* Library function patching		*/
+#define EXECDEBUGF_INITRESIDENT     0x00000001  /* Single resident initialization       */
+#define EXECDEBUGF_INITCODE         0x00000002  /* Kickstart initialization             */
+#define EXECDEBUGF_FINDRESIDENT     0x00000004  /* Resident search                      */
+#define EXECDEBUGF_CREATELIBRARY    0x00000010  /* Library creation                     */
+#define EXECDEBUGF_SETFUNCTION      0x00000020  /* Library function patching            */
 #define EXECDEBUGF_NEWSETFUNCTION   0x00000040
 #define EXECDEBUGF_CHIPRAM          0x00000080
-#define EXECDEBUGF_ADDTASK          0x00000100	/* Task creation			*/
-#define EXECDEBUGF_REMTASK          0x00000200	/* Task removal				*/
+#define EXECDEBUGF_ADDTASK          0x00000100  /* Task creation                        */
+#define EXECDEBUGF_REMTASK          0x00000200  /* Task removal                         */
 #define EXECDEBUGF_GETTASKATTR      0x00000400
 #define EXECDEBUGF_SETTASKATTR      0x00000800
 #define EXECDEBUGF_EXCEPTHANDLER    0x00001000
@@ -185,7 +196,7 @@ struct ExecBase
 #define EXECDEBUGF_PPCSTART         0x04000000
 #define EXECDEBUGF_CGXDEBUG         0x08000000
 #define EXECDEBUGF_INVZEROPAGE      0x10000000
-#define EXECDEBUGF_INIT             0x40000000	/* Generic system startup		*/
+#define EXECDEBUGF_INIT             0x40000000  /* Generic system startup               */
 #define EXECDEBUGF_LOG              0x80000000
 
 /*

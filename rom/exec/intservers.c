@@ -1,7 +1,6 @@
 #include <aros/asmcall.h>
 #include <exec/execbase.h>
 #include <exec/lists.h>
-#include <kernel/scheduler.h>
 
 #include "intservers.h"
 
