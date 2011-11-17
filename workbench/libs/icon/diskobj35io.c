@@ -12,6 +12,8 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 
+#include <zlib.h>
+
 #include <aros/bigendianio.h>
 #include <aros/asmcall.h>
 
@@ -23,6 +25,7 @@
 #define ID_FACE MAKE_ID('F','A','C','E')
 #define ID_IMAG MAKE_ID('I','M','A','G')
 #define ID_png  MAKE_ID('p','n','g',' ')
+#define ID_ARGB MAKE_ID('A','R','G','B')
 
 /****************************************************************************************/
 
@@ -210,6 +213,59 @@ VOID MakeMask35(UBYTE *imgdata, UBYTE *imgmask, UBYTE transpcolor, LONG imagew, 
 }
 
 /****************************************************************************************/
+void *malloc(size_t size)
+{
+    return AllocVec(size, MEMF_PUBLIC);
+}
+
+void free(void *ptr)
+{
+    FreeVec(ptr);
+}
+
+STATIC BOOL ReadARGB35(struct DiskObject *icon, struct IFFHandle *iff, struct FileFaceChunk *fc,
+    	    	    	LONG chunksize, UBYTE **argbptr,
+			struct IconBase *IconBase)
+{
+    UBYTE *src, *mem, *argb = NULL;
+    LONG imagew, imageh;
+    ULONG zsize;
+    uLongf size;
+    int err;
+
+    imagew = fc->Width + 1;
+    imageh = fc->Height + 1;
+    size = imagew * imageh * 4;
+    
+    D(bug("[%s] ARGB size is %dx%d, %d => %d bytes\n", __func__, imagew, imageh, chunksize, size));
+
+    src = mem = AllocMemIcon(icon, chunksize, MEMF_PUBLIC);
+    if (!src) return FALSE;
+    
+    if (ReadChunkBytes(iff, src, chunksize) != chunksize)
+    {
+	goto fail;
+    }
+    
+    argb = AllocMemIcon(icon, size, MEMF_PUBLIC);
+    if (!argb) goto fail;
+ 
+    zsize = AROS_BE2WORD(*((UWORD *)(src + 6))) + 1;
+    err = uncompress(argb, &size, src + 10, zsize);
+    if (err != Z_OK) {
+        D(bug("%s: Can't uncompress %d ARGB bytes: %s\n", __func__, zsize, zError(err)));
+        goto fail;
+    }
+
+    *argbptr = argb;
+    
+    return TRUE;
+
+fail:
+    return FALSE;
+}
+
+/****************************************************************************************/
 
 STATIC BOOL ReadImage35(struct DiskObject *icon, struct IFFHandle *iff, struct FileFaceChunk *fc,
     	    	    	struct FileImageChunk *ic, UBYTE **imgdataptr,
@@ -350,15 +406,18 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     	ID_ICON, ID_FACE,
 	ID_ICON, ID_IMAG,
 	ID_ICON, ID_png,
+	ID_ICON, ID_ARGB,
     };
     
     struct IFFHandle 	    *iff;
     struct Hook     	     iffhook;
     struct FileFaceChunk     fc;
     struct FileImageChunk    ic1, ic2;
+    UBYTE                   *argb1data = NULL, *argb2data = NULL;
     UBYTE   	    	    *img1data = NULL, *img2data = NULL;
     struct ColorRegister    *img1pal = NULL, *img2pal = NULL;
     BOOL  have_face = FALSE, have_imag1 = FALSE, have_imag2 = FALSE;
+    BOOL                     have_argb1 = FALSE, have_argb2 = FALSE;
     int have_png = 0;
     LONG here, extrasize;
     APTR data;
@@ -411,7 +470,7 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	{
     	    D(bug("ReadIcon35. OpenIFF okay\n"));
 	    
-	    if (!StopChunks(iff, stopchunks, 3))
+	    if (!StopChunks(iff, stopchunks, 4))
 	    {
 	    	LONG error;
 		
@@ -453,6 +512,22 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 			    }
 			    
 			}
+                    } else if (cn->cn_ID == ID_ARGB) {
+		    	D(bug("ReadIcon35. Found ARGB chunk\n"));
+                        if (have_argb1)
+                        {
+                            if (ReadARGB35(&icon->ni_DiskObject, iff, &fc, cn->cn_Size, &argb2data, IconBase))
+                            {
+                                have_argb2 = TRUE;
+                            }
+                        }
+                        else
+                        {
+                            if (ReadARGB35(&icon->ni_DiskObject, iff, &fc, cn->cn_Size, &argb1data, IconBase))
+                            {
+                                have_argb1 = TRUE;
+                            }
+			}
                     } else if (cn->cn_ID == ID_png) {
                         if (have_png < 2) {
                             LONG here = data - icon->ni_Extra.Data;
@@ -463,12 +538,13 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
                             D(bug("[%s] Ignoring PNG image %d\n", __func__, have_png));
                         }
                         have_png++;
-		    }
-		    
+		    } else {
+		        D(bug("[%s] Unknown chunk ID 0x%08x\n", __func__, cn->cn_ID));
+                    }
 		    
 		} /* while(!ParseIFF(iff, IFFPARSE_SCAN)) */
 				
-	    } /* if (!StopChunks(iff, stopchunks, 2)) */
+	    } /* if (!StopChunks(iff, stopchunks, 4)) */
 	    
  	} /* if (!OpenIFF(iff, IFFF_READ)) */
 	
@@ -476,13 +552,25 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	
     } /* if ((iff = AllocIFF())) */
 
-    if (have_imag1)
-    {
+    if (have_face) {
     	icon->ni_Width  = fc.Width + 1;
 	icon->ni_Height = fc.Height + 1;
 	//icon->icon35.flags  = fc.Flags;
 	icon->ni_Aspect = fc.Aspect;
-	
+    }
+
+    if (have_argb1)
+    {
+        icon->ni_Image[0].ARGB = (APTR)argb1data;
+    }
+
+    if (have_argb2)
+    {
+        icon->ni_Image[1].ARGB = (APTR)argb2data;
+    }
+
+    if (have_imag1)
+    {
 	icon->ni_Image[0].ImageData 	    = img1data;
 	icon->ni_Image[0].Palette  	    = img1pal;
 	icon->ni_Image[0].Pens  	    = ic1.NumColors + 1;
