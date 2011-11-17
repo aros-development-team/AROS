@@ -48,15 +48,11 @@ void con_InitVESA(unsigned short version, struct vbe_mode *mode)
 
 
 	/*
-	 * QEmu in text mode (VBE number 0x03) is known to supply a
-	 * struct vbe_mode filled with zeroes. This should work around it.
+	 * QEmu in text mode (VBE number 0x03) is known to supply neither phys_base nor
+	 * window segments (all three are NULLs). This is a workaround for this.
 	 */	
 	if (!scr_FrameBuffer)
 	    scr_FrameBuffer = VGA_TEXT_ADDR;
-	if (!scr_Width)
-	    scr_Width = VGA_TEXT_WIDTH;
-	if (!scr_Height)
-	    scr_Height = VGA_TEXT_HEIGHT;
 
 	txt_Clear();
     }
