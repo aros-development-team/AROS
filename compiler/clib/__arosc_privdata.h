@@ -11,7 +11,6 @@
 #include <sys/types.h>
 #include <sys/arosc.h>
 
-#include "etask.h"
 #include "__vfork.h"
 
 struct _fdesc;

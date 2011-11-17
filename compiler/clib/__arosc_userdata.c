@@ -10,7 +10,6 @@
 #include "arosc_init.h"
 
 #include "__ctype.h"
-#include "etask.h"
 
 #include <aros/debug.h>
 

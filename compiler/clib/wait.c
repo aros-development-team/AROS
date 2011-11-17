@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,7 +10,6 @@
 #include <aros/startup.h>
 #include <aros/debug.h>
 
-#include "etask.h"
 #include "__arosc_privdata.h"
 
 #include <sys/types.h>
@@ -21,64 +20,64 @@
 
     NAME */
 
-	pid_t wait(
+        pid_t wait(
 
 /*  SYNOPSIS */
-	int *status)
+        int *status)
 
 /*  FUNCTION
-	Waits for child process to change state. State change is one of the
-	following events: child has exited, child was terminated by a signal,
-	child was stopped by a signal, child was resumed by a signal.
-	
-	The function stores status of the process that changed state in the
-	pointer given as status argument.
+        Waits for child process to change state. State change is one of the
+        following events: child has exited, child was terminated by a signal,
+        child was stopped by a signal, child was resumed by a signal.
+        
+        The function stores status of the process that changed state in the
+        pointer given as status argument.
 
-	The following macros can be used to extract information from the
-	status value:
+        The following macros can be used to extract information from the
+        status value:
 
-	WIFEXITED(status)    - true if the process has exited
-	WEXITSTATUS(status)  - exit status of the exited process
-	WIFSIGNALED(status)  - true if the child process was terminated by a
-	                       signal
-	WTERMSIG(status)     - number of the signal that caused process
-	                       termination
-	WIFSTOPPED(status)   - true if the child process was stopped by a
-	                       signal
-	WSTOPSIG(status)     - number of the signal that caused child process
-	                       stop
-	WIFCONTINUED(status) - true if the child process was resumed by the
-	                       SIGCONT signal.
-	
-	Parent process will be suspended until a child changes state. If a
-	child process has already changed state, function returns immediately.
+        WIFEXITED(status)    - true if the process has exited
+        WEXITSTATUS(status)  - exit status of the exited process
+        WIFSIGNALED(status)  - true if the child process was terminated by a
+                               signal
+        WTERMSIG(status)     - number of the signal that caused process
+                               termination
+        WIFSTOPPED(status)   - true if the child process was stopped by a
+                               signal
+        WSTOPSIG(status)     - number of the signal that caused child process
+                               stop
+        WIFCONTINUED(status) - true if the child process was resumed by the
+                               SIGCONT signal.
+        
+        Parent process will be suspended until a child changes state. If a
+        child process has already changed state, function returns immediately.
 
     INPUTS
-	status - Pointer to int where child return status will be stored or
-	NULL if you don't want to store status.
+        status - Pointer to int where child return status will be stored or
+        NULL if you don't want to store status.
 
     RESULT
-	Process id of the child process on success or -1 on error. If an error
-	occurred, the global variable errno is set.
+        Process id of the child process on success or -1 on error. If an error
+        occurred, the global variable errno is set.
 
     NOTES
-	This function will work only for child processeses notifying parent
-	process of their death, for example processes created by vfork() call.
-	If you want to use it for other processes, remember to set the
-	NP_NotifyOnDeath tag value to TRUE during child process creation.
+        This function will work only for child processeses notifying parent
+        process of their death, for example processes created by vfork() call.
+        If you want to use it for other processes, remember to set the
+        NP_NotifyOnDeath tag value to TRUE during child process creation.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	waitpid()
+        waitpid()
 
     INTERNALS
-	Since POSIX signals are not yet implemented, WIFSIGNALED, WIFSTOPPED
-	and WIFCONTINUED macros always return 0. WIFEXITED always returns 1.
+        Since POSIX signals are not yet implemented, WIFSIGNALED, WIFSTOPPED
+        and WIFCONTINUED macros always return 0. WIFEXITED always returns 1.
 
-	The et_UniqueID field of the ETask structure is used as process id.
+        The et_UniqueID field of the ETask structure is used as process id.
 
 ******************************************************************************/
 {
@@ -90,23 +89,23 @@
     et = GetETask(FindTask(NULL));
     if(!et)
     {
-	/* only ETasks are fertile */
-	errno = ECHILD;
-	return -1;
+        /* only ETasks are fertile */
+        errno = ECHILD;
+        return -1;
     }
 
     et = (struct ETask *)ChildWait(0);
     if (et != (struct ETask *)CHILD_NOTNEW)
     {
-	if(status)
-	{
-	    *status = et->et_Result1;
-	}
+        if(status)
+        {
+            *status = et->et_Result1;
+        }
         ret = et->et_UniqueID;
         ChildFree(et->et_UniqueID);
     }
     else
-	errno = ECHILD;
+        errno = ECHILD;
 
     return ret;
 }

@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "etask.h"
 #include "__arosc_privdata.h"
 #include "__fdesc.h"
 #include "__vfork.h"
