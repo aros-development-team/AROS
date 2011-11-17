@@ -78,8 +78,8 @@ struct TraceLocation
 /*
     Prototypes
 */
-APTR Exec_AllocTaskMem (struct Task * task, ULONG size, ULONG flags, struct ExecBase *SysBase);
-void Exec_FreeTaskMem (struct Task * task, APTR mem, struct ExecBase *SysBase);
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase);
 
 void Exec_InitETask(struct Task *task, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase);

@@ -11,15 +11,9 @@
 
 #include "exec_util.h"
 
-AROS_LH4(BOOL, PrepareContext,
-         AROS_LHA(struct Task *, task, A0),
-         AROS_LHA(APTR, entryPoint,   A1),
-         AROS_LHA(APTR, fallBack,     A2),
-         AROS_LHA(struct TagItem *, tagList, A3),
-         struct ExecBase *, SysBase, 6, Exec)
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase)
 {
-    AROS_LIBFUNC_INIT
-
     struct pt_regs *regs;
     
     UBYTE *sp = (UBYTE *)task->tc_SPReg;
@@ -43,5 +37,4 @@ AROS_LH4(BOOL, PrepareContext,
     task->tc_SPReg = sp;
     
     return TRUE;
-    AROS_LIBFUNC_EXIT
 }

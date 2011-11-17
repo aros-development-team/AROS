@@ -17,15 +17,9 @@
 
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
-AROS_LH4(BOOL, PrepareContext,
-         AROS_LHA(VOLATILE struct Task *, task,       A0),
-         AROS_LHA(APTR,                   entryPoint, A1),
-         AROS_LHA(APTR,                   fallBack,   A2),
-         AROS_LHA(const struct TagItem *, tagList,    A3),
-         struct ExecBase *, SysBase, 6, Exec)
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase)
 {
-    AROS_LIBFUNC_INIT
-
     IPTR args[2] = {0};
     WORD numargs = 0;
     IPTR *sp = task->tc_SPReg;
@@ -84,6 +78,4 @@ AROS_LH4(BOOL, PrepareContext,
     task->tc_SPReg = sp;
 
     return TRUE;
-
-    AROS_LIBFUNC_EXIT
 } /* PrepareContext() */

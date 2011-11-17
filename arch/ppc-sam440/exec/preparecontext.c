@@ -4,7 +4,6 @@
 #include <asm/amcc440.h>
 #include <proto/kernel.h>
 
-#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
@@ -13,8 +12,8 @@
 #include <aros/libcall.h>
 #include <aros/debug.h>
 
-static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack,
-                                    struct TagItem *tagList, struct ExecBase *SysBase)
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase)
 {
     context_t   *ctx;
     int         i;
@@ -60,7 +59,7 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     }
 
     if (!(task->tc_Flags & TF_ETASK) )
-        return NULL;
+        return FALSE;
 
     /* Get the memory for CPU context. */
     task->tc_UnionETask.tc_ETask->et_RegFrame = KrnCreateContext();
@@ -68,7 +67,7 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     D(bug("[exec] PrepareContext: et_RegFrame = %012p\n", task->tc_UnionETask.tc_ETask->et_RegFrame));
     
     if (!(ctx = (context_t *)task->tc_UnionETask.tc_ETask->et_RegFrame))
-        return NULL;
+        return FALSE;
 
     SuperState();
 
@@ -130,19 +129,5 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
 
     UserState(NULL);
 
-    return sp;
-}
-
-AROS_LH4(BOOL, PrepareContext,
-    AROS_LHA(struct Task *, task, A0),
-    AROS_LHA(APTR, entryPoint, A1),
-    AROS_LHA(APTR, fallBack, A2),
-    AROS_LHA(struct TagItem *, tagList, A3),
-    struct ExecBase *, SysBase, 6, Exec)
-{
-    AROS_LIBFUNC_INIT
-
-    return PrepareContext_Common(task, entryPoint, fallBack, tagList, SysBase) ? TRUE : FALSE;
-
-    AROS_LIBFUNC_EXIT
+    return TRUE;
 }
