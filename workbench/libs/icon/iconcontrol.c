@@ -205,6 +205,8 @@
                 if (image1)
                 {
                     image1->TransparentColor = (LONG)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     /* Note: ErrorCode is not modified here */
                     processed++;
                 }
@@ -226,6 +228,8 @@
                 if (image2)
                 {
                     image2->TransparentColor = (LONG)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     /* Note: ErrorCode is not modified here */
                     processed++;
                 }
@@ -247,6 +251,8 @@
                 if (image1)
                 {
                     image1->Palette = (const struct ColorRegister *)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     /* Note: ErrorCode is not modified here */
                     processed++;
                 }
@@ -264,6 +270,8 @@
                 if (image2)
                 {
                     image2->Palette = (CONST struct ColorRegister *)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     /* Note: ErrorCode is not modified here */
                     processed++;
                 }
@@ -285,6 +293,8 @@
                         /* Free any old pens */
                         LayoutIcon(icon, NULL, TAG_END);
                         image1->Pens = pens;
+                        /* Mark that the original imagery has been modified */
+                        nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
                         processed++;
                     }
@@ -311,6 +321,8 @@
                         /* Free any old pens */
                         LayoutIcon(icon, NULL, TAG_END);
                         image2->Pens = pens;
+                        /* Mark that the original imagery has been modified */
+                        nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
                         processed++;
                     }
@@ -333,6 +345,8 @@
                 if (image1)
                 {
                     image1->ImageData = (APTR)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     processed++;
                 }
                 break;
@@ -349,6 +363,8 @@
                 if (image2)
                 {
                     image2->ImageData = (APTR)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     processed++;
                 }
                 break;
@@ -365,6 +381,8 @@
                 if (nativeicon)
                 {
                     nativeicon->ni_Frameless = (BOOL)tag->ti_Data;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                     processed++;
                 }
                 break;
@@ -409,6 +427,8 @@
                     ULONG width = (ULONG)tag->ti_Data;
                     if (width > 0 && width <= 256) {
                         nativeicon->ni_Width = width;
+                        /* Mark that the original imagery has been modified */
+                        nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
                         processed++;
                     }
@@ -429,6 +449,8 @@
                     ULONG height = (ULONG)tag->ti_Data;
                     if (height > 0 && height <= 256) {
                         nativeicon->ni_Height = height;
+                        /* Mark that the original imagery has been modified */
+                        nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
                         processed++;
                     }
@@ -516,6 +538,8 @@
                     image1->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */
                     nativeicon->ni_Extra.PNG[0].Size = 0;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                 }
                 SET_ERRORCODE(0);
                 processed++;
@@ -540,6 +564,8 @@
                     image2->ARGB = (APTR)tag->ti_Data;
                     /* Disable the from-disk PNG based ARGB imagery */
                     nativeicon->ni_Extra.PNG[1].Size = 0;
+                    /* Mark that the original imagery has been modified */
+                    nativeicon->ni_Extra.Size = 0;
                 }
                 SET_ERRORCODE(0);
                 processed++;
