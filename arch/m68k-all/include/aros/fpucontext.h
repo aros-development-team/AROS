@@ -10,10 +10,10 @@ struct FpuContext {
 	fenv_t fpenv;		/* User-visible status register */
 	union IEEEl2bits fp[8];	/* FP registers */
 	union {
-		UBYTE mc68881[0xb8];
-		UBYTE mc68882[0xd8];
-		UBYTE mc68040[0x60];
-		UBYTE mc68060[0x12];
+		UBYTE fpu68881[0xb8];
+		UBYTE fpu68882[0xd8];
+		UBYTE fpu68040[0x60];
+		UBYTE fpu68060[0x12];
 	} fsave;		/* FSAVE context (CPU specific) */
 };
 
