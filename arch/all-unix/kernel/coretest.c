@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,8 +13,6 @@
 #include <string.h>
 #include <kernel_cpu.h>
 #include <sys/time.h>
-
-#include "etask.h"
 
 /* Prototypes */
 void Dispatch (void);
@@ -310,7 +308,7 @@ static void sighandler (int sig, regs_t *sc)
     /* Are task switches allowed ? */
     if (SysBase->TDNestCnt < 0)
     {
-        struct AROSCPUContext *ctx = GetIntETask(THISTASK)->iet_Context;
+        struct AROSCPUContext *ctx = THISTASK->tc_UnionETask.tc_ETask->et_RegFrame;
 
 #if DEBUG_STACK
 	PRINT_SC(sc);
@@ -328,7 +326,7 @@ static void sighandler (int sig, regs_t *sc)
 	else
 	    SC_DISABLE(sc);
 
-	ctx = GetIntETask(THISTASK)->iet_Context;
+	ctx = THISTASK->tc_UnionETask.tc_ETask->et_RegFrame;
 	RESTOREREGS(ctx, sc);
 	SP(sc) = (IPTR)THISTASK->tc_SPReg;
 
@@ -459,7 +457,7 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
     task->tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
     task->tc_Flags |= TF_ETASK;
     ctx = malloc(sizeof(struct AROSCPUContext));
-    GetIntETask(task)->iet_Context = ctx;
+    task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
     PREPARE_INITIAL_CONTEXT(ctx);
     PREPARE_INITIAL_FRAME(ctx, sp, (IPTR)pc);
@@ -510,7 +508,7 @@ int main (int argc, char ** argv)
 
     TaskMain.tc_UnionETask.tc_ETask = malloc(sizeof(struct IntETask));
     TaskMain.tc_Flags |= TF_ETASK;
-    ((struct IntETask *)TaskMain.tc_UnionETask.tc_ETask)->iet_Context = malloc(SIZEOF_ALL_REGISTERS);
+    TaskMain.tc_UnionETask.tc_ETask->et_RegFrame = malloc(sizeof(struct AROSCPUContext));
 
     /* The currently running task is me, myself and I */
     THISTASK = &TaskMain;

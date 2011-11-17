@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Start the internal debugger.
     Lang: english
 */
+
 #include <string.h>
 #include "exec_intern.h"
 #include <proto/exec.h>
@@ -164,8 +165,7 @@ int	get_irq_list(char *buf);
 /*	else if (strcmp(comm,"RI") == 0)
 	{
 
-	    struct pt_regs *r = (struct pt_regs *)
-			    GetIntETask(SysBase->ThisTask)->iet_Context;
+	    struct pt_regs *r = (struct pt_regs *)SysBase->ThisTask->tc_UnionETask.tc_ETask->et_RegFrame;
 
 	    kprintf("Active task's registers dump:\n"
 			    "EAX=%p  ECX=%p  EDX=%p  EIP=%p\n"

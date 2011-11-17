@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The task Dispatcher for m68k; taken from i386-native version
@@ -12,13 +12,11 @@
 #include <proto/exec.h>
 #include <exec_intern.h>
 #include <exec/ptrace.h>
-#include "etask.h"
-
 
 void SaveRegs(struct Task *task, struct pt_regs *regs)
 {
 	/* Copy registers from struct pt_regs into the user stack */
-	struct pt_regs * dest = (struct pt_regs *)GetIntETask(task)->iet_Context;
+	struct pt_regs * dest = (struct pt_regs *)task->tc_UnionETask.tc_ETask->et_RegFrame;
 	/*
 	 * Use this rather than memcpy! It does NOT work otherwise
 	 */
@@ -54,7 +52,7 @@ void SaveRegs(struct Task *task, struct pt_regs *regs)
 void RestoreRegs(struct Task *task, struct pt_regs *regs)
 {
 	/* Copy registers from the task's stack into struct pt_regs */
-	struct pt_regs * src = (struct pt_regs *)GetIntETask(task)->iet_Context;
+	struct pt_regs * src = (struct pt_regs *)task->tc_UnionETask.tc_ETask->et_RegFrame;
 
 	/*
 	 * Use this rather than memcpy! It does NOT work otherwise

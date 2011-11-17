@@ -38,7 +38,7 @@ AROS_LH4(BOOL, PrepareContext,
 	return FALSE;
   
     ctx = KrnCreateContext();
-    GetIntETask (task)->iet_Context = ctx;
+    task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
 	return FALSE;
 

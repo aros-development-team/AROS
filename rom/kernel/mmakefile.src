@@ -10,9 +10,8 @@ include $(TOP)/config/make.cfg
 # not to overcomplicate the build. This definition prevents kernel_cpu.h from including host-specific
 # stuff. The name of this definition is legacy, in ancient times exec.library included some private
 # kernel's stuff and needed this.
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -D__AROS_EXEC_LIBRARY__ \
 	        -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
-	        -D__AROS_EXEC_LIBRARY__
 
 # Allow to add architecture-specific options
 -include $(SRCDIR)/arch/all-$(ARCH)/kernel/make.opts

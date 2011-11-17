@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,7 +13,6 @@
 #include <dos/dosextens.h>
 #include <asm/sigcontext.h>
 #include "machine.h"
-#include "etask.h"
 
 #define FuncOffset(x)       (int)__AROS_GETJUMPVEC(0,x)
 
@@ -66,9 +65,6 @@ int main (void)
     printf ("#define sc_sr         %d\n", offsetof (struct sigcontext_struct, sc_sr));
     printf ("#define sc_pc         %d\n", offsetof (struct sigcontext_struct, sc_pc));
     printf ("#define sc_formatvec  %d\n", offsetof (struct sigcontext_struct, sc_formatvec));
-
-    printf ("\n/* struct IntETask */\n");
-    printf ("#define iet_Context   %d\n", offsetof (struct IntETask, iet_Context));
 
     printf ("\n/* Task Flags */\n");
     printf ("#define TS_RUN        %d\n", TS_RUN);

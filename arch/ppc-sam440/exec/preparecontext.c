@@ -1,4 +1,3 @@
-#include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
@@ -13,8 +12,6 @@
 
 #include <aros/libcall.h>
 #include <aros/debug.h>
-
-#define Regs(t) ((struct regs_t *)(GetIntETask(t)->iet_Context))
 
 static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack,
                                     struct TagItem *tagList, struct ExecBase *SysBase)
@@ -66,11 +63,11 @@ static UQUAD *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
         return NULL;
 
     /* Get the memory for CPU context. */
-    GetIntETask (task)->iet_Context = KrnCreateContext();
+    task->tc_UnionETask.tc_ETask->et_RegFrame = KrnCreateContext();
     
-    D(bug("[exec] PrepareContext: iet_Context = %012p\n", GetIntETask (task)->iet_Context));
+    D(bug("[exec] PrepareContext: et_RegFrame = %012p\n", task->tc_UnionETask.tc_ETask->et_RegFrame));
     
-    if (!(ctx = (context_t *)GetIntETask (task)->iet_Context))
+    if (!(ctx = (context_t *)task->tc_UnionETask.tc_ETask->et_RegFrame))
         return NULL;
 
     SuperState();

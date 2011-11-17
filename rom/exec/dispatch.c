@@ -1,57 +1,80 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Dispatch() - Tell the system that we have switched tasks.
+    Desc: Dispatch() - Exec-side task dispatch handling
     Lang: english
 */
 
-#include <exec/types.h>
+#include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <exec/execbase.h>
-#include <exec/alerts.h>
+#include <proto/exec.h>
 
-#include <proto/arossupport.h>
-#include <aros/asmcall.h>
-
+#include "exec_intern.h"
 #include "etask.h"
+#include "taskstorage.h"
 
-/*****i***********************************************************************
+/*****************************************************************************
 
     NAME */
 #include <proto/exec.h>
 
-	AROS_LH0(void, Dispatch,
+        AROS_LH1(struct Task *, Dispatch,
+
+/*  SYNOPSIS */
+        AROS_LHA(struct Task *, task, A0),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 10, Exec)
+        struct ExecBase *, SysBase, 10, Exec)
 
 /*  FUNCTION
-	This function is obsolete and subject to removal.
-	On AmigaOS(tm) this was a private function.
+        Perform dispatch-time task maintenance.
 
     INPUTS
-	None.
+        task - a task to be dispatched.
 
     RESULT
 
     NOTES
-	This function is still there because i386-native port
-	still uses it.
+        This is a very private function.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	Switch(), Reschedule()
 
     INTERNALS
 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    /*
+     * Increase TaskStorage if it is not big enough.
+     * Please don't even look at this crap. All this will be rewritten.
+     */
+    IPTR *oldstorage = task->tc_UnionETask.tc_TaskStorage;
+
+    if ((int)oldstorage[__TS_FIRSTSLOT] < PrivExecBase(SysBase)->TaskStorageSize)
+    {
+        IPTR *newstorage;
+        ULONG oldsize = (ULONG)oldstorage[__TS_FIRSTSLOT];
+
+	D(bug("[Dispatch] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
+
+        newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+        /* FIXME: Add fault handling */
+
+        CopyMem(oldstorage, newstorage, oldsize);
+        newstorage[__TS_FIRSTSLOT] = PrivExecBase(SysBase)->TaskStorageSize;
+        task->tc_UnionETask.tc_TaskStorage = newstorage;
+        FreeMem(oldstorage, oldsize);
+    }
+
+    return task;
 
     AROS_LIBFUNC_EXIT
 } /* Dispatch() */

@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: PrepareContext() - Prepare a task context for dispatch.
+    Desc: PrepareContext() - Prepare a task context for dispatch, PowerPC version
     Lang: english
 */
 
@@ -33,7 +33,7 @@ AROS_LH4(BOOL, PrepareContext,
 	return FALSE;
   
     ctx = KrnCreateContext();
-    GetIntETask (task)->iet_Context = ctx;
+    task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
 	return FALSE;
 
@@ -77,7 +77,7 @@ AROS_LH4(BOOL, PrepareContext,
 
     /* Then set up the frame to be used by Dispatch() */
     ctx->gpr[1] = (ULONG)task->tc_SPReg;
-    ctx->ip = (ULONG)entryPoint;
+    ctx->ip     = (ULONG)entryPoint;
 
     return TRUE;
 

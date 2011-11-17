@@ -2,8 +2,7 @@
 include $(TOP)/config/make.cfg
 
 MAINDIR	    := rom/kernel
-USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-	       -I$(GENDIR)/$(MAINDIR)/include \
+USER_CFLAGS := $(PRIV_KERNEL_INCLUDES) -I$(GENDIR)/$(MAINDIR)/include \
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES) \
 	       -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 	       -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)

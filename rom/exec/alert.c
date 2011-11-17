@@ -100,7 +100,7 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	    	 * Special case: AN_StackProbe issued by kernel's task dispatcher.
 	    	 * Pick up data from task's context.
 	    	 */
-		struct ExceptionContext *ctx = iet->iet_Context;
+		struct ExceptionContext *ctx = iet->iet_ETask.et_RegFrame;
 
 		location = (APTR)ctx->PC;
 	    	stack    = (APTR)ctx->FP;

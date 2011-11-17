@@ -8,8 +8,7 @@ ASMFILES := core_interrupts
 
 MAINDIR	      := rom/kernel
 USER_AFLAGS   := -I$(GENINCDIR)
-USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES) \
-                 -I$(SRCDIR)/arch/all-native/kernel \
+USER_INCLUDES := $(PRIV_KERNEL_INCLUDES) -I$(SRCDIR)/arch/all-native/kernel \
 		 -isystem $(SRCDIR)/arch/all-native/bootconsole/include
 
 #MM kernel-kernel-pc-x86_64 : includes-asm_h-$(CPU) includes kernel-kernel-includes

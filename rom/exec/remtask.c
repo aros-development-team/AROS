@@ -15,7 +15,6 @@
 
 #include <aros/symbolsets.h>
 
-#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 #include "exec_debug.h"
@@ -69,7 +68,7 @@
     DREMTASK("RemTask (0x%p (\"%s\"))", task, task->tc_Node.ln_Name);
 
     if (task == SysBase->ThisTask)
-    	DREMTASK("Removing itself");
+        DREMTASK("Removing itself");
 
     /* Don't let any other task interfere with us at the moment
     */
@@ -93,7 +92,7 @@
     /* Delete context */
     et = GetETask(task);
     if(et != NULL)
-        KrnDeleteContext(((struct IntETask *)et)->iet_Context);
+        KrnDeleteContext(et->et_RegFrame);
 
     /* Uninitialize ETask structure */
     CleanupETask(task);
@@ -147,7 +146,7 @@ static void remtaskcleaner(void)
         struct Task *task;
 
         WaitPort(IntSysBase->RemTaskPort);
-	task = (struct Task *)GetMsg(IntSysBase->RemTaskPort);
+        task = (struct Task *)GetMsg(IntSysBase->RemTaskPort);
 
         DREMTASK("remtaskcleaner for task %p", task);
 
@@ -183,10 +182,10 @@ int __RemTask_Setup(struct ExecBase *SysBase)
        calls RemTask()
     */
     cleaner = NewCreateTask(TASKTAG_NAME       , "__RemTask_Cleaner__",
-    		            TASKTAG_PRI	       , 127,
-    		            TASKTAG_PC	       , remtaskcleaner,
-    		            TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->RemTaskPort,
-    		            TAG_DONE);
+                            TASKTAG_PRI        , 127,
+                            TASKTAG_PC         , remtaskcleaner,
+                            TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->RemTaskPort,
+                            TAG_DONE);
 
     if (!cleaner)
     {

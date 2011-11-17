@@ -2,8 +2,6 @@
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 
-#include "etask.h"
-
 extern void AROS_SLIB_ENTRY(CopyMem_SSE, Exec, 104)();
 
 static int cpu_Init(struct ExecBase *SysBase)
@@ -19,7 +17,7 @@ static int cpu_Init(struct ExecBase *SysBase)
      * Normal applications should use processor.resource instead.
      */
     struct Task *me = FindTask(NULL);
-    struct ExceptionContext *ctx = GetIntETask(me)->iet_Context;
+    struct ExceptionContext *ctx = me->tc_UnionETask.tc_ETask->et_RegFrame;
 
     if (ctx->Flags & ECF_FPX)
     {
