@@ -12,8 +12,7 @@
 #include <exec/interrupts.h>
 #include <exec/tasks.h>
 
-#include "mmextra.h"
-#include "mungwallextra.h"
+#include "alertextra.h"
 
 /* Known alert context types */
 #define AT_NONE     0x00
