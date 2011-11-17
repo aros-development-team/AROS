@@ -8,8 +8,6 @@ include $(TOP)/config/make.cfg
 FILES  := ftmanager fontbitmap_class fontinfo_class fontlist_class fontwindow_class locale
 EXEDIR := $(AROS_SYSTEM)
 
-USER_CFLAGS := -I$(SRCDIR)/rom/exec
-
 %build_prog mmake=workbench-system-ftmanager \
     progname=FTManager targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="freetype2shared mui amiga arosc"
