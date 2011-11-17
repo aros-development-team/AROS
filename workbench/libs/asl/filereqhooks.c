@@ -1197,7 +1197,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
 				} else {
 				   FRAddPath(filestring, ld, AslBase);
-				   FRSetFile("", ld, AslBase);
+				   FRSetFile(ifreq->ifr_File, ld, AslBase);
 				}
 			    }
 
@@ -1266,7 +1266,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			}
 			GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&dir);
 			FRAddPath(dir, ld, AslBase);
-			FRSetFile("", ld, AslBase);
+			FRSetFile(ifreq->ifr_File, ld, AslBase);
 		    }
 		    break;
 
