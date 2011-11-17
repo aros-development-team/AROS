@@ -177,6 +177,12 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
             src = &srcnativeicon->ni_Image[i];
             dst = &mem->ni_Image[i];
 
+            if (src->ARGB) {
+                dst->ARGB = MemDupIcon(dobj, src->ARGB, srcnativeicon->ni_Width * srcnativeicon->ni_Height * 4, IconBase);
+                if (!dst->ARGB)
+                    goto fail;
+            }
+
             dst->Pens = src->Pens;
             dst->TransparentColor = src->TransparentColor;
 
@@ -191,7 +197,6 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
             dst->BitMap = NULL;
             dst->BitMask = NULL;
             dst->Pen = NULL;
-            dst->ARGB = NULL;
         }
     } /* if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE) */
    

@@ -702,6 +702,56 @@ static UBYTE *Encode35(struct DiskObject *icon, ULONG depth, UBYTE *dtype, LONG 
 
 /****************************************************************************************/
 
+static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
+    	    	    	APTR ARGB, struct IconBase *IconBase)
+{
+    struct ARGB35_Header {
+        ULONG ztype;    /* Always 1 */
+        ULONG zsize;    /* Compressed size, -1 */
+        UWORD resv;     /* Always 0 */
+    } ahdr;
+    Bytef *zdest;
+    uLongf zsize, size;
+    int err;
+    BOOL ok = FALSE;
+
+    /* Assume uncompressible.. */
+    zsize = size = icon->ni_Width * icon->ni_Height * 4;
+
+    zdest = AllocVec(zsize, MEMF_ANY);
+    if (!zdest)
+        return FALSE;
+
+    err = compress(zdest, &zsize, ARGB, size);
+    if (err != Z_OK) {
+        D(bug("%s: Can't compress %d ARGB bytes: %s\n", __func__, size, zError(err)));
+        goto exit;
+    }
+
+    ahdr.ztype = AROS_LONG2BE(1);
+    ahdr.zsize = AROS_LONG2BE(zsize - 1);
+    ahdr.resv = AROS_WORD2BE(0);
+
+    if (!PushChunk(iff, ID_ICON, ID_ARGB, IFFSIZE_UNKNOWN))
+    {
+    	ok = TRUE;
+
+    	if ((WriteChunkBytes(iff, &ahdr, sizeof(ahdr)) != sizeof(ahdr)) ||
+            (WriteChunkBytes(iff, zdest, zsize) != zsize))
+	{
+	    ok = FALSE;
+	}
+
+	PopChunk(iff);
+    }
+
+exit:
+    FreeVec(zdest);
+    return ok;
+}
+
+/****************************************************************************************/
+
 static BOOL WriteImage35(struct IFFHandle *iff, struct NativeIcon *icon,
     	    	    	 struct NativeIconImage *img, struct IconBase *IconBase)
 {
@@ -809,7 +859,13 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
         return TRUE;
     }
 
-    if (icon->ni_Image[0].ImageData == NULL)
+    D(bug("%s: Write Icon %p\n", __func__, icon));
+    D(bug("%s: n_Image[0].ImageData = %p\n", __func__, icon->ni_Image[0].ImageData));
+    D(bug("%s: n_Image[1].ImageData = %p\n", __func__, icon->ni_Image[1].ImageData));
+    D(bug("%s: n_Image[0].ARGB = %p\n", __func__, icon->ni_Image[0].ARGB));
+    D(bug("%s: n_Image[1].ARGB = %p\n", __func__, icon->ni_Image[1].ARGB));
+
+    if (icon->ni_Image[0].ImageData == NULL && icon->ni_Image[0].ARGB == NULL)
     {
         D(bug("%s: No image data to write\n", __func__));
     	return TRUE;
@@ -868,27 +924,48 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 			
 			PopChunk(iff);
 			
-			if (WriteImage35(iff, icon, &icon->ni_Image[0], IconBase))
-			{
-		    	    D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
-			    
-			    if (icon->ni_Image[1].ImageData)
-			    {
-			    	if (WriteImage35(iff, icon, &icon->ni_Image[1], IconBase))
-				{
-		    	    	    D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
-				    
-				    ok = TRUE;
-				}
-				
-			    } /* if (icon->ni_Image[1].ImageData) */
-			    else
-			    {
-			    	ok = TRUE;
-			    }
-			    
-			} /* if (WriteImage35(iff, &icon, &icon->ni_Image[0], IconBase)) */
-			
+			if (icon->ni_Image[0].ImageData)
+                        {
+                            if (WriteImage35(iff, icon, &icon->ni_Image[0], IconBase))
+                            {
+                                D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
+                                
+                                if (icon->ni_Image[1].ImageData)
+                                {
+                                    if (WriteImage35(iff, icon, &icon->ni_Image[1], IconBase))
+                                    {
+                                        D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
+                                        
+                                        ok = TRUE;
+                                    }
+                                    
+                                } /* if (icon->ni_Image[1].ImageData) */
+                                else
+                                {
+                                    ok = TRUE;
+                                }
+                                
+                            } /* if (WriteImage35(iff, &icon, &icon->ni_Image[0], IconBase)) */
+                        } /* if (icon->ni_Image[0].ImageData) */
+
+                        if (icon->ni_Image[0].ARGB)
+                        {
+                            if (WriteARGB35(iff, icon, &icon->ni_Image[0].ARGB, IconBase))
+                            {
+                                D(bug("WriteIcon35. WriteImage35() of 1st image ok.\n"));
+                                if (icon->ni_Image[1].ARGB)
+                                {
+                                        if (WriteARGB35(iff, icon, &icon->ni_Image[1].ARGB, IconBase))
+                                        {
+                                            D(bug("WriteIcon35. WriteImage35() of 2nd image ok.\n"));
+                                            ok = TRUE;
+                                        }
+                                } else {
+                                    ok = TRUE;
+                                }
+                            } /* if (WriteARGB35(iff, icon, &icon->ni_Image[0].ARGB, IconBase) */
+                        } /* if (icon->ni_Image[0].ARGB) */
+
 		    } /* if (WriteChunkBytes(iff, &fc, sizeof(fc)) == sizeof(fc)) */
 		    else
 		    {
