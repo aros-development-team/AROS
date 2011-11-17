@@ -9,7 +9,7 @@
 #include <exec/tasks.h>
 #include <exec/memory.h>
 #include <exec/ptrace.h>
-#include "etask.h"
+
 #include "exec_util.h"
 
 #define DEBUG 1
@@ -18,14 +18,9 @@
 #error "PrepareContext() has been changed. Additional tagList param, etc."
 #error "This one here needs to be rewritten!"
 
-AROS_LH3(BOOL, PrepareContext,
-         AROS_LHA(struct Task *, task, A0),
-         AROS_LHA(APTR, entryPoint,   A1),
-         AROS_LHA(APTR, fallBack,     A2),
-         struct ExecBase *, SysBase, 6, Exec)
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase)
 {
-    AROS_LIBFUNC_INIT
-
     struct pt_regs *regs;
 
     ULONG *sp = (ULONG *)task->tc_SPReg;
@@ -86,5 +81,4 @@ AROS_LH3(BOOL, PrepareContext,
     regs->lr      = (ULONG)fallBack;
 
     return TRUE;
-    AROS_LIBFUNC_EXIT
 }

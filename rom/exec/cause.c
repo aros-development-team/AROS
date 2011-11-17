@@ -101,7 +101,10 @@
         /* We are accessing an Exec list, protect ourselves. */
         ADDTAIL(&SysBase->SoftInts[pri].sh_List, &softint->is_Node);
         softint->is_Node.ln_Type = NT_SOFTINT;
+
+        /* Signal pending software interrupt condition */
         SysBase->SysFlags |= SFF_SoftInt;
+
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
 	{
 	   /* Quick soft int request. For optimal performance m68k-amiga
@@ -109,10 +112,13 @@
 	    volatile struct Custom *custom = (struct Custom*)0xdff000;
 	    custom->intreq = INTF_SETCLR | INTF_SOFTINT;
         }
-#else
-        /* If we are in usermode the software interrupt will end up
-           being triggered in Enable(). See Enable() code */
 #endif
+        /*
+         * If we are in usermode the software interrupt will end up being triggered
+         * in Enable(). On Amiga hardware this happens because a hardware interrupt
+         * was queued. On other machines Enable() will simulate this behavior,
+         * looking at SFF_SoftInt flag.
+         */
     }
     Enable();
 

@@ -55,8 +55,8 @@
         happen with TF_ETASK set - currenty not implemented).
 
     NOTES
-    	This function is private. Use MorphOS-compatible NewCreateTaskA()
-    	in your applications.
+        This function is private. Use MorphOS-compatible NewCreateTaskA()
+        in your applications.
 
     EXAMPLE
 
@@ -119,7 +119,7 @@
      * to turn it on at runtime. So we initialize it when the task starts up.
      */
     if (PrivExecBase(SysBase)->IntFlags & EXECF_StackSnoop)
-    	task->tc_Flags |= TF_STACKCHK;
+        task->tc_Flags |= TF_STACKCHK;
 
     /* Initialize ETask */
     InitETask(task);
@@ -134,7 +134,7 @@
     if ((IPTR)task->tc_SPReg & (AROS_STACKALIGN - 1))
     {
         DADDTASK("NewAddTask with unaligned stack pointer (0x%p)! Fixing...", task->tc_SPReg);
-    	task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
+        task->tc_SPReg = (APTR)((IPTR)task->tc_SPReg & ~(AROS_STACKALIGN - 1));
     }
 #endif
     DADDTASK("NewAddTask: SPLower: 0x%p SPUpper: 0x%p SP: 0x%p", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
@@ -157,7 +157,7 @@
         finalPC=SysBase->TaskExitCode;
 
     /* Init new context. */
-    if (!PrepareContext (task, initialPC, finalPC, tagList))
+    if (!PrepareContext(task, initialPC, finalPC, tagList, SysBase))
     {
         CleanupETask(task);
         return NULL;
@@ -194,7 +194,7 @@
         D(bug("[AddTask] Rescheduling...\n"));
 
         /* Reschedule() will take care about disabled task switching automatically */
-    	Reschedule(task);
+        Reschedule();
     }
 
     Enable();

@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
@@ -17,15 +16,9 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-AROS_LH4(BOOL, PrepareContext,
-	 AROS_LHA(VOLATILE struct Task *, task,       A0),
-	 AROS_LHA(APTR,                   entryPoint, A1),
-	 AROS_LHA(APTR,                   fallBack,   A2),
-	 AROS_LHA(const struct TagItem *, tagList,    A3),
-	 struct ExecBase *, SysBase, 6, Exec)
+BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
+                    struct TagItem *tagList, struct ExecBase *SysBase)
 {
-    AROS_LIBFUNC_INIT
-
     struct TagItem *t;
     struct ExceptionContext *ctx;
     ULONG args[4] = {0};
@@ -85,6 +78,4 @@ AROS_LH4(BOOL, PrepareContext,
     ctx->pc = (ULONG)entryPoint;
 
     return TRUE;
-
-    AROS_LIBFUNC_EXIT
 } /* PrepareContext() */
