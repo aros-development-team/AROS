@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PrepareContext() - Prepare a task context for dispatch, m68k version
@@ -13,18 +13,17 @@
 #include <aros/m68k/cpucontext.h>
 #include <proto/kernel.h>
 
-#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 AROS_LH4(BOOL, PrepareContext,
-	 AROS_LHA(VOLATILE struct Task *, task,       A0),
-	 AROS_LHA(APTR,                   entryPoint, A1),
-	 AROS_LHA(APTR,                   fallBack,   A2),
-	 AROS_LHA(struct TagItem *,       tagList,    A3),
-	 struct ExecBase *, SysBase, 6, Exec)
+         AROS_LHA(VOLATILE struct Task *, task,       A0),
+         AROS_LHA(APTR,                   entryPoint, A1),
+         AROS_LHA(APTR,                   fallBack,   A2),
+         AROS_LHA(struct TagItem *,       tagList,    A3),
+         struct ExecBase *, SysBase, 6, Exec)
 {
     AROS_LIBFUNC_INIT
 
@@ -34,60 +33,60 @@ AROS_LH4(BOOL, PrepareContext,
     struct ExceptionContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK) )
-	return FALSE;
+        return FALSE;
   
     ctx = KrnCreateContext();
-    GetIntETask (task)->iet_Context = ctx;
+    task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
-	return FALSE;
+        return FALSE;
 
     while(tagList)
     {
-    	switch(tagList->ti_Tag)
-	{
-	    case TAG_MORE:
-	    	tagList = (struct TagItem *)tagList->ti_Data;
-		continue;
-		
-	    case TAG_SKIP:
-	    	tagList += tagList->ti_Data;
-		break;
-		
-	    case TAG_DONE:
-	    	tagList = NULL;
-    	    	break;
-		
-#define HANDLEARG(x)					\
-	    case TASKTAG_ARG ## x:			\
-	    	args[x - 1] = (IPTR)tagList->ti_Data;	\
-		if (x > numargs) numargs = x;		\
-		break;
+        switch(tagList->ti_Tag)
+        {
+            case TAG_MORE:
+                tagList = (struct TagItem *)tagList->ti_Data;
+                continue;
+                
+            case TAG_SKIP:
+                tagList += tagList->ti_Data;
+                break;
+                
+            case TAG_DONE:
+                tagList = NULL;
+                break;
+                
+#define HANDLEARG(x)                                    \
+            case TASKTAG_ARG ## x:                      \
+                args[x - 1] = (IPTR)tagList->ti_Data;   \
+                if (x > numargs) numargs = x;           \
+                break;
 
-	    HANDLEARG(1)
-	    HANDLEARG(2)
-	    HANDLEARG(3)
-	    HANDLEARG(4)
-	    HANDLEARG(5)
-	    HANDLEARG(6)
-	    HANDLEARG(7)
-	    HANDLEARG(8)
-	}
-	
-	if (tagList) tagList++;
+            HANDLEARG(1)
+            HANDLEARG(2)
+            HANDLEARG(3)
+            HANDLEARG(4)
+            HANDLEARG(5)
+            HANDLEARG(6)
+            HANDLEARG(7)
+            HANDLEARG(8)
+        }
+        
+        if (tagList) tagList++;
     }
     
     /*
-	There is not much to do here, or at least that is how it
-	appears. Most of the work is done in the kernel_cpu.h macros.
+        There is not much to do here, or at least that is how it
+        appears. Most of the work is done in the kernel_cpu.h macros.
     */
 
     if (numargs)
     {
-	/* On m68k C function gets all param on stack */
-	while(numargs--)
-	{
-	    _PUSH(sp, args[numargs]);
-	}
+        /* On m68k C function gets all param on stack */
+        while(numargs--)
+        {
+            _PUSH(sp, args[numargs]);
+        }
     }
     
     /* First we push the return address */

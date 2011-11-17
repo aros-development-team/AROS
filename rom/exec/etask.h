@@ -35,11 +35,7 @@ struct AlertContext
 struct IntETask
 {
     struct ETask	iet_ETask;
-#ifdef DEBUG_ETASK
-    STRPTR	 	iet_Me;
-#endif
     APTR	 	iet_RT;			/* Structure for resource tracking	 */
-    APTR	 	iet_Context;		/* Structure to store CPU registers	 */
     UQUAD	 	iet_CpuTime;
     UQUAD	 	iet_private1;
     ULONG	 	iet_AlertCode;		/* Alert code for crash handler		 */
@@ -48,6 +44,9 @@ struct IntETask
     APTR	 	iet_AlertLocation;	/* Alert location for crash handler	 */
     APTR		iet_AlertStack;		/* Frame pointer for stack backtrace	 */
     struct AlertContext iet_AlertData;		/* Extra data coming with the crash	 */
+#ifdef DEBUG_ETASK
+    STRPTR	 	iet_Me;
+#endif
 };
 
 #define GetIntETask(task)   ((struct IntETask *)(((struct Task *) \

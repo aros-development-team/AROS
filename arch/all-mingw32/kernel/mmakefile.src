@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES) $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES  := $(PRIV_KERNEL_INCLUDES)
 
 #MM kernel-kernel-mingw32: kernel-kernel-mingw32-native
 

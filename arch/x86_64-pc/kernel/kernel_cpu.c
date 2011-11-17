@@ -9,8 +9,6 @@
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
 
-#include "etask.h"
-
 void cpu_Dispatch(struct ExceptionContext *regs)
 {
     struct Task *task;
@@ -35,7 +33,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception(); */
 
     /* Get task's context */
-    ctx = GetIntETask(task)->iet_Context;
+    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     /* 
      * Restore the fpu, mmx, xmm state
@@ -55,7 +53,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
 void cpu_Switch(struct ExceptionContext *regs)
 {
     struct Task *task = SysBase->ThisTask;
-    struct ExceptionContext *ctx = GetIntETask(task)->iet_Context;
+    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     /*
      * Copy current task's context into the ETask structure. Note that context on stack

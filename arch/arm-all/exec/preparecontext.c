@@ -14,7 +14,6 @@
 #include <proto/kernel.h>
 #include <aros/arm/cpucontext.h>
 
-#include "etask.h"
 #include "exec_intern.h"
 #include "exec_util.h"
 
@@ -37,7 +36,7 @@ AROS_LH4(BOOL, PrepareContext,
 	return FALSE;
 
     ctx = KrnCreateContext();
-    GetIntETask (task)->iet_Context = ctx;
+    task->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
     if (!ctx)
 	return FALSE;
 

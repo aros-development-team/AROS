@@ -372,10 +372,9 @@ void exec_main(struct TagItem *msg, void *entry)
 
             /* Initialise the ETask data. */
             InitETask(t, t->tc_UnionETask.tc_ETask);
+            t->tc_UnionETask.tc_ETask->et_RegFrame = KrnCreateContext();
 
-            GetIntETask(t)->iet_Context = KrnCreateContext();
-
-            if (!GetIntETask(t)->iet_Context)
+            if (!t->tc_UnionETask.tc_ETask->et_RegFrame)
             {
                 D(bug("[exec] Not enough memory for first task\n"));
             }

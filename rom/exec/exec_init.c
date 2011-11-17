@@ -118,7 +118,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
      * structure, and start up multitasking.
      */
     if (!origSysBase)
-    	return PrepareExecBase(mh, tagList);
+        return PrepareExecBase(mh, tagList);
 
     DINIT("exec.library init");
 
@@ -158,8 +158,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     if (!t || !ml || !ctx)
     {
-	DINIT("Not enough memory for first task");
-	return NULL;
+        DINIT("Not enough memory for first task");
+        return NULL;
     }
 
     NEWLIST(&t->tc_MemEntry);
@@ -167,7 +167,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     t->tc_Node.ln_Name = "Boot Task";
     t->tc_Node.ln_Type = NT_TASK;
     t->tc_Node.ln_Pri  = 0;
-    t->tc_State	       = TS_RUN;
+    t->tc_State        = TS_RUN;
     t->tc_SigAlloc     = 0xFFFF;
 
     /*
@@ -192,10 +192,10 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     InitETask(t);
     if (!t->tc_UnionETask.tc_ETask)
     {
-	DINIT("Not enough memory for first task");
-	return NULL;
+        DINIT("Not enough memory for first task");
+        return NULL;
     }
-    GetIntETask(t)->iet_Context = ctx;
+    t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
 
     /*
      * Set the current task and elapsed time for it.
@@ -208,47 +208,47 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     /* Install the interrupt servers. Again, do it here because allocations are needed. */
     for (i=0; i < 16; i++)
     {
-	struct Interrupt *is;
+        struct Interrupt *is;
 
-	if (i != INTB_SOFTINT)
-	{	
-	    struct SoftIntList *sil;
+        if (i != INTB_SOFTINT)
+        {       
+            struct SoftIntList *sil;
 
-	    is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);
-	    if (is == NULL)
-	    {
-		DINIT("ERROR: Cannot install Interrupt Servers!");
-		Alert( AT_DeadEnd | AN_IntrMem );
-	    }
+            is = AllocMem(sizeof(struct Interrupt) + sizeof(struct SoftIntList), MEMF_CLEAR|MEMF_PUBLIC);
+            if (is == NULL)
+            {
+                DINIT("ERROR: Cannot install Interrupt Servers!");
+                Alert( AT_DeadEnd | AN_IntrMem );
+            }
 
-	    sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
+            sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
-	    if (i == INTB_VERTB)
-		is->is_Code = &VBlankServer;
-	    else
-		is->is_Code = &IntServer;
-	    is->is_Data = sil;
-	    NEWLIST((struct List *)sil);
-	    SetIntVector(i,is);
-	}
-	else
-	{
-	    struct Interrupt * is;
+            if (i == INTB_VERTB)
+                is->is_Code = &VBlankServer;
+            else
+                is->is_Code = &IntServer;
+            is->is_Data = sil;
+            NEWLIST((struct List *)sil);
+            SetIntVector(i,is);
+        }
+        else
+        {
+            struct Interrupt * is;
 
-	    is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
-	    if (NULL == is)
-	    {
-		DINIT("Error: Cannot install SoftInt Handler!\n");
-		Alert( AT_DeadEnd | AN_IntrMem );
-	    }
+            is = AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+            if (NULL == is)
+            {
+                DINIT("Error: Cannot install SoftInt Handler!\n");
+                Alert( AT_DeadEnd | AN_IntrMem );
+            }
 
-	    is->is_Node.ln_Type = NT_INTERRUPT;
-	    is->is_Node.ln_Pri = 0;
-	    is->is_Node.ln_Name = "SW Interrupt Dispatcher";
-	    is->is_Data = NULL;
-	    is->is_Code = (void *)SoftIntDispatch;
-	    SetIntVector(i,is);
-	}
+            is->is_Node.ln_Type = NT_INTERRUPT;
+            is->is_Node.ln_Pri = 0;
+            is->is_Node.ln_Name = "SW Interrupt Dispatcher";
+            is->is_Data = NULL;
+            is->is_Code = (void *)SoftIntDispatch;
+            SetIntVector(i,is);
+        }
     }
 
     /* We now start up the interrupts */
@@ -263,9 +263,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     /* Multitasking is on. Call CoolCapture. */
     if (SysBase->CoolCapture)
     {
-    	DINIT("Calling CoolCapture at 0x%p", SysBase->CoolCapture);
+        DINIT("Calling CoolCapture at 0x%p", SysBase->CoolCapture);
 
-	AROS_UFC1(void, SysBase->CoolCapture,
+        AROS_UFC1(void, SysBase->CoolCapture,
             AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
     }
 
@@ -284,6 +284,7 @@ AROS_PLH1(struct ExecBase *, open,
     /* I have one more opener. */
     SysBase->LibNode.lib_OpenCnt++;
     return SysBase;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -295,5 +296,6 @@ AROS_PLH0(BPTR, close,
     /* I have one fewer opener. */
     SysBase->LibNode.lib_OpenCnt--;
     return 0;
+
     AROS_LIBFUNC_EXIT
 }

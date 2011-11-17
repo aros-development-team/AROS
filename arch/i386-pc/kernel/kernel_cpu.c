@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id: $
+    $Id$
 
     Desc: i386 native CPU supplementals for task scheduler
     Lang: english
@@ -17,8 +17,6 @@
 #include "kernel_intern.h"
 #include "kernel_intr.h"
 #include "kernel_scheduler.h"
-
-#include "etask.h"
 
 #define D(x)
 
@@ -46,7 +44,7 @@ void cpu_Dispatch(struct ExceptionContext *regs)
         Exception(); */
 
     /* Get task's context */
-    ctx = GetIntETask(task)->iet_Context;
+    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     D(bug("[Kernel] Dispatch task %s, context 0x%p\n", task->tc_Node.ln_Name, ctx));
 
     /* Restore GPRs first. CopyMemQuick() may use SSE. */
@@ -54,24 +52,24 @@ void cpu_Dispatch(struct ExceptionContext *regs)
     /* Then FPU */
     if (ctx->Flags & ECF_FPX)
     {
-	/*
-	 * We have SSE state, restore it. 
-	 * SSE context includes 8087, so we don't have to care about
-	 * it separately after this.
-	 */
-	asm volatile("fxrstor (%0)"::"r"(ctx->FXData));
+        /*
+         * We have SSE state, restore it. 
+         * SSE context includes 8087, so we don't have to care about
+         * it separately after this.
+         */
+        asm volatile("fxrstor (%0)"::"r"(ctx->FXData));
     }
     else if (ctx->Flags & ECF_FPU)
     {
-	/* No SSE, plain 8087 */
-	asm volatile("frstor (%0)"::"r"(ctx->FPData));
+        /* No SSE, plain 8087 */
+        asm volatile("frstor (%0)"::"r"(ctx->FPData));
     }    
 }
 
 void cpu_Switch(struct ExceptionContext *regs)
 {
     struct Task *task = SysBase->ThisTask;
-    struct ExceptionContext *ctx = GetIntETask(task)->iet_Context;
+    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     D(bug("[Kernel] cpu_Switch(), task %s\n", task->tc_Node.ln_Name));
 
@@ -81,9 +79,9 @@ void cpu_Switch(struct ExceptionContext *regs)
      * can use SSE itself.
      */
     if (KernelBase->kb_ContextFlags & ECF_FPX)
-	asm volatile("fxsave (%0)"::"r"(ctx->FXData));
+        asm volatile("fxsave (%0)"::"r"(ctx->FXData));
     if (KernelBase->kb_ContextFlags & ECF_FPU)
-	asm volatile("fnsave (%0)"::"r"(ctx->FPData));
+        asm volatile("fnsave (%0)"::"r"(ctx->FPData));
 
     /*
      * Copy current task's context into the ETask structure. Note that context on stack

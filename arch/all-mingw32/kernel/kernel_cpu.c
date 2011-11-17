@@ -1,11 +1,14 @@
 /*
- * CPU-specific stuff. Context save, restore, and task exception handling.
- */
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: CPU-specific add-ons for Windows-hosted scheduler.
+          Context save, restore, and task exception handling.
+    Lang: english
+*/
 
 #include <exec/execbase.h>
 #include <proto/exec.h>
-
-#include "etask.h"
 
 #include "kernel_base.h"
 #include "kernel_debug.h"
@@ -28,7 +31,7 @@
  * the context on task's stack.
  *
  * In order to overcome this we forcibly disable interrupts in core_Dispatch()
- * and make the task to jump here. After this iet_Context still contains
+ * and make the task to jump here. After this et_RegFrame still contains
  * unmodified saved task context. Since we're running normally on our stack,
  * we can save the context on the stack here.
  * Inside Exception() interrupts and task switching will be enabled, so original
@@ -41,7 +44,7 @@ static void cpu_Exception()
 {
     /* Save return context and IDNestCnt on stack */
     struct Task *task = SysBase->ThisTask;
-    struct ExceptionContext *ctx = GetIntETask(task)->iet_Context;
+    struct ExceptionContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     char nestCnt = task->tc_IDNestCnt;
     char ContextSave[KernelBase->kb_ContextSize];
 
@@ -66,7 +69,7 @@ static void cpu_Exception()
 void cpu_Switch(CONTEXT *regs)
 {
     struct Task *t = SysBase->ThisTask;
-    struct AROSCPUContext *ctx = GetIntETask(t)->iet_Context;
+    struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
 
     /* Actually save the context */
     SAVEREGS(regs, ctx);
@@ -89,30 +92,30 @@ void cpu_Dispatch(CONTEXT *regs)
 
     if (!task)
     {
-	/*
-	 * There are no ready tasks and we need to go idle.
-	 * Because of the way how our emulation works, we do not
-	 * have a real loop here, unlike most ports. Instead we
-	 * signal idle state and exit. Then there can be two possibilities:
-	 * a) we are called by our virtual machine's supervisor thread.
-	 *    In this case it will just not resume usermode thread, and
-	 *    will go on with interrupts processing.
-	 * b) we are called by usermode thread using core_Rise(). In this
-	 *    case we will continue execution of the code and hit while(Sleep_Mode);
-	 *    spinlock in core_Rise(). We will spin until supervisor thread interrupts
-	 *    us and actually puts asleep.
-	 * We can't implement idle loop similar to other ports here because of (b)
-	 * case. We would just deadlock then since interrupt processing is actually
-	 * disabled during Windows exception processing (which is also an interrupt
-	 * for us).
-	 */
+        /*
+         * There are no ready tasks and we need to go idle.
+         * Because of the way how our emulation works, we do not
+         * have a real loop here, unlike most ports. Instead we
+         * signal idle state and exit. Then there can be two possibilities:
+         * a) we are called by our virtual machine's supervisor thread.
+         *    In this case it will just not resume usermode thread, and
+         *    will go on with interrupts processing.
+         * b) we are called by usermode thread using core_Rise(). In this
+         *    case we will continue execution of the code and hit while(Sleep_Mode);
+         *    spinlock in core_Rise(). We will spin until supervisor thread interrupts
+         *    us and actually puts asleep.
+         * We can't implement idle loop similar to other ports here because of (b)
+         * case. We would just deadlock then since interrupt processing is actually
+         * disabled during Windows exception processing (which is also an interrupt
+         * for us).
+         */
         DSLEEP(if (!Sleep_Mode) bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
 
-	/* This will enable interrupts in core_LeaveInterrupt() */
-	SysBase->IDNestCnt = -1;
+        /* This will enable interrupts in core_LeaveInterrupt() */
+        SysBase->IDNestCnt = -1;
 
         /* We are entering sleep mode */
-	Sleep_Mode = SLEEP_MODE_PENDING;
+        Sleep_Mode = SLEEP_MODE_PENDING;
 
         return;
     }
@@ -122,7 +125,7 @@ void cpu_Dispatch(CONTEXT *regs)
 
     D(bug("[KRN] Dispatched task 0x%p (%s)\n", task, task->tc_Node.ln_Name));
     /* Restore the task's context */
-    ctx = GetIntETask(task)->iet_Context;
+    ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     RESTOREREGS(regs, ctx);
     *LastErrorPtr = ctx->LastError;
 
@@ -131,10 +134,10 @@ void cpu_Dispatch(CONTEXT *regs)
     {
         DEXCEPT(bug("[KRN] Exception requested for task 0x%p, return PC = 0x%p\n", task, PC(regs)));
 
-	/* Disable interrupts, otherwise we may lose saved context */
-	SysBase->IDNestCnt = 0;
+        /* Disable interrupts, otherwise we may lose saved context */
+        SysBase->IDNestCnt = 0;
 
-	/* Make the task to jump to exception handler */
-	PC(regs) = (IPTR)cpu_Exception;
+        /* Make the task to jump to exception handler */
+        PC(regs) = (IPTR)cpu_Exception;
     }
 }
