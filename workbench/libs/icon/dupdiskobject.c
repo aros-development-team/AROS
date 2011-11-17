@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+
 #include <workbench/icon.h>
 #include <graphics/gfx.h>
 #include <proto/arossupport.h>
@@ -193,12 +196,17 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
                 if (!dst->Palette) goto fail;
             }
 
+            if (src->ImageData) {
+                dst->ImageData = MemDupIcon(dobj, src->ImageData, srcnativeicon->ni_Width * srcnativeicon->ni_Height * sizeof(UBYTE), IconBase);
+                if (!dst->ImageData) goto fail;
+            }
+
             /* Do *not* clone the screen specific layout */
             dst->BitMap = NULL;
             dst->BitMask = NULL;
             dst->Pen = NULL;
         }
-    } /* if (GetTagData(ICONDUPA_JustLoadedFromDisk, FALSE, tags) != FALSE) */
+    } /* if (srcnativeicon && GetTagData(ICONDUPA_DuplicateImageData, TRUE, tags) == TRUE) */
    
 #ifdef OUTPUT_DATA
     kprintf("gadgetwidth = %ld\ngadgetheight = %ld\n",dobj->do_Gadget.Width,dobj->do_Gadget.Height);
@@ -287,6 +295,8 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 
     if (GetTagData(ICONDUPA_ActivateImageData, FALSE, tags))
         LayoutIconA(dobj, LB(IconBase)->ib_Screen, NULL);
+
+    D(bug("%s: Icon %p => %p\n", __func__, icon, dobj));
     
     return dobj;
 

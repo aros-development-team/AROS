@@ -181,6 +181,8 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->Palette, 8, img->Pens * sizeof(struct ColorRegister), which, TRUE, IconBase);
     for (bits = 1; (1 << bits) < numcols; bits++);
     DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->ImageData, bits, width * height, which, FALSE, IconBase);
+
+    D(bug("%s: Read NewIcon image %d data from tooltypes\n", __func__, which + 1));
     
     return TRUE;
 }
@@ -214,6 +216,8 @@ BOOL ReadIconNI(struct NativeIcon *icon, struct Hook *streamhook,
     }
     
     if (!tt) return TRUE;
+
+    tt[0] = 0;
 
     if (!ReadImageNI(icon, 0, tooltypes, IconBase))
         return FALSE;
