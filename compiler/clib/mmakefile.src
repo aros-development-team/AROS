@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 #   and a link library from the same source, with only a small amount of
 #   overlap.
 #
-USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/rom/exec -I$(GENDIR)/rom/exec	\
+USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include \
 	-D__mb_cur_max=MB_CUR_MAX		\
 	-DADATE="\"$(shell date '+%d.%m.%Y')\"" \
 	-fno-builtin
