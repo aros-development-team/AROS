@@ -20,14 +20,12 @@
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     struct TagItem *tagList, struct ExecBase *SysBase)
 {
-    AROS_LIBFUNC_INIT
-
     IPTR args[8] = {0};
     WORD numargs = 0;
     IPTR *sp = task->tc_SPReg;
     struct ExceptionContext *ctx;
 
-    if (!(task->tc_Flags & TF_ETASK) )
+    if (!(task->tc_Flags & TF_ETASK))
         return FALSE;
   
     ctx = KrnCreateContext();
@@ -96,6 +94,4 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     task->tc_SPReg = sp;
 
     return TRUE;
-
-    AROS_LIBFUNC_EXIT
 } /* PrepareContext() */
