@@ -69,7 +69,7 @@ static void cpu_Exception()
 void cpu_Switch(CONTEXT *regs)
 {
     struct Task *t = SysBase->ThisTask;
-    struct AROSCPUContext *ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
+    struct AROSCPUContext *ctx = t->tc_UnionETask.tc_ETask->et_RegFrame;
 
     /* Actually save the context */
     SAVEREGS(regs, ctx);
