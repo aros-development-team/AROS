@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,29 +9,21 @@
 #include <exec/types.h>
 
 #if defined(__i386__)
-
 #include <aros/i386/atomic.h>
-
 #elif defined(__x86_64__)
-
 #include <aros/x86_64/atomic.h>
-
 #elif defined(__powerpc__) || defined(__ppc__)
-
 #include <aros/ppc/atomic.h>
-
 #elif defined(__arm__)
-
 #include <aros/arm/atomic.h>
-
 #elif defined(__mc68000)
-
 #include <aros/m68k/atomic.h>
+#endif
 
-#else
 /* Porting to other archs? Just define your asm atomics as above... else deadlock below will hit you! */
-#include <proto/exec.h>
+#ifndef __AROS_ATOMIC_INC_L
 
+#include <proto/exec.h>
 #define AROS_NO_ATOMIC_OPERATIONS
 
 #define __AROS_ATOMIC_INC_B(var) do {Disable(); (var)++; Enable(); } while(0)
