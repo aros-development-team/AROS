@@ -225,6 +225,64 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
     FreeMem(ts, (ULONG)ts[__TS_FIRSTSLOT]);
 }
 
+static inline void FixList(struct List *from, struct List *to)
+{
+    /*
+     * This sequence is incomplete. It is valid only after the whole structure has been copied.
+     * !!! DO NOT remove the second line !!!
+     * If the list is empty, the first line actually modifies from->lh_TailPred, so that
+     * to->lh_TailPred gets correct value !
+     */
+    to->lh_Head->ln_Pred     = (struct Node *)&to->lh_Head;
+    to->lh_TailPred          = from->lh_TailPred;
+    to->lh_TailPred->ln_Succ = (struct Node *)&to->lh_Tail;
+}
+
+BOOL Exec_ExpandTS(struct Task *task, struct ExecBase *SysBase)
+{
+    struct Task *me = FindTask(NULL);
+    ULONG oldsize = task->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT];
+    struct ETask *et_old = task->tc_UnionETask.tc_ETask;
+    struct ETask *et_new;
+
+    D(bug("[TSS] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
+
+    /* Allocate new storage */
+    et_new = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+    if (!et_new)
+        return FALSE;
+
+    if (task == me)
+    {
+        /*
+         * If we are updating ourselves, we need to disable task switching.
+         * Otherwise our ETask can become inconsistent (data in old ETask will
+         * be modified in the middle of copying).
+         */
+        Forbid();
+    }
+
+    /* This copies most of data. */
+    CopyMemQuick(et_old, et_new, oldsize);
+
+    /* ETask includes lists, and we need to fix up pointers in them now */
+    FixList((struct List *)&et_old->et_Children, (struct List *)&et_new->et_Children);
+    FixList(&et_old->et_TaskMsgPort.mp_MsgList, &et_new->et_TaskMsgPort.mp_MsgList);
+
+    /* Set new TSS size, and install new ETask */
+    ((IPTR *)et_new)[__TS_FIRSTSLOT] = PrivExecBase(SysBase)->TaskStorageSize;
+    task->tc_UnionETask.tc_ETask = et_new;
+
+    if (task == me)
+    {
+        /* All done, enable multitask again */
+        Permit();
+    }
+
+    FreeMem(et_old, oldsize);
+    return TRUE;
+}
+
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)
 {
     struct Task *t;

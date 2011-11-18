@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -12,7 +12,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-
 #include <aros/symbolsets.h>
 
 #include "exec_intern.h"
@@ -26,7 +25,7 @@
         AROS_LH1(void, RemTask,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct Task *,     task, A1),
+        AROS_LHA(struct Task *, task, A1),
 
 /*  LOCATION */
         struct ExecBase *, SysBase, 48, Exec)
@@ -103,7 +102,7 @@
      * Message is basically a Node, so we use our task's tc_Node as a message.
      * We use InternalPutMsg() because it won't change ln_Type. Just in case...
      */
-    InternalPutMsg(((struct IntExecBase *)SysBase)->RemTaskPort, (struct Message *)task, SysBase);
+    InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort, (struct Message *)task, SysBase);
 
     /* Freeing myself? */
     if(task==SysBase->ThisTask)
@@ -132,69 +131,3 @@
 
     AROS_LIBFUNC_EXIT
 }
-
-static void remtaskcleaner(void)
-{
-    struct MemList *mb, *mbnext;
-    struct IntExecBase *IntSysBase = (struct IntExecBase *)SysBase;
-
-    DREMTASK("remtaskcleaner RemTaskPort created");
-
-    do
-    { /* forever */
-        struct List list;
-        struct Task *task;
-
-        WaitPort(IntSysBase->RemTaskPort);
-        task = (struct Task *)GetMsg(IntSysBase->RemTaskPort);
-
-        DREMTASK("remtaskcleaner for task %p", task);
-
-        /* Note tc_MemEntry list is part of the task structure which
-           usually is also placed in tc_MemEntry. MungWall_Check()
-           will fill freed memory and destroy our list while we are
-           iterating or the freed memory including our list could be
-           reused by some other task. We take special care of this by
-           copying the list nodes to a local list before freeing.
-           Alternatively, we could check all MemEntries for the task
-           and free it after iterating.
-         */
-        NEWLIST(&list);
-        ForeachNodeSafe(&task->tc_MemEntry, mb, mbnext)
-        {
-            Remove(&mb->ml_Node);
-            AddTail(&list, &mb->ml_Node);
-        }
-        ForeachNodeSafe(&list, mb, mbnext)
-        {
-            DREMTASK("remtaskcleaner freeing MemList 0x%p", mb);
-            /* Free one MemList node */
-            FreeEntry(mb);
-        }
-    } while(1);
-}
-
-int __RemTask_Setup(struct ExecBase *SysBase)
-{
-    struct Task *cleaner;
-
-    /* taskpri is 127, we assume this task will be run before another task
-       calls RemTask()
-    */
-    cleaner = NewCreateTask(TASKTAG_NAME       , "__RemTask_Cleaner__",
-                            TASKTAG_PRI        , 127,
-                            TASKTAG_PC         , remtaskcleaner,
-                            TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->RemTaskPort,
-                            TAG_DONE);
-
-    if (!cleaner)
-    {
-        DREMTASK("__RemTask_Setup task creation failed !");
-        return 0;
-    }
-    DREMTASK("__RemTask_Setup cleaner task created");
-
-    return 1;
-}
-
-ADD2INITLIB(__RemTask_Setup, 0);

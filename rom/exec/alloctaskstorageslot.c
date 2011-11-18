@@ -6,6 +6,7 @@
 #include <aros/debug.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "taskstorage.h"
 
 /*****************************************************************************
@@ -16,13 +17,13 @@
         AROS_LH0(int, AllocTaskStorageSlot,
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 139, Exec)
+        struct ExecBase *, SysBase, 139, Exec)
 
 /*  FUNCTION
         This function will allocate a slot in the taskstorage 
 
     INPUTS
-	None.
+        None.
 
     RESULT
         The allocated slot, 0 if no slot could be allocated.
@@ -38,7 +39,7 @@
     BUGS
 
     SEE ALSO
-	FreeTaskStorageSlot()
+        FreeTaskStorageSlot()
 
     INTERNALS
 
@@ -46,8 +47,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TaskStorageFreeSlot *tsfs =
-        (struct TaskStorageFreeSlot *)GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
+    struct TaskStorageFreeSlot *tsfs = (struct TaskStorageFreeSlot *)GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
     int slot;
     struct Task *t;
 
@@ -60,25 +60,10 @@
 
     if ((slot + 1)*sizeof(IPTR) > PrivExecBase(SysBase)->TaskStorageSize)
     {
-        IPTR *oldstorage = FindTask(NULL)->tc_UnionETask.tc_TaskStorage;
-        IPTR *newstorage;
-        ULONG oldsize = (ULONG)oldstorage[__TS_FIRSTSLOT];
-        ULONG newsize = PrivExecBase(SysBase)->TaskStorageSize + TASKSTORAGEPUDDLE;
+        t = FindTask(NULL);
 
-        newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-        if (newstorage == NULL)
-        {
+        if (!Exec_ExpandTS(t, SysBase))
             return 0;
-        }
-
-        CopyMem(oldstorage, newstorage, oldsize);
-        newstorage[__TS_FIRSTSLOT] = newsize;
-
-	/* Swap storage, then size. This will avoid excessive increases in task scheduler (to be removed) */
-	FindTask(NULL)->tc_UnionETask.tc_TaskStorage = newstorage;
-	PrivExecBase(SysBase)->TaskStorageSize = newsize;
-
-        FreeMem(oldstorage, oldsize);
     }
 
     if (GetSucc(tsfs) == NULL)

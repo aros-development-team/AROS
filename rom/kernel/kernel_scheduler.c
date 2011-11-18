@@ -76,25 +76,29 @@ struct Task *core_Dispatch(void)
 
     D(bug("[KRN] core_Dispatch()\n"));
 
-    task = (struct Task *)REMHEAD(&SysBase->TaskReady);
-    if (!task)
+    do
     {
-        /* Is the list of ready tasks empty? Well, go idle. */
-        D(bug("[KRN] No ready tasks, entering sleep mode\n"));
+        task = (struct Task *)REMHEAD(&SysBase->TaskReady);
+        if (!task)
+        {
+            /* Is the list of ready tasks empty? Well, go idle. */
+            D(bug("[KRN] No ready tasks, entering sleep mode\n"));
 
-        /* Idle counter is incremented every time when we enter here,
-           not only once. This is correct. */
-        SysBase->IdleCount++;
-        SysBase->AttnResched |= ARF_AttnSwitch;
+            /*
+             * Idle counter is incremented every time when we enter here,
+             * not only once. This is correct.
+             */
+            SysBase->IdleCount++;
+            SysBase->AttnResched |= ARF_AttnSwitch;
 
-        return NULL;
-    }
-
-    /*
-     * Perform exec's housekeeping (TSS etc).
-     * exec has rights to postpone the task and select another one.
-     */
-    task = Dispatch(task);
+            return NULL;
+        }
+        /*
+         * We have task. Now let's ask exec if it's okay to launch it.
+         * If exec returns FALSE, we repeat the attempt. In fact we expect
+         * that at least exec's housekeeper is READY in this case.
+         */
+    } while (!Dispatch(task));
 
     SysBase->DispCount++;
     SysBase->IDNestCnt = task->tc_IDNestCnt;
