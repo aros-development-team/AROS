@@ -138,9 +138,7 @@ static BOOL OpenDiskDevice(struct FileSysStartupMsg * , struct MsgPort ** , stru
 static BOOL OpenTimerDevice(struct MsgPort ** , struct timerequest ** , ULONG, globaldata * );
 static BOOL TestRemovability(globaldata *);
 static void InstallDiskChangeHandler(globaldata *);
-#ifndef __AROS__
 static BOOL AddToFSResource(ULONG, BPTR, globaldata *);
-#endif
 #if VERSION23
 static void DoPostponed (struct volumedata *volume, globaldata *g);
 #endif
@@ -286,10 +284,7 @@ Removed because of problems with Phase 5 boards
 	if(g->removable)
 		InstallDiskChangeHandler(g);
 
-#ifndef __AROS__
-        /* Aros handles this automatically */
 	AddToFSResource (g->dosenvec->de_DosType, ((struct DosList *)devnode)->dol_misc.dol_handler.dol_SegList, g);
-#endif
 
 #if EXTRAPACKETS
 	g->sleepport = CreateMsgPort();
@@ -422,7 +417,6 @@ static BOOL OpenTimerDevice(struct MsgPort **port, struct timerequest **request,
 	return(FALSE);
 }
 
-#ifndef __AROS__
 /* AddToFSResource
 **
 ** function supplied by Nicola Salmoria
@@ -468,7 +462,6 @@ static BOOL AddToFSResource(ULONG dostype, BPTR seglist, globaldata *g)
 
 	return TRUE;
 }
-#endif
 
 
 /* Reconfigure the filesystem from a rootblock

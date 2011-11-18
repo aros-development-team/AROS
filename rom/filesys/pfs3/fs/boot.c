@@ -215,7 +215,15 @@ static UBYTE debugbuf[120];
 /*                                MAIN                                */
 /**********************************************************************/
 
+#ifdef KS13WRAPPER
 void __saveds __startup EntryPoint (void)
+{
+	wrapper_stackswap();
+}
+void EntryPoint2(void)
+#else
+void __saveds __startup EntryPoint (void)
+#endif
 {
 	/* globals */
 	struct globaldata *g;
@@ -246,12 +254,22 @@ void __saveds __startup EntryPoint (void)
 #endif
 
 	/* open libs */
-	IntuitionBase = (APTR)OpenLibrary ("intuition.library", 36L);
+	IntuitionBase = (APTR)OpenLibrary ("intuition.library", MIN_LIB_VERSION);
+#ifndef KS13WRAPPER
 	UtilityBase = OpenLibrary ("utility.library",0L);
-	DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", 36L);
+#endif
+	DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
+#ifdef KS13WRAPPER
+	wrapper_init(IntuitionBase, DOSBase);
+#endif
 	msgport = &((struct Process *)FindTask (NULL))->pr_MsgPort;
 
-	if (!IntuitionBase || !UtilityBase || !DOSBase)
+	if (
+		!IntuitionBase ||
+#ifndef KS13WRAPPER
+		!UtilityBase ||
+#endif
+		!DOSBase)
 	{
 		NormalErrorMsg (AFS_ERROR_LIBRARY_PROBLEM, NULL, 1);
 		Wait (0);

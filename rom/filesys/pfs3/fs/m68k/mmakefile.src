@@ -1,0 +1,29 @@
+# $Id: mmakefile.src $
+
+include $(TOP)/config/make.cfg
+
+AFILES := \
+	stackswap
+
+USER_AFLAGS := -I$(GENINCDIR)
+
+#MM- kernel-fs-pfs3ds-ks13-amiga-m68k : \
+#MM     includes-asm_h-m68k
+
+#MM- kernel-fs-pfs3-ks13-amiga-m68k : \
+#MM     includes-asm_h-m68k
+
+%build_archspecific \
+        mainmmake=kernel-fs-pfs3ds-ks13 \
+        maindir=rom/filesys/pfs3/fs \
+        arch=amiga-m68k \
+        asmfiles="$(AFILES)" modulename=pfs3ds_ks13
+
+%build_archspecific \
+        mainmmake=kernel-fs-pfs3-ks13 \
+        maindir=rom/filesys/pfs3/fs \
+        arch=amiga-m68k \
+        asmfiles="$(AFILES)" modulename=pfs3_ks13
+
+
+%common

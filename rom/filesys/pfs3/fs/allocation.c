@@ -112,7 +112,6 @@
 #include <dos/filehandler.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
-#include <dos.h>
 #include <string.h>
 #include "debug.h"
 #include <limits.h>

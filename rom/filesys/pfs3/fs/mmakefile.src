@@ -47,7 +47,7 @@ PFS3DS_CFLAGS := \
 	-DSCSIDIRECT=1
 
 USER_CFLAGS := \
-    -DAROS_KERNEL $(PFS3_CFLAGS) \
+    -DAROS_KERNEL $(PFS3_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 
 %build_module mmake=kernel-fs-pfs3 \
@@ -55,11 +55,37 @@ USER_CFLAGS := \
     files="$(FILES)" uselibs="rom"
 
 USER_CFLAGS := \
-    -DAROS_KERNEL $(PFS3DS_CFLAGS) \
+    -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 
 %build_module mmake=kernel-fs-pfs3ds \
     modname=pfs3ds modtype=handler \
     files="$(FILES)" uselibs="rom"
+
+KS13STUFF := \
+    -DKS13WRAPPER \
+    -DMIN_LIB_VERSION=0 \
+	-D__DOS_LIBAPI__=34 \
+	-D__EXEC_LIBAPI__=34 \
+	-D__UTILITY_LIBAPI__=34 \
+	-D__INTUITION_LIBAPI__=34 \
+	-D__GRAPHICS_LIBAPI__=34
+
+USER_CFLAGS := \
+    -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+
+%build_module mmake=kernel-fs-pfs3-ks13 \
+    modname=pfs3_ks13 modtype=handler \
+    files="$(FILES) ks13wrapper" uselibs="rom"
+
+USER_CFLAGS := \
+    -DAROS_KERNEL $(PFS3DS_CFLAGS) $(KS13STUFF) \
+	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+
+%build_module mmake=kernel-fs-pfs3ds-ks13 \
+    modname=pfs3ds_ks13 modtype=handler \
+    files="$(FILES) ks13wrapper" uselibs="rom"
+
 
 %common

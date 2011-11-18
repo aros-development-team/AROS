@@ -243,6 +243,9 @@ static void ShowVersion (globaldata *g)
   struct Window	*window;
   ULONG rec_idcmp, retval, tick;
 
+  if (SysBase->LibNode.lib_Version < 37)
+    return;
+
 	req.es_TextFormat = (STRPTR)FORMAT_MESSAGE;
 
 	/*

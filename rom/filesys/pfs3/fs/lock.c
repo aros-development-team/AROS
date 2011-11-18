@@ -294,7 +294,7 @@ BOOL _AddListEntry (listentry_t *entry, globaldata *g)
 	if (!IsMinListEmpty(&volume->fileentries))
 		entry->lock.fl_Link = MKBADDR(&(((listentry_t *)HeadOf(&volume->fileentries))->lock));
 	else
-		entry->lock.fl_Link = NULL;
+		entry->lock.fl_Link = BNULL;
 
 	MinAddHead (&volume->fileentries, entry);
 
@@ -327,7 +327,7 @@ void RemoveListEntry (listentry_t *entry, globaldata *g)
 				((listentry_t *)previous)->lock.fl_Link = 
 					MKBADDR(&(((listentry_t *)entry)->next->lock));
 		else
-			((listentry_t *)previous)->lock.fl_Link = NULL;
+			((listentry_t *)previous)->lock.fl_Link = BNULL;
 	}
 	entry->lock.fl_Task = NULL;
 	FreeListEntry (entry, g);

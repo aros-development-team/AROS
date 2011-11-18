@@ -223,7 +223,6 @@
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <exec/io.h>
-#include <dos.h>
 #include <dos/exall.h>
 #include <dos/filehandler.h>
 #include <proto/intuition.h>
@@ -699,7 +698,7 @@ static BOOL SearchInDir(ULONG dirnodenr, STRPTR objectname, union objectinfo *in
 {
 	struct canode anode;
 	struct cdirblock *dirblock;
-	struct direntry *entry;
+	struct direntry *entry = NULL;
 	BOOL found = FALSE, eod = FALSE;
 	ULONG anodeoffset;
 	UBYTE intl_name[PATHSIZE];
@@ -3151,7 +3150,7 @@ static BOOL AddDirectoryEntry(union objectinfo *dir, struct direntry *newentry,
 	struct canode anode;
 	ULONG anodeoffset = 0, diranodenr;
 	struct cdirblock *blok;
-	struct direntry *entry;
+	struct direntry *entry = NULL;
 	BOOL done = FALSE, eof = FALSE;
 	UCOUNT i;
 
