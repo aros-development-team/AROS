@@ -60,7 +60,7 @@ const struct IntFileReq def_filereq =
     NULL,			/* AcceptPattern 	*/ /* def. = "#?", but must be ParsePatternNoCase'ed */
     NULL,			/* RejectPattern 	*/ /* def. = "~(#?)", but must be ParsePatternNoCase'ed */
     0,				/* Flags1	 	*/
-    FRF_REJECTICONS,		/* Flags2	 	*/
+    0,				/* Flags2	 	*/
     NULL,			/* FilterFunc	 	*/
     NULL,			/* HookFunc	 	*/
     NULL,			/* GetSortBy	 	*/
