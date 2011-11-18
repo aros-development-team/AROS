@@ -16,8 +16,4 @@
 #include <aros/arm/atomic_v6.h>
 #endif
 
-#ifndef __AROS_ATOMIC_INC_L
-#include <aros/arm/atomic_v3.h>
-#endif
-
 #endif /* AROS_ARM_ATOMIC_H */
