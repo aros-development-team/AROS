@@ -524,7 +524,7 @@ static SIPTR dd_Open(struct DosPacket *pkt, globaldata * g)
 	union objectinfo pathfi, filefi, *parentfi;
 	listtype type;
 	SIPTR *error = &pkt->dp_Res2;
-	UBYTE pathname[PATHSIZE], *fullname, *filename;
+	UBYTE pathname[PATHSIZE], *fullname, *filename = NULL;
 	BOOL found;
 #if MULTIUSER
 	struct extrafields extrafields;
@@ -940,7 +940,7 @@ static SIPTR dd_Relabel(struct DosPacket *pkt, globaldata * g)
 			devlist->dl_VolumeDate.ds_Days = volume->rootblk->creationday;
 			devlist->dl_VolumeDate.ds_Minute = volume->rootblk->creationminute;
 			devlist->dl_VolumeDate.ds_Tick = volume->rootblk->creationtick;
-			devlist->dl_LockList = NULL;    // disk still inserted
+			devlist->dl_LockList = BNULL;    // disk still inserted
 			devlist->dl_DiskType = volume->rootblk->disktype;
 
 			/* toevoegen */

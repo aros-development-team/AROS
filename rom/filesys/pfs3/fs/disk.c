@@ -160,7 +160,6 @@
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <exec/io.h>
-#include <dos.h>
 #include <dos/filehandler.h>
 //#include <sprof.h>
 #include <string.h>
@@ -606,7 +605,7 @@ static ULONG ReadFromFile(fileentry_t *file, UBYTE *buffer, ULONG size,
 	ULONG anodeoffset, blockoffset, blockstoread;
 	ULONG fullblks, bytesleft;
 	ULONG register t;
-	UBYTE *data, *dataptr;
+	UBYTE *data = NULL, *dataptr;
 	BOOL directread =  FALSE;
 	struct anodechainnode *chnode;
 #if DELDIR
