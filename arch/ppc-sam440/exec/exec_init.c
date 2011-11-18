@@ -104,6 +104,7 @@ void exec_main(struct TagItem *msg, void *entry)
 {
     struct ExecBase *SysBase = NULL;
     struct TaskStorageFreeSlot *tsfs;
+    struct Task *t;
     uintptr_t lowmem = 0;
     uint32_t mem;
     int i;
@@ -344,7 +345,6 @@ void exec_main(struct TagItem *msg, void *entry)
         We do this until at least we can boot dos more cleanly.
     */
     {
-        struct Task    *t;
         struct MemList *ml;
 
         ml = (struct MemList *)AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
@@ -410,11 +410,20 @@ void exec_main(struct TagItem *msg, void *entry)
 
     D(debugmem());
 
-    /* Call init set. This is needed at least to bring up RemTask garbage collector. */
-    set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
+    /* Our housekeeper must have the largest possible priority */
+    t = NewCreateTask(TASKTAG_NAME       , "Exec housekeeper",
+                      TASKTAG_PRI        , 127,
+                      TASKTAG_PC         , ServiceTask,
+                      TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
+                      TASKTAG_ARG1       , SysBase,
+                      TAG_DONE);
+    if (t)
+    {
+        set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
-    D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
-    InitCode(RTF_COLDSTART, 0);
+        D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
+        InitCode(RTF_COLDSTART, 0);
+    }
 
     D(bug("[exec] I should never get here...\n"));
 }
