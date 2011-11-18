@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 #include "etask.h"
 #include "taskstorage.h"
 
@@ -21,7 +22,7 @@
     NAME */
 #include <proto/exec.h>
 
-        AROS_LH1(struct Task *, Dispatch,
+        AROS_LH1(BOOL, Dispatch,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Task *, task, A0),
@@ -36,6 +37,8 @@
         task - a task to be dispatched.
 
     RESULT
+        TRUE if dispatching permitted, FALSE if dispatching needs to be
+        cancelled
 
     NOTES
         This is a very private function.
@@ -52,29 +55,33 @@
 {
     AROS_LIBFUNC_INIT
 
-    /*
-     * Increase TaskStorage if it is not big enough.
-     * Please don't even look at this crap. All this will be rewritten.
-     */
-    IPTR *oldstorage = task->tc_UnionETask.tc_TaskStorage;
+    int oldstorage;
 
-    if ((int)oldstorage[__TS_FIRSTSLOT] < PrivExecBase(SysBase)->TaskStorageSize)
+    if (task == PrivExecBase(SysBase)->ServicePort->mp_SigTask)
     {
-        IPTR *newstorage;
-        ULONG oldsize = (ULONG)oldstorage[__TS_FIRSTSLOT];
-
-	D(bug("[Dispatch] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
-
-        newstorage = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-        /* FIXME: Add fault handling */
-
-        CopyMem(oldstorage, newstorage, oldsize);
-        newstorage[__TS_FIRSTSLOT] = PrivExecBase(SysBase)->TaskStorageSize;
-        task->tc_UnionETask.tc_TaskStorage = newstorage;
-        FreeMem(oldstorage, oldsize);
+        /*
+         * We can't ask housekeeper to service itself.
+         * It's its own responsibility to take care about itself.
+         */
+        return TRUE;
     }
 
-    return task;
+    oldstorage = task->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT];
+    if (oldstorage < PrivExecBase(SysBase)->TaskStorageSize)
+    {
+        D(bug("[Dispatch] Task 0x%p <%s> needs TSS increase (%d -> %d)\n", task, task->tc_Node.ln_Name, oldstorage, PrivExecBase(SysBase)->TaskStorageSize));
+
+        /*
+         * The task has been removed from TaskReady list by kernel.
+         * Send it to housekeeper for servicing.
+         * We use InternalPutMsg() because it won't clobber ln_Type.
+         */
+        InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort, (struct Message *)task, SysBase);
+
+        return FALSE;
+    }
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* Dispatch() */

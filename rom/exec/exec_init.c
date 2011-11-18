@@ -257,6 +257,19 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
 
     D(debugmem());
 
+    /* Our housekeeper must have the largest possible priority */
+    t = NewCreateTask(TASKTAG_NAME       , "Exec housekeeper",
+                      TASKTAG_PRI        , 127,
+                      TASKTAG_PC         , ServiceTask,
+                      TASKTAG_TASKMSGPORT, &((struct IntExecBase *)SysBase)->ServicePort,
+                      TASKTAG_ARG1       , SysBase,
+                      TAG_DONE);
+    if (!t)
+    {
+        DINIT("Failed to start up service task");
+        return NULL;
+    }
+
     /* Call platform-specific init code (if any) */
     set_call_libfuncs(SETNAME(INITLIB), 1, 1, SysBase);
 
