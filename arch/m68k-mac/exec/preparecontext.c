@@ -12,7 +12,7 @@
 #include "exec_util.h"
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
-                    struct TagItem *tagList, struct ExecBase *SysBase)
+                    const struct TagItem *tagList, struct ExecBase *SysBase)
 {
     struct pt_regs *regs;
     

@@ -20,7 +20,7 @@
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
-                    struct TagItem *tagList, struct ExecBase *SysBase)
+                    const struct TagItem *tagList, struct ExecBase *SysBase)
 {
     IPTR args[8] = {0};
     WORD numargs = 0;
@@ -41,22 +41,20 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     	switch(t->ti_Tag)
 	{
 		
-#define HANDLEARG(x) \
-	    case TASKTAG_ARG ## x: \
-	    	args[x - 1] = t->ti_Data; \
-		if (x > numargs) numargs = x; \
-		break;
+#define HANDLEARG(x)                      \
+	case TASKTAG_ARG ## x:            \
+	    args[x - 1] = t->ti_Data;     \
+	    if (x > numargs) numargs = x; \
+	    break;
 
-	    HANDLEARG(1)
-	    HANDLEARG(2)
-	    HANDLEARG(3)
-	    HANDLEARG(4)
-	    HANDLEARG(5)
-	    HANDLEARG(6)
-	    HANDLEARG(7)
-	    HANDLEARG(8)
-	    	
-	    #undef HANDLEARG
+	HANDLEARG(1)
+	HANDLEARG(2)
+	HANDLEARG(3)
+	HANDLEARG(4)
+	HANDLEARG(5)
+	HANDLEARG(6)
+	HANDLEARG(7)
+	HANDLEARG(8)
 	}
     }
 
