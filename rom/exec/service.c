@@ -26,8 +26,6 @@ void ServiceTask(struct ExecBase *SysBase)
     { /* forever */
         struct Task *task;
         struct MemList *mb, *mbnext;
-        struct ETask *newtss, oldtss;
-        ULONG oldsize;
 
         while ((task = (struct Task *)GetMsg(PrivExecBase(SysBase)->ServicePort)))
         {
@@ -55,7 +53,7 @@ void ServiceTask(struct ExecBase *SysBase)
                  */
                 task->tc_MemEntry.lh_TailPred->ln_Succ = NULL;
 
-                for (mb = task->tc_MemEntry.lh_Head; mb; mb = mbnext)
+                for (mb = (struct MemList *)task->tc_MemEntry.lh_Head; mb; mb = mbnext)
                 {
                     /* Free one MemList node */
                     mbnext = (struct MemList *)mb->ml_Node.ln_Succ;
