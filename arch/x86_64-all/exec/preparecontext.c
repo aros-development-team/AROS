@@ -18,7 +18,7 @@
 #define _PUSH(sp, val) *--sp = (IPTR)val
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
-                    struct TagItem *tagList, struct ExecBase *SysBase)
+                    const struct TagItem *tagList, struct ExecBase *SysBase)
 {
     IPTR args[2] = {0};
     WORD numargs = 0;
@@ -34,7 +34,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     if (!ctx)
         return FALSE;
 
-    while ((t = LibNextTagItem((const struct TagItem **)&tagList)))
+    while ((t = LibNextTagItem(&tagList)))
     {
         switch(t->ti_Tag)
         {

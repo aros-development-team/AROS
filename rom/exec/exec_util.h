@@ -79,7 +79,7 @@ struct TraceLocation
     Prototypes
 */
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
-                    struct TagItem *tagList, struct ExecBase *SysBase);
+                    const struct TagItem *tagList, struct ExecBase *SysBase);
 
 void Exec_InitETask(struct Task *task, struct ExecBase *SysBase);
 void Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase);

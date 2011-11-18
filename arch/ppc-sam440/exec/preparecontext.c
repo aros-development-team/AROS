@@ -13,7 +13,7 @@
 #include <aros/debug.h>
 
 BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
-                    struct TagItem *tagList, struct ExecBase *SysBase)
+                    const struct TagItem *tagList, struct ExecBase *SysBase)
 {
     context_t   *ctx;
     int         i;
@@ -26,7 +26,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
         switch(tagList->ti_Tag)
         {
             case TAG_MORE:
-                tagList = (struct TagItem *)tagList->ti_Data;
+                tagList = (const struct TagItem *)tagList->ti_Data;
                 continue;
 
             case TAG_SKIP:
