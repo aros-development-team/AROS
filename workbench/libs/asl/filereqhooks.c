@@ -1312,7 +1312,8 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                                     {
                                         FRSetFile((STRPTR)node->text[0], ld, AslBase);
 
-                                        if (imsg->Code) /* TRUE if double clicked */
+                                        if (    (imsg->Code)                           /* TRUE if double clicked */
+                                             && !(ifreq->ifr_Flags1 & FRF_DOSAVEMODE)) /* disallowed in save mode */
                                         {
                                             retval = FRGetSelectedFiles(ld, AslBase);
                                         }
