@@ -273,12 +273,13 @@ STRPTR GetFileName(ULONG msgtextid)
 	strncpy(pathbuffer, filenamebuffer, 299);
 	filepart = FilePart(pathbuffer);
 	*filepart = 0;
-	
-	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(msgtextid),
-						   ASLFR_DoPatterns   , TRUE                         ,
-						   ASLFR_InitialFile  , (IPTR)filebuffer             ,
-						   ASLFR_InitialDrawer, (IPTR)pathbuffer             ,
-						   ASLFR_Window       , (IPTR)win   	    	     ,
+
+	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText     , (IPTR)MSG(msgtextid),
+						   ASLFR_DoPatterns    , TRUE                ,
+						   ASLFR_InitialPattern, "~(#?.info)"        ,
+						   ASLFR_InitialDrawer , (IPTR)pathbuffer    ,
+						   ASLFR_InitialFile   , (IPTR)filebuffer    ,
+						   ASLFR_Window        , (IPTR)win           ,
 						   TAG_DONE);
 	if (req)
 	{
@@ -292,7 +293,7 @@ STRPTR GetFileName(ULONG msgtextid)
 	    } /* if (AslRequest(req, NULL) */
 	    
 	    FreeAslRequest(req);
-	    
+
 	} /* if (req) */
 	
 	CloseLibrary(AslBase);

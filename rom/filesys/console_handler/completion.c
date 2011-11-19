@@ -205,8 +205,10 @@ static void DoFileReq(struct filehandle *fh, struct completioninfo *ci)
     	    struct FileRequester *fr;
 	    struct TagItem tags[] =
 	    {
-		{ASLFR_Window, (IPTR)ci->fh->window },
-		{TAG_DONE	    	    	    	}
+		{ASLFR_Window        , (IPTR)ci->fh->window },
+		{ASLFR_DoPatterns    , (IPTR)TRUE           },
+		{ASLFR_InitialPattern, (IPTR)"~(#?.info)"   },
+		{TAG_DONE	    	    	    	    }
 	    };
 
 	    if ((fr = AllocAslRequest(ASL_FileRequest, tags)))

@@ -118,11 +118,17 @@ STRPTR GetFile(BOOL open)
 	strncpy(pathbuffer, filenamebuffer, 299);
 	*(FilePart(pathbuffer)) = 0;
 	
-        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR) open ? MSG(MSG_ASL_OPEN_TITLE) : MSG(MSG_ASL_SAVE_TITLE),
-						   ASLFR_DoPatterns   , TRUE			     ,
-						   ASLFR_InitialFile  , (IPTR)filebuffer	     ,
-						   ASLFR_InitialDrawer, (IPTR)pathbuffer	     ,
-						   TAG_DONE);
+        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText     , open                          ?
+                                                                         (IPTR)MSG(MSG_ASL_OPEN_TITLE) :
+                                                                         (IPTR)MSG(MSG_ASL_SAVE_TITLE)  ,
+                                                   ASLFR_DoSaveMode    , open        ?
+                                                                         (IPTR)FALSE :
+                                                                         (IPTR)TRUE                     ,
+                                                   ASLFR_RejectIcons   , (IPTR)TRUE                     ,
+                                                   ASLFR_DoPatterns    , (IPTR)TRUE                     ,
+                                                   ASLFR_InitialDrawer , (IPTR)pathbuffer               ,
+                                                   ASLFR_InitialFile   , (IPTR)filebuffer               ,
+                                                   TAG_DONE);
 	if (req)
 	{
 	    if (AslRequest(req, NULL))
