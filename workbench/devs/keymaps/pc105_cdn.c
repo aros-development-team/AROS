@@ -371,7 +371,7 @@ STATIC CONST UBYTE locapsable[] =
     SETBITS(1, 0, 0, 0, 0, 0, 0, 0),	/* 28 - 2F */
     
     SETBITS(0, 1, 1, 1, 1, 1, 1, 1),	/* 30 - 37 */
-    SETBITS(0, 0, 0, 0, 0, 0, 0, 0)	/* 38 - 3F */
+    SETBITS(0, 0, 1, 0, 0, 0, 0, 0)	/* 38 - 3F */
 };
 
 STATIC CONST UBYTE hicapsable[] =
