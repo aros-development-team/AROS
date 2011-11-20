@@ -435,8 +435,8 @@ struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
     ULONG IFF_Size = AROS_BE2LONG(*((ULONG*)(CheckArray+4)));
 
     if(((!dthc->dthc_FileHandle) && (dthc->dthc_IFF)) ||
-	    (((Size*3/4 < IFF_Size) && (Size*4/3 > IFF_Size)) &&
-	     (IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
+        (((IFF_Size + 8 == Size) && (Size > 21)) &&
+        (IFF_ID==ID_FORM || IFF_ID==ID_CAT || IFF_ID==ID_LIST)) )
     {
         D(bug("[ExamineData] IFF detected\n"));
 	D(type = DTF_IFF);
