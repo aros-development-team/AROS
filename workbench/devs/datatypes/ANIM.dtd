@@ -1,0 +1,10 @@
+# DataType Description for ANIM
+Name=ANIM
+Version=$VER: ANIM 1.0 (14.11.2011)
+BaseName=anim
+Pattern=#?
+Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'N' 'I' 'M' 'F' 'O' 'R' 'M' ANY ANY ANY ANY 'I' 'L' 'B' 'M' 'B' 'M' 'H' 'D'
+GroupID=anim
+ID=iff
+Flags=DTF_IFF
+Priority=0
