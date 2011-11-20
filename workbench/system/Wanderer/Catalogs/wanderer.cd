@@ -192,7 +192,7 @@ MSG_SHUTDOWN_BODY (//)
 What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS (//)
-Power off|Restart computer|Restart AROS|*Cancel
+Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED (//)
 The selected action is not supported by your system.
