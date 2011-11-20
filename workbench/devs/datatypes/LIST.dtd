@@ -1,0 +1,10 @@
+# DataType Description for LIST
+Name=LIST
+Version=$VER: LIST 1.0 (14.11.2011)
+BaseName=list
+Pattern=#?
+Mask='L' 'I' 'S' 'T' ANY ANY ANY ANY ANY ANY ANY ANY 'P' 'R' 'O' 'P'
+GroupID=docu
+ID=iff
+Flags=DTF_IFF
+Priority=0
