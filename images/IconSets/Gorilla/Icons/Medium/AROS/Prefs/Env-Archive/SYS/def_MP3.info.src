@@ -1,3 +1,2 @@
 TYPE = PROJECT
-TOOLTYPE = CLI
 DEFAULTTOOL = SYS:Extras/Multimedia/C/MadAHI
