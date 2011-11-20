@@ -1,4 +1,4 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003-2011, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
@@ -7,8 +7,6 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-sfs-c: workbench-devs-sfs-c-setcache 		\
 #MM			   workbench-devs-sfs-c-sfsquery		\
-#MM			   workbench-devs-sfs-c-sfsformat		\
-#MM			   workbench-devs-sfs-c-sfsdefrag		\
-#MM			   workbench-devs-sfs-c-sfsdefragmentgui
+#MM			   workbench-devs-sfs-c-sfsformat
 
 %common
