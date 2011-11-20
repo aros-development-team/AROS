@@ -14,7 +14,8 @@ ICONS := \
     def_AudioMode def_Zune def_TrueType def_Otag def_A68K def_ADF def_Catalog \
     def_Country def_Home def_MP3ID3 def_MP3 def_SFS def_Lua def_AmiLua \
     def_Archive def_Python def_REXX def_NetworkHost def_UserHome def_Trashcan \
-    def_PLS def_M3U def_DT64 def_Pref def_FAT def_MSD def_USB def_MSI def_CDXL def_FLAC
+    def_PLS def_M3U def_DT64 def_Pref def_FAT def_MSD def_USB def_MSI def_CDXL def_FLAC \
+    def_ELF_EXE_Linux def_ANIM
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-envarc-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-prefs-envarc
