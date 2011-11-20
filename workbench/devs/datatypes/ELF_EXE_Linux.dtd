@@ -1,0 +1,14 @@
+# Descriptor for executable linux ELF files, ie. executable ELF object files.
+Name=ELF_EXE_Linux
+Version=$VER: ELF_EXE_Linux 1.0 (05.11.2011)
+BaseName=binary
+Pattern=#?
+
+#    |----------------------------- ident ----------------------------| |- type -|
+#              EI_CLASS-.        .-EI_VERSION
+#            ELFCLASS32 v        v EV_CURRENT                           --ET_EXE--
+Mask=0x7f 'E' 'L' 'F' 0x01 ANY 0x01 ANY ANY ANY ANY ANY ANY ANY ANY ANY 0x02 0x00
+GroupID=text
+ID=linu
+Flags=DTF_BINARY,DTF_CASE
+Priority=2
