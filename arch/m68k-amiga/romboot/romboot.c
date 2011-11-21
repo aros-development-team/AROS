@@ -51,7 +51,8 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 	ObtainConfigBinding();
 	ForeachNode(&ExpansionBase->BoardList, node) {
 		struct ConfigDev *configDev = (struct ConfigDev*)node;
-		if (configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME && (configDev->cd_Flags & CDF_CONFIGME)) {
+		if ((configDev->cd_Flags & CDF_CONFIGME) && (configDev->cd_Rom.er_Type & ERTF_DIAGVALID) &&
+		    configDev->cd_Rom.er_DiagArea && (configDev->cd_Rom.er_DiagArea->da_Config & DAC_BOOTTIME) == DAC_CONFIGTIME) {
 			struct Resident *res;
 			UWORD *romptr = (UWORD*)configDev->cd_Rom.er_DiagArea;
 			UWORD *romend = (UWORD*)(((UBYTE*)configDev->cd_Rom.er_DiagArea) + configDev->cd_Rom.er_DiagArea->da_Size - 26); // 26 = real sizeof(struct Resident)!
