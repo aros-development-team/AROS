@@ -1,21 +1,20 @@
 /*
  * sdl.hidd - SDL graphics/sound/keyboard for AROS hosted
  * Copyright (c) 2007 Robert Norris. All rights reserved.
- * Copyright (c) 2007-2010 The AROS Development Team
+ * Copyright (c) 2007-2011 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
  */
 
-#include <aros/bootloader.h>
+#include <aros/kernel.h>
 #include <aros/symbolsets.h>
-
-#include <exec/types.h>
 #include <exec/semaphores.h>
 
 #include <proto/bootloader.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
+#include <proto/kernel.h>
 
 #include "sdl_intern.h"
 
@@ -83,8 +82,8 @@ static void *sdl_hostlib_load_so(const char *sofile, const char **names, void **
 int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
 {
     STRPTR LibraryFile = SDL_SOFILE;
-    APTR BootLoaderBase;
-    STRPTR BootLoaderName;
+    APTR KernelBase;
+    const char *arch;
 
     D(bug("[sdl] hostlib init\n"));
 
@@ -92,16 +91,16 @@ int sdl_hostlib_init(LIBBASETYPEPTR LIBBASE)
         kprintf("[sdl] couldn't open hostlib.resource\n");
         return FALSE;
     }
-    
-    BootLoaderBase = OpenResource("bootloader.resource");
-    if (BootLoaderBase) {
-        BootLoaderName = GetBootInfo(BL_LoaderName);
-        if (BootLoaderName) {
-            D(bug("[sdl] Host operating system: %s\n", BootLoaderName));
-            if (!strncasecmp(BootLoaderName, "Windows", 7))
-                LibraryFile = SDL_DLLFILE;
-        }
-    }
+
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+        return FALSE;
+
+    arch = (const char *)KrnGetSystemAttr(KATTR_Architecture);
+    D(bug("[sdl] Host operating system: %s\n", arch));
+
+    if (!strcmp(arch, "mingw32-i386")) 
+        LibraryFile = SDL_DLLFILE;
 
     if ((LIBBASE->sdl_handle = sdl_hostlib_load_so(LibraryFile, sdl_func_names, (void **) &sdl_funcs)) == NULL)
         return FALSE;
