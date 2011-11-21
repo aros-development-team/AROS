@@ -112,7 +112,7 @@ static BOOL diagrom(struct ExpansionBase *ExpansionBase, struct ConfigDev *confi
 	struct DiagArea *da, datmp;
 	UBYTE da_config, buswidth;
 
-	D(bug("Read boot ROM base=%p type=%02x\n", configDev->cd_BoardAddr, configDev->cd_Rom.er_Type));
+	D(bug("Read boot ROM base=%p cd=%p type=%02x\n", configDev->cd_BoardAddr, configDev, configDev->cd_Rom.er_Type));
 
 	if (!(configDev->cd_Rom.er_Type & ERTF_DIAGVALID) || !configDev->cd_Rom.er_InitDiagVec) {
 		D(bug("Board without boot ROM\n"));

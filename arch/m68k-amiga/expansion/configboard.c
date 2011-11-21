@@ -76,8 +76,8 @@ AROS_UFH5(void, writeexpansion,
 	BOOL memorydevice;
 	ULONG size = configDev->cd_BoardSize;
 	
-	D(bug("Configuring board: mfg=%d prod=%d size=%08x type=%02x\n",
-	    configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size, configDev->cd_Rom.er_Type));
+	D(bug("Configuring board: cd=%p mfg=%d prod=%d size=%08x type=%02x\n",
+	    configDev, configDev->cd_Rom.er_Manufacturer, configDev->cd_Rom.er_Product, size, configDev->cd_Rom.er_Type));
 
 	memorydevice = (configDev->cd_Rom.er_Type & ERTF_MEMLIST) != 0;
 	if (type == ERT_ZORROIII) {
