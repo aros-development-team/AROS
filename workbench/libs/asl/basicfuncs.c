@@ -670,7 +670,10 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
     while (!terminated)
     {
-	Wait((1L << port->mp_SigBit) | (1L << ld->ld_AppMsgPort->mp_SigBit));
+        if (ld->ld_AppMsgPort)
+            Wait((1L << port->mp_SigBit) | (1L << ld->ld_AppMsgPort->mp_SigBit));
+        else
+            Wait((1L << port->mp_SigBit));
 
 	while ((imsg = (struct IntuiMessage *)GetMsg(port)))
 	{
@@ -730,7 +733,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
 	} /* while ((imsg = (struct IntuiMessage *)GetMsg(port))) */
 
-	while ((ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort)))
+	while ((ld->ld_AppMsgPort) && (ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort)))
 	{
 	    ld->ld_Command = LDCMD_HANDLEAPPWINDOW;
 	    success = CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase));
@@ -747,7 +750,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		success = FALSE;
 		terminated = TRUE;
 	    }
-	} /* while ((ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort))) */
+	} /* while ((ld->ld_AppMsgPort) && (ld->ld_AppMsg = (struct AppMessage *) GetMsg(ld->ld_AppMsgPort))) */
     } /* while (!terminated) */
     
     ReturnBool ("HandleEvents", success);
