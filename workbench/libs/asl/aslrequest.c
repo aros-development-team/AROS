@@ -277,8 +277,8 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			}
 		    }
 
-		    /* Try to promote the window as an AppWindow */
-		    if ((ld->ld_AppMsgPort = CreateMsgPort()))
+		    /* If file requester, try to promote the window as an AppWindow */
+		    if ((intreq->ir_ReqType == ASL_FileRequest) && (ld->ld_AppMsgPort = CreateMsgPort()))
 		    {
 			if ((ld->ld_AppWindow = AddAppWindow(0, 0, win, ld->ld_AppMsgPort, NULL)))
 			{
