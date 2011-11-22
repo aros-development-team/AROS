@@ -5,4 +5,4 @@
 extern char bootstrapdir[];
 
 void SaveArgs(char **argv);
-void Host_Shutdown(unsigned char warm);
+

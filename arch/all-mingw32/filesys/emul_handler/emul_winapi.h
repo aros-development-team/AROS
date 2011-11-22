@@ -1,7 +1,7 @@
 /* WinAPI definitions to be used with AROS-side code. Taken from various Mingw32 headers. */
 
 #ifdef __x86_64__
-#define __stdcall
+#define __stdcall __attribute__((ms_abi))
 #else
 #define __stdcall __attribute__((stdcall))
 #endif

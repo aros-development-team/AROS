@@ -4,7 +4,7 @@
 
 HANDLE conin, conout;
 
-int __declspec(dllexport) core_putc(char c)
+int __declspec(dllexport) __aros core_putc(char c)
 {
     DWORD cnt;
 
@@ -12,7 +12,7 @@ int __declspec(dllexport) core_putc(char c)
     return cnt;
 }
 
-int __declspec(dllexport) core_getc(void)
+int __declspec(dllexport) __aros core_getc(void)
 {
     DWORD cnt;
     INPUT_RECORD input;
@@ -33,7 +33,7 @@ int __declspec(dllexport) core_getc(void)
     return input.Event.KeyEvent.uChar.AsciiChar;
 }
 
-void __declspec(dllexport) core_alert(const char *text)
+void __declspec(dllexport) __aros core_alert(const char *text)
 {
     MessageBox(NULL, text, "AROS guru meditation", MB_ICONERROR|MB_SETFOREGROUND);
 }

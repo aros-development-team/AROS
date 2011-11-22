@@ -252,7 +252,7 @@ struct AROSCPUContext
         IPTR fpdata = (IPTR)(dest) + sizeof(struct AROSCPUContext);			\
 	fpdata = (fpdata + 15) & ~15;							\
 	(dest)->FXData = (struct FPXContext *)fpdata;					\
-	CopyMemQuick((src)->FXData, (dest)->FXData, sizeof(struct FPXContext);		\
+	CopyMemQuick((src)->FXData, (dest)->FXData, sizeof(struct FPXContext));		\
     }											\
     else										\
 	(dest)->FXData = NULL;
@@ -265,11 +265,11 @@ struct AROSCPUContext
 
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
-		 "    RSP=%016lx  RBP=%016lx  RIP=%016lx\n" \
-		 "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n" \
-		 "    R08=%016lx  R09=%016lx  R10=%016lx  R11=%016lx\n" \
-		 "    R12=%016lx  R13=%016lx  R14=%016lx  R15=%016lx\n" \
-		 "    RDI=%016lx  RSI=%016lx  EFLAGS=%08lx\n" \
+		 "    RSP=%016llx  RBP=%016llx  RIP=%016llx\n" \
+		 "    RAX=%016llx  RBX=%016llx  RCX=%016llx  RDX=%016llx\n" \
+		 "    R08=%016llx  R09=%016llx  R10=%016llx  R11=%016llx\n" \
+		 "    R12=%016llx  R13=%016llx  R14=%016llx  R15=%016llx\n" \
+		 "    RDI=%016llx  RSI=%016llx  RFLAGS=%016llx\n" \
 	    , (ctx)->ContextFlags \
 	    , (ctx)->Rsp, (ctx)->Rbp, (ctx)->Rip \
 	    , (ctx)->Rax, (ctx)->Rbx, (ctx)->Rcx, (ctx)->Rdx \

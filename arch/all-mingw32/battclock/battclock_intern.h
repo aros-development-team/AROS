@@ -1,8 +1,8 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Internal data structures for battclock.resource and HIDD
+    Desc: Internal data structures for Windows-hosted battclock.resource
     Lang: english
 */
 
@@ -12,7 +12,7 @@
 #include <exec/libraries.h>
 
 #ifdef __x86_64__
-#define __stdcall
+#define __stdcall __attribute__((ms_abi))
 #else
 #define __stdcall __attribute__((stdcall))
 #endif
