@@ -371,13 +371,32 @@ case "$host_os" in
         default_android_sdk="/c/android-sdk-windows-1.6_r1"
 
         case "$host_cpu" in
-            *i?86*)
-                aros_host_cpu="i386"
-                ;;
-            *)
-                AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
-                aros_host_cpu="$host_cpu"
-                ;;
+        *i?86*)
+            dnl Currently there's neither 64-bit MinGW nor MSYS. Both environments are 32-bit
+            dnl and run under emulation. Consequently, uname reports i386 even on 64-bit systems.
+            dnl Here we attempt to detect Windows home platform by asking gcc about its target.
+            dnl 64-bit gcc will output "x86_64-w64-mingw32" here.
+
+            AC_MSG_CHECKING([for Windows native gcc target])
+            host_cpu=`gcc -dumpmachine`
+            AC_MSG_RESULT($host_cpu)
+            ;;
+
+        esac
+
+        case "$host_cpu" in
+        *i?86*)
+            aros_host_cpu="i386"
+            ;;
+
+        *x86_64*)
+            aros_host_cpu="x86_64"
+            ;;
+
+        *)
+            AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+            aros_host_cpu="$host_cpu"
+            ;;
         esac
         ;;
     *)
