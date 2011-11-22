@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -20,6 +20,7 @@ Boston, MA 02111-1307, USA.  */
 
 #include "config.h"
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h> /* for strlen() */
 #ifdef HAVE_NETINET_IN_H
