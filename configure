@@ -4556,6 +4556,7 @@ $as_echo "$host_cpu" >&6; }
 
         *x86_64*)
             aros_host_cpu="x86_64"
+            aros_host_cflags="$aros_host_cflags -isystem /mingw/include"
             ;;
 
         *)

@@ -391,6 +391,9 @@ case "$host_os" in
 
         *x86_64*)
             aros_host_cpu="x86_64"
+            dnl Dragon's x86_64-w64-mingw32-gcc is a bit broken. It ignores standard $prefix/include
+            dnl directory, so we have to add it explicitly here.
+            aros_host_cflags="$aros_host_cflags -isystem /mingw/include"
             ;;
 
         *)
