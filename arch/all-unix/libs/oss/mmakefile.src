@@ -27,8 +27,13 @@ FILES := funcs
 %build_prog mmake=test-playoss \
     progname=playossunix targetdir=$(AROS_TESTS) uselibs="ossshared"
 
-USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
-	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\""
+
+# If we are not on UNIX, we're just building the linklib for the SDK. We don't need
+# $(KERNEL_INCLUDES) in such a case. This fixes build under 64-bit Windows.
+ifeq ($(FAMILY),unix)
+    USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+endif
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared \
