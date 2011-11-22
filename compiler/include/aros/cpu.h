@@ -54,9 +54,9 @@
 */
 
 #ifdef _WIN64
-#define AROS_INTPTR_TYPE __int64
-#define AROS_INTPTR_STACKTYPE __int64
-#define AROS_LARGEST_TYPE __int64
+#define AROS_INTPTR_TYPE long long
+#define AROS_INTPTR_STACKTYPE long long
+#define AROS_LARGEST_TYPE long long
 #endif
 
 /*
