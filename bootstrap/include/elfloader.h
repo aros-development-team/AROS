@@ -34,10 +34,10 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *bss_t
  * These functions are used to access files by the loader.
  * They need to be provided by your bootstrap implementation.
  */
-void *open_file(struct ELFNode *n, unsigned int *errno);
+void *open_file(struct ELFNode *n, unsigned int *err);
 void close_file(void *file);
 int read_block(void *file, unsigned long offset, void *dest, unsigned long length);
-void *load_block(void *file, unsigned long offset, unsigned long length, unsigned int *errno);
+void *load_block(void *file, unsigned long offset, unsigned long length, unsigned int *err);
 void free_block(void *addr);
 
 #endif
