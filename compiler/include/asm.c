@@ -142,6 +142,9 @@ int main(void) {
     DEFINE(TF_SWITCH     , TF_SWITCH);
     DEFINE(TF_LAUNCH     , TF_LAUNCH);
 
+    asm volatile("\n/* Exec Flags */" ::);
+    DEFINE(AFF_FPU       , AFF_FPU);
+
     asm volatile("\n/* Exec functions */" ::);
     DEFINE(Supervisor    , FuncOffset (5));
     DEFINE(Reschedule    , FuncOffset (8));
