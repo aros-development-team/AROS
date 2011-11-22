@@ -23,17 +23,15 @@ void (*CauseIRQ)(unsigned char irq, void *data);
 
 /*********************************************************************************************/
 
-unsigned long __declspec(dllexport) EmulGetHome(const char *name, char *home)
+unsigned long __declspec(dllexport) __aros EmulGetHome(const char *name, char *home)
 {
-  HRESULT res;
+    HRESULT res;
 
-  /* TODO: currently username is ignored, however we should acquire an access token for it */
-  DWINAPI(printf("[EmulHandler] SHGetFolderPath()\n"));
-  res = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_DEFAULT, home);
-  if (res)
-      return ERROR_FILE_NOT_FOUND;
-  else
-      return 0;
+    /* TODO: currently username is ignored, however we should acquire an access token for it */
+    DWINAPI(printf("[EmulHandler] SHGetFolderPath()\n"));
+
+    res = SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, SHGFP_TYPE_DEFAULT, home);
+    return res ? ERROR_FILE_NOT_FOUND : 0;
 }
 
 static DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
@@ -41,13 +39,16 @@ static DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
     BOOL res;
 
     DASYNC(printf("[EmulHandler I/O] Thread started, handle 0x%08lX, host handle 0x%08lX, host ID %lu\n", THandle, THandle->handle, THandle->id));
-    for (;;) {
+    for (;;)
+    {
         WaitForSingleObject(emsg->CmdEvent, INFINITE);
         DASYNC(printf("[EmulHandler I/O] Got command: 0xu\n", emsg->cmd));
-        switch(emsg->cmd) {
+        switch(emsg->cmd)
+        {
         case ASYNC_CMD_SHUTDOWN:
             DASYNC(printf("[EmulHandler I/O] shutting down thread\n"));
 	    return 0;
+
         case ASYNC_CMD_READ:
 	    DASYNC(printf("[EmulHandler I/O] READ %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
 	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
@@ -60,19 +61,22 @@ static DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 
 struct AsyncReaderControl ControlStruct;
 
-struct AsyncReaderControl * __declspec(dllexport) Emul_Init_Native(void)
+struct AsyncReaderControl * __declspec(dllexport) __aros Emul_Init_Native(void)
 {
     HANDLE thread;
     DWORD id;
     long irq;
 
     irq = KrnAllocIRQ();
-    if (irq != -1) {
+    if (irq != -1)
+    {
         ControlStruct.IrqNum = irq;
         ControlStruct.CmdEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-        if (ControlStruct.CmdEvent) {
+        if (ControlStruct.CmdEvent)
+        {
     	    thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)EmulThread, &ControlStruct, 0, &id);
-    	    if (thread) {
+    	    if (thread)
+            {
 		CloseHandle(thread);
     	        return &ControlStruct;
 	    }
@@ -81,3 +85,4 @@ struct AsyncReaderControl * __declspec(dllexport) Emul_Init_Native(void)
     }
     return NULL;
 }
+

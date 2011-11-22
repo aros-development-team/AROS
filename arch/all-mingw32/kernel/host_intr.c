@@ -186,7 +186,7 @@ DWORD WINAPI TaskSwitcher()
 
 /* ****** Interface functions ****** */
 
-void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
+void __declspec(dllexport) __aros core_raise(DWORD code, const ULONG_PTR n)
 {
     /* This ensures that we are never preempted inside RaiseException().
        Upon exit from the syscall interrupt state will be restored by
@@ -200,7 +200,7 @@ void __declspec(dllexport) core_raise(DWORD code, const ULONG_PTR n)
     while (Sleep_Mode);
 }
 
-unsigned long __declspec(dllexport)StartClock(unsigned int irq, unsigned int TimerPeriod)
+unsigned long __declspec(dllexport) __aros StartClock(unsigned int irq, unsigned int TimerPeriod)
 {
     LARGE_INTEGER TimerValue;
 
@@ -215,7 +215,7 @@ unsigned long __declspec(dllexport)StartClock(unsigned int irq, unsigned int Tim
  * Initializes IRQ engine, runs virtual supervisor thread and starts up main system timer.
  * Trap and IRQ vectors must be already set up, we don't check them against NULLs.
  */
-int __declspec(dllexport) core_init(unsigned int TimerPeriod)
+int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
 {
     HANDLE ThisProcess;
     HANDLE SwitcherThread;

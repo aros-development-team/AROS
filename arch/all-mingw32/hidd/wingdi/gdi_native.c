@@ -293,7 +293,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
 
 /****************************************************************************************/
 
-struct GDI_Control *__declspec(dllexport) GDI_Init(void)
+struct GDI_Control *__declspec(dllexport) __aros GDI_Init(void)
 {
     long irq;
     HANDLE th;
@@ -342,7 +342,7 @@ struct GDI_Control *__declspec(dllexport) GDI_Init(void)
     return NULL;
 }
 
-void __declspec(dllexport) GDI_Shutdown(struct GDI_Control *ctl)
+void __declspec(dllexport) __aros GDI_Shutdown(struct GDI_Control *ctl)
 {
     PostThreadMessage(thread_id, WM_QUIT, 0, 0);
     UnregisterClass((LPCSTR)bitmap_class, bitmap_class_desc.hInstance);
@@ -352,10 +352,11 @@ void __declspec(dllexport) GDI_Shutdown(struct GDI_Control *ctl)
     KrnFreeIRQ(ctl->GfxIrq);
 }
 
-ULONG __declspec(dllexport) GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
+ULONG __declspec(dllexport) __aros GDI_PutMsg(void *window, UINT msg, WPARAM wp, LPARAM lp)
 {
     if (window)
     	return PostMessage(window, msg, wp, lp);
     else
         return PostThreadMessage(thread_id, msg, wp, lp);
 }
+

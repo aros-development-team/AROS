@@ -10,7 +10,7 @@
  * Our debug output goes to stderr.
  * bootstrap's file redirection code expects this.
  */
-static int KPutC(int chr)
+static int __aros KPutC(int chr)
 {
     int ret;
 
@@ -38,3 +38,4 @@ static struct HostInterface _HostIFace =
 };
 
 void *HostIFace = &_HostIFace;
+

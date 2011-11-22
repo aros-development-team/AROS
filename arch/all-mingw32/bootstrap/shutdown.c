@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <windows.h>
 
+#include "hostlib.h"
 #include "sharedmem.h"
 #include "shutdown.h"
 
@@ -15,7 +16,7 @@ void SaveArgs(char **argv)
     cmdline = GetCommandLine();
 }
 
-void Host_Shutdown(unsigned char warm)
+void __aros Host_Shutdown(unsigned char warm)
 {
     char var[SHARED_RAM_LEN];
     STARTUPINFO runinfo;
@@ -43,3 +44,4 @@ void Host_Shutdown(unsigned char warm)
     }
     D(printf("[Shutdown] Unable to re-run AROS\n"));
 }
+

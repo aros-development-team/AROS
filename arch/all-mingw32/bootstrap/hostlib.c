@@ -16,12 +16,12 @@ static void GetErrorStr(char **error, BOOL condition)
     }
 }
 
-void Host_HostLib_FreeErrorStr(char *error)
+void __aros Host_HostLib_FreeErrorStr(char *error)
 {
     LocalFree(error);
 }
 
-void *Host_HostLib_Open(const char *filename, char **error)
+void * __aros Host_HostLib_Open(const char *filename, char **error)
 {
     HMODULE handle;
 
@@ -32,7 +32,7 @@ void *Host_HostLib_Open(const char *filename, char **error)
     return handle;
 }
 
-int Host_HostLib_Close(void *handle, char **error)
+int __aros Host_HostLib_Close(void *handle, char **error)
 {
     int err;
 
@@ -43,7 +43,7 @@ int Host_HostLib_Close(void *handle, char **error)
     return err;
 }
 
-void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
+void * __aros Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
 {
     void *ptr;
 
@@ -52,3 +52,4 @@ void *Host_HostLib_GetPointer(void *handle, const char *symbol, char **error)
     GetErrorStr(error, !ptr);
     return ptr;
 }
+

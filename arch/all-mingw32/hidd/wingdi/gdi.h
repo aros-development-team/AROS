@@ -114,7 +114,14 @@ struct gdiclbase
 #else
 
 #include <windows.h>
+
 #define APTR void *
+
+#ifdef __x86_64__
+#define __aros __attribute__((sysv_abi))
+#else
+#define __aros
+#endif
 
 struct MinNode
 {

@@ -26,6 +26,12 @@ struct AsyncReaderControl
 #define ASYNC_CMD_SHUTDOWN 0
 #define ASYNC_CMD_READ     1
 
+#ifdef __x86_64__
+#define __aros __attribute((sysv_abi))
+#else
+#define __aros
+#endif
+
 #ifdef __AROS__
 
 #include <resources/emul_winapi.h>
