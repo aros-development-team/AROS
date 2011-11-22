@@ -54,7 +54,7 @@ static void core_TrapHandler(int sig, regs_t *regs)
     short amigaTrap;
     struct AROSCPUContext ctx;
 
-    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
+    SUPERVISOR_ENTER;
 
     /* Just for completeness */
     krnRunIRQHandlers(KernelBase, sig);
@@ -99,12 +99,14 @@ static void core_TrapHandler(int sig, regs_t *regs)
        we convert it back before returning */
     RESTOREREGS(&ctx, regs);
 
-    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
+    SUPERVISOR_LEAVE;
 }
 
 static void core_IRQ(int sig, regs_t *sc)
 {
-    AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount);
+    struct KernelBase *KernelBase = getKernelBase();
+
+    SUPERVISOR_ENTER;
 
     /* Just additional protection - what if there's more than 32 signals? */
     if (sig < IRQ_COUNT)
@@ -113,7 +115,7 @@ static void core_IRQ(int sig, regs_t *sc)
     if (UKB(KernelBase)->SupervisorCount == 1)
 	core_ExitInterrupt(sc);
 
-    AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount);
+    SUPERVISOR_LEAVE;
 }
 
 /*
