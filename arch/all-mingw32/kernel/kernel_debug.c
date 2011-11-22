@@ -3,6 +3,7 @@
 #include <stdarg.h>
 
 #include "hostinterface.h"
+#include "kernel_base.h"
 #include "kernel_cpu.h"
 #include "kernel_mingw32.h"
 

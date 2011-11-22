@@ -261,15 +261,13 @@ struct AROSCPUContext
 
 #define EXCEPTIONS_COUNT 18
 
-#endif /* __AROS__ */
-
 #define PRINT_CPUCONTEXT(ctx) \
 	bug ("    ContextFlags: 0x%08lX\n" \
-		 "    RSP=%016llx  RBP=%016llx  RIP=%016llx\n" \
-		 "    RAX=%016llx  RBX=%016llx  RCX=%016llx  RDX=%016llx\n" \
-		 "    R08=%016llx  R09=%016llx  R10=%016llx  R11=%016llx\n" \
-		 "    R12=%016llx  R13=%016llx  R14=%016llx  R15=%016llx\n" \
-		 "    RDI=%016llx  RSI=%016llx  RFLAGS=%016llx\n" \
+		 "    RSP=%016lx  RBP=%016lx  RIP=%016lx\n" \
+		 "    RAX=%016lx  RBX=%016lx  RCX=%016lx  RDX=%016lx\n" \
+		 "    R08=%016lx  R09=%016lx  R10=%016lx  R11=%016lx\n" \
+		 "    R12=%016lx  R13=%016lx  R14=%016lx  R15=%016lx\n" \
+		 "    RDI=%016lx  RSI=%016lx  EFLAGS=%08lx\n" \
 	    , (ctx)->ContextFlags \
 	    , (ctx)->Rsp, (ctx)->Rbp, (ctx)->Rip \
 	    , (ctx)->Rax, (ctx)->Rbx, (ctx)->Rcx, (ctx)->Rdx \
@@ -277,6 +275,25 @@ struct AROSCPUContext
 	    , (ctx)->R12, (ctx)->R13, (ctx)->R14, (ctx)->R15 \
 	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
       );
+
+#else /* __AROS__ */
+
+#define PRINT_CPUCONTEXT(ctx) \
+	printf("    ContextFlags: 0x%08lX\n" \
+		 "    RSP=%016I64x  RBP=%016I64x  RIP=%016I64x\n" \
+		 "    RAX=%016I64x  RBX=%016I64x  RCX=%016I64x  RDX=%016I64x\n" \
+		 "    R08=%016I64x  R09=%016I64x  R10=%016I64x  R11=%016I64x\n" \
+		 "    R12=%016I64x  R13=%016I64x  R14=%016I64x  R15=%016I64x\n" \
+		 "    RDI=%016I64x  RSI=%016I64x  EFLAGS=%08lx\n" \
+	    , (ctx)->ContextFlags \
+	    , (ctx)->Rsp, (ctx)->Rbp, (ctx)->Rip \
+	    , (ctx)->Rax, (ctx)->Rbx, (ctx)->Rcx, (ctx)->Rdx \
+	    , (ctx)->R8 , (ctx)->R9 , (ctx)->R10, (ctx)->R11 \
+	    , (ctx)->R12, (ctx)->R13, (ctx)->R14, (ctx)->R15 \
+	    , (ctx)->Rdi, (ctx)->Rsi, (ctx)->EFlags \
+      );
+
+#endif /* __AROS__ */
 
 #define CONTEXT_INIT_FLAGS(ctx) (ctx)->ContextFlags = CONTEXT_ALL
 
