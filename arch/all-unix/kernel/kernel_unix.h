@@ -16,3 +16,15 @@ struct UnixKernelBase
 };
 
 #define UKB(base) ((struct UnixKernelBase *)base)
+
+#ifdef AROS_NO_ATOMIC_OPERATIONS
+
+#define SUPERVISOR_ENTER UKB(KernelBase)->SupervisorCount++
+#define SUPERVISOR_LEAVE UKB(KernelBase)->SupervisorCount--
+
+#else
+
+#define SUPERVISOR_ENTER AROS_ATOMIC_INC(UKB(KernelBase)->SupervisorCount)
+#define SUPERVISOR_LEAVE AROS_ATOMIC_DEC(UKB(KernelBase)->SupervisorCount)
+
+#endif

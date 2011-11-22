@@ -13,8 +13,11 @@ AROS_LH0(void, KrnSti,
 
     if (!UKB(KernelBase)->SupervisorCount)
     {
-    	KernelBase->kb_PlatformData->iface->sigprocmask(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
-    	AROS_HOST_BARRIER
+        if (KernelBase->kb_PlatformData->iface)
+        {
+    	    KernelBase->kb_PlatformData->iface->sigprocmask(SIG_UNBLOCK, &KernelBase->kb_PlatformData->sig_int_mask, NULL);
+    	    AROS_HOST_BARRIER
+    	}
     }
 
     AROS_LIBFUNC_EXIT
