@@ -259,7 +259,7 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
     if (DuplicateHandle(ThisProcess, GetCurrentThread(), ThisProcess, &MainThread, 0, TRUE, DUPLICATE_SAME_ACCESS))
     {
 #ifdef __x86_64__
-	#define LastErrOffset 0x34
+	#define LastErrOffset 0x68
 #else
 	/* On 32-bit x86 we have to figure out the offset depending on Windows version */
 	OSVERSIONINFO osver = {0};
