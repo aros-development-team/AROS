@@ -18,6 +18,7 @@
 #define D(x)	 /* Init debug		*/
 #define DS(x)    /* Task switcher debug */
 #define DINT(x)	 /* Interrupts debug    */
+#define DTRAP(x)
 
 HANDLE MainThread;
 DWORD MainThreadId;
@@ -27,8 +28,8 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
-         int           __declspec(dllexport) (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-         int           __declspec(dllexport) (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+         int           __declspec(dllexport) __aros (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
+         int           __declspec(dllexport) __aros (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
 volatile int           __declspec(dllexport) Ints_Enabled;
 volatile int           __declspec(dllexport) Supervisor;
 volatile unsigned char __declspec(dllexport) Sleep_Mode;
@@ -73,7 +74,10 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     Supervisor++;
 
     /* Call trap handler */
+    DTRAP(bug("[KRN] Trap 0x%08lX\n", ExceptionCode));
+
     intstate = TrapVector(ExceptionCode, exptr->ExceptionRecord->ExceptionInformation, ContextRecord);
+
     if (intstate == INT_HALT)
     {
         printf("[KRN] **UNHANDLED EXCEPTION 0x%08lX** stopping here...\n", ExceptionCode);
@@ -85,6 +89,7 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     if (--Supervisor == 0)
     {
 	/* If we are leaving to user mode, we may need to enable interrupts */
+        printf("Leaving, PC 0x%016I64x...\n", PC(ContextRecord));
 	if (intstate)
 	{
 	    /*
@@ -122,7 +127,7 @@ DWORD WINAPI TaskSwitcher()
     {
         obj = WaitForMultipleObjects(Ints_Num, IntObjects, FALSE, INFINITE);
 	PendingInts[obj] = 1;
-        DINT(printf("[Task switcher] Object %lu signalled\n", obj));
+        DINT(printf("[Task switcher] Object %lu signalled, interrupt enable %d\n", obj, Ints_Enabled));
 
 	/* Stop main thread if it's not sleeping */
         if (Sleep_Mode != SLEEP_MODE_ON)
@@ -192,6 +197,8 @@ void __declspec(dllexport) __aros core_raise(DWORD code, const ULONG_PTR n)
        Upon exit from the syscall interrupt state will be restored by
        core_LeaveInterrupt() */
     Ints_Enabled = INT_DISABLE;
+
+    DTRAP(printf("[KRN] Raising exception 0x%08lX\n", code));
     RaiseException(code, 0, 1, &n);
 
     /* If after RaiseException we are still here, but Sleep_Mode != 0, this likely means
