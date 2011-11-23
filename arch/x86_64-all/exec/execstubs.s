@@ -20,6 +20,13 @@
 		    which gets two arguments
 */
 
+/*
+ * r12 doesn't have to be preserved, however i need to keep stack
+ * alignment. So, i push r12.
+ * x86-64 ABI always suggests 16-byte-aligned stack. 64-bit Windows
+ * crashes in RaiseException() (used to implement kernel syscalls)
+ * if this requirement is not met.
+ */
 #define PUSH			      \
 	pushq %rax		    ; \
 	pushq %rcx		    ; \
@@ -29,18 +36,20 @@
 	pushq %r8		    ; \
 	pushq %r9		    ; \
 	pushq %r10		    ; \
-	pushq %r11
+	pushq %r11                  ; \
+	pushq %r12
 
 #define POP			      \
+        popq %r12                   ; \
 	popq %r11		    ; \
 	popq %r10		    ; \
 	popq %r9		    ; \
 	popq %r8		    ; \
 	popq %rdi		    ; \
 	popq %rsi		    ; \
-	popq  %rdx		    ; \
-	popq  %rcx		    ; \
-	popq  %rax
+	popq %rdx		    ; \
+	popq %rcx		    ; \
+	popq %rax
 
 #define STUB_ARG0(name)              \
 	push %rbp                  ; \
