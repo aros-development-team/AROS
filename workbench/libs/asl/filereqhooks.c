@@ -6,6 +6,7 @@
 */
 
 
+#include <aros/atomic.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
@@ -1038,6 +1039,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
     struct IntFileReq   *ifreq;
     ULONG                retval = GHRET_OK;
     WORD                 gadid;
+    IPTR                 left, top, right, bottom;
 
 //    EnterFunc(bug("FRHandleEvents: Class: %d\n", imsg->Class));
 
@@ -1050,12 +1052,46 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
         D(bug("[ASL] FRHandleEvents() imsg->Code = '%d'\n", imsg->Code));
         switch (imsg->Class)
         {
+            case IDCMP_INTUITICKS:
+                GetAttr(GA_Left     , udata->Listview, &left);
+                GetAttr(GA_Top      , udata->Listview, &top);
+                GetAttr(GA_RelWidth , udata->Listview, &right);
+                GetAttr(GA_RelHeight, udata->Listview, &bottom);
+                right  += ld->ld_Window->Width + left;
+                bottom += ld->ld_Window->Height + top;
+
+                if (    (bottom >= ld->ld_Window->MouseY)
+                     && (right  >= ld->ld_Window->MouseX)
+                     && (top    <= ld->ld_Window->MouseY)
+                     && (left   <= ld->ld_Window->MouseX)
+                   )
+                {
+                    AROS_ATOMIC_OR(ld->ld_Window->Flags, WFLG_RMBTRAP);
+                }
+                else
+                {
+                    AROS_ATOMIC_AND(ld->ld_Window->Flags, ~WFLG_RMBTRAP);
+                }
+                break;
+
             case IDCMP_CLOSEWINDOW:
                 retval = FALSE;
                 break;
 
             case IDCMP_MOUSEBUTTONS:
-                FRActivateMainStringGadget(ld, AslBase);
+                switch (imsg->Code)
+                {
+                    case MIDDLEDOWN:
+                    case MENUDOWN:
+                        FRClickOnVolumes(ld, AslBase);
+                        break;
+                    case MENUUP:
+                    case MIDDLEUP:
+                        break;
+                    default:
+                        FRActivateMainStringGadget(ld, AslBase);
+                        break;
+                }
                 break;
             
             case IDCMP_RAWKEY:
@@ -1074,7 +1110,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         break;
                     
                     case RAWKEY_NM_WHEEL_UP:
-                        FRChangeActiveLVItem(ld, -3, imsg->Qualifier, 0, AslBase);                    
+                        FRChangeActiveLVItem(ld, -1, imsg->Qualifier, 0, AslBase);                    
                         break;
                     
                     case CURSORDOWN:
@@ -1090,7 +1126,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
                         break;
                 
                     case RAWKEY_NM_WHEEL_DOWN:
-                        FRChangeActiveLVItem(ld, 3, imsg->Qualifier, 0, AslBase);
+                        FRChangeActiveLVItem(ld, 1, imsg->Qualifier, 0, AslBase);
                         break;
 
                 } /* switch (imsg->Code) */
