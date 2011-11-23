@@ -2,7 +2,7 @@
 
 File: mos_device.c
 Author: Neil Cafferkey
-Copyright (C) 2000-2008 Neil Cafferkey
+Copyright (C) 2000-2011 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ MA 02111-1307, USA.
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <utility/utility.h>
+#include <libraries/query.h>
 
 #include <proto/exec.h>
 
@@ -78,18 +79,38 @@ static const APTR mos_init_table[] =
 };
 
 
+static const struct TagItem query_tags[] =
+{
+   {QUERYINFOATTR_NAME, (UPINT)device_name},
+   {QUERYINFOATTR_IDSTRING, (UPINT)version_string},
+   {QUERYINFOATTR_DESCRIPTION, (UPINT)"Atheros5000 WLAN network driver"},
+   {QUERYINFOATTR_COPYRIGHT, (UPINT)"2000-2011 Neil Cafferkey"},
+   {QUERYINFOATTR_AUTHOR, (UPINT)"Neil Cafferkey"},
+   {QUERYINFOATTR_DATE, (UPINT)DATE},
+   {QUERYINFOATTR_VERSION, VERSION},
+   {QUERYINFOATTR_REVISION, REVISION},
+   {QUERYINFOATTR_CODETYPE, MACHINE_PPC},
+   {QUERYINFOATTR_SUBTYPE, QUERYSUBTYPE_DEVICE},
+   {QUERYINFOATTR_CLASS, QUERYCLASS_NET},
+   {QUERYINFOATTR_NET_IPTYPE, 2048},
+   {TAG_END, 0}
+};
+
+
 const struct Resident mos_rom_tag =
 {
    RTC_MATCHWORD,
    (struct Resident *)&mos_rom_tag,
    (APTR)(&rom_tag + 1),
-   RTF_AUTOINIT | RTF_PPC,
+   RTF_AUTOINIT | RTF_PPC | RTF_EXTENDED,
    VERSION,
    NT_DEVICE,
    0,
    (STRPTR)device_name,
    (STRPTR)version_string,
-   (APTR)mos_init_table
+   (APTR)mos_init_table,
+   REVISION,
+   (struct TagItem *)&query_tags
 };
 
 

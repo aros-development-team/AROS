@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002-2008 Sam Leffler, Errno Consulting
  * Copyright (c) 2002-2008 Atheros Communications, Inc.
+ * Copyright (c) 2010-2011 Neil Cafferkey
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -22,35 +23,27 @@
  * Atheros Hardware Access Layer (HAL) OS Dependent Definitions.
  */
 
-/*
- * Starting with 2.6.4 the kernel supports a configuration option
- * to pass parameters in registers.  If this is enabled we must
- * mark all function interfaces in+out of the HAL to pass parameters
- * on the stack as this is the convention used internally (for
- * maximum portability).
- */
+#include <exec/types.h>
+
 #define	__ahdecl
 #ifndef __packed
 #define	__packed	__attribute__((__packed__))
 #endif
 
-/*
- * Beware of these being mismatched against the contents of <linux/types.h>
- */
-#ifndef _LINUX_TYPES_H
 /* NB: arm defaults to unsigned so be explicit */
-typedef signed char int8_t;
-typedef short int16_t;
-typedef int int32_t;
-typedef long long int64_t;
+typedef BYTE int8_t;
+typedef WORD int16_t;
+typedef LONG int32_t;
+typedef QUAD int64_t;
 
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
+typedef UBYTE uint8_t;
+typedef UWORD uint16_t;
+typedef ULONG uint32_t;
 typedef unsigned long long uint64_t;
 
 typedef unsigned int size_t;
 typedef unsigned int u_int;
+#ifndef _VA_LIST_
 typedef	void *va_list;
 #endif
 
@@ -93,19 +86,18 @@ extern	uint32_t __ahdecl ath_hal_getuptime(struct ath_hal *);
  * in a kernel source tree); look for some other way to
  * setup the host byte order.
  */
-#ifdef __LITTLE_ENDIAN
+#if defined(__AROS__) && !defined(AROS_BIG_ENDIAN)
 #define	AH_BYTE_ORDER	AH_LITTLE_ENDIAN
-#endif
-#ifdef __BIG_ENDIAN
+#else
 #define	AH_BYTE_ORDER	AH_BIG_ENDIAN
-#endif
-#define	AH_BYTE_ORDER	AH_BIG_ENDIAN // !!!
-#ifndef AH_BYTE_ORDER
-#error "Do not know host byte order"
 #endif
 #endif /* AH_BYTE_ORDER */
 
 #if AH_BYTE_ORDER == AH_BIG_ENDIAN
+#ifdef __MORPHOS__
+#include <hardware/byteswap.h>
+#define __bswap32	SWAPLONG
+#else
 /*
  * This could be optimized but since we only use it for
  * a few registers there's little reason to do so.
@@ -120,8 +112,16 @@ __bswap32(uint32_t _x)
 	      (((const uint8_t *)(&_x))[3]<<24))
 	);
 }
+#endif
 #else
 #define __bswap32(_x)	(_x)
+#endif
+
+#ifdef __MORPHOS__
+#define SYNCIO	__asm("eieio");\
+		__asm("sync"); 
+#else
+#define SYNCIO
 #endif
 
 /*
@@ -150,6 +150,7 @@ __bswap32(uint32_t _x)
 			__bswap32((_val));				    \
 	else								    \
 		*((volatile uint32_t *)((_ah)->ah_sh + (_reg))) = (_val);  \
+	SYNCIO; \
 } while (0)
 #define _OS_REG_READ(_ah, _reg) \
 	(OS_REG_UNSWAPPED(_reg) ? \
