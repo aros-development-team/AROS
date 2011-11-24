@@ -71,9 +71,10 @@ static VOID MouseIntHandler(struct gdimouse_data *data, volatile struct GDI_Cont
 
         /*
          * This signals that we have read all data from MouseEvent, and
-         * the structure can be reused for the next event.
+         * the structure can be reused for the next event. Do it ASAP after
+         * reading data from the control structure.
          */
-        MOUSEDATA->MouseEvent = 0;
+        native_func->GDI_MouseAck();
 
         e.type   = vHidd_Mouse_WheelMotion;
         e.button = vHidd_Mouse_NoButton;
@@ -85,7 +86,7 @@ static VOID MouseIntHandler(struct gdimouse_data *data, volatile struct GDI_Cont
         e.y = MOUSEDATA->MouseY;
         new_buttons = MOUSEDATA->Buttons;
 
-        MOUSEDATA->MouseEvent = 0;
+        native_func->GDI_MouseAck();
 
         button = check_button(new_buttons, MK_LBUTTON, vHidd_Mouse_Button1, &e, data);
         button |= check_button(new_buttons, MK_RBUTTON, vHidd_Mouse_Button2, &e, data);
