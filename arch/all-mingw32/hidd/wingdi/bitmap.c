@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Bitmap class for GDI hidd.
@@ -42,7 +42,7 @@
 
 /****************************************************************************************/
 
-#define AO(x) 	    	  (aoHidd_BitMap_ ## x)
+#define AO(x)             (aoHidd_BitMap_ ## x)
 #define GOT_BM_ATTR(code) GOT_ATTR(code, aoHidd_BitMap, bitmap)
 
 struct bitmapinfo_mono
@@ -58,52 +58,52 @@ static OOP_AttrBase HiddGDIBitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
-    { IID_Hidd_BitMap	, &HiddBitMapAttrBase 	},
-    { IID_Hidd_Sync 	, &HiddSyncAttrBase	},
-    { IID_Hidd_PixFmt	, &HiddPixFmtAttrBase 	},
+    { IID_Hidd_BitMap   , &HiddBitMapAttrBase   },
+    { IID_Hidd_Sync     , &HiddSyncAttrBase     },
+    { IID_Hidd_PixFmt   , &HiddPixFmtAttrBase   },
     /* Private bases */
-    { IID_Hidd_GDIBitMap, &HiddGDIBitMapAB    	},
-    { NULL  	    	, NULL      	    	}
+    { IID_Hidd_GDIBitMap, &HiddGDIBitMapAB      },
+    { NULL              , NULL                  }
 };
 
 /****************************************************************************************/
 
 #ifdef DEBUG_PLANAR
-#define PRINT_PLANE(bm, n, startx, xlim, ylim)						\
-{											\
-    ULONG start = startx / 8;								\
-    ULONG xlimit = xlim / 8;								\
-    ULONG ylimit = (ylim < bm.Rows) ? ylim : bm.Rows;					\
-    UBYTE *plane = bm.Planes[n] + start;						\
-    UBYTE i;										\
-    ULONG x, y;										\
-											\
-    if (xlimit > (start - bm.BytesPerRow))						\
-	xlimit = start - bm.BytesPerRow;						\
+#define PRINT_PLANE(bm, n, startx, xlim, ylim)                                          \
+{                                                                                       \
+    ULONG start = startx / 8;                                                           \
+    ULONG xlimit = xlim / 8;                                                            \
+    ULONG ylimit = (ylim < bm.Rows) ? ylim : bm.Rows;                                   \
+    UBYTE *plane = bm.Planes[n] + start;                                                \
+    UBYTE i;                                                                            \
+    ULONG x, y;                                                                         \
+                                                                                        \
+    if (xlimit > (start - bm.BytesPerRow))                                              \
+        xlimit = start - bm.BytesPerRow;                                                \
     bug("[GDIBitMap] Plane %u data (%u pixels from %u, address 0x%p):\n", n, xlimit * 8, start * 8, plane); \
-    for (y = 0; y < ylimit; y++) {							\
-        for (x = 0; x < xlimit; x++) {							\
-	    for (i = 0x80; i; i >>= 1)							\
-	        bug((plane[x] & i) ? "#" : ".");					\
-	}										\
-	bug("\n");									\
-	plane += bm.BytesPerRow;							\
-    }											\
+    for (y = 0; y < ylimit; y++) {                                                      \
+        for (x = 0; x < xlimit; x++) {                                                  \
+            for (i = 0x80; i; i >>= 1)                                                  \
+                bug((plane[x] & i) ? "#" : ".");                                        \
+        }                                                                               \
+        bug("\n");                                                                      \
+        plane += bm.BytesPerRow;                                                        \
+    }                                                                                   \
 }
 
 #define PRINT_MONO_DC(dc, startx, starty, width, height) \
-{							 \
-    ULONG x, y;						 \
-							 \
-    bug("[GDIBitMap] Device context data:\n");		 \
-    for (y = starty; y < height; y++) {			 \
-	for (x = startx; x < width; x++) {		 \
-	    ULONG pix = GDICALL(GetPixel, dc, x, y);	 \
-							 \
-	    bug(pix ? "." : "#");			 \
-	}						 \
-	bug("\n");					 \
-    }							 \
+{                                                        \
+    ULONG x, y;                                          \
+                                                         \
+    bug("[GDIBitMap] Device context data:\n");           \
+    for (y = starty; y < height; y++) {                  \
+        for (x = startx; x < width; x++) {               \
+            ULONG pix = GDICALL(GetPixel, dc, x, y);     \
+                                                         \
+            bug(pix ? "." : "#");                        \
+        }                                                \
+        bug("\n");                                       \
+    }                                                    \
 }
 
 #else
@@ -130,7 +130,7 @@ VOID GDIBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 HIDDT_Pixel GDIBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    HIDDT_Pixel     	pixel;
+    HIDDT_Pixel         pixel;
 
     Forbid();
     pixel = GDICALL(GetPixel, data->dc, msg->x, msg->y);
@@ -194,18 +194,18 @@ VOID GDIBM__Hidd_BitMap__FillRect(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 /* Raster operations for drawing primitives */
 static ULONG R2_DrawModeTable[] = {
     R2_BLACK,
-    R2_MASKPEN,     /* bitmap AND pen	    */
+    R2_MASKPEN,     /* bitmap AND pen       */
     R2_MASKPENNOT,  /* NOT bitmap AND pen   */
-    R2_COPYPEN,     /* pen		    */
+    R2_COPYPEN,     /* pen                  */
     R2_MASKNOTPEN,  /* bitmap AND NOT pen   */
-    R2_NOP,	    /* bitmap		    */
-    R2_XORPEN,	    /* bitmap XOR pen	    */
-    R2_MERGEPEN,    /* bitmap OR pen	    */
+    R2_NOP,         /* bitmap               */
+    R2_XORPEN,      /* bitmap XOR pen       */
+    R2_MERGEPEN,    /* bitmap OR pen        */
     R2_NOTMERGEPEN, /* NOT (bitmap OR pen)  */
     R2_NOTXORPEN,   /* NOT (bitmap XOR pen) */
-    R2_NOT,	    /* NOT bitmap	    */
+    R2_NOT,         /* NOT bitmap           */
     R2_MERGEPENNOT, /* NOT bitmap OR pen    */
-    R2_NOTCOPYPEN,  /* NOT pen		    */
+    R2_NOTCOPYPEN,  /* NOT pen              */
     R2_MERGENOTPEN, /* NOT pen OR bitmap    */
     R2_NOTMASKPEN,  /* NOT (pen AND bitmap) */
     R2_WHITE
@@ -233,23 +233,23 @@ ULONG GDIBM__Hidd_BitMap__DrawPixel(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 /* Raster operations for copying a bitmap */
 ULONG Copy_DrawModeTable[] = {
     BLACKNESS,
-    SRCAND,  	 /* DSa  - src AND dest       */
-    SRCERASE,	 /* SDna - src AND NOT dest   */
-    SRCCOPY,	 /* S    - src		      */
+    SRCAND,      /* DSa  - src AND dest       */
+    SRCERASE,    /* SDna - src AND NOT dest   */
+    SRCCOPY,     /* S    - src                */
     0x00220326,  /* DSna - NOT src AND dest   */
-    0x00AA0029,  /* D    - dest		      */
-    SRCINVERT,   /* DSx  - src XOR dest	      */
-    SRCPAINT,	 /* DSo  - src OR dest	      */
+    0x00AA0029,  /* D    - dest               */
+    SRCINVERT,   /* DSx  - src XOR dest       */
+    SRCPAINT,    /* DSo  - src OR dest        */
     NOTSRCERASE, /* DSon - NOT (src OR dest)  */
     0x00990066,  /* DSxn - NOT (src XOR dest) */
-    DSTINVERT,	 /* Dn   - NOT dest	      */
+    DSTINVERT,   /* Dn   - NOT dest           */
     0x00DD0228,  /* SDno - src OR NOT dest    */
-    NOTSRCCOPY,	 /* Sn   - NOT src	      */
+    NOTSRCCOPY,  /* Sn   - NOT src            */
     MERGEPAINT,  /* DSno - NOT src OR dest    */
     0x007700E6,  /* DSan - NOT (src AND dest) */
     WHITENESS
 };
-	
+        
 VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
@@ -258,7 +258,8 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     HIDDT_StdPixFmt src_stdpf;
     APTR buf, src, dst;
     ULONG bufmod, bufsize;
-    BITMAPINFOHEADER bitmapinfo = {
+    BITMAPINFOHEADER bitmapinfo =
+    {
         sizeof(BITMAPINFOHEADER),
         0, 0,
         1,
@@ -268,13 +269,13 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     };
 
 /*  EnterFunc(bug("GDIGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
+                  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
     
     switch(msg->pixFmt) {
     case vHidd_StdPixFmt_Native:
     case vHidd_StdPixFmt_Native32:
         src_stdpf = vHidd_StdPixFmt_0BGR32_Native;
-    	break;
+        break;
     default:
         src_stdpf = msg->pixFmt;
     }
@@ -293,10 +294,10 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         src = msg->pixels;
         dst = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, msg->modulo, &dst, dst_pixfmt, bufmod,
-			      msg->width, msg->height, NULL);
-    	bitmapinfo.biWidth = msg->width;
-    	bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
-    	Forbid();
+                              msg->width, msg->height, NULL);
+        bitmapinfo.biWidth = msg->width;
+        bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
+        Forbid();
         GDICALL(StretchDIBits, data->dc, msg->x, msg->y, msg->width, msg->height, 0, 0, msg->width, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS, Copy_DrawModeTable[drmd]);
         Permit();
         FreeMem(buf, bufsize);
@@ -311,8 +312,8 @@ VOID GDIBM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 VOID GDIBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImageLUT *msg)
 {
     EnterFunc(bug("GDIGfx.BitMap::PutImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
-	
+                  msg->pixels, msg->x, msg->y, msg->width, msg->height));
+        
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     CHECK_STACK
 }
@@ -320,8 +321,8 @@ VOID GDIBM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_
 VOID GDIBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
     EnterFunc(bug("GDIGfx.BitMap::GetImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));
-	
+                  msg->pixels, msg->x, msg->y, msg->width, msg->height));
+        
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     CHECK_STACK
 }
@@ -347,13 +348,13 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     };
 
 /*  EnterFunc(bug("GDIGfx.BitMap::GetImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
-    	    	  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
+                  msg->pixels, msg->x, msg->y, msg->width, msg->height));*/
 
     switch(msg->pixFmt) {
     case vHidd_StdPixFmt_Native:
     case vHidd_StdPixFmt_Native32:
         dst_stdpf = vHidd_StdPixFmt_0BGR32_Native;
-    	break;
+        break;
     default:
         dst_stdpf = msg->pixFmt;
     }
@@ -363,33 +364,33 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     buf = AllocMem(bufsize, MEMF_ANY);
     if (buf) {
         /* First we have to extract requested rectangle into temporary bitmap because GetDIBits() can limit only scan lines number */
-    	Forbid();
-    	tmp_dc = GDICALL(CreateCompatibleDC, data->display);
-    	if (tmp_dc) {
+        Forbid();
+        tmp_dc = GDICALL(CreateCompatibleDC, data->display);
+        if (tmp_dc) {
             tmp_bitmap = GDICALL(CreateCompatibleBitmap, data->display, msg->width, msg->height);
             if (tmp_bitmap) {
-            	dc_bitmap = GDICALL(SelectObject, tmp_dc, tmp_bitmap);
-            	if (dc_bitmap) {
+                dc_bitmap = GDICALL(SelectObject, tmp_dc, tmp_bitmap);
+                if (dc_bitmap) {
                     GDICALL(BitBlt, tmp_dc, 0, 0, msg->width, msg->height, data->dc, msg->x, msg->y, SRCCOPY);
                     bitmapinfo.biWidth = msg->width;
-    		    bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
-        	    GDICALL(GetDIBits, tmp_dc, tmp_bitmap, 0, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS);
-        	    GDICALL(SelectObject, tmp_dc, dc_bitmap);
-            	}
-            	GDICALL(DeleteObject, tmp_bitmap);
+                    bitmapinfo.biHeight = -msg->height; /* Minus here means top-down bitmap */
+                    GDICALL(GetDIBits, tmp_dc, tmp_bitmap, 0, msg->height, buf, (BITMAPINFO *)&bitmapinfo, DIB_RGB_COLORS);
+                    GDICALL(SelectObject, tmp_dc, dc_bitmap);
+                }
+                GDICALL(DeleteObject, tmp_bitmap);
             }
             GDICALL(DeleteDC, tmp_dc);
-    	}
-    	Permit();
+        }
+        Permit();
         OOP_GetAttr(o, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
-	/* DIB pixels will be 0x00RRGGBB) */
+        /* DIB pixels will be 0x00RRGGBB) */
         src_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, vHidd_StdPixFmt_0RGB32_Native);
         dst_pixfmt = (HIDDT_PixelFormat *)HIDD_Gfx_GetPixFmt(gfxhidd, dst_stdpf);
         dst = msg->pixels;
         src = buf;
         HIDD_BM_ConvertPixels(o, &src, src_pixfmt, bufmod, &dst, dst_pixfmt, msg->modulo,
-			      msg->width, msg->height, NULL);
-    	FreeMem(buf, bufsize);
+                              msg->width, msg->height, NULL);
+        FreeMem(buf, bufsize);
     }
     CHECK_STACK
 }
@@ -399,25 +400,25 @@ VOID GDIBM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 VOID GDIBM__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    ULONG   	    	idx;
+    ULONG               idx;
     
     if (IS_GDIBM_ATTR(msg->attrID, idx)) {
-	switch (idx)
-	{
-	case aoHidd_GDIBitMap_DeviceContext:
-	    *msg->storage = (IPTR)data->dc;
-	    return;
-	}
+        switch (idx)
+        {
+        case aoHidd_GDIBitMap_DeviceContext:
+            *msg->storage = (IPTR)data->dc;
+            return;
+        }
     } else if (IS_BM_ATTR(msg->attrID, idx)) {
         switch (idx)
-	{
-	case aoHidd_BitMap_LeftEdge:
-	    *msg->storage = data->bm_left;
-	    return;
-	case aoHidd_BitMap_TopEdge:
-	    *msg->storage = data->bm_top;
-	    return;
-	}
+        {
+        case aoHidd_BitMap_LeftEdge:
+            *msg->storage = data->bm_left;
+            return;
+        case aoHidd_BitMap_TopEdge:
+            *msg->storage = data->bm_top;
+            return;
+        }
     }
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
@@ -428,43 +429,43 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, obj);
     struct TagItem  *tag, *tstate;
-    ULONG   	    idx;
-    BOOL	    change_position = FALSE;
+    ULONG           idx;
+    BOOL            change_position = FALSE;
 
     tstate = msg->attrList;
     while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         if (IS_BM_ATTR(tag->ti_Tag, idx)) {
-	    switch(idx)
-	    {
-	    case aoHidd_BitMap_LeftEdge:
-	        data->bm_left = tag->ti_Data;
-		change_position = TRUE;
-		break;
-	    case aoHidd_BitMap_TopEdge:
-	        data->bm_top = tag->ti_Data;
-		change_position = TRUE;
-		break;
-	    }
-	}
+            switch(idx)
+            {
+            case aoHidd_BitMap_LeftEdge:
+                data->bm_left = tag->ti_Data;
+                change_position = TRUE;
+                break;
+            case aoHidd_BitMap_TopEdge:
+                data->bm_top = tag->ti_Data;
+                change_position = TRUE;
+                break;
+            }
+        }
     }
 
     if (change_position) {
-	/* Fix up position. We can completely scroll out
-	   of our window into all 4 sides, but not more */
-	if (data->bm_left > data->win_width)
-	    data->bm_left = data->win_width;
-	else if (data->bm_left < -data->bm_width)
-	    data->bm_left = -data->bm_width;
-	if (data->bm_top > data->win_height)
-	    data->bm_top = data->win_height;
-	else if (data->bm_top < -data->bm_height)
-	    data->bm_top = -data->bm_height;
+        /* Fix up position. We can completely scroll out
+           of our window into all 4 sides, but not more */
+        if (data->bm_left > data->win_width)
+            data->bm_left = data->win_width;
+        else if (data->bm_left < -data->bm_width)
+            data->bm_left = -data->bm_width;
+        if (data->bm_top > data->win_height)
+            data->bm_top = data->win_height;
+        else if (data->bm_top < -data->bm_height)
+            data->bm_top = -data->bm_height;
 
-	Forbid();
-	if (data->window)
-	    USERCALL(SetWindowPos, data->window, NULL, data->bm_left - 1, data->bm_top - 1, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
-	Permit();
+        Forbid();
+        if (data->window)
+            USERCALL(SetWindowPos, data->window, NULL, data->bm_left - 1, data->bm_top - 1, 0, 0, SWP_NOSIZE|SWP_NOZORDER);
+        Permit();
     }
 
     OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
@@ -475,14 +476,14 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     OOP_Object  *friend = NULL, *pixfmt;
-    APTR	 display, my_dc, my_bitmap;
-    APTR	 orig_bitmap = NULL;
-    ULONG   	 width, height;
+    APTR         display, my_dc, my_bitmap;
+    APTR         orig_bitmap = NULL;
+    ULONG        width, height;
     HIDDT_ModeID modeid;
-    IPTR	 win_width  = 0;
-    IPTR	 win_height = 0;
-    IPTR	 depth;
-    IPTR    	 attrs[num_Hidd_BitMap_Attrs];
+    IPTR         win_width  = 0;
+    IPTR         win_height = 0;
+    IPTR         depth;
+    IPTR         attrs[num_Hidd_BitMap_Attrs];
     struct bitmap_data *data;
     
     DECLARE_ATTRCHECK(bitmap);
@@ -490,18 +491,18 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     EnterFunc(bug("GDIBM::New()\n"));    
     /* Parse the attributes */
     if (0 != OOP_ParseAttrs(msg->attrList, attrs, num_Hidd_BitMap_Attrs,
-    	    	    	    &ATTRCHECK(bitmap), HiddBitMapAttrBase))
+                            &ATTRCHECK(bitmap), HiddBitMapAttrBase))
     {
-    	D(kprintf("!!! GDIGfx::BitMap() FAILED TO PARSE ATTRS !!!\n"));
-	
-	return NULL;
+        D(kprintf("!!! GDIGfx::BitMap() FAILED TO PARSE ATTRS !!!\n"));
+        
+        return NULL;
     }
     
     if (GOT_BM_ATTR(Friend))
-    	friend = (OOP_Object *)attrs[AO(Friend)];
+        friend = (OOP_Object *)attrs[AO(Friend)];
     else 
-    	friend = NULL;
-	
+        friend = NULL;
+        
     width  = attrs[AO(Width)];
     height = attrs[AO(Height)];
     pixfmt = (OOP_Object *)attrs[AO(PixFmt)];
@@ -511,7 +512,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     /* Get the device context from the friend bitmap */
 /*  if (NULL != friend)
     {
-	OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
+        OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
     }*/
 
     D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
@@ -521,14 +522,14 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
        also get aHidd_BitMap_ModeID with valid value. Currently this seems to be true and i
        beleive it should stay so */
     if (modeid != vHidd_ModeID_Invalid) {
-	OOP_Object *gfx = (OOP_Object *)attrs[AO(GfxHidd)];
-	OOP_Object *sync, *pixfmt;
+        OOP_Object *gfx = (OOP_Object *)attrs[AO(GfxHidd)];
+        OOP_Object *sync, *pixfmt;
 
-	D(bug("[GDI] Display driver object: 0x%p\n", gfx));
-	HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
-	OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
-	OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
-	D(bug("[GDI] Display window size: %dx%d\n", win_width, win_height));
+        D(bug("[GDI] Display driver object: 0x%p\n", gfx));
+        HIDD_Gfx_GetMode(gfx, modeid, &sync, &pixfmt);
+        OOP_GetAttr(sync, aHidd_Sync_HDisp, &win_width);
+        OOP_GetAttr(sync, aHidd_Sync_VDisp, &win_height);
+        D(bug("[GDI] Display window size: %dx%d\n", win_width, win_height));
     }
 
     Forbid();
@@ -544,7 +545,7 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     Permit();
 
     if (!my_dc)
-    	return NULL;
+        return NULL;
     if (!orig_bitmap)
         goto dispose_bitmap;
     
@@ -552,25 +553,25 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     D(bug("[GDI] Object created by superclass: 0x%p\n", o));
     if (o) {
         data = OOP_INST_DATA(cl, o);
-	/* Get some info passed to us by the gdigfxhidd class */
-	data->dc	 = my_dc;
-	data->bitmap     = my_bitmap;
-	data->dc_bitmap  = orig_bitmap;
-	data->display    = display;
-	data->window     = NULL;
-	data->win_width  = win_width;
-	data->win_height = win_height;
-	data->bm_width	 = width;
-	data->bm_height	 = height;
-	data->bm_left	 = 0;
-	data->bm_top	 = 0;
-	CHECK_STACK
-    	ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
+        /* Get some info passed to us by the gdigfxhidd class */
+        data->dc         = my_dc;
+        data->bitmap     = my_bitmap;
+        data->dc_bitmap  = orig_bitmap;
+        data->display    = display;
+        data->window     = NULL;
+        data->win_width  = win_width;
+        data->win_height = win_height;
+        data->bm_width   = width;
+        data->bm_height  = height;
+        data->bm_left    = 0;
+        data->bm_top     = 0;
+        CHECK_STACK
+        ReturnPtr("GDIGfx.BitMap::New()", OOP_Object *, o);
     } /* if (object allocated by superclass) */
 dispose_bitmap:    
     Forbid();
     if (orig_bitmap)
-    	GDICALL(SelectObject, my_dc, orig_bitmap);
+        GDICALL(SelectObject, my_dc, orig_bitmap);
     if (my_bitmap)
         GDICALL(DeleteObject, my_bitmap);
     GDICALL(DeleteDC, my_dc);
@@ -594,7 +595,7 @@ VOID GDIBM__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     if (data->window)
         NATIVECALL(GDI_PutMsg, data->window, WM_CLOSE, 0, 0);
     if (data->dc_bitmap)
-    	GDICALL(SelectObject, data->dc, data->dc_bitmap);
+        GDICALL(SelectObject, data->dc, data->dc_bitmap);
     if (data->bitmap)
         GDICALL(DeleteObject, data->bitmap);
     if (data->dc)
@@ -634,7 +635,7 @@ VOID GDIBM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_B
     if (data->window) {
         RECT r = {
             msg->x,
-	    msg->y,
+            msg->y,
             msg->x + msg->width,
             msg->y + msg->height
         };

@@ -1,4 +1,11 @@
-/* WinAPI definitions to be used with AROS-side code. Taken from various Mingw32 headers. */
+/*
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: WinAPI definitions to be used with AROS-side code.
+          Taken from various Mingw32 headers..
+    Lang: English.
+*/
 
 #ifdef __x86_64__
 #define __stdcall __attribute__((ms_abi))
@@ -231,53 +238,63 @@
 #define DIB_RGB_COLORS	0
 #define DIB_PAL_COLORS	1
 
-typedef struct tagRECT { 
-  LONG left; 
-  LONG top; 
-  LONG right; 
-  LONG bottom; 
+#pragma pack(4)
+
+typedef struct tagRECT
+{ 
+    LONG left; 
+    LONG top; 
+    LONG right; 
+    LONG bottom; 
 } RECT;
 
-typedef struct tagBITMAPINFOHEADER{
-  ULONG  biSize; 
-  LONG   biWidth; 
-  LONG   biHeight; 
-  WORD   biPlanes; 
-  WORD   biBitCount; 
-  ULONG  biCompression; 
-  ULONG  biSizeImage; 
-  LONG   biXPelsPerMeter; 
-  LONG   biYPelsPerMeter; 
-  ULONG  biClrUsed; 
-  ULONG  biClrImportant; 
+typedef struct tagBITMAPINFOHEADER
+{
+    ULONG  biSize; 
+    LONG   biWidth; 
+    LONG   biHeight; 
+    WORD   biPlanes; 
+    WORD   biBitCount; 
+    ULONG  biCompression; 
+    ULONG  biSizeImage; 
+    LONG   biXPelsPerMeter; 
+    LONG   biYPelsPerMeter; 
+    ULONG  biClrUsed; 
+    ULONG  biClrImportant; 
 } BITMAPINFOHEADER, *PBITMAPINFOHEADER; 
 
-typedef struct tagRGBQUAD {
-  BYTE    rgbBlue; 
-  BYTE    rgbGreen; 
-  BYTE    rgbRed; 
-  BYTE    rgbReserved; 
+typedef struct tagRGBQUAD
+{
+    BYTE    rgbBlue; 
+    BYTE    rgbGreen; 
+    BYTE    rgbRed; 
+    BYTE    rgbReserved; 
 } RGBQUAD;
 
-typedef struct tagBITMAP {
-  ULONG   bmType;
-  ULONG   bmWidth; 
-  ULONG   bmHeight; 
-  ULONG   bmWidthBytes; 
-  UWORD   bmPlanes; 
-  UWORD   bmBitsPixel; 
-  APTR bmBits; 
+typedef struct tagBITMAP
+{
+    ULONG   bmType;
+    ULONG   bmWidth; 
+    ULONG   bmHeight; 
+    ULONG   bmWidthBytes; 
+    UWORD   bmPlanes; 
+    UWORD   bmBitsPixel; 
+    APTR bmBits; 
 } BITMAP, *PBITMAP; 
 
-typedef struct tagBITMAPINFO { 
-  BITMAPINFOHEADER bmiHeader; 
-  RGBQUAD          bmiColors[1];
+typedef struct tagBITMAPINFO
+{
+    BITMAPINFOHEADER bmiHeader; 
+    RGBQUAD          bmiColors[1];
 } BITMAPINFO, *PBITMAPINFO;
 
-typedef struct _ICONINFO {
+typedef struct _ICONINFO
+{
     ULONG fIcon;
     ULONG xHotspot;
     ULONG yHotspot;
     APTR hbmMask;
     APTR hbmColor;
 } ICONINFO;
+
+#pragma pack()
