@@ -1,4 +1,11 @@
-/* WinAPI definitions to be used with AROS-side code. Taken from various Mingw32 headers. */
+/*
+    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: WinAPI definitions to be used with AROS-side code.
+          Taken from various Mingw32 headers.
+    Lang: english
+ */
 
 #ifdef __x86_64__
 #define __stdcall __attribute__((ms_abi))
@@ -89,26 +96,30 @@
 #define ERROR_DIR_NOT_EMPTY 145L
 #define ERROR_IO_PENDING 997L
 
+#pragma pack(4) /* Important on 64 bits */
+
 typedef struct _WIN32_FIND_DATA
 {
-   ULONG dwFileAttributes;
-   UQUAD ftCreationTime;
-   UQUAD ftLastAccessTime;
-   UQUAD ftLastWriteTime;
-   ULONG nFileSizeHigh;
-   ULONG nFileSizeLow;
-   ULONG dwReserved0;
-   ULONG dwReserved1;
-   char cFileName[260];
-   char cAlternateFileName[14];
+    ULONG dwFileAttributes;
+    UQUAD ftCreationTime;
+    UQUAD ftLastAccessTime;
+    UQUAD ftLastWriteTime;
+    ULONG nFileSizeHigh;
+    ULONG nFileSizeLow;
+    ULONG dwReserved0;
+    ULONG dwReserved1;
+    char cFileName[260];
+    char cAlternateFileName[14];
 } WIN32_FIND_DATA, *PWIN32_FIND_DATA, *LPWIN32_FIND_DATA;
 
 typedef struct _WIN32_FILE_ATTRIBUTE_DATA
 {
-   ULONG dwFileAttributes;
-   UQUAD ftCreationTime;
-   UQUAD ftLastAccessTime;
-   UQUAD ftLastWriteTime;
-   ULONG nFileSizeHigh;
-   ULONG nFileSizeLow;
+    ULONG dwFileAttributes;
+    UQUAD ftCreationTime;
+    UQUAD ftLastAccessTime;
+    UQUAD ftLastWriteTime;
+    ULONG nFileSizeHigh;
+    ULONG nFileSizeLow;
 } WIN32_FILE_ATTRIBUTE_DATA,  *LPWIN32_FILE_ATTRIBUTE_DATA;
+
+#pragma pack()
