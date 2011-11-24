@@ -36,6 +36,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     const struct TagItem *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
+    ULONG memflags = MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};
 
     /* Fail if we are ocassionally started from within AROS command line */
@@ -116,13 +117,23 @@ int __startup startup(struct TagItem *msg, ULONG magic)
 	return -1;
     }
 
+#if __WORDSIZE > 32
+    /*
+     * On x86-64 VirtualAlloc() still seems to return memory within 32-bit region.
+     * The documentation doesn't specify it explicitly, so we make a check, just in case.
+     * Looks like the lowest possible region is returned.
+     */
+    if (mmap->addr + mmap->len <= 0x80000000)
+        memflags |= MEMF_31BIT;
+#endif
+
     /*
      * Prepare the first mem header and hand it to PrepareExecBase to take SysBase live
      * We know that memory map has only one RAM element.
      */
     D(bug("[Kernel] preparing first mem header\n"));
     mh = (struct MemHeader *)mmap->addr;
-    krnCreateMemHeader("Normal RAM", -5, mh, mmap->len, MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK);
+    krnCreateMemHeader("Normal RAM", -5, mh, mmap->len, memflags);
 
     /*
      * TODO: this needs to be replaced by SysBase address validation.
