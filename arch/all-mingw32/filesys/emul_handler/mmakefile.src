@@ -14,8 +14,6 @@ FILES := emul_host_mingw32 emul_host filenames
   maindir=$(MAINDIR) \
   arch=mingw32 files=$(FILES)
 
-%copy_includes mmake=includes-copy-mingw32-$(CPU) includes="emul_host.h emul_winapi.h" path=resources
-
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_LIBDIR := $(AROS_DEVELOPMENT)/$(CPU)-mingw32/lib
 
