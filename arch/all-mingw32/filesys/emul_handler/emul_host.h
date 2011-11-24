@@ -11,16 +11,16 @@
 /* This structure describes our virtual hardware registers */
 struct AsyncReaderControl
 {
-    unsigned char cmd;	  /* Command				        */
-    void *fh;		  /* File handle to operate on			*/
-    void *addr;		  /* Buffer address				*/
-    unsigned long len;	  /* Requested data length			*/
-    unsigned long actual; /* Actual data length				*/
-    unsigned long error;  /* Error code					*/
-    void *CmdEvent;	  /* Event to trigger in order to tell us to go */
-    unsigned char IrqNum; /* IRQ number on AROS side			*/
-    unsigned long sig;	  /* AROS signal to use, used by IRQ handler	*/
-    void *task;		  /* AROS task to signal, used by IRQ handler	*/
+    unsigned int  cmd;      /* Command                                    */
+    void         *fh;       /* File handle to operate on                  */
+    void         *addr;     /* Buffer address                             */
+    unsigned int  len;      /* Requested data length                      */
+    unsigned int  actual;   /* Actual data length                         */
+    unsigned int  error;    /* Error code                                 */
+    void         *CmdEvent; /* Event to trigger in order to tell us to go */
+    unsigned char IrqNum;   /* IRQ number on AROS side                    */
+    unsigned int  sig;      /* AROS signal to use, used by IRQ handler    */
+    void         *task;     /* AROS task to signal, used by IRQ handler   */
 };
 
 #define ASYNC_CMD_SHUTDOWN 0
@@ -34,7 +34,7 @@ struct AsyncReaderControl
 
 #ifdef __AROS__
 
-#include <resources/emul_winapi.h>
+#include "emul_winapi.h"
 
 struct EmulInterface
 {
@@ -49,7 +49,7 @@ struct EmulInterface
 struct KernelInterface
 {
     void * __stdcall (*CreateFile)(char *lpFileName, ULONG dwDesiredAccess, ULONG dwShareMode, void *lpSecurityAttributes,
-						 ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
+                                                 ULONG dwCreationDisposition, ULONG dwFlagsAndAttributes, void *hTemplateFile);
     ULONG  __stdcall (*CloseHandle)(void *hObject);
     ULONG  __stdcall (*ReadFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToRead, ULONG *lpNumberOfBytesRead, void *lpOverlapped);
     ULONG  __stdcall (*WriteFile)(void *hFile, void *lpBuffer, ULONG nNumberOfBytesToWrite, ULONG *lpNumberOfBytesWritten, void *lpOverlapped);
@@ -78,18 +78,18 @@ struct KernelInterface
 
 struct PlatformHandle
 {
-    char  *pathname;	/* Pathname with pattern for directory searching */
-    ULONG  dirpos;	/* Current directory search position		 */
+    char  *pathname;    /* Pathname with pattern for directory searching */
+    ULONG  dirpos;      /* Current directory search position             */
 };
 
 struct Emul_PlatformData
 {
-    void			*EmulHandle;
-    void			*KernelHandle;
-    void			*ConsoleInt;
-    struct AsyncReaderControl	*ConsoleReader;
-    struct EmulInterface	*EmulIFace;
-    struct KernelInterface	*KernelIFace;
+    void                        *EmulHandle;
+    void                        *KernelHandle;
+    void                        *ConsoleInt;
+    struct AsyncReaderControl   *ConsoleReader;
+    struct EmulInterface        *EmulIFace;
+    struct KernelInterface      *KernelIFace;
 };
 
 #endif
