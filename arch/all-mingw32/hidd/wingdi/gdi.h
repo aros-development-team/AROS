@@ -2,7 +2,7 @@
 #define HIDD_GDI_H
 
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the gdi HIDD.
@@ -13,21 +13,26 @@
 #define WM_USER 1024
 #endif
 
-/* GDI virtual hardware registers */
+/*
+ * GDI virtual hardware registers.
+ * !!! WARNING !!! This structure is shared between Windows-side .dll and AROS code.
+ * 64-bit versions of Windows and AROS have different alignment (Windows has 4 for backwards compatibility),
+ * and this must be taken into account. Take care when adding/removing members!
+ */
 struct GDI_Control
 {
     /* Display */
+    void	   *Active;	/* Set to struct gfx_data * when new display window is activated */
     unsigned char  GfxIrq;	/* IRQ number */
     unsigned char  ShowDone;	/* NOTY_SHOW completion flag */
-    void	   *Active;	/* Set to struct gfx_data * when new display window is activated */
 
     /* Mouse */
-    unsigned char  MouseIrq;
     unsigned short MouseEvent;
     unsigned short MouseX;
     unsigned short MouseY;
     unsigned short Buttons;
     unsigned short WheelDelta;
+    unsigned char  MouseIrq;
 
     /* Keyboard */
     unsigned char  KbdIrq;

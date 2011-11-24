@@ -1,12 +1,15 @@
 #ifndef RESOURCES_EMUL_HOST_H
 #define RESOURCES_EMUL_HOST_H
+
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header-file for emulation-handler.
     Lang: english
 */
+
+#pragma pack(4)
 
 /* This structure describes our virtual hardware registers */
 struct AsyncReaderControl
@@ -22,6 +25,8 @@ struct AsyncReaderControl
     unsigned int  sig;      /* AROS signal to use, used by IRQ handler    */
     void         *task;     /* AROS task to signal, used by IRQ handler   */
 };
+
+#pragma pack()
 
 #define ASYNC_CMD_SHUTDOWN 0
 #define ASYNC_CMD_READ     1
