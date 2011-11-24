@@ -1081,12 +1081,10 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
             case IDCMP_MOUSEBUTTONS:
                 switch (imsg->Code)
                 {
-                    case MIDDLEDOWN:
                     case MENUDOWN:
                         FRClickOnVolumes(ld, AslBase);
                         break;
                     case MENUUP:
-                    case MIDDLEUP:
                         break;
                     default:
                         FRActivateMainStringGadget(ld, AslBase);
