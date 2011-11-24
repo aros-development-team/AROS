@@ -48,8 +48,11 @@ static VOID KbdIntHandler(struct gdikbd_data *data, volatile struct GDI_Control 
     UWORD eventcode = KEYBOARDDATA->KbdEvent;
     UWORD rawcode   = KEYBOARDDATA->KeyCode;
 
-    /* Signal to event processing thread that we've read the event */
-    KEYBOARDDATA->KbdEvent = 0;
+    /*
+     * Signal to event processing thread that we've read the event.
+     * Omit Forbid()/Permit() pair here because we are inside interrupt.
+     */
+    native_func->GDI_KbdAck();
 
     if (rawcode & 0x0100)
     {

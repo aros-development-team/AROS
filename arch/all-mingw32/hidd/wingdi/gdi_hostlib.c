@@ -54,6 +54,8 @@ static const char *native_func_names[] = {
     "GDI_Init",
     "GDI_Shutdown",
     "GDI_PutMsg",
+    "GDI_KbdAck",
+    "GDI_MouseAck",
     NULL
 };
 
@@ -73,8 +75,10 @@ APTR *gdi_hostlib_load_so(const char *sofile, const char **names, void **handle)
     }
 
     funcptr = HostLib_GetInterface(*handle, names, &i);
-    if (funcptr) {
-        if (!i) {
+    if (funcptr)
+    {
+        if (!i)
+        {
             D(bug("[gdi] done\n"));
             return funcptr;
         }
