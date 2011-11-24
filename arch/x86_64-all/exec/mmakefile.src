@@ -1,18 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-## We must use *at least* -O1 when compiling Exec/NewStackSwap,
-## or else we get a separate _inline_Exec_StackSwap, which
-## will contain a 'LEAVE' instruction that will result in
-## StackSwap leaving on the same stack that it entered.
-USER_CFLAGS   := -O1
-
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
-  asmfiles="execstubs stackswap" \
+  asmfiles="execstubs stackswap taskexit" \
   files="copymem newstackswap preparecontext alert_cpu" \
   arch=x86_64
 
