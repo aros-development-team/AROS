@@ -151,9 +151,9 @@ struct gfx_data
     struct MinList bitmaps;		/* Currently shown bitmap objects       */
     void *display;			/* Windows system display object        */
     void *cursor;			/* Windows mouse cursor object          */
-    void *fbwin;			/* Display window		        */
     void (*cb)(void *data, void *bm);	/* Display activation callback function */
     void *cbdata;			/* User data for activation callback    */
+    ULONG fbwin;			/* Display window		        */
 };
 
 #endif /* HIDD_GDI_H */
