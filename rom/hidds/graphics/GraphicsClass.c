@@ -142,11 +142,12 @@ OOP_Object *GFX__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDGraphicsData *data;
-    BOOL    	    	    ok = FALSE;
-    struct TagItem  	    *modetags;
-    struct TagItem  	    gctags[] =
+    BOOL ok = FALSE;
+    struct TagItem *modetags;
+    struct TagItem gctags[] =
     {
-    	{TAG_DONE, 0UL}
+        {aHidd_GC_Foreground, 0},
+    	{TAG_DONE           , 0}
     };
 
     D(bug("Entering gfx.hidd::New\n"));
@@ -762,13 +763,52 @@ VOID GFX__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 *****************************************************************************************/
 
+/*****************************************************************************************
+
+    NAME
+	aoHidd_Gfx_DefaultGC
+
+    SYNOPSIS
+	[..G], OOP_Object *
+
+    LOCATION
+	hidd.graphics.graphics
+
+    FUNCTION
+	Get a pointer to shared default GC object.
+
+    NOTES
+        The returned GC is preset to the following:
+
+          DrawMode = Copy
+          FG       = 0
+          BG       = 0
+          LinePat  = ~0
+          ColMask  = ~0
+
+        You must not alter these settings even temporarily, because this GC is shared between
+        bitmaps and between different tasks which may perform the rendering into different
+        regions of the same bitmap (two windows on one screen, for example). This GC is intended
+        to be used for internal copying operations.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	aoHidd_Gfx_ActiveCallBack
+
+    INTERNALS
+	This attribute needs to be implemented by the display driver. Base class contains
+	no implementation.
+
+*****************************************************************************************/
+
 VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
-    struct HIDDGraphicsData *data;
-    ULONG   	    	    idx;
-
-    data = OOP_INST_DATA(cl, o);
+    struct HIDDGraphicsData *data = OOP_INST_DATA(cl, o);
+    ULONG idx;
 
     if (IS_GFX_ATTR(msg->attrID, idx))
     {
@@ -784,20 +824,17 @@ VOID GFX__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 		return;
 
 	    case aoHidd_Gfx_HWSpriteTypes:
-	    {
-		IPTR hwc;
-
-		OOP_GetAttr(o, aHidd_Gfx_SupportsHWCursor, &hwc);
-		*msg->storage = hwc ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
+	        /* Fall back to obsolete SupportsHWCursor */
+		*msg->storage = OOP_GET(o, aHidd_Gfx_SupportsHWCursor) ? (vHidd_SpriteType_3Plus1|vHidd_SpriteType_DirectColor) : 0;
 		return;
-	    }
 
 	    case aoHidd_Gfx_DriverName:
 		*msg->storage = (IPTR)OOP_OCLASS(o)->ClassNode.ln_Name;
 		return;
 
-	    default:	/* Keep compiler happy */
-		break;
+            case aoHidd_Gfx_DefaultGC:
+                *msg->storage = (IPTR)data->gc;
+                return;
 	}
     }
 
@@ -2381,11 +2418,6 @@ OOP_Object *GFX__Hidd_Gfx__Show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
     	/* We require framebuffer. Don't call us otherwise. */
 	return NULL;
     }
-
-    /* Prepare our GC */
-    OOP_SetAttrsTags(data->gc,
-    		     aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy,
-		     aHidd_GC_Foreground, 0, TAG_DONE);
 
     if (data->shownbm)
     {
