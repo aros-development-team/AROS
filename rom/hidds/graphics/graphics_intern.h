@@ -171,6 +171,7 @@ struct HIDDBitMapData
     OOP_Object  *friend;	/* Friend bitmap		 */
     OOP_Object  *gfxhidd;	/* Owning driver		 */
     OOP_Object  *colmap;	/* Colormap			 */
+    OOP_Object  *gc;            /* Shared GC for copy operations */
     HIDDT_ModeID modeid;	/* Display mode ID		 */
 
     /* Optimize these method calls */
