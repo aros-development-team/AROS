@@ -5,7 +5,7 @@
 
 #define DEBUG 0
 #define DTOGGLE(x)
-#define DMODE(x)
+#define DMODE(x) x
 #define DMOVE(x)
 #define DRECALC(x)
 #define DREDRAWBM(x)
@@ -161,8 +161,8 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositingData *compdata, ULONG
 	OOP_GetAttr(sync, aHidd_Sync_VDisp, &h);
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &d);
 
-	dw = w > width  ? w - width  : width  - w;
-	dh = h > height ? h - height : height - h;
+	dw = w > width  ? w - width  : w < width  ? width  - w : 1;
+	dh = h > height ? h - height : h < height ? height - h : 1;
 	delta = dw * dh;
 
 	match = FALSE;
@@ -204,7 +204,7 @@ static HIDDT_ModeID FindBestHiddMode(struct HIDDCompositingData *compdata, ULONG
 	     * Mode with the same delta, but larger depth, may supersede
 	     * previous mode, if we prefer deeper ones.
 	     */
-	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, delta));
+	    DMODE(bug("Selected (%ld x %ld x %ld, delta = %u)", w, h, d, delta));
 	    found_depth = d;
 	    found_mode  = mode;
 	}
