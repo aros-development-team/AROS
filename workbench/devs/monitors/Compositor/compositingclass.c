@@ -5,7 +5,7 @@
 
 #define DEBUG 0
 #define DTOGGLE(x)
-#define DMODE(x) x
+#define DMODE(x)
 #define DMOVE(x)
 #define DRECALC(x)
 #define DREDRAWBM(x)
