@@ -643,7 +643,28 @@ static void OpenDTO(void)
 	    else
 	        Fault(errnum, 0, s, 256);
 
-	    if (!old_dto) Cleanup(s);
+	    if (!old_dto)
+	    {
+	        /* Check if file is 0-length, fail silently (AOS confirmed) */
+	        STRPTR msg = s;
+	        BPTR lock = Lock(filename, ACCESS_READ);
+	        if (lock)
+	        {
+	            struct FileInfoBlock * fib = AllocDosObject(DOS_FIB, NULL);
+	            if (Examine(lock, fib))
+	            {
+	                if (fib->fib_Size == 0)
+	                {
+	                    prog_exitcode = 20;
+	                    msg = NULL;
+	                }
+	            }
+	            FreeDosObject(DOS_FIB, fib);
+	            UnLock(lock);
+	        }
+
+	        Cleanup(msg);
+	    }
 	    dto = old_dto;
 	    return;
         }
