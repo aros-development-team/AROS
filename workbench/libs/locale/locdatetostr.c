@@ -155,7 +155,7 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 
             curr.ds_Days -= datetime->dat_Stamp.ds_Days;
 
-            if ((curr.ds_Days >= -1) && (curr.ds_Days <= 7))
+            if ((curr.ds_Days <= 7))
             {
                 LONG strid;
 
@@ -176,7 +176,10 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
                 break;
 
                 default:
-                    strid = DAY_1 + (days % 7);
+                    if (curr.ds_Days < -1)
+                        strid = FUTURESTR;
+                    else
+                        strid = DAY_1 + (days % 7);
                 break;
                 }
 

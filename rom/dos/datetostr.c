@@ -38,7 +38,7 @@ const char *const Dos_WeekTable[]=
 
 const char *const Dos_SubstDateTable[]=
 {
-    "Tomorrow", "Today", "Yesterday"
+    "Future", "Tomorrow", "Today", "Yesterday"
 };
 
 /*****************************************************************************
@@ -256,12 +256,14 @@ const char *const Dos_SubstDateTable[]=
 
             curr.ds_Days -= datetime->dat_Stamp.ds_Days;
 
-            if (curr.ds_Days >= -1 && curr.ds_Days <= 7)
+            if (curr.ds_Days <= 7)
             {
                 fstring = "";
 
-                if (curr.ds_Days <= 1)
-                    name = Dos_SubstDateTable[curr.ds_Days+1];
+                if ((curr.ds_Days <= 1) && (curr.ds_Days >= -1))
+                    name = Dos_SubstDateTable[curr.ds_Days+2];
+                else if (curr.ds_Days < -1)
+                    name = Dos_SubstDateTable[0];
                 else
                     name = Dos_WeekTable[datetime->dat_Stamp.ds_Days%7];
 
