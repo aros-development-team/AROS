@@ -655,7 +655,7 @@ static void OpenDTO(void)
 	            {
 	                if (fib->fib_Size == 0)
 	                {
-	                    prog_exitcode = 20;
+	                    /* prog_exitcode = 20; */ /* ABIV1 Multiview no longer exits in Cleanup */
 	                    msg = NULL;
 	                }
 	            }
