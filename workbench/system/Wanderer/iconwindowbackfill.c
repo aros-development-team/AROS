@@ -488,6 +488,12 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
     }
   }
 
+  if (!(this_BFI->bfi_Source))
+  {
+    /* If the previous source is not existing, it means there was a change with the buffer */
+    options_changed = TRUE;
+  }
+
   if (!(this_BFI->bfi_Source)) this_BFI->bfi_Source = ImageBackFill_FindSourceRecord(this_ImageName, BackGround_RenderMode);
 
   if (!(this_BFI->bfi_Source))
