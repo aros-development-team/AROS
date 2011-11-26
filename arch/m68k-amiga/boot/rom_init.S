@@ -8,6 +8,10 @@
 
 	.globl rom_init
 rom_init:
+	bra.w normal_init
+	bra.w arosbootstrap_init
+
+normal_init:
 
 	/* Wait a bit for reset to finish.
 	 * Simulate ROM checksum check.
@@ -41,6 +45,8 @@ rom_init:
 	move.b	%d0,0xbfe001
 	moveq	#0x3,%d0
 	move.b	%d0,0xbfe201
+
+arosbootstrap_init:
 
 	/* Initial Custom chipset setup. Does same writes as AOS.
 	 * It is possible some bus snooping hardware assumes this.

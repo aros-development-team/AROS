@@ -18,7 +18,7 @@
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
  */
-#define DEBUG 0
+#define DEBUG 1
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -66,6 +66,7 @@ struct DosLibrary *DOSBase;
 
 static BOOL ROM_Loaded = FALSE;
 static BOOL forceFAST = FALSE;
+static BOOL debug_enabled = FALSE;
 static struct List mlist;
 
 /* KS 1.3 (and earlier) don't have a dos.library with
@@ -171,6 +172,18 @@ static void _WriteF(BPTR bfmt, ...)
    doBCPL(BCPL_WriteF, bfmt, args[1], args[2], args[3], &args[4], 26-3);
 }
 
+#if DEBUG
+static void _DWriteF(BPTR bfmt, ...)
+{
+   if (debug_enabled || DEBUG > 1) {
+      IPTR *args = (IPTR *)&bfmt;
+
+      doBCPL(BCPL_WriteF, bfmt, args[1], args[2], args[3], &args[4], 26-3);
+   }
+}
+#define DWriteF(fmt, args...) _DWriteF(AROS_CONST_BSTR(fmt) ,##args )
+#endif
+
 #define WriteF(fmt, args...) _WriteF(AROS_CONST_BSTR(fmt) ,##args )
 
 /* For KS < 2.0, we need to call the BCPL ReadArgs,
@@ -206,7 +219,7 @@ static APTR AllocPageAligned(ULONG *psize, ULONG flags)
     size = *psize;
     size += ALLOCPADDING;
     ret = AllocMem(size + 2 * PAGE_SIZE, flags);
-    D(WriteF("AllocPageAligned: $%X8, %X4 => %X8\n", size + 2 * PAGE_SIZE, flags, ret));
+    D(DWriteF("AllocPageAligned: $%X8, %X4 => %X8\n", size + 2 * PAGE_SIZE, flags, ret));
     if (ret == NULL)
     	return NULL;
     Forbid();
@@ -438,7 +451,7 @@ static AROS_UFH3(APTR, elfAlloc,
     APTR mem;
     struct MemList *ml;
 
-    D(WriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
+    D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     /* Since we don't know if we need to wrap the memory
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
@@ -480,14 +493,14 @@ static AROS_UFH3(APTR, elfAlloc,
     	flags |= MEMF_REVERSE;
     }
 
-    D(WriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
+    D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     mem = AllocPageAligned(&size, flags | MEMF_CLEAR);
     if (mem == NULL) {
-    	D(WriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
+    	D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
     	meminfo();
     	return NULL;
     }
-    D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
+    D(DWriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
 
     ml = (struct MemList*)(mem + sizeof(struct MemChunk));
     ml->ml_NumEntries = 1;
@@ -496,7 +509,7 @@ static AROS_UFH3(APTR, elfAlloc,
 
     /* Add to the KickMem list */
     AddTail(&mlist, (struct Node*)ml);
-    D(WriteF("ELF: Got memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
+    D(DWriteF("ELF: Got memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
 
     return &ml[1];
 
@@ -514,12 +527,12 @@ static AROS_UFH3(void, elfFree,
      * is the sizeof(MemChunk) + sizeof(MemList) then we can assume
      * that it was a KickTag protected allocation
      */
-    D(WriteF("ELF: Free memory at %X8, size %N\n", (IPTR)addr, size));
+    D(DWriteF("ELF: Free memory at %X8, size %N\n", (IPTR)addr, size));
     addr -= sizeof(struct MemList);
     Remove((struct Node*)addr);
     addr -= sizeof(struct MemChunk);
     size += sizeof(struct MemChunk) + sizeof(struct MemList);
-    D(WriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
+    D(DWriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
     FreePageAligned(addr, size);
 
     AROS_USERFUNC_EXIT
@@ -654,7 +667,7 @@ static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG
                 reslist = resnew;
                 *resleft = RESLIST_CHUNK - 1;
             }
-            D(WriteF("Resident structure found @%X8\n", r));
+            D(DWriteF("Resident structure found @%X8\n", r));
             *(reslist++) = r;
             (*resleft)--;
 
@@ -705,6 +718,120 @@ static struct Resident **LoadResidents(BPTR *namearray, struct Resident **resnex
 
     return resnext;
 }
+
+#if DEBUG
+
+#define SERDATR			0x18
+#define SERDAT			0x30
+#define INTREQ			0x9c
+#define INTENA			0x9a
+#define SERDATR_TBE		(1 << 13)	/* Tx Buffer Empty */
+#define SERDAT_STP8		(1 << 8)
+#define SERDAT_DB8(x)		((x) & 0xff)
+#define SERPER_BASE_PAL		3546895
+#define SERPER			0x32
+#define SERPER_BAUD(base, x)	((((base + (x)/2))/(x)-1) & 0x7fff)	/* Baud rate */
+#define INTF_TBE		0x0001
+
+static inline void reg_w(ULONG reg, UWORD val)
+{
+	volatile UWORD *r = (void *)(0xdff000 + reg);
+
+	*r = val;
+}
+static inline UWORD reg_r(ULONG reg)
+{
+	volatile UWORD *r = (void *)(0xdff000 + reg);
+
+	return *r;
+}
+static void DebugInit(void)
+{
+	/* Set DTR, RTS, etc */
+	volatile UBYTE *ciab_pra = (APTR)0xBFD000;
+	volatile UBYTE *ciab_ddra = (APTR)0xBFD200;
+	if (!debug_enabled)
+		return;
+	*ciab_ddra = 0xc0;  /* Only DTR and RTS are driven as outputs */
+	*ciab_pra = 0;      /* Turn on DTR and RTS */
+
+	/* Set the debug UART to 115200 */
+	reg_w(SERPER, SERPER_BAUD(SERPER_BASE_PAL, 115200));
+	/* Disable serial transmit interrupt */
+	reg_w(INTENA, INTF_TBE);
+}
+static void DebugPutChar(register int chr)
+{
+	if (!debug_enabled)
+		return;
+	if (chr == '\n')
+		DebugPutChar('\r');
+	while ((reg_r(SERDATR) & SERDATR_TBE) == 0);
+	reg_w(INTREQ, INTF_TBE);
+	/* Output a char to the debug UART */
+	reg_w(SERDAT, SERDAT_STP8 | SERDAT_DB8(chr));
+}
+static void DebugPutStr(register const char *buff)
+{
+	if (!debug_enabled)
+		return;
+	for (; *buff != 0; buff++)
+		DebugPutChar(*buff);
+}
+#if 0
+static void DebugPutDec(const char *what, ULONG val)
+{
+	int i, num;
+	if (!debug_enabled)
+		return;
+	DebugPutStr(what);
+	DebugPutStr(": ");
+	if (val == 0) {
+	    DebugPutChar('0');
+	    DebugPutChar('\n');
+	    return;
+	}
+
+	for (i = 1000000000; i > 0; i /= 10) {
+	    if (val == 0) {
+	    	DebugPutChar('0');
+	    	continue;
+	    }
+
+	    num = val / i;
+	    if (num == 0)
+	    	continue;
+
+	    DebugPutChar("0123456789"[num]);
+	    val -= num * i;
+	}
+	DebugPutChar('\n');
+}
+static void DebugPutHex(const char *what, ULONG val)
+{
+	int i;
+	if (!debug_enabled)
+		return;
+	DebugPutStr(what);
+	DebugPutStr(": ");
+	for (i = 0; i < 8; i ++) {
+		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
+	}
+	DebugPutChar('\n');
+}
+static void DebugPutHexVal(ULONG val)
+{
+	int i;
+	if (!debug_enabled)
+		return;
+	for (i = 0; i < 8; i ++) {
+		DebugPutChar("0123456789abcdef"[(val >> (28 - (i * 4))) & 0xf]);
+	}
+	DebugPutChar(' ');
+}
+#endif
+#endif
+
 
 #define FAKEBASE 0x200
 #define FAKEBASESIZE 558
@@ -847,6 +974,16 @@ void coldcapturecode(void)
 	"0:\n"
 	"move.w	#0x440,0xdff180\n"
 	"clr.l	0.w\n"
+	"clr.l	4.w\n"
+
+	// set early exceptions
+	"move.w	#8,%a1\n"
+	"lea	exception(%pc),%a0\n"
+	"moveq	#64-2-1,%d0\n"
+	"1:\n"
+	"move.l	%a0,(%a1)+\n"
+	"dbf	%d0,1b\n"
+
 	"lea	0x200,%a0\n"
 	"move.l	(%a0),0x7c.w\n" // restore NMI
 	"lea	12(%a0),%a0\n"
@@ -864,7 +1001,13 @@ void coldcapturecode(void)
 	"not.w	%d1\n"
 	"move.w	%d1,(%a0)\n" // ChkSum
 	"move.l	start-4(%pc),%a0\n"
-	"jmp	(%a0)\n"
+	"move.l	2(%a0),%a0\n"
+	"move.l	4(%a0),%a0\n"
+	"jmp	4(%a0)\n"
+	"exception:\n"
+	"move.w #0xff0,0xdff180\n"
+	"move.w #0x000,0xdff180\n"
+	"bra.s exception\n"
 	"end:\n"
     );
 }
@@ -897,8 +1040,16 @@ static void supercode(void)
     ULONG *traps = 0;
     ULONG len;
 
+#if DEBUG
+    DebugPutStr("Entered Supervisor mode.\n");
+#endif
+
     if ((SysBase->AttnFlags & 0xff) != 0)
     	setcpu();
+
+#if DEBUG
+    DebugPutStr("CPU setup done.\n");
+#endif
 
     fakesys = (ULONG*)FAKEBASE;
     coldcapture = (ULONG*)COLDCAPTURE;
@@ -949,6 +1100,11 @@ static void supercode(void)
     sysbase->KickCheckSum = (APTR)mySumKickData(sysbase, FALSE);
 
     traps[1] = (IPTR)sysbase;
+
+#if DEBUG
+    DebugPutStr("Rebooting.\n");
+#endif
+
     // TODO: add custom cacheclear, can't call CacheClearU() because it may not work
     // anymore and KS 1.x does not even have it
     doreboot();
@@ -962,6 +1118,9 @@ void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
     kicktags = reslist;
     kerneltags = tags;
 
+#if DEBUG
+    DebugPutStr("Booting..\n");
+#endif
 
 #if 0
      /* Debug testing code */
@@ -995,40 +1154,40 @@ void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
 static void DumpKickMems(ULONG num, struct MemList *ml)
 {
     if (num == 0)
-    	WriteF("Original KickMemList:\n");
+    	DWriteF("Original KickMemList:\n");
     else
-    	WriteF("AROS KickMemList:\n");
+    	DWriteF("AROS KickMemList:\n");
     /* List is single-linked but last link gets cleared later, so test ln_Succ too */
     while (ml && ml->ml_Node.ln_Succ) {
     	WORD i;
-    	WriteF("%X8:%N\n", ml, ml->ml_NumEntries);
+    	DWriteF("%X8:%N\n", ml, ml->ml_NumEntries);
     	for (i = 0; i < ml->ml_NumEntries; i++) {
-    	    WriteF("  %N: %X8, %N\n", i, ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length);
+    	    DWriteF("  %N: %X8, %N\n", i, ml->ml_ME[i].me_Un.meu_Addr, ml->ml_ME[i].me_Length);
     	}
     	ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
-    WriteF("End of List\n");
+    DWriteF("End of List\n");
 }
 
 static void DumpKickTags(ULONG num, struct Resident **list)
 {
     if (num == 0)
-    	WriteF("Original KickTagList:\n");
+    	DWriteF("Original KickTagList:\n");
     else
-    	WriteF("AROS KickTagList:\n");
+    	DWriteF("AROS KickTagList:\n");
     while (*list) {
     	BSTR bname;
     	if ((ULONG)list & 0x80000000) {
-    	    WriteF("Redirected to %X8\n", (ULONG)list & ~0x80000000);
+    	    DWriteF("Redirected to %X8\n", (ULONG)list & ~0x80000000);
     	    list = (struct Resident**)((ULONG)list & ~0x80000000);
     	    continue;
     	}
     	bname = ConvertCSTR((*list)->rt_IdString);
-    	WriteF("%X8: %X8 %S\n", list, *list, bname);
+    	DWriteF("%X8: %X8 %S\n", list, *list, bname);
     	FreeBSTR(bname);
     	list++;
     }
-    WriteF("End of List\n");
+    DWriteF("End of List\n");
 }
 #endif
 
@@ -1080,32 +1239,37 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCEFAST = 18, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCEFAST = 18, ARG_DEBUG = 19, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
     	 * So only 16 modules are supported
     	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCEFAST/S");
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCEFAST/S,DEBUG/S");
     	/* Make sure the args are in .bss, not stack */
-    	static ULONG args[16 + 3 + 256] __attribute__((aligned(4))) = { };
+    	static ULONG args[16 + 4 + 256] __attribute__((aligned(4))) = { };
 
     	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
 
         RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
-#if DEBUG
-        WriteF("ROM: %S\n", args[ARG_ROM]);
-        WriteF("CMD: %S\n", args[ARG_CMD]);
-        WriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
-        WriteF("MOD: %S\n", args[0]);
-        WriteF("   : %S\n", args[1]);
-        WriteF("   : %S\n", args[2]);
-        WriteF("   : %S\n", args[3]);
+#if DEBUG > 1
+        DWriteF("ROM: %S\n", args[ARG_ROM]);
+        DWriteF("CMD: %S\n", args[ARG_CMD]);
+        DWriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
+        DWriteF("MOD: %S\n", args[0]);
+        DWriteF("   : %S\n", args[1]);
+        DWriteF("   : %S\n", args[2]);
+        DWriteF("   : %S\n", args[3]);
 
 #endif
         forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
+        debug_enabled = args[ARG_DEBUG] ? TRUE : FALSE;
         meminfo();
+
+#if DEBUG
+        DebugInit();
+#endif
 
         if (!IoErr()) {
             /* Load ROM image */
