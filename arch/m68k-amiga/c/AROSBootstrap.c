@@ -31,7 +31,7 @@
 #include <string.h> /* memcpy, memset */
 #include <zlib.h>
 
-#if defined(DEBUG) && DEBUG
+#if defined(DEBUG) && DEBUG > 1
 #define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode mungwall"
 #else
 #define DEFAULT_KERNEL_CMDLINE "sysdebug=InitCode"
