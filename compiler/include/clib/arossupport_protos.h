@@ -43,8 +43,8 @@
     Prototypes
 */
 ULONG   CalcChecksum (APTR mem, ULONG size);
-int     kprintf      (const UBYTE * fmt, ...);
-int     vkprintf     (const UBYTE * fmt, va_list ap);
+int     kprintf      (const char * fmt, ...);
+int     vkprintf     (const char * fmt, va_list ap);
 int     rkprintf     (const STRPTR, const STRPTR, int, const UBYTE * fmt, ...);
 void    NastyFreeMem (APTR mem, ULONG size);
 APTR    RemoveSList  (APTR * list, APTR node);
