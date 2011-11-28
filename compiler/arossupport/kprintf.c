@@ -60,7 +60,7 @@ static inline int atoi(const char *c)
 	int kprintf (
 
 /*  SYNOPSIS */
-	const UBYTE * fmt,
+	const char * fmt,
 	...)
 
 /*  FUNCTION
@@ -103,7 +103,7 @@ static inline int atoi(const char *c)
 
 
 
-int vkprintf (const UBYTE * fmt, va_list args)
+int vkprintf (const char * fmt, va_list args)
 {
     int 	 ret;
     static const char uhex[] = "0123456789ABCDEF";
