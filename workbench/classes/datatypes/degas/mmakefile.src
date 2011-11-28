@@ -1,0 +1,11 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+
+%build_prog mmake=workbench-datatypes-degas \
+    progname="degas.datatype" \
+    files="startup aros_datatype datatype degas" \
+    targetdir=$(AROSDIR)/Classes/DataTypes
+
+%common
