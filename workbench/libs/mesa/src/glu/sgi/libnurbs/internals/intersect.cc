@@ -178,7 +178,7 @@ Subdivider::arc_split( Arc_ptr jarc, int param, REAL value, int dir )
     Arc_ptr	jarc1;
     TrimVertex* v = jarc->pwlArc->pts;
 
-    int		loc[3];
+    int		loc[3] = {};
     switch( pwlarc_intersect( jarc->pwlArc, param, value, dir, loc ) ) {
 
 		// When the parameter value lands on a vertex, life is sweet

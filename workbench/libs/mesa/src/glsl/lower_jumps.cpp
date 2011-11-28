@@ -252,7 +252,7 @@ struct ir_lower_jumps_visitor : public ir_control_flow_visitor {
    bool should_lower_jump(ir_jump* ir)
    {
       unsigned strength = get_jump_strength(ir);
-      bool lower;
+      bool lower = false;
       switch(strength)
       {
       case strength_none:
