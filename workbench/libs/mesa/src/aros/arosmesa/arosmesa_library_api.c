@@ -11015,6 +11015,10 @@ AROS_LH6(void, glCombinerInputNV,
     AROS_LIBFUNC_EXIT
 }
 
+#ifdef __mc68000
+/* Workaround for optimization bug at -Os and higher for gcc 4.5.1 */
+__attribute__((optimize("O0")))
+#endif
 AROS_LH10(void, glCombinerOutputNV,
     AROS_LHA(GLenum, stage, D0),
     AROS_LHA(GLenum, portion, D1),
