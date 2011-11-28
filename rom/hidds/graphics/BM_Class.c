@@ -8,29 +8,28 @@
 
 /****************************************************************************************/
 
-#include <string.h>
-#include <stdlib.h>
+#define SDEBUG 0
+#define DEBUG 0
+#define DPUTPATTERN(x)
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
-
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
 #include <oop/static_mid.h>
 #include <graphics/text.h>
 #include <graphics/scale.h>
-
 #include <hidd/graphics.h>
+
+#include <string.h>
+#include <stdlib.h>
+
 
 #include "graphics_intern.h"
 
-#undef  SDEBUG
-#undef  DEBUG
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 /****************************************************************************************/
 
@@ -78,47 +77,7 @@
 
 *****************************************************************************************/
 
-#define PIXBUFBYTES         (50000*4)
-
-#define PIXBUF_DECLARE_VARS     \
-    LONG __buflines;            \
-    LONG __bufy = 0;            \
-    LONG __worky = 0;           \
-    LONG __height;
-    
-#define PIXBUF_ALLOC(buf,bytesperline,height)                   \
-    __height = height;                                          \
-    __buflines = PIXBUFBYTES / (bytesperline);                  \
-    if (__buflines == 0)                                        \
-    {                                                           \
-        __buflines = 1;                                         \
-    }                                                           \
-    else if (__buflines > __height)                             \
-    {                                                           \
-        __buflines = __height;                                  \
-    }                                                           \
-    buf = AllocVec((bytesperline) * __buflines, MEMF_PUBLIC);   \
-    if (!buf && (__buflines > 1))                               \
-    {                                                           \
-        __buflines = 1;                                         \
-        buf = AllocVec((bytesperline), MEMF_PUBLIC);            \
-    }
-    
-#define PIXBUF_TIME_TO_START_PROCESS    (__bufy == __worky)
-
-#define PIXBUF_LINES_TO_PROCESS         (((__height - __bufy) > __buflines) ?       \
-                                        __buflines : __height - __bufy )
-
-#define PIXBUF_TIME_TO_END_PROCESS      (((__worky - __bufy + 1) == __buflines) || \
-                                        (__worky == __height - 1))
-
-#define PIXBUF_NEXT_LINE                                        \
-    __worky++;                                                  \
-    if ((__worky - __bufy) == __buflines) __bufy = __worky;
-    
-        
-#define PIXBUF_FREE(buf) \
-    if (buf) FreeVec(buf);
+#define PIXBUFBYTES 65536
 
 static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, ULONG startx, ULONG starty, ULONG width, ULONG height,
                                 BOOL getimage, HIDDT_StdPixFmt stdpf, void (*operation)(), void *userdata)
@@ -3478,329 +3437,278 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
+struct ppb_data
+{
+    UWORD *patarray;
+    void  *maskarray;
+    ULONG *patternlut;
+    ULONG  patternsrcy;
+    ULONG  desty;
+    ULONG  patternheight;
+    ULONG  maskmodulo;
+    ULONG  fg;
+    ULONG  bg;
+    UWORD  patmask;
+    UWORD  maskmask;
+    UWORD  patterndepth;
+    UWORD  invert;
+};
+
+static void JAM1PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+{
+    ULONG x, y;
+            
+    for (y = 0; y < height; y++)
+    {
+        UWORD  pmask    = data->patmask;
+        UWORD  mmask    = data->maskmask;
+        UWORD *parray   = data->patarray + ((y + starty + data->patternsrcy - data->desty) % data->patternheight);
+        UWORD  patword  = AROS_BE2WORD(*parray);
+        UWORD *marray   = data->maskarray;
+        UWORD  maskword = marray ? AROS_BE2WORD(*marray) : 0xFFFF;
+    
+        for (x = 0; x < width; x++)
+        {
+            if (maskword & mmask)
+            {
+                if ((patword & pmask) == (data->invert & pmask))
+                    xbuf[x] = data->fg;
+            }
+
+            if (marray)
+            {
+                mmask >>= 1;
+                if (!mmask)
+                {
+                    mmask = 0x8000;
+                    marray++;
+                    maskword = AROS_BE2WORD(*marray);
+                }
+            }
+
+            pmask >>= 1;
+            if (!pmask)
+                pmask = 0x8000;
+
+        } /* for (x) */
+
+        xbuf += width;
+        if (data->maskarray)
+            data->maskarray += data->maskmodulo;
+
+    } /* for (y) */
+}       
+
+static void ComplementPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+{
+    ULONG x, y;
+            
+    for (y = 0; y < height; y++)
+    {
+        UWORD  pmask    = data->patmask;
+        UWORD  mmask    = data->maskmask;
+        UWORD *parray   = data->patarray + ((y + starty + data->patternsrcy - data->desty) % data->patternheight);
+        UWORD  patword  = AROS_BE2WORD(*parray);
+        UWORD *marray   = data->maskarray;
+        UWORD  maskword = marray ? AROS_BE2WORD(*marray) : 0xFFFF;
+
+        for (x = 0; x < width; x++)
+        {
+            if (maskword & mmask)
+            {
+                if ((patword & pmask) == (data->invert & pmask))
+                    xbuf[x] = ~xbuf[x];
+            }
+
+            if (marray)
+            {
+                mmask >>= 1;
+                if (!mmask)
+                {
+                    mmask = 0x8000;
+                    marray++;
+                    maskword = AROS_BE2WORD(*marray);
+                }
+            }
+
+            pmask >>= 1;
+            if (!pmask)
+                pmask = 0x8000;
+
+        } /* for (x) */
+
+        xbuf += width;
+        if (data->maskarray)
+            data->maskarray += data->maskmodulo;
+
+    } /* for (y) */
+}
+
+static void JAM2PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+{
+    ULONG x, y;
+            
+    for (y = 0; y < height; y++)
+    {
+        UWORD  pmask    = data->patmask;
+        UWORD  mmask    = data->maskmask;
+        UWORD *parray   = data->patarray + ((y + starty + data->patternsrcy - data->desty) % data->patternheight);
+        UWORD  patword  = AROS_BE2WORD(*parray);
+        UWORD *marray   = data->maskarray;
+        UWORD  maskword = marray ? AROS_BE2WORD(*marray) : 0xFFFF;
+
+        for (x = 0; x < width; x++)
+        {
+            if (maskword & mmask)
+            {
+                if ((patword & pmask) == (data->invert & pmask))
+                    xbuf[x] = data->fg;
+                else
+                    xbuf[x] = data->bg;
+            }
+
+            if (marray)
+            {
+                mmask >>= 1;
+                if (!mmask)
+                {
+                    mmask = 0x8000;
+                    marray++;
+                    maskword = AROS_BE2WORD(*marray);
+                }
+            }
+
+            pmask >>= 1;
+            if (!pmask)
+                pmask = 0x8000;
+
+        } /* for (x) */
+
+        xbuf += width;
+        if (data->maskarray)
+            data->maskarray += data->maskmodulo;
+
+    } /* for (y) */
+}
+
+static void ColorPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+{
+    ULONG x, y;
+
+    for (y = 0; y < height; y++)
+    {
+        UWORD  pmask    = data->patmask;
+        UWORD  mmask    = data->maskmask;
+        UWORD *parray   = data->patarray + ((y + starty + data->patternsrcy - data->desty) % data->patternheight);
+        UWORD  patword  = AROS_BE2WORD(*parray);
+        UWORD *marray   = data->maskarray;
+        UWORD  maskword = marray ? AROS_BE2WORD(*marray) : 0xFFFF;
+
+        for (x = 0; x < width; x++)
+        {
+            if (maskword & mmask)
+            {
+                UWORD plane;
+                ULONG pixel = (patword & pmask) ? 1 : 0; /* CHECKME: Shouldn't we handle INVERSVID here too ? */
+
+                for (plane = 1; plane < data->patterndepth; plane++)
+                {
+                    UWORD *_parray = parray + plane * data->patternheight;
+                    UWORD _patword = AROS_BE2WORD(*_parray);
+
+                    if (_patword & pmask)
+                        pixel |= 1L << plane;                             
+                }
+
+                if (data->patternlut)
+                    pixel = data->patternlut[pixel];
+
+                xbuf[x] = pixel;
+            }
+
+            if (marray)
+            {
+                mmask >>= 1;
+                if (!mmask)
+                {
+                    mmask = 0x8000;
+                    marray++;
+                    maskword = AROS_BE2WORD(*marray);
+                }
+            }
+
+            pmask >>= 1;
+            if (!pmask)
+                pmask = 0x8000;
+                        
+        } /* for (x) */
+
+        xbuf += width;
+        if (data->maskarray)
+            data->maskarray += data->maskmodulo;
+
+    } /* for (y) */
+} 
+
 VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                  struct pHidd_BitMap_PutPattern *msg)
 {
-    WORD                    x, y;
-    UBYTE                   *patarray;
-    UBYTE                   *maskarray = 0;
-    ULONG                    maskmask = 0;
-    ULONG                   *buf, *xbuf, patmask;
-    OOP_Object              *gc = msg->gc;
-    WORD                     type = 0;
-    PIXBUF_DECLARE_VARS
-    
-    EnterFunc(bug("BitMap::PutPattern(x=%d, y=%d, width=%d, height=%d)\n"
-                , msg->x, msg->y, msg->width, msg->height));
+    void (*op)(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data);
+    struct ppb_data data;
+
+    DPUTPATTERN(bug("BitMap::PutPattern(x=%d, y=%d, width=%d, height=%d)\n",
+                    msg->x, msg->y, msg->width, msg->height));
 
     if (msg->width <= 0 || msg->height <= 0)
         return;
 
     if (msg->patterndepth > 1)
     {
-        type = 6;
+        DPUTPATTERN(bug("[PutPattern] Color\n"));
+        op = ColorPatternBuffered;
+    }
+    else if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
+    {
+        DPUTPATTERN(bug("[PutPattern] JAM1\n"));
+        op = JAM1PatternBuffered;
+    }
+    else if (GC_DRMD(msg->gc) == vHidd_GC_DrawMode_Invert)
+    {
+        DPUTPATTERN(bug("[PutPattern] Complement\n"));
+        op = ComplementPatternBuffered;
     }
     else
     {
-        if (GC_COLEXP(gc) == vHidd_GC_ColExp_Transparent)
-        {
-            type = 0;
-        }
-        else if (GC_DRMD(gc) == vHidd_GC_DrawMode_Invert)
-        {
-            type = 2;
-        }
-        else
-        {
-            type = 4;
-        }
-
-        if (msg->invertpattern) type++;
+        DPUTPATTERN(bug("[PutPattern] JAM2\n"));
+        op = JAM2PatternBuffered;
     }
-    
-    patarray = msg->pattern;
-    patmask = 0x8000 >> (msg->patternsrcx & 0xF);
-    
-    if ((maskarray = msg->mask))
+
+    data.patarray      = (UWORD *)msg->pattern;
+    data.patmask       = 0x8000 >> (msg->patternsrcx & 0xF);
+    data.maskarray     = msg->mask;
+    data.patternlut    = msg->patternlut ? msg->patternlut->pixels : NULL;
+    data.patternsrcy   = msg->patternsrcy;
+    data.desty         = msg->y;
+    data.patternheight = msg->patternheight;
+    data.patterndepth  = msg->patterndepth;
+    data.maskmodulo    = msg->maskmodulo;
+    data.fg            = GC_FG(msg->gc);
+    data.bg            = GC_BG(msg->gc);
+    data.invert        = msg->invertpattern ? 0 : 0xFFFF;
+
+    if (data.maskarray)
     {
-        maskarray += (msg->masksrcx / 16) * 2;
-        maskmask = 0x8000 >> (msg->masksrcx & 0xF);
+        data.maskarray += (msg->masksrcx / 16) * 2;
+        data.maskmask = 0x8000 >> (msg->masksrcx & 0xF);
     }
-    
-    PIXBUF_ALLOC(buf, msg->width * sizeof(ULONG), msg->height);
-    
-    if (buf)
-    {
-        HIDDT_DrawMode   old_drmd = GC_DRMD(msg->gc);
-        ULONG            fg = GC_FG(msg->gc);
-        ULONG            bg = GC_BG(msg->gc);
-        
-        GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
-
-        xbuf = buf;
-        
-        for(y = msg->y; y < msg->y + msg->height; y++)
-        {
-            ULONG  pmask = patmask;
-            ULONG  mmask = maskmask;
-            UWORD *parray = ((UWORD *)patarray) + ((y + msg->patternsrcy - msg->y) % msg->patternheight);
-            UWORD  patword = AROS_BE2WORD(*parray);
-            UWORD *marray = NULL;
-            UWORD  maskword = 0;
-            
-            if (maskarray)
-            {
-                marray = (UWORD *)maskarray;
-                maskword = AROS_BE2WORD(*marray);
-            }
-            
-            if (((type < 4) || maskarray) && PIXBUF_TIME_TO_START_PROCESS)
-            {
-                WORD height = PIXBUF_LINES_TO_PROCESS;
-                
-                //kprintf("  GetImage at %d  height %d\n", y - msg->y, height);
-                
-                HIDD_BM_GetImage(o,
-                                 (UBYTE *)buf,
-                                 msg->width * sizeof(ULONG),
-                                 msg->x,
-                                 y,
-                                 msg->width,
-                                 height,
-                                 vHidd_StdPixFmt_Native32);
-            }
-            
-            
-            switch(type)
-            {
-                case 0: /* JAM1 */          
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            if (patword & pmask) xbuf[x] = fg;
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-
-                case 1: /* JAM1 | INVERSVID */      
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            if (!(patword & pmask)) xbuf[x] = fg;
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-
-                case 2: /* COMPLEMENT */
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            if (patword & pmask) xbuf[x] = ~xbuf[x];
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-
-                case 3: /* COMPLEMENT | INVERSVID*/
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            if (!(patword & pmask)) xbuf[x] = ~xbuf[x];
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-                    
-                case 4: /* JAM2 */          
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            xbuf[x] = (patword & pmask) ? fg : bg;
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-
-                case 5: /* JAM2 | INVERSVID */      
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            xbuf[x] = (patword & pmask) ? bg : fg;
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-        
-                case 6: /* multi color pattern */
-                    for(x = 0; x < msg->width; x++)
-                    {
-                        if (!maskarray || (maskword & mmask))
-                        {
-                            WORD plane;
-                            ULONG pixel = (patword & pmask) ? 1 : 0;
-                            
-                            for(plane = 1; plane < msg->patterndepth; plane++)
-                            {
-                                UWORD *_parray = parray + plane * msg->patternheight;
-                                UWORD _patword = AROS_BE2WORD(*_parray);
-                                
-                                if (_patword & pmask) pixel |= 1L << plane;                             
-                            }
-                            
-                            if (msg->patternlut) pixel = msg->patternlut->pixels[pixel];
-                            
-                            xbuf[x] = pixel;
-                        }
-                        
-                        if (maskarray)
-                        {
-                            mmask >>= 1;
-                            if (!mmask)
-                            {
-                                mmask = 0x8000;
-                                marray++;
-                                maskword = AROS_BE2WORD(*marray);
-                            }
-                        }
-                        
-                        pmask >>= 1;
-                        if (!pmask) pmask = 0x8000;
-                        
-                    } /* for(x = 0; x < msg->width; x++) */
-                    break;
-                                    
-            } /* switch(type) */
-            
-            if (PIXBUF_TIME_TO_END_PROCESS)
-            {
-                LONG height = PIXBUF_LINES_TO_PROCESS;
-                
-                //kprintf("  PutImage at %d  height %d  __height %d  __bufy %d  __worky %d\n",
-                //        y - height + 1 - msg->y, height, __height, __bufy, __worky);
-
-                HIDD_BM_PutImage(o,
-                                 msg->gc,
-                                 (UBYTE *)buf,
-                                 msg->width * sizeof(ULONG),
-                                 msg->x,
-                                 y - height + 1,
-                                 msg->width,
-                                 height,
-                                 vHidd_StdPixFmt_Native32);
-                xbuf = buf;             
-            }
-            else
-            {
-                xbuf += msg->width;
-            }
-                             
-            if (maskarray) maskarray += msg->maskmodulo;
-
-            PIXBUF_NEXT_LINE;
-            
-        } /* for(y = msg->y; y < msg->y + msg->height; y++) */
-        
-        GC_DRMD(msg->gc) = old_drmd;
-        
-        PIXBUF_FREE(buf);
-        
-    } /* if (buf) */
     else
-    {
+        data.maskmask = 0xFFFF;
 
-    }
+    DPUTPATTERN(bug("[PutPattern] MaskArray 0x%p, MaskMask 0x%04X\n", data.maskarray, data.maskmask));
+
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_Native32, op, &data);
+
+    /* TODO: Write fallback */
 
     ReturnVoid("BitMap::PutPattern");
 }
@@ -3981,19 +3889,73 @@ VOID BM__Hidd_BitMap__PutImageLUT(OOP_Class *cl, OOP_Object *o,
 
 *****************************************************************************************/
 
+#undef csd /* Bad hack, but there's no other way */
+
+struct ptilb_data
+{
+    UBYTE                    *pixarray;
+    ULONG                    *lut;
+    OOP_Object               *colmap;
+    struct class_static_data *csd;
+    ULONG                     modulo;
+    UBYTE                     transparent;
+};
+
+static void PutTranspImageLUTBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ptilb_data *data)
+{
+    struct class_static_data *csd = data->csd;
+    ULONG x, y;
+
+    for (y = 0; y < height; y++)
+    {
+        UBYTE *pixarray = data->pixarray;
+
+        if (data->lut)
+        {
+            for (x = 0; x < width; x++)
+            {
+                UBYTE pix = *pixarray++;
+                    
+                if (pix != data->transparent)
+                    xbuf[x] = data->lut[pix];
+
+            } /* for (x) */
+        }
+        else
+        {
+            for (x = 0; x < width; x++)
+            {
+                UBYTE pix = *pixarray++;
+
+                if (pix != data->transparent)
+                {
+                    if (data->colmap)
+                        pix = HIDD_CM_GetPixel(data->colmap, pix);
+
+                    xbuf[x] = pix;
+                }
+
+            } /* for (x) */
+        }
+
+        xbuf += width;
+        data->pixarray += data->modulo;
+    } /* for (y) */
+}
+
 VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
                                         struct pHidd_BitMap_PutTranspImageLUT *msg)
 {
-    WORD                     x, y;
-    UBYTE                   *pixarray = (UBYTE *)msg->pixels;
-    UBYTE                    transparent = msg->transparent;
-    HIDDT_PixelLUT          *pixlut = msg->pixlut;
-    HIDDT_Pixel             *lut = pixlut ? pixlut->pixels : NULL;
-    HIDDT_Pixel             *buf, *xbuf;
-    struct HIDDBitMapData   *data;
-    PIXBUF_DECLARE_VARS
-    
-    data = OOP_INST_DATA(cl, o);
+    struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
+    struct ptilb_data userdata =
+    {
+        msg->pixels,
+        NULL,
+        data->colmap,
+        CSD(cl),
+        msg->modulo,
+        msg->transparent
+    };
 
     EnterFunc(bug("BitMap::PutTranspImageLUT(x=%d, y=%d, width=%d, height=%d)\n"
                 , msg->x, msg->y, msg->width, msg->height));
@@ -4001,96 +3963,18 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
     if (msg->width <= 0 || msg->height <= 0)
         return;
 
-    PIXBUF_ALLOC(buf, msg->width * sizeof(HIDDT_Pixel), msg->height);
+    if (msg->pixlut)
+        userdata.lut = msg->pixlut->pixels;
 
-    if (buf)
-    {
-        HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);     
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_Native32,
+                        PutTranspImageLUTBuffered, &userdata);
 
-        GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
-        xbuf = buf;
-
-        for(y = msg->y; y < msg->y + msg->height; y++)
-        {
-            if (PIXBUF_TIME_TO_START_PROCESS)
-            {
-                WORD height = PIXBUF_LINES_TO_PROCESS;
-
-                HIDD_BM_GetImage(o,
-                                 (UBYTE *)buf,
-                                 msg->width * sizeof(HIDDT_Pixel),
-                                 msg->x,
-                                 y,
-                                 msg->width,
-                                 height,
-                                 vHidd_StdPixFmt_Native32);
-            }
-
-            if (lut)
-            {
-                for(x = 0; x < msg->width; x++)
-                {
-                    UBYTE pix = *pixarray++;
-                    
-                    if (pix != transparent)
-                    {
-                        xbuf[x] = lut[pix];
-                    }
-                    
-                } /* for(x = 0; x < msg->width; x++) */
-            }
-            else
-            {
-                for(x = 0; x < msg->width; x++)
-                {
-                    UBYTE pix = *pixarray++;
-                    
-                    if (pix != transparent)
-                    {
-                        if (data->colmap)
-                            pix = HIDD_CM_GetPixel(data->colmap, pix);
-                        xbuf[x] = pix;
-                    }
-
-                } /* for(x = 0; x < msg->width; x++) */
-            }
-                
-        
-            if (PIXBUF_TIME_TO_END_PROCESS)
-            {
-                LONG height = PIXBUF_LINES_TO_PROCESS;
-                
-                HIDD_BM_PutImage(o,
-                                 msg->gc,
-                                 (UBYTE *)buf,
-                                 msg->width * sizeof(HIDDT_Pixel),
-                                 msg->x,
-                                 y - height + 1,
-                                 msg->width,
-                                 height,
-                                 vHidd_StdPixFmt_Native32);
-                xbuf = buf;
-            }
-            else
-            {
-                xbuf += msg->width;
-            }
-            
-            pixarray = ((UBYTE *)pixarray + msg->modulo - msg->width);
-            
-            PIXBUF_NEXT_LINE;
-            
-
-        } /* for(y = msg->y; y < msg->y + msg->height; y++) */
-
-        GC_DRMD(msg->gc) = old_drmd;
-        
-        PIXBUF_FREE(buf);
-                
-    } /* if (buf) */
+    /* TODO: Write fallback */
 
     ReturnVoid("BitMap::PutTranspImageLUT");
 }
+
+#define csd CSD(cl)
 
 /*****************************************************************************************
 
