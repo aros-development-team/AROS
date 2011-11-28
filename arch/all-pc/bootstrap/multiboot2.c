@@ -1,3 +1,11 @@
+/*
+    Copyright © 2011, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: Multiboot v2 parser
+    Lang: english
+*/
+
 /* #define DEBUG */
 #define DTAGS(x)
 #define DMMAP(x)
@@ -131,11 +139,19 @@ unsigned long mb2_parse(void *mb, struct mb_mmap **mmap_addr, unsigned long *mma
 
             break;
 
+#ifdef MULTIBOOT_64BIT
         case MB2_TAG_EFI64:
             D(kprintf("[Multiboot2] EFI 64-bit System table 0x%016llX\n", ((struct mb2_tag_efi64 *)mbtag)->pointer));
 
             tag->ti_Tag  = KRN_EFISystemTable;
             tag->ti_Data = ((struct mb2_tag_efi64 *)mbtag)->pointer;
+#else
+        case MB2_TAG_EFI32:
+            D(kprintf("[Multiboot2] EFI 32-bit System table 0x%08X\n", ((struct mb2_tag_efi32 *)mbtag)->pointer));
+
+            tag->ti_Tag  = KRN_EFISystemTable;
+            tag->ti_Data = ((struct mb2_tag_efi32 *)mbtag)->pointer;
+#endif
             tag++;
 
             break;
