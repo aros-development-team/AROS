@@ -13,10 +13,17 @@ ifeq ($(AROS_TARGET_CPU), arm)
   GCC_VERSION     = 4.4.2
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 else
+ifeq ($(AROS_TARGET_CPU), m68k)
+  GCC_VERSION     = 4.5.1
+  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
+  GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
+  GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+else
   GCC_VERSION     = 4.2.4
   GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+endif
 endif
 
 GNU_REPOSITORY := gnu://
@@ -27,7 +34,7 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
 # m68k build is disabled, since there is no AROS cross compiler yet, just m68k-elf cross compiler
-##MM- tools-crosstools-m68k  : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-m68k  : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
