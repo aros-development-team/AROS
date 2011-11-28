@@ -1,5 +1,6 @@
 #ifndef AROS_ARM_CPU_H
 #define AROS_ARM_CPU_H
+
 /*
     Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
@@ -9,6 +10,26 @@
     Desc: cpu.h include file for arm-le systems
     Lang: english
 */
+
+/* Translate __ARM_ARCH_X__ definitions to a common one. Makes it easier to write conditional code. */
+#ifdef __ARM_ARCH_2__
+#define __ARM_ARCH__ 2
+#endif
+#ifdef __ARM_ARCH_3__
+#define __ARM_ARCH__ 3
+#endif
+#ifdef __ARM_ARCH_4__
+#define __ARM_ARCH__ 4
+#endif
+#ifdef __ARM_ARCH_5__
+#define __ARM_ARCH__ 5
+#endif
+#ifdef __ARM_ARCH_6__
+#define __ARM_ARCH__ 6
+#endif
+#ifdef __ARM_ARCH_7A__
+#define __ARM_ARCH__ 7
+#endif
 
 /* Information about size and alignment,
  * the defines have to be numeric constants */
