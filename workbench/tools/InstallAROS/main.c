@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -46,13 +46,13 @@
 #define kExallBufSize          (4096)
 
 #define SYS_PART_NAME         "DH0"
-#define WORK_PART_NAME         "DH1"
+#define WORK_PART_NAME        "DH1"
 #define USB_SYS_PART_NAME     "DU0"
-#define USB_WORK_PART_NAME     "DU1"
-#define package_Path        "SYS:"
-#define SYS_VOL_NAME         "AROS"
+#define USB_WORK_PART_NAME    "DU1"
+#define SYS_VOL_NAME          "AROS"
 #define WORK_VOL_NAME         "Work"
-#define USB_VOL_NAME         "AROS Live Drive"
+#define USB_SYS_VOL_NAME      "AROS Live Drive"
+#define USB_WORK_VOL_NAME     "Briefcase"
 
 #define MAX_FFS_SIZE (4L * 1024)
 #define MAX_SFS_SIZE (124L * 1024)
@@ -62,7 +62,7 @@
 
 #define localeFile_path         "Prefs/Locale\""
 #define inputFile_path          "Prefs/Input\""
-#define prefssrc_path          "ENV:SYS"
+#define prefssrc_path           "ENV:SYS"
 #define prefs_path              "Prefs/Env-Archive/SYS"
 #define BOOT_PATH               "boot"
 #define GRUB_PATH               "grub"
@@ -141,7 +141,7 @@ STRPTR BootLoaderFiles[] = {
 struct ExpansionBase *ExpansionBase = NULL;
 
 char *source_Path = NULL;       /* full path to source "tree" */
-char *source_Name = NULL;
+char *extras_source = NULL;
 
 char *dest_Path = NULL;         /* DOS DEVICE NAME of part used to store "aros" */
 char *work_Path = NULL;         /* DOS DEVICE NAME of part used to store "work" */
@@ -294,7 +294,8 @@ IPTR Install__OM_NEW(Class * CLASS, Object * self, struct opSet *message)
     lock = Lock("SYS:", SHARED_LOCK);
     NameFromLock(lock, sys_path, 100);
     if (getDiskFSSM(USB_SYS_PART_NAME ":") != NULL
-        && strncmp(sys_path, USB_VOL_NAME ":", strlen(USB_VOL_NAME) + 1))
+        && strncmp(sys_path, USB_SYS_VOL_NAME ":",
+        strlen(USB_SYS_VOL_NAME) + 1))
     {
         SET(dest_volume, MUIA_String_Contents, USB_SYS_PART_NAME);
         SET(work_volume, MUIA_String_Contents, USB_WORK_PART_NAME);
@@ -1455,6 +1456,31 @@ void create_environment_variable(CONST_STRPTR envarchiveDisk,
     }
 }
 
+static BOOL read_environment_variable(CONST_STRPTR envarchiveDisk,
+    CONST_STRPTR name, STRPTR buffer, ULONG size)
+{
+    BPTR env_variable_fh = NULL;
+    TEXT env_variable_path[100];
+
+    if ((envarchiveDisk == NULL) || (name == NULL) || (buffer == NULL))
+        return FALSE;
+
+    sprintf(env_variable_path, "%s:", envarchiveDisk);
+    AddPart(env_variable_path, "Prefs/Env-Archive/", 100);
+    AddPart(env_variable_path, name, 100);
+
+    D(bug("[INSTALLER] read_environment_variable: Getting Var '%s'\n",
+        env_variable_path));
+
+    if ((env_variable_fh = Open(env_variable_path, MODE_OLDFILE)) != NULL)
+    {
+        FGets(env_variable_fh, buffer, size);
+        Close(env_variable_fh);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 LONG CountFiles(CONST_STRPTR directory, CONST_STRPTR fileMask,
     BOOL recursive)
 {
@@ -1795,7 +1821,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
 
     SET(data->pagetitle, MUIA_Text_Contents, "Installing AROS...");
 
-    /* setup work name to use */
+    /* set up destination Work name to use */
 
     GET(check_copytowork, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
@@ -2091,7 +2117,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         D(bug("[INSTALLER] Copying Extras to '%s'...\n", extras_path));
         SET(data->label, MUIA_Text_Contents, "Copying Extra Software...");
         sprintf(extraspath, "%s:", extras_path);
-        CopyDirArray(CLASS, self, source_Path, extraspath, extras_dirs);
+        CopyDirArray(CLASS, self, extras_source, extraspath, extras_dirs);
 
         /* Set EXTRASPATH environment variable */
         AddPart(extraspath, "Extras", 100);
@@ -2580,7 +2606,7 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         /* Change volume name if installing to a USB drive */
         GET(grub_device, MUIA_String_Contents, &option);
         if (strcmp((char *)option, "usbscsi.device") == 0)
-            strcpy(vol_nametmp, USB_VOL_NAME);
+            strcpy(vol_nametmp, USB_SYS_VOL_NAME);
 
         sprintf(dev_nametmp, "%s:", dest_Path);
 
@@ -2608,17 +2634,22 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
 
         SET(data->gauge2, MUIA_Gauge_Current, 0);
 
+        /* Change volume name if installing to a USB drive */
+        GET(grub_device, MUIA_String_Contents, &option);
+        if (strcmp((char *)option, "usbscsi.device") == 0)
+            strcpy(vol_nametmp, USB_WORK_VOL_NAME);
+
         sprintf(dev_nametmp, "%s:", work_Path);
 
         /* XXX HACK
          * If partition is FFS -> it will format it for FFS
          * If partition is SFS -> it will format it for SFS
-         * Correct way of doing things: read type for DH0 and DH1, apply correct
-         * type when formatting (ID_INTER_FFS_DISK or ID_SFS_BE_DISK)
+         * Correct way of doing things: read type for DH0 and DH1, apply
+         * correct type when formatting (ID_INTER_FFS_DISK or ID_SFS_BE_DISK)
          */
         D(bug("[INSTALLER] (info) Using FormatPartition\n"));
         success =
-            FormatPartition(dev_nametmp, WORK_VOL_NAME, ID_INTER_FFS_DISK);
+            FormatPartition(dev_nametmp, vol_nametmp, ID_INTER_FFS_DISK);
 
         if (success)
         {
@@ -3159,7 +3190,6 @@ BOOPSI_DISPATCHER_END void FindBootLoader(void)
 
 int main(int argc, char *argv[])
 {
-
     Object *wnd = NULL;         /* installer window objects  - will get swallowed into the class eventually */
     Object *wndcontents = NULL;
     Object *page = NULL;
@@ -3326,6 +3356,7 @@ int main(int argc, char *argv[])
     grub_opts =
         AllocMem(sizeof(struct Grub_Options), MEMF_CLEAR | MEMF_PUBLIC);
     source_path = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
+    extras_source = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
 
     dest_path = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
     work_path = AllocVec(256, MEMF_CLEAR | MEMF_PUBLIC);
@@ -3350,6 +3381,13 @@ int main(int argc, char *argv[])
     CopyMem(source_path, source_Path, pathend);
     D(bug("[INST-APP] Launched from '%s'\n", source_Path));
     FreeVec(source_path);
+
+    /* Get source location for Extras dir */
+    if (read_environment_variable(source_Path, "EXTRASPATH", extras_source,
+            256))
+        *PathPart(extras_source) = '\0';
+    else
+        strcpy(extras_source, source_Path);
 
     dest_Path = dest_path;
     sprintf(dest_Path, "" SYS_PART_NAME);
@@ -3384,8 +3422,8 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.10 (11.11.2010)",
-        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2010, The AROS Development Team. All rights reserved.",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.11 (28.11.2011)",
+        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2011, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
         MUIA_Application_Base,        (IPTR) "INSTALLER",
@@ -3918,6 +3956,10 @@ int main(int argc, char *argv[])
     D(bug("[INST-APP] Removing App Object\n"));
 
     MUI_DisposeObject(app);
+
+    FreeVec(extras_source);
+    FreeVec(source_Path);
+
   main_error:
     return 0;
 }
