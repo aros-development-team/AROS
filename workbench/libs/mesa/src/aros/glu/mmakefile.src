@@ -10,7 +10,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-libs-glu : workbench-libs-glu-$(AROS_TARGET_CPU)
 
 # m68k build is disabled, since there is no C++ crosscompiler yet
-##MM- workbench-libs-glu-m68k : workbench-libs-glu-module
+#MM- workbench-libs-glu-m68k : workbench-libs-glu-module
 #MM- workbench-libs-glu-i386 : workbench-libs-glu-module
 #MM- workbench-libs-glu-x86_64 : workbench-libs-glu-module
 #MM- workbench-libs-glu-ppc : workbench-libs-glu-module

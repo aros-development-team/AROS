@@ -14,7 +14,7 @@ include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 #MM- workbench-libs-mesa : workbench-libs-mesa-$(AROS_TARGET_CPU)
 
 # m68k build is disabled, since there is no C++ crosscompiler yet
-##MM- workbench-libs-mesa-m68k : workbench-libs-mesa-module test-mesa
+#MM- workbench-libs-mesa-m68k : workbench-libs-mesa-module test-mesa
 #MM- workbench-libs-mesa-i386 : workbench-libs-mesa-module test-mesa
 #MM- workbench-libs-mesa-x86_64 : workbench-libs-mesa-module test-mesa
 #MM- workbench-libs-mesa-ppc : workbench-libs-mesa-module test-mesa
