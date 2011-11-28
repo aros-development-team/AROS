@@ -614,6 +614,37 @@ static int relocate
 #ifdef __arm__
 
 /*
+ * On ARM < v6 all LONG accesses must be LONG-aligned
+ * TODO: This is useful and can be moved to some public include file.
+ */
+#if (__ARM_ARCH__ > 5)
+
+#define READLONG_UNALIGNED(src) src
+
+#else
+
+static inline ULONG readlong_unaligned(ULONG *src)
+{
+    ULONG res, tmp;
+
+    asm volatile(
+        "ldrb	%0, [%2, #0]\n\t"
+        "ldrb	%1, [%2, #1]\n\t"
+        "orr	%0, %0, %1, lsl #8\n\t"
+        "ldrb	%1, [%2, #2]\n\t"
+        "orr	%0, %0, %1, lsl #16\n\t"
+        "ldrb	%1, [%2, #3]\n\t"
+        "orr	%0, %0, %1, lsl #24"
+        :"=r"(res), "=r"(tmp) : "r"(src)
+    );
+
+    return res;
+}
+
+#define READLONG_UNALIGNED(src) readlong_unaligned(&src);
+#endif
+
+/*
  * This code parses special .ARM.Attributes section and
  * extracts system requirements from it. Things like float ABI,
  * minimum CPU and FPU version are described there.
@@ -651,7 +682,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
     attrs = (void *)data + 1;
     while (len > 0)
     {
-        ULONG attrs_size = attrs->size;
+        ULONG attrs_size = READLONG_UNALIGNED(attrs->size);
 
         if (!strcmp(attrs->vendor, "aeabi"))
         {
@@ -662,7 +693,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
 
             while (aeabi_len > 0)
             {
-                ULONG aeabi_attrs_size = aeabi_attrs->size;
+                ULONG aeabi_attrs_size = READLONG_UNALIGNED(aeabi_attrs->size);
 
                 if (aeabi_attrs->tag == Tag_File)
                 {
@@ -670,7 +701,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
                     UBYTE file_len = aeabi_attrs_size - sizeof(struct attrs_subsection);
 
                     DATTR(bug("[ELF.ARM] Found file-wide attributes @ 0x%p (length %u)\n", file_subsection, file_len));
-                            
+
                     while (file_len > 0)
                     {
                         UBYTE tag, shift;
@@ -768,7 +799,7 @@ static BOOL ARM_ParseAttrs(UBYTE *data, ULONG len, struct DosLibrary *DOSBase)
                                 DATTR(bug("[ELF.ARM] VFP %d required -- unsupported\n", val));
                                 return FALSE;
                             }
-                            
+
                             break;
                         }
                     }
