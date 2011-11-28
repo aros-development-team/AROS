@@ -1,0 +1,10 @@
+# DataType Description for GEM Images
+Name=GEM
+Version=$VER: GemImage 41.1 (1.3.2009)
+BaseName=gemimage
+Pattern=#?.img
+Mask=0x00 ANY 0x00 ANY 0x00 ANY 0x00
+GroupID=pict
+ID=_gem
+Flags=DTF_BINARY,DTF_CASE
+Priority=-10
