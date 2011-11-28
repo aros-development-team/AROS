@@ -15,4 +15,6 @@
 #MM	    workbench-datatypes-wave \
 #MM	    workbench-datatypes-html \
 #MM	    workbench-datatypes-amigaguide \
-#MM     workbench-datatypes-pnm
+#MM	    workbench-datatypes-pnm \
+#MM	    workbench-datatypes-gemimage \
+#MM	    workbench-datatypes-degas
