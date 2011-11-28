@@ -408,7 +408,7 @@ int main(void)
         {
             /* FPS counting is naive! */
             fpsmicrosecs += 1000000;
-            sprintf(title, "MesaSimpleRendering, FPS: %d", fps);
+            sprintf(title, "MesaSimpleRendering, FPS: %d", (int)fps);
             SetWindowTitles(win, title, (UBYTE *)~0L);
             fps = 0;
         }
