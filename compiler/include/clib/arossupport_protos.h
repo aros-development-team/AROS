@@ -42,6 +42,9 @@
 /*
     Prototypes
 */
+#ifdef __cplusplus
+extern "C" {
+#endif
 ULONG   CalcChecksum (APTR mem, ULONG size);
 int     kprintf      (const char * fmt, ...);
 int     vkprintf     (const char * fmt, va_list ap);
@@ -89,6 +92,10 @@ struct RastPort *CreateRastPort(void);
 struct RastPort *CloneRastPort(struct RastPort *rp);
 void DeinitRastPort(struct RastPort *rp);
 void FreeRastPort(struct RastPort *rp);
+
+#ifdef __cplusplus
+}
+#endif
 
 /* don't use SysBase->kprintf on AmigaOS, or AROS m68k */
 #if defined(__AROS__) && !defined(__mc68000)
