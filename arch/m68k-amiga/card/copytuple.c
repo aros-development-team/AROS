@@ -12,7 +12,19 @@
 
 #define TUPLEDEBUG(x) do { if (buffer == NULL) x; } while(0);
 #define TUPLEDEBUG2(x) x
+#define TUPLELOGGING 1
 
+#if TUPLELOGGING
+static void byte2ascii(UBYTE **pp, UBYTE ch)
+{
+    UBYTE *p = *pp;
+    *p++ = ' ';
+    *p++ = (ch >> 4) > 9 ? (ch >> 4) - 10 + 'A' : (ch >> 4) + '0';
+    *p++ = (ch & 15) > 9 ? (ch & 15) - 10 + 'A' : (ch & 15) + '0';
+    *p = 0;
+    *pp = p;
+}
+#endif
 
 static BOOL getbyte(ULONG addr, UBYTE *out)
 {
@@ -178,7 +190,20 @@ AROS_LH4(ULONG, CopyTuple,
             	final = TRUE;
         }
 
-    	if (final) {
+#if TUPLELOGGING
+    if (buffer == NULL) {
+        UBYTE outbuf[(256 + 2 + 1) * 3];
+        UWORD ts;
+        UBYTE *p = outbuf;
+        for (ts = 0; ts < tuplesize + 2; ts++) {
+            getbyte(addr + ts * nextbyte, &v);
+            byte2ascii(&p, v);
+        }
+        bug("%s\n", outbuf);
+    }
+#endif
+
+   	if (final) {
     	    UBYTE buf[5];
     	    TUPLEDEBUG(bug("Next link %08x\n", nextjump));
 	    if (nextjump == 0xffffffff) {

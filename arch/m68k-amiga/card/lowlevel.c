@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#include <hardware/custom.h>
 
 #include "card_intern.h"
 
@@ -176,11 +177,24 @@ void pcmcia_enable(void)
     gio->status = 0;
 }
 
+/* ugly busy wait */
+static void waitframe(UBYTE frames)
+{
+    volatile struct Custom *custom = (struct Custom*)0xdff000;
+    UWORD vpos = 0;
+
+    while (frames != 0) {
+        while (vpos < 128)
+            vpos = custom->vhposr >> 8;
+        while (vpos >= 128)
+            vpos = custom->vhposr >> 8;
+        frames--;
+    }
+}
+
 void pcmcia_cardreset(struct CardResource *CardResource)
 {
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
-    volatile UBYTE *cia = (UBYTE*)0xbfe001;
-    ULONG i;
     UBYTE x, rb, intena;
 
     Disable();
@@ -191,15 +205,17 @@ void pcmcia_cardreset(struct CardResource *CardResource)
     gio->intreq = GAYLE_IRQ_IDE | GAYLE_IRQ_CARD_RESET_MASK;
     Enable();
 
-    for (i = 0; i < 100000; i++)
-	x = *cia;
+    waitframe(10);
 
     Disable();
     CardResource->resetberr = rb;
     x = GAYLE_IRQ_IDE | CardResource->resetberr;
     gio->intreq = x;
-    gio->intena = intena;
     Enable();
+
+    waitframe(10);
+
+    gio->intena = intena;
 
     CARDDEBUG(bug("PCMCIA card reset %02x\n", x));
 }
