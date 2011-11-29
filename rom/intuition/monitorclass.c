@@ -683,7 +683,7 @@ Object *MonitorClass__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 
 	The returned value is a combination of the following bit flags:
 	  PointerType_3Plus1 - color 0 transparent, 1-3 visible	(Amiga(tm) chipset sprite)
-	  PointerType_2Plus1 - color 0 transparent, 1 unsefined (can be for example clear or
+	  PointerType_2Plus1 - color 0 transparent, 1 undefined (can be for example clear or
 			       inverse), 2-3 visible
 	  PointerType_ARGB   - Direct color bitmap (hi-color or truecolor, possibly with alpha
 			       channel
