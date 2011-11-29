@@ -28,14 +28,14 @@
          struct IntuitionBase *, IntuitionBase, 17, Intuition)
 
 /*  FUNCTION
-    Check if two times are within the doubleclick intervall.
+    Check if two times are within the doubleclick interval.
 
     INPUTS
     sSeconds, sMicros - Seconds and microseconds of the first event.
     cSeconds, cMicros - Seconds and microseconds of the second event.
 
     RESULT
-    TRUE if the times are within the doubleclick intervall, FALSE
+    TRUE if the times are within the doubleclick interval, FALSE
     otherwise.
 
     NOTES

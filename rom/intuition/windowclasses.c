@@ -348,8 +348,8 @@ IPTR DragBarClass__GM_GOACTIVE(Class *cl, struct Gadget *g, struct gpInput *msg)
         struct dragbar_data *data;
         struct Window       *w;
 
-        /* There is no point in rerendering ourseleves her, as this
-           is done by a call to RefreshWindowFrame() in the intuition inputhandler
+        /* There is no point in rerendering ourseleves here, as this is done
+           by a call to RefreshWindowFrame() in the intuition inputhandler
         */
 
         w = msg->gpi_GInfo->gi_Window;
