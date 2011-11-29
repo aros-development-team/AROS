@@ -3654,6 +3654,7 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                  struct pHidd_BitMap_PutPattern *msg)
 {
     void (*op)(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data);
+    BOOL get = TRUE;
     struct ppb_data data;
 
     DPUTPATTERN(bug("BitMap::PutPattern(x=%d, y=%d, width=%d, height=%d)\n",
@@ -3665,7 +3666,8 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     if (msg->patterndepth > 1)
     {
         DPUTPATTERN(bug("[PutPattern] Color\n"));
-        op = ColorPatternBuffered;
+        op  = ColorPatternBuffered;
+        get = FALSE;
     }
     else if (GC_COLEXP(msg->gc) == vHidd_GC_ColExp_Transparent)
     {
@@ -3680,7 +3682,8 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     else
     {
         DPUTPATTERN(bug("[PutPattern] JAM2\n"));
-        op = JAM2PatternBuffered;
+        op  = JAM2PatternBuffered;
+        get = FALSE;
     }
 
     data.patarray      = (UWORD *)msg->pattern;
@@ -3699,14 +3702,15 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
     if (data.maskarray)
     {
         data.maskarray += (msg->masksrcx / 16) * 2;
-        data.maskmask = 0x8000 >> (msg->masksrcx & 0xF);
+        data.maskmask   = 0x8000 >> (msg->masksrcx & 0xF);
+        get = TRUE;
     }
     else
         data.maskmask = 0xFFFF;
 
     DPUTPATTERN(bug("[PutPattern] MaskArray 0x%p, MaskMask 0x%04X\n", data.maskarray, data.maskmask));
 
-    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_Native32, op, &data);
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, op, &data);
 
     /* TODO: Write fallback */
 
