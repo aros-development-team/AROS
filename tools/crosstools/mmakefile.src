@@ -9,22 +9,17 @@ GCC_EXTRA_OPTS = \
   --enable-long-long --enable-version-specific-runtime-libs
 
 ifeq ($(AROS_TARGET_CPU), arm)
-  # FIXME: Update patch to work with --with-sysroot then set GCC_INCLUDES and GCC_PATH for --enable-crosstools
-  GCC_VERSION     = 4.4.2
-  GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
+  GCC_VERSION = 4.5.1
 else
 ifeq ($(AROS_TARGET_CPU), m68k)
-  GCC_VERSION     = 4.5.1
-  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
-  GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
-  GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+  GCC_VERSION = 4.5.1
 else
-  GCC_VERSION     = 4.2.4
-  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
-  GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
-  GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
+  GCC_VERSION = 4.2.4
 endif
 endif
+GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
+GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
+GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 
 GNU_REPOSITORY := gnu://
 
