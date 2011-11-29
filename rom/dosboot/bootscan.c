@@ -311,38 +311,6 @@ static BOOL CheckTables(struct ExpansionBase *ExpansionBase, struct Library *Par
     return retval;
 }
 
-static BOOL IsRemovable(struct ExecBase *SysBase, struct IOExtTD *ioreq)
-{
-    struct DriveGeometry dg;
-
-    /*
-     * On AROS m68k, CF cards are removable, but are
-     * bootable. Also, we should support CDROMs that
-     * have RDB blocks. So, in all cases, allow the
-     * RDB support.
-     * UPD: this is not so easy. If you remove one disk with RDB on it
-     * and insert another one, number of partitions and their parameters
-     * will change. This means that we actually have to dismount all DeviceNodes
-     * for old disk and mount new ones.
-     * This is technically possible, however rather complex (we need to track down
-     * which DeviceNodes are currently in use, and be able to reuse them when the
-     * disk is inserted again in a response to "Insert disk XXX in any drive".
-     * MorphOS has this mechanism implemented in mount.library.
-     * An alternative is to bind mounted DeviceNodes to a particular disk and mount
-     * a new set for every new one. Perhaps it's simpler, but anyway, needs to be
-     * handled in some special way.
-     */
-    if (!strcmp(ioreq->iotd_Req.io_Device->dd_Library.lib_Node.ln_Name, "carddisk.device"))
-	return FALSE;
-
-    ioreq->iotd_Req.io_Command = TD_GETGEOMETRY;
-    ioreq->iotd_Req.io_Data = &dg;
-    ioreq->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-    DoIO((struct IORequest *)ioreq);
-
-    return (dg.dg_Flags & DGF_REMOVABLE) ? TRUE : FALSE;
-}
-
 static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library *PartitionBase, struct ExecBase *SysBase, struct BootNode *bn)
 {
     struct DeviceNode *dn = bn->bn_DeviceNode;
@@ -361,9 +329,7 @@ static VOID CheckPartitions(struct ExpansionBase *ExpansionBase, struct Library 
 
 	    if (pt)
             {
-            	/* don't check removable devices for partition tables */
-            	if (!IsRemovable(SysBase, pt->bd->ioreq))
-                    res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
+                res = CheckTables(ExpansionBase, PartitionBase, fssm, pt, SysBase);
 
            	CloseRootPartition(pt);
            }
@@ -387,7 +353,7 @@ void dosboot_BootScan(LIBBASETYPEPTR LIBBASE)
     	/*
     	 * Remove the whole chain of BootNodes from the list and re-initialize it.
     	 * We will insert new nodes into it, based on old ones.
-    	 * What is done here is safe as long is we don't move the list itself.
+    	 * What is done here is safe as long as we don't move the list itself.
     	 * ln_Succ of the last node in chain points to the lh_Tail of our list
     	 * which always contains NULL.
     	 */
