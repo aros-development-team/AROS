@@ -984,6 +984,27 @@ STATIC BOOL FRGadLayout(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
+STATIC VOID FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;
+    
+    if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+    {
+        union
+        {
+            UBYTE *dir;
+            IPTR   baz;
+        } foo;
+
+        GetAttr(STRINGA_TextVal, udata->PathGad, &foo.baz);
+        FRGetDirectory(foo.dir, ld, AslBase);
+    } else {
+        FRGetVolumes(ld, AslBase);
+    }
+}
+
+/*****************************************************************************************/
+
 STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     ULONG retval = GHRET_FAIL;

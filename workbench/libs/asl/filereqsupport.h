@@ -37,7 +37,6 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
-void FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase);
 
 
 
