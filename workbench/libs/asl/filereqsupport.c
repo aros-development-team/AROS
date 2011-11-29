@@ -125,6 +125,27 @@ static void fixpath(char *pathstring)
 
 /*****************************************************************************************/
 
+void FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;
+    
+    if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+    {
+        union
+        {
+            UBYTE *dir;
+            IPTR   baz;
+        } foo;
+
+        GetAttr(STRINGA_TextVal, udata->PathGad, &foo.baz);
+        FRGetDirectory(foo.dir, ld, AslBase);
+    } else {
+        FRGetVolumes(ld, AslBase);
+    }
+}
+
+/*****************************************************************************************/
+
 void FRRefreshListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
@@ -815,11 +836,22 @@ BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		break;
 	}
     }
+
+    BPTR lock = Lock(pathstring, ACCESS_READ);
+    if (!lock)
+    {
+        D(bug("Could not lock parent directory (\"%s\"), doing volumes instead\n", pathstring));
+        FRClickOnVolumes(ld, AslBase);
+        result = FALSE;
+    }
+    else
+    {
+        UnLock(lock);
+        result = FRNewPath(pathstring, ld, AslBase);
+    }
     
-    result = FRNewPath(pathstring, ld, AslBase);
-    
+
     return result;
-   
 }
 
 /*****************************************************************************************/
