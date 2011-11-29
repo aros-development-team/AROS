@@ -209,7 +209,7 @@ struct config *initconfig(int argc, char **argv)
     else if (strcmp(argv[optind+2], "datatype")==0)
     {
 	cfg->modtype = DATATYPE;
-	cfg->moddir = "Classes/Datatypes";
+	cfg->moddir = "Classes/DataTypes";
     }
     else if (strcmp(argv[optind+2], "usbclass")==0)
     {
