@@ -477,8 +477,8 @@ static void writeresident(FILE *out, struct config *cfg)
     if (cfg->modtype != RESOURCE && cfg->modtype != HANDLER)
     {
 	fprintf(out,
-		"AROS_LP1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-		"    AROS_LPA(LIBBASETYPEPTR, extralh, D0),\n"
+		"AROS_LD1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
+		"    AROS_LDA(LIBBASETYPEPTR, extralh, D0),\n"
 		"    LIBBASETYPEPTR, lh, 3, %s\n"
 		");\n"
 		"\n",
@@ -875,9 +875,9 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	if (cfg->options & OPTION_NOOPENCLOSE)
 	    fprintf(out,
 		"AROS_LD3 (void, GM_UNIQUENAME(OpenLib),\n"
-		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
-		"    AROS_LHA(ULONG, unitnum, D0),\n"
-		"    AROS_LHA(ULONG, flags, D1),\n"
+		"    AROS_LDA(struct IORequest *, ioreq, A1),\n"
+		"    AROS_LDA(ULONG, unitnum, D0),\n"
+		"    AROS_LDA(ULONG, flags, D1),\n"
 		"    LIBBASETYPEPTR, lh, 1, %s\n"
 		");\n",
 		cfg->basename
@@ -925,7 +925,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	{
 	    fprintf(out,
 		"AROS_LD1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
-		"    AROS_LHA (ULONG, version, D0),\n"
+		"    AROS_LDA (ULONG, version, D0),\n"
 		"    LIBBASETYPEPTR, lh, 1, %s\n"
 		");\n",
 		cfg->basename
@@ -1055,7 +1055,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	else
 	    fprintf(out,
 		"AROS_LD1(BPTR, GM_UNIQUENAME(CloseLib),\n"
-		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		"    AROS_LDA(struct IORequest *, ioreq, A1),\n"
 		"    LIBBASETYPEPTR, lh, 2, %s\n"
 		");\n",
 		cfg->basename
