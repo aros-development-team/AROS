@@ -744,7 +744,7 @@ UBYTE td_read(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBase *tdb)
 		sectorsdone = 0;
 		for (sec = smallestsectorneeded; sec < largestsectorneeded; sec++) {
 			if (tdb->td_sectorbits & (1 << sec)) {
-				CopyMemQuick(tdb->td_DataBuffer + sec * 512, data + (sec - smallestsectorneeded) * 512, 512);
+				CopyMem(tdb->td_DataBuffer + sec * 512, data + (sec - smallestsectorneeded) * 512, 512);
 				sectorsdone++;
 			}
 		}
@@ -815,7 +815,7 @@ static UBYTE td_write2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskBa
 
 		// fill buffer with new data
 		for (sec = smallestsectorneeded; sec < largestsectorneeded; sec++) {
-			CopyMemQuick(data + (sec - smallestsectorneeded) * 512, tdb->td_DataBuffer + sec * 512, 512);
+			CopyMem(data + (sec - smallestsectorneeded) * 512, tdb->td_DataBuffer + sec * 512, 512);
 			tdb->td_sectorbits |= 1 << sec;
 			tdb->td_dirty = TRUE;
 		}
@@ -916,7 +916,7 @@ static UBYTE td_format2(struct IOExtTD *iotd, struct TDU *tdu, struct TrackDiskB
         td_select(tdu, tdb);
         td_wait(tdb, 2);
         td_seek(tdu, track >> 1, track & 1, tdb);
-	CopyMemQuick(data, tdb->td_DataBuffer, tdu->tdu_sectors * 512);
+	CopyMem(data, tdb->td_DataBuffer, tdu->tdu_sectors * 512);
 	tdb->td_sectorbits = (1 << tdu->tdu_sectors) - 1;
 	tdb->td_buffer_unit = tdu->tdu_UnitNum;
 	tdb->td_buffer_track = track;
