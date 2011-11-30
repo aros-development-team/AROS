@@ -169,8 +169,6 @@ extern void aros_not_implemented ();
 #define AROS_STACKSIZE  40960
 
 /* Some defines to set the cpu specific libcall.h interface */
-#define __AROS_LCGCCREG_REGNAME "%edx"
-#define __AROS_LCGCCREG_ASMSET "movl %1, %%edx"
-#define __AROS_LIBCALL_H_FILE "aros/libcall_gccreg.h"
+#define __AROS_LIBCALL_H_FILE "aros/i386/libcall.h"
 
 #endif /* AROS_I386_CPU_H */
