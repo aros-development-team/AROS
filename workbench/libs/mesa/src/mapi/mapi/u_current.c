@@ -275,7 +275,11 @@ u_current_get_internal(void)
    return (struct mapi_table *) ((ThreadSafe) ?
          u_tsd_get(&u_current_table_tsd) : (void *) u_current_table);
 #elif defined(__AROS__)
-   return (struct mapi_table *)GetFromTLS(u_current_table);
+   struct mapi_table *tbl;
+   tbl = (struct mapi_table *)GetFromTLS(u_current_table);
+   if (tbl == NULL)
+       tbl = (struct mapi_table *) table_noop_array;
+   return tbl;
 #else
    return u_current_table;
 #endif
