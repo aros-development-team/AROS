@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -193,10 +193,10 @@ BPTR NewOpen(struct Library *DataTypesBase, STRPTR name, ULONG SourceType,
 
 #define getDTLIST (GPB(DataTypesBase)->dtb_DTList)
 
-struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
+struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				     struct Library *DataTypesBase)
 {
-    struct CompoundDatatype *cdt = NULL;
+    struct CompoundDataType *cdt = NULL;
 
     D(bug("datatypes.library/ExamineLock\n"));
     
@@ -208,7 +208,7 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 	if (fib->fib_DirEntryType > 0)
 	{
    	    D(bug("datatypes.library/ExamineLock: is a directory\n"));
-	    cdt = (struct CompoundDatatype *)FindNameNoCase(DataTypesBase, 
+	    cdt = (struct CompoundDataType *)FindNameNoCase(DataTypesBase, 
 							    &getDTLIST->dtl_MiscList,
 							    "directory");
 	}
@@ -313,23 +313,23 @@ struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 }
 
 
-struct CompoundDatatype *FindDtInList(struct Library *DataTypesBase,
+struct CompoundDataType *FindDtInList(struct Library *DataTypesBase,
 				      struct DTHookContext *dthc,
 				      struct List *list,
 				      UBYTE *CheckArray,
 				      UWORD CheckSize,
 				      UBYTE *Filename)
 {
-    struct CompoundDatatype *cdt = NULL;
+    struct CompoundDataType *cdt = NULL;
     BOOL                   found = FALSE;
 
     if (list)
     {
-	struct CompoundDatatype *cur;
+	struct CompoundDataType *cur;
 
-	for(cur = (struct CompoundDatatype *)list->lh_Head; 
+	for(cur = (struct CompoundDataType *)list->lh_Head; 
 		cur->DT.dtn_Node1.ln_Succ;
-		cur = (struct CompoundDatatype *)cur->DT.dtn_Node1.ln_Succ)
+		cur = (struct CompoundDataType *)cur->DT.dtn_Node1.ln_Succ)
 	{
 	    if(CheckSize >= cur->DTH.dth_MaskLen)
 	    {
@@ -420,14 +420,14 @@ struct CompoundDatatype *FindDtInList(struct Library *DataTypesBase,
 }
 
 
-struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
+struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size)
 {
-    struct CompoundDatatype *cdt = NULL;
-    struct CompoundDatatype *cdt_bin = NULL;
-    struct CompoundDatatype *cdt_asc = NULL;
+    struct CompoundDataType *cdt = NULL;
+    struct CompoundDataType *cdt_bin = NULL;
+    struct CompoundDataType *cdt_asc = NULL;
 
     D(UWORD        type);
 

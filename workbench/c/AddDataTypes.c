@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -11,7 +11,7 @@
 
     NAME
 
-        AddDatatypes (files) [QUIET] [REFRESH] [LIST]
+        AddDataTypes (files) [QUIET] [REFRESH] [LIST]
 
     SYNOPSIS
 
@@ -23,16 +23,16 @@
 
     FUNCTION
 
-          AddDatatypes allows you to activate a set of specific datatypes.
-      This might be necessary if new datatypes were installed on your 
-      system or were not activated on startup.
+        AddDataTypes allows you to activate a set of specific DataTypes.
+        This might be necessary if new DataTypes were installed on your 
+        system or were not activated on startup.
 
     INPUTS
 
-        FILES  --  The name of the file(s) of the corresponding datatype.
+        FILES  --  The name of the file(s) of the corresponding DataType.
         QUIET  --  Won't output any messages
-      REFRESH  --  Refreshes the Datatype list?
-         LIST  --  This will display a list of current datatypes loaded in
+      REFRESH  --  Refreshes the DataTypes list?
+         LIST  --  This will display a list of current DataTypes loaded in
                    memory
 
     RESULT
@@ -128,44 +128,44 @@ struct StackVars;		/* forward declaration */
 BOOL DateScan(struct StackVars *sv);
 void ScanDirectory(struct StackVars *sv, STRPTR pattern);
 struct DataTypesList *CreateDTList(struct StackVars *sv);
-struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
+struct CompoundDataType *CreateBasicType(struct StackVars *sv,
 					 struct List *list,
 					 struct List *globallist, STRPTR name,
 					 UWORD Flags, ULONG ID, ULONG GroupID);
-void LoadDatatype(struct StackVars *sv, STRPTR name);
-struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
+void LoadDataType(struct StackVars *sv, STRPTR name);
+struct CompoundDataType *CreateDataType(struct StackVars *sv,
 					struct IFFHandle *iff);
-struct CompoundDatatype *AddDatatype(struct StackVars *sv, 
-				     struct CompoundDatatype *cdt);
-void DeleteDatatype(struct StackVars *sv, struct CompoundDatatype *cdt);
+struct CompoundDataType *AddDataType(struct StackVars *sv, 
+				     struct CompoundDataType *cdt);
+void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt);
 void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node);
 void PrioInsert(struct StackVars *sv, struct List *list,
-		struct CompoundDatatype *cdt);
+		struct CompoundDataType *cdt);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 			      STRPTR name);
 
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0), 
 	AROS_UFPA(BPTR   , fh        , D1),
 	AROS_UFPA(void * , buf       , D2),
 	AROS_UFPA(LONG   , size      , D3),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0), 
+AROS_UFP4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0), 
 	AROS_UFPA(BPTR   , fh        , D1),
 	AROS_UFPA(LONG   , pos       , D2),
 	AROS_UFPA(LONG   , mode      , D3),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0), 
+AROS_UFP3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0), 
 	AROS_UFPA(ULONG, size, D0),
 	AROS_UFPA(ULONG, req,  D1),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
-AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0), 
+AROS_UFP3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0), 
 	AROS_UFPA(APTR , memory, A1),
 	AROS_UFPA(ULONG, size  , D0),
 	AROS_UFPA(struct DosLibrary *, DOSBase, A6));
 
 /********************************* CONSTANTS *********************************/
 
-const TEXT Version[] = "$VER: AddDatatypes 42.1 (8.12.2007)\n";
+const TEXT Version[] = "$VER: AddDataTypes 42.1 (8.12.2007)\n";
 
 #define EXCL_LEN 18
 UBYTE ExcludePattern[] = "#?.(info|backdrop)";
@@ -201,10 +201,10 @@ const LONG const CollArray[2*NUM_COLL]=
 
 const LONG_FUNC const FunctionArray[]=
 {				/* Note! */
-    (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
-    (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
-    (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0),
-    (LONG_FUNC)AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0), /* For ELF */
+    (LONG_FUNC)AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
+    (LONG_FUNC)AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0), /* For ELF */
 };
 
 
@@ -226,7 +226,7 @@ struct StackVars
 #define HookBufSize       sv->HookBufSize
 #define HookPosition      sv->HookPosition
 
-/****** AddDatatypes/main *****************************************************
+/****** AddDataTypes/main *****************************************************
 *
 *   NAME
 *        main - well... main
@@ -276,7 +276,7 @@ int main(void)
 	    for(num = 1; num<WBenchMsg->sm_NumArgs; wa++)
 	    {
 		BPTR olddir = CurrentDir(wa->wa_Lock);
-		LoadDatatype(sv, wa->wa_Name);
+		LoadDataType(sv, wa->wa_Name);
 		CurrentDir(olddir);
 	    }
 
@@ -327,7 +327,7 @@ int main(void)
 					while(node->ln_Succ != NULL)
 					{
 						// sorted list points to DT.dtn_Node2 ....
-						struct CompoundDatatype *cdt;
+						struct CompoundDataType *cdt;
 						struct DataTypeHeader *dth;
 						STRPTR argarray[2];
 
@@ -337,7 +337,7 @@ int main(void)
 							PrintFault(ERROR_BREAK,0);
 							break;
 						}
-						cdt=(struct CompoundDatatype *)(node-1);
+						cdt=(struct CompoundDataType *)(node-1);
 						dth=cdt->DT.dtn_Header;
 
 						argarray[0] = dth->dth_BaseName;
@@ -364,10 +364,10 @@ int main(void)
 
 
 
-/****** AddDatatypes/DateScan *************************************************
+/****** AddDataTypes/DateScan *************************************************
 *
 *   NAME
-*        DateScan - See if datatypes descriptors need updating
+*        DateScan - See if DataTypes descriptors need updating
 *
 *   SYNOPSIS
 *
@@ -391,7 +391,7 @@ BOOL DateScan(struct StackVars *sv)
     BPTR   lock;
     struct FileInfoBlock *fib;
 
-    if((lock = Lock("DEVS:Datatypes", ACCESS_READ)))
+    if((lock = Lock("DEVS:DataTypes", ACCESS_READ)))
     {
 	if((fib = AllocDosObject(DOS_FIB, NULL)))
 	{
@@ -418,7 +418,7 @@ BOOL DateScan(struct StackVars *sv)
 
 
 
-/****** AddDatatypes/ScanDirectory ********************************************
+/****** AddDataTypes/ScanDirectory ********************************************
 *
 *   NAME
 *        ScanDirectory - Scan a directory recursively for DT descriptors
@@ -480,7 +480,7 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
 		{
 		    OldDir = CurrentDir(AnchorPath->ap_Current->an_Lock);
 		    
-		    LoadDatatype(sv, AnchorPath->ap_Info.fib_FileName);
+		    LoadDataType(sv, AnchorPath->ap_Info.fib_FileName);
 		    
 		    CurrentDir(OldDir);
 		}
@@ -504,7 +504,7 @@ void ScanDirectory(struct StackVars *sv, STRPTR pattern)
 }
 
 
-/****** AddDatatypes/CreateDTList *********************************************
+/****** AddDataTypes/CreateDTList *********************************************
 *
 *   NAME
 *        CreateDTList - Create and initialize the DataTypesList
@@ -533,7 +533,7 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 
     /* We do this in order to force datatypes.library to get
        loaded and initialized. During this process it will
-       create and install datatypes list object in memory. */
+       create and install DataTypes list object in memory. */
     DTBase = OpenLibrary("datatypes.library", 0);
     if (DTBase)
 	CloseLibrary(DTBase);
@@ -593,7 +593,7 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 
 
 
-/****** AddDatatypes/CreateBasicType ******************************************
+/****** AddDataTypes/CreateBasicType ******************************************
 *
 *   NAME
 *        CreateBasicType - Initialize one of the basic types
@@ -614,13 +614,13 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 *
 */
 
-struct CompoundDatatype *CreateBasicType(struct StackVars *sv, 
+struct CompoundDataType *CreateBasicType(struct StackVars *sv, 
 					 struct List *list, 
 					 struct List *globallist, STRPTR name,
 					 UWORD Flags, ULONG ID, ULONG GroupID)
 {
-    struct CompoundDatatype *cdt;
-    ULONG AllocLen = sizeof(struct CompoundDatatype) + strlen(name) + 1;
+    struct CompoundDataType *cdt;
+    ULONG AllocLen = sizeof(struct CompoundDataType) + strlen(name) + 1;
     
     if((cdt = AllocVec(AllocLen, MEMF_PUBLIC | MEMF_CLEAR)))
     {
@@ -652,10 +652,10 @@ struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
 
 
 
-/****** AddDatatypes/LoadDatatype *********************************************
+/****** AddDataTypes/LoadDataType *********************************************
 *
 *   NAME
-*        LoadDatatype - Load and install a single datatype descriptor
+*        LoadDataType - Load and install a single DataType descriptor
 *
 *   SYNOPSIS
 *
@@ -673,7 +673,7 @@ struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
 *
 */
 
-void LoadDatatype(struct StackVars *sv, STRPTR name)
+void LoadDataType(struct StackVars *sv, STRPTR name)
 {
     struct IFFHandle *iff;
 
@@ -695,7 +695,7 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 			    
 			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) == IFFERR_EOC) 
 			    {
-				CreateDatatype(sv, iff);
+				CreateDataType(sv, iff);
 				/* FIXME: The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix */
 				break;
 			    }
@@ -718,7 +718,7 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 }
 
 
-/****** AddDatatypes/MemStreamHook *******************************************
+/****** AddDataTypes/MemStreamHook *******************************************
 *
 *   NAME
 *        MemStreamHook - needed by ReadStruct
@@ -758,10 +758,10 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
     return rc;
 }
 
-/****** AddDatatypes/CreateDatatype *******************************************
+/****** AddDataTypes/CreateDataType *******************************************
 *
 *   NAME
-*        CreateDatatype - create a datatype from IFF chunks
+*        CreateDataType - create a DataType from IFF chunks
 *
 *   SYNOPSIS
 *
@@ -779,10 +779,10 @@ LONG MemStreamHook(struct Hook * hook, UBYTE **memptr, Msg msg)
 *
 */
 
-struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
+struct CompoundDataType *CreateDataType(struct StackVars *sv,
 					struct IFFHandle *iff)
 {
-    struct CompoundDatatype *cdt = NULL;
+    struct CompoundDataType *cdt = NULL;
     struct StoredProperty *prop;
     ULONG  AllocLen;
     UBYTE *func;
@@ -791,7 +791,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
  
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
-	AllocLen = sizeof(struct CompoundDatatype) - 
+	AllocLen = sizeof(struct CompoundDataType) - 
 	          32 + /* was sizeof(struct DataTypeHeader), but we must use struct size as it would be on Amiga */
 		  prop->sp_Size;
 	
@@ -888,7 +888,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 
 		} /* if((prop = FindProp(iff, ID_DTYP, ID_DTCD))) */
 
-		cdt = AddDatatype(sv, cdt);
+		cdt = AddDataType(sv, cdt);
 
 		FreeStruct(fdh, FileDataTypeHeaderDesc);
 		
@@ -903,21 +903,21 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 
 
 
-/****** AddDatatypes/AddDatatype **********************************************
+/****** AddDataTypes/AddDataType **********************************************
 *
 *   NAME
-*        AddDatatype - add a datatype to the system
+*        AddDataType - add a DataType to the system
 *
 *   SYNOPSIS
 *
 *   FUNCTION
 *
-*        This subroutine tries to add a datatype to the system datatypes
-*        list. If the datatype already exists, it will be replaced or
-*        updated. In case of an error, the CompoundDatatype will be deleted
+*        This subroutine tries to add a DataType to the system DataTypes
+*        list. If the DataType already exists, it will be replaced or
+*        updated. In case of an error, the CompoundDataType will be deleted
 *        and a NULL pointer is returned.
 *
-*        The CompoundDatatype pointer you passed in will be invalid after
+*        The CompoundDataType pointer you passed in will be invalid after
 *        calling this function. Use the returned handle instead.
 *        DO NOT USE THE OLD POINTER IN ANY MORE!
 *
@@ -925,7 +925,7 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 *
 *   RETURNS
 *
-*        A pointer to a CompoundDatatype in the system datatypes list
+*        A pointer to a CompoundDataType in the system DataTypes list
 *        or a NULL pointer for failure
 *
 *   EXAMPLE
@@ -936,14 +936,14 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 *
 */
 
-struct CompoundDatatype *AddDatatype(struct StackVars *sv,
-				     struct CompoundDatatype *cdt)
+struct CompoundDataType *AddDataType(struct StackVars *sv,
+				     struct CompoundDataType *cdt)
 {
     struct List *typelist;
     BOOL   Success = FALSE;
     ULONG  AllocSize;
     ULONG  result;
-    struct CompoundDatatype *oldcdt;
+    struct CompoundDataType *oldcdt;
     
     switch(cdt->DTH.dth_Flags & DTF_TYPE_MASK)
     {
@@ -1007,7 +1007,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 
 	if (Success)
 	{
-	    if((oldcdt = (struct CompoundDatatype*)__FindNameNoCase(sv,
+	    if((oldcdt = (struct CompoundDataType*)__FindNameNoCase(sv,
 								    typelist,
 								    cdt->DT.dtn_Node1.ln_Name)))
 	    {
@@ -1024,7 +1024,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 		       (oldcdt->DTH.dth_Priority != cdt->DTH.dth_Priority) ||
 		       (oldcdt->DTH.dth_MaskLen != cdt->DTH.dth_MaskLen))
 		    {
-			DeleteDatatype(sv, oldcdt);
+			DeleteDataType(sv, oldcdt);
 			oldcdt = NULL;
 		    }
 		    else
@@ -1041,7 +1041,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 	    {
 		if(oldcdt)
 		{
-		    DeleteDatatype(sv, cdt);
+		    DeleteDataType(sv, cdt);
 		    cdt = oldcdt;
 		}
 		else
@@ -1109,7 +1109,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
     
     if(!Success)
     {
-	DeleteDatatype(sv, cdt);
+	DeleteDataType(sv, cdt);
 	cdt = NULL;
     }
     
@@ -1118,10 +1118,10 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 
 
 
-/****** AddDatatypes/DeleteDatatype *******************************************
+/****** AddDataTypes/DeleteDataType *******************************************
 *
 *   NAME
-*        DeleteDatatype - unlink and deallocate a CompoundDatatype structure
+*        DeleteDataType - unlink and deallocate a CompoundDataType structure
 *
 *   SYNOPSIS
 *
@@ -1139,7 +1139,7 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
 *
 */
 
-void DeleteDatatype(struct StackVars *sv, struct CompoundDatatype *cdt)
+void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt)
 {
     if(cdt)
     {
@@ -1178,7 +1178,7 @@ void DeleteDatatype(struct StackVars *sv, struct CompoundDatatype *cdt)
 
 
 
-/****** AddDatatypes/AlphaInsert **********************************************
+/****** AddDataTypes/AlphaInsert **********************************************
 *
 *   NAME
 *        AlphaInsert - enqueue a node alphabetically into a list 
@@ -1214,10 +1214,10 @@ void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node)
 
 
 
-/****** AddDatatypes/PrioInsert **********************************************
+/****** AddDataTypes/PrioInsert **********************************************
 *
 *   NAME
-*        PrioInsert - enqueue a CompoundDatatype correctly in the type list
+*        PrioInsert - enqueue a CompoundDataType correctly in the type list
 *
 *   SYNOPSIS
 *
@@ -1236,14 +1236,14 @@ void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node)
 */
 
 void PrioInsert(struct StackVars *sv, struct List *list,
-		struct CompoundDatatype *cdt)
+		struct CompoundDataType *cdt)
 {
-    struct CompoundDatatype *cur, *prev = NULL;
+    struct CompoundDataType *cur, *prev = NULL;
     WORD diff;
     
-    for(cur = (struct CompoundDatatype*)list->lh_Head;
+    for(cur = (struct CompoundDataType*)list->lh_Head;
 	cur->DT.dtn_Node1.ln_Succ;
-	prev = cur, cur = (struct CompoundDatatype*)cur->DT.dtn_Node1.ln_Succ)
+	prev = cur, cur = (struct CompoundDataType*)cur->DT.dtn_Node1.ln_Succ)
     {
 	diff = (cdt->Function ? 1 : 0) - (cur->Function ? 1 : 0);
 	
@@ -1295,7 +1295,7 @@ void PrioInsert(struct StackVars *sv, struct List *list,
 
 
 
-/****** AddDatatypes/__FindNameNoCase *****************************************
+/****** AddDataTypes/__FindNameNoCase *****************************************
 *
 *   NAME
 *        __FindNameNoCase - find a node in a list (case insensitive)
@@ -1336,7 +1336,7 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 
 
 
-/****** AddDatatypes/ReadFunc *************************************************
+/****** AddDataTypes/ReadFunc *************************************************
 *
 *   NAME
 *        ReadFunc - data read hook for InternalLoadSeg
@@ -1357,7 +1357,7 @@ struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 *
 */
 
-AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDataTypes, 0),
 	AROS_UFHA(BPTR   , fh        , D1),
 	AROS_UFHA(void * , buffer    , D2),
 	AROS_UFHA(LONG   , length    , D3),
@@ -1378,7 +1378,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
     AROS_USERFUNC_EXIT
 }
 
-/****** AddDatatypes/SeekFunc *************************************************
+/****** AddDataTypes/SeekFunc *************************************************
 *
 *   NAME
 *        SeekFunc - seek hook for InternalLoadSeg (ELF only)
@@ -1399,7 +1399,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(ReadFunc, AddDatatypes, 0),
 *
 */
 
-AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0),
+AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDataTypes, 0),
 	AROS_UFHA(BPTR   , fh        , D1),
 	AROS_UFHA(LONG   , pos       , D2),
 	AROS_UFHA(LONG   , mode      , D3),
@@ -1427,7 +1427,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0),
     AROS_USERFUNC_EXIT
 }
 
-/****** AddDatatypes/AllocFunc ************************************************
+/****** AddDataTypes/AllocFunc ************************************************
 *
 *   NAME
 *        AllocFunc - memory allocation hook for InternalLoadSeg
@@ -1448,7 +1448,7 @@ AROS_UFH4(LONG, AROS_SLIB_ENTRY(SeekFunc, AddDatatypes, 0),
 *
 */
 
-AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
+AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDataTypes, 0),
 	AROS_UFHA(ULONG, size, D0),
 	AROS_UFHA(ULONG, flags,D1),
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))
@@ -1462,7 +1462,7 @@ AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
 
 
 
-/****** AddDatatypes/FreeFunc *************************************************
+/****** AddDataTypes/FreeFunc *************************************************
 *
 *   NAME
 *        FreeFunc - memory freeing hook for InternalLoadSeg
@@ -1483,7 +1483,7 @@ AROS_UFH3(UBYTE *, AROS_SLIB_ENTRY(AllocFunc, AddDatatypes, 0),
 *
 */
 
-AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDatatypes, 0),
+AROS_UFH3(void, AROS_SLIB_ENTRY(FreeFunc, AddDataTypes, 0),
 	AROS_UFHA(APTR , memory, A1),
 	AROS_UFHA(ULONG, size  , D0),
 	AROS_UFHA(struct DosLibrary *, DOSBase, A6))

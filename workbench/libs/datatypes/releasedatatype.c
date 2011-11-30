@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -56,8 +56,8 @@
    
     if(dt != NULL)
     {
-	if(((struct CompoundDatatype *)dt)->OpenCount)
-	    ((struct CompoundDatatype*)dt)->OpenCount--;
+	if(((struct CompoundDataType *)dt)->OpenCount)
+	    ((struct CompoundDataType*)dt)->OpenCount--;
 	else
 	    Alert(AN_Unknown);
     }

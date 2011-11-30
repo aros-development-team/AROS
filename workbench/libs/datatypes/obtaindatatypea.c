@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -68,7 +68,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct CompoundDatatype *cdt = NULL;
+    struct CompoundDataType *cdt = NULL;
 
     D(bug("datatypes.library/ObtainDataType - sem = %p\n", &(GPB(DataTypesBase)->dtb_DTList->dtl_Lock)));
     ObtainSemaphoreShared(&(GPB(DataTypesBase)->dtb_DTList->dtl_Lock));
