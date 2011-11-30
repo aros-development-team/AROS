@@ -56,4 +56,16 @@ USER_CFLAGS := -I$(SRCDIR)/rom/exec
 INCLUDE_FILES	    := $(call WILDCARD, include/*.h)
 %copy_includes mmake=compiler-includes path=aros dir=include
 
-%common
+#MM- compiler-includes: includes-generated-libcall_gccreg
+
+#MM
+includes-generated-libcall_gccreg: $(AROS_INCLUDES)/aros/libcall_gccreg.h $(GENINCDIR)/aros/libcall_gccreg.h
+
+$(AROS_INCLUDES)/aros/libcall_gccreg.h: $(HOSTGENDIR)/tools/gencall_gccreg
+	$(HOSTGENDIR)/tools/gencall_gccreg >$@
+
+$(GENINCDIR)/aros/libcall_gccreg.h : $(AROS_INCLUDES)/aros/libcall_gccreg.h
+	$(CP) $< $@
+
+$(HOSTGENDIR)/tools/gencall_gccreg: $(SRCDIR)/$(CURDIR)/gencall_gccreg.c
+	@$(HOST_CC) -Wall -Werror -o $@ $<

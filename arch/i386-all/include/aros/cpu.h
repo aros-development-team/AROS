@@ -168,43 +168,9 @@ extern void aros_not_implemented ();
 
 #define AROS_STACKSIZE  40960
 
-/* How to map function arguments to CPU registers */
-/*
-    The i386 processor doesn't have enough registers to map the m68k
-    register set onto them - so simply use the compiler's calling
-    convention. The library base is mapped to the last argument so that
-    it can be ignored by the function.
-*/
-
-/* What to do with the library base in header, prototype and call */
-#define __AROS_LH_BASE(basetype,basename)   basetype basename
-#define __AROS_LP_BASE(basetype,basename)   void *
-#define __AROS_LC_BASE(basetype,basename)   basename
-#define __AROS_LD_BASE(basetype,basename)   basetype
-
-/* How to transform an argument in header, opt prototype, call and forced
-   prototype. */
-#define __AROS_LHA(type,name,reg)     type name
-#define __AROS_LPA(type,name,reg)     type
-#define __AROS_LCA(type,name,reg)     name
-#define __AROS_LDA(type,name,reg)     type
-#define __AROS_UFHA(type,name,reg)    type name
-#define __AROS_UFPA(type,name,reg)    type
-#define __AROS_UFCA(type,name,reg)    name
-#define __AROS_UFDA(type,name,reg)    type
-#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
-#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
-#define __AROS_LCAQUAD(type,name,reg1,reg2)     name
-#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
-
-/* Prefix for library function in header, prototype and call */
-#define __AROS_LH_PREFIX    /* eps */
-#define __AROS_LP_PREFIX    /* eps */
-#define __AROS_LC_PREFIX    /* eps */
-#define __AROS_LD_PREFIX    /* eps */
-#define __AROS_UFH_PREFIX   /* eps */
-#define __AROS_UFP_PREFIX   /* eps */
-#define __AROS_UFC_PREFIX   /* eps */
-#define __AROS_UFD_PREFIX   /* eps */
+/* Some defines to set the cpu specific libcall.h interface */
+#define __AROS_LCGCCREG_REGNAME "%edx"
+#define __AROS_LCGCCREG_ASMSET "movl %1, %%edx"
+#define __AROS_LIBCALL_H_FILE "aros/libcall_gccreg.h"
 
 #endif /* AROS_I386_CPU_H */
