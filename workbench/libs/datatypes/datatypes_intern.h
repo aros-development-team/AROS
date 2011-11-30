@@ -2,7 +2,7 @@
 #define DATATYPES_INTERN_H
 
 /*
-    Copyright © 1995-2006, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -74,7 +74,7 @@ struct DataTypesList
 };	
 
 
-struct CompoundDatatype
+struct CompoundDataType
 {
     struct DataType  DT;
     ULONG	     FlagLong;
@@ -183,11 +183,11 @@ struct IntDataTypesList
 struct Node *FindNameNoCase(struct Library *DataTypesBase, struct List *list,
 			    STRPTR name);
 struct DataTypesList *GetDataTypesList(struct DataTypesBase *DataTypesBase);
-struct CompoundDatatype *ExamineData(struct Library *DataTypesBase,
+struct CompoundDataType *ExamineData(struct Library *DataTypesBase,
 				     struct DTHookContext *dthc,
 				     UBYTE *CheckArray, UWORD CheckSize,
 				     UBYTE *Filename, ULONG Size);
-struct CompoundDatatype *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
+struct CompoundDataType *ExamineLock(BPTR lock, struct FileInfoBlock *fib,
 				     struct Library *DataTypesBase);
 
 ULONG setattrs(struct Library *DataTypesBase, Object *object, Tag firstTag,...) __stackparm;
