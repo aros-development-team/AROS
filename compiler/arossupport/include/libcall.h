@@ -804,6 +804,8 @@ typedef unsigned int (*ULONG_FUNC)();
 #define AROS_LC14NR AROS_LC14
 #define AROS_LC15NR AROS_LC15
 
+#endif /* !__AROS_CPU_SPECIFIC_LC */
+
 
 /* Special calls: Call a library function without the name just by the ADDRESS */
 #ifndef AROS_CALL0
@@ -1124,7 +1126,6 @@ typedef unsigned int (*ULONG_FUNC)();
 #define AROS_LVO_CALL10NR(t,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
     AROS_CALL10NR(void,__AROS_GETVECADDR(bn,o),AROS_LCA(a1),AROS_LCA(a2),AROS_LCA(a3),AROS_LCA(a4),AROS_LCS(a5),AROS_LCA(a6),AROS_LCA(a7),AROS_LCA(a8),AROS_LCA(a9),AROS_LCA(a10),bt,bn)
 #endif
-#endif /* !__AROS_CPU_SPECIFIC_LC */
 
 #ifndef __AROS_CPU_SPECIFIC_LP
 #   define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \
