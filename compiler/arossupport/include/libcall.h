@@ -69,6 +69,10 @@
 #   include <aros/system.h>
 #endif
 
+#ifdef __AROS_LIBCALL_H_FILE
+#include __AROS_LIBCALL_H_FILE
+#endif
+
 #ifndef __typedef_VOID_FUNC
 #define __typedef_VOID_FUNC
 typedef void (*VOID_FUNC)();
@@ -80,6 +84,61 @@ typedef int (*LONG_FUNC)();
 #ifndef __typedef_ULONG_FUNC
 #define __typedef_ULONG_FUNC
 typedef unsigned int (*ULONG_FUNC)();
+#endif
+
+/* Prefix for library function in header, prototype and call */
+#ifndef __AROS_LH_PREFIX
+#define __AROS_LH_PREFIX    /* eps */
+#endif
+#ifndef __AROS_LP_PREFIX
+#define __AROS_LP_PREFIX    /* eps */
+#endif
+#ifndef __AROS_LC_PREFIX
+#define __AROS_LC_PREFIX    /* eps */
+#endif
+#ifndef __AROS_LD_PREFIX
+#define __AROS_LD_PREFIX    /* eps */
+#endif
+
+/* What to do with the library base in header, prototype and call */
+#ifndef __AROS_LH_BASE
+#define __AROS_LH_BASE(basetype,basename)   basetype basename
+#endif
+#ifndef __AROS_LP_BASE
+#define __AROS_LP_BASE(basetype,basename)   basetype
+#endif
+#ifndef __AROS_LC_BASE
+#define __AROS_LC_BASE(basetype,basename)   basename
+#endif
+#ifndef __AROS_LD_BASE
+#define __AROS_LD_BASE(basetype,basename)   basetype
+#endif
+
+/* How to transform an argument in header, opt prototype, call and forced
+   prototype. */
+#ifndef __AROS_LHA
+#define __AROS_LHA(type,name,reg)     type name
+#endif
+#ifndef __AROS_LPA
+#define __AROS_LPA(type,name,reg)     type
+#endif
+#ifndef __AROS_LCA
+#define __AROS_LCA(type,name,reg)     (name)
+#endif
+#ifndef __AROS_LDA
+#define __AROS_LDA(type,name,reg)     type
+#endif
+#ifndef __AROS_LHAQUAD
+#define __AROS_LHAQUAD(type,name,reg1,reg2)     type name
+#endif
+#ifndef __AROS_LPAQUAD
+#define __AROS_LPAQUAD(type,name,reg1,reg2)     type
+#endif
+#ifndef __AROS_LCAQUAD
+#define __AROS_LCAQUAD(type,name,reg1,reg2)     (name)
+#endif
+#ifndef __AROS_LDAQUAD
+#define __AROS_LDAQUAD(type,name,reg1,reg2)     type
 #endif
 
 /* Declare all macros which the systems' libcall didn't */

@@ -10,12 +10,18 @@ INCLUDE_FILES := jmpdefs.h
 #MM- compiler-includes: includes-generated-m68k-libcall
 
 #MM includes-generated-m68k-libcall
-includes-generated-m68k-libcall: $(AROS_INCLUDES)/aros/m68k/libcall.h
+includes-generated-m68k-libcall: \
+    $(AROS_INCLUDES)/aros/m68k/libcall.h \
+    $(AROS_INCLUDES)/aros/m68k/asmcall.h
 
-$(AROS_INCLUDES)/aros/m68k/libcall.h: $(HOSTGENDIR)/tools/gencall
-	$(MKDIR) $(AROS_INCLUDES)/aros/m68k
-	$(HOSTGENDIR)/tools/gencall >$@
+$(AROS_INCLUDES)/aros/m68k/asmcall.h: $(HOSTGENDIR)/tools/gencall_m68k | $(AROS_INCLUDES)/aros/m68k
+	$(HOSTGENDIR)/tools/gencall_m68k asmcall >$@
 
-$(HOSTGENDIR)/tools/gencall: $(SRCDIR)/$(CURDIR)/gencall.c
+$(AROS_INCLUDES)/aros/m68k/libcall.h: $(HOSTGENDIR)/tools/gencall_m68k | $(AROS_INCLUDES)/aros/m68k
+	$(HOSTGENDIR)/tools/gencall_m68k libcall >$@
+
+GLOB_MKDIRS += $(AROS_INCLUDES)/aros/m68k
+
+$(HOSTGENDIR)/tools/gencall_m68k: $(SRCDIR)/$(CURDIR)/gencall.c
 	@$(HOST_CC) -Wall -Werror -o $@ $<
 

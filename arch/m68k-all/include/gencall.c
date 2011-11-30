@@ -10,7 +10,9 @@
  * If it breaks, you get to keep both pieces.
  */
 
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #define GENCALL_MAX	(13 + 1)	/* Max number of arguments */
 
@@ -51,11 +53,11 @@ void aros_ufh(int id, int is_static)
     printf(") \\\n");
     printf("\t%st n (void) {%s\n", is_static ? "static " : "", (i==0) ? "" : " \\");
     for (i = 0; i < id; i++)
-        printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_UFPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_LSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
+        printf(" \\\n\t__AROS_UFPA(a%d) __attribute__((unused)) __AROS_UFCA(a%d) = __AROS_ISREG(a%d,__AROS_FP_REG) ? (__AROS_UFPA(a%d))(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(__AROS_UFSA(a%d));(__AROS_UFPA(a%d))__r;});", i+1, i+1, i+1, i+1, i+1, i+1);
     printf("\n");
 }
 
-static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
+static void asm_regs_init(int id, int flags, const char *type, const char *jmp, const char *addr)
 {
     int i;
     int has_bn = (flags & FLAG_BN);
@@ -63,8 +65,8 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
 
     /* Input values */
     for (i = 0; i < id; i++)
-        printf("\t   ULONG _arg%d = (ULONG)__AROS_LCA(a%d); \\\n",
-               i + 1, i + 1
+        printf("\t   ULONG _arg%d = (ULONG)__AROS_%sCA(a%d); \\\n",
+               i + 1, type, i + 1
         );
     if (has_bn)
         printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
@@ -74,8 +76,8 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
     if (ret_d)
         printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
     for (i = 0; i < id; i++)
-        printf("\t   register volatile ULONG __AROS_LTA(a%d) asm(__AROS_LSA(a%d)); \\\n",
-               i + 1, i + 1
+        printf("\t   register volatile ULONG __AROS_%sTA(a%d) asm(__AROS_%sSA(a%d)); \\\n",
+               type, i + 1, type, i + 1
         );
     if (has_bn)
         printf("\t   register volatile ULONG _bn asm(\"%%a6\"); \\\n");
@@ -84,8 +86,8 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
     /* Set registers (non FP) */
     for (i = 1; i <= id; i++)
         printf("\t   if (! __AROS_ISREG(a%d,__AROS_FP_REG)) { \\\n"
-               "\t      __AROS_LTA(a%d) = _arg%d; } \\\n",
-               i, i, i
+               "\t      __AROS_%sTA(a%d) = _arg%d; } \\\n",
+               i, type, i, i
         );
     if (has_bn)
         printf("\t   if (! __AROS_ISREG(bt,bn,A6,__AROS_FP_REG)) { \\\n"
@@ -101,7 +103,7 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
                i, jmp, i, addr
         );
         for (j = 0; j < id; j++)
-            printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+            printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
         printf("\t       ); }\\\n");
     }
     if (has_bn)
@@ -111,7 +113,7 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
                "\t      asm volatile (\"move.l %%%%\" __AROS_FP_SREG \",%%%%sp@-\\nmove.l %%0,%%%%\" __AROS_FP_SREG \"\\n%s\\nmove.l %%%%sp@+,%%%%\" __AROS_FP_SREG \"\\n\" : : \"r\" (_bn_arg), %s \\\n", jmp, addr
         );
         for (j = 0; j < id; j++)
-            printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+            printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
         printf("\t       ); }\\\n");
     }
     if (has_bn || id > 0)
@@ -126,7 +128,7 @@ static void asm_regs_init(int id, int flags, const char *jmp, const char *addr)
                "\t      asm volatile (\"%s\\n\" : : \"i\" (0), %s \\\n", jmp, addr
         );
         for (j = 0; j < id; j++)
-            printf("\t\t, \"r\" (__AROS_LTA(a%d)) \\\n", j + 1);
+            printf("\t\t, \"r\" (__AROS_%sTA(a%d)) \\\n", type, j + 1);
         printf("\t       ); }\\\n");
     }
 }
@@ -166,7 +168,7 @@ static void aros_ufc(int id)
              "0:\\n"
     );
     jmp[sizeof(jmp)-1]=0;
-    asm_regs_init(i, 0, jmp, "\"r\" (_n), \"i\" (__LINE__)");
+    asm_regs_init(i, 0, "UF", jmp, "\"r\" (_n), \"i\" (__LINE__)");
 
     asm_regs_exit(i, 0);
     printf("\t  })\n\n");
@@ -182,7 +184,7 @@ void aros_lc(int id, int is_double)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
     printf("\t({ \\\n");
-    asm_regs_init(id, flags, "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
+    asm_regs_init(id, flags, "L", "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
     asm_regs_exit(id, flags);
     printf("\t  })\n\n");
 }
@@ -284,88 +286,270 @@ static void aros_ld(int id, int is_ignored)
     printf("\t__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) (void)\n");
 }
 
+static const char asmextra[] =
+"/* Get the register from a triplet */\n"
+"#define __AROS_UFRA(type,name,reg)            reg\n"
+"\n"
+"/* Temporary variables */\n"
+"#define __AROS_UFTA(type,name,reg)            reg##_tmp\n"
+"\n"
+"/* Get the register as a string from the triplet */\n"
+"#define __AROS_UFSA(type,name,reg)            \"%\"#reg\n"
+;
+
+static const char libextra[] =
+"/* Get the register from a triplet */\n"
+"#define __AROS_LRA(type,name,reg)             reg\n"
+"#define __AROS_LRAQUAD1(type,name,reg1,reg2)  reg1\n"
+"#define __AROS_LRAQUAD2(type,name,reg1,reg2)  reg2\n"
+"\n"
+"/* Temporary variables */\n"
+"#define __AROS_LTA(type,name,reg)             reg##_tmp\n"
+"#define __AROS_LTAQUAD(type,name,reg1,reg2)   reg1##_##reg2##_tmp\n"
+"#define __AROS_LTAQUAD1(type,name,reg1,reg2)  reg1##_tmp\n"
+"#define __AROS_LTAQUAD2(type,name,reg1,reg2)  reg2##_tmp\n"
+"\n"
+"/* Get the register as a string from the triplet */\n"
+"#define __AROS_LSA(type,name,reg)             \"%\"#reg\n"
+"#define __AROS_LSAQUAD1(type,name,reg1,reg2)  \"%\"#reg1\n"
+"#define __AROS_LSAQUAD2(type,name,reg1,reg2)  \"%\"#reg2\n"
+"\n"
+"#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"        AROS_LH2(t,n, \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \\\n"
+"                bt, bn, o, s) \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a1) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a1); \\\n"
+"                __AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \\\n"
+"                __AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \\\n"
+"                __AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;\n"
+"\n"
+"#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        AROS_LH4(t,n, \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \\\n"
+"                bt, bn, o, s) \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a1) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a1); \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a2) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a2); \\\n"
+"                __AROS_LTAQUAD(a1).reg[0] = __AROS_LTAQUAD1(a1); \\\n"
+"                __AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \\\n"
+"                __AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val; \\\n"
+"                __AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \\\n"
+"                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \\\n"
+"                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;\n"
+"\n"
+"#define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        AROS_LH3(t,n, \\\n"
+"                AROS_LHA(a1), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \\\n"
+"                bt, bn, o, s) \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a2) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a2); \\\n"
+"                __AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \\\n"
+"                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \\\n"
+"                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;\n"
+"\n"
+"\n"
+"#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"        ({ \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a1) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } _q1 = { .val = __AROS_LCAQUAD(a1) }; \\\n"
+"                AROS_LC2##t(t, n,  \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \\\n"
+"                        bt, bn, o, s); \\\n"
+"         })\n"
+"\n"
+"#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        ({ \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a1) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } _q1 = { .val = __AROS_LCAQUAD(a1) }; \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a2) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } _q2 = { .val = __AROS_LCAQUAD(a2) }; \\\n"
+"                AROS_LC4##t(t, n,  \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \\\n"
+"                        AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \\\n"
+"                        AROS_LCA(ULONG, _q2.reg[1], __AROS_LRAQUAD2(a2)), \\\n"
+"                        bt, bn, o, s); \\\n"
+"         })\n"
+"\n"
+"#define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        ({ \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a2) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } _q1 = { .val = __AROS_LCAQUAD(a2) }; \\\n"
+"                AROS_LC3##t(t, n,  \\\n"
+"                        AROS_LCA(a1), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a2)), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a2)), \\\n"
+"                        bt, bn, o, s); \\\n"
+"         })\n"
+"\n"
+"#define AROS_LC2double AROS_LC2D\n"
+"#define AROS_LC3double AROS_LC3D\n"
+"#define AROS_LC4double AROS_LC4D\n"
+"#define AROS_LC2LONG   AROS_LC2\n"
+"#define AROS_LC3LONG   AROS_LC3\n"
+"#define AROS_LC4LONG   AROS_LC4\n"
+"\n"
+"#   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \\\n"
+"        __AROS_LDAQUAD(a1), __AROS_LD_BASE(bt,bn))\n"
+"#   define AROS_LDQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \\\n"
+"        __AROS_LDAQUAD(a1), \\\n"
+"        __AROS_LDAQUAD(a2),__AROS_LD_BASE(bt,bn))\n"
+"\n"
+"#define AROS_LPQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"                t n (__AROS_LPAQUAD(a1))\n"
+"#define AROS_LPQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"                t n (__AROS_LPAQUAD(a1), __AROS_LPAQUAD(a2))\n"
+;
+
 int main(int argc, char **argv)
 {
     int i;
 
-    printf("/* AUTOGENERATED by arch/m68k-all/include/gencall.c */\n");
-    printf("/* If you can get this to work for anything other   */\n");
-    printf("/* than gcc-4.5.1 m68k-elf, it would be surprising. */\n");
-    printf("\n");
-    printf("#ifndef AROS_M68K_LIBCALL_H\n");
-    printf("#define AROS_M68K_LIBCALL_H\n");
-    printf("\n");
-    printf("/* Call a libary function which requires the libbase */\n");
-    printf("\n");
-    printf("#define __AROS_CPU_SPECIFIC_ASMCALLS\n\n");
+    if (argc != 2)
+    {
+        fprintf(stderr,
+                "Error in arguments\n"
+                "Usage: %s (asmcall|libcall)\n",
+                argv[0]
+        );
+        exit(20);
+    }
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ufp(i, 0);
+    if (strcmp(argv[1], "asmcall") == 0)
+    {
+        printf("/* AUTOGENERATED by arch/m68k-all/include/gencall.c */\n");
+        printf("/* If you can get this to work for anything other   */\n");
+        printf("/* than gcc-4.5.1 m68k-elf, it would be surprising. */\n");
+        printf("\n");
+        printf("#ifndef AROS_M68K_ASMCALL_H\n");
+        printf("#define AROS_M68K_ASMCALL_H\n");
+        printf("\n");
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ufp(i, 1);
+        printf("#define __AROS_CPU_SPECIFIC_ASMCALLS\n\n");
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ufh(i, 0);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufp(i, 0);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ufh(i, 1);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufp(i, 1);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ufc(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufh(i, 0);
 
-    printf("#define __AROS_CPU_SPECIFIC_LP\n\n");
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufh(i, 1);
+
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufc(i);
+
+        printf("\n%s\n", asmextra);
+
+        printf("#endif /* AROS_M68K_ASMCALL_H */\n");
+    }
+    else if (strcmp(argv[1], "libcall") == 0)
+    {
+        printf("/* AUTOGENERATED by arch/m68k-all/include/gencall.c */\n");
+        printf("/* If you can get this to work for anything other   */\n");
+        printf("/* than gcc-4.5.1 m68k-elf, it would be surprising. */\n");
+        printf("\n");
+        printf("#ifndef AROS_M68K_LIBCALL_H\n");
+        printf("#define AROS_M68K_LIBCALL_H\n");
+        printf("\n");
+        printf("/* Call a libary function which requires the libbase */\n");
+        printf("\n");
+
+        printf("#define __AROS_CPU_SPECIFIC_LP\n\n");
 	
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lp(i, 0);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lp(i, 0);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lp(i, 1);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lp(i, 1);
 
-    printf("\n");
-    printf("#define __AROS_CPU_SPECIFIC_LH\n\n");
+        printf("\n");
+        printf("#define __AROS_CPU_SPECIFIC_LH\n\n");
 	
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lh(i, 0);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lh(i, 0);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lh(i, 1);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lh(i, 1);
 
-    printf("\n");
-    printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
+        printf("\n");
+        printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
 	
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lc(i, 0);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lc(i, 0);
 
-    /* For double return AROS_LC2D..AROS_LC4D */
-    aros_lc(2, 1);
-    aros_lc(3, 1);
-    aros_lc(4, 1);
+        /* For double return AROS_LC2D..AROS_LC4D */
+        aros_lc(2, 1);
+        aros_lc(3, 1);
+        aros_lc(4, 1);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lcnr(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lcnr(i);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_call(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_call(i);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_callnr(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_callnr(i);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lvo_call(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lvo_call(i);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_lvo_callnr(i);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_lvo_callnr(i);
 
-    printf("\n");
-    printf("#define __AROS_CPU_SPECIFIC_LD\n\n");
+        printf("\n");
+        printf("#define __AROS_CPU_SPECIFIC_LD\n\n");
 	
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ld(i, 0);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ld(i, 0);
 
-    for (i = 0; i < GENCALL_MAX; i++)
-        aros_ld(i, 1);
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ld(i, 1);
 
-    printf("#endif /* AROS_M68K_LIBCALL_H */\n");
+        printf("\n%s\n", libextra);
+
+        printf("#endif /* AROS_M68K_LIBCALL_H */\n");
+    }
+    else
+    {
+        fprintf(stderr,
+                "Error in arguments\n"
+                "Usage: %s (asmcall|libcall)\n",
+                argv[0]
+        );
+        exit(20);
+    }
+
     return 0;
 }
