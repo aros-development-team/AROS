@@ -635,7 +635,7 @@ static inline ULONG readlong_unaligned(ULONG *src)
         "orr	%0, %0, %1, lsl #16\n\t"
         "ldrb	%1, [%2, #3]\n\t"
         "orr	%0, %0, %1, lsl #24"
-        :"=r"(res), "=r"(tmp) : "r"(src)
+        :"=&r"(res), "=&r"(tmp) : "r"(src)
     );
 
     return res;
