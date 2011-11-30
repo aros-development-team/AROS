@@ -57,6 +57,10 @@
 #   include <aros/system.h>
 #endif
 
+#ifdef __AROS_ASMCALL_H_FILE
+#include __AROS_ASMCALL_H_FILE
+#endif
+
 #ifndef __typedef_VOID_FUNC
 #define __typedef_VOID_FUNC
 typedef void (*VOID_FUNC)();
@@ -68,6 +72,32 @@ typedef int (*LONG_FUNC)();
 #ifndef __typedef_ULONG_FUNC
 #define __typedef_ULONG_FUNC
 typedef unsigned int (*ULONG_FUNC)();
+#endif
+
+#ifndef __AROS_UFHA
+#define __AROS_UFHA(type,name,reg)    type name
+#endif
+#ifndef __AROS_UFPA
+#define __AROS_UFPA(type,name,reg)    type
+#endif
+#ifndef __AROS_UFCA
+#define __AROS_UFCA(type,name,reg)    (name)
+#endif
+#ifndef __AROS_UFDA
+#define __AROS_UFDA(type,name,reg)    type
+#endif
+
+#ifndef __AROS_UFH_PREFIX
+#define __AROS_UFH_PREFIX   /* eps */
+#endif
+#ifndef __AROS_UFP_PREFIX
+#define __AROS_UFP_PREFIX   /* eps */
+#endif
+#ifndef __AROS_UFC_PREFIX
+#define __AROS_UFC_PREFIX   /* eps */
+#endif
+#ifndef __AROS_UFD_PREFIX
+#define __AROS_UFD_PREFIX   /* eps */
 #endif
 
 #ifndef __AROS_CPU_SPECIFIC_ASMCALLS
