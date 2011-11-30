@@ -19,7 +19,7 @@ VOID DestroyTLS(struct TaskLocalStorage * tls);
 
 #define DECLARE_STATIC_TLS(tls)                 \
 static struct TaskLocalStorage * tls = NULL;    \
-static LONG auto_crate_##tls()                  \
+static LONG auto_create_##tls()                  \
 {                                               \
     tls = CreateTLS();                          \
     if (tls)                                    \
@@ -33,7 +33,7 @@ static VOID auto_destroy_##tls()                \
     if (tls)                                    \
         DestroyTLS(tls);                        \
 }                                               \
-ADD2INIT(auto_crate_##tls, 5);                  \
+ADD2INIT(auto_create_##tls, 5);                  \
 ADD2EXIT(auto_destroy_##tls, 5);
 
 #endif /* TLS_H */
