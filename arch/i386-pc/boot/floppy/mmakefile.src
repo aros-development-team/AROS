@@ -22,7 +22,7 @@ SYSTEM_FILES := \
 BOOT_EXTRA_FILES :=
 
 BOOT_TAR_EXECUTABLES := \
-    C/AddBuffers C/AddDatatypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
+    C/AddBuffers C/AddDataTypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
     C/ChangeTaskPri C/Copy C/Date C/Delete C/Dir C/DiskChange C/Echo C/Else \
     C/EndCLI C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote System/Format \
     C/Get C/Getenv C/IPrefs C/If C/Info C/Join C/Lab C/List \
@@ -31,12 +31,12 @@ BOOT_TAR_EXECUTABLES := \
     C/SetDate C/Setenv C/Skip C/Stack C/Status C/Touch C/Type C/Unalias \
     C/Unset C/Unsetenv C/Version C/Which C/Why C/install-i386-pc \
     C/Partition \
-    Classes/Datatypes/ascii.datatype \
-    Classes/Datatypes/binary.datatype \
-    Classes/Datatypes/text.datatype \
-    Classes/Datatypes/picture.datatype \
-    Classes/Datatypes/ilbm.datatype \
-    Classes/Datatypes/png.datatype \
+    Classes/DataTypes/ascii.datatype \
+    Classes/DataTypes/binary.datatype \
+    Classes/DataTypes/text.datatype \
+    Classes/DataTypes/picture.datatype \
+    Classes/DataTypes/ilbm.datatype \
+    Classes/DataTypes/png.datatype \
     Classes/Zune/AboutWindow.mcc \
     Classes/Zune/Calendar.mcc \
     Classes/Zune/Clock.mcc \
