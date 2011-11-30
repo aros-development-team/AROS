@@ -44,32 +44,6 @@ D(bug("[WBLIB] WBInit: Using %d Bytes for DefaultStackSize\n", WorkbenchBase->wb
     return TRUE;
 }
 
-/* REMOVE THESE CALLS ONCE ABIv1 STABALIZES */
-static BOOL openall(LIBBASETYPEPTR LIBBASE)
-{
-    if ((UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
-    	if ((DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS))) {
-    	    if ((IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
-    	    	if ((IconBase = TaggedOpenLibrary(TAGGEDOPEN_ICON))) {
-    	    	    return TRUE;
-    	    	}
-    	    	CloseLibrary(IntuitionBase);
-    	    }
-    	    CloseLibrary(DOSBase);
-    	}
-    	CloseLibrary(UtilityBase);
-    }
-    return FALSE;
-}
-
-static void closeall(LIBBASETYPEPTR LIBBASE)
-{
-    CloseLibrary(IconBase);
-    CloseLibrary(IntuitionBase);
-    CloseLibrary(DOSBase);
-    CloseLibrary(UtilityBase);
-}
-
 static int WBOpen(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("[WBLIB] Open\n"));
@@ -79,10 +53,6 @@ static int WBOpen(LIBBASETYPEPTR LIBBASE)
     {
         struct CommandLineInterface *cli;
 
-        /* Initialize the libraries */
-        if (!openall(LIBBASE))
-            break;
-        
         /* Duplicate the search path ---------------------------------------*/
         if ((cli = Cli()) != NULL)
         {
@@ -106,11 +76,6 @@ static int WBOpen(LIBBASETYPEPTR LIBBASE)
         {
             /* Prevent expunging while the handler is running */
             AROS_ATOMIC_INC(WorkbenchBase->LibNode.lib_OpenCnt);
-        }
-        else
-        {
-            closeall(LIBBASE);
-            break;
         }
         
         WorkbenchBase->wb_Initialized = TRUE;

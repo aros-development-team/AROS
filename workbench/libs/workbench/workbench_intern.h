@@ -58,12 +58,6 @@ struct WorkbenchBase
     
     BOOL                    wb_Initialized;             /* Has the library been intialized in libOpen? */
     BOOL                    wb_WBStarted;               /* StartWorkbench() started WB? */
-
-    /* TO BE REMOVED AFTER ABIv1 STABILIZATION */
-    struct Library         *wb_UtilityBase;
-    struct Library         *wb_DOSBase;
-    struct Library         *wb_IntuitionBase;
-    struct Library         *wb_IconBase;
 };
 
 #define LB(lb)          ((struct WorkbenchBase *) (lb))
@@ -71,12 +65,6 @@ struct WorkbenchBase
 #define LockWorkbench()   ObtainSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
 #define LockWorkbenchShared()   ObtainSemaphoreShared(&(WorkbenchBase->wb_BaseSemaphore))
 #define UnlockWorkbench() ReleaseSemaphore(&(WorkbenchBase->wb_BaseSemaphore))
-
-/* TO BE REMOVED AFTER ABIv1 STABILIZATION */
-#define UtilityBase	(LB(WorkbenchBase)->wb_UtilityBase)
-#define DOSBase		(LB(WorkbenchBase)->wb_DOSBase)
-#define IntuitionBase	(LB(WorkbenchBase)->wb_IntuitionBase)
-#define IconBase	(LB(WorkbenchBase)->wb_IconBase)
 
 /*
  * Defintion of internal structures.
