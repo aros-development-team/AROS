@@ -121,7 +121,7 @@ struct IClass *MakeGemImgClass(struct GemImgBase *base)
    if(success)
    {
       class->cl_Dispatcher.h_Entry = (HOOKFUNC)DispatchOp;
-      class->cl_UserData = (ULONG)base;
+      class->cl_UserData = (IPTR)base;
       AddClass(class);
    }
 
