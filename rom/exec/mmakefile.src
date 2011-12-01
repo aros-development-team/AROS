@@ -38,7 +38,7 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 	      memory memory_nommu mungwall service traphandler exec_debug exec_util
 
 # platform.h can be overriden in arch-specific directory
-USER_INCLUDES += $(PRIV_EXEC_INCLUDES)
+USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
 
 %build_module mmake=kernel-exec \
   modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) \
