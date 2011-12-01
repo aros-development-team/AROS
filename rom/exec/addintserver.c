@@ -1,21 +1,21 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add interrupt client to chain of interrupt servers
     Lang: english
 */
-#include <aros/config.h>
+
+#define DEBUG 1
+
+#include <aros/debug.h>
+#include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/interrupts.h>
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-#include <hardware/custom.h>
 #include <hardware/intbits.h>
-#endif
-
 #include <proto/exec.h>
-#include <aros/libcall.h>
+
+#include "chipset.h"
 
 /*****************************************************************************
 
@@ -51,21 +51,24 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    volatile struct Custom *custom = (struct Custom *)(void **)0xdff000;
-#endif
+
+    D(bug("[AddIntServer] Vector %d, list 0x%p, SysBase 0x%p\n", intNumber, SysBase->IntVects[intNumber].iv_Data, SysBase));
+
+    if (SysBase->IntVects[intNumber].iv_Data == 0)
+    {
+        int i;
+
+        for (i = 0; i < 16; i++)
+        {
+            bug("[AddIntServer] Vector %d, code 0x%p, data 0x%p\n", i, SysBase->IntVects[i].iv_Code, SysBase->IntVects[i].iv_Data);
+        }
+        for(;;);
+    }
 
     Disable();
 
-    Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, (struct Node *)interrupt);
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(mc68000)
-    /*
-	Enable the chipset interrupt if run on a native Amiga.
-    */
-    if (intNumber < INTB_INTEN)
-	custom->intena = (UWORD)(INTF_SETCLR|(1L<<intNumber));
-#endif
+    Enqueue((struct List *)SysBase->IntVects[intNumber].iv_Data, &interrupt->is_Node);
+    CUSTOM_ENABLE(intNumber);
 
     Enable();
 
