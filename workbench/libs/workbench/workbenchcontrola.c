@@ -1,20 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Change global options and control the Workbench in various ways.
     Lang: english
 */
 
-#include <exec/types.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
-
-#include "workbench_intern.h"
 #include <workbench/workbench.h>
 #include <proto/utility.h>
 
+#include "workbench_intern.h"
 #include "support.h"
 
 /*****************************************************************************
