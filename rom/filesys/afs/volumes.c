@@ -41,46 +41,62 @@ struct BlockCache *blockbuffer;
 UWORD i;
 BOOL gotdostype = FALSE;
 LONG error;
+ULONG dostype;
+UBYTE dosflags;
 
 	/* Check validity of root block first, since boot block may be left over
 	   from an overwritten partition of a different size
 	   Read bootblock first to prevent multiple seeks when using floppies
 	*/ 
 	blockbuffer=getBlock(afsbase, volume,0);
+	volume->dostype = dostype = 0;
+	volume->dosflags = dosflags = 0;
 	if (blockbuffer != NULL) {
 		gotdostype = TRUE;
-		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
-		volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+		dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	}
 
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
-	if (blockbuffer == NULL)
+	if (blockbuffer == NULL) {
+		volume->dostype = ID_UNREADABLE_DISK;
 		return ERROR_UNKNOWN;
+	}
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0 ||
 		OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
 	{
 		D(bug("[afs] newMedium: incorrect checksum or root block type (%ld)\n",
 			OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)])));
+		volume->dostype = ID_NOT_REALLY_DOS;
 		return ERROR_NOT_A_DOS_DISK;
 	}
 
-	if (gotdostype == FALSE)
+	if (gotdostype == FALSE) {
+		volume->dostype = ID_UNREADABLE_DISK;
 		return ERROR_UNKNOWN;
-	if (volume->dostype != 0x444F5300)
-	{
-		blockbuffer=getBlock(afsbase, volume, 1);
-		volume->dostype=OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
-		volume->dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
 	}
-	if (volume->dostype != 0x444F5300)
+	if (dostype != 0x444F5300)
+	{
+		blockbuffer = getBlock(afsbase, volume, 1);
+		dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
+		dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+	}
+	if (dostype != 0x444F5300)
 	{
 		D(bug("[afs] newMedium: incorrect DOS type (0x%lx)\n",
 			volume->dostype));
+		volume->dostype = ID_NOT_REALLY_DOS;
 		return ERROR_NOT_A_DOS_DISK;
 	}
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
-	if (blockbuffer == NULL)
+	if (blockbuffer == NULL) {
+		volume->dostype = ID_UNREADABLE_DISK;
 		return ERROR_UNKNOWN;
+	}
+
+	volume->dostype = dostype;
+	volume->dosflags = dosflags;
+
 	for (i=0;i<=24;i++)
 	{
 		volume->bitmapblockpointers[i]=OS_BE2LONG
