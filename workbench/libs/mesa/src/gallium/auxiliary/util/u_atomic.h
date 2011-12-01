@@ -431,7 +431,7 @@ p_atomic_dec_zero(int32_t *v)
    /* FIXME: AROS needs an atomic decrement and return... */
    Disable();
    AROS_ATOMIC_DEC(*(LONG *)v);
-   n = (*v != 0) ? TRUE : FALSE;
+   n = (*v == 0) ? TRUE : FALSE;
    Enable();
 
    return n;
