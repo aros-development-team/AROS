@@ -1,18 +1,17 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Add a dropzone to an AppWindow's list of AppWindowDropZones.
 */
 
-#include <exec/types.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
-
-#include "workbench_intern.h"
 #include <workbench/workbench.h>
 #include <proto/utility.h>
+
+#include "workbench_intern.h"
 
 /*****************************************************************************
 

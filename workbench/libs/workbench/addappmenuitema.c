@@ -1,20 +1,18 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Add a menuitem to Workbench's list of AppMenuItems.
 */
 
+#include <exec/ports.h>
+#include <utility/tagitem.h>
+#include <workbench/workbench.h>
+#include <proto/utility.h>
 
 #include <string.h>
 
-#include <exec/types.h>
-#include <exec/ports.h>
-#include <utility/tagitem.h>
-
 #include "workbench_intern.h"
-#include <workbench/workbench.h>
-#include <proto/utility.h>
 
 BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 
