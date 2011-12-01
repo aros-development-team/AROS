@@ -51,6 +51,8 @@ static inline void CUSTOM_CAUSE(UWORD intBit)
 
 #else
 
+struct Custom;
+
 #define CUSTOM_ENABLE(intNumber)
 #define CUSTOM_DISABLE(intNumber, list)
 #define CUSTOM_ACK(intBit)
