@@ -178,7 +178,7 @@ static STRPTR        _wpeditor_intern_MainPageNames[4];
 static Class         *_wpeditor_intern_CLASS = NULL;
 static struct List   _wpeditor_intern_ViewSettings;
 
-static CONST_STRPTR  toolbar_PrefsFile = "ENV:SYS/Wanderer/toolbar.prefs";
+static CONST_STRPTR  toolbar_PrefsFile = "SYS/Wanderer/toolbar.prefs";
 #define TOOLBAR_PREFSSIZE 1024
 
 /*** Macros *****************************************************************/
@@ -2315,7 +2315,6 @@ IPTR WPEditor__MUIM_PrefsEditor_ExportFH
     struct WandererPrefsIFFChunkHeader     wanderer_chunkdata = { };
     BOOL                                   success = TRUE;
     LONG                                   error   = 0;
-    BOOL                                    toolbar_enabled = (BOOL)XGET(data->wped_cm_ToolbarEnabled, MUIA_Selected);
 
 D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH()\n"));
 
@@ -2723,12 +2722,6 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Closing Handles ..\n"));
 
         CloseIFF(handle);
         FreeIFF(handle);
-
-        /* Export toolbar preferences */
-        if (toolbar_enabled)
-            SetVar(toolbar_PrefsFile, "True", 4, GVF_GLOBAL_ONLY);
-        else
-            SetVar(toolbar_PrefsFile, "False", 5, GVF_GLOBAL_ONLY);
     }
     else // AllocIFF()
     {
@@ -2872,13 +2865,53 @@ D(bug("[WPEditor] WPEditor__MUIM_Show: Changing windows dimensions to  %d, %d [%
     return TRUE;
 }
 
+IPTR WPEditor__MUIM_PrefsEditor_Save
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_WPEDITOR_INST_DATA;
+
+    BOOL toolbar_enabled = (BOOL)XGET(data->wped_cm_ToolbarEnabled, MUIA_Selected);
+
+    /* Export toolbar preferences */
+    if (toolbar_enabled)
+        SetVar(toolbar_PrefsFile, "True", 4, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+    else
+        SetVar(toolbar_PrefsFile, "False", 5, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+
+    /* Call parent */
+    return DoSuperMethodA(CLASS, self, message);
+}
+
+IPTR WPEditor__MUIM_PrefsEditor_Use
+(
+    Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_WPEDITOR_INST_DATA;
+
+    BOOL toolbar_enabled = (BOOL)XGET(data->wped_cm_ToolbarEnabled, MUIA_Selected);
+
+    /* Export toolbar preferences */
+    if (toolbar_enabled)
+        SetVar(toolbar_PrefsFile, "True", 4, GVF_GLOBAL_ONLY);
+    else
+        SetVar(toolbar_PrefsFile, "False", 5, GVF_GLOBAL_ONLY);
+
+    /* Call parent */
+    return DoSuperMethodA(CLASS, self, message);
+}
+
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_7
 (
     WPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                                struct opSet *,
     MUIM_Setup,                            Msg,
     MUIM_Show,                             Msg,
     MUIM_PrefsEditor_ImportFH,             struct MUIP_PrefsEditor_ImportFH *,
-    MUIM_PrefsEditor_ExportFH,             struct MUIP_PrefsEditor_ExportFH *
+    MUIM_PrefsEditor_ExportFH,             struct MUIP_PrefsEditor_ExportFH *,
+    MUIM_PrefsEditor_Use,                  Msg,
+    MUIM_PrefsEditor_Save,                 Msg
 );
