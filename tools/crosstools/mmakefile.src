@@ -8,6 +8,17 @@ GCC_EXTRA_OPTS = \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
   --enable-long-long --enable-version-specific-runtime-libs
 
+# Hack to support building with custom gpm/mpfr/mpc libraries
+ifeq ($(shell test -e "$(HOME)/include/gmp.h" && echo y),y)
+    GCC_EXTRA_OPTS += --with-gmp="$(HOME)"
+endif
+ifeq ($(shell test -e "$(HOME)/include/mpfr.h" && echo y),y)
+    GCC_EXTRA_OPTS += --with-mpfr="$(HOME)"
+endif
+ifeq ($(shell test -e "$(HOME)/include/mpc.h" && echo y),y)
+    GCC_EXTRA_OPTS += --with-mpc="$(HOME)"
+endif
+
 ifeq ($(AROS_TARGET_CPU), arm)
   GCC_VERSION = 4.5.1
 else
@@ -28,7 +39,6 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
-# m68k build is disabled, since there is no AROS cross compiler yet, just m68k-elf cross compiler
 #MM- tools-crosstools-m68k  : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
