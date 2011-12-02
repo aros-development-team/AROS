@@ -101,7 +101,15 @@ static inline APTR va_addr(va_list args, ULONG len)
 #else
 
 /* This works for i386 and m68k */
-#define va_addr(args, len) stream_addr((void **)&args, len)
+static inline APTR _va_addr(va_list *args)
+{
+    va_list ret = *args;
+ 
+    *args += sizeof(IPTR);
+    return ret;
+}
+
+#define va_addr(args, len) _va_addr(&args)
 
 #endif
 
