@@ -52,26 +52,26 @@ static inline APTR va_addr(va_list args, ULONG len)
 
     if (len == sizeof(UQUAD)) {
         /* On PPC UQUAD is aligned. and occupies 2 registers (plus may waste one more for alignment) */
-	if (args->gpr < 7) {
-	    ULONG *regsave = (ULONG *)args->reg_save_area;
+        if (args->gpr < 7) {
+            ULONG *regsave = (ULONG *)args->reg_save_area;
 
             args->gpr += args->gpr & 1;
-	    ret = &regsave[args->gpr];
-	    args->gpr += 2;
-	} else	{
-	    args->gpr = 8;
-	    ret = (APTR)(((IPTR)(args->overflow_arg_area + 7)) & ~7);
-	    args->overflow_arg_area = ret + sizeof(UQUAD);
-	}
+            ret = &regsave[args->gpr];
+            args->gpr += 2;
+        } else  {
+            args->gpr = 8;
+            ret = (APTR)(((IPTR)(args->overflow_arg_area + 7)) & ~7);
+            args->overflow_arg_area = ret + sizeof(UQUAD);
+        }
     } else {
-	if (args->gpr < 8) {								   \
-	    ULONG *regsave = (ULONG *)args->reg_save_area;
+        if (args->gpr < 8) {                                                               \
+            ULONG *regsave = (ULONG *)args->reg_save_area;
 
-	    ret = &regsave[args->gpr++];
-	} else {
-	    ret = args->overflow_arg_area;
-	    args->overflow_arg_area += sizeof(ULONG);
-	}
+            ret = &regsave[args->gpr++];
+        } else {
+            ret = args->overflow_arg_area;
+            args->overflow_arg_area += sizeof(ULONG);
+        }
     }
     return ret;
 }
@@ -83,11 +83,11 @@ static inline APTR va_addr(va_list args, ULONG len)
     APTR ret;
 
     if (args->gp_offset < 48) {
-	ret = args->reg_save_area + args->gp_offset;
-	args->gp_offset += sizeof(IPTR);
+        ret = args->reg_save_area + args->gp_offset;
+        args->gp_offset += sizeof(IPTR);
     } else {
-	ret = args->overflow_arg_area;
-	args->overflow_arg_area += sizeof(IPTR);
+        ret = args->overflow_arg_area;
+        args->overflow_arg_area += sizeof(IPTR);
     }
     return ret;
 }
@@ -182,14 +182,14 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
             /*
             ** prepare the indices array
             */
-	    if (is_va_list(VaListStream)) {
-	    	for (i = 0; i <= max_argpos; i++)
-		    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
-	    } else {
+            if (is_va_list(VaListStream)) {
                 for (i = 0; i <= max_argpos; i++)
-		    indices[i] = (IPTR)stream_addr((APTR *)&dataStream, indices[i]);
-	    }
-	    
+                    indices[i] = (IPTR)va_addr(VaListStream, indices[i]);
+            } else {
+                for (i = 0; i <= max_argpos; i++)
+                    indices[i] = (IPTR)stream_addr((APTR *)&dataStream, indices[i]);
+            }
+            
           }
           else
           {
@@ -227,7 +227,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
               AROS_UFCA(UBYTE,           fmtTemplate[template_pos],  A1));
           }
           template_pos++;
-	  arg_counter--; //stegerg
+          arg_counter--; //stegerg
         }
         else
         {
@@ -321,15 +321,15 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
           {
             template_pos++;
 
-	    if (fmtTemplate[template_pos] >= '0' &&
-	        fmtTemplate[template_pos] <= '9')
-	    {
+            if (fmtTemplate[template_pos] >= '0' &&
+                fmtTemplate[template_pos] <= '9')
+            {
               for (limit = 0; (fmtTemplate[template_pos] >= '0' &&
                                   fmtTemplate[template_pos] <= '9'); template_pos++)
               {
-        	limit = limit * 10 + fmtTemplate[template_pos] - '0';
+                limit = limit * 10 + fmtTemplate[template_pos] - '0';
               }
-    	    }
+            }
           }
 
           /*
@@ -358,7 +358,7 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
               break;
 
             default:
-	      /* For C-style varargs default size is ULONG, single 'l' is effectively ignored */
+              /* For C-style varargs default size is ULONG, single 'l' is effectively ignored */
               datasize = is_va_list(VaListStream) ? sizeof(ULONG) : sizeof(UWORD);
               break;
           }
@@ -536,11 +536,11 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
 
             case 'p': /* lower case pointer string */
             case 'P': /* upper case pointer string */
-	      fill = '0';
-	      width = sizeof(APTR)*2;
-	      /* %p is always at least natural pointer size */
-	      if (datasize < sizeof(APTR))
-	          datasize = sizeof(APTR);
+              fill = '0';
+              width = sizeof(APTR)*2;
+              /* %p is always at least natural pointer size */
+              if (datasize < sizeof(APTR))
+                  datasize = sizeof(APTR);
             case 'x': /* upper case hexadecimal string */
             case 'X': /* lower case hexadecimal string */
 
@@ -718,16 +718,16 @@ APTR InternalFormatString(const struct Locale *locale, CONST_STRPTR fmtTemplate,
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH4(APTR, FormatString,
+        AROS_LH4(APTR, FormatString,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct Locale *, locale, A0),
-	AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
-	AROS_LHA(CONST_APTR           , dataStream, A2),
-	AROS_LHA(const struct Hook   *, putCharFunc, A3),
+        AROS_LHA(const struct Locale *, locale, A0),
+        AROS_LHA(CONST_STRPTR, fmtTemplate, A1),
+        AROS_LHA(CONST_APTR           , dataStream, A2),
+        AROS_LHA(const struct Hook   *, putCharFunc, A3),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 11, Locale)
+        struct LocaleBase *, LocaleBase, 11, Locale)
 
 /*  FUNCTION
 
