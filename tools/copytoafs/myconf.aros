@@ -17,9 +17,9 @@ int main(int argc, char *argv[])
 {
     union u val;
 
-    printf("%d ",sizeof(long));
-    printf("%d ",sizeof(short));
-    printf("%d ",sizeof(int));
+    printf("%ld ",sizeof(long));
+    printf("%ld ",sizeof(short));
+    printf("%ld ",sizeof(int));
     
     val.l=1L;
     if (val.c[3]==1)
