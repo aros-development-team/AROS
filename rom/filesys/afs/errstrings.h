@@ -13,18 +13,6 @@
 
 
 /*
- * showReqType matches adequate option[] in showPtrArgsText.
- */
-enum showReqType 
-{
-        Req_Cancel = 0,
-        Req_RetryCancel,
-        Req_CheckCancel,
-        Req_ContinueCancel,
-        Req_Continue
-};
-
-/*
  * showReqStruct: a group describing particular requester: 
  * - text - content to be displayed
  * - type - set of buttons for the requester

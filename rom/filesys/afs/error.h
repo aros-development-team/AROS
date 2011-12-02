@@ -2,7 +2,7 @@
 #define ERROR_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 /*
@@ -36,9 +36,16 @@ enum {
         ERR_UNKNOWN
 };
 
-
-void showText(struct AFSBase *, char *, ...);
-LONG showError(struct AFSBase *, ULONG, ...);
-LONG showRetriableError(struct AFSBase *, TEXT *, ...);
+/*
+ * showReqType matches adequate option[] in showPtrArgsText.
+ */
+enum showReqType 
+{
+    Req_Cancel = 0,
+    Req_RetryCancel,
+    Req_CheckCancel,
+    Req_ContinueCancel,
+    Req_Continue
+};
 
 #endif

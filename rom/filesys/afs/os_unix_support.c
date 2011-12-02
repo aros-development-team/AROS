@@ -14,22 +14,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
 #include "os.h"
 #include "error.h"
 #include "errstrings.h"
 #include "volumes.h"
 
-void showPtrArgsText(struct AFSBase *afsbase, char *string, va_list args) {
-        vprintf(string, args);
-        printf("\n");
+void showPtrArgsText(struct AFSBase *afsbase, const char *const string, va_list args)
+{
+    vprintf(string, args);
+    printf("\n");
 }
 
-void showText(struct AFSBase *afsbase, char *string, ...) {
-va_list ap;
+void showText(struct AFSBase *afsbase, const char *const string, ...)
+{
+    va_list ap;
 
-        va_start(ap, string);
-        showPtrArgsText(afsbase, string, ap);
-        va_end(ap);
+    va_start(ap, string);
+    showPtrArgsText(afsbase, string, ap);
+    va_end(ap);
 }
 
 LONG showError(struct AFSBase *afsbase, ULONG error, ...) {
@@ -174,7 +177,7 @@ void FreeVec(APTR mem) {
         free(mem);
 }
 
-void CopyMem(APTR src, APTR dst, ULONG size) {
+void CopyMem(const void *src, APTR dst, ULONG size) {
         memcpy(dst, src, size);
 }
 
@@ -195,30 +198,25 @@ struct tm as={0, 0, 0, 1, 0, 78, -1, -1, -1};
         return ds;
 }
 
-STRPTR PathPart(STRPTR path) {
-STRPTR ptr;
+CONST_STRPTR PathPart(CONST_STRPTR path)
+{
+    CONST_STRPTR ptr;
 
-        /* '/' at the beginning of the string really is part of the path */
-        while (*path == '/')
-        {
-                ++path;
-        }
-                                                                                                                                                                
-        ptr = path;
-                                                                                                                                                                
-        while (*ptr)
-        {
-                if (*ptr == '/')
-                {
-                        path = ptr;
-                }
-                else if (*ptr == ':')
-                {
-                        path = ptr + 1;
-                }
-                                                                                                                                                                
-                ptr++;
-        }
-                                                                                                                                                                
-        return path;
+    /* '/' at the beginning of the string really is part of the path */
+    while (*path == '/')
+        ++path;
+
+    ptr = path;
+
+    while (*ptr)
+    {
+        if (*ptr == '/')
+            path = ptr;
+        else if (*ptr == ':')
+            path = ptr + 1;
+
+        ptr++;
+    }
+
+    return path;
 }
