@@ -19,20 +19,20 @@ __declspec(dllimport) __stdcall unsigned long ntohl(unsigned long);
 #endif
 
 /* exec/types.h */
-typedef int8_t    BYTE;
-typedef uint8_t  UBYTE;
-typedef int16_t   WORD;
-typedef uint16_t UWORD;
-typedef int32_t    LONG;
-typedef uint32_t  ULONG;
+typedef int8_t         BYTE;
+typedef uint8_t        UBYTE;
+typedef int16_t        WORD;
+typedef uint16_t       UWORD;
+typedef int32_t        LONG;
+typedef uint32_t       ULONG;
 typedef void*          APTR;
 typedef char*          STRPTR;
-typedef const char*    CONST_STRPTR;
+typedef const char    *CONST_STRPTR;
 typedef unsigned char  TEXT;
-typedef unsigned long  IPTR;
-typedef signed long    SIPTR;
-typedef unsigned long  BPTR;
-typedef int16_t          BOOL;
+typedef uintptr_t      IPTR;
+typedef intptr_t       SIPTR;
+typedef uintptr_t      BPTR;
+typedef int16_t        BOOL;
 #define VOID  void
 #define FALSE 0L
 #define TRUE  1L
@@ -121,15 +121,18 @@ struct InfoData {
 	BPTR id_VolumeNode;
 	LONG id_InUse;
 };
+
 #define ID_WRITE_PROTECTED 80
-#define ID_VALIDATING 81
-#define ID_VALIDATED  82
-#define ID_NO_DISK_PRESENT  (-1L)
+#define ID_VALIDATING      81
+#define ID_VALIDATED       82
+#define ID_NO_DISK_PRESENT (-1L)
+
+#define ID_UNREADABLE_DISK  MAKE_ID('B','A','D',0)
 #define ID_DOS_DISK         MAKE_ID('D','O','S',0)
 #define ID_FFS_DISK         MAKE_ID('D','O','S',1)
 #define ID_INTER_DOS_DISK   MAKE_ID('D','O','S',2)
 #define ID_INTER_FFS_DISK   MAKE_ID('D','O','S',3)
-
+#define ID_NOT_REALLY_DOS   MAKE_ID('N','D','O','S')
 
 /* dos/exall.h */
 #define ED_NAME       1
@@ -216,7 +219,7 @@ struct DosEnvec {
 /* proto/exec.h */
 APTR AllocMem(ULONG, ULONG);
 APTR AllocVec(ULONG, ULONG);
-void CopyMem(APTR, APTR, ULONG);
+void CopyMem(const void *, APTR, ULONG);
 void FreeMem(APTR, ULONG);
 void FreeVec(APTR);
 /* exec/memory.h */
@@ -225,7 +228,7 @@ void FreeVec(APTR);
 
 /* proto/dos.h */
 struct DateStamp *DateStamp(struct DateStamp *);
-STRPTR PathPart(STRPTR);
+CONST_STRPTR PathPart(CONST_STRPTR);
 
 /* io */
 struct IOHandle {
@@ -238,5 +241,9 @@ struct IOHandle {
 };
 
 #define IOHF_DISK_IN      (1<<2)
+
+void showText(struct AFSBase *, const char * const, ...);
+LONG showError(struct AFSBase *, ULONG, ...);
+LONG showRetriableError(struct AFSBase *, TEXT *, ...);
 
 #endif

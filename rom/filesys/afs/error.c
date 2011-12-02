@@ -9,11 +9,9 @@
  * 04-jan-2008 [Tomasz Wiszkowski]      corrected tabulation
  */
 
-#include <aros/config.h>
 #include <proto/intuition.h>
 #include <aros/debug.h>
 #include <exec/rawfmt.h>
-
 #include <intuition/intuition.h>
 
 #include "error.h"
@@ -24,7 +22,7 @@
 /*
  * displays requester on screen or puts text to the debug buffer
  */
-LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, ULONG *args) 
+LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqType type, IPTR *args) 
 {
 	char* options[] =
 	{
@@ -42,14 +40,11 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 	if (IntuitionBase != NULL)
 	{
 	    es.es_TextFormat=string;
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
+
 	    if (IntuitionBase->FirstScreen != NULL)
 	    {
-#endif
 		return EasyRequestArgs(NULL,&es,NULL,args);
-#if (AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE)
 	    }
-#endif
 	    CloseLibrary((struct Library *)IntuitionBase);
 	}
 	else
@@ -61,26 +56,16 @@ LONG showPtrArgsText(struct AFSBase *afsbase, const char *string, enum showReqTy
 	return 0;
 }
 
-void showText(struct AFSBase *afsbase, char *string, ...) 
+LONG showErrorArgs(struct AFSBase *afsbase, IPTR *args)
 {
-	showPtrArgsText(afsbase, string, Req_Cancel, (ULONG *)(&string+1));
-}
+    ULONG error = args[0];
 
-LONG showRetriableError(struct AFSBase *afsbase, TEXT *string, ...) 
-{
-	return showPtrArgsText(afsbase, string, Req_RetryCancel, (ULONG*)(&string+1)); 
-}
-
-LONG showError(struct AFSBase *afsbase, ULONG error, ...) 
-{
-	if (error == ERR_ALREADY_PRINTED)
-		return 0;
-	if (error >= ERR_UNKNOWN)
-	{
-		return showPtrArgsText(afsbase, texts[ERR_UNKNOWN].text, texts[ERR_UNKNOWN].type, (ULONG *)&error);
-	}
-
-	return showPtrArgsText(afsbase, texts[error].text, texts[error].type, (ULONG *)(&error+1));
+    if (error == ERR_ALREADY_PRINTED)
+	return 0;
+    else if (error >= ERR_UNKNOWN)
+	return showPtrArgsText(afsbase, texts[ERR_UNKNOWN].text, texts[ERR_UNKNOWN].type, args);
+    else
+	return showPtrArgsText(afsbase, texts[error].text, texts[error].type, &args[1]);
 }
 
 
