@@ -147,7 +147,7 @@ index d3ef2a5..41be763 100644
 +	tm_file="${tm_file} aros.h"
 +	tm_defines="${tm_defines} MOTOROLA=1"
 +	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
-+	tmake_file="$tmake_file m68k/t-mlibs"
++	tmake_file="$tmake_file m68k/t-mlibs t-gnu"
 +	extra_parts="crtbegin.o crtend.o"
 +	;;
  m68k-*-elf* | fido-*-elf*)
