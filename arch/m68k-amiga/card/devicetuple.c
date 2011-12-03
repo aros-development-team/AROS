@@ -17,7 +17,7 @@ AROS_LH2(ULONG, DeviceTuple,
 {
     AROS_LIBFUNC_INIT
 
-    UWORD type, tuplesize, speed, units, size, mantissa, exponent;
+    UWORD type, tuplesize, units, size, mantissa, exponent;
     UBYTE offset;
 
     CARDDEBUG(bug("DeviceTuple(%p,%p)\n", tuple_data, storage));
@@ -39,8 +39,7 @@ AROS_LH2(ULONG, DeviceTuple,
     	return FALSE;
 
     if (tuplesize >= offset) {
-	speed = tuple_data[offset] & 15;
-	switch (speed)
+	switch (tuple_data[offset] & 7)
 	{
 	    case 1:
 	    storage->dtd_DTspeed = 250;

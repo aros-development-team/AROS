@@ -45,7 +45,7 @@ void pcmcia_newowner(struct CardResource *CardResource, BOOL doNotify)
 
 void pcmcia_removeowner(struct CardResource *CardResource)
 {
-    CARDDEBUG(bug("pcmcia_removeowner: owned=%p, newowner=%p\n", CardResource->ownedcard, CardResource->ownedcard));
+    CARDDEBUG(bug("pcmcia_removeowner: owned=%p\n", CardResource->ownedcard));
     Forbid();
     if (CardResource->ownedcard != NULL) {
 	if (CardResource->ownedcard->cah_CardRemoved) {
