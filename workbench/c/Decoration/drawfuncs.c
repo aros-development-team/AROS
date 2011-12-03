@@ -29,8 +29,88 @@
 #define SET_ARGB(a, r, g, b) b << 24 | g << 16 | r << 8 | a
 #endif
 
-static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
-    LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest, LONG xSize, LONG ySize)
+/* Code taken from BM__Hidd_BitMap__BitMapScale */
+/* srcdata point directly to (0,0) point of subbuffer to be read from */
+static ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
+{
+    ULONG * scalleddata = (ULONG *) AllocVec(sizeof(ULONG) * widthDest * heightDest, MEMF_ANY);
+    LONG srcline = -1;
+    UWORD * linepattern = (UWORD *) AllocVec(sizeof(UWORD) * widthDest, MEMF_ANY);
+    ULONG count = 0;
+    UWORD ys = 0;
+    ULONG xs = 0;
+    ULONG dyd = heightDest;
+    ULONG dxd = widthDest;
+    LONG accuys = dyd;
+    LONG accuxs = dxd;
+    ULONG dxs = widthSrc;
+    ULONG dys = heightSrc;
+    LONG accuyd = - (dys >> 1);
+    LONG accuxd = - (dxs >> 1);
+    ULONG x;
+    ULONG * lastscalledlineptr = scalleddata + ((heightDest - 1) * widthDest);
+
+    count = 0;
+    while (count < widthDest) {
+        accuxd += dxs;
+        while (accuxd > accuxs) {
+            xs++;
+            accuxs += dxd;
+        }
+
+        linepattern[count] = xs;
+
+        count++;
+    }
+
+    count = 0;
+    while (count < heightDest) {
+        accuyd += dys;
+        while (accuyd > accuys) {
+            ys++;
+            accuys += dyd;
+        }
+
+        if (srcline != ys) {
+            //HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY + ys, bsa->bsa_SrcWidth, 1, vHidd_StdPixFmt_Native32);
+            ULONG * srcptr = srcdata + (ys * widthBuffer);
+            srcline = ys;
+
+            /* New: use last line as temp buffer */
+            for (x = 0; x < widthDest; x++)
+                lastscalledlineptr[x] = srcptr[linepattern[x]];
+
+        }
+
+        //HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
+        CopyMem(lastscalledlineptr, scalleddata + (count * widthDest), widthDest * sizeof(ULONG));
+
+        count++;
+    }
+
+    FreeVec(linepattern);
+
+    return scalleddata;
+}
+
+/* This function provides a number of ways to blit a NewImage onto RastPort. Please take great care when modifying it.
+ *
+ * The number of combinations of arguments is quite high. Please take time to understand it.
+ *
+ * Arguments:
+ * ni - a NewImage that is to be blitted
+ * subimageCol, subimageRow - define the initial read offset in source image based on assumption that image contains
+ *                            a number of subimages drawn in rows or columns
+ * xSrc, ySrc - define additional read offset in the source image subimage
+ * destRP - destination RastPort to blit the image to
+ * xDest, yDest - coordinates on the destination RastPort to where the imatge will be blitted
+ * widthSrc, heightSrc - width/height of region to be read from, if -1 then use the width/height of subimage
+ * widthDest, heightDest - width/height of blit on destination RastPort, if -1 then use widthSrc/heightSrc
+ *
+ */
+static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+        LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest,
+        LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
 {
     ULONG subimagewidth     = ni->w / ni->subimagescols;
     ULONG subimageheight    = ni->h / ni->subimagesrows;
@@ -38,52 +118,88 @@ static void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol,
     if (subimageCol >= ni->subimagescols) return;
     if (subimageRow >= ni->subimagesrows) return;
 
-    /* If destination size not provided, use subimage size */
-    if (xSize < 0) xSize = (LONG)subimagewidth;
-    if (ySize < 0) ySize = (LONG)subimageheight;
+    /* If source size not provided, use subimage size */
+    if (widthSrc < 0) widthSrc = (LONG)subimagewidth;
+    if (heightSrc < 0) heightSrc = (LONG)subimageheight;
 
-    /* Detect if image can be drawn using blitting instead of alpha draw */
-    if (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)]))
+    /* If destination size not provided, use source */
+    if (widthDest < 0) widthDest = widthSrc;
+    if (heightDest < 0) heightDest = heightSrc;
+
+    /* If source and destination sizes do not match, scale */
+    if ((widthSrc != widthDest) || (heightSrc != heightDest))
     {
-        WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc , 
-            (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
-            xDest, yDest, xSize, ySize, 0xffffffff);
+        /* FIXME: The scalled blitting needs similar optimized code paths as non-scalled */
+        ULONG * srcptr = (ni->data) + (((subimageheight * subimageRow) + ySrc) * ni->w) +
+                ((subimagewidth * subimageCol) + xSrc); /* Go to (0,0) of source rect */
+
+        ULONG * scalleddata = ScaleBuffer(srcptr, ni->w, widthSrc, heightSrc, widthDest, heightDest);
+
+        WritePixelArrayAlpha(scalleddata, 0, 0, widthDest * 4, destRP, xDest, yDest, widthDest, heightDest, 0xffffffff);
+
+        FreeVec(scalleddata);
     }
-    else
+    else /* ((widthSrc != widthDest) || (heightSrc != heightDest)) */
     {
-        /* LUT */
-        if (ni->bitmap != NULL)
+        /* Detect if image can be drawn using blitting instead of alpha draw */
+        if (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)]))
         {
-            if (ni->mask)
-            {
-                BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
-                    (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest, 
-                    xSize, ySize, 0xe0, (PLANEPTR) ni->mask);  
-            }
-            else
-            {
-                BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
-                    (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                    xSize, ySize, 0xc0);
-            }
+            WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc ,
+                (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
+                xDest, yDest, widthSrc, heightSrc, 0xffffffff);
         }
-        
-        /* Truecolor */
-        if (ni->bitmap2 != NULL)
+        else
         {
-            BltBitMapRastPort(ni->bitmap2, (subimagewidth * subimageCol) + xSrc ,
-                (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
-                xSize, ySize, 0xc0);
+            /* LUT */
+            if (ni->bitmap != NULL)
+            {
+                if (ni->mask)
+                {
+                    BltMaskBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                        (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
+                        widthSrc, heightSrc, 0xe0, (PLANEPTR) ni->mask);
+                }
+                else
+                {
+                    BltBitMapRastPort(ni->bitmap, (subimagewidth * subimageCol) + xSrc ,
+                        (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
+                        widthSrc, heightSrc, 0xc0);
+                }
+            }
+
+            /* Truecolor */
+            if (ni->bitmap2 != NULL)
+            {
+                BltBitMapRastPort(ni->bitmap2, (subimagewidth * subimageCol) + xSrc ,
+                    (subimageheight * subimageRow) + ySrc, destRP, xDest, yDest,
+                    widthSrc, heightSrc, 0xc0);
+            }
         }
     }
 }
 
-static void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+/* HELPER WRAPPERS */
+static inline void BltNewImageSubImageRastPort(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+        LONG xSrc, LONG ySrc, struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthSrc, LONG heightSrc)
+{
+    BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, xSrc, ySrc, destRP,
+            xDest, yDest, widthSrc, heightSrc, -1, -1);
+}
+
+static inline void BltNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
     struct RastPort * destRP, LONG xDest, LONG yDest)
 {
     BltNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
-        xDest, yDest, -1, -1);
+            xDest, yDest, -1, -1);
 }
+
+static inline void BltScaleNewImageSubImageRastPortSimple(struct NewImage * ni, ULONG subimageCol, ULONG subimageRow,
+    struct RastPort * destRP, LONG xDest, LONG yDest, LONG widthDest, LONG heightDest)
+{
+    BltScaleNewImageSubImageRastPort(ni, subimageCol, subimageRow, 0, 0, destRP,
+            xDest, yDest, -1, -1, widthDest, heightDest);
+}
+/* HELPER WRAPPERS */
 
 static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _sx, UWORD _sy, UWORD _sw, UWORD _sh, UWORD _dx, UWORD _dy, UWORD _dw, UWORD _dh)
 {
@@ -1027,7 +1143,8 @@ void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct
     }
 }
 
-void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp)
+void DrawScalledStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp,
+        WORD scalledwidth, WORD scalledheight)
 {
 
     UWORD subimagecol = 0;
@@ -1046,7 +1163,12 @@ void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG
                 subimagecol = 2;
                 break;
         }
-            
-        BltNewImageSubImageRastPortSimple(ni, subimagecol, subimagerow, rp, xp, yp);
+
+        BltScaleNewImageSubImageRastPortSimple(ni, subimagecol, subimagerow, rp, xp, yp, scalledwidth, scalledheight);
     }
+}
+
+void DrawStatefulGadgetImageToRP(struct RastPort *rp, struct NewImage *ni, ULONG state, UWORD xp, UWORD yp)
+{
+    DrawScalledStatefulGadgetImageToRP(rp, ni, state, xp, yp, -1, -1);
 }
