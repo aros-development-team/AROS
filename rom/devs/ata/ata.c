@@ -76,7 +76,7 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG block = IOStdReq(io)->io_Offset;
     ULONG count = IOStdReq(io)->io_Length;
 
-    D(bug("[ATA%02ld] cmd_Read32()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
+    D(bug("[ATA%02ld] cmd_Read32(%08x, %08x)\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, block, count));
 
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
@@ -125,11 +125,10 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 		return;
 	}
 
-    UQUAD block = (UQUAD)(IOStdReq(io)->io_Offset & 0xffffffff) |
-        ((UQUAD)(IOStdReq(io)->io_Actual)) << 32;
+    UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
     ULONG count = IOStdReq(io)->io_Length;
 
-    D(bug("[ATA%02ld] cmd_Read64()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
+    D(bug("[ATA%02ld] cmd_Read64(%08x-%08x, %08x)\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
 
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
@@ -190,7 +189,7 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     ULONG block = IOStdReq(io)->io_Offset;
     ULONG count = IOStdReq(io)->io_Length;
 
-    D(bug("[ATA%02ld] cmd_Write32()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
+    D(bug("[ATA%02ld] cmd_Write32(%08x, %08x)\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, block, count));
 
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
@@ -245,7 +244,7 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     UQUAD block = IOStdReq(io)->io_Offset | (UQUAD)(IOStdReq(io)->io_Actual) << 32;
     ULONG count = IOStdReq(io)->io_Length;
 
-    D(bug("[ATA%02ld] cmd_Write64()\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum));
+    D(bug("[ATA%02ld] cmd_Write64(%08x-%08x, %08x)\n", ((struct ata_Unit*)io->io_Unit)->au_UnitNum, IOStdReq(io)->io_Actual, IOStdReq(io)->io_Offset, count));
 
     ULONG mask = (1 << unit->au_SectorShift) - 1;
 
@@ -502,7 +501,7 @@ static void cmd_DirectScsi(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
     {
         io->io_Error = unit->au_DirectSCSI(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
     }
-    else if (unit->au_DevType == DG_DIRECT_ACCESS && !(unit->au_Flags & AF_Removable))
+    else if (unit->au_DevType == DG_DIRECT_ACCESS)
     {
     	io->io_Error = SCSIEmu(unit, (struct SCSICmd *)IOStdReq(io)->io_Data);
     }
