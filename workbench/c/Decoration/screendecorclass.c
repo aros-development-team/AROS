@@ -140,8 +140,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
     } else {
         if (sd->img_stitlebar->ok)
-	        WriteTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0, 
-	        sd->img_stitlebar->w, 0, 0, scr->Width);
+	        WriteVerticalScalledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
+	        sd->img_stitlebar->w, 0, 0, scr->Width, scr->BarHeight + 1);
     }
     if (sd->img_sbarlogo->ok)
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
@@ -155,7 +155,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     {
         scr_findtitlearea(scr, &left, &right);
         titlelen = strlen(scr->Title);
-        titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, data->dc->SBarHeight);
+        titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
         if (titlelen == 0) hastitle = 0;
     }
 
@@ -235,13 +235,15 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
     struct RastPort        *rp = msg->sdp_RPort;
     LONG                    left = msg->sdp_X;
     LONG                    top = msg->sdp_Y;
+    LONG                    width = msg->sdp_Width;
+    LONG                    height = msg->sdp_Height;
     LONG                    state = msg->sdp_State;
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
         if (&sd->img_sdepth)
         {
-            DrawStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top);
+            DrawScalledStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top, width, height);
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
@@ -295,7 +297,8 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
 
     msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
     msg->sdp_BarHBorder = 1;
-    msg->sdp_BarHeight = data->dc->SBarHeight - 1; //compatiblity issue
+    /* Allow scalling title bar above decoration defined height */
+    msg->sdp_BarHeight = msg->sdp_FontHeight > (data->dc->SBarHeight - 1) ? msg->sdp_FontHeight : (data->dc->SBarHeight - 1);
     msg->sdp_WBorLeft = data->dc->LeftBorder;
     msg->sdp_WBorRight = data->dc->RightBorder;
     msg->sdp_WBorBottom = data->dc->BottomBorder;
