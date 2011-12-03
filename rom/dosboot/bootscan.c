@@ -120,6 +120,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     TEXT *devname;
     LONG bootable;
     ULONG pttype = PHPTT_UNKNOWN;
+    BOOL appended, changed;
 
 
     /*
@@ -276,6 +277,27 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     i /= blockspercyl;
     pp[4 + DE_LOWCYL] += i;
     pp[4 + DE_HIGHCYL] += i;
+
+    /* Append .n if same device name already exists */
+    appended = FALSE;
+    changed = TRUE;
+    while (changed)
+    {
+        struct BootNode *bn;
+        changed = FALSE;
+        ForeachNode(&ExpansionBase->MountList, bn)
+        {
+            if (stricmp(AROS_BSTR_ADDR(((struct DeviceNode*)bn->bn_DeviceNode)->dn_Name), name) == 0)
+            {
+                if (!appended)
+                    strcat(name, ".1");
+                else
+                    name[strlen(name) - 1]++;
+                appended = TRUE;
+                changed = TRUE;
+            }
+        }
+    }
 
     devnode = MakeDosNode(pp);
     if (devnode != NULL) {
