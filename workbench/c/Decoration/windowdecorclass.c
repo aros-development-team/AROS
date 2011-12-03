@@ -877,7 +877,6 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
         arc = data->dc->DeactivatedGradientColor_a;
-        bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
