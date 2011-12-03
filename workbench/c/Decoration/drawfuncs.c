@@ -10,6 +10,7 @@
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 #include <math.h>
 
@@ -134,6 +135,8 @@ static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimag
                 ((subimagewidth * subimageCol) + xSrc); /* Go to (0,0) of source rect */
 
         ULONG * scalleddata = ScaleBuffer(srcptr, ni->w, widthSrc, heightSrc, widthDest, heightDest);
+
+        D(bug("[Decoration] SCALLED %d,%d -> %d,%d!\n", widthSrc, heightSrc, widthDest, heightDest));
 
         WritePixelArrayAlpha(scalleddata, 0, 0, widthDest * 4, destRP, xDest, yDest, widthDest, heightDest, 0xffffffff);
 
@@ -729,11 +732,15 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
     return x;
 }
 
-LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
+/*
+ * dh - destination height to scale to, -1 to use subimage height
+ */
+LONG WriteVerticalScalledTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage,
+        LONG sx, LONG sw, LONG xp, LONG yp, LONG dw, LONG dh)
 {
-    int     w = dw;
-    int     x = xp;
-    int     ddw;
+    LONG w = dw;
+    LONG x = xp;
+    LONG ddw;
 
     if (!ni->ok) return xp;
 
@@ -744,12 +751,18 @@ LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG s
         ddw = sw;
         if (w < ddw) ddw = w;
 
-        BltNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, -1);
+        BltScaleNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, -1, -1, dh);
 
         w -= ddw;
         x += ddw;
     }
+
     return x;
+}
+
+LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
+{
+    return WriteVerticalScalledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, dw, -1);
 }
 
 LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
