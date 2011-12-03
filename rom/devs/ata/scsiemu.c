@@ -152,7 +152,7 @@ UBYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     	(cmd->scsi_Flags & (1 << SCSIB_AUTOSENSE)) ? cmd->scsi_SenseLength : 32;
     UBYTE *cmdbuf = cmd->scsi_Command;
     UBYTE sense[32];
-    ULONG senselen;
+    UWORD senselen;
     UBYTE err, status;
  
     /* bug("SCSIEMU CMD=%02x\n", cmdbuf[0]); */
@@ -160,6 +160,8 @@ UBYTE SCSIEmu(struct ata_Unit *unit, struct SCSICmd *cmd)
     status = 0;
     scsi_len = 0;
     senselen = 0;
+    if (scsi_sense_len > sizeof sense)
+        scsi_sense_len = sizeof sense;
     switch(cmdbuf[0])
     {
     	case 0x00: /* TEST UNIT READY */
