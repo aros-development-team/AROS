@@ -701,6 +701,7 @@ void HorizVertRepeatNewImage(struct NewImage *ni, ULONG color, UWORD offx, UWORD
 
 /* NOTE: fill parameter is ignored, previously it was forcing a no-alpha blit, but
    this is already handled in BltNewImageSubImageRastPort */
+/* dh - destination height to which subimage will be scalled to */
 LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
     struct RastPort *rp, struct NewImage *ni, LONG sx, LONG sy, LONG sw,
     LONG sh, LONG xp, LONG yp, LONG dw, LONG dh)
@@ -724,7 +725,7 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
         ddw = sw;
         if (w < ddw) ddw = w;
         
-        BltNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, x, yp, ddw, dh);
+        BltScaleNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, x, yp, ddw, -1, -1, dh);
 
         w -= ddw;
         x += ddw;

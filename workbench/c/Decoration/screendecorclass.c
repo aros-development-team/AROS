@@ -284,7 +284,6 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
     return TRUE;
 }
 
-
 static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *msg)
 {
     struct scrdecor_data *data = INST_DATA(cl, obj);
@@ -295,10 +294,19 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
 
     BOOL truecolor = sd->truecolor;
 
-    msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
-    msg->sdp_BarHBorder = 1;
+    /*
+     * This depends on openwindow.c adding font height to w->BorderTop.
+     * It allows the window title bar to grow when font is bigger than decoration defined height
+     */
+    if ((msg->sdp_FontHeight + 2) > data->dc->BarHeight)
+        msg->sdp_WBorTop = 1;
+    else
+        msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
+
     /* Allow scalling title bar above decoration defined height */
     msg->sdp_BarHeight = msg->sdp_FontHeight > (data->dc->SBarHeight - 1) ? msg->sdp_FontHeight : (data->dc->SBarHeight - 1);
+
+    msg->sdp_BarHBorder = 1;
     msg->sdp_WBorLeft = data->dc->LeftBorder;
     msg->sdp_WBorRight = data->dc->RightBorder;
     msg->sdp_WBorBottom = data->dc->BottomBorder;
