@@ -10,6 +10,7 @@
  * ----------------------------------------------------------------------
  * History:
  * 
+ * 04-Dec-11   neil  Fixed buffer overrun with long filenames.
  * 30-Aug-04 sheutlin  fixed using handling of "/" to get the parent directory
  *                     the way Georg Steger suggested
  * 07-Jul-02 sheutlin  various changes when porting to AROS
@@ -170,7 +171,7 @@ char *cp = p_path_name;
 CDROM_OBJ *obj, *new;
 VOLUME *vol = p_current_dir->volume;
 char *np;
-char name[100];
+char name[256];
 
 	if (*cp == ':')
 	{
