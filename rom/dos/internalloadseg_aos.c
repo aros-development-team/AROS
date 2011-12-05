@@ -59,7 +59,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
   BPTR *hunktab = BADDR(table);
   BPTR firsthunk = BNULL, prevhunk = BNULL;
-  ULONG hunktype, count, first, last, curhunk, numhunks;
+  ULONG hunktype, count, first, last, curhunk, lasthunk, numhunks;
   LONG t;
   UBYTE name_buf[255];
   register int i;
@@ -77,7 +77,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   if (DOSBase)
     error =&((struct Process *)FindTask(NULL))->pr_Result2;
 
-  curhunk = 0; /* keep GCC quiet */
+  curhunk = lasthunk = 0; /* keep GCC quiet */
   /* start point is HUNK_HEADER + 4 */
   while (1)
   {
@@ -282,6 +282,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             goto end;
 
     	}
+
+        lasthunk = curhunk;
+        ++curhunk;
       break;
 
       case HUNK_RELOC32:
@@ -313,7 +316,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             offset = AROS_BE2LONG(offset);
 
             //D(bug("\t\t0x%06lx\n", offset));
-            addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
+            addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
             /* See the above MEMF_31 explanation for why this
              * works on AROS 64-bit.
@@ -353,7 +356,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             word = AROS_BE2WORD(word);
 
     	    count = word;
-            D(bug("\tHunk #%ld @%p: %ld relocations\n", count, GETHUNKPTR(curhunk), i));
+            D(bug("\tHunk #%ld @%p: %ld relocations\n", count, GETHUNKPTR(lasthunk), i));
             while (i > 0)
             {
               Wordcount++;
@@ -367,7 +370,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
               offset = AROS_BE2WORD(word);
 
               D(bug("\t\t0x%06lx += 0x%lx\n", offset, GETHUNKPTR(count)));
-              addr = (ULONG *)(GETHUNKPTR(curhunk) + offset);
+              addr = (ULONG *)(GETHUNKPTR(lasthunk) + offset);
 
               /* See the above MEMF_31 explanation for why this
                * works on AROS 64-bit.
@@ -390,7 +393,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_END:
       {
         D(bug("HUNK_END\n"));
-        ++curhunk;
         /* DOSBase == NULL: Called from RDB filesystem loader which does not
          * know filesystem's original size. Exit if last HUNK_END. This can't
          * be done normally because it would break overlayed executables.
