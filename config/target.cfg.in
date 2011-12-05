@@ -68,6 +68,7 @@ NM		:= @aros_target_nm@
 NM_PLAIN	:= @aros_plain_nm@
 OBJCOPY		:= @aros_target_objcopy@
 OBJDUMP		:= @aros_target_objdump@
+STRIP_PLAIN     := @aros_target_strip@
 
 # Apple iOS specific
 IOS_PLATFORM    := @aros_ios_platform@
