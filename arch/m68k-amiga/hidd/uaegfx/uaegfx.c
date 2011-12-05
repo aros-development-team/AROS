@@ -37,7 +37,7 @@
 #define DRTG(x) x;
 #include <aros/debug.h>
 
-#define SIZE_RESLIST 4
+#define SIZE_RESLIST 5
 #define SIZE_PFLIST 19
 #define SIZE_MODELIST (5 + RGBFB_MaxFormats)
 
@@ -270,8 +270,10 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
     	reslist[i * SIZE_RESLIST + 1].ti_Data = r->Height;
     	reslist[i * SIZE_RESLIST + 2].ti_Tag = aHidd_Sync_Description;
     	reslist[i * SIZE_RESLIST + 2].ti_Data = (IPTR)(csd->CardBase ? "RTGFX:%hx%v" : "UAEGFX:%hx%v");
-    	reslist[i * SIZE_RESLIST + 3].ti_Tag = TAG_DONE;
-    	reslist[i * SIZE_RESLIST + 3].ti_Data = 0;
+    	reslist[i * SIZE_RESLIST + 3].ti_Tag = aHidd_Sync_PixelClock;
+    	reslist[i * SIZE_RESLIST + 3].ti_Data = r->Modes[CHUNKY]->PixelClock;
+    	reslist[i * SIZE_RESLIST + 4].ti_Tag = TAG_DONE;
+    	reslist[i * SIZE_RESLIST + 4].ti_Data = 0;
     	D(bug("%08x %d*%d\n", r, r->Width, r->Height));
     	restags[i].ti_Tag = aHidd_Gfx_SyncTags;
     	restags[i].ti_Data = (IPTR)&reslist[i * SIZE_RESLIST];

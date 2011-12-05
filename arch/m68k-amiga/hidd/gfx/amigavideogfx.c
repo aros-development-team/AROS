@@ -252,7 +252,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	struct Library *OOPBase = csd->cs_OOPBase;
 	struct TagItem mytags[2];
 	struct pRoot_New mymsg;
-	ULONG allocsize = 4000, allocsizebuf = 2000;
+	ULONG allocsize = 3000, allocsizebuf = 1000;
 	ULONG allocedsize = 0, allocedsizebuf = 0;
 	WORD x, y, cnt, i, j;
 
@@ -324,6 +324,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 				ADDTAG(aHidd_Sync_HDisp, w);
 				ADDTAG(aHidd_Sync_VDisp, h);
 				ADDTAG(aHidd_Sync_Flags, h >= 400 ? vHidd_Sync_Interlaced : 0);
+				ADDTAG(aHidd_Sync_PixelClock, 1000000000 / (280 >> res));
 				ADDTAG(TAG_DONE, 0);
 			}
 			
