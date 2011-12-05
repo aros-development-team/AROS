@@ -62,7 +62,7 @@
 	    break;
 	}
 	case DOS_FIB:
-	    FreeMem(ptr,sizeof(struct FileInfoBlock));
+	    FreeVec(ptr);
 	    break;
 	    
 	case DOS_STDPKT:
@@ -73,7 +73,7 @@
 	    if (((struct InternalExAllControl *)ptr)->fib)
 	        FreeDosObject(DOS_FIB, ((struct InternalExAllControl *)ptr)->fib);
 	    
-	    FreeMem(ptr, sizeof(struct InternalExAllControl));
+	    FreeVec(ptr);
 	    break;
 	    
 	case DOS_CLI:
@@ -85,7 +85,7 @@
 	    FreeVec(BADDR(cli->cli_CommandName));
 	    FreeVec(BADDR(cli->cli_CommandFile));
 	    FreeVec(BADDR(cli->cli_Prompt));
-	    FreeMem(ptr,sizeof(struct CommandLineInterface));
+	    FreeVec(ptr);
 	    while(cur!=NULL)
 	    {
 		next=(BPTR *)BADDR(cur[0]);
@@ -121,5 +121,5 @@
 
 void freedospacket(struct DosPacket *dp)
 {
-    FreeMem(container_of(dp, struct StandardPacket, sp_Pkt), sizeof(struct StandardPacket));
+    FreeVec(container_of(dp, struct StandardPacket, sp_Pkt));
 }
