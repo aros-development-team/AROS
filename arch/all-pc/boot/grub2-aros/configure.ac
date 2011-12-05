@@ -133,8 +133,12 @@ case "$target_cpu" in
   x86_64 | sparc64) target_m64=1 ;;
 esac
 
-case "$host_os" in
-  mingw32*) host_os=cygwin ;;
+dnl AROS FIX: Originally $host_os is used here, but this causes problems with AROS build system
+dnl because it specifies --target, causing a ELF cross-compiler to be used for building standalone
+dnl grub-core. Using $host_os here caused attempt to use pe2elf on ELF objects.
+dnl The same affects one more 'cygwin' appearance below (line 462).
+case "$target_os" in
+  mingw32*) target_os=cygwin ;;
 esac
 
 # This normalizes the names, and creates a new variable ("host_kernel")
@@ -331,7 +335,9 @@ if test "x$target_alias" != x && test "x$host_alias" != "x$target_alias"; then
   AC_CHECK_TOOL(OBJCOPY, objcopy)
   AC_CHECK_TOOL(STRIP, strip)
   AC_CHECK_TOOL(NM, nm)
+dnl AROS FIX: added TARGET_RANLIB and TARGET_STRIP, used by grub-core/Makefile.am
   AC_CHECK_TOOL(TARGET_RANLIB, ranlib)
+  AC_CHECK_TOOL(TARGET_STRIP, strip)
 
   ac_tool_prefix="$tmp_ac_tool_prefix"
 else
@@ -346,6 +352,7 @@ AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_CC)
 AC_SUBST(TARGET_CC)
 AC_SUBST(TARGET_RANLIB)
+AC_SUBST(TARGET_STRIP)
 
 # Test the C compiler for the target environment.
 tmp_CC="$CC"
@@ -455,7 +462,7 @@ fi
 
 # For platforms where ELF is not the default link format.
 AC_MSG_CHECKING([for command to convert module to ELF format])
-case "${host_os}" in
+case "${target_os}" in
   cygwin) TARGET_OBJ2ELF='$(grub_utildir)/grub-pe2elf';
 # FIXME: put proper test here
   NEED_REGISTER_FRAME_INFO=1
