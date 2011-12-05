@@ -70,13 +70,13 @@
 	return mem;
 
     case DOS_FIB:
-	return AllocMem(sizeof(struct FileInfoBlock), MEMF_CLEAR);
+	return AllocVec(sizeof(struct FileInfoBlock), MEMF_CLEAR);
 
     case DOS_STDPKT:
     	return allocdospacket();
 
     case DOS_EXALLCONTROL:
-	return AllocMem(sizeof(struct InternalExAllControl), MEMF_CLEAR);
+	return AllocVec(sizeof(struct InternalExAllControl), MEMF_CLEAR);
 
     case DOS_CLI:
 	{
@@ -98,7 +98,7 @@
 	    /* C has no exceptions. This is a simple replacement. */
 #define ENOMEM_IF(a)  if(a) goto enomem      /* Throw out of memory. */
 
-	    cli = AllocMem(sizeof(struct CommandLineInterface), MEMF_CLEAR);
+	    cli = AllocVec(sizeof(struct CommandLineInterface), MEMF_CLEAR);
 	    ENOMEM_IF(cli == NULL);
 	    
 	    cli->cli_FailLevel  = RETURN_ERROR;
@@ -135,7 +135,7 @@
 	    
 enomem:
 	    if(cli != NULL)
-		FreeMem(cli, sizeof(struct CommandLineInterface));
+		FreeVec(cli);
 	    
 	    FreeVec(dir);
 	    FreeVec(command);
@@ -161,7 +161,7 @@ enomem:
 /* Internal routines for packet allocation. Does not require DOSBase. */
 struct DosPacket *allocdospacket(void)
 {
-    struct StandardPacket *sp = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
+    struct StandardPacket *sp = AllocVec(sizeof(struct StandardPacket), MEMF_CLEAR);
 
     if (sp == NULL)
 	return NULL;
