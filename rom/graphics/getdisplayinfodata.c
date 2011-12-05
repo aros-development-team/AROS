@@ -38,6 +38,10 @@ static UBYTE popcount(IPTR x);
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
 
+/* Does not 100% match AOS but better than nothing */
+#define TOHTICKS(w) ((22 * 640 + w / 2) / w)
+#define TOVTICKS(h) ((22 * 512 + h / 2) / h)
+
 /*****************************************************************************
 
     NAME */
@@ -153,9 +157,12 @@ static UBYTE popcount(IPTR x);
 	{
 	    struct DisplayInfo *di;
 	    IPTR redmask, greenmask, bluemask;
+	    IPTR width, height;
 	    IPTR val = 0;
 
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
 	    di = (struct DisplayInfo *)qh;
 
@@ -221,9 +228,11 @@ static UBYTE popcount(IPTR x);
 	     * In original AmigaOS(tm) they are hardcoded in monitor driver for
 	     * every mode.
 	     * They have something to do with ratioh and ratiov fields in struct MonitorSpec.
+	     *
+	     * They are called "ticks" and base unit seems to be 44 = 1 hires pixel.
 	     */
-	    di->Resolution.x = 22;
-	    di->Resolution.y = 22;
+	    di->Resolution.x = TOHTICKS(width);
+	    di->Resolution.y = TOVTICKS(height);
 
 	    if (val)
 	        di->PixelSpeed = 1000000000 / val;
@@ -320,8 +329,11 @@ static UBYTE popcount(IPTR x);
 	case DTAG_MNTR:
 	{
 	    struct MonitorInfo *mi = (struct MonitorInfo *)qh;
+	    IPTR width, height;
 
 	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&mi->Mspc);
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
 
 	    /*
 	    mi->ViewPosition.X = ?;
@@ -334,6 +346,9 @@ static UBYTE popcount(IPTR x);
 	    mi->DefaultViewPosition.X = ?;
 	    mi->DefaultViewPosition.Y = ?;
 	    */
+
+            mi->ViewResolution.x = TOHTICKS(width);
+            mi->ViewResolution.y = TOVTICKS(height);
 
 	    if (mi->Mspc)
 	    {
