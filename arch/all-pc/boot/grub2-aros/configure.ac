@@ -469,7 +469,7 @@ fi
 # For platforms where ELF is not the default link format.
 AC_MSG_CHECKING([for command to convert module to ELF format])
 case "${target_os}" in
-  cygwin) TARGET_OBJ2ELF='$(grub_utildir)/grub-pe2elf';
+  cygwin) TARGET_OBJ2ELF='$grub_utildir/grub-pe2elf';
 # FIXME: put proper test here
   NEED_REGISTER_FRAME_INFO=1
   ;;

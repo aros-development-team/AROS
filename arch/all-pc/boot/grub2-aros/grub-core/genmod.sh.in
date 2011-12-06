@@ -21,6 +21,8 @@ moddep=$1
 infile=$2
 outfile=$3
 
+grub_utildir=@abs_top_builddir@
+
 tmpfile=${outfile}.tmp
 modname=`echo $infile | sed -e 's@\.module.*$@@'`
 
@@ -53,7 +55,7 @@ rm -f $t1 $t2
 
 if test x@TARGET_APPLE_CC@ != x1; then
 	if ! test -z "@TARGET_OBJ2ELF@"; then
-	    ./@TARGET_OBJ2ELF@ $tmpfile || exit 1
+	    @TARGET_OBJ2ELF@ $tmpfile || exit 1
 	fi
 	if test x@platform@ != xemu; then
 	    @STRIP@ --strip-unneeded \

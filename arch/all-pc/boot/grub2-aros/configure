@@ -20386,7 +20386,7 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for command to convert module to ELF format" >&5
 $as_echo_n "checking for command to convert module to ELF format... " >&6; }
 case "${target_os}" in
-  cygwin) TARGET_OBJ2ELF='$(grub_utildir)/grub-pe2elf';
+  cygwin) TARGET_OBJ2ELF='$grub_utildir/grub-pe2elf';
 # FIXME: put proper test here
   NEED_REGISTER_FRAME_INFO=1
   ;;
