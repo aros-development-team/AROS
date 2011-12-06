@@ -172,7 +172,8 @@ AROS_UFH3(static BOOL, DiskChangeIntHandler,
 
 LONG InitDiskHandler (struct FileSysStartupMsg *fssm) {
     LONG err;
-    ULONG diskchgintbit, flags, unit;
+    ULONG diskchgintbit, flags;
+    IPTR unit;
     UBYTE *device;
 
     unit = fssm->fssm_Unit;
