@@ -25,8 +25,9 @@ ifeq ($(AROS_TARGET_CPU), arm)
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 else
 ifeq ($(AROS_TARGET_CPU), m68k)
-  GCC_VERSION     = 4.5.1
-  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
+  GCC_VERSION     = 4.5.3
+  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) -disable-bootstrap 
+  GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 else
@@ -79,8 +80,21 @@ tools-crosstools-binutils :
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
+#MM- tools-crosstools-includes: includes
+
+ARCH_INCLUDES := $(TOOLDIR)/crosstools/$(AROS_TARGET_CPU)-aros/include
+    
 #MM
-tools-crosstools-gcc :
+tools-crosstools-includes: $(ARCH_INCLUDES)/aros/system.h
+	@$(ECHO) $^
+
+$(ARCH_INCLUDES)/aros/system.h: $(AROS_DEVELOPMENT)/include/aros/system.h
+	$(MKDIR) -p $(ARCH_INCLUDES)
+	$(CP) -a $(AROS_DEVELOPMENT)/include/. $(ARCH_INCLUDES)/.
+	$(TOUCH) $@
+
+#MM
+tools-crosstools-gcc : tools-crosstools-includes
 	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/specs
 	@$(IF) ! $(TEST) -f $(gcc-installflag) \
 	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gcc-installflag))" ; then \
