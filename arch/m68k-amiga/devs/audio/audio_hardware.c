@@ -150,29 +150,18 @@ AROS_UFH4(ULONG, audio_int,
 void audiohw_reset(struct AudioBase *ab, UWORD mask)
 {
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct AudioInterrupt *inter;
     UBYTE ch;
 
-    Disable();
     custom->adkcon = mask | (mask << 4);
     custom->dmacon = mask;
-    for (ch = 0; ch < NR_CH; ch++) {
-    	if (!(mask & (1 << ch)))
-    	    continue;
-	inter = &ab->audint[ch];
-	inter->audint.is_Code = (APTR)audio_int;
-	inter->audint.is_Data = inter;
-	inter->audint.is_Node.ln_Name = "audio";
-	inter->audint.is_Node.ln_Type = NT_INTERRUPT;
-	inter->ch = ch;
-	inter->ab = ab;
-	SetIntVector(INTB_AUD0 + ch, &inter->audint);
-	custom->aud[ch].ac_vol = 0;
-	custom->aud[ch].ac_per = 100;
-    }
     custom->intena = mask << INTB_AUD0;
     custom->intreq = mask << INTB_AUD0;
-    Enable();
+    for (ch = 0; ch < 4; ch++) {
+        if ((1 << ch) & mask) {
+            custom->aud[ch].ac_vol = 0;
+	    custom->aud[ch].ac_per = 100;
+	}
+    }
 }
 
 static void preparech_initial(struct AudioBase *ab, UBYTE ch)
@@ -208,3 +197,19 @@ void audiohw_start(struct AudioBase *ab, UWORD mask)
     }
 }
 
+void audiohw_init(struct AudioBase *ab)
+{
+    UBYTE ch;
+
+    audiohw_reset(ab, CH_MASK);
+    for (ch = 0; ch < NR_CH; ch++) {
+	struct AudioInterrupt *inter = &ab->audint[ch];
+	inter->audint.is_Code = (APTR)audio_int;
+	inter->audint.is_Data = inter;
+	inter->audint.is_Node.ln_Name = "audio";
+	inter->audint.is_Node.ln_Type = NT_INTERRUPT;
+	inter->ch = ch;
+	inter->ab = ab;
+	SetIntVector(INTB_AUD0 + ch, &inter->audint);
+    }
+}

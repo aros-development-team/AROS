@@ -837,6 +837,16 @@ void initcustom(struct amigavideo_staticdata *data)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *ciab = (struct CIA*)0xbfd000;
 
+    /* Reset audio registers to values that help emulation
+     * if some program enables audio DMA without setting period
+     * or length. Very high period emulation is very CPU intensive.
+     */
+    for (i = 0; i < 4; i++) {
+        custom->aud[i].ac_vol = 0;
+        custom->aud[i].ac_per = 100;
+        custom->aud[i].ac_len = 1000;
+    }
+
     resetcustom(data);
     resetsprite(data);
 

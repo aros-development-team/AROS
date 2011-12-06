@@ -454,11 +454,10 @@ static BOOL ADCMD_READ_f(struct AudioBase *ab, struct IOAudio *io)
 static BOOL ADCMD_WAITCYCLE_f(struct AudioBase *ab, struct IOAudio *io)
 {
     HEADER
-    UBYTE ch, newmask;
+    UBYTE ch;
     BOOL ret;
 
     D(bug("ADCMD_WAITCYCLE %02x %04x\n", mask, key));
-    newmask = 0;
     ret = TRUE;
     for (ch = 0; ch < NR_CH; ch++) {
     	if ((mask & (1 << ch)) && key == ab->key[ch]) {
@@ -587,6 +586,7 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR AudioBase)
     NEWLIST(&AudioBase->misclist);
     AudioBase->zerosample = AllocMem(2, MEMF_CHIP | MEMF_CLEAR);
     AudioBase->keygen = 0x5a00;
+    audiohw_init(AudioBase);
     return TRUE;
 }
 
