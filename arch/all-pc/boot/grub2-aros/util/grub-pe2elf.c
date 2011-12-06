@@ -339,10 +339,19 @@ write_symbol_table (FILE* fp, char *image,
 
       if ((type != STT_FUNC) && (pe_symtab->num_aux))
         {
-          if (! pe_symtab->value)
-            type = STT_SECTION;
-
-          symtab[num_syms].st_name = shdr[section_map[pe_symtab->section]].sh_name;
+          /*
+           * AROS FIX: Standalone build under Cygwin generates a reference to __enable_execute_stack
+           * in part_bsd.module.exe intermediate file. This symbol refers to section zero, but has
+           * num_aux set to 1. Processing it here causes insertion of empty symbol into ELF output,
+           * which causes following strip command to fail.
+           */
+          if (type != STT_NOTYPE)
+            {
+              if (! pe_symtab->value)
+                type = STT_SECTION;
+ 
+              symtab[num_syms].st_name = shdr[section_map[pe_symtab->section]].sh_name;
+            }
         }
       else
         {
