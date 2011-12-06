@@ -1,0 +1,2025 @@
+commit fd3287e3ce48d856a211187e2dca8e1081df4d2c
+Author: Jason S. McMullan <jason.mcmullan@netronome.com>
+Date:   Tue Dec 6 12:03:02 2011 -0500
+
+    AROS 4.5.3 changes
+    
+    Signed-off-by: Jason S. McMullan <jason.mcmullan@netronome.com>
+
+diff --git a/configure b/configure
+index c60f1b3..5fea51d 100755
+--- a/configure
++++ b/configure
+@@ -3147,6 +3147,9 @@ case "${host}" in
+   ppc*-*-pe)
+     noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
+     ;;
++  *-*-aros*)
++    noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb"
++    ;;
+   powerpc-*-beos*)
+     noconfigdirs="$noconfigdirs tk itcl libgui gdb dejagnu readline"
+     ;;
+@@ -3938,6 +3941,8 @@ fi
+     # Build the stage2 and stage3 compilers with -fomit-frame-pointer.
+     host_makefile_frag="config/mh-x86omitfp"
+     ;;
++  *-*-aros*)
++    ;;
+ esac
+ fi
+ 
+diff --git a/configure.ac b/configure.ac
+index 35812aa..124783e 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -390,6 +390,9 @@ case "${host}" in
+   ppc*-*-pe)
+     noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
+     ;;
++  *-*-aros*)
++    noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl tix gnuserv gdb"
++    ;;
+   powerpc-*-beos*)
+     noconfigdirs="$noconfigdirs tk itcl libgui gdb dejagnu readline"
+     ;;
+@@ -1156,6 +1159,8 @@ case "${host}" in
+     # Build the stage2 and stage3 compilers with -fomit-frame-pointer.
+     host_makefile_frag="config/mh-x86omitfp"
+     ;;
++  *-*-aros*)
++    ;;
+ esac
+ fi
+ 
+diff --git a/fixincludes/configure b/fixincludes/configure
+index 52821e4..335f652 100755
+--- a/fixincludes/configure
++++ b/fixincludes/configure
+@@ -4239,6 +4239,7 @@ else
+ fi
+ else
+   case $host in
++        *-*-aros* | \
+ 	i?86-*-msdosdjgpp* | \
+ 	i?86-*-mingw32* | \
+ 	x86_64-*-mingw32* | \
+diff --git a/fixincludes/configure.ac b/fixincludes/configure.ac
+index f30a642..c44e238 100644
+--- a/fixincludes/configure.ac
++++ b/fixincludes/configure.ac
+@@ -49,6 +49,7 @@ else
+ 	TARGET=oneprocess
+ fi],
+ [case $host in
++        *-*-aros* | \
+ 	i?86-*-msdosdjgpp* | \
+ 	i?86-*-mingw32* | \
+ 	x86_64-*-mingw32* | \
+diff --git a/gcc/config.build b/gcc/config.build
+index 0ed8754..b3bdb54 100644
+--- a/gcc/config.build
++++ b/gcc/config.build
+@@ -129,6 +129,9 @@ case $build in
+     # HP 9000 series 300
+     build_install_headers_dir=install-headers-cpio
+     ;;
++  *-*-aros*)
++    build_xm_file=xm-aros.h
++    ;;
+   *-*-sysv*)
+     # All other System V variants.
+     build_install_headers_dir=install-headers-cpio
+diff --git a/gcc/config.gcc b/gcc/config.gcc
+index 0ff189c..abcfb5a 100644
+--- a/gcc/config.gcc
++++ b/gcc/config.gcc
+@@ -573,6 +573,14 @@ case ${target} in
+       ;;
+   esac
+   ;;
++*-*-aros*)
++  gas=yes
++  gnu_ld=yes
++  thread_file=single
++  use_collect2=no
++  xm_defines='STDC_HEADERS=1'
++  ;;
++
+ *-*-openbsd*)
+   tmake_file="t-libc-ok t-openbsd t-libgcc-pic"
+   case ${enable_threads} in
+@@ -709,6 +717,11 @@ arc-*-elf*)
+ 	tm_file="dbxelf.h elfos.h svr4.h newlib-stdint.h ${tm_file}"
+ 	extra_parts="crtinit.o crtfini.o"
+ 	;;
++arm*-*-aros*)
++	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
++	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-bpabi"
++	xm_file="xm-aros.h"
++	;;
+ arm-wrs-vxworks)
+ 	tm_file="elfos.h arm/elf.h arm/aout.h ${tm_file} vx-common.h vxworks.h arm/vxworks.h"
+ 	tmake_file="${tmake_file} arm/t-arm arm/t-vxworks"
+@@ -1190,6 +1203,14 @@ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
+ 	esac
+ 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
+ 	;;
++i[34567]86-*-aros*)
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/aros.h"
++	xm_file=xm-aros.h
++	;;	
++x86_64-*-aros*)
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/x86-64.h i386/aros64.h"
++	xm_file=xm-aros.h
++	;;
+ i[34567]86-pc-msdosdjgpp*)
+ 	xm_file=i386/xm-djgpp.h
+ 	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h"
+@@ -1581,6 +1602,16 @@ m68hc12-*-*|m6812-*-*)
+ 	extra_options="${extra_options} m68hc11/m68hc11.opt"
+ 	use_gcc_stdint=wrap
+         ;;
++m68k-*-aros*)
++	default_m68k_cpu=68020
++	default_cf_cpu=5206
++	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h newlib-stdint.h m68k/m68kemb.h m68k/m68020-elf.h"
++	tm_file="${tm_file} aros.h"
++	tm_defines="${tm_defines} MOTOROLA=1"
++	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
++	tmake_file="$tmake_file m68k/t-mlibs t-gnu"
++	extra_parts="crtbegin.o crtend.o"
++	;;
+ m68k-*-elf* | fido-*-elf*)
+ 	case ${target} in
+ 	fido-*-elf*)
+@@ -2000,6 +2031,12 @@ powerpc-*-rtems*)
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+ 	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-rtems t-rtems rs6000/t-ppccomm"
+ 	;;
++powerpc-*-aros*)
++ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	extra_options="${extra_options} rs6000/sysv4.opt"
++ 	tm_file="${tm_file} rs6000/aros.h"
++ 	xm_file=xm-aros.h
++ 	;;
+ powerpc-*-linux* | powerpc64-*-linux*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h"
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+diff --git a/gcc/config.host b/gcc/config.host
+index c07d9e5..6c8a06b 100644
+--- a/gcc/config.host
++++ b/gcc/config.host
+@@ -268,4 +268,8 @@ case ${host} in
+     out_host_hook_obj=host-hpux.o
+     host_xmake_file="${host_xmake_file} x-hpux"
+     ;;
++  *-*-aros*)
++    host_can_use_collect2=no
++    host_xm_file=xm-aros.h
++    ;;
+ esac
+diff --git a/gcc/config/arm/aros.h b/gcc/config/arm/aros.h
+new file mode 100644
+index 0000000..ae53a33
+--- /dev/null
++++ b/gcc/config/arm/aros.h
+@@ -0,0 +1,90 @@
++/* Configuration file for ARM AROS EABI targets.
++   Copyright (C) 2004, 2005, 2006, 2007, 2010
++   Free Software Foundation, Inc.
++   Contributed by Pavel Fedin
++   Based on linux-eabi.h and other AROS targets
++
++   This file is part of GCC.
++
++   GCC is free software; you can redistribute it and/or modify it
++   under the terms of the GNU General Public License as published
++   by the Free Software Foundation; either version 3, or (at your
++   option) any later version.
++
++   GCC is distributed in the hope that it will be useful, but WITHOUT
++   ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
++   License for more details.
++
++   You should have received a copy of the GNU General Public License
++   along with GCC; see the file COPYING3.  If not see
++   <http://www.gnu.org/licenses/>.  */
++
++/* On EABI GNU/Linux, we want both the BPABI builtins and the
++   GNU/Linux builtins.  */
++#undef  TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS() 		\
++  do 						\
++    {						\
++      TARGET_BPABI_CPP_BUILTINS();		\
++	builtin_define_std ("unix");		\
++	builtin_define_std ("AROS");		\
++	builtin_assert ("system=posix");	\
++	if (flag_pic)				\
++	  {					\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
++	  }					\
++    }						\
++  while (false)
++
++#undef SIZE_TYPE
++#define SIZE_TYPE "unsigned int"
++
++#undef PTRDIFF_TYPE
++#define PTRDIFF_TYPE "int"
++
++#undef WCHAR_TYPE
++#define WCHAR_TYPE "long int"
++
++#undef WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE BITS_PER_WORD
++
++/* We default to a soft-float ABI so that binaries can run on all
++   target hardware.  */
++#undef  TARGET_DEFAULT_FLOAT_ABI
++#define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFT
++
++/* We default to the "aapcs-linux" ABI so that enums are int-sized by
++   default.  */
++#undef  ARM_DEFAULT_ABI
++#define ARM_DEFAULT_ABI ARM_ABI_AAPCS_LINUX
++
++/* Default to armv5t so that thumb shared libraries work.
++   The ARM10TDMI core is the default for armv5t, so set
++   SUBTARGET_CPU_DEFAULT to achieve this.  */
++#undef  SUBTARGET_CPU_DEFAULT
++#define SUBTARGET_CPU_DEFAULT TARGET_CPU_arm10tdmi
++
++/* TARGET_BIG_ENDIAN_DEFAULT is set in
++   config.gcc for big endian configurations.  */
++#undef  TARGET_LINKER_EMULATION
++#if TARGET_BIG_ENDIAN_DEFAULT
++#define TARGET_LINKER_EMULATION "armelfb_linux_eabi"
++#else
++#define TARGET_LINKER_EMULATION "armelf_linux_eabi"
++#endif
++
++#undef  SUBTARGET_EXTRA_LINK_SPEC
++#define SUBTARGET_EXTRA_LINK_SPEC " -m " TARGET_LINKER_EMULATION
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++#undef  LINK_SPEC
++#define LINK_SPEC "-m armelf_linux_eabi"
++
++/* Use own supplement to libgcc.  */
++#undef LIBGCC_SPEC
++#define LIBGCC_SPEC "-laeabi -lgcc"
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
+diff --git a/gcc/config/aros.h b/gcc/config/aros.h
+new file mode 100644
+index 0000000..c3e328e
+--- /dev/null
++++ b/gcc/config/aros.h
+@@ -0,0 +1,93 @@
++/* Definitions for AROS
++   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
++   Contributed by Fabio Alemagna
++   Based upon linux.h, contributed by Eric Youngdale.
++
++This file is part of GNU CC.
++
++GNU CC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GNU CC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GNU CC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Don't assume anything about the header files.  */
++#define NO_IMPLICIT_EXTERN_C
++
++/* AROS uses ctype from libc.a. I am not sure how complete it is.
++   For now, we play safe. It may change later.  */
++
++#if 0
++#undef MULTIBYTE_CHARS
++#define MULTIBYTE_CHARS 1
++#endif
++
++#undef TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS()		\
++  do						\
++    {						\
++	builtin_define_std ("unix");            \
++	builtin_define_std ("AROS");            \
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=posix");        \
++    }						\
++  while (0)
++
++#undef ASM_APP_ON
++#define ASM_APP_ON "#APP\n"
++
++#undef ASM_APP_OFF
++#define ASM_APP_OFF "#NO_APP\n"
++
++#undef MD_EXEC_PREFIX
++#undef MD_STARTFILE_PREFIX
++
++/* Provide a STARTFILE_SPEC appropriate for AROS. AROS has its own
++   set of startup files which also take care of handling C++
++   constructors/destructors.  */
++
++#undef	STARTFILE_SPEC
++#define STARTFILE_SPEC \
++  "%{detach:detach.o%s} startup.o%s %{nix:nixmain.o%s}"
++
++/* Provide a ENDFILE_SPEC appropriate for AROS. */
++
++#undef	ENDFILE_SPEC
++#define ENDFILE_SPEC \
++  "-lautoinit"
++
++/* This is for -profile to use -lc_p instead of -lc.  */
++#ifndef CC1_SPEC
++#define CC1_SPEC "%{profile:-p}"
++#endif
++
++/* The GNU C++ standard library requires that these macros be defined.  */
++#undef CPLUSPLUS_CPP_SPEC
++#define CPLUSPLUS_CPP_SPEC "-D_GNU_SOURCE %(cpp)"
++
++#undef	LIB_SPEC
++#define LIB_SPEC \
++  "-lamiga %{!noarosc:-larosc} -larossupport -lm -lcodesets -lkeymap -lexpansion -lcommodities -ldiskfont -lasl -lmuimaster -ldatatypes -lcybergraphics -lworkbench -licon -lintuition -lgadtools -llayers -laros -lpartition -liffparse -lgraphics -llocale -ldos -lutility -lautoinit -llibinit -lautoinit"
++
++#if !defined(USE_GNULIBC_1) && defined(HAVE_LD_EH_FRAME_HDR)
++#define LINK_EH_SPEC "%{!static:--eh-frame-hdr} "
++#endif
++
++/* AROS uses its own collect-like program for the moment.  */
++#undef LINKER_NAME
++#define LINKER_NAME "collect-aros"
++
++/* Define this so we can compile MS code for use with WINE.  */
++#undef HANDLE_PRAGMA_PACK_PUSH_POP
++#define HANDLE_PRAGMA_PACK_PUSH_POP
++
++#define TARGET_HAS_F_SETLKW
+diff --git a/gcc/config/i386/aros.h b/gcc/config/i386/aros.h
+new file mode 100644
+index 0000000..3d5f284
+--- /dev/null
++++ b/gcc/config/i386/aros.h
+@@ -0,0 +1,120 @@
++/* Definitions for Intel 386 running AROS systems with ELF format.
++   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
++   Free Software Foundation, Inc.
++   Contributed by Fabio Alemagna.
++   Based upon i386/linux.h by Eric Youngdale.
++
++This file is part of GNU CC.
++
++GNU CC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GNU CC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GNU CC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Output at beginning of assembler file.  */
++/* The .file command should always begin the output.  */
++#undef TARGET_ASM_FILE_START_FILE_DIRECTIVE
++#define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
++
++#define TARGET_VERSION fprintf (stderr, " (i386 AROS/ELF)");
++
++/* The svr4 ABI for the i386 says that records and unions are returned
++   in memory.  */
++#undef DEFAULT_PCC_STRUCT_RETURN
++#define DEFAULT_PCC_STRUCT_RETURN 1
++
++#undef ASM_COMMENT_START
++#define ASM_COMMENT_START "#"
++
++#undef DBX_REGISTER_NUMBER
++#define DBX_REGISTER_NUMBER(n) \
++  (TARGET_64BIT ? dbx64_register_map[n] : svr4_dbx_register_map[n])
++
++/* Output assembler code to FILE to call the profiler.
++   To the best of my knowledge, no Linux libc has required the label
++   argument to mcount.  */
++
++#define NO_PROFILE_COUNTERS 1
++
++#undef MCOUNT_NAME
++#define MCOUNT_NAME "mcount"
++
++/* The GLIBC version of mcount for the x86 assumes that there is a
++   frame, so we cannot allow profiling without a frame pointer.  */
++
++#undef SUBTARGET_FRAME_POINTER_REQUIRED
++#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
++
++#undef SIZE_TYPE
++#define SIZE_TYPE "unsigned int"
++
++#undef PTRDIFF_TYPE
++#define PTRDIFF_TYPE "int"
++
++#undef WCHAR_TYPE
++#define WCHAR_TYPE "long int"
++
++#undef WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE BITS_PER_WORD
++
++#undef CPP_SPEC
++#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
++
++#undef CC1_SPEC
++#define CC1_SPEC "%(cc1_cpu) %{profile:-p}"
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++
++#undef	LINK_SPEC
++#define LINK_SPEC "-m elf_i386"
++
++/* A C statement (sans semicolon) to output to the stdio stream
++   FILE the assembler definition of uninitialized global DECL named
++   NAME whose size is SIZE bytes and alignment is ALIGN bytes.
++   Try to use asm_output_aligned_bss to implement this macro.  */
++
++#define ASM_OUTPUT_ALIGNED_BSS(FILE, DECL, NAME, SIZE, ALIGN) \
++  asm_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN)
++
++/* A C statement to output to the stdio stream FILE an assembler
++   command to advance the location counter to a multiple of 1<<LOG
++   bytes if it is within MAX_SKIP bytes.
++
++   This is used to align code labels according to Intel recommendations.  */
++
++#ifdef HAVE_GAS_MAX_SKIP_P2ALIGN
++#define ASM_OUTPUT_MAX_SKIP_ALIGN(FILE,LOG,MAX_SKIP)			\
++  do {									\
++    if ((LOG) != 0) {							\
++      if ((MAX_SKIP) == 0) fprintf ((FILE), "\t.p2align %d\n", (LOG));	\
++      else fprintf ((FILE), "\t.p2align %d,,%d\n", (LOG), (MAX_SKIP));	\
++    }									\
++  } while (0)
++#endif
++
++/* Handle special EH pointer encodings.  Absolute, pc-relative, and
++   indirect are handled automatically.  */
++#define ASM_MAYBE_OUTPUT_ENCODED_ADDR_RTX(FILE, ENCODING, SIZE, ADDR, DONE) \
++  do {									\
++    if ((SIZE) == 4 && ((ENCODING) & 0x70) == DW_EH_PE_datarel)		\
++      {									\
++        fputs (ASM_LONG, FILE);			\
++        assemble_name (FILE, XSTR (ADDR, 0));				\
++	fputs (((ENCODING) & DW_EH_PE_indirect ? "@GOT" : "@GOTOFF"), FILE); \
++        goto DONE;							\
++      }									\
++  } while (0)
++
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
+diff --git a/gcc/config/i386/aros64.h b/gcc/config/i386/aros64.h
+new file mode 100644
+index 0000000..2c64b27
+--- /dev/null
++++ b/gcc/config/i386/aros64.h
+@@ -0,0 +1,43 @@
++/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
++   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
++   Free Software Foundation, Inc.
++   Contributed by Stanislaw Szymczyk <sszymczy@gmail.com>. Based on aros.h.
++
++This file is part of GNU CC.
++
++GNU CC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GNU CC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GNU CC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Output at beginning of assembler file.  */
++/* The .file command should always begin the output.  */
++
++#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
++
++#undef CPP_SPEC
++#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
++
++/* The svr4 ABI for the i386 says that records and unions are returned
++   in memory.  In the 64bit compilation we will turn this flag off in
++   override_options, as we never do pcc_struct_return scheme on this target.  */
++#undef DEFAULT_PCC_STRUCT_RETURN
++#define DEFAULT_PCC_STRUCT_RETURN 1
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++
++#undef	LINK_SPEC
++#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386}" 
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
+diff --git a/gcc/config/m68k/m68k.c b/gcc/config/m68k/m68k.c
+index c22f3b8..9718ccb 100644
+--- a/gcc/config/m68k/m68k.c
++++ b/gcc/config/m68k/m68k.c
+@@ -920,7 +920,7 @@ m68k_initial_elimination_offset (int from, int to)
+ static bool
+ m68k_save_reg (unsigned int regno, bool interrupt_handler)
+ {
+-  if (flag_pic && regno == PIC_REG)
++  if (flag_pic && regno == A5_REG)
+     {
+       if (crtl->saves_all_registers)
+ 	return true;
+@@ -2186,7 +2186,7 @@ static rtx
+ m68k_get_gp (void)
+ {
+   if (pic_offset_table_rtx == NULL_RTX)
+-    pic_offset_table_rtx = gen_rtx_REG (Pmode, PIC_REG);
++    pic_offset_table_rtx = gen_rtx_REG (Pmode, A5_REG);
+ 
+   crtl->uses_pic_offset_table = 1;
+ 
+@@ -4640,7 +4640,7 @@ m68k_delegitimize_address (rtx orig_x)
+   if (GET_CODE (x) == PLUS
+       && GET_CODE (XEXP (x, 1)) == CONST
+       && REG_P (XEXP (x, 0))
+-      && REGNO (XEXP (x, 0)) == PIC_REG)
++      && REGNO (XEXP (x, 0)) == A5_REG)
+     {
+       y = x = XEXP (XEXP (x, 1), 0);
+ 
+@@ -5145,7 +5145,7 @@ m68k_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
+ 
+   /* Restore the original PIC register.  */
+   if (flag_pic)
+-    SET_REGNO (pic_offset_table_rtx, PIC_REG);
++    SET_REGNO (pic_offset_table_rtx, A5_REG);
+ }
+ 
+ /* Worker function for TARGET_STRUCT_VALUE_RTX.  */
+diff --git a/gcc/config/m68k/m68k.h b/gcc/config/m68k/m68k.h
+index 5787e8a..1d36a63 100644
+--- a/gcc/config/m68k/m68k.h
++++ b/gcc/config/m68k/m68k.h
+@@ -348,7 +348,7 @@ along with GCC; see the file COPYING3.  If not see
+ #define PIC_OFFSET_TABLE_REGNUM				\
+   (!flag_pic ? INVALID_REGNUM				\
+    : reload_completed ? REGNO (pic_offset_table_rtx)	\
+-   : PIC_REG)
++   : A5_REG)
+ 
+ /* 1 for registers that have pervasive standard uses
+    and are not available for the register allocator.
+@@ -416,7 +416,7 @@ along with GCC; see the file COPYING3.  If not see
+ 	  fixed_regs[i] = call_used_regs[i] = 1;		\
+     }								\
+   if (flag_pic)							\
+-    fixed_regs[PIC_REG] = call_used_regs[PIC_REG] = 1;		\
++    fixed_regs[A5_REG] = call_used_regs[A5_REG] = 1;		\
+ }
+ 
+ /* On the m68k, ordinary registers hold 32 bits worth;
+@@ -453,7 +453,7 @@ along with GCC; see the file COPYING3.  If not see
+ /* Most m68k targets use %a6 as a frame pointer.  The AmigaOS
+    ABI uses %a6 for shared library calls, therefore the frame
+    pointer is shifted to %a5 on this target.  */
+-#define FRAME_POINTER_REGNUM A6_REG
++#define FRAME_POINTER_REGNUM A5_REG
+ 
+ /* Base register for access to arguments of the function.
+  * This isn't a hardware register. It will be eliminated to the
+diff --git a/gcc/config/m68k/m68k.md b/gcc/config/m68k/m68k.md
+index f89037f..9f3da5a 100644
+--- a/gcc/config/m68k/m68k.md
++++ b/gcc/config/m68k/m68k.md
+@@ -131,7 +131,7 @@
+   [(D0_REG		0)
+    (A0_REG		8)
+    (A1_REG		9)
+-   (PIC_REG		13)
++   (A5_REG		13)
+    (A6_REG		14)
+    (SP_REG		15)
+    (FP0_REG		16)
+@@ -7295,7 +7295,7 @@
+ {
+   if (TARGET_ID_SHARED_LIBRARY)
+     {
+-      operands[1] = gen_rtx_REG (Pmode, PIC_REG);
++      operands[1] = gen_rtx_REG (Pmode, A5_REG);
+       return MOTOROLA ? "move.l %?(%1),%0" : "movel %1@(%?), %0";
+     }
+   else if (MOTOROLA)
+diff --git a/gcc/config/rs6000/aros.h b/gcc/config/rs6000/aros.h
+new file mode 100644
+index 0000000..1be42b8
+--- /dev/null
++++ b/gcc/config/rs6000/aros.h
+@@ -0,0 +1,175 @@
++/* Definitions for Powerpc running AROS systems with ELF format.
++   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
++   Free Software Foundation, Inc.
++   Contributed by Markus Weiss.
++   Based upon i386/aros.h by Fabio Alemagna.
++
++This file is part of GNU CC.
++
++GNU CC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GNU CC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GNU CC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Symbols missing in comparison to i386/aros.h are either
++   defined in elfos.h, rs6000/rs6000.h rs6000/sysv4.h
++   or not needed for PowerPC.
++*/
++
++/* We need to define __powerpc__. */
++
++#undef TARGET_OS_CPP_BUILTINS
++#define TARGET_OS_CPP_BUILTINS()		\
++  do						\
++    {						\
++	builtin_define_std ("unix");		\
++	builtin_define_std ("AROS");		\
++	builtin_define ("__powerpc__");		\
++	builtin_define ("__ELF__");		\
++	builtin_assert ("system=posix");	\
++	if (flag_pic)				\
++	  {					\
++	    builtin_define ("__PIC__");		\
++	    builtin_define ("__pic__");		\
++	  }					\
++    }						\
++  while (0)
++
++/* This one taken from linux.h. */
++/* We are 32-bit all the time, so optimize a little.  */
++#undef TARGET_64BIT
++#define TARGET_64BIT 0
++ 
++/* Output at beginning of assembler file.  */
++/* The .file command should always begin the output.  */
++/*#undef TARGET_ASM_FILE_START_FILE_DIRECTIVE
++#define TARGET_ASM_FILE_START_FILE_DIRECTIVE true
++defined in elfos.h
++*/
++
++#undef TARGET_VERSION
++#define TARGET_VERSION fprintf (stderr, " (PowerPC AROS/ELF)");
++
++/* The svr4 ABI for the i386 says that records and unions are returned
++   in memory.  */
++/*#undef DEFAULT_PCC_STRUCT_RETURN
++#define DEFAULT_PCC_STRUCT_RETURN 1
++see rs6000/rs6000.h
++*/
++
++/*
++#undef ASM_COMMENT_START
++#define ASM_COMMENT_START "#"
++see rs6000/rs6000.h
++*/
++
++/*
++#undef DBX_REGISTER_NUMBER
++#define DBX_REGISTER_NUMBER(n) \
++  (TARGET_64BIT ? dbx64_register_map[n] : svr4_dbx_register_map[n])
++see rs6000/sysv4.h
++*/
++
++/* Output assembler code to FILE to call the profiler.
++   To the best of my knowledge, no Linux libc has required the label
++   argument to mcount.  */
++
++/*
++#define NO_PROFILE_COUNTERS 1
++not used by other similar ppc compilers
++only in darwin.h rs6000/linux64.h rs6000/rs6000.c
++*/
++
++/*
++#undef MCOUNT_NAME
++#define MCOUNT_NAME "mcount"
++see rs6000/sysv4.h RS6000_MCOUNT
++*/
++
++/* The GLIBC version of mcount for the x86 assumes that there is a
++   frame, so we cannot allow profiling without a frame pointer.  */
++/*
++#undef SUBTARGET_FRAME_POINTER_REQUIRED
++#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
++seems to be handled by rs6000/rs6000.h
++*/
++
++#undef SIZE_TYPE
++#define SIZE_TYPE "unsigned int"
++
++#undef PTRDIFF_TYPE
++#define PTRDIFF_TYPE "int"
++
++#undef WCHAR_TYPE
++#define WCHAR_TYPE "long int"
++
++#undef WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE BITS_PER_WORD
++
++#undef CPP_SPEC
++#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
++
++#undef CC1_SPEC
++#define CC1_SPEC "%(cc1_cpu) %{profile:-p}"
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++
++#undef	LINK_SPEC
++#define LINK_SPEC "-m elf32ppc"
++
++/* A C statement (sans semicolon) to output to the stdio stream
++   FILE the assembler definition of uninitialized global DECL named
++   NAME whose size is SIZE bytes and alignment is ALIGN bytes.
++   Try to use asm_output_aligned_bss to implement this macro.  */
++/*
++#define ASM_OUTPUT_ALIGNED_BSS(FILE, DECL, NAME, SIZE, ALIGN) \
++  asm_output_aligned_bss (FILE, DECL, NAME, SIZE, ALIGN)
++see rs6000/sysv4.h
++*/
++
++/* A C statement to output to the stdio stream FILE an assembler
++   command to advance the location counter to a multiple of 1<<LOG
++   bytes if it is within MAX_SKIP bytes.
++
++   This is used to align code labels according to Intel recommendations.  */
++/*
++#ifdef HAVE_GAS_MAX_SKIP_P2ALIGN
++#define ASM_OUTPUT_MAX_SKIP_ALIGN(FILE,LOG,MAX_SKIP)			\
++  do {									\
++    if ((LOG) != 0) {							\
++      if ((MAX_SKIP) == 0) fprintf ((FILE), "\t.p2align %d\n", (LOG));	\
++      else fprintf ((FILE), "\t.p2align %d,,%d\n", (LOG), (MAX_SKIP));	\
++    }									\
++  } while (0)
++#endif
++see rs6000/sysv4.h
++*/
++
++/* Handle special EH pointer encodings.  Absolute, pc-relative, and
++   indirect are handled automatically.  */
++/*
++#define ASM_MAYBE_OUTPUT_ENCODED_ADDR_RTX(FILE, ENCODING, SIZE, ADDR, DONE) \
++  do {									\
++    if ((SIZE) == 4 && ((ENCODING) & 0x70) == DW_EH_PE_datarel)		\
++      {									\
++        fputs (ASM_LONG, FILE);			\
++        assemble_name (FILE, XSTR (ADDR, 0));				\
++	fputs (((ENCODING) & DW_EH_PE_indirect ? "@GOT" : "@GOTOFF"), FILE); \
++        goto DONE;							\
++      }									\
++  } while (0)
++not used for PowerPC
++*/
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
+diff --git a/gcc/config/rs6000/rs6000.c b/gcc/config/rs6000/rs6000.c
+index 3d8d345..dc132aa 100644
+--- a/gcc/config/rs6000/rs6000.c
++++ b/gcc/config/rs6000/rs6000.c
+@@ -1257,6 +1257,7 @@ static const struct attribute_spec rs6000_attribute_table[] =
+   { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute },
+   { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
+   { "shortcall", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
++  { "stackparm", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
+   { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
+   { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
+ #ifdef SUBTARGET_ATTRIBUTE_TABLE
+@@ -6812,6 +6813,9 @@ init_cumulative_args (CUMULATIVE_ARGS *cum, tree fntype,
+ 	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
+     cum->call_cookie |= CALL_LONG;
+ 
++  cum->stackparm = fntype && lookup_attribute("stackparm",
++					     TYPE_ATTRIBUTES(fntype));
++
+   if (TARGET_DEBUG_ARG)
+     {
+       fprintf (stderr, "\ninit_cumulative_args:");
+@@ -7640,6 +7644,9 @@ function_arg (CUMULATIVE_ARGS *cum, enum machine_mode mode,
+       return GEN_INT (cum->call_cookie);
+     }
+ 
++  if (cum->stackparm)
++    return NULL_RTX;
++
+   if (rs6000_darwin64_abi && mode == BLKmode
+       && TREE_CODE (type) == RECORD_TYPE)
+     {
+@@ -8059,6 +8066,9 @@ setup_incoming_varargs (CUMULATIVE_ARGS *cum, enum machine_mode mode,
+   int first_reg_offset;
+   alias_set_type set;
+ 
++  if (cum->stackparm)
++    return;
++
+   /* Skip the last named argument.  */
+   next_cum = *cum;
+   function_arg_advance (&next_cum, mode, type, 1, 0);
+diff --git a/gcc/config/rs6000/rs6000.h b/gcc/config/rs6000/rs6000.h
+index 596f8a8..14f49df 100644
+--- a/gcc/config/rs6000/rs6000.h
++++ b/gcc/config/rs6000/rs6000.h
+@@ -1645,6 +1645,7 @@ typedef struct rs6000_args
+   int nargs_prototype;		/* # args left in the current prototype */
+   int prototype;		/* Whether a prototype was defined */
+   int stdarg;			/* Whether function is a stdarg function.  */
++  int stackparm;		/* Whether function has all args on the stack */
+   int call_cookie;		/* Do special things for this call */
+   int sysv_gregno;		/* next available GP register */
+   int intoffset;		/* running offset in struct (darwin64) */
+diff --git a/gcc/gcc.c b/gcc/gcc.c
+index e7ee382..9f887dc 100644
+--- a/gcc/gcc.c
++++ b/gcc/gcc.c
+@@ -4066,7 +4066,7 @@ process_command (int argc, const char **argv)
+ 	{
+ 	  /* -pipe has to go into the switches array as well as
+ 	     setting a flag.  */
+-	  use_pipes = 1;
++	  use_pipes = 0;
+ 	  n_switches++;
+ 	}
+       else if (strcmp (argv[i], "-wrapper") == 0)
+diff --git a/include/filenames.h b/include/filenames.h
+index 0d411cc..70ebe63 100644
+--- a/include/filenames.h
++++ b/include/filenames.h
+@@ -43,6 +43,12 @@ extern "C" {
+    a file name, which should not be done with a name like d:foo.  */
+ #define IS_ABSOLUTE_PATH(f)	(IS_DIR_SEPARATOR((f)[0]) || (((f)[0]) && ((f)[1] == ':')))
+ 
++#elif defined __AROS__
++
++#define IS_DIR_SEPARATOR(c)	((c) == '/' || (c) == ':')
++#define IS_ABSOLUTE_PATH(f)	(IS_DIR_SEPARATOR((f)[0]) || (strchr((f), ':')))
++#define HAVE_CASE_INSENSITIVE_FILE_SYSTEM
++
+ #else  /* not DOSish */
+ 
+ #define IS_DIR_SEPARATOR(c)	((c) == '/')
+diff --git a/libgcc/config.host b/libgcc/config.host
+index c5f3d6e..b75883d 100644
+--- a/libgcc/config.host
++++ b/libgcc/config.host
+@@ -586,6 +586,8 @@ m32c-*-elf*|m32c-*-rtems*)
+  	;;
+ mep*-*-*)
+ 	;;
++*-*-aros*)
++	;;
+ *)
+ 	echo "*** Configuration ${host} not supported" 1>&2
+ 	exit 1
+diff --git a/libiberty/Makefile.in b/libiberty/Makefile.in
+index f22d3a3..cb870a0 100644
+--- a/libiberty/Makefile.in
++++ b/libiberty/Makefile.in
+@@ -140,7 +140,7 @@ CFILES = alloca.c argv.c asprintf.c atexit.c				\
+ 	objalloc.c obstack.c						\
+ 	partition.c pexecute.c						\
+ 	 pex-common.c pex-djgpp.c pex-msdos.c pex-one.c			\
+-	 pex-unix.c pex-win32.c						\
++	 pex-unix.c pex-win32.c	pex-aros.c				\
+          physmem.c putenv.c						\
+ 	random.c regex.c rename.c rindex.c				\
+ 	safe-ctype.c setenv.c sha1.c sigsetmask.c snprintf.c sort.c	\
+@@ -190,7 +190,7 @@ CONFIGURED_OFILES = ./asprintf.o ./atexit.o				\
+ 	./memchr.o ./memcmp.o ./memcpy.o ./memmem.o ./memmove.o		\
+ 	 ./mempcpy.o ./memset.o ./mkstemps.o				\
+ 	./pex-djgpp.o ./pex-msdos.o					\
+-	 ./pex-unix.o ./pex-win32.o					\
++	 ./pex-unix.o ./pex-win32.o pex-aros.o				\
+ 	 ./putenv.o							\
+ 	./random.o ./rename.o ./rindex.o				\
+ 	./setenv.o ./sigsetmask.o ./snprintf.o ./stpcpy.o ./stpncpy.o	\
+@@ -881,6 +881,13 @@ $(CONFIGURED_OFILES): stamp-picdir
+ 	else true; fi
+ 	$(COMPILE.c) $(srcdir)/pexecute.c $(OUTPUT_OPTION)
+ 
++./pex-aros.o: $(srcdir)/pex-aros.c config.h $(INCDIR)/ansidecl.h \
++	$(INCDIR)/libiberty.h $(srcdir)/pex-common.h
++	if [ x"$(PICFLAG)" != x ]; then \
++	  $(COMPILE.c) $(PICFLAG) $(srcdir)/pex-aros.c -o pic/$@; \
++	else true; fi
++	$(COMPILE.c) $(srcdir)/pex-aros.c $(OUTPUT_OPTION)
++
+ ./physmem.o: $(srcdir)/physmem.c config.h $(INCDIR)/ansidecl.h \
+ 	$(INCDIR)/libiberty.h
+ 	if [ x"$(PICFLAG)" != x ]; then \
+diff --git a/libiberty/configure b/libiberty/configure
+index 77aeb56..db0de24 100755
+--- a/libiberty/configure
++++ b/libiberty/configure
+@@ -5618,6 +5618,159 @@ _ACEOF
+     setobjs=yes
+     ;;
+ 
++  # The same goes for AROS
++  *-*-aros*)
++    case " $LIBOBJS " in
++  *" asprintf.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS asprintf.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" basename.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS basename.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" bcmp.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS bcmp.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" bcopy.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS bcopy.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" bzero.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS bzero.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" clock.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS clock.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" ffs.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS ffs.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" getpagesize.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS getpagesize.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" index.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS index.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" insque.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS insque.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" mempcpy.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS mempcpy.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" mkstemps.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS mkstemps.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" random.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS random.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" rindex.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS rindex.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" sigsetmask.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS sigsetmask.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" stpcpy.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS stpcpy.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" stpncpy.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS stpncpy.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" strndup.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS strndup.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" strverscmp.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS strverscmp.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" vasprintf.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS vasprintf.$ac_objext"
++ ;;
++esac
++
++    case " $LIBOBJS " in
++  *" waitpid.$ac_objext "* ) ;;
++  *) LIBOBJS="$LIBOBJS waitpid.$ac_objext"
++ ;;
++esac
++
++
++    for f in $funcs; do
++      case "$f" in
++	asprintf | basename | bcmp | bcopy | bzero | clock | ffs | getpagesize | index | insque | mempcpy | mkstemps | random | rindex | sigsetmask | stpcpy | stpncpy | strdup | strndup | strverscmp | vasprintf | waitpid)
++	  ;;
++	*)
++	  n=HAVE_`echo $f | tr 'abcdefghijklmnopqrstuvwxyz' 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'`
++	  cat >>confdefs.h <<_ACEOF
++#define $n 1
++_ACEOF
++
++	  ;;
++      esac
++    done
++
++    # AROS doesnt provide any of the variables in $vars, so we
++    # dont have to check them here.
++
++    # Of the functions in $checkfuncs, AROS only has strerror.
++    $as_echo "#define HAVE_STRERROR 1" >>confdefs.h
++
++
++    setobjs=yes
++    ;;
++
+   *-*-msdosdjgpp)
+     case " $LIBOBJS " in
+   *" vasprintf.$ac_objext "* ) ;;
+@@ -6536,6 +6689,7 @@ case "${host}" in
+      *-*-mingw* | *-*-winnt*)	pexecute=./pex-win32.o  ;;
+      *-*-msdosdjgpp*)		pexecute=./pex-djgpp.o  ;;
+      *-*-msdos*)		pexecute=./pex-msdos.o  ;;
++     *-*-aros*)			pexecute=./pex-aros.o   ;;
+      *)				pexecute=./pex-unix.o   ;;
+ esac
+ 
+diff --git a/libiberty/configure.ac b/libiberty/configure.ac
+index 515bb33..e363f1c 100644
+--- a/libiberty/configure.ac
++++ b/libiberty/configure.ac
+@@ -478,6 +478,50 @@ if test -n "${with_target_subdir}"; then
+     setobjs=yes
+     ;;
+ 
++  # The same goes for AROS
++  *-*-aros*)
++    AC_LIBOBJ([asprintf])
++    AC_LIBOBJ([basename])
++    AC_LIBOBJ([bcmp])
++    AC_LIBOBJ([bcopy])
++    AC_LIBOBJ([bzero])
++    AC_LIBOBJ([clock])
++    AC_LIBOBJ([ffs])
++    AC_LIBOBJ([getpagesize])
++    AC_LIBOBJ([index])
++    AC_LIBOBJ([insque])
++    AC_LIBOBJ([mempcpy])
++    AC_LIBOBJ([mkstemps])
++    AC_LIBOBJ([random])
++    AC_LIBOBJ([rindex])
++    AC_LIBOBJ([sigsetmask])
++    AC_LIBOBJ([stpcpy])
++    AC_LIBOBJ([stpncpy])
++    AC_LIBOBJ([strndup])
++    AC_LIBOBJ([strverscmp])
++    AC_LIBOBJ([vasprintf])
++    AC_LIBOBJ([waitpid])
++
++    for f in $funcs; do
++      case "$f" in
++	asprintf | basename | bcmp | bcopy | bzero | clock | ffs | getpagesize | index | insque | mempcpy | mkstemps | random | rindex | sigsetmask | stpcpy | stpncpy | strdup | strndup | strverscmp | vasprintf | waitpid)
++	  ;;
++	*)
++	  n=HAVE_`echo $f | tr 'abcdefghijklmnopqrstuvwxyz' 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'`
++	  AC_DEFINE_UNQUOTED($n)
++	  ;;
++      esac
++    done
++
++    # AROS doesnt provide any of the variables in $vars, so we
++    # dont have to check them here.
++
++    # Of the functions in $checkfuncs, AROS only has strerror.
++    AC_DEFINE(HAVE_STRERROR)
++
++    setobjs=yes
++    ;;
++
+   *-*-msdosdjgpp)
+     AC_LIBOBJ([vasprintf])
+     AC_LIBOBJ([vsnprintf])
+@@ -674,6 +718,7 @@ case "${host}" in
+      *-*-mingw* | *-*-winnt*)	pexecute=./pex-win32.o  ;;
+      *-*-msdosdjgpp*)		pexecute=./pex-djgpp.o  ;;
+      *-*-msdos*)		pexecute=./pex-msdos.o  ;;
++     *-*-aros*)			pexecute=./pex-aros.o   ;;
+      *)				pexecute=./pex-unix.o   ;;
+ esac
+ AC_SUBST(pexecute)
+diff --git a/libiberty/filename_cmp.c b/libiberty/filename_cmp.c
+index 0a4d0d8..2908ced 100644
+--- a/libiberty/filename_cmp.c
++++ b/libiberty/filename_cmp.c
+@@ -51,7 +51,11 @@ int
+ filename_cmp (const char *s1, const char *s2)
+ {
+ #ifndef HAVE_DOS_BASED_FILE_SYSTEM
++#ifdef HAVE_CASE_INSENSITIVE_FILE_SYSTEM
++  return strcasecmp(s1, s2);
++#else
+   return strcmp(s1, s2);
++#endif
+ #else
+   for (;;)
+     {
+diff --git a/libiberty/pex-aros.c b/libiberty/pex-aros.c
+new file mode 100644
+index 0000000..a1647e2
+--- /dev/null
++++ b/libiberty/pex-aros.c
+@@ -0,0 +1,303 @@
++/* Utilities to execute a program in a subprocess (possibly linked by pipes
++   with other subprocesses), and wait for it.  OS/2 specialization.
++   Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2003
++   Free Software Foundation, Inc.
++
++This file is part of the libiberty library.
++Libiberty is free software; you can redistribute it and/or
++modify it under the terms of the GNU Library General Public
++License as published by the Free Software Foundation; either
++version 2 of the License, or (at your option) any later version.
++
++Libiberty is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++Library General Public License for more details.
++
++You should have received a copy of the GNU Library General Public
++License along with libiberty; see the file COPYING.LIB.  If not,
++write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++#include "config.h"
++#include "libiberty.h"
++#include "pex-common.h"
++
++#include <stdio.h>
++#include <signal.h>
++#include <errno.h>
++#ifdef NEED_DECLARATION_ERRNO
++extern int errno;
++#endif
++#ifdef HAVE_STDLIB_H
++#include <stdlib.h>
++#endif
++#ifdef HAVE_STRING_H
++#include <string.h>
++#endif
++#ifdef HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++
++#include <sys/types.h>
++
++#ifdef HAVE_FCNTL_H
++#include <fcntl.h>
++#endif
++#ifdef HAVE_SYS_WAIT_H
++#include <sys/wait.h>
++#endif
++#ifdef HAVE_GETRUSAGE
++#include <sys/time.h>
++#include <sys/resource.h>
++#endif
++#ifdef HAVE_SYS_STAT_H
++#include <sys/stat.h>
++#endif
++
++#include <process.h>
++#include <ctype.h>
++
++static int pex_aros_open_read (struct pex_obj *, const char *, int);
++static int pex_aros_open_write (struct pex_obj *, const char *, int);
++static long pex_aros_exec_child (struct pex_obj *, int, const char *,
++				 char * const *, char * const *,
++				 int, int, int, int,
++				 const char **, int *);
++static int pex_aros_close (struct pex_obj *, int);
++static int pex_aros_wait (struct pex_obj *, long, int *, struct pex_time *,
++			  int, const char **, int *);
++
++/* The list of functions we pass to the common routines.  */
++
++const struct pex_funcs funcs =
++{
++  pex_aros_open_read,
++  pex_aros_open_write,
++  pex_aros_exec_child,
++  pex_aros_close,
++  pex_aros_wait,
++  NULL, /* pipe */
++  NULL, /* fdopenr */
++  NULL, /* fdopenw */
++  NULL  /* cleanup */
++};
++
++/* Return a newly initialized pex_obj structure.  */
++
++struct pex_obj *
++pex_init (int flags, const char *pname, const char *tempbase)
++{
++  /* at the moment we do not support pipes */
++  flags &= ~ PEX_USE_PIPES;
++
++  return pex_init_common (flags, pname, tempbase, &funcs);
++}
++
++/* Open a file for reading.  */
++
++static int
++pex_aros_open_read (struct pex_obj *obj ATTRIBUTE_UNUSED, const char *name,
++		    int binary ATTRIBUTE_UNUSED)
++{
++  return open (name, O_RDONLY);
++}
++
++/* Open a file for writing.  */
++
++static int
++pex_aros_open_write (struct pex_obj *obj ATTRIBUTE_UNUSED, const char *name,
++		     int binary ATTRIBUTE_UNUSED)
++{
++  /* Note that we can't use O_EXCL here because gcc may have already
++     created the temporary file via make_temp_file.  */
++  return open (name, O_WRONLY | O_CREAT | O_TRUNC);
++}
++
++/* Close a file.  */
++
++static int
++pex_aros_close (struct pex_obj *obj ATTRIBUTE_UNUSED, int fd)
++{
++  return close (fd);
++}
++
++/* Execute a child. */
++
++static long
++pex_aros_exec_child (struct pex_obj *obj, int flags, const char *executable,
++                     char * const * argv, char * const * env ATTRIBUTE_UNUSED,
++                     int in, int out, int errdes,
++                     int toclose ATTRIBUTE_UNUSED, const char **errmsg, int *err)
++{
++  int org_in, org_out, org_errdes;
++  int status;
++  int *statuses;
++
++  org_in = -1;
++  org_out = -1;
++  org_errdes = -1;
++
++  if (in != STDIN_FILE_NO)
++    {
++      org_in = dup (STDIN_FILE_NO);
++      if (org_in < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup";
++	  return -1;
++	}
++      if (dup2 (in, STDIN_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (close (in) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "close";
++	  return -1;
++	}
++    }
++
++  if (out != STDOUT_FILE_NO)
++    {
++      org_out = dup (STDOUT_FILE_NO);
++      if (org_out < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup";
++	  return -1;
++	}
++      if (dup2 (out, STDOUT_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (close (out) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "close";
++	  return -1;
++	}
++    }
++
++  if (errdes != STDERR_FILE_NO
++      || (flags & PEX_STDERR_TO_STDOUT) != 0)
++    {
++      org_errdes = dup (STDERR_FILE_NO);
++      if (org_errdes < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup";
++	  return -1;
++	}
++      if (dup2 ((flags & PEX_STDERR_TO_STDOUT) != 0 ? STDOUT_FILE_NO : errdes,
++		 STDERR_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (errdes != STDERR_FILE_NO)
++	{
++	  if (close (errdes) < 0)
++	    {
++	      *err = errno;
++	      *errmsg = "close";
++	      return -1;
++	    }
++	}
++    }
++
++  status = (((flags & PEX_SEARCH) != 0 ? spawnvp : spawnv)
++	    (P_WAIT, executable, (char * const *) argv));
++
++  if (status == -1)
++    {
++      *err = errno;
++      *errmsg = ((flags & PEX_SEARCH) != 0) ? "spawnvp" : "spawnv";
++    }
++
++  if (in != STDIN_FILE_NO)
++    {
++      if (dup2 (org_in, STDIN_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (close (org_in) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "close";
++	  return -1;
++	}
++    }
++
++  if (out != STDOUT_FILE_NO)
++    {
++      if (dup2 (org_out, STDOUT_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (close (org_out) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "close";
++	  return -1;
++	}
++    }
++
++  if (errdes != STDERR_FILE_NO
++      || (flags & PEX_STDERR_TO_STDOUT) != 0)
++    {
++      if (dup2 (org_errdes, STDERR_FILE_NO) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "dup2";
++	  return -1;
++	}
++      if (close (org_errdes) < 0)
++	{
++	  *err = errno;
++	  *errmsg = "close";
++	  return -1;
++	}
++    }
++
++  /* Save the exit status for later.  When we are called, obj->count
++     is the number of children which have executed before this
++     one.  */
++  statuses = (int *) obj->sysdep;
++  statuses = XRESIZEVEC (int, statuses, obj->count + 1);
++  statuses[obj->count] = status;
++  obj->sysdep = (void *) statuses;
++
++  return obj->count;
++}
++
++/* Wait for a child process to complete.  Actually the child process
++   has already completed, and we just need to return the exit
++   status.  */
++
++static int
++pex_aros_wait (struct pex_obj *obj, long pid, int *status,
++               struct pex_time *time, int done ATTRIBUTE_UNUSED,
++               const char **errmsg ATTRIBUTE_UNUSED,
++               int *err ATTRIBUTE_UNUSED)
++{
++  int *statuses;
++
++  if (time != NULL)
++    memset (time, 0, sizeof (struct pex_time));
++
++  statuses = (int *) obj->sysdep;
++  *status = statuses[pid];
++
++  return 0;
++}
+diff --git a/libstdc++-v3/config/os/aros/ctype_base.h b/libstdc++-v3/config/os/aros/ctype_base.h
+new file mode 100644
+index 0000000..d9d7019
+--- /dev/null
++++ b/libstdc++-v3/config/os/aros/ctype_base.h
+@@ -0,0 +1,24 @@
++_GLIBCXX_BEGIN_NAMESPACE(std)
++
++struct ctype_base {
++    /* Non-standard typedefs */
++    typedef int *              __to_type;
++
++    /* NB: Offsets into ctype<char>::_M_table force a particular size
++       on the mask type. Because of this, we don't use an enum. */
++    typedef unsigned short int mask;
++
++    static const mask upper  = _ISupper;
++    static const mask lower  = _ISlower;
++    static const mask alpha  = _ISalpha;
++    static const mask digit  = _ISdigit;
++    static const mask xdigit = _ISxdigit;
++    static const mask space  = _ISspace;
++    static const mask print  = _ISprint;
++    static const mask graph  = _ISgraph;
++    static const mask cntrl  = _IScntrl;
++    static const mask punct  = _ISpunct;
++    static const mask alnum  = _ISalnum;
++};
++
++_GLIBCXX_END_NAMESPACE
+diff --git a/libstdc++-v3/config/os/aros/ctype_inline.h b/libstdc++-v3/config/os/aros/ctype_inline.h
+new file mode 100644
+index 0000000..511bf9d
+--- /dev/null
++++ b/libstdc++-v3/config/os/aros/ctype_inline.h
+@@ -0,0 +1,170 @@
++// Locale support -*- C++ -*-
++
++// Copyright (C) 2000, 2003 Free Software Foundation, Inc.
++//
++// This file is part of the GNU ISO C++ Library.  This library is free
++// software; you can redistribute it and/or modify it under the
++// terms of the GNU General Public License as published by the
++// Free Software Foundation; either version 2, or (at your option)
++// any later version.
++
++// This library is distributed in the hope that it will be useful,
++// but WITHOUT ANY WARRANTY; without even the implied warranty of
++// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++// GNU General Public License for more details.
++
++// You should have received a copy of the GNU General Public License along
++// with this library; see the file COPYING.  If not, write to the Free
++// Software Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,
++// USA.
++
++// As a special exception, you may use this file as part of a free software
++// library without restriction.  Specifically, if other files instantiate
++// templates or use macros or inline functions from this file, or you compile
++// this file and link it with other files to produce an executable, this
++// file does not by itself cause the resulting executable to be covered by
++// the GNU General Public License.  This exception does not however
++// invalidate any other reasons why the executable file might be covered by
++// the GNU General Public License.
++
++/** @file ctype_inline.h
++ *  This is an internal header file, included by other library headers.
++ *  You should not attempt to use it directly.
++ */
++
++//
++// ISO C++ 14882: 22.1  Locales
++//
++  
++// ctype bits to be inlined go here. Non-inlinable (ie virtual do_*)
++// functions go in ctype.cc
++  
++// The following definitions are portable, but insanely slow. If one
++// cares at all about performance, then specialized ctype
++// functionality should be added for the native os in question: see
++// the config/os/bits/ctype_*.h files.
++
++// Constructing a synthetic "C" table should be seriously considered...
++
++_GLIBCXX_BEGIN_NAMESPACE(std)
++
++  bool
++  ctype<char>::
++  is(mask __m, char __c) const
++  { 
++    if (_M_table)
++      return _M_table[static_cast<unsigned char>(__c)] & __m;
++    else
++      {
++	bool __ret = false;
++	const size_t __bitmasksize = 15; 
++	size_t __bitcur = 0; // Lowest bitmask in ctype_base == 0
++	for (; __bitcur <= __bitmasksize; ++__bitcur)
++	  {
++	    const mask __bit = static_cast<mask>(1 << __bitcur);
++	    if (__m & __bit)
++	      {
++		bool __testis;
++		switch (__bit)
++		  {
++		  case space:
++		    __testis = isspace(__c);
++		    break;
++		  case print:
++		    __testis = isprint(__c);
++		    break;
++		  case cntrl:
++		    __testis = iscntrl(__c);
++		    break;
++		  case upper:
++		    __testis = isupper(__c);
++		    break;
++		  case lower:
++		    __testis = islower(__c);
++		    break;
++		  case alpha:
++		    __testis = isalpha(__c);
++		    break;
++		  case digit:
++		    __testis = isdigit(__c);
++		    break;
++		  case punct:
++		    __testis = ispunct(__c);
++		    break;
++		  case xdigit:
++		    __testis = isxdigit(__c);
++		    break;
++		  case alnum:
++		    __testis = isalnum(__c);
++		    break;
++		  case graph:
++		    __testis = isgraph(__c);
++		    break;
++		  default:
++		    __testis = false;
++		    break;
++		  }
++		__ret |= __testis;
++	      }
++	  }
++	return __ret;
++      }
++  }
++   
++  const char*
++  ctype<char>::
++  is(const char* __low, const char* __high, mask* __vec) const
++  {
++    if (_M_table)
++      while (__low < __high)
++	*__vec++ = _M_table[static_cast<unsigned char>(*__low++)];
++    else
++      {
++	// Highest bitmask in ctype_base == 10.
++	const size_t __bitmasksize = 15; 
++	for (;__low < __high; ++__vec, ++__low)
++	  {
++	    mask __m = 0;
++	    // Lowest bitmask in ctype_base == 0
++	    size_t __i = 0; 
++	    for (;__i <= __bitmasksize; ++__i)
++	      {
++		const mask __bit = static_cast<mask>(1 << __i);
++		if (this->is(__bit, *__low))
++		  __m |= __bit;
++	      }
++	    *__vec = __m;
++	  }
++      }
++    return __high;
++  }
++
++  const char*
++  ctype<char>::
++  scan_is(mask __m, const char* __low, const char* __high) const
++  {
++    if (_M_table)
++      while (__low < __high
++	     && !(_M_table[static_cast<unsigned char>(*__low)] & __m))
++	++__low;
++    else
++      while (__low < __high && !this->is(__m, *__low))
++	++__low;
++    return __low;
++  }
++
++  const char*
++  ctype<char>::
++  scan_not(mask __m, const char* __low, const char* __high) const
++  {
++    if (_M_table)
++      while (__low < __high
++	     && (_M_table[static_cast<unsigned char>(*__low)] & __m) != 0)
++	++__low;
++    else
++      while (__low < __high && this->is(__m, *__low) != 0)
++	++__low;
++    return __low;
++  }
++
++_GLIBCXX_END_NAMESPACE
+diff --git a/libstdc++-v3/config/os/aros/ctype_noninline.h b/libstdc++-v3/config/os/aros/ctype_noninline.h
+new file mode 100644
+index 0000000..1e0185b
+--- /dev/null
++++ b/libstdc++-v3/config/os/aros/ctype_noninline.h
+@@ -0,0 +1,56 @@
++  const ctype_base::mask*
++  ctype<char>::classic_table() throw()
++  { return __ctype_b; }
++
++  ctype<char>::ctype(__c_locale, const mask* __table, bool __del, 
++		     size_t __refs) 
++  : facet(__refs), _M_del(__table != 0 && __del), 
++  _M_toupper(NULL), _M_tolower(NULL), 
++  _M_table(__table ? __table : classic_table()) 
++  { 
++    memset(_M_widen, 0, sizeof(_M_widen));
++    _M_widen_ok = 0;
++    memset(_M_narrow, 0, sizeof(_M_narrow));
++    _M_narrow_ok = 0;
++  }
++
++  ctype<char>::ctype(const mask* __table, bool __del, size_t __refs) 
++  : facet(__refs), _M_del(__table != 0 && __del), 
++  _M_toupper(NULL), _M_tolower(NULL), 
++  _M_table(__table ? __table : classic_table())
++  { 
++    memset(_M_widen, 0, sizeof(_M_widen));
++    _M_widen_ok = 0;
++    memset(_M_narrow, 0, sizeof(_M_narrow));
++    _M_narrow_ok = 0;
++  }
++
++  char
++  ctype<char>::do_toupper(char __c) const
++  { return ::toupper((int) __c); }
++
++  const char*
++  ctype<char>::do_toupper(char* __low, const char* __high) const
++  {
++    while (__low < __high)
++      {
++	*__low = ::toupper((int) *__low);
++	++__low;
++      }
++    return __high;
++  }
++
++  char
++  ctype<char>::do_tolower(char __c) const
++  { return ::tolower((int) __c); }
++
++  const char* 
++  ctype<char>::do_tolower(char* __low, const char* __high) const
++  {
++    while (__low < __high)
++      {
++	*__low = ::tolower((int) *__low);
++	++__low;
++      }
++    return __high;
++  }
+diff --git a/libstdc++-v3/config/os/aros/os_defines.h b/libstdc++-v3/config/os/aros/os_defines.h
+new file mode 100644
+index 0000000..5edb8bc
+--- /dev/null
++++ b/libstdc++-v3/config/os/aros/os_defines.h
+@@ -0,0 +1,6 @@
++#ifndef _GLIBCXX_OS_DEFINES
++#define _GLIBCXX_OS_DEFINES
++
++#define __off64_t   off_t
++
++#endif
+diff --git a/libstdc++-v3/configure b/libstdc++-v3/configure
+index 69f6b5d..f6d734d 100755
+--- a/libstdc++-v3/configure
++++ b/libstdc++-v3/configure
+@@ -5216,12 +5216,9 @@ $as_echo "$as_me: OS config directory is $os_include_dir" >&6;}
+ 
+ 
+ 
+-if test "x${with_newlib}" != "xyes"; then
+-  enable_dlopen=yes
+-
+-
+-
+-fi
++#if test "x${with_newlib}" != "xyes"; then
++#  AC_LIBTOOL_DLOPEN
++#fi
+ case `pwd` in
+   *\ * | *\	*)
+     { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
+@@ -7939,6 +7936,8 @@ done
+ 
+ 
+ 
++        enable_dlopen=no
++
+ 
+   enable_win32_dll=no
+ 
+@@ -11441,7 +11440,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11444 "configure"
++#line 11443 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -11547,7 +11546,7 @@ else
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 11550 "configure"
++#line 11549 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -14887,7 +14886,7 @@ fi
+     #
+     # Fake what AC_TRY_COMPILE does.  XXX Look at redoing this new-style.
+     cat > conftest.$ac_ext << EOF
+-#line 14890 "configure"
++#line 14889 "configure"
+ struct S { ~S(); };
+ void bar();
+ void foo()
+@@ -15255,7 +15254,7 @@ $as_echo "$glibcxx_cv_atomic_long_long" >&6; }
+   # Fake what AC_TRY_COMPILE does.
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15258 "configure"
++#line 15257 "configure"
+ int main()
+ {
+   typedef bool atomic_type;
+@@ -15292,7 +15291,7 @@ $as_echo "$glibcxx_cv_atomic_bool" >&6; }
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15295 "configure"
++#line 15294 "configure"
+ int main()
+ {
+   typedef short atomic_type;
+@@ -15329,7 +15328,7 @@ $as_echo "$glibcxx_cv_atomic_short" >&6; }
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15332 "configure"
++#line 15331 "configure"
+ int main()
+ {
+   // NB: _Atomic_word not necessarily int.
+@@ -15367,7 +15366,7 @@ $as_echo "$glibcxx_cv_atomic_int" >&6; }
+     rm -f conftest*
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15370 "configure"
++#line 15369 "configure"
+ int main()
+ {
+   typedef long long atomic_type;
+@@ -15443,7 +15442,7 @@ $as_echo "$as_me: WARNING: Performance of certain classes will degrade as a resu
+   # unnecessary for this test.
+ 
+     cat > conftest.$ac_ext << EOF
+-#line 15446 "configure"
++#line 15445 "configure"
+ int main()
+ {
+   _Decimal32 d1;
+@@ -26420,6 +26419,58 @@ else
+ 
+ # Base decisions on target environment.
+ case "${host}" in
++  *-aros*)
++    for ac_header in nan.h ieeefp.h endian.h sys/isa_defs.h machine/endian.h \
++    machine/param.h sys/machine.h sys/types.h fp.h locale.h float.h inttypes.h
++do :
++  as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
++ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
++eval as_val=\$$as_ac_Header
++   if test "x$as_val" = x""yes; then :
++  cat >>confdefs.h <<_ACEOF
++#define `$as_echo "HAVE_$ac_header" | $as_tr_cpp` 1
++_ACEOF
++
++fi
++
++done
++
++
++    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
++    GLIBCXX_CHECK_WCHAR_T_SUPPORT
++
++    $as_echo "#define HAVE_FINITE 1" >>confdefs.h
++
++    $as_echo "#define HAVE_FINITEF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_FREXPF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_HYPOTF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_ISINF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_ISINFF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_ISNAN 1" >>confdefs.h
++
++    $as_echo "#define HAVE_ISNANF 1" >>confdefs.h
++
++    $as_echo "#define HAVE_SINCOS 1" >>confdefs.h
++
++    $as_echo "#define HAVE_SINCOSF 1" >>confdefs.h
++
++    if test x"long_double_math_on_this_cpu" = x"yes"; then
++      $as_echo "#define HAVE_FINITEL 1" >>confdefs.h
++
++      $as_echo "#define HAVE_HYPOTL 1" >>confdefs.h
++
++      $as_echo "#define HAVE_ISINFL 1" >>confdefs.h
++
++      $as_echo "#define HAVE_ISNANL 1" >>confdefs.h
++
++    fi
++    ;;
++
+   arm*-*-symbianelf*)
+     # This is a freestanding configuration; there is nothing to do here.
+     ;;
+diff --git a/libstdc++-v3/configure.ac b/libstdc++-v3/configure.ac
+index 9fe9c33..ef52264 100644
+--- a/libstdc++-v3/configure.ac
++++ b/libstdc++-v3/configure.ac
+@@ -91,9 +91,9 @@ CXXFLAGS="$save_CXXFLAGS"
+ # up critical shell variables.
+ GLIBCXX_CONFIGURE
+ 
+-if test "x${with_newlib}" != "xyes"; then
+-  AC_LIBTOOL_DLOPEN
+-fi
++#if test "x${with_newlib}" != "xyes"; then
++#  AC_LIBTOOL_DLOPEN
++#fi
+ AM_PROG_LIBTOOL
+ AC_SUBST(enable_shared)
+ AC_SUBST(enable_static)
+diff --git a/libstdc++-v3/configure.host b/libstdc++-v3/configure.host
+index 4b4e242..dfa3569 100644
+--- a/libstdc++-v3/configure.host
++++ b/libstdc++-v3/configure.host
+@@ -203,6 +203,9 @@ case "${host_os}" in
+     os_include_dir="os/generic"
+     atomicity_dir="cpu/generic"
+     ;;
++  aros*)
++    os_include_dir="os/aros"
++    ;;
+   bsd*)
+     # Plain BSD attempts to share FreeBSD files.
+     os_include_dir="os/bsd/freebsd"
+diff --git a/libstdc++-v3/crossconfig.m4 b/libstdc++-v3/crossconfig.m4
+index fdaa9d6..4bd2947 100644
+--- a/libstdc++-v3/crossconfig.m4
++++ b/libstdc++-v3/crossconfig.m4
+@@ -5,6 +5,31 @@ dnl
+ AC_DEFUN([GLIBCXX_CROSSCONFIG],[
+ # Base decisions on target environment.
+ case "${host}" in
++  *-aros*)
++    AC_CHECK_HEADERS([nan.h ieeefp.h endian.h sys/isa_defs.h machine/endian.h \
++    machine/param.h sys/machine.h sys/types.h fp.h locale.h float.h inttypes.h])
++
++    GLIBCXX_CHECK_COMPLEX_MATH_SUPPORT
++    GLIBCXX_CHECK_WCHAR_T_SUPPORT
++
++    AC_DEFINE(HAVE_FINITE)
++    AC_DEFINE(HAVE_FINITEF)
++    AC_DEFINE(HAVE_FREXPF)
++    AC_DEFINE(HAVE_HYPOTF)
++    AC_DEFINE(HAVE_ISINF)
++    AC_DEFINE(HAVE_ISINFF)
++    AC_DEFINE(HAVE_ISNAN)
++    AC_DEFINE(HAVE_ISNANF)
++    AC_DEFINE(HAVE_SINCOS)
++    AC_DEFINE(HAVE_SINCOSF)
++    if test x"long_double_math_on_this_cpu" = x"yes"; then
++      AC_DEFINE(HAVE_FINITEL)
++      AC_DEFINE(HAVE_HYPOTL)
++      AC_DEFINE(HAVE_ISINFL)
++      AC_DEFINE(HAVE_ISNANL)
++    fi
++    ;;
++
+   arm*-*-symbianelf*)
+     # This is a freestanding configuration; there is nothing to do here.
+     ;;
