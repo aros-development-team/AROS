@@ -344,9 +344,15 @@ else
   if test "x$TARGET_CC" = x; then
     TARGET_CC=$CC
   fi
+  if test "x$TARGET_RANLIB" = x; then
+    TARGET_RANLIB=$RANLIB
+  fi
   AC_CHECK_TOOL(OBJCOPY, objcopy)
   AC_CHECK_TOOL(STRIP, strip)
   AC_CHECK_TOOL(NM, nm)
+  if test "x$TARGET_STRIP" = x; then
+    TARGET_STRIP=$STRIP
+  fi
 fi
 AC_SUBST(HOST_CC)
 AC_SUBST(BUILD_CC)

@@ -19833,6 +19833,9 @@ else
   if test "x$TARGET_CC" = x; then
     TARGET_CC=$CC
   fi
+  if test "x$TARGET_RANLIB" = x; then
+    TARGET_RANLIB=$RANLIB
+  fi
   if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}objcopy", so it can be a program name with args.
 set dummy ${ac_tool_prefix}objcopy; ac_word=$2
@@ -20109,6 +20112,9 @@ else
   NM="$ac_cv_prog_NM"
 fi
 
+  if test "x$TARGET_STRIP" = x; then
+    TARGET_STRIP=$STRIP
+  fi
 fi
 
 
