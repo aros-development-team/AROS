@@ -32,6 +32,7 @@ struct AudioBase
     UWORD stopmask;
 };
 
+extern void audiohw_init(struct AudioBase *ab);
 extern void audiohw_reset(struct AudioBase *ab, UWORD mask);
 extern void audiohw_start(struct AudioBase *ab, UWORD mask);
 extern void audiohw_stop(struct AudioBase *ab, UWORD mask);
