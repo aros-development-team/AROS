@@ -556,6 +556,7 @@ static CONST_STRPTR handle_size(TEXT *buffer, Tag tag)
         UQUAD num = IdHardwareNum(tag, NULL);
         if (num < 1000)
         {
+            num *= 10;
             format = _(MSG_BYTE);
         }
         else if (num < 1000 * 1000)
@@ -573,11 +574,9 @@ static CONST_STRPTR handle_size(TEXT *buffer, Tag tag)
             num = num / 1024 / 1024 / 102;
             format = _(MSG_GBYTE);
         }
-        if (num >= 1000)
-        {
-            fraction = num % 10;
-            num /= 10;
-        }
+        fraction = num % 10;
+        num /= 10;
+
         snprintf(buffer, STRBUFSIZE, format,
             (long unsigned int)num, '0' + fraction);
     }
