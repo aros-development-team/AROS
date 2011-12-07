@@ -23,8 +23,8 @@ int main(void)
         struct DeviceNode *dn = n->bn_DeviceNode;
 
         printf("BootNode %p, Flags 0x%08X, ConfigDev %p\n", n, n->bn_Flags, n->bn_Node.ln_Name);
-        printf("DeviceNode %p <%b>\n", dn, dn->dn_Name);
-        printf("Type %d, Task %p, SegList %p\n", dn->dn_Type, dn->dn_Task, dn->dn_SegList);
+        printf("DeviceNode %p <%p>\n", dn, BADDR(dn->dn_Name));
+        printf("Type %d, Task %p, SegList %p\n", (int)dn->dn_Type, BADDR(dn->dn_Task), BADDR(dn->dn_SegList));
 
         if (dn->dn_Startup)
         {
@@ -32,7 +32,7 @@ int main(void)
 
             printf("FileSysStartupMsg %p", fssm);
             if (fssm->fssm_Device)
-                printf(" <%s unit %ld flags 0x%08X>", fssm->fssm_Device, fssm->fssm_Unit, fssm->fssm_Flags);
+                printf(" <%s unit %ld flags 0x%08X>", AROS_BSTR_ADDR(fssm->fssm_Device), (long)fssm->fssm_Unit, (unsigned int)fssm->fssm_Flags);
             printf("\n");
 
             if (fssm->fssm_Environ)
