@@ -840,7 +840,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
     struct NewImage        *ni = NULL;
     UWORD                  *pens = msg->wdp_Dri->dri_Pens;
-    ULONG                   bc, color, s_col, e_col, arc;
+    ULONG                   bc = 0, color, s_col, e_col, arc;
     UWORD                   bl, bt, br, bb, ww, wh;
     LONG    pen = -1;
 
