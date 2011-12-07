@@ -57,6 +57,8 @@
 	    This will lock Work: with the passkey "MyPassword"
 
 **************************************************************************/
+#define DEBUG 1
+#include <aros/debug.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -148,11 +150,11 @@ int main(void)
 	        }
 	        else if (args[ARG_OFF])
 	        {
-	        	error = unlockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY]));
+	            error = unlockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY])) ? IoErr() : 0;
 	        }
 	        else
 	        {
-	        	error = lockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY]));
+                    error = lockDevice(dp, Hash((CONST_STRPTR)args[ARG_PASSKEY])) ? IoErr() : 0;
 	        }
 	    }
 
