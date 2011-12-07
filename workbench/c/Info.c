@@ -711,7 +711,7 @@ void doInfo()
 			    }
 			    UnLock(lock);
 
-			} else if (IoErr() == ERROR_NO_DISK && idn->Task) {
+			} else if (idn->Task) {
 			    name = NULL;
 			    D(bug("Calling ACTION_DISK_INFO\n"));
 			    if (DoPkt(idn->Task, ACTION_DISK_INFO, (SIPTR)MKBADDR(id), (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL)) {
@@ -724,9 +724,13 @@ void doInfo()
 				
 			    D(bug("Got info on %s\n", name));
 
-			    if (id->id_DiskType != ID_NO_DISK_PRESENT)
-			    {
-				
+                            if (id->id_DiskType == ID_NO_DISK_PRESENT) {
+                                VLPrintf(~0, " No disk present\n", NULL);
+                            } else if (id->id_DiskType == ID_NOT_REALLY_DOS) {
+                                VLPrintf(~0, " Not a DOS disk\n", NULL);
+                            } else if (id->id_DiskType == ID_UNREADABLE_DISK) {
+                                VLPrintf(~0, " Unreadable disk\n", NULL);
+                            } else {
 				x = ComputeKBytes(id->id_NumBlocks, id->id_BytesPerBlock);
 				y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
 				
@@ -781,11 +785,7 @@ void doInfo()
                                             " Blocks free: %-10ld    Blocksize: %ld\n",
                                             args);
 				}
-			    } else {
-
-                                VLPrintf(~0, " No disk present\n", NULL);
-			    }			    		
-
+			    }
 			}
 		    	else
 		    	{
