@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Lock - Set the write protect status of a device.
@@ -57,7 +57,7 @@
 	    This will lock Work: with the passkey "MyPassword"
 
 **************************************************************************/
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -75,7 +75,7 @@
 #define ARG_PASSKEY	3
 #define TOTAL_ARGS	4
 
-const TEXT version[] = "$VER: Lock 41.2 (16.1.1999)";
+const TEXT version[] = "$VER: Lock 41.3 (7.12.2011)";
 static const char exthelp[] =
     "Lock : Set the write-protect state of a volume\n"
     "\tDRIVE/A   The name of the volume to lock\n"
