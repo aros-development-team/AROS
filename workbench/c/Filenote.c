@@ -316,6 +316,7 @@ int SafeSetFileComment(struct AnchorPath *a, char *c)
 
     if (!SetComment(a->ap_Buf, c))
     {
+        PrintFault(IoErr(), ERROR_HEADER);
         Return_Value = RETURN_WARN;
     }
 
