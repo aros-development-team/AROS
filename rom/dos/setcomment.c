@@ -9,6 +9,7 @@
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
+#include <dos/dos.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
 
@@ -58,7 +59,11 @@
     LONG status = DOSFALSE;
 
     D(bug("[SetComment] '%s' '%s'\n", name, comment));
-
+    if (strlen(comment)>MAXCOMMENTLENGTH)
+    {
+        SetIoErr(ERROR_COMMENT_TOO_BIG);
+        return status;
+    }
     if (getpacketinfo(DOSBase, name, &phs)) {
     	BSTR com = C2BSTR(comment);
     	if (com) {
