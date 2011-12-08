@@ -2,7 +2,7 @@
 #define INTUITION_MENUDECORCLASS_H
 
 /*
-    Copyright  1995-2001, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Headerfile for Intuitions' MENUDECORCLASS
@@ -27,10 +27,10 @@
 
 /* Attributes for MENUDECORCLASS */
 #define MDA_Dummy                   (TAG_USER + 0x22000)
-#define MDA_DrawInfo                (WDA_Dummy + 1)         /* I.G */
-#define MDA_Screen                  (WDA_Dummy + 2)         /* I.G */
-#define MDA_TrueColorOnly           (WDA_Dummy + 3)         /* ..G */
-#define MDA_UserBuffer              (WDA_Dummy + 4)         /* I.G */
+#define MDA_DrawInfo                (MDA_Dummy + 1)         /* I.G */
+#define MDA_Screen                  (MDA_Dummy + 2)         /* I.G */
+#define MDA_TrueColorOnly           (MDA_Dummy + 3)         /* ..G */
+#define MDA_UserBuffer              (MDA_Dummy + 4)         /* I.G */
 
 
 /* Methods for MENUDECORCLASS */
