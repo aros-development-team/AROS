@@ -1,6 +1,7 @@
 #include <dos/dos.h>
 #include <dos/filehandler.h>
 #include <libraries/expansionbase.h>
+#include <proto/dos.h>
 #include <proto/exec.h>
 
 #include <ctype.h>
@@ -21,8 +22,24 @@ static void PrintDosType(ULONG dt)
     	else
     	    printf("\\%X", c);
     }
+}
 
-    RawPutChar('\n');
+static BOOL IsMounted(struct DeviceNode *dn)
+{
+    BOOL ret = FALSE;
+    struct DosList *dl = LockDosList(LDF_DEVICES|LDF_READ);
+    
+    while ((dl = NextDosEntry(dl, LDF_DEVICES)))
+    {
+    	if (dl == (struct DosList *)dn)
+    	{
+    	    ret = TRUE;
+    	    break;
+    	}
+    }
+
+    UnLockDosList(LDF_DEVICES|LDF_READ);
+    return ret;
 }
 
 int main(void)
@@ -41,8 +58,12 @@ int main(void)
         struct DeviceNode *dn = n->bn_DeviceNode;
 
         printf("BootNode %p, Flags 0x%08X, ConfigDev %p\n", n, n->bn_Flags, n->bn_Node.ln_Name);
-        printf("DeviceNode %p <%s>\n", dn, (char *)BADDR(dn->dn_Name));
-        printf("Type %d, Task %p, SegList %p\n", (int)dn->dn_Type, BADDR(dn->dn_Task), BADDR(dn->dn_SegList));
+        printf("DeviceNode %p <%s>", dn, (char *)BADDR(dn->dn_Name));
+
+        if (IsMounted(dn))
+            printf(" [MOUNTED]");
+
+        printf("\nType %d, Task %p, SegList %p\n", (int)dn->dn_Type, BADDR(dn->dn_Task), BADDR(dn->dn_SegList));
 
         if (dn->dn_Startup)
         {
