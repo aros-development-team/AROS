@@ -11,17 +11,17 @@ static ULONG error(ULONG winerr)
 {
     switch(winerr)
     {
-/*	case ERROR_SEEK_ERROR:
-	    return TDERR_SeekError;*/
-	    
-	case ERROR_WRITE_PROTECT:
-	    return TDERR_WriteProt;
+/*      case ERROR_SEEK_ERROR:
+            return TDERR_SeekError;*/
+            
+        case ERROR_WRITE_PROTECT:
+            return TDERR_WriteProt;
 
-/*	case ERROR_NO_DISK:
-	    return TDERR_DiskChanged;*/
+/*      case ERROR_NO_DISK:
+            return TDERR_DiskChanged;*/
 
-	default:
-	    return TDERR_NotSpecified;
+        default:
+            return TDERR_NotSpecified;
     }
 }
 
@@ -33,19 +33,19 @@ ULONG Host_Open(struct unit *Unit)
     Forbid();
     attrs = Unit->hdskBase->iface->GetFileAttributes(Unit->filename);
     Unit->file = Unit->hdskBase->iface->CreateFile(Unit->filename, GENERIC_READ|GENERIC_WRITE, FILE_SHARE_READ|FILE_SHARE_WRITE,
-						   NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+                                                   NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
     Permit();
 
     if (Unit->file == (APTR)-1)
-	return TDERR_NotSpecified;
+        return TDERR_NotSpecified;
 
 /*
  * GetFileAttributes() on a device returns FILE_ATTRIBUTE_READONLY flag set,
  * however we still can open the device for writing.
     if (attrs & FILE_ATTRIBUTE_READONLY)
-    	Unit->flags |= UNIT_READONLY; */
+        Unit->flags |= UNIT_READONLY; */
     if (attrs & FILE_ATTRIBUTE_DEVICE)
-	Unit->flags |= UNIT_DEVICE;
+        Unit->flags |= UNIT_DEVICE;
 
     D(bug("hostdisk: Unit flags 0x%02X\n", Unit->flags));
     return 0;
@@ -70,7 +70,7 @@ LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
     Permit();
 
     if (ret)
-	return resSize;
+        return resSize;
 
     *ioerr = error(err);
     return -1;
@@ -88,7 +88,7 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
     Permit();
 
     if (ret)
-	return resSize;
+        return resSize;
 
     *ioerr = error(err);
     return -1;
@@ -103,7 +103,7 @@ ULONG Host_Seek(struct unit *Unit, ULONG pos)
     Permit();
 
     if (ret != -1)
-	return 0;
+        return 0;
 
     return TDERR_SeekError;
 }
@@ -117,7 +117,7 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
     Permit();
 
     if (ret != -1)
-	return 0;
+        return 0;
 
     return TDERR_SeekError;
 }
@@ -130,47 +130,47 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 
     if (Unit->flags & UNIT_DEVICE)
     {
-	Forbid();
-	len = Unit->hdskBase->iface->DeviceIoControl(Unit->file, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0,
-						     &geom, sizeof(geom), &ret, NULL);
-	err = Unit->hdskBase->iface->GetLastError();
-	Permit();
+        Forbid();
+        len = Unit->hdskBase->iface->DeviceIoControl(Unit->file, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0,
+                                                     &geom, sizeof(geom), &ret, NULL);
+        err = Unit->hdskBase->iface->GetLastError();
+        Permit();
 
-	D(bug("hostdisk: IOCTL_DISK_GET_DRIVE_GEOMETRY result: %d\n", len));
-	if (len)
-	{
-	    dg->dg_SectorSize   = geom.BytesPerSector;
-	    dg->dg_Heads        = geom.TracksPerCylinder;
-	    dg->dg_TrackSectors = geom.SectorsPerTrack;
-	    dg->dg_Cylinders    = geom.Cylinders;
-	    dg->dg_CylSectors   = dg->dg_TrackSectors * dg->dg_Heads;
-	    dg->dg_TotalSectors = dg->dg_CylSectors * dg->dg_Cylinders;
+        D(bug("hostdisk: IOCTL_DISK_GET_DRIVE_GEOMETRY result: %d\n", len));
+        if (len)
+        {
+            dg->dg_SectorSize   = geom.BytesPerSector;
+            dg->dg_Heads        = geom.TracksPerCylinder;
+            dg->dg_TrackSectors = geom.SectorsPerTrack;
+            dg->dg_Cylinders    = geom.Cylinders;
+            dg->dg_CylSectors   = dg->dg_TrackSectors * dg->dg_Heads;
+            dg->dg_TotalSectors = dg->dg_CylSectors * dg->dg_Cylinders;
  
-	    D(bug("hostdisk: Sector size      : %u\n", dg->dg_SectorSize));
-	    D(bug("hostdisk: Heads            : %u\n", dg->dg_Heads));
-	    D(bug("hostdisk: Sectors per track: %u\n", dg->dg_TrackSectors));
-	    D(bug("hostdisk: Cylinders        : %u\n", dg->dg_Cylinders));
+            D(bug("hostdisk: Sector size      : %u\n", dg->dg_SectorSize));
+            D(bug("hostdisk: Heads            : %u\n", dg->dg_Heads));
+            D(bug("hostdisk: Sectors per track: %u\n", dg->dg_TrackSectors));
+            D(bug("hostdisk: Cylinders        : %u\n", dg->dg_Cylinders));
  
-	    return 0;
+            return 0;
         }
     }
     else
     {
-    	ULONG len64 = 0;
+        ULONG len64 = 0;
 
-	Forbid();
-	len = Unit->hdskBase->iface->GetFileSize(Unit->file, &len64);
-	err = Unit->hdskBase->iface->GetLastError();
-	Permit();
+        Forbid();
+        len = Unit->hdskBase->iface->GetFileSize(Unit->file, &len64);
+        err = Unit->hdskBase->iface->GetLastError();
+        Permit();
 
-	D(bug("hostdisk: Image file length: %d\n", len));
-	if (len != -1)
-	{
-	    dg->dg_TotalSectors = (len >> 9) | (len64 << 23); /* This relies on the fact that SectorSize == 512) */
-	    dg->dg_Cylinders    = dg->dg_TotalSectors;	      /* LBA, CylSectors == 1 */
+        D(bug("hostdisk: Image file length: %d\n", len));
+        if (len != -1)
+        {
+            dg->dg_TotalSectors = (len >> 9) | (len64 << 23); /* This relies on the fact that SectorSize == 512) */
+            dg->dg_Cylinders    = dg->dg_TotalSectors;        /* LBA, CylSectors == 1 */
 
-	    return 0;
-	}
+            return 0;
+        }
     }
 
     D(bug("hostdisk: Host_GetGeometry(): Windows error %u\n", err));
@@ -196,14 +196,14 @@ static int Host_Init(struct HostDiskBase *hdskBase)
 
     hdskBase->KernelHandle = HostLib_Open("kernel32.dll", NULL);
     if (!hdskBase->KernelHandle)
-	return FALSE;
+        return FALSE;
 
     hdskBase->iface = (struct HostInterface *)HostLib_GetInterface(hdskBase->KernelHandle, KernelSymbols, &r);
     if ((!hdskBase->iface) || r)
-	return FALSE;
+        return FALSE;
 
     hdskBase->DiskDevice = "\\\\.\\PhysicalDrive%ld";
-	
+        
     return TRUE;
 }
 
