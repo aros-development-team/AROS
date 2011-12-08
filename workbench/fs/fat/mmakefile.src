@@ -1,5 +1,7 @@
 include $(TOP)/config/make.cfg
 
+#MM- workbench-fs-complete : workbench-fs-fat
+
 FILES := startup cache charset direntry disk fat file lock main names packet\
  ops support notify timer
 
