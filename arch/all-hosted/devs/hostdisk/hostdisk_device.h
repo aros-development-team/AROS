@@ -2,7 +2,7 @@
 #define FDSK_DEVICE_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,29 +15,29 @@
 
 struct HostDiskBase
 {
-    struct Device 		device;
-    struct SignalSemaphore 	sigsem;
-    struct List 		units;
-    STRPTR			DiskDevice;
-    ULONG			unitBase;
-    APTR			HostLibBase;
-    APTR			KernelHandle;
+    struct Device               device;
+    struct SignalSemaphore      sigsem;
+    struct List                 units;
+    STRPTR                      DiskDevice;
+    ULONG                       unitBase;
+    APTR                        HostLibBase;
+    APTR                        KernelHandle;
     struct HostInterface       *iface;
-    int			       *errnoPtr;
+    int                        *errnoPtr;
 };
 
 #define HostLibBase hdskBase->HostLibBase
 
 struct unit
 {
-    struct Node			n;
-    struct HostDiskBase		*hdskBase;
-    ULONG			usecount;
-    struct MsgPort 		*port;
-    file_t 			file;
-    UBYTE			flags;
-    ULONG			changecount;
-    struct MinList 		changeints;
+    struct Node                 n;
+    struct HostDiskBase         *hdskBase;
+    ULONG                       usecount;
+    struct MsgPort              *port;
+    file_t                      file;
+    UBYTE                       flags;
+    ULONG                       changecount;
+    struct MinList              changeints;
 };
 
 #define filename n.ln_Name
