@@ -1026,7 +1026,7 @@ static void RenderMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
         else
         {
             x = mhd->scr->BarHBorder + menu->LeftEdge;
-            y = mhd->scr->BarVBorder;
+            y = mhd->scr->BarVBorder + ((mhd->scr->BarHeight - rp->Font->tf_YSize) / 2);
         }
 
         if (MENUS_AMIGALOOK(IntuitionBase))
