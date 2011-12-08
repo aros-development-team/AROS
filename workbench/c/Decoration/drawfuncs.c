@@ -235,6 +235,31 @@ static void DrawTileToImage(struct NewImage *src, struct NewImage *dest, UWORD _
     }
 }
 
+static void TileImageToImageMenuBar(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
+{
+    UWORD   y, h;
+
+    if (dest == NULL) return;
+    if (src == NULL) return;
+    if (srcti == NULL) return;
+    y = 0;
+
+    h = src->h;
+
+    if ((srcti->TileTop + srcti->TileBottom) > dest->h) return;
+    if (srcti->TileRight > dest->w) return;
+
+    DrawTileToImage(src, dest, srcti->TileLeft, y, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileTop, 0, 0, dest->w - srcti->TileRight, srcti->TileTop);
+    DrawTileToImage(src, dest, srcti->TileLeft, y + h - srcti->TileBottom, src->w - srcti->TileLeft - srcti->TileRight, srcti->TileBottom, 0, dest->h - srcti->TileBottom, dest->w - srcti->TileRight, srcti->TileBottom);
+    DrawTileToImage(src, dest, srcti->TileLeft, y + srcti->TileTop, src->w - srcti->TileLeft - srcti->TileRight, h - srcti->TileBottom - srcti->TileTop, 0, srcti->TileTop + 0, dest->w - srcti->TileRight, dest->h - srcti->TileTop - srcti->TileBottom - 0);
+
+
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y, srcti->TileRight, srcti->TileTop, dest->w - srcti->TileRight, 0, srcti->TileRight, srcti->TileTop);
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y + h - srcti->TileBottom, srcti->TileRight, srcti->TileBottom, dest->w - srcti->TileRight , dest->h - srcti->TileBottom, srcti->TileRight, srcti->TileBottom);
+    DrawTileToImage(src, dest, src->w - srcti->TileRight, y + srcti->TileTop, srcti->TileRight,  h - srcti->TileBottom - srcti->TileTop, dest->w - srcti->TileRight, srcti->TileTop + 0, srcti->TileRight, dest->h - srcti->TileTop - srcti->TileBottom - 0);
+
+}
+
 static void TileImageToImage(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest)
 {
     UWORD   y, h;
@@ -484,7 +509,8 @@ static void BlurSourceAndMixTexture(struct NewImage *pic, struct NewImage *textu
     }
 }
 
-static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
+static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti,
+        UWORD ratio, VOID (*TileImageToImageFunc)(struct NewImage *src, struct TileInfo * srcti, struct NewImage *dest))
 {
     struct NewImage *ni;
 
@@ -495,7 +521,7 @@ static void RenderBackgroundTiled(struct NewImage *pic, struct NewImage *texture
         {
             if (textureti)
             {
-                TileImageToImage(texture, textureti, ni);
+                TileImageToImageFunc(texture, textureti, ni);
                 BlurSourceAndMixTexture(pic, ni, textureti, ratio);
             }
             else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
@@ -580,14 +606,29 @@ void DrawPartToImage(struct NewImage *src, struct NewImage *dest, UWORD sx, UWOR
     }
 }
 
-void RenderBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
+void RenderMenuBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
 {
     if (texture)
     {
-        if (textureti) RenderBackgroundTiled(pic, texture, textureti, ratio); 
+        if (textureti) RenderBackgroundTiled(pic, texture, textureti, ratio, TileImageToImage);
         else BlurSourceAndMixTexture(pic, texture, textureti, ratio);
     }
     else BlurSourceAndMixTexture(pic, NULL, NULL, ratio);
+}
+
+void RenderMenuBarBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio)
+{
+    if (texture && textureti)
+    {
+
+        /* Fill the image with the center tile */
+        DrawTileToImage(texture, pic,
+                textureti->TileLeft, textureti->TileTop,
+                texture->w - textureti->TileLeft - textureti->TileRight, texture->h - textureti->TileBottom - textureti->TileTop,
+                0, 0, pic->w, pic->h);
+
+        RenderBackgroundTiled(pic, texture, textureti, ratio, TileImageToImageMenuBar);
+    }
 }
 
 void WriteAlphaPixelArray(struct NewImage *src, struct NewLUT8Image *dst, LONG sx, LONG sy, LONG dx, LONG dy, LONG w, LONG h)

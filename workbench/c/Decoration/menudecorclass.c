@@ -187,12 +187,30 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
         md->img_menu_ti->TileTop    = data->dc->MenuTileTop;
     }
 
-    md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
-    if (md->ni)
+    if ((msg->mdp_MenuDecorFlags & MDP_MDF_MENU) && !(msg->mdp_MenuDecorFlags & MDP_MDF_MENUS_UNDERMOUSE))
     {
-        md->ni->ok = TRUE;
-        RenderBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+        LONG height = msg->mdp_Height;
+        if (data->dc->MenuIsTiled)
+            if (height < (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop))
+                height = (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop);
+
+        md->ni = NewImageContainer(msg->mdp_Width, height);
+        if (md->ni)
+        {
+            md->ni->ok = TRUE;
+            RenderMenuBarBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+        }
     }
+    else
+    {
+        md->ni = GetImageFromRP(rp, msg->mdp_Left, msg->mdp_Top, msg->mdp_Width, msg->mdp_Height);
+        if (md->ni)
+        {
+            md->ni->ok = TRUE;
+            RenderMenuBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+        }
+    }
+
 
     return TRUE;
 }
