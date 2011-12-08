@@ -58,7 +58,7 @@ int main(void)
         struct DeviceNode *dn = n->bn_DeviceNode;
 
         printf("BootNode %p, Flags 0x%08X, ConfigDev %p\n", n, n->bn_Flags, n->bn_Node.ln_Name);
-        printf("DeviceNode %p <%s>", dn, (char *)BADDR(dn->dn_Name));
+        printf("DeviceNode %p <%s>", dn, AROS_BSTR_ADDR(dn->dn_Name));
 
         if (IsMounted(dn))
             printf(" [MOUNTED]");
