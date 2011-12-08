@@ -622,7 +622,7 @@ static BOOL ParseDevice(const UBYTE *tuple,struct TagItem *tag_list,
 {
    BOOL success=TRUE;
    struct TagItem **lists,*sub_tag_list,*sub_tag;
-   ULONG flags=0,speed,region_base=0,region_length;
+   ULONG flags=0,speed=0,region_base=0,region_length;
    UBYTE region_count;
 
    /* Allocate tag-list array */
@@ -736,9 +736,9 @@ static BOOL ParseConfig(const UBYTE *tuple,struct TagItem *tag_list,
 static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
    struct PCCardBase *base)
 {
-   ULONG n,flags=0,scale,*win_bases,*host_bases,*win_lengths;
+   ULONG n,flags=0,scale,*win_bases = NULL,*host_bases = NULL,*win_lengths = NULL;
    UBYTE base_size,length_size,i=0,j,present,power_count,features,
-      timing_scales[TIMING_COUNT],win_count,sub_flags,sizes,mask;
+      timing_scales[TIMING_COUNT],win_count=0,sub_flags=0,sizes=0,mask=0;
    const UBYTE *p,*q;
    struct TagItem *tag,*temp_tag=tag_list,*temp_sub_tag,*sub_tag,
       *sub_tag_list;
