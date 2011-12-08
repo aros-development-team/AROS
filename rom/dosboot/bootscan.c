@@ -45,13 +45,13 @@
 static const struct _pt {
     IPTR    part,type;
 } PartTypes[] = {
-    { 0x01, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 12-bit FAT */
-    { 0x04, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 16-bit FAT (up to 32M) */
-    { 0x06, AROS_MAKE_ID('F','A','T',' ')  },	/* DOS 16-bit FAT (over 32M) */
+    { 0x01, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 12-bit FAT */
+    { 0x04, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 16-bit FAT (up to 32M) */
+    { 0x06, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 16-bit FAT (over 32M) */
     { 0x07, AROS_MAKE_ID('N','T','F','S')  },	/* Windows NT NTFS */
-    { 0x0b, AROS_MAKE_ID('V','F','A','T')  },	/* W95 FAT32 */
-    { 0x0c, AROS_MAKE_ID('V','F','A','T')  },	/* W95 LBA FAT32 */
-    { 0x0e, AROS_MAKE_ID('F','A','T',' ')  },	/* W95 16-bit LBA FAT */
+    { 0x0b, AROS_MAKE_ID('F','A','T','\0') },	/* W95 FAT32 */
+    { 0x0c, AROS_MAKE_ID('F','A','T','\0') },	/* W95 LBA FAT32 */
+    { 0x0e, AROS_MAKE_ID('F','A','T','\0') },	/* W95 16-bit LBA FAT */
     { 0x2c, AROS_MAKE_ID('D','O','S','\0') },	/* AOS OFS */
     { 0x2d, AROS_MAKE_ID('D','O','S','\1') },	/* AOS FFS */
     { 0x2e, AROS_MAKE_ID('D','O','S','\3') },	/* AOS FFS-I */
