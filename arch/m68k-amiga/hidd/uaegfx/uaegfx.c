@@ -478,21 +478,6 @@ OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 }
 
 /********** GfxHidd::Dispose()  ******************************/
-VOID UAEGFXCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    struct gfx_data *data;
-    
-    EnterFunc(bug("UAEGFX::Dispose(o=%p)\n", o));
-    
-    data = OOP_INST_DATA(cl, o);
-    
-    D(bug("UAEGFX::Dispose: calling super\n"));    
-    OOP_DoSuperMethod(cl, o, msg);
-    
-    ReturnVoid("UAEGFX::Dispose");
-}
-
-
 OOP_Object *UAEGFXCl__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_NewBitMap *msg)
 {  
     struct uaegfx_staticdata *csd = CSD(cl);

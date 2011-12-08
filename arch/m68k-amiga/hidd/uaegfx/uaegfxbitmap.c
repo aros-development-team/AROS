@@ -353,8 +353,12 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
     }
     DB2(bug("UAEGFXBitmap__Root__Set Exit\n"));
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-//    if (moved && csd->disp == data)
-//    	setscroll(csd, data);
+#if 0
+    if (moved && csd->disp == data)
+    	setscroll(csd, data);
+#else
+    (void)moved;
+#endif
 }
 
 VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
