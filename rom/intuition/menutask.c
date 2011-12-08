@@ -335,7 +335,6 @@ static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *I
 
                 if (mhd->activemenunum != -1)
                 {
-
                     HighlightMenuTitle(mhd->activemenu, mhd, IntuitionBase);
                     KillMenuWin(mhd, IntuitionBase);
                     KillSubMenuWin(mhd, IntuitionBase);
@@ -575,7 +574,6 @@ static inline BOOL CustomDrawBackground(struct RastPort *rp, struct Window *win,
 static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    BOOL    customdraw = FALSE;
 
     if ((menu->Flags & MENUENABLED) && mhd->menubarwin)
     {
@@ -587,7 +585,7 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
             WORD i;
             struct Menu *m = mhd->menu;
         
-        x1 = mhd->innerleft;
+            x1 = mhd->innerleft;
 
             x2 = x1 + mhd->menubaritemwidth - 1;
             
@@ -600,11 +598,18 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         else
         {
             x1 = menu->LeftEdge + mhd->scr->BarHBorder - mhd->scr->MenuHBorder;
+            if (x1 < 0) x1 = 0;
             y1 = 0;
             x2 = x1 + menu->Width - 1;
             y2 = mhd->scr->BarHeight - 1;
         }
 
+        menu->Flags ^= HIGHITEM;
+        if (CustomDrawBackground(rp, mhd->win, x1, y1, x2 - x1 + 1, y2 - y1 + 1, menu->Flags, mhd, IntuitionBase))
+        {
+            RenderMenuTitle(menu, mhd, IntuitionBase);
+            return;
+        }
 
         if (MENUS_AMIGALOOK(IntuitionBase))
         {
@@ -613,22 +618,14 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
         }
         else
         {
-            menu->Flags ^= HIGHITEM;
-            if (MENUS_UNDERMOUSE)
-            {
-                customdraw = CustomDrawBackground(rp, mhd->win, x1, y1, x2 - x1 + 1, y2 - y1 + 1, menu->Flags, mhd, IntuitionBase);
-            }
-
             if (!MENUS_UNDERMOUSE(IntuitionBase)) y1++;
 
-        if (!customdraw) {
-                SetDrMd(rp, JAM1);
-                SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLPEN : BACKGROUNDPEN]);
-                RectFill(rp, x1, y1, x2, y2);
-            }
+            SetDrMd(rp, JAM1);
+            SetAPen(rp, mhd->dri->dri_Pens[(menu->Flags & HIGHITEM) ? FILLPEN : BACKGROUNDPEN]);
+            RectFill(rp, x1, y1, x2, y2);
             RenderMenuTitle(menu, mhd, IntuitionBase);
     
-            if ((menu->Flags & HIGHITEM) && !customdraw)
+            if ((menu->Flags & HIGHITEM))
             {
                 if (MENUS_UNDERMOUSE(IntuitionBase))
                 {
@@ -637,9 +634,9 @@ static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd, s
                 else
                 {
                     SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
-                            RectFill(rp, x1, y1, x1, y2);
-                            SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
-                            RectFill(rp, x2, y1, x2, y2);
+                    RectFill(rp, x1, y1, x1, y2);
+                    SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
+                    RectFill(rp, x2, y1, x2, y2);
                 }
             }
         }
@@ -955,37 +952,42 @@ static void RenderMenuBar(struct MenuHandlerData *mhd, struct IntuitionBase *Int
     if (mhd->menubarwin)
     {
         struct Menu *menu = mhd->menu;
-        struct RastPort *rp = mhd->menubarwin->RPort;
+        struct Window *win = mhd->menubarwin;
+        struct RastPort *rp = win->RPort;
 
         SetFont(rp, mhd->dri->dri_Font);
 
+        /* Bar renders using different pens in Amiga mode than rest of menu */
         if (MENUS_UNDERMOUSE(IntuitionBase))
         {
-            RenderMenuBG(mhd->menubarwin, mhd, IntuitionBase);
+            RenderMenuBG(win, mhd, IntuitionBase);
         }
         else
         {
-            if (MENUS_AMIGALOOK(IntuitionBase))
+            if (!CustomDrawBackground(rp, win, 0, 0, win->Width - 1, win->Height - 1, 0, mhd, IntuitionBase))
             {
-                SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
-            }
-            else
-            {
-                SetABPenDrMd(rp, mhd->dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
-            }
+                if (MENUS_AMIGALOOK(IntuitionBase))
+                {
+                    SetABPenDrMd(rp, mhd->dri->dri_Pens[BARBLOCKPEN], 0, JAM1);
+                }
+                else
+                {
+                    SetABPenDrMd(rp, mhd->dri->dri_Pens[BACKGROUNDPEN], 0, JAM1);
+                }
+    
+                RectFill(rp, 0, 0, win->Width - 1, win->Height - 2);
 
-            RectFill(rp, 0, 0, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 2);
-    
-            SetAPen(rp, mhd->dri->dri_Pens[BARTRIMPEN]);
-            RectFill(rp, 0, mhd->menubarwin->Height - 1, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 1);
-    
-            if (!MENUS_AMIGALOOK(IntuitionBase))
-            {
-                SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
-                RectFill(rp, 0, 0, 0, mhd->menubarwin->Height - 2);
-                RectFill(rp, 1, 0, mhd->menubarwin->Width - 1, 0);
-                SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
-                RectFill(rp, mhd->menubarwin->Width - 1, 1, mhd->menubarwin->Width - 1, mhd->menubarwin->Height - 2);
+                SetAPen(rp, mhd->dri->dri_Pens[BARTRIMPEN]);
+                RectFill(rp, 0, win->Height - 1, win->Width - 1, win->Height - 1);
+
+                if (!MENUS_AMIGALOOK(IntuitionBase))
+                {
+                    SetAPen(rp, mhd->dri->dri_Pens[SHINEPEN]);
+                    RectFill(rp, 0, 0, 0, win->Height - 2);
+                    RectFill(rp, 1, 0, win->Width - 1, 0);
+                    SetAPen(rp, mhd->dri->dri_Pens[SHADOWPEN]);
+                    RectFill(rp, win->Width - 1, 1, win->Width - 1, win->Height - 2);
+                }
             }
         }
         
