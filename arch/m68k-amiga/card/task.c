@@ -64,12 +64,10 @@ void pcmcia_removeowner(struct CardResource *CardResource)
 void CardTask(struct Task *parent, struct CardResource *CardResource)
 {
     UBYTE signal;
-    UBYTE timersignal;
     
     signal = AllocSignal(-1);
     CardResource->signalmask = 1 << signal;
 
-    timersignal = AllocSignal(-1);
     CardResource->timermp = CreateMsgPort();
     CardResource->timerio = (struct timerequest*) CreateIORequest(CardResource->timermp, sizeof(struct timerequest));
     if (!CardResource->timermp || !CardResource->timerio)
