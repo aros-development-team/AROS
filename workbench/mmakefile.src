@@ -23,7 +23,6 @@ include $(TOP)/config/make.cfg
 #MM	    workbench-utilities \
 #MM	    workbench-tools \
 #MM	    workbench-prefs \
-#MM	    workbench-fs-fat \
 #MM	    workbench-network \
 #MM         workbench-rexxc \
 #MM         kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)

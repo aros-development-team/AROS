@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 FILES := \
     AddBuffers \
     AddDataTypes \
+    Automount \
     Avail \
     Break \
     ChangeTaskPri \

@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs : workbench-fs-pipe
+#MM- workbench-fs-complete : workbench-fs-pipe
 
 FILES=pipebuf pipedebug pipecreate pipedir \
       pipe-handler pipelists pipename pipesched \

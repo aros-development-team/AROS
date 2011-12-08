@@ -1,0 +1,15 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-fs-complete : workbench-fs-setup
+workbench-fs-complete : $(AROS_FS)/automount-config
+
+$(AROS_FS)/automount-config : automount-config
+	@$(ECHO) Copying $<...
+	@$(CP) $^ $@
+
+#MM
+workbench-fs-setup :
+	@$(IF) $(TEST) ! -d $(AROS_FS) ; then \
+	    $(MKDIR) $(AROS_FS) ; \
+	else $(NOP) ; fi
