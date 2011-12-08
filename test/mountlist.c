@@ -60,6 +60,8 @@ int main(void)
         printf("BootNode %p, Flags 0x%08X, ConfigDev %p\n", n, n->bn_Flags, n->bn_Node.ln_Name);
         printf("DeviceNode %p <%s>", dn, AROS_BSTR_ADDR(dn->dn_Name));
 
+        if (dn->dn_Handler)
+            printf(" Handler %s", AROS_BSTR_ADDR(dn->dn_Handler));
         if (IsMounted(dn))
             printf(" [MOUNTED]");
 
@@ -80,7 +82,7 @@ int main(void)
 
                 printf("DosEnvec %p DosType 0x%08lX <", de, de->de_DosType);
                 PrintDosType(de->de_DosType);
-                printf("> BootPri %ld\n", de->de_BootPri);
+                printf("> BootPri %ld LowCyl %ld HighCyl %ld\n", de->de_BootPri, de->de_LowCyl, de->de_HighCyl);
             }
         }
         printf("\n");
