@@ -241,21 +241,6 @@ VOID AmigaMouse__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-/***** Mouse::HandleEvent()  ***************************************/
-
-VOID AmigaMouse__Hidd_Mouse__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_HandleEvent *msg)
-{
-    struct mouse_data * data;
-
-    EnterFunc(bug("_mouse_handleevent()\n"));
-
-    data = OOP_INST_DATA(cl, o);
-
-    /* Nothing done yet */
-
-    ReturnVoid("_Mouse::HandleEvent");
-}
-
 /********************  init_kbdclass()  *********************************/
 
 static int AmigaMouse_InitAttrs(LIBBASETYPEPTR LIBBASE)
