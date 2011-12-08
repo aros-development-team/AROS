@@ -189,16 +189,30 @@ static IPTR menudecor_initmenu(Class *cl, Object *obj, struct mdpInitMenu *msg)
 
     if ((msg->mdp_MenuDecorFlags & MDP_MDF_MENU) && !(msg->mdp_MenuDecorFlags & MDP_MDF_MENUS_UNDERMOUSE))
     {
+        /* Special handling for pulled down menu bar */
         LONG height = msg->mdp_Height;
-        if (data->dc->MenuIsTiled)
-            if (height < (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop))
-                height = (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop);
+
+        /* Increase height for rendering if needed */
+        if ((data->dc->MenuIsTiled) && (height < (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop)))
+            height = (md->img_menu_ti->TileBottom + md->img_menu_ti->TileTop);
 
         md->ni = NewImageContainer(msg->mdp_Width, height);
         if (md->ni)
         {
             md->ni->ok = TRUE;
             RenderMenuBarBackground(md->ni, md->img_menu, md->img_menu_ti, 20);
+
+            /* Scale down if needed */
+            if (height > msg->mdp_Height)
+            {
+                struct NewImage * sni = ScaleNewImage(md->ni, msg->mdp_Width, msg->mdp_Height);
+                if (sni)
+                {
+                    DisposeImageContainer(md->ni);
+                    md->ni = sni;
+                    md->ni->ok = TRUE;
+                }
+            }
         }
     }
     else
