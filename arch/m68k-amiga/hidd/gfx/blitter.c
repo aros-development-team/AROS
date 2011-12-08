@@ -616,7 +616,6 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
     UBYTE bgpen = GC_BG(pat->gc);
 
     UBYTE i;
-    BYTE shift;
     UWORD shifta, shiftb;
     UWORD afwm, alwm;
     ULONG dstoffset;
@@ -658,7 +657,6 @@ BOOL blit_putpattern(struct amigavideo_staticdata *csd, struct amigabm_data *bm,
     dstx &= 15;
     dstx2 &= 15;
 
-    shift = dstx;
     shifta = 0;
     shiftb = 0;
     afwm = leftmask[dstx];

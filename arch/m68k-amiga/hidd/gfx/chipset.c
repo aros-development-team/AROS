@@ -18,7 +18,6 @@
 #include <aros/debug.h>
 
 static const UBYTE fetchunits[] = { 3,3,3,0, 4,3,3,0, 5,4,3,0 };
-static const UBYTE fetchstarts[] = { 3,2,1,0, 4,3,2,0, 5,4,3,0 };
 static const UBYTE fm_maxplanes[] = { 3,2,1,0, 3,3,2,0, 3,3,3,0 };
 
 /* reset to OCS defaults */
@@ -453,7 +452,7 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     UWORD ddfstrt, ddfstop;
-    UBYTE fetchunit, fetchstart, maxplanes;
+    UBYTE fetchunit, maxplanes;
     UWORD bplwidth, viewwidth;
     UBYTE i;
     
@@ -470,7 +469,6 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     data->height = data->interlace ? (bm->height + 1) / 2 : bm->height;
 
     fetchunit = fetchunits[data->fmode_bpl * 4 + data->res];
-    fetchstart = fetchstarts[data->fmode_bpl * 4 + data->res];
     maxplanes = fm_maxplanes[data->fmode_bpl * 4 + data->res];
 
     viewwidth = data->width;
@@ -478,8 +476,8 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     if ((viewwidth << data->res) > 320)
     	viewwidth = 320 << data->res;
 
-    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d fs=%d\n",
-    	bm, data->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit, fetchstart));
+    D(bug("setmode bm=%x mode=%08x w=%d h=%d d=%d bpr=%d fu=%d\n",
+    	bm, data->modeid, bm->width, bm->height, bm->depth, bm->bytesperrow, fetchunit));
     
     bplwidth = viewwidth >> (data->res + 1);
     ddfstrt = (data->startx / 2) & ~((1 << fetchunit) - 1);
