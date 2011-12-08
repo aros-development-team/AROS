@@ -26,8 +26,8 @@
  */
 #define _DARWIN_NO_64_BIT_INODE
 /* This enables struct stat64 definition */
-#define _DARWIN_C_SOURCE	/* For Darwin */
-#define _LARGEFILE64_SOURCE	/* For Linux */
+#define _DARWIN_C_SOURCE        /* For Darwin */
+#define _LARGEFILE64_SOURCE     /* For Linux */
 #endif
 
 #ifndef INODE64_SUFFIX
@@ -74,16 +74,16 @@ static ULONG error(int unixerr)
     switch (unixerr)
     {
     case 0:
-    	return 0;
+        return 0;
 
     case EBUSY:
-	return TDERR_DriveInUse;
+        return TDERR_DriveInUse;
 
     case EPERM:
-	return TDERR_WriteProt;
+        return TDERR_WriteProt;
 
     default:
-	return TDERR_NotSpecified;
+        return TDERR_NotSpecified;
     }
 }
 
@@ -104,22 +104,22 @@ ULONG Host_Open(struct unit *Unit)
 
     if (err == EBUSY)
     {
-	/* This allows to work on Darwin, at least in read-only mode */
+        /* This allows to work on Darwin, at least in read-only mode */
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
         Unit->flags = UNIT_READONLY;
 
         Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755, &err);
-	AROS_HOST_BARRIER
-	err = *hdskBase->errnoPtr;
+        AROS_HOST_BARRIER
+        err = *hdskBase->errnoPtr;
     }
 
     HostLib_Unlock();
 
     if (Unit->file == -1)
     {
-	D(bug("hostdisk: Error %d\n", err));
+        D(bug("hostdisk: Error %d\n", err));
 
-	return error(err);
+        return error(err);
     }
 
     HostLib_Lock();
@@ -167,7 +167,7 @@ LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
     HostLib_Unlock();
 
     if (ret == -1)
-    	*ioerr = error(err);
+        *ioerr = error(err);
 
     return ret;
 }
@@ -188,7 +188,7 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
     HostLib_Unlock();
 
     if (ret == -1)
-	*ioerr = error(err);
+        *ioerr = error(err);
 
     return ret;
 }
@@ -227,12 +227,12 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 
     if (Unit->flags & UNIT_DEVICE)
     {
-    	/* This routine returns UNIX error code, for simplicity */
-	err = Host_DeviceGeometry(Unit, dg);
+        /* This routine returns UNIX error code, for simplicity */
+        err = Host_DeviceGeometry(Unit, dg);
 
-	/* If this routine is not implemented, use fstat() (worst case) */
-	if (err != ENOSYS)
-	    return error(err);
+        /* If this routine is not implemented, use fstat() (worst case) */
+        if (err != ENOSYS)
+            return error(err);
     }
 
     HostLib_Lock();
@@ -245,10 +245,10 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     D(bug("hostdisk: Image file length: %ld\n", st.st_size));
     if (res != -1)
     {
-	dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
-	dg->dg_Cylinders    = dg->dg_TotalSectors; /* LBA, CylSectors == 1 */
+        dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
+        dg->dg_Cylinders    = dg->dg_TotalSectors; /* LBA, CylSectors == 1 */
 
-	return 0;
+        return 0;
     }
 
     D(bug("hostdisk: Host_GetGeometry(): UNIX error %u\n", err));
@@ -289,27 +289,27 @@ static BOOL CheckArch(const char *Component, const char *MyArch, const char *Sys
 
     if (strcmp(arg[1], arg[2]))
     {
-	struct IntuitionBase *IntuitionBase;
+        struct IntuitionBase *IntuitionBase;
 
-	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
-	if (IntuitionBase)
-	{
+        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 36);
+        if (IntuitionBase)
+        {
             struct EasyStruct es =
             {
-        	sizeof (struct EasyStruct),
-        	0,
-        	"Incompatible architecture",
-		"Used version of %s is built for use\n"
-		"with %s architecture, but your\n"
-		"system architecture is %s.",
-        	"Ok",
-	    };
+                sizeof (struct EasyStruct),
+                0,
+                "Incompatible architecture",
+                "Used version of %s is built for use\n"
+                "with %s architecture, but your\n"
+                "system architecture is %s.",
+                "Ok",
+            };
 
-	    EasyRequestArgs(NULL, &es, NULL, (IPTR *)arg);
+            EasyRequestArgs(NULL, &es, NULL, (IPTR *)arg);
 
-	    CloseLibrary(&IntuitionBase->LibNode);
-	}
-	return FALSE;
+            CloseLibrary(&IntuitionBase->LibNode);
+        }
+        return FALSE;
     }
 
     D(bug("hostdisk: Architecture check done\n"));
@@ -326,24 +326,24 @@ static int Host_Init(struct HostDiskBase *hdskBase)
      * is the architecture we were built for.
      */
     APTR KernelBase = OpenResource("kernel.resource");
-    
+
     if (!KernelBase)
-    	return FALSE;
+        return FALSE;
 
     arch = (STRPTR)KrnGetSystemAttr(KATTR_Architecture);
     if (!arch)
-    	return FALSE;
+        return FALSE;
 
     if (!CheckArch(Hostdisk_LibName, AROS_ARCHITECTURE, arch))
-    	return FALSE;
+        return FALSE;
 
     hdskBase->KernelHandle = HostLib_Open(LIBC_NAME, NULL);
     if (!hdskBase->KernelHandle)
-	return FALSE;
+        return FALSE;
 
     hdskBase->iface = (struct HostInterface *)HostLib_GetInterface(hdskBase->KernelHandle, libcSymbols, &r);
     if ((!hdskBase->iface) || r)
-	return FALSE;
+        return FALSE;
 
     hdskBase->errnoPtr = hdskBase->iface->__error();
 
