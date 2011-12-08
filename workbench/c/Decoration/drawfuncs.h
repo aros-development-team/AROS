@@ -21,7 +21,8 @@ void HorizRepeatBuffer(UBYTE * buf, LONG offy, LONG pen, BOOL tc, struct RastPor
 void FillMemoryBufferRGBGradient(UBYTE * buf, LONG pen, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle);
 void FillPixelArrayGradient(LONG pen, BOOL tc, struct RastPort *rp, LONG xt, LONG yt, LONG xb, LONG yb, LONG xp, LONG yp, LONG w, LONG h, ULONG start_rgb, ULONG end_rgb, LONG angle, LONG dx, LONG dy);
 
-void RenderBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio);
+void RenderMenuBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio);
+void RenderMenuBarBackground(struct NewImage *pic, struct NewImage *texture, struct TileInfo *textureti, UWORD ratio);
 void ShadeLine(LONG pen, BOOL tc, BOOL usegradients, struct RastPort *rp, struct NewImage *ni, ULONG basecolor, UWORD fact, UWORD _offy, UWORD x0, UWORD y0, UWORD x1, UWORD y1);
 void SetImageTint(struct NewImage *dst, UWORD ratio, ULONG argb);
 void TileMapToBitmap(struct NewImage *src, struct TileInfo *srcti, struct BitMap *map, UWORD dw, UWORD dh);
