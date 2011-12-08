@@ -72,7 +72,7 @@ int main(void)
             struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
 
             printf("FileSysStartupMsg %p", fssm);
-            if (fssm->fssm_Device && AROS_BSTR_ADDR(fssm->fssm_Device)[0])
+            if (fssm->fssm_Device != BNULL && AROS_BSTR_strlen(fssm->fssm_Device))
                 printf(" <%s unit %ld flags 0x%08X>", AROS_BSTR_ADDR(fssm->fssm_Device), (long)fssm->fssm_Unit, (unsigned int)fssm->fssm_Flags);
             printf("\n");
 
