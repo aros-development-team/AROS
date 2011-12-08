@@ -47,24 +47,24 @@ struct stat64;
 
 struct HostInterface
 {
-    int		   (*open)(char *path, int oflag, ...);
-    int		   (*close)(int filedes);
+    int            (*open)(char *path, int oflag, ...);
+    int            (*close)(int filedes);
     ssize_t        (*read)(int fildes, void *buf, size_t nbyte);
-    ssize_t	   (*write)(int fildes, const void *buf, size_t nbyte);
-    int	    	   (*ioctl)(int d, int request, ...);
+    ssize_t        (*write)(int fildes, const void *buf, size_t nbyte);
+    int            (*ioctl)(int d, int request, ...);
 #ifdef HOST_LONG_ALIGNED
-    off_t	   (*lseek)(int fildes, unsigned long offset_l, unsigned long offset_h, int whence);
+    off_t          (*lseek)(int fildes, unsigned long offset_l, unsigned long offset_h, int whence);
 #else
     off_t          (*lseek)(int fildes, off_t offset, int whence);
 #endif
-    int		  *(*__error)(void);
+    int           *(*__error)(void);
 #ifdef HOST_OS_linux
-    int		   (*__fxstat64)(int ver, int fd, struct stat64 *buf);
+    int            (*__fxstat64)(int ver, int fd, struct stat64 *buf);
     #define fstat64(fd, buf) __fxstat64(_STAT_VER, fd, buf)
 #else
-    int		   (*fstat64)(int fd, struct stat64 *buf);
+    int            (*fstat64)(int fd, struct stat64 *buf);
 #endif
-    int		   (*stat64)(const char *path, struct stat64 *buf);
+    int            (*stat64)(const char *path, struct stat64 *buf);
 };
 
 #ifdef HOST_LONG_ALIGNED
