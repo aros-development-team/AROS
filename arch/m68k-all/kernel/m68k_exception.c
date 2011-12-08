@@ -267,13 +267,7 @@ asm (
 extern void Exec_MagicResetCode(void);
 void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-    ULONG alert;
     VOID (*trapHandler)(ULONG, void *);
-
-    /* Conveniently, the ACPU_* traps are identical to
-     * id | AT_DeadEnd!
-     */
-    alert = AT_DeadEnd | id;
 
     if (SysBase == NULL ||
     	KernelBase == NULL) {

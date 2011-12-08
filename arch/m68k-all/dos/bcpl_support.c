@@ -102,7 +102,7 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
  */
 BOOL BCPL_AllocGlobVec(struct Process *me)
 {
-    APTR entry, globvec;
+    APTR globvec;
     int i;
     ULONG *seglist = BADDR(me->pr_SegList);
 
@@ -117,8 +117,6 @@ BOOL BCPL_AllocGlobVec(struct Process *me)
     for (i = 0; i < seglist[0]; i++) {
         BCPL_InstallSeg(seglist[i+1], globvec);
     }
-
-    entry = ((APTR *)globvec)[1];
 
     me->pr_GlobVec = globvec;
 
@@ -173,7 +171,6 @@ ULONG BCPL_RunHandler(void)
 {
     struct DosPacket *dp;
     struct Process *me = (struct Process *)FindTask(NULL);
-    APTR oldGlobVec;
     APTR oldReturnAddr;
     ULONG ret;
 
@@ -202,7 +199,6 @@ ULONG BCPL_RunHandler(void)
     me->pr_ReturnAddr = oldReturnAddr;
 
     BCPL_FreeGlobVec(me);
-    oldGlobVec = me->pr_GlobVec;
 
     return ret;
 }
