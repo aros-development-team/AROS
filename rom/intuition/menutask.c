@@ -561,7 +561,7 @@ static inline BOOL CustomDrawBackground(struct RastPort *rp, struct Window *win,
     msg.mdp_ItemHeight = itemheight;
     msg.mdp_Flags = flags;
 
-    msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
+    msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
     if (win == mhd->submenuwin) { msg.mdp_UserBuffer = mhd->SubDecorUserBuffer; msg.mdp_MenuDecorFlags |= MDP_MDF_SUBITEM; }
     else if (win == mhd->menuwin) { msg.mdp_UserBuffer = mhd->DecorUserBuffer; msg.mdp_MenuDecorFlags |= MDP_MDF_ITEM; }
     else { msg.mdp_UserBuffer = mhd->BarDecorUserBuffer; msg.mdp_MenuDecorFlags |= MDP_MDF_MENU; }
@@ -894,7 +894,7 @@ static void MakeMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
         msg.mdp_Height = win_tags[3].ti_Data;
         msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
         msg.mdp_ScreenUserBuffer = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
-        msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
+        msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
         msg.mdp_MenuDecorFlags |= MDP_MDF_MENU;
 
         msg.mdp_Screen = mhd->scr;
@@ -1181,7 +1181,7 @@ static void MakeMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *Intui
             msg.mdp_UserBuffer  = mhd->DecorUserBuffer;
             msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
             msg.mdp_Screen             = mhd->scr;
-            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
+            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
             msg.mdp_MenuDecorFlags |= MDP_MDF_ITEM;
 
             DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
@@ -1345,7 +1345,7 @@ static void MakeSubMenuWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
             msg.mdp_ScreenUserBuffer   = ((struct IntScreen *) mhd->scr)->DecorUserBuffer;
             msg.mdp_TrueColor = mhd->TrueColor;
             msg.mdp_Screen             = mhd->scr;
-            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
+            msg.mdp_MenuDecorFlags = (MENUS_UNDERMOUSE(IntuitionBase)) ? MDP_MDF_MENUS_UNDERMOUSE : 0;
             msg.mdp_MenuDecorFlags |= MDP_MDF_SUBITEM;
 
             DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
