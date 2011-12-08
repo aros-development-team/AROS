@@ -105,6 +105,7 @@ struct mdpDrawBackground
     STACKED LONG            mdp_ItemHeight;
     STACKED UWORD           mdp_Flags;
     STACKED IPTR            mdp_UserBuffer;
+    STACKED ULONG           mdp_MenuDecorFlags;
 };
 
 struct mdpInitMenu
@@ -119,6 +120,7 @@ struct mdpInitMenu
     STACKED LONG            mdp_Height;
     STACKED IPTR            mdp_UserBuffer;
     STACKED IPTR            mdp_ScreenUserBuffer;
+    STACKED ULONG           mdp_MenuDecorFlags;
 };
 
 struct mdpExitMenu
@@ -130,8 +132,13 @@ struct mdpExitMenu
 };
 
 
-#define   MDP_STATE_NORMAL      0
-#define   MDP_STATE_SELECTED    1
-#define   MDP_STATE_DISABLED    2
+#define MDP_STATE_NORMAL    0
+#define MDP_STATE_SELECTED  1
+#define MDP_STATE_DISABLED  2
+
+#define MDP_MDF_MENU                (1<<0)
+#define MDP_MDF_ITEM                (1<<1)
+#define MDP_MDF_SUBITEM             (1<<2)
+#define MDP_MDF_MENUS_UNDERMOUSE    (1<<7)
 
 #endif /* INTUITION_MENUDECORCLASS_H */
