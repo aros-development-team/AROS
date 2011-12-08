@@ -6,8 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 1
-
 #include <aros/debug.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>
@@ -51,19 +49,6 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-
-    D(bug("[AddIntServer] Vector %d, list 0x%p, SysBase 0x%p\n", intNumber, SysBase->IntVects[intNumber].iv_Data, SysBase));
-
-    if (SysBase->IntVects[intNumber].iv_Data == 0)
-    {
-        int i;
-
-        for (i = 0; i < 16; i++)
-        {
-            bug("[AddIntServer] Vector %d, code 0x%p, data 0x%p\n", i, SysBase->IntVects[i].iv_Code, SysBase->IntVects[i].iv_Data);
-        }
-        for(;;);
-    }
 
     Disable();
 
