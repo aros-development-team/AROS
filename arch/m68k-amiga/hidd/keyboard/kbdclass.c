@@ -186,20 +186,6 @@ VOID AmigaKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-VOID AmigaKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
-{
-    struct kbd_data * data;
-
-    EnterFunc(bug("kbd_handleevent()\n"));
-
-    data = OOP_INST_DATA(cl, o);
-    
-    ReturnVoid("Kbd::HandleEvent");
-}
-
-
-/****************************************************************************************/
-
 static int AmigaKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
     struct Library *OOPBase = LIBBASE->ksd.cs_OOPBase;
