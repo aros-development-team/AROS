@@ -921,25 +921,21 @@ static void KillMenuBarWin(struct MenuHandlerData *mhd, struct IntuitionBase *In
 {
     if (mhd->menubarwin)
     {
+        struct mdpExitMenu  msg;
+
         CloseWindow(mhd->menubarwin);
         mhd->menubarwin = NULL;
 
-        if (MENUS_UNDERMOUSE(IntuitionBase))
+        msg.MethodID = MDM_EXITMENU;
+        msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
+        msg.mdp_TrueColor = mhd->TrueColor;
+        DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);
+
+        if (mhd->BarDecorUserBuffer)
         {
-            struct mdpExitMenu  msg;
-
-            msg.MethodID = MDM_EXITMENU;
-            msg.mdp_UserBuffer = mhd->BarDecorUserBuffer;
-            msg.mdp_TrueColor = mhd->TrueColor;
-            DoMethodA(((struct IntScreen *)(mhd->scr))->MenuDecorObj, (Msg)&msg);    
-
-            if (mhd->BarDecorUserBuffer)
-            {
-                FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
-            }
-            mhd->BarDecorUserBuffer = 0;
+            FreeMem((void *)mhd->BarDecorUserBuffer, mhd->DecorUserBufferSize);
         }
-
+        mhd->BarDecorUserBuffer = 0;
     }
 
 }
