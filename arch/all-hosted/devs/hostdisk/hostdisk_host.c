@@ -45,3 +45,8 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
 {
     return IOERR_NOCMD;
 }
+
+int Host_ProbeGeometry(struct HostDiskBase *hdskBase, char *name, struct DriveGeometry *dg)
+{
+    return -1;
+}

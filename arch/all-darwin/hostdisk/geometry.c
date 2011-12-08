@@ -10,19 +10,16 @@
 #include "hostdisk_host.h"
 #include "hostdisk_device.h"
 
-ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg)
+ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
-    struct HostDiskBase *hdskBase = Unit->hdskBase;
     int ret, err;
-
-    D(bug("hostdisk: Host_DeviceGeometry(%s)\n", Unit->filename));
 
     HostLib_Lock();
  
-    ret = hdskBase->iface->ioctl(Unit->file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
+    ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKSIZE, &dg->dg_SectorSize);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(Unit->file, DKIOCGETBLOCKCOUNT, &dg->dg_TotalSectors);
+	ret = hdskBase->iface->ioctl(file, DKIOCGETBLOCKCOUNT, &dg->dg_TotalSectors);
 
     err = *hdskBase->errnoPtr;
 

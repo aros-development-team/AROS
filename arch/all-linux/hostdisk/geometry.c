@@ -17,9 +17,8 @@
 #include "hostdisk_host.h"
 #include "hostdisk_device.h"
 
-ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg)
+ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
-    struct HostDiskBase *hdskBase = Unit->hdskBase;
     int ret, err;
     struct hd_geometry geo;
     size_t blksize;
@@ -29,13 +28,13 @@ ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg)
 
     HostLib_Lock();
  
-    ret = hdskBase->iface->ioctl(Unit->file, HDIO_GETGEO, &geo);
+    ret = hdskBase->iface->ioctl(file, HDIO_GETGEO, &geo);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(Unit->file, BLKSSZGET, &blksize);
+	ret = hdskBase->iface->ioctl(file, BLKSSZGET, &blksize);
 
     if (ret != -1)
-	ret = hdskBase->iface->ioctl(Unit->file, BLKGETSIZE, &devsize);
+	ret = hdskBase->iface->ioctl(file, BLKGETSIZE, &devsize);
 
     err = *hdskBase->errnoPtr;
 

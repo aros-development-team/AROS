@@ -78,7 +78,7 @@ struct HostInterface
 #define LSeek(fildes, offset, offset_high, whence) hdskBase->iface->lseek(fildes, (UQUAD)offset | (UQUAD)offset_high << 32, whence)
 #endif
 
-struct unit;
+struct HostDiskBase;
 
 /* This routine is specific to a particular UNIX variant */
-ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg);
+ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase);

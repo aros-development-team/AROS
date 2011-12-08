@@ -9,7 +9,7 @@ endif
 
 %build_module mmake=workbench-devs-hostdisk \
   modname=hostdisk modtype=device version=$(AROS_TARGET_PLATFORM) \
-  files="hostdisk_device hostdisk_host" \
+  files="hostdisk_device hostdisk_host automount" \
   uselibs="arossupport amiga rom"
 
 %common

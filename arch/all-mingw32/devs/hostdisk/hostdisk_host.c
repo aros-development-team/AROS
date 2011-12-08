@@ -177,6 +177,13 @@ ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
     return error(err);
 }
 
+int Host_ProbeGeometry(struct HostDiskBase *hdskBase, char *name, struct DriveGeometry *dg)
+{
+    /* TODO: Implement this */
+    return -1;
+}
+
+
 static const char *KernelSymbols[] = {
     "CreateFileA",
     "CloseHandle",
