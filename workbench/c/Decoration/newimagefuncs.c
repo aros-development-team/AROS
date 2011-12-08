@@ -26,6 +26,70 @@
 #define GET_A(rgb) ((rgb) & 0xff)
 #endif
 
+/* Code taken from BM__Hidd_BitMap__BitMapScale */
+/* srcdata point directly to (0,0) point of subbuffer to be read from */
+ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
+{
+    ULONG * scalleddata = (ULONG *) AllocVec(sizeof(ULONG) * widthDest * heightDest, MEMF_ANY);
+    LONG srcline = -1;
+    UWORD * linepattern = (UWORD *) AllocVec(sizeof(UWORD) * widthDest, MEMF_ANY);
+    ULONG count = 0;
+    UWORD ys = 0;
+    ULONG xs = 0;
+    ULONG dyd = heightDest;
+    ULONG dxd = widthDest;
+    LONG accuys = dyd;
+    LONG accuxs = dxd;
+    ULONG dxs = widthSrc;
+    ULONG dys = heightSrc;
+    LONG accuyd = - (dys >> 1);
+    LONG accuxd = - (dxs >> 1);
+    ULONG x;
+    ULONG * lastscalledlineptr = scalleddata + ((heightDest - 1) * widthDest);
+
+    count = 0;
+    while (count < widthDest) {
+        accuxd += dxs;
+        while (accuxd > accuxs) {
+            xs++;
+            accuxs += dxd;
+        }
+
+        linepattern[count] = xs;
+
+        count++;
+    }
+
+    count = 0;
+    while (count < heightDest) {
+        accuyd += dys;
+        while (accuyd > accuys) {
+            ys++;
+            accuys += dyd;
+        }
+
+        if (srcline != ys) {
+            //HIDD_BM_GetImage(msg->src, (UBYTE *) srcbuf, bsa->bsa_SrcWidth * sizeof(ULONG), bsa->bsa_SrcX, bsa->bsa_SrcY + ys, bsa->bsa_SrcWidth, 1, vHidd_StdPixFmt_Native32);
+            ULONG * srcptr = srcdata + (ys * widthBuffer);
+            srcline = ys;
+
+            /* New: use last line as temp buffer */
+            for (x = 0; x < widthDest; x++)
+                lastscalledlineptr[x] = srcptr[linepattern[x]];
+
+        }
+
+        //HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
+        CopyMem(lastscalledlineptr, scalleddata + (count * widthDest), widthDest * sizeof(ULONG));
+
+        count++;
+    }
+
+    FreeVec(linepattern);
+
+    return scalleddata;
+}
+
 void DisposeImageContainer(struct NewImage *ni)
 {
     if (ni)
@@ -89,6 +153,27 @@ struct NewImage *NewImageContainer(UWORD w, UWORD h)
         ni->subimagescols = 1;
         ni->subimagesrows = 1;
         ni->data = AllocVec(w * h * sizeof (ULONG), MEMF_ANY | MEMF_CLEAR);
+        if (ni->data == NULL)
+        {
+            FreeVec(ni);
+            ni = NULL;
+        }
+    }
+    return ni;
+}
+
+struct NewImage *ScaleNewImage(struct NewImage * oni, UWORD neww, UWORD newh)
+{
+    struct  NewImage *ni;
+
+    ni = AllocVec(sizeof(struct NewImage), MEMF_ANY | MEMF_CLEAR);
+    if (ni)
+    {
+        ni->w = neww;
+        ni->h = newh;
+        ni->subimagescols = 1;
+        ni->subimagesrows = 1;
+        ni->data = ScaleBuffer(oni->data, oni->w, oni->w, oni->h, ni->w, ni->h);
         if (ni->data == NULL)
         {
             FreeVec(ni);

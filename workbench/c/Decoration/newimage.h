@@ -45,6 +45,7 @@ struct  NewLUT8Image
 };
 
 struct NewImage *NewImageContainer(UWORD w, UWORD h);
+struct NewImage *ScaleNewImage(struct NewImage * ni, UWORD neww, UWORD newh);
 void DisposeImageContainer(struct NewImage *ni);
 
 struct NewImage *GetImageFromFile(STRPTR path, STRPTR name,
@@ -54,5 +55,8 @@ struct NewImage * CreateNewImageContainerMatchingScreen(struct NewImage *in, BOO
 struct NewLUT8Image *NewLUT8ImageContainer(UWORD w, UWORD h);
 void DisposeLUT8ImageContainer(struct NewLUT8Image *ni);
 struct Region *RegionFromLUT8Image(int w, int h, struct NewLUT8Image *s);
+
+ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */,
+        LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest);
 
 #endif
