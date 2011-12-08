@@ -253,7 +253,6 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 	struct TagItem mytags[2];
 	struct pRoot_New mymsg;
 	ULONG allocsize = 3000, allocsizebuf = 1000;
-	ULONG allocedsize = 0, allocedsizebuf = 0;
 	WORD x, y, cnt, i, j;
 
 	UBYTE *buf, *bufptr;
@@ -535,10 +534,8 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 
 	}
 
-    allocedsize = (ULONG)tagptr - (ULONG)tags;
-    allocedsizebuf = bufptr - buf;
-    D(bug("alloc=%d alloced=%d\n", allocsize, allocedsize));
-    D(bug("allocbuf=%d allocedbuf=%d\n", allocsizebuf, allocedsizebuf));
+    D(bug("alloc=%d alloced=%d\n", allocsize, (ULONG)tagptr - (ULONG)tags));
+    D(bug("allocbuf=%d allocedbuf=%d\n", allocsizebuf, bufptr - buf));
 
     EnterFunc(bug("AGFX::New()\n"));
 
@@ -641,11 +638,7 @@ OOP_Object *AmigaVideoCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
 /********** GfxHidd::Dispose()  ******************************/
 VOID AmigaVideoCl__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    struct amigagfx_data *data;
-    
     EnterFunc(bug("AGFX::Dispose(o=%p)\n", o));
-    
-    data = OOP_INST_DATA(cl, o);
     
     D(bug("AGFX::Dispose: calling super\n"));    
     OOP_DoSuperMethod(cl, o, msg);
