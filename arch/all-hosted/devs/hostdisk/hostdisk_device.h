@@ -18,6 +18,7 @@ struct HostDiskBase
     struct Device               device;
     struct SignalSemaphore      sigsem;
     struct List                 units;
+    BPTR                        segList;
     STRPTR                      DiskDevice;
     ULONG                       unitBase;
     APTR                        HostLibBase;
@@ -54,5 +55,6 @@ LONG Host_Write(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr);
 ULONG Host_Seek(struct unit *Unit, ULONG pos);
 ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi);
 ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg);
+int Host_ProbeGeometry(struct HostDiskBase *hdskBase, char *name, struct DriveGeometry *dg);
 
 #endif

@@ -90,7 +90,6 @@ static ULONG error(int unixerr)
 ULONG Host_Open(struct unit *Unit)
 {
     struct HostDiskBase *hdskBase = Unit->hdskBase;
-    struct stat64 st;
     int err;
 
     D(bug("hostdisk: Host_Open(%s)\n", Unit->filename));
@@ -108,7 +107,7 @@ ULONG Host_Open(struct unit *Unit)
         D(bug("hostdisk: EBUSY, retrying with read-only access\n", Unit->filename, Unit->file, err));
         Unit->flags = UNIT_READONLY;
 
-        Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755, &err);
+        Unit->file = hdskBase->iface->open(Unit->filename, O_RDONLY, 0755);
         AROS_HOST_BARRIER
         err = *hdskBase->errnoPtr;
     }
@@ -122,17 +121,6 @@ ULONG Host_Open(struct unit *Unit)
         return error(err);
     }
 
-    HostLib_Lock();
-    err = hdskBase->iface->fstat64(Unit->file, &st);
-    HostLib_Unlock();
-
-    if (err != -1)
-    {
-        if (S_ISBLK(st.st_mode))
-            Unit->flags |= UNIT_DEVICE;
-    }
-
-    D(bug("hostdisk: Unit flags 0x%02X\n", Unit->flags));
     return 0;
 }
 
@@ -219,41 +207,77 @@ ULONG Host_Seek64(struct unit *Unit, ULONG pos, ULONG pos_hi)
     return (res == -1) ? TDERR_SeekError : 0;
 }
 
-ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
+static ULONG InternalGetGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
-    struct HostDiskBase *hdskBase = Unit->hdskBase;
     int res, err;
     struct stat64 st;
 
-    if (Unit->flags & UNIT_DEVICE)
-    {
-        /* This routine returns UNIX error code, for simplicity */
-        err = Host_DeviceGeometry(Unit, dg);
-
-        /* If this routine is not implemented, use fstat() (worst case) */
-        if (err != ENOSYS)
-            return error(err);
-    }
-
     HostLib_Lock();
 
-    res = hdskBase->iface->fstat64(Unit->file, &st);
+    res = hdskBase->iface->fstat64(file, &st);
     err = *hdskBase->errnoPtr;
 
     HostLib_Unlock();
 
-    D(bug("hostdisk: Image file length: %ld\n", st.st_size));
     if (res != -1)
     {
+        if (S_ISBLK(st.st_mode))
+        {
+            /*
+             * For real block devices we can use IOCTL-based function. It will provide better info.
+             * This routine returns UNIX error code, for simplicity.
+             */
+            err = Host_DeviceGeometry(file, dg, hdskBase);
+
+           /* If this routine is not implemented, use fstat() (worst case) */
+           if (err != ENOSYS)
+               return error(err);
+        }
+
+        D(bug("hostdisk: Image file length: %ld\n", st.st_size));
+
         dg->dg_TotalSectors = st.st_size / dg->dg_SectorSize;
         dg->dg_Cylinders    = dg->dg_TotalSectors; /* LBA, CylSectors == 1 */
 
         return 0;
     }
 
-    D(bug("hostdisk: Host_GetGeometry(): UNIX error %u\n", err));
+    D(bug("hostdisk: InternalGetGeometry(): UNIX error %u\n", err));
+    return err;
+}
+
+ULONG Host_GetGeometry(struct unit *Unit, struct DriveGeometry *dg)
+{
+    int err = InternalGetGeometry(Unit->file, dg, Unit->hdskBase);
+    
     return error(err);
 }
+
+int Host_ProbeGeometry(struct HostDiskBase *hdskBase, char *name, struct DriveGeometry *dg)
+{
+    int file, res;
+
+    HostLib_Lock();
+
+    file = hdskBase->iface->open(name, O_RDONLY, 0755);
+    AROS_HOST_BARRIER
+
+    HostLib_Unlock();
+
+    if (file == -1)
+        return -1;
+
+    res = InternalGetGeometry(file, dg, hdskBase);
+
+    HostLib_Lock();
+    
+    hdskBase->iface->close(file);
+    AROS_HOST_BARRIER
+
+    HostLib_Unlock();
+    
+    return res;
+}    
 
 extern const char Hostdisk_LibName[];
 

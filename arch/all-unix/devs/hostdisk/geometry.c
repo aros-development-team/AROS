@@ -6,7 +6,7 @@
 
 #include "hostdisk_host.h"
 
-ULONG Host_DeviceGeometry(struct unit *Unit, struct DriveGeometry *dg)
+ULONG Host_DeviceGeometry(int file, struct DriveGeometry *dg, struct HostDiskBase *hdskBase)
 {
     /* Not implemented for generic UNIX */
     return ENOSYS;
