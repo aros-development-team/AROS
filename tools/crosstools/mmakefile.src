@@ -25,7 +25,7 @@ ifeq ($(AROS_TARGET_CPU), arm)
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 else
 ifeq ($(AROS_TARGET_CPU), m68k)
-  GCC_VERSION     = 4.5.3
+  GCC_VERSION     = 4.6.2
   GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) -disable-bootstrap 
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
