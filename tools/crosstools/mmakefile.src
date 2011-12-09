@@ -2,7 +2,7 @@ include $(TOP)/config/make.cfg
 
 BINUTILS_VERSION = 2.21.1
 
-GCC_LANGUAGES = c,c++
+GCC_LANGUAGES = c,c++,objc
 
 GCC_EXTRA_OPTS = \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
