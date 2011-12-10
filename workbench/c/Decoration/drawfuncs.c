@@ -81,7 +81,7 @@ static void BltScaleNewImageSubImageRastPort(struct NewImage * ni, ULONG subimag
     else /* ((widthSrc != widthDest) || (heightSrc != heightDest)) */
     {
         /* Detect if image can be drawn using blitting instead of alpha draw */
-        if (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)]))
+        if ((!ni->subimageinbm) || (!(ni->subimageinbm[subimageCol + (subimageRow * ni->subimagescols)])))
         {
             WritePixelArrayAlpha(ni->data, (subimagewidth * subimageCol) + xSrc ,
                 (subimageheight * subimageRow) + ySrc, ni->w * 4, destRP,
@@ -701,7 +701,7 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
     {
         ddw = sw;
         if (w < ddw) ddw = w;
-        
+
         BltScaleNewImageSubImageRastPort(ni, 0, 0, sx, sy, rp, x, yp, ddw, -1, -1, dh);
 
         w -= ddw;
