@@ -279,14 +279,6 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
     hastitle = window->Title != NULL ? TRUE : FALSE;
     hastitlebar = (window->BorderTop > 0) ? TRUE : FALSE;
 
-    if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
-    {
-        dy = 0;
-    }
-    else
-    {
-        dy = data->dc->BarHeight;
-    }
     getleftgadgetsdimensions(data, window, &xl0, &xl1);
     getrightgadgetsdimensions(data, window, &xr0, &xr1);
 
@@ -323,23 +315,33 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
     {
         UWORD x = 0;
         UWORD barh =  window->BorderTop;
+        struct NewImage * img_winbar_normal = wd->img_winbar_normal;
+
+        if (data->dc->BarHeight != barh)
+            img_winbar_normal = ScaleNewImage(wd->img_winbar_normal, wd->img_winbar_normal->w, 2 * barh);
+
+        if (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX))
+            dy = 0;
+        else
+            dy = barh; /* Offset into source image */
+
         if (xl0 != xl1)
         {
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPreGadget_o, dy, data->dc->BarPreGadget_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
-            if ((xl1-xl0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarLGadgetFill_o, dy, data->dc->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape,img_winbar_normal, data->dc->BarPreGadget_o, dy, data->dc->BarPreGadget_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
+            if ((xl1-xl0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarLGadgetFill_o, dy, data->dc->BarLGadgetFill_s, barh, x, 0, xl1-xl0, barh);
         }
         else
         {
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPre_o, dy, data->dc->BarPre_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarPre_o, dy, data->dc->BarPre_s, barh, x, 0, data->dc->BarPreGadget_s, barh);
         }
-        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarJoinGB_o, dy, data->dc->BarJoinGB_s, barh, x, 0, data->dc->BarJoinGB_s, barh);
         if (hastitle && (textlen > 0))
         {
             switch(data->TextAlign)
             {
                 case WD_DWTA_CENTER:
                     //BarLFill
-                    x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarLFill_o, dy, data->dc->BarLFill_s, barh, x, 0, 60, barh);
+                    x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarLFill_o, dy, data->dc->BarLFill_s, barh, x, 0, 60, barh);
                     break;
                 case WD_DWTA_RIGHT:
                     //BarLFill
@@ -348,21 +350,24 @@ static void DrawShapePartialTitleBar(struct WindowData *wd, struct NewLUT8Image 
                 case WD_DWTA_LEFT:
                     break;
             }
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinBT_o, dy, data->dc->BarJoinBT_s, barh, x, 0, data->dc->BarJoinBT_s, barh);
-            if (textpixellen > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarTitleFill_o, dy, data->dc->BarTitleFill_s, barh, x, 0, textpixellen, barh);
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinTB_o, dy, data->dc->BarJoinTB_s, barh, x, 0, data->dc->BarJoinTB_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarJoinBT_o, dy, data->dc->BarJoinBT_s, barh, x, 0, data->dc->BarJoinBT_s, barh);
+            if (textpixellen > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarTitleFill_o, dy, data->dc->BarTitleFill_s, barh, x, 0, textpixellen, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarJoinTB_o, dy, data->dc->BarJoinTB_s, barh, x, 0, data->dc->BarJoinTB_s, barh);
         }
-        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarRFill_o, dy, data->dc->BarRFill_s, barh, x, 0, xr0 - x - data->dc->BarJoinBG_s, barh);
-        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarJoinBG_o, dy, data->dc->BarJoinBG_s, barh, x, 0, data->dc->BarJoinBG_s, barh);
-        if ((xr1-xr0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarRGadgetFill_o, dy, data->dc->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarRFill_o, dy, data->dc->BarRFill_s, barh, x, 0, xr0 - x - data->dc->BarJoinBG_s, barh);
+        x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarJoinBG_o, dy, data->dc->BarJoinBG_s, barh, x, 0, data->dc->BarJoinBG_s, barh);
+        if ((xr1-xr0) > 0) x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarRGadgetFill_o, dy, data->dc->BarRGadgetFill_s, barh, x, 0, xr1-xr0, barh);
         if (xr0 != xr1)
         {
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPostGadget_o, dy, data->dc->BarPostGadget_s, barh, x, 0, data->dc->BarPostGadget_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarPostGadget_o, dy, data->dc->BarPostGadget_s, barh, x, 0, data->dc->BarPostGadget_s, barh);
         }
         else
         {
-            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, wd->img_winbar_normal, data->dc->BarPost_o, dy, data->dc->BarPost_s, barh, x, 0, data->dc->BarPost_s, barh);
+            x = WriteTiledImageShape(data->dc->FillTitleBar, window, shape, img_winbar_normal, data->dc->BarPost_o, dy, data->dc->BarPost_s, barh, x, 0, data->dc->BarPost_s, barh);
         }
+
+        if (data->dc->BarHeight != barh)
+            DisposeImageContainer(img_winbar_normal);
     }
 }
 
@@ -1802,7 +1807,6 @@ static IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *
             return back;
 
         }
-
     }
 
     if (!data->dc->BarRounded) return (IPTR) NULL;

@@ -173,6 +173,7 @@ struct NewImage *ScaleNewImage(struct NewImage * oni, UWORD neww, UWORD newh)
         ni->h = newh;
         ni->subimagescols = 1;
         ni->subimagesrows = 1;
+        ni->ok = TRUE;
         ni->data = ScaleBuffer(oni->data, oni->w, oni->w, oni->h, ni->w, ni->h);
         if (ni->data == NULL)
         {
