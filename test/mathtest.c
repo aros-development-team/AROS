@@ -1,8 +1,12 @@
+#include <string.h>
+
+#include <aros/asmcall.h>
+
+#include <proto/alib.h>
+
 #include <proto/exec.h>
 #include <proto/aros.h>
 #include <proto/dos.h>
-#include <stdio.h>
-
 
 double X_Mul(double x, double y)
 {
@@ -20,8 +24,6 @@ double X_Mul(double x, double y)
 #include <proto/mathieeedoubbas.h>
 #include <proto/mathieeedoubtrans.h>
 
-#include <stdio.h>
-
 #include <exec/types.h>
 
 struct Library * MathBase;
@@ -31,10 +33,34 @@ struct Library * MathIeeeSingTransBase;
 struct Library * MathIeeeDoubBasBase;
 struct Library * MathIeeeDoubTransBase;
 
-
-
-int main(int argc, char ** argv)
+#ifdef __mc68000
+/* For compatability with AOS, our test reference,
+ * use this SPrintf()
+ */
+static AROS_UFH2(VOID, _SPutC,
+        AROS_UFHA(BYTE, c, D0),
+        AROS_UFHA(BYTE **, ptr, A3))
 {
+    AROS_USERFUNC_INIT
+
+    if (c != 0)
+        Write(Output(),&c,1);
+
+    AROS_USERFUNC_EXIT
+}
+
+#undef Printf
+VOID Printf( const char *format, ...)
+{
+    RawDoFmt( format, (APTR)&(((ULONG *)&format)[1]), _SPutC, NULL);
+}
+#else
+#define Printf(target,format,args...) __sprintf(target,format ,##args )
+#endif
+
+int main(int argc, char **argv)
+{
+    LONG tested = 0, passed = 0;
     float FFPOne, FFPTwo, FFPOnehalf, FFPMinusOne, FFPNull;
     float SPOne, SPTwo, SPOnehalf;
     float float_res;
@@ -77,17 +103,17 @@ int main(int argc, char ** argv)
     ptr = (LONG *)&SPTwo; 	*ptr = DEF_SPTwo;
 
 /* if you deactivate #define float LONG something very funny happens here:    
-printf("two: %x <-> %x \n",*ptr,SPTwo);
-printf("two: %x <-> %x \n",SPTwo,*ptr);
+Printf("two: %x <-> %x \n",*ptr,SPTwo);
+Printf("two: %x <-> %x \n",SPTwo,*ptr);
 */
 
 #define CHECK(func, args, cres)                                                          \
     float_res = func args;                                                               \
     if (*float_resptr != cres)                                                           \
-	printf ("FAIL: " #func " " #args " in line %d (got=0x%08lx expected=0x%08lx)\n", \
+	Printf ("FAIL: " #func " " #args " in line %ld (got=0x%08lx expected=0x%08lx)\n", \
                  __LINE__, (unsigned long)*float_resptr, (unsigned long)cres);                                         \
     else                                                                                 \
-	printf ("OK  : " #func " " #args "\n");
+	Printf ("OK  : " #func " " #args "\n");
 
 /*
   When using doubles or QUADs it is important to pay attention to the Endianess of the processor,
@@ -96,106 +122,111 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
 #define CHECK_DOUBLE1A(func, arg1, cres)                                                           \
     double_res = func (arg1);                                                                      \
+    tested++; \
     if (*double_resptr != cres)                                                                    \
     {                                                                                              \
       if (0 != AROS_BIG_ENDIAN)                                                                    \
       {                                                                                            \
-	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("FAIL: " #func " " #arg1 " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
-                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),  \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                   \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
-	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
-                 __LINE__,                                                                         \
-                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
-                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+	Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                                         \
+                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),            \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                           \
       }                                                                                            \
     }                                                                                              \
     else                                                                                           \
-      printf ("OK  : " #func " " #arg1 "\n");                                                      
+      Printf ("OK  : " #func " " #arg1 "\n");                                                      
 
 #define CHECK_DOUBLE1AF(func, cres)                                                                \
+    tested++;                                                                                      \
     if (*double_resptr != cres)                                                                    \
     {                                                                                              \
       if (0 != AROS_BIG_ENDIAN)                                                                    \
       {                                                                                            \
-	printf ("FAIL: " #func " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("FAIL: " #func " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
                  (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
                  (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
-	printf ("(little endian) FAIL: " #func " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("(little endian) FAIL: " #func " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
                  (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
                  (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
       }                                                                                            \
     }                                                                                              \
-    else                                                                                           \
-      printf ("OK  : " #func "\n");                                                      
-
+    else  {                                                                                        \
+      passed++;                                                                                    \
+      Printf ("OK  : " #func "\n");                                                      \
+    }
     
 #define CHECK_DOUBLE1B(func, arg1, cres)                                                           \
     QArg1 = arg1;                                                                                  \
     double_res = func (*Darg1);                                                                    \
+    tested++;                                                                                      \
     if (*double_resptr != cres)                                                                    \
     {                                                                                              \
       if (0 != AROS_BIG_ENDIAN)                                                                    \
       {                                                                                            \
-	printf ("FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("FAIL: " #func " " #arg1 " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
-                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),   \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                           \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
-	printf ("(little endian) FAIL: " #func " " #arg1 " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("(little endian) FAIL: " #func " " #arg1 " in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
-                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
-                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),  \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                           \
       }                                                                                            \
     }                                                                                              \
-    else                                                                                           \
-      printf ("OK  : " #func " " #arg1 "\n");                                                      
+    else {                                                                                         \
+      passed++;                                                                                    \
+      Printf ("OK  : " #func " " #arg1 "\n");                                                      \
+    }
 
 #define CHECK_DOUBLE2A(func, arg1, arg2, cres)                                                     \
     double_res = func (arg1, arg2);                                                                \
     double_res2 = cres;                                                                            \
+    tested++;                                                                                      \
     if (double_res != double_res2)                                                                 \
     {                                                                                              \
       if (0 != AROS_BIG_ENDIAN)                                                                    \
       {                                                                                            \
-	printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
                  (unsigned long)(((QUAD)*double_resptr )>>32),(unsigned long)*(((LONG *)double_resptr )+1),                \
                  (unsigned long)(((QUAD)*double_resptr2)>>32),(unsigned long)*(((LONG *)double_resptr2)+1) );              \
       }                                                                                            \
       else                                                                                         \
       {                                                                                            \
-	printf ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+	Printf ("(little endian) FAIL: " #func " (" #arg1 "," #arg2 ") in line %ld (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
                  __LINE__,                                                                         \
                  (unsigned long)*(((LONG *)double_resptr )+1),(unsigned long)*(((LONG *)double_resptr)),                         \
                  (unsigned long)*(((LONG *)double_resptr2)+1),(unsigned long)*(((LONG *)double_resptr2)) );                      \
       }                                                                                            \
     }                                                                                              \
-    else                                                                                           \
-      printf ("OK  : " #func " ( " #arg1 "," #arg2 " ) \n");                                                      
-
-
-
-
+    else {                                                                                         \
+      passed++;                                                                                    \
+      Printf ("OK  : " #func " ( " #arg1 "," #arg2 " ) \n");                                       \
+    }
 
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
-	printf ("Couldn't open mathffp.library\n");
-	return (0);
+	Printf ("Couldn't open mathffp.library\n");
+	return RETURN_FAIL;
     }
 	
-    printf("Very basic mathffp functionality test...\n");
+    Printf("Very basic mathffp functionality test...\n");
 
     /* this should set the zero-bit*/
     wanted = DEF_FFPNull;	CHECK(SPAbs,(0),wanted);
@@ -226,11 +257,11 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
     {
-	fprintf (stderr, "Couldn't open mathtrans.library\n");
-	return (0);
+	Printf ("Couldn't open mathtrans.library\n");
+	return RETURN_FAIL;
     }
 
-    printf("Very basic mathtrans functionality test...\n");
+    Printf("Very basic mathtrans functionality test...\n");
 
     CHECK (SPLog,   (FFPTwo),     0xb1721840UL);
     CHECK (SPLog10, (FFPTwo),     0x9a209b3fUL);
@@ -248,18 +279,18 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeSingBasBase = OpenLibrary("mathieeesingbas.library", 0L)))
     {
-	printf ("Couldn't open mathieeesingbas.library\n");
-	return (0);
+	Printf ("Couldn't open mathieeesingbas.library\n");
+	return RETURN_FAIL;
     }
 
 
     if (!(MathIeeeSingTransBase = OpenLibrary("mathieeesingtrans.library", 0L)))
     {
-	printf ("Couldn't open mathieeesingtrans.library\n");
-	return (0);
+	Printf ("Couldn't open mathieeesingtrans.library\n");
+	return RETURN_FAIL;
     }
 
-    printf("Very basic mathieeesingtrans functionality test...\n");
+    Printf("Very basic mathieeesingtrans functionality test...\n");
 
 
     CHECK (IEEESPLog,   (SPTwo),      0x3f317218UL);
@@ -278,8 +309,8 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 0L)))
     {
-	printf ("Couldn't open mathieeedoubbas.library\n");
-	return (0);
+	Printf ("Couldn't open mathieeedoubbas.library\n");
+	return RETURN_FAIL;
     }
     
 
@@ -302,8 +333,8 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
 
     if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
     {
-	printf ("Couldn't open mathieeedoubtrans.library\n");
-	return (0);
+	Printf ("Couldn't open mathieeedoubtrans.library\n");
+	return RETURN_FAIL;
     }
 
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(4)), DEF_DPTwo);
@@ -317,7 +348,7 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK_DOUBLE1AF(IEEEDPSincos, 0x3fe14a280fb5068bULL);
 
     wanted = IEEEDPTieee(IEEEDPFlt(2));
-    printf("IEEEDPTieee(2) = %08x\n", wanted);
+    Printf("IEEEDPTieee(2) = %08lx\n", (LONG)wanted);
 
     double_res = IEEEDPFieee(SPFlt(2));
     CHECK_DOUBLE1AF(IEEEDPFieee, DEF_DPTwo);
@@ -325,5 +356,6 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     CloseLibrary(MathIeeeDoubTransBase);
     CloseLibrary(MathIeeeDoubBasBase);
 
-    return (0);
+    Printf("Passed %ld of %ld tests\n", passed, tested);
+    return (tested == passed) ? RETURN_OK : RETURN_FAIL;
 }
