@@ -45,5 +45,8 @@
 #define Negative_Bit 0x00000008  
 #define Overflow_Bit 0x00000002  
 
-#endif /* __MATHFFP_INTERN_H__  */
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
 
+#endif /* __MATHFFP_INTERN_H__  */

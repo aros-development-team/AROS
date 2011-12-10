@@ -113,7 +113,8 @@ LONG intern_SPisodd(ULONG fnum);
 #define qS3      0xb03361c0 /*0 -6.88283971605453293030e-01 */ 
 #define qS4      0x9dc62e3d /*d  7.70381505559019352791e-02 */
 
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
+
 #endif /* MATHTRANS_INTERN_H  */
-
-
-

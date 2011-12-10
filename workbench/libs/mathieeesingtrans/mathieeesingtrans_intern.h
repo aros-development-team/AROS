@@ -101,6 +101,8 @@ LONG intern_IEEESPisodd(LONG fnum);
 #define qS3      0xbf303361 /* -6.88283971605453293030e-01 */
 #define qS4      0x3d9dc62e /*  7.70381505559019352791e-02 */
 
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
 
 #endif /* __MATHIEEESINGTRANS_INTERN_H__  */
-
