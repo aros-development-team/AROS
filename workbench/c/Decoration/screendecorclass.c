@@ -141,7 +141,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     } else {
         if (sd->img_stitlebar->ok)
 	        WriteVerticalScalledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-	        sd->img_stitlebar->w, 0, 0, scr->Width, scr->BarHeight + 1);
+	        sd->img_stitlebar->w, 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
     }
     if (sd->img_sbarlogo->ok)
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
