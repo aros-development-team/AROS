@@ -1166,7 +1166,6 @@ inPreEvaluateBU_intfac(u);
 void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper_val, int n_lower, REAL v_lower, REAL* lower_val)
 {
   int i,j,k,l;
-  REAL leftMostV[2];
  typedef REAL REAL3[3];
 
   REAL3* upperXYZ = (REAL3*) malloc(sizeof(REAL3)*n_upper);
@@ -1199,8 +1198,6 @@ void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper
       i=1;
       j=0;
 
-      leftMostV[0] = upper_val[0];
-      leftMostV[1] = v_upper;
       leftMostXYZ = upperXYZ[0];
       leftMostNormal = upperNormal[0];
     }
@@ -1208,9 +1205,6 @@ void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper
     {
       i=0;
       j=1;
-
-      leftMostV[0] = lower_val[0];
-      leftMostV[1] = v_lower;
 
       leftMostXYZ = lowerXYZ[0];
       leftMostNormal = lowerNormal[0];
@@ -1298,8 +1292,6 @@ void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper
                */
               i = k+1;
 
-	      leftMostV[0] = upper_val[k];
-	      leftMostV[1] = v_upper;
 	      leftMostNormal = upperNormal[k];
 	      leftMostXYZ = upperXYZ[k];
             }
@@ -1331,8 +1323,6 @@ void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper
               /*update j and leftMostV for next loop
                */
               j=k;
-	      leftMostV[0] = lower_val[j-1];
-	      leftMostV[1] = v_lower;
 
 	      leftMostNormal = lowerNormal[j-1];
 	      leftMostXYZ = lowerXYZ[j-1];
@@ -1355,7 +1345,6 @@ void OpenGLSurfaceEvaluator::inEvalUStrip(int n_upper, REAL v_upper, REAL* upper
 void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_val, int n_right, REAL u_right, REAL* right_val)
 {
   int i,j,k,l;
-  REAL botMostV[2];
   typedef REAL REAL3[3];
 
   REAL3* leftXYZ = (REAL3*) malloc(sizeof(REAL3)*n_left);
@@ -1377,20 +1366,16 @@ void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_va
 
   /*
    *the algorithm works by scanning from bot to top.
-   *botMostV: the bot most of the remaining verteces (on both left and right).
-   *           it could an element of leftVerts or rightVerts.
    *i: leftVerts[i] is the first vertex to the top of botMostV on left line   
    *j: rightVerts[j] is the first vertex to the top of botMostV on rightline   */
 
-  /*initialize i,j,and botMostV
+  /*initialize i,j
    */
   if(left_val[0] <= right_val[0])
     {
       i=1;
       j=0;
 
-      botMostV[0] = u_left;
-      botMostV[1] = left_val[0];
       botMostXYZ = leftXYZ[0];
       botMostNormal = leftNormal[0];
     }
@@ -1399,16 +1384,13 @@ void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_va
       i=0;
       j=1;
 
-      botMostV[0] = u_right;
-      botMostV[1] = right_val[0];
-
       botMostXYZ = rightXYZ[0];
       botMostNormal = rightNormal[0];
     }
   
   /*the main loop.
    *the invariance is that: 
-   *at the beginning of each loop, the meaning of i,j,and botMostV are 
+   *at the beginning of each loop, the meaning of i,j are 
    *maintained
    */
   while(1)
@@ -1449,7 +1431,7 @@ void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_va
             }
           break; /*exit the main loop*/
         }
-      else /* case3: neither is empty, plus the botMostV, there is at least one triangle to output*/
+      else /* case3: neither is empty, there is at least one triangle to output*/
         {
           if(left_val[i] <= right_val[j])
             {
@@ -1484,12 +1466,10 @@ void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_va
 
               endtfan();
 
-              /*update i and botMostV for next loop
+              /*update i for next loop
                */
               i = k+1;
 
-	      botMostV[0] = u_left;
-	      botMostV[1] = left_val[k];
 	      botMostNormal = leftNormal[k];
 	      botMostXYZ = leftXYZ[k];
             }
@@ -1518,11 +1498,9 @@ void OpenGLSurfaceEvaluator::inEvalVStrip(int n_left, REAL u_left, REAL* left_va
                 }
               endtfan();
 
-              /*update j and botMostV for next loop
+              /*update j for next loop
                */
               j=k;
-	      botMostV[0] = u_right;
-	      botMostV[1] = right_val[j-1];
 
 	      botMostNormal = rightNormal[j-1];
 	      botMostXYZ = rightXYZ[j-1];
