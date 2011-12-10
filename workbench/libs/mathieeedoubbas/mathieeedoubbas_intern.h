@@ -79,6 +79,9 @@ struct MathIeeeDoubBasBase
 #define one_Lo 0x00000000
 #define one_64 0x3ff0000000000000ULL
 
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
 
 #endif /* __MATHIEEEDOUBBAS_INTERN_H__  */
 

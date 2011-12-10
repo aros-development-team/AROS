@@ -64,4 +64,8 @@
 
 #define D(x) ;
 
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
+
 #endif /* __MATHFFP_INTERN_H__  */

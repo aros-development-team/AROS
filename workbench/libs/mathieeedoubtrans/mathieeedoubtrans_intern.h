@@ -276,35 +276,8 @@ LONG intern_IEEEDPisodd(QUAD fnum);
 #define sinf8_64 0xbd6ae7f3e733b81fULL
 #define sinf8 QuadData(sinf8_Hi, sinf8_Lo, sinf8_64)
 
+#ifdef __mc68000
+#include <aros/m68k/libcall_cc.h>
+#endif
 
 #endif /* __MATHIEEEDOUBTRANS_INTERN_H__  */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
