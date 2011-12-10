@@ -714,7 +714,7 @@ LONG WriteTiledImageTitle(BOOL fill, struct Window *win,
  * dh - destination height to scale to, -1 to use subimage height
  */
 LONG WriteVerticalScalledTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage,
-        LONG sx, LONG sw, LONG xp, LONG yp, LONG dw, LONG dh)
+        LONG sx, LONG sw, LONG xp, LONG yp, LONG sh, LONG dw, LONG dh)
 {
     LONG w = dw;
     LONG x = xp;
@@ -729,7 +729,7 @@ LONG WriteVerticalScalledTiledImageHorizontal(struct RastPort *rp, struct NewIma
         ddw = sw;
         if (w < ddw) ddw = w;
 
-        BltScaleNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, -1, -1, dh);
+        BltScaleNewImageSubImageRastPort(ni, 0, subimage, sx, 0, rp, x, yp, ddw, sh, -1, dh);
 
         w -= ddw;
         x += ddw;
@@ -740,7 +740,7 @@ LONG WriteVerticalScalledTiledImageHorizontal(struct RastPort *rp, struct NewIma
 
 LONG WriteTiledImageHorizontal(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sx, LONG sw, LONG xp, LONG yp, LONG dw)
 {
-    return WriteVerticalScalledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, dw, -1);
+    return WriteVerticalScalledTiledImageHorizontal(rp, ni, subimage, sx, sw, xp, yp, -1, dw, -1);
 }
 
 LONG WriteTiledImageVertical(struct RastPort *rp, struct NewImage *ni, ULONG subimage, LONG sy, LONG sh, LONG xp, LONG yp, LONG dh)
