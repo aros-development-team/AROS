@@ -300,6 +300,7 @@ SHARED	:= \
 	setgrent \
 	setlinebuf \
         setpwent \
+        setrlimit \
 	setuid \
 	setvbuf \
 	sharecontextwithchild \
