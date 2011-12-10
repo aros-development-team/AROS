@@ -115,6 +115,28 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     }                                                                                              \
     else                                                                                           \
       printf ("OK  : " #func " " #arg1 "\n");                                                      
+
+#define CHECK_DOUBLE1AF(func, cres)                                                                \
+    if (*double_resptr != cres)                                                                    \
+    {                                                                                              \
+      if (0 != AROS_BIG_ENDIAN)                                                                    \
+      {                                                                                            \
+	printf ("FAIL: " #func " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 (unsigned long)(((QUAD)*double_resptr)>>32),(unsigned long)*(((LONG *)double_resptr)+1),                  \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+      }                                                                                            \
+      else                                                                                         \
+      {                                                                                            \
+	printf ("(little endian) FAIL: " #func " in line %d (got=0x%08lx%08lx expected=0x%08lx%08lx)\n", \
+                 __LINE__,                                                                         \
+                 (unsigned long)*(((LONG *)double_resptr)+1),(unsigned long)*(((LONG *)double_resptr)),                          \
+                 (unsigned long)(((QUAD)cres)>>32),(unsigned long)cres);                                             \
+      }                                                                                            \
+    }                                                                                              \
+    else                                                                                           \
+      printf ("OK  : " #func "\n");                                                      
+
     
 #define CHECK_DOUBLE1B(func, arg1, cres)                                                           \
     QArg1 = arg1;                                                                                  \
@@ -185,6 +207,21 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     wanted = DEF_FFPTwo;	CHECK(SPAdd,(FFPOne, FFPOne),wanted);
     wanted = DEF_FFPOnehalf;	CHECK(SPDiv,(FFPTwo, FFPOne),wanted);
     wanted = DEF_FFPTwo;	CHECK(SPMul,(FFPOne, FFPTwo),wanted);
+
+    CHECK(SPMul, (SPFlt(-1000), SPFlt(-10)), 0x9c40004e);
+    CHECK(SPDiv, (SPFlt(-10), SPFlt(-1000)), 0xc8000047);
+    CHECK(SPDiv, (SPFlt(0), SPFlt(1000)), 0);
+
+    /* Should also check condition codes but impossible without assembly */
+    CHECK(SPCmp, (SPFlt(10),SPFlt(15)), -1);
+    CHECK(SPCmp, (SPFlt(10),SPFlt(-15)), 1);
+    CHECK(SPCmp, (SPFlt(-10),SPFlt(-15)), 1);
+    CHECK(SPCmp, (SPFlt(-15),SPFlt(-10)), -1);
+    CHECK(SPCmp, (SPFlt(10),SPFlt(10)), 0);
+    CHECK(SPTst, (SPFlt(-1)), -1);
+    CHECK(SPTst, (SPFlt(0)), 0);
+    CHECK(SPTst, (SPFlt(1)), 1);
+
     CloseLibrary(MathBase);
 
     if (!(MathTransBase = OpenLibrary("mathtrans.library", 0L)))
@@ -259,7 +296,9 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(321),    IEEEDPFlt(123456), IEEEDPFlt(39629376));
     CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(2),      IEEEDPFlt(2),      IEEEDPFlt(4));
     CHECK_DOUBLE2A(IEEEDPMul, IEEEDPFlt(20),     IEEEDPFlt(20),     IEEEDPFlt(400));
-    
+    CHECK_DOUBLE2A(IEEEDPDiv, IEEEDPFlt(39629376),IEEEDPFlt(123456),IEEEDPFlt(321));
+    CHECK_DOUBLE2A(IEEEDPDiv, IEEEDPFlt(4),      IEEEDPFlt(2),      IEEEDPFlt(2));
+    CHECK_DOUBLE2A(IEEEDPDiv, IEEEDPFlt(400),    IEEEDPFlt(20),    IEEEDPFlt(20));
 
     if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
     {
@@ -271,7 +310,18 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK_DOUBLE1A(IEEEDPSqrt, ((double)IEEEDPFlt(9)), DEF_DPThree);
     CHECK_DOUBLE1A(IEEEDPCos,  ((double)IEEEDPFlt(1)), 0x3fe14a280fb5068bULL);
     CHECK_DOUBLE1A(IEEEDPSin,  ((double)IEEEDPFlt(1)), 0x3feaed548f090ceeULL);
-    
+
+    double_res = IEEEDPSincos(&double_res2, (double)IEEEDPFlt(1));
+    CHECK_DOUBLE1AF(IEEEDPSincos, 0x3feaed548f090ceeULL);
+    double_res = double_res2;
+    CHECK_DOUBLE1AF(IEEEDPSincos, 0x3fe14a280fb5068bULL);
+
+    wanted = IEEEDPTieee(IEEEDPFlt(2));
+    printf("IEEEDPTieee(2) = %08x\n", wanted);
+
+    double_res = IEEEDPFieee(SPFlt(2));
+    CHECK_DOUBLE1AF(IEEEDPFieee, DEF_DPTwo);
+
     CloseLibrary(MathIeeeDoubTransBase);
     CloseLibrary(MathIeeeDoubBasBase);
 
