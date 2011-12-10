@@ -169,6 +169,37 @@ static VOID CacheTitleBar(struct CachedTitleBar *cached, struct Window *window, 
     strncpy(cached->title, window->Title, len);
 }
 
+static ULONG HasTitleBarShapeChanged(struct CachedTitleBarShape *cached, struct Window *window)
+{
+    /* More restrictive tests */
+
+    /* If the window size has changed */
+    if (cached->width != window->Width)
+        return CHANGE_SIZE_CHANGE;
+    if (cached->height != window->Height)
+        return CHANGE_SIZE_CHANGE;
+
+    /* If there is no cached shape at all (this can happen NOT only at first call) */
+    if (cached->shape == NULL)
+        return CHANGE_SIZE_CHANGE;
+
+    /* Less restrictive tests */
+
+    /* If the window activity status has changed */
+    if (cached->windowflags ^ (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)))
+        return CHANGE_NO_SIZE_CHANGE;
+
+    return CHANGE_NO_CHANGE;
+}
+
+static VOID CacheTitleBarShape(struct CachedTitleBarShape *cached, struct Window *window, struct Region *shape)
+{
+    cached->shape       = shape;
+    cached->width       = window->Width;
+    cached->height      = window->Height;
+    cached->windowflags = (window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX));
+}
+
 static int WriteTiledImageShape(BOOL fill, struct Window *win, struct NewLUT8Image *lut8, struct NewImage *ni, int sx, int sy, int sw, int sh, int xp, int yp, int dw, int dh)
 {
     int     w = dw;
@@ -1799,18 +1830,32 @@ static IPTR windecor_windowshape(Class *cl, Object *obj, struct wdpWindowShape *
 
     if (data->dc->BarMasking)
     {
-        struct  NewLUT8ImageContainer *shape;
-        IPTR    back = 0;
-        shape = (struct  NewLUT8ImageContainer *)NewLUT8ImageContainer(window->Width, window->BorderTop);
-        if (shape)
+        if (HasTitleBarShapeChanged(&wd->tbarshape, window) != CHANGE_NO_CHANGE)
         {
-            if (window->BorderTop > 0) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window);
-            back =(IPTR) RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, (struct NewLUT8Image *)shape);
+            struct  NewLUT8ImageContainer *shape;
+            struct Region * newreg = NULL;
 
-            DisposeLUT8ImageContainer((struct NewLUT8Image *)shape);
-            return back;
+            if (wd->tbarshape.shape != NULL)
+            {
+                DisposeRegion(wd->tbarshape.shape);
+                wd->tbarshape.shape = NULL;
+            }
 
+            shape = (struct  NewLUT8ImageContainer *)NewLUT8ImageContainer(window->Width, window->BorderTop);
+            if (shape)
+            {
+                if (window->BorderTop > 0) DrawShapePartialTitleBar(wd, (struct NewLUT8Image *)shape, data, window);
+
+                newreg = RegionFromLUT8Image(msg->wdp_Width, msg->wdp_Height, (struct NewLUT8Image *)shape);
+                DisposeLUT8ImageContainer((struct NewLUT8Image *)shape);
+
+                CacheTitleBarShape(&wd->tbarshape, window, newreg);
+            }
         }
+
+        /* Make a copy of region and return it */
+        return (IPTR)CopyRegion(wd->tbarshape.shape);
+
     }
 
     if (!data->dc->BarRounded) return (IPTR) NULL;
@@ -1916,6 +1961,7 @@ static IPTR windecor_exitwindow(Class *cl, Object *obj, struct wdpExitWindow *ms
     if (wd->vert.bm) FreeBitMap(wd->vert.bm);
     if (wd->horiz.bm) FreeBitMap(wd->horiz.bm);
     if (wd->tbar.bm) FreeBitMap(wd->tbar.bm);
+    if (wd->tbarshape.shape) DisposeRegion(wd->tbarshape.shape);
     if (wd->tbar.title) FreeVec(wd->tbar.title);
 
     return TRUE;
