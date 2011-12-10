@@ -15,4 +15,15 @@
 AROS_SLIB_ENTRY(SPTst,Mathffp,8):
 
 	moveq	#0,%d0
-	bra.l		AROS_SLIB_ENTRY(SPCmp,Mathffp,7)
+	/* == 0? */
+	tst.b	%d1
+	beq.s	.done
+	/* >0? */
+	moveq	#1,%d0
+	tst.b	%d1
+	bpl.s	.done
+	/* <0 */
+	moveq	#-1,%d0
+	tst.b	%d1
+.done:
+	rts
