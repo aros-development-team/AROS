@@ -39,6 +39,16 @@ struct CachedTitleBar
     ULONG           titlelen;
 };
 
+struct CachedTitleBarShape
+{
+    /* This is pregenerated Region shape matching state saved in rest of fields */
+    struct Region   *shape;
+
+    UWORD           width;
+    UWORD           height;
+    ULONG           windowflags;
+};
+
 struct  WindowData
 {
     struct NewImage *ni;
@@ -71,9 +81,10 @@ struct  WindowData
     BOOL   truecolor;
     
     /* Cached bitmaps used to improve speed of redrawing of decorated window */
-    struct CachedPropGadget vert;
-    struct CachedPropGadget horiz;
-    struct CachedTitleBar   tbar;
+    struct CachedPropGadget     vert;
+    struct CachedPropGadget     horiz;
+    struct CachedTitleBar       tbar;
+    struct CachedTitleBarShape  tbarshape;
 };
 
 #define WDA_DecorImages     0x30003
