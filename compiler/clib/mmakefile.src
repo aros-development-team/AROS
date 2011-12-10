@@ -182,7 +182,9 @@ SHARED	:= \
 	getenv \
 	getfsstat \
 	statfs \
+        getdtablesize \
         getpid \
+        getrlimit \
 	gettimeofday \
         getuid \
         geteuid \
