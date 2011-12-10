@@ -156,7 +156,7 @@ static void aros_ufc(int id)
     int i;
     char jmp[256];
 
-    printf("#define AROS_UFC%d(t,n", id);
+    printf("#define __AROS_UFC%d(t,n", id);
     for (i = 0; i < id; i++)
         printf(",a%d", i + 1);
     printf(") \\\n");
@@ -172,6 +172,7 @@ static void aros_ufc(int id)
 
     asm_regs_exit(i, 0);
     printf("\t  })\n\n");
+    printf("#define AROS_UFC%d __AROS_UFC%d\n", id, id);
 }
 
 void aros_lc(int id, int is_double)
@@ -179,7 +180,7 @@ void aros_lc(int id, int is_double)
     int i;
     int flags = FLAG_BN | (is_double ? FLAG_DOUBLE : 0);
 
-    printf("#define AROS_LC%d%s(t,n,", id, is_double ? "D" : "");
+    printf("#define __AROS_LC%d%s(t,n,", id, is_double ? "D" : "");
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
@@ -187,13 +188,14 @@ void aros_lc(int id, int is_double)
     asm_regs_init(id, flags, "L", "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
     asm_regs_exit(id, flags);
     printf("\t  })\n\n");
+    printf("#define AROS_LC%d%s __AROS_LC%d%s\n", id, is_double ? "D" : "", id, is_double ? "D" : "");
 }
 
 void aros_lp(int id, int is_ignored)
 {
     int i;
 
-    printf("#define AROS_LP%d%s(t,n,", id, is_ignored ? "I" : "");
+    printf("#define __AROS_LP%d%s(t,n,", id, is_ignored ? "I" : "");
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
@@ -206,13 +208,14 @@ void aros_lp(int id, int is_ignored)
     if (id == 0)
         printf("void ");
     printf(")\n");
+    printf("#define AROS_LP%d%s __AROS_LP%d%s\n", id, is_ignored ? "I" : "", id, is_ignored ? "I" : "");
 }
 
 void aros_lh(int id, int is_ignored)
 {
     int i;
 
-    printf("#define AROS_LH%d%s(t,n,", id, is_ignored ? "I" : "");
+    printf("#define __AROS_LH%d%s(t,n,", id, is_ignored ? "I" : "");
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
@@ -222,17 +225,18 @@ void aros_lh(int id, int is_ignored)
     if (!is_ignored)
         printf(" \\\n\tregister bt __attribute__((unused)) bn = __AROS_ISREG(bn,bt,A6,__AROS_FP_REG) ? (bt)(ULONG)__builtin_frame_address(1) : ({register ULONG __r asm(\"%%a6\");(bt)__r;});");
     printf("\n");
+    printf("#define AROS_LH%d%s __AROS_LH%d%s\n", id, is_ignored ? "I" : "", id, is_ignored ? "I" : "");
 }
 
 static void aros_lcnr(int id)
 {
-    printf("#define AROS_LC%dNR AROS_LC%d\n", id, id);
+    printf("#define AROS_LC%dNR __AROS_LC%d\n", id, id);
 }
 
 static void aros_call(int id)
 {
     int i;
-    printf("#define AROS_CALL%d(t,n,", id);
+    printf("#define __AROS_CALL%d(t,n,", id);
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn) \\\n");
@@ -242,48 +246,53 @@ static void aros_call(int id)
         printf(",AROS_UFCA(a%d)", i + 1);
     }
     printf(",AROS_UFCA(bt,bn,A6))\n");
+    printf("#define AROS_CALL%d __AROS_CALL%d\n", id, id);
 }
 
 static void aros_callnr(int id)
 {
-    printf("#define AROS_CALL%dNR AROS_CALL%d\n", id, id);
+    printf("#define __AROS_CALL%dNR __AROS_CALL%d\n", id, id);
+    printf("#define AROS_CALL%dNR __AROS_CALL%dNR\n", id, id);
 }
 
 static void aros_lvo_call(int id)
 {
     int i;
-    printf("#define AROS_LVO_CALL%d(t,", id);
+    printf("#define __AROS_LVO_CALL%d(t,", id);
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
-    printf("\tAROS_CALL%d(t,__AROS_GETVECADDR(bn,o), \\\n", id);
+    printf("\t__AROS_CALL%d(t,__AROS_GETVECADDR(bn,o), \\\n", id);
     for (i = 0; i < id; i++)
         printf("\t\tAROS_LCA(a%d), \\\n", i + 1);
     printf("\t\tbt,bn)\n");
+    printf("#define AROS_LVO_CALL%d __AROS_LVO_CALL%d\n", id, id);
 }
 
 static void aros_lvo_callnr(int id)
 {
     int i;
-    printf("#define AROS_LVO_CALL%dNR(t,", id);
+    printf("#define __AROS_LVO_CALL%dNR(t,", id);
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
-    printf("\tAROS_CALL%dNR(t,__AROS_GETVECADDR(bn,o), \\\n", id);
+    printf("\t__AROS_CALL%dNR(t,__AROS_GETVECADDR(bn,o), \\\n", id);
     for (i = 0; i < id; i++)
         printf("\t\tAROS_LCA(a%d), \\\n", i + 1);
     printf("\t\tbt,bn)\n");
+    printf("#define AROS_LVO_CALL%dNR __AROS_LVO_CALL%dNR\n", id, id);
 }
 
 static void aros_ld(int id, int is_ignored)
 {
     int i;
 
-    printf("#define AROS_LD%d%s(t,n,", id, is_ignored ? "I" : "");
+    printf("#define __AROS_LD%d%s(t,n,", id, is_ignored ? "I" : "");
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
     printf("\t__AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) (void)\n");
+    printf("#define AROS_LD%d%s __AROS_LD%d%s\n", id, is_ignored ? "I" : "", id, is_ignored ? "I" : "");
 }
 
 static const char asmextra[] =
@@ -314,8 +323,8 @@ static const char libextra[] =
 "#define __AROS_LSAQUAD1(type,name,reg1,reg2)  \"%\"#reg1\n"
 "#define __AROS_LSAQUAD2(type,name,reg1,reg2)  \"%\"#reg2\n"
 "\n"
-"#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \\\n"
-"        AROS_LH2(t,n, \\\n"
+"#define __AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"        __AROS_LH2(t,n, \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \\\n"
 "                bt, bn, o, s) \\\n"
@@ -327,8 +336,10 @@ static const char libextra[] =
 "                __AROS_LTAQUAD(a1).reg[1] = __AROS_LTAQUAD2(a1); \\\n"
 "                __AROS_LPAQUAD(a1) __attribute__((unused)) __AROS_LCAQUAD(a1) = __AROS_LTAQUAD(a1).val;\n"
 "\n"
-"#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
-"        AROS_LH4(t,n, \\\n"
+"#define AROS_LHQUAD1 __AROS_LHQUAD1\n"
+"\n"
+"#define __AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        __AROS_LH4(t,n, \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD1(a1), __AROS_LRAQUAD1(a1)), \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD2(a1), __AROS_LRAQUAD2(a1)), \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \\\n"
@@ -349,8 +360,35 @@ static const char libextra[] =
 "                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \\\n"
 "                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;\n"
 "\n"
-"#define AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
-"        AROS_LH3(t,n, \\\n"
+"#define AROS_LHQUAD2 __AROS_LHQUAD2\n"
+"\n"
+"#define __AROS_LH1QUAD2(t,n,a1,a2,a3,bt,bn,o,s) \\\n"
+"        __AROS_LH5(t,n, \\\n"
+"                AROS_LHA(a1), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a3), __AROS_LRAQUAD1(a3)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a3), __AROS_LRAQUAD2(a3)), \\\n"
+"                bt, bn, o, s) \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a2) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a2); \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a3) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a3); \\\n"
+"                __AROS_LTAQUAD(a2).reg[0] = __AROS_LTAQUAD1(a2); \\\n"
+"                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \\\n"
+"                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val; \\\n"
+"                __AROS_LTAQUAD(a3).reg[0] = __AROS_LTAQUAD1(a3); \\\n"
+"                __AROS_LTAQUAD(a3).reg[1] = __AROS_LTAQUAD2(a3); \\\n"
+"                __AROS_LPAQUAD(a3) __attribute__((unused)) __AROS_LCAQUAD(a3) = __AROS_LTAQUAD(a3).val;\n"
+"\n"
+"#define AROS_LH1QUAD2 __AROS_LH1QUAD2\n"
+"\n"
+"#define __AROS_LH1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
+"        __AROS_LH3(t,n, \\\n"
 "                AROS_LHA(a1), \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD1(a2), __AROS_LRAQUAD1(a2)), \\\n"
 "                AROS_LHA(ULONG, __AROS_LTAQUAD2(a2), __AROS_LRAQUAD2(a2)), \\\n"
@@ -363,20 +401,40 @@ static const char libextra[] =
 "                __AROS_LTAQUAD(a2).reg[1] = __AROS_LTAQUAD2(a2); \\\n"
 "                __AROS_LPAQUAD(a2) __attribute__((unused)) __AROS_LCAQUAD(a2) = __AROS_LTAQUAD(a2).val;\n"
 "\n"
+"#define AROS_LH1QUAD1 __AROS_LH1QUAD1\n"
 "\n"
-"#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \\\n"
+"#define __AROS_LH2QUAD1(t,n,a1,a2,a3,bt,bn,o,s) \\\n"
+"        __AROS_LH4(t,n, \\\n"
+"                AROS_LHA(a1), \\\n"
+"                AROS_LHA(a2), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD1(a3), __AROS_LRAQUAD1(a3)), \\\n"
+"                AROS_LHA(ULONG, __AROS_LTAQUAD2(a3), __AROS_LRAQUAD2(a3)), \\\n"
+"                bt, bn, o, s) \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a3) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } __AROS_LTAQUAD(a3); \\\n"
+"                __AROS_LTAQUAD(a3).reg[0] = __AROS_LTAQUAD1(a3); \\\n"
+"                __AROS_LTAQUAD(a3).reg[1] = __AROS_LTAQUAD2(a3); \\\n"
+"                __AROS_LPAQUAD(a3) __attribute__((unused)) __AROS_LCAQUAD(a3) = __AROS_LTAQUAD(a3).val;\n"
+"\n"
+"#define AROS_LH2QUAD1 __AROS_LH2QUAD1\n"
+"\n"
+"#define __AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \\\n"
 "        ({ \\\n"
 "                union { \\\n"
 "                        __AROS_LPAQUAD(a1) val; \\\n"
 "                        ULONG reg[2]; \\\n"
 "                } _q1 = { .val = __AROS_LCAQUAD(a1) }; \\\n"
-"                AROS_LC2##t(t, n,  \\\n"
+"                __AROS_LC2##t(t, n,  \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \\\n"
 "                        bt, bn, o, s); \\\n"
 "         })\n"
 "\n"
-"#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
+"#define AROS_LCQUAD1 __AROS_LCQUAD1\n"
+"\n"
+"#define __AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \\\n"
 "        ({ \\\n"
 "                union { \\\n"
 "                        __AROS_LPAQUAD(a1) val; \\\n"
@@ -386,7 +444,7 @@ static const char libextra[] =
 "                        __AROS_LPAQUAD(a2) val; \\\n"
 "                        ULONG reg[2]; \\\n"
 "                } _q2 = { .val = __AROS_LCAQUAD(a2) }; \\\n"
-"                AROS_LC4##t(t, n,  \\\n"
+"                __AROS_LC4##t(t, n,  \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a1)), \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a1)), \\\n"
 "                        AROS_LCA(ULONG, _q2.reg[0], __AROS_LRAQUAD1(a2)), \\\n"
@@ -394,25 +452,45 @@ static const char libextra[] =
 "                        bt, bn, o, s); \\\n"
 "         })\n"
 "\n"
-"#define AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
+"#define AROS_LCQUAD2 __AROS_LCQUAD2\n"
+"\n"
+"#define __AROS_LC1QUAD1(t,n,a1,a2,bt,bn,o,s) \\\n"
 "        ({ \\\n"
 "                union { \\\n"
 "                        __AROS_LPAQUAD(a2) val; \\\n"
 "                        ULONG reg[2]; \\\n"
 "                } _q1 = { .val = __AROS_LCAQUAD(a2) }; \\\n"
-"                AROS_LC3##t(t, n,  \\\n"
+"                __AROS_LC3##t(t, n,  \\\n"
 "                        AROS_LCA(a1), \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a2)), \\\n"
 "                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a2)), \\\n"
 "                        bt, bn, o, s); \\\n"
 "         })\n"
 "\n"
-"#define AROS_LC2double AROS_LC2D\n"
-"#define AROS_LC3double AROS_LC3D\n"
-"#define AROS_LC4double AROS_LC4D\n"
-"#define AROS_LC2LONG   AROS_LC2\n"
-"#define AROS_LC3LONG   AROS_LC3\n"
-"#define AROS_LC4LONG   AROS_LC4\n"
+"#define AROS_LC1QUAD1 __AROS_LC1QUAD1\n"
+"\n"
+"#define __AROS_LC2QUAD1(t,n,a1,a2,a3,bt,bn,o,s) \\\n"
+"        ({ \\\n"
+"                union { \\\n"
+"                        __AROS_LPAQUAD(a3) val; \\\n"
+"                        ULONG reg[2]; \\\n"
+"                } _q1 = { .val = __AROS_LCAQUAD(a3) }; \\\n"
+"                __AROS_LC4##t(t, n,  \\\n"
+"                        AROS_LCA(a1), \\\n"
+"                        AROS_LCA(a2), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[0], __AROS_LRAQUAD1(a3)), \\\n"
+"                        AROS_LCA(ULONG, _q1.reg[1], __AROS_LRAQUAD2(a3)), \\\n"
+"                        bt, bn, o, s); \\\n"
+"         })\n"
+"\n"
+"#define AROS_LC2QUAD1 __AROS_LC2QUAD1\n"
+"\n"
+"#define __AROS_LC2double __AROS_LC2D\n"
+"#define __AROS_LC3double __AROS_LC3D\n"
+"#define __AROS_LC4double __AROS_LC4D\n"
+"#define __AROS_LC2LONG   __AROS_LC2\n"
+"#define __AROS_LC3LONG   __AROS_LC3\n"
+"#define __AROS_LC4LONG   __AROS_LC4\n"
 "\n"
 "#   define AROS_LDQUAD1(t,n,a1,bt,bn,o,s) \\\n"
 "        __AROS_LD_PREFIX t AROS_SLIB_ENTRY(n,s,o) ( \\\n"
