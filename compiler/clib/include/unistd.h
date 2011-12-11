@@ -176,7 +176,6 @@ int         execvp(const char *path, char *const argv[]);
 void        _exit(int) __noreturn;
 /* NOTIMPL long        fpathconf(int fd, int name); */
 char        *getcwd(char *buf, size_t size);
-int         getdtablesize(void);
 gid_t       getegid(void);
 uid_t       geteuid(void);
 gid_t       getgid(void);
