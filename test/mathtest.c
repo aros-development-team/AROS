@@ -54,8 +54,6 @@ VOID Printf( const char *format, ...)
 {
     RawDoFmt( format, (APTR)&(((ULONG *)&format)[1]), _SPutC, NULL);
 }
-#else
-#define Printf(target,format,args...) __sprintf(target,format ,##args )
 #endif
 
 int main(int argc, char **argv)
