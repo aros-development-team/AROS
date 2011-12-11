@@ -20,8 +20,8 @@
 
 /*  SYNOPSIS */
 	struct RexxMsg *msg,
-	char *varname,
-	char * value,
+	CONST_STRPTR varname,
+	char *value,
         ULONG length)
 
 /*  FUNCTION

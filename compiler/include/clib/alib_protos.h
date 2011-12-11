@@ -244,8 +244,8 @@ AROS_UFP3(IPTR, HookEntry,
 
 /* Rexx support */
 BOOL CheckRexxMsg(struct RexxMsg *);
-LONG SetRexxVar(struct RexxMsg *, char *, char *, ULONG length);
-LONG GetRexxVar(struct RexxMsg *, char *, char **value);
+LONG SetRexxVar(struct RexxMsg *, CONST_STRPTR var, char *value, ULONG length);
+LONG GetRexxVar(struct RexxMsg *, CONST_STRPTR var, char **value);
 
 /* Inline versions of varargs functions */
 #if !defined(ALIB_NO_INLINE_STDARG) && !defined(NO_INLINE_STDARG)

@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	struct RexxMsg *msg,
-	char *varname,
+	CONST_STRPTR varname,
 	char **value)
 
 /*  FUNCTION
