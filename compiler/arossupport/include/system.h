@@ -133,6 +133,12 @@
 #    define __const
 #endif
 
+#if __GNUC_PREREQ(3,3)
+#    define __mayalias  __attribute__((__may_alias__))
+#else
+#    deifne __mayalias
+#endif
+
 #define __pure2 __const
 
 /* 4. Macros for debugging and development */
