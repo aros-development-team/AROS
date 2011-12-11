@@ -23,7 +23,7 @@
 #ifndef _LIB_PROTOS_H
 #define _LIB_PROTOS_H
 
-#include "SDI_lib.h"
+#include <SDI/SDI_lib.h>
 
 /* init.c */
 ULONG freeBase(struct LibraryHeader* lib);
