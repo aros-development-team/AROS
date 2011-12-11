@@ -16,7 +16,7 @@
 	AROS_LH2(UBYTE *, CreateArgstring,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, string, A0),
+	AROS_LHA(CONST UBYTE *, string, A0),
 	AROS_LHA(ULONG  , length, D0),
 
 /*  LOCATION */
