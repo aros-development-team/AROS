@@ -62,7 +62,7 @@
 
 #include "debug.h"
 #include "SmartReadArgs.h"
-#include "SDI_compiler.h"
+#include <SDI/SDI_compiler.h>
 
 #include <exec/memory.h>
 #include <workbench/startup.h>
