@@ -24,7 +24,7 @@
 #include <proto/graphics.h>
 #include <proto/exec.h>
 
-#include "SDI_compiler.h"
+#include <SDI/SDI_compiler.h>
 
 #include "private.h"
 #include "Debug.h"

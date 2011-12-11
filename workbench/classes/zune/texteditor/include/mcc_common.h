@@ -20,10 +20,10 @@
 
 ***************************************************************************/
 
-#include "SDI_compiler.h"
-#include "SDI_hook.h"
-#include "SDI_lib.h"
-#include "SDI_stdarg.h"
+#include <SDI/SDI_compiler.h>
+#include <SDI/SDI_hook.h>
+#include <SDI/SDI_lib.h>
+#include <SDI/SDI_stdarg.h>
 
 #ifdef __amigaos4__
 
