@@ -185,7 +185,7 @@
 #include <aros/libcall.h>
 #endif
 
-#include "SDI_compiler.h"
+#include <SDI/SDI_compiler.h>
 
 #if defined(__amigaos4__)
 struct Library *MUIMasterBase = NULL;
