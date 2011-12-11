@@ -3,12 +3,13 @@ include $(TOP)/config/make.cfg
 
 FILES       := SerialClass SerialUnitClass #unix_funcs
 
-USER_CFLAGS := -DAROS_USE_OOP -D__AROS__
-USER_INCLUDES := -I$(GENINCDIR)
+USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
+	      -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
 %build_module mmake=workbench-hidd-unix-serial \
   modname=serial modtype=hidd \
   files=$(FILES) \
-  uselibs="amiga hiddstubs" usehostlibs=c \
-  compiler=kernel
+  uselibs="amiga oop rom"
+
 
 #MM workbench-hidd-unix-serial : kernel-unixio

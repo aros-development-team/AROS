@@ -43,9 +43,11 @@ struct class_static_data
     OOP_Class		 *serialhiddclass;
     OOP_Class		 *serialunitclass;
     OOP_AttrBase          hiddSerialUnitAB;
+    OOP_AttrBase          hiddUnixIOAttrBase;
 };
 
 #define __IHidd_SerialUnitAB   (CSD(cl)->hiddSerialUnitAB)
+#define __IHidd_UnixIO         (CSD(cl)->hiddUnixIOAttrBase)
 
 struct HIDDSerialUnitData
 {
@@ -64,7 +66,10 @@ struct HIDDSerialUnitData
     BOOL		breakcontrol;
 
     BOOL		stopped;
-    
+
+    OOP_Object         *unixio;
+
+#if 0
     struct MsgPort	*replyport_read;
     struct Interrupt 	*softint_read;
     HIDD		unixio_read;
@@ -72,6 +77,7 @@ struct HIDDSerialUnitData
     struct MsgPort	*replyport_write;
     struct Interrupt 	*softint_write;
     HIDD		unixio_write;
+#endif
     
     struct termios	orig_termios;
 };

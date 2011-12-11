@@ -10,7 +10,4 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-/* int unix_open_nonblock(const char * pathname); */
-#define unix_open_nonblock(pathname) open(pathname, O_NONBLOCK|O_RDWR)
-
 #endif

@@ -30,6 +30,7 @@
 #include <utility/tagitem.h>
 #include <hidd/serial.h>
 #include <hidd/unixio.h>
+#include <hidd/unixio_inline.h>
 
 #include <devices/serial.h>
 #include <intuition/preferences.h>
@@ -70,7 +71,9 @@ static char * unitname[] =
 OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
 {
   struct HIDDSerialUnitData * data;
+#if 0
   static const struct TagItem tags[] = {{ TAG_END, 0}};
+#endif
   struct TagItem *tag, *tstate;
   ULONG unitnum = 0;
   
@@ -78,7 +81,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   D(bug("SerialUnit created on %s at %s.\n",__DATE__,__TIME__));
 
   tstate = msg->attrList;
-  while ((tag = NextTagItem((struct TagItem **)&tstate)))
+  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
   {
       ULONG idx;
 
@@ -103,14 +106,26 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   if (obj)
   {
     struct termios _termios;
+    const struct TagItem tags[] = {
+        {aHidd_UnixIO_Opener      , (IPTR)"serial.hidd"},
+        {aHidd_UnixIO_Architecture, (IPTR)AROS_ARCHITECTURE},
+        {TAG_END}
+    };
     
     data = OOP_INST_DATA(cl, obj);
     
     data->unitnum = unitnum;
 
+    data->unixio = OOP_NewObject(NULL, CLID_Hidd_UnixIO, (struct TagItem *)tags);
+    if (!data->unixio) {
+        OOP_DisposeObject(obj);
+        obj = NULL;
+        goto exit;
+    }
+
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
-    data->filedescriptor = unix_open_nonblock(unitname[data->unitnum]);
+    data->filedescriptor = Hidd_UnixIO_OpenFile(data->unixio, unitname[data->unitnum], O_NONBLOCK|O_RDWR, 0, NULL);
 
     D(bug("Opened %s on handle %d\n",unitname[data->unitnum], data->filedescriptor));
     
@@ -118,12 +133,14 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
     {
       struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
 
+#if 0
       /*
       ** Configure the tty driver
       */
       tcgetattr(data->filedescriptor, &data->orig_termios);
       tcgetattr(data->filedescriptor, &_termios); 
       cfmakeraw(&_termios);
+#endif
 
       /* 
        * Get the preferences information from intuition library.
@@ -141,6 +158,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
       }
       D(bug("Setting baudrate to %d.\n",data->baudrate));
 
+#if 0
       if (tcsetattr(data->filedescriptor, TCSANOW, &_termios) >=0)
       {
         data->replyport_read = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
@@ -216,10 +234,12 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
           FreeMem(data->replyport_read , sizeof(struct MsgPort));
         if (data->replyport_write)
           FreeMem(data->replyport_write, sizeof(struct MsgPort));
-
       } 
+#else
+       goto exit;
+#endif
       
-      close(data->filedescriptor);  
+      Hidd_UnixIO_CloseFile(data->unixio, data->filedescriptor, NULL);
     }
 
     OOP_DisposeObject(obj);
@@ -243,13 +263,16 @@ OOP_Object *UXSerUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg
 
   if (-1 != data->filedescriptor)
   { 
+#if 0
     tcsetattr(data->filedescriptor, TCSANOW, &data->orig_termios);
     Hidd_UnixIO_AbortAsyncIO(data->unixio_read,
                              data->filedescriptor,
                              SysBase);
+#endif
 
-    close(data->filedescriptor);
-  
+    Hidd_UnixIO_CloseFile(data->unixio, data->filedescriptor, NULL);
+ 
+#if 0
     FreeMem(data->replyport_read,  sizeof(struct MsgPort));
     FreeMem(data->replyport_write, sizeof(struct MsgPort));
 
@@ -258,6 +281,7 @@ OOP_Object *UXSerUnit__Root__Dispose(OOP_Class *cl, OOP_Object *obj, OOP_Msg msg
 
     OOP_DisposeObject(data->unixio_read);
     OOP_DisposeObject(data->unixio_write);
+#endif
   }
   OOP_DoSuperMethod(cl, obj, (OOP_Msg)msg);
   ReturnPtr("SerialUnit::Dispose()", OOP_Object *, obj);
@@ -299,9 +323,9 @@ ULONG UXSerUnit__Hidd_SerialUnit__Write(OOP_Class *cl, OOP_Object *o, struct pHi
         data->filedescriptor,
         msg->Outbuffer));
 
-  len = write(data->filedescriptor,
+  len = Hidd_UnixIO_WriteFile(data->unixio, data->filedescriptor,
               msg->Outbuffer,
-              msg->Length);
+              msg->Length, NULL);
 
 
   ReturnInt("SerialUnit::Write()",ULONG, len);
@@ -372,6 +396,7 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetBaudrate(OOP_Class *cl, OOP_Object *o, stru
     {
       if (msg->baudrate == valid_baudrates[i])
       {
+#if 0
         struct termios _termios;
         tcgetattr(data->filedescriptor, &_termios); 
         cfsetspeed(&_termios, msg->baudrate);
@@ -386,6 +411,9 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetBaudrate(OOP_Class *cl, OOP_Object *o, stru
           D(bug("Adjusted to new baudrate %d!\n",msg->baudrate));
           valid = TRUE;
         }
+#else
+        valid = TRUE;
+#endif
       }
       i++;
     } /* while */
@@ -485,9 +513,10 @@ ULONG UXSerUnit__Hidd_SerialUnit__SetParameters(OOP_Class *cl, OOP_Object *o, st
 /******* SerialUnit::SendBreak() **********************************/
 BYTE UXSerUnit__Hidd_SerialUnit__SendBreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_SendBreak *msg)
 {
+#if 0 
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
-  
   if (0 == tcsendbreak(data->filedescriptor, msg->duration))
+#endif
     return 0;
   
   return SerErr_LineErr;
@@ -587,7 +616,7 @@ AROS_UFH3(void, serialunit_receive_data,
   /*
   ** Read the data from the port ...
   */
-  len = read(data->filedescriptor, buffer, READBUFFER_SIZE);
+  len = Hidd_UnixIO_ReadFile(data->unixio, data->filedescriptor, buffer, READBUFFER_SIZE, NULL);
   /*
   ** ... and deliver them to whoever is interested. 
   */
@@ -634,13 +663,18 @@ AROS_UFH3(void, serialunit_write_more_data,
 #undef __IHidd_SerialUnitAB
 #define __IHidd_SerialUnitAB (LIBBASE->hdg_csd.hiddSerialUnitAB)
 
+#undef __IHidd_UnixIO
+#define __IHidd_UnixIO (LIBBASE->hdg_csd.hiddUnixIOAttrBase)
+
 static int UXSerUnit_InitAttrBase(LIBBASETYPEPTR LIBBASE)
 {
     EnterFunc(bug("    UXSerUnit_InitAttrBase(LIBBASE=%p)\n", LIBBASE));
 
     __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
 
-    ReturnInt("UXSerUnit_InitAttrBase", ULONG, __IHidd_SerialUnitAB != 0);
+    __IHidd_UnixIO = OOP_ObtainAttrBase(IID_Hidd_UnixIO);
+
+    ReturnInt("UXSerUnit_InitAttrBase", ULONG, __IHidd_SerialUnitAB != 0 && __IHidd_UnixIO != 0);
 }
 
 ADD2INITLIB(UXSerUnit_InitAttrBase, 0)
@@ -650,7 +684,7 @@ ADD2INITLIB(UXSerUnit_InitAttrBase, 0)
 
 static void settermios(struct HIDDSerialUnitData * data)
 {
-
+#if 0
   struct termios _termios;
   tcgetattr(data->filedescriptor, &_termios);
 
@@ -692,7 +726,7 @@ static void settermios(struct HIDDSerialUnitData * data)
   {
 //    D(bug("Adjusted to new termios!\n"));
   }
-
+#endif
 } /* settermios */
 
 /**************************************************************/
@@ -703,6 +737,7 @@ static void settermios(struct HIDDSerialUnitData * data)
 static void adapt_termios(struct termios * termios,
                           struct Preferences * prefs)
 {
+#if 0
 	cfmakeraw(termios);
 	/*
 	 * Parity.
@@ -777,5 +812,6 @@ static void adapt_termios(struct termios * termios,
 	}
 
 	cfsetspeed(termios, prefs->BaudRate);
+#endif
 	
 } /* adapt_termios */
