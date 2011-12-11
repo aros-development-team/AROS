@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
 	ULONG id,
 	ULONG userdata,
-	STRPTR text,
+	CONST_STRPTR text,
 	struct MsgPort * msgport,
 	BPTR lock,
 	struct DiskObject * diskobj,

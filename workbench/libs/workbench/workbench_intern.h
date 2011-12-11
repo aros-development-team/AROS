@@ -90,7 +90,7 @@ struct AppIcon
     ULONG              ai_UserData;
 
     ULONG              ai_Flags;
-    STRPTR             ai_Text;
+    CONST_STRPTR       ai_Text;
     struct DiskObject *ai_DiskObject;
 
     struct Hook       *ai_RenderHook;
