@@ -11,9 +11,8 @@
 #ifndef PM_DLIST_H
 #define PM_DLIST_H
 
-#ifndef EXEC_NODES_H
 #include <exec/nodes.h>
-#endif
+#include <exec/lists.h>
 
 struct PM_GenericListNode {
 	struct MinNode	n;
