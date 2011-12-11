@@ -44,7 +44,7 @@ char * GetString(struct LocaleInfo * li,
   }
 
   if (NULL != li->li_Catalog)
-    string = GetCatalogStr((struct Catalog *)li->li_Catalog,
+    string = (char *)GetCatalogStr((struct Catalog *)li->li_Catalog,
                            stringNum,
                            builtIn);
   else
