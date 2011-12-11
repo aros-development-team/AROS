@@ -18,7 +18,7 @@
 
 ***************************************************************************/
 
-#include "SDI_lib.h"
+#include <SDI/SDI_lib.h>
 
 /* init.c */
 ULONG freeBase(struct LibraryHeader* lib);
