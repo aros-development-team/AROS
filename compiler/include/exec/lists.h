@@ -28,7 +28,7 @@ struct List
 		* lh_TailPred;
     UBYTE	  lh_Type;
     UBYTE	  l_pad;
-};
+} __mayalias;
 
 /* Minimal list */
 struct MinList
@@ -36,7 +36,7 @@ struct MinList
     struct MinNode * mlh_Head,
                    * mlh_Tail,
 		   * mlh_TailPred;
-};
+} __mayalias;
 
 
 /**************************************
