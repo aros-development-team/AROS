@@ -37,7 +37,7 @@
             "öäüÖÄÜß" \
             "öäüÖÄÜß"
 
-#include "SDI_hook.h"
+#include <SDI/SDI_hook.h>
 
 struct Library *CodesetsBase = NULL;
 #if defined(__amigaos4__)
