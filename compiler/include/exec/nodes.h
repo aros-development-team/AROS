@@ -28,6 +28,7 @@
 	       Structures
 **************************************/
 
+struct Node __mayalias;
 struct Node
 {
     struct Node * ln_Succ,
@@ -35,13 +36,14 @@ struct Node
     UBYTE	  ln_Type;
     BYTE	  ln_Pri;
     char	* ln_Name;
-} __mayalias;
+};
 
+struct MinNode __mayalias;
 struct MinNode
 {
     struct MinNode * mln_Succ,
 		   * mln_Pred;
-} __mayalias;
+};
 
 
 /**************************************
