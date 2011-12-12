@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -83,6 +83,7 @@ static Object *list, *editor, *liststr;
 
 BOOL file_altered = FALSE;
 BOOL icon_altered = FALSE;
+char loadedcomment[MAXCOMMENTLENGTH];
 
 void getReadableSize(UBYTE *buf, UQUAD size, BOOL accurate)
 {
@@ -718,7 +719,6 @@ int main(int argc, char **argv)
     ULONG protection;
     char stack[16];
     char deftool[MAX_PATH_LEN];
-    char comment[MAXCOMMENTLENGTH];
     char size[64];
     char date[LEN_DATSTRING];
     char time[LEN_DATSTRING];
@@ -824,7 +824,7 @@ D(bug("[WBInfo] pass to diskinfo\n"));
     {
 D(bug("[WBInfo] scan file\n"));
         /* fill comment */
-        sprintf(comment,"%s",ap->ap_Info.fib_Comment);
+        sprintf(loadedcomment,"%s",ap->ap_Info.fib_Comment);
 
         /* fill date and time */
         ds = &ap->ap_Info.fib_Date;
@@ -1228,8 +1228,8 @@ D(bug("[WBInfo] icon type is: %s\n", type));
                 break;
         }
 
-        if (comment != NULL)
-            set(commentspace, MUIA_String_Contents, comment);
+        if (loadedcomment[0])
+            nnset(commentspace, MUIA_String_Contents, loadedcomment);
 
         nnset(readobject, MUIA_Selected, flags[3]);
         nnset(writeobject, MUIA_Selected, flags[4]);
@@ -1283,6 +1283,14 @@ D(bug("[WBInfo] broker command received: %ld\n", returnid));
                         if (icon_altered)
             #endif
                             SaveIcon(icon, file, lock);
+                        {
+                            /* This is a workardound for String.mui not sending notification on contents change */
+                            STRPTR text = NULL;
+                            get(commentspace, MUIA_String_Contents, &text);
+                            if(strcmp(loadedcomment, text) != 0)
+                                file_altered = TRUE;
+                        }
+
                         if (file_altered)
                             SaveFile(ap, lock);
                         DoMethod(application, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
