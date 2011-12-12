@@ -1635,8 +1635,8 @@ static void readsectionfunctionlist(struct config *cfg)
 					      regs[regcount-1], regcount
 				);
 			    
-			    if (regcount > 2)
-				exitfileerror(20, "maximum two arguments passed in two registers allowed\n");
+			    if (regcount > 4)
+				exitfileerror(20, "maximum four arguments passed in two registers allowed (%d, %s) \n", regcount, regs[regcount-1]);
 			}
 			*s = '\0';
 		    }

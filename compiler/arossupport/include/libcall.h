@@ -536,6 +536,25 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LCA(a1),\
     __AROS_LCAQUAD(a2),\
     __AROS_LC_BASE(bt,bn)))
+#define AROS_LC2QUAD1(t,n,a1,a2,a3,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPAQUAD(a3),\
+    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCAQUAD(a2),\
+    __AROS_LC_BASE(bt,bn)))
+#define AROS_LC3QUAD1(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+    (((__AROS_LC_PREFIX t(*)(\
+    __AROS_LPA(a1),\
+    __AROS_LPA(a2),\
+    __AROS_LPA(a3),\
+    __AROS_LPAQUAD(a4),\
+    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    __AROS_LCA(a1),\
+    __AROS_LCAQUAD(a2),\
+    __AROS_LC_BASE(bt,bn)))
 
 #define AROS_LC0(t,n,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
