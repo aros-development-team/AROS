@@ -30,7 +30,7 @@
 #include <proto/dos.h>
 #include <clib/alib_protos.h>
 
-#include "SDI_compiler.h"
+#include <SDI/SDI_compiler.h>
 
 #include "private.h"
 

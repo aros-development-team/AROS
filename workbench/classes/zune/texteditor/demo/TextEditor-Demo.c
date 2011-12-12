@@ -47,7 +47,7 @@
 
 #include <mui/TextEditor_mcc.h>
 
-#include <SDI_hook.h>
+#include <SDI/SDI_hook.h>
 
 #ifndef __amigaos4__
 struct GfxBase *GfxBase;

@@ -39,7 +39,7 @@
 #include "Debug.h"
 #include "version.h"
 
-#include "SDI_hook.h"
+#include <SDI/SDI_hook.h>
 
 // global data
 Object *editorgad = NULL;
