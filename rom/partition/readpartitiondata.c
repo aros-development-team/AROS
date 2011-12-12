@@ -7,13 +7,13 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH4(LONG, ReadPartitionData,
+        AROS_LH3QUAD1(LONG, ReadPartitionDataQ,
 
 /*  SYNOPSIS */
-        AROS_LHA(UQUAD                   , StartBlock, D0), /* FIXME: Should be D0/D1 */
         AROS_LHA(ULONG                   , DataSize  , D2),
         AROS_LHA(struct PartitionHandle *, Partition , A0),
         AROS_LHA(APTR                    , Buffer    , A1),
+        AROS_LHAQUAD(UQUAD               , StartBlock, D0, D1),
 
 /*  LOCATION */
         struct Library *, PartitionBase, 25, Partition)
@@ -47,12 +47,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    /*
-     * FIXME: After UQUAD issue is fixed on m68k, throw away old duplicating code
-     * from partition_support.c.
-     * Doing this right now will break large disks support on m68k.
-     */
-    
     UQUAD offset = (getStartBlock(Partition) + StartBlock) * (Partition->de.de_SizeBlock << 2);
     struct IOExtTD *ioreq = Partition->bd->ioreq;
 
