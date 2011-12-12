@@ -31,7 +31,9 @@ FUNCS := \
 	loadfilesystem		 \
 	getfilesystemattrsa	 \
 	addbootfilesystem	 \
-	loadbootfilesystems
+	loadbootfilesystems      \
+	readpartitiondata        \
+	writepartitiondata
 
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
