@@ -34,7 +34,7 @@
 #include "locale.h"
 #include "private.h"
 
-#include "SDI_hook.h"
+#include <SDI/SDI_hook.h>
 
 #if defined(__amigaos4__)
 struct Library *IntuitionBase = NULL;
