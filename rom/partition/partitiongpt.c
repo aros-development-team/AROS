@@ -57,7 +57,7 @@ static const uuid_t GPT_Type_Unused = MAKE_UUID(0x00000000, 0x0000, 0x0000, 0x00
  * I hope this won't create any significant problems. Even if some ID ever collides, it will
  * unlikely collide with existing DOSTypes being used, so it can be blacklisted then.
  */
-static const uuid_t GPT_Type_AROS   = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5E);
+static const uuid_t GPT_Type_AROS   = MAKE_UUID(0x00000000, 0xBB67, 0x46C5, 0xAA4A, 0xF502CA018E5EULL);
 
 
 /*
@@ -170,11 +170,13 @@ static void PRINT_LE_UUID(char *s, uuid_t *id)
 #endif
 
 #ifdef NO_WRITE
-#define writeDataFromBlock(root, blk, tablesize, table) TDERR_WriteProt
+#undef WritePartitionDataQ
+#define WritePartitionDataQ(root, table, tablesize, blk) TDERR_WriteProt
 #define PartitionWriteBlock(base, root, blk, mem) TDERR_WriteProt
 #endif
 #ifdef SIM_WRITE
-#define writeDataFromBlock(root, blk, tablesize, table) 0
+#undef WritePartitionDataQ
+#define WritePartitionDataQ(root, table, tablesize, blk) 0
 #define PartitionWriteBlock(base, root, blk, mem) 0
 #endif
 
@@ -312,7 +314,7 @@ static LONG GPTReadPartitionTable(struct Library *PartitionBase, struct Partitio
         startblk = AROS_LE2QUAD(hdr->StartBlock);
 
         DREAD(KPrintF("[GPT] Read: start block %llu\n", startblk));
-        res = readDataFromBlock(root, startblk, tablesize, table);
+        res = ReadPartitionDataQ(root, table, tablesize, startblk);
         if (!res)
         {
             ULONG orig_crc = AROS_LE2LONG(hdr->PartCRC32);
@@ -454,7 +456,7 @@ static LONG GPTWriteTable(struct Library *PartitionBase, struct PartitionHandle 
     DWRITE(bug("[GPT] New header CRC 0x%08X\n", crc));
 
     DWRITE(KPrintF("[GPT] Write data: start block %llu\n", startblk));
-    res = writeDataFromBlock(root, startblk, tablesize, table);
+    res = WritePartitionDataQ(root, table, tablesize, startblk);
 
     DWRITE(bug("[GPT] Write result: %u\n", res));
     if (res == 0)

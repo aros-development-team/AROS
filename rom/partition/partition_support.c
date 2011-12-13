@@ -96,50 +96,6 @@ ULONG start = 0;
     return start;
 }
 
-/* read a single block within partition ph */
-LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
-{
-    return readDataFromBlock(ph, block, ph->de.de_SizeBlock<<2, mem);
-}
-
-/* read 'size' bytes starting from 'block' within partition ph */
-LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
-{
-    UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock<<2);
-    struct IOExtTD *ioreq = ph->bd->ioreq;
-
-    ioreq->iotd_Req.io_Command = ph->bd->cmdread;
-    ioreq->iotd_Req.io_Length  = size;
-    ioreq->iotd_Req.io_Data    = mem;
-    ioreq->iotd_Req.io_Offset  = offset;
-    ioreq->iotd_Req.io_Actual  = offset >> 32;
-
-    return DoIO((struct IORequest *)ioreq);
-}
-
-/*
-    write a single block within partition ph
-*/
-LONG PartitionWriteBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
-{
-    return writeDataFromBlock(ph, block, ph->de.de_SizeBlock << 2, mem);
-}
-
-/* write 'size' bytes starting from 'block' within partition ph */
-LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem)
-{
-    UQUAD offset = (getStartBlock(ph) + block) * (ph->de.de_SizeBlock<<2);
-    struct IOExtTD *ioreq = ph->bd->ioreq;
-
-    ioreq->iotd_Req.io_Command = ph->bd->cmdwrite;
-    ioreq->iotd_Req.io_Length  = size;
-    ioreq->iotd_Req.io_Data    = mem;
-    ioreq->iotd_Req.io_Offset  = offset;
-    ioreq->iotd_Req.io_Actual  = offset>>32;
-
-    return DoIO((struct IORequest *)ioreq);
-}
-
 LONG deviceError(LONG err)
 {
     switch (err)
