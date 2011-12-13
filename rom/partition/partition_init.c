@@ -26,7 +26,7 @@ static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 
     /*
      * This is intentionally allowed to fail.
-     * It fill fail if we are in kickstart, partition.library is initialized
+     * It will fail if we are in kickstart; partition.library is initialized
      * long before dos.library.
      */
     LIBBASE->pb_DOSBase = OpenLibrary("dos.library", 36);

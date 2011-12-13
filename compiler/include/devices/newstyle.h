@@ -2,10 +2,10 @@
 #define DEVICES_NEWSTYLE_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: New Style Device standard as described on Amiga Developper CD
+    Desc: New Style Device standard as described on Amiga Developer CD
     Lang: english
 */
 

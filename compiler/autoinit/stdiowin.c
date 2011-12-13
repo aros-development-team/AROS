@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: autoinit library - open IO window when started from WB
@@ -48,7 +48,7 @@ static void __startup_stdiowin(void)
         return;
     }
 
-    D(bug("[__startup_stdiowin] Opening console window: %s\n", __stdiowin));
+    D(bug("[__startup_stdiowin] Opening console window: '%s'\n", __stdiowin));
 
     __iowinw = Open(__stdiowin, MODE_OLDFILE);
     __iowinr = DupFH(__iowinw, MODE_OLDFILE, DOSBase);

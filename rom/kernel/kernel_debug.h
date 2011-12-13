@@ -24,7 +24,7 @@ static inline void _bug(APTR kernelBase, const char *format, ...)
     va_start(args, format);
 
     /* 
-     * We use iternal entry here. This is done because this function can be used
+     * We use internal entry here. This is done because this function can be used
      * during early boot, while KernelBase is NULL. However it's still passed,
      * just in case.
      */

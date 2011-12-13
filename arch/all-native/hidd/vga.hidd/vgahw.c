@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: VGA Inside...
@@ -412,7 +412,7 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     regs->Attribute[16] = 0x81; /* wrong for the ET4000 */
     regs->Attribute[17] = 0x00; /* GJA -- overscan. */
     /*
-	Attribute[17] is the overscan, and is initalised above only at startup
+	Attribute[17] is the overscan, and is initialised above only at startup
 	time, and not when mode switching.
     */
     regs->Attribute[18] = 0x0F;
@@ -458,7 +458,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     unsigned char   	    *dst, *dstPtr;
     unsigned int	    srcx, srcy;
 
-    /* In 640x480x16 mode VRAM data has planar layout .All 4 bitplanes share
+    /* In 640x480x16 mode VRAM data has planar layout. All 4 bitplanes share
        the same addresses, we use sequencer register in order to select
        which plane to write to. 
        is very weird: we have LONGs in which first bytes contain bits 0 of
@@ -488,7 +488,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, struct Box *pbox)
     /* We don't check top-left corner of the display.
        We assume that refresh region will never have negative
        coordinates. Also we assume that the entire screen is
-       covered with the bitmap (i. e. bitmap is not smaller than
+       covered with the bitmap (i.e. bitmap is not smaller than
        physical display area and is not moved out of the view.
        We could implement this, but we trade this off for speed */
 
