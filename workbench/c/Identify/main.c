@@ -35,17 +35,17 @@
 
     EXAMPLE
 
-	Identify s:startup-sequenceS:startup-sequence        
-	> Text/Ascii    
-	
-	(This will identify the startup-sequence as a text file.)
-	
+        Identify S:Startup-Sequence
+        > Text/Ascii
+
+        (This will identify the startup-sequence as a text file.)
+
     BUGS
 
     SEE ALSO
 
         AddDatatypes
-	
+
     INTERNALS
 
     HISTORY
