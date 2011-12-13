@@ -171,6 +171,13 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LHA(a1),\
     __AROS_LHAQUAD(a2),\
     __AROS_LH_BASE(bt,bn)) {
+#define AROS_LH3QUAD1(t,n,a1,a2,a3,a4,bt,bn,o,s) \
+    __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
+    __AROS_LHA(a1),\
+    __AROS_LHA(a2),\
+    __AROS_LHA(a3),\
+    __AROS_LHAQUAD(a4),\
+    __AROS_LH_BASE(bt,bn)) {
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
     __AROS_LH_PREFIX t AROS_SLIB_ENTRY(n,s,o)(\
@@ -543,7 +550,8 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LPAQUAD(a3),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA(a1),\
-    __AROS_LCAQUAD(a2),\
+    __AROS_LCA(a2),\
+    __AROS_LCAQUAD(a3),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LC3QUAD1(t,n,a1,a2,a3,a4,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
@@ -553,7 +561,9 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_LPAQUAD(a4),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
     __AROS_LCA(a1),\
-    __AROS_LCAQUAD(a2),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCAQUAD(a4),\
     __AROS_LC_BASE(bt,bn)))
 
 #define AROS_LC0(t,n,bt,bn,o,s) \
