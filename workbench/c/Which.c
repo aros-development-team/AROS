@@ -23,23 +23,23 @@
     FUNCTION
 
         Find and print the location of a specific program or directory.
-	Resident programs are marked as RESIDENT if they are not
-	interal resident in which case they are marked as INTERNAL.
+        Resident programs are marked as RESIDENT if they are not
+        internal resident in which case they are marked as INTERNAL.
 
-	Which searches the resident list, the current directory,
+        Which searches the resident list, the current directory,
         the command paths and the C: assign. If the item was not
-	found the condition flag is set to WARN but no error is
-	printed.
+        found the condition flag is set to WARN but no error is
+        printed.
 
     INPUTS
 
         FILE   --  the command/directory to search for
         NORES  --  don't include resident programs in the search
-	RES    --  consider resident programs only
-	ALL    --  find all locations of the FILE. This may cause the
+        RES    --  consider resident programs only
+        ALL    --  find all locations of the FILE. This may cause the
                    printing of the same location several times, for
-		   instance if the current directory is C: and the
-		   FILE was found in C:
+                   instance if the current directory is C: and the
+                   FILE was found in C:
 
     RESULT
 
@@ -54,16 +54,15 @@
     INTERNALS
 
         Executable files in AROS currently haven't got the e-flag set,
-	which makes Which unusable for now in emulated mode.
+        which makes Which unusable for now in emulated mode.
 
     HISTORY
 
         09.02.1998  SDuvan  --  implemented
         11.11.2000  SDuvan  --  rewrote most of the code and added 
-	                        correct path support
+                                correct path support
 
 ******************************************************************************/
- 
 
 #include <aros/debug.h>
 #include <proto/exec.h>
