@@ -33,7 +33,7 @@
         Standard DOS return codes.
 
     NOTES
- 
+
  Both  CHAR  (character)  and WORD arguments allow to define a begin and an end
 position  in the original string. Words are strings separated by a SEPARATOR (a
 space character (" ") is the default), which can also be a string. 
