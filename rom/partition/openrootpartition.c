@@ -90,6 +90,7 @@
                                 return ph;
                             }
                         }
+                        CloseDevice((struct IORequest *)ph->bd->ioreq);
                     }
                     DeleteIORequest((struct IORequest *)ph->bd->ioreq);
                 }
