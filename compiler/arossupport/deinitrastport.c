@@ -21,14 +21,17 @@
 	struct RastPort *rp)
 
 /*  FUNCTION
-	Frees the extra contents associated with a RastPort structure.
-	The structure itself is not freed.
+
+        Frees the extra contents associated with a RastPort structure.
+        The structure itself is not freed.
 
     INPUTS
-	rp - The RastPort which contents are to be freed.
+
+        rp - The RastPort which contents are to be freed.
 
     RESULT
-	None.
+
+        None.
 
     NOTES
 
@@ -37,7 +40,8 @@
     BUGS
 
     SEE ALSO
-	InitRastPort()
+
+        graphics.library/InitRastPort()
 
     INTERNALS
 
