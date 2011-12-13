@@ -45,7 +45,8 @@ struct phony_segment
     BUGS
 
     SEE ALSO
-        UnloadSeg()
+
+        dos.library/UnloadSeg()
 
     INTERNALS
 
