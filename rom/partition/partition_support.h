@@ -7,9 +7,9 @@
 
 */
 
-#include <exec/types.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
+#include <proto/partition.h>
 
 #include "partition_intern.h"
 
@@ -68,16 +68,24 @@ extern const struct FSFunctionTable FilesystemRDB;
 LONG PartitionGetGeometry(struct Library *, struct IOExtTD *, struct DriveGeometry *);
 void PartitionNsdCheck(struct Library *, struct PartitionHandle *);
 ULONG getStartBlock(struct PartitionHandle *);
-LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
-LONG readDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
-LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
-LONG writeDataFromBlock(struct PartitionHandle *ph, UQUAD block, ULONG size, void *mem);
 LONG deviceError(LONG err);
 
 void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *ph, ULONG first_sector, ULONG count_sector);
 void setDosType(struct DosEnvec *de, ULONG type);
 
 unsigned int Crc32_ComputeBuf(unsigned int inCrc32, const void *buf, unsigned int bufLen);
+
+/* read a single block within partition ph */
+static inline LONG readBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
+{
+    return ReadPartitionDataQ(ph, mem, ph->de.de_SizeBlock << 2, block);
+}
+
+/* write a single block within partition ph */
+static inline LONG PartitionWriteBlock(struct Library *PartitionBase, struct PartitionHandle *ph, ULONG block, void *mem)
+{
+    return WritePartitionDataQ(ph, mem, ph->de.de_SizeBlock << 2, block);
+}
 
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock

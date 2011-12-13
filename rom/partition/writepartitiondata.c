@@ -10,10 +10,10 @@
         AROS_LH3QUAD1(LONG, WritePartitionDataQ,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG                   , DataSize  , D2),
         AROS_LHA(struct PartitionHandle *, Partition , A0),
         AROS_LHA(APTR                    , Buffer    , A1),
-        AROS_LHAQUAD(UQUAD               , StartBlock, D0, D1),
+        AROS_LHA(ULONG                   , DataSize  , D0),
+        AROS_LHAQUAD(UQUAD               , StartBlock, D1, D2),
 
 /*  LOCATION */
         struct Library *, PartitionBase, 26, Partition)
@@ -22,11 +22,11 @@
         Write raw data to the partition.
 
     INPUTS
-        StartBlock - Number of the first block to start writing from.
-        DataSize   - Size of data to read in bytes. This size must be a multiple of block size,
-                     in order to ensure correct operation.
         Partition  - a handle to a partition to read from
         Buffer     - a pointer to a data buffer
+        DataSize   - Size of data to read in bytes. This size must be a multiple of block size,
+                     in order to ensure correct operation.
+        StartBlock - Number of the first block to start writing from.
 
     RESULT
         A return code of DoIO() function which was used to write the data
