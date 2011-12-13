@@ -27,7 +27,7 @@
     INPUTS
 
     name   --  Name of the device to inhibit (including a ':')
-    onoff  --  Specify whether to inhinit (DOSTRUE) or uninhibit (DOSFALSE)
+    onoff  --  Specify whether to inhibit (DOSTRUE) or uninhibit (DOSFALSE)
                the device
 
     RESULT
