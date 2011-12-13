@@ -22,15 +22,15 @@
 
     FUNCTION
 
-        Saves a bootblock to a floppy disk. If the NOBOOT is appointed it 
+        Saves a bootblock to a floppy disk. If the NOBOOT is appointed it
         will not be able to be boot on computer startup (Amiga only)
 
     INPUTS
 
-        DRIVE     --  show information on file system devices
-        NOBOOT  --  should be set on PC Floppy drives
-        CHECK  --  Verify the existing bootblock
-        FFS --  For FFS formatted Floppy disks
+        DRIVE     --  Show information on file system devices
+        NOBOOT    --  Should be set on PC Floppy drives
+        CHECK     --  Verify the existing bootblock
+        FFS       --  For FFS formatted Floppy disks
 
     RESULT
 
@@ -38,17 +38,17 @@
 
         This is a pretty useless command for PC-Drives, since most systems
         require grub to be present on disk for AROS to boot.
-	
+
     EXAMPLE
 
-	Install df0: NOBOOT FFS    
-	
+        Install df0: NOBOOT FFS
+
     BUGS
 
     SEE ALSO
 
         Install-i386-pc, Sys:System/Format
-	
+
     INTERNALS
 
     HISTORY
