@@ -1,0 +1,14 @@
+# Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES := Install-grub2
+
+USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\"" -isystem $(SRCDIR)/arch/all-pc/boot/grub2-aros/include
+
+%build_progs mmake=workbench-c-install-grub2 \
+    files=$(FILES) targetdir=$(AROS_C) \
+    uselibs="arossupport amiga"
+
+%common
