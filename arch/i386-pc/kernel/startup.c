@@ -107,7 +107,7 @@ static const struct MemRegion PC_Memory[] =
      * Give low memory a bit lower priority. This will help us to locate its MemHeader (the last one in the list).
      * We explicitly need low memory for SMP bootstrap.
      */
-    {0x00000000, 0x00100000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
+    {0x00000000, 0x000a0000, "Low memory"    , -6, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     {0x00100000, 0x01000000, "ISA DMA memory", -5, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_CHIP|MEMF_31BIT|MEMF_24BITDMA},
     /*
      * FIXME: The following should also be CHIP. trackdisk.device fix is needed
