@@ -22,7 +22,7 @@
     FUNCTION
 
         Print additional information why an operation failed. Ordinarily
-	when a command fails a breif message is printed that typically
+	when a command fails a brief message is printed that typically
 	includes the name of the command that failed but provides few
 	details. Why fills in details related to the failed operation.
 
