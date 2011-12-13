@@ -34,7 +34,7 @@ Currently the following 9 Keywords are defined:
                 a filetype. Please use the fit-all-pattern "#?" .
                 createdtdesc does this too, if Pattern is ommited.
 
-5)  Mask        Comparision mask to identify a file by its constant parts.
+5)  Mask        Comparison mask to identify a file by its constant parts.
                 To be specified as white space separated list of any
                 of the following items:
                 
