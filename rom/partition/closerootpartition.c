@@ -1,8 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
+
 #include <proto/exec.h>
 #include <exec/memory.h>
 
@@ -15,13 +16,13 @@
     NAME */
 #include <libraries/partition.h>
 
-   AROS_LH1(void, CloseRootPartition,
+    AROS_LH1(void, CloseRootPartition,
 
 /*  SYNOPSIS */
-   AROS_LHA(struct PartitionHandle *, ph,       A1),
+    AROS_LHA(struct PartitionHandle *, ph,       A1),
 
 /*  LOCATION */
-   struct Library *, PartitionBase, 6, Partition)
+    struct Library *, PartitionBase, 6, Partition)
 
 /*  FUNCTION
     close root handle allocated by OpenRootPartition()
@@ -50,11 +51,13 @@
 
     if (ph->table)
     {
-    struct PTFunctionTable *handler = ph->table->handler;
+        struct PTFunctionTable *handler = ph->table->handler;
 
         if (handler->closePartitionTable)
             handler->closePartitionTable(PartitionBase, ph);
     }
+
+    CloseDevice((struct IORequest *)ph->bd->ioreq);
     DeleteIORequest((struct IORequest *)ph->bd->ioreq);
     DeleteMsgPort(ph->bd->port);
     FreeMem(ph->bd, sizeof(struct PartitionBlockDevice));
