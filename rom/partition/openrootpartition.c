@@ -81,7 +81,7 @@
                                 ph->de.de_HighCyl        = ph->dg.dg_Cylinders-1;
                                 ph->de.de_BufMemType     = ph->dg.dg_BufMemType;
 
-                                /* The followin are common defaults */
+                                /* The following are common defaults */
                                 ph->de.de_TableSize      = DE_BUFMEMTYPE;
                                 ph->de.de_SectorPerBlock = 1;
                                 ph->de.de_NumBuffers     = 20;

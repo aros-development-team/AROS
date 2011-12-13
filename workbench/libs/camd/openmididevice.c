@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -89,7 +89,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 			if
 			  (
 			   /* Do some tests to check that we have got a correct mididevicedata.
-			      Its not failproof, but the chance for this to fail should be small.
+			      It's not failproof, but the chance for this to fail should be small.
 			      */
 			   mididevicedata->Magic==MDD_Magic && 		//Hopefully, this one should only succeed once.
 			   mididevicedata->Name!=NULL &&

@@ -5,7 +5,7 @@
     Copyright  1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Headerfile for Intuitions' MENUDECORCLASS
+    Desc: Headerfile for Intuition's MENUDECORCLASS
     Lang: english
 */
 

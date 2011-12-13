@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Miscellaneous support functions.
@@ -154,7 +154,7 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
 #if 0 /* Commented out - safe, but too slow */
     /* If we have ARGB imagery, but no Palettized imagery,
      * synthesize some. Use an EHB palette, similar to the
-     * VGA-16 color pallette.
+     * VGA-16 color palette.
      *
      * The goal here is to be fast & usable, not slow and accurate.
      */
@@ -212,7 +212,7 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
 #endif
 
 
-    /* Prepate ARGB selected imagery, if needed */
+    /* Prepare ARGB selected imagery, if needed */
     image = &ni->ni_Image[1];
 #if 0 /* Commented out - safe, but too slow */
     if (image->ARGB == NULL &&
