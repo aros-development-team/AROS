@@ -34,49 +34,48 @@
 
     NOTES
 
- Both  CHAR  (character)  and WORD arguments allow to define a begin and an end
-position  in the original string. Words are strings separated by a SEPARATOR (a
-space character (" ") is the default), which can also be a string. 
+        Both  CHAR  (character)  and WORD arguments allow to define a begin and an end
+        position  in the original string. Words are strings separated by a SEPARATOR (a
+        space character (" ") is the default), which can also be a string. 
 
- Positions  range  is specified using numbers with the form "P1-P2", where "P1"
-is  the position of the first character (resp. word) to extract in the original
-string, "-" is the hyphen-minus character, and "P2" is the position of the last
-character (resp. word) to extract.
+        Positions  range  is specified using numbers with the form "P1-P2", where "P1"
+        is  the position of the first character (resp. word) to extract in the original
+        string, "-" is the hyphen-minus character, and "P2" is the position of the last
+        character (resp. word) to extract.
 
- If  only  one  position  is  supplied, then only one character (resp. word) is
-extracted,  unless  the  hyphen-minus  character is supplied too: P- extracts a 
-string  begining  at  the  character (resp. word) at position P in the original
-string until the end, and -P extracts a string starting at the beginning of the
-original  string,  and  ending with the character (resp. word) at position P in
-the original string.
-
+        If  only  one  position  is  supplied, then only one character (resp. word) is
+        extracted,  unless  the  hyphen-minus  character is supplied too: P- extracts a 
+        string  begining  at  the  character (resp. word) at position P in the original
+        string until the end, and -P extracts a string starting at the beginning of the
+        original  string,  and  ending with the character (resp. word) at position P in
+        the original string.
 
     EXAMPLES
 
-Example 1:
-> Cut "A dummy sentence" CHAR 7
-y
-extract one character.
+        Example 1:
+        > Cut "A dummy sentence" CHAR 7
+        y
+        extract one character.
 
-Example 2:
-> Cut "A dummy sentence" CHAR 6-12
-my sent
-extract from character 6 to 12.
+        Example 2:
+        > Cut "A dummy sentence" CHAR 6-12
+        my sent
+        extract from character 6 to 12.
 
-Example 3:
-> Cut "A dummy sentence" CHAR -7
-A dummy
-extract from character 1 to 7 without specifying the beginning position.
+        Example 3:
+        > Cut "A dummy sentence" CHAR -7
+        A dummy
+        extract from character 1 to 7 without specifying the beginning position.
 
-Example 4:
-> Cut "A dummy sentence" CHAR 12-
-tence
-extract from character 12 of the string until the end.
+        Example 4:
+        > Cut "A dummy sentence" CHAR 12-
+        tence
+        extract from character 12 of the string until the end.
 
-Example 5:
-> Cut "A dummy sentence" WORD 2 SEPARATOR "en"
-t
-extract the second word (using an user-defined separator).
+        Example 5:
+        > Cut "A dummy sentence" WORD 2 SEPARATOR "en"
+        t
+        extract the second word (using an user-defined separator).
 
 
 ******************************************************************************/
