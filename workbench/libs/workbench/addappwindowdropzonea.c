@@ -23,7 +23,7 @@
 /*  SYNOPSIS */
         AROS_LHA(struct AppWindow *, aw      , A0),
         AROS_LHA(ULONG             , id      , D0),
-        AROS_LHA(ULONG             , userdata, D1),
+        AROS_LHA(IPTR              , userdata, D1),
         AROS_LHA(struct TagItem *  , tags    , A1),
 
 /*  LOCATION */

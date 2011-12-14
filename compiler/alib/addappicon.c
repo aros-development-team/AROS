@@ -19,7 +19,7 @@
 
 /*  SYNOPSIS */
 	ULONG id,
-	ULONG userdata,
+	IPTR  userdata,
 	CONST_STRPTR text,
 	struct MsgPort * msgport,
 	BPTR lock,

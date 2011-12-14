@@ -166,7 +166,7 @@ struct AppWindowDropZoneMsg
     struct RastPort *adzm_RastPort;
     struct IBox      adzm_DropZoneBox;
     ULONG            adzm_ID;
-    ULONG            adzm_UserData;
+    IPTR             adzm_UserData;
     LONG             adzm_Action;  /* see below */
 };
 

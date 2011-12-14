@@ -26,7 +26,7 @@
         AROS_LH7(struct AppIcon *, AddAppIconA,
 /*  SYNOPSIS */
         AROS_LHA(ULONG,               id,       D0),
-        AROS_LHA(ULONG,               userdata, D1),
+        AROS_LHA(IPTR,                userdata, D1),
         AROS_LHA(const char *,        text,     A0),
         AROS_LHA(struct MsgPort *,    msgport,  A1),
         AROS_LHA(BPTR,                lock,     A2),

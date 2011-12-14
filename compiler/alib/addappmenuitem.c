@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 	ULONG id,
-	ULONG userdata,
+	IPTR  userdata,
 	STRPTR text,
 	struct MsgPort * msgport,
 	Tag tag1,

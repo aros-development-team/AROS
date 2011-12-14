@@ -20,7 +20,7 @@
 /*  SYNOPSIS */
         struct AppWindow * aw,
         ULONG              id,
-        ULONG              userdata,
+        IPTR               userdata,
         Tag                tag1,
         ...)
 
