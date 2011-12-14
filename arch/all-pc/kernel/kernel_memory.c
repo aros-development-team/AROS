@@ -12,7 +12,11 @@
 #include <exec/lists.h>
 #include <exec/memory.h>
 
+#include "kernel_base.h"
+#include "kernel_debug.h"
 #include "kernel_mmap.h"
+
+#define D(x)
 
 /*
  * Append a single chunk to a MemHeader.
@@ -76,137 +80,169 @@ static struct MemChunk *krnAddMemChunk(struct MemHeader **mhPtr, struct MemChunk
 }
 
 /*
- * The same as above, but aware of kickstart placement
- * klo - Lowest address of the kickstart region
- * khi - Next free address beyond the kickstart (kickstart highest address + 1)
- */
-static struct MemChunk *krnAddKickChunk(struct MemHeader **mhPtr, struct MemChunk *prev, IPTR start, IPTR end,
-                                        IPTR klo, IPTR khi, IPTR mh_Start, const struct MemRegion *reg)
-{
-    /* If the kickstart is placed outside of this region, just add it as it is */
-    if ((klo >= end) || (khi <= start))
-        return krnAddMemChunk(mhPtr, prev, start, end, mh_Start, reg);
-
-    /* Have some usable space above the kickstart ? */
-    if (klo > start)
-        prev = krnAddMemChunk(mhPtr, prev, start, klo, mh_Start, reg);
-
-    /* Have some usable space below the kickstart ? */
-    if (khi < end)
-        prev = krnAddMemChunk(mhPtr, prev, khi, end, mh_Start, reg);
-
-    return prev;
-}
-
-/*
  * Build conventional memory lists out of multiboot memory map structure.
  * Will add all MemHeaders to the specified list in the same order they
  * were created, not in the priority one.
  * Memory breakup is specified by an array of MemRegion structures.
  *
- * It is suggested that:
- * 1. Addresses in both memory map and MemRegion structures
- *    are sorted in ascending order.
- * 2. MemRegion structures must specify continuous addresses range (i. e. it is guaranteed
- *    that none of memory map entries will happen to be between two MemRegions).
+ * The algorithm is the following:
+ * 1. Traverse MemRegion array. For each region repeat all of the following:
+ * 2. Set starting address (cur_start) to the beginning of the region.
+ * 3. Traverse the entire memory map, locating the lowest fitting chunk.
+ * 4. If we have found a chunk in (3), we add it to the memory list.
+ * 5. If there's a gap between this chunk and the previously added one, we also start a new MemHeader.
+ * 6, Set cur_start to the end of this repeat the process from step (3).
+ *
+ * This effectively sorts memory map entries in ascending order and merges adjacent chunks into single MemHeaders.
  */
-void mmap_InitMemory(struct mb_mmap *mmap, unsigned long len, struct MinList *memList,
+void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct MinList *memList,
                      IPTR klo, IPTR khi, IPTR reserve, const struct MemRegion *reg)
 {
-    while (len >= sizeof(struct mb_mmap))
+    while (reg->name)
     {
-        /* We don't have a header yet */
         struct MemHeader *mh = NULL;
-        struct MemChunk *mc = NULL;
-        IPTR phys_start = mmap->addr;
-        IPTR end = 0;
-        IPTR addr;
+        struct MemChunk *mc  = NULL;
+        IPTR phys_start = ~0;
+        IPTR cur_start  = reg->start;
+        IPTR chunk_start;
+        IPTR chunk_end;
+        unsigned int chunk_type;
 
-        /* Go to the first matching region */
-        while (reg->end <= phys_start)
+        D(nbug("[MMAP] Processing region 0x%p - 0x%p (%s)...\n", reg->start, reg->end, reg->name));
+
+        do
         {
-            reg++;
-            /* NULL name is a terminator */
-            if (reg->name == NULL)
-                return;
-        }
+            struct mb_mmap *mmap = mmap_addr;
+            unsigned long len = mmap_len;
 
-        /* Adjust start address if needed */
-        if (phys_start < reg->start)
-            phys_start = reg->start;
+            chunk_start = ~0;
+            chunk_end   = 0;
+            chunk_type  = 0;
 
-        for (;;)
-        {
+            while (len >= sizeof(struct mb_mmap))
+            {
+                IPTR start = mmap->addr;
+                IPTR end   = 0;
+    
 #ifdef __i386__
-            /* We are on i386, ignore high memory */
-            if (mmap->addr_high)
-                break;
+                /* We are on i386, ignore high memory */
+                if (mmap->addr_high)
+                {
+                    /* Go to the next chunk */
+                    len -= mmap->size + 4;
+                    mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap + 4);
 
-            if (mmap->len_high)
-                end = 0x80000000;
-            else
+                    continue;
+                }
+
+                if (mmap->len_high)
+                    end = 0x80000000;
+                else
 #endif
-                end  = mmap->addr + mmap->len;
-            addr = mmap->addr;
+                end = mmap->addr + mmap->len;
 
-            if (addr < reg->start)
-            {
-                /* 
-                 * This region includes space from the previous MemHeader.
-                 * Trim it.
-                 */
-                addr = reg->start;
+                if ((cur_start < end) && (reg->end > start))
+                {
+                    if (cur_start > start)
+                        start = cur_start;
+                    if (reg->end < end)
+                        end = reg->end;
+
+                    if (start < chunk_start)
+                    {
+                        chunk_start = start;
+                        chunk_end   = end;
+                        chunk_type  = mmap->type;
+
+                        if (chunk_start == cur_start)
+                        {
+                            /*
+                             * Terminate search early if the found chunk is in the beginning of the region
+                             * to consider. There will be no better match.
+                             */
+                            break;
+                        }
+                    }
+                }
+
+                /* Go to the next chunk */
+                len -= mmap->size + 4;
+                mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap + 4);
             }
-            else if (addr == 0)
+
+            if (chunk_end)
             {
-                /* Reserve requested space in zero page */
-                addr = reserve;
+                /* Have a chunk to add. Either reserved or free. */
+
+                if (mh && (chunk_start > cur_start))
+                {
+                    /*
+                     * There is a physical gap in the memory. Add current MemHeader to the list and reset pointers
+                     * in order to begin a new one.
+                     */
+                    D(nbug("[MMAP] Physical gap   0x%p - 0x%p\n", cur_start, chunk_start));
+
+                    ADDTAIL(memList, mh);
+                    mh = NULL;
+                    phys_start = ~0;
+                }
+
+                if (phys_start == ~0)
+                    phys_start = chunk_start;
+
+                if (chunk_type == MMAP_TYPE_RAM)
+                {
+                    /* Take reserved space into account */
+                    if (reserve > chunk_start)
+                        chunk_start = reserve;
+
+                    D(nbug("[MMAP] Usable   chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
+
+                    /*
+                     * Now let's add the chunk. However, this is the right place to remember about klo and khi.
+                     * Area occupied by kickstart must appear to be preallocated. This way our chunk can be
+                     * split into up to three chunks, one of which will be occupied by the KS.
+                     */
+                    if ((klo >= chunk_end) || (khi <= chunk_start))
+                    {
+                        /* If the kickstart is placed outside of this region, just add it as it is */
+                        mc = krnAddMemChunk(&mh, mc, chunk_start, chunk_end, phys_start, reg);
+                    }
+                    else
+                    {
+                        /* Have some usable space above the kickstart ? */
+                        if (klo > chunk_start)
+                            mc = krnAddMemChunk(&mh, mc, chunk_start, klo, phys_start, reg);
+
+                        /* Have some usable space below the kickstart ? */
+                        if (khi < chunk_end)
+                            mc = krnAddMemChunk(&mh, mc, khi, chunk_end, phys_start, reg);
+                    }
+                }
+                else if (mh)
+                {
+                    /* Just expand physical MemHeader area, but do not add the chunk as free */
+                    D(nbug("[MMAP] Reserved chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
+
+                    mh->mh_Upper = chunk_end;
+                }
+                
+                if (chunk_end == reg->end)
+                {
+                    /* Terminate early if we have reached the end of region */
+                    break;
+                }
+
+                cur_start = chunk_end;
             }
 
-            /* Is the limit in the middle of current chunk ? */
-            if (end > reg->end)
-            {
-                /* Add a partial chunk, up to limit */
-                end = reg->end;
+        } while (chunk_end);
 
-                if (mmap->type == MMAP_TYPE_RAM)
-                    krnAddKickChunk(&mh, mc, addr, end, klo, khi, phys_start, reg);
-
-                /* We will continue with the next region within this chunk */
-                reg++;
-                break;
-            }
-
-            /* Add the entire chunk */
-            if (mmap->type == MMAP_TYPE_RAM)
-                mc = krnAddKickChunk(&mh, mc, addr, end, klo, khi, phys_start, reg);
-
-            /* Go to the next chunk */
-            len -= mmap->size + 4;
-            mmap = (struct mb_mmap *)(mmap->size + (IPTR)mmap + 4);
-
-            /* If this was the last chunk, we are done */
-            if (len < sizeof(struct mb_mmap))
-                break;
-
-            /*
-             * If the next chunk is not a physical continuation of the previous one,
-             * we break inner loop and start over again with a new MemHeader
-             */
-            if (mmap->addr != end)
-                break;
-        }
-
-        /* Complete the MemHeader and add it to the list */
+        /* Add the last MemHeader if exists */
         if (mh)
-        {
-            mh->mh_Upper = (APTR)end;
             ADDTAIL(memList, mh);
-        }
 
-        /* If we reached the end of layout table, exit */
-        if (reg->name == NULL)
-            return;
+        reg++;
     }
 }
 
