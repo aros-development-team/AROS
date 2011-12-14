@@ -111,7 +111,7 @@ struct AppMessage
 {
     struct Message am_Message;
     UWORD          am_Type;     /* see below */
-    ULONG          am_UserData;
+    IPTR           am_UserData;
     ULONG          am_ID;
     LONG           am_NumArgs;
     struct WBArg * am_ArgList;
