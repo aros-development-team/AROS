@@ -108,7 +108,7 @@ struct MemHeader *mm_AllocExecHeader(struct MemHeader *mh, STRPTR name, IPTR max
         bootmh->mh_Node.ln_Type    = mh->mh_Node.ln_Type;
         bootmh->mh_Node.ln_Pri     = mh->mh_Node.ln_Pri;
         bootmh->mh_Attributes      = mh->mh_Attributes;
-        bootmh->mh_First           = (IPTR)bootmh + MEMHEADER_TOTAL;
+        bootmh->mh_First           = (APTR)((IPTR)bootmh + MEMHEADER_TOTAL);
         bootmh->mh_First->mc_Next  = NULL;
         bootmh->mh_First->mc_Bytes = maxsize - MEMHEADER_TOTAL;
 
@@ -116,8 +116,8 @@ struct MemHeader *mm_AllocExecHeader(struct MemHeader *mh, STRPTR name, IPTR max
          * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
          * inside the region it describes, the region includes MemHeader.
          */
-        bootmh->mh_Lower           = (IPTR)bootmh;
-        bootmh->mh_Upper           = (IPTR)bootmh + maxsize;
+        bootmh->mh_Lower           = (APTR)((IPTR)bootmh);
+        bootmh->mh_Upper           = (APTR)((IPTR)bootmh + maxsize);
         bootmh->mh_Free            = bootmh->mh_First->mc_Bytes;
     }
 
