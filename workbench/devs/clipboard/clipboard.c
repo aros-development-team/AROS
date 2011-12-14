@@ -93,7 +93,7 @@ AROS_UFH2(void, putchr,
 /****************************************************************************************/
 
 #define cb_sprintf(CBBase, buffer, format, ...) \
-({ ULONG _args[]={__VA_ARGS__}; APTR bufptr = buffer; RawDoFmt(format, _args, (VOID_FUNC)AROS_ASMSYMNAME(putchr), &bufptr); })
+({ IPTR  _args[]={__VA_ARGS__}; APTR bufptr = buffer; RawDoFmt(format, _args, (VOID_FUNC)AROS_ASMSYMNAME(putchr), &bufptr); })
 
 #else
 
