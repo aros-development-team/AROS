@@ -965,7 +965,7 @@ BD_LDFLAGS   := %(ldflags)
 #MM %(mmake) : includes-generate-deps core-linklibs linklibs-%(uselibs)
 %(mmake) : $(BD_TARGETDIR)/$(BD_PROGNAME)
 
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick),)
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
