@@ -101,7 +101,25 @@ struct MemHeader *mm_AllocExecHeader(struct MemHeader *mh, STRPTR name, IPTR max
     struct MemHeader *bootmh = mm_Allocate(mh, maxsize, MEMF_ANY);
 
     if (bootmh)
-    	krnCreateMemHeader(name, mh->mh_Node.ln_Pri, bootmh, maxsize, mh->mh_Attributes);
+    {
+	bootmh->mh_Node.ln_Succ    = NULL;
+        bootmh->mh_Node.ln_Pred    = NULL;
+        bootmh->mh_Node.ln_Name    = name;
+        bootmh->mh_Node.ln_Type    = mh->mh_Node.ln_Type;
+        bootmh->mh_Node.ln_Pri     = mh->mh_Node.ln_Pri;
+        bootmh->mh_Attributes      = mh->mh_Attributes;
+        bootmh->mh_First           = (IPTR)bootmh + MEMHEADER_TOTAL;
+        bootmh->mh_First->mc_Next  = NULL;
+        bootmh->mh_First->mc_Bytes = maxsize - MEMHEADER_TOTAL;
+
+        /*
+         * mh_Lower and mh_Upper are informational only. Since our MemHeader resides
+         * inside the region it describes, the region includes MemHeader.
+         */
+        bootmh->mh_Lower           = (IPTR)bootmh;
+        bootmh->mh_Upper           = (IPTR)bootmh + maxsize;
+        bootmh->mh_Free            = bootmh->mh_First->mc_Bytes;
+    }
 
     return bootmh;
 }
