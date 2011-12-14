@@ -24,7 +24,7 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
         AROS_LH5(struct AppMenuItem *, AddAppMenuItemA,
 /*  SYNOPSIS */
         AROS_LHA(ULONG           , id      , D0),
-        AROS_LHA(ULONG           , userdata, D1),
+        AROS_LHA(IPTR            , userdata, D1),
         AROS_LHA(APTR            , text    , A0),
         AROS_LHA(struct MsgPort *, msgport , A1),
         AROS_LHA(struct TagItem *, taglist , A3),

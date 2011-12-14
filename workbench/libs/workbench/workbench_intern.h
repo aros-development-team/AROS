@@ -87,7 +87,7 @@ struct AppIcon
     struct Node        ai_Node;
 
     ULONG              ai_ID;
-    ULONG              ai_UserData;
+    IPTR               ai_UserData;
 
     ULONG              ai_Flags;
     CONST_STRPTR       ai_Text;
@@ -119,7 +119,7 @@ struct AppWindow
     struct Node     aw_Node;
 
     ULONG           aw_ID;
-    ULONG           aw_UserData;
+    IPTR            aw_UserData;
 
     struct Window  *aw_Window;
     struct List     aw_DropZones;   // List of AppWindowDropZones for this AppWindow.
@@ -141,7 +141,7 @@ struct AppWindowDropZone
     struct Node       awdz_Node;
 
     ULONG             awdz_ID;
-    ULONG             awdz_UserData;
+    IPTR              awdz_UserData;
 
     struct IBox       awdz_Box;
 
@@ -158,7 +158,7 @@ struct AppMenuItem
     struct Node     ami_Node;
 
     ULONG           ami_ID;
-    ULONG           ami_UserData;
+    IPTR            ami_UserData;
 
     STRPTR          ami_Text;
     STRPTR          ami_CommandKey;
