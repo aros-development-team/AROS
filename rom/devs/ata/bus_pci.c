@@ -30,6 +30,7 @@
 
 #include "ata.h"
 #include "pci.h"
+#include "timer.h"
 
 typedef struct 
 {
@@ -352,12 +353,6 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
      */
     if (SubClass == PCI_SUBCLASS_SATA)
     {
-    /*
-        WARNING: This will most probably result in failed boot on number of PC's.
-        It is not enough to just clear GHC_AE, see chapter 10.2 Hardware Prerequisites to Enable/Disable GHC.AE on ahci 1.3 specification
-        I can confirm this happening on my P45D motherboard with mixed IDE/SATA drives
-    */
-//      return;
 
     	APTR hba_phys = NULL;
     	IPTR hba_size = 0;
@@ -400,80 +395,87 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
 	ghc = mmio_inl_le(&hwhba->ghc);
 	DSATA(bug("[PCI-ATA] Capabilities: 0x%08X, host control: 0x%08X\n", cap, ghc));
 
+        /*
+         * Some hardware may report GHC_AE to be zero, together with CAP_SAM set (indicating
+         * that the device doesn't support legacy IDE registers). Seems to be spec violation
+         * (the AHCI specification says that in this cases GHC_AE is read-only bit which is
+         * hardwired to 1).
+         * Attempting to drive such a hardware causes ata.device to freeze.
+         * This effect has been observed on Marvel 9172 controller (and some other HW,
+         * according to user reports, but nobody has ever provided a debug log).
+         */
+	if (cap & CAP_SAM)
+	{
+	    DSATA(bug("[PCI-ATA] Legacy mode is not supported, device will be ignored\n"));
+
+	    OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+	    return;
+	}
+
 	if (ghc & GHC_AE)
 	{
 	    DSATA(bug("[PCI-ATA] AHCI enabled\n"));
 
-	    if (cap & CAP_SAM)
-	    {
-	    	DSATA(bug("[PCI-ATA] Legacy mode is not supported, device will be ignored\n"));
-
-	    	OOP_DoMethod(Driver, (OOP_Msg)&unmap);
-	    	return;
-	    }
-	    else
-	    {
-	    	/*
-	    	 * This is ATA driver, not SATA driver, so i'd like to keep SATA-specific code
-	    	 * at a minimum.
-	    	 * On Mac everything runs fine without this (GRUB tells EFI to handoff the whole
-	    	 * machine for us). However, if on some machine we have problems, we can try
-	    	 * to #define this.
-	    	 */
+	    /*
+	     * This is ATA driver, not SATA driver, so i'd like to keep SATA-specific code
+	     * at a minimum. None of tests revealed a real need for BIOS handoff, no BIOS
+	     * was discovered to use controllers in SMI mode.
+	     * However, if on some machine we have problems, we can try
+	     * to #define this.
+	     */
 #ifdef DO_SATA_HANDOFF
-		ULONG version = mmio_inl_le(&hwhba->vs);
-		ULONG cap2    = mmio_inl_le(&hwhba->cap2);
+	    ULONG version = mmio_inl_le(&hwhba->vs);
+	    ULONG cap2    = mmio_inl_le(&hwhba->cap2);
 
-		DSATA(bug("[PCI-ATA] Version: 0x%08X, Cap2: 0x%08X\n", version, cap2));
+	    DSATA(bug("[PCI-ATA] Version: 0x%08X, Cap2: 0x%08X\n", version, cap2));
 
-	    	if ((version >= AHCI_VERSION_1_20) && (cap2 && CAP2_BOH))
+	    if ((version >= AHCI_VERSION_1_20) && (cap2 && CAP2_BOH))
+	    {
+	    	ULONG bohc;
+
+            	DSATA(bug("[PCI-ATA] HBA supports BIOS/OS handoff\n"));
+
+		bohc = mmio_inl_le(&hwhba->bohc);
+		if (bohc && BOHC_BOS)
 		{
-	    	    ULONG bohc;
+	    	    struct IORequest *timereq;
 
-            	    DSATA(bug("[PCI-ATA] HBA supports BIOS/OS handoff\n"));
+		    DSATA(bug("[PCI-ATA] Device owned by BIOS, performing handoff\n"));
 
-		    bohc = mmio_inl_le(&hwhba->bohc);
-		    if (bohc && BOHC_BOS)
-		    {
-	    		struct IORequest *timereq;
+		    /*
+		     * We need timer.device in order to perform delays.
+		     * TODO: in ata_InitBus() it will be opened and closed again.
+		     * This is not optimal, it could be opened and closed just once.
+		     */
+	    	   timereq = ata_OpenTimer(a->ATABase);
+	    	   if (!timereq)
+	    	   {
+	    		DSATA(bug("[PCI-ATA] Failed to open timer, can't perform handoff. Device will be ignored\n"));
 
-			DSATA(bug("[PCI-ATA] Device owned by BIOS, performing handoff\n"));
+			OOP_DoMethod(Driver, (OOP_Msg)&unmap);
+	    		return;
+	    	   }
 
-			/*
-		 	 * We need timer.device in order to perform delays.
-		 	 * TODO: in ata_InitBus() it will be opened and closed again.
-		 	 * This is not optimal, it could be opened and closed just once.
-		 	 */
-	    		timereq = ata_OpenTimer();
-	    		if (!timereq)
-	    		{
-	    		    DSATA(bug("[PCI-ATA] Failed to open timer, can't perform handoff. Device will be ignored\n"));
+                    mmio_outl_le(bohc | BOHC_OOS, &hwhba->bohc);
+                    /* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
+		    while (mmio_inl_le(&hwhba->bohc) & BOHC_BOS);
 
-			    OOP_DoMethod(Driver, (OOP_Msg)&unmap);
-	    		    return;
-	    		}
+		    ata_WaitTO(timereq, 0, 25000, 0);
+                    /* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
 
-                	mmio_outl_le(bohc | BOHC_OOS, &hwhba->bohc);
-                	/* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
-			while (mmio_inl_le(&hwhba->bohc) & BOHC_BOS);
+                    if (mmio_inl_le(&hwhba->bohc) & BOHC_BB)
+                    {
+                	DSATA(bug("[PCI-ATA] Delayed handoff, waiting...\n"));
+                	ata_WaitTO(timereq, 2, 0, 0);
+                    }
 
-			ata_WaitTO(timereq, 0, 25000, 0);
-                	/* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
-                
-                	if (mmio_inl_le(&hwhba->bohc) & BOHC_BB)
-                	{
-                	    DSATA(bug("[PCI-ATA] Delayed handoff, waiting...\n"));
-                	    ata_WaitTO(timereq, 2, 0, 0);
-                	}
-
-                	DSATA(bug("[ATA ] Handoff done\n"));
-                	ata_CloseTimer(timereq);
-            	    }
+                    DSATA(bug("[ATA ] Handoff done\n"));
+                    ata_CloseTimer(timereq);
         	}
+            }
 #endif
-	    	/* This resets GHC_AE bit, disabling AHCI */
-	    	mmio_outl_le(0, &hwhba->ghc);
-	    }
+	    /* This resets GHC_AE bit, disabling AHCI */
+	    mmio_outl_le(0, &hwhba->ghc);
 	}
 
 	unmap.mID        = a->HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
