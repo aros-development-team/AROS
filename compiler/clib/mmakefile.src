@@ -404,6 +404,13 @@ ROM_COMMON := \
 	memmove \
 	memset \
 	stccpy \
+	stcd_l \
+	stcl_d \
+	stcl_h \
+	stcl_o \
+	stch_l \
+	stco_l \
+	stcu_d \
 	stpblk \
 	stpcpy \
 	strcasecmp \
