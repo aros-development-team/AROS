@@ -505,6 +505,9 @@ static void __bootstrap(unsigned int magic, void *mb)
     void *kend = NULL;
     kernel_entry_fun_t kentry = NULL;
     struct ELF_ModuleInfo *kdebug = NULL;
+#ifdef DEBUG_MEM
+    struct mb_mmap *mm2;
+#endif
 
     /*
      * This will set fb_Mirror address to start of our working memory.
@@ -538,6 +541,23 @@ static void __bootstrap(unsigned int magic, void *mb)
     	/* What to do here? We have no console... Die silently... */
     	return;
     }
+
+#ifdef DEBUG_MEM
+    ksize = len;
+    mm2   = mmap;
+
+    kprintf("[BOOT] Memory map contents:\n", mmap);
+    while (ksize >= sizeof(struct mb_mmap))
+    {
+#ifdef DEBUG_MEM_TYPE
+        if (mm2->type == DEBUG_MEM_TYPE)
+#endif
+	    kprintf("[BOOT] Type %d addr %llp len %llp\n", mm2->type, mm2->addr, mm2->len);
+
+        ksize -= mm2->size+4;
+        mm2 = (struct mb_mmap *)(mm2->size + (unsigned long)mm2 + 4);
+    }
+#endif
 
     D(kprintf("[BOOT] Modules end at 0x%p\n", mod_end));
     if (!firstMod)
@@ -576,18 +596,8 @@ static void __bootstrap(unsigned int magic, void *mb)
     ksize = ro_size + rw_size + PAGE_SIZE - 1 + 0x80000;
 
     /* Now locate the highest appropriate region */
-#ifdef DEBUG_MEM
-    kprintf("[BOOT] Memory map contents:\n", mmap);
-#endif
     while (len >= sizeof(struct mb_mmap))
     {
-#ifdef DEBUG_MEM
-#ifdef DEBUG_MEM_TYPE
-        if (mmap->type == DEBUG_MEM_TYPE)
-#endif
-	    kprintf("[BOOT] Type %d addr %llp len %llp\n", mmap->type, mmap->addr, mmap->len);
-#endif
-
         if (mmap->type == MMAP_TYPE_RAM)
         {
             unsigned long long start = mmap->addr;
