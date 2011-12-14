@@ -1,3 +1,6 @@
+#ifdef __AROS__
+#error AROS requires that you include the system libraries
+#endif
 /***************************************************************************
 **
 ** MUI - MagicUserInterface
