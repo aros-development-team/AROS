@@ -1,5 +1,11 @@
 #!/bin/sh -x
 
+FETCH_ONLY=no
+if [ "$1" = "--fetch-only" ]; then
+	FETCH_ONLY=yes
+	shift
+fi
+
 PREFIX="$1"
 if [ -z "$PREFIX" ]; then
 	PREFIX="/opt/m68k-elf"
@@ -100,6 +106,10 @@ fi
 fetch ftp://sources.redhat.com/pub/newlib/newlib-${NEWLIB_VERSION}.tar.gz
 if [ download/newlib-${NEWLIB_VERSION}.tar.gz -nt download/newlib-${NEWLIB_VERSION}.tar.bz2 ]; then
 	(gzip -dc download/newlib-${NEWLIB_VERSION}.tar.gz | bzip2 -c >download/newlib-${NEWLIB_VERSION}.tar.bz2) || exit 1
+fi
+
+if [ "${FETCH_ONLY}" = "yes" ]; then
+    exit 0
 fi
 
 unpack binutils-${BINUTILS_VERSION}
