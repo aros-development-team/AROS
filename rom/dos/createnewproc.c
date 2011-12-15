@@ -173,8 +173,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             return NULL;
     } */
 
+    /* We allocate from the 31bit area because SDL's thread
+     * support requires that the thread ID be 32 bit.
+     */
     process = (struct Process *)AllocMem(sizeof(struct Process),
-					 MEMF_PUBLIC | MEMF_CLEAR);
+					 MEMF_PUBLIC | MEMF_31BIT | MEMF_CLEAR);
     ENOMEM_IF(process == NULL);
 
     /* Do this early to ease implementation of failure code */
