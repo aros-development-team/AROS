@@ -60,6 +60,12 @@ AROS_LH5(void, AddMemList,
 
     struct MemHeader *mh;
 
+    /* If the end is less than (1 << 31), MEMF_31BIT is implied */
+    if (((IPTR)base+size) < (1UL << 31))
+        attributes |= MEMF_31BIT;
+    else
+        attributes &= ~MEMF_31BIT;
+
     /* Do I have to look here if it matches some other MemHeader? */
     mh=(struct MemHeader *)base;
     mh->mh_Node.ln_Type=NT_MEMORY;
