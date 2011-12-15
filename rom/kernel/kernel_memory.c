@@ -23,6 +23,12 @@ void krnCreateMemHeader(CONST_STRPTR name, BYTE pri, APTR start, IPTR size, ULON
     /* The MemHeader itself does not have to be aligned */
     struct MemHeader *mh = start;
 
+    /* If the end is less than (1 << 31), MEMF_31BIT is implied */
+    if (((IPTR)start+size) < (1UL << 31))
+        flags |= MEMF_31BIT;
+    else
+        flags &= ~MEMF_31BIT;
+
     mh->mh_Node.ln_Succ    = NULL;
     mh->mh_Node.ln_Pred    = NULL;
     mh->mh_Node.ln_Type    = NT_MEMORY;
