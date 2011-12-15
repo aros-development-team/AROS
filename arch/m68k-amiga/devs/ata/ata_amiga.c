@@ -47,6 +47,9 @@ struct amiga_pcmcia_driverdata
     struct CardResource *CardResource;
     BOOL intena;
     BOOL poststatus;
+    ULONG configbase, configmask;
+    struct DeviceTData dtd;
+    struct CardMemoryMap *cmm;
 };
 
 
@@ -55,7 +58,6 @@ struct amiga_busdata
     void *ddata;
     struct ata_Bus *bus;
     UBYTE *port;
-    BOOL intena;
     BOOL reset;
 };
 
@@ -115,18 +117,14 @@ static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
 
     /* IDE doubler hides Alternate Status/Device Control register */
     if (port == -1) {
-	//bug("altout %x %x %d\n", bdata->port, port, offset);
-    	bdata->intena = (val & 2) == 0;
 	if (bdata->reset == 0 && (val & 4)) {
 	    ata_out(0xa0, ata_DevHead, 0, bdata);
  	    ata_out(ATA_EXECUTE_DIAG, ata_Command, 0, bdata); 
  	    D(bug("[IDE] Emulating reset\n"));
 	}
 	bdata->reset = (val & 4) != 0;
-    	//bug("intena=%d reset=%d\n", bdata->intena, bdata->reset);
 	return;
     }
-    //bug("out %x %x %x %d\n", bdata, bdata->port, port, offset);
     addr = (UBYTE*)(bdata->port + port);
     addr[offset * 4] = val;
 }
@@ -137,11 +135,9 @@ static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
     volatile UBYTE *addr;
 
     if (port == -1) {
-    	//bug("altin %x %x %d\n", bdata->port, port, offset);
     	port = 0;
     	offset = ata_Status;
     }
-    //bug("in %x %x %x %d\n", bdata, bdata->port, port, offset);
     addr = (UBYTE*)(bdata->port + port);
     return addr[offset * 4];
 }
@@ -257,10 +253,17 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
 	} else {
     	    ddata->doubler = 0;
 	}
-	D(bug("[ATA] IDE doubler check (%02x, %02X)\n", v1, v2));
+	D(bug("[ATA] IDE doubler check (%02x, %02X) = %d\n", v1, v2, ddata->doubler));
     }
     /* we may have connected drives */
     return (UBYTE*)port;
+}
+
+static void callbusirq(struct amiga_driverdata *ddata, UBYTE bus)
+{
+    if (!ddata->bus[bus])
+        return;
+    ata_HandleIRQ(ddata->bus[bus]->bus);
 }
 
 AROS_UFH4(APTR, IDE_Handler_A1200,
@@ -276,10 +279,8 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
     if (irqmask & GAYLE_IRQ_IDE) {
 	/* Clear interrupt */
 	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
-	if (ddata->bus[0] && ddata->bus[0]->intena)
-	    ata_HandleIRQ(ddata->bus[0]->bus);
-	if (ddata->bus[1] && ddata->bus[1]->intena)
-	    ata_HandleIRQ(ddata->bus[1]->bus);
+	callbusirq(ddata, 0);
+	callbusirq(ddata, 1);
     }
     return 0;
 
@@ -298,10 +299,8 @@ AROS_UFH4(APTR, IDE_Handler_A4000,
     /* A4000 interrupt clears when register is read */
     UWORD irqmask = *((UWORD*)ddata->gayleirqbase);
     if (irqmask & (GAYLE_IRQ_IDE << 8)) {
-	if (ddata->bus[0] && ddata->bus[0]->intena)
-	    ata_HandleIRQ(ddata->bus[0]->bus);
-	if (ddata->bus[1] && ddata->bus[1]->intena)
-	    ata_HandleIRQ(ddata->bus[1]->bus);
+	callbusirq(ddata, 0);
+	callbusirq(ddata, 1);
     }
     return 0;
 
@@ -369,7 +368,7 @@ static APTR ata_CreateInterrupt1(struct ata_Bus *bus)
 {
     return ata_CreateInterrupt(bus, 1);
 }
-static APTR ata_CreateInterrupt_pcmcmia(struct ata_Bus *bus)
+static APTR ata_CreateInterrupt_pcmcia(struct ata_Bus *bus)
 {
     struct amiga_busdata *bdata = bus->ab_DriverData;
     struct amiga_pcmcia_driverdata *ddata = bdata->ddata;
@@ -412,7 +411,7 @@ static const struct ata_BusDriver amiga_driver_pcmcia =
     ata_pcmcia_outsw,
     ata_pcmcia_insw,
     ata_pcmcia_outsw,
-    ata_CreateInterrupt_pcmcmia
+    ata_CreateInterrupt_pcmcia
 };
 
 static BOOL ata_amiga_ide_init(struct ataBase *LIBBASE)
@@ -430,13 +429,11 @@ static BOOL ata_amiga_ide_init(struct ataBase *LIBBASE)
     if (bdata && ddata->gaylebase) {
 	LIBBASE->ata_NoDMA = TRUE;
 	bdata->ddata = ddata;
-	bdata->intena = 1;
 	bdata->port = ddata->gaylebase;
 	ata_RegisterBus(0, ddata->doubler ? -1 : 0x1010, 2, 0, 0, &amiga_driver0, bdata, LIBBASE);
 	if (ddata->doubler == 2) {
 	    bdata++;
 	    bdata->ddata = ddata;
-	    bdata->intena = 1;
 	    bdata->port = ddata->gaylebase + 0x1000;
 	    ata_RegisterBus(0, -1, 2, 0, 0, &amiga_driver1, bdata, LIBBASE);
 	}
@@ -447,19 +444,108 @@ static BOOL ata_amiga_ide_init(struct ataBase *LIBBASE)
     return FALSE;
 }
 
+static BOOL detectcard(struct amiga_pcmcia_driverdata *ddata)
+{
+    APTR CardResource;
+    struct CardHandle *ch;
+    UBYTE tuple[256 + 2];
+    WORD cnt1, cnt2;
+    UBYTE *tp;
+    BOOL got;
+
+    ch = &ddata->cardhandle;
+    CardResource = ddata->CardResource;
+
+    ddata->configmask = 1;
+    ddata->configbase = 0x0200;
+
+    CardResetCard(ch);
+    CardMiscControl(ch, CARD_ENABLEF_DIGAUDIO | CARD_DISABLEF_WP);
+
+    got = FALSE;
+    for (;;) {
+        if (!CopyTuple(ch, tuple, PCCARD_TPL_DEVICE, sizeof(tuple) - 2))
+            break;
+        if (!DeviceTuple(tuple, &ddata->dtd))
+            break;
+        if (ddata->dtd.dtd_DTtype != PCCARD_DTYPE_FUNCSPEC)
+            break;
+        tuple[2] = 0;
+        if (!CopyTuple(ch, tuple, PCCARD_TPL_FUNCID, sizeof(tuple) - 2))
+            break;
+        if (tuple[2] != PCCARD_FUNC_FIXED)
+            break;
+        got = FALSE;
+        for (cnt1 = 0; TRUE; cnt1++) {
+            if (!CopyTuple(ch, tuple, PCCARD_TPL_FUNCE | (cnt1 << 16), sizeof(tuple) - 2))
+                break;
+            if (tuple[2] != 1 || tuple[3] != 1)
+                break;
+            got = TRUE;
+            break;
+        }
+        if (!got)
+            break;
+        got = FALSE;
+        if (!CopyTuple(ch, tuple, PCCARD_TPL_CONFIG, sizeof(tuple) - 2))
+            break;
+        if (tuple[1] < 5)
+            break;
+        //lastindex = tuple[3] & 0x3f;
+        tp = &tuple[4];
+        cnt2 = (tuple[2] & 3) + 1;
+        for (cnt1 = 0; cnt1 < cnt2; cnt1++) {
+            ddata->configbase |= (*tp) << (cnt1 * 8);
+            tp++;
+        }
+        cnt2 = ((tuple[2] >> 3) & 15) + 1;
+        for (cnt1 = 0; cnt1 < cnt2; cnt1++) {
+            ddata->configmask |= (*tp) << (cnt1 * 8);
+            tp++;
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static void initializecard(struct amiga_pcmcia_driverdata *ddata)
+{
+    struct CardHandle *ch;
+    UBYTE tuple[256 + 2];
+    UBYTE *tp;
+    APTR CardResource;
+    volatile UBYTE *attrbase;
+
+    ch = &ddata->cardhandle;
+    CardResource = ddata->CardResource;
+
+    D(bug("Detected PCMCIA IDE. ConfigBase=%08x RMask=%08x\n", ddata->configbase, ddata->configmask);
+    memset(tuple, 0, sizeof tuple);
+    if (CopyTuple(ch, tuple, PCCARD_TPL_VERS1, sizeof(tuple) - 2)) {
+        if (tuple[2] == 4) {
+            tp = &tuple[4];
+            while (*tp != 0xff) {
+                bug("%s ", tp);
+                tp += strlen(tp) + 1;
+            }
+            D(bug("\n"));
+        }
+    });
+    CardAccessSpeed(ch, ddata->dtd.dtd_DTspeed);
+    attrbase = ddata->cmm->cmm_AttributeMemory;
+    attrbase[ddata->configbase + 2 * 3] = 0; /* Socket and copy. Must be written first. */
+    attrbase[ddata->configbase + 2 * 2] = 0x0f; /* Pin replacement. */
+    attrbase[ddata->configbase + 2 * 1] = 0; /* Configuration and Status. */
+    attrbase[ddata->configbase + 2 * 0] = 0x41; /* Configure option. Configure as IO linear mode. */
+    /* Now we have IDE registers at iobase */
+}
+
 static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
 {
     struct CardResource *CardResource;
     struct amiga_pcmcia_driverdata *ddata;
     struct amiga_busdata *bdata;
     struct CardHandle *ch;
-    BOOL got = FALSE;
-    struct CardMemoryMap *cmm;
-    volatile UBYTE *attrbase, *iobase;
-    WORD cnt1, cnt2;
-    UBYTE *tp;
-    ULONG configbase = 0, configmask = 0;
-    //UBYTE lastindex;
     
     CardResource = OpenResource("card.resource");
     if (!CardResource)
@@ -474,101 +560,38 @@ static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
 
     ch = &ddata->cardhandle;
     ddata->CardResource = CardResource;
-
-    cmm = GetCardMap();
-    attrbase = cmm->cmm_AttributeMemory;
-    iobase = cmm->cmm_IOMemory;
+    ddata->cmm = GetCardMap();
 
     ch->cah_CardFlags = CARDF_IFAVAILABLE | CARDF_POSTSTATUS;
     ch->cah_CardNode.ln_Name = LIBBASE->ata_Device.dd_Library.lib_Node.ln_Name;
     ch->cah_CardStatus = &ddata->statusint;
-    //ch->cah_CardRemoved = &ddata->removalint;
-    //ch->cah_CardInserted = &ddata->insertint;
+    ch->cah_CardRemoved = &ddata->removalint;
+    ch->cah_CardInserted = &ddata->insertint;
     ch->cah_CardStatus->is_Data = ddata;
     ch->cah_CardStatus->is_Code = (void*)IDE_PCMCIA_Handler;
+#if 0
+    ch->cah_CardRemoved->is_Data = ddata;
+    ch->cah_CardRemoved->is_Code = (void*)IDE_PCMCIA_Removed;
+    ch->cah_CardInserted->is_Data = ddata;
+    ch->cah_CardInserted->is_Code = (void*)IDE_PCMCIA_Inserted
+#endif
 
     if (!OwnCard(ch)) {
-        struct DeviceTData dtd;
-        UBYTE tuple[256 + 2];
-
         BeginCardAccess(ch);
-        CardResetCard(ch);
-        CardMiscControl(ch, CARD_ENABLEF_DIGAUDIO | CARD_DISABLEF_WP);
 
-        for (;;) {
-            if (!CopyTuple(ch, tuple, PCCARD_TPL_DEVICE, sizeof(tuple) - 2))
-                break;
-            if (!DeviceTuple(tuple, &dtd))
-                break;
-            if (dtd.dtd_DTtype != PCCARD_DTYPE_FUNCSPEC)
-                break;
-            tuple[2] = 0;
-            if (!CopyTuple(ch, tuple, PCCARD_TPL_FUNCID, sizeof(tuple) - 2))
-                break;
-            if (tuple[2] != PCCARD_FUNC_FIXED)
-                break;
-            got = FALSE;
-            for (cnt1 = 0; TRUE; cnt1++) {
-                if (!CopyTuple(ch, tuple, PCCARD_TPL_FUNCE | (cnt1 << 16), sizeof(tuple) - 2))
-                    break;
-                if (tuple[2] != 1 || tuple[3] != 1)
-                    break;
-                got = TRUE;
-                break;
-            }
-            if (!got)
-                break;
-            got = FALSE;
-            if (!CopyTuple(ch, tuple, PCCARD_TPL_CONFIG, sizeof(tuple) - 2))
-                break;
-            if (tuple[1] < 5)
-                break;
-            //lastindex = tuple[3] & 0x3f;
-            tp = &tuple[4];
-            cnt2 = (tuple[2] & 3) + 1;
-            for (cnt1 = 0; cnt1 < cnt2; cnt1++) {
-                configbase |= (*tp) << (cnt1 * 8);
-                tp++;
-            }
-            cnt2 = ((tuple[2] >> 3) & 15) + 1;
-            for (cnt1 = 0; cnt1 < cnt2; cnt1++) {
-                configmask |= (*tp) << (cnt1 * 8);
-                tp++;
-            }
-            got = TRUE;
-            break;
-        }
-
-        if (got) {
-            D(bug("Detected PCMCIA IDE. ConfigBase=%08x RMask=%08x\n", configbase, configmask);
-            memset(tuple, 0, sizeof tuple);
-            if (CopyTuple(ch, tuple, PCCARD_TPL_VERS1, sizeof(tuple) - 2)) {
-                if (tuple[2] == 4) {
-                    tp = &tuple[4];
-                    while (*tp != 0xff) {
-                        bug("%s ", tp);
-                        tp += strlen(tp) + 1;
-                    }
-                    D(bug("\n"));
-                }
-            });
-            CardAccessSpeed(ch, dtd.dtd_DTspeed);
-            attrbase[configbase + 2 * 3] = 0; /* Socket and copy. Must be written first. */
-            attrbase[configbase + 2 * 2] = 0x0f; /* Pin replacement. */
-            attrbase[configbase + 2 * 1] = 0; /* Configuration and Status. */
-            attrbase[configbase + 2 * 0] = 0x41; /* Configure option. Configure as IO linear mode. */
-            /* Now we have IDE registers at iobase */
+        if (detectcard(ddata)) {
+            initializecard(ddata);
             bdata->ddata = ddata;
-            bdata->port = (UBYTE*)iobase;
+            bdata->port = (UBYTE*)ddata->cmm->cmm_IOMemory;
             LIBBASE->ata_NoDMA = TRUE;
-            ata_RegisterBus((IPTR)iobase, (IPTR)(iobase + 14 - ata_AltControl), 2, 0, 0, &amiga_driver_pcmcia, bdata, LIBBASE);
+            ata_RegisterBus((IPTR)ddata->cmm->cmm_IOMemory, (IPTR)(ddata->cmm->cmm_IOMemory + 14 - ata_AltControl), 2, 0, 0, &amiga_driver_pcmcia, bdata, LIBBASE);
             return TRUE;
         }
 
         EndCardAccess(ch);
-
         ReleaseCard(ch, CARDF_REMOVEHANDLE);
     }
+
     FreeVec(ddata);
 
     return FALSE;
