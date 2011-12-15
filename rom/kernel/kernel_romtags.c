@@ -121,6 +121,10 @@ APTR krnRomTagScanner(struct MemHeader *mh, UWORD *ranges[])
 	ptr = *ranges++;
 	end = *ranges++;
 
+        /* Make sure that addresses are UWORD-aligned. In some circumstances they can be not. */
+        ptr = (UWORD *)(((IPTR)ptr + 1) & ~1);
+        end = (UWORD *)((IPTR)end & ~1);
+
 	D(bug("RomTagScanner: Start = %p, End = %p\n", ptr, end));
 	do
 	{
