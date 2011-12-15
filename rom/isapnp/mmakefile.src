@@ -1,18 +1,14 @@
 include $(TOP)/config/make.cfg
 
-FILES := controller devices init pnp pnp_iterators pnp_structs end
-
-USER_CFLAGS := -fomit-frame-pointer -fstrict-aliasing -Os \
-	       -W -Wall -Wstrict-prototypes -Wno-unused -I$(GENDIR)/$(CURDIR)
+FILES       := controller devices init pnp pnp_iterators pnp_structs end
+USER_CFLAGS := -fstrict-aliasing -W -Wall -Wstrict-prototypes -Wno-unused -I$(GENDIR)/$(CURDIR)
 
 %build_module_simple mmake=kernel-isapnp \
     modname=isapnp modtype=resource \
     files="$(FILES)" uselibs="rom"
 
-# FIXME: %build_module_simple macro doesn't track dependencies.
-#        This definitely needs to be fixed. Until this we'll use
-#        this manual dependency
-$(OBJDIR)/init.o: $(GENDIR)/$(CURDIR)/version.h
+# This causes generation of version.h at makedepend stage. Otherwise the build fails.
+$(OBJDIR)/init.d: $(GENDIR)/$(CURDIR)/version.h
 
 $(GENDIR)/$(CURDIR)/version.h:	version.rev version.date
 	@echo Creating $@
@@ -22,6 +18,10 @@ $(GENDIR)/$(CURDIR)/version.h:	version.rev version.date
 	 echo "#define VERSION $$ver" > $@ && \
 	 echo "#define REVISION $$rev" >> $@ && \
 	 echo "#define VERS \"$$ver.$$rev ($$date)\"" >> $@
+
+%build_prog mmake=workbench-c-isapnp progname=ISApnp \
+    files=isapnp targetdir=$(AROS_C) \
+    uselibs="arossupport amiga rom" usestartup=no
 
 INCLUDE_FILES := include/isapnp.h
 %copy_includes path=resources dir=include
