@@ -28,9 +28,9 @@
 #include <proto/dos.h>
 
 #include <resources/isapnp.h>
-#include "../../rom/isapnp/isapnp_private.h"
 
-#include "../../rom/isapnp/pnp_structs.h"
+#include "isapnp_private.h"
+#include "pnp_structs.h"
 
 #define TEMPLATE "SHOWCONFIG/S,SHOWOPTIONS/S" /*,REMOVE/S"*/
 
@@ -84,9 +84,9 @@ ResourceEntry( void )
 
   struct 
   {
-    ULONG   m_ShowConfig;
-    ULONG   m_ShowOptions;
-/*  ULONG   m_Remove;*/
+    IPTR   m_ShowConfig;
+    IPTR   m_ShowOptions;
+/*  IPTR   m_Remove;*/
   } args = { FALSE, FALSE/*, FALSE*/ };
 
   if( ! OpenLibs() )
@@ -104,7 +104,7 @@ ResourceEntry( void )
     return RETURN_FAIL;
   }
 
-  rdargs = ReadArgs( TEMPLATE, (LONG *) &args, NULL );
+  rdargs = ReadArgs(TEMPLATE, (IPTR *)&args, NULL);
 
   if( rdargs != NULL )
   {

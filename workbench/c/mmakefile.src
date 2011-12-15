@@ -70,7 +70,6 @@ PURE_FILES := \
     AROSMonDrvs \
     SetKeyboard \
     WaitX
-#   ISApnp
 
 USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
