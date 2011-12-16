@@ -16,7 +16,7 @@
 	AROS_LH1(struct Task *, FindTask,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, A1),
+	AROS_LHA(CONST_STRPTR, name, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 49, Exec)
@@ -71,7 +71,7 @@
 		to nonsense to look for it this way.
 	    */
 	    char *s1=SysBase->ThisTask->tc_Node.ln_Name;
-	    char *s2=name;
+	    const char *s2=name;
 
 	    /* Check as long as the names are identical. */
 	    while(*s1++==*s2)
