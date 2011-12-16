@@ -20,7 +20,7 @@
 	AROS_LH1(struct TextFont *, OpenFont,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TextAttr *, textAttr, A0),
+	AROS_LHA(const struct TextAttr *, textAttr, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 12, Graphics)
