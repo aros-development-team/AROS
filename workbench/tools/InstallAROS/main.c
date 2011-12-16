@@ -2638,6 +2638,8 @@ IPTR Install__MUIM_Format(Class * CLASS, Object * self, Msg message)
         GET(grub_device, MUIA_String_Contents, &option);
         if (strcmp((char *)option, "usbscsi.device") == 0)
             strcpy(vol_nametmp, USB_WORK_VOL_NAME);
+        else
+            strcpy(vol_nametmp, WORK_VOL_NAME);
 
         sprintf(dev_nametmp, "%s:", work_Path);
 
@@ -3422,7 +3424,7 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.11 (28.11.2011)",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.12 (16.12.2011)",
         MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2011, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
