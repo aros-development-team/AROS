@@ -16,8 +16,8 @@
 	AROS_LH3(WORD, WeighTAMatch,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct TextAttr *, reqTextAttr, A0),
-	AROS_LHA(struct TextAttr *, targetTextAttr, A1),
+	AROS_LHA(const struct TextAttr *, reqTextAttr, A0),
+	AROS_LHA(const struct TextAttr *, targetTextAttr, A1),
 	AROS_LHA(struct TagItem  *, targetTags, A2),
 
 /*  LOCATION */
