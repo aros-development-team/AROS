@@ -31,17 +31,19 @@ fetch () {
 
 unpack () {
 	mkdir -p src || exit 1
-	unpackSRC="$1".tar.bz2
-	if [ -z "$2" ]; then
-		unpackDST="$1"
-	else
-		unpackDST="$2"
+	unpackDST="$1"
+	if [ -n "$2" ]; then
+		shift
 	fi
+	HERE=`pwd`
 	if [ -n "$STERILIZE" -o ! -f "src/$unpackDST/configure" ]; then
- 		rm -rf "src/${unpackDST}"
-		tar -C src -jxvf `pwd`/download/"${unpackSRC}" || exit 1
-		HERE=`pwd`
-		for d in `pwd`/download/"$unpackDST"-*.patch; do
+		rm -rf "src/${unpackDST}"
+		while [ -n "$1" ]; do
+			unpackSRC="$1"
+			shift
+			tar -C src -jxvf `pwd`/download/"${unpackSRC}".tar.bz2 || exit 1
+		done
+		for d in `pwd`/download/"${unpackDST}"-*.patch; do
 		    if [ -f "$d" ]; then
 			cd "src/${unpackDST}"
 			patch -p1 <$d || exit 1
@@ -113,9 +115,10 @@ if [ "${FETCH_ONLY}" = "yes" ]; then
 fi
 
 unpack binutils-${BINUTILS_VERSION}
-unpack gcc-core-${GCC_VERSION} gcc-${GCC_VERSION}
-unpack gcc-objc-${GCC_VERSION} gcc-${GCC_VERSION}
-unpack gcc-g++-${GCC_VERSION} gcc-${GCC_VERSION}
+unpack gcc-${GCC_VERSION} \
+    gcc-core-${GCC_VERSION} \
+    gcc-objc-${GCC_VERSION} \
+    gcc-g++-${GCC_VERSION}
 unpack gmp-${GMP_VERSION}
 unpack mpfr-${MPFR_VERSION}
 unpack mpc-${MPC_VERSION}
