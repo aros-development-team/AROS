@@ -528,15 +528,18 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 while ( (windowItem = NextObject(&firstWindow)) )
                 {
                     iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
-                    ent2     = (void*) MUIV_IconList_NextIcon_Start;
-                    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
-                    do
+                    if (iconList != NULL) /* Wanderer has non-iconlist windows as well */
                     {
-                        if ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
-                            argsCounted++;
+                        ent2     = (void*) MUIV_IconList_NextIcon_Start;
                         DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
+                        do
+                        {
+                            if ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
+                                argsCounted++;
+                            DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
+                        }
+                        while ((IPTR)ent2 != MUIV_IconList_NextIcon_End );
                     }
-                    while ((IPTR)ent2 != MUIV_IconList_NextIcon_End );
                 } /* while ( (windowItem = NextObject(&firstWindow)) ) */
                 D(bug("[Wanderer] argsCounted = %d\n", argsCounted));
                         
@@ -548,19 +551,22 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                     while ( (windowItem = NextObject(&firstWindow)) )
                     {
                         iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
-                        ent2     = (void*) MUIV_IconList_NextIcon_Start;
-                        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
-                        
-                        while ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
+                        if (iconList != NULL) /* Wanderer has non-iconlist windows as well */
                         {
-                            if ( ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name )
-                            {
-                                argsTagList[i].ti_Tag  = WBOPENA_ArgName;
-                                argsTagList[i].ti_Data = (IPTR) ent2->ile_IconEntry->ie_IconNode.ln_Name;
-                                D(bug("[Wanderer] argsTagList[%d]: %s\n", i, argsTagList[i].ti_Data));
-                                i++;
-                            }
+                            ent2     = (void*) MUIV_IconList_NextIcon_Start;
                             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
+
+                            while ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
+                            {
+                                if ( ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name )
+                                {
+                                    argsTagList[i].ti_Tag  = WBOPENA_ArgName;
+                                    argsTagList[i].ti_Data = (IPTR) ent2->ile_IconEntry->ie_IconNode.ln_Name;
+                                    D(bug("[Wanderer] argsTagList[%d]: %s\n", i, argsTagList[i].ti_Data));
+                                    i++;
+                                }
+                                DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
+                            }
                         }
                     } /* while ( (windowItem = NextObject(&cstate)) ) */
                     argsTagList[(argsCounted - 1)].ti_Tag = TAG_DONE;
