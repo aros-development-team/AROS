@@ -88,7 +88,6 @@ ARCH_INCLUDES := $(TOOLDIR)/crosstools/$(AROS_TARGET_CPU)-aros/include
     
 #MM
 tools-crosstools-includes: $(ARCH_INCLUDES)/aros/system.h
-	@$(ECHO) $^
 
 $(ARCH_INCLUDES)/aros/system.h: $(AROS_DEVELOPMENT)/include/aros/system.h
 	$(MKDIR) -p $(ARCH_INCLUDES)
