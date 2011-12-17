@@ -25,9 +25,9 @@ long aslfilerequest(char *msg,char *dirpart,char *filepart,char *fullname, struc
 
 /* msg=a name to show
    tags=can be 0 or some additional tags
-   dirpart= a pointer to a buffer of 500 bytes that recieve the selected directory
-   filepart= a pointer to a buffer of 500 bytes that recieve the selected filename
-   fullname= a pointer to a buffer of 1000 bytes that recieve the selected full filename */
+   dirpart= a pointer to a buffer of 500 bytes that receive the selected directory
+   filepart= a pointer to a buffer of 500 bytes that receive the selected filename
+   fullname= a pointer to a buffer of 1000 bytes that receive the selected full filename */
      
     struct FileRequester *fr;
     struct Library *AslBase;

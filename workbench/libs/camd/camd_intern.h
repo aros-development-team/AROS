@@ -2,7 +2,7 @@
 #define CAMD_INTERN_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -77,7 +77,7 @@
 #define OUTBUFFERSIZE_RT 1025
 #define RECEIVERPROCBUFFERSIZE 1025
 #define SYSEXRECEIVERPROCBUFFERSIZE 1025
-#define NUMBEROFSYSEXSTORECIEVE 1025
+#define NUMBEROFSYSEXSTORECEIVE 1025
 
 struct MyMidiMessage2{
 	UBYTE status;
@@ -192,7 +192,7 @@ struct MyMidiNode{
 
 	struct SignalSemaphore receiversemaphore;
 
-// For sysex recieving. (probably needs some rewriting)
+// For sysex receiving. (probably needs some rewriting)
 
 	struct SignalSemaphore sysexsemaphore;
 	struct SignalSemaphore sysexsemaphore2;
@@ -328,7 +328,7 @@ void EndReceiverProc(
 	struct CamdBase *CamdBase
 );
 
-void Reciever_SysExSuperTreat(
+void Receiver_SysExSuperTreat(
 	struct DriverData *driverdata,
 	UBYTE data
 );

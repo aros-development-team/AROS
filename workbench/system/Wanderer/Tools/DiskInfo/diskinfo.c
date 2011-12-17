@@ -470,7 +470,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
     {
     while ((npMessage = (struct NotifyMessage *)GetMsg(data->dki_NotifyPort)) != NULL)
     {
-        D(bug("[DiskInfo] %s: FS notification recieved\n", __PRETTY_FUNCTION__));
+        D(bug("[DiskInfo] %s: FS notification received\n", __PRETTY_FUNCTION__));
 
         if ((fsdevlock = Lock(data->dki_DOSDev, SHARED_LOCK)) != BNULL)
         {

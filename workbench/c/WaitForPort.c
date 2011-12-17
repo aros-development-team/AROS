@@ -81,7 +81,7 @@ D(bug("[WaitForPort] In Wait Loop ..\n"));
 			         	if (mask & SIGBREAKF_CTRL_D) break;
                      if (mask & (1 << timerport->mp_SigBit))
                      {
-D(bug("[WaitForPort] Recieved timer signal? ..\n"));
+D(bug("[WaitForPort] Received timer signal?...\n"));
                         timerIORequest = (struct timerequest *)GetMsg(timerport);
                         if (timerIORequest)
                         {

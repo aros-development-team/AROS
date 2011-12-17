@@ -178,8 +178,8 @@ AROS_LH1(void, CloseWindow,
 
     if (do_unlockscreen) UnlockPubScreen(NULL, screen);
 
-    /* As of now intuition has removed us from th list of
-       windows, and we will recieve no more messages
+    /* As of now intuition has removed us from the list of
+       windows, and we will receive no more messages
     */
 #if USE_IDCMPUPDATE_MESSAGECACHE
     if (messagecache)

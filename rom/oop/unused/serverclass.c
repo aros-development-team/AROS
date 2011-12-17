@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Class for server objects.
@@ -36,7 +36,7 @@ struct ServerData
     /* List of public objects */
     struct List ObjectList;
     
-    /* The MsgPort from which the server recieves invocation requests */
+    /* The MsgPort from which the server receives invocation requests */
     struct MsgPort *ReceivePort;
     
     /* The public object list needs protection */

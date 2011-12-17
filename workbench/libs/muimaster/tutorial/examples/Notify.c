@@ -61,7 +61,7 @@ BOOL init_gui(void)
 
         DoMethod(BT_Hello, MUIM_Notify,    /* Source object which triggers the notification.            */
                  MUIA_Pressed, FALSE,      /* Trigger if the button is released (MUIA_Pressed -> FALSE) */
-                 TX_Info,                  /* Destination object to recieve the notification.           */
+                 TX_Info,                  /* Destination object to receive the notification.           */
                  3,                        /* Send three parameters.                                    */
                                            /* Set MUIA_Text_Contents to given string.                   */
                  MUIM_Set, MUIA_Text_Contents, (IPTR) "Hello Notify! Press reset");
@@ -69,7 +69,7 @@ BOOL init_gui(void)
 
         DoMethod(BT_Reset, MUIM_Notify,    /* Source object which triggers the notification.            */
                  MUIA_Pressed, FALSE,      /* Trigger if the button is released (MUIA_Pressed -> FALSE) */
-                 TX_Info,                  /* Destination object to recieve the notification.           */
+                 TX_Info,                  /* Destination object to receive the notification.           */
                  3,                        /* Send three parameters.                                    */
                                            /* Set MUIA_Text_Contents to given string.                   */
                  MUIM_Set, MUIA_Text_Contents, (IPTR) "Please press 'Hello Notify'");
