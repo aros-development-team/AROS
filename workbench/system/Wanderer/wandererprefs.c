@@ -89,7 +89,8 @@
 #endif
 #endif
 
-static CONST_STRPTR                     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
+static CONST_STRPTR     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
+static CONST_STRPTR     wandererPrefs_FontsPrefsFile = "ENV:SYS/Font.prefs";
 
 struct TagItem32 {
     ULONG ti_Tag;
@@ -108,8 +109,11 @@ struct WandererPrefs_DATA
     struct List                 wpd_ViewSettings;
 
     struct NotifyRequest        wpd_PrefsNotifyRequest;
-    struct Wanderer_FSHandler   wdp_PrefsFSHandler;
+    struct Wanderer_FSHandler   wpd_PrefsFSHandler;
     
+    struct NotifyRequest        wpd_FontPrefsNotifyRequest;
+    struct Wanderer_FSHandler   wpd_FontPrefsFSHandler;
+
     BOOL                        wpd_PROCESSING;
 
     struct WandererInternalPrefsData temp;
@@ -482,6 +486,12 @@ IPTR WandererPrefs__HandleFSUpdate(Object *prefs, struct NotifyMessage *msg)
     return 0;
 }
 
+IPTR WandererPrefs__HandleFontPrefsFSUpdate(Object *prefs, struct NotifyMessage *msg)
+{
+    DoMethod(prefs, MUIM_WandererPrefs_ReloadFontPrefs);
+    return 0;
+}
+
 /*** Methods ****************************************************************/
 
 ///OM_NEW()
@@ -501,13 +511,13 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         /* Setup notification on prefs file --------------------------------*/
         if (_wandererPrefs__FSNotifyPort != 0)
         {
-            data->wdp_PrefsFSHandler.target                         = self;
-            data->wdp_PrefsFSHandler.fshn_Node.ln_Name              = (STRPTR)ExpandEnvName(wandererPrefs_PrefsFile);
-            data->wdp_PrefsFSHandler.HandleFSUpdate                 = WandererPrefs__HandleFSUpdate;
-            data->wpd_PrefsNotifyRequest.nr_Name                    = data->wdp_PrefsFSHandler.fshn_Node.ln_Name;
+            data->wpd_PrefsFSHandler.target                         = self;
+            data->wpd_PrefsFSHandler.fshn_Node.ln_Name              = (STRPTR)ExpandEnvName(wandererPrefs_PrefsFile);
+            data->wpd_PrefsFSHandler.HandleFSUpdate                 = WandererPrefs__HandleFSUpdate;
+            data->wpd_PrefsNotifyRequest.nr_Name                    = data->wpd_PrefsFSHandler.fshn_Node.ln_Name;
             data->wpd_PrefsNotifyRequest.nr_Flags                   = NRF_SEND_MESSAGE;
             data->wpd_PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port    = (struct MsgPort *)_wandererPrefs__FSNotifyPort;
-            data->wpd_PrefsNotifyRequest.nr_UserData                = (IPTR)&data->wdp_PrefsFSHandler;
+            data->wpd_PrefsNotifyRequest.nr_UserData                = (IPTR)&data->wpd_PrefsFSHandler;
 
             if (StartNotify(&data->wpd_PrefsNotifyRequest))
             {
@@ -516,10 +526,35 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             else
             {
                 D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
-                data->wdp_PrefsFSHandler.fshn_Node.ln_Name = NULL;
+                data->wpd_PrefsFSHandler.fshn_Node.ln_Name = NULL;
                 data->wpd_PrefsNotifyRequest.nr_Name = NULL;
             }
         }
+
+        /* Setup notification on font prefs file --------------------------------*/
+        if (_wandererPrefs__FSNotifyPort != 0)
+        {
+            data->wpd_FontPrefsFSHandler.target                         = self;
+            data->wpd_FontPrefsFSHandler.fshn_Node.ln_Name              = (STRPTR)ExpandEnvName(wandererPrefs_FontsPrefsFile);
+            data->wpd_FontPrefsFSHandler.HandleFSUpdate                 = WandererPrefs__HandleFontPrefsFSUpdate;
+            data->wpd_FontPrefsNotifyRequest.nr_Name                    = data->wpd_FontPrefsFSHandler.fshn_Node.ln_Name;
+            data->wpd_FontPrefsNotifyRequest.nr_Flags                   = NRF_SEND_MESSAGE;
+            data->wpd_FontPrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port    = (struct MsgPort *)_wandererPrefs__FSNotifyPort;
+            data->wpd_FontPrefsNotifyRequest.nr_UserData                = (IPTR)&data->wpd_FontPrefsFSHandler;
+
+
+            if (StartNotify(&data->wpd_FontPrefsNotifyRequest))
+            {
+                D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", data->wpd_FontPrefsNotifyRequest.nr_Name));
+            }
+            else
+            {
+                D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
+                data->wpd_FontPrefsFSHandler.fshn_Node.ln_Name = NULL;
+                data->wpd_FontPrefsNotifyRequest.nr_Name = NULL;
+            }
+        }
+
         D(bug("[Wanderer:Prefs]:New - reloading\n"));
 
         NewList(&data->wpd_ViewSettings);
@@ -540,6 +575,7 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 {
   SETUP_INST_DATA;
   EndNotify(&data->wpd_PrefsNotifyRequest);
+  EndNotify(&data->wpd_FontPrefsNotifyRequest);
   return DoSuperMethodA(CLASS, self, (Msg)message);
 }
 ///
@@ -950,9 +986,19 @@ IPTR WandererPrefs__MUIM_WandererPrefs_ReloadFontPrefs
   Class *CLASS, Object *self, Msg message
 )
 {
+    struct WandererPrefs_ViewSettingsNode * current_Node = NULL;
+
     SETUP_INST_DATA;
 
+    SET(self, MUIA_WandererPrefs_Processing, TRUE);
+
     WandererPrefs_CheckFont(&data->temp);
+
+    ForeachNode(&data->wpd_ViewSettings, current_Node)
+        SET(current_Node->wpbn_NotifyObject, MUIA_IconWindow_Font, data->temp.WIPD_IconFont);
+
+    SET(self, MUIA_WandererPrefs_Processing, FALSE);
+
     return TRUE;
 }
 ///
