@@ -893,6 +893,9 @@ IPTR IconWindow__OM_SET(Class *CLASS, Object *self, struct opSet *message)
             if (!data->iwd_WindowFont)
                 SetFont(_rp(self), data->iwd_WindowFont);
 
+            if (data->iwd_IconListObj)
+                SET(data->iwd_IconListObj, MUIA_Font, data->iwd_WindowFont);
+
             break;
 
         case MUIA_IconWindow_Location:
@@ -1039,7 +1042,7 @@ IPTR IconWindow__MUIM_Window_Setup
 
     if ((prefs) && (data->iwd_ViewSettings_PrefsNotificationObject))
     {
-        D(bug("[Wanderer:IconWindow] %s: Setting up window background change hook\n", __PRETTY_FUNCTION__));
+        D(bug("[Wanderer:IconWindow] %s: Setting up window prefs change hooks\n", __PRETTY_FUNCTION__));
 
         /* Set-up a hook to call ProcessBackground on prefs notification */
         DoMethod
@@ -1079,6 +1082,15 @@ IPTR IconWindow__MUIM_Window_Setup
             (IPTR) self, 3, 
             MUIM_CallHook, &data->iwd_ProcessBackground_hook, (IPTR)CLASS
           );
+
+        /* React to notification on font change */
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject, MUIM_Notify, MUIA_IconWindow_Font, MUIV_EveryTime,
+            (IPTR) self, 3,
+            MUIM_Set, MUIA_IconWindow_Font, MUIV_TriggerValue
+          );
+
     }
 
     D(bug("[Wanderer:IconWindow] %s: Setup complete!\n", __PRETTY_FUNCTION__));
@@ -1136,6 +1148,12 @@ IPTR IconWindow__MUIM_Window_Cleanup
           (
             data->iwd_ViewSettings_PrefsNotificationObject,
             MUIM_KillNotifyObj, MUIA_Background, (IPTR) self
+          );
+
+        DoMethod
+          (
+            data->iwd_ViewSettings_PrefsNotificationObject,
+            MUIM_KillNotifyObj, MUIA_IconWindow_Font, (IPTR) self
           );
     }
     return DoSuperMethodA(CLASS, self, message);
