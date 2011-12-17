@@ -58,7 +58,7 @@
 
 #include "wanderer.h"
 #include "wandererprefs.h"
-#include "wandererprefsintern.h"
+#include "wandererprefsfont.h"
 #include "Classes/iconlist_attributes.h"
 #include "iconwindow_attributes.h"
 #include "support.h"
@@ -116,7 +116,7 @@ struct WandererPrefs_DATA
 
     BOOL                        wpd_PROCESSING;
 
-    struct WandererInternalPrefsData temp;
+    struct WandererFontPrefsData wfpd;
 };
 
 struct WandererPrefs_ViewSettingsNode
@@ -992,12 +992,14 @@ IPTR WandererPrefs__MUIM_WandererPrefs_ReloadFontPrefs
 
     SET(self, MUIA_WandererPrefs_Processing, TRUE);
 
-    WandererPrefs_CheckFont(&data->temp);
+    WandererPrefs_ReloadFontPrefs(wandererPrefs_FontsPrefsFile, &data->wfpd);
 
     ForeachNode(&data->wpd_ViewSettings, current_Node)
-        SET(current_Node->wpbn_NotifyObject, MUIA_IconWindow_Font, data->temp.WIPD_IconFont);
+        SET(current_Node->wpbn_NotifyObject, MUIA_IconWindow_Font, data->wfpd.wfpd_IconFont);
 
     SET(self, MUIA_WandererPrefs_Processing, FALSE);
+
+    WandererPrefs_CloseOldIconFont(&data->wfpd);
 
     return TRUE;
 }
@@ -1119,7 +1121,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
     }
     else if (message->AttributeID == MUIA_IconWindow_Font)
     {
-        return (IPTR)data->temp.WIPD_IconFont;
+        return (IPTR)data->wfpd.wfpd_IconFont;
     }
     else if (current_Node->wpbn_Options)
     {

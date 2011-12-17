@@ -18,7 +18,7 @@ FILES := main \
     iconwindow_drawerlist \
     iconwindow_volumelist \
     iconwindowbackfill \
-    wandererprefsinternal
+    wandererprefsfont
 
 #MM- workbench-system : workbench-system-wanderer
 #MM- workbench-system-wanderer : \
