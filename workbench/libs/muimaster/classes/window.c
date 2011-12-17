@@ -3014,29 +3014,6 @@ IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 data->wd_RefWindow = (Object *)tag->ti_Data;
                 break;
 
-// TODO: obsolete hacked atribute - remove
-#if defined(MUIA_Window_WandererBackdrop)
-            case MUIA_Window_WandererBackdrop:
-                _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
-                _handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_DRAGBAR);
-                _handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_SIZEGADGET);
-                _handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_CLOSEGADGET);
-                _handle_bool_tag(data->wd_CrtFlags, !tag->ti_Data, WFLG_DEPTHGADGET);
-                _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
-                if (tag->ti_Data)
-                {
-                    data->wd_ReqWidth = (LONG)MUIV_Window_Width_Screen(100);
-                    /* won't take the barlayer into account */
-                    data->wd_ReqHeight = (LONG)MUIV_Window_Height_Screen(100);
-                    data->wd_Width = 0;
-                    data->wd_Height = 0;
-                    data->wd_X = (LONG)0;
-                    /* place the window below the bar layer */
-                    data->wd_Y = (LONG)MUIV_Window_TopEdge_Delta(0);
-                }
-                break;
-#endif
-
             case MUIA_Window_LeftEdge:
                 data->wd_X = tag->ti_Data;
                 break;
