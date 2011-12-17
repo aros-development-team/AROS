@@ -3241,7 +3241,6 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 #ifdef __AROS__
         data->wd_Prefs = (Object *)WandererPrefsObject,
                                         MUIA_Wanderer_FileSysNotifyPort, (IPTR)data->wd_NotifyPort,
-                                        MUIA_Wanderer_FileSysNotifyList, (IPTR)&_WandererIntern_FSHandlerList,
                                     End; // FIXME: error handling
 #else
         data->wd_Prefs = NewObject(WandererPrefs_CLASS->mcc_Class, NULL, TAG_DONE); // FIXME: error handling

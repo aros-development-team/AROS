@@ -89,7 +89,6 @@
 #endif
 
 static CONST_STRPTR                     wandererPrefs_PrefsFile = "ENV:SYS/Wanderer/global.prefs";
-static Object                           *wandererPrefs_PrefsObject;
 struct Wanderer_FSHandler               *wandererPrefs_PrefsNotifyHandler = NULL;
 
 struct TagItem32 {
@@ -474,9 +473,9 @@ static CONST_STRPTR ExpandEnvName(CONST_STRPTR env_path)
 ///
 
 
-IPTR WandererPrefs__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *msg)
+IPTR WandererPrefs__HandleFSUpdate(Object *prefs, struct NotifyMessage *msg)
 {
-    DoMethod(wandererPrefs_PrefsObject, MUIM_WandererPrefs_Reload);
+    DoMethod(prefs, MUIM_WandererPrefs_Reload);
     return 0;
 }
 
@@ -486,11 +485,9 @@ IPTR WandererPrefs__HandleFSUpdate(Object *WandererObj, struct NotifyMessage *ms
 Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 {
     IPTR                _wandererPrefs__FSNotifyPort = 0;
-    struct List         *_wandererPrefs__FSNotifyList = NULL;
     D(bug("[Wanderer:Prefs]:New()\n"));
 
     _wandererPrefs__FSNotifyPort = GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
-    _wandererPrefs__FSNotifyList = (APTR)GetTagData(MUIA_Wanderer_FileSysNotifyList, (IPTR) NULL, message->ops_AttrList);
 
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
  
@@ -498,16 +495,16 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     {
         SETUP_INST_DATA;
 
-        wandererPrefs_PrefsObject = self;
-
         /* Setup notification on prefs file --------------------------------*/
-        if (_wandererPrefs__FSNotifyList && ((wandererPrefs_PrefsNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
+        if (((wandererPrefs_PrefsNotifyHandler = AllocMem(sizeof(struct Wanderer_FSHandler), MEMF_CLEAR)) != NULL))
         {
+            wandererPrefs_PrefsNotifyHandler->target                    = self;
             wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name         = (char *)ExpandEnvName(wandererPrefs_PrefsFile);
+            wandererPrefs_PrefsNotifyHandler->HandleFSUpdate            = WandererPrefs__HandleFSUpdate;
             data->wpd_PrefsNotifyRequest.nr_Name                        = wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name;
             data->wpd_PrefsNotifyRequest.nr_Flags                       = NRF_SEND_MESSAGE;
             data->wpd_PrefsNotifyRequest.nr_stuff.nr_Msg.nr_Port        = (struct MsgPort *)_wandererPrefs__FSNotifyPort;
-            wandererPrefs_PrefsNotifyHandler->HandleFSUpdate            = WandererPrefs__HandleFSUpdate;
+            data->wpd_PrefsNotifyRequest.nr_UserData                    = (IPTR)wandererPrefs_PrefsNotifyHandler;
 
             if (StartNotify(&data->wpd_PrefsNotifyRequest))
             {
@@ -515,9 +512,10 @@ D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: Prefs-notification setup on '%s'\n", d
             }
             else
             {
-D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
+                D(bug("[Wanderer:Prefs] Wanderer__OM_NEW: FAILED to setup Prefs-notification!\n"));
+                wandererPrefs_PrefsNotifyHandler->fshn_Node.ln_Name = NULL;
+                data->wpd_PrefsNotifyRequest.nr_Name = NULL;
             }
-            AddTail(_wandererPrefs__FSNotifyList, &wandererPrefs_PrefsNotifyHandler->fshn_Node);
         }
 D(bug("[Wanderer:Prefs]:New - reloading\n"));
 
