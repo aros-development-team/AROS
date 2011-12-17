@@ -20,3 +20,5 @@ struct WandererInternalPrefsData
   struct TextFont  *WIPD_IconFont;
   struct TextAttr   WIPD_IconFontTA;
 };
+
+void WandererPrefs_CheckFont(struct WandererInternalPrefsData *WIPD);

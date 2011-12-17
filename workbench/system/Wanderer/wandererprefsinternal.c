@@ -263,7 +263,7 @@ void KillIFF(struct IFFHandle *iff)
 
 /*********************************************************************************************/
 
-static void WandererPrefs_CheckFont(struct WandererInternalPrefsData *WIPD)
+void WandererPrefs_CheckFont(struct WandererInternalPrefsData *WIPD)
 {
     struct IFFHandle *iff = NULL;
 

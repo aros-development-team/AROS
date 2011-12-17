@@ -58,6 +58,7 @@
 
 #include "wanderer.h"
 #include "wandererprefs.h"
+#include "wandererprefsintern.h"
 #include "Classes/iconlist_attributes.h"
 #include "iconwindow_attributes.h"
 #include "support.h"
@@ -110,6 +111,8 @@ struct WandererPrefs_DATA
     struct Wanderer_FSHandler   wdp_PrefsFSHandler;
     
     BOOL                        wpd_PROCESSING;
+
+    struct WandererInternalPrefsData temp;
 };
 
 struct WandererPrefs_ViewSettingsNode
@@ -524,6 +527,7 @@ Object *WandererPrefs__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->wpd_PROCESSING = FALSE;
 
         DoMethod(self, MUIM_WandererPrefs_Reload);
+        DoMethod(self, MUIM_WandererPrefs_ReloadFontPrefs);
     }
 
     D(bug("[Wanderer:Prefs] obj = %ld\n", self));
@@ -940,6 +944,19 @@ D(bug("[Wanderer:Prefs] Failed to open stream!, returncode %ld!\n", error));
 }
 ///
 
+///WandererPrefs__MUIM_WandererPrefs_ReloadFontPrefs()
+IPTR WandererPrefs__MUIM_WandererPrefs_ReloadFontPrefs
+(
+  Class *CLASS, Object *self, Msg message
+)
+{
+    SETUP_INST_DATA;
+
+    WandererPrefs_CheckFont(&data->temp);
+    return TRUE;
+}
+///
+
 ///WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject()
 IPTR WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetNotifyObject
 (
@@ -1054,6 +1071,10 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
     {
       if (current_Node->wpbn_Background) return current_Node->wpbn_Background;
     }
+    else if (message->AttributeID == MUIA_IconWindow_Font)
+    {
+        return (IPTR)data->temp.WIPD_IconFont;
+    }
     else if (current_Node->wpbn_Options)
     {
       if (sizeof(IPTR) > 4)
@@ -1076,7 +1097,7 @@ D(bug("[Wanderer:Prefs] WandererPrefs__MUIM_WandererPrefs_ViewSettings_GetAttrib
 }
 ///
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_7
+ZUNE_CUSTOMCLASS_8
 (
   WandererPrefs, NULL, MUIC_Notify, NULL,
   OM_NEW,                                              struct opSet *,
@@ -1084,6 +1105,7 @@ ZUNE_CUSTOMCLASS_7
   OM_SET,                                              struct opSet *,
   OM_GET,                                              struct opGet *,
   MUIM_WandererPrefs_Reload,                           Msg,
+  MUIM_WandererPrefs_ReloadFontPrefs,                  Msg,
   MUIM_WandererPrefs_ViewSettings_GetNotifyObject,     struct MUIP_WandererPrefs_ViewSettings_GetNotifyObject *,
   MUIM_WandererPrefs_ViewSettings_GetAttribute,        struct MUIP_WandererPrefs_ViewSettings_GetAttribute *
 );
