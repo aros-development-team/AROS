@@ -75,7 +75,6 @@
 #include "iconwindow_attributes.h"
 #include "iconwindow_iconlist.h"
 #include "wandererprefs.h"
-#include "wandererprefsintern.h"
 #include "filesystems.h"
 #include "wanderer.h"
 #include "Classes/iconlist.h"
@@ -105,7 +104,6 @@
 
 #define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, TAG_DONE)
 
-extern IPTR             InitWandererPrefs(void);
 Object                  *FindMenuitem(Object* strip, int id);
 Object                  *Wanderer__Func_CreateWandererIntuitionMenu(BOOL isRoot, BOOL useBackdrop);
 void                    wanderer_menufunc_window_update(void);
@@ -146,7 +144,6 @@ struct Wanderer_DATA
     struct MsgPort                      *wd_NotifyPort;
     struct MUI_InputHandlerNode         wd_NotifyIHN;
 
-    IPTR                                wd_PrefsIntern;
     BOOL                                wd_Option_BackDropMode;
 };
 
@@ -3248,11 +3245,11 @@ D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererInte
 
         if (data->wd_Prefs)
         {
-D(bug("[Wanderer] %s: Prefs-Screentitle = '%s'\n", __PRETTY_FUNCTION__, XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
-            data->wd_PrefsIntern = InitWandererPrefs();
+            D(bug("[Wanderer] %s: Prefs-Screentitle = '%s'\n", __PRETTY_FUNCTION__, XGET(data->wd_Prefs, MUIA_IconWindowExt_ScreenTitle_String)));
         }
     }
-D(bug("[Wanderer] %s: WandererObj @ %p\n", __PRETTY_FUNCTION__, self));
+
+    D(bug("[Wanderer] %s: WandererObj @ %p\n", __PRETTY_FUNCTION__, self));
     return self;
 }
 ///
@@ -3837,10 +3834,7 @@ D(bug("[Wanderer] %s: Couldn't lock screen!\n", __PRETTY_FUNCTION__));
     }
 D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen));
 
-    if (data->wd_PrefsIntern)
-    {
-        useFont = (IPTR)((struct WandererInternalPrefsData *)data->wd_PrefsIntern)->WIPD_IconFont;
-    }
+    useFont = DoMethod(data->wd_Prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, "Workbench", MUIA_IconWindow_Font);
 
     _NewWandDrawerMenu__menustrip = Wanderer__Func_CreateWandererIntuitionMenu (isWorkbenchWindow, useBackdrop);
 
