@@ -3808,7 +3808,6 @@ Object *Wanderer__MUIM_Wanderer_CreateDrawerWindow
     BOOL    isWorkbenchWindow     = FALSE;
     BOOL    useBackdrop           = FALSE;
     IPTR    TAG_IconWindow_Drawer;
-    IPTR    useFont;
     Object *_NewWandDrawerMenu__menustrip;
 
     Object *window_IconList = NULL;
@@ -3822,8 +3821,6 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     TAG_IconWindow_Drawer = isWorkbenchWindow ? TAG_IGNORE : MUIA_IconWindow_Location;
 
-    useFont = (IPTR)NULL;
-
     data->wd_Screen = LockPubScreen(NULL);
 
     if(data->wd_Screen == NULL)
@@ -3833,8 +3830,6 @@ D(bug("[Wanderer] %s: Couldn't lock screen!\n", __PRETTY_FUNCTION__));
         return NULL;
     }
 D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen));
-
-    useFont = DoMethod(data->wd_Prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, "Workbench", MUIA_IconWindow_Font);
 
     _NewWandDrawerMenu__menustrip = Wanderer__Func_CreateWandererIntuitionMenu (isWorkbenchWindow, useBackdrop);
 
@@ -3847,7 +3842,6 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
                 MUIA_Window_ScreenTitle,              (IPTR)GetUserScreenTitle(data->wd_Prefs),
                 MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
                 TAG_IconWindow_Drawer,                (IPTR) message->drawer,
-                MUIA_IconWindow_Font,                 useFont,
                 MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
                 MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
                 isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
@@ -3863,7 +3857,6 @@ D(bug("[Wanderer] %s: Using Screen @ %p\n", __PRETTY_FUNCTION__, data->wd_Screen
                 MUIA_Window_ScreenTitle,              GetUserScreenTitle(data->wd_Prefs),
                 MUIA_Window_Menustrip,                (IPTR) _NewWandDrawerMenu__menustrip,
                 TAG_IconWindow_Drawer,                (IPTR) message->drawer,
-                MUIA_IconWindow_Font,                 useFont,
                 MUIA_IconWindow_ActionHook,           (IPTR) &_WandererIntern_hook_action,
                 MUIA_IconWindow_IsRoot,               isWorkbenchWindow ? TRUE : FALSE,
                 isWorkbenchWindow ? MUIA_IconWindow_IsBackdrop : TAG_IGNORE, useBackdrop,
