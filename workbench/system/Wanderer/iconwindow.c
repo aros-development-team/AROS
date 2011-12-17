@@ -348,8 +348,15 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
                                                     MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                                     TAG_DONE);
 
-        _newIconWin__WindowWidth = _newIconWin__Screen->Width;
-        _newIconWin__WindowHeight = _newIconWin__Screen->Height;
+        /*
+         * Use MUI built-in support to keep window aligned to size of screen
+         * Remember: sizes of screen can change without window beeing recreated
+         */
+        _newIconWin__WindowWidth = MUIV_Window_Width_Screen(100);
+        _newIconWin__WindowHeight = MUIV_Window_Height_Screen(100);
+        _newIconWin__WindowTop = MUIV_Window_TopEdge_Delta(0);
+        _newIconWin__WindowLeft = 0;
+
         DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Screen dimensions ..  %ld x %ld\n", __PRETTY_FUNCTION__, _newIconWin__WindowWidth, _newIconWin__WindowHeight));
 
         if (isBackdrop)
@@ -362,11 +369,6 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
             DOPENWINDOW(bug("[Wanderer:IconWindow] %s: Plain ROOT Window\n", __PRETTY_FUNCTION__));
             _newIconWin__Title = __intern_wintitle_wanderer;
         }
-
-        _newIconWin__WindowTop = _newIconWin__Screen->BarHeight + 1;
-        _newIconWin__WindowLeft = 0;
-
-        _newIconWin__WindowHeight -= _newIconWin__WindowTop;
     }
     else
     {
