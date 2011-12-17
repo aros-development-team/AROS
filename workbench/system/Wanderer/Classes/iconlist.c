@@ -1,6 +1,6 @@
 /*
-Copyright  2002-2011, The AROS Development Team. All rights reserved.
-$Id$
+    Copyright © 2001-2011, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include "../portable_macros.h"
@@ -6763,7 +6763,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
     else
     {
 #if defined(DEBUG_ILC_ICONDRAGDROP)
-        D(bug("[IconList] %s: BUG - DragDrop recieved with no source icons!\n", __PRETTY_FUNCTION__));
+        D(bug("[IconList] %s: BUG - DragDrop received with no source icons!\n", __PRETTY_FUNCTION__));
 #endif
         NNSET(obj, MUIA_IconList_IconsDropped, (IPTR)NULL);
     }

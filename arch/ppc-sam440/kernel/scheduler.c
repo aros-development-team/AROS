@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <asm/amcc440.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
@@ -251,7 +256,7 @@ void core_Schedule(regs_t *regs)
 
 
 /*
- * Leave the interrupt. This function recieves the register frame used to leave the supervisor
+ * Leave the interrupt. This function receives the register frame used to leave the supervisor
  * mode. It never returns and reschedules the task if it was asked for.
  */
 void core_ExitInterrupt(regs_t *regs) 

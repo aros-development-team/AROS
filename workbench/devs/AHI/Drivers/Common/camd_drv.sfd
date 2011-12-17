@@ -11,7 +11,7 @@ VOID Expunge() ()
 struct MidiPortData* OpenPort(struct MidiDeviceData * data,
                               LONG portnum,
                               APTR transmitfunc,
-                              APTR recievefunc,
+                              APTR receivefunc,
                               APTR userdata) (A3,D0,A0,A1,A2)
 VOID ClosePort(struct MidiDeviceData * data, LONG portnum) (A3,D0)
 VOID ActivateXmit(APTR userdata, LONG portnum)(A2,D0)

@@ -213,7 +213,7 @@ D(bug("[AROSTCP](res_send.c) res_send: Failed sending query\n"));
 			if (n <= 0) {
 				terrno = readErrnoValue(libPtr);
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_send.c) res_send: Failed recieving response\n"));
+D(bug("[AROSTCP](res_send.c) res_send: Failed receiving response\n"));
 #endif
 #ifdef RES_DEBUG
 					Perror("read (vc)");
@@ -255,7 +255,7 @@ D(bug("[AROSTCP](res_send.c) res_send: Truncated response\n"));
 			}
 			if (n <= 0) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_send.c) res_send: Error recieving response\n"));
+D(bug("[AROSTCP](res_send.c) res_send: Error receiving response\n"));
 #endif
 				terrno = readErrnoValue(libPtr);
 #ifdef RES_DEBUG
@@ -429,7 +429,7 @@ D(bug("[AROSTCP](res_send.c) res_send: Timeout!\n"));
 			if ((resplen = __recv(res_sock,
 					    answer, anslen, 0, libPtr)) <= 0) {
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_send.c) res_send: Error recieving\n"));
+D(bug("[AROSTCP](res_send.c) res_send: Error receiving\n"));
 #endif
 #ifdef RES_DEBUG
 					Perror("recv (dg)");
@@ -466,7 +466,7 @@ D(bug("[AROSTCP](res_send.c) res_send: Response is truncated\n"));
 		}
 
 #if defined(__AROS__)
-D(bug("[AROSTCP](res_send.c) res_send: Recieved answer\n"));
+D(bug("[AROSTCP](res_send.c) res_send: Received answer\n"));
 #endif
 
 #ifdef RES_DEBUG

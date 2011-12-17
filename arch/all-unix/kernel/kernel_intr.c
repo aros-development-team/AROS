@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/atomic.h>
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
@@ -13,7 +18,7 @@
 #include "kernel_unix.h"
 
 /*
- * Leave the interrupt. This function recieves the interrupt register frame
+ * Leave the interrupt. This function receives the interrupt register frame
  * and runs task scheduler if needed.
  *
  * You should call it only if you're returning to user mode (i.e. not from

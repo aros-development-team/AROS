@@ -66,7 +66,7 @@ SAVEDS ASM struct MidiPortData *OpenPort(
 					 REG(a3) struct MidiDeviceData *data,
 					 REG(d0) LONG portnum,
 					 REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
-					 REG(a1) void (* ASM recievefunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
+					 REG(a1) void (* ASM receivefunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
 					 REG(a2) APTR userdata
 					 );
 ASM void ClosePort(
@@ -206,7 +206,7 @@ SAVEDS ASM struct MidiPortData *OpenPort(
 					 REG(a3) struct MidiDeviceData *data,
 					 REG(d0) LONG portnum,
 					 REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
-					 REG(a1) void (* ASM recieverfunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
+					 REG(a1) void (* ASM receiverfunc)(UWORD REG(d0) input,APTR REG(a2) userdata),
 					 REG(a2) APTR userdata
 					 )
 {

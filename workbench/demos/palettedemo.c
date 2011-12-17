@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-97, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Demo/test for AROS boopsi objects
@@ -197,7 +197,7 @@ VOID HandleEvents(struct Window *win)
 	    
 	    	Object *gad;
 	    	
-	        D(bug("Recieved gadgetup"));
+	        D(bug("Received gadgetup"));
 
 	        gad = (Object *)imsg->IAddress;
 	        

@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: High-level scheduler calling code
@@ -16,7 +16,7 @@
 #include <kernel_syscall.h>
 
 /*
- * Leave the interrupt. This function recieves the interrupt register frame
+ * Leave the interrupt. This function receives the interrupt register frame
  * and runs task scheduler if needed.
  *
  * You should call it only if you're returning to user mode (i.e. not from

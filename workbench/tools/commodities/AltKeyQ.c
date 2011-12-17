@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     AltKeyQ -- Enter characters by their ANSI number.
@@ -347,7 +347,7 @@ static void handleCx(struct AKQState *as)
         
         if (signals & (1 << sendSigBit))
         {
-            D(bug("signal recieved\n"));
+            D(bug("signal received\n"));
             struct InputEvent *ie = InvertString((TEXT *)&send, NULL);
             if (ie)
             {

@@ -3483,11 +3483,11 @@ IPTR Wanderer__MUIM_Wanderer_HandleCommand
     struct PubScreenNode *pub_screen_node;
     WORD visitor_count = 0;
 D(bug("[Wanderer] %s()\n", __PRETTY_FUNCTION__));
-D(bug("[Wanderer] %s: Recieved signal at notification port\n", __PRETTY_FUNCTION__));
+D(bug("[Wanderer] %s: Received signal at notification port\n", __PRETTY_FUNCTION__));
 
     while ((wbhm = WBHM(GetMsg(data->wd_CommandPort))) != NULL)
     {
-D(bug("[Wanderer] %s: Recieved message from handler, type = %ld\n", __PRETTY_FUNCTION__, wbhm->wbhm_Type));
+D(bug("[Wanderer] %s: Received message from handler, type = %ld\n", __PRETTY_FUNCTION__, wbhm->wbhm_Type));
 
         switch (wbhm->wbhm_Type)
         {

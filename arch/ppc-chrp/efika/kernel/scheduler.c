@@ -1,9 +1,7 @@
 /*
- * scheduler.c
- *
- *  Created on: Aug 29, 2008
- *      Author: misc
- */
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #include <asm/mpc5200b.h>
 #include <aros/kernel.h>
@@ -280,7 +278,7 @@ void core_Schedule(regs_t *regs)
 }
 
 /*
- * Leave the interrupt. This function recieves the register frame used to leave the supervisor
+ * Leave the interrupt. This function receives the register frame used to leave the supervisor
  * mode. It never returns and reschedules the task if it was asked for.
  */
 void core_ExitInterrupt(regs_t *regs)
