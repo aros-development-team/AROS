@@ -288,7 +288,6 @@ Object *IconWindow__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 isBackdrop = FALSE;
 
     struct Hook                 *actionHook = NULL;
-    struct TextFont             *_newIconWin__WindowFont = NULL;
 
     struct Hook                 *_newIconWin__BackFillHook = NULL;
 
@@ -313,7 +312,6 @@ D(bug("[Wanderer:IconWindow]: %s()\n", __PRETTY_FUNCTION__));
     isRoot = (BOOL)GetTagData(MUIA_IconWindow_IsRoot, (IPTR)FALSE, message->ops_AttrList);
 
     actionHook = (struct Hook *)GetTagData(MUIA_IconWindow_ActionHook, (IPTR) NULL, message->ops_AttrList);
-    _newIconWin__WindowFont = (struct TextFont *)GetTagData(MUIA_IconWindow_Font, (IPTR) NULL, message->ops_AttrList);
     prefs = (Object *)GetTagData(MUIA_Wanderer_Prefs, (IPTR) NULL, message->ops_AttrList);
 
     _newIconWin__FSNotifyPort = (IPTR)GetTagData(MUIA_Wanderer_FileSysNotifyPort, (IPTR) NULL, message->ops_AttrList);
@@ -347,7 +345,6 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
     {
         iconviewclass = IconWindowVolumeList_CLASS;
         _newIconWin__IconListObj = (Object *)NewObject(iconviewclass->mcc_Class, NULL,
-                                                    MUIA_Font, (IPTR)_newIconWin__WindowFont,
                                                     MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                                     TAG_DONE);
 
@@ -499,7 +496,6 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         }
 
         _newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
-                                                                 MUIA_Font, (IPTR)_newIconWin__WindowFont,
                                                                  MUIA_IconDrawerList_Drawer, (IPTR) _newIconWin__Title,
                                                                  MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                                                 TAG_DONE);
@@ -613,7 +609,6 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         WindowBF_TAG,                                        _newIconWin__BackFillHook,
 
         MUIA_Window_ScreenTitle,                             (IPTR) "",
-        MUIA_Font,                                           (IPTR) _newIconWin__WindowFont,
 
         WindowContents, (IPTR) MUI_NewObject(MUIC_Group,
             MUIA_Group_Spacing,  0,
@@ -671,8 +666,6 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
         data->iwd_Flags                                 |= (isRoot) ? IWDFLAG_ISROOT : 0;
         data->iwd_Flags                                 |= (isBackdrop) ? IWDFLAG_ISBACKDROP : 0;
 
-        data->iwd_WindowFont                            = _newIconWin__WindowFont;        
-
         data->iwd_ViewSettings_Attrib                   = (data->iwd_Flags & IWDFLAG_ISROOT) 
                                                           ? "Workbench"
                                                           : "Drawer";
@@ -688,7 +681,7 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
 #endif
 
             DoMethod
-            (
+              (
                 prefs, MUIM_Notify, MUIA_WandererPrefs_Processing, FALSE,
                 (IPTR) self, 3, 
                 MUIM_CallHook, &data->iwd_PrefsUpdated_hook, (IPTR)CLASS
@@ -697,6 +690,9 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
             data->iwd_ViewSettings_PrefsNotificationObject = (Object *) DoMethod(prefs,
                                     MUIM_WandererPrefs_ViewSettings_GetNotifyObject,
                                     data->iwd_ViewSettings_Attrib);
+            data->iwd_WindowFont  = (struct TextFont*)DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute,
+                    data->iwd_ViewSettings_Attrib, MUIA_IconWindow_Font);
+            SET(data->iwd_IconListObj, MUIA_Font, data->iwd_WindowFont);
         }
 
 #ifdef __AROS__
