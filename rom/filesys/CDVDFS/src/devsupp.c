@@ -6,13 +6,14 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2010 The AROS Development Team
+ *              (C) Copyright 2002-2011 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
  *
+ * 18-Dec-11 twilen    - SCANINTERVAL=-1: Use media change interrupt.
  * 11-Aug-10 sonic     - Fixed for 64-bit compatibility
  * 08-Apr-07 sonic     - removed redundant "TRACKDISK" option
  * 31-Mar-07 sonic     - merged together 2 versions of Get_Startup(), changed
@@ -292,8 +293,6 @@ int Get_Startup(struct CDVDBase *global,struct FileSysStartupMsg *fssm) {
 
 			      if (Args[ARG_SCANINTERVAL]) {
 			        global->g_scan_interval = *(long *) (Args[ARG_SCANINTERVAL]);
-			        if (global->g_scan_interval < 0)
-			          global->g_scan_interval = 0;
 			      }
 
 			      if (Args[ARG_PLAYCDDA]) {

@@ -4,13 +4,14 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2010 The AROS Development Team
+ *              (C) Copyright 2002-2011 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
  *
+ * 18-Dec-11 twilen  Added media change interrupt support.
  * 11-Aug-10 sonic   Fixed comparison warning in Has_Audio_Tracks()
  * 01-Mar-10 neil    Do not read past end of disc.
  * 12-Jun-09 neil    If drive returns incorrect TOC length, calculate it
@@ -80,6 +81,18 @@
 
 #include "clib_stuff.h"
 #include <exec/interrupts.h>
+
+AROS_UFH2(ULONG, CDChangeHandler,
+    AROS_UFHA(struct CDVDBase *, global, A1),
+    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    Signal(&global->DosProc->pr_Task, global->g_changeint_sigbit);
+    return 0;
+
+    AROS_USERFUNC_EXIT
+}
 
 /*
  * i decided to change few things to make this code less insane.
@@ -172,6 +185,22 @@ CDROM *Open_CDROM
 	    break;
 
 	cd->device_open = TRUE;
+
+	if (global->g_scan_interval < 0) {
+	    /* Add media change interrupts */
+	    cd->iochangeint = (struct IOStdReq *)AllocVec(sizeof (struct IOExtTD), MEMF_PUBLIC);
+	    if (NULL == cd->iochangeint)
+		break;
+	    CopyMem(cd->scsireq, cd->iochangeint, sizeof (struct IOExtTD));
+	    cd->changeint.is_Node.ln_Type = NT_INTERRUPT;
+	    cd->changeint.is_Node.ln_Name = "CDFS ChangeInt";
+	    cd->changeint.is_Data = (APTR)global;
+	    cd->changeint.is_Code = (APTR)CDChangeHandler;
+	    cd->iochangeint->io_Length  = sizeof(struct Interrupt);
+	    cd->iochangeint->io_Data    = &cd->changeint;
+	    cd->iochangeint->io_Command = TD_ADDCHANGEINT;
+	    SendIO((struct IORequest *)cd->iochangeint);
+	}
 
 	cd->scsireq->io_Command = CMD_CLEAR;
 	DoIO ((struct IORequest *) cd->scsireq);
@@ -624,6 +653,13 @@ int Stop_Play_Audio(CDROM *p_cd)
 
 void Cleanup_CDROM (CDROM *p_cd) 
 {
+    if (p_cd->iochangeint) {
+	p_cd->iochangeint->io_Length  = sizeof(struct Interrupt);
+	p_cd->iochangeint->io_Data    = &p_cd->changeint;
+	p_cd->iochangeint->io_Command = TD_REMCHANGEINT;
+	DoIO((struct IORequest *)p_cd->iochangeint);
+	FreeVec(p_cd->iochangeint);
+    }
     if (p_cd->device_open)
 	CloseDevice ((struct IORequest *) p_cd->scsireq);
     if (p_cd->scsireq)

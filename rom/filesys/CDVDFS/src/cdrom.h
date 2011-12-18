@@ -44,6 +44,9 @@ typedef struct CDROM {
   struct IOStdReq	*scsireq;
   struct SCSICmd	cmd;
   short			device_open;
+  struct IOStdReq *iochangeint;
+  struct Interrupt changeint;
+
 } CDROM;
 
 typedef struct inquiry_data {
