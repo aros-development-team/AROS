@@ -24,19 +24,24 @@ ifeq ($(AROS_HOST_ARCH),darwin)
 endif
 
 ifeq ($(AROS_HOST_ARCH),mingw32)
-    EXTRALIBS := -lws2_32
+    EXTRALIBS2 := -lws2_32
+else
+ifneq ($(AROS_HOST_ARCH),linux)
+    # linking of i386 on x86_64 with -lz doesn't work
+    EXTRALIBS1 := -lz
+endif
 endif
 
 all : $(ILBMTOICON) $(INFOINFO)
 
 $(ILBMTOICON) : ilbmtoicon.c
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ -lpng -lz
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ -lpng $(EXTRALIBS1)
 	@$(HOST_STRIP) $@
 
 $(INFOINFO) : infoinfo.c
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ $(EXTRALIBS)
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ $(EXTRALIBS2)
 	@$(HOST_STRIP) $@
 
 clean:
