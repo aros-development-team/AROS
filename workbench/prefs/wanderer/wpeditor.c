@@ -1617,8 +1617,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_VertSpacingObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_PADDINGICONIMAGELABEL)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ImageSpacingObj);
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONTEXTMODE)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_TextModeObj);
