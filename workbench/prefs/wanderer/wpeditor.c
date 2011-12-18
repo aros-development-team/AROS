@@ -174,6 +174,7 @@ static STRPTR        _wpeditor_intern_IconTextRenderModeNames[iconlist_LabelRend
 static ULONG         _wpeditor_intern_IconTextRenderModeIDs[iconlist_LabelRenderModesCount + 1];
 
 static STRPTR        _wpeditor_intern_MainPageNames[4];
+static STRPTR        _wpeditor_intern_AdvancedPageNames[4];
 
 static Class         *_wpeditor_intern_CLASS = NULL;
 static struct List   _wpeditor_intern_ViewSettings;
@@ -1131,6 +1132,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *_WP_Prefs_PageGroupObj = NULL;
 
     Object    *_WP_AdvancedViewWindow = NULL,
+            *_WP_AdvancedViewPageGroupObj = NULL,
             *_WP_AdvancedViewWindowVGrp = NULL,
             *_WP_AdvancedViewBackgroundGrpObj = NULL,
             *_WP_AdvancedViewRenderModeGrpObj = NULL,
@@ -1406,6 +1408,16 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                     WindowContents, (IPTR) (_WP_AdvancedViewWindowVGrp = (Object *)VGroup, End),
                 End;
 
+    /*_WP_AdvancedViewPageGroupObj = Object for handling multi (3) page groups---------*/
+    _wpeditor_intern_AdvancedPageNames[0] = (STRPTR)"Background"; //FIXME
+    _wpeditor_intern_AdvancedPageNames[1] = (STRPTR)"Icons"; //FIXME
+    _wpeditor_intern_AdvancedPageNames[2] = (STRPTR)"Labels"; //FIXME
+
+    _WP_AdvancedViewPageGroupObj = (Object *)RegisterObject,
+                    MUIA_Register_Titles, (IPTR) _wpeditor_intern_AdvancedPageNames,
+                End;
+    /*END _WP_AdvancedViewPageGroupObj-------------------------------------------------*/
+
     /*Draw Mode Group----------------------------------------------------*/        
     _WP_AdvancedViewBackgroundGrpObj = (Object *)VGroup,
                     MUIA_FrameTitle, (IPTR)_(MSG_BACKGROUNDOPTIONS),
@@ -1648,9 +1660,11 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedViewRenderModeGrpObj);
     DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedView_RenderModePageObj);
 
-    DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
-    DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
+    DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
+    DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
+    DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
     DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_ButtonGrpObj);
+
 /*END Add advanced view objects to AdvancedViewWindow object-----------------*/
 /*END AdvancedViewWindow-----------------------------------------------------*/
 
