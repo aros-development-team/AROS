@@ -191,3 +191,15 @@ _Use
 MSG_CANCEL (//)
 C_ancel
 ;
+MSG_LABELSPREFS (//)
+Labels look and feel
+;
+MSG_ADVANCEDBACKGROUND (//)
+Background
+;
+MSG_ADVANCEDICONS (//)
+Icons
+;
+MSG_ADVANCEDLABELS (//)
+Labels
+;

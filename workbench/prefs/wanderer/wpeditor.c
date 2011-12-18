@@ -55,6 +55,10 @@
 #include "../../system/Wanderer/Classes/iconlist_attributes.h"
 #include "../../system/Wanderer/iconwindow_attributes.h"
 
+#define WPD_ADVANCED_ICONS      0
+#define WPD_ADVANCED_LABELS     1
+#define WPD_ADVANCED_BACKGROUND 2
+
 struct TagItem32 {
     ULONG ti_Tag;
     ULONG ti_Data;
@@ -1410,9 +1414,9 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
                 End;
 
     /*_WP_AdvancedViewPageGroupObj = Object for handling multi (3) page groups---------*/
-    _wpeditor_intern_AdvancedPageNames[0] = (STRPTR)"Background"; //FIXME
-    _wpeditor_intern_AdvancedPageNames[1] = (STRPTR)"Icons"; //FIXME
-    _wpeditor_intern_AdvancedPageNames[2] = (STRPTR)"Labels"; //FIXME
+    _wpeditor_intern_AdvancedPageNames[WPD_ADVANCED_ICONS] = (STRPTR)_(MSG_ADVANCEDICONS);
+    _wpeditor_intern_AdvancedPageNames[WPD_ADVANCED_LABELS] = (STRPTR)_(MSG_ADVANCEDLABELS);
+    _wpeditor_intern_AdvancedPageNames[WPD_ADVANCED_BACKGROUND] = (STRPTR)_(MSG_ADVANCEDBACKGROUND);
 
     _WP_AdvancedViewPageGroupObj = (Object *)RegisterObject,
                     MUIA_Register_Titles, (IPTR) _wpeditor_intern_AdvancedPageNames,
@@ -1577,7 +1581,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
 
     _WP_AdvancedView_LabelRenderGrpObj = (Object *)GroupObject,
                     MUIA_Group_SameSize, FALSE,
-                    MUIA_FrameTitle, __(MSG_ICONSPREFS), //FIXME
+                    MUIA_FrameTitle, __(MSG_LABELSPREFS),
                     MUIA_Frame, MUIV_Frame_Group,
                     MUIA_Group_Columns, 2,
                 End;
@@ -1605,25 +1609,19 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_RenderModePageObj, OM_ADDMEMBER, _WP_AdvancedView_ScaleModeGrpObj);
     DoMethod(_WP_AdvancedView_RenderModePageObj, OM_ADDMEMBER, _WP_AdvancedView_TileModeGrpObj);
 
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);    
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
-
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONLISTMODE)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ListModeObj);
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, HVSpace);
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, HVSpace);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_HORIZSPACINGICON)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_HorSpacingObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_VERTSPACINGICON)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_VertSpacingObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_PADDINGICONIMAGELABEL)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ImageSpacingObj);
+    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONTEXTMODE)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_TextModeObj);
-
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
 /* "TODO: Replace with propper font selectors" */
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICONLABELFONT)));
@@ -1636,9 +1634,6 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     SET(_WP_AdvancedView_IconLabel_InfoFontObj, MUIA_Disabled, TRUE);
 #endif
 
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
-    
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_LABELLINELENGTH)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_MaxLineLenObj);
 #if defined(DEBUG_MULTLINE)
@@ -1649,8 +1644,6 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_NDISPLAYLINES)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_MultiLineNoObj);
 #endif
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
-    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_HORIZPADDINGLABELTEXT)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_HorPaddObj);
@@ -1664,12 +1657,17 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_FRAMEHEIGHT)));
     DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_IconLabel_BorderHeightObj);
 
+    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
+    DoMethod(_WP_AdvancedView_LabelRenderGrpObj, OM_ADDMEMBER,HVSpace);
+
+
     DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedViewRenderModeGrpObj);
     DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,_WP_AdvancedView_RenderModePageObj);
+    DoMethod(_WP_AdvancedViewBackgroundGrpObj, OM_ADDMEMBER,HVSpace);
 
-    DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_IconRenderGrpObj);
     DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedView_LabelRenderGrpObj);
+    DoMethod(_WP_AdvancedViewPageGroupObj, OM_ADDMEMBER,_WP_AdvancedViewBackgroundGrpObj);
     DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedViewPageGroupObj);/*add pagesGroup to view*/
     DoMethod(_WP_AdvancedViewWindowVGrp, OM_ADDMEMBER,_WP_AdvancedView_ButtonGrpObj);
 
