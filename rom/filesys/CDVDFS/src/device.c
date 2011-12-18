@@ -5,13 +5,14 @@
  *
  * ----------------------------------------------------------------------
  * This code is (C) Copyright 1993,1994 by Frank Munkert.
- *              (C) Copyright 2002-2010 The AROS Development Team
+ *              (C) Copyright 2002-2011 The AROS Development Team
  * All rights reserved.
  * This software may be freely distributed and redistributed for
  * non-commercial purposes, provided this notice is included.
  * ----------------------------------------------------------------------
  * History:
  *
+ * 18-Dec-11 twilen    - Added media change interrupt support (SCANINTERVAL=-1).
  * 11-Aug-10 sonic     - Fixed for 64-bit compatibility
  * 04-Jun-10 neil      - No longer removes device node and seglist when
  *                       exiting. It isn't our job.
@@ -331,6 +332,8 @@ ULONG signals;
     BUG(dbprintf(global, "%d std buffers, %d file buffers\n",
     		 global->g_std_buffers, global->g_file_buffers);)
 
+    global->g_changeint_signumber = AllocSignal(-1);
+    global->g_changeint_sigbit = 1L << global->g_changeint_signumber;
     /* Initialize timer: */
     global->g_timer_sigbit = 0;
     if (Open_Timer_Device (global)) {
@@ -358,7 +361,7 @@ ULONG signals;
      */
 	do
 	{
-		signals = Wait(global->g_dos_sigbit | global->g_timer_sigbit | global->g_app_sigbit);
+		signals = Wait(global->g_dos_sigbit | global->g_timer_sigbit | global->g_app_sigbit | global->g_changeint_sigbit);
 	} while	(handlemessage(global, signals));
     BUG(dbprintf(global, "Terminating the handler\n");)
     /* remove timer device and any pending timer requests: */
@@ -372,6 +375,9 @@ ULONG signals;
 
     if (global->g_cd)
       Cleanup_CDROM (global->g_cd);
+
+    if (global->g_changeint_signumber != -1)
+      FreeSignal(global->g_changeint_signumber);
 
     Close_Intui (global);
 
@@ -409,6 +415,11 @@ char    buf[256];
 register WORD   error;
 UBYTE   notdone = 1;
  
+	if (signals & global->g_changeint_sigbit)
+	{
+		if (global->g_cd && !global->g_inhibited)
+			Check_Disk (global);
+	}
 	if (signals & global->g_timer_sigbit)
 	{
 		GetMsg (global->g_timer_mp);
@@ -428,7 +439,7 @@ UBYTE   notdone = 1;
 				Show_CDDA_Icon (global);
 			}
 			/* diskchange check: */
-			if (global->g_scan_interval)
+			if (global->g_scan_interval > 0)
 			{
 				if (global->g_scan_time == 1)
 				{

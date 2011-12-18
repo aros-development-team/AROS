@@ -42,6 +42,8 @@ struct CDVDBase
     struct MsgPort	*g_timer_mp; /*  timer message port	*/
     struct timerequest	*g_timer_io; /*  timer i/o request	*/
     ULONG   g_timer_sigbit;
+    int   g_changeint_signumber;
+    ULONG   g_changeint_sigbit;
     int	g_scan_interval; /* Time between successive diskchange checks */
     int	g_scan_time;     /* Countdown for diskchange	          */
     int	g_time;          /* Current time	          */
