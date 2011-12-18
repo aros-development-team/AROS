@@ -79,6 +79,7 @@
 #include "wanderer.h"
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
+#include "Classes/icon_attributes.h"
 #include "locale.h"
 
 #include "version.h"
@@ -1337,16 +1338,24 @@ D(bug("[Wanderer] %s: snapshot ALL\n", __PRETTY_FUNCTION__));
             if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
             {
                 node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
-D(bug("[Wanderer] %s: SNAPSHOT entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__, icon_entry->ile_IconEntry->ie_IconNode.ln_Name, icon_entry, node));
-                if (node->ie_DiskObj)
+                if (node->ie_Flags & ICONENTRY_FLAG_HASICON)
                 {
-                    node->ie_DiskObj->do_CurrentX = node->ie_IconX;
-                    node->ie_DiskObj->do_CurrentY = node->ie_IconY;
-                    PutIconTagList(icon_entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icon_tags);
-                }
-                else
-                {
-D(bug("[Wanderer] %s: icon has no diskobj!\n", __PRETTY_FUNCTION__));
+                    /* Snapshot-all should only save positions of objects that already have icons.
+                     * This is by design and how 3.1 Workbench works. In order to snapshot all objects in window
+                     * regardless if they have icons or not: 1) make all objects visible, 2) select all objects,
+                     * 3) select icon->snapshot */
+                    D(bug("[Wanderer] %s: SNAPSHOT entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__,
+                            icon_entry->ile_IconEntry->ie_IconNode.ln_Name, icon_entry, node));
+                    if (node->ie_DiskObj)
+                    {
+                        node->ie_DiskObj->do_CurrentX = node->ie_IconX;
+                        node->ie_DiskObj->do_CurrentY = node->ie_IconY;
+                        PutIconTagList(icon_entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icon_tags);
+                    }
+                    else
+                    {
+                        D(bug("[Wanderer] %s: icon has no diskobj!\n", __PRETTY_FUNCTION__));
+                    }
                 }
             }
             else
@@ -1962,6 +1971,10 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
+            /* On 3.1 Workbench it is not possible to snapshot an object that does not have icon file. Wanderer in such
+             * case automatically creates and icon because user explicitly request icon snapshot operation
+             * (see window snapshoting comment) */
+
             node = (struct IconEntry *)((IPTR)entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
 D(bug("[Wanderer] %s: %s entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__, (snapshot) ? "SNAPSHOT" : "UNSNAPSHOT", entry->ile_IconEntry->ie_IconNode.ln_Name, entry, node));
             if (node->ie_DiskObj)
