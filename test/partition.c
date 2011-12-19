@@ -1,8 +1,13 @@
-#include <stdio.h>
+#define DEBUG 0
+
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <proto/partition.h>
 #include <libraries/partition.h>
 #include <utility/tagitem.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 struct PartitionBase *PartitionBase;
 
@@ -26,18 +31,15 @@ ULONG a;
     printf("HighCyl = %ld\n", de->de_HighCyl);
 }
 
-LONG GetPartitionAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
-
-    return GetPartitionAttrs(ph, (struct TagItem *)&tag);
-}
-
 void PrintPInfo(struct PartitionHandle *ph, ULONG i) {
 struct DosEnvec de;
 UBYTE name[32];
 LONG type = 0;
 ULONG a;
 
-    GetPartitionAttrsA
+    D(bug("Getting attrs for handle 0x%p\n", ph));
+
+    GetPartitionAttrsTags
     (
         ph,
         PT_DOSENVEC, &de,
@@ -45,12 +47,14 @@ ULONG a;
         PT_TYPE, &type,
         TAG_DONE
     );
+
+    D(bug("Got attrs for handle 0x%p\n", ph));    
     for (a=i;a;a--)
         printf("  ");
     printf("name: %s\n", name);
     for (a=i+1;a;a--)
         printf("  ");
-    printf("type: %lx\n", (unsigned long)type);
+    printf("type: %x\n", type);
     PrintDE(&de, i+1);
 }
 
@@ -60,14 +64,11 @@ struct PartitionHandle *ph;
     ph = (struct PartitionHandle *)root->table->list.lh_Head;
     while (ph->ln.ln_Succ)
     {
+        D(bug("PartitionHandle 0x%p, code 0x%p\n", ph, PrintPInfo));
+
         PrintPInfo(ph, i);
         ph = (struct PartitionHandle *)ph->ln.ln_Succ;
     }
-}
-
-LONG GetPartitionTableAttrsA(struct PartitionHandle *ph, LONG tag, ...) {
-    //FIXME: buggy
-    return GetPartitionTableAttrs(ph, (struct TagItem *) &tag);
 }
 
 void PrintPartitionTable(struct PartitionHandle *root, ULONG i) {
@@ -78,14 +79,14 @@ ULONG a;
 
     if (OpenPartitionTable(root)==0)
     {
-        GetPartitionTableAttrsA
+        GetPartitionTableAttrsTags
         (
             root,
             PTT_TYPE, &type,
             PTT_RESERVED, &reserved,
             TAG_DONE
         );
-        GetPartitionAttrsA(root, PT_DOSENVEC, &de, TAG_DONE);
+        GetPartitionAttrsTags(root, PT_DOSENVEC, &de, TAG_DONE);
         for (a=i;a;a--)
             printf("  ");
         printf("Partition type is ");
@@ -103,7 +104,7 @@ ULONG a;
         }
         for (a=i;a;a--)
             printf("  ");
-        printf("reserved blocks: %ld\n", (long)reserved);
+        printf("reserved blocks: %d\n", reserved);
         PrintDE(&de,i);
         for (a=i;a;a--)
             printf("  ");
@@ -115,10 +116,17 @@ ULONG a;
         printf("Couldn't read partition table\n");
 }
 
-int main(void) {
-struct PartitionHandle *root;
-char *device = "fdsk.device";
-ULONG unit = 1;
+int main(int argc, char **argv)
+{
+    struct PartitionHandle *root;
+    char *device = "fdsk.device";
+    ULONG unit = 1;
+
+    if (argc > 2)
+    {
+        device = argv[1];
+        unit = atoi(argv[2]);
+    }
 
     PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 1);
     if (PartitionBase)
@@ -126,7 +134,7 @@ ULONG unit = 1;
         root = OpenRootPartition(device, unit);
         if (root)
         {
-            printf("got root handle of %s unit %ld\n", device, (long)unit);
+            printf("got root handle of %s unit %d\n", device, unit);
             PrintPartitionTable(root, 0);
             CloseRootPartition(root);
         }
