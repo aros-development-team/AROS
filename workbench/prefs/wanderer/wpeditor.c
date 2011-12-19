@@ -304,6 +304,7 @@ AROS_UFH3(
     if (Image_Spec)
     {
         strcpy(Image_Spec, ImageSelector_Spec);
+        /* This "reloads" the dynamic controls by calling WandererPrefs_Hook_CheckImageFunc */
         SET(_viewSettings_Current->wpedbo_ImageSpecObject, MUIA_Imagedisplay_Spec, Image_Spec);
 
         struct WPEditor_ViewSettingsObject *_viewSettings_Node = NULL;
@@ -2097,10 +2098,15 @@ D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: GUI Objects inserted in Pr
             );
 
             if (_viewSettings_Node->wpedbo_AdvancedOptionsObject)
-                DoMethod (
-                      _viewSettings_Node->wpedbo_AdvancedOptionsObject, MUIM_Notify, MUIA_Pressed, FALSE,
-                      (IPTR)data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_WindowObj, 3, MUIM_Set, MUIA_Window_Open, TRUE
-                     );
+            {
+                _viewSettings_Node->wpedbo_Hook_OpenAdvancedOptions.h_Entry = ( HOOKFUNC )WandererPrefs_Hook_OpenAdvancedOptionsFunc;
+
+                DoMethod
+                    (
+                        _viewSettings_Node->wpedbo_AdvancedOptionsObject, MUIM_Notify, MUIA_Pressed, FALSE,
+                        (IPTR)self, 3, MUIM_CallHook, &_viewSettings_Node->wpedbo_Hook_OpenAdvancedOptions, _viewSettings_Node
+                    );
+            }
 
 D(bug("[WPEditor] WPEditor_ProccessViewSettingsChunk: GUI Objects Notifications set ..\n"));
         }
