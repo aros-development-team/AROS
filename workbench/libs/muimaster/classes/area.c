@@ -799,7 +799,7 @@ static IPTR Area__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             return TRUE;
     
         case MUIA_ShowMe:
-            STORE = (data->mad_Flags & MADF_SHOWME);
+            STORE = !!(data->mad_Flags & MADF_SHOWME);
             return TRUE;
     
         case MUIA_Timer:
