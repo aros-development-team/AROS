@@ -56,6 +56,8 @@ Boston, MA 02111-1307, USA.  */
 #define debug(v)
 #endif
 
+#define MAX_NODEDEPTH 128
+
 #define FLAG_VIRTUAL	0x0001
 
 /* Return true if last non whitespace character is a '\' */
@@ -464,6 +466,14 @@ finddirnode (struct DirNode * topnode, const char * path)
     return subdir;
 }
 
+static int nodedepth (struct DirNode * node)
+{
+    int depth;
+
+    for (depth = 0; node->parent; depth++, node = node->parent);
+
+    return depth;
+}
 
 int
 scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredirs)
@@ -473,6 +483,15 @@ scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredir
     struct dirent * dirent;
 
     int mfnamelen = strlen(mfname), scanned = 0;
+
+    /*
+     * To avoid MetaMake going into infinite loop when circular
+     * linking is present, we limit the total depth.
+     */
+    if (nodedepth(node) > MAX_NODEDEPTH) {
+	error("scandirnode(): exceeded maximum directory depth of %d\n%s\n", MAX_NODEDEPTH, buildpath(node));
+	exit(20);
+    }
 
     debug(printf("MMAKE:dirnode.c->scandirnode('%s')\n", node->node.name));
 
@@ -574,17 +593,11 @@ scandirnode (struct DirNode * node, const char * mfname, struct List * ignoredir
 		 */
 		st.st_mode = 0; /* This makes us to ignore the file if it can't be stat()'ed.
 				   This lets us to succesfully skip Unicode-named files under Windows */
-		lstat (dirent->d_name, &st);
+		stat (dirent->d_name, &st);
 
-		/* TODO: Add support to MetaMake for going through links
-		 * If this feature is to be supported one also has to implement
-		 * checks to avoid MetaMake going into infinite loop when circular
-		 * linking is present
-		 */
 		if (S_ISDIR (st.st_mode)
 			&& strcmp (dirent->d_name, ".") != 0
 			&& strcmp (dirent->d_name, "..") != 0
-			&& !S_ISLNK (st.st_mode)
 			&& !FindNode (ignoredirs, dirent->d_name)
 		   )
 		{
