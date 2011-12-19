@@ -155,6 +155,7 @@ void initPartitionHandle(struct PartitionHandle *root, struct PartitionHandle *p
     ph->dg.dg_Heads        = ph->de.de_Surfaces;
     ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
     ph->dg.dg_Cylinders    = count_sector / cylsecs;
+    ph->dg.dg_CylSectors   = cylsecs;
     ph->dg.dg_BufMemType   = ph->de.de_BufMemType;
 
     /* Set start/end cylinder in DosEnvec */
