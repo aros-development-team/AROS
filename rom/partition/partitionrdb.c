@@ -809,10 +809,12 @@ ULONG i;
 
 static LONG PartitionRDBGetPartitionTableAttr(struct Library *PartitionBase, struct PartitionHandle *root, struct TagItem *tag)
 {
+    struct RDBData *data = root->table->data;
+
     switch (tag->ti_Tag)
     {
     case PTT_RESERVED:
-        *((LONG *)tag->ti_Data) = (root->de.de_Surfaces * root->de.de_BlocksPerTrack) << 1; /* 2 cylinders */
+        *((LONG *)tag->ti_Data) = AROS_BE2LONG(data->rdb.rdb_RDBBlocksHi) + 1; /* Reserved blocks count starts from 0, so ignore rdb_RDBBlocksLo */
         return TRUE;
     }
 
