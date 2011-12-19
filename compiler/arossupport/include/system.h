@@ -133,7 +133,7 @@
 #    define __const
 #endif
 
-#if __GNUC_PREREQ(3,3) && !defined(__mc68000)
+#if __GNUC_PREREQ(3,3)
 #    define __mayalias  __attribute__((__may_alias__))
 #else
 #    define __mayalias
