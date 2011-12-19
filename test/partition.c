@@ -16,46 +16,56 @@ ULONG a;
 
     for (a=i;a;a--)
         printf("  ");
-    printf("SizeBlock = %ld\n", de->de_SizeBlock<<2);
+    printf("SizeBlock      = %ld\n", de->de_SizeBlock<<2);
     for (a=i;a;a--)
         printf("  ");
-    printf("Surfaces = %ld\n", de->de_Surfaces);
+    printf("Surfaces       = %ld\n", de->de_Surfaces);
     for (a=i;a;a--)
         printf("  ");
     printf("BlocksPerTrack = %ld\n", de->de_BlocksPerTrack);
     for (a=i;a;a--)
         printf("  ");
-    printf("LowCyl = %ld\n", de->de_LowCyl);
+    printf("LowCyl         = %ld\n", de->de_LowCyl);
     for (a=i;a;a--)
         printf("  ");
-    printf("HighCyl = %ld\n", de->de_HighCyl);
+    printf("HighCyl        = %ld\n", de->de_HighCyl);
 }
 
-void PrintPInfo(struct PartitionHandle *ph, ULONG i) {
-struct DosEnvec de;
-UBYTE name[32];
-LONG type = 0;
-ULONG a;
+void PrintPInfo(struct PartitionHandle *ph, ULONG i)
+{
+    struct DosEnvec de;
+    UBYTE name[32];
+    struct PartitionType type;
+    ULONG a;
+    ULONG start, end;
 
-    D(bug("Getting attrs for handle 0x%p\n", ph));
+    GetPartitionAttrsTags(ph,
+                          PT_DOSENVEC  , &de,
+                          PT_NAME      , name,
+                          PT_TYPE      , &type,
+                          PT_STARTBLOCK, &start,
+                          PT_ENDBLOCK  , &end,
+                          TAG_DONE);
 
-    GetPartitionAttrsTags
-    (
-        ph,
-        PT_DOSENVEC, &de,
-        PT_NAME, name,
-        PT_TYPE, &type,
-        TAG_DONE
-    );
-
-    D(bug("Got attrs for handle 0x%p\n", ph));    
     for (a=i;a;a--)
         printf("  ");
     printf("name: %s\n", name);
     for (a=i+1;a;a--)
         printf("  ");
-    printf("type: %x\n", type);
+
+    printf("type:");
+    for (a = 0; a < type.id_len; a++)
+        printf(" %02X", type.id[a]);
+    printf("\n");
+
     PrintDE(&de, i+1);
+
+    for (a = i + 1; a; a--)
+        printf("  ");
+    printf("StartBlock     = %d\n", start);
+    for (a = i + 1; a; a--)
+        printf("  ");    
+    printf("EndBlock       = %d\n", end);
 }
 
 void PrintPartitions(struct PartitionHandle *root, ULONG i) {
@@ -64,8 +74,7 @@ struct PartitionHandle *ph;
     ph = (struct PartitionHandle *)root->table->list.lh_Head;
     while (ph->ln.ln_Succ)
     {
-        D(bug("PartitionHandle 0x%p, code 0x%p\n", ph, PrintPInfo));
-
+        D(printf("PartitionHandle 0x%p\n", ph));
         PrintPInfo(ph, i);
         ph = (struct PartitionHandle *)ph->ln.ln_Succ;
     }
