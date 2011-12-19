@@ -11,6 +11,8 @@
 
 struct PartitionBase *PartitionBase;
 
+LONG PrintPartitionTable(struct PartitionHandle *root, ULONG i);
+
 void PrintDE(struct DosEnvec *de, ULONG i) {
 ULONG a;
 
@@ -66,6 +68,8 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
     for (a = i + 1; a; a--)
         printf("  ");    
     printf("EndBlock       = %d\n", end);
+
+    PrintPartitionTable(ph, i + 1);
 }
 
 void PrintPartitions(struct PartitionHandle *root, ULONG i) {
@@ -80,49 +84,57 @@ struct PartitionHandle *ph;
     }
 }
 
-void PrintPartitionTable(struct PartitionHandle *root, ULONG i) {
-struct DosEnvec de;
-ULONG type = 0;
-ULONG reserved = 0;
-ULONG a;
+LONG PrintPartitionTable(struct PartitionHandle *root, ULONG i)
+{
+    struct DosEnvec de;
+    ULONG type = 0;
+    ULONG reserved = 0;
+    ULONG a;
 
-    if (OpenPartitionTable(root)==0)
+    a = OpenPartitionTable(root);
+    if (a)
+        return a;
+
+    GetPartitionTableAttrsTags(root,
+                               PTT_TYPE    , &type,
+                               PTT_RESERVED, &reserved,
+                               TAG_DONE);
+    GetPartitionAttrsTags(root, PT_DOSENVEC, &de, TAG_DONE);
+
+    for (a=i;a;a--)
+        printf("  ");
+    printf("Partition table type is ");
+    switch (type)
     {
-        GetPartitionTableAttrsTags
-        (
-            root,
-            PTT_TYPE, &type,
-            PTT_RESERVED, &reserved,
-            TAG_DONE
-        );
-        GetPartitionAttrsTags(root, PT_DOSENVEC, &de, TAG_DONE);
-        for (a=i;a;a--)
-            printf("  ");
-        printf("Partition type is ");
-        switch (type)
-        {
-        case PHPTT_UNKNOWN:
-            printf("unknown\n");
-            break;
-        case PHPTT_RDB:
-            printf("Rigid Disk Block\n");
-            break;
-        case PHPTT_MBR:
-            printf("MBR -> PC\n");
-            break;
-        }
-        for (a=i;a;a--)
-            printf("  ");
-        printf("reserved blocks: %d\n", reserved);
-        PrintDE(&de,i);
-        for (a=i;a;a--)
-            printf("  ");
-        printf("partitions:\n");
-        PrintPartitions(root,i+1);
-        ClosePartitionTable(root);
+    case PHPTT_RDB:
+        printf("Rigid Disk Block\n");
+        break;
+
+    case PHPTT_MBR:
+        printf("MBR -> PC\n");
+        break;
+
+    case PHPTT_EBR:
+        printf("EBR -> PC\n");
+        break;
+
+    default:
+        printf("unknown\n");
+        break;
     }
-    else
-        printf("Couldn't read partition table\n");
+
+    for (a=i;a;a--)
+        printf("  ");
+    printf("reserved blocks: %d\n", reserved);
+
+    PrintDE(&de,i);
+    for (a=i;a;a--)
+        printf("  ");
+    printf("partitions:\n");
+    PrintPartitions(root,i+1);
+    ClosePartitionTable(root);
+
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -144,7 +156,10 @@ int main(int argc, char **argv)
         if (root)
         {
             printf("got root handle of %s unit %d\n", device, unit);
-            PrintPartitionTable(root, 0);
+
+            if (PrintPartitionTable(root, 0))
+                printf("Couldn't read partition table\n");
+
             CloseRootPartition(root);
         }
         else
