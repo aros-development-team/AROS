@@ -65,7 +65,7 @@ static char *check_header(struct elfheader *eh)
  */
 static void *load_hunk(void *file, struct sheader *sh, void *addr, struct KernelBSS_t **bss_tracker)
 { 
-    unsigned long align;
+    uintptr_t align;
 
     /* empty chunk? Who cares :) */
     if (!sh->size)
@@ -73,22 +73,22 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
 
     D(kprintf("[ELF Loader] Chunk (%ld bytes, align=%ld (%p) @ ", sh->size, sh->addralign, (void *)sh->addralign));
     align = sh->addralign - 1;
-    addr = (char *)(((unsigned long)addr + align) & ~align);
+    addr = (char *)(((uintptr_t)addr + align) & ~align);
 
     D(kprintf("%p\n", addr));
-    sh->addr = (elf_ptr_t)(unsigned long)addr;
+    sh->addr = (elf_ptr_t)(uintptr_t)addr;
 
     /* copy block of memory from ELF file if it exists */
     if (sh->type != SHT_NOBITS)
     {
-	if (read_block(file, sh->offset, (void *)(unsigned long)sh->addr, sh->size))
+	if (read_block(file, sh->offset, (void *)(uintptr_t)sh->addr, sh->size))
 	    return NULL;
     }
     else
     {
 	memset(addr, 0, sh->size);
 
-	(*bss_tracker)->addr = (unsigned long)addr;
+	(*bss_tracker)->addr = (uintptr_t)addr;
 	(*bss_tracker)->len = sh->size;
 	(*bss_tracker)++;
     }
@@ -96,7 +96,7 @@ static void *load_hunk(void *file, struct sheader *sh, void *addr, struct Kernel
     return addr + sh->size;
 }
 
-static void *copy_data(void *src, void *addr, unsigned long len)
+static void *copy_data(void *src, void *addr, uintptr_t len)
 {
     memcpy(addr, src, len);
     return addr + len;
@@ -109,10 +109,10 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
   struct sheader *shsymtab = &sh[SHINDEX(shrel->link)];
   struct sheader *toreloc  = &sh[SHINDEX(shrel->info)];
 
-  struct symbol *symtab   = (struct symbol *)(unsigned long)shsymtab->addr;
-  struct relo   *rel      = (struct relo *)(unsigned long)shrel->addr;
-  /* Early cast to unsigned long omits __udivdi3 call in x86-64 native bootstrap */
-  unsigned int numrel = (unsigned long)shrel->size / (unsigned long)shrel->entsize;
+  struct symbol *symtab   = (struct symbol *)(uintptr_t)shsymtab->addr;
+  struct relo   *rel      = (struct relo *)(uintptr_t)shrel->addr;
+  /* Early cast to uintptr_t omits __udivdi3 call in x86-64 native bootstrap */
+  unsigned int numrel = (uintptr_t)shrel->size / (uintptr_t)shrel->entsize;
   unsigned int i;
   
   struct symbol *SysBase_sym = NULL;
@@ -129,8 +129,8 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
   for (i=0; i<numrel; i++, rel++)
   {
 	struct symbol *sym = &symtab[ELF_R_SYM(rel->info)];
-	unsigned long *p = (void *)(unsigned long)toreloc->addr + rel->offset;
-	const char *name = (const char *)(unsigned long)sh[shsymtab->link].addr + sym->name;
+	uintptr_t *p = (void *)(uintptr_t)toreloc->addr + rel->offset;
+	const char *name = (const char *)(uintptr_t)sh[shsymtab->link].addr + sym->name;
 	elf_uintptr_t s;
 
 #ifdef __arm__
@@ -458,7 +458,7 @@ int GetKernelSize(struct ELFNode *FirstELF, unsigned long *ro_size, unsigned lon
  * This function loads the listed modules.
  * It expects that ELF and section header pointers in the list are already set up by GetKernelSize().
  *
- * (elf_ptr_t)(unsigned long) double-casting is needed because in some cases elf_ptr_t is an UQUAD,
+ * (elf_ptr_t)(uintptr_t) double-casting is needed because in some cases elf_ptr_t is an UQUAD,
  * while in most cases it's a pointer (see dos/elf.h).
  */
 int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *tracker, uintptr_t DefSysBase,
@@ -520,7 +520,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 		/* Remember address of the first code section, this is our entry point */
 		if ((sh[i].flags & SHF_EXECINSTR) && need_entry)
 		{
-		    *kernel_entry = (void *)(unsigned long)sh[i].addr;
+		    *kernel_entry = (void *)(uintptr_t)sh[i].addr;
 		    need_entry = 0;
 		}
 	    }
@@ -537,7 +537,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 
 	    if ((sh[i].type == AROS_ELF_REL) && sh[sh[i].info].addr)
 	    {
-		sh[i].addr = (elf_ptr_t)(unsigned long)load_block(file, sh[i].offset, sh[i].size, &err);
+		sh[i].addr = (elf_ptr_t)(uintptr_t)load_block(file, sh[i].offset, sh[i].size, &err);
 		if (err)
 		{
 		    DisplayError("%s: Failed to load relocation section %u\n", n->Name, i);
@@ -550,7 +550,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 		    return 0;
 		}
 
-		free_block((void *)(unsigned long)sh[i].addr);
+		free_block((void *)(uintptr_t)sh[i].addr);
 		sh[i].addr = (elf_ptr_t)0;
 	    }
 	}
@@ -560,7 +560,7 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 	D(kprintf("[ELF Loader] Adding module debug information...\n"));
 
 	/* Align our pointer */
-	ptr_ro = (void *)(((unsigned long)ptr_ro + sizeof(void *)) & ~(sizeof(void *) - 1));
+	ptr_ro = (void *)(((uintptr_t)ptr_ro + sizeof(void *)) & ~(sizeof(void *) - 1));
 
 	/* Allocate module descriptor */
 	mod = ptr_ro;
@@ -569,20 +569,20 @@ int LoadKernel(struct ELFNode *FirstELF, void *ptr_ro, void *ptr_rw, void *track
 	mod->Type = DEBUG_ELF;
 
 	/* Copy ELF header */
-	mod->eh  = (unsigned long)ptr_ro;
+	mod->eh  = (uintptr_t)ptr_ro;
 	ptr_ro = copy_data(n->eh, ptr_ro, sizeof(struct elfheader));
 
 	/* Copy section header */
-	mod->sh = (unsigned long)ptr_ro;
+	mod->sh = (uintptr_t)ptr_ro;
 	ptr_ro = copy_data(n->sh, ptr_ro, n->eh->shnum * n->eh->shentsize);
 
 	/* Copy module name */
-	mod->Name = (unsigned long)ptr_ro;
+	mod->Name = (uintptr_t)ptr_ro;
 	ptr_ro = copy_data(n->Name, ptr_ro, strlen(n->Name) + 1);
 
 	/* Link the module descriptor with previous one */
 	if (prev_mod)
-	    prev_mod->Next = (unsigned long)mod;
+	    prev_mod->Next = (uintptr_t)mod;
 	else
 	    *kernel_debug = (struct ELF_ModuleInfo *)mod;
 	prev_mod = mod;
