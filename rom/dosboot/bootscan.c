@@ -38,54 +38,6 @@
 
 #define uppercase(x) ((x >= 'a' && x <= 'z') ? (x & 0xdf) : x)
 
-/* 
- * TODO: Check if DOSType lookup in partition.library really works
- * and remove this table and related code.
- */
-static const struct _pt {
-    IPTR    part,type;
-} PartTypes[] = {
-    { 0x01, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 12-bit FAT */
-    { 0x04, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 16-bit FAT (up to 32M) */
-    { 0x06, AROS_MAKE_ID('F','A','T','\0') },	/* DOS 16-bit FAT (over 32M) */
-    { 0x07, AROS_MAKE_ID('N','T','F','S')  },	/* Windows NT NTFS */
-    { 0x0b, AROS_MAKE_ID('F','A','T','\0') },	/* W95 FAT32 */
-    { 0x0c, AROS_MAKE_ID('F','A','T','\0') },	/* W95 LBA FAT32 */
-    { 0x0e, AROS_MAKE_ID('F','A','T','\0') },	/* W95 16-bit LBA FAT */
-    { 0x2c, AROS_MAKE_ID('D','O','S','\0') },	/* AOS OFS */
-    { 0x2d, AROS_MAKE_ID('D','O','S','\1') },	/* AOS FFS */
-    { 0x2e, AROS_MAKE_ID('D','O','S','\3') },	/* AOS FFS-I */
-    { 0x2f, AROS_MAKE_ID('S','F','S','\0') },	/* AOS SFS */
-    { 0x80, AROS_MAKE_ID('M','N','X','\0') },	/* MINIX until 1.4a */
-    { 0x81, AROS_MAKE_ID('M','N','X','\1') },	/* MINIX since 1.4b */
-    { 0x83, AROS_MAKE_ID('E','X','T','\2') },	/* linux native partition */
-    { 0x8e, AROS_MAKE_ID('L','V','M','\0') },	/* linux LVM partition */
-    { 0x9f, AROS_MAKE_ID('B','S','D','\0') },	/* BSD/OS */
-    { 0xa5, AROS_MAKE_ID('B','S','D','\1') },	/* NetBSD, FreeBSD */
-    { 0xa6, AROS_MAKE_ID('B','S','D','\2') },	/* OpenBSD */
-    { 0xdb, AROS_MAKE_ID('C','P','M','\2') },	/* CPM/M */
-    { 0xeb, AROS_MAKE_ID('B','E','F','S')  },	/* BeOS FS */
-    { 0xec, AROS_MAKE_ID('S','K','Y','\0') },	/* SkyOS FS */
-    { 0xfd, AROS_MAKE_ID('R','A','I','D')  },	/* linux RAID with autodetect */
-    { 0, 0 }
-};
-
-static IPTR MatchPartType(UBYTE PartType)
-{
-    int i;
-    IPTR type = 0;
-
-    for (i = 0; i < (sizeof(PartTypes) / sizeof(struct _pt)); i++)
-    {
-	if ((IPTR)PartType == PartTypes[i].part)
-	{
-	    type = PartTypes[i].type;
-	    break;
-	}
-    }
-    return type;
-}
-
 static ULONG GetOffset(struct Library *PartitionBase, struct PartitionHandle *ph)
 {
     IPTR tags[3];
@@ -122,7 +74,6 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     ULONG pttype = PHPTT_UNKNOWN;
     BOOL appended, changed;
 
-
     /*
      * TODO: Try to locate RDB filesystem for this volume and make it bootable.
      * Use FindFileSystem() and AddBootFileSystem() for this.
@@ -132,9 +83,10 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     GetPartitionTableAttrsTags(table, PTT_TYPE, &pttype, TAG_DONE);
 
     attrs = QueryPartitionAttrs(table);
-    while ((attrs->attribute != PTA_DONE) && (attrs->attribute != PTA_NAME))
+    while ((attrs->attribute != TAG_DONE) && (attrs->attribute != PT_NAME))
         attrs++;  /* look for name attr */
-    if (attrs->attribute != PTA_DONE)
+
+    if (attrs->attribute != TAG_DONE)
     {
         D(bug("[Boot] RDB/GPT partition\n"));
 
@@ -147,29 +99,26 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
         tags[5] = (IPTR)&bootable;
         tags[6] = TAG_DONE;
         GetPartitionAttrs(pn, (struct TagItem *)tags);
-        D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
 
-        /*
-         * CHECKME: This should not be needed at all. Partition.library knows what it does,
-         * and it knows DosEnvec size. RDB partitions should have complete DosEnvec. GPT
-         * partitions (also processed here) have only fields up to de_DosType filled in,
-         * and this is correctly reflected in the DosEnvec.
-        pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
-         */
+        D(bug("[Boot] Partition name: %s bootable: %d\n", name, bootable));
     }
     else
     {
-        D(bug("[Boot] MBR partition\n"));
+        D(bug("[Boot] MBR/EBR partition\n"));
 
-        /* partition doesn't have a name => MBR partition */
+        /* partition doesn't have a name => MBR/EBR partition */
         tags[0] = PT_POSITION;
         tags[1] = (IPTR)&ppos;
-        tags[2] = PT_TYPE;
-        tags[3] = (IPTR)&ptyp;
-        tags[4] = PT_DOSENVEC;
-        tags[5] = (IPTR)&pp[4];
-        tags[6] = TAG_DONE;
+        tags[2] = PT_DOSENVEC;
+        tags[3] = (IPTR)&pp[4];
+        tags[4] = TAG_DONE;
         GetPartitionAttrs(pn, (struct TagItem *)tags);
+
+        /*
+         * 'Active' is not the same as 'Bootable'. Theoretically we can set Active flag for multiple
+         * partitions, but this may screw up Microsoft system software which expects to see only one
+         * active partition.
+         */
         bootable = TRUE;
 
         /* make the name */
@@ -191,31 +140,8 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
             name[i++] = '0' + (UBYTE)(ppos / 10);
         name[i++] = '0' + (UBYTE)(ppos % 10);
         name[i] = '\0';
-        D(bug("[Boot] Partition name: %s type: %u\n", name, ptyp.id[0]));
 
-        /*
-         * FIXME: These MBR-related DosEnvec patches should already be correctly done
-         * by partition.library. Test this and remove the unneeded code from here.
-         */
-
-        /* set DOSTYPE based on the partition type */
-        pp[4 + DE_DOSTYPE] = MatchPartType(ptyp.id[0]);
-        /* set some common DOSENV fields */
-        pp[4 + DE_TABLESIZE] = DE_BOOTBLOCKS;
-        pp[4 + DE_NUMBUFFERS] = 20;
-        pp[4 + DE_BUFMEMTYPE] = MEMF_PUBLIC;
-        /* set some fs specific fields */
-        switch(ptyp.id[0])
-        {
-            case 0x2c:	/* OFS */
-            case 0x2d:	/* FFS */
-            case 0x2e:	/* FFS I */
-            case 0x2f:	/* SFS */
-                pp[4 + DE_SECSPERBLOCK] = 1;
-                pp[4 + DE_RESERVEDBLKS] = 2;
-                pp[4 + DE_BOOTBLOCKS] = 2;
-                break;
-        }
+        D(bug("[Boot] Partition name: %s\n", name));
     }
 
     if ((pp[4 + DE_TABLESIZE] < DE_DOSTYPE) || (pp[4 + DE_DOSTYPE] == 0))
