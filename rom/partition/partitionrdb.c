@@ -501,18 +501,26 @@ UBYTE i;
         }
         if (i != RDB_LOCATION_LIMIT)
         {
-        ULONG block;
+            ULONG block;
 
             data->rdbblock = i;
             NEWLIST(&root->table->list);
             NEWLIST(&data->badblocklist);
             NEWLIST(&data->fsheaderlist);
             root->table->data = data;
+
             /* take the values of the rdb instead of TD_GEOMETRY */
-            root->dg.dg_SectorSize = AROS_BE2LONG(data->rdb.rdb_BlockBytes);
-            root->dg.dg_Cylinders = AROS_BE2LONG(data->rdb.rdb_Cylinders);
+            root->dg.dg_SectorSize   = AROS_BE2LONG(data->rdb.rdb_BlockBytes);
+            root->dg.dg_Cylinders    = AROS_BE2LONG(data->rdb.rdb_Cylinders);
             root->dg.dg_TrackSectors = AROS_BE2LONG(data->rdb.rdb_Sectors);
-            root->dg.dg_Heads = AROS_BE2LONG(data->rdb.rdb_Heads);
+            root->dg.dg_Heads        = AROS_BE2LONG(data->rdb.rdb_Heads);
+            /*
+             * Before v3.1 partition.library left rdb_CylBlocks uninitialized, so don't rely on it here.
+             * Otherwise you'll get problem reading drives partitioned with earlier partition.library.
+             */
+            root->dg.dg_CylSectors   = root->dg.dg_TrackSectors * root->dg.dg_Heads;
+            root->dg.dg_TotalSectors = root->dg.dg_CylSectors * root->dg.dg_Cylinders;
+
             /* read bad blocks */
             block = AROS_BE2LONG(data->rdb.rdb_BadBlockList);
             while (block != (ULONG)-1)
@@ -754,42 +762,52 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     return 0;
 }
 
-LONG PartitionRDBCreatePartitionTable
-    (
-        struct Library *PartitionBase,
-        struct PartitionHandle *ph
-    )
+LONG PartitionRDBCreatePartitionTable(struct Library *PartitionBase, struct PartitionHandle *ph)
 {
-struct RDBData *data;
-ULONG i;
+    struct RDBData *data;
+    ULONG i;
 
     data = AllocMem(sizeof(struct RDBData), MEMF_PUBLIC | MEMF_CLEAR);
     if (data)
     {
+        /* Get number of reserved sectors to place the partition table. By default we reserve 2 cylinders. */
+        ULONG rdbsize = ph->dg.dg_CylSectors << 1;
+
+        /*
+         * Modern machines love LBA, so container partition may be not cylinder-aligned. In this case we will
+         * likely use flat LBA to describe own placement, with Heads == TrackSectors == 1. This will give us
+         * just two sectors for the RDB, which is horribly small.
+         * Here we detect this situation and increase rdbsize by two until it reaches a minimum of 256 blocks.
+         * This way we keep it aligned to our (virtual) CylSectors value, which allows to set correct LoCylinder
+         * value.
+         */
+        while (rdbsize < 256)
+            rdbsize <<= 1;
+
         ph->table->data = data;
-        data->rdb.rdb_ID = AROS_LONG2BE(IDNAME_RIGIDDISK);
-        data->rdb.rdb_SummedLongs = AROS_LONG2BE(sizeof(struct RigidDiskBlock)/4);
-        data->rdb.rdb_BlockBytes = AROS_LONG2BE(ph->dg.dg_SectorSize);
-        data->rdb.rdb_BadBlockList = (ULONG)-1;
-        data->rdb.rdb_PartitionList = (ULONG)-1;
+
+        data->rdb.rdb_ID                = AROS_LONG2BE(IDNAME_RIGIDDISK);
+        data->rdb.rdb_SummedLongs       = AROS_LONG2BE(sizeof(struct RigidDiskBlock)/4);
+        data->rdb.rdb_BlockBytes        = AROS_LONG2BE(ph->dg.dg_SectorSize);
+        data->rdb.rdb_BadBlockList      = (ULONG)-1;
+        data->rdb.rdb_PartitionList     = (ULONG)-1;
         data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
-        data->rdb.rdb_DriveInit = (ULONG)-1;
-        for (i=0;i<6;i++)
-            data->rdb.rdb_Reserved1[i] = (ULONG)-1;
-        data->rdb.rdb_Cylinders = AROS_LONG2BE(ph->dg.dg_Cylinders);
-        data->rdb.rdb_Sectors = AROS_LONG2BE(ph->dg.dg_TrackSectors);
-        data->rdb.rdb_Heads = AROS_LONG2BE(ph->dg.dg_Heads);
+        data->rdb.rdb_DriveInit         = (ULONG)-1;
+        for (i = 0; i < 6; i++)
+            data->rdb.rdb_Reserved1[i]  = (ULONG)-1;
+        data->rdb.rdb_Cylinders         = AROS_LONG2BE(ph->dg.dg_Cylinders);
+        data->rdb.rdb_Sectors           = AROS_LONG2BE(ph->dg.dg_TrackSectors);
+        data->rdb.rdb_Heads             = AROS_LONG2BE(ph->dg.dg_Heads);
 
-        data->rdb.rdb_Park = data->rdb.rdb_Cylinders;
-        data->rdb.rdb_WritePreComp = data->rdb.rdb_Cylinders;
-        data->rdb.rdb_ReducedWrite = data->rdb.rdb_Cylinders;
+        data->rdb.rdb_Park              = data->rdb.rdb_Cylinders;
+        data->rdb.rdb_WritePreComp      = data->rdb.rdb_Cylinders;
+        data->rdb.rdb_ReducedWrite      = data->rdb.rdb_Cylinders;
         /* StepRate */
-
-        data->rdb.rdb_RDBBlocksLo = AROS_LONG2BE(1); /* leave a block for PC */
-        data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE((ph->dg.dg_Heads*ph->dg.dg_TrackSectors*2)-1); /* two cylinders */
-        data->rdb.rdb_LoCylinder = AROS_LONG2BE(2);
-        data->rdb.rdb_HiCylinder = AROS_LONG2BE(ph->dg.dg_Cylinders-1);
-        data->rdb.rdb_CylBlocks = AROS_LONG2BE(ph->dg.dg_Heads*ph->dg.dg_TrackSectors);
+        data->rdb.rdb_RDBBlocksLo       = AROS_LONG2BE(1); /* leave a block for PC */
+        data->rdb.rdb_RDBBlocksHi       = AROS_LONG2BE(rdbsize - 1);
+        data->rdb.rdb_LoCylinder        = AROS_LONG2BE(rdbsize / ph->dg.dg_CylSectors);
+        data->rdb.rdb_HiCylinder        = AROS_LONG2BE(ph->dg.dg_Cylinders-1);
+        data->rdb.rdb_CylBlocks         = AROS_LONG2BE(ph->dg.dg_CylSectors);
         /* AutoParkSeconds */
         /* DiskVendor */
         /* DiskProduct */
