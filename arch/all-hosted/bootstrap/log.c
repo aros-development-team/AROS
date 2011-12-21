@@ -7,8 +7,6 @@
 #include <unistd.h>
 #endif
 
-#include <runtime.h>
-
 #include "log.h"
 
 int SetLog(const char *c)
@@ -20,10 +18,8 @@ int SetLog(const char *c)
     int fd = open(c, O_WRONLY|O_CREAT|O_APPEND, 0644);
 
     if (fd == -1)
-    {
-        DisplayError("Failed to redirect debug output to %s", c);
         return -1;
-    }
+
     dup2(fd, STDERR_FILENO);
     fprintf(stderr, "----\n");
 
