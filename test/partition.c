@@ -80,18 +80,18 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
 
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("StartBlock     = %d\n", start);
+    printf("StartBlock     = %d\n", (int)start);
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("EndBlock       = %d\n", end);
+    printf("EndBlock       = %d\n", (int)end);
 
     abs = getStartBlock(ph->root);
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("Abs StartBlock = %d\n", start + abs);
+    printf("Abs StartBlock = %d\n", (int)(start + abs));
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("Abs EndBlock   = %d\n", end + abs);
+    printf("Abs EndBlock   = %d\n", (int)(end + abs));
 
     PrintPartitionTable(ph, i + 1);
 }
@@ -149,7 +149,7 @@ LONG PrintPartitionTable(struct PartitionHandle *root, ULONG i)
 
     for (a=i;a;a--)
         printf("  ");
-    printf("reserved blocks: %d\n", reserved);
+    printf("reserved blocks: %d\n", (int)reserved);
 
     PrintDE(&de,i);
     for (a=i;a;a--)
@@ -179,7 +179,7 @@ int main(int argc, char **argv)
         root = OpenRootPartition(device, unit);
         if (root)
         {
-            printf("got root handle of %s unit %d\n", device, unit);
+            printf("got root handle of %s unit %d\n", device, (int)unit);
 
             if (PrintPartitionTable(root, 0))
                 printf("Couldn't read partition table\n");
