@@ -20,8 +20,11 @@ int SetLog(const char *c)
     if (fd == -1)
         return -1;
 
-    dup2(fd, STDERR_FILENO);
-    fprintf(stderr, "----\n");
+    if (dup2(fd, STDERR_FILENO) == -1)
+    {
+        close(fd);
+        return -1;
+    }
 
     return 0;
 }
