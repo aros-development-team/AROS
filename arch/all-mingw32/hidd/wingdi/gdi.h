@@ -153,7 +153,7 @@ struct gfx_data
     void *cursor;                       /* Windows mouse cursor object          */
     void (*cb)(void *data, void *bm);   /* Display activation callback function */
     void *cbdata;                       /* User data for activation callback    */
-    ULONG fbwin;                        /* Display window                       */
+    void *fbwin;                        /* Display window                       */
 };
 
 #endif /* HIDD_GDI_H */

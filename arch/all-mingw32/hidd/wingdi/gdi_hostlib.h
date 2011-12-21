@@ -40,7 +40,7 @@ struct native_func
 {
     struct GDI_Control *(*GDI_Init)(void);
     void  (*GDI_Shutdown)(struct GDI_Control *ctl);
-    ULONG (*GDI_PutMsg)(ULONG win, ULONG msg, IPTR wp, IPTR lp);
+    ULONG (*GDI_PutMsg)(void *win, ULONG msg, IPTR wp, IPTR lp);
     void  (*GDI_KbdAck)(void);
     void  (*GDI_MouseAck)(void);
 };
