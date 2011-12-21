@@ -240,6 +240,7 @@ int bootstrap(int argc, char ** argv)
                 DisplayError("Failed to redirect debug output to %s", c);
                 return i;
             }
+            fprintf(stderr, "----\n"); /* Separation marker */
         }
 
         c = GetConfigArg(buf, "arguments");
