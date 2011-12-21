@@ -7,19 +7,37 @@
 
 #define D(x)
 
-/* Windows CE has no notion of "current directory" */
-#ifdef UNDER_CE
-#define bootstrapdir NULL
-#endif
-
 static LPTSTR bootstrapname;
 static LPTSTR cmdline;
 
+#ifdef UNDER_CE
+/* Windows CE has no notion of "current directory" */
+#define bootstrapdir NULL
+
+static LPTSTR StrConvert(const char *src)
+{
+    int len = strlen(src) + 1;
+    LPTSTR res = malloc(len * 2);
+
+    if (res)
+    {
+        if (!MultiByteToWideChar(CP_ACP, 0, src, len, res, len))
+        {
+            free(res);
+            return NULL;
+        }
+    }
+    return NULL;
+}
+#else
+#define StrConvert(x) x
+#endif
+
+/* Remember our launch context (bootstrap name and command line) */
 void SaveArgs(char **argv)
 {
-    /* FIXME: Adapt to WinCE by converting argv[0] to Unicode */
-    bootstrapname = argv[0];
-    cmdline = GetCommandLine();
+    bootstrapname = StrConvert(argv[0]);
+    cmdline       = GetCommandLine();
 }
 
 void __aros Host_Shutdown(unsigned char warm)
