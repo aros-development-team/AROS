@@ -236,7 +236,10 @@ int bootstrap(int argc, char ** argv)
         {
             i = SetLog(c);
             if (i)
+            {
+                DisplayError("Failed to redirect debug output to %s", c);
                 return i;
+            }
         }
 
         c = GetConfigArg(buf, "arguments");
