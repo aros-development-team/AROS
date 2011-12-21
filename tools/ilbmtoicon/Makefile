@@ -25,11 +25,10 @@ endif
 
 ifeq ($(AROS_HOST_ARCH),mingw32)
     EXTRALIBS2 := -lws2_32
-else
+endif
 ifneq ($(AROS_HOST_ARCH),linux)
     # linking of i386 on x86_64 with -lz doesn't work
     EXTRALIBS1 := -lz
-endif
 endif
 
 all : $(ILBMTOICON) $(INFOINFO)
