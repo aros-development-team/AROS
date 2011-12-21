@@ -1,11 +1,16 @@
 /*
- *  filesystem.c
- *  AROS
- *
- *  Created by Pavel Fedin on 10/13/10.
- *  Copyright 2010 AROS Development Team. All rights reserved.
- *
+    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Filesystem control routines
+    Lang: english
+*/
+
+/*
+ * A temporary workaround to get the bootstrap compiled for WinCE.
+ * In fact Windows CE port requires emulation of current directory.
  */
+#ifndef UNDER_CE
 
 #include <dirent.h>
 #include <sys/stat.h>
@@ -30,3 +35,5 @@ int SetRootDirectory(void)
 
     return 0;
 }
+
+#endif

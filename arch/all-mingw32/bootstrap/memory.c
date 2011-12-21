@@ -10,8 +10,12 @@
 #endif
 
 #define D(x)
-
 #define ID_LEN 64
+
+#ifdef UNDER_CE
+/* In Windows CE there's no MapViewOfFileEx(). This means that we're not going to have warm reboot, sorry. */
+#define MapViewOfFileEx(obj, access, offh, offl, size, addr) MapViewOfFile(obj, access, offh, offl, size)
+#endif
 
 HANDLE RAM_Handle = NULL;
 void *RAM_Address = NULL;
@@ -38,9 +42,9 @@ void *AllocateRW(size_t len)
 
 void *AllocateRAM(size_t len)
 {
-    void *addr = NULL;
     SECURITY_ATTRIBUTES sa;
 #ifndef UNDER_CE
+    void *addr = NULL;
     const char *var = getenv(SHARED_RAM_VAR);
 
     if (var)
