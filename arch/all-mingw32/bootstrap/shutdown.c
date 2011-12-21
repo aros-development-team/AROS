@@ -4,6 +4,7 @@
 #include "hostlib.h"
 #include "sharedmem.h"
 #include "shutdown.h"
+#include "unicode.h"
 
 #define D(x)
 
@@ -11,26 +12,12 @@ static LPTSTR bootstrapname;
 static LPTSTR cmdline;
 
 #ifdef UNDER_CE
-/* Windows CE has no notion of "current directory" */
+/*
+ * Windows CE has no notion of "current directory". In fact we could
+ * leave it as it is, but this redefinition prevents pointer type mismatch warning
+ * (Windows CE has only Unicode API).
+ */
 #define bootstrapdir NULL
-
-static LPTSTR StrConvert(const char *src)
-{
-    int len = strlen(src) + 1;
-    LPTSTR res = malloc(len * 2);
-
-    if (res)
-    {
-        if (!MultiByteToWideChar(CP_ACP, 0, src, len, res, len))
-        {
-            free(res);
-            return NULL;
-        }
-    }
-    return NULL;
-}
-#else
-#define StrConvert(x) x
 #endif
 
 /* Remember our launch context (bootstrap name and command line) */
