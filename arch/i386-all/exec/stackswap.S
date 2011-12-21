@@ -103,11 +103,6 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	popl	%edi
 
 noStackSnoop:
-	/* We need to restore %ebx before swapping stack pointers, so
-	   put its content in a register whose content doesn't matter
-	   anymore to us, like %edx.  */
-	movl    %ebx, %edx  // edx = newStack, ThisTask is lost
-
 	/* Now restore %ebx */
 	popl	%ebx
 
