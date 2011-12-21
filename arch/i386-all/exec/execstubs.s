@@ -41,15 +41,15 @@
 	PUSH			    ; \
 	call  name		    ; \
 	POP			    ; \
-	leave                       ; \
+	leave
 	ret
 
 #define STUB_ARG1(name)               \
 	pushl %ebp		    ; \
 	movl  %esp,%ebp		    ; \
 	PUSH			    ; \
-	movl  FIRST_ARG(%esp),%edx  ; \
-	pushl %edx		    ; \
+	movl  FIRST_ARG(%esp),%eax  ; \
+	pushl %eax		    ; \
 	call  name		    ; \
 	addl  $4,%esp		    ; \
 	POP			    ; \
@@ -60,10 +60,10 @@
 	pushl %ebp		    ; \
 	movl  %esp,%ebp		    ; \
 	PUSH			    ; \
-	movl  SECOND_ARG(%esp),%edx ; \
-	pushl %edx		    ; \
-	movl  SECOND_ARG(%esp),%edx ; \
-	pushl %edx		    ; \
+	movl  SECOND_ARG(%esp),%eax ; \
+	pushl %eax		    ; \
+	movl  SECOND_ARG(%esp),%eax ; \
+	pushl %eax		    ; \
 	call  name		    ; \
 	addl  $8,%esp		    ; \
 	POP			    ; \
@@ -95,13 +95,13 @@ cname:				    ; \
 
 	/* Call functions and preserve registers */
 #ifdef  UseExecstubs
-	STUB0(AROS_SLIB_ENTRY(Forbid,Exec,22),AROS_CSYMNAME(_Exec_22_Forbid))
-	STUB0(AROS_SLIB_ENTRY(Permit,Exec,23),AROS_CSYMNAME(_Exec_23_Permit))
-	STUB0(AROS_SLIB_ENTRY(Disable,Exec,20),AROS_CSYMNAME(_Exec_20_Disable))
-	STUB0(AROS_SLIB_ENTRY(Enable,Exec,21),AROS_CSYMNAME(_Exec_21_Enable))
+	STUB1(AROS_SLIB_ENTRY(Forbid,Exec,22),AROS_CSYMNAME(_Exec_22_Forbid))
+	STUB1(AROS_SLIB_ENTRY(Permit,Exec,23),AROS_CSYMNAME(_Exec_23_Permit))
+	STUB1(AROS_SLIB_ENTRY(Disable,Exec,20),AROS_CSYMNAME(_Exec_20_Disable))
+	STUB1(AROS_SLIB_ENTRY(Enable,Exec,21),AROS_CSYMNAME(_Exec_21_Enable))
 
-	STUB1(AROS_SLIB_ENTRY(ObtainSemaphore,Exec,94),AROS_CSYMNAME(_Exec_94_ObtainSemaphore))
-	STUB1(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95),AROS_CSYMNAME(_Exec_95_ReleaseSemaphore))
-	STUB1(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec,113),AROS_CSYMNAME(_Exec_113_ObtainSemaphoreShared))
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec,94),AROS_CSYMNAME(_Exec_94_ObtainSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec,95),AROS_CSYMNAME(_Exec_95_ReleaseSemaphore))
+	STUB2(AROS_SLIB_ENTRY(ObtainSemaphoreShared,Exec,113),AROS_CSYMNAME(_Exec_113_ObtainSemaphoreShared))
 #endif
 
