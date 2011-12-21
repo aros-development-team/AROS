@@ -10,8 +10,9 @@ MINGW32_HIDD	 := wingdi
 MINGW32_LIBS	 := expansion exec
 MINGW32_RES	 := hostlib battclock processor
 
-#MM- AROS-mingw32-$(CPU): kernel-bootstrap-hosted kernel-boot-mingw32 \
-#MM			  kernel-link-mingw32 kernel-link-base kernel-link-hosted \
+#MM- boot-mingw32: kernel-bootstrap-hosted kernel-boot-mingw32
+
+#MM- AROS-mingw32-$(CPU): kernel-link-mingw32 kernel-link-base kernel-link-hosted \
 #MM			  workbench-hosted
 
 #MM- kernel-link-mingw32: kernel-kernel-kobj		\
