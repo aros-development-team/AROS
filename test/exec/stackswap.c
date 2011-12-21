@@ -29,7 +29,7 @@ void PrintTaskStack(void)
     struct Task *t = FindTask(NULL);
     
     print("Current program stack:\n");
-    print("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", t->tc_SPLower, t->tc_SPUpper, t->tc_SPReg);
+    print("Lower: 0x%P, Upper: 0x%P, SP: 0x%P\n", t->tc_SPLower, t->tc_SPUpper, AROS_GET_SP);
 }
 
 void Sub(IPTR a1, IPTR a2)
