@@ -35,7 +35,7 @@ struct bitmap_data
     APTR  bitmap;     /* Actual Windows bitmap object                                            */
     APTR  dc_bitmap;  /* Original DC's bitmap object, needs to be put back before freeing the DC */
     APTR  display;    /* System display - to what DC should be compatible                        */
-    ULONG window;     /* Window in which the bitmap is displayed                                 */
+    void *window;     /* Window in which the bitmap is displayed                                 */
     LONG  win_width;  /* Window size (cached from ModeID)                                        */
     LONG  win_height;
     LONG  bm_width;   /* Requested bitmap size. (not rounded up)                                 */

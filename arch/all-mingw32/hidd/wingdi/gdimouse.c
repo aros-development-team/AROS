@@ -49,7 +49,6 @@ static BOOL check_button(UWORD state, UWORD mask, UWORD arosbutton, struct pHidd
 
 static VOID MouseIntHandler(struct gdimouse_data *data, volatile struct GDI_Control *MOUSEDATA)
 {
-    unsigned short event;
     struct pHidd_Mouse_Event e;
     UWORD new_buttons;
     BOOL button;

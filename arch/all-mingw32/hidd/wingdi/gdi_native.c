@@ -36,7 +36,7 @@ static WNDCLASS display_class_desc =
     NULL,
     (HBRUSH)(COLOR_WINDOW + 1),
     NULL,
-    "AROS_Screen"
+    TEXT("AROS_Screen")
 };
 
 static WNDCLASS bitmap_class_desc =
@@ -50,16 +50,16 @@ static WNDCLASS bitmap_class_desc =
     NULL,
     (HBRUSH)(COLOR_WINDOW + 1),
     NULL,
-    "AROS_Bitmap"
+    TEXT("AROS_Bitmap")
 };
 
-static DWORD thread_id;     /* Window service thread ID                       */
-static HWND window_active;  /* Currently active AROS window                   */
-static ULONG display_class; /* Display window class                           */
-static ULONG bitmap_class;  /* Bitmap window class                            */
-static DWORD last_key;      /* Last pressed key - used to suppress autorepeat */
-static HANDLE KbdAck;       /* Keyboard acknowledge event                     */
-static HANDLE MouseAck;     /* Mouse acknowledge event                        */
+static ULONG_PTR display_class; /* Display window class                           */
+static ULONG_PTR bitmap_class;  /* Bitmap window class                            */
+static HWND      window_active; /* Currently active AROS window                   */
+static HANDLE    KbdAck;        /* Keyboard acknowledge event                     */
+static HANDLE    MouseAck;      /* Mouse acknowledge event                        */
+static DWORD     thread_id;     /* Window service thread ID                       */
+static DWORD     last_key;      /* Last pressed key - used to suppress autorepeat */
 
 /* Virtual hardware registers */
 static volatile struct GDI_Control gdictl;
@@ -303,7 +303,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
                          * We create the window as invisible, and show it only after setting gdata pointer.
                          * Otherwise we miss activation event (since gdata is NULL)
                          */
-                        gdata->fbwin = CreateWindow((LPCSTR)display_class, "AROS Screen", WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
+                        gdata->fbwin = CreateWindow((LPCTSTR)display_class, TEXT("AROS Screen"), WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX,
                                                      CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL,
                                                      display_class_desc.hInstance, NULL);
                         DWIN(printf("[GDI] Opened display window: 0x%p\n", gdata->fbwin));
@@ -327,7 +327,7 @@ DWORD WINAPI gdithread_entry(struct GDI_Control *ctl)
                          */
                         if (!bmdata->window)
                         {
-                            bmdata->window = CreateWindow((LPCSTR)bitmap_class, NULL, WS_BORDER|WS_CHILD|WS_CLIPSIBLINGS|WS_DISABLED, bmdata->bm_left - 1, bmdata->bm_top - 1, bmdata->bm_width + 2, bmdata->bm_height + 2,
+                            bmdata->window = CreateWindow((LPCTSTR)bitmap_class, NULL, WS_BORDER|WS_CHILD|WS_CLIPSIBLINGS|WS_DISABLED, bmdata->bm_left - 1, bmdata->bm_top - 1, bmdata->bm_width + 2, bmdata->bm_height + 2,
                                                            gdata->fbwin, NULL, display_class_desc.hInstance, NULL);
                             DWIN(printf("[GDI] Opened bitmap window: 0x%p\n", bmdata->window));
                         }
@@ -430,9 +430,9 @@ volatile struct GDI_Control *__declspec(dllexport) __aros GDI_Init(void)
                             }
                             CloseHandle(KbdAck);
                         }
-                        UnregisterClass((LPCSTR)bitmap_class, bitmap_class_desc.hInstance);
+                        UnregisterClass((LPCTSTR)bitmap_class, bitmap_class_desc.hInstance);
                     }
-                    UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
+                    UnregisterClass((LPCTSTR)display_class, display_class_desc.hInstance);
                 }
                 KrnFreeIRQ(gdictl.MouseIrq);
             }
@@ -446,8 +446,8 @@ volatile struct GDI_Control *__declspec(dllexport) __aros GDI_Init(void)
 void __declspec(dllexport) __aros GDI_Shutdown(struct GDI_Control *ctl)
 {
     PostThreadMessage(thread_id, WM_QUIT, 0, 0);
-    UnregisterClass((LPCSTR)bitmap_class, bitmap_class_desc.hInstance);
-    UnregisterClass((LPCSTR)display_class, display_class_desc.hInstance);
+    UnregisterClass((LPCTSTR)bitmap_class, bitmap_class_desc.hInstance);
+    UnregisterClass((LPCTSTR)display_class, display_class_desc.hInstance);
     CloseHandle(MouseAck);
     CloseHandle(KbdAck);
     KrnFreeIRQ(ctl->MouseIrq);
