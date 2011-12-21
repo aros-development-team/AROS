@@ -41,7 +41,7 @@
 	PUSH			    ; \
 	call  name		    ; \
 	POP			    ; \
-	leave
+	leave                       ; \
 	ret
 
 #define STUB_ARG1(name)               \
