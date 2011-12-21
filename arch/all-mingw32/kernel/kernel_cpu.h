@@ -9,6 +9,9 @@
 #ifdef __x86_64__
 #include "cpu_x86_64.h"
 #endif
+#ifdef __arm__
+#include "cpu_arm.h"
+#endif
 
 /* This macro serves as an indicator of included file */
 #ifndef PRINT_CPUCONTEXT
