@@ -54,7 +54,7 @@ int main(void)
     }
 
     sss.stk_Upper = sss.stk_Lower + STACK_SIZE;
-    sss.stk_Pointer = sss.stk_Upper;
+    sss.stk_Pointer = sss.stk_Upper - sizeof(IPTR);
     PrintSSS(&sss);
     PrintTaskStack();
 
