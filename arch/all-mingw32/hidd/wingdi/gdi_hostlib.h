@@ -16,15 +16,15 @@ struct gdi_func
     ULONG __stdcall (*SetTextColor)(APTR hdc, ULONG crColor);
     ULONG __stdcall (*SetROP2)(APTR hdc, ULONG fnDrawMode);
     LONG  __stdcall (*BitBlt)(APTR hdcDest, LONG nXDest, LONG nYDest, LONG nWidth, LONG nHeight, APTR hdcSrc,
-    					    LONG nXSrc, LONG nYSrc, ULONG dwRop);
+                                            LONG nXSrc, LONG nYSrc, ULONG dwRop);
     LONG  __stdcall (*PatBlt)(APTR hdc, LONG nXLeft, LONG nYLeft, LONG nWidth, LONG nHeight, ULONG dwRop);
     ULONG __stdcall (*GetPixel)(APTR hdc, LONG nXPos, LONG nYPos);
     ULONG __stdcall (*SetPixel)(APTR hdc, LONG X, LONG Y, ULONG crColor);
     LONG  __stdcall (*GetDIBits)(APTR hdc, APTR hbmp, ULONG uStartScan, ULONG cScanLines,
-    					       void *lpvBits, BITMAPINFO *lpbi, ULONG uUsage);
+                                               void *lpvBits, BITMAPINFO *lpbi, ULONG uUsage);
     LONG  __stdcall (*StretchDIBits)(APTR hdc, LONG XDest, LONG YDest, LONG nDestWidth, LONG nDestHeight,
-						   LONG XSrc, LONG YSrc, LONG nSrcWidth, LONG nSrcHeight,
-						   const void *lpBits, const BITMAPINFO *lpBitsInfo, ULONG iUsage, ULONG dwRop);
+                                                   LONG XSrc, LONG YSrc, LONG nSrcWidth, LONG nSrcHeight,
+                                                   const void *lpBits, const BITMAPINFO *lpBitsInfo, ULONG iUsage, ULONG dwRop);
 };
 
 struct user_func
