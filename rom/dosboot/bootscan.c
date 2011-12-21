@@ -67,7 +67,6 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     IPTR tags[7];
     IPTR pp[4 + DE_BOOTBLOCKS + 1] = { };
     struct DeviceNode *devnode;
-    struct PartitionType ptyp;
     LONG ppos;
     TEXT *devname;
     LONG bootable;
