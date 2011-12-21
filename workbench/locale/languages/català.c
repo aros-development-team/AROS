@@ -25,7 +25,10 @@
 #define LANGREV     0           /* Revision number of language */
 #define LANGTAG     "\0$VER: "LANGSTR".language 41.0 (08.01.1998)"
 
-STRPTR AROS_SLIB_ENTRY(getlangstring,language,9)();
+AROS_LD1(STRPTR, getlangstring,
+    AROS_LDA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, language
+);
 
 /* ----------------------------------------------------------------------- */
 
@@ -51,11 +54,14 @@ extern const UBYTE version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern struct Language *AROS_SLIB_ENTRY(init,language,0)();
-extern struct Language *AROS_SLIB_ENTRY(open,language,1)();
-extern BPTR AROS_SLIB_ENTRY(close,language,2)();
-extern BPTR AROS_SLIB_ENTRY(expunge,language,3)();
-extern int AROS_SLIB_ENTRY(null,language,0)();
-extern ULONG AROS_SLIB_ENTRY(mask,language,5)();
+AROS_LD1(struct Language *, open,
+    AROS_LDA(ULONG, version, D0),
+    struct Language *, language, 1, language
+);
+AROS_LD0(BPTR, close, struct Language *, language, 2, language);
+AROS_LD0(BPTR, expunge, struct Language *, language, 3, language);
+AROS_LD0I(int, null, struct Language *, language, 0, language);
+AROS_LD0(ULONG, mask, struct Language *, language, 5, language);
 extern const char end;
 
 int entry(void)
@@ -130,7 +136,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
-    struct Language *, language, 1, language)
+    struct Language *, language, 1, language
+)
 {
     AROS_LIBFUNC_INIT
     language->library.lib_OpenCnt++;
@@ -220,7 +227,8 @@ AROS_LH0(ULONG, mask, struct Language *, language, 5, language)
 */
 AROS_LH1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
-    struct LocaleBase *, LocaleBase, 9, language)
+    struct LocaleBase *, LocaleBase, 9, language
+)
 {
     AROS_LIBFUNC_INIT
 
