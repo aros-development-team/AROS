@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <sys/stat.h>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 /* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
 #undef __pure
