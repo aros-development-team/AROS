@@ -13,68 +13,68 @@
 #define __stdcall __attribute__((stdcall))
 #endif
 
-#define BLACKNESS	0x00000042
-#define NOTSRCERASE	0x001100A6
-#define NOTSRCCOPY	0x00330008
-#define SRCERASE	0x00440328
-#define DSTINVERT	0x00550009
-#define PATINVERT	0x005A0049
-#define SRCINVERT	0x00660046
-#define SRCAND		0x008800C6
-#define MERGEPAINT	0x00BB0226
-#define MERGECOPY	0x00C000CA
-#define SRCCOPY		0x00CC0020
-#define SRCPAINT	0x00EE0086
-#define PATCOPY		0x00F00021
-#define PATPAINT	0x00FB0A09
-#define WHITENESS	0x00FF0062
-#define CAPTUREBLT	0x40000000
-#define NOMIRRORBITMAP	0x80000000
+#define BLACKNESS       0x00000042
+#define NOTSRCERASE     0x001100A6
+#define NOTSRCCOPY      0x00330008
+#define SRCERASE        0x00440328
+#define DSTINVERT       0x00550009
+#define PATINVERT       0x005A0049
+#define SRCINVERT       0x00660046
+#define SRCAND          0x008800C6
+#define MERGEPAINT      0x00BB0226
+#define MERGECOPY       0x00C000CA
+#define SRCCOPY         0x00CC0020
+#define SRCPAINT        0x00EE0086
+#define PATCOPY         0x00F00021
+#define PATPAINT        0x00FB0A09
+#define WHITENESS       0x00FF0062
+#define CAPTUREBLT      0x40000000
+#define NOMIRRORBITMAP  0x80000000
 
-#define R2_BLACK	1
-#define R2_COPYPEN	13
-#define R2_MASKNOTPEN	3
-#define R2_MASKPEN	9
-#define R2_MASKPENNOT	5
-#define R2_MERGENOTPEN	12
-#define R2_MERGEPEN	15
-#define R2_MERGEPENNOT	14
-#define R2_NOP	11
-#define R2_NOT	6
-#define R2_NOTCOPYPEN	4
-#define R2_NOTMASKPEN	8
-#define R2_NOTMERGEPEN	2
-#define R2_NOTXORPEN	10
-#define R2_WHITE	16
-#define R2_XORPEN	7
+#define R2_BLACK        1
+#define R2_COPYPEN      13
+#define R2_MASKNOTPEN   3
+#define R2_MASKPEN      9
+#define R2_MASKPENNOT   5
+#define R2_MERGENOTPEN  12
+#define R2_MERGEPEN     15
+#define R2_MERGEPENNOT  14
+#define R2_NOP  11
+#define R2_NOT  6
+#define R2_NOTCOPYPEN   4
+#define R2_NOTMASKPEN   8
+#define R2_NOTMERGEPEN  2
+#define R2_NOTXORPEN    10
+#define R2_WHITE        16
+#define R2_XORPEN       7
 
-#define RDW_ERASE	    4
-#define RDW_FRAME	    1024
+#define RDW_ERASE           4
+#define RDW_FRAME           1024
 #define RDW_INTERNALPAINT   2
-#define RDW_INVALIDATE	    1
-#define RDW_NOERASE	    32
-#define RDW_NOFRAME	    2048
+#define RDW_INVALIDATE      1
+#define RDW_NOERASE         32
+#define RDW_NOFRAME         2048
 #define RDW_NOINTERNALPAINT 16
-#define RDW_VALIDATE	    8
-#define RDW_ERASENOW	    512
-#define RDW_UPDATENOW	    256
-#define RDW_ALLCHILDREN	    128
-#define RDW_NOCHILDREN	    64
+#define RDW_VALIDATE        8
+#define RDW_ERASENOW        512
+#define RDW_UPDATENOW       256
+#define RDW_ALLCHILDREN     128
+#define RDW_NOCHILDREN      64
 
-#define SWP_NOSIZE	   0x0001
-#define SWP_NOMOVE	   0x0002
-#define SWP_NOZORDER	   0x0004
-#define SWP_NOREDRAW	   0x0008
-#define SWP_NOACTIVATE	   0x0010
-#define SWP_DRAWFRAME	   0x0020
+#define SWP_NOSIZE         0x0001
+#define SWP_NOMOVE         0x0002
+#define SWP_NOZORDER       0x0004
+#define SWP_NOREDRAW       0x0008
+#define SWP_NOACTIVATE     0x0010
+#define SWP_DRAWFRAME      0x0020
 #define SWP_FRAMECHANGED   0x0020
-#define SWP_SHOWWINDOW	   0x0040
-#define SWP_HIDEWINDOW	   0x0080
-#define SWP_NOCOPYBITS	   0x0100
+#define SWP_SHOWWINDOW     0x0040
+#define SWP_HIDEWINDOW     0x0080
+#define SWP_NOCOPYBITS     0x0100
 #define SWP_NOOWNERZORDER  0x0200
 #define SWP_NOREPOSITION   0x0200
 #define SWP_NOSENDCHANGING 0x0400
-#define SWP_DEFERERASE	   0x2000
+#define SWP_DEFERERASE     0x2000
 #define SWP_ASYNCWINDOWPOS 0x4000
 
 #define DRIVERVERSION 0
@@ -210,20 +210,20 @@
 #define TC_SCROLLBLT 65536
 
 #define WM_CLOSE      16
-#define WM_QUIT	      18
+#define WM_QUIT       18
 #define WM_KEYDOWN    256
 #define WM_KEYUP      257
 #define WM_SYSKEYDOWN 260
 #define WM_SYSKEYUP   261
 #define WM_MOUSEWHEEL 522
 
-#define MK_LBUTTON	1
-#define MK_RBUTTON	2
-#define MK_SHIFT	4
-#define MK_CONTROL	8
-#define MK_MBUTTON	16
-#define MK_XBUTTON1	32
-#define MK_XBUTTON2	64
+#define MK_LBUTTON      1
+#define MK_RBUTTON      2
+#define MK_SHIFT        4
+#define MK_CONTROL      8
+#define MK_MBUTTON      16
+#define MK_XBUTTON1     32
+#define MK_XBUTTON2     64
 
 #define VK_LWIN 0x5B
 #define VK_RWIN 0x5C
@@ -235,8 +235,8 @@
 
 #define BI_RGB 0
 
-#define DIB_RGB_COLORS	0
-#define DIB_PAL_COLORS	1
+#define DIB_RGB_COLORS  0
+#define DIB_PAL_COLORS  1
 
 #pragma pack(4)
 
