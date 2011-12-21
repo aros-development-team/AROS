@@ -39,10 +39,10 @@ void *AllocateRW(size_t len)
 void *AllocateRAM(size_t len)
 {
     void *addr = NULL;
-    char *var;
     SECURITY_ATTRIBUTES sa;
+#ifndef UNDER_CE
+    const char *var = getenv(SHARED_RAM_VAR);
 
-    var = getenv(SHARED_RAM_VAR);
     if (var)
     {
         D(printf("[AllocateRAM] Found RAM specification: %s\n", var));
@@ -52,8 +52,9 @@ void *AllocateRAM(size_t len)
             addr = NULL;
         }
     }
-
     D(printf("[AllocateRAM] Inherited memory handle 0x%p address 0x%p\n", RAM_Handle, addr));
+#endif
+
     if (!RAM_Handle)
     {
         sa.nLength = sizeof(sa);
