@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 EXEDIR := $(BINDIR)/boot
 
-FILES := main bootstrap elf_io filesystem hostinterface kickstart memory support shutdown runtime ui
+FILES := main bootstrap elf_io filesystem hostinterface kickstart log memory support shutdown runtime ui
 PROG  := AROSBootstrap
 
 ## The '-Wno-attributes' is here due to a gcc 4.5.x bug

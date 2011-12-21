@@ -1,6 +1,5 @@
 #include <ctype.h>
 #include <dirent.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdarg.h>
@@ -9,12 +8,6 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/stat.h>
-
-#ifdef _WIN32
-#include <io.h>
-#else
-#include <unistd.h>
-#endif
 
 /* These macros are defined in both UNIX and AROS headers. Get rid of warnings. */
 #undef __pure
@@ -34,6 +27,7 @@
 #include "elf_io.h"
 #include "filesystem.h"
 #include "kickstart.h"
+#include "log.h"
 #include "memory.h"
 #include "support.h"
 #include "shutdown.h"
@@ -240,21 +234,11 @@ int bootstrap(int argc, char ** argv)
         c = GetConfigArg(buf, "logfile");
         if (c)
         {
-            /*
-             * Redirect stderr on filedescriptor level.
-             * Redirecting on streams level does not work with Android's Bionic
-             */
-            int fd = open(c, O_WRONLY|O_CREAT|O_APPEND, 0644);
-            
-            if (fd == -1)
-            {
-                DisplayError("Failed to redirect debug output to %s", c);
-                return -1;
-            }
-            dup2(fd, STDERR_FILENO);
-            fprintf(stderr, "----\n");
+            i = SetLog(c);
+            if (i)
+                return i;
         }
-        
+
         c = GetConfigArg(buf, "arguments");
         if (c)
         {
