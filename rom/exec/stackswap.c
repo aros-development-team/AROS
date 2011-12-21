@@ -51,10 +51,10 @@
         be used instead. StackSwap() is only retained to provide backwards
         compatibility. On some hosted versions with strict stack checking use
         of StackSwap() may cause problems.
-
-        No proper initialization for alternative stack is done so alternative
-        stack can't be used after using StackSwap(). This means that on
-        some archs no shared library functions can be called.
+        By default StackSwap() will not be defined and you have to
+        #define __AROS_GIMME_DEPRECATED_STACKSWAP__ before including
+        <proto/exec.h>. As said above it is highly advised to change code
+        to use NewStackSwap() and not define __AROS_GIMME_DEPRECATED_STACKSWAP__
 
     EXAMPLE
 

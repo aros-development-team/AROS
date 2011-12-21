@@ -31,6 +31,8 @@ FILES :=		\
 
 EXEDIR := $(AROS_TESTS)/exec
 
+USER_CFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
+
 #MM test-exec : includes includes-copy linklibs kernel
 
 %build_progs mmake=test-exec \
