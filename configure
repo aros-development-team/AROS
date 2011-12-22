@@ -7842,7 +7842,7 @@ fi
                 aros_target_cpu="x86_64"
                 aros_object_format="elf_x86_64"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dx86_64"
-                aros_config_cflags="$aros_config_cflags -mno-red-zone -fno-omit-frame-pointer"
+                aros_config_cflags="$aros_config_cflags -fno-omit-frame-pointer"
                 aros_default_wbdepth=8
                 target_tool_prefix="x86_64-w64-mingw32-"
                 ;;
