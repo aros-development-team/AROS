@@ -3104,15 +3104,6 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_ENABLE)) != NULL)
         {
-            if (isRoot)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            else
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-
             NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == 0) ? FALSE : TRUE);
         }
     }
@@ -3721,7 +3712,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                     {NM_SUB,    _(MSG_MEN_ALLFIL),      NULL                    , _NewWandIntMenu__OPTION_SHOWALL|NM_ITEMDISABLED, 0, (APTR) MEN_WINDOW_VIEW_ALL },
                 {NM_ITEM,       _(MSG_MEN_SORTIC) },
                     {NM_SUB,    _(MSG_MEN_CLNUP),       _(MSG_MEN_SC_CLNUP)     , 0                                     , 0, (APTR) MEN_WINDOW_SORT_NOW },
-                    {NM_SUB,    _(MSG_MEN_ICONSORTING), NULL                    , CHECKIT|MENUTOGGLE|CHECKED|NM_ITEMDISABLED, 0, (APTR) MEN_WINDOW_SORT_ENABLE },
+                    {NM_SUB,    _(MSG_MEN_ICONSORTING), NULL                    , CHECKIT|MENUTOGGLE|CHECKED            , 0, (APTR) MEN_WINDOW_SORT_ENABLE },
                     {NM_SUB,    NM_BARLABEL },
                     {NM_SUB,    _(MSG_MEN_BYNAME),      NULL                    , CHECKIT                               , ~((1 << 3)|(1 << 1)|(1 << 8)|(1 << 9)|(1 << 10)), (APTR) MEN_WINDOW_SORT_NAME },
                     {NM_SUB,    _(MSG_MEN_BYDATE),      NULL                    , CHECKIT                               , ~((1 << 4)|(1 << 1)|(1 << 8)|(1 << 9)|(1 << 10)), (APTR) MEN_WINDOW_SORT_DATE },
