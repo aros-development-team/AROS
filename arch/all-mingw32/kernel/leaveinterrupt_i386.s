@@ -7,8 +7,7 @@
 # so it's okay to play with stack here.
 
 _core_LeaveInterrupt:
-	pushl 0(%eax)		# Push real return address
-	pushl 4(%eax)		# Push real eax contents
-	movl $1, _Ints_Enabled	# Now enable interrupts
-	popl %eax		# Restore eax and leave
+	pushl   0(%eax)		  # Push real return address
+	movl    4(%eax), %eax	  # Restore real eax contents
+	movl    $1, _Ints_Enabled # Now enable interrupts
 	ret
