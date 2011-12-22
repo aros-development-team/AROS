@@ -1,11 +1,12 @@
 #ifndef DEVICES_BLUETOOTHHCI_H
 #define DEVICES_BLUETOOTHHCI_H
 /*
-**	$VER: bluetoothhci.h 1.0 (28.03.05)
+**	$VER: bluetoothhci.h 1.1 (22.12.2011)
 **
 **	standard bluetooth host controller interface device include file
 **
 **	(C) Copyright 2005 Chris Hodges
+**	(C) Copyright 2011 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -19,10 +20,6 @@
 
 #ifndef BLUETOOTH_HCI_H
 #include "bluetooth/hci.h"
-#endif
-
-#if defined(__GNUC__)
-# pragma pack(2)
 #endif
 
 /* IO Request structure */
@@ -77,9 +74,5 @@ struct BTHCIEventMsg
 #define BTA_Description    (BTA_Dummy + 0x14)
 #define BTA_Copyright      (BTA_Dummy + 0x15)
 #define BTA_DriverVersion  (BTA_Dummy + 0x20)
-
-#if defined(__GNUC__)
-# pragma pack()
-#endif
 
 #endif	/* DEVICES_BLUETOOTHHCI_H */

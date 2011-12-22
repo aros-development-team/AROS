@@ -1,11 +1,12 @@
 #ifndef DEVICES_IRDA_H
 #define DEVICES_IRDA_H
 /*
-**	$VER: irda.h 1.0 (18.04.05)
+**	$VER: irda.h 1.1 (22.12.2011)
 **
 **	standard irda host controller interface device include file
 **
 **	(C) Copyright 2005 Chris Hodges
+**	(C) Copyright 2011 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -15,10 +16,6 @@
 
 #ifndef EXEC_ERRORS_H
 #include <exec/errors.h>
-#endif
-
-#if defined(__GNUC__)
-# pragma pack(2)
 #endif
 
 /* IO Request structure */
@@ -63,9 +60,5 @@ struct IOIrDAReq
 #define IRA_Description    (IRA_Dummy + 0x14)
 #define IRA_Copyright      (IRA_Dummy + 0x15)
 #define IRA_DriverVersion  (IRA_Dummy + 0x20)
-
-#if defined(__GNUC__)
-# pragma pack()
-#endif
 
 #endif	/* DEVICES_IRDA_H */

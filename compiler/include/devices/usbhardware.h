@@ -1,11 +1,12 @@
 #ifndef DEVICES_USBHARDWARE_H
 #define DEVICES_USBHARDWARE_H
 /*
-**	$VER: usbhardware.h 2.2 (26.04.07)
+**	$VER: usbhardware.h 2.3 (22.12.2011)
 **
 **	standard usb hardware device include file
 **
 **	(C) Copyright 2002-2007 Chris Hodges
+**	(C) Copyright 2011 AROS Development Team
 **	    All Rights Reserved
 */
 
@@ -19,10 +20,6 @@
 
 #ifndef DEVICES_USB_H
 #include "devices/usb.h"
-#endif
-
-#if defined(__GNUC__)
-# pragma pack(2)
 #endif
 
 /* IO Request structure */
@@ -221,9 +218,5 @@ struct IOUsbHWBufferReq
 #define UHSF_RESUMING    (1<<UHSB_RESUMING)
 #define UHSF_SUSPENDED   (1<<UHSB_SUSPENDED)
 #define UHSF_RESET       (1<<UHSB_RESET)
-
-#if defined(__GNUC__)
-# pragma pack()
-#endif
 
 #endif	/* DEVICES_USBHARDWARE_H */
