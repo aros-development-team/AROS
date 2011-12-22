@@ -1559,11 +1559,12 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
             GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
 
-            sort_bits &= ~(MUIV_IconList_Sort_MASK|MUIV_IconList_Sort_Reverse);
-            sort_bits |= MUIV_IconList_Sort_DrawersMixed;
-
             if( XGET(item, MUIA_Menuitem_Checked) )
             {
+                sort_bits &= ~(MUIV_IconList_Sort_Orders|MUIV_IconList_Sort_Reverse);
+                sort_bits |= MUIV_IconList_Sort_DrawersMixed;
+                sort_bits |= MUIV_IconList_Sort_AutoSort;
+
                 if ((item = FindMenuitem(strip, MEN_WINDOW_SORT_DATE)) != NULL)
                 {
                     NNSET(item, MUIA_Disabled, FALSE);
@@ -1585,7 +1586,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
                     NNSET(item, MUIA_Disabled, FALSE);
                     if( XGET(item, MUIA_Menuitem_Checked) )
                     {
-                        sort_bits |= MUIV_IconList_Sort_MASK;
+                        sort_bits |= MUIV_IconList_Sort_ByType;
                     }
                 }
                 if ((item = FindMenuitem(strip, MEN_WINDOW_SORT_NAME)) != NULL)
@@ -1595,12 +1596,6 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
                     {
                         sort_bits |= MUIV_IconList_Sort_ByName;
                     }
-                    else
-                        if ((sort_bits & MUIV_IconList_Sort_MASK) == 0)
-                        {
-                            NNSET(item, MUIA_Menuitem_Checked, TRUE);
-                            sort_bits |= MUIV_IconList_Sort_ByName;
-                        }
                 }
                 if ((item = FindMenuitem(strip, MEN_WINDOW_SORT_REVERSE)) != NULL)
                 {
@@ -1622,6 +1617,8 @@ D(bug("[Wanderer] %s: (enable) Setting sort flags %08x\n", __PRETTY_FUNCTION__, 
             }
             else
             {
+                sort_bits &= ~MUIV_IconList_Sort_AutoSort;
+
                 if ((item = FindMenuitem(strip, MEN_WINDOW_SORT_DATE)) != NULL)
                 {
                     NNSET(item, MUIA_Disabled, TRUE);
@@ -1672,8 +1669,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
         GET(item, MUIA_Menuitem_Checked, &checked);
 
-        /*name = date and size bit both NOT set*/
-        sort_bits &= ~MUIV_IconList_Sort_MASK;
+        sort_bits &= ~MUIV_IconList_Sort_Orders;
         if (checked == TRUE)
         {
             sort_bits |= MUIV_IconList_Sort_ByName;
@@ -1700,8 +1696,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
         GET(item, MUIA_Menuitem_Checked, &checked);
 
-        /*exclude size bit*/
-        sort_bits &= ~MUIV_IconList_Sort_MASK;
+        sort_bits &= ~MUIV_IconList_Sort_Orders;
         if (checked == TRUE)
         {
             sort_bits |= MUIV_IconList_Sort_ByDate;
@@ -1729,9 +1724,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         GET(item, MUIA_Menuitem_Checked, &checked);
 
 D(bug("[Wanderer]: %s: (start) sort flags %08x\n", __PRETTY_FUNCTION__, sort_bits));
-        /*exclude date bit*/
-        sort_bits &= ~MUIV_IconList_Sort_MASK;
-
+        sort_bits &= ~MUIV_IconList_Sort_Orders;
         if (checked == TRUE)
         {
             sort_bits |= MUIV_IconList_Sort_BySize;
@@ -1759,11 +1752,10 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
         GET(item, MUIA_Menuitem_Checked, &checked);
 
-        /*type = all sort bits set (name+date+size) */
-        sort_bits &= ~MUIV_IconList_Sort_MASK;
+        sort_bits &= ~MUIV_IconList_Sort_Orders;
         if (checked == TRUE)
         {
-            sort_bits |= MUIV_IconList_Sort_MASK;
+            sort_bits |= MUIV_IconList_Sort_ByType;
         }
         SET(iconList, MUIA_IconList_SortFlags, sort_bits);
         DoMethod(iconList, MUIM_IconList_Sort);
@@ -3080,19 +3072,19 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
 //        }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_NAME)) != NULL)
         {
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByName) ? TRUE : FALSE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_ByName) ? TRUE : FALSE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_DATE)) != NULL)
         {
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_ByDate) ? TRUE : FALSE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_ByDate) ? TRUE : FALSE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_SIZE)) != NULL)
         {
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_BySize) ? TRUE : FALSE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_BySize) ? TRUE : FALSE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_TYPE)) != NULL)
         {
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == MUIV_IconList_Sort_MASK) ? TRUE : FALSE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_ByType) ? TRUE : FALSE));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_REVERSE)) != NULL)
         {
@@ -3104,7 +3096,7 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
         }
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_SORT_ENABLE)) != NULL)
         {
-            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_MASK) == 0) ? FALSE : TRUE);
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, ((current_SortFlags & MUIV_IconList_Sort_AutoSort) == 0) ? FALSE : TRUE);
         }
     }
 }
