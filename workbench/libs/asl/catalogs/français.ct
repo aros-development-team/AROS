@@ -1,4 +1,4 @@
-## version $VER: asl.catalog 1.0 (12.03.2001)
+## version $VER: asl.catalog 1.1 (23.12.2011)
 ## codeset 0
 ## language français
 ;
@@ -55,6 +55,24 @@ MSG_FILEREQ_DELETE_OKCANCEL
 Effacer|Annuler
 ; Delete|Cancel
 ;
+MSG_FILEREQ_FOREIGNER_TITLE
+Icônes déposées provenant de répertoires différents
+;Icons dropped from different drawers
+;
+MSG_FILEREQ_FOREIGNER_MSG
+Attention : Les icônes qui viennent d'être déposées\n\
+ne proviennent pas toutes du même répertoire.\n\
+Les fichiers suivants n'ont pas pu être pris en compte :\n\
+%s
+;Warning: The icons that have just been dropped\n\
+;do not all come from the same drawer.\n\
+;The requester could not handle the following files:\n\
+;%s
+;
+MSG_FILEREQ_FOREIGNER_OK
+OK
+;OK
+;
 MSG_FILEREQ_RENAME_TITLE
 Renommer
 ; Rename
@@ -84,7 +102,7 @@ Renommez_moi
 ; Rename_Me
 ;
 MSG_FILEREQ_SELECT_TITLE
-Choisir par modèle
+Appliquer le modèle
 ; Select by pattern
 ;
 MSG_FILEREQ_SELECT_OK

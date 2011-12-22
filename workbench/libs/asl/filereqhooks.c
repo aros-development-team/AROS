@@ -48,6 +48,7 @@
 
 /*****************************************************************************************/
 
+STATIC BOOL FRWindowOpened(struct LayoutData *, struct AslBase_intern *);
 STATIC BOOL  FRGadInit(struct LayoutData *, struct AslBase_intern *);
 STATIC BOOL  FRGadLayout(struct LayoutData *, struct AslBase_intern *);
 STATIC VOID  FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
@@ -91,14 +92,22 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
     {
         struct DrawInfo *dri = msg->lvdm_DrawInfo;
         struct RastPort *rp  = msg->lvdm_RastPort;
+        struct LayoutData *ld = NULL;
             
         WORD min_x = msg->lvdm_Bounds.MinX;
         WORD min_y = msg->lvdm_Bounds.MinY;
         WORD max_x = msg->lvdm_Bounds.MaxX;
         WORD max_y = msg->lvdm_Bounds.MaxY;
+        BOOL savemode = FALSE;
+        
+        if (node)
+            ld = ((struct LayoutData *)node->userdata);
 
-        UWORD erasepen = BACKGROUNDPEN;
-        UWORD textpen = TEXTPEN;
+        if (ld && (((struct IntFileReq *)ld->ld_IntReq)->ifr_Flags1 & FRF_DOSAVEMODE))
+            savemode = TRUE;
+
+        UWORD erasepen = savemode ? TEXTPEN : BACKGROUNDPEN;
+        UWORD textpen = savemode ? BACKGROUNDPEN : TEXTPEN;
 
         if (node) switch(node->type)
         {
@@ -138,7 +147,6 @@ AROS_UFH3(IPTR, ASLFRRenderHook,
                          
                 if (node)
                 {
-                    struct LayoutData *ld = ((struct LayoutData *)node->userdata);
                     struct FRUserData *udata = (struct FRUserData *)ld->ld_UserData;        
                     WORD               i;
                     
@@ -388,8 +396,9 @@ AROS_UFH3(VOID, FRTagHook,
     } /* while ((tag = NextTagItem(&tstate)) != 0) */
 
     /* DrawersOnly excludes multiselect */
+    /* DoSaveMode also excludes multiselect */
     
-    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+    if ((ifreq->ifr_Flags2 & FRF_DRAWERSONLY) || (ifreq->ifr_Flags1 & FRF_DOSAVEMODE))
     {
         ifreq->ifr_Flags1 &= ~FRF_DOMULTISELECT;
     }
@@ -413,6 +422,10 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 
     switch (ld->ld_Command)
     {
+        case LDCMD_WINDOWOPENED:
+            retval = (ULONG)FRWindowOpened(ld, ASLB(AslBase));
+            break;
+
         case LDCMD_INIT:
             retval = (ULONG)FRGadInit(ld, ASLB(AslBase));
             break;
@@ -459,6 +472,20 @@ struct ButtonInfo
     Object                 **objvar;
 #endif
 };
+
+/*****************************************************************************************/
+
+STATIC BOOL FRWindowOpened(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    ModifyIDCMP(ld->ld_Window, ld->ld_Window->IDCMPFlags | IDCMP_INTUITICKS);
+
+    if (    (ld->ld_AppMsgPort = CreateMsgPort())
+         && (ld->ld_AppWindow = AddAppWindow(0, 0, ld->ld_Window, ld->ld_AppMsgPort, NULL))
+       )
+    {
+        D(bug("[asl.library] AppWindow sucessful\n"));
+    }
+}
 
 /*****************************************************************************************/
 
@@ -602,6 +629,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
             {GA_RelVerify       , TRUE                                    },
             {ASLLV_CallBack     , (IPTR)&udata->ListviewHook              },
             {ASLLV_DoMultiSelect, (ifreq->ifr_Flags1 & FRF_DOMULTISELECT) },
+            {ASLLV_DoSaveMode   , (ifreq->ifr_Flags1 & FRF_DOSAVEMODE)    },
             {TAG_DONE                                                     }
         };
         
@@ -1007,12 +1035,15 @@ STATIC VOID FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBa
 
 STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    ULONG retval = GHRET_FAIL;
-    char  pathbuffer[MAX_PATH_LEN];
+    struct FRUserData       *udata = (struct FRUserData *)ld->ld_UserData;
+    struct ASLLVFileReqNode *node;
+    STRPTR                   buffer = NULL, temp;
+    char                     pathbuffer[MAX_PATH_LEN], tempbuf[MAX_PATH_LEN];
+    ULONG                    retval = GHRET_FAIL, i = 0;
+    BOOL                     found;
 
     if (ld->ld_AppMsg && (ld->ld_AppMsg->am_Type == AMTYPE_APPWINDOW))
     {
-        /* FIXME: Should we handle multiple droped icons in case of multiselect requester? */
         if (ld->ld_AppMsg->am_NumArgs >= 1)
         {
             if (ld->ld_AppMsg->am_ArgList->wa_Lock)
@@ -1020,14 +1051,64 @@ STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *Asl
                 NameFromLock(ld->ld_AppMsg->am_ArgList->wa_Lock, pathbuffer, MAX_PATH_LEN);
                 FRNewPath(pathbuffer, ld, AslBase);
             }
-            if (ld->ld_AppMsg->am_ArgList->wa_Name)
+
+            /*
+             * Try to select the files corresponding to the dropped icons
+             * (those coming from the same drawer as the first icon)
+             */
+            do
             {
+                if (    (ld->ld_AppMsg->am_ArgList[i].wa_Name)
+                     && (buffer = VecPooledCloneString(ld->ld_AppMsg->am_ArgList[i].wa_Name, NULL, ld->ld_IntReq->ir_MemPool, AslBase))
+                   )
+                {
+                    found = FALSE;
+                    ForeachNode(&udata->ListviewList, node)
+                    {
+                        if (    (IS_MULTISEL(node) || (ld->ld_AppMsg->am_NumArgs == 1))
+                             && node->node.ln_Name
+                             && (Strnicmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)buffer, strlen(buffer)) == 0)
+                           )
+                        {
+                            /* Avoid to select homonyms of files dropped from other drawers */
+                            NameFromLock(ld->ld_AppMsg->am_ArgList[i].wa_Lock, tempbuf, MAX_PATH_LEN);
+                            if (Strnicmp((CONST_STRPTR)tempbuf, (CONST_STRPTR)pathbuffer, strlen(pathbuffer)) == 0)
+                            {
+                                MARK_SELECTED(node);
+                                found = TRUE;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found && buffer)
+                    {
+                        if (ld->ld_ForeignerFiles)
+                        {
+                            temp = VecPooledCloneString("\n", buffer, ld->ld_IntReq->ir_MemPool, AslBase);
+                            MyFreeVecPooled(buffer, AslBase);
+                            buffer = temp;
+                            temp = VecPooledCloneString(ld->ld_ForeignerFiles, buffer, ld->ld_IntReq->ir_MemPool, AslBase);
+                            MyFreeVecPooled(ld->ld_ForeignerFiles, AslBase);
+                        }
+                        else
+                        {
+                            temp = VecPooledCloneString(buffer, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
+                        }
+                        ld->ld_ForeignerFiles = temp;
+                    }
+                    MyFreeVecPooled(buffer, AslBase);
+                }
+            } while (    (((struct IntFileReq *)ld->ld_IntReq)->ifr_Flags1 & FRF_DOMULTISELECT)
+                      && (++i < ld->ld_AppMsg->am_NumArgs)
+                    );
+
+            if (ld->ld_AppMsg->am_ArgList->wa_Name)
                 FRSetFile(ld->ld_AppMsg->am_ArgList->wa_Name, ld, AslBase);
-            }
+
             retval = GHRET_OK;
         }
     }
-    ReturnInt ("FRHandleEvents(), retval", ULONG, retval);
+    ReturnInt ("FRHandleAppWindow(), retval", ULONG, retval);
 }
 
 /*****************************************************************************************/
@@ -1053,26 +1134,29 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
         switch (imsg->Class)
         {
             case IDCMP_INTUITICKS:
-                GetAttr(GA_Left     , udata->Listview, &left);
-                GetAttr(GA_Top      , udata->Listview, &top);
-                GetAttr(GA_RelWidth , udata->Listview, &right);
-                GetAttr(GA_RelHeight, udata->Listview, &bottom);
-                right  += ld->ld_Window->Width + left;
-                bottom += ld->ld_Window->Height + top;
+                {
+                    GT_GetGadgetAttrs((struct Gadget *)udata->Listview,
+                                                         ld->ld_Window,
+                                             (struct Requester *)ifreq,
+                                                                        GA_Left     , &left  ,
+                                                                        GA_Top      , &top   ,
+                                                                        GA_RelWidth , &right ,
+                                                                        GA_RelHeight, &bottom);
 
-                if (    (bottom >= ld->ld_Window->MouseY)
-                     && (right  >= ld->ld_Window->MouseX)
-                     && (top    <= ld->ld_Window->MouseY)
-                     && (left   <= ld->ld_Window->MouseX)
-                   )
-                {
-                    AROS_ATOMIC_OR(ld->ld_Window->Flags, WFLG_RMBTRAP);
+                    if (    (ld->ld_Window->MouseY < bottom + ld->ld_Window->Height + top)
+                         && (ld->ld_Window->MouseX < right  + ld->ld_Window->Width + left)
+                         && (ld->ld_Window->MouseY >= top)
+                         && (ld->ld_Window->MouseX >= left)
+                       )
+                    {
+                        AROS_ATOMIC_OR(ld->ld_Window->Flags, WFLG_RMBTRAP);
+                    }
+                    else
+                    {
+                        AROS_ATOMIC_AND(ld->ld_Window->Flags, ~WFLG_RMBTRAP);
+                    }
+                    break;
                 }
-                else
-                {
-                    AROS_ATOMIC_AND(ld->ld_Window->Flags, ~WFLG_RMBTRAP);
-                }
-                break;
 
             case IDCMP_CLOSEWINDOW:
                 retval = FALSE;
@@ -1584,14 +1668,16 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
     
     /* Save file string gadget text in fr_File */
     
-    if (!(ifreq->ifr_Flags2 & FRF_DRAWERSONLY))
-    {
+    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+        name = "";
+    else
         GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name);
-        
-        if (!(req->fr_File = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase))) goto bye;
-        D(bug("FRGetSelectedFiles: fr_File 0x%lx <%s>\n",req->fr_File,req->fr_File));
-        ifreq->ifr_File = req->fr_File;
-    }
+
+    if (!(req->fr_File = VecPooledCloneString(name, NULL, intreq->ir_MemPool, AslBase)))
+        goto bye;
+
+    D(bug("FRGetSelectedFiles: fr_File 0x%lx <%s>\n",req->fr_File,req->fr_File));
+    ifreq->ifr_File = req->fr_File;
 
     /* Save pattern string gadget text in fr_Patterns */
 

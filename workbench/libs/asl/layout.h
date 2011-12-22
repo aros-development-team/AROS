@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -127,6 +127,7 @@ struct AslBase_intern;
 #define ASLLV_TotalPixels   	(ASLLV_Dummy + 14)
 #define ASLLV_VisiblePixels 	(ASLLV_Dummy + 15)
 #define ASLLV_DeltaFactor   	(ASLLV_Dummy + 16)
+#define ASLLV_DoSaveMode	(ASLLV_Dummy + 17)
 
 /* ButtonClass */
 
@@ -295,6 +296,7 @@ struct LayoutData
     struct AppMessage   *ld_AppMsg;
     struct MsgPort      *ld_AppMsgPort;
     struct AppWindow    *ld_AppWindow;
+    STRPTR               ld_ForeignerFiles;
 
 };
 
