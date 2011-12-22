@@ -1,0 +1,15 @@
+#   $Id$
+#
+#   Makefile to make test boot module.
+
+include $(TOP)/config/make.cfg
+
+FILES  := testboot
+EXEDIR := $(BINDIR)/boot
+
+%build_prog mmake=test-mingw32-boot \
+    progname=testboot targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="rom" \
+    usestartup=no
+
+%common
