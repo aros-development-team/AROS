@@ -2,7 +2,7 @@
 #define MIDI_CAMDDEVICES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,7 @@ struct MidiDeviceData{
 	 	REG(a3) struct MidiDeviceData *data,
 		REG(d0) LONG portnum,
 		REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
-		REG(a1) void (* ASM recievefunc)(UWORD REG(d0) input, APTR REG(a2) userdata),
+		REG(a1) void (* ASM receivefunc)(UWORD REG(d0) input, APTR REG(a2) userdata),
 		REG(a2) APTR userdata
 		);
 
