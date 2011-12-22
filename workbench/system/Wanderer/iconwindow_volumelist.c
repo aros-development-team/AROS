@@ -387,6 +387,23 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
                     SET(self, MUIA_IconList_LabelText_BorderHeight, attrib_Prefs);
                 }
             }
+        case MUIA_IconList_SortFlags:
+            /* Generic code */
+            GET(self, (ULONG)CHANGED_ATTRIB, &attrib_Current);
+
+            if (((attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, (ULONG)CHANGED_ATTRIB)) != -1) &&
+                (attrib_Current != attrib_Prefs))
+            {
+                options_changed = TRUE;
+                if (prefs_Processing)
+                {
+                    NNSET(self, (ULONG)CHANGED_ATTRIB, attrib_Prefs);
+                }
+                else
+                {
+                    SET(self, (ULONG)CHANGED_ATTRIB, attrib_Prefs);
+                }
+            }
             break;
 
         default:
@@ -788,6 +805,13 @@ IPTR IconWindowVolumeList__MUIM_Setup
 
         DoMethod
           (
+            data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_SortFlags, MUIV_EveryTime,
+            (IPTR) self, 3,
+            MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_SortFlags
+          );
+
+        DoMethod
+          (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_LabelText_MaxLineLen, MUIV_EveryTime,
             (IPTR) self, 3, 
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_LabelText_MaxLineLen
@@ -919,6 +943,11 @@ IPTR IconWindowVolumeList__MUIM_Cleanup
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_KillNotifyObj, MUIA_IconList_LabelText_Mode, (IPTR)self
+          );
+
+        DoMethod
+          (
+            data->iwcd_ViewPrefs_NotificationObject, MUIM_KillNotifyObj, MUIA_IconList_SortFlags, (IPTR)self
           );
 
         DoMethod
