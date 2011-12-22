@@ -16,6 +16,7 @@
 #endif
 
 #include "elf_io.h"
+#include "filesystem.h"
 #include "support.h"
 
 #include <aros/config.h>
@@ -69,7 +70,7 @@ void *open_file(struct ELFNode *n, unsigned int *err)
 {
     FILE *f;
 
-    f = fopen(((struct ExtELFNode *)n)->FullName, "rb");
+    f = file_open(((struct ExtELFNode *)n)->FullName, "rb");
     *err = f ? 0 : errno;
     
     return f;

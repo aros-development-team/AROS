@@ -1,4 +1,8 @@
  This file contains various notes about Windows-hosted port of AROS.
+ At the moment both x86 (i386 and x86_64) processors are supported. ARM support
+ is in very early experimental state, and is likely to be postponed until Windows 8
+ release. Windows CE lacks some capabilities necessary to run hosted AROS, and it is
+ unclear if a workaround can be found.
 
  1. COMPILING
 
@@ -10,15 +14,10 @@ c) Native gcc v3 (for Cygwin). In gcc v4 -mno-cygwin option is no more supported
    you're free from this restriction and can use the latest gcc.
 d) AROS-targetted crosscompiler. It can be found on AROS Archives:
    http://archives.aros-exec.org/index.php?function=browse&cat=development/cross
-   Use the latest gcc and binutils version, however i386-aros-gcc v3 also works.
 e) Mingw32 libraries package (only for Cygwin).
 f) libiconv plus development files (only for MinGW - for building makecountry).
 
- That's all. Execute "./configure --target=mingw32-i386", then "make".
-
- Native build is verified to be succesful in two environments:
-1. Cygwin + gcc v3.4.4 + i386-aros-gcc v4.2.2
-2. MinGW + MSYS + gcc 4.4.0 + i386-aros-binutils v2.19 + i386-aros-gcc v4.2.2
+ That's all. Execute "./configure --target=mingw32-<your_cpu>", then "make".
 
  You can also crosscompile it under other OS. The only restriction (implied by configure script,
 needs to be fixed): build system CPU should be different from i386. Otherwise configure suggests native build

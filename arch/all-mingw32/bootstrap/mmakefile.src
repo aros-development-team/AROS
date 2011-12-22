@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 EXEDIR  := $(BINDIR)/boot
 ICONDIR := $(GENDIR)/arch/all-hosted/bootstrap/arch
 
-FILES         := hostinterface hostlib log memory shutdown support ui
+FILES         := filesystem hostinterface hostlib log memory shutdown support ui
 ICON          := $(ICONDIR)/icon.o
 USER_INCLUDES := -I$(SRCDIR)/arch/all-hosted/bootstrap \
 		 -I$(SRCDIR)/arch/all-mingw32/kernel   \

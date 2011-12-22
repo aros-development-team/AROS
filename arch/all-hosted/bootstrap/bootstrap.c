@@ -204,16 +204,15 @@ int bootstrap(int argc, char ** argv)
     SystemVersion = getosversion(&version[6]);
     D(fprintf(stderr, "[Bootstrap] OS version: %s\n", SystemVersion));
 
-#ifndef UNDER_CE
     if (SetRootDirectory())
     {
         DisplayError("Failed to locate root directory!");
         return -1;
     }
-#endif
 
-    file = fopen(config, "r");
-    if (!file) {
+    file = file_open(config, "r");
+    if (!file)
+    {
         DisplayError("Failed to load configuration file %s!", config);
         return -1;
     }

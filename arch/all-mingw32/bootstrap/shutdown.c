@@ -8,7 +8,7 @@
 
 #define D(x)
 
-static LPTSTR bootstrapname;
+char *bootstrapname;
 static LPTSTR cmdline;
 
 #ifdef UNDER_CE
@@ -23,12 +23,14 @@ static LPTSTR cmdline;
 /* Remember our launch context (bootstrap name and command line) */
 void SaveArgs(char **argv)
 {
-    bootstrapname = StrConvert(argv[0]);
+    bootstrapname = argv[0];
     cmdline       = GetCommandLine();
 }
 
 void __aros Host_Shutdown(unsigned char warm)
 {
+    LPTSTR bsname;
+    BOOL res;
     STARTUPINFO runinfo;
     PROCESS_INFORMATION ProcInfo;
 #ifndef UNDER_CE
@@ -46,11 +48,15 @@ void __aros Host_Shutdown(unsigned char warm)
     FillMemory(&runinfo, sizeof(runinfo), 0);
     runinfo.cb = sizeof(runinfo);
 
+    bsname = StrConvert(bootstrapname);
     /*
      * If we create new process without CREATE_NEW_CONSOLE, strange thing will happen if we start AROS
      * from within command line processor. Looks like it's Windows bug/misdesign. Well, let's reopen the console every time.
      */
-    if (CreateProcess(bootstrapname, cmdline, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, bootstrapdir, &runinfo, &ProcInfo))
+    res = CreateProcess(bsname, cmdline, NULL, NULL, TRUE, CREATE_NEW_CONSOLE, NULL, bootstrapdir, &runinfo, &ProcInfo);
+    StrFree(bsname);
+
+    if (res)
     {
         D(printf("[Shutdown] AROS re-run\n"));
 
