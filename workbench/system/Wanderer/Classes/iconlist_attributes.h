@@ -15,32 +15,18 @@
 #define MUIV_IconList_NextIcon_Selected    0x02
 #define MUIV_IconList_NextIcon_Visible    0x03
 
-/* # SORTFLAGS 
+#define MUIV_IconList_Sort_DrawersMixed (1<<0)      /* mix folders and files when sorting  */
+#define MUIV_IconList_Sort_DrawersLast  (1<<1)      /* ignored if mixed is set             */
+#define MUIV_IconList_Sort_Reverse      (1<<2)      /* reverse sort direction              */
 
-    ((flags & (MUIV_IconList_Sort_MASK) == 0)
-      place icons with coords at specified locations, sort remainder by name
+#define MUIV_IconList_Sort_ByName       (1<<4)
+#define MUIV_IconList_Sort_ByDate       (1<<5)
+#define MUIV_IconList_Sort_BySize       (1<<6)
+#define MUIV_IconList_Sort_ByType       (1<<7)
 
-    ((flags & (MUIV_IconList_Sort_MASK) == ICONLIST_SORT_BY_NAME)
-      sort icons by Name
+#define MUIV_IconList_Sort_AutoSort     (1<<16)     /* should icons automatically sort, ignoring snapshoted positions */
 
-    ((flags & (MUIV_IconList_Sort_MASK) == ICONLIST_SORT_BY_DATE)
-      sort icons by Date
-
-    ((flags & (MUIV_IconList_Sort_MASK) == ICONLIST_SORT_BY_SIZE)
-      sort icons by Size
-
-    ((flags & (MUIV_IconList_Sort_MASK) == (MUIV_IconList_Sort_MASK))
-      sort icons by Type
-*/
-#define MUIV_IconList_Sort_DrawersMixed    (1<<0)        /* mix folders and files when sorting  */
-#define MUIV_IconList_Sort_DrawersLast    (1<<1)        /* ignored if mixed is set             */
-#define MUIV_IconList_Sort_Reverse    (1<<2)        /* reverse sort direction              */
-
-#define MUIV_IconList_Sort_ByName    (1<<4)
-#define MUIV_IconList_Sort_ByDate    (1<<5)
-#define MUIV_IconList_Sort_BySize    (1<<6)
-
-#define MUIV_IconList_Sort_MASK        (MUIV_IconList_Sort_ByName|MUIV_IconList_Sort_ByDate|MUIV_IconList_Sort_BySize)
+#define MUIV_IconList_Sort_Orders       (MUIV_IconList_Sort_ByName | MUIV_IconList_Sort_ByDate | MUIV_IconList_Sort_BySize | MUIV_IconList_Sort_ByType)
 
 /*** Attributes *************************************************************/
 #define MUIA_IconList_Changed                               (MUIB_IconList | 0x00000001)         /* Zune: V1 .SG BOOL */
