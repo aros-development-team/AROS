@@ -33,6 +33,8 @@
 #include <string.h>
 
 #include "asl_intern.h"
+#include "filereqsupport.h"
+#include "filereqhooks.h"
 #include "layout.h"
 
 #define SDEBUG 0
@@ -738,8 +740,16 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 	    ld->ld_Command = LDCMD_HANDLEAPPWINDOW;
 	    success = CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase));
 	    ReplyMsg ((struct Message *) ld->ld_AppMsg);
+
+            /* Do Intuition stuff only now, so we can have replied message quite early */
+            RefreshGadgets(((struct Gadget *)((struct FRUserData *)ld->ld_UserData)->Listview), ld->ld_Window, (struct Requester *)ld->ld_Req);
 	    ActivateWindow(ld->ld_Window);
-	    D(bug("GadgetryHook() returned, success = %d\n", success));
+
+            if (ld->ld_ForeignerFiles)
+            {
+                FRDropFromDifferentDrawersRequester(ld, AslBase);
+            }
+
 	    if (success == LDRET_FINISHED)
 	    {
 		success    = TRUE;

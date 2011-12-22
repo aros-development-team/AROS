@@ -527,6 +527,10 @@ IPTR AslListView__OM_SET(Class * cl, Object * o, struct opSet * msg)
 	    	data->domultiselect = tidata ? TRUE : FALSE;
 		break;
 
+	    case ASLLV_DoSaveMode:
+	    	data->dosavemode = tidata ? TRUE : FALSE;
+		break;
+
 	    case ASLLV_ReadOnly:
 	    	data->readonly = tidata ? TRUE : FALSE;
 		break;
@@ -972,7 +976,7 @@ IPTR AslListView__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 			    data->frame,
 			    &fbox,
 			    &ibox,
-			    msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN],
+			    msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->dosavemode ? TEXTPEN : BACKGROUNDPEN],
 			    AslBase);
 	    
 	}

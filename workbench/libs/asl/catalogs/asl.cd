@@ -37,6 +37,18 @@ Warning: you cannot get back\nwhat you delete! Ok to delete\n\%s?
 MSG_FILEREQ_DELETE_OKCANCEL (//)
 Delete|Cancel
 ;
+MSG_FILEREQ_FOREIGNER_TITLE (//)
+Icons dropped from different drawers
+;
+MSG_FILEREQ_FOREIGNER_MSG (//)
+Warning: The icons that have just been dropped\n\
+do not all come from the same drawer.\n\
+The requester could not handle the following files:\n\
+%s
+;
+MSG_FILEREQ_FOREIGNER_OK (//)
+OK
+;
 MSG_FILEREQ_RENAME_TITLE (//)
 Rename
 ;

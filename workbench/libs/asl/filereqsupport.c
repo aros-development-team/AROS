@@ -944,9 +944,12 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 	    char pathstring[MAX_FILE_LEN];
 	    
 	    strcpy(pathstring, node->node.ln_Name);
-	    if ((node->subtype > 0) && (!(udata->Flags & FRFLG_SHOWING_VOLUMES)))
+	    if (node->subtype > 0) 
 	    {
-	        strcat(pathstring, "/");
+                if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+	            strcat(pathstring, ":");
+                else
+                    strcat(pathstring, "/");
 	    }
 	    
 	    FRSetFile(pathstring, ld, AslBase);
@@ -1099,6 +1102,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     if (name) if (name[0])
     {
+D(bug("[ASL] delete() name = '%s'\n", &name));
 	struct EasyStruct es;
 
 	es.es_StructSize   = sizeof(es);
@@ -1274,6 +1278,24 @@ void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
     } /* if (lock) */
 
+}
+
+/*****************************************************************************************/
+
+void FRDropFromDifferentDrawersRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct IntFileReq *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    struct EasyStruct  es;
+
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = GetString(MSG_FILEREQ_FOREIGNER_TITLE, GetIR(ifreq)->ir_Catalog, AslBase);
+    es.es_TextFormat   = GetString(MSG_FILEREQ_FOREIGNER_MSG  , GetIR(ifreq)->ir_Catalog, AslBase);
+    es.es_GadgetFormat = GetString(MSG_FILEREQ_FOREIGNER_OK   , GetIR(ifreq)->ir_Catalog, AslBase);
+
+    EasyRequestArgs(ld->ld_Window, &es, NULL, &ld->ld_ForeignerFiles);
+    MyFreeVecPooled(ld->ld_ForeignerFiles, AslBase);
+    ld->ld_ForeignerFiles = NULL;
 }
 
 /*****************************************************************************************/

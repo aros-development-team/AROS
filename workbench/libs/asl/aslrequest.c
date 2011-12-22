@@ -9,7 +9,6 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
-#include <proto/workbench.h>
 #include <string.h>
 #include <intuition/intuition.h>
 #include "asl_intern.h"
@@ -188,8 +187,6 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		    IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
 		    IDCMP_MENUPICK    | IDCMP_RAWKEY        | IDCMP_VANILLAKEY |
 		    IDCMP_MOUSEBUTTONS;
-            if (intreq->ir_ReqType == ASL_FileRequest)
-                idcmp |= IDCMP_INTUITICKS;
 			
 	    wintags[1].ti_Data	= nw.Width;
 	    wintags[2].ti_Data	= nw.Height;
@@ -276,15 +273,6 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			{
 		    	    ScreenToFront(win->WScreen);
 			    intreq->ir_Flags |= IF_POPPEDTOFRONT;
-			}
-		    }
-
-		    /* If file requester, try to promote the window as an AppWindow */
-		    if ((intreq->ir_ReqType == ASL_FileRequest) && (ld->ld_AppMsgPort = CreateMsgPort()))
-		    {
-			if ((ld->ld_AppWindow = AddAppWindow(0, 0, win, ld->ld_AppMsgPort, NULL)))
-			{
-			    D(bug("[asl.library] AppWindow sucessful\n"));
 			}
 		    }
 
