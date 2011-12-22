@@ -13,3 +13,4 @@ struct LeaveInterruptContext
 extern HANDLE conin, conout;
 
 void core_LeaveInterrupt(void);
+extern unsigned char core_LeaveInt_End;

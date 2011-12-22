@@ -119,6 +119,16 @@ LONG WINAPI exceptionHandler(EXCEPTION_POINTERS *exptr)
     return EXCEPTION_CONTINUE_EXECUTION;
 }
 
+#ifdef __x86_64__
+/*
+ * Magic: on x86-64 we can't preempt within a certain location. Not good,
+ * but i can't offer something better. See leaveinterrupt_x86_64.s.
+ */
+#define INT_SAFE(ctx) ((ctx.Rip < (DWORD64)core_LeaveInterrupt) || (ctx.Rip >= (DWORD64)&core_LeaveInt_End))
+#else
+#define INT_SAFE(ctx) TRUE
+#endif
+
 DWORD WINAPI TaskSwitcher()
 {
     DWORD obj;
@@ -144,7 +154,7 @@ DWORD WINAPI TaskSwitcher()
         }
 
         /* Process interrupts if we are allowed to */
-        if (Ints_Enabled)
+        if (Ints_Enabled && INT_SAFE(MainCtx))
         {
             Supervisor = 1;
             /* 
