@@ -203,3 +203,18 @@ Icons
 MSG_ADVANCEDLABELS (//)
 Labels
 ;
+MSG_ICONSORTMODE_BYNAME (//)
+By name
+;
+MSG_ICONSORTMODE_BYDATE (//)
+By date
+;
+MSG_ICONSORTMODE_BYSIZE (//)
+By size
+;
+MSG_DEFAULT_ICONSORTMODE (//)
+Default sort order
+;
+MSG_ICON_AUTOSORT_ENABLED (//)
+Autosorting enabled
+;
