@@ -62,31 +62,28 @@ AROS_LH3(IPTR, NewStackSwap,
     /* Actually change the stack */
     "	movl	%2, %%esp\n\t"
 
-    /* Enable(). It preserves all registers by convention, so no %1 save/restore. */
-    "	push	%3\n"
-    "	call	*-84(%3)\n"
-    "	pop	%3\n"
+    /* Enable(). Pass SysBase in %eax, We don't need %eax afterwards */
+    "	call	*-84(%0)\n"
 
     /* Call our function */
     "	call	*%1\n"
 
     /*
-     * Disable(). Also preserves registers.
-     * We reload %3 from global SysBase here because we are running on a new stack,
-     * and local SysBase of this function is placed on old one. %3 was
-     * clobbered by the called function.
-     */
-    "	movl	SysBase, %3\n"
-    "	push	%3\n"
-    "	call	*-80(%3)\n"
-    "	pop	%3\n"
+     * Disable().
+     * Remember %eax (e.g. %0) and put local SysBase of this function in it.
+     * %3 was clobbered by the called function.
+     */ 
+    "	push	%0\n"
+    "	movl	SysBase, %0\n"
+    "	call	*-80(%0)\n"
+    "	pop	%0\n"
 
     /* Restore original ESP. Function's return value is in EAX. */
     "	movl	%%ebp, %%esp\n"
     "	pop	%%ebp\n"
     : "=a"(ret)
-    : "r"(entry), "r"(sp), "r"(SysBase)
-    : "ebx", "ecx", "edx", "cc");
+    : "r"(entry), "r"(sp), "a"(SysBase)
+    : "ecx", "edx", "cc");
 
     /* Change limits back and return */
     t->tc_SPLower = splower;

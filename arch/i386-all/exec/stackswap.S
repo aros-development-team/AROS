@@ -48,14 +48,11 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	/* Save %ebx content */
 	pushl	%ebx
 
-	/* Take the function's parameters */
+	/* Take the function's parameters; SysBase is in %eax */
 	movl	8(%esp),  %ebx  //newStack
-	movl	12(%esp), %eax  //SysBase
 
 	/* Disable interrupts, to be sure they always find a good stackframe */
-	pushl	%eax
 	call	*Disable(%eax)
-	popl	%eax
 
 	/* FindTask(NULL) in %edx */
 	movl	ThisTask(%eax), %edx
@@ -77,7 +74,7 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	/* Fill [stk_Lower .. stk_Pointer - 16] with 0xE1 */
 
 	pushl	%edi
-	pushl	%eax
+	pushl	%eax // SysBase
 
 	/* Destination register = %edi = NEW SPLower.
 	   Which was already swapped above, so to be found
@@ -99,7 +96,7 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	rep
 	stosb
 
-	popl	%eax
+	popl	%eax // SysBase
 	popl	%edi
 
 noStackSnoop:
@@ -112,22 +109,18 @@ noStackSnoop:
 	   second StackSwap() call will restore the stack to exactly the same state. */
 	popl    %ecx    // return address
 	popl    %edx    // newStack
-	popl    %eax	// SysBase
 
 	/* Swap stack pointers */
 	xchgl	%esp, stk_Pointer(%edx) 
 
 	/* Reenable interrupts. */
-	pushl	%eax
 	call	*Enable(%eax)
 
 	/*
 	 * Now we should make the top of new stack to look exactly like the
 	 * old one. This means it should contain arguments passed to StackSwap(),
 	 * because the caller now will want to clear the stack and remove arguments.
-	 * Arguments were: SysBase, newStack (in the order in which they were
-	 * pushed). So we need to push them now to a new stack.
-	 * SysBase is already there, we supplied it to Enable(). Push newStack now.
+	 * Arguments were: newStack. So we need to push it to the new stack.
 	 */
 	pushl %edx
 
