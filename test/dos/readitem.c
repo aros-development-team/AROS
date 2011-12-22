@@ -13,6 +13,10 @@
 
 #define IOERR_UNCHANGED -1
 
+#ifndef BNULL
+#define BNULL 0
+#endif
+
 static int ritest_buff(ULONG test, CONST_STRPTR in, LONG ret, LONG ioerr, CONST_STRPTR out, LONG cur)
 {
     static char buff[256];

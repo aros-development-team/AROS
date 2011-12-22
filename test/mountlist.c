@@ -1,3 +1,5 @@
+#define AROS_ALMOST_COMPATIBLE
+
 #include <dos/dos.h>
 #include <dos/filehandler.h>
 #include <libraries/expansionbase.h>
@@ -8,6 +10,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifndef __AROS__
+#define BNULL 0
+#define AROS_BSTR_ADDR(s) ((char *)(s << 2) + 1)
+#define AROS_BSTR_strlen(s) *((unsigned char *)(s << 2))
+#endif
+
 int __nocommandline = 1;
 
 static void PrintDosType(ULONG dt)
@@ -16,12 +24,12 @@ static void PrintDosType(ULONG dt)
 
     for (i = 0; i < 4; i++)
     {
-    	unsigned char c = dt >> (24 - i * 8);
+        unsigned char c = dt >> (24 - i * 8);
 
-	if (isprint(c))
-	    putchar(c);
-    	else
-    	    printf("\\%X", c);
+        if (isprint(c))
+            putchar(c);
+        else
+            printf("\\%X", c);
     }
 }
 
@@ -32,11 +40,11 @@ static BOOL IsMounted(struct DeviceNode *dn)
     
     while ((dl = NextDosEntry(dl, LDF_DEVICES)))
     {
-    	if (dl == (struct DosList *)dn)
-    	{
-    	    ret = TRUE;
-    	    break;
-    	}
+        if (dl == (struct DosList *)dn)
+        {
+            ret = TRUE;
+            break;
+        }
     }
 
     UnLockDosList(LDF_DEVICES|LDF_READ);
