@@ -123,6 +123,7 @@ struct WPEditor_AdvancedBackgroundWindow_DATA
                         *wpedabwd_Window_Icon_TextMode,
                         *wpedabwd_Window_IconLabel_MaxLineLen,
                         *wpedabwd_Window_Icon_SortMode,
+                        *wpedabwd_Window_Icon_SortModeLabel,
                         *wpedabwd_Window_Icon_AutoSort,
 #if defined(DEBUG_MULTLINE)
                         *wpedabwd_Window_IconLabel_TextMultiLine, 
@@ -1066,6 +1067,17 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p\n", new_Rende
             if (old_bg_drawpages)
                 FreeVec((APTR)old_bg_drawpages);
         }
+
+        if ((strcmp(_viewSettings_Current->wpedbo_ViewName, "Workbench")) == 0)
+        {
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortModeLabel, MUIA_ShowMe, FALSE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortMode, MUIA_ShowMe, FALSE);
+        }
+        else
+        {
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortModeLabel, MUIA_ShowMe, TRUE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortMode, MUIA_ShowMe, TRUE);
+        }
     }
     else
     {
@@ -1208,6 +1220,7 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *_WP_AdvancedView_Icon_VertSpacingObj = NULL,
             *_WP_AdvancedView_Icon_ImageSpacingObj = NULL,
             *_WP_AdvancedView_Icon_SortModeObj = NULL,
+            *_WP_AdvancedView_Icon_SortModeLabelObj = NULL,
             *_WP_AdvancedView_Icon_AutoSortObj = NULL,
             *_WP_AdvancedView_IconLabel_LabelFontObj = NULL,
             *_WP_AdvancedView_IconLabel_InfoFontObj = NULL,
@@ -1549,6 +1562,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _wpeditor_intern_IconSortModeNames[WPD_ICONSORTMODE_BYSIZE] = (STRPTR)_(MSG_ICONSORTMODE_BYSIZE);
     _WP_AdvancedView_Icon_SortModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_IconSortModeNames);
 
+    _WP_AdvancedView_Icon_SortModeLabelObj = Label1(_(MSG_DEFAULT_ICONSORTMODE));
     /*END Icon List Mode Cycle button--------------------*/
 
     _WP_AdvancedView_Icon_AutoSortObj = MUI_MakeObject(MUIO_Checkmark, NULL);
@@ -1677,8 +1691,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_VertSpacingObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_PADDINGICONIMAGELABEL)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ImageSpacingObj);
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_DEFAULT_ICONSORTMODE)));
-    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_SortModeObj );
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_SortModeLabelObj);
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_SortModeObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICON_AUTOSORT_ENABLED)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_AutoSortObj );
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
@@ -1763,6 +1777,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ 0x%p\n", self));
             advancedView_data->wpedabwd_Window_Icon_ListMode                  = _WP_AdvancedView_Icon_ListModeObj;
             advancedView_data->wpedabwd_Window_Icon_TextMode                  = _WP_AdvancedView_Icon_TextModeObj;
             advancedView_data->wpedabwd_Window_Icon_SortMode                  = _WP_AdvancedView_Icon_SortModeObj;
+            advancedView_data->wpedabwd_Window_Icon_SortModeLabel             = _WP_AdvancedView_Icon_SortModeLabelObj;
             advancedView_data->wpedabwd_Window_Icon_AutoSort                  = _WP_AdvancedView_Icon_AutoSortObj;
 
             advancedView_data->wpedabwd_Window_Icon_HorSpacing                = _WP_AdvancedView_Icon_HorSpacingObj;
