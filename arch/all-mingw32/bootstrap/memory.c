@@ -49,14 +49,14 @@ void *AllocateRAM(size_t len)
 
     if (var)
     {
-        D(printf("[AllocateRAM] Found RAM specification: %s\n", var));
+        D(fprintf(stderr, "[AllocateRAM] Found RAM specification: %s\n", var));
         if (sscanf(var, "%p:%p", &RAM_Handle, &addr) != 2) {
-            D(printf("[AllocateRAM] Error parsing specification\n"));
+            D(fprintf(stderr, "[AllocateRAM] Error parsing specification\n"));
             RAM_Handle = NULL;
             addr = NULL;
         }
     }
-    D(printf("[AllocateRAM] Inherited memory handle 0x%p address 0x%p\n", RAM_Handle, addr));
+    D(ffprintf(stderr, stderr, "[AllocateRAM] Inherited memory handle 0x%p address 0x%p\n", RAM_Handle, addr));
 #endif
 
     if (!RAM_Handle)
@@ -68,15 +68,20 @@ void *AllocateRAM(size_t len)
     }
     if (!RAM_Handle)
     {
-        D(printf("[AllocateRAM] PAGE_EXECUTE_READWRITE failed, retrying with PAGE_READWRITE\n"));
+        D(fprintf(stderr, "[AllocateRAM] PAGE_EXECUTE_READWRITE failed, retrying with PAGE_READWRITE\n"));
         RAM_Handle = CreateFileMapping(INVALID_HANDLE_VALUE, &sa, PAGE_READWRITE, 0, len, NULL);
     }
-    D(printf("[AllocateRAM] Shared memory handle 0x%p\n", RAM_Handle));
+    D(fprintf(stderr, "[AllocateRAM] Shared memory handle 0x%p\n", RAM_Handle));
     if (!RAM_Handle)
         return NULL;
 
     RAM_Address = MapViewOfFileEx(RAM_Handle, FILE_MAP_ALL_ACCESS|FILE_MAP_EXECUTE, 0, 0, 0, addr);
-    D(printf("[AllocateRAM] Requested address 0x%p, mapped at 0x%p\n", addr, RAM_Address));
+    if (!RAM_Address)
+    {
+        D(fprintf(stderr, "[AllocateRAM] FILE_MAP_EXECUTE failed, retrying without it\n"));
+        RAM_Address = MapViewOfFileEx(RAM_Handle, FILE_MAP_ALL_ACCESS, 0, 0, 0, addr);
+    }
+    D(fprintf(stderr, "[AllocateRAM] Mapped at 0x%p\n", RAM_Address));
 
     if (!RAM_Address)
     {
