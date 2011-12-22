@@ -758,6 +758,9 @@ IPTR IconWindowVolumeList__MUIM_Setup
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_Mode);
         if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_Mode)))  SET(self, MUIA_IconList_LabelText_Mode, attrib_Prefs);
 
+        attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_SortFlags);
+        if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_SortFlags))) SET(self, MUIA_IconList_SortFlags, attrib_Prefs);
+
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_MaxLineLen);
         if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_MaxLineLen)))  SET(self, MUIA_IconList_LabelText_MaxLineLen, attrib_Prefs);
 
