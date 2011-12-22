@@ -40,11 +40,24 @@ int SetRootDirectory(void)
     return 0;
 }
 
+char *GetAbsName(const char *filename)
+{
+    int l1 = strlen(bootstrapdir);
+    char *absname = malloc(l1 + strlen(filename) + 1);
+
+    if (absname)
+    {
+        memcpy(absname, bootstrapdir, l1);
+        strcpy(&absname[l1], filename);
+    }
+
+    return absname;
+}
+
 FILE *file_open(const char *filename, const char *mode)
 {
     FILE *res;
     char *absname;
-    int l1;
  
     if (*filename == '\\')
     {
@@ -52,17 +65,13 @@ FILE *file_open(const char *filename, const char *mode)
         return fopen(filename, mode);
     }
 
-    l1 = strlen(bootstrapdir);
-    absname = malloc(l1 + strlen(filename) + 1);
-
+    absname = GetAbsName(filename);
     if (!absname)
         return NULL;
 
-    memcpy(absname, bootstrapdir, l1);
-    strcpy(&absname[l1], filename);
-
     res = fopen(absname, mode);
     free(absname);
+
     return res;
 }
 
