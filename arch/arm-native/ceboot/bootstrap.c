@@ -179,7 +179,10 @@ int main(int argc, char **argv)
     D(fprintf(stderr, "[Boot] Logical : Read-write %p, Read-only %p BSS %p\n", rw_addr, ro_addr, bss_addr));
     D(fprintf(stderr, "[Boot] Physical: Read-write %p, Read-only %p BSS %p\n", physbase, physbase + rw_size, bss_phys));
 
-    /* kernel_entry and Debug_KickList are returned as PHYSICAL POINTERS!!! */
+    /*
+     * kernel_entry and Debug_KickList are returned as PHYSICAL POINTERS!!!
+     * TODO: Actually implement this, as well as ELF relocation based upon virtual addressing.
+     */
     if (!LoadKernel(FirstELF, ro_addr, rw_addr, bss_addr, 4, &phys_end, &kernel_entry, &Debug_KickList))
         return -1;
 
@@ -223,6 +226,8 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    /* TODO: Write kick()
+    kick(kernel_entry, taglist_phys); */
     DisplayError("Launching kickstart... Not implemented yet! :)");
 
     return 0;
