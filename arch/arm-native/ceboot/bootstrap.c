@@ -108,7 +108,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    file = file_open("AROSBootstrap.conf", "r");
+    file = file_open("CEBoot.conf", "r");
     if (!file)
     {
         DisplayError("Failed to load configuration file!");
