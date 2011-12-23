@@ -39,7 +39,7 @@ typedef unsigned char  UBYTE;
 #include "hardware.h"
 #include "winapi.h"
 
-#define D(x)
+#define D(x) x
 
 char *bootstrapdir;
 char buf[BUFFER_SIZE];
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 
     ro_addr = rw_addr + rw_size;
     D(fprintf(stderr, "[Boot] Logical : Read-write %p, Read-only %p BSS %p\n", rw_addr, ro_addr, bss_addr));
-    D(fprintf(stderr, "[Boot] Physical: Read-write %p, Read-only %p BSS %p\n", physbase, physbase + rw_size, bss_phys));
+    D(fprintf(stderr, "[Boot] Physical: Read-write %p, Read-only %p BSS %p\n", (void *)physbase, (void *)physbase + rw_size, (void *)bss_phys));
 
     /*
      * kernel_entry and Debug_KickList are returned as PHYSICAL POINTERS!!!
@@ -213,7 +213,7 @@ int main(int argc, char **argv)
 
     /* Set the end of protected area */
     tag->ti_Data = bootmem_Phys;
-    D(fprintf(stderr, "[Boot] Bootinfo physical %p - %p, taglist %p\n", boot_phys, bootmem_Phys, taglist_phys));
+    D(fprintf(stderr, "[Boot] Bootinfo physical %p - %p, taglist %p\n", (void *)boot_phys, (void *)bootmem_Phys, (void *)taglist_phys));
 
     /*
      * Become a supervisor.
