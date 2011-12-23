@@ -19,7 +19,6 @@
 #include "shellcommands_intern.h"
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
-DEFINESET(SHCOMMANDS)
 
 #include LC_LIBDEFS_FILE
 
