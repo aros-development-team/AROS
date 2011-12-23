@@ -51,7 +51,7 @@ static const struct nameexp layout_expansion_table[] =
     {"br"   , "Brasileiro"          , "Brasil"          },
     {"gb"   , "British"             , "United_Kingdom"  },
     {"gbx"  , "British Extended"    , "United_Kingdom"  },
-    {"bg"   , "Bulgarian"           , NULL              },
+    {"bg"   , "Bulgarian"           , "Bulgarija"       },
     {"ca"   , "Canadien Français"   , "Canada_Français" },
     {"cz"   , "Czech"               , "Cesko"           },
     {"dk"   , "Dansk"               , "Danmark"         },
@@ -64,11 +64,11 @@ static const struct nameexp layout_expansion_table[] =
     {"irl"  , "English Ireland"     , "Ireland"         },
     {"e"    , "Español"             , "España"          },
     {"sp"   , "Español no deadkeys" , "España"          },
-    {"est"  , "Estonian"            , NULL              },
+    {"est"  , "Estonian"            , "Eesti"           },
     {"fin"  , "Finnish"             , "Suomi"           },
     {"f"    , "Français"            , "France"          },
     {"hr"   , "Hrvatski"            , "Hrvatska"        },
-    {"is"   , "Icelandic"           , "Island"          },
+    {"is"   , "Íslenska"            , "Island"          },
     {"i"    , "Italiana"            , "Italia"          },
     {"la"   , "Latin American"      , NULL              },
     {"lv"   , "Latvian"             , NULL              },
@@ -82,7 +82,7 @@ static const struct nameexp layout_expansion_table[] =
     {"sl"   , "Slovak"              , "Slovakia"        },
     {"ch1"  , "Schweiz"             , "Suisse"          },
     {"s"    , "Svenskt"             , "Sverige"         },
-    {"ua"   , "Ucranian"            , "Ukrajina"        },
+    {"ua"   , "Ukranian"            , "Ukrajina"        },
     {NULL   , NULL                  , NULL              }
 };
 
