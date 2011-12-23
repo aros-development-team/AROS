@@ -8,7 +8,9 @@ include $(TOP)/config/make.cfg
 FONT   := font8x14
 
 # This can be hardware-specific.
-SERIAL := serial_16450
+ifneq ($(AROS_TARGET_CPU),arm)
+    SERIAL := serial_16450
+endif
 
 FILES := common clear init_multiboot init_multiboot2 init_taglist \
 	 screen_text screen_fb util_fb vars $(FONT) $(SERIAL)
