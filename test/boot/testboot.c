@@ -60,3 +60,19 @@ int kprintf(const char *format, ...)
 
     return res;
 }
+
+#ifdef __arm__
+
+/*
+ * ARM bootconsole doesn't have own serial port code because
+ * no known ARM hardware uses PC-compatible serial ports.
+ */
+void serial_Init(char *opts)
+{
+}
+
+void serial_Putc(char chr)
+{
+}
+
+#endif
