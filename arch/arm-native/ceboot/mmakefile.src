@@ -1,0 +1,23 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(BINDIR)/boot
+
+FILES := bootstrap bootmem elf_io filesystem hardware ui
+PROG  := CEBoot.exe
+
+## The '-Wno-attributes' is here due to a gcc 4.5.x bug
+## where its strcmp() builtin generates a number of spurious
+## complaints with -O1 or higher optimizations enabled.
+USER_CFLAGS   := -Wno-attributes -DADATE="\"$(shell date '+%d.%m.%Y')\""
+USER_LDFLAGS  := -L$(GENDIR)/lib
+USER_INCLUDES := -I$(GENINCDIR) -isystem $(SRCDIR)/bootstrap/include
+LIBS	      := bootstrap
+
+#MM kernel-bootstrap-wince: linklibs-bootstrap
+
+%build_prog mmake=kernel-bootstrap-wince \
+    progname=$(PROG) targetdir=$(EXEDIR) \
+    files=$(FILES) compiler=kernel uselibs="$(LIBS)"
+
+%common
