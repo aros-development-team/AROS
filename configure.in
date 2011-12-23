@@ -1334,6 +1334,7 @@ case "$target_os" in
                 aros_arch_libs="-laeabi"
                 aros_default_wbdepth=8
                 gcc_target_cpu="arm"
+                gcc_default_float_abi="soft"
                 target_tool_prefix="arm-mingw32ce-"
                 aros_default_wbwidth=160
                 aros_default_wbheight=160
