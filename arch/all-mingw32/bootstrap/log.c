@@ -8,7 +8,6 @@
  * which is, in its turn, raw HANDLE. In order to replace it, we reassign stderr.
  * Under desktop Windows this is also going to work.
  */
-#ifdef UNDER_CE
 
 char *GetAbsName(const char *filename);
 
@@ -16,12 +15,8 @@ int SetLog(const char *filename)
 {
     FILE *res;
 
-    if (*filename == '\\')
-    {
-        /* The path is given as absolute, just use it */
-        res = freopen(filename, "a", stderr);
-    }
-    else
+#ifdef UNDER_CE
+    if (*filename != '\\')
     {
         char *absname = GetAbsName(filename);
         
@@ -31,15 +26,9 @@ int SetLog(const char *filename)
         res = freopen(absname, "a", stderr);
         free(absname);
     }
-
+    else
+        /* The path is given as absolute, just use it */
+#endif
+    res = freopen(filename, "a", stderr);
     return res ? 0 : -1;
 }
-
-#else
-
-int SetLog(const char *c)
-{
-    return (freopen(c, "a", stderr) == NULL) ? -1 : 0;
-}
-
-#endif
