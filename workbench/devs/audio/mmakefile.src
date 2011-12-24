@@ -1,13 +1,21 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- workbench-devs-complete : workbench-devs-audio
+#MM- workbench-devs-audio : workbench-devs-eaudio-$(AROS_TARGET_CPU)
+
+# m68k not included, do not override ROM Paula audio.device
+#MM- workbench-devs-eaudio-i386 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-x86_64 : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-ppc : workbench-devs-eaudio
+#MM- workbench-devs-eaudio-arm : workbench-devs-eaudio
+
 FILES := libfunctions audio_commands objpoollite audio_esys
 
-#MM- workbench-devs-complete : workbench-devs-audio
-#MM- workbench-devs-audio : includes linklibs workbench-devs-AHI
+#MM- workbench-devs-eaudio : includes linklibs workbench-devs-AHI
 
 USER_CFLAGS := -I$(SRCDIR)/workbench/devs/AHI/Include/C
 
-%build_module mmake=workbench-devs-audio \
+%build_module mmake=workbench-devs-eaudio \
     modname=audio modtype=device \
     files="$(FILES)" uselibs="hiddstubs rom"
