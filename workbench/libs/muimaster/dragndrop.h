@@ -13,12 +13,12 @@
 #endif
 
 /* Tags for GUI_CreateBitMapNodeA() */
-#define GUI_BitMap				(TAG_USER+1)	/* struct BitMap * */
-#define GUI_Mask					(TAG_USER+2)	/* APTR */
-#define GUI_LeftOffset		(TAG_USER+3)	/* LONG */
-#define GUI_TopOffset		(TAG_USER+4)	/* LONG */
-#define GUI_Width				(TAG_USER+5)	/* LONG */
-#define GUI_Height				(TAG_USER+6)	/* LONG */
+#define GUI_BitMap      (TAG_USER+1)    /* struct BitMap * */
+#define GUI_Mask        (TAG_USER+2)    /* APTR */
+#define GUI_LeftOffset  (TAG_USER+3)    /* LONG */
+#define GUI_TopOffset   (TAG_USER+4)    /* LONG */
+#define GUI_Width       (TAG_USER+5)    /* LONG */
+#define GUI_Height      (TAG_USER+6)    /* LONG */
 
 struct DragNDrop *CreateDragNDropA( struct TagItem *tlist );
 VOID DeleteDragNDrop( struct DragNDrop *dnd );
