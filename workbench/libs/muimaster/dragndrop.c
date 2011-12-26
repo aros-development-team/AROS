@@ -780,18 +780,18 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
 
                 BltBackgroundBitMap(bmn, x, y, width, height, TRUE);
 
-
-//        BltBitMapRastPort(temp_bmap,0,0,
-//                                rp, 100+bmn->bmn_Left,20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
+                /* Debug code */
+//                BltBitMapRastPort(temp_bmap,0,0,rp,100+bmn->bmn_Left,
+//                        20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
 
                 // Teile des alten Hintergrundes, die neu verdeckt werden in temporäre Bitmap
                 BltBitMapRastPort( bmn->bmn_SaveBitMap, result_x, result_y,
                                         &temp_rp, (result_x?0:(save_width-result_width)),result_y?0:(save_height-result_height),
                                         result_width,result_height,0xc0);
 
-
-//        BltBitMapRastPort(temp_bmap,0,0,
-//                                rp, 180+bmn->bmn_Left,20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
+                /* Debug code */
+//                BltBitMapRastPort(temp_bmap,0,0,rp,180+bmn->bmn_Left,
+//                        20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
 
 
                 // Teile des alten Hintergrundes, die nicht mehr verdeckt werden auf Screen
@@ -819,16 +819,18 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
                 // Angenzende BitMaps in temporäre BitMap
                 BltNearBitMaps(bmn, &temp_rp,x,y,width,height);
 
-//        BltBitMapRastPort(temp_bmap,0,0,
-//                                rp, 240+bmn->bmn_Left,20+bmn->bmn_Top,width,height,0xc0);
+                /* Debug code */
+//                BltBitMapRastPort(temp_bmap,0,0,rp,240+bmn->bmn_Left,
+//                        20+bmn->bmn_Top,width,height,0xc0);
 
 
                 // temporäre (fertige) BitMap darstellen
                 SafeBltBitMapRastPort(temp_bmap,0,0,
                                 rp,x,y,width,height,0xc0);
 
-//        BltBitMapRastPort(bmn->bmn_SaveBitMap,0,0,
-//                                rp, 40+bmn->bmn_Left,20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
+                /* Debug code */
+//                BltBitMapRastPort(bmn->bmn_SaveBitMap,0,0,rp,40+bmn->bmn_Left,
+//                        20+bmn->bmn_Top,bmn->bmn_Width,bmn->bmn_Height,0xc0);
 
             }    else
             {
