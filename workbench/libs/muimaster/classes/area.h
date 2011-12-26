@@ -105,8 +105,11 @@ struct MUI_DragImage
     WORD height;
     WORD touchx; /* position of pointer click relative to bitmap */
     WORD touchy;
-    ULONG flags; /* must be set to 0 */
+    ULONG flags;
 };
+
+// #define MUIF_DRAGIMAGE_HASMASK       (1<<0) /* Use provided mask for drawing */ /* Not supported at the moment */
+#define MUIF_DRAGIMAGE_SOURCEALPHA   (1<<1) /* Use drag image source alpha information for transparrent drawing */
 
 /*** Attributes *************************************************************/
 #define MUIA_Background		(MUIB_MUI|0x0042545b) /* MUI: V4  is. LONG              */
