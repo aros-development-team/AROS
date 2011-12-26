@@ -813,7 +813,7 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
                 BltBitMap(temp_bmap,0,0,
                                 bmn->bmn_SaveBitMap, 0,0,width,height,0xc0,-1,NULL);
 
-                // darzustellende BitMap in temporäre BitMap
+                /* Blit drag image bitmap to temporary bitmap */
                 BltBitMapNode(bmn, 0,0,&temp_rp,0,0,width,height);
 
                 // Angenzende BitMaps in temporäre BitMap
@@ -824,7 +824,7 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
 //                        20+bmn->bmn_Top,width,height,0xc0);
 
 
-                // temporäre (fertige) BitMap darstellen
+                /* Blit prepared temporaty bitmap to screen */
                 SafeBltBitMapRastPort(temp_bmap,0,0,
                                 rp,x,y,width,height,0xc0);
 
