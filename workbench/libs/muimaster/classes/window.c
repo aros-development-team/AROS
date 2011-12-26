@@ -3789,7 +3789,8 @@ IPTR Window__MUIM_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_
                     GUI_LeftOffset, di->touchx,
                     GUI_TopOffset, di->touchy,
                     GUI_Width, di->width,
-                    GUI_Height, di->height))))
+                    GUI_Height, di->height,
+                    GUI_SourceAlpha, !!(di->flags & MUIF_DRAGIMAGE_SOURCEALPHA)))))
             {
                 DoMethod(msg->obj, MUIM_DeleteDragImage, (IPTR)di);
                 DeleteDragNDrop(dnd);

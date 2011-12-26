@@ -15,6 +15,8 @@
 
 #include <clib/alib_protos.h>
 
+#include <cybergraphx/cybergraphics.h>
+#include <proto/cybergraphics.h>
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -120,7 +122,7 @@ struct DragNDrop
 struct BitMapNode
 {
     struct MinNode bmn_Node;
-    struct BitMap *bmn_BitMap;
+    struct BitMap *bmn_BitMap; /* This bitmap is external and not to be modified */
     APTR bmn_Mask;
 
     LONG bmn_Left;
@@ -138,18 +140,13 @@ struct BitMapNode
     struct BitMap *bmn_SaveBitMap;
 
     struct DragNDrop *bmn_DnD;
+
+    /* Basic alpha-blitting implementation */
+    APTR bmn_BitMapBuffer; /* Same data as bmn_BitMap but 32-bit ARGB */
 };
 
 #define bmn_Succ bmn_Node.mln_Succ
 #define bmn_Pred bmn_Node.mln_Pred
-
-/* Tags for GUI_CreateBitMapNodeA() */
-#define GUI_BitMap                (TAG_USER+1)    /* struct BitMap * */
-#define GUI_Mask                    (TAG_USER+2)    /* APTR */
-#define GUI_LeftOffset        (TAG_USER+3)    /* LONG */
-#define GUI_TopOffset        (TAG_USER+4)    /* LONG */
-#define GUI_Width                (TAG_USER+5)    /* LONG */
-#define GUI_Height                (TAG_USER+6)    /* LONG */
 
 //-------------------------------------
 STATIC VOID List_Sort_Mode_1( struct MinList *list )
@@ -497,8 +494,19 @@ STATIC VOID BltBitMapNode(struct BitMapNode *src_bmn, LONG offx, LONG offy, stru
                                     rp, x, y, width, height, 0xe2, (PLANEPTR)src_bmn->bmn_Mask);
         }    else
         {
-            BltBitMapRastPort( src_bmn->bmn_BitMap, offx, offy,
-                                    rp, x, y, width, height, 0xc0 );
+            if (src_bmn->bmn_BitMapBuffer)
+            {
+                /* This should be done using BltBitMapRastPortAlpha with direct video card alpha blit,
+                 * but this function is not available on AROS yet. Current implementation is that
+                 * src_bmn->bmn_BitMapBuffer contains 32bit ARGB buffer acquired from src_bmn->bmn_BitMap */
+                WritePixelArrayAlpha( src_bmn->bmn_BitMapBuffer, offx, offy,
+                        src_bmn->bmn_Width * sizeof(ULONG), rp, x, y, width, height, 0);
+            }
+            else
+            {
+                BltBitMapRastPort( src_bmn->bmn_BitMap, offx, offy,
+                                        rp, x, y, width, height, 0xc0 );
+            }
         }
     }
 }
@@ -598,7 +606,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
     struct BitMapNode *bmn = (struct BitMapNode*)AllocMem( sizeof(struct BitMapNode), MEMF_CLEAR );
     if( bmn )
     {
-/*          BOOL alloc=FALSE; */
+        BOOL sourcealpha = FALSE;
         struct TagItem *tl=tagList;
         struct TagItem *tag;
 
@@ -609,30 +617,33 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 
             switch( id )
             {
-                case    GUI_BitMap:
-                            bmn->bmn_BitMap = (struct BitMap *)data;
-                            break;
+                case GUI_BitMap:
+                    bmn->bmn_BitMap = (struct BitMap *)data;
+                    break;
 
-                case    GUI_Mask:
-                            bmn->bmn_Mask = (APTR)data;
-                            break;
+                case GUI_Mask:
+                    bmn->bmn_Mask = (APTR)data;
+                    break;
 
-                case    GUI_LeftOffset:
-                            bmn->bmn_Left = data;
-                            break;
+                case GUI_LeftOffset:
+                    bmn->bmn_Left = data;
+                    break;
 
-                case    GUI_TopOffset:
-                            bmn->bmn_Top = data;
-                            break;
+                case GUI_TopOffset:
+                    bmn->bmn_Top = data;
+                    break;
 
-                case    GUI_Width:
-                            bmn->bmn_Width = data;
-                            break;
+                case GUI_Width:
+                    bmn->bmn_Width = data;
+                    break;
 
-                case    GUI_Height:
-                            bmn->bmn_Height = data;
-                            break;
+                case GUI_Height:
+                    bmn->bmn_Height = data;
+                    break;
 
+                case GUI_SourceAlpha:
+                    sourcealpha = data;
+                    break;
             }
         }
 
@@ -641,6 +652,18 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
             FreeMem(bmn, sizeof(struct BitMapNode));
             bmn = NULL;
         }
+
+        if( bmn && sourcealpha )
+        {
+            /* See notes in BltBitMapNode */
+            struct RastPort temp_rp;
+            InitRastPort(&temp_rp);
+            temp_rp.BitMap = bmn->bmn_BitMap;
+            bmn->bmn_BitMapBuffer = AllocVec(bmn->bmn_Width * bmn->bmn_Height * sizeof(ULONG), MEMF_ANY);
+            ReadPixelArray(bmn->bmn_BitMapBuffer, 0, 0, bmn->bmn_Width * sizeof(ULONG),
+                    &temp_rp, 0, 0, bmn->bmn_Width, bmn->bmn_Height, RECTFMT_ARGB);
+            DeinitRastPort(&temp_rp);
+        }
     }
     return bmn;
 }
@@ -648,6 +671,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 VOID DeleteBitMapNode(struct BitMapNode *bmn )
 {
     if( bmn->bmn_SaveBitMap ) FreeBitMap(bmn->bmn_SaveBitMap);
+    FreeVec( bmn->bmn_BitMapBuffer );
     FreeMem( bmn, sizeof(struct BitMapNode));
 }
 //-------------------------------------
