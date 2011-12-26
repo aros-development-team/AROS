@@ -6574,6 +6574,10 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         }
         }
 
+        /* Additional filter - if same window and the target entry is selected (==dragged), then it was intended as a move */
+        if ((message->obj == obj) && (drop_target_node) && (drop_target_node->ie_Flags & ICONENTRY_FLAG_SELECTED))
+            drop_target_node = NULL;
+
         if ((drop_target_node != NULL) && 
             ((drop_target_node->ie_IconListEntry.type == ST_SOFTLINK)   ||
              (drop_target_node->ie_IconListEntry.type == ST_ROOT)       ||
@@ -6582,6 +6586,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
              (drop_target_node->ie_IconListEntry.type == ST_FILE)       ||
              (drop_target_node->ie_IconListEntry.type == ST_LINKFILE)))
         {
+            /* Dropped on some entry */
             if ((drop_target_node->ie_IconListEntry.type != ST_ROOT) && (drop_target_node->ie_IconListEntry.type != ST_SOFTLINK))
             {
                 if (directory_path)
@@ -6618,7 +6623,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
         }
         else
         {
-            /* not dropped on entry -> get path of DESTINATION iconlist */
+            /* Not dropped on entry -> get path of DESTINATION iconlist */
             /* Note: directory_path is NULL when dropped on Wanderer's desktop */
             if ((message->obj != obj) && directory_path)
             {
@@ -6675,6 +6680,8 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                 iconMove = TRUE;
             }
         }
+
+
         if (!(iconMove))
         {
             int copycount = 0;
