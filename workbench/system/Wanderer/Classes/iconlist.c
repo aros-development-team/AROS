@@ -2482,6 +2482,7 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
         case MUIA_IconList_LabelInfoText_Font:          STORE = (IPTR)data->icld_IconInfoFont; return 1;
         case MUIA_IconList_LabelInfoText_Pen:           STORE = (IPTR)data->icld_InfoPen; return 1;
         case MUIA_IconList_LabelInfoText_ShadowPen:     STORE = (IPTR)data->icld_InfoShadowPen; return 1;
+        case MUIA_IconList_DragImageTransparent:        STORE = (IPTR)FALSE; return 1;
 
         case MUIA_IconList_Icon_HorizontalSpacing:      STORE = (IPTR)data->icld__Option_IconHorizontalSpacing; return 1;
         case MUIA_IconList_Icon_VerticalSpacing:        STORE = (IPTR)data->icld__Option_IconVerticalSpacing; return 1;
@@ -6283,6 +6284,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     struct MUI_DragImage        *img = NULL;
     LONG                        first_x = -1,
                                 first_y = -1;
+    BOOL                        transp = XGET(obj, MUIA_IconList_DragImageTransparent);
 
 #if defined(DEBUG_ILC_FUNCS) || defined(DEBUG_ILC_ICONDRAGDROP)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
@@ -6295,8 +6297,6 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     {
         struct Node      *node = NULL;
         struct IconEntry *entry = NULL;
-
-        LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
 
 #if defined(CREATE_FULL_DRAGIMAGE)
 #if defined(__AROS__)
@@ -6359,7 +6359,18 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
     }
 #endif
 
-        if ((img->bm = AllocBitMap(img->width, img->height, depth, BMF_CLEAR, _screen(obj)->RastPort.BitMap)))
+        if (transp)
+        {
+            /* Request 32-bit, because the image will have alpha channel */
+            img->bm = AllocBitMap(img->width, img->height, 32, BMF_CLEAR, NULL);
+        }
+        else
+        {
+            LONG depth = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH);
+            img->bm = AllocBitMap(img->width, img->height, depth, BMF_CLEAR, _screen(obj)->RastPort.BitMap);
+        }
+
+        if (img->bm)
         {
             struct RastPort temprp;
             InitRastPort(&temprp);
@@ -6407,7 +6418,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             );
         }
 #endif
-            RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
+            if (transp)
+                RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
             DeinitRastPort(&temprp);
         }
 
@@ -6418,10 +6430,10 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         img->touchx = first_x + message->touchx;
         img->touchy = first_y + message->touchy;
 
-        img->flags = 0;
-#if defined(__MORPHOS__)
-        img->dragmode = DD_TRANSPARENT;
-#endif
+        if (transp)
+            img->flags = MUIF_DRAGIMAGE_SOURCEALPHA;
+        else
+            img->flags = 0;
     }
     return (IPTR)img;
 }
