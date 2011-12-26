@@ -133,6 +133,7 @@ struct IconList_DATA
     BOOL                          icld__Option_IconListScaledBackground;         /* */
     ULONG                         icld__Option_LabelTextMultiLine;               /* No. of lines to display for labels*/
     ULONG                         icld__Option_LastLabelTextMultiLine;
+    BOOL                          icld__Option_DragImageTransparent;             /* Should dragging with source alpha be used */
 
     BOOL                          icld__Option_TrimVolumeNames;
 

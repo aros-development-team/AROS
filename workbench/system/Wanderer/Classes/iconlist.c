@@ -224,16 +224,16 @@ static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG 
     {
         for (x = 0; x < width; x++)
         {
-            pixelval = *((ULONG *)pixelptr);
-
-            if (alphamode == RPALPHARADIAL){
-                //Set the alpha value based on distance from ax,ay
-            } else {
-                alphaval = val;
+            if((pixelval = *((ULONG *)pixelptr)))
+            {
+                if (alphamode == RPALPHARADIAL){
+                    //Set the alpha value based on distance from ax,ay
+                } else {
+                    alphaval = val;
+                }
+                pixelval = (pixelval & 0xffffff00) | alphaval;
+                *((ULONG *)pixelptr) = pixelval;
             }
-            pixelval = (pixelval & 0xffffff00) | alphaval;
-            *((ULONG *)pixelptr) = pixelval;
-
             pixelptr += sizeof(ULONG);
         }
     }
@@ -2001,6 +2001,7 @@ IPTR IconList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *message)
     data->icld__Option_IconListMode   = (UBYTE)GetTagData(MUIA_IconList_IconListMode, 0, message->ops_AttrList);
     data->icld__Option_LabelTextMode   = (UBYTE)GetTagData(MUIA_IconList_LabelText_Mode, 0, message->ops_AttrList);
     data->icld__Option_LabelTextMaxLen = (ULONG)GetTagData(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, message->ops_AttrList);
+    data->icld__Option_DragImageTransparent = (BOOL)GetTagData(MUIA_IconList_DragImageTransparent, FALSE, message->ops_AttrList);
 
     if ( data->icld__Option_LabelTextMaxLen < ILC_ICONLABEL_SHORTEST )
         data->icld__Option_LabelTextMaxLen = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
@@ -2253,6 +2254,10 @@ IPTR IconList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *message)
                 data->icld_SortFlags = (ULONG)tag->ti_Data;
                 break;
 
+            case MUIA_IconList_DragImageTransparent:
+                data->icld__Option_DragImageTransparent = (BOOL)tag->ti_Data;
+                break;
+
             case MUIA_IconList_IconListMode:
 #if defined(DEBUG_ILC_ATTRIBS)
                 D(bug("[IconList] %s: MUIA_IconList_IconListMode %d\n", __PRETTY_FUNCTION__, tag->ti_Data));
@@ -2482,7 +2487,7 @@ IPTR IconList__OM_GET(struct IClass *CLASS, Object *obj, struct opGet *message)
         case MUIA_IconList_LabelInfoText_Font:          STORE = (IPTR)data->icld_IconInfoFont; return 1;
         case MUIA_IconList_LabelInfoText_Pen:           STORE = (IPTR)data->icld_InfoPen; return 1;
         case MUIA_IconList_LabelInfoText_ShadowPen:     STORE = (IPTR)data->icld_InfoShadowPen; return 1;
-        case MUIA_IconList_DragImageTransparent:        STORE = (IPTR)FALSE; return 1;
+        case MUIA_IconList_DragImageTransparent:        STORE = (IPTR)data->icld__Option_DragImageTransparent; return 1;
 
         case MUIA_IconList_Icon_HorizontalSpacing:      STORE = (IPTR)data->icld__Option_IconHorizontalSpacing; return 1;
         case MUIA_IconList_Icon_VerticalSpacing:        STORE = (IPTR)data->icld__Option_IconVerticalSpacing; return 1;
