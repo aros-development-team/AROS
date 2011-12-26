@@ -387,6 +387,7 @@ HOOKPROTO(IconWindowVolumeList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
                     SET(self, MUIA_IconList_LabelText_BorderHeight, attrib_Prefs);
                 }
             }
+        case MUIA_IconList_DragImageTransparent:
         case MUIA_IconList_SortFlags:
             /* Generic code */
             GET(self, (ULONG)CHANGED_ATTRIB, &attrib_Current);
@@ -761,6 +762,9 @@ IPTR IconWindowVolumeList__MUIM_Setup
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_SortFlags);
         if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_SortFlags))) SET(self, MUIA_IconList_SortFlags, attrib_Prefs);
 
+        attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_DragImageTransparent);
+        if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_DragImageTransparent))) SET(self, MUIA_IconList_DragImageTransparent, attrib_Prefs);
+
         attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwcd_ViewPrefs_ID, MUIA_IconList_LabelText_MaxLineLen);
         if ((attrib_Prefs != (IPTR)-1)  && (attrib_Prefs != XGET(self, MUIA_IconList_LabelText_MaxLineLen)))  SET(self, MUIA_IconList_LabelText_MaxLineLen, attrib_Prefs);
 
@@ -811,6 +815,13 @@ IPTR IconWindowVolumeList__MUIM_Setup
             data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_SortFlags, MUIV_EveryTime,
             (IPTR) self, 3,
             MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_SortFlags
+          );
+
+        DoMethod
+          (
+            data->iwcd_ViewPrefs_NotificationObject, MUIM_Notify, MUIA_IconList_DragImageTransparent, MUIV_EveryTime,
+            (IPTR) self, 3,
+            MUIM_CallHook, &data->iwcd_ProcessIconListPrefs_hook, (IPTR)MUIA_IconList_DragImageTransparent
           );
 
         DoMethod
@@ -951,6 +962,11 @@ IPTR IconWindowVolumeList__MUIM_Cleanup
         DoMethod
           (
             data->iwcd_ViewPrefs_NotificationObject, MUIM_KillNotifyObj, MUIA_IconList_SortFlags, (IPTR)self
+          );
+
+        DoMethod
+          (
+            data->iwcd_ViewPrefs_NotificationObject, MUIM_KillNotifyObj, MUIA_IconList_DragImageTransparent, (IPTR)self
           );
 
         DoMethod
