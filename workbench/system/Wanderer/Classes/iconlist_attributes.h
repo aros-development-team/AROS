@@ -62,6 +62,7 @@
 #define MUIA_IconList_LabelInfoText_Font                    (MUIB_IconList_ConfigTags | 0x00000004)    /* Zune: V1 ISG (struct TextFont *) */
 #define MUIA_IconList_LabelInfoText_Pen                     (MUIB_IconList_ConfigTags | 0x00000005)    /* Zune: V1 ISG UBYTE */
 #define MUIA_IconList_LabelInfoText_ShadowPen               (MUIB_IconList_ConfigTags | 0x00000006)    /* Zune: V1 ISG UBYTE */
+#define MUIA_IconList_DragImageTransparent                  (MUIB_IconList_ConfigTags | 0x00000017)    /* Zube: V1 ISG BOOL */
 
 /* options only relevant in List view-mode */
 
