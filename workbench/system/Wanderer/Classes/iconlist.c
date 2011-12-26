@@ -501,6 +501,22 @@ static void IconList_GetIconImageRectangle(Object *obj, struct IconList_DATA *da
 }
 ///
 
+///IconList_GetIconImageOffsets()
+static void IconList_GetIconImageOffsets(struct IconList_DATA *data, struct IconEntry *entry, LONG *offsetx, LONG *offsety)
+{
+    *offsetx = *offsety = 0;
+    if (entry->ie_IconWidth < entry->ie_AreaWidth)
+         *offsetx += (entry->ie_AreaWidth - entry->ie_IconWidth)/2;
+
+    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+            (entry->ie_AreaWidth < data->icld_IconAreaLargestWidth))
+        *offsetx += ((data->icld_IconAreaLargestWidth - entry->ie_AreaWidth)/2);
+
+    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
+            (entry->ie_AreaHeight < data->icld_IconAreaLargestHeight))
+        *offsety += ((data->icld_IconAreaLargestHeight - entry->ie_AreaHeight)/2);
+}
+
 ///IconList_GetIconLabelRectangle()
 static void IconList_GetIconLabelRectangle(Object *obj, struct IconList_DATA *data, struct IconEntry *entry, struct Rectangle *rect)
 {
@@ -829,8 +845,6 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     struct Rectangle            iconrect;
     struct Rectangle            objrect;
 
-    LONG                        offsetx,offsety;
-
     ULONG                       objX, objY, objW, objH;
     LONG                        iconX, iconY;
 #if 0 /* unused */
@@ -928,33 +942,19 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
     }
     else
     {
-    /* Get the dimensions and affected area of message->entry */
-    IconList_GetIconImageRectangle(obj, data, message->entry, &iconrect);
-#if 0 /* unused */
-    iconW = iconrect.MaxX - iconrect.MinX + 1;
-    iconH = iconrect.MaxY - iconrect.MinY + 1;
-#endif
+        LONG    offsetx,offsety;
 
-    /* Add the relative position offset of the message->entry */
-    offsetx = objX - data->icld_ViewX + message->entry->ie_IconX;
-    /* Centre our image with our text */
-    if (message->entry->ie_IconWidth < message->entry->ie_AreaWidth)
-        offsetx += (message->entry->ie_AreaWidth - message->entry->ie_IconWidth)/2;
+        /* Get the dimensions and affected area of message->entry */
+        IconList_GetIconImageRectangle(obj, data, message->entry, &iconrect);
 
-    if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-        (message->entry->ie_AreaWidth < data->icld_IconAreaLargestWidth))
-        offsetx += ((data->icld_IconAreaLargestWidth - message->entry->ie_AreaWidth)/2);
+        /* Get offset corrections */
+        IconList_GetIconImageOffsets(data, message->entry, &offsetx, &offsety);
 
-    iconrect.MinX += offsetx;
-    iconrect.MaxX += offsetx;
-
-    offsety = objY - data->icld_ViewY + message->entry->ie_IconY;
-        if ((data->icld__Option_IconListMode == ICON_LISTMODE_GRID) &&
-            (message->entry->ie_AreaHeight < data->icld_IconAreaLargestHeight))
-            offsety += ((data->icld_IconAreaLargestHeight - message->entry->ie_AreaHeight)/2);
-
-    iconrect.MinY += offsety;
-    iconrect.MaxY += offsety;
+        /* Add the relative position offset of the message->entry */
+        iconrect.MinX += objX - data->icld_ViewX + message->entry->ie_IconX + offsetx;
+        iconrect.MaxX += objX - data->icld_ViewX + message->entry->ie_IconX + offsetx;
+        iconrect.MinY += objY - data->icld_ViewY + message->entry->ie_IconY + offsety;
+        iconrect.MaxY += objY - data->icld_ViewY + message->entry->ie_IconY + offsety;
 
     if (!RectAndRect(&iconrect, &objrect))
     {
@@ -6309,8 +6309,18 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         {
             if ((first_x == -1) || ((first_x != -1) && (entry->ie_IconX < first_x))) first_x = entry->ie_IconX;
             if ((first_y == -1) || ((first_y != -1) && (entry->ie_IconY < first_y))) first_y = entry->ie_IconY;
-            if ((entry->ie_IconX + entry->ie_IconWidth) > img->width)   img->width = entry->ie_IconX + entry->ie_IconWidth;
-            if ((entry->ie_IconY + entry->ie_IconHeight) > img->height) img->height = entry->ie_IconY + entry->ie_IconHeight;
+
+                    if (data->icld__Option_IconListMode == ICON_LISTMODE_ROUGH)
+                    {
+                        if ((entry->ie_IconX + entry->ie_AreaWidth) > img->width)   img->width = entry->ie_IconX + entry->ie_AreaWidth;
+                        if ((entry->ie_IconY + entry->ie_AreaHeight) > img->height) img->height = entry->ie_IconY + entry->ie_AreaHeight;
+                    }
+
+                    if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                    {
+                        if ((entry->ie_IconX + data->icld_IconAreaLargestWidth) > img->width)   img->width = entry->ie_IconX + data->icld_IconAreaLargestWidth;
+                        if ((entry->ie_IconY + data->icld_IconAreaLargestHeight) > img->height) img->height = entry->ie_IconY + data->icld_IconAreaLargestHeight;
+                    }
         }
         else
         {
@@ -6358,19 +6368,23 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
                 entry = (struct IconEntry *)((IPTR)node - ((IPTR)&entry->ie_SelectionNode - (IPTR)entry));
                 if ((entry->ie_Flags & ICONENTRY_FLAG_VISIBLE) && (entry->ie_Flags & ICONENTRY_FLAG_SELECTED))
                 {
-            if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
-            {
-            }
-            else
-            {
-            DrawIconStateA
-                (
-                &temprp, entry->ie_DiskObj, NULL,
-                (entry->ie_IconX + 1) - first_x, (entry->ie_IconY + 1) - first_y,
-                IDS_SELECTED,
-                __iconList_DrawIconStateTags
-                );
-            }
+                    if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
+                    {
+                    }
+                    else
+                    {
+                        LONG offsetx , offsety;
+
+                        IconList_GetIconImageOffsets(data, entry, &offsetx, &offsety);
+
+                        DrawIconStateA
+                            (
+                            &temprp, entry->ie_DiskObj, NULL,
+                            (entry->ie_IconX + 1) - first_x + offsetx, (entry->ie_IconY + 1) - first_y + offsety,
+                            IDS_SELECTED,
+                            __iconList_DrawIconStateTags
+                            );
+                    }
                 }
             }
 #else
