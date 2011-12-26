@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002-2011, The AROS Development Team.
     All rights reserved.
     
     $Id$
@@ -19,6 +19,7 @@
 #define GUI_TopOffset   (TAG_USER+4)    /* LONG */
 #define GUI_Width       (TAG_USER+5)    /* LONG */
 #define GUI_Height      (TAG_USER+6)    /* LONG */
+#define GUI_SourceAlpha (TAG_USER+7)    /* BOOL */
 
 struct DragNDrop *CreateDragNDropA( struct TagItem *tlist );
 VOID DeleteDragNDrop( struct DragNDrop *dnd );
