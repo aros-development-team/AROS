@@ -218,3 +218,6 @@ Default sort order
 MSG_ICON_AUTOSORT_ENABLED (//)
 Autosorting enabled
 ;
+MSG_ICON_DRAG_TRANSPARENT (//)
+Use transparency when draging icons
+;
