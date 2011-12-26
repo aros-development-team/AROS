@@ -211,22 +211,35 @@ static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG 
 {
     ULONG       x, y;
     ULONG       alphaval, pixelval;
+    APTR        buffer, pixelptr;
+
+    if ((buffer = AllocVec(width * height * sizeof(ULONG), MEMF_ANY)) == NULL)
+        return;
+
+    ReadPixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, 0, 0, width, height, RECTFMT_ARGB);
+
+    pixelptr = buffer;
 
     for (y = 0; y < height; y++)
     {
         for (x = 0; x < width; x++)
         {
-            if ((pixelval = ReadRGBPixel(arport, x, y)))
-            {
-                if (alphamode == RPALPHARADIAL){
-                    //Set the alpha value based on distance from ax,ay
-                } else {
-                    alphaval = val;
-                }
-                WriteRGBPixel(arport, x, y, ((pixelval & 0xffffff)|(alphaval << 24)));
+            pixelval = *((ULONG *)pixelptr);
+
+            if (alphamode == RPALPHARADIAL){
+                //Set the alpha value based on distance from ax,ay
+            } else {
+                alphaval = val;
             }
+            pixelval = (pixelval & 0xffffff00) | alphaval;
+            *((ULONG *)pixelptr) = pixelval;
+
+            pixelptr += sizeof(ULONG);
         }
     }
+
+    WritePixelArray(buffer, 0, 0, width * sizeof(ULONG), arport, 0, 0, width, height, RECTFMT_ARGB);
+    FreeVec(buffer);
 }
 
 ///RectAndRect()
