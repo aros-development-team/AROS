@@ -70,9 +70,6 @@ struct IconList_DATA
     /* Input / Event Information */
     struct MUI_EventHandlerNode   ehn;
 
-    LONG                          touch_x;
-    LONG                          touch_y;
-
     LONG                          click_x;
     LONG                          click_y;
 
