@@ -5940,6 +5940,8 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
                     if (data->icld_SelectionLastClicked && (data->icld_LassoActive == FALSE) && 
                         ((abs(move_x - data->click_x) >= 2) || (abs(move_y - data->click_y) >= 2)))
                     {
+                        LONG touch_x, touch_y;
+
                         /* Entry(s) being dragged .... */
                         DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
                         data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
@@ -5947,9 +5949,10 @@ IPTR IconList__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct MUIP_H
 
                         data->mouse_pressed &= ~LEFT_BUTTON;
 
-                        data->touch_x = move_x + data->icld_ViewX - data->icld_SelectionLastClicked->ie_IconX;
-                        data->touch_y = move_y + data->icld_ViewY - data->icld_SelectionLastClicked->ie_IconY;
-                        DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
+                        /* Pass view relative coords */
+                        touch_x = move_x + data->icld_ViewX;
+                        touch_y = move_y + data->icld_ViewY;
+                        DoMethod(obj,MUIM_DoDrag, touch_x, touch_y, 0);
                     }
                     else if (data->icld_LassoActive == TRUE)
                     {
@@ -6408,8 +6411,12 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             DeinitRastPort(&temprp);
         }
 
-    img->touchx = message->touchx;
-    img->touchy = message->touchy;
+        /* Convert view relative coords to drag image relative. This is done because the "object" that is beeing
+         * dragged is virtual (its a collection of icons) and the coords passed to DoDrag are not relative to this
+         * "object"
+         */
+        img->touchx = first_x + message->touchx;
+        img->touchy = first_y + message->touchy;
 
         img->flags = 0;
 #if defined(__MORPHOS__)
