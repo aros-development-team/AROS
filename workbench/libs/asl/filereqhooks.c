@@ -484,7 +484,10 @@ STATIC BOOL FRWindowOpened(struct LayoutData *ld, struct AslBase_intern *AslBase
        )
     {
         D(bug("[asl.library] AppWindow sucessful\n"));
+        return TRUE;
     }
+
+    return FALSE;
 }
 
 /*****************************************************************************************/
