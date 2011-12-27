@@ -275,19 +275,19 @@ MSG_EMPTY_TRASH
 Isprazni Kantu za Smeæe
 ; Empty trash
 ;
-MSG_PUT_AWAY
+MSG_MEN_PUT_AWAY
 Stavi sa Strane
 ; Put away
 ;
-MSG_LEAVE_OUT
+MSG_MEN_LEAVE_OUT
 Izbaci Van
 ; Leave out
 ;
-MSG_UNSNAPSHOT
+MSG_MEN_UNSNAPSHOT
 Zaboravi Polo¾aj
 ; Unsnapshot
 ;
-MSG_SNAPSHOT
+MSG_MEN_SNAPSHOT
 Zapamti Polo¾aj
 ; Snapshot
 ;

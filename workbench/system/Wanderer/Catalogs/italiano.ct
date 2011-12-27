@@ -263,19 +263,19 @@ MSG_EMPTY_TRASH
 Svuota cestino
 ; Empty trash
 ;
-MSG_PUT_AWAY
+MSG_MEN_PUT_AWAY
 Put Away
 ; Put away
 ;
-MSG_LEAVE_OUT
+MSG_MEN_LEAVE_OUT
 Leave Out
 ; Leave out
 ;
-MSG_UNSNAPSHOT
+MSG_MEN_UNSNAPSHOT
 Rimuovi fissaggio
 ; Unsnapshot
 ;
-MSG_SNAPSHOT
+MSG_MEN_SNAPSHOT
 Fissa
 ; Snapshot
 ;

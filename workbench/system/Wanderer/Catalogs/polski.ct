@@ -274,19 +274,19 @@ MSG_EMPTY_TRASH
 Opró¿nij ¶mietnik
 ; Empty trash
 ;
-MSG_PUT_AWAY
+MSG_MEN_PUT_AWAY
 Schowaj
 ; Put away
 ;
-MSG_LEAVE_OUT
+MSG_MEN_LEAVE_OUT
 Wyjmij na blat
 ; Leave out
 ;
-MSG_UNSNAPSHOT
+MSG_MEN_UNSNAPSHOT
 Uwolnij pozycjê
 ; Unsnapshot
 ;
-MSG_SNAPSHOT
+MSG_MEN_SNAPSHOT
 Utrwal pozycjê
 ; Snapshot
 ;
