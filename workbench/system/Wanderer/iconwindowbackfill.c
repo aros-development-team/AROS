@@ -359,9 +359,9 @@ D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap(mode %d)\n", bli
   {
     for (SrcY = MOD(SrcOffsetY + MOD((DstFillBounds->MinY - DstAreaBounds->MinY), SrcSizeY - 1), SrcSizeY - 1), PosY = DstFillBounds->MinY, SizeY = MIN((SrcSizeY - SrcY), (DstFillBounds->MaxY - DstFillBounds->MinY ) + 1); PosY <= DstFillBounds->MaxY;)
     {
-      for (SrcX = MOD(SrcOffsetX + MOD((DstFillBounds->MinX - DstAreaBounds->MinX), SrcSizeY - 1), SrcSizeX - 1), PosX = DstFillBounds->MinX, SizeX = MIN((SrcSizeX - SrcX), (DstFillBounds->MaxX - DstFillBounds->MinX ) + 1); PosX <= DstFillBounds->MaxX;)
+      for (SrcX = MOD(SrcOffsetX + MOD((DstFillBounds->MinX - DstAreaBounds->MinX), SrcSizeX - 1), SrcSizeX - 1), PosX = DstFillBounds->MinX, SizeX = MIN((SrcSizeX - SrcX), (DstFillBounds->MaxX - DstFillBounds->MinX ) + 1); PosX <= DstFillBounds->MaxX;)
       {
-        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: ClipBlit @ %d,%d [%d x %d]\n", PosX, PosY, SizeX, SizeY));
+        D(bug("[IconWindow.ImageBackFill] ImageBackFill_CopyTiledBitMap: ClipBlit %d, %d -> %d,%d [%d x %d]\n", SrcX, SrcY, PosX, PosY, SizeX, SizeY));
 
         ClipBlit(SrcRast,
           SrcX, SrcY,
