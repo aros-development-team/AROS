@@ -14,7 +14,7 @@
 static BOOL trash = FALSE;
 static BOOL leak  = FALSE;
 
-static void AccessTest(ULONG *ptr)
+static inline void AccessTest(ULONG *ptr)
 {
     if (!trash)
 	return;
@@ -88,7 +88,25 @@ int main(int argc, char **argv)
 	    output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
 	}
     }
-    
+
+    output("And now trying MEMF_REVERSE...\n");
+    block0 = AllocMem(4096, MEMF_REVERSE);
+    output("Allocated at 0x%p, available memory: %lu bytes\n", block0, (unsigned long)AvailMem(MEMF_ANY));
+ 
+    /* This test actually proves that we don't hit for example MMIO region */
+    *((volatile ULONG *)block0) = 0xC0DEBAD;
+    if (*((volatile ULONG *)block0) != 0xC0DEBAD)
+        output("It's not a memory!!!\n");
+ 
+    AccessTest(block0 + 256 * 1024);
+ 
+    if (!leak)
+    {
+    	output("Freeing the block...\n");
+    	FreeMem(block0, 256 * 1024);
+    	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
+    }
+
     Permit();
     return 0;
 }
