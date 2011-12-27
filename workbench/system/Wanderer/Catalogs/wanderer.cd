@@ -111,7 +111,7 @@ MSG_MEN_CLNUP (//)
 Clean up
 ;
 MSG_MEN_SC_CLNUP (//)
-U
+.
 ;
 MSG_MEN_BYNAME (//)
 By name
@@ -159,7 +159,7 @@ MSG_MEN_TOOLS  (//)
 Tools
 ;
 MSG_MEN_ICONSORTING (//)
-Enable Icon Sorting
+Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS (//)
 Group Icons
@@ -203,17 +203,29 @@ MSG_OK (//)
 MSG_EMPTY_TRASH (//)
 Empty trash
 ;
-MSG_PUT_AWAY (//)
+MSG_MEN_PUT_AWAY (//)
 Put away
 ;
-MSG_LEAVE_OUT (//)
+MSG_MEN_SC_PUT_AWAY (//)
+P
+;
+MSG_MEN_LEAVE_OUT (//)
 Leave out
 ;
-MSG_UNSNAPSHOT (//)
+MSG_MEN_SC_LEAVE_OUT (//)
+L
+;
+MSG_MEN_UNSNAPSHOT (//)
 Unsnapshot
 ;
-MSG_SNAPSHOT (//)
+MSG_MEN_SC_UNSNAPSHOT (//)
+U
+;
+MSG_MEN_SNAPSHOT (//)
 Snapshot
+;
+MSG_MEN_SC_SNAPSHOT (//)
+S
 ;
 MSG_REQU_DELETE (//)
 Delete file...

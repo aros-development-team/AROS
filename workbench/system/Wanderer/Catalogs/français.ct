@@ -275,19 +275,19 @@ MSG_EMPTY_TRASH
 Vider la corbeille
 ; Empty trash
 ;
-MSG_PUT_AWAY
+MSG_MEN_PUT_AWAY
 Ranger
 ; Put away
 ;
-MSG_LEAVE_OUT
+MSG_MEN_LEAVE_OUT
 Sortir
 ; Leave out
 ;
-MSG_UNSNAPSHOT
+MSG_MEN_UNSNAPSHOT
 Défiger
 ; Unsnapshot
 ;
-MSG_SNAPSHOT
+MSG_MEN_SNAPSHOT
 Figer
 ; Snapshot
 ;

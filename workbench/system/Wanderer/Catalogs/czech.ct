@@ -275,19 +275,19 @@ MSG_EMPTY_TRASH
 Vyprázdnit ko¹
 ; Empty trash
 ;
-MSG_PUT_AWAY
+MSG_MEN_PUT_AWAY
 Sklidit z plochy
 ; Put away
 ;
-MSG_LEAVE_OUT
+MSG_MEN_LEAVE_OUT
 Umístit na plochu
 ; Leave out
 ;
-MSG_UNSNAPSHOT
+MSG_MEN_UNSNAPSHOT
 Zru¹it umístìní
 ; Unsnapshot
 ;
-MSG_SNAPSHOT
+MSG_MEN_SNAPSHOT
 Zapsat umístìní
 ; Snapshot
 ;
