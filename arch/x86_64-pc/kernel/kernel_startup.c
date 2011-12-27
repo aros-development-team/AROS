@@ -39,8 +39,16 @@ static const struct MemRegion PC_Memory[] =
     /*
      * FIXME: The following two entries should also be CHIP. trackdisk.device and i386 port
      * fix is needed (use MEMF_24BITDMA instead of MEMF_CHIP for 24-bit ISA DMA-capable area.
+     * EXPERIMENTAL:
+     * 1. Some (or all?) 64-bit machines expose RAM at addresses up to 0xD0000000 (giving 3.5 GB total). All MMIO
+     * sits beyond this border. We intentionally specify 4GB as limit, just in case if some machine exhibits
+     * even more RAM in this space. We want all the RAM to be usable.
+     * 2. We have MEMF_31BIT originating from MorphOS. But here we interpret it as "32-bit memory". I guess
+     * it originated from the assumption that MMIO starts at 0x80000000 (which is true at least for PegasosPPC).
+     * So, is it okay to assume actually 32-bit memory for MEMF_31BIT? Are there anything which really imposes
+     * 31-bit limit? AllocEntry() issue doesn't count...
      */
-    {0x001000000, 0x080000000, "31-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST|MEMF_31BIT		},
+    {0x001000000, 0x0FFFFFFFF, "32-bit memory" ,  0, MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK|MEMF_FAST|MEMF_31BIT		},
     /*
      * FIXME: Our MMU mapping supports only 4GB address space.
      * We can't enable more right now because lots of RAM would be required for MMU tables,
