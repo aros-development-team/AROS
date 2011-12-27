@@ -224,7 +224,7 @@ void mmap_InitMemory(struct mb_mmap *mmap_addr, unsigned long mmap_len, struct M
                     /* Just expand physical MemHeader area, but do not add the chunk as free */
                     D(nbug("[MMAP] Reserved chunk 0x%p - 0x%p\n", chunk_start, chunk_end));
 
-                    mh->mh_Upper = chunk_end;
+                    mh->mh_Upper = (APTR)chunk_end;
                 }
                 
                 if (chunk_end == reg->end)
