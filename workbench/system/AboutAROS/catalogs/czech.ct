@@ -1,6 +1,6 @@
 ## version $VER: About.catalog 1.6 (14.5.2008)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -44,8 +44,8 @@ MSG_LICENSE_3
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Dal¹í informace najdete na stránkách http://www.aros.org/.
-; Please visit http://www.aros.org/ for more information.
+Dal¹í informace najdete na stránkách http://www.aros.org/cs/ .
+; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
 Autoøi
