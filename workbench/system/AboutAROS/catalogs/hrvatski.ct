@@ -1,6 +1,6 @@
 ## version $VER: About.catalog 1.6 (03.01.2010)
 ## language hrvatski
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_TITLE
@@ -44,8 +44,8 @@ verzija 1.1.
 ; , version 1.1.
 ;
 MSG_MORE_INFORMATION
-Posjetite http://www.aros.org/ za vi¹e informacija. 
-; Please visit http://www.aros.org/ for more information.
+Posjetite http://www.aros.org za vi¹e informacija. 
+; Please visit http://www.aros.org for more information.
 ;
 MSG_PAGE_AUTHORS
 Autori
