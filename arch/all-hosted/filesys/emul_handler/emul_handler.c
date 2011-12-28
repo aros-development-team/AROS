@@ -821,7 +821,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
 
 	Res2 = 0;
 	/* DOSTRUE means 'Same', DOSFALSE means 'Different' */
-	Res1 = strcmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
+	Res1 = strcasecmp(fh->hostname, fh2->hostname) ? DOSFALSE : DOSTRUE;
 
         DSAME(bug("[emul] Replying with 0x%p, %ld\n", Res1, Res2));
         break;
