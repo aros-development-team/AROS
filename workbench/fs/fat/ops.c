@@ -668,8 +668,10 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, ULONG want, ULONG *written) 
         return ERROR_WRITE_PROTECTED;
     }
 
-    if (want == 0)
+    if (want == 0) {
+        *written = 0;
         return 0;
+    }
 
     /* if this is the first write, make a note as we'll have to store the
      * first cluster in the directory entry later */
