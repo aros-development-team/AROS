@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -82,7 +82,7 @@ static PathEntryPtr InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName, A
 
 static BOOL IsDirectory(BPTR lock, APTR DOSBase);
 
-AROS_SH7(Path, 45.3,
+AROS_SH7(Path, 45.4,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),
 AROS_SHA(BOOL, ,ADD,/S,NULL),
 AROS_SHA(BOOL, ,SHOW,/S,NULL),
@@ -271,6 +271,8 @@ FindPathEntry(CommandLineInterfacePtr cli, STRPTR pathName,
 
             UnLock(pathLock);
         }
+        else
+            PrintFault(IoErr(), pathName);
     }
     
     return(entry);        
@@ -313,11 +315,7 @@ InsertPathEntry(PathEntryPtr predecessor, STRPTR pathName, APTR SysBase, APTR DO
         }
         else
         {
-            if (lock == BNULL)
-            {
-                PrintFault(IoErr(), pathName);
-            }
-            else
+            if (lock != BNULL)
             {
                 if (!isDirectory)
                 {
