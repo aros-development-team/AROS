@@ -51,12 +51,16 @@
 /* explicitly prototype rand() so we don't have pull in stdlib.h */
 extern int rand(void);
 
+/* NewStyle device support */
+#define NEWSTYLE_DEVICE 1
+
 #define MAX_TAP_UNITS (4)
 
 #define TAP_DEV_NODE "/dev/net/tun"
 
 #define TAP_IFACE_FORMAT "aros%ld"
 #define TAP_TASK_FORMAT "TAP IO: unit %d"
+
 
 struct tap_opener {
     struct MinNode              node;

@@ -26,6 +26,9 @@ static const UWORD tap_supported_commands[] = {
     S2_UNTRACKTYPE,
     S2_GETTYPESTATS,
     S2_GETGLOBALSTATS,
+#if NEWSTYLE_DEVICE
+    NSCMD_DEVICEQUERY,
+#endif
     0
 };
 
@@ -242,9 +245,36 @@ static BOOL tap_broadcast(struct IOSana2Req *req, struct tap_unit *unit) {
 
 void tap_handle_request(struct IOSana2Req *req) {
     struct tap_unit *unit = (struct tap_unit *) req->ios2_Req.io_Unit;
-    BOOL completed = TRUE;
+    BOOL completed = FALSE;
 
     switch (req->ios2_Req.io_Command) {
+#if NEWSTYLE_DEVICE
+        case NSCMD_DEVICEQUERY:
+        {
+            struct NSDeviceQueryResult *d;
+            LONG error = 0;
+            struct IOStdReq *iotd;
+            iotd = (struct IOStdReq *)req;
+            D(bug("[tap] [%d] NSCMD_DEVICEQUERY\n", unit->num));
+            if(iotd->io_Length >= sizeof(struct NSDeviceQueryResult))
+            {
+                if((d = (struct NSDeviceQueryResult *)iotd->io_Data))
+                {
+                    if ((d->DevQueryFormat == 0) && (d->SizeAvailable == 0))
+                    {
+                        d->SizeAvailable        = sizeof(struct NSDeviceQueryResult);
+                        d->DeviceType           = NSDEVTYPE_SANA2;
+                        d->DeviceSubType        = 0;
+                        d->SupportedCommands    = (UWORD *)tap_supported_commands;
+                        iotd->io_Actual = sizeof(struct NSDeviceQueryResult);
+                    } else error = IOERR_BADLENGTH;
+                } else error = IOERR_BADADDRESS;
+            } else error = IOERR_BADLENGTH;
+            iotd->io_Error = error;
+            completed = error ? FALSE : TRUE;
+            break;
+        }
+#endif
         case S2_DEVICEQUERY:
             D(bug("[tap] [%d] S2_DEVICEQUERY\n", unit->num));
             completed = tap_device_query(req, unit);
