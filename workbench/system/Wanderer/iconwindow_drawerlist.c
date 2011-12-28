@@ -153,6 +153,30 @@ HOOKPROTO(IconWindowDrawerList__HookFunc_ProcessIconListPrefsFunc, void, APTR *o
 
         switch (CHANGED_ATTRIB)
         {
+        case MUIA_IconList_DisplayFlags:
+            /* Special handling */
+            GET(self, MUIA_IconList_DisplayFlags, &attrib_Current);
+            attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwidld_ViewPrefs_ID, MUIA_IconList_DisplayFlags);
+
+            if (attrib_Prefs != (IPTR)-1)
+            {
+                if ((attrib_Current & ICONLIST_DISP_SHOWINFO) && !(attrib_Prefs & ICONLIST_DISP_SHOWINFO))
+                    attrib_Current &= ~ICONLIST_DISP_SHOWINFO;
+                if (!(attrib_Current & ICONLIST_DISP_SHOWINFO) && (attrib_Prefs & ICONLIST_DISP_SHOWINFO))
+                    attrib_Current |= ICONLIST_DISP_SHOWINFO;
+
+                options_changed = TRUE;
+                if (prefs_Processing)
+                {
+                    NNSET(self, (ULONG)CHANGED_ATTRIB, attrib_Current);
+                }
+                else
+                {
+                    SET(self, (ULONG)CHANGED_ATTRIB, attrib_Current);
+                }
+            }
+
+            break;
         case MUIA_IconList_IconListMode:
         case MUIA_IconList_LabelText_Mode:
         case MUIA_IconList_LabelText_MaxLineLen:
@@ -431,11 +455,25 @@ IPTR IconWindowDrawerList__MUIM_Setup
         SETFROMPREFS(MUIA_IconList_LabelText_BorderWidth);
         SETFROMPREFS(MUIA_IconList_LabelText_BorderHeight);
 
+        /* Special handling */
+        attrib_Prefs = DoMethod(prefs, MUIM_WandererPrefs_ViewSettings_GetAttribute, data->iwidld_ViewPrefs_ID, MUIA_IconList_DisplayFlags);
+        if (attrib_Prefs != (IPTR)-1)
+        {
+            IPTR attrib_Current = XGET(self, MUIA_IconList_DisplayFlags);
+            if ((attrib_Current & ICONLIST_DISP_SHOWINFO) && !(attrib_Prefs & ICONLIST_DISP_SHOWINFO))
+                attrib_Current &= ~ICONLIST_DISP_SHOWINFO;
+            if (!(attrib_Current & ICONLIST_DISP_SHOWINFO) && (attrib_Prefs & ICONLIST_DISP_SHOWINFO))
+                attrib_Current |= ICONLIST_DISP_SHOWINFO;
+            SET(self, MUIA_IconList_DisplayFlags, attrib_Current);
+        }
+
+
         /* Configure notifications incase they get updated =) */
         ADDPREFSNTF(MUIA_IconList_IconListMode);
         ADDPREFSNTF(MUIA_IconList_LabelText_Mode);
         ADDPREFSNTF(MUIA_IconList_SortFlags);
         ADDPREFSNTF(MUIA_IconList_DragImageTransparent);
+        ADDPREFSNTF(MUIA_IconList_DisplayFlags);
         ADDPREFSNTF(MUIA_IconList_LabelText_MaxLineLen);
         ADDPREFSNTF(MUIA_IconList_LabelText_MultiLine);
         ADDPREFSNTF(MUIA_IconList_LabelText_MultiLineOnFocus);
@@ -480,6 +518,7 @@ IPTR IconWindowDrawerList__MUIM_Cleanup
         REMPREFSNTF(MUIA_IconList_LabelText_Mode);
         REMPREFSNTF(MUIA_IconList_SortFlags);
         REMPREFSNTF(MUIA_IconList_DragImageTransparent);
+        REMPREFSNTF(MUIA_IconList_DisplayFlags);
         REMPREFSNTF(MUIA_IconList_LabelText_MaxLineLen);
         REMPREFSNTF(MUIA_IconList_LabelText_MultiLine);
         REMPREFSNTF(MUIA_IconList_LabelText_MultiLineOnFocus);
