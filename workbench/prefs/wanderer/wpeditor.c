@@ -433,6 +433,17 @@ AROS_UFH3(
     AROS_USERFUNC_EXIT
 }
 
+#define SETCURRENTVIEWSETTINGSTAG(tag, obj, objtag)                                                                 \
+    success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, tag, XGET(obj, objtag));         \
+    if (success == FALSE)                                                                                           \
+    {                                                                                                               \
+        /* TODO: Allocate extra storage for our tags.. */                                                           \
+    }                                                                                                               \
+    else if (success == TRUE)                                                                                       \
+    {                                                                                                               \
+        settings_changed = TRUE;                                                                                    \
+    }
+
 AROS_UFH3(
     void, WandererPrefs_Hook_CloseAdvancedOptionsFunc,
     AROS_UFHA(struct Hook *,    hook,   A0),
@@ -497,27 +508,9 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
                     break;
 
                 case IconWindowExt_ImageBackFill_RenderMode_Tiled:
-                    success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconWindowExt_ImageBackFill_BGXOffset, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_XOffsetObj, MUIA_String_Integer));
-                    if (success == FALSE)
-                    {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGXOffset TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-                    }
-                    else if (success == TRUE)
-                    {
-                        settings_changed = TRUE;
-                    }
+                    SETCURRENTVIEWSETTINGSTAG(MUIA_IconWindowExt_ImageBackFill_BGXOffset, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_XOffsetObj, MUIA_String_Integer);
+                    SETCURRENTVIEWSETTINGSTAG(MUIA_IconWindowExt_ImageBackFill_BGYOffset, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_YOffsetObj, MUIA_String_Integer);
 
-                    success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconWindowExt_ImageBackFill_BGYOffset, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_YOffsetObj, MUIA_String_Integer));
-                    if (success == FALSE)
-                    {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindowExt_ImageBackFill_BGYOffset TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-                    }
-                    else if (success == TRUE)
-                    {
-                        settings_changed = TRUE;
-                    }
 
                     IPTR current_tilemodeno = 0;
                     ULONG current_tilemode = 0;
@@ -542,138 +535,23 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
             }
         }
 
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_IconListMode, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ListMode, MUIA_Cycle_Active));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_IconListMode TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_IconListMode, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ListMode, MUIA_Cycle_Active);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_Mode, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_TextMode, MUIA_Cycle_Active);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_MaxLineLen, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MaxLineLen, MUIA_String_Integer);
 
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_Mode, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_TextMode, MUIA_Cycle_Active));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_Mode TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_MaxLineLen, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MaxLineLen, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MaxLineLen TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
 
 #if defined(DEBUG_MULTLINE)
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_MultiLineOnFocus, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineonFocus, MUIA_Selected));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MultiLineOnFocus TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_MultiLine, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineNo, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_MultiLine TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_MultiLineOnFocus, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineonFocus, MUIA_Selected);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_MultiLine, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineNo, MUIA_String_Integer);
 #endif
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_Icon_HorizontalSpacing, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_HorSpacing, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_HorizontalSpacing TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
 
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_Icon_VerticalSpacing, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_VertSpacing, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_VerticalSpacing TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_Icon_ImageSpacing, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ImageSpacing, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_Icon_ImageSpacing TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_HorizontalPadding, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_HorPadd, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_HorizontalPadding TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_VerticalPadding, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_VertPadd, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_VerticalPadding TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_BorderWidth, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_BorderWidth, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_BorderWidth TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
-
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_LabelText_BorderHeight, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_BorderHeight, MUIA_String_Integer));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_LabelText_BorderHeight TAG - Adding ..\n"));
-/* "TODO: Allocate extra storage for our tags.." */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_Icon_HorizontalSpacing, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_HorSpacing, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_Icon_VerticalSpacing, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_VertSpacing, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_Icon_ImageSpacing, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ImageSpacing, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_HorizontalPadding, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_HorPadd, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_VerticalPadding, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_VertPadd, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_BorderWidth, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_BorderWidth, MUIA_String_Integer);
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_LabelText_BorderHeight, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_BorderHeight, MUIA_String_Integer);
 
         {
             ULONG new_SortFlags = 0;
@@ -700,16 +578,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_
             }
         }
 
-        success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_DragImageTransparent, XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_DragTransparent, MUIA_Selected));
-        if (success == FALSE)
-        {
-D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_DragImageTransparent TAG - Adding ..\n"));
-/* TODO: Allocate extra storage for our tags.. */
-        }
-        else if (success == TRUE)
-        {
-            settings_changed = TRUE;
-        }
+        SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_DragImageTransparent, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_DragTransparent, MUIA_Selected);
 
         if (settings_changed) SET(self, MUIA_PrefsEditor_Changed, TRUE);
     }
@@ -764,6 +633,13 @@ D(bug("[WPEditor] WandererPrefs_Hook_DrawModeChangeFunc: Changing Active Page to
 
     AROS_USERFUNC_EXIT
 }
+
+#define SETNEVSOPTION(tag, defvalue)                                                                                    \
+    newVS_Options[newVS_OptionCount].ti_Tag = tag;                                                                      \
+    if (_viewSettings_Current->wpedbo_Options)                                                                          \
+        newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(tag, defvalue, _viewSettings_Current->wpedbo_Options);\
+    else                                                                                                                \
+        newVS_Options[newVS_OptionCount++].ti_Data = defvalue;
 
 AROS_UFH3(
     void, WandererPrefs_Hook_CheckImageFunc,
@@ -888,29 +764,10 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p\n", new_TileM
                     if (old_bg_tilemodeentries)
                         FreeVec((APTR)old_bg_tilemodeentries);
                     
-                    newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconWindowExt_ImageBackFill_BGRenderMode;
-                    if (_viewSettings_Current->wpedbo_Options)
-                        newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGRenderMode, IconWindowExt_ImageBackFill_RenderMode_Tiled, _viewSettings_Current->wpedbo_Options);
-                    else
-                     newVS_Options[newVS_OptionCount++].ti_Data = IconWindowExt_ImageBackFill_RenderMode_Tiled;
-
-                    newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconWindowExt_ImageBackFill_BGTileMode;
-                    if (_viewSettings_Current->wpedbo_Options)
-                        newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGTileMode, IconWindowExt_ImageBackFill_TileMode_Float, _viewSettings_Current->wpedbo_Options);
-                    else
-                        newVS_Options[newVS_OptionCount++].ti_Data = IconWindowExt_ImageBackFill_TileMode_Float;
-                    
-                    newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconWindowExt_ImageBackFill_BGXOffset;
-                    if (_viewSettings_Current->wpedbo_Options)
-                        newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGXOffset, 0, _viewSettings_Current->wpedbo_Options);
-                    else
-                        newVS_Options[newVS_OptionCount++].ti_Data = 0;
-
-                    newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconWindowExt_ImageBackFill_BGYOffset;
-                    if (_viewSettings_Current->wpedbo_Options)
-                        newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconWindowExt_ImageBackFill_BGYOffset, 0, _viewSettings_Current->wpedbo_Options);
-                    else
-                        newVS_Options[newVS_OptionCount++].ti_Data = 0;
+                    SETNEVSOPTION(MUIA_IconWindowExt_ImageBackFill_BGRenderMode, IconWindowExt_ImageBackFill_RenderMode_Tiled);
+                    SETNEVSOPTION(MUIA_IconWindowExt_ImageBackFill_BGTileMode, IconWindowExt_ImageBackFill_TileMode_Float);
+                    SETNEVSOPTION(MUIA_IconWindowExt_ImageBackFill_BGXOffset, 0);
+                    SETNEVSOPTION(MUIA_IconWindowExt_ImageBackFill_BGYOffset, 0);
 
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newBG_RenderModeCount -1, newBG_RenderModes[newBG_RenderModeCount-1]));
 
@@ -923,92 +780,24 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newB
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe, FALSE);
         }
 
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_IconListMode;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_IconListMode, ICON_LISTMODE_GRID, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ICON_LISTMODE_GRID;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_Mode;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_Mode, ICON_TEXTMODE_OUTLINE, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ICON_TEXTMODE_OUTLINE;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_SortFlags;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_SortFlags, (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName), _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName);
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_DragImageTransparent;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_DragImageTransparent, FALSE, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = FALSE;
-
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_MaxLineLen;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_MAXLINELEN_DEFAULT;
+        SETNEVSOPTION(MUIA_IconList_IconListMode, ICON_LISTMODE_GRID);
+        SETNEVSOPTION(MUIA_IconList_LabelText_Mode, ICON_TEXTMODE_OUTLINE);
+        SETNEVSOPTION(MUIA_IconList_SortFlags, (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName));
+        SETNEVSOPTION(MUIA_IconList_DragImageTransparent, FALSE);
+        SETNEVSOPTION(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT);
 
 #if defined(DEBUG_MULTLINE)
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_MultiLine;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_MultiLine, 1, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = 1;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_MultiLineOnFocus;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_MultiLineOnFocus, FALSE, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = FALSE;
+        SETNEVSOPTION(MUIA_IconList_LabelText_MultiLine, 1);
+        SETNEVSOPTION(MUIA_IconList_LabelText_MultiLineOnFocus, FALSE);
 #endif
 
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_Icon_HorizontalSpacing;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_Icon_HorizontalSpacing, ILC_ICON_HORIZONTALMARGIN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICON_HORIZONTALMARGIN_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_Icon_VerticalSpacing;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_Icon_VerticalSpacing, ILC_ICON_VERTICALMARGIN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICON_VERTICALMARGIN_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_Icon_ImageSpacing;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_Icon_ImageSpacing, ILC_ICONLABEL_IMAGEMARGIN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_IMAGEMARGIN_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_HorizontalPadding;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_HorizontalPadding, ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_VerticalPadding;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_VerticalPadding, ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_BorderWidth;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_BorderWidth, ILC_ICONLABEL_BORDERWIDTH_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_BORDERWIDTH_DEFAULT;
-
-        newVS_Options[newVS_OptionCount].ti_Tag = MUIA_IconList_LabelText_BorderHeight;
-        if (_viewSettings_Current->wpedbo_Options)
-            newVS_Options[newVS_OptionCount++].ti_Data = GetTag32Data(MUIA_IconList_LabelText_BorderHeight, ILC_ICONLABEL_BORDERHEIGHT_DEFAULT, _viewSettings_Current->wpedbo_Options);
-        else
-         newVS_Options[newVS_OptionCount++].ti_Data = ILC_ICONLABEL_BORDERHEIGHT_DEFAULT;
+        SETNEVSOPTION(MUIA_IconList_Icon_HorizontalSpacing, ILC_ICON_HORIZONTALMARGIN_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_Icon_VerticalSpacing, ILC_ICON_VERTICALMARGIN_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_Icon_ImageSpacing, ILC_ICONLABEL_IMAGEMARGIN_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_LabelText_HorizontalPadding, ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_LabelText_VerticalPadding, ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_LabelText_BorderWidth, ILC_ICONLABEL_BORDERWIDTH_DEFAULT);
+        SETNEVSOPTION(MUIA_IconList_LabelText_BorderHeight, ILC_ICONLABEL_BORDERHEIGHT_DEFAULT);
 
         if (newVS_OptionCount > 0)
         {
@@ -2430,6 +2219,12 @@ D(bug("[WPEditor] Failed to open stream!, returncode %ld!\n", error));
     return success;
 }
 
+#define SAVEVIEWSETTINGSTAG(tag, defvalue)                                                                                                  \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(tag);                                                               \
+    _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(tag, defvalue, _viewSettings_Node->wpedbo_Options));  \
+    _viewSettings_TagCount += 1;
+
+
 /*IPTR WPEditor__MUIM_PrefsEditor_ExportFH(): definition of an abstract function from
  *MUIC_PrefsEditor; This function basically memorized in the correspondent iff prefs file 
  *of Wanderer prefs the changes made with Wanderer prefs window...;
@@ -2723,78 +2518,24 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
                                 break;
                         }
                         
-                        /* save the icon listing method */
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_IconListMode);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_IconListMode, ICON_LISTMODE_GRID, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_IconListMode @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        /* save the icon text mode */
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_Mode);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_Mode, ICON_TEXTMODE_OUTLINE, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_Mode @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        /* save the max length of icons */
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MaxLineLen);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_MaxLineLen @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_IconListMode, ICON_LISTMODE_GRID);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_Mode, ICON_TEXTMODE_OUTLINE);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT);
 
 #if defined(DEBUG_MULTLINE)
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MultiLine);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_MultiLine, 1, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_MultiLine @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_MultiLineOnFocus);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_MultiLineOnFocus, FALSE, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_MultiLineOnFocus @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_MultiLine, 1);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_MultiLineOnFocus, FALSE);
 #endif
 
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_Icon_HorizontalSpacing);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_Icon_HorizontalSpacing, ILC_ICON_HORIZONTALMARGIN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_Icon_HorizontalSpacing @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_Icon_VerticalSpacing);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_Icon_VerticalSpacing, ILC_ICON_VERTICALMARGIN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_Icon_VerticalSpacing @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_Icon_ImageSpacing);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_Icon_ImageSpacing, ILC_ICONLABEL_IMAGEMARGIN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_Icon_ImageSpacing @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_HorizontalPadding);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_HorizontalPadding, ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_HorizontalPadding @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_VerticalPadding);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_VerticalPadding, ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_VerticalPadding @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_BorderWidth);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_BorderWidth, ILC_ICONLABEL_BORDERWIDTH_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_BorderWidth @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_LabelText_BorderHeight);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_LabelText_BorderHeight, ILC_ICONLABEL_BORDERHEIGHT_DEFAULT, _viewSettings_Node->wpedbo_Options));
-D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: 'ViewSettings' MUIA_IconList_LabelText_BorderHeight @ Tag %d, data = %d\n", _viewSettings_TagCount, _viewSettings_TagList[_viewSettings_TagCount].ti_Data));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_SortFlags);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_SortFlags, MUIV_IconList_Sort_ByName, _viewSettings_Node->wpedbo_Options));
-                        _viewSettings_TagCount += 1;
-
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Tag = AROS_LONG2LE(MUIA_IconList_DragImageTransparent);
-                        _viewSettings_TagList[_viewSettings_TagCount].ti_Data = AROS_LONG2LE(GetTag32Data(MUIA_IconList_DragImageTransparent, FALSE, _viewSettings_Node->wpedbo_Options));
-                        _viewSettings_TagCount += 1;
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_Icon_HorizontalSpacing, ILC_ICON_HORIZONTALMARGIN_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_Icon_VerticalSpacing, ILC_ICON_VERTICALMARGIN_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_Icon_ImageSpacing, ILC_ICONLABEL_IMAGEMARGIN_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_HorizontalPadding, ILC_ICONLABEL_HORIZONTALTEXTMARGIN_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_VerticalPadding, ILC_ICONLABEL_VERTICALTEXTMARGIN_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_BorderWidth, ILC_ICONLABEL_BORDERWIDTH_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_BorderHeight, ILC_ICONLABEL_BORDERHEIGHT_DEFAULT);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_SortFlags, MUIV_IconList_Sort_ByName);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_DragImageTransparent, FALSE);
                     }
                     _viewSettings_ChunkSize += (_viewSettings_TagCount * sizeof(struct TagItem32));
 
