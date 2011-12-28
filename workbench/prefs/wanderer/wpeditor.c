@@ -63,6 +63,9 @@
 #define WPD_ICONSORTMODE_BYDATE 1
 #define WPD_ICONSORTMODE_BYSIZE 2
 
+#define WPD_ICONVIEWMODE_ALL    0
+#define WPD_ICONVIEWMODE_ICONS  1
+
 struct TagItem32 {
     ULONG ti_Tag;
     ULONG ti_Data;
@@ -126,6 +129,8 @@ struct WPEditor_AdvancedBackgroundWindow_DATA
                         *wpedabwd_Window_Icon_SortModeLabel,
                         *wpedabwd_Window_Icon_AutoSort,
                         *wpedabwd_Window_Icon_DragTransparent,
+                        *wpedabwd_Window_Icon_ViewMode,
+                        *wpedabwd_Window_Icon_ViewModeLabel,
 #if defined(DEBUG_MULTLINE)
                         *wpedabwd_Window_IconLabel_TextMultiLine, 
                         *wpedabwd_Window_IconLabel_MultiLineonFocus, 
@@ -186,6 +191,7 @@ static STRPTR        _wpeditor_intern_IconTextRenderModeNames[iconlist_LabelRend
 static ULONG         _wpeditor_intern_IconTextRenderModeIDs[iconlist_LabelRenderModesCount + 1];
 
 static STRPTR        _wpeditor_intern_IconSortModeNames[4];
+static STRPTR        _wpeditor_intern_IconViewModeNames[3];
 
 static STRPTR        _wpeditor_intern_MainPageNames[4];
 static STRPTR        _wpeditor_intern_AdvancedPageNames[4];
@@ -331,6 +337,9 @@ AROS_UFH3(
             {
                 ULONG current_SortFlags = GetTag32Data(MUIA_IconList_SortFlags,
                         (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName), _viewSettings_Node->wpedbo_Options);
+                ULONG current_ViewFlags = GetTag32Data(MUIA_IconList_DisplayFlags,
+                        ICONLIST_DISP_SHOWINFO, _viewSettings_Node->wpedbo_Options);
+
 
                 D(bug("[WPEditor] WandererPrefs_Hook_OpenAdvancedOptionsFunc: Found ViewSettings chunk for node we are editing\n"));
                 if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe) == TRUE)
@@ -419,6 +428,11 @@ AROS_UFH3(
                     SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortMode, MUIA_Cycle_Active, 2);
 
                 SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_DragTransparent, MUIA_Selected, GetTag32Data(MUIA_IconList_DragImageTransparent, FALSE, _viewSettings_Current->wpedbo_Options));
+
+                if (current_ViewFlags & ICONLIST_DISP_SHOWINFO)
+                    SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewMode, MUIA_Cycle_Active, WPD_ICONVIEWMODE_ICONS);
+                else
+                    SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewMode, MUIA_Cycle_Active, WPD_ICONVIEWMODE_ALL);
             }
         }
 
@@ -579,6 +593,20 @@ D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconWindo
         }
 
         SETCURRENTVIEWSETTINGSTAG(MUIA_IconList_DragImageTransparent, data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_DragTransparent, MUIA_Selected);
+
+        if (XGET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewMode, MUIA_Cycle_Active) == WPD_ICONVIEWMODE_ICONS)
+            success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_DisplayFlags, ICONLIST_DISP_SHOWINFO);
+        else
+            success = SetViewSettingTag32(data->wped_ViewSettings_Current->wpedbo_Options, MUIA_IconList_DisplayFlags, 0);
+        if (success == FALSE)
+        {
+            D(bug("[WPEditor] WandererPrefs_Hook_CloseAdvancedOptionsFunc: No MUIA_IconList_DisplayFlags TAG - Adding ..\n"));
+            /* TODO: Allocate extra storage for our tags.. */
+        }
+        else if (success == TRUE)
+        {
+            settings_changed = TRUE;
+        }
 
         if (settings_changed) SET(self, MUIA_PrefsEditor_Changed, TRUE);
     }
@@ -784,6 +812,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: DrawMode %d = '%s'\n", newB
         SETNEVSOPTION(MUIA_IconList_LabelText_Mode, ICON_TEXTMODE_OUTLINE);
         SETNEVSOPTION(MUIA_IconList_SortFlags, (MUIV_IconList_Sort_AutoSort | MUIV_IconList_Sort_ByName));
         SETNEVSOPTION(MUIA_IconList_DragImageTransparent, FALSE);
+        SETNEVSOPTION(MUIA_IconList_DisplayFlags, ICONLIST_DISP_SHOWINFO);
         SETNEVSOPTION(MUIA_IconList_LabelText_MaxLineLen, ILC_ICONLABEL_MAXLINELEN_DEFAULT);
 
 #if defined(DEBUG_MULTLINE)
@@ -881,11 +910,15 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p\n", new_Rende
         {
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortModeLabel, MUIA_ShowMe, FALSE);
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortMode, MUIA_ShowMe, FALSE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewModeLabel, MUIA_ShowMe, FALSE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewMode, MUIA_ShowMe, FALSE);
         }
         else
         {
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortModeLabel, MUIA_ShowMe, TRUE);
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_SortMode, MUIA_ShowMe, TRUE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewModeLabel, MUIA_ShowMe, TRUE);
+            SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_Icon_ViewMode, MUIA_ShowMe, TRUE);
         }
     }
     else
@@ -1032,6 +1065,8 @@ Object *WPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *_WP_AdvancedView_Icon_SortModeLabelObj = NULL,
             *_WP_AdvancedView_Icon_DragTransparentObj = NULL,
             *_WP_AdvancedView_Icon_AutoSortObj = NULL,
+            *_WP_AdvancedView_Icon_ViewModeObj = NULL,
+            *_WP_AdvancedView_Icon_ViewModeLabelObj = NULL,
             *_WP_AdvancedView_IconLabel_LabelFontObj = NULL,
             *_WP_AdvancedView_IconLabel_InfoFontObj = NULL,
             *_WP_AdvancedView_IconLabel_MaxLineLenObj = NULL,
@@ -1373,6 +1408,12 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     _WP_AdvancedView_Icon_SortModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_IconSortModeNames);
 
     _WP_AdvancedView_Icon_SortModeLabelObj = Label1(_(MSG_DEFAULT_ICONSORTMODE));
+
+    _wpeditor_intern_IconViewModeNames[WPD_ICONVIEWMODE_ALL] = (STRPTR)_(MSG_ICONVIEWMODE_ALL);
+    _wpeditor_intern_IconViewModeNames[WPD_ICONVIEWMODE_ICONS] = (STRPTR)_(MSG_ICONVIEWMODE_ICONS);
+    _WP_AdvancedView_Icon_ViewModeObj = MUI_MakeObject(MUIO_Cycle, NULL, _wpeditor_intern_IconViewModeNames);
+
+    _WP_AdvancedView_Icon_ViewModeLabelObj = Label1(_(MSG_DEFAULT_ICONVIEWMODE));
     /*END Icon List Mode Cycle button--------------------*/
 
     _WP_AdvancedView_Icon_AutoSortObj = MUI_MakeObject(MUIO_Checkmark, NULL);
@@ -1509,6 +1550,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW()\n"));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_AutoSortObj );
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, Label1(_(MSG_ICON_DRAG_TRANSPARENT)));
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_DragTransparentObj);
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ViewModeLabelObj);
+    DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER, _WP_AdvancedView_Icon_ViewModeObj);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
     DoMethod(_WP_AdvancedView_IconRenderGrpObj, OM_ADDMEMBER,HVSpace);
 
@@ -1594,6 +1637,8 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Prefs Object (self) @ 0x%p\n", self));
             advancedView_data->wpedabwd_Window_Icon_SortModeLabel             = _WP_AdvancedView_Icon_SortModeLabelObj;
             advancedView_data->wpedabwd_Window_Icon_AutoSort                  = _WP_AdvancedView_Icon_AutoSortObj;
             advancedView_data->wpedabwd_Window_Icon_DragTransparent           = _WP_AdvancedView_Icon_DragTransparentObj;
+            advancedView_data->wpedabwd_Window_Icon_ViewMode                  = _WP_AdvancedView_Icon_ViewModeObj;
+            advancedView_data->wpedabwd_Window_Icon_ViewModeLabel             = _WP_AdvancedView_Icon_ViewModeLabelObj;
 
             advancedView_data->wpedabwd_Window_Icon_HorSpacing                = _WP_AdvancedView_Icon_HorSpacingObj;
             advancedView_data->wpedabwd_Window_Icon_VertSpacing               = _WP_AdvancedView_Icon_VertSpacingObj;
@@ -2536,6 +2581,7 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Write 'ViewSettings' Stri
                         SAVEVIEWSETTINGSTAG(MUIA_IconList_LabelText_BorderHeight, ILC_ICONLABEL_BORDERHEIGHT_DEFAULT);
                         SAVEVIEWSETTINGSTAG(MUIA_IconList_SortFlags, MUIV_IconList_Sort_ByName);
                         SAVEVIEWSETTINGSTAG(MUIA_IconList_DragImageTransparent, FALSE);
+                        SAVEVIEWSETTINGSTAG(MUIA_IconList_DisplayFlags, ICONLIST_DISP_SHOWINFO);
                     }
                     _viewSettings_ChunkSize += (_viewSettings_TagCount * sizeof(struct TagItem32));
 

@@ -221,3 +221,12 @@ Autosorting enabled
 MSG_ICON_DRAG_TRANSPARENT (//)
 Use transparency when draging icons
 ;
+MSG_DEFAULT_ICONVIEWMODE (//)
+Default view mode
+;
+MSG_ICONVIEWMODE_ALL (//)
+All files
+;
+MSG_ICONVIEWMODE_ICONS (//)
+Icons only
+;
