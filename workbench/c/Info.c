@@ -108,6 +108,7 @@
 #define ID_CDFS_DISK       (0x43444653L) /* CDFS  - AmiCDFS disk */
 #define ID_CACHECDFS_DISK  (0x43443031L)
 #define ID_ASIMCDFS_DISK   (0x662dabacL)
+#define ID_PFS_DISK        (0x50465301L) /* PFS */
 #define ID_PFS2_DISK       (0x50465302L)
 #define ID_PFS2_SCSI_DISK  (0x50445300L)
 #define ID_PFS2_muFS_DISK  (0x6d755046L)
@@ -204,6 +205,7 @@ struct DiskTypeList dtl[] =
     { ID_FAT32_DISK,       "FAT32" },
     { ID_SFS_BE_DISK,      "SFS" },
     { ID_SFS_LE_DISK,      "sfs" },
+    { ID_PFS_DISK,         "PFS" },
     { 0L, 0L }
 };
 
