@@ -1,0 +1,10 @@
+Name=KickROM
+Version=$VER KickROM 1.0 (03.12.2011)
+BaseName=binary
+Pattern=#?
+Mask=ANY ANY 0x4E 0xF9
+GroupID=syst
+ID=exec
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
+
