@@ -5,7 +5,7 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -472,7 +472,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
     {
         D(bug("[DiskInfo] %s: FS notification received\n", __PRETTY_FUNCTION__));
 
-        if ((fsdevlock = Lock(data->dki_DOSDev, SHARED_LOCK)) != BNULL)
+        if ((fsdevlock = Lock((STRPTR)XGET(data->dki_VolumeName, MUIA_Text_Contents), SHARED_LOCK)) != BNULL)
         {
         /* Extract volume info from InfoData */
         if (Info(fsdevlock, &id) == DOSTRUE)
@@ -484,7 +484,7 @@ IPTR DiskInfo__MUIM_DiskInfo_HandleNotify
             TEXT                        free[64];
             //TEXT                        blocksize[16];
 
-            D(bug("[DiskInfo] %s: Updating Window from DOS Device '%s'\n", __PRETTY_FUNCTION__, data->dki_DOSDev));
+            D(bug("[DiskInfo] %s: Updating Window from DOS Device '%s'\n", __PRETTY_FUNCTION__, (STRPTR)XGET(data->dki_VolumeName, MUIA_Text_Contents)));
 
             //FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
             percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
