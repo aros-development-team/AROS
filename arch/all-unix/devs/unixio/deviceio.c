@@ -1,80 +1,11 @@
 #include <hidd/unixio.h>
 #include <hidd/unixio_inline.h>
 #include <proto/exec.h>
+#include <proto/hostlib.h>
 
 #include "unixio_device.h"
 
 #include <signal.h>
-
-static inline void SetupActive(struct Queue *q)
-{
-    q->Data   = q->Active->io_Data;
-    q->Length = (q->Active->io_Length == -1) ? strlen(q->Data) : q->Active->io_Length;
-}
-
-/* Proceed to the next pending request, if any */
-static inline void Next(struct Queue *q)
-{
-    q->Active = REMHEAD(&q->Pending);
-    if (q->Active)
-        SetupActive(q);
-}
-
-static void HandleIO(struct Queue *q, int len, int err)
-{
-    BOOL done = FALSE;
-
-    if (len == -1)
-    {
-        done = data->ErrorCallback(q->Active, err);
-    }
-    else
-    {
-        q->Active->io_Actual += len;
-        q->Data              += len;
-        q->Length            -= len;
-
-        done == (q->Length == 0);
-    }
-
-    if (done)
-    {
-        /* Active request is done, reply it */
-        q->Active->io_Error = 0;
-        ReplyMsg(&q->Active->io_Message);
-
-        /* Proceed to the next pending request, if any */
-        Next(q);
-    }
-}
-
-static void Push(struct Queue *q, struct IoStdReq *req)
-{
-    /*
-     * As I am returning immediately I will tell that this
-     * could not be done QUICK   
-     */
-    req->io_Flags &= ~IOF_QUICK;
-    req->io_Actual = 0;
-
-    Disable();
-
-    if (q->Active)
-    {
-        /* There's already an active request. Add to the list of pending ones. */
-        ADDTAIL(&q->Pending, req);
-    }
-    else
-    {
-        q->Active = req;
-        SetupActive(q);
-
-        UnixDevice->iface->raise(SIGIO);
-        AROS_HOST_BARRIER
-    }
-
-    Enable();
-}
 
 static void Flush(struct IoStdReq *req)
 {
@@ -82,17 +13,32 @@ static void Flush(struct IoStdReq *req)
 
     for (; req->io_Message.mn_Node.ln_Succ; req = next)
     {
-	next = (struct IoStdReq *)req->io_Message.mn_Node.ln_Succ
+        next = (struct IoStdReq *)req->io_Message.mn_Node.ln_Succ
 
         ireq->io_Error = IOERR_ABORTED;
         ReplyMsg(&req->io_Message);    
     }
 }   
 
+static BOOL is_eof(char c, struct UnitData *unit)
+{
+    for (i = 0; i < 8; i++)
+    {
+        if (c == unit->termarray[i])
+            return TRUE;
+        else if (c > unit->termarray[i])
+        {
+            /* Speed optimization: the array is descending-ordered */
+            return FALSE;
+        }
+    }
+    return FALSE;
+}
+
 void unit_io(int fd, int mode, struct UnitData *data)
 {
     struct IOStdReq *req;
-    int err;
+    int err, len;
 
     if (data->stopped)
     {
@@ -103,9 +49,18 @@ void unit_io(int fd, int mode, struct UnitData *data)
     if (mode & vHidd_UnixIO_Read)
     {
         /* Read as much as we can */
-        while (data->readQueue.Active)
+        while ((req = GetHead(&data->readQueue)))
         {
-            len = Hidd_UnixIO_ReadFile(data->unixio, fd, data->readQueue.Data, data->readQueue.Length, &err);
+            char *ptr = req->io_Data + req->io_Actual;
+            BOOL done = FALSE;
+            unsigned int readLength;
+
+            if ((readLength == -1) || data->eofmode))
+                readLength = 1;
+            else
+                readLength = req->io_Length - req->io_Actual;
+
+            len = Hidd_UnixIO_ReadFile(data->unixio, data->fd, ptr, readLength, &err);
 
             if ((len == -1) && (err == EWOULDBLOCK))
             {
@@ -113,16 +68,61 @@ void unit_io(int fd, int mode, struct UnitData *data)
                 break;
             }
 
-            HandleIO(&data->readQueue, len, err);
+            if (len == -1)
+            {
+                done = data->ErrorCallback(req, err);
+            }
+            else
+            {
+                req->io_Actual += len;
+
+                if ((req->io_Length == -1) && (*ptr == 0))
+                    done = TRUE;
+                else if (data->eofmode && is_eof(*ptr, data))
+                    done = TRUE;
+                else if (req->io_Actual == req->io_Length)
+                    done = TRUE;
+            }
+
+            if (done)
+            {
+                /* The request is done, reply it */
+                REMOVE(req);
+                req->io_Error = 0;
+                ReplyMsg(&req->io_Message);
+            }
         }
     }
 
     if (mode & vHidd_UnixIO_Write)
     {
         /* Write as much as we can */
-        while (data->writeQueue.Active)
+        while ((req = GetHead(&data->writeQueue)))
         {
-            len = Hidd_UnixIO_WriteFile(data->unixio, fd, data->writeQueue.Data, data->writeQueue.Length, &err);
+            BOOL done = FALSE;
+
+            if (data->writeLen == 0)
+            {
+                /* This request is being served for the first time, length is not determined yet */
+
+                data->writeLen = (req->io_Length == -1) ? strlen(req->io_Data) : req->io_Length;
+                if (data->eofmode)
+                {
+                    char *ptr = req->io_Data;
+                    unsigned int i;
+
+                    for (i = 0; i < data->writeLen; i++)
+                    {
+                        if (is_eof(ptr[i], data)
+                        {
+                            data->wrireLen = i;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            len = Hidd_UnixIO_WriteFile(data->unixio, data->fd, req->io_Data + req->io_Actual, data->writeLength, &err);
 
             if ((len == -1) && (err == EWOULDBLOCK))
             {
@@ -130,19 +130,56 @@ void unit_io(int fd, int mode, struct UnitData *data)
                 break;
             }
 
-            HandleIO(&data->writeQueue, len, err);
+            if (len == -1)
+            {
+                done = data->ErrorCallback(req, err);
+            }
+            else
+            {
+                req->io_Actual += len;
+                writeLength    -= len;
+
+                done == (writeLength == 0);
+            }
+
+            if (done)
+            {
+                /* Active request is done, reply it */
+                REMOVE(req);
+                req->io_Error = 0;
+                ReplyMsg(&req->io_Message);
+            }
         }
     }
 }
 
+struct IOStdReq *GetInactive(struct MinList *l)
+{
+    struct MinNode *n = l->mlh_Head.mln_Succ;
+
+    if (n && n->mln_Succ)
+    {
+        /*
+         * The list has more than one node. 'n' points to the second one.
+         * Unlink 'n' and following nodes from the list, leave only the first node.
+         */
+        l->mlh_TailPred = l->mlh_Head;
+        l->mlh_Head->mln_Succ = &l->mlh_Tail;
+
+        return n;
+    }
+    return NULL;
+}
+
 AROS_LH1(void, beginio,
          AROS_LHA(struct IOStdReq *, ioreq, A1),
-         struct unixioDev *, UnixDevice, 5, Unixio)
+         struct UnixDevice *, unixioDev, 5, Unixio)
 {
     AROS_LIBFUNC_INIT
 
     struct UnitData *data = (struct UnitData *)ioreq->io_Unit;
     struct IoStdReq *read, *write, *activeread, *activewrite;
+    BOOL stopped;
 
     D(bug("unixio.device: beginio(0x%p)\n", ioreq));
 
@@ -152,84 +189,85 @@ AROS_LH1(void, beginio,
     switch (ioreq->io_Command)
     {
     case CMD_READ:
-        D(bug("Queuing the read request.\n"));
-        Push(&data->writeQueue, ioreq);
+        D(bug("Queuing the read request.\n"));        
+        ioreq->io_Flags &= ~IOF_QUICK;
 
+        Disable();
+        ADDTAIL(&data->readQueue, req);
+
+        /*
+         * Artificially cause SIGIO in order to recheck all fd's and start I/O on ready ones.
+         * Without this the I/O can stall. For example, some fd might go write-ready while we have
+         * nothing to write. In this case the issued SIGIO will be consumed, and there will be no
+         * other SIGIO on the same fd until we write something to it.
+         * No HostLib_Lock() here, single-threaded by Disable()
+         */
+        unixioDev->raise(SIGIO);
+        AROS_HOST_BARRIER
+
+        Enable();
         return;
 
     case CMD_WRITE:
         D(bug("Queuing the write request.\n"));
-        Push(&data->writeQueue, ioreq);
+        ioreq->io_Flags &= ~IOF_QUICK;
 
+        Disable();
+        ADDTAIL(&data->writeQueue, req);
+
+        unixioDev->raise(SIGIO);
+        AROS_HOST_BARRIER
+
+        Enable();
         return;
 
     case CMD_RESET:
-        /*
-         * All IORequests, including the active ones, are aborted.
-         * The same as CMD_FLUSH (see below) plus handles Active requests.
-         */
+        /* All IORequests, including the active ones, are aborted */
         Disable();
 
-        read  = (struct IOStdReq *)data->readQueue.Pending.mlh_Head;
-        write = (struct IOStdReq *)data->writeQueue.Pending.mlh_Head;
-        NEWLIST(&data->readQueue.Pending);
-        NEWLIST(&data->writeQueue.Pending);        
+         /*
+          * An optimization trick: in order not to hold Disable()'d state for a while,
+          * we just detach chains of requests from queue lists and reinitialize
+          * lists. After this we can Enable(), then reply all requests in our chains.
+          */
+        read  = (struct IOStdReq *)data->readQueue.mlh_Head;
+        write = (struct IOStdReq *)data->writeQueue.mlh_Head;
+        NEWLIST(&data->readQueue);
+        NEWLIST(&data->writeQueue);
+        data->writeLength = 0;
 
-        activeread  = data->readQueue.Active;
-        activewrite = data->writeQueue.Active;
-        data->readQueue.Active  = NULL;
-        data->writeQueue.Active = NULL;
-        
         Enable();
-
-        if (activeread)
-        {
-            activeread->io_Error = IOERR_ABORTED;
-            ReplyMsg(&activeread->io_Message);
-        }
-        if (activewrite)
-        {
-            activewrite->io_Error = IOERR_ABORTED;
-            ReplyMsg(&activewrite->io_Message);
-        }
 
         Flush(read);
         Flush(write);
-
         ioreq->io_Error = 0;
         break;
 
     case CMD_FLUSH:
         /* 
-         * Clear all queued IO request for the given parallel unit except
-         * for the active ones.
-         * An optimization trick: in order not to hold Disable()d state for a while,
-         * we just detach chains of pending requests from queue's lists and reinitialize
-         * lists. After this we can Enable(), then reply all requests in our chains.
+         * Clear all queued IO request for the given unit except for the active ones.
+         * Techniques are the same as in CMD_RESET, just don't touch writeLength.
          */
         Disable();
 
-        read  = (struct IOStdReq *)data->readQueue.Pending.mlh_Head;
-        write = (struct IOStdReq *)data->writeQueue.Pending.mlh_Head;
-
-        NEWLIST(&data->readQueue.Pending);
-        NEWLIST(&data->writeQueue.Pending);
+        read = GetInactive(&data->readQueue);
+        write = GetInactive(&data->writeQueue);
 
         Enable();
 
         Flush(read);
         Flush(write);
-
         ioreq->io_Error = 0;
         break;
 
     case CMD_START:
         data->stopped = FALSE;
 
-        if (data->readQueue.Active || data->writeQueue.Active)
+        if (!(IsListEmpty(&data->readQueue) && IsListEmpty(&data->writeQueue)))
         {
-            UnixDevice->iface->raise(SIGIO);
-            AROS_HOST_BARRIER
+            /* Force-start I/O if there's something queued */
+            unixioDev->raise(SIGIO);
+            AROS_HOST_BARRIER;
         }
 
         ioreq->io_Error = 0;
@@ -249,7 +287,7 @@ AROS_LH1(void, beginio,
      * The request could be completed immediately.
      * Check if I have to reply the message
      */
-    if (0 == (ioreq->IOPar.io_Flags & IOF_QUICK))
+    if (!(ioreq->io_Flags & IOF_QUICK))
         ReplyMsg(&ioreq->IOPar.io_Message);
 
     D(bug("id: Return from BeginIO()\n"));
@@ -261,20 +299,20 @@ AROS_LH1(void, beginio,
 
 AROS_LH1(LONG, abortio,
          AROS_LHA(struct IOStdReq *, ioreq, A1),
-         struct unixioDev *, UnixDevice, 6, Unixio)
+         struct UnixDevice *, unixioDev, 6, Unixio)
 {
     AROS_LIBFUNC_INIT
 
     struct UnitData *data = (struct UnitData *)ioreq->io_Unit;
 
     Disable();
-    
-    if (data->readQueue.Active == ioreq)
-    	Next(&data->readQueue);
-    else if (data->writeQueue.Active == ioreq)
-    	Next(&data->writeQueue);
-    else
-    	REMOVE(ioreq);
+
+    if (data->writeQueue.mlh_Head == (struct MinNode *)ioreq)
+    {
+        /* Reset writeLength to zero so it's re-calculated when the next request is picked up */
+        data->writeLength = 0;
+    }
+    REMOVE(ioreq);
 
     Enable();
 
