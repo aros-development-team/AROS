@@ -56,10 +56,10 @@ LONG main()
                 
                 if(choice == 'y' || choice == 'Y')
                 {
-                    Printf("a");
+                    //Printf("a");
                     if(Inhibit(arglist.device,DOSTRUE))
                     {
-                    Printf("b");
+                    //Printf("b");
                         {
                             struct TagItem tags[5];
                             struct TagItem *tag=tags;
