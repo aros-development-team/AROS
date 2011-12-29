@@ -179,7 +179,7 @@ int main(void)
     {
         if (OpenDevice(AROS_BSTR_ADDR(fssm->fssm_Device), fssm->fssm_Unit,
             (APTR)request, 0) != 0)
-            error = ERROR_UNKNOWN;
+            error = IoErr();
     }
 
     if (error == 0)
@@ -207,7 +207,7 @@ int main(void)
         else
         {
             if (request->io_Error != 0)
-                error = ERROR_UNKNOWN;
+                error = IoErr();
         }
     }
 
