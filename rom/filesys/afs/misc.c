@@ -262,6 +262,11 @@ struct DateStamp ds;
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
 	if (blockbuffer == NULL)
 		return DOSFALSE;
+    if (strlen(name) > MAX_NAME_LENGTH)
+    {
+        *error = ERROR_LINE_TOO_LONG;
+        return DOSFALSE;
+    }
 	StrCpyToBstr
 		(
 			name,
