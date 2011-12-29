@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.2 (29.12.2011)
+## version $VER: About.catalog 1.2 (29.12.2011)
 ## language deutsch
 ## codeset 0
 ;
@@ -141,3 +141,4 @@ Datatypes
 ;
 MSG_SECTION_TESTING
 Testen
+; Testing
