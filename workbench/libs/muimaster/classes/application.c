@@ -19,6 +19,10 @@
 
 #include <clib/alib_protos.h>
 #include <libraries/commodities.h>
+#include <rexx/errors.h>
+#include <rexx/storage.h>
+#include <rexx/rxslib.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -26,8 +30,9 @@
 #include <proto/commodities.h>
 #include <proto/muimaster.h>
 #include <proto/iffparse.h>
+#include <proto/rexxsyslib.h>
 
-//#define MYDEBUG 1 */
+#define MYDEBUG 1
 #include "debug.h"
 #include "prefs.h"
 
@@ -88,6 +93,11 @@ struct MUI_ApplicationData
     LONG winposused;       //dont add other vars before windowpos all is save together
     struct windowpos        winpos[MAXWINS];
     struct MsgPort          *app_RexxPort;
+    struct RexxMsg          *app_RexxMsg;
+    struct Hook             *app_RexxHook;
+    struct MUI_Command      *app_Commands;
+    STRPTR                  app_RexxString;
+    BOOL                    app_UseRexx;
 
 };
 
@@ -137,7 +147,7 @@ MUIA_Application_SingleTask [I..]         done
 MUIA_Application_Sleep [.S.]              todo
 MUIA_Application_Title [I.G]              done
 MUIA_Application_UseCommodities [I..]     done
-MUIA_Application_UseRexx [I..]            done ? needs Arexx
+MUIA_Application_UseRexx [I..]            done
 MUIA_Application_Version [I.G]            done
 MUIA_Application_Window [I..]             done
 MUIA_Application_WindowList [..G]         done
@@ -152,7 +162,7 @@ MUIM_Application_GetMenuState             OBSOLETE
 MUIM_Application_Input                    OBSOLETE
 MUIM_Application_InputBuffered            todo
 MUIM_Application_Load
-MUIM_Application_NewInput                 todo
+MUIM_Application_NewInput                 done
 MUIM_Application_OpenConfigWindow
 MUIM_Application_PushMethod
 MUIM_Application_RemInputHandler          done ?
@@ -299,7 +309,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 {
     struct MUI_ApplicationData *data;
     struct TagItem        *tags,*tag;
-    BOOL   bad_childs = FALSE , needrexx = TRUE;
+    BOOL   bad_childs = FALSE ;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
@@ -508,9 +518,19 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
                     }
                 }
                 break;
+
             case MUIA_Application_UseRexx:
-                needrexx = tag->ti_Data ? TRUE : FALSE;
+                data->app_UseRexx = tag->ti_Data ? TRUE: FALSE;
                 break;
+
+            case MUIA_Application_Commands:
+                data->app_Commands = (struct MUI_Command *)tag->ti_Data;
+                break;
+
+            case MUIA_Application_RexxHook:
+                data->app_RexxHook = (struct Hook *)tag->ti_Data;
+                break;
+
         }
     }
 
@@ -608,7 +628,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
         }
     }
 
-    if (needrexx)
+    if (data->app_UseRexx)
     {
         data->app_RexxPort = CreateMsgPort();
         if (data->app_RexxPort)
@@ -616,6 +636,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
             data->app_RexxPort->mp_Node.ln_Name = StrDup(data->app_Base);
             if (data->app_RexxPort->mp_Node.ln_Name != NULL)
             {
+                D(bug("[MUI] %s is using REXX!\n",data->app_RexxPort->mp_Node.ln_Name));
                 char *i;
                 for (i = data->app_RexxPort->mp_Node.ln_Name; *i != '\0'; i++)
                 {
@@ -755,7 +776,7 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_RexxPort)
     {
-                struct Message *msg;
+        struct Message *msg;
         while((msg = GetMsg(data->app_RexxPort)))
         {
             ReplyMsg(msg);
@@ -949,6 +970,17 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                 }
                 break;
 
+            case MUIA_Application_Commands:
+                data->app_Commands = (struct MUI_Command *)tag->ti_Data;
+                break;
+
+            case MUIA_Application_RexxString:
+                data->app_RexxString = (STRPTR)tag->ti_Data;
+                break;
+
+            case MUIA_Application_RexxHook:
+                data->app_RexxHook = (struct Hook *)tag->ti_Data;
+                break;
         }
     }
 
@@ -1102,6 +1134,18 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
         case MUIA_Application_Active:
             STORE = data->app_Active;
             return TRUE;
+
+        case MUIA_Application_Commands:
+            STORE = (IPTR)data->app_Commands;
+            return TRUE;
+
+        case MUIA_Application_RexxMsg:
+            STORE = (IPTR)data->app_RexxMsg;
+            return TRUE;
+
+        case MUIA_Application_RexxHook:
+            STORE = (IPTR)data->app_RexxHook;
+            return TRUE;
     }
 
     /* our handler didn't understand the attribute, we simply pass
@@ -1254,6 +1298,9 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
     if (data->app_Broker)
         signalmask |= (1L << data->app_BrokerPort->mp_SigBit);
 
+    if (data->app_RexxPort)
+        signalmask |= (1L << data->app_RexxPort->mp_SigBit);
+
     if (signal == 0)
     {
         /* Stupid app which (always) passes 0 in signals. It's impossible to
@@ -1346,6 +1393,17 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
                 }
 
                 ReplyMsg((struct Message *)msg);
+            }
+        }
+
+        if (data->app_RexxPort && (signal & (1L << data->app_RexxPort->mp_SigBit)))
+        {
+
+            D(bug("[MUI] Got Rexx message!\n"));
+            struct Message *msg;
+            while((msg = GetMsg(data->app_RexxPort)))
+            {
+                ReplyMsg(msg);
             }
         }
 
