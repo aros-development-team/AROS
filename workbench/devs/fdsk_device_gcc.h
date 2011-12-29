@@ -15,24 +15,24 @@
 
 struct fdskbase
 {
-    struct Device 		device;
-    struct SignalSemaphore 	sigsem;
-    struct MsgPort 		port;
-    struct MinList 		units;
+    struct Device           device;
+    struct SignalSemaphore  sigsem;
+    struct MsgPort      port;
+    struct MinList      units;
 };
 
 struct unit
 {
-    struct Message 		msg;
-    struct fdskbase 		*fdskbase;
-    STRPTR                      filename;
-    ULONG 			unitnum;
-    ULONG			usecount;
-    struct MsgPort 		port;
-    BPTR 			file;
-    BOOL			writable;
-    ULONG			changecount;
-    struct MinList 		changeints;
+    struct Message      msg;
+    struct fdskbase     *fdskbase;
+    STRPTR              filename;
+    ULONG           unitnum;
+    ULONG           usecount;
+    struct MsgPort  port;
+    BPTR            file;
+    BOOL            writable;
+    ULONG           changecount;
+    struct MinList  changeints;
 };
 
 #endif
