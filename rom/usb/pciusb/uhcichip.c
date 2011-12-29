@@ -4,16 +4,6 @@
 */
 
 
-/*
- * *** PLEASE DO NOT DELINT THIS FILE !!! ***
- *
- * Warnings on 64-bit systems show where physical pointers are assigned.
- * In UHCI these pointers *HAVE* to be 32-bit wide. Simple replacement of ULONG with
- * IPTR *WILL NOT* fix this code, but hide places where fixing is needed.
- * In order to be 64-bit safe, bounce buffers need to be implemented. See OHCI code.
- *	I can't do it myself because i don't have UHCI hardware on a 64-bit system - sonic
- */
-
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <hidd/pci.h>
@@ -221,6 +211,7 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
             fixsetupterm = FALSE;
             if(inspect)
             {
+                APTR data = &((UBYTE *)ioreq->iouh_Data)[ioreq->iouh_Actual];
                 shortpkt = FALSE;
                 if(inspect < 2) // if all went okay, don't traverse list, assume all bytes successfully transferred
                 {
@@ -330,11 +321,11 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                         KPRINTF(10, ("Short packet: %ld < %ld\n", actual, ioreq->iouh_Length));
                         ioreq->iouh_Req.io_Error = UHIOERR_RUNTPACKET;
                     }
-                    ioreq->iouh_Actual += actual;
                 } else {
                     KPRINTF(10, ("all %ld bytes transferred\n", uqh->uqh_Actual));
-                    ioreq->iouh_Actual += uqh->uqh_Actual;
+                    actual = uqh->uqh_Actual;
                 }
+                ioreq->iouh_Actual += actual;
                 // due to the short packet, the terminal of a setup packet has not been sent. Please do so.
                 if(shortpkt && (ioreq->iouh_Req.io_Command == UHCMD_CONTROLXFER))
                 {
@@ -347,6 +338,10 @@ void uhciHandleFinishedTDs(struct PCIController *hc) {
                 }
                 unit->hu_DevBusyReq[devadrep] = NULL;
                 Remove(&ioreq->iouh_Req.io_Message.mn_Node);
+                if (uqh->uqh_DataBuffer)
+                    usbReleaseBuffer(uqh->uqh_DataBuffer, data, actual, ioreq->iouh_Dir);
+                if (uqh->uqh_SetupBuffer)
+                    usbReleaseBuffer(uqh->uqh_SetupBuffer, &ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
                 uhciFreeQContext(hc, uqh);
                 if(ioreq->iouh_Req.io_Command == UHCMD_INTXFER)
                 {
@@ -484,28 +479,31 @@ void uhciScheduleCtrlTDs(struct PCIController *hc) {
             cont = FALSE;
             uqh->uqh_FirstTD = setuputd;
             uqh->uqh_Element = setuputd->utd_Self; // start of queue
+            uqh->uqh_SetupBuffer = usbGetBuffer(&ioreq->iouh_SetupData, sizeof(ioreq->iouh_SetupData), (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? UHDIR_IN : UHDIR_OUT);
             WRITEMEM32_LE(&setuputd->utd_CtrlStatus, ctrlstatus);
             WRITEMEM32_LE(&setuputd->utd_Token, (PID_SETUP<<UTTS_PID)|token|(7<<UTTS_TRANSLENGTH)|UTTF_DATA0);
-            WRITEMEM32_LE(&setuputd->utd_BufferPtr, (ULONG) pciGetPhysical(hc, &ioreq->iouh_SetupData));
+            WRITEMEM32_LE(&setuputd->utd_BufferPtr, (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_SetupBuffer));
         }
 
         token |= (ioreq->iouh_SetupData.bmRequestType & URTF_IN) ? PID_IN : PID_OUT;
         predutd = setuputd;
         actual = ioreq->iouh_Actual;
+
         if(ioreq->iouh_Length - actual)
         {
             ctrlstatus |= UTCF_SHORTPACKET;
             if(cont)
             {
-                phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
                 if(!unit->hu_DevDataToggle[devadrep])
                 {
                     // continue with data toggle 0
                     token |= UTTF_DATA1;
                 }
             } else {
-                phyaddr = (ULONG) pciGetPhysical(hc, ioreq->iouh_Data);
+                ioreq->iouh_Actual=0;
             }
+            uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+            phyaddr = (ULONG)(IPTR)pciGetPhysical(hc, uqh->uqh_DataBuffer);
             do
             {
                 datautd = uhciAllocTD(hc);
@@ -676,7 +674,8 @@ void uhciScheduleIntTDs(struct PCIController *hc) {
         token |= (ioreq->iouh_Dir == UHDIR_IN) ? PID_IN : PID_OUT;
         predutd = NULL;
         actual = ioreq->iouh_Actual;
-        phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
+        uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+        phyaddr = (ULONG) (IPTR) pciGetPhysical(hc, uqh->uqh_DataBuffer);
         if(unit->hu_DevDataToggle[devadrep])
         {
             // continue with data toggle 1
@@ -825,7 +824,10 @@ void uhciScheduleBulkTDs(struct PCIController *hc) {
         token |= (ioreq->iouh_Dir == UHDIR_IN) ? PID_IN : PID_OUT;
         predutd = NULL;
         actual = ioreq->iouh_Actual;
-        phyaddr = (ULONG) pciGetPhysical(hc, &(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]));
+
+        // Get a MEMF_31BIT bounce buffer
+        uqh->uqh_DataBuffer = usbGetBuffer(&(((UBYTE *) ioreq->iouh_Data)[ioreq->iouh_Actual]), ioreq->iouh_Length - actual, ioreq->iouh_Dir);
+        phyaddr = (IPTR)pciGetPhysical(hc, uqh->uqh_DataBuffer);
         if(unit->hu_DevDataToggle[devadrep])
         {
             // continue with data toggle 1
@@ -850,12 +852,11 @@ void uhciScheduleBulkTDs(struct PCIController *hc) {
                 //utd->utd_Pred = NULL;
             }
             //utd->utd_QueueHead = uqh;
-            len = ioreq->iouh_Length - actual;
+            len    = ioreq->iouh_Length - actual;
             if(len > ioreq->iouh_MaxPktSize)
             {
                 len = ioreq->iouh_MaxPktSize;
             }
-
             WRITEMEM32_LE(&utd->utd_CtrlStatus, ctrlstatus);
             WRITEMEM32_LE(&utd->utd_Token, token|(((len-1) & 0x7ff)<<UTTS_TRANSLENGTH));
             WRITEMEM32_LE(&utd->utd_BufferPtr, phyaddr);
@@ -1038,45 +1039,53 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_PCIMemSize += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
 
     memptr = HIDD_PCIDriver_AllocPCIMem(hc->hc_PCIDriverObject, hc->hc_PCIMemSize);
+    /* memptr will be in the MEMF_31BIT type, therefore
+     * we know that it's *physical address* will be 32 bits or
+     * less, which is required for UHCI operation
+     */
     hc->hc_PCIMem = (APTR) memptr;
     if(memptr) {
 
         // PhysicalAddress - VirtualAdjust = VirtualAddress
         // VirtualAddress  + VirtualAdjust = PhysicalAddress
-        hc->hc_PCIVirtualAdjust = ((ULONG) pciGetPhysical(hc, memptr)) - ((ULONG) memptr);
+        hc->hc_PCIVirtualAdjust = (IPTR)pciGetPhysical(hc, memptr) - (IPTR)memptr;
         KPRINTF(10, ("VirtualAdjust 0x%08lx\n", hc->hc_PCIVirtualAdjust));
 
         // align memory
-        memptr = (UBYTE *) ((((ULONG) hc->hc_PCIMem) + UHCI_FRAMELIST_ALIGNMENT) & (~UHCI_FRAMELIST_ALIGNMENT));
+        memptr = (UBYTE *) ((((IPTR) hc->hc_PCIMem) + UHCI_FRAMELIST_ALIGNMENT) & (~UHCI_FRAMELIST_ALIGNMENT));
         hc->hc_UhciFrameList = (ULONG *) memptr;
         KPRINTF(10, ("FrameListBase 0x%08lx\n", hc->hc_UhciFrameList));
         memptr += sizeof(APTR) * UHCI_FRAMELIST_SIZE;
 
         // build up QH pool
+        // Again, all the UQHs are in the MEMF_31BIT hc_PCIMem pool,
+        // so we can safely treat their physical addresses as 32 bit pointers
         uqh = (struct UhciQH *) memptr;
         hc->hc_UhciQHPool = uqh;
         cnt = UHCI_QH_POOLSIZE - 1;
         do {
             // minimal initalization
             uqh->uqh_Succ = (struct UhciXX *) (uqh + 1);
-            WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) (&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT);
+            WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) ((IPTR)(&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT));
             uqh++;
         } while(--cnt);
         uqh->uqh_Succ = NULL;
-        WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) (&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT);
+        WRITEMEM32_LE(&uqh->uqh_Self, (ULONG) ((IPTR)(&uqh->uqh_Link) + hc->hc_PCIVirtualAdjust + UHCI_QHSELECT));
         memptr += sizeof(struct UhciQH) * UHCI_QH_POOLSIZE;
 
         // build up TD pool
+        // Again, all the UTDs are in the MEMF_31BIT hc_PCIMem pool,
+        // so we can safely treat their physical addresses as 32 bit pointers
         utd = (struct UhciTD *) memptr;
         hc->hc_UhciTDPool = utd;
         cnt = UHCI_TD_POOLSIZE - 1;
         do {
             utd->utd_Succ = (struct UhciXX *) (utd + 1);
-            WRITEMEM32_LE(&utd->utd_Self, (ULONG) (&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT);
+            WRITEMEM32_LE(&utd->utd_Self, (ULONG) ((IPTR)(&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT));
             utd++;
         } while(--cnt);
         utd->utd_Succ = NULL;
-        WRITEMEM32_LE(&utd->utd_Self, (ULONG) (&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT);
+        WRITEMEM32_LE(&utd->utd_Self, (ULONG) ((IPTR)(&utd->utd_Link) + hc->hc_PCIVirtualAdjust + UHCI_TDSELECT));
         memptr += sizeof(struct UhciTD) * UHCI_TD_POOLSIZE;
 
         // terminating QH
@@ -1198,7 +1207,10 @@ BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_FRAMECOUNT, 0);
 
-        WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG) pciGetPhysical(hc, hc->hc_UhciFrameList));
+        /* hc->hc_UhciFrameList points to a portion of hc->hc_PciMem,
+         * which we know is 32 bit
+         */
+        WRITEIO32_LE(hc->hc_RegBase, UHCI_FRAMELISTADDR, (ULONG)(IPTR)pciGetPhysical(hc, hc->hc_UhciFrameList));
 
         WRITEIO16_LE(hc->hc_RegBase, UHCI_USBSTATUS, UHIF_TIMEOUTCRC|UHIF_INTONCOMPLETE|UHIF_SHORTPACKET);
 

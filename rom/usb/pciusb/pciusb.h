@@ -138,7 +138,7 @@ struct PCIController
 
     APTR                  hc_PCIMem;
     ULONG                 hc_PCIMemSize;
-    ULONG                 hc_PCIVirtualAdjust;
+    IPTR                  hc_PCIVirtualAdjust;
     IPTR                  hc_PCIIntLine;
     HIDDT_IRQ_Handler     hc_PCIIntHandler;
     ULONG                 hc_PCIIntEnMask;

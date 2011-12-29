@@ -146,6 +146,9 @@ static inline struct UhciQH * uhciAllocQH(struct PCIController *hc)
     }
 
     hc->hc_UhciQHPool = (struct UhciQH *) uqh->uqh_Succ;
+
+    uqh->uqh_SetupBuffer = NULL;
+    uqh->uqh_DataBuffer = NULL;
     return(uqh);
 }
 /* \\\ */
