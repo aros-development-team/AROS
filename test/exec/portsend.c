@@ -9,7 +9,7 @@ int main(void)
     struct Message msg, *msg2;
     struct MsgPort *port;
     
-    port = FindPort("VARTEST");
+    port = FindPort("PORTTEST");
     if (port==NULL)
     {
 	puts("Port not found");
