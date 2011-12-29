@@ -1,0 +1,389 @@
+## version $VER: acpitool.catalog 1.1 (26.10.2011)
+## language français
+## codeset 0
+;
+;
+;
+MSG_TITLE
+ACPI Tool
+;
+MSG_WINTITLE
+ACPI Tool
+;
+MSG_DESCRIPTION
+Requètes et gestion de l'ACPI
+;
+MSG_ERROR_LOCALE
+Can't open locale
+;
+MSG_ERROR_OK
+Ok
+;
+MSG_ERROR_HEADER
+ERREUR
+;
+MSG_ERROR_NO_ACPI
+Cette machine n'a pas d'ACPI, ou le support de l'ACPI est désactivé
+;
+MSG_UNKNOWN
+Inconnu
+;
+MSG_TABLE_SIGNATURE
+Signature de table
+;
+MSG_REVISION
+Révision
+;
+MSG_OEM_ID
+Revendeur
+;
+MSG_OEM_TABLE_ID
+Table Revendeur
+;
+MSG_CREATOR_ID
+Constructeur
+;
+MSG_PM_PROFILE
+Profil système préféré
+;
+MSG_SCI_INT
+Interruption SCI
+;
+MSG_SMI_CMD
+Registre de commande SMI
+;
+MSG_ACPI_ENABLE
+Commande d'activation ACPI
+;
+MSG_ACPI_DISABLE
+Commande de désactivation ACPI
+;
+MSG_S4BIOS
+Commande d'entrée dans l'état S4BIOS
+;
+MSG_PSTATE
+Commande d'état des performances du processeur
+;Processor performance state command
+;
+MSG_FLUSH_SIZE
+Taille du cache CPU
+;CPU Cache flush size
+;
+MSG_FLUSH_STRIDE
+Pas du cache CPU
+;CPU Cache flush stride
+;
+MSG_RTC_DAY_ALARM
+Décalage de l'alarme RTC quotidienne
+;RTC alarm day offset
+;
+MSG_RTC_MON_ALARM
+Décalage de l'alarme RTC mensuelle
+;RTC alarm month offset
+;
+MSG_RTC_CENTURY
+Décalage RTC sur un siècle
+;RTC century offset
+;
+MSG_RESET_REG
+Addresse du registre de R.A.Z.
+;Reset register address
+;
+MSG_RESET_VAL
+Valeur de R.A.Z.
+;Reset value
+;
+MSG_UNKNOWN_SIZE
+Taille inconnue
+;Unknown size
+;
+MSG_AT
+à
+;at
+;
+MSG_BITS
+bits
+;bits
+;
+MSG_SPACE_FIXED
+Matériel fixe
+;Fixed hardware
+;
+MSG_SPACE_OEM
+Espace Revendeur
+;OEM space
+;
+MSG_SPACE_UNKNOWN
+Espace inconnu
+;Unknown space
+;
+MSG_FMT_UNKNOWN_SPACE
+ dans espace inconnu (%u)
+; in unknown space (%u)
+;
+MSG_FMT_KNOWN_SPACE
+ dans %s
+; in %s
+;
+MSG_YES
+Oui
+;Yes
+;
+MSG_NO
+Non
+;No
+;
+MSG_PC_FLAGS
+Drapeaux architecture PC
+;
+MSG_FF_FLAGS
+Drapeaux fonctionalités fixes
+;Fixed Feature flags
+;
+MSG_LAPIC_ADDR
+Adresse de l'APIC locale
+;Local APIC address
+;
+MSG_PCAT_COMPAT
+Muni du PIC 8259 PC-AT
+;Has 8259 PC-AT PIC
+;
+MSG_LOCAL_APIC
+APIC locale
+;Local APIC
+;
+MSG_CPU_ID
+ACPI ID processeur
+;ACPI Processor ID
+;
+MSG_LAPIC_ID
+Id APIC locale
+;Local APIC ID
+;
+MSG_ENABLED
+Activé
+;Enabled
+;
+MSG_IOAPIC
+APIC E/S
+;I/O APIC
+;
+MSG_ID
+ID
+;
+MSG_ADDRESS
+Addresse
+;
+MSG_IRQ_BASE
+Base IRQ globale au système
+;Global system IRQ base
+;
+MSG_INT_SRC_OVR
+Consigne int. source
+;Interrupt source override
+;
+MSG_BUS
+  Bus
+;
+MSG_BUS_IRQ
+Bus IRQ
+;
+MSG_GLOBAL_IRQ
+IRQ système globale
+;
+MSG_POLARITY
+  Polarité
+;
+MSG_TRIGGER
+  Bascule
+;
+MSG_NMI_SRC
+Source NMI
+;
+MSG_LAPIC_NMI
+NMI APIC locale
+;
+MSG_DEST_ID
+ID ACPI processeur destination
+;
+MSG_ALL
+Tout
+;
+MSG_LINT
+Entrée d'int. locale
+;Local interrupt input
+;
+MSG_LAPIC_ADDR_OVR
+Consigne d'adresse APIC locale
+;Local APIC address override
+;
+MSG_IOSAPIC
+SAPIC E/S
+;I/O SAPIC
+;
+MSG_LSAPIC
+SAPIC locale
+;
+MSG_LSAPIC_ID
+ID SAPIC locale
+;
+MSG_LSAPIC_EID
+EID SAPIC locale
+;
+MSG_PLAT_INT_SRC
+Source d'int. plateforme
+;Platform interrupt source
+;
+MSG_PLAT_INT_TYPE
+  Type d'int.
+;  Interrupt type
+;
+MSG_DEST_LSAPIC_ID
+ID LSAPIC destination
+;Destination LSAPIC ID
+;
+MSG_DEST_EID
+EID LSAPIC destination
+;Destination LSAPIC EID
+;
+MSG_IOSAPIC_VECTOR
+Vector SAPIC d'E/S
+;I/O SAPIC vector
+;
+MSG_CPEI_PROC_OVR
+Consigne d'int. CPE du processeur
+;CPE interrupt processor override
+;
+MSG_LOCAL_X2APIC
+X2APIC locale
+;Local X2APIC
+;
+MSG_X2APIC_ID
+ID de l'X2APIC locale
+;Local X2APIC ID
+;
+MSG_CPU_UID
+UID ACPI processeur
+;ACPI Processor UID
+;
+MSG_X2APIC_NMI
+NMI X2APIC
+;X2APIC NMI
+;
+MSG_UNKNOWN_ENTRY
+Entrée inconnnue (%u), %u octets
+;Unknown entry (%u), %u bytes
+;
+MSG_RSDP_ADDR
+Adresse RSDP
+;
+MSG_SYSTEM_OEM_ID
+ID système revendeur
+;System OEM ID
+;
+MSG_ACPI_REVISION
+Révision ACPI
+;ACPI Revision
+;
+MSG_HW_REVISION
+Révision matériel
+;Hardware Revision
+;
+MSG_NUM_COMPARATORS
+Nombre de comparateurs
+;Number of comparators
+;
+MSG_64BIT_COUNTER
+Compteur 64-bits
+;64-bit counter
+;
+MSG_LEGACY_REPLACEMENT
+Capable de remplacement 
+;Capable d'héritage
+;
+MSG_PCI_VENDOR
+ID PCI Vendeur
+;PCI Vendor ID
+;
+MSG_BASE_ADDRESS
+Adresse de base
+;Base address
+;
+MSG_NUMBER
+Nombre
+;Number
+;
+MSG_MIN_TICK
+Battement horloge min.
+;Minimum clock tick
+;
+MSG_PAGE_PROTECT
+Protection de page
+;Page protection
+;
+MSG_OEM_ATTRS
+Attributs revendeur
+;OEM Attributes
+;
+MSG_SHOW_MODE
+Montre :
+;Show:
+;
+MSG_SAVE_DATA
+Sauver les données
+;Save data
+;
+MSG_MENU_PROJECT
+Projet
+;Project
+;
+MSG_MENU_QUIT
+Quitter
+;
+MSG_MENU_DUMP
+Copie complète
+;Full dump
+;
+MSG_MENU_DUMP_PARSED
+Données lues
+;Parsed data
+;
+MSG_MENU_DUMP_RAW
+Copie brute
+;Raw dump
+;
+MSG_BATT_WARN
+Niveau d'alerte
+;Warning level
+;
+MSG_BATT_LOW
+Niveau faible
+;Low level
+;
+MSG_BATT_CRITICAL
+Niveau critique
+;Critical level
+;
+MSG_MWH
+mWh
+;
+MSG_CMD_REG
+Registre de commande/état
+;Command/status register
+;
+MSG_DATA_REG
+Registre de données
+;Data register
+;
+MSG_UID
+ID unique
+;Unique ID
+;
+MSG_SCI_GPE_BIT
+Bit GPE SCI
+;SCI GPE bit
+;
+MSG_NAMESPACE_ID
+ID espace de nommage
+;Namespace ID
+;
