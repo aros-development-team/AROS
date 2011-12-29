@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default Locale Preferences
@@ -25,8 +25,8 @@ const struct Locale defLocale =
     "united_states.country",        /* Locale Name */
     "english.language",             /* Language Name */
     {   "english", NULL, NULL,
-	NULL, NULL, NULL,
-	NULL, NULL, NULL, NULL },   /* Prefered Languages */
+        NULL, NULL, NULL,
+        NULL, NULL, NULL, NULL },   /* Prefered Languages */
     0,                              /* Flags */
 
     0,                              /* CodeSet */

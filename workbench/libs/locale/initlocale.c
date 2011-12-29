@@ -31,8 +31,7 @@ AROS_LD4(ULONG, strcompare,
     AROS_UFPA(STRPTR, string2, A2),
     AROS_UFPA(ULONG, length, D0),
     AROS_UFPA(ULONG, how, D1),
-    struct LocaleBase *, LocaleBase, 22, english
-);
+    struct LocaleBase *, LocaleBase, 22, english);
 
 extern void *__eng_functable[];
 
@@ -45,10 +44,10 @@ extern void *__eng_functable[];
 }
 
 /*
-    void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *)
+   void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *)
 
-    Try and set up the language of a Locale structure.
-*/
+   Try and set up the language of a Locale structure.
+ */
 
 void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 {
@@ -57,207 +56,228 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
     STRPTR fileBuf;
     int i = 0;
 
-    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n",il));
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Locale 0x%lx\n", il));
 
     fileBuf = AllocMem(PATH_MAX, MEMF_ANY);
     if (!fileBuf)
-    	return;
+        return;
 
-    while(lang == NULL && i < 10)
+    while (lang == NULL && i < 10)
     {
-	STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
+        STRPTR lName = il->il_Locale.loc_PrefLanguages[i];
         ULONG ret;
 
-    if (lName != NULL)
-    {
+        if (lName != NULL)
+        {
 
-	/* Is this english? If not try and load the language */
-	void *fn = AROS_SLIB_ENTRY(strcompare, english, 22);
+            /* Is this english? If not try and load the language */
+            void *fn = AROS_SLIB_ENTRY(strcompare, english, 22);
 
-	ret = AROS_CALL4(ULONG, fn,
-                     AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
-                     AROS_LCA(STRPTR, lName, A2),
-                     AROS_LCA(ULONG, 7, D0),
-                     AROS_LCA(ULONG, SC_ASCII, D1),
-                     struct LocaleBase *, LocaleBase);
+            ret = AROS_CALL4(ULONG, fn,
+                AROS_LCA(STRPTR, defLocale.loc_PrefLanguages[0], A1),
+                AROS_LCA(STRPTR, lName, A2),
+                AROS_LCA(ULONG, 7, D0),
+                AROS_LCA(ULONG, SC_ASCII, D1),
+                struct LocaleBase *, LocaleBase);
 
-	if (ret != 0)
-	{
-	    snprintf(fileBuf, PATH_MAX, "%s.language", lName);
-	    fileBuf[PATH_MAX-1] = 0;
-	    
-    	    /* Try and open the specified language */
-    	    lang = OpenLibrary(fileBuf, 0);
+            if (ret != 0)
+            {
+                snprintf(fileBuf, PATH_MAX, "%s.language", lName);
+                fileBuf[PATH_MAX - 1] = 0;
 
-    	#ifdef __MORPHOS
-    	    if(lang == NULL)
-    	    {
-		/*
-    		    Ok, so the language didn't open, lets try for
-    		    MOSSYS:LOCALE/Languages/xxx.language
-		*/
-		
-		snprintf(fileBuf, PATH_MAX, "MOSSYS:LOCALE/Languages/%s.language", lName);
-		fileBuf[PATH_MAX-1] = 0;
-		
-		{ APTR oldwinptr;
-		  struct Process *me=(struct Process *)FindTask(NULL);
-		  oldwinptr = me->pr_WindowPtr;
-		  me->pr_WindowPtr = (APTR) -1;
-		  lang = OpenLibrary(fileBuf, 0);
-		  me->pr_WindowPtr = oldwinptr;
-		}
-	    }
-    	#endif
-	
-    	    if(lang == NULL)
-    	    {
-		/*
-    		    Ok, so the language didn't open, lets try for
-    		    LOCALE:Languages/xxx.language
-		*/
-		
-		snprintf(fileBuf, PATH_MAX, "LOCALE:Languages/%s.language", lName);
-		fileBuf[PATH_MAX-1] = 0;
-		
-		lang = OpenLibrary(fileBuf, 0);
-	    }
-	    
-    	    if((lang == NULL) && ((((struct Process *)FindTask(NULL))->pr_HomeDir) != BNULL))
-    	    {
-		/*
-    		    Ok, so we are still NULL, lets then try for
-    		    PROGDIR:Languages/xxx.language
-		*/
-		snprintf(fileBuf, PATH_MAX, "PROGDIR:Languages/%s.language", lName);
-		fileBuf[PATH_MAX-1] = 0;
+                /* Try and open the specified language */
+                lang = OpenLibrary(fileBuf, 0);
 
-		lang = OpenLibrary(fileBuf, 0);
-	    }
-	    
-	    if (lang)
-	    {
-	    	strncpy(il->LanguageName, FilePart(fileBuf), 30);
-	    }
-	    
-    	    /* If it is still no good, then we have no hope */
-	}
-    }
-	i++;
+#ifdef __MORPHOS
+                if (lang == NULL)
+                {
+                    /*
+                       Ok, so the language didn't open, lets try for
+                       MOSSYS:LOCALE/Languages/xxx.language
+                     */
+
+                    snprintf(fileBuf, PATH_MAX,
+                        "MOSSYS:LOCALE/Languages/%s.language", lName);
+                    fileBuf[PATH_MAX - 1] = 0;
+
+                    {
+                        APTR oldwinptr;
+                        struct Process *me =
+                            (struct Process *)FindTask(NULL);
+                        oldwinptr = me->pr_WindowPtr;
+                        me->pr_WindowPtr = (APTR) - 1;
+                        lang = OpenLibrary(fileBuf, 0);
+                        me->pr_WindowPtr = oldwinptr;
+                    }
+                }
+#endif
+
+                if (lang == NULL)
+                {
+                    /*
+                       Ok, so the language didn't open, lets try for
+                       LOCALE:Languages/xxx.language
+                     */
+
+                    snprintf(fileBuf, PATH_MAX,
+                        "LOCALE:Languages/%s.language", lName);
+                    fileBuf[PATH_MAX - 1] = 0;
+
+                    lang = OpenLibrary(fileBuf, 0);
+                }
+
+                if ((lang == NULL)
+                    && ((((struct Process *)FindTask(NULL))->pr_HomeDir) !=
+                        BNULL))
+                {
+                    /*
+                       Ok, so we are still NULL, lets then try for
+                       PROGDIR:Languages/xxx.language
+                     */
+                    snprintf(fileBuf, PATH_MAX,
+                        "PROGDIR:Languages/%s.language", lName);
+                    fileBuf[PATH_MAX - 1] = 0;
+
+                    lang = OpenLibrary(fileBuf, 0);
+                }
+
+                if (lang)
+                {
+                    strncpy(il->LanguageName, FilePart(fileBuf), 30);
+                }
+
+                /* If it is still no good, then we have no hope */
+            }
+        }
+        i++;
     }
 
     if (lang == NULL)
     {
-    	strcpy(il->LanguageName, defLocale.loc_LanguageName);
+        strcpy(il->LanguageName, defLocale.loc_LanguageName);
     }
 
     il->il_Locale.loc_LanguageName = &il->LanguageName[0];
-    
-    /*
-	Ok so we now should have a language, or nothing. Either way
-	we now fill in the locale functions in the structure.
-	I remember there was a VERY big bug in here once, which I 
-	finally managed to fix, only to blow away the only copy
-	of the file (and the rest of the locale.library) from all
-	existance. Sigh.
 
-	If we could open any of the libraries, replace its function,
-	otherwise replace none of them.
-    */
+    /*
+       Ok so we now should have a language, or nothing. Either way
+       we now fill in the locale functions in the structure.
+       I remember there was a VERY big bug in here once, which I 
+       finally managed to fix, only to blow away the only copy
+       of the file (and the rest of the locale.library) from all
+       existance. Sigh.
+
+       If we could open any of the libraries, replace its function,
+       otherwise replace none of them.
+     */
 
     il->il_CurrentLanguage = lang;
 
-    if(lang != NULL)
+    if (lang != NULL)
     {
-    	mask = AROS_LC0(ULONG, mask, struct Library *, lang, 5, Language);
+        mask = AROS_LC0(ULONG, mask, struct Library *, lang, 5, Language);
     }
     else
-	mask = 0;
+        mask = 0;
 
-    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Language Mask 0x%lx\n",mask));
-    /* CONST: If we add any more functions we need to increase this number */   
-    for(i = 0; i < 17; i++)
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: Language Mask 0x%lx\n",
+            mask));
+    /* CONST: If we add any more functions we need to increase this number */
+    for (i = 0; i < 17; i++)
     {
-	if(mask & (1<<i))
-	{
-    	#ifdef __MORPHOS__
-            il->il_LanguageFunctions[i] = (APTR)(((ULONG)lang) - ((i+6)*6));
-    	#else
-            il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i+6));
-    	#endif
-	    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: use Lanugage Entry %ld Func 0x%lx\n",i,il->il_LanguageFunctions[i]));
-	}
-	else
-	{
+        if (mask & (1 << i))
+        {
+#ifdef __MORPHOS__
+            il->il_LanguageFunctions[i] =
+                (APTR) (((ULONG) lang) - ((i + 6) * 6));
+#else
+            il->il_LanguageFunctions[i] = __AROS_GETVECADDR(lang, (i + 6));
+#endif
+            DEBUG_INITLOCALE(dprintf
+                ("SetLocaleLanguage: use Lanugage Entry %ld Func 0x%lx\n",
+                    i, il->il_LanguageFunctions[i]));
+        }
+        else
+        {
             il->il_LanguageFunctions[i] = __eng_functable[i];
-	    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: use Default Entry %ld Func 0x%lx\n",i,il->il_LanguageFunctions[i]));
-	}
+            DEBUG_INITLOCALE(dprintf
+                ("SetLocaleLanguage: use Default Entry %ld Func 0x%lx\n", i,
+                    il->il_LanguageFunctions[i]));
+        }
     }
 
     /* Open dos.catalog (needed for DosGetLocalizedString patch) */
-    il->il_DosCatalog = OpenCatalogA((struct Locale *)il, "System/Libs/dos.catalog", NULL);
+    il->il_DosCatalog =
+        OpenCatalogA((struct Locale *)il, "System/Libs/dos.catalog", NULL);
 
-    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",il->il_DosCatalog));
+    DEBUG_INITLOCALE(dprintf("SetLocaleLanguage: DosCatalog 0x%lx\n",
+            il->il_DosCatalog));
 
     FreeMem(fileBuf, PATH_MAX);
 }
 
 /* InitLocale(IntLocale *, LocalePrefs *)
-    This procedure will extract all the relevant information out of
-    a LocalePrefs structure, and stuff it into a IntLocale structure.
+   This procedure will extract all the relevant information out of
+   a LocalePrefs structure, and stuff it into a IntLocale structure.
 
-    This is really a silly way of doing things, but unfortunately it
-    is the only way that doesn't keep the entire chunk in memory,
-    (by duplicating the LocalePrefs chunk), or by doing extra loops
-    on things (counting string sizes, then allocating).
+   This is really a silly way of doing things, but unfortunately it
+   is the only way that doesn't keep the entire chunk in memory,
+   (by duplicating the LocalePrefs chunk), or by doing extra loops
+   on things (counting string sizes, then allocating).
 
-    This puts it smack bang in the centre of speed/memory use.
-    This is mainly a separate procedure to get rid of the indentation.
-*/
+   This puts it smack bang in the centre of speed/memory use.
+   This is mainly a separate procedure to get rid of the indentation.
+ */
 
 void InitLocale(STRPTR filename, struct IntLocale *locale,
-    	    	struct LocalePrefs *lp, struct LocaleBase *LocaleBase) 
+    struct LocalePrefs *lp, struct LocaleBase *LocaleBase)
 {
     struct CountryPrefs *cp;
     int i, i2;
 
-    DEBUG_INITLOCALE(dprintf("InitLocale: filename <%s> Locale 0x%lx LocalePrefs 0x%lx\n",filename,locale,lp));
+    DEBUG_INITLOCALE(dprintf
+        ("InitLocale: filename <%s> Locale 0x%lx LocalePrefs 0x%lx\n",
+            filename, locale, lp));
 
     cp = &lp->lp_CountryData;
 
     strncpy(locale->LocaleName, FilePart(filename), 30);
     locale->il_Locale.loc_LocaleName = &locale->LocaleName[0];
-    
-    /*
-	We can copy 300 bytes straight away since
-	the prefered languages are all in a row.
-    */
-    CopyMem(lp->lp_PreferredLanguages[0],
-	    locale->PreferredLanguages[0], 300);
 
-    for(i = 0, i2 = 0; i < 10; i++)
+    /*
+       We can copy 300 bytes straight away since
+       the prefered languages are all in a row.
+     */
+    CopyMem(lp->lp_PreferredLanguages[0],
+        locale->PreferredLanguages[0], 300);
+
+    for (i = 0, i2 = 0; i < 10; i++)
     {
-	if (locale->PreferredLanguages[i][0])
-	{
-	    locale->il_Locale.loc_PrefLanguages[i2++] = locale->PreferredLanguages[i];
-    	}
+        if (locale->PreferredLanguages[i][0])
+        {
+            locale->il_Locale.loc_PrefLanguages[i2++] =
+                locale->PreferredLanguages[i];
+        }
     }
 
     if (i2 == 0)
     {
-    	/* The user did not set any preferred Language. So we automatically
-	   poke "english" into the array (Tested on the Amiga where this
-	   does seem to happen, too!) */
-	
-	DEBUG_INITLOCALE(dprintf("InitLocale: user set no preferred lang\n"));
-	strcpy(locale->PreferredLanguages[0], defLocale.loc_PrefLanguages[0]);
-	locale->il_Locale.loc_PrefLanguages[0] = locale->PreferredLanguages[0];
+        /* The user did not set any preferred Language. So we automatically
+           poke "english" into the array (Tested on the Amiga where this
+           does seem to happen, too!) */
+
+        DEBUG_INITLOCALE(dprintf
+            ("InitLocale: user set no preferred lang\n"));
+        strcpy(locale->PreferredLanguages[0],
+            defLocale.loc_PrefLanguages[0]);
+        locale->il_Locale.loc_PrefLanguages[0] =
+            locale->PreferredLanguages[0];
     }
-    
+
     /*
-	If we cannot open ANY of the languages, then all the language
-	function vectors would have the default language data.
-    */
+       If we cannot open ANY of the languages, then all the language
+       function vectors would have the default language data.
+     */
     SetLocaleLanguage(locale, LocaleBase);
 
     locale->il_Locale.loc_Flags = lp->lp_Flags;
@@ -275,28 +295,31 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
 #endif
 
     /* Another really large section to copy,
-	from cp_DateTimeFormat[] to cp_MonFracGrouping[] incl
-	80 + 40 + 40 + 80 + 40 + 40 + (10 * 10)
-    */
+       from cp_DateTimeFormat[] to cp_MonFracGrouping[] incl
+       80 + 40 + 40 + 80 + 40 + 40 + (10 * 10)
+     */
 
     CopyMem(&cp->cp_DateTimeFormat[0], &locale->DateTimeFormat[0], 420);
 
     locale->il_Locale.loc_DateTimeFormat = &locale->DateTimeFormat[0];
     locale->il_Locale.loc_DateFormat = &locale->DateFormat[0];
     locale->il_Locale.loc_TimeFormat = &locale->TimeFormat[0];
-    locale->il_Locale.loc_ShortDateTimeFormat = &locale->ShortDateTimeFormat[0];
+    locale->il_Locale.loc_ShortDateTimeFormat =
+        &locale->ShortDateTimeFormat[0];
     locale->il_Locale.loc_ShortDateFormat = &locale->ShortDateFormat[0];
     locale->il_Locale.loc_ShortTimeFormat = &locale->ShortTimeFormat[0];
 
     locale->il_Locale.loc_DecimalPoint = &locale->DecimalPoint[0];
     locale->il_Locale.loc_GroupSeparator = &locale->GroupSeparator[0];
-    locale->il_Locale.loc_FracGroupSeparator = &locale->FracGroupSeparator[0];
+    locale->il_Locale.loc_FracGroupSeparator =
+        &locale->FracGroupSeparator[0];
     locale->il_Locale.loc_Grouping = &locale->Grouping[0];
     locale->il_Locale.loc_FracGrouping = &locale->FracGrouping[0];
 
     locale->il_Locale.loc_MonDecimalPoint = &locale->MonDecimalPoint[0];
     locale->il_Locale.loc_MonGroupSeparator = &locale->MonGroupSeparator[0];
-    locale->il_Locale.loc_MonFracGroupSeparator = &locale->MonFracGroupSeparator[0];
+    locale->il_Locale.loc_MonFracGroupSeparator =
+        &locale->MonFracGroupSeparator[0];
     locale->il_Locale.loc_MonGrouping = &locale->MonGrouping[0];
     locale->il_Locale.loc_MonFracGrouping = &locale->MonFracGrouping[0];
 
@@ -324,4 +347,3 @@ void InitLocale(STRPTR filename, struct IntLocale *locale,
 
     DEBUG_INITLOCALE(dprintf("InitLocale: done\n"));
 }
-

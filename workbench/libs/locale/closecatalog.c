@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Close a message catalog.
@@ -9,33 +9,33 @@
 #include <proto/exec.h>
 #include "locale_intern.h"
 
-#define	DEBUG_CLOSECATALOG(x)	;
+#define        DEBUG_CLOSECATALOG(x)        ;
 
 /*****************************************************************************
 
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH1(void, CloseCatalog,
+        AROS_LH1(void, CloseCatalog,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Catalog *, catalog, A0),
+        AROS_LHA(struct Catalog *, catalog, A0),
 
 /*  LOCATION */
-	struct LocaleBase *, LocaleBase, 6, Locale)
+        struct LocaleBase *, LocaleBase, 6, Locale)
 
 /*  FUNCTION
-	Conclude access to a message catalog, and decrement the use count.
-	If this use count is 0, the catalog can be expunged when the
-	system memory is running low.
+        Conclude access to a message catalog, and decrement the use count.
+        If this use count is 0, the catalog can be expunged when the
+        system memory is running low.
 
     INPUTS
-	catalog	-	the message catalog to close, note that NULL is
-			a valid catalog.
+        catalog        -        the message catalog to close, note that NULL is
+                        a valid catalog.
 
     RESULT
-	The catalog is closed, and should no longer be used by the
-	application.
+        The catalog is closed, and should no longer be used by the
+        application.
 
     NOTES
 
@@ -44,26 +44,23 @@
     BUGS
 
     SEE ALSO
-	GetCatalogStr(), OpenCatalogA() 
+        GetCatalogStr(), OpenCatalogA() 
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    DEBUG_CLOSECATALOG(dprintf("CloseCatalog: catalog 0x%lx\n",catalog));
+    DEBUG_CLOSECATALOG(dprintf("CloseCatalog: catalog 0x%lx\n",
+        catalog));
 
-    if(catalog != NULL)
+    if (catalog != NULL)
     {
-        ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
+        ObtainSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
-	/* Decrement the use counter. */
-	IntCat(catalog)->ic_UseCount--;
+        /* Decrement the use counter. */
+        IntCat(catalog)->ic_UseCount--;
 
         if (0 == IntCat(catalog)->ic_UseCount)
         {
@@ -78,6 +75,6 @@
     }
 
     DEBUG_CLOSECATALOG(dprintf("CloseCatalog: done\n"));
+
     AROS_LIBFUNC_EXIT
-    
-} /* CloseCatalog */
+}
