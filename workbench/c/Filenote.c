@@ -213,8 +213,7 @@ int Do_Filenote(struct AnchorPath *a,
                     if (All == NOT_SET)
                     {
                         Return_Value = SafeSetFileComment(a, Comment);
-
-                        if (Quiet == NOT_SET)
+                        if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
                         {
                             PrintFileName(a, TabValue);
                         }
@@ -234,7 +233,7 @@ int Do_Filenote(struct AnchorPath *a,
 
                                 Return_Value = SafeSetFileComment(a, Comment);
 
-                                if (Quiet == NOT_SET)
+                                if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
                                 {
                                     PrintFileName(a, TabValue);
                                 }
@@ -252,7 +251,7 @@ int Do_Filenote(struct AnchorPath *a,
                         {
                             Return_Value = SafeSetFileComment(a, Comment);
 
-                            if (Quiet == NOT_SET)
+                            if ((Quiet == NOT_SET) && (Return_Value == RETURN_OK))
                             {
                                 PrintFileName(a, TabValue);
                             }
