@@ -6,9 +6,11 @@
 /****************************************************************************************/
 
 #include <devices/trackdisk.h>
+#include <devices/newstyle.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
+#include <exec/initializers.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
@@ -24,6 +26,36 @@
 #include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
+
+#define NEWSTYLE_DEVICE 1
+
+#if NEWSTYLE_DEVICE
+static const UWORD SupportedCommands[] =
+{
+	CMD_UPDATE,
+	CMD_CLEAR,
+	TD_MOTOR,
+	CMD_READ,
+	CMD_WRITE,
+	TD_FORMAT,
+	TD_CHANGENUM,
+	TD_CHANGESTATE,
+	TD_ADDCHANGEINT,
+	TD_REMCHANGEINT,
+	TD_GETGEOMETRY,
+	TD_EJECT,
+	TD_PROTSTATUS,
+	ETD_READ,
+	ETD_WRITE,
+	ETD_UPDATE,
+	ETD_CLEAR,
+	ETD_MOTOR,
+	ETD_FORMAT,
+	TD_GETDRIVETYPE,
+	NSCMD_DEVICEQUERY,
+	0
+};
+#endif
 
 /****************************************************************************************/
 
@@ -197,13 +229,46 @@ AROS_LH1(void, beginio,
 
     switch(iotd->iotd_Req.io_Command)
     {
+#if NEWSTYLE_DEVICE
+	case NSCMD_DEVICEQUERY:
+        D(bug("[FDSK  ] NSCMD_DEVICEQUERY\n"));
+		if(iotd->iotd_Req.io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+		{
+			iotd->iotd_Req.io_Error = IOERR_BADLENGTH;
+		}
+		else
+		{
+			struct NSDeviceQueryResult *d;
+
+			d = (struct NSDeviceQueryResult *)iotd->iotd_Req.io_Data;
+
+			d->DevQueryFormat 	    = 0;
+			d->SizeAvailable 	    = sizeof(struct NSDeviceQueryResult);
+			d->DeviceType 	    	= NSDEVTYPE_TRACKDISK;
+			d->DeviceSubType 	    = 0;
+			d->SupportedCommands    = (UWORD *)SupportedCommands;
+
+			iotd->iotd_Req.io_Actual = sizeof(struct NSDeviceQueryResult);
+			iotd->iotd_Req.io_Error  = 0;
+		}
+		break;
+	case TD_GETDRIVETYPE:
+		iotd->iotd_Req.io_Actual = DRIVE_NEWSTYLE;
+		break;
+#endif
+	case ETD_UPDATE:
+	case ETD_CLEAR:
+	case ETD_MOTOR:
 	case CMD_UPDATE:
 	case CMD_CLEAR:
 	case TD_MOTOR:
 	    /* Ignore but don't fail */
 	    iotd->iotd_Req.io_Error = 0;
 	    break;
-	    
+
+	case ETD_READ:
+	case ETD_WRITE:
+	case ETD_FORMAT:
 	case CMD_READ:
 	case CMD_WRITE:
 	case TD_FORMAT:
@@ -401,30 +466,37 @@ struct FileInfoBlock fib;
 
 /**************************************************************************/
 
-void eject(struct unit *unit, BOOL eject) {
-struct IOExtTD *iotd;
-struct FileInfoBlock fib;
-
-    if (eject)
+static LONG eject(struct unit *unit, struct IOExtTD *iotd)
+{
+    BOOL eject = iotd->iotd_Req.io_Length;
+    struct FileInfoBlock fib;
+    if ((eject) && (unit->file))
     {
         Close(unit->file);
         unit->file = (BPTR)NULL;
+        goto quiteject;
+    } else if ((eject) && (unit->file == NULL)) {
+        return ERROR_NO_DISK;
     }
-    else
+
+    if ((!eject) && (unit->file == NULL))
     {
         unit->file = Open(unit->filename, MODE_OLDFILE);
         if (unit->file == (BPTR) NULL)
-            return;
+			return ERROR_OBJECT_NOT_FOUND;
         ExamineFH(unit->file, &fib);
         unit->writable = !(fib.fib_Protection & FIBF_WRITE);
+    } else {
+        return 0;
     }
-
+quiteject:
     unit->changecount++;
 
     ForeachNode(&unit->changeints, iotd)
     {
-        Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
+        Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
     }
+	return 0;
 }
 
 /**************************************************************************/
@@ -457,7 +529,6 @@ AROS_UFH3(LONG, unitentry,
     APTR                win;
     struct FileInfoBlock fib;
 
-    D(bug("fdsk_device/unitentry: just started\n"));
     
     me = (struct Process *)FindTask(NULL);
 
@@ -486,12 +557,12 @@ AROS_UFH3(LONG, unitentry,
         D(bug("fdsk_device/unitentry: open failed ioerr = %d:-( Replying startup msg.\n", IoErr()));
 
 	ReplyMsg(&unit->msg);
-	return 0;
+	return DOSFALSE;
     }
 
     ExamineFH(unit->file, &fib);
     unit->writable = !(fib.fib_Protection & FIBF_WRITE);
-
+	
     /* enable requesters */
     me->pr_WindowPtr = win;
 
@@ -514,17 +585,20 @@ AROS_UFH3(LONG, unitentry,
 		ReplyMsg(&unit->msg);
 		return 0;
 	    }
-
  	    switch(iotd->iotd_Req.io_Command)
  	    {
- 		case CMD_READ:
+		case ETD_READ:
+		case CMD_READ:
      		    D(bug("fdsk_device/unitentry: received CMD_READ.\n"));
-		    err = read(unit, iotd);
- 		    break;
+			err = read(unit, iotd);
+			break;
 		    
  		case CMD_WRITE:
  		case TD_FORMAT:
-    		    D(bug("fdsk_device/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
+		case ETD_FORMAT:
+			D(bug("[FDSK%02ld] received %s\n", unit->unitnum, (
+				(iotd->iotd_Req.io_Command == ETD_WRITE) ||
+				(iotd->iotd_Req.io_Command == CMD_WRITE)) ? "CMD_WRITE" : "TD_FORMAT"));
  		    err = write(unit, iotd);
  		    break;
 		case TD_CHANGENUM:
@@ -548,14 +622,13 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    break;
 		case TD_EJECT:
-		    eject(unit, iotd->iotd_Req.io_Length);
-		    err = 0;
+            err = eject(unit, iotd);
 		    break;
 		case TD_PROTSTATUS:
 		    iotd->iotd_Req.io_Actual = !unit->writable;
 		    err = 0;
 		    break;
-		    
+
  	    } /* switch(iotd->iotd_Req.io_Command) */
 	    
  	    iotd->iotd_Req.io_Error = err;
