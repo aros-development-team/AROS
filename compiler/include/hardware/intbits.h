@@ -2,7 +2,7 @@
 #define HARDWARE_INTBITS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt bits
@@ -41,11 +41,5 @@
 #define INTF_INTEN   (1L<<14)
 #define INTB_SETCLR       15
 #define INTF_SETCLR  (1L<<15)
-
-/* AROS extensions */
-
-/* SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency Hz timer */
-#define INTB_TIMERTICK 	INTB_COPER
-#define INTF_TIMERTICK	INTF_COPER
 
 #endif /* HARDWARE_INTBITS_H */
