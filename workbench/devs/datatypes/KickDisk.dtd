@@ -1,0 +1,9 @@
+Name=KickDisk
+Version=$VER KickDisk 1.0 (03.12.2011)
+BaseName=binary
+Pattern=#?
+Mask='K' 'I' 'C' 'K'
+GroupID=kick
+ID=kick
+Flags=DTF_BINARY,DTF_CASE
+Priority=0
