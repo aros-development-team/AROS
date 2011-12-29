@@ -105,18 +105,15 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 
         DateStamp(&curr);
 
-        if (!strnicmp(buf, GetLocaleStr(loc, YESTERDAYSTR),
-                strlen(GetLocaleStr(loc, YESTERDAYSTR))))
+        if (!stricmp(buf, GetLocaleStr(loc, YESTERDAYSTR)))
         {
             datetime->dat_Stamp.ds_Days = curr.ds_Days - 1;
         }
-        else if (!strnicmp(buf, GetLocaleStr(loc, TODAYSTR),
-                strlen(GetLocaleStr(loc, TODAYSTR))))
+        else if (!stricmp(buf, GetLocaleStr(loc, TODAYSTR)))
         {
             datetime->dat_Stamp.ds_Days = curr.ds_Days;
         }
-        else if (!strnicmp(buf, GetLocaleStr(loc, TOMORROWSTR),
-                strlen(GetLocaleStr(loc, TOMORROWSTR))))
+        else if (!stricmp(buf, GetLocaleStr(loc, TOMORROWSTR)))
         {
             datetime->dat_Stamp.ds_Days = curr.ds_Days + 1;
         }
@@ -126,8 +123,7 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 
             for (i = 0; i < 7; i++)
             {
-                if (!strnicmp(buf, GetLocaleStr(loc, DAY_1 + i),
-                        strlen(GetLocaleStr(loc, DAY_1 + i))))
+                if (!stricmp(buf, GetLocaleStr(loc, DAY_1 + i)))
                     break;
             }
 
