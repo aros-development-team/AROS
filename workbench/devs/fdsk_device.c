@@ -61,7 +61,7 @@ static const UWORD SupportedCommands[] =
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR fdskbase)
 {
-    D(bug("fdsk_device: in libinit func\n"));
+    D(bug("[FDSK  ] in libinit func\n"));
 
     InitSemaphore(&fdskbase->sigsem);
     NEWLIST((struct List *)&fdskbase->units);
@@ -70,7 +70,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR fdskbase)
     fdskbase->port.mp_SigBit = SIGB_SINGLE;
     NEWLIST((struct List *)&fdskbase->port.mp_MsgList);
 
-   D(bug("fdsk_device: in libinit func. Returning %x (success) :-)\n", fdskbase));
+   D(bug("[FDSK  ] in libinit func. Returning %x (success) :-)\n", fdskbase));
    return TRUE;
 }
 
@@ -106,9 +106,9 @@ static int GM_UNIQUENAME(Open)
     };
     struct unit *unit;
 
-    D(bug("fdsk_device: in libopen func.\n"));
+    D(bug("[FDSK%02ld] in libopen func.\n", unitnum));
 
-    D(bug("fdsk_device: in libopen func. Looking if unit is already open\n"));
+    D(bug("[FDSK%02ld] in libopen func. Looking if unit%ld is already open\n", unitnum, unitnum));
 
     ObtainSemaphore(&fdskbase->sigsem);
 
@@ -124,18 +124,18 @@ static int GM_UNIQUENAME(Open)
 	    iotd->iotd_Req.io_Error 		      = 0;
 	    iotd->iotd_Req.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
    	   
-	    D(bug("fdsk_device: in libopen func. Yep. Unit is already open\n"));
+	    D(bug("[FDSK%02ld] in libopen func. Yep. Unit is already open\n", unitnum));
 	    
 	    return TRUE;
 	}
 
-    D(bug("fdsk_device: in libopen func. No, it is not. So creating new unit ...\n"));
+    D(bug("[FDSK%02ld] in libopen func. No, it is not. So creating new unit ...\n", unitnum));
 
     unit = (struct unit *)AllocMem(sizeof(struct unit),
         MEMF_PUBLIC | MEMF_CLEAR);
     if(unit != NULL)
     {
-        D(bug("fdsk_device: in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n"));
+        D(bug("[FDSK%02ld] in libopen func. Allocation of unit memory okay. Setting up unit and calling CreateNewProc ...\n", unitnum));
 
 	unit->usecount 			= 1;
 	unit->fdskbase 			= fdskbase;
@@ -147,7 +147,7 @@ static int GM_UNIQUENAME(Open)
 	unit->port.mp_SigTask 		= CreateNewProc((struct TagItem *)tags);
 	NEWLIST((struct List *)&unit->changeints);
 
-        D(bug("fdsk_device: in libopen func. CreateNewProc called. Proc = %x\n", unit->port.mp_SigTask));
+    D(bug("[FDSK%02ld] in libopen func. CreateNewProc called. Proc = %x\n", unitnum, unit->port.mp_SigTask));
 	
 	if(unit->port.mp_SigTask != NULL)
 	{
@@ -157,13 +157,13 @@ static int GM_UNIQUENAME(Open)
 	    fdskbase->port.mp_SigTask = FindTask(NULL);
     	    SetSignal(0, SIGF_SINGLE);
 	    
-    	    D(bug("fdsk_device: in libopen func. Sending startup msg\n"));
+            D(bug("[FDSK%02ld] in libopen func. Sending startup msg\n", unitnum));
 	    PutMsg(&((struct Process *)unit->port.mp_SigTask)->pr_MsgPort, &unit->msg);
 
-    	    D(bug("fdsk_device: in libopen func. Waiting for replymsg\n"));
+        D(bug("[FDSK%02ld] in libopen func. Waiting for replymsg\n", unitnum));
 	    WaitPort(&fdskbase->port);
 	    (void)GetMsg(&fdskbase->port);
-    	    D(bug("fdsk_device: in libopen func. Received replymsg\n"));
+        D(bug("[FDSK%02ld] in libopen func. Received replymsg\n", unitnum));
 	    
 	    if(unit->file)
 	    {
@@ -346,19 +346,19 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
     STRPTR 	buf;
     LONG 	size, subsize;
     
-    D(bug("fdsk_device/read: offset = %d  size = %d\n", iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
+	D(bug("[FDSK%02ld] read32: offset = %08x  size = %08x\n", unit->unitnum, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
     
 #if 0
     if(iotd->iotd_SecLabel)
     {
-        D(bug("fdsk_device/read: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n"));
+	D(bug("[FDSK%02ld] read32: iotd->iotd_SecLabel is != NULL -> returning IOERR_NOCMD\n", unit->unitnum));
 	return IOERR_NOCMD;
     }
 #endif
     
     if(Seek(unit->file, iotd->iotd_Req.io_Offset, OFFSET_BEGINNING) == -1)
     {
-        D(bug("fdsk_device/read: Seek to offset %d failed. Returning TDERR_SeekError\n", iotd->iotd_Req.io_Offset));
+		D(bug("[FDSK%02ld] read32: Seek to offset %d failed. Returning TDERR_SeekError\n", unit->unitnum, iotd->iotd_Req.io_Offset));
 	return TDERR_SeekError;
     }
     
@@ -372,13 +372,13 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
 	if(!subsize)
 	{
 	     iotd->iotd_Req.io_Actual -= size;
-             D(bug("fdsk_device/read: Read() returned 0. Returning IOERR_BADLENGTH\n"));	     
+		 D(bug("[FDSK%02ld] read32: Read() returned 0. Returning IOERR_BADLENGTH\n", unit->unitnum));
 	     return IOERR_BADLENGTH;
 	}
 	if(subsize == -1)
 	{
 	    iotd->iotd_Req.io_Actual -= size;
-            D(bug("fdsk_device/read: Read() returned -1. Returning error number %d\n", error(IoErr())));
+		D(bug("[FDSK%02ld] read32: Read() returned -1. Returning error number %d\n", unit->unitnum, error(IoErr())));
 	    return error(IoErr());
 	}
 	buf  += subsize;
@@ -387,7 +387,7 @@ static LONG read(struct unit *unit, struct IOExtTD *iotd)
 
 #if DEBUG
     buf = iotd->iotd_Req.io_Data;
-    D(bug("fdsk_device/read: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", buf[0], buf[1], buf[2], buf[3]));
+	D(bug("[FDSK%02ld] read32: returning 0. First 4 buffer bytes = [%c%c%c%c]\n", unit->unitnum, buf[0], buf[1], buf[2], buf[3]));
 #endif
 
     return 0;
@@ -399,6 +399,8 @@ static LONG write(struct unit *unit, struct IOExtTD *iotd)
 {
     STRPTR 	buf;
     LONG 	size, subsize;
+
+	D(bug("[FDSK%02ld] write32: offset = %08x  size = %08x\n", unit->unitnum, iotd->iotd_Req.io_Offset, iotd->iotd_Req.io_Length));
 
     if(!unit->writable)
 	return TDERR_WriteProt;
@@ -469,7 +471,7 @@ struct FileInfoBlock fib;
 static LONG eject(struct unit *unit, struct IOExtTD *iotd)
 {
     BOOL eject = iotd->iotd_Req.io_Length;
-    struct FileInfoBlock fib;
+struct FileInfoBlock fib;
     if ((eject) && (unit->file))
     {
         Close(unit->file);
@@ -544,7 +546,7 @@ AROS_UFH3(LONG, unitentry,
 
     (void)RawDoFmt("FDSK:Unit%ld", &unit->unitnum, (VOID_FUNC)putchr, &ptr);
 
-    D(bug("fdsk_device/unitentry: Trying to open \"%s\" ...\n", buf));
+    D(bug("[FDSK%02ld] Trying to open \"%s\" ...\n", unit->unitnum, buf));
 
     unit->filename = buf;
     unit->file = Open(buf, MODE_OLDFILE);
@@ -554,7 +556,7 @@ AROS_UFH3(LONG, unitentry,
 #warning FIXME: Next line will produce a segfault -- uninitialized variable iotd
 	iotd->iotd_Req.io_Error = error(IoErr());
 */
-        D(bug("fdsk_device/unitentry: open failed ioerr = %d:-( Replying startup msg.\n", IoErr()));
+        D(bug("[FDSK%02ld] open failed ioerr = %d :-( Replying startup msg!\n", unit->unitnum, IoErr()));
 
 	ReplyMsg(&unit->msg);
 	return DOSFALSE;
@@ -566,11 +568,11 @@ AROS_UFH3(LONG, unitentry,
     /* enable requesters */
     me->pr_WindowPtr = win;
 
-    D(bug("fdsk_device/unitentry: open okay :-) Replying startup msg.\n"));
+    D(bug("[FDSK%02ld] open okay :-) Replying startup msg.\n", unit->unitnum));
 
     ReplyMsg(&unit->msg);
 
-    D(bug("fdsk_device/unitentry: Now entering main loop\n"));
+    D(bug("[FDSK%02ld] now entering main loop.\n", unit->unitnum));
 
     for(;;)
     {
@@ -578,7 +580,7 @@ AROS_UFH3(LONG, unitentry,
 	{
 	    if(&iotd->iotd_Req.io_Message == &unit->msg)
 	    {
-    		D(bug("fdsk_device/unitentry: Received EXIT message.\n"));
+			D(bug("[FDSK%02ld] received EXIT message.\n", unit->unitnum));
 
 		Close(unit->file);
 		Forbid();
@@ -589,10 +591,10 @@ AROS_UFH3(LONG, unitentry,
  	    {
 		case ETD_READ:
 		case CMD_READ:
-     		    D(bug("fdsk_device/unitentry: received CMD_READ.\n"));
+			D(bug("[FDSK%02ld] received CMD_READ.\n", unit->unitnum));
 			err = read(unit, iotd);
 			break;
-		    
+		case ETD_WRITE:
  		case CMD_WRITE:
  		case TD_FORMAT:
 		case ETD_FORMAT:
