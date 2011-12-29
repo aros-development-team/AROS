@@ -98,12 +98,12 @@ int main(int argc, char **argv)
     if (*((volatile ULONG *)block0) != 0xC0DEBAD)
         output("It's not a memory!!!\n");
  
-    AccessTest(block0 + 256 * 1024);
+    AccessTest(block0 + 4096);
  
     if (!leak)
     {
     	output("Freeing the block...\n");
-    	FreeMem(block0, 256 * 1024);
+    	FreeMem(block0, 4096);
     	output("Done, available memory: %lu bytes\n", (unsigned long)AvailMem(MEMF_ANY));
     }
 
