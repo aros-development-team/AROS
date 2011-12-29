@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LocDateToStr - locale.library's private replacement
@@ -42,13 +42,13 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     NAME */
 #include <proto/locale.h>
 
-    AROS_PLH1(LONG, LocDateToStr,
+        AROS_PLH1(LONG, LocDateToStr,
 
 /*  SYNOPSIS */
-    AROS_LHA(struct DateTime *, datetime, D1),
+        AROS_LHA(struct DateTime *, datetime, D1),
 
 /*  LOCATION */
-    struct DosLibrary *, DOSBase, 36, Locale)
+        struct DosLibrary *, DOSBase, 36, Locale)
 
 /*  FUNCTION
         See dos.library/DateToStr
@@ -59,18 +59,18 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
     RESULT
 
     NOTES
-        This function is not called by apps directly. Instead dos.library/DateToStr
-    is patched to use this function. This means, that the LocaleBase parameter
-    above actually points to DOSBase!!! But I may not rename it, because then
-    no entry for this function is generated in the Locale functable by the
-    corresponding script!
+        This function is not called by apps directly. Instead
+        dos.library/DateToStr is patched to use this function. This means,
+        that the LocaleBase parameter above actually points to DOSBase. But
+        it may not be renamed, because then no entry for this function is
+        generated in the Locale functable by the corresponding script.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    dos.library/DateToStr, locale.library/FormatDate.
+        dos.library/DateToStr, locale.library/FormatDate.
 
     INTERNALS
 
