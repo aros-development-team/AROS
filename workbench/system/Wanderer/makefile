@@ -1,6 +1,6 @@
 CC        = gcc
-OBJ       = support.o main.o iconwindow.o wandererprefsinternal.o wanderer.o locale.o filesystems.o iconwindowbackfill.o iconwindowcontents.o portable_utils.o Classes/icondrawerlist.o Classes/iconlist.o Classes/iconlistview.o Classes/iconvolumelist.o wandererprefs.o
-LINKOBJ   = support.o main.o iconwindow.o wandererprefsinternal.o wanderer.o locale.o filesystems.o iconwindowbackfill.o iconwindowcontents.o portable_utils.o Classes/icondrawerlist.o Classes/iconlist.o Classes/iconlistview.o Classes/iconvolumelist.o wandererprefs.o
+OBJ       = support.o main.o iconwindow.o wandererprefsfont.o wanderer.o locale.o filesystems.o iconwindowbackfill.o iconwindow.o iconwindow.o iconwindow_iconlist.o iconwindow_volumelist.o iconwindow_drawerlist.o iconwindow_networkbrowserlist.o portable_utils.o Classes/icondrawerlist.o Classes/iconlist.o Classes/iconlistview.o Classes/iconvolumelist.o wandererprefs.o
+LINKOBJ   = support.o main.o iconwindow.o wandererprefsfont.o wanderer.o locale.o filesystems.o iconwindowbackfill.o iconwindowcontents.o portable_utils.o Classes/icondrawerlist.o Classes/iconlist.o Classes/iconlistview.o Classes/iconvolumelist.o wandererprefs.o
 
 INCS      =
 CXXINCS   =
@@ -30,13 +30,13 @@ main.o: $(GLOBALDEPS) main.c
 iconwindow.o: $(GLOBALDEPS) iconwindow.c
 	$(CC) -c iconwindow.c -o iconwindow.o $(CFLAGS)
 
-wandererprefsinternal.o: $(GLOBALDEPS) wandererprefsinternal.c
-	$(CC) -c wandererprefsinternal.c -o wandererprefsinternal.o $(CFLAGS)
+wandererprefsfont.o: $(GLOBALDEPS) wandererprefsfont.c
+	$(CC) -c wandererprefsfont.c -o wandererprefsfont.o $(CFLAGS)
 
 wanderer.o: $(GLOBALDEPS) wanderer.c
 	$(CC) -c wanderer.c -o wanderer.o $(CFLAGS)
 
-locale.o: $(GLOBALDEPS) locale.c
+locale.o: $(GLOBALDEPS) locale.c strings.h
 	$(CC) -c locale.c -o locale.o $(CFLAGS)
 
 filesystems.o: $(GLOBALDEPS) filesystems.c filesystems.h
@@ -65,3 +65,6 @@ Classes/iconvolumelist.o: $(GLOBALDEPS) Classes/iconvolumelist.c Classes/iconvol
 
 wandererprefs.o: $(GLOBALDEPS) wandererprefs.c
 	$(CC) -c wandererprefs.c -o wandererprefs.o $(CFLAGS)
+
+strings.h: Catalogs/wanderer.cd
+	catcomp $? CFILE $@
