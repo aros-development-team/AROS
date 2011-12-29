@@ -76,9 +76,14 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	return FALSE;
 
     if (!CxBase)
-    	CxBase = OpenLibrary("commodities.library", 37);
+        CxBase = OpenLibrary("commodities.library", 37);
     if (!CxBase)
-    	return FALSE;
+        return FALSE;
+
+    if (!RexxSysBase)
+        RexxSysBase = OpenLibrary("rexxsyslib.library", 37);
+    if (!RexxSysBase)
+        return FALSE;
 
     if (!GadToolsBase)
     	GadToolsBase = OpenLibrary("gadtools.library", 37);
@@ -172,6 +177,9 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 
     CloseLibrary(CxBase);
     CxBase = NULL;
+
+    CloseLibrary(RexxSysBase);
+    RexxSysBase = NULL;
 
     CloseLibrary(GadToolsBase);
     GadToolsBase = NULL;

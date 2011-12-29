@@ -65,6 +65,7 @@ struct MUIMasterBase_intern
     struct Library  	    	*layersbase;
     struct IntuitionBase    	*intuibase;
     struct Library  	    	*cxbase;
+    struct RxsLib               *rxsbase;
     struct Library  	    	*keymapbase;
     struct Library		*gadtoolsbase;
     struct Library  	    	*iffparsebase;
@@ -115,6 +116,9 @@ struct MUIMasterBase_intern
 
 #undef CxBase
 #define CxBase	    	(MUIMB(MUIMasterBase)->cxbase)
+
+#undef RexxSysBase
+#define RexxSysBase      (MUIMB(MUIMasterBase)->rxsbase)
 
 #undef KeymapBase
 #define KeymapBase  	(MUIMB(MUIMasterBase)->keymapbase)
