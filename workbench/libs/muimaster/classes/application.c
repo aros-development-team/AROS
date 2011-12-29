@@ -32,7 +32,7 @@
 #include <proto/iffparse.h>
 #include <proto/rexxsyslib.h>
 
-#define MYDEBUG 1
+//#define MYDEBUG 1
 #include "debug.h"
 #include "prefs.h"
 
