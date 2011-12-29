@@ -180,15 +180,14 @@ BOOL _getnum(LONG numchars,
             case 'b':
                 /* abbreviated month name */
             case 'h':
-                strOffs = 12;
                 /* month name */
             case 'B':
                 {
-                    CONST_STRPTR monthStr[12];
-                    BOOL monthOk[12];
+                    CONST_STRPTR monthStr[24];
+                    BOOL monthOk[24];
                     ULONG i, a;
 
-                    for (i = 0; i < 12; i++)
+                    for (i = 0; i < 24; i++)
                     {
                         monthOk[i] = TRUE;
                         monthStr[i] =
@@ -198,30 +197,33 @@ BOOL _getnum(LONG numchars,
                     c = GetChar();
                     while ((c != '\0') && (c != *fmtTemplate))
                     {
-                        for (i = 0; i < 12; i++)
+                        for (i = 0; i < 24; i++)
                         {
-                            a = ConvToUpper(locale, *(monthStr[i])++);
+                            a = ConvToUpper(locale, *monthStr[i]);
+                            if (a != '\0')
+                                monthStr[i]++;
                             c = ConvToUpper(locale, c);
 
-                            if (monthOk[i] && a)
+                            if (monthOk[i])
                                 if (a != c)
                                     monthOk[i] = FALSE;
                         }
                         c = GetChar();
                     }
+                    for (i = 0; i < 24; i++)
+                    {
+                        if (monthOk[i] && *monthStr[i] == '\0')
+                            month = i % 12 + 1;
+                    }
+
+                    /* If we didn't get a valid month, fail */
+                    if (month == 0)
+                        return FALSE;
 
                     /* End of stream in wrong place, or invalid */
                     if (((c == '\0') && *fmtTemplate)
                         || (c != *fmtTemplate))
                         return FALSE;
-
-                    /* If we didn't get a valid month, fail */
-                    i = 0;
-                    while ((i < 12) && !monthOk[i++])
-                        ;
-                    if ((i == 12) && !monthOk[11])
-                        return FALSE;
-                    month = i;
 
                     if (*fmtTemplate)
                         fmtTemplate++;
