@@ -1,4 +1,4 @@
-## version $VER: AboutAROS.catalog 1.1 (9.2.2006)
+## version $VER: AboutAROS.catalog 1.2 (29.12.2011)
 ## language deutsch
 ## codeset 0
 ;
@@ -56,7 +56,7 @@ Sponsoren
 ; Sponsors
 ;
 MSG_PAGE_ACKNOWLEDGEMENTS
-Danksagung
+Danksagungen
 ; Acknowledgements
 ;
 MSG_SECTION_COORDINATION
@@ -68,7 +68,7 @@ Evangelismus
 ; Evangelism
 ;
 MSG_SECTION_HIDD
-HIDD Subsystem
+HIDD-Subsystem
 ; HIDD subsystem
 ;
 MSG_SECTION_INTUITION
@@ -80,7 +80,7 @@ Graphics
 ; Graphics
 ;
 MSG_SECTION_SHELL_COMMANDS
-Shell Kommandos
+Shell-Kommandos
 ; Shell Commands
 ;
 MSG_SECTION_WORKBENCH
@@ -112,11 +112,11 @@ DOS
 ; DOS
 ;
 MSG_SECTION_NETWORK
-Networking Components
+Netzwerk-Komponenten
 ; Networking Components
 ;
 MSG_SECTION_LIBC_POSIX
-C Link Library und POSIX Layer
+C Link Library und POSIX-Layer
 ; C link library and POSIX layer
 ;
 MSG_SECTION_DOCUMENTATION
@@ -124,17 +124,20 @@ Dokumentation
 ; Documentation
 ;
 MSG_SECTION_TRANSLATION
-Übersetzungen
+Übersetzung
 ; Translation
 ;
 MSG_SECTION_ARTISTRY
-Kunstwerke
+Künstlerische Gestaltung
 ; Artistry
 ;
 MSG_SECTION_WEBSITE
-Webseiten
+Webseite
 ; Website
 ;
 MSG_SECTION_DATATYPES
 Datatypes
 ; Datatypes
+;
+MSG_SECTION_TESTING
+Testen
