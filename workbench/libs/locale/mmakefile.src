@@ -3,12 +3,12 @@ include $(TOP)/config/make.cfg
 
 FILES := defaultlocale english initlocale catalog_funcs patches 
 FUNCS := \
-	closecatalog closelocale convtolower convtoupper \
-	formatdate formatstring getcatalogstr getlocalestr \
-	isxxxx opencataloga openlocale parsedate prefsupdate \
-	strconvert strncmp locrawdofmt locstrnicmp locstricmp \
-	loctolower loctoupper locdatetostr locstrtodate \
-	locdosgetlocalizedstring
+    closecatalog closelocale convtolower convtoupper \
+    formatdate formatstring getcatalogstr getlocalestr \
+    isxxxx opencataloga openlocale parsedate prefsupdate \
+    strconvert strncmp locrawdofmt locstrnicmp locstricmp \
+    loctolower loctoupper locdatetostr locstrtodate \
+    locdosgetlocalizedstring
 
 #MM workbench-libs-locale-includes : \
 #MM     kernel-exec-includes \

@@ -3,8 +3,8 @@
     $Id$
 
     Desc: Locale_RawDoFmt - locale.library's private replacement
-    	  of exec.library/RawDoFmt function. IPrefs will install
-	  the patch.
+          of exec.library/RawDoFmt function. IPrefs will install
+          the patch.
 
     Lang: english
 */
@@ -16,94 +16,6 @@
 #include "locale_intern.h"
 #include <aros/asmcall.h>
 #include <stdarg.h>
-
-
-#ifdef __MORPHOS__
-
-/* move.b d0,(a3)+
-   rts
-*/
-#define ARRAY_FUNC      0x16c04e75
-
-/* KPutChar
-	MOVE.L  A6,-(SP)        ;2F0E
-	MOVEA.L (4).L,A6        ;2C7900000004
-	JSR     (-$0204,A6)     ;4EAEFDFC
-	MOVEA.L (SP)+,A6        ;2C5F
-	RTS                     ;4E75
-*/
-
-#define SERIAL_FUNC0    0x2f0e2c79
-#define SERIAL_FUNC1    0x00000004
-#define SERIAL_FUNC2    0x4eaefdfc
-#define SERIAL_FUNC3    0x2c5f4e75
-
-struct HookData
-{
-	char	*PutChData;
-	ULONG	OldA4;
-};
-
-/* Quick reg layout function
- */
-#if 0
-char *_PPCCallM68k_RawDoFmt(char MyChar,
-			    char *(*PutChProc)(char*,char),
-			    char *PutChData,
-			    ULONG OldA4,
-			    struct ExecBase *sysBase);
-
-char *PPCCallM68k_RawDoFmt(char MyChar,
-			   char *(*PutChProc)(char*,char),
-			   char *PutChData,
-			   ULONG OldA4,
-			   struct ExecBase *sysBase)
-{
-  /* As we call a *QUICK REG LAYOUT* function
-   * below we must make sure that this function backups/restores
-   * all registers
-   */
-  asm volatile (""
-      :
-      :
-      : "r13");
-
-  return _PPCCallM68k_RawDoFmt(MyChar,
-                               PutChProc,
-			       PutChData,
-			       OldA4,
-			       sysBase);
-}
-#else
-char *PPCCallM68k_RawDoFmt(char MyChar,
-			   char *(*PutChProc)(char*,char),
-			   char *PutChData,
-			   ULONG OldA4,
-			   struct ExecBase *sysBase);
-
-/* Shitty workaround for release/cisc - ignores r13 clobber */
-
-__asm(".section \".text\"\n\t"
-      ".align 2\n\t"
-      ".globl PPCCallM68k_RawDoFmt\n\t"
-      ".type PPCCallM68k_RawDoFmt, @function\n"
-      "PPCCallM68k_RawDoFmt:\n\t"
-      "stwu 1, -96(1)\n\t"
-      "mflr 0\n\t"
-      "stmw 13, 20(1)\n\t"
-      "stw 0, 100(1)\n\t"
-      "bl _PPCCallM68k_RawDoFmt\n\t"
-      "lwz 0, 100(1)\n\t"
-      "mtlr 0\n\t"
-      "lmw 13, 20(1)\n\t"
-      "la 1, 96(1)\n\t"
-      "blr\n"
-      ".LfeN:\n\t"
-      ".size PPCCallM68k_RawDoFmt, .LfeN - PPCCallM68k_RawDoFmt"
-     );
-#endif
-
-#endif
 
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
@@ -119,25 +31,25 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     char *pdata = hook->h_Data;
 #endif
 
-    switch ((IPTR)hook->h_SubEntry)
+    switch ((IPTR) hook->h_SubEntry)
     {
-      case (IPTR)RAWFMTFUNC_STRING:
-	/* Standard Array Function */
-	*pdata++ = fill;
-	break;
-      case (IPTR)RAWFMTFUNC_SERIAL:
-	/* Standard Serial Function */
-	RawPutChar(fill);
-	break;
-      case (IPTR)RAWFMTFUNC_COUNT:
+    case (IPTR) RAWFMTFUNC_STRING:
+        /* Standard Array Function */
+        *pdata++ = fill;
+        break;
+    case (IPTR) RAWFMTFUNC_SERIAL:
+        /* Standard Serial Function */
+        RawPutChar(fill);
+        break;
+    case (IPTR) RAWFMTFUNC_COUNT:
         /* Standard Count Function */
-	(*((ULONG *)pdata))++;
-	break;
-      default:
-	AROS_UFC3(void, hook->h_SubEntry,
-    	    AROS_UFCA(char, fill, D0),
-	    AROS_UFCA(APTR, pdata, A3),
-	    AROS_UFCA(struct ExecBase *, SysBase, A6));
+        (*((ULONG *) pdata))++;
+        break;
+    default:
+        AROS_UFC3(void, hook->h_SubEntry,
+            AROS_UFCA(char, fill, D0),
+            AROS_UFCA(APTR, pdata, A3),
+            AROS_UFCA(struct ExecBase *, SysBase, A6));
     }
     hook->h_Data = pdata;
 
@@ -146,33 +58,32 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     AROS_UFHA(struct Hook *, hook, A0),
-    AROS_UFHA(struct Locale *, locale, A2),
-    AROS_UFHA(char, fill, A1))
+    AROS_UFHA(struct Locale *, locale, A2), AROS_UFHA(char, fill, A1))
 {
     AROS_USERFUNC_INIT
 
-    APTR (*proc)(APTR, UBYTE) = (APTR)hook->h_SubEntry;
+    APTR(*proc) (APTR, UBYTE) = (APTR) hook->h_SubEntry;
     char *pdata = hook->h_Data;
 
-    switch ((IPTR)hook->h_SubEntry)
+    switch ((IPTR) hook->h_SubEntry)
     {
-    case (IPTR)RAWFMTFUNC_STRING:
-	/* Standard Array Function */
-	*pdata++ = fill;
-	break;
+    case (IPTR) RAWFMTFUNC_STRING:
+        /* Standard Array Function */
+        *pdata++ = fill;
+        break;
 
-    case (IPTR)RAWFMTFUNC_SERIAL:
-	/* Standard Serial Function */
-	RawPutChar(fill);
-	break;
+    case (IPTR) RAWFMTFUNC_SERIAL:
+        /* Standard Serial Function */
+        RawPutChar(fill);
+        break;
 
-    case (IPTR)RAWFMTFUNC_COUNT:
+    case (IPTR) RAWFMTFUNC_COUNT:
         /* Standard Count Function */
-	(*((ULONG *)pdata))++;
-	break;
+        (*((ULONG *) pdata))++;
+        break;
 
     default:
-	pdata = proc(pdata, fill);
+        pdata = proc(pdata, fill);
     }
     hook->h_Data = pdata;
 
@@ -186,97 +97,58 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
     NAME */
 #include <proto/locale.h>
 
-	AROS_PLH4(APTR, LocRawDoFmt,
+        AROS_PLH4(APTR, LocRawDoFmt,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, FormatString, A0),
-	AROS_LHA(APTR        , DataStream, A1),
-	AROS_LHA(VOID_FUNC   , PutChProc, A2),
-	AROS_LHA(APTR        , PutChData, A3),
+        AROS_LHA(CONST_STRPTR, FormatString, A0),
+        AROS_LHA(APTR        , DataStream, A1),
+        AROS_LHA(VOID_FUNC   , PutChProc, A2),
+        AROS_LHA(APTR        , PutChData, A3),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 31, Locale)
+        struct ExecBase *, SysBase, 31, Locale)
 
 /*  FUNCTION
-    	See exec.library/RawDoFmt
+            See exec.library/RawDoFmt
 
     INPUTS
-    	See exec.library/RawDoFmt
+            See exec.library/RawDoFmt
 
     RESULT
 
     NOTES
-    	This function is not called by apps directly. Instead dos.library/DosGet-
-	LocalizedString is patched to use this function. This means, that the
-	LocaleBase parameter above actually points to SysBase, so we make use of
-	the global LocaleBase variable. This function is marked as private,
-	thus the headers generator won't mind the different basename in the header.
+            This function is not called by apps directly. Instead dos.library/DosGet-
+        LocalizedString is patched to use this function. This means, that the
+        LocaleBase parameter above actually points to SysBase, so we make use of
+        the global LocaleBase variable. This function is marked as private,
+        thus the headers generator won't mind the different basename in the header.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawDoFmt(), FormatString().
+        RawDoFmt(), FormatString().
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Hook       hook;
-    APTR    	      retval;
+    struct Hook hook;
+    APTR retval;
 
-#ifdef __MORPHOS__
-    struct HookData   data;
-
-    if ((ULONG) PutChProc > 1)
-    {
-	if (*((ULONG*) PutChProc) == ARRAY_FUNC)
-	{
-	    PutChProc = 0;
-	}
-#if 0
-/*
- * This is the job of exec
- */
-	else if ((((ULONG*) PutChProc)[0] == SERIAL_FUNC0) &&
-		 (((ULONG*) PutChProc)[1] == SERIAL_FUNC1) &&
-		 (((ULONG*) PutChProc)[2] == SERIAL_FUNC2) &&
-		 (((ULONG*) PutChProc)[3] == SERIAL_FUNC3))
-	{
-	    PutChProc = (APTR) 1;
-	}
-#endif
-    }
-
-    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
-    hook.h_SubEntry = (HOOKFUNC)PutChProc;
-    hook.h_Data     = &data;
-    data.PutChData  = PutChData;
-    data.OldA4      = REG_A4;
-
-#else
-
-    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
-    hook.h_SubEntry = (HOOKFUNC)PutChProc;
-    hook.h_Data     = PutChData;
-
-#endif
+    hook.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc);
+    hook.h_SubEntry = (HOOKFUNC) PutChProc;
+    hook.h_Data = PutChData;
 
     //kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
 
     REPLACEMENT_LOCK;
 
     retval = FormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
-    	    	    	  (STRPTR)FormatString,
-			  DataStream,
-			  &hook);
+        (STRPTR) FormatString, DataStream, &hook);
 
     REPLACEMENT_UNLOCK;
 
@@ -286,73 +158,68 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc_SysV,
 
     AROS_LIBFUNC_EXIT
 
-} /* LocRawDoFmt */
+}
 
  /*****************************************************************************
 
     NAME */
 #include <proto/locale.h>
 
-	AROS_PLH4(APTR, LocVNewRawDoFmt,
+        AROS_PLH4(APTR, LocVNewRawDoFmt,
 
 /*  SYNOPSIS */
-	AROS_LHA(CONST_STRPTR, FormatString, A0),
-	AROS_LHA(VOID_FUNC   , PutChProc, A2),
-	AROS_LHA(APTR        , PutChData, A3),
-	AROS_LHA(va_list     , DataStream, A1),
+        AROS_LHA(CONST_STRPTR, FormatString, A0),
+        AROS_LHA(VOID_FUNC   , PutChProc, A2),
+        AROS_LHA(APTR        , PutChData, A3),
+        AROS_LHA(va_list     , DataStream, A1),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 39, Locale)
+        struct ExecBase *, SysBase, 39, Locale)
 
 /*  FUNCTION
-    	See exec.library/VNewRawDoFmt
+            See exec.library/VNewRawDoFmt
 
     INPUTS
-    	See exec.library/VNewRawDoFmt
+            See exec.library/VNewRawDoFmt
 
     RESULT
 
     NOTES
-    	This function is not called by apps directly. Instead exec.library/VNewRawDoFmt
-	is patched to use this function. This means, that the library base parameter above
-	actually points to SysBase, so we make use of the global LocaleBase variable.
-	This function is marked as private, thus the headers generator won't mind the
-	different basename in the header.
+            This function is not called by apps directly. Instead exec.library/VNewRawDoFmt
+        is patched to use this function. This means, that the library base parameter above
+        actually points to SysBase, so we make use of the global LocaleBase variable.
+        This function is marked as private, thus the headers generator won't mind the
+        different basename in the header.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	RawDoFmt(), FormatString().
+        RawDoFmt(), FormatString().
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
+
 {
     AROS_LIBFUNC_INIT
 
-    struct Hook       hook;
+    struct Hook hook;
 
-    hook.h_Entry    = (HOOKFUNC)AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc_SysV);
-    hook.h_SubEntry = (HOOKFUNC)PutChProc;
-    hook.h_Data     = PutChData;
+    hook.h_Entry =
+        (HOOKFUNC) AROS_ASMSYMNAME(LocRawDoFmtFormatStringFunc_SysV);
+    hook.h_SubEntry = (HOOKFUNC) PutChProc;
+    hook.h_Data = PutChData;
 
     REPLACEMENT_LOCK;
 
     InternalFormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
-    	    	    	  (STRPTR)FormatString,
-			  NULL,
-			  &hook, DataStream);
+        (STRPTR) FormatString, NULL, &hook, DataStream);
 
     REPLACEMENT_UNLOCK;
 
     return hook.h_Data;
 
     AROS_LIBFUNC_EXIT
-
-} /* LocRawDoFmt */
+}

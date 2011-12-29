@@ -74,8 +74,6 @@ AROS_UFH3(void, LocDateToStrPutCharFunc,
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
