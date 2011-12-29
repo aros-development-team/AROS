@@ -1,10 +1,10 @@
 # DataType Description for AIFF
 Name=AIFF
 Version=$VER: AIFF 1.0 (14.11.2011)
-BaseName=aiff
+BaseName=binary
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'I' 'F' 'F'
 GroupID=soun
-ID=iff
+ID=aiff
 Flags=DTF_IFF
 Priority=0
