@@ -178,7 +178,8 @@ struct UhciQH
     ULONG           uqh_Element;    /* LE PHYSICAL Queue Element Link Pointer (QH/TD+TERM) */
     struct UhciTD  *uqh_FirstTD;    /* First TD */
     ULONG           uqh_Actual;     /* Number of bytes for successful completion in this QH */
-    //struct UhciTD  *uqh_LastTD;     /* Last TD */
+    APTR            uqh_SetupBuffer;/* Bounce buffer */
+    APTR            uqh_DataBuffer; /* Bounce buffer */
 };
 
 /* pointer defines */
