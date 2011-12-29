@@ -114,6 +114,23 @@ static BOOL AFS_close_volume(struct AFSBase *handler, struct Volume *volume, SIP
     return FALSE;
 }
 
+static BOOL AFS_protect_volume(struct AFSBase *handler, struct Volume *volume, BOOL on, ULONG key, SIPTR *io_DosError)
+{
+    if (!volume->locklist)
+    {
+        LONG error = writeprotectVolume(handler, volume, on, key);
+        if (error == 0)
+        {
+            return TRUE;
+        } else {
+            *io_DosError = error;
+            return FALSE;
+        }
+    }
+    *io_DosError = ERROR_OBJECT_IN_USE;
+    return FALSE;
+}
+
 static VOID startFlushTimer(struct AFSBase *handler)
 {
     struct timerequest *request;
@@ -785,6 +802,9 @@ void __startup AFS_work(void)
 		case ACTION_SERIALIZE_DISK:
 		    ok = relabel(handler, volume, NULL, &res2);
 		    break;
+		case ACTION_WRITE_PROTECT:
+			ok = AFS_protect_volume(handler, volume, dp->dp_Arg1, dp->dp_Arg2, &res2) ? DOSFALSE : DOSTRUE;
+			break;
 		default:
 		    ok = DOSFALSE;
 		    res2 = ERROR_NOT_IMPLEMENTED;

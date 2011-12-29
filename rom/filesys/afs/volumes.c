@@ -260,4 +260,43 @@ void uninitVolume(struct AFSBase *afsbase, struct Volume *volume) {
 	FreeMem(volume,sizeof(struct Volume) + strlen(volume->ioh.blockdevice) + 1);
 }
 
+
+LONG writeprotectVolume(struct AFSBase *afsbase, struct Volume *volume, BOOL on, ULONG key)
+{
+    LONG error = 0;
+
+    if(on && (volume->state == ID_WRITE_PROTECTED))
+    { // Already write protected
+        error = ERROR_DISK_WRITE_PROTECTED;
+        D(bug("[AFS] Volume: Already write protected (%l)\n", error));
+    } else {
+        if(on)
+        { // Attempt to write protect
+            if (key)
+            { // With a key
+                volume->key = key;
+                volume->state = ID_WRITE_PROTECTED; // : ID_VALIDATED;
+            } else { // Without a key
+                volume->state = ID_WRITE_PROTECTED;
+            }
+        } else { // Attempt to write enable
+            if (volume->key)
+            { // There is a key
+                if(key == volume->key)
+                { // Key is correct
+                    volume->state = ID_VALIDATED;
+                    volume->key = 0;
+                } else { // Key is incorrect
+                    error = ERROR_INVALID_COMPONENT_NAME;
+                    D(bug("[AFS] Volume: Wrong key (%l)\n", error));
+                    return error;
+                }
+            } else { // There is no key
+                volume->state = ID_VALIDATED;
+            }
+        }
+    }
+    /* Return success indicator */
+    return error;
+}
 /* vim: set noet ts=3 ai fdm=marker fmr={,} :*/

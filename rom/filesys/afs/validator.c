@@ -34,6 +34,7 @@
 #include <dos/dos.h>
 #include <aros/debug.h>
 #include "misc.h"
+#include "extstrings.h"
 #endif
 
 /*******************************************
@@ -48,8 +49,14 @@
 LONG checkValid(struct AFSBase *afs, struct Volume *vol)
 {
 #ifdef __AROS__
+    struct BlockCache *blockbuffer;
+    blockbuffer = getBlock(afs, vol, vol->rootblock);
+    UBYTE  n[MAX_NAME_LENGTH];
+    STRPTR name;
+    name=(STRPTR)((char *)blockbuffer->buffer+(BLK_DISKNAME_START(vol)*4));
+    StrCpyFromBstr(name, n);
 	while (vol->state == ID_WRITE_PROTECTED
-		&& showError(afs, ERR_WRITEPROTECT, "")); /* TO DO: insert volume name */
+              && showError(afs, ERR_WRITEPROTECT, n));
 
 	if (vol->state == ID_VALIDATING)
 	{

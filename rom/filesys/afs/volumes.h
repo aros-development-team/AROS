@@ -27,6 +27,7 @@ struct Volume {
 	LONG numbuffers;
 	ULONG cachecounter;           /* Keeps track of cache usage */
 	ULONG state;                 /* Read-only, read/write or validating */
+        ULONG key;                   /* Lock key */
 	ULONG inhibitcounter;
 
 	ULONG usedblockscount;       /* nr of used blocks */
@@ -53,6 +54,7 @@ struct Volume *initVolume(struct AFSBase *, struct Device *, CONST_STRPTR,
 	ULONG, ULONG flags, struct DosEnvec *, LONG *error);
 void uninitVolume(struct AFSBase *, struct Volume *);
 LONG newMedium(struct AFSBase *, struct Volume *);
+LONG writeprotectVolume(struct AFSBase *, struct Volume *, BOOL on, ULONG key);
 
 #endif
 
