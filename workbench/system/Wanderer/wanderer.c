@@ -371,6 +371,8 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         struct MUIDisplayObjects dobjects;
         struct IconList_Drop_SourceEntry *currententry;
         struct OpModes opModes;
+        ULONG updatedIcons = 0;
+
         opModes.deletemode = OPMODE_ASK;
         opModes.protectmode = OPMODE_ASK;
         opModes.overwritemode = OPMODE_ASK;
@@ -392,17 +394,28 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
         {
             while ((currententry = (struct IconList_Drop_SourceEntry *)RemTail(&copyFunc_DropEvent->drop_SourceList)) != NULL)
             {
-D(bug("[Wanderer] %s: Copying '%s' to '%s'\n", __PRETTY_FUNCTION__, currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath));
+                D(bug("[Wanderer] %s: Copying '%s' to '%s'\n", __PRETTY_FUNCTION__,
+                        currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath));
 
                 CopyContent(NULL,
                             currententry->dropse_Node.ln_Name, copyFunc_DropEvent->drop_TargetPath,
                             TRUE, ACTION_COPY, &displayCopyHook, &opModes, (APTR) &dobjects);
+                updatedIcons++;
 
                 FreeVec(currententry->dropse_Node.ln_Name);
                 FreeMem(currententry, sizeof(struct IconList_Drop_SourceEntry));
             } 
             /* delete copy window */
             DisposeCopyDisplay(&dobjects);
+        }
+
+        if (updatedIcons > 0)
+        {
+            /* Update state of target object after copying */
+            DoMethod(_app(copyFunc_DropEvent->drop_TargetObj), MUIM_Application_PushMethod,
+                    copyFunc_DropEvent->drop_TargetObj, 1, MUIM_IconList_Update);
+            DoMethod(_app(copyFunc_DropEvent->drop_TargetObj), MUIM_Application_PushMethod,
+                    copyFunc_DropEvent->drop_TargetObj, 1, MUIM_IconList_Sort);
         }
 
         if (copyFunc_DropEvent->drop_TargetPath) FreeVec(copyFunc_DropEvent->drop_TargetPath);
