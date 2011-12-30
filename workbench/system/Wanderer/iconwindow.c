@@ -57,6 +57,7 @@
 #include "Classes/iconlist.h"
 #include "Classes/iconlistview.h"
 #include "Classes/iconlist_attributes.h"
+#include "Classes/icon_attributes.h"
 #include "wanderer.h"
 #include "wandererprefs.h"
 
@@ -1535,6 +1536,135 @@ IPTR IconWindow__MUIM_IconWindow_RateLimitRefresh
 }
 ///
 
+///IconWindow__MUIM_IconWindow_Snapshot()
+IPTR IconWindow__MUIM_IconWindow_Snapshot
+(
+  Class *CLASS, Object *self, struct MUIP_IconWindow_Snapshot * message
+)
+{
+    Object            *iconList = (Object *) XGET(self, MUIA_IconWindow_IconList);
+    char              *dir_name = (char *)XGET(self, MUIA_IconWindow_Location);
+    struct DiskObject *drawericon = NULL;
+    IPTR               geticon_error = 0;
+    IPTR               display_bits = 0, sort_bits = 0;
+
+    D(bug("[Wanderer:IconWindow]: %s('%s')\n", __PRETTY_FUNCTION__, dir_name));
+
+    if (message->snapshotall == TRUE)
+    {
+        struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
+        struct IconEntry      *node = NULL;
+        struct TagItem            icon_tags[] =
+        {
+            { ICONPUTA_OnlyUpdatePosition, TRUE },
+            { TAG_DONE, 0                       }
+        };
+        D(bug("[Wanderer:IconWindow] %s: snapshot ALL\n", __PRETTY_FUNCTION__));
+
+        do
+        {
+            DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR)&icon_entry);
+
+            if ((IPTR)icon_entry != MUIV_IconList_NextIcon_End)
+            {
+                node = (struct IconEntry *)((IPTR)icon_entry - ((IPTR)&node->ie_IconListEntry - (IPTR)node));
+                if (node->ie_Flags & ICONENTRY_FLAG_HASICON)
+                {
+                    /* Snapshot-all should only save positions of objects that already have icons.
+                     * This is by design and how 3.1 Workbench works. In order to snapshot all objects in window
+                     * regardless if they have icons or not: 1) make all objects visible, 2) select all objects,
+                     * 3) select icon->snapshot */
+                    D(bug("[Wanderer:IconWindow] %s: SNAPSHOT entry = '%s' @ %p, (%p)\n", __PRETTY_FUNCTION__,
+                            icon_entry->ile_IconEntry->ie_IconNode.ln_Name, icon_entry, node));
+                    if (node->ie_DiskObj)
+                    {
+                        node->ie_DiskObj->do_CurrentX = node->ie_IconX;
+                        node->ie_DiskObj->do_CurrentY = node->ie_IconY;
+                        PutIconTagList(icon_entry->ile_IconEntry->ie_IconNode.ln_Name, node->ie_DiskObj, icon_tags);
+                    }
+                    else
+                    {
+                        D(bug("[[Wanderer:IconWindow] %s: icon has no diskobj!\n", __PRETTY_FUNCTION__));
+                    }
+                }
+            }
+            else
+            {
+                break;
+            }
+        } while (TRUE);
+    }
+    else
+    {
+        D(bug("[Wanderer:IconWindow] %s: snapshot WINDOW\n", __PRETTY_FUNCTION__));
+    }
+
+    drawericon = GetIconTags(dir_name,
+                            ICONGETA_FailIfUnavailable, FALSE,
+                            ICONA_ErrorCode, &geticon_error,
+                            TAG_DONE);
+
+    if (drawericon != NULL)
+    {
+        if (drawericon->do_DrawerData == NULL)
+        {
+            D(bug("[Wanderer:IconWindow] %s: Icon for '%s' has no DRAWER data!\n", __PRETTY_FUNCTION__, dir_name));
+            drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
+        }
+
+        drawericon->do_Gadget.UserData = (APTR)1;
+
+        drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(self, MUIA_Window_TopEdge);
+        drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(self, MUIA_Window_LeftEdge);
+        drawericon->do_DrawerData->dd_NewWindow.Width = XGET(self, MUIA_Window_Width);
+        drawericon->do_DrawerData->dd_NewWindow.Height = XGET(self, MUIA_Window_Height);
+
+        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+        if (display_bits & ICONLIST_DISP_SHOWINFO)
+        {
+            D(bug("[Wanderer:IconWindow] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
+            drawericon->do_DrawerData->dd_Flags = 1;
+        }
+        else
+        {
+            drawericon->do_DrawerData->dd_Flags = 2;
+        }
+
+        /* TODO: Icon sort flags are only really for text list mode ... fix */
+        GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
+        if (sort_bits & MUIV_IconList_Sort_ByDate)
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 3;
+        }
+        else if (sort_bits & MUIV_IconList_Sort_BySize)
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 4;
+        }
+        else
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 2;
+        }
+
+        {
+
+            UBYTE * newtooltypes[2] = {NULL, NULL};
+            UBYTE ** oldtooltypes = drawericon->do_ToolTypes;
+            TEXT s[30] = {0};
+            newtooltypes[0] = s;
+
+            __sprintf(s, "WNDRRSRT=%d", sort_bits);
+            drawericon->do_ToolTypes = newtooltypes;
+
+            PutDiskObject(dir_name, drawericon);
+
+            drawericon->do_ToolTypes = oldtooltypes;
+        }
+    }
+
+    return (IPTR)TRUE;
+}
+///
+
 ///
 IPTR IconWindow__SetupClass()
 {
@@ -1568,6 +1698,7 @@ ICONWINDOW_CUSTOMCLASS
   MUIM_IconWindow_AppWindowDrop,              Msg,
   MUIM_IconWindow_Remove,                     Msg,
   MUIM_IconWindow_RateLimitRefresh,           Msg,
+  MUIM_IconWindow_Snapshot,                   struct MUIP_IconWindow_Snapshot *,
   MUIM_IconWindow_BackFill_Register,          struct MUIP_IconWindow_BackFill_Register *,
   MUIM_IconWindow_BackFill_Setup,             struct MUIP_IconWindow_BackFill_Setup *,
   MUIM_IconWindow_BackFill_Cleanup,           struct MUIP_IconWindow_BackFill_Cleanup *,
