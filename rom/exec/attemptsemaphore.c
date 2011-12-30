@@ -1,15 +1,17 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Try to lock a sempahore.
     Lang: english
 */
-#include "exec_intern.h"
+
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-#define CHECK_INITSEM 1
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "semaphores.h"
 
 /*****************************************************************************
 
@@ -50,50 +52,10 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("AttemptSemaphore");
     struct Task *me = FindTask(NULL);
 
-#if CHECK_INITSEM
-    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
-    {
-        kprintf("\n\nAttemptSemaphore called on an uninitialized semaphore!!! "
-	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
-    }
-#endif
-
-    /* Arbitrate for semaphore nesting count and owner fields */
-    Forbid();
-
-    /*
-	We are going to lock or fail, so we increment the
-	ss_QueueCount anyway. We shall fix it up later if it was
-	wrong.
-    */
-    sigSem->ss_QueueCount++;
-
-    /*	If it is now equal to zero, then we have got it */
-    if( sigSem->ss_QueueCount == 0 )
-    {
-	sigSem->ss_Owner = me;
-	sigSem->ss_NestCount++;
-    }
-    /*	It was already owned by me, so lets just inc the nest count */
-    else if( sigSem->ss_Owner == me )
-    {
-	sigSem->ss_NestCount++;
-    }
-
-    /*	Owned by somebody else, we fix up the owner count. */
-    else
-    {
-	sigSem->ss_QueueCount--;
-    }
-
-    Permit();
-
-    /*
-	We own the semaphore if it is owned by me
-    */
-    return (sigSem->ss_Owner == me ? TRUE : FALSE);
+    return InternalAttemptSemaphore(sigSem, me, &tp, SysBase);
 
     AROS_LIBFUNC_EXIT
 } /* AttemptSemaphore */
