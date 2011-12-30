@@ -102,31 +102,33 @@ struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 static char __intern_wintitle_wanderer[] = "Wanderer";
 
 /*** Helper functions ***********************************************************/
-struct IconWindowSettings
+STATIC VOID IconWindow_RestoreSettings(struct DiskObject * dskobj, Object * iconwindowiconlist, BOOL forceshowall)
 {
-    ULONG ws_SortFlags;
-};
-
-STATIC struct IconWindowSettings IconWindow_RestoreSettings(struct DiskObject * dskobj)
-{
-    struct IconWindowSettings _return;
-    _return.ws_SortFlags = 0;
-
-
     if (dskobj->do_ToolTypes)
     {
         LONG sortFlags = ArgInt(dskobj->do_ToolTypes, "WNDRRSRT", -1);
         if (sortFlags != -1)
-            _return.ws_SortFlags = (ULONG)sortFlags;
+            SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredSortFlags, (ULONG)sortFlags);
     }
 
-    return _return;
+    if (dskobj->do_Gadget.UserData)
+    {
+        D(bug("[Wanderer:IconWindow] %s: Drawer Icon has OS 2.x/3.x data: FLAGS %x\n", __PRETTY_FUNCTION__, dskobj->do_DrawerData->dd_Flags));
+
+        if (dskobj->do_DrawerData->dd_Flags == 1)
+            SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, ICONLIST_DISP_SHOWINFO);
+        if (dskobj->do_DrawerData->dd_Flags == 2)
+            SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, 0);
+    }
+
+    if (forceshowall)
+        SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, 0);
 }
 
-STATIC VOID IconWindow_StoreSettings(Object * window)
+STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
 {
-    Object              *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
-    STRPTR              dir_name = (char *)XGET(window, MUIA_IconWindow_Location);
+    Object              *iconList = (Object *) XGET(iconwindow, MUIA_IconWindow_IconList);
+    STRPTR              dir_name = (char *)XGET(iconwindow, MUIA_IconWindow_Location);
     struct DiskObject   *drawericon = NULL;
     IPTR                geticon_error = 0;
     IPTR                display_bits = 0, sort_bits = 0;
@@ -146,20 +148,20 @@ STATIC VOID IconWindow_StoreSettings(Object * window)
 
         drawericon->do_Gadget.UserData = (APTR)1;
 
-        drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(window, MUIA_Window_TopEdge);
-        drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(window, MUIA_Window_LeftEdge);
-        drawericon->do_DrawerData->dd_NewWindow.Width = XGET(window, MUIA_Window_Width);
-        drawericon->do_DrawerData->dd_NewWindow.Height = XGET(window, MUIA_Window_Height);
+        drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(iconwindow, MUIA_Window_TopEdge);
+        drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(iconwindow, MUIA_Window_LeftEdge);
+        drawericon->do_DrawerData->dd_NewWindow.Width = XGET(iconwindow, MUIA_Window_Width);
+        drawericon->do_DrawerData->dd_NewWindow.Height = XGET(iconwindow, MUIA_Window_Height);
 
         GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
         if (display_bits & ICONLIST_DISP_SHOWINFO)
         {
             D(bug("[Wanderer:IconWindow] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
-            drawericon->do_DrawerData->dd_Flags = 1;
+            drawericon->do_DrawerData->dd_Flags = DDFLAGS_SHOWICONS;
         }
         else
         {
-            drawericon->do_DrawerData->dd_Flags = 2;
+            drawericon->do_DrawerData->dd_Flags = DDFLAGS_SHOWALL;
         }
 
         /* TODO: Icon sort flags are only really for text list mode ... fix */
@@ -467,14 +469,11 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
     }
     else
     {
-        struct DiskObject       *drawericon = NULL;
-        IPTR                    geticon_error = 0, geticon_isdefault = 0;
-        IPTR                    _newIconWin__TitleLen = 0;
-        IPTR                    current_DispFlags = 0;
-/*      IPTR                        current_SortFlags = 0; */
-        IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
-        BOOL                        isVolume;
-        struct IconWindowSettings iwsettings;
+        struct DiskObject   *drawericon = NULL;
+        IPTR                geticon_error = 0, geticon_isdefault = 0;
+        IPTR                _newIconWin__TitleLen = 0;
+        BOOL                forceshowall = FALSE;
+        BOOL                isVolume;
 
         _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
         _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
@@ -507,38 +506,6 @@ D(bug("[Wanderer:IconWindow] %s: Directory Icon has DRAWER data!\n", __PRETTY_FU
         if ((drawericon) && (drawericon->do_Gadget.UserData > 0))
         {
 D(bug("[Wanderer:IconWindow] %s: Directory Icons has OS 2.x/3.x data: FLAGS %x [\n", __PRETTY_FUNCTION__, drawericon->do_DrawerData->dd_Flags));
-            switch (drawericon->do_DrawerData->dd_Flags)
-            {
-                case 0:
-                {
-                    D(bug("Default"));
-                    break;
-                }
-                case 1:
-                {
-                    D(bug("Show only icons"));
-                    icon__DispFlags |= ICONLIST_DISP_SHOWINFO;
-                    break;
-                }
-                case 2:
-                {
-                    D(bug("Show all files"));
-                    icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
-                    break;
-                }
-                case 3:
-                {
-                    D(bug("Show all files"));
-                    icon__DispFlags |= ICONLIST_DISP_SHOWHIDDEN;
-                    icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
-                    break;
-                }
-                default:
-                {
-                    D(bug("INVALID"));
-                }
-            }
-
 D(bug("] VIEWMODES %x [", drawericon->do_DrawerData->dd_ViewModes));
 
             switch (drawericon->do_DrawerData->dd_ViewModes)
@@ -589,8 +556,8 @@ D(bug("]\n"));
                 (((geticon_isdefault) && (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAllIfNoInfo)) ||
                 (_newIconWin__VOLVIEWMODE == MUIV_IconWindow_VolumeInfoMode_ShowAll)))
         {
-D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
-                icon__DispFlagMask &= ~ICONLIST_DISP_SHOWINFO;
+            D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION__));
+            forceshowall = TRUE;
         }
 
         _newIconWin__IconListObj = (Object *) NewObject(iconviewclass->mcc_Class, NULL,
@@ -598,12 +565,8 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
                                                                  MUIA_Wanderer_FileSysNotifyPort, _newIconWin__FSNotifyPort,
                                                                 TAG_DONE);
 
-        GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
-        SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
-
-        iwsettings = IconWindow_RestoreSettings(drawericon);
-
-        SET(_newIconWin__IconListObj, MUIA_IconWindowIconList_RestoredSortFlags, iwsettings.ws_SortFlags);
+        if (drawericon)
+            IconWindow_RestoreSettings(drawericon, _newIconWin__IconListObj, forceshowall);
 
         _newIconWin__TopPanelRootGroupObj = MUI_NewObject(MUIC_Group,
                 MUIA_InnerLeft,(0),
