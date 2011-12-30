@@ -17,21 +17,15 @@
  * EXPERIMENTAL: use semaphore protection instead of Forbid()/Permit() for
  * system memory allocation routines.
  * In case of problems use definitions below.
- *
- * 31.01.2011: disabled, because creates problems:
- * 1. FindMem() can be called from within supervisor mode
- * 2. FreeMem() can be called from within RemTask() in order to free task structure itself.
- *    This eventually leads to trashing memory (semaphore is owned by removed task).
- * Can be turned on again only after addressing these issues.
-
+ */
 #define MEM_LOCK	ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_UNLOCK	ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
-*/
+/*
 #define MEM_LOCK	Forbid()
 #define MEM_LOCK_SHARED Forbid()
 #define MEM_UNLOCK	Permit()
-
+*/
 
 /* Private Pool structure */
 struct Pool 

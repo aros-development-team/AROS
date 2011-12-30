@@ -5,14 +5,13 @@
     Desc: Lock a semaphore.
     Lang: english
 */
-#include "exec_intern.h"
-#include "semaphores.h"
+
 #include <exec/semaphores.h>
 #include <aros/atomic.h>
 
-#include <proto/exec.h>
-
-#define CHECK_INITSEM 1
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "semaphores.h"
 
 /*****************************************************************************/
 #undef  Exec
@@ -59,10 +58,8 @@
 
     AROS_LIBFUNC_INIT
 
-    struct Task *me;
-
-    /* Get pointer to current task */
-    me=SysBase->ThisTask;
+    struct TraceLocation tp = CURRENT_LOCATION("ObtainSemaphore");
+    struct Task *me = FindTask(NULL);
 
     /*
      * If there's no ThisTask, the function is called from within memory
@@ -72,14 +69,10 @@
     if (!me)
     	return;
 
-#if CHECK_INITSEM
-    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
+    if (!CheckSemaphore(sigSem, &tp))
     {
-        kprintf("\n\nObtainSemaphore called on a not intialized semaphore!!! "
-	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
-	Alert(AN_SemCorrupt);
+        return;  /* A crude attempt to recover... */
     }
-#endif
 
     /* Arbitrate for the semaphore structure */
     Forbid();
