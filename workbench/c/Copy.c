@@ -56,7 +56,7 @@
         FOLNK     --  also makes links to directories
         FODEL     --  delete protected files also
         FOOVR     --  also overwrite protected files
-        DONTOVR   --  do never overwrite destination
+        DONTOVR   --  never overwrite destination
         FORCE     --  DO NOT USE. Call compatibility only.
         NEWER     --  compare version strings and only overwrites older files.
 
@@ -286,16 +286,6 @@
         Copy was done by Dirk Stoecker (stoecker@amigaworld.com), donated
         to AROS in March 2001
 
-        3.3.2001  --  AROSified by Johan 'S.Duvan' Alfredsson
-        29.7.2002 --  Fixed silly IoErr trashing bug, bumped to 50.1 - Piru
-        7.11.2002 --  Fixed even silier bug where it would put out a bogus
-                      errormessage when the copy destination was a volume
-                      root. bumped to 50.2 - Piru
-		6.3.2007  --  Fixed small signed bug. bumped to 50.15 - Geit
-		7.3.2006  --  Implemented new copy mode named "NEWER" which scans for
-					  version information and only copies over a file if it is
-					  newer than an existing target. bumped to 50.16 - Geit
-
 ******************************************************************************/
 
 #define CTRL_C          (SetSignal(0L,0L) & SIGBREAKF_CTRL_C)
@@ -326,7 +316,7 @@ typedef ULONG IPTR;
 
 #include <string.h>
 
-const TEXT version[] = "\0$VER: Copy 50.16 (7.3.2007)";
+const TEXT version[] = "\0$VER: Copy 50.17 (30.12.2011)";
 
 static const UBYTE *PARAM =
 "FROM/M,TO,PAT=PATTERN/K,BUF=BUFFER/K/N,ALL/S,"
@@ -457,6 +447,7 @@ struct CopyData
     UBYTE       Mode;
     UBYTE       RetVal;         /* when set, error output is already done */
     UBYTE       RetVal2;        /* when set, error output must be done */
+    LONG        IoErr;
     UBYTE       Deep;
     UBYTE       FileName[FILEPATH_SIZE];
     UBYTE       DestName[FILEPATH_SIZE];
@@ -511,11 +502,11 @@ struct VersionData {
 const CONST_STRPTR texts[] =
     {
         "read.",
-        "copied.",
-        "moved.",
-        "deleted.",
-        "linked.",
-        "renamed.",
+        "copied",
+        "moved",
+        "deleted",
+        "linked",
+        "renamed",
         "   [created]",
         "entered",
         "opened for output",
@@ -526,7 +517,7 @@ const CONST_STRPTR texts[] =
         "HARDLINK mode\n",
         "SOFTLINK mode\n",
         "%s (Dir)",         /* output of directories */
-        " not %s: ",
+        " not %s",
         "No file was processed.\n",
         "FORCELINK keyword required.\n",
         "A device cannot be deleted.",
@@ -590,9 +581,6 @@ __startup static AROS_ENTRY(int, Start,
 
         cd->SysBase = SysBase;
         cd->DOSBase = DOSBase;
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
 #define SysBase cd->SysBase
 #define DOSBase cd->DOSBase
 
@@ -865,7 +853,7 @@ __startup static AROS_ENTRY(int, Start,
                         (args.softlink && args.all) ||
                         (!args.to && cd->Mode != COPYMODE_DELETE && cd->Mode != COPYMODE_MAKEDIR))
                 {
-                    SetIoErr(ERROR_TOO_MANY_ARGS);
+                    cd->IoErr = ERROR_TOO_MANY_ARGS;
                 }
                 else if (cd->Mode == COPYMODE_MAKEDIR)
                 {
@@ -919,11 +907,17 @@ __startup static AROS_ENTRY(int, Start,
                             if ((out = Open(args.to, MODE_NEWFILE)))
                             {
                                 cd->RetVal2 = CopyFile(in, out, cd->BufferSize, cd);
+                                if (cd->RetVal2 != 0)
+                                    cd->IoErr = IoErr();
                                 Close(out);
                             }
+                            else
+                                cd->IoErr = IoErr();
 
                             Close(in);
                         }
+                        else
+                            cd->IoErr = IoErr();
                     }
                     else /* COPYMODE_DELETE */
                     {
@@ -966,7 +960,7 @@ __startup static AROS_ENTRY(int, Start,
                         {
                             if (!*args.pattern)
                             {
-                                SetIoErr(ERROR_BAD_TEMPLATE);
+                                cd->IoErr = ERROR_BAD_TEMPLATE;
                             }
                         }
                         else if (cd->Mode == COPYMODE_DELETE)
@@ -1004,7 +998,6 @@ __startup static AROS_ENTRY(int, Start,
                                 !(i = IsMatchPattern(*args.from, cd)))
                             {
                                 BPTR lock;
-                                LONG lockioerr;
 
                                 /* is destination an existing directory */
                                 if ((lock = Lock(args.to, SHARED_LOCK)))
@@ -1098,8 +1091,6 @@ __startup static AROS_ENTRY(int, Start,
                                     }
                                 }
 
-                                lockioerr = IoErr(); /* We save ioerr here, because TestFileSys changes it */
-
                                 if (lock == 0 && cd->Mode == COPYMODE_COPY && !TestFileSys(*args.from, cd))
                                 {
                                     UBYTE sep;
@@ -1120,8 +1111,6 @@ __startup static AROS_ENTRY(int, Start,
                                         UnLock(cd->CurDest);
                                     }
                                 }
-                                else
-                                    SetIoErr(lockioerr);
                             }
                             else if (i != -1)
                             {
@@ -1169,11 +1158,6 @@ __startup static AROS_ENTRY(int, Start,
             cd->RetVal2 = RETURN_WARN;
         }
 
-        if (cd->RetVal2 && !args.quiet && !cd->RetVal)
-        {
-            PrintFault(IoErr(), NULL);
-        }
-
         if (cd->RetVal)
         {
             cd->RetVal2 = cd->RetVal;
@@ -1195,6 +1179,7 @@ __startup static AROS_ENTRY(int, Start,
     if (cd)
     {
         retval = cd->RetVal2;
+        SetIoErr(cd->IoErr);
         FreeMem(cd, sizeof(*cd));
     }
     else if (DOSBase)
@@ -1264,7 +1249,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                 //Printf("ParentDir() fuxored last round! Would copy next files to SYS: !\n");
                 retval = IoErr();
                 if (!retval)
-                    SetIoErr(retval = ERROR_INVALID_LOCK);
+                    cd->IoErr = retval = ERROR_INVALID_LOCK;
                 break;
             }
 
@@ -1423,7 +1408,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 #endif
             Printf("%s - ", APath->ap_Info.fib_FileName);
             PrintFault(ioerr, NULL);
-            SetIoErr(ioerr);
+            cd->IoErr = ioerr;
 
             cd->RetVal2 = RETURN_FAIL;
         }
@@ -1470,7 +1455,7 @@ LONG IsPattern(STRPTR name, struct CopyData *cd)
 
     if (ret == -1)
     {
-        SetIoErr(ERROR_NO_FREE_STORE);
+        cd->IoErr = ERROR_NO_FREE_STORE;
     }
 
     return ret;
@@ -1505,18 +1490,6 @@ LONG KillFile(STRPTR name, ULONG doit, struct CopyData *cd)
     }
 
     return DeleteFile(name);
-}
-
-
-LONG KillFileKeepErr(STRPTR name, ULONG doit, struct CopyData *cd)
-{
-    LONG ret, ioerr;
-
-    ioerr = IoErr();
-    ret = KillFile(name, doit, cd);
-    SetIoErr(ioerr);
-
-    return ret;
 }
 
 
@@ -1574,6 +1547,7 @@ BPTR OpenDestDir(STRPTR name, struct CopyData *cd)
             }
             else
             {
+                cd->IoErr = IoErr();
                 if (!(cd->Flags & COPYFLAG_QUIET))
                 {
                     PrintNotDone(name, TEXT_CREATED, 1, 1, cd);
@@ -1609,7 +1583,7 @@ BPTR OpenDestDir(STRPTR name, struct CopyData *cd)
 
     if (cd->Mode == COPYMODE_MAKEDIR && !cr && !(cd->Flags & COPYFLAG_QUIET))
     {
-        SetIoErr(ERROR_OBJECT_EXISTS);
+        cd->IoErr = ERROR_OBJECT_EXISTS;
         PrintNotDone(name, TEXT_CREATED, 1, 1, cd);
     }
 
@@ -1667,7 +1641,13 @@ void PrintNotDone(CONST_STRPTR name, CONST_STRPTR txt, ULONG deep, ULONG dir, st
 #endif
 
     Printf(TEXT_NOT_DONE, txt);
-    PrintFault(IoErr(), NULL);
+    if (cd->IoErr != 0)
+    {
+        PutStr(" - ");
+        PrintFault(cd->IoErr, NULL);
+    }
+    else
+        PutStr("\n");
 }
 
 
@@ -1755,8 +1735,11 @@ void DoWork(STRPTR name, struct CopyData *cd)
                 ULONG h;
 
                 h = CopyFile(in, out, cd->BufferSize, cd);
+                if (h != 0)
+                    cd->IoErr = IoErr();
                 Close(out);
-                Close(in); in = BNULL;
+                Close(in);
+                in = BNULL;
 
                 if (!h)
                 {
@@ -1772,18 +1755,21 @@ void DoWork(STRPTR name, struct CopyData *cd)
                         res = 1;
                     }
                 } else {
-                    KillFileKeepErr(cd->DestName, 0, cd);
+                    KillFile(cd->DestName, 0, cd);
                 }
             }
+            else
+                cd->IoErr = IoErr();
 
             if (in != BNULL)
                 Close(in);
         }
+        else
+            cd->IoErr = IoErr();
 
         if (!res && !(cd->Flags & COPYFLAG_QUIET))
         {
-            PrintNotDone(cd->Flags & COPYFLAG_VERBOSE ? name : 0,
-                         txt, cd->Deep, cd->Fib.fib_DirEntryType > 0, cd);
+            PrintNotDone(name, txt, cd->Deep, cd->Fib.fib_DirEntryType > 0, cd);
         }
         else
         {
@@ -1804,6 +1790,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
     if (!(lock = Lock(cd->FileName, SHARED_LOCK)))
     {
         cd->RetVal = RETURN_WARN;
+        cd->IoErr = IoErr();
 
         if (!(cd->Flags & COPYFLAG_QUIET))
         {
@@ -1908,6 +1895,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
             {
                 if (!(cd->CurDest = Lock(cd->DestName, SHARED_LOCK)))
                 {
+                    cd->IoErr = IoErr();
                     printerr = TEXT_ENTERED;
                     cd->RetVal = RETURN_ERROR;
                 }
@@ -1930,12 +1918,14 @@ void DoWork(STRPTR name, struct CopyData *cd)
                 }
                 else
                 {
+                    cd->IoErr = IoErr();
                     printerr = TEXT_ENTERED;
                     cd->RetVal = RETURN_ERROR;
                 }
             }
             else
             {
+                cd->IoErr = IoErr();
                 printerr = TEXT_CREATED;
                 cd->RetVal = RETURN_ERROR;
             }
@@ -1957,6 +1947,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
             }
             else
             {
+                cd->IoErr = IoErr();
                 printerr = TEXT_RENAMED;
                 cd->RetVal = RETURN_WARN;
             }
@@ -2026,7 +2017,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
                 if (cd->Flags & COPYFLAG_SOFTLINK)
                 {
-                    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
+                    cd->IoErr = ERROR_OBJECT_WRONG_TYPE;
                 }
             }
         }
@@ -2047,7 +2038,10 @@ void DoWork(STRPTR name, struct CopyData *cd)
                 if ((in = Open(cd->FileName, MODE_OLDFILE)))
                 {
                     h = CopyFile(in, out, cd->BufferSize, cd);
-                    Close(out); out = BNULL;
+                    if (h != 0)
+                        cd->IoErr = IoErr();
+                    Close(out);
+                    out = BNULL;
                     Close(in);
 
                     if (!h)
@@ -2067,6 +2061,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
                         }
                     }
                 }
+                else cd->IoErr = IoErr();
 
                 if (out)
                 {
@@ -2075,9 +2070,10 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
                 if (kill)
                 {
-                    KillFileKeepErr(cd->DestName, 0, cd);
+                    KillFile(cd->DestName, 0, cd);
                 }
             }
+            else cd->IoErr = IoErr();
 
             if (!res)
             {
@@ -2093,8 +2089,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 
     if (printerr && !(cd->Flags & COPYFLAG_QUIET))
     {
-        PrintNotDone(cd->Flags & COPYFLAG_VERBOSE ? name : 0,
-                     printerr, cd->Deep, cd->Fib.fib_DirEntryType > 0, cd);
+        PrintNotDone(name, printerr, cd->Deep, cd->Fib.fib_DirEntryType > 0, cd);
     }
     else if (printok)
     {
@@ -2164,7 +2159,7 @@ LONG CopyFile(BPTR from, BPTR to, ULONG bufsize, struct CopyData *cd)
                 {
                     if (brk)
                     {
-                        SetIoErr(ERROR_BREAK);
+                        cd->IoErr = ERROR_BREAK;
                     }
                     err = RETURN_FAIL;
                     break;
@@ -2199,7 +2194,7 @@ LONG CopyFile(BPTR from, BPTR to, ULONG bufsize, struct CopyData *cd)
                 {
                     if (brk)
                     {
-                        SetIoErr(ERROR_BREAK);
+                        cd->IoErr = ERROR_BREAK;
                     }
                     err = RETURN_FAIL;
                     break;
@@ -2387,7 +2382,11 @@ LONG TestDest(STRPTR name, ULONG type, struct CopyData *cd)
 
     if (ret == TESTDEST_CANTDELETE)
     {
-        SetIoErr(ERROR_OBJECT_EXISTS);
+        cd->IoErr = ERROR_OBJECT_EXISTS;
+    }
+    else if (ret == TESTDEST_ERROR)
+    {
+        cd->IoErr = IoErr();
     }
 
     return ret;
