@@ -107,7 +107,7 @@ struct IconWindowSettings
     ULONG ws_SortFlags;
 };
 
-struct IconWindowSettings IconWindow_RestoreSettings(struct DiskObject * dskobj)
+STATIC struct IconWindowSettings IconWindow_RestoreSettings(struct DiskObject * dskobj)
 {
     struct IconWindowSettings _return;
     _return.ws_SortFlags = 0;
@@ -123,6 +123,76 @@ struct IconWindowSettings IconWindow_RestoreSettings(struct DiskObject * dskobj)
     return _return;
 }
 
+STATIC VOID IconWindow_StoreSettings(Object * window)
+{
+    Object              *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    STRPTR              dir_name = (char *)XGET(window, MUIA_IconWindow_Location);
+    struct DiskObject   *drawericon = NULL;
+    IPTR                geticon_error = 0;
+    IPTR                display_bits = 0, sort_bits = 0;
+
+    drawericon = GetIconTags(dir_name,
+                            ICONGETA_FailIfUnavailable, FALSE,
+                            ICONA_ErrorCode, &geticon_error,
+                            TAG_DONE);
+
+    if (drawericon != NULL)
+    {
+        if (drawericon->do_DrawerData == NULL)
+        {
+            D(bug("[Wanderer:IconWindow] %s: Icon for '%s' has no DRAWER data!\n", __PRETTY_FUNCTION__, dir_name));
+            drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
+        }
+
+        drawericon->do_Gadget.UserData = (APTR)1;
+
+        drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(window, MUIA_Window_TopEdge);
+        drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(window, MUIA_Window_LeftEdge);
+        drawericon->do_DrawerData->dd_NewWindow.Width = XGET(window, MUIA_Window_Width);
+        drawericon->do_DrawerData->dd_NewWindow.Height = XGET(window, MUIA_Window_Height);
+
+        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
+        if (display_bits & ICONLIST_DISP_SHOWINFO)
+        {
+            D(bug("[Wanderer:IconWindow] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
+            drawericon->do_DrawerData->dd_Flags = 1;
+        }
+        else
+        {
+            drawericon->do_DrawerData->dd_Flags = 2;
+        }
+
+        /* TODO: Icon sort flags are only really for text list mode ... fix */
+        GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
+        if (sort_bits & MUIV_IconList_Sort_ByDate)
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 3;
+        }
+        else if (sort_bits & MUIV_IconList_Sort_BySize)
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 4;
+        }
+        else
+        {
+            drawericon->do_DrawerData->dd_ViewModes = 2;
+        }
+
+        {
+
+            UBYTE * newtooltypes[2] = {NULL, NULL};
+            UBYTE ** oldtooltypes = drawericon->do_ToolTypes;
+            TEXT s[30] = {0};
+            newtooltypes[0] = s;
+
+            __sprintf(s, "WNDRRSRT=%d", sort_bits);
+            drawericon->do_ToolTypes = newtooltypes;
+
+            PutDiskObject(dir_name, drawericon);
+
+            drawericon->do_ToolTypes = oldtooltypes;
+        }
+    }
+}
 
 
 /*** Hook functions *********************************************************/
@@ -1542,11 +1612,7 @@ IPTR IconWindow__MUIM_IconWindow_Snapshot
   Class *CLASS, Object *self, struct MUIP_IconWindow_Snapshot * message
 )
 {
-    Object            *iconList = (Object *) XGET(self, MUIA_IconWindow_IconList);
-    char              *dir_name = (char *)XGET(self, MUIA_IconWindow_Location);
-    struct DiskObject *drawericon = NULL;
-    IPTR               geticon_error = 0;
-    IPTR               display_bits = 0, sort_bits = 0;
+    Object  *iconList = (Object *) XGET(self, MUIA_IconWindow_IconList);
 
     D(bug("[Wanderer:IconWindow]: %s('%s')\n", __PRETTY_FUNCTION__, dir_name));
 
@@ -1599,67 +1665,7 @@ IPTR IconWindow__MUIM_IconWindow_Snapshot
         D(bug("[Wanderer:IconWindow] %s: snapshot WINDOW\n", __PRETTY_FUNCTION__));
     }
 
-    drawericon = GetIconTags(dir_name,
-                            ICONGETA_FailIfUnavailable, FALSE,
-                            ICONA_ErrorCode, &geticon_error,
-                            TAG_DONE);
-
-    if (drawericon != NULL)
-    {
-        if (drawericon->do_DrawerData == NULL)
-        {
-            D(bug("[Wanderer:IconWindow] %s: Icon for '%s' has no DRAWER data!\n", __PRETTY_FUNCTION__, dir_name));
-            drawericon->do_DrawerData = AllocMem(sizeof(struct DrawerData), MEMF_CLEAR|MEMF_PUBLIC);
-        }
-
-        drawericon->do_Gadget.UserData = (APTR)1;
-
-        drawericon->do_DrawerData->dd_NewWindow.TopEdge = XGET(self, MUIA_Window_TopEdge);
-        drawericon->do_DrawerData->dd_NewWindow.LeftEdge = XGET(self, MUIA_Window_LeftEdge);
-        drawericon->do_DrawerData->dd_NewWindow.Width = XGET(self, MUIA_Window_Width);
-        drawericon->do_DrawerData->dd_NewWindow.Height = XGET(self, MUIA_Window_Height);
-
-        GET(iconList, MUIA_IconList_DisplayFlags, &display_bits);
-        if (display_bits & ICONLIST_DISP_SHOWINFO)
-        {
-            D(bug("[Wanderer:IconWindow] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
-            drawericon->do_DrawerData->dd_Flags = 1;
-        }
-        else
-        {
-            drawericon->do_DrawerData->dd_Flags = 2;
-        }
-
-        /* TODO: Icon sort flags are only really for text list mode ... fix */
-        GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
-        if (sort_bits & MUIV_IconList_Sort_ByDate)
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 3;
-        }
-        else if (sort_bits & MUIV_IconList_Sort_BySize)
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 4;
-        }
-        else
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 2;
-        }
-
-        {
-
-            UBYTE * newtooltypes[2] = {NULL, NULL};
-            UBYTE ** oldtooltypes = drawericon->do_ToolTypes;
-            TEXT s[30] = {0};
-            newtooltypes[0] = s;
-
-            __sprintf(s, "WNDRRSRT=%d", sort_bits);
-            drawericon->do_ToolTypes = newtooltypes;
-
-            PutDiskObject(dir_name, drawericon);
-
-            drawericon->do_ToolTypes = oldtooltypes;
-        }
-    }
+    IconWindow_StoreSettings(self);
 
     return (IPTR)TRUE;
 }
