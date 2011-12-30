@@ -100,6 +100,30 @@ struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
 static char __intern_wintitle_wanderer[] = "Wanderer";
 
+/*** Helper functions ***********************************************************/
+struct IconWindowSettings
+{
+    ULONG ws_SortFlags;
+};
+
+struct IconWindowSettings IconWindow_RestoreSettings(struct DiskObject * dskobj)
+{
+    struct IconWindowSettings _return;
+    _return.ws_SortFlags = 0;
+
+
+    if (dskobj->do_ToolTypes)
+    {
+        LONG sortFlags = ArgInt(dskobj->do_ToolTypes, "WNDRRSRT", -1);
+        if (sortFlags != -1)
+            _return.ws_SortFlags = (ULONG)sortFlags;
+    }
+
+    return _return;
+}
+
+
+
 /*** Hook functions *********************************************************/
 
 ///IconWindow__HookFunc_PrefsUpdatedFunc()
@@ -379,6 +403,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
 /*      IPTR                        current_SortFlags = 0; */
         IPTR                    icon__DispFlags = 0,icon__DispFlagMask = ~0;
         BOOL                        isVolume;
+        struct IconWindowSettings iwsettings;
 
         _newIconWin__WindowTop = MUIV_Window_TopEdge_Centered;
         _newIconWin__WindowLeft = MUIV_Window_LeftEdge_Centered;
@@ -504,6 +529,10 @@ D(bug("[Wanderer:IconWindow] %s: setting 'SHOW ALL FILES'\n", __PRETTY_FUNCTION_
 
         GET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
         SET(_newIconWin__IconListObj, MUIA_IconList_DisplayFlags, ((current_DispFlags & icon__DispFlagMask)|icon__DispFlags));
+
+        iwsettings = IconWindow_RestoreSettings(drawericon);
+
+        SET(_newIconWin__IconListObj, MUIA_IconWindowIconList_RestoredSortFlags, iwsettings.ws_SortFlags);
 
         _newIconWin__TopPanelRootGroupObj = MUI_NewObject(MUIC_Group,
                 MUIA_InnerLeft,(0),

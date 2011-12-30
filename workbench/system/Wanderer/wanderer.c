@@ -1414,7 +1414,21 @@ D(bug("[Wanderer] %s: ICONLIST_DISP_SHOWINFO\n", __PRETTY_FUNCTION__));
         {
             drawericon->do_DrawerData->dd_ViewModes = 2;
         }
-        PutDiskObject(dir_name, drawericon);
+
+        {
+
+            UBYTE * newtooltypes[2] = {NULL, NULL};
+            UBYTE ** oldtooltypes = drawericon->do_ToolTypes;
+            TEXT s[30] = {0};
+            newtooltypes[0] = s;
+
+            __sprintf(s, "WNDRRSRT=%d", sort_bits);
+            drawericon->do_ToolTypes = newtooltypes;
+
+            PutDiskObject(dir_name, drawericon);
+
+            drawericon->do_ToolTypes = oldtooltypes;
+        }
     }
 }
 ///
