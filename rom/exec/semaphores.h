@@ -33,4 +33,8 @@ struct SemaphoreNode
 #define SN_TYPE_OBTAIN	0
 #define SN_TYPE_PROCURE 1
 
+struct TraceLocation;
+
+BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller);
+
 #endif

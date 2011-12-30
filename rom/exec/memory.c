@@ -10,13 +10,18 @@
 
 #define DMH(x)
 
-/* Find MemHeader to which address belongs */
+/*
+ * Find MemHeader to which address belongs.
+ * This function is legal to be called in supervisor mode (we use TypeOfMem()
+ * in order to validate addresses in tons of places). So, here are checks.
+ */
 struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 {
+    int usermode = (KernelBase != NULL) && (KrnIsSuper() == 0);
     struct MemHeader *mh;
 
     /* Nobody should change the memory list now. */
-    MEM_LOCK_SHARED;
+    if (usermode) MEM_LOCK_SHARED;
 
     /* Follow the list of MemHeaders */
     mh = (struct MemHeader *)SysBase->MemList.lh_Head;
@@ -27,7 +32,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 	if(address >= mh->mh_Lower && address < mh->mh_Upper)
 	{
 	    /* Yes. Return it. */
-	    MEM_UNLOCK;
+	    if (usermode) MEM_UNLOCK;
 	    return mh;
 	}
 
@@ -35,7 +40,7 @@ struct MemHeader *FindMem(APTR address, struct ExecBase *SysBase)
 	mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
     }
 
-    MEM_UNLOCK;
+    if (usermode) MEM_UNLOCK;
     return NULL;
 }
 

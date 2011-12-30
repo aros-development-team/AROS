@@ -5,12 +5,14 @@
     Desc: Release a semaphore.
     Lang: english
 */
-#include "exec_intern.h"
-#include "semaphores.h"
+
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-#define CHECK_INITSEM 	1
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "semaphores.h"
+
 #define CHECK_TASK	0 /* it seems to be legal to call ObtainSemaphore in one task and ReleaseSemaphore in another */
 
 /*****************************************************************************/
@@ -58,17 +60,15 @@
 
     AROS_LIBFUNC_INIT
 
+    struct TraceLocation tp = CURRENT_LOCATION("ReleaseSemaphore");
+    struct Task *me = FindTask(NULL);
+
     /* We can be called from within exec's pre-init code. It's okay. */
-    if (!SysBase->ThisTask)
+    if (!me)
     	return;
 
-#if CHECK_INITSEM
-    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
-    {
-        kprintf("\n\nReleaseSemaphore called on an unintialized semaphore!!! "
-	        "sem = %x  task = %x (%s)\n\n", sigSem, FindTask(0), FindTask(0)->tc_Node.ln_Name);
-    }
-#endif
+    if (!CheckSemaphore(sigSem, &tp))
+        return;
 
     /* Protect the semaphore srtucture from multiple access. */
     Forbid();
@@ -85,8 +85,8 @@
 	    correct Task is calling ReleaseSemaphore()
 	*/
 	
-	#if CHECK_TASK
-	if( sigSem->ss_Owner != NULL && sigSem->ss_Owner != FindTask(NULL) )
+#if CHECK_TASK
+        if (sigSem->ss_Owner != NULL && sigSem->ss_Owner != me)
 	{
 	    /*
 		If it is not, there is a chance that the semaphore
@@ -94,7 +94,7 @@
 	    */
 	    Alert( AN_SemCorrupt );
 	}
-	#endif
+#endif
 
 	/*
 	    Do not try and wake anything unless there are a number

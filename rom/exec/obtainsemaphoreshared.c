@@ -5,11 +5,13 @@
     Desc: Get a shared lock on a semaphore.
     Lang: english
 */
-#include "exec_intern.h"
-#include "semaphores.h"
+
 #include <exec/semaphores.h>
 #include <aros/atomic.h>
-#include <proto/exec.h>
+
+#include "exec_intern.h"
+#include "exec_util.h"
+#include "semaphores.h"
 
 #define CHECK_INITSEM 1
 
@@ -60,8 +62,8 @@
 
     AROS_LIBFUNC_INIT
 
-    /* Get pointer to current task */
-    struct Task *me = SysBase->ThisTask;
+    struct TraceLocation tp = CURRENT_LOCATION("ObtainSemaphoreShared");
+    struct Task *me = FindTask(NULL);
 
     /*
      * If there's no ThisTask, the function is called from within memory
@@ -73,15 +75,8 @@
 
     ASSERT_VALID_PTR(sigSem);
 
-#if CHECK_INITSEM
-    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
-    {
-        kprintf("\n\nObtainSemaphoreShared called on a not intialized semaphore!!! "
-	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
-
-       Alert(AN_SemCorrupt);
-    }
-#endif
+    if (!CheckSemaphore(sigSem, &tp))
+        return;
 
     /* Arbitrate for the semaphore structure */
     Forbid();
