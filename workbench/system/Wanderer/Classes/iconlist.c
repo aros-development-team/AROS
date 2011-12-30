@@ -6424,7 +6424,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         }
 #endif
             if (transp)
-                RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0x80, RPALPHAFLAT);
+                RastPortSetAlpha(&temprp, data->click_x, data->click_y, img->width, img->height, 0xC0, RPALPHAFLAT);
             DeinitRastPort(&temprp);
         }
 
