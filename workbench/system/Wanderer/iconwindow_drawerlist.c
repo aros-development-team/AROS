@@ -85,6 +85,8 @@ extern struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
 #define BG_DRAWFLAG     0xf00dd00f
 
+#define RESTORED_BIT    (1 << 31)
+
 /*** Instance Data **********************************************************/
 
 struct IconWindowDrawerList_DATA
@@ -101,6 +103,7 @@ struct IconWindowDrawerList_DATA
     IPTR                        iwidld_ViewPrefs_ID;
     Object                      *iwidld_ViewPrefs_NotificationObject;
     ULONG                       iwidld_RestoredSortFlags;   /* Flags restored from icon */
+    ULONG                       iwidld_RestoredDisplayFlags;
 
     /* File System update handling */
     struct Wanderer_FSHandler   iwidld_FSHandler;
@@ -108,8 +111,6 @@ struct IconWindowDrawerList_DATA
     ULONG                       iwidld_LastRefresh; /* In seconds */
     BOOL                        iwidld_FSChanged;
 };
-
-// static char __icwc_intern_TxtBuff[TXTBUFF_LEN];
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct IconWindowDrawerList_DATA *data = INST_DATA(CLASS, self)
@@ -373,7 +374,10 @@ IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 break; /* Fallthrough and handle this in parent class as well */
             }
         case MUIA_IconWindowIconList_RestoredSortFlags:
-            data->iwidld_RestoredSortFlags = tag->ti_Data;
+            data->iwidld_RestoredSortFlags = (tag->ti_Data | RESTORED_BIT);
+            break;
+        case MUIA_IconWindowIconList_RestoredDisplayFlags:
+            data->iwidld_RestoredDisplayFlags = (tag->ti_Data | RESTORED_BIT);
             break;
         }
     }
@@ -491,8 +495,22 @@ IPTR IconWindowDrawerList__MUIM_Setup
     }
 
     /* Handle information restores from icon, it overwrites the configuration settings */
-    if (data->iwidld_RestoredSortFlags != 0)
-        SET(self, MUIA_IconList_SortFlags, data->iwidld_RestoredSortFlags);
+    if (data->iwidld_RestoredSortFlags & RESTORED_BIT)
+    {
+        ULONG sortFlags = data->iwidld_RestoredSortFlags;
+        sortFlags &= ~RESTORED_BIT;
+        SET(self, MUIA_IconList_SortFlags, sortFlags);
+    }
+
+    if (data->iwidld_RestoredDisplayFlags & RESTORED_BIT)
+    {
+        IPTR attrib_Current = XGET(self, MUIA_IconList_DisplayFlags);
+        if (data->iwidld_RestoredDisplayFlags & ICONLIST_DISP_SHOWINFO)
+            attrib_Current |= ICONLIST_DISP_SHOWINFO;
+        else
+            attrib_Current &= ~ICONLIST_DISP_SHOWINFO;
+        SET(self, MUIA_IconList_DisplayFlags, attrib_Current);
+    }
 
     /* Setup notification on the directory -------------------------------- */
     STRPTR directory_path = NULL;
