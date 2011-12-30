@@ -100,6 +100,7 @@ struct IconWindowDrawerList_DATA
 
     IPTR                        iwidld_ViewPrefs_ID;
     Object                      *iwidld_ViewPrefs_NotificationObject;
+    ULONG                       iwidld_RestoredSortFlags;   /* Flags restored from icon */
 
     /* File System update handling */
     struct Wanderer_FSHandler   iwidld_FSHandler;
@@ -371,6 +372,9 @@ IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                 UpdateFSNotification((STRPTR)tag->ti_Data, data, self);
                 break; /* Fallthrough and handle this in parent class as well */
             }
+        case MUIA_IconWindowIconList_RestoredSortFlags:
+            data->iwidld_RestoredSortFlags = tag->ti_Data;
+            break;
         }
     }
     return DoSuperMethodA(CLASS, self, (Msg) message);
@@ -420,7 +424,7 @@ IPTR IconWindowDrawerList__MUIM_Setup
 )
 {
     SETUP_INST_DATA;
-  
+
     Object *prefs = NULL;
 
     if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
@@ -485,6 +489,10 @@ IPTR IconWindowDrawerList__MUIM_Setup
         ADDPREFSNTF(MUIA_IconList_LabelText_BorderWidth);
         ADDPREFSNTF(MUIA_IconList_LabelText_BorderHeight);
     }
+
+    /* Handle information restores from icon, it overwrites the configuration settings */
+    if (data->iwidld_RestoredSortFlags != 0)
+        SET(self, MUIA_IconList_SortFlags, data->iwidld_RestoredSortFlags);
 
     /* Setup notification on the directory -------------------------------- */
     STRPTR directory_path = NULL;
