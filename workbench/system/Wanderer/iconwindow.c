@@ -101,14 +101,20 @@ struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
 static char __intern_wintitle_wanderer[] = "Wanderer";
 
+#define TT_WNDRRSRT     "WNDRRSRT"
+#define TT_COUNT        1
+
 /*** Helper functions ***********************************************************/
 STATIC VOID IconWindow_RestoreSettings(struct DiskObject * dskobj, Object * iconwindowiconlist, BOOL forceshowall)
 {
     if (dskobj->do_ToolTypes)
     {
-        LONG sortFlags = ArgInt(dskobj->do_ToolTypes, "WNDRRSRT", -1);
-        if (sortFlags != -1)
+        STRPTR hexFlags = FindToolType(dskobj->do_ToolTypes, TT_WNDRRSRT);
+        if (hexFlags != NULL)
+        {
+            ULONG sortFlags = strtol(hexFlags, NULL, 16);
             SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredSortFlags, (ULONG)sortFlags);
+        }
     }
 
     if (dskobj->do_Gadget.UserData)
@@ -164,34 +170,55 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
             drawericon->do_DrawerData->dd_Flags = DDFLAGS_SHOWALL;
         }
 
-        /* TODO: Icon sort flags are only really for text list mode ... fix */
-        GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
-        if (sort_bits & MUIV_IconList_Sort_ByDate)
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 3;
-        }
-        else if (sort_bits & MUIV_IconList_Sort_BySize)
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 4;
-        }
-        else
-        {
-            drawericon->do_DrawerData->dd_ViewModes = 2;
-        }
+        drawericon->do_DrawerData->dd_ViewModes = DDVM_BYICON;
 
+        /* Save settings into Tool Types */
         {
-
-            UBYTE * newtooltypes[2] = {NULL, NULL};
+            LONG i = 0, inew = 0, tocopy = 0;
+            TEXT buffer[128] = {0};
             UBYTE ** oldtooltypes = drawericon->do_ToolTypes;
-            TEXT s[30] = {0};
-            newtooltypes[0] = s;
+            UBYTE ** newtooltypes = NULL;
 
-            __sprintf(s, "WNDRRSRT=%d", sort_bits);
+            /* Find how many need to be copied */
+            if (oldtooltypes != NULL)
+            {
+                for (i = 0; oldtooltypes[i]; i++)
+                {
+                    if (Strnicmp(oldtooltypes[i], TT_WNDRRSRT, strlen(TT_WNDRRSRT)) == 0)
+                        continue;
+                    tocopy++;
+                }
+            }
+
+            /* Create new pointer array */
+            newtooltypes = AllocVec(sizeof(STRPTR) * (tocopy + TT_COUNT + 1), MEMF_CLEAR);
+
+            /* Copy, inew will have last index value */
+            if (oldtooltypes != NULL)
+            {
+                for (i = 0, inew = 0; oldtooltypes[i]; i++)
+                {
+                    if (Strnicmp(oldtooltypes[i], TT_WNDRRSRT, strlen(TT_WNDRRSRT)) == 0)
+                        continue;
+                    newtooltypes[inew++] = StrDup(oldtooltypes[i]);
+                }
+            }
+
+            /* Add TT_WNDRRSRT value */
+            GET(iconList, MUIA_IconList_SortFlags, &sort_bits);
+            __sprintf(buffer, TT_WNDRRSRT"=0x%lx", sort_bits);
+            newtooltypes[inew++] = StrDup(buffer);
+
             drawericon->do_ToolTypes = newtooltypes;
 
             PutDiskObject(dir_name, drawericon);
 
             drawericon->do_ToolTypes = oldtooltypes;
+
+            /* Free memory */
+            for (i = 0; i < inew; i++)
+                FreeVec(newtooltypes[i]);
+            FreeVec(newtooltypes);
         }
     }
 }
