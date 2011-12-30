@@ -67,7 +67,7 @@
     if (!me)
     	return;
 
-    if (!CheckSemaphore(sigSem, &tp))
+    if (!CheckSemaphore(sigSem, &tp, SysBase))
         return;
 
     /* Protect the semaphore srtucture from multiple access. */
