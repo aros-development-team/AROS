@@ -257,6 +257,9 @@ IPTR IconDrawerList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
 
     D(bug("[IconDrawerList] obj @ %p\n", obj));
 
+    SET(obj, MUIA_IconList_DisplayFlags, ICONLIST_DISP_MODEDEFAULT);
+    SET(obj, MUIA_IconList_SortFlags, MUIV_IconList_Sort_ByName);
+
     data = INST_DATA(CLASS, obj);
 
     /* parse initial taglist */
