@@ -66,6 +66,8 @@
 #include "iconwindow_iconlist.h"
 #include "iconwindowbackfill.h"
 
+#include "version.h"
+
 #ifndef __AROS__
 
 #ifdef DEBUG
@@ -99,7 +101,7 @@ static struct List                      iconwindow_BackFillNodes;
 struct List                             iconwindow_Extensions;
 struct IconWindow_BackFill_Descriptor  *iconwindow_BackFill_Active;
 
-static char __intern_wintitle_wanderer[] = "Wanderer";
+static char __intern_wintitle_wanderer[] = WANDERERNAME;
 
 #define TT_WNDRRSRT     "WNDRRSRT"
 #define TT_COUNT        1
