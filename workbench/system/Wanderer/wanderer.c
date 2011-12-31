@@ -2976,6 +2976,14 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
         {
             NNSET(current_MenuItem, MUIA_Menuitem_Checked, !(current_DispFlags & ICONLIST_DISP_SHOWINFO) ? TRUE : FALSE);
         }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_ICON)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (current_DispFlags & ICONLIST_DISP_MODEDEFAULT) ? TRUE : FALSE);
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_DETAIL)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (current_DispFlags & ICONLIST_DISP_MODELIST) ? TRUE : FALSE);
+        }
 //        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_HIDDEN)) != NULL)
 //        {
 //            NNSET(current_MenuItem, MUIA_Menuitem_Checked, (current_DispFlags & ICONLIST_DISP_SHOWHIDDEN) ? TRUE : FALSE);
