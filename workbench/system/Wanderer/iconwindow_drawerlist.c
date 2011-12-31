@@ -505,10 +505,10 @@ IPTR IconWindowDrawerList__MUIM_Setup
     if (data->iwidld_RestoredDisplayFlags & RESTORED_BIT)
     {
         IPTR attrib_Current = XGET(self, MUIA_IconList_DisplayFlags);
-        if (data->iwidld_RestoredDisplayFlags & ICONLIST_DISP_SHOWINFO)
-            attrib_Current |= ICONLIST_DISP_SHOWINFO;
-        else
-            attrib_Current &= ~ICONLIST_DISP_SHOWINFO;
+
+        attrib_Current &= ~(ICONLIST_DISP_MODE_MASK | ICONLIST_DISP_SHOWINFO);
+        attrib_Current |= (data->iwidld_RestoredDisplayFlags & (ICONLIST_DISP_MODE_MASK | ICONLIST_DISP_SHOWINFO));
+
         SET(self, MUIA_IconList_DisplayFlags, attrib_Current);
     }
 

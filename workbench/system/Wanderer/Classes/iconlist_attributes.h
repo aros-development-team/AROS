@@ -85,21 +85,23 @@
 
 /* # DISPLAYFLAGS */
 
-#define ICONLIST_DISP_BUFFERED       (1<<0)            /* use buffered IconList rendering         */
+#define ICONLIST_DISP_BUFFERED          (1<<0)  /* use buffered IconList rendering */
 
-#define ICONLIST_DISP_MODEDEFAULT    (1<<1)             /* icons view-mode (with labels below)        */
-#define ICONLIST_DISP_MODELABELRIGHT (1<<2)             /* icons view-mode (with labels to the right)    */
-#define ICONLIST_DISP_MODELIST         (1<<3)        /* list view-mode                      */
+#define ICONLIST_DISP_MODEDEFAULT       (1<<1)  /* icons view-mode (with labels below) */
+#define ICONLIST_DISP_MODELABELRIGHT    (1<<2)  /* icons view-mode (with labels to the right) */
+#define ICONLIST_DISP_MODELIST          (1<<3)  /* list view-mode */
 
-#define ICONLIST_DISP_SHOWHIDDEN     (1<<6)        /* show system "hidden" files                  */
-#define ICONLIST_DISP_SHOWINFO         (1<<7)        /* only show icon(s) which have *.info files     */
+#define ICONLIST_DISP_SHOWHIDDEN        (1<<6)  /* show system "hidden" files */
+#define ICONLIST_DISP_SHOWINFO          (1<<7)  /* only show icon(s) which have .info files */
 
-#define ICONLIST_DISP_NOICONS         (1<<10)        /* name only mode                              */
+#define ICONLIST_DISP_NOICONS           (1<<10) /* name only mode */
+
+#define ICONLIST_DISP_MODE_MASK         (ICONLIST_DISP_MODEDEFAULT | ICONLIST_DISP_MODELABELRIGHT | ICONLIST_DISP_MODELIST)
 
 /* Display Flags only relevant in List view-modes */
 
 /* Display Flags only relevant in Icon view-modes */
-#define ICONLIST_DISP_VERTICAL         (1<<15)        /* tile icons vertically                       */
+#define ICONLIST_DISP_VERTICAL          (1<<15) /* tile icons vertically */
 
 enum iconlist_ListViewModes
 {
