@@ -23,7 +23,7 @@
 #include "locale.h"
 #include "wpeditor.h"
 
-#define VERSIONSTR "$VER: Wanderer Prefs 1.2 (18.12.2011) ©1995-2009 The AROS Development Team"
+#define VERSIONSTR "$VER: Wanderer Prefs 1.3 (31.12.2011) ©1995-2011 The AROS Development Team"
 
 int main(void)
 {
@@ -42,7 +42,7 @@ D(bug("[WPEditor.exe] Starting...\n"));
         MUIA_Application_Title, (IPTR) "Wanderer Prefs",
         MUIA_Application_Version, (IPTR) VERSIONSTR,
         MUIA_Application_Description, __(MSG_DESCRIPTION),
-        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2009, The AROS Development Team",
+        MUIA_Application_Copyright, (IPTR)"Copyright © 1995-2011, The AROS Development Team",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Base, (IPTR)"WANDERERPREFS",
         MUIA_Application_SingleTask, TRUE,
