@@ -130,7 +130,7 @@ struct JumpVec
     void __ ## fname ## _ ## libbasename ## _wrapper(void) \
     { \
 	asm volatile( \
-	    ".globl " #fname "\n" \
+	    ".weak " #fname "\n" \
 	    "\t" #fname ":\n" \
 	    "\tlis   12," #libbasename "@ha\n" \
 	    "\tlwz   12," #libbasename "@l(12)\n" \
@@ -151,7 +151,7 @@ struct JumpVec
     void __ ## fname ## _ ## libbasename ## _relwrapper(void) \
     { \
 	asm volatile( \
-	    ".globl " #fname "\n" \
+	    ".weak " #fname "\n" \
 	    "\t" #fname ":\n" \
             "\tbl __comp_get_relbase\n" \
             "\tlwz 12, 3\n" \
