@@ -107,6 +107,9 @@ static char __intern_wintitle_wanderer[] = "Wanderer";
 /*** Helper functions ***********************************************************/
 STATIC VOID IconWindow_RestoreSettings(struct DiskObject * dskobj, Object * iconwindowiconlist, BOOL forceshowall)
 {
+    ULONG displayFlags = (ICONLIST_DISP_SHOWINFO | ICONLIST_DISP_MODEDEFAULT);
+    BOOL displayFlagsRestored = FALSE;
+
     if (dskobj->do_ToolTypes)
     {
         STRPTR hexFlags = FindToolType(dskobj->do_ToolTypes, TT_WNDRRSRT);
@@ -119,16 +122,46 @@ STATIC VOID IconWindow_RestoreSettings(struct DiskObject * dskobj, Object * icon
 
     if (dskobj->do_Gadget.UserData)
     {
+        /*
+         * Note: it is actually possible when reading icons not snapshoted by Wanderer to end up in situation where
+         * only one of the dd_Flafs/dd_ViewModes has supported values. In that case however still the complete
+         * displayFlags are marked as restored. That is why the displayFlags have default value, so not to end
+         * up with invalid window settings.
+         */
         D(bug("[Wanderer:IconWindow] %s: Drawer Icon has OS 2.x/3.x data: FLAGS %x\n", __PRETTY_FUNCTION__, dskobj->do_DrawerData->dd_Flags));
 
-        if (dskobj->do_DrawerData->dd_Flags == 1)
-            SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, ICONLIST_DISP_SHOWINFO);
-        if (dskobj->do_DrawerData->dd_Flags == 2)
-            SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, 0);
+        if (dskobj->do_DrawerData->dd_Flags == DDFLAGS_SHOWICONS)
+        {
+            displayFlags |= ICONLIST_DISP_SHOWINFO;
+            displayFlagsRestored = TRUE;
+        }
+        if (dskobj->do_DrawerData->dd_Flags == DDFLAGS_SHOWALL)
+        {
+            displayFlags &= ~ICONLIST_DISP_SHOWINFO;
+            displayFlagsRestored = TRUE;
+        }
+        if (dskobj->do_DrawerData->dd_ViewModes == DDVM_BYICON)
+        {
+            displayFlags &= ~ICONLIST_DISP_MODE_MASK;
+            displayFlags |= ICONLIST_DISP_MODEDEFAULT;
+            displayFlagsRestored = TRUE;
+        }
+        if (dskobj->do_DrawerData->dd_ViewModes == DDVM_BYNAME)
+        {
+            displayFlags &= ~ICONLIST_DISP_MODE_MASK;
+            displayFlags |= ICONLIST_DISP_MODELIST;
+            displayFlagsRestored = TRUE;
+        }
     }
 
     if (forceshowall)
-        SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, 0);
+    {
+        displayFlags &= ~ICONLIST_DISP_SHOWINFO;
+        displayFlagsRestored = TRUE;
+    }
+
+    if (displayFlagsRestored)
+        SET(iconwindowiconlist, MUIA_IconWindowIconList_RestoredDisplayFlags, displayFlags);
 }
 
 STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
@@ -170,7 +203,19 @@ STATIC VOID IconWindow_StoreSettings(Object * iconwindow)
             drawericon->do_DrawerData->dd_Flags = DDFLAGS_SHOWALL;
         }
 
-        drawericon->do_DrawerData->dd_ViewModes = DDVM_BYICON;
+        if (display_bits & ICONLIST_DISP_MODEDEFAULT)
+        {
+            drawericon->do_DrawerData->dd_ViewModes = DDVM_BYICON;
+        }
+        if (display_bits & ICONLIST_DISP_MODELIST)
+        {
+            /*
+             * ByName mode is used to encode list-view display mode. Note that actual sorting
+             * is stored in tool type, so the list-view window stores as DDVM_BYNAME does not
+             * have to be sorted by name.
+             */
+            drawericon->do_DrawerData->dd_ViewModes = DDVM_BYNAME;
+        }
 
         /* Save settings into Tool Types */
         {
