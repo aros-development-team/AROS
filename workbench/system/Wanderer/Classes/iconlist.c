@@ -1435,7 +1435,7 @@ IPTR IconList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *obj, s
     {
     char *curlabel_StrPtr;
 
-    if ((message->entry->ie_Flags & ICONENTRY_FLAG_FOCUS) && ((BOOL)XGET(_win(obj), MUIA_Window_Activate)))
+        if ((message->entry->ie_Flags & ICONENTRY_FLAG_FOCUS))
     {
         //Draw the focus box around the selected label ..
         if (data->icld__Option_LabelTextBorderHeight > 0)
