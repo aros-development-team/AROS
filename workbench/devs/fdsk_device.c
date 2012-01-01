@@ -477,14 +477,14 @@ static LONG eject(struct unit *unit, struct IOExtTD *iotd)
         Close(unit->file);
         unit->file = (BPTR)NULL;
         goto quiteject;
-    } else if ((eject) && (unit->file == NULL)) {
+    } else if ((eject) && (unit->file == BNULL)) {
         return ERROR_NO_DISK;
     }
 
-    if ((!eject) && (unit->file == NULL))
+    if ((!eject) && (unit->file == BNULL))
     {
         unit->file = Open(unit->filename, MODE_OLDFILE);
-        if (unit->file == (BPTR) NULL)
+        if (unit->file == BNULL)
             return ERROR_OBJECT_NOT_FOUND;
         ExamineFH(unit->file, &fib);
         unit->writable = !(fib.fib_Protection & FIBF_WRITE);
