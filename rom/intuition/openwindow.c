@@ -97,7 +97,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct NewWindow        	 nw;
     struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
     struct TagItem  	    	*tag, *shapeti = NULL, *shapehookti = NULL;
-    const struct TagItem	*tagList;
+    struct TagItem	    	*tagList;
     struct RastPort 	    	*rp;
     struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
     struct Region   	    	*shape = NULL;

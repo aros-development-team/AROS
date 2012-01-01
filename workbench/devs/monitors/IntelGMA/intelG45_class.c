@@ -627,7 +627,7 @@ void METHOD(INTELG45, Root, Set)
 
 	ULONG idx;
 	struct TagItem *tag;
-	const struct TagItem *tags = msg->attrList;
+	struct TagItem *tags = msg->attrList;
 
 	while ((tag = NextTagItem(&tags)))
 	{

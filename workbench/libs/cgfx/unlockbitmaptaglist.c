@@ -55,7 +55,7 @@
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
     
-    while ((tag = NextTagItem((const struct TagItem **)&Tags)))
+    while ((tag = NextTagItem(&Tags)))
     {
     	switch (tag->ti_Tag)
 	{

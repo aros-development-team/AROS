@@ -198,7 +198,7 @@ IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -378,7 +378,7 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -412,7 +412,7 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
 
     tags = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tags)))
+    while ((tag = NextTagItem(&tags)))
     {
 	for
 	(

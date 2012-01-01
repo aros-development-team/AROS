@@ -48,7 +48,7 @@ IPTR GTString__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     	{TAG_IGNORE	, 0UL	},  /* 3 STRINGA_EditHook */
     	{TAG_MORE	, 0UL	}
     };
-    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem      *tstate = msg->ops_AttrList;
     
     LONG 		labelplace = GV_LabelPlace_Left;
     struct DrawInfo 	*dri = NULL;

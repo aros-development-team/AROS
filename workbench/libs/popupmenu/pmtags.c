@@ -16,8 +16,7 @@ LONG __saveds ASM PM_SetItemAttrsA(
     register __a2 struct PopupMenu *p GNUCREG(a2),
     register __a1 struct TagItem *tags GNUCREG(a1))
 {
-    struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tag, *tstate;
     LONG count=0;
 
     if(!p) return 0;
@@ -259,7 +258,7 @@ LONG __saveds ASM PM_GetItemAttrsA(
     register __a1 struct TagItem *tags GNUCREG(a1))
 {
     struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     LONG count=0;
 
     if(!p) return 0;

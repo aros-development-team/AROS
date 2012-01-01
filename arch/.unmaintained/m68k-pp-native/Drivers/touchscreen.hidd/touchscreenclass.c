@@ -59,7 +59,7 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 
 		/* Search for all mouse attrs */
 
-		while ((tag = NextTagItem((const struct TagItem **)&tstate))) {
+		while ((tag = NextTagItem(&tstate))) {
 			ULONG idx;
 
 			if (IS_HIDDMOUSE_ATTR(tag->ti_Tag, idx))

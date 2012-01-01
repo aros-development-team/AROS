@@ -83,8 +83,8 @@ IPTR Presentation__OM_SET
 )
 {
     SETUP_INST_DATA;
-    const struct TagItem *tstate = message->ops_AttrList;
-    struct TagItem       *tag;
+    struct TagItem *tstate = message->ops_AttrList;
+    struct TagItem *tag;
     
     while ((tag = NextTagItem(&tstate)) != NULL)
     {

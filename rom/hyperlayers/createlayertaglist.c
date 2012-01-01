@@ -31,8 +31,7 @@ struct Layer *CreateLayerTagList(struct Layer_Info *li, struct BitMap *bm, LONG 
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
   struct Region * layershape = NULL, *shape;
-  const struct TagItem *tstate = tagList;
-  struct TagItem *tag;
+  struct TagItem *tag, *tstate = tagList;
   
   while((tag = NextTagItem(&tstate)))
   {

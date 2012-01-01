@@ -263,7 +263,7 @@ IPTR IconDrawerList__OM_NEW(struct IClass *CLASS, Object *obj, struct opSet *mes
     data = INST_DATA(CLASS, obj);
 
     /* parse initial taglist */
-    for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -311,7 +311,7 @@ IPTR IconDrawerList__OM_SET(struct IClass *CLASS, Object *obj, struct opSet *mes
     D(bug("[IconDrawerList]: %s()\n", __PRETTY_FUNCTION__));
 
     /* parse initial taglist */
-    for (tags = message->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = message->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {

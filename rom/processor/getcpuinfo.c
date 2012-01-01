@@ -143,7 +143,7 @@
     
     /* This is the default implementation */
         
-    while ((passedTag = NextTagItem((const struct TagItem **)&tagList)) != NULL)
+    while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
         if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
             (passedTag->ti_Tag <= GCIT_FeaturesLast))

@@ -43,7 +43,7 @@ STATIC VOID mx_setnew(Class *cl, Object *o, struct opSet *msg)
 {
     struct MXData  *data = INST_DATA(cl, o);
     struct TagItem *tag;
-    const struct TagItem *taglist = msg->ops_AttrList;
+    struct TagItem *taglist = msg->ops_AttrList;
 
     while ((tag = NextTagItem(&taglist)))
     {
@@ -169,7 +169,7 @@ IPTR GTMX__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct MXData   *data = INST_DATA(cl, o);
     struct TagItem  *tag;
-    const struct TagItem *taglist = msg->ops_AttrList;
+    struct TagItem *taglist = msg->ops_AttrList;
     IPTR    	    retval = FALSE;
 
     if (msg->MethodID != OM_NEW)

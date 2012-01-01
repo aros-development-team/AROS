@@ -201,7 +201,7 @@ static inline UWORD AdjustHeight(UWORD height, struct ScreenModeProperties_DATA 
 IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
     struct ScreenModeProperties_DATA *data = INST_DATA(CLASS, self);    
-    const struct TagItem *tags;
+    struct TagItem *tags;
     struct TagItem *tag;
     ULONG id        = INVALID_ID;
     IPTR  no_notify = TAG_IGNORE;

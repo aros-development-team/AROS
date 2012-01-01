@@ -87,8 +87,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem *tstate = TagItems;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = TagItems;
     UWORD desired_width, desired_height;
     struct DisplayInfoHandle *dinfo;
     struct DisplayInfo disp;

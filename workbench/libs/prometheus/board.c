@@ -71,7 +71,7 @@ static const struct TagItem map_tag_list[] =
 
    struct LibBase *base = (APTR)PrometheusBase;
    Tag tag, aros_tag;
-   const struct TagItem *temp_tag_list;
+   struct TagItem *temp_tag_list;
    struct TagItem *tag_item;
    struct PCIBoard *board, *tail;
    BOOL success = FALSE;
@@ -147,7 +147,7 @@ static const struct TagItem map_tag_list[] =
    UPINT *tag_data_ptr;
    struct TagItem *tag_item;
 
-   while((tag_item = NextTagItem((const struct TagItem **)&tag_list)) != NULL)
+   while((tag_item = NextTagItem(&tag_list)) != NULL)
    {
       if(tag_item->ti_Tag == PRM_BoardOwner)
       {

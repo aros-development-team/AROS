@@ -2,7 +2,7 @@
 
 struct TagItem *LibFindTagItem(Tag tagValue, const struct TagItem *tagList)
 {
-    const struct TagItem *tstate = tagList;
+    struct TagItem *tstate = (struct TagItem *)tagList;
     struct TagItem *tag;
 
     while ((tag = LibNextTagItem(&tstate)))

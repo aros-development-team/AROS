@@ -131,7 +131,7 @@ IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, Tag tag1, ...)
 STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object *o, struct opSet *msg)
 {
     struct Gadget *g;
-    const struct TagItem *attrs = msg->ops_AttrList;
+    struct TagItem *attrs = msg->ops_AttrList;
     struct TagItem *ti;
     struct Picture_Data *pd;
 
@@ -247,7 +247,7 @@ STATIC IPTR DT_DisposeMethod(struct IClass *cl, Object *o, Msg msg)
 STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 {
     struct Picture_Data *pd;
-    const struct TagItem *tl = msg->ops_AttrList;
+    struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
     IPTR RetVal;
     struct RastPort *rp;

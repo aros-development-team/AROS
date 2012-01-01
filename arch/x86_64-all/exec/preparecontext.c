@@ -24,7 +24,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
 {
     IPTR args[2] = {0};
     IPTR *sp = task->tc_SPReg;
-    struct TagItem *t;
+    struct TagItem *t, *tstate = (struct TagItem *)tagList;
     struct ExceptionContext *ctx;
 
     if (!(task->tc_Flags & TF_ETASK))
@@ -35,7 +35,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     if (!ctx)
         return FALSE;
 
-    while ((t = LibNextTagItem(&tagList)))
+    while ((t = LibNextTagItem(&tstate)))
     {
         switch(t->ti_Tag)
         {

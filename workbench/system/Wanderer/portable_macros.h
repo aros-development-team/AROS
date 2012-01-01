@@ -1,11 +1,7 @@
 #ifndef __PORTABLE_MACROS__
 #define __PORTABLE_MACROS__
 
-#ifdef __AROS__
-  #define TAGITEM const struct TagItem **
-#else
-  #define TAGITEM  struct TagItem **
-#endif
+#define TAGITEM  struct TagItem **
 
 #ifndef __AROS__
 

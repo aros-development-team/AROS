@@ -727,7 +727,7 @@ static LONG createobjecttagitem(struct CacheBuffer **io_cb, struct fsObject **io
         }
 
         if((errorcode=findobjectspace(io_cb, io_o, objectsize))==0) {
-          const struct TagItem *tstate=tags;
+          struct TagItem *tstate=tags;
           struct fsObject *o=*io_o;
           UBYTE *name=o->name;
           UBYTE *objname=objectname;

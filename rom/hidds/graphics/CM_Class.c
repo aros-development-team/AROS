@@ -65,7 +65,7 @@ OOP_Object *CM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     EnterFunc(bug("ColorMap::New()\n"));
     numentries = 256;
     
-    for (tstate = msg->attrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = msg->attrList; (tag = NextTagItem(&tstate)); )
     {
     	ULONG idx;
 	

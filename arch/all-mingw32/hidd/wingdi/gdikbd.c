@@ -103,7 +103,7 @@ OOP_Object * GDIKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
     tstate = msg->attrList;
     D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));     
     
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
         

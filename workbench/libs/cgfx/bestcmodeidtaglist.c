@@ -107,7 +107,7 @@ static STRPTR ids[] = {
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
     struct TagItem modetags[] = {
 	{ BIDTAG_NominalWidth  , 800	},

@@ -303,8 +303,7 @@ LONG ASM SAVEDS PaletteRequestA (
 {
     GlobData 		*glob;
     struct DisplayInfo 	displayinfo;
-    struct TagItem 	*tag;
-    const struct TagItem *tstate = taglist;
+    struct TagItem 	*tag, *tstate = taglist;
     struct TextFont 	*deffont = NULL;
     struct TextAttr 	*fontattr = NULL;
     struct Locale 	*locale = NULL;
@@ -512,7 +511,7 @@ static LONG ASM SAVEDS PalReqHandler (
     struct IntuiMessage *palmsg;
     struct Gadget 	*gad;
     struct TagItem 	*tag;
-    const struct TagItem *tstate = taglist;
+    struct TagItem *tstate = taglist;
     ULONG 		rgb[3], rgbcol;
     ULONG 		tagdata, class;
     UWORD 		code, qual;

@@ -69,8 +69,7 @@ BOOL NamesToList
     Object *list, struct TagItem *tags, struct AboutWindow_DATA *data
 )
 {
-    const struct TagItem *tstate       = tags;
-    struct TagItem       *tag          = NULL;
+    struct TagItem *tag = NULL, *tstate       = tags;
     BOOL            success      = TRUE;
     IPTR            section      = SID_NONE;
     CONST_STRPTR    sectionName  = NULL;
@@ -157,8 +156,8 @@ Object *AboutWindow__OM_NEW
 )
 {
     struct AboutWindow_DATA *data              = NULL; 
-    const struct TagItem    *tstate            = message->ops_AttrList;
-    struct TagItem          *tag               = NULL, 
+    struct TagItem          *tag               = NULL,
+                            *tstate            = message->ops_AttrList,
                             *authorsTags       = NULL,
                             *sponsorsTags      = NULL;
     struct Catalog          *catalog           = NULL;

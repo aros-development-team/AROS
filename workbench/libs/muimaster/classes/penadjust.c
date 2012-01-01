@@ -126,7 +126,7 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     static const struct Hook muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
 
     struct Penadjust_DATA   *data;
-    const struct TagItem       *tags;
+    struct TagItem          *tags;
     struct TagItem  	       *tag;
     Object  	    	       *listobj, *sliderobj, *coloradjobj;
 
@@ -181,7 +181,7 @@ IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 IPTR Penadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem     *tags;
+    struct TagItem     *tags;
     struct TagItem  	     *tag;
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
     BOOL    	    	      update = FALSE;

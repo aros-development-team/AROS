@@ -172,7 +172,7 @@ IPTR GTCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct CycleData 	*data = INST_DATA(cl, o);
     struct TagItem  	*tag;
-    const struct TagItem *taglist = msg->ops_AttrList;
+    struct TagItem *taglist = msg->ops_AttrList;
     STRPTR  	    	*mylabels;
     BOOL    	    	rerender = FALSE;
     IPTR    	    	result;

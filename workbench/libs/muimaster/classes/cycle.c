@@ -109,7 +109,7 @@ IPTR Cycle__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
     switch (tag->ti_Tag)
     {
@@ -183,7 +183,7 @@ IPTR Cycle__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     
     data = INST_DATA(cl, obj);
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
     switch (tag->ti_Tag)
     {

@@ -93,7 +93,7 @@ HIDDT_ModeID *AmigaVideoCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
    if (csd->superforward)
    	return (HIDDT_ModeID*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = msg->queryTags; (tag = NextTagItem(&tstate)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -706,8 +706,8 @@ VOID AmigaVideoCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *m
 {
     struct amigavideo_staticdata *csd = CSD(cl);
     struct Library *UtilityBase = csd->cs_UtilityBase;
-    struct TagItem  	    *tag;
-    const struct TagItem    *tstate;
+    struct TagItem *tag, *tstate;
+
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
     {

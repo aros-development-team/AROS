@@ -85,9 +85,9 @@ AROS_UFH3(VOID, SMTagHook,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem 	     *tag; 
-    const struct TagItem *tstate;
-    struct IntSMReq 	 *ismreq;
+    struct TagItem  *tag; 
+    struct TagItem  *tstate;
+    struct IntSMReq *ismreq;
     
     EnterFunc(bug("SMTagHook(hook=%p, pta=%p)\n", hook, pta));
 

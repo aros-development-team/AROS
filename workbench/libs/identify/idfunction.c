@@ -115,7 +115,7 @@ static CONST_STRPTR searchFunction(struct LibNode *libNode, ULONG offset);
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
     STRPTR funcNameStr = NULL;
     ULONG strLength = 0;
     struct LibNode *libNode;

@@ -37,7 +37,7 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
 struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
 {
     struct TagItem *tag;
-    const struct TagItem *tagptr = tagList;
+    struct TagItem *tagptr = tagList;
 
     while((tag = krnNextTagItem(&tagptr)))
     {

@@ -420,7 +420,7 @@ void METHOD(I2C, Root, Set)
 
     ULONG idx;
     struct TagItem *tag;
-    const struct TagItem *tags = msg->attrList;
+    struct TagItem *tags = msg->attrList;
 
     while ((tag = NextTagItem(&tags)))
     {
@@ -464,8 +464,7 @@ OOP_Object *METHOD(I2C, Root, New)
     if (o)
     {
         tDrvData *drv = (tDrvData *)OOP_INST_DATA(cl, o);
-        struct TagItem *tag;
-        const struct TagItem *tags = msg->attrList;
+        struct TagItem *tag, *tags = msg->attrList;
 
         drv->HoldTime = 5;
         drv->AcknTimeout = 5;

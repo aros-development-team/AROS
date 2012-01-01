@@ -140,9 +140,10 @@ void core_Kick(struct TagItem *msg, void *target)
  * This is the main entry point.
  * We run from here both at first boot and upon reboot.
  */
-void kernel_cstart(const struct TagItem *msg)
+void kernel_cstart(const struct TagItem *start_msg)
 {
     struct MinList memList;
+    struct TagItem *msg = (struct TagItem *)start_msg;
     struct MemHeader *mh, *mh2;
     struct mb_mmap *mmap = NULL;
     IPTR mmap_len = 0;

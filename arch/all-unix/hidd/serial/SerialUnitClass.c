@@ -81,7 +81,7 @@ OOP_Object *UXSerUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
   D(bug("SerialUnit created on %s at %s.\n",__DATE__,__TIME__));
 
   tstate = msg->attrList;
-  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  while ((tag = NextTagItem(&tstate)))
   {
       ULONG idx;
 

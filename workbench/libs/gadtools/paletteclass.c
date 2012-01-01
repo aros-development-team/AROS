@@ -323,8 +323,7 @@ STATIC VOID RenderFrame(struct PaletteData *data, struct RastPort *rp, struct IB
 
 STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem          *tag;
-    const struct TagItem    *tstate = msg->ops_AttrList;
+    struct TagItem          *tag, *tstate = msg->ops_AttrList;
     struct PaletteData      *data = INST_DATA(cl, o);
     BOOL                    labelplace_set = FALSE, relayout = FALSE;
     BOOL                    colortag_found = FALSE, numcolorstag_found = FALSE;

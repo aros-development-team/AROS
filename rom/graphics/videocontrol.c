@@ -54,8 +54,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem *tstate = tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = tags;
     LONG *immediate = NULL;
     ULONG res = 0;
 
@@ -333,7 +332,7 @@
 	    break;
 
 	case VTAG_NEXTBUF_CM:
-	    tstate = (const struct TagItem *)tag->ti_Data;
+	    tstate = (struct TagItem *)tag->ti_Data;
 	    break;
 
 	case VTAG_BATCH_CM_SET:

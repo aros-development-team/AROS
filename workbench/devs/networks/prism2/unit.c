@@ -687,7 +687,7 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
 static VOID GetDefaults(struct DevUnit *unit, struct DevBase *base)
 {
    const struct NamedObject *options;
-   const struct TagItem *tag_list, *tag_item;
+   struct TagItem *tag_list, *tag_item;
    const TEXT *id;
    UPINT length;
    UWORD encryption;

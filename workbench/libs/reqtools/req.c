@@ -174,8 +174,7 @@ ULONG ASM SAVEDS GetString (
     /**/
     Req_GlobData	*glob;
     struct Gadget 	*gad;
-    struct TagItem 	*tag;
-    const struct TagItem *tstate;
+    struct TagItem 	*tag, *tstate;
     /* for rtEZRequestA */
     char 		*gadfmt = title;
     char 		*ptr;
@@ -769,7 +768,7 @@ static ULONG ASM SAVEDS myReqHandler (
 {
     struct Gadget 	*tmpgad, *selgad;
     struct TagItem 	*tag;
-    const struct TagItem *tstate = taglist;
+    struct TagItem *tstate = taglist;
     struct IntuiMessage *msg;
     ULONG 		class, tagdata;
     UWORD 		code, qual;

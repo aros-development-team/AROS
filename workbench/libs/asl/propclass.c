@@ -95,7 +95,7 @@ IPTR AslProp__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 IPTR AslProp__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslPropData *data;
-    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem *tstate = msg->ops_AttrList;
     struct TagItem *ti;
     IPTR retval;
     BOOL rerender = FALSE;

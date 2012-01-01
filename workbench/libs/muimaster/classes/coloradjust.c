@@ -192,7 +192,7 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
 IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
-    const struct TagItem    	*tags;
+    struct TagItem    	*tags;
     struct TagItem  	    	*tag;
     struct Library  	    	*colorwheelbase, *gradientsliderbase;
     Object  	    	    	*rslider, *gslider, *bslider;
@@ -383,7 +383,7 @@ IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Coloradjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Coloradjust_DATA   *data;
-    const struct TagItem    	*tags;
+    struct TagItem    	*tags;
     struct TagItem  	    	*tag;
     ULONG   	    	    	*rgb;
     BOOL    	    	    	 newcol = FALSE;

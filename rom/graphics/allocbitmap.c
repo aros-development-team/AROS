@@ -199,8 +199,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 
     if (BITMAPFLAGS_ARE_EXTENDED(flags))
     {
-        const struct TagItem *tstate = (const struct TagItem *)friend_bitmap;
-	struct TagItem *tag;
+        struct TagItem *tag, *tstate = (struct TagItem *)friend_bitmap;
 
 	friend_bitmap = NULL;
 

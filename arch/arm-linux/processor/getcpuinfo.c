@@ -24,7 +24,7 @@ AROS_LH1(void, GetCPUInfo,
     struct LinuxArmProcessor *data = ProcessorBase->Private1;
 
     /* Go over each passed tag and fill apprioprate data */
-    while ((passedTag = NextTagItem((const struct TagItem **)&tagList)) != NULL)
+    while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
         ULONG val;
 

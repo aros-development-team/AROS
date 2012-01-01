@@ -959,7 +959,7 @@ VOID CBM__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     ULONG idx;
 
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         if(IS_CHUNKYBM_ATTR(tag->ti_Tag, idx))
         {

@@ -91,7 +91,7 @@ BOOL NamesToList
     Object *list, struct TagItem *tags, struct AboutAROS_DATA *data
 )
 {
-    const struct TagItem *tstate       = tags;
+    struct TagItem       *tstate       = tags;
     struct TagItem       *tag          = NULL;
     BOOL                  success      = TRUE;
     IPTR                  section      = SID_NONE;

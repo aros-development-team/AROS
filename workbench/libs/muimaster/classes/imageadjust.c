@@ -455,7 +455,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA   *data;
     struct TagItem            *tag;
-    const struct TagItem      *tags;
+    struct TagItem            *tags;
     static const char * const labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", "Gradient", NULL};
     static const char * const labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
     static const char * const labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
@@ -784,7 +784,7 @@ IPTR Imageadjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
 IPTR Imageadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem *tags;
+    struct TagItem *tags;
     struct TagItem *tag;
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 

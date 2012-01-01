@@ -88,7 +88,7 @@
 	getPartitionAttr = handler->getPartitionAttr;
     }
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
     	ULONG sup;
 

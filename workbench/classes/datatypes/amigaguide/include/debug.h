@@ -42,7 +42,7 @@ void KPrintF(const char *fmt, ...);
 #define DEBUG_TAGLIST(x)      { struct TagItem *tstate = x; \
 				struct TagItem *tag; \
 				bug("TagList : \n"); \
-				while((tag = NextTagItem((const struct TagItem **)&tstate))) \
+				while((tag = NextTagItem(&tstate))) \
 				  bug("{0x%08lx,0x%08lx}\n",tag->ti_Tag,tag->ti_Data); \
 			      }
 #define DEBUG_EXECLIST(x)     { struct Node *node; bug("ExecList : \n"); \

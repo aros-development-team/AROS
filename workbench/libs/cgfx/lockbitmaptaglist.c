@@ -82,7 +82,7 @@
     	return NULL;
     
     
-    while ((tag = NextTagItem((const struct TagItem **)&tags)))
+    while ((tag = NextTagItem(&tags)))
     {
     	switch (tag->ti_Tag)
 	{

@@ -34,8 +34,7 @@ OOP_Object *AKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     if (o)
     {
 	struct kbd_data *data = OOP_INST_DATA(cl, o);
-	const struct TagItem *tstate = msg->attrList;
-	struct TagItem *tag;
+	struct TagItem *tag, *tstate = msg->attrList;
 
 	while ((tag = NextTagItem(&tstate)))
     	{

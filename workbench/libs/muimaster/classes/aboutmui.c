@@ -897,7 +897,7 @@ static void CloseAboutWindowFunc(const struct Hook *hook, Object *app, APTR msg)
 IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Aboutmui_DATA   *data;
-    const struct TagItem *tag, *tags;
+    struct TagItem *tag, *tags;
     static const struct Hook closehook = { { NULL, NULL }, HookEntry,
 					   (APTR)CloseAboutWindowFunc, NULL };
     static const char about_text[] = "Zune, a MUI clone\n"

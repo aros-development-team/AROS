@@ -66,7 +66,7 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     if (o)
     {
     	struct sync_data *data = OOP_INST_DATA(cl, o);
-    	const struct TagItem *tstate = msg->attrList;
+    	struct TagItem *tstate = msg->attrList;
     	char *s = NULL;
     	ULONG board = 0;
     	struct TagItem *tag;
@@ -479,8 +479,7 @@ static BOOL parse_sync_tags(struct class_static_data *csd, struct sync_data *dat
     BOOL have_vtotal      = FALSE;
     BOOL change_totclk    = init;
     BOOL notify_driver    = FALSE;
-    const struct TagItem *tstate = tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = tags;
 
     /*
      * Parse sync signal parameters. They may come either as start, stop and total

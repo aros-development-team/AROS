@@ -1,6 +1,6 @@
 #include <proto/arossupport.h>
 
-struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr)
+struct TagItem *LibNextTagItem(struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr))
 	return NULL;
@@ -25,7 +25,7 @@ struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr)
                 continue;
 
             default:
-                return (struct TagItem *)(*tagListPtr)++;
+                return (*tagListPtr)++;
 
         }
 

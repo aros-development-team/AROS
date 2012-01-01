@@ -196,12 +196,11 @@ OOP_Object *PCIDev__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-	const struct TagItem *tags;
-	struct TagItem *tag;
+	struct TagItem *tag, *tags;
 	tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl, o);
 	OOP_Object *driver = NULL;
 	
-	tags=msg->attrList;
+	tags=(struct TagItem *)msg->attrList;
 
 	/*
 	    Get all information passed by pci class calling OOP_NewObject()
@@ -735,10 +734,9 @@ void PCIDev__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     ULONG idx;
     tDeviceData *dev = (tDeviceData *)OOP_INST_DATA(cl,o);
-    const struct TagItem *tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tags;
 
-    tags = msg->attrList;
+    tags = (struct TagItem *)msg->attrList;
 
     while ((tag = NextTagItem(&tags)))
     {

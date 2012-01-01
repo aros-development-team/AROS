@@ -82,8 +82,8 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem     *tagState = taglist;
-    const struct TagItem     *tag;
+    struct TagItem     *tagState = taglist;
+    struct TagItem     *tag;
 
     struct AppMenuItem *appMenuItem;
 

@@ -258,7 +258,7 @@ STATIC IPTR pt_set(Class *cl, Object *obj, struct opSet *msg)
     struct PTableData *data = INST_DATA(cl, obj);
     IPTR retval = 0UL;
     struct TagItem *tag;
-    const struct TagItem *taglist;
+    struct TagItem *taglist;
     struct RastPort *rport;
 
     D(bug("[HDToolBox] pt_set()\n"));

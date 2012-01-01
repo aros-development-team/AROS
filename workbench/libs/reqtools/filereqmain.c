@@ -109,8 +109,7 @@ IPTR ASM SAVEDS PropReqHandler (
     struct RealFontRequester 	*fontreq = NULL;
     struct BufferData 		*buff;
     struct DiskfontBase 	*DiskfontBase = glob->diskfontbase;
-    struct TagItem 		*tag;
-    const struct TagItem    *tstate = taglist;
+    struct TagItem 		*tag, *tstate = taglist;
     struct AvailFontsHeader 	*afh;
     struct AvailFonts 		*af;
     struct ReqEntry 		*entry;

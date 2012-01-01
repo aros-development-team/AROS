@@ -68,8 +68,7 @@ AROS_LH2(ULONG, KrnStatMemoryA,
 #if USE_MMU
     if (KernelBase->kb_PageSize)
     {
-        const struct TagItem *tstate = query;
-	struct TagItem *tag;
+        struct TagItem *tag, *tstate = query;
 	struct MemHeader *mh;
 	BOOL do_traverse = FALSE;
 

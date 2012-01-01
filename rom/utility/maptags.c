@@ -53,7 +53,7 @@
     AROS_LIBFUNC_INIT
     struct TagItem * tag, * map;
 
-    while ((tag = NextTagItem ((const struct TagItem **)&tagList)))
+    while ((tag = NextTagItem (&tagList)))
     {
 	if (mapList && (map = FindTagItem (tag->ti_Tag, mapList)))
 	{

@@ -121,8 +121,8 @@ STATIC IPTR setup_datatype(Class *cl, Object *obj)
 /*** Methods ****************************************************************/
 Object *PPreview__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem  *tstate = msg->ops_AttrList;
-    struct TagItem        *tag    = NULL;
+    struct TagItem  *tstate = msg->ops_AttrList;
+    struct TagItem  *tag    = NULL;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return 0;
@@ -181,7 +181,7 @@ IPTR PPreview__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     SETUP_INST_DATA;
 
-    const struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem       *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     BOOL needs_redraw           = FALSE;
 

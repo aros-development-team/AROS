@@ -11,7 +11,7 @@ int KPrintf(struct HostInterface *hif, const char *format, ...);
 
 int __startup start(const struct TagItem *tags)
 {
-    const struct TagItem *tag;
+    struct TagItem *tag;
     struct HostInterface *hif = (struct HostInterface *)LibGetTagData(KRN_HostInterface, 0, tags);
 
     if (!hif)
@@ -20,7 +20,7 @@ int __startup start(const struct TagItem *tags)
     KPrintf(hif, "Test module succesfully started\n");
     KPrintf(hif, "Taglist at 0x%p:\n", tags);
 
-    while ((tag = LibNextTagItem(&tags)))
+    while ((tag = LibNextTagItem((struct TagItem **)&tags)))
     {
     	KPrintf(hif, "0x%08lX 0x%p\n", tag->ti_Tag, tag->ti_Data);
     }

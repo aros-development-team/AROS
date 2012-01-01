@@ -54,7 +54,7 @@ IPTR Busy__OM_SET(Class *cl, Object *obj, struct opSet *msg)
     struct TagItem   	 *tag;
     BOOL    	      	  redraw = FALSE;
         
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
     	switch(tag->ti_Tag)
 	{

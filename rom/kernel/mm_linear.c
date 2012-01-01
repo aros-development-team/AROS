@@ -456,7 +456,7 @@ void mm_Protect(struct MemHeader *mh, struct KernelBase *KernelBase)
 /* Get statistics from the specified MemHeader */
 void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct KernelBase *KernelBase)
 {
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = (struct TagItem *)query;
     IPTR *largest_alloc  = NULL;
     IPTR *smallest_alloc = NULL;
     IPTR *largest_free   = NULL;
@@ -465,7 +465,7 @@ void mm_StatMemHeader(struct MemHeader *mh, const struct TagItem *query, struct 
     IPTR *num_free       = NULL;
     BOOL do_traverse = FALSE;
 
-    while ((tag = LibNextTagItem(&query)))
+    while ((tag = LibNextTagItem(&tstate)))
     {
 	switch (tag->ti_Tag)
 	{

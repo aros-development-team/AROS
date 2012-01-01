@@ -169,8 +169,7 @@ OOP_Object *METHOD(I2CDev, Root, New)
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
     if (o)
     {
-        struct TagItem *tag;
-        const struct TagItem *tags = msg->attrList;
+        struct TagItem *tag, *tags = msg->attrList;
         tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
         OOP_Object *driver = NULL;
         UWORD address = 0;
@@ -336,8 +335,7 @@ void METHOD(I2CDev, Root, Set)
 {
     tDevData *dev = (tDevData *)OOP_INST_DATA(cl, o);
     ULONG idx;
-    struct TagItem *tag;
-    const struct TagItem *tags = msg->attrList;
+    struct TagItem *tag, *tags = msg->attrList;
     
     while ((tag = NextTagItem(&tags)))
     {

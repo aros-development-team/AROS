@@ -102,8 +102,7 @@ static const struct newMemList MemTemplate =
     struct Task * newtask;
     struct newMemList nml = MemTemplate;
     struct MemList  * ml;
-    const struct TagItem *tstate = tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = tags;
     struct MsgPort **msgPortPtr = NULL;
     ULONG *errPtr    = NULL;
     APTR   initpc    = NULL;

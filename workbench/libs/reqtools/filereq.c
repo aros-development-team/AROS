@@ -49,8 +49,7 @@ APTR ASM SAVEDS FileRequestA (
 {
     GlobData 				*glob;
     struct ReqEntry 			*entry;
-    struct TagItem			*tag;
-    const struct TagItem *tstate = taglist;
+    struct TagItem			*tag, *tstate = taglist;
     struct RealFontRequester 		*fontreq;
     struct RealScreenModeRequester 	*scrmodereq = NULL;
     struct DiskfontBase 		*DiskfontBase;

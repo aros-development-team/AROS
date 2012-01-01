@@ -91,7 +91,7 @@ int main (int argc, char **argv)
     struct IntuiMessage *imsg;
     ULONG sigr;
 
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
     struct TagItem *tags;
     ULONG tidata;

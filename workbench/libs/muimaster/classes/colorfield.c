@@ -39,7 +39,7 @@ extern struct Library *MUIMasterBase;
 IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Colorfield_DATA   *data;
-    const struct TagItem   	*tags;
+    struct TagItem   	*tags;
     struct TagItem  	    	*tag;
     ULONG   	    	    	*rgb;
     
@@ -86,7 +86,7 @@ IPTR Colorfield__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Colorfield__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Colorfield_DATA   *data;
-    const struct TagItem   	*tags;
+    struct TagItem   	*tags;
     struct TagItem  	    	*tag;
     ULONG   	    	    	*rgb;
     BOOL    	    	    	 newcol = FALSE;

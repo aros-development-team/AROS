@@ -127,9 +127,9 @@ static Object *MakeFrameDisplay(int i, int state)
 
 IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Frameadjust_DATA   *data;
-    const struct TagItem    *tags;
-    struct TagItem  	    *tag;
+    struct Frameadjust_DATA *data;
+    struct TagItem          *tags;
+    struct TagItem          *tag;
     Object *FD_display;
     Object *SL_top, *SL_left, *SL_right, *SL_bottom;
     Object *GR_fd;

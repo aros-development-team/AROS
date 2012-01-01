@@ -80,7 +80,7 @@ static OOP_Object *parallelunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot
   EnterFunc(bug("ParallelUnit::New()\n"));
 
   tstate = msg->attrList;
-  while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+  while ((tag = NextTagItem(&tstate)))
   {
       ULONG idx;
 

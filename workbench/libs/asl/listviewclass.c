@@ -381,8 +381,7 @@ static void notifytop(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
 IPTR AslListView__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslListViewData 	*data = INST_DATA(cl, o);
-    struct TagItem 		*tag;
-    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem              *tag, *tstate = msg->ops_AttrList;
     IPTR 			retval, tidata;
     BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
     LONG 			newtop;

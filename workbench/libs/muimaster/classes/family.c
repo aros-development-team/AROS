@@ -100,7 +100,7 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * parse initial taglist
      */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	if (tag->ti_Tag == MUIA_Family_Child || tag->ti_Tag == MUIA_Group_Child)
 	{

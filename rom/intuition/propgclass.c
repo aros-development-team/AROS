@@ -220,8 +220,7 @@ IPTR PropGClass__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    const struct TagItem *tstate;
-    struct TagItem  	*tag;
+    struct TagItem  	*tag, *tstate;
     struct PropGData    *data;
     struct BBox     	 old_knobbox;
     struct opSet    	 method;

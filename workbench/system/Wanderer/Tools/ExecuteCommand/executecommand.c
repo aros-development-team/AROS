@@ -49,7 +49,7 @@ Object *ExecuteCommand__OM_NEW
 )
 {
     struct ExecuteCommand_DATA *data           = NULL;
-    const struct TagItem       *tstate         = message->ops_AttrList,
+    struct TagItem             *tstate         = message->ops_AttrList,
                                *tag            = NULL;
     BPTR                        parent         = BNULL;
     BOOL                        unlockParent   = FALSE;

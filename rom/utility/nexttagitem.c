@@ -16,7 +16,7 @@
 	AROS_LH1I(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
-	AROS_LHA(const struct TagItem **, tagListPtr, A0),
+	AROS_LHA(struct TagItem **, tagListPtr, A0),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 8, Utility)

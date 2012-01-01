@@ -24,7 +24,7 @@ void RelocateBootMsg(const struct TagItem *msg)
 {
     struct TagItem *dest;
     struct TagItem *tag;
-    const struct TagItem *tstate = msg;
+    struct TagItem *tstate = (struct TagItem *)msg;
     ULONG num = 1;
 
     /* First count how much memory we will need */
@@ -38,7 +38,8 @@ void RelocateBootMsg(const struct TagItem *msg)
     BootMsg = dest;
 
     /* Now copy tagitems */
-    while ((tag = LibNextTagItem(&msg)))
+    tstate = (struct TagItem *)msg;
+    while ((tag = LibNextTagItem(&tstate)))
     {
     	dest->ti_Tag  = tag->ti_Tag;
     	dest->ti_Data = tag->ti_Data;

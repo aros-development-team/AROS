@@ -176,8 +176,8 @@ static STRPTR CLI_BuildCommandLine
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    const struct TagItem *tstate   = tags;
-    const struct TagItem *tag      = NULL;
+    struct TagItem *tstate   = tags;
+    struct TagItem *tag      = NULL;
     BPTR            lastLock = BNULL;
     STRPTR          buffer   = NULL;
     ULONG           length   = strlen(command) + 3 /* NULL + 2 '"' */;
@@ -346,7 +346,7 @@ static BOOL WB_BuildArguments
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    const struct TagItem *tstate   = tags,
+    struct TagItem *tstate   = tags,
                    *tag      = NULL;
     BPTR            lastLock = BNULL;
     struct WBArg   *args     = NULL;

@@ -704,7 +704,7 @@ static IPTR WBWindowUpdate(Class *cl, Object *obj, struct opUpdate *opu)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
     IPTR rc;
 

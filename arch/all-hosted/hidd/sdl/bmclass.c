@@ -192,7 +192,7 @@ VOID SDLBitMap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     ULONG   	    idx;
 
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate))) {
+    while((tag = NextTagItem(&tstate))) {
         idx = SDLBM_ATTR(tag->ti_Tag);
         if (idx < num_Hidd_SDLBitMap_Attrs) {
 	    switch(idx) {

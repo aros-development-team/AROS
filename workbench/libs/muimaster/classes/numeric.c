@@ -58,7 +58,7 @@ IPTR Numeric__OM_NEW(struct IClass *cl, Object * obj, struct opSet *msg)
     data->min    =   0;
     data->flags  =   0;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
 	switch (tag->ti_Tag)
 	{
@@ -116,7 +116,7 @@ IPTR Numeric__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
     oldmin = data->min;
     oldmax = data->max;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags));)
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
 	switch (tag->ti_Tag)
 	{

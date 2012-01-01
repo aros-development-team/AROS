@@ -584,7 +584,7 @@ IPTR WandererPrefs__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 IPTR WandererPrefs__OM_SET(Class *CLASS, Object *self, struct opSet *message)
 {
   SETUP_INST_DATA;
-  const struct TagItem *tstate = message->ops_AttrList;
+  struct TagItem *tstate = message->ops_AttrList;
   struct TagItem *tag;
   
   while ((tag = NextTagItem((TAGITEM)&tstate)) != NULL)

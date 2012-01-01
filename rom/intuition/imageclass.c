@@ -61,7 +61,7 @@ IPTR _om_set(Class *cl, struct Image *im, struct TagItem *tags)
     IPTR   tidata;
     BOOL   unsupported = FALSE;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
 	tidata = tag->ti_Data;
 

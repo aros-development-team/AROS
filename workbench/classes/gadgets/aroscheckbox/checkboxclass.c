@@ -99,7 +99,7 @@ void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
 IPTR AROSCheckbox__OM_SET(Class * cl, Object * obj, struct opSet * msg)
 {
     struct CheckData     *data = INST_DATA(cl, obj);
-    const struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct TagItem *tag, *taglist = msg->ops_AttrList;
     struct RastPort      *rport;
     IPTR    	          retval = FALSE;
 

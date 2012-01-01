@@ -39,7 +39,7 @@ OOP_Object *AMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	struct TagItem *tstate = msg->attrList;
 	struct TagItem *tag;
 
-	while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+	while ((tag = NextTagItem(&tstate)))
 	{
 	    ULONG idx;
 

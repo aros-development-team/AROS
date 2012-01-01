@@ -73,7 +73,7 @@ IPTR Dtpic__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (obj)
     {
         struct Dtpic_DATA    *data = INST_DATA(cl, obj);
-        const struct TagItem *tags = msg->ops_AttrList;
+        struct TagItem       *tags = msg->ops_AttrList;
         struct TagItem       *tag;
 
         while ((tag = NextTagItem(&tags)) != NULL)
@@ -267,7 +267,7 @@ IPTR Dtpic__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Dtpic__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Dtpic_DATA    *data  = INST_DATA(cl, obj);
-    const struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     ULONG                 needs_redraw = 0;
 

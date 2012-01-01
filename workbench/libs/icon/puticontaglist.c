@@ -45,7 +45,7 @@
 {
     AROS_LIBFUNC_INIT
     
-    const struct TagItem *tstate  = tags;
+    struct TagItem       *tstate  = tags;
     struct TagItem       *tag     = NULL;
     
     BOOL    success               = FALSE;

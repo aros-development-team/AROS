@@ -891,8 +891,7 @@ OOP_Object *BM__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_New *msg)
             { aHidd_ColorMap_NumEntries , 16    },
             { TAG_DONE                          }
         };
-        const struct TagItem *tstate;
-        struct TagItem *tag;
+        struct TagItem *tag, *tstate;
         BOOL ok = TRUE;
         struct HIDDBitMapData *data = OOP_INST_DATA(cl, obj);
 
@@ -4889,7 +4888,7 @@ VOID BM__Hidd_BitMap__UpdateRect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
  */
 
 /* This is a private form of Set method. Doesn't need a standard message. */
-void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, const struct TagItem *bitMapTags)
+void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags)
 {
     struct Library *UtilityBase = CSD(cl)->cs_UtilityBase;
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);

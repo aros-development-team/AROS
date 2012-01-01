@@ -71,7 +71,7 @@
     AROS_LIBFUNC_INIT
     struct TagItem *current, *found, *tstate = tagList;
 
-    while ((current = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((current = NextTagItem(&tstate)))
     {
 	if ((found = FindTagItem (current->ti_Tag, boolMap)))
 	{

@@ -152,7 +152,7 @@ static void openfont(void)
 	LONG dpivalue;
 	
 	printf("  taglist:\n");
-	while((tag = NextTagItem((const struct TagItem **)&tstate)))
+	while((tag = NextTagItem(&tstate)))
 	{
 	    printf("    {0x%08lx,0x%08lx}\n", tag->ti_Tag, tag->ti_Data);
 	}

@@ -48,7 +48,7 @@ STATIC IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
     	{PGA_Visible	, 0	},
     	{TAG_MORE		}
     };
-    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem *tstate = msg->ops_AttrList;
 
     struct ScrollerData *data = INST_DATA(cl, o);
 

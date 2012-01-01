@@ -85,7 +85,7 @@ OOP_Object * X11Mouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	struct TagItem       *tag, *tstate;
 	
 	tstate = msg->attrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+	while ((tag = NextTagItem(&tstate)))
 	{
 	    ULONG idx;
 	    

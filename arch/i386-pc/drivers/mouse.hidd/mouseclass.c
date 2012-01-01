@@ -90,7 +90,7 @@ OOP_Object * PCMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
         /* Search for all mouse attrs */
 
-        while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+        while ((tag = NextTagItem(&tstate)))
         {
             ULONG idx;
 

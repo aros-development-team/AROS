@@ -1165,8 +1165,7 @@ static void RethinkLasso(Object *obj, struct TextIconList_DATA *data)
 static IPTR TextIconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TextIconList_DATA    *data;
-    struct TagItem  	    	*tag;
-    const struct TagItem	*tags;
+    struct TagItem  	    	*tag, *tags;
     LONG    	    	    	 i;
     
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
@@ -1251,7 +1250,7 @@ static IPTR TextIconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TextIconList_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	     *tag;
-    const struct TagItem     *tags;
+    struct TagItem           *tags;
     LONG    	    	      oldleft = data->view_x, oldtop = data->view_y;
     
     /* parse initial taglist */

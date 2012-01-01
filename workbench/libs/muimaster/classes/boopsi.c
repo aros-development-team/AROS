@@ -39,7 +39,7 @@ IPTR Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->boopsi_maxwidth = data->boopsi_maxheight = MUI_MAXMAX;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -101,7 +101,7 @@ IPTR Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Now fill in the initial remember tag datas in our remember tag list */
-    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = data->remember; (tag = NextTagItem(&tags)); )
     {
 	struct TagItem *set_tag = FindTagItem(tag->ti_Tag,msg->ops_AttrList);
 	if (set_tag) tag->ti_Data = set_tag->ti_Data;
@@ -132,7 +132,7 @@ IPTR Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     int only_trigger = 0;
     int no_notify = 0;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -183,7 +183,7 @@ IPTR Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Now fill in remember list tag datas in our remember tag list */
-    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = data->remember; (tag = NextTagItem(&tags)); )
     {
 	struct TagItem *set_tag = FindTagItem(tag->ti_Tag,msg->ops_AttrList);
 	if (set_tag) tag->ti_Data = set_tag->ti_Data;
@@ -219,7 +219,7 @@ IPTR Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 	    struct TagItem *tags,*tag;
 
     	    /* look in the rember list first */
-	    for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
+	    for (tags = data->remember; (tag = NextTagItem(&tags)); )
             {
             	if (tag->ti_Tag == msg->opg_AttrID)
             	{
@@ -369,7 +369,7 @@ IPTR Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
         struct TagItem *tags,*tag;
 
         /* Now fill in the initial remember tag datas in our remember tag list */
-	for (tags = data->remember; (tag = NextTagItem((const struct TagItem**)&tags)); )
+	for (tags = data->remember; (tag = NextTagItem(&tags)); )
 	{
             GetAttr(tag->ti_Tag, data->boopsi_object, &tag->ti_Data);
 	}

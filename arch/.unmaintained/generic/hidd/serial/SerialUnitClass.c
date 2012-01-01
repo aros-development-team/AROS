@@ -75,7 +75,7 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
 	EnterFunc(bug("SerialUnit::New()\n"));
 
 	tstate = msg->attrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate))) {
+	while ((tag = NextTagItem(&tstate))) {
 		ULONG idx;
 
 #define csd CSD(cl->UserData)

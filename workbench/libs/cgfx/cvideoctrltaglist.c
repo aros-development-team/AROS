@@ -69,7 +69,7 @@
     
     HIDDT_DPMSLevel hdpms = 0;
     
-    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = tags; (tag = NextTagItem(&tstate)); )
     {
     	switch (tag->ti_Tag)
 	{

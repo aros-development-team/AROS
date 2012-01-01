@@ -394,7 +394,7 @@ static LONG PartitionEBRSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct EBRData *data = (struct EBRData *)ph->data;
     struct TagItem *tag;
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
         switch (tag->ti_Tag)
         {

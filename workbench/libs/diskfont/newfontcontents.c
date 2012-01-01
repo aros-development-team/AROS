@@ -194,7 +194,7 @@ struct contentsBuffer
 	    /* Embedded tags? */
 	    if((dfh->dfh_TF.tf_Style & FSF_TAGGED) && (dfh->dfh_TagList != 0))
 	    {
-		const struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
+		struct TagItem *ti = (struct TagItem *)(dfh->dfh_TagList); /* dfh_TagList */
 		struct TagItem *tPtr;
 	 	struct TagItem *item;
 		WORD   nTags = 0;

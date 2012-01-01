@@ -592,7 +592,7 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct TagItem *tag;
     struct TagItem *bootable = NULL;
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
         switch (tag->ti_Tag)
         {

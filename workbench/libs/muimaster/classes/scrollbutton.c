@@ -66,7 +66,7 @@ IPTR Scrollbutton__OM_GET(struct IClass * cl, Object * o, struct opGet * msg)
 IPTR Scrollbutton__OM_SET(struct IClass * cl, Object * o, struct opSet * msg)
 {
     struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
-    const struct TagItem *tl = msg->ops_AttrList;
+    struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
 
     while ((ti = NextTagItem(&tl)))

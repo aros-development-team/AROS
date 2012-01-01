@@ -653,12 +653,12 @@ static BOOL ParseDevice(const UBYTE *tuple,struct TagItem *tag_list,
 
             if((*tuple&0x8)!=0)
                flags=PCCARD_REGIONF_WP;
-            NextTagItem((const struct TagItem**)&sub_tag_list)->ti_Data=flags;
-            NextTagItem((const struct TagItem**)&sub_tag_list)->ti_Data=*tuple>>4;
+            NextTagItem(&sub_tag_list)->ti_Data=flags;
+            NextTagItem(&sub_tag_list)->ti_Data=*tuple>>4;
 
             /* Get speed */
 
-            sub_tag=NextTagItem((const struct TagItem**)&sub_tag_list);
+            sub_tag=NextTagItem(&sub_tag_list);
             switch(*tuple&0x7)
             {
             case 0:
@@ -676,15 +676,15 @@ static BOOL ParseDevice(const UBYTE *tuple,struct TagItem *tag_list,
 
             /* Get base and length */
 
-            NextTagItem((const struct TagItem**)&sub_tag_list)->ti_Data=region_base;
+            NextTagItem(&sub_tag_list)->ti_Data=region_base;
             region_length=((*tuple>>3)+1)*(512<<((*tuple&0x7)*2));
-            NextTagItem((const struct TagItem**)&sub_tag_list)->ti_Data=region_length;
+            NextTagItem(&sub_tag_list)->ti_Data=region_length;
             region_base+=region_length;
             tuple++;
          }
       }
 
-      NextTagItem((const struct TagItem**)&tag_list)->ti_Data=region_count;
+      NextTagItem(&tag_list)->ti_Data=region_count;
    }
 
    return success;
@@ -698,8 +698,8 @@ static BOOL ParseVers1(const UBYTE *tuple,struct TagItem *tag_list,
    /* Get version no. */
 
    tuple+=2;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=*tuple++;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=*tuple++;
+   NextTagItem(&tag_list)->ti_Data=*tuple++;
+   NextTagItem(&tag_list)->ti_Data=*tuple++;
 
    /* Get info strings */
 
@@ -747,14 +747,14 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
    /* Get mode no. */
 
    p=tuple+2;
-   NextTagItem((const struct TagItem**)&temp_tag)->ti_Data=*p&0x3f;
+   NextTagItem(&temp_tag)->ti_Data=*p&0x3f;
 
    if(*p&0x40)
       flags|=PCCARD_CFTABLEF_DEFAULT;
    if(*p&0x80)
       p++;
 
-   NextTagItem((const struct TagItem**)&temp_tag)->ti_Data=flags;
+   NextTagItem(&temp_tag)->ti_Data=flags;
 
    features=*(++p);
    p++;
@@ -763,7 +763,7 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
 
    for(power_count=features&0x3;i<MAX_POWER_COUNT;i++)
    {
-      tag=NextTagItem((const struct TagItem**)&temp_tag);
+      tag=NextTagItem(&temp_tag);
 
       if(i<power_count)
       {
@@ -777,7 +777,7 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
             flags=0;
             for(j=0;j<POWER_PARAM_COUNT;j++)
             {
-               sub_tag=NextTagItem((const struct TagItem**)&temp_sub_tag);
+               sub_tag=NextTagItem(&temp_sub_tag);
 
                if((present&1)!=0)
                {
@@ -801,7 +801,7 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
 
                present>>=1;
             }
-            NextTagItem((const struct TagItem**)&temp_sub_tag)->ti_Data=flags;
+            NextTagItem(&temp_sub_tag)->ti_Data=flags;
          }
 
          tag->ti_Data=(UPINT)sub_tag_list;
@@ -827,7 +827,7 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
 
       for(i=0;i<TIMING_COUNT;i++)
       {
-         tag=NextTagItem((const struct TagItem**)&temp_tag);
+         tag=NextTagItem(&temp_tag);
 
          if(timing_scales[i]!=7)
          {
@@ -838,8 +838,8 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
             if(success)
             {
                p++;
-               NextTagItem((const struct TagItem**)&temp_sub_tag)->ti_Data=SPEED_CVT(*p);
-               NextTagItem((const struct TagItem**)&temp_sub_tag)->ti_Data=
+               NextTagItem(&temp_sub_tag)->ti_Data=SPEED_CVT(*p);
+               NextTagItem(&temp_sub_tag)->ti_Data=
                   exponents[timing_scales[i]];
             }
 
@@ -853,7 +853,7 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
    }
    else
    {
-      tag=NextTagItem((const struct TagItem**)&temp_tag);
+      tag=NextTagItem(&temp_tag);
       tag->ti_Tag=TAG_SKIP;
       tag->ti_Data=TIMING_COUNT-1;
       temp_tag=tag;
@@ -910,27 +910,27 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
       }
    }
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x8)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=sub_flags&(PCCARD_IOF_8BIT|PCCARD_IOF_16BIT);
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x8)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=sub_flags&0x1f;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x8)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=win_count;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x8)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=(UPINT)win_bases;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x8)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=(UPINT)win_lengths;
@@ -951,12 +951,12 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
       }
    }
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x10)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=sub_flags;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x10)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=mask;
@@ -1034,22 +1034,22 @@ static BOOL ParseCfTableEntry(const UBYTE *tuple,struct TagItem *tag_list,
       }
    }
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x60)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=win_count;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x60)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=(UPINT)win_bases;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if(((features&0x60)==0)||(sizes==0))
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=(UPINT)host_bases;
 
-   tag=NextTagItem((const struct TagItem**)&temp_tag);
+   tag=NextTagItem(&temp_tag);
    if((features&0x60)==0)
       tag->ti_Tag=TAG_IGNORE;
    tag->ti_Data=(UPINT)win_lengths;
@@ -1075,9 +1075,9 @@ static BOOL ParseManfID(const UBYTE *tuple,struct TagItem *tag_list,
    /* Get manufacturer and product IDs */
 
    tuple+=2;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=LEWord(tuple);
+   NextTagItem(&tag_list)->ti_Data=LEWord(tuple);
    tuple+=2;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=LEWord(tuple);
+   NextTagItem(&tag_list)->ti_Data=LEWord(tuple);
 
    return TRUE;
 }
@@ -1090,8 +1090,8 @@ static BOOL ParseFuncID(const UBYTE *tuple,struct TagItem *tag_list,
    /* Get function and intialisation info */
 
    tuple+=2;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=*tuple++;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=*tuple;
+   NextTagItem(&tag_list)->ti_Data=*tuple++;
+   NextTagItem(&tag_list)->ti_Data=*tuple;
 
    return TRUE;
 }
@@ -1145,7 +1145,7 @@ AROS_LH1(void, PCCard_FreeTupleInfo,
    if(tag_list!=NULL)
    {
       temp_tag=tag_list;
-      while((tag=NextTagItem((const struct TagItem**)&temp_tag))!=NULL)
+      while((tag=NextTagItem(&temp_tag))!=NULL)
       {
          if(TagInArray(tag->ti_Tag,(Tag*)sublist_tags)&&(tag->ti_Data!=0))
             PCCard_FreeTupleInfo((APTR)tag->ti_Data);
@@ -1203,8 +1203,8 @@ static BOOL ParseStrings(const UBYTE *tuple,struct TagItem *tag_list,
       }
    }
 
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=string_count;
-   NextTagItem((const struct TagItem**)&tag_list)->ti_Data=(UPINT)strings;
+   NextTagItem(&tag_list)->ti_Data=string_count;
+   NextTagItem(&tag_list)->ti_Data=(UPINT)strings;
 
    /* Return */
 

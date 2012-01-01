@@ -197,8 +197,8 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem        *tag;
-    const struct TagItem  *tags;
+    struct TagItem  *tag;
+    struct TagItem  *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )

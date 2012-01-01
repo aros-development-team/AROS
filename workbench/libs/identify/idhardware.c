@@ -249,7 +249,7 @@ static CONST_STRPTR handle_notavail(BOOL null4na);
     AROS_LIBFUNC_INIT
 
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
 
     CONST_STRPTR result = NULL;
     BOOL null4na = FALSE;

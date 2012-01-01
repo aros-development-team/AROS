@@ -173,7 +173,7 @@ static IPTR WBVirtualSetUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbVirtual *my = INST_DATA(cl, obj);
     struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     IPTR rc;
     WORD val;
 

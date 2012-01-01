@@ -349,7 +349,7 @@ const struct
     BOOL found;
 
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
 
     for (tags = taglist; (tag = NextTagItem(&tags)); )
     {

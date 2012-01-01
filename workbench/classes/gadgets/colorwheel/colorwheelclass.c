@@ -101,7 +101,7 @@ STATIC VOID notify_all(Class *cl, Object *o, struct GadgetInfo *gi, BOOL interim
 
 IPTR ColorWheel__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    const struct TagItem 	*tag, *tstate;
+    struct TagItem 	*tag, *tstate;
     struct ColorWheelData 	*data 	       = INST_DATA(cl, o);
     ULONG			old_brightness = 0;
     BOOL			do_notify      = FALSE;

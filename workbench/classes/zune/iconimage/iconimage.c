@@ -35,7 +35,7 @@ Object *IconImage__OM_NEW
 )
 {
     struct IconImage_DATA *data       = NULL; 
-    const struct TagItem  *tstate = message->ops_AttrList;    
+    struct TagItem        *tstate = message->ops_AttrList;    
     struct TagItem        *tag        = NULL;    
     struct DiskObject     *diskObject = NULL;
     CONST_STRPTR           file       = NULL;

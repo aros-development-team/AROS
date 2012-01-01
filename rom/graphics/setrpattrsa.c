@@ -86,7 +86,7 @@
     struct TagItem *tag, *tstate = tags;
     struct gfx_driverdata *driverdata;
     
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	switch (tag->ti_Tag)
 	{

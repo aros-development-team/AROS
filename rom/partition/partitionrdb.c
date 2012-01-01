@@ -867,7 +867,7 @@ static LONG PartitionRDBSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct TagItem *tag;
     struct PartitionBlock *data = (struct PartitionBlock *)ph->data;
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
         switch (tag->ti_Tag)
         {

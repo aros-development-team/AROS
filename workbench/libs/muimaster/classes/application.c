@@ -436,7 +436,7 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
     data->app_Version = "Unnamed 0.0";
     data->app_Description = "?";
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -821,7 +821,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
      ** we do know. The best way should be using NextTagItem() and simply
      ** browsing through the list.
      */
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
         IPTR *addr;
         switch (tag->ti_Tag)

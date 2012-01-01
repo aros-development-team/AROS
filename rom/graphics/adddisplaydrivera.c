@@ -125,7 +125,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = (struct TagItem *)tags;
     struct monitor_driverdata *mdd;
     ULONG FirstID = INVALID_ID;
     ULONG NextID;
@@ -152,7 +152,7 @@
     }
 
     /* First parse parameters */
-    while ((tag = NextTagItem(&tags)))
+    while ((tag = NextTagItem(&tstate)))
     {
     	switch (tag->ti_Tag)
     	{

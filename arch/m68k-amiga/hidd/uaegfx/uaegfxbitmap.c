@@ -273,7 +273,7 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 
     DB2(bug("UAEGFXBitmap__Root__Set %p (%p:%d)\n", data, data->VideoData, data->memsize));
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
  	DB2(bug("%d/%d\n", tag->ti_Tag, tag->ti_Data));
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))

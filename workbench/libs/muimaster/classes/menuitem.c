@@ -144,7 +144,7 @@ IPTR Menuitem__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->flags = MENUF_ENABLED;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -199,7 +199,7 @@ IPTR Menuitem__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 
     BOOL rebuild = FALSE;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{

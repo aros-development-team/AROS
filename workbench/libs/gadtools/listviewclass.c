@@ -457,7 +457,7 @@ STATIC IPTR listview_set(Class *cl, struct Gadget *g,struct opSet *msg)
     EnterFunc(bug("Listview::Set: Data 0x%lx\n",data));
 
     tstate = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
     	IPTR tidata = tag->ti_Data;
     	

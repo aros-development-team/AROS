@@ -277,7 +277,7 @@ static IPTR Area__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -474,7 +474,7 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     
     int change_disable = 0; /* Has the disable state changed? */
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch (tag->ti_Tag)
         {
