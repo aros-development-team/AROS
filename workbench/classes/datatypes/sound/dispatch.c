@@ -993,7 +993,7 @@ BOOL __regargs parsetaglist( Class *cl, Object *o, struct opSet *ops, ULONG *cnt
 
 	ObtainSemaphore( &id->Lock );
 dbug( kprintf( "NextTagItem\n" ); )
-	while( ( ti = NextTagItem( (const struct TagItem **)&tstate ) ) )
+	while( ( ti = NextTagItem(&tstate ) ) )
 	{
 		IPTR	data = ti->ti_Data;
 		

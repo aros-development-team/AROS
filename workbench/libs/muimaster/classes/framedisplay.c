@@ -32,9 +32,9 @@ extern struct Library *MUIMasterBase;
 
 IPTR Framedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct Framedisplay_DATA   *data;
-    const struct TagItem    *tags;
-    struct TagItem  	    *tag;
+    struct Framedisplay_DATA  *data;
+    struct TagItem            *tags;
+    struct TagItem            *tag;
     
     D(bug("Framedisplay_New starts\n"));
 
@@ -62,7 +62,7 @@ IPTR Framedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Framedisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Framedisplay_DATA *data = INST_DATA(cl, obj);
-    const struct TagItem    *tags;
+    struct TagItem    *tags;
     struct TagItem  	    *tag;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )

@@ -67,7 +67,7 @@ IPTR Numericbutton__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Numericbutton__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct Numericbutton_DATA *data = INST_DATA(cl, obj);
-    const struct TagItem *tags;
+    struct TagItem *tags;
     struct TagItem *tag;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)

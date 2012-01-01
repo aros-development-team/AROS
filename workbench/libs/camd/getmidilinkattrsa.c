@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
 
 	struct TagItem *tag;
-	const struct TagItem *tstate=tags;
+	struct TagItem *tstate=tags;
 	IPTR *where;
 	ULONG ret=0;
 

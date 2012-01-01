@@ -136,7 +136,7 @@ IPTR AROSCycle__OM_GET(Class *cl, Object *o, struct opGet *msg)
 IPTR AROSCycle__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct CycleData 	 *data = INST_DATA(cl, o);
-    const struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct TagItem       *tag, *taglist = msg->ops_AttrList;
     STRPTR  	    	 *mylabels;
     BOOL    	    	  rerender = FALSE;
     IPTR    	    	  result;

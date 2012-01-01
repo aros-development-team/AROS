@@ -792,7 +792,7 @@ APTR __saveds ASM PM_FilterIMsgA(register __a0 struct Window *w GNUCREG(a0),
     register __a2 struct IntuiMessage *im GNUCREG(a2),
     register __a3 struct TagItem *tags GNUCREG(a3))
 {
-        const struct TagItem    *tstate;
+        struct TagItem          *tstate;
         struct TagItem          *tag;
         struct Hook             *MenuHandler=NULL;
         BOOL                    autpd = FALSE, rawkey = FALSE;
@@ -923,7 +923,7 @@ APTR __saveds ASM PM_OpenPopupMenuA(register __a1 struct Window *prevwnd GNUCREG
 {
         APTR			ret = 0L;
         BOOL			shut_down = FALSE;
-        const struct TagItem    *tstate;
+        struct TagItem    *tstate;
         struct TagItem          *tag;
 #if 1
         /* TODO: Check this code that is trying to get rid of global p */
@@ -1121,7 +1121,7 @@ LONG __saveds ASM PM_InsertMenuItemA(register __a0 struct PopupMenu *base GNUCRE
     register __a1 struct TagItem *tags GNUCREG(a1))
 {
     struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     LONG count=0;
     ULONG method=0; // insertion method
     struct PopupMenu *pointer = NULL, *pm;

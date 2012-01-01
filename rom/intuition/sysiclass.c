@@ -109,7 +109,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
     BOOL    	     	 set_width = FALSE, set_height = FALSE;
 
     taglist = msg->ops_AttrList;
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
         switch(tag->ti_Tag)
         {

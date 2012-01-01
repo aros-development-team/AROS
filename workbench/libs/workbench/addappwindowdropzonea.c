@@ -123,8 +123,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem           *tagState = tags;
-    const struct TagItem           *tag;
+    struct TagItem           *tagState = tags;
+    struct TagItem           *tag;
 
     struct AppWindowDropZone *dropZone;
 

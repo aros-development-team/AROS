@@ -1090,7 +1090,7 @@ static void FitToWindow(void)
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
-    const struct TagItem *tstate, *tags;
+    struct TagItem *tstate, *tags;
     struct TagItem      *tag;
     struct MenuItem     *item;
     struct Gadget       *activearrowgad = NULL;
@@ -1486,7 +1486,7 @@ static void HandleAll(void)
 		    break;
 
 		case IDCMP_IDCMPUPDATE:
-		    tstate = tags = (const struct TagItem *) msg->IAddress;
+		    tstate = tags = (struct TagItem *) msg->IAddress;
 		    while ((tag = NextTagItem(&tstate)) != NULL)
 		    {
 			tidata = tag->ti_Data;

@@ -34,7 +34,7 @@ extern struct Library *MUIMasterBase;
 IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Balance_DATA *data;
-    const struct TagItem *tags;
+    struct TagItem *tags;
     struct TagItem *tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);

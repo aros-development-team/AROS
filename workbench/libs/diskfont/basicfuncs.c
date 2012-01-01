@@ -149,7 +149,7 @@ BOOL WriteTagsNum(BPTR fh, const struct TagItem *taglist, struct DiskfontBase *D
     if (!WriteLong(&DiskfontBase->dsh, num, (void *)fh))
 	goto wt_failure;
     
-    for (; (tag = NextTagItem(&taglist)); )
+    for (; (tag = NextTagItem((struct TagItem **)&taglist)); )
     {
         if (!WriteLong( &DiskfontBase->dsh, tag->ti_Tag, (void *)fh ))
             goto wt_failure;
@@ -182,7 +182,7 @@ ULONG NumTags(const struct TagItem *taglist, struct DiskfontBase *DiskfontBase)
 
     D(bug("NumTags(taglist=%p)\n", taglist));
 
-    for (; NextTagItem(&taglist); )
+    for (; NextTagItem((struct TagItem **)&taglist); )
         numtags ++;
 
     numtags ++; /* Count TAG_DONE */
@@ -214,7 +214,7 @@ ULONG CopyTagItems
 
     D(bug("CopyTagItems(desttaglist=%p, sourcetaglist=%p)\n", desttaglist, sourcetaglist));
 
-    for (; (tag = NextTagItem(&sourcetaglist)); )
+    for (; (tag = NextTagItem((struct TagItem **)&sourcetaglist)); )
     {
         desttaglist->ti_Tag   = tag->ti_Tag;
         desttaglist->ti_Data  = tag->ti_Data;

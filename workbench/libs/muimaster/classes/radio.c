@@ -26,7 +26,7 @@ extern struct Library *MUIMasterBase;
 IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA   *data;
-    const struct TagItem    *tags;
+    struct TagItem      *tags;
     struct TagItem  	    *tag;
     int i;
     const char **entries = NULL;
@@ -137,7 +137,7 @@ IPTR Radio__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 IPTR Radio__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Radio_DATA *data;
-    const struct TagItem    *tags;
+    struct TagItem    *tags;
     struct TagItem  	    *tag;
 
     data = INST_DATA(cl, obj);

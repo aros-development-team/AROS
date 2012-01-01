@@ -257,7 +257,7 @@ VOID MNAME_ROOT(Set)(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     int yoffset = data->yoffset;
 
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         if(IS_BM_ATTR(tag->ti_Tag, idx))
         {

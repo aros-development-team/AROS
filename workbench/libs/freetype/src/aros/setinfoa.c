@@ -22,7 +22,7 @@ static void scantags(FT_GlyphEngine *ge, struct TagItem *tags)
 {
     Tag   otagtag;
     IPTR otagdata;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
     int temp, temp2;
 

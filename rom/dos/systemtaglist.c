@@ -124,7 +124,7 @@
     ULONG commandlen;
     LONG rc            = -1;
 
-    const struct TagItem *tags2 = tags;
+    struct TagItem *tags2 = tags;
     struct TagItem *newtags, *tag;
 
     D(bug("SystemTagList('%s',%p)\n", command, tags));

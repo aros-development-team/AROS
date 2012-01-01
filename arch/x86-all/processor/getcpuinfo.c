@@ -72,7 +72,7 @@ static void ProcessFeaturesTag(struct X86ProcessorInformation * info, struct Tag
     processor = sysprocs[selectedprocessor];
 
     /* Go over each passed tag and fill apprioprate data */
-    while ((passedTag = NextTagItem((const struct TagItem **)&tagList)) != NULL)
+    while ((passedTag = NextTagItem(&tagList)) != NULL)
     {
         if ((passedTag->ti_Tag > GCIT_FeaturesBase) &&
             (passedTag->ti_Tag <= GCIT_FeaturesLast))

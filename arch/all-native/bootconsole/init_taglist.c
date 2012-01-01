@@ -21,7 +21,7 @@ void con_InitTagList(const struct TagItem *tags)
     /* By default we have 2.0 data (framebuffer pointer filled in) */
     unsigned short vbever = 0x0200;
 
-    while ((tag = LibNextTagItem(&tags)))
+    while ((tag = LibNextTagItem((struct TagItem **)&tags)))
     {
 	switch (tag->ti_Tag)
 	{

@@ -35,7 +35,7 @@ IPTR Gauge__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Gauge_DATA   *data;
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return FALSE;
@@ -102,7 +102,7 @@ IPTR Gauge__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Gauge_DATA      *data;
     struct TagItem         *tag;
-    const struct TagItem   *tags;
+    struct TagItem   *tags;
     int info_changed = 0;
     int need_redraw = 0;
 

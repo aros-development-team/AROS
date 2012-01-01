@@ -19,7 +19,7 @@ D(bug("[AROSTCP] amiga_netstat.c: __QueryInterfaceTagList()\n"));
 
 	ifp = ifunit(name);
 	if (ifp) {
-		while (tag = NextTagItem(&tags)) {
+		while (tag = NextTagItem((struct TagItem **)&tags)) {
 			switch (tag->ti_Tag)
 			{
 			case IFQ_HardwareAddressSize:

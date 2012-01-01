@@ -95,7 +95,7 @@
     AROS_LIBFUNC_INIT
 
 	struct TagItem *tag;
-	const struct TagItem *tstate=tags;
+	struct TagItem *tstate=tags;
 	MidiMsg *temp;
 	UBYTE *temp2;
 	BOOL ret=TRUE;

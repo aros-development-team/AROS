@@ -46,7 +46,7 @@ IPTR Popimage__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->adjust_type = MUIV_Imageadjust_Type_All;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{

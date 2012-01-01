@@ -2304,7 +2304,7 @@ STATIC struct Gadget *_OM_NEW(struct IClass *cl, Object * o, struct opSet *msg)
 STATIC ULONG _OM_SET(struct IClass * cl, struct Gadget * g, struct opSet * msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
-    const struct TagItem *tl = msg->ops_AttrList;
+    struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
 
     LONG top_vert = td->vert_top;

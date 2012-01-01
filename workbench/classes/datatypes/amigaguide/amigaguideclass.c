@@ -207,7 +207,7 @@ IPTR om_new(Class *cl, Object *obj, struct opSet *msg)
 
    /* process attributes that only belongs to this class
       and intialization phase. */
-   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+   while((tag = NextTagItem(&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -450,7 +450,7 @@ IPTR _om_update(Class *cl, Object *obj, struct opSet *msg)
    struct TagItem *tag;
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+   while((tag = NextTagItem(&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {
@@ -503,7 +503,7 @@ IPTR _om_set(Class *cl,Object *obj,struct opSet *msg)
    struct TagItem *tag;
 
    /* process attributes that only belongs to this class */
-   while((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+   while((tag = NextTagItem(&tstate)) != NULL)
    {
       switch(tag->ti_Tag)
       {

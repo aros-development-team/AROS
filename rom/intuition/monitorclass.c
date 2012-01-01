@@ -900,7 +900,7 @@ IPTR MonitorClass__OM_SET(Class *cl, Object *o, struct opSet *msg)
     struct TagItem  *tag, *tstate;
 
     tstate = msg->ops_AttrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate))) {
+    while((tag = NextTagItem(&tstate))) {
 	switch (tag->ti_Tag) {
 	case MA_TopLeftMonitor:
 	    data->topleft = (Object *)tag->ti_Data;

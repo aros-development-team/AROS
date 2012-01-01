@@ -1010,7 +1010,7 @@ VOID GoOffline(struct DevUnit *unit, struct DevBase *base)
 BOOL SetOptions(struct DevUnit *unit, const struct TagItem *tag_list,
    struct DevBase *base)
 {
-   const struct TagItem *tag_item, *tlist = tag_list;
+   struct TagItem *tag_item, *tlist = (struct TagItem *)tag_list;
    BOOL reconfigure = TRUE;
 
    while((tag_item = NextTagItem(&tlist)) != NULL)

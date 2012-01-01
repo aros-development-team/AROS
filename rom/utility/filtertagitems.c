@@ -70,7 +70,7 @@
     {
 	struct TagItem *ti;
 
-	while((ti = NextTagItem((const struct TagItem **)&tagList)))
+	while((ti = NextTagItem(&tagList)))
 	{
 	    if(logic == TAGFILTER_AND)
 	    {

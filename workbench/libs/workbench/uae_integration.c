@@ -94,7 +94,7 @@ static ULONG tag_list_nr(const struct TagItem *tstate, APTR WorkbenchBase)
     ULONG count;
 
     count=0;
-    while(NextTagItem(&tstate)) 
+    while(NextTagItem((struct TagItem **)&tstate)) 
     {
      	count++;
     }
@@ -165,7 +165,7 @@ struct TagItem *tag_list_clone(void *mempool, const struct TagItem *in, APTR Wor
     }
 
     t=0;
-    while( (tag=NextTagItem(&in)) ) 
+    while( (tag=NextTagItem((struct TagItem **)&in)) ) 
     {
 	switch(tag->ti_Tag) {
 

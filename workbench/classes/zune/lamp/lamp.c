@@ -47,7 +47,7 @@ const static ULONG defaultcolors[][3] =
 Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Lamp_DATA           *data;
-    const struct TagItem       *tstate = msg->ops_AttrList;
+    struct TagItem             *tstate = msg->ops_AttrList;
     struct TagItem             *tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -122,7 +122,7 @@ Object *Lamp__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Lamp__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Lamp_DATA           *data   = INST_DATA(cl, obj);
-    const struct TagItem       *tstate = msg->ops_AttrList;
+    struct TagItem             *tstate = msg->ops_AttrList;
     struct TagItem             *tag;
 
     while ((tag = NextTagItem(&tstate)) != NULL)

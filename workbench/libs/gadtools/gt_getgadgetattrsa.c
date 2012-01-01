@@ -58,7 +58,7 @@
     
     LONG                  count = 0;
     struct TagItem 	     *tag;
-    const struct TagItem *mytags = taglist;
+    struct TagItem *mytags = taglist;
 
     if (gad == NULL || taglist == NULL)
         return 0L;

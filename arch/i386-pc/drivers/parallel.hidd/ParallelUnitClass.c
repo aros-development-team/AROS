@@ -101,7 +101,7 @@ OOP_Object *PCParUnit__Root__New(OOP_Class *cl, OOP_Object *obj, struct pRoot_Ne
 	EnterFunc(bug("ParallelUnit::New()\n"));
 
 	tstate = msg->attrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate))) {
+	while ((tag = NextTagItem(&tstate))) {
 		ULONG idx;
 
 		if (IS_HIDDPARALLELUNIT_ATTR(tag->ti_Tag, idx)) {

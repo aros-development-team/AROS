@@ -716,7 +716,7 @@ void METHOD(USBDevice, Root, Set)
 {
     uint32_t idx;
     struct TagItem *tag;
-    const struct TagItem *tags = msg->attrList;
+    struct TagItem *tags = msg->attrList;
     DeviceData *dev = OOP_INST_DATA(cl, o);
 
     while ((tag = NextTagItem(&tags)))

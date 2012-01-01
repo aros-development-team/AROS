@@ -346,7 +346,7 @@ IPTR IconWindowDrawerList__OM_SET(Class *CLASS, Object *self, struct opSet *mess
 
     struct TagItem *tstate = message->ops_AttrList, *tag;
 
-    while ((tag = NextTagItem((const struct TagItem**)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {

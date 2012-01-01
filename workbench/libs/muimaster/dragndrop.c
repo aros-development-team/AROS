@@ -610,7 +610,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
         struct TagItem *tl=tagList;
         struct TagItem *tag;
 
-        while(( tag = NextTagItem((const struct TagItem **) &tl )))
+        while(( tag = NextTagItem( &tl )))
         {
             ULONG id = tag->ti_Tag;
             IPTR data = tag->ti_Data;

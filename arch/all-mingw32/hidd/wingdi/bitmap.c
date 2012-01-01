@@ -433,7 +433,7 @@ VOID GDIBM__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
     BOOL            change_position = FALSE;
 
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         if (IS_BM_ATTR(tag->ti_Tag, idx)) {
             switch(idx)

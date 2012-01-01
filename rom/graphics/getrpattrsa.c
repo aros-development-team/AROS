@@ -93,7 +93,7 @@
     struct gfx_driverdata *driverdata;
     HIDDT_Color col;
 
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	switch(tag->ti_Tag)
 	{
@@ -214,7 +214,7 @@
 		
 	} /* switch(tag->ti_Tag) */
 	
-    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
+    } /* while ((tag = NextTagItem(&tstate))) */
 
     AROS_LIBFUNC_EXIT
 } /* GetRPAttrsA */

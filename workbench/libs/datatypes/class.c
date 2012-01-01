@@ -76,7 +76,7 @@ IPTR SetAttributes(struct Library *DataTypesBase, Class *class, Object *object,
     LONG VisHoriz = dtsi->si_VisHoriz;
     LONG TotHoriz = dtsi->si_TotHoriz;
    
-    const struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
+    struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
     struct TagItem *tag;
    
     while ((tag = NextTagItem(&tstate)) != NULL)

@@ -457,7 +457,7 @@ static LONG PartitionMBRSetPartitionAttrs(struct Library *PartitionBase, struct 
     struct MBRData *data = (struct MBRData *)ph->data;
     struct TagItem *tag;
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
         switch (tag->ti_Tag)
         {

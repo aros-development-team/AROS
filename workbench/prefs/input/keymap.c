@@ -29,7 +29,7 @@ static IPTR Keymap__OM_NEW(Class  *cl, Object *obj, struct opSet *msg)
 static IPTR Keymap__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Keymap_DATA *data = INST_DATA(cl, obj);
-    const struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
 
     while ((tag = NextTagItem(&tags)) != NULL)

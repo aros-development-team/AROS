@@ -70,8 +70,7 @@ struct PopupMenu *__saveds ASM PM_MakeItemA(register __a1 struct TagItem *tags G
 
 struct PopupMenu * __saveds ASM PM_MakeMenuA(register __a1 struct TagItem *tags GNUCREG(a1))
 {
-    struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tag, *tstate;
     struct PopupMenu *first=0L, *last=0L;
     BOOL error=0;
 
@@ -102,7 +101,7 @@ struct PopupMenu * __saveds ASM PM_MakeMenuA(register __a1 struct TagItem *tags 
 struct PM_IDLst * __saveds ASM PM_MakeIDListA(register __a1 struct TagItem *tags GNUCREG(a1))
 {
     struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct PM_IDLst *first=0L, *last=0L, *n=0L;
     BOOL error=0;
 

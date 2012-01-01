@@ -640,7 +640,7 @@ void mainloop(void) {
         switch(globals->packet->dp_Type) {
         case ACTION_SFS_SET:
           {
-            const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+            struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
             struct TagItem *tag;
 
             while((tag=NextTagItem(&taglist))!=NULL) {
@@ -670,7 +670,7 @@ void mainloop(void) {
           break;
         case ACTION_SFS_QUERY:
           {
-            const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+            struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
             struct TagItem *tag;
 
             while((tag=NextTagItem(&taglist)))
@@ -809,7 +809,7 @@ void mainloop(void) {
             currentdate=getdate();
 
             if(globals->packet->dp_Type==ACTION_SFS_FORMAT) {
-              const struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
+              struct TagItem *taglist=(struct TagItem *)globals->packet->dp_Arg1;
               struct TagItem *tag;
 
               while((tag=NextTagItem(&taglist))) {

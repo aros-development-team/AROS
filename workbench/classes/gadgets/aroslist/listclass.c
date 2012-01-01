@@ -60,7 +60,7 @@ STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = (IPTR)0;
     
-    const struct TagItem *tag, *tstate;
+    struct TagItem *tag, *tstate;
     struct ListData *data;
     
     data = INST_DATA(cl, o);
@@ -112,7 +112,7 @@ IPTR AROSList__OM_NEW(Class *cl, Object *o, struct opSet *msg)
     {
     	struct ListData *data;
     	APTR *srcarray = NULL;
-    	const struct TagItem *tag, *tstate;
+    	struct TagItem *tag, *tstate;
     	
     	ULONG puddlesz = 2008, threshsz = 1024;
     	

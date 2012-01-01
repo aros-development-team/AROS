@@ -274,7 +274,7 @@ IPTR Dirlist__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	*tag, *tags;
     BOOL    	    	 directory_changed = FALSE;
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         IPTR tidata = tag->ti_Data;
 

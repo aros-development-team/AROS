@@ -92,7 +92,7 @@
     /* Remember, the clone list is a straight memory block, however
 	the original list may not be.
     */
-    while ((current = NextTagItem (&original)))
+    while ((current = NextTagItem ((struct TagItem **)&original)))
     {
 	*clone = *current; /* Copies both tag and data */
 	clone++;

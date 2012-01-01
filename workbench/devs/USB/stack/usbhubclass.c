@@ -262,7 +262,7 @@ void METHOD(USBHub, Root, Set)
 {
     uint32_t idx;
     struct TagItem *tag;
-    const struct TagItem *tags = msg->attrList;
+    struct TagItem *tags = msg->attrList;
 
     while ((tag = NextTagItem(&tags)))
     {

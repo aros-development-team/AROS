@@ -60,7 +60,7 @@
 
     /* TODO: Implement Display mode attributes */
 
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
 
     ULONG minwidth = 320;

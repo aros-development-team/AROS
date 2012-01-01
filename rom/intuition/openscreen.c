@@ -227,7 +227,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             sharepens = TRUE; /* not sure */
         }
 
-        while((tag = NextTagItem ((const struct TagItem **)&tagList)))
+        while((tag = NextTagItem(&tagList)))
         {
             DEBUG_OPENSCREEN(dprintf("OpenScreen: Tag 0x%08lx Data 0x%08lx\n",
                                      tag->ti_Tag, tag->ti_Data));

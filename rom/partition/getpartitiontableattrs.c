@@ -59,7 +59,7 @@
     	struct PTFunctionTable *handler = root->table->handler;
     	struct TagItem *tag;
 
-    	while ((tag = NextTagItem(&taglist)))
+    	while ((tag = NextTagItem((struct TagItem **)&taglist)))
     	{
     	    LONG sup;
 

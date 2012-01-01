@@ -40,14 +40,14 @@ AROS_LH2(BOOL, GetUnitAttrsA,
 {
     AROS_LIBFUNC_INIT
 
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = (struct TagItem *)tags;
 
     /* Owner is the only thing which can be modified, so we don't need a semaphore here */
 
     if (unit >= base->unitCnt)
     	return FALSE;
 
-    while ((tag = LibNextTagItem(&tags)))
+    while ((tag = LibNextTagItem(&tstate)))
     {
     	switch (tag->ti_Tag)
     	{

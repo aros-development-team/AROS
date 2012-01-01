@@ -264,8 +264,7 @@ IPTR AslCycle__OM_DISPOSE(Class * cl, Object * o, Msg msg)
 IPTR AslCycle__OM_SET(Class * cl, Object * o, struct opSet *msg)
 {
     struct AslCycleData *data = INST_DATA(cl, o);
-    struct TagItem 	*tag;
-    const struct TagItem *tstate = msg->ops_AttrList;
+    struct TagItem      *tag, *tstate = msg->ops_AttrList;
     IPTR		retval, tidata;
     
     retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);

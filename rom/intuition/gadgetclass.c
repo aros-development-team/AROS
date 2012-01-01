@@ -52,8 +52,7 @@ static ULONG set_gadgetclass(Class *cl, struct ExtGadget *eg, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    const struct TagItem *tstate = msg->ops_AttrList;
-    struct TagItem  	 *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
     IPTR    	    	  tidata;
     ULONG   	    	  retval = 0UL; /* set to non-zero to signal visual changes */
 

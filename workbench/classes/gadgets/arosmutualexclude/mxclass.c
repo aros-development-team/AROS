@@ -41,7 +41,7 @@
 static void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 {
     struct MXData  *data = INST_DATA(cl, obj);
-    const struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct TagItem *tag, *taglist = msg->ops_AttrList;
 
     while ((tag = NextTagItem(&taglist)))
     {
@@ -145,9 +145,9 @@ Object *AROSMX__OM_NEW(Class * cl, Class * rootcl, struct opSet *msg)
 
 IPTR AROSMX__OM_SET(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct MXData         *data = INST_DATA(cl, obj);
-    const struct TagItem  *tag, *taglist = msg->ops_AttrList;
-    IPTR    	           retval = FALSE;
+    struct MXData   *data = INST_DATA(cl, obj);
+    struct TagItem  *tag, *taglist = msg->ops_AttrList;
+    IPTR    	     retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);

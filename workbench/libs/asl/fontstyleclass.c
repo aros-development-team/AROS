@@ -104,7 +104,7 @@ IPTR AslFontStyle__OM_SET(Class * cl, Object * o, struct opSet * msg)
 {
     struct AslFontStyleData 	*data;
     struct TagItem  	    	*tag;
-    const struct TagItem        *tstate = msg->ops_AttrList;
+    struct TagItem              *tstate = msg->ops_AttrList;
     struct RastPort 	    	*rp;
     BOOL    	    	    	 redraw = FALSE;
     IPTR    	    	    	 retval;

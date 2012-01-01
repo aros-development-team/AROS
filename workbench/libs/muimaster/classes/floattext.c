@@ -130,7 +130,7 @@ IPTR Floattext__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Floattext_DATA *data;
     struct TagItem        *tag;
-    const struct TagItem  *tags;
+    struct TagItem        *tags;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -217,7 +217,7 @@ IPTR Floattext__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Floattext_DATA *data = INST_DATA(cl, obj);
     struct TagItem        *tag;
-    const struct TagItem  *tags;
+    struct TagItem  *tags;
     BOOL                   changed = FALSE;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )

@@ -1086,8 +1086,7 @@ OOP_Object * GFX__Hidd_Gfx__NewBitMap(OOP_Class *cl, OOP_Object *o,
     };
     OOP_Object   *bm;
 
-    const struct TagItem *tstate = msg->attrList;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->attrList;
     ULONG idx;
 
     STRPTR        classid     = NULL;
@@ -1658,7 +1657,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
     /* First we need to calculate how much memory we are to allocate by counting supplied
        pixel formats and syncs */
     
-    for (tstate = modetags; (tag = NextTagItem((const struct TagItem **)&tstate));)
+    for (tstate = modetags; (tag = NextTagItem(&tstate));)
     {
 	ULONG idx;
 	
@@ -1701,7 +1700,7 @@ static BOOL register_modes(OOP_Class *cl, OOP_Object *o, struct TagItem *modetag
 	goto failure;
     
     
-    for (tstate = modetags; (tag = NextTagItem((const struct TagItem **)&tstate));)
+    for (tstate = modetags; (tag = NextTagItem(&tstate));)
     {
 	/* Look for Gfx, PixFmt and Sync tags */
 	ULONG idx;
@@ -1983,7 +1982,7 @@ HIDDT_ModeID *GFX__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o,
     mq.mdb = mdb;
     mq.cl  = cl;
     
-    for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = msg->queryTags; (tag = NextTagItem(&tstate)); )
     {
 	switch (tag->ti_Tag)
 	{

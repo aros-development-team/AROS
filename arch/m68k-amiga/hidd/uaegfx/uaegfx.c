@@ -55,7 +55,7 @@ HIDDT_ModeID *UAEGFXCl__Hidd_Gfx__QueryModeIDs(OOP_Class *cl, OOP_Object *o, str
    if (csd->superforward)
    	return (HIDDT_ModeID*)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
-    for (tstate = msg->queryTags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = msg->queryTags; (tag = NextTagItem(&tstate)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -536,8 +536,7 @@ VOID UAEGFXCl__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
 VOID UAEGFXCl__Root__Set(OOP_Class *cl, OOP_Object *obj, struct pRoot_Set *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct TagItem  	    *tag;
-    const struct TagItem    *tstate;
+    struct TagItem  *tag, *tstate;
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))

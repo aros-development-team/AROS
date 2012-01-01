@@ -30,7 +30,7 @@
 
 STATIC IPTR _OM_SET(Class *cl, Object *o, struct opSet *msg, BOOL render)
 {
-    const struct TagItem *tag, *tstate;
+    struct TagItem *tag, *tstate;
     IPTR retval = (IPTR)0;
     struct PaletteData *data = INST_DATA(cl, o);
     

@@ -36,7 +36,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     if (!ctx)
 	return FALSE;
 
-    while((t = LibNextTagItem(&tagList)))
+    while((t = LibNextTagItem((struct TagItem **)&tagList)))
     {
     	switch(t->ti_Tag)
 	{

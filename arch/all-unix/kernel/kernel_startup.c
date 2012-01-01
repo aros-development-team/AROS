@@ -54,8 +54,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     char *errstr;
     unsigned int mm_PageSize;
     struct MemHeader *bootmh;
-    struct TagItem *tag;
-    const struct TagItem *tstate = msg;
+    struct TagItem *tag, *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
     UWORD *ranges[] = {NULL, NULL, (UWORD *)-1};

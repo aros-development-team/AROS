@@ -32,8 +32,7 @@ int __startup startup(struct TagItem *msg, ULONG magic)
     char *errstr;
     unsigned int i;
     struct MemHeader *mh;
-    struct TagItem *tag;
-    const struct TagItem *tstate = msg;
+    struct TagItem *tag, *tstate = msg;
     struct HostInterface *hif = NULL;
     struct mb_mmap *mmap = NULL;
     ULONG memflags = MEMF_CHIP|MEMF_PUBLIC|MEMF_LOCAL|MEMF_KICK;

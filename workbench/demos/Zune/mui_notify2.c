@@ -163,7 +163,7 @@ static IPTR
 Test_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TestData       *data = INST_DATA(cl, obj);
-    const struct TagItem  *tags = msg->ops_AttrList;
+    struct TagItem        *tags = msg->ops_AttrList;
     struct TagItem        *tag;
 
     /* There are many ways to find out what tag items provided by set()

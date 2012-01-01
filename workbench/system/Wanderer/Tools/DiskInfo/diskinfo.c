@@ -75,7 +75,7 @@ Object *DiskInfo__OM_NEW
 )
 {
     struct DiskInfo_DATA    *data           = NULL;
-    const struct TagItem    *tstate         = message->ops_AttrList;
+    struct TagItem        *tstate         = message->ops_AttrList;
     struct TagItem        *tag            = NULL;
     BPTR                        initial         = BNULL;
     Object            *window,
@@ -553,12 +553,12 @@ IPTR DiskInfo__OM_GET(Class *CLASS, Object *self, struct opGet *msg)
 ULONG DiskInfo__OM_SET(Class *CLASS, Object *self, struct opSet *msg)
 {
     struct DiskInfo_DATA *data = INST_DATA(CLASS, self);
-    const struct TagItem *tags = msg->ops_AttrList;
-    struct TagItem       *tag;
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tag;
 
     D(bug("[DiskInfo] %s()\n", __PRETTY_FUNCTION__));
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch (tag->ti_Tag)
         {

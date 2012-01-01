@@ -65,7 +65,7 @@
     bug("ProcessPixelArray not implemented\n");
 
 #if 0
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
     struct TagItem *tag;
 
     for (tstate = tags; (tag = NextTagItem(&tstate)); ) {

@@ -73,7 +73,7 @@ static OOP_Object *method_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     /* Parse the createion-time attributes passed to the object */ 
     tstate = msg->attrList;
     
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
      	if (IS_METHOD_ATTR(tag->ti_Tag, idx))
 	{

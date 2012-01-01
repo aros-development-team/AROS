@@ -67,7 +67,7 @@
     const struct FSFunctionTable *handler = ((struct FileSysHandle *)handle)->handler;
     struct TagItem *tag;
 
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((struct TagItem **)&taglist)))
     {
     	handler->getFileSystemAttr(PartitionBase, (struct FileSysHandle *)handle, tag);
     	

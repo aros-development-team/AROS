@@ -200,7 +200,7 @@ static IPTR WBSetUpdate(Class *cl, Object *obj, struct opUpdate *opu)
     struct wbSet *my = INST_DATA(cl, obj);
     IPTR rc;
     struct TagItem *tag;
-    const struct TagItem *tstate;
+    struct TagItem *tstate;
 
     rc = DoSuperMethodA(cl, obj, (Msg)opu);
 

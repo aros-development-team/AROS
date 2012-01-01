@@ -72,7 +72,7 @@ STATIC IPTR strg_set(Class *cl, struct Gadget * g, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    const struct TagItem  *tag, *tstate;
+    struct TagItem  *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, g);
     IPTR    	     retval = (IPTR)0;
 

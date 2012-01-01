@@ -180,7 +180,7 @@ OOP_Object *KBD__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     tstate = msg->attrList;
     D(bug("tstate: %p\n", tstate));
 
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
 	ULONG idx;
 

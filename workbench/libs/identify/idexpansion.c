@@ -166,7 +166,7 @@
     BOOL localize = TRUE;
 
     struct TagItem *tag;
-    const struct TagItem *tags;
+    struct TagItem *tags;
 
     for (tags = taglist; (tag = NextTagItem(&tags)); )
     {

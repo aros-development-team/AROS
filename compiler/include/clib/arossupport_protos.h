@@ -65,7 +65,7 @@ BPTR CreateSegList(APTR function);
  * (where utility.library is not available yet).
  * Please consider using utility.library whenever possible.
  */
-struct TagItem *LibNextTagItem(const struct TagItem **tagListPtr);
+struct TagItem *LibNextTagItem(struct TagItem **tagListPtr);
 struct TagItem *LibFindTagItem(Tag tagValue, const struct TagItem *tagList);
 IPTR LibGetTagData(Tag tagValue, IPTR defaultVal, const struct TagItem *tagList);
 

@@ -69,7 +69,7 @@ VOID NV__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     ULONG idx;
 
     struct TagItem *tag;
-    const struct TagItem *tags = msg->attrList;
+    struct TagItem *tags = msg->attrList;
 
     while ((tag = NextTagItem(&tags)))
     {

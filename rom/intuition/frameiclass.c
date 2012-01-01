@@ -139,7 +139,7 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
     struct TagItem  	*tag;
     ULONG            	 retval = 0UL;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)))
     {
         switch(tag->ti_Tag)
         {

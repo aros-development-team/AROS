@@ -138,7 +138,7 @@ IPTR kickbase(void);
 
     D(bug("ArosInquireA(taglist=%p)\n", taglist));
 
-    while( (tag = NextTagItem((const struct TagItem**)&taglist)))
+    while( (tag = NextTagItem(&taglist)))
     {
         D(bug("  tag[%d] = 0x%lx  data = 0x%lx\n", i, tag->ti_Tag, tag->ti_Data));
         i++;

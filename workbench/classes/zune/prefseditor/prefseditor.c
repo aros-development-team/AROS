@@ -160,7 +160,7 @@ IPTR PrefsEditor__OM_SET
 )
 {
     SETUP_INST_DATA;
-    const struct TagItem *tstate = message->ops_AttrList;
+    struct TagItem *tstate = message->ops_AttrList;
     struct TagItem *tag,
                     noforward_attrs[] =
                     {

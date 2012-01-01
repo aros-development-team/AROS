@@ -46,8 +46,7 @@
 STATIC IPTR text_set(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR 		retval = 0UL;
-    struct TagItem 	*tag;
-    const struct TagItem *tstate;
+    struct TagItem 	*tag, *tstate;
     struct TextData 	*data = INST_DATA(cl, o);
     struct RastPort 	*rport;
     

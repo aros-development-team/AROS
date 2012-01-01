@@ -91,8 +91,7 @@ static const ULONG masks [] = {0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff};
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
 {
-    const struct TagItem *bootinfo;
-    struct TagItem *tag;
+    struct TagItem *tag, *bootinfo;
     APTR KernelBase;
     struct Library *UtilityBase;
     struct vbe_mode *vmi = NULL;
@@ -110,7 +109,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR BootLoaderBase)
     NEWLIST(&(BootLoaderBase->DriveInfo));
 
     KernelBase = OpenResource("kernel.resource");
-    bootinfo = KrnGetBootInfo();
+    bootinfo = (struct TagItem *)KrnGetBootInfo();
     
     while ((tag = NextTagItem(&bootinfo)))
     {

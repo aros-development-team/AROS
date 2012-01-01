@@ -304,7 +304,7 @@ VOID METHOD(GMABM, Root, Set)
     LONG newxoffset = bmdata->xoffset;
     LONG newyoffset = bmdata->yoffset;
     tstate = msg->attrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         if(IS_BITMAP_ATTR(tag->ti_Tag, idx))
         {

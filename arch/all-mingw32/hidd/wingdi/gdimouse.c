@@ -133,7 +133,7 @@ OOP_Object * GDIMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
         D(bug("[GDIMouse] Mouse interrupt object: 0x%p\n", data->interrupt));
         if (data->interrupt) {
             tstate = msg->attrList;
-            while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+            while ((tag = NextTagItem(&tstate)))
             {
                 ULONG idx;
             

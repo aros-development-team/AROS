@@ -64,8 +64,7 @@
     AROS_LIBFUNC_INIT
 
 	struct TagItem *tag;
-
-	const struct TagItem *tstate=tags;
+	struct TagItem *tstate=tags;
 
 	BOOL ret=TRUE;
 	char *clustername;

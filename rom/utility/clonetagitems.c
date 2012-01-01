@@ -72,7 +72,7 @@
     */
     if (tagList)
     {
-	const struct TagItem *tmp;
+	struct TagItem *tmp;
 	/*
 	    We start the counter at 1 since this count will not include the
 	    TAG_DONE TagItem
@@ -81,7 +81,7 @@
 	    anything to the value of newList afterwards, since AllocateTagItems()
 	    will take care of setting it to NULL if the allocation fails.
 	*/
-	tmp = tagList;
+	tmp = (struct TagItem *)tagList;
 	while (NextTagItem (&tmp) != NULL)
 	    numTags++;
     }

@@ -311,7 +311,7 @@ VOID HIDDCl__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 
     EnterFunc(bug("HIDD::Set(cl=%s)\n", cl->ClassNode.ln_Name));
 
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
         ULONG idx;
         

@@ -41,8 +41,7 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
     struct Library      *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
-    const struct TagItem *tstate = msg->ops_AttrList;
-    struct TagItem  	*tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
     struct FillRectData *data = INST_DATA(cl, obj);
 
     IPTR retval = 0;

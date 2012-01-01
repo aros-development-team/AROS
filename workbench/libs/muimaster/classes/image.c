@@ -61,7 +61,7 @@ struct MUI_ImageData
 IPTR Image__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ImageData   *data;
-    const struct TagItem    *tags;
+    struct TagItem    *tags;
     struct TagItem  	    *tag;
     Object *prop;
 
@@ -174,7 +174,7 @@ IPTR Image__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ImageData *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{

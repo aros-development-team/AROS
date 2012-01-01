@@ -49,7 +49,7 @@ STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
     IPTR retval = (IPTR)0;
 
-    const struct TagItem *tag, *tstate;
+    struct TagItem *tag, *tstate;
     struct LVData *data;
 
     EnterFunc(bug("ListView::OM_SET\n"));

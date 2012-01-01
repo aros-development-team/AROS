@@ -103,7 +103,7 @@ IPTR GTCheckBox__OM_SET(Class *cl, struct Gadget *g, struct opSet *msg)
 {
     struct CheckBoxData *data;
     struct TagItem   	*tag;
-    const struct TagItem *taglist = msg->ops_AttrList;
+    struct TagItem *taglist = msg->ops_AttrList;
     struct RastPort  	*rp;
     IPTR    	     	retval = FALSE;
 

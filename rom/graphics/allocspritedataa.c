@@ -129,8 +129,7 @@ bug("[AllocSpriteData] Bitmap contents:\n");			\
 	BOOL have_OldDataFormat = FALSE;
         ULONG height = 0;
         ULONG width = 16;
-        const struct TagItem * tstate = tagList;
-        struct TagItem * tag;
+        struct TagItem * tag, * tstate = tagList;
 	struct BitMap *friend_bm = NULL;
 	ULONG pixfmt = BMF_SPECIALFMT|SHIFT_PIXFMT(PIXFMT_LUT8);
 	struct BitMap old_bitmap;

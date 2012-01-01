@@ -2621,7 +2621,7 @@ static void WindowSelectDimensions (struct MUI_WindowData *data)
 IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data;
-    const struct TagItem *tags;
+    struct TagItem *tags;
     struct TagItem *tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -2876,8 +2876,8 @@ static ULONG WindowClose(struct IClass *cl, Object *obj);
 IPTR Window__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    const struct TagItem        *tags = msg->ops_AttrList;
-    const struct TagItem        *tag;
+    struct TagItem        *tags = msg->ops_AttrList;
+    struct TagItem        *tag;
 
     while ((tag = NextTagItem(&tags)) != NULL)
     {

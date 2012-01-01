@@ -86,7 +86,7 @@ STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL inte
 
 IPTR GradientSlider__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
-    const struct TagItem 	*tstate;
+    struct TagItem 		*tstate;
     struct TagItem 		*tag;
     IPTR 			retval;
     struct GradientSliderData 	*data = INST_DATA(cl, o);

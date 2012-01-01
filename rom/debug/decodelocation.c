@@ -121,8 +121,7 @@ AROS_LH2(int, DecodeLocationA,
     void **funend   = &dummy;
     BPTR  *secptr   = (BPTR *)&dummy;
     unsigned int *secnum = (unsigned int *)&dummy;
-    const struct TagItem *tstate = tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = tags;
     void *symaddr = NULL;
     int ret = 0;
     int super;

@@ -64,7 +64,7 @@
     AROS_LIBFUNC_INIT
 
     LONG           *error = NULL;
-    const struct TagItem *tl = tagList;
+    struct TagItem *tl = tagList;
     struct TagItem *tag;
     APTR            lock;
 

@@ -60,8 +60,8 @@
 {
     AROS_LIBFUNC_INIT
 
-    const struct TagItem *tstate            = tags;
-    const struct TagItem *tag;
+    struct TagItem       *tstate            = (struct TagItem *)tags;
+    struct TagItem *tag;
     struct DiskObject    *icon              = NULL;
     LONG                  defaultType       = -1;
     CONST_STRPTR          defaultName       = NULL;

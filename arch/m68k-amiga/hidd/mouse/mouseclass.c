@@ -139,7 +139,7 @@ OOP_Object * AmigaMouse__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
         /* Search for all mouse attrs */
 
-        while ((tag = NextTagItem((const struct TagItem **)&tstate)))
+        while ((tag = NextTagItem(&tstate)))
         {
             ULONG idx;
 

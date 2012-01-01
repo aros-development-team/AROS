@@ -153,7 +153,7 @@ OOP_Object *GFX__Hidd_Gfx__RegisterPixFmt(OOP_Class *cl, struct TagItem *pixFmtT
 VOID GFX__Hidd_Gfx__ReleasePixFmt(OOP_Class *cl, OOP_Object *pf);
 
 /* Private bitmap methods */
-void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, const struct TagItem *bitMapTags);
+void BM__Hidd_BitMap__SetBitMapTags(OOP_Class *cl, OOP_Object *o, struct TagItem *bitMapTags);
 void BM__Hidd_BitMap__SetPixFmt(OOP_Class *cl, OOP_Object *o, OOP_Object *pf);
 
 struct HIDDBitMapData
