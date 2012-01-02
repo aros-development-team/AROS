@@ -106,8 +106,8 @@ struct RexxRsrc
 	WORD        rr_Func; /* Library offset of clean up function */
 	APTR        rr_Base; /* Library base of clean up function */
 	LONG        rr_Size; /* Total size of structure */
-	LONG        rr_Arg1; /* Meaning depends on type of Resource */
-	LONG        rr_Arg2; /* Meaning depends on type of Resource */
+	SIPTR       rr_Arg1; /* Meaning depends on type of Resource */
+	SIPTR       rr_Arg2; /* Meaning depends on type of Resource */
 };
 
 /* Types for the resource nodes */
