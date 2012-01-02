@@ -73,7 +73,8 @@
 #define ICONENTRY_FLAG_VISIBLE          (1<<4)        /* icon for entry should be drawn     */
 #define ICONENTRY_FLAG_HASICON          (1<<5)        /* entry has an '.info' file          */
 #define ICONENTRY_FLAG_TODAY            (1<<6)        /* entry's timestamp is from today    */
-#define ICONENTRY_FLAG_LASSO            (1<<7)        /* Icon is being altered by a lasso  */
+#define ICONENTRY_FLAG_LASSO            (1<<7)        /* icon is being altered by a lasso  */
+#define ICONENTRY_FLAG_RESERVED         (1<<8)        /* reserved for local use */
 
 
 /* For Icons of type ST_ROOT */
