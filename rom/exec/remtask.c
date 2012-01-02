@@ -59,6 +59,7 @@
 {
     AROS_LIBFUNC_INIT
     struct ETask *et;
+    BOOL suicide;
 
     /* A value of NULL means current task */
     if (task==NULL)
@@ -66,20 +67,27 @@
 
     DREMTASK("RemTask (0x%p (\"%s\"))", task, task->tc_Node.ln_Name);
 
-    if (task == SysBase->ThisTask)
-        DREMTASK("Removing itself");
-
     /* Don't let any other task interfere with us at the moment
     */
     Forbid();
 
+    suicide = (task == SysBase->ThisTask);
+    if (suicide)
+        DREMTASK("Removing itself");
+
     /* Remove() here, before freeing the MemEntry list. Because
        the MemEntry list might contain the task struct itself! */
 
-    if(task != SysBase->ThisTask)
+    if(!suicide)
     {
         Remove(&task->tc_Node);
+    } else {
+        /* Prevent ObtainSemaphore() task switching in memory free routines
+         * to the now-freed task.
+         */
+        SysBase->ThisTask = NULL;
     }
+
 
     /*
      * The task is being removed.
@@ -105,7 +113,7 @@
     InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort, (struct Message *)task, SysBase);
 
     /* Freeing myself? */
-    if(task==SysBase->ThisTask)
+    if(suicide)
     {
         /* Changing the task lists always needs a Disable(). */
         Disable();
