@@ -50,7 +50,7 @@
 {
     AROS_LIBFUNC_INIT
 //  ASSERT_VALID_PTR(node); argh! TypeOfMem() doesn't know about the data segment!
-    ASSERT_VALID_PTR(list);
+//  ASSERT_VALID_PTR(list); argh! Infinite loop in TypeOfMem() if called from ObtainSemaphoreShared() in FindMem()!
 
     /*
 	Make the node point to the head of the list. Our predecessor is the
