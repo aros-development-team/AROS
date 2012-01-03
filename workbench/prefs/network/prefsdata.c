@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -300,6 +300,7 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
             (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
         );
         if (strstr(GetDevice(iface), "atheros5000.device") != NULL
+            || strstr(GetDevice(iface), "prism2.device") != NULL
             || strstr(GetDevice(iface), "realtek8180.device") != NULL)
         {
             SetWirelessDevice(GetDevice(iface));
