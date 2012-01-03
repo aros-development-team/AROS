@@ -246,7 +246,11 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 	BusyWindow(Wnd);
 
 	/* first try if file already exist */
-	if( ! ( fh = Open(name, MODE_OLDFILE) ) )
+	if( (fh = Open(name, MODE_OLDFILE)) )
+	{
+		SetFileSize(fh, 0, OFFSET_BEGINNING);
+	}
+	else
 	{
 		/* No,open new file */
 		fh = Open(name, MODE_NEWFILE);
