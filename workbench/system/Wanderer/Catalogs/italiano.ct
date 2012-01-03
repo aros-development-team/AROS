@@ -3,459 +3,443 @@
 ## codeset 0
 ;
 ;
-MSG_TITLE
+MSG_TITLE (//)
 Wanderer
 ; Wanderer
 ;
-MSG_DESCRIPTION
+MSG_DESCRIPTION (//)
 Gestione File
 ; File manager
 ;
-MSG_SCREENTITLE
+MSG_SCREENTITLE (//)
 Wanderer %s Memoria Grafica %s altra Memoria
 ; Wanderer %s graphics mem %s other mem
 ;
-MSG_MEM_B
+MSG_MEM_B (//)
 B
 ; B
 ;
-MSG_MEM_K
+MSG_MEM_K (//)
 K
 ; K
 ;
-MSG_MEM_M
+MSG_MEM_M (//)
 M
 ; M
 ;
-MSG_MEM_G
+MSG_MEM_G (//)
 G
 ; G
 ;
-MSG_MEN_WANDERER
+MSG_MEN_WANDERER (//)
 Wanderer
 ; Wanderer
 ;
-MSG_MEN_BACKDROP
+MSG_MEN_BACKDROP (//)
 Sfondo
 ; Backdrop
 ;
-MSG_MEN_SC_BACKDROP
+MSG_MEN_SC_BACKDROP (//)
 S
 ; B
 ;
-MSG_MEN_EXECUTE
+MSG_MEN_EXECUTE (//)
 Esegui...
 ; Execute...
 ;
-MSG_MEN_SC_EXECUTE
+MSG_MEN_SC_EXECUTE (//)
 E
 ; E
 ;
-MSG_MEN_SHELL
-Shell...
+MSG_MEN_SHELL (//)
+Shell
 ; Shell
 ;
-MSG_MEN_SC_SHELL
+MSG_MEN_SC_SHELL (//)
 W
 ; W
 ;
-MSG_MEN_GUISET
+MSG_MEN_GUISET (//)
 Impostazioni Gui...
 ; GUI settings...
 ;
-MSG_MEN_ABOUT
+MSG_MEN_ABOUT (//)
 Informazioni...
 ; About...
 ;
-MSG_MEN_QUIT
+MSG_MEN_QUIT (//)
 Termina...
 ; Quit...
 ;
-MSG_MEN_SC_QUIT
+MSG_MEN_SC_QUIT (//)
 T
 ; Q
 ;
-MSG_MEN_WINDOW
+MSG_MEN_WINDOW (//)
 Finestra
 ; Window
 ;
-MSG_MEN_NEWDRAW
+MSG_MEN_NEWDRAW (//)
 Nuovo Cassetto...
 ; New drawer...
 ;
-MSG_MEN_SC_NEWDRAW
+MSG_MEN_SC_NEWDRAW (//)
 N
 ; N
 ;
-MSG_MEN_OPENPAR
+MSG_MEN_OPENPAR (//)
 Apri precedente
 ; Open parent
 ;
-MSG_MEN_CLOSE
+MSG_MEN_CLOSE (//)
 Chiudi
 ; Close
 ;
-MSG_MEN_SC_CLOSE
+MSG_MEN_SC_CLOSE (//)
 K
 ; K
 ;
-MSG_MEN_UPDATE
+MSG_MEN_UPDATE (//)
 Aggiorna
 ; Update
 ;
-MSG_MEN_CONTENTS
+MSG_MEN_CONTENTS (//)
 Seleziona Contenuto
 ; Select contents
 ;
-MSG_MEN_SC_CONTENTS
+MSG_MEN_SC_CONTENTS (//)
 C
 ; A
 ;
-MSG_MEN_CLRSEL
+MSG_MEN_CLRSEL (//)
 Annulla Selezione
 ; Clear selection
 ;
-MSG_MEN_SC_CLRSEL
+MSG_MEN_SC_CLRSEL (//)
 A
 ; Z
 ;
-MSG_MEN_SNAPSHT
+MSG_MEN_SNAPSHT (//)
 Fissa
 ; Snapshot
 ;
-MSG_MEN_ALL
+MSG_MEN_ALL (//)
 Tutto
 ; All
 ;
-MSG_MEN_VIEW
+MSG_MEN_VIEW (//)
 Vista
 ; View
 ;
-MSG_MEN_ICVIEW
+MSG_MEN_ICVIEW (//)
 Vista a icone
 ; Icon view
 ;
-MSG_MEN_DCVIEW
+MSG_MEN_DCVIEW (//)
 Vista dettagliata
 ; Detail view
 ;
-MSG_MEN_ALLFIL
+MSG_MEN_ALLFIL (//)
 Tutti i file
 ; All files
 ;
-MSG_MEN_SORTIC
+MSG_MEN_SORTIC (//)
 Ordina
 ; Sort
 ;
-MSG_MEN_CLNUP
+MSG_MEN_CLNUP (//)
 Pulisci
 ; Clean up
 ;
-MSG_MEN_SC_CLNUP
+MSG_MEN_SC_CLNUP (//)
 P
 ; U
 ;
-MSG_MEN_BYNAME
+MSG_MEN_BYNAME (//)
 Per nome
 ; By name
 ;
-MSG_MEN_BYDATE
+MSG_MEN_BYDATE (//)
 Per data
 ; By date
 ;
-MSG_MEN_BYSIZE
+MSG_MEN_BYSIZE (//)
 Per dimensione
 ; By size
 ;
-MSG_MEN_BYTYPE
+MSG_MEN_BYTYPE (//)
 Per tipo
 ; By type
 ;
-MSG_MEN_REVERSE
-Inverso
+MSG_MEN_REVERSE (//)
+Inverti
 ; Reverse
 ;
-MSG_MEN_DRWFRST
+MSG_MEN_DRWFRST (//)
 Prima i cassetti
 ; Drawers first
 ;
-MSG_MEN_ICON
+MSG_MEN_ICON (//)
 Icona
 ; Icon
 ;
-MSG_MEN_OPEN
+MSG_MEN_OPEN (//)
 Apri
 ; Open
 ;
-MSG_MEN_SC_OPEN
+MSG_MEN_SC_OPEN (//)
 A
 ; O
 ;
-MSG_MEN_RENAME
+MSG_MEN_RENAME (//)
 Rinomina...
 ; Rename...
 ;
-MSG_MEN_SC_RENAME
+MSG_MEN_SC_RENAME (//)
 R
 ; R
 ;
-MSG_MEN_INFO
+MSG_MEN_INFO (//)
 Informazioni
 ; Information...
 ;
-MSG_MEN_SC_INFO
+MSG_MEN_SC_INFO (//)
 I
 ; I
 ;
-MSG_MEN_DELETE
+MSG_MEN_DELETE (//)
 Elimina
 ; Delete...
 ;
-MSG_MEN_TOOLS
+MSG_MEN_TOOLS (//)
 Strumenti
 ; Tools
 ;
-MSG_REALLYQUIT
+MSG_MEN_ICONSORTING (//)
+Abilita ordinamento automatico
+;
+MSG_MEN_GROUPICONS (//)
+Raggruppa icone
+;
+MSG_MEN_ICONSCLOSE (//)
+Chiudi
+;
+MSG_REALLYQUIT (//)
 Vuoi davvero chiudere Wanderer?
 ; Do you really want to quit Wanderer?
 ;
-MSG_YESNO
+MSG_YESNO (//)
 *Sì|No
 ; *Yes|No
 ;
-MSG_DUMMY
+MSG_DUMMY (//)
 DUMMY
 ; DUMMY
 ; DUMMY :)
-MSG_USERSCREENTITLE
+;
+MSG_USERSCREENTITLE (//)
 Wanderer %pc memoria grafica %pf altra memoria
 ; Wanderer %pc graphics mem %pf other mem
 ;
-MSG_MEN_FORMAT
+MSG_MEN_FORMAT (//)
 Formatta ...
 ; Format disk...
 ;
-MSG_MEN_SHUTDOWN
+MSG_MEN_SHUTDOWN (//)
 Fine sessione ...
 ; Shut down...
 ;
-MSG_SHUTDOWN_TITLE
+MSG_SHUTDOWN_TITLE (//)
 Fine Sessione
 ; System shutdown
 ;
-MSG_SHUTDOWN_BODY
+MSG_SHUTDOWN_BODY (//)
 Cosa preferisci fare?
 ; What would you like to do?
 ;
-MSG_SHUTDOWN_BUTTONS
+MSG_SHUTDOWN_BUTTONS (//)
 Spegni|Riavvia Computer|Riavvia AROS|*Annulla
 ; Power off|Restart computer|Restart AROS|*Cancel
 ;
-MSG_ACTION_NOT_SUPPORTED
+MSG_ACTION_NOT_SUPPORTED (//)
 L'opzione richiesta non è supportata da questo computer.
 ; The selected action is not supported by your system.
 ;
-MSG_OK
+MSG_OK (//)
 *OK
 ; *OK
 ;
-MSG_EMPTY_TRASH
+MSG_EMPTY_TRASH (//)
 Svuota cestino
 ; Empty trash
 ;
-MSG_MEN_PUT_AWAY
-Put Away
+MSG_MEN_PUT_AWAY (//)
+Sul desktop
 ; Put away
 ;
-MSG_MEN_LEAVE_OUT
-Leave Out
+MSG_MEN_LEAVE_OUT (//)
+Riponi
 ; Leave out
 ;
-MSG_MEN_UNSNAPSHOT
-Rimuovi fissaggio
+MSG_MEN_UNSNAPSHOT (//)
+Libera
 ; Unsnapshot
 ;
-MSG_MEN_SNAPSHOT
+MSG_MEN_SNAPSHOT (//)
 Fissa
 ; Snapshot
 ;
-MSG_REQU_DELETE
+MSG_REQU_DELETE (//)
 Elimina file ...
 ; Delete file...
 ;
-MSG_REQU_DELETE_YESNO
+MSG_REQU_DELETE_YESNO (//)
 _Sì|Elimina _Tutti|_No|No _Per Tutti
 ; _Yes|Yes to _all|_No|No _to all
 ;
-MSG_REQU_DELETE_DRAWER_S
+MSG_REQU_DELETE_DRAWER_S (//)
 Eliminare davvero il cassetto
 ; Really delete drawer
 ;
-MSG_REQU_DELETE_DRAWER_E
+MSG_REQU_DELETE_DRAWER_E (//)
 ?
 ; ?
 ;
-MSG_REQU_DELETE_FILE_S
+MSG_REQU_DELETE_FILE_S (//)
 Eliminare davvero il file
 ; Really delete file
 ;
-MSG_REQU_DELETE_FILE_M
+MSG_REQU_DELETE_FILE_M (//)
 contenuto in
 ; located in
 ;
-MSG_REQU_DELETE_FILE_E
+MSG_REQU_DELETE_FILE_E (//)
 ?
 ; ?
 ;
-MSG_REQU_OVERWRITE
+MSG_REQU_OVERWRITE (//)
 Sovrascrivi file ...
 ; Overwrite file...
 ;
-MSG_REQU_OVERWRITE_S
-Intendi sovrascrivere il file
+MSG_REQU_OVERWRITE_S (//)
+Sovrascrivere davvero il file
 ; Really overwrite file
 ;
-MSG_REQU_OVERWRITE_M
+MSG_REQU_OVERWRITE_M (//)
 contenuto in
 ; located in
 ;
-MSG_REQU_OVERWRITE_E
+MSG_REQU_OVERWRITE_E (//)
 ?
 ; ?
 ;
-MSG_REQU_OVERWRITE_YESNO
+MSG_REQU_OVERWRITE_YESNO (//)
 _Sovrascrivi|Sovrascrivi _Tutti|_No|No _Per Tutti
 ; _Overwrite|Overwrite _all|_No|No _to all
 ;
-MSG_REQU_OVERWRITE_SKIPABORT
+MSG_REQU_OVERWRITE_SKIPABORT (//)
 _Salta|_Annulla
 ; _Skip|_Abort
 ;
-MSG_REQU_PROTECTION
-
+MSG_REQU_PROTECTION (//)
+Protezione file
 ; File Protection
 ;
-; ***NEW***
-;
-MSG_REQU_PROTECTION_UNPROTECT
-
+MSG_REQU_PROTECTION_UNPROTECT (//)
+_Libera|Libera _tutti|_No|No _per tutti
 ; _Unprotect|Unprotect _All|_No|No _to ALL
 ;
-; ***NEW***
-;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_S
-
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_S (//)
+Liberare il cassetto
 ; Do you wish to unprotect drawer
 ;
-; ***NEW***
-;
-MSG_REQU_PROTECTION_UNPROTECTDRAWER_E
-
+MSG_REQU_PROTECTION_UNPROTECTDRAWER_E (//)
+?
 ; ?
 ;
-; ***NEW***
-;
-MSG_NOFILEACCESS_S
-
+MSG_NOFILEACCESS_S (//)
+Impossibile accedere al file
 ; Can't access file
 ;
-; ***NEW***
-;
-MSG_NOFILEACCESS_M
-
+MSG_NOFILEACCESS_M (//)
+presente in
 ; located in
 ;
-; ***NEW***
-;
-MSG_NOFILEACCESS_E
+MSG_NOFILEACCESS_E (//)
 
 ;  
-;
-; ***NEW***
-;
-MSG_NODRAWERACCESS_S
-
+MSG_NODRAWERACCESS_S (//)
+Impossibile accedere al cassetto
 ; Can't access drawer
 ;
-; ***NEW***
-;
-MSG_NODRAWERACCESS_E
+MSG_NODRAWERACCESS_E (//)
 
 ;  
-;
-; ***NEW***
-;
-MSG_REQU_FILEUNPROTECT_S
-
+MSG_REQU_FILEUNPROTECT_S (//)
+Vuoi liberare il file
 ; Do you wish to unprotect file
 ;
-; ***NEW***
-;
-MSG_REQU_FILEUNPROTECT_M
-
+MSG_REQU_FILEUNPROTECT_M (//)
+presente in
 ; located in
 ;
-; ***NEW***
-;
-MSG_REQU_FILEUNPROTECT_E
-
+MSG_REQU_FILEUNPROTECT_E (//)
+?
 ; ?
 ;
-; ***NEW***
-;
-MSG_WANDERER_FILEACCESS
+MSG_WANDERER_FILEACCESS (//)
 Accesso al file
 ; Wanderer file access
 ;
-MSG_WANDERER_FILEACCESS_PROCESSING
+MSG_WANDERER_FILEACCESS_PROCESSING (//)
 Elaborazione ...
 ; Processing...
 ;
-MSG_WANDERER_FILEACCESS_STOP
+MSG_WANDERER_FILEACCESS_STOP (//)
 Stop
 ; Stop
 ;
-MSG_WANDERER_FILEACCESS_MOVEFROM
+MSG_WANDERER_FILEACCESS_MOVEFROM (//)
 Sposta da
 ; Move from
 ;
-MSG_WANDERER_FILEACCESS_MOVETO
+MSG_WANDERER_FILEACCESS_MOVETO (//)
 Sposta in
 ; Move to
 ;
-MSG_WANDERER_FILEACCESS_COPYFROM
+MSG_WANDERER_FILEACCESS_COPYFROM (//)
 Copia da
 ; Copy from
 ;
-MSG_WANDERER_FILEACCESS_COPYTO
+MSG_WANDERER_FILEACCESS_COPYTO (//)
 Copia in
 ; Copy to
 ;
-MSG_WANDERER_FILEACCESS_FILE
+MSG_WANDERER_FILEACCESS_FILE (//)
 File
 ; File
 ;
-MSG_WANDERER_FILEACCESS_TRAFFIC
+MSG_WANDERER_FILEACCESS_TRAFFIC (//)
 Velocità di trasferimento
 ; Data transfer rate
 ;
-MSG_WANDERER_FILEACCESS_DELETEFROM
+MSG_WANDERER_FILEACCESS_DELETEFROM (//)
 Elimina dal cassetto
 ; Delete from drawer
 ;
-MSG_WANDERER_FILEACCESS_FILETODELETE
+MSG_WANDERER_FILEACCESS_FILETODELETE (//)
 File da eliminare
 ; File to delete
 ;
-MSG_WANDERER_FILEACCESS_NOOFFILES
+MSG_WANDERER_FILEACCESS_NOOFFILES (//)
 File elaborati:
 ; Processed files:
 ;
-MSG_WANDERER_FILEACCESS_ACTUAL
+MSG_WANDERER_FILEACCESS_ACTUAL (//)
 Dimensioni del file corrente:
 ; Size of current file:
 ;
-MSG_WANDERER_FILEACCESS_TOTAL
+MSG_WANDERER_FILEACCESS_TOTAL (//)
 Dimensioni totali:
 ; Overall size:
 ;
