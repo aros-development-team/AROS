@@ -67,6 +67,9 @@
     if (!me)
     	return;
 
+    if (me->tc_State == TS_REMOVED)
+        return;
+
     if (!CheckSemaphore(sigSem, &tp, SysBase))
         return;
 

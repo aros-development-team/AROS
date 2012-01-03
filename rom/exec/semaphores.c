@@ -56,6 +56,13 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
     if (!me)
         return;
 
+    /*
+     * Freeing memory during RemTask(NULL). We are already single-threaded by
+     * Forbid(), and waiting isn't possible because task context is being deallocated.
+     */
+    if (me->tc_State == TS_REMOVED)
+        return;
+
     if (!CheckSemaphore(sigSem, caller, SysBase))
         return;  /* A crude attempt to recover... */
 

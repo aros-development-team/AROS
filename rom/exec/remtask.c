@@ -78,16 +78,8 @@
     /* Remove() here, before freeing the MemEntry list. Because
        the MemEntry list might contain the task struct itself! */
 
-    if(!suicide)
-    {
+    if (!suicide)
         Remove(&task->tc_Node);
-    } else {
-        /* Prevent ObtainSemaphore() task switching in memory free routines
-         * to the now-freed task.
-         */
-        SysBase->ThisTask = NULL;
-    }
-
 
     /*
      * The task is being removed.
@@ -98,7 +90,7 @@
 
     /* Delete context */
     et = GetETask(task);
-    if(et != NULL)
+    if (et != NULL)
         KrnDeleteContext(et->et_RegFrame);
 
     /* Uninitialize ETask structure */
@@ -113,7 +105,7 @@
     InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort, (struct Message *)task, SysBase);
 
     /* Freeing myself? */
-    if(suicide)
+    if (suicide)
     {
         /* Changing the task lists always needs a Disable(). */
         Disable();
