@@ -6367,14 +6367,16 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
         {
             first_x = 0;
-            first_y = 0;
+            first_y = -message->touchy;
             img->width = data->icld_LVMAttribs->lmva_ColumnWidth[data->icld_LVMAttribs->lmva_ColumnPos[INDEX_TYPE]] +
                             data->icld_LVMAttribs->lmva_ColumnWidth[data->icld_LVMAttribs->lmva_ColumnPos[INDEX_NAME]];
+            img->height += 2;
         }
         else
+        {
             img->width = (img->width - first_x) + 2;
-
-        img->height = (img->height - first_y) + 2;
+            img->height = (img->height - first_y) + 2;
+        }
 #else
         entry = data->icld_SelectionLastClicked;
         if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
