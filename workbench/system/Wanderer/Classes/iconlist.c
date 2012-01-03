@@ -204,8 +204,8 @@ for                                                        \
     node = (void *)(((struct Node *)(node))->ln_Pred)      \
 )
 
-#define RPALPHAFLAT (1 << 0)
-#define RPALPHARADIAL (1 << 1)
+#define RPALPHAFLAT     (1 << 0)
+#define RPALPHARADIAL   (1 << 1)
 
 static void RastPortSetAlpha(struct RastPort *arport, ULONG ax, ULONG ay, ULONG width, ULONG height, UBYTE val, UBYTE alphamode)
 {
@@ -694,8 +694,8 @@ static LONG LastVisibleColumnNumber(struct IconList_DATA *data)
 }
 
 static void RenderEntryField(Object *obj, struct IconList_DATA *data,
-                                         struct IconEntry *entry, struct Rectangle *rect,
-                             LONG index, BOOL firstvis, BOOL lastvis)
+        struct IconEntry *entry, struct Rectangle *rect, LONG index, BOOL firstvis,
+        BOOL lastvis, struct RastPort * rp)
 {
     STRPTR text = NULL, renderflag = "<UHOH>";
     struct TextExtent te;
@@ -703,7 +703,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
 
     if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
     {
-        FillPixelArray(data->icld_BufferRastPort,
+        FillPixelArray(rp,
             rect->MinX, rect->MinY,
             rect->MaxX - rect->MinX + 1, rect->MaxY - rect->MinY,
             0x0A246A);
@@ -759,7 +759,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
             {
                 DrawIconStateA
                   (
-                    data->icld_BufferRastPort, data->icld_LVMAttribs->lvma_IconDrawer, NULL,
+                    rp, data->icld_LVMAttribs->lvma_IconDrawer, NULL,
                     rect->MinX + 1, rect->MinY + 1,
                     (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
                     __iconList_DrawIconStateTags
@@ -767,7 +767,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
             }
             else
             {
-                FillPixelArray(data->icld_BufferRastPort,
+                FillPixelArray(rp,
                     rect->MinX + 1, rect->MinY + 1,
                     rect->MaxX - rect->MinX - 1, rect->MaxY - rect->MinY - 1,
                     0xc0f0f0);
@@ -779,7 +779,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
             {
                 DrawIconStateA
                   (
-                    data->icld_BufferRastPort, data->icld_LVMAttribs->lvma_IconFile, NULL,
+                    rp, data->icld_LVMAttribs->lvma_IconFile, NULL,
                     rect->MinX + 1, rect->MinY + 1,
                     (entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL,
                     __iconList_DrawIconStateTags
@@ -787,7 +787,7 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
             }
             else
             {
-                FillPixelArray(data->icld_BufferRastPort,
+                FillPixelArray(rp,
                     rect->MinX + 1, rect->MinY + 1,
                     rect->MaxX - rect->MinX - 1, rect->MaxY - rect->MinY - 1,
                     0xe0e0e0);
@@ -796,13 +796,13 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
     }
     else
     {
-        fit = TextFit(data->icld_BufferRastPort, text, strlen(text), &te, NULL, 1,
+        fit = TextFit(rp, text, strlen(text), &te, NULL, 1,
                        rect->MaxX - rect->MinX + 1,
                        rect->MaxY - rect->MinY + 1);
 
         if (!fit) return;
-        
-        SetABPenDrMd(data->icld_BufferRastPort, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
+
+        SetABPenDrMd(rp, _pens(obj)[(entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? MPEN_SHINE : MPEN_TEXT], 0, JAM1);
 
         if (((rect->MaxY - rect->MinY + 1) - data->icld_IconLabelFont->tf_YSize) > 0)
         {
@@ -812,20 +812,20 @@ static void RenderEntryField(Object *obj, struct IconList_DATA *data,
         switch(data->icld_LVMAttribs->lmva_ColumnHAlign[index])
         {
             case COLUMN_ALIGN_LEFT:
-                Move(data->icld_BufferRastPort, rect->MinX, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+                Move(rp, rect->MinX, rect->MinY + rp->TxBaseline);
                 break;
                 
             case COLUMN_ALIGN_RIGHT:
-                Move(data->icld_BufferRastPort, rect->MaxX - te.te_Width, rect->MinY + data->icld_BufferRastPort->TxBaseline);
+                Move(rp, rect->MaxX - te.te_Width, rect->MinY + rp->TxBaseline);
                 break;
                 
             case COLUMN_ALIGN_CENTER:
-                Move(data->icld_BufferRastPort, rect->MinX + (rect->MaxX - rect->MinX + 1 + 1 - te.te_Width) / 2,
-                               rect->MinY + data->icld_BufferRastPort->TxBaseline);
+                Move(rp, rect->MinX + (rect->MaxX - rect->MinX + 1 + 1 - te.te_Width) / 2,
+                               rect->MinY + rp->TxBaseline);
                 break;
                 
         }
-        Text(data->icld_BufferRastPort, text, fit);
+        Text(rp, text, fit);
     }
     if ((index == INDEX_LASTACCESS) && text)
         FreeVec(text);
@@ -918,7 +918,7 @@ IPTR IconList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *obj, struct
                 if (AndRectRect(&field_rect, &objrect, NULL))
                 {
                     RenderEntryField(obj, data, message->entry, &field_rect, index,
-                                     (i == firstvis), (i == lastvis));
+                                     (i == firstvis), (i == lastvis), data->icld_BufferRastPort);
                 }
 /*            }*/
             x += data->icld_LVMAttribs->lmva_ColumnWidth[index];
@@ -6368,7 +6368,8 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
         {
             first_x = 0;
             first_y = 0;
-            img->width = _mright(obj) - _mleft(obj);
+            img->width = data->icld_LVMAttribs->lmva_ColumnWidth[data->icld_LVMAttribs->lmva_ColumnPos[INDEX_TYPE]] +
+                            data->icld_LVMAttribs->lmva_ColumnWidth[data->icld_LVMAttribs->lmva_ColumnPos[INDEX_NAME]];
         }
         else
             img->width = (img->width - first_x) + 2;
@@ -6408,6 +6409,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             struct RastPort temprp;
             InitRastPort(&temprp);
             temprp.BitMap = img->bm;
+            ULONG minY = 0;
 
 #if defined(CREATE_FULL_DRAGIMAGE)
             ForeachNode(&data->icld_SelectionList, node)
@@ -6417,6 +6419,22 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
                 {
                     if ((data->icld_DisplayFlags & ICONLIST_DISP_MODELIST) == ICONLIST_DISP_MODELIST)
                     {
+                        struct Rectangle field_rect;
+                        ULONG selected = entry->ie_Flags & ICONENTRY_FLAG_SELECTED;
+                        entry->ie_Flags &= ~ICONENTRY_FLAG_SELECTED; /* Drawing as not selected actually looks better */
+
+                        field_rect.MinX = 0; field_rect.MaxX = img->width - 1;
+                        field_rect.MinY = minY; field_rect.MaxY = field_rect.MinY + data->icld_LVMAttribs->lmva_RowHeight - 1;
+                        RenderEntryField(obj, data, entry, &field_rect, INDEX_TYPE, TRUE, FALSE, &temprp);
+
+                        field_rect.MinX = data->icld_LVMAttribs->lmva_ColumnWidth[data->icld_LVMAttribs->lmva_ColumnPos[INDEX_TYPE]] - 1;
+                        field_rect.MaxX = img->width - 1;
+                        field_rect.MinY = minY; field_rect.MaxY = field_rect.MinY + data->icld_LVMAttribs->lmva_RowHeight - 1;
+                        RenderEntryField(obj, data, entry, &field_rect, INDEX_NAME, FALSE, FALSE, &temprp);
+
+                        minY += data->icld_LVMAttribs->lmva_RowHeight;
+
+                        entry->ie_Flags |= selected;
                     }
                     else
                     {
