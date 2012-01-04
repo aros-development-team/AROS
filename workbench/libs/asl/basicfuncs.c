@@ -748,6 +748,8 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
             if (ld->ld_ForeignerFiles)
             {
                 FRDropFromDifferentDrawersRequester(ld, AslBase);
+                MyFreeVecPooled(ld->ld_ForeignerFiles, AslBase);
+                ld->ld_ForeignerFiles = NULL;
             }
 
 	    if (success == LDRET_FINISHED)
