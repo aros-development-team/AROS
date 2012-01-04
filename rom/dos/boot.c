@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Boot your operating system.
@@ -123,7 +123,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
         BYTE const C[] = "AROS - The AROS Research Operating System\n"
-                         "Copyright © 1995-2011, The AROS Development Team. "
+                         "Copyright © 1995-2012, The AROS Development Team. "
                          "All rights reserved.\n"
                          "AROS is licensed under the terms of the "
                          "AROS Public License (APL),\n"
