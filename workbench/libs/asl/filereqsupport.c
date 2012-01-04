@@ -1294,8 +1294,6 @@ void FRDropFromDifferentDrawersRequester(struct LayoutData *ld, struct AslBase_i
     es.es_GadgetFormat = GetString(MSG_FILEREQ_FOREIGNER_OK   , GetIR(ifreq)->ir_Catalog, AslBase);
 
     EasyRequestArgs(ld->ld_Window, &es, NULL, &ld->ld_ForeignerFiles);
-    MyFreeVecPooled(ld->ld_ForeignerFiles, AslBase);
-    ld->ld_ForeignerFiles = NULL;
 }
 
 /*****************************************************************************************/

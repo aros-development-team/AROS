@@ -48,7 +48,7 @@
 
 /*****************************************************************************************/
 
-STATIC BOOL FRWindowOpened(struct LayoutData *, struct AslBase_intern *);
+STATIC BOOL  FRWindowOpened(struct LayoutData *, struct AslBase_intern *);
 STATIC BOOL  FRGadInit(struct LayoutData *, struct AslBase_intern *);
 STATIC BOOL  FRGadLayout(struct LayoutData *, struct AslBase_intern *);
 STATIC VOID  FRGadCleanup(struct LayoutData *, struct AslBase_intern *);
@@ -452,7 +452,8 @@ AROS_UFH3(ULONG, FRGadgetryHook,
             break;
     }
 
-    ReturnInt ("FRGadgetryHook(), retval", ULONG, retval);
+//    ReturnInt ("FRGadgetryHook(), retval", ULONG, retval);
+    return retval;
 
     AROS_USERFUNC_EXIT
 }
@@ -479,15 +480,14 @@ STATIC BOOL FRWindowOpened(struct LayoutData *ld, struct AslBase_intern *AslBase
 {
     ModifyIDCMP(ld->ld_Window, ld->ld_Window->IDCMPFlags | IDCMP_INTUITICKS);
 
-    if (    (ld->ld_AppMsgPort = CreateMsgPort())
-         && (ld->ld_AppWindow = AddAppWindow(0, 0, ld->ld_Window, ld->ld_AppMsgPort, NULL))
-       )
-    {
-        D(bug("[asl.library] AppWindow sucessful\n"));
-        return TRUE;
-    }
+    if (ld->ld_AppMsgPort = CreateMsgPort())
+        ld->ld_AppWindow = AddAppWindow(0, 0, ld->ld_Window, ld->ld_AppMsgPort, NULL);
 
-    return FALSE;
+    /*
+     * A file requester that failed to be an AppWindow is better than no file
+     * requester at all: let's not fail.
+     */
+    return TRUE;
 }
 
 /*****************************************************************************************/
@@ -1040,8 +1040,8 @@ STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *Asl
 {
     struct FRUserData       *udata = (struct FRUserData *)ld->ld_UserData;
     struct ASLLVFileReqNode *node;
-    STRPTR                   buffer = NULL, temp;
-    char                     pathbuffer[MAX_PATH_LEN], tempbuf[MAX_PATH_LEN];
+    STRPTR                   iconname = NULL, temp;
+    char                     firsticonpath[MAX_PATH_LEN], iconpath[MAX_PATH_LEN], fullpath[MAX_PATH_LEN];
     ULONG                    retval = GHRET_FAIL, i = 0;
     BOOL                     found;
 
@@ -1051,8 +1051,8 @@ STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *Asl
         {
             if (ld->ld_AppMsg->am_ArgList->wa_Lock)
             {
-                NameFromLock(ld->ld_AppMsg->am_ArgList->wa_Lock, pathbuffer, MAX_PATH_LEN);
-                FRNewPath(pathbuffer, ld, AslBase);
+                NameFromLock(ld->ld_AppMsg->am_ArgList->wa_Lock, firsticonpath, MAX_PATH_LEN);
+                FRNewPath(firsticonpath, ld, AslBase);
             }
 
             /*
@@ -1062,45 +1062,62 @@ STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *Asl
             do
             {
                 if (    (ld->ld_AppMsg->am_ArgList[i].wa_Name)
-                     && (buffer = VecPooledCloneString(ld->ld_AppMsg->am_ArgList[i].wa_Name, NULL, ld->ld_IntReq->ir_MemPool, AslBase))
+                     && (iconname = VecPooledCloneString(ld->ld_AppMsg->am_ArgList[i].wa_Name, NULL, ld->ld_IntReq->ir_MemPool, AslBase))
                    )
                 {
-                    found = FALSE;
-                    ForeachNode(&udata->ListviewList, node)
+                    /* Case of a single volume icon */
+                    if (    (strcmp(iconname, "") == 0)
+                         && (ld->ld_AppMsg->am_NumArgs == 1)
+                       )
                     {
-                        if (    (IS_MULTISEL(node) || (ld->ld_AppMsg->am_NumArgs == 1))
-                             && node->node.ln_Name
-                             && (Strnicmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)buffer, strlen(buffer)) == 0)
-                           )
+                        found = TRUE;
+                    }
+                    else
+                    {
+                        NameFromLock(ld->ld_AppMsg->am_ArgList[i].wa_Lock, iconpath, MAX_PATH_LEN);
+                        found = FALSE;
+                        ForeachNode(&udata->ListviewList, node)
                         {
-                            /* Avoid to select homonyms of files dropped from other drawers */
-                            NameFromLock(ld->ld_AppMsg->am_ArgList[i].wa_Lock, tempbuf, MAX_PATH_LEN);
-                            if (Strnicmp((CONST_STRPTR)tempbuf, (CONST_STRPTR)pathbuffer, strlen(pathbuffer)) == 0)
+                            if (    (IS_MULTISEL(node) || (ld->ld_AppMsg->am_NumArgs == 1))
+                                 && node->node.ln_Name
+                                 && (strcmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)iconname) == 0)
+                               )
                             {
-                                MARK_SELECTED(node);
-                                found = TRUE;
+                                /* Avoid to select homonyms of files dropped from other drawers */
+                                if (strcmp((CONST_STRPTR)iconpath, (CONST_STRPTR)firsticonpath) == 0)
+                                {
+                                    MARK_SELECTED(node);
+                                    found = TRUE;
+                                }
+
                                 break;
                             }
-                        }
-                    }
-                    if (!found && buffer)
+                        } /* ForeachNode(&udata->ListviewList, node) */
+                    } /* if (!(single volume icon)) */
+
+                    if (!found)
                     {
+                        fullpath[0] = '\0';
+                        AddPart(fullpath, iconpath, MAX_PATH_LEN);
+                        AddPart(fullpath, iconname, MAX_PATH_LEN);
+                        temp = VecPooledCloneString("\n", fullpath, ld->ld_IntReq->ir_MemPool, AslBase);
+
+                        MyFreeVecPooled(iconname, AslBase);
+                        iconname = NULL;
+
                         if (ld->ld_ForeignerFiles)
                         {
-                            temp = VecPooledCloneString("\n", buffer, ld->ld_IntReq->ir_MemPool, AslBase);
-                            MyFreeVecPooled(buffer, AslBase);
-                            buffer = temp;
-                            temp = VecPooledCloneString(ld->ld_ForeignerFiles, buffer, ld->ld_IntReq->ir_MemPool, AslBase);
+                            iconname = temp;
+                            temp = VecPooledCloneString(ld->ld_ForeignerFiles, iconname, ld->ld_IntReq->ir_MemPool, AslBase);
                             MyFreeVecPooled(ld->ld_ForeignerFiles, AslBase);
                         }
-                        else
-                        {
-                            temp = VecPooledCloneString(buffer, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
-                        }
+
                         ld->ld_ForeignerFiles = temp;
-                    }
-                    MyFreeVecPooled(buffer, AslBase);
-                }
+                    } /* if (!found) */
+
+                    if (iconname)
+                        MyFreeVecPooled(iconname, AslBase);
+                } /* if (iconname = ld->ld_AppMsg->am_ArgList[i].wa_Name) */
             } while (    (((struct IntFileReq *)ld->ld_IntReq)->ifr_Flags1 & FRF_DOMULTISELECT)
                       && (++i < ld->ld_AppMsg->am_NumArgs)
                     );
@@ -1111,7 +1128,8 @@ STATIC ULONG FRHandleAppWindow(struct LayoutData *ld, struct AslBase_intern *Asl
             retval = GHRET_OK;
         }
     }
-    ReturnInt ("FRHandleAppWindow(), retval", ULONG, retval);
+//    ReturnInt ("FRHandleAppWindow(), retval", ULONG, retval);
+    return retval;
 }
 
 /*****************************************************************************************/
@@ -1133,7 +1151,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
     if ((imsg = ld->ld_Event))
     {
-        D(bug("[ASL] FRHandleEvents() imsg->Code = '%d'\n", imsg->Code));
+//        D(bug("[ASL] FRHandleEvents() imsg->Code = '%d'\n", imsg->Code));
         switch (imsg->Class)
         {
             case IDCMP_INTUITICKS:
@@ -1593,7 +1611,8 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
         } /* switch (imsg->Class) */
     } /* if((imsg = ld->ld_Event)) */
 
-    ReturnInt ("FRHandleEvents", ULONG, retval);
+//    ReturnInt ("FRHandleEvents", ULONG, retval);
+    return retval;
 }
 
 /*****************************************************************************************/
