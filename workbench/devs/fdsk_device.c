@@ -468,37 +468,31 @@ struct FileInfoBlock fib;
 
 /**************************************************************************/
 
-static LONG eject(struct unit *unit, struct IOExtTD *iotd)
-{
-    BOOL eject = iotd->iotd_Req.io_Length;
+void eject(struct unit *unit, BOOL eject) {
+    struct IOExtTD *iotd;
     struct FileInfoBlock fib;
-    if ((eject) && (unit->file))
+
+    if (eject)
     {
         Close(unit->file);
         unit->file = (BPTR)NULL;
-        goto quiteject;
-    } else if ((eject) && (unit->file == BNULL)) {
-        return ERROR_NO_DISK;
     }
-
-    if ((!eject) && (unit->file == BNULL))
+    else
     {
         unit->file = Open(unit->filename, MODE_OLDFILE);
         if (unit->file == BNULL)
-            return ERROR_OBJECT_NOT_FOUND;
+            return;
         ExamineFH(unit->file, &fib);
         unit->writable = !(fib.fib_Protection & FIBF_WRITE);
-    } else {
-        return 0;
     }
-quiteject:
+
     unit->changecount++;
 
     ForeachNode(&unit->changeints, iotd)
     {
-        Cause((struct Interrupt *)((struct IOExtTD *)iotd->iotd_Req.io_Data));
+        Cause((struct Interrupt *)iotd->iotd_Req.io_Data);
     }
-    return 0;
+    return;
 }
 
 /**************************************************************************/
@@ -558,7 +552,7 @@ AROS_UFH3(LONG, unitentry,
         D(bug("[FDSK%02ld] open failed ioerr = %d :-( Replying startup msg!\n", unit->unitnum, IoErr()));
 
         ReplyMsg(&unit->msg);
-        return DOSFALSE;
+        return 0;
     }
 
     ExamineFH(unit->file, &fib);
@@ -623,7 +617,8 @@ AROS_UFH3(LONG, unitentry,
                     err = 0;
                     break;
                 case TD_EJECT:
-                    err = eject(unit, iotd);
+                    eject(unit, iotd->iotd_Req.io_Length);
+                    err = 0;
                     break;
                 case TD_PROTSTATUS:
                     iotd->iotd_Req.io_Actual = !unit->writable;
