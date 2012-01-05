@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 #include "portable_macros.h"
@@ -14,7 +14,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/System/Wanderer.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
 struct Catalog *catalog;
