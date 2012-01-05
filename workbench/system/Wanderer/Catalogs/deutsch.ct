@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.3 (25.12.2009)
+## version $VER: wanderer.catalog 2.0 (05.01.2012)
 ## language deutsch
 ## codeset 0
 ;
@@ -152,8 +152,8 @@ Aufräumen
 ; Clean up
 ;
 MSG_MEN_SC_CLNUP
-U
-; U
+.
+; .
 ;
 MSG_MEN_BYNAME
 nach Name
@@ -217,7 +217,7 @@ Hilfsmittel
 ;
 MSG_MEN_ICONSORTING
 Piktogramme sortieren
-; Enable Icon Sorting
+; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
 Piktogramme gruppieren
@@ -261,7 +261,7 @@ Was möchten Sie tun?
 ;
 MSG_SHUTDOWN_BUTTONS
 Abschalten|Rechner neustarten|AROS neustarten|*Abbrechen
-; Power off|Restart computer|Restart AROS|*Cancel
+; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
 Die gewählte Funktion wird von Ihrem System nicht unterstützt
@@ -279,17 +279,33 @@ MSG_MEN_PUT_AWAY
 Zurücklegen
 ; Put away
 ;
+MSG_MEN_SC_PUT_AWAY
+P
+; P
+;
 MSG_MEN_LEAVE_OUT
 Auslagern
 ; Leave out
+;
+MSG_MEN_SC_LEAVE_OUT
+L
+; L
 ;
 MSG_MEN_UNSNAPSHOT
 Position freigeben
 ; Unsnapshot
 ;
+MSG_MEN_SC_UNSNAPSHOT
+U
+; U
+;
 MSG_MEN_SNAPSHOT
 Fixieren
 ; Snapshot
+;
+MSG_MEN_SC_SNAPSHOT
+S
+; S
 ;
 MSG_REQU_DELETE
 Datei Löschen ...
