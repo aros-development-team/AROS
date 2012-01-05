@@ -22,6 +22,8 @@
 
 #include <aros/debug.h>
 
+#include <png.h>
+
 #define ATTR_ICONX   	    0x80001001
 #define ATTR_ICONY   	    0x80001002
 #define ATTR_DRAWERX 	    0x80001003
@@ -185,10 +187,11 @@ ULONG *ReadMemPNG(struct DiskObject *icon, APTR stream, LONG *width, LONG *heigh
 
 /****************************************************************************************/
 
-static void GetChunkInfo(APTR *stream, APTR *chunkdata, ULONG *chunksize)
+static void GetChunkInfo(APTR stream, APTR *chunkdata, ULONG *chunksize)
 {
-    *chunksize = AROS_BE2LONG(*(ULONG *)stream);
-    *chunkdata = stream+8;
+    png_unknown_chunkp chunkp = stream;
+    *chunksize = chunkp->size;
+    *chunkdata = chunkp->data;
 }
 
 BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
