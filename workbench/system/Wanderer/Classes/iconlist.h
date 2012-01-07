@@ -75,6 +75,9 @@ struct IconList_Entry
     void                *udata;
 };
 
+#define ILE_TYPE_APPICON 10
+#define ILE_TYPE_CUSTOM  (ILE_TYPE_APPICON + 1)
+
 struct IconList_Click
 {
     int         shift; /* TRUE for shift click */
