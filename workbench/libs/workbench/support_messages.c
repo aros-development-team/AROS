@@ -58,8 +58,8 @@ VOID __DestroyWBS_WB
             if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
         }
         
-	FreeMem(message->sm_ArgList, message->sm_NumArgs * sizeof(struct WBArg));
-	
+        FreeMem(message->sm_ArgList, message->sm_NumArgs * sizeof(struct WBArg));
+
         FreeMessage((struct Message *) message);
     }
 }
@@ -76,7 +76,7 @@ struct IntWBHandlerMessage *__CreateIWBHM_WB
     if (message != NULL)
     {
         message->iwbhm_wbhm.wbhm_Type                 = type;
-	message->iwbhm_wbhm.wbhm_Message.mn_ReplyPort = replyport;
+        message->iwbhm_wbhm.wbhm_Message.mn_ReplyPort = replyport;
     }
     
     return message;

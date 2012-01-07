@@ -11,6 +11,7 @@ FUNCS := \
     closeworkbenchobjecta \
     getnextappicon \
     makeworkbenchobjectvisiblea \
+    notifyworkbench \
     openworkbenchobjecta \
     quoteworkbench \
     registerworkbench \
