@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -165,7 +165,7 @@ LONG launcher()
 
 pid_t __vfork(jmp_buf env)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     struct Task *this = FindTask(NULL);
     struct ETask *etask = NULL;
     struct vfork_data *udata = AllocMem(sizeof(struct vfork_data), MEMF_ANY | MEMF_CLEAR);
@@ -250,7 +250,7 @@ pid_t __vfork(jmp_buf env)
         /* Stack may have been overwritten when we return here,
          * we jump to here from a function lower in the call chain
          */
-        aroscbase = __get_aroscbase();
+        aroscbase = __GM_GetBase();
         udata = aroscbase->acb_vfork_data;
 
         D(bug("__vfork: acb_vfork_data = %x\n", udata));
@@ -320,7 +320,7 @@ pid_t __vfork(jmp_buf env)
 
 static void parent_enterpretendchild(struct vfork_data *udata)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     D(bug("parent_enterpretendchild(%x): entered\n", udata));
 
     aroscbase->acb_vfork_data = udata;
@@ -356,7 +356,7 @@ static void parent_enterpretendchild(struct vfork_data *udata)
 
 static void child_takeover(struct vfork_data *udata)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     D(bug("child_takeover(%x): entered\n", udata));
 
     /* Set current dir to parent's current dir */
@@ -369,7 +369,7 @@ static void child_takeover(struct vfork_data *udata)
 
 static void parent_leavepretendchild(struct vfork_data *udata)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     D(bug("parent_leavepretendchild(%x): entered\n", udata));
 
     /* Restore parent's malloc mempool */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function readdir().
@@ -64,6 +64,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     int const max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
     fdesc *desc;
 
@@ -84,7 +85,7 @@
     	return NULL;
     }
 
-    if (__doupath && dir->pos == 0)
+    if (aroscbase->acb_doupath && dir->pos == 0)
     {
         dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
@@ -92,7 +93,7 @@
         dir->ent.d_reclen = 1;
     } 
     else
-    if (__doupath && dir->pos == 1)
+    if (aroscbase->acb_doupath && dir->pos == 1)
     {
         dir->ent.d_type = DT_DIR;
         dir->ent.d_name[0]='.';
@@ -121,7 +122,7 @@
         while (TRUE)
         {
 
-            if (__doupath && name[0] == '.')
+            if (aroscbase->acb_doupath && name[0] == '.')
             { 
                 if (name[1] == '.')
                 {      

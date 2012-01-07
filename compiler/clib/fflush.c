@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fflush().
@@ -50,12 +50,14 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
+
     /* flush all streams opened for output */
     if (!stream)
     {
 	FILENODE *fn;
 
-	ForeachNode (&__stdio_files, fn)
+	ForeachNode (&aroscbase->acb_stdio_files, fn)
 	{
 	    if (fn->File.flags & _STDIO_WRITE)
 	    {

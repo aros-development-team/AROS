@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function posix_memalign().
@@ -65,6 +65,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     UBYTE *mem = NULL, *orig;
 
     /* check the alignment is valid */
@@ -72,7 +73,7 @@
         return EINVAL;
 
     /* allocate enough space to satisfy the alignment and save some info */
-    mem = AllocPooled(__mempool, AROS_ALIGN(sizeof(size_t)) + sizeof(void *)
+    mem = AllocPooled(aroscbase->acb_mempool, AROS_ALIGN(sizeof(size_t)) + sizeof(void *)
         + AROS_ALIGN(sizeof(size_t)) + alignment + size);
     if (mem == NULL)
         return ENOMEM;

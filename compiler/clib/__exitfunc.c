@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -12,7 +12,7 @@
 
 int __addexitfunc(struct AtExitNode *aen)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     
     ADDHEAD((struct List *)&aroscbase->acb_atexit_list, (struct Node *)aen);
 
@@ -28,7 +28,7 @@ int __init_atexit(struct aroscbase *aroscbase)
 
 void __callexitfuncs(void)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     struct AtExitNode *aen;
 
     while (

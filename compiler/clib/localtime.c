@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Convert a time into a string.
 */
-
-extern long __gmtoffset;
 
 /*****************************************************************************
 

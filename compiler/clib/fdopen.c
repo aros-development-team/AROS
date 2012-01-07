@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function fdopen().
@@ -64,6 +64,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
     FILENODE *fn;
@@ -100,7 +101,7 @@
     fn = malloc(sizeof(FILENODE));
     if (!fn) return NULL;
 
-    AddTail ((struct List *)&__stdio_files, (struct Node *)fn);
+    AddTail ((struct List *)&aroscbase->acb_stdio_files, (struct Node *)fn);
 
     fn->File.flags = __oflags2sflags(oflags);
     fn->File.fd    = filedes;

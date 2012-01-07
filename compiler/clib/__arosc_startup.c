@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: arosc library - support code for entering and leaving a program
@@ -18,7 +18,7 @@ void __arosc_program_startup(void)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", __get_aroscbase()));
+    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", __GM_GetBase()));
 
     /* Function is just a placeholder for the future */
 

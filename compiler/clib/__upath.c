@@ -1,6 +1,5 @@
-
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: utility internal function __path_u2a()
@@ -15,12 +14,6 @@
 
 static const char *__path_devstuff_u2a(const char *path);
 static void  __path_normalstuff_u2a(const char *path, char *buf);
-
-#ifdef BUILD_TEST
-    static int  __doupath = 1;
-    static char *__apathbuf;
-#   define realloc_nocopy realloc
-#endif
 
 /*****************************************************************************
 
@@ -57,10 +50,11 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     const char *newpath;
 
     /* Does the path really need to be converted?  */
-    if (!__doupath)
+    if (!aroscbase->acb_doupath)
         return upath;
 
     /* Safety check.  */
@@ -86,7 +80,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     if (!newpath)
     {
         /* Else, convert it normally */
-	newpath = realloc_nocopy(__apathbuf, strlen(upath) + 1);
+	newpath = realloc_nocopy(aroscbase->acb_apathbuf, strlen(upath) + 1);
 
 	if (newpath == NULL)
 	{
@@ -94,8 +88,8 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 	    return NULL;
 	}
 
-        __apathbuf = (char *)newpath;
-	__path_normalstuff_u2a(upath, __apathbuf);
+        aroscbase->acb_apathbuf = (char *)newpath;
+	__path_normalstuff_u2a(upath, aroscbase->acb_apathbuf);
     }
 
     return newpath;
@@ -136,6 +130,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     const char *old_apath = apath;
     char ch, *upath, *old_upath;
     size_t size = 0;
@@ -157,7 +152,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         return NULL;
     }
 
-    if (!__doupath)
+    if (!aroscbase->acb_doupath)
         return apath;
 	
     while ((ch = *apath++))
@@ -171,14 +166,14 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
     if (size == 0)
         return "";
 
-    old_upath = realloc_nocopy(__apathbuf, 1 + size + 1);
+    old_upath = realloc_nocopy(aroscbase->acb_apathbuf, 1 + size + 1);
     if (old_upath == NULL)
     {
 	errno = ENOMEM;
 	return NULL;
     }
 
-    __apathbuf = old_upath;
+    aroscbase->acb_apathbuf = old_upath;
     upath = ++old_upath;
     apath = old_apath;
 
@@ -421,18 +416,4 @@ static void __path_normalstuff_u2a(const char *path, char *buf)
 
     buf[0] = '\0';
 }
-
-
-#ifdef BUILD_TEST
-
-#include <stdio.h>
-int main(int argc, char *argv[])
-{
-    if (argc != 3)
-        return 20;
-
-    printf("%s\n", __path_u2a(argv[1]));
-    printf("%s\n", __path_a2u(argv[2]));
-}
-#endif
 

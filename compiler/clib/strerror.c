@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function strerror().
@@ -46,7 +46,7 @@ extern const char * _errstrings[];
 {
     if (n > MAX_ERRNO)
     {
-        struct aroscbase *aroscbase = __get_aroscbase();
+        struct aroscbase *aroscbase = __GM_GetBase();
 
 	Fault(n - MAX_ERRNO, NULL, aroscbase->acb_fault_buf, sizeof(aroscbase->acb_fault_buf));
 

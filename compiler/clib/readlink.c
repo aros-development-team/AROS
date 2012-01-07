@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function readlink().
@@ -43,13 +43,14 @@
 	global variable errno.
 */
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     ssize_t          res = -1;
     struct DevProc   *dvp = NULL;
     LONG             error;
     struct Process   *me = (struct Process *)FindTask(NULL);
 
     /* check for empty path before potential conversion from "." to "" */
-    if (__doupath && path && *path == '\0')
+    if (aroscbase->acb_doupath && path && *path == '\0')
     {
         errno = ENOENT;
         return res;

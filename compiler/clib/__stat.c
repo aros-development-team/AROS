@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -540,6 +540,7 @@ static void __fill_statbuffer(
     int                  fallback_to_defaults,
     BPTR                 lock)
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     uint64_t hash;
     uint32_t pc = 1, pb = 1; /* initial hash values */
 
@@ -567,7 +568,7 @@ static void __fill_statbuffer(
     sb->st_size    = (off_t)fib->fib_Size;
     sb->st_atime   =
     sb->st_ctime   =
-    sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + __gmtoffset) * 60 +
+    sb->st_mtime   = (fib->fib_Date.ds_Days * 24*60 + fib->fib_Date.ds_Minute + aroscbase->acb_gmtoffset) * 60 +
 	              fib->fib_Date.ds_Tick / TICKS_PER_SECOND + OFFSET_FROM_1970;
     sb->st_uid     = __id_a2u(fib->fib_OwnerUID);
     sb->st_gid     = __id_a2u(fib->fib_OwnerGID);

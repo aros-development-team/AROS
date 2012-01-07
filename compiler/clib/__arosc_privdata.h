@@ -126,25 +126,9 @@ struct aroscbase
 
 /* !acb_flags */
 
+/* This function is added by genmodule and returns the current active
+   libbase.
+*/
 struct aroscbase *__GM_GetBase();
-#define __get_aroscbase() __GM_GetBase()
-
-#define __env_list                            (__get_aroscbase()->acb_env_list)
-#define __stdio_files                         (__get_aroscbase()->acb_stdio_files)
-#define __numslots                            (__get_aroscbase()->acb_numslots)
-#define __fd_mempool                          (__get_aroscbase()->acb_fd_mempool)
-#define __fd_array                            (__get_aroscbase()->acb_fd_array)
-#define __mempool                             (__get_aroscbase()->acb_mempool)
-#define __datestamp                           (__get_aroscbase()->acb_datestamp)
-#define __atexit_list                         (__get_aroscbase()->acb_atexit_list)
-#define __umask                               (__get_aroscbase()->acb_umask)
-#define __cd_changed                          (__get_aroscbase()->acb_cd_changed)
-#define __cd_lock                             (__get_aroscbase()->acb_cd_lock)
-#define __timereq                             (__get_aroscbase()->acb_timereq)
-#define __timeport                            (__get_aroscbase()->acb_timeport)
-#define __gmtoffset                           (__get_aroscbase()->acb_gmtoffset)
-#define __apathbuf                            (__get_aroscbase()->acb_apathbuf)
-#define __doupath                             (__get_aroscbase()->acb_doupath)
-#define __flocks_list                         (__get_aroscbase()->acb_file_locks)
 
 #endif /* !___AROSC_PRIVDATA_H */

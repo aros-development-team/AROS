@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function system().
@@ -52,11 +52,12 @@ static int system_no_sh(const char *string);
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     BPTR lock;
     APTR old_proc_window;
     struct Process *me;
 
-    if (!__doupath)
+    if (!aroscbase->acb_doupath)
         return system_no_sh(string);
     
     if (string == NULL || string[0] == '\0')
@@ -83,6 +84,7 @@ static int system_no_sh(const char *string);
 
 static int system_sh(const char *string)
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     pid_t pid = vfork();
     int status;
 
@@ -96,7 +98,7 @@ static int system_sh(const char *string)
     }
     else if(pid == 0)
     {
-	execl((__doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
+	execl((aroscbase->acb_doupath ? "/bin/sh" : "bin:sh"), "sh", "-c", string, (char *) NULL);
 	_exit(127);
     }
     else

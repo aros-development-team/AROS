@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function getpid().
@@ -40,7 +40,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     struct ETask *et;
 
     if(aroscbase->acb_flags & PRETEND_CHILD)
