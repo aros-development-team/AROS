@@ -54,7 +54,6 @@
 #include <proto/intuition.h>
 #endif
 #include <proto/muimaster.h>
-#include <proto/workbench.h>
 
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
@@ -64,7 +63,7 @@
 #include "wandererprefs.h"
 #include "iconwindow.h"
 #include "iconwindow_iconlist.h"
-
+#include "appobjects.h"
 
 #ifndef __AROS__
 #define DEBUG 1
@@ -882,19 +881,19 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
         /* Refresh entries for AppIcons */
         {
-            struct DiskObject * appdo = NULL;
-            TEXT appiconname[128] = {0};
+
+            struct AppIcon * appicon = NULL;
+
+            APTR lock = AppObjectsLock();
 
             /* Reinsert existing, add new */
-            while ((appdo = GetNextAppIcon(appdo, appiconname)))
+            while ((appicon = GetNextAppIconLocked(appicon, lock)))
             {
-                TEXT ptrbuffer[20] = {0}; /* Ugly hack follows */
-                sprintf(ptrbuffer, "0x%lx", (IPTR)appdo);
                 struct IconEntry * appentry = NULL;
 
                 ForeachNodeSafe(&iconifiedList, entry, tmpentry)
                 {
-                    if (strcmp(entry->ie_IconNode.ln_Name, ptrbuffer) == 0)
+                    if (entry->ie_AppIcon == (APTR)appicon)
                     {
                         appentry = entry;
                         Remove((struct Node*)&entry->ie_IconNode);
@@ -907,17 +906,22 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                 if (appentry == NULL)
                 {
+                    struct DiskObject * appdo = AppIcon_GetDiskObject((struct AppIcon *)appicon);
                     struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE); //FIXME this causes bad icon image
+                    CONST_STRPTR label = AppIcon_GetLabel((struct AppIcon *)appicon);
                     appentry = (struct IconEntry *)DoMethod(self,
-                            MUIM_IconList_CreateEntry, (IPTR)ptrbuffer, (IPTR)appiconname, (IPTR)NULL, (IPTR)dupdo, 0);
+                            MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0);
                     if (appentry)
                     {
+                        appentry->ie_AppIcon = (APTR)appicon;
                         appentry->ie_IconNode.ln_Pri = 3;
                         appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
                         DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
                     }
                 }
             }
+
+            AppObjectsUnlock(lock);
 
             /* Destroy entries which where not re-added */
             ForeachNodeSafe(&iconifiedList, entry, tmpentry)

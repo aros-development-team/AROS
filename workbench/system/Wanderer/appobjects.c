@@ -17,38 +17,58 @@
 
 #include "../../libs/workbench/workbench_intern.h"
 
+/*
+ * Assumes lock in already acquired. Returns pointer to AppIcon from workbench.library list, if the passed
+ * pointer is actually on the list.
+ */
+STATIC struct AppIcon * FindAppIconByPtr(struct AppIcon * appicon)
+{
+    struct AppIcon * entry = NULL;
+    ForeachNode(&LB(WorkbenchBase)->wb_AppIcons, entry)
+    {
+        if (entry == appicon)
+            return entry;
+    }
+
+    return NULL;
+}
+
 BOOL SendAppIconMessage(struct AppIcon * appicon, LONG numargs, STRPTR args)
 {
     struct AppMessage * msg = NULL;
     struct MsgPort *reply = NULL;
     BOOL success = FALSE;
+    struct AppIcon * entry = NULL;
 
     if (!appicon)
         return success;
 
     LockWorkbench();
 
-    /* TODO: Check if appicon is still on the list of appicons handled by workbench.library */
-
-    /* TODO: Handle the case when icons are dropped on appicon */
-    msg = AllocVec(sizeof(struct AppMessage), MEMF_CLEAR);
-    msg->am_Type = AMTYPE_APPICON;
-    msg->am_ArgList = NULL;
-    msg->am_NumArgs = 0;
-    msg->am_ID = appicon->ai_ID;
-    msg->am_UserData = appicon->ai_UserData;
-    msg->am_Version = AM_VERSION;
-
-    reply = CreateMsgPort();
-    if (reply)
+    /* Check is passed entry is valid */
+    if ((entry = FindAppIconByPtr(appicon)) != NULL)
     {
-        struct MsgPort *port = appicon->ai_MsgPort;
-        msg->am_Message.mn_ReplyPort = reply;
-        PutMsg(port, (struct Message *) msg);
-        WaitPort(reply);
-        GetMsg(reply);
-        DeleteMsgPort(reply);
-        success = TRUE;
+
+        /* TODO: Handle the case when icons are dropped on appicon */
+        msg = AllocVec(sizeof(struct AppMessage), MEMF_CLEAR);
+        msg->am_Type = AMTYPE_APPICON;
+        msg->am_ArgList = NULL;
+        msg->am_NumArgs = 0;
+        msg->am_ID = entry->ai_ID;
+        msg->am_UserData = entry->ai_UserData;
+        msg->am_Version = AM_VERSION;
+
+        reply = CreateMsgPort();
+        if (reply)
+        {
+            struct MsgPort *port = entry->ai_MsgPort;
+            msg->am_Message.mn_ReplyPort = reply;
+            PutMsg(port, (struct Message *) msg);
+            WaitPort(reply);
+            GetMsg(reply);
+            DeleteMsgPort(reply);
+            success = TRUE;
+        }
     }
 
     UnlockWorkbench();
@@ -56,4 +76,83 @@ BOOL SendAppIconMessage(struct AppIcon * appicon, LONG numargs, STRPTR args)
     FreeVec(msg);
 
     return success;
+}
+
+APTR AppObjectsLock()
+{
+    static LONG lock = 1;
+
+    LockWorkbench();
+
+    return (APTR)&lock;
+}
+
+VOID AppObjectsUnlock(APTR lock)
+{
+    UnlockWorkbench();
+}
+
+/* Assumes lock is already held */
+struct AppIcon * GetNextAppIconLocked(struct AppIcon * lastappicon, APTR lock)
+{
+    struct List *appiconlist = &LB(WorkbenchBase)->wb_AppIcons;
+
+    /* return NULL if list empty or argument dob is already from last appicon in list*/
+    if (!IsListEmpty(appiconlist))
+    {
+        struct AppIcon * _return = NULL;
+
+        /* return NULL if last entry reached */
+        if (lastappicon == (struct AppIcon *)appiconlist->lh_TailPred)
+            return NULL;
+
+        _return = FindAppIconByPtr(lastappicon);
+
+        if (_return)
+        {
+            /* Return next */
+            return (struct AppIcon *)GetSucc((struct Node *)_return);
+        }
+        else
+        {
+            /* Return first */
+            return (struct AppIcon *)appiconlist->lh_Head;
+        }
+    }
+
+    return NULL;
+}
+
+struct DiskObject * AppIcon_GetDiskObject(struct AppIcon * appicon)
+{
+    struct AppIcon * entry = NULL;
+    struct DiskObject * _return = NULL;
+
+    LockWorkbench();
+
+    entry = FindAppIconByPtr(appicon);
+
+    if (entry)
+        _return = entry->ai_DiskObject;
+
+    UnlockWorkbench();
+
+    return _return;
+}
+
+CONST_STRPTR AppIcon_GetLabel(struct AppIcon * appicon)
+{
+    struct AppIcon * entry = NULL;
+    STRPTR _return = NULL;
+
+    LockWorkbench();
+
+    entry = FindAppIconByPtr(appicon);
+
+    if (entry)
+        _return = entry->ai_Text;
+
+    UnlockWorkbench();
+
+    return (CONST_STRPTR)_return;
 }
