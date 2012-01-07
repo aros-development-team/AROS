@@ -105,6 +105,7 @@ struct IconEntry
 
     struct DiskObject           *ie_DiskObj;                     /* The icons disk objects */
     struct FileInfoBlock        *ie_FileInfoBlock;
+    APTR                        *ie_AppIcon;
 
     LONG                        ie_IconX,                        /* Top Left Co-ords of Icons "AREA" */
                                 ie_IconY;
