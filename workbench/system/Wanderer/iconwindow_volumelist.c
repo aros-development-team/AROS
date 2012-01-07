@@ -54,6 +54,7 @@
 #include <proto/intuition.h>
 #endif
 #include <proto/muimaster.h>
+#include <proto/workbench.h>
 
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
@@ -802,7 +803,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
         NEWLIST(&leftoutList);
         
-D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &leftoutList));
+        D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &leftoutList));
         
         GET(self, MUIA_Family_List, &iconList);
 
@@ -810,19 +811,21 @@ D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &le
         {
             if (entry->ie_IconListEntry.type == ST_ROOT)
             {
-D(bug("[Wanderer:VolumeList] %s: Marking volume entry '%s' (pri = %d)\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name, entry->ie_IconNode.ln_Pri));
+                D(bug("[Wanderer:VolumeList] %s: Marking volume entry '%s' (pri = %d)\n",
+                        __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name, entry->ie_IconNode.ln_Pri));
                 if (entry->ie_IconNode.ln_Pri == 5) entry->ie_IconNode.ln_Pri = -5;
                 else entry->ie_IconNode.ln_Pri = -2;
             }
             if ((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
             {
-D(bug("[Wanderer:VolumeList] %s: Removing left out entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+                D(bug("[Wanderer:VolumeList] %s: Removing left out entry '%s'\n",
+                        __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
                 Remove(&entry->ie_IconNode);
                 AddTail(&leftoutList, &entry->ie_IconNode);
             }
             else if (strcmp(entry->ie_IconNode.ln_Name, "?wanderer.networkbrowse?") == 0)
             {
-D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNCTION__));
+                D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNCTION__));
                 Remove(&entry->ie_IconNode);
                 Obj_NetworkIcon = (struct Node *)entry;
             }
@@ -838,6 +841,7 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 
         GET(self, MUIA_Family_List, &iconList);
 
+        /* Re-parsing .backdrop files and re-adding icons */
         ForeachNode(iconList, volentry)
         {
             if ((volentry->ie_IconListEntry.type == ST_ROOT)
@@ -851,6 +855,7 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
 
                 IconWindowVolumeList__Func_ParseBackdrop(self, volentry, &leftoutList);
 
+                /* Destroy entries which where not re-added */
                 ForeachNodeSafe(&leftoutList, entry, tmpentry)
                 {
                     if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
@@ -864,6 +869,28 @@ D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNC
             }
         }
         
+        /* Retrieve list of AppIcons */
+        {
+            struct DiskObject * appdo = NULL;
+            TEXT appiconname[128] = {0};
+            while ((appdo = GetNextAppIcon(appdo, appiconname)))
+            {
+                struct IconEntry * appentry = (struct IconEntry *)DoMethod(self,
+                        MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)appiconname, (IPTR)NULL, (IPTR)appdo, 0);
+                if (appentry)
+                {
+                    appentry->ie_IconNode.ln_Pri = 3;
+                    appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
+                    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
+                }
+            }
+        }
+
+
+
+
+
+        /* Network browser / User Files */
         D(bug("[Wanderer:VolumeList] %s: Check if we should show NetworkBrowser Icon ..\n", __PRETTY_FUNCTION__));
 
         GET(_app(self), MUIA_Wanderer_Prefs, &prefs);
