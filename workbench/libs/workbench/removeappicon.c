@@ -7,6 +7,7 @@
 */
 
 #include "workbench_intern.h"
+#include "notifyworkbench.h"
 #include <workbench/workbench.h>
 
 /*****************************************************************************
@@ -64,13 +65,7 @@
 
     FreeVec(appIcon);
 
-    /*
-      Question is if we should negotiate with the (possible) workbench
-      application. Probably not... we just remove it from the list and
-      send a message to the workbench application that the icon should
-      be removed as soon as possible. 
-
-      NotifyWorkbench(WBNOTIFY_Delete, WBNOTIFY_AppIcon, WorkbenchBase); */
+    NotifyWorkbench(WBNOTIFY_Delete, WBNOTIFY_AppIcon, WorkbenchBase);
 
     return TRUE;
 

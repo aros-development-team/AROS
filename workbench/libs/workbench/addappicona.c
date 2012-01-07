@@ -15,6 +15,7 @@
 #include <proto/utility.h>
 
 #include "workbench_intern.h"
+#include "notifyworkbench.h"
 #include <workbench/workbench.h>
 
 
@@ -354,9 +355,7 @@
     AddTail(&WorkbenchBase->wb_AppIcons, (struct Node *)appIcon);
     UnlockWorkbench();
 
-    /*
-      NotifyWorkbench(WBNOTIFY_Create, WBNOTIFY_AppIcon, WorkbenchBase);
-     */
+    NotifyWorkbench(WBNOTIFY_Create, WBNOTIFY_AppIcon, WorkbenchBase);
 
     return appIcon;
 
