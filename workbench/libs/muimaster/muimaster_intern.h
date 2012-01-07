@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -59,7 +59,7 @@ struct MUIMasterBase_intern
 
     /* On AROS autoopened libraries are used */
     struct DosLibrary  	    	*dosbase;
-    struct UtilityBase		*utilitybase;
+    struct UtilityBase          *utilitybase;
     struct Library  	    	*aslbase;
     struct GfxBase  	    	*gfxbase;
     struct Library  	    	*layersbase;
@@ -67,11 +67,12 @@ struct MUIMasterBase_intern
     struct Library  	    	*cxbase;
     struct RxsLib               *rxsbase;
     struct Library  	    	*keymapbase;
-    struct Library		*gadtoolsbase;
+    struct Library              *gadtoolsbase;
     struct Library  	    	*iffparsebase;
     struct Library  	    	*diskfontbase;
     struct Library  	    	*iconbase;
     struct Library  	    	*cybergfxbase;
+    struct Library              *workbenchbase;
 #ifdef HAVE_COOLIMAGES
     struct Library  	    	*coolimagesbase;
 #endif
@@ -100,7 +101,7 @@ struct MUIMasterBase_intern
 #define DOSBase     	(MUIMB(MUIMasterBase)->dosbase)
 
 #undef UtilityBase
-#define UtilityBase	(MUIMB(MUIMasterBase)->utilitybase)
+#define UtilityBase     (MUIMB(MUIMasterBase)->utilitybase)
 
 #undef AslBase
 #define AslBase     	(MUIMB(MUIMasterBase)->aslbase)
@@ -133,13 +134,16 @@ struct MUIMasterBase_intern
 #define DiskfontBase  	(MUIMB(MUIMasterBase)->diskfontbase)
 
 #undef IconBase
-#define IconBase  	(MUIMB(MUIMasterBase)->iconbase)
+#define IconBase        (MUIMB(MUIMasterBase)->iconbase)
 
 #undef CyberGfxBase
 #define CyberGfxBase  	(MUIMB(MUIMasterBase)->cybergfxbase)
 
 #undef CoolImagesBase
 #define CoolImagesBase	(MUIMB(MUIMasterBase)->coolimagesbase)
+
+#undef WorkbenchBase
+#define WorkbenchBase   (MUIMB(MUIMasterBase)->workbenchbase)
 
 #endif /* __AROS__ */
 

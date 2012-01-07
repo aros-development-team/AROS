@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2006, The AROS Development Team.
+    Copyright  2002-2011, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -31,6 +31,8 @@
 #include <proto/muimaster.h>
 #include <proto/iffparse.h>
 #include <proto/rexxsyslib.h>
+#include <proto/workbench.h>
+#include <proto/icon.h>
 
 //#define MYDEBUG 1
 #include "debug.h"
@@ -98,6 +100,9 @@ struct MUI_ApplicationData
     struct MUI_Command      *app_Commands;
     STRPTR                  app_RexxString;
     BOOL                    app_UseRexx;
+    struct MsgPort          *app_AppPort; /* Port for handling AppIcon / AppMenu */
+    struct AppIcon          *app_AppIcon;
+    struct DiskObject       *app_AppIconDiskObject;
 
 };
 
@@ -654,6 +659,8 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
 
     if (data->app_Menustrip) DoMethod(data->app_Menustrip, MUIM_ConnectParent, (IPTR)obj);
 
+    data->app_AppPort = CreateMsgPort();
+
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     data->app_TrackingNode.tn_Application = obj;
     AddTail((struct List *)&MUIMB(MUIMasterBase)->Applications, (struct Node*)&data->app_TrackingNode);
@@ -789,6 +796,22 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
         DeleteMsgPort(data->app_RexxPort);
     }
 
+    if (data->app_AppIcon)
+        RemoveAppIcon(data->app_AppIcon);
+
+    if (data->app_AppIconDiskObject)
+        FreeDiskObject(data->app_AppIconDiskObject);
+
+    if (data->app_AppPort)
+    {
+        struct Message *msg;
+        while((msg = GetMsg(data->app_AppPort)))
+        {
+            ReplyMsg(msg);
+        }
+        DeleteMsgPort(data->app_AppPort);
+    }
+
     if (data->app_GlobalInfo.mgi_Configdata)
         MUI_DisposeObject(data->app_GlobalInfo.mgi_Configdata);
 
@@ -885,7 +908,28 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                         data->app_Iconified = do_iconify;
 
                         nnset(obj, MUIA_ShowMe, !data->app_Iconified);
-                        //FIXME "In case the WB is up, an appicon needs to be placed on the desktop"
+
+                        /* Inform workbench.library */
+                        if (data->app_Iconified)
+                        {
+                            STRPTR appname = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
+                            data->app_AppIconDiskObject = GetDefDiskObject(WBTOOL); //FIXME: read apps diskobject
+                            data->app_AppIcon = AddAppIconA(0L, 0L, appname, data->app_AppPort,
+                                                    NULL, data->app_AppIconDiskObject, NULL);
+                        }
+                        else
+                        {
+                            if (data->app_AppIcon)
+                            {
+                                RemoveAppIcon(data->app_AppIcon);
+                                data->app_AppIcon = NULL;
+                            }
+                            if (data->app_AppIconDiskObject)
+                            {
+                                FreeDiskObject(data->app_AppIconDiskObject);
+                                data->app_AppIconDiskObject = NULL;
+                            }
+                        }
                     }
                 }
                 break;
