@@ -798,10 +798,11 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
         struct Node *Obj_NetworkIcon = NULL;
         struct Node *Obj_UserFilesIcon = NULL;
         
-        struct List                leftoutList, *iconList = NULL;
+        struct List                leftoutList, iconifiedList, *iconList = NULL;
         struct IconEntry        *volentry = NULL, *entry = NULL, *tmpentry = NULL;
 
         NEWLIST(&leftoutList);
+        NEWLIST(&iconifiedList);
         
         D(bug("[Wanderer:VolumeList] %s: left-out List @ %p\n", __PRETTY_FUNCTION__, &leftoutList));
         
@@ -823,6 +824,13 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                 Remove(&entry->ie_IconNode);
                 AddTail(&leftoutList, &entry->ie_IconNode);
             }
+            else if (entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
+            {
+                D(bug("[Wanderer:VolumeList] %s: Removing iconified entry '%s'\n",
+                        __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+                Remove(&entry->ie_IconNode);
+                AddTail(&iconifiedList, &entry->ie_IconNode);
+            }
             else if (strcmp(entry->ie_IconNode.ln_Name, "?wanderer.networkbrowse?") == 0)
             {
                 D(bug("[Wanderer:VolumeList] %s: Removing NetworkBrowser entry\n", __PRETTY_FUNCTION__));
@@ -841,7 +849,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
         GET(self, MUIA_Family_List, &iconList);
 
-        /* Re-parsing .backdrop files and re-adding icons */
+        /* Re-parsing .backdrop files and re-adding entries */
         ForeachNode(iconList, volentry)
         {
             if ((volentry->ie_IconListEntry.type == ST_ROOT)
@@ -853,6 +861,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                 D(bug("[Wanderer:VolumeList] %s: Re-Parsing backdrop file for '%s'\n", __PRETTY_FUNCTION__, volentry->ie_IconNode.ln_Name));
 
+                /* Re-add entries which did not change and create entries for new left-out entries */
                 IconWindowVolumeList__Func_ParseBackdrop(self, volentry, &leftoutList);
 
                 /* Destroy entries which where not re-added */
@@ -868,25 +877,57 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                 }
             }
         }
-        
-        /* Retrieve list of AppIcons */
+
+
+
+        /* Refresh entries for AppIcons */
         {
             struct DiskObject * appdo = NULL;
             TEXT appiconname[128] = {0};
+
+            /* Reinsert existing, add new */
             while ((appdo = GetNextAppIcon(appdo, appiconname)))
             {
-                struct IconEntry * appentry = (struct IconEntry *)DoMethod(self,
-                        MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)appiconname, (IPTR)NULL, (IPTR)appdo, 0);
-                if (appentry)
+                TEXT ptrbuffer[20] = {0}; /* Ugly hack follows */
+                sprintf(ptrbuffer, "0x%lx", (IPTR)appdo);
+                struct IconEntry * appentry = NULL;
+
+                ForeachNodeSafe(&iconifiedList, entry, tmpentry)
                 {
-                    appentry->ie_IconNode.ln_Pri = 3;
-                    appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
-                    DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
+                    if (strcmp(entry->ie_IconNode.ln_Name, ptrbuffer) == 0)
+                    {
+                        appentry = entry;
+                        Remove((struct Node*)&entry->ie_IconNode);
+                        D(bug("[Wanderer:VolumeList] %s: Reinserting '%s'\n", __PRETTY_FUNCTION__,
+                                entry->ie_IconNode.ln_Name));
+                        DoMethod(self, MUIM_Family_AddTail, (struct Node*)&entry->ie_IconNode);
+                        break;
+                    }
+                }
+
+                if (appentry == NULL)
+                {
+                    struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE); //FIXME this causes bad icon image
+                    appentry = (struct IconEntry *)DoMethod(self,
+                            MUIM_IconList_CreateEntry, (IPTR)ptrbuffer, (IPTR)appiconname, (IPTR)NULL, (IPTR)dupdo, 0);
+                    if (appentry)
+                    {
+                        appentry->ie_IconNode.ln_Pri = 3;
+                        appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
+                        DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
+                    }
                 }
             }
+
+            /* Destroy entries which where not re-added */
+            ForeachNodeSafe(&iconifiedList, entry, tmpentry)
+            {
+                D(bug("[Wanderer:VolumeList] %s: Destroying old iconified entry '%s'\n",
+                        __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+                Remove(&entry->ie_IconNode);
+                DoMethod(self, MUIM_IconList_DestroyEntry, entry);
+            }
         }
-
-
 
 
 
