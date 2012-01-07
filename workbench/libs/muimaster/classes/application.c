@@ -806,9 +806,8 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     {
         struct Message *msg;
         while((msg = GetMsg(data->app_AppPort)))
-        {
             ReplyMsg(msg);
-        }
+
         DeleteMsgPort(data->app_AppPort);
     }
 
@@ -1345,6 +1344,9 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
     if (data->app_RexxPort)
         signalmask |= (1L << data->app_RexxPort->mp_SigBit);
 
+    if (data->app_AppPort)
+        signalmask |= (1L << data->app_AppPort->mp_SigBit);
+
     if (signal == 0)
     {
         /* Stupid app which (always) passes 0 in signals. It's impossible to
@@ -1448,6 +1450,23 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
             while((msg = GetMsg(data->app_RexxPort)))
             {
                 ReplyMsg(msg);
+            }
+        }
+
+        if (data->app_AppPort && (signal & (1L << data->app_AppPort->mp_SigBit)))
+        {
+            struct AppMessage *appmsg;
+            while((appmsg = (struct AppMessage *)GetMsg(data->app_AppPort)))
+            {
+                if ((appmsg->am_Type == AMTYPE_APPICON) && (appmsg->am_NumArgs == 0)
+                        && (appmsg->am_ArgList == NULL) && (XGET(obj, MUIA_Application_Iconified) == TRUE))
+                {
+                    ReplyMsg((struct Message *)appmsg); /* Reply before removing AppIcon */
+                    set(obj, MUIA_Application_Iconified, FALSE);
+                    continue;
+                }
+
+                ReplyMsg((struct Message *)appmsg);
             }
         }
 
