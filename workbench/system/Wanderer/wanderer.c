@@ -80,6 +80,7 @@
 #include "Classes/iconlist.h"
 #include "Classes/iconlist_attributes.h"
 #include "locale.h"
+#include "appobjects.h"
 
 #include "version.h"
 
@@ -604,6 +605,10 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 UnLock(newwd);
                 UnLock(file);
             }
+        }
+        else if (ent->type == ILE_TYPE_APPICON)
+        {
+            SendAppIconMessage((struct AppIcon *)ent->ile_IconEntry->ie_AppIcon, 0, NULL);
         }
     } 
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
