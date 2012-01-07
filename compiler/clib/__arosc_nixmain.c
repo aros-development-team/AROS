@@ -1,5 +1,5 @@
 /* 
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: special main function for code which has to use special *nix features.
@@ -36,7 +36,7 @@ static void update_PATH(void);
 
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
-    struct aroscbase *aroscbase = __get_aroscbase(), *paroscbase;
+    struct aroscbase *aroscbase = __GM_GetBase(), *paroscbase;
     char *old_argv0 = NULL;
     char *new_argv0 = NULL;
     struct MinList old_vars;

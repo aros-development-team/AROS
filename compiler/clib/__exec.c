@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Support functions for POSIX exec*() functions.
@@ -41,7 +41,7 @@ static void close_on_exec(struct aroscbase *aroscbase);
 
 APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], char *const envp[])
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     char *filename2 = NULL;
     int argssize = 512;
     struct Process *me;
@@ -388,7 +388,7 @@ error:
 
 void __exec_do(APTR id)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     char *oldtaskname;
     struct CommandLineInterface *cli = Cli();
     struct Task *self = FindTask(NULL);
@@ -398,8 +398,8 @@ void __exec_do(APTR id)
 
     /* id is unused */
     (void)id;
-    /* When exec is not called under vfork condition id == __get_aroscbase()
-       When exec is called under vfork condition we need to use __get_aroscbase() in the
+    /* When exec is not called under vfork condition id == __GM_GetBase()
+       When exec is called under vfork condition we need to use __GM_GetBase() in the
        parent to check for PRETEND_CHILD and find the udata for signaling the child
     */
 
@@ -453,7 +453,7 @@ void __exec_do(APTR id)
 
 char *const *__exec_valist2array(const char *arg1, va_list list)
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     int argc, i;
     static char *no_arg[] = {NULL};
     va_list list2;
@@ -497,7 +497,7 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
 
 void __exec_cleanup_array()
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
     if (aroscbase->acb_exec_tmparray)
     {
         free((void *)aroscbase->acb_exec_tmparray);

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -50,6 +50,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     BPTR oldlock = BNULL;
     BPTR newlock = BNULL;
     BPTR handle = BNULL;
@@ -69,14 +70,14 @@
     }
     oldlock = CurrentDir( newlock ); 
 
-    if( __cd_changed )
+    if( aroscbase->acb_cd_changed )
     {
     	UnLock( oldlock );
     }
     else
     {
-    	__cd_changed = TRUE;
-	__cd_lock    = oldlock;
+    	aroscbase->acb_cd_changed = TRUE;
+	aroscbase->acb_cd_lock    = oldlock;
     }       
     return 0;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -38,26 +38,26 @@
 
 ******************************************************************************/
 {
-    mode_t oumask = __umask;
+    struct aroscbase *aroscbase = __GM_GetBase();
+    mode_t oumask = aroscbase->acb_umask;
 
-    __umask = numask;
+    aroscbase->acb_umask = numask;
 
     return oumask;
 }
 
-static int __umask_init(void)
+static int __umask_init(struct aroscbase *aroscbase)
 {
-    struct aroscbase *aroscbase = __get_aroscbase(),
-                     *paroscbase;
+    struct aroscbase *paroscbase;
 
     paroscbase = __GM_GetBaseParent(aroscbase);
 
     /* FIXME: Implement umask() properly */
 
     if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
-        __umask = paroscbase->acb_umask;
+        aroscbase->acb_umask = paroscbase->acb_umask;
     else
-        __umask = S_IWGRP|S_IWOTH;
+        aroscbase->acb_umask = S_IWGRP|S_IWOTH;
 
     return 1;
 }

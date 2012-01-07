@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -41,7 +41,7 @@
 
 ******************************************************************************/
 {
-  struct aroscbase *aroscbase = __get_aroscbase();
+  struct aroscbase *aroscbase = __GM_GetBase();
   struct Task *ParentTask;
   struct ETask *eThisTask;
   struct ETask *et;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS function sharecontextwithchild().
@@ -61,7 +61,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __get_aroscbase();
+    struct aroscbase *aroscbase = __GM_GetBase();
 
     if (aroscbase)
     {

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function access().
@@ -58,6 +58,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     BPTR lock = BNULL;
     struct FileInfoBlock *fib = NULL;
     int result = -1;
@@ -79,7 +80,7 @@
     }
 
     /* POSIX root is (poorly) emulated, its contents is accessible */
-    if (__doupath && (path[0] == '/') && (path[1] == '\0'))
+    if (aroscbase->acb_doupath && (path[0] == '/') && (path[1] == '\0'))
     {
 	if (mode & (W_OK|R_OK)) {
 	    errno = EACCES;
