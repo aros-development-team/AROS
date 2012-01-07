@@ -19,7 +19,7 @@ FILES := main \
     iconwindow_volumelist \
     iconwindowbackfill \
     wandererprefsfont \
-    appobjects \
+    appobjects
 
 #MM- workbench-system : workbench-system-wanderer
 #MM- workbench-system-wanderer : \

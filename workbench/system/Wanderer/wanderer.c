@@ -3443,6 +3443,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
                 {
                     CONST_STRPTR name = wbhm->wbhm_Data.Update.Name;
                     ULONG        length;
+                    BOOL         windowned = FALSE, refreshroot = FALSE;
 
                     switch (wbhm->wbhm_Data.Update.Type)
                     {
@@ -3450,8 +3451,11 @@ D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
                         case WBDRAWER:
                         case WBGARBAGE:
                             length = strlen(name);
+                            windowned = TRUE;
                             break;
-
+                        case WBAPPICON:
+                            refreshroot = TRUE;
+                            break;
                         default:
                             length = PathPart(name) - name;
                             break;
@@ -3459,6 +3463,7 @@ D(bug("[Wanderer] %s: WBHM_TYPE_UPDATE\n", __PRETTY_FUNCTION__));
 
 D(bug("[Wanderer] %s: name = %s, length = %ld\n", __PRETTY_FUNCTION__, name, length));
 
+                    if (windowned)
                     {
                         Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
                         Object *child = NULL;
@@ -3487,6 +3492,20 @@ D(bug("[Wanderer] %s: Drawer found: %s!\n", __PRETTY_FUNCTION__, child_drawer));
                                     }
                                     break;
                                 }
+                            }
+                        }
+                    }
+
+                    if (refreshroot)
+                    {
+                        Object * root = (Object *)XGET(self, MUIA_Wanderer_WorkbenchWindow);
+                        if (root)
+                        {
+                            Object *iconlist = (Object *)XGET(root, MUIA_IconWindow_IconList);
+                            if (iconlist != NULL)
+                            {
+                                DoMethod(iconlist, MUIM_IconList_Update);
+                                DoMethod(iconlist, MUIM_IconList_Sort);
                             }
                         }
                     }
