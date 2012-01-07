@@ -329,6 +329,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         tmp = AROS_LONG2BE((LONG)icon->do_CurrentX);
         if (Write(file, &tmp, sizeof(tmp)) == sizeof(tmp)) {
             Seek(file, OFFSET_DO_CURRENTY, OFFSET_BEGINNING);
+            tmp = AROS_LONG2BE((LONG)icon->do_CurrentY);
             if (Write(file, &tmp, sizeof(tmp)) == sizeof(tmp)) {
                 return TRUE;
             }
