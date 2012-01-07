@@ -17,15 +17,18 @@
  * EXPERIMENTAL: use semaphore protection instead of Forbid()/Permit() for
  * system memory allocation routines.
  * In case of problems use definitions below.
+ *
+ * Many m68k programs assume forbid state won't get broken.
  */
+#ifndef __mc68000
 #define MEM_LOCK	ObtainSemaphore(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_LOCK_SHARED ObtainSemaphoreShared(&PrivExecBase(SysBase)->MemListSem)
 #define MEM_UNLOCK	ReleaseSemaphore(&PrivExecBase(SysBase)->MemListSem)
-/*
+#else
 #define MEM_LOCK	Forbid()
 #define MEM_LOCK_SHARED Forbid()
 #define MEM_UNLOCK	Permit()
-*/
+#endif
 
 /* Private Pool structure */
 struct Pool 
