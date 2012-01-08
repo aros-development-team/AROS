@@ -196,7 +196,10 @@
     if (err != 0)
     {
         if (notify->nr_FullName != notify->nr_Name)
+        {
             FreeVec(notify->nr_FullName);
+            notify->nr_FullName = NULL;
+        }
 
         SetIoErr(err);
         return DOSFALSE;
