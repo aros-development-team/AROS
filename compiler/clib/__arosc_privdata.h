@@ -11,10 +11,9 @@
 #include <sys/types.h>
 #include <sys/arosc.h>
 
-#include "__vfork.h"
-
 struct _fdesc;
 struct __env_item;
+struct vfork_data;
 
 struct aroscbase
 {
