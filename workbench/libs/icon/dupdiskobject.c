@@ -167,7 +167,7 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
         mem->ni_Screen = NULL;
 
         /* Duplicate any extra data */
-        if (srcnativeicon->ni_Extra.Data) {
+        if (srcnativeicon->ni_Extra.Data && srcnativeicon->ni_Extra.Size > 0) {
             mem->ni_Extra = srcnativeicon->ni_Extra;
             mem->ni_Extra.Data = MemDupIcon(dobj, srcnativeicon->ni_Extra.Data, srcnativeicon->ni_Extra.Size,IconBase);
             if (!mem->ni_Extra.Data) goto fail;
