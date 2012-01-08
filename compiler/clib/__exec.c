@@ -593,7 +593,9 @@ static char *appendargs(char *argptr, int *argssizeptr, char *const args[], APTR
         if(containswhite(*argsit))
         {
             char *escaped = escape(*argsit);
-            if(!escaped) {
+            if(!escaped)
+            {
+                FreePooled(pool, argptr, *argssizeptr);
                 return NULL;
             }
             argptr = appendarg(argptr, argssizeptr, escaped, pool);
