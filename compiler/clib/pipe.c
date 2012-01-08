@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h> /* For snprintf */
+#include <errno.h>
 
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -98,7 +98,7 @@
 
     if (!writer)
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         __free_fdesc(rdesc);
         __free_fdesc(wdesc);
         return -1;

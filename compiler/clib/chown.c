@@ -10,7 +10,6 @@
 #include <errno.h>
 
 #include "__arosc_privdata.h"
-#include "__errno.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -73,13 +72,13 @@
     {
         if (!(fib = AllocDosObject(DOS_FIB, NULL)))
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             goto out;
         }
     
         if (!(lock = Lock(path, SHARED_LOCK)) || !Examine(lock, fib))
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             goto out;
         }
 
@@ -102,7 +101,7 @@
 
     if (changed && !SetOwner(path, owner << 16 | group))
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         goto out;
     }
 

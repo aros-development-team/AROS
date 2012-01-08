@@ -12,7 +12,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include "__errno.h"
+#include <errno.h>
 #include "__stdio.h"
 #include "__fdesc.h"
 
@@ -71,7 +71,7 @@
 
 		if (!Flush((BPTR)fdesc->fcb->fh))
 		{
-		    errno = IoErr2errno(IoErr());
+		    errno = __arosc_ioerr2errno(IoErr());
 		    return EOF;
       		}
             }
@@ -91,7 +91,7 @@
 	    return 0;
     }
 
-    errno = IoErr2errno(IoErr());
+    errno = __arosc_ioerr2errno(IoErr());
     return EOF;
 } /* fflush */
 

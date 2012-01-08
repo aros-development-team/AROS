@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fgetc().
@@ -10,7 +10,6 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include "__errno.h"
 #include "__fdesc.h"
 
 
@@ -66,7 +65,7 @@
 
 	if (c)
 	{
-    	    errno = IoErr2errno (c);
+    	    errno = __arosc_ioerr2errno (c);
 
 	    stream->flags |= _STDIO_ERROR;
 	}

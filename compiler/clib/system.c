@@ -11,10 +11,10 @@
 #include <proto/dos.h>
 //#include <utility/tagitem.h>
 #include <unistd.h>
+#include <errno.h>
 //#include <sys/types.h>
 #include <sys/wait.h>
 
-#include "__errno.h"
 #include "__fdesc.h"
 #include "__upath.h"
 
@@ -148,7 +148,7 @@ static int system_no_sh(const char *string)
     free(fullcmd);
     
     if (ret == -1)
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
 
     return ret;
 } /* system */

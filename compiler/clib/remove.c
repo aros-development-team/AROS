@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function remove().
@@ -8,7 +8,7 @@
 #define remove remove
 
 #include <proto/dos.h>
-#include "__errno.h"
+#include <errno.h>
 #include "__upath.h"
 
 /*****************************************************************************
@@ -46,7 +46,7 @@
 {
     if (!DeleteFile (__path_u2a(pathname)))
     {
-	errno = IoErr2errno (IoErr());
+	errno = __arosc_ioerr2errno (IoErr());
 	return -1;
     }
 

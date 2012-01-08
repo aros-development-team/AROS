@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function opendir().
@@ -17,7 +17,6 @@
 #include <fcntl.h>
 
 #include "__fdesc.h"
-#include "__errno.h"
 #include "__upath.h"
 
 #define DEBUG 0
@@ -91,7 +90,7 @@
     lock = Lock(aname, SHARED_LOCK);
     if (!lock)
     {
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	goto err3;
     }
 
@@ -111,7 +110,7 @@
 
     if (!Examine(lock, dir->priv))
     {
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	goto err4;
     }
 

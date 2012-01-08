@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function write().
@@ -11,7 +11,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__stdio.h"
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -61,7 +60,7 @@
     cnt = Write ((BPTR)fdesc->fcb->fh, (void *)buf, count);
 
     if (cnt == -1)
-	errno = IoErr2errno (IoErr ());
+	errno = __arosc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* write */

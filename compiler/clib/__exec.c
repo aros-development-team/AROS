@@ -23,7 +23,6 @@
 #include "__arosc_privdata.h"
 #include "__exec.h"
 #include "__upath.h"
-#include "__errno.h"
 #include "__fdesc.h"
 #include "__vfork.h"
 
@@ -250,7 +249,7 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
     else
     {
         /* Simply assume it doesn't exist */
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         goto error;
     }
 

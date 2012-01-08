@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function mkdir().
@@ -9,7 +9,6 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "__errno.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -78,7 +77,7 @@
 
     if (!lock)
     {
-    	errno = IoErr2errno(IoErr());
+    	errno = __arosc_ioerr2errno(IoErr());
 	return -1;
     }
 

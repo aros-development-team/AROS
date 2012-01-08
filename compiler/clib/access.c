@@ -13,7 +13,6 @@
 #include <aros/debug.h>
 
 #include "__arosc_privdata.h"
-#include "__errno.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -114,14 +113,14 @@
     lock = Lock(apath, SHARED_LOCK);
     if (lock == BNULL)
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         return -1;
     }
 
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         UnLock(lock);
         return -1;
     }

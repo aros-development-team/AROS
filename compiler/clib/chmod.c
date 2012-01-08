@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <sys/types.h>
 
-#include "__errno.h"
 #include "__upath.h"
 
 ULONG prot_u2a(mode_t protect);
@@ -89,7 +88,7 @@ ULONG prot_u2a(mode_t protect);
 
     if (!SetProtection(path, prot_u2a(mode)))
     {
-    	errno = IoErr2errno(IoErr());
+    	errno = __arosc_ioerr2errno(IoErr());
 	return -1;
     }
 

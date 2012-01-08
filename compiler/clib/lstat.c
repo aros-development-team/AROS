@@ -10,7 +10,6 @@
 #include <errno.h>
 
 #include "__arosc_privdata.h"
-#include "__errno.h"
 #include "__filesystem_support.h"
 #include "__stat.h"
 #include "__upath.h"
@@ -91,7 +90,7 @@ static BPTR __lock(
             return __stat_from_path(path, sb);
         }
 
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         return -1;
     }
     else

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Scan a stream and write the result in the parameters.
@@ -9,7 +9,6 @@
 
 #include <proto/dos.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__fdesc.h"
 #include <stdio.h>
 
@@ -116,7 +115,7 @@ static int __ungetc(int c, void *_h)
 
     if (!UnGetC((BPTR)h->fdesc->fcb->fh, c))
     {
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 
 	if (errno)
 	{
@@ -148,7 +147,7 @@ static int __getc(void *_h)
 	
 	if (c)
 	{
-	    errno = IoErr2errno(c);
+	    errno = __arosc_ioerr2errno(c);
 	    h->stream->flags |= _STDIO_ERROR;
 	}
 	else

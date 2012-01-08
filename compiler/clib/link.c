@@ -1,11 +1,11 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function link().
 */
 
-#include "__errno.h"
+#include <errno.h>
 
 /*****************************************************************************
 

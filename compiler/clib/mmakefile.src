@@ -82,6 +82,7 @@ COMMON_ARCH := \
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
+	__arosc_ioerr2errno \
         __arosc_nixmain \
         __arosc_startup \
 	__arosc_userdata \
@@ -92,7 +93,6 @@ SHARED	:= \
         __exec \
 	__exitfunc \
         __fdesc \
-	__ioerr2errno \
 	__rand48 \
 	__spawnv \
 	__stat \
