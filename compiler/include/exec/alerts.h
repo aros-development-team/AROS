@@ -2,7 +2,7 @@
 #define EXEC_ALERTS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: alert numbers
@@ -82,6 +82,7 @@
 #define AO_ArosLib	0x00008040
 #define AO_OOPLib	0x00008041
 #define AO_HiddLib	0x00008042
+#define AO_PartitionLib	0x00008043
 
 /* exec.library */
 #define AN_ExecLib      0x01000000

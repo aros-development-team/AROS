@@ -1,4 +1,9 @@
 /*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+/*
  * A library of alert strings and useful functions.
  * Used by platform-specific Alert() implementations
  */
@@ -83,6 +88,7 @@ static const struct Errors subsystems[] =
     { 0x40,	"aros " },
     { 0x41,	"oop " },
     { 0x42,	"hidd " },
+    { 0x43,	"partition.library " },
 
     /* This takes in 0x35 as well... */
     { 0x00,     "unknown " }
@@ -322,6 +328,11 @@ static const struct Errors hiddstrings[] =
     {0, "unknown Hidd system error" }
 };
 
+static const struct Errors partitionstrings[] =
+{
+    {0, "unknown partition.library error" }
+};
+
 static const struct Errors *const stringlist[] =
 {
     /* 0x00 */
@@ -399,7 +410,8 @@ static const struct Errors *const stringlist[] =
     /* 0x40 */
     arosstrings,
     oopstrings,
-    hiddstrings
+    hiddstrings,
+    partitionstrings
 };
 
 /* Similar to strcpy() but returns a pointer to the next byte beyond the
@@ -415,7 +427,7 @@ STRPTR Alert_AddString(STRPTR dest, CONST_STRPTR src)
 
 STRPTR Alert_GetTitle(ULONG alertNum)
 {
-    if(alertNum & AG_NoMemory)
+    if((alertNum & 0x00ff0000) == AG_NoMemory)
         return "Not Enough Memory!";
     else if(alertNum & AT_DeadEnd)
         return "Software Failure!";
@@ -448,10 +460,7 @@ STRPTR Alert_GetString(ULONG alertnum, STRPTR buf)
     {
         UBYTE subsys = (alertnum & 0x7f000000) >> 24;
 
-        if(subsys < 0x80)
-            buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
-        else
-            buf = Alert_AddString(buf, "unknown error");
+        buf = Alert_AddString(buf, getString(alertnum, stringlist[subsys]));
     }
 
     *buf = 0;
