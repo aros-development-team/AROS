@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function fsync().
@@ -9,7 +9,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include "__errno.h"
+#include <errno.h>
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -52,7 +52,7 @@
 
     if (!Flush((BPTR) fdesc->fcb->fh))
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         return -1;
     }
     

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function execve().
@@ -19,8 +19,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
-#include <__errno.h>
 #include "__exec.h"
 #include "__upath.h"
 #include "__fdesc.h"

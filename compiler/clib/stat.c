@@ -9,7 +9,6 @@
 #include <errno.h>
 
 #include "__time.h"
-#include "__errno.h"
 #include "__stat.h"
 #include "__upath.h"
 
@@ -105,7 +104,7 @@
             return __stat_from_path(path, sb);
         }
 
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	return -1;
     }
     else

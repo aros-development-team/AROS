@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fwrite().
@@ -12,7 +12,6 @@
 #include <proto/dos.h>
 #define DEBUG 0
 #include <aros/debug.h>
-#include "__errno.h"
 #include "__stdio.h"
 #include "__fdesc.h"
 
@@ -69,7 +68,7 @@
 
     if (cnt == -1)
     {
-        errno = IoErr2errno (IoErr ());
+        errno = __arosc_ioerr2errno (IoErr ());
         
         cnt = 0;
     }

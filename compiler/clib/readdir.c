@@ -13,7 +13,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include "__errno.h"
 #include "__fdesc.h"
 #include "__upath.h"
 
@@ -110,7 +109,7 @@
 	    dir->pos--;
 	    if (IoErr() != ERROR_NO_MORE_ENTRIES)
 	    {
-    	        errno = IoErr2errno(IoErr());
+    	        errno = __arosc_ioerr2errno(IoErr());
 		D(bug(") errno=%d\n", (int)errno));
             }
 	    D(else

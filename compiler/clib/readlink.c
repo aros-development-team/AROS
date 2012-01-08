@@ -12,7 +12,6 @@
 #include <errno.h>
 
 #include "__arosc_privdata.h"
-#include "__errno.h"
 #include "__filesystem_support.h"
 #include "__upath.h"
 
@@ -72,7 +71,7 @@
     FreeDeviceProc(dvp);
 
     if (error)
-        errno = IoErr2errno(error);
+        errno = __arosc_ioerr2errno(error);
 
     return res;
 }

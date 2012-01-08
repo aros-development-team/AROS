@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fchmod().
@@ -15,7 +15,6 @@
 
 #include "__stdio.h"
 #include "__fdesc.h"
-#include "__errno.h"
 #include "__upath.h"
 
 ULONG prot_u2a(mode_t protect);
@@ -73,7 +72,7 @@ ULONG prot_u2a(mode_t protect);
     {
         if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             return -1;
         }
             
@@ -81,7 +80,7 @@ ULONG prot_u2a(mode_t protect);
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             FreeVec(buffer);
             return -1;
         }
@@ -93,7 +92,7 @@ ULONG prot_u2a(mode_t protect);
     if (!SetProtection(buffer, prot_u2a(mode)))
     {
 	FreeVec(buffer);
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	return -1;
     }
 

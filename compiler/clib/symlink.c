@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function symlink().
@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <proto/dos.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__upath.h"
 #include <aros/debug.h>
 
@@ -126,7 +125,7 @@
     free((void*) oldpath);
 
     if(ioerr)
-	errno = IoErr2errno(ioerr);
+	errno = __arosc_ioerr2errno(ioerr);
 
     return retval;
 } /* symlink */

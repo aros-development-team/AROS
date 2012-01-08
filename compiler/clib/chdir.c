@@ -12,7 +12,6 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -68,7 +67,7 @@
 
     if( newlock == BNULL )
     {
-    	errno = IoErr2errno( IoErr() );
+    	errno = __arosc_ioerr2errno( IoErr() );
 	goto error;
     }
 

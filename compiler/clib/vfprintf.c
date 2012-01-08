@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Format a string and call a usercallback to output each char.
@@ -9,7 +9,6 @@
 
 #include <proto/dos.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__fdesc.h"
 
 static int __putc(int c, void *fh);
@@ -67,7 +66,7 @@ static int __putc(int c, void *fhp)
     BPTR fh = MKBADDR(fhp);
     if (FPutC(fh, c) == EOF)
     {
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	return EOF;
     }
 

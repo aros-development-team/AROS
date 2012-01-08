@@ -1,16 +1,15 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function mknod().
 */
 
-#include "__errno.h"
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <errno.h>
 
 /*****************************************************************************
 

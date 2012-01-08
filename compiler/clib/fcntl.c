@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -154,7 +153,7 @@
                 return 0;
             }
 
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             return -1;
         }
 

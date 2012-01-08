@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fputs().
@@ -7,7 +7,6 @@
 
 #include <proto/dos.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -56,7 +55,7 @@
 
     if (FPuts((BPTR)fdesc->fcb->fh, str) == -1)
     {
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 	return EOF;
     }
 

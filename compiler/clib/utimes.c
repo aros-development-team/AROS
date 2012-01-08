@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -9,7 +9,6 @@
 #include <sys/time.h>
 #include <errno.h>
 
-#include "__errno.h"
 #include "__upath.h"
 
 /*****************************************************************************
@@ -80,7 +79,7 @@
     if (SetFileDate(file, &ds))
 	return 0;
     else
-	errno = IoErr2errno(IoErr());
+	errno = __arosc_ioerr2errno(IoErr());
 
     return -1;
 }

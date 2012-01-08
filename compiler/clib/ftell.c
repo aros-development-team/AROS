@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Tell the position in a stream.
@@ -8,7 +8,6 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include "__errno.h"
 #include "__stdio.h"
 #include "__fdesc.h"
 
@@ -61,7 +60,7 @@
     cnt = Seek (fh, 0, OFFSET_CURRENT);
 
     if (cnt == -1)
-	errno = IoErr2errno (IoErr ());
+	errno = __arosc_ioerr2errno (IoErr ());
 
     return cnt;
 } /* ftell */

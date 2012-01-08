@@ -1,17 +1,15 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function putc().
 */
 
-#include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__fdesc.h"
-#include "__errno.h"
 
 #include <stdio.h>
 #undef putc

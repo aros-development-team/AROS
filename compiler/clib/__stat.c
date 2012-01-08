@@ -13,7 +13,6 @@
 #include <stdio.h>
 
 #include "__time.h"
-#include "__errno.h"
 #include "__stat.h"
 
 #include <sys/stat.h>
@@ -42,7 +41,7 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 
     if (!fib)
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
 
         return -1;
     }
@@ -58,7 +57,7 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
 	}
 	else
 	{
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             FreeDosObject(DOS_FIB, fib);
             return -1;
 	}
@@ -94,7 +93,7 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
         }
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             FreeDosObject(DOS_FIB, fib);
             FreeVec(buffer);
             return -1;
@@ -158,7 +157,7 @@ int __stat_from_path(const char *path, struct stat *sb)
                 break;
             else if (IoErr() != ERROR_LINE_TOO_LONG)
             {
-                errno = IoErr2errno(IoErr());
+                errno = __arosc_ioerr2errno(IoErr());
                 goto out;
             }
 
@@ -197,7 +196,7 @@ int __stat_from_path(const char *path, struct stat *sb)
     if (   !(fib = AllocDosObject(DOS_FIB, NULL))
         || !(lock = Lock(abspath, SHARED_LOCK)))
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         goto out;
     }
 
@@ -208,7 +207,7 @@ int __stat_from_path(const char *path, struct stat *sb)
             fallback_to_defaults = 1;
         else
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             goto out;
         }
     }
@@ -234,7 +233,7 @@ int __stat_from_path(const char *path, struct stat *sb)
             }
 
             if (IoErr() != ERROR_NO_MORE_ENTRIES)
-                errno = IoErr2errno(IoErr());
+                errno = __arosc_ioerr2errno(IoErr());
             else
                 /* nothing found to stat */
                 errno = ENOENT;

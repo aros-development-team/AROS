@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,7 +11,6 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
-#include "__errno.h"
 #include "__upath.h"
 
 short getnixfilesystemtype(LONG id_DiskType)
@@ -151,7 +150,7 @@ short getnixfilesystemtype(LONG id_DiskType)
     UnLockDosList(LDF_READ | LDF_VOLUMES);
 
     if(ioerr) {
-	errno = IoErr2errno(ioerr);
+	errno = __arosc_ioerr2errno(ioerr);
 	return -1;
     }
     return fscount;

@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function rmdir().
@@ -8,7 +8,6 @@
 #define remove remove
 
 #include <proto/dos.h>
-#include "__errno.h"
 
 /*****************************************************************************
 

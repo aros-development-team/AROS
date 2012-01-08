@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Reposition read/write file offset.
@@ -10,7 +10,6 @@
 #include <exec/exec.h>
 #include <proto/exec.h>
 #include <clib/macros.h>
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -151,6 +150,6 @@
 
     return Seek((BPTR)fdesc->fcb->fh, 0, OFFSET_CURRENT);
 error:
-    errno = IoErr2errno (IoErr ());
+    errno = __arosc_ioerr2errno (IoErr ());
     return (off_t) -1;
 } /* lseek */

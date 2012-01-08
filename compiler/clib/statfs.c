@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -8,7 +8,6 @@
 #include <sys/mount.h>
 #include <proto/dos.h>
 #include <dos/dos.h>
-#include "__errno.h"
 #include "__upath.h"
 
 short getnixfilesystemtype(LONG id_DiskType);
@@ -99,7 +98,7 @@ short getnixfilesystemtype(LONG id_DiskType);
     }
 	
     if(ioerr != 0) {
-	errno = IoErr2errno(ioerr);
+	errno = __arosc_ioerr2errno(ioerr);
 	return -1;
     }
 

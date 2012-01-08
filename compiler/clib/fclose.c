@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fclose().
@@ -9,8 +9,6 @@
 #include <proto/dos.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
-#include "__errno.h"
 #include "__stdio.h"
 
 

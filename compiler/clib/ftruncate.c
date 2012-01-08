@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function ftruncate().
@@ -9,7 +9,6 @@
 #include <proto/dos.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "__errno.h"
 #include "__fdesc.h"
 
 /*****************************************************************************
@@ -82,7 +81,7 @@
 
     if ((length = SetFileSize(fdesc->fcb->fh, length, OFFSET_BEGINNING)) == -1)
     {
-    	errno = IoErr2errno(IoErr());
+    	errno = __arosc_ioerr2errno(IoErr());
     	return -1;
     }
     else

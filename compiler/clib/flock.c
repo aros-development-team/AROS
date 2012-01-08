@@ -17,7 +17,6 @@
 #include <errno.h>
 
 #include "__fdesc.h"
-#include "__errno.h"
 #include "__arosc_privdata.h"
 
 struct FlockNode
@@ -119,7 +118,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
     {
         if(!(buffer = AllocVec(buffersize, MEMF_ANY)))
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             return -1;
         }
 
@@ -127,7 +126,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
             break;
         else if(IoErr() != ERROR_LINE_TOO_LONG)
         {
-            errno = IoErr2errno(IoErr());
+            errno = __arosc_ioerr2errno(IoErr());
             FreeVec(buffer);
             return -1;
         }

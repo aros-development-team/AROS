@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2008, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Change the position in a stream.
@@ -9,7 +9,6 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
-#include "__errno.h"
 #include "__stdio.h"
 #include "__fdesc.h"
 
@@ -81,7 +80,7 @@
     cnt = Seek (fh, 0, OFFSET_CURRENT);
     if (cnt == -1)
     {
-    	errno = IoErr2errno (IoErr ());
+    	errno = __arosc_ioerr2errno (IoErr ());
         return -1;
     }
 
@@ -89,7 +88,7 @@
     fib = AllocDosObject(DOS_FIB, NULL);
     if (!fib)
     {
-        errno = IoErr2errno(IoErr());
+        errno = __arosc_ioerr2errno(IoErr());
         return -1;
     }
 
@@ -147,7 +146,7 @@
     cnt = Seek (fh, finalseekposition, OFFSET_BEGINNING);
 
     if (cnt == -1)
-    	errno = IoErr2errno (IoErr ());
+    	errno = __arosc_ioerr2errno (IoErr ());
     else
     {
         /* It's specified that upon success fseek should clear EOF flag
