@@ -56,6 +56,10 @@ NIX_LDFLAGS       := @aros_target_nix_ldflags@
 DETACH_LDFLAGS    := @aros_target_detach_ldflags@
 NOSTDLIB_LDFLAGS  := @aros_target_nostdlib_ldflags@
 
+UNUSED_BUT_SET_VARIABLE_CFLAGS := @aros_cflags_unused_but_set_variable@
+ARRAY_BOUNDS_CFLAGS            := @aros_cflags_array_bounds@
+ENUM_COMPARE_CFLAGS            := @aros_cflags_enum_compare@
+
 COMPILER_LIBS   := @aros_compiler_libs@
 ARCH_LIBS	:= @aros_arch_libs@
 

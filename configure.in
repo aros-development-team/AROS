@@ -2030,6 +2030,50 @@ if test "x-$use_no_stack_protector" = "x-yes" ; then
     aros_kernel_cflags="$aros_kernel_cflags -fno-stack-protector"
 fi
 
+
+#-----------------------------------------------------------------------------
+
+# Check if the target compiler supports some options used for delinting:
+#  -Wunused-but-set-variable
+#  -Warray-bounds
+#  -Wenum-compare
+
+if test "x-$crosstools" != "x-yes"; then
+    if test "$orig_target_cc" != "$aros_kernel_cc"; then
+        CC="$orig_target_cc"
+    fi
+    AC_MSG_CHECKING([whether ${CC} accepts -Wunused-but-set-variable])
+    CFLAGS=-Wunused-but-set-variable
+    AC_TRY_COMPILE(,, aros_unused_but_set_variable="yes", aros_unused_but_set_variable="no")
+    AC_MSG_RESULT($aros_unused_but_set_variable)
+    if test "x-$aros_unused_but_set_variable" = "x-yes" ; then
+        aros_cflags_unused_but_set_variable=-Wno-unused-but-set-variable
+    fi
+
+    AC_MSG_CHECKING([whether ${CC} accepts -Warray-bounds])
+    CFLAGS=-Warray-bounds
+    AC_TRY_COMPILE(,, aros_array_bounds="yes", aros_array_bounds="no")
+    AC_MSG_RESULT($aros_array_bounds)
+    if test "x-$aros_array_bounds" = "x-yes" ; then
+        aros_cflags_array_bounds=-Wno-array-bounds
+    fi
+
+    AC_MSG_CHECKING([whether ${CC} accepts -Wenum-compare])
+    CFLAGS=-Wenum-compare
+    AC_TRY_COMPILE(,, aros_enum_compare="yes", aros_enum_compare="no")
+    AC_MSG_RESULT($aros_enum_compare)
+    if test "x-$aros_enum_compare" = "x-yes" ; then
+        aros_cflags_enum_compare=-Wno-enum-compare
+    fi
+else
+    # We do not know which gcc version we are going to build and what we need to know
+    # here is different for different versions so this will be set later during the
+    # build of crosstools.
+    aros_cflags_unused_but_set_variable=@aros_cflags_unused_but_set_variable@
+    aros_cflags_array_bounds=@aros_cflags_array_bounds@
+    aros_cflags_enum_compare=@aros_cflags_enum_compare@
+fi
+
 #-----------------------------------------------------------------------------
 
 # Check if we can explicitly choose older version of symbol hashing
@@ -2439,6 +2483,11 @@ AC_SUBST(aros_target_strip_flags)
 
 AC_SUBST(crosstools_target)
 AC_SUBST(crosstools_cxx_target)
+
+# Delinting target compiler flags
+AC_SUBST(aros_cflags_unused_but_set_variable)
+AC_SUBST(aros_cflags_array_bounds)
+AC_SUBST(aros_cflags_enum_compare)
 
 # Graphics Related
 AC_SUBST(x11_hidd_target)
