@@ -11,9 +11,6 @@
  * to anyone/anything when using this software.
  */
 
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include "rand48.h"
 
 /*****************************************************************************
