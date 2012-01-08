@@ -11,8 +11,8 @@
 #include <proto/dos.h>
 #include "__fdesc.h"
 
+#define _STDIO_H_NOMACRO
 #include <stdio.h>
-#undef getc
 
 /*****************************************************************************
 

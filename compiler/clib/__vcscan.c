@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Function to scan a string like scanf().
 */
-
-#define __vcscan __vcscan
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,8 +25,8 @@
  * PREV(c);         ungetc a character
  * VAL(a)           leads to 1 if a is true and valid
  */
-#define NEXT(c) ((c)=(*getc)(data),size++,incount++)
-#define PREV(c) do{if((c)!=EOF)(*ungetc)((c),data);size--;incount--;}while(0)
+#define NEXT(c) ((c)=(*get_char)(data),size++,incount++)
+#define PREV(c) do{if((c)!=EOF)(*unget_char)((c),data);size--;incount--;}while(0)
 #define VAL(a)    ((a)&&size<=width)
 
 extern unsigned char *__decimalpoint;
@@ -42,8 +40,6 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
 };
 #endif
 
-#undef getc
-#undef ungetc
 
 /*****************************************************************************
 
@@ -53,8 +49,8 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
 
 /*    SYNOPSIS */
     void         * data,
-    int        (* getc)(void *),
-    int        (* ungetc)(int,void *),
+    int        (* get_char)(void *),
+    int        (* unget_char)(int,void *),
     const char * format,
     va_list            args)
 
@@ -64,14 +60,14 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
 
     INPUTS
         data - This is passed to the usercallback getc and ungetc
-        getc - This function gets called when the routine wants to
+        get_char - This function gets called when the routine wants to
             read the next character. It whould return EOF when
             no more characters are available.
-        ungetc - This function gets called when the routine wants to
+        unget_char - This function gets called when the routine wants to
             put a read character back into the stream. The next
-            call to getc should return this character. It is possible
+            call to get_char() should return this character. It is possible
             that this function is called more than once before the
-            next getc.
+            next get_char().
         format - A scanf() format string.
         args - A list of arguments in which the result of the scan should
             be placed.

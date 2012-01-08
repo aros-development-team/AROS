@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     POSIX function getrlimit().
 */
-
-#define getrlimit getrlimit
 
 #include <errno.h>
 #include <sys/resource.h>
