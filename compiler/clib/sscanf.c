@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function sscanf().
 */
-
-#define sscanf sscanf
 
 #include <string.h>
 #include <stdio.h>

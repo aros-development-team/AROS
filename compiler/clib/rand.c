@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C functions rand() and srand().
@@ -44,7 +44,6 @@ static unsigned int a = 1;
 } /* rand */
 
 
-#define srand srand
 /*****************************************************************************
 
     NAME */

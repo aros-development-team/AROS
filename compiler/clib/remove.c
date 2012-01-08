@@ -5,8 +5,6 @@
     ANSI C function remove().
 */
 
-#define remove remove
-
 #include <proto/dos.h>
 #include <errno.h>
 #include "__upath.h"

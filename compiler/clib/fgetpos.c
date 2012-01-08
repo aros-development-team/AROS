@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Get the position in a stream.
 */
-
-#define fgetpos fgetpos
 
 #include <errno.h>
 

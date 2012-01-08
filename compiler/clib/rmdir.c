@@ -5,8 +5,6 @@
     POSIX function rmdir().
 */
 
-#define remove remove
-
 #include <proto/dos.h>
 
 /*****************************************************************************
