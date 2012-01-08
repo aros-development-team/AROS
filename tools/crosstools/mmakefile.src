@@ -32,6 +32,9 @@ ifeq ($(AROS_TARGET_CPU), m68k)
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
   GCC_LANGUAGES  := $(GCC_LANGUAGES),objc
+  GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
+  GCC_ARRAY_BOUNDS            := -Wno-array-bounds
+  GCC_ENUM_COMPARE            := -Wno-enum-compare
 else
   GCC_VERSION     = 4.2.4
   GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
@@ -108,6 +111,9 @@ tools-crosstools-gcc : tools-crosstools-includes
 	fi
 	@$(IF) $(TEST) -f $(gcc-installflag); then \
 	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
+	    $(SED) -i -e "s|@aros_cflags_unused_but_set_variable@|$(GCC_UNUSED_BUT_SET_VARIABLE)|g" $(GENDIR)/config/target.cfg ; \
+	    $(SED) -i -e "s|@aros_cflags_array_bounds@|$(GCC_ARRAY_BOUNDS)|g" $(GENDIR)/config/target.cfg ; \
+	    $(SED) -i -e "s|@aros_cflags_enum_compare@|$(GCC_ENUM_COMPARE)|g" $(GENDIR)/config/target.cfg ; \
 	fi
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
