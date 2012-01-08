@@ -13,7 +13,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <assert.h>
-#include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -25,6 +25,7 @@
 #include "__upath.h"
 #include "__errno.h"
 #include "__fdesc.h"
+#include "__vfork.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
