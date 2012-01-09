@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -42,24 +42,24 @@ static IPTR menudecor_getdefsizes(Class *cl, Object *obj, struct mdpGetDefSizeSy
     {
         case AMIGAKEY:
             n = data->img_amigakey;
-            isset = TRUE;
+            if(n) isset = TRUE;
             break;
 
         case MENUCHECK:
             n = data->img_menucheck;
-            isset = TRUE;
+            if(n) isset = TRUE;
             break;
 
         case SUBMENUIMAGE:
             n = data->img_submenu;
-            isset = TRUE;
+            if(n) isset = TRUE;
             break;
 
         default:
             return FALSE;
     }
 
-    if (!isset || (n==NULL)) return DoSuperMethodA(cl, obj, (Msg) msg);
+    if (!isset) return DoSuperMethodA(cl, obj, (Msg) msg);
 
     *msg->mdp_Width = n->w;
     *msg->mdp_Height = n->h;
