@@ -57,7 +57,7 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct ata_port  *at = ap->ap_ata[0];
     APTR data = iotd->iotd_Req.io_Data;
     ULONG len = iotd->iotd_Req.io_Length;
-    const ULONG bmask = at->at_identify.sector_size - 1;
+    ULONG sector_size, bmask;
     BOOL done = TRUE;
     /* It's safe to allocate these on the stack, since they
      * will never be referenced once the ahci_scsi_*_io() 
@@ -66,11 +66,16 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     struct SCSICmd scsi = {};
     union scsi_cdb cdb = {};
 
-    if (ap->ap_type != ATA_PORT_T_DISK &&
-        ap->ap_type != ATA_PORT_T_ATAPI) {
+    if (ap->ap_type == ATA_PORT_T_DISK) {
+        sector_size = at->at_identify.sector_size;
+    } else if (ap->ap_type == ATA_PORT_T_ATAPI) {
+        // FIXME: Where should this come from?
+        sector_size = 2048;
+    } else {
         io->io_Error = TDERR_DiskChanged;
         return TRUE;
     }
+    bmask = sector_size - 1;
 
     if ((off64 & bmask) || bmask == 0 || data == NULL) {
         io->io_Error = IOERR_BADADDRESS;
@@ -82,7 +87,6 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     }
 
     if (len == 0) {
-        io->io_Error = 0;
         IOStdReq(io)->io_Actual = 0;
         return TRUE;
     }
@@ -92,8 +96,8 @@ static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
     scsi.scsi_Flags  = is_write ? SCSIF_WRITE : SCSIF_READ;
 
     /* Make in units of sector size */
-    len /= at->at_identify.sector_size;
-    off64 /= at->at_identify.sector_size;
+    len /= sector_size;
+    off64 /= sector_size;
 
     /* Set up the CDB, based on what the transfer size is */
     scsi.scsi_Command = (APTR)&cdb;
@@ -167,10 +171,14 @@ AROS_LH1(void, BeginIO,
         CMD_READ,
         CMD_WRITE,
         CMD_UPDATE,
+        CMD_CLEAR,
         TD_ADDCHANGEINT,
+        TD_CHANGENUM,
         TD_CHANGESTATE,
+        TD_EJECT,
         TD_FORMAT,
         TD_GETGEOMETRY,
+        TD_MOTOR,
         TD_PROTSTATUS,
         TD_READ64,
         TD_REMCHANGEINT,
@@ -192,6 +200,7 @@ AROS_LH1(void, BeginIO,
     BOOL done = FALSE;
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
+    io->io_Error = 0;
 
     D(bug("[AHCI%02ld] BeginIO: Start, io_Flags = %d, io_Command = %d\n", 0, io->io_Flags, io->io_Command));
 
@@ -209,17 +218,24 @@ AROS_LH1(void, BeginIO,
         nsqr->DeviceSubType  = 0;
         nsqr->SupportedCommands = (UWORD *)NSDSupported;
         IOStdReq(io)->io_Actual = sizeof(*nsqr);
-        io->io_Error  = 0;
         done = TRUE;
         break;
     case TD_PROTSTATUS:
-        io->io_Error = 0;
         IOStdReq(io)->io_Actual = (ap->ap_type == ATA_PORT_T_DISK) ? 0 : -1;
         done = TRUE;
         break;
+    case TD_CHANGENUM:
+        // FIXME: Count the number of changes
+        IOStdReq(io)->io_Actual = 1;
+        done = TRUE;
+        break;
     case TD_CHANGESTATE:
-        io->io_Error = 0;
+        // FIXME: Report changestate
         IOStdReq(io)->io_Actual = (ap->ap_type == ATA_PORT_T_DISK || ap->ap_type == ATA_PORT_T_ATAPI) ? 0 : 1;
+        done = TRUE;
+        break;
+    case TD_EJECT:
+        // FIXME: Eject removable media
         done = TRUE;
         break;
     case TD_GETDRIVETYPE:
@@ -247,7 +263,6 @@ AROS_LH1(void, BeginIO,
         geom->dg_DeviceType   = (ap->ap_type == ATA_PORT_T_ATAPI) ? DG_CDROM : DG_DIRECT_ACCESS;
         geom->dg_Flags        = (at->at_identify.config & (1 << 7)) ? DGF_REMOVABLE : 0;
         IOStdReq(io)->io_Actual = sizeof(*geom);
-        io->io_Error = 0;
         done = TRUE;
         break;
     case TD_FORMAT:
@@ -257,6 +272,11 @@ AROS_LH1(void, BeginIO,
         if (off64 & (at->at_identify.nsectors * at->at_identify.sector_size - 1))
             goto bad_address;
         done = ahci_sector_rw(io, off64, TRUE);
+        break;
+    case TD_MOTOR:
+        // FIXME: Tie in with power management
+        IOStdReq(io)->io_Actual = 1;
+        done = TRUE;
         break;
     case CMD_WRITE:
         off64  = iotd->iotd_Req.io_Offset;
@@ -292,7 +312,6 @@ AROS_LH1(void, BeginIO,
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
         AddHead((struct List *)&unit->sim_ChangeInts, (struct Node *)io);
-        io->io_Error = 0;
         break;
     case TD_REMCHANGEINT:
         if (io->io_Flags & IOF_QUICK)
@@ -300,12 +319,14 @@ AROS_LH1(void, BeginIO,
         ahci_os_lock_port(ap);
         Remove((struct Node *)io);
         ahci_os_unlock_port(ap);
-        io->io_Error = 0;
+        done = TRUE;
+        break;
+    case CMD_CLEAR:
+        // FIXME: Implemennt cache invalidate
         done = TRUE;
         break;
     case CMD_UPDATE:
-        // FIXME: Implement these
-        io->io_Error = 0;
+        // FIXME: Implement cache flush
         done = TRUE;
         break;
     default:
