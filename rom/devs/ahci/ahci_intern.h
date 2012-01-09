@@ -45,14 +45,10 @@ struct AHCIBase
    struct Task            *ahci_Daemon;
 
    /*
-    * list of all units
+    * List of all units
     */
    struct MinList          ahci_Units;
    ULONG                   ahci_UnitCount;
-
-   /*
-    * Arguments and flags
-    */
 
    /*
     * memory pool
@@ -77,12 +73,7 @@ struct cam_sim {
     ULONG sim_UseCount;
     struct SignalSemaphore sim_Lock;
     unsigned int sim_Timeout;
+    struct MinList sim_ChangeInts;
 };
-
-
-BOOL ahci_RegisterVolume(struct ahci_port *port);
-
-int ahci_RegisterPort(struct ahci_port *port);
-int ahci_UnregisterPort(struct ahci_port *port);
 
 #endif /* AHCI_INTERN_H */
