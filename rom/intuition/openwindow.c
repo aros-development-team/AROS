@@ -617,6 +617,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
         {
             /* The screen wasn't a PublicScreen */
             UnlockPubScreenList();
+            D(bug("OpenWindow: Not a PublicScreen\n"));
             goto failexit;
         }
         UnlockPubScreenList();
@@ -632,8 +633,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
         }
     }
 
-    if (nw.Screen == NULL)
+    if (nw.Screen == NULL) {
+        D(bug("OpenWindow: No screen\n"));
         goto failexit;
+    }
 
     w  = AllocMem (sizeof(struct IntWindow), MEMF_CLEAR);
 
@@ -654,8 +657,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     */
 
-    if (NULL == w)
+    if (NULL == w) {
+        D(bug("OpenWindow: No window\n"));
         goto failexit;
+    }
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: Flags 0x%lx MoreFlags 0x%lx IDCMP 0x%lx\n",
                 nw.Flags, moreFlags, nw.IDCMPFlags));
@@ -667,8 +672,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     {
 	((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
 	((struct IntWindow *)w)->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	if (0 == ((struct IntWindow *)w)->DecorUserBuffer)
+	if (0 == ((struct IntWindow *)w)->DecorUserBuffer) {
+		D(bug("OpenWindow: No decor\n"));
 		goto failexit;
+        }
     }
 
     struct wdpInitWindow       initmsg;
@@ -682,7 +689,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     ok = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&initmsg);	
 
-    if (!ok) goto failexit;
+    if (!ok) {
+        D(bug("OpenWindow: WDM_INITWINDOW failed\n"));
+        goto failexit;
+    }
 
     w->WScreen = nw.Screen;
 
@@ -694,8 +704,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     }
     #endif
 
-    if (!ModifyIDCMP (w, nw.IDCMPFlags))
+    if (!ModifyIDCMP (w, nw.IDCMPFlags)) {
+        D(bug("OpenWindow: ModifyIDCMP failed\n"));
         goto failexit;
+    }
 
     ((struct IntWindow *)w)->extrabuttons = extrabuttons;
     ((struct IntWindow *)w)->extrabuttonsid = extrabuttonsid;
@@ -907,8 +919,13 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     if (nw.LeftEdge < 0 || nw.TopEdge < 0 ||
         nw.LeftEdge + w->Width > w->WScreen->Width ||
-        nw.TopEdge + w->Height > w->WScreen->Height)
+        nw.TopEdge + w->Height > w->WScreen->Height) {
+        D(bug("OpenWindow: Window size (%dx%d) @(%d,%d) is weird for a %dx%d screen\n",
+                    nw.LeftEdge + w->Width, nw.TopEdge + w->Height,
+                    nw.LeftEdge, nw.TopEdge ,
+                    w->WScreen->Width,  w->WScreen->Height));
         goto failexit;
+    }
 
     if (NULL == parentwin)
     {
@@ -1028,8 +1045,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     	w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri.dri_Font));
     }
     
-    if (w->IFont == NULL)
+    if (w->IFont == NULL) {
+        D(bug("OpenWindow: No font\n"));
         goto failexit;
+     }
 
 #else
 
@@ -1080,8 +1099,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     }
 #endif
 
-    if (!msg.success)
+    if (!msg.success) {
+        D(bug("OpenWindow: DoSyncAction failed\n"));
         goto failexit;
+    }
 
     /* nlorentz: The driver has in some way or another allocated a rastport for us,
        which now is ready for us to use. */
