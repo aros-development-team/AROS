@@ -178,6 +178,7 @@ BOOL ObjectTypeOk(struct DosList* device)
     
     if( (pfssm = (struct FileSysStartupMsg *)
 	 BADDR(device->dol_misc.dol_handler.dol_Startup)) == 0
+	|| (IPTR)device->dol_misc.dol_handler.dol_Startup == 1  // RAW: device
 	|| TypeOfMem(pfssm) == 0
 	|| pfssm->fssm_Device == 0
 	|| (pdenDevice = (struct DosEnvec *)BADDR(pfssm->fssm_Environ)) == 0
