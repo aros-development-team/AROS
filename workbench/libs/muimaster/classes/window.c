@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2010, The AROS Development Team.
+    Copyright  2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -2302,6 +2302,10 @@ void _zune_window_message(struct IntuiMessage *imsg)
                 DoMethod(_app(oWin), MUIM_Application_OpenConfigWindow);
             }
 #endif
+            if (ETI_Iconify == ((struct Gadget *)imsg->IAddress)->GadgetID)
+            {
+                set(_app(oWin), MUIA_Application_Iconified, TRUE);
+            }
         }
         else
         {
