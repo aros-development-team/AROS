@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team.
+    Copyright © 2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -586,7 +586,9 @@ static VOID DrawPartialTitleBar(struct WindowData *wd, struct windecor_data *dat
         SetAPen(rp, pens[(window->Flags & (WFLG_WINDOWACTIVE | WFLG_TOOLBOX)) ? FILLTEXTPEN : TEXTPEN]);
         SetDrMd(rp, JAM1);
         UWORD   tx = textstart;
-        UWORD   ty = ((window->BorderTop - dri->dri_Font->tf_YSize) >> 1) + dri->dri_Font->tf_Baseline;
+        UWORD   tymax = window->BorderTop - (dri->dri_Font->tf_YSize - dri->dri_Font->tf_Baseline) - 1;
+        UWORD   ty = (window->BorderTop + dri->dri_Font->tf_Baseline - 1) >> 1;
+        if (ty > tymax) ty = tymax;
 
         if (!wd->truecolor || ((data->dc->TitleOutline == FALSE) && (data->dc->TitleShadow == FALSE)))
         {
