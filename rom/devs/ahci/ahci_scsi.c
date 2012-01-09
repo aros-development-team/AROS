@@ -562,7 +562,7 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
 #if 0
     kprintf("opcode %d cdb_len %d dxfer_len %d\n",
         cdbs->generic.opcode,
-        scsi->scsi_CmdLength, csio->dxfer_len);
+        scsi->scsi_CmdLength, scsi->scsi_Length);
 #endif
 
     /*
@@ -604,10 +604,10 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
          */
         cdbd->rw_10.opcode |= 0x20;
         cdbd->rw_10.byte2 = 0;
-        cdbd->rw_10.addr[0] = cdbs->rw_6.addr[0] & 0x1F;
-        cdbd->rw_10.addr[1] = cdbs->rw_6.addr[1];
-        cdbd->rw_10.addr[2] = cdbs->rw_6.addr[2];
-        cdbd->rw_10.addr[3] = 0;
+        cdbd->rw_10.addr[0] = 0;
+        cdbd->rw_10.addr[1] = cdbs->rw_6.addr[0] & 0x1F;
+        cdbd->rw_10.addr[2] = cdbs->rw_6.addr[1];
+        cdbd->rw_10.addr[3] = cdbs->rw_6.addr[2];
         cdbd->rw_10.reserved = 0;
         cdbd->rw_10.length[0] = 0;
         cdbd->rw_10.length[1] = cdbs->rw_6.length;
@@ -626,6 +626,6 @@ BOOL ahci_scsi_atapi_io(struct IORequest *io, struct SCSICmd *scsi)
     ahci_ata_cmd(xa);
     ahci_os_unlock_port(ap);
 
-    return FALSE;
+    return (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
 }
 

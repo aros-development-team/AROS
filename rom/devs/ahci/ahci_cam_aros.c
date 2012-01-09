@@ -108,13 +108,15 @@ static BOOL ahci_RegisterVolume(struct ahci_port *port)
         pp[DE_BLKSPERTRACK + 4] = at->at_identify.nsectors;
         pp[DE_RESERVEDBLKS + 4] = 2;
         pp[DE_LOWCYL       + 4] = 0;
-        pp[DE_HIGHCYL      + 4] = at->at_identify.ncyls-1;
+        pp[DE_HIGHCYL      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls-1) : 0;
         pp[DE_NUMBUFFERS   + 4] = 10;
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
         pp[DE_MASK         + 4] = ~3;
         pp[DE_BOOTPRI      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? 0 : 10;
         pp[DE_DOSTYPE      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? DOS_ID : CDROM_ID;
+        pp[DE_BAUD         + 4] = 0;
+        pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 2;
     
         devnode = MakeDosNode(pp);
