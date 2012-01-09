@@ -300,7 +300,14 @@ struct SFormatEntry* SelectDevice(void)
     list_dispfunc_hook.h_Entry = (HOOKFUNC)dispfunc;
 
     app = (Object *)ApplicationObject,
+           MUIA_Application_Title, __(MSG_APPLICATION_TITLE),
+           MUIA_Application_Version, (IPTR)szVersion,
+           MUIA_Application_Description, __(MSG_DESCRIPTION),
+           MUIA_Application_Copyright, __(MSG_COPYRIGHT),
+           MUIA_Application_Author, __(MSG_AUTHOR),
+           MUIA_Application_Base, (IPTR)"FORMAT",
         SubWindow, (IPTR)(wnd = (Object *)WindowObject,
+            MUIA_Window_ID, MAKE_ID('F','R','M','D'),
             MUIA_Window_CloseGadget, (IPTR)FALSE,
             MUIA_Window_Title, (IPTR)_(MSG_APPLICATION_TITLE),
             WindowContents, (IPTR)(VGroup,
