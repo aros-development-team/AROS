@@ -480,7 +480,7 @@ STATIC BOOL FRWindowOpened(struct LayoutData *ld, struct AslBase_intern *AslBase
 {
     ModifyIDCMP(ld->ld_Window, ld->ld_Window->IDCMPFlags | IDCMP_INTUITICKS);
 
-    if (ld->ld_AppMsgPort = CreateMsgPort())
+    if ((ld->ld_AppMsgPort = CreateMsgPort()))
         ld->ld_AppWindow = AddAppWindow(0, 0, ld->ld_Window, ld->ld_AppMsgPort, NULL);
 
     /*
