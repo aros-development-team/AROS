@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -131,6 +131,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct RastPort        *rp = msg->sdp_RPort;
     struct Screen          *scr = msg->sdp_Screen;
     UWORD                  *pens = msg->sdp_Dri->dri_Pens;
+    struct DrawInfo        *dri = msg->sdp_Dri;
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
@@ -162,7 +163,9 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     if (hastitle)
     {
         UWORD tx = data->dc->STitleOffset;
-        UWORD ty = (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline;
+        UWORD tymax = scr->BarHeight - (dri->dri_Font->tf_YSize - dri->dri_Font->tf_Baseline) - 1;
+        UWORD ty = ((scr->BarHeight + dri->dri_Font->tf_Baseline - 1) >> 1);
+        if (ty > tymax) ty = tymax;
 
         SetFont(rp, msg->sdp_Dri->dri_Font);
         SetDrMd(rp, JAM1);
