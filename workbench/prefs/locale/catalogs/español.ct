@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (30.09.2007)
+## version $VER: Locale.catalog 1.0 (30.09.2007)
 ## codeset 0
 ## language español
 ;
@@ -125,14 +125,14 @@ Husos Horarios
 ;Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Huso Horario: 1 Hora menos que GMT
-;Time Zone: 1 Hour from GMT
+Huso Horario: 1 Hora menos que UTC
+;Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Huso Horario: %ld horas menos que GMT
-;Time Zone: %ld Hours from GMT
+Huso Horario: %ld horas menos que UTC
+;Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Huso Horario: %ld horas, %ld minutos menos que GMT
-;Time Zone: %ld Hours, %ld Minutes from GMT
+Huso Horario: %ld horas, %ld minutos menos que UTC
+;Time Zone: %ld Hours, %ld Minutes from UTC
 ;

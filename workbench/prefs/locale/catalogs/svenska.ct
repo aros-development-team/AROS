@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (04.03.2000)
+## version $VER: Locale.catalog 1.0 (04.03.2000)
 ## language svenska
 ## codeset 0
 ;
@@ -124,14 +124,14 @@ Tidszon
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Tidszon: 1 timme från GMT
-; Time Zone: 1 Hour from GMT
+Tidszon: 1 timme från UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Tidszon: %ld timmar från GMT
-; Time Zone: %ld Hours from GMT
+Tidszon: %ld timmar från UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Tidszon: %ld timmar, %ld minuter från GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Tidszon: %ld timmar, %ld minuter från UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;

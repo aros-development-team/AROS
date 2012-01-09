@@ -1,9 +1,9 @@
-## version $VER: localeprefs.catalog 1.0 (12.08.2006)
-## codeset 0
+## version $VER: Locale.catalog 1.0 (12.08.2006)
+## codeset 2104
 ## language russian
 ;
 MSG_CANT_OPEN_LIB
-Не могу открыть %s V%ld !\n
+Не могу открыть %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
 Не могу занять общий дисплей!
@@ -93,13 +93,13 @@ MSG_GAD_TAB_TIMEZONE
 Временная зона
 ;
 MSG_TIMEZONE_1HOUR
-Временная зона: 1 час от GMT
+Временная зона: 1 час от UTC
 ;
 MSG_TIMEZONE_HOURS
-Временная зона: %ld часов от GMT
+Временная зона: %ld часов от UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Временная зона: %ld часов %ld минут от GMT
+Временная зона: %ld часов %ld минут от UTC
 ;
 MSG_CHARACTER_SET (//)
 Кодировка по умолчанию
@@ -108,5 +108,5 @@ MSG_NOT_SPECIFIED (//)
 Не определена
 ;
 MSG_GMT_CLOCK (//)
-Аппаратные часы установлены на GMT
+Аппаратные часы установлены на UTC
 ;

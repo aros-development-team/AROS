@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (23.02.2001)
+## version $VER: Locale.catalog 1.0 (23.02.2001)
 ## codeset 0
 ## language italiano
 ;
@@ -93,11 +93,11 @@ MSG_GAD_TAB_TIMEZONE
 Fuso orario
 ;
 MSG_TIMEZONE_1HOUR
-Fuso orario: 1 Ora rispetto GMT
+Fuso orario: 1 Ora rispetto UTC
 ;
 MSG_TIMEZONE_HOURS
-Fuso orario: %ld Ore rispetto GMT
+Fuso orario: %ld Ore rispetto UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Fuso orario: %ld ore e %ld minuti rispetto GMT
+Fuso orario: %ld ore e %ld minuti rispetto UTC
 ;

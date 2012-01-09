@@ -125,16 +125,16 @@ Tidszone
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Tidszone: 1 time fra GMT
-; Time Zone: 1 Hour from GMT
+Tidszone: 1 time fra UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Tidszone: %ld timer fra GMT
-; Time Zone: %ld Hours from GMT
+Tidszone: %ld timer fra UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Tidszone: %ld timer, %ld minutter fra GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Tidszone: %ld timer, %ld minutter fra UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET
 Standardtegnsæt

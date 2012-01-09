@@ -1,6 +1,6 @@
 ## version $VER: Locale.catalog 1.2 (26.12.2009)
 ## language hrvatski
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_CANT_OPEN_LIB
@@ -124,14 +124,14 @@ Vremenska Zona
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Vremenska Zona: 1 Sat od GMT
-; Time Zone: 1 Hour from GMT
+Vremenska Zona: 1 Sat od UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Vremenska Zona: %ld Sati od GMT
-; Time Zone: %ld Hours from GMT
+Vremenska Zona: %ld Sati od UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Vremenska Zona: %ld Sati, %ld Minuta od GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Vremenska Zona: %ld Sati, %ld Minuta od UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;

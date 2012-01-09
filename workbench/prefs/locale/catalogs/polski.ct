@@ -123,16 +123,16 @@ Strefa czasowa
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Strefa czasowa: 1 godzina od GMT
-; Time Zone: 1 Hour from GMT
+Strefa czasowa: 1 godzina od UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Strefa czasowa: %ld godzin od GMT
-; Time Zone: %ld Hours from GMT
+Strefa czasowa: %ld godzin od UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Strefa czasowa: %ld godzin, %ld minut od GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Strefa czasowa: %ld godzin, %ld minut od UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET
 Domy¶lny zestaw znaków

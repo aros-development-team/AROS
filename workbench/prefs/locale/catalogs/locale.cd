@@ -90,13 +90,13 @@ MSG_GAD_TAB_TIMEZONE (//)
 Time Zone
 ;
 MSG_TIMEZONE_1HOUR (//)
-Time Zone: 1 Hour from GMT
+Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS (//)
-Time Zone: %ld Hours from GMT
+Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS (//)
-Time Zone: %ld Hours, %ld Minutes from GMT
+Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET (//)
 Default character set
@@ -105,5 +105,5 @@ MSG_NOT_SPECIFIED (//)
 Not specified
 ;
 MSG_GMT_CLOCK (//)
-Hardware clock stores GMT
+Hardware clock stores UTC
 ;
