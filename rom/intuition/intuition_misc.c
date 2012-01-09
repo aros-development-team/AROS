@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2012, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -554,8 +554,8 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
                     msg.wdp_Window  = w;
                     msg.wdp_Gadgets = (struct Gadget *)SYSGAD(w, i);
                     msg.wdp_Flags   = WDF_LBG_SYSTEMGADGET | WDF_LBG_INITIAL;
-            msg.wdp_UserBuffer  = ((struct IntWindow *)(w))->DecorUserBuffer;
-            msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
+                    msg.wdp_UserBuffer  = ((struct IntWindow *)(w))->DecorUserBuffer;
+                    msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
 
                     msg.wdp_TrueColor = (((struct IntScreen *)w->WScreen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
                     msg.wdp_Dri = dri;
@@ -911,28 +911,13 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
         {GA_RelVerify        , TRUE              },
         {TAG_DONE                           }
     };
-    struct TagItem image_tags[] =
-    {
-    #ifdef SKINS
-        {TAG_IGNORE         , 0                                     },
-    #else
-        {IA_Left            , -1                                    },
-    #endif
-        {IA_Height          , TitleHeight                       },
-        {SYSIA_Which    , imagetype                                 },
-        {SYSIA_DrawInfo , (IPTR)dri                                 },
-        {SYSIA_Size         , w->WScreen->Flags & SCREENHIRES ?
-                          SYSISIZE_MEDRES : SYSISIZE_LOWRES     },
-        {SYSIA_UserBuffer, ((struct IntWindow *)(w))->DecorUserBuffer                        },
 
-        {TAG_DONE                                                       }
-    };
     Object *im;
 
     if (gadgettype == LOCKGAD)
-    gadget_tags[1].ti_Data = TRUE;
+        gadget_tags[1].ti_Data = TRUE;
 
-    im = NewObjectA(NULL, SYSICLASS, image_tags);
+    im = CreateStdSysImage(imagetype, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
     if (im)
     {
         gadget_tags[0].ti_Data = (IPTR)im;
