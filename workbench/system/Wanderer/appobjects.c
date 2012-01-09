@@ -143,7 +143,7 @@ struct DiskObject * AppIcon_GetDiskObject(struct AppIcon * appicon)
 CONST_STRPTR AppIcon_GetLabel(struct AppIcon * appicon)
 {
     struct AppIcon * entry = NULL;
-    STRPTR _return = NULL;
+    CONST_STRPTR _return = NULL;
 
     LockWorkbench();
 
@@ -154,5 +154,5 @@ CONST_STRPTR AppIcon_GetLabel(struct AppIcon * appicon)
 
     UnlockWorkbench();
 
-    return (CONST_STRPTR)_return;
+    return _return;
 }
