@@ -917,7 +917,7 @@ ULONG addextragadget(struct Window *w,BOOL is_gzz,struct DrawInfo *dri,LONG relr
     if (gadgettype == LOCKGAD)
         gadget_tags[1].ti_Data = TRUE;
 
-    im = CreateStdSysImage(imagetype, TITLEBAR_HEIGHT, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
+    im = CreateStdSysImage(imagetype, TitleHeight, w->WScreen, (APTR)((struct IntWindow *)(w))->DecorUserBuffer, dri,IntuitionBase);
     if (im)
     {
         gadget_tags[0].ti_Data = (IPTR)im;
