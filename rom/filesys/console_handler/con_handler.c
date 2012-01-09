@@ -484,15 +484,19 @@ LONG CONMain(void)
 					replypkt(dp, DOSTRUE);
 				break;
 				case ACTION_READ:
-					if (!MakeSureWinIsOpen(fh))
-						goto end;
+					if (!MakeSureWinIsOpen(fh)) {
+					    replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+					    break;
+					}
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;
 					startread(fh);
 					con_read(fh, dp);
 				break;
 				case ACTION_WRITE:
-					if (!MakeSureWinIsOpen(fh))
-						goto end;
+					if (!MakeSureWinIsOpen(fh)) {
+					    replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+					    break;
+					}
 				 	fh->breaktask = dp->dp_Port->mp_SigTask;
 					startread(fh);
 					answer_write_request(fh, dp);
@@ -529,8 +533,10 @@ LONG CONMain(void)
 				break;
 				case ACTION_WAIT_CHAR:
 				{
-				    if (!MakeSureWinIsOpen(fh))
-					goto end;
+				    if (!MakeSureWinIsOpen(fh)) {
+				       replypkt2(dp, DOSFALSE, ERROR_NO_FREE_STORE);
+				       break;
+				    }
 				    if (fh->inputsize > 0)
 				    {
 				    	replypkt(dp, DOSTRUE);
