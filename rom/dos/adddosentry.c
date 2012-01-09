@@ -5,13 +5,12 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /*****************************************************************************
 

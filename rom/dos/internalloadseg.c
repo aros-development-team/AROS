@@ -6,9 +6,6 @@
     Lang: english
 */
 
-
-#define DEBUG 0
-
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>

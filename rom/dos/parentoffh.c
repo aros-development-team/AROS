@@ -5,7 +5,7 @@
     Desc: Lock the directory a file is located in
     Lang: english
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 #include "dos_intern.h"
 #include <dos/dosasl.h>

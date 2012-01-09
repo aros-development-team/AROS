@@ -5,11 +5,9 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
-
-#define  DEBUG  0
-#include <aros/debug.h>
 
 static void BSTR2CINLINE(char *s)
 {

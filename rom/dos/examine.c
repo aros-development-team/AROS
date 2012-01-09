@@ -5,7 +5,7 @@
     Desc: dos.library function Examine().
     Lang: English
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
