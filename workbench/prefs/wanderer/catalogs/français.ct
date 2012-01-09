@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 2.0 (02.07.2009)
+## version $VER: wanderer.catalog 2.1 (05.01.2012)
 ## language français
 ## codeset 0
 ;
@@ -259,9 +259,61 @@ Réglages avancés
 ;
 MSG_USE
 _Utiliser
-; &Use
+; _Use
 ;
 MSG_CANCEL
 A_nnuler
-; &Cancel
+; C_ancel
+;
+MSG_LABELSPREFS
+Etiquettes
+; Labels look and feel
+;
+MSG_ADVANCEDBACKGROUND
+Fond
+; Background
+;
+MSG_ADVANCEDICONS
+Icônes
+; Icons
+;
+MSG_ADVANCEDLABELS
+Etiquettes
+; Labels
+;
+MSG_ICONSORTMODE_BYNAME
+Par nom
+; By name
+;
+MSG_ICONSORTMODE_BYDATE
+Par date
+; By date
+;
+MSG_ICONSORTMODE_BYSIZE
+Par taille
+; By size
+;
+MSG_DEFAULT_ICONSORTMODE
+Ordre de tri par défaut
+; Default sort order
+;
+MSG_ICON_AUTOSORT_ENABLED
+Tri automatique activé
+; Autosorting enabled
+;
+MSG_ICON_DRAG_TRANSPARENT
+Utiliser la transparence lors du d&d
+; Use transparency when draging icons
+;
+MSG_DEFAULT_ICONVIEWMODE
+Vue par défaut
+; Default view mode
+;
+MSG_ICONVIEWMODE_ALL
+Tous les fichiers
+; All files
+;
+MSG_ICONVIEWMODE_ICONS
+Icônes seulement
+; Icons only
 ;
