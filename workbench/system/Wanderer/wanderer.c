@@ -3232,11 +3232,9 @@ D(bug("[Wanderer] %s: MUIA_Wanderer_ActiveWindow = %p\n", __PRETTY_FUNCTION__, t
             break;
 
         case MUIA_Application_Iconified:
-            /* Wanderer itself cannot be iconified, 
-               just hide, instead.  */
-            tag->ti_Tag  = MUIA_ShowMe;
-            tag->ti_Data = !tag->ti_Data;
-            break; 
+            /* Wanderer does not allow iconifying of itself */
+            tag->ti_Tag = TAG_IGNORE;
+            break;
         }
     }
 
@@ -3283,6 +3281,11 @@ IPTR Wanderer__OM_GET(Class *CLASS, Object *self, struct opGet *message)
 
         case MUIA_Revision:
             *store = (IPTR)WANDERERREV;
+            break;
+
+        case MUIA_Application_Iconified:
+            /* Wanderer does not allow iconifying of itself */
+            *store = (IPTR)FALSE;
             break;
 
         default:
