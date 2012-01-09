@@ -5,7 +5,7 @@
     Desc:
     Lang: English
 */
-#define DEBUG 0
+
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 

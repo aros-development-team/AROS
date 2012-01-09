@@ -5,7 +5,6 @@
     Desc: DOS function LoadSeg()
     Lang: english
 */
-#define DEBUG 0
 
 #include <aros/asmcall.h>
 #include <aros/config.h>

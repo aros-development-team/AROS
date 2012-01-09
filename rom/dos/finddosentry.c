@@ -6,13 +6,11 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include <dos/dosextens.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
 
-# undef   DEBUG
-# define  DEBUG  0
-# include <aros/debug.h>
 
 /*****************************************************************************
 

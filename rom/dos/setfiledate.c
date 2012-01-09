@@ -5,9 +5,9 @@
     Desc: Change the date of a file.
     Lang: English
 */
-#define DEBUG 0
-#include <aros/debug.h>
+
 #include <string.h>
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>

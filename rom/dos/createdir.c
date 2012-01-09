@@ -5,7 +5,7 @@
     Desc: Create a new directory.
     Lang: English
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

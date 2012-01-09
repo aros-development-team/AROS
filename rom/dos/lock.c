@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define DEBUG 0
 #define DLINK(x)
 
 #include <aros/debug.h>

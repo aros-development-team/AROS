@@ -5,12 +5,13 @@
     Desc: GetDeviceProc() - Find the filesystem for a path.
     Lang: english
 */
-#include "dos_intern.h"
+
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include "dos_intern.h"
 
 extern struct Process *r(struct DeviceNode *dn, struct DosLibrary *DOSBase);
 static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STRPTR name, struct DevProc *dp);

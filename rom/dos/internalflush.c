@@ -3,10 +3,6 @@
     $Id$
 */
 
-#undef  SDEBUG
-#undef  DEBUG
-#define DEBUG  0
-
 #include <exec/types.h>
 #include <proto/dos.h>
 #include <aros/debug.h>

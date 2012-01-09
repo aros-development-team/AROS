@@ -5,13 +5,12 @@
     Desc: Open a file from a lock
     Lang: english
 */
+
+#include <aros/debug.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/stdio.h>
 #include "dos_intern.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /*****************************************************************************
 

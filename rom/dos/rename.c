@@ -5,7 +5,7 @@
     Desc: Rename a file
     Lang: english
 */
-#define DEBUG 0
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 #include "dos_intern.h"

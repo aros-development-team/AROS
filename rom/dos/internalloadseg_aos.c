@@ -5,7 +5,7 @@
     Desc:
     Lang: english
 */
-#define DEBUG 0
+
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/dosasl.h>

@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 0
 #include <proto/exec.h>
 #include "dos_intern.h"
 #include <proto/dos.h>
@@ -24,7 +23,7 @@ BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LON
     BOOL  first = TRUE;
 
     D(origbuffer = buffer);
-    D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length, filehandle));
+    D(bug("NameFromX(%x,%x,%d,%d)\n", BADDR(lock), buffer, length));
 	
     if (length < 1)
     {

@@ -2,12 +2,12 @@
     Copyright © 1995-2007, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#include <aros/debug.h>
+
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
-
-#define DEBUG 0
-#include <aros/debug.h>
 
 /*****************************************************************************
 
