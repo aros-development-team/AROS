@@ -38,7 +38,7 @@
 
 #define DBSTEP      0.5
 
-const char *Version = "$VER: AHI preferences " VERS "\r\n";
+const char *Version = "$VER: AHI preferences " VERS "";
 
 #define TEMPLATE "FROM,EDIT/S,USE/S,SAVE/S,PUBSCREEN/K"
 
