@@ -219,7 +219,7 @@ static IPTR scrdecor_getdefsize_sysimage(Class *cl, Object *obj, struct sdpGetDe
 
     if (msg->sdp_Which == SDEPTHIMAGE)
     {
-        if (data->di->img_sdepth)
+        if (data->di && data->di->img_sdepth)
         {
             *msg->sdp_Height = data->di->img_sdepth->h;
             *msg->sdp_Width = data->di->img_sdepth->w >> 1;
