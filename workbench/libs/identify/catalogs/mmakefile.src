@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-libs-identify-catalogs \
-                name=Identify subdir=System/Libs
+                name=Identify subdir=System/Tools
