@@ -207,7 +207,7 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     CloseLibrary(CyberGfxBase);
     CyberGfxBase = NULL;
 
-    CloseLibrary(WorkbenchBase)
+    CloseLibrary(WorkbenchBase);
     WorkbenchBase = NULL;
 
 #ifdef HAVE_COOLIMAGES
