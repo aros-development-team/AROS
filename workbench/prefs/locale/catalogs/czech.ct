@@ -125,15 +125,15 @@ MSG_GAD_TAB_TIMEZONE
 ;
 MSG_TIMEZONE_1HOUR
 Èasové pásmo: 1 hod. od UTC
-; Time Zone: 1 Hour from GMT
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
 Èasové pásmo: %ld hod. od UTC
-; Time Zone: %ld Hours from GMT
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
 Èasové pásmo: %ld hod., %ld min. od UTC
-; Time Zone: %ld Hours, %ld Minutes from GMT
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET
 Výchozí kódování

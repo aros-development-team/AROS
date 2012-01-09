@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.1 (24.09.2010)
+## version $VER: Locale.catalog 1.1 (24.09.2010)
 ## language deutsch
 ## codeset 0
 ;
@@ -124,16 +124,16 @@ Zeitzone
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Zeitzone: 1 Stunde auf GMT
-; Time Zone: 1 Hour from GMT
+Zeitzone: 1 Stunde auf UTC
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Zeitzone: %ld Stunden auf GMT
-; Time Zone: %ld Hours from GMT
+Zeitzone: %ld Stunden auf UTC
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Zeitzone: %ld Stunden %ld Minuten auf GMT
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Zeitzone: %ld Stunden %ld Minuten auf UTC
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;
 MSG_CHARACTER_SET
 Standard Zeichensatz
@@ -144,6 +144,6 @@ Nicht spezifiziert
 ; Not specified
 ;
 MSG_GMT_CLOCK
-Hardware-Uhr speichert GMT
-; Hardware clock stores GMT
+Hardware-Uhr speichert UTC
+; Hardware clock stores UTC
 ;

@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (04.03.2000)
+## version $VER: Locale.catalog 1.0 (04.03.2000)
 ## language suomi
 ## codeset 0
 ;
@@ -124,14 +124,14 @@ Aikavyöhyke
 ; Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Aikavyöhyke: Tunti GMT:sta
-; Time Zone: 1 Hour from GMT
+Aikavyöhyke: Tunti UTC:sta
+; Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Aikavyöhyke: %ld tuntia GMT:sta
-; Time Zone: %ld Hours from GMT
+Aikavyöhyke: %ld tuntia UTC:sta
+; Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Aikavyöhyke: %ld tuntia, %ld minuuttia GMT:sta
-; Time Zone: %ld Hours, %ld Minutes from GMT
+Aikavyöhyke: %ld tuntia, %ld minuuttia UTC:sta
+; Time Zone: %ld Hours, %ld Minutes from UTC
 ;

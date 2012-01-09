@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (30.09.2008)
+## version $VER: Locale.catalog 1.0 (30.09.2008)
 ## codeset 0
 ## language português
 ;
@@ -125,14 +125,14 @@ Fusos Horários
 ;Time Zone
 ;
 MSG_TIMEZONE_1HOUR
-Fuso Horário: Uma hora da GMT
-;Time Zone: 1 Hour from GMT
+Fuso Horário: Uma hora da UTC
+;Time Zone: 1 Hour from UTC
 ;
 MSG_TIMEZONE_HOURS
-Fuso Horário: %ld horas da GMT
-;Time Zone: %ld Hours from GMT
+Fuso Horário: %ld horas da UTC
+;Time Zone: %ld Hours from UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Fuso Horário: %ld horas, %ld minutos da GMT
-;Time Zone: %ld Hours, %ld Minutes from GMT
+Fuso Horário: %ld horas, %ld minutos da UTC
+;Time Zone: %ld Hours, %ld Minutes from UTC
 ;

@@ -1,4 +1,4 @@
-## version $VER: localeprefs.catalog 1.0 (02.07.2008)
+## version $VER: Locale.catalog 1.0 (02.07.2008)
 ## codeset 0
 ## language français
 ;
@@ -93,11 +93,11 @@ MSG_GAD_TAB_TIMEZONE
 Fuseau horaire
 ;
 MSG_TIMEZONE_1HOUR
-Fuseau horaire : 1 Heure de GMT
+Fuseau horaire : 1 Heure de UTC
 ;
 MSG_TIMEZONE_HOURS
-Fuseau horaire : %ld Heures de GMT
+Fuseau horaire : %ld Heures de UTC
 ;
 MSG_TIMEZONE_HOURSMINS
-Fuseau horaire : %ld Heures %ld Minutes de GMT
+Fuseau horaire : %ld Heures %ld Minutes de UTC
 ;
