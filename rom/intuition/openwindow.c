@@ -39,14 +39,14 @@
 struct OpenWindowActionMsg
 {
     struct IntuiActionMsg    msg;
-    struct Window   	    *window;
-    struct BitMap   	    *bitmap;
-    struct Hook     	    *backfillhook;
-    struct Region   	    *shape;
-    struct Hook     	    *shapehook;
-    struct Layer    	    *parentlayer;
-    BOOL    	    	     invisible;
-    BOOL    	    	     success;
+    struct Window               *window;
+    struct BitMap               *bitmap;
+    struct Hook                 *backfillhook;
+    struct Region               *shape;
+    struct Hook                 *shapehook;
+    struct Layer                *parentlayer;
+    BOOL                             invisible;
+    BOOL                             success;
 };
 
 static VOID int_openwindow(struct OpenWindowActionMsg *msg,
@@ -94,39 +94,39 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     struct GfxBase              *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct Library              *UtilityBase = GetPrivIBase(IntuitionBase)->UtilityBase;
     struct OpenWindowActionMsg   msg;
-    struct NewWindow        	 nw;
-    struct Window   	    	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
-    struct TagItem  	    	*tag, *shapeti = NULL, *shapehookti = NULL;
-    struct TagItem	    	*tagList;
-    struct RastPort 	    	*rp;
-    struct Hook     	    	*backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
-    struct Region   	    	*shape = NULL;
-    struct IBox     	    	*zoombox = NULL;
-    struct Image    	    	*AmigaKey = NULL;
-    struct Image    	    	*Checkmark = NULL;
-    struct Layer    	    	*parentl = NULL;
+    struct NewWindow                 nw;
+    struct Window                       *w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
+    struct TagItem                      *tag, *shapeti = NULL, *shapehookti = NULL;
+    struct TagItem                    *tagList;
+    struct RastPort                     *rp;
+    struct Hook                         *backfillhook = LAYERS_BACKFILL, *shapehook = NULL;
+    struct Region                       *shape = NULL;
+    struct IBox                         *zoombox = NULL;
+    struct Image                        *AmigaKey = NULL;
+    struct Image                        *Checkmark = NULL;
+    struct Layer                        *parentl = NULL;
 #ifdef SKINS
-    struct SkinInfo 	    	*skininfo = NULL;
-    BOOL    	    	    	 hasskininfo = FALSE;
-    struct Region   	    	*usertranspregion = NULL;
-    struct Hook     	    	*usertransphook = NULL;
-    struct MsgPort  	    	*userport = NULL;
+    struct SkinInfo                     *skininfo = NULL;
+    BOOL                                     hasskininfo = FALSE;
+    struct Region                       *usertranspregion = NULL;
+    struct Hook                         *usertransphook = NULL;
+    struct MsgPort                      *userport = NULL;
 #endif
-    STRPTR          	    	 pubScreenName = NULL;
-    BOOL            	    	 pubScreenNameSet = FALSE;
-    UBYTE           	    	*screenTitle = NULL;
-    BOOL            	    	 autoAdjust = FALSE, pubScreenFallBack = FALSE;
-    ULONG           	    	 innerWidth = ~0;
-    ULONG           	    	 innerHeight = ~0;
-    WORD            	    	 mousequeue = DEFAULTMOUSEQUEUE;
-    WORD            	    	 repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
-    ULONG           	    	 moreFlags = 0;
-    ULONG           	    	 helpgroup = 0;
-    ULONG           	    	 extrabuttons = 0, extrabuttonsid = ETI_Dummy;
-  //ULONG     	    	    	 lock;
-    ULONG                   	 windowinvisible = FALSE;
-    BOOL            	    	 driver_init_done = FALSE, have_helpgroup = FALSE;
-    BOOL                    	 do_setwindowpointer = FALSE;
+    STRPTR                               pubScreenName = NULL;
+    BOOL                                 pubScreenNameSet = FALSE;
+    UBYTE                               *screenTitle = NULL;
+    BOOL                                 autoAdjust = FALSE, pubScreenFallBack = FALSE;
+    ULONG                                innerWidth = ~0;
+    ULONG                                innerHeight = ~0;
+    WORD                                 mousequeue = DEFAULTMOUSEQUEUE;
+    WORD                                 repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
+    ULONG                                moreFlags = 0;
+    ULONG                                helpgroup = 0;
+    ULONG                                extrabuttons = 0, extrabuttonsid = ETI_Dummy;
+  //ULONG                                      lock;
+    ULONG                            windowinvisible = FALSE;
+    BOOL                                 driver_init_done = FALSE, have_helpgroup = FALSE;
+    BOOL                             do_setwindowpointer = FALSE;
 
     ASSERT_VALID_PTR_ROMOK(newWindow);
 
@@ -199,15 +199,15 @@ WFLG_WINDOWACTIVE )
                 break;
 
             case WA_Top:
-                nw.TopEdge  	= tag->ti_Data;
+                nw.TopEdge          = tag->ti_Data;
                 break;
 
             case WA_Width:
-                nw.Width    	= tag->ti_Data;
+                nw.Width            = tag->ti_Data;
                 break;
 
             case WA_Height:
-                nw.Height   	= tag->ti_Data;
+                nw.Height           = tag->ti_Data;
                 break;
 
             case WA_IDCMP:
@@ -498,7 +498,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
                 };
                 break;
 
-    	#ifdef SKINS
+            #ifdef SKINS
             case WA_SkinInfo:
                 skininfo = (struct SkinInfo *)tag->ti_Data;
                 hasskininfo = TRUE;
@@ -522,19 +522,19 @@ moreFlags |= (name); else moreFlags &= ~(name)
             case WA_IAmMUI:
                 MODIFY_MFLAG(WMFLG_IAMMUI);
                 break;
-    	#endif
+            #endif
 
 #ifndef __MORPHOS__
             case WA_ShapeRegion:
-	    	shapeti = tag;
+                    shapeti = tag;
                 shape = (struct Region *)tag->ti_Data;
                 break;
 
-    	    case WA_ShapeHook:
-	    	shapehookti = tag;
-	    	shapehook = (struct Hook *)tag->ti_Data;
-		break;
-		
+                case WA_ShapeHook:
+                    shapehookti = tag;
+                    shapehook = (struct Hook *)tag->ti_Data;
+                break;
+                
 
             case WA_Parent:
                 parentwin = ((struct Window *)tag->ti_Data);
@@ -664,17 +664,17 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: Flags 0x%lx MoreFlags 0x%lx IDCMP 0x%lx\n",
                 nw.Flags, moreFlags, nw.IDCMPFlags));
-    IPTR	userbuffersize;
+    IPTR        userbuffersize;
 
     GetAttr(WDA_UserBuffer, ((struct IntScreen *)(nw.Screen))->WinDecorObj, &userbuffersize);
 
     if (userbuffersize)
     {
-	((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
-	((struct IntWindow *)w)->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
-	if (0 == ((struct IntWindow *)w)->DecorUserBuffer) {
-		D(bug("OpenWindow: No decor\n"));
-		goto failexit;
+        ((struct IntWindow *)w)->DecorUserBufferSize = userbuffersize;
+        ((struct IntWindow *)w)->DecorUserBuffer = (IPTR) AllocMem(userbuffersize, MEMF_ANY | MEMF_CLEAR);
+        if (0 == ((struct IntWindow *)w)->DecorUserBuffer) {
+                D(bug("OpenWindow: No decor\n"));
+                goto failexit;
         }
     }
 
@@ -687,7 +687,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     initmsg.wdp_ScreenUserBuffer   = ((struct IntScreen *) nw.Screen)->DecorUserBuffer;
     initmsg.wdp_Screen             = nw.Screen;
 
-    ok = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&initmsg);	
+    ok = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&initmsg);        
 
     if (!ok) {
         D(bug("OpenWindow: WDM_INITWINDOW failed\n"));
@@ -829,18 +829,18 @@ moreFlags |= (name); else moreFlags &= ~(name)
     //    if ((w->Flags & WFLG_SIZEGADGET) &&
     //       (w->Flags & (WFLG_SIZEBRIGHT | WFLG_SIZEBBOTTOM)))
     {
-        IPTR 	    	 sizewidth = 16, sizeheight = 16;
-        struct Image 	*im;
+        IPTR                      sizewidth = 16, sizeheight = 16;
+        struct Image         *im;
         struct DrawInfo *dri;
 
         if ((dri = GetScreenDrawInfo(w->WScreen)))
         {
             struct TagItem imtags[] =
             {
-                {SYSIA_DrawInfo , (STACKIPTR)dri    	    	    	    	    	    	    	},
-                {SYSIA_Which	, SIZEIMAGE 	    	    	    	    	    	    	    	},
-                {SYSIA_Size 	, w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES	},
-                {TAG_DONE   	    	    	    	    	    	    	    	    	    	}
+                {SYSIA_DrawInfo , (STACKIPTR)dri                                                                                    },
+                {SYSIA_Which        , SIZEIMAGE                                                                                             },
+                {SYSIA_Size         , w->WScreen->Flags & SCREENHIRES ? SYSISIZE_MEDRES : SYSISIZE_LOWRES        },
+                {TAG_DONE                                                                                                                       }
             };
 
             if ((im = NewObjectA(NULL, SYSICLASS, imtags)))
@@ -966,16 +966,16 @@ moreFlags |= (name); else moreFlags &= ~(name)
     else
     {
         ((struct IntWindow *)w)->ZipLeftEdge = nw.LeftEdge;
-        ((struct IntWindow *)w)->ZipTopEdge  = nw.TopEdge;	
+        ((struct IntWindow *)w)->ZipTopEdge  = nw.TopEdge;        
         ((struct IntWindow *)w)->ZipWidth    = (w->Width == w->MinWidth) ? w->MaxWidth : w->MinWidth;
         ((struct IntWindow *)w)->ZipHeight   = (w->Height == w->MinHeight) ? w->MaxHeight : w->MinHeight;
     }
 
     DEBUG_OPENWINDOW(dprintf("OpenWindow: zip %d %d %d %d\n",
-                	     ((struct IntWindow *)w)->ZipLeftEdge,
-                	     ((struct IntWindow *)w)->ZipTopEdge,
-                	     ((struct IntWindow *)w)->ZipWidth,
-                	     ((struct IntWindow *)w)->ZipHeight));
+                             ((struct IntWindow *)w)->ZipLeftEdge,
+                             ((struct IntWindow *)w)->ZipTopEdge,
+                             ((struct IntWindow *)w)->ZipWidth,
+                             ((struct IntWindow *)w)->ZipHeight));
 
 
     IW(w)->mousequeue = mousequeue;
@@ -984,10 +984,10 @@ moreFlags |= (name); else moreFlags &= ~(name)
     /* Amiga and checkmark images for menus */
 
     IW(w)->Checkmark = Checkmark ? Checkmark :
-                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_CheckMark;
+                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_CheckMark;
 
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
-                    	    	   ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_AmigaKey;
+                                           ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_AmigaKey;
     IW(w)->SubMenuImage = ((struct IntScreen *)(w->WScreen))->DInfo.dri.dri_SubMenuImage;
 
 #ifndef __MORPHOS__
@@ -1038,11 +1038,11 @@ moreFlags |= (name); else moreFlags &= ~(name)
      
     if (GetPrivScreen(w->WScreen)->SpecialFlags & SF_SysFont)
     {
-    	w->IFont = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
+            w->IFont = SafeReopenFont(IntuitionBase, &GfxBase->DefaultFont);
     }
     else
     {
-    	w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri.dri_Font));
+            w->IFont = SafeReopenFont(IntuitionBase, &(GetPrivScreen(w->WScreen)->DInfo.dri.dri_Font));
     }
     
     if (w->IFont == NULL) {
@@ -1078,7 +1078,7 @@ moreFlags |= (name); else moreFlags &= ~(name)
     if ((shapeti != NULL) || (shapehookti != NULL)) IW(w)->CustomShape = TRUE;
     if (!(IW(w)->CustomShape) && (!(w->Flags & WFLG_BORDERLESS)) && !IS_GZZWINDOW(w))
     {
-    	shapehook = &IW(w)->DefaultWindowShapeHook;
+            shapehook = &IW(w)->DefaultWindowShapeHook;
     }
     
     msg.window = w;
@@ -1139,19 +1139,19 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
     if (nw.FirstGadget)
     {
-    	struct IntDrawInfo     	      *dri = &((struct IntScreen *)(w->WScreen))->DInfo;
-    	struct wdpLayoutBorderGadgets  msg;
+            struct IntDrawInfo                   *dri = &((struct IntScreen *)(w->WScreen))->DInfo;
+            struct wdpLayoutBorderGadgets  msg;
 
-	msg.MethodID 	    	= WDM_LAYOUT_BORDERGADGETS;
+        msg.MethodID                     = WDM_LAYOUT_BORDERGADGETS;
     msg.wdp_UserBuffer  = ((struct IntWindow *)w)->DecorUserBuffer;;
     msg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
-	msg.wdp_Window 	    	= w;
-	msg.wdp_Gadgets     	= nw.FirstGadget;
-	msg.wdp_Flags   	= WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
+        msg.wdp_Window                     = w;
+        msg.wdp_Gadgets             = nw.FirstGadget;
+        msg.wdp_Flags           = WDF_LBG_INITIAL | WDF_LBG_MULTIPLE;
     msg.wdp_ExtraButtons = ((struct IntWindow *)w)->extrabuttons;
-	msg.wdp_Dri             = (struct DrawInfo *)dri;
+        msg.wdp_Dri             = (struct DrawInfo *)dri;
 
-	DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&msg);	
+        DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&msg);        
 
         AddGList(w, nw.FirstGadget, -1, -1, NULL);
     }
@@ -1195,12 +1195,12 @@ moreFlags |= (name); else moreFlags &= ~(name)
 
         shapemsg.MethodID           = WDM_WINDOWSHAPE;
         shapemsg.wdp_TrueColor        = (((struct IntScreen *)nw.Screen)->DInfo.dri.dri_Flags & DRIF_DIRECTCOLOR);
-        shapemsg.wdp_Width 	    = w->Width;
-        shapemsg.wdp_Height 	    = w->Height;
+        shapemsg.wdp_Width             = w->Width;
+        shapemsg.wdp_Height             = w->Height;
         shapemsg.wdp_Window = w;
         shapemsg.wdp_UserBuffer      = ((struct IntWindow *)w)->DecorUserBuffer;
 
-        shape = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&shapemsg);	
+        shape = DoMethodA(((struct IntScreen *)(nw.Screen))->WinDecorObj, (Msg)&shapemsg);        
         ((struct IntWindow *)w)->OutlineShape = shape;
         ChangeWindowShape(w, shape, NULL);
         ((struct IntWindow *)w)->CustomShape = FALSE;
@@ -1299,13 +1299,13 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     else
     {
         if (w->Flags & WFLG_SUPER_BITMAP && SuperBitMap)
-	{
+        {
             layerflags |= LAYERSUPER;
-	}
+        }
         else
-	{
+        {
             layerflags |= LAYERSMART;
-	}
+        }
     }
     
     if (w->Flags & WFLG_BACKDROP)
@@ -1320,7 +1320,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
     //install transp layer hook!
     {
         struct windowclassprefs *wcprefs = NULL;
-	
+        
         wcprefs = (struct windowclassprefs*)int_GetCustomPrefs(TYPE_WINDOWCLASS,&((struct IntScreen*)(w->WScreen))->DInfo,IntuitionBase);
         if (wcprefs->flags & WINDOWCLASS_PREFS_ROUNDEDEDGES && (w->Title || (w->Flags & (WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_DEPTHGADGET))))
         {
@@ -1331,8 +1331,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                 IW(w)->specialflags |= SPFLAG_TRANSPHOOK;
             }
         }
-	else
-	{
+        else
+        {
             if (IW(w)->usertransphook)
             {
                 IW(w)->transpregion = NewRegion();
@@ -1342,7 +1342,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
                     IW(w)->specialflags |= SPFLAG_TRANSPHOOK;
                 }
             }
-	    else if (IW(w)->usertranspregion)
+            else if (IW(w)->usertranspregion)
             {
                 IW(w)->transpregion = NewRegion();
                 if (IW(w)->transpregion)
@@ -1377,8 +1377,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
             {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
 #else
-	    {TAG_IGNORE  , 0           },
-	    {TAG_IGNORE  , 0           },
+            {TAG_IGNORE  , 0           },
+            {TAG_IGNORE  , 0           },
 #endif
             {LA_WindowPtr, (IPTR)w     },
             {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
@@ -1413,16 +1413,16 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
         /* Now comes the inner window */
         layertags[0].ti_Data = (IPTR)backfillhook;
-	if (shapehook)
-	{
-	    layertags[2].ti_Tag  = LA_ShapeHook;
-	    layertags[2].ti_Data = (IPTR)shapehook;
-	}
-	if (shape)
-	{
-	    layertags[3].ti_Tag  = LA_ShapeRegion;
-	    layertags[3].ti_Data = (IPTR)shape;
-	}
+        if (shapehook)
+        {
+            layertags[2].ti_Tag  = LA_ShapeHook;
+            layertags[2].ti_Data = (IPTR)shapehook;
+        }
+        if (shape)
+        {
+            layertags[3].ti_Tag  = LA_ShapeRegion;
+            layertags[3].ti_Data = (IPTR)shape;
+        }
 
         w->WLayer = CreateUpfrontLayerTagList(
                 &w->WScreen->LayerInfo
@@ -1455,8 +1455,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {installtransphook ? LA_TransHook : TAG_IGNORE, notransphook ? (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->notransphook : (IPTR)&((struct IntIntuitionBase *)(IntuitionBase))->transphook},
             {installtransphook ? LA_TransRegion : TAG_IGNORE, (IPTR)IW(w)->transpregion},
 #else
-	    {TAG_IGNORE  , 0           },
-	    {TAG_IGNORE  , 0           },
+            {TAG_IGNORE  , 0           },
+            {TAG_IGNORE  , 0           },
 #endif
             {LA_WindowPtr, (IPTR)w     },
             {LA_ChildOf  , (IPTR)parent}, /* These two are AROS-specific */
@@ -1464,16 +1464,16 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             {TAG_DONE}
         };
 
-	if (shapehook)
-	{
-	    layertags[2].ti_Tag  = LA_ShapeHook;
-	    layertags[2].ti_Data = (IPTR)shapehook;
-	}
-	if (shape)
-	{
-	    layertags[3].ti_Tag  = LA_ShapeRegion;
-	    layertags[3].ti_Data = (IPTR)shape;
-	}
+        if (shapehook)
+        {
+            layertags[2].ti_Tag  = LA_ShapeHook;
+            layertags[2].ti_Data = (IPTR)shapehook;
+        }
+        if (shape)
+        {
+            layertags[3].ti_Tag  = LA_ShapeRegion;
+            layertags[3].ti_Data = (IPTR)shape;
+        }
 
         D(dprintf("CreateUpfontLayerTagList(taglist 0x%lx)\n",&layertags));
 
@@ -1565,8 +1565,8 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
         if (CreateWinSysGadgets(w, IntuitionBase))
         {
             LONG lock;
-	    
-	    lock = LockIBase (0);
+            
+            lock = LockIBase (0);
 
             /* insert new window into parent/descendant list
             **
@@ -1587,7 +1587,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
             */
 
 #if 1
-	    {
+            {
             struct Window *parent, *descendant_of_parent;
 
             parent = IntuitionBase->ActiveWindow;
@@ -1605,7 +1605,7 @@ static VOID int_openwindow(struct OpenWindowActionMsg *msg,
 
             w->Descendant = descendant_of_parent;
             w->Parent = parent;
-	    }
+            }
 #endif
 
             w->NextWindow = w->WScreen->FirstWindow;
