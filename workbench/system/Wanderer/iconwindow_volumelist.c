@@ -907,14 +907,14 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                 if (appentry == NULL)
                 {
                     struct DiskObject * appdo = AppIcon_GetDiskObject((struct AppIcon *)appicon);
-                    struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE); //FIXME this causes bad icon image
+                    struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE);
                     CONST_STRPTR label = AppIcon_GetLabel((struct AppIcon *)appicon);
                     appentry = (struct IconEntry *)DoMethod(self,
                             MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0);
                     if (appentry)
                     {
                         appentry->ie_AppIcon = (APTR)appicon;
-                        appentry->ie_IconNode.ln_Pri = 3;
+                        appentry->ie_IconNode.ln_Pri = 0;
                         appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
                         DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
                     }
