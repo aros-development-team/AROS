@@ -9,6 +9,14 @@
 #include <exec/types.h>
 #include <inttypes.h>
 
+#ifndef __packed
+#ifdef __GNUC__
+#define __packed __attribute__((__packed__))
+#else
+#define __packed
+#endif
+#endif
+
 #define AHCI_VERSION_0_95   0x00000095
 #define AHCI_VERSION_1_00   0x00010000
 #define AHCI_VERSION_1_10   0x00010100
@@ -97,6 +105,148 @@ enum {
 	PORT_INT_DHR	= (1 << 0),		// Device to Host Register FIS Interrupt
 };
 
+enum {
+	PORT_TFD_ERR_MASK	= 0xff,		// Last error from task file
+	PORT_TFD_ERR_SHIFT	= 8,
+	PORT_TFD_STS_MASK	= 0xff,		// Status of task file
+	PORT_TFD_STS_BSY	= (1 << 7),	// Busy
+	PORT_TFD_STS_DRQ	= (1 << 3),	// Data requested
+	PORT_TFD_STS_ERR	= (1 << 0),	// Transfer error
+};
+
+enum {
+	PORT_SIG_LBA_HIGH_MASK	= 0xff,	// LBA High Register
+	PORT_SIG_LBA_HIGH_SHIFT	= 24,
+	PORT_SIG_LBA_MED_MASK	= 0xff,	// LBA Med Register
+	PORT_SIG_LBA_MED_SHIFT	= 16,
+	PORT_SIG_LBA_LOW_MASK	= 0xff,	// LBA Low Register
+	PORT_SIG_LBA_LOW_SHIFT	= 8,
+	PORT_SIG_SECTORS_MASK	= 0xff,	// Sector Count Register
+};
+
+enum {
+	PORT_SSTS_IPM_MASK	= (0xf << 8),	// Interface state
+	PORT_SSTS_IPM_NODEV	= (0 << 8),	// No device present
+	PORT_SSTS_IPM_ACTIVE	= (1 << 8),	// Interface active
+	PORT_SSTS_IPM_PARTIAL	= (2 << 8),	// Partial power save
+	PORT_SSTS_IPM_SLUMBER	= (6 << 8),	// Slumber power save
+
+	PORT_SSTS_SPD_MASK	= (0xf << 4),	// Interface speed
+	PORT_SSTS_SPD_NODEV	= (0 << 4),	// Interface speed
+	PORT_SSTS_SPD_GEN1	= (1 << 4),	// Interface speed
+	PORT_SSTS_SPD_GEN2	= (2 << 4),	// Interface speed
+	PORT_SSTS_SPD_GEN3	= (3 << 4),	// Interface speed
+
+	PORT_SSTS_DET_MASK	= 0xf,		// Device Detect
+	PORT_SSTS_DET_NODEV	= (0 << 0),	// No device, no phy
+	PORT_SSTS_DET_NOPHY	= (1 << 0),	// Device, but no phy
+	PORT_SSTS_DET_ONLINE	= (3 << 0),	// Online and ready
+	PORT_SSTS_DET_OFFLINE	= (4 << 0),	// Offline (Device in BIST?)
+};
+
+enum {
+	PORT_SERR_ERR_MASK	= 0xffff,	// Errors
+};
+
+/********** DMAable Data Structures **********/
+
+/* FIS RX structure
+ * 256 bytes in size
+ */
+struct ahci_fis {
+    /* DMA setup FIS */
+    union {
+        struct dsfis {
+        } dsfis;
+        UBYTE dsfis_pad[0x20];
+    };
+
+    /* PIO setup FIS */
+    union {
+        struct psfis {
+        } psfis;
+        UBYTE psfis_pad[0x20];
+    };
+
+    /* D2H register FIS */
+    union {
+        struct rfis {
+        } rfis;
+        UBYTE rfis_pad[0x18];
+    };
+
+    /* SetDevice FIS */
+    union {
+        struct sdbfis {
+        } sdbfis;
+        UBYTE sdbfis_pad[0x8];
+    };
+
+    /* Unknown FIS */
+    UBYTE ufis[0x40];
+
+    UBYTE resv[0x60];
+} __packed;
+
+/* Command List Header Entry */
+struct ahci_cmdhdr {
+    ULONG       cw0;    /* PRDTL, PMP, C, B, R, P, W, A, and CFL */
+    ULONG       prdbc;  /* PRD byte count */
+    ULONG       ctba;   /* Lower 32bits of the command table address. 128 byte aligned */
+    ULONG       ctbu;   /* Uppoer 32bit of the command table address */
+    ULONG       resv[4];
+} __packed;
+
+enum {
+    CW0_PRDTL_MASK      = 0xffff,  /* Physical Region Descriptor Table Length */
+    CW0_PRDTL_SHIFT     = 16,   
+    CW0_PMP_MASK        = 0x1f,    /* Port Multiplier Port */
+    CW0_PMP_SHIFT       = 12,
+    CW0_C               = (1 << 10),    /* Clear Busy Upon R_OK */
+    CW0_B               = (1 <<  9),    /* BIST */
+    CW0_R               = (1 <<  8),    /* Reset */
+    CW0_P               = (1 <<  7),    /* Prefetchable */
+    CW0_W               = (1 <<  6),    /* Write to device */
+    CW0_A               = (1 <<  5),    /* ATAPI */
+    CW0_CFL_MASK        = 0x1f,         /* Command FIS Length in ULONGs. Max 16 */
+};
+
+/* Command Table (pointed to by a command list header)
+ * Must be 128 byte aligned.
+ */
+struct ahci_cmdtab {
+    /* Command FIS */
+    union {
+        struct cfis {
+        } cfis;
+        UBYTE pad_cfis[0x40];
+    };
+
+    /* ATAPI Command */
+    union {
+        struct acmd {
+        } acmd;
+        UBYTE pad_acmd[0x10];
+    };
+
+    UBYTE resv[0x30];
+
+    /* Physical Region Descriptor Table
+     * (the scatter-gather DMA list)
+     */
+    struct prdt {
+        ULONG   dba;    /* Data Base Address (USHORT aligned) */
+        ULONG   dbau;   /* Data Base Upper 32 Address */
+        ULONG   resv;   /* Reserved */
+        ULONG   pw3;    /* I and DBC. See below. */
+    } prdt[];   /* Up to 65535 entries allowed */
+} __packed;
+
+enum {
+    PW3_I          = (1 << 31), /* Interrupt on completion */
+    PW3_DBC_MASK   = 0x3fffff,  /* N-1 bytes of transfer */
+};
+
 struct ahci_hwport {
 	volatile ULONG      clb;			// Port x Command List Base Address (alignment 1024 byte)
 	volatile ULONG      clbu;			// Port x Command List Base Address Upper 32-Bits
@@ -117,7 +267,7 @@ struct ahci_hwport {
 	volatile ULONG      res2;			// Port x FIS-based Switching Control
 	volatile ULONG      res[11];		// Port x Reserved
 	volatile ULONG      vendor[4];		// Port x Vendor Specific
-} __attribute__((__packed__));
+} __packed;
 
 struct ahci_hwhba {
     volatile ULONG      cap;			// 0x00 Host Capabilities
@@ -134,7 +284,7 @@ struct ahci_hwhba {
     volatile ULONG      res[29];        // 0x2c-0x9f Reserved
     volatile ULONG      vendor[24];     // 0xa0-0xff Vendor Specific registers
     struct ahci_hwport  port[32];       // 0x100
-} __attribute__((__packed__));
+} __packed;
 
 #endif // AHCI_HBA_H
 
