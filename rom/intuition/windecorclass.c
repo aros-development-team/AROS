@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
+    Copyright  1995-2012, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -256,7 +256,7 @@ IPTR WinDecorClass__WDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct wdpGe
     case SNAPSHOTIMAGE:
     case JUMPIMAGE:
     #if USE_AROS_DEFSIZE
-            def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
+        def_low_width = def_med_width = def_high_width = DEFSIZE_WIDTH;
         def_low_height = def_med_height = def_high_height = DEFSIZE_HEIGHT;
     #else
             def_low_width = 18;
@@ -372,7 +372,7 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
     switch(msg->wdp_Which)
     {
 
-        case MUIIMAGE:
+    case MUIIMAGE:
     {
         renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
         /* no code yet */
@@ -384,7 +384,61 @@ IPTR WinDecorClass__WDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct wdpDrawSysI
         /* code should be added later */
         break;      
     }
-        case CLOSEIMAGE:
+    case ICONIFYIMAGE:
+    {
+        UWORD  bg;
+        WORD   h_spacing;
+        WORD   v_spacing;
+
+        renderimageframe(rp, ICONIFYIMAGE, state, pens,
+                         left, top, width, height, IntuitionBase);
+        left++;
+        top++;
+        width -= 2;
+        height -= 2;
+
+        right = left + width - 1;
+        bottom = top + height - 1 ;
+        h_spacing = width / 6;
+        v_spacing = height / 6;
+
+        bg = getbgpen(state, pens);
+
+        /* Clear background into correct color */
+        SetAPen(rp, bg);
+        RectFill(rp, left, top, right, bottom);
+
+        left += h_spacing;
+        right -= h_spacing;
+        top += v_spacing;
+        bottom -= v_spacing;
+
+        SetAPen(rp, pens[SHADOWPEN]);
+        RectFill(rp, left, top, right, bottom);
+
+        SetAPen(rp, pens[(state == IDS_SELECTED) ? SHINEPEN :
+                            (state == IDS_NORMAL) ? FILLPEN : BACKGROUNDPEN]);
+        RectFill(rp, left + 1, top + 1, right - 1, bottom - 1);
+
+        right = left + (right - left + 1) / 2;
+        top = top + (bottom - top + 1) / 2;
+
+        if (right - left <  4) right = left + 4;
+
+        SetAPen(rp, pens[SHADOWPEN]);
+        RectFill(rp, left, top, right, bottom);
+
+        left += 2;
+        right -= 2;
+        top += 1;
+        bottom -= 1;
+
+        SetAPen(rp, pens[(state == IDS_SELECTED) ? FILLPEN :
+                            (state == IDS_NORMAL) ? SHINEPEN : BACKGROUNDPEN]);
+        RectFill(rp,left, top, right, bottom);
+        break;
+    }
+    case CLOSEIMAGE:
     {
         renderimageframe(rp, CLOSEIMAGE, state, pens, left, top, width, height, IntuitionBase);
         left++;
@@ -1115,52 +1169,63 @@ IPTR WinDecorClass__WDM_DRAW_WINBORDER(Class *cl, Object *obj, struct wdpDrawWin
 
 IPTR WinDecorClass__WDM_LAYOUT_BORDERGADGETS(Class *cl, Object *obj, struct wdpLayoutBorderGadgets *msg)
 {
-    //struct windecor_data *data = INST_DATA(cl, obj);
-    //struct Window        *window = msg->wdp_Window;
     struct Gadget        *gadget = msg->wdp_Gadgets;
 
     if (!(msg->wdp_Flags & WDF_LBG_SYSTEMGADGET)) return TRUE;
-    
+
     while(gadget)
     {
         switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
-    {
+        {
         case GTYP_CLOSE:
             gadget->LeftEdge = 0;
-        gadget->Width = gadget->Height;
-        gadget->Flags &= ~(GFLG_RELRIGHT | GFLG_RELWIDTH);
+            gadget->Width = gadget->Height;
+            gadget->Flags &= ~(GFLG_RELRIGHT | GFLG_RELWIDTH);
             break;
-        
+
         case GTYP_WDEPTH:
             gadget->LeftEdge = -gadget->Height + 1;
-        gadget->Width = gadget->Height;
-        gadget->Flags &= ~GFLG_RELWIDTH;
-        gadget->Flags |= GFLG_RELRIGHT;
-        break;
-        
+            gadget->Width = gadget->Height;
+            gadget->Flags &= ~GFLG_RELWIDTH;
+            gadget->Flags |= GFLG_RELRIGHT;
+            break;
+
         case GTYP_WZOOM:
             gadget->LeftEdge = -gadget->Height * 2 + 1;
-        gadget->Width = gadget->Height;
-        gadget->Flags &= ~GFLG_RELWIDTH;
-        gadget->Flags |= GFLG_RELRIGHT;
-        break;
-        
+            gadget->Width = gadget->Height;
+            gadget->Flags &= ~GFLG_RELWIDTH;
+            gadget->Flags |= GFLG_RELRIGHT;
+            break;
+
         case GTYP_WDRAGGING:
             gadget->LeftEdge = 0;
-        gadget->Width = 0;
-        gadget->Flags &= ~GFLG_RELRIGHT;
-        gadget->Flags |= GFLG_RELWIDTH;
-        break;
-    }
-    
-    if (msg->wdp_Flags & WDF_LBG_MULTIPLE)
-    {
-        gadget = gadget->NextGadget;
-    }
-    else
-    {
-        gadget = NULL;
-    }
+            gadget->Width = 0;
+            gadget->Flags &= ~GFLG_RELRIGHT;
+            gadget->Flags |= GFLG_RELWIDTH;
+            break;
+        }
+
+        if (gadget->GadgetType == GTYP_CUSTOMGADGET)
+        {
+            switch(gadget->GadgetID)
+            {
+            case ETI_Iconify:
+                gadget->LeftEdge = -gadget->Height * 3 + 1;
+                gadget->Width = gadget->Height;
+                gadget->Flags &= ~GFLG_RELWIDTH;
+                gadget->Flags |= GFLG_RELRIGHT;
+                break;
+            }
+        }
+
+        if (msg->wdp_Flags & WDF_LBG_MULTIPLE)
+        {
+            gadget = gadget->NextGadget;
+        }
+        else
+        {
+            gadget = NULL;
+        }
     }
     
     return TRUE;
