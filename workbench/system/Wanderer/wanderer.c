@@ -2486,7 +2486,7 @@ void wanderer_menufunc_icon_format(void)
     if ((IPTR)entry != MUIV_IconList_NextIcon_End)
     {  
         BPTR lock   = Lock(entry->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
-D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name);)
+D(bug("[Wanderer]: %s('%s')\n", __PRETTY_FUNCTION__, entry->ile_IconEntry->ie_IconNode.ln_Name));
         /* Usually we pass object name and parent lock. Here we do the same thing.
            Just object name is empty string and its parent is device's root. */
         OpenWorkbenchObject
