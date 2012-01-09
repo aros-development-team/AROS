@@ -2043,6 +2043,7 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
             "Classes", "Classes",
             "Devs", "Devs",
             "Fonts", "Fonts",
+            "L", "L",
             "Libs", "Libs",
             "Locale", "Locale",
             "Prefs", "Prefs",
