@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 1.3 (22.12.2011)
+## version $VER: Wanderer.catalog 2.0 (05.01.2012)
 ## language français
 ## codeset 0
 ;
@@ -152,8 +152,8 @@ Nettoyer
 ; Clean up
 ;
 MSG_MEN_SC_CLNUP
-U
-; U
+.
+; .
 ;
 MSG_MEN_BYNAME
 Par nom
@@ -217,7 +217,7 @@ Outils
 ;
 MSG_MEN_ICONSORTING
 Activer le tri des icônes
-; Enable Icon Sorting
+; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
 Groupe d'icônes
@@ -240,7 +240,7 @@ DUMMY
 ; DUMMY
 ; DUMMY :)
 MSG_USERSCREENTITLE
-
+Wanderer %pc mémoire graphique %pf mémoire autre
 ; Wanderer %pc graphics mem %pf other mem
 ;
 MSG_MEN_FORMAT
@@ -261,7 +261,7 @@ Que désirez vous faire ?
 ;
 MSG_SHUTDOWN_BUTTONS
 Eteindre|Redémarrer l'ordinateur|Redémarrer AROS|*Annuler
-; Power off|Restart computer|Restart AROS|*Cancel
+; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
 L'action n'est pas disponible pour cette machine.
@@ -279,17 +279,33 @@ MSG_MEN_PUT_AWAY
 Ranger
 ; Put away
 ;
+MSG_MEN_SC_PUT_AWAY
+P
+; P
+;
 MSG_MEN_LEAVE_OUT
 Sortir
 ; Leave out
+;
+MSG_MEN_SC_LEAVE_OUT
+L
+; L
 ;
 MSG_MEN_UNSNAPSHOT
 Défiger
 ; Unsnapshot
 ;
+MSG_MEN_SC_UNSNAPSHOT
+U
+; U
+;
 MSG_MEN_SNAPSHOT
 Figer
 ; Snapshot
+;
+MSG_MEN_SC_SNAPSHOT
+S
+; S
 ;
 MSG_REQU_DELETE
 Suppression du fichier...
@@ -368,7 +384,7 @@ situé dans
 ; located in
 ;
 MSG_NOFILEACCESS_E
-
+  
 ;  
 ;
 MSG_NODRAWERACCESS_S
@@ -376,7 +392,7 @@ Impossible d'accéder au dossier
 ; Can't access drawer
 ;
 MSG_NODRAWERACCESS_E
-
+  
 ;  
 ;
 MSG_REQU_FILEUNPROTECT_S
