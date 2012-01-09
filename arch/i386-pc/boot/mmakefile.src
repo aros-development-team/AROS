@@ -21,9 +21,15 @@ include $(TOP)/config/make.cfg
 #MM     kernel-bsp-objs			\
 #MM	kernel-pc-acpi-kobj		\
 #MM	kernel-pc-hpet-kobj		\
+#MM	kernel-ata-kobj 		\
+#MM	kernel-ahci-kobj 		\
+#MM	kernel-oop-kobj 		\
+#MM	kernel-utility-kobj 		\
 #MM	kernel-isapnp-kobj 		\
+#MM	kernel-debug-kobj 		\
 #MM	kernel-pc-i386-drivers 		\
 #MM     kernel-hidd-irq-kobj		\
+#MM     kernel-hidd-pci-kobj		\
 #MM     kernel-hidd-vesa-kobj 		\
 #MM     kernel-hidd-vga-kobj		\
 #MM     kernel-workbench-devs-pc-i386
@@ -32,8 +38,8 @@ EXEDIR  := $(BINDIR)/boot
 USELIBS	:= hiddstubs amiga arossupport debug rom arosm autoinit libinit
 
 KRSRCS  := acpi battclock hpet processor
-KLIBS   := exec expansion
-KDEVS   := timer ata trackdisk
+KLIBS   := exec expansion oop utility debug
+KDEVS   := timer ahci ata trackdisk
 KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc irq
 ##Disabled RSRC cpu isapnp
 

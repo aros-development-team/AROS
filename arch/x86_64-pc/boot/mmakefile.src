@@ -13,6 +13,7 @@ include $(TOP)/config/make.cfg
 #MM			   kernel-kernel-kobj		 \
 #MM			   kernel-exec-kobj		 \
 #MM			   kernel-ata-kobj		 \
+#MM			   kernel-ahci-kobj		 \
 #MM			   kernel-battclock-kobj	 \
 #MM			   kernel-efi-kobj		 \
 #MM			   kernel-timer-kobj		 \
@@ -33,7 +34,7 @@ include $(TOP)/config/make.cfg
 
 KRSRCS  := acpi battclock efi hpet processor
 KLIBS   := exec expansion
-KDEVS   := ata timer
+KDEVS   := ata ahci timer
 KHIDDS  := irq parallel pci pcipc serial vesagfx vgah kbd ps2mouse
 
 USER_LDFLAGS := -L$(GENDIR)/lib

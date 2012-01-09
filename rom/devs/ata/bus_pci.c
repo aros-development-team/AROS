@@ -6,8 +6,8 @@
     Lang: English
 */
 
-#define DEBUG 1
-#define DSATA(x) x
+#define DEBUG 0
+#define DSATA(x)
 
 /*
  * What is done here is currently a draft.
@@ -30,7 +30,6 @@
 
 #include "ata.h"
 #include "pci.h"
-#include "timer.h"
 
 typedef struct 
 {
@@ -343,146 +342,11 @@ AROS_UFH3(void, ata_PCIEnumerator_h,
     D(bug("[PCI-ATA] ata_PCIEnumerator_h: Found IDE device %04x:%04x\n", VendorID, ProductID));
 
     /*
-     * SATA controllers may need a special treatment before becoming usable.
-     * The machine's firmware (EFI on Mac) may operate them in native AHCI mode
-     * and do not set up legacy mode by itself.
-     * In this case we have to do it ourselves.
-     * This code is based on incomplete ahci.device source code by DissyOfCRN.
-     * CHECKME: In order to work on PPC it uses explicit little-endian I/O,
-     * assuning AHCI register file is always little-endian. Is it correct ?
+     * SATA controllers are handled by the AHCI driver.
      */
-    if (SubClass == PCI_SUBCLASS_SATA)
-    {
-
-    	APTR hba_phys = NULL;
-    	IPTR hba_size = 0;
-	OOP_Object *Driver = NULL;
-    	volatile struct ahci_hwhba *hwhba;
-    	struct pHidd_PCIDriver_MapPCI map;
-    	struct pHidd_PCIDriver_UnmapPCI unmap;
-    	ULONG ghc, cap;
-
-    	OOP_GetAttr(Device, aHidd_PCIDevice_Base5, (IPTR *)&hba_phys);
-        OOP_GetAttr(Device, aHidd_PCIDevice_Size5, &hba_size);
-
-    	DSATA(bug("[PCI-ATA] Device %04x:%04x is a SATA device, HBA 0x%p, size 0x%p\n", VendorID, ProductID, hba_phys, hba_size));
-
-        OOP_GetAttr(Device, aHidd_PCIDevice_Driver, (IPTR *)&Driver);
-
-	/*
-	 * Obtain PCIDriver method base (lazy).
-	 * Methods are numbered subsequently, the same as attributes. This means
-	 * we can use the same mechanism for them (get base value and add offsets).
-	 */
-        if (!a->HiddPCIDriverMethodBase)
-            a->HiddPCIDriverMethodBase = OOP_GetMethodID(IID_Hidd_PCIDriver, 0);
-
-	map.mID        = a->HiddPCIDriverMethodBase + moHidd_PCIDriver_MapPCI;
-	map.PCIAddress = hba_phys;
-	map.Length     = hba_size;
-
-	hwhba = (struct ahci_hwhba *)OOP_DoMethod(Driver, (OOP_Msg)&map);
-	DSATA(bug("[PCI-ATA] Mapped at 0x%p\n", hwhba));
-
-	if (!hwhba)
-	{
-	    DSATA(bug("[PCI-ATA] Mapping failed, device will be ignored\n"));
-
-	    return;
-	}
-
-	cap = mmio_inl_le(&hwhba->cap);
-	ghc = mmio_inl_le(&hwhba->ghc);
-	DSATA(bug("[PCI-ATA] Capabilities: 0x%08X, host control: 0x%08X\n", cap, ghc));
-
-        /*
-         * Some hardware may report GHC_AE to be zero, together with CAP_SAM set (indicating
-         * that the device doesn't support legacy IDE registers). Seems to be spec violation
-         * (the AHCI specification says that in this cases GHC_AE is read-only bit which is
-         * hardwired to 1).
-         * Attempting to drive such a hardware causes ata.device to freeze.
-         * This effect has been observed on Marvel 9172 controller (and some other HW,
-         * according to user reports, but nobody has ever provided a debug log).
-         */
-	if (cap & CAP_SAM)
-	{
-	    DSATA(bug("[PCI-ATA] Legacy mode is not supported, device will be ignored\n"));
-
-	    OOP_DoMethod(Driver, (OOP_Msg)&unmap);
-	    return;
-	}
-
-	if (ghc & GHC_AE)
-	{
-	    DSATA(bug("[PCI-ATA] AHCI enabled\n"));
-
-	    /*
-	     * This is ATA driver, not SATA driver, so i'd like to keep SATA-specific code
-	     * at a minimum. None of tests revealed a real need for BIOS handoff, no BIOS
-	     * was discovered to use controllers in SMI mode.
-	     * However, if on some machine we have problems, we can try
-	     * to #define this.
-	     */
-#ifdef DO_SATA_HANDOFF
-	    ULONG version = mmio_inl_le(&hwhba->vs);
-	    ULONG cap2    = mmio_inl_le(&hwhba->cap2);
-
-	    DSATA(bug("[PCI-ATA] Version: 0x%08X, Cap2: 0x%08X\n", version, cap2));
-
-	    if ((version >= AHCI_VERSION_1_20) && (cap2 && CAP2_BOH))
-	    {
-	    	ULONG bohc;
-
-            	DSATA(bug("[PCI-ATA] HBA supports BIOS/OS handoff\n"));
-
-		bohc = mmio_inl_le(&hwhba->bohc);
-		if (bohc && BOHC_BOS)
-		{
-	    	    struct IORequest *timereq;
-
-		    DSATA(bug("[PCI-ATA] Device owned by BIOS, performing handoff\n"));
-
-		    /*
-		     * We need timer.device in order to perform delays.
-		     * TODO: in ata_InitBus() it will be opened and closed again.
-		     * This is not optimal, it could be opened and closed just once.
-		     */
-	    	   timereq = ata_OpenTimer(a->ATABase);
-	    	   if (!timereq)
-	    	   {
-	    		DSATA(bug("[PCI-ATA] Failed to open timer, can't perform handoff. Device will be ignored\n"));
-
-			OOP_DoMethod(Driver, (OOP_Msg)&unmap);
-	    		return;
-	    	   }
-
-                    mmio_outl_le(bohc | BOHC_OOS, &hwhba->bohc);
-                    /* Spin on BOHC_BOS bit FIXME: Possible dead lock. No maximum time given on AHCI1.3 specs... */
-		    while (mmio_inl_le(&hwhba->bohc) & BOHC_BOS);
-
-		    ata_WaitTO(timereq, 0, 25000, 0);
-                    /* If after 25ms BOHC_BB bit is still set give bios a minimum of 2 seconds more time to run */
-
-                    if (mmio_inl_le(&hwhba->bohc) & BOHC_BB)
-                    {
-                	DSATA(bug("[PCI-ATA] Delayed handoff, waiting...\n"));
-                	ata_WaitTO(timereq, 2, 0, 0);
-                    }
-
-                    DSATA(bug("[ATA ] Handoff done\n"));
-                    ata_CloseTimer(timereq);
-        	}
-            }
-#endif
-	    /* This resets GHC_AE bit, disabling AHCI */
-	    mmio_outl_le(0, &hwhba->ghc);
-	}
-
-	unmap.mID        = a->HiddPCIDriverMethodBase + moHidd_PCIDriver_UnmapPCI;
-	unmap.CPUAddress = (APTR)hwhba;
-	unmap.Length     = hba_size;
-
-	OOP_DoMethod(Driver, &unmap.mID);
+    if (SubClass == PCI_SUBCLASS_SATA) {
+        DSATA(bug("[PCI-ATA] Device %04x:%04x is a SATA device, ignoring\n", VendorID, ProductID));
+        return;
     }
 
     /*
