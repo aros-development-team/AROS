@@ -859,8 +859,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
         ** are ignored also the current overscan view */
         if (data->wd_X == MUIV_Window_LeftEdge_Centered)
         {
-	    data->wd_X = (data->wd_RenderInfo.mri_Screen->ViewPort.DWidth - data->wd_Width)/2
-	        - data->wd_RenderInfo.mri_Screen->LeftEdge;
+            data->wd_X = (data->wd_RenderInfo.mri_Screen->ViewPort.DWidth - data->wd_Width)/2
+                - data->wd_RenderInfo.mri_Screen->LeftEdge;
         }
         else if (data->wd_X == MUIV_Window_LeftEdge_Moused)
         {
@@ -869,8 +869,8 @@ static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data)
 
         if (data->wd_Y == MUIV_Window_TopEdge_Centered)
         {
-	    data->wd_Y = (data->wd_RenderInfo.mri_Screen->ViewPort.DHeight - data->wd_Height)/2
-	        - data->wd_RenderInfo.mri_Screen->TopEdge;
+            data->wd_Y = (data->wd_RenderInfo.mri_Screen->ViewPort.DHeight - data->wd_Height)/2
+                - data->wd_RenderInfo.mri_Screen->TopEdge;
         }
         else if (data->wd_Y == MUIV_Window_TopEdge_Moused)
         {
@@ -1588,9 +1588,9 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
                         height = data->wd_RenderInfo.mri_Window->Height
                             - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-                        //		    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-                        //			  __LINE__, data->wd_Background, left, top, width,
-                        //			  height, left, top));
+                        //                    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+                        //                          __LINE__, data->wd_Background, left, top, width,
+                        //                          height, left, top));
                         zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
                                 left, top, width, height, left, top, 0);
                     }
@@ -1633,9 +1633,9 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 
                     if(data->wd_Flags & MUIWF_ERASEAREA)
                     {
-                        //			D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-                        //			      __LINE__, data->wd_Background, left, top, width,
-                        //			      height, left, top));
+                        //                        D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+                        //                              __LINE__, data->wd_Background, left, top, width,
+                        //                              height, left, top));
                         zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
                                 left, top, width, height, left, top, 0);
                     }
@@ -3370,12 +3370,12 @@ static void WindowMinMax(Object *obj, struct MUI_WindowData *data)
     /* inquire about sizes */
     DoMethod(data->wd_RootObject, MUIM_AskMinMax, (IPTR)&data->wd_MinMax);
 /*      D(bug("*** root minmax = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth, */
-/*  	  data->wd_MinMax.MinHeight, */
-/*  	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
+/*            data->wd_MinMax.MinHeight, */
+/*            data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
 /*      D(bug("*** root minmax2 = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth, */
-/*  	  data->wd_MinMax.MinHeight, */
-/*  	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
+/*            data->wd_MinMax.MinHeight, */
+/*            data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
 }
 
 
@@ -3391,8 +3391,8 @@ static void InstallBackbuffer (struct IClass *cl, Object *obj)
 #endif
     if (data->wd_RenderInfo.mri_BufferBM)
     {
-/*  	D(bug("install_backbuffer : allocated bitmap %dx%dx%d with friend %p\n", */
-/*  	      win->Width, win->Height, win->RPort->BitMap->Depth, win->RPort->BitMap)); */
+/*          D(bug("install_backbuffer : allocated bitmap %dx%dx%d with friend %p\n", */
+/*                win->Width, win->Height, win->RPort->BitMap->Depth, win->RPort->BitMap)); */
         InitRastPort(&data->wd_RenderInfo.mri_BufferRP);
         data->wd_RenderInfo.mri_BufferRP.BitMap = data->wd_RenderInfo.mri_BufferBM;
     }
@@ -3487,10 +3487,10 @@ static ULONG WindowOpen(struct IClass *cl, Object *obj)
         height = data->wd_RenderInfo.mri_Window->Height
             - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-/*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
-//	D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-//	      __LINE__, data->wd_Background, left, top, width,
-//	      height, left, top));
+/*          D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+//        D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//              __LINE__, data->wd_Background, left, top, width,
+//              height, left, top));
 
         zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
                  left, top, width, height, left, top, 0);
@@ -3960,8 +3960,8 @@ IPTR Window__MUIM_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Win
         return FALSE;
 
 //    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
-//	  __LINE__, data->wd_Background, msg->left, msg->top, msg->width,
-//	  msg->height, msg->xoffset, msg->yoffset));
+//          __LINE__, data->wd_Background, msg->left, msg->top, msg->width,
+//          msg->height, msg->xoffset, msg->yoffset));
     zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
                     msg->left, msg->top, msg->width, msg->height,
                     msg->xoffset, msg->yoffset, 0);
