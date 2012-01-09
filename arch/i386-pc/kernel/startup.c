@@ -191,7 +191,7 @@ void kernel_cstart(const struct TagItem *msg)
 	/* Now relocate linked data */
 	mmap_len = LibGetTagData(KRN_MMAPLength, 0, BootMsg);
 	msg = BootMsg;
-	while ((tag = LibNextTagItem(&msg)))
+	while ((tag = LibNextTagItem((struct TagItem **)&msg)))
     	{
     	    switch (tag->ti_Tag)
     	    {
@@ -242,7 +242,7 @@ void kernel_cstart(const struct TagItem *msg)
      * (first boot and reboot)
      */
     msg = BootMsg;
-    while ((tag = LibNextTagItem(&msg)))
+    while ((tag = LibNextTagItem((struct TagItem **)&msg)))
     {
         switch (tag->ti_Tag)
         {
