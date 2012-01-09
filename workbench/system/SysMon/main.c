@@ -253,8 +253,6 @@ int main()
     struct SysMonModule * modules [] = {&memorymodule, &videomodule, &processormodule, &tasksmodule, &timermodule, NULL};
     LONG lastinitedmodule = -1;
 
-    Locale_Initialize();
-
     if ((lastinitedmodule = InitModules(modules)) == -1)
         return 1;
 
@@ -303,8 +301,6 @@ int main()
     DisposeApplication(&smdata);
 
     DeInitModules(modules, lastinitedmodule);
-
-    Locale_Deinitialize();
 
     return 0;
 }
