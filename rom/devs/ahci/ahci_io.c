@@ -167,15 +167,17 @@ AROS_LH1(void, BeginIO,
         CMD_READ,
         CMD_WRITE,
         CMD_UPDATE,
-        TD_FORMAT,
-        TD_PROTSTATUS,
+        TD_ADDCHANGEINT,
         TD_CHANGESTATE,
+        TD_FORMAT,
         TD_GETGEOMETRY,
+        TD_PROTSTATUS,
         TD_READ64,
+        TD_REMCHANGEINT,
         TD_WRITE64,
+        NSCMD_DEVICEQUERY,
         NSCMD_TD_READ64,
         NSCMD_TD_WRITE64,
-        NSCMD_DEVICEQUERY,
         0
     };
     struct IOExtTD *iotd = (struct IOExtTD *)io;
@@ -286,8 +288,23 @@ AROS_LH1(void, BeginIO,
         else
             goto bad_cmd;
         break;
+    case TD_ADDCHANGEINT:
+        if (io->io_Flags & IOF_QUICK)
+            goto bad_cmd;
+        AddHead((struct List *)&unit->sim_ChangeInts, (struct Node *)io);
+        io->io_Error = 0;
+        break;
+    case TD_REMCHANGEINT:
+        if (io->io_Flags & IOF_QUICK)
+            goto bad_cmd;
+        ahci_os_lock_port(ap);
+        Remove((struct Node *)io);
+        ahci_os_unlock_port(ap);
+        io->io_Error = 0;
+        done = TRUE;
+        break;
     case CMD_UPDATE:
-        // FIXME: Flush caches on the drive
+        // FIXME: Implement these
         io->io_Error = 0;
         done = TRUE;
         break;
