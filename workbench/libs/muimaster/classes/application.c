@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2011, The AROS Development Team.
+    Copyright  2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -102,8 +102,8 @@ struct MUI_ApplicationData
     BOOL                    app_UseRexx;
     struct MsgPort          *app_AppPort; /* Port for handling AppIcon / AppMenu */
     struct AppIcon          *app_AppIcon;
-    struct DiskObject       *app_AppIconDiskObject;
-
+    struct DiskObject       *app_DiskObject; /* This is only pointer to client-managed object */
+    struct DiskObject       *app_DefaultDiskObject; /* This is complete object managed by the class */
 };
 
 struct timerequest_ext
@@ -135,12 +135,12 @@ MUIA_Application_BrokerPri [I.G]          done
 MUIA_Application_Commands [ISG]           needs Arexx
 MUIA_Application_Copyright [I.G]          done
 MUIA_Application_Description [I.G]        done
-MUIA_Application_DiskObject [ISG]         needs struct DiskObject
+MUIA_Application_DiskObject [ISG]         done
 MUIA_Application_DoubleStart [..G]        not triggered yet (todo)
 MUIA_Application_DropObject [IS.]         needs AppMessage
 MUIA_Application_ForceQuit [..G]          not triggered yet
 MUIA_Application_HelpFile [ISG]           unused/dummy
-MUIA_Application_Iconified [.SG]          complete (handle appicons)
+MUIA_Application_Iconified [.SG]          done
 MUIA_Application_Menu [I.G]               unimplemented (OBSOLETE)
 MUIA_Application_MenuAction [..G]         done
 MUIA_Application_MenuHelp [..G]           todo (ditto)
@@ -536,6 +536,10 @@ static IPTR Application__OM_NEW(struct IClass *cl, Object *obj, struct opSet *ms
                 data->app_RexxHook = (struct Hook *)tag->ti_Data;
                 break;
 
+            case MUIA_Application_DiskObject:
+                data->app_DiskObject = (struct DiskObject *)tag->ti_Data;
+                break;
+
         }
     }
 
@@ -799,8 +803,8 @@ static IPTR Application__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_AppIcon)
         RemoveAppIcon(data->app_AppIcon);
 
-    if (data->app_AppIconDiskObject)
-        FreeDiskObject(data->app_AppIconDiskObject);
+    if (data->app_DefaultDiskObject)
+        FreeDiskObject(data->app_DefaultDiskObject);
 
     if (data->app_AppPort)
     {
@@ -912,9 +916,34 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                         if (data->app_Iconified)
                         {
                             STRPTR appname = data->app_Title ? data->app_Title : (STRPTR)"Unnamed";
-                            data->app_AppIconDiskObject = GetDefDiskObject(WBTOOL); //FIXME: read apps diskobject
-                            data->app_AppIcon = AddAppIconA(0L, 0L, appname, data->app_AppPort,
-                                                    NULL, data->app_AppIconDiskObject, NULL);
+                            struct DiskObject * dobj = (struct DiskObject *)XGET(obj, MUIA_Application_DiskObject);
+
+                            if (dobj == NULL)
+                            {
+                                /* Get defaults - first ENV:SYS/def_MUI.info */
+                                dobj = GetDiskObject("ENV:SYS/def_MUI");
+                                if (dobj) data->app_DefaultDiskObject = dobj;
+                                else
+                                {
+                                    /* Get defaults - second ENV:SYS/def_Zune.info */
+                                    dobj = GetDiskObject("ENV:SYS/def_Zune");
+                                    if (dobj) data->app_DefaultDiskObject = dobj;
+                                    else
+                                    {
+                                        /* Get default - third, default tool icon */
+                                        dobj = GetDefDiskObject(WBTOOL);
+                                        if (dobj) data->app_DefaultDiskObject = dobj;
+                                    }
+                                }
+                            }
+
+                            if (dobj == NULL)
+                                break;
+
+                            dobj->do_CurrentX = NO_ICON_POSITION;
+                            dobj->do_CurrentY = NO_ICON_POSITION;
+
+                            data->app_AppIcon = AddAppIconA(0L, 0L, appname, data->app_AppPort, NULL, dobj, NULL);
                         }
                         else
                         {
@@ -923,10 +952,10 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                                 RemoveAppIcon(data->app_AppIcon);
                                 data->app_AppIcon = NULL;
                             }
-                            if (data->app_AppIconDiskObject)
+                            if (data->app_DefaultDiskObject)
                             {
-                                FreeDiskObject(data->app_AppIconDiskObject);
-                                data->app_AppIconDiskObject = NULL;
+                                FreeDiskObject(data->app_DefaultDiskObject);
+                                data->app_DefaultDiskObject = NULL;
                             }
                         }
                     }
@@ -1023,6 +1052,10 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 
             case MUIA_Application_RexxHook:
                 data->app_RexxHook = (struct Hook *)tag->ti_Data;
+                break;
+
+            case MUIA_Application_DiskObject:
+                data->app_DiskObject = (struct DiskObject *)tag->ti_Data;
                 break;
         }
     }
@@ -1188,6 +1221,10 @@ static IPTR Application__OM_GET(struct IClass *cl, Object *obj, struct opGet *ms
 
         case MUIA_Application_RexxHook:
             STORE = (IPTR)data->app_RexxHook;
+            return TRUE;
+
+        case MUIA_Application_DiskObject:
+            STORE = (IPTR)data->app_DiskObject;
             return TRUE;
     }
 
