@@ -36,38 +36,40 @@
  *
  *	(c) Michal Schulz.
  */
-const ULONG TIMER_RPROK = 3599597124UL;
+static const ULONG TIMER_TUCONV = (ULONG)(1000000 * 0x100000000ULL / 1193180);
 
-static inline ULONG tick2usec(ULONG tick)
+static inline const ULONG tick2usec(const ULONG tick)
 {
-    ULONG ret, rest;
-
-    asm volatile("mull %3":"=d"(ret),"=a"(rest):"a"(TIMER_RPROK),"m"(tick));
-    ret+=rest>>31;
-    return ret;
+    return (ULONG)(((UQUAD)tick * TIMER_TUCONV) >> 32);
 }
 
-static inline ULONG usec2tick(ULONG usec)
-{
-    /*
-     * This is important!!! EAX must be set to zero at input.
-     * Previously asm construction here was written as:
-     *		asm volatile("movl $0,%%eax; divl %2":"=a"(ret),"+d"(usec):"m"(TIMER_RPROK));
-     * On x86-64 this caused dereferencing a NULL pointer. gcc v4.5.2 generated the
-     * following code:
-     * 		mov    $0x0,%rax	; This is a symbol reference, not actual zero.
-     *		mov    $0x0,%eax	; Here our asm begins. This is real zero.
-     *		divl   (%rax)
-     * I. e. is used RAX to store address of TIMER_RPROK without knowing about it
-     * being clobbered by the asm sequence itself.
-     * Adding :"eax" to the clobberlist caused "impossible constraint" error,
-     * so i made EAX to be both input and output operand and initialize it to zero in C.
-     */
-    ULONG ret = 0;
+/*
+ * So let's get rid of division once again:
+ *
+ * Theoretical value of ticks is: usec * tb_eclock_rate / 1000000
+ * a) Multiply both divident and divisor of the initial equation by 0x100000000 (4294967296 in decimal). In asm this
+ *    can be accomplished simply by using 64-bit math ops and using upper half instead of lower:
+ *    tick * 0x100000000 = usec * (1193180 * 0x100000000 / 1000000)
+ * b) Calculate the constant part in brackets:
+ *    tick * 0x100000000 =  usec * 5124669078
+ * c) Shift off the low bits
+ *    tick = (usec * 5124669078) >> 32;
+ * d) BUT! 5124669078 > 1<<32 , so by the communitive property we get:
+ *    tick = (usec * (2^32 + (5124669078 - 2^32))) / 2^32
+ *    or
+ *    tick = ((usec * 2^32)) + (usec * (5124669078 - 2^32))) / 2^32
+ *    or
+ *    tick = ((usec * 2^32) + (usec * 829701782)) / 2^32
+ *    or
+ *    tick = ((usec * 2^32 / 2^32) + (usec * 829701782) / 2^32
+ *    or
+ *    tick = usec + ((usec * 829701782) >> 32);
+ */
+static const ULONG TIMER_UTCONV =  (1193180 * 0x100000000ULL / 1000000) - 0x100000000;
 
-    /* Actually this seems to be usec * 4294967296 / 3599597124 */
-    asm volatile("divl %2":"+a"(ret),"+d"(usec):"m"(TIMER_RPROK));
-    return ret;
+static inline const ULONG usec2tick(const ULONG usec)
+{
+    return usec + (ULONG)(((UQUAD)usec * TIMER_UTCONV) >> 32);
 }
 
 /*
