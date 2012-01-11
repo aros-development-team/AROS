@@ -141,13 +141,6 @@ ULONG ahci_WaitTO(struct IORequest* tmr, ULONG secs, ULONG micro, ULONG sigs)
 {
     ULONG iosig = 1 << tmr->io_Message.mn_ReplyPort->mp_SigBit;
 
-    if (1) {
-        ULONG total = secs * 1000000 + micro;
-        total /= 4;
-        secs = total / 1000000;
-        micro = total % 1000000;
-    }
-
     //D(bug("[AHCI--] Timed wait %lds %ldu\n", secs, micro));
 
     tmr->io_Command = TR_ADDREQUEST;
