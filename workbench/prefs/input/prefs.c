@@ -68,7 +68,7 @@ static const struct nameexp layout_expansion_table[] =
     {"fin"  , "Finnish"             , "Suomi"           },
     {"f"    , "Français"            , "France"          },
     {"hr"   , "Hrvatski"            , "Hrvatska"        },
-    {"is"   , "Íslenska"            , "Island"          },
+    {"is"   , "Íslenska"            , "Ísland"          },
     {"i"    , "Italiana"            , "Italia"          },
     {"la"   , "Latin American"      , NULL              },
     {"lv"   , "Latvian"             , NULL              },
@@ -80,7 +80,7 @@ static const struct nameexp layout_expansion_table[] =
     {"rus"  , "Russian"             , "Rossija"         },
     {"ch2"  , "Suisse"              , "Suisse"          },
     {"sl"   , "Slovak"              , "Slovakia"        },
-    {"ch1"  , "Schweiz"             , "Suisse"          },
+    {"ch1"  , "Schweizer"           , "Schweiz"         },
     {"s"    , "Svenskt"             , "Sverige"         },
     {"ua"   , "Ukranian"            , "Ukrajina"        },
     {NULL   , NULL                  , NULL              }
@@ -423,7 +423,7 @@ BOOL Prefs_ExportFH(BPTR fh)
 
                         D(Printf("SavePrefs: PushChunk(PRHD) okay.\n"));
 
-                        head.ph_Version  = 0; // FIXME: shouold be PHV_CURRENT, but see <prefs/prefhdr.h>
+                        head.ph_Version  = 0; // FIXME: should be PHV_CURRENT, but see <prefs/prefhdr.h>
                         head.ph_Type     = 0;
                         head.ph_Flags[0] =
                         head.ph_Flags[1] =
