@@ -22,11 +22,11 @@
 #include <proto/timer.h>
 #include "timer.h"
 
-ULONG iters_per_100ns = 0;
-struct Device *TimerBase = 0;
+ULONG iters_per_100ns = ~0;
 
 static BOOL ahci_Calibrate(struct IORequest* tmr)
 {
+    struct Device *TimerBase = tmr->io_Device;
     register ULONG x;
     register ULONG scale = 0x8000;	// min iterations...
     volatile register ULONG t = 1;
@@ -88,9 +88,8 @@ struct IORequest *ahci_OpenTimer()
 	     */
 	    if (0 == OpenDevice(TIMERNAME, UNIT_MICROHZ, io, 0))	
 	    {
-		if (0 == TimerBase)
+		if (iters_per_100ns == ~0)
 		{
-		    TimerBase = io->io_Device;
 		    ahci_Calibrate(io);
 		}
 		return io;
