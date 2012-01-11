@@ -92,7 +92,8 @@ static int AHCI_Open
     iorq->io_Error = IOERR_OPENFAIL;
 
     ForeachNode(&LIBBASE->ahci_Units, tmp) {
-        if (tmp->sim_Unit == unitnum) {
+        if (tmp->sim_Unit == unitnum &&
+            !(tmp->sim_Flags & SIMF_OffLine)) {
             unit = tmp;
             AROS_ATOMIC_INC(unit->sim_UseCount);
             break;

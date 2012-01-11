@@ -67,13 +67,20 @@ struct ahci_port;
 #include <exec/semaphores.h>
 
 struct cam_sim {
-    struct MinNode sim_Node;
+    struct MinNode    sim_Node;
     struct ahci_port *sim_Port;
-    ULONG sim_Unit;
-    ULONG sim_UseCount;
+    ULONG             sim_Unit;
+    ULONG             sim_UseCount;
     struct SignalSemaphore sim_Lock;
-    unsigned int sim_Timeout;
-    struct MinList sim_ChangeInts;
+    unsigned int      sim_Timeout;
+    struct List       sim_IOs;
+    ULONG             sim_Flags;
+#define SIMB_MediaPresent       0       /* Media is present */
+#define SIMB_OffLine            1       /* No new IOs are permitted */
+#define SIMF_MediaPresent       (1 << SIMB_MediaPresent)
+#define SIMF_OffLine            (1 << SIMB_OffLine)
+    ULONG             sim_ChangeNum;
+    struct Task      *sim_Monitor;
 };
 
 #endif /* AHCI_INTERN_H */

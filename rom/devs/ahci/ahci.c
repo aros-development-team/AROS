@@ -2489,12 +2489,13 @@ ahci_port_intr(struct ahci_port *ap, int blockable)
 	 * This stops command processing.
 	 */
 	if (is & AHCI_PREG_IS_TFES) {
-		u_int32_t tfd, serr;
+		u_int32_t tfd, serr, cmd;
 		int	err_slot;
 
 process_error:
 		tfd = ahci_pread(ap, AHCI_PREG_TFD);
 		serr = ahci_pread(ap, AHCI_PREG_SERR);
+		cmd = ahci_pread(ap, AHCI_PREG_CMD);
 
 		/*
 		 * Load the error slot and restart command processing.
@@ -2506,7 +2507,11 @@ process_error:
 		 * It is unclear but we may have to clear SERR to reenable
 		 * error processing.
 		 */
-		err_slot = AHCI_PREG_CMD_CCS(ahci_pread(ap, AHCI_PREG_CMD));
+		if (cmd & AHCI_PREG_CMD_ST) {
+		    err_slot = AHCI_PREG_CMD_CCS(ahci_pread(ap, AHCI_PREG_CMD));
+		} else {
+		    err_slot = -1;
+		}
 		ahci_pwrite(ap, AHCI_PREG_IS, AHCI_PREG_IS_TFES |
 					      AHCI_PREG_IS_PSS |
 					      AHCI_PREG_IS_DHRS |

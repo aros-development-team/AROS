@@ -44,6 +44,19 @@ struct scsi_vpd_unit_devid {
 
 #define SHORT_INQUIRY_LENGTH 36
 
+struct scsi_generic {
+    UBYTE opcode;
+    UBYTE resv[5];
+};
+struct scsi_inquiry {
+    UBYTE opcode;
+    UBYTE byte2;
+#define SI_EVPD (1 << 0)
+    UBYTE page_code;
+    UBYTE length;
+    UBYTE control;
+};
+
 struct scsi_inquiry_data {
 #define T_DIRECT        0x00
     UBYTE device;
@@ -87,6 +100,7 @@ struct scsi_sense_data {
     UBYTE flags;
 #define SSD_KEY                 0x0f
 #define         SSD_KEY_MEDIUM_ERROR    0x01
+#define         SSD_KEY_NOT_READY       0x02
 #define         SSD_KEY_ILLEGAL_REQUEST 0x05
 #define SSD_ILI                 0x20
 #define SSD_EOM                 0x40
@@ -174,18 +188,8 @@ struct scsi_read_capacity_16 {
 };
 
 typedef union scsi_cdb {
-    struct {
-        UBYTE opcode;
-        UBYTE resv[5];
-    } generic;
-    struct {
-        UBYTE opcode;
-        UBYTE byte2;
-#define SI_EVPD (1 << 0)
-        UBYTE page_code;
-        UBYTE length;
-        UBYTE control;
-    } inquiry;
+    struct scsi_generic generic;
+    struct scsi_inquiry inquiry;
     struct scsi_read_capacity read_capacity;
     struct scsi_rw_6 rw_6;
     struct scsi_rw_10 rw_10;

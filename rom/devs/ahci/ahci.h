@@ -36,7 +36,7 @@
 #define AHCI_D_VERBOSE		0x01
 #define AHCI_D_INTR		0x02
 #define AHCI_D_XFER		0x08
-int ahcidebug = AHCI_D_VERBOSE;
+static const int ahcidebug = 0xff;
 #else
 #define DPRINTF(m, f...)
 #endif
@@ -486,7 +486,7 @@ struct ahci_softc {
 	struct sysctl_ctx_list	sysctl_ctx;
 	struct sysctl_oid	*sysctl_tree;
 };
-#define DEVNAME(_s)		((_s)->sc_dev.dv_xname)
+#define DEVNAME(_s)		"ahci.device"
 
 struct ahci_device {
 	pci_vendor_id_t		ad_vendor;

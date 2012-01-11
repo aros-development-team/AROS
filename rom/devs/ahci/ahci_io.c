@@ -48,6 +48,8 @@
 /* Translate to a SCSI command, since the
  * backend will make that work on both ATAPI
  * and ATA devices.
+ *
+ * Return whether or not we are completed.
  */
 static BOOL ahci_sector_rw(struct IORequest *io, UQUAD off64, BOOL is_write)
 {
@@ -197,14 +199,26 @@ AROS_LH1(void, BeginIO,
     UQUAD off64;
     struct DriveGeometry *geom;
     struct NSDeviceQueryResult *nsqr;
-    BOOL done = FALSE;
+    BOOL done = (io->io_Flags & IOF_QUICK) ? TRUE : FALSE;
 
     io->io_Message.mn_Node.ln_Type = NT_MESSAGE;
     io->io_Error = 0;
 
     D(bug("[AHCI%02ld] BeginIO: Start, io_Flags = %d, io_Command = %d\n", 0, io->io_Flags, io->io_Command));
 
+    /* Unit going offline? Don't permit new commands. */
+    if (unit->sim_Flags & SIMF_OffLine) {
+        io->io_Error = IOERR_OPENFAIL;
+        if (!(io->io_Flags & IOF_QUICK))
+            ReplyMsg(&io->io_Message);
+        return;
+    }
+
     ObtainSemaphore(&unit->sim_Lock);
+
+    Forbid();
+    AddHead(&unit->sim_IOs, &io->io_Message.mn_Node);
+    Permit();
 
     switch (io->io_Command) {
     case NSCMD_DEVICEQUERY:
@@ -225,13 +239,11 @@ AROS_LH1(void, BeginIO,
         done = TRUE;
         break;
     case TD_CHANGENUM:
-        // FIXME: Count the number of changes
-        IOStdReq(io)->io_Actual = 1;
+        IOStdReq(io)->io_Actual = unit->sim_ChangeNum;
         done = TRUE;
         break;
     case TD_CHANGESTATE:
-        // FIXME: Report changestate
-        IOStdReq(io)->io_Actual = (ap->ap_type == ATA_PORT_T_DISK || ap->ap_type == ATA_PORT_T_ATAPI) ? 0 : 1;
+        IOStdReq(io)->io_Actual = (unit->sim_Flags & SIMF_MediaPresent) ? 0 : -1;
         done = TRUE;
         break;
     case TD_EJECT:
@@ -311,14 +323,10 @@ AROS_LH1(void, BeginIO,
     case TD_ADDCHANGEINT:
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
-        AddHead((struct List *)&unit->sim_ChangeInts, (struct Node *)io);
         break;
     case TD_REMCHANGEINT:
         if (io->io_Flags & IOF_QUICK)
             goto bad_cmd;
-        ahci_os_lock_port(ap);
-        Remove((struct Node *)io);
-        ahci_os_unlock_port(ap);
         done = TRUE;
         break;
     case CMD_CLEAR:
@@ -345,9 +353,17 @@ bad_address:
         break;
     }
 
+    /* The IO is finished, so no need to keep it around anymore */
+    if (done) {
+        Forbid();
+        Remove(&io->io_Message.mn_Node);
+        Permit();
+    }
+        
     ReleaseSemaphore(&unit->sim_Lock);
 
-    if (done || (io->io_Flags & IOF_QUICK))
+    /* Need a reply now? */
+    if (done && !(io->io_Flags & IOF_QUICK))
         ReplyMsg(&io->io_Message);
 
     D(bug("[AHCI%02ld] BeginIO: Done, io_Flags = %d, io_Error = %d\n", unit->sim_Unit, io->io_Flags, io->io_Error));

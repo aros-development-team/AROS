@@ -57,6 +57,7 @@ struct scsi_link;
 #define ATA_SF_WRITECACHE_EN	0x02
 #define ATA_SF_SETXFER		0x03
 #define ATA_SF_LOOKAHEAD_EN	0xaa
+#define ATA_SF_SENSEDATA_EN	0xc3
 
 struct ata_identify {
 	u_int16_t	config;		/*   0 */
