@@ -90,20 +90,91 @@ static void ahci_ata_dummy_sense(struct scsi_sense_data *sense_data)
 static void ahci_ata_atapi_sense(struct ata_fis_d2h *rfis,
              struct scsi_sense_data *sense_data)
 {
+    UBYTE asc = 0, asq = 0, key = 0;
+
+    if ((rfis->status & ATA_D2H_STATUS_BSY)) {
+        key = SSD_KEY_ABORTED_COMMAND;
+    } else {
+        /* Decode error bits */
+        switch (rfis->error & 0xff) {
+        case ATA_D2H_ERROR_BBK|ATA_D2H_ERROR_UNK|ATA_D2H_ERROR_IDNF:
+        case ATA_D2H_ERROR_BBK|ATA_D2H_ERROR_UNK|ATA_D2H_ERROR_IDNF|ATA_D2H_ERROR_AMNF:
+                /* Device busy, aborted command */
+        case ATA_D2H_ERROR_ABRT:
+                /* Aborted command */
+                key = SSD_KEY_ABORTED_COMMAND;
+                break;
+        case ATA_D2H_ERROR_UNK|ATA_D2H_ERROR_MC|ATA_D2H_ERROR_AMNF:
+                /* Hardware fault */
+                key = SSD_KEY_HARDWARE_ERROR;
+                break;
+        case ATA_D2H_ERROR_BBK|ATA_D2H_ERROR_ABRT:
+                /* Data partiy error */
+                key = SSD_KEY_ABORTED_COMMAND;
+                asc = 0x47;
+                break;
+        case ATA_D2H_ERROR_MCR:
+                /* Media change request */
+        case ATA_D2H_ERROR_MC|ATA_D2H_ERROR_IDNF|ATA_D2H_ERROR_ABRT|ATA_D2H_ERROR_TK0NF|ATA_D2H_ERROR_AMNF:
+        case ATA_D2H_ERROR_MCR|ATA_D2H_ERROR_AMNF:
+                /* Unit offline or not ready */
+                key = SSD_KEY_NOT_READY;
+                asc = 0x04;
+                break;
+        case ATA_D2H_ERROR_AMNF:
+                /* No address mark found */
+                key = SSD_KEY_MEDIUM_ERROR;
+                asc = 0x13;
+                break;
+        case ATA_D2H_ERROR_TK0NF:
+                /* Track 0 not found */
+                key = SSD_KEY_HARDWARE_ERROR;
+                break;
+        case ATA_D2H_ERROR_IDNF:
+                /* Sector not found */
+                key = SSD_KEY_ABORTED_COMMAND;
+                asc = 0x14;
+                break;
+        case ATA_D2H_ERROR_BBK:
+                /* Bad block */
+        case ATA_D2H_ERROR_UNK:
+                /* ECC failure */
+                key = SSD_KEY_MEDIUM_ERROR;
+                asc = 0x11;
+                asq = 0x04;
+                break;
+        default:
+                D(bug("ahci.device: No sense translation for ATA Error 0x%02x\n", rfis->error));
+                switch (rfis->status) {
+                case ATA_D2H_STATUS_DF:
+                    key = SSD_KEY_HARDWARE_ERROR;
+                    break;
+                case ATA_D2H_STATUS_DRQ:
+                    key = SSD_KEY_ABORTED_COMMAND;
+                    asc = 0x47;
+                    break;
+                case ATA_D2H_STATUS_CORR:
+                    key = SSD_KEY_RECOVERED_ERROR;
+                    asc = 0x11;
+                    break;
+                default:
+                    D(bug("ahci.device: No sense translation for ATA Status 0x%02x\n", rfis->status));
+                    key = SSD_KEY_ABORTED_COMMAND;
+                    break;
+                }
+                break;
+        }
+    }
+
+    memset(sense_data, 0, sizeof(sense_data));
+
     sense_data->error_code = SSD_ERRCODE_VALID | SSD_CURRENT_ERROR;
-    sense_data->segment = 0;
-    sense_data->flags = (rfis->error & 0xF0) >> 4;
-    if (rfis->error & 0x04)
-        sense_data->flags |= SSD_KEY_ILLEGAL_REQUEST;
-    if (rfis->error & 0x02)
-        sense_data->flags |= SSD_EOM;
-    if (rfis->error & 0x01)
+
+    sense_data->flags = ((rfis->error & 0xF0) >> 4) | key;
+    if (rfis->error & ATA_D2H_ERROR_AMNF)
         sense_data->flags |= SSD_ILI;
-    sense_data->info[0] = 0;
-    sense_data->info[1] = 0;
-    sense_data->info[2] = 0;
-    sense_data->info[3] = 0;
-    sense_data->extra_len = 0;
+    sense_data->add_sense_code = asc;
+    sense_data->add_sense_qual = asq;
 }
 
 void ahci_io_complete(struct ata_xfer *xa)

@@ -204,7 +204,23 @@ struct ata_fis_d2h {
 	u_int8_t		flags;
 #define ATA_D2H_FLAGS_INTR		(1<<6)
 	u_int8_t		status;
+#define ATA_D2H_STATUS_BSY		(1<<7)  /* Busy */
+#define ATA_D2H_STATUS_DRDY		(1<<6)  /* Device Ready */
+#define ATA_D2H_STATUS_DF		(1<<5)  /* Device Fault */
+#define ATA_D2H_STATUS_DSC		(1<<4)  /* Seek Complete */
+#define ATA_D2H_STATUS_DRQ		(1<<3)  /* Data Transfer Request */
+#define ATA_D2H_STATUS_CORR		(1<<2)  /* Data Corrected */
+#define ATA_D2H_STATUS_IDX		(1<<1)  /* Index mark */
+#define ATA_D2H_STATUS_ERR		(1<<0)  /* Error */
 	u_int8_t		error;
+#define ATA_D2H_ERROR_BBK		(1<<7)  /* Bad Block */
+#define ATA_D2H_ERROR_UNK		(1<<6)  /* Uncorrectable data error */
+#define ATA_D2H_ERROR_MC		(1<<5)  /* Media Check */
+#define ATA_D2H_ERROR_IDNF		(1<<4)  /* ID (of sector) not found  */
+#define ATA_D2H_ERROR_MCR		(1<<3)  /* Media Change Request */
+#define ATA_D2H_ERROR_ABRT		(1<<2)  /* Aborted Command */
+#define ATA_D2H_ERROR_TK0NF		(1<<1)  /* Track 0 not valid */
+#define ATA_D2H_ERROR_AMNF		(1<<0)  /* Data Address Mark not found */
 
 	u_int8_t		lba_low;
 	u_int8_t		lba_mid;
