@@ -70,7 +70,6 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
                 scsi.scsi_SenseLength = sizeof(sense);
                 scsi.scsi_SenseActual = 0;
 
-
                 DoIO(io);
 
                 is_present = (io->io_Error == 0) && (scsi.scsi_Status == SCSI_GOOD);
@@ -327,17 +326,8 @@ void ahci_cam_changed(struct ahci_port *ap, struct ata_port *atx, int found)
 {
     D(bug("ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
 
-    if (ap && ap->ap_sim && found == -1) {
-        struct ata_port *at = ap->ap_ata[0];
-        /* Enable sense data reporting, if supported */
-        if ((at->at_identify.cmdset119 & (1 << 6)) &&
-            (at->at_identify.features120 & (1 << 6))) {
-            ahci_os_lock_port(ap);
-            ahci_set_feature(ap, NULL, ATA_SF_SENSEDATA_EN, 1);
-            ahci_os_unlock_port(ap);
-        }
+    if (ap && ap->ap_sim && found == -1)
         ahci_RegisterVolume(ap);
-    }
 
     /* Mark the port scan as completed */
     ap->ap_flags |= AP_F_SCAN_COMPLETED;

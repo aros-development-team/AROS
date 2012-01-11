@@ -67,29 +67,16 @@ static inline void scsi_ulto4b(ULONG val, UBYTE *addr)
 }
 
 /*
- * Construct dummy sense data for errors on DISKs
- */
-static void ahci_ata_dummy_sense(struct scsi_sense_data *sense_data)
-{
-    sense_data->error_code = SSD_ERRCODE_VALID | SSD_CURRENT_ERROR;
-    sense_data->segment = 0;
-    sense_data->flags = SSD_KEY_MEDIUM_ERROR;
-    sense_data->info[0] = 0;
-    sense_data->info[1] = 0;
-    sense_data->info[2] = 0;
-    sense_data->info[3] = 0;
-    sense_data->extra_len = 0;
-}
-
-/*
- * Construct atapi sense data for errors on ATAPI
+ * Construct dummy sense data for disks, and ATAPI devices
+ * that do not support extended status
  *
- * The ATAPI sense data is stored in the passed rfis and must be converted
- * to SCSI sense data.
+ * In the io_complete, there should a REQUEST SENSE command
+ * for ATAPI devices
  */
-static void ahci_ata_atapi_sense(struct ata_fis_d2h *rfis,
-             struct scsi_sense_data *sense_data)
+static void ahci_ata_sense(struct ata_xfer *xa,
+        struct scsi_sense_data *sense_data)
 {
+    struct ata_fis_d2h *rfis = &xa->rfis;
     UBYTE asc = 0, asq = 0, key = 0;
 
     if ((rfis->status & ATA_D2H_STATUS_BSY)) {
@@ -103,59 +90,82 @@ static void ahci_ata_atapi_sense(struct ata_fis_d2h *rfis,
         case ATA_D2H_ERROR_ABRT:
                 /* Aborted command */
                 key = SSD_KEY_ABORTED_COMMAND;
+                asc = 0x00; asq = 0x00; /* no additional sense code */
                 break;
         case ATA_D2H_ERROR_UNK|ATA_D2H_ERROR_MC|ATA_D2H_ERROR_AMNF:
                 /* Hardware fault */
                 key = SSD_KEY_HARDWARE_ERROR;
+                asc = 0x44; asq = 0x00; /* internal target failure */
                 break;
         case ATA_D2H_ERROR_BBK|ATA_D2H_ERROR_ABRT:
                 /* Data partiy error */
                 key = SSD_KEY_ABORTED_COMMAND;
-                asc = 0x47;
+                asc = 0x4b; asq = 0x00;   /* data phase error */
+                break;
+        case ATA_D2H_ERROR_MC:
+                /* No media */
+                key = SSD_KEY_NOT_READY;
+                asc = 0x3a; asq = 0x00;   /* medium not present */
                 break;
         case ATA_D2H_ERROR_MCR:
                 /* Media change request */
+                key = SSD_KEY_NOT_READY;
+                asc = 0x04; asq = 0x03;    /* manual intervention required */
+                break;
         case ATA_D2H_ERROR_MC|ATA_D2H_ERROR_IDNF|ATA_D2H_ERROR_ABRT|ATA_D2H_ERROR_TK0NF|ATA_D2H_ERROR_AMNF:
         case ATA_D2H_ERROR_MCR|ATA_D2H_ERROR_AMNF:
                 /* Unit offline or not ready */
                 key = SSD_KEY_NOT_READY;
-                asc = 0x04;
+                asc = 0x04; asq = 0x00;    /* unknown reason */
                 break;
         case ATA_D2H_ERROR_AMNF:
                 /* No address mark found */
                 key = SSD_KEY_MEDIUM_ERROR;
-                asc = 0x13;
+                asc = 0x31; asq = 0x00;    /* medium format corrupted */
                 break;
         case ATA_D2H_ERROR_TK0NF:
                 /* Track 0 not found */
                 key = SSD_KEY_HARDWARE_ERROR;
+                asc = 0x02; asq = 0x00;    /* no seek complete */
                 break;
         case ATA_D2H_ERROR_IDNF:
                 /* Sector not found */
-                key = SSD_KEY_ABORTED_COMMAND;
-                asc = 0x14;
+                key = SSD_KEY_ILLEGAL_REQUEST;
+                asc = 0x21; asq = 0x00;    /* LBA out of range */
                 break;
         case ATA_D2H_ERROR_BBK:
-                /* Bad block */
+                /* Bad block (now defined as interface CRC in ATA8-ACS) */
+                key = SSD_KEY_ABORTED_COMMAND;
+                asc = 0x47; asq = 0x00;    /* SCSI partity error */
+                break;
         case ATA_D2H_ERROR_UNK:
                 /* ECC failure */
                 key = SSD_KEY_MEDIUM_ERROR;
-                asc = 0x11;
-                asq = 0x04;
+                if ((xa->fis->flags & ATA_H2D_FEATURES_DIR) == ATA_H2D_FEATURES_DIR_WRITE) {
+                        asc = 0x10; asq = 0x00;    /* write fault */
+                } else {
+                        asc = 0x11; asq = 0x00;    /* read fault */
+                }
                 break;
         default:
                 D(bug("ahci.device: No sense translation for ATA Error 0x%02x\n", rfis->error));
                 switch (rfis->status) {
                 case ATA_D2H_STATUS_DF:
                     key = SSD_KEY_HARDWARE_ERROR;
+                    asc = 0x44; asq = 0x00;     /* Internal target failure */
                     break;
                 case ATA_D2H_STATUS_DRQ:
                     key = SSD_KEY_ABORTED_COMMAND;
-                    asc = 0x47;
+                    asc = 0x4B; asq = 0x00;     /* Data phase error */
                     break;
                 case ATA_D2H_STATUS_CORR:
-                    key = SSD_KEY_RECOVERED_ERROR;
-                    asc = 0x11;
+                    if ((xa->fis->flags & ATA_H2D_FEATURES_DIR) == ATA_H2D_FEATURES_DIR_WRITE) {
+                        key = SSD_KEY_RECOVERED_ERROR;
+                        asc = 0x0c; asq = 0x01; /* Recovered write with realloc */
+                    } else {
+                        key = SSD_KEY_RECOVERED_ERROR;
+                        asc = 0x18; asq = 0x02; /* Recovered read  with realloc */
+                    }
                     break;
                 default:
                     D(bug("ahci.device: No sense translation for ATA Status 0x%02x\n", rfis->status));
@@ -177,10 +187,9 @@ static void ahci_ata_atapi_sense(struct ata_fis_d2h *rfis,
     sense_data->add_sense_qual = asq;
 }
 
-void ahci_io_complete(struct ata_xfer *xa)
+static void ahci_io_complete(struct ata_xfer *xa)
 {
     struct IORequest *io = xa->atascsi_private;
-    struct ata_port  *at = xa->at;
     const int sense_length = offsetof(struct scsi_sense_data, extra_bytes[0]);
 
     switch (xa->state) {
@@ -197,16 +206,19 @@ void ahci_io_complete(struct ata_xfer *xa)
     case ATA_S_ERROR:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
+            D(bug("Error on HD_SCSICMD\n"));
             scsi->scsi_Status = SCSI_CHECK_CONDITION;
             scsi->scsi_Actual = 0;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
-            if (io->io_Flags & (SCSIF_AUTOSENSE | SCSIF_OLDAUTOSENSE)) {
+            if (scsi->scsi_Flags & (SCSIF_AUTOSENSE | SCSIF_OLDAUTOSENSE)) {
+                D(bug("SCSIF_AUTOSENSE desired\n"));
                 if (scsi->scsi_SenseData && scsi->scsi_SenseLength >= sense_length) {
-                    if (at->at_type == ATA_PORT_T_ATAPI)
-                        ahci_ata_atapi_sense(&xa->rfis, (void *)scsi->scsi_SenseData);
-                    else
-                        ahci_ata_dummy_sense((void *)scsi->scsi_SenseData);
+                    ahci_ata_sense(xa, (void *)scsi->scsi_SenseData);
                     scsi->scsi_SenseActual = sense_length;
+                    D(bug("SCSI Sense: KCQ = 0x%02x 0x%02x 0x%02x\n",
+                                scsi->scsi_SenseData[2],
+                                scsi->scsi_SenseData[12],
+                                scsi->scsi_SenseData[13]));
                 }
             }
         } else {
