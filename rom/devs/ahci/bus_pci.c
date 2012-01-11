@@ -6,8 +6,6 @@
     Lang: English
 */
 
-#define DEBUG 0
-
 #include <aros/asmcall.h>
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
@@ -131,7 +129,6 @@ static int ahci_pci_scan(struct AHCIBase *AHCIBase)
 
     while ((dev = (device_t)RemHead(&Args.devices)) != NULL) {
         if (ahci_attach(dev) != 0) {
-            bug("** OH SNAP! ahci_attach() failed!\n");
             FreePooled(AHCIBase->ahci_MemPool, dev, sizeof(*dev) + sizeof(*(dev->dev_softc)));
         }
     }

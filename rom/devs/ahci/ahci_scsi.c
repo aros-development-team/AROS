@@ -114,7 +114,6 @@ void ahci_io_complete(struct ata_xfer *xa)
 
     switch (xa->state) {
     case ATA_S_COMPLETE:
-        io->io_Error  = 0;
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
             scsi->scsi_Status = SCSI_GOOD;
@@ -127,7 +126,6 @@ void ahci_io_complete(struct ata_xfer *xa)
     case ATA_S_ERROR:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
-            io->io_Error = 0;
             scsi->scsi_Status = SCSI_CHECK_CONDITION;
             scsi->scsi_Actual = 0;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
@@ -148,7 +146,6 @@ void ahci_io_complete(struct ata_xfer *xa)
     case ATA_S_TIMEOUT:
         if (io->io_Command == HD_SCSICMD) {
             struct SCSICmd *scsi = IOStdReq(io)->io_Data;
-            io->io_Error = 0;
             scsi->scsi_Status = SCSI_BUSY;
             scsi->scsi_Actual = 0;
             IOStdReq(io)->io_Actual = sizeof(*scsi);
@@ -163,8 +160,12 @@ void ahci_io_complete(struct ata_xfer *xa)
     }
 
     ahci_ata_put_xfer(xa);
-    if (!(io->io_Flags & IOF_QUICK))
+    if (!(io->io_Flags & IOF_QUICK)) {
+        Forbid();
+        Remove(&io->io_Message.mn_Node);
+        Permit();
         ReplyMsg(&io->io_Message);
+    }
 }
 
 
@@ -176,7 +177,6 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
     union {
         struct scsi_vpd_supported_page_list    list;
         struct scsi_vpd_unit_serial_number    serno;
-        struct scsi_vpd_unit_devid        devid;
         UBYTE                    buf[256];
     } page;
     scsi_cdb_t cdb;
@@ -193,7 +193,6 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         page.list.page_code = SVPD_SUPPORTED_PAGE_LIST;
         page.list.list[i++] = SVPD_SUPPORTED_PAGE_LIST;
         page.list.list[i++] = SVPD_UNIT_SERIAL_NUMBER;
-        page.list.list[i++] = SVPD_UNIT_DEVID;
         page.list.length = i;
         len = offsetof(struct scsi_vpd_supported_page_list, list[3]);
         break;
@@ -212,8 +211,6 @@ static BYTE ahci_scsi_page_inquiry(struct ahci_port *ap, struct ata_port *at, st
         len = offsetof(struct scsi_vpd_unit_serial_number,
                    serial_num[j-i]);
         break;
-    case SVPD_UNIT_DEVID:
-        /* fall through for now */
     default:
         return IOERR_NOCMD;
         break;
@@ -288,6 +285,8 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
             if (rdata_len > sizeof(rdata->inquiry_data))
                 rdata_len = sizeof(rdata->inquiry_data);
             rdata->inquiry_data.device = T_DIRECT;
+            /* Mark as removable if ATA has the 'removable' tag */
+            rdata->inquiry_data.dev_qual2 = (at->at_identify.config ? 0x80 : 0);
             rdata->inquiry_data.version = SCSI_REV_SPC2;
             rdata->inquiry_data.response_format = 2;
             rdata->inquiry_data.additional_length = 32;
@@ -299,7 +298,6 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
                   rdata->inquiry_data.revision,
                   sizeof(rdata->inquiry_data.revision));
         }
-        io->io_Error = 0;
         break;
     case SCSI_DA_READ_CAPACITY:
         done = TRUE;
@@ -318,7 +316,6 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         scsi_ulto4b((u_int32_t)capacity - 1,
                 rdata->read_capacity_data.addr);
         scsi_ulto4b(512, rdata->read_capacity_data.length);
-        io->io_Error = 0;
         break;
     case SCSI_DA_SYNCHRONIZE_CACHE:
         /*
@@ -339,7 +336,6 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         /*
          * Just silently return success
          */
-        io->io_Error = 0;
         done = TRUE;
         rdata_len = 0;
         break;
@@ -469,6 +465,7 @@ BOOL ahci_scsi_disk_io(struct IORequest *io, struct SCSICmd *scsi)
         ahci_ata_cmd(xa);
         ahci_os_unlock_port(ap);
     } else {
+        IOStdReq(io)->io_Actual = sizeof(*scsi);
         ahci_ata_put_xfer(xa);
     }
 

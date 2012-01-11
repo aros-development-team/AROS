@@ -25,15 +25,12 @@ void callout_init(struct callout *co)
 
 void callout_stop(struct callout *co)
 {
-bug("%s: %d %p stop\n", __func__, __LINE__, co);
     Forbid();
     if (co->co_Task) {
-bug("%s: %d %p stopping\n", __func__, __LINE__, co);
         Signal(co->co_Task, SIGF_ABORT);
         co->co_Task = NULL;
     }
     Permit();
-bug("%s: %d %p stopped\n", __func__, __LINE__, co);
 }
 
 static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
@@ -42,20 +39,15 @@ static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func,
     ULONG signals;
     ULONG us = (ticks * 1000000) / hz;
 
-bug("%s: %d %p start, %d ticks, %p(%p)\n", __func__, __LINE__, co, ticks, func, arg);
-bug("%s: %d timeout (%ds %dus)\n", __func__, __LINE__, us / 1000000, us % 1000000);
     if ((io = ahci_OpenTimer())) {
         signals = ahci_WaitTO(io, us / 1000000, us % 1000000, SIGF_ABORT);
         ahci_CloseTimer(io);
     }
 
     if (!(signals & SIGF_ABORT)) {
-bug("%s: %d %p Callout timeout function %p(%p)\n", __func__, __LINE__, co, func, arg);
         co->co_Task = NULL;
         func(arg);
     }
-
-bug("%s: %d %p done\n", __func__, __LINE__, co);
 }
 
 int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
@@ -64,7 +56,6 @@ int callout_reset(struct callout *co, unsigned ticks, timeout_t *func, void *arg
 
     callout_stop(co);
 
-bug("%s: %d %p reset, %d ticks, %p(%p)\n", __func__, __LINE__, co, ticks, func, arg);
     t = NewCreateTask(TASKTAG_NAME, "AHCI Callout",
                       TASKTAG_PC, callout_handler,
                       TASKTAG_PRI, 21,

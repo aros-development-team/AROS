@@ -5,20 +5,125 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#include <aros/debug.h>
+#include <aros/atomic.h>
+
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/dos.h>
 
 #include <dos/filehandler.h>
 
+#include <devices/trackdisk.h>
+#include <devices/scsidisk.h>
+
+#include <scsi/commands.h>
+#include <scsi/values.h>
+
 #include "ahci.h"
+#include "ahci_scsi.h"
 
 #include LC_LIBDEFS_FILE
+
+/*
+ * Execute a SCSI TEST UNIT READY every 250ms, to see
+ * if the medium has changed.
+ */
+static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct cam_sim *unit)
+{
+    struct MsgPort *mp;
+
+    D(bug("%s %d: Monitor Start\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
+    AROS_ATOMIC_INC(unit->sim_UseCount);
+    Signal(parent, SIGBREAKF_CTRL_C);
+
+    if ((mp = CreateMsgPort())) { 
+        struct IORequest *io;
+        if ((io = CreateIORequest(mp, sizeof(struct IOStdReq)))) {
+            BOOL media_present = FALSE;
+
+            struct scsi_generic test_unit_ready = { .opcode = SCSI_TEST_UNIT_READY, };
+            struct scsi_sense_data sense = {};
+            struct SCSICmd scsi = {};
+
+            io->io_Device = device;
+            io->io_Unit = (struct Unit *)unit;
+
+            D(bug("%s %d: Monitoring\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
+            ObtainSemaphore(&unit->sim_Lock);
+            while (!(unit->sim_Flags & SIMF_OffLine)) {
+                BOOL is_present;
+
+                ReleaseSemaphore(&unit->sim_Lock);
+                io->io_Command = HD_SCSICMD;
+                io->io_Flags   = 0;
+                io->io_Error = 0;
+                IOStdReq(io)->io_Data = &scsi;
+                IOStdReq(io)->io_Length = sizeof(scsi);
+                IOStdReq(io)->io_Actual = 0;
+                scsi.scsi_Command = (UBYTE *)&test_unit_ready;
+                scsi.scsi_CmdLength = sizeof(test_unit_ready);
+                scsi.scsi_Actual = 0;
+                scsi.scsi_Status = 0;
+                scsi.scsi_Flags = SCSIF_AUTOSENSE;
+                scsi.scsi_SenseData = (UBYTE *)&sense;
+                scsi.scsi_SenseLength = sizeof(sense);
+                scsi.scsi_SenseActual = 0;
+
+
+                DoIO(io);
+
+                is_present = (io->io_Error == 0) && (scsi.scsi_Status == SCSI_GOOD);
+                // TODO: Check sense for additional information
+
+                ObtainSemaphore(&unit->sim_Lock);
+                if (is_present)
+                    unit->sim_Flags |= SIMF_MediaPresent;
+                else
+                    unit->sim_Flags &= ~SIMF_MediaPresent;
+                if (is_present != media_present)
+                    unit->sim_ChangeNum++;
+                ReleaseSemaphore(&unit->sim_Lock);
+
+                if (is_present != media_present) {
+                    struct IORequest *msg;
+
+                    D(bug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE"));
+
+                    if (is_present) {
+                        Forbid();
+
+                        ForeachNode((struct Node *)&unit->sim_IOs, msg) {
+                            D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command)); 
+                            if (msg->io_Command == TD_ADDCHANGEINT) {
+                                D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
+                                Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
+                            }
+                        }
+                        Permit();
+                    }
+                }
+                media_present = is_present;
+
+                /* Wait 1s to the next scan */
+                ahci_os_sleep(1000);
+                ObtainSemaphore(&unit->sim_Lock);
+            }
+            ReleaseSemaphore(&unit->sim_Lock);
+
+            DeleteIORequest(io);
+        }
+        DeleteMsgPort(mp);
+    }
+    AROS_ATOMIC_DEC(unit->sim_UseCount);
+    D(bug("%s %d: Monitor End\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
+}
 
 static int ahci_RegisterPort(struct ahci_port *ap)
 {
     struct AHCIBase *AHCIBase = ap->ap_sc->sc_dev->dev_AHCIBase;
     struct cam_sim *unit;
+    char name[64];
 
     unit = AllocPooled(AHCIBase->ahci_MemPool, sizeof(*unit));
     if (!unit)
@@ -28,9 +133,20 @@ static int ahci_RegisterPort(struct ahci_port *ap)
     unit->sim_Port = ap;
     unit->sim_Unit = AHCIBase->ahci_UnitCount++;
     InitSemaphore(&unit->sim_Lock);
-    NEWLIST(&unit->sim_ChangeInts);
+    NEWLIST(&unit->sim_IOs);
 
     AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
+
+    /* Now that this device is in the unit list, start the disk change monitor */
+    snprintf(name, sizeof(name), "ahci.device %d monitor", unit->sim_Unit);
+    unit->sim_Monitor = NewCreateTask(TASKTAG_NAME, name,
+                                      TASKTAG_PC, ahci_PortMonitor,
+                                      TASKTAG_ARG1, FindTask(NULL),
+                                      TASKTAG_ARG2, AHCIBase,
+                                      TASKTAG_ARG3, unit,
+                                      TAG_END);
+
+    Wait(SIGBREAKF_CTRL_C);
 
     return 0;
 }
@@ -50,9 +166,23 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
 
     AHCIBase = sc->sc_dev->dev_AHCIBase;
 
-    /* FIXME: Stop IO on this device? */
+    /* Stop the monitor, and wait for IOs to drain,
+     * and users to CloseDevice() the unit.
+     */
+    ObtainSemaphore(&unit->sim_Lock);
+    unit->sim_Flags |= SIMF_OffLine;
+    while (unit->sim_UseCount) {
+        ReleaseSemaphore(&unit->sim_Lock);
+        ahci_os_sleep(100);
+        ObtainSemaphore(&unit->sim_Lock);
+    }
+    ReleaseSemaphore(&unit->sim_Lock);
 
+    /* Remove from the unit list */
+    Forbid();
     Remove((struct Node *)unit);
+    Permit();
+
     FreePooled(AHCIBase->ahci_MemPool, unit, sizeof(*unit));
 
     return 0;
@@ -197,8 +327,17 @@ void ahci_cam_changed(struct ahci_port *ap, struct ata_port *atx, int found)
 {
     D(bug("ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
 
-    if (ap && ap->ap_sim && found == -1)
+    if (ap && ap->ap_sim && found == -1) {
+        struct ata_port *at = ap->ap_ata[0];
+        /* Enable sense data reporting, if supported */
+        if ((at->at_identify.cmdset119 & (1 << 6)) &&
+            (at->at_identify.features120 & (1 << 6))) {
+            ahci_os_lock_port(ap);
+            ahci_set_feature(ap, NULL, ATA_SF_SENSEDATA_EN, 1);
+            ahci_os_unlock_port(ap);
+        }
         ahci_RegisterVolume(ap);
+    }
 
     /* Mark the port scan as completed */
     ap->ap_flags |= AP_F_SCAN_COMPLETED;

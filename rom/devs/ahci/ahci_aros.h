@@ -363,12 +363,10 @@ static inline struct resource *bus_alloc_resource_any(device_t dev, enum bus_res
         map.PCIAddress = (APTR)resource->res_tag;
         map.Length = resource->res_size;
         resource->res_handle = OOP_DoMethod(Driver, (OOP_Msg)&map);
-        device_printf(dev, "Map 0x%x %p => %p (%d)\n", *rid, resource->res_tag, resource->res_handle, resource->res_size);
     } else {
         /* FIXME: Map IRQ? */
         resource->res_handle = resource->res_tag;
         resource->res_size = 1;
-        device_printf(dev, "IRQ %d %p\n", *rid, resource->res_tag);
     }
 
     return resource;
@@ -492,8 +490,8 @@ static inline int lockmgr(struct lock *lock, int flags)
 }
 
 /* Events */
-#define atomic_clear_int(ptr, val) AROS_ATOMIC_AND(*ptr, ~val)
-#define atomic_set_int(ptr, val) AROS_ATOMIC_OR(*ptr, val)
+#define atomic_clear_int(ptr, val) AROS_ATOMIC_AND(*(ptr), ~(val))
+#define atomic_set_int(ptr, val) AROS_ATOMIC_OR(*(ptr), (val))
 
 /* Callouts */
 

@@ -188,7 +188,6 @@ ahci_pci_attach(device_t dev)
 	if (sc->sc_irq == NULL) {
 		device_printf(dev, "unable to map interrupt\n");
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 
@@ -203,7 +202,6 @@ bug("%s: %d ENXIO\n", __func__, __LINE__);
 	if (sc->sc_regs == NULL) {
 		device_printf(dev, "unable to map registers\n");
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 	sc->sc_iot = rman_get_bustag(sc->sc_regs);
@@ -215,7 +213,6 @@ bug("%s: %d ENXIO\n", __func__, __LINE__);
 	error = ahci_init(sc);
 	if (error) {
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 
@@ -235,7 +232,6 @@ bug("%s: %d ENXIO\n", __func__, __LINE__);
 	if (sc->sc_ncmds < 4) {
 		device_printf(dev, "NCS must probe a value >= 4\n");
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 
@@ -313,7 +309,6 @@ bug("%s: %d ENXIO\n", __func__, __LINE__);
 	if (error) {
 		device_printf(dev, "unable to create dma tags\n");
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 
@@ -440,7 +435,6 @@ noccc:
 	if (error) {
 		device_printf(dev, "unable to install interrupt\n");
 		ahci_pci_detach(dev);
-bug("%s: %d ENXIO\n", __func__, __LINE__);
 		return (ENXIO);
 	}
 
@@ -489,7 +483,6 @@ bug("%s: %d ENXIO\n", __func__, __LINE__);
 		}
 	}
 
-bug("%s: %d OK\n", __func__, __LINE__);
 	return(0);
 }
 
