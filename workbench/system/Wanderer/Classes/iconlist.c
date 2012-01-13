@@ -1788,74 +1788,64 @@ static VOID IconList_Layout_FullAutoLayout(struct IClass *CLASS, Object *obj)
         calcnextpos = FALSE;
         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         {
-            if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
-                 && (entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
+            calcnextpos = TRUE;
+
+            /* Set previously calculated position to this icon */
+            entry->ie_IconX = cur_x;
+            entry->ie_IconY = cur_y;
+
+            if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
             {
-                /* Use provided icon position */
-                entry->ie_IconX = entry->ie_ProvidedIconX;
-                entry->ie_IconY = entry->ie_ProvidedIconY;
+                if (data->icld_SelectionLastClicked == NULL) data->icld_SelectionLastClicked = entry;
+                if (data->icld_FocusIcon == NULL) data->icld_FocusIcon = entry;
+            }
+
+            /* Calculate grid size to advanced the coordinate in next step */
+            if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+            {
+                maxw = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
+                maxh = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
+                gridx = maxw;
+                gridy = maxh;
             }
             else
             {
-                calcnextpos = TRUE;
+                if (!(pass_first)) pass_first = entry;
 
-                /* Set previously calculated position to this icon */
-                entry->ie_IconX = cur_x;
-                entry->ie_IconY = cur_y;
+                IconList_GetIconAreaRectangle(obj, data, entry, &iconrect);
 
-                if (entry->ie_Flags & ICONENTRY_FLAG_SELECTED)
+                if ((maxw < entry->ie_AreaWidth) || (maxh < entry->ie_AreaHeight))
                 {
-                    if (data->icld_SelectionLastClicked == NULL) data->icld_SelectionLastClicked = entry;
-                    if (data->icld_FocusIcon == NULL) data->icld_FocusIcon = entry;
+                    if (maxw < entry->ie_AreaWidth) maxw = entry->ie_AreaWidth;
+                    if (maxh < entry->ie_AreaHeight) maxh = entry->ie_AreaHeight;
+                    if (pass_first != entry)
+                    {
+                        entry = pass_first;
+                        cur_x = entry->ie_IconX;
+                        cur_y = entry->ie_IconY;
+                        /* We detected that the new icon it taller/wider than icons so far in this row/column.
+                         * We need to re-layout this row/column. */
+                        continue;
+                    }
                 }
 
-                /* Calculate grid size to advanced the coordinate in next step */
-                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                 {
-                    maxw = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
-                    maxh = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
+                    /* Centering */
+                    if (entry->ie_AreaWidth < maxw)
+                        entry->ie_IconX += ( maxw - entry->ie_AreaWidth ) / 2;
+
                     gridx = maxw;
-                    gridy = maxh;
+                    gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
                 }
                 else
                 {
-                    if (!(pass_first)) pass_first = entry;
+                    /* Centering */ /* Icons look better not centered in this case - disabled */
+                    /* if (entry->ie_AreaHeight < maxh)
+                        entry->ie_IconY += ( maxh - entry->ie_AreaHeight ) / 2; */
 
-                    IconList_GetIconAreaRectangle(obj, data, entry, &iconrect);
-
-                    if ((maxw < entry->ie_AreaWidth) || (maxh < entry->ie_AreaHeight))
-                    {
-                        if (maxw < entry->ie_AreaWidth) maxw = entry->ie_AreaWidth;
-                        if (maxh < entry->ie_AreaHeight) maxh = entry->ie_AreaHeight;
-                        if (pass_first != entry)
-                        {
-                            entry = pass_first;
-                            cur_x = entry->ie_IconX;
-                            cur_y = entry->ie_IconY;
-                            /* We detected that the new icon it taller/wider than icons so far in this row/column.
-                             * We need to re-layout this row/column. */
-                            continue;
-                        }
-                    }
-
-                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                    {
-                        /* Centering */
-                        if (entry->ie_AreaWidth < maxw)
-                            entry->ie_IconX += ( maxw - entry->ie_AreaWidth ) / 2;
-
-                        gridx = maxw;
-                        gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
-                    }
-                    else
-                    {
-                        /* Centering */ /* Icons look better not centered in this case - disabled */
-                        /* if (entry->ie_AreaHeight < maxh)
-                            entry->ie_IconY += ( maxh - entry->ie_AreaHeight ) / 2; */
-
-                        gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
-                        gridy = maxh;
-                    }
+                    gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
+                    gridy = maxh;
                 }
             }
         }
@@ -1903,6 +1893,54 @@ static VOID IconList_Layout_FullAutoLayout(struct IClass *CLASS, Object *obj)
     }
 }
 
+static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
+{
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct Region               *occupied = NewRegion();
+    struct IconEntry            *entry = NULL;
+
+     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+     while (entry != NULL)
+     {
+         if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION)
+                 && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+         {
+             struct Rectangle iconrect = {
+                     entry->ie_ProvidedIconX,
+                     entry->ie_ProvidedIconY,
+                     entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
+                     entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
+             };
+             OrRectRegion(occupied, &iconrect);
+         }
+         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+     }
+
+     /* Now go to the actual positioning */
+     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+     while (entry != NULL)
+     {
+         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+         {
+             if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
+             {
+                 entry->ie_IconX = entry->ie_ProvidedIconX;
+                 entry->ie_IconY = entry->ie_ProvidedIconY;
+             }
+             else
+             {
+                 entry->ie_IconX = 0;
+                 entry->ie_IconY = 0;
+             }
+         }
+
+         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+     }
+
+     DisposeRegion(occupied);
+}
+
+
 ///IconList__MUIM_IconList_PositionIcons()
 /**************************************************************************
 MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
@@ -1911,34 +1949,14 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct IconEntry            *entry = NULL;
-    struct Region               *occupied = NULL;
+
 
 #if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
     if ((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
     {
-        occupied = NewRegion();
-
-        /* Not in auto sort mode. Build list of occupied regions where icons are already present */
-        entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-        while (entry != NULL)
-        {
-            if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION)
-                    && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-            {
-                struct Rectangle iconrect = {
-                        entry->ie_ProvidedIconX,
-                        entry->ie_ProvidedIconY,
-                        entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
-                        entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
-                };
-                OrRectRegion(occupied, &iconrect);
-            }
-            entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
-        }
-
-        IconList_Layout_FullAutoLayout(CLASS, obj);
+        IconList_Layout_PartialAutoLayout(CLASS, obj);
     }
     else
     {
@@ -1961,8 +1979,6 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
     }
 
-    if (occupied)
-        DisposeRegion(occupied);
 
     DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
     return (IPTR)NULL;
