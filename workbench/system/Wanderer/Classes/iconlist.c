@@ -1755,9 +1755,6 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     BOOL                        next;
     struct Rectangle            iconrect;
 
-/* This is local flag defining if icon already had set position (yes, solution is ugly) */
-#define ICONENTRY_FLAG_XYSET    ICONENTRY_FLAG_RESERVED
-
 #if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
@@ -1767,9 +1764,14 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
             entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode))
     {
         if ((entry->ie_IconX != NO_ICON_POSITION) && (entry->ie_IconY != NO_ICON_POSITION))
-            entry->ie_Flags |= ICONENTRY_FLAG_XYSET;
+        {
+            entry->ie_ProvidedIconX = entry->ie_IconX;
+            entry->ie_ProvidedIconY = entry->ie_IconY;
+        }
         else
-            entry->ie_Flags &= ~ICONENTRY_FLAG_XYSET;
+        {
+            entry->ie_ProvidedIconX = entry->ie_ProvidedIconY = NO_ICON_POSITION;
+        }
     }
 
     /* Now go to the actual positioning */
@@ -1780,7 +1782,7 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         {
             if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
-                 && (entry->ie_Flags & ICONENTRY_FLAG_XYSET))
+                 && (entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
             {
                 /* Do nothing - use provided icon position */
             }
@@ -1891,15 +1893,6 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
             }
         }
     }
-
-    /* Clean locally mark icons which already have position */
-    for (entry = (struct IconEntry *)GetHead(&data->icld_IconList); entry != NULL;
-            entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode))
-    {
-        entry->ie_Flags &= ~ICONENTRY_FLAG_XYSET;
-    }
-
-#undef ICONENTRY_FLAG_XYSET
 
     DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
     return (IPTR)NULL;
