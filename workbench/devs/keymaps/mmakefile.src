@@ -5,7 +5,7 @@ KEYMAPS := \
     pc104_usa pc104_usa2 \
     pc105_al pc105_b pc105_bg pc105_br pc105_by pc105_cdn pc105_cz pc105_d pc105_dk pc105_dvl \
     pc105_dvr pc105_dvx pc105_e pc105_est pc105_f pc105_fin pc105_gb pc105_gbx pc105_gr \
-    pc105_hu pc105_hr pc105_i pc105_is pc105_irl pc105_la pc105_lt pc105_lv pc105_n \
+    pc105_h pc105_hr pc105_i pc105_is pc105_irl pc105_la pc105_lt pc105_lv pc105_n \
     pc105_nl pc105_pl pc105_p pc105_rus pc105_s pc105_ch1 pc105_ch2 pc105_sk \
     pc105_tr pc105_ua pc105_usx \
     sun_usa 
