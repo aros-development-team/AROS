@@ -1266,11 +1266,37 @@ void wanderer_menufunc_window_update()
 {
     Object *window = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
     Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = (APTR) MUIV_IconList_NextIcon_Start;
 
-D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
+    D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if (iconList != NULL)
     {
+        /*
+         * Reset the ie_Provided[X|Y] to DiskObject values. This will cause all icons to return to their
+         * snapshoted position or get layouted. This is bahavior only present in this menu action. This is Wanderer
+         * function, not IconList function, thus the implementation is here.
+         */
+        do
+        {
+            DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Visible, (IPTR) &entry);
+
+            if ((IPTR)entry != MUIV_IconList_NextIcon_End)
+            {
+                if (entry->ile_IconEntry->ie_DiskObj)
+                {
+                    entry->ile_IconEntry->ie_ProvidedIconX = entry->ile_IconEntry->ie_DiskObj->do_CurrentX;
+                    entry->ile_IconEntry->ie_ProvidedIconY = entry->ile_IconEntry->ie_DiskObj->do_CurrentY;
+                }
+                else
+                {
+                    entry->ile_IconEntry->ie_ProvidedIconX = NO_ICON_POSITION;
+                    entry->ile_IconEntry->ie_ProvidedIconY = NO_ICON_POSITION;
+                }
+            }
+            else break;
+        } while (TRUE);
+
         DoMethod(iconList, MUIM_IconList_Update);
         DoMethod(iconList, MUIM_IconList_Sort);
     }
@@ -1287,7 +1313,30 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
 
     if (iconList != NULL)
     {
-        DoMethod(iconList, MUIM_IconList_Sort);
+        /*
+         * Cleanup ignores all snapshoted / provided positions and re-layouts all icons. To enable this,
+         * temporarilly set the AutoSort flag. This is Wanderer function, not IconList function, thus the
+         * implementation is here.
+         */
+        IPTR sortFlags;
+
+        get(iconList, MUIA_IconList_SortFlags, &sortFlags);
+
+        if ((sortFlags & MUIV_IconList_Sort_AutoSort) == 0)
+        {
+            sortFlags |= MUIV_IconList_Sort_AutoSort;
+            set(iconList, MUIA_IconList_SortFlags, sortFlags);
+
+            DoMethod(iconList, MUIM_IconList_Sort);
+
+            get(iconList, MUIA_IconList_SortFlags, &sortFlags);
+            sortFlags &= ~MUIV_IconList_Sort_AutoSort;
+            set(iconList, MUIA_IconList_SortFlags, sortFlags);
+        }
+        else
+        {
+            DoMethod(iconList, MUIM_IconList_Sort);
+        }
     } 
 }
 ///
