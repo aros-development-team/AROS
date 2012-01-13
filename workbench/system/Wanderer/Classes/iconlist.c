@@ -255,6 +255,10 @@ static int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 ///RegionAndRect()
 static int RegionAndRect(struct Region * a, struct Rectangle *b)
 {
+    D(bug("Region (%d, %d)(%d, %d), Rect (%d, %d)(%d, %d)\n",
+            (LONG)a->bounds.MinX, (LONG)a->bounds.MinY, (LONG)a->bounds.MaxX, (LONG)a->bounds.MaxY,
+            (LONG)b->MinX,        (LONG)b->MinY,        (LONG)b->MaxX,        (LONG)b->MaxY));
+
     /* First check with region bounds */
     if (RectAndRect(&a->bounds, b) == 0)
         return 0;
@@ -264,7 +268,14 @@ static int RegionAndRect(struct Region * a, struct Rectangle *b)
         struct RegionRectangle * c = a->RegionRectangle;
         while(c)
         {
-            if (RectAndRect(&c->bounds, b))
+            struct Rectangle d = {
+                    a->bounds.MinX + c->bounds.MinX,
+                    a->bounds.MinY + c->bounds.MinY,
+                    a->bounds.MinX + c->bounds.MaxX,
+                    a->bounds.MinY + c->bounds.MaxY
+            }; /* We need absolute coordinates */
+
+            if (RectAndRect(&d, b))
                 return 1;
             c = c->Next;
         }
@@ -1916,6 +1927,9 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
              else
                  iconrect.MaxX += data->icld__Option_IconHorizontalSpacing;
 
+             D(bug("Adding %s (%d %d)(%d %d)\n", entry->ie_TxtBuf_DisplayedLabel,
+                     (LONG)iconrect.MinX, (LONG)iconrect.MinY, (LONG)iconrect.MaxX, (LONG)iconrect.MaxY));
+
              OrRectRegion(occupied, &iconrect);
          }
          entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
@@ -1937,8 +1951,6 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                  LONG gridx, gridy, stepx, stepy, addx = 0;
                  struct Rectangle iconarea;
                  BOOL first = TRUE;
-
-                 IconList_GetIconAreaRectangle(obj, data, entry, &iconarea);
 
                  /* Calculate grid size and step */
                  if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
