@@ -1,10 +1,10 @@
-# DataType Description for Postscript
-Name=Postscript
-Version=$VER: Postscript 1.0 (9.12.2006)
+# DataType Description for PostScript and EPSF
+Name=PostScript
+Version=$VER: PostScript 1.1 (13.1.2012)
 BaseName=postscript
 Pattern=#?
-Mask=0x25 0x21 0x50 0x53
+Mask='%' '!' 'P' 'S'
 GroupID=text
 ID=post
-Flags=DTF_ASCII
+Flags=DTF_ASCII,DTF_CASE
 Priority=1
