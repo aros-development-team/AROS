@@ -107,8 +107,10 @@ struct IconEntry
     struct FileInfoBlock        *ie_FileInfoBlock;
     APTR                        *ie_AppIcon;
 
-    LONG                        ie_IconX,                        /* Top Left Co-ords of Icons "AREA" */
-                                ie_IconY;
+    LONG                        ie_IconX,                       /* Top Left Co-ords of Icons "AREA" */
+                                ie_IconY,
+                                ie_ProvidedIconX,               /* Co-ords of last known "provided" position */
+                                ie_ProvidedIconY;
 
     ULONG                       ie_IconWidth,                    /* Width/Height of Icon "Image" */
                                 ie_IconHeight,
@@ -130,6 +132,15 @@ struct IconEntry
     ULONG                       ie_TxtBuf_SIZEWidth;
     UBYTE                       *ie_TxtBuf_PROT;
 };
+
+/* Note:
+ * ie_Icon[X|Y] vs ie_ProvidedIcon[X|Y]
+ *
+ * ie_Icon[X|Y] always contains the current position in rendering view
+ * ie_ProvidedIcon[X|Y] has following fixed characteristics:
+ *   a) is it set to do_Currect[X|Y] at IconEntry creation time
+ *   b) if it is different then NO_ICON_POSITION, the auto layouting will not apply to the IconEntry
+ */
 
 /****************************************************************************/
 /*** Name *******************************************************************/
