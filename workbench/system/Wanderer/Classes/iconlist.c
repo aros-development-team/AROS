@@ -252,6 +252,31 @@ static int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 }
 ///
 
+///RegionAndRect()
+//static int RegionAndRect(struct Region * a, struct Rectangle *b)
+//{
+//    /* First check with region bounds */
+//    bug("%d %d %d %d <- %d %d %d %d\n",
+//            (LONG)a->bounds.MinX, (LONG)a->bounds.MinY, (LONG)a->bounds.MaxX, (LONG)a->bounds.MaxY,
+//            b->MinX, b->MinY, b->MaxX, b->MaxY);
+//
+//    if (RectAndRect(&a->bounds, b) == 0)
+//        return 0;
+//
+//    if (a->RegionRectangle)
+//    {
+//        struct RegionRectangle * c = a->RegionRectangle;
+//        while(c)
+//        {
+//            if (RectAndRect(&c->bounds, b))
+//                return 1;
+//            c = c->Next;
+//        }
+//    }
+//
+//    return 0;
+//}
+
 ///Node_NextVisible()
 // IconEntry List navigation functions ..
 static struct IconEntry *Node_NextVisible(struct IconEntry *current_Node)
@@ -1733,37 +1758,34 @@ IPTR IconList__MUIM_IconList_RethinkDimensions(struct IClass *CLASS, Object *obj
     return TRUE;
 }
 
-///IconList__MUIM_IconList_PositionIcons()
-/**************************************************************************
-MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
-**************************************************************************/
-IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
+/*
+ * This function executes the layouting when AutoSort is enabled. This means all icons are layouted regardless if
+ * they have Provided position or not.
+ */
+
+static VOID IconList_Layout_FullAutoLayout(struct IClass *CLASS, Object *obj)
 {
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct IconEntry            *entry = NULL;
     struct IconEntry            *pass_first = NULL; /* First entry of current column or row */
 
-    int                         left = data->icld__Option_IconHorizontalSpacing;
-    int                         top = data->icld__Option_IconVerticalSpacing;
-    int                         cur_x = left;
-    int                         cur_y = top;
-    int                         gridx = 0;
-    int                         gridy = 0;
-    int                         maxw = 0; /* Widest & talest entry in a column or row */
-    int                         maxh = 0;
+    LONG                        left = data->icld__Option_IconHorizontalSpacing;
+    LONG                        top = data->icld__Option_IconVerticalSpacing;
+    LONG                        cur_x = left;
+    LONG                        cur_y = top;
+    LONG                        gridx = 0;
+    LONG                        gridy = 0;
+    LONG                        maxw = 0; /* Widest & talest entry in a column or row */
+    LONG                        maxh = 0;
 
-    BOOL                        next;
+    BOOL                        calcnextpos;
     struct Rectangle            iconrect;
-
-#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
-    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
-#endif
 
     /* Now go to the actual positioning */
     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
     while (entry != NULL)
     {
-        next = FALSE;
+        calcnextpos = FALSE;
         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
         {
             if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
@@ -1775,7 +1797,8 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
             }
             else
             {
-                next = TRUE;
+                calcnextpos = TRUE;
+
                 /* Set previously calculated position to this icon */
                 entry->ie_IconX = cur_x;
                 entry->ie_IconY = cur_y;
@@ -1809,6 +1832,8 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
                             entry = pass_first;
                             cur_x = entry->ie_IconX;
                             cur_y = entry->ie_IconY;
+                            /* We detected that the new icon it taller/wider than icons so far in this row/column.
+                             * We need to re-layout this row/column. */
                             continue;
                         }
                     }
@@ -1841,7 +1866,7 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
          */
         if ((entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode)) != NULL)
         {
-            if (next == TRUE)
+            if (calcnextpos)
             {
                 if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
                 {
@@ -1872,13 +1897,52 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
                         pass_first = NULL;
                         maxh = 0;
                     }
-                    else if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                    {
-                        
-                    }
                 }
             }
         }
+    }
+}
+
+///IconList__MUIM_IconList_PositionIcons()
+/**************************************************************************
+MUIM_PositionIcons - Place icons with NO_ICON_POSITION coords somewhere
+**************************************************************************/
+IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, struct MUIP_IconList_PositionIcons *message)
+{
+    struct IconList_DATA        *data = INST_DATA(CLASS, obj);
+    struct IconEntry            *entry = NULL;
+    struct Region               *occupied = NULL;
+
+#if defined(DEBUG_ILC_ICONPOSITIONING) || defined(DEBUG_ILC_FUNCS)
+    D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
+#endif
+    if ((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
+    {
+        occupied = NewRegion();
+
+        /* Not in auto sort mode. Build list of occupied regions where icons are already present */
+        entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+        while (entry != NULL)
+        {
+            if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION)
+                    && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+            {
+                struct Rectangle iconrect = {
+                        entry->ie_ProvidedIconX,
+                        entry->ie_ProvidedIconY,
+                        entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
+                        entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
+                };
+                OrRectRegion(occupied, &iconrect);
+            }
+            entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+        }
+
+        IconList_Layout_FullAutoLayout(CLASS, obj);
+    }
+    else
+    {
+        IconList_Layout_FullAutoLayout(CLASS, obj);
     }
 
     /*
@@ -1889,11 +1953,16 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
     while (entry != NULL)
     {
-        entry->ie_ProvidedIconX = entry->ie_IconX;
-        entry->ie_ProvidedIconY = entry->ie_IconY;
+        if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
+        {
+            entry->ie_ProvidedIconX = entry->ie_IconX;
+            entry->ie_ProvidedIconY = entry->ie_IconY;
+        }
         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
     }
 
+    if (occupied)
+        DisposeRegion(occupied);
 
     DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
     return (IPTR)NULL;
