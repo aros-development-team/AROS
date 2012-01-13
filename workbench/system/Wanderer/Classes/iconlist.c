@@ -1909,134 +1909,133 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
     LONG                        top = data->icld__Option_IconVerticalSpacing;
     LONG                        cur_x = left, cur_y  = top;
 
-     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-     while (entry != NULL)
-     {
-         if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION)
-                 && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-         {
-             struct Rectangle iconrect = {
-                     entry->ie_ProvidedIconX,
-                     entry->ie_ProvidedIconY,
-                     entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
-                     entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
-             };
+    entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+    while (entry != NULL)
+    {
+        if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION)
+                && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+        {
+            struct Rectangle iconrect = {
+                    entry->ie_ProvidedIconX,
+                    entry->ie_ProvidedIconY,
+                    entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
+                    entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
+            };
 
-             if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                 iconrect.MaxY += data->icld__Option_IconVerticalSpacing;
-             else
-                 iconrect.MaxX += data->icld__Option_IconHorizontalSpacing;
+            if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                iconrect.MaxY += data->icld__Option_IconVerticalSpacing;
+            else
+                iconrect.MaxX += data->icld__Option_IconHorizontalSpacing;
 
-             D(bug("Adding %s (%d %d)(%d %d)\n", entry->ie_TxtBuf_DisplayedLabel,
-                     (LONG)iconrect.MinX, (LONG)iconrect.MinY, (LONG)iconrect.MaxX, (LONG)iconrect.MaxY));
+            D(bug("Adding %s (%d %d)(%d %d)\n", entry->ie_TxtBuf_DisplayedLabel,
+                    (LONG)iconrect.MinX, (LONG)iconrect.MinY, (LONG)iconrect.MaxX, (LONG)iconrect.MaxY));
 
-             OrRectRegion(occupied, &iconrect);
-         }
-         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
-     }
+            OrRectRegion(occupied, &iconrect);
+        }
+        entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+    }
 
-     /* Now go to the actual positioning */
-     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
-     while (entry != NULL)
-     {
-         if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
-         {
-             if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
-             {
-                 entry->ie_IconX = entry->ie_ProvidedIconX;
-                 entry->ie_IconY = entry->ie_ProvidedIconY;
-             }
-             else
-             {
-                 LONG gridx, gridy, stepx, stepy, addx = 0;
-                 struct Rectangle iconarea;
-                 BOOL first = TRUE;
+    /* Now go to the actual positioning */
+    entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+    while (entry != NULL)
+    {
+        if ((entry->ie_DiskObj != NULL) && (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE))
+        {
+            if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
+            {
+                entry->ie_IconX = entry->ie_ProvidedIconX;
+                entry->ie_IconY = entry->ie_ProvidedIconY;
+            }
+            else
+            {
+                LONG gridx, gridy, stepx, stepy, addx = 0;
+                struct Rectangle iconarea;
+                BOOL first = TRUE;
 
-                 /* Calculate grid size and step */
-                 if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
-                 {
-                     gridx = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
-                     gridy = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
-                     stepx = gridx;
-                     stepy = gridy;
-                 }
-                 else
-                 {
-                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                     {
-                         gridx = data->icld_IconAreaLargestWidth; /* This gives better centering effect */
-                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
-                         stepx = gridx;
-                         stepy = 2;
-                         addx =  (gridx - entry->ie_AreaWidth) / 2;
-                     }
-                     else
-                     {
-                         gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
-                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
-                         stepx = 2;
-                         stepy = gridy;
-                     }
+                /* Calculate grid size and step */
+                if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                {
+                    gridx = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
+                    gridy = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
+                    stepx = gridx;
+                    stepy = gridy;
+                }
+                else
+                {
+                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                    {
+                        gridx = data->icld_IconAreaLargestWidth; /* This gives better centering effect */
+                        gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
+                        stepx = gridx;
+                        stepy = 2;
+                        addx =  (gridx - entry->ie_AreaWidth) / 2;
+                    }
+                    else
+                    {
+                        gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
+                        gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
+                        stepx = 2;
+                        stepy = gridy;
+                    }
+                }
 
-                 }
+                /* Find first not occupied spot matching the calculate rectangle */
+                do
+                {
+                    if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                    {
+                        /* Advance to next position */
+                        if (!first) cur_y += stepy;
 
-                 /* Find first not occupied spot matching the calculate rectangle */
-                 do
-                 {
-                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                     {
-                         /* Advance to next position */
-                         if (!first) cur_y += stepy;
+                        if ((cur_y >= data->icld_ViewHeight) ||
+                                ((cur_y + gridy - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight))
+                        {
+                            /* Wrap "around" if the icon would be below bottom border */
+                            cur_x += stepx;
+                            cur_y =  top;
+                        }
+                    }
+                    else
+                    {
+                        /* Advance to next position */
+                        if (!first) cur_x += stepx;
 
-                         if ((cur_y >= data->icld_ViewHeight) ||
-                                 ((cur_y + gridy - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight))
-                         {
-                             /* Wrap "around" if the icon would be below bottom border */
-                             cur_x += stepx;
-                             cur_y =  top;
-                         }
-                     }
-                     else
-                     {
-                         /* Advance to next position */
-                         if (!first) cur_x += stepx;
+                        if ((cur_x >= data->icld_ViewWidth) ||
+                            ((cur_x + gridx - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth))
+                        {
+                            /* Wrap "around" if the icon would be right of right border */
+                            cur_x =  left;
+                            cur_y += stepy;
+                        }
+                    }
 
-                         if ((cur_x >= data->icld_ViewWidth) ||
-                             ((cur_x + gridx - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth))
-                         {
-                             /* Wrap "around" if the icon would be right of right border */
-                             cur_x =  left;
-                             cur_y += stepy;
-                         }
-                     }
+                    iconarea.MinX = cur_x;
+                    iconarea.MinY = cur_y;
+                    iconarea.MaxX = cur_x + gridx - 1;
+                    iconarea.MaxY = cur_y + gridy - 1;
 
-                     iconarea.MinX = cur_x;
-                     iconarea.MinY = cur_y;
-                     iconarea.MaxX = cur_x + gridx - 1;
-                     iconarea.MaxY = cur_y + gridy - 1;
+                    first = FALSE;
 
-                     first = FALSE;
+                } while(RegionAndRect(occupied, &iconarea));
 
-                 } while(RegionAndRect(occupied, &iconarea));
+                entry->ie_IconX = iconarea.MinX + addx;
+                entry->ie_IconY = iconarea.MinY;
 
-                 entry->ie_IconX = iconarea.MinX + addx;
-                 entry->ie_IconY = iconarea.MinY;
+                /* Add this area to occupied list */
+                OrRectRegion(occupied, &iconarea);
 
-                 /* Add this area to occupied list */
-                 OrRectRegion(occupied, &iconarea);
+                /* Add spacing to next icon */
+                if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                    cur_y += gridy;
+                else
+                    cur_x += gridx;
+            }
+        }
 
-                 /* Add spacing to next icon */
-                 if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
-                     cur_y += gridy;
-                 else
-                     cur_x += gridx;
-             }
-         }
+        entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+    }
 
-         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
-     }
-
-     DisposeRegion(occupied);
+    DisposeRegion(occupied);
 }
 
 
