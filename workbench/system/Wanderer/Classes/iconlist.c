@@ -253,29 +253,25 @@ static int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 ///
 
 ///RegionAndRect()
-//static int RegionAndRect(struct Region * a, struct Rectangle *b)
-//{
-//    /* First check with region bounds */
-//    bug("%d %d %d %d <- %d %d %d %d\n",
-//            (LONG)a->bounds.MinX, (LONG)a->bounds.MinY, (LONG)a->bounds.MaxX, (LONG)a->bounds.MaxY,
-//            b->MinX, b->MinY, b->MaxX, b->MaxY);
-//
-//    if (RectAndRect(&a->bounds, b) == 0)
-//        return 0;
-//
-//    if (a->RegionRectangle)
-//    {
-//        struct RegionRectangle * c = a->RegionRectangle;
-//        while(c)
-//        {
-//            if (RectAndRect(&c->bounds, b))
-//                return 1;
-//            c = c->Next;
-//        }
-//    }
-//
-//    return 0;
-//}
+static int RegionAndRect(struct Region * a, struct Rectangle *b)
+{
+    /* First check with region bounds */
+    if (RectAndRect(&a->bounds, b) == 0)
+        return 0;
+
+    if (a->RegionRectangle)
+    {
+        struct RegionRectangle * c = a->RegionRectangle;
+        while(c)
+        {
+            if (RectAndRect(&c->bounds, b))
+                return 1;
+            c = c->Next;
+        }
+    }
+
+    return 0;
+}
 
 ///Node_NextVisible()
 // IconEntry List navigation functions ..
@@ -1898,6 +1894,9 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
     struct IconList_DATA        *data = INST_DATA(CLASS, obj);
     struct Region               *occupied = NewRegion();
     struct IconEntry            *entry = NULL;
+    LONG                        left = data->icld__Option_IconHorizontalSpacing;
+    LONG                        top = data->icld__Option_IconVerticalSpacing;
+    LONG                        cur_x = left, cur_y  = top;
 
      entry = (struct IconEntry *)GetHead(&data->icld_IconList);
      while (entry != NULL)
@@ -1911,6 +1910,12 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
                      entry->ie_ProvidedIconX + entry->ie_AreaWidth - 1,
                      entry->ie_ProvidedIconY + entry->ie_AreaHeight - 1
              };
+
+             if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                 iconrect.MaxY += data->icld__Option_IconVerticalSpacing;
+             else
+                 iconrect.MaxX += data->icld__Option_IconHorizontalSpacing;
+
              OrRectRegion(occupied, &iconrect);
          }
          entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
@@ -1929,8 +1934,90 @@ static VOID IconList_Layout_PartialAutoLayout(struct IClass *CLASS, Object *obj)
              }
              else
              {
-                 entry->ie_IconX = 0;
-                 entry->ie_IconY = 0;
+                 LONG gridx, gridy, stepx, stepy, addx = 0;
+                 struct Rectangle iconarea;
+                 BOOL first = TRUE;
+
+                 IconList_GetIconAreaRectangle(obj, data, entry, &iconarea);
+
+                 /* Calculate grid size and step */
+                 if (data->icld__Option_IconListMode == ICON_LISTMODE_GRID)
+                 {
+                     gridx = data->icld_IconAreaLargestWidth + data->icld__Option_IconHorizontalSpacing;
+                     gridy = data->icld_IconLargestHeight + data->icld__Option_IconImageSpacing + data->icld_LabelLargestHeight + data->icld__Option_IconVerticalSpacing;
+                     stepx = gridx;
+                     stepy = gridy;
+                 }
+                 else
+                 {
+                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                     {
+                         gridx = data->icld_IconAreaLargestWidth; /* This gives better centering effect */
+                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
+                         stepx = gridx;
+                         stepy = 2;
+                         addx =  (gridx - entry->ie_AreaWidth) / 2;
+                     }
+                     else
+                     {
+                         gridx = entry->ie_AreaWidth + data->icld__Option_IconHorizontalSpacing;
+                         gridy = entry->ie_AreaHeight + data->icld__Option_IconVerticalSpacing;
+                         stepx = 2;
+                         stepy = gridy;
+                     }
+
+                 }
+
+                 /* Find first not occupied spot matching the calculate rectangle */
+                 do
+                 {
+                     if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                     {
+                         /* Advance to next position */
+                         if (!first) cur_y += stepy;
+
+                         if ((cur_y >= data->icld_ViewHeight) ||
+                                 ((cur_y + gridy - data->icld__Option_IconBorderOverlap) >= data->icld_ViewHeight))
+                         {
+                             /* Wrap "around" if the icon would be below bottom border */
+                             cur_x += stepx;
+                             cur_y =  top;
+                         }
+                     }
+                     else
+                     {
+                         /* Advance to next position */
+                         if (!first) cur_x += stepx;
+
+                         if ((cur_x >= data->icld_ViewWidth) ||
+                             ((cur_x + gridx - data->icld__Option_IconBorderOverlap) >= data->icld_ViewWidth))
+                         {
+                             /* Wrap "around" if the icon would be right of right border */
+                             cur_x =  left;
+                             cur_y += stepy;
+                         }
+                     }
+
+                     iconarea.MinX = cur_x;
+                     iconarea.MinY = cur_y;
+                     iconarea.MaxX = cur_x + gridx - 1;
+                     iconarea.MaxY = cur_y + gridy - 1;
+
+                     first = FALSE;
+
+                 } while(RegionAndRect(occupied, &iconarea));
+
+                 entry->ie_IconX = iconarea.MinX + addx;
+                 entry->ie_IconY = iconarea.MinY;
+
+                 /* Add this area to occupied list */
+                 OrRectRegion(occupied, &iconarea);
+
+                 /* Add spacing to next icon */
+                 if (data->icld_DisplayFlags & ICONLIST_DISP_VERTICAL)
+                     cur_y += gridy;
+                 else
+                     cur_x += gridx;
              }
          }
 
