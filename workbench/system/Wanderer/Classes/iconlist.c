@@ -1759,21 +1759,6 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     D(bug("[IconList]: %s()\n", __PRETTY_FUNCTION__));
 #endif
 
-    /* First locally mark icons which already have position */
-    for (entry = (struct IconEntry *)GetHead(&data->icld_IconList); entry != NULL;
-            entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode))
-    {
-        if ((entry->ie_IconX != NO_ICON_POSITION) && (entry->ie_IconY != NO_ICON_POSITION))
-        {
-            entry->ie_ProvidedIconX = entry->ie_IconX;
-            entry->ie_ProvidedIconY = entry->ie_IconY;
-        }
-        else
-        {
-            entry->ie_ProvidedIconX = entry->ie_ProvidedIconY = NO_ICON_POSITION;
-        }
-    }
-
     /* Now go to the actual positioning */
     entry = (struct IconEntry *)GetHead(&data->icld_IconList);
     while (entry != NULL)
@@ -1784,7 +1769,9 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
             if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
                  && (entry->ie_ProvidedIconX != NO_ICON_POSITION) && (entry->ie_ProvidedIconY != NO_ICON_POSITION))
             {
-                /* Do nothing - use provided icon position */
+                /* Use provided icon position */
+                entry->ie_IconX = entry->ie_ProvidedIconX;
+                entry->ie_IconY = entry->ie_ProvidedIconY;
             }
             else
             {
@@ -1893,6 +1880,20 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
             }
         }
     }
+
+    /*
+     * Set Provided icon position on all icons (this can't be done as part of previous loop!)
+     * The icons will not no longer be autolayouted unless MUIV_IconList_Sort_AutoSort is set.
+     * This give the stability that new icons appearing won't make existing icons jump from their places
+     */
+    entry = (struct IconEntry *)GetHead(&data->icld_IconList);
+    while (entry != NULL)
+    {
+        entry->ie_ProvidedIconX = entry->ie_IconX;
+        entry->ie_ProvidedIconY = entry->ie_IconY;
+        entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
+    }
+
 
     DoMethod(obj, MUIM_IconList_RethinkDimensions, NULL);
     return (IPTR)NULL;
@@ -4204,6 +4205,9 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
     strcpy(entry->ie_IconListEntry.label, message->label);
 
     entry->ie_IconListEntry.udata = NULL;
+
+    entry->ie_ProvidedIconX = entry->ie_IconX = dob->do_CurrentX;
+    entry->ie_ProvidedIconY = entry->ie_IconY = dob->do_CurrentY;
 
     if (IconList__LabelFunc_CreateLabel(obj, data, entry) != (IPTR)NULL)
     {
@@ -6760,6 +6764,9 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                     {
                         entry->ile_IconEntry->ie_IconX += offset_x;
                         entry->ile_IconEntry->ie_IconY += offset_y;
+                        /* Remember new position as provided */
+                        entry->ile_IconEntry->ie_ProvidedIconX = entry->ile_IconEntry->ie_IconX;
+                        entry->ile_IconEntry->ie_ProvidedIconY = entry->ile_IconEntry->ie_IconY;
                     }
                     SET(obj, MUIA_IconList_IconMoved, (IPTR)entry); // Now notify
                 }
@@ -7123,22 +7130,6 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
     /*move list into our local list struct(s)*/
     while ((entry = (struct IconEntry *)RemTail((struct List*)&data->icld_IconList)))
     {
-        if (entry->ie_DiskObj)
-        {
-            if (entry->ie_IconX != entry->ie_DiskObj->do_CurrentX)
-            {
-                entry->ie_IconX = entry->ie_DiskObj->do_CurrentX;
-                if ((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
-                    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            }
-            if (entry->ie_IconY != entry->ie_DiskObj->do_CurrentY)
-            {
-                entry->ie_IconY = entry->ie_DiskObj->do_CurrentY;
-                if ((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
-                    entry->ie_Flags |= ICONENTRY_FLAG_NEEDSUPDATE;
-            }
-        }
-
         if (!(entry->ie_Flags & ICONENTRY_FLAG_HASICON))
         {
             if (data->icld_DisplayFlags & ICONLIST_DISP_SHOWINFO)
@@ -7169,7 +7160,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
             if(entry->ie_IconHeight > data->icld_IconLargestHeight) data->icld_IconLargestHeight = entry->ie_IconHeight;
             if((entry->ie_AreaHeight - entry->ie_IconHeight) > data->icld_LabelLargestHeight) data->icld_LabelLargestHeight = entry->ie_AreaHeight - entry->ie_IconHeight;
 
-            if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0) && (entry->ie_IconX == NO_ICON_POSITION))
+            if (((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0) && (entry->ie_ProvidedIconX == NO_ICON_POSITION))
                 AddTail((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
             else
                 AddHead((struct List*)&list_VisibleIcons, (struct Node *)&entry->ie_IconNode);
@@ -7244,7 +7235,7 @@ IPTR IconList__MUIM_IconList_Sort(struct IClass *CLASS, Object *obj, struct MUIP
             
                     if ((data->icld_SortFlags & MUIV_IconList_Sort_AutoSort) == 0)
                     {
-                        if ((entry->ie_IconX != NO_ICON_POSITION) &&  (entry->ie_IconY != NO_ICON_POSITION))
+                        if ((entry->ie_ProvidedIconX != NO_ICON_POSITION) &&  (entry->ie_ProvidedIconY != NO_ICON_POSITION))
                         {
                             i = 1;
                         }
