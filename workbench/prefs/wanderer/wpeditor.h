@@ -16,6 +16,9 @@
 /*** Identifier base ********************************************************/
 #define MUIB_WPEditor                  (TAG_USER | 0x10000000)
 
+/*** Attributes *************************************************************/
+#define MUIA_WPEditor_AdvancedViewWindow    (MUIB_WPEditor | 0x00000001) /* Zune: V1  ..G Object *            */
+
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *WPEditor_CLASS;
 
