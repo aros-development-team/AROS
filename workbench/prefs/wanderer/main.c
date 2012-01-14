@@ -56,7 +56,7 @@ D(bug("[WPEditor.exe] Starting...\n"));
     
     if (application)
     {
-        Object * advancedviewwindow = XGET(wpeditor, MUIA_WPEditor_AdvancedViewWindow);
+        Object * advancedviewwindow = (Object *)XGET(wpeditor, MUIA_WPEditor_AdvancedViewWindow);
         if (advancedviewwindow)
         {
             DoMethod(application, OM_ADDMEMBER, advancedviewwindow);
