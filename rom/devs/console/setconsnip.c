@@ -10,12 +10,29 @@ AROS_LH1(LONG, SetConSnip,
 {
     AROS_LIBFUNC_INIT
 
-    /* data = NUL-terminated string
-     * TODO: paste to console
-     */
+    /* data = NUL-terminated string */
+    ULONG size;
+    LONG ret = 0;
 
-    bug("SetConSnip unimplemented\n");
-    return 0;
+    ObtainSemaphore(&ConsoleDevice->copyBufferLock);
+
+    FreeMem((APTR)ConsoleDevice->copyBuffer, ConsoleDevice->copyBufferSize);
+    ConsoleDevice->copyBufferSize = 0;
+    if (data) {
+         size = strlen(data);
+         if (size) {
+            ConsoleDevice->copyBuffer = AllocMem(size, MEMF_PUBLIC);
+            if (ConsoleDevice->copyBuffer) {
+                CopyMem(data, (APTR)ConsoleDevice->copyBuffer, size);
+                ConsoleDevice->copyBufferSize = size;
+                ret = 1;
+            }
+         }
+    }
+
+    ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
+
+    return ret;
     
     AROS_LIBFUNC_EXIT
 }

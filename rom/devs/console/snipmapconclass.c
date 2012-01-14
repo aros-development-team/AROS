@@ -77,33 +77,17 @@ static const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 static VOID snipmapcon_paste(Class *cl, Object *o, Msg msg)
 {
-  /* if conclip is running, and there is space in the input buffer, 
-     insert <CSI> "0 v" and we're done. The console.handler will
-     be responsible for the actual paste.
+  /* if conclip is running, insert <CSI> "0 v" and we're done.
+   * The console.handler will be responsible for the actual paste.
    */
-  if ((!IsListEmpty(&ConsoleDevice->sniphooks) || FindPort(CONCLIP_PORTNAME)) && ICU(o)->numStoredChars < CON_INPUTBUF_SIZE - 4) {
+  if (!IsListEmpty(&ConsoleDevice->sniphooks) || FindPort(CONCLIP_PORTNAME)) {
     D(bug("Pasting to ConClip\n"));
-    CopyMem("\x9b""0 v",ICU(o)->inputBuf + ICU(o)->numStoredChars,4);
-    ICU(o)->numStoredChars += 4;
+    con_inject(ConsoleDevice, CU(o), "\x9b""0 v", -1);
     return;
   }
-  D(bug("Pasting directly (ConClip not found)\n"));
-
   ObtainSemaphore(&ConsoleDevice->copyBufferLock);
-  if (ConsoleDevice->copyBuffer)
-    {
-      struct intPasteData * p = AllocMem(sizeof(struct intPasteData),MEMF_ANY);
-      if (p)
-	{
-	  p->pasteBuffer = AllocMem(ConsoleDevice->copyBufferSize,MEMF_ANY);
-	  if (p->pasteBuffer)
-	    {
-	      CopyMem((APTR)ConsoleDevice->copyBuffer,p->pasteBuffer,ConsoleDevice->copyBufferSize);
-	      p->pasteBufferSize = ConsoleDevice->copyBufferSize;
-	      AddTail((struct List *)&ICU(o)->pasteData,(struct Node *)p);
-	    }
-	}
-    }
+  D(bug("Pasting directly (ConClip not found) %p,%d\n", ConsoleDevice->copyBuffer, ConsoleDevice->copyBufferSize));
+  con_inject(ConsoleDevice, CU(o), ConsoleDevice->copyBuffer, ConsoleDevice->copyBufferSize);
   ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
 }
 

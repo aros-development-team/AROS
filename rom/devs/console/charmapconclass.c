@@ -818,12 +818,12 @@ static VOID charmapcon_refresh_lines(Class *cl, Object * o, LONG fromLine, LONG 
 		 line->flags[start] == line->flags[start + len] &&
 		 start + len < stop) len += 1;
 
-	  SetABPenDrMd(rp, fgpen,bgpen,JAM2);
+          setabpen(GfxBase, rp, line->flags[start], fgpen, bgpen);
+          if ((line->flags[start] & CON_TXTFLAGS_MASK) != (flags & CON_TXTFLAGS_MASK)) {
+            SetSoftStyle(rp, line->flags[start], CON_TXTFLAGS_MASK);
+          }
+          flags = line->flags[start];
 
-	  if (line->flags[start] != flags) {
-	    SetSoftStyle(rp, line->flags[start], FSF_BOLD | FSF_UNDERLINED | FSF_ITALIC);
-	    flags = line->flags[start];
-	  }
 	  Text(rp,&str[start],len);
 
 	  start += len;
@@ -982,10 +982,12 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
 
   size = charmapcon_calc_selection_size(first,last,minx,maxx);
   buf = charmapcon_get_selection(size,first,last,minx,maxx);
+  D(bug("%d bytes copied\n"));
 
   /* If Conclip is running, we prefer using that */
   if (IsListEmpty(&ConsoleDevice->sniphooks) && (port = FindPort(CONCLIP_PORTNAME))) {
     /* AROS conclip format */
+    D(bug("AROS conclip\n"));
     replyport.mp_Node.ln_Type	= NT_MSGPORT;
     replyport.mp_Node.ln_Name 	= NULL;
     replyport.mp_Node.ln_Pri 	= 0;
@@ -1022,30 +1024,33 @@ static VOID charmapcon_copy(Class *cl, Object *o, Msg copymsg)
   }
 
   ObtainSemaphore(&ConsoleDevice->copyBufferLock);
-  if (ConsoleDevice->copyBuffer)
-    {
-      FreeMem((APTR)ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
-    }
+  FreeMem((APTR)ConsoleDevice->copyBuffer,ConsoleDevice->copyBufferSize);
 
   ConsoleDevice->copyBuffer = buf;
-  if (ConsoleDevice->copyBuffer) ConsoleDevice->copyBufferSize = size;
-  else ConsoleDevice->copyBufferSize = 0;
+  if (ConsoleDevice->copyBuffer)
+    ConsoleDevice->copyBufferSize = size;
+  else
+    ConsoleDevice->copyBufferSize = 0;
 
-  if (!IsListEmpty(&ConsoleDevice->sniphooks) && ConsoleDevice->copyBufferSize) {
+  if (!IsListEmpty(&ConsoleDevice->sniphooks)) {
     /* OS2-3.x compatible conclip format */
     struct Hook *conhook;
     struct ConClipData ccd;
     
-    ccd.flags = 0;
-    ccd.size = ConsoleDevice->copyBufferSize;
-    /* must be NUL-terminated */
-    ccd.buffer = AllocVec(ccd.size + 1, MEMF_CLEAR);
-    if (ccd.buffer) {
-      CopyMem(ConsoleDevice->copyBuffer, ccd.buffer, ccd.size);
-      ForeachNode(&ConsoleDevice->sniphooks, conhook) {
-        CALLHOOKPKT(conhook, NULL, &ccd);
+    D(bug("AOS conclip\n"));
+    if (ConsoleDevice->copyBufferSize) {
+      ccd.flags = 0;
+      ccd.size = ConsoleDevice->copyBufferSize;
+      /* must be NUL-terminated */
+      ccd.buffer = AllocVec(ccd.size + 1, MEMF_CLEAR);
+      if (ccd.buffer) {
+        CopyMem(ConsoleDevice->copyBuffer, ccd.buffer, ccd.size);
+        ForeachNode(&ConsoleDevice->sniphooks, conhook) {
+          D(bug("Calling AOS conclip hook %p\n", conhook));
+          CALLHOOKPKT(conhook, NULL, &ccd);
+        }
+        FreeVec(ccd.buffer);
       }
-      FreeVec(ccd.buffer);
     }
   }
   ReleaseSemaphore(&ConsoleDevice->copyBufferLock);
@@ -1273,7 +1278,7 @@ AROS_UFH3S(IPTR, dispatch_charmapconclass,
 	break;
 
     case M_Console_HandleGadgets:
-      D(bug("CharMapCon::HandleGadgets\n"));
+      //D(bug("CharMapCon::HandleGadgets\n"));
       charmapcon_handlegadgets(cl, o, (struct P_Console_HandleGadgets *)msg);
       break;
 

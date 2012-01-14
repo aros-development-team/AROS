@@ -286,7 +286,7 @@ AROS_LH1(void, beginio,
 
     	case CMD_WRITE: {
 	    ULONG towrite;
-	    D(bug("CMD_WRITE\n"));
+	    D(bug("CMD_WRITE %p,%d\n", ioreq->io_Data, ioreq->io_Length));
 #if DEBUG
 	    {
 	    	char *str;
@@ -315,7 +315,7 @@ AROS_LH1(void, beginio,
     	    break; }
 
 	case CMD_READ:
-	    D(bug("CMD_READ\n"));
+	    D(bug("CMD_READ %p,%d\n", ioreq->io_Data, ioreq->io_Length));
 #if DEBUG
 	    {
 	    	char *str;

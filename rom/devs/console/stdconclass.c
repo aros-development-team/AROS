@@ -11,6 +11,7 @@
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
+#include <exec/rawfmt.h>
 #include <aros/asmcall.h>
 
 #define SDEBUG 0
@@ -88,6 +89,25 @@ static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
     return;
 }
 
+VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags, UBYTE FgPen, UBYTE BgPen)
+{
+    UBYTE fg = FgPen, bg = BgPen;
+    UBYTE style = JAM2;
+
+    if (tflags & CON_TXTFLAGS_CONCEALED)
+        fg = bg;
+    else if (tflags & CON_TXTFLAGS_REVERSED)
+        style |= INVERSVID;
+    SetABPenDrMd(rp, fg, bg, style);
+}
+
+static void setstyle(struct Library *GfxBase, struct RastPort *rp, Object *o)
+{
+    UBYTE tflags = CU(o)->cu_TxFlags;
+    setabpen(GfxBase, rp, tflags, CU(o)->cu_FgPen, CU(o)->cu_BgPen);
+    SetSoftStyle(rp, tflags, CON_TXTFLAGS_MASK);
+}
+
 /*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
@@ -115,8 +135,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 	Console_UnRenderCursor(o);
 
-    	SetABPenDrMd(rp, CU(o)->cu_FgPen,CU(o)->cu_BgPen, JAM2);
-	SetSoftStyle(rp, CU(o)->cu_TxFlags, FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED);
+        setstyle(GfxBase, rp, o);
 	Move(rp,CP_X(o),CP_Y(o)+rp->Font->tf_Baseline);
 	{
 	  UBYTE c = params[0];
@@ -137,8 +156,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 
 	Console_UnRenderCursor(o);
 
-    	SetABPenDrMd(rp, CU(o)->cu_FgPen,CU(o)->cu_BgPen, JAM2);
-	SetSoftStyle(rp, CU(o)->cu_TxFlags, FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED);
+        setstyle(GfxBase, rp, o);
 
 	{
 	    ULONG  len     = params[1];
@@ -584,13 +602,29 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		Console_NewWindowSize(o);
     	break;
 
-	case C_SET_PAGE_LENGTH:
+    case C_SET_PAGE_LENGTH:
 		Console_UnRenderCursor(o);
 		CU(o)->cu_YMax = params[0];
 		// FIXME: Need to set something that prevents NewWindowSize to change YMax
 		Console_RenderCursor(o);
 		Console_NewWindowSize(o);
 		break;	  
+
+    case C_WINDOW_STATUS_REQUEST:
+    {
+        UBYTE reply[32];
+        NewRawDoFmt("\x9b""1;1;%d;%d r", RAWFMTFUNC_STRING, reply, CU(o)->cu_YMax, CU(o)->cu_XMax);
+        con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply, -1);
+        break;
+    }
+
+    case C_DEVICE_STATUS_REPORT:
+    {
+        UBYTE reply[32];
+        NewRawDoFmt("\x9b""%d;%dR", RAWFMTFUNC_STRING, reply, CU(o)->cu_YCP, CU(o)->cu_XCP);
+        con_inject((struct ConsoleBase *)cl->cl_UserData, CU(o), reply, -1);
+        break;
+    }
 
     default:
     	DoSuperMethodA(cl, o, (Msg)msg);
