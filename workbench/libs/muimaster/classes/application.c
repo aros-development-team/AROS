@@ -1456,11 +1456,8 @@ static IPTR Application__MUIM_NewInput(struct IClass *cl, Object *obj, struct MU
                                 break;
 
                             case CXCMD_APPEAR:
-                                set(obj, MUIA_Application_Iconified, FALSE);
-                                break;
-
                             case CXCMD_DISAPPEAR:
-                                set(obj, MUIA_Application_Iconified, TRUE);
+                                /* No default handling - application need to be in control of this */
                                 break;
 
                             case CXCMD_KILL:
