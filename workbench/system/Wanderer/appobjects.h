@@ -16,5 +16,6 @@ VOID AppObjectsUnlock(APTR lock);
 struct AppIcon * GetNextAppIconLocked(struct AppIcon * lastappicon, APTR lock);
 struct DiskObject * AppIcon_GetDiskObject(struct AppIcon * appicon);
 CONST_STRPTR AppIcon_GetLabel(struct AppIcon * appicon);
+BOOL AppIcon_Supports(struct AppIcon * appicon, ULONG tag); /* Takes one of the WBAPPICONA_SupportsXXX tags as parameter */
 
 #endif /* _APPOBJECTS_H_ */

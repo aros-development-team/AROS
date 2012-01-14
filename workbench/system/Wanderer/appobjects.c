@@ -156,3 +156,24 @@ CONST_STRPTR AppIcon_GetLabel(struct AppIcon * appicon)
 
     return _return;
 }
+
+BOOL AppIcon_Supports(struct AppIcon * appicon, ULONG tag)
+{
+    BOOL _return = FALSE;
+    /* This is a low-risk function, query passed object directly */
+    switch(tag)
+    {
+    case(WBAPPICONA_SupportsOpen):          _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsOpen); break;
+    case(WBAPPICONA_SupportsCopy):          _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsCopy); break;
+    case(WBAPPICONA_SupportsRename):        _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsRename); break;
+    case(WBAPPICONA_SupportsInformation):   _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsInformation); break;
+    case(WBAPPICONA_SupportsSnapshot):      _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsSnapshot); break;
+    case(WBAPPICONA_SupportsUnSnapshot):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsUnSnapshot); break;
+    case(WBAPPICONA_SupportsLeaveOut):      _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsLeaveOut); break;
+    case(WBAPPICONA_SupportsPutAway):       _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsPutAway); break;
+    case(WBAPPICONA_SupportsDelete):        _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsDelete); break;
+    case(WBAPPICONA_SupportsFormatDisk):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsFormatDisk); break;
+    case(WBAPPICONA_SupportsEmptyTrash):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsEmptyTrash); break;
+    }
+    return _return;
+}

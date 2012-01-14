@@ -2931,6 +2931,29 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
                 iconmenustate &= ~MENF_ICON_FORMAT;
                 iconmenustate &= ~MENF_ICON_EMPTYTRASH;
             }
+            if (isRoot && (icon_entry->type == ILE_TYPE_APPICON))
+            {
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsOpen))
+                    iconmenustate &= ~MENF_ICON_OPEN;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsRename))
+                    iconmenustate &= ~MENF_ICON_RENAME;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsInformation))
+                    iconmenustate &= ~MENF_ICON_INFORMATION;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsSnapshot))
+                    iconmenustate &= ~MENF_ICON_SNAPSHOT;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsUnSnapshot))
+                    iconmenustate &= ~MENF_ICON_UNSNAPSHOT;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsLeaveOut))
+                    iconmenustate &= ~MENF_ICON_LEAVEOUT;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsPutAway))
+                    iconmenustate &= ~MENF_ICON_PUTAWAY;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsDelete))
+                    iconmenustate &= ~MENF_ICON_DELETE;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsFormatDisk))
+                    iconmenustate &= ~MENF_ICON_FORMAT;
+                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsEmptyTrash))
+                    iconmenustate &= ~MENF_ICON_EMPTYTRASH;
+            }
             selectedcount++;
         }
         else
