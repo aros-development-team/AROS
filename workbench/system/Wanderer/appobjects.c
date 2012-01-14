@@ -7,6 +7,7 @@
 
 #include <proto/workbench.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 /*
  * Wanderer needs access to internals of workbench.library to provided needed functionality.
