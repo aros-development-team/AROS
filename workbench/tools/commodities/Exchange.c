@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Exchange -- controls commodities.
@@ -80,7 +80,7 @@
 #endif
 #define CATALOG_VERSION  3
 
-TEXT version[] = "$VER: Exchange 1.1 (08.01.2009)";
+TEXT version[] = "$VER: Exchange 1.2 (14.01.2012)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt h"
@@ -102,6 +102,7 @@ static struct Hook broker_hook;
 static struct Hook list_disp_hook;
 static struct Hook list_select_hook;
 static struct Hook inform_broker_hook;
+static struct Hook show_hook;
 
 static LONG cx_pri;
 static char *cx_popkey;
@@ -301,16 +302,37 @@ AROS_UFH3(void, broker_func,
     D(bug("Exchange: Broker hook called\n"));
     if (CxMsgType(msg) == CXM_COMMAND)
     {
-	if (CxMsgID(msg) == CXCMD_APPEAR)
-	{
-	    //This opens window if application was started with cx_popup=no
-	    set(app, MUIA_Application_Iconified, FALSE);
-	}
-	else if (CxMsgID(msg) == CXCMD_LIST_CHG)
-	{
-	    update_list();
-	}
+        if (CxMsgID(msg) == CXCMD_APPEAR)
+        {
+            CallHookPkt(&show_hook, NULL, NULL);
+        }
+        else if (CxMsgID(msg) == CXCMD_DISAPPEAR)
+        {
+            set(wnd, MUIA_Window_Open, FALSE);
+        }
+        else if (CxMsgID(msg) == CXCMD_LIST_CHG)
+        {
+            update_list();
+        }
     }
+    AROS_USERFUNC_EXIT
+}
+
+/*** show_func ************************************************************/
+AROS_UFH3(
+    void, show_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    if (XGET(app, MUIA_Application_Iconified) == TRUE)
+        set(app, MUIA_Application_Iconified, FALSE);
+    else
+        set(wnd, MUIA_Window_Open, TRUE);
+
     AROS_USERFUNC_EXIT
 }
 
@@ -389,13 +411,14 @@ static void MakeGUI(void)
     list_disp_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_display_func);
     list_select_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(list_select_func);
     inform_broker_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(inform_broker_func);
+    show_hook.h_Entry = (HOOKFUNC)AROS_ASMSYMNAME(show_func);
     
     snprintf(wintitle, sizeof(wintitle), _(MSG_EXCHANGE_WINTITLE), cx_popkey);
     
     app = (Object *)ApplicationObject,
 	MUIA_Application_Title, __(MSG_EXCHANGE_CXNAME),
 	MUIA_Application_Version, (IPTR)version,
-	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2009, The AROS Development TEAM",
+	MUIA_Application_Copyright, (IPTR)"Copyright  © 1995-2012, The AROS Development TEAM",
 	MUIA_Application_Author, (IPTR)"The AROS Development Team",
 	MUIA_Application_Description, __(MSG_EXCHANGE_CXDESCR),
 	MUIA_Application_BrokerPri, cx_pri,
@@ -468,14 +491,10 @@ static void MakeGUI(void)
     update_list();
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+	(IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
-	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
-
-    // Open the window when app isn't iconified
-    DoMethod(app, MUIM_Notify, MUIA_Application_Iconified, FALSE,
-	(IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
+    (IPTR)wnd, 2, MUIM_CallHook, &show_hook);
 
     DoMethod(listgad, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 	(IPTR)listgad, 2, MUIM_CallHook, (IPTR)&list_select_hook);
@@ -499,7 +518,7 @@ static void MakeGUI(void)
 	(IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_HIDE,
-	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+	(IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_ICONIFY,
 	(IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
@@ -512,7 +531,7 @@ static void HandleAll(void)
 {
     ULONG sigs = 0;
 
-    set(app, MUIA_Application_Iconified, cx_popup ? FALSE : TRUE);
+    set(wnd, MUIA_Window_Open, cx_popup);
     
     while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
 	    != MUIV_Application_ReturnID_Quit)
@@ -526,7 +545,7 @@ static void HandleAll(void)
 	    }
 	    if (sigs & SIGBREAKF_CTRL_F)
 	    {
-		set(app, MUIA_Application_Iconified, FALSE);
+	        CallHookPkt(&show_hook, NULL, NULL);
 	    }
 	}
     }

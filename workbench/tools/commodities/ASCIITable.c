@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ASCIITable -- Insert characters to clipboard from GUI.
@@ -73,7 +73,7 @@
 #define CATALOG_NAME     "System/Tools/Commodities.catalog"
 #define CATALOG_VERSION  3
 
-TEXT version[] = "$VER: ASCIITable 1.1 (14.06.2009)";
+TEXT version[] = "$VER: ASCIITable 1.2 (14.01.2012)";
 
 #define ARG_TEMPLATE "CX_PRIORITY/N/K,CX_POPKEY/K,CX_POPUP/S"
 #define DEF_POPKEY "ctrl alt a"
@@ -90,6 +90,7 @@ static struct Catalog *catalog;
 static UBYTE s[257];
 
 static struct Hook broker_hook;
+static struct Hook show_hook;
 
 static LONG cx_pri;
 static char *cx_popkey;
@@ -541,10 +542,31 @@ AROS_UFH3(void, broker_func,
     {
         if (CxMsgID(msg) == CXCMD_APPEAR)
         {
-            //This opens window if application was started with cx_popup=no
-            set(app, MUIA_Application_Iconified, FALSE);
+            CallHookPkt(&show_hook, NULL, NULL);
+        }
+        else if (CxMsgID(msg) == CXCMD_DISAPPEAR)
+        {
+            set(wnd, MUIA_Window_Open, FALSE);
         }
     }
+    AROS_USERFUNC_EXIT
+}
+
+/*** show_func ************************************************************/
+AROS_UFH3(
+    void, show_func,
+    AROS_UFHA(struct Hook *,    hook,   A0),
+    AROS_UFHA(APTR *,           obj,    A2),
+    AROS_UFHA(APTR,             param,  A1)
+)
+{
+    AROS_USERFUNC_INIT
+
+    if (XGET(app, MUIA_Application_Iconified) == TRUE)
+        set(app, MUIA_Application_Iconified, FALSE);
+    else
+        set(wnd, MUIA_Window_Open, TRUE);
+
     AROS_USERFUNC_EXIT
 }
 
@@ -558,13 +580,14 @@ static void MakeGUI(void)
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
 
     broker_hook.h_Entry = (HOOKFUNC)broker_func;
+    show_hook.h_Entry = (HOOKFUNC)show_func;
     
     snprintf(wintitle, sizeof(wintitle), _(MSG_ASCIITABLE_WINTITLE), cx_popkey);
     
     app = (Object *)ApplicationObject,
         MUIA_Application_Title, __(MSG_ASCIITABLE_CXNAME),
         MUIA_Application_Version, (IPTR)version,
-        MUIA_Application_Copyright, (IPTR)"Copyright  © 2009, The AROS Development TEAM",
+        MUIA_Application_Copyright, (IPTR)"Copyright  © 2012, The AROS Development TEAM",
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, __(MSG_ASCIITABLE_CXDESCR),
         MUIA_Application_BrokerPri, cx_pri,
@@ -605,20 +628,16 @@ static void MakeGUI(void)
     }
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-        (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+        (IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
-        (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
-
-    // Open the window when app isn't iconified
-    DoMethod(app, MUIM_Notify, MUIA_Application_Iconified, FALSE,
-        (IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, TRUE);
+        (IPTR)wnd, 2, MUIM_CallHook, &show_hook);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT,
         (IPTR)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_HIDE,
-        (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
+        (IPTR)wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_ICONIFY,
         (IPTR)app, 3, MUIM_Set, MUIA_Application_Iconified, TRUE);
@@ -629,7 +648,7 @@ static void HandleAll(void)
 {
     ULONG sigs = 0;
 
-    set(app, MUIA_Application_Iconified, cx_popup ? FALSE : TRUE);
+    set(wnd, MUIA_Window_Open, cx_popup);
     
     while((LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs)
             != MUIV_Application_ReturnID_Quit)
@@ -643,7 +662,7 @@ static void HandleAll(void)
             }
             if (sigs & SIGBREAKF_CTRL_F)
             {
-                set(app, MUIA_Application_Iconified, FALSE);
+                CallHookPkt(&show_hook, NULL, NULL);
             }
         }
     }
