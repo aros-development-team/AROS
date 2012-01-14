@@ -174,6 +174,26 @@ BOOL AppIcon_Supports(struct AppIcon * appicon, ULONG tag)
     case(WBAPPICONA_SupportsDelete):        _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsDelete); break;
     case(WBAPPICONA_SupportsFormatDisk):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsFormatDisk); break;
     case(WBAPPICONA_SupportsEmptyTrash):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsEmptyTrash); break;
+    case(WBAPPICONA_RenderHook):            _return = (appicon->ai_RenderHook != NULL); break;
     }
     return _return;
+}
+
+BOOL AppIcon_CallRenderHook(struct AppIcon * appicon, struct AppIconRenderMsg * msg)
+{
+    struct AppIcon * entry = NULL;
+
+    LockWorkbench();
+
+    entry = FindAppIconByPtr(appicon);
+
+    if (entry && entry->ai_RenderHook)
+        CallHookA(entry->ai_RenderHook, NULL, msg);
+
+    UnlockWorkbench();
+
+    if (entry && entry->ai_RenderHook)
+        return TRUE;
+    else
+        return FALSE;
 }
