@@ -134,8 +134,10 @@ static const UBYTE str_dsr[] = {0x36, 0x6E };       /* device status report */
 static const UBYTE str_con[] = {' ', 'p'};    	    /* cursor visible */
 static const UBYTE str_con2[] = {'1', ' ', 'p'};    /* cursor visible */
 static const UBYTE str_cof[] = {'0', ' ', 'p'};     /* cursor invisible */
+static const UBYTE str_srq1[] = {' ', 'q'};         /* window status request */
+static const UBYTE str_srq2[] = {'0', ' ','q'};     /* window status request */
 
-#define NUM_SPECIAL_COMMANDS 10
+#define NUM_SPECIAL_COMMANDS 12
 static const struct special_cmd_descr
 {
     BYTE	Command;
@@ -152,8 +154,9 @@ static const struct special_cmd_descr
     {C_DEVICE_STATUS_REPORT, 	(STRPTR)str_dsr, 2 },
     {C_CURSOR_VISIBLE,		(STRPTR)str_con, 2 },
     {C_CURSOR_VISIBLE,          (STRPTR)str_con2, 3 },
-    {C_CURSOR_INVISIBLE,	(STRPTR)str_cof, 3 }
-
+    {C_CURSOR_INVISIBLE,	(STRPTR)str_cof, 3 },
+    {C_WINDOW_STATUS_REQUEST,   (STRPTR)str_srq1, 2 },
+    {C_WINDOW_STATUS_REQUEST,   (STRPTR)str_srq2, 3 }
 };
 
 #if DEBUG
@@ -199,6 +202,7 @@ static UBYTE *cmd_names[NUM_CONSOLE_COMMANDS] =
     "Cursor Tab Ctrl",		/* C_CURSOR_TAB_CTRL,	    	*/
     "Cursor Backtab",		/* C_CURSOR_BACKTAB,	    	*/
     "Select Graphic Rendition", /* C_SELECT_GRAPHIC_RENDITION 	*/
+    "Window Status Request",    /* C_WINDOW_STATUS_REQUEST      */
     "Cursor Visible",		/* C_CURSOR_VISIBLE,        	*/
     "Cursor Invisible",		/* C_CURSOR_INVISIBLE,      	*/
     "Set Raw Events",	    	/* C_SET_RAWEVENTS, 	    	*/

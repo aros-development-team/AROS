@@ -304,13 +304,14 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 	    break;
 	    
 	case C_SELECT_GRAPHIC_RENDITION:
-	    D(bug("Select graphic Rendition\n"));
+	    D(bug("Select graphic Rendition, params=%d\n", msg->NumParams));
 	    {
 	        UBYTE i, param;
 		
 		for(i = 0; i < msg->NumParams; i++)
 		{
 		    param = msg->Params[i];
+		    D(bug("param%d=%d\n", i, param));
 
 		    switch(param)
 		    {
@@ -320,37 +321,37 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 		      CU(o)->cu_TxFlags = 0;
 		      break;
 		    case 1:
-		      CU(o)->cu_TxFlags |= FSF_BOLD;
+		      CU(o)->cu_TxFlags |= CON_TXTFLAGS_BOLD;
 		      break;
 		    case 2:
 		      /* Set "faint" */
 		      break;
 		    case 3:
-		      CU(o)->cu_TxFlags |= FSF_ITALIC;
+		      CU(o)->cu_TxFlags |= CON_TXTFLAGS_ITALIC;
 		      break;
 		    case 4:
-		      CU(o)->cu_TxFlags |= FSF_UNDERLINED;
+		      CU(o)->cu_TxFlags |= CON_TXTFLAGS_UNDERLINED;
 		      break;
 		    case 7:
-		      bug("NOT implemented: Reversed mode on\n");
+		      CU(o)->cu_TxFlags |= CON_TXTFLAGS_REVERSED;
 		      break;
 		    case 8:
-		      bug("NOT implemented: Concealed mode\n");
+		      CU(o)->cu_TxFlags |= CON_TXTFLAGS_CONCEALED;
 		      break;
 		    case 22:
-		      CU(o)->cu_TxFlags &= ~FSF_BOLD;
+		      CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_BOLD;
 		      break;
 		    case 23:
-		      CU(o)->cu_TxFlags &= ~FSF_ITALIC;
+		      CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_ITALIC;
 		      break;
 		    case 24:
-		      CU(o)->cu_TxFlags &= ~FSF_UNDERLINED;
+		      CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_UNDERLINED;
 		      break;
 		    case 27:
-		      bug("NOT implemented: Reversed mode on\n");
+		      CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_REVERSED;
 		      break;
 		    case 28:
-		      bug("NOT implemented: Concealed mode off\n");
+		      CU(o)->cu_TxFlags &= ~CON_TXTFLAGS_CONCEALED;
 		      break;
 		    case 30:
 		    case 31:

@@ -22,6 +22,35 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu, const UBYTE *data, LONG size)
+{
+    struct intConUnit *icu = ICU(cu);
+    ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
+    if (data && size)
+    {
+        struct intPasteData *p = AllocMem(sizeof(struct intPasteData), MEMF_ANY);
+        if (p)
+	{
+	    if (size < 0)
+	        size = strlen(data);
+	    p->pasteBuffer = AllocMem(size, MEMF_ANY);
+	    if (p->pasteBuffer)
+	    {
+	        CopyMem((APTR)data, p->pasteBuffer, size);
+	        p->pasteBufferSize = size;
+	        p->unit = icu;
+	        AddTail((struct List*)&icu->pasteData, (struct Node*)p);
+	        D(bug("con_inject(%x %x %x %d)\n", icu, p, p->pasteBuffer, p->pasteBufferSize));
+	    } else {
+	        FreeMem(p, sizeof(struct intPasteData));
+	    }
+	}
+    }
+    ReleaseSemaphore(&ConsoleDevice->consoleTaskLock);
+    /* Wake up possible waiting CMD_READs */
+    Signal(ConsoleDevice->consoleTask, SIGBREAKF_CTRL_D);
+}
+
 /* Protos */
 static BOOL checkconunit(Object *unit, struct ConsoleBase *ConsoleDevice);
 static void answer_read_request(struct IOStdReq *req, struct ConsoleBase *ConsoleDevice);
@@ -136,7 +165,7 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
     inputsig	= 1 << inputport->mp_SigBit;
     commandsig	= 1 << ConsoleDevice->commandPort->mp_SigBit;
     
-    waitsigs = inputsig|commandsig|SIGBREAKF_CTRL_C;
+    waitsigs = inputsig|commandsig|SIGBREAKF_CTRL_C|SIGBREAKF_CTRL_D;
     
     for (;;)
     {
@@ -149,6 +178,23 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 	}
 
 	ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
+
+        if (wakeupsig & SIGBREAKF_CTRL_D) {
+            struct IOStdReq *req;
+            BOOL active = TRUE;
+            D(bug("SIGBREAKF_CTRL_D\n"));
+            /* console.device pasted data? */
+            while (active) {
+                active = FALSE;
+                ForeachNode(&ConsoleDevice->readRequests, req) {
+                    if (pasteData(ICU(req->io_Unit), ConsoleDevice)) {
+                        answer_requests(NULL, ConsoleDevice);
+                        active = TRUE;
+                        break;
+                    }
+                }
+            }
+        }
 
 	if (wakeupsig & inputsig)
 	{
@@ -217,10 +263,12 @@ VOID consoleTaskEntry(struct ConsoleBase *ConsoleDevice)
 				    switch(inputBuf[0]) 
 				      {
 				      case 'c':
+				        D(bug("Console_Copy\n"));
 					Console_Copy(cdihmsg->unit);
 					actual = 0;
 					break;
 				      case 'v':
+				        D(bug("Console_Paste\n"));
 					Console_Paste(cdihmsg->unit);
 					/* We have likely put something into the input buffer */
 					if (ICU(cdihmsg->unit)->numStoredChars) answer_requests(cdihmsg->unit,ConsoleDevice);

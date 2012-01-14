@@ -88,6 +88,14 @@ struct ConsoleBase;
 #define MAX(a, b) ((a) > (b) ? a : b)
 #define MIN(a, b) ((a) < (b) ? a : b)
 
+
+#define CON_TXTFLAGS_MASK (FSF_BOLD | FSF_ITALIC | FSF_UNDERLINED)
+#define CON_TXTFLAGS_BOLD FSF_BOLD
+#define CON_TXTFLAGS_ITALIC FSF_ITALIC
+#define CON_TXTFLAGS_UNDERLINED FSF_UNDERLINED
+#define CON_TXTFLAGS_REVERSED 0x08
+#define CON_TXTFLAGS_CONCEALED 0x10
+
 /* Console write commands */
 enum 
 {
@@ -108,11 +116,11 @@ enum
     C_NEXT_LINE,
     C_H_TAB_SET,
     C_REVERSE_IDX,
-    
+
     C_SET_LF_MODE,
     C_RESET_LF_MODE,
     C_DEVICE_STATUS_REPORT,
-    
+
     C_INSERT_CHAR,
     C_CURSOR_UP,
     C_CURSOR_DOWN,
@@ -133,13 +141,14 @@ enum
     C_CURSOR_BACKTAB,
 
     C_SELECT_GRAPHIC_RENDITION,
-    
+    C_WINDOW_STATUS_REQUEST,
+
     C_CURSOR_VISIBLE,
     C_CURSOR_INVISIBLE,
-    
+
     C_SET_RAWEVENTS,
     C_RESET_RAWEVENTS,
-    
+
     C_SET_AUTOWRAP_MODE,
     C_RESET_AUTOWRAP_MODE,
     C_SET_AUTOSCROLL_MODE,
@@ -150,7 +159,7 @@ enum
     C_SET_TOP_OFFSET,
 
     C_ASCII_STRING,
-    
+
     NUM_CONSOLE_COMMANDS
 };
 
@@ -255,8 +264,11 @@ Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
 Class *makeCharMapConClass(struct ConsoleBase *ConsoleDevice);
 Class *makeSnipMapConClass(struct ConsoleBase *ConsoleDevice);
 
+VOID con_inject(struct ConsoleBase *ConsoleDevice, struct ConUnit *cu, const UBYTE *data, LONG size);
 
 VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);
+
+VOID setabpen(struct Library *GfxBase, struct RastPort *rp, UBYTE tflags, UBYTE FgPen, UBYTE BgPen);
 
 struct ConsoleBase
 {
