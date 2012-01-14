@@ -1,5 +1,5 @@
 /*
-    Copyright  2004-2011, The AROS Development Team. All rights reserved.
+    Copyright  2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -2870,31 +2870,37 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
 }    
 ///
 
+#define MENF_ICON_OPEN          (1 << 0)
+#define MENF_ICON_RENAME        (1 << 1)
+#define MENF_ICON_INFORMATION   (1 << 2)
+#define MENF_ICON_SNAPSHOT      (1 << 3)
+#define MENF_ICON_UNSNAPSHOT    (1 << 4)
+#define MENF_ICON_LEAVEOUT      (1 << 5)
+#define MENF_ICON_PUTAWAY       (1 << 6)
+#define MENF_ICON_DELETE        (1 << 7)
+#define MENF_ICON_FORMAT        (1 << 8)
+#define MENF_ICON_EMPTYTRASH    (1 << 9)
+
 ///Wanderer__Func_UpdateMenuStates()
 VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
 {
     IPTR   isRoot = 0, current_DispFlags = 0, current_SortFlags = 0;
     Object *current_Menustrip = NULL, *current_MenuItem = NULL;
     struct IconList_Entry *icon_entry    = (IPTR)MUIV_IconList_NextIcon_Start;
-    int selected_count = 0;
-
-    BOOL icon_men_PutAway = FALSE;
-    BOOL icon_men_LeaveOut = FALSE;
-    BOOL icon_men_Format = FALSE;
-    BOOL icon_men_EmptyTrash = FALSE;
-    // BOOL icon_men_IconSort = FALSE;
+    ULONG iconmenustate = 0xFFFFFFFF; /* All enabled */
+    LONG selectedcount = 0;
 
     if (IconlistObj == NULL)
         return;
 
-D(bug("[Wanderer]: %s(IconList @ %p)\n", __PRETTY_FUNCTION__, IconlistObj));
+    D(bug("[Wanderer]: %s(IconList @ %p)\n", __PRETTY_FUNCTION__, IconlistObj));
 
     GET(IconlistObj, MUIA_IconList_SortFlags, &current_SortFlags);
     GET(IconlistObj, MUIA_IconList_DisplayFlags, &current_DispFlags);
     GET(WindowObj, MUIA_Window_Menustrip, &current_Menustrip);
     GET(WindowObj, MUIA_IconWindow_IsRoot, &isRoot);
 
-D(bug("[Wanderer] %s: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", __PRETTY_FUNCTION__, current_Menustrip, current_DispFlags, current_SortFlags));
+    D(bug("[Wanderer] %s: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", __PRETTY_FUNCTION__, current_Menustrip, current_DispFlags, current_SortFlags));
 
     do
     {
@@ -2904,20 +2910,28 @@ D(bug("[Wanderer] %s: Menu @ %p, Display Flags : %x, Sort Flags : %x\n", __PRETT
         {
             if (isRoot && (icon_entry->type == ST_ROOT))
             {
-D(bug("[Wanderer] %s: ST_ROOT\n", __PRETTY_FUNCTION__));
-                icon_men_Format = TRUE;
+                /* Disks can't be: */
+                iconmenustate &= ~MENF_ICON_LEAVEOUT;
+                iconmenustate &= ~MENF_ICON_PUTAWAY;
+                iconmenustate &= ~MENF_ICON_DELETE;
+                iconmenustate &= ~MENF_ICON_EMPTYTRASH;
             }
             if (isRoot && ((icon_entry->type == ST_LINKDIR) || (icon_entry->type == ST_LINKFILE)))
             {
-D(bug("[Wanderer] %s: ST_LINKDIR/ST_LINKFILE\n", __PRETTY_FUNCTION__));
-                icon_men_PutAway = TRUE;
+                /* Leave outed icons can't be: */
+                iconmenustate &= ~MENF_ICON_LEAVEOUT;
+                iconmenustate &= ~MENF_ICON_DELETE;
+                iconmenustate &= ~MENF_ICON_FORMAT;
+                iconmenustate &= ~MENF_ICON_EMPTYTRASH;
             }
             if (!(isRoot) && ((icon_entry->type == ST_USERDIR) || (icon_entry->type == ST_FILE)))
             {
-D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
-                icon_men_LeaveOut = TRUE;
+                /* Normal files/drawers can't be: */
+                iconmenustate &= ~MENF_ICON_PUTAWAY;
+                iconmenustate &= ~MENF_ICON_FORMAT;
+                iconmenustate &= ~MENF_ICON_EMPTYTRASH;
             }
-            selected_count++;
+            selectedcount++;
         }
         else
         {
@@ -2925,102 +2939,57 @@ D(bug("[Wanderer] %s: ST_USERDIR/ST_FILE\n", __PRETTY_FUNCTION__));
         }
     } while (TRUE);
 
+    if (selectedcount == 0) iconmenustate = 0x00000000;
+
     if (current_Menustrip != NULL)
     {
-        if (selected_count > 0)
+        /* Icon menu */
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
         {
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_LeaveOut);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_Format);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_LeaveOut);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_PutAway);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, icon_men_EmptyTrash);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
-            }
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_OPEN));
         }
-        else
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
         {
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_OPEN)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_RENAME)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
-            if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
-            {
-                NNSET(current_MenuItem, MUIA_Menuitem_Enabled, FALSE);
-            }
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_RENAME));
         }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_INFORMATION)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_INFORMATION));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_SNAPSHOT)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_SNAPSHOT));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_UNSNAPSHOT)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_UNSNAPSHOT));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_DELETE)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_DELETE));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_FORMAT)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_FORMAT));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_LEAVEOUT)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_LEAVEOUT));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_PUTAWAY)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_PUTAWAY));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_ICON_EMPTYTRASH)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, !!(iconmenustate & MENF_ICON_EMPTYTRASH));
+        }
+        if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_CLEAR)) != NULL)
+        {
+            NNSET(current_MenuItem, MUIA_Menuitem_Enabled, TRUE);
+        }
+
+        /* Window menu */
         if ((current_MenuItem = FindMenuitem(current_Menustrip, MEN_WINDOW_VIEW_ALL)) != NULL)
         {
             NNSET(current_MenuItem, MUIA_Menuitem_Checked, !(current_DispFlags & ICONLIST_DISP_SHOWINFO) ? TRUE : FALSE);
