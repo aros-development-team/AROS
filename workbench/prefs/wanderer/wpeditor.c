@@ -16,7 +16,6 @@
 #define       WP_MAX_TILE_MODES                  4
 #define       WP_DRAWMODE_COUNT                  2
 
-#define       DEBUG_ADVANCEDIMAGEOPTIONS
 #define       DEBUG_TOOLBARINTERNAL
 #define       DEBUG_SHOWUSERFILES
 //#define       DEBUG_FORCEWINSIZE
@@ -706,9 +705,7 @@ D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Object @ 0x%p reports image
         if ((_viewSettings_Current->wpedbo_Type == 5)||(_viewSettings_Current->wpedbo_Type == 0))
         {
 D(bug("[WPEditor] WandererPrefs_Hook_CheckImageFunc: Image-type spec (%d) - Enabling Advanced Image options ..\n", _viewSettings_Current->wpedbo_Type));
-#if defined(DEBUG_ADVANCEDIMAGEOPTIONS)
             SET(data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_BackgroundGrpObj, MUIA_ShowMe, TRUE);
-#endif
 
             for (newVS_OptionCount = 0; newVS_OptionCount < WP_MAX_BG_TAG_COUNT; newVS_OptionCount++)
             {
@@ -1765,6 +1762,25 @@ D(bug("[WPEditor] WPEditor__OM_NEW: 'Advanced' Window Object @ 0x%p\n", advanced
                 data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_TextMultiLine, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,  
                 (IPTR)data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_IconLabel_MultiLineNo, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
             );
+
+            DoMethod
+            (
+                data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_UseObj, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR)self, 3, MUIM_CallHook, &data->wped_Hook_CloseAdvancedOptions, TRUE
+            );
+
+            DoMethod
+            (
+                data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_CancelObj, MUIM_Notify, MUIA_Pressed, FALSE,
+                (IPTR)self, 3, MUIM_CallHook, &data->wped_Hook_CloseAdvancedOptions, FALSE
+            );
+
+            DoMethod
+            (
+                data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_WindowObj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+                (IPTR)self, 3, MUIM_CallHook, &data->wped_Hook_CloseAdvancedOptions, FALSE
+            );
+
         }
 
         /*--------------------*/        
@@ -1871,7 +1887,7 @@ D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create objects ..\n"));
     else
     {
 D(bug("[WPEditor] WPEditor__OM_NEW: Failed to create GUI ..\n"));
-        if (advancedView_data->wpedabwd_Window_WindowObj) DoMethod(advancedView_data->wpedabwd_Window_WindowObj, OM_DISPOSE);
+        if (_WP_AdvancedViewWindow) DoMethod(_WP_AdvancedViewWindow, OM_DISPOSE);
         if (self) DoMethod(self, OM_DISPOSE);
 
         self = NULL;
@@ -2662,61 +2678,21 @@ D(bug("[WPEditor] WPEditor__MUIM_PrefsEditor_ExportFH: Export Finished\n"));
 }
 
 
-IPTR WPEditor__MUIM_Setup
+IPTR WPEditor__OM_GET
 (
-    Class *CLASS, Object *self, Msg message
+    Class *CLASS, Object *self, struct opGet *msg
 )
 {
     SETUP_WPEDITOR_INST_DATA;
-    
-D(bug("[WPEditor] WPEditor__MUIM_Setup()\n"));
 
-    if (!DoSuperMethodA(CLASS, self, message)) return FALSE;
-    
-#if defined(DEBUG_ADVANCEDIMAGEOPTIONS)
-        DoMethod(
-             _app(self), 
-             OM_ADDMEMBER, 
-             data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_WindowObj
-            );
-#endif
-    DoMethod (
-            data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_RenderModeObj,
-                MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
-            (IPTR)self, 3, 
-                MUIM_CallHook,
-                    &data->wped_AdvancedViewSettings_WindowData->wpedabwd_Hook_DrawModeChage, 
-                CLASS
-          );
+    switch(msg->opg_AttrID)
+    {
+    case MUIA_WPEditor_AdvancedViewWindow:
+        *msg->opg_Storage = (IPTR)data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_WindowObj;
+        return TRUE;
+    }
 
-    DoMethod (
-            data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_UseObj,
-            MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)self, 3, 
-                MUIM_CallHook,
-                    &data->wped_Hook_CloseAdvancedOptions, 
-                TRUE
-         );
-
-    DoMethod (
-            data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_CancelObj,
-            MUIM_Notify, MUIA_Pressed, FALSE,
-            (IPTR)self, 3, 
-                MUIM_CallHook,
-                    &data->wped_Hook_CloseAdvancedOptions, 
-                FALSE
-         );
-
-    DoMethod (
-            data->wped_AdvancedViewSettings_WindowData->wpedabwd_Window_WindowObj,
-            MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-            (IPTR)self, 3, 
-                MUIM_CallHook,
-                    &data->wped_Hook_CloseAdvancedOptions, 
-                FALSE
-         );
-
-    return TRUE;
+    return DoSuperMethodA(CLASS, self, (Msg) msg);
 }
 
 IPTR WPEditor__MUIM_Show
@@ -2834,7 +2810,7 @@ ZUNE_CUSTOMCLASS_7
 (
     WPEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                                struct opSet *,
-    MUIM_Setup,                            Msg,
+    OM_GET,                                struct opGet *,
     MUIM_Show,                             Msg,
     MUIM_PrefsEditor_ImportFH,             struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,             struct MUIP_PrefsEditor_ExportFH *,
