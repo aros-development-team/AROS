@@ -1,4 +1,4 @@
-## version $VER: wanderer.catalog 1.0 (03.20.2007)
+## version $VER: wanderer.catalog 2.0 (14.01.2012)
 ## language italiano
 ## codeset 0
 ;
@@ -152,8 +152,8 @@ Pulisci
 ; Clean up
 ;
 MSG_MEN_SC_CLNUP
-P
-; U
+.
+; .
 ;
 MSG_MEN_BYNAME
 Per nome
@@ -217,12 +217,15 @@ Strumenti
 ;
 MSG_MEN_ICONSORTING
 Abilita ordinamento automatico
+; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
 Raggruppa icone
+; Group Icons
 ;
 MSG_MEN_ICONSCLOSE
 Chiudi
+; Close
 ;
 MSG_REALLYQUIT
 Vuoi davvero chiudere Wanderer?
@@ -236,7 +239,6 @@ MSG_DUMMY
 DUMMY
 ; DUMMY
 ; DUMMY :)
-;
 MSG_USERSCREENTITLE
 Wanderer %pc memoria grafica %pf altra memoria
 ; Wanderer %pc graphics mem %pf other mem
@@ -259,7 +261,7 @@ Cosa preferisci fare?
 ;
 MSG_SHUTDOWN_BUTTONS
 Spegni|Riavvia Computer|Riavvia AROS|*Annulla
-; Power off|Restart computer|Restart AROS|*Cancel
+; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
 L'opzione richiesta non è supportata da questo computer.
@@ -277,17 +279,33 @@ MSG_MEN_PUT_AWAY
 Sul desktop
 ; Put away
 ;
+MSG_MEN_SC_PUT_AWAY
+P
+; P
+;
 MSG_MEN_LEAVE_OUT
 Riponi
 ; Leave out
+;
+MSG_MEN_SC_LEAVE_OUT
+L
+; L
 ;
 MSG_MEN_UNSNAPSHOT
 Libera
 ; Unsnapshot
 ;
+MSG_MEN_SC_UNSNAPSHOT
+U
+; U
+;
 MSG_MEN_SNAPSHOT
 Fissa
 ; Snapshot
+;
+MSG_MEN_SC_SNAPSHOT
+S
+; S
 ;
 MSG_REQU_DELETE
 Elimina file ...
@@ -368,6 +386,7 @@ presente in
 MSG_NOFILEACCESS_E
 
 ;  
+;
 MSG_NODRAWERACCESS_S
 Impossibile accedere al cassetto
 ; Can't access drawer
@@ -375,6 +394,7 @@ Impossibile accedere al cassetto
 MSG_NODRAWERACCESS_E
 
 ;  
+;
 MSG_REQU_FILEUNPROTECT_S
 Vuoi liberare il file
 ; Do you wish to unprotect file
