@@ -1232,6 +1232,62 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
     return rv;
 }
 
+IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object *self, struct MUIP_IconList_DrawEntry *message)
+{
+    D(bug("[Wanderer:Volumelist]: %s()\n", __PRETTY_FUNCTION__));
+
+    /* If the Entry is an AppIcon, and it has a renderhook - use the hook to perform the rendering, otherwise fallback to our parents handling */
+    if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
+    {
+        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_AppIcon, WBAPPICONA_RenderHook))
+        {
+            struct AppIconRenderMsg  renderMsg;
+            struct TagItem           renderTags[] = {
+                { ICONDRAWA_Frameless, TRUE         },
+                { ICONDRAWA_Borderless, TRUE        },
+                { ICONDRAWA_EraseBackground, FALSE  },
+                { TAG_DONE,                         }
+            };
+
+            GET(self, MUIA_IconList_BufferRastport, &renderMsg.arm_RastPort);
+            renderMsg.arm_Icon = message->entry->ie_DiskObj;
+            renderMsg.arm_Label = message->entry->ie_TxtBuf_DisplayedLabel;
+
+            renderMsg.arm_Left = message->entry->ie_IconX;
+            renderMsg.arm_Top = message->entry->ie_IconY;
+            renderMsg.arm_Width = message->entry->ie_IconWidth;
+            renderMsg.arm_Height = message->entry->ie_IconHeight;
+
+            renderMsg.arm_State = (message->entry->ie_Flags & ICONENTRY_FLAG_SELECTED) ? IDS_SELECTED : IDS_NORMAL;
+            renderMsg.arm_Tags = renderTags;
+
+            D(bug("[Wanderer:Volumelist] %s: Using AppIcon RenderHook for AppIcon 0x%p with DiskObj 0x%p and RastPort 0x%p\n",
+                    __PRETTY_FUNCTION__, diEntry->di_Data, renderMsg.arm_Icon, renderMsg.arm_RastPort));
+            D(bug("[Wanderer:Volumelist] %s: Render @ %d, %d (%d x %d pixels)\n", __PRETTY_FUNCTION__,
+                    renderMsg.arm_Left, renderMsg.arm_Top, renderMsg.arm_Width, renderMsg.arm_Height));
+
+            AppIcon_CallRenderHook((struct AppIcon*)message->entry->ie_AppIcon, &renderMsg);
+
+            return TRUE;
+        }
+    }
+
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
+IPTR IconWindowVolumeList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *self, struct MUIP_IconList_DrawEntryLabel *message)
+{
+    D(bug("[Wanderer:Volumelist]: %s()\n", __PRETTY_FUNCTION__));
+
+    if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
+    {
+        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_AppIcon, WBAPPICONA_RenderHook))
+            return TRUE;
+    }
+
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
 ///
 /*** Setup ******************************************************************/
 #ifdef __AROS__
@@ -1248,7 +1304,9 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_IconList_Update,       struct MUIP_IconList_Update *,
     MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
     MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
-    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *
+    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *,
+    MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
+    MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
 );
 #else
 ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
@@ -1264,6 +1322,8 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_IconList_Update,       struct MUIP_IconList_Update *,
     MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
     MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
-    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *
+    MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *,
+    MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
+    MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
 );
 #endif

@@ -75,8 +75,10 @@ and temporarily placed here */
                            m7, m7_msg_type,                          \
                            m8, m8_msg_type,                          \
                            m9, m9_msg_type,                          \
-                           m10, m10_msg_type,                          \
-                           m11, m11_msg_type)                          \
+                           m10, m10_msg_type,                        \
+                           m11, m11_msg_type,                        \
+                           m12, m12_msg_type,                        \
+                           m13, m13_msg_type)                        \
     __ZUNE_CUSTOMCLASS_START(name)                                   \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m1, m1, m1_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m2, m2, m2_msg_type);    \
@@ -87,8 +89,10 @@ and temporarily placed here */
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m7, m7, m7_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m8, m8, m8_msg_type);    \
     __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m9, m9, m9_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type);    \
-    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type);    \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m10, m10, m10_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m11, m11, m11_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m12, m12, m12_msg_type); \
+    __ZUNE_CUSTOMCLASS_METHOD(name ## __ ## m13, m13, m13_msg_type); \
     __ZUNE_CUSTOMCLASS_END(name, base, parent_name, parent_class)    \
 
 #define ICONWINDOWICONNETWORKBROWSERLIST_CUSTOMCLASS(name, base, parent_name, parent_class,   \
