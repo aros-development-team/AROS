@@ -970,16 +970,42 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                        sense now, yes?  */
                     struct List *wlist = NULL;
                     APTR         wstate;
-                    Object      *curwin;
+                    Object      *curwin = NULL;
+                    Object      *lastwin = NULL;
 
-                    get(obj, MUIA_Application_WindowList, &wlist);
+                    /* MUIA_ShowMe can cause MUIM_Setup/MUIM_Cleanup to be issued. On the
+                     * other hand it is allowed to add/remove other application windows in
+                     * MUIM_Setup/MUIM_Cleanup. This means after processing a window from
+                     * internal list, the list needs to be re-read and iteration started
+                     * again, because wstate can become invalid.
+                     * Note: The code below assumes that the window won't remove
+                     * itself from the list.
+                     */
 
-                    if (wlist)
+                    while(1)
                     {
-                        wstate = wlist->lh_Head;
-                        while ((curwin = NextObject(&wstate)))
+                        get(data->app_WindowFamily, MUIA_Family_List, &wlist);
+                        wstate = (Object *)wlist->lh_Head;
+                        while((curwin = NextObject(&wstate)))
+                        {
+                            if (lastwin == NULL) break;
+                            if (curwin == lastwin)
+                            {
+                                curwin = NextObject(&wstate);
+                                break;
+                            }
+                        }
+
+                        /* This is the window to be processed */
+                        if (curwin)
                         {
                             set(curwin, MUIA_ShowMe, tag->ti_Data);
+                            lastwin = curwin;
+                        }
+                        else
+                        {
+                            /* No more windows */
+                            break;
                         }
                     }
                 }
