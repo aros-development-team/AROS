@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2010-2011 Neil Cafferkey
+Copyright (C) 2010-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -134,8 +134,10 @@ void ath_hal_free(void* p)
 
 void ath_hal_memzero(void *dst, size_t n)
 {
+   UBYTE *buf = dst;
+
    while(n-- != 0)
-      *(UBYTE *)dst = 0;
+      *buf++ = 0;
 }
 
 
