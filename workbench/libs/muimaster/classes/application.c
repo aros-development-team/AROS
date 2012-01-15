@@ -943,7 +943,7 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
                             dobj->do_CurrentX = NO_ICON_POSITION;
                             dobj->do_CurrentY = NO_ICON_POSITION;
 
-                            data->app_AppIcon = AddAppIconA(0L, 0L, appname, data->app_AppPort, NULL, dobj, NULL);
+                            data->app_AppIcon = AddAppIconA(0L, 0L, appname, data->app_AppPort, BNULL, dobj, NULL);
                         }
                         else
                         {
