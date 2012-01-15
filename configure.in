@@ -2508,6 +2508,8 @@ AC_SUBST(crosstools_cxx_target)
 AC_SUBST(aros_cflags_unused_but_set_variable)
 AC_SUBST(aros_cflags_array_bounds)
 AC_SUBST(aros_cflags_enum_compare)
+AC_SUBST(aros_cflags_strict_overflow)
+AC_SUBST(aros_cflags_format_security)
 
 # Graphics Related
 AC_SUBST(x11_hidd_target)
