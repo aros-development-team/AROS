@@ -556,35 +556,46 @@ static LONG windowpos_endian(IPTR data, BOOL isNative)
     WORD cnt, i, j;
     void *p = (void*)data;
 
-    if (!AROS_BIG_ENDIAN) {
+    if (AROS_BIG_ENDIAN) {
+        size = *(LONG *)p;
+    } else {
         if (isNative) {
             size = *(LONG *)p;
         } else {
             size = AROS_BE2LONG(*((LONG*)p));
         }
         *((LONG*)p) = AROS_SWAP_BYTES_LONG(*((LONG*)p));
+    }
 
-        cnt = sizeof(LONG);
-        items = (size - sizeof(LONG)) / sizeof(struct windowpos);
-        D(bug("size=%d items=%d\n", size, items));
-        if (size > 100 || items > 100) {
-            bug("%s crashed...\n", FindTask(NULL)->tc_Node.ln_Name);
-            {volatile int dead = 1; while (dead); }
-        }
-        for (i = 0; i < items; i++) {
+    cnt = sizeof(LONG);
+    items = (size - sizeof(LONG)) / sizeof(struct windowpos);
+    D(bug("size=%d items=%d\n", size, items));
+    if (size > 100 || items > 100) {
+        bug("%s crashed...\n", FindTask(NULL)->tc_Node.ln_Name);
+        {volatile int dead = 1; while (dead); }
+    }
+
+    for (i = 0; i < items; i++) {
+        if (AROS_BIG_ENDIAN) {
+            D(bug("ID=%08x\n", *((LONG*)(p + cnt))));
+        } else {
             if (isNative) D(bug("ID=%08x\n", *((LONG*)(p + cnt))));
             *((LONG*)(p + cnt)) = AROS_SWAP_BYTES_LONG(*((LONG*)(p + cnt)));
             if (!isNative) D(bug("ID=%08x\n", *((LONG*)(p + cnt))));
-            cnt += sizeof(LONG);
-            for (j = 0; j < 8; j++) {
+        }
+        cnt += sizeof(LONG);
+        for (j = 0; j < 8; j++) {
+            if (AROS_BIG_ENDIAN) {
+                D(bug("V%d: %d\n", j, *((WORD*)(p + cnt))));
+            } else {
                 if (isNative) D(bug("V%d: %d\n", j, *((WORD*)(p + cnt))));
                 *((WORD*)(p + cnt)) = AROS_SWAP_BYTES_LONG(*((WORD*)(p + cnt)));
                 if (!isNative) D(bug("V%d: %d\n", j, *((WORD*)(p + cnt))));
-                cnt += sizeof(WORD);
             }
+            cnt += sizeof(WORD);
         }
-        D(bug("size=%d\n", cnt));
     }
+    D(bug("size=%d\n", cnt));
     return cnt;
 }
 
