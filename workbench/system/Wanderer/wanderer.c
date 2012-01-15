@@ -1318,7 +1318,7 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
          * temporarilly set the AutoSort flag. This is Wanderer function, not IconList function, thus the
          * implementation is here.
          */
-        IPTR sortFlags;
+        IPTR sortFlags = 0;
 
         get(iconList, MUIA_IconList_SortFlags, &sortFlags);
 
