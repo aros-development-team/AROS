@@ -63,7 +63,7 @@ struct DiskInfo_DATA
     Object            *dki_VolumeUseGauge;
     Object            *dki_VolumeUsed;
     Object            *dki_VolumeFree;
-    STRPTR	      dki_DOSDev;
+    STRPTR              dki_DOSDev;
     STRPTR            dki_DOSDevInfo;
     STRPTR            dki_FileSys;
     struct MsgPort    *dki_NotifyPort;
@@ -176,23 +176,23 @@ Object *DiskInfo__OM_NEW
     /* Extract volume info from InfoData */
     if (Info(initial, &id) == DOSTRUE)
     {
-	LONG i;
-	disktype = id.id_DiskType;
+        LONG i;
+        disktype = id.id_DiskType;
 
-	for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
-	{
-	    if (disktype == dt[i])
-	    {
-		filesystem = AllocVec(strlen(disktypelist[i]) + 1, MEMF_ANY|MEMF_CLEAR);
-		CopyMem(disktypelist[i], filesystem, strlen(disktypelist[i]));
-		break;
-	    }
-	}
-	if (!filesystem)
-	{
-	    filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY|MEMF_CLEAR);
-	    CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
-	}
+        for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
+        {
+            if (disktype == dt[i])
+            {
+                filesystem = AllocVec(strlen(disktypelist[i]) + 1, MEMF_ANY|MEMF_CLEAR);
+                CopyMem(disktypelist[i], filesystem, strlen(disktypelist[i]));
+                break;
+            }
+        }
+        if (!filesystem)
+        {
+            filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY|MEMF_CLEAR);
+            CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
+        }
 
         FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
         percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
@@ -200,57 +200,57 @@ Object *DiskInfo__OM_NEW
         sprintf(blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
 
         switch (id.id_DiskState)
-	{
+        {
         case (ID_WRITE_PROTECTED):
-	    status = _(MSG_READABLE);
-	    break;
+            status = _(MSG_READABLE);
+            break;
         case (ID_VALIDATING):
-	    status = _(MSG_VALIDATING);
-	    break;
+            status = _(MSG_VALIDATING);
+            break;
         case (ID_VALIDATED):
-	    status = _(MSG_READABLE_WRITABLE);
-	    break;
+            status = _(MSG_READABLE_WRITABLE);
+            break;
         default:
-	    status = _(MSG_UNKNOWN);
-	}
-	
-	dl = LockDosList(LDF_VOLUMES | LDF_READ);
-	dl = FindDosEntry(dl, volname, LDF_VOLUMES | LDF_READ);
-	UnLockDosList(LDF_VOLUMES | LDF_READ);
+            status = _(MSG_UNKNOWN);
+        }
+        
+        dl = LockDosList(LDF_VOLUMES | LDF_READ);
+        dl = FindDosEntry(dl, volname, LDF_VOLUMES | LDF_READ);
+        UnLockDosList(LDF_VOLUMES | LDF_READ);
 
-	if (dl != NULL)
-	{
-	    IPTR voltask = dl->dol_Task;
-	    dl = LockDosList(LDF_DEVICES|LDF_READ);
-	    if (dl) {
-		while((dl = NextDosEntry(dl, LDF_DEVICES)))
-		{
-		    if (dl->dol_Task == voltask)
-		    {
-			struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
-			dosdevname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
-			if (dl->dol_misc.dol_handler.dol_Handler)
-			{
-			    char *fscur = filesystem;
-			    filesystem = AllocVec(strlen(fscur) + AROS_BSTR_strlen(dl->dol_misc.dol_handler.dol_Handler) + 4, MEMF_ANY);
-			    sprintf(filesystem,"%s (%s)", fscur, AROS_BSTR_ADDR(dl->dol_misc.dol_handler.dol_Handler));
-			}
-			if (fsstartup != NULL)
-			{
-			   deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
-			   sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), fsstartup->fssm_Unit);
-			}
-			break;
-		    }
-		}
-		UnLockDosList(LDF_VOLUMES|LDF_READ);
-	    }
-	}
+        if (dl != NULL)
+        {
+            IPTR voltask = dl->dol_Task;
+            dl = LockDosList(LDF_DEVICES|LDF_READ);
+            if (dl) {
+                while((dl = NextDosEntry(dl, LDF_DEVICES)))
+                {
+                    if (dl->dol_Task == voltask)
+                    {
+                        struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
+                        dosdevname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
+                        if (dl->dol_misc.dol_handler.dol_Handler)
+                        {
+                            char *fscur = filesystem;
+                            filesystem = AllocVec(strlen(fscur) + AROS_BSTR_strlen(dl->dol_misc.dol_handler.dol_Handler) + 4, MEMF_ANY);
+                            sprintf(filesystem,"%s (%s)", fscur, AROS_BSTR_ADDR(dl->dol_misc.dol_handler.dol_Handler));
+                        }
+                        if (fsstartup != NULL)
+                        {
+                           deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
+                           sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), fsstartup->fssm_Unit);
+                        }
+                        break;
+                    }
+                }
+                UnLockDosList(LDF_VOLUMES|LDF_READ);
+            }
+        }
     }
-    else	
+    else        
     {
-	filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY);
-	CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
+        filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY);
+        CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
     }
 
     /* Create application and window objects -------------------------------*/
