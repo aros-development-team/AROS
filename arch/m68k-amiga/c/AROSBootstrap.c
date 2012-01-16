@@ -1001,8 +1001,15 @@ void coldcapturecode(void)
 	"not.w	%d1\n"
 	"move.w	%d1,(%a0)\n" // ChkSum
 	"move.l	start-4(%pc),%a0\n"
-	"move.l	2(%a0),%a0\n"
-	"move.l	4(%a0),%a0\n"
+	"addq.l	#2,%a0\n"
+	"moveq	#2,%d0\n"
+	"cmp.w	#0x4ef9,(%a0)\n"
+	"beq.s	.skip\n"
+	// skip elf loader injected header
+	"moveq	#4,%d0\n"
+	"move.l	(%a0),%a0\n"
+	".skip:\n"
+	"move.l	0(%a0,%d0.w),%a0\n"
 	"jmp	4(%a0)\n"
 	"exception:\n"
 	"move.w #0xff0,0xdff180\n"
