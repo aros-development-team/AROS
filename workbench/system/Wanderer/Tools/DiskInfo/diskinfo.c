@@ -44,12 +44,15 @@
 #ifndef ID_CDFS_DISK
 #define ID_CDFS_DISK       (0x43444653L)
 #endif
+#ifndef ID_NTFS_DISK
+#define ID_NTFS_DISK       (0x4E544653L)
+#endif
 
 static LONG dt[]={ID_NO_DISK_PRESENT, ID_UNREADABLE_DISK,
     ID_DOS_DISK, ID_FFS_DISK, ID_INTER_DOS_DISK, ID_INTER_FFS_DISK,
     ID_FASTDIR_DOS_DISK, ID_FASTDIR_FFS_DISK, ID_NOT_REALLY_DOS,
     ID_KICKSTART_DISK, ID_MSDOS_DISK, ID_SFS_BE_DISK, ID_SFS_LE_DISK,
-    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK, ID_CDFS_DISK };
+    ID_FAT12_DISK, ID_FAT16_DISK, ID_FAT32_DISK, ID_CDFS_DISK, ID_NTFS_DISK };
 
 /*** Instance data **********************************************************/
 struct DiskInfo_DATA
@@ -118,7 +121,8 @@ Object *DiskInfo__OM_NEW
     "FAT12",
     "FAT16",
     "FAT32",
-    "CD-ROM"
+    "CD-ROM",
+    "NTFS"
     };
 
     /* Parse initial taglist -----------------------------------------------*/
