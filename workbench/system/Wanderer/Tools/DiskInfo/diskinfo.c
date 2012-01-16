@@ -63,10 +63,12 @@ struct DiskInfo_DATA
     Object            *dki_VolumeUseGauge;
     Object            *dki_VolumeUsed;
     Object            *dki_VolumeFree;
-    char            *dki_DOSDev;
-    struct MsgPort              *dki_NotifyPort;
-    LONG            dki_DiskType;
-    LONG            dki_Aspect;
+    STRPTR	      dki_DOSDev;
+    STRPTR            dki_DOSDevInfo;
+    STRPTR            dki_FileSys;
+    struct MsgPort    *dki_NotifyPort;
+    LONG              dki_DiskType;
+    LONG              dki_Aspect;
     struct MUI_InputHandlerNode dki_NotifyIHN;
     struct NotifyRequest        dki_FSNotifyRequest;
 };
@@ -77,6 +79,7 @@ Object *DiskInfo__OM_NEW
     Class *CLASS, Object *self, struct opSet *message 
 )
 {
+    struct DosList *dl;
     struct DiskInfo_DATA    *data           = NULL;
     struct TagItem        *tstate         = message->ops_AttrList;
     struct TagItem        *tag            = NULL;
@@ -93,13 +96,12 @@ Object *DiskInfo__OM_NEW
     TEXT                        free[64];
     TEXT                        blocksize[16];
     STRPTR                      status = NULL;
-    STRPTR            dosdevname = "";
-    STRPTR            filesystem = NULL;
-    STRPTR                      volicon = NULL;
-    STRPTR            handlertype = "";
-    STRPTR            deviceinfo = "";
+    STRPTR                      dosdevname = NULL;
+    STRPTR                      deviceinfo = NULL;
 
-    BOOL                        disktypefound = FALSE;
+    STRPTR                      filesystem = NULL;
+    STRPTR                      volicon = NULL;
+    STRPTR                      handlertype = "";
 
     static struct InfoData id;
 
@@ -174,21 +176,23 @@ Object *DiskInfo__OM_NEW
     /* Extract volume info from InfoData */
     if (Info(initial, &id) == DOSTRUE)
     {
-        if (!disktypefound) /* Workaround for FFS-Intl having 0 as dol_DiskType */
-        {
-            LONG i;
-            filesystem = _(MSG_UNKNOWN);
-            disktype = id.id_DiskType;
+	LONG i;
+	disktype = id.id_DiskType;
 
-            for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
-            {
-                if (disktype == dt[i])
-                {
-                    filesystem = disktypelist[i];
-                    break;
-                }
-            }
-        }
+	for (i = 0; i < sizeof(dt) / sizeof(LONG); ++i)
+	{
+	    if (disktype == dt[i])
+	    {
+		filesystem = AllocVec(strlen(disktypelist[i]) + 1, MEMF_ANY|MEMF_CLEAR);
+		CopyMem(disktypelist[i], filesystem, strlen(disktypelist[i]));
+		break;
+	    }
+	}
+	if (!filesystem)
+	{
+	    filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY|MEMF_CLEAR);
+	    CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
+	}
 
         FormatSize(size, id.id_NumBlocks, id.id_NumBlocks, id.id_BytesPerBlock, FALSE);
         percent = FormatSize(used, id.id_NumBlocksUsed, id.id_NumBlocks, id.id_BytesPerBlock, TRUE);
@@ -196,19 +200,57 @@ Object *DiskInfo__OM_NEW
         sprintf(blocksize, "%d %s", (int)id.id_BytesPerBlock, _(MSG_BYTES));
 
         switch (id.id_DiskState)
-    {
+	{
         case (ID_WRITE_PROTECTED):
-        status = _(MSG_READABLE);
-        break;
+	    status = _(MSG_READABLE);
+	    break;
         case (ID_VALIDATING):
-        status = _(MSG_VALIDATING);
-        break;
+	    status = _(MSG_VALIDATING);
+	    break;
         case (ID_VALIDATED):
-        status = _(MSG_READABLE_WRITABLE);
-        break;
+	    status = _(MSG_READABLE_WRITABLE);
+	    break;
         default:
-        status = _(MSG_UNKNOWN);
+	    status = _(MSG_UNKNOWN);
+	}
+	
+	dl = LockDosList(LDF_VOLUMES | LDF_READ);
+	dl = FindDosEntry(dl, volname, LDF_VOLUMES | LDF_READ);
+	UnLockDosList(LDF_VOLUMES | LDF_READ);
+
+	if (dl != NULL)
+	{
+	    IPTR voltask = dl->dol_Task;
+	    dl = LockDosList(LDF_DEVICES|LDF_READ);
+	    if (dl) {
+		while((dl = NextDosEntry(dl, LDF_DEVICES)))
+		{
+		    if (dl->dol_Task == voltask)
+		    {
+			struct FileSysStartupMsg *fsstartup = (struct FileSysStartupMsg *)BADDR(dl->dol_misc.dol_handler.dol_Startup);
+			dosdevname = (UBYTE*)AROS_BSTR_ADDR(dl->dol_Name);
+			if (dl->dol_misc.dol_handler.dol_Handler)
+			{
+			    char *fscur = filesystem;
+			    filesystem = AllocVec(strlen(fscur) + AROS_BSTR_strlen(dl->dol_misc.dol_handler.dol_Handler) + 4, MEMF_ANY);
+			    sprintf(filesystem,"%s (%s)", fscur, AROS_BSTR_ADDR(dl->dol_misc.dol_handler.dol_Handler));
+			}
+			if (fsstartup != NULL)
+			{
+			   deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
+			   sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), fsstartup->fssm_Unit);
+			}
+			break;
+		    }
+		}
+		UnLockDosList(LDF_VOLUMES|LDF_READ);
+	    }
+	}
     }
+    else	
+    {
+	filesystem = AllocVec(strlen(_(MSG_UNKNOWN)) + 1, MEMF_ANY);
+	CopyMem(_(MSG_UNKNOWN), filesystem, strlen(_(MSG_UNKNOWN)));
     }
 
     /* Create application and window objects -------------------------------*/
@@ -246,22 +288,22 @@ Object *DiskInfo__OM_NEW
             Child, (IPTR) HVSpace,
                         Child, (IPTR) ColGroup(2),
 /* TODO: Build this list only when data is realy available, and localise */
-                            Child, (IPTR) TextObject, 
+                            (dosdevname) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_DOSDEVICE),
-                            End,
-                Child, (IPTR) TextObject, 
+                            End},
+                (dosdevname) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
                 MUIA_Text_PreParse, (IPTR) "\33l",
                 MUIA_Text_Contents, (IPTR) dosdevname,
-                End,
-                            Child, (IPTR) TextObject, 
+                End},
+                            (deviceinfo) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_DEVICEINFO),
-                            End,
-                Child, (IPTR) TextObject, 
+                            End},
+                (deviceinfo) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
                 MUIA_Text_PreParse, (IPTR) "\33l",
                 MUIA_Text_Contents, (IPTR) deviceinfo,
-                End,
+                End},
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_FILESYSTEM),
@@ -389,6 +431,8 @@ Object *DiskInfo__OM_NEW
     data->dki_DOSDev        = AllocVec(strlen(dosdevname) +2, MEMF_CLEAR);
     sprintf(data->dki_DOSDev, "%s:", dosdevname);
 
+    data->dki_DOSDevInfo = deviceinfo;
+    data->dki_FileSys = filesystem;
     data->dki_Aspect        = aspect;
 
     /* Setup notifications -------------------------------------------------*/
@@ -438,6 +482,8 @@ IPTR DiskInfo__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
     }
 
     if (data->dki_DOSDev) FreeVec(data->dki_DOSDev);
+    if (data->dki_DOSDevInfo) FreeVec(data->dki_DOSDevInfo);
+    if (data->dki_FileSys) FreeVec(data->dki_FileSys);
 
     return DoSuperMethodA(CLASS, self, message);
 }
