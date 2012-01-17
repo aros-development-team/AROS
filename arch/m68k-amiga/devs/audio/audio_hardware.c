@@ -69,7 +69,7 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     struct IOAudio *io = getnextwrite(ab, ch, FALSE);
     UBYTE mask = 1 << ch;
 
-    D(bug("audio: ch %d interrupt, io %p %04x %04x %d\n", ch, io, ab->initialcyclemask, ab->initialdmamask, ab->cycles[ch]));
+    D(bug("audio: ch %d interrupt, io %p %04x %04x %04x %d\n", ch, io, ab->initialcyclemask, ab->initialdmamask, ab->stopmask, ab->cycles[ch]));
 
     if (!io || (ab->stopmask & mask)) {
         audiohw_stop(ab, mask);
