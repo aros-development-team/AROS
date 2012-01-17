@@ -325,26 +325,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
     {
     	object->ldon_AccessCount += 1;
     }
-#if CHECK_DEPENDENCY
-    else
-    {
-	struct Task  *curtask = FindTask(0);
-	struct ETask *et      = GetETask(curtask);
 
-	D(bug("Checking for circular dependency\n"));
-	if (et)
-	{
-	    while (curtask && curtask != object->ldon_FirstLocker)
-     		curtask = et->et_Parent;
-
-	    if (curtask)
-	    {
-		bug("Circular dependency found!\n");
-	        object = NULL;
-	    }
-        }
-    }
-#endif
     ReleaseSemaphore(&ldBase->dl_LDObjectsListSigSem);
 
     if (!object)
