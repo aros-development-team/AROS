@@ -304,7 +304,7 @@ DEFINE_main(name)                                              \
                             __SHA_OPT(a3) "," __SHA_OPT(a4) ","  \
 		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","  \
 			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","  \
-			    __SHA_OPT(a9) "," __SHA_OPT(a10) "." \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) "," \
 			    __SHA_OPT(a11), help)                \
     {                                                            \
 	__SHA_TYPEDEF(a1);                                       \
@@ -337,7 +337,7 @@ DEFINE_main(name)                                              \
                             __SHA_OPT(a3) "," __SHA_OPT(a4) ","  \
 		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","  \
 			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","  \
-			    __SHA_OPT(a9) "," __SHA_OPT(a10) "." \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) "," \
 			    __SHA_OPT(a11) "," __SHA_OPT(a12),   \
 			    help)                                \
     {                                                            \
@@ -357,6 +357,262 @@ DEFINE_main(name)                                              \
 	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),    \
 	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),    \
 	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12)};
+
+#define __AROS_SH13(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13)           \
+    __AROS_SH_ARGS(name, version, 13,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13),                       \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13)};
+
+#define __AROS_SH14(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13, a14)      \
+    __AROS_SH_ARGS(name, version, 14,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13) "," __SHA_OPT(a14),    \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	__SHA_TYPEDEF(a14);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13), __SHA_ENUM(a14)};
+
+#define __AROS_SH15(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13, a14,      \
+                                         a15)                     \
+    __AROS_SH_ARGS(name, version, 15,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13) "," __SHA_OPT(a14) "," \
+                            __SHA_OPT(a15),                       \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	__SHA_TYPEDEF(a14);                                       \
+	__SHA_TYPEDEF(a15);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13), __SHA_ENUM(a14), __SHA_ENUM(a15)};
+
+#define __AROS_SH16(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13, a14,      \
+                                         a15, a16)                \
+    __AROS_SH_ARGS(name, version, 16,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13) "," __SHA_OPT(a14) "," \
+                            __SHA_OPT(a15) "," __SHA_OPT(a16),    \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	__SHA_TYPEDEF(a14);                                       \
+	__SHA_TYPEDEF(a15);                                       \
+	__SHA_TYPEDEF(a16);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13), __SHA_ENUM(a14), __SHA_ENUM(a15),  \
+              __SHA_ENUM(a16)};
+
+#define __AROS_SH17(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13, a14,      \
+                                         a15, a16, a17)           \
+    __AROS_SH_ARGS(name, version, 17,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13) "," __SHA_OPT(a14) "," \
+                            __SHA_OPT(a15) "," __SHA_OPT(a16) "," \
+                            __SHA_OPT(a17),                       \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	__SHA_TYPEDEF(a14);                                       \
+	__SHA_TYPEDEF(a15);                                       \
+	__SHA_TYPEDEF(a16);                                       \
+	__SHA_TYPEDEF(a17);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13), __SHA_ENUM(a14), __SHA_ENUM(a15),  \
+              __SHA_ENUM(a16), __SHA_ENUM(a17)};
+
+#define __AROS_SH18(name, version, help, a1, a2, a3, a4, a5,      \
+                                         a6, a7, a8, a9, a10,     \
+				         a11, a12, a13, a14,      \
+                                         a15, a16, a17, a18)      \
+    __AROS_SH_ARGS(name, version, 18,                             \
+                            __DEF(__SHA_DEF(a1), __SHA_DEF(a2),   \
+                            __SHA_DEF(a3), __SHA_DEF(a4),         \
+		            __SHA_DEF(a5), __SHA_DEF(a6),         \
+			    __SHA_DEF(a7), __SHA_DEF(a8),         \
+			    __SHA_DEF(a9), __SHA_DEF(a10),        \
+			    __SHA_DEF(a11), __SHA_DEF(a12)),      \
+                            __SHA_OPT(a1) "," __SHA_OPT(a2) ","   \
+                            __SHA_OPT(a3) "," __SHA_OPT(a4) ","   \
+		            __SHA_OPT(a5) "," __SHA_OPT(a6) ","   \
+			    __SHA_OPT(a7) "," __SHA_OPT(a8) ","   \
+			    __SHA_OPT(a9) "," __SHA_OPT(a10) ","  \
+			    __SHA_OPT(a11) "," __SHA_OPT(a12) "," \
+                            __SHA_OPT(a13) "," __SHA_OPT(a14) "," \
+                            __SHA_OPT(a15) "," __SHA_OPT(a16) "," \
+                            __SHA_OPT(a17) "," __SHA_OPT(a18),    \
+			    help)                                 \
+    {                                                             \
+	__SHA_TYPEDEF(a1);                                        \
+	__SHA_TYPEDEF(a2);                                        \
+	__SHA_TYPEDEF(a3);                                        \
+	__SHA_TYPEDEF(a4);                                        \
+	__SHA_TYPEDEF(a5);                                        \
+	__SHA_TYPEDEF(a6);                                        \
+	__SHA_TYPEDEF(a7);                                        \
+	__SHA_TYPEDEF(a8);                                        \
+	__SHA_TYPEDEF(a9);                                        \
+	__SHA_TYPEDEF(a10);                                       \
+	__SHA_TYPEDEF(a11);                                       \
+	__SHA_TYPEDEF(a12);                                       \
+	__SHA_TYPEDEF(a13);                                       \
+	__SHA_TYPEDEF(a14);                                       \
+	__SHA_TYPEDEF(a15);                                       \
+	__SHA_TYPEDEF(a16);                                       \
+	__SHA_TYPEDEF(a17);                                       \
+	__SHA_TYPEDEF(a18);                                       \
+	enum {__SHA_ENUM(a1), __SHA_ENUM(a2), __SHA_ENUM(a3),     \
+	      __SHA_ENUM(a4), __SHA_ENUM(a5), __SHA_ENUM(a6),     \
+	      __SHA_ENUM(a7), __SHA_ENUM(a8), __SHA_ENUM(a9),     \
+	      __SHA_ENUM(a10), __SHA_ENUM(a11), __SHA_ENUM(a12),  \
+              __SHA_ENUM(a13), __SHA_ENUM(a14), __SHA_ENUM(a15),  \
+              __SHA_ENUM(a16), __SHA_ENUM(a17), __SHA_ENUM(a18)};
 
 #define AROS_SHA(type, abbr, name, modf, def) type,abbr,name,modf,def,""
 #define AROS_SHAH(type, abbr, name, modf, def, help) type,abbr,name,modf,def, __SHA_OPT(type,abbr,name,modf,def,help) "\t" help "\n"
@@ -393,6 +649,21 @@ DEFINE_main(name)                                              \
 #define __SH_HELP(name, help) stringify(name) ": " help "\n"
 #define __SHA_HELP(type, abbr, name, modf, def, help) help
 
+
+
+
+#define AROS_SH18H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) \
+        __AROS_SH18(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13) __SHA_HELP(a14) __SHA_HELP(a15) __SHA_HELP(a16) __SHA_HELP(a17) __SHA_HELP(a18), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13), __AROS_SHA(a14), __AROS_SHA(a15), __AROS_SHA(a16), __AROS_SHA(a17), __AROS_SHA(a18))
+#define AROS_SH17H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) \
+        __AROS_SH17(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13) __SHA_HELP(a14) __SHA_HELP(a15) __SHA_HELP(a16) __SHA_HELP(a17), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13), __AROS_SHA(a14), __AROS_SHA(a15), __AROS_SHA(a16), __AROS_SHA(a17))
+#define AROS_SH16H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) \
+        __AROS_SH16(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13) __SHA_HELP(a14) __SHA_HELP(a15) __SHA_HELP(a16), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13), __AROS_SHA(a14), __AROS_SHA(a15), __AROS_SHA(a16))
+#define AROS_SH15H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
+        __AROS_SH15(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13) __SHA_HELP(a14) __SHA_HELP(a15), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13), __AROS_SHA(a14), __AROS_SHA(a15))
+#define AROS_SH14H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
+        __AROS_SH14(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13) __SHA_HELP(a14), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13), __AROS_SHA(a14))
+#define AROS_SH13H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
+        __AROS_SH13(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12) __SHA_HELP(a13), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12), __AROS_SHA(a13))
 #define AROS_SH12H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
         __AROS_SH12(name, version, __SH_HELP(name, help) __SHA_HELP(a1) __SHA_HELP(a2) __SHA_HELP(a3) __SHA_HELP(a4) __SHA_HELP(a5) __SHA_HELP(a6) __SHA_HELP(a7) __SHA_HELP(a8) __SHA_HELP(a9) __SHA_HELP(a10) __SHA_HELP(a11) __SHA_HELP(a12), __AROS_SHA(a1), __AROS_SHA(a2), __AROS_SHA(a3), __AROS_SHA(a4), __AROS_SHA(a5), __AROS_SHA(a6), __AROS_SHA(a7), __AROS_SHA(a8), __AROS_SHA(a9), __AROS_SHA(a10), __AROS_SHA(a11), __AROS_SHA(a12))
 #define AROS_SH11H(name, version, help, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
