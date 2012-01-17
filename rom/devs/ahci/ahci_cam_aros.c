@@ -22,6 +22,7 @@
 
 #include "ahci.h"
 #include "ahci_scsi.h"
+#include "timer.h"
 
 #include LC_LIBDEFS_FILE
 
@@ -32,10 +33,15 @@
 static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct cam_sim *unit)
 {
     struct MsgPort *mp;
+    struct IORequest *tmr;
 
     D(bug("%s %d: Monitor Start\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
     AROS_ATOMIC_INC(unit->sim_UseCount);
     Signal(parent, SIGBREAKF_CTRL_C);
+
+    tmr = ahci_OpenTimer();
+    if (!tmr)
+        return;
 
     if ((mp = CreateMsgPort())) { 
         struct IORequest *io;
@@ -50,11 +56,9 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
             io->io_Unit = (struct Unit *)unit;
 
             D(bug("%s %d: Monitoring\n", ((struct Node *)device)->ln_Name, unit->sim_Unit)); 
-            ObtainSemaphore(&unit->sim_Lock);
-            while (!(unit->sim_Flags & SIMF_OffLine)) {
+            do {
                 BOOL is_present;
 
-                ReleaseSemaphore(&unit->sim_Lock);
                 io->io_Command = HD_SCSICMD;
                 io->io_Flags   = 0;
                 io->io_Error = 0;
@@ -89,26 +93,20 @@ static void ahci_PortMonitor(struct Task *parent, struct Device *device, struct 
 
                     D(bug("%s: Media change detected on ahci.device %d (%s => %s)\n", __func__, unit->sim_Unit, media_present ? "TRUE" : "FALSE", is_present ? "TRUE" : "FALSE"));
 
-                    if (is_present) {
-                        Forbid();
-
-                        ForeachNode((struct Node *)&unit->sim_IOs, msg) {
-                            D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command)); 
-                            if (msg->io_Command == TD_ADDCHANGEINT) {
-                                D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
-                                Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
-                            }
+                    Forbid();
+                    ForeachNode((struct Node *)&unit->sim_IOs, msg) {
+                        D(bug("%s %d: io_Command = 0x%04x\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, msg->io_Command)); 
+                        if (msg->io_Command == TD_ADDCHANGEINT) {
+                            D(bug("%s %d: Interrupt = 0x%p\n", ((struct Node *)device)->ln_Name, unit->sim_Unit, IOStdReq(msg)->io_Data));
+                            Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
                         }
-                        Permit();
                     }
+                    Permit();
                 }
                 media_present = is_present;
 
                 /* Wait 1s to the next scan */
-                ahci_os_sleep(1000);
-                ObtainSemaphore(&unit->sim_Lock);
-            }
-            ReleaseSemaphore(&unit->sim_Lock);
+            } while ((ahci_WaitTO(tmr, 1, 0, SIGF_DOS) & SIGF_DOS) == 0);
 
             DeleteIORequest(io);
         }
@@ -130,14 +128,14 @@ static int ahci_RegisterPort(struct ahci_port *ap)
 
     ap->ap_sim = unit;
     unit->sim_Port = ap;
-    unit->sim_Unit = AHCIBase->ahci_UnitCount++;
+    unit->sim_Unit = ap->ap_sc->sc_dev->dev_HostID * 32 + ap->ap_num;
     InitSemaphore(&unit->sim_Lock);
     NEWLIST(&unit->sim_IOs);
 
     AddTail((struct List *)&AHCIBase->ahci_Units, (struct Node *)unit);
 
     /* Now that this device is in the unit list, start the disk change monitor */
-    snprintf(name, sizeof(name), "ahci.device %d monitor", unit->sim_Unit);
+    snprintf(name, sizeof(name), "ahci.device %d [media]", unit->sim_Unit);
     unit->sim_Monitor = NewCreateTask(TASKTAG_NAME, name,
                                       TASKTAG_PC, ahci_PortMonitor,
                                       TASKTAG_ARG1, FindTask(NULL),
@@ -168,8 +166,9 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
     /* Stop the monitor, and wait for IOs to drain,
      * and users to CloseDevice() the unit.
      */
+    if (unit->sim_Monitor)
+        Signal(unit->sim_Monitor, SIGF_DOS);
     ObtainSemaphore(&unit->sim_Lock);
-    unit->sim_Flags |= SIMF_OffLine;
     while (unit->sim_UseCount) {
         ReleaseSemaphore(&unit->sim_Lock);
         ahci_os_sleep(100);
@@ -187,23 +186,38 @@ static int ahci_UnregisterPort(struct ahci_port *ap)
     return 0;
 }
 
-/* Add a bootnode using expansion.library */
-static BOOL ahci_RegisterVolume(struct ahci_port *port)
+/* Add a bootnode using expansion.library,
+ * but only when dos.library has not yet been initialized.
+ * This way, we get BootNodes if ahci.device is linked in,
+ * but don't if ahci.device is loaded after booting.
+ */
+static BOOL ahci_RegisterVolume(struct ahci_port *ap, struct ata_port *at)
 {
-    struct ata_port *at = port->ap_ata[0];
     struct ExpansionBase *ExpansionBase;
+    BOOL dos_loaded;
     struct DeviceNode *devnode;
     TEXT dosdevname[4] = "HA0";
     const ULONG DOS_ID = AROS_MAKE_ID('D','O','S','\001');
     const ULONG CDROM_ID = AROS_MAKE_ID('C','D','V','D');
+    ULONG unit = device_get_unit(ap->ap_sc->sc_dev) * 32 + ap->ap_num;
 
-    D(bug("ahci_RegisterVolume: port = %p, at = %p, unit = %d\n", port, at, port->ap_sim ? port->ap_sim->sim_Unit : -1));
+    D(bug("%s: ap = %p, at = %p, unit = %d\n", __func__, ap, at, ap->ap_sim ? ap->ap_sim->sim_Unit : -1));
 
-    if (at == NULL || port->ap_type == ATA_PORT_T_NONE)
+    /* See if dos.library has run */
+    Forbid();
+    dos_loaded = (FindName (&SysBase->LibList, "dos.library") != NULL);
+    Permit();
+
+    if (dos_loaded) {
+        D(bug("%s: refused to register as boot volume - dos.library already loaded\n", __func__));
+        return FALSE;
+    }
+
+    if (at == NULL || ap->ap_type == ATA_PORT_T_NONE)
         return FALSE;
 
     /* This should be dealt with using some sort of volume manager or such. */
-    switch (port->ap_type)
+    switch (ap->ap_type)
     {
         case ATA_PORT_T_DISK:
             break;
@@ -222,14 +236,14 @@ static BOOL ahci_RegisterVolume(struct ahci_port *port)
     {
         IPTR pp[4 + DE_BOOTBLOCKS + 1];
 
-        if (port->ap_num < 10)
-            dosdevname[2] += port->ap_num;
+        if (ap->ap_num < 10)
+            dosdevname[2] += ap->ap_num;
         else
-            dosdevname[2] = 'A' + (port->ap_num - 10);
+            dosdevname[2] = 'A' + (ap->ap_num - 10);
     
         pp[0] 		    = (IPTR)dosdevname;
         pp[1]		    = (IPTR)MOD_NAME_STRING;
-        pp[2]		    = port->ap_sim->sim_Unit;
+        pp[2]		    = unit;
         pp[DE_TABLESIZE    + 4] = DE_BOOTBLOCKS;
         pp[DE_SIZEBLOCK    + 4] = at->at_identify.sector_size;
         pp[DE_NUMHEADS     + 4] = at->at_identify.nheads;
@@ -237,13 +251,13 @@ static BOOL ahci_RegisterVolume(struct ahci_port *port)
         pp[DE_BLKSPERTRACK + 4] = at->at_identify.nsectors;
         pp[DE_RESERVEDBLKS + 4] = 2;
         pp[DE_LOWCYL       + 4] = 0;
-        pp[DE_HIGHCYL      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls-1) : 0;
+        pp[DE_HIGHCYL      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? (at->at_identify.ncyls-1) : 0;
         pp[DE_NUMBUFFERS   + 4] = 10;
         pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
         pp[DE_MAXTRANSFER  + 4] = 0x00200000;
         pp[DE_MASK         + 4] = ~3;
-        pp[DE_BOOTPRI      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? 0 : 10;
-        pp[DE_DOSTYPE      + 4] = (port->ap_type == ATA_PORT_T_DISK) ? DOS_ID : CDROM_ID;
+        pp[DE_BOOTPRI      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? 0 : 10;
+        pp[DE_DOSTYPE      + 4] = (ap->ap_type == ATA_PORT_T_DISK) ? DOS_ID : CDROM_ID;
         pp[DE_BAUD         + 4] = 0;
         pp[DE_CONTROL      + 4] = 0;
         pp[DE_BOOTBLOCKS   + 4] = 2;
@@ -252,7 +266,7 @@ static BOOL ahci_RegisterVolume(struct ahci_port *port)
 
         if (devnode) {
             D(bug("[AHCI>>]:-ahci_RegisterVolume: '%s' C/H/S=%d/%d/%d, %s unit %d\n",
-                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, port->ap_sim->sim_Unit));
+                        AROS_BSTR_ADDR(devnode->dn_Name), at->at_identify.ncyls, at->at_identify.nheads,  at->at_identify.nsectors, MOD_NAME_STRING, unit));
             AddBootNode(pp[DE_BOOTPRI + 4], 0, devnode, 0);
             D(bug("[AHCI>>]:-ahci_RegisterVolume: done\n"));
             return TRUE;
@@ -290,6 +304,7 @@ int ahci_cam_attach(struct ahci_port *ap)
             ahci_cam_detach(ap);
             return (EIO);
     }
+
     ap->ap_flags |= AP_F_CAM_ATTACHED;
 
     return 0;
@@ -326,8 +341,13 @@ void ahci_cam_changed(struct ahci_port *ap, struct ata_port *atx, int found)
 {
     D(bug("ahci_cam_changed: ap=%p, sim = %p, atx=%p, found=%d\n", ap, ap->ap_sim, atx, found));
 
-    if (ap && ap->ap_sim && found == -1)
-        ahci_RegisterVolume(ap);
+    if (ap->ap_sim) {
+        if (found == 0) {
+                ap->ap_sim->sim_Flags |= SIMF_OffLine;
+        } else {
+                ap->ap_sim->sim_Flags &= ~SIMF_OffLine;
+        }
+    }
 
     /* Mark the port scan as completed */
     ap->ap_flags |= AP_F_SCAN_COMPLETED;
@@ -822,6 +842,7 @@ err:
 		at->at_probe = ATA_PROBE_GOOD;
 		if (atx == NULL)
 			ap->ap_probe = at->at_probe;
+		ahci_RegisterVolume(ap, at);
 	}
 	return (error);
 }

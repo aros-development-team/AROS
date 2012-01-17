@@ -66,7 +66,7 @@ static int AHCI_Init(LIBBASETYPEPTR LIBBASE)
 
     /* Initialize lists */
     NEWLIST(&LIBBASE->ahci_Units);
-    LIBBASE->ahci_UnitCount=0;
+    LIBBASE->ahci_HostCount=0;
 
     /* Get some useful bases */
     LIBBASE->ahci_HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
@@ -92,8 +92,7 @@ static int AHCI_Open
     iorq->io_Error = IOERR_OPENFAIL;
 
     ForeachNode(&LIBBASE->ahci_Units, tmp) {
-        if (tmp->sim_Unit == unitnum &&
-            !(tmp->sim_Flags & SIMF_OffLine)) {
+        if (tmp->sim_Unit == unitnum) {
             unit = tmp;
             AROS_ATOMIC_INC(unit->sim_UseCount);
             break;

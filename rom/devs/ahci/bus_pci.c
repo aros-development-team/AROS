@@ -46,6 +46,11 @@ int ahci_attach(device_t dev)
 /*
  * PCI BUS ENUMERATOR
  *   collect all SATA devices and spawn concurrent tasks.
+ *
+ * ahci.device unit numbers are as follows:
+ *   First AHCI device:  unit   0..31
+ *   Second device:      units 32..63
+ *   etc..
  */
 
 static
@@ -68,6 +73,7 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
     dev->dev_AHCIBase = AHCIBase;
     dev->dev_Object   = Device;
     dev->dev_softc    = (void *)&dev[1];
+    dev->dev_HostID   = AHCIBase->ahci_HostCount;
 
     D(bug("[PCI-AHCI] ahci_PCIEnumerator_h: Scan device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
 
@@ -79,6 +85,7 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
 
     D(bug("[PCI-AHCI] ahci_PCIEnumerator_h: Found device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
 
+    AHCIBase->ahci_HostCount++;
     AddTail(&a->devices, (struct Node *)dev);
 
     return;

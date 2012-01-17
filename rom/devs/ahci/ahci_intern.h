@@ -44,11 +44,13 @@ struct AHCIBase
     */
    struct Task            *ahci_Daemon;
 
+   /* Count of all hosts detected */
+   ULONG                   ahci_HostCount;
+
    /*
     * List of all units
     */
    struct MinList          ahci_Units;
-   ULONG                   ahci_UnitCount;
 
    /*
     * memory pool
