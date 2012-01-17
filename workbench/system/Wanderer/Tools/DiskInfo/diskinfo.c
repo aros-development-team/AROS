@@ -220,7 +220,7 @@ Object *DiskInfo__OM_NEW
 
         if (dl != NULL)
         {
-            IPTR voltask = dl->dol_Task;
+            APTR voltask = dl->dol_Task;
             dl = LockDosList(LDF_DEVICES|LDF_READ);
             if (dl) {
                 while((dl = NextDosEntry(dl, LDF_DEVICES)))
@@ -238,7 +238,7 @@ Object *DiskInfo__OM_NEW
                         if (fsstartup != NULL)
                         {
                            deviceinfo = AllocVec(strlen((UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device)) + (fsstartup->fssm_Unit/10 + 1) + 7, MEMF_CLEAR);
-                           sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), fsstartup->fssm_Unit);
+                           sprintf(deviceinfo,"%s %s %d", (UBYTE*)AROS_BSTR_ADDR(fsstartup->fssm_Device), _(MSG_UNIT), (int)fsstartup->fssm_Unit);
                         }
                         break;
                     }
@@ -288,22 +288,22 @@ Object *DiskInfo__OM_NEW
             Child, (IPTR) HVSpace,
                         Child, (IPTR) ColGroup(2),
 /* TODO: Build this list only when data is realy available, and localise */
-                            (dosdevname) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
+                            (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_DOSDEVICE),
-                            End},
-                (dosdevname) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
+                            End,
+                (dosdevname) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                 MUIA_Text_PreParse, (IPTR) "\33l",
                 MUIA_Text_Contents, (IPTR) dosdevname,
-                End},
-                            (deviceinfo) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
+                End,
+                            (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_DEVICEINFO),
-                            End},
-                (deviceinfo) ? Child : TAG_IGNORE, {(IPTR) TextObject, 
+                            End,
+                (deviceinfo) ? Child : TAG_IGNORE, (IPTR) TextObject, 
                 MUIA_Text_PreParse, (IPTR) "\33l",
                 MUIA_Text_Contents, (IPTR) deviceinfo,
-                End},
+                End,
                             Child, (IPTR) TextObject, 
                                 MUIA_Text_PreParse, (IPTR) "\33r",
                                 MUIA_Text_Contents, (IPTR) __(MSG_FILESYSTEM),
