@@ -75,6 +75,7 @@ static void abort_io(struct AudioBase *ab, struct IOAudio *io)
     	D(bug("audio: ch %d aborted, io %p\n", ch, io));
     	audiohw_stop(ab, 1 << ch);
     }
+    D(bug("abort_io(%p)\n", io));
     REMOVE(io);
     io->ioa_Request.io_Error = IOERR_ABORTED;
     ReplyMsg(&io->ioa_Request.io_Message);
@@ -85,14 +86,15 @@ static void abort_ch(struct AudioBase *ab, UBYTE ch)
     struct IOAudio *io;
 
     Disable();
-    while((io = (struct IOAudio*)ab->writelist[ch].mlh_Head->mln_Succ))
-   	abort_io(ab, io);
+    while ((io = (struct IOAudio*)GetHead(&ab->writelist[ch])))
+        abort_io(ab, io);
     Enable();
 }
 
 static void abort_waitcycles(struct AudioBase *ab, UBYTE mask)
 {
     struct IOAudio *io, *next;
+    Disable();
     ForeachNodeSafe(&ab->misclist, io, next) {
     	UWORD cmd = io->ioa_Request.io_Command;
     	UBYTE cmask = (UBYTE)(ULONG)io->ioa_Request.io_Unit;
@@ -102,6 +104,7 @@ static void abort_waitcycles(struct AudioBase *ab, UBYTE mask)
     	    continue;
     	abort_io(ab, io);
     }
+    Enable();
 }
 
 static void allocchannels(struct AudioBase *ab, struct IOAudio *io, UBYTE mask, BYTE pri)
@@ -157,6 +160,7 @@ static void setunit(struct IOAudio *io, UBYTE num)
 
 static BOOL ADCMD_ALLOCATE_f(struct AudioBase *ab, struct IOAudio *io)
 {
+    D(HEADER);
     D(bug("ADCMD_ALLOCATE %02x %04x\n", mask, key));
     allocaudio(ab, io);
     if (io->ioa_Request.io_Error == 0)
@@ -556,7 +560,6 @@ AROS_LH1(LONG, abortio,
     for (ch = 0; ch < NR_CH; ch++) {
     	ForeachNode(&AudioBase->writelist[ch], node) {
     	    if (node == io) {
-    	    	REMOVE(io);
     	    	abort_io(AudioBase, io);
     	        break;
     	    }
@@ -564,7 +567,6 @@ AROS_LH1(LONG, abortio,
     }
     ForeachNode(&AudioBase->misclist, node) {
     	if (node == io) {
-    	    REMOVE(io);
     	    abort_io(AudioBase, io);
     	    break;
     	}
