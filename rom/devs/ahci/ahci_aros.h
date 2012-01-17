@@ -47,10 +47,11 @@ typedef unsigned int u_int;
 #define PAGE_SIZE       4096
 
 typedef struct {
-    struct MinNode dev_Node;
-    OOP_Object *dev_Object;
-    struct AHCIBase *dev_AHCIBase;
+    struct MinNode     dev_Node;
+    OOP_Object        *dev_Object;
+    struct AHCIBase   *dev_AHCIBase;
     struct ahci_softc *dev_softc;
+    ULONG              dev_HostID;
 } *device_t;
 
 /* Kernel stuff */
@@ -519,8 +520,8 @@ struct sysctl_ctx_list {};
 #define TAILQ_REMOVE(head,n,link)  ({ (n) = (head)->next; if ((n) != NULL) (head)->next = (n)->link.next; (n)->link.next = (n)->link.last = NULL; })
 #define TAILQ_INSERT_TAIL(head,n,link)  do { if ((head)->last != NULL) (head)->last->link.next = (n); (head)->last = (n); if ((head)->next == NULL) (head)->next = (n); } while (0)
 
-#define device_get_name(dev)    "ahci"
-#define device_get_unit(dev)    0
+#define device_get_name(dev)    "ahci.device "
+#define device_get_unit(dev)    ((dev)->dev_HostID)
 
 #define M_DEVBUF        0
 #define M_TEMP          0
