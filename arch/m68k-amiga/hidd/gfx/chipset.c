@@ -661,14 +661,13 @@ UBYTE bltnode_wrapper(void)
 
 static AROS_UFH4(ULONG, gfx_blit,
     AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
+    AROS_UFHA(struct GfxBase *, GfxBase, A1),
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(ULONG, dummy3, A6))
 { 
     AROS_USERFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
-    struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     struct bltnode *bn = NULL;
     UBYTE v;
     UWORD dmaconr;
@@ -871,8 +870,11 @@ void initcustom(struct amigavideo_staticdata *data)
     data->inter.is_Node.ln_Type = NT_INTERRUPT;
     AddIntServer(INTB_VERTB, &data->inter);
 
+    /* There are programs that take over the system and
+     * assume SysBase->IntVects[BLITTER].iv_Data = GfxBase!
+     */
     GfxBase->bltsrv.is_Code         = (APTR)gfx_blit;
-    GfxBase->bltsrv.is_Data         = data;
+    GfxBase->bltsrv.is_Data         = GfxBase;
     GfxBase->bltsrv.is_Node.ln_Name = "Blitter";
     GfxBase->bltsrv.is_Node.ln_Type = NT_INTERRUPT;
     SetIntVector(INTB_BLIT, &GfxBase->bltsrv);
