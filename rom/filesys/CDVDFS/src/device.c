@@ -772,7 +772,7 @@ openbreak:
 				if (global->g_inhibited) {
 					id->id_DiskType = 0x42555359 /* "BUSY" */;
 				} else if (Mount_Check (global)) {
-					id->id_DiskType = ID_DOS_DISK;
+					id->id_DiskType = AROS_MAKE_ID('C','D','V','D');
 					id->id_NumBlocks= Volume_Size (global->g_volume);
 					id->id_BytesPerBlock = Block_Size (global->g_volume);
 					id->id_VolumeNode = MKBADDR(global->DevList);
