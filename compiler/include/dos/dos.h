@@ -359,11 +359,11 @@ struct InfoData
 /* Non-exclusive lock, other tasks may lock this file as well. This is used
    for read-only operations. */
 #define SHARED_LOCK    -2
-#define ACCESS_READ    SHARED_LOCK
+#define ACCESS_READ    -2
 /* Exclusive lock, other tasks may not lock this file. This is used for write
    operations. */
 #define EXCLUSIVE_LOCK -1
-#define ACCESS_WRITE   EXCLUSIVE_LOCK
+#define ACCESS_WRITE   -1
 
 /* Returned by SameLock(). See autodocs for description. */
 #define LOCK_DIFFERENT   -1
