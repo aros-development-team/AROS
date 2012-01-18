@@ -1945,7 +1945,17 @@ void wanderer_menufunc_icon_snapshot(IPTR *flags)
         if ((IPTR)entry != MUIV_IconList_NextIcon_End)
         {
             if (entry->type == ILE_TYPE_APPICON)
-                continue; /* TODO: Implement */
+            {
+                struct AppIcon * ai = (struct AppIcon *)entry->ile_IconEntry->ie_User1;
+
+                if (snapshot)
+                    SendAppIconMenuMessage(ai, AMCLASSICON_Snapshot);
+                else
+                    SendAppIconMenuMessage(ai, AMCLASSICON_UnSnapshot);
+
+                continue;
+            }
+
 
             /* On 3.1 Workbench it is not possible to snapshot an object that does not have icon file. Wanderer in such
              * case automatically creates and icon because user explicitly request icon snapshot operation
@@ -2533,13 +2543,17 @@ void wanderer_menufunc_icon_delete(void)
         {   
             if ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
-                if (entry->type != ILE_TYPE_APPICON) /* TODO: Implement */
+                if (entry->type != ILE_TYPE_APPICON)
                 {
                     /* copy via filesystems.c */
                     D(bug("[Wanderer] Delete \"%s\"\n", entry->ile_IconEntry->ie_IconNode.ln_Name);)
                     CopyContent( NULL, entry->ile_IconEntry->ie_IconNode.ln_Name, NULL, TRUE,
                             ACTION_DELETE, &displayCopyHook, &opModes, (APTR) &dobjects);
                     updatedIcons++;
+                }
+                else
+                {
+                    SendAppIconMenuMessage((struct AppIcon *)entry->ile_IconEntry->ie_User1, AMCLASSICON_Delete);
                 }
             }
             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
