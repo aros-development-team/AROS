@@ -56,9 +56,14 @@
 
     LONG t;
 
+    if (!vp)
+        return;
+
     ASSERT_VALID_PTR(vp);
     ASSERT_VALID_PTR(colors);
-    
+
+    /* TODO: Optimization */
+
     for (t = 0; t < count; t ++ )
     {
     	ULONG red   = (colors[t] & 0xF00) >> 8;
