@@ -40,9 +40,10 @@
 #define MUIM_IconList_CreateEntry       (MUIB_IconList | 0x00000010) /* returns 0 For Failure or (struct IconEntry *) */
 #define MUIM_IconList_UpdateEntry       (MUIB_IconList | 0x00000011) /* returns 0 For Failure or (struct IconEntry *) */
 #define MUIM_IconList_DestroyEntry      (MUIB_IconList | 0x00000012)
+#define MUIM_IconList_PropagateEntryPos (MUIB_IconList | 0x00000013)
 #define MUIM_IconList_DrawEntry         (MUIB_IconList | 0x00000020)
 #define MUIM_IconList_DrawEntryLabel    (MUIB_IconList | 0x00000021)
-#define MUIM_IconList_MakeEntryVisible   (MUIB_IconList | 0x00000024)
+#define MUIM_IconList_MakeEntryVisible  (MUIB_IconList | 0x00000024)
 #define MUIM_IconList_SelectAll         (MUIB_IconList | 0x00000030)
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000031)
 #define MUIM_IconList_NextIcon          (MUIB_IconList | 0x00000034)
@@ -57,6 +58,7 @@ struct MUIP_IconList_RethinkDimensions  {STACKED ULONG MethodID; STACKED struct 
 struct MUIP_IconList_CreateEntry        {STACKED ULONG MethodID; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
 struct MUIP_IconList_UpdateEntry        {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED STRPTR filename; STACKED STRPTR label; STACKED struct FileInfoBlock *fib; STACKED struct DiskObject *entry_dob; STACKED ULONG type;};
 struct MUIP_IconList_DestroyEntry       {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};
+struct MUIP_IconList_PropagateEntryPos  {STACKED ULONG MethodID; STACKED struct IconEntry *entry;};
 struct MUIP_IconList_DrawEntry          {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED IPTR drawmode;};
 struct MUIP_IconList_DrawEntryLabel     {STACKED ULONG MethodID; STACKED struct IconEntry *entry; STACKED IPTR drawmode;};
 struct MUIP_IconList_NextIcon           {STACKED ULONG MethodID; STACKED IPTR nextflag; STACKED struct IconList_Entry **entry;};

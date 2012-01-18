@@ -180,6 +180,7 @@ BOOL AppIcon_Supports(struct AppIcon * appicon, ULONG tag)
     case(WBAPPICONA_SupportsDelete):        _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsDelete); break;
     case(WBAPPICONA_SupportsFormatDisk):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsFormatDisk); break;
     case(WBAPPICONA_SupportsEmptyTrash):    _return = !!(appicon->ai_Flags & WBAPPICONF_SupportsEmptyTrash); break;
+    case(WBAPPICONA_PropagatePosition):     _return = !!(appicon->ai_Flags & WBAPPICONF_PropagatePosition); break;
     case(WBAPPICONA_RenderHook):            _return = (appicon->ai_RenderHook != NULL); break;
     }
     return _return;
