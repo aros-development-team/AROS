@@ -8,6 +8,7 @@
 #include <proto/workbench.h>
 #include <proto/exec.h>
 #include <proto/alib.h>
+#include <aros/symbolsets.h>
 
 /*
  * Wanderer needs access to internals of workbench.library to provided needed functionality.
@@ -17,6 +18,9 @@
  */
 
 #include "../../libs/workbench/workbench_intern.h"
+
+
+static struct MsgPort * replyport = NULL;
 
 /*
  * Assumes lock in already acquired. Returns pointer to AppIcon from workbench.library list, if the passed
@@ -37,7 +41,6 @@ STATIC struct AppIcon * FindAppIconByPtr(struct AppIcon * appicon)
 BOOL SendAppIconMessage(struct AppIcon * appicon, LONG numargs, STRPTR args)
 {
     struct AppMessage * msg = NULL;
-    struct MsgPort *reply = NULL;
     BOOL success = FALSE;
     struct AppIcon * entry = NULL;
 
@@ -49,34 +52,36 @@ BOOL SendAppIconMessage(struct AppIcon * appicon, LONG numargs, STRPTR args)
     /* Check is passed entry is valid */
     if ((entry = FindAppIconByPtr(appicon)) != NULL)
     {
+        struct MsgPort *port = entry->ai_MsgPort;
 
         /* TODO: Handle the case when icons are dropped on appicon */
         msg = AllocVec(sizeof(struct AppMessage), MEMF_CLEAR);
-        msg->am_Type = AMTYPE_APPICON;
-        msg->am_ArgList = NULL;
-        msg->am_NumArgs = 0;
-        msg->am_ID = entry->ai_ID;
-        msg->am_UserData = entry->ai_UserData;
-        msg->am_Version = AM_VERSION;
 
-        reply = CreateMsgPort();
-        if (reply)
+        if (msg)
         {
-            struct MsgPort *port = entry->ai_MsgPort;
-            msg->am_Message.mn_ReplyPort = reply;
+            msg->am_Type = AMTYPE_APPICON;
+            msg->am_ArgList = NULL;
+            msg->am_NumArgs = 0;
+            msg->am_ID = entry->ai_ID;
+            msg->am_UserData = entry->ai_UserData;
+            msg->am_Version = AM_VERSION;
+
+            msg->am_Message.mn_ReplyPort = replyport;
             PutMsg(port, (struct Message *) msg);
-            WaitPort(reply);
-            GetMsg(reply);
-            DeleteMsgPort(reply);
             success = TRUE;
         }
     }
 
     UnlockWorkbench();
 
-    FreeVec(msg);
-
     return success;
+}
+
+VOID CleanAppIconReplyMessages()
+{
+    struct Message * msg = NULL;
+
+    while ((msg = GetMsg(replyport))) FreeVec(msg);
 }
 
 APTR AppObjectsLock()
@@ -198,3 +203,12 @@ BOOL AppIcon_CallRenderHook(struct AppIcon * appicon, struct AppIconRenderMsg * 
     else
         return FALSE;
 }
+
+LONG AppObjects_Init()
+{
+    replyport = CreateMsgPort();
+
+    return 1;
+}
+
+ADD2INIT(AppObjects_Init, 0);
