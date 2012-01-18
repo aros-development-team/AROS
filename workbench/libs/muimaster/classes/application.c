@@ -1577,6 +1577,14 @@ static IPTR Application__MUIM_Input(struct IClass *cl, Object *obj, struct MUIP_
 
     signal = (1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit)
         | (1L << data->app_TimerPort->mp_SigBit) | handler_mask;
+
+    if (data->app_RexxPort)
+        signal |= (1L << data->app_RexxPort->mp_SigBit);
+
+    if (data->app_AppPort)
+        signal |= (1L << data->app_AppPort->mp_SigBit);
+
+
     *msg->signal = signal;
     return Application__MUIM_NewInput(cl, obj, (APTR)msg);
 }
