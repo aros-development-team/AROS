@@ -105,7 +105,6 @@ struct IconEntry
 
     struct DiskObject           *ie_DiskObj;                     /* The icons disk objects */
     struct FileInfoBlock        *ie_FileInfoBlock;
-    APTR                        *ie_AppIcon;
 
     LONG                        ie_IconX,                       /* Top Left Co-ords of Icons "AREA" */
                                 ie_IconY,
@@ -131,6 +130,9 @@ struct IconEntry
     UBYTE                       *ie_TxtBuf_SIZE;
     ULONG                       ie_TxtBuf_SIZEWidth;
     UBYTE                       *ie_TxtBuf_PROT;
+
+
+    APTR                        *ie_User1;                      /* Pointer to data provided by user */
 };
 
 /* Note:

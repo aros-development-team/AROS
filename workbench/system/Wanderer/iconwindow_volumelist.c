@@ -893,7 +893,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                 ForeachNodeSafe(&iconifiedList, entry, tmpentry)
                 {
-                    if (entry->ie_AppIcon == (APTR)appicon)
+                    if (entry->ie_User1 == (APTR)appicon)
                     {
                         appentry = entry;
                         Remove((struct Node*)&entry->ie_IconNode);
@@ -906,14 +906,14 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
 
                 if (appentry == NULL)
                 {
-                    struct DiskObject * appdo = AppIcon_GetDiskObject((struct AppIcon *)appicon);
+                    struct DiskObject * appdo = AppIcon_GetDiskObject(appicon);
                     struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE);
-                    CONST_STRPTR label = AppIcon_GetLabel((struct AppIcon *)appicon);
+                    CONST_STRPTR label = AppIcon_GetLabel(appicon);
                     appentry = (struct IconEntry *)DoMethod(self,
                             MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0);
                     if (appentry)
                     {
-                        appentry->ie_AppIcon = (APTR)appicon;
+                        appentry->ie_User1 = (APTR)appicon;
                         appentry->ie_IconNode.ln_Pri = 0;
                         appentry->ie_IconListEntry.type = ILE_TYPE_APPICON;
                         DoMethod(self, MUIM_Family_AddTail, (struct Node*)&appentry->ie_IconNode);
@@ -1239,7 +1239,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object 
     /* If the Entry is an AppIcon, and it has a renderhook - use the hook to perform the rendering, otherwise fallback to our parents handling */
     if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
     {
-        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_AppIcon, WBAPPICONA_RenderHook))
+        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_User1, WBAPPICONA_RenderHook))
         {
             struct AppIconRenderMsg  renderMsg;
             struct TagItem           renderTags[] = {
@@ -1266,7 +1266,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object 
             D(bug("[Wanderer:Volumelist] %s: Render @ %d, %d (%d x %d pixels)\n", __PRETTY_FUNCTION__,
                     renderMsg.arm_Left, renderMsg.arm_Top, renderMsg.arm_Width, renderMsg.arm_Height));
 
-            AppIcon_CallRenderHook((struct AppIcon*)message->entry->ie_AppIcon, &renderMsg);
+            AppIcon_CallRenderHook((struct AppIcon*)message->entry->ie_User1, &renderMsg);
 
             return TRUE;
         }
@@ -1281,7 +1281,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Ob
 
     if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
     {
-        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_AppIcon, WBAPPICONA_RenderHook))
+        if (AppIcon_Supports((struct AppIcon *)message->entry->ie_User1, WBAPPICONA_RenderHook))
             return TRUE;
     }
 
