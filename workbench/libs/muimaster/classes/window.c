@@ -768,7 +768,10 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
-    if ((data->wd_XStore >= 0) && (data->wd_YStore >= 0))
+    BOOL prefssnap = ((muiGlobalInfo(obj)->mgi_Prefs->window_position == WINDOW_POSITION_REMEMBER_ON_EXIT) ||
+                   (muiGlobalInfo(obj)->mgi_Prefs->window_position == WINDOW_POSITION_SAVE_ON_EXIT));
+
+    if (((data->wd_XStore >= 0) && (data->wd_YStore >= 0)) || prefssnap)
     {
         DoMethod(obj,MUIM_Window_Snapshot,0);
     }
