@@ -1283,16 +1283,19 @@ void wanderer_menufunc_window_update()
 
             if ((IPTR)entry != MUIV_IconList_NextIcon_End)
             {
+
+                LONG x = NO_ICON_POSITION, y = NO_ICON_POSITION;
+
                 if (entry->ile_IconEntry->ie_DiskObj)
                 {
-                    entry->ile_IconEntry->ie_ProvidedIconX = entry->ile_IconEntry->ie_DiskObj->do_CurrentX;
-                    entry->ile_IconEntry->ie_ProvidedIconY = entry->ile_IconEntry->ie_DiskObj->do_CurrentY;
+                    x = entry->ile_IconEntry->ie_DiskObj->do_CurrentX;
+                    y = entry->ile_IconEntry->ie_DiskObj->do_CurrentY;
                 }
-                else
-                {
-                    entry->ile_IconEntry->ie_ProvidedIconX = NO_ICON_POSITION;
-                    entry->ile_IconEntry->ie_ProvidedIconY = NO_ICON_POSITION;
-                }
+
+                entry->ile_IconEntry->ie_IconX = x;
+                entry->ile_IconEntry->ie_IconY = y;
+
+                DoMethod(iconList, MUIM_IconList_PropagateEntryPos, entry->ile_IconEntry);
             }
             else break;
         } while (TRUE);

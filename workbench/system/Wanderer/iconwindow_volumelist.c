@@ -1275,6 +1275,25 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object 
     return DoSuperMethodA(CLASS, self, (Msg) message);
 }
 
+IPTR IconWindowVolumeList__MUIM_IconList_PropagateEntryPos(struct IClass *CLASS, Object *obj,
+        struct MUIP_IconList_PropagateEntryPos *message)
+{
+
+    if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
+    {
+        struct AppIcon * ai = (struct AppIcon *)message->entry->ie_User1;
+
+        if (AppIcon_Supports(ai, WBAPPICONA_PropagatePosition))
+        {
+            struct DiskObject * diskobj = AppIcon_GetDiskObject(ai);
+            diskobj->do_CurrentX = message->entry->ie_IconX;
+            diskobj->do_CurrentY = message->entry->ie_IconY;
+        }
+    }
+
+    return DoSuperMethodA(CLASS, obj, (Msg) message);
+}
+
 IPTR IconWindowVolumeList__MUIM_IconList_DrawEntryLabel(struct IClass *CLASS, Object *self, struct MUIP_IconList_DrawEntryLabel *message)
 {
     D(bug("[Wanderer:Volumelist]: %s()\n", __PRETTY_FUNCTION__));
@@ -1305,6 +1324,7 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
     MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
     MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *,
+    MUIM_IconList_PropagateEntryPos, struct MUIP_IconList_PropagateEntryPos *,
     MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
     MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
 );
@@ -1323,6 +1343,7 @@ ICONWINDOWICONVOLUMELIST_CUSTOMCLASS
     MUIM_IconList_CreateEntry,  struct MUIP_IconList_CreateEntry *,
     MUIM_IconList_UpdateEntry,  struct MUIP_IconList_UpdateEntry *,
     MUIM_IconList_DestroyEntry, struct MUIP_IconList_DestroyEntry *,
+    MUIM_IconList_PropagateEntryPos, struct MUIP_IconList_PropagateEntryPos *,
     MUIM_IconList_DrawEntry,    struct MUIP_IconList_DrawEntry *,
     MUIM_IconList_DrawEntryLabel, struct MUIP_IconList_DrawEntryLabel *
 );

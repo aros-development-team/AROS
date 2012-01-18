@@ -2070,10 +2070,8 @@ IPTR IconList__MUIM_IconList_PositionIcons(struct IClass *CLASS, Object *obj, st
     while (entry != NULL)
     {
         if (entry->ie_Flags & ICONENTRY_FLAG_VISIBLE)
-        {
-            entry->ie_ProvidedIconX = entry->ie_IconX;
-            entry->ie_ProvidedIconY = entry->ie_IconY;
-        }
+            DoMethod(obj, MUIM_IconList_PropagateEntryPos, entry);
+
         entry = (struct IconEntry *)GetSucc(&entry->ie_IconNode);
     }
 
@@ -4210,6 +4208,17 @@ IPTR IconList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Object *obj, str
 }
 ///
 
+///IconList__MUIM_IconList_PropagateEntryPos()
+IPTR IconList__MUIM_IconList_PropagateEntryPos(struct IClass *CLASS, Object *obj,
+        struct MUIP_IconList_PropagateEntryPos *message)
+{
+    message->entry->ie_ProvidedIconX = message->entry->ie_IconX;
+    message->entry->ie_ProvidedIconY = message->entry->ie_IconY;
+
+    return (IPTR)TRUE;
+}
+
+//
 ///IconList__MUIM_IconList_CreateEntry()
 /**************************************************************************
 MUIM_IconList_CreateEntry.
@@ -4389,8 +4398,10 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
 
     entry->ie_IconListEntry.udata = NULL;
 
-    entry->ie_ProvidedIconX = entry->ie_IconX = dob->do_CurrentX;
-    entry->ie_ProvidedIconY = entry->ie_IconY = dob->do_CurrentY;
+    entry->ie_IconX = dob->do_CurrentX;
+    entry->ie_IconY = dob->do_CurrentY;
+
+    DoMethod(obj, MUIM_IconList_PropagateEntryPos, entry);
 
     if (IconList__LabelFunc_CreateLabel(obj, data, entry) != (IPTR)NULL)
     {
@@ -6948,8 +6959,7 @@ IPTR IconList__MUIM_DragDrop(struct IClass *CLASS, Object *obj, struct MUIP_Drag
                         entry->ile_IconEntry->ie_IconX += offset_x;
                         entry->ile_IconEntry->ie_IconY += offset_y;
                         /* Remember new position as provided */
-                        entry->ile_IconEntry->ie_ProvidedIconX = entry->ile_IconEntry->ie_IconX;
-                        entry->ile_IconEntry->ie_ProvidedIconY = entry->ile_IconEntry->ie_IconY;
+                        DoMethod(obj, MUIM_IconList_PropagateEntryPos, entry->ile_IconEntry);
                     }
                     SET(obj, MUIA_IconList_IconMoved, (IPTR)entry); // Now notify
                 }
