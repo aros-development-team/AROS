@@ -3460,6 +3460,8 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
         DoMethod(child, MUIM_IconWindow_RateLimitRefresh);
     }
 
+    CleanAppIconReplyMessages();
+
     return TRUE;
 }
 ///
