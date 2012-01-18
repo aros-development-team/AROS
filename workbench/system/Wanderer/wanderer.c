@@ -608,7 +608,7 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
         }
         else if (ent->type == ILE_TYPE_APPICON)
         {
-            SendAppIconMessage((struct AppIcon *)ent->ile_IconEntry->ie_AppIcon, 0, NULL);
+            SendAppIconMessage((struct AppIcon *)ent->ile_IconEntry->ie_User1, 0, NULL);
         }
     } 
     else  if (msg->type == ICONWINDOW_ACTION_DIRUP)
@@ -2968,25 +2968,27 @@ VOID Wanderer__Func_UpdateMenuStates(Object *WindowObj, Object *IconlistObj)
             }
             if (isRoot && (icon_entry->type == ILE_TYPE_APPICON))
             {
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsOpen))
+
+                struct AppIcon * ai = (struct AppIcon *)icon_entry->ile_IconEntry->ie_User1;
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsOpen))
                     iconmenustate &= ~MENF_ICON_OPEN;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsRename))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsRename))
                     iconmenustate &= ~MENF_ICON_RENAME;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsInformation))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsInformation))
                     iconmenustate &= ~MENF_ICON_INFORMATION;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsSnapshot))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsSnapshot))
                     iconmenustate &= ~MENF_ICON_SNAPSHOT;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsUnSnapshot))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsUnSnapshot))
                     iconmenustate &= ~MENF_ICON_UNSNAPSHOT;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsLeaveOut))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsLeaveOut))
                     iconmenustate &= ~MENF_ICON_LEAVEOUT;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsPutAway))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsPutAway))
                     iconmenustate &= ~MENF_ICON_PUTAWAY;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsDelete))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsDelete))
                     iconmenustate &= ~MENF_ICON_DELETE;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsFormatDisk))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsFormatDisk))
                     iconmenustate &= ~MENF_ICON_FORMAT;
-                if (!AppIcon_Supports((struct AppIcon *)icon_entry->ile_IconEntry->ie_AppIcon, WBAPPICONA_SupportsEmptyTrash))
+                if (!AppIcon_Supports(ai, WBAPPICONA_SupportsEmptyTrash))
                     iconmenustate &= ~MENF_ICON_EMPTYTRASH;
             }
             selectedcount++;
