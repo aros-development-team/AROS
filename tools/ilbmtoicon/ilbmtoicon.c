@@ -37,6 +37,7 @@
 #define ID_FACE MAKE_ID('F','A','C','E')
 #define ID_IMAG MAKE_ID('I','M','A','G')
 #define ID_PNG  MAKE_ID('p','n','g',' ')
+#define ID_ARGB MAKE_ID('A','R','G','B')
 
 #define CMP_NONE     0
 #define CMP_BYTERUN1 1
@@ -92,6 +93,8 @@ struct ILBMImage
     UBYTE   	    	remaptable[256];
     APTR                png;
     ULONG               png_size;
+    APTR                argb;
+    ULONG               argb_size;
 };
 
 /****************************************************************************************/
@@ -189,6 +192,7 @@ static LONG 	    	    transparentoption = -1;
 static BOOL		    dualpng; /* png file contains second image */
 static unsigned char	    *dualpngstart; /* address of 2nd image in filebuffer */
 static BOOL		    nosavePNG; /* Don't save the original PNG data */
+static BOOL		    nosaveARGB; /* Don't ARGB data */
 static BOOL		    nosaveIFF; /* Don't save any IFF data */
 
 /****************************************************************************************/
@@ -205,6 +209,12 @@ static void freeimage(struct ILBMImage *img)
     {
     	free(img->planarbuffer);
 	img->planarbuffer = NULL;
+    }
+
+    if (img->argb)
+    {
+        free(img->argb);
+        img->argb = NULL;
     }
     
     if (filebuffer)
@@ -243,12 +253,18 @@ static void getarguments(int argc, char **argv)
 {
     WORD i;
 
+    nosavePNG = 1;
+
     for (; argc > 1 && argv[1][0] == '-'; argc--, argv++) {
-        if (strcmp(argv[1],"--no-png") == 0) {
-            nosavePNG = 1;
+        if (strcmp(argv[1],"--png") == 0) {
+            nosavePNG = 0;
             continue;
         }
         if (strcmp(argv[1],"--no-iff") == 0) {
+            nosaveIFF = 1;
+            continue;
+        }
+        if (strcmp(argv[1],"--no-argb") == 0) {
             nosaveIFF = 1;
             continue;
         }
@@ -258,7 +274,7 @@ static void getarguments(int argc, char **argv)
     if ((argc != 4) && (argc != 5))
     {
     	fprintf(stderr, "Wrong number of arguments\n");
-    	cleanup("Usage: ilbmtoicon icondescription image1 [image2] filename", 1);
+    	cleanup("Usage: ilbmtoicon [--png] [--no-argb] [--no-iff] icondescription image1 [image2] filename", 1);
     }
     
     if (argc == 4)
@@ -787,10 +803,21 @@ static void loadpng(struct ILBMImage *img, struct Palette *pal)
         cleanup("Can't allocate the chunky buffer", 1);
 
     chunkrow = img->chunkybuffer;
+    img->argb_size = width * height * sizeof(UBYTE) * 4;
+    img->argb = malloc(img->argb_size);
+    if (!img->argb)
+        cleanup("Can't allocate the ARGB buffer", 1);
+
     for (y = 0; y < height; y++) {
         png_bytep row = row_pointers[y];
-        for (x = 0; x < width; x++, row += 4, chunkrow++) {
+        UBYTE *ap = img->argb + (width * sizeof(UBYTE) * 4) * y;
+        for (x = 0; x < width; x++, row += 4, ap += 4, chunkrow++) {
             UBYTE r,g,b;
+
+            ap[0] = row[3];
+            ap[1] = row[0];
+            ap[2] = row[1];
+            ap[3] = row[2];
 
             /* Opacity of 0? Use the transparency color */
             if (row[3] == 0) {
@@ -1532,6 +1559,22 @@ static void writenewdrawerdata(void)
 
 /****************************************************************************************/
 
+static void writeword(WORD l)
+{
+    UBYTE f[2];
+
+    f[1] = (l >> 8) & 0xFF;
+    f[2] = l & 0xFF;
+ 
+    if (fwrite(f, 1, 2, outfile) != 2)
+    {
+    	cleanup("Error writing word value!", 1);
+    }
+    
+}
+
+/****************************************************************************************/
+
 static void writelong(LONG l)
 {
     UBYTE f[4];
@@ -1543,7 +1586,7 @@ static void writelong(LONG l)
  
     if (fwrite(f, 1, 4, outfile) != 4)
     {
-    	cleanup("Error writing string long value!", 1);
+    	cleanup("Error writing long value!", 1);
     }
     
 }
@@ -1876,6 +1919,50 @@ static LONG writeimagchunk(struct ILBMImage *img)
 }
 
 /****************************************************************************************/
+static LONG writeargb(APTR argb, ULONG argb_size)
+{
+    LONG formsize = 10;
+    struct ARGB35_Header {
+        ULONG ztype;    /* Always 1 */
+        ULONG zsize;    /* Compressed size, or -1 */
+        UWORD resv;     /* Always 0 */
+    } ahdr;
+    Bytef *zdest;
+    uLongf zsize, size;
+    int err;
+    
+    zsize = size = argb_size;
+
+    zdest = malloc(zsize);
+    if (!zdest)
+        return 0;
+
+    err = compress(zdest, &zsize, argb, size);
+    if (err != Z_OK) {
+        free(zdest);
+        return 0;
+    }
+
+    writelong(ID_ARGB);
+    formsize = 10 + zsize;
+    if (formsize & 1)
+        formsize++;
+    writelong(formsize);
+    writelong(1);
+    writelong(zsize);
+    writeword(0);
+    fwrite(zdest, 1, zsize, outfile);
+    if (zsize & 1) {
+        char c = 0;
+        fwrite(&c, 1, 1, outfile);
+    }
+
+    free(zdest);
+
+    return 8 + formsize;
+}
+
+/****************************************************************************************/
 
 static void write35data(void)
 {
@@ -1893,6 +1980,14 @@ static void write35data(void)
     formsize += writefacechunk();
     formsize += writeimagchunk(&img1);
     if (image2option) formsize += writeimagchunk(&img2);
+
+    if (!nosaveARGB && img1.argb) {
+        formsize += writeargb(img1.argb, img1.argb_size);
+    }
+
+    if (!nosaveARGB && img2.argb) {
+        formsize += writeargb(img2.argb, img2.argb_size);
+    }
 
     if (!nosavePNG && img1.png) {
         writelong(ID_PNG);
