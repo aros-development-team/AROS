@@ -63,6 +63,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    if (!vp)
+        return;
+
     SetRGB32(vp, n, r * 0x11111111,
     	    	    g * 0x11111111,
 		    b * 0x11111111);
