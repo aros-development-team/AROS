@@ -214,6 +214,20 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
 
     /* Prepare ARGB selected imagery, if needed */
     image = &ni->ni_Image[1];
+    if (image->ARGB == NULL && ni->ni_Image[0].ARGB != NULL) {
+        /* Synthesize a selected ARGB icon */
+        ULONG area = ni->ni_Width * ni->ni_Height;
+        image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4, MEMF_PUBLIC);
+        if (image->ARGB) {
+            CopyMem(ni->ni_Image[0].ARGB, (APTR)image->ARGB, area * sizeof(UBYTE) * 4);
+            UBYTE *cp;
+            for (cp = (APTR)image->ARGB; area > 0; area--, cp += 4) {
+                struct ColorRegister *cr = (APTR)&cp[1];
+                ChangeToSelectedIconColor(cr);
+            }
+        }
+    }
+
 #if 0 /* Commented out - safe, but too slow */
     if (image->ARGB == NULL &&
         ni->ni_Extra.Offset[0].PNG >= 0 && 
