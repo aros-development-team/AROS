@@ -335,21 +335,7 @@
         }
     }
 
-    if (appIcon->ai_Flags & WBAPPICONF_PropagatePosition)
-    {
-	appIcon->ai_DiskObject = DupDiskObject(diskobj, TAG_DONE);
-
-	if (appIcon->ai_DiskObject == NULL)
-	{
-	    FreeVec(appIcon);
-	    
-	    return NULL;
-	}
-    }
-    else
-    {
 	appIcon->ai_DiskObject = diskobj;
-    }
 
     LockWorkbench();
     AddTail(&WorkbenchBase->wb_AppIcons, (struct Node *)appIcon);
