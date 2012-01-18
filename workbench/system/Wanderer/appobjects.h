@@ -11,6 +11,7 @@
 
 /*** Prototypes *************************************************************/
 BOOL SendAppIconMessage(struct AppIcon * appicon, LONG numargs, STRPTR args);
+BOOL SendAppIconMenuMessage(struct AppIcon * appicon, UWORD class);
 APTR AppObjectsLock();
 VOID AppObjectsUnlock(APTR lock);
 struct AppIcon * GetNextAppIconLocked(struct AppIcon * lastappicon, APTR lock);
