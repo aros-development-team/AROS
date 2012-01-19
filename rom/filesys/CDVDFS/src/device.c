@@ -586,7 +586,7 @@ UBYTE   notdone = 1;
 			break;
 		case ACTION_FINDINPUT: /* FileHandle,Lock,Name   Bool */
 		{
-			if (Mount_Check (global))
+			if (!(error = Mount_Check (global)))
 			{
 				CDROM_OBJ *obj;
 				CDROM_OBJ *parentdir = getlockfile(global, packet->dp_Arg2);
@@ -646,8 +646,6 @@ UBYTE   notdone = 1;
 					Register_File_Handle (obj);
 				}
 			}
-			else
-				error = ERROR_NO_DISK;
 		}
 openbreak:
 		break;
@@ -771,14 +769,26 @@ openbreak:
 				id->id_UnitNumber = global->g_unit;
 				if (global->g_inhibited) {
 					id->id_DiskType = 0x42555359 /* "BUSY" */;
-				} else if (Mount_Check (global)) {
-					id->id_DiskType = AROS_MAKE_ID('C','D','V','D');
-					id->id_NumBlocks= Volume_Size (global->g_volume);
-					id->id_BytesPerBlock = Block_Size (global->g_volume);
-					id->id_VolumeNode = MKBADDR(global->DevList);
-					id->id_DiskState = ID_WRITE_PROTECTED;
 				} else {
+				    int errcode = Mount_Check (global);
+				    if (errcode == ERROR_NO_DISK) {
 					id->id_DiskType = ID_NO_DISK_PRESENT;
+				    } else if (!errcode) {
+#if 1
+					id->id_DiskType = AROS_MAKE_ID('C','D','V','D');
+#else
+					id->id_DiskType = ID_DOS_DISK; /* for building UAE built-in CDFS */
+#endif
+					id->id_NumBlocks= Volume_Size (global->g_volume);
+					 id->id_BytesPerBlock = Block_Size (global->g_volume);
+					id->id_VolumeNode = MKBADDR(global->DevList);
+		                    } else {
+				        /* For example empty CD-R */
+				        id->id_DiskType = ID_UNREADABLE_DISK;
+				        id->id_NumBlocks = 0;
+				        id->id_BytesPerBlock = 2048;
+				    }
+				    id->id_DiskState = ID_WRITE_PROTECTED;
 				}
 				id->id_NumBlocksUsed = id->id_NumBlocks;
 			}
@@ -790,7 +800,7 @@ openbreak:
 		case ACTION_PARENT_FH:     /* FHArg1                  ParentLock */
 		case ACTION_PARENT:        /* Lock                    ParentLock */
 		{
-			if (Mount_Check (global))
+			if (!(error = Mount_Check (global)))
 			{
 				if (packet->dp_Arg1)
 				{
@@ -830,13 +840,11 @@ openbreak:
 				else
 					error = ERROR_OBJECT_NOT_FOUND;
 			}
-			else
-				error = ERROR_NO_DISK;
 		}
 		break;
 		case ACTION_LOCATE_OBJECT: /* Lock,Name,Mode   Lock */
 		{
-			if (Mount_Check (global))
+			if (!(error = Mount_Check (global)))
 			{
 				CDROM_OBJ *parentdir = getlockfile (global, packet->dp_Arg1);
 				CDROM_OBJ *obj;
@@ -889,8 +897,6 @@ openbreak:
 						error = 333;
 				}
 			}
-			else
-				error = ERROR_NO_DISK;
 		}
 		break;
 		case ACTION_COPY_DIR:   /*	 Lock,			    Lock       */
@@ -1486,8 +1492,9 @@ static void Unmount (struct CDVDBase *global)
 }
 
 /*
- * Mount_Check returns 1 if a valid disk is inserted in the drive. A check is
- * only performed if previously the drive was empty.
+ * Mount_Check returns 0 if a valid disk is inserted in the drive.
+ * Error code is returned if drive is empty or disk is unknown.
+ * A check is only performed if previously the drive was empty.
  */
 
 int Mount_Check (struct CDVDBase *global)
@@ -1504,16 +1511,20 @@ int Mount_Check (struct CDVDBase *global)
 	if (0 == Test_Unit_Ready (global->g_cd)) 
 	{
 	    D(bug("[CDVDFS]\tDrive not ready, not mounting\n"));
-	    return 0;
+	    return ERROR_NO_DISK;
 	}
 
 	D(bug("[CDVDFS]\tDrive ready, mounting disc\n"));
 	global->g_disk_inserted = TRUE;
 	Mount (global);
-	return global->DevList ? 1 : 0;
+	if (!global->DevList)
+	    return ERROR_NO_DISK;
+    } else {
+        D(bug("[CDVDFS]\tDisc already mounted.\n"));
     }
-    D(bug("[CDVDFS]\tDisc already mounted.\n"));
-    return 1;
+    if (global->g_volume == NULL || global->g_volume->handler == NULL)
+        return ERROR_NOT_A_DOS_DISK;
+    return 0;
 }
 
 /*

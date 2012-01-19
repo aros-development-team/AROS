@@ -104,7 +104,7 @@ VOLUME *res;
 int skip;
 t_ulong offset, svdoffset;
     
-	res = AllocMem (sizeof (VOLUME), MEMF_PUBLIC);
+	res = AllocMem (sizeof (VOLUME), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!res)
 	{
 		global->iso_errno = ISOERR_NO_MEMORY;
