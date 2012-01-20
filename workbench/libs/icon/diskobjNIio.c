@@ -154,7 +154,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     {
     	return FALSE;
     }
-    
+
     numcols = (((tt[3] - 0x21) << 6) + (tt[4] - 0x21));
     transp = (tt[0] =='B') ? TRUE : FALSE;
    
@@ -175,7 +175,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     img->Palette = AllocMemIcon(&icon->ni_DiskObject, size, MEMF_PUBLIC);
     if (!img->Palette) return FALSE;
 
-    img->TransparentColor = transp ? -1 : 0;
+    img->TransparentColor = transp ? 0 : -1;
     img->Pens = numcols;
 
     DecodeNI(&icon->ni_DiskObject, tooltypes, (UBYTE *)img->Palette, 8, img->Pens * sizeof(struct ColorRegister), which, TRUE, IconBase);
