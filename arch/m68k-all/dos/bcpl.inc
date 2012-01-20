@@ -138,5 +138,6 @@ BCPL(0x1f4, createDir)
 BCPL(0x1f8, compareTime)
 BCPL(0x1fc, timerIO)
 BCPL(0x200, settime)
+/* BCPL(0x204, DOSBase) <- Value, not a function */
 BCPL(0x214, CliInit)
 BCPL(0x218, findCLI)
