@@ -463,3 +463,66 @@ end
 document seglistdump
 Shows the segments chain of the given seglist
 end
+
+define bttask
+    set $task = (struct Task *)$arg0
+    if ($task->tc_Node.ln_Type != 1) && ($task->tc_Node.ln_Type != 13)
+        printf "ERROR: Given address does not look like a task or process!\n"
+    else
+        #FIXME: The following assumes Linux x86
+        set $old_esp = $esp
+	set $old_eip = $eip
+	
+	if $task->tc_State == 2
+	    printf "WARNING: TS_RUN Task. Showing normal backtrace!\n"
+	else
+            set $esp = $task->tc_SPReg
+	    set $taskcontext = (struct AROSCPUContext *)$task->tc_UnionETask.tc_ETask.et_RegFrame
+            set $eip = $taskcontext.regs.eip
+        end
+	
+	bt
+ 
+        set $esp = $old_esp
+	set $eip = $old_eip
+    end
+end
+document bttask
+Shows the backtrace of the given TS_READY/TS_WAIT task
+end
+
+define semowner
+    set $sem = (struct SignalSemaphore *)$arg0
+    if $sem->ss_Link.ln_Type != 15
+        printf "ERROR: Given address does not look like a semaphore!\n"
+    else
+        if $sem->ss_QueueCount == -1
+	    printf "The semaphore is free\n"
+	else
+	    if $sem->ss_Owner == 0
+	        printf "The semaphore is locked in shared mode by one or more tasks\n"
+	    else
+	    	printf "The semaphore is owned by task %p (%s)\n", $sem->ss_Owner, $sem->ss_Owner->tc_Node.ln_Name
+	    end
+
+	    printf "\nWait Queue:\n\n"
+
+	    set $waitnode = (struct SemaphoreRequest *)$sem->ss_WaitQueue.mlh_Head
+
+            while ($waitnode->sr_Link.mln_Succ != 0)
+	        set $waitertask = $waitnode->sr_Waiter
+		if (int)$waitertask & 1
+		    set $waitertask = $waitertask & ~1
+		    printf " SHARED    "
+		else
+		    printf " EXCLUSIVE "
+		end
+	        printf"%p %s\n", $waitertask, $waitertask->tc_Node.ln_Name
+	        set $waitnode = (struct SemaphoreRequest *)$waitnode->sr_Link.mln_Succ
+	    end
+	end
+    end
+end
+document semowner
+Shows the owner of the given Exec Semaphore and the Wait Queue
+end
