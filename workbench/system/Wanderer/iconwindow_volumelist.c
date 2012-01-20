@@ -908,6 +908,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                 {
                     struct DiskObject * appdo = AppIcon_GetDiskObject(appicon);
                     struct DiskObject * dupdo = DupDiskObject(appdo, TAG_DONE);
+                    LayoutIconA(dupdo, _screen(self), NULL);
                     CONST_STRPTR label = AppIcon_GetLabel(appicon);
                     appentry = (struct IconEntry *)DoMethod(self,
                             MUIM_IconList_CreateEntry, (IPTR)"?APPICON?", (IPTR)label, (IPTR)NULL, (IPTR)dupdo, 0);
