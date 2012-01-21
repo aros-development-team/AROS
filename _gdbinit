@@ -471,20 +471,20 @@ define bttask
     else
         #FIXME: The following assumes Linux x86
         set $old_esp = $esp
-	set $old_eip = $eip
-	
-	if $task->tc_State == 2
-	    printf "WARNING: TS_RUN Task. Showing normal backtrace!\n"
-	else
+        set $old_eip = $eip
+        
+        if $task->tc_State == 2
+            printf "WARNING: TS_RUN Task. Showing normal backtrace!\n"
+        else
             set $esp = $task->tc_SPReg
-	    set $taskcontext = (struct AROSCPUContext *)$task->tc_UnionETask.tc_ETask.et_RegFrame
+            set $taskcontext = (struct AROSCPUContext *)$task->tc_UnionETask.tc_ETask.et_RegFrame
             set $eip = $taskcontext.regs.eip
         end
-	
-	bt
+        
+        bt
  
         set $esp = $old_esp
-	set $eip = $old_eip
+        set $eip = $old_eip
     end
 end
 document bttask
@@ -497,30 +497,30 @@ define semowner
         printf "ERROR: Given address does not look like a semaphore!\n"
     else
         if $sem->ss_QueueCount == -1
-	    printf "The semaphore is free\n"
-	else
-	    if $sem->ss_Owner == 0
-	        printf "The semaphore is locked in shared mode by one or more tasks\n"
-	    else
-	    	printf "The semaphore is owned by task %p (%s)\n", $sem->ss_Owner, $sem->ss_Owner->tc_Node.ln_Name
-	    end
+            printf "The semaphore is free\n"
+        else
+            if $sem->ss_Owner == 0
+                printf "The semaphore is locked in shared mode by one or more tasks\n"
+            else
+                    printf "The semaphore is owned by task %p (%s)\n", $sem->ss_Owner, $sem->ss_Owner->tc_Node.ln_Name
+            end
 
-	    printf "\nWait Queue:\n\n"
+            printf "\nWait Queue:\n\n"
 
-	    set $waitnode = (struct SemaphoreRequest *)$sem->ss_WaitQueue.mlh_Head
+            set $waitnode = (struct SemaphoreRequest *)$sem->ss_WaitQueue.mlh_Head
 
             while ($waitnode->sr_Link.mln_Succ != 0)
-	        set $waitertask = $waitnode->sr_Waiter
-		if (int)$waitertask & 1
-		    set $waitertask = $waitertask & ~1
-		    printf " SHARED    "
-		else
-		    printf " EXCLUSIVE "
-		end
-	        printf"%p %s\n", $waitertask, $waitertask->tc_Node.ln_Name
-	        set $waitnode = (struct SemaphoreRequest *)$waitnode->sr_Link.mln_Succ
-	    end
-	end
+                set $waitertask = $waitnode->sr_Waiter
+                if (int)$waitertask & 1
+                    set $waitertask = $waitertask & ~1
+                    printf " SHARED    "
+                else
+                    printf " EXCLUSIVE "
+                end
+                printf"%p %s\n", $waitertask, $waitertask->tc_Node.ln_Name
+                set $waitnode = (struct SemaphoreRequest *)$waitnode->sr_Link.mln_Succ
+            end
+        end
     end
 end
 document semowner
