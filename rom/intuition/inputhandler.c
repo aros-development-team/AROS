@@ -1898,6 +1898,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         IntuitionBase->Seconds = ie->ie_TimeStamp.tv_secs;
         IntuitionBase->Micros  = ie->ie_TimeStamp.tv_micro;
 
+#if 0 /* toolbox stuff disabled. broken. calling LockLayerinfo() for every event is broken. deadlocks */
         /* Use event to find the active window */
 
         toolbox = GetToolBoxWindow(ie, screen, IntuitionBase);
@@ -1919,6 +1920,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
             } /* switch (ie->ie_Class) */
         } /* if (toolbox) */
+#endif
 
         w = IntuitionBase->ActiveWindow;
 
