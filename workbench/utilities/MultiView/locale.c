@@ -22,8 +22,8 @@ void InitLocale(STRPTR catname, ULONG version)
 #endif
     if (LocaleBase)
     {
-	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-					     TAG_DONE);
+        catalog = OpenCatalog(NULL, catname, OC_Version, version,
+                                             TAG_DONE);
     }
 }
 
@@ -41,9 +41,9 @@ CONST_STRPTR MSG(ULONG id)
 {
     if (catalog)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } else {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 

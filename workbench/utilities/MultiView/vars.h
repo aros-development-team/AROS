@@ -40,7 +40,7 @@ VAR Object                      *dto_to_vert_ic_obj;
 VAR Object                      *dto_to_horiz_ic_obj;
 VAR Object                      *vert_to_dto_ic_obj;
 VAR Object                      *horiz_to_dto_ic_obj;
-VAR Object  	    	    	*model_to_dto_ic_obj;
+VAR Object                      *model_to_dto_ic_obj;
 VAR Object                      *gad[NUM_GADGETS];
 VAR Object                      *img[NUM_IMAGES];
 VAR UBYTE                       filenamebuffer[300];
@@ -70,15 +70,15 @@ VAR UBYTE                       dto_supports_search;
 VAR UBYTE                       dto_supports_search_prev;
 VAR UBYTE                       dto_supports_search_next;
 /* variables for picture-dt scaling */
-VAR UWORD			pdt_origwidth;
-VAR UWORD			pdt_origheight;
-VAR WORD			pdt_zoom;
-VAR BOOL			pdt_fit_win;
-VAR BOOL			pdt_keep_aspect;
-VAR BOOL			pdt_force_map;
-VAR BOOL			pdt_pict_dither;
+VAR UWORD                       pdt_origwidth;
+VAR UWORD                       pdt_origheight;
+VAR WORD                        pdt_zoom;
+VAR BOOL                        pdt_fit_win;
+VAR BOOL                        pdt_keep_aspect;
+VAR BOOL                        pdt_force_map;
+VAR BOOL                        pdt_pict_dither;
 /* variable for text-dt word-wraping */
-VAR BOOL			tdt_text_wordwrap;
+VAR BOOL                        tdt_text_wordwrap;
 /* variables for AppWindow handling */
 VAR struct MsgPort             *msgport;
 VAR struct AppWindow           *appwindow;
@@ -89,5 +89,5 @@ VAR struct MsgPort             *isnport;
 VAR APTR                        isnstarted;
 VAR ULONG                       isnmask;
 /* variable for using separate screen */
-VAR BOOL			separate_screen;
+VAR BOOL                        separate_screen;
 
