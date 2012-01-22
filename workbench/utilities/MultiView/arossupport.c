@@ -23,14 +23,14 @@
 ULONG *FindMethod(ULONG *methods, ULONG searchmethodid)
 {
     if(methods == NULL)
-	return NULL;
+        return NULL;
 
     while(((LONG)(*methods)) != -1)
     {
-	if(*methods == searchmethodid)
-	    return methods;
+        if(*methods == searchmethodid)
+            return methods;
 
-	methods++;
+        methods++;
     }
 
     return NULL;
@@ -43,28 +43,28 @@ struct DTMethod *FindTriggerMethod(struct DTMethod *methods, STRPTR command, ULO
 
     if (methods)
     {
-	while(methods->dtm_Method != STM_DONE)
-	{
-	    if(command != NULL)
-	    {
-		if(Stricmp(methods->dtm_Command, command) == 0)
-		{
-		    retval = methods;
-		    break;
-		}
-	    }
+        while(methods->dtm_Method != STM_DONE)
+        {
+            if(command != NULL)
+            {
+                if(Stricmp(methods->dtm_Command, command) == 0)
+                {
+                    retval = methods;
+                    break;
+                }
+            }
 
-	    if(method != ~0)
-	    {
-		if(methods->dtm_Method == method)
-		{
-		    retval = methods;
-		    break;
-		}
-	    }
+            if(method != ~0)
+            {
+                if(methods->dtm_Method == method)
+                {
+                    retval = methods;
+                    break;
+                }
+            }
 
-	    methods++;
-	}
+            methods++;
+        }
     }
 
     return retval;
