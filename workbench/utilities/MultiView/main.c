@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -10,6 +10,8 @@
 #include "compilerspecific.h"
 #include "debug.h"
 #include "arossupport.h"
+
+#include <setjmp.h>
 
 extern struct NewMenu nm[];
 extern struct NewMenu nmpict[];
@@ -74,6 +76,7 @@ static UBYTE            fontname[256];
 static WORD             winwidth, winheight;
 static WORD             sizeimagewidth, sizeimageheight;
 static BOOL             model_has_members;
+static jmp_buf 		exit_buf;
 
 /*********************************************************************************************/
 
@@ -179,6 +182,8 @@ void Cleanup(CONST_STRPTR msg)
 
     CloseLibs();
     CleanupLocale();
+
+    longjmp(exit_buf, 0);
 }
 
 
@@ -1562,6 +1567,13 @@ void InitWin(void)
 
 int main(int argc, char **argv)
 {
+    int rc;
+
+    /* This is for when Cleanup() is called */
+    rc = setjmp(exit_buf);
+    if (rc)
+        return rc;
+
     wincoords.MinX = 0;
     wincoords.MinY = 0;
     wincoords.MaxX = 0;
