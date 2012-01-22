@@ -4,6 +4,7 @@
 */
 
 #include "__arosc_privdata.h"
+#include "__fdesc.h"
 
 #include <exec/types.h>
 #include <dos/dos.h>
@@ -54,13 +55,20 @@
     BPTR newlock = BNULL;
     BPTR handle = BNULL;
 
+    fdesc *fdc = __getfdesc(fd);
+    if (!fdc->fcb->isdir)
+    {
+        errno = ENOTDIR;
+        goto error; 
+    }
+
     if ( __get_default_file(fd, (long*) &handle) != 0 )
     {
         errno = EBADF;
         goto error;
     }
 
-    newlock = DupLockFromFH(handle);
+    newlock = DupLock(handle);
 
     if( newlock == BNULL )
     {
