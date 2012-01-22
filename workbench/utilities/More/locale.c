@@ -17,11 +17,11 @@
 /*********************************************************************************************/
 
 #ifdef __MORPHOS__
-struct Library 		*LocaleBase;
+struct Library          *LocaleBase;
 #else
-struct LocaleBase 	*LocaleBase;
+struct LocaleBase       *LocaleBase;
 #endif
-struct Catalog 		*catalog;
+struct Catalog          *catalog;
 
 /*********************************************************************************************/
 
@@ -30,8 +30,8 @@ void InitLocale(STRPTR catname, ULONG version)
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 39);
     if (LocaleBase)
     {
-	catalog = OpenCatalog(NULL, catname, OC_Version, version,
-    					     TAG_DONE);
+        catalog = OpenCatalog(NULL, catname, OC_Version, version,
+                                             TAG_DONE);
     }
 }
 

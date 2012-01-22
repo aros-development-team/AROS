@@ -52,13 +52,13 @@ enum {GAD_GOTO_STRING = 1,
 /****************************************************************************************/
 
 
-static struct RastPort 	temprp;
-static struct Window 	*gotowin, *findwin;
-static struct Gadget 	*gotogad, *findgad, *gad, *gotogadlist, *findgadlist;
+static struct RastPort  temprp;
+static struct Window    *gotowin, *findwin;
+static struct Gadget    *gotogad, *findgad, *gad, *gotogadlist, *findgadlist;
 static struct NewGadget ng;
-static WORD 		fontwidth, fontheight;
+static WORD             fontwidth, fontheight;
 
-static char 		searchtext[256];
+static char             searchtext[256];
 
 /****************************************************************************************/
 
@@ -100,10 +100,10 @@ void Make_Goto_Requester(void)
     gadheight = fontheight + GAD_EXTRA_HEIGHT;
 
     winheight = scr->WBorTop + fontheight + 1 +
-		scr->WBorBottom +
-		BORDER_SPACING_Y * 2 +
-		gadheight * 2 +
-		GAD_SPACING_Y;
+                scr->WBorBottom +
+                BORDER_SPACING_Y * 2 +
+                gadheight * 2 +
+                GAD_SPACING_Y;
 
     gadwidth = TextLength(&temprp, MSG(MSG_OK), strlen(MSG(MSG_OK)));
     w = TextLength(&temprp, MSG(MSG_CANCEL), strlen(MSG(MSG_CANCEL)));
@@ -114,9 +114,9 @@ void Make_Goto_Requester(void)
     strwidth = gadwidth * 2 + GAD_SPACING_X;
 
     winwidth = scr->WBorLeft +
-	       scr->WBorRight +
-	       BORDER_SPACING_X * 2 +
-	       strwidth;
+               scr->WBorRight +
+               BORDER_SPACING_X * 2 +
+               strwidth;
 
     ng.ng_LeftEdge = scr->WBorLeft + BORDER_SPACING_X;
     ng.ng_TopEdge = scr->WBorTop + fontheight + 1 + BORDER_SPACING_Y;
@@ -126,8 +126,8 @@ void Make_Goto_Requester(void)
     ng.ng_Flags = PLACETEXT_IN;
 
     gotogad = CreateGadget(INTEGER_KIND, gad, &ng, GTIN_MaxChars, 8, 
-						STRINGA_Justification, GACT_STRINGCENTER, 
-						TAG_DONE);
+                                                STRINGA_Justification, GACT_STRINGCENTER, 
+                                                TAG_DONE);
 
     ng.ng_TopEdge += gadheight + GAD_SPACING_Y;
     ng.ng_Width = gadwidth;
@@ -144,37 +144,37 @@ void Make_Goto_Requester(void)
 
     if (!gad)
     {
-	FreeGadgets(gotogadlist);
-	gotogadlist = 0;
+        FreeGadgets(gotogadlist);
+        gotogadlist = 0;
     } else {
-	gotowin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
-				    WA_Left, scr->MouseX - (winwidth / 2), 
-				    WA_Top, scr->MouseY - (winheight / 2), 
-				    WA_Width, winwidth, 
-				    WA_Height, winheight, 
-				    WA_AutoAdjust, TRUE, 
-				    WA_Title, (IPTR)MSG(MSG_JUMP_TITLE), 
-				    WA_CloseGadget, TRUE, 
-				    WA_DepthGadget, TRUE, 
-				    WA_DragBar, TRUE, 
-				    WA_Activate, TRUE, 
-				    WA_SimpleRefresh, TRUE, 
-				    WA_IDCMP, IDCMP_CLOSEWINDOW |
-					     IDCMP_REFRESHWINDOW |
-					     IDCMP_VANILLAKEY |
-					     BUTTONIDCMP |
-					     INTEGERIDCMP, 
-				    WA_Gadgets, (IPTR)gotogadlist, 
-				    TAG_DONE);
+        gotowin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
+                                    WA_Left, scr->MouseX - (winwidth / 2), 
+                                    WA_Top, scr->MouseY - (winheight / 2), 
+                                    WA_Width, winwidth, 
+                                    WA_Height, winheight, 
+                                    WA_AutoAdjust, TRUE, 
+                                    WA_Title, (IPTR)MSG(MSG_JUMP_TITLE), 
+                                    WA_CloseGadget, TRUE, 
+                                    WA_DepthGadget, TRUE, 
+                                    WA_DragBar, TRUE, 
+                                    WA_Activate, TRUE, 
+                                    WA_SimpleRefresh, TRUE, 
+                                    WA_IDCMP, IDCMP_CLOSEWINDOW |
+                                             IDCMP_REFRESHWINDOW |
+                                             IDCMP_VANILLAKEY |
+                                             BUTTONIDCMP |
+                                             INTEGERIDCMP, 
+                                    WA_Gadgets, (IPTR)gotogadlist, 
+                                    TAG_DONE);
 
-	if (!gotowin)
-	{
-	    FreeGadgets(gotogadlist);gotogadlist = 0;
-	} else {
-	    gotomask = 1L << gotowin->UserPort->mp_SigBit;
-	    GT_RefreshWindow(gotowin, 0);
-	    ActivateGadget(gotogad, gotowin, 0);
-	}
+        if (!gotowin)
+        {
+            FreeGadgets(gotogadlist);gotogadlist = 0;
+        } else {
+            gotomask = 1L << gotowin->UserPort->mp_SigBit;
+            GT_RefreshWindow(gotowin, 0);
+            ActivateGadget(gotogad, gotowin, 0);
+        }
     }
 }
 
@@ -188,51 +188,51 @@ BOOL Handle_Goto_Requester(LONG *line)
 
     while ((msg = GT_GetIMsg(gotowin->UserPort)))
     {
-	switch (msg->Class)
-	{
-	    case IDCMP_REFRESHWINDOW:
-		GT_BeginRefresh(gotowin);
-		GT_EndRefresh(gotowin, TRUE);
-		break;
+        switch (msg->Class)
+        {
+            case IDCMP_REFRESHWINDOW:
+                GT_BeginRefresh(gotowin);
+                GT_EndRefresh(gotowin, TRUE);
+                break;
 
-	    case IDCMP_CLOSEWINDOW:
-		killreq = TRUE;
-		break;
+            case IDCMP_CLOSEWINDOW:
+                killreq = TRUE;
+                break;
 
-	    case IDCMP_GADGETUP:
-		switch (((struct Gadget *)msg->IAddress)->GadgetID)
-		{
-		    case GAD_GOTO_CANCEL:
-			killreq = TRUE;
-			break;
+            case IDCMP_GADGETUP:
+                switch (((struct Gadget *)msg->IAddress)->GadgetID)
+                {
+                    case GAD_GOTO_CANCEL:
+                        killreq = TRUE;
+                        break;
 
-		    case GAD_GOTO_STRING:
-		    case GAD_GOTO_OK:
-			GT_GetGadgetAttrs(gotogad, gotowin, 0, GTIN_Number, (IPTR)&l, 
-							    TAG_DONE);
-			rc = TRUE;
-			break;
+                    case GAD_GOTO_STRING:
+                    case GAD_GOTO_OK:
+                        GT_GetGadgetAttrs(gotogad, gotowin, 0, GTIN_Number, (IPTR)&l, 
+                                                            TAG_DONE);
+                        rc = TRUE;
+                        break;
 
-		} /* switch (((struct Gadget *)msg->IAddress)->GadgetID) */
-		break;
+                } /* switch (((struct Gadget *)msg->IAddress)->GadgetID) */
+                break;
 
-	    case IDCMP_VANILLAKEY:
-		switch(ToUpper(msg->Code))
-		{
-		    case 27:
-			killreq = TRUE;
-			break;
+            case IDCMP_VANILLAKEY:
+                switch(ToUpper(msg->Code))
+                {
+                    case 27:
+                        killreq = TRUE;
+                        break;
 
-		    case 9:
-		    case 'G':
-			ActivateGadget(gotogad, gotowin, 0);
-			break;
+                    case 9:
+                    case 'G':
+                        ActivateGadget(gotogad, gotowin, 0);
+                        break;
 
-		} /* switch(msg->Code) */
-		break;
+                } /* switch(msg->Code) */
+                break;
 
-	} /* switch (msg->Class) */
-	GT_ReplyIMsg(msg);
+        } /* switch (msg->Class) */
+        GT_ReplyIMsg(msg);
 
     }  /* while ((msg = GT_GetIMsg(gotowin))) */
 
@@ -249,12 +249,12 @@ void Kill_Goto_Requester(void)
 {
     if (gotowin)
     {
-	CloseWindow(gotowin);gotowin = 0;gotomask = 0;
+        CloseWindow(gotowin);gotowin = 0;gotomask = 0;
     }
 
     if (gotogadlist)
     {
-	FreeGadgets(gotogadlist);gotogadlist = 0;
+        FreeGadgets(gotogadlist);gotogadlist = 0;
     }
 }
 
@@ -272,10 +272,10 @@ void Make_Find_Requester(void)
     gadheight = fontheight + GAD_EXTRA_HEIGHT;
 
     winheight = scr->WBorTop + fontheight + 1 +
-		scr->WBorBottom +
-		BORDER_SPACING_Y * 2 +
-		gadheight * 2 +
-		GAD_SPACING_Y;
+                scr->WBorBottom +
+                BORDER_SPACING_Y * 2 +
+                gadheight * 2 +
+                GAD_SPACING_Y;
 
     gadwidth = TextLength(&temprp, MSG(MSG_OK), strlen(MSG(MSG_OK)));
     w = TextLength(&temprp, MSG(MSG_CANCEL), strlen(MSG(MSG_CANCEL)));
@@ -288,9 +288,9 @@ void Make_Find_Requester(void)
     if (strwidth < 250) strwidth = 250;
 
     winwidth = scr->WBorLeft +
-	       scr->WBorRight +
-	       BORDER_SPACING_X * 2 +
-	       strwidth;
+               scr->WBorRight +
+               BORDER_SPACING_X * 2 +
+               strwidth;
 
     ng.ng_LeftEdge = scr->WBorLeft + BORDER_SPACING_X;
     ng.ng_TopEdge = scr->WBorTop + fontheight + 1 + BORDER_SPACING_Y;
@@ -300,7 +300,7 @@ void Make_Find_Requester(void)
     ng.ng_Flags = PLACETEXT_IN;
 
     findgad = CreateGadget(STRING_KIND, gad, &ng, GTST_MaxChars, 256, 
-					       TAG_DONE);
+                                               TAG_DONE);
 
     ng.ng_TopEdge += gadheight + GAD_SPACING_Y;
     ng.ng_Width = gadwidth;
@@ -317,37 +317,37 @@ void Make_Find_Requester(void)
 
     if (!gad)
     {
-	FreeGadgets(findgadlist);
-	findgadlist = 0;
+        FreeGadgets(findgadlist);
+        findgadlist = 0;
     } else {
-	findwin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
-				    WA_Left, scr->MouseX - (winwidth / 2), 
-				    WA_Top, scr->MouseY - (winheight / 2), 
-				    WA_Width, winwidth, 
-				    WA_Height, winheight, 
-				    WA_AutoAdjust, TRUE, 
-				    WA_Title, (IPTR)MSG(MSG_FIND_TITLE), 
-				    WA_CloseGadget, TRUE, 
-				    WA_DepthGadget, TRUE, 
-				    WA_DragBar, TRUE, 
-				    WA_Activate, TRUE, 
-				    WA_SimpleRefresh, TRUE, 
-				    WA_IDCMP, IDCMP_CLOSEWINDOW |
-					      IDCMP_REFRESHWINDOW |
-					      IDCMP_VANILLAKEY |
-					      BUTTONIDCMP |
-					      INTEGERIDCMP, 
-				    WA_Gadgets, (IPTR)findgadlist, 
-				    TAG_DONE);
+        findwin = OpenWindowTags(0, WA_CustomScreen, (IPTR)scr, 
+                                    WA_Left, scr->MouseX - (winwidth / 2), 
+                                    WA_Top, scr->MouseY - (winheight / 2), 
+                                    WA_Width, winwidth, 
+                                    WA_Height, winheight, 
+                                    WA_AutoAdjust, TRUE, 
+                                    WA_Title, (IPTR)MSG(MSG_FIND_TITLE), 
+                                    WA_CloseGadget, TRUE, 
+                                    WA_DepthGadget, TRUE, 
+                                    WA_DragBar, TRUE, 
+                                    WA_Activate, TRUE, 
+                                    WA_SimpleRefresh, TRUE, 
+                                    WA_IDCMP, IDCMP_CLOSEWINDOW |
+                                              IDCMP_REFRESHWINDOW |
+                                              IDCMP_VANILLAKEY |
+                                              BUTTONIDCMP |
+                                              INTEGERIDCMP, 
+                                    WA_Gadgets, (IPTR)findgadlist, 
+                                    TAG_DONE);
 
-	if (!findwin)
-	{
-	    FreeGadgets(findgadlist);findgadlist = 0;
-	} else {
-	    findmask = 1L << findwin->UserPort->mp_SigBit;
-	    GT_RefreshWindow(findwin, 0);
-	    ActivateGadget(findgad, findwin, 0);
-	}
+        if (!findwin)
+        {
+            FreeGadgets(findgadlist);findgadlist = 0;
+        } else {
+            findmask = 1L << findwin->UserPort->mp_SigBit;
+            GT_RefreshWindow(findwin, 0);
+            ActivateGadget(findgad, findwin, 0);
+        }
     }
 }
 
@@ -361,63 +361,63 @@ WORD Handle_Find_Requester(char **text)
 
     while ((msg = GT_GetIMsg(findwin->UserPort)))
     {
-	switch (msg->Class)
-	{
-	    case IDCMP_REFRESHWINDOW:
-		GT_BeginRefresh(findwin);
-		GT_EndRefresh(findwin, TRUE);
-		break;
+        switch (msg->Class)
+        {
+            case IDCMP_REFRESHWINDOW:
+                GT_BeginRefresh(findwin);
+                GT_EndRefresh(findwin, TRUE);
+                break;
 
-	    case IDCMP_CLOSEWINDOW:
-		killreq = TRUE;
-		break;
+            case IDCMP_CLOSEWINDOW:
+                killreq = TRUE;
+                break;
 
-	    case IDCMP_GADGETUP:
-		switch (((struct Gadget *)msg->IAddress)->GadgetID)
-		{
-		    case GAD_FIND_CANCEL:
-			killreq = TRUE;
-			break;
+            case IDCMP_GADGETUP:
+                switch (((struct Gadget *)msg->IAddress)->GadgetID)
+                {
+                    case GAD_FIND_CANCEL:
+                        killreq = TRUE;
+                        break;
 
-		    case GAD_FIND_TEXT:
-		    case GAD_FIND_OK:
-			GT_GetGadgetAttrs(findgad, findwin, 0, GTST_String, (IPTR)&sp, 
-							    TAG_DONE);
-			strcpy(searchtext, sp);
+                    case GAD_FIND_TEXT:
+                    case GAD_FIND_OK:
+                        GT_GetGadgetAttrs(findgad, findwin, 0, GTST_String, (IPTR)&sp, 
+                                                            TAG_DONE);
+                        strcpy(searchtext, sp);
 
-			rc = TRUE;
-			    break;
+                        rc = TRUE;
+                            break;
 
-		} /* switch (((struct Gadget *)msg->IAddress)->GadgetID) */
-		break;
+                } /* switch (((struct Gadget *)msg->IAddress)->GadgetID) */
+                break;
 
-	    case IDCMP_VANILLAKEY:
-		switch(ToUpper(msg->Code))
-		{
-		    case 27:
-			killreq = TRUE;
-			break;
+            case IDCMP_VANILLAKEY:
+                switch(ToUpper(msg->Code))
+                {
+                    case 27:
+                        killreq = TRUE;
+                        break;
 
-		    case 9:
-		    case 'S':
-		    case 'F':
-			ActivateGadget(findgad, findwin, 0);
-			break;
+                    case 9:
+                    case 'S':
+                    case 'F':
+                        ActivateGadget(findgad, findwin, 0);
+                        break;
 
-		    case 13:
-		    case 'N':
-			rc = SEARCH_NEXT;
-			break;
+                    case 13:
+                    case 'N':
+                        rc = SEARCH_NEXT;
+                        break;
 
-		    case 'P':
-			rc = SEARCH_PREV;
-			break;
+                    case 'P':
+                        rc = SEARCH_PREV;
+                        break;
 
-		} /* switch(msg->Code) */
-		break;
+                } /* switch(msg->Code) */
+                break;
 
-	} /* switch (msg->Class) */
-	GT_ReplyIMsg(msg);
+        } /* switch (msg->Class) */
+        GT_ReplyIMsg(msg);
 
     } /* while ((msg = GT_GetIMsg(findwin))) */
 
@@ -434,12 +434,12 @@ void Kill_Find_Requester(void)
 {
     if (findwin)
     {
-	CloseWindow(findwin);findwin = 0;findmask = 0;
+        CloseWindow(findwin);findwin = 0;findmask = 0;
     }
 
     if (findgadlist)
     {
-	FreeGadgets(findgadlist);findgadlist = 0;
+        FreeGadgets(findgadlist);findgadlist = 0;
     }
 }
 

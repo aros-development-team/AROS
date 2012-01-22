@@ -5,17 +5,17 @@
 
 /****************************************************************************************/
 
-extern struct IntuitionBase 	*IntuitionBase;
-extern struct GfxBase 		*GfxBase;
-extern struct Library		*GadToolsBase;
-extern struct Screen 		*scr;
-extern struct DrawInfo 		*dri;
-extern APTR			vi;
-extern struct Menu		*menus;
-extern struct Window		*win;
+extern struct IntuitionBase     *IntuitionBase;
+extern struct GfxBase           *GfxBase;
+extern struct Library           *GadToolsBase;
+extern struct Screen            *scr;
+extern struct DrawInfo          *dri;
+extern APTR                     vi;
+extern struct Menu              *menus;
+extern struct Window            *win;
 
-extern ULONG 			gotomask, findmask;
-extern UBYTE			filenamebuffer[300];
+extern ULONG                    gotomask, findmask;
+extern UBYTE                    filenamebuffer[300];
 
 /****************************************************************************************/
 
