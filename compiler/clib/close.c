@@ -79,7 +79,15 @@
 
         if (!(fdesc->fcb->privflags & _FCB_DONTCLOSE_FH))
         {
-            (void)Close(fdesc->fcb->fh);
+            // don't close directories because we don't Open() them.
+            if (fdesc->fcb->isdir)
+            {
+                UnLock(fdesc->fcb->fh);
+            }
+            else
+            {
+                Close(fdesc->fcb->fh);
+            }
         }
 
         FreeVec(fdesc->fcb);
