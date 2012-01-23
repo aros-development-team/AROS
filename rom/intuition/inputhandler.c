@@ -1803,17 +1803,21 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     AROS_USERFUNC_INIT
 
     struct InputEvent     *ie, *orig_ie, *next_ie, stackie;
-    struct Gadget         *gadget = NULL, *boxgadget = NULL;
+    struct Gadget         *gadget = NULL;
     struct IntuitionBase  *IntuitionBase = iihdata->IntuitionBase;
     struct Library        *KeymapBase = GetPrivIBase(IntuitionBase)->KeymapBase;
     struct Screen       *screen;
     //ULONG                lock;
     struct GadgetInfo     *gi = &iihdata->GadgetInfo;
-    struct GadgetInfo     *boxgi = &iihdata->BoxGadgetInfo;
     BOOL                   reuse_event, ie_used;
-    struct Window         *w, *toolbox;
+    struct Window         *w;
     struct Requester      *req;
     ULONG                  stitlebarhit = 0;
+#if 0 /* Toolbox is broken-as-designed */
+    struct Window         *toolbox;
+    struct GadgetInfo     *boxgi = &iihdata->BoxGadgetInfo;
+    struct Gadget         *boxgadget = NULL;
+#endif
 #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     BOOL                   call_setpointerpos = FALSE;
 #endif
