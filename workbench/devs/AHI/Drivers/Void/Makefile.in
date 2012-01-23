@@ -11,6 +11,6 @@ MODEFILE	= VOID
 
 OBJECTS		= void-init.o void-main.o void-playslave.o void-accel.o
 
-DEST		= Storage
+#DEST		= Storage
 
 include ../Common/Makefile.common
