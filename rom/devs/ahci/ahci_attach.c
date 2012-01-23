@@ -55,6 +55,7 @@
 
 static int	ahci_vt8251_attach(device_t);
 static int	ahci_ati_sb600_attach(device_t);
+static int	ahci_ati_sb700_attach(device_t);
 static int	ahci_nvidia_mcp_attach(device_t);
 static int	ahci_pci_attach(device_t);
 static int	ahci_pci_detach(device_t);
@@ -64,6 +65,8 @@ static const struct ahci_device ahci_devices[] = {
 	    ahci_vt8251_attach, ahci_pci_detach, "ViaTech-VT8251-SATA" },
 	{ PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB600_SATA,
 	    ahci_ati_sb600_attach, ahci_pci_detach, "ATI-SB600-SATA" },
+	{ PCI_VENDOR_ATI,	PCI_PRODUCT_ATI_SB700_SATA,
+	    ahci_ati_sb700_attach, ahci_pci_detach, "ATI-SB700-SATA" },
 	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP65_AHCI_2,
 	    ahci_nvidia_mcp_attach, ahci_pci_detach, "NVidia-MCP65-SATA" },
 	{ PCI_VENDOR_NVIDIA,	PCI_PRODUCT_NVIDIA_MCP67_AHCI_1,
@@ -144,6 +147,15 @@ ahci_ati_sb600_attach(device_t dev)
 				 revid, 4);
 		pci_write_config(dev, AHCI_PCI_ATI_SB600_MAGIC, magic, 4);
 	}
+
+	sc->sc_flags |= AHCI_F_IGN_FR;
+	return (ahci_pci_attach(dev));
+}
+
+static int
+ahci_ati_sb700_attach(device_t dev)
+{
+	struct ahci_softc *sc = device_get_softc(dev);
 
 	sc->sc_flags |= AHCI_F_IGN_FR;
 	return (ahci_pci_attach(dev));
