@@ -24,19 +24,19 @@
     FUNCTION
 
         Starts DOS scripts from Workbench. In order to use it you need an icon for
-	your script. Set 'IconX' as default tool.
+        your script. Set 'IconX' as default tool.
 
     INPUTS
 
         FILE - The script filename to execute.
-	
+        
         Tooltypes for script icon:
-	    WINDOW	      -- Specification of the shell window
-	                         default: con:0/50//80/IconX/Auto
-	    STACK=n           -- default: 40960
-	    USERSHELL=YES|NO  -- default: YES
-	    WAIT=n            -- Wait n seconds before closing window (default 2)
-	    DELAY=n           -- Wait n/50 seconds before closing window
+            WINDOW            -- Specification of the shell window
+                                 default: con:0/50//80/IconX/Auto
+            STACK=n           -- default: 40960
+            USERSHELL=YES|NO  -- default: YES
+            WAIT=n            -- Wait n seconds before closing window (default 2)
+            DELAY=n           -- Wait n/50 seconds before closing window
 
     RESULT
 
@@ -49,7 +49,7 @@
     SEE ALSO
 
         Execute
-	
+        
     INTERNALS
 
     HISTORY
@@ -86,10 +86,10 @@ void displayMsg(LONG code)
 {
     if (code)
     {
-	Fault(code, "IconX", errbuffer, sizeof(errbuffer));
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", errbuffer, "OK"};
-	EasyRequest(0, &es, 0);
+        Fault(code, "IconX", errbuffer, sizeof(errbuffer));
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+            "Error", errbuffer, "OK"};
+        EasyRequest(0, &es, 0);
     }
 }
 
@@ -185,7 +185,7 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
     {
         /*-- Build command line --------------------------------------------*/
         buffer[0] = '\0';
-	/* Please read the long comment about C:Run and quotes above */
+        /* Please read the long comment about C:Run and quotes above */
         strcat(buffer, "C:Run QUIET EXECUTE \"\"");
 
         for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
@@ -235,15 +235,15 @@ int main(int argc, char **argv)
 
     if (argc != 0)
     {
-	displayMsg(ERROR_REQUIRED_ARG_MISSING);
-	goto exit;
+        displayMsg(ERROR_REQUIRED_ARG_MISSING);
+        goto exit;
     }
 
     struct WBStartup *startup = (struct WBStartup *) argv;
     if (startup->sm_NumArgs < 2)
     {
-	displayMsg(ERROR_REQUIRED_ARG_MISSING);
-	goto exit;
+        displayMsg(ERROR_REQUIRED_ARG_MISSING);
+        goto exit;
     }
     
     D(bug("[IconX] startup->sm_NumArgs: %d\n", startup->sm_NumArgs));
@@ -257,51 +257,51 @@ int main(int argc, char **argv)
     dobj = GetDiskObject(filename);
     if (dobj == NULL)
     {
-	struct EasyStruct es = {sizeof(struct EasyStruct), 0,
-	    "Error", "IconX\nGetDiskObject failed for:\n%s", "OK"};
-	EasyRequest(0, &es, 0, filename);
-	goto exit;
+        struct EasyStruct es = {sizeof(struct EasyStruct), 0,
+            "Error", "IconX\nGetDiskObject failed for:\n%s", "OK"};
+        EasyRequest(0, &es, 0, filename);
+        goto exit;
     }
 
     if (dobj->do_Type == WBPROJECT)
     {
-	const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
-	STRPTR s;
-	if ((s = FindToolType(toolarray, "WINDOW")))
-	{
-	    ixWindow = s;
-	}
-	if ((s = FindToolType(toolarray, "STACK")))
-	{
-	    ixStack = atol(s);
-	}
-	if ((s = FindToolType(toolarray, "USERSHELL")))
-	{
-	    if (MatchToolValue(s, "NO"))
-	    {
-		ixUShell = FALSE;
-	    }
-	}
-	if ((s = FindToolType(toolarray, "WAIT")))
-	{
-	    ixWait += atol(s) * 50;
-	}
-	if ((s = FindToolType(toolarray, "DELAY")))
-	{
-	    ixWait += atol(s);
-	}
+        const STRPTR *toolarray = (const STRPTR *)dobj->do_ToolTypes;
+        STRPTR s;
+        if ((s = FindToolType(toolarray, "WINDOW")))
+        {
+            ixWindow = s;
+        }
+        if ((s = FindToolType(toolarray, "STACK")))
+        {
+            ixStack = atol(s);
+        }
+        if ((s = FindToolType(toolarray, "USERSHELL")))
+        {
+            if (MatchToolValue(s, "NO"))
+            {
+                ixUShell = FALSE;
+            }
+        }
+        if ((s = FindToolType(toolarray, "WAIT")))
+        {
+            ixWait += atol(s) * 50;
+        }
+        if ((s = FindToolType(toolarray, "DELAY")))
+        {
+            ixWait += atol(s);
+        }
     }
     else
     {
-	displayMsg(ERROR_OBJECT_WRONG_TYPE);
-	goto exit;
+        displayMsg(ERROR_OBJECT_WRONG_TYPE);
+        goto exit;
     }
     
     if (ixWait <= 0)
-	ixWait = DEFWAIT;
+        ixWait = DEFWAIT;
 
     if (ixStack <= 4096)
-	ixStack = DEFSTACK;
+        ixStack = DEFSTACK;
     
     D(bug("wait %d stack %d usershell %d window %s\n", ixWait, ixStack, ixUShell, ixWindow));
 
@@ -309,44 +309,44 @@ int main(int argc, char **argv)
     commandLine = BuildCommandLine(startup);
     if (commandLine == NULL)
     {
-	displayMsg(IoErr());
-	goto exit;
+        displayMsg(IoErr());
+        goto exit;
     }
     D(bug("[IconX] commandLine: '%s'\n", commandLine));
 
     window  = Open(ixWindow, MODE_OLDFILE);
     if (window == BNULL)
     {
-	/* try to open default window */
-	window = Open(DEFWINDOW, MODE_OLDFILE);
+        /* try to open default window */
+        window = Open(DEFWINDOW, MODE_OLDFILE);
     }
 
     if (window)
     {
-	D(bug("[IconX] window ok\n"));
-	struct TagItem tags[] =
-	{
-	    { SYS_Asynch,      FALSE        },
-	    { SYS_Background,  TRUE         },
-	    { SYS_Input,       (IPTR)window },
-	    { SYS_Output,      (IPTR)NULL   },
-	    { SYS_Error,       (IPTR)NULL   },
-	    { SYS_UserShell,   ixUShell     },
-	    { NP_StackSize,    ixStack      },
-	    { TAG_DONE,        0            }
-	};
+        D(bug("[IconX] window ok\n"));
+        struct TagItem tags[] =
+        {
+            { SYS_Asynch,      FALSE        },
+            { SYS_Background,  TRUE         },
+            { SYS_Input,       (IPTR)window },
+            { SYS_Output,      (IPTR)NULL   },
+            { SYS_Error,       (IPTR)NULL   },
+            { SYS_UserShell,   ixUShell     },
+            { NP_StackSize,    ixStack      },
+            { TAG_DONE,        0            }
+        };
 
-	rc = SystemTagList(commandLine, tags);
-	if (rc == -1)
-	{
-	    displayMsg(IoErr());
-	    rc = RETURN_FAIL;
-	}
+        rc = SystemTagList(commandLine, tags);
+        if (rc == -1)
+        {
+            displayMsg(IoErr());
+            rc = RETURN_FAIL;
+        }
     }
     else
     {
-	displayMsg(IoErr());
-	goto exit;
+        displayMsg(IoErr());
+        goto exit;
     }
 
     Delay(ixWait);
@@ -357,7 +357,7 @@ exit:
     FreeDiskObject(dobj);
 
     if (oldlock != (BPTR)-1)
-	CurrentDir(oldlock);
+        CurrentDir(oldlock);
 
     return rc;
 }
