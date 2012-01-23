@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2009, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: IconX WB script starter
@@ -77,7 +77,9 @@
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
-const TEXT version[] = "\0$VER: IconX 41.2 (11.05.2009)";
+#define BASECOMMAND "C:Run QUIET EXECUTE "
+
+const TEXT version[] = "\0$VER: IconX 41.3 (23.1.2012)";
 int __forceerrorrequester = 1;
 static TEXT errbuffer[255];
 
@@ -148,15 +150,7 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
 {
     const struct WBStartup *wbsstate = startup;
     STRPTR                  buffer   = NULL;
-    /* 
-       As C:Run seems to "eat" the quotes around the first argument it gets,
-       let's feed it with quotes around an empty argument: it will be "eaten"
-       and the real first argument that C:Execute will get will then be
-       surrounded with quotes, which is needed when its path or name contains
-       spaces. Of course it would be better to find and fix the real bug
-       where it stands (probably dos.library/ReadArgs()).
-    */
-    ULONG                   length   = 2 /* NULL + '\n' */ + strlen("C:Run QUIET EXECUTE \"\"");
+    ULONG                   length   = 2 /* NULL + '\n' */ + strlen(BASECOMMAND);
     int i;
 
     /*-- Calculate length of resulting string ------------------------------*/
@@ -184,9 +178,7 @@ STRPTR BuildCommandLine(struct WBStartup *startup)
     if (buffer != NULL)
     {
         /*-- Build command line --------------------------------------------*/
-        buffer[0] = '\0';
-        /* Please read the long comment about C:Run and quotes above */
-        strcat(buffer, "C:Run QUIET EXECUTE \"\"");
+        strcpy(buffer, BASECOMMAND);
 
         for (i = 1 ; i < wbsstate->sm_NumArgs ; i++)
         {
