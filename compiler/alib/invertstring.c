@@ -65,10 +65,10 @@ extern struct Library *CxBase;
     struct InputEvent *ieChain = NULL;
     struct InputEvent *ie;
     struct InputEvent *first = NULL;
-    UBYTE                  ansiCode;
-    UBYTE                 *start;
+    UBYTE              ansiCode;
+    UBYTE             *start;
 
-    while(*str != '\0')
+    while(str && *str != '\0')
     {
         ie = AllocMem(sizeof(struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
         if (!ie)
@@ -115,6 +115,8 @@ extern struct Library *CxBase;
                 FreeIEvents(first);
                 return NULL;
             }
+
+            str++;
 
             break;
             
