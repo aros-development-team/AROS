@@ -192,10 +192,10 @@ void initDefaultInterpreterState(ShellState *ss);
 void popInterpreterState(ShellState *ss);
 LONG pushInterpreterState(ShellState *ss);
 
-LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
-LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
+LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase);
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase);
 LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
-LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase);
+LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase);
 LONG l2a(LONG x, STRPTR buf); /* long to ascii */
 
 void cliEcho(ShellState *ss, CONST_STRPTR args, APTR DOSBase);

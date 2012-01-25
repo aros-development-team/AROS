@@ -7,12 +7,13 @@
 #include "Shell.h"
 
 /* subsitute one script argument and leaves the input after .ket */
-LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase)
 {
     STRPTR s = in->buf + in->cur;
     STRPTR p = s;
     STRPTR q = ++s;
     LONG i;
+    BOOL scriptarg = FALSE;
 
     if (s[0] == ss->dollar && s[1] == ss->dollar && s[2] == ss->ket)
     {
@@ -23,21 +24,22 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
         return 0;
     }
 
-    if (*p == '<' && *q == '>') /* Run <>NIL: ... */
+    if (!*quoted && *p == '<' && *q == '>') /* Run <>NIL: ... */
         return convertRedir(ss, in, out, DOSBase);
 
     for (; *q != ss->ket && *q != ss->dollar && *q != '\0'; ++q)
     {
-        switch (*q)
-        {
-        case '"':
-        case ' ':
-            if (*p == '<') /* input redirection */
-                return convertRedir(ss, in, out, DOSBase);
+        if (!*quoted)
+            switch (*q)
+            {
+            case '"':
+            case ' ':
+                if (*p == '<') /* input redirection */
+                    return convertRedir(ss, in, out, DOSBase);
 
-            bufferAppend(s, q - s, out);
-            return 0;
-        }
+                bufferAppend(s, q - s, out);
+                return 0;
+            }
     }
 
     for (i = 0; i < ss->argcount; ++i)
@@ -53,6 +55,8 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 
         if (strncmp(s, a->name, len) != 0)
             continue;
+        else
+            scriptarg = TRUE;
 
         if (val)
         {
@@ -98,7 +102,13 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
         break;
     }
 
-    while (*q != '\0' && *q++ != ss->ket);
-    in->cur = q - in->buf;
+    if(scriptarg)
+    {
+        while (*q != '\0' && *q++ != ss->ket);
+        in->cur = q - in->buf;
+    }
+    else
+        bufferCopy(in, out, 1);
+
     return 0;
 }
