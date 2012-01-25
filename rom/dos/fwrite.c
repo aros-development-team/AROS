@@ -46,7 +46,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ASSERT_VALID_PTR(fh);
+    ASSERT_VALID_PTR(BADDR(fh));
     ASSERT_VALID_PTR(block);
     ASSERT(blocklen > 0);
     ASSERT(numblocks > 0);
