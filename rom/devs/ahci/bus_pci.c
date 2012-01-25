@@ -83,7 +83,7 @@ AROS_UFH3(void, ahci_PCIEnumerator_h,
         return;
     }
 
-    D(bug("[PCI-AHCI] ahci_PCIEnumerator_h: Found device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev)));
+    bug("[AHCI] Found PCI device %04x:%04x\n", pci_get_vendor(dev), pci_get_device(dev));
 
     AHCIBase->ahci_HostCount++;
     AddTail(&a->devices, (struct Node *)dev);
