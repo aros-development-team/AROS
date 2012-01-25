@@ -22,7 +22,7 @@
 /* BackTicks handling... like V45, we allow several embedded
  * commands, while V40 only allows one per line.
  */
-LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase)
 {
     Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
     LONG c = 0, error = 0, n = in->len, p = 0;

@@ -14,7 +14,7 @@
 
 #include <aros/debug.h>
 
-static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, APTR DOSBase),
+static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BOOL *, APTR DOSBase),
                         LONG a, ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
 {
     LONG c, p = 0, error, n = in->len;
@@ -31,13 +31,14 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, AP
             c = 0;
             bufferCopy(in, out, 1);
         }
-        else if (c == '"') {
+        else if (c == '"')
+        {
             quoted = !quoted;
             bufferCopy(in, out, 1);
         }
         else if (c == a)
         {
-            if ((error = (*convertItem)(ss, in, out, DOSBase)))
+            if ((error = (*convertItem)(ss, in, out, &quoted, DOSBase)))
                 return error;
         }
         else if (!quoted && c == ';')
@@ -235,7 +236,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     D(bug("[convertLine] Pass 1: on (%s)\n", in->buf));
     if ((error = convertLoop(convertBackTicks, '`', ss, in, out, DOSBase)))
     {
-        D(bug("[convertLine] Pass 1: Error %lu parsing aliases\n", error));
+        D(bug("[convertLine] Pass 1: Error %lu parsing backticks\n", error));
         return error;
     }
 
@@ -243,7 +244,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     D(bug("[convertLine] Pass 2: on (%s)\n", out->buf));
     if ((error = convertLoop(convertArg, ss->bra, ss, out, in, DOSBase)))
     {
-        D(bug("[convertLine] Pass 2: Error %lu parsing aliases\n", error));
+        D(bug("[convertLine] Pass 2: Error %lu parsing <arguments> substitution and <$$> CLI#\n", error));
         return error;
     }
 
@@ -251,7 +252,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     D(bug("[convertLine] Pass 3: on (%s)\n", in->buf));
     if ((error = convertLoop(convertVar, '$', ss, in, out, DOSBase)))
     {
-        D(bug("[convertLine] Pass 3: Error %lu parsing variable\n", error));
+        D(bug("[convertLine] Pass 3: Error %lu parsing variables\n", error));
         return error;
     }
 
@@ -270,20 +271,20 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
     error = convertLoopRedir(ss, in, out, DOSBase);
     if (error)
     {
-            D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
-            return error;
+        D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
+        return error;
     }
 
     if (out->len == 0 || out->buf[out->len-1] != '\n')
     {
-            /*
-             * Make sure that the output buffer (command arguments) ends with a newline.
-             * This is OS 3.1-compatible behavior. RunCommand() injects the supplied line
-             * into command's Input(), but doesn't append a newline. And without a newline,
-             * ReadArgs() will halt, waiting for it.
-             */
-            D(bug("[convertLine] Appending a newline\n"));
-            error = bufferAppend("\n", 1, out);
+        /*
+         * Make sure that the output buffer (command arguments) ends with a newline.
+         * This is OS 3.1-compatible behavior. RunCommand() injects the supplied line
+         * into command's Input(), but doesn't append a newline. And without a newline,
+         * ReadArgs() will halt, waiting for it.
+         */
+        D(bug("[convertLine] Appending a newline\n"));
+        error = bufferAppend("\n", 1, out);
     }
 
     D(bug("[convertLine] Result: cur %d len %d (%s)\n", out->cur, out->len, out->buf));
