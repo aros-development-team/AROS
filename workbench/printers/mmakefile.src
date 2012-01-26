@@ -1,0 +1,11 @@
+include $(TOP)/config/make.cfg
+
+FILES := postscript
+
+USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__
+
+%build_module_simple mmake=workbench-printers-ps modname=PostScript \
+                     modtype=printer files="$(FILES)" \
+                     uselibs=rom
+
+%common
