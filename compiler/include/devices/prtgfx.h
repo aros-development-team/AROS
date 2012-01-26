@@ -33,53 +33,53 @@ union colorEntry
 
 struct PrtInfo
 {
-    LONG		(*pi_render)();
-    struct RastPort 	 *pi_rp;
-    struct RastPort 	 *pi_temprp;
-    UWORD   	    	 *pi_RowBuf;
-    UWORD   	    	 *pi_HamBuf;
-    union colorEntry 	 *pi_ColorMap;
-    union colorEntry 	 *pi_ColorInt;
-    union colorEntry 	 *pi_HamInt;
-    union colorEntry 	 *pi_Dest1Int;
-    union colorEntry 	 *pi_Dest2Int;
-    UWORD   	    	 *pi_ScaleX;
-    UWORD   	    	 *pi_ScaleXAlt;
-    UBYTE   	    	 *pi_dmatrix;
-    UWORD   	    	 *pi_TopBuf;
-    UWORD   	    	 *pi_BotBuf;
+    LONG		(*pi_render)();         /* PRIVATE */
+    struct RastPort 	 *pi_rp;                /* PRIVATE */
+    struct RastPort 	 *pi_temprp;            /* PRIVATE */
+    UWORD   	    	 *pi_RowBuf;            /* PRIVATE */
+    UWORD   	    	 *pi_HamBuf;            /* PRIVATE */
+    union colorEntry 	 *pi_ColorMap;          /* PRIVATE */
+    union colorEntry 	 *pi_ColorInt;      /* Colors for the row */
+    union colorEntry 	 *pi_HamInt;            /* PRIVATE */
+    union colorEntry 	 *pi_Dest1Int;          /* PRIVATE */
+    union colorEntry 	 *pi_Dest2Int;          /* PRIVATE */
+    UWORD   	    	 *pi_ScaleX;        /* Array of X scale values */
+    UWORD   	    	 *pi_ScaleXAlt;         /* PRIVATE */
+    UBYTE   	    	 *pi_dmatrix;       /* Pointer to dither matrix */
+    UWORD   	    	 *pi_TopBuf;            /* PRIVATE */
+    UWORD   	    	 *pi_BotBuf;            /* PRIVATE */
 
-    UWORD		  pi_RowBufSize;
-    UWORD		  pi_HamBufSize;
-    UWORD		  pi_ColorMapSize;
-    UWORD		  pi_ColorIntSize;
-    UWORD		  pi_HamIntSize;
-    UWORD		  pi_Dest1IntSize;
-    UWORD		  pi_Dest2IntSize;
-    UWORD		  pi_ScaleXSize;
-    UWORD		  pi_ScaleXAltSize;
+    UWORD		  pi_RowBufSize;        /* PRIVATE */
+    UWORD		  pi_HamBufSize;        /* PRIVATE */
+    UWORD		  pi_ColorMapSize;      /* PRIVATE */
+    UWORD		  pi_ColorIntSize;      /* PRIVATE */
+    UWORD		  pi_HamIntSize;        /* PRIVATE */
+    UWORD		  pi_Dest1IntSize;      /* PRIVATE */
+    UWORD		  pi_Dest2IntSize;      /* PRIVATE */
+    UWORD		  pi_ScaleXSize;        /* PRIVATE */
+    UWORD		  pi_ScaleXAltSize;     /* PRIVATE */
 
-    UWORD		  pi_PrefsFlags;
-    ULONG		  pi_special;
-    UWORD		  pi_xstart;
-    UWORD		  pi_ystart;
-    UWORD		  pi_width;
-    UWORD		  pi_height;
-    ULONG		  pi_pc;
-    ULONG		  pi_pr;
-    UWORD		  pi_ymult;
-    UWORD		  pi_ymod;
-    WORD		  pi_ety;
-    UWORD		  pi_xpos;
-    UWORD		  pi_threshold;
-    UWORD		  pi_tempwidth;
-    UWORD		  pi_flags;
+    UWORD		  pi_PrefsFlags;        /* PRIVATE */
+    ULONG		  pi_special;           /* PRIVATE */
+    UWORD		  pi_xstart;            /* PRIVATE */
+    UWORD		  pi_ystart;            /* PRIVATE */
+    UWORD		  pi_width;         /* Source width */
+    UWORD		  pi_height;        /* Source height */
+    ULONG		  pi_pc;                /* PRIVATE */
+    ULONG		  pi_pr;                /* PRIVATE */
+    UWORD		  pi_ymult;             /* PRIVATE */
+    UWORD		  pi_ymod;              /* PRIVATE */
+    WORD		  pi_ety;               /* PRIVATE */
+    UWORD		  pi_xpos;          /* Offset of the line */
+    UWORD		  pi_threshold;     /* Theshold from Preferences */
+    UWORD		  pi_tempwidth;         /* PRIVATE */
+    UWORD		  pi_flags;             /* PRIVATE */
 
     /* New in V44 */
-    UWORD   	    	 *pi_ReduceBuf;
-    UWORD	    	  pi_ReduceBufSize;
-    struct Hook      	 *pi_SourceHook;
-    ULONG   	    	 *pi_InvertHookBuf;
+    UWORD   	    	 *pi_ReduceBuf;         /* PRIVATE */
+    UWORD	    	  pi_ReduceBufSize;     /* PRIVATE */
+    struct Hook      	 *pi_SourceHook;        /* PRIVATE */
+    ULONG   	    	 *pi_InvertHookBuf;     /* PRIVATE */
 };
 
 

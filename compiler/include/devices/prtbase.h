@@ -184,7 +184,7 @@ struct PrinterExtendedData
 				     BYTE *current_line_spacing,
 				     BYTE *crlf_flag,
 				     UBYTE params[]);
-    LONG    	    (*ped_Render)(LONG ct, LONG x, LONG y, LONG status);
+    LONG    	    (*ped_Render)(SIPTR ct, LONG x, LONG y, LONG status);
     LONG    	      ped_TimeoutSecs;
     STRPTR  	     *ped_8BitChars;
     LONG    	      ped_PrintMode;
