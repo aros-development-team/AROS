@@ -1124,6 +1124,9 @@ ifeq ($(BD_MODDIR),)
   ifeq (%(modtype),hidd)
     BD_MODDIR  := $(AROS_DRIVERS)
   endif
+  ifeq (%(modtype),printer)
+    BD_MODDIR  := $(AROS_PRINTERS)
+  endif
 endif
 ifeq ($(BD_MODDIR),)
   $(error Don't know where to put the file for modtype %(modtype). Specify moduledir=)
@@ -1143,8 +1146,13 @@ ifeq (%(modtype),handler)
 BD_MODULE := $(BD_MODDIR)/%(modname)-%(modtype)
 BD_PKGMOD := $(PKGDIR)/%(modname)-%(modtype)
 else
+ifeq (%(modtype),printer)
+BD_MODULE := $(BD_MODDIR)/%(modname)
+BD_PKGMOD := $(PKGDIR)/%(modname)
+else
 BD_MODULE := $(BD_MODDIR)/%(modname).%(modtype)
 BD_PKGMOD := $(PKGDIR)/%(modname).%(modtype)
+endif
 endif
 BD_KOBJ   := $(KOBJSDIR)/%(modname)_%(modtype).o
 
