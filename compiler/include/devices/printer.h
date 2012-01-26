@@ -192,35 +192,35 @@ struct IODRPTagsReq
     struct TagItem  *io_TagList;
 };
 
-#define SPECIAL_MILCOLS	    	0x0001
-#define SPECIAL_MILROWS	    	0x0002
-#define SPECIAL_FULLCOLS    	0x0004
-#define SPECIAL_FULLROWS    	0x0008
-#define SPECIAL_FRACCOLS    	0x0010
-#define SPECIAL_FRACROWS    	0x0020
-#define SPECIAL_CENTER	    	0x0040
-#define SPECIAL_ASPECT	    	0x0080
-#define SPECIAL_DENSITY1    	0x0100
+#define SPECIAL_MILCOLS	    	0x0001          /* io_DestCols are in 1/1000" */
+#define SPECIAL_MILROWS	    	0x0002          /* io_DestRows are in 1/1000" */
+#define SPECIAL_FULLCOLS    	0x0004          /* ignore io_DestCols */
+#define SPECIAL_FULLROWS    	0x0008          /* ignore io_DestRows */
+#define SPECIAL_FRACCOLS    	0x0010          /* io_DestCols is a 32-bit fraction of FULLCOLS */
+#define SPECIAL_FRACROWS    	0x0020          /* io_DestRows is a 32-bit fraction of FULLROWS */
+#define SPECIAL_CENTER	    	0x0040          /* Center image on paper */
+#define SPECIAL_ASPECT	    	0x0080          /* Correct aspect ratio */
+#define SPECIAL_DENSITY1    	0x0100          /* Lowest DPI */
 #define SPECIAL_DENSITY2    	0x0200
 #define SPECIAL_DENSITY3    	0x0300
 #define SPECIAL_DENSITY4    	0x0400
 #define SPECIAL_DENSITY5    	0x0500
 #define SPECIAL_DENSITY6    	0x0600
-#define SPECIAL_DENSITY7    	0x0700
-#define SPECIAL_NOFORMFEED  	0x0800
-#define SPECIAL_TRUSTME	    	0x1000
-#define SPECIAL_NOPRINT	    	0x2000
+#define SPECIAL_DENSITY7    	0x0700          /* Highest DPI */
+#define SPECIAL_NOFORMFEED  	0x0800          /* Don't eject paper after raster has rendered */
+#define SPECIAL_TRUSTME	    	0x1000          /* Don't clear after raster has rendered */
+#define SPECIAL_NOPRINT	    	0x2000          /* Don't actually print the raster */
 
-#define PDERR_NOERR	    	0
-#define PDERR_CANCEL		1
-#define PDERR_NOTGRAPHICS	2
-#define PDERR_INVERTHAM		3   /* obsolete */
-#define PDERR_BADDIMENSION	4
-#define PDERR_DIMENSIONOVFLOW	5   /* obsolete */
-#define PDERR_INTERNALMEMORY	6
-#define PDERR_BUFFERMEMORY	7
-#define PDERR_TOOKCONTROL	8
-#define PDERR_BADPREFERENCES	9
+#define PDERR_NOERR	    	0               /* No error */
+#define PDERR_CANCEL		1               /* User cancelled the print */
+#define PDERR_NOTGRAPHICS	2               /* Printer can't print graphics */
+#define PDERR_INVERTHAM		3               /* obsolete */
+#define PDERR_BADDIMENSION	4               /* Bad printing dimensions */
+#define PDERR_DIMENSIONOVFLOW	5               /* obsolete */
+#define PDERR_INTERNALMEMORY	6               /* No memory for internal variables */
+#define PDERR_BUFFERMEMORY	7               /* No memory for the output buffer */
+#define PDERR_TOOKCONTROL	8               /* (internal) Driver rendered everything in Render Phase 0 */
+#define PDERR_BADPREFERENCES	9               /* Bad preferences */
 
 #define PDERR_LASTSTANDARD	31
 #define PDERR_FIRSTCUSTOM	32
