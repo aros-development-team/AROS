@@ -2,7 +2,7 @@
 #define __WORKBENCH_INTERN_H__
 
 /*
-    Copyright  1995-2006, The AROS Development Team. All rights reserved.
+    Copyright  1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Internal header file for workbench.library.
@@ -84,17 +84,25 @@ struct WorkbenchBase
 
 struct AppIcon
 {
-    struct Node        ai_Node;
+    struct MinNode     ai_Node;
+    UWORD              ai_AppID;
+    UWORD              ai_Type;
 
     ULONG              ai_ID;
     IPTR               ai_UserData;
 
-    ULONG              ai_Flags;
-    CONST_STRPTR       ai_Text;
+    struct MsgPort    *ai_MsgPort;
+
     struct DiskObject *ai_DiskObject;
 
+    APTR               ai_Dummy[3]; // Scalos has some private fields after the object
+
+    // don't change above elements to keep compatibility with Scalos
+
+    ULONG              ai_Flags;
+    CONST_STRPTR       ai_Text;
+
     struct Hook       *ai_RenderHook;
-    struct MsgPort    *ai_MsgPort;
 };
 
 /* Valid values for ai_Flags. These correspond to the tag items
@@ -116,15 +124,22 @@ struct AppIcon
 
 struct AppWindow
 {
-    struct Node     aw_Node;
+    struct MinNode  aw_Node;
+    UWORD           aw_AppID;
+    UWORD           aw_Type;
 
     ULONG           aw_ID;
     IPTR            aw_UserData;
 
-    struct Window  *aw_Window;
-    struct List     aw_DropZones;   // List of AppWindowDropZones for this AppWindow.
-
     struct MsgPort *aw_MsgPort;
+
+    struct Window  *aw_Window;
+
+    APTR            aw_Dummy[3]; // Scalos has some private fields after the object
+
+    // don't change above elements to keep compatibility with Scalos
+
+    struct List     aw_DropZones;   // List of AppWindowDropZones for this AppWindow.
 };
 
 #define  AWDZFlag_fix        0	/* IBox value is actual coordinate */
@@ -155,15 +170,22 @@ struct AppWindowDropZone
 
 struct AppMenuItem
 {
-    struct Node     ami_Node;
+    struct MinNode  aw_Node;
+    UWORD           aw_AppID;
+    UWORD           aw_Type;
 
     ULONG           ami_ID;
     IPTR            ami_UserData;
 
-    STRPTR          ami_Text;
-    STRPTR          ami_CommandKey;
-
     struct MsgPort *ami_MsgPort;
+
+    STRPTR          ami_Text;
+
+    APTR            ami_Dummy[3]; // Scalos has some private fields after the object
+
+    // don't change above elements to keep compatibility with Scalos
+
+    STRPTR          ami_CommandKey;
 };
 
 /* Internal WBHM structure, used to hold data which the user doesn't
