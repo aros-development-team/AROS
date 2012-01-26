@@ -1,0 +1,13 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- workbench-devs-common: workbench-devs-printtofile
+
+#MM- workbench-devs-quick: workbench-devs-printtofile-quick
+
+%build_module mmake=workbench-devs-printtofile \
+  modname=printtofile modtype=device \
+  files=printtofile \
+  uselibs="rom"
+
+%common
