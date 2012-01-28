@@ -54,7 +54,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
 
 /**************************************************************************/
 /*

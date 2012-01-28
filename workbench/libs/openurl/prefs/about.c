@@ -25,7 +25,7 @@
 #define CATCOMP_NUMBERS
 #include "locale.h"
 
-#include <SDI/SDI_hook.h>
+#include "SDI_hook.h"
 
 #include "version.h"
 

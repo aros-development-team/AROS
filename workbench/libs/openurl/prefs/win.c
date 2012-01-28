@@ -27,7 +27,7 @@
 
 #include <libraries/openurl.h>
 
-#include <SDI/SDI_hook.h>
+#include "SDI_hook.h"
 #include "macros.h"
 
 #include "debug.h"
