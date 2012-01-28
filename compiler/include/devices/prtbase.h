@@ -177,7 +177,7 @@ struct PrinterExtendedData
     ULONG   	      ped_MaxYDots;
     UWORD   	      ped_XDotsInch;
     UWORD   	      ped_YDotsInch;
-    STRPTR  	    **ped_Commands;
+    STRPTR  	     *ped_Commands;
     LONG    	    (*ped_DoSpecial)(UWORD *command,
     	    	    		     UBYTE output_buffer[],
 				     BYTE *current_line_position,
