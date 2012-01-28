@@ -5,7 +5,6 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
-#define DEBUG 1
 #include <aros/debug.h>
 #include <clib/alib_protos.h>
 #include <devices/printer.h>
@@ -42,6 +41,186 @@ static struct TagItem PED_TagList[] = {
     { TAG_END }
 };
 
+static CONST_STRPTR PED_Commands[] = {
+    "\377",                             /*  0 aRIS   (reset) */
+    "",                                 /*  1 aRIN   (initialize) */
+    "\n",                               /*  2 aIND   (linefeed) */
+    "\r\n",                             /*  3 aNEL   (CR/LF) */
+    "\377",                             /*  4 aRI    (reverse LF) */
+    "\377",                             /*  5 aSGR0  (Courier) */
+    "\377",                             /*  6 aSGR3  (italics) */
+    "\377",                             /*  7 aSGR23 (no italics) */
+    "\377",                             /*  8 aSGR4  (underline) */
+    "\377",                             /*  9 aSGR24 (no underline) */
+    "\377",                             /* 10 aSGR1  (boldface) */
+    "\377",                             /* 11 aSGR21 (no boldface) */
+    "\377",                             /* 12 aSFC   (set text color) */
+    "\377",                             /* 13 aSBC   (set background color) */
+    "\377",                             /* 14 aSHORP0 (normal pitch) */
+    "\377",                             /* 15 aSHORP2 (elite) */
+    "\377",                             /* 16 aSHORP1 (no elite) */
+    "\377",                             /* 17 aSHORP4 (condensed) */
+    "\377",                             /* 18 aSHORP3 (no condensed) */
+    "\377",                             /* 19 aSHORP6 (enlarge) */
+    "\377",                             /* 20 aSHORT5 (no enlarge) */
+    "\377",                             /* 21 aDEN6   (shadow) */ 
+    "\377",                             /* 22 aDEN5   (no shadow) */
+    "\377",                             /* 23 aDEN4   (double strike) */
+    "\377",                             /* 24 aDEN3   (no double strike) */
+    "\377",                             /* 25 aDEN2   (NLQ) */
+    "\377",                             /* 26 aDEN1   (no NLQ) */
+    "\377",                             /* 27 aSUS2   (superscript) */
+    "\377",                             /* 28 aSUS1   (no superscript) */
+    "\377",                             /* 29 aSUS4   (subscript) */
+    "\377",                             /* 30 aSUS3   (no subscript) */
+    "\377",                             /* 31 aSUS0   (normal) */
+    "\377",                             /* 32 aPLU    (partial line up) */
+    "\377",                             /* 33 aPLD    (partial line down) */
+    "\377",                             /* 34 aFNT0   (Courier) */
+    "\377",                             /* 35 aFNT1   (Helvetica) */
+    "\377",                             /* 36 aFNT2   (Font 2) */
+    "\377",                             /* 37 aFNT3   (Font 3) */
+    "\377",                             /* 38 aFNT4   (Font 4) */
+    "\377",                             /* 39 aFNT5   (Font 5) */
+    "\377",                             /* 40 aFNT6   (Font 6) */
+    "\377",                             /* 41 aFNT7   (Font 7) */
+    "\377",                             /* 42 aFNT8   (Font 8) */
+    "\377",                             /* 43 aFNT9   (Font 9) */
+    "\377",                             /* 44 aFNT10  (Font 10) */
+    "\377",                             /* 45 aPROP2  (proportional) */
+    "\377",                             /* 46 aPROP1  (no proportional) */
+    "\377",                             /* 47 aPROP0  (default proportion) */
+    "\377",                             /* 48 aTSS    (set proportional offset) */
+    "\377",                             /* 49 aJFY5   (left justify) */
+    "\377",                             /* 50 aJFY7   (right justify) */
+    "\377",                             /* 51 aJFY6   (full justify) */
+    "\377",                             /* 52 aJFY0   (no justify) */
+    "\377",                             /* 53 aJFY3   (letter space) */
+    "\377",                             /* 54 aJFY1   (word fill) */
+    "\377",                             /* 55 aVERP0  (1/8" line spacing) */
+    "\377",                             /* 56 aVERP1  (1/6" line spacing) */
+    "\377",                             /* 57 aSLPP   (form length) */
+    "\377",                             /* 58 aPERF   (skip n perfs) */
+    "\377",                             /* 59 aPERF0  (no skip perfs) */
+    "\377",                             /* 60 aLMS    (left margin) */
+    "\377",                             /* 61 aRMS    (right margin) */
+    "\377",                             /* 62 aTMS    (top margin) */
+    "\377",                             /* 63 aBMS    (bot margin) */
+    "\377",                             /* 64 aSTBM   (top & bottom margin) */
+    "\377",                             /* 65 aSLRM   (left & right margin) */
+    "\377",                             /* 66 aCAM    (no margins) */
+    "\377",                             /* 67 aHTS    (horizontal tabs) */
+    "\377",                             /* 68 aVTS    (vertical tabs) */
+    "\377",                             /* 69 aTBC0   (clear horizontal tab) */
+    "\377",                             /* 70 aTBC3   (clear all horiz. tabs) */
+    "\377",                             /* 71 aTBC1   (clear vertical tab) */
+    "\377",                             /* 72 aTBC4   (clear all vertical tabs) */
+    "\377",                             /* 73 aTBCALL (clear all tabs) */
+    "\377",                             /* 74 aTBSALL (default tabs) */
+    "\377",                             /* 75 aEXTEND (extended chars) */
+    "\377",                             /* 76 aRAW    (next N chars are literal) */
+};
+
+static CONST_STRPTR PED_8BitChars[] = {
+
+          " ", /* SPC (160) */
+          "?", /* ! */ 
+          "?", /* c */ 
+          "?", /* £ */
+          "?", /* o */
+          "?", /* Y */
+          "|", 
+          "?", /* S */
+          "?", 
+          "?", /* Copyright */ 
+          "?", /* a */
+          "?", /* < */ 
+          "?", /* - */
+          "?", /* SHY */
+          "?", /* R */ 
+          "?", /* - */
+          "?", /* o (176) */
+          "?", /* +- */ 
+          "?", /* 2 */
+          "?", /* 3 */
+          "?", 
+          "?", /* u */ 
+          "?", /* P */ 
+          "?", /* . */
+          "?", /* , */ 
+          "?", /* 1 */
+          "?", /* o */
+          "?", /* > */
+          "?", /* 1/4 */
+          "?", /* 1/2 */
+          "?", /* 3/4 */ 
+          "?", /* ? */
+          "?", /* A' (192) */
+          "?", /* A' */ 
+          "?", /* A^ */ 
+          "?", /* A~ */ 
+          "?", /* A: */ 
+          "?", /* Ao */ 
+          "?", /* AE */ 
+          "?", /* C */
+          "?", /* E' */ 
+          "?", /* E' */ 
+          "?", /* E^ */ 
+          "?", /* E: */ 
+          "?", /* I' */ 
+          "?", /* I' */ 
+          "?", /* I^ */ 
+          "?", /* I: */
+          "?", /* D- (208) */ 
+          "?", /* N~ */ 
+          "?", /* O' */ 
+          "?", /* O' */ 
+          "?", /* O^ */ 
+          "?", /* O~ */ 
+          "?", /* O: */ 
+          "?", /* x  */
+          "?", /* 0  */ 
+          "?", /* U' */
+          "?", /* U' */
+          "?", /* U^ */ 
+          "?", /* U: */ 
+          "?", /* Y' */ 
+          "?", /* p  */ 
+          "?", /* B  */
+          "?", /* a' (224) */
+          "?", /* a' */ 
+          "?", /* a^ */ 
+          "?", /* a~ */ 
+          "?", /* a: */ 
+          "?", /* ao */ 
+          "?", /* ae */ 
+          "?", /* c */
+          "?", /* e' */ 
+          "?", /* e' */ 
+          "?", /* e^ */ 
+          "?", /* e: */ 
+          "?", /* i' */ 
+          "?", /* i' */ 
+          "?", /* i^ */ 
+          "?", /* i: */
+          "?", /* o (240) */ 
+          "?", /* n~ */ 
+          "?", /* o' */ 
+          "?", /* o' */ 
+          "?", /* o^ */ 
+          "?", /* o~ */ 
+          "?", /* o: */ 
+          "?", /* /  */
+          "?", /* 0  */ 
+          "?", /* u' */
+          "?", /* u' */
+          "?", /* u^ */ 
+          "?", /* u: */ 
+          "?", /* y' */ 
+          "?", /* p  */ 
+          "?", /* y: */
+};
+
 PRINTER_TAG(PED, 44, 0,
         .ped_PrinterName = "PostScript",
         .ped_Init = ps_Init,
@@ -51,19 +230,19 @@ PRINTER_TAG(PED, 44, 0,
 
         /* Settings for a 'graphics only' printer */
         .ped_PrinterClass = PPC_COLORGFX | PPCF_EXTENDED,
-        .ped_ColorClass = PCC_YMCB,
         .ped_MaxColumns = 0,    /* Set during render */
-        .ped_NumCharSets = 0,
+        .ped_ColorClass = PCC_BGR,
+        .ped_NumCharSets = 2,
         .ped_NumRows = 1,
         .ped_MaxXDots = 0,       /* Set during render */
         .ped_MaxYDots = 0,       /* Set during render */
         .ped_XDotsInch = 0,      /* Set during render */
         .ped_YDotsInch = 0,      /* Set during render */
-        .ped_Commands = NULL,    /* No ANSI commands */
+        .ped_Commands = (STRPTR *)PED_Commands, /* No ANSI commands */
         .ped_DoSpecial = ps_DoSpecial,
         .ped_Render = ps_Render,
-        .ped_TimeoutSecs = 10,
-        .ped_8BitChars = NULL,
+        .ped_TimeoutSecs = 1000, /* For print-to-file timeouts */
+        .ped_8BitChars = (STRPTR *)PED_8BitChars,
         .ped_PrintMode = 1,
         .ped_ConvFunc = ps_ConvFunc,
         .ped_TagList = &PED_TagList[0],
@@ -87,25 +266,114 @@ static VOID ps_Expunge(VOID)
     CloseLibrary(GfxBase);
 }
 
+static void PWrite(const char *format, ...)
+{
+    va_list args;
+    char state = 0;
+    int len = 0;
+    LONG lval = 0;
+    static char buff_a[16];
+    static char buff_b[16];
+    static char *buff = &buff_a[0];
+
+#define PFLUSH() do { \
+        PD->pd_PWrite(buff, len); \
+        if (buff == &buff_a[0]) \
+            buff = &buff_b[0]; \
+        else \
+            buff = &buff_a[0]; \
+        len = 0; \
+      } while (0)
+
+#define PUTC(c) do { \
+    buff[len++]=c; \
+    if (len >= 16) PFLUSH(); \
+  } while (0)
+
+    va_start(args, format);
+
+    for (; *format; format++) {
+        switch (state) {
+        case 0:
+            if (*format == '%') {
+                state = '%';
+            } else {
+                PUTC(*format);
+            }
+            break;
+        case '%':
+            switch (*format) {
+            case 'd':
+                lval = va_arg(args, LONG);
+                if (lval == 0)
+                    PUTC('0');
+                else {
+                    BYTE out[10];
+                    int olen = 0;
+                    if (lval < 0) {
+                        PUTC('-');
+                        lval = -lval;
+                    }
+                    do {
+                        out[olen++] = lval % 10;
+                        lval /= 10;
+                    } while (lval > 0);
+                    while (olen--) {
+                        PUTC(out[olen] + '0');
+                    }
+                }
+                break;
+            case '%':
+                PUTC('%');
+                break;
+            default:
+                PUTC('?');
+                break;
+            }
+            state = 0;
+            break;
+        default:
+            state = 0;
+            break;
+        }
+    }
+
+    va_end(args);
+
+    PFLUSH();
+}
+
+static BOOL ps_HeaderSent;
+
+static void ps_SendHeader(void)
+{
+    const TEXT header[] = 
+        "%%!PS-Adobe-2.0\n"
+        "/Courier findfont 12 scalefont setfont\n"
+        "5 %d moveto gsave\n"
+        "(\\\n";
+
+    if (!ps_HeaderSent) {
+        PWrite(header, PED->ped_MaxYDots * 72 / PED->ped_YDotsInch - 36);
+        ps_HeaderSent = TRUE;
+    }
+}
+
+
 static LONG ps_Open(union printerIO *ior)
 {
     D(bug("ps_Open: ior=%p\n", ior));
+
+    ps_HeaderSent = FALSE;
+
     return 0;
 }
 
 static VOID ps_Close(union printerIO *ior)
 {
+    if (ps_HeaderSent)
+        PWrite(") show showpage grestore\n");
     D(bug("ps_Close: ior=%p\n", ior));
-}
-
-static LONG ps_DoSpecial(UWORD *command, UBYTE output_buffer[],
-                         BYTE *current_line_position,
-                         BYTE *current_line_spacing,
-                         BYTE *crlf_flag, UBYTE params[])
-{
-    D(bug("ps_DoSpecial: command=%p, output_buffer=%p, current_line_position=%p, current_line_spacing=%p, crlf_flag=%p, params=%p\n",
-                command, output_buffer,  current_line_position, current_line_spacing, crlf_flag, params));
-    return 0;
 }
 
 VOID color_get(struct ColorMap *cm,
@@ -133,84 +401,6 @@ VOID color_get(struct ColorMap *cm,
     *b = blue8;
 }
 
-static void PWrite(const char *format, ...)
-{
-    va_list args;
-    char state = 0;
-    int len = 0;
-    UBYTE bval = 0;
-    LONG lval = 0;
-    char buff[16];
-
-#define PFLUSH() do { \
-        PD->pd_PWrite(buff, len); \
-        PD->pd_PBothReady(); \
-        len = 0; \
-      } while (0)
-
-#define PUTC(c) do { \
-    buff[len++]=c; \
-    if (len >= sizeof(buff)) PFLUSH(); \
-  } while (0)
-
-    va_start(args, format);
-
-    for (; *format; format++) {
-        switch (state) {
-        case 0:
-            if (*format == '%') {
-                state = '%';
-            } else {
-                PUTC(*format);
-            }
-            break;
-        case '%':
-            switch (*format) {
-            case 'D':
-                lval = va_arg(args, LONG);
-                if (lval == 0)
-                    PUTC('0');
-                else {
-                    BYTE out[10];
-                    int olen = 0;
-                    if (lval < 0) {
-                        PUTC('-');
-                        lval = -lval;
-                    }
-                    do {
-                        out[olen++] = lval % 10;
-                        lval /= 10;
-                    } while (lval > 0);
-                    while (olen--) {
-                        PUTC(out[olen] + '0');
-                    }
-                }
-                break;
-            case 'X':
-                bval = (UBYTE)va_arg(args, ULONG);
-                PUTC("0123456789abcdef"[(bval >> 4) & 0xf]);
-                PUTC("0123456789abcdef"[(bval >> 0) & 0xf]);
-                break;
-            case '%':
-                PUTC('%');
-                break;
-            default:
-                PUTC('?');
-                break;
-            }
-            state = 0;
-            break;
-        default:
-            state = 0;
-            break;
-        }
-    }
-
-    va_end(args);
-
-    PFLUSH();
-}
-
 static LONG ps_PrintBufLen;
 
 static LONG ps_RenderInit(struct IODRPReq *io, LONG x, LONG y)
@@ -220,19 +410,20 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG x, LONG y)
            io->io_SrcX, io->io_SrcY, io->io_SrcWidth,
            io->io_SrcHeight, io->io_DestCols, io->io_DestRows));
 
+    ps_SendHeader();
+
     ps_PrintBufLen = io->io_SrcWidth;
     PD->pd_PrintBuf = AllocMem(ps_PrintBufLen * 6, MEMF_ANY);
     if (PD->pd_PrintBuf == NULL)
         return PDERR_BUFFERMEMORY;
 
     /* Write a postscript colorimage */
-    PWrite("%%!PS-Adobe-2.0\n");
-    PWrite("gsave\n");
-    PWrite("%D %D translate\n", PD->pd_Preferences.PrintXOffset * PED->ped_XDotsInch / 10 +
+    PWrite(") show grestore gsave\n");
+    PWrite("%d %d translate\n", PD->pd_Preferences.PrintXOffset * PED->ped_XDotsInch / 10 +
                                 (PED->ped_MaxXDots - x) / 2,
                                 (PED->ped_MaxYDots - y) / 2);
-    PWrite("%D %D scale\n", x, y);
-    PWrite("%D %D 8 [%D 0 0 %D 0 %D]\n",
+    PWrite("%d %d scale\n", x, y);
+    PWrite("%d %d 8 [%d 0 0 %d 0 %d]\n",
             io->io_SrcWidth, io->io_SrcHeight,
             io->io_SrcWidth, -io->io_SrcHeight, io->io_SrcHeight);
     PWrite("{<\n");
@@ -266,6 +457,7 @@ static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG x, LONG y)
 static LONG ps_RenderFlush(LONG rows)
 {
     PD->pd_PWrite(PD->pd_PrintBuf, ps_PrintBufLen * 6);
+    PD->pd_PWrite("\n", 1);
     return PDERR_NOERR;
 }
 
@@ -344,36 +536,17 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
     return PDERR_NOERR;
 }
 
-static void ps_FinishImage(void)
+static LONG ps_RenderClose(struct IODRPReq *io, ULONG flags)
 {
     if (ps_PrintBufLen) {
         PWrite(">}\nfalse 3 colorimage\n");
+        PWrite("grestore (\n");
         FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 6);
         PD->pd_PrintBuf=NULL;
         ps_PrintBufLen=0;
     }
-}
-
-static LONG ps_RenderEject(void)
-{
-    ps_FinishImage();
-
-    PWrite("grestore\n");
 
     return PDERR_NOERR;
-}
-
-static LONG ps_RenderClose(struct IODRPReq *io, ULONG flags)
-{
-    LONG err = PDERR_NOERR;
-
-    ps_FinishImage();
-
-    if (!(flags & SPECIAL_NOFORMFEED))
-        err = ps_RenderEject();
-
-
-    return err;
 }
 
 
@@ -406,10 +579,6 @@ static LONG ps_Render(SIPTR ct, LONG x, LONG y, LONG status)
         D(bug("PRS_PREINIT: ct=%p, x=0x%0x, y=%d\n", ct, x, y));
         err = ps_RenderPreInit((struct IODRPReq *)ct, x);
         break;
-    case PRS_EJECT:
-        D(bug("PRS_EJECT: ct=%p, x=0x%0x, y=%d\n", ct, x, y));
-        err = ps_RenderEject();
-        break;
     case PRS_CONVERT:
         D(bug("PRS_CONVERT: ct=%p, x=0x%0x, y=%d\n", ct, x, y));
         err = PDERR_NOERR;
@@ -427,10 +596,69 @@ static LONG ps_Render(SIPTR ct, LONG x, LONG y, LONG status)
     return err;
 }
 
+/* Text output */
+static LONG ps_DoSpecial(UWORD *command, UBYTE output_buffer[],
+                         BYTE *current_line_position,
+                         BYTE *current_line_spacing,
+                         BYTE *crlf_flag, UBYTE params[])
+{
+    D(bug("ps_DoSpecial: command=0x%04x, output_buffer=%p, current_line_position=%d, current_line_spacing=%d, crlf_flag=%d, params=%s\n",
+                *command, output_buffer,  *current_line_position, *current_line_spacing, *crlf_flag, params));
+
+    if (*command == aRIN) {
+        ps_SendHeader();
+    }
+
+    if (*command == aRIS) {
+        PD->pd_PWaitEnabled = '\375';
+    }
+
+    if (*command == aIND) {
+        strcpy(output_buffer, "\\\n) show\n"
+                /* Get current point => x=5, y=currentline */
+                    "currentpoint exch pop 5 exch moveto\n"
+                    "(\\\n");
+        return strlen(output_buffer);
+    }
+
+    if (*command == aNEL) {
+        strcpy(output_buffer, "\\\n) show\n"
+                /* Get current point => x=5, y=currentline-11 */
+                    "currentpoint exch pop 5 exch 11 sub moveto\n"
+                    "(\\\n");
+        return strlen(output_buffer);
+    }
+
+
+    return -1;
+}
+
 static LONG ps_ConvFunc(UBYTE *buf, UBYTE c, LONG crlf_flag)
 {
-    D(bug("ps_ConvFunc: buf=%p, c=%c, crlf_flag=%d\n", buf, c, crlf_flag));
-    return c;
+    D(bug("ps_ConvFunc: %p '%c' %d\n", buf, c, crlf_flag));
+
+    if (c < 0x1f || c > 0x7f)
+        return -1;
+
+    if (c == '(' || c == ')') {
+        *(buf++) = '\\';
+        *(buf++) = c;
+        *(buf++) = 0;
+        return 2;
+    }
+
+    if (c >= ' ' && c < 127) {
+        *(buf++) = c;
+        *(buf++) = 0;
+        return 1;
+    }
+
+    *(buf++) = '\\';
+    *(buf++) = ((c >> 6) & 7) + '0';
+    *(buf++) = ((c >> 3) & 7) + '0';
+    *(buf++) = ((c >> 0) & 7) + '0';
+    *(buf++) = 0;
+    return 4;
 }
 
 static LONG ps_DoPreferences(union printerIO *ior, LONG command)
