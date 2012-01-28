@@ -76,6 +76,7 @@ VOID    ArgArrayDone(VOID);
 LONG    ArgInt(UBYTE **tt, STRPTR entry, LONG defaultVal);
 STRPTR  ArgString(UBYTE **tt, STRPTR entry, STRPTR defaultstring);
 struct  InputEvent *InvertString(STRPTR str, struct KeyMap *km);
+struct  InputEvent *InvertStringForwd(STRPTR str, struct KeyMap *km);
 
 /* Graphics */
 #ifndef ObtainBestPen
