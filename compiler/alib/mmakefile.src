@@ -69,6 +69,7 @@ FILES	:= \
     hookentry \
     hotkey \
     invertstring \
+    invertstringforward \
     layoutmenuitems \
     layoutmenus \
     liballocpooled \
