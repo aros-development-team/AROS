@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -26,7 +26,10 @@ extern struct Library *CxBase;
                      )
 /*  FUNCTION
         Return a linked list of input events which would produce the string
-        'str' with the keymap 'km'.
+        'str' in the reverse order, with the keymap 'km'. To get a list of
+        events in the right order, just use InvertStringForwd(). InverString()
+        is only there to provide compatibility with the original function,
+        which indeed reversed the order of the supplied string.
 
     INPUTS
         str  --  pointer to a (NULL-terminated) string that may contain
@@ -48,12 +51,12 @@ extern struct Library *CxBase;
     NOTES
 
     EXAMPLE
-        An example string: "Hello <shift alt a>\n"
+        An example string: "\n<shift alt a> olleH"
 
     BUGS
 
     SEE ALSO
-        commodities.library/ParseIX(), FreeIEvents()
+        commodities.library/ParseIX(), InvertStringForwd(), FreeIEvents()
 
     INTERNALS
         Ought to have an extra \< for < not starting an IX expression.
@@ -62,100 +65,20 @@ extern struct Library *CxBase;
 
 ******************************************************************************/
 {
-    struct InputEvent *ieChain = NULL;
-    struct InputEvent *ie;
-    struct InputEvent *first = NULL;
-    UBYTE              ansiCode;
-    UBYTE             *start;
-
-    while(str && *str != '\0')
+    struct InputEvent *first, *second, *third, *fourth;
+    if ((first = InvertStringForwd(str, km)))
     {
-        ie = AllocMem(sizeof(struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
-        if (!ie)
+        fourth = first;
+        third = first->ie_NextEvent;
+        while (third)
         {
-            if (first) FreeIEvents(first);
-            return NULL;
+            second = first;
+            first = third;
+            third = first->ie_NextEvent;
+            first->ie_NextEvent = second;
         }
-        
-        if (!first) first = ie;
-        
-        if(ieChain != NULL)
-            ieChain->ie_NextEvent = ie;            
-        
-        ieChain = ie;
-        
-        ie->ie_Class = IECLASS_RAWKEY;
-        ie->ie_EventAddress = NULL;
-        
-        switch(*str)
-        {
-        case '\\' :
-            str++;
-            switch(*str)
-            {
-            case 't':
-                ansiCode = '\t';
-                break;
-            case 'r':
-            case 'n':
-                ansiCode = '\n';
-                break;
-            case '\\':
-                ansiCode = '\\';
-                break;
-            default  :
-                /* FIXME: What to do if "\x" comes? */
-                /* stegerg: This? */
-                ansiCode = *str;
-                break;
-            }
-
-            if(InvertKeyMap(ansiCode, ie, km) == FALSE)
-            {
-                FreeIEvents(first);
-                return NULL;
-            }
-
-            str++;
-
-            break;
-            
-        case '<' :
-            start = ++str;
-
-            while(*str && (*str != '>')) str++;
-                        
-            {
-                IX ix = {0};
-                LONG err;
-                
-                *str = '\0';            
-                err = ParseIX(start, &ix);
-                *str++ = '>';
-                
-                if (err < 0)
-                {
-                    FreeIEvents(first);
-                    return NULL;
-                }
-
-                    ie->ie_Class     = ix.ix_Class;
-                    ie->ie_Code      = ix.ix_Code;
-                    ie->ie_Qualifier = ix.ix_Qualifier;
-                }
-            break;
-            
-        default :
-            if(InvertKeyMap(*str++, ie, km) == FALSE)
-            {
-                FreeIEvents(first);
-                return NULL;
-            }
-            
-            break;
-        }
-        
+        fourth->ie_NextEvent = NULL;
     }
-
     return first;
 } /* InvertString */
+

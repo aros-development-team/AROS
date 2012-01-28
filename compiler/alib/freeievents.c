@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,7 +19,7 @@
 
 /*  FUNCTION
 
-    Frees a chain of input events allocated by InvertString().
+    Frees a chain of input events allocated by InvertString() or InvertStringForwd().
 
     INPUTS
 
@@ -35,7 +35,7 @@
 
     SEE ALSO
 
-    commodities.library/InvertString()
+    InvertString(), InvertStringForwd()
 
     INTERNALS
 
