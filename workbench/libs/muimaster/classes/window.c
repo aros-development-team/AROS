@@ -2666,12 +2666,8 @@ IPTR Window__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
 /* alternate dimensions */
 /* no change in coordinates */
-/*
-    // otigreat 02/10/2011 Commented out as this forbids
-    // MUI-windows to behave like other windows when zoomed
     data->wd_AltDim.Top = MUIV_Window_AltTopEdge_NoChange;
     data->wd_AltDim.Left = MUIV_Window_AltLeftEdge_NoChange;
-*/
 /* default to min size */
     data->wd_AltDim.Width = MUIV_Window_AltWidth_MinMax(0);
     data->wd_AltDim.Height = MUIV_Window_AltHeight_MinMax(0);
