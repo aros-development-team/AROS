@@ -26,7 +26,7 @@
 #include <workbench/startup.h>
 #endif
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
 
 struct SmartArgs
 {

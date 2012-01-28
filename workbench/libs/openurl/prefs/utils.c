@@ -20,7 +20,7 @@
 
 #include "openurl.h"
 
-#include <SDI/SDI_stdarg.h>
+#include "SDI_stdarg.h"
 #include "macros.h"
 
 #include "debug.h"

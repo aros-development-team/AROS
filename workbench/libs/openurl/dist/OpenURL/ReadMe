@@ -1,10 +1,10 @@
 Short:    OpenURL - Get that URL!
 Author:   openurl.library Open Source Team
 Uploader: Jens Langner <Jens.Langner@light-speed.de>
-Version:  7.9
+Version:  7.10
 Type:     comm/www
 Requires: AmigaOS 3.0+, MorphOS or AROS
-Replaces: comm/www/OpenURL-7.8.lha
+Replaces: comm/www/OpenURL-7.9.lha
 Architecture: ppc-amigaos >= 4.0.0; m68k-amigaos >= 3.0; ppc-morphos >= 1.4.2; i386-aros; ppc-aros; x86_64-aros
 
 Introduction

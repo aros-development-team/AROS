@@ -2,8 +2,18 @@
 openurl.library - ChangeLog
 ---------------------------
 
-$Id: ChangeLog 164 2011-04-17 21:24:16Z damato $
-$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.9/ChangeLog $
+$Id: ChangeLog 167 2011-11-26 15:36:24Z damato $
+$URL: https://openurllib.svn.sourceforge.net/svnroot/openurllib/releases/7.10/ChangeLog $
+
+#### v7.10 RELEASE #############################################################
+
+2011-11-26  Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 7.10 release preparations
+
+2011-04-19 Matthias Rustler <mrustler@gmx.de>
+
+  * misc: backport of AROS fixes.
 
 #### v7.9 RELEASE ##############################################################
 

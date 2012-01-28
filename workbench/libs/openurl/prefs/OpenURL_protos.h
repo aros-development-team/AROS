@@ -18,7 +18,7 @@
 
 ***************************************************************************/
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
 
 #ifdef __MORPHOS__
 APTR DoSuperNew(struct IClass *cl, APTR obj, ...);
