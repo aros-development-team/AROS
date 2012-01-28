@@ -598,7 +598,7 @@ static void RethinkKey(struct KeyInfo *ki)
 	{
 	    case ACTION_INSERT_TEXT:
 	    	strrev(ki->param);
-	    	if ((ki->translist = InvertString(ki->param, NULL)))
+	    	if ((ki->translist = InvertStringForwd(ki->param, NULL)))
 		{		
 	    	    if ((ki->trans = CxTranslate(ki->translist)))
 		    {
