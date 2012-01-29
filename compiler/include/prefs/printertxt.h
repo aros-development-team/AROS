@@ -18,10 +18,13 @@
 
 #define ID_PTXT MAKE_ID('P','T','X','T')
 #define ID_PUNT MAKE_ID('P','U','N','T')
+#define ID_PDEV MAKE_ID('P','D','E','V')
+#define ID_PGFX MAKE_ID('P','G','F','X')
 
 
 #define	DRIVERNAMESIZE 30
 #define DEVICENAMESIZE 32
+#define UNITNAMESIZE   32
 
 
 struct PrinterTxtPrefs
@@ -81,5 +84,11 @@ struct PrinterUnitPrefs
     UBYTE pu_DeviceName[DEVICENAMESIZE];
 };
 
+struct PrinterDeviceUnitPrefs
+{
+    LONG  pd_Reserved[4];               /* Reserved */
+    LONG  pd_UnitNum;                   /* Unit number */
+    UBYTE pd_UnitName[UNITNAMESIZE];    /* Name of the unit */
+};
 
 #endif /* PREFS_PRINTERTXT_H */
