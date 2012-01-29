@@ -134,7 +134,7 @@ typedef struct _Statistics
 {
     ULONG nFiles;
     ULONG nDirs;
-    ULONG nBlocks;
+    UQUAD nBlocks;
 } Statistics;
 
 
@@ -213,7 +213,7 @@ struct lfstruct
     STRPTR  	       flags;
     STRPTR  	       filename;
     STRPTR  	       comment;
-    ULONG   	       size;
+    UQUAD   	       size;
     ULONG   	       key;
 };
 
@@ -287,7 +287,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                     else
                     {
                         Printf("%lu", tmp);
-                    }		    
+                    }
                 }
 
                 break;
@@ -337,7 +337,21 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                     }
                     else
                     {
-                        Printf("%lu", lf->size);
+                        UQUAD filesize = lf->size;
+
+                        char buf[256];
+                        buf[255] = '\0';
+
+                        char *bufpos = &buf[254];
+
+                        do
+                        {
+                            bufpos[0] = '0' + (filesize % 10);
+                            filesize /= 10;
+                            bufpos--;
+                        } while (filesize);
+
+                        Printf("%s", &bufpos[1]);
                     }
                 }
 
@@ -447,7 +461,7 @@ int printFileData(struct AnchorPath *ap,
     BOOL    	       isDir = (ap->ap_Info.fib_DirEntryType >= 0);
     struct DateStamp  *ds = &ap->ap_Info.fib_Date;
     ULONG   	       protection = ap->ap_Info.fib_Protection;
-    ULONG   	       size = ap->ap_Info.fib_Size;
+    UQUAD   	       size = ap->ap_Info.fib_Size;
     STRPTR  	       filenote = ap->ap_Info.fib_Comment;
     LONG    	       diskKey = ap->ap_Info.fib_DiskKey;
     
@@ -459,6 +473,23 @@ int printFileData(struct AnchorPath *ap,
 
     struct DateTime dt;
 
+#if defined(ACTION_GET_FILE_SIZE64)
+    if (ap->ap_Info.fib_Size >= 0x7FFFFFFF)
+    {
+        BPTR flock = BNULL;
+        flock = Lock(filename, ACCESS_READ);
+
+        if (flock)
+        {
+            UQUAD *size_ptr = (UQUAD *)DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, flock, 0, 0, 0, 0);
+            if (size_ptr)
+            {
+                size = *size_ptr;
+            }
+            UnLock(flock);
+        }
+    }
+#endif
     /* Do the file match the time interval we are looking for?
        (ARG_SINCE and ARG_UPTO) -- any combination of these may be
        specified */
@@ -576,8 +607,21 @@ int printFileData(struct AnchorPath *ap,
                 {
                     if (0 != size)
                     {
-                        Printf("%7ld ", 
-                               block ? roundUp(size, BLOCKSIZE) : size);
+                        UQUAD filesize = block ? roundUp(size, BLOCKSIZE) : size;
+
+                        char buf[256];
+                        buf[255] = '\0';
+
+                        char *bufpos = &buf[254];
+
+                        do
+                        {
+                            bufpos[0] = '0' + (filesize % 10);
+                            filesize /= 10;
+                            bufpos--;
+                        } while (filesize);
+
+                        Printf("%s", &bufpos[1]);
                     }
                     else
                     {
