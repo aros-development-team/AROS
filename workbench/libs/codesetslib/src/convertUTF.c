@@ -41,7 +41,7 @@
 #include "lib.h"
 #include "convertUTF.h"
 
-#include <SDI/SDI_lib.h>
+#include "SDI_lib.h"
 
 #include "debug.h"
 
