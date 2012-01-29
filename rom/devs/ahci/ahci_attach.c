@@ -158,6 +158,7 @@ ahci_ati_sb700_attach(device_t dev)
 	struct ahci_softc *sc = device_get_softc(dev);
 
 	sc->sc_flags |= AHCI_F_IGN_FR;
+	sc->sc_flags |= AHCI_F_NO_PM;
 	return (ahci_pci_attach(dev));
 }
 
@@ -222,6 +223,7 @@ ahci_pci_attach(device_t dev)
 	/*
 	 * Initialize the chipset and then set the interrupt vector up
 	 */
+	device_printf(dev, "device flags 0x%x\n", sc->sc_flags);
 	error = ahci_init(sc);
 	if (error) {
 		ahci_pci_detach(dev);
@@ -235,6 +237,8 @@ ahci_pci_attach(device_t dev)
 	cap = ahci_read(sc, AHCI_REG_CAP);
 	if (sc->sc_flags & AHCI_F_NO_NCQ)
 		cap &= ~AHCI_REG_CAP_SNCQ;
+	if (sc->sc_flags & AHCI_F_NO_PM)
+		cap &= ~AHCI_REG_CAP_SPM;
 	sc->sc_cap = cap;
 
 	/*
