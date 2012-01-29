@@ -25,7 +25,7 @@
 #include <proto/graphics.h>
 #include <proto/exec.h>
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
 
 #if 0
 #define USE_OS3 (1)
