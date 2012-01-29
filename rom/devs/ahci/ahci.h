@@ -470,8 +470,9 @@ struct ahci_softc {
 
 	int			sc_flags;
 #define AHCI_F_NO_NCQ			(1<<0)
-#define AHCI_F_IGN_FR			(1<<1)
+#define AHCI_F_IGN_FR			(1<<1)  /* Ignore FIS errors */
 #define AHCI_F_INT_GOOD			(1<<2)
+#define AHCI_F_NO_PM			(1<<3)  /* Broken port multiplier */
 
 	u_int			sc_ncmds;
 
