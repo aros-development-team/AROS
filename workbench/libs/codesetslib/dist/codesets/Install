@@ -1,14 +1,15 @@
 ;
-; $VER: Install 1.1 (11.06.2010)
+; $VER: Install 1.2 (06.10.2010)
 ;
-; $Id: Install 246 2010-06-11 10:07:45Z thboeckel $
+; $Id: Install 266 2010-10-06 09:07:26Z thboeckel $
 ;
 ; History:
 ;
 ;   1.0   10.06.2010: initial release
 ;   1.1   11.06.2010: extended the final message that a reboot might be
 ;                     necessary to be able to use the just installed version.
-
+;   1.2   06.10.2010: changed the default destination path for libs depending
+;                     on the detected system
 ;----------------------------------------------------------------------------
 ; /// ***** English
 (if (= @language "english")
@@ -85,21 +86,27 @@
 ; set up the source and destination path
 (if (= #detectedSystem "os3")
     (set #LIB_source "Libs/AmigaOS3")
+    (set #LIB_dest "LIBS:")
 )
 (if (= #detectedSystem "os4")
     (set #LIB_source "Libs/AmigaOS4")
+    (set #LIB_dest "LIBS:")
 )
 (if (= #detectedSystem "mos")
     (set #LIB_source "Libs/MorphOS")
+    (set #LIB_dest "SYS:Libs")
 )
 (if (= #detectedSystem "aros-i386")
     (set #LIB_source "Libs/AROS-i386")
+    (set #LIB_dest "LIBS:")
 )
 (if (= #detectedSystem "aros-ppc")
     (set #LIB_source "Libs/AROS-ppc")
+    (set #LIB_dest "LIBS:")
 )
 (if (= #detectedSystem "aros-x86_64")
     (set #LIB_source "Libs/AROS-x86_64")
+    (set #LIB_dest "LIBS:")
 )
 
 ; ///
@@ -112,7 +119,7 @@
     (copylib
         (prompt @each-name)
         (source (tackon #LIB_source @each-name))
-        (dest "LIBS:")
+        (dest #LIB_dest)
         (confirm)
         (help @copylib-help)
     )
@@ -121,11 +128,11 @@
 (complete 66)
 
 ; copy the charset files
-(makedir "LIBS:Charsets")
+(makedir (tackon #LIB_dest "Charsets"))
 (foreach "Charsets" "#?.txt"
     (copyfiles
         (source (tackon "Charsets" @each-name))
-        (dest "LIBS:Charsets")
+        (dest (tackon #LIB_dest "Charsets"))
         (help @copyfiles-help)
     )
 )

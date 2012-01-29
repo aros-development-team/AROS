@@ -599,10 +599,47 @@ static struct LibraryHeader * LIBFUNC LibInit(REG(d0, struct LibraryHeader *base
   FreeMem((STRPTR)(LIB)-(LIB)->lib_NegSize, (ULONG)((LIB)->lib_NegSize+(LIB)->lib_PosSize))
 #endif
 
+STATIC BPTR LibDelete(struct LibraryHeader *base)
+{
+#if defined(__amigaos4__)
+  struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
+#endif
+  BPTR rc;
+
+  // make sure to restore the SysBase
+  SysBase = (APTR)base->sysBase;
+
+  // remove the library base from exec's lib list in advance
+  Remove((struct Node *)base);
+
+  // free all our private data and stuff.
+  ObtainSemaphore(&base->libSem);
+
+  // make sure we have enough stack here
+  callLibFunction(freeBase, base);
+
+  // unprotect
+  ReleaseSemaphore(&base->libSem);
+
+  #if defined(__amigaos4__) && defined(__NEWLIB__)
+  if(NewlibBase)
+  {
+    DROPINTERFACE(INewlib);
+    CloseLibrary(NewlibBase);
+    NewlibBase = NULL;
+  }
+  #endif
+
+  // make sure the system deletes the library as well.
+  rc = base->segList;
+  DeleteLibrary(&base->libBase);
+
+  return rc;
+}
+
 #if defined(__amigaos4__)
 static BPTR LibExpunge(struct LibraryManagerInterface *Self)
 {
-  struct ExecIFace *IExec = (struct ExecIFace *)(*(struct ExecBase **)4)->MainInterface;
   struct LibraryHeader *base = (struct LibraryHeader *)Self->Data.LibBase;
 #elif defined(__MORPHOS__)
 static BPTR LibExpunge(void)
@@ -632,33 +669,7 @@ static BPTR LIBFUNC LibExpunge(REG(a6, struct LibraryHeader *base))
   }
   else
   {
-    // make sure to restore the SysBase
-    SysBase = (APTR)base->sysBase;
-
-    // remove the library base from exec's lib list in advance
-    Remove((struct Node *)base);
-
-    // free all our private data and stuff.
-    ObtainSemaphore(&base->libSem);
-
-    // make sure we have enough stack here
-    callLibFunction(freeBase, base);
-
-    // unprotect
-    ReleaseSemaphore(&base->libSem);
-
-    #if defined(__amigaos4__) && defined(__NEWLIB__)
-    if(NewlibBase)
-    {
-      DROPINTERFACE(INewlib);
-      CloseLibrary(NewlibBase);
-      NewlibBase = NULL;
-    }
-    #endif
-
-    // make sure the system deletes the library as well.
-    rc = base->segList;
-    DeleteLibrary(&base->libBase);
+    rc = LibDelete(base);
   }
 
   return rc;
@@ -749,18 +760,7 @@ static BPTR LIBFUNC LibClose(REG(a6, struct LibraryHeader *base))
     // expunge the library base right now
     if(base->libBase.lib_Flags & LIBF_DELEXP)
     {
-      #if defined(__amigaos4__)
-      rc = LibExpunge(Self);
-      #elif defined(__MORPHOS__)
-      rc = LibExpunge();
-      #elif defined(__AROS__)
-      rc = AROS_LC1(BPTR, LibExpunge,
-                    AROS_LCA(struct LibraryHeader *, base, D0),
-                    struct LibraryHeader *, base, 3, Codesets
-      );
-      #else
-      rc = LibExpunge(base);
-      #endif
+      rc = LibDelete(base);
     }
   }
 

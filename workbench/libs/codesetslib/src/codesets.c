@@ -622,9 +622,9 @@ const struct CodesetAliases codesetAliases[] =
   { NULL,           NULL,                }
 };
 
-static char *matchCodesetAlias(const char *search)
+static const char *matchCodesetAlias(const char *search)
 {
-  char *result = NULL;
+  const char *result = NULL;
   size_t len = strlen(search);
   int i;
 
@@ -657,7 +657,7 @@ static char *matchCodesetAlias(const char *search)
 
     if(found == TRUE)
     {
-      result = (char *)codesetAliases[i].MIMEname;
+      result = codesetAliases[i].MIMEname;
 
       break;
     }
@@ -1577,9 +1577,9 @@ struct codeset *codesetsFind(struct codesetList *csList, const char *name)
   if(name != NULL && name[0] != '\0')
   {
     struct Node *node;
-    char *matchedName = matchCodesetAlias(name);
+    const char *matchedName;
 
-    if(matchedName != NULL)
+    if((matchedName = matchCodesetAlias(name)) != NULL)
       name = matchedName;
 
     for(node = GetHead((struct List *)csList); node != NULL; node = GetSucc(node))

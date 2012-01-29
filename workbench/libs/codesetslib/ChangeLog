@@ -5,6 +5,38 @@ codesets.library - Library for handling different codesets
 $Id$
 $URL$
 
+#### 6.13 RELEASE ########################################################
+
+2011-11-26 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 6.13 release preparations.
+
+2011-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * all/Makefile: fixed the dependency generation to respect the system specific
+    object file path.
+
+2010-12-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * codesets.c: added some "const" keywords to avoid type casts.
+
+2010-10-06 Thore Böckelmann <tboeckel@gmx.de>
+
+  * dist/Install: adapted the Installer script to respect MorphOS' default
+    location for 3rd party libraries.
+
+2010-10-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * libinit.c: make sure that removing the library during LibClose() really
+    operates on the correct base. Calling LibExpunge() on MorphOS is wrong,
+    since that takes no parameter but expects the base to be in A6. We work
+    around this by using an additional function which gets called from
+    LibClose() and LibExpunge() with the correct base pointer.
+
+2010-09-28 Thore Böckelmann <tboeckel@gmx.de>
+
+  * tools/mkrelease.sh: remove the mmakefile.src file from the distribution.
+
 #### 6.12 RELEASE ########################################################
 
 2010-09-23 Jens Langner <Jens.Langner@light-speed.de>
