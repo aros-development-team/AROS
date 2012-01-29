@@ -2,8 +2,32 @@
 MUI BetterString MCC class - ChangeLog
 --------------------------------------
 
-$Id: ChangeLog 283 2010-09-23 18:04:10Z damato $
-$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.20/ChangeLog $
+$Id: ChangeLog 290 2011-11-26 13:14:52Z damato $
+$URL: https://bstring-mcc.svn.sourceforge.net/svnroot/bstring-mcc/releases/11.21/ChangeLog $
+
+#### v11.21 RELEASE ###########################################################
+
+2011-11-26 Jens Langner <Jens.Langner@light-speed.de>
+
+  * misc: final 11.21 release preparations
+
+2011-09-12 Thore Böckelmann <tboeckel@gmx.de>
+
+  * mcc/PrintString.c: fixed the slightly wrong background drawing when 
+    gradients are being used.
+
+2011-01-04 Thore Böckelmann <tboeckel@gmx.de>
+
+  * all/Makefile: fixed the dependency generation to respect the system specific
+    object file path.
+
+2010-10-05 Thore Böckelmann <tboeckel@gmx.de>
+
+  * include/mccinit.c: make sure that removing the library during LibClose()
+    really operates on the correct base. Calling LibExpunge() on MorphOS is
+    wrong, since that takes no parameter but expects the base to be in A6. We
+    work around this by using an additional function which gets called from
+    LibClose() and LibExpunge() with the correct base pointer.
 
 #### v11.20 RELEASE ###########################################################
 

@@ -39,7 +39,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
   struct TextFont   *font     = data->Font ? data->Font : ad->mad_Font;
   struct TextExtent tExtend;
   STRPTR contents;
-  WORD x=10, y=0, width, height;
+  WORD width, height;
   WORD crsr_x=0, crsr_width=0, crsr_color=0;
   WORD dst_x, dst_y, length, offset = 0, StrLength;
   STRPTR text;
@@ -137,7 +137,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
   }
 
   muiRenderInfo(obj)->mri_RastPort = rport;
-  DoMethod(obj, MUIM_DrawBackground, x, y, width, height, dst_x, dst_y, 0L);
+  DoMethod(obj, MUIM_DrawBackground, 0, 0, _mwidth(obj), _mheight(obj), 0, 0, 0L);
   muiRenderInfo(obj)->mri_RastPort = oldrport;
 
   length = TextFit(rport, text, StrLength, &tExtend, NULL, 1, width, font->tf_YSize);
@@ -169,7 +169,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
     {
       crsr_width = width-crsr_x;
     }
-    RectFill(rport, x+offset+crsr_x, y, x+offset+crsr_x+crsr_width-1, y+font->tf_YSize-1);
+    RectFill(rport, offset+crsr_x, 0, offset+crsr_x+crsr_width-1, font->tf_YSize-1);
   }
 
   if(length)
@@ -177,7 +177,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
     UWORD newlength;
     LONG textcolor= isFlagSet(data->Flags, FLG_Active) ? data->ActiveText : data->InactiveText;
 
-    Move(rport, x+offset, y+font->tf_Baseline);
+    Move(rport, offset, font->tf_Baseline);
 
     if(BlockEnabled && textcolor != (LONG)data->MarkedTextColor)
     {
@@ -212,7 +212,7 @@ VOID PrintString(struct IClass *cl, Object *obj)
   if(fake_contents != NULL)
     SharedPoolFree(fake_contents);
 
-  BltBitMapRastPort(data->rport.BitMap, x, y, muiRenderInfo(obj)->mri_RastPort, dst_x, dst_y, width, height, 0xc0);
+  BltBitMapRastPort(data->rport.BitMap, 0, 0, muiRenderInfo(obj)->mri_RastPort, dst_x, dst_y, width, height, 0xc0);
 
   if(isFlagSet(data->Flags, FLG_Ghosted))
   {
