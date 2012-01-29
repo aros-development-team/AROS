@@ -20,7 +20,7 @@
 # from the source code of SimpleMail (http://www.sf.net/projects/simplemail)
 # with full permissions by its authors.
 #
-# $Id: Makefile 244 2010-06-10 11:25:11Z thboeckel $
+# $Id$
 #
 #***************************************************************************/
 
