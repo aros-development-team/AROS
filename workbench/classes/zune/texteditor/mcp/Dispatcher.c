@@ -32,8 +32,8 @@
 #include "locale.h"
 #include "private.h"
 
-#include <SDI/SDI_compiler.h>
-#include <SDI/SDI_hook.h>
+#include "SDI_compiler.h"
+#include "SDI_hook.h"
 
 // the main mcp dispatcher
 DISPATCHER(_DispatcherP)
