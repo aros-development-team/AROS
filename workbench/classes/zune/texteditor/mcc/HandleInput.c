@@ -942,7 +942,20 @@ IPTR mHandleInput(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 
                     if(last_x == data->CPos_X && lastline == data->actualline && DoubleClick(data->StartSecs, data->StartMicros, imsg->Seconds, imsg->Micros))
                     {
-                      if((data->DoubleClickHook && !CallHook(data->DoubleClickHook, (Object *)data->object, data->actualline->line.Contents, data->CPos_X, imsg->Qualifier)) || (!data->DoubleClickHook))
+                      BOOL handleDoubleClick;
+
+                      if(data->DoubleClickHook != NULL)
+                      {
+                        // we have a user defined hook, let this one decide
+                        handleDoubleClick = CallHook(data->DoubleClickHook, data->object, data->actualline->line.Contents, data->CPos_X, imsg->Qualifier);
+                      }
+                      else
+                      {
+                        // no hook function, handle this double click
+                        handleDoubleClick = TRUE;
+                      }
+
+                      if(handleDoubleClick != FALSE)
                       {
                         if(CheckSep(data, data->actualline->line.Contents[data->CPos_X]) == FALSE)
                         {
