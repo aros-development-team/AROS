@@ -226,7 +226,16 @@ BOOL FileNameComplete (Object *obj, BOOL backwards, struct InstData *data)
           dl = LockDosList(LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS);
           while((dl = NextDosEntry(dl, LDF_READ|LDF_DEVICES|LDF_VOLUMES|LDF_ASSIGNS)) != NULL)
           {
+          #ifdef __AROS__
             strlcpy(tmpBuffer, AROS_BSTR_ADDR(dl->dol_Name), AROS_BSTR_strlen(dl->dol_Name));
+          #else
+            // dol_Name is a BSTR, we have to convert it to a regular C string
+            char *bstr = BADDR(dl->dol_Name);
+
+            // a BSTR cannot exceed 255 characters, hence the buffer size of 256 is enough in any case
+            strlcpy(tmpBuffer, &bstr[1], (unsigned char)bstr[0]);
+          #endif
+
             if(Strnicmp(tmpBuffer, data->Contents+pos, cut) == 0)
             {
               volumeName = tmpBuffer;
