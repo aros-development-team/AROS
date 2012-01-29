@@ -575,6 +575,11 @@ struct DosPacket
 
 #define ACTION_SERIALIZE_DISK 4200
 
+#define ACTION_CHANGE_FILE_POSITION64  8001
+#define ACTION_GET_FILE_POSITION64     8002
+#define ACTION_CHANGE_FILE_SIZE64      8003
+#define ACTION_GET_FILE_SIZE64         8004
+
 /* Structure for easy handling of DosPackets. DosPackets don't have to be in
    this structure, but this struture may ease the use of it. */
 struct StandardPacket
