@@ -43,7 +43,7 @@
 #include "convertUTF.h"
 #include "codepages.h"
 
-#include <SDI/SDI_stdarg.h>
+#include "SDI_stdarg.h"
 
 #include "debug.h"
 
