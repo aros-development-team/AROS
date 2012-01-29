@@ -1,6 +1,7 @@
 #ifdef __AROS__
-#error AROS requires that you include the system libraries
-#endif
+#include "libraries/muiaros.h"
+#else
+
 /***************************************************************************
 **
 ** MUI - MagicUserInterface
@@ -3098,13 +3099,13 @@ extern char MUIC_Dataspace[];
 #define MUIM_Dataspace_ReadIFF              0x80420dfb /* V11 */
 #define MUIM_Dataspace_Remove               0x8042dce1 /* V11 */
 #define MUIM_Dataspace_WriteIFF             0x80425e8e /* V11 */
-struct  MUIP_Dataspace_Add                  { STACKED ULONG MethodID; APTR data; STACKED LONG len; STACKED ULONG id; };
-struct  MUIP_Dataspace_Clear                { STACKED ULONG MethodID; };
-struct  MUIP_Dataspace_Find                 { STACKED ULONG MethodID; STACKED ULONG id; };
-struct  MUIP_Dataspace_Merge                { STACKED ULONG MethodID; Object *dataspace; };
-struct  MUIP_Dataspace_ReadIFF              { STACKED ULONG MethodID; struct IFFHandle *handle; };
-struct  MUIP_Dataspace_Remove               { STACKED ULONG MethodID; STACKED ULONG id; };
-struct  MUIP_Dataspace_WriteIFF             { STACKED ULONG MethodID; struct IFFHandle *handle; STACKED ULONG type; STACKED ULONG id; };
+struct  MUIP_Dataspace_Add                  { ULONG MethodID; APTR data; LONG len; ULONG id; };
+struct  MUIP_Dataspace_Clear                { ULONG MethodID; };
+struct  MUIP_Dataspace_Find                 { ULONG MethodID; ULONG id; };
+struct  MUIP_Dataspace_Merge                { ULONG MethodID; Object *dataspace; };
+struct  MUIP_Dataspace_ReadIFF              { ULONG MethodID; struct IFFHandle *handle; };
+struct  MUIP_Dataspace_Remove               { ULONG MethodID; ULONG id; };
+struct  MUIP_Dataspace_WriteIFF             { ULONG MethodID; struct IFFHandle *handle; ULONG type; ULONG id; };
 
 /* Attributes */
 
@@ -3556,3 +3557,5 @@ struct MUI_CustomClass
 #endif
 
 #endif /* MUI_H */
+
+#endif /* __AROS__ */
