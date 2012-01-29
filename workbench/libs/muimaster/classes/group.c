@@ -425,7 +425,7 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 	
     }
     
-    if (need_recalc)
+    if (muiRenderInfo(obj) && need_recalc)
 	DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
