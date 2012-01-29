@@ -104,29 +104,40 @@ DISPATCHER(TextEditor_Dispatcher)
 {
   switch(msg->MethodID)
   {
-    case MUIM_Show:
+    case MUIM_Setup:
     {
-      struct ColorMap *cm = muiRenderInfo(obj)->mri_Screen->ViewPort.ColorMap;
+      if(DoSuperMethodA(cl, obj, (Msg)msg))
+      {
+        struct ColorMap *cm = muiRenderInfo(obj)->mri_Screen->ViewPort.ColorMap;
 
-      cmap[0] = ObtainBestPenA(cm, 0x00<<24, 0x00<<24, 0x00<<24, NULL);
-      cmap[1] = ObtainBestPenA(cm, 0xff<<24, 0xff<<24, 0xff<<24, NULL);
-      cmap[2] = ObtainBestPenA(cm, 0xff<<24, 0x00<<24, 0x00<<24, NULL);
-      cmap[3] = ObtainBestPenA(cm, 0x00<<24, 0xff<<24, 0x00<<24, NULL);
-      cmap[4] = ObtainBestPenA(cm, 0x00<<24, 0xff<<24, 0xff<<24, NULL);
-      cmap[5] = ObtainBestPenA(cm, 0xff<<24, 0xff<<24, 0x00<<24, NULL);
-      cmap[6] = ObtainBestPenA(cm, 0x00<<24, 0x00<<24, 0xff<<24, NULL);
-      cmap[7] = ObtainBestPenA(cm, 0xff<<24, 0x00<<24, 0xff<<24, NULL);
+        cmap[0] = ObtainBestPenA(cm, 0x00<<24, 0x00<<24, 0x00<<24, NULL);
+        cmap[1] = ObtainBestPenA(cm, 0xff<<24, 0xff<<24, 0xff<<24, NULL);
+        cmap[2] = ObtainBestPenA(cm, 0xff<<24, 0x00<<24, 0x00<<24, NULL);
+        cmap[3] = ObtainBestPenA(cm, 0x00<<24, 0xff<<24, 0x00<<24, NULL);
+        cmap[4] = ObtainBestPenA(cm, 0x00<<24, 0xff<<24, 0xff<<24, NULL);
+        cmap[5] = ObtainBestPenA(cm, 0xff<<24, 0xff<<24, 0x00<<24, NULL);
+        cmap[6] = ObtainBestPenA(cm, 0x00<<24, 0x00<<24, 0xff<<24, NULL);
+        cmap[7] = ObtainBestPenA(cm, 0xff<<24, 0x00<<24, 0xff<<24, NULL);
+
+        set(obj, MUIA_TextEditor_ColorMap, cmap);
+
+        return TRUE;
+      }
+      else
+        return FALSE;
     }
     break;
 
-    case MUIM_Hide:
+    case MUIM_Cleanup:
     {
       struct ColorMap *cm = muiRenderInfo(obj)->mri_Screen->ViewPort.ColorMap;
       int c;
 
+      set(obj, MUIA_TextEditor_ColorMap, NULL);
+
       for(c = 0; c < 8; c++)
       {
-        if(cmap[c] >= 0)
+        if(cmap[c] != -1)
           ReleasePen(cm, cmap[c]);
       }
     }
@@ -134,7 +145,7 @@ DISPATCHER(TextEditor_Dispatcher)
 
     case MUIM_DragQuery:
     {
-      return(TRUE);
+      return TRUE;
     }
 
     case MUIM_DragDrop:
@@ -195,7 +206,7 @@ DISPATCHER(TextEditor_Dispatcher)
         break;
       }
 
-      if(errortxt)
+      if(errortxt != NULL)
         MUI_Request(app, window, 0L, NULL, "Continue", errortxt);
     }
     break;
@@ -332,7 +343,6 @@ int main(VOID)
                         Child, HGroup,
                           MUIA_Group_Spacing, 0,
                           Child, editorgad = NewObject(editor_mcc->mcc_Class, NULL,
-                            MUIA_TextEditor_ColorMap, cmap,
                             MUIA_CycleChain, TRUE,
                           End,
                           Child, slider = ScrollbarObject,
