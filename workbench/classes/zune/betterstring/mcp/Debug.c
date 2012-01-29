@@ -32,7 +32,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include <SDI/SDI_compiler.h>
+#include "SDI_compiler.h"
 #include "Debug.h"
 #include "version.h"
 
