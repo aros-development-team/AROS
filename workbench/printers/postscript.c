@@ -21,7 +21,7 @@ static VOID ps_Expunge(VOID);
 static LONG ps_Open(union printerIO *ior);
 static VOID ps_Close(union printerIO *ior);
 
-static LONG ps_Render(LONG ct, LONG x, LONG y, LONG status);
+static LONG ps_Render(SIPTR ct, LONG x, LONG y, LONG status);
 static LONG ps_ConvFunc(UBYTE *buf, UBYTE c, LONG crlf_flag);
 static LONG ps_DoPreferences(union printerIO *ior, LONG command);
 static VOID ps_CallErrHook(union printerIO *ior, struct Hook *hook);
