@@ -58,6 +58,10 @@ extern struct Library *MUIMasterBase;
     
 */
 
+/* Private attribute/method definitions */
+#define MUIM_Group_Insert      (MUIB_MUI|0x00424d34) /* MUI: V20 */
+struct MUIP_Group_Insert       {STACKED ULONG MethodID; STACKED Object *obj; STACKED Object *pred;};
+
 struct layout2d_elem {
     WORD min;
     WORD max;
@@ -191,6 +195,45 @@ static int Group_GetNumVisibleChildren(struct MUI_GroupData *data, struct MinLis
             num_visible_children--;
     }
     return num_visible_children;
+}
+
+/**************************************************************************
+ Handles insertion of objects - works based on fact that IDs of all methods
+ that use it are the same for Group and Family and that struct share obj at
+ same offset.
+**************************************************************************/
+struct MUIP_StructWithObj {STACKED ULONG MethodID; STACKED Object *obj;};
+
+static IPTR Group__MUIM_AddObject(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    struct MUIP_StructWithObj * msgint = (struct MUIP_StructWithObj *)msg;
+
+    DoMethodA(data->family, (Msg)msg);
+    data->num_childs++;
+
+    /* if we are in an application tree, propagate pointers */
+    if (muiNotifyData(obj)->mnd_GlobalInfo)
+    {
+        /* Only childs of groups can have parents */
+
+        if ((_flags(obj) & MADF_INVIRTUALGROUP) || (data->flags & GROUP_VIRTUAL))
+        {
+            _flags(msgint->obj) |= MADF_INVIRTUALGROUP;
+        }
+
+        muiNotifyData(msgint->obj)->mnd_ParentObject = obj;
+        DoMethod(msgint->obj, MUIM_ConnectParent, (IPTR)obj);
+    }
+
+    if (_flags(obj) & MADF_SETUP)
+    {
+        DoSetupMethod(msgint->obj, muiRenderInfo(obj));
+    }
+/*      if (_flags(obj) & MADF_CANDRAW) */
+/*          DoShowMethod(msg->opam_Object); */
+
+    return TRUE;
 }
 
 /**************************************************************************
@@ -543,58 +586,46 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
 
 /**************************************************************************
- OM_ADDMEMBER
+ MUIM_AddTail
 **************************************************************************/
-IPTR Group__OM_ADDMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
+IPTR Group__MUIM_AddTail(struct IClass *cl, Object *obj, struct MUIP_Group_AddTail *msg)
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
-
-    D(bug("Group_AddMember(0x%p, 0x%p)\n",obj, msg->opam_Object));
-
-    DoMethodA(data->family, (Msg)msg);
-    data->num_childs++;
-
-    /* if we are in an application tree, propagate pointers */
-    if (muiNotifyData(obj)->mnd_GlobalInfo)
-    {
-        /* Only childs of groups can have parents */
-        
-        if ((_flags(obj) & MADF_INVIRTUALGROUP) || (data->flags & GROUP_VIRTUAL))
-        {
-            _flags(msg->opam_Object) |= MADF_INVIRTUALGROUP;
-        }
-
-        muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
-        DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR)obj);
-    }
-
-    if (_flags(obj) & MADF_SETUP)
-    {
-        DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
-    }
-/*      if (_flags(obj) & MADF_CANDRAW) */
-/*          DoShowMethod(msg->opam_Object); */
-
-    return TRUE;
+    return Group__MUIM_AddObject(cl, obj, (Msg)msg);
 }
 
 /**************************************************************************
- OM_REMMEMBER
+ MUIM_AddHead
 **************************************************************************/
-IPTR Group__OM_REMMEMBER(struct IClass *cl, Object *obj, struct opMember *msg)
+IPTR Group__MUIM_AddHead(struct IClass *cl, Object *obj, struct MUIP_Group_AddHead *msg)
+{
+    return Group__MUIM_AddObject(cl, obj, (Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_Insert
+**************************************************************************/
+IPTR Group__MUIM_Insert(struct IClass *cl, Object *obj, struct MUIP_Group_Insert *msg)
+{
+    return Group__MUIM_AddObject(cl, obj, (Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_Remove
+**************************************************************************/
+IPTR Group__MUIM_Remove(struct IClass *cl, Object *obj, struct MUIP_Group_Remove *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
     if (_flags(obj) & MADF_CANDRAW)
-        DoHideMethod(msg->opam_Object);
+        DoHideMethod(msg->obj);
     if (_flags(obj) & MADF_SETUP)
-        DoMethod(msg->opam_Object, MUIM_Cleanup);
+        DoMethod(msg->obj, MUIM_Cleanup);
     if (muiNotifyData(obj)->mnd_GlobalInfo)
     {
-        DoMethod(msg->opam_Object, MUIM_DisconnectParent);
-        muiNotifyData(msg->opam_Object)->mnd_ParentObject = NULL;
+        DoMethod(msg->obj, MUIM_DisconnectParent);
+        muiNotifyData(msg->obj)->mnd_ParentObject = NULL;
         
-        _flags(msg->opam_Object) &= ~MADF_INVIRTUALGROUP;
+        _flags(msg->obj) &= ~MADF_INVIRTUALGROUP;
     }
 
     data->num_childs--;
@@ -2959,8 +2990,12 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
         case OM_DISPOSE:            return Group__OM_DISPOSE(cl, obj, msg);
         case OM_SET:                return Group__OM_SET(cl, obj, (struct opSet *)msg);
         case OM_GET:                return Group__OM_GET(cl, obj, (struct opGet *)msg);
-        case OM_ADDMEMBER:          return Group__OM_ADDMEMBER(cl, obj, (APTR)msg);
-        case OM_REMMEMBER:          return Group__OM_REMMEMBER(cl, obj, (APTR)msg);
+        case OM_ADDMEMBER:          /* Fall through */
+        case MUIM_Group_AddTail:    return Group__MUIM_AddTail(cl, obj, (APTR)msg);
+        case MUIM_Group_AddHead:    return Group__MUIM_AddHead(cl, obj, (APTR)msg);
+        case MUIM_Group_Insert:     return Group__MUIM_Insert(cl, obj, (APTR)msg);
+        case OM_REMMEMBER:          /* Fall through */
+        case MUIM_Group_Remove:     return Group__MUIM_Remove(cl, obj, (APTR)msg);
         case MUIM_AskMinMax:        return Group__MUIM_AskMinMax(cl, obj, (APTR)msg);
         case MUIM_Group_ExitChange: return Group__MUIM_ExitChange(cl, obj, (APTR)msg);
         case MUIM_Group_InitChange: return Group__MUIM_InitChange(cl, obj, (APTR)msg);
