@@ -861,19 +861,19 @@ IPTR IconWindowVolumeList__MUIM_IconList_Update
                 D(bug("[Wanderer:VolumeList] %s: Re-Parsing backdrop file for '%s'\n", __PRETTY_FUNCTION__, volentry->ie_IconNode.ln_Name));
 
                 /* Re-add entries which did not change and create entries for new left-out entries */
+                /* This function removes objects from leftoutlist */
                 IconWindowVolumeList__Func_ParseBackdrop(self, volentry, &leftoutList);
+            }
+        }
 
-                /* Destroy entries which where not re-added */
-                ForeachNodeSafe(&leftoutList, entry, tmpentry)
-                {
-                    if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
-                        && (entry->ie_IconListEntry.udata == volentry))
-                    {
-                        D(bug("[Wanderer:VolumeList] %s: Destroying orphaned left-out entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
-                        Remove(&entry->ie_IconNode);
-                        DoMethod(self, MUIM_IconList_DestroyEntry, entry);
-                    }
-                }
+        /* Destroy entries which where not re-added */
+        ForeachNodeSafe(&leftoutList, entry, tmpentry)
+        {
+            if ((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR))
+            {
+                D(bug("[Wanderer:VolumeList] %s: Destroying orphaned left-out entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
+                Remove(&entry->ie_IconNode);
+                DoMethod(self, MUIM_IconList_DestroyEntry, entry);
             }
         }
 
@@ -1207,20 +1207,6 @@ IPTR IconWindowVolumeList__MUIM_IconList_DestroyEntry(struct IClass *CLASS, Obje
             FreeMem((struct Wanderer_FSHandler *)volPrivate->vip_FSNotifyRequest.nr_UserData, sizeof(struct Wanderer_FSHandler));
             volPrivate->vip_FSNotifyRequest.nr_Name = NULL;
             volPrivate->vip_FSNotifyRequest.nr_UserData = (IPTR)NULL;
-        }
-
-        // Remove all the icons left out for this volume ..
-        struct List                *iconList = NULL;
-        struct IconEntry        *entry = NULL;
-
-        GET(obj, MUIA_Family_List, &iconList);
-        ForeachNode(iconList, entry)
-        {
-            if (((entry->ie_IconListEntry.type == ST_LINKFILE) || (entry->ie_IconListEntry.type == ST_LINKDIR)) && (entry->ie_IconListEntry.udata == message->entry))
-            {
-                D(bug("[Wanderer:VolumeList] %s: Removing child entry '%s'\n", __PRETTY_FUNCTION__, entry->ie_IconNode.ln_Name));
-                DoMethod(obj, MUIM_IconList_DestroyEntry, entry);
-            }
         }
     }
     else if ((message->entry->ie_IconListEntry.type == ST_LINKFILE) || (message->entry->ie_IconListEntry.type == ST_LINKDIR))
