@@ -164,9 +164,9 @@ struct PrinterData
 struct PrinterExtendedData
 {
     char    	     *ped_PrinterName;
-    VOID    	    (*ped_Init)(struct PrinterData *pd);
+    LONG    	    (*ped_Init)(struct PrinterData *pd); /* return 0 for success */
     VOID    	    (*ped_Expunge)(VOID);
-    LONG    	    (*ped_Open)(union printerIO *ior);
+    LONG    	    (*ped_Open)(union printerIO *ior);   /* return 0 for success */
     VOID    	    (*ped_Close)(union printerIO *ior);
     UBYTE   	      ped_PrinterClass;
     UBYTE   	      ped_ColorClass;
