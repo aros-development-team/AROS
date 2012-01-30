@@ -181,13 +181,13 @@ struct Preferences
 #define SHADE_COLOR	0x02
 
 /* PaperSize (All paper sizes must have a zero in the lowest nibble) */
-#define US_LETTER	0x00
-#define US_LEGAL	0x10
-#define N_TRACTOR	0x20
-#define W_TRACTOR	0x30
-#define CUSTOM		0x40
+#define US_LETTER	0x00    /*   8.5 x 11 inches */
+#define US_LEGAL	0x10    /*   8.5 x 14 inches */
+#define N_TRACTOR	0x20    /*   9.5 x 11 inches */
+#define W_TRACTOR	0x30    /* 14.86 x 11 inches */
+#define CUSTOM		0x40    /* PrintMaxWidth x PrintMaxHeight */
 
-/* European sizes */
+/* European sizes (in mm) */
 #define EURO_A0		0x50	/* A0: 841 x 1189 */
 #define EURO_A1		0x60	/* A1: 594 x 841  */
 #define EURO_A2		0x70	/* A2: 420 x 594  */
