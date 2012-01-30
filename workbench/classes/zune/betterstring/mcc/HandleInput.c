@@ -36,7 +36,7 @@
 
 #include "private.h"
 
-#include "SDI_stdarg.h"
+#include <SDI/SDI_stdarg.h>
 
 #define BlockEnabled(data)  (isFlagSet((data)->Flags, FLG_BlockEnabled) && (data)->BlockStart != (data)->BlockStop)
 
