@@ -3,7 +3,7 @@
 
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2003, The AROS Development Team.
+    Copyright © 2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -16,12 +16,18 @@
 #define MUIB_Group                 (MUIB_ZUNE | 0x00001000)
 
 /*** Methods ****************************************************************/
+#define MUIM_Group_AddHead         (MUIB_MUI|0x0042e200) /* MUI: V8 */
+#define MUIM_Group_AddTail         (MUIB_MUI|0x0042d752) /* MUI: V8 */
 #define MUIM_Group_ExitChange      (MUIB_MUI|0x0042d1cc) /* MUI: V11 */
 #define MUIM_Group_InitChange      (MUIB_MUI|0x00420887) /* MUI: V11 */
 #define MUIM_Group_Sort            (MUIB_MUI|0x00427417) /* MUI: V4  */
+#define MUIM_Group_Remove          (MUIB_MUI|0x0042f8a9) /* MUI: V8 */
+struct MUIP_Group_AddHead          {STACKED ULONG MethodID; STACKED Object *obj;};
+struct MUIP_Group_AddTail          {STACKED ULONG MethodID; STACKED Object *obj;};
 struct MUIP_Group_ExitChange       {STACKED ULONG MethodID;};
 struct MUIP_Group_InitChange       {STACKED ULONG MethodID;};
 struct MUIP_Group_Sort             {STACKED ULONG MethodID; STACKED Object *obj[1];};
+struct MUIP_Group_Remove           {STACKED ULONG MethodID; STACKED Object *obj;};
 
 #define MUIM_Group_DoMethodNoForward (MUIB_Group | 0x00000000)
 struct MUIP_Group_DoMethodNoForward  {STACKED ULONG MethodID; STACKED ULONG DoMethodID; }; /* msg stuff follows */
@@ -61,10 +67,10 @@ struct MUI_LayoutMsg
     STACKED struct MUI_MinMax  lm_MinMax;   /* here you have to place the MUILM_MINMAX results */
     struct
     {
-	STACKED LONG Width;
-	STACKED LONG Height;
-	STACKED ULONG priv5;
-	STACKED ULONG priv6;
+        STACKED LONG Width;
+        STACKED LONG Height;
+        STACKED ULONG priv5;
+        STACKED ULONG priv6;
     } lm_Layout;   /* size (and result) for MUILM_LAYOUT */
 };
 
