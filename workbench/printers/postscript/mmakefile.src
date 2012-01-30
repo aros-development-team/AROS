@@ -4,7 +4,9 @@ FILES := postscript
 
 USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__
 
-%build_module_simple mmake=workbench-printers-ps modname=PostScript \
+#MM- workbench-printers: workbench-printers-postscript
+
+%build_module_simple mmake=workbench-printers-postscript modname=PostScript \
                      modtype=printer files="$(FILES)" \
                      uselibs=rom
 

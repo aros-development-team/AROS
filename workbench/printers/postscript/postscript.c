@@ -6,17 +6,17 @@
  */
 
 #include <aros/debug.h>
+#include <aros/printertag.h>
+
 #include <clib/alib_protos.h>
 #include <devices/printer.h>
 #include <devices/prtgfx.h>
 
 #include <proto/graphics.h>
 
-#include "printers_intern.h"
-
 static struct Library *GfxBase;
 
-static VOID ps_Init(struct PrinterData *pd);
+static LONG ps_Init(struct PrinterData *pd);
 static VOID ps_Expunge(VOID);
 static LONG ps_Open(union printerIO *ior);
 static VOID ps_Close(union printerIO *ior);
@@ -221,7 +221,7 @@ static CONST_STRPTR PED_8BitChars[] = {
           "?", /* y: */
 };
 
-PRINTER_TAG(PED, 44, 0,
+AROS_PRINTER_TAG(PED, 44, 0,
         .ped_PrinterName = "PostScript",
         .ped_Init = ps_Init,
         .ped_Expunge = ps_Expunge,
@@ -252,11 +252,12 @@ PRINTER_TAG(PED, 44, 0,
 
 struct PrinterData *PD;
 
-static VOID ps_Init(struct PrinterData *pd)
+static LONG ps_Init(struct PrinterData *pd)
 {
     D(bug("ps_Init: pd=%p\n", pd));
     PD = pd;
     GfxBase = OpenLibrary("graphics.library", 0);
+    return 0;
 }
 
 static VOID ps_Expunge(VOID)
