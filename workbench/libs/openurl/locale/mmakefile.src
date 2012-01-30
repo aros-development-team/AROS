@@ -7,11 +7,12 @@ include $(TOP)/config/make.cfg
 #MM
 workbench-libs-openurl-catalogs : \
     $(AROS_CATALOGS)/deutsch/OpenURL.catalog \
-    $(AROS_CATALOGS)/français/OpenURL.catalog
-	
+    $(AROS_CATALOGS)/français/OpenURL.catalog \
+    $(AROS_CATALOGS)/polski/OpenURL.catalog
+
 # Catalogs which aren't uptodate:
-#$(TARGETDIR)/svenska/OpenURL.catalog
-#$(TARGETDIR)/italiano/OpenURL.catalog
+#$(AROS_CATALOGS)/svenska/OpenURL.catalog
+#$(AROS_CATALOGS)/italiano/OpenURL.catalog
 
 $(AROS_CATALOGS)/deutsch/OpenURL.catalog  : german.ct
 	@$(MKDIR) $(AROS_CATALOGS)/deutsch
@@ -27,6 +28,10 @@ $(AROS_CATALOGS)/svenska/OpenURL.catalog  : swedish.ct
 
 $(AROS_CATALOGS)/français/OpenURL.catalog  : french.ct
 	@$(MKDIR) $(AROS_CATALOGS)/français
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
+
+$(AROS_CATALOGS)/polski/OpenURL.catalog  : polish.ct
+	@$(MKDIR) $(AROS_CATALOGS)/polski
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/OpenURL.cd $< CATALOG=$@
 
 %common
