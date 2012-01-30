@@ -1,0 +1,19 @@
+# $Id$
+# Makefile to make Printer prefs program.
+
+include $(TOP)/config/make.cfg
+
+FILES := main locale editor prefs args misc
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+USER_CFLAGS := -DMUI_OBSOLETE
+
+#MM- workbench-prefs : workbench-prefs-printer
+#MM workbench-prefs-printer : includes linklibs workbench-prefs-printer-catalogs
+
+%build_prog mmake=workbench-prefs-printer \
+    progname=Printer targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
