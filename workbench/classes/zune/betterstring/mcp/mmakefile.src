@@ -39,7 +39,8 @@ workbench-classes-zune-betterstring-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
     $(TARGETDIR)/italiano/BetterString_mcp.catalog \
     $(TARGETDIR)/français/BetterString_mcp.catalog \
     $(TARGETDIR)/dansk/BetterString_mcp.catalog \
-    $(TARGETDIR)/russian/BetterString_mcp.catalog
+    $(TARGETDIR)/russian/BetterString_mcp.catalog \
+    $(TARGETDIR)/polski/BetterString_mcp.catalog
 
 $(LOCALE_H): locale/BetterString_mcp.cd C_h.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $(LOCALE_H)=$(SRCDIR)/$(CURDIR)/C_h.sd
@@ -73,6 +74,10 @@ $(TARGETDIR)/dansk/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.c
 
 $(TARGETDIR)/russian/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
 	@$(MKDIR) $(TARGETDIR)/russian
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/polski/BetterString_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/polish.ct
+	@$(MKDIR) $(TARGETDIR)/polski
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/BetterString_mcp.cd $< CATALOG $@
 
 %common

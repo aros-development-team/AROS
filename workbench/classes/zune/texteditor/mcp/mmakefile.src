@@ -45,7 +45,8 @@ workbench-classes-zune-texteditor-mcp-locale : $(LOCALE_C) $(LOCALE_H) \
     $(TARGETDIR)/svenska/TextEditor_mcp.catalog \
     $(TARGETDIR)/français/TextEditor_mcp.catalog \
     $(TARGETDIR)/dansk/TextEditor_mcp.catalog \
-    $(TARGETDIR)/russian/TextEditor_mcp.catalog
+    $(TARGETDIR)/russian/TextEditor_mcp.catalog \
+    $(TARGETDIR)/polski/TextEditor_mcp.catalog
 
 $(LOCALE_H): locale/TextEditor_mcp.cd C_h.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $(LOCALE_H)=$(SRCDIR)/$(CURDIR)/C_h.sd
@@ -75,6 +76,10 @@ $(TARGETDIR)/dansk/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/danish.ct
 
 $(TARGETDIR)/russian/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/russian.ct
 	@$(MKDIR) $(TARGETDIR)/russian
+	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
+
+$(TARGETDIR)/polski/TextEditor_mcp.catalog: $(SRCDIR)/$(CURDIR)/locale/polish.ct
+	@$(MKDIR) $(TARGETDIR)/polski
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/locale/TextEditor_mcp.cd $< CATALOG $@
 
 #MM
