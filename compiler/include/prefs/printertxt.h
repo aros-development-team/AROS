@@ -35,7 +35,7 @@ struct PrinterTxtPrefs
 
     UWORD pt_PaperType;
     UWORD pt_PaperSize;
-    UWORD pt_PaperLength;
+    UWORD pt_PaperLength;       /* # of lines per page */
 
     UWORD pt_Pitch;
     UWORD pt_Spacing;
@@ -65,15 +65,15 @@ struct PrinterTxtPrefs
 #define PS_EURO_A7	12
 #define PS_EURO_A8	13
 
-#define PP_PICA	 0
-#define PP_ELITE 1
-#define PP_FINE	 2
+#define PP_PICA	 0      /* 10 characters per inch */
+#define PP_ELITE 1      /* 12 characters per inch */
+#define PP_FINE	 2      /* 17.1 characters per inch */
 
-#define PS_SIX_LPI   0
-#define PS_EIGHT_LPI 1
+#define PS_SIX_LPI   0  /* 6 lines per inch */
+#define PS_EIGHT_LPI 1  /* 8 lines per inch */
 
-#define PQ_DRAFT  0
-#define PQ_LETTER 1
+#define PQ_DRAFT  0     /* Density select 0 */
+#define PQ_LETTER 1     /* Density select 1 */
 
 
 struct PrinterUnitPrefs
