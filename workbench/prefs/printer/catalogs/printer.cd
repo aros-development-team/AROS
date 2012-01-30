@@ -1,0 +1,74 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR (//)
+Can't lock public screen!
+;
+MSG_CANT_GET_DRI (//)
+Can't get DrawInfo!
+;
+MSG_CANT_GET_VI (//)
+Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET (//)
+Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS (//)
+Can't create menus!
+;
+MSG_CANT_CREATE_WIN (//)
+Can't create window!
+;
+MSG_WINTITLE (//)
+Printer Preferences
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_OPEN (//)
+O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS (//)
+A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_MEN_EDIT (//)
+Edit
+;
+MSG_MEN_EDIT_DEFAULT (//)
+D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED (//)
+L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE (//)
+R\0Restore
+;
+MSG_MEN_SETTINGS (//)
+Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS (//)
+I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE (//)
+Load Printer Preferences
+;
+MSG_ASL_SAVE_TITLE (//)
+Save Printer Preferences
+;
+MSG_OK (//)
+Ok
+;
+MSG_GAD_SAVE (//)
+Save
+;
+MSG_GAD_USE (//)
+Use
+;
+MSG_GAD_CANCEL (//)
+Cancel
+;
+;
