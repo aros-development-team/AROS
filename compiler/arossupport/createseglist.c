@@ -11,7 +11,7 @@
 struct phony_segment
 {
     ULONG Size;	/* Length of segment in # of bytes */
-    IPTR  Next;	/* Next segment (always 0 for this) */
+    BPTR  Next;	/* Next segment (always 0 for this) */
     struct FullJumpVec Code;	/* Code to jump to the offset */
 } __attribute__((packed));
 
@@ -59,7 +59,7 @@ struct phony_segment
     	return BNULL;
 
     segtmp->Size = sizeof(*segtmp);
-    segtmp->Next = (IPTR)0;
+    segtmp->Next = (BPTR)0;
     __AROS_SET_FULLJMP(&segtmp->Code, function);
 
     CacheClearE(&segtmp->Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
