@@ -481,7 +481,7 @@ int printFileData(struct AnchorPath *ap,
 
         if (flock)
         {
-            UQUAD *size_ptr = (UQUAD *)DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, flock, 0, 0, 0, 0);
+            UQUAD *size_ptr = (UQUAD *)DoPkt(((struct FileLock *)flock)->fl_Task, ACTION_GET_FILE_SIZE64, (IPTR)flock, 0, 0, 0, 0);
             if (size_ptr)
             {
                 size = *size_ptr;
