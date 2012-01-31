@@ -256,9 +256,7 @@ IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             
             return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
         }
-        case MUIA_Listview_List:
-            STORE = (IPTR)data->list;
-            break;
+        case MUIA_Listview_List: STORE = (IPTR)data->list; return 1;
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
