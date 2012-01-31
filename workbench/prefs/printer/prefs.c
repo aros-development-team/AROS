@@ -14,7 +14,6 @@
 
 #include <aros/macros.h>
 
-#define DEBUG 1 
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -94,6 +93,8 @@ BOOL Prefs_ImportFH(BPTR fh)
     };
 
 
+    D(bug("LoadPrefs: Begin\n"));
+
     if ((iff = AllocIFF()))
     {
         iff->iff_Stream = (IPTR)fh;
@@ -112,11 +113,11 @@ BOOL Prefs_ImportFH(BPTR fh)
                 {
                     struct ContextNode *cn;
 
-                    D(bug("LoadPrefs: ParseIFF okay.\n"));
-
                     cn = CurrentChunk(iff);
 
-                    if (cn->cn_Type == ID_PTXT && cn->cn_Size == sizeof(txt))
+                    D(bug("LoadPrefs: ParseIFF okay: 0x%04x 0x%04x\n", cn->cn_ID, cn->cn_Type));
+
+                    if (cn->cn_ID == ID_PTXT && cn->cn_Size == sizeof(txt))
                     {
                         D(bug("LoadPrefs: ID_PTXT chunk size okay.\n"));
                         if (ReadChunkBytes(iff, &txt, sizeof(txt)) == sizeof(txt))
@@ -126,7 +127,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                             chunk_map |= (1 << 0);
                         }
                     }
-                    if (cn->cn_Type == ID_PUNT && cn->cn_Size == sizeof(unit))
+                    if (cn->cn_ID == ID_PUNT && cn->cn_Size == sizeof(unit))
                     {
                         D(bug("LoadPrefs: ID_PUNT chunk size okay.\n"));
                         if (ReadChunkBytes(iff, &unit, sizeof(unit)) == sizeof(unit))
@@ -136,7 +137,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                             chunk_map |= (1 << 1);
                         }
                     }
-                    if (cn->cn_Type == ID_PDEV && cn->cn_Size == sizeof(devunit))
+                    if (cn->cn_ID == ID_PDEV && cn->cn_Size == sizeof(devunit))
                     {
                         D(bug("LoadPrefs: ID_PDEV chunk size okay.\n"));
                         if (ReadChunkBytes(iff, &devunit, sizeof(devunit)) == sizeof(devunit))
@@ -146,7 +147,7 @@ BOOL Prefs_ImportFH(BPTR fh)
                             chunk_map |= (1 << 2);
                         }
                     }
-                    if (cn->cn_Type == ID_PGFX && cn->cn_Size == sizeof(gfx))
+                    if (cn->cn_ID == ID_PGFX && cn->cn_Size == sizeof(gfx))
                     {
                         D(bug("LoadPrefs: ID_PGFX chunk size okay.\n"));
                         if (ReadChunkBytes(iff, &gfx, sizeof(gfx)) == sizeof(gfx))
@@ -164,6 +165,8 @@ BOOL Prefs_ImportFH(BPTR fh)
     }
 
     if (chunk_map & (1 << 0)) {
+        D(bug("LoadPrefs: PTXT\n"));
+
         IMPORT_WORD(txt.pt_PaperType); 
         IMPORT_WORD(txt.pt_PaperSize);
         IMPORT_WORD(txt.pt_PaperLength);
@@ -176,17 +179,23 @@ BOOL Prefs_ImportFH(BPTR fh)
     }
 
     if (chunk_map & (1 << 1)) {
+        D(bug("LoadPrefs: PUNT\n"));
+
         IMPORT_LONG(unit.pu_UnitNum);
         IMPORT_LONG(unit.pu_OpenDeviceFlags);
         printerprefs.pp_Unit = unit;
     }
 
     if (chunk_map & (1 << 2)) {
+        D(bug("LoadPrefs: PDEV\n"));
+
         IMPORT_LONG(devunit.pd_UnitNum);
         printerprefs.pp_DeviceUnit = devunit;
     }
 
     if (chunk_map & (1 << 3)) {
+        D(bug("LoadPrefs: PGFX\n"));
+
         IMPORT_WORD(gfx.pg_Aspect);
         IMPORT_WORD(gfx.pg_Shade);
         IMPORT_WORD(gfx.pg_Image);
@@ -198,6 +207,7 @@ BOOL Prefs_ImportFH(BPTR fh)
         printerprefs.pp_Gfx = gfx;
     }
 
+    D(bug("LoadPrefs: Done\n"));
     return (chunk_map & (1 << 0)) ? TRUE : FALSE;
 }
 
@@ -374,6 +384,8 @@ BOOL Prefs_Default(int PrinterUnit)
     struct PrinterGfxPrefs *gfx = &printerprefs.pp_Gfx;
 
     memset(&printerprefs, 0, sizeof(printerprefs));
+
+    D(bug("Prefs_Default: Unit %d\n", PrinterUnit));
 
     strcpy(txt->pt_Driver, "PostScript");
     txt->pt_Port = PP_PARALLEL;   /* Actually, unused */
