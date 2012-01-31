@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <stdio.h>      /* for sprintf */
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 #include <zune/customclasses.h>
@@ -201,7 +200,7 @@ struct PrinterEditor_DATA
     Object *pg_PrintYOffset;    /* String (integer) */
 };
 
-STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data);
+STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self);
 STATIC VOID Gadgets2PrinterPrefs(Class *CLASS, Object *self);
 
 /*** Macros *****************************************************************/
@@ -267,8 +266,8 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 /* Driver and Device page */
                 Child, (IPTR) HGroup,
                     Child, (IPTR) VGroup,
-                        Child, (IPTR) LLabel("Select Driver:"),
-                        Child, (IPTR) (ListviewObject,
+                        Child, (IPTR) CLabel("Select Driver:"),
+                        Child, (IPTR) HCenter((ListviewObject,
                             MUIA_Listview_List, (IPTR) (data->pt_DriverList = DirlistObject,                                
                                 InputListFrame,
                                 MUIA_List_Format, (IPTR) "COL=0",
@@ -277,7 +276,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Dirlist_FilesOnly, TRUE,
                                 MUIA_Dirlist_RejectIcons, TRUE,
                             End),
-                        End),
+                        End)),
                     End,
                     Child, (IPTR) BalanceObject, End,
                     Child, (IPTR) VGroup,
@@ -290,27 +289,22 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                             Child, (IPTR) (data->pt_Port = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Port,
                             End),
-                        End),
-                        Child, (IPTR) HGroup,
-                            Child, (IPTR) (data->pu_DeviceNameCustom = CheckMark(FALSE)),
-                            Child, (IPTR) Label("Custom device"),
                             Child, (IPTR)HVSpace,
-                        End,
-                        Child, (IPTR) HGroup,
-                            Child, (IPTR) Label("Device:"),
-                            Child, (IPTR) (data->pu_DeviceName = StringObject,
-                                StringFrame,
-                                MUIA_String_Format, MUIV_String_Format_Right,
-                                MUIA_String_MaxLen, DEVICENAMESIZE,
-                            End),
-                        End,
-                        Child, (IPTR) HGroup,
                             Child, (IPTR) Label("Unit:"),
                             Child, (IPTR) (data->pu_UnitNum = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
                                 MUIA_String_Accept, (IPTR)"0123456879",
                                 MUIA_String_Integer, 0,
+                            End),
+                        End),
+                        Child, (IPTR) HGroup,
+                            Child, (IPTR) (data->pu_DeviceNameCustom = CheckMark(FALSE)),
+                            Child, (IPTR) Label("Custom device:"),
+                            Child, (IPTR) (data->pu_DeviceName = StringObject,
+                                StringFrame,
+                                MUIA_String_Format, MUIV_String_Format_Right,
+                                MUIA_String_MaxLen, DEVICENAMESIZE,
                             End),
                         End,
                         Child, (IPTR)HVSpace,
@@ -368,7 +362,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_String_Integer, 0,
                             End),
                             Child, (IPTR) LLabel("Right Margin:"),
-                            Child, (IPTR) (data->pt_LeftMargin = StringObject,
+                            Child, (IPTR) (data->pt_RightMargin = StringObject,
                                 StringFrame,
                                 MUIA_String_Format, MUIV_String_Format_Right,
                                 MUIA_String_Accept, (IPTR)"0123456879",
@@ -445,17 +439,20 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
 #define PREF_NOTIFY(x, field)   DoMethod(data->x, MUIM_Notify, field, MUIV_EveryTime, \
                                          (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE)
-#define PREF_SYNC(x, field)     PREF_NOTIFY(x, field); \
+#define PREF_REFRESH(x, field)  PREF_NOTIFY(x, field); \
                                 DoMethod(data->x, MUIM_Notify, field, MUIV_EveryTime, \
-                                         (IPTR)self, 1, MUIM_PrinterEditor_SelfCheck)
+                                         (IPTR)self, 1, MUIM_PrinterEditor_Refresh)
 
-        PREF_SYNC(pd_UnitNum, MUIA_Cycle_Active);
+        /* Select a different config file */
+        DoMethod(data->pd_UnitNum, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime,
+                 (IPTR)self, 1, MUIM_PrinterEditor_Sync);
+
         PREF_NOTIFY(pd_UnitName, MUIA_String_Contents);
 
-        PREF_SYNC(pt_DriverList, MUIA_List_Active);
+        PREF_REFRESH(pt_DriverList, MUIA_List_Active);
         PREF_NOTIFY(pt_Port, MUIA_Cycle_Active);
         PREF_NOTIFY(pt_PaperType, MUIA_Cycle_Active);
-        PREF_SYNC(pt_PaperSize, MUIA_Cycle_Active);
+        PREF_REFRESH(pt_PaperSize, MUIA_Cycle_Active);
         PREF_NOTIFY(pt_PaperLength, MUIA_String_Integer);
         PREF_NOTIFY(pt_Pitch, MUIA_Cycle_Active);
         PREF_NOTIFY(pt_Spacing, MUIA_Cycle_Active);
@@ -465,7 +462,7 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
         PREF_NOTIFY(pu_UnitNum, MUIA_String_Integer);
         PREF_NOTIFY(pu_DeviceName, MUIA_String_Contents);
-        PREF_SYNC(pu_DeviceNameCustom, MUIA_Selected);
+        PREF_REFRESH(pu_DeviceNameCustom, MUIA_Selected);
 
         PREF_NOTIFY(pg_Aspect, MUIA_Cycle_Active);
         PREF_NOTIFY(pg_Shade, MUIA_Cycle_Active);
@@ -477,13 +474,19 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         PREF_NOTIFY(pg_GraphicFlags_AntiAlias, MUIA_Selected);
         PREF_NOTIFY(pg_GraphicFlags_IntScaling, MUIA_Selected);
         PREF_NOTIFY(pg_PrintDensity, MUIA_Cycle_Active);
-        PREF_SYNC(pg_MaxUnits, MUIA_Cycle_Active);
+        PREF_REFRESH(pg_MaxUnits, MUIA_Cycle_Active);
         PREF_NOTIFY(pg_PrintMaxWidth, MUIA_String_Integer);
         PREF_NOTIFY(pg_PrintMaxHeight, MUIA_String_Integer);
         PREF_NOTIFY(pg_PrintXOffset, MUIA_String_Integer);
         PREF_NOTIFY(pg_PrintYOffset, MUIA_String_Integer);
 
-        PrinterPrefs2Gadgets(data);
+        DoMethod(data->pu_DeviceNameCustom, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+                 (IPTR)data->pt_Port, 3, MUIM_Set, MUIA_Disabled, MUIV_TriggerValue);
+        DoMethod(data->pu_DeviceNameCustom, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+                 (IPTR)data->pu_DeviceName, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
+
+        printerprefs.pp_DeviceUnit.pd_UnitNum = -1;
+        DoMethod(self, MUIM_PrinterEditor_Sync);
     }
 
     return self;
@@ -513,15 +516,19 @@ static inline double fromdeci(LONG units, LONG value)
     return val;
 }
 
-STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL is_set)
+STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL from_prefs)
 {
-    struct PrinterTxtPrefs *txt = &printerprefs.pp_Txt;
-    struct PrinterGfxPrefs *gfx = &printerprefs.pp_Gfx;
     LONG width, height;
-    CONST_STRPTR str;
     char buf[64];
+    LONG pt_PaperSize;
+    
+    if (from_prefs) {
+        pt_PaperSize = printerprefs.pp_Txt.pt_PaperSize;
+    } else {
+        pt_PaperSize = XGET(data->pt_PaperSize, MUIA_Cycle_Active) << 4;
+    }
 
-    switch (txt->pt_PaperSize) {
+    switch (pt_PaperSize) {
 /* PaperSize (in deci-inches) */
     case US_LETTER: width =  85; height = 110; break;   /* 8.5"x11" */
     case US_LEGAL:  width =  85; height = 140; break;   /* 8.5"x14" */
@@ -537,32 +544,16 @@ STATIC void UpdatePrintMax (struct PrinterEditor_DATA *data, int units, BOOL is_
     case EURO_A6:   width = 105 * 100 / 254; height =  148 * 100 / 254; break;  /* A6: 105 x 148  */
     case EURO_A7:   width =  74 * 100 / 254; height =  105 * 100 / 254; break;  /* A7: 74 x 105   */
     case EURO_A8:   width =  52 * 100 / 254; height =   74 * 100 / 254; break;  /* A8: 52 x 74    */
-    case CUSTOM:
-        if (is_set) {
-            width = gfx->pg_PrintMaxWidth;
-            height = gfx->pg_PrintMaxHeight;
-        } else {
-            str = (CONST_STRPTR)XGET(data->pg_PrintMaxWidth, MUIA_String_Contents);
-            width = todeci(units, atof(str));
-            str = (CONST_STRPTR)XGET(data->pg_PrintMaxWidth, MUIA_String_Contents);
-            height = todeci(units, atof(str));
-        }
-        break;
     default:
         width = height = 0;
         break;
     }
 
-    if (!is_set) {
-        gfx->pg_PrintMaxWidth = width;
-        gfx->pg_PrintMaxHeight = height;
-    }
 
-    NNSET(data->pg_PrintMaxWidth, MUIA_Disabled, (txt->pt_PaperSize == CUSTOM) ? FALSE : TRUE);
-    NNSET(data->pg_PrintMaxHeight, MUIA_Disabled, (txt->pt_PaperSize == CUSTOM) ? FALSE : TRUE);
+    NNSET(data->pg_PrintMaxWidth, MUIA_Disabled, (pt_PaperSize == CUSTOM) ? FALSE : TRUE);
+    NNSET(data->pg_PrintMaxHeight, MUIA_Disabled, (pt_PaperSize == CUSTOM) ? FALSE : TRUE);
 
-D(bug("is_set=%d, printerprefs.pp_Txt.pt_PaperSize=%d\n", is_set, printerprefs.pp_Txt.pt_PaperSize));
-    if (is_set || printerprefs.pp_Txt.pt_PaperSize != CUSTOM) {
+    if (pt_PaperSize != CUSTOM) {
         sprintf(buf, "%.*f", (units == UI_UNITS_IN) ? 1 : 0, fromdeci(units, width));
         NNSET(data->pg_PrintMaxWidth, MUIA_String_Contents, buf);
         sprintf(buf, "%.*f", (units == UI_UNITS_IN) ? 1 : 0, fromdeci(units, height));
@@ -585,34 +576,6 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     CONST_STRPTR str;
     int units;
     BOOL custom;
-
-    if (XGET(data->pu_UnitNum, MUIA_Cycle_Active) != data->PrinterDeviceUnit) {
-        char buf[64];
-        char path[sizeof(buf) + 7]; /* ENVARC: */
-
-        int PrinterDeviceUnit = XGET(data->pu_UnitNum, MUIA_Cycle_Active);
-
-        sprintf(buf, "SYS/printer%d.prefs", PrinterDeviceUnit);
-        str = (PrinterDeviceUnit ? buf : "SYS/printer.prefs");
-        NNSET(self, MUIA_PrefsEditor_Path, (IPTR) str);
-        /*-- Reload preferences --*/
-        sprintf(path, "ENV:%s", str);
-        if (!DoMethod(self, MUIM_PrefsEditor_Import, path))
-        {
-            sprintf(path, "ENVARC:%s", str);
-            if (!DoMethod(self, MUIM_PrefsEditor_Import, path))
-            {
-                PrinterPrefs2Gadgets(data);
-                Prefs_Default(PrinterDeviceUnit);
-                SET(self, MUIA_PrefsEditor_Changed, TRUE);
-                DoMethod(self, MUIM_PrinterEditor_SelfCheck);
-                return;
-            }
-        }
-        NNSET(data->pu_UnitNum, MUIA_Cycle_Active, PrinterDeviceUnit);
-        SET(self, MUIA_PrefsEditor_Changed, TRUE);
-        return;
-    }
 
     D(bug("Gadgets2PrinterPrefs\n"));
 
@@ -643,15 +606,8 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     if (custom) {
         str = (CONST_STRPTR)XGET(data->pu_DeviceName, MUIA_String_Contents);
         strcpy(unit->pu_DeviceName, str);
-        unit->pu_UnitNum = (LONG)XGET(data->pu_UnitNum, MUIA_String_Integer);
     }
-
-    NNSET(data->pt_Port, MUIA_Disabled, custom);
-
-    if (XGET(data->pt_DriverList, MUIA_List_Active) != MUIV_List_Active_Off) {
-        str = (CONST_STRPTR)XGET(data->pt_DriverList, MUIA_Dirlist_Path);
-        NNSET(data->pt_Driver, MUIA_Text_Contents, FilePart(str));
-    }
+    unit->pu_UnitNum = (LONG)XGET(data->pu_UnitNum, MUIA_String_Integer);
 
     strcpy(txt->pt_Driver, (CONST_STRPTR)XGET(data->pt_Driver, MUIA_Text_Contents));
 
@@ -677,8 +633,13 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     gfx->pg_Dimensions = XGET(data->pg_Dimensions, MUIA_Cycle_Active);
     gfx->pg_GraphicFlags =
         (XGET(data->pg_GraphicFlags_Center, MUIA_Selected) ? PGFF_CENTER_IMAGE : 0) |
-        (XGET(data->pg_GraphicFlags_AntiAlias, MUIA_Selected) ? PGFF_INTEGER_SCALING : 0) |
-        (XGET(data->pg_GraphicFlags_IntScaling, MUIA_Selected) ? PGFF_ANTI_ALIAS : 0);
+        (XGET(data->pg_GraphicFlags_AntiAlias, MUIA_Selected) ? PGFF_ANTI_ALIAS : 0) |
+        (XGET(data->pg_GraphicFlags_IntScaling, MUIA_Selected) ? PGFF_INTEGER_SCALING : 0);
+
+    str = (CONST_STRPTR)XGET(data->pg_PrintMaxWidth, MUIA_String_Contents);
+    gfx->pg_PrintMaxWidth = todeci(units, atof(str));
+    str = (CONST_STRPTR)XGET(data->pg_PrintMaxHeight, MUIA_String_Contents);
+    gfx->pg_PrintMaxHeight = todeci(units, atof(str));
 
     str = (CONST_STRPTR)XGET(data->pg_PrintXOffset, MUIA_String_Contents);
     gfx->pg_PrintXOffset = todeci(units, atof(str));
@@ -693,14 +654,18 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
 /*
  * update gadgets with values of struct printerprefs
  */
-STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data)
+STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self)
 {
+    SETUP_INST_DATA;
+
     struct PrinterTxtPrefs *txt = &printerprefs.pp_Txt;
     struct PrinterGfxPrefs *gfx = &printerprefs.pp_Gfx;
     struct PrinterUnitPrefs *unit = &printerprefs.pp_Unit;
     struct PrinterDeviceUnitPrefs *devunit = &printerprefs.pp_DeviceUnit;
     int units;
     char buf[64];
+
+    D(bug("PrinterPrefs2Gadgets: Unit %d\n", devunit->pd_UnitNum));
 
     /* Internal scale is deci-inches. Yeah.
      */
@@ -711,7 +676,7 @@ STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data)
     NNSET(data->pd_UnitName, MUIA_String_Contents, devunit->pd_UnitName);
 
     NNSET(data->pt_DriverList, MUIA_List_Active, MUIV_List_Active_Off);
-    NNSET(data->pt_Driver, MUIA_String_Contents, txt->pt_Driver);
+    NNSET(data->pt_Driver, MUIA_Text_Contents, txt->pt_Driver);
     NNSET(data->pt_Port, MUIA_Cycle_Active, txt->pt_Port);
     NNSET(data->pt_PaperType, MUIA_Cycle_Active, txt->pt_PaperType);
     NNSET(data->pt_PaperSize, MUIA_Cycle_Active, txt->pt_PaperSize >> 4);
@@ -723,17 +688,26 @@ STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data)
     NNSET(data->pt_Quality, MUIA_Cycle_Active, txt->pt_Quality);
 
     NNSET(data->pu_UnitNum, MUIA_String_Integer, unit->pu_UnitNum);
-    NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)unit->pu_DeviceName);
-    NNSET(data->pu_DeviceNameCustom, MUIA_Selected, unit->pu_DeviceName[0] ? TRUE : FALSE);
 
-    if (strcmp(unit->pu_DeviceName, "printofile") == 0) {
+    if (strcmp(unit->pu_DeviceName, "serial") == 0) {
+        NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_SERIAL);
+        SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
+        NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
+    } else if (strcmp(unit->pu_DeviceName, "parallel") == 0) {
+        NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_PARALLEL);
+        SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
+        NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
+    } else if (strcmp(unit->pu_DeviceName, "printtofile") == 0) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_PRINTTOFILE);
-        NNSET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
-    }
-
-    if (strcmp(unit->pu_DeviceName, "usbprinter") == 0) {
+        SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
+        NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
+    } else if (strcmp(unit->pu_DeviceName, "usbprinter") == 0) {
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_USBPRINTER);
-        NNSET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
+        SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
+        NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
+    } else {
+        SET(data->pu_DeviceNameCustom, MUIA_Selected, TRUE);
+        NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)unit->pu_DeviceName);
     }
 
     NNSET(data->pg_Aspect, MUIA_Cycle_Active, gfx->pg_Aspect);
@@ -747,6 +721,11 @@ STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data)
     NNSET(data->pg_GraphicFlags_IntScaling, MUIA_Selected, (gfx->pg_GraphicFlags & PGFF_INTEGER_SCALING) ? TRUE : FALSE);
     NNSET(data->pg_PrintDensity, MUIA_Cycle_Active, gfx->pg_PrintDensity);
 
+    sprintf(buf, "%.*f", (units == UI_UNITS_IN) ? 1 : 0, fromdeci(units, gfx->pg_PrintMaxWidth));
+    NNSET(data->pg_PrintMaxWidth, MUIA_String_Contents, buf);
+    sprintf(buf, "%.*f", (units == UI_UNITS_IN) ? 1 : 0, fromdeci(units, gfx->pg_PrintMaxHeight));
+    NNSET(data->pg_PrintMaxHeight, MUIA_String_Contents, buf);
+
     UpdatePrintMax(data, units, TRUE);
 
     NNSET(data->pg_OffsetUnits, MUIA_Text_Contents, (IPTR)ui_Units[units]);
@@ -755,6 +734,10 @@ STATIC VOID PrinterPrefs2Gadgets(struct PrinterEditor_DATA *data)
     NNSET(data->pg_PrintXOffset, MUIA_String_Contents, buf);
     sprintf(buf, "%.*f", (units == UI_UNITS_IN) ? 1 : 0, fromdeci(units, gfx->pg_PrintYOffset));
     NNSET(data->pg_PrintYOffset, MUIA_String_Contents, buf);
+
+    DoMethod(self, MUIM_PrinterEditor_Refresh);
+
+    D(bug("PrinterPrefs2Gadgets: Done\n"));
 }
 
 IPTR PrinterEditor__MUIM_PrefsEditor_ImportFH (
@@ -762,13 +745,12 @@ IPTR PrinterEditor__MUIM_PrefsEditor_ImportFH (
     struct MUIP_PrefsEditor_ImportFH *message
 )
 {
-    SETUP_INST_DATA;
     BOOL success = TRUE;
 
     D(bug("[PrinterEdit class] PrinterEdit Class Import\n"));
 
     success = Prefs_ImportFH(message->fh);
-    if (success) PrinterPrefs2Gadgets(data);
+    if (success) PrinterPrefs2Gadgets(CLASS, self);
 
     return success;
 }
@@ -794,34 +776,96 @@ IPTR PrinterEditor__MUIM_PrefsEditor_SetDefaults
     Class *CLASS, Object *self, Msg message
 )
 {
-    SETUP_INST_DATA;
     BOOL success = TRUE;
 
     D(bug("[PrinterEdit class] PrinterEdit Class SetDefaults\n"));
 
     success = Prefs_Default(0);
-    if (success) PrinterPrefs2Gadgets(data);
+    if (success) PrinterPrefs2Gadgets(CLASS, self);
 
     return success;
 }
 
-IPTR PrinterEditor__MUIM_PrinterEditor_SelfCheck(Class *CLASS, Object *self, Msg message)
+/* Re-synchronize with the pd_UnitNum
+ */
+IPTR PrinterEditor__MUIM_PrinterEditor_Sync(Class *CLASS, Object *self, Msg message)
 {
-    BOOL success = TRUE;
+    SETUP_INST_DATA;
 
-    Gadgets2PrinterPrefs(CLASS, self);
+    struct PrinterDeviceUnitPrefs *devunit = &printerprefs.pp_DeviceUnit;
 
-    return success;
+    CONST_STRPTR str;
+    LONG unit;
+
+    unit = XGET(data->pd_UnitNum, MUIA_Cycle_Active);
+
+    if (unit != devunit->pd_UnitNum) {
+        char buf[64];
+        char path[sizeof(buf) + 7]; /* ENVARC: */
+
+        D(bug("PrinterEditor_Sync: Unit %d -> %d\n", devunit->pd_UnitNum, unit));
+        sprintf(buf, "SYS/printer%d.prefs", unit);
+        str = (unit ? buf : "SYS/printer.prefs");
+        NNSET(self, MUIA_PrefsEditor_Path, (IPTR) str);
+        /*-- Reload preferences --*/
+        sprintf(path, "ENV:%s", str);
+        if (!DoMethod(self, MUIM_PrefsEditor_Import, path))
+        {
+            sprintf(path, "ENVARC:%s", str);
+            if (!DoMethod(self, MUIM_PrefsEditor_Import, path))
+            {
+                Prefs_Default(unit);
+                PrinterPrefs2Gadgets(CLASS, self);
+                SET(self, MUIA_PrefsEditor_Changed, TRUE);
+                D(bug("PrinterEditor_Sync: Defaults\n"));
+                return TRUE;
+            }
+        }
+        NNSET(data->pd_UnitNum, MUIA_Cycle_Active, unit);
+        devunit->pd_UnitNum = unit;
+        D(bug("PrinterEditor_Sync: Loaded\n"));
+        return TRUE;
+    }
+
+    return TRUE;
+}
+
+IPTR PrinterEditor__MUIM_PrinterEditor_Refresh(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+
+    CONST_STRPTR str;
+    int units;
+
+    D(bug("PrinterEditor_Refresh: Begin\n"));
+
+    /* Internal scale is deci-inches. Yeah.
+     */
+    units = XGET(data->pg_MaxUnits, MUIA_Cycle_Active);
+
+    if (XGET(data->pt_DriverList, MUIA_List_Active) != MUIV_List_Active_Off) {
+        str = (CONST_STRPTR)XGET(data->pt_DriverList, MUIA_Dirlist_Path);
+        NNSET(data->pt_Driver, MUIA_Text_Contents, FilePart(str));
+    }
+
+    UpdatePrintMax(data, units, FALSE);
+
+    NNSET(data->pg_OffsetUnits, MUIA_Text_Contents, (IPTR)ui_Units[units]);
+ 
+    D(bug("PrinterEditor_Refresh: End\n"));
+
+    return TRUE;
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_5
+ZUNE_CUSTOMCLASS_6
 (
     PrinterEditor, NULL, MUIC_PrefsEditor, NULL,
     OM_NEW,                       struct opSet *,
     MUIM_PrefsEditor_ImportFH,    struct MUIP_PrefsEditor_ImportFH *,
     MUIM_PrefsEditor_ExportFH,    struct MUIP_PrefsEditor_ExportFH *,
     MUIM_PrefsEditor_SetDefaults, Msg,
-    MUIM_PrinterEditor_SelfCheck, Msg
+    MUIM_PrinterEditor_Sync, Msg,
+    MUIM_PrinterEditor_Refresh, Msg
 );
 

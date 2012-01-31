@@ -12,7 +12,8 @@
 /*** Identifier base ********************************************************/
 #define MUIB_PrinterEditor                  (TAG_USER | 0x10000000)
 
-#define MUIM_PrinterEditor_SelfCheck        (MUIB_PrinterEditor + 1)
+#define MUIM_PrinterEditor_Refresh          (MUIB_PrinterEditor + 1)
+#define MUIM_PrinterEditor_Sync             (MUIB_PrinterEditor + 2)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *PrinterEditor_CLASS;

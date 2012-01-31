@@ -21,7 +21,6 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
 #include <aros/debug.h>
 
 #define VERSION "$VER: Printer 0.1 (01.31.2011) AROS Dev Team"
