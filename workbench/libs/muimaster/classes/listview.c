@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -232,6 +232,10 @@ void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
+/* small macro to simplify return value storage */
+#define STORE *(msg->opg_Storage)
+    struct MUI_ListviewData *data = INST_DATA(cl, obj);
+
     switch (msg->opg_AttrID)
     {
         case MUIA_List_CompareHook:
@@ -252,9 +256,13 @@ IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             
             return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
         }
+        case MUIA_Listview_List:
+            STORE = (IPTR)data->list;
+            break;
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
+#undef STORE
 }
 
 BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)

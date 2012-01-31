@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -966,6 +966,7 @@ IPTR List__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
         case MUIA_Listview_DoubleClick: STORE = 0; return 1;
         case MUIA_Listview_ClickColumn: STORE = data->click_column; return 1;
+        case MUIA_Listview_List: STORE = (IPTR)obj; return 1; /* Validated with 3rd party application */
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
