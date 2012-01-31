@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -139,8 +139,6 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
 				     struct CompoundDataType *cdt);
 void DeleteDataType(struct StackVars *sv, struct CompoundDataType *cdt);
 void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node);
-void PrioInsert(struct StackVars *sv, struct List *list,
-		struct CompoundDataType *cdt);
 struct Node *__FindNameNoCase(struct StackVars *sv, struct List *list,
 			      STRPTR name);
 
@@ -642,7 +640,8 @@ struct CompoundDataType *CreateBasicType(struct StackVars *sv,
 		
 	cdt->DT.dtn_Length = AllocLen;
 		
-	AddTail(list, &cdt->DT.dtn_Node1);
+	cdt->DT.dtn_Node1.ln_Pri = -128;
+	Enqueue(list, &cdt->DT.dtn_Node1);
 		
 	AlphaInsert(sv, globallist, &cdt->DT.dtn_Node2);
     }
@@ -1099,7 +1098,8 @@ struct CompoundDataType *AddDataType(struct StackVars *sv,
 			DTList->dtl_LongestMask = cdt->DTH.dth_MaskLen;
 		    }
 		    
-		    PrioInsert(sv, typelist, cdt);
+		    cdt->DT.dtn_Node1.ln_Pri = cdt->DTH.dth_Priority;
+		    Enqueue(typelist, &cdt->DT.dtn_Node1);
 		    
 		    AlphaInsert(sv, &DTList->dtl_SortedList, &cdt->DT.dtn_Node2);
 		}
@@ -1210,87 +1210,6 @@ void AlphaInsert(struct StackVars *sv, struct List *list, struct Node *node)
     }
 
     Insert(list, node, prev);
-}
-
-
-
-/****** AddDataTypes/PrioInsert **********************************************
-*
-*   NAME
-*        PrioInsert - enqueue a CompoundDataType correctly in the type list
-*
-*   SYNOPSIS
-*
-*   FUNCTION
-*
-*   INPUTS
-*
-*   RETURNS
-*
-*   EXAMPLE
-*
-*   SEE ALSO
-*
-******************************************************************************
-*
-*/
-
-void PrioInsert(struct StackVars *sv, struct List *list,
-		struct CompoundDataType *cdt)
-{
-    struct CompoundDataType *cur, *prev = NULL;
-    WORD diff;
-    
-    for(cur = (struct CompoundDataType*)list->lh_Head;
-	cur->DT.dtn_Node1.ln_Succ;
-	prev = cur, cur = (struct CompoundDataType*)cur->DT.dtn_Node1.ln_Succ)
-    {
-	diff = (cdt->Function ? 1 : 0) - (cur->Function ? 1 : 0);
-	
-	if(diff > 0)
-	    break;
-	
-	if(!diff)
-	{
-	    UWORD MinMask = (cdt->DTH.dth_MaskLen < cur->DTH.dth_MaskLen) ?
-		cdt->DTH.dth_MaskLen : cur->DTH.dth_MaskLen;
-	    WORD *cdtmask = cdt->DTH.dth_Mask;
-	    WORD *curmask=cur->DTH.dth_Mask;
-
-	    while(!diff && MinMask--)
-		diff= *(curmask++) - *(cdtmask++);
-			
-	    if(diff > 0)
-		break;
-	    
-	    if(!diff)
-	    {
-		diff = cdt->DTH.dth_MaskLen - cur->DTH.dth_MaskLen;
-		
-		if(diff > 0)
-		    break;
-		
-		if(!diff)
-		{
-		    diff = (((cdt->FlagLong & CFLGF_PATTERN_UNUSED) || cdt->DTH.dth_Pattern==NULL) ? 0 : 1) -
-			(((cur->FlagLong & CFLGF_PATTERN_UNUSED) || cur->DTH.dth_Pattern==NULL) ? 0 : 1);
-		    
-		    if(diff > 0)
-			break;
-		    
-		    if(!diff)
-		    {
-			diff = cdt->DTH.dth_Priority - cur->DTH.dth_Priority;
-			
-			if(diff > 0)
-			    break;
-		    }
-		}
-	    }
-	}
-    }
-
-    Insert(list, &cdt->DT.dtn_Node1, (struct Node *)prev);
 }
 
 
