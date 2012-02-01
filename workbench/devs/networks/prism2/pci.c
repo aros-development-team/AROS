@@ -32,6 +32,7 @@ MA 02111-1307, USA.
 #include "pci.h"
 
 #include "pci_protos.h"
+#include "device_protos.h"
 #if !(defined(__MORPHOS__) || defined(__amigaos4__))
 #include "prometheus_protos.h"
 #endif
@@ -77,9 +78,6 @@ static VOID BEWordOutIOHook(struct BusContext *context, ULONG offset,
 static UWORD LEWordInIOHook(struct BusContext *context, ULONG offset);
 static VOID LEWordOutIOHook(struct BusContext *context, ULONG offset,
    UWORD value);
-BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base);
-VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base);
-
 
 const UWORD product_codes[] =
 {
@@ -821,57 +819,5 @@ static VOID LEWordOutIOHook(struct BusContext *context, ULONG offset,
 
    return;
 }
-
-
-
-/****i* prism2.device/WrapInt **********************************************
-*
-*   NAME
-*	WrapInt
-*
-****************************************************************************
-*
-*/
-
-BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
-{
-   BOOL success = TRUE;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
-   APTR *int_data;
-
-   int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
-   if(int_data != NULL)
-   {
-      int_data[0] = interrupt->is_Code;
-      int_data[1] = interrupt->is_Data;
-      interrupt->is_Code = base->wrapper_int_code;
-      interrupt->is_Data = int_data;
-   }
-   else
-      success = FALSE;
-#endif
-
-   return success;
-}
-
-
-
-/****i* prism2.device/UnwrapInt ********************************************
-*
-*   NAME
-*	UnwrapInt
-*
-****************************************************************************
-*
-*/
-
-VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
-{
-   if(interrupt->is_Code == base->wrapper_int_code)
-      FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
-
-   return;
-}
-
 
 

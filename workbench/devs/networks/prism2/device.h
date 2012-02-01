@@ -204,7 +204,7 @@ struct Opener
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
    const VOID *real_rx_function;
    const VOID *real_tx_function;
    const VOID *real_dma_tx_function;
