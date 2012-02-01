@@ -35,6 +35,7 @@ MA 02111-1307, USA.
 
 #include "device.h"
 
+#include "device_protos.h"
 #include "pci_protos.h"
 #include "pccard_protos.h"
 #include "request_protos.h"
@@ -42,22 +43,7 @@ MA 02111-1307, USA.
 
 /* Private prototypes */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
-   REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base));
-static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
-   REG(d0, ULONG unit_num), REG(d1, ULONG flags),
-   REG(BASE_REG, struct DevBase *base));
-static APTR DevClose(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
-static APTR DevReserved();
-static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
-static VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
 static VOID DeleteDevice(struct DevBase *base);
-static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
-
 
 /* Return an error immediately if someone tries to run the device */
 
@@ -67,8 +53,8 @@ LONG Main()
 }
 
 
-static const TEXT device_name[] = DEVICE_NAME;
-static const TEXT version_string[] =
+const TEXT device_name[] = DEVICE_NAME;
+const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
 static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
@@ -94,7 +80,7 @@ static const APTR vectors[] =
 #ifdef __MORPHOS__
 #pragma pack(2)
 #endif
-static const struct
+const struct
 {
    SMALLINITBYTEDEF(type);
    SMALLINITPINTDEF(name);
@@ -173,7 +159,7 @@ static const ULONG tx_tags[] =
 *
 */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
+struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base))
 {
    BOOL success = TRUE;
@@ -239,7 +225,7 @@ static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
 *
 */
 
-static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
+BYTE DevOpen(REG(a1, struct IOSana2Req *request),
    REG(d0, ULONG unit_num), REG(d1, ULONG flags),
    REG(BASE_REG, struct DevBase *base))
 {
@@ -345,7 +331,7 @@ static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static APTR DevClose(REG(a1, struct IOSana2Req *request),
+APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    struct DevUnit *unit;
@@ -378,11 +364,9 @@ static APTR DevClose(REG(a1, struct IOSana2Req *request),
          case PLX_BUS:
             DeletePCIUnit(unit, base);
             break;
-#if defined(__mc68000) && !defined(__AROS__)
          case PCCARD_BUS:
             DeletePCCardUnit(unit, base);
             break;
-#endif
          }
       }
    }
@@ -416,7 +400,7 @@ static APTR DevClose(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
+APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 {
    APTR seg_list;
 
@@ -451,7 +435,7 @@ static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 *
 */
 
-static APTR DevReserved()
+APTR DevReserved()
 {
    return NULL;
 }
@@ -472,7 +456,7 @@ static APTR DevReserved()
 *
 */
 
-static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
+VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    struct DevUnit *unit;
@@ -509,7 +493,7 @@ static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
+VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    Disable();
@@ -590,30 +574,70 @@ VOID DeleteDevice(struct DevBase *base)
 *
 */
 
-static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
+struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base)
 {
    struct DevUnit *unit;
    ULONG pci_limit;
-#if defined(__mc68000) && !defined(__AROS__)
    ULONG pccard_limit;
-#endif
 
    pci_limit = GetPCICount(base);
-#if defined(__mc68000) && !defined(__AROS__)
    pccard_limit = pci_limit + GetPCCardCount(base);
-#endif
 
    if(unit_num < pci_limit)
       unit = GetPCIUnit(unit_num, base);
-#if defined(__mc68000) && !defined(__AROS__)
    else if(unit_num < pccard_limit)
       unit = GetPCCardUnit(unit_num - pci_limit, base);
-#endif
    else
       unit = NULL;
 
    return unit;
 }
 
+/****i* prism2.device/WrapInt **********************************************
+*
+*   NAME
+*	WrapInt
+*
+****************************************************************************
+*
+*/
 
+BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base)
+{
+   BOOL success = TRUE;
+   APTR *int_data;
+
+   if(base->wrapper_int_code != NULL)
+   {
+      int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
+      if(int_data != NULL)
+      {
+         int_data[0] = interrupt->is_Code;
+         int_data[1] = interrupt->is_Data;
+         interrupt->is_Code = base->wrapper_int_code;
+         interrupt->is_Data = int_data;
+      }
+      else
+         success = FALSE;
+   }
+
+   return success;
+}
+
+/****i* prism2.device/UnwrapInt ********************************************
+*
+*   NAME
+*	UnwrapInt
+*
+****************************************************************************
+*
+*/
+
+VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
+{
+   if(interrupt->is_Code == base->wrapper_int_code)
+      FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
+
+   return;
+}
 

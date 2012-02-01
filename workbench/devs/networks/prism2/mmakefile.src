@@ -8,7 +8,7 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 %build_prog mmake=devs-networks-drivers-prism2 \
     progname="prism2.device" \
-    files="startup device request unit pci prometheus" \
+    files="startup aros_device device request unit pci prometheus pccard" \
     targetdir="$(AROSDIR)/Devs/Networks"
 
 %build_prog mmake=devs-networks-drivers-prism2-cmd \
