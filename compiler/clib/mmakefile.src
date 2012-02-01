@@ -84,6 +84,7 @@ COMMON_ARCH := \
 SHARED	:= \
 	__arosc_ioerr2errno \
         __arosc_nixmain \
+        __arosc_set_environptr \
         __arosc_startup \
 	__arosc_userdata \
 	__assert \
@@ -377,6 +378,9 @@ SHARED_ARCH := \
     vfork \
     vfork_longjmp
 
+SHARED_LINKLIB := \
+       arosc_environ
+
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
 #       or not.
@@ -519,7 +523,8 @@ USER_LDFLAGS := -L$(OBJDIR)
 %build_module mmake=linklibs-clib-shared \
     modname=arosc modtype=library objdir=$(OBJDIR)/shared \
     cflags="$(CFLAGS) -DAROSC_SHARED" \
-    files="$(SHARED) $(SHARED_ARCH)" linklibobjs=$(AROSC_LINKLIB_OBJS) \
+    files="$(SHARED) $(SHARED_ARCH)" \
+    linklibfiles=$(SHARED_LINKLIB) linklibobjs=$(AROSC_LINKLIB_OBJS) \
     uselibs="arosccommon"
 
 

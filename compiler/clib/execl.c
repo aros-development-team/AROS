@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "__arosc_privdata.h"
 #include "__exec.h"
 
 /*****************************************************************************
@@ -48,8 +49,11 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
+
     va_list args;
     char *const *argv;
+    char **environ = (aroscbase->acb_environptr) ? *aroscbase->acb_environptr : NULL;
 
     va_start(args, arg);
     

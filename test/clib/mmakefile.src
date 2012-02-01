@@ -42,7 +42,8 @@ FILES := \
         execl \
         chown \
         sscanf \
-        ctype
+        ctype \
+        environ
 
 EXEDIR := $(AROS_TESTS)/clib
 
