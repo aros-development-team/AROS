@@ -31,9 +31,6 @@ struct arosc_userdata
 
     /* Used by multi-byte functions */
     int acud_mb_cur_max;
-    
-    /* environ variable value */
-    char **acud_environ;
 
     /* Used for arosc startup code */
     int acud_startup_error;
@@ -46,7 +43,6 @@ struct arosc_userdata *__get_arosc_userdata(void) __pure;
 const struct arosc_ctype *__get_arosc_ctype(void) __pure;
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[]);
 int __get_default_file(int file_descriptor, long* file_handle);
-int __env_get_environ(char **environ, int size);
 void __arosc_program_startup(void);
 void __arosc_program_end(void);
 
