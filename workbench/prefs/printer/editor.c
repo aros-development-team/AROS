@@ -804,7 +804,7 @@ IPTR PrinterEditor__MUIM_PrinterEditor_Sync(Class *CLASS, Object *self, Msg mess
         char path[sizeof(buf) + 7]; /* ENVARC: */
 
         D(bug("PrinterEditor_Sync: Unit %d -> %d\n", devunit->pd_UnitNum, unit));
-        sprintf(buf, "SYS/printer%d.prefs", unit);
+        sprintf(buf, "SYS/printer%d.prefs", (int)unit);
         str = (unit ? buf : "SYS/printer.prefs");
         NNSET(self, MUIA_PrefsEditor_Path, (IPTR) str);
         /*-- Reload preferences --*/
