@@ -55,6 +55,7 @@ struct filehandle
     struct MsgPort	*conreadmp;
     struct MsgPort	*conwritemp;
     struct Window	*window;
+    struct Window	*otherwindow; /* WINDOW0xXXXXXXXX parameter */
     struct Task 	*contask;
     struct Task		*breaktask;
     struct Task		*lastwritetask;

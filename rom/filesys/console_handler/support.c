@@ -177,6 +177,36 @@ csimatchtable[] =
 
 /******************************************************************************************/
 
+static UBYTE hex2val(char c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+    c &= ~0x20;
+    return c - 'A' + 10;
+}
+/* strtoul() not used because it is much larger and uses .bss
+ * TODO: Sanity checks. */
+static IPTR string2val(const char *s, WORD len)
+{
+    IPTR v = 0;
+     
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X')) {
+        s += 2;
+        while (len-- > 0 && *s) {
+            v <<= 4;
+            v |= hex2val(*s);
+            s++;
+        }
+    } else {
+        while (len-- > 0 && *s) {
+            v *= 10;
+            v |= *s - '0';
+            s++;
+        }
+    }
+    return v;
+}
+
 BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
 {
     char   *param;
@@ -304,6 +334,11 @@ BOOL parse_filename(struct filehandle *fh, char *filename, struct NewWindow *nw)
 			    else if (!strnicmp(param, "ALT", paramlen))
 			    {
 				/* TODO: style "ALT30/30/200/200" */
+			    }
+			    else if (!strnicmp(param, "WINDOW", 6))
+			    {
+			        /* Do we need some sanity checks here? */
+				fh->otherwindow = (struct Window*)string2val(param + 6, paramlen - 6);
 			    }
 			    else if (!strnicmp(param, "SCREEN", 6))
 			    {

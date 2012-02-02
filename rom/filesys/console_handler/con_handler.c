@@ -83,18 +83,23 @@ static LONG MakeConWindow(struct filehandle *fh)
 {
     LONG err = 0;
 
-    struct TagItem win_tags [] =
-    {
-	{WA_PubScreen	,0	    },
-	{WA_AutoAdjust	,TRUE       },
-	{WA_PubScreenName, 0        },
-	{WA_PubScreenFallBack, TRUE },
-	{TAG_DONE                   }
-    };
+    if (fh->otherwindow == NULL) {
+        struct TagItem win_tags [] =
+        {
+            {WA_PubScreen           ,0      },
+            {WA_AutoAdjust          ,TRUE   },
+            {WA_PubScreenName       ,0      },
+            {WA_PubScreenFallBack   ,TRUE   },
+            {TAG_DONE                       }
+        };
 
-    win_tags[2].ti_Data = (IPTR)fh->screenname;
-    D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
-    fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+        win_tags[2].ti_Data = (IPTR)fh->screenname;
+        D(bug("[contask] Opening window on screen %s, IntuitionBase = 0x%p\n", fh->screenname, IntuitionBase));
+        fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
+    } else {
+        D(bug("[contask] Using window %p\n", fh->otherwindow));
+        fh->window = fh->otherwindow;
+    }
 
     if (fh->window)
     {
@@ -254,7 +259,7 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
 	    fh->conreadio = (struct IOStdReq *)CreateIORequest(fh->conreadmp, sizeof (struct IOStdReq));
 	    if (fh->conreadio)
 	    {
-    	    	D(bug("contask: conreadio created\n"));
+    	    	D(bug("contask: conreadio created, parms '%s'\n", fn));
 
 		fh->nw = default_nw;
 
