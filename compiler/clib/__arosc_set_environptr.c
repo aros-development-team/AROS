@@ -67,7 +67,7 @@
     *environptr = malloc(len);
     if (__env_get_environ(*environptr, len) < 0)
     {
-        fputs(stderr, "Internal error with environ initialization\n");
+        fputs("Internal error with environ initialization\n", stderr);
         abort();
     }
 }
