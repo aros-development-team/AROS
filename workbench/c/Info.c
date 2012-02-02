@@ -115,10 +115,11 @@
 #define ID_FLOPPY_PFS_DISK (0x50465300L)
 #define ID_P2A0_DISK       (0x50324130L)
 #define ID_AFS0_DISK       (0x41465300L) /* AFS\0 */
-#define ID_muFS_DISK       (0x6d754653L) /* muFS - Mulituserfsys */
+#define ID_muFS_DISK       (0x6d754653L) /* muFS - Multiuserfsys */
 #define ID_FAT12_DISK      (0x46415400L) /* FAT12 */
 #define ID_FAT16_DISK      (0x46415401L) /* FAT16 */
 #define ID_FAT32_DISK      (0x46415402L) /* FAT32 */
+#define ID_EXT2_DISK       (0x45585432L) /* Extended 2 - Linux */
 
 
 /* Prototypes */
@@ -202,10 +203,10 @@ struct DiskTypeList dtl[] =
     { ID_FAT12_DISK,       "FAT12" },
     { ID_FAT16_DISK,       "FAT16" },
     { ID_FAT32_DISK,       "FAT32" },
-    { ID_FAT32_DISK,       "FAT32" },
     { ID_SFS_BE_DISK,      "SFS" },
     { ID_SFS_LE_DISK,      "sfs" },
     { ID_PFS_DISK,         "PFS" },
+    { ID_EXT2_DISK,        "EXT2" },
     { 0L, 0L }
 };
 
