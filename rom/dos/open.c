@@ -119,8 +119,8 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     }
 
     /*
-     * Special case for NIL:. Node that this can be called from a task - needed for CreateNewProcTags().
-     * But *DO NOT RELY* on it in user software!!! This is internal feature for AROS' own needs.
+     * Special case for NIL:, since it has no
+     * device task attached to it.
      */
     if (!Stricmp(name, "NIL:"))
     {

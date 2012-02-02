@@ -29,6 +29,7 @@
 
 static void DosEntry(void);
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
+static BPTR OpenNIL(struct DosLibrary *DOSBase);
 
 BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase);
 
@@ -289,12 +290,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-    	/*
-    	 * We know that our Open("NIL:") works inside a task.
-    	 * This is private feature, just to provide code reuse.
-    	 * Kids, don't try this at home!!!
-    	 */
-	input = Open("NIL:", MODE_OLDFILE);
+	input = OpenNIL(DOSBase);
 	ERROR_IF(!input);
 
 	defaults[2].ti_Data = (IPTR)input;
@@ -304,7 +300,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	output = Open("NIL:", MODE_NEWFILE);
+	output = OpenNIL(DOSBase);
 	ERROR_IF(!output);
 
 	defaults[4].ti_Data = (IPTR)output;
@@ -314,7 +310,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     if (defaults[6].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	ces = Open("NIL:", MODE_NEWFILE);
+	ces = OpenNIL(DOSBase);
 	ERROR_IF(!ces);
 
 	defaults[6].ti_Data = (IPTR)ces;
@@ -582,10 +578,6 @@ end:
 
     AROS_LIBFUNC_EXIT
 } /* CreateNewProc */
-
-
-
-
 
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 {
@@ -857,4 +849,20 @@ static void DosEntry(void)
     }
 
     CloseLibrary((APTR)DOSBase);
+}
+
+/*
+ * This is a version of Open("NIL:") that works inside a task.
+ */
+static BPTR OpenNIL(struct DosLibrary *DOSBase)
+{
+    struct FileHandle *fh;
+
+    if ((fh = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL))) {
+        fh->fh_Type = BNULL;
+        fh->fh_Interactive = DOSFALSE;
+        return MKBADDR(fh);
+    }
+
+    return BNULL;
 }
