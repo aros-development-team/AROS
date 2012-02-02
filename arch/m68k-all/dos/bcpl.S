@@ -1535,7 +1535,15 @@ BCPL putlong        /* 1bc, void, longoffset, &struct, data */
     move.l	%d3,%a0@(%d1)
     BRTS
 
-BCPLd openfile       /* 1c0, FileHandle ^, @devinfo, @filename */
+BCPL openDevInfo       /* 1c0, FileHandle ^, @DevInfo, @filename/window */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%a6,%sp@-
+    move.l	%d2,%sp@-
+    move.l	%d1,%sp@-
+    jsr		RunHandler
+    lea.l	%sp@(12),%sp
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL DupLock        /* 1c4, FileLock ^, @FileLock */
