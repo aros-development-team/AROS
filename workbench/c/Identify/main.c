@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: File Identifier/starter
@@ -26,8 +26,8 @@
 
     INPUTS
 
-        FILE    -- file to be recognized
-        VERBOSE   -- activates verbose output
+        FILE     --  file to be recognized
+        VERBOSE  --  activates verbose output
 
     RESULT
 
@@ -35,8 +35,8 @@
 
     EXAMPLE
 
-        Identify S:Startup-Sequence
-        > Text/Ascii
+        > Identify S:Startup-Sequence
+        S:Startup-Sequence:     Text/ascii
 
         (This will identify the startup-sequence as a text file.)
 
@@ -57,7 +57,16 @@
 #include <proto/datatypes.h>
 #include <datatypes/datatypes.h>
 
-#include <stdio.h>
+#ifdef __MORPHOS__
+#define BNULL NULL
+#define AROS_LONG2BE
+#define ErrorOutput() Output()
+#endif
+
+#define ERROR_HEADER "Identify"
+
+const TEXT version_string[] = "$VER: " ERROR_HEADER " 41.1 (02.02.2012)";
+const TEXT template[] = "FILE/M/A,VERBOSE/S";
 
 enum
 {
@@ -65,8 +74,6 @@ enum
     ARG_VERBOSE,
     ARG_COUNT
 };
-
-#define ERROR_HEADER "Identify"
 
 /*** Prototypes *************************************************************/
 int          identify(CONST_STRPTR filename, BOOL verbose);
@@ -79,7 +86,7 @@ int main(void)
     struct RDArgs *rdargs          = NULL;
     IPTR           args[ARG_COUNT] = { 0 };
 
-    if ((rdargs = ReadArgs("FILE/M/A,VERBOSE/S", args, NULL)) != NULL)
+    if ((rdargs = ReadArgs(template, args, NULL)) != NULL)
     {
         CONST_STRPTR *files = (CONST_STRPTR *) args[ARG_FILE], file;
 
