@@ -20,6 +20,11 @@
 #include <sys/soundcard.h>
 //#include <sys/mman.h>
 
+/* Make it build on both newer and older OSS libraries */
+#if !defined(SNDCTL_DSP_SPEED) && defined(SOUND_PCM_WRITE_RATE)
+#  define SNDCTL_DSP_SPEED  SOUND_PCM_WRITE_RATE
+#endif
+
 #include <aros/debug.h>
 
 /******************************************************************************/
@@ -395,7 +400,7 @@ BOOL OSS_SetWriteRate(int rate, int *used_rate)
     
     if (audio_fd < 0) return FALSE;
     
-    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SOUND_PCM_WRITE_RATE, &val, NULL);   
+    retval = Hidd_UnixIO_IOControlFile(unixio, audio_fd, SNDCTL_DSP_SPEED, &val, NULL);   
     if (retval < 0)
     {
     	return FALSE;
