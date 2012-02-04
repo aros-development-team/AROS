@@ -387,6 +387,9 @@
 
             if (cliproc)
             {
+                SIPTR oldSignal = 0;
+                struct FileHandle *fh = NULL;
+
 #ifdef __mc68000
                 /* Trickery needed for BCPL user shells.
                  * This is needed for the trimmed AROS m68k
@@ -430,9 +433,21 @@
                     dp->dp_Arg6 = 1;
                 }
 
+                /* Migrate the CIS handle to the new process */
+                if (!isAsynch && IsInteractive(sis)) {
+                    fh = BADDR(sis);
+
+                    if (dopacket(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&cliproc->pr_MsgPort, 0, 0, 0, 0, 0) == DOSFALSE)
+                        oldSignal = 0;
+                }
+
                 SendPkt(dp, &cliproc->pr_MsgPort, &me->pr_MsgPort);
                 if (WaitPkt() != dp)
                     Alert(AN_QPktFail);
+
+                if (fh && oldSignal) {
+                    DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&oldSignal, 0, 0, 0);
+                }
 
                 rc = dp->dp_Res2;
 
