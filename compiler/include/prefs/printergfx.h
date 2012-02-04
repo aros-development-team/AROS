@@ -39,8 +39,8 @@ struct PrinterGfxPrefs
     UBYTE pg_PrintYOffset;      /* in 1/10 of an inch */
 };
 
-#define PA_HORIZONTAL 0         /* Landscape */
-#define PA_VERTICAL   1         /* Portrait */
+#define PA_HORIZONTAL 0         /* Portrait */
+#define PA_VERTICAL   1         /* Landscape */
 
 #define PS_BW		0
 #define PS_GREYSCALE	1

@@ -112,8 +112,8 @@ STATIC CONST_STRPTR const ui_Quality[] = {
 };
 
 STATIC CONST_STRPTR const ui_Aspect[] = {
-    "Landscape",
     "Portrait",
+    "Landscape",
     NULL,
 };
 
