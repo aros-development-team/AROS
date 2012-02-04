@@ -34,7 +34,6 @@ static char *escape(const char *str);
 static char *appendarg(char *argptr, int *argptrsize, const char *arg, APTR pool);
 static char *appendargs(char *argptr, int *argptrsize, char *const args[], APTR pool);
 static void __exec_cleanup(struct aroscbase *aroscbase);
-static void close_on_exec(struct aroscbase *aroscbase);
 
 /* Public functions */
 /********************/
@@ -179,6 +178,8 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         {
             D(bug("__exec_prepare: Continue child immediately on error\n"));
             Signal(udata->child, 1 << udata->child_signal);
+
+            return NULL;
         }
         
         D(bug("__exec_prepare: Exiting from forked __exec_prepare id=%x, errno=%d\n",
@@ -413,7 +414,7 @@ void __exec_do(APTR id)
 
         D(bug("[__exec_do] PRETEND_CHILD\n"));
 
-        close_on_exec(aroscbase);
+        __close_on_exec_fdescs();
 
 	D(bug("Notify child to call __exec_do\n"));
 
@@ -643,24 +644,5 @@ static void __exec_cleanup(struct aroscbase *aroscbase)
     {
         UnLoadSeg(aroscbase->acb_exec_seglist);
         aroscbase->acb_exec_seglist = (BPTR)NULL;
-    }
-}
-
-static void close_on_exec(struct aroscbase *aroscbase)
-{
-    int i;
-    fdesc *fd;
-
-    for (i = __getfdslots() - 1; i >= 0; i--)
-    {
-        if ((fd = __getfdesc(i)) != NULL)
-        {
-            D(bug("close_on_exec: checking fd %d\n", i));
-            if (fd->fdflags & FD_CLOEXEC)
-            {
-                D(bug("close_on_exec: closing fd %d\n", i));
-                assert(close(i) == 0);
-            }
-        }
     }
 }

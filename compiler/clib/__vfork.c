@@ -336,10 +336,8 @@ static void parent_enterpretendchild(struct vfork_data *udata)
     /* Remember and switch fd descriptor table */
     udata->parent_fd_mempool = aroscbase->acb_fd_mempool;
     aroscbase->acb_fd_mempool = udata->child_aroscbase->acb_fd_mempool;
-    udata->parent_numslots = aroscbase->acb_numslots;
-    aroscbase->acb_numslots = udata->child_aroscbase->acb_numslots;
-    udata->parent_fd_array = aroscbase->acb_fd_array;
-    aroscbase->acb_fd_array = udata->child_aroscbase->acb_fd_array;
+    __getfdarray((APTR *)&udata->parent_fd_array, &udata->parent_numslots);
+    __setfdarraybase(udata->child_aroscbase);
     
     /* Remember and switch chdir fields */
     udata->parent_cd_changed = aroscbase->acb_cd_changed;
@@ -380,8 +378,7 @@ static void parent_leavepretendchild(struct vfork_data *udata)
 
     /* Restore parent's old fd_array */
     aroscbase->acb_fd_mempool = udata->parent_fd_mempool;
-    aroscbase->acb_numslots = udata->parent_numslots;
-    aroscbase->acb_fd_array =  udata->parent_fd_array;
+    __setfdarray(udata->parent_fd_array, udata->parent_numslots);
 
     /* Switch to currentdir from before vfork() call */
     aroscbase->acb_cd_changed = udata->parent_cd_changed;
