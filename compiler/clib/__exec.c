@@ -70,9 +70,6 @@ APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], ch
         goto error;
     }
 
-    aroscbase->acb_exec_args = AllocPooled(aroscbase->acb_exec_pool, argssize);
-    aroscbase->acb_exec_args[0] = '\0';
-
     /* Search path if asked and no directory separator is present in the file */
     if (searchpath && index(filename, '/') == NULL && index(filename, ':') == NULL)
     {
