@@ -329,6 +329,86 @@ $(TMP_TARGETBASE).d : %(basename).c
 
 
 #------------------------------------------------------------------------------
+# Generate a rule to compile a C++ source file to an object file and generate
+# the dependency file. Basename may contain a directory part, then the source
+# file has to be in that directory. The generated file will be put in the
+# object directory without the directory.
+# options
+# - basename: the basename of the file to compile. Use % for a wildcard rule
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file
+%define rule_compile_cxx basename=/A cflags=$(CFLAGS) dflags= targetdir= compiler=target nix=no
+
+ifeq (%(targetdir),)
+  TMP_TARGETBASE := %(basename)
+else
+  TMP_TARGETBASE := %(targetdir)/$(notdir %(basename))
+endif
+
+# Adjust compiler flags to suit C++
+TMP_CXXFLAGS := %(cflags)
+TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
+TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(TARGET_CC) $(TARGET_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(HOST_CC)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETBASE).o : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).d : TMP_CMD:=$(KERNEL_CC) $(KERNEL_CFLAGS)
+$(TMP_TARGETBASE).o : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).d : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETBASE).o : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+$(TMP_TARGETBASE).d : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+ifeq (%(nix),yes)
+  $(TMP_TARGETBASE).o : CFLAGS := -nix $(TMP_CXXFLAGS)
+else
+  $(TMP_TARGETBASE).o : CFLAGS := $(TMP_CXXFLAGS)
+endif
+$(TMP_TARGETBASE).o : %(basename).cpp
+	%compile_q cmd=$(TMP_CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+
+ifeq (%(dflags),)
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(cflags)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(cflags)
+  endif
+else
+  ifeq (%(nix),yes)
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=-nix %(dflags)
+  else
+    $(TMP_TARGETBASE).d : TMP_DFLAGS:=%(dflags)
+  endif
+endif
+$(TMP_TARGETBASE).d : %(basename).cpp
+	%mkdepend_q cc=$(TMP_CMD) flags=$(TMP_DFLAGS)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
 # Generate a rule to compile multiple C source files to an object file and
 # generate the corresponding dependency files. The generated file will be put
 # in the object directory without the directory part of the source file.
@@ -398,6 +478,86 @@ else
 $(TMP_DTARGETS) : DFLAGS:=%(dflags)
 endif
 $(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.c
+	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Generate a rule to compile multiple C++ source files to an object file and
+# generate the corresponding dependency files. The generated file will be put
+# in the object directory without the directory part of the source file.
+# options
+# - basenames: the basenames of the files to compile. The names may include
+#   relative or absolute path names. No wildcard is allowed
+# - cflags (default $(CFLAGS)): the C flags to use for compilation
+# - dflags: the flags used during creation of dependency file. If not specified
+#   the same value as cflags will be used
+# - targetdir: the directory to put the .o file and the .d file. By default
+#   it is put in the same directory as the .c file. When targetdir is not
+#   empty, path names will be stripped from the file names so that all files
+#   are in that dir and not in subdirectories.
+# - compiler (default target): compiler to use, target, kernel or host
+%define rule_compile_cxx_multi basenames=/A cflags=$(CFLAGS) dflags= \
+    targetdir= compiler=target
+
+# Adjust compiler flags to suit C++
+TMP_CXXFLAGS := %(cflags)
+TMP_CXXFLAGS := $(TMP_CXXFLAGS) -fno-rtti -fno-exceptions -fno-check-new -isystem $(AROS_DEVELOPMENT)/include
+TMP_CXXFLAGS := $(subst -Wno-pointer-sign,, $(subst -Werror-implicit-function-declaration,, $(TMP_CXXFLAGS)))
+
+ifeq (%(targetdir),)
+TMP_TARGETS := $(addsuffix .o,%(basenames))
+TMP_DTARGETS := $(addsuffix .d,%(basenames))
+TMP_WILDCARD := %
+else
+TMP_TARGETS := $(addsuffix .o,$(addprefix %(targetdir)/,%(basenames)))
+TMP_DTARGETS := $(addsuffix .d,$(addprefix %(targetdir)/,%(basenames)))
+TMP_WILDCARD := %(targetdir)/%
+
+# Be sure that all .cpp files are generated
+$(TMP_TARGETS) $(TMP_DTARGETS) : | $(addsuffix .cpp,%(basenames))
+
+# Be sure that all .cpp files are found
+TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
+TMP_BASEDIRS := $(shell echo $(sort $(dir %(basenames))) | sed 's/\(.\):\//\/\1\//g')
+TMP_DIRS := $(foreach dir, $(TMP_BASEDIRS), $(if $(filter /%,$(dir)),$(dir),$(TMP_SRCDIR)/$(CURDIR)/$(dir)))
+ifneq ($(TMP_DIRS),)
+    TMP_DIRS := $(shell echo $(TMP_DIRS) | sed 's/\(.\):\//\/\1\//g')
+    vpath %.cpp $(TMP_DIRS)
+endif
+
+endif
+
+ifeq ($(findstring %(compiler),host kernel target),)
+  $(error unknown compiler %(compiler))
+endif
+ifeq (%(compiler),target)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CXX) $(TARGET_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
+endif
+ifeq (%(compiler),host)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(HOST_CXX)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(HOST_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(HOST_IQUOTE_END)
+endif
+ifeq (%(compiler),kernel)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(KERNEL_CXX) $(KERNEL_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(KERNEL_IQUOTE)
+$(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(KERNEL_IQUOTE_END)
+endif
+
+$(TMP_TARGETS) : CFLAGS := $(TMP_CXXFLAGS)
+$(TMP_TARGETS) : $(TMP_WILDCARD).o : %.cpp
+	%compile_q cmd=$(CMD) iquote=$(TMP_IQUOTE) iquote_end=$(TMP_IQUOTE_END)
+
+ifeq (%(dflags),)
+$(TMP_DTARGETS) : DFLAGS:=%(cflags)
+else
+$(TMP_DTARGETS) : DFLAGS:=%(dflags)
+endif
+$(TMP_DTARGETS) : $(TMP_WILDCARD).d : %.cpp
 	%mkdepend_q cc=$(CMD) flags=$(DFLAGS)
 %end
 #------------------------------------------------------------------------------
@@ -926,8 +1086,8 @@ BDID := $(BDTARGETID)
 
 #------------------------------------------------------------------------------
 # Build a program
-%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) asmfiles= \
-    objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
+%define build_prog mmake=/A progname=/A files=$(BD_PROGNAME) cxxfiles= \
+    asmfiles= objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
     cflags=$(CFLAGS) dflags=$(BD_CFLAGS) ldflags=$(LDFLAGS) \
     aflags=$(AFLAGS) uselibs= usehostlibs= usestartup=yes detach=no nix=no \
     compiler=target linker= srcdir=
@@ -945,14 +1105,15 @@ ifeq ($(BD_LINKER),)
 endif
 
 BD_FILES     := %(files)
+BD_CXXFILES  := %(cxxfiles)
 BD_ASMFILES  := %(asmfiles)
 
 BD_ARCHOBJS   := $(wildcard $(BD_OBJDIR)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_OBJS      := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_ASMFILES)))
-BD_DEPS      := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES)))
+BD_OBJS := $(addsuffix .o,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES)))
+BD_DEPS := $(addsuffix .d,$(addprefix $(BD_OBJDIR)/,$(BD_NARCHFILES) $(BD_CXXFILES)))
 
 BD_CFLAGS    := %(cflags)
 BD_AFLAGS    := %(aflags)
@@ -967,6 +1128,8 @@ BD_LDFLAGS   := %(ldflags)
 
 ifneq ($(filter $(TARGET),%(mmake) %(mmake)-quick %(mmake)-gz-quick),)
 %rule_compile basename=%(srcdir)% targetdir=$(BD_OBJDIR) \
+    cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
+%rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=$(BD_OBJDIR) \
     cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS) compiler=%(compiler)
 %rule_assemble_multi basenames=$(BD_ASMFILES) targetdir=$(BD_OBJDIR) \
     aflags=$(BD_AFLAGS) compiler=%(compiler)
@@ -1688,13 +1851,16 @@ endif # $(TARGET) in $(BD_ALLTARGETS)
 # - objdir is where the .o are generated
 # - libdir is the directory where the linklib will be placed (default $(LIBDIR))
 %define build_linklib mmake=/A libname=/A \
-  files="$(basename $(call WILDCARD, *.c))" asmfiles=  objs= compiler=target \
+  files="$(basename $(call WILDCARD, *.c))" \
+  cxxfiles="$(basename $(call WILDCARD, *.cpp))" \
+  asmfiles= objs= compiler=target \
   cflags=$(CFLAGS) dflags= aflags=$(AFLAGS) objdir=$(OBJDIR) libdir=$(LIBDIR)
 
 # assign and generate the local variables used in this macro
 OBJDIR        ?= $(GENDIR)/$(CURDIR)
 
 BD_FILES      := %(files)
+BD_CXXFILES   := %(cxxfiles)
 BD_ASMFILES   := %(asmfiles)
 
 BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
@@ -1702,7 +1868,7 @@ BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
 BD_OBJS       := $(BD_ARCHOBJS) \
-                 $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_ASMFILES)))) \
+                 $(addsuffix .o,$(addprefix %(objdir)/,$(notdir $(BD_NARCHFILES) $(BD_CXXFILES) $(BD_ASMFILES)))) \
                  %(objs)
 BD_DEPS       := $(patsubst %.o,%.d,$(BD_OBJS))
 
@@ -1731,10 +1897,12 @@ TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
 endif
 
-%rule_compile basename=% targetdir=%(objdir) compiler=%(compiler) \
-	      cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+%rule_compile_multi basenames=$(BD_FILES) targetdir=%(objdir) \
+    compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
+%rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=%(objdir) \
+    compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_assemble basename=% targetdir=%(objdir) \
-	      aflags=$(BD_AFLAGS)
+    aflags=$(BD_AFLAGS)
 
 %rule_link_linklib libname=%(libname) objs=$(BD_OBJS) libdir=%(libdir) linker=%(compiler)
 endif
