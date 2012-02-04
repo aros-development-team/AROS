@@ -200,7 +200,7 @@ static IPTR string2val(const char *s, WORD len)
     } else {
         while (len-- > 0 && *s) {
             v *= 10;
-            v |= *s - '0';
+            v += *s - '0';
             s++;
         }
     }
