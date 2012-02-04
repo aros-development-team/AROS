@@ -1020,6 +1020,10 @@ BCPL_write_base:	/* number, width, base, canneg */
     bra		.LBCPL_write_base_pad_cond
 .LBCPL_write_base_pad:
     moveq	#' ',%d1
+    cmp.b	#10,%d6
+    beq.s	.LBCPL_write_base_pad_char
+    moveq	#'0',%d1
+.LBCPL_write_base_pad_char:
     move.l	#(3*4 + 4*4 + 8*4), %d0
     move.l	%a2@(GV_wrch), %a4
     jsr		(%a5)
