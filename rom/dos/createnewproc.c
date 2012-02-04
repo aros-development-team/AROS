@@ -491,8 +491,23 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     {
         if (process->pr_Flags & PRF_SYNCHRONOUS)
         {
+             SIPTR oldSignal = 0;
+             struct FileHandle *fh = NULL;
+
+            /* Migrate the CIS handle to the new process */
+            if (IsInteractive(process->pr_CIS)) {
+                fh = BADDR(process->pr_CIS);
+
+                if (dopacket(&oldSignal, fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&process->pr_MsgPort, 0, 0, 0, 0, 0) == DOSFALSE)
+                    oldSignal = 0;
+            }
+
             D(bug("[createnewproc] Waiting for task to die...\n"));
             internal_ChildWait(&me->pr_Task, DOSBase);
+
+            if (fh && oldSignal) {
+                DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&oldSignal, 0, 0, 0);
+            }
         }
 
         goto end;
