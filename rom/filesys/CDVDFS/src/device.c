@@ -1076,7 +1076,7 @@ openbreak:
 			{
 				if(error == ERROR_DISK_WRITE_PROTECTED)
 				{
-#ifdef __AROS__
+#if defined(__AROS__) && !defined(__mc68000)
 					UBYTE  tn[MAX_NAME_LEN], n[26+MAX_NAME_LEN];
 					//StrCpyFromBstr(global->g_vol_name, tn);
 					CopyMem(global->g_vol_name+1, tn, global->g_vol_name[0]);
