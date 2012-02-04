@@ -722,7 +722,6 @@ BCPL sendPacket     /* c0, BOOL, -, MsgPort, Type, -, -, Arg1,... */
     jsr		dopacket
     lea.l	%sp@(10 * 4), %sp
     movem.l	%sp@+,%a0-%a1/%a6
-    moveq.l	#-1,%d0
     BRTS
 
 BCPL returnPacket   /* c4, void, @DosPacket, res1, res2 */
