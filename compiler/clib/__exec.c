@@ -435,12 +435,19 @@ void __exec_do(APTR id)
     oldtaskname = self->tc_Node.ln_Name;
     self->tc_Node.ln_Name = aroscbase->acb_exec_taskname;
     SetProgramName((STRPTR)aroscbase->acb_exec_taskname);
-   
+
+    D(bug("[__exec_do] Running program, aroscbase=%x\n", aroscbase));
+
     returncode = RunCommand(
         aroscbase->acb_exec_seglist,
         cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
         (STRPTR)aroscbase->acb_exec_args,
         strlen(aroscbase->acb_exec_args)
+    );
+
+    D(bug("[__exec_do] Program ran, aroscbase=%x, __GM_GetBase()=%x\n",
+          aroscbase, __GM_GetBase()
+      )
     );
 
     self->tc_Node.ln_Name = oldtaskname;

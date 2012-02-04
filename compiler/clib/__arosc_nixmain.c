@@ -41,6 +41,8 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     char *new_argv0 = NULL;
     struct MinList old_vars;
 
+    D(bug("__arosc_nixmain: @begin, Task=%x\n", FindTask(NULL)));
+
     /* Trigger *nix path handling on.  */
     aroscbase->acb_doupath = 1;
 
@@ -66,6 +68,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
        The cloning does not need to be performed if flags of parent have VFORK_PARENT
        or EXEC_PARENT flags */
     paroscbase = __GM_GetBaseParent(aroscbase);
+    D(bug("__arosc_nixmain: paroscbase = %x, Task=%x\n", paroscbase, FindTask(NULL)));
     if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
     {
         D(bug("__arosc_nixmain: Cloning LocalVars"));
@@ -86,8 +89,10 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     {
         __arosc_startup_error = (*main)(argc, argv);
     }
+    else
+        D(bug("__arosc_nixmain: setjmp() != 0\n"));
 
-
+    D(bug("__arosc_nixmain: paroscbase = %x, Task=%x\n", paroscbase, FindTask(NULL)));
     if (!paroscbase || !(paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
         restore_vars(&old_vars);
 
@@ -99,6 +104,8 @@ err_vars:
         free(new_argv0);
 	argv[0] = (char *)old_argv0;
     }
+
+    D(bug("__arosc_nixmain: @end, Task=%x\n", FindTask(NULL)));
 
     return __arosc_startup_error;
 }
