@@ -28,6 +28,29 @@
 static struct SignalSemaphore __fdsem;
 static struct MinList __fdreglist;
 
+void __getfdarray(APTR *arrayptr, int *slotsptr)
+{
+    struct aroscbase *aroscbase = __GM_GetBase();
+
+    *arrayptr = aroscbase->acb_fd_array;
+    *slotsptr = aroscbase->acb_numslots;
+}
+
+void __setfdarray(APTR array, int slots)
+{
+    struct aroscbase *aroscbase = __GM_GetBase();
+    aroscbase->acb_fd_array = array;
+    aroscbase->acb_numslots = slots;
+}
+
+void __setfdarraybase(struct aroscbase *aroscbase2)
+{
+    struct aroscbase *aroscbase = __GM_GetBase();
+
+    aroscbase->acb_fd_array = aroscbase2->acb_fd_array;
+    aroscbase->acb_numslots = aroscbase2->acb_numslots;
+}
+
 int __getfdslots(void)
 {
     struct aroscbase *aroscbase = __GM_GetBase();
@@ -497,6 +520,27 @@ void __exit_fd(struct aroscbase *aroscbase)
 	    close(i);
     }
     DeletePool(aroscbase->acb_fd_mempool);
+}
+
+void __close_on_exec_fdescs(void)
+{
+    struct aroscbase *aroscbase = __GM_GetBase();
+
+    int i;
+    fdesc *fd;
+
+    for (i = aroscbase->acb_numslots - 1; i >= 0; i--)
+    {
+        if ((fd = __getfdesc(i)) != NULL)
+        {
+            D(bug("__close_fdesc_on_exec: checking fd %d\n", i));
+            if (fd->fdflags & FD_CLOEXEC)
+            {
+                D(bug("__close_fdesc_on_exec: closing fd %d\n", i));
+                close(i);
+            }
+        }
+    }
 }
 
 #include <stdio.h>
