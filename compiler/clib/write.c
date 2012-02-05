@@ -10,7 +10,6 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include "__stdio.h"
 #include "__fdesc.h"
 
 /*****************************************************************************

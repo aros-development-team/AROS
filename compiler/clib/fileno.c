@@ -1,11 +1,12 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function fileno().
 */
 
 #include <errno.h>
+#include "__stdio.h"
 
 /*****************************************************************************
 
