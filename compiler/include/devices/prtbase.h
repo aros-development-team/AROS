@@ -78,8 +78,8 @@ struct DeviceData
 
 #define DUF_STOPPED	    	(1L << DUB_STOPPED)
 
-#define P_OLDSTKSIZE	    	0x0800
-#define P_STKSIZE   	    	AROS_STACKSIZE	/* 0x1000 in AmigaOS */
+#define P_OLDSTKSIZE	    	0x0800  /* Unused */
+#define P_STKSIZE   	    	0x1000  /* Unused */
 #define P_BUFSIZE	    	256
 #define P_SAFESIZE	    	128
 
@@ -186,9 +186,12 @@ struct PrinterExtendedData
 				     UBYTE params[]);
     LONG    	    (*ped_Render)(SIPTR ct, LONG x, LONG y, LONG status);
     LONG    	      ped_TimeoutSecs;
+    /* Version 33 and above drivers */
     STRPTR  	     *ped_8BitChars;
     LONG    	      ped_PrintMode;
+    /* Version 34 and above drivers */
     LONG    	    (*ped_ConvFunc)(UBYTE *buf, UBYTE c, LONG crlf_flag);
+    /* Version 44 and above drivers, with PPCF_EXTENDED */
     struct TagItem   *ped_TagList;
     LONG    	    (*ped_DoPreferences)(union printerIO *ior, LONG command);
     VOID    	    (*ped_CallErrHook)(union printerIO *ior, struct Hook *hook);
