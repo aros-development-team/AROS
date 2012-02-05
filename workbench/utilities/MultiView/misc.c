@@ -413,6 +413,49 @@ ULONG DoWriteMethod(STRPTR name, ULONG mode)
 
 /*********************************************************************************************/
 
+ULONG DoPrintMethod(VOID)
+{
+    struct dtPrint msg;
+    struct MsgPort *mp;
+    struct IORequest *pio;
+    ULONG retval = PDERR_CANCEL;
+   
+    if ((mp = CreateMsgPort())) {
+        if ((pio = CreateIORequest(mp, sizeof(union printerIO)))) {
+            if (0 == OpenDevice("printer.device", 0, pio, 0)) {
+                ULONG IDCMPFlags;
+
+                msg.MethodID          = DTM_PRINT;
+                msg.dtp_GInfo         = NULL;
+                msg.dtp_PIO           = (union printerIO *)pio;
+                msg.dtp_AttrList      = NULL;
+                D(bug("Multiview: Printing...\n"));
+
+                /* We're not using PrintDTObjectA() here at this
+                 * time, because we don't plan on waiting for the
+                 * IDCMP_IDCMPUPDATE (DTA_PrinterStatus) message.
+                 *
+                 * So we just use the busy pointer while printing.
+                 */
+                IDCMPFlags = win->IDCMPFlags;
+                ModifyIDCMP(win, 0);
+                SetWindowPointer(win, WA_BusyPointer, TRUE);
+                retval = DoDTMethodA(dto, win, NULL, (Msg)&msg);
+                ModifyIDCMP(win, IDCMPFlags);
+                ClearPointer(win);
+
+                CloseDevice(pio);
+            }
+            DeleteIORequest(pio);
+        }
+        DeleteMsgPort(mp);
+    }
+
+    return retval;
+}
+
+/*********************************************************************************************/
+
 ULONG DoLayout(ULONG initial)
 {
     ULONG res;
