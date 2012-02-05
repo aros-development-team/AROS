@@ -54,7 +54,7 @@
 /* PRS_TRANSFER - Render page row
  *
  * ct - pointer to PrtInfo
- * x  - 0
+ * x  - color (PCMYELLOW/PCMMAGENTA/PCMCYAN/PCMBLACK)
  * y  - row # (0 to height-1)
  */
 #define PRS_TRANSFER            1
@@ -87,6 +87,13 @@
  * y  - 0
  */
 #define PRS_PREINIT             5
+
+/* PRS_NEXTCOLOR - Select next color for PCC_MULTI_PASS
+ * ct - 0
+ * x  - 0
+ * y  - 0
+ */
+#define PRS_NEXTCOLOR           6
 
 /* PRS_UNKNOWN - Something that AOS 3.9 sends, unknown?
  * ct - 0
