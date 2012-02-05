@@ -11,12 +11,20 @@
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
-#include "__time.h"
 #include "__stat.h"
+#include "__arosc_privdata.h"
 
 #include <sys/stat.h>
 #include <aros/debug.h>
+
+/* 2922 is the number of days between 1.1.1970 and 1.1.1978 (2 leap
+   years and 6 normal). The former number is the start value
+   for time(), the latter the start time for the AmigaOS
+   time functions.
+*/
+#define OFFSET_FROM_1970 2922*24*60*60
 
 static mode_t __prot_a2u(ULONG protect);
 static uid_t  __id_a2u(UWORD id);
