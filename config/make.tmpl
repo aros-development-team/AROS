@@ -1897,7 +1897,7 @@ TMP_SRCDIR := $(shell echo $(SRCDIR) | sed 's/^\(.\):\//\/\1\//')
 vpath %.c $(addprefix $(TMP_SRCDIR)/$(CURDIR)/,$(dir $(BD_FILES)))
 endif
 
-%rule_compile_multi basenames=$(BD_FILES) targetdir=%(objdir) \
+%rule_compile basename=% targetdir=%(objdir) \
     compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
 %rule_compile_cxx_multi basenames=$(BD_CXXFILES) targetdir=%(objdir) \
     compiler=%(compiler) cflags=$(BD_CFLAGS) dflags=$(BD_DFLAGS)
