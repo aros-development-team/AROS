@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -902,8 +902,8 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 					   (APTR)CloseAboutWindowFunc, NULL };
     static const char about_text[] = "Zune, a MUI clone\n"
 	"\nCompiled on " __DATE__
-	"\nCopyright (C) 2002-2011, The AROS Development Team.";
-    
+	"\nCopyright (C) 2002-2012, The AROS Development Team.";
+
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
