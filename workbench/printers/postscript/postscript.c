@@ -11,10 +11,14 @@
 #include <clib/alib_protos.h>
 #include <devices/printer.h>
 #include <devices/prtgfx.h>
+#include <prefs/printergfx.h>
+#include <prefs/printertxt.h>
+#include <exec/rawfmt.h>
 
+#include <proto/exec.h>
 #include <proto/graphics.h>
 
-static struct Library *GfxBase;
+//static struct Library *GfxBase;
 
 static LONG ps_Init(struct PrinterData *pd);
 static VOID ps_Expunge(VOID);
@@ -43,9 +47,9 @@ static struct TagItem PED_TagList[] = {
 
 static CONST_STRPTR PED_Commands[] = {
     "\377",                             /*  0 aRIS   (reset) */
-    "",                                 /*  1 aRIN   (initialize) */
-    "\n",                               /*  2 aIND   (linefeed) */
-    "\r\n",                             /*  3 aNEL   (CR/LF) */
+    "\377\377",                         /*  1 aRIN   (initialize) */
+    "\377",                             /*  2 aIND   (linefeed) */
+    "\377",                             /*  3 aNEL   (CR/LF) */
     "\377",                             /*  4 aRI    (reverse LF) */
     "\377",                             /*  5 aSGR0  (Courier) */
     "\377",                             /*  6 aSGR3  (italics) */
@@ -251,12 +255,18 @@ AROS_PRINTER_TAG(PED, 44, 0,
 );
 
 struct PrinterData *PD;
+static LONG ps_PageID;
+static BOOL ps_HeaderSent;
+static CONST_STRPTR ps_PaperSize;
+static LONG ps_PrintBufLen;
+static LONG ps_SpacingLPI;
+static LONG ps_FontCPI;
 
 static LONG ps_Init(struct PrinterData *pd)
 {
     D(bug("ps_Init: pd=%p\n", pd));
     PD = pd;
-    GfxBase = OpenLibrary("graphics.library", 0);
+//    GfxBase = OpenLibrary("graphics.library", 0);
     return 0;
 }
 
@@ -264,102 +274,156 @@ static VOID ps_Expunge(VOID)
 {
     D(bug("ps_Expunge\n"));
     PD = NULL;
-    CloseLibrary(GfxBase);
+//    CloseLibrary(GfxBase);
 }
 
-static void PWrite(const char *format, ...)
-{
-    va_list args;
-    char state = 0;
-    int len = 0;
-    LONG lval = 0;
-    static char buff_a[16];
-    static char buff_b[16];
-    static char *buff = &buff_a[0];
+static struct {
+    char buff_a[16];
+    char buff_b[16];
+    char *buff;
+    int len;
+} ps_PState = {
+    .buff = &ps_PState.buff_a[0]
+};
 
 #define PFLUSH() do { \
-        PD->pd_PWrite(buff, len); \
-        if (buff == &buff_a[0]) \
-            buff = &buff_b[0]; \
+        PD->pd_PWrite(ps_PState.buff, ps_PState.len); \
+        if (ps_PState.buff == &ps_PState.buff_a[0]) \
+            ps_PState.buff = &ps_PState.buff_b[0]; \
         else \
-            buff = &buff_a[0]; \
-        len = 0; \
+            ps_PState.buff = &ps_PState.buff_a[0]; \
+        ps_PState.len = 0; \
       } while (0)
 
-#define PUTC(c) do { \
-    buff[len++]=c; \
-    if (len >= 16) PFLUSH(); \
-  } while (0)
 
-    va_start(args, format);
+static AROS_UFH2(void, ps_PPutC,
+        AROS_UFHA(UBYTE, c, D0),
+        AROS_UFHA(APTR, dummy, A3))
+{
+    AROS_USERFUNC_INIT
 
-    for (; *format; format++) {
-        switch (state) {
-        case 0:
-            if (*format == '%') {
-                state = '%';
-            } else {
-                PUTC(*format);
-            }
-            break;
-        case '%':
-            switch (*format) {
-            case 'd':
-                lval = va_arg(args, LONG);
-                if (lval == 0)
-                    PUTC('0');
-                else {
-                    BYTE out[10];
-                    int olen = 0;
-                    if (lval < 0) {
-                        PUTC('-');
-                        lval = -lval;
-                    }
-                    do {
-                        out[olen++] = lval % 10;
-                        lval /= 10;
-                    } while (lval > 0);
-                    while (olen--) {
-                        PUTC(out[olen] + '0');
-                    }
-                }
-                break;
-            case '%':
-                PUTC('%');
-                break;
-            default:
-                PUTC('?');
-                break;
-            }
-            state = 0;
-            break;
-        default:
-            state = 0;
-            break;
-        }
-    }
+    /* Ignore the trailing 0 that RawDoFmt() tacks on the end */
+    if (c == 0)
+        return;
 
-    va_end(args);
+    ps_PState.buff[ps_PState.len++]=c;
+    if (ps_PState.len >= 16)
+        PFLUSH();
 
-    PFLUSH();
+    AROS_USERFUNC_EXIT
 }
 
-static BOOL ps_HeaderSent;
+#define ps_PWrite(fmt, ...) \
+    do { \
+        IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+        RawDoFmt(fmt, args, (VOID_FUNC)ps_PPutC, NULL); \
+        PFLUSH(); \
+    } while (0);
+
+#define ps_VWrite(buf, fmt, ...) \
+    do { \
+        IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
+        RawDoFmt(fmt, args, RAWFMTFUNC_STRING, buf); \
+    } while (0);
+
+CONST TEXT ps_PageHeader[] =
+        "%s\n"  /* Optional formfeed */
+        "%%%%Page: %ld %ld\n"
+        "%%%%BeginPageSetup\n"
+        "%%%%PageOrientation: %s\n"
+        "%%%%PageMedia: %s\n"
+        "%%%%PageBoundingBox: %ld %ld %ld %ld\n"
+        "%%%%EndPageSetup\n"
+        "aFB (\\\n"
+        ;
+
+static void ps_VSendPage(char *buff, BOOL formfeed)
+{
+    ps_VWrite(buff, ps_PageHeader, formfeed ? ") show aFF" : "",
+        ps_PageID, ps_PageID,
+        /* Aspect */
+        PD->pd_Preferences.PrintAspect ? "Landscape" : "Portrait",
+        /* Media */
+        ps_PaperSize,
+        /* BoundingBox */
+        0, 0,
+        PED->ped_MaxXDots * 72 / PED->ped_XDotsInch,
+        PED->ped_MaxYDots * 72 / PED->ped_YDotsInch
+    );
+
+    ps_PageID++;
+}
+
+static void ps_SendPage(BOOL formfeed)
+{
+    ps_PWrite(ps_PageHeader, formfeed ? ") show aFF" : "",
+        ps_PageID, ps_PageID,
+        /* Aspect */
+        PD->pd_Preferences.PrintAspect ? "Landscape" : "Portrait",
+        /* Media */
+        ps_PaperSize,
+        /* BoundingBox */
+        0, 0,
+        PED->ped_MaxXDots * 72 / PED->ped_XDotsInch,
+        PED->ped_MaxYDots * 72 / PED->ped_YDotsInch
+    );
+
+    ps_PageID++;
+}
 
 static void ps_SendHeader(void)
 {
     const TEXT header[] = 
         "%%!PS-Adobe-2.0\n"
-        "/Courier findfont 12 scalefont setfont\n"
-        "5 %d moveto gsave\n"
-        "(\\\n";
+        "%%%%Creator: AROS PostScript %ld.%ld (printer.device)\n"
+        "%%%%BoundingBox: %ld %ld %ld %ld\n"
+        "%%%%DocumentData: Clean7Bit\n"
+        "%%%%LanguageLevel: 2\n"
+        "%%%%DocumentMedia: %s %ld %ld 0 () ()\n"
+        "%%%%EndComments\n"
+        "%%%%BeginProlog\n"
+        /* (ypixels * 72 / ydpi) - (72 / 4) [1/4 inch] */
+        "/Page_Top %ld 72 mul %ld div 72 4 div sub def\n"
+        /* 12 * left-margin-chars */
+        "/Page_Left 12 %ld mul def\n"
+        "/aNEL { currentpoint exch pop Page_Left exch Spacing sub dup 0 lt { pop pop aFF aFB } { moveto } ifelse } bind def\n"
+        "/aIND { currentpoint exch pop Page_Left exch moveto } bind def\n"
+        "/aFB { gsave Font_CPI setFont Page_Left Page_Top moveto } bind def\n"
+        "/aFF  { grestore showpage } bind def\n"
+        "/setFont { 1200 exch div Font_Name findfont exch scalefont setfont } bind def\n"
+        "/Spacing { 72 Spacing_LPI div } bind def\n"
+        "/Font_Name /Courier def\n"
+        "/Font_CPIDefault %ld def\n"
+        "/Spacing_LPIDefault %ld def\n"
+        "/Font_CPI Font_CPIDefault def\n"
+        "/Spacing_LPI Spacing_LPIDefault def\n"
+        "%%%%EndProlog\n"
+        ;
 
     if (!ps_HeaderSent) {
-        PWrite(header, PED->ped_MaxYDots * 72 / PED->ped_YDotsInch - 36);
+        ps_PWrite(header,
+                __pmh.pmh_Version,
+                __pmh.pmh_Revision,
+                /* BoundingBox */
+                0, 0,
+                PED->ped_MaxXDots * 72 / PED->ped_XDotsInch,
+                PED->ped_MaxYDots * 72 / PED->ped_YDotsInch,
+                /* DocumentMedia */
+                ps_PaperSize,
+                PED->ped_MaxXDots * 72 / PED->ped_XDotsInch,
+                PED->ped_MaxYDots * 72 / PED->ped_YDotsInch,
+                /* Margin - assuming average font width is 1/2 its height*/
+                PED->ped_MaxYDots, PED->ped_YDotsInch,
+                PD->pd_Preferences.PrintLeftMargin,
+                ps_FontCPI,
+                ps_SpacingLPI);
+
+        ps_PageID = 1;
         ps_HeaderSent = TRUE;
     }
-}
 
+    ps_SendPage(FALSE);
+}
 
 static LONG ps_Open(union printerIO *ior)
 {
@@ -372,8 +436,11 @@ static LONG ps_Open(union printerIO *ior)
 
 static VOID ps_Close(union printerIO *ior)
 {
-    if (ps_HeaderSent)
-        PWrite(") show showpage grestore\n");
+    if (ps_HeaderSent) {
+        ps_PWrite(") show aFF\n"
+                  "%%%%Trailer\n"
+                  "%%%%EOF\n");
+    }
     D(bug("ps_Close: ior=%p\n", ior));
 }
 
@@ -402,14 +469,15 @@ VOID color_get(struct ColorMap *cm,
     *b = blue8;
 }
 
-static LONG ps_PrintBufLen;
-
-static LONG ps_RenderInit(struct IODRPReq *io, LONG x, LONG y)
+static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
 {
-    D(bug("ps_RenderInit: Dump raster %dx%d pixels, io_RastPort=%p\n", x, y, io->io_RastPort));
-    D(bug("\t@%dx%d (%dx%d) => @%dx%d\n", 
+    D(bug("ps_RenderInit: Dump raster %ldx%ld pixels, io_RastPort=%p\n", width, height, io->io_RastPort));
+    D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n", 
            io->io_SrcX, io->io_SrcY, io->io_SrcWidth,
            io->io_SrcHeight, io->io_DestCols, io->io_DestRows));
+    LONG alignOffsetX = 0;
+    LONG alignOffsetY = 0;
+    LONG x, y;
 
     ps_SendHeader();
 
@@ -418,16 +486,41 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG x, LONG y)
     if (PD->pd_PrintBuf == NULL)
         return PDERR_BUFFERMEMORY;
 
-    /* Write a postscript colorimage */
-    PWrite(") show grestore gsave\n");
-    PWrite("%d %d translate\n", PD->pd_Preferences.PrintXOffset * PED->ped_XDotsInch / 10 +
-                                (PED->ped_MaxXDots - x) / 2,
-                                (PED->ped_MaxYDots - y) / 2);
-    PWrite("%d %d scale\n", x, y);
-    PWrite("%d %d 8 [%d 0 0 %d 0 %d]\n",
+    if (PD->pd_Preferences.PrintFlags & PGFF_CENTER_IMAGE) {
+        alignOffsetX = (PED->ped_MaxXDots - width) / 2;
+        alignOffsetY = (PED->ped_MaxYDots - height) / 2;
+    }
+
+    /* Leave text printing mode */
+    ps_PWrite(") show grestore gsave\n");
+
+    /* Move grapics location to (in dots):
+     * x = (PrintXOffset * dpiX / 10) +   alignOffsetX
+     *          (0.1 in)                (dots)     (dots)
+     * y = (PrintYOffset * dpiX / 10) +   alignOffsetY + height
+     */
+    x = PD->pd_Preferences.PrintXOffset * PED->ped_XDotsInch / 10 + alignOffsetX;
+    y = /* ??? where ???                * PED->ped_YDotsInch / 10+*/alignOffsetY + height;
+
+    /* Move text location to (in points):
+     *  textx = PageLeft
+     *  texty = (y - height) * dpiY / 72 - Font_H
+     */
+    ps_PWrite("PageLeft %ld %ld mul 72 div Font_H sub moveto\n", y - height, PED->ped_YDotsInch);
+
+    /* Save the graphics context - we don't want the scaling & translation
+     * when we return to text context later
+     */
+    ps_PWrite("gsave\n");
+    ps_PWrite("%ld 72 div %ld mul %ld 72 div %ld mul translate\n",
+            x, PED->ped_XDotsInch,
+            y, PED->ped_YDotsInch);
+    ps_PWrite("translate\n");
+    ps_PWrite("%ld %ld div %ld %ld div scale\n", x * 72, PED->ped_XDotsInch, y * 72, PED->ped_YDotsInch);
+    ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
             io->io_SrcWidth, io->io_SrcHeight,
             io->io_SrcWidth, -io->io_SrcHeight, io->io_SrcHeight);
-    PWrite("{<\n");
+    ps_PWrite("{<\n");
 
     return PDERR_NOERR;
 }
@@ -470,7 +563,7 @@ static LONG ps_RenderClear(void)
 
 static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
 {
-    ULONG dpiX = 0, dpiY = 0;
+    ULONG dpiX, dpiY;
     ULONG width, height;
 
     /* Select DPI */
@@ -503,11 +596,49 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
         dpiX = 1200;
         dpiY = 1200;
         break;
+    default:
+        dpiX = 72;
+        dpiY = 72;
+    }
+
+    switch (PD->pd_Preferences.PrintPitch) {
+    case PP_ELITE: ps_FontCPI = 120; break;
+    case PP_FINE:  ps_FontCPI = 171; break;
+    case PP_PICA:  ps_FontCPI = 100; break;
+    default:
+        return PDERR_BADDIMENSION;
+    }
+
+    switch (PD->pd_Preferences.PrintSpacing) {
+    case PS_SIX_LPI:   ps_SpacingLPI = 6; break;
+    case PS_EIGHT_LPI: ps_SpacingLPI = 8; break;
+    default:
+        return PDERR_BADDIMENSION;
+    }
+
+    switch (PD->pd_Preferences.PaperSize) {
+/* PaperSize (in units of 0.0001 meters) */
+    case US_LETTER: ps_PaperSize = "Letter";  break;   /* 8.5"x11" */
+    case US_LEGAL:  ps_PaperSize = "Legal";   break;   /* 8.5"x14" */
+    case N_TRACTOR: ps_PaperSize = "80-Col";  break;   /* 9.5"x11" */
+    case W_TRACTOR: ps_PaperSize = "132-Col"; break;   /* 14.86"x11" */
+/* European sizes */
+    case EURO_A0:   ps_PaperSize = "A0";      break;  /* A0: 841 x 1189 */
+    case EURO_A1:   ps_PaperSize = "A1";      break;  /* A1: 594 x 841  */
+    case EURO_A2:   ps_PaperSize = "A2";      break;  /* A2: 420 x 594  */
+    case EURO_A3:   ps_PaperSize = "A3";      break;  /* A3: 297 x 420  */
+    case EURO_A4:   ps_PaperSize = "A4";      break;  /* A4: 210 x 297  */
+    case EURO_A5:   ps_PaperSize = "A5";      break;  /* A5: 148 x 210  */
+    case EURO_A6:   ps_PaperSize = "A6";      break;  /* A6: 105 x 148  */
+    case EURO_A7:   ps_PaperSize = "A7";      break;  /* A7: 74 x 105   */
+    case EURO_A8:   ps_PaperSize = "A8";      break;  /* A8: 52 x 74    */
+    case CUSTOM:    ps_PaperSize = "Custom";  break;
+    default:        return PDERR_BADDIMENSION;
     }
 
     /* Set up for the page size */
     switch (PD->pd_Preferences.PaperSize) {
-/* PaperSize (in um) */
+/* PaperSize (in units of 0.0001 meters) */
     case US_LETTER: width = 2159; height = 2794; break;   /* 8.5"x11" */
     case US_LEGAL:  width = 2159; height = 3556; break;   /* 8.5"x14" */
     case N_TRACTOR: width = 2413; height = 2794; break;   /* 9.5"x11" */
@@ -528,11 +659,16 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
     default:        return PDERR_CANCEL;
     }
 
-    PED->ped_MaxColumns = width * 10 / 254;
+    PED->ped_NumRows = height * ps_SpacingLPI / 2540;
+    PED->ped_MaxColumns = width * ps_FontCPI / 2540;
     PED->ped_XDotsInch = dpiX;
     PED->ped_YDotsInch = dpiY;
     PED->ped_MaxXDots = width * dpiX / 254;
     PED->ped_MaxYDots = height * dpiY / 254;
+bug("MaxColumns=%d, dpiX=%d, dpiY=%d, MaxXDots=%d, MaxYDots=%d (%d x %d in)\n",
+        PED->ped_MaxColumns, PED->ped_XDotsInch, PED->ped_YDotsInch,
+        PED->ped_MaxXDots, PED->ped_MaxYDots,
+        PED->ped_MaxXDots / dpiX, PED->ped_MaxYDots / dpiY);
 
     return PDERR_NOERR;
 }
@@ -540,12 +676,19 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
 static LONG ps_RenderClose(struct IODRPReq *io, ULONG flags)
 {
     if (ps_PrintBufLen) {
-        PWrite(">}\nfalse 3 colorimage\n");
-        PWrite("grestore (\n");
+        ps_PWrite(">}\nfalse 3 colorimage\n");
+        /* Restore to text context - the text location
+         * has already been moved to after the raster
+         */
+        ps_PWrite("grestore (\n",);
         FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 6);
         PD->pd_PrintBuf=NULL;
         ps_PrintBufLen=0;
     }
+
+    /* Send formfeed */
+    if (!(flags & SPECIAL_NOFORMFEED))
+        ps_SendPage(TRUE);
 
     return PDERR_NOERR;
 }
@@ -597,51 +740,60 @@ static LONG ps_Render(SIPTR ct, LONG x, LONG y, LONG status)
     return err;
 }
 
-/* Text output */
+/* Text output:
+ *  > 0 = processed, add N chars
+ *  0   = not handled by DoSpecial
+ *  -1  = Unsupported command
+ *  -2  = Processed, but no additional chars in the buffer
+ */
 static LONG ps_DoSpecial(UWORD *command, UBYTE output_buffer[],
                          BYTE *current_line_position,
                          BYTE *current_line_spacing,
                          BYTE *crlf_flag, UBYTE params[])
 {
+    LONG ret;
     D(bug("ps_DoSpecial: command=0x%04x, output_buffer=%p, current_line_position=%d, current_line_spacing=%d, crlf_flag=%d, params=%s\n",
                 *command, output_buffer,  *current_line_position, *current_line_spacing, *crlf_flag, params));
 
-    if (*command == aRIN) {
+    switch (*command) {
+    case aRIN:
         ps_SendHeader();
-    }
-
-    if (*command == aRIS) {
+        ret = -2;
+        break;
+    case aRIS:
         PD->pd_PWaitEnabled = '\375';
+        ret = -2;
+        break;
+    case aIND:
+        strcpy(output_buffer, ") show aIND\n(");
+        ret = strlen(output_buffer);
+        break;
+    case aNEL:
+        (*current_line_position)++;
+        strcpy(output_buffer, ") show aNEL\n(");
+        ret = strlen(output_buffer);
+        break;
+    default:
+        ret = -1;
+        break;
     }
 
-    if (*command == aIND) {
-        strcpy(output_buffer, "\\\n) show\n"
-                /* Get current point => x=5, y=currentline */
-                    "currentpoint exch pop 5 exch moveto\n"
-                    "(\\\n");
-        return strlen(output_buffer);
-    }
-
-    if (*command == aNEL) {
-        strcpy(output_buffer, "\\\n) show\n"
-                /* Get current point => x=5, y=currentline-11 */
-                    "currentpoint exch pop 5 exch 11 sub moveto\n"
-                    "(\\\n");
-        return strlen(output_buffer);
-    }
-
-
-    return -1;
+    return ret;
 }
 
 static LONG ps_ConvFunc(UBYTE *buf, UBYTE c, LONG crlf_flag)
 {
     D(bug("ps_ConvFunc: %p '%c' %d\n", buf, c, crlf_flag));
 
+    if (c == '\014') {  /* Formfeed */
+        ps_VSendPage(buf, TRUE);
+        return strlen(buf);
+    }
+
     if (c < 0x1f || c > 0x7f)
         return -1;
 
-    if (c == '(' || c == ')') {
+    if (c == '(' || c == ')' || c== '\\') {
         *(buf++) = '\\';
         *(buf++) = c;
         *(buf++) = 0;
