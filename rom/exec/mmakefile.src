@@ -31,7 +31,8 @@ ALL_FUNCTIONS := \
 	vacate wait waitio waitport allocvecpooled freevecpooled newallocentry \
 	newaddtask newminlist avl vnewrawdofmt shutdowna useralert \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska \
-        alloctaskstorageslot freetaskstorageslot
+        alloctaskstorageslot freetaskstorageslot savetaskstorage \
+        restoretaskstorage
 
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
