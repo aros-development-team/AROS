@@ -34,17 +34,6 @@ static LONG ps_DoSpecial(UWORD *command, UBYTE output_buffer[],
                          BYTE *current_line_spacing,
                          BYTE *crlf_flag, UBYTE params[]);
 
-static struct TagItem PED_TagList[] = {
-    { PRTA_8BitGuns, TRUE },            /* 0 */
-    { PRTA_NewColor, TRUE },            /* 1 */
-    { PRTA_ColorSize, 3 },              /* 2 */
-    { PRTA_NoScaling, TRUE },           /* 3 */
-    { PRTA_MixBWColor, FALSE },         /* 4 */
-    { PRTA_LeftBorder, 0 },             /* 5 */
-    { PRTA_TopBorder,  0 },             /* 6 */
-    { TAG_END }
-};
-
 static CONST_STRPTR PED_Commands[] = {
     "\377",                             /*  0 aRIS   (reset) */
     "\377\377",                         /*  1 aRIN   (initialize) */
@@ -225,6 +214,17 @@ static CONST_STRPTR PED_8BitChars[] = {
           "?", /* y: */
 };
 
+static struct TagItem PED_TagList[] = {
+    { PRTA_8BitGuns, TRUE },            /* 0 */
+    { PRTA_NewColor, TRUE },            /* 1 */
+    { PRTA_ColorSize, 3 },              /* 2 */
+    { PRTA_NoScaling, TRUE },           /* 3 */
+    { PRTA_MixBWColor, FALSE },         /* 4 */
+    { PRTA_LeftBorder, 0 },             /* 5 */
+    { PRTA_TopBorder,  0 },             /* 6 */
+    { TAG_END }
+};
+
 AROS_PRINTER_TAG(PED, 44, 0,
         .ped_PrinterName = "PostScript",
         .ped_Init = ps_Init,
@@ -237,7 +237,7 @@ AROS_PRINTER_TAG(PED, 44, 0,
         .ped_MaxColumns = 0,    /* Set during render */
         .ped_ColorClass = PCC_BGR,
         .ped_NumCharSets = 2,
-        .ped_NumRows = 1,
+        .ped_NumRows = 1,        /* minimum pixels/row in gfx mode */
         .ped_MaxXDots = 0,       /* Set during render */
         .ped_MaxYDots = 0,       /* Set during render */
         .ped_XDotsInch = 0,      /* Set during render */
@@ -659,7 +659,6 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
     default:        return PDERR_CANCEL;
     }
 
-    PED->ped_NumRows = height * ps_SpacingLPI / 2540;
     PED->ped_MaxColumns = width * ps_FontCPI / 2540;
     PED->ped_XDotsInch = dpiX;
     PED->ped_YDotsInch = dpiY;
