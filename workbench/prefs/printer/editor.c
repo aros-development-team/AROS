@@ -189,7 +189,7 @@ struct PrinterEditor_DATA
     Object *pg_GraphicFlags_Center;     /* CheckMark */
     Object *pg_GraphicFlags_AntiAlias;  /* CheckMark */
     Object *pg_GraphicFlags_IntScaling; /* CheckMark */
-    Object *pg_PrintDensity;    /* Cycle */
+    Object *pg_PrintDensity;    /* Slider */
 
     Object *pg_MaxUnits;        /* Cycle */
     Object *pg_PrintMaxWidth;   /* String (integer) */
@@ -375,6 +375,14 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_String_Accept, (IPTR)"0123456879",
                                 MUIA_String_Integer, 0,
                             End),
+                            Child, (IPTR) LLabel("Density:"),
+                            Child, (IPTR) (data->pg_PrintDensity = SliderObject,
+                                SliderFrame,
+                                MUIA_Slider_Horiz, TRUE,
+                                MUIA_Slider_Level, 1,
+                                MUIA_Slider_Min, 1,
+                                MUIA_Slider_Max, 7,
+                            End),
                         End,
                         Child, (IPTR) ColGroup(2),
                             Child, (IPTR) LLabel("Aspect:"),
@@ -395,13 +403,13 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                                 MUIA_Numeric_Min, 0,
                                 MUIA_Numeric_Max, 255,
                             End),
-                            Child, (IPTR) LLabel("Dimensions:"),
-                            Child, (IPTR) (data->pg_Dimensions = CycleObject,
-                                MUIA_Cycle_Entries, (IPTR) ui_Dimensions,
-                            End),
                             Child, (IPTR) LLabel("Dithering:"),
                             Child, (IPTR) (data->pg_Dithering = CycleObject,
                                 MUIA_Cycle_Entries, (IPTR) ui_Dithering,
+                            End),
+                            Child, (IPTR) LLabel("Dimensions:"),
+                            Child, (IPTR) (data->pg_Dimensions = CycleObject,
+                                MUIA_Cycle_Entries, (IPTR) ui_Dimensions,
                             End),
                             Child, (IPTR) HGroup,
                                 Child, (IPTR) LLabel("Offset ("),
@@ -470,10 +478,10 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         PREF_NOTIFY(pg_Threshold, MUIA_Numeric_Value);
         PREF_NOTIFY(pg_Dimensions, MUIA_Cycle_Active);
         PREF_NOTIFY(pg_Dithering, MUIA_Cycle_Active);
+        PREF_NOTIFY(pg_PrintDensity, MUIA_Numeric_Value);
         PREF_NOTIFY(pg_GraphicFlags_Center, MUIA_Selected);
         PREF_NOTIFY(pg_GraphicFlags_AntiAlias, MUIA_Selected);
         PREF_NOTIFY(pg_GraphicFlags_IntScaling, MUIA_Selected);
-        PREF_NOTIFY(pg_PrintDensity, MUIA_Cycle_Active);
         PREF_REFRESH(pg_MaxUnits, MUIA_Cycle_Active);
         PREF_NOTIFY(pg_PrintMaxWidth, MUIA_String_Integer);
         PREF_NOTIFY(pg_PrintMaxHeight, MUIA_String_Integer);
@@ -631,6 +639,8 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
     gfx->pg_Threshold = XGET(data->pg_Threshold, MUIA_Numeric_Value);
     gfx->pg_ColorCorrect = 0; /* TODO! */
     gfx->pg_Dimensions = XGET(data->pg_Dimensions, MUIA_Cycle_Active);
+    gfx->pg_Dithering = XGET(data->pg_Dithering, MUIA_Cycle_Active);
+    gfx->pg_PrintDensity = XGET(data->pg_PrintDensity, MUIA_Numeric_Value);
     gfx->pg_GraphicFlags =
         (XGET(data->pg_GraphicFlags_Center, MUIA_Selected) ? PGFF_CENTER_IMAGE : 0) |
         (XGET(data->pg_GraphicFlags_AntiAlias, MUIA_Selected) ? PGFF_ANTI_ALIAS : 0) |
@@ -716,6 +726,7 @@ STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self)
     NNSET(data->pg_Threshold, MUIA_Numeric_Value, gfx->pg_Threshold);
     NNSET(data->pg_Dimensions, MUIA_Cycle_Active, gfx->pg_Dimensions);
     NNSET(data->pg_Dithering, MUIA_Cycle_Active, gfx->pg_Dithering);
+    NNSET(data->pg_PrintDensity, MUIA_Numeric_Value, gfx->pg_PrintDensity <= 0 ? 1 : gfx->pg_PrintDensity);
     NNSET(data->pg_GraphicFlags_Center, MUIA_Selected, (gfx->pg_GraphicFlags & PGFF_CENTER_IMAGE) ? TRUE : FALSE);
     NNSET(data->pg_GraphicFlags_AntiAlias, MUIA_Selected, (gfx->pg_GraphicFlags & PGFF_ANTI_ALIAS) ? TRUE : FALSE);
     NNSET(data->pg_GraphicFlags_IntScaling, MUIA_Selected, (gfx->pg_GraphicFlags & PGFF_INTEGER_SCALING) ? TRUE : FALSE);
