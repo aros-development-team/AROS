@@ -8,7 +8,7 @@ FILES := nforce handler unit
 #   random
 #   srandom
 
-%build_module mmake=devs-networks-drivers-nforce-i386 \
+%build_module mmake=workbench-devs-networks-nforce-i386 \
     modname=nforce modtype=device \
     files="nforce_init $(FILES)" \
     moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs arosc"

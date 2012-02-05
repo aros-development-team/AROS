@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-pcnet32-i386 : networking-drivers-pcnet32-x86
-#MM- devs-networks-drivers-pcnet32-x86_64 : networking-drivers-pcnet32-x86
+#MM- workbench-devs-networks-pcnet32-i386 : workbench-devs-networks-pcnet32-x86
+#MM- workbench-devs-networks-pcnet32-x86_64 : workbench-devs-networks-pcnet32-x86
 
 FILES := handler unit pcnet32
 
-%build_module mmake=networking-drivers-pcnet32-x86 \
+%build_module mmake=workbench-devs-networks-pcnet32-x86 \
     modname=pcnet32 modtype=device \
     files="pcnet32_init $(FILES)" \
     moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"

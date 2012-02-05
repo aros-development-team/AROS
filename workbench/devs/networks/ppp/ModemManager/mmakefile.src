@@ -6,9 +6,9 @@ USER_CFLAGS := \
 FILES := ModemManager misc  
 EXEDIR := $(AROS_C)
 
-#MM devs-networks-drivers-ppp-mm : includes linklibs
+#MM workbench-devs-networks-ppp-mm : includes linklibs
 
-%build_prog mmake=devs-networks-drivers-ppp-mm \
+%build_prog mmake=workbench-devs-networks-ppp-mm \
     progname=ModemManager targetdir=$(EXEDIR) \
     files=$(FILES) uselibs="arossupport amiga arosc m mui"
 %common

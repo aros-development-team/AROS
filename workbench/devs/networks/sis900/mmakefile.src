@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-sis900-i386 : networking-drivers-sis900
-#MM- devs-networks-drivers-sis900-x86_64 : networking-drivers-sis900
+#MM- workbench-devs-networks-sis900-i386 : workbench-devs-networks-sis900
+#MM- workbench-devs-networks-sis900-x86_64 : workbench-devs-networks-sis900
 
 FILES := handler unit sis900
 
-%build_module mmake=networking-drivers-sis900 \
+%build_module mmake=workbench-devs-networks-sis900 \
     modname=sis900 modtype=device \
     files="sis900_init $(FILES)" \
     moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"

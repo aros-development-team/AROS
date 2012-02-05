@@ -1,23 +1,23 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-rtl8139-i386 : networking-drivers-rtl8139
-#MM- devs-networks-drivers-rtl8139-x86_64 : networking-drivers-rtl8139
+#MM- workbench-devs-networks-rtl8139-i386 : workbench-devs-networks-rtl8139
+#MM- workbench-devs-networks-rtl8139-x86_64 : workbench-devs-networks-rtl8139
 
 FILES := handler unit rtl8139
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 
-#MM- networking-drivers-rtl8139 : networking-drivers-rtl8139-normal
-#MM- networking-drivers-rtl8139 : networking-drivers-rtl8139-debug
+#MM- workbench-devs-networks-rtl8139 : workbench-devs-networks-rtl8139-normal
+#MM- workbench-devs-networks-rtl8139 : workbench-devs-networks-rtl8139-debug
 
-%build_module mmake=networking-drivers-rtl8139-normal \
+%build_module mmake=workbench-devs-networks-rtl8139-normal \
     modname=rtl8139 modtype=device \
     files="rtl8139_init $(FILES)" cflags=$(CFLAGSNORMAL) \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
 
-%build_module mmake=networking-drivers-rtl8139-debug \
+%build_module mmake=workbench-devs-networks-rtl8139-debug \
     modname=rtl8139_debug modtype=device \
     files="rtl8139_init $(FILES)" conffile=rtl8139.conf cflags=$(CFLAGSDEBUG) \
     objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"

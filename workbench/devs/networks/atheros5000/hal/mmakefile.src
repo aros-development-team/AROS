@@ -17,5 +17,5 @@ CC:=$(oldCC)
 
 USER_CFLAGS += -I$(SRCDIR)/$(CURDIR)
 
-%build_linklib mmake=devs-networks-drivers-atheros5000-hal libname="athhal" \
+%build_linklib mmake=workbench-devs-networks-atheros5000-hal libname="athhal" \
  files="$(basename $(HAL_SRCS))"

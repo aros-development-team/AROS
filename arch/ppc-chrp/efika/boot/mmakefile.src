@@ -51,7 +51,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-hidd-graphics \
 #MM     kernel-hidd-kbd \
 #MM     kernel-hidd-mouse \
-#MM     devs-networks-drivers-fec-powerpc \
+#MM     workbench-devs-networks-fec-powerpc \
 #MM     kernel-processor
 
 PKG_GEN_LIBS 	:= aros expansion utility oop graphics layers intuition keymap workbench dos
