@@ -17,6 +17,7 @@
 #include "Cursor.h"
 #include "Jed.h"
 #include "ProtoTypes.h"
+#include "Print.h"
 
 #define  CATCOMP_NUMBERS			/* We will need the string id */
 #include "strings.h"
@@ -201,6 +202,12 @@ void set_project_name( Project p, STRPTR path )
 		p->path = NULL,
 		p->name = ErrMsg(ERR_NONAME);
 	p->labsize = strlen(p->name);
+}
+
+/*** Print one project ***/
+char print_project(Project p)
+{
+    return print_file(p->the_line, p->eol);
 }
 
 /*** Save one project ***/

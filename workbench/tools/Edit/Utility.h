@@ -10,6 +10,10 @@
 struct Window;
 #endif
 
+/** End of line markers (0 = CR, 1 = LF, 2 = CRLF) **/
+extern const UBYTE chEOL[];
+extern const UBYTE szEOL[];
+
 /** Very simple SPrintf-like function **/
 STRPTR my_SPrintf(STRPTR fmt, APTR data);
 

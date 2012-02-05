@@ -5,7 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
-    	 Macros Memory Prefs Project Search UndoRedo \
+    	 Macros Memory Prefs Print Project Search UndoRedo \
 	 Utility
 
 EXEDIR := $(AROS_TOOLS)

@@ -312,6 +312,7 @@ void handle_menu( LONG MenuID )
 		case 106: save_project (edit,TRUE,TRUE);  break; /* Save as */
 		case_sav: save_project (edit,TRUE,FALSE); break; /* Save one file */
 		case 107: save_projects(edit,FALSE);      break; /* Save changes */
+		case 108: print_project (edit);           break; /* Print project */
 		case 109: show_info(edit);                break; /* Information */
 
 		case 113:	/* Save if necessary, then quit */

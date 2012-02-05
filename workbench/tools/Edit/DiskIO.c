@@ -41,10 +41,6 @@ static IPTR tags[] = {
 	TAG_DONE
 };
 
-/* Different End Of Line marker */
-UBYTE chEOL[] = {'\n', '\r', '\r', '\n'};
-UBYTE szEOL[] = {1, 1, 2};
-
 /*** Find the correctly spelled path ***/
 BYTE get_full_path( STRPTR filename, STRPTR *dest )
 {
@@ -190,7 +186,7 @@ STRPTR ask_save(struct Window *wnd, AskArgs *path, CONST_STRPTR title)
 /** Original FWrite has a too small buffer **/
 static STRPTR buffer = NULL;
 static ULONG  usage  = 0;
-char myFWrite(BPTR file, STRPTR buf, ULONG size)
+char myFWrite(BPTR file, CONST_STRPTR buf, ULONG size)
 {
 	if(buffer == NULL && NULL == (buffer = (STRPTR) AllocVec(MEM_CHUNK, MEMF_PUBLIC)))
 		goto emergency;

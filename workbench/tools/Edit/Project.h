@@ -84,6 +84,7 @@ char    active_project    (Project, char);					/* Makes specified project, the a
 char    close_project     (Project);							/* Try to close a project */
 char    save_project      (Project, char refresh, char);	/* Save one projet, asking for filename */
 void    set_project_name  (Project, STRPTR path);			/* Set path of project */
+char    print_project     (Project active);	/* Print one project */
 void    change_project    (Project, LINE *);					/* Change content of a project (no redraw) */
 void    reshape_panel     (Project);							/* Resize item's project bar */
 void    set_modif_mark    (Project);							/* Set and show modification flag */
