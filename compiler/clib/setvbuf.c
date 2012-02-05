@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function setvbuf().
@@ -9,6 +9,7 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include "__fdesc.h"
+#include "__stdio.h"
 
 /*****************************************************************************
 

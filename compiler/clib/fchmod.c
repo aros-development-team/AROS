@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-#include "__stdio.h"
 #include "__fdesc.h"
 #include "__upath.h"
 

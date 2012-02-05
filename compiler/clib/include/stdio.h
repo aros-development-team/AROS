@@ -49,12 +49,9 @@ typedef off_t fpos_t;
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE
+    struct __sFILE;
     /* I need a named struct for FILE, so that I can use it in wchar.h> */
-    typedef struct __sFILE
-    {
-	int fd;
-	int flags;
-    } FILE;
+    typedef struct __sFILE FILE;
 
 #   define _STDIO_EOF    0x0001L
 #   define _STDIO_ERROR  0x0002L

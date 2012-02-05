@@ -8,6 +8,7 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include "__fdesc.h"
+#include "__stdio.h"
 
 /*****************************************************************************
 

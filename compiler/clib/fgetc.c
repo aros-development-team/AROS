@@ -11,7 +11,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include "__fdesc.h"
-
+#include "__stdio.h"
 
 /*****************************************************************************
 
