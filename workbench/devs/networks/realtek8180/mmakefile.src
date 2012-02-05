@@ -1,11 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-realtek8180-pc: devs-networks-drivers-realtek8180
+#MM- workbench-devs-networks-realtek8180-pc: workbench-devs-networks-realtek8180
 
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
-%build_prog mmake=devs-networks-drivers-realtek8180 \
+%build_prog mmake=workbench-devs-networks-realtek8180 \
     progname="realtek8180.device" \
     files="startup aros_device device request unit encryption usb radio eeprom timer" \
     targetdir="$(AROSDIR)/Devs/Networks"

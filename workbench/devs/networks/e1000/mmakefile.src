@@ -1,8 +1,8 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-e1000-i386 : networking-drivers-e1000
-#MM- devs-networks-drivers-e1000-x86_64 : networking-drivers-e1000
+#MM- workbench-devs-networks-e1000-i386 : workbench-devs-networks-e1000
+#MM- workbench-devs-networks-e1000-x86_64 : workbench-devs-networks-e1000
 
 FILES := handler unit e1000
 INTELCOREFILES := e1000_api e1000_phy e1000_mac e1000_nvm e1000_manage
@@ -12,15 +12,15 @@ CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 ##CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1 -Dintel_debug
 
-#MM- networking-drivers-e1000 : networking-drivers-e1000-normal
-#MM- networking-drivers-e1000 : networking-drivers-e1000-debug
+#MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-normal
+#MM- workbench-devs-networks-e1000 : workbench-devs-networks-e1000-debug
 
-%build_module mmake=networking-drivers-e1000-normal \
+%build_module mmake=workbench-devs-networks-e1000-normal \
     modname=e1000 modtype=device \
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" cflags=$(CFLAGSNORMAL) \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
 
-%build_module mmake=networking-drivers-e1000-debug \
+%build_module mmake=workbench-devs-networks-e1000-debug \
     modname=e1000_debug modtype=device \
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" conffile=e1000.conf cflags=$(CFLAGSDEBUG) \
     objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"

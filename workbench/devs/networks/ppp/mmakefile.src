@@ -5,8 +5,8 @@ USER_CFLAGS := \
 	
 FILES := init handler ppp serial
 
-#MM devs-networks-drivers-ppp : devs-networks-drivers-ppp-mm
+#MM workbench-devs-networks-ppp : workbench-devs-networks-ppp-mm
 
-%build_module mmake=devs-networks-drivers-ppp \
+%build_module mmake=workbench-devs-networks-ppp \
     modname=ppp modtype=device \
     moduledir=Devs/Networks uselibs="arosc"

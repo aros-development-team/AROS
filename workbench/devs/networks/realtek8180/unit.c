@@ -462,9 +462,7 @@ BOOL InitialiseAdapter(struct DevUnit *unit, BOOL reinsertion,
 
    p = (UWORD *)unit->default_address;
    for(i = 0; i < ETH_ADDRESSSIZE / sizeof(UWORD); i++)
-   {
       *p++ = LEWord(ReadEEPROM(unit, R8180ROM_ADDRESS0 + i, base));
-   }
 
    /* Refine main chip revision */
 

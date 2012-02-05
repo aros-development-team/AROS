@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES := fec_unit fec_handler fec_hardware
 
-%build_module mmake=devs-networks-drivers-fec-powerpc \
+%build_module mmake=workbench-devs-networks-fec-powerpc \
     modname=fec modtype=device \
     files="fec_init $(FILES)" \
     moduledir=Devs/Networks uselibs="rom amiga hiddstubs"

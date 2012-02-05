@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-sam440-ppc \
 #MM     kernel-package-sam440-ppc \
 #MM     workbench-complete \
-#MM     devs-networks-drivers-emac-powerpc \
+#MM     workbench-devs-networks-emac-powerpc \
 #MM     aros-tcpip-apps
 
 #MM bootiso-sam440-ppc: \

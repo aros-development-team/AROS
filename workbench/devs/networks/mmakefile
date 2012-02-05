@@ -1,16 +1,16 @@
-#MM- workbench-devs-networks-drivers : \
-#MM     devs-networks-drivers-nforce-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-pcnet32-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-viarhine-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-sis900-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-rtl8139-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-rtl8168-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-rtl8169-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-etherlink3 \
-#MM     devs-networks-drivers-intelpro100 \
-#MM     devs-networks-drivers-e1000-$(AROS_TARGET_CPU) \
-#MM     devs-networks-drivers-prism2 \
-#MM     devs-networks-drivers-rtl8029 \
-#MM     devs-networks-drivers-atheros5000 \
-#MM     devs-networks-drivers-realtek8180-$(AROS_TARGET_ARCH) \
-#MM     devs-networks-drivers-ppp
+#MM- workbench-devs-networks: \
+#MM     workbench-devs-networks-atheros5000 \
+#MM     workbench-devs-networks-e1000-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-etherlink3 \
+#MM     workbench-devs-networks-intelpro100 \
+#MM     workbench-devs-networks-nforce-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-pcnet32-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-ppp \
+#MM     workbench-devs-networks-prism2 \
+#MM     workbench-devs-networks-realtek8180-$(AROS_TARGET_ARCH) \
+#MM     workbench-devs-networks-rhine \
+#MM     workbench-devs-networks-rtl8029 \
+#MM     workbench-devs-networks-rtl8139-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-rtl8168-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-rtl8169-$(AROS_TARGET_CPU) \
+#MM     workbench-devs-networks-sis900-$(AROS_TARGET_CPU)

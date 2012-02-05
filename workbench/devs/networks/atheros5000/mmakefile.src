@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-atheros5000 : \
-#MM  devs-networks-drivers-atheros5000-hal
+#MM- workbench-devs-networks-atheros5000 : \
+#MM  workbench-devs-networks-atheros5000-hal
 
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
-%build_prog mmake=devs-networks-drivers-atheros5000 \
+%build_prog mmake=workbench-devs-networks-atheros5000 \
     progname="atheros5000.device" \
     files="startup aros_device device request unit encryption pci prometheus halsupport" \
     targetdir="$(AROSDIR)/Devs/Networks" uselibs="athhal"

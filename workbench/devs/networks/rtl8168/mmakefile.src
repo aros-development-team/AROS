@@ -1,23 +1,23 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- devs-networks-drivers-rtl8168-i386 : networking-drivers-rtl8168
-#MM- devs-networks-drivers-rtl8168-x86_64 : networking-drivers-rtl8168
+#MM- workbench-devs-networks-rtl8168-i386 : workbench-devs-networks-rtl8168
+#MM- workbench-devs-networks-rtl8168-x86_64 : workbench-devs-networks-rtl8168
 
 FILES := handler unit rtl8168
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
 CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 
-#MM- networking-drivers-rtl8168 : networking-drivers-rtl8168-normal
-#MM- networking-drivers-rtl8168 : networking-drivers-rtl8168-debug
+#MM- workbench-devs-networks-rtl8168 : workbench-devs-networks-rtl8168-normal
+#MM- workbench-devs-networks-rtl8168 : workbench-devs-networks-rtl8168-debug
 
-%build_module mmake=networking-drivers-rtl8168-normal \
+%build_module mmake=workbench-devs-networks-rtl8168-normal \
     modname=rtl8168 modtype=device \
     files="rtl8168_init $(FILES)" cflags=$(CFLAGSNORMAL) \
     objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
 
-%build_module mmake=networking-drivers-rtl8168-debug \
+%build_module mmake=workbench-devs-networks-rtl8168-debug \
     modname=rtl8168_debug modtype=device \
     files="rtl8168_init $(FILES)" conffile=rtl8168.conf cflags=$(CFLAGSDEBUG) \
     objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"

@@ -4,10 +4,10 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 # build PCMCIA support modules
-#MM- devs-networks-drivers-etherlink3: \
+#MM- workbench-devs-networks-etherlink3: \
 #MM  kernel-cardres workbench-libs-pccard
 
-%build_prog mmake=devs-networks-drivers-etherlink3 \
+%build_prog mmake=workbench-devs-networks-etherlink3 \
     progname="etherlink3.device" \
     files="startup aros_device device request unit pci prometheus pccard" \
     targetdir=$(AROSDIR)/Devs/Networks
