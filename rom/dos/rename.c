@@ -54,7 +54,6 @@
     AROS_LIBFUNC_INIT
 
     struct DevProc *olddvp, *newdvp;
-    SIPTR err;
     LONG status;
     struct Process *me = (struct Process *)FindTask(NULL);
     char buf1[256], vol[32];
@@ -168,7 +167,7 @@
 
     bstrNewName = C2BSTR(newName);
     bstrOldName = C2BSTR(oldName);
-    status = dopacket4(DOSBase, &err, olddvp->dvp_Port, ACTION_RENAME_OBJECT, olddvp->dvp_Lock, bstrOldName, newdvp->dvp_Lock, bstrNewName);
+    status = dopacket4(DOSBase, NULL, olddvp->dvp_Port, ACTION_RENAME_OBJECT, olddvp->dvp_Lock, bstrOldName, newdvp->dvp_Lock, bstrNewName);
     FREEC2BSTR(bstrOldName);
     FREEC2BSTR(bstrNewName);
 

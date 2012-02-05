@@ -25,7 +25,7 @@ LONG fs_LocateObject(BPTR *ret, struct MsgPort *port, BPTR parent, CONST_STRPTR 
     *ret = (BPTR)dopacket3(DOSBase, &error, port, ACTION_LOCATE_OBJECT, parent, bstrname, accessMode);
     FREEC2BSTR(bstrname);
 
-    return error;
+    return (*ret) ? 0 : error;
 }
 
 LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mode, CONST_STRPTR name, struct DosLibrary *DOSBase)
@@ -33,6 +33,7 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
     ULONG action;
     BSTR bstrname;
     SIPTR error = 0;
+    LONG status;
 
     /* The MODE_* flags exactly match their corresponding ACTION_*
      * flags:
@@ -65,11 +66,11 @@ LONG fs_Open(struct FileHandle *handle, struct MsgPort *port, BPTR lock, LONG mo
     if (!bstrname)
     	return ERROR_NO_FREE_STORE;
 
-    dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
+    status = dopacket3(DOSBase, &error, port, action, MKBADDR(handle), lock, bstrname);
     FREEC2BSTR(bstrname);
 
     handle->fh_Type = port;
-    return error;
+    return status ? 0 : error;
 }
 
 LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buffer, ULONG size, struct DosLibrary *DOSBase)
@@ -94,11 +95,12 @@ LONG fs_ReadLink(BPTR parent, struct DevProc *dvp, CONST_STRPTR path, STRPTR buf
 LONG fs_ChangeSignal(BPTR handle, struct Process *task, struct DosLibrary *DOSBase)
 {
     SIPTR error = 0;
+    LONG status;
     struct FileHandle *fh = BADDR(handle);
 
-    dopacket3(DOSBase, &error, fh->fh_Type, ACTION_CHANGE_SIGNAL, fh->fh_Arg1, (IPTR)task, (SIPTR)NULL);
+    status = dopacket3(DOSBase, &error, fh->fh_Type, ACTION_CHANGE_SIGNAL, fh->fh_Arg1, (IPTR)task, (SIPTR)NULL);
 
-    return error;
+    return status ? 0 : error;
 }
 
 LONG fs_AddNotify(struct NotifyRequest *notify, struct DevProc *dvp, BPTR lock, struct DosLibrary *DOSBase)
