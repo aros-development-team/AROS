@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -109,8 +110,23 @@
     args.Args[2] = (IPTR)BADDR(segList) + sizeof(BPTR);
     args.Args[3] = (IPTR)me;
 
+    APTR tsid = SaveTaskStorage();
+    D(bug("RunCommand: b4 StackSwap() tsid=%x, thistask->TaskStorage=%x\n",
+          tsid, FindTask(NULL)->tc_UnionETask.tc_TaskStorage
+    ));
+
     ret = NewStackSwap(&sss, CallEntry, &args);
 
+    D(bug("RunCommand: after StackSwap() tsid=%x, thistask->TaskStorage=%x\n",
+          tsid, FindTask(NULL)->tc_UnionETask.tc_TaskStorage
+    ));
+
+    RestoreTaskStorage(tsid);
+
+    D(bug("RunCommand: after RestoreTaskStorage() tsid=%x, thistask->TaskStorage=%x\n",
+          tsid, FindTask(NULL)->tc_UnionETask.tc_TaskStorage
+    ));
+    
     me->pr_ReturnAddr = oldReturnAddr;
     me->pr_Arguments  = oldargs;
 
