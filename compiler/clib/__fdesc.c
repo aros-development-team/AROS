@@ -90,7 +90,7 @@ int __getfdslot(int wanted_fd)
     {
         void *tmp;
         
-        tmp = AllocPooled(aroscbase->acb_fd_mempool, (wanted_fd+1)*sizeof(fdesc *));
+        tmp = AllocPooled(aroscbase->acb_internalpool, (wanted_fd+1)*sizeof(fdesc *));
         
         if (!tmp) return -1;
 
@@ -98,7 +98,7 @@ int __getfdslot(int wanted_fd)
         {
             size_t size = aroscbase->acb_numslots*sizeof(fdesc *);
             CopyMem(aroscbase->acb_fd_array, tmp, size);
-            FreePooled(aroscbase->acb_fd_mempool, aroscbase->acb_fd_array, size);
+            FreePooled(aroscbase->acb_internalpool, aroscbase->acb_fd_array, size);
         }
 
         aroscbase->acb_fd_array = tmp;
@@ -331,9 +331,9 @@ fdesc *__alloc_fdesc(void)
     struct aroscbase *aroscbase = __GM_GetBase();
     fdesc * desc;
     
-    desc = AllocPooled(aroscbase->acb_fd_mempool, sizeof(fdesc));
+    desc = AllocPooled(aroscbase->acb_internalpool, sizeof(fdesc));
     
-    D(bug("Allocated fdesc %x from %x pool\n", desc, aroscbase->acb_fd_mempool));
+    D(bug("Allocated fdesc %x from %x pool\n", desc, aroscbase->acb_internalpool));
     
     return desc;
 }
@@ -341,8 +341,8 @@ fdesc *__alloc_fdesc(void)
 void __free_fdesc(fdesc *desc)
 {
     struct aroscbase *aroscbase = __GM_GetBase();
-    D(bug("Freeing fdesc %x from %x pool\n", desc, aroscbase->acb_fd_mempool));
-    FreePooled(aroscbase->acb_fd_mempool, desc, sizeof(fdesc));
+    D(bug("Freeing fdesc %x from %x pool\n", desc, aroscbase->acb_internalpool));
+    FreePooled(aroscbase->acb_internalpool, desc, sizeof(fdesc));
 }
 
 
@@ -481,8 +481,6 @@ int __init_fd(struct aroscbase *aroscbase)
     struct __reg_fdarray *regnodeit, *regnode = NULL;
     struct Task *self = FindTask(NULL);
 
-    aroscbase->acb_fd_mempool = CreatePool(MEMF_PUBLIC, 16*sizeof(fdesc), 16*sizeof(fdesc));
-    
     ObtainSemaphore(&__fdsem);
     ForeachNode(&__fdreglist, regnodeit)
     {
@@ -519,7 +517,6 @@ void __exit_fd(struct aroscbase *aroscbase)
 	if (aroscbase->acb_fd_array[--i])
 	    close(i);
     }
-    DeletePool(aroscbase->acb_fd_mempool);
 }
 
 void __close_on_exec_fdescs(void)

@@ -91,6 +91,7 @@ COMMON_ARCH := \
 
 #   - Shared are in either the shared linklib, or the arosc.library module
 SHARED	:= \
+        __arosc_init \
 	__arosc_ioerr2errno \
         __arosc_nixmain \
         __arosc_set_environptr \
