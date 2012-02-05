@@ -59,7 +59,7 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addsegment \
 
 #MM- core-linklibs : linklibs-dos
 
-USER_CFLAGS := -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+USER_CFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
 
 %build_module mmake=kernel-dos \
   modname=dos modtype=library \

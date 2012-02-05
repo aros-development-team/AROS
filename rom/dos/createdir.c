@@ -55,12 +55,11 @@
 
     BPTR lock = BNULL;
     struct PacketHelperStruct phs;
-    SIPTR error;
 
     D(bug("[CreateDir] '%s'\n", name));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	lock = (BPTR)dopacket2(DOSBase, &error, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
+    	lock = (BPTR)dopacket2(DOSBase, NULL, phs.port, ACTION_CREATE_DIR, phs.lock, phs.name);
     	freepacketinfo(DOSBase, &phs);
     }
 

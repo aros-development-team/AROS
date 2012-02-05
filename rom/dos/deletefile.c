@@ -53,13 +53,12 @@
     AROS_LIBFUNC_INIT
 
     LONG status = 0;
-    SIPTR error;
     struct PacketHelperStruct phs;
 
     D(bug("[DeleteFile] '%s'\n", name));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket2(DOSBase, &error, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
+    	status = dopacket2(DOSBase, NULL, phs.port, ACTION_DELETE_OBJECT, phs.lock, phs.name);
     	freepacketinfo(DOSBase, &phs);
     }
     

@@ -50,13 +50,12 @@
     AROS_LIBFUNC_INIT
     
     LONG status = 0;
-    SIPTR error = 0;
     struct PacketHelperStruct phs;
 
     D(bug("[SetProtection] '%s':%x\n", name, protect));
 
     if (getpacketinfo(DOSBase, name, &phs)) {
-    	status = dopacket4(DOSBase, &error, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
+    	status = dopacket4(DOSBase, NULL, phs.port, ACTION_SET_PROTECT, BNULL, phs.lock, phs.name, protect);
     	freepacketinfo(DOSBase, &phs);
     }
  
