@@ -236,6 +236,7 @@ void About(void);
 
 ULONG DoTrigger(ULONG what);
 ULONG DoWriteMethod(STRPTR name, ULONG mode);
+ULONG DoPrintMethod(VOID);
 ULONG DoLayout(ULONG initial);
 ULONG DoScaleMethod(ULONG xsize, ULONG ysize, BOOL aspect);
 void DoZoom(WORD zoomer);
