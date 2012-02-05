@@ -237,21 +237,25 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 	BYTE   szeol = szEOL[eol];
 	LINE *ln; BPTR fh=BNULL;
 	BYTE retval = 0;
-	BOOL newfile=FALSE;
 
 	BusyWindow(Wnd);
 
-	/* first try if file already exist */
-	if( (fh = Open(name, MODE_OLDFILE)) )
+	if( ( fh = Open( name, MODE_OLDFILE) ) )
 	{
-		SetFileSize(fh, 0, OFFSET_BEGINNING);
+		/* The file exists, Get protection flags */
+		struct FileInfoBlock *fib;
+		if( ( fib = (APTR) AllocDosObject( DOS_FIB, NULL ) ) )
+		{
+			if( ExamineFH(fh, fib) )
+			{
+				protection = fib->fib_Protection;
+			}
+			FreeDosObject( DOS_FIB, fib );
+		}
+		Close( fh );
 	}
-	else
-	{
-		/* No,open new file */
-		fh = Open(name, MODE_NEWFILE);
-		newfile=TRUE;
-	}
+
+	fh = Open(name, MODE_NEWFILE);
 
 	if( fh )
 	{
@@ -282,8 +286,7 @@ BYTE save_file(STRPTR name, LINE *svg, unsigned char eol, LONG protection)
 		if( i>szeol && FWrite(fh,buf,i-szeol,1)!=1 ) goto wrterr;
 
 		FClose( fh );
-		/* set protection flags, if file is new. */ 
-		if( newfile ) SetProtection(name, protection);
+		SetProtection(name, protection);
 
 		retval = 1;
 
