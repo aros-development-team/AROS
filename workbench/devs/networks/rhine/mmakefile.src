@@ -1,0 +1,11 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
+
+%build_prog mmake=workbench-devs-networks-rhine \
+    progname="rhine.device" \
+    files="startup device request unit pci timer" \
+    targetdir="$(AROSDIR)/Devs/Networks"
+
+%common
