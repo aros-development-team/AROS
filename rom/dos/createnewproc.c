@@ -149,6 +149,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     ApplyTagChanges(defaults, (struct TagItem *)tags);
 
+    D({
+        int i;
+        for (i = 0;  defaults[i].ti_Tag; i++)
+            bug("%2d: %08x = %08x\n", i, defaults[i].ti_Tag, defaults[i].ti_Data);
+      }
+    );
+
     /*
      * If both the seglist and the entry are specified, make sure that the entry resides in the seglist
      * Disabled because it is not necessarily always true. At least current implementation of SystemTagList()
@@ -359,7 +366,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_Task.tc_SPLower = stack;
     process->pr_Task.tc_SPUpper = stack + process->pr_StackSize - SP_OFFSET;
 
-    D(bug("[createnewproc] Starting process %s\n", name));
+    D(bug("[createnewproc] Starting process %p '%s'\n", process, name));
     D(bug("[createnewproc] Stack: 0x%p - 0x%p\n", process->pr_Task.tc_SPLower, process->pr_Task.tc_SPUpper));
 
 /*  process->pr_ReturnAddr; */
@@ -506,7 +513,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
             internal_ChildWait(&me->pr_Task, DOSBase);
 
             if (fh && oldSignal) {
-                DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&oldSignal, 0, 0, 0);
+                DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);
             }
         }
 
@@ -527,6 +534,9 @@ enomem:
     freeLocalVars(process, DOSBase);
 
 error:
+
+    D(bug("[createnewproc] Failed to create process\n"));
+
     if (cli != NULL)
     {
 	FreeDosObject(DOS_CLI, cli);
