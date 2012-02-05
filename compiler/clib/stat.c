@@ -8,9 +8,9 @@
 
 #include <errno.h>
 
-#include "__time.h"
 #include "__stat.h"
 #include "__upath.h"
+#include "__arosc_privdata.h"
 
 /*****************************************************************************
 

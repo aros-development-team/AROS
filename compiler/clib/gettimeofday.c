@@ -15,10 +15,8 @@
 #include <devices/timer.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
-#include <libraries/locale.h>
 
-
-#include "__time.h"
+#include <time.h>
 
 /*****************************************************************************
 

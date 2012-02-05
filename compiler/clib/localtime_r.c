@@ -5,7 +5,7 @@
     Convert a time into a string, reentrant.
 */
 
-#include "__time.h"
+#include "__arosc_privdata.h"
 
 /*****************************************************************************
 
