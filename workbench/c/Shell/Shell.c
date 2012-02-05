@@ -164,11 +164,12 @@ __startup AROS_CLI(ShellStart)
 
     FreeMem(ss, sizeof(ShellState));
 
-    /* Make sure Input() and Output() don't
+    /* Make sure Input(), Output() and pr_CES don't
      * point to any dangling files.
      */
     SelectInput(BNULL);
     SelectOutput(BNULL);
+    me->pr_CES = BNULL;
 
     CloseLibrary(DOSBase);
 
