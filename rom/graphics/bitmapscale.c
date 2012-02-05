@@ -42,10 +42,10 @@
 	  bsa_DestWidth, bsa_DestHeight - this function will set these
 	        values. Use the bsa_???Factor for scaling
 	  bsa_XSrcFactor:bsa_XDestFactor - Set these to get approximately
-                the same ratio as bsa_XSrcWidth:bsa_XDestWidth, but
+                the same ratio as bsa_SrcWidth:bsa_DestWidth, but
 	        usually not exactly the same number.
 	  bsa_YSrcFactor:bsa_YDestFactor - Set these to get approximately
-	        the same ratio as bsa_YSrcWidth:YDestWidth, but
+	        the same ratio as bsa_SrcHeight:DestHeight, but
 	        usually not exactly the same number.
 	  bsa_SrcBitMap - pointer to source bitmap to be scaled
 	  bsa_DestBitMap - pointer to destination bitmap which will
