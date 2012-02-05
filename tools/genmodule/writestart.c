@@ -23,6 +23,55 @@ static void writeextfunclib(FILE *, struct config *);
 static void writefunctable(FILE *, struct config *);
 static void writesets(FILE *, struct config *);
 
+/* Some general info on the function of the generated code and how they work
+   for .library modules (TODO: add docs for other module types):
+
+   The code in this file will write out the inittable, the function table,
+   the InitLib, OpenLib, CloseLib and ExpungeLib function.
+   InitLib will call the functions in the ADD2INIT symbolset.
+   OpenLib will call the functions in the ADD2OPENLIB symbolset.
+   CloseLib will call the functions in the ADD2CLOSELIB symbolset.
+   ExpungeLib will call the fucntions in the ADD2EXIT symbolset.
+
+   Currently 3 types of libraries are supported: 1 libbase, a per-opener
+   libbase and a per-task libbase.
+   * For 1 libbase the libbase is initialized once in InitLib and
+     then returned for each call to OpenLib. OpenLib and CloseLib keep track
+     of the times the libraries is still open; if it is 0 the library may be
+     expunged.
+   * The per-opener libbase will create a new libbase for each call to OpenLib
+     After InitLib has called the ADD2INIT functions the fields in the root
+     libbase may have been initialized to a certain value. These value are
+     copied in the newly generated libbase and then the ADD2OPENLIB functions
+     are called with the new libbase.
+     A per-opener libbase is indicated by the OPTION_DUPBASE flag in cfg->options.
+     Currently, a task memory slot is used to store the libbase when a function
+     of the library is entered. With proper support from the compiler this could
+     be changed to use a reserved register - probably increasing speed. This
+     could be implemented later on without breaking backwards compatibility.
+     Special provision has been taken to restore the state of the memory slot
+     after CloseLib to what it was when OpenLib is called. This is to handle the
+     case properly where the library is used both in the parent and child
+     of a Task run with RunCommand().
+   * The per-task libbase will create a new libbase for a call to OpenLib when
+     there does not exist a libbase yet for this task. This is handled by reserving
+     an additional task memory slot. In OpenLib the contents of this memory slot
+     is checked and only a new libbase will be generated when the libbase stored
+     there is not for the current Task. Also on then the ADD2OPENLIB
+     A separate counter is added to count the number of times the libbase is opened
+     in the same task. The libbase will also only be closed and removed if this
+     counter reaches 0 and only then the ADD2CLOSELIB functions are called.
+     A per-task libbase is indicated by both flags OPTION_DUPBASE and
+     OPTION_PERTASKBASE in cfg->options.
+     It was decided to use an extra slot for storing the per-task libbase to check
+     in OpenLib if a new libbase has to created. This is to increase flexibility
+     during calling of the library functions. If the library supports this the
+     library can still be called with another libbase then the libbase stored in the
+     per-task slot, or the library function can be called from another task then the
+     one that opened the libbase.
+     Also here special provision has been taken to restore the state of the memory
+     slot after CloseLib to what it was when OpenLib is called.
+*/
 void writestart(struct config *cfg)
 {
     FILE *out;
@@ -41,6 +90,11 @@ void writestart(struct config *cfg)
     banner = getBanner(cfg);
     fprintf(out, "%s", banner);
     freeBanner(banner);
+
+    fprintf(out,
+            "/* For comments and explanation of generated code look in writestart.c source code\n"
+            "   of the genmodule program */\n"
+    );
 
     writedecl(out, cfg);
     if (!(cfg->options & OPTION_NORESIDENT))
@@ -153,6 +207,7 @@ static void writedecl(FILE *out, struct config *cfg)
 	);
     }
     if (cfg->options & OPTION_DUPBASE)
+    {
         fprintf(out,
 		"#ifndef GM_ROOTBASE_FIELD\n"
 		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
@@ -249,32 +304,42 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#else\n"
                 "#   error unsupported CPU type\n"
                 "#endif\n"
-        );
-
-    if (cfg->options & OPTION_PERTASKBASE)
-        fprintf(out,
-                "struct __GM_PerTaskBase {\n"
+                "struct __GM_DupBase {\n"
                 "    LIBBASETYPE base;\n"
-                "    ULONG taskopencount;\n"
-                "    struct Task *task;\n"
-                "    APTR retaddr;\n"
-                "    LIBBASETYPEPTR oldpertaskbase;\n"
-                "};\n"
-                "#define LIBBASESIZE sizeof(struct __GM_PerTaskBase)\n"
-                "static int __pertaskslot;\n"
-                "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
-                "{\n"
-                "    return ((struct __GM_PerTaskBase *)base)->oldpertaskbase;\n"
-                "}\n"
-                "static inline LIBBASETYPEPTR __GM_GetPerTaskBase(void)\n"
-                "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot];\n"
-                "}\n"
-                "static inline void __GM_SetPerTaskBase(LIBBASETYPEPTR base)\n"
-                "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot] = (IPTR)base;\n"
-                "}\n"
+                "    LIBBASETYPEPTR oldbase;\n"
         );
+        if (cfg->options & OPTION_PERTASKBASE)
+        {
+            fprintf(out,
+                    "    ULONG taskopencount;\n"
+                    "    struct Task *task;\n"
+                    "    APTR retaddr;\n"
+                    "    LIBBASETYPEPTR oldpertaskbase;\n"
+            );
+        }
+        fprintf(out,
+                "};\n"
+                "#define LIBBASESIZE sizeof(struct __GM_DupBase)\n"
+        );
+        if (cfg->options & OPTION_PERTASKBASE)
+        {
+            fprintf(out,
+                    "static int __pertaskslot;\n"
+                    "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
+                    "{\n"
+                    "    return ((struct __GM_DupBase *)base)->oldpertaskbase;\n"
+                    "}\n"
+                    "static inline LIBBASETYPEPTR __GM_GetPerTaskBase(void)\n"
+                    "{\n"
+                    "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot];\n"
+                    "}\n"
+                    "static inline void __GM_SetPerTaskBase(LIBBASETYPEPTR base)\n"
+                    "{\n"
+                    "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot] = (IPTR)base;\n"
+                    "}\n"
+            );
+        }
+    }
     else
         fprintf(out, "#define LIBBASESIZE sizeof(LIBBASETYPE)\n");
     
@@ -965,6 +1030,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		    "    struct Library *newlib = NULL;\n"
 		    "    UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
+                    "    LIBBASETYPEPTR oldbase = __GM_GetBase();\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
@@ -973,15 +1039,15 @@ static void writeopenlib(FILE *out, struct config *cfg)
                         "    newlib = (struct Library *)oldpertaskbase;\n"
                         "    if (newlib)\n"
                         "    {\n"
-                        "        struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)newlib;\n"
-                        "        if (pertaskbase->task != thistask)\n"
+                        "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
+                        "        if (dupbase->task != thistask)\n"
                         "            newlib = NULL;\n"
                         "        else if (thistask->tc_Node.ln_Type == NT_PROCESS\n"
-                        "                 && pertaskbase->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
+                        "                 && dupbase->retaddr != ((struct Process *)thistask)->pr_ReturnAddr\n"
                         "        )\n"
                         "            newlib = NULL;\n"
                         "        else\n"
-                        "            pertaskbase->taskopencount++;\n"
+                        "            dupbase->taskopencount++;\n"
                         "    }\n"
                 );
 
@@ -1000,15 +1066,16 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "\n"
 		    "        CopyMem(lh, newlib, possize);\n"
                     "        __GM_SetBase((LIBBASETYPEPTR)newlib);\n"
+                    "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
+                    "        dupbase->oldbase = oldbase;\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
-                        "        struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)newlib;\n"
-                        "        pertaskbase->task = thistask;\n"
+                        "        dupbase->task = thistask;\n"
                         "        if (thistask->tc_Node.ln_Type == NT_PROCESS)\n"
-                        "             pertaskbase->retaddr = ((struct Process *)thistask)->pr_ReturnAddr;\n"
-                        "        pertaskbase->oldpertaskbase = oldpertaskbase;\n"
-                        "        pertaskbase->taskopencount = 1;\n"
+                        "             dupbase->retaddr = ((struct Process *)thistask)->pr_ReturnAddr;\n"
+                        "        dupbase->oldpertaskbase = oldpertaskbase;\n"
+                        "        dupbase->taskopencount = 1;\n"
                         "        __GM_SetPerTaskBase((LIBBASETYPEPTR)newlib);\n"
                 );
             fprintf(out,
@@ -1097,26 +1164,27 @@ static void writecloselib(FILE *out, struct config *cfg)
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
 	);
     }
-    else
+    else /* OPTION_DUPBASE */
     {
 	fprintf(out,
 		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
+                "    struct __GM_DupBase *dupbase = (struct __GM_DupBase *)lh;\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    struct __GM_PerTaskBase *pertaskbase = (struct __GM_PerTaskBase *)lh;\n"
-                    "    pertaskbase->taskopencount--;\n"
-                    "    if (pertaskbase->taskopencount != 0)\n"
+                    "    dupbase->taskopencount--;\n"
+                    "    if (dupbase->taskopencount != 0)\n"
                     "        return BNULL;\n"
             );
         fprintf(out,
                 "\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
-                "    set_close_rellibraries(lh);\n");
+                "    set_close_rellibraries(lh);\n"
+                "    __GM_SetBase(dupbase->oldbase);\n"
+        );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    __GM_SetBase(((struct __GM_PerTaskBase *)lh)->oldpertaskbase);\n"
-                    "    __GM_SetPerTaskBase(((struct __GM_PerTaskBase *)lh)->oldpertaskbase);\n"
+                    "    __GM_SetPerTaskBase(((struct __GM_DupBase *)lh)->oldpertaskbase);\n"
             );
         fprintf(out,
                 "    __freebase(lh);\n"
