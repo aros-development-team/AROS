@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stdio internals
@@ -20,7 +20,6 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
-#include "__fdesc.h"
 #include "__stdio.h"
 
 int __smode2oflags(const char *mode)
