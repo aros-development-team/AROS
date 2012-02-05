@@ -446,7 +446,7 @@
                     Alert(AN_QPktFail);
 
                 if (fh && oldSignal) {
-                    DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, (SIPTR)&oldSignal, 0, 0, 0);
+                    DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);
                 }
 
                 rc = dp->dp_Res2;
