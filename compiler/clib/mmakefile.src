@@ -23,10 +23,12 @@ COMMON	:= \
 	__alloca \
 	__filesystem_support \
 	__isinf \
+	atof \
 	bcmp \
 	bcopy \
 	bzero \
 	div \
+	_errstrings \
 	getopt \
 	getopt_long \
 	isinf \
@@ -108,7 +110,6 @@ SHARED	:= \
 	asctime \
         asctime_r \
 	atexit \
-	atof \
 	atoi \
 	atol \
 	basename \
@@ -331,7 +332,6 @@ SHARED	:= \
 	stcu_d \
 	stdtime/timelocal	\
 	strftime \
-	_errstrings \
 	strerror \
 	strptime \
 	strtoimax \
