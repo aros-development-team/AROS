@@ -103,7 +103,7 @@ const IPTR SupportedMethods[] =
 //    DTM_SELECT,
 //    DTM_CLEARSELECTED,
 //    DTM_COPY,
-//    DTM_PRINT,
+    DTM_PRINT,
 //    DTM_WRITE,
 
     PDTM_WRITEPIXELARRAY,
@@ -1484,6 +1484,109 @@ STATIC IPTR DT_Draw(struct IClass *cl, struct Gadget *g, struct dtDraw *msg)
 
 /**************************************************************************************************/
 
+STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
+{
+    IPTR RetVal;
+    struct IODRPReq *pio = &msg->dtp_PIO->iodrp;
+    struct RastPort *rp = NULL;
+    struct TagItem *tag, *tags = msg->dtp_AttrList;
+    IPTR w = 0, h = 0, th = 0, tw = 0;
+    struct GadgetInfo *gi = msg->dtp_GInfo;
+
+    GetDTAttrs(o, DTA_NominalHoriz, &w, DTA_NominalVert, &h);
+    GetDTAttrs(o, DTA_TopHoriz, &tw, DTA_TopVert, &th);
+
+    if (tw == 0 || th == 0 || w == 0 || h == 0)
+        return 0;
+
+    RetVal = PDERR_CANCEL;
+
+    pio->io_Command = PRD_DUMPRPORT;
+    pio->io_SrcX = 0;
+    pio->io_SrcY = 0;
+    pio->io_SrcWidth = w;
+    pio->io_SrcHeight = h;
+    pio->io_DestCols = 0;
+    pio->io_DestRows = 0;
+    pio->io_Special = 0;
+
+    while ((tag = NextTagItem(&tags))) {
+        switch (tag->ti_Tag) {
+        case DTA_DestCols: pio->io_DestCols = (LONG)tag->ti_Data; break;
+        case DTA_DestRows: pio->io_DestRows = (LONG)tag->ti_Data; break;
+        case DTA_RastPort: rp = (struct RastPort *)tag->ti_Data; break;
+        case DTA_Special:  pio->io_Special = (UWORD)tag->ti_Data; break;
+        default: break;
+        }
+    }
+    tags = msg->dtp_AttrList;
+
+    if (rp) {
+        /* Print from supplied (non colormap) rastport */
+        pio->io_RastPort = rp;
+        pio->io_ColorMap = NULL;
+        pio->io_Modes = INVALID_ID;
+        RetVal = DoIO((struct IORequest *)pio);
+    } else if (gi) {
+        /* Print as Gadget */
+        struct Screen *s;
+        
+        if ((s = gi->gi_Screen)) {
+            if ((pio->io_Modes = GetVPModeID(&s->ViewPort)) != INVALID_ID) {
+                pio->io_ColorMap = s->ViewPort.ColorMap;
+                if ((pio->io_RastPort = gi->gi_RastPort)) {
+                    RetVal = DoIO((struct IORequest *)pio);
+                }
+            }
+        }
+    } else {
+        /* Print as a 24-bit color image */
+        struct RastPort baseRP;
+        struct BitMap *bm;
+
+        rp = &baseRP;
+
+        pio->io_ColorMap = NULL;
+        pio->io_Modes = INVALID_ID;
+        pio->io_RastPort = rp;
+        InitRastPort(rp);
+        /* Maybe we should do strip printing to save memory?
+         *
+         * Too bad native AOS's PostScript driver doesn't
+         * support that.
+         *
+         * Well, if 24 bit color fails, try 12 bit (4096 color),
+         * and if that fails, just do black & white.
+         */
+        if ((bm = AllocBitMap(w, h, 24, 0, NULL)) ||
+            (bm = AllocBitMap(w, h, 12, 0, NULL)) ||
+            (bm = AllocBitMap(w, h,  1, 0, NULL))) {
+            struct Layer_Info *li;
+            rp->BitMap = bm;
+            if ((li = NewLayerInfo())) {
+                struct Layer *layer;
+                if ((layer = CreateUpfrontLayer(li, bm, 0, 0, w, h, 0, NULL))) {
+                    APTR drawInfo;
+                    rp->Layer = layer;
+                    if ((drawInfo = ObtainDTDrawInfo(o, tags))) {
+                        if (DrawDTObject(rp, o, 0, 0, w, h, th, tw, tags)) {
+                            RetVal = DoIO((struct IORequest *)pio);
+                        }
+                        ReleaseDTDrawInfo(o, drawInfo);
+                    }
+                    DeleteLayer(0, layer);
+                }
+                DisposeLayerInfo(li);
+            }
+            FreeBitMap(bm);
+        }
+    }
+
+    return RetVal;
+}
+
+/**************************************************************************************************/
+
 STATIC IPTR DT_ReleaseDrawInfo(struct IClass *cl, struct Gadget *g, struct dtReleaseDrawInfo *msg)
 {
     struct Picture_Data *pd;
@@ -1606,6 +1709,13 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
             break;
         }
 
+        case DTM_PRINT:
+        {
+            D(bug("picture.datatype/DT_Dispatcher: Method DTM_PRINT\n"));
+            RetVal=(IPTR) DT_Print(cl, o, (struct dtPrint *) msg);
+            break;
+        }
+
         case DTM_DRAW:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_DRAW\n"));
@@ -1685,3 +1795,4 @@ struct IClass *DT_MakeClass(struct Library *picturebase)
 #endif /* !__AROS__ */
 
 /**************************************************************************************************/
+
