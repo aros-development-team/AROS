@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
@@ -84,6 +85,10 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
      *  Alternatively, an orphaned task will free its own ETask.
      */
     IPTR *ts = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
+    D(bug("[TSS] Create new TS=%x for task=%x with size %d\n",
+          ts, task, PrivExecBase(SysBase)->TaskStorageSize
+    ));
+
     /* IntETask is embedded in TaskStorage */
     struct ETask *et = (struct ETask *)ts;
     task->tc_UnionETask.tc_TaskStorage = ts;
@@ -160,6 +165,8 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
     if(!et)
 	return;
 
+    D(bug("CleanupETask: task=%x, et=%x\n", task, et));
+
     Forbid();
     
     /* Clean up after all the children that the task didn't do itself. */
@@ -222,6 +229,9 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);
 #endif
+    D(bug("Exec_ExpungeETask: Freeing ts=%x, size=%d\n",
+          ts, (ULONG)ts[__TS_FIRSTSLOT]
+    ));
     FreeMem(ts, (ULONG)ts[__TS_FIRSTSLOT]);
 }
 
