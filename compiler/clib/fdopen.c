@@ -98,7 +98,7 @@
     	}
     }
 
-    fn = malloc(sizeof(FILENODE));
+    fn = AllocPooled(aroscbase->acb_internalpool, sizeof(FILENODE));
     if (!fn) return NULL;
 
     AddTail ((struct List *)&aroscbase->acb_stdio_files, (struct Node *)fn);

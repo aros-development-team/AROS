@@ -28,6 +28,10 @@ struct aroscbase
        on the way things are modified in it, as long as arosc_userdata
        is always kept at its beginning.  */
 
+    /* common */
+    int acb_flags;
+    APTR acb_internalpool;
+
     /* malloc.c */
     APTR acb_mempool;
 
@@ -41,7 +45,6 @@ struct aroscbase
     struct DateStamp acb_datestamp;
 
     /* __open.c */
-    APTR acb_fd_mempool;
     int acb_numslots;
     struct _fdesc **acb_fd_array;
 
@@ -71,7 +74,6 @@ struct aroscbase
 
     /* spawn* */
     char *acb_joined_args;
-    int   acb_flags;
 
     /* strerror */
     char acb_fault_buf[100];

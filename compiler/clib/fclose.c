@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include "__stdio.h"
 
+#include "__arosc_privdata.h"
 
 /*****************************************************************************
 
@@ -48,6 +49,7 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     FILENODE * fn;
 
     if (close(stream->fd) == -1)
@@ -56,7 +58,7 @@
     fn = FILE2FILENODE (stream);
     Remove ((struct Node *)fn);
 
-    free(fn);
+    FreePooled(aroscbase->acb_internalpool, fn, sizeof(FILENODE));
 
     return 0;
 } /* fclose */
