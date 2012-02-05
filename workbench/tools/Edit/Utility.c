@@ -26,6 +26,10 @@ extern struct IntuitionBase *IntuitionBase;
 extern ULONG  err_time;
 static UBYTE  SPrintfBuf[256], *savea3;
 
+/* Different End Of Line markers */
+const UBYTE chEOL[] = {'\n', '\r', '\r', '\n'};
+const UBYTE szEOL[] = {1, 1, 2};
+
 /** SPrintf like routine **/
 
 
@@ -301,7 +305,7 @@ struct EasyStruct request;
 /*** Show information window ***/
 void show_info(Project p)
 {
-	extern UBYTE WinTitle[], szEOL[];
+	extern UBYTE WinTitle[];
 	STRPTR file;
 	ULONG  bytes;
 
