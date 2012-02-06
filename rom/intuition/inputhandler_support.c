@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
     Support functions for InputHandler.
@@ -1412,6 +1412,25 @@ void WindowNeedsRefresh(struct Window * w,
 
     } /* if (!IS_NOCAREREFRESH(w)) */
 
+}
+
+/****************************************************************************************/
+
+struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase)
+{
+    struct Screen *scr, *highest = IntuitionBase->FirstScreen;
+
+    for (scr = highest; scr; scr = scr->NextScreen) {
+        /* We only check screens that are on this monitor */
+        if (GetPrivScreen(scr)->MonitorObject
+            != GetPrivIBase(IntuitionBase)->ActiveMonitor)
+            continue;
+
+	/* Check if top of screen is highest so far */
+        if (scr->TopEdge < highest->TopEdge)
+            highest = scr;
+    }
+    return highest;
 }
 
 /****************************************************************************************/
