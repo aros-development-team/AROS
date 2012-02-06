@@ -9,6 +9,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
+#include <proto/utility.h>
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -195,6 +196,32 @@ IPTR Title__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     FreeVec(data->layout_hook);
 
     return DoSuperMethodA(cl, obj, msg);
+}
+
+IPTR Title__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct Title_DATA *data = INST_DATA(cl, obj);
+    struct TagItem *tags  = msg->ops_AttrList;
+    struct TagItem *tag;
+
+    while ((tag = NextTagItem((const struct TagItem**) &tags)) != NULL)
+    {
+        switch(tag->ti_Tag)
+        {
+            case MUIA_Group_ActivePage:
+            {
+                if (data->activetab != tag->ti_Data)
+                {
+                    data->activetab = tag->ti_Data;
+                    MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    set(_parent(obj), MUIA_Group_ActivePage, data->activetab);
+                }
+                break;
+            }
+        }
+    }
+
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 /* MUIM_Draw helpers */
@@ -479,8 +506,6 @@ IPTR Title__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
 
 IPTR Title__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct Title_DATA *data = INST_DATA(cl, obj);
-
     if (!msg->imsg)
         return 0;
 
@@ -500,8 +525,7 @@ IPTR Title__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleE
                     if(_isinobj(msg->imsg->MouseX, msg->imsg->MouseY,child))
                     {
                         /* Activate this tab */
-                        data->activetab = i;
-                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                        set(obj, MUIA_Group_ActivePage, i);
                         break;
                     }
                 }
@@ -517,6 +541,7 @@ BOOPSI_DISPATCHER(IPTR, Title_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
         case OM_NEW:        return Title__OM_NEW(cl, obj, (struct opSet *)msg);
+        case OM_SET:        return Title__OM_SET(cl, obj, (struct opSet *)msg);
         case OM_DISPOSE:    return Title_OM_DISPOSE(cl, obj, msg);
         case MUIM_Draw:     return Title__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
         case MUIM_Setup:    return Title__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
