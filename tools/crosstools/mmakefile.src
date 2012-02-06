@@ -114,6 +114,8 @@ tools-crosstools-gcc : tools-crosstools-includes
 	    $(SED) -i -e "s|@aros_cflags_unused_but_set_variable@|$(GCC_UNUSED_BUT_SET_VARIABLE)|g" $(GENDIR)/config/target.cfg ; \
 	    $(SED) -i -e "s|@aros_cflags_array_bounds@|$(GCC_ARRAY_BOUNDS)|g" $(GENDIR)/config/target.cfg ; \
 	    $(SED) -i -e "s|@aros_cflags_enum_compare@|$(GCC_ENUM_COMPARE)|g" $(GENDIR)/config/target.cfg ; \
+	    $(SED) -i -e "s|@aros_cflags_format_security@|-Wno-format-security|g" $(GENDIR)/config/target.cfg ; \
+	    $(SED) -i -e "s|@aros_cflags_strict_overflow@|-Wno-strict-overflow|g" $(GENDIR)/config/target.cfg ; \
 	fi
 
 %fetch_and_build mmake=crosstools-gcc package=gcc version=$(GCC_VERSION) compiler=host \
