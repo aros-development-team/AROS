@@ -4,7 +4,12 @@
 /*** Instance data **********************************************************/
 struct Title_DATA
 {
-    LONG dummy;
+    struct Hook *layout_hook;
+    ULONG location;
+    WORD protrusion;
+    struct MUI_EventHandlerNode ehn;
+    LONG background;
+    LONG activetab;
 };
 
 #endif /* _TITLE_PRIVATE_H_ */
