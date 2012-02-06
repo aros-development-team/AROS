@@ -529,11 +529,18 @@ endif
 
 endif
 
+# Define the use of cross compiler
+ifeq ($(TARGET_CXX),)
+  TMP_CC := $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-g++
+else
+  TMP_CC := $(TARGET_CXX)
+endif
+
 ifeq ($(findstring %(compiler),host kernel target),)
   $(error unknown compiler %(compiler))
 endif
 ifeq (%(compiler),target)
-$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TARGET_CXX) $(TARGET_CFLAGS)
+$(TMP_TARGETS) $(TMP_DTARGETS) : CMD:=$(TMP_CC) $(TARGET_CFLAGS)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE:=$(CFLAGS_IQUOTE)
 $(TMP_TARGETS) $(TMP_DTARGETS) : TMP_IQUOTE_END:=$(CFLAGS_IQUOTE_END)
 endif
