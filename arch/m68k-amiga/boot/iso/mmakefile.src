@@ -1,11 +1,20 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-.PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
-
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k.iso
+DEVEL_ISO  := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-amiga-m68k-devel.iso
+
+.PHONY: $(TARGET_ISO) $(DEVEL_ISO)
 
 #MM bootiso-amiga-m68k :	AROS-complete		\
+#MM			kernel-aros \
+#MM			kernel-oop  \
+#MM			kernel-package-amiga-m68k	\
+#MM			kernel-bootstrap-amiga-m68k	\
+#MM			AROS-amiga-m68k-drivers \
+#MM			bootdisk-amiga-m68k
+
+#MM deviso-amiga-m68k :	AROS-complete		\
 #MM			kernel-aros \
 #MM			kernel-oop  \
 #MM			kernel-package-amiga-m68k	\
@@ -52,13 +61,18 @@ bootiso-amiga-m68k: $(TARGET_ISO)
 #MM
 bootiso-amiga-m68k-quick: $(TARGET_ISO)
 
-.PHONY: bootiso-amiga-m68k-quick
+#MM
+deviso-amiga-m68k: $(DEVEL_ISO)
+
+#MM
+deviso-amiga-m68k-quick: $(DEVEL_ISO)
+
+.PHONY: bootiso-amiga-m68k-quick deviso-amiga-m68k-quick
 
 $(warning LANG = $(LANG))
 
 $(TARGET_ISO): $(AROSDIR)/.backdrop \
 		$(AROSDIR)/Emergency-Boot.adf \
-		$(AROSDIR)/Sources \
 		$(AROSDIR)/README.txt.info  \
 		$(AROSDIR)/README.txt
 	%mkdirs_q $(AROSDIR)/S
@@ -66,6 +80,7 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(MKDIR) -p "$(AROSDIR).HUNK"
 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
 	@$(ELF2HUNK) "$(AROSDIR)" "$(AROSDIR).HUNK"
+	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR).HUNK/S/Startup-Sequence
 	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs $(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs
 	@mkisofs -f \
@@ -78,6 +93,26 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
                 -l -J -r \
 		"$(AROSDIR).HUNK"
+
+$(DEVEL_ISO):   $(AROSDIR)/.backdrop \
+		$(AROSDIR)/Emergency-Boot.adf \
+		$(AROSDIR)/Sources \
+		$(AROSDIR)/README.txt.info  \
+		$(AROSDIR)/README.txt
+	%mkdirs_q $(AROSDIR)/S
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR)/S/Startup-Sequence
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs $(AROSDIR).iso/Prefs/Env-Archive/SYS/Wanderer/global.prefs
+	@mkisofs -f \
+		-o $@ \
+		-allow-leading-dots \
+		-iso-level 4 \
+                -V "AROS Development CD" \
+                -publisher "The AROS Dev Team" \
+		-p "The AROS Dev Team (www.aros.org)" \
+		-sysid "AROS-$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)" \
+                -l -J -r \
+		"$(AROSDIR)"
+
 
 FORCE:
 
