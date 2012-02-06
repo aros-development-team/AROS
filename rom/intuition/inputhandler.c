@@ -1,6 +1,6 @@
 /*
-    Copyright  1995-2011, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -499,6 +499,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         /* Enter screen dragging mode if LButton + MetaDrag are pressed. */
         if (MetaDrag && ((iihdata->ActQualifier & KEY_QUALIFIERS) == MetaDrag)) {
             iihdata->ScreenDrag = screen;
+            iihdata->ScreenDragPointX = screen->MouseX;
+            iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
         break;
         }
@@ -568,6 +570,8 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         if ((!gadget) && stitlebarhit) {
         DEBUG_CLICK(bug("[Inputhandler] Entering drag state for screen 0x%p\n", screen));
             iihdata->ScreenDrag = screen;
+            iihdata->ScreenDragPointX = screen->MouseX;
+            iihdata->ScreenDragPointY = screen->MouseY;
             *keep_event = FALSE;
         break;
         }
@@ -1391,7 +1395,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
            screen was positioned out of user drag limits by the program itself using
            ScreenPosition() or OpenScreen(). We apply restrictions in parts depending
            on the dragging direction.
-           May be the user should also be able do drag the screen back off-display in such
+           Maybe the user should also be able to drag the screen back off-display in such
            a case?
            Calculate the position we would go to */
         val = scr->LeftEdge + dx;
@@ -1474,12 +1478,12 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
             yval -= iihdata->DeltaMouseY;
 
             if (ie->ie_Y < 0) {
-                /* If screen is dragged down and user touched upper screen boundry,
-                do nothing */
+                /* If screen is dragged down and user touched upper screen
+                   boundary, do nothing */
                 if (scr->TopEdge >= 0)
                     yval = scr->TopEdge;
                 else
-                    /* If scrolled down screen is beeing scrolled up, make sure it
+                    /* If scrolled down screen is being scrolled up, make sure it
                        does not go over 0 */
                     if (yval > 0)
                         yval = 0;
@@ -1533,8 +1537,22 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
         ie->ie_Y = iihdata->MouseBoundsBottom;
     }
 
-    IntuitionBase->MouseX = ie->ie_X;
-    IntuitionBase->MouseY = ie->ie_Y;
+    /* Prevent mouse going above all screens */
+    scr = FindHighestScreen(IntuitionBase);
+    if (scr) {
+        if (ie->ie_Y < scr->TopEdge)
+            ie->ie_Y = scr->TopEdge;
+    }
+
+    /* Store new mouse coords. If a screen is being dragged, lock drag point */
+    scr = iihdata->ScreenDrag;
+    if (scr) {
+        IntuitionBase->MouseX = scr->LeftEdge + iihdata->ScreenDragPointX;
+        IntuitionBase->MouseY = scr->TopEdge + iihdata->ScreenDragPointY;
+    } else {
+        IntuitionBase->MouseX = ie->ie_X;
+        IntuitionBase->MouseY = ie->ie_Y;
+    }
     notify_mousemove_screensandwindows(IntuitionBase);
 #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
     MySetPointerPos(IntuitionBase);
@@ -2757,7 +2775,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                 /* semaphore was locked when menu action started, see
                    above where MMCODE_START MenuMessage is sent.
 
-                   It could have also have been looked if the user
+                   It could have also have been locked if the user
                    activated one of the menu key shortcuts, see
                    "case IECLASS_RAWKEY" */
 

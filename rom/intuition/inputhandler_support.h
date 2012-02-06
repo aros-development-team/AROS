@@ -2,7 +2,7 @@
 #define INPUTHANDLER_SUPPORT_H
 
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -103,6 +103,8 @@ void FixWindowCoords(struct Window *win, LONG *left, LONG *top, LONG *width, LON
 /*********************************************************************/
 
 void WindowNeedsRefresh(struct Window * w, struct IntuitionBase * IntuitionBase );
+
+struct Screen *FindHighestScreen(struct IntuitionBase *IntuitionBase);
 
 struct Screen *FindActiveScreen(struct IntuitionBase *IntuitionBase);
 

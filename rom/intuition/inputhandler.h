@@ -2,8 +2,8 @@
 #define INPUTHANDLER_H
 
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
-    Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
 
@@ -73,6 +73,8 @@ struct IIHData
     BOOL                     TitlebarOnTop;
     BOOL                     MouseWasInsideBoolGadget;
     struct Screen	    *ScreenDrag;
+    WORD                     ScreenDragPointX;
+    WORD                     ScreenDragPointY;
     BOOL		     SwitchedMonitor;
 };
 
