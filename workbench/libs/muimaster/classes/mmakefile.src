@@ -37,7 +37,8 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 #MM	workbench-classes-zune-levelmeter \
 #MM	workbench-classes-zune-knob \
 #MM	workbench-classes-zune-dtpic \
-#MM	workbench-classes-zune-palette
+#MM	workbench-classes-zune-palette \
+#MM	workbench-classes-zune-title
 
 
 #MM- workbench-libs-muimaster-clean : \
@@ -71,7 +72,8 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 #MM	workbench-classes-zune-levelmeter-clean \
 #MM	workbench-classes-zune-knob-clean \
 #MM	workbench-classes-zune-dtpic-clean \
-#MM	workbench-classes-zune-palette-clean
+#MM	workbench-classes-zune-palette-clean \
+#MM	workbench-classes-zune-title-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -328,6 +330,14 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
     modname=Palette modtype=mui files=palette \
     conffile=palette.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PALETTE=0" \
+    uselibs="amiga rom m mui"
+
+#MM workbench-classes-zune-title : includes
+%build_module \
+    mmake=workbench-classes-zune-title \
+    modname=Title modtype=mui files=title \
+    conffile=title.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_TITLE=0" \
     uselibs="amiga rom m mui"
 
 %common

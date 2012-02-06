@@ -553,6 +553,10 @@ struct MUI_RGBcolor
 #include "classes/palette.h"
 #endif
 
+#ifndef _MUI_CLASSES_TITLE_H
+#include "classes/title.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
