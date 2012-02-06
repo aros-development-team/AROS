@@ -1,6 +1,6 @@
 /*
     Copyright  1999, David Le Corfec.
-    Copyright  2002-2011, The AROS Development Team.
+    Copyright  2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -96,7 +96,16 @@ struct MUI_GroupData
     LONG saved_minwidth,saved_minheight;
     LONG dont_forward_get; /* Setted temporary to 1 so that the get method is not forwarded */
     LONG dont_forward_methods; /* Setted temporary to 1, meaning that the methods are not forwarded to the group's children */
+    /* MUI4 group with tabs */
+    Object      *titlegroup;
 };
+
+/* Note:
+ * The MUI4 feature of group with tabs is implemented based on behaviour of one application. What this application
+ * codes suggest it seems that passing MUIV_Frame_Register together with MUIA_Group_PageMode, TRUE activates this mode.
+ * In such mode, the first passed group is used to register tab "titles" and is always visible. The selection of object
+ * in this group selects the matching (by position) group to be displayed
+ */
 
 #define GROUP_HORIZ       (1<<1)
 #define GROUP_SAME_WIDTH  (1<<2)
@@ -136,9 +145,12 @@ static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg);
 static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    LONG newpage;
+    LONG newpage, num_childs = data->num_childs;
 
     if (!(data->flags & GROUP_PAGEMODE)) return;
+
+    if (data->titlegroup != NULL)
+        num_childs--;
 
     switch (page)
     {
@@ -146,16 +158,16 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
             newpage = 0;
             break;
         case MUIV_Group_ActivePage_Last:
-            newpage = data->num_childs - 1;
+            newpage = num_childs - 1;
             break;
         case MUIV_Group_ActivePage_Prev:
             newpage = data->active_page - 1;
             if (newpage == -1)
-                newpage = data->num_childs - 1;
+                newpage = num_childs - 1;
             break;
         case MUIV_Group_ActivePage_Next:
         case MUIV_Group_ActivePage_Advance:
-            newpage = (data->active_page + 1) % data->num_childs;
+            newpage = (data->active_page + 1) % num_childs;
             break;
         default:
             newpage = page;
@@ -164,15 +176,21 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 
     if (newpage != data->active_page)
     {
-        if (_flags(obj) & MADF_CANDRAW) Group__MUIM_Hide(cl,obj,NULL);
+        if (_flags(obj) & MADF_CANDRAW)
+            Group__MUIM_Hide(cl,obj,NULL);
+
         data->active_page = newpage;
-            if (_flags(obj) & MADF_CANDRAW)
-            {
-                DoMethod(obj,MUIM_Layout);
+
+        if (_flags(obj) & MADF_CANDRAW)
+        {
+            DoMethod(obj,MUIM_Layout);
             Group__MUIM_Show(cl,obj,NULL);
             data->update = 1;
             MUI_Redraw(obj, MADF_DRAWUPDATE);
         }
+
+        if (data->titlegroup)
+            set(data->titlegroup, MUIA_Group_ActivePage, newpage);
     }
 }
 
@@ -245,6 +263,7 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags,*tag;
     BOOL   bad_childs = FALSE;
     IPTR  disabled = FALSE;
+    IPTR frame = MUIV_Frame_None;
 
     D(bug("[group.mui] OM_NEW, object 0x%p\n", obj));
 
@@ -265,6 +284,8 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->vert_spacing = -1;
     data->columns = 1;
     data->rows = 1;
+    data->active_page = -1;
+    get(obj, MUIA_Frame, &frame);
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -275,6 +296,9 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                         D(bug("[group.mui] Adding child 0x%p\n", tag->ti_Data));
                     if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
                     else  bad_childs = TRUE;
+                    /* Set first child as group title */
+                    if ((frame == MUIV_Frame_Register) && (data->titlegroup == NULL))
+                        data->titlegroup = (Object *)tag->ti_Data;
                     break;
 
             case    MUIA_Group_ActivePage:
@@ -901,7 +925,7 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             while ((child = NextObject(&cstate)))
             {
                 /*page++;*//* redraw problem with colorwheel in coloradjust register */
-                if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
+                if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page) && (child != data->titlegroup)))
                     continue;
 
                 if ((muiAreaData(child)->mad_Flags & MADF_CANDRAW)
@@ -1078,8 +1102,11 @@ IPTR Group__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     {
         if (! (_flags(child) & MADF_SHOWME))
             continue;
-        ++page;
-        if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
+
+        if (child != data->titlegroup)
+            ++page;
+
+        if ((data->flags & GROUP_PAGEMODE) && ((page != data->active_page) && (child != data->titlegroup)))
         {
             continue;
         }
@@ -1500,13 +1527,19 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
 {
     Object *cstate;
     Object *child;
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
     struct MUI_MinMax tmp = { 0, 0, MUI_MAXMAX, MUI_MAXMAX, 0, 0 };
     
     cstate = (Object *)children->mlh_Head;
-/*      D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth)); */
+
+    D(bug("minmax_pagemode(%lx)\n", obj, tmp.DefWidth));
+
     while ((child = NextObject(&cstate)))
     {
         if (! (_flags(child) & MADF_SHOWME))
+            continue;
+
+        if (child == data->titlegroup)
             continue;
 
         tmp.MinHeight = MAX(tmp.MinHeight, _minheight(child));
@@ -1518,8 +1551,16 @@ group_minmax_pagemode(struct IClass *cl, Object *obj,
                             ((w0_defheight(child) < MUI_MAXMAX) ? w0_defheight(child) : tmp.DefHeight));
         tmp.DefWidth = MAX(tmp.DefWidth,
                            ((w0_defwidth(child) < MUI_MAXMAX) ? w0_defwidth(child) : tmp.DefWidth));
-/*          D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth)); */
+        D(bug("minmax_pagemode(%lx) defw = %ld\n", obj, tmp.DefWidth));
     }
+
+    if (data->titlegroup)
+    {
+        tmp.MinHeight += _minheight(data->titlegroup);
+        tmp.MaxHeight += w0_maxheight(data->titlegroup);
+        tmp.DefHeight += w0_defheight(data->titlegroup);
+    }
+
     END_MINMAX();
 }
 
@@ -2428,7 +2469,7 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
     Object *child;
     WORD layout_width;
     WORD layout_height;
-    int w, h;
+    int w, h, yoffset = 0;
     
     if (data->flags & GROUP_VIRTUAL)
     {
@@ -2440,8 +2481,14 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
     }
     else
     {
-            layout_width = _mwidth(obj);
+        layout_width = _mwidth(obj);
         layout_height = _mheight(obj);
+    }
+
+    if (data->titlegroup)
+    {
+        yoffset = _minheight(data->titlegroup);
+        layout_height -= yoffset;
     }
 
     cstate = (Object *)children->mlh_Head;
@@ -2450,9 +2497,16 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
         w = MIN(layout_width, _maxwidth(child));
         h = MIN(layout_height, _maxheight(child));
 
-/*          D(bug("PM/child %p -> layout %d x %d\n", child, w, h));         */
-        MUI_Layout(child, (layout_width - w) / 2, (layout_height - h) / 2,
-                   w, h, 0);
+        if (child == data->titlegroup)
+        {
+            MUI_Layout(child, (layout_width - w) / 2, 0, w, yoffset, 0);
+        }
+        else
+        {
+            D(bug("PM/child %p -> layout %d x %d\n", child, w, h));
+            MUI_Layout(child, (layout_width - w) / 2, yoffset + (layout_height - h) / 2,
+                       w, h, 0);
+        }
     }
 }
 
@@ -2553,6 +2607,12 @@ IPTR Group__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
         int page = 0;
         while ((child = NextObject(&cstate)))
         {
+            if (child == data->titlegroup)
+            {
+                DoShowMethod(child);
+                continue; /* Title group is not counted as page */
+            }
+
             if (page == data->active_page)
             {
                 DoShowMethod(child);
@@ -2593,6 +2653,12 @@ IPTR Group__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
         int page = 0;
         while ((child = NextObject(&cstate)))
         {
+            if (child == data->titlegroup)
+            {
+                DoHideMethod(child);
+                continue; /* Title group is not counted as page */
+            }
+
             if (page == data->active_page)
             {
                 DoHideMethod(child);
