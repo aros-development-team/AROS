@@ -5,7 +5,7 @@ USER_INCLUDES := -I.. -I$(SRCDIR)/rom/devs/ata
 
 USER_CFLAGS   += -D__TIMER_NOLIBBASE__
 
-#MM- kernel-ata: kernel-cardres-includes
+#MM- kernel-ata-amiga-m68k: kernel-cardres-includes
 
 # allow override of ata.h in arch-specific directory
 %build_archspecific \
