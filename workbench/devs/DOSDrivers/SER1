@@ -1,0 +1,8 @@
+Handler = port-handler
+Priority = 5
+GlobVec = -1
+Device   = serial.device
+Unit     = 1
+Flags    = 0
+Control  = "8N1"
+Baud     = 115200

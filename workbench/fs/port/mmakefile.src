@@ -1,0 +1,13 @@
+include $(TOP)/config/make.cfg
+
+#MM- workbench-fs-complete : workbench-fs-port
+
+FILES=port-handler
+
+%build_prog mmake=workbench-fs-port \
+	progname=port-handler targetdir=$(AROS_FS) \
+	files="$(FILES)" \
+	usestartup=no \
+	uselibs="arossupport rom"
+
+%common
