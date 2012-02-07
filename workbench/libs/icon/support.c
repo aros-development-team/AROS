@@ -330,6 +330,9 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
 #define OFFSET_DO_CURRENTX      0x3a
 #define OFFSET_DO_CURRENTY      0x3e
 
+#define is_png(ni) (ni && ni->ni_Extra.Data && ni->ni_Extra.PNG[0].Size && ni->ni_Extra.PNG[0].Offset == 0)
+#define is_aos(ni) (!is_png(ni))
+
 BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, struct IconBase *IconBase)
 {
     struct NativeIcon *ni;
@@ -338,8 +341,9 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
 
     D(bug("[%s] icon=%p\n", __func__, icon));
 
-    /* Fast position update */
-    if (GetTagData(ICONPUTA_OnlyUpdatePosition, FALSE, tags)) {
+    ni = GetNativeIcon(icon, IconBase);
+   /* Fast position update, for non-PNG icons  */
+   if (is_aos(ni) && GetTagData(ICONPUTA_OnlyUpdatePosition, FALSE, tags)) {
         LONG tmp;
         D(bug("[%s] FastUpdate x,y\n", __func__, icon));
         Seek(file, OFFSET_DO_CURRENTX, OFFSET_BEGINNING);
@@ -364,7 +368,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         itmp->do_Gadget.Flags &= ~(GFLG_GADGIMAGE | GFLG_GADGHIMAGE);
         itmp->do_Gadget.GadgetRender = NULL;
         itmp->do_Gadget.SelectRender = NULL;
-    } else {
+    } else if (is_aos(ni)) {
         if (itmp->do_Gadget.GadgetRender == NULL) {
             SetIoErr(ERROR_OBJECT_WRONG_TYPE);
             return FALSE;
@@ -386,11 +390,11 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (ni && GetTagData(ICONPUTA_OptimizeImageSpace, FALSE, tags)) {
+    if (is_aos(ni) && GetTagData(ICONPUTA_OptimizeImageSpace, FALSE, tags)) {
         /* TODO: Compress the palette for the icon */
     }
 
-    if (ni && GetTagData(ICONPUTA_PreserveOldIconImages, TRUE, tags)) {
+    if (is_aos(ni) && GetTagData(ICONPUTA_PreserveOldIconImages, TRUE, tags)) {
         oldicon = ReadIcon(file);
         Seek(file, 0, OFFSET_BEGINNING);
         if (oldicon) {
@@ -399,9 +403,7 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
         }
     }
 
-    if (ni && ni->ni_Extra.Data &&
-              ni->ni_Extra.PNG[0].Size &&
-              ni->ni_Extra.PNG[0].Offset == 0)
+    if (is_png(ni)) 
     {
     	D(bug("[%s] Write as PNG\n", __func__));
     	success = WriteIconPNG(file, itmp, IconBase);
