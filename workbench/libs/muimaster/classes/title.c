@@ -175,7 +175,7 @@ IPTR Title__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->layout_hook = layout_hook;
     data->location = location;
     data->protrusion = 4;
-    data->activetab = -1;
+    data->activetab = 0;
 
     /* We need tab events to be processed after all objects contained in tabs
        like for example close button, hence the low priority value */
