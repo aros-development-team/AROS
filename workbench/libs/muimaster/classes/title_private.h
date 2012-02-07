@@ -6,10 +6,10 @@ struct Title_DATA
 {
     struct Hook *layout_hook;
     ULONG location;
-    WORD protrusion;
     struct MUI_EventHandlerNode ehn;
     LONG background;
     LONG activetab;
+    LONG oldactivetab;
 };
 
 #endif /* _TITLE_PRIVATE_H_ */
