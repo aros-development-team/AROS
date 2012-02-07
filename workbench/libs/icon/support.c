@@ -336,9 +336,12 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
     struct DiskObject *itmp, *oldicon = NULL;
     BOOL success;
 
+    D(bug("[%s] icon=%p\n", __func__, icon));
+
     /* Fast position update */
     if (GetTagData(ICONPUTA_OnlyUpdatePosition, FALSE, tags)) {
         LONG tmp;
+        D(bug("[%s] FastUpdate x,y\n", __func__, icon));
         Seek(file, OFFSET_DO_CURRENTX, OFFSET_BEGINNING);
         tmp = AROS_LONG2BE((LONG)icon->do_CurrentX);
         if (Write(file, &tmp, sizeof(tmp)) == sizeof(tmp)) {
@@ -400,10 +403,12 @@ BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, st
               ni->ni_Extra.PNG[0].Size &&
               ni->ni_Extra.PNG[0].Offset == 0)
     {
+    	D(bug("[%s] Write as PNG\n", __func__));
     	success = WriteIconPNG(file, itmp, IconBase);
     }
     else
     {
+    	D(bug("[%s] Write as AOS 3.5\n", __func__));
     	success = WriteStruct(&(LB(IconBase)->dsh), (APTR) itmp, (APTR) file, IconDesc);
     }
 

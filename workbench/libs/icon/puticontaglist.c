@@ -59,11 +59,13 @@
 #   define SET_ERRORCODE(value) (errorCode != NULL ? *errorCode = (value) : (value))
 
     /* Check input parameters ----------------------------------------------*/
+    D(bug("[%s] Icon %p\n", __func__, icon));
     if (icon == NULL) return FALSE;
 
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
+        D(bug("[%s]\tTag (0x%08x, 0x%p)\n", __func__, tag->ti_Tag, (APTR)tag->ti_Data));
         switch (tag->ti_Tag)
         {
                 
@@ -91,6 +93,9 @@
         }
     }
 
+    D(bug("[%s]\tdefaultType=%d\n", __func__, defaultType));
+    D(bug("[%s]\tdefaultName='%s'\n", __func__, defaultName));
+    D(bug("[%s]\tname='%s'\n", __func__, name));
     if (defaultType != -1)
     {
         CONST_STRPTR defaultIconName = GetDefaultIconName(defaultType);
@@ -126,6 +131,7 @@
     }
 
     /* Notify workbench if we added/changed the icon */
+    D(bug("[%s]\tsuccess=%d\n", __func__, success));
     if (success && name && notifyWorkbench && WorkbenchBase) {
         BPTR lock, parent;
 
