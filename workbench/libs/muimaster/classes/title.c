@@ -204,7 +204,7 @@ IPTR Title__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem *tags  = msg->ops_AttrList;
     struct TagItem *tag;
 
-    while ((tag = NextTagItem((const struct TagItem**) &tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch(tag->ti_Tag)
         {
@@ -424,7 +424,7 @@ IPTR Tab__MUIM_Draw(Object * child, struct Title_DATA * data, BOOL active)
 IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Title_DATA *data = INST_DATA(cl, obj);
-    struct List *children;
+    struct List *children = NULL;
     APTR cstate;
     Object *child;
     WORD horiz_spacing = XGET(obj, MUIA_Group_HorizSpacing);
@@ -464,13 +464,14 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
     else if(data->location == MUIV_Tabs_Left)
     {
-        WORD lasty;
+        WORD lasty = -1;
         while(child && (child = NextObject(&cstate)))
         {
             RectFill(_rp(obj), _right(child), _top(child) - vert_spacing, _right(child), _top(child) - 1);
             lasty = _bottom(child);
         }
-        RectFill(_rp(obj), _right(obj), lasty + 1, _right(obj), _bottom(obj));
+        if (lasty > -1)
+            RectFill(_rp(obj), _right(obj), lasty + 1, _right(obj), _bottom(obj));
     }
     else
         return FALSE;
