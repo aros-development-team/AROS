@@ -237,14 +237,13 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     	 */
     	if (args == NULL)
 	{
-    	    argptr = "";
-    	    argsize = 0;
-	} else {
-	    argsize = strlen(args);
-	    argptr  = (STRPTR)AllocVec(argsize+1, MEMF_PUBLIC);
-	    ENOMEM_IF(argptr == NULL);
-	    CopyMem(args, argptr, argsize+1);
+    	    args = "";
 	}
+
+        argsize = strlen(args);
+        argptr  = (STRPTR)AllocVec(argsize+1, MEMF_PUBLIC);
+        ENOMEM_IF(argptr == NULL);
+        CopyMem(args, argptr, argsize+1);
 
 	D(bug("[createnewproc] Arguments \"%s\"\n", argptr));
     }
@@ -427,7 +426,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	                (defaults[19].ti_Data ? PRF_SYNCHRONOUS   : 0) |
 			(defaults[20].ti_Data ? PRF_FREESEGLIST   : 0) |
 			(defaults[23].ti_Data ? PRF_NOTIFYONDEATH : 0) |
-		        PRF_FREEARGS;
+		        (argptr               ? PRF_FREEARGS      : 0);
     process->pr_ExitCode = (APTR)defaults[15].ti_Data;
     process->pr_ExitData = defaults[16].ti_Data;
     process->pr_Arguments = argptr;
