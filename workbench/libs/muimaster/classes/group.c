@@ -293,12 +293,16 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case    MUIA_Group_Child:
-                        D(bug("[group.mui] Adding child 0x%p\n", tag->ti_Data));
-                    if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
+                    D(bug("[group.mui] Adding child 0x%p\n", tag->ti_Data));
+                    if (tag->ti_Data)
+                    {
+                        DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
+                        /* Set first child as group title */
+                        if ((frame == MUIV_Frame_Register) && (data->titlegroup == NULL))
+                            data->titlegroup = (Object *)tag->ti_Data;
+                        else if (data->active_page == -1) data->active_page = 0;
+                    }
                     else  bad_childs = TRUE;
-                    /* Set first child as group title */
-                    if ((frame == MUIV_Frame_Register) && (data->titlegroup == NULL))
-                        data->titlegroup = (Object *)tag->ti_Data;
                     break;
 
             case    MUIA_Group_ActivePage:
