@@ -67,16 +67,16 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg 
             {
                 mintotalwidth = number_of_children * maxminwidth + (number_of_children - 1) * XGET(obj, MUIA_Group_HorizSpacing);
                 lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth = mintotalwidth;
-                lm->lm_MinMax.MinHeight = lm->lm_MinMax.DefHeight = maxminheight + data->protrusion;
+                lm->lm_MinMax.MinHeight = lm->lm_MinMax.DefHeight = maxminheight + 10;
                 lm->lm_MinMax.MaxWidth  = MUI_MAXMAX;
-                lm->lm_MinMax.MaxHeight = lm->lm_MinMax.DefHeight = maxminheight + data->protrusion;
+                lm->lm_MinMax.MaxHeight = lm->lm_MinMax.DefHeight = maxminheight + 10;
             }
             else if(data->location == MUIV_Tabs_Left)
             {
                 mintotalheight += (number_of_children - 1) * XGET(obj, MUIA_Group_VertSpacing);
-                lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth = maxminwidth + data->protrusion;
-                lm->lm_MinMax.MinHeight = lm->lm_MinMax.DefHeight = mintotalheight + data->protrusion;
-                lm->lm_MinMax.MaxWidth  = lm->lm_MinMax.DefWidth = maxminwidth + data->protrusion;
+                lm->lm_MinMax.MinWidth = lm->lm_MinMax.DefWidth = maxminwidth;
+                lm->lm_MinMax.MinHeight = lm->lm_MinMax.DefHeight = mintotalheight;
+                lm->lm_MinMax.MaxWidth  = lm->lm_MinMax.DefWidth = maxminwidth;
                 lm->lm_MinMax.MaxHeight = MUI_MAXMAX;
             }
 
@@ -100,7 +100,6 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg 
                 WORD childwidth = (lm->lm_Layout.Width - (number_of_children - 1) * horiz_spacing) / number_of_children;
                 WORD leftovers = lm->lm_Layout.Width - (number_of_children - 1) * horiz_spacing - number_of_children * childwidth;
                 WORD left = 0;
-                LONG tab = 0;
                 cstate = lm->lm_Children->mlh_Head;
                 while((child = NextObject(&cstate)))
                 {
@@ -108,26 +107,20 @@ ULONG Tabs_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg 
                     WORD cheight = _height(obj);
                     if(leftovers-- > 0)
                         cwidth++;
-                    if(tab != data->activetab)
-                        cheight -= data->protrusion;
-                    if(!MUI_Layout(child, left, lm->lm_Layout.Height - cheight, cwidth, cheight, 0))
+                    if(!MUI_Layout(child, left, lm->lm_Layout.Height - cheight, cwidth, cheight - 10, 0))
                         return(FALSE);
 
                     left += cwidth + horiz_spacing;
-                    tab++;
                 }
             }
             else if(data->location == MUIV_Tabs_Left)
             {
                 WORD vert_spacing = XGET(obj, MUIA_Group_VertSpacing);
                 WORD top = 0;
-                LONG tab = 0;
                 cstate = lm->lm_Children->mlh_Head;
                 while((child = NextObject(&cstate)))
                 {
                     WORD cheight = _minheight(child);
-                    if(tab != data->activetab)
-                        cheight += data->protrusion;
 
                     if(!MUI_Layout(child, 0, top, lm->lm_Layout.Width, cheight, 0))
                         return(FALSE);
@@ -174,8 +167,8 @@ IPTR Title__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     layout_hook->h_Data = data;
     data->layout_hook = layout_hook;
     data->location = location;
-    data->protrusion = 4;
     data->activetab = 0;
+    data->oldactivetab = 0;
 
     /* We need tab events to be processed after all objects contained in tabs
        like for example close button, hence the low priority value */
@@ -212,6 +205,7 @@ IPTR Title__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             {
                 if (data->activetab != tag->ti_Data)
                 {
+                    data->oldactivetab = data->activetab;
                     data->activetab = tag->ti_Data;
                     MUI_Redraw(obj, MADF_DRAWUPDATE);
                     set(_parent(obj), MUIA_Group_ActivePage, data->activetab);
@@ -232,28 +226,25 @@ static void DrawTopTab(Object *obj, struct Title_DATA *data, BOOL active, WORD x
     if (!active)
     {
         /* Clear the rounded edges of an unactive tab with default background */
-        nnset(obj, MUIA_Background, data->background);
 
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y1,
                  (IPTR) 1, (IPTR) 3,
                  (IPTR) x1, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1 + 1, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1 + 1, (IPTR) y1,
                  (IPTR) 1, (IPTR) 2,
                  (IPTR) x1 + 1, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1 + 2, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1 + 2, (IPTR) y1,
                  (IPTR) 1, (IPTR) 1,
                  (IPTR) x1 + 2, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x2 - 3, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x2 - 3, (IPTR) y1,
                  (IPTR) 3, (IPTR) 1,
                  (IPTR) x2 - 3, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x2 - 1, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x2 - 1, (IPTR) y1,
                  (IPTR) 1, (IPTR) 2,
                  (IPTR) x2 - 1, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x2, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x2, (IPTR) y1,
                  (IPTR) 1, (IPTR) 3,
                  (IPTR) x2, (IPTR) y1, (IPTR) 0);
-
-        nnset(obj, MUIA_Background, MUII_BACKGROUND);
     }
 
     /* top horiz bar */
@@ -309,28 +300,26 @@ static void DrawLeftTab(Object *obj, struct Title_DATA *data, BOOL active, WORD 
     if (!active)
     {
         /* Clear the rounded edges of an unactive tab with default background */
-        nnset(obj, MUIA_Background, data->background);
 
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y1,
                  (IPTR) 3, (IPTR) 1,
                  (IPTR) x1, (IPTR) y1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y1 + 1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y1 + 1,
                  (IPTR) 2, (IPTR) 1,
                  (IPTR) x1, (IPTR) y1 + 1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y1 + 2,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y1 + 2,
                  (IPTR) 1, (IPTR) 1,
                  (IPTR) x1, (IPTR) y1 + 2, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y2 - 2,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y2 - 2,
                  (IPTR) 1, (IPTR) 1,
                  (IPTR) x1, (IPTR) y2 - 2, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y2 - 1,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y2 - 1,
                  (IPTR) 2, (IPTR) 1,
                  (IPTR) x1, (IPTR) y2 - 1, (IPTR) 0);
-        DoMethod(obj,MUIM_DrawBackground, (IPTR) x1, (IPTR) y2,
+        DoMethod(obj,MUIM_DrawParentBackground, (IPTR) x1, (IPTR) y2,
                  (IPTR) 3, (IPTR) 1,
                  (IPTR) x1, (IPTR) y2, (IPTR) 0);
 
-        nnset(obj, MUIA_Background, MUII_BACKGROUND);
     }
 
     /* left vert bar */
@@ -381,41 +370,28 @@ static void DrawLeftTab(Object *obj, struct Title_DATA *data, BOOL active, WORD 
 }
 
 /* Drawing code */
-IPTR Tab__MUIM_Draw(Object * child, struct Title_DATA * data, BOOL active)
+IPTR Tab__MUIM_Draw(Object * child, struct Title_DATA * data, LONG active)
 {
-    WORD x1 = _left(child) ;
+    WORD x1 = _left(child);
     WORD y1 = _top(child);
     WORD x2 = _right(child);
     WORD y2 = _bottom(child);
 
-//    if(data->nodraw)
-//        return 1;
-//
-//    /* Zune does MUI_Redraw(obj, MADF_DRAWOBJECT) when setting new background,
-//       we don't need it */
-//    data->nodraw = 1;
-//
-    if (active)
+    /* Setting of background causes redraw of object. We use this "feature" */
+    if (active == 1)
     {
         nnset(child, MUIA_Background, data->background);
     }
-    else
+    else if (active == 0)
     {
         nnset(child, MUIA_Background, MUII_BACKGROUND);
     }
 
-    /* Draw all child objects */
-    MUI_Redraw(child, MADF_DRAWOBJECT);
-
-//    DoSuperMethodA(cl, obj, (Msg) msg);
-
     /* Draw tab frame */
     if(data->location == MUIV_Tabs_Top)
-        DrawTopTab(child, data, active, x1, y1, x2, y2);
+        DrawTopTab(child, data, (active == 1), x1, y1, x2, y2);
     else if(data->location == MUIV_Tabs_Left)
-        DrawLeftTab(child, data, active, x1, y1, x2, y2);
-
-//    data->nodraw = 0;
+        DrawLeftTab(child, data, (active == 1), x1, y1, x2, y2);
 
     return TRUE;
 }
@@ -437,6 +413,7 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE)))
         return(0);
 
+
     /* Now draw missing TabbedGroup border between the spaces */
     get(obj, MUIA_Group_ChildList, &children);
 
@@ -445,9 +422,12 @@ IPTR Title__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     while ((child = NextObject(&cstate)))
     {
         if (tab == data->activetab)
-            Tab__MUIM_Draw(child, data, TRUE);
+            Tab__MUIM_Draw(child, data, 1);
+        else if (tab == data->oldactivetab)
+            Tab__MUIM_Draw(child, data, 0);
         else
-            Tab__MUIM_Draw(child, data, FALSE);
+            Tab__MUIM_Draw(child, data, -1);
+
         tab++;
     }
 
