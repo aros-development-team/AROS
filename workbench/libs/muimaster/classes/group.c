@@ -62,6 +62,8 @@ extern struct Library *MUIMasterBase;
 #define MUIM_Group_Insert      (MUIB_MUI|0x00424d34) /* MUI: V20 */
 struct MUIP_Group_Insert       {STACKED ULONG MethodID; STACKED Object *obj; STACKED Object *pred;};
 
+#define MUIA_Group_ChildCount  0x80420322 /* MUI: V20 isg LONG */
+
 struct layout2d_elem {
     WORD min;
     WORD max;
@@ -583,12 +585,13 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_Group_Horiz: STORE = (data->flags & GROUP_HORIZ); return 1;
         case MUIA_Group_HorizSpacing: STORE = data->horiz_spacing; return 1;
         case MUIA_Group_VertSpacing: STORE = data->vert_spacing; return 1;
+        case MUIA_Group_ChildCount: STORE = data->num_childs; return 1;
         case MUIA_Virtgroup_Left: STORE = data->virt_offx; return 1;
         case MUIA_Virtgroup_Top: STORE = data->virt_offy; return 1;
         case MUIA_Virtgroup_Width: STORE = data->virt_mwidth; return 1;
         case MUIA_Virtgroup_Height: STORE = data->virt_mheight; return 1;
         case MUIA_Virtgroup_MinWidth: STORE = data->saved_minwidth; return 1;
-        case MUIA_Virtgroup_MinHeight: STORE = data->saved_minheight; return 1;        
+        case MUIA_Virtgroup_MinHeight: STORE = data->saved_minheight; return 1;
     }
 
     /* our handler didn't understand the attribute, we simply pass
