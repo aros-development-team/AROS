@@ -796,7 +796,8 @@ BOOL WriteIconPNG(BPTR file, struct DiskObject *dobj, struct IconBase *IconBase)
     struct NativeIcon 	*nativeicon = NATIVEICON(dobj);
     UBYTE   	    	*mempos = nativeicon->ni_Extra.Data + nativeicon->ni_Extra.PNG[0].Offset;
     BOOL    	    	 done = FALSE;
-    
+
+    D(bug("%s: ni=%p, ni->ni_Extra.Data = %p\n", __func__, nativeicon, nativeicon->ni_Extra.Data));
     if (nativeicon->ni_Extra.Data == NULL)
     	return FALSE;
 
