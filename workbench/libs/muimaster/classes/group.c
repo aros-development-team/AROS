@@ -286,7 +286,7 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->vert_spacing = -1;
     data->columns = 1;
     data->rows = 1;
-    data->active_page = -1;
+    data->active_page = 0;
     get(obj, MUIA_Frame, &frame);
 
     /* parse initial taglist */
@@ -302,7 +302,6 @@ IPTR Group__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                         /* Set first child as group title */
                         if ((frame == MUIV_Frame_Register) && (data->titlegroup == NULL))
                             data->titlegroup = (Object *)tag->ti_Data;
-                        else if (data->active_page == -1) data->active_page = 0;
                     }
                     else  bad_childs = TRUE;
                     break;
