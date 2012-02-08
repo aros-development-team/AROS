@@ -199,6 +199,26 @@ IPTR Ascii__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 
     return retval;
 }
+
+/**************************************************************************************************/
+
+IPTR Ascii__DTM_PRINT(Class *cl, Object *o, struct dtPrint *dtp)
+{
+    union printerIO *pio = dtp->dtp_PIO;
+    STRPTR buffer;
+    IPTR   bufferlen;
+
+    if (GetDTAttrs (o, TDTA_Buffer	, (IPTR) &buffer	,
+                       TDTA_BufferLen	, (IPTR) &bufferlen	,
+                       TAG_DONE) == 2) {
+        pio->ios.io_Command = CMD_WRITE;
+        pio->ios.io_Data = buffer;
+        pio->ios.io_Length = bufferlen;
+        return DoIO((struct IORequest *)pio);
+    }
+
+    return PDERR_CANCEL;
+}
 	
 /**************************************************************************************************/
 
