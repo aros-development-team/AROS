@@ -268,9 +268,15 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
 
         decodeArgs(pb, pa, name);
 
+        D(bug("%s: %s device=%s, unit=%d (%d), mode=%d\n",
+                    __func__, name, pb->pb_DeviceName,
+                    pa->pa_DeviceUnit, pb->pb_DeviceFlags,
+                    pb->pb_Mode));
+
         if ((pa->pa_IOMsg = CreateMsgPort())) {
             if ((pa->pa_IO = (APTR)CreateIORequest(pa->pa_IOMsg, sizeof(*pa->pa_IO)))) {
                 if (0 == OpenDevice(pb->pb_DeviceName, pa->pa_DeviceUnit, (struct IORequest *)pa->pa_IO, pb->pb_DeviceFlags)) {
+                    D(bug("%s: Device is open\n"));
                     *err = 0;
                     if (pb->pb_Mode != PORT_SERIAL) {
                         AddTail(&pb->pb_Files, &pa->pa_Node);
@@ -304,12 +310,14 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
         FreeVec(pa);
     }
 
+    D(bug("%s: Didn't open device\n", __func__));
     *err = ERROR_NO_DISK;
     return NULL;
 }
 
 static void portClose(struct portArgs *pa)
 {
+    D(bug("%s: Close %s\n", pa->pa_Node.ln_Name));
     Remove(&pa->pa_Node);
     CloseDevice((struct IORequest *)pa->pa_IO);
     DeleteIORequest((struct IORequest *)pa->pa_IO);
@@ -317,7 +325,20 @@ static void portClose(struct portArgs *pa)
     FreeVec(pa);
 }
 
-__startup void _main(void)
+void replyPkt(struct DosPacket *dp)
+{
+    struct MsgPort *mp;
+    struct Message *mn;
+    
+    D(bug("%s: type=%d res1=%d, res2=0x%p\n", __func__, dp->dp_Type, dp->dp_Res1, dp->dp_Res2));
+    mp = dp->dp_Port;
+    mn = dp->dp_Link;
+    mn->mn_Node.ln_Name = (char*)dp;
+    dp->dp_Port = &((struct Process*)FindTask(NULL))->pr_MsgPort;
+    PutMsg(mp, mn);
+}
+
+__startup void port_handler(void)
 {
     struct DosPacket *dp;
     struct MsgPort *mp;
@@ -340,13 +361,17 @@ __startup void _main(void)
         res = decodeStartup(&pb, (BPTR)dp->dp_Arg2);
     }
 
+    if (res == 0)
+        ((struct DeviceNode *)BADDR(dp->dp_Arg3))->dn_Task = mp;
+
     dp->dp_Res2 = res;
     dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
 
     do {
-        PutMsg (dp->dp_Port, dp->dp_Link);
+        replyPkt(dp);
         WaitPort(mp);
         dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
+        D(bug("%s: type=%d\n", __func__, dp->dp_Type));
 
         switch (dp->dp_Type) {
         case ACTION_FINDINPUT:
@@ -434,7 +459,9 @@ __startup void _main(void)
     } while (!dead);
 
 /* ACTION_DIE ends up here... */
-    PutMsg (dp->dp_Port, dp->dp_Link);
+    D(bug("%s: Exiting\n"));
+
+    replyPkt(dp);
 
     CloseLibrary(pb.pb_UtilityBase);
 }
