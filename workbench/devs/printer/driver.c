@@ -161,7 +161,7 @@ STATIC AROS_LH1(void, BeginIO,
     struct IOStdReq *io = &pio->ios; 
     struct PrinterData *pd = &pu->pu_PrinterData;
 
-    D(bug("BeginIO: io_Command = %d\n", io->io_Command));
+    D(bug("BeginIO: io_Command = %d, Unit Port %p\n", io->io_Command, &pd->pd_Unit));
 
     io->io_Flags &= ~IOF_QUICK;
     PutMsg(&pd->pd_Unit, &io->io_Message);
@@ -515,6 +515,7 @@ static LONG pd_DriverTask(VOID)
     union printerIO *pio;
     UWORD cmd;
     BOOL stopped = FALSE;
+    LONG ret;
 
     /* Wait for startup message -
      * we use the DOS port because the 
@@ -524,14 +525,15 @@ static LONG pd_DriverTask(VOID)
     WaitPort(&me->pr_MsgPort);
     msg = (struct MagicMessage *)GetMsg(&me->pr_MsgPort);
 
-    D(bug("%s: Initializing driver\n", __func__));
-    msg->mn_Version = pd_Init(pd);
+    D(bug("%s: Initializing driver, Unit Port %p\n", __func__, &pd->pd_Unit));
+    ret = pd_Init(pd);
 
-    D(bug("%s: Replying with %d\n", __func__, msg->mn_Version));
+    D(bug("%s: Replying with %d\n", __func__, ret));
+    msg->mn_Version = ret;
     ReplyMsg((struct Message *)msg);
 
-    if (0 != msg->mn_Version)
-        return msg->mn_Version;
+    if (0 != ret)
+        return ret;
 
     /* Wait for unit messages on the pd_Unit */
     do {
@@ -574,14 +576,20 @@ static LONG pd_DriverTask(VOID)
         case CMD_WRITE:
             if (stopped)
                 err = PDERR_CANCEL;
-            else
+            else {
                 err = Printer_Text_Write(pd, pio->ios.io_Data, pio->ios.io_Length);
+                if (err == 0)
+                    pio->ios.io_Actual = pio->ios.io_Length;
+            }
             break;
         case PRD_RAWWRITE:
             if (stopped)
                 err = PDERR_CANCEL;
-            else
+            else {
                 err = pd_PWrite(pio->ios.io_Data, pio->ios.io_Length);
+                if (err == 0)
+                    pio->ios.io_Actual = pio->ios.io_Length;
+            }
             break;
         case PRD_RESETPREFS:
         case PRD_LOADPREFS:
@@ -614,6 +622,7 @@ static LONG pd_DriverTask(VOID)
             break;
         }
         pio->ios.io_Error = err;
+        D(bug("%s: Command = %d, Result = %d\n", __func__, cmd, err));
 
         ReplyMsg((struct Message *)pio);
     } while (cmd != CMD_CLOSEDEVICE);
