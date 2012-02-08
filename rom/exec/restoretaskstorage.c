@@ -50,7 +50,7 @@
 
     IPTR *tsrestore = id, *taskstorage;
     struct Task *thistask = FindTask(NULL);
-    ULONG size1, size2;
+    ULONG size1, size2, size;
 
     if (!tsrestore)
         return;
@@ -65,7 +65,11 @@
     taskstorage = thistask->tc_UnionETask.tc_TaskStorage;
     size2 = (ULONG)taskstorage[__TS_FIRSTSLOT];
 
-    CopyMemQuick(tsrestore, taskstorage, MIN(size1, size2));
+    size = MIN(size1, size2);
+    if (((size&3) == 0))
+        CopyMemQuick(tsrestore, taskstorage, size);
+    else
+        CopyMem(tsrestore, taskstorage, size);
     taskstorage[__TS_FIRSTSLOT] = size2;
     D(bug("RestoreTaskStorage: Freeing tsrestore=%x of size %d\n",
           tsrestore, size1

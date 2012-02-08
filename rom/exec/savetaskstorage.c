@@ -53,8 +53,12 @@
     int size = (int)taskstorage[__TS_FIRSTSLOT];
 
     tsout = AllocMem(size, MEMF_PUBLIC);
-    if (tsout)
-        CopyMemQuick(taskstorage, tsout, size);
+    if (tsout) {
+        if (((size&3) == 0))
+            CopyMemQuick(taskstorage, tsout, size);
+        else
+            CopyMem(taskstorage, tsout, size);
+    }
 
     D(bug("SaveTaskStorage: taskstorage=%x, size=%d, tsout=%x\n",
           taskstorage, size, tsout
