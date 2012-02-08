@@ -2425,11 +2425,10 @@ endif
 # Set up build environment, and options for configure script
 ifeq (%(compiler),host)
     CONFIG_ENV := \
-        CC="$(HOST_CC) $(HOST_CFLAGS)" \
+        CC="$(HOST_CC) $(HOST_CFLAGS) -L$(CROSSTOOLSDIR)/lib -I$(CROSSTOOLSDIR)/include" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)"
-    %(mmake)-config_opts += --target=$(AROS_TARGET_CPU)-aros
 endif
 ifeq (%(compiler),target)
     CONFIG_ENV := \
