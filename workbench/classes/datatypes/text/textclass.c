@@ -1803,8 +1803,9 @@ static void CopyText(struct Text_Data *td)
 /**************************************************************************
  Print the text (whole text only)
 **************************************************************************/
-static void PrintText(struct Text_Data *td, union printerIO *printer_io)
+static SIPTR PrintText(struct Text_Data *td, union printerIO *printer_io)
 {
+    SIPTR ret = PDERR_CANCEL;
     D(bug("Printing Text...\n"));
 
     if (printer_io)
@@ -1813,7 +1814,7 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 	LONG sig_mask = 1L << printer_io->ios.io_Message.mn_ReplyPort->mp_SigBit;
 	LONG sigs;
 
-	while (line->ln_Link.mln_Succ && !CheckSignal (SIGBREAKF_CTRL_C))
+	while (line && !CheckSignal (SIGBREAKF_CTRL_C))
 	{
 	    LONG fontx = td->font->tf_XSize;
 	    LONG space_len = GetRelativeOffset(line, fontx) / fontx;
@@ -1824,7 +1825,9 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 		printer_io->ios.io_Data = (APTR) " ";
 		printer_io->ios.io_Command = CMD_WRITE;
 	    	D(bug("DoIO1\n"));
-		DoIO((struct IORequest *) printer_io);
+		ret = DoIO((struct IORequest *) printer_io);
+		if (ret != 0)
+		    break;
 		space_len--;
 	    }
 
@@ -1834,7 +1837,9 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 		printer_io->ios.io_Data = (APTR) line->ln_Text;
 		printer_io->ios.io_Command = CMD_WRITE;
 	    	D(bug("DoIO2\n"));
-		DoIO((struct IORequest *) printer_io);
+		ret = DoIO((struct IORequest *) printer_io);
+		if (ret != 0)
+		    break;
 	    }
 
 	    if (line->ln_Flags & LNF_LF)
@@ -1856,17 +1861,25 @@ static void PrintText(struct Text_Data *td, union printerIO *printer_io)
 			AbortIO((struct IORequest *) printer_io);
 		    	D(bug("WaitIO\n"));
 			WaitIO((struct IORequest *) printer_io);
+			ret = PDERR_CANCEL;
 		    }
 		    break;
+		} else {
+		    WaitIO((struct IORequest *) printer_io);
+		    ret = ((struct IORequest *) printer_io)->io_Error;
+		    if (ret != 0)
+		        break;
 		}
 	    }
-	    line = (struct Line *) line->ln_Link.mln_Succ;
+	    line = (struct Line *) Node_Next(line);
 
 	}	/* while(line) */
 
     }	/* if (printer_io) */
 
     D(bug("Printing Text finished...\n"));
+
+    return ret;
 }
 
 #ifndef COMPILE_DATATYPE
@@ -3017,11 +3030,11 @@ BOOL DT_Write(struct IClass * cl, struct Gadget * g, struct dtWrite * msg)
     return TRUE;
 }
 
-VOID DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
+SIPTR DT_Print(struct IClass *cl, struct Gadget *g, struct dtPrint *msg)
 {
     struct Text_Data *td = (struct Text_Data *) INST_DATA(cl, g);
 
-    PrintText(td, msg->dtp_PIO);
+    return PrintText(td, msg->dtp_PIO);
 }
 
 #ifndef __AROS__
