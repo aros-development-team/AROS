@@ -599,7 +599,7 @@ IPTR Group__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
 
     /* seems to be the documented behaviour, however it should be slow! */
-//    if (!data->dont_forward_get)
+    if (!data->dont_forward_get && !data->dont_forward_methods)
     {
         Object               *cstate;
         Object               *child;
@@ -3034,8 +3034,17 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList = NULL;
+    IPTR attr[30];
 
-    DoSuperMethodA(cl,obj,(Msg)msg);
+    data->dont_forward_get = 1;
+
+    if (GetAttr(msg->TrigAttr, obj, attr))
+    {
+        data->dont_forward_get = 0;
+        return DoSuperMethodA(cl,obj,(Msg)msg);
+    }
+    data->dont_forward_get = 0;
+    
     get(data->family, MUIA_Family_List, &(ChildList));
     if (!ChildList)
             return TRUE;
@@ -3043,11 +3052,11 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-       IPTR attr[30];
 
        if (GetAttr(msg->TrigAttr, child, attr))
        {
            DoMethodA(child, (Msg)msg);
+           /* No return here! */
        }
     }
     return TRUE;
