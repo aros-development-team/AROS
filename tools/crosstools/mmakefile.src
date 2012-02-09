@@ -5,7 +5,7 @@ GMP_VERSION=5.0.1
 MPFR_VERSION=3.0.1
 MPC_VERSION=0.9
 
-GCC_LANGUAGES = c,c++
+GCC_LANGUAGES = c,c++,objc
 
 GCC_EXTRA_OPTS = \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
@@ -23,7 +23,6 @@ ifeq ($(AROS_TARGET_CPU), m68k)
   GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
-  GCC_LANGUAGES  := $(GCC_LANGUAGES),objc
   GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
   GCC_ARRAY_BOUNDS            := -Wno-array-bounds
   GCC_ENUM_COMPARE            := -Wno-enum-compare
