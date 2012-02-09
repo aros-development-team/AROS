@@ -120,7 +120,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 BOOL namefrom_internal(struct DosLibrary *DOSBase, BPTR lock, STRPTR buffer, LONG length);
 
 /* Platform-overridable boot sequence */
-void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags);
+void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags);
 BOOL __dos_IsBootable(struct DosLibrary *DOSBase, BPTR Lock);
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */

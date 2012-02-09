@@ -64,14 +64,14 @@ static void load_system_configuration(struct DosLibrary *DOSBase)
 
 extern void BCPL_cliInit(void);
 
-void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
+void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
 {
     BPTR cis = BNULL;
 
     /*  We have been created as a process by DOS, we should now
     	try and boot the system. */
 
-    D(bug("[__dos_Boot] generic boot sequence, flags 0x%08X\n", Flags));
+    D(bug("[__dos_Boot] generic boot sequence, BootFlags 0x%08X Flags 0x%02X\n", BootFlags, Flags));
 
     /* m68000 uses this to get the default colors and
      * cursors for Workbench
@@ -84,7 +84,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
      * which will be used for bootmenu etc. However, it we somehow happen
      * not to have it, this will be our last chance.
      */
-    if ((Flags & (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION)) != (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION))
+    if ((BootFlags & (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION)) != (BF_NO_DISPLAY_DRIVERS | BF_NO_COMPOSITION))
     {
         /* Check that it exists first... */
         BPTR seg = LoadSeg("C:AROSMonDrvs");
@@ -98,9 +98,9 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
 	     * Argument strings MUST contain terminating LF because of ReadItem() bugs.
 	     * Their absence causes ReadArgs() crash.
 	     */
-            if (Flags & BF_NO_COMPOSITION)
+            if (BootFlags & BF_NO_COMPOSITION)
             	args = "NOCOMPOSITION\n";
-            else if (Flags & BF_NO_DISPLAY_DRIVERS)
+            else if (BootFlags & BF_NO_DISPLAY_DRIVERS)
             	args = "ONLYCOMPOSITION\n";
 
 	    D(bug("[__dos_Boot] Running AROSMonDrvs %s\n", args));
@@ -134,13 +134,17 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG Flags)
         if (cos) {
             BPTR cas = BNULL;
             
-            if (!(Flags & BF_NO_STARTUP_SEQUENCE))
+            if (!(BootFlags & BF_NO_STARTUP_SEQUENCE))
                 cas = Open("S:Startup-Sequence", MODE_OLDFILE);
 
             /* Inject the banner */
-            if (SetVBuf(cos, NULL, BUF_FULL, sizeof(C)) == 0) {
+            if (Flags & EBF_SILENTSTART) {
+                if (SetVBuf(cos, NULL, BUF_FULL, sizeof(C)) == 0) {
+                    FPuts(cos, C);
+                    SetVBuf(cos, NULL, BUF_LINE, -1);
+                }
+            } else {
                 FPuts(cos, C);
-                SetVBuf(cos, NULL, BUF_LINE, -1);
             }
             
             if (SystemTags(NULL,
