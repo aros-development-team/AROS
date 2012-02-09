@@ -24,6 +24,8 @@ struct MUI_ListviewData
     Object *list, *group, *vert;
     struct Hook *layout_hook;
     struct Hook hook;
+    struct Hook selfnofity_hook;
+    BOOL noforward;
 };
 
 ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
@@ -106,6 +108,20 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
     return 0;
 }
 
+ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
+{
+    struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
+    SIPTR attribute = (SIPTR)msg[0];
+    SIPTR value     = (SIPTR)msg[1];
+
+    /* This allows avoiding notify loops */
+    data->noforward = TRUE;
+    SetAttrs(obj, MUIA_Group_Forward, FALSE, attribute, value, TAG_DONE);
+    data->noforward = FALSE;
+
+    return 0;
+}
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -154,6 +170,11 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->hook.h_SubEntry = (HOOKFUNC)Listview_Function;
     data->hook.h_Data = data;
 
+    data->selfnofity_hook.h_Entry = HookEntry;
+    data->selfnofity_hook.h_SubEntry = (HOOKFUNC)SelfNotify_Function;
+    data->selfnofity_hook.h_Data = data;
+    data->noforward = FALSE;
+
     get(list,MUIA_List_VertProp_First,&first);
     get(list,MUIA_List_VertProp_Visible,&visible);
     get(list,MUIA_List_VertProp_Entries,&entries);
@@ -177,6 +198,9 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
              (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_ENTRIES,
              MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->selfnofity_hook, MUIA_List_Active,
+            MUIV_TriggerValue);
 
     return (IPTR)obj;
 }
@@ -200,6 +224,13 @@ void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  *tag;
     struct TagItem  *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
+    struct MUI_ListviewData *data = INST_DATA(cl, obj);
+
+    if (data->noforward)
+    {
+        DoSuperMethodA(cl, obj, (Msg)msg);
+        return;
+    }
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
