@@ -46,7 +46,14 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
-#MM- tools-crosstools-m68k  : tools-crosstools-gcc crosstools-gcc
+#MM
+sysinclude-gcc: $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h
+
+$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h: $(AROS_DEVELOPMENT)/include/math.h
+	@$(MKDIR) -p $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include
+	@$(CP) $^ $@
+
+#MM- tools-crosstools-m68k  : tools-crosstools-gcc sysinclude-gcc crosstools-gcc
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
