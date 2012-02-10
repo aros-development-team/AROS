@@ -44,7 +44,7 @@ ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
 
 static int ReadNextInt(BPTR FileHandle)
 {
-	char c;
+	int c;
 	int retval = 0;
 
 	c = FGetC(FileHandle);
@@ -77,7 +77,7 @@ static BOOL LoadPNM(struct IClass *cl, Object *o)
 	unsigned char *RGBBuffer;
 	unsigned char *ReadBuffer;
 	unsigned int PNMTYPE;
-	char c;
+	int c;
 	int bytePerRow;
 	int curbit, nbbyte, curcol;
 	unsigned char currentgray;
