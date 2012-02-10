@@ -6,10 +6,6 @@
 
 int main()
 {
-    char *argv0[] = { "Echo", "I'm child", NULL };
-    char *argv1[] = { "Echo", "I'm the second child of a parent", NULL };
-    char *argv2[] = { "Echo", "I'm child of a child", NULL };
-    char *envp[] = { NULL };
     pid_t pid;
 
     pid = vfork();
@@ -20,7 +16,7 @@ int main()
     }
     else if(pid == 0)
     {
-	execve("C:Echo", argv0, envp);
+	printf("I'm a child\n");
 	_exit(1);
     }
     else
@@ -40,7 +36,7 @@ int main()
 	}
 	else if(pid2 == 0)
 	{
-	    execve("C:Echo", argv1, envp);
+	    printf("I am the second child\n");
 	    _exit(1);
 	}
 	waitpid(pid, NULL, 0);
@@ -56,7 +52,7 @@ int main()
 	}
 	else if(pid2 == 0)
 	{
-	    execve("C:Echo", argv2, envp);
+	    printf("I am the child of a child\n");
 	    _exit(1);
 	}
 	_exit(0);
