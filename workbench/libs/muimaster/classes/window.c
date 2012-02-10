@@ -3555,7 +3555,7 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wind
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     LONG left,top,width,height;
-    BOOL resized;
+    BOOL resized, reshow = FALSE;
     Object *current_obj;
 
     if (!(data->wd_Flags & MUIWF_OPENED))
@@ -3598,7 +3598,15 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wind
         current_obj = data->wd_RootObject;
 
     WindowMinMax(obj, data);
-    DoHideMethod(current_obj);
+    
+    /* Important: current_obj could be hidden, like in an inactive page! */
+    if (_flags(current_obj) & MADF_CANDRAW)
+    {
+        reshow = TRUE;
+    }
+    
+    if (reshow) DoHideMethod(current_obj);
+    
     /* resize window ? */
     WindowSelectDimensions(data);
     resized = WindowResize(data);
@@ -3617,10 +3625,13 @@ IPTR Window__MUIM_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wind
         _height(data->wd_RootObject) = data->wd_Height;
     }
     DoMethod(current_obj, MUIM_Layout);
-    DoShowMethod(current_obj);
+    
+    if (reshow) DoShowMethod(current_obj);
 
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
-        MUI_Redraw(current_obj, MADF_DRAWOBJECT);
+    {
+        if (reshow) MUI_Redraw(current_obj, MADF_DRAWOBJECT);
+    }
     else
     {
         left = data->wd_RenderInfo.mri_Window->BorderLeft;
