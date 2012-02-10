@@ -886,7 +886,7 @@ index ef35453..0e4deb0 100644
  	else true; fi
  	$(COMPILE.c) $(srcdir)/pexecute.c $(OUTPUT_OPTION)
  
-+./pex-aros.o: $(srcdir)/pex-aros.c config.h $(INCDIR)/ansidecl.h \
++./pex-aros.$(objext): $(srcdir)/pex-aros.c config.h $(INCDIR)/ansidecl.h \
 +	$(INCDIR)/libiberty.h $(srcdir)/pex-common.h
 +	if [ x"$(PICFLAG)" != x ]; then \
 +	  $(COMPILE.c) $(PICFLAG) $(srcdir)/pex-aros.c -o pic/$@; \
@@ -1064,7 +1064,7 @@ index bdabe8d..c93f7ac 100755
       *-*-mingw* | *-*-winnt*)	pexecute=pex-win32  ;;
       *-*-msdosdjgpp*)		pexecute=pex-djgpp  ;;
       *-*-msdos*)		pexecute=pex-msdos  ;;
-+     *-*-aros*)			pexecute=./pex-aros.o   ;;
++     *-*-aros*)			pexecute=pex-aros  ;;
       *)				pexecute=pex-unix   ;;
  esac
  
@@ -1127,7 +1127,7 @@ index 9f1ff04..0262c8d 100644
       *-*-mingw* | *-*-winnt*)	pexecute=pex-win32  ;;
       *-*-msdosdjgpp*)		pexecute=pex-djgpp  ;;
       *-*-msdos*)		pexecute=pex-msdos  ;;
-+     *-*-aros*)			pexecute=./pex-aros.o   ;;
++     *-*-aros*)			pexecute=pex-aros   ;;
       *)				pexecute=pex-unix   ;;
  esac
  AC_SUBST(pexecute)

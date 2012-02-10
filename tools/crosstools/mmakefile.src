@@ -18,7 +18,8 @@ ifeq ($(AROS_TARGET_CPU), arm)
 else
 ifeq ($(AROS_TARGET_CPU), m68k)
   GCC_VERSION     = 4.6.2
-  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --disable-bootstrap 
+  GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS_DEVELOPMENT)
+  GCC_EXTRA_OPTS += --disable-bootstrap 
   GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
   GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
@@ -52,11 +53,11 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 # arm still needs linklibs be build before, can be removed after patch is updated to work with --with-sysroot
 #MM- tools-crosstools-arm    : core-linklibs tools-crosstools-gcc crosstools-gcc
 
-#MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros compiler-includes compiler-clib-includes
-
-ifeq ($(AROS_TARGET_CPU), m68k)
-#MM- tools-crosstools-gcc : tools-crosstools-gmp tools-crosstools-mpfr tools-crosstools-mpc
-endif
+#MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
+#MM                        compiler-includes compiler-clib-includes \
+#MM                        tools-crosstools-gmp \
+#MM                        tools-crosstools-mpfr \
+#MM                        tools-crosstools-mpc
 
 # We intentionally bypass the usual fetch_and_build macro below and call mmakefile and gcc makefile
 # targets directly. This is in order to not build the core-linklibs target during binutils and gcc
@@ -139,20 +140,8 @@ tools-crosstools-binutils :
 
 HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
-#MM- tools-crosstools-includes: includes
-
-ARCH_INCLUDES := $(TOOLDIR)/crosstools/$(AROS_TARGET_CPU)-aros/include
-    
 #MM
-tools-crosstools-includes: $(ARCH_INCLUDES)/aros/system.h
-
-$(ARCH_INCLUDES)/aros/system.h: $(AROS_DEVELOPMENT)/include/aros/system.h
-	$(MKDIR) -p $(ARCH_INCLUDES)
-	$(CP) -a $(AROS_DEVELOPMENT)/include/. $(ARCH_INCLUDES)/.
-	$(TOUCH) $@
-
-#MM
-tools-crosstools-gcc : tools-crosstools-includes
+tools-crosstools-gcc :
 	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/specs
 	@$(IF) ! $(TEST) -f $(gcc-installflag) \
 	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gcc-installflag))" ; then \
