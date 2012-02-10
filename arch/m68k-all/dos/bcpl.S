@@ -376,7 +376,7 @@ BCPL divide         /*  10, D1 = D1 / D2 */
 
 BCPL mod            /*  14, D1 = D1 % D2 */
     jsr	%a5@(0x12)
-    move.l	%d2,%d1
+    move.l	%d2,%d0 /* BRTS does move.l %d0,%d1 */
     move.l	%a1@(4),%d2
     BRTS
 
