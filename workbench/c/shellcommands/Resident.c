@@ -174,6 +174,7 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	struct Segment *curr;
 	struct SegNode *n;
 	struct DosInfo *dinf = BADDR(DOSBase->dl_Root->rn_Info);
+	BOOL isbreak = FALSE;
 
 	NEWLIST((struct List *)&l);
 
@@ -204,22 +205,29 @@ AROS_SHA(BOOL, ,SYSTEM,/S,FALSE))
 	PutStr("NAME                           USECOUNT\n\n");
 	while ((n = (struct SegNode *)RemHead((struct List *)&l)))
 	{
-	    if (n->data[1] == CMD_SYSTEM)
-	        VPrintf("%-30s SYSTEM\n", n->data);
-	    else
-	    if (n->data[1] == CMD_INTERNAL)
-    	        VPrintf("%-30s INTERNAL\n", n->data);
-	    else
-	    if (n->data[1] == CMD_DISABLED)
-    	        VPrintf("%-30s DISABLED\n", n->data);
-	    else
-		VPrintf("%-30s %-ld\n", n->data);
-
-	    FreeVec((APTR)n->data[0]);
-	    FreeVec(n);
+            if (SetSignal(0L, SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+                isbreak = TRUE;
+            if (!isbreak) {
+                if (n->data[1] == CMD_SYSTEM)
+                    VPrintf("%-30s SYSTEM\n", n->data);
+                else
+                if (n->data[1] == CMD_INTERNAL)
+                    VPrintf("%-30s INTERNAL\n", n->data);
+                else
+                if (n->data[1] == CMD_DISABLED)
+                    VPrintf("%-30s DISABLED\n", n->data);
+                else
+                    VPrintf("%-30s %-ld\n", n->data);
+            }
+            FreeVec((APTR)n->data[0]);
+            FreeVec(n);
+        }
+        if (isbreak) {
+            SetIoErr(ERROR_BREAK);
+            PrintFault(IoErr(), "Resident");
+            return RETURN_FAIL;
         }
     }
-
 
     return RETURN_OK;
 
