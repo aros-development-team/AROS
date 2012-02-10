@@ -174,7 +174,7 @@ AROS_SHA(STRPTR, ,EXISTS,/K,NULL))
 
 	if(!result)
 	{
-	    char a = 0;
+	    int  a = 0;
 	    char buffer[256];
 	    int  level = 1;	    /* If block level */
 	    BOOL found = FALSE; /* Have we found a matching Else or

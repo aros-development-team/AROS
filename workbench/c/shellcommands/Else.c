@@ -72,7 +72,8 @@ AROS_SH0(Else,41.1)
     {
 	BOOL found = FALSE;
 	int  level = 1;
-	char buffer[256], a = 0;
+	char buffer[256];
+	int a = 0;
 
 	SelectInput(cli->cli_CurrentInput);
 

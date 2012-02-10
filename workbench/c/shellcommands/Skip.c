@@ -80,7 +80,8 @@ AROS_SHA(BOOL,   , BACK, /S, FALSE))
     }
 
     {
-	char  buffer[256], a = 0;
+	char  buffer[256];
+	int   a = 0;
 	LONG  status;
 	BOOL  quit = FALSE;
 
