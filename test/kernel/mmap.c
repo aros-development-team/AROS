@@ -3,6 +3,7 @@
 #include <proto/exec.h>
 #include <proto/kernel.h>
 #include <proto/utility.h>
+#include <proto/kernel.h>
 
 #include <stdio.h>
 
