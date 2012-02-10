@@ -85,7 +85,8 @@ static void
 vs_ppc_run_linear( struct draw_vertex_shader *base,
 		   const float (*input)[4],
 		   float (*output)[4],
-                  const void *constants[PIPE_MAX_CONSTANT_BUFFERS],
+                   const void *constants[PIPE_MAX_CONSTANT_BUFFERS],
+                   const unsigned const_size[PIPE_MAX_CONSTANT_BUFFERS],
 		   unsigned count,
 		   unsigned input_stride,
 		   unsigned output_stride )
