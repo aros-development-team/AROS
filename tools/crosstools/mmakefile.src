@@ -49,6 +49,8 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 #MM
 sysinclude-gcc: $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h
 
+#MM- sysinclude-gcc: includes-copy-mlib
+
 $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h: $(AROS_DEVELOPMENT)/include/math.h
 	@$(MKDIR) -p $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include
 	@$(CP) $^ $@
@@ -89,7 +91,7 @@ tools-crosstools-gmp :
 	package_repo="$(GNU_REPOSITORY)/gmp" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR)"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
 
 #MM
 tools-crosstools-mpfr :
@@ -107,7 +109,7 @@ tools-crosstools-mpfr :
 	package_repo="$(GNU_REPOSITORY)/mpfr" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR)"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
 
 #MM
 tools-crosstools-mpc :
@@ -125,7 +127,7 @@ tools-crosstools-mpc :
 	package_repo="$(MPC_REPOSITORY)" suffixes="tar.gz" \
 	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
-	extraoptions="--bindir=$(CROSSTOOLSDIR)"
+	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
 
 #MM
 tools-crosstools-binutils :
@@ -150,6 +152,7 @@ HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 #MM
 tools-crosstools-gcc :
 	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/specs
+	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/elf-specs
 	@$(IF) ! $(TEST) -f $(gcc-installflag) \
 	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gcc-installflag))" ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gcc/.files-touched \
