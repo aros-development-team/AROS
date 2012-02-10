@@ -204,7 +204,7 @@ emit_li_offset(struct gen_context *gen, int offset)
    return gen->offset_reg;
 }
 
-
+#if 0
 /**
  * Forces subsequent emit_li_offset() calls to emit an 'li'.
  * To be called at the top of basic blocks.
@@ -214,7 +214,7 @@ reset_li_offset(struct gen_context *gen)
 {
    gen->offset_value = -9999999;
 }
-
+#endif
 
 
 /**
@@ -1042,8 +1042,8 @@ emit_pow(struct gen_context *gen, struct tgsi_full_instruction *inst)
 static void
 emit_xpd(struct gen_context *gen, struct tgsi_full_instruction *inst)
 {
-   int x0_vec, y0_vec, z0_vec;
-   int x1_vec, y1_vec, z1_vec;
+   int x0_vec = 0, y0_vec = 0, z0_vec = 0;
+   int x1_vec = 0, y1_vec = 0, z1_vec = 0;
    int zero_vec, tmp_vec;
    int tmp2_vec;
 
