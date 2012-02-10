@@ -142,6 +142,7 @@
         return 0;
     }
 
+    D(bug("waitpid: wait for %d to die\n", tid));
     et = (struct ETask *)ChildWait(tid);
     if (et != (struct ETask *)CHILD_NOTNEW)
     {
