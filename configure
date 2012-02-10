@@ -8021,6 +8021,7 @@ else
 fi
 
 if test "$with_crosstools" = "default"; then
+    crosstools=yes
     AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
 else
     AROS_CROSSTOOLSDIR="$with_crosstools"
@@ -8204,15 +8205,17 @@ if test "$cross_compiling" = "yes" ; then
             target_tool_version=$aros_gcc_version
             use_kernel_cc_wrapper=yes
 
-                                    aros_target_cc=
-            aros_target_ld=
-            aros_target_as=
-            aros_target_ar=
-            aros_target_ranlib=
-            aros_target_nm=
-            aros_target_strip=
-            aros_target_objcopy=
-            aros_target_objdump=
+                                    if test "$crosstools" != yes; then
+                aros_target_cc=
+                aros_target_ld=
+                aros_target_as=
+                aros_target_ar=
+                aros_target_ranlib=
+                aros_target_nm=
+                aros_target_strip=
+                aros_target_objcopy=
+                aros_target_objdump=
+            fi
         fi
     fi
 
