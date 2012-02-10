@@ -929,7 +929,7 @@ void printverstring(void)
             {
                 Printf("Architecture: ");
 
-                if (parsedver.pv_arm_cpu == -1)
+                if (parsedver.pv_arm_cpu == (UBYTE)-1)
                     Printf("ARM (unspecified)");
                 else if (parsedver.pv_arm_cpu <= ELF_CPU_ARMv7EM)
                     Printf(arm_cpus[parsedver.pv_arm_cpu]);
