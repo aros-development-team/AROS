@@ -179,8 +179,10 @@ endif
 endif
 endif
 
-#MM includes-copy : setup-includes
-includes-copy : $(AROS_INCLUDES)/math.h
+#MM- includes-copy : includes-copy-mlib
+
+#MM includes-copy-mlib: setup-includes
+includes-copy-mlib : $(AROS_INCLUDES)/math.h
 
 %rule_copy from=$(SRCDIR)/$(CURDIR)/%.h to=$(AROS_INCLUDES)/%.h
 
