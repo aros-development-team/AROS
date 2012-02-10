@@ -742,7 +742,32 @@ IPTR Group__MUIM_ExitChange(struct IClass *cl, Object *obj,
         data->flags &= ~GROUP_CHANGING;
 
         if ((_flags(obj) & MADF_SETUP) && _win(obj))
-            DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
+        {
+            Object *win = _win(obj);
+            Object *parent = obj;
+            
+            /* CHECKME: Don't call RecalcDisplay if one of our parents is
+                        in GROUP_CHANGING state to prevent  crash with Zune prefs
+                        program NListtree page because NList/NListtree when
+                        killing tree images in MUIM_Cleanup uses InitChange/
+                        ExitChange. Zune prefs program uses InitChange/ExitChange
+                        when switching page -> nesting -> mess. */
+                        
+            while ((parent = _parent(parent)))
+            {
+                struct MUI_GroupData *pdata = INST_DATA(cl, parent);
+
+                if (parent == win) break;
+
+                if (pdata->flags & GROUP_CHANGING)
+                {
+                    return TRUE;
+                }
+
+            }
+
+            DoMethod(win, MUIM_Window_RecalcDisplay, (IPTR)obj);
+        }
     }
 
     return TRUE;
