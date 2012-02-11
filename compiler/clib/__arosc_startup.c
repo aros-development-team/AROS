@@ -34,7 +34,9 @@ void __arosc_program_startup(void)
 
 void __arosc_program_end(void)
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
     D(bug("[__arosc_program_end]\n"));
 
-    __callexitfuncs();
+    if (!(aroscbase->acb_flags & ABNORMAL_EXIT))
+        __callexitfuncs();
 }

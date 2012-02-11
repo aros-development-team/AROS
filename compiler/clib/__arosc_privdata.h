@@ -128,6 +128,9 @@ struct aroscbase
 */
 #define SHARE_ACPD_WITH_CHILD 16
 
+/* Make a distinction between exit() and abort() */
+#define ABNORMAL_EXIT 32
+
 /* !acb_flags */
 
 /* This function is added by genmodule and returns the current active
