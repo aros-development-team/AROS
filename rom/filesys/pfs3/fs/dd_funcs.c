@@ -1038,7 +1038,7 @@ static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 			- g->rootblock->alwaysfree - 1;
 		info->id_NumBlocksUsed = info->id_NumBlocks - alloc_data.alloc_available;
 		info->id_BytesPerBlock = volume->bytesperblock;
-		info->id_DiskType = (volume->rootblock) ? (volume->rootblock->disktype) : ID_NOT_REALLY_DOS;
+		info->id_DiskType = ID_INTER_FFS_DISK;  // c:Info does not like this
 
 		info->id_VolumeNode = MKBADDR(volume->devlist);
 		info->id_InUse = !IsMinListEmpty(&volume->fileentries);
