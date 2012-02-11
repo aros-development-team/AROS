@@ -13,9 +13,10 @@
 #include <dos/dos.h>
 #include <proto/exec.h>
 
-#include "debug.h"
 #include "ntfs_fs.h"
 #include "ntfs_protos.h"
+
+#include "debug.h"
 
 LONG InitTimer(void)
 {

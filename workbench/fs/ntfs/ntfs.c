@@ -48,7 +48,7 @@ ULONG PostProcessMFTRecord(struct FSData *fs_data, struct MFTRecordEntry *record
 
     D(bug("[NTFS] %s: FSData @ 0x%p\n", __PRETTY_FUNCTION__, fs_data));
     D(bug("[NTFS] %s: MFTRecordEntry @ 0x%p\n", __PRETTY_FUNCTION__, record));
-   
+
     if (memcmp(record->header.magic, magic, 4))
     {
 	D(
@@ -571,13 +571,13 @@ retry:
 	    at->attr_cur = at->attr_nxt;
 	    at->attr_nxt += AROS_LE2WORD(at->attr_cur->length);
 
-	    D(bug("[NTFS] %s: attr_cur = %u, attr_nxt = %u\n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt ));
+	    D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt ));
 
 	    if ((*(UBYTE *)at->attr_cur == attr) || (attr == 0))
 	    {
 		UBYTE *new_pos;
 
-		D(bug("[NTFS] %s: attr %u found @ %u\n", __PRETTY_FUNCTION__, attr, at->attr_cur));
+		D(bug("[NTFS] %s: attr %u found @ 0x%p\n", __PRETTY_FUNCTION__, attr, at->attr_cur));
 
 		if (at->flags & AF_MMFT)
 		{
@@ -639,13 +639,13 @@ retry:
     {
 	at->attr_nxt += AROS_LE2WORD(at->attr_cur->length);
 
-	D(bug("[NTFS] %s: attr_cur = %u, attr_nxt = %u (offset %u) \n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt, AROS_LE2WORD(at->attr_cur->length)));
+	D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p (offset %u) \n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt, AROS_LE2WORD(at->attr_cur->length)));
 
 	if (*(UBYTE *)at->attr_cur == AT_ATTRIBUTE_LIST)
 	    at->attr_end = at->attr_cur;
 	if ((*(UBYTE *)at->attr_cur == attr) || (attr == 0))
 	{
-	    D(bug("[NTFS] %s: returning attr_cur = %u\n", __PRETTY_FUNCTION__, at->attr_cur));
+	    D(bug("[NTFS] %s: returning attr_cur @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_cur));
 	    return at->attr_cur;
 	}
 	at->attr_cur = at->attr_nxt;
@@ -654,7 +654,7 @@ retry:
     {
 	struct MFTAttr *attrentry;
 
-	D(bug("[NTFS] %s: attr_end = %u\n", __PRETTY_FUNCTION__, at->attr_end));
+	D(bug("[NTFS] %s: attr_end @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_end));
 
 	at->emft_buf = AllocMem(at->mft->data->mft_size << SECTORSIZE_SHIFT, MEMF_ANY);
 	if (at->emft_buf == NULL)
@@ -687,7 +687,7 @@ retry:
 	{
 	    at->attr_nxt = at->attr_end + AROS_LE2WORD(attrentry->data.resident.value_offset);
 	    at->attr_end = at->attr_end + AROS_LE2LONG(attrentry->length);
-	    D(bug("[NTFS] %s: attr_nxt = %u, attr_end = %u\n", __PRETTY_FUNCTION__, at->attr_nxt, at->attr_end));
+	    D(bug("[NTFS] %s: attr_nxt @ 0x%p, attr_end @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_nxt, at->attr_end));
 	}
 	at->flags |= AF_ALST;
 	while (at->attr_nxt < at->attr_end)

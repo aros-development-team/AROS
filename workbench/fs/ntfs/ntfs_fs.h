@@ -12,6 +12,8 @@
 #ifndef NTFS_FS_H
 #define NTFS_FS_H
 
+#define DEBUG 1
+
 #define DEBUG_DIRENTRY      0
 #define DEBUG_FILE          0
 #define DEBUG_DUMP          0
@@ -292,7 +294,8 @@ struct Globals {
 #define INIT_MFTATTRIB(attrib, mftentry) \
     ((struct NTFSMFTAttr *)attrib)->mft = mftentry;   \
     ((struct NTFSMFTAttr *)attrib)->flags = ((struct NTFSMFTEntry *)mftentry == &((struct NTFSMFTEntry *)mftentry)->data->mft) ? AF_MMFT : 0;   \
-    ((struct NTFSMFTAttr *)attrib)->attr_nxt = (struct MFTAttr *)((struct NTFSMFTEntry *)mftentry)->buf + AROS_LE2WORD(*((UWORD *)(((struct NTFSMFTEntry *)mftentry)->buf + 0x14)));   \
+    ((struct NTFSMFTAttr *)attrib)->attr_nxt = (struct MFTAttr *)((struct NTFSMFTEntry *)mftentry)->buf;   \
+    ((struct NTFSMFTAttr *)attrib)->attr_nxt += AROS_LE2WORD(((struct NTFSMFTAttr *)attrib)->attr_nxt->data.resident.value_offset);   \
     ((struct NTFSMFTAttr *)attrib)->attr_end = ((struct NTFSMFTAttr *)attrib)->emft_buf = ((struct NTFSMFTAttr *)attrib)->edat_buf = ((struct NTFSMFTAttr *)attrib)->sbuf = NULL;
 
 #endif

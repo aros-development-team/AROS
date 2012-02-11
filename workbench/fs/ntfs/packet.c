@@ -271,9 +271,9 @@ void ProcessPackets(void) {
 
             case ACTION_WRITE: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
+                ULONG want = pkt->dp_Arg3;
 #if !defined(NTFS_READONLY)		
                 APTR buffer = (APTR)pkt->dp_Arg2;
-                ULONG want = pkt->dp_Arg3;
 		UQUAD written;
 #endif
                 D(bug("[NTFS] %s: ** WRITE: lock 0x%08x (dir %ld/%ld pos %ld) want %ld\n", __PRETTY_FUNCTION__,
@@ -369,8 +369,8 @@ void ProcessPackets(void) {
 	    
             case ACTION_SET_FILE_SIZE: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
-#if !defined(NTFS_READONLY)
                 LONG offset = pkt->dp_Arg2;
+#if !defined(NTFS_READONLY)
                 LONG offsetfrom = pkt->dp_Arg3;
                 LONG newsize;
 #endif
@@ -401,9 +401,9 @@ void ProcessPackets(void) {
 #if defined(ACTION_CHANGE_FILE_SIZE64)
 	    case ACTION_CHANGE_FILE_SIZE64: {
                 struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
-#if !defined(NTFS_READONLY)
                 UQUAD offset = pkt->dp_Arg2;
                 LONG offsetfrom = pkt->dp_Arg3;
+#if !defined(NTFS_READONLY)
                 UQUAD newsize;
 #endif
                 D(bug("[NTFS] %s: ** CHANGE_FILE_SIZE64: lock 0x%08x (dir %ld/%ld pos %ld) offset %lld offsetfrom %s\n", __PRETTY_FUNCTION__,
@@ -725,9 +725,11 @@ void ProcessPackets(void) {
             }
 
             case ACTION_CREATE_DIR: {
-                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1), *new;
+                struct ExtFileLock *fl = BADDR(pkt->dp_Arg1);
                 UBYTE *name = BADDR(pkt->dp_Arg2);
-
+#if !defined(NTFS_READONLY)
+                struct ExtFileLock *nl;
+#endif
 	        D(bug("[NTFS] %s: ** CREATE_DIR: lock 0x%08x (dir %ld/%d) name '", __PRETTY_FUNCTION__,
 		      pkt->dp_Arg1,
 		      (fl != NULL && fl->dir != NULL) ? fl->dir->ioh.mft.mftrec_no : FILE_ROOT, (fl != NULL && fl->entry != NULL) ? fl->entry->no : -1);
@@ -736,14 +738,13 @@ void ProcessPackets(void) {
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
 		(void)fl; // unused
-		new=NULL;(void)new; // unused
 		(void)name; // unused
 #else
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), &new)) == 0)
-                    res = (IPTR)MKBADDR(new);
+                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), &nl)) == 0)
+                    res = (IPTR)MKBADDR(nl);
 #endif
                 break;
             }
