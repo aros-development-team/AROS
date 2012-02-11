@@ -31,6 +31,6 @@ void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *s
             }
             FreeMem(buffer, 512);
         }
-        CloseLibrary(DebugBase);
+// ??        CloseLibrary(DebugBase);
     }
 }
