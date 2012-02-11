@@ -1143,14 +1143,26 @@ BCPLd writef         /* 128, void, @format, arg1, arg2, ... */
 
 BCPL toupper        /* 12c, void, char */
     move.l	%d1,%d0
+    cmp.b	#'a',%d0
+    bcs.s	1f
+    cmp.b	#'z',%d0
+    bhi.s	1f
     bclr	#5,%d0
-    BRTS
+1:  BRTS
 
 BCPL charicmp        /* 130, long , char1, char2 */
     move.l	%d2,%d0
+    cmp.b	#'a',%d0
+    bcs.s	1f
+    cmp.b	#'z',%d0
+    bhi.s	1f
     bclr	#5,%d0
+1:  cmp.b	#'a',%d1
+    bcs.s	2f
+    cmp.b	#'z',%d1
+    bhi.s	2f
     bclr	#5,%d1
-    sub.l	%d1,%d0
+2:  sub.l	%d1,%d0
     BRTS
 
 BCPL stricmp         /* 134, long , @String1, @String2 */
