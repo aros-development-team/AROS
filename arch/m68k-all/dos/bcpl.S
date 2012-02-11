@@ -690,22 +690,42 @@ BCPL writeoutput    /* ac, void, &buf, bytelength */
     BRTS
 
     /* copy src LONG array to destination, LONG -> BYTE */
-BCPL packstring     /* b0, void, @Array, @String */
-    movem.l	%a0-%a1,%sp@-
+BCPL packstring     /* b0, long, @Array, @String */
+    movem.l	%d2-%d3/%a0-%a1,%sp@-
+#if BCPLSTRINGDEBUG
+    move.l	%d2,%d3
+#endif
     lsl.l	#2,%d1
     move.l	%d1,%a0
     lsl.l	#2,%d2
     move.l	%d2,%a1
-    move.l	(%a0),%d0
+    moveq	#0,%d2
+    move.l	(%a0),%d2
+    move.l	%d2,%d0
+    lsr.l	#2,%d0
 1:  move.l	(%a0)+,%d1
     move.b	%d1,(%a1)+
-    dbf		%d0,1b
-    movem.l	%sp@+,%a0-%a1
+    dbf		%d2,1b
+
+#if BCPLSTRINGDEBUG
+	move.l	%d0,%d2
+    move.l	%d3,%d0
+    bsr		bstr_debug
+    move.l	%d2,%d0
+#endif
+
+    movem.l	%sp@+,%d2-%d3/%a0-%a1
     BRTS
 
     /* copy src BSTR to destination array, BYTE -> LONG */
 BCPL unpackstring   /* b4, void, @String, @Array */
     movem.l	%a0-%a1,%sp@-
+
+#if BCPLSTRINGDEBUG
+    move.l	%d1,%d0
+    bsr		bstr_debug
+#endif
+
     lsl.l	#2,%d1
     move.l	%d1,%a0
     lsl.l	#2,%d2
@@ -1840,13 +1860,21 @@ bstr_to_cstr:
 
 #if BCPLSTRINGDEBUG
 .bstr_format:
-    .string  "'%b'\n"
+    .string  "%p->%p:%d:'%b'\n"
 bstr_debug:
 	movem.l	%d1/%a0-%a1,%sp@-
-    move.l  %d0,%sp@-
+    move.l	%d0,%a0
+    add.l	%a0,%a0
+    add.l	%a0,%a0
+    moveq	#0,%d1
+    move.b	(%a0),%d1
+    move.l	%d0,%sp@-
+    move.l	%d1,%sp@-
+    move.l  %a0,%sp@-
+    move.l	%d0,%sp@-
     pea		.bstr_format(%pc)
     jsr     kprintf
-    addq.l	#8,%sp
+    lea		20(%sp),%sp
     movem.l	%sp@+,%d1/%a0-%a1
     rts
 #endif
