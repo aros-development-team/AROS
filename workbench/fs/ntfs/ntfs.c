@@ -537,7 +537,7 @@ static IPTR ReadMFTFileRecord(struct NTFSMFTEntry *mft, UBYTE *buf, ULONG mft_id
 	D(bug("[NTFS] %s: failed to read MFT #%d\n", __PRETTY_FUNCTION__, mft_id));
 	return ~0;
     }
-#if (DEBUG_MFT)
+#if defined(DEBUG_MFT)
     D(
 	int dumpx;
 
@@ -995,8 +995,7 @@ LONG ReadBootSector(struct FSData *fs_data )
     D(bug("[NTFS] %s:\tClusterSize Bits = %ld\n", __PRETTY_FUNCTION__, fs_data->clustersize_bits));
     D(bug("[NTFS] %s:\tCluster Sectors Bits = %ld\n", __PRETTY_FUNCTION__, fs_data->cluster_sectors_bits));
 
-// WARNING : TODO  - number_of_sectors is LE UQUAD 
-    fs_data->total_sectors = boot->number_of_sectors;
+    fs_data->total_sectors = AROS_LE2QUAD(boot->number_of_sectors);
 
     D(bug("[NTFS] %s:\tVolumeSize in sectors = %ld\n", __PRETTY_FUNCTION__, fs_data->total_sectors));
     D(bug("[NTFS] %s:\t                in bytes = %ld\n", __PRETTY_FUNCTION__, fs_data->total_sectors * fs_data->sectorsize));
@@ -1028,8 +1027,7 @@ LONG ReadBootSector(struct FSData *fs_data )
 
     D(bug("[NTFS] %s:\tIndexRecordSize = %ld (%ld clusters per index)\n", __PRETTY_FUNCTION__, fs_data->idx_size, boot->clusters_per_index_record));
 
-// WARNING : TODO  - lcn stored in LE u64 format ! */
-    fs_data->mft_start = boot->mft_lcn * fs_data->cluster_sectors;
+    fs_data->mft_start = AROS_LE2QUAD(boot->mft_lcn) * fs_data->cluster_sectors;
 
     D(bug("[NTFS] %s:\tMFTStart = %ld\n", __PRETTY_FUNCTION__, fs_data->mft_start));
 
@@ -1041,6 +1039,7 @@ LONG ReadBootSector(struct FSData *fs_data )
     }
 
     /* Warning: todo - UUID stored in LE format- do we need to convert it? */
+    boot->volume_serial_number = AROS_LE2QUAD(boot->volume_serial_number);
     UUID_Copy((const uuid_t *)&boot->volume_serial_number, (uuid_t *)&fs_data->uuid);
 
     D(
@@ -1068,7 +1067,7 @@ LONG ReadBootSector(struct FSData *fs_data )
 	fs_data->mft.cblock = NULL;
     }
 
-#if (DEBUG_MFT)
+#if defined(DEBUG_MFT)
     D(
 	int dumpx;
 
@@ -1095,7 +1094,7 @@ LONG ReadBootSector(struct FSData *fs_data )
 	return ERROR_NO_FREE_STORE;
     }
 
-#if (DEBUG_MFT)
+#if defined(DEBUG_MFT)
     D(
 	bug("[NTFS] %s: MFTRecord Dump (Post Processing) -:\n", __PRETTY_FUNCTION__);
 	bug("[NTFS] %s: MFTRecord buf @ 0x%p, size %d x %d", __PRETTY_FUNCTION__, fs_data->mft.buf, fs_data->mft_size, fs_data->sectorsize);
@@ -1112,7 +1111,7 @@ LONG ReadBootSector(struct FSData *fs_data )
      )
 #endif
 
-    if (!MapMFTAttrib (&fs_data->mft.attr, &fs_data->mft, AT_DATA))
+    if (!MapMFTAttrib(&fs_data->mft.attr, &fs_data->mft, AT_DATA))
     {
 	D(bug("[NTFS] %s: no $DATA in MFT\n", __PRETTY_FUNCTION__));
 	FreeMem(fs_data->mft.buf, fs_data->mft_size * fs_data->sectorsize);
