@@ -912,10 +912,21 @@ BCPLnd wrch           /* e0, void, char */
     movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTSnd
 
-BCPLd readinput_e4   /* e4, lwlength , @buf, lwlength */
+BCPL readinput_long   /* e4, lwlength , @buf, lwlength */
+    movem.l	%d1-%d3/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    move.l	%d2,%d3
+    move.l	%d1,%d2
+    jsr		%a6@(9 * -6)	/* DOS/Input() */
+    move.l	%d0,%d1
+    lsl.l	#2,%d2
+    lsl.l	#2,%d3
+    jsr		%a6@(7 * -6)	/* DOS/Read() */
+    asr.l	#2,%d0
+    movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
     BRTS
 
-BCPL writeoutput_e8 /* e8, void, @buf, lwlength */
+BCPL writeoutput_long /* e8, void, @buf, lwlength */
     movem.l	%d2-%d4/%a0-%a1/%a6,%sp@-
     move.l	%a2@(GV_DOSBase),%a6
     move.l	%d2, %d4	/* Num blocks */
