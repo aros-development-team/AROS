@@ -1647,7 +1647,7 @@ IPTR List__MUIM_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exchan
         default:                          pos2 = msg->pos2;
     }
 
-    if (pos1 >= 0 && pos1 < data->entries_num && pos2 >= 0 && pos2 <= data->entries_num && pos1 != pos2)
+    if (pos1 >= 0 && pos1 < data->entries_num && pos2 >= 0 && pos2 < data->entries_num && pos1 != pos2)
     {
             struct ListEntry *save = data->entries[pos1];
             data->entries[pos1] = data->entries[pos2];
