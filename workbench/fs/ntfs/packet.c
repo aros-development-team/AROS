@@ -283,6 +283,7 @@ void ProcessPackets(void) {
                       want));
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;
@@ -381,6 +382,7 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;
@@ -416,6 +418,7 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;
@@ -640,6 +643,7 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)name; // unused
 #else
                 if (glob->data->doslist == NULL) {
                     err = glob->disk_inserted ? ERROR_NOT_A_DOS_DISK : ERROR_NO_DISK;
@@ -682,6 +686,8 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
+		(void)name; // unused
 #else
                 if ((err = TestLock(fl)))
                     break;
@@ -705,6 +711,10 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)sfl; // unused
+		(void)dfl; // unused
+		(void)sname; // unused
+		(void)dname; // unused
 #else
                 if ((err = TestLock(sfl)) != 0 || (err = TestLock(dfl)) != 0)
                     break;
@@ -725,6 +735,9 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
+		new=NULL;(void)new; // unused
+		(void)name; // unused
 #else
                 if ((err = TestLock(fl)))
                     break;
@@ -746,6 +759,9 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
+		(void)name; // unused
+		(void)prot; // unused
 #else
                 if ((err = TestLock(fl)))
                     break;
@@ -782,6 +798,9 @@ void ProcessPackets(void) {
 
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
+		(void)fl; // unused
+		(void)name; // unused
+		(void)ds; // unused
 #else
                 if ((err = TestLock(fl)))
                     break;

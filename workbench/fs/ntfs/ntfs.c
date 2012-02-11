@@ -48,12 +48,11 @@ ULONG PostProcessMFTRecord(struct FSData *fs_data, struct MFTRecordEntry *record
 
     D(bug("[NTFS] %s: FSData @ 0x%p\n", __PRETTY_FUNCTION__, fs_data));
     D(bug("[NTFS] %s: MFTRecordEntry @ 0x%p\n", __PRETTY_FUNCTION__, record));
-    
-    if (strncmp((char *)&AROS_LE2LONG(record->header.magic), magic, 4))
+   
+    if (memcmp(record->header.magic, magic, 4))
     {
 	D(
-	    buf = (char *)&AROS_LE2LONG(record->header.magic);
-	    bug("[NTFS] %s: record magic mismatch (got '%.4s')\n", __PRETTY_FUNCTION__, buf);
+	    bug("[NTFS] %s: record magic mismatch (got '%.4s')\n", __PRETTY_FUNCTION__, record->header.magic);
 	 )
 	return ERROR_OBJECT_WRONG_TYPE ;
     }
@@ -205,7 +204,7 @@ void FreeMFTAttrib(struct NTFSMFTAttr *at)
 
 IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE *dest, UQUAD ofs, ULONG len, int cached)
 {
-    UQUAD vcn;
+    D(UQUAD vcn);
     struct NTFSRunLstEntry runlist_entry, *rle;
 
     D(
@@ -290,13 +289,13 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 	    at->save_pos = 1;
 	}
 
-	vcn = rle->target_vcn = (ofs >> COM_LOG_LEN) * (COM_SEC / at->mft->data->cluster_sectors);
+	D(vcn =) rle->target_vcn = (ofs >> COM_LOG_LEN) * (COM_SEC / at->mft->data->cluster_sectors);
 	rle->target_vcn &= ~0xF;
     }
     else
     {
 	rle->target_vcn = (ofs >> SECTORSIZE_SHIFT) / at->mft->data->cluster_sectors;
-	vcn = rle->target_vcn;
+	D(vcn = rle->target_vcn);
     }
 
     rle->next_vcn = AROS_LE2QUAD(attrentry->data.non_resident.lowest_vcn);
