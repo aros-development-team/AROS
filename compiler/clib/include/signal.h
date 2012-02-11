@@ -11,7 +11,7 @@
 
 #include <aros/system.h>
 
-typedef void __sighandler_t (int);
+#include <aros/types/__sighandler_t.h>
 
 #define SIG_DFL	    ((__sighandler_t *)0)   /* default signal handling */
 #define SIG_IGN	    ((__sighandler_t *)1)   /* ignore this signal */
