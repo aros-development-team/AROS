@@ -12,7 +12,7 @@
 #ifndef NTFS_FS_H
 #define NTFS_FS_H
 
-#define DEBUG 1
+//#define DEBUG 1
 
 #define DEBUG_DIRENTRY      0
 #define DEBUG_FILE          0
@@ -292,10 +292,12 @@ struct Globals {
     (((BYTE *)(A)) - (IPTR)&((struct ExtFileLock *)NULL)->node))
 
 #define INIT_MFTATTRIB(attrib, mftentry) \
-    ((struct NTFSMFTAttr *)attrib)->mft = mftentry;   \
-    ((struct NTFSMFTAttr *)attrib)->flags = ((struct NTFSMFTEntry *)mftentry == &((struct NTFSMFTEntry *)mftentry)->data->mft) ? AF_MMFT : 0;   \
-    ((struct NTFSMFTAttr *)attrib)->attr_nxt = (struct MFTAttr *)((struct NTFSMFTEntry *)mftentry)->buf;   \
-    ((struct NTFSMFTAttr *)attrib)->attr_nxt += AROS_LE2WORD(((struct NTFSMFTAttr *)attrib)->attr_nxt->data.resident.value_offset);   \
-    ((struct NTFSMFTAttr *)attrib)->attr_end = ((struct NTFSMFTAttr *)attrib)->emft_buf = ((struct NTFSMFTAttr *)attrib)->edat_buf = ((struct NTFSMFTAttr *)attrib)->sbuf = NULL;
+    { \
+	struct NTFSMFTAttr *tmpattr = (struct NTFSMFTAttr *)attrib; \
+	tmpattr->mft = mftentry;   \
+	tmpattr->flags = (tmpattr->mft == &tmpattr->mft->data->mft) ? AF_MMFT : 0;   \
+	tmpattr->attr_nxt = (struct MFTAttr *)(tmpattr->mft->buf + AROS_LE2WORD(*((UWORD *)(tmpattr->mft->buf + 0x14))));   \
+	tmpattr->attr_end = tmpattr->emft_buf = tmpattr->edat_buf = tmpattr->sbuf = NULL; \
+    }
 
 #endif

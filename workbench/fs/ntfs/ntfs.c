@@ -637,7 +637,7 @@ retry:
 
     while (*(UBYTE *)at->attr_cur != 0xFF)
     {
-	at->attr_nxt += AROS_LE2WORD(at->attr_cur->length);
+	at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_cur->length));
 
 	D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p (offset %u) \n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt, AROS_LE2WORD(at->attr_cur->length)));
 
