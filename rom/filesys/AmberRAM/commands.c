@@ -1603,7 +1603,7 @@ BOOL CmdInfo(struct Handler *handler, struct InfoData *info_data)
       + MEMBLOCKS(AvailMem(MEMF_ANY));
    info_data->id_NumBlocksUsed = handler->block_count;
    info_data->id_BytesPerBlock = MEM_BLOCKSIZE;
-   info_data->id_DiskType = AROS_MAKE_ID('R','A','M',0);
+   info_data->id_DiskType = ID_DOS_DISK;
    info_data->id_VolumeNode = MKBADDR(handler->volume);
    info_data->id_InUse = DOSBOOL(handler->lock_count > 1);
 
