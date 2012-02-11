@@ -689,10 +689,34 @@ BCPL writeoutput    /* ac, void, &buf, bytelength */
     movem.l	%sp@+,%d2-%d3/%a0-%a1/%a6
     BRTS
 
-BCPLd packstring     /* b0, void, @Array, @String */
+    /* copy src LONG array to destination, LONG -> BYTE */
+BCPL packstring     /* b0, void, @Array, @String */
+    movem.l	%a0-%a1,%sp@-
+    lsl.l	#2,%d1
+    move.l	%d1,%a0
+    lsl.l	#2,%d2
+    move.l	%d2,%a1
+    move.l	(%a0),%d0
+1:  move.l	(%a0)+,%d1
+    move.b	%d1,(%a1)+
+    dbf		%d0,1b
+    movem.l	%sp@+,%a0-%a1
     BRTS
 
-BCPLd unpackstring   /* b4, void, @String, @Array */
+    /* copy src BSTR to destination array, BYTE -> LONG */
+BCPL unpackstring   /* b4, void, @String, @Array */
+    movem.l	%a0-%a1,%sp@-
+    lsl.l	#2,%d1
+    move.l	%d1,%a0
+    lsl.l	#2,%d2
+    move.l	%d2,%a1
+    moveq	#0,%d0
+    move.b	(%a0),%d0
+    moveq	#0,%d1
+1:  move.b	(%a0)+,%d1
+    move.l	%d1,(%a1)+
+    dbf		%d0,1b
+    movem.l	%sp@+,%a0-%a1
     BRTS
 
 BCPLd holdTask       /* b8, void, @memseg */
