@@ -1,6 +1,6 @@
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs-complete : workbench-fs-ntfs
+##MM- workbench-fs-complete : workbench-fs-ntfs
 
 #MM workbench-fs-ntfs : workbench-libs-uuid-includes
 
