@@ -774,11 +774,7 @@ openbreak:
 				    if (errcode == ERROR_NO_DISK) {
 					id->id_DiskType = ID_NO_DISK_PRESENT;
 				    } else if (!errcode) {
-#if 1
-					id->id_DiskType = AROS_MAKE_ID('C','D','V','D');
-#else
-					id->id_DiskType = ID_DOS_DISK; /* for building UAE built-in CDFS */
-#endif
+					id->id_DiskType = ID_DOS_DISK;
 					id->id_NumBlocks= Volume_Size (global->g_volume);
 					 id->id_BytesPerBlock = Block_Size (global->g_volume);
 					id->id_VolumeNode = MKBADDR(global->DevList);
