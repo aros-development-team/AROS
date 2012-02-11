@@ -1,1 +1,2 @@
 FAT\0 = L:fat-handler
+NTFS = L:ntfs-handler
