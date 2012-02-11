@@ -105,6 +105,7 @@ SHARED	:= \
 	__exitfunc \
         __fdesc \
 	__rand48 \
+        __signal \
 	__spawnv \
 	__stat \
 	__stdio \
