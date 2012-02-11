@@ -18,9 +18,14 @@ $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #MM kernel-kernel-chrp-ppc-efika : includes includes-copy-chrp-ppc-efika kernel-kernel-native-ppc
 #MM kernel-kernel-chrp-ppc-efika-kobj : includes includes-copy-chrp-ppc-efika kernel-kernel-native-ppc
 
-%build_module mmake=kernel-kernel-chrp-ppc-efika \
-  modname=kernel modtype=resource                \
-  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"        \
-  files="$(FILES)" uselibs="rom"
+%build_archspecific \
+  mainmmake=kernel-kernel maindir=rom/kernel \
+  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"    \
+  arch=chrp-ppc-efika files="$(FILES)"
+
+#%build_module mmake=kernel-kernel-chrp-ppc-efika \
+#  modname=kernel modtype=resource                \
+#  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"        \
+#  files="$(FILES)" uselibs="rom"
 
 %common
