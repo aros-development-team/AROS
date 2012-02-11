@@ -52,12 +52,16 @@
 
 ******************************************************************************/
 
+#ifdef __VBCC__
+typedef unsigned long IPTR;
+#else
 #include <proto/alib.h>
+#endif
 #include <proto/dos.h>
 #include <proto/datatypes.h>
 #include <datatypes/datatypes.h>
 
-#ifdef __MORPHOS__
+#ifndef BNULL
 #define BNULL NULL
 #define AROS_LONG2BE
 #define ErrorOutput() Output()
