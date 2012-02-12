@@ -54,7 +54,8 @@
  * 2009-01-20  J. Koivisto         Modified bus reseting scheme
  * 2009-02-04  T. Wiszkowski       Disabled ATA debug on official builds
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
- * 2011-05-19  P. Fedin		   The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
+ * 2011-05-19  P. Fedin            The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
+ * 2012-02-12  T. Wilen            DEVHEAD_VAL, ata_HandleIRQ returns BOOL.
  */
 /*
  * TODO:
@@ -124,6 +125,8 @@ static BYTE atapi_Write(struct ata_Unit *, ULONG, ULONG, APTR, ULONG *);
 static BYTE atapi_Eject(struct ata_Unit *);
 
 static void common_SetBestXferMode(struct ata_Unit* unit);
+
+#define DEVHEAD_VAL 0x40
 
 #if DEBUG
 static void dump(APTR mem, ULONG len)
@@ -245,7 +248,7 @@ void ata_IRQSignalTask(struct ata_Bus *bus)
 /* PIO-only: IDE doublers don't have real AltStatus register.
  * Do not assume reading AltStatus does not clear interrupt request.
  */
-void ata_HandleIRQ(struct ata_Bus *bus)
+BOOL ata_HandleIRQ(struct ata_Bus *bus)
 {
     struct ata_Unit *unit = ata_GetSelectedUnit(bus);
     UBYTE status;
@@ -290,7 +293,7 @@ void ata_HandleIRQ(struct ata_Bus *bus)
         DIRQ(bug("[ATA  ] IRQ: Calling dedicated handler... \n"));
         bus->ab_HandleIRQ(unit, status);
 
-        return;
+        return TRUE;
     }
 
     DIRQ_MORE({
@@ -305,15 +308,16 @@ void ata_HandleIRQ(struct ata_Bus *bus)
             bug("device ready. Dumping details:\n");
 
             bug("[ATA  ] STATUS: %02lx\n", status);
-            bug("[ATA  ] ALT STATUS: %02lx\n", ATA_IN(ata_AltStatus, bus->ab_Alt));
-            bug("[ATA  ] ERROR: %02lx\n", ATA_IN(ata_Error, bus->ab_Port));
-            bug("[ATA  ] IRQ: REASON: %02lx\n", ATA_IN(atapi_Reason, bus->ab_Port));
+            bug("[ATA  ] ALT STATUS: %02lx\n", ata_ReadAltStatus(bus));
+            bug("[ATA  ] ERROR: %02lx\n", BUS_IN(ata_Error, bus->ab_Port));
+            bug("[ATA  ] IRQ: REASON: %02lx\n", BUS_IN(atapi_Reason, bus->ab_Port));
         }
         else
         {
             bug("device still busy. ignoring irq.\n");
         }
     });
+    return FALSE;
 }
 
 void ata_IRQSetHandler(struct ata_Unit *unit, void (*handler)(struct ata_Unit*, UBYTE), APTR piomem, ULONG blklen, ULONG piolen)
@@ -682,7 +686,7 @@ static BYTE ata_exec_cmd(struct ata_Unit* unit, ata_CommandBlock *block)
         case CT_LBA28:
             DATA(bug("[ATA%02ld] ata_exec_cmd: Command uses 28bit LBA addressing (OLD)\n", unit->au_UnitNum));
 
-            ATA_OUT(((block->blk >> 24) & 0x0f) | 0x40 | unit->au_DevMask, ata_DevHead, port);
+            ATA_OUT(((block->blk >> 24) & 0x0f) | DEVHEAD_VAL | unit->au_DevMask, ata_DevHead, port);
             ATA_OUT(block->blk >> 16, ata_LBAHigh, port);
             ATA_OUT(block->blk >> 8, ata_LBAMid, port);
             ATA_OUT(block->blk, ata_LBALow, port);
@@ -2230,7 +2234,7 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
 
     D(bug("[ATA  ] ata_ReadSignature(%02ld)\n", unit));
 
-    BUS_OUT(0xa0 | (unit << 4), ata_DevHead, port);
+    BUS_OUT(DEVHEAD_VAL | (unit << 4), ata_DevHead, port);
     ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
@@ -2260,11 +2264,14 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
             return DEV_SATAPI;
 
         default:
-            if (0 == (ata_ReadStatus(bus) & 0xfe))
+            if (0 == (ata_ReadStatus(bus) & 0xfe)) {
+                DINIT(bug("[ATA  ] ata_ReadSignature: Found NONE\n"));
                 return DEV_NONE;
+            }
             /* ATA_EXECUTE_DIAG is executed by both devices, do it only once */
             if (!*DiagExecuted)
             {
+                DINIT(bug("[ATA  ] ata_ReadSignature: ATA_EXECUTE_DIAG\n"));
                 BUS_OUT(ATA_EXECUTE_DIAG, ata_Command, port);
                 *DiagExecuted = TRUE;
             }
@@ -2274,7 +2281,9 @@ ULONG ata_ReadSignature(struct ata_Bus *bus, int unit, BOOL *DiagExecuted)
                 ata_WaitNano(400, bus->ab_Base);
                 //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-            BUS_OUT(0xa0 | (unit << 4), ata_DevHead, port);
+            DINIT(bug("[ATA  ] ata_ReadSignature: ATAF_BUSY wait finished\n"));
+
+            BUS_OUT(DEVHEAD_VAL | (unit << 4), ata_DevHead, port);
             do
             {
                 ata_WaitNano(400, bus->ab_Base);
@@ -2305,11 +2314,11 @@ void ata_ResetBus(struct ata_Bus *bus)
     /* Set and then reset the soft reset bit in the Device Control
      * register.  This causes device 0 be selected */
     DINIT(bug("[ATA  ] ata_ResetBus(%d)\n", bus->ab_BusNum));
-    BUS_OUT(0xa0 | (0 << 4), ata_DevHead, port);    /* Select it never the less */
+    BUS_OUT(DEVHEAD_VAL | (0 << 4), ata_DevHead, port);    /* Select it never the less */
     ata_WaitNano(400, bus->ab_Base);
     //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
-    BUS_OUT(0x04, ata_AltControl, alt);
+    BUS_OUT(0x04 | 0x02, ata_AltControl, alt);
     ata_WaitTO(bus->ab_Timer, 0, 10, 0);    /* sleep 10us; min: 5us */
     BUS_OUT(0x02, ata_AltControl, alt);
     ata_WaitTO(bus->ab_Timer, 0, 20000, 0); /* sleep 20ms; min: 2ms */
@@ -2338,7 +2347,7 @@ void ata_ResetBus(struct ata_Bus *bus)
      * register access, but fail only if BSY isn't cleared */
     if (DEV_NONE != bus->ab_Dev[1]) {
         DINIT(bug("[ATA  ] ata_ResetBus: Wait DEV1 to allow access\n"));
-        BUS_OUT(0xa0 | (1 << 4), ata_DevHead, port);
+        BUS_OUT(DEVHEAD_VAL | (1 << 4), ata_DevHead, port);
         ata_WaitNano(400, bus->ab_Base);
         //ata_WaitTO(bus->ab_Timer, 0, 1, 0);
 
@@ -2400,7 +2409,7 @@ void ata_InitBus(struct ata_Bus *bus)
     for (i = 0; i < MAX_BUSUNITS; i++)
     {
         /* Select device and disable IRQs */
-        BUS_OUT(0xa0 | (i << 4), ata_DevHead, port);
+        BUS_OUT(DEVHEAD_VAL | (i << 4), ata_DevHead, port);
         ata_WaitTO(bus->ab_Timer, 0, 100, 0);
         BUS_OUT(0x2, ata_AltControl, bus->ab_Alt);
 
