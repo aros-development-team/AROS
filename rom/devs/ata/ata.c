@@ -26,6 +26,7 @@
  * 2008-05-11  T. Wiszkowski       Remade the ata trannsfers altogether, corrected the pio/irq handling
  *                                 medium removal, device detection, bus management and much more
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
+ * 2012-02-12  T. Wilen            Put "USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST" inside D()
  */
 
 #include <aros/debug.h>
@@ -68,7 +69,7 @@ static void cmd_Read32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
 	{
-		bug("[ATA%02ld] cmd_Read32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		D(bug("[ATA%02ld] cmd_Read32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum));
 		io->io_Error = TDERR_DiskChanged;
 		return;
 	}
@@ -120,7 +121,7 @@ static void cmd_Read64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
 	{
-		bug("[ATA%02ld] cmd_Read64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		D(bug("[ATA%02ld] cmd_Read64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum));
 		io->io_Error = TDERR_DiskChanged;
 		return;
 	}
@@ -181,7 +182,7 @@ static void cmd_Write32(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
 	{
-		bug("[ATA%02ld] cmd_Write32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		D(bug("[ATA%02ld] cmd_Write32: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum));
 		io->io_Error = TDERR_DiskChanged;
 		return;
 	}
@@ -235,7 +236,7 @@ static void cmd_Write64(struct IORequest *io, LIBBASETYPEPTR LIBBASE)
 
 	if (AF_Removable == (unit->au_Flags & (AF_Removable | AF_DiscPresent)))
 	{
-		bug("[ATA%02ld] cmd_Write64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum);
+		D(bug("[ATA%02ld] cmd_Write64: USUALLY YOU'D WANT TO CHECK IF DISC IS PRESENT FIRST\n", unit->au_UnitNum));
 		io->io_Error = TDERR_DiskChanged;
 		return;
 	}

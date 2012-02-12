@@ -564,7 +564,7 @@ static int ata_pci_Scan(struct ataBase *base)
 	 * On x86 this value is ignored, see I/O functions.
 	 */
 	ata_RegisterBus(probedbus->atapb_IOBase, probedbus->atapb_IOAlt, probedbus->atapb_INTLine,
-			probedbus->atapb_DMABase, probedbus->atapb_80wire,
+			probedbus->atapb_DMABase, probedbus->atapb_80wire ? ARBF_80Wire : 0,
 			&pci_driver, (APTR)0xe8000000, base);
 
 	FreeMem(probedbus, sizeof(struct ata_ProbedBus));

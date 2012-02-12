@@ -38,8 +38,9 @@
  * 2008-05-18  T. Wiszkowski       corrected device naming to handle cases where more than 10 physical units may be available
  * 2008-06-24  P. Fedin            Added 'NoMulti' flag to disable multisector transfers
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
- * 2011-04-05  P. Fedin		   Addid basic SATA handling, needed for Mac.
- * 2011-05-19  P. Fedin		   The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
+ * 2011-04-05  P. Fedin            Addid basic SATA handling, needed for Mac.
+ * 2011-05-19  P. Fedin            The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
+ * 2012-02-12  T. Wilen            ata_RegisterBus() Flags parameter introduced and optional early interrupt setup.
  */
 
 #include <aros/bootloader.h>
@@ -175,18 +176,22 @@ static AROS_UFH3(void, ATAResetHandler,
  * This routine needs to be called by bus probe code in order to register a device.
  * IOBase     - base address of primary I/O registers on your bus.
  * IOAlt      - base address of secondary I/O register bank. Zero if no secondary bank
- *	        is present. (IDE splitter on Amiga(tm), for example).
+ *              is present. (IDE splitter on Amiga(tm), for example).
  * DMABase    - base address of DMA controller on your bus. Zero if DMA is not supported.
- * has80Wire  - TRUE if your drive is connected using 80-wire cable. Enables high-speed
- *	        UDMA modes (where appropriate).
+ * Flags      - Misc flags
  * driver     - structure holding pointers to I/O functions (for speedup)
  * driverData - driver-specific data, whatever it needs.
  *
- * TODO: Actually implement handling of IOAlt == 0
+ * Flags:     - ARBF_80Wire
+ *              Set if your drive is connected using 80-wire cable. Enables high-speed
+ *              UDMA modes (where appropriate).
+ *            - ARBF_EarlyInterrupt
+ *              Setup interrupt handler before IDE bus probe to catch possible spurious
+ *              interrupts (IDE splitter disables access to ata_devcon register)
  *
  * When a HIDD subsystem is implemented, these parameters will become HIDD attributes.
  */
-void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL has80Wire,
+void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG Flags,
 		     const struct ata_BusDriver *driver, APTR driverData, struct ataBase *ATABase)
 {
     /*
@@ -251,6 +256,10 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
     ab->ab_ResetInt.is_Data = ab;
     AddResetCallback(&ab->ab_ResetInt);
 
+    /* catch possible spurious interrupts */
+    if (Flags & ARBF_EarlyInterrupt)
+        ab->ab_IntHandler = ab->ab_Driver->CreateInterrupt(ab);
+
     /*
      * scan bus - try to locate all devices (disables irq)
      */
@@ -262,7 +271,7 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, BOOL h
             ab->ab_Units[i] = AllocVecPooled(ATABase->ata_MemPool,
                 sizeof(struct ata_Unit));
             ab->ab_Units[i]->au_DMAPort = DMABase;
-            ab->ab_Units[i]->au_Flags = has80Wire ? AF_80Wire : 0;
+            ab->ab_Units[i]->au_Flags = (Flags & ARBF_80Wire) ? AF_80Wire : 0;
             ata_init_unit(ab, i);
         }
     }
