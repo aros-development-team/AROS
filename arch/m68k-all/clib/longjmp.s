@@ -44,7 +44,7 @@ AROS_CDEFNAME(longjmp):
         moveq.l #1,%d0                  /* make sure it isn't 0 */
 .okret:
         movem.l (%a0),%d1-%d7/%a2-%a6/%sp       /* restore all registers except scratch */
-#ifdef DEBUG
+#if DEBUG
         cmp.l   #DEBUG_MAGIC,%a0@(4 * 15)
         beq     0f
         trap    #1
