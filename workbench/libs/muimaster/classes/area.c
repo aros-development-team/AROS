@@ -670,10 +670,22 @@ static IPTR Area__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
                 /*  D(bug(" Area_Set(%p) : 
                     MUIA_Selected val=%ld sss=%d\n", obj, tag->ti_Data, !!(data->mad_Flags & MADF_SHOWSELSTATE))); 
                 */
-                if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
-                else data->mad_Flags &= ~MADF_SELECTED;
-        /*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
+                if (tag->ti_Data && !(data->mad_Flags & MADF_SELECTED))
+                {
+                    data->mad_Flags |= MADF_SELECTED;
                     MUI_Redraw(obj, MADF_DRAWOBJECT);
+                }
+                else if (!tag->ti_Data && (data->mad_Flags & MADF_SELECTED))
+                {
+                    data->mad_Flags &= ~MADF_SELECTED;
+                    MUI_Redraw(obj, MADF_DRAWOBJECT);
+                }
+                else
+                {
+                    tag->ti_Tag = TAG_IGNORE;
+                }
+        /*  		if (data->mad_Flags & MADF_SHOWSELSTATE) */
+        /*            MUI_Redraw(obj, MADF_DRAWOBJECT); */
         /*  		else */
         /*  		    MUI_Redraw(obj, MADF_DRAWUPDATE); */
                 break;
