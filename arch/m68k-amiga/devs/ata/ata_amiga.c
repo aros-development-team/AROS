@@ -1,5 +1,6 @@
 
 #define DEBUG 1
+#define DEBUG2 0
 
 #include <aros/debug.h>
 #include <exec/types.h>
@@ -115,12 +116,15 @@ static void ata_out(UBYTE val, UWORD offset, IPTR port, APTR data)
     struct amiga_busdata *bdata = data;
     volatile UBYTE *addr;
 
+#if DEBUG2
+    bug("ata_out(%x,%x)=%x:%x\n", offset, port, (UBYTE*)(bdata->port + port) + offset * 4, val);
+#endif
     /* IDE doubler hides Alternate Status/Device Control register */
     if (port == -1) {
 	if (bdata->reset == 0 && (val & 4)) {
-	    ata_out(0xa0, ata_DevHead, 0, bdata);
+	    ata_out(0x40, ata_DevHead, 0, bdata);
+ 	    D(bug("[ATA] Emulating reset\n"));
  	    ata_out(ATA_EXECUTE_DIAG, ata_Command, 0, bdata); 
- 	    D(bug("[IDE] Emulating reset\n"));
 	}
 	bdata->reset = (val & 4) != 0;
 	return;
@@ -133,13 +137,21 @@ static UBYTE ata_in(UWORD offset, IPTR port, APTR data)
 {
     struct amiga_busdata *bdata = data;
     volatile UBYTE *addr;
+    UBYTE v;
 
+#if DEBUG2
+    bug("ata_in(%x,%x)=%x\n", offset, port, (UBYTE*)(bdata->port + port) + offset * 4);
+#endif
     if (port == -1) {
     	port = 0;
     	offset = ata_Status;
     }
     addr = (UBYTE*)(bdata->port + port);
-    return addr[offset * 4];
+    v = addr[offset * 4];
+#if DEBUG2
+    bug("=%x\n", v);
+#endif
+    return v;
 }
 
 static void ata_pcmcia_out(UBYTE val, UWORD offset, IPTR port, APTR data)
@@ -201,7 +213,7 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
 	ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_1200;
     } else {
     	// in AGA this area is never custom mirror but lets make sure..
-    	if (!custom_check((APTR)0xdd2000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
+    	if (!custom_check((APTR)0xdd4000) && (gfx->ChipRevBits0 & GFXF_AA_ALICE)) {
             port = (UBYTE*)GAYLE_BASE_4000;
 	    ddata->a4000 = TRUE;
 	    ddata->gayleirqbase = (UBYTE*)GAYLE_IRQ_4000;
@@ -253,17 +265,32 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
 	} else {
     	    ddata->doubler = 0;
 	}
-	D(bug("[ATA] IDE doubler check (%02x, %02X) = %d\n", v1, v2, ddata->doubler));
+	D(bug("[ATA] IDE doubler check (%02X, %02X) = %d\n", v1, v2, ddata->doubler));
     }
     /* we may have connected drives */
     return (UBYTE*)port;
 }
 
-static void callbusirq(struct amiga_driverdata *ddata, UBYTE bus)
+static void callbusirq(struct amiga_driverdata *ddata)
 {
-    if (!ddata->bus[bus])
+    volatile UBYTE *port;
+    UBYTE status1, status2;
+    BOOL handled = FALSE;
+
+    if (ddata->bus[0])
+        handled |= ata_HandleIRQ(ddata->bus[0]->bus);
+    if (ddata->bus[1])
+        handled |= ata_HandleIRQ(ddata->bus[1]->bus);
+    if (handled)
         return;
-    ata_HandleIRQ(ddata->bus[bus]->bus);
+
+    /* Handle spurious interrupt */
+    port = ddata->gaylebase;
+    status1 = port[ata_Status * 4];
+    status2 = 0;
+    if (ddata->doubler == 2)
+        status2 = port[0x1000 + ata_Status * 4];
+    bug("[ATA] Spurious interrupt: %02X %02X\n", status1, status2);
 }
 
 AROS_UFH4(APTR, IDE_Handler_A1200,
@@ -279,8 +306,7 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
     if (irqmask & GAYLE_IRQ_IDE) {
 	/* Clear interrupt */
 	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
-	callbusirq(ddata, 0);
-	callbusirq(ddata, 1);
+	callbusirq(ddata);
     }
     return 0;
 
@@ -299,8 +325,7 @@ AROS_UFH4(APTR, IDE_Handler_A4000,
     /* A4000 interrupt clears when register is read */
     UWORD irqmask = *((UWORD*)ddata->gayleirqbase);
     if (irqmask & (GAYLE_IRQ_IDE << 8)) {
-	callbusirq(ddata, 0);
-	callbusirq(ddata, 1);
+	callbusirq(ddata);
     }
     return 0;
 
@@ -430,12 +455,13 @@ static BOOL ata_amiga_ide_init(struct ataBase *LIBBASE)
 	LIBBASE->ata_NoDMA = TRUE;
 	bdata->ddata = ddata;
 	bdata->port = ddata->gaylebase;
-	ata_RegisterBus(0, ddata->doubler ? -1 : 0x1010, 2, 0, 0, &amiga_driver0, bdata, LIBBASE);
+	ata_RegisterBus(0, ddata->doubler ? -1 : 0x1010, 2, 0, ARBF_EarlyInterrupt, &amiga_driver0, bdata, LIBBASE);
 	if (ddata->doubler == 2) {
+	    D(bug("[ATA] Adding secondary bus\n"));
 	    bdata++;
 	    bdata->ddata = ddata;
 	    bdata->port = ddata->gaylebase + 0x1000;
-	    ata_RegisterBus(0, -1, 2, 0, 0, &amiga_driver1, bdata, LIBBASE);
+	    ata_RegisterBus(0, -1, 2, 0, ARBF_EarlyInterrupt, &amiga_driver1, bdata, LIBBASE);
 	}
 	return TRUE;
     }
@@ -584,7 +610,7 @@ static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
             bdata->ddata = ddata;
             bdata->port = (UBYTE*)ddata->cmm->cmm_IOMemory;
             LIBBASE->ata_NoDMA = TRUE;
-            ata_RegisterBus((IPTR)ddata->cmm->cmm_IOMemory, (IPTR)(ddata->cmm->cmm_IOMemory + 14 - ata_AltControl), 2, 0, 0, &amiga_driver_pcmcia, bdata, LIBBASE);
+            ata_RegisterBus((IPTR)ddata->cmm->cmm_IOMemory, (IPTR)(ddata->cmm->cmm_IOMemory + 14 - ata_AltControl), 2, 0, ARBF_EarlyInterrupt, &amiga_driver_pcmcia, bdata, LIBBASE);
             return TRUE;
         }
 
