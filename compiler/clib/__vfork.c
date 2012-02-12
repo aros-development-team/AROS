@@ -172,10 +172,10 @@ pid_t __vfork(jmp_buf env)
     if(udata == NULL)
     {
 	errno = ENOMEM;
-	longjmp(env, -1);	
+	vfork_longjmp(env, -1);
     }
-    D(bug("__vfork: Parent: allocated udata %p, jmp_buf %p\n", udata, &udata->vfork_jump));
-    bcopy(env, &udata->vfork_jump, sizeof(jmp_buf));
+    D(bug("__vfork: Parent: allocated udata %p, jmp_buf %p\n", udata, udata->vfork_jump));
+    CopyMem(env, udata->vfork_jump, sizeof(jmp_buf));
 
     struct TagItem tags[] =
     {
@@ -203,7 +203,7 @@ pid_t __vfork(jmp_buf env)
                                         
     D(bug("__vfork: Parent: backuping startup buffer\n"));
     /* Backup startup buffer */
-    CopyMem(&__arosc_startup_jmp_buf, &udata->startup_jmp_buf, sizeof(jmp_buf));
+    CopyMem(__arosc_startup_jmp_buf, udata->startup_jmp_buf, sizeof(jmp_buf));
 
     D(bug("__vfork: Parent: Allocating parent signal\n"));
     /* Allocate signal for child->parent communication */
@@ -213,7 +213,7 @@ pid_t __vfork(jmp_buf env)
 	/* Couldn't allocate the signal, return -1 */
 	FreeMem(udata, sizeof(struct vfork_data));
 	errno = ENOMEM;
-	longjmp(udata->vfork_jump, -1);    
+	vfork_longjmp(env, -1);
     }
     
     D(bug("__vfork: Parent: Creating child\n"));
@@ -224,7 +224,7 @@ pid_t __vfork(jmp_buf env)
 	/* Something went wrong, return -1 */
 	FreeMem(udata, sizeof(struct vfork_data));
 	errno = ENOMEM; /* Most likely */
-	longjmp(env, -1);
+	vfork_longjmp(env, -1);
     }
     D(bug("__vfork: Parent: Child created %p, waiting to finish setup\n", udata->child));
     udata->child_id = GetETaskID(udata->child);
@@ -237,7 +237,7 @@ pid_t __vfork(jmp_buf env)
     {
 	/* An error occured during child setup */
 	errno = udata->child_errno;
-	longjmp(env, -1);
+	vfork_longjmp(env, -1);
     }
 
     D(bug("__vfork: Parent: Setting jmp_buf at %p\n", __arosc_startup_jmp_buf));
@@ -280,16 +280,16 @@ pid_t __vfork(jmp_buf env)
 
 	D(bug("__vfork: Parent: restoring startup buffer\n"));
 	/* Restore parent startup buffer */
-	CopyMem(&udata->startup_jmp_buf, &__arosc_startup_jmp_buf, sizeof(jmp_buf));
+	CopyMem(udata->startup_jmp_buf, __arosc_startup_jmp_buf, sizeof(jmp_buf));
 
 	D(bug("__vfork: Parent: freeing parent signal\n"));
 	FreeSignal(udata->parent_signal);
 
         errno = udata->child_errno;
 
-        D(bug("__vfork: Parent: Remembering jmp_buf %p\n", &udata->vfork_jump));
         jmp_buf env;
-        bcopy(&udata->vfork_jump, env, sizeof(jmp_buf));
+        D(bug("__vfork: Parent: Remembering jmp_buf %p to %p\n", udata->vfork_jump, env));
+        CopyMem(udata->vfork_jump, env, sizeof(jmp_buf));
 
         parent_leavepretendchild(udata);
 
@@ -299,7 +299,7 @@ pid_t __vfork(jmp_buf env)
         D(bug("__vfork: Parent: freeing udata\n"));
         FreeMem(udata, sizeof(struct vfork_data));
 
-        D(bug("__vfork: Parent jumping to jmp_buf %p (child=%d)\n", &env, child_id));
+        D(bug("__vfork: Parent jumping to jmp_buf %p (child=%d)\n", env, child_id));
         D(bug("__vfork: ip: %p, stack: %p\n", env->retaddr, env->regs[SP]));
         vfork_longjmp(env, child_id);
 	assert(0); /* not reached */
