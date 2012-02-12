@@ -12,7 +12,7 @@
 #include <aros/system.h>
 
 #ifdef __mc68000__
-#   define _JMPLEN 12
+#   define _JMPLEN 15
 #elif __i386__
 #   define _JMPLEN 7
 #elif __x86_64__

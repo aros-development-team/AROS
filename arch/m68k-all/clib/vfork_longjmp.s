@@ -40,7 +40,7 @@ AROS_CDEFNAME(vfork_longjmp):
         addq.l  #4,%sp                     /* returns to other address */
         move.l  %sp@+,%a0                  /* get address of jmp_buf */
         move.l  %sp@+,%d0                  /* get return code */
-#ifdef DEBUG
+#if DEBUG
         cmp.l   #(DEBUG_MAGIC+1),%a0@(4 * 15)
         beq     0f
         trap    #1
