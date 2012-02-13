@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 BCPL_CFILES  := bcpl_patches bcpl_support bcpl_readargs bcpl_putpkt
 BCPL_AFILES  := bcpl bcpl_writef
 
-CFILES  := bstr_helper exit \
+CFILES  := bstr_helper exit callglobvec \
 	   $(BCPL_CFILES)
 
 AFILES := callentry \
