@@ -1,0 +1,21 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+FILES         := listtree
+INCLUDE_FILES := Listtree_mcc.h
+
+#MM workbench-classes-zune-listtree : includes
+
+%build_module \
+    mmake=workbench-classes-zune-listtree \
+    modname=Listtree modtype=mcc \
+    conffile=listtree.conf \
+    uselibs="amiga rom"
+
+%copy_includes path=mui
+
+%common
