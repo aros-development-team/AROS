@@ -98,7 +98,7 @@ ULONG PreProcessMFTRecord(struct FSData *fs_data, struct MFTRecordEntry *record,
     return 0;
 }
 
-struct MFTAttr *GetMappingPairPos(UBYTE *mappos, int nn, UQUAD * val, int sig)
+struct MFTAttr *GetMappingPairPos(UBYTE *mappos, int nn, UQUAD *val, int sig)
 {
     UQUAD pos = 0;
     UQUAD mask = 1;
@@ -123,11 +123,10 @@ IPTR ReadNTFSRunList(struct NTFSRunLstEntry * rle)
 {
     int len, offs;
     UQUAD val;
-    struct MFTAttr *mappos;
+    struct MFTAttr *mappos = (struct MFTAttr *)rle->mappingpair;
 
-    D(bug("[NTFS]: %s(mappos @ 0x%p)\n", __PRETTY_FUNCTION__, rle->mappingpair));
+    D(bug("[NTFS]: %s(mappos @ 0x%p)\n", __PRETTY_FUNCTION__, mappos));
 
-    mappos = (struct MFTAttr *)rle->mappingpair;
 retry:
     len = (*(UBYTE *)mappos & 0xF);
     offs = (*(UBYTE *)mappos >> 4);
@@ -153,7 +152,7 @@ retry:
 		    return ~0;
 		}
 
-		mappos += AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset);
+		mappos = (struct MFTAttr *)((IPTR)mappos + AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset));
 		rle->curr_lcn = 0;
 		goto retry;
 	    }
@@ -162,17 +161,17 @@ retry:
 	return ~0;
     }
     // current VCN  length
-    mappos = GetMappingPairPos((UBYTE *)(mappos + 1), len, &val, 0);
+    mappos = GetMappingPairPos((UBYTE *)mappos + 1, len, &val, 0);
     rle->curr_vcn = rle->next_vcn;
-    rle->next_vcn += val;
+    rle->next_vcn = rle->next_vcn + val;
 
-    D(bug("[NTFS] %s: curr_vcn = %u, next_vcn = %u, val = %u\n", __PRETTY_FUNCTION__, rle->curr_vcn, rle->next_vcn, val));
+    D(bug("[NTFS] %s: curr_vcn = %u, next_vcn = %u, val = %u\n", __PRETTY_FUNCTION__, (unsigned int)rle->curr_vcn, (unsigned int)rle->next_vcn, (unsigned int)val));
 
     // previous LCN offset
     mappos = GetMappingPairPos((UBYTE *)mappos, offs, &val, 1);
-    rle->curr_lcn += val;
+    rle->curr_lcn = rle->curr_lcn + val;
 
-    D(bug("[NTFS] %s: curr_lcn = %u\n", __PRETTY_FUNCTION__, rle->curr_lcn));
+    D(bug("[NTFS] %s: curr_lcn = %u\n", __PRETTY_FUNCTION__, (unsigned int)rle->curr_lcn));
 
     if (val == 0)
 	rle->flags |= RLEFLAG_SPARSE;
@@ -248,11 +247,13 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     {
 	rle->flags &= ~RLEFLAG_COMPR;
     }
-    rle->mappingpair = (UBYTE *)(attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
+    rle->mappingpair = (UBYTE *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
 
+    bug("[NTFS] %s: mappingpair @ 0x%p\n", __PRETTY_FUNCTION__, rle->mappingpair);
+    
     if (rle->flags & RLEFLAG_COMPR)
     {
-	D(bug("[NTFS] %s: Compressed\n", __PRETTY_FUNCTION__));
+	D(bug("[NTFS] %s: ## Compressed\n", __PRETTY_FUNCTION__));
 	if (!cached)
 	{
 	    D(bug("[NTFS] %s: error - attribute cannot be compressed\n", __PRETTY_FUNCTION__));
@@ -344,7 +345,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 
     if (!(rle->flags & RLEFLAG_COMPR))
     {
-	D(bug("[NTFS] %s: Uncompressed\n", __PRETTY_FUNCTION__));
+	D(bug("[NTFS] %s: ## Uncompressed\n", __PRETTY_FUNCTION__));
 
 	if (!(at->mft->data->cluster_sectors & 0x1))
 	{
@@ -503,7 +504,7 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
 	D(bug("[NTFS] %s: AF_ALST\n", __PRETTY_FUNCTION__));
 
 	vcn = ofs / (at->mft->data->cluster_sectors << SECTORSIZE_SHIFT);
-	attrentry = at->attr_nxt + AROS_LE2WORD(at->attr_nxt->length);
+	attrentry = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_nxt->length));
 	while (attrentry < at->attr_end)
 	{
 	    if (*(UBYTE *)attrentry != attr)
@@ -511,7 +512,7 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
 	    if (AROS_LE2LONG(*((ULONG *)(attrentry + 8))) > vcn)
 		break;
 	    at->attr_nxt = attrentry;
-	    attrentry += AROS_LE2WORD(attrentry->length);
+	    attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->length));
 	}
     }
     attrentry = FindMFTAttrib(at, attr);
@@ -569,7 +570,7 @@ retry:
 	while (at->attr_nxt < at->attr_end)
 	{
 	    at->attr_cur = at->attr_nxt;
-	    at->attr_nxt += AROS_LE2WORD(at->attr_cur->length);
+	    at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_cur->length));
 
 	    D(bug("[NTFS] %s: attr_cur @ 0x%p, attr_nxt @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_cur, at->attr_nxt ));
 
@@ -681,12 +682,12 @@ retry:
 		D(bug("[NTFS] %s: failed to read non-resident attribute list!\n", __PRETTY_FUNCTION__));
 	    }
 	    at->attr_nxt = at->edat_buf;
-	    at->attr_end = at->edat_buf + AROS_LE2QUAD(attrentry->data.non_resident.data_size);
+	    at->attr_end = (struct MFTAttr *)((IPTR)at->edat_buf + AROS_LE2QUAD(attrentry->data.non_resident.data_size));
 	}
 	else
 	{
-	    at->attr_nxt = at->attr_end + AROS_LE2WORD(attrentry->data.resident.value_offset);
-	    at->attr_end = at->attr_end + AROS_LE2LONG(attrentry->length);
+	    at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_end + AROS_LE2WORD(attrentry->data.resident.value_offset));
+	    at->attr_end = (struct MFTAttr *)((IPTR)at->attr_end + AROS_LE2LONG(attrentry->length));
 	    D(bug("[NTFS] %s: attr_nxt @ 0x%p, attr_end @ 0x%p\n", __PRETTY_FUNCTION__, at->attr_nxt, at->attr_end));
 	}
 	at->flags |= AF_ALST;
@@ -694,7 +695,7 @@ retry:
 	{
 	    if ((*(UBYTE *)at->attr_nxt == attr) || (attr == 0))
 		break;
-	    at->attr_nxt += AROS_LE2WORD(at->attr_nxt->length);
+	    at->attr_nxt = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(at->attr_nxt->length));
 	}
 	if (at->attr_nxt >= at->attr_end)
 	    return NULL;
@@ -708,7 +709,7 @@ retry:
 	    attrentry = at->attr_cur;
 	    attrentry->data.resident.value_length = AROS_LONG2LE(at->mft->data->mft_start);
 	    attrentry->data.resident.value_offset = AROS_WORD2LE(at->mft->data->mft_start + 1);
-	    attrentry = at->attr_nxt + AROS_LE2WORD(attrentry->length);
+	    attrentry = (struct MFTAttr *)((IPTR)at->attr_nxt + AROS_LE2WORD(attrentry->length));
 	    while (attrentry < at->attr_end)
 	    {
 		if (*(UBYTE *)attrentry != attr)
@@ -718,7 +719,7 @@ retry:
 		    AROS_LE2LONG(attrentry->data.resident.value_length) * (at->mft->data->mft_size << SECTORSIZE_SHIFT),
 		    at->mft->data->mft_size << SECTORSIZE_SHIFT, 0))
 		    return NULL;
-		attrentry += AROS_LE2WORD(attrentry->length);
+		attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->length));
 	    }
 	    at->attr_nxt = at->attr_cur;
 	    at->flags &= ~AF_GPOS;
@@ -801,11 +802,11 @@ IPTR InitMFTEntry(struct NTFSMFTEntry *mft, ULONG mft_id)
 
 	if (attrentry->residentflag == ATTR_RESIDENT_FORM)
 	{
-	    mft->size = AROS_LE2LONG(attrentry->data.resident.value_length);
+	    mft->size = AROS_LE2LONG(*(ULONG *)((IPTR)attrentry + 0x10));
 	}
 	else
 	{
-	    mft->size = AROS_LE2QUAD(attrentry->data.non_resident.data_size);
+	    mft->size = AROS_LE2QUAD(*(UQUAD *)((IPTR)attrentry + 0x30));
 	}
 
 	if ((mft->attr.flags & AF_ALST) == 0)
@@ -1139,7 +1140,7 @@ LONG ReadBootSector(struct FSData *fs_data )
 	    attrentry = FindMFTAttrib(&dir_entry.entry->attr, AT_STANDARD_INFORMATION);
 	    if ((attrentry) && (attrentry->residentflag == ATTR_RESIDENT_FORM) && (AROS_LE2LONG(attrentry->data.resident.value_length) > 0))
 	    {
-		attrentry += AROS_LE2WORD(attrentry->data.resident.value_offset);
+		attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 		D(bug("[NTFS] %s: nfstime     = %d\n", __PRETTY_FUNCTION__, *(UQUAD *)attrentry));
 
@@ -1158,14 +1159,14 @@ LONG ReadBootSector(struct FSData *fs_data )
 	    {
 		int i;
 		fs_data->volume.name[0] = (UBYTE)(AROS_LE2LONG(attrentry->data.resident.value_length) / 2) + 1;
-		attrentry += AROS_LE2WORD(attrentry->data.resident.value_offset);
+		attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 		if (fs_data->volume.name[0] > 30)
 		    fs_data->volume.name[0] = 30;
 
 		for (i = 0; i < fs_data->volume.name[0]; i++)
 		{
-		    fs_data->volume.name[i + 1] = glob->from_unicode[AROS_LE2WORD(*((UWORD *)(attrentry + (i * 2))))];
+		    fs_data->volume.name[i + 1] = glob->from_unicode[AROS_LE2WORD(*((UWORD *)((IPTR)attrentry + (i * 2))))];
 		}
 		fs_data->volume.name[fs_data->volume.name[0]] = '\0';
 
