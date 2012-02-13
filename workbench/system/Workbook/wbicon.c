@@ -38,7 +38,7 @@ struct wbIcon {
 
 const struct TagItem wbIcon_DrawTags[] = {
     { ICONDRAWA_Frameless, TRUE, },
-    { ICONDRAWA_Borderless, FALSE, },
+    { ICONDRAWA_Borderless, TRUE, },
     { ICONDRAWA_EraseBackground, FALSE, },
     { TAG_DONE },
 };
