@@ -5,6 +5,15 @@
 
 #include "bcpl.h"
 
+/* CallGlobVec lives in the private function (4) */
+AROS_UFP5(LONG, CallGlobVec,
+    AROS_UFPA(LONG, function, D0),
+    AROS_UFPA(LONG, d1, D1),
+    AROS_UFPA(LONG, d2, D2),
+    AROS_UFPA(LONG, d3, D3),
+    AROS_UFPA(LONG, d4, D4));
+
+
 /* LoadSeg() needs D1-D3 parameters for overlay hunk support */
 AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(UBYTE*, name, D1),
@@ -15,7 +24,7 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
 extern void *BCPL_jsr, *BCPL_rts;
 extern const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize];
     
-const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
+const UWORD highfunc = 37, lowfunc = 4, skipfuncs = 2;
 
 #define PATCHMEM_SIZE (10 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 16 * sizeof(UWORD))
 
@@ -30,6 +39,15 @@ static int PatchDOS(struct DosLibrary *dosbase)
     UWORD i;
     UWORD *asmcall, *asmmem;
     IPTR func;
+    APTR GlobVec;
+
+    GlobVec = AllocMem(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize, MEMF_PUBLIC);
+    if (GlobVec == NULL)
+        return FALSE;
+
+    CopyMem(BCPL_GlobVec, GlobVec, BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize);
+    GlobVec += BCPL_GlobVec_NegSize;
+    *(APTR *)(GlobVec + GV_DOSBase) = dosbase;
 
     Forbid();
 
@@ -37,6 +55,13 @@ static int PatchDOS(struct DosLibrary *dosbase)
 
     for (i = lowfunc; i <= highfunc; i++)
     {
+        if (i == 4) {
+            /* Use this private slot for the C-to-BCPL thunk */
+            __AROS_INITVEC(dosbase, i);
+            __AROS_SETVECADDR(dosbase, i, CallGlobVec);
+            continue;
+        }
+
     	if (i == 24 || i == 25)
     	    continue;
     	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
@@ -77,7 +102,7 @@ static int PatchDOS(struct DosLibrary *dosbase)
 
     dosbase->dl_A5 = (LONG)&BCPL_jsr;
     dosbase->dl_A6 = (LONG)&BCPL_rts;
-    dosbase->dl_GV = (APTR)BCPL_GlobVec + BCPL_GlobVec_NegSize;
+    dosbase->dl_GV = (APTR)GlobVec;
     
     Permit();
 
@@ -92,6 +117,7 @@ static int UnPatchDOS(struct DosLibrary *dosbase)
 
     asmcall = __AROS_GETJUMPVEC(dosbase, lowfunc)->vec;
     FreeMem(asmcall, PATCHMEM_SIZE);
+    FreeMem(dosbase->dl_GV, BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize);
 
     return TRUE;
 }
