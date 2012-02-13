@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 1.1 (24.1.2010)
+## version $VER: Wanderer.catalog 1.2 (12.1.2012)
 ## language czech
 ## codeset 5
 ;
@@ -152,8 +152,8 @@ Srovnat ikony
 ; Clean up
 ;
 MSG_MEN_SC_CLNUP
-U
-; U
+.
+; .
 ;
 MSG_MEN_BYNAME
 Dle názvu
@@ -217,7 +217,7 @@ Nástroje
 ;
 MSG_MEN_ICONSORTING
 Povolit øazení
-; Enable Icon Sorting
+; Enable Automatic Icon Sorting
 ;
 MSG_MEN_GROUPICONS
 Seskupit ikony
@@ -261,7 +261,7 @@ Vyberte prosím po¾adovanou akci.
 ;
 MSG_SHUTDOWN_BUTTONS
 Vypnout|Restartovat hardware|Restartovat AROS|*Zru¹it
-; Power off|Restart computer|Restart AROS|*Cancel
+; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
 Po¾adovanou akci nelze provést.
@@ -279,17 +279,33 @@ MSG_MEN_PUT_AWAY
 Sklidit z plochy
 ; Put away
 ;
+MSG_MEN_SC_PUT_AWAY
+P
+; P
+;
 MSG_MEN_LEAVE_OUT
 Umístit na plochu
 ; Leave out
+;
+MSG_MEN_SC_LEAVE_OUT
+L
+; L
 ;
 MSG_MEN_UNSNAPSHOT
 Zru¹it umístìní
 ; Unsnapshot
 ;
+MSG_MEN_SC_UNSNAPSHOT
+U
+; U
+;
 MSG_MEN_SNAPSHOT
 Zapsat umístìní
 ; Snapshot
+;
+MSG_MEN_SC_SNAPSHOT
+S
+; S
 ;
 MSG_REQU_DELETE
 Smazat soubor
@@ -447,3 +463,4 @@ MSG_WANDERER_FILEACCESS_TOTAL
 Celková velikost:
 ; Overall size:
 ;
+

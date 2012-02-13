@@ -1,4 +1,4 @@
-## version $VER: network.catalog 3.0 (15.11.2010)
+## version $VER: network.catalog 3.1 (9.1.2012)
 ## language czech
 ## codeset 5
 ;
@@ -57,6 +57,14 @@ Název hostitele
 MSG_DOMAIN_NAME
 Název domény
 ; Domain Name
+;
+MSG_SERIAL_DEVICE
+Sériové zaøízení
+; Serial Device
+;
+MSG_UNIT_NUMBER
+Jednotka
+; Unit
 ;
 MSG_IP_MODE_MANUAL
 Ruèním zadáním
@@ -122,13 +130,17 @@ MSG_TAB_WIRELESS
 Bezdrátové pøipojení
 ; Wireless
 ;
+MSG_TAB_MOBILE
+Mobilní pøipojení
+; Mobile Broadband
+;
 MSG_AUTOSTART_STACK
-Pøi spu¹tìní automaticky pøipojit k síti
+Pøi startu pøipojit k síti
 ; Start networking during system boot
 ;
-MSG_AUTOSTART_WIRELESS
-Povolit bezdrátové pøipojení
-; Enable wireless networking
+MSG_AUTOSTART_MOBILE
+Pøi startu spustit správce modemù
+; Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR
 Neznámá chyba
@@ -141,6 +153,10 @@ Chyba pøi restartu sí»ových slu¾eb.
 MSG_ERR_NOT_RESTARTED_WIRELESS
 Chyba pøi restartu bezdrátového pøipojení.
 ; Failed to restart wireless networking
+;
+MSG_ERR_NOT_RESTARTED_MOBILE
+Chyba pøi restartu správce modemù.
+; Failed to restart ModemManager
 ;
 MSG_BUTTON_OK
 OK
@@ -170,6 +186,10 @@ MSG_ERROR_TITLE
 Chyba
 ; Error
 ;
+MSG_WARNING_TITLE
+Upozornìní
+; Warning
+;
 MSG_ERR_NOT_SAVED_PREFS
 Nelze ulo¾it konfiguraèní soubory.\n(cesta: %s).
 ; Network preferences not saved to %s
@@ -177,6 +197,10 @@ Nelze ulo¾it konfiguraèní soubory.\n(cesta: %s).
 MSG_ERR_NOT_COPIED_FILES
 Nelze zkopírovat potøebné soubory.\n(cesta: %s).
 ; Additional files not copied to %s
+;
+MSG_WARN_MULTIPLE_IFACES
+DHCP funguje spolehlivì pouze s jedním rozhraním.
+; DHCP does not work reliably when multiple interfaces are configured
 ;
 MSG_INFO_TITLE
 Informace
@@ -193,4 +217,12 @@ Rozhraní
 MSG_NETWINDOW_TITLE
 Bezdrátová sí»
 ; Wireless Network
+;
+MSG_USERNAME
+Jméno
+; Username
+;
+MSG_PASSWORD
+Heslo
+; Password
 ;

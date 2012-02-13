@@ -1,4 +1,4 @@
-## version $VER: HDToolBox.catalog 1.3 (7.12.2007)
+## version $VER: HDToolBox.catalog 1.4 (12.1.2012)
 ## language czech
 ## codeset 5
 ;
@@ -167,3 +167,12 @@ MSG_CreateTableError
 Chyba pøi vytváøení tabulky se seznamem oddílù.
 ; Error while creating partition table
 ;
+WORD_MENU_Partition
+Oddíl
+; Partition
+;
+WORD_MENU_CreateMountlist
+Vytvoøit popis...
+; Create mountlist...
+;
+
