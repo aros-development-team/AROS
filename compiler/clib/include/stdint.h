@@ -45,8 +45,6 @@
 	    INT_FAST<N>_MIN, INT_FAST<N>_MAX, UINT_FAST<N>_MAX
 	    INTPTR_MIN, INTPTR_MAX, UINTPTR_MAX
 
-	    INTMAX_MIN, INTMAX_MAX, UINTMAX_MAX
-
 	    PTRDIFF_MIN, _MAX
 	    SIZE_MAX
 	    WCHAR_MIN, _MAX (must be <= -127 or >= 127)
@@ -85,6 +83,13 @@
 #  define INTMAX_C(c)	c ## LL
 #  define UINTMAX_C(c)	c ## ULL
 # endif
+
+/* Maximal integer (long long) size */
+# define INTMAX_MIN     INT64_MIN
+# define INTMAX_MAX     INT64_MAX
+
+/* Maximal unsigned integer (unsigned long long) size */
+# define UINTMAX_MAX     UINT64_MAX
 
 #endif
 
