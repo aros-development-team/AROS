@@ -187,7 +187,7 @@ asm (
 	"	move.w	%sp@(6),%sp@-\n"	// Copy the vector
 	"	andi.w	#0x0fff,%sp@\n"		// Clear the upper bits
 	"	clr.w	%sp@-\n"		// extend vector to long
-	"	bra	M68KExceptionHelper\n"
+	"	jmp	M68KExceptionHelper\n"
 );
 
 static void M68KExceptionInit_10(struct ExecBase *SysBase)
