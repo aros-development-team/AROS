@@ -1,4 +1,4 @@
-## version $VER: Input.catalog 1.5 (29.9.2010)
+## version $VER: Input.catalog 1.6 (12.1.2012)
 ## language czech
 ## codeset 5
 ;
@@ -139,3 +139,28 @@ MSG_GAD_MOUSE_SPEED_FAST
 Vysoká
 ; Fast
 ;
+MSG_GAD_KEY_DEF
+Výchozí
+; Default
+;
+MSG_GAD_KEY_ALT
+Sekundární
+; Alternate
+;
+MSG_GAD_KEY_SET
+Nastavit
+; Set
+;
+MSG_GAD_KEY_SWITCH
+Pøepínání klávesnic
+; Layout switching
+;
+MSG_GAD_KEY_SWITCH_ENABLE
+Povolit
+; Enabled
+;
+MSG_GAD_KEY_SWITCH_KEY
+Klávesová zkratka
+; Hotkey
+;
+

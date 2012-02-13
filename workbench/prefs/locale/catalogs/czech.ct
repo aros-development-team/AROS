@@ -1,4 +1,4 @@
-## version $VER: Locale.catalog 1.3 (13.4.2010)
+## version $VER: Locale.catalog 1.4 (9.1.2012)
 ## language czech
 ## codeset 5
 ;
@@ -143,3 +143,8 @@ MSG_NOT_SPECIFIED
 není urèeno
 ; Not specified
 ;
+MSG_GMT_CLOCK
+Pou¾ít univerzální èas
+; Hardware clock stores GMT
+;
+

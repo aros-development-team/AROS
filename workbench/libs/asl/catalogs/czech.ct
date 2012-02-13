@@ -1,4 +1,4 @@
-## version $VER: asl.catalog 1.0 (20.11.2007)
+## version $VER: asl.catalog 1.0 (9.1.2012)
 ## language czech
 ## codeset 0
 ;
@@ -53,6 +53,24 @@ Upozornìní: Opravdu chcete smazat vybraný objekt\n\%s?
 MSG_FILEREQ_DELETE_OKCANCEL
 Smazat|Zru¹it
 ; Delete|Cancel
+;
+MSG_FILEREQ_FOREIGNER_TITLE
+Ikony z nìkolika rùzných adresáøù
+; Icons dropped from different drawers
+;
+MSG_FILEREQ_FOREIGNER_MSG
+Upozornìní: Vybrané ikony nepocházejí z jednoho\n\
+adresáøe.\n\
+Následující soubory nelze zpracovat:\n\
+%s
+; Warning: The icons that have just been dropped\n\
+; do not all come from the same drawer.\n\
+; The requester could not handle the following files:\n\
+; %s
+;
+MSG_FILEREQ_FOREIGNER_OK
+OK
+; OK
 ;
 MSG_FILEREQ_RENAME_TITLE
 Pøejmenování objektu

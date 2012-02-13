@@ -1,6 +1,6 @@
-## version $VER: Wanderer.catalog 2.0 (24.1.2010)
+## version $VER: Wanderer.catalog 2.2 (7.2.2012)
 ## language czech
-## codeset 0
+## codeset 5
 ;
 ;
 MSG_NAME
@@ -265,3 +265,56 @@ MSG_CANCEL
 _Zru¹it
 ; C_ancel
 ;
+MSG_LABELSPREFS
+Vzhled popisu
+; Labels look and feel
+;
+MSG_ADVANCEDBACKGROUND
+Pozadí
+; Background
+;
+MSG_ADVANCEDICONS
+Ikony
+; Icons
+;
+MSG_ADVANCEDLABELS
+Popisy
+; Labels
+;
+MSG_ICONSORTMODE_BYNAME
+Dle názvu
+; By name
+;
+MSG_ICONSORTMODE_BYDATE
+Dle data
+; By date
+;
+MSG_ICONSORTMODE_BYSIZE
+Dle velikosti
+; By size
+;
+MSG_DEFAULT_ICONSORTMODE
+Výchozí øazení
+; Default sort order
+;
+MSG_ICON_AUTOSORT_ENABLED
+Automatické øazení
+; Autosorting enabled
+;
+MSG_ICON_DRAG_TRANSPARENT
+Pøi pøesouvání pou¾ít prùhlednost
+; Use transparency when draging icons
+;
+MSG_DEFAULT_ICONVIEWMODE
+Výchozí pohled
+; Default view mode
+;
+MSG_ICONVIEWMODE_ALL
+V¹echny soubory
+; All files
+;
+MSG_ICONVIEWMODE_ICONS
+Pouze s ikonami
+; Icons only
+;
+
