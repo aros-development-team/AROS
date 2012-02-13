@@ -581,6 +581,7 @@ static int relocate
             case R_68K_PC16:
                 bug("[ELF2HUNK] Unsupported relocation type R_68K_PC16\n");
                 set_error(EINVAL);
+                return 0;
                 break;
 
             case R_68k_NONE:
