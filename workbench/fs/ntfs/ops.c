@@ -103,7 +103,7 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
 
 	INIT_MFTATTRIB(&dirattr, &dh.ioh.mft);
 	attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
-	attrentry += AROS_LE2WORD(*((UWORD *)(attrentry + 0x14)));
+	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(*((UWORD *)(attrentry + 0x14))));
 
 	// take us up
 	dh.ioh.mft.mftrec_no = AROS_LE2QUAD(*((UQUAD *)attrentry)) & MFTREF_MASK;

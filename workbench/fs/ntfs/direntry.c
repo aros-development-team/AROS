@@ -26,7 +26,7 @@
 
 LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 {
-    struct MFTAttr *cur_pos;
+    struct MFTAttr *curattr;
     UBYTE *bmp;
     UQUAD bitmap_len;
     LONG ret = 0;
@@ -60,24 +60,29 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
     while(1)
     {
-	if ((cur_pos = FindMFTAttrib(&dh->ioh.mft.attr, AT_INDEX_ROOT)) == NULL)
+	if ((curattr = FindMFTAttrib(&dh->ioh.mft.attr, AT_INDEX_ROOT)) == NULL)
 	{
 	    D(bug("[NTFS] %s: no $INDEX_ROOT found!\n", __PRETTY_FUNCTION__));
 	    goto done;
 	}
 
-	if (((cur_pos->residentflag == ATTR_RESIDENT_FORM) &&
-	    (cur_pos->attrname_length == 4) &&
-	    (AROS_LE2WORD(cur_pos->attrname_offset) == 0x18)) ||
-	  (AROS_LE2QUAD(*((UQUAD *)(cur_pos + 0x18))) != 0x49002400300033ULL)) /* "$I30" */
+	if ((curattr->residentflag != ATTR_RESIDENT_FORM) ||
+	    (curattr->attrname_length != 4) ||
+	    (AROS_LE2WORD(curattr->attrname_offset) != 0x18) ||
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x18))) != 0x00490024) ||
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x1c))) != 0x00300033))
+	{
 	    continue;
-	cur_pos += AROS_LE2WORD(cur_pos->data.resident.value_offset);
-	if (*(UBYTE *)cur_pos != 0x30)	/* Not filename index */
+	}
+	curattr = (struct MFTAttr *)((IPTR)curattr + AROS_LE2WORD(curattr->data.resident.value_offset));
+	if (*(UBYTE *)curattr != 0x30)	/* Not filename index */
+	{
 	    continue;
+	}
 	break;
     }
 
-    dh->idx_root = (UBYTE *)cur_pos + 0x10;
+    dh->idx_root = (UBYTE *)curattr + 0x10;
     dh->idx_root += AROS_LE2WORD(*(UWORD *)(dh->idx_root));
 
     D(bug("[NTFS] %s: idx_root @ 0x%p\n", __PRETTY_FUNCTION__, dh->idx_root));
@@ -87,17 +92,18 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
     FreeMFTAttrib(&dh->ioh.mft.attr);
     INIT_MFTATTRIB(&dh->ioh.mft.attr, &dh->ioh.mft);
-    while ((cur_pos = FindMFTAttrib(&dh->ioh.mft.attr, AT_BITMAP)) != NULL)
+    while ((curattr = FindMFTAttrib(&dh->ioh.mft.attr, AT_BITMAP)) != NULL)
     {
 	int ofs;
 
-	ofs = ((UBYTE *)cur_pos)[0xA];
-	if ((cur_pos->attrname_length == 4) &&
-	  (AROS_LE2QUAD(*((UQUAD *)(cur_pos + ofs))) == 0x49002400300033ULL)) /* "$I30" */
+	ofs = ((UBYTE *)curattr)[0xA];
+	if ((curattr->attrname_length == 4) &&
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + ofs))) == 0x00490024) &&
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + ofs + 4))) == 0x00300033)) /* "$I30" */
 	{
-	    int is_resident = (cur_pos->residentflag == ATTR_RESIDENT_FORM);
+	    int is_resident = (curattr->residentflag == ATTR_RESIDENT_FORM);
 
-	    bitmap_len = (is_resident) ? AROS_LE2LONG(cur_pos->data.resident.value_length) : AROS_LE2QUAD(cur_pos->data.non_resident.data_size);
+	    bitmap_len = (is_resident) ? AROS_LE2LONG(curattr->data.resident.value_length) : AROS_LE2QUAD(curattr->data.non_resident.data_size);
 
 	    D(bug("[NTFS] %s: bitmap_len = %d\n", __PRETTY_FUNCTION__, bitmap_len));
 
@@ -106,17 +112,17 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
 	    if (is_resident)
 	    {
-		CopyMem((UBYTE *) (cur_pos + AROS_LE2WORD(cur_pos->data.resident.value_offset)), bmp, bitmap_len);
+		CopyMem((UBYTE *) (curattr + AROS_LE2WORD(curattr->data.resident.value_offset)), bmp, bitmap_len);
 		dh->ioh.bitmap_len = bitmap_len;
 	    }
 	    else
             {
-		if (ReadMFTAttribData(&dh->ioh.mft.attr, cur_pos, bmp, 0, bitmap_len, 0))
+		if (ReadMFTAttribData(&dh->ioh.mft.attr, curattr, bmp, 0, bitmap_len, 0))
                 {
 		    D(bug("[NTFS] %s: failed to read $BITMAP\n", __PRETTY_FUNCTION__));
 		    goto done;
                 }
-		dh->ioh.bitmap_len = AROS_LE2LONG(*((ULONG *)(cur_pos + 0x30)));
+		dh->ioh.bitmap_len = AROS_LE2LONG(*((ULONG *)(curattr + 0x30)));
             }
 
 	    dh->ioh.bitmap = (UBYTE *) bmp;
@@ -126,18 +132,19 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
     FreeMFTAttrib(&dh->ioh.mft.attr);
     INIT_MFTATTRIB(&dh->idx_attr, &dh->ioh.mft);
-    cur_pos = MapMFTAttrib (&dh->idx_attr, &dh->ioh.mft, AT_INDEX_ALLOCATION);
-    while (cur_pos != NULL)
+    curattr = MapMFTAttrib (&dh->idx_attr, &dh->ioh.mft, AT_INDEX_ALLOCATION);
+    while (curattr != NULL)
     {
-	if (((cur_pos->residentflag == ATTR_NONRESIDENT_FORM) &&
-	    (cur_pos->attrname_length == 4) &&
-	    (AROS_LE2WORD(cur_pos->attrname_offset) == 0x18)) ||
-	  (AROS_LE2QUAD(*((UQUAD *)(cur_pos + 0x18))) != 0x49002400300033ULL)) /* "$I30" */
+	if ((curattr->residentflag == ATTR_NONRESIDENT_FORM) &&
+	    (curattr->attrname_length == 4) &&
+	    (AROS_LE2WORD(curattr->attrname_offset) == 0x40) &&
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x40))) == 0x00490024) &&
+	    (AROS_LE2LONG(*((ULONG *)((IPTR)curattr + 0x44))) == 0x00300033)) /* "$I30" */
 	    break;
-	cur_pos = FindMFTAttrib(&dh->idx_attr, AT_INDEX_ALLOCATION);
+	curattr = FindMFTAttrib(&dh->idx_attr, AT_INDEX_ALLOCATION);
     }
 
-    if ((!cur_pos) && (dh->ioh.bitmap))
+    if ((!curattr) && (dh->ioh.bitmap))
     {
 	D(bug("[NTFS] %s: $BITMAP without $INDEX_ALLOCATION\n", __PRETTY_FUNCTION__));
 	goto done;
@@ -363,7 +370,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
     {
 	INIT_MFTATTRIB(&dirattr, &dh->ioh.mft);
 	attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
-	attrentry += AROS_LE2WORD(attrentry->data.resident.value_offset);
+	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	// take us up
 	parentdh.ioh.mft.mftrec_no = *((UQUAD *)attrentry) & MFTREF_MASK;
@@ -383,7 +390,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
     {
 	INIT_MFTATTRIB(&dirattr, &parentdh.ioh.mft);
 	attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
-	attrentry += AROS_LE2WORD(attrentry->data.resident.value_offset);
+	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	// take us up
 	parentdh.ioh.mft.mftrec_no = *((UQUAD *)attrentry) & MFTREF_MASK;
@@ -660,7 +667,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 	}
 	INIT_MFTATTRIB(mftattr, mft);
 	attrentry = FindMFTAttrib(&fl->entry->entry->attr, AT_STANDARD_INFORMATION);
-	attrentry += AROS_LE2WORD(attrentry->data.resident.value_offset);
+	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	D(bug("[NTFS] %s: nfstime     = %d\n", __PRETTY_FUNCTION__, *((UQUAD *)(attrentry + 8))));
 
