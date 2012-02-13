@@ -134,15 +134,11 @@
             wDelta = 0;
         }
 
-        /* textTop is adjusted downwards by the size of the font,
-         */
-        textTop += extent.te_Height;
-
         SetAPen(rp, Pens[FILLTEXTPEN]);
         SetOutlinePen(rp, selected ? Pens[HIGHLIGHTTEXTPEN] : Pens[TEXTPEN]);
         SetBPen(rp, Pens[BACKGROUNDPEN]);
 
-        Move(rp, leftEdge + textLeft, topEdge + textTop);
+        Move(rp, leftEdge + textLeft, topEdge + textTop - extent.te_Extent.MinY);
         Text(rp, label, txtlen);
     }
     
