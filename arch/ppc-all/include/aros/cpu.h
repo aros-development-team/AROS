@@ -153,18 +153,20 @@ struct JumpVec
 	asm volatile( \
 	    ".weak " #fname "\n" \
 	    "\t" #fname ":\n" \
-            "\tbl __comp_get_relbase\n" \
-            "\tlwz 12, 3\n" \
-	    "\tlis 12," #libbasename "@ha\n" \
-	    "\tlwz 12," #libbasename "@l(12)\n" \
-	    "\tlwz 11,%c0(12)\n" \
+            "\tbl   __comp_get_relbase\n" \
+	    "\tlis  11," #libbasename "_offset@ha\n" \
+	    "\tlwz  11," #libbasename "_offset@l(11)\n" \
+            "\tadd  11, 11, 3\n" \
+	    "\tlis  12, %c0@ha\n" \
+	    "\tlwz  12, %c0@l(12)\n" \
+	    "\tadd  11, 11, 12\n" \
 	    "\tmtctr 11\n" \
 	    "\tbctr\n" \
 	    : : "i" ((-lvo*LIB_VECTSIZE)) \
         ); \
     }
 #define AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
-    __AROS_LIBFUNCSTUB(fname, libbasename, lvo)
+    __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo)
 
 /* Macro: AROS_FUNCALIAS(functionname, alias)
    This macro will generate an alias 'alias' for function
