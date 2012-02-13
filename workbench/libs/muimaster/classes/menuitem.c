@@ -457,6 +457,10 @@ BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 	case MUIM_DisconnectParent: return Menuitem__MUIM_DisconnectParent(cl, obj, (APTR)msg);
 	case MUIM_Family_Insert:    return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
 	case MUIM_Family_Remove:    return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
+	case MUIM_Family_AddTail:   return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
+	case MUIM_Family_AddHead:   return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
+	case OM_ADDMEMBER:          return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
+	case OM_REMMEMBER:          return Menuitem__MUIM_Update(cl, obj, (APTR)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }
