@@ -1597,15 +1597,16 @@ static IPTR Application__MUIM_PushMethod(struct IClass *cl, Object *obj, struct 
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MQNode *mq;
-    LONG          i;
+    LONG    i;
     IPTR    *m = (IPTR *)&msg->count;   /* Warning, it will break on 64-bit BigEndian systems!!! */
+    LONG    count = msg->count & 0xf; /* MUI4 uses count to pass additional information */
 
-    mq = CreateMQNode(msg->count);
+    mq = CreateMQNode(count);
     if (!mq) return 0;
-    mq->mq_Dest = msg->dest;
+        mq->mq_Dest = msg->dest;
 
     /* fill msg */
-    for (i = 0; i < msg->count; i++)
+    for (i = 0; i < count; i++)
         mq->mq_Msg[i] = *(m + 1 + i);
 
     /* enqueue method */
