@@ -63,6 +63,7 @@ COMMON	:= \
 	strcpy \
 	strcspn \
 	strdup \
+	strndup \
 	strlcat \
 	strlcpy \
 	strlen \

@@ -23,6 +23,7 @@ int    strncasecmp (const char *str1, const char * str2, size_t n);
 char * strcasestr (const char * buf, const char * str);
 int    strncmp (const char * s1, const char * s2, size_t n);
 char * strdup (const char * str);
+char * strndup (const char * str, size_t n);
 char * strcpy (char * restrict dest, const char * restrict src);
 char * strcat (char * restrict dest, const char * restrict src);
 size_t strcspn (const char *s1, const char *s2);
