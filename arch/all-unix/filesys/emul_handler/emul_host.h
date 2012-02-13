@@ -13,7 +13,8 @@ struct LibCInterface;
 
 struct PlatformHandle
 {
-    ULONG dirpos; /* Directory search position for Android */
+    ULONG dirpos;       /* Directory search position for Android */
+    long  dirpos_first; /* Pointing to first dir entry for use by seekdir */
 };
 
 struct Emul_PlatformData

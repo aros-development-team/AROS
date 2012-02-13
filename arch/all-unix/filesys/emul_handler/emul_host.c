@@ -500,6 +500,7 @@ LONG DoOpen(struct emulbase *emulbase, struct filehandle *fh, LONG mode, LONG pr
     {
 	/* Object is a directory */
 	fh->fd = emulbase->pdata.SysIFace->opendir(fh->hostname);
+        fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 	AROS_HOST_BARRIER
 
 	if (fh->fd)
@@ -689,6 +690,7 @@ LONG DoMkDir(struct emulbase *emulbase, struct filehandle *fh, ULONG protect)
     {
 	fh->type = FHD_DIRECTORY;
 	fh->fd   = emulbase->pdata.SysIFace->opendir(fh->hostname);
+        fh->ph.dirpos_first = emulbase->pdata.SysIFace->telldir(fh->fd);
 	AROS_HOST_BARRIER
     }
 
@@ -1152,13 +1154,33 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
 
     DEXAM(bug("[emul] examine_all()\n"));
 
+
+#ifndef HOST_OS_android
+    HostLib_Lock();
+
+    if (eac->eac_LastKey == 0)
+    {
+        /* Theoretically this doesn't work if opendir/telldir "handle"
+           can be 0 for a dir entry which is not the first one! */
+           
+        eac->eac_LastKey = fh->ph.dirpos_first;
+    }
+    
+    emulbase->pdata.SysIFace->seekdir(fh->fd, eac->eac_LastKey);
+    AROS_HOST_BARRIER
+
+    HostLib_Unlock();
+#endif
+
     for(;;)
     {
 	HostLib_Lock();
 
 #ifndef HOST_OS_android
-	oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
-	AROS_HOST_BARRIER
+        oldpos = eac->eac_LastKey;
+                
+	//oldpos = emulbase->pdata.SysIFace->telldir(fh->fd);
+	//AROS_HOST_BARRIER
 #endif
 
         *emulbase->pdata.errnoPtr = 0;
@@ -1198,12 +1220,12 @@ LONG DoExamineAll(struct emulbase *emulbase, struct filehandle *fh, struct ExAll
 #ifdef HOST_OS_android
 	eac->eac_LastKey--;
 #else
-	HostLib_Lock();
+        eac->eac_LastKey = oldpos;
 
-	emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
-	AROS_HOST_BARRIER
-
-	HostLib_Unlock();
+	//HostLib_Lock();
+	//emulbase->pdata.SysIFace->seekdir(fh->fd, oldpos);
+	//AROS_HOST_BARRIER
+	//HostLib_Unlock();
 #endif
 	/* Examination will continue from the current position */
 	return 0;
