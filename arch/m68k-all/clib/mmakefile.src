@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG_MAGIC=0x40506070 -DDEBUG=0
+USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG=0
 
 %build_archspecific \
   mainmmake=linklibs-clib-common maindir=compiler/clib \
@@ -16,22 +16,15 @@ USER_AFLAGS  := -I$(GENINCDIR) -DDEBUG_MAGIC=0x40506070 -DDEBUG=0
 #MM- linklibs-clib-common-m68k : includes-asm_h-m68k
 #MM- linklibs-clib-shared-m68k : includes-asm_h-m68k
 
-FILES:=vdemo
+USER_AFLAGS := -DDEBUG_MAGIC=0x40506070 -DDEBUG=1
+AFILES:=jmptests setjmp longjmp vfork vfork_longjmp
 
 #MM- test-clib: test-clib-$(AROS_TARGET_CPU)
-#MM- test-clib-m68k: test-clib-m68k-vdemo
+#MM- test-clib-m68k: test-clib-m68k-jmptests
 
-#MM
-test-clib-m68k-vdemo: longjmp.s setjmp.s vfork.s vfork_longjmp.s vdemo.s
-	$(CC) -o $(AROS_TESTS)/clib/vdemo -nostdlib \
-	    -I$(GENDIR)/include \
-	    -x assembler-with-cpp \
-	    $(USER_AFLAGS) \
-	    $(SRCDIR)/arch/m68k-all/clib/vdemo.s \
-	    $(SRCDIR)/arch/m68k-all/clib/longjmp.s \
-	    $(SRCDIR)/arch/m68k-all/clib/setjmp.s \
-	    $(SRCDIR)/arch/m68k-all/clib/vfork.s \
-	    $(SRCDIR)/arch/m68k-all/clib/vfork_longjmp.s
+%build_prog mmake=test-clib-m68k-jmptests files= asmfiles=$(AFILES) \
+            progname=jmptests targetdir=$(AROS_TESTS)/clib \
+            usestartup=no
 
 
 %common
