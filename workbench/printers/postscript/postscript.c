@@ -5,6 +5,7 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
+#define DEBUG 1
 #include <aros/debug.h>
 #include <aros/printertag.h>
 
@@ -18,7 +19,11 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 
-//static struct Library *GfxBase;
+/* Support binary compatability with AOS */
+#ifdef __mc68000
+#undef RAWFMTFUNC_STRING
+#define RAWFMTFUNC_STRING (VOID (*)())"\x16\xC0\x4E\x75"
+#endif
 
 static LONG ps_Init(struct PrinterData *pd);
 static VOID ps_Expunge(VOID);
@@ -214,14 +219,15 @@ static CONST_STRPTR PED_8BitChars[] = {
           "?", /* y: */
 };
 
+#define PS_NOSCALING    TRUE
+
 static struct TagItem PED_TagList[] = {
     { PRTA_8BitGuns, TRUE },            /* 0 */
-    { PRTA_NewColor, TRUE },            /* 1 */
-    { PRTA_ColorSize, 3 },              /* 2 */
-    { PRTA_NoScaling, TRUE },           /* 3 */
-    { PRTA_MixBWColor, FALSE },         /* 4 */
-    { PRTA_LeftBorder, 0 },             /* 5 */
-    { PRTA_TopBorder,  0 },             /* 6 */
+    { PRTA_FloydDithering, TRUE },      /* 1 */
+    { PRTA_MixBWColor, TRUE },          /* 2 */
+    { PRTA_LeftBorder, 0 },             /* 3 */
+    { PRTA_TopBorder,  0 },             /* 4 */
+    { PRTA_NoScaling, PS_NOSCALING },
     { TAG_END }
 };
 
@@ -266,7 +272,6 @@ static LONG ps_Init(struct PrinterData *pd)
 {
     D(bug("ps_Init: pd=%p\n", pd));
     PD = pd;
-//    GfxBase = OpenLibrary("graphics.library", 0);
     return 0;
 }
 
@@ -274,7 +279,6 @@ static VOID ps_Expunge(VOID)
 {
     D(bug("ps_Expunge\n"));
     PD = NULL;
-//    CloseLibrary(GfxBase);
 }
 
 static struct {
@@ -390,7 +394,7 @@ static void ps_SendHeader(void)
         "/aIND { currentpoint exch pop Page_Left exch moveto } bind def\n"
         "/aFB { gsave Font_CPI setFont Page_Left Page_Top moveto } bind def\n"
         "/aFF  { grestore showpage } bind def\n"
-        "/setFont { 1200 exch div Font_Name findfont exch scalefont setfont } bind def\n"
+        "/setFont { 1200 exch div /Font_Height exch def Font_Name findfont Font_Height scalefont setfont } bind def\n"
         "/Spacing { 72 Spacing_LPI div } bind def\n"
         "/Font_Name /Courier def\n"
         "/Font_CPIDefault %ld def\n"
@@ -475,51 +479,61 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
     D(bug("\t@%ldx%ld (%ldx%ld) => @%ldx%ld\n", 
            io->io_SrcX, io->io_SrcY, io->io_SrcWidth,
            io->io_SrcHeight, io->io_DestCols, io->io_DestRows));
-    LONG alignOffsetX = 0;
-    LONG alignOffsetY = 0;
+    LONG alignOffsetX;
+    LONG alignOffsetY;
     LONG x, y;
 
     ps_SendHeader();
 
-    ps_PrintBufLen = io->io_SrcWidth;
-    PD->pd_PrintBuf = AllocMem(ps_PrintBufLen * 6, MEMF_ANY);
+    ps_PrintBufLen = PS_NOSCALING ? io->io_SrcWidth : width;
+    PD->pd_PrintBuf = AllocMem(ps_PrintBufLen * 6 + 1, MEMF_ANY);
     if (PD->pd_PrintBuf == NULL)
         return PDERR_BUFFERMEMORY;
+    PD->pd_PrintBuf[ps_PrintBufLen * 6] = '\n';
 
     if (PD->pd_Preferences.PrintFlags & PGFF_CENTER_IMAGE) {
         alignOffsetX = (PED->ped_MaxXDots - width) / 2;
         alignOffsetY = (PED->ped_MaxYDots - height) / 2;
+    } else {
+        alignOffsetX = 0;
+        alignOffsetY = PED->ped_MaxYDots - height;
     }
 
     /* Leave text printing mode */
     ps_PWrite(") show grestore gsave\n");
 
     /* Move grapics location to (in dots):
-     * x = (PrintXOffset * dpiX / 10) +   alignOffsetX
-     *          (0.1 in)                (dots)     (dots)
-     * y = (PrintYOffset * dpiX / 10) +   alignOffsetY + height
+     * x = alignOffsetX
+     *        (dots)
+     * y = alignOffsetY
      */
-    x = PD->pd_Preferences.PrintXOffset * PED->ped_XDotsInch / 10 + alignOffsetX;
-    y = /* ??? where ???                * PED->ped_YDotsInch / 10+*/alignOffsetY + height;
+    x = alignOffsetX;
+    y = alignOffsetY;
 
     /* Move text location to (in points):
      *  textx = PageLeft
-     *  texty = (y - height) * dpiY / 72 - Font_H
+     *  texty = y * 72 / dpiY - Font_Height
      */
-    ps_PWrite("PageLeft %ld %ld mul 72 div Font_H sub moveto\n", y - height, PED->ped_YDotsInch);
+    ps_PWrite("Page_Left %ld 72 mul %ld div Font_Height sub moveto\n",
+              y, PED->ped_YDotsInch);
 
     /* Save the graphics context - we don't want the scaling & translation
      * when we return to text context later
      */
     ps_PWrite("gsave\n");
-    ps_PWrite("%ld 72 div %ld mul %ld 72 div %ld mul translate\n",
-            x, PED->ped_XDotsInch,
-            y, PED->ped_YDotsInch);
-    ps_PWrite("translate\n");
-    ps_PWrite("%ld %ld div %ld %ld div scale\n", x * 72, PED->ped_XDotsInch, y * 72, PED->ped_YDotsInch);
-    ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
-            io->io_SrcWidth, io->io_SrcHeight,
-            io->io_SrcWidth, -io->io_SrcHeight, io->io_SrcHeight);
+    ps_PWrite("%ld %ld div %ld %ld div translate\n",
+            x * 72, PED->ped_XDotsInch,
+            y * 72, PED->ped_YDotsInch);
+    ps_PWrite("%ld %ld div %ld %ld div scale\n", width * 72, PED->ped_XDotsInch, height * 72, PED->ped_YDotsInch);
+    if (PS_NOSCALING) {
+        ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
+                io->io_SrcWidth, io->io_SrcHeight,
+                io->io_SrcWidth, -io->io_SrcHeight, io->io_SrcHeight);
+    } else {
+        ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
+                width, height,
+                width, -height, height);
+    }
     ps_PWrite("{<\n");
 
     return PDERR_NOERR;
@@ -531,17 +545,20 @@ static UBYTE tohex(UBYTE val)
     return (val < 10) ? ('0' + val) : ('a' + val - 10);
 }
 
-static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG x, LONG y)
+static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG color, LONG y)
 {
     UBYTE *ptr = PD->pd_PrintBuf;
-    UBYTE *src = (UBYTE *)pi->pi_ColorInt;
-    ptr += (2 * x);
+    union colorEntry *src = pi->pi_ColorInt;
+    int x;
+    int const index[3] = { PCMRED, PCMGREEN, PCMBLUE };
 
-    for (x = 0; x < ps_PrintBufLen; x++, src += 3, ptr += 6) {
+    D(bug("\twidth = %d\n", ps_PrintBufLen));
+    for (x = 0; x < ps_PrintBufLen; x++, src++) {
         int i;
         for (i = 0; i < 3; i++) {
-            ptr[i*2+0] = tohex(src[2-i]>>4);
-            ptr[i*2+1] = tohex(src[2-i]>>0);
+            UBYTE color = src->colorByte[index[i]];
+            *(ptr++) = tohex(color>>4);
+            *(ptr++) = tohex(color>>0);
         }
     }
 
@@ -550,8 +567,9 @@ static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG x, LONG y)
 
 static LONG ps_RenderFlush(LONG rows)
 {
-    PD->pd_PWrite(PD->pd_PrintBuf, ps_PrintBufLen * 6);
-    PD->pd_PWrite("\n", 1);
+    PD->pd_PrintBuf[ps_PrintBufLen * 6] = '\n';
+    PD->pd_PWrite(PD->pd_PrintBuf, ps_PrintBufLen * 6 + 1);
+    PD->pd_PBothReady();
     return PDERR_NOERR;
 }
 
@@ -664,15 +682,15 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
     PED->ped_YDotsInch = dpiY;
     PED->ped_MaxXDots = width * dpiX / 254;
     PED->ped_MaxYDots = height * dpiY / 254;
-bug("MaxColumns=%d, dpiX=%d, dpiY=%d, MaxXDots=%d, MaxYDots=%d (%d x %d in)\n",
+    D(bug("MaxColumns=%d, dpiX=%d, dpiY=%d, MaxXDots=%d, MaxYDots=%d (%d x %d in)\n",
         PED->ped_MaxColumns, PED->ped_XDotsInch, PED->ped_YDotsInch,
         PED->ped_MaxXDots, PED->ped_MaxYDots,
-        PED->ped_MaxXDots / dpiX, PED->ped_MaxYDots / dpiY);
+        PED->ped_MaxXDots / dpiX, PED->ped_MaxYDots / dpiY));
 
     return PDERR_NOERR;
 }
 
-static LONG ps_RenderClose(struct IODRPReq *io, ULONG flags)
+static LONG ps_RenderClose(SIPTR error, ULONG flags)
 {
     if (ps_PrintBufLen) {
         ps_PWrite(">}\nfalse 3 colorimage\n");
@@ -680,7 +698,7 @@ static LONG ps_RenderClose(struct IODRPReq *io, ULONG flags)
          * has already been moved to after the raster
          */
         ps_PWrite("grestore (\n",);
-        FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 6);
+        FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 6 + 1);
         PD->pd_PrintBuf=NULL;
         ps_PrintBufLen=0;
     }
@@ -716,7 +734,7 @@ static LONG ps_Render(SIPTR ct, LONG x, LONG y, LONG status)
         break;
     case PRS_CLOSE:
         D(bug("PRS_CLOSE: ct=%p, x=0x%0x, y=%d\n", ct, x, y));
-        err = ps_RenderClose((struct IODRPReq *)ct, x);
+        err = ps_RenderClose(ct, x);
         break;
     case PRS_PREINIT:
         D(bug("PRS_PREINIT: ct=%p, x=0x%0x, y=%d\n", ct, x, y));
