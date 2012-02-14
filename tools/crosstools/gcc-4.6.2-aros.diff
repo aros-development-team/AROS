@@ -1,8 +1,7 @@
-diff --git a/configure b/configure
-index b3cc9ad..c625a53 100755
---- a/configure
-+++ b/configure
-@@ -2997,6 +2997,9 @@ case "${host}" in
+diff -ruN gcc-4.6.2/configure gcc-4.6.2.aros/configure
+--- gcc-4.6.2/configure	2011-06-27 16:54:59.000000000 -0400
++++ gcc-4.6.2.aros/configure	2012-02-13 20:34:51.000000000 -0500
+@@ -2997,6 +2997,9 @@
    ppc*-*-pe)
      noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
      ;;
@@ -12,7 +11,7 @@ index b3cc9ad..c625a53 100755
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs tk itcl libgui gdb dejagnu readline"
      ;;
-@@ -3810,6 +3813,8 @@ fi
+@@ -3810,6 +3813,8 @@
      # Build the stage2 and stage3 compilers with -fomit-frame-pointer.
      host_makefile_frag="config/mh-x86omitfp"
      ;;
@@ -21,11 +20,10 @@ index b3cc9ad..c625a53 100755
  esac
  fi
  
-diff --git a/configure.ac b/configure.ac
-index c6615bd..68ca69f 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -453,6 +453,9 @@ case "${host}" in
+diff -ruN gcc-4.6.2/configure.ac gcc-4.6.2.aros/configure.ac
+--- gcc-4.6.2/configure.ac	2011-06-27 16:54:59.000000000 -0400
++++ gcc-4.6.2.aros/configure.ac	2012-02-13 20:34:51.000000000 -0500
+@@ -453,6 +453,9 @@
    ppc*-*-pe)
      noconfigdirs="$noconfigdirs patch diff make tk tcl expect dejagnu autoconf automake texinfo bison send-pr gprof rcs guile perl itcl gnuserv"
      ;;
@@ -35,7 +33,7 @@ index c6615bd..68ca69f 100644
    powerpc-*-beos*)
      noconfigdirs="$noconfigdirs tk itcl libgui gdb dejagnu readline"
      ;;
-@@ -1237,6 +1240,8 @@ case "${host}" in
+@@ -1237,6 +1240,8 @@
      # Build the stage2 and stage3 compilers with -fomit-frame-pointer.
      host_makefile_frag="config/mh-x86omitfp"
      ;;
@@ -44,11 +42,10 @@ index c6615bd..68ca69f 100644
  esac
  fi
  
-diff --git a/fixincludes/configure b/fixincludes/configure
-index 7b7109a..66ef005 100755
---- a/fixincludes/configure
-+++ b/fixincludes/configure
-@@ -4245,6 +4245,7 @@ else
+diff -ruN gcc-4.6.2/fixincludes/configure gcc-4.6.2.aros/fixincludes/configure
+--- gcc-4.6.2/fixincludes/configure	2010-06-03 02:45:02.000000000 -0400
++++ gcc-4.6.2.aros/fixincludes/configure	2012-02-13 20:34:51.000000000 -0500
+@@ -4245,6 +4245,7 @@
  fi
  else
    case $host in
@@ -56,11 +53,10 @@ index 7b7109a..66ef005 100755
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	x86_64-*-mingw32* | \
-diff --git a/fixincludes/configure.ac b/fixincludes/configure.ac
-index 2c488e7..c133b63 100644
---- a/fixincludes/configure.ac
-+++ b/fixincludes/configure.ac
-@@ -49,6 +49,7 @@ else
+diff -ruN gcc-4.6.2/fixincludes/configure.ac gcc-4.6.2.aros/fixincludes/configure.ac
+--- gcc-4.6.2/fixincludes/configure.ac	2010-06-03 02:45:02.000000000 -0400
++++ gcc-4.6.2.aros/fixincludes/configure.ac	2012-02-13 20:34:51.000000000 -0500
+@@ -49,6 +49,7 @@
  	TARGET=oneprocess
  fi],
  [case $host in
@@ -68,114 +64,9 @@ index 2c488e7..c133b63 100644
  	i?86-*-msdosdjgpp* | \
  	i?86-*-mingw32* | \
  	x86_64-*-mingw32* | \
-diff --git a/gcc/config.build b/gcc/config.build
-index 6c837c3..f716733 100644
---- a/gcc/config.build
-+++ b/gcc/config.build
-@@ -124,6 +124,9 @@ case $build in
-     # HP 9000 series 300
-     build_install_headers_dir=install-headers-cpio
-     ;;
-+  *-*-aros*)
-+    build_xm_file=xm-aros.h
-+    ;;
-   *-*-sysv*)
-     # All other System V variants.
-     build_install_headers_dir=install-headers-cpio
-diff --git a/gcc/config.gcc b/gcc/config.gcc
-index 39d9a19..f83c0c8 100644
---- a/gcc/config.gcc
-+++ b/gcc/config.gcc
-@@ -656,6 +656,14 @@ case ${target} in
-       ;;
-   esac
-   ;;
-+*-*-aros*)
-+  gas=yes
-+  gnu_ld=yes
-+  thread_file=single
-+  use_collect2=no
-+  xm_defines='STDC_HEADERS=1'
-+  ;;
-+
- *-*-openbsd*)
-   tmake_file="t-libc-ok t-openbsd t-libgcc-pic"
-   case ${enable_threads} in
-@@ -793,6 +801,11 @@ arc-*-elf*)
- 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
- 	extra_parts="crtinit.o crtfini.o"
- 	;;
-+arm*-*-aros*)
-+	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
-+	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-bpabi"
-+	xm_file="xm-aros.h"
-+	;;
- arm-wrs-vxworks)
- 	tm_file="elfos.h arm/elf.h arm/aout.h ${tm_file} vx-common.h vxworks.h arm/vxworks.h"
- 	extra_options="${extra_options} arm/vxworks.opt"
-@@ -1312,6 +1325,14 @@ x86_64-*-linux* | x86_64-*-kfreebsd*-gnu | x86_64-*-knetbsd*-gnu)
- 	esac
- 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
- 	;;
-+i[34567]86-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/aros.h"
-+	xm_file=xm-aros.h
-+	;;	
-+x86_64-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/x86-64.h i386/aros64.h"
-+	xm_file=xm-aros.h
-+	;;
- i[34567]86-pc-msdosdjgpp*)
- 	xm_file=i386/xm-djgpp.h
- 	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
-@@ -1720,6 +1741,16 @@ m68hc12-*-*|m6812-*-*)
- 	extra_options="${extra_options} m68hc11/m68hc11.opt"
- 	use_gcc_stdint=wrap
-         ;;
-+m68k-*-aros*)
-+	default_m68k_cpu=68020
-+	default_cf_cpu=5206
-+	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h newlib-stdint.h m68k/m68kemb.h m68k/m68020-elf.h"
-+	tm_file="${tm_file} aros.h"
-+	tm_defines="${tm_defines} MOTOROLA=1"
-+	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
-+	tmake_file="$tmake_file m68k/t-mlibs t-gnu"
-+	extra_parts="crtbegin.o crtend.o"
-+	;;
- m68k-*-elf* | fido-*-elf*)
- 	case ${target} in
- 	fido-*-elf*)
-@@ -2143,6 +2174,12 @@ powerpc-*-rtems*)
- 	extra_options="${extra_options} rs6000/sysv4.opt"
- 	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-rtems t-rtems rs6000/t-ppccomm"
- 	;;
-+powerpc-*-aros*)
-+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h aros.h"
-+ 	extra_options="${extra_options} rs6000/sysv4.opt"
-+ 	tm_file="${tm_file} rs6000/aros.h"
-+ 	xm_file=xm-aros.h
-+ 	;;
- powerpc-*-linux* | powerpc64-*-linux*)
- 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h"
- 	extra_options="${extra_options} rs6000/sysv4.opt"
-diff --git a/gcc/config.host b/gcc/config.host
-index d0342b9..cdcc1f8 100644
---- a/gcc/config.host
-+++ b/gcc/config.host
-@@ -277,4 +277,8 @@ case ${host} in
-     out_host_hook_obj=host-hpux.o
-     host_xmake_file="${host_xmake_file} x-hpux"
-     ;;
-+  *-*-aros*)
-+    host_can_use_collect2=no
-+    host_xm_file=xm-aros.h
-+    ;;
- esac
-diff --git a/gcc/config/arm/aros.h b/gcc/config/arm/aros.h
-new file mode 100644
-index 0000000..ae53a33
---- /dev/null
-+++ b/gcc/config/arm/aros.h
+diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
+--- gcc-4.6.2/gcc/config/arm/aros.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/arm/aros.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,90 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
@@ -229,10 +120,10 @@ index 0000000..ae53a33
 +#undef WCHAR_TYPE_SIZE
 +#define WCHAR_TYPE_SIZE BITS_PER_WORD
 +
-+/* We default to a soft-float ABI so that binaries can run on all
-+   target hardware.  */
++/* We default to a softfp ABI so that we are compatible
++   with the Linux EABI (as used by the linker).  */
 +#undef  TARGET_DEFAULT_FLOAT_ABI
-+#define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFT
++#define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFTFP
 +
 +/* We default to the "aapcs-linux" ABI so that enums are int-sized by
 +   default.  */
@@ -267,11 +158,9 @@ index 0000000..ae53a33
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff --git a/gcc/config/aros.h b/gcc/config/aros.h
-new file mode 100644
-index 0000000..97378f6
---- /dev/null
-+++ b/gcc/config/aros.h
+diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
+--- gcc-4.6.2/gcc/config/aros.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/aros.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,89 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
@@ -362,11 +251,56 @@ index 0000000..97378f6
 +#define LINKER_NAME "collect-aros"
 +
 +#define TARGET_HAS_F_SETLKW
-diff --git a/gcc/config/i386/aros.h b/gcc/config/i386/aros.h
-new file mode 100644
-index 0000000..3d5f284
---- /dev/null
-+++ b/gcc/config/i386/aros.h
+diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros64.h
+--- gcc-4.6.2/gcc/config/i386/aros64.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/i386/aros64.h	2012-02-13 20:34:51.000000000 -0500
+@@ -0,0 +1,43 @@
++/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
++   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
++   Free Software Foundation, Inc.
++   Contributed by Stanislaw Szymczyk <sszymczy@gmail.com>. Based on aros.h.
++
++This file is part of GNU CC.
++
++GNU CC is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2, or (at your option)
++any later version.
++
++GNU CC is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with GNU CC; see the file COPYING.  If not, write to
++the Free Software Foundation, 59 Temple Place - Suite 330,
++Boston, MA 02111-1307, USA.  */
++
++/* Output at beginning of assembler file.  */
++/* The .file command should always begin the output.  */
++
++#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
++
++#undef CPP_SPEC
++#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
++
++/* The svr4 ABI for the i386 says that records and unions are returned
++   in memory.  In the 64bit compilation we will turn this flag off in
++   override_options, as we never do pcc_struct_return scheme on this target.  */
++#undef DEFAULT_PCC_STRUCT_RETURN
++#define DEFAULT_PCC_STRUCT_RETURN 1
++
++/* Provide a LINK_SPEC appropriate for AROS.  */
++
++#undef	LINK_SPEC
++#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386}" 
++
++/* FIXME: AROS doesn't support dw2 unwinding yet.  */
++#undef MD_FALLBACK_FRAME_STATE_FOR
+diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
+--- gcc-4.6.2/gcc/config/i386/aros.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/i386/aros.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,120 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -488,60 +422,10 @@ index 0000000..3d5f284
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff --git a/gcc/config/i386/aros64.h b/gcc/config/i386/aros64.h
-new file mode 100644
-index 0000000..2c64b27
---- /dev/null
-+++ b/gcc/config/i386/aros64.h
-@@ -0,0 +1,43 @@
-+/* Definitions for AMD x86_64 running AROS systems with ELF64 format.
-+   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
-+   Free Software Foundation, Inc.
-+   Contributed by Stanislaw Szymczyk <sszymczy@gmail.com>. Based on aros.h.
-+
-+This file is part of GNU CC.
-+
-+GNU CC is free software; you can redistribute it and/or modify
-+it under the terms of the GNU General Public License as published by
-+the Free Software Foundation; either version 2, or (at your option)
-+any later version.
-+
-+GNU CC is distributed in the hope that it will be useful,
-+but WITHOUT ANY WARRANTY; without even the implied warranty of
-+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+GNU General Public License for more details.
-+
-+You should have received a copy of the GNU General Public License
-+along with GNU CC; see the file COPYING.  If not, write to
-+the Free Software Foundation, 59 Temple Place - Suite 330,
-+Boston, MA 02111-1307, USA.  */
-+
-+/* Output at beginning of assembler file.  */
-+/* The .file command should always begin the output.  */
-+
-+#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
-+
-+#undef CPP_SPEC
-+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
-+
-+/* The svr4 ABI for the i386 says that records and unions are returned
-+   in memory.  In the 64bit compilation we will turn this flag off in
-+   override_options, as we never do pcc_struct_return scheme on this target.  */
-+#undef DEFAULT_PCC_STRUCT_RETURN
-+#define DEFAULT_PCC_STRUCT_RETURN 1
-+
-+/* Provide a LINK_SPEC appropriate for AROS.  */
-+
-+#undef	LINK_SPEC
-+#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386}" 
-+
-+/* FIXME: AROS doesn't support dw2 unwinding yet.  */
-+#undef MD_FALLBACK_FRAME_STATE_FOR
-diff --git a/gcc/config/m68k/m68k.c b/gcc/config/m68k/m68k.c
-index e5bd011..9ebe89a 100644
---- a/gcc/config/m68k/m68k.c
-+++ b/gcc/config/m68k/m68k.c
-@@ -4522,7 +4522,7 @@ print_operand (FILE *file, rtx op, int letter)
+diff -ruN gcc-4.6.2/gcc/config/m68k/m68k.c gcc-4.6.2.aros/gcc/config/m68k/m68k.c
+--- gcc-4.6.2/gcc/config/m68k/m68k.c	2011-07-31 11:09:25.000000000 -0400
++++ gcc-4.6.2.aros/gcc/config/m68k/m68k.c	2012-02-13 20:34:51.000000000 -0500
+@@ -4522,7 +4522,7 @@
    else if (letter == '/')
      asm_fprintf (file, "%R");
    else if (letter == '?')
@@ -550,11 +434,10 @@ index e5bd011..9ebe89a 100644
    else if (letter == 'p')
      {
        output_addr_const (file, op);
-diff --git a/gcc/config/m68k/m68k.h b/gcc/config/m68k/m68k.h
-index 71b7c4f..e854210 100644
---- a/gcc/config/m68k/m68k.h
-+++ b/gcc/config/m68k/m68k.h
-@@ -342,7 +342,9 @@ along with GCC; see the file COPYING3.  If not see
+diff -ruN gcc-4.6.2/gcc/config/m68k/m68k.h gcc-4.6.2.aros/gcc/config/m68k/m68k.h
+--- gcc-4.6.2/gcc/config/m68k/m68k.h	2010-11-21 20:57:50.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/m68k/m68k.h	2012-02-13 20:34:51.000000000 -0500
+@@ -342,7 +342,9 @@
     register elimination.  */
  #define FIRST_PSEUDO_REGISTER 25
  
@@ -565,7 +448,7 @@ index 71b7c4f..e854210 100644
  #define PIC_OFFSET_TABLE_REGNUM				\
    (!flag_pic ? INVALID_REGNUM				\
     : reload_completed ? REGNO (pic_offset_table_rtx)	\
-@@ -432,7 +434,8 @@ along with GCC; see the file COPYING3.  If not see
+@@ -432,7 +434,8 @@
  /* Most m68k targets use %a6 as a frame pointer.  The AmigaOS
     ABI uses %a6 for shared library calls, therefore the frame
     pointer is shifted to %a5 on this target.  */
@@ -575,10 +458,9 @@ index 71b7c4f..e854210 100644
  
  /* Base register for access to arguments of the function.
   * This isn't a hardware register. It will be eliminated to the
-diff --git a/gcc/config/m68k/m68k.md b/gcc/config/m68k/m68k.md
-index f89037f..56de82b 100644
---- a/gcc/config/m68k/m68k.md
-+++ b/gcc/config/m68k/m68k.md
+diff -ruN gcc-4.6.2/gcc/config/m68k/m68k.md gcc-4.6.2.aros/gcc/config/m68k/m68k.md
+--- gcc-4.6.2/gcc/config/m68k/m68k.md	2009-12-30 18:03:46.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/m68k/m68k.md	2012-02-13 20:34:51.000000000 -0500
 @@ -131,7 +131,8 @@
    [(D0_REG		0)
     (A0_REG		8)
@@ -598,11 +480,9 @@ index f89037f..56de82b 100644
        return MOTOROLA ? "move.l %?(%1),%0" : "movel %1@(%?), %0";
      }
    else if (MOTOROLA)
-diff --git a/gcc/config/rs6000/aros.h b/gcc/config/rs6000/aros.h
-new file mode 100644
-index 0000000..1be42b8
---- /dev/null
-+++ b/gcc/config/rs6000/aros.h
+diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/aros.h
+--- gcc-4.6.2/gcc/config/rs6000/aros.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/rs6000/aros.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,175 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
@@ -779,11 +659,10 @@ index 0000000..1be42b8
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
 +#undef MD_FALLBACK_FRAME_STATE_FOR
-diff --git a/gcc/config/rs6000/rs6000.c b/gcc/config/rs6000/rs6000.c
-index ea66f80..17c1483 100644
---- a/gcc/config/rs6000/rs6000.c
-+++ b/gcc/config/rs6000/rs6000.c
-@@ -1308,6 +1308,7 @@ static const struct attribute_spec rs6000_attribute_table[] =
+diff -ruN gcc-4.6.2/gcc/config/rs6000/rs6000.c gcc-4.6.2.aros/gcc/config/rs6000/rs6000.c
+--- gcc-4.6.2/gcc/config/rs6000/rs6000.c	2011-09-18 18:01:56.000000000 -0400
++++ gcc-4.6.2.aros/gcc/config/rs6000/rs6000.c	2012-02-13 20:34:51.000000000 -0500
+@@ -1308,6 +1308,7 @@
    { "altivec",   1, 1, false, true,  false, rs6000_handle_altivec_attribute },
    { "longcall",  0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
    { "shortcall", 0, 0, false, true,  true,  rs6000_handle_longcall_attribute },
@@ -791,7 +670,7 @@ index ea66f80..17c1483 100644
    { "ms_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
    { "gcc_struct", 0, 0, false, false, false, rs6000_handle_struct_attribute },
  #ifdef SUBTARGET_ATTRIBUTE_TABLE
-@@ -8063,6 +8064,9 @@ init_cumulative_args (CUMULATIVE_ARGS *cum, tree fntype,
+@@ -8063,6 +8064,9 @@
  	  && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype))))
      cum->call_cookie |= CALL_LONG;
  
@@ -801,7 +680,7 @@ index ea66f80..17c1483 100644
    if (TARGET_DEBUG_ARG)
      {
        fprintf (stderr, "\ninit_cumulative_args:");
-@@ -9038,6 +9042,9 @@ rs6000_function_arg (CUMULATIVE_ARGS *cum, enum machine_mode mode,
+@@ -9038,6 +9042,9 @@
        return GEN_INT (cum->call_cookie);
      }
  
@@ -811,7 +690,7 @@ index ea66f80..17c1483 100644
    if (TARGET_MACHO && rs6000_darwin64_struct_check_p (mode, type))
      {
        rtx rslt = rs6000_darwin64_record_arg (cum, type, named, /*retval= */false);
-@@ -9453,6 +9460,9 @@ setup_incoming_varargs (CUMULATIVE_ARGS *cum, enum machine_mode mode,
+@@ -9453,6 +9460,9 @@
    int first_reg_offset;
    alias_set_type set;
  
@@ -821,11 +700,10 @@ index ea66f80..17c1483 100644
    /* Skip the last named argument.  */
    next_cum = *cum;
    rs6000_function_arg_advance_1 (&next_cum, mode, type, true, 0);
-diff --git a/gcc/config/rs6000/rs6000.h b/gcc/config/rs6000/rs6000.h
-index a8d4239..d9bae97 100644
---- a/gcc/config/rs6000/rs6000.h
-+++ b/gcc/config/rs6000/rs6000.h
-@@ -1563,6 +1563,7 @@ typedef struct rs6000_args
+diff -ruN gcc-4.6.2/gcc/config/rs6000/rs6000.h gcc-4.6.2.aros/gcc/config/rs6000/rs6000.h
+--- gcc-4.6.2/gcc/config/rs6000/rs6000.h	2011-07-27 14:17:15.000000000 -0400
++++ gcc-4.6.2.aros/gcc/config/rs6000/rs6000.h	2012-02-13 20:34:51.000000000 -0500
+@@ -1563,6 +1563,7 @@
    int nargs_prototype;		/* # args left in the current prototype */
    int prototype;		/* Whether a prototype was defined */
    int stdarg;			/* Whether function is a stdarg function.  */
@@ -833,11 +711,119 @@ index a8d4239..d9bae97 100644
    int call_cookie;		/* Do special things for this call */
    int sysv_gregno;		/* next available GP register */
    int intoffset;		/* running offset in struct (darwin64) */
-diff --git a/include/filenames.h b/include/filenames.h
-index d4955df..9984fe9 100644
---- a/include/filenames.h
-+++ b/include/filenames.h
-@@ -37,6 +37,10 @@ extern "C" {
+diff -ruN gcc-4.6.2/gcc/config/t-aros gcc-4.6.2.aros/gcc/config/t-aros
+--- gcc-4.6.2/gcc/config/t-aros	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config/t-aros	2012-02-13 20:35:43.000000000 -0500
+@@ -0,0 +1,2 @@
++# In AROS, "/usr" is a four-letter word.
++NATIVE_SYSTEM_HEADER_DIR = /include
+diff -ruN gcc-4.6.2/gcc/config.build gcc-4.6.2.aros/gcc/config.build
+--- gcc-4.6.2/gcc/config.build	2010-04-12 14:36:30.000000000 -0400
++++ gcc-4.6.2.aros/gcc/config.build	2012-02-13 20:34:51.000000000 -0500
+@@ -124,6 +124,9 @@
+     # HP 9000 series 300
+     build_install_headers_dir=install-headers-cpio
+     ;;
++  *-*-aros*)
++    build_xm_file=xm-aros.h
++    ;;
+   *-*-sysv*)
+     # All other System V variants.
+     build_install_headers_dir=install-headers-cpio
+diff -ruN gcc-4.6.2/gcc/config.gcc gcc-4.6.2.aros/gcc/config.gcc
+--- gcc-4.6.2/gcc/config.gcc	2011-07-22 12:44:50.000000000 -0400
++++ gcc-4.6.2.aros/gcc/config.gcc	2012-02-13 20:34:51.000000000 -0500
+@@ -656,6 +656,14 @@
+       ;;
+   esac
+   ;;
++*-*-aros*)
++  gas=yes
++  gnu_ld=yes
++  thread_file=single
++  use_collect2=no
++  xm_defines='STDC_HEADERS=1'
++  ;;
++
+ *-*-openbsd*)
+   tmake_file="t-libc-ok t-openbsd t-libgcc-pic"
+   case ${enable_threads} in
+@@ -793,6 +801,11 @@
+ 	tm_file="dbxelf.h elfos.h newlib-stdint.h ${tm_file}"
+ 	extra_parts="crtinit.o crtfini.o"
+ 	;;
++arm*-*-aros*)
++	tm_file="dbxelf.h elfos.h arm/elf.h arm/bpabi.h aros.h arm/aros.h arm/aout.h arm/arm.h"
++	tmake_file="${tmake_file} arm/t-arm arm/t-arm-elf arm/t-bpabi t-aros"
++	xm_file="xm-aros.h"
++	;;
+ arm-wrs-vxworks)
+ 	tm_file="elfos.h arm/elf.h arm/aout.h ${tm_file} vx-common.h vxworks.h arm/vxworks.h"
+ 	extra_options="${extra_options} arm/vxworks.opt"
+@@ -1312,6 +1325,16 @@
+ 	esac
+ 	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
+ 	;;
++i[34567]86-*-aros*)
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/aros.h"
++	xm_file=xm-aros.h
++	tmake_file="$tmake_file t-aros"
++	;;	
++x86_64-*-aros*)
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/x86-64.h i386/aros64.h"
++	xm_file=xm-aros.h
++	tmake_file="$tmake_file t-aros"
++	;;
+ i[34567]86-pc-msdosdjgpp*)
+ 	xm_file=i386/xm-djgpp.h
+ 	tm_file="dbxcoff.h ${tm_file} i386/unix.h i386/bsd.h i386/gas.h i386/djgpp.h i386/djgpp-stdint.h"
+@@ -1720,6 +1743,16 @@
+ 	extra_options="${extra_options} m68hc11/m68hc11.opt"
+ 	use_gcc_stdint=wrap
+         ;;
++m68k-*-aros*)
++	default_m68k_cpu=68020
++	default_cf_cpu=5206
++	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h newlib-stdint.h m68k/m68kemb.h m68k/m68020-elf.h"
++	tm_file="${tm_file} aros.h"
++	tm_defines="${tm_defines} MOTOROLA=1"
++	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
++	tmake_file="$tmake_file m68k/t-mlibs t-aros"
++	extra_parts="crtbegin.o crtend.o"
++	;;
+ m68k-*-elf* | fido-*-elf*)
+ 	case ${target} in
+ 	fido-*-elf*)
+@@ -2143,6 +2176,13 @@
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+ 	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-rtems t-rtems rs6000/t-ppccomm"
+ 	;;
++powerpc-*-aros*)
++ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	extra_options="${extra_options} rs6000/sysv4.opt"
++ 	tm_file="${tm_file} rs6000/aros.h"
++ 	xm_file=xm-aros.h
++	tmake_file="$tmake_file t-aros"
++ 	;;
+ powerpc-*-linux* | powerpc64-*-linux*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h"
+ 	extra_options="${extra_options} rs6000/sysv4.opt"
+diff -ruN gcc-4.6.2/gcc/config.host gcc-4.6.2.aros/gcc/config.host
+--- gcc-4.6.2/gcc/config.host	2011-02-15 04:49:14.000000000 -0500
++++ gcc-4.6.2.aros/gcc/config.host	2012-02-13 20:34:51.000000000 -0500
+@@ -277,4 +277,8 @@
+     out_host_hook_obj=host-hpux.o
+     host_xmake_file="${host_xmake_file} x-hpux"
+     ;;
++  *-*-aros*)
++    host_can_use_collect2=no
++    host_xm_file=xm-aros.h
++    ;;
+ esac
+diff -ruN gcc-4.6.2/include/filenames.h gcc-4.6.2.aros/include/filenames.h
+--- gcc-4.6.2/include/filenames.h	2011-02-28 13:23:25.000000000 -0500
++++ gcc-4.6.2.aros/include/filenames.h	2012-02-13 20:34:51.000000000 -0500
+@@ -37,6 +37,10 @@
  #  define HAS_DRIVE_SPEC(f) HAS_DOS_DRIVE_SPEC (f)
  #  define IS_DIR_SEPARATOR(c) IS_DOS_DIR_SEPARATOR (c)
  #  define IS_ABSOLUTE_PATH(f) IS_DOS_ABSOLUTE_PATH (f)
@@ -848,11 +834,10 @@ index d4955df..9984fe9 100644
  #else /* not DOSish */
  #  define HAS_DRIVE_SPEC(f) (0)
  #  define IS_DIR_SEPARATOR(c) IS_UNIX_DIR_SEPARATOR (c)
-diff --git a/libgcc/config.host b/libgcc/config.host
-index d3f64d6..2852cdd 100644
---- a/libgcc/config.host
-+++ b/libgcc/config.host
-@@ -599,6 +599,8 @@ m32c-*-elf*|m32c-*-rtems*)
+diff -ruN gcc-4.6.2/libgcc/config.host gcc-4.6.2.aros/libgcc/config.host
+--- gcc-4.6.2/libgcc/config.host	2011-03-14 02:06:23.000000000 -0400
++++ gcc-4.6.2.aros/libgcc/config.host	2012-02-13 20:34:51.000000000 -0500
+@@ -599,6 +599,8 @@
   	;;
  mep*-*-*)
  	;;
@@ -861,46 +846,10 @@ index d3f64d6..2852cdd 100644
  *)
  	echo "*** Configuration ${host} not supported" 1>&2
  	exit 1
-diff --git a/libiberty/Makefile.in b/libiberty/Makefile.in
-index ef35453..0e4deb0 100644
---- a/libiberty/Makefile.in
-+++ b/libiberty/Makefile.in
-@@ -141,7 +141,7 @@ CFILES = alloca.c argv.c asprintf.c atexit.c				\
- 	objalloc.c obstack.c						\
- 	partition.c pexecute.c						\
- 	 pex-common.c pex-djgpp.c pex-msdos.c pex-one.c			\
--	 pex-unix.c pex-win32.c						\
-+	 pex-unix.c pex-win32.c	pex-aros.c				\
-          physmem.c putenv.c						\
- 	random.c regex.c rename.c rindex.c				\
- 	safe-ctype.c setenv.c setproctitle.c sha1.c sigsetmask.c        \
-@@ -206,6 +206,7 @@ CONFIGURED_OFILES = ./asprintf.$(objext) ./atexit.$(objext)		\
- 	 ./mempcpy.$(objext) ./memset.$(objext) ./mkstemps.$(objext)	\
- 	./pex-djgpp.$(objext) ./pex-msdos.$(objext)			\
- 	 ./pex-unix.$(objext) ./pex-win32.$(objext)			\
-+	 ./pex-aros.$(objext)						\
- 	 ./putenv.$(objext)						\
- 	./random.$(objext) ./rename.$(objext) ./rindex.$(objext)	\
- 	./setenv.$(objext) 						\
-@@ -905,6 +906,13 @@ $(CONFIGURED_OFILES): stamp-picdir
- 	else true; fi
- 	$(COMPILE.c) $(srcdir)/pexecute.c $(OUTPUT_OPTION)
- 
-+./pex-aros.$(objext): $(srcdir)/pex-aros.c config.h $(INCDIR)/ansidecl.h \
-+	$(INCDIR)/libiberty.h $(srcdir)/pex-common.h
-+	if [ x"$(PICFLAG)" != x ]; then \
-+	  $(COMPILE.c) $(PICFLAG) $(srcdir)/pex-aros.c -o pic/$@; \
-+	else true; fi
-+	$(COMPILE.c) $(srcdir)/pex-aros.c $(OUTPUT_OPTION)
-+
- ./physmem.$(objext): $(srcdir)/physmem.c config.h $(INCDIR)/ansidecl.h \
- 	$(INCDIR)/libiberty.h
- 	if [ x"$(PICFLAG)" != x ]; then \
-diff --git a/libiberty/configure b/libiberty/configure
-index bdabe8d..c93f7ac 100755
---- a/libiberty/configure
-+++ b/libiberty/configure
-@@ -5639,6 +5639,159 @@ _ACEOF
+diff -ruN gcc-4.6.2/libiberty/configure gcc-4.6.2.aros/libiberty/configure
+--- gcc-4.6.2/libiberty/configure	2010-11-20 22:29:27.000000000 -0500
++++ gcc-4.6.2.aros/libiberty/configure	2012-02-13 20:34:51.000000000 -0500
+@@ -5639,6 +5639,159 @@
      setobjs=yes
      ;;
  
@@ -1060,7 +1009,7 @@ index bdabe8d..c93f7ac 100755
    *-*-msdosdjgpp)
      case " $LIBOBJS " in
    *" vasprintf.$ac_objext "* ) ;;
-@@ -6557,6 +6710,7 @@ case "${host}" in
+@@ -6557,6 +6710,7 @@
       *-*-mingw* | *-*-winnt*)	pexecute=pex-win32  ;;
       *-*-msdosdjgpp*)		pexecute=pex-djgpp  ;;
       *-*-msdos*)		pexecute=pex-msdos  ;;
@@ -1068,11 +1017,10 @@ index bdabe8d..c93f7ac 100755
       *)				pexecute=pex-unix   ;;
  esac
  
-diff --git a/libiberty/configure.ac b/libiberty/configure.ac
-index 9f1ff04..0262c8d 100644
---- a/libiberty/configure.ac
-+++ b/libiberty/configure.ac
-@@ -483,6 +483,50 @@ if test -n "${with_target_subdir}"; then
+diff -ruN gcc-4.6.2/libiberty/configure.ac gcc-4.6.2.aros/libiberty/configure.ac
+--- gcc-4.6.2/libiberty/configure.ac	2010-11-20 22:29:27.000000000 -0500
++++ gcc-4.6.2.aros/libiberty/configure.ac	2012-02-13 20:34:51.000000000 -0500
+@@ -483,6 +483,50 @@
      setobjs=yes
      ;;
  
@@ -1123,7 +1071,7 @@ index 9f1ff04..0262c8d 100644
    *-*-msdosdjgpp)
      AC_LIBOBJ([vasprintf])
      AC_LIBOBJ([vsnprintf])
-@@ -679,6 +723,7 @@ case "${host}" in
+@@ -679,6 +723,7 @@
       *-*-mingw* | *-*-winnt*)	pexecute=pex-win32  ;;
       *-*-msdosdjgpp*)		pexecute=pex-djgpp  ;;
       *-*-msdos*)		pexecute=pex-msdos  ;;
@@ -1131,11 +1079,10 @@ index 9f1ff04..0262c8d 100644
       *)				pexecute=pex-unix   ;;
  esac
  AC_SUBST(pexecute)
-diff --git a/libiberty/filename_cmp.c b/libiberty/filename_cmp.c
-index 0eed120..cfd1434 100644
---- a/libiberty/filename_cmp.c
-+++ b/libiberty/filename_cmp.c
-@@ -51,7 +51,11 @@ int
+diff -ruN gcc-4.6.2/libiberty/filename_cmp.c gcc-4.6.2.aros/libiberty/filename_cmp.c
+--- gcc-4.6.2/libiberty/filename_cmp.c	2011-02-28 13:23:25.000000000 -0500
++++ gcc-4.6.2.aros/libiberty/filename_cmp.c	2012-02-13 20:34:51.000000000 -0500
+@@ -51,7 +51,11 @@
  filename_cmp (const char *s1, const char *s2)
  {
  #ifndef HAVE_DOS_BASED_FILE_SYSTEM
@@ -1147,11 +1094,43 @@ index 0eed120..cfd1434 100644
  #else
    for (;;)
      {
-diff --git a/libiberty/pex-aros.c b/libiberty/pex-aros.c
-new file mode 100644
-index 0000000..a1647e2
---- /dev/null
-+++ b/libiberty/pex-aros.c
+diff -ruN gcc-4.6.2/libiberty/Makefile.in gcc-4.6.2.aros/libiberty/Makefile.in
+--- gcc-4.6.2/libiberty/Makefile.in	2010-11-20 14:37:08.000000000 -0500
++++ gcc-4.6.2.aros/libiberty/Makefile.in	2012-02-13 20:34:51.000000000 -0500
+@@ -141,7 +141,7 @@
+ 	objalloc.c obstack.c						\
+ 	partition.c pexecute.c						\
+ 	 pex-common.c pex-djgpp.c pex-msdos.c pex-one.c			\
+-	 pex-unix.c pex-win32.c						\
++	 pex-unix.c pex-win32.c	pex-aros.c				\
+          physmem.c putenv.c						\
+ 	random.c regex.c rename.c rindex.c				\
+ 	safe-ctype.c setenv.c setproctitle.c sha1.c sigsetmask.c        \
+@@ -206,6 +206,7 @@
+ 	 ./mempcpy.$(objext) ./memset.$(objext) ./mkstemps.$(objext)	\
+ 	./pex-djgpp.$(objext) ./pex-msdos.$(objext)			\
+ 	 ./pex-unix.$(objext) ./pex-win32.$(objext)			\
++	 ./pex-aros.$(objext)						\
+ 	 ./putenv.$(objext)						\
+ 	./random.$(objext) ./rename.$(objext) ./rindex.$(objext)	\
+ 	./setenv.$(objext) 						\
+@@ -905,6 +906,13 @@
+ 	else true; fi
+ 	$(COMPILE.c) $(srcdir)/pexecute.c $(OUTPUT_OPTION)
+ 
++./pex-aros.$(objext): $(srcdir)/pex-aros.c config.h $(INCDIR)/ansidecl.h \
++	$(INCDIR)/libiberty.h $(srcdir)/pex-common.h
++	if [ x"$(PICFLAG)" != x ]; then \
++	  $(COMPILE.c) $(PICFLAG) $(srcdir)/pex-aros.c -o pic/$@; \
++	else true; fi
++	$(COMPILE.c) $(srcdir)/pex-aros.c $(OUTPUT_OPTION)
++
+ ./physmem.$(objext): $(srcdir)/physmem.c config.h $(INCDIR)/ansidecl.h \
+ 	$(INCDIR)/libiberty.h
+ 	if [ x"$(PICFLAG)" != x ]; then \
+diff -ruN gcc-4.6.2/libiberty/pex-aros.c gcc-4.6.2.aros/libiberty/pex-aros.c
+--- gcc-4.6.2/libiberty/pex-aros.c	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/libiberty/pex-aros.c	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,303 @@
 +/* Utilities to execute a program in a subprocess (possibly linked by pipes
 +   with other subprocesses), and wait for it.  OS/2 specialization.
@@ -1456,11 +1435,10 @@ index 0000000..a1647e2
 +
 +  return 0;
 +}
-diff --git a/libobjc/configure b/libobjc/configure
-index 8f670e1..e660b45 100755
---- a/libobjc/configure
-+++ b/libobjc/configure
-@@ -11249,215 +11249,7 @@ $as_echo "#define HAVE_GTHR_DEFAULT 1" >>confdefs.h
+diff -ruN gcc-4.6.2/libobjc/configure gcc-4.6.2.aros/libobjc/configure
+--- gcc-4.6.2/libobjc/configure	2011-02-13 06:45:53.000000000 -0500
++++ gcc-4.6.2.aros/libobjc/configure	2012-02-13 20:34:51.000000000 -0500
+@@ -11249,215 +11249,7 @@
  
  fi
  
@@ -1677,11 +1655,10 @@ index 8f670e1..e660b45 100755
  
  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for exception model to use" >&5
  $as_echo_n "checking for exception model to use... " >&6; }
-diff --git a/libobjc/configure.ac b/libobjc/configure.ac
-index 494a289..d86b533 100644
---- a/libobjc/configure.ac
-+++ b/libobjc/configure.ac
-@@ -217,7 +217,7 @@ if test $target_thread_file != single; then
+diff -ruN gcc-4.6.2/libobjc/configure.ac gcc-4.6.2.aros/libobjc/configure.ac
+--- gcc-4.6.2/libobjc/configure.ac	2010-12-05 19:50:04.000000000 -0500
++++ gcc-4.6.2.aros/libobjc/configure.ac	2012-02-13 20:34:51.000000000 -0500
+@@ -217,7 +217,7 @@
  fi 
  
  # Check if we have thread-local storage
@@ -1690,11 +1667,9 @@ index 494a289..d86b533 100644
  
  AC_MSG_CHECKING([for exception model to use])
  AC_LANG_PUSH(C)
-diff --git a/libstdc++-v3/config/os/aros/ctype_base.h b/libstdc++-v3/config/os/aros/ctype_base.h
-new file mode 100644
-index 0000000..8e9aaee
---- /dev/null
-+++ b/libstdc++-v3/config/os/aros/ctype_base.h
+diff -ruN gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_base.h gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_base.h
+--- gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_base.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_base.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,27 @@
 +namespace std _GLIBCXX_VISIBILITY(default)
 +{
@@ -1723,11 +1698,9 @@ index 0000000..8e9aaee
 +
 +_GLIBCXX_END_NAMESPACE_VERSION
 +} // namespace
-diff --git a/libstdc++-v3/config/os/aros/ctype_inline.h b/libstdc++-v3/config/os/aros/ctype_inline.h
-new file mode 100644
-index 0000000..8fcfe0a
---- /dev/null
-+++ b/libstdc++-v3/config/os/aros/ctype_inline.h
+diff -ruN gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_inline.h gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_inline.h
+--- gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_inline.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_inline.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,173 @@
 +// Locale support -*- C++ -*-
 +
@@ -1902,11 +1875,9 @@ index 0000000..8fcfe0a
 +
 +_GLIBCXX_END_NAMESPACE_VERSION
 +} // namespace
-diff --git a/libstdc++-v3/config/os/aros/ctype_noninline.h b/libstdc++-v3/config/os/aros/ctype_noninline.h
-new file mode 100644
-index 0000000..1e0185b
---- /dev/null
-+++ b/libstdc++-v3/config/os/aros/ctype_noninline.h
+diff -ruN gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_noninline.h gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_noninline.h
+--- gcc-4.6.2/libstdc++-v3/config/os/aros/ctype_noninline.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/config/os/aros/ctype_noninline.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,56 @@
 +  const ctype_base::mask*
 +  ctype<char>::classic_table() throw()
@@ -1964,11 +1935,9 @@ index 0000000..1e0185b
 +      }
 +    return __high;
 +  }
-diff --git a/libstdc++-v3/config/os/aros/os_defines.h b/libstdc++-v3/config/os/aros/os_defines.h
-new file mode 100644
-index 0000000..5edb8bc
---- /dev/null
-+++ b/libstdc++-v3/config/os/aros/os_defines.h
+diff -ruN gcc-4.6.2/libstdc++-v3/config/os/aros/os_defines.h gcc-4.6.2.aros/libstdc++-v3/config/os/aros/os_defines.h
+--- gcc-4.6.2/libstdc++-v3/config/os/aros/os_defines.h	1969-12-31 19:00:00.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/config/os/aros/os_defines.h	2012-02-13 20:34:51.000000000 -0500
 @@ -0,0 +1,6 @@
 +#ifndef _GLIBCXX_OS_DEFINES
 +#define _GLIBCXX_OS_DEFINES
@@ -1976,11 +1945,10 @@ index 0000000..5edb8bc
 +#define __off64_t   off_t
 +
 +#endif
-diff --git a/libstdc++-v3/configure b/libstdc++-v3/configure
-index 21fde5c..9ee0229 100755
---- a/libstdc++-v3/configure
-+++ b/libstdc++-v3/configure
-@@ -5267,12 +5267,9 @@ $as_echo "$as_me: OS config directory is $os_include_dir" >&6;}
+diff -ruN gcc-4.6.2/libstdc++-v3/configure gcc-4.6.2.aros/libstdc++-v3/configure
+--- gcc-4.6.2/libstdc++-v3/configure	2011-10-05 19:09:51.000000000 -0400
++++ gcc-4.6.2.aros/libstdc++-v3/configure	2012-02-13 20:34:51.000000000 -0500
+@@ -5267,12 +5267,9 @@
  
  
  
@@ -1996,7 +1964,7 @@ index 21fde5c..9ee0229 100755
  case `pwd` in
    *\ * | *\	*)
      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Libtool does not cope well with whitespace in \`pwd\`" >&5
-@@ -7990,6 +7987,8 @@ done
+@@ -7990,6 +7987,8 @@
  
  
  
@@ -2005,7 +1973,7 @@ index 21fde5c..9ee0229 100755
  
    enable_win32_dll=no
  
-@@ -26484,6 +26483,58 @@ else
+@@ -26484,6 +26483,58 @@
  
  # Base decisions on target environment.
  case "${host}" in
@@ -2064,11 +2032,10 @@ index 21fde5c..9ee0229 100755
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
-diff --git a/libstdc++-v3/configure.ac b/libstdc++-v3/configure.ac
-index cc4c9bf..2792eaa 100644
---- a/libstdc++-v3/configure.ac
-+++ b/libstdc++-v3/configure.ac
-@@ -88,9 +88,9 @@ CXXFLAGS="$save_CXXFLAGS"
+diff -ruN gcc-4.6.2/libstdc++-v3/configure.ac gcc-4.6.2.aros/libstdc++-v3/configure.ac
+--- gcc-4.6.2/libstdc++-v3/configure.ac	2011-10-05 19:09:51.000000000 -0400
++++ gcc-4.6.2.aros/libstdc++-v3/configure.ac	2012-02-13 20:34:51.000000000 -0500
+@@ -88,9 +88,9 @@
  # up critical shell variables.
  GLIBCXX_CONFIGURE
  
@@ -2081,11 +2048,10 @@ index cc4c9bf..2792eaa 100644
  AM_PROG_LIBTOOL
  ACX_LT_HOST_FLAGS
  AC_SUBST(enable_shared)
-diff --git a/libstdc++-v3/configure.host b/libstdc++-v3/configure.host
-index e29404c..3a6d875 100644
---- a/libstdc++-v3/configure.host
-+++ b/libstdc++-v3/configure.host
-@@ -203,6 +203,9 @@ case "${host_os}" in
+diff -ruN gcc-4.6.2/libstdc++-v3/configure.host gcc-4.6.2.aros/libstdc++-v3/configure.host
+--- gcc-4.6.2/libstdc++-v3/configure.host	2010-12-05 19:50:04.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/configure.host	2012-02-13 20:34:51.000000000 -0500
+@@ -203,6 +203,9 @@
      os_include_dir="os/generic"
      atomicity_dir="cpu/generic"
      ;;
@@ -2095,11 +2061,10 @@ index e29404c..3a6d875 100644
    bsd*)
      # Plain BSD attempts to share FreeBSD files.
      os_include_dir="os/bsd/freebsd"
-diff --git a/libstdc++-v3/crossconfig.m4 b/libstdc++-v3/crossconfig.m4
-index 2d0a4a8..bee8f58 100644
---- a/libstdc++-v3/crossconfig.m4
-+++ b/libstdc++-v3/crossconfig.m4
-@@ -5,6 +5,31 @@ dnl
+diff -ruN gcc-4.6.2/libstdc++-v3/crossconfig.m4 gcc-4.6.2.aros/libstdc++-v3/crossconfig.m4
+--- gcc-4.6.2/libstdc++-v3/crossconfig.m4	2011-02-04 02:26:57.000000000 -0500
++++ gcc-4.6.2.aros/libstdc++-v3/crossconfig.m4	2012-02-13 20:34:51.000000000 -0500
+@@ -5,6 +5,31 @@
  AC_DEFUN([GLIBCXX_CROSSCONFIG],[
  # Base decisions on target environment.
  case "${host}" in
