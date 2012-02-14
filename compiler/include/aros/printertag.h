@@ -33,7 +33,7 @@
         UWORD pmh_Version;                               \
         UWORD pmh_Revision;                              \
         struct PrinterExtendedData pmh_PED;              \
-    } __pmh = {                                          \ 
+    } __pmh = {                                          \
         .pmh_Magic = AROS_PRINTER_MAGIC,                 \
         .pmh_Version = (version),                        \
         .pmh_Revision = (revision),                      \
@@ -88,7 +88,8 @@
  */
 #define PRS_PREINIT             5
 
-/* PRS_NEXTCOLOR - Select next color for PCC_MULTI_PASS
+/* PRS_NEXTCOLOR - Prepare for next color (return to top of page)
+ *                 Only used for PCC_MULTI_PASS
  * ct - 0
  * x  - 0
  * y  - 0
