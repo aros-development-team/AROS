@@ -5,18 +5,19 @@ GMP_VERSION=5.0.1
 MPFR_VERSION=3.0.1
 MPC_VERSION=0.9
 
+# gcc 4.6.2 can't build arm Objective C support without
+# a compiler error.
+ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
+GCC_LANGUAGES = c,c++
+else
 GCC_LANGUAGES = c,c++,objc
+endif
 
 GCC_EXTRA_OPTS = \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
   --enable-long-long --enable-version-specific-runtime-libs
 
-ifeq ($(AROS_TARGET_CPU), arm)
-  # FIXME: Update patch to work with --with-sysroot then set GCC_INCLUDES and GCC_PATH for --enable-crosstools
-  GCC_VERSION     = 4.4.2
-  GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
-else
-ifeq ($(AROS_TARGET_CPU), m68k)
+ifneq (,$(findstring $(AROS_TARGET_CPU),arm m68k))
   GCC_VERSION     = 4.6.2
   GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS_DEVELOPMENT)
   GCC_EXTRA_OPTS += --disable-bootstrap 
@@ -32,7 +33,6 @@ else
   GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT)
   GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
   GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
-endif
 endif
 
 GNU_REPOSITORY := gnu://
@@ -59,8 +59,7 @@ $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h: $(AROS_DEVELOPMENT)
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
-# arm still needs linklibs be build before, can be removed after patch is updated to work with --with-sysroot
-#MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
+#MM- tools-crosstools-arm    : tools-crosstools-gcc sysinclude-gcc crosstools-gcc
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        compiler-includes compiler-clib-includes \

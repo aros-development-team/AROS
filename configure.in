@@ -1232,7 +1232,7 @@ case "$target_os" in
         aros_arch_libs="-laeabi"
         gcc_default_cpu="armv7-a"
         gcc_default_fpu="vfpv3"
-        gcc_default_float_abi="hard"
+        gcc_default_float_abi="softfp"
         aros_config_cflags="$aros_config_cflags -mtune=cortex-a8 -fno-strict-aliasing"
         aros_config_aflags="$aros_config_aflags -mtune=cortex-a8 -fno-strict-aliasing"
         ;;
