@@ -1496,7 +1496,7 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
     GetDTAttrs(o, DTA_NominalHoriz, &w, DTA_NominalVert, &h);
     GetDTAttrs(o, DTA_TopHoriz, &tw, DTA_TopVert, &th);
 
-    if (tw == 0 || th == 0 || w == 0 || h == 0)
+    if (w == 0 || h == 0)
         return 0;
 
     RetVal = PDERR_CANCEL;
