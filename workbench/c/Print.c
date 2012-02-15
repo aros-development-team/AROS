@@ -53,15 +53,17 @@
 
 ******************************************************************************/
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <exec/memory.h>
-#include <datatypes/datatypesclass.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/datatypes.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include <datatypes/datatypesclass.h>
+#include <datatypes/pictureclass.h>
 
 #include <aros/shcommands.h>
 
@@ -82,7 +84,7 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to print\n") )
     if (file != NULL) {
         if ((DataTypesBase = OpenLibrary("datatypes.library", 0))) {
             Object *o;
-            if ((o = NewDTObject(file, TAG_END))) {
+            if ((o = NewDTObject(file, PDTA_Remap, FALSE, TAG_END))) {
                 struct dtPrint msg;
                 struct MsgPort *mp;
                 struct IORequest *io;
