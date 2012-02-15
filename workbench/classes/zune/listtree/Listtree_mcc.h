@@ -20,76 +20,41 @@
 #define MUIA_Listtree_DragDropSort         (MUIB_MUI|0x00020031)
 #define MUIA_Listtree_SortHook             (MUIB_MUI|0x00020010)
 
-enum
-{
-    MUIV_Listtree_GetEntry_Position_Tail    = -1,
-    MUIV_Listtree_GetEntry_Position_Active  = -2,
-    MUIV_Listtree_GetEntry_Position_Next    = -3,
-    MUIV_Listtree_GetEntry_Position_Previous= -4,
-    MUIV_Listtree_GetEntry_Position_Parent  = -5
-};
+#define MUIV_Listtree_GetEntry_Position_Tail        -1
+#define MUIV_Listtree_GetEntry_Position_Active      -2
+#define MUIV_Listtree_GetEntry_Position_Next        -3
+#define MUIV_Listtree_GetEntry_Position_Previous    -4
+#define MUIV_Listtree_GetEntry_Position_Parent      -5
 
-#define MUIV_Listtree_GetEntry_Flags_SameLevel   (1<<15)
-#define MUIV_Listtree_GetEntry_Flags_Visible     (1<<14)
+#define MUIV_Listtree_GetEntry_Flags_SameLevel      (1<<15)
+#define MUIV_Listtree_GetEntry_Flags_Visible        (1<<14)
 
-enum
-{
-    MUIV_Listtree_GetEntry_ListNode_Root    =  0,
-    MUIV_Listtree_GetEntry_ListNode_Active  = -2
-};
+#define MUIV_Listtree_GetEntry_ListNode_Root         0
+#define MUIV_Listtree_GetEntry_ListNode_Active      -2
 
-enum
-{
-    MUIV_Listtree_Remove_ListNode_Root      =  0
-};
+#define MUIV_Listtree_Remove_ListNode_Root           0
 
-enum
-{
-    MUIV_Listtree_Remove_TreeNode_Active    = -2,
-    MUIV_Listtree_Remove_TreeNode_All       = -3
-};
+#define MUIV_Listtree_Remove_TreeNode_Active        -2
+#define MUIV_Listtree_Remove_TreeNode_All           -3
 
-enum
-{
-    MUIV_Listtree_Insert_ListNode_Root      =  0
-};
+#define MUIV_Listtree_Insert_ListNode_Root           0
 
-enum
-{
-    MUIV_Listtree_Insert_PrevNode_Tail      = -1,
-    MUIV_Listtree_Insert_PrevNode_Sorted    = -4
-};
+#define MUIV_Listtree_Insert_PrevNode_Tail          -1
+#define MUIV_Listtree_Insert_PrevNode_Sorted        -4
 
-enum
-{
-    MUIV_Listtree_Open_ListNode_Root        =  0,
-    MUIV_Listtree_Open_ListNode_Parent      = -1
-};
+#define MUIV_Listtree_Open_ListNode_Root             0
+#define MUIV_Listtree_Open_ListNode_Parent          -1
 
-enum
-{
-    MUIV_Listtree_Open_TreeNode_All         = -3
-};
+#define MUIV_Listtree_Open_TreeNode_All             -3
 
-enum
-{
-    MUIV_Listtree_Close_ListNode_Root       =  0
-};
+#define MUIV_Listtree_Close_ListNode_Root            0
 
-enum
-{
-    MUIV_Listtree_Close_TreeNode_All        = -3
-};
+#define MUIV_Listtree_Close_TreeNode_All            -3
 
-enum
-{
-    MUIV_Listtree_SetDropMark_Values_None   =  0
-};
+#define MUIV_Listtree_SetDropMark_Values_None        0
 
-enum
-{
-    MUIV_Listtree_TestPos_Result_Flags_Onto =  3
-};
+#define MUIV_Listtree_TestPos_Result_Flags_Onto      3
+
 
 #define TNF_OPEN   (1<<00)
 #define TNF_LIST   (1<<01)
