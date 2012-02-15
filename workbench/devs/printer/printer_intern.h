@@ -63,7 +63,7 @@ BOOL Printer_LoadPrefs(struct PrinterBase *PrinterBase, LONG unit, struct Printe
 
 struct PrinterUnit *Printer_Unit(struct PrinterBase *PrinterBase, LONG unit);
 
-LONG Printer_Gfx_DumpRPort(const struct IODRPReq *pio, struct TagItem *tags);
+LONG Printer_Gfx_DumpRPort(struct IODRPReq *pio, struct TagItem *tags);
 
 LONG Printer_Text_Write(struct PrinterData *pd, UBYTE *text, LONG length);
 LONG Printer_Text_Command(struct PrinterData *pd, UWORD command, UBYTE p0, UBYTE p1, UBYTE p2, UBYTE p3);

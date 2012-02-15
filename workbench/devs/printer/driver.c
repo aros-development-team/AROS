@@ -209,7 +209,6 @@ static LONG pd_PWrite(APTR data, LONG len)
     io = (pd->pd_Flags & PDF_IOREQ) ?
                 (struct IOStdReq *)&pd->pd_ior1 :
                 (struct IOStdReq *)&pd->pd_ior0;
-bug("%s: '%s'@%p (%d), io %d\n", __func__, data, data, len, pd->pd_Flags & PDF_IOREQ);
     WaitIOStd(io);
     /* TODO: Call error hook if there is an error */
     io->io_Command = CMD_WRITE;
