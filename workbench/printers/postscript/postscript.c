@@ -324,10 +324,16 @@ static AROS_UFH2(void, ps_PPutC,
         PFLUSH(); \
     } while (0);
 
+#ifdef __mc68000
+#define STRING_FUNC     (VOID (*)())"\x16\xC0\x4E\x75"
+#else
+#define STRING_FUNC     RAWFMTFUNC_STRING
+#endif
+
 #define ps_VWrite(buf, fmt, ...) \
     do { \
         IPTR args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \
-        RawDoFmt(fmt, args, RAWFMTFUNC_STRING, buf); \
+        RawDoFmt(fmt, args, STRING_FUNC, buf); \
     } while (0);
 
 CONST TEXT ps_PageHeader[] =
