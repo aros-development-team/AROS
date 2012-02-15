@@ -53,7 +53,7 @@
   AROS_LIBFUNC_INIT
 
   ULONG res;
-  if (0 == factor)
+  if (0 == factor || 0 == numerator || 0 == denominator)
     return 0;
   else
     res = (ULONG)((ULONG)factor * (ULONG)numerator) / denominator;
