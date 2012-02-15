@@ -3,7 +3,7 @@
 
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2003, The AROS Development Team.
+    Copyright © 2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -22,17 +22,23 @@
 #define MUIM_Family_Remove     (MUIB_MUI|0x0042f8a9) /* MUI: V8  */
 #define MUIM_Family_Sort       (MUIB_MUI|0x00421c49) /* MUI: V8  */
 #define MUIM_Family_Transfer   (MUIB_MUI|0x0042c14a) /* MUI: V8  */
+#define MUIM_Family_GetChild   (MUIB_MUI|0x0042c556) /* MUI: V20 */
 struct MUIP_Family_AddHead     {STACKED ULONG MethodID; STACKED Object *obj;};
 struct MUIP_Family_AddTail     {STACKED ULONG MethodID; STACKED Object *obj;};
 struct MUIP_Family_Insert      {STACKED ULONG MethodID; STACKED Object *obj; STACKED Object *pred;};
 struct MUIP_Family_Remove      {STACKED ULONG MethodID; STACKED Object *obj;};
 struct MUIP_Family_Sort        {STACKED ULONG MethodID; STACKED Object *obj[1];};
 struct MUIP_Family_Transfer    {STACKED ULONG MethodID; STACKED Object *family;};
+struct MUIP_Family_GetChild    {STACKED ULONG MethodID; STACKED LONG nr; STACKED Object *ref;};
 
 /*** Attributes *************************************************************/
 #define MUIA_Family_Child      (MUIB_MUI|0x0042c696) /* MUI: V8  i.. Object *          */
 #define MUIA_Family_List       (MUIB_MUI|0x00424b9e) /* MUI: V8  ..g struct MinList *  */
 
+#define MUIV_Family_GetChild_First      0
+#define MUIV_Family_GetChild_Last       -1
+#define MUIV_Family_GetChild_Next       -2
+#define MUIV_Family_GetChild_Previous   -3
 
 extern const struct __MUIBuiltinClass _MUI_Family_desc; /* PRIV */
 

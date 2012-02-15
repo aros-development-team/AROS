@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002-2006, The AROS Development Team.
+    Copyright © 2002-2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -367,6 +367,33 @@ IPTR Family__MUIM_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUD
     return FALSE;
 }
 
+IPTR Family__MUIM_GetChild(struct IClass *cl, Object *obj, struct MUIP_Family_GetChild *msg)
+{
+    struct MUI_FamilyData   *data = INST_DATA(cl, obj);
+    Object                  *cstate = (Object *)data->childs.lh_Head;
+    Object                  *child, *prev = NULL;
+    LONG                    counter = 0;
+
+    while ((child = NextObject(&cstate)))
+    {
+        if ((msg->nr >= 0) && (msg->nr == counter)) return (IPTR)child;
+
+        if ((msg->ref != NULL) && (msg->ref == child))
+        {
+            if (msg->nr == MUIV_Family_GetChild_Next) return (IPTR)NextObject(&cstate);
+            if (msg->nr == MUIV_Family_GetChild_Previous) return (IPTR)prev;
+        }
+
+        if (msg->nr == MUIV_Family_GetChild_First) return (IPTR)child;
+
+        prev = child;
+        counter++;
+    }
+
+    if (msg->nr == MUIV_Family_GetChild_Last) return (IPTR)prev;
+
+    return (IPTR)NULL;
+}
 
 BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 {
@@ -412,6 +439,9 @@ BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 
         case MUIM_SetUDataOnce :
             return Family__MUIM_SetUDataOnce(cl, obj, (APTR)msg);
+
+        case MUIM_Family_GetChild:
+            return Family__MUIM_GetChild(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
