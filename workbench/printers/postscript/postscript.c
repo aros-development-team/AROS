@@ -430,9 +430,8 @@ static void ps_SendHeader(void)
 
         ps_PageID = 1;
         ps_HeaderSent = TRUE;
+        ps_SendPage(FALSE);
     }
-
-    ps_SendPage(FALSE);
 }
 
 static LONG ps_Open(union printerIO *ior)
@@ -540,7 +539,8 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
                 width, height,
                 width, -height, height);
     }
-    ps_PWrite("{<\n");
+    ps_PWrite("{currentfile 3 %ld mul string readhexstring pop} bind\n", width);
+    ps_PWrite("false 3 colorimage\n");
 
     return PDERR_NOERR;
 }
@@ -699,7 +699,6 @@ static LONG ps_RenderPreInit(struct IODRPReq *io, LONG flags)
 static LONG ps_RenderClose(SIPTR error, ULONG flags)
 {
     if (ps_PrintBufLen) {
-        ps_PWrite(">}\nfalse 3 colorimage\n");
         /* Restore to text context - the text location
          * has already been moved to after the raster
          */
