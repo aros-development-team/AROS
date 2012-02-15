@@ -91,10 +91,14 @@ AROS_SHAH(STRPTR, ,FILE   ,  ,NULL ,  "File to print\n") )
                 if ((mp = CreateMsgPort())) {
                     if ((io = CreateIORequest(mp, sizeof(union printerIO)))) {
                         if (0 == OpenDevice("printer.device", unit, io, 0)) {
+                            struct TagItem tags[] = {
+                                { DTA_Special, SPECIAL_ASPECT | SPECIAL_CENTER },
+                                { TAG_END }
+                            };
                             msg.MethodID          = DTM_PRINT;
                             msg.dtp_GInfo         = NULL;
                             msg.dtp_PIO           = (union printerIO *)io;
-                            msg.dtp_AttrList      = NULL;
+                            msg.dtp_AttrList      = tags;
                             if (0 == DoDTMethodA(o, NULL, NULL, (Msg)&msg)) {
                                 if (!quiet)
                                     Printf("[%s printed to printer.device %ld]\n", file, unit);
