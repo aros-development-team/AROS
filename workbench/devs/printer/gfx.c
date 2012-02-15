@@ -86,6 +86,20 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
     if (err < 0)
         return err;
 
+    /* Get the source's aspect ratio */
+    if (io->io_Modes != INVALID_ID) {
+        struct DisplayInfo dpyinfo;
+
+        if (GetDisplayInfoData(NULL, (APTR)&dpyinfo, sizeof(dpyinfo), DTAG_DISP, io->io_Modes)) {
+            aspectXsrc = dpyinfo.Resolution.x;
+            aspectYsrc = dpyinfo.Resolution.y;
+        }
+    }
+
+    /* Get the printer's aspect ratio */
+    aspectXdst = ped->ped_XDotsInch;
+    aspectYdst = ped->ped_YDotsInch;
+
     while ((tag = LibNextTagItem(&tags))) {
         switch (tag->ti_Tag) {
         case DRPA_SourceHook:
@@ -123,7 +137,7 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
                 di.di_ColorCorrection = (BOOL)tag->ti_Data;
                 break;
             case PRTA_NoIO:
-                /* Handled in di.di_.c */
+                /* Handled in driver.c */
                 break;
             case PRTA_NewColor:
                 di.di_NewColor = (BOOL)tag->ti_Data;
@@ -176,8 +190,8 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
 
     prnX = 0;
     prnY = 0;
-    prnW = io->io_DestCols;
-    prnH = io->io_DestRows;
+    prnW = io->io_DestCols ? io->io_DestCols : io->io_SrcWidth;
+    prnH = io->io_DestRows ? io->io_DestRows : io->io_SrcHeight;
 
     di.di_NumRows = ped->ped_NumRows; /* Rows/Stripe */
 
@@ -223,11 +237,33 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
         prnH = prnH * aspectYdst / aspectXdst;
     }
 
+    /* Autoshrink to maximum page size */
+    if (prnW > (ped->ped_MaxXDots - (prnMarginLeft + prnMarginRight ))) {
+        LONG delta = prnW - (ped->ped_MaxXDots - (prnMarginLeft + prnMarginRight ));
+        prnH = prnH - delta * prnH / prnW;
+        prnW = prnW - delta;
+    }
+
+    if (prnH > (ped->ped_MaxYDots - (prnMarginTop + prnMarginBottom ))) {
+        LONG delta = prnH - (ped->ped_MaxYDots - (prnMarginTop + prnMarginBottom ));
+        prnW = prnW - delta * prnW / prnH;
+        prnH = prnH - delta;
+    }
+
     /* Centering */
     if (io->io_Special & SPECIAL_CENTER) {
         prnX = prnMarginLeft + (ped->ped_MaxXDots - (prnMarginLeft + prnMarginRight ) - prnW) / 2;
-        prnY = prnMarginLeft + (ped->ped_MaxYDots - (prnMarginTop  + prnMarginBottom) - prnH) / 2;
+        prnY = prnMarginTop + (ped->ped_MaxYDots - (prnMarginTop  + prnMarginBottom) - prnH) / 2;
+    } else {
+        prnX = prnMarginLeft;
+        prnY = prnMarginTop;
     }
+
+    D(bug("\tAspect: %dx%d %d:%d => %dx%d %d:%d\n",
+                io->io_SrcWidth, io->io_SrcHeight,
+                aspectXsrc, aspectYsrc,
+                prnW, prnH,
+                aspectXdst, aspectYdst));
 
     /* Scaling calculations. */
     scaleXsrc = io->io_SrcWidth;
@@ -254,10 +290,12 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
     }
 
 
-    prnW = ScalerDiv(io->io_SrcWidth, scaleXsrc, scaleXdst);
-    prnH = ScalerDiv(io->io_SrcHeight, scaleYsrc, scaleYdst);
+    prnW = ScalerDiv(io->io_SrcWidth, scaleXdst, scaleXsrc);
+    prnH = ScalerDiv(io->io_SrcHeight, scaleYdst, scaleYsrc);
 
-    D(bug("\tScaling %dx%d => %dx%d\n", io->io_SrcWidth, io->io_SrcHeight, prnW, prnH));
+    D(bug("\tScaling %dx%d (%d:%d) => %dx%d (%d:%d)\n",
+                io->io_SrcWidth, io->io_SrcHeight, scaleXsrc, scaleYsrc,
+                prnW, prnH, scaleXdst, scaleYdst));
 
     io->io_DestCols = prnW;
     io->io_DestRows = prnH;
