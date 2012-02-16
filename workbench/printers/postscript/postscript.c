@@ -5,7 +5,7 @@
  * Licensed under the AROS PUBLIC LICENSE (APL) Version 1.1
  */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <aros/printertag.h>
 
@@ -18,6 +18,10 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
+
+#define PS_NOSCALING    TRUE    /* Do all scaling in PostScript, not in printer.device */
+#define PS_RGB          TRUE    /* RGB or CMYK printing */
+
 
 /* Support binary compatability with AOS */
 #ifdef __mc68000
@@ -219,8 +223,6 @@ static CONST_STRPTR PED_8BitChars[] = {
           "?", /* y: */
 };
 
-#define PS_NOSCALING    TRUE
-
 static struct TagItem PED_TagList[] = {
     { PRTA_8BitGuns, TRUE },            /* 0 */
     { PRTA_FloydDithering, TRUE },      /* 1 */
@@ -241,7 +243,7 @@ AROS_PRINTER_TAG(PED, 44, 0,
         /* Settings for a 'graphics only' printer */
         .ped_PrinterClass = PPC_COLORGFX | PPCF_EXTENDED,
         .ped_MaxColumns = 0,    /* Set during render */
-        .ped_ColorClass = PCC_BGR,
+        .ped_ColorClass = (PS_RGB ? PCC_BGR : PCC_YMCB),
         .ped_NumCharSets = 2,
         .ped_NumRows = 1,        /* minimum pixels/row in gfx mode */
         .ped_MaxXDots = 0,       /* Set during render */
@@ -267,6 +269,7 @@ static CONST_STRPTR ps_PaperSize;
 static LONG ps_PrintBufLen;
 static LONG ps_SpacingLPI;
 static LONG ps_FontCPI;
+static UWORD ps_PrintShade;
 
 static LONG ps_Init(struct PrinterData *pd)
 {
@@ -400,6 +403,35 @@ static void ps_SendHeader(void)
         "/aIND { currentpoint exch pop Page_Left exch moveto } bind def\n"
         "/aFB { gsave Font_CPI setFont Page_Left Page_Top moveto } bind def\n"
         "/aFF  { grestore showpage } bind def\n"
+        "/aImageBW {\n"
+        "       /aImage_H exch def /aImage_W exch def\n"
+        "       aImage_W aImage_H 1\n"
+        "       [ aImage_W 0 0 aImage_H neg 0 aImage_H ]\n"
+        "       { currentfile aImage_W 7 add 8 div cvi string readhexstring pop} bind\n"
+        "       image\n"
+        "} bind def\n"
+        "/aImageGreyscale {\n"
+        "       /aImage_H exch def /aImage_W exch def\n"
+        "       aImage_W aImage_H 8\n"
+        "       [ aImage_W 0 0 aImage_H neg 0 aImage_H ]\n"
+        "       { currentfile aImage_W string readhexstring pop} bind\n"
+        "       image\n"
+        "} bind def\n"
+        "/aImageColorRGB {\n"
+        "       /aImage_H exch def /aImage_W exch def\n"
+        "       aImage_W aImage_H 8\n"
+        "       [ aImage_W 0 0 aImage_H neg 0 aImage_H ]\n"
+        "       { currentfile aImage_W 3 mul string readhexstring pop} bind %% RGB\n"
+        "       false 3 colorimage %% Single-pass \n"
+        "} bind def\n"
+        "/aImageColorCMYK {\n"
+        "       /aImage_H exch def /aImage_W exch def\n"
+        "       aImage_W aImage_H 8\n"
+        "       [ aImage_W 0 0 aImage_H -1 mul 0 aImage_H ]\n"
+        "       { currentfile aImage_W 4 mul string readhexstring pop} bind %% CMYK\n"
+        "       false 4 colorimage %%\n"
+        "} bind def\n"
+        "\n"
         "/setFont { 1200 exch div /Font_Height exch def Font_Name findfont Font_Height scalefont setfont } bind def\n"
         "/Spacing { 72 Spacing_LPI div } bind def\n"
         "/Font_Name /Courier def\n"
@@ -454,10 +486,10 @@ static VOID ps_Close(union printerIO *ior)
 }
 
 VOID color_get(struct ColorMap *cm,
-		UBYTE *r,
-		UBYTE *g,
-		UBYTE *b,
-		ULONG index)
+                UBYTE *r,
+                UBYTE *g,
+                UBYTE *b,
+                ULONG index)
 {
     UWORD hibits = ((UWORD *)cm->ColorTable)[index];
 
@@ -468,7 +500,7 @@ VOID color_get(struct ColorMap *cm,
     if (cm->Type > COLORMAP_TYPE_V1_2) {
         UWORD lobits = ((UWORD *)cm->LowColorBits)[index];
 
-	red8   |= (lobits & 0x0f00) >> 8;
+        red8   |= (lobits & 0x0f00) >> 8;
         green8 |= (lobits & 0x00f0) >> 4;
         blue8  |= (lobits & 0x000f);
     }
@@ -490,11 +522,11 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
 
     ps_SendHeader();
 
+    ps_PrintShade = PD->pd_Preferences.PrintShade;
     ps_PrintBufLen = PS_NOSCALING ? io->io_SrcWidth : width;
-    PD->pd_PrintBuf = AllocMem(ps_PrintBufLen * 6 + 1, MEMF_ANY);
+    PD->pd_PrintBuf = AllocMem(ps_PrintBufLen * 8 + 1, MEMF_ANY);
     if (PD->pd_PrintBuf == NULL)
         return PDERR_BUFFERMEMORY;
-    PD->pd_PrintBuf[ps_PrintBufLen * 6] = '\n';
 
     if (PD->pd_Preferences.PrintFlags & PGFF_CENTER_IMAGE) {
         alignOffsetX = (PED->ped_MaxXDots - width) / 2;
@@ -530,17 +562,29 @@ static LONG ps_RenderInit(struct IODRPReq *io, LONG width, LONG height)
             x * 72, PED->ped_XDotsInch,
             y * 72, PED->ped_YDotsInch);
     ps_PWrite("%ld %ld div %ld %ld div scale\n", width * 72, PED->ped_XDotsInch, height * 72, PED->ped_YDotsInch);
+
     if (PS_NOSCALING) {
-        ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
-                io->io_SrcWidth, io->io_SrcHeight,
-                io->io_SrcWidth, -io->io_SrcHeight, io->io_SrcHeight);
-    } else {
-        ps_PWrite("%ld %ld 8 [%ld 0 0 %ld 0 %ld]\n",
-                width, height,
-                width, -height, height);
+        width = io->io_SrcWidth;
+        height = io->io_SrcHeight;
     }
-    ps_PWrite("{currentfile 3 %ld mul string readhexstring pop} bind\n", width);
-    ps_PWrite("false 3 colorimage\n");
+
+    ps_PWrite("%ld %ld ", width, height);
+
+    switch (ps_PrintShade) {
+    case SHADE_BW:
+        ps_PWrite("aImageBW\n");
+        break;
+    case SHADE_GREYSCALE:
+        ps_PWrite("aImageGreyscale\n");
+        break;
+    case SHADE_COLOR:
+        if (PS_RGB) {
+            ps_PWrite("aImageColorRGB\n");
+        } else {
+            ps_PWrite("aImageColorCMYK\n");
+        }
+        break;
+    }
 
     return PDERR_NOERR;
 }
@@ -551,37 +595,98 @@ static UBYTE tohex(UBYTE val)
     return (val < 10) ? ('0' + val) : ('a' + val - 10);
 }
 
-static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG color, LONG y)
+static LONG ps_RenderTransfer(struct PrtInfo *pi, LONG cindex, LONG y)
 {
     UBYTE *ptr = PD->pd_PrintBuf;
     union colorEntry *src = pi->pi_ColorInt;
     int x;
-    int const index[3] = { PCMRED, PCMGREEN, PCMBLUE };
+    int const rgb[3] = { PCMRED, PCMGREEN, PCMBLUE };
+    int const cmyk[4] = { PCMCYAN, PCMMAGENTA, PCMYELLOW, PCMBLACK };
+    UBYTE color = 0;
+    UBYTE threshold = (PD->pd_Preferences.PrintThreshold & 0xf) * 0x11;
 
-    D(bug("\twidth = %d\n", ps_PrintBufLen));
     for (x = 0; x < ps_PrintBufLen; x++, src++) {
         int i;
-        for (i = 0; i < 3; i++) {
-            UBYTE color = src->colorByte[index[i]];
+
+        switch (ps_PrintShade) {
+        case SHADE_BW:
+            color <<= 1;
+            if (PS_RGB)
+                color |= (src->colorByte[PCMWHITE] >= threshold) ? 1 : 0;
+            else
+                color |= ((255 - src->colorByte[PCMBLACK]) >= threshold) ? 1 : 0;
+            if ((x & 7)==7) {
+                *(ptr++) = tohex(color>>4);
+                *(ptr++) = tohex(color>>0);
+            }
+            break;
+        case SHADE_GREYSCALE:
+            if (PS_RGB)
+                color = src->colorByte[PCMWHITE];
+            else
+                color = 255 - src->colorByte[PCMBLACK];
             *(ptr++) = tohex(color>>4);
             *(ptr++) = tohex(color>>0);
+            break;
+        case SHADE_COLOR:
+            if (PS_RGB) {
+                /* Single-pass RGB */
+                for (i = 0; i < 3; i++) {
+                    color = src->colorByte[rgb[i]];
+                    *(ptr++) = tohex(color>>4);
+                    *(ptr++) = tohex(color>>0);
+                }
+            } else {
+                /* CMYK */
+                for (i = 0; i < 4; i++) {
+                    color = src->colorByte[cmyk[i]];
+                    *(ptr++) = tohex(color>>4);
+                    *(ptr++) = tohex(color>>0);
+                }
+            }
+            break;
         }
     }
+    if (ps_PrintShade == SHADE_BW && ((x & 7) != 0)) {
+        for (; (x & 7) != 0; x++) {
+            color <<= 1;
+        }
+        *(ptr++) = tohex(color>>4);
+        *(ptr++) = tohex(color>>0);
+    }
+
+    *(ptr++) = '\n';
 
     return PDERR_NOERR;
 }
 
 static LONG ps_RenderFlush(LONG rows)
 {
-    PD->pd_PrintBuf[ps_PrintBufLen * 6] = '\n';
-    PD->pd_PWrite(PD->pd_PrintBuf, ps_PrintBufLen * 6 + 1);
+    int len = 0;
+
+    switch (ps_PrintShade) {
+    case SHADE_BW:
+        len = (ps_PrintBufLen + 7) / 8;
+        break;
+    case SHADE_GREYSCALE:
+        len = ps_PrintBufLen;
+        break;
+    case SHADE_COLOR:
+        if (PS_RGB)
+            len = ps_PrintBufLen * 3;
+        else
+            len = ps_PrintBufLen * 4;
+        break;
+    }
+
+    PD->pd_PWrite(PD->pd_PrintBuf, len * 2 + 1);
     PD->pd_PBothReady();
     return PDERR_NOERR;
 }
 
 static LONG ps_RenderClear(void)
 {
-    memset(PD->pd_PrintBuf, '0', ps_PrintBufLen * 6);
+    memset(PD->pd_PrintBuf, '0', ps_PrintBufLen * 8);
     return PDERR_NOERR;
 }
 
