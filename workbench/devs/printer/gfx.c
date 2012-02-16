@@ -396,7 +396,6 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
 
    /* Initialize page for printing */
     if (0 == (err = RENDER(io, prnW, prnH, PRS_INIT))) {
-        struct RastPort rp;
         APTR pdata;
         struct BitMap *src_bm = NULL;
 
@@ -420,7 +419,7 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
                     struct DRPSourceMsg msg;
                     LONG row;
 
-                    rp.BitMap = src_bm;
+                    src_rp.BitMap = src_bm;
                     
                     msg.x = io->io_SrcX;
                     msg.y = io->io_SrcY;
