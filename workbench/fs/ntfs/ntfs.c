@@ -249,7 +249,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     }
     rle->mappingpair = (UBYTE *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
 
-    bug("[NTFS] %s: mappingpair @ 0x%p\n", __PRETTY_FUNCTION__, rle->mappingpair);
+    D(bug("[NTFS] %s: mappingpair @ 0x%p\n", __PRETTY_FUNCTION__, rle->mappingpair));
     
     if (rle->flags & RLEFLAG_COMPR)
     {

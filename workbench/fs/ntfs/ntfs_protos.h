@@ -38,7 +38,7 @@ LONG ReleaseDirHandle(struct DirHandle *);
 
 LONG GetDirEntry(struct DirHandle *, ULONG, struct DirEntry *);
 LONG GetNextDirEntry(struct DirHandle *, struct DirEntry *, BOOL);
-LONG GetDirEntryByCluster(struct DirHandle *, ULONG, struct DirEntry *);
+LONG GetDirEntryByCluster(struct DirHandle *, UQUAD, struct DirEntry *);
 
 LONG GetDirEntryByName(struct DirHandle *, STRPTR, ULONG, struct DirEntry *);
 LONG GetDirEntryByPath(struct DirHandle *, STRPTR, ULONG, struct DirEntry *);
