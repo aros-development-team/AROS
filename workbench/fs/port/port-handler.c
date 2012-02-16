@@ -192,6 +192,8 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
     struct portArgs *pa = &pb->pb_Defaults;
     SIPTR ret = RETURN_OK;
 
+    D(bug("\tStartup = %d\n", (SIPTR)startup));
+
     switch ((SIPTR)startup) {
     case 0:
         pb->pb_Mode = PORT_SERIAL;
@@ -276,7 +278,7 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
         if ((pa->pa_IOMsg = CreateMsgPort())) {
             if ((pa->pa_IO = (APTR)CreateIORequest(pa->pa_IOMsg, sizeof(*pa->pa_IO)))) {
                 if (0 == OpenDevice(pb->pb_DeviceName, pa->pa_DeviceUnit, (struct IORequest *)pa->pa_IO, pb->pb_DeviceFlags)) {
-                    D(bug("%s: Device is open\n"));
+                    D(bug("%s: Device is open\n", __func__));
                     *err = 0;
                     if (pb->pb_Mode != PORT_SERIAL) {
                         AddTail(&pb->pb_Files, &pa->pa_Node);
