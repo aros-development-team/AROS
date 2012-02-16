@@ -2,7 +2,7 @@
 #define _DIRENT_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: header file dirent.h
@@ -38,13 +38,8 @@ struct dirent
 };
 
 /* structure describing an open directory. */
-typedef struct _dirdesc
-{
-   int    fd;
-   struct dirent ent;
-   off_t  pos;
-   void   *priv;
-} DIR;
+struct __dirdesc;
+typedef struct __dirdesc DIR;
 
 __BEGIN_DECLS
 
