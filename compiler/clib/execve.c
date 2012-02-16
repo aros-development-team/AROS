@@ -6,26 +6,11 @@
 */
 
 #define DEBUG 0
-
-#include <exec/types.h>
-#include <exec/lists.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
 #include <aros/debug.h>
 
 #include <assert.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <errno.h>
 
 #include "__exec.h"
-#include "__upath.h"
-#include "__fdesc.h"
-#include "__arosc_privdata.h"
-#include "__vfork.h"
 
 /*****************************************************************************
 
