@@ -15,6 +15,7 @@
 
 #include "__fdesc.h"
 #include "__upath.h"
+#include "__dirdesc.h"
 
 #define DEBUG 0
 #include <aros/debug.h>

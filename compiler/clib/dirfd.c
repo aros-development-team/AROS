@@ -8,6 +8,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include "__dirdesc.h"
+
 /*****************************************************************************
 
     NAME */
