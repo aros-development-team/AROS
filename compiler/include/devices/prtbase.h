@@ -153,7 +153,7 @@ struct PrinterData
 #define PCC_YMC                 0x02    /* Cyan, Yellow, and Magenta printer */
 #define PCC_YMC_BW              0x03    /* CYM *or* BW printer */
 #define PCC_YMCB                0x04    /* CYMK printer */
-#define PCC_4COLOR              0x04    /* (alias for PCC_YMCB) */
+#define PCC_4COLOR              0x04    /* Flag for PCC_YMCB and PCC_BGRW */
 #define PCC_ADDITIVE            0x08    /* Blue, Green, Red, White */
 #define PCC_WB                  0x09    /* White-on-Black printer */
 #define PCC_BGR                 0x0A    /* BGR printer */

@@ -27,6 +27,7 @@
 
 struct driverInfo {
     struct PrtInfo pi;
+    struct PrinterData *di_PrinterData;
     BOOL di_8BitGuns;
     BOOL di_ConvertSource;
     BOOL di_FloydDithering;
@@ -43,6 +44,70 @@ typedef LONG (*renderFunc )(SIPTR ct, LONG x, LONG y, LONG status);
 #define RENDER(ct, x, y, status) ({ \
     D(bug("\tRENDER(%d): ct=%p x=%d y=%d\n", status, (APTR)ct, x, y)); \
     ((renderFunc)pi->pi_render)((SIPTR)(ct), (LONG)(x), (LONG)(y), (LONG)(status)); })
+
+static void pg_ConvertSource(struct driverInfo *di, UBYTE *pdata, LONG width)
+{
+    struct PrinterData *pd = di->di_PrinterData;
+    struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
+    LONG x;
+
+    if (di->di_ColorSize < sizeof(union colorEntry)) {
+        D(bug("\tdi->di_ColorSize<sizeof(union colorEntry)\n"));
+        return;
+    }
+
+    for (x = 0; x < width; x++, pdata += di->di_ColorSize) {
+        union colorEntry *ce = (APTR) pdata;
+        UBYTEr, g, b, w;
+
+        r = ce->colorByte[PCMRED];
+        g = ce->colorByte[PCMGREEN];
+        b = ce->colorByte[PCMBLUE];
+
+        /* Find largest white*/
+        w = (r > g) ? r : g;
+        w = (b > w) ? b : w;
+
+        if ((ped->ped_ColorClass & PCC_4COLOR)) {
+            r = ~((w - r) * 255 / w);
+            g = ~((w - g) * 255 / w);
+            b = ~((w - b) * 255 / w);
+        }
+
+        if (!(ped->ped_ColorClass & PCC_ADDITIVE)) {
+            r = ~r;
+            g = ~g;
+            b = ~b;
+            w = ~w;
+        }
+
+        if (!di->di_8BitGuns) {
+            r >>= 4;
+            g >>= 4;
+            b >>= 4;
+            w >>= 4;
+        }
+
+        ce->colorByte[PCMRED] = r;
+        ce->colorByte[PCMGREEN] = g;
+        ce->colorByte[PCMBLUE] = b;
+        ce->colorByte[PCMWHITE] = w;
+    }
+}
+
+
+static void pg_ColorCorrection(struct driverInfo *di, UBYTE *pdata, LONG width)
+{
+    /*Nothing to do here*/
+}
+
+static void pg_FloydDithering(struct driverInfo *di, UBYTE *pdata, LONG width)
+{
+    /* Nothing done here for now.
+     *
+     * In theory, we should do Ordered and Floyd-Steinberg dithering here.
+     */
+}
 
 LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
 {
@@ -61,15 +126,16 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
     LONG prnX, prnY;
     LONG prnW, prnH;
     LONG err;
-    struct driverInfo di = {
+    struct driverInfodi = {
+        .di_PrinterData = pd,
         .di_ColorSize = sizeof(union colorEntry),
     };
     struct PrtInfo *pi = &di.pi;
-    UBYTE dmatrix[4][4] = {
-        {  1,  9,  3, 11, },
-        { 13,  5, 15,  7, },
-        {  4, 12,  2, 10, },
-        { 16,  8, 14,  6, }
+    UBYTE const dmatrix[] = {
+         1,  9,  3, 11,
+        13,  5, 15,  7,
+         4, 12,  2, 10,
+        16,  8, 14,  6,
     };
 
     D(bug("%s: io=%p, tags=%p\n", __func__, io, tags));
@@ -178,8 +244,18 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
         di.di_AntiAlias = TRUE;
     }
 
+    if (di.di_8BitGuns) {
+        di.di_FloydDithering = TRUE;
+    }
+
     if (di.di_ColorSize < 3) {
         D(bug("\tPRTA_ColorSize was %d - illegal!\n", di.di_ColorSize));
+        return PDERR_BADDIMENSION;
+    }
+
+    if (di.di_ColorSize < sizeof(union colorEntry) && !di.di_ConvertSource
+        && !di.di_ColorCorrection) {
+        D(bug("\tPRTA_ColorSize of %d is illegal without PRTA_ConvertSource and PRTA_ColorCorrection!\n", di.di_ColorSize));
         return PDERR_BADDIMENSION;
     }
 
@@ -310,7 +386,7 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
     /* Set up the PrtInfo structure */
     pi->pi_rp = io->io_RastPort;
     pi->pi_ScaleX = NULL; /* New di.di_s should *not* be using this */
-    pi->pi_dmatrix = (APTR)dmatrix;
+    pi->pi_dmatrix = (UBYTE *) dmatrix;
     pi->pi_width = prnW;
     pi->pi_height = prnH;
     pi->pi_xpos = prnX;
@@ -411,10 +487,22 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
                                            di.di_ColorSize == 3 ?
                                              RECTFMT_BGR24 :
                                              RECTFMT_BGR032);
+
+                            /* Convert from RGB to printer color space */
                             if (di.di_ConvertSource)
                                 RENDER(pdata, prnW, 1, PRS_CONVERT);
+                            else
+                                pg_ConvertSource(&di, pdata, prnW);
+
+                            /* Apply printer color space corrections */
                             if (di.di_ColorCorrection)
                                 RENDER(pdata, prnW, 1, PRS_CORRECT);
+                            else
+                                pg_ColorCorrection(&di, pdata, prnW);
+
+                            if (!di.di_FloydDithering)
+                                pg_FloydDithering(&di, pdata, prnW);
+
                             RENDER(pi, 0, prnY + row, PRS_TRANSFER);
                         }
                         RENDER(0, 0, rows, PRS_FLUSH);
