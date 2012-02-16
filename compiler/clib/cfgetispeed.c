@@ -1,5 +1,6 @@
 #include <termios.h>
 
+/* FIXME: Add autodocs */
 speed_t cfgetispeed(const struct termios *__termios_p)
 {
     if (__termios_p)
