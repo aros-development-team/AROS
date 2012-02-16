@@ -112,7 +112,7 @@ LONG LockFileByName(struct ExtFileLock *fl, UBYTE *name, LONG namelen, LONG acce
     }
     InitDirHandle(glob->data, dh, FALSE);
 
-    D(bug("[NTFS] %s: looking in directory MFT #%u\n", __PRETTY_FUNCTION__, dh->ioh.mft.mftrec_no));
+    D(bug("[NTFS] %s: looking in directory MFT #%u\n", __PRETTY_FUNCTION__, (IPTR)dh->ioh.mft.mftrec_no));
 
     memset(&de, 0, sizeof(struct DirEntry));
 

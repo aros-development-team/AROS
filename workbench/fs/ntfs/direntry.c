@@ -363,7 +363,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
         return ERROR_OBJECT_NOT_FOUND;
     }
 
-    D(bug("[NTFS] %s: finding parent of directory mft #%u\n", __PRETTY_FUNCTION__, dh->ioh.mft.mftrec_no));
+    D(bug("[NTFS] %s: finding parent of directory MFT #%u\n", __PRETTY_FUNCTION__, (IPTR)dh->ioh.mft.mftrec_no));
     
 //    InitDirHandle(dh->ioh.data, dh, TRUE);
     if (dh->parent_mft == 0)
@@ -373,7 +373,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	// take us up
-	parentdh.ioh.mft.mftrec_no = *((UQUAD *)attrentry) & MFTREF_MASK;
+	parentdh.ioh.mft.mftrec_no = *(UQUAD *)((IPTR)attrentry) & MFTREF_MASK;
     }
     else
 	parentdh.ioh.mft.mftrec_no = dh->parent_mft;
@@ -382,7 +382,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 
     de->cluster = parentdh.ioh.first_cluster = parentdh.ioh.mft.mftrec_no * glob->data->mft_size;
 
-    D(bug("[NTFS] %s: parent_mft = %d [%d]\n", __PRETTY_FUNCTION__, (parentdh.ioh.first_cluster / glob->data->mft_size), parentdh.ioh.mft.mftrec_no));
+    D(bug("[NTFS] %s: parent_mft = %u [%u]\n", __PRETTY_FUNCTION__, (IPTR)(parentdh.ioh.first_cluster / glob->data->mft_size), (IPTR)parentdh.ioh.mft.mftrec_no));
     parentdh.ioh.mft.buf = NULL;
     InitDirHandle(dh->ioh.data, &parentdh, TRUE);
     
@@ -393,12 +393,12 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
 	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	// take us up
-	parentdh.ioh.mft.mftrec_no = *((UQUAD *)attrentry) & MFTREF_MASK;
+	parentdh.ioh.mft.mftrec_no = *(UQUAD *)((IPTR)attrentry) & MFTREF_MASK;
 	if (parentdh.ioh.mft.mftrec_no == 0x2)
 		parentdh.ioh.mft.mftrec_no = FILE_ROOT;
 	parentdh.ioh.first_cluster = parentdh.ioh.mft.mftrec_no * glob->data->mft_size;
 
-	D(bug("[NTFS] %s: grandparent_mft = %d [%d]\n", __PRETTY_FUNCTION__, (parentdh.ioh.first_cluster / glob->data->mft_size), parentdh.ioh.mft.mftrec_no));
+	D(bug("[NTFS] %s: grandparent_mft = %u [%u]\n", __PRETTY_FUNCTION__, (IPTR)(parentdh.ioh.first_cluster / glob->data->mft_size), (IPTR)parentdh.ioh.mft.mftrec_no));
 	ReleaseDirHandle(&parentdh);
 	InitDirHandle(dh->ioh.data, &parentdh, TRUE);
 	
@@ -413,7 +413,7 @@ LONG GetParentDir(struct DirHandle *dh, struct DirEntry *de)
     return err;
 }
 
-LONG GetDirEntryByCluster(struct DirHandle *dh, ULONG cluster, struct DirEntry *de)
+LONG GetDirEntryByCluster(struct DirHandle *dh, UQUAD cluster, struct DirEntry *de)
 {
     LONG err = 0;
 

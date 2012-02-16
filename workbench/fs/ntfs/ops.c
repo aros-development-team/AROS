@@ -103,14 +103,14 @@ LONG OpLockParent(struct ExtFileLock *lock, struct ExtFileLock **parent)
 
 	INIT_MFTATTRIB(&dirattr, &dh.ioh.mft);
 	attrentry = FindMFTAttrib(&dirattr, AT_FILENAME);
-	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(*((UWORD *)(attrentry + 0x14))));
+	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	// take us up
-	dh.ioh.mft.mftrec_no = AROS_LE2QUAD(*((UQUAD *)attrentry)) & MFTREF_MASK;
+	dh.ioh.mft.mftrec_no = AROS_LE2QUAD(*(UQUAD *)((IPTR)attrentry)) & MFTREF_MASK;
 	if (dh.ioh.mft.mftrec_no == 0x2)
 		dh.ioh.mft.mftrec_no = FILE_ROOT;
 	dh.ioh.first_cluster = dh.ioh.mft.mftrec_no * glob->data->mft_size;
-	D(bug("[NTFS] %s: parent_mft = %d [%d]\n", __PRETTY_FUNCTION__, (dh.ioh.first_cluster / glob->data->mft_size), dh.ioh.mft.mftrec_no));
+	D(bug("[NTFS] %s: parent_mft = %u [%u]\n", __PRETTY_FUNCTION__, (IPTR)(dh.ioh.first_cluster / glob->data->mft_size), (IPTR)dh.ioh.mft.mftrec_no));
 	ReleaseDirHandle(&dh);
 	InitDirHandle(dh.ioh.data, &dh, TRUE);
 	
@@ -284,14 +284,14 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, UQUAD want, UQUAD *read)
     LONG err = 0;
     struct NTFSMFTAttr dataatrr;
     D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
-    D(bug("[NTFS] %s: %u bytes, pos %u\n", __PRETTY_FUNCTION__, (unsigned int)want, (unsigned int)lock->pos));
+    D(bug("[NTFS] %s: %u bytes, pos %u\n", __PRETTY_FUNCTION__, (IPTR)want, (IPTR)lock->pos));
 
     if (want == 0)
         return 0;
 
     if (want + lock->pos > lock->gl->size) {
         want = lock->gl->size - lock->pos;
-        D(bug("[NTFS] %s: full read would take us past end-of-file, adjusted want to %u bytes\n", __PRETTY_FUNCTION__, (unsigned int)want));
+        D(bug("[NTFS] %s: full read would take us past end-of-file, adjusted want to %u bytes\n", __PRETTY_FUNCTION__, (IPTR)want));
     }
 
     INIT_MFTATTRIB(&dataatrr, lock->entry->entry);
@@ -301,7 +301,7 @@ LONG OpRead(struct ExtFileLock *lock, UBYTE *data, UQUAD want, UQUAD *read)
 	{
 	    *read = want;
 	    lock->pos = lock->pos + want;
-	    D(bug("[NTFS] %s: read %u bytes, new file pos is %u\n", __PRETTY_FUNCTION__, (unsigned int)want, (unsigned int)lock->pos));
+	    D(bug("[NTFS] %s: read %u bytes, new file pos is %u\n", __PRETTY_FUNCTION__, (IPTR)want, (IPTR)lock->pos));
 	}
     }
     return err;
@@ -315,7 +315,7 @@ LONG OpWrite(struct ExtFileLock *lock, UBYTE *data, UQUAD want, UQUAD *written)
 #if defined(NTFS_READONLY)
     err = ERROR_DISK_WRITE_PROTECTED;
 #else
-    D(bug("[NTFS] %s: %ld bytes, pos %ld\n", __PRETTY_FUNCTION__, want, lock->pos));
+    D(bug("[NTFS] %s: %u bytes, pos %u\n", __PRETTY_FUNCTION__, (IPTR)want, (IPTR)lock->pos));
 #endif
 
     return err;
