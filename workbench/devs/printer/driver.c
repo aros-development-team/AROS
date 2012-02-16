@@ -87,16 +87,18 @@ STATIC AROS_LH3(LONG, OpenDevice,
 {
     AROS_LIBFUNC_INIT
 
-    struct MsgPort *reply;
+    struct MsgPort *mp;
+    LONG ret = IOERR_OPENFAIL;
 
-    if ((reply = CreateMsgPort())) {
+    if ((mp = CreateMsgPort())) {
         struct IORequest ior = *io;
-        ior.io_Message.mn_ReplyPort = reply;
+        ior.io_Message.mn_ReplyPort = mp;
         ior.io_Command = CMD_OPENDEVICE;
-        return DoIO(&ior);
+        ret = DoIO(&ior);
+        DeleteMsgPort(mp);
     }
 
-    return IOERR_OPENFAIL;
+    return ret;
 
     AROS_LIBFUNC_EXIT
 }
@@ -107,19 +109,21 @@ STATIC AROS_LH1(BPTR, CloseDevice,
 {
     AROS_LIBFUNC_INIT
 
-    struct MsgPort *reply;
+    BPTR ret = BNULL;
+    struct MsgPort *mp;
 
-    if ((reply = CreateMsgPort())) {
+    if ((mp = CreateMsgPort())) {
         struct IORequest ior = *io;
-        ior.io_Message.mn_ReplyPort = reply;
+        ior.io_Message.mn_ReplyPort = mp;
         ior.io_Command = CMD_CLOSEDEVICE;
         DoIO(&ior);
-        return AROS_LC1(BPTR, Expunge,
+        ret = AROS_LC1(BPTR, Expunge,
                    AROS_LCA(struct PrinterUnit *, pu, D0),
                    struct PrinterUnit *, pu, 3, PrinterUnit);
+        DeleteMsgPort(mp);
     }
 
-    return BNULL;
+    return ret;
 
     AROS_LIBFUNC_EXIT
 }
