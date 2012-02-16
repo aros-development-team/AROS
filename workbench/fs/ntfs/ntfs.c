@@ -207,7 +207,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     struct NTFSRunLstEntry runlist_entry, *rle;
 
     D(
-    bug("[NTFS]: %s(ofs = %u; len = %u)\n", __PRETTY_FUNCTION__, (unsigned int)ofs, len);
+    bug("[NTFS]: %s(ofs = %u; len = %u)\n", __PRETTY_FUNCTION__, (IPTR)ofs, len);
 
     bug("[NTFS] %s: NTFSMFTAttr @ 0x%p\n", __PRETTY_FUNCTION__, at);
     bug("[NTFS] %s: MFTAttr @ 0x%p, dest @ 0x%p\n", __PRETTY_FUNCTION__, attrentry, dest);
@@ -306,7 +306,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 
     while (rle->next_vcn <= rle->target_vcn)
     {
-	D(bug("[NTFS] %s: next_vcn = %u, target_vcn = %u\n", __PRETTY_FUNCTION__, rle->next_vcn, rle->target_vcn));
+	D(bug("[NTFS] %s: next_vcn = %u, target_vcn = %u\n", __PRETTY_FUNCTION__, (IPTR)rle->next_vcn, (IPTR)rle->target_vcn));
 	if (ReadNTFSRunList(rle))
 	{
 	    D(bug("[NTFS] %s: read_run_list failed\n", __PRETTY_FUNCTION__));
@@ -314,7 +314,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 	}
     }
 
-    D(bug("[NTFS] %s: next_vcn = %u\n", __PRETTY_FUNCTION__, rle->next_vcn));
+    D(bug("[NTFS] %s: next_vcn = %u\n", __PRETTY_FUNCTION__, (IPTR)rle->next_vcn));
 
     if (at->flags & AF_GPOS)
     {
@@ -356,7 +356,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 	    UQUAD i, blockcnt = ((len + ofs) + blocksize - 1) >> (sectbits_shift + SECTORSIZE_SHIFT);
 
 	    D(
-		bug("[NTFS] %s: blockcnt = %u\n", __PRETTY_FUNCTION__, blockcnt);
+		bug("[NTFS] %s: blockcnt = %u\n", __PRETTY_FUNCTION__, (IPTR)blockcnt);
 		bug("[NTFS] %s: blocksize = %u\n", __PRETTY_FUNCTION__, blocksize);
 	    )
 
@@ -368,8 +368,8 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 		UQUAD skipfirst = 0;
 
 		D(
-		    bug("[NTFS] %s: blockoff = %u\n", __PRETTY_FUNCTION__, blockoff);
-		    bug("[NTFS] %s: blockend = %u\n", __PRETTY_FUNCTION__, blockend);
+		    bug("[NTFS] %s: blockoff = %u\n", __PRETTY_FUNCTION__, (IPTR)blockoff);
+		    bug("[NTFS] %s: blockend = %u\n", __PRETTY_FUNCTION__, (IPTR)blockend);
 		)
 
 		if (i >= rle->next_vcn)
@@ -413,9 +413,9 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 		/* If the block number is 0 this block is not stored on disk but is zero filled instead.  */
 
 		D(
-		    bug("[NTFS] %s: blockstart = %u\n", __PRETTY_FUNCTION__, blockstart);
-		    bug("[NTFS] %s: blockend = %u\n", __PRETTY_FUNCTION__, blockend);
-		    bug("[NTFS] %s: skipfirst = %u\n", __PRETTY_FUNCTION__, skipfirst);
+		    bug("[NTFS] %s: blockstart = %u\n", __PRETTY_FUNCTION__, (IPTR)blockstart);
+		    bug("[NTFS] %s: blockend = %u\n", __PRETTY_FUNCTION__, (IPTR)blockend);
+		    bug("[NTFS] %s: skipfirst = %u\n", __PRETTY_FUNCTION__, (IPTR)skipfirst);
 		)
 
 		if (blockstart)
@@ -429,7 +429,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
 
 		    for (blocknr = skipblocks; blocknr < lastblock; blocknr++)
 		    {
-			D(bug("[NTFS] %s: block %u\n", __PRETTY_FUNCTION__, blocknr));
+			D(bug("[NTFS] %s: block %u\n", __PRETTY_FUNCTION__, (IPTR)blocknr));
 			if (blocknr >= (skipfirst >> SECTORSIZE_SHIFT))
 			{
 			    D(bug("[NTFS] %s: reading ..\n", __PRETTY_FUNCTION__));
@@ -492,7 +492,7 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
     struct MFTAttr *attrentry;
     IPTR ret;
 
-    D(bug("[NTFS]: %s(NTFSMFTAttr @ 0x%p; ofs = %d; len = %d)\n", __PRETTY_FUNCTION__, at, ofs, len));
+    D(bug("[NTFS]: %s(NTFSMFTAttr @ 0x%p; ofs = %d; len = %d)\n", __PRETTY_FUNCTION__, at, (IPTR)ofs, len));
 
     save_cur = at->attr_cur;
     at->attr_nxt = at->attr_cur;
@@ -527,7 +527,7 @@ IPTR ReadMFTAttrib(struct NTFSMFTAttr *at, UBYTE *dest, UQUAD ofs, ULONG len, in
     return ret;
 }
 
-static IPTR ReadMFTFileRecord(struct NTFSMFTEntry *mft, UBYTE *buf, ULONG mft_id)
+static IPTR ReadMFTRecord(struct NTFSMFTEntry *mft, UBYTE *buf, ULONG mft_id)
 {
     D(bug("[NTFS]: %s(%d)\n", __PRETTY_FUNCTION__, mft_id));
 
@@ -611,7 +611,7 @@ retry:
 		{
 		    D(bug("[NTFS] %s: !AF_MMFT\n", __PRETTY_FUNCTION__));
 
-		    if (ReadMFTFileRecord(at->mft, (UBYTE *)at->emft_buf,
+		    if (ReadMFTRecord(at->mft, (UBYTE *)at->emft_buf,
 				AROS_LE2LONG(at->attr_cur->data.resident.value_length)))
 			return NULL;
 		}
@@ -776,7 +776,7 @@ IPTR InitMFTEntry(struct NTFSMFTEntry *mft, ULONG mft_id)
 	return ERROR_NO_FREE_STORE;
     }
 
-    if (ReadMFTFileRecord(mft, mft->buf, mft_id))
+    if (ReadMFTRecord(mft, mft->buf, mft_id))
     {
 	D(bug("[NTFS] %s: failed to read MFT #%d\n", __PRETTY_FUNCTION__, mft_id));
 	return ~0;
@@ -793,7 +793,7 @@ IPTR InitMFTEntry(struct NTFSMFTEntry *mft, ULONG mft_id)
     {
 	struct MFTAttr *attrentry;
 
-	attrentry = MapMFTAttrib (&mft->attr, mft, AT_DATA);
+	attrentry = MapMFTAttrib(&mft->attr, mft, AT_DATA);
 	if (attrentry == NULL)
 	{
 	    D(bug("[NTFS] %s: No $DATA in MFT #%d\n", __PRETTY_FUNCTION__, mft_id));

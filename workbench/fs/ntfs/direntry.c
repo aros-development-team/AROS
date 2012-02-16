@@ -112,7 +112,7 @@ LONG InitDirHandle(struct FSData *fs_data, struct DirHandle *dh, BOOL reuse)
 
 	    if (is_resident)
 	    {
-		CopyMem((UBYTE *) (curattr + AROS_LE2WORD(curattr->data.resident.value_offset)), bmp, bitmap_len);
+		CopyMem((UBYTE *) ((IPTR)curattr + AROS_LE2WORD(curattr->data.resident.value_offset)), bmp, bitmap_len);
 		dh->ioh.bitmap_len = bitmap_len;
 	    }
 	    else
@@ -236,7 +236,7 @@ LONG GetDirEntry(struct DirHandle *dh, ULONG no, struct DirEntry *de)
 		    de->key->pos += AROS_LE2WORD(*((UWORD *)(de->key->pos + 8)));
 		else
 		{
-		    D(bug("[NTFS] %s: key @ 0x%p [index #%u @ 0x%p - 0x%p]\n", __PRETTY_FUNCTION__, de->key, i, de->key->indx, de->key->indx + (dh->ioh.data->idx_size << SECTORSIZE_SHIFT)));
+		    D(bug("[NTFS] %s: key @ 0x%p [index #%u @ 0x%p - 0x%p]\n", __PRETTY_FUNCTION__, de->key, (IPTR)i, de->key->indx, de->key->indx + (dh->ioh.data->idx_size << SECTORSIZE_SHIFT)));
 
 		    if ((ReadMFTAttrib
 		      (&dh->idx_attr, de->key->indx, i * (dh->ioh.data->idx_size << SECTORSIZE_SHIFT),
@@ -647,7 +647,7 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
         CopyMem(&fs_data->volume.create_time, &fib->fib_Date, sizeof(struct DateStamp));
     else {
 	struct MFTAttr *attrentry;
-	struct NTFSMFTAttr  *mftattr;
+	struct NTFSMFTAttr  *mftattr, dirattr;
 	struct NTFSMFTEntry *mft;
 	if (fl->entry)
 	{
@@ -661,17 +661,18 @@ LONG FillFIB (struct ExtFileLock *fl, struct FileInfoBlock *fib) {
 	}
 	else
 	{
-	    struct NTFSMFTAttr dirattr;
 	    mftattr = &dirattr;
 	    mft = &fl->dir->ioh.mft;
 	}
+	D(bug("[NTFS] %s:\t\tNTFSMFTEntry @ 0x%p, NTFSMFTAttr @ 0x%p\n", __PRETTY_FUNCTION__, mft, mftattr));
+
 	INIT_MFTATTRIB(mftattr, mft);
-	attrentry = FindMFTAttrib(&fl->entry->entry->attr, AT_STANDARD_INFORMATION);
+	attrentry = FindMFTAttrib(mftattr, AT_STANDARD_INFORMATION);
 	attrentry = (struct MFTAttr *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.resident.value_offset));
 
 	D(bug("[NTFS] %s: nfstime     = %d\n", __PRETTY_FUNCTION__, *((UQUAD *)(attrentry + 8))));
 
-	NTFS2DateStamp((UQUAD *)(attrentry + 8), &fib->fib_Date);
+	NTFS2DateStamp((UQUAD *)((IPTR)attrentry + 8), &fib->fib_Date);
 
 	D(bug("[NTFS] %s:\t Date: days %ld minutes %ld ticks %ld\n", __PRETTY_FUNCTION__, fib->fib_Date.ds_Days, fib->fib_Date.ds_Minute, fib->fib_Date.ds_Tick));
     }
