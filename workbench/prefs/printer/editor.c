@@ -443,6 +443,15 @@ Object *PrinterEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             End,
         End;
 
+        if (data->child == NULL) {
+#if SHOWICON
+            MUI_DisposeObject(icon);
+#endif
+            MUI_DisposeObject(self);
+            return NULL;
+        }
+
+
         DoMethod(self, OM_ADDMEMBER, (IPTR) data->child);
 
 #define PREF_NOTIFY(x, field)   DoMethod(data->x, MUIM_Notify, field, MUIV_EveryTime, \
