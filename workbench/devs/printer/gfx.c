@@ -58,7 +58,7 @@ static void pg_ConvertSource(struct driverInfo *di, UBYTE *pdata, LONG width)
 
     for (x = 0; x < width; x++, pdata += di->di_ColorSize) {
         union colorEntry *ce = (APTR) pdata;
-        UBYTEr, g, b, w;
+        UBYTE r, g, b, w;
 
         r = ce->colorByte[PCMRED];
         g = ce->colorByte[PCMGREEN];
@@ -126,7 +126,7 @@ LONG  Printer_Gfx_DumpRPort(struct IODRPReq *io, struct TagItem *tags)
     LONG prnX, prnY;
     LONG prnW, prnH;
     LONG err;
-    struct driverInfodi = {
+    struct driverInfo di = {
         .di_PrinterData = pd,
         .di_ColorSize = sizeof(union colorEntry),
     };
