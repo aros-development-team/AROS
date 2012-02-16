@@ -2,7 +2,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 
-#include "kernel_libdefs.h"	/* Actually LC_LIBDEFS_FILE, we want FUNCTIONS_COUNT */
+#include LC_LIBDEFS_FILE /* we want FUNCTIONS_COUNT */
 
 #include <kernel_debug.h>
 #include <kernel_globals.h>
@@ -23,7 +23,7 @@ struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
     /* Allocate the memory. Note that we have platform-specific portion in KernelBase. */
     mem = AllocMem(i + sizeof(struct UnixKernelBase), MEMF_PUBLIC|MEMF_CLEAR);
     if (!mem)
-    	return NULL;
+        return NULL;
 
     /* Skip past the vector table */
     KernelBase = mem + i;
@@ -32,7 +32,7 @@ struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
     D(bug("[KRN] PlatformData %p\n", KernelBase->kb_PlatformData));
 
     if (!KernelBase->kb_PlatformData)
-    	return NULL;
+        return NULL;
 
     /* Set global KernelBase storage and return */
     setKernelBase(KernelBase);
