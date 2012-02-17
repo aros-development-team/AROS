@@ -8021,7 +8021,6 @@ else
 fi
 
 if test "$with_crosstools" = "default"; then
-    crosstools=yes
     AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
 else
     AROS_CROSSTOOLSDIR="$with_crosstools"
