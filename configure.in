@@ -1463,7 +1463,6 @@ fi
 AC_MSG_CHECKING([where to install or search for cross tools binaries])
 AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
 if test "$with_crosstools" = "default"; then
-    crosstools=yes
     AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
 else
     AROS_CROSSTOOLSDIR="$with_crosstools"
