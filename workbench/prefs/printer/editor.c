@@ -47,7 +47,7 @@ STATIC CONST_STRPTR const ui_DeviceUnits[] = {
 #define UI_DEVICE_PARALLEL      0
 #define UI_DEVICE_SERIAL        1
 #define UI_DEVICE_PRINTTOFILE   2
-#define UI_DEVICE_USBPRINTER    3
+#define UI_DEVICE_USBPARALLEL   3
 
 STATIC CONST_STRPTR const ui_Port[] = {
     "Parallel",
@@ -609,12 +609,12 @@ STATIC void Gadgets2PrinterPrefs (Class *CLASS, Object *self)
             txt->pt_Port = PP_PARALLEL;
             strcpy(unit->pu_DeviceName, "parallel");
             break;
-        case UI_DEVICE_USBPRINTER:
-            txt->pt_Port = PP_SERIAL;
-            strcpy(unit->pu_DeviceName, "usbprinter");
+        case UI_DEVICE_USBPARALLEL:
+            txt->pt_Port = PP_PARALLEL;
+            strcpy(unit->pu_DeviceName, "usbparallel");
             break;
         case UI_DEVICE_PRINTTOFILE:
-            txt->pt_Port = PP_SERIAL;
+            txt->pt_Port = PP_PARALLEL;
             strcpy(unit->pu_DeviceName, "printtofile");
             break;
     }
@@ -720,8 +720,8 @@ STATIC VOID PrinterPrefs2Gadgets(Class *CLASS, Object *self)
         NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_PRINTTOFILE);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
-    } else if (strcmp(unit->pu_DeviceName, "usbprinter") == 0) {
-        NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_USBPRINTER);
+    } else if (strcmp(unit->pu_DeviceName, "usbparallel") == 0) {
+        NNSET(data->pt_Port, MUIA_Cycle_Active, UI_DEVICE_USBPARALLEL);
         SET(data->pu_DeviceNameCustom, MUIA_Selected, FALSE);
         NNSET(data->pu_DeviceName, MUIA_String_Contents, (IPTR)"");
     } else {
