@@ -1,0 +1,23 @@
+#   $Id$
+#
+#   Makefile for AROS Test
+
+include $(TOP)/config/make.cfg
+
+
+TESTFILES := \
+    printerinfo \
+    printertxt
+
+EXEDIR := $(AROS_TESTS)/printer
+
+#MM- test: test-printer
+
+#MM test-printer : includes includes-copy
+
+%build_progs mmake=test-printer \
+    files=$(TESTFILES) targetdir=$(EXEDIR) \
+    usestartup=no
+
+
+%common
