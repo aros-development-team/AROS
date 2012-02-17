@@ -403,14 +403,12 @@ static LONG pd_Init(struct PrinterData *pd)
                 return 0;
 
             if ((pd->pd_ior0.pd_p0.IOPar.io_Message.mn_ReplyPort=CreateMsgPort())) {
-                pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior0);
                 if (0 == OpenDevice(devname,
                                     pd->pd_Preferences.DefaultPrtUnit,
                                     (struct IORequest *)&pd->pd_ior0, 0)) {
                     D(bug("%s: open %s %d for io 0\n", __func__, devname, pd->pd_Preferences.DefaultPrtUnit));
                     pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Node.ln_Type = 0;
                     if ((pd->pd_ior1.pd_p1.IOPar.io_Message.mn_ReplyPort=CreateMsgPort())) {
-                        pd->pd_ior1.pd_p1.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior1);
                         if (0 == OpenDevice(devname,
                                             pd->pd_Preferences.DefaultPrtUnit,
                                             (struct IORequest *)&pd->pd_ior1, 0)) {
@@ -672,6 +670,22 @@ static void pd_SyncPrefs(struct PrinterData *pd)
     } else {
         strncpy(dprefs->PrtDevName, uprefs->pp_Unit.pu_DeviceName, sizeof(dprefs->PrtDevName));
         dprefs->PrtDevName[sizeof(dprefs->PrtDevName)-1]=0;
+    }
+
+    if (strcmp(dprefs->PrtDevName, "parallel") == 0 ||
+        strcmp(dprefs->PrtDevName, "usbparallel") == 0) {
+        pd->pd_ior0.pd_p0.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior0.pd_p0);
+        pd->pd_ior0.pd_p0.io_ParFlags = PARF_SHARED;
+        pd->pd_ior1.pd_p1.IOPar.io_Message.mn_Length = sizeof(pd->pd_ior1.pd_p1);
+        pd->pd_ior1.pd_p1.io_ParFlags = PARF_SHARED;
+    } else if (strcmp(dprefs->PrtDevName, "serial") == 0) {
+        pd->pd_ior0.pd_s0.IOSer.io_Message.mn_Length = sizeof(pd->pd_ior0.pd_s0);
+        pd->pd_ior0.pd_s0.io_SerFlags = SERF_SHARED;
+        pd->pd_ior1.pd_s1.IOSer.io_Message.mn_Length = sizeof(pd->pd_ior1.pd_s1);
+        pd->pd_ior1.pd_s1.io_SerFlags = SERF_SHARED;
+    } else {
+        pd->pd_ior0.pd_i0.io_Message.mn_Length = sizeof(pd->pd_ior0.pd_i0);
+        pd->pd_ior1.pd_i1.io_Message.mn_Length = sizeof(pd->pd_ior1.pd_i1);
     }
 
     dprefs->DefaultPrtUnit = uprefs->pp_Unit.pu_UnitNum;

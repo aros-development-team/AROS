@@ -99,11 +99,13 @@ struct PrinterData
     {
         struct IOExtPar pd_p0;
         struct IOExtSer pd_s0;
+        struct IOStdReq pd_i0;
     }                         pd_ior0;
     union
     {
         struct IOExtPar pd_p1;
         struct IOExtSer pd_s1;
+        struct IOStdReq pd_i1;
     }                         pd_ior1;
     struct timerequest        pd_TIOR;
     struct MsgPort            pd_IORPort;
