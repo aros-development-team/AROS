@@ -20,7 +20,7 @@ TEXT const printertxt[] =
         "      \033[23m underline bold\033[24m bold\033[22m normal\033[4m underline\n"
         "      \033[0m normal\n"
         "aSFC  \033[30mblack \033[31mred \033[32mgreen \033[33myellow \033[34mblue \033[35md. gray \033[36mcyan \033[37ml. gray\033[0m\n"
-        "aSBC  \033[40mblack \033[41mred \033[42mgreen \033[43myellow \033[44mblue \033[45md. gray \033[46mcyan \033[47ml. gray\033[0m\n"
+        "aSBC  \033[40m\033[39mblack \033[41m\033[30mred \033[42mgreen \033[43myellow \033[44mblue \033[45md. gray \033[46mcyan \033[47ml. gray\033[0m\n"
         "aSHOR elite  \033[2wis abcdefg on \033[1wthen off\n"
         "      cond.  \033[4wis abcdefg on \033[3wthen off\n"
         "      enla   \033[6wis abcdefg on \033[5wthen off\n"
