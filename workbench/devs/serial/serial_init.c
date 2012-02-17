@@ -34,7 +34,7 @@
 #    include "serial_intern.h"
 #endif
 
-# define DEBUG 1
+# define DEBUG 0
 # include <aros/debug.h>
 
 #include LC_LIBDEFS_FILE
@@ -212,12 +212,14 @@ static int GM_UNIQUENAME(Open)
         ioreq->io_Error  = 0;
 
         SU->su_OpenerCount++;
+        D(bug("%s: Opened %d on unit %d\n", __func__, SU->su_OpenerCount, unitnum));
       }
       else
       {
         /*
         ** I don't allow another opener
         */
+        D(bug("%s: Exclusive access is set for unit %d\n", __func__, unitnum));
         ioreq->io_Error = SerErr_DevBusy;
       }
     }
