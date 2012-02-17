@@ -446,6 +446,56 @@ document loadseg
 Loads the module that contains the given address
 end
 
+define loadkick
+    _debug_init
+    set $_kicknode = $_debug_KickList
+
+    while ($_kicknode != 0)
+        set $_eh = $_kicknode->eh
+        set $_sh = $_kicknode->sh
+        set $_shnum = $_eh->shnum
+
+        set $_i = 0
+        while ($_i < $_shnum)
+            if ($_i == 1) && ($_sh->addr != 0) && ($_sh->size != 0)
+                loadseg $_sh->addr
+            end
+            set $_sh = $_sh + 1
+            set $_i = $_i + 1
+        end
+        set $_kicknode = $_kicknode->Next
+    end
+end
+document loadkick
+Loads the Kickstart (symbols)
+end
+
+define loadmods
+    _debug_init
+    
+    if $_debug_ModList
+        set $_segnode = (struct segment *)$_debug_ModList->mlh_Head
+
+        while ($_segnode->s_node.mln_Succ != 0)
+            if $_segnode->s_num == 1
+                loadseg $_segnode->s_lowest
+            end
+            set $_segnode = (struct segment *)$_segnode->s_node.mln_Succ
+        end
+    end
+end
+document loadmods
+Loads all the modules (symbols)
+end
+
+define loadall
+    loadkick
+    loadmods
+end
+document loadall
+Loads the symbols of the Kickstart and all modules
+end
+
 define seglistdump
     _debug_init
     set $nextseg = $arg0
