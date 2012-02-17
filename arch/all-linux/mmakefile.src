@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 ##MM    kernel-hidd-linux-kobj
 
 #MM- workbench-linux-$(CPU) : \
+#MM      workbench-unix \
 #MM      workbench-devs-tap-unix \
 #MM	 kernel-pci		 \
 #MM	 $(PCI_HIDD_TARGET)
