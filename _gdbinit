@@ -3,16 +3,16 @@ handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
 define _debug_init
-    init-if-undefined $AbsExecBase = (struct ExecBase *)SysBase
+    init-if-undefined $AbsExecBase = (struct IntExecBase *)SysBase
+    init-if-undefined $_debug_DebugBase = 0
 
-    if AbsExecBase != 0
-        set $AbsExecBase = *(struct IntExecBase **)&AbsExecBase
+    if $AbsExecBase != 0 && $_debug_DebugBase == 0
         set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
+    end
 
-        if $_debug_DebugBase != 0
-            set $_debug_ModList = $_debug_DebugBase->db_Modules
-            set $_debug_KickList = $_debug_DebugBase->db_KernelModules
-        end
+    if $_debug_DebugBase != 0
+        set $_debug_ModList = &($_debug_DebugBase->db_Modules)
+        set $_debug_KickList = $_debug_DebugBase->db_KernelModules
     else
         init-if-undefined $_debug_ModList = Debug_ModList
         init-if-undefined $_debug_KickList = Debug_KickList
