@@ -1496,21 +1496,21 @@ if test "$aros_gcc_version" != "none"; then
     dnl Check for specific version requested, and append suffix if needed
 
     if test "$aros_gcc_version" != "default"; then
-        aros_target_cc="$aros_target_cpu-aros-gcc-$aros_gcc_version"
-        aros_target_cxx="$aros_target_cpu-aros-g++-$aros_gcc_version"
+        aros_target_cc="${target_tool_prefix}gcc-$aros_gcc_version"
+        aros_target_cxx="${target_tool_prefix}g++-$aros_gcc_version"
     else
-        aros_target_cc="$aros_target_cpu-aros-gcc"
-        aros_target_cxx="$aros_target_cpu-aros-g++"
+        aros_target_cc="${target_tool_prefix}gcc"
+        aros_target_cxx="${target_tool_prefix}g++"
     fi
 
-    aros_target_ld="$aros_target_cpu-aros-ld"
-    aros_target_as="$aros_target_cpu-aros-as"
-    aros_target_ar="$aros_target_cpu-aros-ar"
-    aros_target_ranlib="$aros_target_cpu-aros-ranlib"
-    aros_target_nm="$aros_target_cpu-aros-nm"
-    aros_target_strip="$aros_target_cpu-aros-strip"
-    aros_target_objcopy="$aros_target_cpu-aros-objcopy"
-    aros_target_objdump="$aros_target_cpu-aros-objdump"
+    aros_target_ld="${target_tool_prefix}ld"
+    aros_target_as="${target_tool_prefix}as"
+    aros_target_ar="${target_tool_prefix}ar"
+    aros_target_ranlib="${target_tool_prefix}ranlib"
+    aros_target_nm="${target_tool_prefix}nm"
+    aros_target_strip="${target_tool_prefix}strip"
+    aros_target_objcopy="${target_tool_prefix}objcopy"
+    aros_target_objdump="${target_tool_prefix}objdump"
 fi
 
 # Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
