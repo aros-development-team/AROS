@@ -284,6 +284,7 @@ void ProcessPackets(void) {
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
 		(void)fl; // unused
+		(void)want; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;
@@ -383,6 +384,7 @@ void ProcessPackets(void) {
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
 		(void)fl; // unused
+		(void)offset; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;
@@ -419,6 +421,8 @@ void ProcessPackets(void) {
 #if defined(NTFS_READONLY)
 		res = ERROR_DISK_WRITE_PROTECTED;
 		(void)fl; // unused
+		(void)offsetfrom; // unused
+		(void)offset; // unused
 #else
                 if ((err = TestLock(fl))) {
                     res = -1;

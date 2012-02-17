@@ -682,7 +682,11 @@ retry:
 		D(bug("[NTFS] %s: failed to read non-resident attribute list!\n", __PRETTY_FUNCTION__));
 	    }
 	    at->attr_nxt = at->edat_buf;
-	    at->attr_end = (struct MFTAttr *)((IPTR)at->edat_buf + AROS_LE2QUAD(attrentry->data.non_resident.data_size));
+	    /* Note: The extra '(IPTR)' cast here shuts up
+	     *       gcc warnings on 32-bit architectures
+	     *       (converting a QUAD to a 32-bit pointer
+	     */
+	    at->attr_end = (struct MFTAttr *)(IPTR)((IPTR)at->edat_buf + AROS_LE2QUAD(attrentry->data.non_resident.data_size));
 	}
 	else
 	{
