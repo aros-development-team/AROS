@@ -19,8 +19,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
