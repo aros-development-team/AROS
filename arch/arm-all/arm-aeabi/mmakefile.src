@@ -10,4 +10,4 @@ include $(TOP)/config/make.cfg
 #MM- linklibs-clib-common-arm: linklibs-aeabi-arm
 
 %build_linklib mmake=linklibs-aeabi-arm \
-    libname=aeabi files="uldiv ldiv" asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0"
+    libname=aeabi files="uldiv ldiv" asmfiles="uidivmod idivmod uldivmod ldivmod idiv0 ldiv0 unwind"
