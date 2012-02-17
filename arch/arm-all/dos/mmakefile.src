@@ -1,8 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-
 USER_CFLAGS := -I$(SRCDIR)/rom/dos
+
+#MM- kernel-dos-arm: includes
 
 %build_archspecific \
   mainmmake=kernel-dos maindir=rom/dos arch=arm \
