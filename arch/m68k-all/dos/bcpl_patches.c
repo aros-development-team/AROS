@@ -24,7 +24,7 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
 extern void *BCPL_jsr, *BCPL_rts;
 extern const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize];
     
-const UWORD highfunc = 37, lowfunc = 4, skipfuncs = 2;
+const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
 
 #define PATCHMEM_SIZE (10 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 16 * sizeof(UWORD))
 
@@ -51,18 +51,15 @@ static int PatchDOS(struct DosLibrary *dosbase)
 
     Forbid();
 
+    /* Use this private slot for the C-to-BCPL thunk */
+    __AROS_INITVEC(dosbase, 4);
+    __AROS_SETVECADDR(dosbase, 4, CallGlobVec);
+
     asmmem = asmcall = AllocMem(PATCHMEM_SIZE, MEMF_PUBLIC);
 
     for (i = lowfunc; i <= highfunc; i++)
     {
-        if (i == 4) {
-            /* Use this private slot for the C-to-BCPL thunk */
-            __AROS_INITVEC(dosbase, i);
-            __AROS_SETVECADDR(dosbase, i, CallGlobVec);
-            continue;
-        }
-
-    	if (i == 24 || i == 25)
+     	if (i == 24 || i == 25)
     	    continue;
     	func = (IPTR)__AROS_GETJUMPVEC(dosbase, i)->vec;
  	__AROS_SETVECADDR(dosbase, i, asmcall);
@@ -117,7 +114,7 @@ static int UnPatchDOS(struct DosLibrary *dosbase)
 
     asmcall = __AROS_GETJUMPVEC(dosbase, lowfunc)->vec;
     FreeMem(asmcall, PATCHMEM_SIZE);
-    FreeMem(dosbase->dl_GV, BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize);
+    FreeMem(dosbase->dl_GV - BCPL_GlobVec_NegSize, BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize);
 
     return TRUE;
 }
