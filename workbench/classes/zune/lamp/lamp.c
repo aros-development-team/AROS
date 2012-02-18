@@ -249,11 +249,18 @@ IPTR Lamp__MUIM_Cleanup(struct IClass *cl, Object *obj, Msg msg)
         if (data->lmp_PenNr != -1)
         {
             ReleasePen(_screen(obj)->ViewPort.ColorMap, data->lmp_PenNr);
+            data->lmp_PenNr = -1;
         }
     }
     else if (data->lmp_PenChangedOld == PCH_NEWSPEC)
     {
         MUI_ReleasePen(muiRenderInfo(obj), data->lmp_PenNr);
+    }
+
+    if (data->lmp_PenChangedOld != PCH_NONE)
+    {
+        data->lmp_PenChanged = data->lmp_PenChangedOld;
+        data->lmp_PenChangedOld = PCH_NONE;
     }
 
     return DoSuperMethodA(cl, obj, msg);
