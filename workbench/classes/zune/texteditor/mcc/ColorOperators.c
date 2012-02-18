@@ -52,6 +52,7 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
 {
   struct Grow colorGrow;
   struct LineColor *colors;
+  UWORD oldcol = 0;
 
   ENTER();
 
@@ -61,8 +62,7 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
 
   if((colors = line->line.Colors) != NULL)
   {
-    UWORD oldcol = 0;
-
+    // keep all color changes ahead of the new color
     while(colors->column != EOC && colors->column < x)
     {
       struct LineColor newColor;
@@ -73,56 +73,61 @@ static void AddColorToLine(struct InstData *data, UWORD x, struct line_node *lin
       colors++;
       AddToGrow(&colorGrow, &newColor);
     }
-    if(color != oldcol)
-    {
-      struct LineColor newColor;
-
-      newColor.column = x;
-      newColor.color = color;
-      AddToGrow(&colorGrow, &newColor);
-    }
-    if(colors != NULL)
-    {
-      while(colors->column != EOC && colors->column <= x+length)
-      {
-        oldcol = colors->color;
-        colors++;
-      }
-    }
-    if(color != oldcol)
-    {
-      struct LineColor newColor;
-
-      newColor.column = x+length;
-      newColor.color = oldcol;
-      AddToGrow(&colorGrow, &newColor);
-    }
-    if(colors != NULL)
-    {
-      while(colors->column != EOC)
-      {
-        struct LineColor newColor;
-
-        newColor.column = colors->column;
-        newColor.color = colors->color;
-        AddToGrow(&colorGrow, &newColor);
-        colors++;
-      }
-    }
-
-    // terminate the color array if we have any colors at all
-    if(colorGrow.itemCount > 0)
-    {
-      struct LineColor newColor;
-
-      newColor.column = EOC;
-      newColor.color = 0;
-      AddToGrow(&colorGrow, &newColor);
-    }
-
-    // the old colors are not needed anymore
-    FreeVecPooled(data->mypool, line->line.Colors);
   }
+  // add the new color if it is different from the last one
+  if(color != oldcol)
+  {
+    struct LineColor newColor;
+
+    newColor.column = x;
+    newColor.color = color;
+    AddToGrow(&colorGrow, &newColor);
+  }
+  // skip and forget all color changes in the new range
+  if(colors != NULL)
+  {
+    while(colors->column != EOC && colors->column <= x+length)
+    {
+      oldcol = colors->color;
+      colors++;
+    }
+  }
+  // add another color change if the new color is different from the last skipped one within the range
+  if(color != oldcol)
+  {
+    struct LineColor newColor;
+
+    newColor.column = x+length;
+    newColor.color = oldcol;
+    AddToGrow(&colorGrow, &newColor);
+  }
+  // keep all color changes until the end of the line
+  if(colors != NULL)
+  {
+    while(colors->column != EOC)
+    {
+      struct LineColor newColor;
+
+      newColor.column = colors->column;
+      newColor.color = colors->color;
+      AddToGrow(&colorGrow, &newColor);
+      colors++;
+    }
+  }
+
+  // terminate the color array if we have any colors at all
+  if(colorGrow.itemCount > 0)
+  {
+    struct LineColor newColor;
+
+    newColor.column = EOC;
+    newColor.color = 0;
+    AddToGrow(&colorGrow, &newColor);
+  }
+
+  // the old colors are not needed anymore
+  if(line->line.Colors != NULL)
+    FreeVecPooled(data->mypool, line->line.Colors);
 
   line->line.Colors = (struct LineColor *)colorGrow.array;
 
@@ -139,6 +144,7 @@ void AddColor(struct InstData *data, struct marking *realblock, UWORD color)
   ENTER();
 
   data->HasChanged = TRUE;
+
   if(realblock->enabled == TRUE && (realblock->startx != realblock->stopx || realblock->startline != realblock->stopline))
   {
     NiceBlock(realblock, &newblock);
