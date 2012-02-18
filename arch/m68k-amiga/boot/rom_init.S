@@ -123,12 +123,6 @@ arosbootstrap_init:
 	bsr		.L_memtest
 	beq	chipfault
 
-	/* Adjust to skip the first 4K bytes of
-	 * Chip RAM. It's reserved for the Trap area.
-	 */
-	move.l	#0x1000,%a5@(-8)
-	sub.l	#0x1000,%a5@(-4)
-
 	/* end of memory region list */
 	clr.l	%a5@+
 	clr.l	%a5@
