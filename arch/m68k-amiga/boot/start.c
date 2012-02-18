@@ -438,6 +438,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	struct TagItem bootmsg[] = {
 #if AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
+//	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode,mmu,mungwall" },
 #endif
             { KRN_KernelStackBase, (IPTR)&_ss },
             { KRN_KernelStackSize, (IPTR)(&_ss_end - &_ss) },
@@ -446,7 +447,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	struct TagItem *bootmsgptr = bootmsg;
 	volatile APTR *trap;
 	int i;
-	BOOL wasvalid;
+	BOOL wasvalid, arosbootstrapmode;
 	UWORD *kickrom[8];
 	struct MemHeader *mh;
 	LONG oldLastAlert[4];
@@ -536,12 +537,14 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 
 	/* Zap out old SysBase if invalid */
+	arosbootstrapmode = FALSE;
 	wasvalid = IsSysBaseValid(oldSysBase);
 	if (wasvalid) {
 	    DEBUGPUTHEX(("[SysBase] was at", (ULONG)oldSysBase));
 	} else {
 	    wasvalid = IsSysBaseValidNoVersion(oldSysBase);
 	    if (wasvalid) {
+	        arosbootstrapmode = TRUE;
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
 	    	if (oldSysBase->DebugData)
 	    	    bootmsgptr = (struct TagItem*)oldSysBase->DebugData;
@@ -569,7 +572,17 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    /* Mark the oldSysBase as processed */
 	    oldSysBase = NULL;
 	}
-
+	
+	/* Adjust to skip the first 1K/4K bytes of
+	 * Chip RAM. It's reserved for the Trap area.
+	 */
+        for (i = 0; membanks[i + 2 + 1]; i += 2);
+        if (arosbootstrapmode || (attnflags & AFF_68030))
+            membanks[i + 0] = 0x1000;
+        else
+            membanks[i + 0] = 0x400;
+        membanks[i + 1] -= membanks[i + 0];
+ 
 #if AROS_SERIAL_DEBUG
 	for (i = 0; membanks[i + 1]; i += 2) {
 		ULONG addr = membanks[i + 0];
