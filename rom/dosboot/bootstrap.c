@@ -226,7 +226,7 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
 
 /* Attempt to boot via dos.library directly
  */
-static void dosboot_BootDos(void)
+static inline void dosboot_BootDos(void)
 {
     struct Resident *DOSResident;
 
@@ -281,8 +281,18 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
         /* Then as a BootBlock */
         dosboot_BootBlock(bn, LIBBASE->bm_ExpansionBase);
 
+#ifdef __mc68000
+        /* Don't try to boot via searching for :AROS.boot
+         * (dosboot_BootDos()), since that is not
+         * required for m68k 'bootability'. Trying to
+         * do so would lead to false positives, such
+         * as attempting to boot off of an empty, formatted
+         * floppy disk.
+         */
+#else
         /* And finally with DOS */
         dosboot_BootDos();
+#endif
 
         /* Didn't work. Next! */
         D(bug("%s: DeviceNode %b (%d) was not bootable\n", __func__,
