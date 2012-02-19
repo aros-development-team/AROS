@@ -1,4 +1,8 @@
 /*
+  Desc: BSD4.4 header file sys/mount.h
+*/
+
+/*
  * Copyright (c) 1989 The Regents of the University of California.
  * All rights reserved.
  *
@@ -38,7 +42,6 @@
 #define _SYS_MOUNT_H_
 
 #include <stdint.h>
-#include <sys/fs_types.h>
 
 typedef struct { int32_t val[2]; } fsid_t;      /* file system id type */
 
@@ -86,6 +89,24 @@ struct statfs {
 #define MNT_MPBUSY      0x00400000      /* scan of mount point in progress */
 #define MNT_MPWANT      0x00800000      /* waiting for mount point */
 #define MNT_UNMOUNT     0x01000000      /* unmount in progress */
+
+/*
+ * File system types.
+ */
+#define MOUNT_NONE      0
+#define MOUNT_UFS       1
+#define MOUNT_NFS       2
+#define MOUNT_MFS       3
+#define MOUNT_PC        4
+#define MOUNT_ADOS_OFS  5       /* for AmigaOS standard and international */
+#define MOUNT_ADOS_FFS  6       /* old fs and fast fs */
+#define MOUNT_ADOS_IOFS 7
+#define MOUNT_ADOS_IFFS 8
+#define MOUNT_MAXTYPE   8
+
+static char __attribute__((unused)) *mnt_names[] = {
+    "none", "ufs", "nfs", "mfs", "pc", "ofs", "ffs", "iofs", "iffs"
+};
 
 __BEGIN_DECLS
 int getfsstat (struct statfs *, long, int);

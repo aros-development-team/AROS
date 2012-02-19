@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/fs_types.h>	/* mnt_names is defined here */
+#include <sys/mount.h> /* mnt_names is defined here */
 #include "test.h"
 
 int main() 
