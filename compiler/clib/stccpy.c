@@ -1,8 +1,8 @@
 /*
-    Copyright © 2003, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C function stccpy().
+    SAS/C function stccpy().
 */
 
 /*****************************************************************************
@@ -33,6 +33,7 @@
 
     NOTES
 	No check is beeing made that dest is large enough for src.
+        SAS/C specific.
 
     EXAMPLE
 

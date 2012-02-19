@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    SAS C function stcl_o().
+    SAS/C function stcl_o().
 */
 
 #include <stdio.h>
@@ -29,7 +29,7 @@
 	The number of characters written into the string
 
     NOTES
-	SAS C specific
+	SAS/C specific
 	
     EXAMPLE
 
