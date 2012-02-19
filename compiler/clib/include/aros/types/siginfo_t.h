@@ -74,7 +74,7 @@
     siginfo_t is delivered to sigaction() style signal handlers.
     It's part of the POSIX Realtime Extension
 */
-typedef struct __siginfo
+typedef struct
 {
     int		    si_signo;	    /* signal number */
     int		    si_errno;	    /* errno value */
