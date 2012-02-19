@@ -1,32 +1,31 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ISO/ANSI C function wcstombs().
+    C99 function wcstombs().
 */
-
-#include <aros/debug.h>
 
 /*****************************************************************************
 
-    NAME */
-
+    NAME
 #include <stdlib.h>
 
 	size_t wcstombs(
 
-/*  SYNOPSIS */
-	char *s,
-	const wchar_t *pwcs,
+    SYNOPSIS
+	char * restrict s,
+	const wchar_t * restrict pwcs,
 	size_t n)
 
-/*  FUNCTION
+    FUNCTION
+        C99 function wcstombs
 
     INPUTS
 
     RESULT
 
     NOTES
+        arosc.library currently only implements "C" locale
 
     EXAMPLE
 
@@ -35,11 +34,7 @@
     SEE ALSO
 
     INTERNALS
+        Implemented as static inline function to adapt to changing wchar_t
+        definitions
 
 ******************************************************************************/
-{
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-    
-    return (size_t) -1;
-}
-

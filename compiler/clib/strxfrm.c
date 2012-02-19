@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function strxfrm().
+    C99 function strxfrm().
 */
-
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -41,6 +39,8 @@
         value is n or more, the contents of dst are indeterminate.
 
     NOTES
+        arosc.library only support "C" locale so strxfrm is equivalent to
+        strncpy.
 
     EXAMPLE
 
@@ -52,9 +52,6 @@
 
 ******************************************************************************/
 {
-    /* TODO: Implement strxfrm() properly */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-    
     size_t srclen = strlen(src);
     strncpy(dst, src, n);
 

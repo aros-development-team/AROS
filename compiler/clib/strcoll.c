@@ -1,11 +1,9 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function strcoll().
+    C99 function strcoll().
 */
-
-#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -20,7 +18,7 @@
 
 /*  FUNCTION
 	Calculate str1 - str2. The operation is based on strings interpreted
-	as appropriate for the program's current locale  for  category  LC_COLLATE.
+	as appropriate for the program's current locale for category LC_COLLATE.
 
     INPUTS
 	str1, str2 - Strings to compare
@@ -31,6 +29,8 @@
 	it may be greater then 1 or less than -1.
 
     NOTES
+        arosc.library only implements "C" locale so strcoll() is equivalent
+        to strcmp()
 
     EXAMPLE
 
@@ -42,9 +42,6 @@
 
 ******************************************************************************/
 {
-    /* TODO: Implement strcoll() properly */
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-
     return strcmp(str1, str2);
 } /* strcoll */
 
