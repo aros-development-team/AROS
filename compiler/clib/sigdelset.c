@@ -1,16 +1,15 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     ANSI C function sigdelset().
 */
 
+#include <stddef.h>
+
 /*****************************************************************************
 
     NAME */
-
-#include "__arosc_privdata.h"
-
 #include <signal.h>
 
 	int sigdelset (
@@ -38,7 +37,7 @@
 ******************************************************************************/
 {
     if (NULL != set) {
-        ULONG i = (signum >> 5);
+        unsigned int i = (signum >> 5);
         set->__val[i] &= ~(1 << (signum & 0x1f));
         return 0;
     }

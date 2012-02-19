@@ -5,12 +5,11 @@
     ANSI C function sigismember().
 */
 
+#include <stddef.h>
+
 /*****************************************************************************
 
     NAME */
-
-#include "__arosc_privdata.h"
-
 #include <signal.h>
 
 	int sigismember (
@@ -38,11 +37,11 @@
 ******************************************************************************/
 {
     if (NULL != set) {
-        ULONG i = (signum >> 5);
+        unsigned int i = (signum >> 5);
         if (0 != (set->__val[i] & (signum & 0x1f)))
             return 1;
         return 0;
     }
-	
+
     return -1;
 } /* sigismember */
