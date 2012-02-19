@@ -167,20 +167,23 @@ ULONG patterncoltab[] = {
 };    
    
   printf("Opening screen\n");
-  screen = OpenScreenTags(NULL,
+  if ((screen = OpenScreenTags(NULL,
                           SA_Width, 	640,
                           SA_Height, 	480,
 			  SA_Depth,	24,
 			  SA_Title,	"gfx hidd demo",
 			  SA_Pens,	pens,
-			  
-                          TAG_END);
+                          TAG_END))) {
+  } else {
+      screen = OpenScreenTags(NULL,
+                          SA_Width, 	640,
+                          SA_Height, 	480,
+			  SA_Title,	"gfx hidd demo",
+			  TAG_END);
+  }
 
-  LoadRGB32(&screen->ViewPort, patterncoltab);
-
-#if 0
-   screen = LockPubScreen(NULL);
-#endif
+  if (screen)
+        LoadRGB32(&screen->ViewPort, patterncoltab);
 
 /*  screen->RastPort.longreserved[0] = window->RPort->longreserved[0];
 
