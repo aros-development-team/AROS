@@ -142,7 +142,11 @@ static inline void SetBootNodeDosType(struct BootNode *bn, ULONG dostype)
     de->de_DosType = dostype;
 }
 
-static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *ExpansionBase)
+/* Returns TRUE if it was a BootBlock style, but couldn't
+ * be booted, FALSE if not a BootBlock style, and doesn't
+ * return at all on a successful boot.
+ */
+static BOOL dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *ExpansionBase)
 {
     ULONG bootblock_size;
     struct MsgPort *msgport;
@@ -153,7 +157,7 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
     UBYTE *buffer;
 
     if (!GetBootNodeDeviceUnit(bn, &device, &unit, &bootblock_size))
-        return;
+        return FALSE;
 
     D(bug("%s: Probing for boot block on %b.%d\n", __func__, device, unit));
     /* memf_chip not required but more compatible with old bootblocks */
@@ -222,6 +226,9 @@ static void dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
        		 AROS_UFCA(BPTR, BNULL, A0),
        		 AROS_UFCA(struct ExecBase *, SysBase, A6));
    }
+
+   /* Device *was* BootBlock style, but couldn't boot. */
+   return TRUE;
 }
 
 /* Attempt to boot via dos.library directly
@@ -275,24 +282,23 @@ LONG dosboot_BootStrap(LIBBASETYPEPTR LIBBASE)
          * use it as SYS: if the strap works
          */
 
-        /* First try as a BootPoint node */
-        dosboot_BootPoint(bn);
-
-        /* Then as a BootBlock */
-        dosboot_BootBlock(bn, LIBBASE->bm_ExpansionBase);
-
-#ifdef __mc68000
-        /* Don't try to boot via searching for :AROS.boot
-         * (dosboot_BootDos()), since that is not
-         * required for m68k 'bootability'. Trying to
-         * do so would lead to false positives, such
-         * as attempting to boot off of an empty, formatted
-         * floppy disk.
+        /* First try as a BootBlock.
+         * dosboot_BootBlock returns TRUE if it *was*
+         * a BootBlock device, but couldn't be booted.
+         * Returns FALSE if not a bootblock device,
+         * and doesn't return at all if the bootblock
+         * was successful.
          */
-#else
-        /* And finally with DOS */
-        dosboot_BootDos();
-#endif
+        D(bug("%s: Attempting %b as BootBlock\n",__func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
+        if (!dosboot_BootBlock(bn, LIBBASE->bm_ExpansionBase)) {
+            /* Then as a BootPoint node */
+            D(bug("%s: Attempting %b as BootPoint\n", __func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
+            dosboot_BootPoint(bn);
+
+            /* And finally with DOS */
+            D(bug("%s: Attempting %b with DOS\n", __func__, ((struct DeviceNode *)bn->bn_DeviceNode)->dn_Name));
+            dosboot_BootDos();
+        }
 
         /* Didn't work. Next! */
         D(bug("%s: DeviceNode %b (%d) was not bootable\n", __func__,
