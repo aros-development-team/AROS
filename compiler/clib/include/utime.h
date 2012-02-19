@@ -17,7 +17,7 @@ struct utimbuf {
 };
 
 __BEGIN_DECLS
-int utime(const char *filename, struct utimbuf *buf);
+int utime(const char *filename, const struct utimbuf *buf);
 __END_DECLS
 
 #endif /* !_UTIME_H_ */

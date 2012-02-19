@@ -2,16 +2,14 @@
 #define _SYS_TIME_H_
 
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file sys/time.h
     Lang: english
 */
 
-#include <sys/types.h>
-#include <time.h>	  /* XXX Probably not allowed */
-
+#include <aros/system.h>
 #include <aros/types/timeval_s.h> /* get struct timeval */
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
@@ -28,7 +26,7 @@ struct itimerval
 
 /*
     This structure describes a timezone. Note that most implementations of the
-    C library no longer use the timezone information passed to gettimeofday().
+    C library no longer use the timezone information passed to settimeofday().
 */
 struct timezone
 {
@@ -82,7 +80,7 @@ int getitimer(int which, struct itimerval *);
 int setitimer(int which, const struct itimerval *, struct itimerval *);
 int gettimeofday(struct timeval * tv, struct timezone * tz);
 int settimeofday(const struct timeval * tv, const struct timezone * tz);
-int utimes(const char *file, struct timeval tvp[2]);
+int utimes(const char *file, const struct timeval tvp[2]);
 
 __END_DECLS
 
