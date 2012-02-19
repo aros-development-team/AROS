@@ -11,7 +11,6 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <aros/debug.h>
-#include <aros/startup.h>
 #include <aros/symbolsets.h>
 
 #include <errno.h>
@@ -227,7 +226,7 @@ LONG AddToList(struct SignalSemaphore *sem)
     if(!node)
 	return -1;
     node->sem = sem;
-    AddHead((struct List *)&aroscbase->acb_file_locks, (struct Node*) node);
+    AddHead(aroscbase->acb_file_locks, (struct Node*) node);
     return 0;
 }
 
@@ -237,7 +236,7 @@ void RemoveFromList(struct SignalSemaphore *sem)
     struct FlockNode *varNode;
     struct Node *tmpNode;
     
-    ForeachNodeSafe(&aroscbase->acb_file_locks, varNode, tmpNode)
+    ForeachNodeSafe(aroscbase->acb_file_locks, varNode, tmpNode)
     {
 	if(varNode->sem == sem)
 	{
@@ -248,46 +247,50 @@ void RemoveFromList(struct SignalSemaphore *sem)
     }
 }
 
+/* __init_flocks is called during library init.
+   aroscbase->acb_file_locks will be initialized here and then copied
+   in all libbases for each open of the library.
+   This means that a global file_locks list is used, this is needed as flocks
+   are used for locking between different processes.
+*/
 int __init_flocks(struct aroscbase *base)
 {
-    /*
-     * This function is called once each time a new libbase is created
-     */
-    NEWLIST(&base->acb_file_locks);
+    base->acb_file_locks = AllocMem(sizeof(struct MinList), MEMF_PUBLIC);
+    NEWLIST(base->acb_file_locks);
 
-    D(bug("[flock] Initialized lock list at 0x%p\n", &base->acb_file_locks));
+    D(bug("[flock] Initialized lock list at 0x%p\n", base->acb_file_locks));
 
     return 1;
 }
 
+/* This function is called once before root libbase would be freed.
+   This function will be called when no other program has arosc.library open
+   so no protection should be needed.
+*/
 void __unlock_flocks(struct aroscbase *base)
 {
-    /* This function is called once before libbase would be freed */
-    if (base->acb_file_locks.mlh_Head)
+    struct FlockNode *lock;
+    struct SignalSemaphore *sem;
+
+    D(bug("[flock] Freeing lock list at 0x%p\n", base->acb_file_locks));
+
+    while ((lock = (struct FlockNode *) REMHEAD(base->acb_file_locks)))
     {
-	struct FlockNode *lock;
-	struct SignalSemaphore *sem;
+        sem = lock->sem;
+        ReleaseSemaphore(sem);
+        FreeMem(lock, sizeof(struct FlockNode));
 
-	D(bug("[flock] Freeing lock list at 0x%p\n", &base->acb_file_locks));
+        if (sem->ss_Owner != NULL || sem->ss_QueueCount != -1)
+            bug("[flock] Freeing locked semaphore!");
 
-	while ((lock = (struct FlockNode *) REMHEAD(&base->acb_file_locks)))
-	{
-	    sem = lock->sem;
-    	    ReleaseSemaphore(sem);
-	    FreeMem(lock, sizeof(struct FlockNode));
-
-    	    if(sem->ss_Owner == NULL && sem->ss_QueueCount == -1)
-    	    {
-    	        D(bug("[flock] All locks unlocked, removing semaphore %s\n", sem->ss_Link.ln_Name));
-    	        /* All locks for this file were unlocked, we don't need semaphore
-                 * anymore */
-                RemSemaphore(sem);
-                FreeVec(sem->ss_Link.ln_Name);
-                FreeVec(sem);
-            }
-	}
+        D(bug("[flock] removing semaphore %s\n", sem->ss_Link.ln_Name));
+        RemSemaphore(sem);
+        FreeVec(sem->ss_Link.ln_Name);
+        FreeVec(sem);
     }
+    FreeMem(base->acb_file_locks, sizeof(struct MinList));
+    base->acb_file_locks = NULL;
 }
 
-ADD2OPENLIB(__init_flocks, 1);
-ADD2CLOSELIB(__unlock_flocks, 1);
+ADD2INITLIB(__init_flocks, 1);
+ADD2EXPUNGELIB(__unlock_flocks, 1);
