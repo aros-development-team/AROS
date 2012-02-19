@@ -11,8 +11,6 @@
 #include <exec/types.h>
 #include <assert.h>
 
-#include <stdio.h> /* FIXME: remove */
-
 /*****************************************************************************
 
     NAME */
@@ -71,8 +69,11 @@
     }
     
     c++; /* ... c now points to the 1st char of the template tail */
-    
-    if (*c) /* FIXME: why would you get *c == 0 legitimately? */
+
+    /* If template errornously does not end in X c will point to '\0';
+       exit gracefully
+    */
+    if (*c)
     {
         /* Loop over the first position of the tail, bumping it up as necessary */
         for(*c = 'A'; *c <= 'Z'; (*c)++)
@@ -81,7 +82,6 @@
         	return template;
             UnLock(lock);
         }
-        *c = 0; /* FIXME: looks wrong. Why would you want to chop the tail? */
     }
     
     return template; 
