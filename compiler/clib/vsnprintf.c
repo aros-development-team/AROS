@@ -31,36 +31,36 @@ static int _vsnprintf_uc (int c, struct data * data)
 #include <stdio.h>
 #include <stdarg.h>
 
-int vsnprintf (
+        int vsnprintf (
 
 /*  SYNOPSIS */
-    char        * str,
-    size_t      n,
-    const char * format,
-    va_list      args)
+        char        * str,
+        size_t      n,
+        const char * format,
+        va_list      args)
 
 /*  FUNCTION
-    Format a list of arguments and put them into the string str.
-    The function makes sure that no more than n characters (including
-    the terminal 0 byte) are written into str.
-    If n is zero, nothing is written, and s may be a null pointer. Otherwise,
-    output characters beyond the n-1st are discarded rather than being written
-    to the array, and a null character is written at the end of the characters
-    actually written into the array. If copying takes place between objects
-    that overlap, the behavior is undefined.
+        Format a list of arguments and put them into the string str.
+        The function makes sure that no more than n characters (including
+        the terminal 0 byte) are written into str.
+        If n is zero, nothing is written, and s may be a null pointer. Otherwise,
+        output characters beyond the n-1st are discarded rather than being written
+        to the array, and a null character is written at the end of the characters
+        actually written into the array. If copying takes place between objects
+        that overlap, the behavior is undefined.
     
     INPUTS
-    str - The formatted result is stored here
-    n - The size of str
-    format - A printf() format string.
-    args - A list of arguments for the format string.
+        str - The formatted result is stored here
+        n - The size of str
+        format - A printf() format string.
+        args - A list of arguments for the format string.
 
     RESULT
-    Function returns the number of characters that would have been
-    written had n been sufficiently large, not counting the terminating null
-    character, or a negative value if an encoding error occurred. Thus, the
-    null-terminated output has been completely written if and only if the
-    returned value is nonnegative and less than n.
+        Function returns the number of characters that would have been
+        written had n been sufficiently large, not counting the terminating null
+        character, or a negative value if an encoding error occurred. Thus, the
+        null-terminated output has been completely written if and only if the
+        returned value is nonnegative and less than n.
 
     NOTES
 
@@ -69,8 +69,8 @@ int vsnprintf (
     BUGS
 
     SEE ALSO
-    printf(), sprintf(), fprintf(), vprintf(), vfprintf(), snprintf(),
-    vsnprintf()
+        printf(), sprintf(), fprintf(), vprintf(), vfprintf(), snprintf(),
+        vsnprintf()
 
     INTERNALS
 

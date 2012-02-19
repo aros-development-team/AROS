@@ -37,12 +37,12 @@
 
 ******************************************************************************/
 {
-	if (NULL != set) {
-		ULONG i = (signum >> 5);
-		if (0 != (set->__val[i] & (signum & 0x1f)))
-			return 1;
-		return 0;
-	}
+    if (NULL != set) {
+        ULONG i = (signum >> 5);
+        if (0 != (set->__val[i] & (signum & 0x1f)))
+            return 1;
+        return 0;
+    }
 	
-	return -1;
+    return -1;
 } /* sigismember */

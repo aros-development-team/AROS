@@ -35,10 +35,10 @@
 
 ******************************************************************************/
 {
-	if (NULL != set) {
-		memset(&set->__val, 0x00, sizeof(set->__val));
-		return 0;
-	}
+    if (NULL != set) {
+        memset(&set->__val, 0x00, sizeof(set->__val));
+        return 0;
+    }
 
-	return -1; /* return failure */
+    return -1; /* return failure */
 } /* sigemptyset */
