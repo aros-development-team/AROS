@@ -700,9 +700,10 @@ BCPL packstring     /* b0, long, @Array, @String */
     lsl.l	#2,%d2
     move.l	%d2,%a1
     moveq	#0,%d2
-    move.l	(%a0),%d2
+    move.b	(3,%a0),%d2
     move.l	%d2,%d0
-    lsr.l	#2,%d0
+    addq.l	#4,%d0          /* word_len = ((byte_len + 1) + 3) / 4 */
+    lsr.w	#2,%d0
 1:  move.l	(%a0)+,%d1
     move.b	%d1,(%a1)+
     dbf		%d2,1b
