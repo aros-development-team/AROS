@@ -58,24 +58,25 @@
    XDEF AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127)	; for 68040+
 */
 
-	#define CACHEDEBUG 0
-
 	#include "aros/m68k/asm.h"
+	#include "cache.h"
 
-	#define DMAB_NoModify   2
+	#define DMAB_Continue	    1  /* Continuation flag for CachePreDMA */
+	#define DMAB_NoModify	    2  /* Set if DMA does not update memory */
+	#define	DMAB_ReadFromRAM    3  /* Set if DMA goes *FROM* RAM to device */
 
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127)
 	.type	AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127),@function
 AROS_SLIB_ENTRY(CachePreDMA_00,Exec,127):
-	move.l	%a0,%d0	/* return input address */
-	rts
 
 #if CACHEDEBUG
-format:
-	.string "PreDMA(%p,%x,%x)\n"
+	bsr		cachedebug
 #endif
+
+	move.l	%a0,%d0	/* return input address */
+	rts
 
 	.text
 	.balign 4
@@ -84,17 +85,16 @@ format:
 AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127):
 
 #if CACHEDEBUG
-	movem.l %d0-%d1/%a0-%a1,-(%sp)
-	move.l %d0,-(%sp)
-	move.l (%a1),-(%sp)
-	move.l %a0,-(%sp)
-	pea format
-	jsr kprintf
-	lea 16(%sp),%sp
-	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	bsr		cachedebug
 #endif
 
 	movem.l %a0/%a3/%a5,-(%sp)
+
+	btst	#DMAB_Continue,%d0
+	bne.s	0f
+	btst	#DMAB_ReadFromRAM,%d0
+	bne.s	0f
+
 	move.l %a0,%d1
 	or.l %a1@,%d1
 	and.w #0x000f,%d1
@@ -112,71 +112,113 @@ AROS_SLIB_ENTRY(CachePreDMA_40,Exec,127):
 	move.l %a3@(kb_PlatformData),%a3
 	tst.l MMU_Level_A(%a3)
 	beq.s 0f
-	move.l (%a1),%d0
-	/* Non-cacheable page descriptor bits */
-	move.b #0x40+0x20,%d1
+	move.l %a1@,%d0
+	moveq #0,%d1
 	lea cacheprepostset,%a5
 	jsr Supervisor(%a6)
-	/* Store for following CachePostDMA() call */
-	move.b %d0,%a3@(cachemodestore)
-	bra.s 1f
 0:
+#if CACHEFULLFLUSH
+	jsr -0x27C(%a6) /* CacheClearU() */
+#else
 	move.l #0x0800,%d1
 	move.l %a1@,%d0
 	jsr -0x282(%a6) /* CacheClearE() */
+#endif
 1:
 	movem.l (%sp)+,%a0/%a3/%a5
 	move.l %a0,%d0
 	rts
 
 .globl cacheprepostset
+	// a0 = address
+	// d0 = length
+	// d1 = copyback mode. on=1 off=0
 cacheprepostset:
-	movem.l %d2/%d3/%a2,-(%sp)
-	move.l %d0,%d2
-	add.l %a0,%d2
+	movem.l %a0/%a2,-(%sp)
+	or.w #0x0700,%sr
+	sub.l %a2,%a2
+	// start address
+	bsr copybackchange
+	add.l %d0,%a0
+	// end address
+	bsr copybackchange
+	movem.l (%sp)+,%a0/%a2
+	rte
+
+copybackchange:
+	movem.l %d0-%d3/%a0-%a1,-(%sp)
+	move.l %d1,%d2
+	move.l %a0,%d0
+	and.w #0x000f,%d0
+	beq.s 1f // cache line aligned -> nothing to do
 	move.l %a0,%d0
 	and.w #~4095,%d0
+	cmp.l %a2,%d0
+	beq.s 1f // end == start
 	move.l %d0,%a2
-	move.b %d1,%d3
-	or.w #0x0700,%sr
-0:
-	nop
-	cpushp %dc,(%a2)
 	move.l %a2,%a0
 	bsr getpagedesc
+#if CACHEDEBUG
+	bsr cachedebug2
+#endif
 	/* adjust page descriptor cache flags */
-	move.b 3(%a0),%d0
-	and.b #~(0x40+0x20),3(%a0)
-	or.b %d3,3(%a0)
+	addq.l #3,%a0
+	move.b (%a0),%d0
+	btst #6,%d0
+	bne.s 1f // bit 6 set = noncacheable
+	bclr #5,%d0 // disable copyback
+	tst.b %d2
+	beq.s 2f
+	bset #5,%d0 // enable copyback
+2:	pflusha
+	move.b %d0,(%a0)
 	cpushl %dc,(%a0)
-	lea 4096(%a2),%a2
-	cmp.l %a2,%d2
-	bhi.s 0b
-	pflusha
-	and.b #0x40+0x20,%d0
-	movem.l (%sp)+,%d2/%d3/%a2
-	rte
+1:	movem.l (%sp)+,%d0-%d3/%a0-%a1
+	rts
 
 	/* Fetch page descriptor address. No error checks. */
 getpagedesc:
 	move.l MMU_Level_A(%a3),%a1
-	move.l %a0,%d0
-	moveq #32-7,%d1
-	lsr.l %d1,%d0
-	and.w #127,%d0
+	move.l %a0,%d1
+	bfextu %d1{0:7},%d0
 	move.l 0(%a1,%d0.w*4),%d0
 	clr.b %d0
 	move.l %d0,%a1
-	move.l %a0,%d0
-	moveq #32-7-7,%d1
-	lsr.l %d1,%d0
-	and.w #127,%d0
+	bfextu %d1{7:7},%d0
 	move.l 0(%a1,%d0.w*4),%d0
 	clr.b %d0
 	move.l %d0,%a1
-	move.l %a0,%d0
-	moveq #32-7-7-6,%d1
-	lsr.l %d1,%d0
-	and.w #63,%d0
+	bfextu %d1{14:6},%d0
 	lea 0(%a1,%d0.w*4),%a0
 	rts
+
+#if CACHEDEBUG
+cachedebug:
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l %d0,-(%sp)
+	move.l (%a1),-(%sp)
+	move.l %a0,-(%sp)
+	pea format
+	jsr kprintf
+	lea 16(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+cachedebug2:
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l %d2,-(%sp)
+	move.l (%a0),-(%sp)
+	move.l %a0,-(%sp)
+	move.l %a2,-(%sp)
+	pea format2
+	jsr kprintf
+	lea 20(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+
+format:
+	.string "PreDMA(%p,%x,%x)\n"
+format2:
+	.string "CB(%08x,%08x[%08x],%d)\n"
+
+#endif

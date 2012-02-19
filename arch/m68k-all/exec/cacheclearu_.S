@@ -4,7 +4,7 @@
 */
 
 /*****************************************************************************
- 
+
     NAME
  
  	AROS_LH0(void, CacheClearU,
@@ -46,9 +46,8 @@
 						; the branch cache)
 */
 
-#define CACHEDEBUG 0
-
 	#include "aros/m68k/asm.h"
+	#include "cache.h"
 
 	.text
 	.balign 4
@@ -56,6 +55,11 @@
 	.type	AROS_SLIB_ENTRY(CacheClearU_00,Exec,106),@function
 AROS_SLIB_ENTRY(CacheClearU_00,Exec,106):
 	/* Simple 68000s have no chaches */
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	rts
 
 	.text
@@ -63,6 +67,11 @@ AROS_SLIB_ENTRY(CacheClearU_00,Exec,106):
 	.globl	AROS_SLIB_ENTRY(CacheClearU_20,Exec,106)
 	.type	AROS_SLIB_ENTRY(CacheClearU_20,Exec,106),@function
 AROS_SLIB_ENTRY(CacheClearU_20,Exec,106):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1		/* Save a5 */
 	lea.l	cacheclearusup_20,%a5
 	jmp	Supervisor(%a6)	/* No jsr: this saves an rts */
@@ -81,6 +90,11 @@ cacheclearusup_20:
 	.globl	AROS_SLIB_ENTRY(CacheClearU_40,Exec,106)
 	.type	AROS_SLIB_ENTRY(CacheClearU_40,Exec,106),@function
 AROS_SLIB_ENTRY(CacheClearU_40,Exec,106):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1
 	lea.l	cacheclearusup_40,%a5
 	jmp	Supervisor(%a6)
@@ -90,28 +104,30 @@ AROS_SLIB_ENTRY(CacheClearU_40,Exec,106):
 	.globl	AROS_SLIB_ENTRY(CacheClearU_60,Exec,106)
 	.type	AROS_SLIB_ENTRY(CacheClearU_60,Exec,106),@function
 AROS_SLIB_ENTRY(CacheClearU_60,Exec,106):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1
 	lea.l	cacheclearusup_60,%a5
 	jmp	Supervisor(%a6)
 
-#if CACHEDEBUG
-format:
-  .string "CU()\n"
-#endif
-
 cacheclearusup_40:
-
-#if CACHEDEBUG
-  movem.l %d0-%d1/%a0-%a1,-(%sp)
-  pea format
-  jsr kprintf
-  addq.l #4,%sp
-  movem.l (%sp)+,%d0-%d1/%a0-%a1
-#endif
-
 	nop /* old 68040 revision bug workaround */
 cacheclearusup_60:
 	cpusha	%bc	/* Push dirty cache lines to memory and invalidate both caches */
 	move.l	%a1,%a5
 	rte
 
+#if CACHEDEBUG
+cachedebug:
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	pea format
+	jsr kprintf
+	addq.l #4,%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+format:
+	.string "CU()\n"
+#endif

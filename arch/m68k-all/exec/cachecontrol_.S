@@ -7,6 +7,7 @@
 */
 
 	#include "aros/m68k/asm.h"
+	#include "cache.h"
 
 	.chip 68040
 
@@ -17,12 +18,27 @@
 	.type	AROS_SLIB_ENTRY(CacheControl_00,Exec,108),@function
 AROS_SLIB_ENTRY(CacheControl_00,Exec,108):
 	/* 68000/010 have no caches */
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	moveq #0,%d0
+
+#if CACHEDEBUG
+	bsr		cachedebug2
+#endif
+
 	rts
 
 	.globl	AROS_SLIB_ENTRY(CacheControl_20,Exec,108)
 	.type	AROS_SLIB_ENTRY(CacheControl_20,Exec,108),@function
 AROS_SLIB_ENTRY(CacheControl_20,Exec,108):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1
 	lea.l	cachecontrolsup_20,%a5
 	jmp	Supervisor(%a6)
@@ -41,12 +57,22 @@ cachecontrolsup_20:
 	or.w	#0x0808,%d3 // CACRF_ClearI|CACRF_ClearD
 	movec	%d3,%cacr
 	movem.l	(%sp)+,%d2/%d3
+
+#if CACHEDEBUG
+	bsr		cachedebug2
+#endif
+
 	rte
 
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheControl_40,Exec,108)
 	.type	AROS_SLIB_ENTRY(CacheControl_40,Exec,108),@function
 AROS_SLIB_ENTRY(CacheControl_40,Exec,108):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1
 	lea.l	cachecontrolsup_40,%a5
 	jmp	Supervisor(%a6)
@@ -95,12 +121,42 @@ cachecontrolsup_40:
     btst #15,%d1
     beq.s 1f
     // ->code+burst
-    or.w #0x2011,%d0 // CACRF_WriteAllocate|CACRF_IBE|CACRF_EnableI
+    or.w #0x0011,%d0 // CACRF_IBE|CACRF_EnableI
 1:	// 040/060 data cache?
 	btst #31,%d1
 	beq.s 0f
 	// ->data+burst+copyback
-	or.l #0x80002100,%d0 // CACRF_CopyBack|CACRF_DBE|CACRF_EnableE
+	or.l #0x80001100,%d0 // CACRF_CopyBack|CACRF_DBE|CACRF_EnableE
 0:
 	movem.l (%sp)+,%d2/%d3
+
+#if CACHEDEBUG
+	bsr		cachedebug2
+#endif
+
     rte
+
+#if CACHEDEBUG
+cachedebug:
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l	%d1,-(%sp)
+	move.l	%d0,-(%sp)
+	pea format
+	jsr kprintf
+	lea	12(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+cachedebug2:
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l	%d0,-(%sp)
+	pea format2
+	jsr kprintf
+	lea	8(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+format:
+	.string "CO(%08x,%08x)"
+format2:
+	.string "=%08x\n"
+#endif
+
