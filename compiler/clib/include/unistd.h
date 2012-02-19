@@ -8,7 +8,7 @@
     Desc: POSIX header file unistd.h
     Lang: english
 */
-#include <sys/types.h>
+#include <aros/system.h>
 
 /*
  * What version of POSIX things do we implement. We must define this before

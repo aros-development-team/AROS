@@ -41,7 +41,7 @@
     /* TODO: Implement kill() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
-    
+
     return -1;
 } /* kill() */
 

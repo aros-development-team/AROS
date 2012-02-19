@@ -48,6 +48,7 @@
     struct timerequest  *timerIO;
     int retval = -1;
     
+    /* FIXME: share TimerBase with gettimeofday and don't open/close it for each usleep call */
     if((timerMsgPort = CreateMsgPort()))
     {
 	timerIO = (struct timerequest *) CreateIORequest(timerMsgPort, sizeof (struct timerequest));

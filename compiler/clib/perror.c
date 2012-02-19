@@ -5,8 +5,9 @@
     ANSI C function perror().
 */
 
-#include "errno.h"
-#include "string.h"
+#include <errno.h>
+#include <string.h>
+
 /*****************************************************************************
 
     NAME */

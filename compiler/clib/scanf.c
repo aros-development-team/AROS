@@ -5,11 +5,12 @@
     ANSI C function scanf().
 */
 
+#include <stdarg.h>
+
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <stdarg.h>
 
 	int scanf (
 

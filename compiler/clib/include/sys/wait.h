@@ -8,9 +8,7 @@
 #ifndef SYS_WAIT_H_
 #define SYS_WAIT_H_
 
-#ifndef SYS_TYPES_H
-#include <sys/types.h>
-#endif
+#include <aros/system.h>
 
 #define WNOHANG         0x00000001
 #define WUNTRACED       0x00000002

@@ -8,7 +8,6 @@
 #ifndef AROS_NOFPU
 
 #include <ctype.h>
-#include <errno.h>
 #include <limits.h>
 
 /*****************************************************************************
@@ -150,7 +149,7 @@
 
 void strtod (const char * str,char ** endptr)
 {
-	return;
+    return;
 }
 
 #endif /* AROS_NOFPU */

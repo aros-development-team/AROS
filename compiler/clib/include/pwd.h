@@ -2,7 +2,7 @@
 #define	_PWD_H_
 
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,6 +13,7 @@
     You do not need to define size_t in this file. (POSIX)
 */
 
+#include <aros/types/size_t.h>
 #include <aros/types/gid_t.h>
 #include <aros/types/uid_t.h>
 

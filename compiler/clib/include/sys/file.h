@@ -1,18 +1,15 @@
 #ifndef _SYS__FILE_H_
 #define _SYS__FILE_H_
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
     
-    Desc: 4.4BSD header file sys/stat.h
-    Lang: english
+    Desc: 4.4BSD header file sys/file.h
 */
 
-/* flock() operations */
+#include <aros/system.h>
 
-#ifndef SYS_TYPES_H
-#include <sys/types.h>
-#endif
+/* flock() operations */
 
 #define LOCK_SH 1       /* Shared lock.  */
 #define LOCK_EX 2       /* Exclusive lock.  */

@@ -5,8 +5,6 @@
     POSIX function getuid().
 */
 
-#include <sys/types.h>
-
 /*****************************************************************************
 
     NAME */
@@ -24,7 +22,8 @@
     RESULT
 	
     NOTES
-    	
+        Always 0 is returned.
+
     EXAMPLE
 
     BUGS

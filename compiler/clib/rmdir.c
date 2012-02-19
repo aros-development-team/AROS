@@ -5,12 +5,12 @@
     POSIX function rmdir().
 */
 
-#include <proto/dos.h>
+#include <stdio.h>
 
 /*****************************************************************************
 
     NAME */
-#include <stdio.h>
+#include <unistd.h>
 
 	int rmdir(
 
@@ -39,5 +39,6 @@
 
 ******************************************************************************/
 {
+    /* FIXME: Shouldn't we check if pathname is actually a directory ? */
     return remove(pathname);
 } /* rmdir() */

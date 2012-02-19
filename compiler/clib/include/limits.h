@@ -9,8 +9,6 @@
 #ifndef _LIMITS_H_
 #define _LIMITS_H_ 1
 
-#include <aros/system.h>
-
 /*
  *  Define ANSI <limits.h> for standard 32-bit words.
  *  We're assuming

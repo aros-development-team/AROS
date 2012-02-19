@@ -2,11 +2,9 @@
 #define	_GRP_H_
 
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#include <aros/system.h>
 
 /*
     Implementation Note:

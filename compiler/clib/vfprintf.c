@@ -9,6 +9,7 @@
 
 #include <proto/dos.h>
 #include <errno.h>
+#include <stdarg.h>
 #include "__fdesc.h"
 #include "__stdio.h"
 
@@ -18,7 +19,6 @@ static int __putc(int c, void *fh);
 
     NAME */
 #include <stdio.h>
-#include <stdarg.h>
 
 	int vfprintf (
 

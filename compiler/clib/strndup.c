@@ -5,11 +5,12 @@
     ANSI C function strndup().
 */
 
+#include <stdlib.h>
+
 /*****************************************************************************
 
     NAME */
 #include <string.h>
-#include <memory.h>
 
 	char * strndup (
 

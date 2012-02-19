@@ -41,7 +41,6 @@ static char *rcsid = "$OpenBSD: swab.c,v 1.3 1998/02/10 02:19:48 deraadt Exp $";
 /*****************************************************************************
 
     NAME */
-
 #include <unistd.h>
 
 void swab(

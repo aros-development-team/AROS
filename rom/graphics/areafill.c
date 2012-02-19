@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#include <memory.h>
 #include <proto/alib.h>
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -16,6 +15,7 @@
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include <aros/debug.h>
 

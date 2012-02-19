@@ -9,9 +9,9 @@
 
 #include <proto/dos.h>
 #include <errno.h>
+#include <stdarg.h>
 #include "__fdesc.h"
 #include "__stdio.h"
-#include <stdio.h>
 
 /*
 ** If the VFSCANF_DIRECT_DOS define is set to 1, dos.library functions FGetC()
@@ -37,7 +37,7 @@ static int __ungetc(int c, void *_h);
 /*****************************************************************************
 
     NAME */
-#include <stdarg.h>
+#include <stdio.h>
 
 	int vfscanf (
 

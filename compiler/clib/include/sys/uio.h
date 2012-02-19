@@ -7,8 +7,8 @@
     POSIX/BSD header <sys/uio.h>
 */
 
-#include <aros/systypes.h>
 #include <aros/system.h>
+
 #include <aros/types/iovec_s.h>
 #include <aros/types/ssize_t.h>
 
