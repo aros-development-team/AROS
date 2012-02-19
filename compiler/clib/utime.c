@@ -4,6 +4,7 @@
 */
 
 #include <errno.h>
+#include <time.h>
 #include <sys/time.h>
 
 /*****************************************************************************
@@ -16,7 +17,7 @@
 
 /*  SYNOPSIS */
 	const char *filename,
-	struct utimbuf *buf)
+	const struct utimbuf *buf)
 
 /*  FUNCTION
 	Change last access and last modification time of the given file to

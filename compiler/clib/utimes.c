@@ -6,7 +6,6 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 
-#include <sys/time.h>
 #include <errno.h>
 
 #include "__upath.h"
@@ -14,12 +13,13 @@
 /*****************************************************************************
 
     NAME */
+#include <sys/time.h>
 
 	int utimes(
 /*  SYNOPSIS */
 
 	const char *file,
-	struct timeval tvp[2])
+	const struct timeval tvp[2])
 
 /*  FUNCTION
 	Change last access and last modification time of the given file to
