@@ -8,6 +8,7 @@
 #include <exec/types.h>
 #include <workbench/icon.h>
 #include <utility/tagitem.h>
+#include <graphics/gfxmacros.h>
 #include <proto/icon.h>
 
 #include "icon_intern.h"
@@ -145,7 +146,7 @@
         if (!image->ImageData) {
             struct Image *gi = NULL;
             ULONG state;
-            BOOL flood;
+            BOOL flood = FALSE;
 
             if (i == 1 && (icon->do_Gadget.Flags & GFLG_GADGHIMAGE)) {
                 gi = icon->do_Gadget.SelectRender;
@@ -167,22 +168,37 @@
             }
 
             InitRastPort(&rp);
-            rp.BitMap = image->BitMap;
-            DrawImageState(&rp, gi, 0, 0, state, dri);
+            if (!flood) {
+                rp.BitMap = image->BitMap;
+                DrawImageState(&rp, gi, 0, 0, state, dri);
+            } else {
+                /* Create a bitmap with a 1 pixel border,
+                 * fill it with the inverse color,
+                 * draw the inverse image into it,
+                 * then flood-fill the border with color 0.
+                 *
+                 * Finally, copy the final image to the
+                 * destination bitmap.
+                 */
+                struct BitMap *bm;
+                if ((bm = AllocBitMap(gi->Width+2, gi->Height+2, gi->Depth, BMF_CLEAR, NULL))) {
+                    PLANEPTR trbuf;
 
-            if (flood) {
-                /* Ugh. The TmpRas game. */
-                struct TmpRas tr;
-                ULONG trsize = RASSIZE(ni->ni_Width, ni->ni_Height);
-                APTR trbuf;
+                    rp.BitMap = bm;
 
-                trbuf = AllocMem(trsize, MEMF_CHIP);
-                if (trbuf) {
-                    InitTmpRas(&tr, trbuf, trsize);
-                    rp.TmpRas = &tr;
-                    SetAPen(&rp, dri->dri_Pens[BACKGROUNDPEN]);
-                    Flood(&rp, 1, 0, 0);
-                    FreeMem(trbuf, trsize);
+                    if ((trbuf = AllocRaster(gi->Width+2, gi->Height+2))) {
+                        struct TmpRas tr;
+                        InitTmpRas(&tr, trbuf, RASSIZE(gi->Width+2, gi->Height+2));
+                        rp.TmpRas = &tr;
+                        SetAPen(&rp, (1 << gi->Depth)-1);
+                        RectFill(&rp, 0, 0, gi->Width+1, gi->Height+1);
+                        DrawImageState(&rp, gi, 1, 1, state, dri);
+                        SetAPen(&rp, 0);
+                        Flood(&rp, 1, 0, 0);
+                        BltBitMap(bm, 0, 0, image->BitMap, 0, 0, gi->Width, gi->Height, 0xc0, ~0, NULL);
+                        FreeRaster(trbuf, gi->Width+2, gi->Height+2);
+                    }
+                    FreeBitMap(bm);
                 }
             }
 
