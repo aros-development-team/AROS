@@ -69,21 +69,21 @@ void swab(
 
 ******************************************************************************/
 {
-	register unsigned long temp;
-	register int n;
-	register char *fp, *tp;
+    register unsigned long temp;
+    register int n;
+    register char *fp, *tp;
 
-	n = (len >> 1) + 1;
-	fp = (char *)from;
-	tp = (char *)to;
+    n = (len >> 1) + 1;
+    fp = (char *)from;
+    tp = (char *)to;
 #define	STEP	temp = *fp++,*tp++ = *fp++,*tp++ = temp
-	/* round to multiple of 8 */
-	while ((--n) & 07)
-		STEP;
-	n >>= 3;
-	while (--n >= 0) {
-		STEP; STEP; STEP; STEP;
-		STEP; STEP; STEP; STEP;
-	}
+    /* round to multiple of 8 */
+    while ((--n) & 07)
+        STEP;
+    n >>= 3;
+    while (--n >= 0) {
+        STEP; STEP; STEP; STEP;
+        STEP; STEP; STEP; STEP;
+    }
 }
 
