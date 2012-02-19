@@ -5,12 +5,12 @@
     ANSI C function sigfillset().
 */
 
+#include <string.h>
+
 /*****************************************************************************
 
     NAME */
-
 #include <signal.h>
-#include <string.h>
 
 	int sigfillset (
 

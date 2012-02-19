@@ -8,6 +8,7 @@
 */
 
 #include <aros/system.h>
+#include <aros/types/time_t.h>
 
 struct timeb
 {

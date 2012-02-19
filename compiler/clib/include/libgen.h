@@ -15,5 +15,4 @@ char *dirname(char *);
 
 __END_DECLS
 
-#endif
-
+#endif /* _LIBGEN_H */

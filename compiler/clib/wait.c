@@ -13,12 +13,12 @@
 #include "__arosc_privdata.h"
 
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <errno.h>
 
 /*****************************************************************************
 
     NAME */
+#include <sys/wait.h>
 
         pid_t wait(
 

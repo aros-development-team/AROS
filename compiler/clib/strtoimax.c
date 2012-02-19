@@ -42,6 +42,7 @@
     EXAMPLE
 
     BUGS
+        errno is not set as required by C99 standard
 
     SEE ALSO
         strtol(), strtoll()
@@ -50,6 +51,7 @@
 
 ******************************************************************************/
 {
+    /* TODO: Implement errno handling in strtoimax() */
 #if defined(AROS_HAVE_LONG_LONG)
     return (intmax_t) strtoll(nptr, endptr, base);
 #else

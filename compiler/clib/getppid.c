@@ -3,7 +3,6 @@
     $Id$
 */
 
-#include <unistd.h>
 #include <sys/types.h>
 
 #include <exec/tasks.h>
@@ -17,6 +16,7 @@
 /*****************************************************************************
 
     NAME */
+#include <unistd.h>
 
 	pid_t getppid(
 

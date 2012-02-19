@@ -4,12 +4,12 @@
 
     Implementation of vscanf().
 */
+#include <stdarg.h>
 
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <stdarg.h>
 
 	int vscanf (
 

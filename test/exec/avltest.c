@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <memory.h>
 
 static const char version[] = "$VER: avltest.c 45.0 (25.2.2008)\n";
 

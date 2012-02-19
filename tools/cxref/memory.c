@@ -30,7 +30,6 @@
 #include <varargs.h>
 #endif
 
-#include <memory.h>
 #include "memory.h"
 
 /*+ A private memory heap is used to reduce the number of malloc calls that are made, the Heap type is a pointer to this. +*/

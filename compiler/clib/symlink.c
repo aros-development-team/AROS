@@ -11,7 +11,6 @@
 #include <proto/dos.h>
 #include <errno.h>
 #include "__upath.h"
-#include <aros/debug.h>
 
 /*****************************************************************************
 

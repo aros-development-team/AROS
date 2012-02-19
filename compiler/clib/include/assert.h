@@ -11,7 +11,9 @@
 
 #include <aros/system.h>
 
+#ifdef assert
 #undef assert
+#endif
 
 #ifdef NDEBUG
 /* According to POSIX.1-2001, assert() must generate no code

@@ -4,12 +4,12 @@
 
     Implementation of vprintf().
 */
+#include <stdarg.h>
 
 /*****************************************************************************
 
     NAME */
 #include <stdio.h>
-#include <stdarg.h>
 
 	int vprintf (
 

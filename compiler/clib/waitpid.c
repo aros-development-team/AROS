@@ -11,7 +11,6 @@
 #include <aros/startup.h>
 
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <errno.h>
 
 #include "__arosc_privdata.h"
@@ -19,6 +18,7 @@
 /*****************************************************************************
 
     NAME */
+#include <sys/wait.h>
 
         pid_t waitpid(
 

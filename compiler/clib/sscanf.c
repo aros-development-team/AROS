@@ -5,16 +5,13 @@
     ANSI C function sscanf().
 */
 
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
 #include <stdarg.h>
 
 
 /*****************************************************************************
 
     NAME */
+#include <stdio.h>
 
 	int sscanf (
 

@@ -42,6 +42,7 @@
     EXAMPLE
 
     BUGS
+        errno is not set as required by C99 standard
 
     SEE ALSO
         strtoul(), strtoull()
@@ -50,6 +51,7 @@
 
 ******************************************************************************/
 {
+    /* TODO: Implement errno handling in strtoumax() */
 #if defined(AROS_HAVE_LONG_LONG)
     return (uintmax_t) strtoull(nptr, endptr, base);
 #else

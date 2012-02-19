@@ -71,7 +71,7 @@
     cpu = rindex(architecture, '-') + 1;
     strncpy(name->machine, (cpu?cpu:architecture), sizeof(name->machine) - 1);
 
-    /* If TCP is running it will set the ENV:HOSTNAME var with out hostname */
+    /* If TCP is running it will set the ENV:HOSTNAME var with our hostname */
     if (GetVar("HOSTNAME", name->nodename, sizeof(name->nodename) - 1, GVF_GLOBAL_ONLY) == -1)
     {
         strncpy(name->nodename, "localhost.localdomain", sizeof(name->nodename) - 1);

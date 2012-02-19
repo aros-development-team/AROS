@@ -5,11 +5,12 @@
     ANSI C function strdup().
 */
 
+#include <stdlib.h>
+
 /*****************************************************************************
 
     NAME */
 #include <string.h>
-#include <memory.h>
 
 	char * strdup (
 
@@ -18,7 +19,7 @@
 
 /*  FUNCTION
 	Create a copy of a string. The copy can be freed with free() or will
-	be freed when then program ends.
+	be freed when the program ends.
 
     INPUTS
 	str1 - Strings to duplicate

@@ -5,8 +5,6 @@
     ANSI C function qsort().
 */
 /* Original source from NetBSD */
-#include <exec/types.h>
-#include <sys/types.h>
 #include <stdlib.h>
 
 static inline const char *med3 (const char *, const char *, const char *, int (*)());
