@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    SAS C function stco_l().
+    SAS/C function stco_l().
 */
 
-#include <stdio.h>
+#include <stdlib.h>
 
 /*****************************************************************************
 
@@ -29,7 +29,7 @@
 	1 means success. 0 means failure.
 
     NOTES
-	SAS C specific
+	SAS/C specific
 	
     EXAMPLE
 
@@ -41,5 +41,16 @@
 
 ******************************************************************************/
 {
-    return sscanf(in, "%lo", lvalue);
+    char *s;
+    long l;
+
+    l = strtol(in, &s, 8);
+
+    if (s != in)
+    {
+        *lvalue = l;
+        return 1;
+    }
+    else
+        return 0;
 } /* stco_l */

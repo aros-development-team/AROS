@@ -2,10 +2,9 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    SAS C function stch_l().
+    SAS/C function stch_l().
 */
 
-#include <stdio.h>
 #include <stdlib.h>
 
 /*****************************************************************************
@@ -30,7 +29,7 @@
 	Number of characters converted
 
     NOTES
-	SAS C specific
+	SAS/C specific
 	
     EXAMPLE
 

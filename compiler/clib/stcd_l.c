@@ -2,10 +2,10 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    SAS C function stcd_l().
+    SAS/C function stcd_l().
 */
 
-#include <stdio.h>
+#include <stdlib.h>
 
 /*****************************************************************************
 
@@ -29,7 +29,7 @@
 	1 means success. 0 means failure.
 
     NOTES
-	SAS C specific
+	SAS/C specific
 	
     EXAMPLE
 
@@ -41,7 +41,16 @@
 
 ******************************************************************************/
 {
+    char *s;
+    long l;
 
-    return sscanf(in, "%ld", lvalue);
-    
+    l = strtol(in, &s, 10);
+
+    if (s != in)
+    {
+        *lvalue = l;
+        return 1;
+    }
+    else
+        return 0;
 } /* stcd_l */
