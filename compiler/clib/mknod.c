@@ -29,6 +29,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -40,6 +41,7 @@
 
 ******************************************************************************/
 {
+    /* TODO: Implement mknod() */
     errno = EPERM;
     return -1;
 } /* mknod */

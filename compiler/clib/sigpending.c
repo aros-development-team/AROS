@@ -26,6 +26,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -37,7 +38,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement sigpending() */
+    /* TODO: Implement sigpending() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
     

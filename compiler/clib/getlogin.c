@@ -24,6 +24,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -35,7 +36,7 @@
 
 ******************************************************************************/
 {
-    /* Implement getlogin() */
+    /* TODO: Implement getlogin() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     errno = ENOSYS;

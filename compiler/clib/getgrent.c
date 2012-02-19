@@ -36,7 +36,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement getgrent() */
+    /* TODO: Implement getgrent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
 

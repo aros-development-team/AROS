@@ -24,6 +24,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -35,7 +36,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement ttyname() */
+    /* TODO: Implement ttyname() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     errno = ENOSYS;

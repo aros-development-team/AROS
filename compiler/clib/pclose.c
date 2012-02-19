@@ -28,6 +28,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -40,7 +41,7 @@
 
 ******************************************************************************/
 {
-    /* Implement pclose() */
+    /* TODO: Implement pclose() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
 

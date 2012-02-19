@@ -2,9 +2,10 @@
 #include <stdio.h>	/* FILENAME_MAX */
 #include <unistd.h>	/* _PC_*	*/
 
-/* just a hack for grub2 */
+/* FIXME: add autodoc */
 long pathconf(const char *path, int name)
 {
+    /* TODO: Implement pathconf() properly */
     switch (name) {
     case _POSIX_NAME_MAX:
 	return FILENAME_MAX;

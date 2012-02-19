@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -35,8 +36,9 @@
 
 ******************************************************************************/
 {
-    /* Implement setgrent() */
+    /* TODO: Implement setgrent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return;
 }

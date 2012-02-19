@@ -27,6 +27,7 @@
     RESULT
 
     NOTES
+        umask is currently remembered but not used in any function
 
     EXAMPLE
 
@@ -52,8 +53,11 @@ static int __umask_init(struct aroscbase *aroscbase)
 
     paroscbase = __GM_GetBaseParent(aroscbase);
 
-    /* FIXME: Implement umask() properly */
+    /* TODO: Implement umask() properly
+       Currently information is not used in any of the related functions
+    */
 
+     /* Child of exec*()/vfork() functions inherit umask of parent */
     if (paroscbase && (paroscbase->acb_flags & (VFORK_PARENT | EXEC_PARENT)))
         aroscbase->acb_umask = paroscbase->acb_umask;
     else

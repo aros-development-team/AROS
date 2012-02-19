@@ -1,4 +1,5 @@
+/* FIXME: add autodoc */
 void sync()
 {
-    /* hack for grub-setup */
+    /* TODO: Implement sync() */
 }

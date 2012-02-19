@@ -22,6 +22,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -33,6 +34,7 @@
 
 ******************************************************************************/
 {
+    /* TODO: Implement getloadavg() */
     return -1;
 }
 

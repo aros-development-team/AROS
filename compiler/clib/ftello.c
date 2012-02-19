@@ -1,7 +1,8 @@
 #include <stdio.h>
 
-/* hack for grub2 */
+/* FIXME: add autodoc */
 off_t ftello(FILE *stream)
 {
+    /* TODO: implement ftello() */
     return ftell(stream);
 }

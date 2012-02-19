@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement fchown() */
+    /* TODO: Implement fchown() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     return 0;
