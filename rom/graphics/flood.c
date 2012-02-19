@@ -28,6 +28,8 @@ struct fillinfo
     ULONG bpr;
     ULONG orig_apen;
     ULONG orig_bpen;
+    ULONG rp_width;
+    ULONG rp_height;
     
     struct GfxBase *gfxbase;
 };
@@ -93,9 +95,6 @@ static int pix_written;
     
     struct TmpRas *tmpras = rp->TmpRas;
     ULONG bpr, needed_size;
-    ULONG rp_width, rp_height;
-    ULONG idx;
-    UBYTE right_mask;
     
     struct fillinfo fi;
     
@@ -115,18 +114,18 @@ static int pix_written;
 
     if (NULL != rp->Layer)
     {
-    	rp_width  = rp->Layer->Width;
-    	rp_height = rp->Layer->Height;
+    	fi.rp_width  = rp->Layer->Width;
+    	fi.rp_height = rp->Layer->Height;
     }
     else
     {
-    	rp_width  = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
-    	rp_height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);
+    	fi.rp_width  = GetBitMapAttr(rp->BitMap, BMA_WIDTH);
+    	fi.rp_height = GetBitMapAttr(rp->BitMap, BMA_HEIGHT);
     }
     
     
-    bpr = WIDTH_TO_BYTES( rp_width );
-    needed_size = bpr * rp_height;
+    bpr = WIDTH_TO_BYTES( fi.rp_width );
+    needed_size = bpr * fi.rp_height;
     
     if (tmpras->Size < needed_size)
     	ReturnBool("Flood (To small tmpras)",  FALSE);
@@ -143,32 +142,6 @@ static int pix_written;
     D(bug("Clearing tmpras\n"));
     memset(tmpras->RasPtr, 0,  needed_size);
     
-
-    D(bug("Drawing outline\n"));
-    /* Draw an outline to stop "leaks" */
-
-
-    D(bug("Left\n"));
-    for (idx = 0; idx < bpr; idx ++ )				/* top */
-    	tmpras->RasPtr[idx] = 0xFF;
-	
-    D(bug("Top\n"));
-    for (idx = bpr; idx < needed_size; idx += bpr )		/* left */
-        tmpras->RasPtr[idx] |= 0x80;
-
-    D(bug("Right\n"));
-    right_mask = XCOORD_TO_MASK(rp_width - 1);
-    D(bug("Width=%d, mask=%d\n", rp_width, right_mask));
-    for (idx = (bpr * 2) - 1; idx < needed_size; idx += bpr )	/* right */
-        tmpras->RasPtr[idx] |= right_mask;
-	
-    D(bug("Bottom\n"));
-    D(bug("height=%d, idx=%d\n", rp_height, bpr * (rp_height - 1) ));
-    for (idx = bpr * (rp_height - 1); idx < needed_size; idx ++ )	/* bottom */
-        tmpras->RasPtr[idx] |= 0xFF;
-	
-    D(bug("done outlining\n"));
-	
     if (mode == 0)
     {
     	/* Outline mode */
@@ -183,7 +156,7 @@ static int pix_written;
     	/* Color mode */
 	D(bug("Reading pixel\n"));
 	fi.fillpen = ReadPixel(rp, x, y);
-	D(bug("pixel read\n"));
+	D(bug("pixel read: %d\n", fi.fillpen));
 	fi.isfillable = color_isfillable;
     }
     
@@ -248,6 +221,9 @@ static BOOL color_isfillable(struct fillinfo *fi, LONG x, LONG y)
 {
     BOOL fill;
 
+    if (x < 0 || y < 0 || x >= fi->rp_width || y >= fi->rp_height)
+        return FALSE;
+
     if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
@@ -270,6 +246,9 @@ static BOOL outline_isfillable(struct fillinfo *fi, LONG x, LONG y)
 /*    EnterFunc(bug("outline_isfillable(fi=%p, x=%d, y=%d)\n",
     	fi, x, y));
 */    
+    if (x < 0 || y < 0 || x >= fi->rp_width || y >= fi->rp_height)
+        return FALSE;
+
     if (gettmpraspixel(fi->rasptr, x, y, fi->bpr))
     {
 /*    	D(bug("Pixel checked twice at (%d, %d)\n", x, y)); */
