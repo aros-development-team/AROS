@@ -1,0 +1,89 @@
+TABLE OF CONTENTS
+
+Rawimage.mcc/Rawimage.mcc
+Rawimage.mcc/MUIA_Rawimage_Data
+Rawimage.mcc/Rawimage.mcc                         
+
+   Rawimage.mcc is a MUI custom class which offers a comfortable way to
+   integrate large or small images (e.g. logos, symbols for buttons, etc.)
+   into MUI UIs. Respective images can be easily embedded directly into
+   the program code.
+
+   The base format (ARGB RAW) of the data structure is compatible with
+   the MUI_AlphaData structure, so uncompressed images also can be used
+   directly with MUI4's \033A[0xaddr] escape sequence for text output.
+
+   struct MUI_AlphaData
+   {
+       ULONG width;
+       ULONG height;
+       ULONG padding[2];
+       ULONG data[0];
+   };
+
+
+   Since embedding lots of ARGB images into the code can increase executable
+   size noticeably (up to the point when there is more image data than actual
+   code in the binary) Rawimage.mcc offers decompression functionality, so
+   compressed image data can be used.
+
+   This is not compatible with MUI_AlphaData (yet); the two reserved padding
+   longwords are used to specify compression format and compressed data size.
+
+   struct MUI_RawimageData
+   {
+       ULONG ri_Width;
+       ULONG ri_Height;
+       ULONG ri_Format;
+       ULONG ri_Size;
+       ULONG ri_Data[0];
+   };
+
+   Filling the ri_Size field is optional when ri_Format is 0.
+
+   To convert an image into embedded code one of the many available tools
+   can be used (png2c, dt2raw, bin2c, dt2rawimage, etc.). For each supported
+   format the example code (Rawimage-Demo) contains short instructions for
+   possible ways to do the conversion.
+
+   e.g. to make a bz2 compressed embedded image:
+   > dt2raw logo.png logo.raw
+   > bzip2 -k logo.raw
+   > bin2c logo.raw logo.c
+
+   The data array needs to be prefixed with the MUIA_RawimageData structure
+   header, e.g. like this:
+
+   UBYTE _image1_bz2[] = {
+       0x00, 0x00, 0x00, 0x20, /* Width of logo.png:     32         */
+       0x00, 0x00, 0x00, 0x20, /* Height of logo.png:    32         */
+       'B',  'Z',  '2',  '\0', /* Format:                ARGB BZ2   */
+       0x00, 0x00, 0x07, 0x61, /* logo.png.bz2 filesize: 1889 Bytes */
+       (actual data follows here)
+       ...
+
+Rawimage.mcc/MUIA_Rawimage_Data
+
+   NAME
+       MUIA_Rawimage_Data -- (V20) [IS.], struct MUI_RawimageData *
+
+   FUNCTION
+       Initialize a new graphic for the RawimageObject. A pointer to 
+       valid MUI_AlphaData or MUI_RawimageData needs to be passed. 
+
+       This attribute can not be queried with get(); any possible return
+       value is undefined.
+       
+   EXAMPLE
+
+       ULONG rgbpixel[] =
+       {
+           0x3, /* width          */
+           0x1, /* height         */
+           0x0, /* no compression */
+           0x0  /* data size      */
+           0xFFFF0000, 0xFF00FF00, 0xFF0000FF,
+       };
+
+       set(rawimgobj, MUIA_Rawimage_Data, rgbpixel);
+

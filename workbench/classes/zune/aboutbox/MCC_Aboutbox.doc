@@ -1,0 +1,224 @@
+TABLE OF CONTENTS
+
+Aboutbox.mcc/Aboutbox.mcc
+Aboutbox.mcc/MUIA_Aboutbox_Build
+Aboutbox.mcc/MUIA_Aboutbox_Credits
+Aboutbox.mcc/MUIA_Aboutbox_LogoData
+Aboutbox.mcc/MUIA_Aboutbox_LogoFallback
+Aboutbox.mcc/MUIA_Aboutbox_LogoFile
+Aboutbox.mcc/Aboutbox.mcc                         
+
+   Aboutbox.mcc is a MUI custom class which offers a standardized 'About'
+   and copyright information requester to achieve an uniform look across all
+   applications which make use of it. It also reduces the amount of work
+   required to  implement an own About requester.
+
+   To get the right look out of Aboutbox.mcc it is very important that 
+   the standard MUIA_Application_#? tags are properly filled and are style 
+   conform. Aboutbox will do some magic on them to retrieve the data
+   it needs.
+
+   Setting the environment variable 'ABOUTBOX_DEBUG' will return verbose
+   debug information in case information provided in the tag values are
+   unsuitable.
+
+
+   EXAMPLE
+       myapp = ApplicationObject,
+           MUIA_Application_Title,       "AboutboxDemo",
+           MUIA_Application_Version,     "$VER: AboutboxDemo 1.0 (07.04.07)",
+           MUIA_Application_Copyright,   "© 2007 Christian Rosentreter",
+           MUIA_Application_Author,      "Christian Rosentreter",
+           MUIA_Application_Description, "Demonstrates Aboutbox.mcc.",
+       ...
+
+
+   NOTES
+   Do not add copyright information to the MUIA_Application_Version
+   string. The style is:
+
+       "$VER: <app_title> <version>.<revision> (<dd>.<mm>.<yyyy>)"
+   
+   A 2-digit year in the date is accepted too. Avoid adding weird information
+   directly after the <app_title>. Do not use leading zeros for the re-
+   vision (<version>.<revision> is not a decimal number; it's two numbers
+   separated by a dot).
+
+   
+   If the project has multiple authors then a comma separated list can
+   be used in MUIA_Application_Author, like: "Christian Rosentreter, Mister
+   Banana", etc.
+
+   If the project requires multiple copyrights (e.g. because the Application
+   was developed by someone else in the past) then a comma separated list can
+   be used, too.
+ 
+   Avoid English and untranslatable words like: 'and', 'by', 'written by' and so
+   on. Do not add 'Copyright' to the string, only use the ISO-Latin1 copyright
+   sign ('©', hex: 0xa9). Aboutbox.mcc will automatically transform it to 
+   "Copyright ©" (or a localized variant) and also uses it to break the 
+   string into multiple lines. Accepted formats:
+
+       "© <year> <author1>"
+       "© <year> <author1>, <author2>"
+       "© <year> <author1>, © <year> <author2>"
+       "© <year1>-<year2> <author>"
+       etc.
+
+   Instead a single <year> a range like <year1>-<year2> can be used too. 
+   There must be a space after the copyright sign and before the <year>.
+
+
+Aboutbox.mcc/MUIA_Aboutbox_Build
+
+   NAME
+   MUIA_Aboutbox_Build -- (V20.10) [I..], STRPTR
+
+   FUNCTION
+   Optional build information. Useful if the project is managed  via a
+   revisions control software like Subversion. Build information is hidden by
+   default, but can be viewed by clicking the version number in the Aboutbox
+   window.
+
+
+Aboutbox.mcc/MUIA_Aboutbox_Credits
+
+   NAME
+   MUIA_Aboutbox_Credits -- (V20) [I..], STRPTR
+
+   FUNCTION
+   Optional extra credits. If a valid string is passed then Aboutbox.mcc will
+   add a second page to the requester and displays the information there. Currently
+   the format of the string is limited to the ISO-8859-1 (Latin-1) character set.
+
+   Various  placeholders can be used to get predefined strings (or a 
+   localized equivalents):
+
+       %p - 'Programming:'
+       %P - 'Additional programming:'
+       %l - 'Translations:'
+       %L - 'Proofreading:'
+       %t - 'Thanks to:'
+       %T - 'Special thanks to:'
+       %a - 'Acknowledgements:'
+       %d - 'Documentation:'
+       %i - 'Icons:'
+       %I - 'Icon:'                   (v20.10)
+       %W - 'Web support:'
+       %m - 'Music:'                  (v20.10)
+       %s - 'Sound Effects'           (v20.10)
+       %g - 'Graphics'                (v20.10)
+       %? - 'Disclaimer'              (v20.10)
+       %$ - 'License'                 (v20.10)
+
+   For printing an actual percent sign a double percent ('%%') can be used.
+
+   Tabs (\t) are replaced with 4 spaces. Further all normal MUI escaping sequences
+   can be used without limitations. Lines in the string should preferably not be longer
+   than 40 characters.
+
+   See the example for suggested layout.
+
+
+   EXAMPLE
+       STATIC CONST UBYTE credits[] = 
+            "\33b%p\33n\n"                 /* Programming: */
+            "\tChristian Rosentreter\n"
+            "\n"
+            "\33b%l\33n\n"                 /* Translation: */
+            "\tChristian Rosentreter\n"
+            "\tMax Mustermann\n"
+            "\tJohn Doe\n"
+            "\tMr. Bean\n"
+            "\n"
+            "\33b%t\33n\n"                 /* Thanks to:   */
+            "\tMax Mustermann\n"
+            "\tJohn Doe";
+   
+
+Aboutbox.mcc/MUIA_Aboutbox_LogoData
+
+   NAME
+   MUIA_Aboutbox_LogoData -- (V20.2) [I..], struct MUI_RawimageData *
+
+   FUNCTION
+   Data pointer to into code embedded logo data in MUI_RawimageData format
+   (see Rawimage.mcc documentation). The image must be exactly 64 pixels
+   in width and 64 pixels in height. Other sizes are not supported.        
+
+   NOTES
+   This attribute should be avoided generally and not be used unless
+   *absolutely* necessary. Aboutbox' default handling for the displayed
+   logo is sufficient in 99.9% of all cases and any normal application 
+   usually doesn't require to overwrite it. This is reserved for some
+   specific system components which require advanced special handling.
+
+   SEE ALSO
+   MUIA_Aboutbox_LogoFallback, MUIA_Aboutbox_LogoFile, 
+   MUIA_Rawimage_Data
+
+Aboutbox.mcc/MUIA_Aboutbox_LogoFallback
+
+   NAME
+   MUIA_Aboutbox_LogoFallback -- (V20.2) [I..], ULONG
+
+   FUNCTION
+   Specify in which order default handling and fallback handlings to aquire
+   correct logo data are executed.
+
+   Supported Specificators:
+   D - default application icon (usually PROGDIR:<application>.info)
+   E - file specified in MUIA_Aboutbox_LogoFile
+   I - data specified with MUIA_Aboutbox_LogoData
+
+   The specificators can be merged in any order with the MAKE_ID() macro
+   from "libraries/iffparse.h". The composed specification ID should be
+   terminated with a '0' byte.
+
+   Defaults to MUIV_Aboutbox_LogoFallbackMode_Auto.
+
+   EXAMPLE
+       /*  Let it first check for the application icon and if not
+        *  available use an internal fallback logo.
+        */
+       aboutwindow = AboutboxObject,
+           MUIA_Aboutbox_LogoFallback, MAKE_ID('D', 'I', '\0', '\0'),
+           MUIA_Aboutbox_LogoData,     _internal_fallback_image_data,
+       End;
+
+   NOTES
+   This attribute should be avoided generally and not be used unless
+   *absolutely* necessary. Aboutbox' default handling for the displayed
+   logo is sufficient in 99.9% of all cases and any normal application 
+   usually doesn't require to overwrite it. This is reserved for some
+   specific system components which require advanced special handling.
+
+   SEE ALSO
+   MUIA_Aboutbox_LogoData, MUIA_Aboutbox_LogoFile
+
+Aboutbox.mcc/MUIA_Aboutbox_LogoFile
+
+   NAME
+   MUIA_Aboutbox_LogoFile -- (V20.2) [I..], STRPTR
+
+   FUNCTION
+   Specify an alternative location where to load the logo image from.
+
+   The image must be exactly 64 pixels in width and 64 pixels in height.
+   Other sizes are not supported.
+
+   The path must be absolute. Relative paths are not supported. This makes
+   it only useful for -and naturally limits it to- usage of fixed images
+   or icons from a standard MorphOS system installation ('SYS:' or
+   'MOSSYS:' paths).
+
+   NOTES
+   This attribute should be avoided generally and not be used unless
+   *absolutely* necessary. Aboutbox' default handling for the displayed
+   logo is sufficient in 99.9% of all cases and any normal application 
+   usually doesn't require to overwrite it. This is reserved for some
+   specific system components which require advanced special handling.
+
+   SEE ALSO
+   MUIA_Aboutbox_LogoFallback, MUIA_Aboutbox_LogoData
+
