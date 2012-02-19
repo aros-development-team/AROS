@@ -29,6 +29,7 @@
     EXAMPLE
 
     BUGS
+        Currently only _SC_ARG_MAX handling is implemented
 
     SEE ALSO
 
@@ -38,6 +39,7 @@
 {
     switch (name)
     {
+        /* TODO: Implement other names */
         case _SC_ARG_MAX: return ARG_MAX;
 
         default:

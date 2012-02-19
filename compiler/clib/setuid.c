@@ -8,6 +8,7 @@
 #include <aros/debug.h>
 
 #include <sys/types.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -26,7 +27,8 @@
     RESULT
 	
     NOTES
-    	
+        Not implemented.
+
     EXAMPLE
 
     BUGS
@@ -37,8 +39,9 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement setuid() */
+    /* TODO: Implement setuid() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
+    errno = ENOSYS;
 
     return 0;
 } /* setuid() */

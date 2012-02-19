@@ -38,7 +38,7 @@
 
 ******************************************************************************/
 {
-    /* warning Implement kill() */
+    /* TODO: Implement kill() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
     

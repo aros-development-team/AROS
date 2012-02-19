@@ -4,6 +4,7 @@
 */
 
 #include <aros/debug.h>
+#include <errno.h>
 
 /*****************************************************************************
 
@@ -35,9 +36,10 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement setpwent() */
+    /* TODO: Implement setpwent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-    
+    errno = ENOSYS;
+
     return;
 }
 

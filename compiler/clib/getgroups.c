@@ -37,7 +37,7 @@
 
 ******************************************************************************/
 {
-    /* Implement getgroups() */
+    /* TODO: Implement getgroups() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
 

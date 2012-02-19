@@ -27,6 +27,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -38,7 +39,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement sigaction() */
+    /* TODO: Implement sigaction() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
     

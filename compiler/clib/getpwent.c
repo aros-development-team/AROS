@@ -34,8 +34,9 @@
 
     INTERNALS
 
-******************************************************************************/{
-    /* FIXME: Implement getpwent() */
+******************************************************************************/
+{
+    /* TODO: Implement getpwent() */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     errno = ENOSYS;
 

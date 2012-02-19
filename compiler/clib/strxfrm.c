@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function strcoll().
+    ANSI C function strxfrm().
 */
 
 #include <aros/debug.h>
@@ -52,7 +52,7 @@
 
 ******************************************************************************/
 {
-    /* FIXME: Implement strxfrm() properly */
+    /* TODO: Implement strxfrm() properly */
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
     
     size_t srclen = strlen(src);

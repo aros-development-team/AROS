@@ -26,6 +26,7 @@
     RESULT
 
     NOTES
+        Not implemented.
 
     EXAMPLE
 
@@ -37,6 +38,7 @@
 
 ******************************************************************************/
 {
+    /* TODO: Implement link() */
     errno = EPERM;
     return -1;
 } /* link */
