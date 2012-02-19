@@ -10,6 +10,7 @@
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/utility.h>
+#include <proto/alib.h>
 
 #include <libraries/mui.h>
 #include <cybergraphx/cybergraphics.h>

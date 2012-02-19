@@ -6,6 +6,7 @@
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/alib.h>
 
 #include "Rawimage_mcc.h"
 

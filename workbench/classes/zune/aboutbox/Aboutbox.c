@@ -11,6 +11,7 @@
 #include <proto/muimaster.h>
 #include <proto/icon.h>
 #include <proto/utility.h>
+#include <proto/alib.h>
 
 #include <libraries/mui.h>
 #include <mui/Rawimage_mcc.h>
