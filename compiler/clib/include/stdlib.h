@@ -2,7 +2,7 @@
 #define _STDLIB_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file stdlib.h
@@ -145,13 +145,13 @@ lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
 /* Multibyte character functions */
-size_t mblen(const char *s, size_t n);
-int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n);
-int wctomb(char *s, wchar_t wchar);
+int mblen(const char *s, size_t n);
+/* INLINE int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n); */
+/* INLINE int wctomb(char *s, wchar_t wchar); */
 
 /* Multibyte string functions */
-size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
-size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
+/* INLINE size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n); */
+/* INLINE size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n); */
 
 /* Miscellaneous BSD functions */
 int getloadavg(double loadavg[], int n);
@@ -174,6 +174,112 @@ char *realpath(const char *, char *);
 void  setkey(const char *);
 int   unlockpt(int);
 #endif /* _ANSI_SOURCE */
+
+
+
+/* inline code */
+/* The multi-byte character functions are implemented inline so that they adapt to the
+   size of wchar_t used by the compiler. This would not be possible if the code would
+   be compiled in the shared library or even the static link library
+*/
+
+#if !defined(_STDC_NOINLINE) && !defined(_STDC_NOINLINE_STDLIB)
+/* This is name space pollution */
+#include <ctype.h>
+
+
+#if !defined(_STDC_NOINLINE_MBTOWC)
+static inline
+int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n)
+{
+    if (s == NULL)
+        /* No state-dependent multi-byte character encoding */
+        return 0;
+    else
+    {
+        if (isascii(*s))
+        {
+            if (pwc)
+                *pwc = (wchar_t)*s;
+            if (*s == 0)
+                return 0;
+            else
+                return 1;
+        }
+        else
+            return -1;
+    }
+}
+#endif /* !_STDC_NOINLINE_MBTOWC */
+
+
+#if !defined(_STDC_NOINLINE_WCTOMB)
+static inline
+int wctomb(char *s, wchar_t wchar)
+{
+    if (s == NULL)
+        /* No state dependent encodings */
+        return 0;
+    else if (isascii((int)wchar))
+    {
+        *s = (char)wchar;
+        if (wchar == 0)
+            return 0;
+        else
+            return 1;
+    }
+    else
+        return -1;
+}
+#endif /* !_STDC_NOINLINE_WCTOMB */
+
+
+#if !defined(_STDC_NOINLINE_MBSTOWCS)
+static inline
+size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n)
+{
+    size_t l;
+
+    for(l = 0; n > 0; s++, pwcs++, n--)
+    {
+        *pwcs = (wchar_t)*s;
+
+        if (*s == '\0')
+            break;
+
+        l++;
+    }
+
+    return l;
+}
+#endif /* !_STDC_NOINLINE_MBSTOWCS */
+
+
+#if !defined(_STDC_NOINLINE_WCSTOMBS)
+static inline
+size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n)
+{
+    size_t l;
+
+    for(l = 0; n > 0; s++, pwcs++, n--)
+    {
+        if (!isascii((int)*pwcs))
+            return (size_t)-1;
+
+        *s = (char)*pwcs;
+
+        if (*s == '\0')
+            break;
+
+        l++;
+    }
+
+    return l;
+}
+#endif /* !_STDC_NOINLINE_MBTOWC */
+
+
+#endif /* !_STDC_NOINLINE && !_STDC_NOINLINE_STDLIB */
 
 __END_DECLS
 

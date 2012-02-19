@@ -1,32 +1,31 @@
 /*
-    Copyright © 2007, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ISO/ANSI C function mbstowcs().
+    C99 function mbstowcs().
 */
-
-#include <aros/debug.h>
 
 /*****************************************************************************
 
-    NAME */
-
+    NAME
 #include <stdlib.h>
 
 	size_t mbstowcs(
 
-/*  SYNOPSIS */
-	wchar_t *pwcs,
-	const char *s,
+    SYNOPSIS
+	wchar_t * restrict pwcs,
+	const char * restrict s,
 	size_t n)
 
-/*  FUNCTION
+    FUNCTION
+        C99 function mbstowcs.
 
     INPUTS
 
     RESULT
 
     NOTES
+        arosc.library currenlty only implements "C" locale.
 
     EXAMPLE
 
@@ -35,11 +34,7 @@
     SEE ALSO
 
     INTERNALS
+        Implemented as static inline function to adapt to changing wchar_t
+        definitions
 
 ******************************************************************************/
-{
-    AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
-    
-    return (size_t) -1;
-}
-
