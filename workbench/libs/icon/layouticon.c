@@ -195,7 +195,7 @@
                         DrawImageState(&rp, gi, 1, 1, state, dri);
                         SetAPen(&rp, 0);
                         Flood(&rp, 1, 0, 0);
-                        BltBitMap(bm, 0, 0, image->BitMap, 0, 0, gi->Width, gi->Height, 0xc0, ~0, NULL);
+                        BltBitMap(bm, 1, 1, image->BitMap, 0, 0, gi->Width, gi->Height, 0xc0, ~0, NULL);
                         FreeRaster(trbuf, gi->Width+2, gi->Height+2);
                     }
                     FreeBitMap(bm);
