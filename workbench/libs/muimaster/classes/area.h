@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002 - 2011, The AROS Development Team.
+    Copyright © 2002 - 2012, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -120,6 +120,7 @@ struct MUI_DragImage
 #define MUIA_CustomBackfill		(MUIB_MUI|0x00420a63) /* undoc    i..                   */
 #define MUIA_CycleChain         	(MUIB_MUI|0x00421ce7) /* MUI: V11 isg LONG              */
 #define MUIA_Disabled           	(MUIB_MUI|0x00423661) /* MUI: V4  isg BOOL              */
+#define MUIA_DoubleBuffer               (MUIB_MUI|0x0042a9c7) /* MUI: V20 isg BOOL              */
 #define MUIA_Draggable          	(MUIB_MUI|0x00420b6e) /* MUI: V11 isg BOOL              */
 #define MUIA_Dropable           	(MUIB_MUI|0x0042fbce) /* MUI: V11 isg BOOL              */
 #define MUIA_FillArea           	(MUIB_MUI|0x004294a3) /* MUI: V4  is. BOOL              */

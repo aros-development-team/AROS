@@ -51,6 +51,8 @@ MAKE_BUILTIN_KNOB          := no
 MAKE_BUILTIN_DTPIC         := no
 MAKE_BUILTIN_PALETTE	   := no
 MAKE_BUILTIN_TITLE         := no
+MAKE_BUILTIN_PROCESS       := no
+MAKE_BUILTIN_PIXMAP        := no
 
 CLASSES := \
     application \
@@ -384,6 +386,22 @@ ifeq ($(MAKE_BUILTIN_TITLE),yes)
 else
     EXTCLASSES  := $(EXTCLASSES) title
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_TITLE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PROCESS),yes)
+    CLASSES     := $(CLASSES) process
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PROCESS=1
+else
+    EXTCLASSES  := $(EXTCLASSES) process
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PROCESS=0
+endif
+
+ifeq ($(MAKE_BUILTIN_PIXMAP),yes)
+    CLASSES     := $(CLASSES) pixmap
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PIXMAP=1
+else
+    EXTCLASSES  := $(EXTCLASSES) pixmap
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_PIXMAP=0
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))

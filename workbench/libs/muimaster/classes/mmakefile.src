@@ -4,6 +4,8 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
+USER_CFLAGS += $(PARANOIA_CFLAGS)
+USER_LIBS   := amiga rom m mui
 
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \
@@ -38,7 +40,9 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 #MM	workbench-classes-zune-knob \
 #MM	workbench-classes-zune-dtpic \
 #MM	workbench-classes-zune-palette \
-#MM	workbench-classes-zune-title
+#MM	workbench-classes-zune-title \
+#MM	workbench-classes-zune-process \
+#MM	workbench-classes-zune-pixmap
 
 
 #MM- workbench-libs-muimaster-clean : \
@@ -73,7 +77,9 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 #MM	workbench-classes-zune-knob-clean \
 #MM	workbench-classes-zune-dtpic-clean \
 #MM	workbench-classes-zune-palette-clean \
-#MM	workbench-classes-zune-title-clean
+#MM	workbench-classes-zune-title-clean \
+#MM	workbench-classes-zune-process-clean \
+#MM	workbench-classes-zune-pixmap-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -339,6 +345,22 @@ USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
     conffile=title.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_TITLE=0" \
     uselibs="amiga rom m mui"
+
+#MM workbench-classes-zune-process : includes
+%build_module \
+    mmake=workbench-classes-zune-process \
+    modname=Process modtype=mui files=process \
+    conffile=process.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PROCESS=0" \
+    uselibs="amiga rom m mui"
+
+#MM workbench-classes-zune-pixmap : includes
+%build_module \
+    mmake=workbench-classes-zune-pixmap \
+    modname=Pixmap modtype=mui files=pixmap \
+    conffile=pixmap.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_PIXMAP=0" \
+    uselibs="amiga rom m mui bz2_nostdio"
 
 %common
 %include_deps

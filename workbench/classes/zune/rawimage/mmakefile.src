@@ -1,0 +1,23 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
+
+FILES         := Rawimage
+INCLUDE_FILES := Rawimage_mcc.h
+
+#MM- workbench-classes-zune : workbench-classes-zune-rawimage 
+
+#MM workbench-classes-zune-rawimage : includes
+
+%build_module \
+    mmake=workbench-classes-zune-rawimage \
+    modname=Rawimage modtype=mcc \
+    conffile=Rawimage.conf \
+    uselibs="amiga rom"
+
+%copy_includes path=mui
+
+%common
