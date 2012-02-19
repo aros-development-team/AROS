@@ -3,20 +3,29 @@
     $Id$
 */
 
-#define CACHEDEBUG 0
-
 	#include "aros/m68k/asm.h"
+	#include "cache.h"
 
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearE_00,Exec,107)
 	.type	AROS_SLIB_ENTRY(CacheClearE_00,Exec,107),@function
 AROS_SLIB_ENTRY(CacheClearE_00,Exec,107):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	rts
 
 	.globl	AROS_SLIB_ENTRY(CacheClearE_20,Exec,107)
 	.type	AROS_SLIB_ENTRY(CacheClearE_20,Exec,107),@function
 AROS_SLIB_ENTRY(CacheClearE_20,Exec,107):
+
+#if CACHEDEBUG
+	bsr		cachedebug
+#endif
+
 	move.l	%a5,%a1
 	lea.l	cacheclearesup_20,%a5
 	jmp	Supervisor(%a6)
@@ -33,11 +42,6 @@ cacheclearesup_20:
 	move.l	%a1,%a5		/* Restore a5 */
 	rte			/* This rte will restore the SR from the stack */
 
-#if CACHEDEBUG
-format:
-  .string "CE(%x,%x,%x,%x)\n"
-#endif
-
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107)
@@ -45,11 +49,7 @@ format:
 AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107):
 
 #if CACHEDEBUG
-  movem.l %d0-%d1/%a0-%a1,-(%sp)
-  pea format
-  jsr kprintf
-  addq.l #4,%sp
-  movem.l (%sp)+,%d0-%d1/%a0-%a1
+	bsr		cachedebug
 #endif
 
 	move.l	%a5,%a1
@@ -62,41 +62,59 @@ AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107):
 
 cacheclearesup_4060:
 	move.l	%a1,%a5
-  /* just flush whole cache if region is big enough */
-  cmp.l #0x00100000,%d0
-  bhi.s 4f
-  move.l %d2,%a1
-  add.l %a0,%d0
-  move.l %a0,%d2
-  and.w #~4095,%d2
-  move.l %d2,%a0
-  move.l %a1,%d2
-  /* CACRF_ClearI set? */
-  btst #3,%d1
-  bne.s 2f
-  /* data only */
-3: nop
-  cpushp %dc,(%a0)
-  lea 4096(%a0),%a0
-  cmp.l %a0,%d0
-  bhi.s 3b
-  bra.s 0f
-  /* both */
-2: nop
-  cpushp %bc,(%a0)
-  lea 4096(%a0),%a0
-  cmp.l %a0,%d0
-  bhi.s 2b
-0: rte  
-
-  /* flush whole cache: data only or both */
+#if CACHEFULLFLUSH == 0
+	/* just flush whole cache if region is big enough */
+	cmp.l #0x00100000,%d0
+	bhi.s 4f
+	move.l %d2,%a1
+	add.l %a0,%d0
+	move.l %a0,%d2
+	and.w #~4095,%d2
+	move.l %d2,%a0
+	move.l %a1,%d2
+	/* CACRF_ClearI set? */
+	btst #3,%d1
+	bne.s 2f
+	/* data only */
+3:	nop
+	cpushp %dc,(%a0)
+	lea 4096(%a0),%a0
+	cmp.l %a0,%d0
+	bhi.s 3b
+	bra.s 0f
+	/* both */
+2:	nop
+	cpushp %bc,(%a0)
+	lea 4096(%a0),%a0
+	cmp.l %a0,%d0
+	bhi.s 2b
+0:	rte
 4:
-  /* CACRF_ClearI set? */
-  btst #3,%d1
-  bne.s 1f
+#endif
+
+	/* flush whole cache: data only or both */
+	/* CACRF_ClearI set? */
+	btst #3,%d1
+	bne.s 1f
 	nop
 	cpusha %dc
-	bra.s 0b
-1: nop
+	rte
+1:	nop
 	cpusha %bc
-	bra.s 0b
+	rte
+
+
+#if CACHEDEBUG
+cachedebug:	
+	movem.l %d0-%d1/%a0-%a1,-(%sp)
+	move.l	%d1,-(%sp)
+	move.l	%d0,-(%sp)
+	move.l	%a0,-(%sp)
+	pea format
+	jsr kprintf
+	lea	16(%sp),%sp
+	movem.l (%sp)+,%d0-%d1/%a0-%a1
+	rts
+format:
+	.string "CE(%08x,%08x,%08x)\n"
+#endif
