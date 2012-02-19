@@ -83,7 +83,7 @@ struct aroscbase
     int acb_parent_does_upath;
 
     /* flock.c */
-    struct MinList acb_file_locks;
+    struct List *acb_file_locks;
     
     /* __vfork.c */
     struct vfork_data *acb_vfork_data;
