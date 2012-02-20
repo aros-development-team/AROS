@@ -85,8 +85,9 @@
 
     if (base < 0 || base == 1 || base > 36)
     {
+#ifndef AROSC_ROM
         errno = EINVAL;
-
+#endif
         if (endptr)
             *endptr = (char *)str;
 
@@ -174,7 +175,9 @@
         if (any < 0)
         {
             val = ULONG_MAX;
+#ifndef AROSC_ROM
             errno = ERANGE;
+#endif
         }
 
         if (c == '-')
