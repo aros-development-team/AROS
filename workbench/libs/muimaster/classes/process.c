@@ -54,8 +54,7 @@ static void my_process(void)
 IPTR Process__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Process_DATA *data;
-    const struct TagItem *tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tags;
     struct Task *thistask;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);

@@ -90,8 +90,7 @@ const ULONG defaultColorMap[256] =
 
 IPTR Pixmap__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem *tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tags;
 
     if((obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg)) != NULL)
     {
@@ -625,8 +624,7 @@ IPTR Pixmap__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Pixmap_DATA *data = INST_DATA(cl, obj);
     BOOL decompress = FALSE;
     BOOL refresh = FALSE;
-    const struct TagItem *tags;
-    struct TagItem *tag;
+    struct TagItem *tag, *tags;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
