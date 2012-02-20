@@ -17,7 +17,7 @@
     NAME */
 #include <proto/datatypes.h>
 
-	AROS_LH1(struct DTMethods *, GetDTTriggerMethods,
+	AROS_LH1(struct DTMethod *, GetDTTriggerMethods,
 
 /*  SYNOPSIS */
 	AROS_LHA(Object *, object, A0),
@@ -64,7 +64,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct DTMethods *dtm = NULL;
+    struct DTMethod *dtm = NULL;
     struct opGet      opGet;
     
     if(object == NULL)
