@@ -1522,8 +1522,7 @@ Optional Features:
                           messages, stack, mungwall, modules, symbols. If no
                           list is provided then "all" is assumed.
                           (default=none)
-  --enable-crosstools     Build cross-compiler toolchains if necessary
-                          (default=no).
+  --disable-crosstools    Do not build cross-compiler toolchain
   --enable-distcc         Use distcc as a front end to the compiler
                           (default=no).
   --enable-ccache         Use ccache as a front end to the compiler
@@ -6948,7 +6947,7 @@ $as_echo_n "checking whether to build crosstools... " >&6; }
 if test "${enable_crosstools+set}" = set; then :
   enableval=$enable_crosstools; crosstools="$enableval"
 else
-  crosstools="no"
+  crosstools="yes"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $crosstools" >&5
