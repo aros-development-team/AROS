@@ -199,6 +199,12 @@ query : tools
 # This does not allow to check for dependancies, so it is not suitable for
 # Calling standard main targets, but is usable as a shortcut for MetaMake
 # if it was not installed globally
+#
+# The '%-quick:' targets are special - we don't want to wait around
+# for building crosstools if we just want to build one subtarget
+%-quick: 
+	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
+
 .DEFAULT :
 	@$(MAKE) $(MKARGS) crosstools
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
