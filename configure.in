@@ -682,7 +682,7 @@ aros_debug_ldflags="$aros_symbols_debug"
 #-----------------------------------------------------------------------------
 #   Checking if we should build crosstools..
 AC_MSG_CHECKING([whether to build crosstools])
-AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--enable-crosstools],[Build cross-compiler toolchains if necessary (default=no).]),crosstools="$enableval",crosstools="no")
+AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--disable-crosstools],[Do not build cross-compiler toolchain]),crosstools="$enableval",crosstools="yes")
 AC_MSG_RESULT($crosstools)
 
 #-----------------------------------------------------------------------------
