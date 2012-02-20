@@ -319,8 +319,7 @@ IPTR Icon__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct DiskObject *icon = NULL;
     STRPTR file = NULL;
     struct Screen *screen = NULL;
-    const struct TagItem *tstate = msg->ops_AttrList;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -433,8 +432,7 @@ IPTR Icon__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
 IPTR Aboutbox__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    const struct TagItem *tstate = msg->ops_AttrList;
-    struct TagItem *tag;
+    struct TagItem *tag, *tstate = msg->ops_AttrList;
 
     Object *logoGroup;
     Object *appInfoText;
