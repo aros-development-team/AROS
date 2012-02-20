@@ -2461,7 +2461,14 @@ endif
 
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-build_and_install-quick
 
-#MM- %(mmake) : setup includes core-linklibs %(mmake)-quick
+# When building for the host, we don't need to build the
+# linklibs - this is especially true when building the
+# crosstool toolchain on 'foreign' architectures (such as
+# building PPC on x86)
+
+#MM- %(mmake)-host : setup includes %(mmake)-quick
+#MM- %(mmake)-target : setup includes core-linklibs %(mmake)-quick
+#MM- %(mmake): %(mmake)-%(compiler)
 
 # Using -j1 in install_command may result in a warning but finally
 # it does its job. make install for gcc does not work reliably for -jN
