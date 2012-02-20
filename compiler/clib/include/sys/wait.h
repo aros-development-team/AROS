@@ -9,6 +9,7 @@
 #define SYS_WAIT_H_
 
 #include <aros/system.h>
+#include <aros/types/pid_t.h>
 
 #define WNOHANG         0x00000001
 #define WUNTRACED       0x00000002
