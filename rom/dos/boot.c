@@ -149,14 +149,17 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
             
             if (SystemTags(NULL,
                            NP_Name, "Initial CLI",
-                           SYS_Asynch, TRUE,
-                           SYS_CliType, CLI_BOOT,
+                           SYS_Background, FALSE,
+                           SYS_Asynch, FALSE,
                            SYS_Input, cis,
                            SYS_Output, cos,
                            SYS_ScriptInput, cas,
                            TAG_END) == -1) {
                 Alert(AT_DeadEnd | AN_BootStrap);
             }
+            Close(cis);
+            Close(cos);
+            /* NOTE: 'cas' will will already have been closed by the Shell */
         }
     } else
         Alert(AN_NoWindow);

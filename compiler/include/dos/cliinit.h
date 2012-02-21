@@ -28,7 +28,7 @@
  * the arguments here are private, and are decoded by the
  * DOS/CliInitRun() and DOS/CliInitNewcli() routines.
  *
- * NewCli/NewShell:
+ * NewCli/NewShell: (Asynchonous)
  *
  *   dp_Type = 1
  *   dp_Res1 = 1
@@ -40,7 +40,7 @@
  *
  *   dp_Arg5..dp_Arg7 are unused, and have junk data
  *
- * Boot CLI:  (this is AROS private - AOS uses a NULL Dos Packet pointer)
+ * Boot CLI:  (synchronous - this is AROS private - AOS uses a NULL Dos Packet pointer)
  *   dp_Type = -4       // AROS private
  *   dp_Res1 = 1
  *   dp_Res2 = 0

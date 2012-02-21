@@ -235,12 +235,13 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
                       break;
     case CLI_RUN:     cli->cli_Background = TRUE;
                       /* Fallthrough */
-    case CLI_BOOT:   
     case CLI_NEWCLI:  flags = 0;
+                      break;
+    case CLI_BOOT:    flags |= FNF_VALIDFLAGS | FNF_USERINPUT;
                       break;
     default:          break;
     }
-    D(bug("= flags:%p\n", flags));
+    D(bug("= flags:%p (Type %d)\n", flags, Type));
 
 exit:
     if (!(flags & FNF_VALIDFLAGS))

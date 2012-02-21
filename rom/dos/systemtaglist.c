@@ -199,7 +199,7 @@
         if (isBackground)
             cliType = isAsynch ? CLI_ASYSTEM : CLI_SYSTEM;
         else
-            cliType = CLI_NEWCLI;
+            cliType = isAsynch ? CLI_NEWCLI : CLI_BOOT;
         break;
     default:
         /* invalid */
