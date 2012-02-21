@@ -36,8 +36,6 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
 void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
-/* Temporary macro */
-#define P(x)
 /*****************************************************************************
 
     NAME */
@@ -611,7 +609,7 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
     ForeachNodeSafe(&process->pr_LocalVars,
 		    varNode, tempNode)
     {
-	P(kprintf("Freeing variable %s with value %s at %p\n",
+	D(bug("Freeing variable %s with value %s at %p\n",
 		  varNode->lv_Node.ln_Name, varNode->lv_Value, varNode));
 	FreeMem(varNode->lv_Value, varNode->lv_Len);
 	Remove((struct Node *)varNode);
@@ -685,7 +683,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    CopyMem(varNode, newVar, copyLength);
 	    newVar->lv_Node.ln_Name = (char *)newVar +
 		sizeof(struct LocalVar);
-	    P(kprintf("Variable with name %s copied.\n", 
+	    D(bug("Variable with name %s copied.\n", 
 		      newVar->lv_Node.ln_Name));
 	    
             if (varNode->lv_Len)
@@ -785,40 +783,40 @@ static void DosEntry(void)
         Alert(AT_DeadEnd | AG_OpenLib | AO_DOSLib);
     }
 
-    P(kprintf("Deleting local variables\n"));
+    D(bug("Deleting local variables\n"));
 
     /* Clean up */
     freeLocalVars(me, DOSBase);
 
-    P(kprintf("Closing input stream\n"));
+    D(bug("Closing input stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
 	Close(me->pr_CIS);
     }
 
-    P(kprintf("Closing output stream\n"));
+    D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
 	Close(me->pr_COS);
     }
 
-    P(kprintf("Closing error stream\n"));
+    D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
 	Close(me->pr_CES);
     }
 
-    P(kprintf("Freeing arguments\n"));
+    D(bug("Freeing arguments\n"));
 
     if (me->pr_Flags & PRF_FREEARGS)
     {
 	FreeVec(me->pr_Arguments);
     }
 
-    P(kprintf("Unloading segment\n"));
+    D(bug("Unloading segment\n"));
 
     if (me->pr_Flags & PRF_FREESEGLIST)
     {
@@ -836,17 +834,17 @@ static void DosEntry(void)
         D(Alert(AT_DeadEnd | AN_FreeVec));
     }
 
-    P(kprintf("Unlocking current dir\n"));
+    D(bug("Unlocking current dir\n"));
 
     if (me->pr_Flags & PRF_FREECURRDIR)
     {
 	UnLock(me->pr_CurrentDir);
     }
 
-    P(kprintf("Unlocking home dir\n"));
+    D(bug("Unlocking home dir\n"));
     UnLock(me->pr_HomeDir);
 
-    P(kprintf("Freeing cli structure\n"));
+    D(bug("Freeing cli structure\n"));
 
     if (me->pr_Flags & PRF_FREECLI)
     {
@@ -860,7 +858,7 @@ static void DosEntry(void)
      * enabled.
      */
     if (me->pr_Flags & PRF_SYNCHRONOUS) {
-        P(kprintf("Calling ChildFree()\n"));
+        D(bug("Calling ChildFree()\n"));
         /* ChildFree signals the parent */
         internal_ChildFree(me, DOSBase);
     }

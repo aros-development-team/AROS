@@ -77,7 +77,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     if (ret != NULL)
     {
 	LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
-	D(bug("[Open] = %d Error = %d\n", ok, IoErr()));
+	D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : NULL, IoErr()));
 	if (ok)
 	{
 	    return MKBADDR(ret);	    

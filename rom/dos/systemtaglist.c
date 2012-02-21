@@ -390,6 +390,7 @@
                 SIPTR oldSignal = 0;
                 struct FileHandle *fh = NULL;
 
+                D(bug("[SystemTagList] cliType = %d (background=%d, asynch=%d)\n", cliType, isBackground, isAsynch));
 #ifdef __mc68000
                 /* Trickery needed for BCPL user shells.
                  * This is needed for the trimmed AROS m68k
