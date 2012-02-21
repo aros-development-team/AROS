@@ -55,11 +55,13 @@ $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h: $(AROS_DEVELOPMENT)
 	@$(MKDIR) -p $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include
 	@$(CP) $^ $@
 
-#MM- tools-crosstools-m68k  : tools-crosstools-gcc sysinclude-gcc crosstools-gcc
+#MM- tools-crosstools-m68k   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
-#MM- tools-crosstools-arm    : tools-crosstools-gcc sysinclude-gcc crosstools-gcc
+#MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
+
+#MM- crosstools-gcc: sysinclude-gcc core-linklibs
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        compiler-includes compiler-clib-includes \
