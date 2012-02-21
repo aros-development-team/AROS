@@ -1,9 +1,9 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context parsing routines. Dummy nonfunctional template.
-          See code in arch/i386/all/exec/alert_cpu.c for working example.
+          See code in arch/i386-all/exec/alert_cpu.c for working example.
     Lang: english
 */
 
@@ -12,7 +12,8 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
+char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx,
+    struct ExecBase *SysBase)
 {
     char *buf;
     

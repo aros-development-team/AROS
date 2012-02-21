@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id: compositingclass.c 38905 2011-05-29 06:54:59Z deadwood $
 */
 
@@ -328,12 +328,13 @@ static VOID HIDDCompositingRedrawVisibleScreen(struct HIDDCompositingData * comp
 
     DREDRAWSCR(bug("[Compositing] Redrawing screen\n"));
 
-    /* Calculations are performed regardless if compositedbitmap is beeing show.
-       Gfx operations are only performed if compositedbitmap is beeing show */
-    
+    /* Calculations are performed regardless of whether compositedbitmap is
+       being shown. Gfx operations are only performed if compositedbitmap is
+       being shown */
+
     /* Recalculate visible rects per screen */
     HIDDCompositingRecalculateVisibleRects(compdata);
-    
+
     /*
      * Refresh all bitmaps on stack.
      * For simplicity, we traverse the list in reverse order (from bottom to top).

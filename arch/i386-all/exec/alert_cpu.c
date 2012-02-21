@@ -1,8 +1,8 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: CPU context parsing routines. Dummy nonfunctional template.
+    Desc: CPU context parsing routines.
     Lang: english
 */
 

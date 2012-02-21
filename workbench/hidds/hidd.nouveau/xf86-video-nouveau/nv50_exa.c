@@ -1053,8 +1053,8 @@ NV50EXATransform(PictTransformPtr t, int x, int y, float sx, float sy,
 		 float *x_ret, float *y_ret)
 {
 	if (t) {
-	/* Note: current t is always NULL in AROS. That is good enought for
-	   operations beeing done (simple blits with alpha) */
+	/* Note: current t is always NULL in AROS. That is good enough for
+	   operations being done (simple blits with alpha) */
 #if !defined(__AROS__)
 		PictVector v;
 

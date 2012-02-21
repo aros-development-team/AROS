@@ -32,7 +32,7 @@
 	The number of copied characters.
 
     NOTES
-	No check is beeing made that dest is large enough for src.
+	No check is made that dest is large enough for src.
         SAS/C specific.
 
     EXAMPLE

@@ -2,7 +2,7 @@
 #define DATATYPES_DATATYPES_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -35,10 +35,10 @@ struct DataTypeHeader
     STRPTR	 dth_Name;           /* Name of the data type */
     STRPTR	 dth_BaseName;       /* Base name of the data type */
     STRPTR	 dth_Pattern;        /* File name match pattern */
-    WORD	*dth_Mask;           /* Comparision mask (binary) */
+    WORD	*dth_Mask;           /* Comparison mask (binary) */
     ULONG	 dth_GroupID;        /* DataType Group */
     ULONG	 dth_ID;             /* DataType ID (same as IFF FORM type) */
-    WORD	 dth_MaskLen;        /* Length of the comparision mask */
+    WORD	 dth_MaskLen;        /* Length of the comparison mask */
     WORD	 dth_Pad;            /* Unused at present (must be 0) */
     UWORD	 dth_Flags;          /* Flags -- see below */
     UWORD	 dth_Priority;
@@ -167,7 +167,7 @@ struct DataType
     struct Node            dtn_Node2;         /* ...system use only! */
     struct DataTypeHeader *dtn_Header;
     struct List            dtn_ToolList;      /* Tool nodes */
-    STRPTR                 dtn_FunctionName;  /* Name of comparision routine */
+    STRPTR                 dtn_FunctionName;  /* Name of comparison routine */
     struct TagItem        *dtn_AttrList;      /* Object creation tags */
     ULONG                  dtn_Length;        /* Length of the memory block */
 };

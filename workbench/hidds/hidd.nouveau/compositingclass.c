@@ -273,7 +273,7 @@ static VOID HIDDCompositingRedrawBitmap(struct HIDDCompositingData * compdata,
 {
     struct StackBitMapNode * n = NULL;
     
-    /* Check if compositedbitmap is beeing displayed right now */
+    /* Check if compositedbitmap is being displayed right now */
     if (compdata->screenbitmap != compdata->compositedbitmap)
         return;
     

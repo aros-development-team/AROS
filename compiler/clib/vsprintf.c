@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     C function vsprintf().
@@ -38,8 +38,7 @@ static int _vsprintf_uc (int c, char ** str)
 	The number of characters written.
 
     NOTES
-	No check is beeing made that str is large enough to contain
-	the result.
+	No check is made that str is large enough to contain the result.
 
     EXAMPLE
 

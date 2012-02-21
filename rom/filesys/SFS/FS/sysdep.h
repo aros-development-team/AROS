@@ -2,7 +2,7 @@
 
 #define SQRT sqrt
 
-/* There's no more difference in FIB handling between IOFS and packet verions
+/* There's no more difference in FIB handling between IOFS and packet versions
 #ifdef AROS_KERNEL */
 #ifdef AROS_FAST_BSTR
 #define USE_FAST_BSTR

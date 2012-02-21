@@ -746,7 +746,7 @@ void METHOD(OHCI, Hidd_USBDrv, DeletePipe)
               AROS_OHCI2LONG(ed->edNextED)
               ));
 
-        /* Stop pipe from beeing processed */
+        /* Stop pipe from being processed */
         pipe->ed->edFlags |= AROS_LONG2OHCI(ED_K);
         CacheClearE(pipe->ed, sizeof(ohci_ed_t), CACRF_ClearD);
 

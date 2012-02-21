@@ -616,8 +616,8 @@ NV30EXATransformCoord(PictTransformPtr t, int x, int y, float sx, float sy,
 #endif
 
 	if (t) {
-	/* Note: current t is always NULL in AROS. That is good enought for
-	   operations beeing done (simple blits with alpha) */
+	/* Note: current t is always NULL in AROS. That is good enough for
+	   operations being done (simple blits with alpha) */
 #if !defined(__AROS__)
 		v.vector[0] = IntToxFixed(x);
 		v.vector[1] = IntToxFixed(y);
