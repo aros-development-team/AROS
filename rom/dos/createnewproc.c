@@ -717,6 +717,12 @@ static void DosEntry(void)
     APTR DOSBase;
     APTR initialPC;
     BPTR *segArray;
+    BPTR cis, cos, ces;
+
+    /* Save away our current streams */
+    cis = me->pr_CIS;
+    cos = me->pr_COS;
+    ces = me->pr_CES;
 
     /* me->pr_Result2 contains our real entry point
      */
@@ -792,21 +798,21 @@ static void DosEntry(void)
 
     if (me->pr_Flags & PRF_CLOSEINPUT)
     {
-	Close(me->pr_CIS);
+	Close(cis);
     }
 
     D(bug("Closing output stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEOUTPUT)
     {
-	Close(me->pr_COS);
+	Close(cos);
     }
 
     D(bug("Closing error stream\n"));
 
     if (me->pr_Flags & PRF_CLOSEERROR)
     {
-	Close(me->pr_CES);
+	Close(ces);
     }
 
     D(bug("Freeing arguments\n"));
