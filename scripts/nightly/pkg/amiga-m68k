@@ -19,7 +19,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 
 cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-serial-debug
 make
 make    bootdisk
 make    bootiso

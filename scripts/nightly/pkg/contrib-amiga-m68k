@@ -18,7 +18,7 @@ copy    $SOURCE_CONTRIB $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
 export  PATH=$PATH:$CFG_M68K_CROSSTOOLS
-execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-optimization="-Os" --with-serial-debug
+execute ./configure --target=$BUILDTARGET --enable-ccache --enable-build-type=nightly --with-serial-debug
 make    tools mmake contrib
 
 PACKAGE=$BASENAME-$BUILDTARGET-contrib
