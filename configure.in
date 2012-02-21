@@ -1271,7 +1271,6 @@ case "$target_os" in
                 gcc_target_cpu="m68000"
                 aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -Os"
                 aros_config_aflags="$aros_config_aflags -${gcc_target_cpu}"
-                target_tool_prefix="m68k-elf-"
                 # Needed to get the correct multilib
                 aros_config_ldflags="-${gcc_target_cpu}"
                 aros_shared_ldflags="-${gcc_target_cpu}"
