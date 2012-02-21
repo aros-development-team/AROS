@@ -1,7 +1,7 @@
 #ifndef ASM_IRQ_H
 #define ASM_IRQ_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Interrupt core, part of kernel.resource
@@ -57,7 +57,7 @@ struct irqDescriptor
 #define IRQ_DISABLED     2  /* IRQ disabled - DO NOT enter */
 #define IRQ_PENDING      4  /* IRQ pending - replay on enable */
 #define IRQ_REPLAY       8  /* IRQ has been replayed but not acked yet */
-#define IRQ_AUTODETECT  16  /* IRQ is beeing autodetected */
+#define IRQ_AUTODETECT  16  /* IRQ is being autodetected */
 #define IRQ_WAITING     32  /* IRQ not seen yet - for autodetection */
 
 #endif /* ASM_IRQ_H */

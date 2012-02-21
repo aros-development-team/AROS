@@ -2,7 +2,7 @@
 #define DOS_DOSEXTENS_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: LibBase and some important structures
@@ -402,8 +402,8 @@ struct DosList
    difference is that they support just one type of entry. You can use them
    instead of DosList if you have a list containing just one type of
    entry. For more information see above.
-   Note that these two entries have the same size, and dl_Name has the same offset.
-   Also they have to correspond the union above.
+   Note that these two entries have the same size, and dl_Name has the same
+   offset. Also they have to correspond to the union above.
  */
 
 struct DeviceList

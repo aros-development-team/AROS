@@ -1,5 +1,5 @@
 /*
-  Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+  Copyright © 2004-2012, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -521,7 +521,7 @@ D(bug("[Wanderer:IconWindow] %s: Allocated WindowBackFillHook @ 0x%p\n", __PRETT
 
         /*
          * Use MUI built-in support to keep window aligned to size of screen
-         * Remember: sizes of screen can change without window beeing recreated
+         * Remember: sizes of screen can change without window being recreated
          */
         _newIconWin__WindowWidth = MUIV_Window_Width_Screen(100);
         _newIconWin__WindowHeight = MUIV_Window_Height_Screen(100);

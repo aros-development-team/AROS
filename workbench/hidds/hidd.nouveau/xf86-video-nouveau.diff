@@ -998,8 +998,8 @@ diff -ur /data/deadwood/source/xf86-video-nouveau-src-2011-08-23/nv30_exa.c xf86
 +#endif
  
  	if (t) {
-+	/* Note: current t is always NULL in AROS. That is good enought for
-+	   operations beeing done (simple blits with alpha) */
++	/* Note: current t is always NULL in AROS. That is good enough for
++	   operations being done (simple blits with alpha) */
 +#if !defined(__AROS__)
  		v.vector[0] = IntToxFixed(x);
  		v.vector[1] = IntToxFixed(y);
@@ -1253,8 +1253,8 @@ diff -ur /data/deadwood/source/xf86-video-nouveau-src-2011-08-23/nv40_exa.c xf86
  					  float *x_ret, float *y_ret)
  {
  	if (t) {
-+	/* Note: current t is always NULL in AROS. That is good enought for
-+	   operations beeing done (simple blits with alpha) */
++	/* Note: current t is always NULL in AROS. That is good enough for
++	   operations being done (simple blits with alpha) */
 +#if !defined(__AROS__)
  		PictVector v;
  		v.vector[0] = IntToxFixed(x);
@@ -1730,8 +1730,8 @@ diff -ur /data/deadwood/source/xf86-video-nouveau-src-2011-08-23/nv50_exa.c xf86
  		 float *x_ret, float *y_ret)
  {
  	if (t) {
-+	/* Note: current t is always NULL in AROS. That is good enought for
-+	   operations beeing done (simple blits with alpha) */
++	/* Note: current t is always NULL in AROS. That is good enough for
++	   operations being done (simple blits with alpha) */
 +#if !defined(__AROS__)
  		PictVector v;
  

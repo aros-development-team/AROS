@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
- 
+
     Free a BOOPSI Class.
 */
 
@@ -28,7 +28,7 @@
  
     Tries to free a class which has been created with MakeClass() in the
     first place. This will not succeed in all cases: Classes which
-    still have living objects or which are still beeing used by subclasses
+    still have living objects or which are still being used by subclasses
     can't simply be freed. In this case this call will fail.
  
     Public classes will always be removed with RemoveClass() no matter

@@ -2,7 +2,7 @@
 #define EXEC_LIBRARIES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Amiga header file exec/libraries.h
@@ -48,7 +48,7 @@ struct Library {
 };
 
 /* lib_Flags bits (all others are reserved by the system) */
-#define LIBF_SUMMING	(1<<0)      /* lib is currently beeing checksummed */
+#define LIBF_SUMMING	(1<<0)      /* lib is currently being checksummed */
 #define LIBF_CHANGED	(1<<1)      /* lib has changed */
 #define LIBF_SUMUSED	(1<<2)      /* sum should be checked */
 #define LIBF_DELEXP	(1<<3)      /* delayed expunge */

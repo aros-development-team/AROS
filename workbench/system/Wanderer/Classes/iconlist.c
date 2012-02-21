@@ -1,5 +1,5 @@
 /*
-    Copyright © 2001-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -4692,7 +4692,7 @@ static void IconList_HandleNewIconSelection(struct IClass *CLASS, Object *obj, s
         {
             update_entry = FALSE;
 
-            /* If node that is beeing checked is selected and it is not the clicked node
+            /* If node that is being checked is selected and it is not the clicked node
              * and no shift pressed and
              * clicked node is not part of selection (see notes above) or this is a double click */
             if (node->ie_Flags & ICONENTRY_FLAG_SELECTED)
@@ -6667,7 +6667,7 @@ IPTR IconList__MUIM_CreateDragImage(struct IClass *CLASS, Object *obj, struct MU
             DeinitRastPort(&temprp);
         }
 
-        /* Convert view relative coords to drag image relative. This is done because the "object" that is beeing
+        /* Convert view relative coords to drag image relative. This is done because the "object" that is being
          * dragged is virtual (its a collection of icons) and the coords passed to DoDrag are not relative to this
          * "object"
          */

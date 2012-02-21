@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -28,7 +28,7 @@
 	character)
 
     NOTES
-	No check is beeing made that dest is large enough for src.
+	No check is made that dest is large enough for src.
 
     EXAMPLE
 

@@ -1,5 +1,5 @@
 /*
-    Copyright 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -438,16 +438,16 @@ int fscanf (FILE * fh,const char * format, ...)
     This implementation of atexit is different than the definition of atexit
     function due to how libraries work in AROS.
    
-    Under Linux, when an .so file is used by an application, libraries code is
-    beeing shared but libraries data (global, static variables) are COPIED for
-    each process. Then, a atexit call inside .so will only operate on COPY of data
+    Under Linux, when an .so file is used by an application, the library's code
+    is being shared but the library's data (global, static variables) are COPIED for
+    each process. Then, an atexit call inside .so will only operate on COPY of data
     and thus can for example free memory allocated by one process without
     influencing other processes.
    
     Under AROS, when a .library file is used by an application, library code AND
     library data is shared. This means, an atexit call inside .library which was
     initially coded under Linux cannot be executed when process is finishing 
-    (for example at CloseLibrary) because such call will most likelly free shared 
+    (for example at CloseLibrary) because such call will most likely free shared 
     data which will make other processes crash. The best approximation of atexit
     in case of .library is to call the atexit functions at library expunge/exit.
 */
