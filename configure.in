@@ -99,7 +99,6 @@ aros_host_ldflags=$LDFLAGS
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
-aros_host_incl="/usr/include"
 aros_host_exe_suffix="$EXEEXT"
 aros_host_lib_suffix=""
 
@@ -1677,7 +1676,6 @@ aros_cc_pre=""
 aros_shared_ld="$aros_host_ld"
 
 aros_target_mkdep="$aros_host_mkdep"
-aros_target_incl_def="$aros_host_incl"
 
 aros_kernel_cc="$CC"
 
@@ -1840,21 +1838,6 @@ aros_target_strip=${prefix}-strip
 aros_plain_nm="${prefix}-nm"
 aros_plain_ar="${prefix}-ar"
 
-# Find the system include path. We can suggest that an alternative is
-# used if we don't get it correct. The default is to use /usr/include.
-# Which is set in the aros_target_incl_def variable.
-
-AC_ARG_ENABLE(includes,
-AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
-[aros_target_incl=$enable_includes], [aros_target_incl=$aros_target_incl_def])
-
-if test "$aros_kernel_includes" = ""; then
-    if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
-        # FIXME: for cross-compiling this should point to another location
-        aros_kernel_includes="-isystem $aros_target_incl"
-    fi
-fi
-
 if test "$aros_kernel_includes" != "" ; then
     dnl find out about the kernel cc's include path
     AC_MSG_CHECKING([for the kernel compiler's include path])
@@ -1879,14 +1862,7 @@ if test "$aros_kernel_includes" != "" ; then
             # These are the headers we're looking for.
             headers="limits.h mmintrin.h stdbool.h syslimits.h float.h \
                      stddef.h xmmintrin.h iso646.h stdarg.h unwind.h   \
-                     zutil.h"
-
-            dnl This is for Darwin.
-            dnl With XCode4.1 Apple thought it's a nice idea to move stdint.h away
-            dnl to some very specific location
-            if test ! -f $aros_target_incl/stdint.h; then
-                headers="$headers stdint.h"
-            fi
+                     zutil.h stdint.h"
 
             dirs=
             for h in $headers; do
@@ -2456,7 +2432,6 @@ AC_SUBST(aros_target_family)
 AC_SUBST(aros_target_cpu)
 AC_SUBST(aros_target_variant)
 AC_SUBST(aros_target_suffix)
-AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_ar)
 AC_SUBST(aros_target_ranlib)
 AC_SUBST(aros_plain_nm)

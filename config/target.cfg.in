@@ -10,7 +10,6 @@
 FAMILY		:= @aros_target_family@
 FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
-SYS_INCLUDES	:= @aros_target_incl@
 
 TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
 KERNEL_CC	:= @aros_kernel_cc@
