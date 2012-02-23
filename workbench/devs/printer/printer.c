@@ -76,7 +76,7 @@ static int GM_UNIQUENAME(OpenDevice)(struct PrinterBase *PrinterBase, union prin
 
     if (pu) {
         io->io_Device = (struct Device *)pu;
-        io->io_Unit   = (struct Unit *)unitnum;
+        io->io_Unit   = (struct Unit *)(IPTR)unitnum;
         io->io_Error  = 0;
         AROS_LVO_CALL3NR(void,
                 AROS_LCA(struct IORequest *,(struct IORequest *)io,A1),
