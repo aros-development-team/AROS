@@ -11,4 +11,7 @@ include $(TOP)/config/make.cfg
 #MM	 kernel-pci		 \
 #MM	 $(PCI_HIDD_TARGET)
 
+#MM- includes-generate-linux-$(CPU): includes-generate-unix
+#MM- linklibs-linux: linklibs-unix
+
 %common
