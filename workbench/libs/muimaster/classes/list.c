@@ -462,8 +462,9 @@ static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 
     DisplayEntry(cl, obj, pos);
 
-    /* Clear the height */
-    data->entries[pos]->height = data->entry_minheight;
+    /* Set height to at least minheight */
+    if (data->entries[pos]->height < data->entry_minheight)
+        data->entries[pos]->height = data->entry_minheight;
 
     for (j = 0; j < data->columns; j++)
     {
