@@ -8,6 +8,6 @@ USER_CFLAGS := -DHOST_OS_$(ARCH) -DHOST_OS_$(AROS_TARGET_VARIANT)	\
 	       -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
-    arch=linux files="geometry"
+    arch=linux files="geometry" compiler=kernel
 
 %common

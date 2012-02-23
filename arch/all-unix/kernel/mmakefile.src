@@ -12,7 +12,7 @@ FUNCS := cause cli issuper kernel_debug maygetchar sti setprotection \
 FILES := kernel_startup kernel kernel_cpu kernel_intr cpu_$(CPU)
 
 %build_archspecific \
-  mainmmake=kernel-kernel maindir=rom/kernel \
+  mainmmake=kernel-kernel maindir=rom/kernel compiler=kernel \
   arch=unix files="$(FILES) $(FUNCS)" modulename=kernel
 
 TESTS		:= coretest
