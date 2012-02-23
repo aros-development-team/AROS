@@ -152,7 +152,7 @@ retry:
 		    return ~0;
 		}
 
-		mappos = (struct MFTAttr *)((IPTR)mappos + AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset));
+		mappos = (struct MFTAttr *)(IPTR)((IPTR)mappos + AROS_LE2WORD(mappos->data.non_resident.mapping_pairs_offset));
 		rle->curr_lcn = 0;
 		goto retry;
 	    }
@@ -247,7 +247,7 @@ IPTR ReadMFTAttribData(struct NTFSMFTAttr *at, struct MFTAttr *attrentry, UBYTE 
     {
 	rle->flags &= ~RLEFLAG_COMPR;
     }
-    rle->mappingpair = (UBYTE *)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
+    rle->mappingpair = (UBYTE *)(IPTR)((IPTR)attrentry + AROS_LE2WORD(attrentry->data.non_resident.mapping_pairs_offset));
 
     D(bug("[NTFS] %s: mappingpair @ 0x%p\n", __PRETTY_FUNCTION__, rle->mappingpair));
     
