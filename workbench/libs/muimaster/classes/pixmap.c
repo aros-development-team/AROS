@@ -669,7 +669,7 @@ IPTR Pixmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (((struct opGet *)msg)->opg_AttrID)
     {
         case MUIA_Pixmap_Data:
-            *store = (ULONG)data->data;
+            *store = (IPTR)data->data;
             return TRUE;
 
         case MUIA_Pixmap_Format:
@@ -677,15 +677,15 @@ IPTR Pixmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             return TRUE;
 
         case MUIA_Pixmap_Width:
-            *store = (ULONG)data->width;
+            *store = (IPTR)data->width;
             return TRUE;
 
         case MUIA_Pixmap_Height:
-            *store = (ULONG)data->height;
+            *store = (IPTR)data->height;
             return TRUE;
 
         case MUIA_Pixmap_CLUT:
-            *store = (ULONG)data->clut;
+            *store = (IPTR)data->clut;
             return TRUE;
 
         case MUIA_Pixmap_Alpha:
@@ -702,7 +702,7 @@ IPTR Pixmap__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
         case MUIA_Pixmap_UncompressedData:
             DecompressImage(cl, obj);
-            *store = (ULONG)data->uncompressedData;
+            *store = (IPTR)data->uncompressedData;
             return TRUE;
     }
 
