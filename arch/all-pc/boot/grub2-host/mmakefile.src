@@ -41,14 +41,15 @@ $(BOOT_EFI)/unicode.pf2: unicode.pf2 $(BOOT_EFI)
 
 # avoid the mate.tmpl s_flag in order to disable stripping of binaries
 export DEBUG		:= yes
-# remove the -m32, -s & --strip-all flags, just in case
-# ... to no strip grub_mod_init or something from modules
-export CFLAGS		:= $(filter-out -m32 -s --strip-all,$(HOST_CFLAGS))
-export TARGET_CFLAGS	:= $(CFLAGS)
+# remove all flags, just in case
+export HOST_CFLAGS	:= 
+export KERNEL_CFLAGS	:= 
+export CONFIG_LDFLAGS   :=
 
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
 CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
                 --host=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)       \
+                --target=$(AROS_TARGET_CPU)                     \
                 --datarootdir=$(DESTDIR)/share                  \
                 --sysconfdir=$(DESTDIR)/etc                     \
                 --disable-grub-mkfont                           \
