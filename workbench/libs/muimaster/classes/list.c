@@ -457,6 +457,9 @@ static int CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
     if (!entry)
         return ret;
 
+    if (!(_flags(obj) & MADF_SETUP))
+        return ret;
+
     DisplayEntry(cl, obj, pos);
 
     /* Clear the height */
@@ -1681,14 +1684,25 @@ IPTR List__MUIM_Redraw(struct IClass *cl, Object *obj, struct MUIP_List_Redraw *
         data->update = 1;
         CalcWidths(cl,obj);
         MUI_Redraw(obj,MADF_DRAWUPDATE);
-    } else
+    }
+    else
     {
-            LONG pos;
-            if (msg->pos == MUIV_List_Redraw_Active) pos = data->entries_active;
-            else pos = msg->pos;
+        LONG pos = -1;
+        if (msg->pos == MUIV_List_Redraw_Active) pos = data->entries_active;
+        else if (msg->pos == MUIV_List_Redraw_Entry)
+        {
+            LONG i;
+            for (i = 0; i < data->entries_num; i++)
+                if (data->entries[i]->data == msg->entry)
+                {
+                    pos = i;
+                    break;
+                }
+        }
+        else pos = msg->pos;
 
-            if (pos != -1)
-            {
+        if (pos != -1)
+        {
             if(CalcDimsOfEntry(cl, obj, pos))
                 data->update = 1;
             else

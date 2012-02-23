@@ -47,7 +47,7 @@ struct MUIP_List_InsertSingle         {STACKED ULONG MethodID; STACKED APTR entr
 struct MUIP_List_Jump                 {STACKED ULONG MethodID; STACKED LONG pos;};
 struct MUIP_List_Move                 {STACKED ULONG MethodID; STACKED LONG from; STACKED LONG to;};
 struct MUIP_List_NextSelected         {STACKED ULONG MethodID; STACKED LONG *pos;};
-struct MUIP_List_Redraw               {STACKED ULONG MethodID; STACKED LONG pos;};
+struct MUIP_List_Redraw               {STACKED ULONG MethodID; STACKED LONG pos; STACKED APTR entry;};
 struct MUIP_List_Remove               {STACKED ULONG MethodID; STACKED LONG pos;};
 struct MUIP_List_Select               {STACKED ULONG MethodID; STACKED LONG pos; STACKED LONG seltype; STACKED LONG *state;};
 struct MUIP_List_Sort                 {STACKED ULONG MethodID;};
@@ -162,6 +162,7 @@ enum
 {
     MUIV_List_Redraw_Active = -1,
     MUIV_List_Redraw_All    = -2,
+    MUIV_List_Redraw_Entry  = -3,
 };
 
 enum
