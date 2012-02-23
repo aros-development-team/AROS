@@ -180,6 +180,7 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
     ULONG *mem;
     struct ListEntry *le;
     int size = sizeof(struct ListEntry) + sizeof(LONG)*data->columns + 4; /* sizeinfo */
+    LONG j;
 
     mem = AllocPooled(data->pool, size);
     if (!mem) return NULL;
@@ -188,6 +189,13 @@ static struct ListEntry *AllocListEntry(struct MUI_ListData *data)
     mem[0] = size; /* Save the size */
     le = (struct ListEntry*)(mem+1);
     le->widths = (LONG*)(le + 1);
+
+    /* Initialize fields */
+    le->height = 0;
+    le->width = 0;
+    for (j = 0; j < data->columns; j++)
+        le->widths[j] = 0;
+
     return le;
 }
 
