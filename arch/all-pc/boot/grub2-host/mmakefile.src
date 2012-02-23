@@ -41,9 +41,9 @@ $(BOOT_EFI)/unicode.pf2: unicode.pf2 $(BOOT_EFI)
 
 # avoid the mate.tmpl s_flag in order to disable stripping of binaries
 export DEBUG		:= yes
-# remove the -s & --strip-all flags, just in case
+# remove the -m32, -s & --strip-all flags, just in case
 # ... to no strip grub_mod_init or something from modules
-export CFLAGS		:= $(filter-out -s --strip-all,$(HOST_CFLAGS))
+export CFLAGS		:= $(filter-out -m32 -s --strip-all,$(HOST_CFLAGS))
 export TARGET_CFLAGS	:= $(CFLAGS)
 
 DESTDIR     :=	$(HOSTGENDIR)/$(CURDIR)/host_binaries
