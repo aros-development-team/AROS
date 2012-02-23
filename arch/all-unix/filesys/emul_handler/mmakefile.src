@@ -15,6 +15,7 @@ endif
 FILES := emul_host_unix emul_host emul_dir
 
 %build_archspecific mainmmake=kernel-fs-emul \
-  maindir=$(MAINDIR) arch=unix files="$(FILES)"
+  maindir=$(MAINDIR) arch=unix files="$(FILES)" \
+  compiler=kernel
 
 %common
