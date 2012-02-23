@@ -78,6 +78,10 @@
 
     DCREATELIBRARY("MakeLibrary: functions table at 0x%p, data size is %lu", funcInit, dataSize);
 
+    /* Can't do the following check on machines like x86, because 0x????ffff is
+       a valid address for code there! */
+    
+#if defined(__mc68000) || defined(__ppc__) || defined(__powerpc__)
     /* Calculate the jumptable's size */
     if (*(WORD *)funcInit==-1)
     {
@@ -89,6 +93,7 @@
 	DCREATELIBRARY("Table contains %lu relative offsets", count);
     }
     else
+#endif
     {
 	/* Count function pointers */
 	void **fp=(void **)funcInit;
@@ -113,10 +118,12 @@
 	library=(struct Library *)((char *)library+negsize);
 
 	/* Build jumptable */
+    #if defined(__mc68000) || defined(__ppc__) || defined(__powerpc__)
 	if(*(WORD *)funcInit==-1)
 	    /* offsets */
 	    MakeFunctions(library,(WORD *)funcInit+1,(WORD *)funcInit);
 	else
+    #endif
 	    /* function pointers */
 	    MakeFunctions(library,funcInit,NULL);
 
