@@ -145,7 +145,7 @@ IPTR MenuDecorClass__MDM_GETDEFSIZE_SYSIMAGE(Class *cl, Object *obj, struct mdpG
             {
                 struct  TextExtent TextExt;
                 SetFont(rp, msg->mdp_ReferenceFont);
-                TextExtent(rp, ">>", 2, &TextExt);
+                TextExtent(rp, "\xBB", 1, &TextExt);
                 *msg->mdp_Width = TextExt.te_Width;
                 *msg->mdp_Height = TextExt.te_Height;
                 FreeRastPort(rp);
@@ -199,7 +199,7 @@ IPTR MenuDecorClass__MDM_DRAW_SYSIMAGE(Class *cl, Object *obj, struct mdpDrawSys
             WORD x = left;
 
     	    Move(rport, x, top + rport->Font->tf_Baseline);
-            Text(rport, ">>", 2);
+            Text(rport, "\xBB", 1);
             break;
         }
 
