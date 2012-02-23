@@ -2,18 +2,31 @@ handle SIGUSR1 pass noprint nostop
 handle SIGUSR2 pass noprint nostop
 set follow-fork-mode child
 
+# This is a bit tricky, because we have several cases,
+# and gdb has no easy 'is this symbol defined' tests.
+#
+# Case 1: Hosted AROSBootstrap (ie linux-i386)
+#         Provides SysBase, Debug_ModList, and Debug_KickList
+# Case 2: ROM (ie amiga-m68k)
+#         Provides AbsExecBase and SysBase
+#
 define _debug_init
-    init-if-undefined $AbsExecBase = (struct IntExecBase *)SysBase
+    init-if-undefined $AbsExecBase = 0
     init-if-undefined $_debug_DebugBase = 0
 
+    # This is the case for ROM debugging - the user must
+    #  'set $AbsExecBase = 4', then this kicks in.
     if $AbsExecBase != 0 && $_debug_DebugBase == 0
+        set $AbsExecBase = (struct IntExecBase *)$AbsExecBase
         set $_debug_DebugBase = (struct DebugBase *)($AbsExecBase->DebugBase)
     end
 
     if $_debug_DebugBase != 0
+        # This is the case for debugging a ROM
         set $_debug_ModList = &($_debug_DebugBase->db_Modules)
         set $_debug_KickList = $_debug_DebugBase->db_KernelModules
     else
+        # This is the case for debugging a bootstrap
         init-if-undefined $_debug_ModList = Debug_ModList
         init-if-undefined $_debug_KickList = Debug_KickList
     end
