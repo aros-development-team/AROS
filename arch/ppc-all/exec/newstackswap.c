@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define __AROS_GIMME_DEPRECATED_STACKSWAP__
+
 /*****************************************************************************
 
     NAME */
