@@ -280,6 +280,7 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros
 +/* Output at beginning of assembler file.  */
 +/* The .file command should always begin the output.  */
 +
++#undef TARGET_VERSION
 +#define TARGET_VERSION fprintf (stderr, " (x86_64 AROS/ELF)");
 +
 +#undef CPP_SPEC
@@ -766,14 +767,14 @@ diff -ruN gcc-4.6.2/gcc/config.gcc gcc-4.6.2.aros/gcc/config.gcc
  	tmake_file="${tmake_file} i386/t-linux64 i386/t-crtstuff i386/t-crtpc i386/t-crtfm t-dfprules"
  	;;
 +i[34567]86-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/aros.h"
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h aros.h"
 +	xm_file=xm-aros.h
-+	tmake_file="$tmake_file t-aros"
++	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	;;	
 +x86_64-*-aros*)
-+	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h svr4.h aros.h i386/x86-64.h i386/aros64.h"
++	tm_file="${tm_file} i386/unix.h i386/att.h dbxelf.h elfos.h i386/i386elf.h i386/x86-64.h aros.h i386/aros64.h"
++	tmake_file="${tmake_file} i386/t-i386elf t-aros"
 +	xm_file=xm-aros.h
-+	tmake_file="$tmake_file t-aros"
 +	;;
  i[34567]86-pc-msdosdjgpp*)
  	xm_file=i386/xm-djgpp.h
