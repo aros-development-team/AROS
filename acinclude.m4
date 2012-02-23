@@ -8,7 +8,7 @@ dnl presentation to the user.
 dnl
 AC_DEFUN(AROS_REQUIRED,
 [if test "$2" = ""; then
-    AC_MSG_ERROR($1 is required to build AROS. Please install and run configure again.)
+    AC_MSG_ERROR([$1 is required to build AROS. Please install and run configure again.])
 fi])
 
 dnl AROS_PROG(var,prog,args)
@@ -39,6 +39,23 @@ AC_DEFUN(AROS_TOOL_TARGET,
 if test "$3" = ""; then
     if test "$cross_compiling" = "yes" ; then
         AC_PATH_PROG([$1],${target_tool_prefix}[$2])
+    else
+        AROS_TOOL_CCPATH($1, $2)
+    fi
+else
+    AC_PATH_PROG($1, $3)
+fi
+])
+
+dnl AROS_KERNEL_TARGET(var,prog,override)
+dnl This is effectively the same as AROS_PROG, but adds the appropriate
+dnl arch prefix when cross compiling. 
+dnl
+AC_DEFUN(AROS_TOOL_KERNEL,
+[
+if test "$3" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        AC_PATH_PROG([$1],${kernel_tool_prefix}[$2])
     else
         AROS_TOOL_CCPATH($1, $2)
     fi
