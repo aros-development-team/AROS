@@ -2,10 +2,10 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- includes-generate: \
+#MM- includes-generate-unix: \
 #MM	workbench-libs-oss-unix-module-includes
 
-#MM- linklibs: \
+#MM- linklibs-unix: \
 #MM	workbench-libs-oss-unix-module-linklib
 
 #MM- workbench-unix : workbench-hidd-unix $(OSS_LIBRARY_TARGET) workbench-hosted
