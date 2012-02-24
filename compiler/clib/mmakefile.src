@@ -461,7 +461,7 @@ ROM_STATIC := \
 	isinf \
 	labs \
 	qsort \
-	rand \
+	rand_rom \
 	snprintf \
 	sprintf \
 	sscanf \

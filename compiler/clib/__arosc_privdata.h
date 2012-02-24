@@ -103,6 +103,9 @@ struct aroscbase
 
     /* signal.c & co. */
     struct signal_func_data *acb_sigfunc_array;
+
+    /* rand */
+    unsigned int acb_srand_seed;
 };
 
 /* acb_flags */
