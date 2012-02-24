@@ -604,7 +604,7 @@ void ProcessPackets(void) {
                 if ((err = TestLock(fl)))
                     break;
 
-                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), &nl)) == 0)
+                if ((err = OpCreateDir(fl, AROS_BSTR_ADDR(name), AROS_BSTR_strlen(name), &new)) == 0)
                     res = (IPTR)MKBADDR(new);
 
                 break;
