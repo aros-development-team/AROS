@@ -387,7 +387,7 @@ static void KillICObjects(void)
 
 static void GetVisual(void)
 {
-    scr = LockPubScreen(NULL);
+    scr = LockPubScreen((CONST_STRPTR)args[ARG_PUBSCREEN]);
     if (!scr) Cleanup(MSG(MSG_CANT_LOCK_SCR));
 
     dri = GetScreenDrawInfo(scr);
