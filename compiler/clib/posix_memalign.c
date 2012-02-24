@@ -19,7 +19,6 @@
 /*****************************************************************************
 
     NAME */
-#include <sys/types.h>
 #include <stdlib.h>
 
 	int posix_memalign (
