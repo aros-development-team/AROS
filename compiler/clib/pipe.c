@@ -8,7 +8,6 @@
 #include <exec/exec.h>
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h> /* For snprintf */
 #include <errno.h>
@@ -18,6 +17,7 @@
 /*****************************************************************************
 
     NAME */
+#include <unistd.h>
 
 	int pipe(
 
