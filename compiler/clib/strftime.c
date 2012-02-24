@@ -4,9 +4,12 @@
 */
 
 #include <time.h>
-/* #include <locale.h>
+/*
+TODO: Implement localization support
+#include <locale.h>
 #include <libraries/locale.h>
-#include <proto/locale.h> */
+#include <proto/locale.h>
+*/
 
 #define ADDS(st)  tmp=strftime(s,maxsize-size,(st),timeptr);break;
 
@@ -90,6 +93,7 @@ static size_t strfnumb(char *s, size_t maxsize, signed int places, size_t value)
     RESULT
 
     NOTES
+        Function does not take localization into account at the moment
 
     EXAMPLE
 
