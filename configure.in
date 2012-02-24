@@ -90,6 +90,7 @@ AROS_PROG(MMAKE,mmake)
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
 
+aros_host_cpp="$CPP"
 aros_host_cc="$CC"
 AROS_TOOL_CCPATH(aros_host_ld,ld)
 AROS_REQUIRED(ld,$aros_host_ld)
@@ -1312,6 +1313,7 @@ case "$target_os" in
                 gcc_target_cpu="i386"
 
                 dnl Temporary hack, needed to get nightly build working
+                aros_target_cpp="i386-aros-cpp"
                 aros_target_as="i386-aros-as"
                 aros_target_ar="i386-aros-ar"
                 aros_target_ranlib="i386-aros-ranlib"
@@ -1510,6 +1512,7 @@ if test "$aros_gcc_version" != "none"; then
         aros_target_cxx="${target_tool_prefix}g++"
     fi
 
+    aros_target_cpp="${target_tool_prefix}cpp"
     aros_target_ld="${target_tool_prefix}ld"
     aros_target_as="${target_tool_prefix}as"
     aros_target_ar="${target_tool_prefix}ar"
@@ -1529,6 +1532,7 @@ if test "$aros_gcc_version" != "none"; then
         aros_kernel_cxx="${kernel_tool_prefix}g++"
     fi
 
+    aros_kernel_cpp="${kernel_tool_prefix}cpp"
     aros_kernel_ld="${kernel_tool_prefix}ld"
     aros_kernel_as="${kernel_tool_prefix}as"
     aros_kernel_ar="${kernel_tool_prefix}ar"
@@ -1646,6 +1650,7 @@ if test "$cross_compiling" = "yes" ; then
             if test "$crosstools" != yes; then
                 aros_target_cc=
                 aros_target_ld=
+                aros_target_cpp=
                 aros_target_as=
                 aros_target_ar=
                 aros_target_ranlib=
@@ -1729,6 +1734,9 @@ if test "$crosstools" != "yes"; then
         if test "$aros_target_ld" == ""; then
            aros_target_ld="${target_tool_prefix}ld"
         fi
+        if test "$aros_target_cpp" == ""; then
+           aros_target_cpp="${target_tool_prefix}cpp"
+        fi
     fi
     AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
     AROS_REQUIRED(as,$aros_target_as_ln)
@@ -1751,6 +1759,7 @@ if test "$crosstools" != "yes"; then
 else
     aros_target_cc=$AROS_CROSSTOOLSDIR/$aros_target_cc
     aros_target_cxx=$AROS_CROSSTOOLSDIR/$aros_target_cxx
+    aros_target_cpp=$AROS_CROSSTOOLSDIR/$aros_target_cpp
     aros_target_as_ln=$AROS_CROSSTOOLSDIR/$aros_target_as
     aros_target_ar_ln=$AROS_CROSSTOOLSDIR/$aros_target_ar
     aros_target_nm_ln=$AROS_CROSSTOOLSDIR/$aros_target_nm
@@ -1762,6 +1771,8 @@ else
     crosstools_target=tools-crosstools
 fi
 
+AROS_TOOL_TARGET(aros_kernel_cpp,cpp,$aros_kernel_cpp)
+AROS_REQUIRED(cpp,$aros_kernel_cpp)
 AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
 AROS_REQUIRED(ld,$aros_kernel_ld)
 AROS_TOOL_TARGET(aros_kernel_ar,ar,$aros_kernel_ar)
@@ -1772,6 +1783,7 @@ AROS_REQUIRED(ld,$aros_kernel_ranlib)
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
+orig_target_cpp=$aros_kernel_cpp
 orig_target_cc=$aros_kernel_cc
 orig_target_ld=$aros_kernel_ld
 
@@ -1786,9 +1798,15 @@ if test "$crosstools" != "yes"; then
         AROS_REQUIRED(ld,$aros_target_ld)
         orig_target_ld=$aros_target_ld
     fi
+    if test "$aros_target_cpp" != ""; then
+        AC_PATH_PROG(aros_target_cpp,$aros_target_cpp)
+        AROS_REQUIRED(cpp,$aros_target_cpp)
+        orig_target_cpp=$aros_target_cpp
+    fi
 else
     orig_target_cc=$aros_target_cc
     orig_target_ld=$aros_target_ld
+    orig_target_cpp=$aros_target_cpp
 fi
 
 # Build crosstools if we have no C++ - temporary thing 
@@ -1841,6 +1859,7 @@ else
     # build of crosstools.
     aros_target_cc_path=@aros_target_cc_path@
 fi
+aros_target_cpp="${prefix}-cpp"
 aros_target_cc="${prefix}-gcc"
 aros_target_as="${prefix}-as"
 aros_target_ld="${prefix}-ld"
@@ -2418,6 +2437,7 @@ AC_SUBST(aros_cc_pre)
 AC_SUBST(aros_host_strip)
 AC_SUBST(aros_host_arch)
 AC_SUBST(aros_host_cpu)
+AC_SUBST(aros_host_cpp)
 AC_SUBST(aros_host_cc)
 AC_SUBST(aros_host_ar)
 AC_SUBST(aros_host_ranlib)
@@ -2457,6 +2477,9 @@ AC_SUBST(orig_target_cc)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cxx)
 AC_SUBST(aros_kernel_cc)
+AC_SUBST(orig_target_cpp)
+AC_SUBST(aros_target_cpp)
+AC_SUBST(aros_kernel_cpp)
 AC_SUBST(aros_target_as)
 AC_SUBST(orig_target_ld)
 AC_SUBST(aros_target_ld)
@@ -2619,7 +2642,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
 
         echo ${prefix2}
         echo ${prefix3}
-        chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix3}-gcc
+        chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
 
         ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
         ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
@@ -2663,6 +2686,7 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in
     ${aros_targetcfg_dir}/specs:config/specs.in
     ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in

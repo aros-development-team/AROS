@@ -11,6 +11,8 @@ FAMILY		:= @aros_target_family@
 FLAVOUR		:= @aros_flavour@
 SHARED_MOD	:= @aros_shared_default@
 
+TARGET_CPP	:= @aros_target_cpp@
+KERNEL_CPP	:= @aros_kernel_cpp@
 TARGET_CC	:= @aros_cc_pre@ @aros_target_cc@
 KERNEL_CC	:= @aros_kernel_cc@
 TARGET_CXX	:= @aros_target_cxx@
