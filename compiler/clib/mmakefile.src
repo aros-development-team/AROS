@@ -382,7 +382,8 @@ SHARED_ARCH := \
     vfork_longjmp
 
 SHARED_LINKLIB := \
-       arosc_environ
+       arosc_environ \
+       __ctype_linklib
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used

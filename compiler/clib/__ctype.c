@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -506,6 +506,11 @@ const int __ctype_tolower_array[384] =
 };
 
 #ifdef AROSC_SHARED
+const struct arosc_ctype *__get_arosc_ctype(void)
+{
+    return &__get_arosc_userdata()->acud_ctype;
+}
+
 static int __ctype_init(void)
 {
     struct arosc_userdata *acud = __get_arosc_userdata();
@@ -520,24 +525,12 @@ static int __ctype_init(void)
 ADD2INIT(__ctype_init, 20);
 #endif
 
-/* Provide local arosc ctypes for the static version of arosc */
-#ifdef AROSC_STATIC
-const struct arosc_ctype __arosc_ctype = {
-    .b = &__ctype_b_array[128],
-    .toupper = &__ctype_toupper_array[128],
-    .tolower = &__ctype_tolower_array[128],
-};
-const struct arosc_ctype *__get_arosc_ctype(void)
-{
-    return &__arosc_ctype;
-}
-#else
-const struct arosc_ctype *__get_arosc_ctype(void)
-{
-    return &__get_arosc_userdata()->acud_ctype;
-}
-#endif
-
+/* Pointers have to be available both when in static linklib and
+   internally to arosc.library also
+*/
+const unsigned short int * const __ctype_b = &__ctype_b_array[128];
+const int * const __ctype_toupper = &__ctype_toupper_array[128];
+const int * const __ctype_tolower = &__ctype_tolower_array[128];
 
 /*****************************************************************************
 
