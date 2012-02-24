@@ -11,6 +11,7 @@
 
 #include <exec/types.h>
 #include <setjmp.h>
+#include <assert.h>
 #include <aros/startup.h>
 
 /*****************************************************************************
@@ -52,13 +53,15 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __GM_GetBase();
+
     __arosc_startup_error = code;
 
     D(bug("_exit() - returning via jmp_buf %p\n", __arosc_startup_jmp_buf));
+    aroscbase->acb_flags |= ABNORMAL_EXIT;
     longjmp (__arosc_startup_jmp_buf, 1);
 
-    /* TODO: _exit() is not properly implemented */
-
     /* never reached */
+    assert(0);
 } /* _exit */
 
