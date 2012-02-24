@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/arosc.h>
 
+#include <aros/types/clock_t.h>
 struct _fdesc;
 struct __env_item;
 struct vfork_data;
@@ -43,7 +44,7 @@ struct aroscbase
     struct MinList acb_stdio_files;
 
     /* clock.c */
-    struct DateStamp acb_datestamp;
+    clock_t acb_starttime;
 
     /* __open.c */
     int acb_numslots;
