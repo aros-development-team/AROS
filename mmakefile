@@ -29,13 +29,16 @@ cleandep :
 
 #MM
 query :
+	@$(ECHO) "HOST_CPP       : $(HOST_CPP)"
 	@$(ECHO) "HOST_CC        : $(HOST_CC)"
 	@$(ECHO) "HOST_CFLAGS    : $(HOST_CFLAGS)"
 	@$(ECHO) "HOST_LDFLAGS   : $(HOST_LDFLAGS)"
+	@$(ECHO) "KERNEL_CPP     : $(KERNEL_CPP)"
 	@$(ECHO) "KERNEL_CC      : $(KERNEL_CC)"
 	@$(ECHO) "KERNEL_CFLAGS  : $(KERNEL_CFLAGS)"
 	@$(ECHO) "KERNEL_LD      : $(KERNEL_LD)"
 	@$(ECHO) "KERNEL_LDFLAGS : $(KERNEL_LDFLAGS)"
+	@$(ECHO) "TARGET_CPP     : $(TARGET_CPP)"
 	@$(ECHO) "TARGET_CC      : $(TARGET_CC)"
 	@$(ECHO) "TARGET_CFLAGS  : $(TARGET_CFLAGS)"
 	@$(ECHO) "TARGET_LDFLAGS : $(TARGET_LDFLAGS)"

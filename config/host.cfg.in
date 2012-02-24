@@ -10,6 +10,7 @@
 AROS_HOST_ARCH	:= @aros_host_arch@
 AROS_HOST_CPU	:= @aros_host_cpu@
 
+HOST_CPP	:= @aros_host_cpp@
 HOST_CC		:= @aros_cc_pre@ @aros_host_cc@
 HOST_LD		:= @aros_host_ld@
 HOST_MAKE	:= @aros_host_make@
