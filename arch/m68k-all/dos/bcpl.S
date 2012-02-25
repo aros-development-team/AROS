@@ -922,10 +922,7 @@ BCPL readinput_long   /* e4, lwlength , @buf, lwlength */
     lsl.l	#2,%d2
     lsl.l	#2,%d3
     jsr		%a6@(7 * -6)	/* DOS/Read() */
-    tst.l	%d0
-    blt.s	0f
     asr.l	#2,%d0
-0:
     movem.l	%sp@+,%d1-%d3/%a0-%a1/%a6
     BRTS
 
