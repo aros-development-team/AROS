@@ -1,0 +1,17 @@
+# $Id$
+# Makefile to make KeyShow tool.
+
+include $(TOP)/config/make.cfg
+
+FILES := main locale keyboardgroup_class
+
+EXEDIR := $(AROS_TOOLS)
+
+#MM- workbench-tools : workbench-tools-keyshow
+#MM  workbench-tools-keyshow : includes linklibs workbench-tools-keyshow-catalogs
+
+%build_prog mmake=workbench-tools-keyshow \
+    progname=KeyShow targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui amiga arosc"
+
+%common
