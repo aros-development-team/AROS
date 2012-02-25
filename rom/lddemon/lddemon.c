@@ -156,8 +156,9 @@ static BPTR LDLoad(struct Process *caller, STRPTR name, STRPTR basedir,
   Library *LDInit(seglist, DOSBase)
     Initialise the library.
 */
-static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *SysBase)
+static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, struct ExecBase *SysBase)
 {
+    struct Node *node = NULL;
     BPTR seg = seglist;
 
     /* we may not have any extension fields */ 
@@ -180,8 +181,6 @@ static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *
 	    if(    res->rt_MatchWord == RTC_MATCHWORD
 		&& res->rt_MatchTag == res )
 	    {
-		struct Node *node;
-
 		D(bug("[LDInit] Calling InitResident(%p) on %s\n", res, res->rt_Name));
 		/* AOS compatibility requirement. 
 		 * Ramlib ignores InitResident() return code.
@@ -203,7 +202,16 @@ static struct Library *LDInit(BPTR seglist, struct List *list, struct ExecBase *
 	seg = *(BPTR *)BADDR(seg);
     }
     D(bug("[LDInit] Couldn't find Resident for %p\n", seglist));
-    return NULL;
+#ifdef __mc68000
+    /* If struct Resident was not found, just run the code. SegList in A0.
+     * Required to load WB1.x devs:narrator.device. */
+    Forbid();
+    AROS_UFC1(void, BADDR(seglist) + sizeof(ULONG), AROS_UFCA(BPTR, seglist, A0));
+    node = FindName(list, resname);
+    Permit();
+    D(bug("[LDInit] Done direct calling %s, seg %p, node %p\n", resname, BADDR(seglist), node));
+#endif
+    return (struct Library*)node;
 }
 
 #define ExecOpenLibrary(libname, version)                         \
@@ -365,7 +373,7 @@ static struct LDObjectNode *LDRequestObject(STRPTR libname, ULONG version, STRPT
 
 	if (ldd.ldd_Return)
 	{
-	    tmplib = LDInit(ldd.ldd_Return, list, SysBase);
+	    tmplib = LDInit(ldd.ldd_Return, list, stripped_libname, SysBase);
 	    if (!tmplib)
 	    	UnLoadSeg(ldd.ldd_Return);
 	}
