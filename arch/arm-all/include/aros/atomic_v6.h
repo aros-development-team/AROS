@@ -133,36 +133,36 @@ static inline void atomic_dec_w(WORD* p)
 	:"cc");
 }
 
-static inline void atomic_or_b(UBYTE* p, UBYTE mask)
+static inline void atomic_or_b(UBYTE* p, ULONG mask)
 {
     CONST ULONG* addr  = (ULONG*)((ULONG)p & ~0x03); /* Longword-align the address   */
     UBYTE shift        = ((ULONG)p & 0x03) << 3;     /* get number of bits to shift  */
 
-    atomic_or_l(addr, (ULONG)mask << shift);
+    atomic_or_l(addr, mask << shift);
 }
 
-static inline void atomic_and_b(UBYTE* p, UBYTE mask)
+static inline void atomic_and_b(UBYTE* p, ULONG mask)
 {
     CONST ULONG* addr  = (ULONG*)((ULONG)p & ~0x03); /* Longword-align the address   */
     UBYTE shift        = ((ULONG)p & 0x03) << 3;     /* get number of bits to shift  */
 
-    atomic_and_l(addr, ~0UL & (mask << shift));
+    atomic_and_l(addr, ~0UL & ((UBYTE)mask << shift));
 }
 
-static inline void atomic_or_w(UWORD* p, UWORD mask)
+static inline void atomic_or_w(UWORD* p, ULONG mask)
 {
     CONST ULONG* addr  = (ULONG*)((ULONG)p & ~0x03); /* Longword-align the address   */
     UBYTE shift        = ((ULONG)p & 0x03) << 3;     /* get number of bits to shift  */
 
-    atomic_or_l(addr, (ULONG)mask << shift);
+    atomic_or_l(addr, mask << shift);
 }
 
-static inline void atomic_and_w(UWORD* p, UWORD mask)
+static inline void atomic_and_w(UWORD* p, ULONG mask)
 {
     CONST ULONG* addr  = (ULONG*)((ULONG)p & ~0x03); /* Longword-align the address   */
     UBYTE shift        = ((ULONG)p & 0x03) << 3;     /* get number of bits to shift  */
 
-    atomic_and_l(addr, ~0UL & (mask << shift));
+    atomic_and_l(addr, ~0UL & ((UWORD)mask << shift));
 }
 
 #define __AROS_ATOMIC_INC_B(var) atomic_inc_b((BYTE *) &(var))
