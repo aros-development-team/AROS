@@ -1,0 +1,23 @@
+MSG_AppDescription (//)
+Show Keyboard Layout
+;
+MSG_AppCopyright (//)
+Copyright © 2012 The AROS Development Team
+;
+MSG_WI_TITLE (//)
+KeyShow
+;
+MSG_OK (//)
+_OK
+;
+; Error messages
+;
+MSG_ERR (//)
+Error
+;
+MSG_ERR_NO_APPLICATION (//)
+Can't create application
+;
+MSG_ERR_NO_MEM (//)
+Out of memory
+;
