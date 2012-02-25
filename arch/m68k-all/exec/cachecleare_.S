@@ -45,7 +45,7 @@ cacheclearesup_20:
 	.text
 	.balign 4
 	.globl	AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107)
-	.type	AROS_SLIB_ENTRY(CacheClearE_460,Exec,107),@function
+	.type	AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107),@function
 AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107):
 
 #if CACHEDEBUG
