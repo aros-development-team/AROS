@@ -25,17 +25,17 @@ int main(void)
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"KeyShow",
         MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.0 (24.02.2012)",
-        MUIA_Application_Copyright, _(MSG_AppCopyright),
+        MUIA_Application_Copyright, (IPTR)_(MSG_AppCopyright),
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
-        MUIA_Application_Description, _(MSG_AppDescription),
+        MUIA_Application_Description, (IPTR)_(MSG_AppDescription),
         MUIA_Application_Base, (IPTR)"KEYSHOW",
 
-        SubWindow, win = WindowObject,
-            MUIA_Window_Title, _(MSG_WI_TITLE),
+        SubWindow, (IPTR)(win = WindowObject,
+            MUIA_Window_Title, (IPTR)_(MSG_WI_TITLE),
             MUIA_Window_ID, MAKE_ID('K','S','W','N'),
-            WindowContents, KeyboardGroupObject,
+            WindowContents, (IPTR)KeyboardGroupObject,
             End,
-        End,
+        End),
     End;
 
     if (app == NULL)
