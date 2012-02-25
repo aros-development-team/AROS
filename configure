@@ -8275,10 +8275,8 @@ if test "$cross_compiling" = "yes" ; then
     fi
 
     aros_kernel_cc=${kernel_tool_prefix}gcc
-        aros_kernel_cpp=${kernel_tool_prefix}cpp
     if test "$kernel_tool_version" != "default"; then
         aros_kernel_cc="${aros_kernel_cc}-$kernel_tool_version"
-        aros_kernel_cpp="${aros_kernel_cpp}-$kernel_tool_version"
     fi
 fi
 
