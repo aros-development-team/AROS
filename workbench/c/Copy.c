@@ -547,10 +547,16 @@ static STRPTR skipspaces( STRPTR buffer);
 static STRPTR skipnonspaces( STRPTR buffer);
 static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
 
+#ifdef __MORPHOS__
+#define BNULL NULL
+int main()
+{
+#else
 __startup static AROS_ENTRY(int, Start,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
 	  struct ExecBase *, SysBase)
+#endif
 {
     AROS_USERFUNC_INIT
 
@@ -2649,5 +2655,3 @@ STRPTR skipnonspaces( STRPTR buffer)
 		}
 	}
 }
-
-
