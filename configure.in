@@ -941,6 +941,9 @@ case "$target_os" in
                 dnl (Ab)use $(X11_HIDD_TARGET) as "Default display driver target"
                 dnl in order not to fill mmakefiles with garbage
                 x11_hidd_target=kernel-hidd-androidgfx-kobj
+                # Disable implicit PIC mode
+                aros_kernel_cflags="$aros_kernel_cflags -fno-pic"
+                aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
             ;;
         esac

@@ -7483,6 +7483,9 @@ case "$target_os" in
                 fi
                 need_x11=no
                                                 x11_hidd_target=kernel-hidd-androidgfx-kobj
+                # Disable implicit PIC mode
+                aros_kernel_cflags="$aros_kernel_cflags -fno-pic"
+                aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
             ;;
         esac
