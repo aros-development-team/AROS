@@ -1510,7 +1510,13 @@ AC_MSG_RESULT($aros_target_guitheme)
 # Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
 cross_compiling=no
-if test "$aros_host_cpu" != "$aros_target_cpu" ; then
+if test "$aros_host_cpu" = "$aros_target_cpu" ; then
+    # If host = target CPU, let's try to use the
+    # host's toolchains if no others were requested
+    if test "$kernel_tool_prefix" = "none" ; then
+        kernel_tool_prefix=""
+    fi
+else
     cross_compiling=yes
 fi
 
