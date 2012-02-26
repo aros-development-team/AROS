@@ -21,3 +21,47 @@ Can't create application
 MSG_ERR_NO_MEM (//)
 Out of memory
 ;
+; Key descriptions
+;
+MSG_KEY_SHIFT (//)
+Shift
+;
+MSG_KEY_CTRL (//)
+Ctrl
+;
+MSG_KEY_ALT (//)
+Alt
+;
+MSG_KEY_LOCK (//)
+Lock
+;
+MSG_KEY_HELP (//)
+Help
+;
+MSG_KEY_A (//)
+A
+;
+MSG_KEY_INSERT (//)
+Insert
+;
+MSG_KEY_HOME (//)
+Home
+;
+MSG_KEY_PAGEUP (//)
+Page ^
+;
+MSG_KEY_DELETE (//)
+Delete
+;
+MSG_KEY_END (//)
+End
+;
+MSG_KEY_PAGEDOWN (//)
+Page v
+;
+MSG_KEY_NUM (//)
+Num
+;
+MSG_KEY_ENTER (//)
+Enter
+;
