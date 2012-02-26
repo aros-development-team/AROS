@@ -7,6 +7,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-afs-pkg	\
 #MM	kernel-fs-cdvdfs-pkg	\
 #MM	kernel-fs-sfs-pkg	\
+#MM	kernel-fs-fat-pkg	\
 #MM	kernel-partition-pkg
 
 # kernel-fs-kobj metatarget is already taken by rom/filesys
@@ -14,10 +15,11 @@ include $(TOP)/config/make.cfg
 #MM	kernel-fs-afs-kobj	\
 #MM	kernel-fs-cdvdfs-kobj	\
 #MM	kernel-fs-sfs-kobj	\
+#MM	kernel-fs-fat-kobj	\
 #MM	kernel-partition-kobj
 
 FS_LIBS     := partition
-FS_HANDLERS := afs cdrom sfs
+FS_HANDLERS := afs cdrom sfs fat
 
 %make_package mmake=kernel-package-fs file=$(BINDIR)/boot/aros-fs.pkg \
 	      handlers=$(FS_HANDLERS) libs=$(FS_LIBS)
