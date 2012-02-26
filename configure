@@ -669,9 +669,15 @@ aros_target_objcopy
 aros_target_objdump
 aros_target_cc_path
 aros_target_cc_includes
+aros_target_ld
 orig_target_ld
 aros_target_as
+orig_target_as
+aros_target_cpp
 orig_target_cpp
+aros_target_cxx
+orig_target_cxx
+aros_target_cc
 orig_target_cc
 aros_plain_ar
 aros_plain_nm
@@ -725,21 +731,16 @@ aros_target_detach_ldflags
 aros_target_nix_ldflags
 aros_target_nostartup_ldflags
 aros_target_nostdinc_cflags
-aros_target_cpp
-aros_target_ld
-aros_target_cc
+aros_kernel_rescomp
+aros_kernel_objdump
+aros_kernel_objcopy
+aros_kernel_strip
+aros_kernel_nm
 aros_kernel_ranlib
 aros_kernel_ar
+aros_kernel_as
 aros_kernel_ld
-aros_target_cxx
-aros_target_strip_ln
-aros_target_ranlib_ln
-aros_target_objdump_ln
-aros_target_objcopy_ln
-aros_target_nm_ln
-aros_target_ar_ln
-aros_target_as_ln
-aros_kernel_rescomp
+aros_kernel_cxx
 aros_kernel_cc
 aros_kernel_cpp
 ant
@@ -861,11 +862,11 @@ with_sdk
 with_ndk
 with_ndk_version
 enable_amigaos_compliance
+with_crosstools
 with_kernel_tool_prefix
 with_cpu
 with_fpu
 with_float
-with_crosstools
 with_aros_gcc
 with_portssources
 with_bootloader
@@ -1571,6 +1572,7 @@ Optional Packages:
                           Use Android SDK for API LEVEL (default=12).
   --with-ndk-version=LEVEL
                           Use Android NDK for API LEVEL (default=9).
+  --with-crosstools=DIR   Where to install or search for cross tools binaries
   --with-kernel-tool-prefix=...
                           Specify crosscompile toolchain prefix for kernel
                           objects
@@ -1578,7 +1580,6 @@ Optional Packages:
   --with-fpu=<spec>       Specify minumum FPU (default=$gcc_default_fpu).
   --with-float=<spec>     Specify floating point ABI
                           (default=$gcc_default_float_abi).
-  --with-crosstools=DIR   Where to install or search for cross tools binaries
   --with-aros-gcc=VERSION Use aros-gcc-VERSION for building AROS
   --with-portssources=DIR Where to download sourcecode for external ports
   --with-bootloader=NAME  Use a specific bootloader
@@ -4309,12 +4310,6 @@ aros_target_cc_includes=""
 # ----------------------------------------------------------------------------------------
 # Host-specific defaults
 #
-# Override this to "yes" in order to force a specific build to use real AROS crosscompiler
-# instead of a wrapper script.
-# Useful for non-ELF hosts (like Windows and Darwin).
-# Can also be overriden in target section below
-use_aros_gcc="no"
-
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
 # not look at anything that compiles to the target yet, we'll get
@@ -4395,7 +4390,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     darwin*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
-        use_aros_gcc="yes"
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
@@ -4522,7 +4516,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     cygwin*)
         aros_host_arch="cygwin"
-        use_aros_gcc="yes"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         android_build_os="windows"
         android_tool="android.bat"
@@ -4542,7 +4535,6 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
 
     mingw32*)
         aros_host_arch="mingw32"
-        use_aros_gcc="yes"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         android_build_os="windows"
         android_tool="android.bat"
@@ -6735,6 +6727,9 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
+# Leave at 'none' for no external toolchain
+kernel_tool_prefix="none"
+
 #-----------------------------------------------------------------------------
 
 #
@@ -7172,19 +7167,6 @@ $as_echo "$enableval" >&6; }
 #
 # Bootloader name. Currently used by PC target.
 target_bootloader="none"
-
-# Prefix for toolchain used to build bootstrap. For hosted ports, this should be a toolchain for target host OS.
-# (i. e. when building mingw32-i386 port this should be set to "i386-mingw32-").
-# For native ports this toolchain is used to build a bootloader and second-level bootstrap (if present).
-if test "$crosstools" != "yes"; then
-    target_tool_prefix=${target_cpu}-elf-
-else
-    target_tool_prefix=${target_cpu}-aros-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking Target tool prefix" >&5
-$as_echo_n "checking Target tool prefix... " >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_prefix" >&5
-$as_echo "$target_tool_prefix" >&6; }
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -7857,15 +7839,6 @@ fi
                 aros_default_wbdepth=8
                 gcc_target_cpu="i386"
 
-                                aros_target_cpp="i386-aros-cpp"
-                aros_target_as="i386-aros-as"
-                aros_target_ar="i386-aros-ar"
-                aros_target_ranlib="i386-aros-ranlib"
-                aros_target_nm="i386-aros-nm"
-                aros_target_strip="i386-aros-strip"
-                aros_target_objcopy="i386-aros-objcopy"
-                aros_target_objdump="i386-aros-objdump"
-
                 kernel_tool_prefix="i386-mingw32-"
                 ;;
             *x86_64*)
@@ -7967,16 +7940,43 @@ fi
         ;;
 esac
 
+#-----------------------------------------------------------------------------
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install or search for cross tools binaries" >&5
+$as_echo_n "checking where to install or search for cross tools binaries... " >&6; }
+
+# Check whether --with-crosstools was given.
+if test "${with_crosstools+set}" = set; then :
+  withval=$with_crosstools; with_crosstools=$withval
+else
+  with_crosstools="default"
+fi
+
+if test "$with_crosstools" = "default"; then
+    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+else
+    # Disable building crosstools if we are using an external set - otherwise
+    # we may attempt to overwrite them if the tools-crosstools target is made!
+    crosstools=no
+    AROS_CROSSTOOLSDIR="$with_crosstools"
+    PATH="$AROS_CROSSTOOLSDIR:$PATH"
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
+$as_echo "$AROS_CROSSTOOLSDIR" >&6; }
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking Kernel tool prefix" >&5
 $as_echo_n "checking Kernel tool prefix... " >&6; }
 
 # Check whether --with-kernel-tool-prefix was given.
 if test "${with_kernel_tool_prefix+set}" = set; then :
   withval=$with_kernel_tool_prefix; kernel_tool_prefix="$withval"
+else
+  kernel_tool_prefix="$kernel_tool_prefix"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
 $as_echo "$kernel_tool_prefix" >&6; }
+
+target_tool_prefix=${target_cpu}-aros-
 
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -8045,93 +8045,18 @@ else
     elf_specs_in=config/elf-specs.in
 fi
 
-#-----------------------------------------------------------------------------
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install or search for cross tools binaries" >&5
-$as_echo_n "checking where to install or search for cross tools binaries... " >&6; }
-
-# Check whether --with-crosstools was given.
-if test "${with_crosstools+set}" = set; then :
-  withval=$with_crosstools; with_crosstools=$withval
-else
-  with_crosstools="default"
-fi
-
-if test "$with_crosstools" = "default"; then
-    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
-else
-    AROS_CROSSTOOLSDIR="$with_crosstools"
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
-$as_echo "$AROS_CROSSTOOLSDIR" >&6; }
-
-if test "$crosstools" != "no" -o "$with_crosstools" != "default"; then
-
-
-    use_aros_gcc=yes
-    PATH=$AROS_CROSSTOOLSDIR:$PATH
-fi
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific AROS gcc version to use" >&5
 $as_echo_n "checking what specific AROS gcc version to use... " >&6; }
 
 # Check whether --with-aros-gcc was given.
 if test "${with_aros_gcc+set}" = set; then :
-  withval=$with_aros_gcc; aros_gcc_version="$withval"
+  withval=$with_aros_gcc; aros_gcc_version="-$withval"
 else
-  aros_gcc_version="$use_aros_gcc"
+  aros_gcc_version=""
 fi
 
-case "$aros_gcc_version" in
-yes)
-    aros_gcc_version="default"
-    ;;
-no)
-    aros_gcc_version="none"
-    ;;
-esac
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_gcc_version" >&5
 $as_echo "$aros_gcc_version" >&6; }
-
-if test "$aros_gcc_version" != "none"; then
-
-
-    if test "$aros_gcc_version" != "default"; then
-        aros_target_cc="${target_tool_prefix}gcc-$aros_gcc_version"
-        aros_target_cxx="${target_tool_prefix}g++-$aros_gcc_version"
-    else
-        aros_target_cc="${target_tool_prefix}gcc"
-        aros_target_cxx="${target_tool_prefix}g++"
-    fi
-
-    aros_target_cpp="${target_tool_prefix}cpp"
-    aros_target_ld="${target_tool_prefix}ld"
-    aros_target_as="${target_tool_prefix}as"
-    aros_target_ar="${target_tool_prefix}ar"
-    aros_target_ranlib="${target_tool_prefix}ranlib"
-    aros_target_nm="${target_tool_prefix}nm"
-    aros_target_strip="${target_tool_prefix}strip"
-    aros_target_objcopy="${target_tool_prefix}objcopy"
-    aros_target_objdump="${target_tool_prefix}objdump"
-
-
-    if test "$aros_gcc_version" != "default"; then
-        aros_kernel_cc="${kernel_tool_prefix}gcc-$aros_gcc_version"
-        aros_kernel_cxx="${kernel_tool_prefix}g++-$aros_gcc_version"
-    else
-        aros_kernel_cc="${kernel_tool_prefix}gcc"
-        aros_kernel_cxx="${kernel_tool_prefix}g++"
-    fi
-
-    aros_kernel_cpp="${kernel_tool_prefix}cpp"
-    aros_kernel_ld="${kernel_tool_prefix}ld"
-    aros_kernel_as="${kernel_tool_prefix}as"
-    aros_kernel_ar="${kernel_tool_prefix}ar"
-    aros_kernel_ranlib="${kernel_tool_prefix}ranlib"
-    aros_kernel_nm="${kernel_tool_prefix}nm"
-    aros_kernel_strip="${kernel_tool_prefix}strip"
-    aros_kernel_objcopy="${kernel_tool_prefix}objcopy"
-    aros_kernel_objdump="${kernel_tool_prefix}objdump"
-fi
 
 # Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
 # Since we override specs, we may need to put these defines there
@@ -8223,6 +8148,7 @@ if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
         if test "$aros_target_arch" != "mingw32"; then
             cross_compiling=no
+            kernel_tool_prefix=""
         fi
     fi
 fi
@@ -8232,6 +8158,7 @@ if test "$aros_host_arch" == "darwin" ; then
         cross_compiling=yes
     else
         cross_compiling=no
+        kernel_tool_prefix=""
     fi
 fi
 
@@ -8241,47 +8168,78 @@ if test "$aros_host_arch" == "mingw32" ; then
     fi
 fi
 
-# I want to have this information in configure output, although it might be
-# misleading, e.g. for darwin hosted you cannot compile target code without a
-# cross compiler, but here it says no.
+#######################################################################
+## Compute what toolchains to use, and their paths                   ##
+#######################################################################
+#
+# This takes, as input:
+#   crosstools             {yes,no}
+#   aros_gcc_version       {default,[version]}
+#   kernel_tool_prefix     {none,[some-arch-os-]}
+#   target_tool_prefix     ${target_cpu}-aros-
+#
+# The output is
+#   aros_kernel_{cpp,cc,ar,ld,as,ranlib,nm,strip}
+#        Where the 'kernel' binaries are located
+#   orig_target_{cpp,cc,ar,ld,as,ranlib,nm,strip}
+#        Where the 'target' binaries are located
+#        (not the symlink farm - that is aros_target_*!)
+#
+# The rules are:
+#   if crosstools then
+#      if kernel_tools_prefix = "none"
+#          aros_kernel_* = crosstools cc paths
+#          aros_kernel_cc = elf cc wrapper around crosstools cc
+#      else
+#          VALIDATE(${kernel_tools_prefix}*)
+#          aros_kernel_* = ${kernel_tools_prefix}*
+#          if ${kernel_tools_prefix}cc is an AROS gcc
+#              aros_kernel_cc = ${kernel_tools_prefix}cc
+#          else
+#              aros_kernel_cc = elf cc wrapper around ${kernel_tools_prefix}cc
+#          fi
+#      fi
+#
+#      orig_target_* = aros built crosstools
+#      orig_target_cc = elf cc wrapper around crosstools cc
+#   else
+#      VALIDATE(${kernel_tools_prefix}*)
+#
+#      orig_target_* = aros_kernel_*
+#      if aros_kernel_cc is an AROS gcc
+#          orig_target_cc = aros_kernel_cc
+#      else
+#          orig_target_cc = aros cc wrapper around aros_kernel_cc
+#      fi
+#   fi
+#
 
-# Note: it says 'yes' only if bootstrap ("kernel") is cross-compiled.
-# Target code is a little bit different thing.
-#                                                sonic
-echo "checking whether we are (AROS style) cross compiling... $cross_compiling"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use external toolchain" >&5
+$as_echo_n "checking whether to use external toolchain... " >&6; }
+if test "$kernel_tool_prefix" = "none" -a "$crosstools" = "yes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; };
+    # We are building AROS crosstools, and no kernel
+    # tools specified - assume target tools == kernel tools
+    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    aros_kernel_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
+    aros_kernel_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    aros_kernel_cpp="${tmp_tool_prefix}cpp"
+    aros_kernel_ld="${tmp_tool_prefix}ld"
+    aros_kernel_as="${tmp_tool_prefix}as"
+    aros_kernel_ar="${tmp_tool_prefix}ar"
+    aros_kernel_ranlib="${tmp_tool_prefix}ranlib"
+    aros_kernel_nm="${tmp_tool_prefix}nm"
+    aros_kernel_strip="${tmp_tool_prefix}strip"
+    aros_kernel_objcopy="${tmp_tool_prefix}objcopy"
+    aros_kernel_objdump="${tmp_tool_prefix}objdump"
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; };
+    # Kernel tools specified - find them
+    # Note that 'normally', aros_kernel_* overrides will
+    # empty, unless specified in the per-arch sections above.
 
-# Set prefix for target compiler etc. if we're cross-compiling
-# (should possibly be earlier but needs to be after AC_PROG_CC)
-if test "$cross_compiling" = "yes" ; then
-
-    if test "x-$aros_flavour" = "x-standalone" -o "x-$aros_flavour" = "x-standcompat" ; then
-        if test "$aros_gcc_version" != "none"; then
-
-
-                        target_tool_prefix=${target_cpu}-aros-
-            target_tool_version=$aros_gcc_version
-            use_kernel_cc_wrapper=yes
-
-                                    if test "$crosstools" != yes; then
-                aros_target_cc=
-                aros_target_ld=
-                aros_target_cpp=
-                aros_target_as=
-                aros_target_ar=
-                aros_target_ranlib=
-                aros_target_nm=
-                aros_target_strip=
-                aros_target_objcopy=
-                aros_target_objdump=
-            fi
-        fi
-    fi
-
-    aros_kernel_cc=${kernel_tool_prefix}gcc
-    if test "$kernel_tool_version" != "default"; then
-        aros_kernel_cc="${aros_kernel_cc}-$kernel_tool_version"
-    fi
-fi
 
 if test "$aros_kernel_cpp" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -8455,14 +8413,14 @@ fi
 
 fi
 
-if test "$aros_kernel_cpp" = ""; then
+    if test "$aros_kernel_cpp" = ""; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
-if test "$aros_kernel_cc" = ""; then
+if test "$aros_kernel_cc${aros_gcc_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${kernel_tool_prefix}gcc", so it can be a program name with args.
-set dummy ${kernel_tool_prefix}gcc; ac_word=$2
+        # Extract the first word of "${kernel_tool_prefix}gcc${aros_gcc_version}", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}gcc${aros_gcc_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -8503,9 +8461,9 @@ fi
 
     else
         if test "$GCC" = "yes"; then
-    aros_gcc_gcc=`$CC -print-prog-name=gcc`
-    # Extract the first word of "`basename $aros_gcc_[gcc]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_gcc`; ac_word=$2
+    aros_gcc_gcc${aros_gcc_version}=`$CC -print-prog-name=gcc${aros_gcc_version}`
+    # Extract the first word of "`basename $aros_gcc_[gcc${aros_gcc_version}]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_gcc${aros_gcc_version}`; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -8517,7 +8475,7 @@ else
   ;;
   *)
   as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_gcc`
+for as_dir in `dirname $aros_gcc_gcc${aros_gcc_version}`
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
@@ -8546,8 +8504,8 @@ fi
 
 fi
 if test "$aros_kernel_cc" = ""; then
-    # Extract the first word of "gcc", so it can be a program name with args.
-set dummy gcc; ac_word=$2
+    # Extract the first word of "gcc${aros_gcc_version}", so it can be a program name with args.
+set dummy gcc${aros_gcc_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -8589,8 +8547,8 @@ fi
 fi
     fi
 else
-    # Extract the first word of "$aros_kernel_cc", so it can be a program name with args.
-set dummy $aros_kernel_cc; ac_word=$2
+    # Extract the first word of "$aros_kernel_cc${aros_gcc_version}", so it can be a program name with args.
+set dummy $aros_kernel_cc${aros_gcc_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -8631,9 +8589,1666 @@ fi
 
 fi
 
-if test "$aros_kernel_cc" = ""; then
+    if test "$aros_kernel_cc" = ""; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+
+if test "$aros_kernel_cxx${aros_gcc_version}" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}g++${aros_gcc_version}", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}g++${aros_gcc_version}; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_cxx+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_cxx in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_cxx="$aros_kernel_cxx" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_cxx="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_cxx=$ac_cv_path_aros_kernel_cxx
+if test -n "$aros_kernel_cxx"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cxx" >&5
+$as_echo "$aros_kernel_cxx" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_g++${aros_gcc_version}=`$CC -print-prog-name=g++${aros_gcc_version}`
+    # Extract the first word of "`basename $aros_gcc_[g++${aros_gcc_version}]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_g++${aros_gcc_version}`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_cxx+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_cxx in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_cxx="$aros_kernel_cxx" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_g++${aros_gcc_version}`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_cxx="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_cxx=$ac_cv_path_aros_kernel_cxx
+if test -n "$aros_kernel_cxx"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cxx" >&5
+$as_echo "$aros_kernel_cxx" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_cxx" = ""; then
+    # Extract the first word of "g++${aros_gcc_version}", so it can be a program name with args.
+set dummy g++${aros_gcc_version}; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_cxx+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_cxx in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_cxx="$aros_kernel_cxx" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_cxx="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_cxx=$ac_cv_path_aros_kernel_cxx
+if test -n "$aros_kernel_cxx"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cxx" >&5
+$as_echo "$aros_kernel_cxx" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_cxx${aros_gcc_version}", so it can be a program name with args.
+set dummy $aros_kernel_cxx${aros_gcc_version}; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_cxx+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_cxx in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_cxx="$aros_kernel_cxx" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_cxx="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_cxx=$ac_cv_path_aros_kernel_cxx
+if test -n "$aros_kernel_cxx"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cxx" >&5
+$as_echo "$aros_kernel_cxx" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_cxx" = ""; then
+    as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_ld" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}ld", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}ld; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ld+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ld in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ld=$ac_cv_path_aros_kernel_ld
+if test -n "$aros_kernel_ld"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
+$as_echo "$aros_kernel_ld" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_ld=`$CC -print-prog-name=ld`
+    # Extract the first word of "`basename $aros_gcc_[ld]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_ld`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ld+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ld in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_ld`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ld=$ac_cv_path_aros_kernel_ld
+if test -n "$aros_kernel_ld"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
+$as_echo "$aros_kernel_ld" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_ld" = ""; then
+    # Extract the first word of "ld", so it can be a program name with args.
+set dummy ld; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ld+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ld in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ld=$ac_cv_path_aros_kernel_ld
+if test -n "$aros_kernel_ld"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
+$as_echo "$aros_kernel_ld" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_ld", so it can be a program name with args.
+set dummy $aros_kernel_ld; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ld+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ld in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ld=$ac_cv_path_aros_kernel_ld
+if test -n "$aros_kernel_ld"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
+$as_echo "$aros_kernel_ld" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_ld" = ""; then
+    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_as" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}as", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_as in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_as="$aros_kernel_as" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_as="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_as=$ac_cv_path_aros_kernel_as
+if test -n "$aros_kernel_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_as" >&5
+$as_echo "$aros_kernel_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_as=`$CC -print-prog-name=as`
+    # Extract the first word of "`basename $aros_gcc_[as]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_as`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_as in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_as="$aros_kernel_as" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_as`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_as="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_as=$ac_cv_path_aros_kernel_as
+if test -n "$aros_kernel_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_as" >&5
+$as_echo "$aros_kernel_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_as" = ""; then
+    # Extract the first word of "as", so it can be a program name with args.
+set dummy as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_as in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_as="$aros_kernel_as" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_as="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_as=$ac_cv_path_aros_kernel_as
+if test -n "$aros_kernel_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_as" >&5
+$as_echo "$aros_kernel_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_as", so it can be a program name with args.
+set dummy $aros_kernel_as; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_as+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_as in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_as="$aros_kernel_as" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_as="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_as=$ac_cv_path_aros_kernel_as
+if test -n "$aros_kernel_as"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_as" >&5
+$as_echo "$aros_kernel_as" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_as" = ""; then
+    as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_ar" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}ar", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}ar; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ar+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ar in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ar=$ac_cv_path_aros_kernel_ar
+if test -n "$aros_kernel_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
+$as_echo "$aros_kernel_ar" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_ar=`$CC -print-prog-name=ar`
+    # Extract the first word of "`basename $aros_gcc_[ar]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_ar`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ar+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ar in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_ar`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ar=$ac_cv_path_aros_kernel_ar
+if test -n "$aros_kernel_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
+$as_echo "$aros_kernel_ar" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_ar" = ""; then
+    # Extract the first word of "ar", so it can be a program name with args.
+set dummy ar; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ar+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ar in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ar=$ac_cv_path_aros_kernel_ar
+if test -n "$aros_kernel_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
+$as_echo "$aros_kernel_ar" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_ar", so it can be a program name with args.
+set dummy $aros_kernel_ar; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ar+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ar in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ar=$ac_cv_path_aros_kernel_ar
+if test -n "$aros_kernel_ar"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
+$as_echo "$aros_kernel_ar" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_ar" = ""; then
+    as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_ranlib" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}ranlib", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}ranlib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ranlib in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
+if test -n "$aros_kernel_ranlib"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
+$as_echo "$aros_kernel_ranlib" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_ranlib=`$CC -print-prog-name=ranlib`
+    # Extract the first word of "`basename $aros_gcc_[ranlib]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_ranlib`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ranlib in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_ranlib`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
+if test -n "$aros_kernel_ranlib"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
+$as_echo "$aros_kernel_ranlib" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_ranlib" = ""; then
+    # Extract the first word of "ranlib", so it can be a program name with args.
+set dummy ranlib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ranlib in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
+if test -n "$aros_kernel_ranlib"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
+$as_echo "$aros_kernel_ranlib" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_ranlib", so it can be a program name with args.
+set dummy $aros_kernel_ranlib; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_ranlib in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
+if test -n "$aros_kernel_ranlib"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
+$as_echo "$aros_kernel_ranlib" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_ranlib" = ""; then
+    as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_nm" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}nm", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}nm; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_nm+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_nm in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_nm="$aros_kernel_nm" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_nm="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_nm=$ac_cv_path_aros_kernel_nm
+if test -n "$aros_kernel_nm"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_nm" >&5
+$as_echo "$aros_kernel_nm" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_nm=`$CC -print-prog-name=nm`
+    # Extract the first word of "`basename $aros_gcc_[nm]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_nm`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_nm+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_nm in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_nm="$aros_kernel_nm" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_nm`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_nm="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_nm=$ac_cv_path_aros_kernel_nm
+if test -n "$aros_kernel_nm"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_nm" >&5
+$as_echo "$aros_kernel_nm" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_nm" = ""; then
+    # Extract the first word of "nm", so it can be a program name with args.
+set dummy nm; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_nm+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_nm in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_nm="$aros_kernel_nm" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_nm="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_nm=$ac_cv_path_aros_kernel_nm
+if test -n "$aros_kernel_nm"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_nm" >&5
+$as_echo "$aros_kernel_nm" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_nm", so it can be a program name with args.
+set dummy $aros_kernel_nm; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_nm+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_nm in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_nm="$aros_kernel_nm" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_nm="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_nm=$ac_cv_path_aros_kernel_nm
+if test -n "$aros_kernel_nm"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_nm" >&5
+$as_echo "$aros_kernel_nm" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_nm" = ""; then
+    as_fn_error $? "nm is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_strip" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}strip", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_strip+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_strip in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_strip="$aros_kernel_strip" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_strip="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_strip=$ac_cv_path_aros_kernel_strip
+if test -n "$aros_kernel_strip"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_strip" >&5
+$as_echo "$aros_kernel_strip" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_strip=`$CC -print-prog-name=strip`
+    # Extract the first word of "`basename $aros_gcc_[strip]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_strip`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_strip+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_strip in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_strip="$aros_kernel_strip" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_strip`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_strip="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_strip=$ac_cv_path_aros_kernel_strip
+if test -n "$aros_kernel_strip"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_strip" >&5
+$as_echo "$aros_kernel_strip" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_strip" = ""; then
+    # Extract the first word of "strip", so it can be a program name with args.
+set dummy strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_strip+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_strip in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_strip="$aros_kernel_strip" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_strip="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_strip=$ac_cv_path_aros_kernel_strip
+if test -n "$aros_kernel_strip"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_strip" >&5
+$as_echo "$aros_kernel_strip" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_strip", so it can be a program name with args.
+set dummy $aros_kernel_strip; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_strip+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_strip in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_strip="$aros_kernel_strip" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_strip="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_strip=$ac_cv_path_aros_kernel_strip
+if test -n "$aros_kernel_strip"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_strip" >&5
+$as_echo "$aros_kernel_strip" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_strip" = ""; then
+    as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_objcopy" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}objcopy", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}objcopy; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objcopy+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objcopy in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objcopy="$aros_kernel_objcopy" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objcopy="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objcopy=$ac_cv_path_aros_kernel_objcopy
+if test -n "$aros_kernel_objcopy"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objcopy" >&5
+$as_echo "$aros_kernel_objcopy" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_objcopy=`$CC -print-prog-name=objcopy`
+    # Extract the first word of "`basename $aros_gcc_[objcopy]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_objcopy`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objcopy+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objcopy in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objcopy="$aros_kernel_objcopy" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_objcopy`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objcopy="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objcopy=$ac_cv_path_aros_kernel_objcopy
+if test -n "$aros_kernel_objcopy"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objcopy" >&5
+$as_echo "$aros_kernel_objcopy" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_objcopy" = ""; then
+    # Extract the first word of "objcopy", so it can be a program name with args.
+set dummy objcopy; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objcopy+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objcopy in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objcopy="$aros_kernel_objcopy" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objcopy="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objcopy=$ac_cv_path_aros_kernel_objcopy
+if test -n "$aros_kernel_objcopy"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objcopy" >&5
+$as_echo "$aros_kernel_objcopy" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_objcopy", so it can be a program name with args.
+set dummy $aros_kernel_objcopy; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objcopy+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objcopy in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objcopy="$aros_kernel_objcopy" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objcopy="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objcopy=$ac_cv_path_aros_kernel_objcopy
+if test -n "$aros_kernel_objcopy"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objcopy" >&5
+$as_echo "$aros_kernel_objcopy" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_objcopy" = ""; then
+    as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
+if test "$aros_kernel_objdump" = ""; then
+    if test "$cross_compiling" = "yes" ; then
+        # Extract the first word of "${kernel_tool_prefix}objdump", so it can be a program name with args.
+set dummy ${kernel_tool_prefix}objdump; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objdump+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objdump in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objdump="$aros_kernel_objdump" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objdump="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objdump=$ac_cv_path_aros_kernel_objdump
+if test -n "$aros_kernel_objdump"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objdump" >&5
+$as_echo "$aros_kernel_objdump" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    else
+        if test "$GCC" = "yes"; then
+    aros_gcc_objdump=`$CC -print-prog-name=objdump`
+    # Extract the first word of "`basename $aros_gcc_[objdump]`", so it can be a program name with args.
+set dummy `basename $aros_gcc_objdump`; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objdump+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objdump in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objdump="$aros_kernel_objdump" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in `dirname $aros_gcc_objdump`
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objdump="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objdump=$ac_cv_path_aros_kernel_objdump
+if test -n "$aros_kernel_objdump"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objdump" >&5
+$as_echo "$aros_kernel_objdump" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test "$aros_kernel_objdump" = ""; then
+    # Extract the first word of "objdump", so it can be a program name with args.
+set dummy objdump; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objdump+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objdump in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objdump="$aros_kernel_objdump" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objdump="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objdump=$ac_cv_path_aros_kernel_objdump
+if test -n "$aros_kernel_objdump"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objdump" >&5
+$as_echo "$aros_kernel_objdump" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+    fi
+else
+    # Extract the first word of "$aros_kernel_objdump", so it can be a program name with args.
+set dummy $aros_kernel_objdump; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_aros_kernel_objdump+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $aros_kernel_objdump in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_aros_kernel_objdump="$aros_kernel_objdump" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_aros_kernel_objdump="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+aros_kernel_objdump=$ac_cv_path_aros_kernel_objdump
+if test -n "$aros_kernel_objdump"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_objdump" >&5
+$as_echo "$aros_kernel_objdump" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+
+    if test "$aros_kernel_objdump" = ""; then
+    as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking which target tools" >&5
+$as_echo_n "checking which target tools... " >&6; }
+if test "$crosstools" = "yes"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_tool_prefix" >&5
+$as_echo "$target_tool_prefix" >&6; }
+    # We are are building AROS crosstools
+    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    orig_target_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
+    orig_target_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    orig_target_cpp="${tmp_tool_prefix}cpp"
+    orig_target_ld="${tmp_tool_prefix}ld"
+    orig_target_as="${tmp_tool_prefix}as"
+    orig_target_ar="${tmp_tool_prefix}ar"
+    orig_target_ranlib="${tmp_tool_prefix}ranlib"
+    orig_target_nm="${tmp_tool_prefix}nm"
+    orig_target_strip="${tmp_tool_prefix}strip"
+    orig_target_objcopy="${tmp_tool_prefix}objcopy"
+    orig_target_objdump="${tmp_tool_prefix}objdump"
+else
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
+$as_echo "$kernel_tool_prefix" >&6; }
+    # We are *not* building AROS crosstools - use the kernel tools
+    orig_target_cpp="${aros_kernel_cpp}"
+    if test "$orig_target_cpp" = ""; then
+    as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_cc="${aros_kernel_cc}"
+    if test "$orig_target_cc" = ""; then
+    as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_cxx="${aros_kernel_cxx}"
+    if test "$orig_target_cxx" = ""; then
+    as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_ld="${aros_kernel_ld}"
+    if test "$orig_target_ld" = ""; then
+    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_as="${aros_kernel_as}"
+    if test "$orig_target_as" = ""; then
+    as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_ar="${aros_kernel_ar}"
+    if test "$orig_target_ar" = ""; then
+    as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_ranlib="${aros_kernel_ranlib}"
+    if test "$orig_target_ranlib" = ""; then
+    as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_nm="${aros_kernel_nm}"
+    if test "$orig_target_nm" = ""; then
+    as_fn_error $? "nm is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_strip="${aros_kernel_strip}"
+    if test "$orig_target_strip" = ""; then
+    as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_objcopy="${aros_kernel_objcopy}"
+    if test "$orig_target_objcopy" = ""; then
+    as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+    orig_target_objdump="${aros_kernel_objdump}"
+    if test "$orig_target_objdump" = ""; then
+    as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+fi
+
+# At this point, all aros_kernel_* and aros_target_*
+# tools should be set up correctly
+
 CC="$aros_kernel_cc $kernel_tool_flags"
 CPP="$aros_kernel_cpp"
 
@@ -8871,2173 +10486,16 @@ fi
 fi
 fi
 
-if test "$crosstools" != "yes"; then
-
-                        if test "$target_tool_prefix" != "${target_cpu}-elf-" -a "$target_tool_prefix" != "${target_cpu}-aros-" ; then
-        target_tool_prefix=${target_cpu}-elf-
-        if test "$aros_target_cc" == ""; then
-           aros_target_cc="${target_tool_prefix}gcc"
-        fi
-        if test "$aros_target_ld" == ""; then
-           aros_target_ld="${target_tool_prefix}ld"
-        fi
-        if test "$aros_target_cpp" == ""; then
-           aros_target_cpp="${target_tool_prefix}cpp"
-        fi
-    fi
-
-if test "$aros_target_as" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}as", so it can be a program name with args.
-set dummy ${target_tool_prefix}as; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_as_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_as_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_as_ln="$aros_target_as_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_as_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_as_ln=$ac_cv_path_aros_target_as_ln
-if test -n "$aros_target_as_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_as_ln" >&5
-$as_echo "$aros_target_as_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_as=`$CC -print-prog-name=as`
-    # Extract the first word of "`basename $aros_gcc_[as]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_as`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_as_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_as_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_as_ln="$aros_target_as_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_as`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_as_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_as_ln=$ac_cv_path_aros_target_as_ln
-if test -n "$aros_target_as_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_as_ln" >&5
-$as_echo "$aros_target_as_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_as_ln" = ""; then
-    # Extract the first word of "as", so it can be a program name with args.
-set dummy as; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_as_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_as_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_as_ln="$aros_target_as_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_as_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_as_ln=$ac_cv_path_aros_target_as_ln
-if test -n "$aros_target_as_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_as_ln" >&5
-$as_echo "$aros_target_as_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_as", so it can be a program name with args.
-set dummy $aros_target_as; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_as_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_as_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_as_ln="$aros_target_as_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_as_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_as_ln=$ac_cv_path_aros_target_as_ln
-if test -n "$aros_target_as_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_as_ln" >&5
-$as_echo "$aros_target_as_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_as_ln" = ""; then
-    as_fn_error $? "as is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_ar" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}ar", so it can be a program name with args.
-set dummy ${target_tool_prefix}ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ar_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ar_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ar_ln="$aros_target_ar_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ar_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ar_ln=$ac_cv_path_aros_target_ar_ln
-if test -n "$aros_target_ar_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ar_ln" >&5
-$as_echo "$aros_target_ar_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_ar=`$CC -print-prog-name=ar`
-    # Extract the first word of "`basename $aros_gcc_[ar]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_ar`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ar_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ar_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ar_ln="$aros_target_ar_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_ar`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ar_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ar_ln=$ac_cv_path_aros_target_ar_ln
-if test -n "$aros_target_ar_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ar_ln" >&5
-$as_echo "$aros_target_ar_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_ar_ln" = ""; then
-    # Extract the first word of "ar", so it can be a program name with args.
-set dummy ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ar_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ar_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ar_ln="$aros_target_ar_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ar_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ar_ln=$ac_cv_path_aros_target_ar_ln
-if test -n "$aros_target_ar_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ar_ln" >&5
-$as_echo "$aros_target_ar_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_ar", so it can be a program name with args.
-set dummy $aros_target_ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ar_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ar_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ar_ln="$aros_target_ar_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ar_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ar_ln=$ac_cv_path_aros_target_ar_ln
-if test -n "$aros_target_ar_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ar_ln" >&5
-$as_echo "$aros_target_ar_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_ar_ln" = ""; then
-    as_fn_error $? "ar is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_nm" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}nm", so it can be a program name with args.
-set dummy ${target_tool_prefix}nm; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_nm_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_nm_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_nm_ln="$aros_target_nm_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_nm_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_nm_ln=$ac_cv_path_aros_target_nm_ln
-if test -n "$aros_target_nm_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_nm_ln" >&5
-$as_echo "$aros_target_nm_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_nm=`$CC -print-prog-name=nm`
-    # Extract the first word of "`basename $aros_gcc_[nm]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_nm`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_nm_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_nm_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_nm_ln="$aros_target_nm_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_nm`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_nm_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_nm_ln=$ac_cv_path_aros_target_nm_ln
-if test -n "$aros_target_nm_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_nm_ln" >&5
-$as_echo "$aros_target_nm_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_nm_ln" = ""; then
-    # Extract the first word of "nm", so it can be a program name with args.
-set dummy nm; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_nm_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_nm_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_nm_ln="$aros_target_nm_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_nm_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_nm_ln=$ac_cv_path_aros_target_nm_ln
-if test -n "$aros_target_nm_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_nm_ln" >&5
-$as_echo "$aros_target_nm_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_nm", so it can be a program name with args.
-set dummy $aros_target_nm; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_nm_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_nm_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_nm_ln="$aros_target_nm_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_nm_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_nm_ln=$ac_cv_path_aros_target_nm_ln
-if test -n "$aros_target_nm_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_nm_ln" >&5
-$as_echo "$aros_target_nm_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_nm_ln" = ""; then
-    as_fn_error $? "nm is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_objcopy" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}objcopy", so it can be a program name with args.
-set dummy ${target_tool_prefix}objcopy; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objcopy_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objcopy_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objcopy_ln="$aros_target_objcopy_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objcopy_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objcopy_ln=$ac_cv_path_aros_target_objcopy_ln
-if test -n "$aros_target_objcopy_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objcopy_ln" >&5
-$as_echo "$aros_target_objcopy_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_objcopy=`$CC -print-prog-name=objcopy`
-    # Extract the first word of "`basename $aros_gcc_[objcopy]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_objcopy`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objcopy_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objcopy_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objcopy_ln="$aros_target_objcopy_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_objcopy`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objcopy_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objcopy_ln=$ac_cv_path_aros_target_objcopy_ln
-if test -n "$aros_target_objcopy_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objcopy_ln" >&5
-$as_echo "$aros_target_objcopy_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_objcopy_ln" = ""; then
-    # Extract the first word of "objcopy", so it can be a program name with args.
-set dummy objcopy; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objcopy_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objcopy_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objcopy_ln="$aros_target_objcopy_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objcopy_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objcopy_ln=$ac_cv_path_aros_target_objcopy_ln
-if test -n "$aros_target_objcopy_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objcopy_ln" >&5
-$as_echo "$aros_target_objcopy_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_objcopy", so it can be a program name with args.
-set dummy $aros_target_objcopy; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objcopy_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objcopy_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objcopy_ln="$aros_target_objcopy_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objcopy_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objcopy_ln=$ac_cv_path_aros_target_objcopy_ln
-if test -n "$aros_target_objcopy_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objcopy_ln" >&5
-$as_echo "$aros_target_objcopy_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_objcopy_ln" = ""; then
-    as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_objdump" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}objdump", so it can be a program name with args.
-set dummy ${target_tool_prefix}objdump; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objdump_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objdump_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objdump_ln="$aros_target_objdump_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objdump_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objdump_ln=$ac_cv_path_aros_target_objdump_ln
-if test -n "$aros_target_objdump_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objdump_ln" >&5
-$as_echo "$aros_target_objdump_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_objdump=`$CC -print-prog-name=objdump`
-    # Extract the first word of "`basename $aros_gcc_[objdump]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_objdump`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objdump_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objdump_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objdump_ln="$aros_target_objdump_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_objdump`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objdump_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objdump_ln=$ac_cv_path_aros_target_objdump_ln
-if test -n "$aros_target_objdump_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objdump_ln" >&5
-$as_echo "$aros_target_objdump_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_objdump_ln" = ""; then
-    # Extract the first word of "objdump", so it can be a program name with args.
-set dummy objdump; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objdump_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objdump_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objdump_ln="$aros_target_objdump_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objdump_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objdump_ln=$ac_cv_path_aros_target_objdump_ln
-if test -n "$aros_target_objdump_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objdump_ln" >&5
-$as_echo "$aros_target_objdump_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_objdump", so it can be a program name with args.
-set dummy $aros_target_objdump; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_objdump_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_objdump_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_objdump_ln="$aros_target_objdump_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_objdump_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_objdump_ln=$ac_cv_path_aros_target_objdump_ln
-if test -n "$aros_target_objdump_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_objdump_ln" >&5
-$as_echo "$aros_target_objdump_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_objdump_ln" = ""; then
-    as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_ranlib" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}ranlib", so it can be a program name with args.
-set dummy ${target_tool_prefix}ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ranlib_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ranlib_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ranlib_ln="$aros_target_ranlib_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ranlib_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ranlib_ln=$ac_cv_path_aros_target_ranlib_ln
-if test -n "$aros_target_ranlib_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ranlib_ln" >&5
-$as_echo "$aros_target_ranlib_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_ranlib=`$CC -print-prog-name=ranlib`
-    # Extract the first word of "`basename $aros_gcc_[ranlib]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_ranlib`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ranlib_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ranlib_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ranlib_ln="$aros_target_ranlib_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_ranlib`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ranlib_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ranlib_ln=$ac_cv_path_aros_target_ranlib_ln
-if test -n "$aros_target_ranlib_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ranlib_ln" >&5
-$as_echo "$aros_target_ranlib_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_ranlib_ln" = ""; then
-    # Extract the first word of "ranlib", so it can be a program name with args.
-set dummy ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ranlib_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ranlib_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ranlib_ln="$aros_target_ranlib_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ranlib_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ranlib_ln=$ac_cv_path_aros_target_ranlib_ln
-if test -n "$aros_target_ranlib_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ranlib_ln" >&5
-$as_echo "$aros_target_ranlib_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_ranlib", so it can be a program name with args.
-set dummy $aros_target_ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ranlib_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ranlib_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ranlib_ln="$aros_target_ranlib_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ranlib_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ranlib_ln=$ac_cv_path_aros_target_ranlib_ln
-if test -n "$aros_target_ranlib_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ranlib_ln" >&5
-$as_echo "$aros_target_ranlib_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_ranlib_ln" = ""; then
-    as_fn_error $? "ranlib is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_target_strip" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}strip", so it can be a program name with args.
-set dummy ${target_tool_prefix}strip; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_strip_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_strip_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_strip_ln="$aros_target_strip_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_strip_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_strip_ln=$ac_cv_path_aros_target_strip_ln
-if test -n "$aros_target_strip_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_strip_ln" >&5
-$as_echo "$aros_target_strip_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_strip=`$CC -print-prog-name=strip`
-    # Extract the first word of "`basename $aros_gcc_[strip]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_strip`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_strip_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_strip_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_strip_ln="$aros_target_strip_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_strip`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_strip_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_strip_ln=$ac_cv_path_aros_target_strip_ln
-if test -n "$aros_target_strip_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_strip_ln" >&5
-$as_echo "$aros_target_strip_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_target_strip_ln" = ""; then
-    # Extract the first word of "strip", so it can be a program name with args.
-set dummy strip; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_strip_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_strip_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_strip_ln="$aros_target_strip_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_strip_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_strip_ln=$ac_cv_path_aros_target_strip_ln
-if test -n "$aros_target_strip_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_strip_ln" >&5
-$as_echo "$aros_target_strip_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_target_strip", so it can be a program name with args.
-set dummy $aros_target_strip; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_strip_ln+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_strip_ln in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_strip_ln="$aros_target_strip_ln" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_strip_ln="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_strip_ln=$ac_cv_path_aros_target_strip_ln
-if test -n "$aros_target_strip_ln"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_strip_ln" >&5
-$as_echo "$aros_target_strip_ln" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-    if test "$aros_target_strip_ln" = ""; then
-    as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-    if test "$aros_target_cxx" != ""; then
-        # Extract the first word of "$aros_target_cxx", so it can be a program name with args.
-set dummy $aros_target_cxx; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_cxx+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_cxx in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_cxx="$aros_target_cxx" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_cxx="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_cxx=$ac_cv_path_aros_target_cxx
-if test -n "$aros_target_cxx"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cxx" >&5
-$as_echo "$aros_target_cxx" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-        if test "$aros_target_cxx" = ""; then
-    as_fn_error $? "c++ is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-    fi
-else
-    aros_target_cc=$AROS_CROSSTOOLSDIR/$aros_target_cc
-    aros_target_cxx=$AROS_CROSSTOOLSDIR/$aros_target_cxx
-    aros_target_cpp=$AROS_CROSSTOOLSDIR/$aros_target_cpp
-    aros_target_as_ln=$AROS_CROSSTOOLSDIR/$aros_target_as
-    aros_target_ar_ln=$AROS_CROSSTOOLSDIR/$aros_target_ar
-    aros_target_nm_ln=$AROS_CROSSTOOLSDIR/$aros_target_nm
-    aros_target_objcopy_ln=$AROS_CROSSTOOLSDIR/$aros_target_objcopy
-    aros_target_objdump_ln=$AROS_CROSSTOOLSDIR/$aros_target_objdump
-    aros_target_ranlib_ln=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
-    aros_target_strip_ln=$AROS_CROSSTOOLSDIR/$aros_target_strip
-
+# Set up the sources for the symlink farm
+if test "$crosstools" = "yes"; then
     crosstools_target=tools-crosstools
-fi
-
-
-if test "$aros_kernel_cpp" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}cpp", so it can be a program name with args.
-set dummy ${target_tool_prefix}cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_cpp+:} false; then :
-  $as_echo_n "(cached) " >&6
 else
-  case $aros_kernel_cpp in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_cpp="$aros_kernel_cpp" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_cpp="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_cpp=$ac_cv_path_aros_kernel_cpp
-if test -n "$aros_kernel_cpp"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cpp" >&5
-$as_echo "$aros_kernel_cpp" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_cpp=`$CC -print-prog-name=cpp`
-    # Extract the first word of "`basename $aros_gcc_[cpp]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_cpp`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_cpp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_cpp in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_cpp="$aros_kernel_cpp" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_cpp`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_cpp="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_cpp=$ac_cv_path_aros_kernel_cpp
-if test -n "$aros_kernel_cpp"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cpp" >&5
-$as_echo "$aros_kernel_cpp" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_kernel_cpp" = ""; then
-    # Extract the first word of "cpp", so it can be a program name with args.
-set dummy cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_cpp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_cpp in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_cpp="$aros_kernel_cpp" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_cpp="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_cpp=$ac_cv_path_aros_kernel_cpp
-if test -n "$aros_kernel_cpp"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cpp" >&5
-$as_echo "$aros_kernel_cpp" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_kernel_cpp", so it can be a program name with args.
-set dummy $aros_kernel_cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_cpp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_cpp in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_cpp="$aros_kernel_cpp" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_cpp="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_cpp=$ac_cv_path_aros_kernel_cpp
-if test -n "$aros_kernel_cpp"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_cpp" >&5
-$as_echo "$aros_kernel_cpp" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-if test "$aros_kernel_cpp" = ""; then
-    as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_kernel_ld" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}ld", so it can be a program name with args.
-set dummy ${target_tool_prefix}ld; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ld+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ld in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ld=$ac_cv_path_aros_kernel_ld
-if test -n "$aros_kernel_ld"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
-$as_echo "$aros_kernel_ld" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_ld=`$CC -print-prog-name=ld`
-    # Extract the first word of "`basename $aros_gcc_[ld]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_ld`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ld+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ld in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_ld`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ld=$ac_cv_path_aros_kernel_ld
-if test -n "$aros_kernel_ld"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
-$as_echo "$aros_kernel_ld" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_kernel_ld" = ""; then
-    # Extract the first word of "ld", so it can be a program name with args.
-set dummy ld; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ld+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ld in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ld=$ac_cv_path_aros_kernel_ld
-if test -n "$aros_kernel_ld"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
-$as_echo "$aros_kernel_ld" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_kernel_ld", so it can be a program name with args.
-set dummy $aros_kernel_ld; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ld+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ld in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ld="$aros_kernel_ld" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ld="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ld=$ac_cv_path_aros_kernel_ld
-if test -n "$aros_kernel_ld"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ld" >&5
-$as_echo "$aros_kernel_ld" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-if test "$aros_kernel_ld" = ""; then
-    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_kernel_ar" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}ar", so it can be a program name with args.
-set dummy ${target_tool_prefix}ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ar+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ar in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ar=$ac_cv_path_aros_kernel_ar
-if test -n "$aros_kernel_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
-$as_echo "$aros_kernel_ar" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_ar=`$CC -print-prog-name=ar`
-    # Extract the first word of "`basename $aros_gcc_[ar]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_ar`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ar+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ar in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_ar`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ar=$ac_cv_path_aros_kernel_ar
-if test -n "$aros_kernel_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
-$as_echo "$aros_kernel_ar" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_kernel_ar" = ""; then
-    # Extract the first word of "ar", so it can be a program name with args.
-set dummy ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ar+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ar in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ar=$ac_cv_path_aros_kernel_ar
-if test -n "$aros_kernel_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
-$as_echo "$aros_kernel_ar" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_kernel_ar", so it can be a program name with args.
-set dummy $aros_kernel_ar; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ar+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ar in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ar="$aros_kernel_ar" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ar="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ar=$ac_cv_path_aros_kernel_ar
-if test -n "$aros_kernel_ar"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ar" >&5
-$as_echo "$aros_kernel_ar" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-if test "$aros_kernel_ar" = ""; then
-    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-
-if test "$aros_kernel_ranlib" = ""; then
-    if test "$cross_compiling" = "yes" ; then
-        # Extract the first word of "${target_tool_prefix}ranlib", so it can be a program name with args.
-set dummy ${target_tool_prefix}ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ranlib in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
-if test -n "$aros_kernel_ranlib"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
-$as_echo "$aros_kernel_ranlib" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-    else
-        if test "$GCC" = "yes"; then
-    aros_gcc_ranlib=`$CC -print-prog-name=ranlib`
-    # Extract the first word of "`basename $aros_gcc_[ranlib]`", so it can be a program name with args.
-set dummy `basename $aros_gcc_ranlib`; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ranlib in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in `dirname $aros_gcc_ranlib`
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
-if test -n "$aros_kernel_ranlib"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
-$as_echo "$aros_kernel_ranlib" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-if test "$aros_kernel_ranlib" = ""; then
-    # Extract the first word of "ranlib", so it can be a program name with args.
-set dummy ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ranlib in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
-if test -n "$aros_kernel_ranlib"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
-$as_echo "$aros_kernel_ranlib" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-    fi
-else
-    # Extract the first word of "$aros_kernel_ranlib", so it can be a program name with args.
-set dummy $aros_kernel_ranlib; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_kernel_ranlib+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_kernel_ranlib in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_kernel_ranlib="$aros_kernel_ranlib" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_kernel_ranlib="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_kernel_ranlib=$ac_cv_path_aros_kernel_ranlib
-if test -n "$aros_kernel_ranlib"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_kernel_ranlib" >&5
-$as_echo "$aros_kernel_ranlib" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-fi
-
-if test "$aros_kernel_ranlib" = ""; then
-    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
+    crosstools_cxx_target=tools-crosstools
 fi
 
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
-orig_target_cpp=$aros_kernel_cpp
-orig_target_cc=$aros_kernel_cc
-orig_target_ld=$aros_kernel_ld
-
-if test "$crosstools" != "yes"; then
-    if test "$aros_target_cc" != ""; then
-        # Extract the first word of "$aros_target_cc", so it can be a program name with args.
-set dummy $aros_target_cc; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_cc+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_cc in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_cc="$aros_target_cc" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_cc="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_cc=$ac_cv_path_aros_target_cc
-if test -n "$aros_target_cc"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cc" >&5
-$as_echo "$aros_target_cc" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-        if test "$aros_target_cc" = ""; then
-    as_fn_error $? "gcc is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-        orig_target_cc=$aros_target_cc
-    fi
-    if test "$aros_target_ld" != ""; then
-        # Extract the first word of "$aros_target_ld", so it can be a program name with args.
-set dummy $aros_target_ld; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_ld+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_ld in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_ld="$aros_target_ld" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_ld="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_ld=$ac_cv_path_aros_target_ld
-if test -n "$aros_target_ld"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_ld" >&5
-$as_echo "$aros_target_ld" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-        if test "$aros_target_ld" = ""; then
-    as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-        orig_target_ld=$aros_target_ld
-    fi
-    if test "$aros_target_cpp" != ""; then
-        # Extract the first word of "$aros_target_cpp", so it can be a program name with args.
-set dummy $aros_target_cpp; ac_word=$2
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
-$as_echo_n "checking for $ac_word... " >&6; }
-if ${ac_cv_path_aros_target_cpp+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  case $aros_target_cpp in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_aros_target_cpp="$aros_target_cpp" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_aros_target_cpp="$as_dir/$ac_word$ac_exec_ext"
-    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-  done
-IFS=$as_save_IFS
-
-  ;;
-esac
-fi
-aros_target_cpp=$ac_cv_path_aros_target_cpp
-if test -n "$aros_target_cpp"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_target_cpp" >&5
-$as_echo "$aros_target_cpp" >&6; }
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-fi
-
-
-        if test "$aros_target_cpp" = ""; then
-    as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
-        orig_target_cpp=$aros_target_cpp
-    fi
-else
-    orig_target_cc=$aros_target_cc
-    orig_target_ld=$aros_target_ld
-    orig_target_cpp=$aros_target_cpp
-fi
-
-# Build crosstools if we have no C++ - temporary thing
-if test "$aros_target_cxx" = "" -a "$crosstools" != "yes"; then
-    crosstools_cxx_target=tools-crosstools
-fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
@@ -11065,7 +10523,7 @@ else
     fi
 fi
 
-prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
+prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
 
 aros_target_nostdinc_cflags=-nostdinc
 
@@ -11089,18 +10547,19 @@ else
     # build of crosstools.
     aros_target_cc_path=@aros_target_cc_path@
 fi
-aros_target_cpp="${prefix}-cpp"
-aros_target_cc="${prefix}-gcc"
-aros_target_as="${prefix}-as"
-aros_target_ld="${prefix}-ld"
-aros_target_ar="${prefix}-ar $aros_target_ar_flags"
-aros_target_objcopy=${prefix}-objcopy
-aros_target_objdump=${prefix}-objdump
-aros_target_ranlib="${prefix}-ranlib $aros_target_ranlib_flags"
-aros_target_nm="${prefix}-nm $aros_target_nm_flags"
-aros_target_strip=${prefix}-strip
-aros_plain_nm="${prefix}-nm"
-aros_plain_ar="${prefix}-ar"
+aros_target_cpp="${prefix}cpp"
+aros_target_cc="${prefix}gcc"
+aros_target_cxx="${prefix}g++"
+aros_target_as="${prefix}as"
+aros_target_ld="${prefix}ld"
+aros_target_ar="${prefix}ar $aros_target_ar_flags"
+aros_target_objcopy="${prefix}objcopy"
+aros_target_objdump="${prefix}objdump"
+aros_target_ranlib="${prefix}ranlib $aros_target_ranlib_flags"
+aros_target_nm="${prefix}nm $aros_target_nm_flags"
+aros_target_strip="${prefix}strip"
+aros_plain_nm="${prefix}nm"
+aros_plain_ar="${prefix}ar"
 
 if test "$aros_kernel_includes" != "" ; then
         { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the kernel compiler's include path" >&5
@@ -12464,6 +11923,7 @@ fi
 
 
 
+
 # Compatability with other Amiga-like operation systems
 
 
@@ -12494,6 +11954,10 @@ fi
 
 
 # Target Related
+
+
+
+
 
 
 
@@ -13382,13 +12846,13 @@ cat >>$CONFIG_STATUS <<_ACEOF || ac_write_fail=1
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
-        aros_target_nm_ln=${aros_target_nm_ln}
-        aros_target_as_ln=${aros_target_as_ln}
-        aros_target_ar_ln=${aros_target_ar_ln}
-        aros_target_ranlib_ln=${aros_target_ranlib_ln}
-        aros_target_objdump_ln=${aros_target_objdump_ln}
-        aros_target_objcopy_ln=${aros_target_objcopy_ln}
-        aros_target_strip_ln=${aros_target_strip_ln}
+        orig_target_nm=${orig_target_nm}
+        orig_target_as=${orig_target_as}
+        orig_target_ar=${orig_target_ar}
+        orig_target_ranlib=${orig_target_ranlib}
+        orig_target_objdump=${orig_target_objdump}
+        orig_target_objcopy=${orig_target_objcopy}
+        orig_target_strip=${orig_target_strip}
         aros_kernel_ld=${aros_kernel_ld}
 
 
@@ -13983,13 +13447,13 @@ $as_echo "$as_me: executing $ac_file commands" >&6;}
         echo ${prefix3}
         chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
 
-        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
-        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
-        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
-        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
-        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
-        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
-        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
+        ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
+        ln -sf $orig_target_nm$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
+        ln -sf $orig_target_ar$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
+        ln -sf $orig_target_ranlib$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
+        ln -sf $orig_target_objcopy$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
+        ln -sf $orig_target_objdump$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
+        ln -sf $orig_target_strip$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
 
         ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld$aros_host_exe_suffix
      ;;
