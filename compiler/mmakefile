@@ -2,3 +2,14 @@
 
 #MM- compiler : includes linklibs
 
+#MM- includes : includes-$(AROS_TARGET_CPU) \
+#MM             includes-$(AROS_TARGET_ARCH) \
+#MM             includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM             includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_VARIANT) \
+#MM             includes-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)
+
+#MM- linklibs : linklibs-$(AROS_TARGET_CPU) \
+#MM             linklibs-$(AROS_TARGET_ARCH) \
+#MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
+#MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_VARIANT) \
+#MM             linklibs-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-$(AROS_TARGET_VARIANT)
