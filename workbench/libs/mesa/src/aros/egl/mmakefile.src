@@ -5,9 +5,9 @@ include $(TOP)/config/make.cfg
 # EGL                                                                          #
 ################################################################################
 
-#MM- workbench-libs-complete : workbench-libs-egl
+#MM- workbench-libs-complete : workbench-libs-egl-$(AROS_TARGET_TOOLCHAIN)
 
-#MM workbench-libs-egl : includes workbench-libs-mesa workbench-libs-vega \
+#MM workbench-libs-egl-yes : includes workbench-libs-mesa workbench-libs-vega \
 #MM     workbench-libs-gallium
 
 SHARED_LIB_SOURCES = \

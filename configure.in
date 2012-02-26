@@ -2339,6 +2339,12 @@ if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
 fi
 
+if test "${crosstools}" != "yes" ; then
+    aros_target_toolchain=no
+else
+    aros_target_toolchain=yes
+fi
+
 dnl --------------------------------------------------------------------
 dnl Configuration Output Section
 dnl --------------------------------------------------------------------
@@ -2348,6 +2354,7 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
+AC_SUBST(aros_target_toolchain)
 AC_SUBST(AROS_BUILDDIR)
 AC_SUBST(AROS_BUILDDIR_UNIX)
 AC_SUBST(SRCDIR)

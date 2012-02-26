@@ -712,6 +712,7 @@ AROS_CROSSTOOLSDIR
 SRCDIR
 AROS_BUILDDIR_UNIX
 AROS_BUILDDIR
+aros_target_toolchain
 aros_flavour_uc
 aros_flavour
 aros_cpu
@@ -11909,6 +11910,12 @@ $as_echo "$dbus" >&6; }
 
 if test "$use_kernel_cc_wrapper" = "yes" ; then
     aros_kernel_cc="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc"
+fi
+
+if test "${crosstools}" != "yes" ; then
+    aros_target_toolchain=no
+else
+    aros_target_toolchain=yes
 fi
 
 

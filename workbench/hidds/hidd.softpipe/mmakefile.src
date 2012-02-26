@@ -2,9 +2,9 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-hidds : hidd-softpipe
+#MM- workbench-hidds : hidd-softpipe-yes
 
-#MM hidd-softpipe : includes hidd-gallium linklibs-galliumauxiliary
+#MM hidd-softpipe-$(AROS_TARGET_TOOLCHAIN) : includes hidd-gallium linklibs-galliumauxiliary
 
 GALLIUM_SOFTPIPE_SOURCES = \
             drivers/softpipe/sp_fs_exec \
