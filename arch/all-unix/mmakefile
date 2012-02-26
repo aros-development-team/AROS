@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- includes-generate-unix: \
+#MM- includes-unix: \
 #MM	workbench-libs-oss-unix-module-includes
 
 #MM- linklibs-unix: \
