@@ -10,8 +10,9 @@ include $(SRCDIR)/$(CURDIR)/../../mapi/glapi/sources.mak
 include $(SRCDIR)/$(CURDIR)/../../mapi/mapi/sources.mak
 
 #MM- workbench-libs-complete : workbench-libs-mesa-$(AROS_TARGET_TOOLCHAIN)
+#MM- workbench-libs-mesa-yes : workbench-libs-mesa
 
-#MM- workbench-libs-mesa-yes : workbench-libs-mesa-module test-mesa
+#MM- workbench-libs-mesa : workbench-libs-mesa-$(AROS_TARGET_CPU) workbench-libs-mesa-module test-mesa
 
 #MM- test-mesa : workbench-libs-mesa-module
 

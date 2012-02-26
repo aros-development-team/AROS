@@ -6,8 +6,9 @@ include $(TOP)/config/make.cfg
 ################################################################################
 
 #MM- workbench-libs-complete : workbench-libs-vega-$(AROS_TARGET_TOOLCHAIN)
+#MM- workbench-libs-vega-yes : workbench-libs-vega
 
-#MM workbench-libs-vega-yes : workbench-libs-vega-generated includes linklibs-galliumauxiliary
+#MM- workbench-libs-vega : workbench-libs-vega-generated includes linklibs-galliumauxiliary
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
