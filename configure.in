@@ -1616,9 +1616,9 @@ else
 
     AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
     AROS_REQUIRED(cpp,$aros_kernel_cpp)
-    AROS_TOOL_KERNEL(aros_kernel_cc,gcc${aros_gcc_version},$aros_kernel_cc${aros_gcc_version})
+    AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc${aros_gcc_version})
     AROS_REQUIRED(cc,$aros_kernel_cc)
-    AROS_TOOL_KERNEL(aros_kernel_cxx,g++${aros_gcc_version},$aros_kernel_cxx${aros_gcc_version})
+    AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx${aros_gcc_version})
     # If it's set, make sure it's really there
     if test "x$aros_kernel_cxx" != "x" ; then
         AROS_REQUIRED(cxx,$aros_kernel_cxx)
