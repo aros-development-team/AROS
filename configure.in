@@ -2592,7 +2592,7 @@ AC_CONFIG_COMMANDS([compiler_executable],
 
         echo ${prefix2}
         echo ${prefix3}
-        chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
+        chmod a+x ${prefix2}-gcc ${prefix2}-g++ ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
 
         ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
         ln -sf $orig_target_nm$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
@@ -2638,6 +2638,7 @@ AC_CONFIG_FILES(
     ${aros_targetcfg_dir}/elf-specs:${elf_specs_in}
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-cpp:scripts/aros-cpp.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in
+    ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-g++:scripts/aros-g++.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-elf-gcc:scripts/elf-gcc.in
     ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in
     ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py
