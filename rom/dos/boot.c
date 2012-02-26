@@ -125,11 +125,7 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         BYTE const C[] = "AROS - The AROS Research Operating System\n"
                          "Copyright © 1995-2012, The AROS Development Team.\n"
                          "All rights reserved.\n"
-                         "AROS is licensed under the terms of the\n"
-                         "AROS Public License (APL),\n"
-                         "a copy of which you should have received\n"
-                         "with this distribution.\n"
-                         "Visit http://www.aros.org/ for more information.\n";
+                         "License: AROS Public License (APL).\n";
 
         if (cos) {
             BPTR cas = BNULL;
