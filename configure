@@ -7813,13 +7813,11 @@ fi
                 aros_default_wbwidth=640
                 aros_default_wbheight=256
                 aros_default_wbdepth=2
-                kernel_tool_prefix="m68k-elf-"
                 ;;
             *ppc*)
                 aros_cpu="ppc"
                 aros_flavour="native"
                 gcc_target_cpu="ppc"
-                kernel_tool_prefix="ppc-elf-"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Amiga $target_cpu\"" "$LINENO" 5
@@ -8190,7 +8188,7 @@ fi
 #
 # The rules are:
 #   if crosstools then
-#      if kernel_tools_prefix = "none"
+#      if kernel_tools_prefix = "no-kernel-prefix-"
 #          aros_kernel_* = crosstools cc paths
 #          aros_kernel_cc = elf cc wrapper around crosstools cc
 #      else
@@ -8219,9 +8217,12 @@ fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to use external toolchain" >&5
 $as_echo_n "checking whether to use external toolchain... " >&6; }
-if test "$kernel_tool_prefix" = "none" -a "$crosstools" = "yes"; then
+if test "$kernel_tool_prefix" = "none" ; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; };
+    if test "$crosstools" != "yes"; then
+        as_fn_error $? "--disable-crosstools requires --with-kernel-tool-prefix= for this arch" "$LINENO" 5
+    fi
     # We are building AROS crosstools, and no kernel
     # tools specified - assume target tools == kernel tools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
