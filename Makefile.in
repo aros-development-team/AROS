@@ -11,11 +11,6 @@ AROS_TARGET_CPU     ?= @aros_target_cpu@
 AROS_TARGET_ARCH    ?= @aros_target_arch@
 AROS_TARGET_VARIANT ?= @aros_target_variant@
 
-# Defined if we can build our own toolchain.
-# This is a prerequisite for ObjectiveC and C++ support,
-# since they depend on the AROS C Library
-AROS_TARGET_TOOLCHAIN ?= @aros_target_toolchain@
-
 # normally, these variable's should go in mmake.config/globalvarfile
 export AROS_TARGET_BOOTLOADER := @aros_target_bootloader@
 export AROS_TARGET_ICONSET := @aros_target_iconset@
