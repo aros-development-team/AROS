@@ -172,6 +172,8 @@ workbench-libs-glu-module-cpp-quick : $(CC_SOURCES) $(CPP_SOURCES)
 # Hack to get C++ objects linked into module
 LDFLAGS += $(CXX_OBJECTS)
 
+#MM- workbench-libs-glu-module: workbench-libs-glu-module-cpp
+
 %build_module mmake=workbench-libs-glu-module \
     modname=glu modtype=library linklibname=GLU conffile=glu.conf \
     files="$(LIBRARY_SOURCES)" \
