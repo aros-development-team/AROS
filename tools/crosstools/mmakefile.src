@@ -152,8 +152,6 @@ HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
 #MM
 tools-crosstools-gcc :
-	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/specs
-	@$(SED) -i -e "s|@aros_target_cc_includes@|$(GCC_INCLUDES)|g" $(GENDIR)/config/elf-specs
 	@$(IF) ! $(TEST) -f $(gcc-installflag) \
 	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gcc-installflag))" ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gcc/.files-touched \
