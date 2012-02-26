@@ -119,13 +119,12 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         }
     }
 
-    cis = Open("CON:////Initial CLI/AUTO/CLOSE/SMART", MODE_OLDFILE);
+    cis = Open("CON:////AROS/AUTO/CLOSE/SMART", MODE_OLDFILE);
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
-        BYTE const C[] = "AROS - The AROS Research Operating System\n"
-                         "Copyright © 1995-2012, The AROS Development Team.\n"
-                         "All rights reserved.\n"
-                         "License: AROS Public License (APL).\n";
+        BYTE const C[] = "Copyright © 1995-2012, The AROS Development Team.\n"
+                         "Licensed under the AROS Public License.\n"
+                         "Version SVN" SVNREV ", built on " ISODATE ".\n";
 
         if (cos) {
             BPTR cas = BNULL;
