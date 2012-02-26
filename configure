@@ -8419,6 +8419,9 @@ fi
     if test "$aros_kernel_cpp" = ""; then
     as_fn_error $? "cpp is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+    if test "x$aros_kernel_cc" = "x"; then
+        aros_kernel_cc=${kernel_tool_prefix}gcc
+    fi
 
 if test "$aros_kernel_cc${aros_gcc_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -8595,6 +8598,9 @@ fi
     if test "$aros_kernel_cc" = ""; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+    if test "x$aros_kernel_cxx" = "x"; then
+        aros_kernel_cxx=${kernel_tool_prefix}g++
+    fi
 
 if test "$aros_kernel_cxx${aros_gcc_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then

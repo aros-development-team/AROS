@@ -1616,8 +1616,14 @@ else
 
     AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
     AROS_REQUIRED(cpp,$aros_kernel_cpp)
+    if test "x$aros_kernel_cc" = "x"; then
+        aros_kernel_cc=${kernel_tool_prefix}gcc
+    fi
     AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc${aros_gcc_version})
     AROS_REQUIRED(cc,$aros_kernel_cc)
+    if test "x$aros_kernel_cxx" = "x"; then
+        aros_kernel_cxx=${kernel_tool_prefix}g++
+    fi
     AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx${aros_gcc_version})
     # If it's set, make sure it's really there
     if test "x$aros_kernel_cxx" != "x" ; then
