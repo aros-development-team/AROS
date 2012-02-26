@@ -212,6 +212,8 @@ BCPLd QueuePacket    /* -54, void */
     BRTS
 
 BCPL clearmem       /* -50, void, @buff, lw_length */
+    tst.l	%d2
+    bmi.s	.Lclearmem_end
     lsl.l	#2,%d1
     bra		.Lclearmem_cond
 
@@ -220,7 +222,7 @@ BCPL clearmem       /* -50, void, @buff, lw_length */
     addq.l	#4,%d1
 .Lclearmem_cond:
     dbf		%d2,.Lclearmem_loop
-
+.Lclearmem_end:
     BRTS
 
 BCPL LoadSeg        /* -4c, SegList ^, &name */
