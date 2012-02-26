@@ -138,12 +138,6 @@ aros_target_cc_includes=""
 # ----------------------------------------------------------------------------------------
 # Host-specific defaults
 #
-# Override this to "yes" in order to force a specific build to use real AROS crosscompiler
-# instead of a wrapper script.
-# Useful for non-ELF hosts (like Windows and Darwin).
-# Can also be overriden in target section below
-use_aros_gcc="no"
-
 # This is the main host configuration section. It is where the host
 # can change the values of any variables it needs to change. We do
 # not look at anything that compiles to the target yet, we'll get
@@ -224,7 +218,6 @@ case "$host_os" in
     darwin*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
-        use_aros_gcc="yes"
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
@@ -345,7 +338,6 @@ case "$host_os" in
 
     cygwin*)
         aros_host_arch="cygwin"
-        use_aros_gcc="yes"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         android_build_os="windows"
         android_tool="android.bat"
@@ -364,7 +356,6 @@ case "$host_os" in
 
     mingw32*)
         aros_host_arch="mingw32"
-        use_aros_gcc="yes"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         android_build_os="windows"
         android_tool="android.bat"
@@ -536,6 +527,9 @@ ignore_undefined_symbols=""
 
 # Check for X11 by default
 need_x11="auto"
+
+# Leave at 'none' for no external toolchain
+kernel_tool_prefix="none"
 
 #-----------------------------------------------------------------------------
 
@@ -762,17 +756,6 @@ AC_MSG_RESULT($enableval)
 #
 # Bootloader name. Currently used by PC target.
 target_bootloader="none"
-
-# Prefix for toolchain used to build bootstrap. For hosted ports, this should be a toolchain for target host OS.
-# (i. e. when building mingw32-i386 port this should be set to "i386-mingw32-").
-# For native ports this toolchain is used to build a bootloader and second-level bootstrap (if present).
-if test "$crosstools" != "yes"; then
-    target_tool_prefix=${target_cpu}-elf-
-else
-    target_tool_prefix=${target_cpu}-aros-
-fi
-AC_MSG_CHECKING([Target tool prefix])
-AC_MSG_RESULT($target_tool_prefix)
 
 #-----------------------------------------------------------------------------
 # Additional options for some specific targets
@@ -1315,16 +1298,6 @@ case "$target_os" in
                 aros_default_wbdepth=8
                 gcc_target_cpu="i386"
 
-                dnl Temporary hack, needed to get nightly build working
-                aros_target_cpp="i386-aros-cpp"
-                aros_target_as="i386-aros-as"
-                aros_target_ar="i386-aros-ar"
-                aros_target_ranlib="i386-aros-ranlib"
-                aros_target_nm="i386-aros-nm"
-                aros_target_strip="i386-aros-strip"
-                aros_target_objcopy="i386-aros-objcopy"
-                aros_target_objdump="i386-aros-objdump"
-
                 kernel_tool_prefix="i386-mingw32-"
                 ;;
             *x86_64*)
@@ -1426,9 +1399,25 @@ case "$target_os" in
         ;;
 esac
 
+#-----------------------------------------------------------------------------
+AC_MSG_CHECKING([where to install or search for cross tools binaries])
+AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
+if test "$with_crosstools" = "default"; then
+    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+else
+    # Disable building crosstools if we are using an external set - otherwise
+    # we may attempt to overwrite them if the tools-crosstools target is made!
+    crosstools=no
+    AROS_CROSSTOOLSDIR="$with_crosstools"
+    PATH="$AROS_CROSSTOOLSDIR:$PATH"
+fi
+AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
+
 AC_MSG_CHECKING([Kernel tool prefix])
-AC_ARG_WITH(kernel-tool-prefix,AC_HELP_STRING([--with-kernel-tool-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),kernel_tool_prefix="$withval")
+AC_ARG_WITH(kernel-tool-prefix,AC_HELP_STRING([--with-kernel-tool-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"],[kernel_tool_prefix="$kernel_tool_prefix"])
 AC_MSG_RESULT($kernel_tool_prefix)
+
+target_tool_prefix=${target_cpu}-aros-
 
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -1471,80 +1460,9 @@ else
     elf_specs_in=config/elf-specs.in
 fi
 
-#-----------------------------------------------------------------------------
-AC_MSG_CHECKING([where to install or search for cross tools binaries])
-AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
-if test "$with_crosstools" = "default"; then
-    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
-else
-    AROS_CROSSTOOLSDIR="$with_crosstools"
-fi
-AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
-
-if test "$crosstools" != "no" -o "$with_crosstools" != "default"; then
-
-    dnl --with-crosstools with no --enable-crosstools implies --with-aros-gcc with no version specified
-    dnl The same is about --enable-crosstools
-
-    use_aros_gcc=yes
-    PATH=$AROS_CROSSTOOLSDIR:$PATH
-fi
-
 AC_MSG_CHECKING([what specific AROS gcc version to use])
-AC_ARG_WITH(aros-gcc,AC_HELP_STRING([--with-aros-gcc=VERSION],[Use aros-gcc-VERSION for building AROS]),aros_gcc_version="$withval",aros_gcc_version="$use_aros_gcc")
-case "$aros_gcc_version" in
-yes)
-    aros_gcc_version="default"
-    ;;
-no)
-    aros_gcc_version="none"
-    ;;
-esac
+AC_ARG_WITH(aros-gcc,AC_HELP_STRING([--with-aros-gcc=VERSION],[Use aros-gcc-VERSION for building AROS]),aros_gcc_version="-$withval",aros_gcc_version="")
 AC_MSG_RESULT($aros_gcc_version)
-
-if test "$aros_gcc_version" != "none"; then
-
-    dnl Here we either build own crosstools, or use preinstalled ones
-    dnl Check for specific version requested, and append suffix if needed
-
-    if test "$aros_gcc_version" != "default"; then
-        aros_target_cc="${target_tool_prefix}gcc-$aros_gcc_version"
-        aros_target_cxx="${target_tool_prefix}g++-$aros_gcc_version"
-    else
-        aros_target_cc="${target_tool_prefix}gcc"
-        aros_target_cxx="${target_tool_prefix}g++"
-    fi
-
-    aros_target_cpp="${target_tool_prefix}cpp"
-    aros_target_ld="${target_tool_prefix}ld"
-    aros_target_as="${target_tool_prefix}as"
-    aros_target_ar="${target_tool_prefix}ar"
-    aros_target_ranlib="${target_tool_prefix}ranlib"
-    aros_target_nm="${target_tool_prefix}nm"
-    aros_target_strip="${target_tool_prefix}strip"
-    aros_target_objcopy="${target_tool_prefix}objcopy"
-    aros_target_objdump="${target_tool_prefix}objdump"
-
-    dnl Check for specific version requested, and append suffix if needed
-
-    if test "$aros_gcc_version" != "default"; then
-        aros_kernel_cc="${kernel_tool_prefix}gcc-$aros_gcc_version"
-        aros_kernel_cxx="${kernel_tool_prefix}g++-$aros_gcc_version"
-    else
-        aros_kernel_cc="${kernel_tool_prefix}gcc"
-        aros_kernel_cxx="${kernel_tool_prefix}g++"
-    fi
-
-    aros_kernel_cpp="${kernel_tool_prefix}cpp"
-    aros_kernel_ld="${kernel_tool_prefix}ld"
-    aros_kernel_as="${kernel_tool_prefix}as"
-    aros_kernel_ar="${kernel_tool_prefix}ar"
-    aros_kernel_ranlib="${kernel_tool_prefix}ranlib"
-    aros_kernel_nm="${kernel_tool_prefix}nm"
-    aros_kernel_strip="${kernel_tool_prefix}strip"
-    aros_kernel_objcopy="${kernel_tool_prefix}objcopy"
-    aros_kernel_objdump="${kernel_tool_prefix}objdump"
-fi
 
 # Some compilers (ppc-elf-gcc is known to) have CPU defines in specs
 # Since we override specs, we may need to put these defines there
@@ -1601,6 +1519,7 @@ if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
         if test "$aros_target_arch" != "mingw32"; then
             cross_compiling=no
+            kernel_tool_prefix=""
         fi
     fi
 fi
@@ -1613,6 +1532,7 @@ if test "$aros_host_arch" == "darwin" ; then
         cross_compiling=yes
     else
         cross_compiling=no
+        kernel_tool_prefix=""
     fi
 fi
 
@@ -1623,57 +1543,145 @@ if test "$aros_host_arch" == "mingw32" ; then
     fi
 fi
 
-# I want to have this information in configure output, although it might be
-# misleading, e.g. for darwin hosted you cannot compile target code without a
-# cross compiler, but here it says no.
+#######################################################################
+## Compute what toolchains to use, and their paths                   ##
+#######################################################################
+#
+# This takes, as input:
+#   crosstools             {yes,no}
+#   aros_gcc_version       {default,[version]}
+#   kernel_tool_prefix     {none,[some-arch-os-]}
+#   target_tool_prefix     ${target_cpu}-aros-
+#
+# The output is
+#   aros_kernel_{cpp,cc,ar,ld,as,ranlib,nm,strip}
+#        Where the 'kernel' binaries are located
+#   orig_target_{cpp,cc,ar,ld,as,ranlib,nm,strip}
+#        Where the 'target' binaries are located
+#        (not the symlink farm - that is aros_target_*!)
+#
+# The rules are:
+#   if crosstools then
+#      if kernel_tools_prefix = "none"
+#          aros_kernel_* = crosstools cc paths
+#          aros_kernel_cc = elf cc wrapper around crosstools cc
+#      else
+#          VALIDATE(${kernel_tools_prefix}*)
+#          aros_kernel_* = ${kernel_tools_prefix}*
+#          if ${kernel_tools_prefix}cc is an AROS gcc
+#              aros_kernel_cc = ${kernel_tools_prefix}cc
+#          else
+#              aros_kernel_cc = elf cc wrapper around ${kernel_tools_prefix}cc
+#          fi
+#      fi
+#
+#      orig_target_* = aros built crosstools
+#      orig_target_cc = elf cc wrapper around crosstools cc
+#   else
+#      VALIDATE(${kernel_tools_prefix}*)
+#
+#      orig_target_* = aros_kernel_*
+#      if aros_kernel_cc is an AROS gcc
+#          orig_target_cc = aros_kernel_cc
+#      else
+#          orig_target_cc = aros cc wrapper around aros_kernel_cc
+#      fi
+#   fi
+#
 
-# Note: it says 'yes' only if bootstrap ("kernel") is cross-compiled.
-# Target code is a little bit different thing.
-#                                                sonic
-echo "checking whether we are (AROS style) cross compiling... $cross_compiling"
+AC_MSG_CHECKING([whether to use external toolchain])
+if test "$kernel_tool_prefix" = "none" -a "$crosstools" = "yes"; then
+    AC_MSG_RESULT([no]);
+    # We are building AROS crosstools, and no kernel
+    # tools specified - assume target tools == kernel tools
+    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    aros_kernel_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
+    aros_kernel_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    aros_kernel_cpp="${tmp_tool_prefix}cpp"
+    aros_kernel_ld="${tmp_tool_prefix}ld"
+    aros_kernel_as="${tmp_tool_prefix}as"
+    aros_kernel_ar="${tmp_tool_prefix}ar"
+    aros_kernel_ranlib="${tmp_tool_prefix}ranlib"
+    aros_kernel_nm="${tmp_tool_prefix}nm"
+    aros_kernel_strip="${tmp_tool_prefix}strip"
+    aros_kernel_objcopy="${tmp_tool_prefix}objcopy"
+    aros_kernel_objdump="${tmp_tool_prefix}objdump"
+else
+    AC_MSG_RESULT([yes]);
+    # Kernel tools specified - find them
+    # Note that 'normally', aros_kernel_* overrides will
+    # empty, unless specified in the per-arch sections above.
 
-# Set prefix for target compiler etc. if we're cross-compiling
-# (should possibly be earlier but needs to be after AC_PROG_CC)
-if test "$cross_compiling" = "yes" ; then
-
-    if test "x-$aros_flavour" = "x-standalone" -o "x-$aros_flavour" = "x-standcompat" ; then
-        if test "$aros_gcc_version" != "none"; then
-
-            dnl If we are cross-compiling a native port with AROS compiler, we can reuse
-            dnl AROS compiler for bootstrap ("kernel"). This eliminates a need for one more
-            dnl ELF compiler.
-
-            dnl Use target toolchain as bootstrap one.
-            target_tool_prefix=${target_cpu}-aros-
-            target_tool_version=$aros_gcc_version
-            use_kernel_cc_wrapper=yes
-
-            dnl Cancel explicit AROS tools assignment. This will cause configure
-            dnl to select the same tools for bootstrap and AROS.
-            if test "$crosstools" != yes; then
-                aros_target_cc=
-                aros_target_ld=
-                aros_target_cpp=
-                aros_target_as=
-                aros_target_ar=
-                aros_target_ranlib=
-                aros_target_nm=
-                aros_target_strip=
-                aros_target_objcopy=
-                aros_target_objdump=
-            fi
-        fi
-    fi
-
-    aros_kernel_cc=${kernel_tool_prefix}gcc
-    if test "$kernel_tool_version" != "default"; then
-        aros_kernel_cc="${aros_kernel_cc}-$kernel_tool_version"
-    fi
+    AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
+    AROS_REQUIRED(cpp,$aros_kernel_cpp)
+    AROS_TOOL_KERNEL(aros_kernel_cc,gcc${aros_gcc_version},$aros_kernel_cc${aros_gcc_version})
+    AROS_REQUIRED(cc,$aros_kernel_cc)
+    AROS_TOOL_KERNEL(aros_kernel_cxx,g++${aros_gcc_version},$aros_kernel_cxx${aros_gcc_version})
+    AROS_REQUIRED(cxx,$aros_kernel_cxx)
+    AROS_TOOL_KERNEL(aros_kernel_ld,ld,$aros_kernel_ld)
+    AROS_REQUIRED(ld,$aros_kernel_ld)
+    AROS_TOOL_KERNEL(aros_kernel_as,as,$aros_kernel_as)
+    AROS_REQUIRED(as,$aros_kernel_as)
+    AROS_TOOL_KERNEL(aros_kernel_ar,ar,$aros_kernel_ar)
+    AROS_REQUIRED(ar,$aros_kernel_ar)
+    AROS_TOOL_KERNEL(aros_kernel_ranlib,ranlib,$aros_kernel_ranlib)
+    AROS_REQUIRED(ranlib,$aros_kernel_ranlib)
+    AROS_TOOL_KERNEL(aros_kernel_nm,nm,$aros_kernel_nm)
+    AROS_REQUIRED(nm,$aros_kernel_nm)
+    AROS_TOOL_KERNEL(aros_kernel_strip,strip,$aros_kernel_strip)
+    AROS_REQUIRED(strip,$aros_kernel_strip)
+    AROS_TOOL_KERNEL(aros_kernel_objcopy,objcopy,$aros_kernel_objcopy)
+    AROS_REQUIRED(objcopy,$aros_kernel_objcopy)
+    AROS_TOOL_KERNEL(aros_kernel_objdump,objdump,$aros_kernel_objdump)
+    AROS_REQUIRED(objdump,$aros_kernel_objdump)
 fi
-AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
-AROS_REQUIRED(cpp,$aros_kernel_cpp)
-AROS_TOOL_KERNEL(aros_kernel_cc,gcc,$aros_kernel_cc)
-AROS_REQUIRED(cc,$aros_kernel_cc)
+
+AC_MSG_CHECKING([which target tools])
+if test "$crosstools" = "yes"; then
+    AC_MSG_RESULT([$target_tool_prefix])
+    # We are are building AROS crosstools
+    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
+    orig_target_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
+    orig_target_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
+    orig_target_cpp="${tmp_tool_prefix}cpp"
+    orig_target_ld="${tmp_tool_prefix}ld"
+    orig_target_as="${tmp_tool_prefix}as"
+    orig_target_ar="${tmp_tool_prefix}ar"
+    orig_target_ranlib="${tmp_tool_prefix}ranlib"
+    orig_target_nm="${tmp_tool_prefix}nm"
+    orig_target_strip="${tmp_tool_prefix}strip"
+    orig_target_objcopy="${tmp_tool_prefix}objcopy"
+    orig_target_objdump="${tmp_tool_prefix}objdump"
+else
+    AC_MSG_RESULT([$kernel_tool_prefix])
+    # We are *not* building AROS crosstools - use the kernel tools
+    orig_target_cpp="${aros_kernel_cpp}"
+    AROS_REQUIRED(cpp,$orig_target_cpp)
+    orig_target_cc="${aros_kernel_cc}"
+    AROS_REQUIRED(cc,$orig_target_cc)
+    orig_target_cxx="${aros_kernel_cxx}"
+    AROS_REQUIRED(cxx,$orig_target_cxx)
+    orig_target_ld="${aros_kernel_ld}"
+    AROS_REQUIRED(ld,$orig_target_ld)
+    orig_target_as="${aros_kernel_as}"
+    AROS_REQUIRED(as,$orig_target_as)
+    orig_target_ar="${aros_kernel_ar}"
+    AROS_REQUIRED(ar,$orig_target_ar)
+    orig_target_ranlib="${aros_kernel_ranlib}"
+    AROS_REQUIRED(ranlib,$orig_target_ranlib)
+    orig_target_nm="${aros_kernel_nm}"
+    AROS_REQUIRED(nm,$orig_target_nm)
+    orig_target_strip="${aros_kernel_strip}"
+    AROS_REQUIRED(strip,$orig_target_strip)
+    orig_target_objcopy="${aros_kernel_objcopy}"
+    AROS_REQUIRED(objcopy,$orig_target_objcopy)
+    orig_target_objdump="${aros_kernel_objdump}"
+    AROS_REQUIRED(objdump,$orig_target_objdump)
+fi
+
+# At this point, all aros_kernel_* and aros_target_* 
+# tools should be set up correctly
+
 CC="$aros_kernel_cc $kernel_tool_flags"
 CPP="$aros_kernel_cpp"
 
@@ -1719,100 +1727,16 @@ if test "$rescomp" != ""; then
     AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
 fi
 
-if test "$crosstools" != "yes"; then
-
-    dnl For non-ELF hosts we additionally have to look up ELF toolchain for AROS binaries
-    dnl It can be either AROS toolchain selected earlier or generic ELF toolchain we select here.
-    dnl This catches also Android-hosted case. Android gcc is a ELF compiler, but it can't be used
-    dnl to build AROS binaries, at least on ARM. Android EABI is different from AROS EABI
-    dnl (at least enum size is known to be different).
-    if test "$target_tool_prefix" != "${target_cpu}-elf-" -a "$target_tool_prefix" != "${target_cpu}-aros-" ; then
-        target_tool_prefix=${target_cpu}-elf-
-        if test "$aros_target_cc" == ""; then
-           aros_target_cc="${target_tool_prefix}gcc"
-        fi
-        if test "$aros_target_ld" == ""; then
-           aros_target_ld="${target_tool_prefix}ld"
-        fi
-        if test "$aros_target_cpp" == ""; then
-           aros_target_cpp="${target_tool_prefix}cpp"
-        fi
-    fi
-    AROS_TOOL_TARGET(aros_target_as_ln,as,$aros_target_as)
-    AROS_REQUIRED(as,$aros_target_as_ln)
-    AROS_TOOL_TARGET(aros_target_ar_ln,ar,$aros_target_ar)
-    AROS_REQUIRED(ar,$aros_target_ar_ln)
-    AROS_TOOL_TARGET(aros_target_nm_ln,nm,$aros_target_nm)
-    AROS_REQUIRED(nm,$aros_target_nm_ln)
-    AROS_TOOL_TARGET(aros_target_objcopy_ln,objcopy,$aros_target_objcopy)
-    AROS_REQUIRED(objcopy,$aros_target_objcopy_ln)
-    AROS_TOOL_TARGET(aros_target_objdump_ln,objdump,$aros_target_objdump)
-    AROS_REQUIRED(objdump,$aros_target_objdump_ln)
-    AROS_TOOL_TARGET(aros_target_ranlib_ln,ranlib,$aros_target_ranlib)
-    AROS_REQUIRED(ranlib,$aros_target_ranlib_ln)
-    AROS_TOOL_TARGET(aros_target_strip_ln,strip,$aros_target_strip)
-    AROS_REQUIRED(strip,$aros_target_strip_ln)
-    if test "$aros_target_cxx" != ""; then
-        AC_PATH_PROG(aros_target_cxx,$aros_target_cxx)
-        AROS_REQUIRED(c++,$aros_target_cxx)
-    fi
-else
-    aros_target_cc=$AROS_CROSSTOOLSDIR/$aros_target_cc
-    aros_target_cxx=$AROS_CROSSTOOLSDIR/$aros_target_cxx
-    aros_target_cpp=$AROS_CROSSTOOLSDIR/$aros_target_cpp
-    aros_target_as_ln=$AROS_CROSSTOOLSDIR/$aros_target_as
-    aros_target_ar_ln=$AROS_CROSSTOOLSDIR/$aros_target_ar
-    aros_target_nm_ln=$AROS_CROSSTOOLSDIR/$aros_target_nm
-    aros_target_objcopy_ln=$AROS_CROSSTOOLSDIR/$aros_target_objcopy
-    aros_target_objdump_ln=$AROS_CROSSTOOLSDIR/$aros_target_objdump
-    aros_target_ranlib_ln=$AROS_CROSSTOOLSDIR/$aros_target_ranlib
-    aros_target_strip_ln=$AROS_CROSSTOOLSDIR/$aros_target_strip
-
+# Set up the sources for the symlink farm
+if test "$crosstools" = "yes"; then
     crosstools_target=tools-crosstools
+else
+    crosstools_cxx_target=tools-crosstools
 fi
-
-AROS_TOOL_TARGET(aros_kernel_cpp,cpp,$aros_kernel_cpp)
-AROS_REQUIRED(cpp,$aros_kernel_cpp)
-AROS_TOOL_TARGET(aros_kernel_ld,ld,$aros_kernel_ld)
-AROS_REQUIRED(ld,$aros_kernel_ld)
-AROS_TOOL_TARGET(aros_kernel_ar,ar,$aros_kernel_ar)
-AROS_REQUIRED(ld,$aros_kernel_ar)
-AROS_TOOL_TARGET(aros_kernel_ranlib,ranlib,$aros_kernel_ranlib)
-AROS_REQUIRED(ld,$aros_kernel_ranlib)
 
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
 aros_kernel_ar="$aros_kernel_ar $aros_kernel_ar_flags"
 
-orig_target_cpp=$aros_kernel_cpp
-orig_target_cc=$aros_kernel_cc
-orig_target_ld=$aros_kernel_ld
-
-if test "$crosstools" != "yes"; then
-    if test "$aros_target_cc" != ""; then
-        AC_PATH_PROG(aros_target_cc,$aros_target_cc)
-        AROS_REQUIRED(gcc,$aros_target_cc)
-        orig_target_cc=$aros_target_cc
-    fi
-    if test "$aros_target_ld" != ""; then
-        AC_PATH_PROG(aros_target_ld,$aros_target_ld)
-        AROS_REQUIRED(ld,$aros_target_ld)
-        orig_target_ld=$aros_target_ld
-    fi
-    if test "$aros_target_cpp" != ""; then
-        AC_PATH_PROG(aros_target_cpp,$aros_target_cpp)
-        AROS_REQUIRED(cpp,$aros_target_cpp)
-        orig_target_cpp=$aros_target_cpp
-    fi
-else
-    orig_target_cc=$aros_target_cc
-    orig_target_ld=$aros_target_ld
-    orig_target_cpp=$aros_target_cpp
-fi
-
-# Build crosstools if we have no C++ - temporary thing 
-if test "$aros_target_cxx" = "" -a "$crosstools" != "yes"; then
-    crosstools_cxx_target=tools-crosstools
-fi
 
 aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}${aros_target_suffix}/gen/config"
@@ -1840,7 +1764,7 @@ else
     fi
 fi
 
-prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros"
+prefix="${PWD}/${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-"
 
 AC_SUBST(aros_target_nostdinc_cflags,-nostdinc)
 AC_SUBST(aros_target_nostartup_ldflags,-nostartfiles)
@@ -1859,18 +1783,19 @@ else
     # build of crosstools.
     aros_target_cc_path=@aros_target_cc_path@
 fi
-aros_target_cpp="${prefix}-cpp"
-aros_target_cc="${prefix}-gcc"
-aros_target_as="${prefix}-as"
-aros_target_ld="${prefix}-ld"
-aros_target_ar="${prefix}-ar $aros_target_ar_flags"
-aros_target_objcopy=${prefix}-objcopy
-aros_target_objdump=${prefix}-objdump
-aros_target_ranlib="${prefix}-ranlib $aros_target_ranlib_flags"
-aros_target_nm="${prefix}-nm $aros_target_nm_flags"
-aros_target_strip=${prefix}-strip
-aros_plain_nm="${prefix}-nm"
-aros_plain_ar="${prefix}-ar"
+aros_target_cpp="${prefix}cpp"
+aros_target_cc="${prefix}gcc"
+aros_target_cxx="${prefix}g++"
+aros_target_as="${prefix}as"
+aros_target_ld="${prefix}ld"
+aros_target_ar="${prefix}ar $aros_target_ar_flags"
+aros_target_objcopy="${prefix}objcopy"
+aros_target_objdump="${prefix}objdump"
+aros_target_ranlib="${prefix}ranlib $aros_target_ranlib_flags"
+aros_target_nm="${prefix}nm $aros_target_nm_flags"
+aros_target_strip="${prefix}strip"
+aros_plain_nm="${prefix}nm"
+aros_plain_ar="${prefix}ar"
 
 if test "$aros_kernel_includes" != "" ; then
     dnl find out about the kernel cc's include path
@@ -2475,12 +2400,16 @@ AC_SUBST(aros_kernel_ar)
 AC_SUBST(aros_kernel_ranlib)
 AC_SUBST(orig_target_cc)
 AC_SUBST(aros_target_cc)
-AC_SUBST(aros_target_cxx)
 AC_SUBST(aros_kernel_cc)
+AC_SUBST(orig_target_cxx)
+AC_SUBST(aros_target_cxx)
+AC_SUBST(aros_kernel_cxx)
 AC_SUBST(orig_target_cpp)
 AC_SUBST(aros_target_cpp)
 AC_SUBST(aros_kernel_cpp)
+AC_SUBST(orig_target_as)
 AC_SUBST(aros_target_as)
+AC_SUBST(aros_kernel_as)
 AC_SUBST(orig_target_ld)
 AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
@@ -2644,13 +2573,13 @@ AC_CONFIG_COMMANDS([compiler_executable],
         echo ${prefix3}
         chmod a+x ${prefix2}-gcc ${prefix2}-ld ${prefix2}-cpp ${prefix3}-gcc
 
-        ln -sf $aros_target_as_ln$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
-        ln -sf $aros_target_nm_ln$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
-        ln -sf $aros_target_ar_ln$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
-        ln -sf $aros_target_ranlib_ln$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
-        ln -sf $aros_target_objcopy_ln$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
-        ln -sf $aros_target_objdump_ln$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
-        ln -sf $aros_target_strip_ln$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
+        ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
+        ln -sf $orig_target_nm$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
+        ln -sf $orig_target_ar$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
+        ln -sf $orig_target_ranlib$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
+        ln -sf $orig_target_objcopy$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
+        ln -sf $orig_target_objdump$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
+        ln -sf $orig_target_strip$aros_host_exe_suffix   ${prefix2}-strip$aros_host_exe_suffix
 
         ln -sf $aros_kernel_ld$aros_host_exe_suffix         ${prefix3}-ld$aros_host_exe_suffix
     ],
@@ -2660,13 +2589,13 @@ AC_CONFIG_COMMANDS([compiler_executable],
         aros_target_cpu=${aros_target_cpu}
         aros_target_arch=${aros_target_arch}
         aros_target_suffix=${aros_target_suffix}
-        aros_target_nm_ln=${aros_target_nm_ln}
-        aros_target_as_ln=${aros_target_as_ln}
-        aros_target_ar_ln=${aros_target_ar_ln}
-        aros_target_ranlib_ln=${aros_target_ranlib_ln}
-        aros_target_objdump_ln=${aros_target_objdump_ln}
-        aros_target_objcopy_ln=${aros_target_objcopy_ln}
-        aros_target_strip_ln=${aros_target_strip_ln}
+        orig_target_nm=${orig_target_nm}
+        orig_target_as=${orig_target_as}
+        orig_target_ar=${orig_target_ar}
+        orig_target_ranlib=${orig_target_ranlib}
+        orig_target_objdump=${orig_target_objdump}
+        orig_target_objcopy=${orig_target_objcopy}
+        orig_target_strip=${orig_target_strip}
         aros_kernel_ld=${aros_kernel_ld}
     ]
 )
