@@ -5,18 +5,11 @@ include $(TOP)/config/make.cfg
 # GLU                                                                          #
 ################################################################################
 
-#MM- workbench-libs-complete : workbench-libs-glu
+#MM- workbench-libs-complete : workbench-libs-glu-$(AROS_TARGET_TOOLCHAIN)
 
-#MM- workbench-libs-glu : workbench-libs-glu-$(AROS_TARGET_CPU)
+#MM- workbench-libs-glu-yes : workbench-libs-glu-module
 
-# m68k build is disabled, since there is no C++ crosscompiler yet
-#MM- workbench-libs-glu-m68k : workbench-libs-glu-module
-#MM- workbench-libs-glu-i386 : workbench-libs-glu-module
-#MM- workbench-libs-glu-x86_64 : workbench-libs-glu-module
-#MM- workbench-libs-glu-ppc : workbench-libs-glu-module
-#MM- workbench-libs-glu-arm : workbench-libs-glu-module
-
-#MM workbench-libs-glu-module : includes workbench-libs-glu-module-cpp workbench-libs-mesa
+#MM workbench-libs-glu-module : includes workbench-libs-mesa
 
 SHARED_LIB_SOURCES = \
             aros/emul_arosc \
