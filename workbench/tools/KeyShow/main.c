@@ -24,7 +24,7 @@ int main(void)
 
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"KeyShow",
-        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.0 (24.02.2012)",
+        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.1 (26.02.2012)",
         MUIA_Application_Copyright, (IPTR)_(MSG_AppCopyright),
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)_(MSG_AppDescription),

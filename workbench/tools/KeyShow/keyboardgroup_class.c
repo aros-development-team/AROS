@@ -22,7 +22,7 @@
 
 #define KEY(n) Child, keybtn[n]
 
-#define KBUFSIZE (8)
+#define KBUFSIZE (12)
 
 struct Key
 {
@@ -33,6 +33,7 @@ struct Key
     TEXT shift_alt[KBUFSIZE];
     TEXT ctrl_alt[KBUFSIZE];
     TEXT ctrl_shift[KBUFSIZE];
+    BOOL immutable;
 };
 
 struct KeyboardGroup_DATA
@@ -42,6 +43,14 @@ struct KeyboardGroup_DATA
     struct Hook change_qualifier_hook;
 };
 
+
+static void set_immutable_key(struct Key *key, ULONG idx, CONST_STRPTR content)
+{
+    strlcpy(key[idx].alone, content, KBUFSIZE);
+    key[idx].immutable = TRUE;
+}
+
+
 static struct Key *read_keymap(void)
 {
     struct Key *key = AllocVec(sizeof(struct Key) * 128, MEMF_CLEAR);
@@ -49,108 +58,103 @@ static struct Key *read_keymap(void)
     {
         struct KeyMap *km = AskKeyMapDefault();
         LONG i;
-        for (i = 0; i < 128; i++)
+        for (i = 0; i < 64; i++)
         {
-            UBYTE type;
-            if (i < 64)
-            {
-                type = km->km_LoKeyMapTypes[i];
-            }
-            else
-            {
-                type = km->km_HiKeyMapTypes[i - 64];
-            }
-
-            switch (type)
+            ULONG value = km->km_LoKeyMap[i];
+            switch (km->km_LoKeyMapTypes[i])
             {
                 case KC_NOQUAL:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
+                    key[i].alone[0]     = value & 0xff;
                     break;
                 case KCF_SHIFT:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].shift[0]     = (km->km_LoKeyMap[i] >> 8) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].shift[0]     = (value >> 8) & 0xff;
                     break;
                 case KCF_ALT:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].alt[0]       = (km->km_LoKeyMap[i] >> 8) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].alt[0]       = (value >> 8) & 0xff;
                     break;
                 case KCF_CONTROL:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].ctrl[0]      = (km->km_LoKeyMap[i] >> 8) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].ctrl[0]      = (value >> 8) & 0xff;
                     break;
                 case KCF_ALT + KCF_SHIFT:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].shift[0]     = (km->km_LoKeyMap[i] >> 8) & 0xff;
-                    key[i].alt[0]       = (km->km_LoKeyMap[i] >> 16) & 0xff;
-                    key[i].shift_alt[0] = (km->km_LoKeyMap[i] >> 24) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].shift[0]     = (value >> 8) & 0xff;
+                    key[i].alt[0]       = (value >> 16) & 0xff;
+                    key[i].shift_alt[0] = (value >> 24) & 0xff;
                     break;
                 case KCF_CONTROL + KCF_ALT:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].alt[0]       = (km->km_LoKeyMap[i] >> 8) & 0xff;
-                    key[i].ctrl[0]      = (km->km_LoKeyMap[i] >> 16) & 0xff;
-                    key[i].ctrl_alt[0]  = (km->km_LoKeyMap[i] >> 24) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].alt[0]       = (value >> 8) & 0xff;
+                    key[i].ctrl[0]      = (value >> 16) & 0xff;
+                    key[i].ctrl_alt[0]  = (value >> 24) & 0xff;
                     break;
                 case KCF_CONTROL + KCF_SHIFT:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].shift[0]     = (km->km_LoKeyMap[i] >> 8) & 0xff;
-                    key[i].ctrl[0]      = (km->km_LoKeyMap[i] >> 16) & 0xff;
-                    key[i].ctrl_shift[0]= (km->km_LoKeyMap[i] >> 24) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].shift[0]     = (value >> 8) & 0xff;
+                    key[i].ctrl[0]      = (value >> 16) & 0xff;
+                    key[i].ctrl_shift[0]= (value >> 24) & 0xff;
                     break;
                 case KC_VANILLA:
-                    key[i].alone[0]     = km->km_LoKeyMap[i] & 0xff;
-                    key[i].shift[0]     = (km->km_LoKeyMap[i] >> 8) & 0xff;
-                    key[i].alt[0]       = (km->km_LoKeyMap[i] >> 16) & 0xff;
-                    key[i].shift_alt[0] = (km->km_LoKeyMap[i] >> 24) & 0xff;
+                    key[i].alone[0]     = value & 0xff;
+                    key[i].shift[0]     = (value >> 8) & 0xff;
+                    key[i].alt[0]       = (value >> 16) & 0xff;
+                    key[i].shift_alt[0] = (value >> 24) & 0xff;
                     key[i].ctrl[0]      = '^';
-                    key[i].ctrl[1]      = km->km_LoKeyMap[i] & 0xff;
+                    key[i].ctrl[1]      = value & 0xff;
                     break;
             }
         }
         // Qualifier keys
-        strlcpy(key[96].alone, "LShift", KBUFSIZE);
-        strlcpy(key[97].alone, "RShift", KBUFSIZE);
-        strlcpy(key[98].alone, "Lock", KBUFSIZE);
-        strlcpy(key[99].alone, "Ctrl", KBUFSIZE);
-        strlcpy(key[100].alone, "LAlt", KBUFSIZE);
-        strlcpy(key[101].alone, "RAlt", KBUFSIZE);
+        set_immutable_key(key, 96, _(MSG_KEY_SHIFT));   // Left Shift
+        set_immutable_key(key, 97, _(MSG_KEY_SHIFT));   // Right Shift
+        set_immutable_key(key, 98, _(MSG_KEY_LOCK));    // Caps Lock
+        set_immutable_key(key, 99, _(MSG_KEY_CTRL));    // (Left) Ctrl
+        set_immutable_key(key, 100, _(MSG_KEY_ALT));    // Left Alt
+        set_immutable_key(key, 101, _(MSG_KEY_ALT));    // Right Alt
         
         // Special keys
-        strlcpy(key[76].alone, "^", KBUFSIZE);          // cursor
-        strlcpy(key[77].alone, "v", KBUFSIZE);
-        strlcpy(key[78].alone, ">", KBUFSIZE);
-        strlcpy(key[79].alone, "<", KBUFSIZE);
+        set_immutable_key(key, 76, "\033I[6:11]");      // Cursor
+        set_immutable_key(key, 77, "\033I[6:12]");
+        set_immutable_key(key, 78, "\033I[6:14]");
+        set_immutable_key(key, 79, "\033I[6:13]");
 
-        strlcpy(key[65].alone, "<-", KBUFSIZE);         // backspace
-        strlcpy(key[66].alone, "->|", KBUFSIZE);        // tab
-        strlcpy(key[95].alone, "Help", KBUFSIZE);
-        strlcpy(key[80].alone, "F1", KBUFSIZE);
-        strlcpy(key[81].alone, "F2", KBUFSIZE);
-        strlcpy(key[82].alone, "F3", KBUFSIZE);
-        strlcpy(key[83].alone, "F4", KBUFSIZE);
-        strlcpy(key[84].alone, "F5", KBUFSIZE);
-        strlcpy(key[85].alone, "F6", KBUFSIZE);
-        strlcpy(key[86].alone, "F7", KBUFSIZE);
-        strlcpy(key[87].alone, "F8", KBUFSIZE);
-        strlcpy(key[88].alone, "F9", KBUFSIZE);
-        strlcpy(key[89].alone, "F10", KBUFSIZE);
-        strlcpy(key[75].alone, "F11", KBUFSIZE);
-        strlcpy(key[111].alone, "F12", KBUFSIZE);
-        strlcpy(key[102].alone, "LAmiga", KBUFSIZE);
-        strlcpy(key[103].alone, "RAmiga", KBUFSIZE);
+        set_immutable_key(key, 65, "^H");               // Backspace
+        set_immutable_key(key, 66, "^I");               // Tab
+        set_immutable_key(key, 68, "^M");               // Enter
+        set_immutable_key(key, 69, "^[");               // Esc
+        set_immutable_key(key, 95, _(MSG_KEY_HELP));
+        set_immutable_key(key, 80, "F1");
+        set_immutable_key(key, 81, "F2");
+        set_immutable_key(key, 82, "F3");
+        set_immutable_key(key, 83, "F4");
+        set_immutable_key(key, 84, "F5");
+        set_immutable_key(key, 85, "F6");
+        set_immutable_key(key, 86, "F7");
+        set_immutable_key(key, 87, "F8");
+        set_immutable_key(key, 88, "F9");
+        set_immutable_key(key, 89, "F10");
+        set_immutable_key(key, 75, "F11");
+        set_immutable_key(key, 111, "F12");
+        set_immutable_key(key, 102, _(MSG_KEY_A));      // Left A
+        set_immutable_key(key, 103, _(MSG_KEY_A));      // Right A
 
-        strlcpy(key[71].alone, "Insert", KBUFSIZE);
-        strlcpy(key[112].alone, "Pos 1", KBUFSIZE);
-        strlcpy(key[72].alone, "^", KBUFSIZE);
-        strlcpy(key[70].alone, "Del", KBUFSIZE);
-        strlcpy(key[113].alone, "End", KBUFSIZE);
-        strlcpy(key[73].alone, "v", KBUFSIZE);
+        set_immutable_key(key, 71, _(MSG_KEY_INSERT));
+        set_immutable_key(key, 112, _(MSG_KEY_HOME));
+        set_immutable_key(key, 72, _(MSG_KEY_PAGEUP));
+        set_immutable_key(key, 70, _(MSG_KEY_DELETE));
+        set_immutable_key(key, 113, _(MSG_KEY_END));
+        set_immutable_key(key, 73, _(MSG_KEY_PAGEDOWN));
 
-        strlcpy(key[90].alone, "Num", KBUFSIZE);
-        strlcpy(key[91].alone, "/", KBUFSIZE);
-        strlcpy(key[92].alone, "*", KBUFSIZE);
-        strlcpy(key[93].alone, "-", KBUFSIZE);
-        strlcpy(key[94].alone, "+", KBUFSIZE);
-        strlcpy(key[67].alone, "<|", KBUFSIZE);
+        set_immutable_key(key, 90, _(MSG_KEY_NUM));
+        set_immutable_key(key, 91, "/");
+        set_immutable_key(key, 92, "*");
+        set_immutable_key(key, 93, "-");
+        set_immutable_key(key, 94, "+");
+        set_immutable_key(key, 67, "^M");               // Numpad Enter
+
+        set_immutable_key(key, 127, _(MSG_KEY_CTRL));   // Pseudo right Ctrl
     }
     return key;
 }
@@ -167,57 +171,64 @@ AROS_UFH3S(void, change_qualifier_func,
     ULONG i;
     BOOL shift = XGET(data->keybutton[96], MUIA_Pressed) | XGET(data->keybutton[97], MUIA_Pressed);
     BOOL alt = XGET(data->keybutton[100], MUIA_Pressed) | XGET(data->keybutton[101], MUIA_Pressed);
-    BOOL ctrl = XGET(data->keybutton[99], MUIA_Pressed);
+    BOOL ctrl = XGET(data->keybutton[99], MUIA_Pressed) | XGET(data->keybutton[127], MUIA_Pressed);
 
-    bug("[keyshow/change_qualifier_func] shift %d alt %d ctrl %d\n", shift, alt, ctrl);
+    D(bug("[keyshow/change_qualifier_func] shift %d alt %d ctrl %d\n", shift, alt, ctrl));
 
     if (shift && !alt && !ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift);
         }
     }
     else if (!shift && alt && !ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alt);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alt);
         }
     }
     else if (!shift && !alt && ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl);
         }
     }
     else if (shift && alt && !ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift_alt);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].shift_alt);
         }
     }
     else if (!shift && alt && ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_alt);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_alt);
         }
     }
     else if (shift && !alt && ctrl)
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_shift);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].ctrl_shift);
         }
     }
     else
     {
         for (i = 0; i < 128; i++)
         {
-            SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alone);
+            if (!data->key[i].immutable)
+                SET(data->keybutton[i], MUIA_Text_Contents, data->key[i].alone);
         }
     }
 
@@ -252,22 +263,21 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
 
     for (i = 0; i < 128; i++)
     {
-        if (i < 96 || i > 101)
+        if ((i < 96 || i > 101) && i != 127 && i != 98)
         {
             keybtn[i] = MUI_NewObject(MUIC_Text,
                 ButtonFrame,
-                MUIA_Font, MUIV_Font_Button,
+                MUIA_Font, MUIV_Font_Tiny,
                 MUIA_Text_Contents, key[i].alone,
                 MUIA_Text_PreParse, "\33c",
-                //MUIA_FixWidthTxt, "W",
-                //MUIA_Background   , MUII_ButtonBack,
                 TAG_DONE);
         }
         else
         {
+            // Qualifier keys
             keybtn[i] = MUI_NewObject(MUIC_Text,
             ButtonFrame,
-            MUIA_Font, MUIV_Font_Button,
+            MUIA_Font, MUIV_Font_Tiny,
             MUIA_Text_Contents, key[i].alone,
             MUIA_Text_PreParse, "\33c",
             MUIA_InputMode    , MUIV_InputMode_Toggle,
@@ -286,6 +296,7 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 MUIA_Group_SameSize, TRUE,
                 KEY(69), KEY(80), KEY(81), KEY(82), KEY(83), KEY(84), KEY(85), KEY(86), KEY(87), KEY(88), KEY(89), KEY(75), KEY(111),
             End,
+            Child, VSpace(5),
             Child, HGroup,
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
@@ -325,7 +336,7 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 KEY(64),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
-                    KEY(101), KEY(103), KEY(95),  // FIXME: right Ctrl key
+                    KEY(101), KEY(103), KEY(95), KEY(127),
                 End,
             End,
         End,
@@ -348,7 +359,7 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         End,
         Child, VGroup,
             Child, HVSpace,
-            Child, ColGroup(4),
+                Child, ColGroup(4),
                 GroupFrame,
                 MUIA_Group_SameSize, TRUE,
                 KEY(90), KEY(91), KEY(92), KEY(93),
@@ -383,6 +394,11 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 self, 2, MUIM_CallHook, &data->change_qualifier_hook
             );
         }
+        DoMethod
+        (
+            data->keybutton[127], MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,
+            self, 2, MUIM_CallHook, &data->change_qualifier_hook
+        );
     }
     return self;
 }
@@ -398,9 +414,58 @@ IPTR KeyboardGroup__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
 }
 
 
-ZUNE_CUSTOMCLASS_2
+IPTR KeyboardGroup__MUIM_Setup(Class *CLASS, Object *obj, struct MUIP_HandleInput *msg)
+{
+    if (!DoSuperMethodA(CLASS, obj, msg))
+        return FALSE;
+
+    MUI_RequestIDCMP(obj, IDCMP_RAWKEY);
+
+    return TRUE;
+}
+
+
+IPTR KeyboardGroup__MUIM_Cleanup(Class *CLASS, Object *obj, struct MUIP_HandleInput *msg)
+{
+    MUI_RejectIDCMP(obj,IDCMP_MOUSEBUTTONS|IDCMP_RAWKEY);
+    return DoSuperMethodA(CLASS, obj, msg);
+}
+
+
+IPTR KeyboardGroup__MUIM_HandleInput(Class *CLASS, Object *obj, struct MUIP_HandleInput *msg)
+{
+    struct KeyboardGroup_DATA *data = INST_DATA(CLASS, obj);
+
+    if (msg->imsg)
+    {
+        switch (msg->imsg->Class)
+        {
+            case IDCMP_RAWKEY:
+            {
+                D(bug("Rawkey %d\n", msg->imsg->Code));
+                if (msg->imsg->Code > 95 && msg->imsg->Code < 102)      // Qualifier key
+                {
+                    Object *btn = data->keybutton[msg->imsg->Code];
+                    if (btn)
+                    {
+                        SET(btn, MUIA_Selected, XGET(btn, MUIA_Selected) ? FALSE : TRUE); // FIXME: this doesn't trigger the callback hook
+                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                    }
+                }
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
+
+ZUNE_CUSTOMCLASS_5
 (
     KeyboardGroup, NULL, MUIC_Group, NULL,
     OM_NEW,             struct opSet *,
-    OM_DISPOSE,         Msg
+    OM_DISPOSE,         Msg,
+    MUIM_Setup,         struct MUIP_HandleInput *,
+    MUIM_Cleanup,       struct MUIP_HandleInput *,
+    MUIM_HandleInput,   struct MUIP_HandleInput *
 );
