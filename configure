@@ -8768,9 +8768,12 @@ fi
 
 fi
 
-    if test "$aros_kernel_cxx" = ""; then
+    # If it's set, make sure it's really there
+    if test "x$aros_kernel_cxx" != "x" ; then
+        if test "$aros_kernel_cxx" = ""; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+    fi
 
 if test "$aros_kernel_ld" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -10212,9 +10215,11 @@ fi
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
     orig_target_cxx="${aros_kernel_cxx}"
-    if test "$orig_target_cxx" = ""; then
+    if test "x$orig_target_cxx" != "x" ; then
+        if test "$orig_target_cxx" = ""; then
     as_fn_error $? "cxx is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+    fi
     orig_target_ld="${aros_kernel_ld}"
     if test "$orig_target_ld" = ""; then
     as_fn_error $? "ld is required to build AROS. Please install and run configure again." "$LINENO" 5
