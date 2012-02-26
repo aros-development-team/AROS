@@ -1465,7 +1465,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         if(hcsparams & EHSF_EXTPORTROUTING)
         {
             hc->hc_complexrouting = TRUE;
-            hc->hc_portroute = READREG64_LE(pciregbase, EHCI_HCSPPORTROUTE);
+            hc->hc_portroute = READREG32_LE(pciregbase, EHCI_HCSPPORTROUTE);
 #ifdef DEBUG
             for(cnt = 0; cnt < hc->hc_NumPorts; cnt++) {
                 KPRINTF(100, ("Port %ld maps to controller %ld\n", cnt, ((hc->hc_portroute >> (cnt<<2)) & 0xf)));
