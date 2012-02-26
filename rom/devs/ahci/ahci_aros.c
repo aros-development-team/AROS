@@ -36,7 +36,7 @@ void callout_stop(struct callout *co)
 static void callout_handler(struct callout *co, unsigned ticks, timeout_t *func, void *arg)
 {
     struct IORequest *io;
-    ULONG signals;
+    ULONG signals = 0;
     ULONG us = (ticks * 1000000) / hz;
 
     if ((io = ahci_OpenTimer())) {
