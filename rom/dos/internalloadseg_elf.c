@@ -479,6 +479,7 @@ static int relocate
             case R_ARM_CALL:
             case R_ARM_JUMP24:
             case R_ARM_PC24:
+            case R_ARM_PREL31:
             {
                 /* On ARM the 24 bit offset is shifted by 2 to the right */
                 signed long offset = (*p & 0x00ffffff) << 2;
