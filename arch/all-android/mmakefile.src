@@ -1,0 +1,7 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- includes-generate-linux-$(AROS_TARGET_CPU)-android: includes-generate-unix
+#MM- linklibs-linux-$(AROS_TARGET_CPU)-android: linklibs-unix
+
+%common
