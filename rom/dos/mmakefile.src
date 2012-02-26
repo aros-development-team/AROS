@@ -1,8 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+SVNREV        := $(shell svn info $(SRCDIR) | sed -n 's/Revision: //p')
 USER_INCLUDES := -I$(GENDIR)/$(CURDIR)
-USER_CFLAGS := -D__DOS_NOLIBBASE__
+USER_CFLAGS   := -D__DOS_NOLIBBASE__ -DISODATE="\"$(shell date '+%Y-%m-%d')\"" -DSVNREV=\"$(SVNREV)\"
 
 IMAGE_TYPES := aos elf
 
