@@ -11,6 +11,8 @@
     However we need to check whether it exists or not.
 */
 
+#ifndef __cplusplus
+
 /* People are allowed to define their own versions of these */
 #undef bool
 #undef true
@@ -27,5 +29,15 @@
 #if __STDC_VERSION__ < 199901L && (!defined __GNUC__ || __GNUC__ < 3)
 typedef int	_Bool;
 #endif
+
+#else /* __cplusplus */
+
+#define _Bool	bool
+#define bool	bool
+#define false	false
+#define true	true
+
+#endif /* __cplusplus */
+
 
 #endif /* _STDBOOL_H_ */
