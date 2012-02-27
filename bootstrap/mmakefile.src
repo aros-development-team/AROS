@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 FILES := elfloader
 
-USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/include -isystem $(GENINCDIR)
+USER_INCLUDES := -I $(SRCDIR)/$(CURDIR)/include -I $(GENINCDIR)
 
 %build_linklib mmake=linklibs-bootstrap libname=bootstrap files="$(FILES)" \
 	       compiler=kernel libdir=$(GENDIR)/lib
