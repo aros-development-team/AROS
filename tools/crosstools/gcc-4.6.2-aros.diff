@@ -801,7 +801,7 @@ diff -ruN gcc-4.6.2/gcc/config.gcc gcc-4.6.2.aros/gcc/config.gcc
  	tmake_file="rs6000/t-fprules rs6000/t-fprules-fpbit rs6000/t-rtems t-rtems rs6000/t-ppccomm"
  	;;
 +powerpc-*-aros*)
-+ 	tm_file="${tm_file} dbxelf.h elfos.h svr4.h freebsd-spec.h rs6000/sysv4.h aros.h"
++ 	tm_file="${tm_file} dbxelf.h elfos.h freebsd-spec.h rs6000/sysv4.h aros.h"
 + 	extra_options="${extra_options} rs6000/sysv4.opt"
 + 	tm_file="${tm_file} rs6000/aros.h"
 + 	xm_file=xm-aros.h
