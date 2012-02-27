@@ -1052,6 +1052,7 @@ emit_xpd(struct gen_context *gen, struct tgsi_full_instruction *inst)
 
    tmp_vec = ppc_allocate_vec_register(gen->f);
    tmp2_vec = ppc_allocate_vec_register(gen->f);
+   (void)tmp2_vec; // Unused
 
    if (IS_DST0_CHANNEL_ENABLED(*inst, CHAN_Y) ||
        IS_DST0_CHANNEL_ENABLED(*inst, CHAN_Z)) {
