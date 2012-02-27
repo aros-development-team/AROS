@@ -227,8 +227,15 @@ static BOOL dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
        		 AROS_UFCA(struct ExecBase *, SysBase, A6));
    }
 
+#ifdef __mc68000
    /* Device *was* BootBlock style, but couldn't boot. */
    return TRUE;
+#else
+   /* Device *was* BootBlock style, but couldn't boot.
+    * Non-m68k will try as DOS Boot anyway!
+    */
+   return FALSE;
+#endif
 }
 
 /* Attempt to boot via dos.library directly
