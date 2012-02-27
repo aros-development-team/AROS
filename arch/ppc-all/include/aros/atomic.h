@@ -130,7 +130,7 @@ static inline void atomic_dec_b(BYTE* p)
     }
 }
 
-static inline void atomic_and_b(UBYTE* p, UBYTE mask)
+static inline void atomic_and_b(UBYTE* p, ULONG mask)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -146,13 +146,13 @@ static inline void atomic_and_b(UBYTE* p, UBYTE mask)
               } un;
               
         un.new    = old;
-        un.a[rem] = b & mask;
+        un.a[rem] = b & (UBYTE)mask;
         
         success = set_atomic(addr, old, un.new);
     }
 }
 
-static inline void atomic_or_b(UBYTE* p, UBYTE mask)
+static inline void atomic_or_b(UBYTE* p, ULONG mask)
 {
     CONST IPTR  rem     = ((IPTR) p) % 4;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -168,7 +168,7 @@ static inline void atomic_or_b(UBYTE* p, UBYTE mask)
               } un;
               
         un.new    = old;
-        un.a[rem] = b | mask;
+        un.a[rem] = b | (UBYTE)mask;
         
         success = set_atomic(addr, old, un.new);
     }
@@ -218,7 +218,7 @@ static inline void atomic_dec_w(WORD* p)
     }
 }
 
-static inline void atomic_and_w(UWORD* p, UWORD mask)
+static inline void atomic_and_w(UWORD* p, ULONG mask)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -234,13 +234,13 @@ static inline void atomic_and_w(UWORD* p, UWORD mask)
               } un;
               
         un.new    = old;
-        un.a[rem] = w & mask;
+        un.a[rem] = w & (UWORD)mask;
         
         success = set_atomic(addr, old, un.new);
     }
 }
 
-static inline void atomic_or_w(UWORD* p, UWORD mask)
+static inline void atomic_or_w(UWORD* p, ULONG mask)
 {
     CONST IPTR  rem     = (((IPTR) p) % 4 ) / 2;
           IPTR* addr    = (IPTR*) (p - rem);
@@ -256,7 +256,7 @@ static inline void atomic_or_w(UWORD* p, UWORD mask)
               } un;
         
         un.new    = old;
-        un.a[rem] = w | mask;
+        un.a[rem] = w | (UWORD)mask;
         
         success = set_atomic(addr, old, un.new);
     }
