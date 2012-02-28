@@ -117,6 +117,7 @@
 #define RAWKEY_KP_0 	    0x0F
 #define RAWKEY_KP_DECIMAL   0x3C
 #define RAWKEY_KP_PLUS	    0x5E
+#define RAWKEY_KP_MINUS     0x4A
 #define RAWKEY_KP_ENTER     0x43
 
 /* Extra PC and multimedia keys (MorphOS-compatible) */
