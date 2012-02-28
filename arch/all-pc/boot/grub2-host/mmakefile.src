@@ -68,7 +68,9 @@ CONFIG_OPTS :=  --build=$(AROS_HOST_CPU)-$(AROS_HOST_ARCH)      \
 
 PC_MODS	    := biosdisk
 EFI_MODS    :=
-GRUB2_MODS  :=	fshelp part_msdos part_amiga part_gpt affs sfs ext2 hfsplus iso9660 minicmd
+GRUB2_MODS  :=	fshelp part_msdos part_amiga part_gpt \
+              	fat ntfs ntfscomp affs sfs ext2 hfsplus iso9660 \
+              	minicmd
 LST_FILES   :=	command fs moddep
 MKIMG_OPTS  :=	-O i386-pc -p /boot/grub
 MKIMG_EFI   :=  -O $(AROS_TARGET_CPU)-efi -p /EFI/BOOT/grub
