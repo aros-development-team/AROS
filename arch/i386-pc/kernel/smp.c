@@ -32,10 +32,10 @@ static void smp_Entry(volatile UBYTE *apicready)
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
 
-    D(bug("[SMP] smp_Entry[%d]: APIC base @ %p\n", _APICID, _APICBase));
-    D(bug("[SMP] smp_Entry[%d]: Ready lock 0x%p\n", _APICID, apicready));
+    D(bug("[SMP] smp_Entry[0x%02X]: APIC base @ 0x%p\n", _APICID, _APICBase));
+    D(bug("[SMP] smp_Entry[0x%02X]: Ready lock 0x%p\n", _APICID, apicready));
 
-    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC->count);
+    bug("[SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -71,7 +71,7 @@ int smp_Setup(void)
     CopyMem(&_binary_smpbootstrap_start, bs, (unsigned long)&_binary_smpbootstrap_size);
     pdata->kb_APIC_TrampolineBase = bs;
 
-    D(bug("[SMP] Copied APIC bootstrap code to %p\n", bs));
+    D(bug("[SMP] Copied APIC bootstrap code to 0x%p\n", bs));
 
     bs->IP = smp_Entry;
     return 1;
@@ -97,11 +97,11 @@ int smp_Wake(void)
     {
     	UBYTE apic_id = apic->cores[i].lapicID;
 
-    	D(bug("[SMP] Launching APIC %u (ID 0x%02X)\n", i, apic_id));
+    	D(bug("[SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apic_id));
  
 	/* First we need to allocate a stack for our CPU. */
 	_APICStackBase = AllocMem(STACK_SIZE, MEMF_CLEAR);
-	D(bug("[SMP] Allocated STACK for APIC ID 0x%02X @ %p\n", apic_id, _APICStackBase));
+	D(bug("[SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p\n", apic_id, _APICStackBase));
 	if (!_APICStackBase)
 		return 0;
 
@@ -124,10 +124,10 @@ int smp_Wake(void)
 	     * Previously we have set apicready to 0. When the core starts up,
 	     * it writes 1 there.
 	     */
-	    DWAKE(bug("[SMP] Waiting for APIC %u to initialise .. ", i));
+	    DWAKE(bug("[SMP] Waiting for APIC #%u to initialise .. ", i + 1));
 	    while (!apicready);
 
-	    D(bug("[SMP] APIC %u started up\n", i));
+	    D(bug("[SMP] APIC #%u started up\n", i + 1));
 	}
 	    D(else bug("[SMP] APIC wake() failed, status 0x%p\n", wakeresult));
     }

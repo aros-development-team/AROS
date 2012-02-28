@@ -16,7 +16,7 @@
 #include "apic.h"
 #include "apic_ia32.h"
 
-#define D(x) x
+#define D(x)
 
 /************************************************************************************************
                                     ACPI RELATED FUNCTIONS
@@ -70,14 +70,14 @@ AROS_UFH3(static IPTR, ACPI_hook_Table_LAPIC_Parse,
 	if (data->cores[0].lapicID == processor->id)
 	{
 	    /* This is the BSP, slot 0 is always reserved for it. */
-	    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering ACPI ID 0x%02X for BSP\n", processor->acpi_id));
+	    bug("[APIC-ACPI] Registering APIC [ID=0x%02X] for BSP\n", processor->id);
 
 	    data->cores[0].sysID = processor->acpi_id;
 	}
 	else
 	{
 	    /* Add one more AP */
-	    D(bug("[APIC-ACPI] (HOOK) ACPI_hook_Table_LAPIC_Parse: Registering APIC number %d [ID=0x%02X:0x%02X]\n", data->count, processor->id, processor->acpi_id));
+	    bug("[APIC-ACPI] Registering APIC [ID=0x%02X:0x%02X]\n", processor->id, processor->acpi_id);
 
 	    data->cores[data->count].lapicID = processor->id;
 	    data->cores[data->count].sysID   = processor->acpi_id;
@@ -285,7 +285,7 @@ struct APICData *acpi_APIC_Init(struct ACPIBase *ACPIBase)
         data->count	= 1;		/* Only one CPU is running right now */
         data->flags     = madt->flags.pcat_compat ? APF_8259 : 0;
 
-        D(bug("[APIC-ACPI] Local APIC address 0x%08x; Flags 0x%04X\n", data->lapicBase, data->flags));
+        bug("[APIC-ACPI] Local APIC address 0x%08x; Flags 0x%04X\n", data->lapicBase, data->flags);
 
         /*
      	 * The local APIC base address is obtained from the MADT (32-bit value) and
@@ -299,7 +299,7 @@ struct APICData *acpi_APIC_Init(struct ACPIBase *ACPIBase)
 
 	/* Now fill in IDs (both HW and ACPI) of the rest APICs */
 	ACPI_ScanEntries(&madt->header, ACPI_MADT_LAPIC, &ACPI_TableParse_LAPIC_hook, data);
-	D(bug("[APIC-ACPI] System Total APICs: %d\n", data->count));
+	bug("[APIC-ACPI] System Total APICs: %d\n", data->count);
 
 	/* Initialize LAPIC for ourselves (CPU #0) */
 	acpi_APIC_InitCPU(data, 0);

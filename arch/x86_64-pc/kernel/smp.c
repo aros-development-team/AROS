@@ -36,14 +36,14 @@ static void smp_Entry(IPTR stackBase, volatile UBYTE *apicready, struct KernelBa
     _APICID   = core_APIC_GetID(_APICBase);
     _APICNO   = core_APIC_GetNumber(KernelBase->kb_PlatformData->kb_APIC);
 
-    D(bug("[SMP] smp_Entry[%d]: launching on AP APIC ID %d, base @ %p\n", _APICID, _APICID, _APICBase));
-    D(bug("[SMP] smp_Entry[%d]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
-    D(bug("[SMP] smp_Entry[%d]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
+    D(bug("[SMP] smp_Entry[0x%02X]: launching on AP APIC ID 0x%02X, base @ 0x%p\n", _APICID, _APICID, _APICBase));
+    D(bug("[SMP] smp_Entry[0x%02X]: KernelBootPrivate 0x%p, stack base 0x%p\n", _APICID, __KernBootPrivate, stackBase));
+    D(bug("[SMP] smp_Entry[0x%02X]: Stack base 0x%p, ready lock 0x%p\n", _APICID, stackBase, apicready));
 
     /* Set up GDT and LDT for our core */
     core_CPUSetup(_APICID, stackBase);
 
-    bug("[SMP] APIC No. %d of %d Going IDLE (Halting)...\n", _APICNO, KernelBase->kb_PlatformData->kb_APIC->count);
+    bug("[SMP] APIC #%u of %u Going IDLE (Halting)...\n", _APICNO + 1, KernelBase->kb_PlatformData->kb_APIC->count);
 
     /* Signal the bootstrap core that we are running */
     *apicready = 1;
@@ -81,7 +81,7 @@ static int smp_Setup(struct KernelBase *KernelBase)
     CopyMem(&_binary_smpbootstrap_start, bs, (unsigned long)&_binary_smpbootstrap_size);
     pdata->kb_APIC_TrampolineBase = bs;
 
-    D(bug("[SMP] Copied APIC bootstrap code to %p\n", bs));
+    D(bug("[SMP] Copied APIC bootstrap code to 0x%p\n", bs));
 
     /*
      * Store constant arguments in bootstrap's data area
@@ -117,14 +117,14 @@ static int smp_Wake(struct KernelBase *KernelBase)
     {
     	UBYTE apic_id = apic->cores[i].lapicID;
 
-    	D(bug("[SMP] Launching APIC %u (ID %u)\n", i, apic_id));
+    	D(bug("[SMP] Launching APIC #%u (ID 0x%02X)\n", i + 1, apic_id));
  
 	/*
 	 * First we need to allocate a stack for our CPU.
 	 * We allocate the same three stacks as in core_CPUSetup().
 	 */
 	_APICStackBase = AllocMem(STACK_SIZE * 3, MEMF_CLEAR);
-	D(bug("[SMP] Allocated STACK for APIC ID %d @ %p ..\n", apic_id, _APICStackBase));
+	D(bug("[SMP] Allocated STACK for APIC ID 0x%02X @ 0x%p ..\n", apic_id, _APICStackBase));
 	if (!_APICStackBase)
 		return 0;
 
@@ -148,10 +148,10 @@ static int smp_Wake(struct KernelBase *KernelBase)
 	     * Previously we have set apicready to 0. When the core starts up,
 	     * it writes 1 there.
 	     */
-	    DWAKE(bug("[SMP] Waiting for APIC %u to initialise .. ", i));
+	    DWAKE(bug("[SMP] Waiting for APIC #%u to initialise .. ", i + 1));
 	    while (!apicready);
 
-	    D(bug("[SMP] APIC %u started up\n", i));
+	    D(bug("[SMP] APIC #%u started up\n", i + 1));
 	}
 	    D(else bug("[SMP] core_APIC_Wake() failed, status 0x%p\n", wakeresult));
     }
