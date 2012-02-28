@@ -32,6 +32,8 @@ query :
 	@$(ECHO) "HOST_CPP       : $(HOST_CPP)"
 	@$(ECHO) "HOST_CC        : $(HOST_CC)"
 	@$(ECHO) "HOST_CFLAGS    : $(HOST_CFLAGS)"
+	@$(ECHO) "HOST_CXX       : $(HOST_CXX)"
+	@$(ECHO) "HOST_CXXFLAGS  : $(HOST_CXXFLAGS)"
 	@$(ECHO) "HOST_LD        : $(HOST_LD)"
 	@$(ECHO) "HOST_LDFLAGS   : $(HOST_LDFLAGS)"
 	@$(ECHO) "KERNEL_CPP     : $(KERNEL_CPP)"
