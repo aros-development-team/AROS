@@ -15,6 +15,7 @@
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
+#include <devices/rawkeycodes.h>
 #include <zune/customclasses.h>
 
 #include "keyboardgroup_class.h"
@@ -107,52 +108,52 @@ static struct Key *read_keymap(void)
             }
         }
         // Qualifier keys
-        set_immutable_key(key, 96, _(MSG_KEY_SHIFT));   // Left Shift
-        set_immutable_key(key, 97, _(MSG_KEY_SHIFT));   // Right Shift
-        set_immutable_key(key, 98, _(MSG_KEY_LOCK));    // Caps Lock
-        set_immutable_key(key, 99, _(MSG_KEY_CTRL));    // (Left) Ctrl
-        set_immutable_key(key, 100, _(MSG_KEY_ALT));    // Left Alt
-        set_immutable_key(key, 101, _(MSG_KEY_ALT));    // Right Alt
+        set_immutable_key(key, RAWKEY_LSHIFT, _(MSG_KEY_SHIFT));
+        set_immutable_key(key, RAWKEY_RSHIFT, _(MSG_KEY_SHIFT));
+        set_immutable_key(key, RAWKEY_CAPSLOCK, _(MSG_KEY_LOCK));
+        set_immutable_key(key, RAWKEY_LCONTROL, _(MSG_KEY_CTRL));
+        set_immutable_key(key, RAWKEY_LALT, _(MSG_KEY_ALT));
+        set_immutable_key(key, RAWKEY_RALT, _(MSG_KEY_ALT));
         
         // Special keys
-        set_immutable_key(key, 76, "\033I[6:11]");      // Cursor
-        set_immutable_key(key, 77, "\033I[6:12]");
-        set_immutable_key(key, 78, "\033I[6:14]");
-        set_immutable_key(key, 79, "\033I[6:13]");
+        set_immutable_key(key, RAWKEY_UP, "\033I[6:11]");
+        set_immutable_key(key, RAWKEY_DOWN, "\033I[6:12]");
+        set_immutable_key(key, RAWKEY_RIGHT, "\033I[6:14]");
+        set_immutable_key(key, RAWKEY_LEFT, "\033I[6:13]");
 
-        set_immutable_key(key, 65, "^H");               // Backspace
-        set_immutable_key(key, 66, "^I");               // Tab
-        set_immutable_key(key, 68, "^M");               // Enter
-        set_immutable_key(key, 69, "^[");               // Esc
-        set_immutable_key(key, 95, _(MSG_KEY_HELP));
-        set_immutable_key(key, 80, "F1");
-        set_immutable_key(key, 81, "F2");
-        set_immutable_key(key, 82, "F3");
-        set_immutable_key(key, 83, "F4");
-        set_immutable_key(key, 84, "F5");
-        set_immutable_key(key, 85, "F6");
-        set_immutable_key(key, 86, "F7");
-        set_immutable_key(key, 87, "F8");
-        set_immutable_key(key, 88, "F9");
-        set_immutable_key(key, 89, "F10");
-        set_immutable_key(key, 75, "F11");
-        set_immutable_key(key, 111, "F12");
-        set_immutable_key(key, 102, _(MSG_KEY_A));      // Left A
-        set_immutable_key(key, 103, _(MSG_KEY_A));      // Right A
+        set_immutable_key(key, RAWKEY_BACKSPACE, "^H");
+        set_immutable_key(key, RAWKEY_TAB, "^I");
+        set_immutable_key(key, RAWKEY_RETURN, "^M");
+        set_immutable_key(key, RAWKEY_ESCAPE, "^[");
+        set_immutable_key(key, RAWKEY_HELP, _(MSG_KEY_HELP));
+        set_immutable_key(key, RAWKEY_F1, "F1");
+        set_immutable_key(key, RAWKEY_F2, "F2");
+        set_immutable_key(key, RAWKEY_F3, "F3");
+        set_immutable_key(key, RAWKEY_F4, "F4");
+        set_immutable_key(key, RAWKEY_F5, "F5");
+        set_immutable_key(key, RAWKEY_F6, "F6");
+        set_immutable_key(key, RAWKEY_F7, "F7");
+        set_immutable_key(key, RAWKEY_F8, "F8");
+        set_immutable_key(key, RAWKEY_F9, "F9");
+        set_immutable_key(key, RAWKEY_F10, "F10");
+        set_immutable_key(key, RAWKEY_F11, "F11");
+        set_immutable_key(key, RAWKEY_F12, "F12");
+        set_immutable_key(key, RAWKEY_LAMIGA, _(MSG_KEY_A));
+        set_immutable_key(key, RAWKEY_RAMIGA, _(MSG_KEY_A));
 
-        set_immutable_key(key, 71, _(MSG_KEY_INSERT));
-        set_immutable_key(key, 112, _(MSG_KEY_HOME));
-        set_immutable_key(key, 72, _(MSG_KEY_PAGEUP));
-        set_immutable_key(key, 70, _(MSG_KEY_DELETE));
-        set_immutable_key(key, 113, _(MSG_KEY_END));
-        set_immutable_key(key, 73, _(MSG_KEY_PAGEDOWN));
+        set_immutable_key(key, RAWKEY_INSERT, _(MSG_KEY_INSERT));
+        set_immutable_key(key, RAWKEY_HOME, _(MSG_KEY_HOME));
+        set_immutable_key(key, RAWKEY_PAGEUP, _(MSG_KEY_PAGEUP));
+        set_immutable_key(key, RAWKEY_DELETE, _(MSG_KEY_DELETE));
+        set_immutable_key(key, RAWKEY_END, _(MSG_KEY_END));
+        set_immutable_key(key, RAWKEY_PAGEDOWN, _(MSG_KEY_PAGEDOWN));
 
-        set_immutable_key(key, 90, _(MSG_KEY_NUM));
-        set_immutable_key(key, 91, "/");
-        set_immutable_key(key, 92, "*");
-        set_immutable_key(key, 93, "-");
-        set_immutable_key(key, 94, "+");
-        set_immutable_key(key, 67, "^M");               // Numpad Enter
+        set_immutable_key(key, RAWKEY_NUMLOCK, _(MSG_KEY_NUM));
+        set_immutable_key(key, RAWKEY_KP_DIVIDE, "/");
+        set_immutable_key(key, RAWKEY_KP_MULTIPLY, "*");
+        set_immutable_key(key, RAWKEY_KP_MINUS, "-");
+        set_immutable_key(key, RAWKEY_KP_PLUS, "+");
+        set_immutable_key(key, RAWKEY_KP_ENTER, "^M");
 
         set_immutable_key(key, 127, _(MSG_KEY_CTRL));   // Pseudo right Ctrl
     }
@@ -162,18 +163,49 @@ static struct Key *read_keymap(void)
 AROS_UFH3S(void, change_qualifier_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, obj, A2),
-    AROS_UFHA(APTR, msg, A1))
+    AROS_UFHA(ULONG *, msg, A1))
 {
     AROS_USERFUNC_INIT
 
     struct KeyboardGroup_DATA *data = h->h_Data;
 
     ULONG i;
-    BOOL shift = XGET(data->keybutton[96], MUIA_Pressed) | XGET(data->keybutton[97], MUIA_Pressed);
-    BOOL alt = XGET(data->keybutton[100], MUIA_Pressed) | XGET(data->keybutton[101], MUIA_Pressed);
-    BOOL ctrl = XGET(data->keybutton[99], MUIA_Pressed) | XGET(data->keybutton[127], MUIA_Pressed);
+    ULONG selectedkey = msg[0];
+    BOOL keydown = msg[1];
 
-    D(bug("[keyshow/change_qualifier_func] shift %d alt %d ctrl %d\n", shift, alt, ctrl));
+    BOOL shift = XGET(data->keybutton[96], MUIA_Selected) | XGET(data->keybutton[97], MUIA_Selected);
+    BOOL alt = XGET(data->keybutton[100], MUIA_Selected) | XGET(data->keybutton[101], MUIA_Selected);
+    BOOL ctrl = XGET(data->keybutton[99], MUIA_Selected) | XGET(data->keybutton[127], MUIA_Selected);
+
+    D(bug("[keyshow/change_qualifier_func] old: shift %d alt %d ctrl %d key %d trigger %d\n", shift, alt, ctrl, selectedkey, keydown));
+
+    if (keydown)
+    {
+        if ((selectedkey == RAWKEY_LSHIFT) || (selectedkey == RAWKEY_RSHIFT))
+            shift = TRUE;
+        else if ((selectedkey == RAWKEY_LALT) || (selectedkey == RAWKEY_RALT))
+            alt = TRUE;
+        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == 127))
+            ctrl = TRUE;
+    }
+    else
+    {
+        if ((selectedkey == RAWKEY_LSHIFT) || (selectedkey == RAWKEY_RSHIFT))
+            shift = FALSE;
+        else if ((selectedkey == RAWKEY_LALT) || (selectedkey == RAWKEY_RALT))
+            alt = FALSE;
+        else if ((selectedkey == RAWKEY_LCONTROL) || (selectedkey == 127))
+            ctrl = FALSE;
+    }
+
+    NNSET(data->keybutton[RAWKEY_LSHIFT], MUIA_Selected, shift);
+    NNSET(data->keybutton[RAWKEY_RSHIFT], MUIA_Selected, shift);
+    NNSET(data->keybutton[RAWKEY_LALT], MUIA_Selected, alt);
+    NNSET(data->keybutton[RAWKEY_RALT], MUIA_Selected, alt);
+    NNSET(data->keybutton[RAWKEY_LCONTROL], MUIA_Selected, ctrl);
+    NNSET(data->keybutton[127], MUIA_Selected, ctrl);
+
+    D(bug("[keyshow/change_qualifier_func] new: shift %d alt %d ctrl %d key %d trigger %d\n", shift, alt, ctrl, selectedkey, keydown));
 
     if (shift && !alt && !ctrl)
     {
@@ -293,8 +325,9 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         Child, VGroup,
             GroupFrame,
             Child, HGroup,
-                MUIA_Group_SameSize, TRUE,
-                KEY(69), KEY(80), KEY(81), KEY(82), KEY(83), KEY(84), KEY(85), KEY(86), KEY(87), KEY(88), KEY(89), KEY(75), KEY(111),
+                //MUIA_Group_SameSize, TRUE,
+                KEY(RAWKEY_ESCAPE), KEY(RAWKEY_F1), KEY(RAWKEY_F2), KEY(RAWKEY_F3), KEY(RAWKEY_F4), KEY(RAWKEY_F5),
+                KEY(RAWKEY_F6), KEY(RAWKEY_F7), KEY(RAWKEY_F8), KEY(RAWKEY_F9), KEY(RAWKEY_F10), KEY(RAWKEY_F11), KEY(RAWKEY_F12),
             End,
             Child, VSpace(5),
             Child, HGroup,
@@ -302,18 +335,18 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     MUIA_Group_SameSize, TRUE,
                     KEY(0), KEY(1), KEY(2), KEY(3), KEY(4), KEY(5), KEY(6), KEY(7), KEY(8), KEY(9), KEY(10), KEY(11), KEY(12), KEY(13),
                 End,
-                KEY(65),
+                KEY(RAWKEY_BACKSPACE),
             End,
             Child, HGroup,
-                KEY(66),
+                KEY(RAWKEY_TAB),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
                     KEY(16), KEY(17), KEY(18), KEY(19), KEY(20), KEY(21), KEY(22), KEY(23), KEY(24), KEY(25), KEY(26), KEY(27),
                 End,
-                KEY(68),
+                KEY(RAWKEY_RETURN),
             End,
             Child, HGroup,
-                KEY(98),
+                KEY(RAWKEY_CAPSLOCK),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
                     KEY(32), KEY(33), KEY(34), KEY(35), KEY(36), KEY(37), KEY(38), KEY(39), KEY(40), KEY(41), KEY(42), KEY(43),
@@ -321,55 +354,55 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                 Child, HVSpace,
             End,
             Child, HGroup,
-                KEY(96),
+                KEY(RAWKEY_LSHIFT),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
                     KEY(48), KEY(49), KEY(50), KEY(51), KEY(52), KEY(53), KEY(54), KEY(55), KEY(56), KEY(57), KEY(58),
                 End,
-                KEY(97),
+                KEY(RAWKEY_RSHIFT),
             End,
             Child, HGroup,
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
-                    KEY(99), KEY(102), KEY(100),
+                    KEY(RAWKEY_LCONTROL), KEY(RAWKEY_LAMIGA), KEY(RAWKEY_LALT),
                 End,
-                KEY(64),
+                KEY(RAWKEY_SPACE),
                 Child, HGroup,
                     MUIA_Group_SameSize, TRUE,
-                    KEY(101), KEY(103), KEY(95), KEY(127),
+                    KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), KEY(127),
                 End,
             End,
         End,
         Child, VGroup,
             Child, ColGroup(3),
                 GroupFrame,
-                MUIA_Group_SameSize, TRUE,
-                KEY(71), KEY(112), KEY(72),
-                KEY(70), KEY(113), KEY(73),
+                //MUIA_Group_SameSize, TRUE,
+                KEY(RAWKEY_INSERT), KEY(RAWKEY_HOME), KEY(RAWKEY_PAGEUP),
+                KEY(RAWKEY_DELETE), KEY(RAWKEY_END), KEY(RAWKEY_PAGEDOWN),
             End,
             Child, HVSpace,
             Child, ColGroup(3),
                 GroupFrame,
                 MUIA_Group_SameSize, TRUE,
                 Child, HVSpace,
-                KEY(76),
+                KEY(RAWKEY_UP),
                 Child, HVSpace,
-                KEY(79), KEY(77), KEY(78),
+                KEY(RAWKEY_LEFT), KEY(RAWKEY_DOWN), KEY(RAWKEY_RIGHT),
             End,
         End,
         Child, VGroup,
             Child, HVSpace,
-                Child, ColGroup(4),
+            Child, ColGroup(4),
                 GroupFrame,
                 MUIA_Group_SameSize, TRUE,
-                KEY(90), KEY(91), KEY(92), KEY(93),
-                KEY(61), KEY(62), KEY(63), KEY(94),
-                KEY(45), KEY(46), KEY(47), Child, HVSpace,
-                KEY(29), KEY(30), KEY(31), KEY(67),
-                KEY(15), Child, HVSpace, KEY(60), Child, HVSpace,
+                KEY(RAWKEY_NUMLOCK), KEY(RAWKEY_KP_DIVIDE), KEY(RAWKEY_KP_MULTIPLY), KEY(RAWKEY_KP_MINUS),
+                KEY(RAWKEY_KP_7), KEY(RAWKEY_KP_8), KEY(RAWKEY_KP_9), KEY(RAWKEY_KP_PLUS),
+                KEY(RAWKEY_KP_4), KEY(RAWKEY_KP_5), KEY(RAWKEY_KP_6), Child, HVSpace,
+                KEY(RAWKEY_KP_1), KEY(RAWKEY_KP_2), KEY(RAWKEY_KP_3), KEY(RAWKEY_KP_ENTER),
+                KEY(RAWKEY_KP_0), Child, HVSpace, KEY(RAWKEY_KP_DECIMAL), Child, HVSpace,
             End,
         End,
-        TAG_DONE
+        TAG_MORE, (IPTR)message->ops_AttrList
     );
 
     if (self)
@@ -390,14 +423,14 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         {
             DoMethod
             (
-                data->keybutton[i], MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,
-                self, 2, MUIM_CallHook, &data->change_qualifier_hook
+                data->keybutton[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+                self, 4, MUIM_CallHook, &data->change_qualifier_hook, i, MUIV_TriggerValue
             );
         }
         DoMethod
         (
-            data->keybutton[127], MUIM_Notify, MUIA_Pressed, MUIV_EveryTime,
-            self, 2, MUIM_CallHook, &data->change_qualifier_hook
+            data->keybutton[127], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+            self, 4, MUIM_CallHook, &data->change_qualifier_hook, 127, MUIV_TriggerValue
         );
     }
     return self;
@@ -448,8 +481,8 @@ IPTR KeyboardGroup__MUIM_HandleInput(Class *CLASS, Object *obj, struct MUIP_Hand
                     Object *btn = data->keybutton[msg->imsg->Code];
                     if (btn)
                     {
-                        SET(btn, MUIA_Selected, XGET(btn, MUIA_Selected) ? FALSE : TRUE); // FIXME: this doesn't trigger the callback hook
-                        MUI_Redraw(obj, MADF_DRAWUPDATE);
+                        SET(btn, MUIA_Selected, XGET(btn, MUIA_Selected) ? FALSE : TRUE);
+                        //MUI_Redraw(obj, MADF_DRAWUPDATE);
                     }
                 }
             }
