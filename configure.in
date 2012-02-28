@@ -80,6 +80,7 @@ dnl copying files around and the like.
 # Check for a compiler.
 AC_PROG_CC
 AC_PROG_CC_STDC
+AC_PROG_CXX
 AC_PROG_CPP
 
 # Check for a compatible awk
@@ -92,10 +93,12 @@ AROS_PROG(MMAKE,mmake)
 
 aros_host_cpp="$CPP"
 aros_host_cc="$CC"
+aros_host_cxx="$CXX"
 AROS_TOOL_CCPATH(aros_host_ld,ld)
 AROS_REQUIRED(ld,$aros_host_ld)
 aros_host_make="make"
 aros_host_cflags=$CFLAGS
+aros_host_cxxflags=$CXXFLAGS
 aros_host_ldflags=$LDFLAGS
 aros_host_debug="-g -O0"
 aros_host_mkdep="\$(SRCDIR)/scripts/mkdep"
@@ -2391,11 +2394,13 @@ AC_SUBST(aros_host_arch)
 AC_SUBST(aros_host_cpu)
 AC_SUBST(aros_host_cpp)
 AC_SUBST(aros_host_cc)
+AC_SUBST(aros_host_cxx)
 AC_SUBST(aros_host_ar)
 AC_SUBST(aros_host_ranlib)
 AC_SUBST(aros_host_ld)
 AC_SUBST(aros_host_make)
 AC_SUBST(aros_host_cflags)
+AC_SUBST(aros_host_cxxflags)
 AC_SUBST(gnu89_inline)
 AC_SUBST(aros_host_ldflags)
 AC_SUBST(aros_host_debug)

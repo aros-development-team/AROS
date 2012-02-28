@@ -2428,7 +2428,7 @@ ifeq (%(compiler),host)
         CPP="$(HOST_CPP)" \
         CXXCPP="$(HOST_CPP)" \
         CC="$(HOST_CC) $(HOST_CFLAGS) -L$(CROSSTOOLSDIR)/lib -I$(CROSSTOOLSDIR)/include" \
-        CXX="$(HOST_CXX) $(HOST_CFLAGS) -L$(CROSSTOOLSDIR)/lib -I$(CROSSTOOLSDIR)/include" \
+        CXX="$(HOST_CXX) $(HOST_CXXFLAGS) -L$(CROSSTOOLSDIR)/lib -I$(CROSSTOOLSDIR)/include" \
         TARGET_CC="$(KERNEL_CC) $(KERNEL_CFLAGS) $(%(mmake)-s_flag)" \
         TARGET_AS="$(TARGET_AS)" OBJCOPY="$(OBJCOPY)" \
         TARGET_RANLIB="$(RANLIB)" TARGET_STRIP="$(STRIP_PLAIN)"
