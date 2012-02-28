@@ -16,6 +16,8 @@
 
 const char version[] = "$VER: InitPrinter 1.0 (27.02.2012) © AROS Dev Team";
 
+char __stdiowin[]="CON:/30/400/100/InitPrinter/AUTO/CLOSE/WAIT";
+
 enum
 {
     ARG_UNIT,
