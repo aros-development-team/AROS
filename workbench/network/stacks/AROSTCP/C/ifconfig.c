@@ -265,6 +265,20 @@ struct afswtch *afp;	/*the address family being set or asked about*/
 
 struct afswtch *lookup_af __P((const char *));
 
+static void __close_bsdsocket()
+{
+	if (MiamiBase != NULL)
+	{
+		CloseLibrary(MiamiBase);
+		MiamiBase = NULL;
+	}
+	if (SocketBase != NULL)
+	{
+		CloseLibrary(SocketBase);
+		SocketBase = NULL;
+	}
+}
+
 int
 main(argc, argv)
 	int argc;
@@ -275,12 +289,13 @@ main(argc, argv)
 #if defined(__AROS__)
    if (!(SocketBase = OpenLibrary(socket_name, SOCKET_VERSION)))
    {
-      return RETURN_FAIL;   
+      return RETURN_FAIL;
    }
    if (!(MiamiBase = OpenLibrary("miami.library", 0)))
    {
-      return RETURN_FAIL;   
+      return RETURN_FAIL;
    }
+	atexit(__close_bsdsocket);
 #endif
 
 	/* Parse command-line options */
