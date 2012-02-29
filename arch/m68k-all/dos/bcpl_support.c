@@ -31,7 +31,7 @@ extern void BCPL_dummy(void);
 #define BCPL(id, name) \
 	[(BCPL_GlobVec_NegSize + id)>>2] = (ULONG)BCPL_##name,
 
-const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize] = {
+const ULONG BCPL_GlobVec[(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize) >> 2] = {
 #include "bcpl.inc"
 };
 #undef BCPL
