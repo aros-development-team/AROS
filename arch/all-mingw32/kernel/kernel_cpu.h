@@ -41,19 +41,23 @@ struct KernelInterface
     void 	 (*core_putc)(char c);
     int		 (*core_getc)(void);
     void	 (*core_alert)(const char *text);
-    int		 (**TrapVector)(unsigned int num, IPTR *args, CONTEXT *regs);
-    int		 (**IRQVector)(unsigned char *irqs, CONTEXT *regs);
-    volatile int 	   *IntState;
-    volatile int 	   *SuperState;
-    volatile unsigned char *SleepState;
-    volatile ULONG	   **LastErrorPtr;
+    void	 (*Set_TrapVector)(void *TrapVector);
+    void	 (*Set_IRQVector)(void *IRQVector);
+    int		 (*Get_SuperState)(void);
+    void	 (*Set_IntState)(int state);
+    unsigned char (*Get_SleepState)(void);
+    void	 (*Set_SleepState)(unsigned char state);
+    ULONG	 (*Get_LastError)(void);
+    void	 (*Set_LastError)(ULONG err);
 };
 
 extern struct KernelInterface KernelIFace;
 
-#define krnSysCall(n) KernelIFace.core_raise(AROS_EXCEPTION_SYSCALL, n)
-#define Sleep_Mode   (*KernelIFace.SleepState)
-#define LastErrorPtr (*KernelIFace.LastErrorPtr)
+#define krnSysCall(n)           KernelIFace.core_raise(AROS_EXCEPTION_SYSCALL, n)
+#define Sleep_Mode              KernelIFace.Get_SleepState()
+#define Set_Sleep_Mode(x)       KernelIFace.Set_SleepState(x)
+#define SetLastError(err)       KernelIFace.Set_LastError(err)
+#define GetLastError(err)       KernelIFace.Get_LastError(err)
 
 #endif
 

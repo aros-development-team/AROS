@@ -12,8 +12,8 @@ AROS_LH0I(void, KrnSti,
      * be enabled upon leaving supervisor mode by core_LeaveInterrupt().
      * Otherwise we can end up in nested interrupts
      */
-    if (*KernelIFace.SuperState == 0)
-	*KernelIFace.IntState = INT_ENABLE;
+    if (KernelIFace.Get_SuperState() == 0)
+	KernelIFace.Set_IntState(INT_ENABLE);
 
     AROS_LIBFUNC_EXIT
 }

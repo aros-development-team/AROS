@@ -128,7 +128,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
         /* Restore saved context and continue */
 	ctx = (struct AROSCPUContext *)args[0];
 	RESTOREREGS(regs, ctx);
-	*LastErrorPtr = ctx->LastError;
+	SetLastError(ctx->LastError);
 	break;
 
     default:

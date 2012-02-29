@@ -32,7 +32,7 @@ static DWORD WINAPI ResolverThread(struct SocketController *ctl)
     }
 }
 
-struct SocketController * __declspec(dllexport) sock_init(void)
+struct SocketController * __declspec(dllexport) __aros sock_init(void)
 {
     struct WSAData wsdata;
     HANDLE thread;
@@ -77,7 +77,7 @@ struct SocketController * __declspec(dllexport) sock_init(void)
     return NULL;
 }
 
-int __declspec(dllexport) sock_shutdown(struct SocketController *ctl)
+int __declspec(dllexport) __aros sock_shutdown(struct SocketController *ctl)
 {
     int res = WSACleanup();
     
