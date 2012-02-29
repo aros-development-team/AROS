@@ -40,7 +40,7 @@ int __nocommandline = 1;
 static ULONG AddDisplays(ULONG num)
 {
     struct GDIBase *GDIBase;
-    OOP_Object *gfxclass;
+    OOP_Class *gfxclass;
     ULONG old;
     ULONG i;
 

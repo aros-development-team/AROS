@@ -544,12 +544,10 @@ VOID GDICl__Hidd_Gfx__CopyBox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Cop
 {
     APTR src = NULL, dest = NULL;
     ULONG drmd;
-    struct gfx_data *data;
     IPTR xoffset, yoffset;
     
     EnterFunc(bug("[GDI] hidd.gfx.wingdi::CopyBox(0x%p(%lu, %lu, %lu, %lu) -> 0x%p(%lu, %lu)\n", msg->src, msg->srcX, msg->srcY, msg->width, msg->height,
     		  msg->dest, msg->destX, msg->destY));
-    data = OOP_INST_DATA(cl, o);
     
     OOP_GetAttr(msg->src,  aHidd_GDIBitMap_DeviceContext, (IPTR *)&src);
     OOP_GetAttr(msg->dest, aHidd_GDIBitMap_DeviceContext, (IPTR *)&dest);

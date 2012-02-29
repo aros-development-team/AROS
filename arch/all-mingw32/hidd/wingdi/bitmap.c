@@ -510,10 +510,14 @@ OOP_Object *GDIBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
 
     /* Get the device context from the friend bitmap */
-/*  if (NULL != friend)
+#if 0
+    if (NULL != friend)
     {
         OOP_GetAttr(friend, aHidd_GDIBitMap_Drawable, (IPTR *)&friend_drawable);
-    }*/
+    }
+#else
+    (void)friend; // Unused
+#endif
 
     D(bug("Creating GDI bitmap: %ldx%ldx%ld\n", width, height, depth));
     display = (APTR)GetTagData(aHidd_GDIBitMap_SysDisplay, 0, msg->attrList);

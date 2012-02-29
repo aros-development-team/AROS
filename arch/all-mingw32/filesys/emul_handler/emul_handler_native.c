@@ -51,7 +51,9 @@ static DWORD WINAPI EmulThread(struct AsyncReaderControl *emsg)
 
         case ASYNC_CMD_READ:
 	    DASYNC(printf("[EmulHandler I/O] READ %lu bytes at 0x%p, file 0x%p\n", emsg->len, emsg->addr, emsg->fh));
-	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &emsg->actual, NULL);
+	    DWORD actual;
+	    res = ReadFile(emsg->fh, emsg->addr, emsg->len, &actual, NULL);
+	    emsg->actual = actual;
 	    emsg->error = res ? 0 : GetLastError();
 	    DASYNC(printf("[EmulHandler I/O] %lu bytes transferred, result %ld, error %lu\n", emsg->actual, res, emsg->error));
 	    KrnCauseIRQ(emsg->IrqNum);
