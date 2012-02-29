@@ -28,12 +28,12 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
-         int           __declspec(dllexport) __aros (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-         int           __declspec(dllexport) __aros (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
-volatile int           __declspec(dllexport) Ints_Enabled;
-volatile int           __declspec(dllexport) Supervisor;
-volatile unsigned char __declspec(dllexport) Sleep_Mode;
-volatile DWORD *       __declspec(dllexport) LastErrorPtr;
+         int           (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
+         int           (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+         int           Ints_Enabled;
+         int           Supervisor;
+         unsigned char Sleep_Mode;
+         DWORD *       LastErrorPtr;
 
 /*
  * This can't be placed on stack because noone knows
@@ -351,6 +351,48 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
     return 0;
 }
 
+/* Host side KernelInterface API */
+void __declspec(dllexport) __aros Set_TrapVector(void *trapVector)
+{
+    TrapVector = trapVector;
+}
+
+void __declspec(dllexport) __aros Set_IRQVector(void *irqVector)
+{
+    IRQVector = irqVector;
+}
+
+void __declspec(dllexport) __aros Set_SleepMode(unsigned char state)
+{
+    Sleep_Mode = state;
+}
+
+unsigned char __declspec(dllexport) __aros Get_SleepMode(void)
+{
+    return Sleep_Mode;
+}
+
+void __declspec(dllexport) __aros Set_IntState(int state)
+{
+    Ints_Enabled = state;
+}
+
+int __declspec(dllexport) __aros Get_SuperState(void)
+{
+    return Supervisor;
+}
+
+DWORD __declspec(dllexport) __aros Get_LastError(void)
+{
+    return *LastErrorPtr;
+}
+
+void __declspec(dllexport) __aros Set_LastError(DWORD err)
+{
+    *LastErrorPtr = err;
+}
+
+
 /*
  * The following is host-side IRQ API.
  *
@@ -359,7 +401,7 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
  *
  */
 
-int __declspec(dllexport) KrnAllocIRQ(void)
+int __declspec(dllexport) __aros KrnAllocIRQ(void)
 {
     int irq;
 
@@ -386,7 +428,8 @@ int __declspec(dllexport) KrnAllocIRQ(void)
     return -1;
 }
 
-void __declspec(dllexport) KrnFreeIRQ(unsigned char irq)
+
+void __declspec(dllexport) __aros KrnFreeIRQ(unsigned char irq)
 {
     AllocatedInts[irq] = 0;
 
@@ -394,12 +437,12 @@ void __declspec(dllexport) KrnFreeIRQ(unsigned char irq)
         Ints_Num--;
 }
 
-void *__declspec(dllexport) KrnGetIRQObject(unsigned char irq)
+void *__declspec(dllexport) __aros KrnGetIRQObject(unsigned char irq)
 {
     return IntObjects[irq];
 }
 
-unsigned long __declspec(dllexport) KrnCauseIRQ(unsigned char irq)
+unsigned long __declspec(dllexport) __aros KrnCauseIRQ(unsigned char irq)
 {
     unsigned long res;
 

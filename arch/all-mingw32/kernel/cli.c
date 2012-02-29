@@ -7,7 +7,7 @@ AROS_LH0I(void, KrnCli,
 {
     AROS_LIBFUNC_INIT
 
-    *KernelIFace.IntState = INT_DISABLE;
+    KernelIFace.Set_IntState(INT_DISABLE);
 
     AROS_LIBFUNC_EXIT
 }

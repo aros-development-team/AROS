@@ -73,7 +73,7 @@ void cpu_Switch(CONTEXT *regs)
 
     /* Actually save the context */
     SAVEREGS(regs, ctx);
-    ctx->LastError = *LastErrorPtr;
+    ctx->LastError = GetLastError();
 
     /* Update tc_SPReg */
     t->tc_SPReg = GET_SP(ctx);
@@ -109,25 +109,25 @@ void cpu_Dispatch(CONTEXT *regs)
          * disabled during Windows exception processing (which is also an interrupt
          * for us).
          */
-        DSLEEP(if (!Sleep_Mode) bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
+        DSLEEP(if (!Get_Sleep_Mode()) bug("[KRN] TaskReady list empty. Sleeping for a while...\n"));
 
         /* This will enable interrupts in core_LeaveInterrupt() */
         SysBase->IDNestCnt = -1;
 
         /* We are entering sleep mode */
-        Sleep_Mode = SLEEP_MODE_PENDING;
+        Set_Sleep_Mode(SLEEP_MODE_PENDING);
 
         return;
     }
 
-    DSLEEP(if (Sleep_Mode) bug("[KRN] Exiting idle state\n");)
-    Sleep_Mode = SLEEP_MODE_OFF;
+    DSLEEP(if (Get_Sleep_Mode()) bug("[KRN] Exiting idle state\n");)
+    Set_Sleep_Mode(SLEEP_MODE_OFF);
 
     D(bug("[KRN] Dispatched task 0x%p (%s)\n", task, task->tc_Node.ln_Name));
     /* Restore the task's context */
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     RESTOREREGS(regs, ctx);
-    *LastErrorPtr = ctx->LastError;
+    SetLastError(ctx->LastError);
 
     /* Handle exception if requested */
     if (task->tc_Flags & TF_EXCEPT)
