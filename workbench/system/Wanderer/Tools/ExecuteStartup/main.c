@@ -71,11 +71,8 @@ static BOOL executeWBStartup(void);
 int
 main(void)
 {
-    Locale_Initialize();
 
     executeWBStartup();
-
-    Locale_Deinitialize();
 
     return RETURN_OK;
 }                                       
