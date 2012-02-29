@@ -211,16 +211,14 @@ BCPL SetComment     /* -5c, BOOL, &name, &comment */
 BCPLd QueuePacket    /* -54, void */
     BRTS
 
-BCPL clearmem       /* -50, void, @buff, lw_length */
+BCPL clearvec       /* -50, void, @buff, lw_length */
     tst.l	%d2
     bmi.s	.Lclearmem_end
     lsl.l	#2,%d1
-    bra		.Lclearmem_cond
-
+	/* clears one extra long by design! */
 .Lclearmem_loop:
     clr.l	%a0@(%d1)
     addq.l	#4,%d1
-.Lclearmem_cond:
     dbf		%d2,.Lclearmem_loop
 .Lclearmem_end:
     BRTS
@@ -323,17 +321,18 @@ BCPL Read           /* -0c, LONG, Read, @FileHandle, &buf, len */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPL memcpy        /* -08, void, @src, @dest, n */
+BCPL copyvec        /* -08, void, @src, @dest, n */
     movem.l	%d2-%d3/%a0-%a1,%sp@-
+	tst.l	%d3
+	bmi.s	.copydone
 	lsl.l	#2,%d1
 	move.l	%d1,%a0
 	lsl.l	#2,%d2
 	move.l	%d2,%a1
+	/* copies one extra long by design! */
 .copyloop:
-	subq.l	#1,%d3
-	bmi.s	.copydone
 	move.l	%a0@+,%a1@+
-	bra.s	.copyloop
+	dbf		%d3,.copyloop
 .copydone:
     movem.l	%sp@+,%d2-%d3/%a0-%a1
     BRTS
@@ -514,10 +513,9 @@ BCPL getvec         /*  74, LONG ^, lw_length */
     movem.l	%a0-%a1/%a6,%sp@-
     move.l	SysBase,%a6
     move.l	%d1,%d0
-    addq.l	#4,%d0         /* 4 additional words for padding */
+    addq.l	#1,%d0         /* extra long */
     lsl.l	#2,%d0
     moveq	#1,%d1
-    bset.l	#16,%d1        /* MEMF_CLEAR */
     jsr		%a6@(114 * -6) /* Exec/AllocVec() */
     lsr.l	#2,%d0
     movem.l	%sp@+,%a0-%a1/%a6
