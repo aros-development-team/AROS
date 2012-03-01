@@ -1651,10 +1651,16 @@ else
     AROS_REQUIRED(nm,$aros_kernel_nm)
     AROS_TOOL_KERNEL(aros_kernel_strip,strip,$aros_kernel_strip)
     AROS_REQUIRED(strip,$aros_kernel_strip)
+
+    # Objcopy and objdump are not required for the kernel
+    # toolchain on many architectures.
+    # So we'll look for them, but not make them strictly required.
     AROS_TOOL_KERNEL(aros_kernel_objcopy,objcopy,$aros_kernel_objcopy)
-    AROS_REQUIRED(objcopy,$aros_kernel_objcopy)
     AROS_TOOL_KERNEL(aros_kernel_objdump,objdump,$aros_kernel_objdump)
-    AROS_REQUIRED(objdump,$aros_kernel_objdump)
+    if test "x${crosstools}" != "yes" ; then
+        AROS_REQUIRED(objcopy,$aros_kernel_objcopy)
+        AROS_REQUIRED(objdump,$aros_kernel_objdump)
+    fi
 fi
 
 AC_MSG_CHECKING([which target tools])
