@@ -1,6 +1,6 @@
 ## version $VER: snoopy.catalog 1.0 (06.09.2006)
-## language deutsch
-## codeset 0
+## language russian
+## codeset 2104
 ;
 ; TODO: update translation and set version to 2
 ;
@@ -10,7 +10,7 @@ Snoopy
 ;
 MSG_COPYRIGHT
 é 2006, The AROS Development Team
-; Ê 2006, The AROS Development Team
+; © 2006, The AROS Development Team
 ;
 MSG_AUTHOR
 The AROS Development Team
