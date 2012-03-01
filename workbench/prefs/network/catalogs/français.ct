@@ -121,14 +121,6 @@ MSG_AUTOSTART_STACK
 Démarrage automatique
 ; Autostart
 ;
-MSG_AUTOSTART_WIRELESS
-Activer le réseau sans fil
-;Enable wireless networking
-;
-MSG_AUTOSTART_MOBILE
-Démarrer ModemManager durant le boot
-;Start ModemManager during system boot
-;
 MSG_ERR_UNKNOWN_ERROR
 Erreur inconnue
 ; Unknown error

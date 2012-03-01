@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -64,7 +64,6 @@ struct NetPEditor_DATA
             *netped_netEditButton,
             *netped_netRemoveButton,
             *netped_MBBInitString[MAXATCOMMANDS],
-            *netped_MBBAutostart,
             *netped_MBBDeviceString,
             *netped_MBBUnit,
             *netped_MBBUsername,
@@ -289,8 +288,6 @@ BOOL Gadgets2NetworkPrefs(struct NetPEditor_DATA *data)
         GET(data->netped_MBBInitString[i], MUIA_String_Contents, &str);
         if( strlen(str) > 0 ) SetMobile_atcommand( a++ , str );
     }
-    GET(data->netped_MBBAutostart, MUIA_Selected, &lng);
-    SetMobile_Autostart(lng);
     GET(data->netped_MBBDeviceString, MUIA_String_Contents, &str);
     SetMobile_devicename(str);
     GET(data->netped_MBBUnit, MUIA_Numeric_Value , &lng);
@@ -386,7 +383,6 @@ BOOL NetworkPrefs2Gadgets
 
     NNSET((data->netped_MBBDeviceString), MUIA_String_Contents, GetMobile_devicename());
     NNSET((data->netped_MBBUnit), MUIA_Numeric_Value, GetMobile_unit());
-    NNSET(data->netped_MBBAutostart, MUIA_Selected, (IPTR)GetMobile_Autostart());
     NNSET((data->netped_MBBUsername), MUIA_String_Contents, GetMobile_username());
     NNSET((data->netped_MBBPassword), MUIA_String_Contents, GetMobile_password());
 
@@ -454,8 +450,8 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             *autostart, *interfaceList, *DHCPState,
             *addButton, *editButton, *removeButton, *inputGroup,
             *networkList, *netAddButton, *netEditButton, *netRemoveButton,
-            *MBBInitString[MAXATCOMMANDS],
-            *MBBAutostart,*MBBDeviceString,*MBBUnit,*MBBUsername,*MBBPassword;
+            *MBBInitString[MAXATCOMMANDS], *MBBDeviceString, *MBBUnit,
+            *MBBUsername, *MBBPassword;
 
     // inferface window
     Object  *deviceString, *IPString, *maskString,
@@ -659,14 +655,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                     End),
                 End,
 
-                Child, (IPTR)ColGroup(2),
-                    Child, (IPTR)(MBBAutostart = MUI_MakeObject(MUIO_Checkmark, NULL)),
-                    Child, (IPTR)HGroup,
-                        Child, (IPTR)Label2(_(MSG_AUTOSTART_MOBILE)),
-                        Child, (IPTR)HVSpace,
-                    End,
-                End,
-
             End,
 
         End, // register
@@ -751,17 +739,15 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         MUIA_Window_SizeGadget, TRUE,
         WindowContents, (IPTR)VGroup,
             GroupFrame,
-#if 0 // Awaiting an appropriate image
             Child, HGroup,
                 Child, (IPTR)HVSpace,
                 Child, ImageObject,
-                    MUIA_Image_Spec, (IPTR)"3:Images:interface",
-                    MUIA_FixWidth, 52,
-                    MUIA_FixHeight, 48,
+                    MUIA_Image_Spec, (IPTR)"3:Images:wireless",
+                    MUIA_FixWidth, 50,
+                    MUIA_FixHeight, 50,
                 End,
                 Child, (IPTR)HVSpace,
             End,
-#endif
             Child, (IPTR)ColGroup(2),
                 GroupFrame,
                 Child, (IPTR)Label2(_(MSG_SSID)),
@@ -828,7 +814,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->netped_MBBInitString[2] = MBBInitString[2];
         data->netped_MBBInitString[3] = MBBInitString[3];
         data->netped_MBBInitString[4] = MBBInitString[4];
-        data->netped_MBBAutostart = MBBAutostart;
         data->netped_MBBDeviceString = MBBDeviceString;
         data->netped_MBBUnit = MBBUnit;
         data->netped_MBBUsername = MBBUsername;
@@ -954,12 +939,6 @@ Object * NetPEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         (
             netRemoveButton, MUIM_Notify, MUIA_Pressed, FALSE,
             (IPTR)networkList, 2, MUIM_List_Remove, MUIV_List_Remove_Active
-        );
-
-        DoMethod
-        (
-            MBBAutostart, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-            (IPTR)self, 3, MUIM_Set, MUIA_PrefsEditor_Changed, TRUE
         );
 
         DoMethod

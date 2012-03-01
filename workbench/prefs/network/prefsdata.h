@@ -1,5 +1,5 @@
 /*
-    Copyright © 2009-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
  */
 
@@ -18,7 +18,7 @@
 #define MAXINTERFACES 15
 #define MAXATCOMMANDS 5
 
-#define DEFAULTNAME "eth0"
+#define DEFAULTNAME "net0"
 #define DEFAULTIP "192.168.0.188"
 #define DEFAULTMASK "255.255.255.0"
 #define DEFAULTGATE "192.168.0.1"

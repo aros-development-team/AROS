@@ -251,25 +251,6 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     if(!RecursiveCreateDir(destdir)) return FALSE;
     if(!RecursiveCreateDir(destdbdir)) return FALSE;
 
-    /* Write variables */
-    CombinePath2P(filename, filenamelen, destdir, "Config");
-    ConfFile = fopen(filename, "w");
-    if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s/db", PREFS_PATH_ENV);
-    fclose(ConfFile);
-
-    CombinePath2P(filename, filenamelen, destdir, "AutoRun");
-    ConfFile = fopen(filename, "w");
-    if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
-    fclose(ConfFile);
-
-    CombinePath2P(filename, filenamelen, destdir, "MobileAutorun");
-    ConfFile = fopen(filename, "w");
-    if (!ConfFile) return FALSE;
-    fprintf(ConfFile, "%s", (GetMobile_Autostart()) ? "True" : "False");
-    fclose(ConfFile);
-
     /* Write configuration files */
     CombinePath2P(filename, filenamelen, destdbdir, "general.config");
     ConfFile = fopen(filename, "w");
@@ -306,6 +287,8 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
             SetWirelessDevice(GetDevice(iface));
             SetWirelessUnit(GetUnit(iface));
         }
+        else if (strstr(GetDevice(iface), "ppp.device") != NULL)
+            SetMobile_Autostart(TRUE);
     }
     fclose(ConfFile);
 
@@ -342,6 +325,25 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
         // FIXME: old version wrote Gateway even when DHCP was enabled
         fprintf(ConfFile, "DEFAULT GATEWAY %s\n", GetGate());
     }
+    fclose(ConfFile);
+
+    /* Write variables */
+    CombinePath2P(filename, filenamelen, destdir, "Config");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s/db", PREFS_PATH_ENV);
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "AutoRun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetAutostart()) ? "True" : "False");
+    fclose(ConfFile);
+
+    CombinePath2P(filename, filenamelen, destdir, "MobileAutorun");
+    ConfFile = fopen(filename, "w");
+    if (!ConfFile) return FALSE;
+    fprintf(ConfFile, "%s", (GetMobile_Autostart()) ? "True" : "False");
     fclose(ConfFile);
 
     CombinePath2P(filename, filenamelen, destdir, "WirelessAutoRun");
@@ -905,28 +907,6 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
         }
     }
     CloseTokenFile(&tok);
-
-    CombinePath2P(filename, filenamelen, directory, "MobileAutorun");
-    OpenTokenFile(&tok, filename);
-    while (!tok.fend)
-    {
-        GetNextToken(&tok, " \n");
-        if (tok.token)
-        {
-            if (strncmp(tok.token, "True", 4) == 0)
-            {
-                SetMobile_Autostart(TRUE);
-                break;
-            }
-            else
-            {
-                SetMobile_Autostart(FALSE);
-                break;
-            }
-        }
-    }
-    CloseTokenFile(&tok);
-
 }
 
 void ReadWirelessPrefs(CONST_STRPTR directory)
@@ -1472,7 +1452,7 @@ void SetWirelessUnit(LONG w)
 
 void SetMobile_Autostart(BOOL w)
 {
-    prefs.mobile.autostart =w;
+    prefs.mobile.autostart = w;
 }
 
 void SetMobile_atcommand(ULONG i,STRPTR w)
