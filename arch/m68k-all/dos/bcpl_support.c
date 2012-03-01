@@ -78,20 +78,24 @@ ULONG BCPL_InstallSeg(BPTR seg, ULONG *globvec)
     	return DOSTRUE;
     }
 
-    segment = BADDR(seg);
-    if ((segment[-1] < segment[1])) {
-        D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
-        Alert(AN_BadOverlay);
-    }
+    while (seg) {
+        segment = BADDR(seg);
 
-    D(bug("BCPL_InstallSeg: SegList @%p\n", segment));
-    table = &segment[segment[1]];
+        if ((segment[-1] < segment[1])) {
+            D(bug("BCPL_InstallSeg: segList @%p does not look like BCPL.\n", segment));
+            Alert(AN_BadOverlay);
+        }
 
-    D(bug("\tFill in for %p:\n", segment));
+        D(bug("BCPL_InstallSeg: SegList @%p\n", segment));
+        table = &segment[segment[1]];
 
-    for (; table[-1] != 0; table = &table[-2]) {
-        D(bug("\t globvec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
-        globvec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+        D(bug("\tFill in for %p:\n", segment));
+
+        for (; table[-1] != 0; table = &table[-2]) {
+            D(bug("\t globvec[%d] = %p\n", table[-2], (APTR)&segment[1] + table[-1]));
+            globvec[table[-2]] = (ULONG)((APTR)&segment[1] + table[-1]);
+        }
+        seg = (BPTR)segment[0]; /* next segment */
     }
 
     return DOSTRUE;
