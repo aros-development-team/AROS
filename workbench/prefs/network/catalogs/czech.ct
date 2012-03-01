@@ -72,7 +72,7 @@ Ruèním zadáním
 ;
 MSG_IP_MODE_DHCP
 Automaticky z DHCP
-; Get address from DHCP
+; Automatic
 ;
 MSG_ENC_NONE
 ---
@@ -137,10 +137,6 @@ Mobilní pøipojení
 MSG_AUTOSTART_STACK
 Pøi startu pøipojit k síti
 ; Start networking during system boot
-;
-MSG_AUTOSTART_MOBILE
-Pøi startu spustit správce modemù
-; Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR
 Neznámá chyba

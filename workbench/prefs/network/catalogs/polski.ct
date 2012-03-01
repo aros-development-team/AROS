@@ -72,7 +72,7 @@ rêczne
 ;
 MSG_IP_MODE_DHCP
 automatyczne przez DHCP
-; Get address from DHCP
+; Automatic
 ;
 MSG_ENC_NONE
 Brak
@@ -137,14 +137,6 @@ GSM
 MSG_AUTOSTART_STACK
 W³±czaj sieæ podczas wczytywania systemu.
 ; Start networking during system boot
-;
-MSG_AUTOSTART_WIRELESS
-W³±cz sieæ bezprzewodow±
-; Enable wireless networking
-;
-MSG_AUTOSTART_MOBILE
-Uruchom ModemManager podczas wczytywania systemu
-; Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR
 Nieznany b³±d

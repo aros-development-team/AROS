@@ -126,10 +126,6 @@ MSG_AUTOSTART_STACK
 Starte Netzwerk beim Booten des Systems
 ; Start networking during system boot
 ;
-MSG_AUTOSTART_WIRELESS
-Drahtloses Netzwerk aktivieren
-; Enable wireless networking
-;
 MSG_ERR_UNKNOWN_ERROR
 Unbekannter Fehler
 ; Unknown error
@@ -213,8 +209,4 @@ Benutzername
 MSG_PASSWORD
 Passwort
 ; Password
-;
-MSG_AUTOSTART_MOBILE
-Modem-Manager beim Systemstart aktivieren
-; Start networking during system boot
 ;

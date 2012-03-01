@@ -50,7 +50,7 @@ MSG_IP_MODE_MANUAL (//)
 Manual
 ;
 MSG_IP_MODE_DHCP (//)
-Get address from DHCP
+Automatic
 ;
 MSG_ENC_NONE (//)
 None
@@ -99,9 +99,6 @@ Mobile Broadband
 ;
 MSG_AUTOSTART_STACK (//)
 Start networking during system boot
-;
-MSG_AUTOSTART_MOBILE (//)
-Start ModemManager during system boot
 ;
 MSG_ERR_UNKNOWN_ERROR (//)
 Unknown error
