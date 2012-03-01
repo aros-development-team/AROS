@@ -1560,8 +1560,20 @@ BCPL libcall        /* 19c, void, libbase, LVOffset, d0, d1, a0, a1 */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd writeErr		/* 1a0, ??, ?? */
-    moveq.l	#-1,%d0
+BCPL writeErr		/* 1a0, void, LONG, BSTR */
+    /* oddly enough D2 points to BSTR name of the command
+     * which seems to be ignored.
+     */
+    movem.l	%d2/%a0-%a1/%a6,%sp@-
+    tst.l	%d1
+    beq.s	1f
+    moveq	#0,%d2
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(-0x1da)	/* PrintFault */
+    tst.l	%d0
+    beq.s	0f
+1:  moveq	#-1,%d0
+0:  movem.l	%sp@+,%d2/%a0-%a1/%a6
     BRTS
 
 BCPL findConsoleHandler /* 1a4, MsgPort *,  */
