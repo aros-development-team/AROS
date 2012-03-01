@@ -10151,6 +10151,10 @@ fi
     as_fn_error $? "strip is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
 
+    # Objcopy and objdump are not required for the kernel
+    # toolchain on many architectures.
+    # So we'll look for them, but not make them strictly required.
+
 if test "$aros_kernel_objcopy" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}objcopy", so it can be a program name with args.
@@ -10323,9 +10327,6 @@ fi
 
 fi
 
-    if test "$aros_kernel_objcopy" = ""; then
-    as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
-fi
 
 if test "$aros_kernel_objdump" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -10499,9 +10500,14 @@ fi
 
 fi
 
-    if test "$aros_kernel_objdump" = ""; then
+    if test "x${crosstools}" != "yes" ; then
+        if test "$aros_kernel_objcopy" = ""; then
+    as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+        if test "$aros_kernel_objdump" = ""; then
     as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+    fi
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which target tools" >&5
