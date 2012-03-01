@@ -22,7 +22,7 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
 extern void *BCPL_jsr, *BCPL_rts;
-extern const ULONG BCPL_GlobVec[BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize];
+extern const ULONG BCPL_GlobVec[(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize) >> 2];
     
 const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
 
