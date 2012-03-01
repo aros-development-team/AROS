@@ -33,7 +33,7 @@ IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     int entries_active = 0;
     int entries_num;
     struct TagItem *grouptags;
-    Object **buttons;
+    Object **buttons, **imgobjs, **textobjs;
     int state;
 
     /* parse initial taglist */
@@ -69,35 +69,38 @@ IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     grouptags = AllocateTagItems(entries_num + 1);
     if (!grouptags)
 	return FALSE;
-    buttons = AllocVec(i * sizeof(Object *), MEMF_PUBLIC);
+    buttons = AllocVec(i * sizeof(Object *) * 3, MEMF_PUBLIC);
     if (!buttons)
     {
 	FreeVec(grouptags);
 	return FALSE;
     }
+    imgobjs = buttons + i;
+    textobjs = imgobjs + i;
+    
     for (i = 0; i < entries_num; i++)
     {
 	state = (entries_active == i) ? TRUE : FALSE;
 
 	buttons[i] = HGroup,
-	    Child, (IPTR)ImageObject,
+	    Child, (IPTR)(imgobjs[i] = ImageObject,
 	        MUIA_Image_FontMatch, TRUE,
 	        MUIA_InputMode, MUIV_InputMode_Immediate,
 	        MUIA_Selected, state,
 	        MUIA_ShowSelState, FALSE,
 	        MUIA_Image_Spec, MUII_RadioButton,
 	        MUIA_Frame, MUIV_Frame_None,
-   	        End,
-	    Child, (IPTR)TextObject,
+   	        End),
+	    Child, (IPTR)(textobjs[i] = TextObject,
 	        MUIA_InputMode, MUIV_InputMode_Immediate,
                 MUIA_ShowSelState, FALSE,
 	        MUIA_Selected, state,
 	        MUIA_Text_Contents, entries[i],
 	        MUIA_Frame, MUIV_Frame_None,
 	        MUIA_Text_PreParse, (IPTR)"\33l",
-	        End,
+	        End),
 	    End;
-
+        
 	grouptags[i].ti_Tag = MUIA_Group_Child;
         grouptags[i].ti_Data = (IPTR)buttons[i];
     }
@@ -120,7 +123,9 @@ IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     for (i = 0; i < entries_num; i++)
     {
-	DoMethod(buttons[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	DoMethod(imgobjs[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+		 (IPTR)obj, 3, MUIM_Set, MUIA_Radio_Active, i);
+	DoMethod(textobjs[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		 (IPTR)obj, 3, MUIM_Set, MUIA_Radio_Active, i);
     }
 
