@@ -392,10 +392,27 @@ BCPL setIO          /*  18, void, @IOStdReq, command, &data, len, offset */
     move.l	%a1@(4*4),%a0@(44,%d1)
     BRTS
 
-BCPLd packlw         /*  20, ?? */
+BCPL packlw         /*  20, LONG, &data, len */
+	movem.l	%d2,%sp@-
+	moveq	#0,%d0
+.packlw_loop:
+	lsl.l	#8,%d0
+	move.b	%a0@(%d1.l),%d0
+	addq.l	#1,%d1
+	subq.b	#1,%d2
+	bne.s	.packlw_loop
+	movem.l	%sp@+,%d2
     BRTS
 
-BCPLd unpacklw       /*  24, ?? */
+BCPL unpacklw       /*  24, void, &data, len, LONG */
+	movem.l	%d2/%d3,%sp@-
+.unpacklw_loop:
+	rol.l	#8,%d3
+	move.b	%d3,%a0@(%d1.l)
+	addq.l	#1,%d1
+	subq.b	#1,%d2
+	bne.s	.unpacklw_loop
+	movem.l	%sp@+,%d2/%d3
     BRTS
 
 BCPL Res2           /*  28, LONG, is_set_flag, result_code */
@@ -425,10 +442,17 @@ BCPL findtask        /*  38, &Process->MsgPort *, */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd getbyte        /*  3c, BYTE, @lw_addr, bytenum */
+BCPL getbyte        /*  3c, BYTE, @lw_addr, bytenum */
+    lsl.l	#2,%d1
+    add.l	%d2,%d1
+    moveq	#0,%d0
+    move.b	%a0@(%d1.l),%d0
     BRTS
 
-BCPLd putbyte        /*  40, BYTE, @lw_addr, bytenum, byte */
+BCPL putbyte        /*  40, BYTE, @lw_addr, bytenum, byte */
+	lsl.l	#2,%d1
+	add.l	%d2,%d1
+	move.b	%d3,%a0@(%d1.l)
     BRTS
 
 BCPL level          /*  44, LONG (or BPTR?) */
@@ -1193,7 +1217,8 @@ BCPL charicmp        /* 130, long , char1, char2 */
     cmp.b	#'z',%d1
     bhi.s	2f
     bclr	#5,%d1
-2:  sub.l	%d1,%d0
+2:  exg		%d1,%d0
+	sub.l	%d1,%d0
     BRTS
 
 BCPL stricmp         /* 134, long , @String1, @String2 */
@@ -1220,13 +1245,24 @@ sicmp1:
     beq.b	sicmp2
     subq.b	#1,%d2
     subq.b	#1,%d3
+
     moveq	#0,%d0
     move.b	%a0@+,%d0
+    cmp.b	#'a',%d0
+    bcs.s	sicmp3
+    cmp.b	#'z',%d0
+    bhi.s	sicmp3
     bclr	#5,%d0
+sicmp3:
     moveq	#0,%d1
     move.b	%a1@+,%d1
+    cmp.b	#'a',%d1
+    bcs.s	sicmp4
+    cmp.b	#'z',%d1
+    bhi.s	sicmp4
     bclr	#5,%d1
-    sub.w	%d1,%d0
+sicmp4:
+    sub.l	%d1,%d0
     beq.s	sicmp1
 	bra.s	sicmp0
 sicmp2:
@@ -1237,7 +1273,6 @@ sicmp2:
 	beq.s	sicmp0
 	moveq	#1,%d0
 sicmp0:
-    ext.l	%d0
 	movem.l	%sp@+,%d1-%d3/%a0-%a1
     BRTS
 
@@ -1473,10 +1508,23 @@ BCPL Close          /* 174, void, @FileHandle */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd getword        /* 178, void, longaddress, wordnumber */
+BCPL getword        /* 178, void, longaddress, wordnumber */
+	movem.l	%sp@+,%d2
+	lsl.l	#2,%d1
+	add.l	%d2,%d2
+	add.l	%d1,%d2
+	moveq	#0,%d0
+    move.w	%a0@(%d2.l),%d0
+	movem.l	%sp@+,%d2
     BRTS
 
-BCPLd putword        /* 17c, void, longaddress, wordnumber */
+BCPL putword        /* 17c, void, longaddress, wordnumber */
+	movem.l	%sp@+,%d2
+	lsl.l	#2,%d1
+	add.l	%d2,%d2
+	add.l	%d1,%d2
+	move.w	%d3,%a0@(%d2.l)
+	movem.l	%sp@+,%d2
     BRTS
                      /* 180, ??? */
 
