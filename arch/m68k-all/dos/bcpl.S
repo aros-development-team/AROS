@@ -1047,7 +1047,74 @@ BCPL Output         /* 108, FileHandle @,  */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd readn          /* 10c, void,  */
+BCPL readn          /* 10c, void,  */
+    /* no dos.library equivalent for this :(
+     * ignore all whitespace at the beginning
+     * converts ascii to decimal
+     */
+    movem.l	%d2-%d7/%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(9 * -6) /* DOS/Input() */
+    move.l	%d0,%d6
+    moveq	#0,%d4 /* val */
+    moveq	#0,%d5 /* neg */
+    moveq	#10,%d3
+    moveq	#0,%d7
+
+.readn_ws:
+    move.l	%d6,%d1
+    jsr		%a6@(51 * -6) /* DOS/FGetC() */
+    move.l	%d0,%d2
+    cmp.b	#' ',%d2
+    beq.s	.readn_ws
+    cmp.b	#'\t',%d2
+    beq.s	.readn_ws
+    cmp.b	#'\n',%d2
+    beq.s	.readn_ws
+    cmp.b	#'+',%d2
+    beq.s	.readn_ch
+    cmp.b	#'-',%d2
+    bne.s	.readn_ch2
+    moveq	#1,%d5
+    bra.s	.readn_ch
+.readn_ch2:
+    cmp.b	#'0',%d2
+    bcs.s	.readn_end
+    cmp.b	#'9',%d2
+    bhi.s	.readn_end
+    move.l  %d3, %sp@-
+    move.l  %d4, %sp@-
+    jsr     __mulsi3
+    addq.l	#8,%sp
+    move.l	%d0,%d4
+    moveq	#0,%d0
+    move.b	%d2,%d0
+    sub.b	#'0',%d0
+    add.l	%d0,%d4
+.readn_ch:
+    moveq	#1,%d7 /* got at least one digit */
+    move.l	%d6,%d1
+    jsr		%a6@(51 * -6) /* DOS/FGetC() */
+    move.l	%d0,%d2
+    bra.s	.readn_ch2
+
+.readn_end: 
+    move.l	%d6,%d1
+    jsr		%a6@(53 * -6) /* DOS/UnGetC() */
+
+    moveq	#-1,%d1
+    tst.b	%d7
+    beq.s	.readn_fail
+    moveq	#0,%d1
+.readn_fail:
+    jsr		%a6@(77 * -6) /* DOS/SetIoErr() */
+
+    tst.b	%d5 /* negative? */
+    beq.s	.readn_nneg
+    neg.l	%d4
+.readn_nneg:
+    move.l	%d4,%d0
+    movem.l	%sp@+,%d2-%d7/%a0-%a1/%a6
     BRTS
 
 BCPL newline        /* 110, void,  */
