@@ -18,9 +18,12 @@
 #include <proto/graphics.h>
 #include <clib/alib_protos.h>
 #include <proto/muimaster.h>
+#include <proto/miami.h>
 #include <utility/hooks.h>
 #include <libraries/mui.h>
 #include <aros/debug.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 #include "ppp.h"
 #include "misc.h"
@@ -43,6 +46,7 @@ Object *IN_Info,*OUT_Info;
 struct EasyBitmap *SignalBM=0;
 
 UBYTE *PortName = "ModemManager";
+const TEXT version_string[] = "$VER: ModemManager 1.2 (1.3.2012)";
 
 ULONG exPhase,exstate;
 BOOL exSer;
@@ -411,12 +415,9 @@ void ConfNetWork(struct PPPcontrolMsg *msg,struct Conf *c){
 		{ TAG_DONE,   0           }
 	};
 
+    struct Library *MiamiBase;
 	TEXT arostcppath[256];
-	BPTR InFile, OutFile;
 	UBYTE *buff;
-	UBYTE *linebuff;
-	BOOL putline;
-	BYTE myhostname[] = "ENVARC:AROSTCP/db/netdb-myhost";
 
 	arostcppath[0]=0;
 	GetVar( "SYS/Packages/AROSTCP" , arostcppath , 256 , LV_VAR);
@@ -433,46 +434,26 @@ void ConfNetWork(struct PPPcontrolMsg *msg,struct Conf *c){
 		bug("Secondary DNS address %d.%d.%d.%d\n", msg->SecondaryDNS[0],msg->SecondaryDNS[1],
 			msg->SecondaryDNS[2],msg->SecondaryDNS[3] );
 
-		if(linebuff = AllocMem( FILEBUFFSIZE , MEMF_CLEAR|MEMF_PUBLIC ) ){
-			bug( "Open File \"%s\"\n" , myhostname );
-			if( InFile  =  Open( myhostname , MODE_OLDFILE ) ){
-				buff[0]=0;
-				while(FGets( InFile , linebuff, FILEBUFFSIZE-1 )){
+        // Register nameservers with TCP/IP stack
+		if( FindTask("bsdsocket.library") != NULL ) {
+            MiamiBase = OpenLibrary("miami.library", 0);
+            if(MiamiBase != NULL) {
+                ClearDynNameServ();
+                struct sockaddr_in ns_addr;
 
-					putline = TRUE;
+                ns_addr.sin_len = sizeof(ns_addr);
+                ns_addr.sin_family = AF_INET;
 
-					if( strcasestr( linebuff , "NAMESERVER" ) ){ // remove existing nameservers
-						putline = FALSE;
-					}
+                ns_addr.sin_addr.s_addr = *(ULONG *)msg->PrimaryDNS;
+                AddDynNameServ((struct sockaddr *)&ns_addr);
 
-					if( strcasestr( linebuff , "added by ModemManager" ) ){ // remove existing comment
-						putline = FALSE;
-					}
+                ns_addr.sin_addr.s_addr = *(ULONG *)msg->SecondaryDNS;
+                AddDynNameServ((struct sockaddr *)&ns_addr);
 
-					if( putline ) strcat( buff, linebuff );
-
-				}
-
-				strcat( buff, ";Name Servers added by ModemManager\n" );
-
-				sprintf( linebuff ,"NAMESERVER %d.%d.%d.%d\n", msg->PrimaryDNS[0],msg->PrimaryDNS[1],
-						 msg->PrimaryDNS[2],msg->PrimaryDNS[3] );
-				strcat( buff, linebuff );
-				sprintf( linebuff ,"NAMESERVER %d.%d.%d.%d\n", msg->SecondaryDNS[0],msg->SecondaryDNS[1],
-						 msg->SecondaryDNS[2],msg->SecondaryDNS[3] );
-				strcat( buff, linebuff );
-
-				Close(InFile);
-				if( OutFile  =  Open( myhostname , MODE_NEWFILE ) ){
-					FPuts( OutFile , buff );
-					Close( OutFile );
-				}
-				bug( "File \"%s\"  is modified !\n" , myhostname );
-			}else{
-				bug("FAIL!\n");
-			}
-			FreeMem( linebuff, FILEBUFFSIZE );
-		}
+                EndDynNameServ();
+                CloseLibrary(MiamiBase);
+            }
+        }
 
 		sprintf(buff,"%s/c/ifconfig %s %d.%d.%d.%d %d.%d.%d.%d",
 				arostcppath,
