@@ -92,11 +92,21 @@ static void readexprom(APTR board, struct ExpansionRom *rom, struct ExpansionBas
 		UBYTE mem = rom->er_Type & ERT_MEMMASK;
 		if (mem == 0)
 			size = 8 * 1024 * 1024; // 8M
-		else if (mem <= 4)
-			size = (32 * 1024) << mem; // 64k,128k,256k,512k
 		else
-			size = 32768 << mem; // 1M/2M/4M
+			size = (32 * 1024) << mem; // 64k,128k,256k,512k,1m,2m,4m
 	}
+	if ((rom->er_Type & ERT_TYPEMASK) == ERT_ZORROIII) {
+		UBYTE subsize = rom->er_Type & ERT_Z3_SSMASK;
+		ULONG ss = size;
+		if (subsize >= 2 && subsize <= 7) { // 64k,128k,256k,512k,1m,2m
+			ss = (64 * 1024) << (subsize - 2);
+		} else if (subsize >= 8) { // 4m,6m,8m,10m,12m,14m
+			ss = (4 + (subsize - 8) * 2) * 1024 * 1024;
+		}
+		if (size > ss)
+			size = ss;
+	}
+
 	configDev->cd_BoardSize = size;
 	configDev->cd_BoardAddr = board;
 	
