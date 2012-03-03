@@ -9,12 +9,10 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
-#include <stdio.h>
-
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
-const char version[] = "$VER: InitPrinter 1.0 (27.02.2012) © AROS Dev Team";
+const char version[] = "$VER: InitPrinter 1.0 (03.03.2012) © AROS Dev Team";
 
 char __stdiowin[]="CON:/30/400/100/InitPrinter/AUTO/CLOSE/WAIT";
 
@@ -36,7 +34,7 @@ static BOOL init_printer(ULONG unit)
         {
             if (OpenDevice("printer.device", unit, (struct IORequest *)PrintIO, 0))
             {
-                printf("Error: printer.device did not open\n");
+                PutStr("Error: printer.device did not open\n");
             }
             else
             {
@@ -50,7 +48,7 @@ static BOOL init_printer(ULONG unit)
 
                 if (DoIO((struct IORequest *)PrintIO))
                 {
-                    printf("Printer reset failed. Error: %d\n", PrintIO->io_Error);
+                    Printf("Printer reset failed. Error: %d\n", (IPTR)PrintIO->io_Error);
                 }
                 else
                 {
@@ -62,13 +60,13 @@ static BOOL init_printer(ULONG unit)
         }
         else
         {
-            printf("Error: Could not create I/O request\n");
+            PutStr("Error: Could not create I/O request\n");
         }
         DeleteMsgPort(PrintMP);
     }
     else
     {
-        printf("Error: Could not create message port\n");
+        PutStr("Error: Could not create message port\n");
     }
     return success;
 }
@@ -95,7 +93,7 @@ int main(void)
     }
     else
     {
-        printf("Error: Could not read arguments\n");
+        PutStr("Error: Could not read arguments\n");
     }
 
     return retval;
