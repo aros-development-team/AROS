@@ -10500,7 +10500,7 @@ fi
 
 fi
 
-    if test "x${crosstools}" != "yes" ; then
+    if test "x${crosstools}" != "xyes" ; then
         if test "$aros_kernel_objcopy" = ""; then
     as_fn_error $? "objcopy is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi

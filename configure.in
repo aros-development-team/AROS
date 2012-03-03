@@ -1657,7 +1657,7 @@ else
     # So we'll look for them, but not make them strictly required.
     AROS_TOOL_KERNEL(aros_kernel_objcopy,objcopy,$aros_kernel_objcopy)
     AROS_TOOL_KERNEL(aros_kernel_objdump,objdump,$aros_kernel_objdump)
-    if test "x${crosstools}" != "yes" ; then
+    if test "x${crosstools}" != "xyes" ; then
         AROS_REQUIRED(objcopy,$aros_kernel_objcopy)
         AROS_REQUIRED(objdump,$aros_kernel_objdump)
     fi
