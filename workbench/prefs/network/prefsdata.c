@@ -276,7 +276,10 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
             ConfFile, "%s DEV=%s UNIT=%d %s IP=%s NETMASK=%s %s\n",
             GetName(iface), GetDevice(iface), (int)GetUnit(iface),
             (GetNoTracking(iface) ? (CONST_STRPTR)"NOTRACKING" : (CONST_STRPTR)""),
-            (GetIfDHCP(iface) ? (CONST_STRPTR)"DHCP" : GetIP(iface)),
+            (GetIfDHCP(iface) ?
+                (strstr(GetDevice(iface), "ppp.device") == NULL ?
+                    (CONST_STRPTR)"DHCP" : (CONST_STRPTR)"0.0.0.0") :
+                GetIP(iface)),
             GetMask(iface),
             (GetUp(iface) ? (CONST_STRPTR)"UP" : (CONST_STRPTR)"")
         );
@@ -299,11 +302,14 @@ BOOL WriteNetworkPrefs(CONST_STRPTR  destdir)
     for(i = 0; i < interfacecount; i++)
     {
         iface = GetInterface(i);
-        fprintf
-        (
-            ConfFile, "HOST %s %s.%s %s\n",
-            GetIP(iface), GetHost(), GetDomain(), GetHost()
-        );
+        if (!GetIfDHCP(iface))
+        {
+            fprintf
+            (
+                ConfFile, "HOST %s %s.%s %s\n",
+                GetIP(iface), GetHost(), GetDomain(), GetHost()
+            );
+        }
     }
 
     if (!GetDHCP())
@@ -817,7 +823,8 @@ void ReadNetworkPrefs(CONST_STRPTR directory)
                 else if (strncmp(tok.token, "IP=", 3) == 0)
                 {
                     tstring = strchr(tok.token, '=');
-                    if (strncmp(tstring + 1, "DHCP", 4) == 0)
+                    if (strncmp(tstring + 1, "DHCP", 4) == 0
+                        || strstr(GetDevice(iface), "ppp.device") != NULL)
                     {
                         SetIfDHCP(iface, TRUE);
                         SetIP(iface, DEFAULTIP);
