@@ -12,7 +12,7 @@
 
 #define BUF_SIZE 512
 
-LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
+static BOOL bufferExpand(Buffer *out, LONG size)
 {
     ULONG newLength = out->len + size;
 
@@ -25,7 +25,7 @@ LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
 	    newSize += BUF_SIZE;
 
 	if ((tmp = AllocMem(newSize + 1, MEMF_ANY)) == NULL)
-	    return ERROR_NO_FREE_STORE;
+	    return FALSE;
 
 	if (out->len > 0)
 	    CopyMem(out->buf, tmp, out->len);
@@ -36,8 +36,32 @@ LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
 	out->buf = tmp;
 	out->mem = newSize;
     }
+    return TRUE;
+}
+
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out)
+{
+    ULONG newLength;
+    if (!bufferExpand(out, size))
+        return ERROR_NO_FREE_STORE;
+
+    memmove(out->buf + size, out->buf, out->len);
+    CopyMem(str, out->buf, size);
+    newLength = out->len + size;
+    out->len = newLength;
+    out->buf[newLength] = '\0';
+    
+    return 0;
+}
+
+LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
+{
+    ULONG newLength;
+    if (!bufferExpand(out, size))
+        return ERROR_NO_FREE_STORE;
 
     CopyMem(str, out->buf + out->len, size);
+    newLength = out->len + size;
     out->len = newLength;
     out->buf[newLength] = '\0';
 

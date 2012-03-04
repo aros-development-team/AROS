@@ -41,7 +41,7 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
             if ((error = (*convertItem)(ss, in, out, &quoted, DOSBase)))
                 return error;
         }
-        else if (!quoted && c == ';')
+        else if (!quoted && c == ';' && c != ss->mchar0)
         {
              /* rest of line is comment, ignore it */
              break;
@@ -209,7 +209,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 {
     LONG c = in->buf[in->cur], error;
 
-    if (c == ';') /* skip comment */
+    if (c == ';' && c != ss->mchar0) /* skip comment */
         return 0;
 
     if (c == ss->dot) /* .dot command at start of line */

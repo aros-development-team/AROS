@@ -18,6 +18,7 @@ typedef struct {
 } Buffer;
 
 LONG bufferAppend(STRPTR str, ULONG size, Buffer *out);
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out);
 
 /* read 'size' chars from 'in' and append them to 'out' */
 LONG bufferCopy(Buffer *in, Buffer *out, ULONG size);
