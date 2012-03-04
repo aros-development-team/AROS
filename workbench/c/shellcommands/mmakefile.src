@@ -27,6 +27,7 @@ FILES	:= \
     NewShell \
     Path \
     PathPart \
+    Pipe \
     Prompt \
     Quit \
     Resident \
