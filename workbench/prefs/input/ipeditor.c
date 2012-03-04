@@ -460,7 +460,7 @@ static BOOL Gadgets2InputPrefs(struct IPEditor_DATA *data)
     else
 	kmsprefs.kms_AltKeymap[0] = 0;
 
-    GET(data->iped_SwitchKey, MUIA_String_Contents, (IPTR *)&key);
+    GET(data->iped_SwitchKey, MUIA_String_Contents, &key);
     if (ParseIX(key, &ix))
     {
 	D(Printf("Gadgets2Prefs: IX parse error\n"));
