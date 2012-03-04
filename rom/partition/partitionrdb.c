@@ -358,7 +358,7 @@ struct PartitionHandle *ph;
                     ph->data = pblock;
                     CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
                     ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
-                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
+                    CopyBE2HostDosEnvec(pblock->pb_Environment, (SIPTR *)&ph->de, AROS_BE2LONG(pblock->pb_Environment[DE_TABLESIZE])+1);
                     ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
                     ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
                     ph->dg.dg_Heads = ph->de.de_Surfaces;
@@ -733,6 +733,7 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
     while (fn->h.ln.ln_Succ)
     {
     ULONG fshblock;
+    struct FileSysHeaderBlock *fsb;
 
         fshblock = block;
         block++; /* header block will be written later */
@@ -742,7 +743,8 @@ static LONG PartitionRDBWritePartitionTable(struct Library *PartitionBase, struc
         fn->fhb.fhb_Next = fn->h.ln.ln_Succ->ln_Succ ? AROS_LONG2BE(block) : (ULONG)-1;
         fn->fhb.fhb_ChkSum = 0;
         CopyMem(&fn->fhb, root->buffer, sizeof(struct FileSysHeaderBlock));
-        ((struct FileSysHeaderBlock *)root->buffer)->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)root->buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
+        fsb = (struct FileSysHeaderBlock *)root->buffer;
+        fsb->fhb_ChkSum = AROS_LONG2BE(0-calcChkSum((ULONG *)root->buffer, AROS_BE2LONG(fn->fhb.fhb_SummedLongs)));
 #if RDB_WRITE
         writeBlock(PartitionBase, root, fshblock, root->buffer);
 #else
@@ -1014,13 +1016,15 @@ ULONG PartitionRDBDestroyPartitionTable
     )
 {
 struct RDBData *data;
+struct RigidDiskBlock *rdb;
 
     if (sizeof(root->buffer) < (root->de.de_SizeBlock << 2))
     	    return 0;
 
     data = root->table->data;
     CopyMem(&data->rdb, root->buffer, sizeof(struct RigidDiskBlock));
-    ((struct RigidDiskBlock *)root->buffer)->rdb_ID = 0;
+    rdb = (struct RigidDiskBlock *)root->buffer;
+    rdb->rdb_ID = 0;
     if (writeBlock(PartitionBase, root, data->rdbblock, root->buffer))
         return 1;
     return 0;
