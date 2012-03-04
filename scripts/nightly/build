@@ -99,7 +99,7 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
         mail_write "The following packages FAILED to build completely:"
         for package in $failed; do
             mail_write $package
-            bzcat $LOG_BASE/$package.log.bz2 | tail -100 - >/tmp/_aros_build_log_$package
+            bzcat $LOG_BASE/$package.log.bz2 | tail -100 >/tmp/_aros_build_log_$package
             ATTACH=( $ATTACH -a/tmp/_aros_build_log_$package )
         done
         mail_write ""
