@@ -259,7 +259,7 @@ BOOL Gadgets2IControlPrefs(struct IControlEditor_DATA *data)
     if (active)
         prefs->ic_VDragModes[0] |= ICVDM_BBOUND;
 
-    GET(data->metadragobj, MUIA_String_Contents, (IPTR *)&key);
+    GET(data->metadragobj, MUIA_String_Contents, &key);
     if (!ParseIX(key, &ix))
         prefs->ic_MetaDrag = ix.ix_Qualifier;
 
