@@ -25,7 +25,10 @@ Boston, MA 02111-1307, USA.  */
 
 /* This file specifies the API for the list functions */
 
+#include "compiler.h"
+
 /* Types */
+struct Node __mayalias;
 struct Node
 {
     struct Node * next,
@@ -33,18 +36,42 @@ struct Node
     char 	* name;
 };
 
+struct List __mayalias;
+#ifndef __GNUC__
 struct List
 {
     struct Node * first,
 		* last,
 		* prelast;
-}
-List;
+};
+#else
+struct List
+{
+    union
+    {
+        struct Node * first;
+        struct Node ** _first;
+    };
+    struct Node * last;
+    union
+    {
+        struct Node * prelast;
+        struct List * _prelast;
+    };
+};
+#endif
 
 /* Macros */
+
+#ifndef __GNUC__
 #   define NewList(l)       (((struct List *)l)->prelast = (struct Node *)(l), \
 			    ((struct List *)l)->last = 0, \
 			    ((struct List *)l)->first = (struct Node *)&(((struct List *)l)->last))
+#else
+#   define NewList(l)       (((struct List *)l)->_prelast = (struct List *)(l), \
+			    ((struct List *)l)->last = 0, \
+			    ((struct List *)l)->_first = &(((struct List *)l)->last))
+#endif
 
 #   define AddHead(l,n)     ((void)(\
 	((struct Node *)n)->next        = ((struct List *)l)->first, \
