@@ -1341,7 +1341,7 @@ nv_pass_fixups(struct nv_pass *ctx, struct nv_basic_block *b)
 static int
 nv_pc_pass0(struct nv_pc *pc, struct nv_basic_block *root)
 {
-   struct pass_reld_elim *reldelim;
+   struct pass_reld_elim *reldelim = NULL;
    struct nv_pass pass;
    struct nv_pass_dce dce;
    int ret;
