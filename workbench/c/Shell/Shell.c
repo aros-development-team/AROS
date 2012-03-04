@@ -199,7 +199,7 @@ LONG interact(ShellState *ss, APTR DOSBase)
 	    bufferReset(&out);
 
 	    D(bug("Shell %d: Reading in a line of input...\n", ss->cliNumber));
-	    error = readLine(cli, &in, &moreLeft, DOSBase);
+	    error = readLine(ss, cli, &in, &moreLeft, DOSBase);
 	    D(bug("Shell %d: moreLeft=%ld, error=%ld, Line is: %ld bytes (%s)\n", ss->cliNumber, moreLeft, error, in.len, in.buf));
 
 	    if (error == 0 && in.len > 0)

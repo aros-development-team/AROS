@@ -57,6 +57,7 @@ typedef struct _ShellState
     struct RDArgs *arg_rd;	/* Current RDArgs return state */
 
     TEXT	bra, ket, dollar, dot;
+    TEXT        mchar0, pchar0;
 
     struct _ShellState *stack;
 
@@ -95,15 +96,17 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase);
  *
  * Action:   Read one line of a stream into a buffer.
  *
- * Input:    struct CommandLineInterface *cli       --  the CLI
+ * Input:    ShellState                  *ss        --  this state
+ *           struct CommandLineInterface *cli       --  the CLI
  *           Buffer                      *out       --  the result
  *           BOOL                        *moreLeft  --  not end of stream result
  *
  * Note:     This routine reads a full command line.
+ *           As a side effect, it also updates ss->pchar0 and ss->mchar0
  *
  * Output:   SIPTR --  DOS error code
  */
-LONG readLine(struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
+LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, BOOL *moreLeft, APTR DOSBase);
 
 /* Function: checkLine
  *
