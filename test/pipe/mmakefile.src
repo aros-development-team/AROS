@@ -1,0 +1,20 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := autopipe
+
+EXEDIR          := $(AROS_TESTS)/pipe
+
+#MM- test : test-pipe test-pipe-pure
+#MM- test-quick : test-pipe-quick
+
+#MM test-pipe : includes linklibs
+
+%build_progs mmake=test-pipe \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga m" \
+    usestartup="no"
+
+%common

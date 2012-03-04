@@ -307,11 +307,25 @@ LOOP:
             PipeExNext (pkt);
             break;
 
+          case ACTION_EXAMINE_FH:
+#  ifdef DEBUG
+     OS (  "ExFH packet received\n");
+#  endif /* DEBUG */
+            PipeExFH (pkt);
+            break;
+
           case ACTION_PARENT:
 #  ifdef DEBUG
      OS (  "ParentDir packet received\n");
 #  endif /* DEBUG */
             PipeParentDir (pkt);
+            break;
+
+          case ACTION_PARENT_FH:
+#  ifdef DEBUG
+     OS (  "ParentFH packet received\n");
+#  endif /* DEBUG */
+            PipeParentFH (pkt);
             break;
 #endif /* PIPEDIR */
 

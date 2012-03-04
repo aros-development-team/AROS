@@ -55,12 +55,17 @@
 **		since a null name indicates a lock is desired on the handler.
 **		Thus locking PIPE: and opening PIPE: reference different
 **		objects.
+**
+** AUTONAME_STAR: Like AUTONAME, but use the special name 'PIPE:*' for the
+**		automatic pipe name. This works around the Lock() issues
+**		that AUTONAME has.
 */
 
 #define   CON_TAP_ONLY      0
 #define   PIPEDIR           1
 #define   UPDATE_PIPEDATE   1
-#define   AUTONAME          0
+#define   AUTONAME          0           /* Use PIPE: for auto names */
+#define   AUTONAME_STAR     1           /* Use PIPE:* for automatic names */
 
 
 

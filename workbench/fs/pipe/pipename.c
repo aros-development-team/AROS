@@ -41,7 +41,7 @@
 **	char  *findchar     (str, ch)
 **	void  l_strcpy      (to, from)
 **	char  *strdiff      (str1, str2)
-**	char  *get_autoname (newflag)     (if AUTONAME is true)
+**	char  *get_autoname (newflag)     (if AUTONAME or AUTONAME_STAR is true)
 **
 ** Macros (in pipename.h)
 ** ----------------------
@@ -331,7 +331,7 @@ register char  *str2;
 ** contain such a block of digits.
 */
 
-#if AUTONAME
+#if AUTONAME || AUTONAME_STAR
 
 static char  autoname[]  =  AUTONAME_INIT;
 
@@ -368,7 +368,7 @@ BYTE  newflag;
   return  autoname;
 }
 
-#endif /* AUTONAME */
+#endif /* AUTONAME || AUTONAME_STAR */
 
 
 

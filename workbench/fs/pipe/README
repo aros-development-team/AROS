@@ -123,6 +123,10 @@ is interpreted as octal.
 If an empty tapname is specified, the default tap CON:10/15/300/70/name
 is used (where "name" is the pipe's name given).
 
+You can use a pipe name of '*' to specify an autonamed pipe. The
+dos.library/NameFromFH() call can be used to get the name of the
+opposite end, which can then be passed to Open()
+
 
 EXAMPLES OF PIPE NAMES
 ----------------------
