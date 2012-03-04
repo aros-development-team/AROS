@@ -11,6 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Define this wrapper here, before loading AROS headers,
+ * so that the defines in <aros/system.h> do not
+ * confuse GCC's built-in substitutions for strcmp().
+ */
+static inline int Strcmp(const char *a, const char *b) { return strcmp(a, b); }
+
 #include <dos/elf.h>
 #include <libraries/debug.h>
 
@@ -156,7 +162,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
         case SHN_ABS:
             if (SysBase_sym == NULL)
             {
-                if (strncmp(name, "SysBase", 8) == 0)
+                if (Strcmp(name, "SysBase") == 0)
                 {
                     DREL(kprintf("[ELF Loader] got SysBase\n"));
                     SysBase_sym = sym;
@@ -189,7 +195,7 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
                  */
                 if (sym->info == ELF_S_INFO(STB_GLOBAL, STT_OBJECT))
                 {
-                    if (strcmp(name, "SysBase") == 0)
+                    if (Strcmp(name, "SysBase") == 0)
                     {
                         SysBase_ptr = s;
                         D(kprintf("[ELF Loader] SysBase pointer set to %p\n", (void *)SysBase_ptr));
