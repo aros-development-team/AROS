@@ -4,7 +4,7 @@
 #include "kernel_intern.h"
 
 
-struct SignalTranslation sigs[] = {
+struct SignalTranslation const sigs[] = {
     {SIGILL   ,  4,  7},
     {SIGTRAP  ,  9, 13},
     {SIGBUS   ,  2,  3},
