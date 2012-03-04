@@ -40,11 +40,11 @@
 
 #ifdef SIGCORE_NEED_SA_SIGINFO
 #define SETHANDLER(sa, h) 			\
-    sa.sa_sigaction = (void *)h ## _gate;	\
+    sa.sa_sigaction = h ## _gate;	\
     sa.sa_flags |= SA_SIGINFO
 #else
 #define SETHANDLER(sa, h) 			\
-    sa.sa_handler = (SIGHANDLER_T)h ## _gate;
+    sa.sa_handler = h ## _gate;
 #endif
 
 static void core_TrapHandler(int sig, regs_t *regs)
@@ -169,7 +169,7 @@ int core_Start(void *libc)
     struct KernelBase *KernelBase = getKernelBase();
     struct PlatformData *pd = KernelBase->kb_PlatformData;
     APTR HostLibBase;
-    struct sigaction sa;
+    struct sigaction sa = {};
     const struct SignalTranslation *s;
     sigset_t tmp_mask;
     ULONG r;
@@ -203,9 +203,6 @@ int core_Start(void *libc)
     SIGFILLSET(&pd->sig_int_mask);
     SIGEMPTYSET(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
-#ifdef HOST_OS_linux
-    sa.sa_restorer = NULL;
-#endif
 
     /* 
      * These ones we consider as processor traps.
