@@ -183,7 +183,7 @@ HOOKPROTONH(popupOpenFun, ULONG, Object *list, Object *str)
     STRPTR s = NULL, x;
     int i;
 
-    get(str, MUIA_Text_Contents, (IPTR *)&s);
+    get(str, MUIA_Text_Contents, &s);
 
     if(s != NULL)
     {
@@ -423,7 +423,7 @@ meditorLoad(struct IClass *cl,Object *obj,struct MUIP_Editor_Load *msg)
                                     STRPTR                  cname = NULL;
 
                                     /* Get used codeset */
-                                    get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
+                                    get(data->codesetsObj, MUIA_Text_Contents, &cname);
                                     codeset = CodesetsFindA(cname,NULL);
 
                                     /* Convert */
@@ -480,7 +480,7 @@ meditorSave(struct IClass *cl, Object *obj, UNUSED Msg msg)
         ULONG                   dlen;
 
         /* Get current user codeset */
-        get(data->codesetsObj, MUIA_Text_Contents, (IPTR *)&cname);
+        get(data->codesetsObj, MUIA_Text_Contents, &cname);
         codeset = CodesetsFindA(cname,NULL);
 
         /* Convert text as utf8 */
