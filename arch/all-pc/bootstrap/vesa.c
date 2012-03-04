@@ -26,7 +26,10 @@ short getControllerInfo(void)
 {
     short retval;
 
-    *(ULONG *)controllerinfo.signature = *(ULONG *)"VBE2";
+    controllerinfo.signature[0] = 'V';
+    controllerinfo.signature[1] = 'B';
+    controllerinfo.signature[2] = 'E';
+    controllerinfo.signature[3] = '2';
     asm volatile("call go16 \n\t.code16 \n\t"
                 "movw $0x4f00, %%ax\n\t"
                 "int $0x10\n\t"
@@ -195,9 +198,9 @@ void calcTimings(int vfreq)
 
 short findMode(int x, int y, int d, int vfreq, BOOL prioritise_depth)
 {
-    unsigned long match, bestmatch, matchd, bestmatchd;
+    unsigned long match, bestmatch = 0, matchd, bestmatchd = 0;
     unsigned short bestmode = 0xffff, mode_attrs;
-    int bestd;
+    int bestd = 0;
 
     if (getControllerInfo() == 0x4f)
     {
