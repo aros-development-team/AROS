@@ -339,6 +339,41 @@ EXNEXTREPLY:
 
 
 /*---------------------------------------------------------------------------
+** PipeExFH() responds to ExFH requests.
+*/
+
+void  PipeExFH (pkt)
+
+struct DosPacket  *pkt;
+
+{ struct FileInfoBlock  *fib;
+  PIPEKEY               *pipekey;
+  PIPEDATA              *pipe;
+
+  pkt->dp_Res1= 0;     /* error, for now */
+
+  if ((pipekey= (PIPEKEY *) pkt->dp_Arg1) == NULL)
+    { pkt->dp_Res2= ERROR_OBJECT_WRONG_TYPE;
+      goto EXFHREPLY;
+    }
+
+  fib= (struct FileInfoBlock *) BPTRtoCptr (pkt->dp_Arg2);
+
+  pipe=pipekey->pipe;
+  FillFIB ( fib, (SIPTR)NextItem (pipe), pipe->name,
+            (FIBF_EXECUTE | FIBF_DELETE), -1,
+            pipe->buf->len, 1, &pipe->accessdate );
+
+  pkt->dp_Res1= DOSTRUE;
+  pkt->dp_Res2= 0;
+
+EXFHREPLY:
+  QuickReplyPkt (pkt);
+}
+
+
+
+/*---------------------------------------------------------------------------
 ** PipeParentDir() responds to ParentDir requests.
 */
 
@@ -363,6 +398,36 @@ struct DosPacket  *pkt;
         pkt->dp_Res1= 0;     /* root of current filing system */
       else
         pkt->dp_Res1= (SIPTR)CptrtoBPTR (PipedirLock);
+    }
+
+  QuickReplyPkt (pkt);
+}
+
+
+
+/*---------------------------------------------------------------------------
+** PipeParentFH() responds to ParentFH requests.
+*/
+
+void  PipeParentFH (pkt)
+
+struct DosPacket  *pkt;
+
+{ PIPEKEY         *pipekey;
+  void             InitPipedirLock();
+
+
+  InitPipedirLock ();
+
+  pkt->dp_Res2= 0;
+
+  if ((pipekey= (PIPEKEY *) (pkt->dp_Arg1)) == NULL)
+    { pkt->dp_Res1= 0;
+      pkt->dp_Res2= ERROR_INVALID_LOCK;
+    }
+  else
+    {
+      pkt->dp_Res1= (SIPTR)CptrtoBPTR (PipedirLock);
     }
 
   QuickReplyPkt (pkt);

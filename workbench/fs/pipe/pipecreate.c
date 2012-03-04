@@ -132,6 +132,9 @@ BPTR              tapfh;
           goto OPENREPLY;
         }
 #endif /* AUTONAME */
+      if (AUTONAME_STAR && pipename[0] == '*' && pipename[1] == 0) {
+          pipename= get_autoname ((openmode == MODE_NEWFILE) || (openmode == MODE_READWRITE));
+      }
 
       pipe= FindPipe (pipename);
     }

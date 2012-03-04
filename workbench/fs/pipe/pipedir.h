@@ -25,5 +25,7 @@ extern void  PipeDupLock   ( /* pkt */ );
 extern void  PipeUnLock    ( /* pkt */ );
 extern void  PipeExamine   ( /* pkt */ );
 extern void  PipeExNext    ( /* pkt */ );
+extern void  PipeExFH      ( /* pkt */ );
 extern void  PipeParentDir ( /* pkt */ );
+extern void  PipeParentFH  ( /* pkt */ );
 extern void  InitLock      ( /* lock, key */ );

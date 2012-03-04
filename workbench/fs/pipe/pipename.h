@@ -27,7 +27,7 @@
 ** AUTONAME_INIT	: Initial value used by get_autoname() to form
 **			default pipe names.  It MUST contain a block of
 **			digits.  See pipename.c.
-**			This is only used if AUTONAME is true.
+**			This is only used if AUTONAME or AUTONAME_STAR is true.
 */
 
 #define   PIPENAMELEN        108
@@ -37,9 +37,7 @@
 #define   PIPE_SPEC_CHAR           '/'
 #define   DEFAULT_TAPNAME_PREFIX   "CON:10/15/300/70/"
 
-#if AUTONAME
-# define   AUTONAME_INIT            "$00000000"
-#endif /* AUTONAME */
+# define   AUTONAME_INIT            "*00000000"
 
 
 
@@ -57,6 +55,4 @@ extern char  *findchar     ( /* str, ch */ );
 extern void  l_strcpy      ( /* to, from */ );
 extern char  *strdiff      ( /* str1, str2 */ );
 
-#if AUTONAME
-  extern char  *get_autoname ( /* newflag */ );
-#endif /* AUTONAME */
+extern char  *get_autoname ( /* newflag */ );
