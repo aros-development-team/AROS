@@ -3,7 +3,7 @@
 #include "kernel_base.h"
 #include "kernel_intern.h"
 
-struct SignalTranslation sigs[] = {
+struct SignalTranslation const sigs[] = {
     {SIGILL   ,  4,  6},
     {SIGTRAP  ,  9,  1},
     {SIGBUS   ,  2, 13},

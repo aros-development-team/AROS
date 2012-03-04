@@ -14,7 +14,7 @@
  * 6 - Software interrupt (not simulated)
  */
 
-struct SignalTranslation sigs[] = {
+struct SignalTranslation const sigs[] = {
     {SIGILL   ,  4,  5},
     {SIGTRAP  ,  9,  5},
     {SIGBUS   ,  2,  1},

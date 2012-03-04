@@ -50,7 +50,7 @@
 static void core_TrapHandler(int sig, regs_t *regs)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    struct SignalTranslation *s;
+    const struct SignalTranslation *s;
     short amigaTrap;
     struct AROSCPUContext ctx;
 
@@ -170,7 +170,7 @@ int core_Start(void *libc)
     struct PlatformData *pd = KernelBase->kb_PlatformData;
     APTR HostLibBase;
     struct sigaction sa;
-    struct SignalTranslation *s;
+    const struct SignalTranslation *s;
     sigset_t tmp_mask;
     ULONG r;
 

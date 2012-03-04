@@ -75,6 +75,6 @@ struct SignalTranslation
     short CPUTrap;
 };
 
-extern struct SignalTranslation sigs[];
+extern struct SignalTranslation const sigs[];
 
 void cpu_DispatchContext(struct Task *task, regs_t *regs, struct PlatformData *pdata);
