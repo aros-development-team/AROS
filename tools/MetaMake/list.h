@@ -36,7 +36,6 @@ struct Node
     char 	* name;
 };
 
-struct List __mayalias;
 #ifndef __GNUC__
 struct List
 {
@@ -45,6 +44,7 @@ struct List
 		* prelast;
 };
 #else
+struct List __mayalias;
 struct List
 {
     union
@@ -61,33 +61,44 @@ struct List
 };
 #endif
 
-/* Macros */
-
+/* inline functions and macros */
+static inline void __NewList(struct List *l)
+{
 #ifndef __GNUC__
-#   define NewList(l)       (((struct List *)l)->prelast = (struct Node *)(l), \
-			    ((struct List *)l)->last = 0, \
-			    ((struct List *)l)->first = (struct Node *)&(((struct List *)l)->last))
+    l->prelast = (struct Node *)l;
+    l->_first = (struct Node *)&l->last;
 #else
-#   define NewList(l)       (((struct List *)l)->_prelast = (struct List *)(l), \
-			    ((struct List *)l)->last = 0, \
-			    ((struct List *)l)->_first = &(((struct List *)l)->last))
+    l->_prelast = l;
+    l->_first = &l->last;
 #endif
+    l->last = 0;
+}
+#define NewList(l) __NewList((struct List *)l)
 
-#   define AddHead(l,n)     ((void)(\
-	((struct Node *)n)->next        = ((struct List *)l)->first, \
-	((struct Node *)n)->prev        = (struct Node *)&((struct List *)l)->first, \
-	((struct List *)l)->first->prev = ((struct Node *)n), \
-	((struct List *)l)->first       = ((struct Node *)n)))
+static inline void __AddHead(struct List *l, struct Node *n)
+{
+    n->next        = l->first;
+    n->prev        = (struct Node *)&l->first;
+    l->first->prev = n;
+    l->first       = n;
+}
+#define AddHead(l,n) __AddHead((struct List *)l, (struct Node *)n)
 
-#   define AddTail(l,n)     ((void)(\
-	((struct Node *)n)->next          = (struct Node *)&((struct List *)l)->last, \
-	((struct Node *)n)->prev          = ((struct List *)l)->prelast, \
-	((struct List *)l)->prelast->next = ((struct Node *)n), \
-	((struct List *)l)->prelast       = ((struct Node *)n) ))
+static inline void __AddTail(struct List *l, struct Node *n)
+{
+    n->next          = (struct Node *)&l->last;
+    n->prev          = l->prelast;
+    l->prelast->next = n;
+    l->prelast       = n;
+}
+#define AddTail(l,n) __AddTail((struct List *)l, (struct Node *)n)
 
-#   define Remove(n)        ((void)(\
-	((struct Node *)n)->prev->next = ((struct Node *)n)->next,\
-	((struct Node *)n)->next->prev = ((struct Node *)n)->prev ))
+static inline void __Remove(struct Node *n)
+{
+    n->prev->next = n->next;
+    n->next->prev = n->prev;
+}
+#define Remove(n) __Remove((struct Node *)n)
 
 #   define GetHead(l)       (void *)(((struct List *)l)->first->next \
 				? ((struct List *)l)->first \
