@@ -312,6 +312,7 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
 
     if (stat (mfsrc, &sst) == -1)
     {
+        debug(printf("MMAKE/cache.c:stat(\"%s\", ...) failed\n", mfsrc));
 	xfree (mfsrc);
 	return;
     }
@@ -335,10 +336,14 @@ checknewsrc (struct Cache_priv * cache, struct Makefile * makefile, struct List 
 	reg->src = mfsrc;
 	reg->dest = xstrdup (makefile->node.name);
 
+        debug(printf("MMAKE/cache.c:Added \"%s\" to be regenerated from \"%s\" in \"%s\"\n",
+                     reg->dest, reg->src, reg->dir
+        ));
 	AddTail (regeneratefiles, reg);
     }
     else
     {
+        debug(printf("MMAKE/cache.c:\"%s\" Not regenerated\n", makefile->node.name));
 	xfree (mfsrc);
     }
 }
@@ -352,7 +357,7 @@ updatemflist (struct Cache_priv * cache, struct DirNode * node, struct List * re
     int goup = 0, reread = 0;
     char curdir[1024];
 
-    debug(printf("MMAKE:cache.c->updatemflist()\n"));
+    debug(printf("MMAKE:cache.c->updatemflist(\"%s\")\n", node->node.name));
 
     if (strlen(node->node.name) != 0)
     {
