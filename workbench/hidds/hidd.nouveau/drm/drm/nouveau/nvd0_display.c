@@ -837,7 +837,7 @@ nvd0_sor_mode_set(struct drm_encoder *encoder, struct drm_display_mode *umode,
 	struct nouveau_connector *nv_connector;
 	struct nvbios *bios = &dev_priv->vbios;
 	u32 mode_ctrl = (1 << nv_crtc->index);
-	u32 *push, or_config;
+	u32 *push, or_config = 0;
 
 	nv_connector = nouveau_encoder_connector_get(nv_encoder);
 	switch (nv_encoder->dcb->type) {

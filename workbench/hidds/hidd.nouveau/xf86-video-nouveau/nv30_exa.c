@@ -666,8 +666,8 @@ NV30EXAComposite(PixmapPtr pdPix, int srcX , int srcY,
 	NVPtr pNv = NVPTR(pScrn);
 	struct nouveau_channel *chan = pNv->chan;
 	struct nouveau_grobj *rankine = pNv->Nv3D;
-	float sX0, sX1, sX2, sY0, sY1, sY2;
-	float mX0, mX1, mX2, mY0, mY1, mY2;
+	float sX0 = 0, sX1 = 0, sX2 = 0, sY0 = 0, sY1 = 0, sY2 = 0;
+	float mX0 = 0, mX1 = 0, mX2 = 0, mY0 = 0, mY1 = 0, mY2 = 0;
 	NV30EXA_STATE;
 
 	WAIT_RING(chan, 64);
