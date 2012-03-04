@@ -324,13 +324,23 @@ setdtablesize(struct SocketBase * libPtr, UWORD size)
   return size;
 }
 
+#ifdef __GNUC__
+/* GNU C 4.x and higher really don't like to
+ * have the l-value type-punned
+ */
+#define IPTR_ASSIGN(s,v) s = (__typeof__(s))(v)
+#define LONG_ASSIGN(s,v) IPTR_ASSIGN(s, v)
+#else
+#define IPTR_ASSIGN(s, v) *(IPTR *)(s) = v
+#define LONG_ASSIGN(s, v) *(LONG *)(s) = v
+#endif
 
 #define CASE_IPTR(code, baseField)\
  case (code << SBTB_CODE): /* get */ \
   *tagData = (IPTR)libPtr->baseField;\
   break;\
  case (code << SBTB_CODE) | SBTF_SET: /* set */\
-  *(ULONG *)&libPtr->baseField = *tagData;\
+  IPTR_ASSIGN(libPtr->baseField, *(tagData));\
   break
 
 #define CASE_LONG(code, baseField)\
@@ -338,7 +348,7 @@ setdtablesize(struct SocketBase * libPtr, UWORD size)
   *tagData = (LONG)libPtr->baseField;\
   break;\
  case (code << SBTB_CODE) | SBTF_SET: /* set */\
-  *(ULONG *)&libPtr->baseField = *tagData;\
+  LONG_ASSIGN(libPtr->baseField, *(tagData));\
   break
 
 #define CASE_WORD(code, baseField)\

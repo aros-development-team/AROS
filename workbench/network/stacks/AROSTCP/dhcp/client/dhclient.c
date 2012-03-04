@@ -112,7 +112,11 @@ static void usage PROTO ((void));
 
 void do_release(struct client_state *);
 
-#define ia2ulong(x) (*(u_long *)(x.iabuf))
+#ifdef __GNUC__
+static inline u_long ia2ulong(struct iaddr *ia) { u_long *p = (u_long *)&ia->iabuf[0]; return *p; }
+#else
+#define ia2ulong(x) (*(u_long *)((x)->iabuf))
+#endif
 void interface_preinit (struct client_state *);
 int interface_medium (struct client_state *, char *);
 int interface_bind (struct client_state *);
@@ -2846,7 +2850,7 @@ int interface_bind (struct client_state *client)
 		dump_params (client, client -> new);
 		if (new_ifconfig) {
 			delroute (INADDR_BROADCAST);
-			ifconfig (client->interface->name, ia2ulong(client->new->address), new_netmask, new_broadcast);
+			ifconfig (client->interface->name, ia2ulong(&client->new->address), new_netmask, new_broadcast);
 		}
 		if (new_gateways) {
 			delroute (INADDR_ANY);
