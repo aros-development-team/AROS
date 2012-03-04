@@ -20,6 +20,7 @@
 /**************************************
 	       Structures
 **************************************/
+#ifndef __GNUC__
 /* Normal list */
 struct List
 {
@@ -28,7 +29,7 @@ struct List
 		* lh_TailPred;
     UBYTE	  lh_Type;
     UBYTE	  l_pad;
-} __mayalias;
+};
 
 /* Minimal list */
 struct MinList
@@ -36,8 +37,36 @@ struct MinList
     struct MinNode * mlh_Head,
                    * mlh_Tail,
 		   * mlh_TailPred;
-} __mayalias;
+};
+#else
+/* Normal list */
+struct List __mayalias;
+struct List
+{
+    struct Node * lh_Head,
+                * lh_Tail;
+    union
+    {
+        struct Node * lh_TailPred;
+        struct List * lh_TailPred_;
+    };
+    UBYTE	  lh_Type;
+    UBYTE	  l_pad;
+};
 
+/* Minimal list */
+struct MinList __mayalias;
+struct MinList
+{
+    struct MinNode * mlh_Head,
+                   * mlh_Tail;
+    union
+    {
+        struct MinNode * mlh_TailPred;
+        struct MinList * mlh_TailPred_;
+    };
+};
+#endif /* __GNUC__ */
 
 /**************************************
 	       Macros
@@ -52,6 +81,7 @@ struct MinList
       ( (((struct MsgPort *)(mp))->mp_MsgList.lh_TailPred) \
 	    == (struct Node *)(&(((struct MsgPort *)(mp))->mp_MsgList)) )
 
+#ifndef __GNUC__
 #define NEWLIST(_l)                                     \
 do                                                      \
 {                                                       \
@@ -62,6 +92,18 @@ do                                                      \
     l->lh_Tail     = 0;                                 \
     l->lh_Head     = (struct Node *)&l->lh_Tail;        \
 } while (0)
+#else /* __GNUC__ */
+#define NEWLIST(_l)                                     \
+do                                                      \
+{                                                       \
+    struct List *__aros_list_tmp = (struct List *)(_l), \
+                *l = __aros_list_tmp;                   \
+                                                        \
+    l->lh_TailPred_= l;                                 \
+    l->lh_Tail     = 0;                                 \
+    l->lh_Head     = (struct Node *)&l->lh_Tail;        \
+} while (0)
+#endif /* __GNUC__ */
 
 #define ADDHEAD(_l,_n)                                  \
 do                                                      \
