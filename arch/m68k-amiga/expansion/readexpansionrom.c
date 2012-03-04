@@ -96,7 +96,7 @@ static void readexprom(APTR board, struct ExpansionRom *rom, struct ExpansionBas
 			size = (32 * 1024) << mem; // 64k,128k,256k,512k,1m,2m,4m
 	}
 	if ((rom->er_Type & ERT_TYPEMASK) == ERT_ZORROIII) {
-		UBYTE subsize = rom->er_Type & ERT_Z3_SSMASK;
+		UBYTE subsize = rom->er_Flags & ERT_Z3_SSMASK;
 		ULONG ss = size;
 		if (subsize >= 2 && subsize <= 7) { // 64k,128k,256k,512k,1m,2m
 			ss = (64 * 1024) << (subsize - 2);
