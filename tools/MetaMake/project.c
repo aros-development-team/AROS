@@ -414,6 +414,8 @@ initprojects (void)
 		int depc, t;
 		char ** deps = getargs (args, &depc, NULL);
 
+                debug(printf("MMAKE/project.c: genmakefiledeps depc=%d\n", depc));
+
 		for (t=0; t<depc; t++)
 		{
 		    dep = addnodeonce (&project->genmakefiledeps, deps[t]);
