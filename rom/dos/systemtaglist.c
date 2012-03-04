@@ -450,7 +450,8 @@
                     DoPkt(fh->fh_Type, ACTION_CHANGE_SIGNAL, (SIPTR)fh->fh_Arg1, oldSignal, 0, 0, 0);
                 }
 
-                rc = dp->dp_Res2;
+                rc = dp->dp_Res1;
+                SetIoErr(dp->dp_Res2);
 
                 cis_opened = FALSE;
                 if (isAsynch) {
