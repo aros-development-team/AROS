@@ -3,15 +3,13 @@
     $Id$
 */
 
-//#include <proto/dos.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/keymap.h>
-//#include <proto/asl.h>
-//#include <proto/utility.h>
+#include <proto/utility.h>
 #include <proto/alib.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <libraries/mui.h>
@@ -24,6 +22,10 @@
 #define KEY(n) Child, keybtn[n]
 
 #define KBUFSIZE (12)
+
+// On classic keyboard in top left corner of num pad
+#define RAWKEY_KP_LBRACKET     0x5A
+#define RAWKEY_KP_RBRACKET     0x5B
 
 struct Key
 {
@@ -42,6 +44,7 @@ struct KeyboardGroup_DATA
     struct Key *key;
     Object *keybutton[128]; // 64-127 are high keys
     struct Hook change_qualifier_hook;
+    ULONG kbtype; // Amiga, PC105 etc.
 };
 
 
@@ -59,10 +62,22 @@ static struct Key *read_keymap(void)
     {
         struct KeyMap *km = AskKeyMapDefault();
         LONG i;
-        for (i = 0; i < 64; i++)
+        ULONG value;
+        UBYTE type;
+        for (i = 0; i < 128; i++)
         {
-            ULONG value = km->km_LoKeyMap[i];
-            switch (km->km_LoKeyMapTypes[i])
+            if (i < 64)
+            {
+                type = km->km_LoKeyMapTypes[i];
+                value = km->km_LoKeyMap[i];
+            }
+            else
+            {
+                type = km->km_HiKeyMapTypes[i-64];
+                value = km->km_HiKeyMap[i-64];
+            }
+
+            switch (type)
             {
                 case KC_NOQUAL:
                     key[i].alone[0]     = value & 0xff;
@@ -110,7 +125,6 @@ static struct Key *read_keymap(void)
         // Qualifier keys
         set_immutable_key(key, RAWKEY_LSHIFT, _(MSG_KEY_SHIFT));
         set_immutable_key(key, RAWKEY_RSHIFT, _(MSG_KEY_SHIFT));
-        set_immutable_key(key, RAWKEY_CAPSLOCK, _(MSG_KEY_LOCK));
         set_immutable_key(key, RAWKEY_LCONTROL, _(MSG_KEY_CTRL));
         set_immutable_key(key, RAWKEY_LALT, _(MSG_KEY_ALT));
         set_immutable_key(key, RAWKEY_RALT, _(MSG_KEY_ALT));
@@ -121,6 +135,7 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_RIGHT, "\033I[6:14]");
         set_immutable_key(key, RAWKEY_LEFT, "\033I[6:13]");
 
+        set_immutable_key(key, RAWKEY_CAPSLOCK, _(MSG_KEY_LOCK));
         set_immutable_key(key, RAWKEY_BACKSPACE, "^H");
         set_immutable_key(key, RAWKEY_TAB, "^I");
         set_immutable_key(key, RAWKEY_RETURN, "^M");
@@ -148,13 +163,7 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_END, _(MSG_KEY_END));
         set_immutable_key(key, RAWKEY_PAGEDOWN, _(MSG_KEY_PAGEDOWN));
 
-        set_immutable_key(key, RAWKEY_NUMLOCK, _(MSG_KEY_NUM));
-        set_immutable_key(key, RAWKEY_KP_DIVIDE, "/");
-        set_immutable_key(key, RAWKEY_KP_MULTIPLY, "*");
-        set_immutable_key(key, RAWKEY_KP_MINUS, "-");
-        set_immutable_key(key, RAWKEY_KP_PLUS, "+");
         set_immutable_key(key, RAWKEY_KP_ENTER, "^M");
-
         set_immutable_key(key, 127, _(MSG_KEY_CTRL));   // Pseudo right Ctrl
     }
     return key;
@@ -273,29 +282,24 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     LONG i;
     Object *keybtn[128];
     struct Key *key = read_keymap();
+    ULONG kbtype = MUIV_KeyboardGroup_Type_Amiga;
 
-    //struct TagItem  *tstate = message->ops_AttrList;
-    //struct TagItem  *tag    = NULL;
+    struct TagItem  *tstate = message->ops_AttrList;
+    struct TagItem  *tag    = NULL;
 
-#if 0
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_UnarcWindow_Archive:
-                archive = (STRPTR)tag->ti_Data;
-                break;
-
-            case MUIA_UnarcWindow_Destination:
-                destination = (STRPTR)tag->ti_Data;
+            case MUIA_KeyboardGroup_Type:
+                kbtype = tag->ti_Data;
                 break;
         }
     }
-#endif
 
     for (i = 0; i < 128; i++)
     {
-        if ((i < 96 || i > 101) && i != 127 && i != 98)
+        if ((i < 96 || i > 101 || i == RAWKEY_CAPSLOCK) && i != 127)
         {
             keybtn[i] = MUI_NewObject(MUIC_Text,
                 ButtonFrame,
@@ -318,92 +322,186 @@ Object *KeyboardGroup__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         }
     }
 
-    self = (Object *) DoSuperNewTags
-    (
-        CLASS, self, NULL,
-        MUIA_Group_Horiz, TRUE,
-        Child, VGroup,
-            GroupFrame,
-            Child, HGroup,
-                //MUIA_Group_SameSize, TRUE,
-                KEY(RAWKEY_ESCAPE), KEY(RAWKEY_F1), KEY(RAWKEY_F2), KEY(RAWKEY_F3), KEY(RAWKEY_F4), KEY(RAWKEY_F5),
-                KEY(RAWKEY_F6), KEY(RAWKEY_F7), KEY(RAWKEY_F8), KEY(RAWKEY_F9), KEY(RAWKEY_F10), KEY(RAWKEY_F11), KEY(RAWKEY_F12),
-            End,
-            Child, VSpace(5),
-            Child, HGroup,
+    if (kbtype == MUIV_KeyboardGroup_Type_PC105)
+    {
+        self = (Object *) DoSuperNewTags
+        (
+            CLASS, self, NULL,
+            MUIA_Group_Horiz, TRUE,
+            Child, VGroup,
+                GroupFrame,
                 Child, HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    KEY(0), KEY(1), KEY(2), KEY(3), KEY(4), KEY(5), KEY(6), KEY(7), KEY(8), KEY(9), KEY(10), KEY(11), KEY(12), KEY(13),
+                    //MUIA_Group_SameSize, TRUE,
+                    KEY(RAWKEY_ESCAPE), KEY(RAWKEY_F1), KEY(RAWKEY_F2), KEY(RAWKEY_F3), KEY(RAWKEY_F4), KEY(RAWKEY_F5),
+                    KEY(RAWKEY_F6), KEY(RAWKEY_F7), KEY(RAWKEY_F8), KEY(RAWKEY_F9), KEY(RAWKEY_F10), KEY(RAWKEY_F11), KEY(RAWKEY_F12),
                 End,
-                KEY(RAWKEY_BACKSPACE),
-            End,
-            Child, HGroup,
-                KEY(RAWKEY_TAB),
+                Child, VSpace(5),
                 Child, HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    KEY(16), KEY(17), KEY(18), KEY(19), KEY(20), KEY(21), KEY(22), KEY(23), KEY(24), KEY(25), KEY(26), KEY(27),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(0), KEY(1), KEY(2), KEY(3), KEY(4), KEY(5), KEY(6), KEY(7), KEY(8), KEY(9), KEY(10), KEY(11), KEY(12), KEY(13),
+                    End,
+                    KEY(RAWKEY_BACKSPACE),
                 End,
-                KEY(RAWKEY_RETURN),
-            End,
-            Child, HGroup,
-                KEY(RAWKEY_CAPSLOCK),
                 Child, HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    KEY(32), KEY(33), KEY(34), KEY(35), KEY(36), KEY(37), KEY(38), KEY(39), KEY(40), KEY(41), KEY(42), KEY(43),
+                    KEY(RAWKEY_TAB),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(16), KEY(17), KEY(18), KEY(19), KEY(20), KEY(21), KEY(22), KEY(23), KEY(24), KEY(25), KEY(26), KEY(27),
+                    End,
+                    KEY(RAWKEY_RETURN),
+                End,
+                Child, HGroup,
+                    KEY(RAWKEY_CAPSLOCK),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(32), KEY(33), KEY(34), KEY(35), KEY(36), KEY(37), KEY(38), KEY(39), KEY(40), KEY(41), KEY(42), KEY(43),
+                    End,
+                    Child, HVSpace,
+                End,
+                Child, HGroup,
+                    KEY(RAWKEY_LSHIFT),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(48), KEY(49), KEY(50), KEY(51), KEY(52), KEY(53), KEY(54), KEY(55), KEY(56), KEY(57), KEY(58),
+                    End,
+                    KEY(RAWKEY_RSHIFT),
+                End,
+                Child, HGroup,
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(RAWKEY_LCONTROL), KEY(RAWKEY_LAMIGA), KEY(RAWKEY_LALT),
+                    End,
+                    KEY(RAWKEY_SPACE),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), KEY(127),
+                    End,
+                End,
+            End,
+            Child, VGroup,
+                Child, ColGroup(3),
+                    GroupFrame,
+                    //MUIA_Group_SameSize, TRUE,
+                    KEY(RAWKEY_INSERT), KEY(RAWKEY_HOME), KEY(RAWKEY_PAGEUP),
+                    KEY(RAWKEY_DELETE), KEY(RAWKEY_END), KEY(RAWKEY_PAGEDOWN),
                 End,
                 Child, HVSpace,
-            End,
-            Child, HGroup,
-                KEY(RAWKEY_LSHIFT),
-                Child, HGroup,
+                Child, ColGroup(3),
+                    GroupFrame,
                     MUIA_Group_SameSize, TRUE,
-                    KEY(48), KEY(49), KEY(50), KEY(51), KEY(52), KEY(53), KEY(54), KEY(55), KEY(56), KEY(57), KEY(58),
-                End,
-                KEY(RAWKEY_RSHIFT),
-            End,
-            Child, HGroup,
-                Child, HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    KEY(RAWKEY_LCONTROL), KEY(RAWKEY_LAMIGA), KEY(RAWKEY_LALT),
-                End,
-                KEY(RAWKEY_SPACE),
-                Child, HGroup,
-                    MUIA_Group_SameSize, TRUE,
-                    KEY(RAWKEY_RALT), KEY(RAWKEY_RAMIGA), KEY(RAWKEY_HELP), KEY(127),
+                    Child, HVSpace,
+                    KEY(RAWKEY_UP),
+                    Child, HVSpace,
+                    KEY(RAWKEY_LEFT), KEY(RAWKEY_DOWN), KEY(RAWKEY_RIGHT),
                 End,
             End,
-        End,
-        Child, VGroup,
-            Child, ColGroup(3),
-                GroupFrame,
-                //MUIA_Group_SameSize, TRUE,
-                KEY(RAWKEY_INSERT), KEY(RAWKEY_HOME), KEY(RAWKEY_PAGEUP),
-                KEY(RAWKEY_DELETE), KEY(RAWKEY_END), KEY(RAWKEY_PAGEDOWN),
-            End,
-            Child, HVSpace,
-            Child, ColGroup(3),
-                GroupFrame,
-                MUIA_Group_SameSize, TRUE,
+            Child, VGroup,
                 Child, HVSpace,
-                KEY(RAWKEY_UP),
-                Child, HVSpace,
-                KEY(RAWKEY_LEFT), KEY(RAWKEY_DOWN), KEY(RAWKEY_RIGHT),
+                Child, ColGroup(4),
+                    GroupFrame,
+                    MUIA_Group_SameSize, TRUE,
+                    // rawkey codes refer to a matrix position and can
+                    // differ from their real meaning
+                    KEY(RAWKEY_KP_LBRACKET), KEY(RAWKEY_KP_RBRACKET), KEY(RAWKEY_KP_DIVIDE), KEY(RAWKEY_KP_MULTIPLY),
+                    KEY(RAWKEY_KP_7), KEY(RAWKEY_KP_8), KEY(RAWKEY_KP_9), KEY(RAWKEY_KP_PLUS),
+                    KEY(RAWKEY_KP_4), KEY(RAWKEY_KP_5), KEY(RAWKEY_KP_6), Child, HVSpace,
+                    KEY(RAWKEY_KP_1), KEY(RAWKEY_KP_2), KEY(RAWKEY_KP_3), KEY(RAWKEY_KP_ENTER),
+                    KEY(RAWKEY_KP_0), Child, HVSpace, KEY(RAWKEY_KP_DECIMAL), Child, HVSpace,
+                End,
             End,
-        End,
-        Child, VGroup,
-            Child, HVSpace,
-            Child, ColGroup(4),
+            TAG_MORE, (IPTR)message->ops_AttrList
+        );
+    }
+    else
+    {
+        self = (Object *) DoSuperNewTags
+        (
+            CLASS, self, NULL,
+            MUIA_Group_Horiz, TRUE,
+            Child, VGroup,
                 GroupFrame,
-                MUIA_Group_SameSize, TRUE,
-                KEY(RAWKEY_NUMLOCK), KEY(RAWKEY_KP_DIVIDE), KEY(RAWKEY_KP_MULTIPLY), KEY(RAWKEY_KP_MINUS),
-                KEY(RAWKEY_KP_7), KEY(RAWKEY_KP_8), KEY(RAWKEY_KP_9), KEY(RAWKEY_KP_PLUS),
-                KEY(RAWKEY_KP_4), KEY(RAWKEY_KP_5), KEY(RAWKEY_KP_6), Child, HVSpace,
-                KEY(RAWKEY_KP_1), KEY(RAWKEY_KP_2), KEY(RAWKEY_KP_3), KEY(RAWKEY_KP_ENTER),
-                KEY(RAWKEY_KP_0), Child, HVSpace, KEY(RAWKEY_KP_DECIMAL), Child, HVSpace,
+                Child, HGroup,
+                    //MUIA_Group_SameSize, TRUE,
+                    KEY(RAWKEY_ESCAPE), KEY(RAWKEY_F1), KEY(RAWKEY_F2), KEY(RAWKEY_F3), KEY(RAWKEY_F4), KEY(RAWKEY_F5),
+                    KEY(RAWKEY_F6), KEY(RAWKEY_F7), KEY(RAWKEY_F8), KEY(RAWKEY_F9), KEY(RAWKEY_F10),
+                End,
+                Child, VSpace(5),
+                Child, HGroup,
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(0), KEY(1), KEY(2), KEY(3), KEY(4), KEY(5), KEY(6), KEY(7), KEY(8), KEY(9), KEY(10), KEY(11), KEY(12), KEY(13),
+                    End,
+                    KEY(RAWKEY_BACKSPACE),
+                End,
+                Child, HGroup,
+                    KEY(RAWKEY_TAB),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(16), KEY(17), KEY(18), KEY(19), KEY(20), KEY(21), KEY(22), KEY(23), KEY(24), KEY(25), KEY(26), KEY(27),
+                    End,
+                    KEY(RAWKEY_RETURN),
+                End,
+                Child, HGroup,
+                    KEY(RAWKEY_LCONTROL),
+                    KEY(RAWKEY_CAPSLOCK),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(32), KEY(33), KEY(34), KEY(35), KEY(36), KEY(37), KEY(38), KEY(39), KEY(40), KEY(41), KEY(42), KEY(43),
+                    End,
+                    Child, HVSpace,
+                End,
+                Child, HGroup,
+                    KEY(RAWKEY_LSHIFT),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(48), KEY(49), KEY(50), KEY(51), KEY(52), KEY(53), KEY(54), KEY(55), KEY(56), KEY(57), KEY(58),
+                    End,
+                    KEY(RAWKEY_RSHIFT),
+                End,
+                Child, HGroup,
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(RAWKEY_LALT), KEY(RAWKEY_LAMIGA),
+                    End,
+                    KEY(RAWKEY_SPACE),
+                    Child, HGroup,
+                        MUIA_Group_SameSize, TRUE,
+                        KEY(RAWKEY_RAMIGA), KEY(RAWKEY_RALT),
+                    End,
+                End,
             End,
-        End,
-        TAG_MORE, (IPTR)message->ops_AttrList
-    );
+            Child, VGroup,
+                Child, HGroup,
+                    GroupFrame,
+                    //MUIA_Group_SameSize, TRUE,
+                    KEY(RAWKEY_DELETE), KEY(RAWKEY_HELP),
+                End,
+                Child, HVSpace,
+                Child, ColGroup(3),
+                    GroupFrame,
+                    MUIA_Group_SameSize, TRUE,
+                    Child, HVSpace,
+                    KEY(RAWKEY_UP),
+                    Child, HVSpace,
+                    KEY(RAWKEY_LEFT), KEY(RAWKEY_DOWN), KEY(RAWKEY_RIGHT),
+                End,
+            End,
+            Child, VGroup,
+                Child, HVSpace,
+                Child, ColGroup(4),
+                    GroupFrame,
+                    MUIA_Group_SameSize, TRUE,
+                    KEY(RAWKEY_KP_LBRACKET), KEY(RAWKEY_KP_RBRACKET), KEY(RAWKEY_KP_DIVIDE), KEY(RAWKEY_KP_MULTIPLY),
+                    KEY(RAWKEY_KP_7), KEY(RAWKEY_KP_8), KEY(RAWKEY_KP_9), KEY(RAWKEY_KP_MINUS),
+                    KEY(RAWKEY_KP_4), KEY(RAWKEY_KP_5), KEY(RAWKEY_KP_6), KEY(RAWKEY_KP_PLUS),
+                    KEY(RAWKEY_KP_1), KEY(RAWKEY_KP_2), KEY(RAWKEY_KP_3), KEY(RAWKEY_KP_ENTER),
+                    KEY(RAWKEY_KP_0), Child, HVSpace, KEY(RAWKEY_KP_DECIMAL), Child, HVSpace,
+                End,
+            End,
+            TAG_MORE, (IPTR)message->ops_AttrList
+        );
+    }
 
     if (self)
     {
@@ -475,8 +573,8 @@ IPTR KeyboardGroup__MUIM_HandleInput(Class *CLASS, Object *obj, struct MUIP_Hand
         {
             case IDCMP_RAWKEY:
             {
-                D(bug("Rawkey %d\n", msg->imsg->Code));
-                if (msg->imsg->Code > 95 && msg->imsg->Code < 102)      // Qualifier key
+                D(bug("[KeyShow/HandleInput] Rawkey %d\n", msg->imsg->Code));
+                if (msg->imsg->Code > 95 && msg->imsg->Code < 102 && msg->imsg->Code != RAWKEY_CAPSLOCK)      // Qualifier key
                 {
                     Object *btn = data->keybutton[msg->imsg->Code];
                     if (btn)

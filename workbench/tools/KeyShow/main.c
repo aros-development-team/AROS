@@ -7,9 +7,12 @@
 
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
+#include <proto/icon.h>
 #include <proto/alib.h>
 
 #include <libraries/mui.h>
+
+#include <strings.h>
 
 #include "keyboardgroup_class.h"
 #include "locale.h"
@@ -22,9 +25,29 @@ int main(void)
 {
     Locale_Initialize();
 
+    ULONG kbtype = MUIV_KeyboardGroup_Type_Amiga;
+    STRPTR result;
+
+    // Read icon even if we have been started from CLI
+    struct DiskObject *dobj = GetDiskObject("PROGDIR:KeyShow");
+    if (dobj)
+    {
+        STRPTR *toolarray = dobj->do_ToolTypes;
+
+        result = FindToolType(toolarray, "TYPE");
+        if (result)
+        {
+            if (strcasecmp(result, "PC105") == 0)
+            {
+                kbtype = MUIV_KeyboardGroup_Type_PC105;
+            }
+        }
+        FreeDiskObject(dobj);
+    }
+
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"KeyShow",
-        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.2 (28.02.2012)",
+        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.3 (03.03.2012)",
         MUIA_Application_Copyright, (IPTR)_(MSG_AppCopyright),
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)_(MSG_AppDescription),
@@ -34,6 +57,7 @@ int main(void)
             MUIA_Window_Title, (IPTR)_(MSG_WI_TITLE),
             MUIA_Window_ID, MAKE_ID('K','S','W','N'),
             WindowContents, (IPTR)KeyboardGroupObject,
+                MUIA_KeyboardGroup_Type, kbtype,
             End,
         End),
     End;
