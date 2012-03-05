@@ -7745,6 +7745,9 @@ case "$target_os" in
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
+                if test "$aros_host_cpu" != "arm" ; then
+                    kernel_tool_prefix="arm-none-linux-gnueabi-"
+                fi
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
