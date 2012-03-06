@@ -828,7 +828,7 @@ struct NepClassSerial * nAllocSerial(void)
                             default:
                             {
                                 char fctid[5];
-                                *((ULONG *) fctid) = ncp->ncp_ExtConnectInfo.Streams[cnt].FctID;
+                                memcpy(fctid, &ncp->ncp_ExtConnectInfo.Streams[cnt].FctID, 4);
                                 fctid[4] = 0;
                                 psdAddErrorMsg(RETURN_WARN, (STRPTR) libname, "Unknown function %s at PDA port %ld!", fctid, cnt+1);
                             }

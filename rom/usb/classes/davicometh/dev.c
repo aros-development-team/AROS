@@ -520,7 +520,7 @@ WORD cmdConfigInterface(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     }
 
     /* Check for valid address */
-    if(*((LONG *) ioreq->ios2_SrcAddr) <= 0)
+    if(ioreq->ios2_SrcAddr[0] & 0x80)
     {
         Permit();
         return deverror(S2ERR_BAD_ADDRESS, S2WERR_SRC_ADDRESS);
@@ -576,8 +576,7 @@ WORD cmdDelMulticastAddresses(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     return DelMCastRange(ncp, ioreq, ioreq->ios2_SrcAddr, ioreq->ios2_DstAddr);
 }
 
-#define mcmp(a,b) ((((ULONG *) (a))[0] == ((ULONG *) (b))[0]) &&  \
-                   (((UWORD *) (a))[2] == ((UWORD *) (b))[2]))
+#define mcmp(a,b) (memcmp(a,b,ETHER_ADDR_SIZE)==0)
 
 WORD AddMCastRange(struct NepClassEth *ncp, struct IOSana2Req *ioreq, UBYTE *lower, UBYTE *upper)
 {
@@ -744,7 +743,7 @@ ULONG ether_crc(LONG length, UBYTE *data)
 void UpdateMulticastHash(struct NepClassEth *ncp)
 {
     struct MulticastAddressRange *mar;
-    ULONG addr[2];
+    UBYTE addr[ETHER_ADDR_SIZE];
 
     KPRINTF(1, ("nic_update_multicasts\n"));
 
@@ -754,30 +753,29 @@ void UpdateMulticastHash(struct NepClassEth *ncp)
         /* "Promiscuous Physical." ... "In addition, the multicast hashing
             array must be set to all 1's so that all multicast addresses are
             accepted." */
-        ((ULONG *) ncp->ncp_MulticastArray)[0] = 0xffffffff;
-        ((ULONG *) ncp->ncp_MulticastArray)[1] = 0xffffffff;
+        memset(ncp->ncp_MulticastArray, 0xff, sizeof(ncp->ncp_MulticastArray));
     } else {
         /* Clear all multicast bits */
-        ((ULONG *) ncp->ncp_MulticastArray)[0] = 0x00000000;
-        ((ULONG *) ncp->ncp_MulticastArray)[1] = 0x00000000;
+        memset(ncp->ncp_MulticastArray, 0x00, sizeof(ncp->ncp_MulticastArray));
         mar = (struct MulticastAddressRange *) ncp->ncp_Multicasts.lh_Head;
         while(mar->mar_Node.ln_Succ)
         {
-            addr[0] = *((UWORD *) (mar->mar_LowerAddr + 0));
-            addr[1] = *((ULONG *) (mar->mar_LowerAddr + 2));
+            memcpy(addr, mar->mar_LowerAddr, ETHER_ADDR_SIZE);
             do
             {
                 UBYTE hash;
-                hash = ether_crc(ETHER_ADDR_SIZE, ((UBYTE *) addr) + 2) >> 26;
+                hash = ether_crc(ETHER_ADDR_SIZE, addr) >> 26;
                 ncp->ncp_MulticastArray[hash>>3] |= 1<<(hash & 7);
-                if(mcmp(((char *) addr) + 2, mar->mar_UpperAddr))
+                if(mcmp(addr, mar->mar_UpperAddr))
                 {
                     break;
                 }
-                if(!++addr[1])
-                {
-                    addr[0]++;
-                }
+                if(!++addr[5])
+                    if (!++addr[4])
+                        if (!++addr[3])
+                            if (!++addr[2])
+                                if (!++addr[1])
+                                    ++addr[0];
             } while(TRUE);
             mar = (struct MulticastAddressRange *) mar->mar_Node.ln_Succ;
         }

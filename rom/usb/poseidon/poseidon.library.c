@@ -1458,6 +1458,7 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     } memlist;
 
     struct MemList *newmemlist;
+    struct MemEntry *me;
     struct Task *nt;
     struct Process *subtask;
 
@@ -1485,11 +1486,12 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     memlist.mrm_ml.ml_Node.ln_Pri = 0;
     memlist.mrm_ml.ml_Node.ln_Name = NULL;
     memlist.mrm_ml.ml_NumEntries = 3;
-    memlist.mrm_ml.ml_ME[1].me_Un.meu_Reqs = memlist.mrm_ml.ml_ME[0].me_Un.meu_Reqs = MEMF_CLEAR|MEMF_PUBLIC;
-    memlist.mrm_ml.ml_ME[0].me_Length = sizeof(struct Task);
-    memlist.mrm_ml.ml_ME[1].me_Length = SUBTASKSTACKSIZE;
-    memlist.mrm_ml.ml_ME[2].me_Un.meu_Reqs = MEMF_PUBLIC;
-    memlist.mrm_ml.ml_ME[2].me_Length = strlen(name) + 1;
+    me = &memlist.mrm_ml.ml_ME[0];
+    me[1].me_Un.meu_Reqs = memlist.mrm_ml.ml_ME[0].me_Un.meu_Reqs = MEMF_CLEAR|MEMF_PUBLIC;
+    me[0].me_Length = sizeof(struct Task);
+    me[1].me_Length = SUBTASKSTACKSIZE;
+    me[2].me_Un.meu_Reqs = MEMF_PUBLIC;
+    me[2].me_Length = strlen(name) + 1;
 
 #ifdef __AROS__
     newmemlist = NewAllocEntry(&memlist.mrm_ml, NULL);
@@ -1501,12 +1503,13 @@ AROS_LH3(struct Task *, psdSpawnSubTask,
     {
         return(NULL);
     }
-    nt = newmemlist->ml_ME[0].me_Un.meu_Addr;
-    nt->tc_Node.ln_Name = newmemlist->ml_ME[2].me_Un.meu_Addr;
+    me = &newmemlist->ml_ME[0];
+    nt = me[0].me_Un.meu_Addr;
+    nt->tc_Node.ln_Name = me[2].me_Un.meu_Addr;
     strcpy(nt->tc_Node.ln_Name, name);
     nt->tc_Node.ln_Type = NT_TASK;
     nt->tc_Node.ln_Pri = ps->ps_GlobalCfg->pgc_SubTaskPri;
-    nt->tc_SPLower = newmemlist->ml_ME[1].me_Un.meu_Addr;
+    nt->tc_SPLower = me[1].me_Un.meu_Addr;
     nt->tc_SPUpper = nt->tc_SPReg = (APTR) ((IPTR) nt->tc_SPLower + SUBTASKSTACKSIZE);
     nt->tc_UserData = userdata;
     NewList(&nt->tc_MemEntry);
