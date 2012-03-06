@@ -5,6 +5,8 @@
     Desc: GetProgramDir() - Get the lock for PROGDIR:
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/exec.h>
 
@@ -50,7 +52,9 @@
 {
     AROS_LIBFUNC_INIT
 
-    return ((struct Process *)FindTask(NULL))->pr_HomeDir;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    ASSERT_VALID_PROCESS(me);
+    return me->pr_HomeDir;
 
     AROS_LIBFUNC_EXIT
 } /* GetProgramDir */

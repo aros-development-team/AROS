@@ -74,8 +74,12 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
   SIPTR *error = &dummy;
   
-  if (DOSBase)
-    error =&((struct Process *)FindTask(NULL))->pr_Result2;
+  if (DOSBase) {
+    struct Process *me = (struct Process *)FindTask(NULL);
+    ASSERT_VALID_PROCESS(me);
+
+    error =&me->pr_Result2;
+  }
 
   curhunk = lasthunk = 0; /* keep GCC quiet */
   /* start point is HUNK_HEADER + 4 */

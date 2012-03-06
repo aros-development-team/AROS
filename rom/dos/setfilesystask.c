@@ -5,6 +5,8 @@
     Desc: Set the current filesystem handler for a process.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/exec.h>
 
@@ -49,6 +51,8 @@
 
     struct Process *pr = (struct Process *)FindTask(NULL);
     APTR old;
+
+    ASSERT_VALID_PROCESS(pr);
 
     old = pr->pr_FileSystemTask;
     pr->pr_FileSystemTask = task;

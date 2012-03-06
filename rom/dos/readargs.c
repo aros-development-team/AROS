@@ -173,6 +173,8 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     /* Get pointer to process structure. */
     struct Process *me = (struct Process *) FindTask(NULL);
 
+    ASSERT_VALID_PROCESS(me);
+
     /* Error recovery. C has no exceptions. This is a simple replacement. */
     LONG error;
 

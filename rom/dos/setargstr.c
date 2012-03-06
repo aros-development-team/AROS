@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <dos/dosextens.h>
 #include <proto/exec.h>
@@ -49,6 +51,7 @@
 
     STRPTR oldStr;
     struct Process *pr = (struct Process *)FindTask(NULL);
+    ASSERT_VALID_PROCESS(pr);
     oldStr = pr->pr_Arguments;
     pr->pr_Arguments = (STRPTR)string;
 

@@ -5,6 +5,8 @@
     Desc: Find a local variable.
     Lang: English
 */
+
+#include <aros/debug.h>
 #include "dos_intern.h"
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -92,6 +94,7 @@
 	struct LocalVar *var;
 	
 	pr  = (struct Process *)FindTask(NULL);
+	ASSERT_VALID_PROCESS(pr);
 	var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 	
 	ForeachNode(&pr->pr_LocalVars, var)

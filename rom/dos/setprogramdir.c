@@ -5,6 +5,8 @@
     Desc: Set the home directory for a program (PROGDIR:)
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/exec.h>
 
@@ -55,6 +57,9 @@
     BPTR oldLock;
 
     pr = (struct Process *)FindTask(NULL);
+
+    ASSERT_VALID_PROCESS(pr);
+
     oldLock = pr->pr_HomeDir;
     pr->pr_HomeDir = lock;
 

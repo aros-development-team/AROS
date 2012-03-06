@@ -80,6 +80,8 @@
     struct StackSwapArgs args;
     D(BOOL injected;)
 
+    ASSERT_VALID_PROCESS(me);
+
     if(stacksize < AROS_STACKSIZE)
 	stacksize = AROS_STACKSIZE;
 

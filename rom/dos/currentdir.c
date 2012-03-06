@@ -50,6 +50,8 @@
     struct Process *me=(struct Process *)FindTask(NULL);
     BPTR old;
 
+    ASSERT_VALID_PROCESS(me);
+
     ASSERT_VALID_PTR_OR_NULL(BADDR(lock));
 
     /* Nothing spectacular */

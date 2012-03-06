@@ -27,6 +27,8 @@ ULONG internal_CliInitAny(struct DosPacket *dp, APTR DOSBase)
     BPTR cis, cos, cas, olddir, newdir;
     BOOL inter_in = FALSE, inter_out = FALSE;
 
+    ASSERT_VALID_PROCESS(me);
+
     D(bug("CliInit%s packet @%p: Process %p\n", (dp->dp_Type > 1) ? "Custom" : (dp->dp_Res1 ? "Newcli" : "Run"), dp, me));
     D(bug("\tdp_Type: %p \n", (APTR)(IPTR)dp->dp_Type));
     D(bug("\tdp_Res1: %p (is NewCli/NewShell?)\n", (APTR)dp->dp_Res1));

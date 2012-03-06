@@ -5,6 +5,9 @@
     Desc:
     Lang: english
 */
+
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -47,6 +50,8 @@
     /* Get pointer to process structure */
     struct Process *me = (struct Process *) FindTask(NULL);
     
+    ASSERT_VALID_PROCESS(me);
+
     /* Make sure this is a process */
     if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
     {

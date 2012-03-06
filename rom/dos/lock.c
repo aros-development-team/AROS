@@ -96,6 +96,7 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     LONG error = 0;
     STRPTR filename;
 
+    ASSERT_VALID_PROCESS(me);
     D(bug("[Lock] Process: 0x%p \"%s\", Window: 0x%p, Name: \"%s\", \n", me, me->pr_Task.tc_Node.ln_Name, me->pr_WindowPtr, name));
 
     if(soft_nesting == 0)

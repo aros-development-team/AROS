@@ -6,6 +6,8 @@
     Lang: English
 */
 
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/utility.h>
 #include <exec/lists.h>
@@ -72,6 +74,8 @@
 	msg.sv_SVMSize = sizeof(struct ScanVarsMsg);
 	msg.sv_Flags = flags;
 	pr  = (struct Process *)FindTask(NULL);
+
+	ASSERT_VALID_PROCESS(pr);
 
 	/* not global only? */
 	if(0 == (flags & GVF_GLOBAL_ONLY))

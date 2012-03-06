@@ -4,6 +4,8 @@
 
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 
@@ -41,7 +43,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    BPTR file=((struct Process *)FindTask(NULL))->pr_COS;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR file;
+
+    ASSERT_VALID_PROCESS(me);
+
+    file = me->pr_COS;
 
     return(FPuts(file, string));
     

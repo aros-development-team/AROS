@@ -5,6 +5,8 @@
     Desc: Get the name of the current directory.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include "dos_intern.h"
@@ -57,11 +59,14 @@
     AROS_LIBFUNC_INIT
 
     struct Process *me = (struct Process *)FindTask(NULL);
-    struct CommandLineInterface *cli = BADDR(me->pr_CLI);
+    struct CommandLineInterface *cli;
     STRPTR cname;
     ULONG clen;
     BOOL ret = DOSTRUE;
 
+    ASSERT_VALID_PROCESS(me);
+
+    cli = BADDR(me->pr_CLI);
     if (cli == NULL)
     	return NameFromLock(me->pr_CurrentDir, buf, len);
 
