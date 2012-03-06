@@ -582,8 +582,7 @@ WORD cmdDelMulticastAddresses(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     return DelMCastRange(ncp, ioreq, ioreq->ios2_SrcAddr, ioreq->ios2_DstAddr);
 }
 
-#define mcmp(a,b) ((((ULONG *) (a))[0] == ((ULONG *) (b))[0]) &&  \
-                   (((UWORD *) (a))[2] == ((UWORD *) (b))[2]))
+#define mcmp(a,b) (memcmp(a,b,ETHER_ADDR_SIZE)==0)
 
 WORD AddMCastRange(struct NepClassEth *ncp, struct IOSana2Req *ioreq, UBYTE *lower, UBYTE *upper)
 {

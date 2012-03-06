@@ -520,7 +520,7 @@ WORD cmdConfigInterface(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     }
 
     /* Check for valid address */
-    if(*((LONG *) ioreq->ios2_SrcAddr) <= 0)
+    if(ioreq->ios2_SrcAddr[0] & 0x80)
     {
         Permit();
         return deverror(S2ERR_BAD_ADDRESS, S2WERR_SRC_ADDRESS);
@@ -576,8 +576,7 @@ WORD cmdDelMulticastAddresses(struct NepClassEth *ncp, struct IOSana2Req *ioreq)
     return DelMCastRange(ncp, ioreq, ioreq->ios2_SrcAddr, ioreq->ios2_DstAddr);
 }
 
-#define mcmp(a,b) ((((ULONG *) (a))[0] == ((ULONG *) (b))[0]) &&  \
-                   (((UWORD *) (a))[2] == ((UWORD *) (b))[2]))
+#define mcmp(a,b) (memcmp(a,b,ETHER_ADDR_SIZE)==0)
 
 WORD AddMCastRange(struct NepClassEth *ncp, struct IOSana2Req *ioreq, UBYTE *lower, UBYTE *upper)
 {

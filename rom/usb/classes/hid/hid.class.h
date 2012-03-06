@@ -150,4 +150,17 @@ AROS_UFP3(IPTR, GM_UNIQUENAME(HCActionDispatcher),
 void GM_UNIQUENAME(nHIDCtrlGUITaskCleanup)(struct NepClassHid *nch);
 struct NepHidGItem * nAllocGHCItem(struct NepClassHid *nch, struct NepHidItem *nhi, struct List *actionlist, ULONG usageid);
 
+static inline UWORD GET_WTYPE(struct List *list)
+{
+    UWORD *w = (UWORD *)(&list->lh_Type);
+    return *w;
+}
+
+static inline void SET_WTYPE(struct List *list, UWORD val)
+{
+    UWORD *w = (UWORD *)(&list->lh_Type);
+    *w = val;
+}
+
+
 #endif /* HID_CLASS_H */

@@ -3292,7 +3292,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         strncpy(nha->nha_OutArray, tmpstr, 255);
                         if(nhgi)
                         {
-                            nha->nha_OutItem = *((UWORD *) &nhgi->nhgi_ActionList->lh_Type);
+                            nha->nha_OutItem = GET_WTYPE(nhgi->nhgi_ActionList);
                             if(nhgi->nhgi_Item->nhi_Flags & RPF_MAIN_VARIABLE)
                             {
                                 set(nch->nch_A_OutArrayObj, MUIA_Disabled, TRUE);
@@ -3316,7 +3316,7 @@ AROS_UFH3(IPTR, GM_UNIQUENAME(ActionDispatcher),
                         strncpy(nha->nha_OutArray, tmpstr, 255);
                         if(nhgi)
                         {
-                            nha->nha_FeatItem = *((UWORD *) &nhgi->nhgi_ActionList->lh_Type);
+                            nha->nha_FeatItem = GET_WTYPE(nhgi->nhgi_ActionList);
                         } else {
                             nha->nha_FeatItem = 0;
                         }

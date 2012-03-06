@@ -1481,8 +1481,8 @@ UWORD nReadIOReq(struct NepClassEth *ncp, struct EtherPacketHeader *eph, UWORD d
     if(ioreq->ios2_DstAddr[0] & 1)
     {
         /* Address == Broadcast? */
-        if((*((ULONG *) ioreq->ios2_DstAddr) == 0xffffffff) &&
-           (*((UWORD *) (ioreq->ios2_DstAddr + 4)) == 0xffff))
+        static const UBYTE bcast[ETHER_ADDR_SIZE] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+        if(memcmp(bcast, ioreq->ios2_DstAddr, ETHER_ADDR_SIZE) == 0)
         {
             ioreq->ios2_Req.io_Flags |= SANA2IOF_BCAST;
         } else {

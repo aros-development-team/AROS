@@ -1376,7 +1376,7 @@ void nAddItemAction(struct NepClassHid *nch, struct PsdIFFContext *rppic, struct
 {
     struct NepHidCollection *nhc = nhi->nhi_Collection;
     NewList(&nhi->nhi_ActionList);
-    *((UWORD *) &nhi->nhi_ActionList.lh_Type) = id + 0xf001;
+    SET_WTYPE(&nhi->nhi_ActionList, id + 0xf001);
     AddTail(&nhc->nhc_Items, &nhi->nhi_Node);
     if(rppic)
     {
@@ -2260,14 +2260,14 @@ BOOL nReadReports(struct NepClassHid *nch)
                     }
 
                     // generate id numbers
-                    *((UWORD *) &nhi->nhi_ActionList.lh_Type) = idnum++;
+                    SET_WTYPE(&nhi->nhi_ActionList, idnum++);
                     if(!(nhi->nhi_Flags & RPF_MAIN_VARIABLE))
                     {
                         alistptr = nhi->nhi_ActionMap;
                         count = nhi->nhi_MapSize;
                         do
                         {
-                            *((UWORD *) &alistptr->lh_Type) = idnum++;
+                            SET_WTYPE(alistptr, idnum++);
                             alistptr++;
                         } while(--count);
                     }
@@ -3373,7 +3373,7 @@ struct NepHidItem * nFindItemID(struct NepClassHid *nch, UWORD id, UWORD itype, 
             do
             {
                 nhi = *nhiptr++;
-                if(*((UWORD *) &nhi->nhi_ActionList.lh_Type) == id)
+                if(GET_WTYPE(&nhi->nhi_ActionList) == id)
                 {
                     *pos = 0xffffffff;
                     return(nhi);
@@ -3384,7 +3384,7 @@ struct NepHidItem * nFindItemID(struct NepClassHid *nch, UWORD id, UWORD itype, 
                     count = nhi->nhi_MapSize;
                     do
                     {
-                        if(*((UWORD *) &alistptr->lh_Type) == id)
+                        if(GET_WTYPE(alistptr) == id)
                         {
                             *pos = nhi->nhi_MapSize - count;
                             return(nhi);
@@ -3446,7 +3446,7 @@ UWORD nFindItemUsage(struct NepClassHid *nch, ULONG usage, UWORD itype)
                 nhi = *nhiptr++;
                 if(nhi->nhi_Usage == usage)
                 {
-                    return(*((UWORD *) &nhi->nhi_ActionList.lh_Type));
+                    return(GET_WTYPE(&nhi->nhi_ActionList));
                 }
                 if(!(nhi->nhi_Flags & RPF_MAIN_VARIABLE))
                 {
@@ -3457,7 +3457,7 @@ UWORD nFindItemUsage(struct NepClassHid *nch, ULONG usage, UWORD itype)
                     {
                         if(*usageptr == usage)
                         {
-                            return(*((UWORD *) &alistptr->lh_Type));
+                            return GET_WTYPE(alistptr);
                         }
                         usageptr++;
                         alistptr++;
@@ -6470,7 +6470,7 @@ BOOL nLoadItem(struct NepClassHid *nch, struct PsdIFFContext *rppic, struct List
     struct NepHidActionChunk *nhac;
     STRPTR tmpstr;
 
-    psdSafeRawDoFmt((STRPTR) buf, 8, "I%03lx", *((UWORD *) &lst->lh_Type) - idbase + 1);
+    psdSafeRawDoFmt((STRPTR) buf, 8, "I%03lx", GET_WTYPE(lst) - idbase + 1);
     newform[0] = AROS_LONG2BE(ID_FORM);
     newform[1] = AROS_LONG2BE(4);
     newform[2] = *buf;
@@ -6549,7 +6549,7 @@ struct PsdIFFContext * nSaveItem(struct NepClassHid *nch, struct PsdIFFContext *
     {
         return(NULL);
     }
-    psdSafeRawDoFmt((STRPTR) buf, 8, "I%03lx", *((UWORD *) &lst->lh_Type) - idbase + 1);
+    psdSafeRawDoFmt((STRPTR) buf, 8, "I%03lx", GET_WTYPE(lst) - idbase + 1);
     newform[0] = AROS_LONG2BE(ID_FORM);
     newform[1] = AROS_LONG2BE(4);
     newform[2] = *buf;
