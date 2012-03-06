@@ -5,6 +5,7 @@
     Desc:
     Lang: English
 */
+#include <aros/debug.h>
 
 #include "dos_intern.h"
 #include <exec/memory.h>
@@ -123,7 +124,10 @@
 					   MEMF_CLEAR|MEMF_PUBLIC) ) )
 		{
 		    struct Process  *pr = (struct Process *)FindTask(NULL);
-		    struct LocalVar *n  = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
+		    struct LocalVar *n;
+
+		    ASSERT_VALID_PROCESS(pr);
+		    n = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 
 		    /* init the newly created structure */
 

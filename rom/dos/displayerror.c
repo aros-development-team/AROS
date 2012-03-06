@@ -60,6 +60,7 @@
     AROS_LIBFUNC_INIT
 
     struct IntuitionBase *IntuitionBase = NULL;
+    struct Process *me = (struct Process *)FindTask(NULL);
     struct Window *window;	/* The window to put the requester in */
     char	   gadTexts[128];
     char          *gtPtr = (char *)gadTexts;
@@ -75,7 +76,8 @@
 	gadTexts			    /* "Retry|Cancel" */
     };
 
-    window = (struct Window *)((struct Process *)FindTask(NULL))->pr_WindowPtr;
+    ASSERT_VALID_PROCESS(me);
+    window = (struct Window *)me->pr_WindowPtr;
 
     /* Supress requesters? */
     if ((IPTR)window == (IPTR)-1L)

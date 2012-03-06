@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -56,7 +58,12 @@
 {
     AROS_LIBFUNC_INIT
 
-    SIPTR *result=&((struct Process *)FindTask(NULL))->pr_Result2;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    SIPTR *result;
+
+    ASSERT_VALID_PROCESS(me);
+
+    result=&me->pr_Result2;
 
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);

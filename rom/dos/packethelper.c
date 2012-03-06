@@ -23,6 +23,9 @@ BOOL getpacketinfo(struct DosLibrary *DOSBase, CONST_STRPTR name, struct PacketH
         BPTR cur;
     	BSTR bstrname = C2BSTR(name);
         struct FileLock *fl;
+
+        ASSERT_VALID_PROCESS(me);
+
         cur = me->pr_CurrentDir;
         if (cur && cur != (BPTR)-1) {
             fl = BADDR(cur);

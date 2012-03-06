@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 
 #include "dos_intern.h"
@@ -47,6 +49,8 @@
     AROS_LIBFUNC_INIT
 
     struct Process *me = (struct Process *)FindTask(NULL);
+
+    ASSERT_VALID_PROCESS(me);
 
     internal_ReplyPkt(dp, &me->pr_MsgPort, res1, res2);
 

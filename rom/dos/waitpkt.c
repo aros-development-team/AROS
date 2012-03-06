@@ -57,6 +57,8 @@
 
     struct Process *me = (struct Process *)FindTask(NULL);
 
+    ASSERT_VALID_PROCESS(me);
+
     return internal_WaitPkt(&me->pr_MsgPort);
 
     AROS_LIBFUNC_EXIT

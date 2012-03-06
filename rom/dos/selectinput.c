@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include "dos_intern.h"
 
@@ -49,6 +51,8 @@
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
+
+    ASSERT_VALID_PROCESS(me);
 
     /* Nothing spectacular */
     old=me->pr_CIS;

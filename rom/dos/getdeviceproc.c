@@ -95,6 +95,8 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     CONST_STRPTR origname = name;
     struct FileLock *fl;
 
+    ASSERT_VALID_PROCESS(pr);
+
     /* if they passed us the result of a previous call, then they're wanted to
      * loop over the targets of a multidirectory assign */
     if (dp != NULL) {

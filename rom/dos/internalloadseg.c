@@ -136,8 +136,11 @@ int read_block(BPTR file, APTR buffer, ULONG size, SIPTR * funcarray, struct Dos
     subsize = ilsRead(file, buf, size);
     if(subsize==0)
     {
-      if (DOSBase)
-      	((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
+      if (DOSBase) {
+          struct Process *me = (struct Process *)FindTask(NULL);
+          ASSERT_VALID_PROCESS(me);
+          me->pr_Result2=ERROR_BAD_HUNK;
+      }
       return 1;
     }
 

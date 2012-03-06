@@ -5,6 +5,8 @@
     Desc: Get the current prompt.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include "dos_intern.h"
@@ -58,6 +60,8 @@
     STRPTR cname;
     ULONG clen;
     BOOL ret = DOSTRUE;
+
+    ASSERT_VALID_PROCESS(me);
 
     if (cli == NULL)
     {

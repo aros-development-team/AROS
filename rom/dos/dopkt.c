@@ -71,6 +71,8 @@ SIPTR dopacket(SIPTR *res2, struct MsgPort *port, LONG action, SIPTR arg1, SIPTR
     struct DosPacket *dp;
     struct MsgPort   *replyPort;
 
+    ASSERT_VALID_PROCESS(me);
+
     if (port == NULL)
     {
     	/* NIL: */

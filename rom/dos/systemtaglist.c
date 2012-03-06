@@ -100,8 +100,8 @@
 
     struct Process *me = (struct Process *)FindTask(NULL);
     BPTR   cis = BNULL;
-    BPTR   sis = Input();
-    BPTR   sos = Output();
+    BPTR   sis;
+    BPTR   sos;
     BPTR   ses = BNULL;
     BPTR   shellseg = BNULL;
     STRPTR resShell    = BNULL;
@@ -127,7 +127,11 @@
     struct TagItem *tags2 = tags;
     struct TagItem *newtags, *tag;
 
+    ASSERT_VALID_PROCESS(me);
     D(bug("SystemTagList('%s',%p)\n", command, tags));
+
+    sis = Input();
+    sos = Output();
 
     while ((tag = NextTagItem(&tags2)))
     {

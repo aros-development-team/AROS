@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include <aros/debug.h>
 #include <setjmp.h>
 
 #include "dos_intern.h"
@@ -76,7 +77,10 @@ struct StackState
     AROS_LIBFUNC_INIT
 
     struct Process *me = (struct Process *)FindTask(NULL);
-    struct StackState *ss = me->pr_ReturnAddr;
+    struct StackState *ss;
+
+    ASSERT_VALID_PROCESS(me);
+    ss = me->pr_ReturnAddr;
 
     /* Return code can be zero, so we can't pass it via longjmp() */
     ss->retval = returnCode;

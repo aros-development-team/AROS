@@ -86,6 +86,7 @@
     struct MsgPort      *msgport;
     struct PacketHelperStruct phs;
     
+    ASSERT_VALID_PROCESS(me);
 
     /* do nothing if errors are disabled */
     if (me->pr_WindowPtr == (APTR) -1) {

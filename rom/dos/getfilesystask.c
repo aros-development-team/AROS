@@ -5,6 +5,8 @@
     Desc: Get the filesystem handler for a process.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/exec.h>
 
@@ -46,7 +48,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    return ((struct Process *)FindTask(NULL))->pr_FileSystemTask;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    ASSERT_VALID_PROCESS(me);
+    return me->pr_FileSystemTask;
+
 
     AROS_LIBFUNC_EXIT
 } /* GetFileSysTask */

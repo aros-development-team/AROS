@@ -108,6 +108,8 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     LONG error = 0;
     BPTR con, ast;
 
+    ASSERT_VALID_PROCESS(me);
+
     D(bug("[Open] %s: 0x%p \"%s\", Name: \"%s\" File: %p\n",
     	  __is_process(me) ? "Process" : "Task", me, me->pr_Task.tc_Node.ln_Name,
     	  name, MKBADDR(handle)));

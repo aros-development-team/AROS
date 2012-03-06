@@ -61,6 +61,8 @@
     int len;
     BSTR bstrNewName, bstrOldName;
 
+    ASSERT_VALID_PROCESS(me);
+
     len = SplitName(oldName, ':', vol, 0, sizeof(vol) - 1);
 
     if (len > 0)

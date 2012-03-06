@@ -5,6 +5,8 @@
     Desc: Set the console handler for the current process.
     Lang: english
 */
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <proto/exec.h>
 
@@ -53,6 +55,8 @@
     struct Process *pr;
     
     pr = (struct Process *)FindTask(NULL);
+    ASSERT_VALID_PROCESS(pr);
+
     old = pr->pr_ConsoleTask;
     pr->pr_ConsoleTask = handler;
 

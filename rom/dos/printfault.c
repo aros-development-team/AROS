@@ -60,6 +60,7 @@
     UBYTE           buffer[80];
     BOOL            ret;
 
+    ASSERT_VALID_PROCESS(me);
     ASSERT_VALID_PTR(BADDR(stream));
     ASSERT_VALID_PTR_OR_NULL(header);
 
