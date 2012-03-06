@@ -7746,7 +7746,7 @@ case "$target_os" in
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
                 if test "$aros_host_cpu" != "arm" ; then
-                    kernel_tool_prefix="arm-none-linux-gnueabi-"
+                    kernel_tool_prefix="arm-linux-gnueabi-"
                 fi
                 ;;
             *)
