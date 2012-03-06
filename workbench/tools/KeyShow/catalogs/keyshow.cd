@@ -65,3 +65,15 @@ Num
 MSG_KEY_ENTER (//)
 Enter
 ;
+MSG_KEY_BACKSP (//)
+^H
+;
+MSG_KEY_TAB (//)
+^I
+;
+MSG_KEY_ESC (//)
+^[
+;
+MSG_KEY_NUM_ENTER (//)
+^M
+;

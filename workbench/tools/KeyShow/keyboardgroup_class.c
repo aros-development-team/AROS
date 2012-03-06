@@ -135,11 +135,13 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_RIGHT, "\033I[6:14]");
         set_immutable_key(key, RAWKEY_LEFT, "\033I[6:13]");
 
+
         set_immutable_key(key, RAWKEY_CAPSLOCK, _(MSG_KEY_LOCK));
-        set_immutable_key(key, RAWKEY_BACKSPACE, "^H");
-        set_immutable_key(key, RAWKEY_TAB, "^I");
-        set_immutable_key(key, RAWKEY_RETURN, "^M");
-        set_immutable_key(key, RAWKEY_ESCAPE, "^[");
+        set_immutable_key(key, RAWKEY_BACKSPACE,  _(MSG_KEY_BACKSP));
+        set_immutable_key(key, RAWKEY_TAB,  _(MSG_KEY_TAB));
+        set_immutable_key(key, RAWKEY_RETURN,  _(MSG_KEY_ENTER));
+        set_immutable_key(key, RAWKEY_ESCAPE, _(MSG_KEY_ESC));
+
         set_immutable_key(key, RAWKEY_HELP, _(MSG_KEY_HELP));
         set_immutable_key(key, RAWKEY_F1, "F1");
         set_immutable_key(key, RAWKEY_F2, "F2");
@@ -163,7 +165,7 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_END, _(MSG_KEY_END));
         set_immutable_key(key, RAWKEY_PAGEDOWN, _(MSG_KEY_PAGEDOWN));
 
-        set_immutable_key(key, RAWKEY_KP_ENTER, "^M");
+        set_immutable_key(key, RAWKEY_KP_ENTER, _(MSG_KEY_NUM_ENTER));
         set_immutable_key(key, 127, _(MSG_KEY_CTRL));   // Pseudo right Ctrl
     }
     return key;
