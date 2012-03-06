@@ -25,7 +25,11 @@ BOOL pu_OpenFile(struct PrintToFileBase *PrintToFileBase,
 
     ObtainSemaphore(&pu->pu_Lock);
     if (!pu->pu_FileReq) {
-        fr = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText,"File to print to...", TAG_END);
+        fr = AllocAslRequestTags(ASL_FileRequest,
+                ASLFR_TitleText,"File to print to...",
+                ASLFR_DoSaveMode, TRUE,
+                ASLFR_RejectIcons, TRUE,
+                TAG_END);
         if (fr == NULL) {
             ReleaseSemaphore(&pu->pu_Lock);
             return IOERR_OPENFAIL;
