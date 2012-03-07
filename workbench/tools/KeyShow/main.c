@@ -86,6 +86,10 @@ int main(int argc, char **argv)
             {
                 kbtype = MUIV_KeyboardGroup_Type_PC105;
             }
+            else if (strcasecmp(result, "PC104") == 0)
+            {
+                kbtype = MUIV_KeyboardGroup_Type_PC104;
+            }
         }
     }
 
