@@ -339,18 +339,23 @@ int main (void)
 
           if (data)
           {
-            ULONG read = Read(lock_in, data, fib->fib_Size);
+            BPTR in;
+            if ((in = OpenFromLock(lock_in))) {
+                ULONG read = Read(in, data, fib->fib_Size);
 
-            if (-1 != read)
-            {
-              struct sorted_data * sd;
-              sd = sort(data, 
-                        fib->fib_Size, 
-                        (STRPTR)args[ARG_COLSTART],
-                        (BOOL)args[ARG_CASE],
-                        (BOOL)args[ARG_NUMERIC]);
+                if (-1 != read)
+                {
+                  struct sorted_data * sd;
+                  sd = sort(data, 
+                            fib->fib_Size, 
+                            (STRPTR)args[ARG_COLSTART],
+                            (BOOL)args[ARG_CASE],
+                            (BOOL)args[ARG_NUMERIC]);
 
-              error = write_data(sd, file_out);
+                  error = write_data(sd, file_out);
+                }
+                Close(in);
+                lock_in = BNULL;
             }
             FreeVec(data);
           }/*  if (data) */
@@ -358,7 +363,8 @@ int main (void)
           Close(file_out);  
        } /* if (file_out) */
        FreeDosObject(DOS_FIB, fib);
-       UnLock(lock_in);
+       if (lock_in)
+           UnLock(lock_in);
     } /* if (lock_in) */
     FreeArgs(rda);
   }
