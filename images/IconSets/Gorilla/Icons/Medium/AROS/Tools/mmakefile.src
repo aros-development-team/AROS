@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 ICONS := Calculator HDToolBox PCITool InstallAROS Editor Commodities Debug WiMP \
-         ScreenGrabber ShowConfig KeyShow
+         ScreenGrabber ShowConfig KeyShow InitPrinter
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-tools-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-tools
