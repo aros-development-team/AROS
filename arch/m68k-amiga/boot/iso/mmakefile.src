@@ -81,8 +81,10 @@ $(TARGET_ISO): $(AROSDIR)/.backdrop \
 	@$(ECHO) "Converting $(subst $(TARGETDIR)/,,$(AROSDIR)) -> $(subst $(TARGETDIR)/,,$(AROSDIR).HUNK)"
 	@$(ELF2HUNK) "$(AROSDIR)" "$(AROSDIR).HUNK"
 	@$(RM) -rf "$(AROSDIR).HUNK/Sources"*
-	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence $(AROSDIR).HUNK/S/Startup-Sequence
-	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs $(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs
+	@$(RM) -rf "$(AROSDIR).HUNK/boot/aros.elf"
+	@$(CP) "$(AROSDIR)/Emergency-Boot/boot/aros.hunk.gz" "$(AROSDIR).HUNK/boot"
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/s/Startup-Sequence "$(AROSDIR).HUNK/S/Startup-Sequence"
+	@$(CP) $(SRCDIR)/arch/m68k-amiga/boot/iso/Wanderer-global.prefs "$(AROSDIR).HUNK/Prefs/Env-Archive/SYS/Wanderer/global.prefs"
 	@mkisofs -f \
 		-o $@ \
 		-allow-leading-dots \
