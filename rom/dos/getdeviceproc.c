@@ -89,8 +89,7 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     struct DosList *dl = NULL;
     char vol[32];
     LONG len;
-    BPTR cur = BNULL, lock = BNULL;
-    BOOL stdio = FALSE;
+    BPTR lock = BNULL;
     BOOL res;
     CONST_STRPTR origname = name;
     struct FileLock *fl;
@@ -125,63 +124,10 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
     /* otherwise we need to find a place to start in the doslist based on the
      * name they passed in */
     else {
-
-        /* handle standard I/O streams as "virtual" devices */
-        if (Stricmp(name, "IN:") == 0 || Stricmp(name, "STDIN:") == 0) {
-            cur = pr->pr_CIS != BNULL ? pr->pr_CIS : (BPTR) -1;
-            stdio = TRUE;
-        }
-        else if (Stricmp(name, "OUT:") == 0 || Stricmp(name, "STDOUT:") == 0) {
-            cur = pr->pr_COS != BNULL ? pr->pr_COS : (BPTR) -1;
-            stdio = TRUE;
-        }
-        else if (Stricmp(name, "ERR:") == 0 || Stricmp(name, "STDERR:") == 0) {
-            cur = pr->pr_CES != BNULL ? pr->pr_CES :
-                  pr->pr_COS != BNULL ? pr->pr_COS : (BPTR) -1;
-            stdio = TRUE;
-        }
-
          /* allocate structure for return */
         if ((dp = AllocMem(sizeof(struct DevProc), MEMF_ANY | MEMF_CLEAR)) == NULL) {
             SetIoErr(ERROR_NO_FREE_STORE);
             return NULL;
-        }
-
-        if (stdio) {
-            /* handle doesn't exist */
-            if (cur == (BPTR) -1) {
-                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                FreeMem(dp, sizeof(struct DevProc));
-                return NULL;
-            }
-
-            /* we need a lock for the devproc */
-            if ((lock = DupLockFromFH(cur)) == BNULL) {
-                FreeMem(dp, sizeof(struct DevProc));
-                return NULL;
-            }
-
-            /* build the devproc for return */
-            dp->dvp_Port = ((struct FileLock *) BADDR(lock))->fl_Task;
-            dp->dvp_Lock = lock;
-            dp->dvp_Flags = DVPF_UNLOCK; /* remember to unlock in FreeDeviceNode() */
-
-            dl = LockDosList(LDF_ALL | LDF_READ);
-            while (dl != NULL && dl->dol_Task != dp->dvp_Port)
-                dl = BADDR(dl->dol_Next);
-            UnLockDosList(LDF_READ | LDF_ALL);
-
-            /* not found */
-            if (dl == NULL) {
-                FreeMem(dp, sizeof(struct DevProc));
-                SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
-                return NULL;
-            }
-
-            /* take it */
-            dp->dvp_DevNode = dl;
-
-            return dp;
         }
 
         /* something real, work out what it's relative to */

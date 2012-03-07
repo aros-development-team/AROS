@@ -77,7 +77,7 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     if (ret != NULL)
     {
 	LONG ok = InternalOpen(name, accessMode, ret, MAX_SOFT_LINK_NESTING, DOSBase);
-	D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : NULL, IoErr()));
+	D(bug("[Open] = %p, Error = %d\n", ok ? MKBADDR(ret) : BNULL, IoErr()));
 	if (ok)
 	{
 	    return MKBADDR(ret);	    
@@ -96,6 +96,41 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
 
     AROS_LIBFUNC_EXIT
 } /* Open */
+
+
+static LONG dupHandle(struct FileHandle *fh, BPTR lock, struct DosLibrary *DOSBase)
+{
+    LONG err;
+    struct MsgPort *port;
+    struct FileLock *fl;
+
+    if (lock == BNULL)
+        return DOSFALSE;
+
+    /* NIL: ? */
+
+    fl = BADDR(lock);
+    port = fl->fl_Task;
+
+    if (port) {
+        err = dopacket2(DOSBase, NULL, port, ACTION_FH_FROM_LOCK, MKBADDR(fh), lock);
+    } else {
+        /* NIL: device */
+        fh->fh_Interactive = DOSFALSE;
+        err = DOSTRUE;
+    }
+
+    if (err != DOSFALSE) {
+        fh->fh_Type = port;
+        if (fh->fh_Interactive)
+            SetVBuf(MKBADDR(fh), NULL, BUF_LINE, -1);
+        else
+            SetVBuf(MKBADDR(fh), NULL, BUF_NONE, -1);
+    }
+
+    return err;
+}
+
 
 /* Try to open name recursively calling itself in case it's a soft link.
    Store result in handle. Return boolean value indicating result. */
@@ -118,6 +153,14 @@ static LONG InternalOpen(CONST_STRPTR name, LONG accessMode,
     {
 	SetIoErr(ERROR_TOO_MANY_LEVELS);
 	return DOSFALSE;
+    }
+
+    /* IN:, OUT:, ERR: pseudodevices
+     */
+    if (pseudoLock(name, (accessMode == MODE_OLDFILE) ? ACCESS_READ :
+                         ((accessMode == MODE_NEWFILE) ? ACCESS_WRITE : 0),
+                         &ast, &ret, DOSBase)) {
+        return dupHandle(handle, ast, DOSBase);
     }
 
     /*

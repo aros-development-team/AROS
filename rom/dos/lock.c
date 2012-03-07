@@ -83,6 +83,70 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
     AROS_LIBFUNC_EXIT
 } /* Lock */
 
+
+/* Attempt to create a synthetic IN:, OUT:, ERR:,
+ * STDIN:, STDOUT, or STDERR: lock
+ */
+BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct DosLibrary *DOSBase)
+{
+    struct Process *me = (struct Process *)FindTask(NULL);
+    BPTR fh = (BPTR)-1;
+
+    ASSERT_VALID_PROCESS(me);
+
+    /* IN:, STDIN: */
+    if (!Stricmp(name, "IN:") || !Stricmp(name, "STDIN:")) {
+        if (lockMode != ACCESS_READ) {
+            SetIoErr(ERROR_OBJECT_IN_USE);
+            *ret = DOSFALSE;
+            return TRUE;
+        }
+
+        fh = me->pr_CIS;
+    }
+
+    /* OUT:, STDOUT: */
+    if (!Stricmp(name, "OUT:") || !Stricmp(name, "STDOUT:")) {
+        if (lockMode != ACCESS_WRITE) {
+            SetIoErr(ERROR_OBJECT_IN_USE);
+            *ret = DOSFALSE;
+            return TRUE;
+        }
+
+        fh = me->pr_COS;
+    }
+
+
+    /* ERR:, STDERR: */
+    if (!Stricmp(name, "ERR:") || !Stricmp(name, "STDERR:")) {
+        if (lockMode != ACCESS_WRITE) {
+            SetIoErr(ERROR_OBJECT_IN_USE);
+            *ret = DOSFALSE;
+            return TRUE;
+        }
+
+        fh = me->pr_CES;
+    }
+
+    if (fh == (BPTR)-1)
+        return FALSE;
+
+    if (fh == BNULL) {
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
+        *ret = DOSFALSE;
+        return TRUE;
+    }
+
+    *lock = DupLockFromFH(fh);
+    if (*lock) {
+        struct FileLock *fl = BADDR(*lock);
+        fl->fl_Access = lockMode;
+    }
+    *ret = (*lock != BNULL) ? DOSTRUE : DOSFALSE;
+    return TRUE;
+}
+
+
 /* Try to lock name recursively calling itself in case it's a soft link. 
    Store result in handle. Return boolean value indicating result. */
 static LONG InternalLock(CONST_STRPTR name, LONG accessMode, 
@@ -104,6 +168,12 @@ static LONG InternalLock(CONST_STRPTR name, LONG accessMode,
 	SetIoErr(ERROR_TOO_MANY_LEVELS);
 	return DOSFALSE;
     }
+
+    /* Check for a pseudo-file lock
+     * (ie IN:, STDOUT:, ERR:, etc)
+     */
+    if (pseudoLock(name, accessMode, handle, &ret, DOSBase))
+        return ret;
 
     filename = strchr(name, ':');
     if (!filename)
