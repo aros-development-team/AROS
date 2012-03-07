@@ -1,4 +1,4 @@
-boot/AROSBootstrap ROM boot/aros.elf
+boot/AROSBootstrap ROM boot/aros.hunk.gz
 SetClock LOAD
 
 FailAt 21
