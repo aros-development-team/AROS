@@ -324,4 +324,8 @@ BPTR findseg_cli(BOOL isBoot, struct DosLibrary *DOSBase);
 
 BPTR findseg_shell(BOOL isBoot, struct DosLibrary *DOSBase);
 
+/* Helper for IN:, OUT:, ERR:, STDIN:, STDOUT:, STDERR:
+ */
+BOOL pseudoLock(CONST_STRPTR name, LONG lockMode, BPTR *lock, LONG *ret, struct DosLibrary *DOSBase);
+
 #endif /* DOS_INTERN_H */
