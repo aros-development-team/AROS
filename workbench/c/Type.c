@@ -439,6 +439,13 @@ int main (void)
 			ULONG numfiles = 0;
 			LONG error;
 
+			error = processfile(*names, in, out, args, &numfiles);
+			if (error == 0)
+			{
+			    names++;
+			    continue;
+			}
+
 			for (error = MatchFirst(*names, &apath.apath);
 			     !error;
 			     error = MatchNext(&apath.apath))
