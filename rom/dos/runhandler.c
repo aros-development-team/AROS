@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Execute a loaded command synchronously
@@ -47,7 +47,8 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 
 	    /* Try to find in the Resident Segment list */
 	    Forbid();
-	    D(bug("[RunHandler] handler '%s' in resident list\n", handler));
+	    D(bug("[RunHandler] Looking for handler '%s' in resident list\n",
+	        handler));
 	    seg = FindSegment(handler, NULL, TRUE);
 	    Permit();
 
@@ -69,7 +70,7 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
 	    	if (dir != BNULL) {
 	    	    BPTR olddir;
 	    	    olddir = CurrentDir(dir);
-	    	    D(bug("[RunHandler] LoadSeg(\"DEVS:%s\")\n", cp));
+	    	    D(bug("[RunHandler] LoadSeg(\"L:%s\")\n", cp));
 	    	    deviceNode->dn_SegList = LoadSeg(cp);
 	    	    CurrentDir(olddir);
 	    	}
@@ -123,6 +124,10 @@ struct MsgPort *RunHandler(struct DeviceNode *deviceNode, const char *path, stru
         else
 #endif
             entry = BADDR(deviceNode->dn_SegList)+sizeof(IPTR);
+
+        D(bug("[RunHandler] stacksize %d priority %d\n",
+            deviceNode->dn_StackSize,
+            deviceNode->dn_Priority));
 
         /* start it up */
         process = CreateNewProcTags(
