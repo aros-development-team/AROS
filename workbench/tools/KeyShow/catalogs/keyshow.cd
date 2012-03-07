@@ -77,3 +77,12 @@ MSG_KEY_ESC (//)
 MSG_KEY_NUM_ENTER (//)
 ^M
 ;
+MSG_KEY_PRTSCREEN (//)
+Print
+;
+MSG_KEY_SCRLOCK (//)
+ScrLock
+;
+MSG_KEY_PAUSE (//)
+Pause
+;

@@ -18,6 +18,7 @@
 /*** Values *****************************************************************/
 #define MUIV_KeyboardGroup_Type_Amiga   (0ul)
 #define MUIV_KeyboardGroup_Type_PC105   (1ul)
+#define MUIV_KeyboardGroup_Type_PC104   (2ul)
 
 /*** Variables **************************************************************/
 extern struct MUI_CustomClass *KeyboardGroup_CLASS;
