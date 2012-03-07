@@ -171,6 +171,43 @@ PLOCKEXIT:
 }
 
 
+/*---------------------------------------------------------------------------
+** PipeFHFromLock() responds to FHFromLock requests.  It is assumed that the
+** lock sent is valid.
+*/
+
+void  PipeFHFromLock (pkt)
+
+struct DosPacket  *pkt;
+
+{ struct FileLock  *lock;
+  PIPEDATA         *pipe;
+  PIPEKEY          *pipekey;
+  struct FileHandle *fh;
+
+
+  pkt->dp_Res1= DOSFALSE;
+  pkt->dp_Res2= ERROR_OBJECT_NOT_FOUND;
+
+  if ((fh= (struct FileHandle *) BPTRtoCptr (pkt->dp_Arg1)) != NULL) {
+      if ((lock= (struct FileLock *) BPTRtoCptr (pkt->dp_Arg2)) != NULL) {
+          if ((pipe= (PIPEDATA *) lock->fl_Key) != NULL) {
+              if ((pipekey= (PIPEKEY *) AllocMem (sizeof (PIPEKEY), ALLOCMEM_FLAGS)) != NULL) {
+                  pipekey->pipe = pipe;
+                  pipekey->openmode = (lock->fl_Access == ACCESS_READ) ? OPEN_FOR_READ : OPEN_FOR_WRITE;
+                  pipekey->iotype = (lock->fl_Access == ACCESS_READ) ? PIPEREAD : PIPEWRITE;
+                  fh->fh_Arg1 = (SIPTR)pipekey;
+                  pkt->dp_Res1= DOSTRUE;
+                  pkt->dp_Res2= 0;
+              }
+          }
+      }
+  }
+
+  QuickReplyPkt (pkt);
+}
+
+
 
 /*---------------------------------------------------------------------------
 ** PipeDupLock() responds to DupLock requests.  It is assumed that the lock
@@ -196,6 +233,35 @@ struct DosPacket  *pkt;
     { if ((pipe= (PIPEDATA *) lock->fl_Key) != NULL)
         ++pipe->lockct;     /* lock is on an individual pipe */
     }
+
+  QuickReplyPkt (pkt);
+}
+
+
+/*---------------------------------------------------------------------------
+** PipeDupLockFH() responds to DupLockFH requests.  It is assumed that the fh
+** sent is valid.  The lock for the fh is returned; the only action taken is to
+** increment the lock count if the lock is on an individual pipe.
+*/
+
+void  PipeDupLockFH (pkt)
+
+struct DosPacket  *pkt;
+
+{ PIPEKEY          *pipekey;
+  PIPEDATA         *pipe;
+
+  pkt->dp_Res1= 0;
+  pkt->dp_Res2= ERROR_OBJECT_NOT_FOUND;
+
+
+  if ((pipekey= (PIPEKEY *) (pkt->dp_Arg1)) != NULL)
+    { if ((pipe= pipekey->pipe) != NULL) {
+        ++pipe->lockct;     /* lock is on an individual pipe */
+        pkt->dp_Res1= (SIPTR)MKBADDR(pipe->lock);
+        pkt->dp_Res2= 0;
+    }
+  }
 
   QuickReplyPkt (pkt);
 }
@@ -260,12 +326,12 @@ struct DosPacket  *pkt;
   else
     { if ((pipe= (PIPEDATA *) lock->fl_Key) == NULL)     /* then this is a lock on the handler */
         { FillFIB ( fib, (SIPTR)FirstItem (&pipelist), HandlerName,
-                    (FIBF_EXECUTE | FIBF_DELETE), 1,
+                    (FIBF_EXECUTE | FIBF_DELETE), ST_ROOT,
                     0, 0, &PipeDate );
         }
       else
         { FillFIB ( fib, (SIPTR)NULL, pipe->name,
-                    (FIBF_EXECUTE | FIBF_DELETE), -1,
+                    (FIBF_EXECUTE | FIBF_DELETE), ST_PIPEFILE,
                     pipe->buf->len, 1, &pipe->accessdate );
         }
     }
@@ -325,7 +391,7 @@ struct DosPacket  *pkt;
 
   if (listitem == pipe)     /* then found next entry */
     { FillFIB ( fib, (SIPTR)NextItem (listitem), listitem->name,
-                (FIBF_EXECUTE | FIBF_DELETE), -1,
+                (FIBF_EXECUTE | FIBF_DELETE), ST_PIPEFILE,
                 listitem->buf->len, 1, &listitem->accessdate );
 
       pkt->dp_Res1= 1;
@@ -361,7 +427,7 @@ struct DosPacket  *pkt;
 
   pipe=pipekey->pipe;
   FillFIB ( fib, (SIPTR)NextItem (pipe), pipe->name,
-            (FIBF_EXECUTE | FIBF_DELETE), -1,
+            (FIBF_EXECUTE | FIBF_DELETE), ST_PIPEFILE,
             pipe->buf->len, 1, &pipe->accessdate );
 
   pkt->dp_Res1= DOSTRUE;

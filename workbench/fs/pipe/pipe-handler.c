@@ -279,11 +279,25 @@ LOOP:
             PipeLock (pkt);
             break;
 
+          case ACTION_FH_FROM_LOCK:
+#  ifdef DEBUG
+     OS (  "FHFromLock packet received\n");
+#  endif /* DEBUG */
+            PipeFHFromLock (pkt);
+            break;
+
           case ACTION_COPY_DIR:
 #  ifdef DEBUG
      OS (  "DupLock packet received\n");
 #  endif /* DEBUG */
             PipeDupLock (pkt);
+            break;
+
+          case ACTION_COPY_DIR_FH:
+#  ifdef DEBUG
+     OS (  "DupLockFH packet received\n");
+#  endif /* DEBUG */
+            PipeDupLockFH (pkt);
             break;
 
           case ACTION_FREE_LOCK:

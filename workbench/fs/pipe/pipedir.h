@@ -21,7 +21,9 @@
 
 extern void  SetPipeDate   ( /* pipe */ );
 extern void  PipeLock      ( /* pkt */ );
+extern void  PipeFHFromLock( /* pkt */ );
 extern void  PipeDupLock   ( /* pkt */ );
+extern void  PipeDupLockFH ( /* pkt */ );
 extern void  PipeUnLock    ( /* pkt */ );
 extern void  PipeExamine   ( /* pkt */ );
 extern void  PipeExNext    ( /* pkt */ );
