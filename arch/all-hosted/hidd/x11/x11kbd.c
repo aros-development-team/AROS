@@ -563,14 +563,18 @@ VOID X11Kbd__Hidd_X11Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd
 {
     struct x11kbd_data  *data;    
     XKeyEvent 	    	*xk;
-    UWORD   	    	 keycode;
+    long   	    	 keycode;
     
     EnterFunc(bug("x11kbd_handleevent()\n"));
     
     data = OOP_INST_DATA(cl, o);
     xk = &(msg->event->xkey);
     
-    keycode = (UWORD)xkey2hidd(xk, XSD(cl));
+    keycode = xkey2hidd(xk, XSD(cl));
+    if (keycode == -1)
+    {
+        ReturnVoid("X11Kbd::HandleEvent: Unknown key!");
+    }
     
     if (msg->event->type == KeyRelease)
     {
