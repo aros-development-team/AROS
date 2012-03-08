@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := calculator InitPrinter WiMP
+FILES := calculator InitPrinter PrintFiles WiMP
 
 #MM- workbench : workbench-tools
 #MM workbench-tools : includes linklibs
