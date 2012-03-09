@@ -130,6 +130,8 @@ OOP_Object *Sync__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	    if (data->mspc)
 	    {
 	    	data->mspc->ms_Node.xln_Name = data->description;
+	    	data->mspc->ratioh = RATIO_UNITY;
+	    	data->mspc->ratiov = RATIO_UNITY;
 	    	InitSemaphore(&data->mspc->DisplayInfoDataBaseSemaphore);
 
 	    	data->InternalFlags |= SYNC_FREE_MONITORSPEC;

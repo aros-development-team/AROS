@@ -30,8 +30,8 @@ struct MonitorSpec
 
     UWORD ms_Flags;			/* Flags, see below */
 
-    LONG  ratioh;
-    LONG  ratiov;
+    LONG  ratioh;			/* Fixed point fractions, see the */
+    LONG  ratiov;			/* RATIO_FIXEDPART and RATIO_UNITY macros */
     UWORD total_rows;			/* Total number of scanlines per frame */
     UWORD total_colorclocks;		/* Total number of color clocks per line (in 1/280 ns units) */
     UWORD DeniseMaxDisplayColumn;
