@@ -491,7 +491,7 @@ AROS_UFH3(LONG, HardwareListDisplayHook,
     if(hlnode)
     {
         psdSafeRawDoFmt(buf, 16, "%ld", hlnode->unit);
-        psdSafeRawDoFmt(buf2, 32, "\33O[%08lx] %s", hlnode->phw ? data->mimainlist[18] : data->mimainlist[5], hlnode->phw ? "Yes" : "No");
+        psdSafeRawDoFmt(buf2, 32, "\33O[%08lx] %s", hlnode->phw ? data->mimainlist[18] : data->mimainlist[5], hlnode->phw ? _(MSG_PANEL_HARDWARE_ONLINE_YES) : _(MSG_PANEL_HARDWARE_ONLINE_NO));
         strptr = hlnode->devname;
         cmpstr = strptr;
         while(*cmpstr)
@@ -507,12 +507,12 @@ AROS_UFH3(LONG, HardwareListDisplayHook,
         *strarr++ = strptr;
         *strarr++ = buf;
         *strarr++ = buf2;
-        *strarr   = hlnode->prodname ? hlnode->prodname : (STRPTR) "\33iunknown until online";
+        *strarr   = hlnode->prodname ? hlnode->prodname : (STRPTR) _(MSG_PANEL_HARDWARE_UNKNOWN);
     } else {
-        *strarr++ = "\33l\33uName";
-        *strarr++ = "\33l\33uUnit";
-        *strarr++ = "\33l\33uOnline";
-        *strarr   = "\33l\33uProduct";
+        *strarr++ = _(MSG_PANEL_HARDWARE_COLS_NAME);
+        *strarr++ = _(MSG_PANEL_HARDWARE_COLS_UNIT);
+        *strarr++ = _(MSG_PANEL_HARDWARE_COLS_ONLINE);
+        *strarr   = _(MSG_PANEL_HARDWARE_COLS_PRODUCT);
     }
     return(0);
     AROS_USERFUNC_EXIT
@@ -537,10 +537,10 @@ AROS_UFH3(LONG, PrefsListDisplayHook,
         *strarr++ = plnode->owner;
         *strarr   = buf;
     } else {
-        *strarr++ = "\33l\33uType";
-        *strarr++ = "\33l\33uDescription";
-        *strarr++ = "\33l\33uOwner";
-        *strarr = "\33l\33uSize";
+        *strarr++ = _(MSG_PANEL_CONFIG_COLS_TYPE);
+        *strarr++ = _(MSG_PANEL_CONFIG_COLS_DESC);
+        *strarr++ = _(MSG_PANEL_CONFIG_COLS_OWNER);
+        *strarr = _(MSG_PANEL_CONFIG_COLS_SIZE);
     }
     return(0);
     AROS_USERFUNC_EXIT
@@ -658,47 +658,47 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
                     TAG_END);
 
         #ifdef AROS_USB30_CODE
-        *strarr++ = (devislowspeed ? "Low" : (devissuperspeed ? "Super" : (devishighspeed ? "High" : "Full")));
+        *strarr++ = (devislowspeed ? _(MSG_DEVICE_SPEED_LOW) : (devissuperspeed ? _(MSG_DEVICE_SPEED_SUPER) : (devishighspeed ? _(MSG_DEVICE_SPEED_HIGH) : _(MSG_DEVICE_SPEED_FULL))));
         #else
-        *strarr++ = (devislowspeed ? "Low" : (devishighspeed ? "High" : "Full"));
+        *strarr++ = (devislowspeed ? _(MSG_DEVICE_SPEED_LOW) : (devishighspeed ? _(MSG_DEVICE_SPEED_HIGH) : _(MSG_DEVICE_SPEED_FULL)));
         #endif
 
         if(devissuspended)
         {
-            statestr = "Suspended";
+            statestr = _(MSG_DEVICE_STATE_SUSPENDED);
             stateimg = 19;
         }
         else if(devisdead)
         {
-            statestr = devlowpower ? "Dead / LP" : "Dead";
+            statestr = devlowpower ? _(MSG_DEVICE_STATE_DEADLP) : _(MSG_DEVICE_STATE_DEAD);
             stateimg = 5;
         }
         else if(devlowpower)
         {
-            statestr = "Low Power";
+            statestr = _(MSG_DEVICE_STATE_LOWPOWER);
             stateimg = 19;
         }
         else if(devisconfigured)
         {
-            statestr = "Running";
+            statestr = _(MSG_DEVICE_STATE_CONFIGURED);
             stateimg = 18;
         }
         else if(devhasdevdesc)
         {
-            statestr = "DevDesc";
+            statestr = _(MSG_DEVICE_STATE_DEVDESC);
             stateimg = 5;
         }
         else if(devhasaddress)
         {
-            statestr = "ValidAddr";
+            statestr = _(MSG_DEVICE_STATE_HASADDRESS);
             stateimg = 5;
         }
         else if(devisconnected)
         {
-            statestr = "Connected";
+            statestr = _(MSG_DEVICE_STATE_CONNECTED);
             stateimg = 5;
         } else {
-            statestr = "Dead";
+            statestr = _(MSG_DEVICE_STATE_DEAD);
             stateimg = 5;
         }
         *strarr++ = buf3;
@@ -871,11 +871,11 @@ AROS_UFH3(LONG, DeviceListDisplayHook,
         psdSafeRawDoFmt(buf3, 32, "\33O[%08lx] %s",
                         data->mimainlist[stateimg], statestr);
     } else {
-        *strarr++ = "\33l\33uName";
-        *strarr++ = "\33l\33uSpeed";
-        *strarr++ = "\33l\33uState";
-        *strarr++ = "\33l\33uClass";
-        *strarr   = "\33l\33uBindings";
+        *strarr++ = _(MSG_PANEL_DEVICES_COLS_NAME);
+        *strarr++ = _(MSG_PANEL_DEVICES_COLS_SPEED);
+        *strarr++ = _(MSG_PANEL_DEVICES_COLS_STATE);
+        *strarr++ = _(MSG_PANEL_DEVICES_COLS_CLASS);
+        *strarr   = _(MSG_PANEL_DEVICES_COLS_BINDINGS);
     }
     return(0);
     AROS_USERFUNC_EXIT
@@ -928,9 +928,9 @@ AROS_UFH3(LONG, ClassListDisplayHook,
                     TAG_END);
 
     } else {
-        *strarr++ = "\33l\33uName";
-        *strarr++ = "\33l\33uUse#";
-        *strarr   = "\33l\33uDescription";
+        *strarr++ = _(MSG_PANEL_CLASSES_COLS_NAME);
+        *strarr++ = _(MSG_PANEL_CLASSES_COLS_USE);
+        *strarr   = _(MSG_PANEL_CLASSES_COLS_DESC);
     }
     return(0);
     AROS_USERFUNC_EXIT
@@ -975,10 +975,10 @@ AROS_UFH3(LONG, ErrorListDisplayHook,
         } else {
             strarr[0] = "";
         }
-        strarr[1] = ((level == RETURN_OK) ? "" :
-                    ((level == RETURN_WARN) ? "Warning" :
-                    ((level == RETURN_ERROR) ? "Error" :
-                    ((level == RETURN_FAIL) ? "Failure" : "???"))));
+        strarr[1] = ((level == RETURN_OK) ? _(MSG_LOGLEVEL_OK) :
+                    ((level == RETURN_WARN) ? _(MSG_LOGLEVEL_WARNING) :
+                    ((level == RETURN_ERROR) ? _(MSG_LOGLEVEL_ERROR) :
+                    ((level == RETURN_FAIL) ? _(MSG_LOGLEVEL_FAILURE) : _(MSG_LOGLEVEL_OTHER)))));
     }
     return(0);
     AROS_USERFUNC_EXIT
@@ -2606,7 +2606,7 @@ Object * Action_OM_NEW(struct IClass *cl, Object *obj, Msg msg)
                 MUIA_Popstring_Button, PopButton(MUII_PopFile),
                 ASLFR_TitleText, __(MSG_PANEL_HARDWARE_SELECT),
                 End,
-            Child, Label("Unit:"),
+            Child, Label(__(MSG_PANEL_HARDWARE_UNIT)),
             Child, data->hwunitobj = StringObject,
                 MUIA_ShortHelp, __(MSG_PANEL_HARDWARE_UNIT_HELP),
                 StringFrame,
