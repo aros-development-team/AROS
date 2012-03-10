@@ -1,6 +1,6 @@
-## version $VER: Trident.catalog 1.0 (23.01.2011)
-## language français
-## codeset 0
+## version $VER: Trident.catalog 1.4 (9.3.2012)
+## language czech
+## codeset 5
 ;
 ;
 MSG_APP_TITLE
@@ -8,31 +8,31 @@ Trident
 ; Trident
 ;
 MSG_APP_VERSION
-4.3 (27.05.2009)
+4.3 (27. kvìtna 2009)
 ; 4.3 (27-May-09)
 ;
 MSG_APP_DESC
-Préférences de Poseidon
+Nastavení pro Poseidon
 ; Poseidon USB Stack GUI
 ;
 MSG_MENU_PROJECT
-Projet
+Projekt
 ; Project
 ;
 MSG_MENU_ABOUT
-À propos ...
+O programu...
 ; About...
 ;
 MSG_MENU_ABOUTMUI
-À propos de MUI ...
+O rozhraní MUI...
 ; About MUI...
 ;
 MSG_MENU_HELP
-Aide
+Nápovìda
 ; Help
 ;
 MSG_MENU_ONLINE
-En ligne
+Online
 ; Online
 ;
 MSG_MENU_SC_ONLINE
@@ -40,7 +40,7 @@ O
 ; O
 ;
 MSG_MENU_OFFLINE
-Hors ligne
+Offline
 ; Offline
 ;
 MSG_MENU_SC_OFFLINE
@@ -48,7 +48,7 @@ F
 ; F
 ;
 MSG_MENU_ICONIFY
-Iconifier
+Ikonifikovat
 ; Iconify
 ;
 MSG_MENU_SC_ICONIFY
@@ -56,7 +56,7 @@ H
 ; H
 ;
 MSG_MENU_QUIT
-Quitter
+Ukonèit
 ; Quit
 ;
 MSG_MENU_SC_QUIT
@@ -64,27 +64,27 @@ Q
 ; Q
 ;
 MSG_MENU_INFO
-Information
+Informace
 ; Information
 ;
 MSG_MENU_SAVELOG
-Exporter le journal des erreurs ...
+Ulo¾it výpis chyb...
 ; Save error log...
 ;
 MSG_MENU_FLUSH
-Effacer les erreurs
+Vymazat výpis chyb
 ; Flush errors
 ;
 MSG_MENU_SAVEDEV
-Exporter la liste des périphériques ...
+Ulo¾it seznam zaøízení...
 ; Save device list...
 ;
 MSG_MENU_SETTINGS
-Paramètres
+Nastavení
 ; Settings
 ;
 MSG_MENU_LOAD
-Importer ...
+Naèíst...
 ; Load...
 ;
 MSG_MENU_SC_LOAD
@@ -92,7 +92,7 @@ L
 ; L
 ;
 MSG_MENU_SAVE
-Exporter
+Ulo¾it
 ; Save
 ;
 MSG_MENU_SC_SAVE
@@ -100,7 +100,7 @@ S
 ; S
 ;
 MSG_MENU_SAVEAS
-Exporter en tant que ...
+Ulo¾it jako...
 ; Save as...
 ;
 MSG_MENU_SC_SAVEAS
@@ -108,7 +108,7 @@ A
 ; A
 ;
 MSG_MENU_MUISETTINGS
-Préférences MUI
+Nastavení MUI
 ; MUI Settings
 ;
 MSG_MENU_SC_MUISETTINGS
@@ -120,773 +120,735 @@ Trident 4.3
 ; Trident 4.3
 ;
 MSG_MAINPANEL_GENERAL
-Général
+Obecné
 ; General
 ;
 MSG_MAINPANEL_CONTROLLERS
-Contrôleurs
+Øadièe
 ; Controllers
 ;
 MSG_MAINPANEL_DEVICES
-Périphériques
+Zaøízení
 ; Devices
 ;
 MSG_MAINPANEL_CLASSES
-Classes
+Kategorie
 ; Classes
 ;
 MSG_MAINPANEL_OPTIONS
-Options
+Mo¾nosti
 ; Options
 ;
 MSG_MAINPANEL_POPUPS
-Notifications
+Upozornìní
 ; Popups
 ;
 MSG_MAINPANEL_CONFIG
-Configuration
+Konfigurace
 ; Config
 ;
 MSG_ERRLVL_ALL
-Tous les messages
+V¹echny zprávy
 ; All messages
 ;
 MSG_ERRLVL_WARNINGS
-Alertes et pire
+Upozornìní
 ; Warning and worse
 ;
 MSG_ERRLVL_ERRORS
-Erreurs et échecs
+V¹echny chyby
 ; Errors and failures
 ;
 MSG_ERRLVL_FAILURES
-Échecs seulement
+Záva¾né chyby
 ; Failures only
 ;
 MSG_POPUP_NEVER
-Ne jamais notifier
+Upozornìní nezobrazovat
 ; Never open a popup window! Bah!
 ;
 MSG_POPUP_ERROR
-Ne notifier que si il y a une erreur
+Upozornit pouze na chyby
 ; Only popup on an error condition
 ;
 MSG_POPUP_UNKNOWN
-Ne notifier que les nouveaux périphs.
+Upozornit na nové, neznámé zaøízení
 ; Popup on new, unknown devices
 ;
 MSG_POPUP_NOBINDING
-Ne notifier qu'en l'absence de liaison
+Upozornit na neexistující propojení
 ; Popup, if there is no binding
 ;
 MSG_POPUP_NOCONFIG
-Ne Notifier qu'en l'absence de config.
+Upozornit na chybìjící konfiguraci
 ; Popup, if there is no config yet
 ;
 MSG_POPUP_CONFIGCLASS
-Nofifier les classes configurables
+Upozornit na známou kategorii
 ; Popup on configurable class
 ;
 MSG_POPUP_BINDING
-Notifier, quelque soit la liaison
+Upozornit bez ohledu na stav propojení
 ; Popup, regardless of binding
 ;
 MSG_POPUP_ALWAYS
-Toujours notifier
+Upozornit na ka¾dou zmìnu
 ; Always immediately annoy me
 ;
 MSG_PANEL_GENERAL_LABEL1
-\33cInterface graphique de Trident V4.3
+\33cGrafické rozhraní Trident
 ; \33cTrident V4.3 Graphical User Interface
 ;
 MSG_PANEL_GENERAL_LABEL2
-\33cpour la pile USB Poseidon
+\33cpro balík Poseidon USB
 ; \33cfor the Poseidon USB Stack
 ;
 MSG_PANEL_GENERAL_LABEL3
-\33cCopyright ©2002-2009 Chris Hodges
+\33cCopyright (c) 2002-2009 Chris Hodges
 ; \33cCopyright ©2002-2009 Chris Hodges
 ;
 MSG_PANEL_GENERAL_LABEL4
-\33cAll rights reserved.
+\33cV¹echna práva vyhrazena
 ; \33cAll rights reserved.
 ;
 MSG_PANEL_GENERAL_LABEL5
-\33cMason Icons, courtoisie\n de Martin Merz.
+\33cMason Icons (c) Martin Merz
 ; \33cMason Icons are\ncourtesy of Martin Merz.
 ;
 MSG_PANEL_HARDWARE_LABEL1
-\33c\33bContrôleurs USB disponibles
+\33c\33bSeznam øadièù
 ; \33c\33bUSB Hardware Controllers available
 ;
 MSG_PANEL_HARDWARE_CONTROLLER_HELP
-Ceci est la liste des contrôleurs disponibles.\nPlusieurs contrôleurs différents peuvent cohabiter dans le système\nen même temps.\nPour en ajouter un, utilisez le gadget 'nouveau'.\nVous devez mettre le contrôleur en ligne manuellement à la première utilisation.
+Zobrazí seznam øadièù hardwaru, pøièem¾ v systému\nlze mít vícero rùzných typù.\nNový pøidáte kliknutím na tlaèítko 'Pøidat'. Pøed\npøipojením prvního nového zaøízení je nutno øadiè\nruènì uvést do stavu online.
 ; This is the list of available hardware controllers.\nSeveral different controllers can be in the system at\nthe same time.\nTo add an entry, use the 'New' gadget at the bottom.\nYou need to manually set an hardware controller online\nthe first time you add the device.
 ;
 MSG_PANEL_HARDWARE_COLS_NAME
-
+\33uNázev
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_UNIT
-
+\33uJedn.
 ; \33uUnit
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_ONLINE
-
+\33uOnline
 ; \33uOnline
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_COLS_PRODUCT
-
+\33uProdukt
 ; \33uProduct
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_ONLINE_YES
-
+ano
 ; Yes
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_ONLINE_NO
-
+ne
 ; No
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_UNKNOWN
-
+\33ineznámý
 ; \33iunknown until online
 ;
-; ***NEW***
-;
 MSG_PANEL_HARDWARE_LABEL2
-Périphérique :
+Zaøízení:
 ; Device:
 ;
 MSG_PANEL_HARDWARE_DEVICE_HELP
-Donnez le nom du contrôleur ou du pilote\n dans ce champ. Ces pilotes sont habituellement dans DEVS:USBHardware.
+Zobrazí název ovladaèe zaøízení. Tyto soubory\nnajdete obvykle v DEVS:USBHardware.
 ; Give the name of the controller device\ndriver in this field. These devices are\nnormally stored in DEVS:USBHardware.
 ;
 MSG_PANEL_HARDWARE_SELECT
-Choisir un pilote USBHardware...
+Vyberte øadiè USB
 ; Select USBHardware device...
 ;
 MSG_PANEL_HARDWARE_UNIT
-Unité :
+Jednotka:
 ; Unit:
 ;
 MSG_PANEL_HARDWARE_UNIT_HELP
-Si des cartes semblables sont présentes\ndans votre machine, entrez\nleur numéro ici.
+Pokud je v systému pøipojeno více karet tého¾\ntypu, zde zadejte èíslo vybraného.
 ; If there are multiple cards of the\nsame kind in your machine, enter\nthe unit number of the board here.
 ;
 MSG_PANEL_HARDWARE_DRIVER_NEW
-\33c Nouveau 
+\33cPøidat
 ; \33c New
 ;
 MSG_PANEL_HARDWARE_DRIVER_NEW_HELP
-Cliquez ici pour créer une\nnouvelle instance d'un pilote.
+Kliknutím pøidáte nový ovladaè hardwaru.
 ; Click here to create a\nnew hardware driver entry.
 ;
 MSG_PANEL_HARDWARE_DRIVER_COPY
-\33c Copier 
+\33cZkopírovat
 ; \33c Copy
 ;
 MSG_PANEL_HARDWARE_DRIVER_COPY_HELP
-Cliquez ici pour copier le pilote sélectionné.
+Kliknutím zkopírujete vybraný ovladaè hardwaru.
 ; Click here to copy the selected\nhardware driver entry.
 ;
 MSG_PANEL_HARDWARE_DRIVER_DELETE
-\33c Effacer 
+\33cOdebrat
 ; \33c Delete
 ;
 MSG_PANEL_HARDWARE_DRIVER_DELETE_HELP
-Cliquez ici pour retirer l'entrée sélectionnée.\nLe matériel sera mis hors ligne automatiquement,\ndéconnectant tous les périphériques connectés.
+Kliknutím odstraníte vybraný ovladaè hardwaru.\nOdpovídající (vèetnì souvisejících) zaøízení\nse automaticky odpojí.
 ; Click here to remove the selected entry.\nThe hardware will automatically go offline,\ntaking all its connected devices down.
 ;
 MSG_PANEL_HARDWARE_DRIVER_ONLINE
-\33c En ligne 
+\33cOnline
 ; \33c Online
 ;
 MSG_PANEL_HARDWARE_DRIVER_ONLINE_HELP
-Cliquez ici pour activer un pilote individuel.
+Kliknutím aktivujete vybraný ovladaè hardwaru.
 ; Click here to activate an\nindividual hardware driver.
 ;
 MSG_PANEL_HARDWARE_DRIVER_OFFLINE
-\33c Hors ligne 
+\33cOffline
 ; \33c Offline
 ;
 MSG_PANEL_HARDWARE_DRIVER_OFFLINE_HELP
-Cliquez ici pour désactiver un\npilote individuel.
+Kliknutím deaktivujete vybraný ovladaè hardwaru.
 ; Click here to deactivate an\nindividual hardware driver.
 ;
 MSG_PANEL_HARDWARE_DRIVER_INFO
-\33c Information 
+\33c Informace
 ; \33c Info
 ;
 MSG_PANEL_HARDWARE_DRIVER_INFO_HELP
-Pour obtenir des informations sur un pilote\ncliquez ici. Le périphérique doit être en ligne pour\nobtenir ces informations.
+Zobrazuje pøehled informací o ovladaèích hardwaru.\nChcete-li zobrazit podrobnìj¹í údaje, vyberte\npo¾adovaný ovladaè a kliknìte na tlaèítko 'Informace'.
 ; To get information on the device driver,\nclick here. The device needs to be online\nfor the information to be available.
 ;
 MSG_PANEL_DEVICES_LABEL
-\33c\33bPériphériques USB dans le système
+\33c\33bSeznam zaøízení
 ; \33c\33bUSB Devices in the system
 ;
 MSG_PANEL_DEVICES_HELP
-Ceci est la liste des périphs. ou fonctions\nUSB actuellement dans le système. Cela montre aussi\nles périphériques existants et leurs liaisons.
+Zobrazuje seznam zaøízení pøipojených do systému\nvèetnì údajù o rychlosti, stavu, kategorii a event.\npropojení.
 ; This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.
 ;
 MSG_PANEL_DEVICES_COLS_NAME
-
+\33uNázev
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_SPEED
-
+\33uRychlost
 ; \33uSpeed
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_STATE
-
+\33uStav
 ; \33uState
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_CLASS
-
+\33uKategorie
 ; \33uClass
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_COLS_BINDINGS
-
+\33uPropojení
 ; \33uBindings
 ;
-; ***NEW***
-;
 MSG_PANEL_DEVICES_SCAN
-\33c Détection des classes 
+\33cZaøadit
 ; \33c Class Scan
 ;
 MSG_PANEL_DEVICES_SCAN_HELP
-En cliquant ici vous déclencherez une détection des classes.\nCela signifie que chaque périphérique sera examiné pour les classes standard du système.\nSi des correspondances sont trouvées une liaison est crée et la fonctionnalité\nsera ajoutée automatiquement au système.
+Provede rozøazení zaøízení do kategorií. Podle svých\nfunkcí patøí ka¾dé zaøízení do urèité kategorie\na pokud danou kategorii Poseidon podporuje, pøiøadí\nodpovídající propojení vèetnì zavedení do systému.
 ; Clicking on this button will start a class scan. This means that\neach device will be examined if it matches some of the standard\nclasses in the system. In this case, a binding will be established\nand the functionality will be added to the system automatically.\n
 ;
 MSG_PANEL_DEVICES_UNBIND
-\33c Délier 
+\33cOdpojit
 ; \33c Unbind
 ;
 MSG_PANEL_DEVICES_UNBIND_HELP
-Retire une liaison manuellent. Ceci peut être utile pour désactiver temporairement un périphérique.\nUtilisez la détection pour réactiver la liaison.
+Umo¾ní ruènì odpojit vybrané zaøízení. To je výhodné\ntehdy, chcete-li dané zaøízení doèasnì deaktivovat.\nZnovu ho aktivujete kliknutím na tlaèítko 'Zaøadit'.
 ; Manually removes a binding. This can be\nuseful to temporarily deactivate a device.\nUse 'Class Scan' to reactivate the binding.
 ;
 MSG_PANEL_DEVICES_INFO
-\33c Information 
+\33cInformace
 ; \33c Information
 ;
 MSG_PANEL_DEVICES_INFO_HELP
-Ouvre une fenêtre d'information.\nCeci est sans danger.
+Otevøe okno s podrobnými informacemi o zaøízení.
 ; Opens a detailed information window.\nJust try it, nothing can go wrong.
 ;
 MSG_PANEL_DEVICES_SETTINGS
-\33c Paramètres 
+\33cNastavení
 ; \33c Settings
 ;
 MSG_PANEL_DEVICES_SETTINGS_HELP
-Si il existe une liaison et la classe supporte\nune interface de configuration. Cliquer ici\nouvrira la fenêtre de préférences.\n\nNotez bien que le gadget correspondant peut être trouvé sous la fenêtre d'information.
-; If there is a device binding and the class\nsupports a configuration GUI, clicking on this\nbutton will open the preferences window.\n\nNote well, that the corresponding button for the\ninterface binding settings can be found inside\nthe information window.
+Pokud vybrané zaøízení nabízí mo¾nost konfigurace,\nkliknutím na toto tlaèítko otevøete okno s pøehledem\nmo¾ností nastavení.\n\nPozn.: Mo¾nosti týkající se konfigurace propojení\nnajdete v oknì s informacemi o zaøízení.
+; If there is a device binding and the class\nsupports a configuration GUI. Clicking on this\nbutton will open the preferences window.\n\nNote well, that the corrsponding button for the\ninterface binding settings can be found inside\nthe information window.
 ;
 MSG_PANEL_DEVICES_SUSPEND
-\33c Suspendre 
+\33cUspat
 ; \33c Suspend
 ;
 MSG_PANEL_DEVICES_SUSPEND_HELP
-Place le périphérique en économie d'énergie.\nSi une liaison ne supporte pas ce mode,\nce bouton sera sans effet.
+Pøepne vybrané zaøízení do re¾imu spánku. Pokud\nkategorie daného zaøízení tento re¾im nepodporuje,\nnestane se nic.
 ; Sends device into power saving suspend mode.\nIf a class binding does not support suspend,\nthis button will do nothing.
 ;
 MSG_PANEL_DEVICES_RESUME
-\33c Reprendre 
+\33cProbudit
 ; \33c Resume
 ;
 MSG_PANEL_DEVICES_RESUME_HELP
-Place le périphérique en mode de pleine opération après\navoir été suspendu.
+Probudí vybrané zaøízení z re¾imu spánku (bylo-li\npøedtím v tomto re¾imu).
 ; Resumes the device to full operation after\nit was placed into suspend mode.\n
 ;
 MSG_PANEL_DEVICES_POWERCYCLE
-\33c Rafraîchissement 
+\33cReaktivovat
 ; \33c Powercycle
 ;
 MSG_PANEL_DEVICES_POWERCYCLE_HELP
-Rafraîchit le port du HUB et détecte de nouveau les périphs.\n Pratique pour activer les périphs. morts.
+Vypne a zapne napájení pro odpovídající port rozboèovaèe.\nTento postup je výhodný tehdy, chcete-li znovu aktivovat\nnereagující zaøízení.
 ; Power cycles the hub port and re-enumerates\ndevice. Comes handy to reactivate dead devices.\n
 ;
 MSG_PANEL_DEVICES_DISABLE
-\33c Désactiver 
+\33cVypnout
 ; \33c Disable
 ;
 MSG_PANEL_DEVICES_DISABLE_HELP
-Coupe le port. Il ne sera pas activé de nouveau en branchant le périphérique
+Odpojí napájení portu rozboèovaèe, ve kterém je\nvybrané zaøízení. Toto zaøízení pak ji¾ nelze znovu\naktivovat prostým vyta¾ením a zasunutím zpìt do portu. 
 ; Permanently powers off the port. It cannot be\nreactivated by unplugging/replugging the device.\n
 ;
 MSG_POSEIDON_SHORTHELP
-Poseidon (son nom latin est Neptune) est le dieu de la mer\net des ses habitants, c'est l'un des Olympiens, le fils\nde Cronos et Rhéa, le frère de Zeus, Hades, Demeter,\nHera, Hestia. Il a été marié à Amphitrite, une Néréïde,\net a eu un fils, Triton, avec elle. Comme les autres\nOlympiens, il eu beaucoup d'aventures (par ex. avec la Méduse)\net eu de nombreux enfants (par ex. Pégase).
+Poseidón (v øímské mytologii Neptun) je bùh moøe,\nsyn Kronùv a Rheiin, bratr Dia, Háda, Démétér, Héry\na Hestie. Jeho man¾elkou je Amfitríta a synem Triton.\nStejnì jako ostatní olymp¹tí bohové má mnoho pletek\n(napø. s Medúsou) a z nich nesèetnì dal¹ích potomkù\n(napø. Pegas).
 ; Poseidon (his latin name Neptune) the god of the sea\nand its inhabitants, and one of the Olympians, the son\nof Cronus and Rhea, brother of Zeus, Hades, Demeter,\nHera, Hestia. He was married to Amphitrite, a Nereid,\nand had by her the son Triton, a merman. Like other\nOlympians, had many love affairs (e.g. with Medusa)\nand numerous children (e.g. Pegasos).
 ;
 MSG_PANEL_CLASSES
-\33c\33bClasses USB disponibles
+\33c\33bSeznam kategorií
 ; \33c\33bUSB Classes available
 ;
 MSG_PANEL_CLASSES_HELP
-Ceci est la liste des classes USB disponibles.\nChaque classe est un pilote pour un groupe de\npériphériques USB. Ces classes peuvent être ajoutées manuellement en\nutilisant le gadget 'Ajouter' ou automatiquement avec 'Détecter'.
+Pøedstavuje seznam kategorií zaøízení, pøièem¾ ka¾dé\nkategorii odpovídá ovladaè. Pomocí tlaèítka 'Pøidat'\nlze ovladaè dodat ruènì, tlaèítkem 'Identifikovat' pak\nautomaticky.
 ; This is the list of USB classes available.\nEach class is a software driver for a group of\nUSB devices. Classes can be manually added using\nthe 'Add' button or automatically with 'Dir Scan'.
 ;
 MSG_PANEL_CLASSES_COLS_NAME
-
+\33uNázev
 ; \33uName
 ;
-; ***NEW***
-;
 MSG_PANEL_CLASSES_COLS_USE
-
+\33uPou¾ití
 ; \33uUse#
 ;
-; ***NEW***
-;
 MSG_PANEL_CLASSES_COLS_DESC
-
+\33uPopis
 ; \33uDescription
 ;
-; ***NEW***
-;
 MSG_PANEL_CLASSES_LABEL
-Bibliothèque de classes :
+Kategorie:
 ; Class library:
 ;
 MSG_PANEL_CLASSES_LABEL_HELP
-Pour ajouter manuellement un pilote USB,\nentrez son nom et cliquez sur 'Ajouter'.
+Chcete-li pøidat ovladaè pro kategorii (skupinu)\nzaøízení ruènì, zadejte do tohoto textového pole\ncestu vèetnì názvu ovladaèe a kliknìte na tlaèítko\n'Pøidat'.
 ; To manually add an usb class driver,\nenter its name here and click on 'Add'.
 ;
 MSG_PANEL_CLASSES_SELECT
-Choisir une bibliothèque de classe USB...
+Vyberte kategorii zaøízení
 ; Select USB class library...
 ;
 MSG_PANEL_CLASSES_ADD
-\33cAjouter
+\33cPøidat
 ; \33cAdd
 ;
 MSG_PANEL_CLASSES_ADD_HELP
-Pour ajouter un pilote, entrez son nom et cliquez ici.
+Chcete-li pøidat ovladaè pro kategorii (skupinu)\nzaøízení ruènì, zadejte do vý¹e umístìného textového\npole cestu vèetnì názvu ovladaèe a kliknìte na toto\ntlaèítko.
 ; To manually add an usb class\ndriver, enter its name above\nand click on this button.
 ;
 MSG_PANEL_CLASSES_REMOVE
-\33c Retirer
+\33cOdebrat
 ; \33c Remove
 ;
 MSG_PANEL_CLASSES_REMOVE_HELP
-Cliquez pour retirer une classe et ses liaisons.
+Umo¾ní odebrat ovladaè kategorie zaøízení vèetnì\nv¹ech propojení.
 ; Click here to remove a class driver\nand all its current bindings.
 ;
 MSG_PANEL_CLASSES_CONFIG
-\33cConfigurer
+\33cKonfigurovat
 ; \33c Configure
 ;
 MSG_PANEL_CLASSES_CONFIG_HELP
-Si un pilote supporte des paramètres, cliquez ici\net sa fenêtre de configuration s'ouvrira.
+Pokud vybraný ovladaè nabízí mo¾nost konfigurace,\nkliknutím na toto tlaèítko otevøete okno s pøehledem\nmo¾ností nastavení.
 ; If a class driver supports some kind of\nconfiguration, click here and it will\nopen a configuration window of the class.
 ;
 MSG_PANEL_CLASSES_SCAN
-\33c Scan du répertoire
+\33cIdentifikovat
 ; \33c Dir Scan
 ;
 MSG_PANEL_CLASSES_SCAN_HELP
-Scan automatique et ajout des classes au système.
+Projde seznam dostupných ovladaèù a automaticky\nje pøidá do systému.
 ; Automatically scans for class\ndrivers and\nadds all drivers found to the system.
 ;
 MSG_PANEL_OPTIONS
-;\33c\33bParamètres variés
+\33c\33bOstatní mo¾nosti
 ; \33c\33bVarious Settings
 ;
 MSG_PANEL_OPTIONS_STACK
-Paramètres de la pile
+Obecné mo¾nosti
 ; Stack Settings
 ;
 MSG_PANEL_OPTIONS_PRIORITY
-Priorité des sous-tâches
+Priorita úloh:
 ; SubTask priority:
 ;
 MSG_PANEL_OPTIONS_PRIORITY_HELP
-Définit la priorité de toutes les sous-tâches démarées par Poseidon.
+Definuje priority v¹ech podpùrných úloh spou¹tìných\nprogramem Poseidon.
 ; Defines the task priority of all\nsubtasks started by Poseidon.
 ;
 MSG_PANEL_OPTIONS_BOOT
-Délai au démarrage :
+Zpo¾dìní pøi startu:
 ; Boot delay:
 ;
 MSG_PANEL_OPTIONS_BOOT_HELP
-Après un redémarrage cette valeur définit combien de temps\nPoseidon devrait attendre les \périphériques USB lents, tels qu'un lecteur de CDROM.
+Definuje dobu, po kterou Poseidon èeká na pomalej¹í\nzaøízení typu mechaniky CD nebo DVD tak, aby z nich\nbylo mo¾no nastartovat systém.
 ; If reset resident, this value defines,\nhow long Poseidon should wait for USB\ndevices to settle, allowing to boot from\nslow devices such as an USB CD drive.
 ;
 MSG_PANEL_OPTIONS_BOOT_FORMAT
-%ld sec.
+%ld sek.
 ; %ld sec.
 ;
 MSG_PANEL_OPTIONS_DISABLELOW
-Désactiver automatiquement le HUB si le courant est faible :
+V pøípadì nedostateèného napájení vypnout port rozboèovaèe:
 ; Automatically disable hub port on low power conditions:
 ;
 MSG_PANEL_OPTIONS_DISABLELOW_HELP
-Si une condition de courant faible est détectée,\nle périphique responsable sera automatiquement éteind.
+Umo¾ní automaticky odpojit zaøízení, jeho¾ odbìr\npøevy¹uje mo¾nosti portu rozboèovaèe.
 ; If a low power condition is detected at a port,\nselecting this switch will automatically turn off\nthe device causing the low power condition.
 ;
 MSG_PANEL_OPTIONS_DISABLEDEAD
-Désactiver le HUB si le périphérique meurt :
+V pøípadì chyby zaøízení vypnout port rozboèovaèe:
 ; Automatically disable hub port, if device drops dead:
 ;
 MSG_PANEL_OPTIONS_DISABLEDEAD_HELP
-Si un périph. meurt (délai de transfert dépassé),\net cette option est sélectionnée,\nalors le port sera désactiver pour éviter les baisses de performance.
+Vypne port rozboèovaèe v pøípadì, ¾e zaøízení pøestane\nreagovat (obvykle chyby pøi pøenosu dat).
 ; If a device drops dead (transfer timeouts),\nand this switch is selected, then the hub port\nwill be disabled automatically to avoid unnecessary\nperformance penalties.
 ;
 MSG_PANEL_OPTIONS_POWERCYCLE
-Rafraîchir les ports si un périphérique meurt :
+V pøípadì chyby zaøízení reaktivovat port rozboèovaèe:
 ; Automatically power cycle hub port, if device drops dead:
 ;
 MSG_PANEL_OPTIONS_POWERCYCLE_HELP
-Si un périph. meurt (délai de transfert dépassé),\et cette option est sélectionnée,\nalors le port sera automatiquement mis à zéro\npour rafraîchir le périph. Cela peut induire des boucles infinies.
+Pokusí se reaktivovat port rozboèovaèe v pøípadì,\n¾e zaøízení pøestane reagovat (obvykle se pøedtím\nobjevují chyby pøi pøenosu dat).\nTímto zpùsobem mù¾e dojít jak k nápravì situace,\ntak také k výraznému \33bzhor¹ení\33n (napø. zacyklení této\noperace) a pádu systému!
 ; If a device drops dead (transfer timeouts),\nand this switch is selected, then the hub port\nwill be reset automatically to try to revive the\ndevice. However, this can lead to nasty infinity loops.
 ;
 MSG_PANEL_OPTIONS_POWERSAVE
-Activer le mode d'économie :
+Povolit re¾im ¹etøení energií:
 ; Enable power-saving suspend mode:
 ;
 MSG_PANEL_OPTIONS_POWERSAVE_HELP
-Les périphs. seront suspendus après\nun temps d'inactivité.\nLa consommation de courant descend alors en dessous de 1mA.\nReprendre les opérations habituellement prend 25ms.
+Po uplynutí definované doby pøepne zaøízení do re¾imu\n¹etøení energií.\nOdbìr v tomto re¾imu klesne pod 1 mA, pøièem¾ obnovení\npracovního re¾imu trvá obvykle do 25 ms.
 ; Devices will be placed into suspend mode after\na specified interval of inactivity.\nPower consumption goes down to less than 1mA.\nResuming of operation usually takes place within 25ms.
 ;
 MSG_PANEL_OPTIONS_FORCESUSPEND
-Forcer le mode de suspension, même si non supporté :
+Vynutit re¾im spánku i tehdy, nepodporuje-li ho ovladaè:
 ; Force suspend mode, even if not supported by class:
 ;
 MSG_PANEL_OPTIONS_FORCESUSPEND_HELP
-Les pilotes devraient tous supporter le mode économie.\nSi ils ne le font pas, cette option permet simplement\nde defaire la liaison.\nCela est effectué seulement pour les périphs permettant le réveil\nà distance, sinon la liaison ne pourrait s'établir automatiquement.
+Ovladaèe jednotlivých kategorií zaøízení by mìly\npodporovat re¾im ¹etøení energií. V pøípadì ¾e tomu\ntak není, tato funkce zru¹í propojení související\ns ovladaèem a následnì zaøízení nucenì uvede\ndo re¾imu spánku.\nPozn.: Funkce se týká pouze tìch zaøízení, které lze\nprobudit odpovídajícím signálem zvenèí.
 ; Class drivers should support going into suspend\nmode. If they don't, enabling this switch will\nsimply release the binding prior to suspending.\nThis is only performed on remote wakeup devices,\notherwise the class wouldn't rebind automatically.
 ;
 MSG_PANEL_OPTIONS_INACTIVITY
-Délai d'expiration :
+Re¾im spánku po:
 ; Inactivity timeout for suspend:
 ;
 MSG_PANEL_OPTIONS_INACTIVITY_HELP
-Délai après lequel essayer de placer un périph\nen mode économique.
+Po uplynutí definované doby pøepne zaøízení do re¾imu\n¹etøení energií.
 ; Timeout before trying to place a device into\npower saving suspend mode.
 ;
 MSG_PANEL_OPTIONS_INACTIVITY_FORMAT
-%ld sec.
+%ld sek.
 ; %ld sec.
 ;
 MSG_PANEL_OPTIONS_LOGGING
-Options des journeaux
+Výpis hlá¹ení
 ; Logging Options
 ;
 MSG_PANEL_OPTIONS_LOGGING_LABEL
-Messages d'information :
+Bì¾né informace:
 ; Log info messages:
 ;
 MSG_PANEL_OPTIONS_LOGGING_LABEL_HELP
-Bascule la journalisation des messages d'information.
+Povolí výpis bì¾ných informací programu Poseidon.
 ; Toggles logging of normal\ninformation messages.
 ;
 MSG_PANEL_OPTIONS_LOGGING_WARN
-Messages d'alerte :
+Upozornìní:
 ; Log warnings:
 ;
 MSG_PANEL_OPTIONS_LOGGING_WARN_HELP
-Bascule la journalisation des messages d'alerte.
+Povolí výpis upozornìní programu Poseidon.
 ; Toggles logging of warnings.
 ;
 MSG_PANEL_OPTIONS_LOGGING_ERR
-Messages d'erreur :
+Bì¾né chyby:
 ; Log errors:
 ;
 MSG_PANEL_OPTIONS_LOGGING_ERR_HELP
-Bascule la journalisation des erreurs.
+Povolí výpis bì¾ných chyb programu Poseidon.
 ; Toggles logging of errors.
 ;
 MSG_PANEL_OPTIONS_LOGGING_FAIL
-Messages d'échec :
+Záva¾né chyby:
 ; Log failures:
 ;
 MSG_PANEL_OPTIONS_LOGGING_FAIL_HELP
-Bascule la journalisation des messages d'échec.
+Povolí výpis záva¾ných chyb programu Poseidon.
 ; Toggles logging of failures.
 ;
 MSG_PANEL_OPTIONS_MEMORY
-Mémoire allouée par Poseidon :
+Velikost bloku pamìti pro Poseidon Pool:
 ; Memory allocated in Poseidon Pool:
 ;
 MSG_PANEL_POPO
-\33c\33bParamètres des notifications
+\33c\33bMo¾nosti upozornìní
 ; \33c\33bPopup Settings
 ;
 MSG_PANEL_POPO_LABEL
-Options de la fenêtre de notification
+Mo¾nosti upozornìní
 ; Popup Window Options
 ;
 MSG_PANEL_POPO_CONNECT
-Pendant la connection :
+Pøi pøipojení:
 ; On connecting:
 ;
 MSG_PANEL_POPO_CONNECT_HELP
-Comportement lors de la connection de nouveaux périphs.
+Zobrazí upozornìní pøi pøipojení nového zaøízení.
 ; Popup display behaviour on\nconnecting new USB devices
 ;
 MSG_PANEL_POPO_DISCONNECT
-Pendant la déconnection :
+Pøi odpojení:
 ; On disconnect:
 ;
 MSG_PANEL_POPO_DISCONNECT_HELP
-Comportement lors des déconnections.
+Zobrazí upozornìní po odpojení zaøízení.
 ; Whether to popup a window\nif the device is removed.
 ;
 MSG_PANEL_POPO_DEATH
-Lors de la mort d'un périph. :
+Pøi chybì zaøízení:
 ; On device death:
 ;
 MSG_PANEL_POPO_DEATH_HELP
-Notifier si un périph. semble mort.
+Zobrazí upozornìní v pøípadì, ¾e zaøízení nereaguje.
 ; Open a requester, if device seems to be dead.
 ;
 MSG_PANEL_POPO_DELAY
-Délai de notification :
+Doba upozornìní:
 ; Popup delay:
 ;
 MSG_PANEL_POPO_DELAY_HELP
-Combien de temps la requête doit rester ouverte\navant de se refermer automatiquement.
+Definuje dobu, po kterou bude upozornìní zobrazeno.
 ; How long should the requester be displayed\nbefore disappearing automatically.
 ;
 MSG_PANEL_POPO_DELAY_FORMAT
-%ld sec.
+%ld sek.
 ; %ld sec.
 ;
 MSG_PANEL_POPO_ACTIVATE
-Activer la fenêtre :
+Aktivovat okno:
 ; Activate window:
 ;
 MSG_PANEL_POPO_ACTIVATE_HELP
-Faire de la fenêtre de notification une\nune fen^etre active.
+Pøi otevøení aktivuje okno.
 ; Make the window active when opening.
 ;
 MSG_PANEL_POPO_TOFRONT
-Fenêtre en avant :
+Pøenést do popøedí:
 ; Pop to front:
 ;
 MSG_PANEL_POPO_TOFRONT_HELP
-Placer la fenêtre en avant si son contenu change.
+Pøi zmìnì obsahu pøenese okno do popøedí.
 ; Pop window to front, if content changes.
 ;
 MSG_PANEL_POPO_CONSOUND
-Son à la connection :
+Zvuk pøi pøipojení:
 ; Connection sound:
 ;
 MSG_PANEL_POPO_CONSOUND_HELP
-Ce son sera joué à chaque insertion\nd'un périphérique sur le bus.
+Pøehraje definovaný zvuk pøi pøipojení nového zaøízení.
 ; This sound will be replayed everytime\na device is connected to the bus.
 ;
 MSG_PANEL_POPO_CONSOUND_SELECT
-Choisir un son...
+Vyberte po¾adovaný zvuk
 ; Select a sound file to be replayed...
 ;
 MSG_PANEL_POPO_DISCONSOUND
-Son à la déconnection :
+Zvuk pøi odpojení:
 ; Disconnect sound:
 ;
 MSG_PANEL_POPO_DISCONSOUND_HELP
-Ce son sera joué à chaque déconnection d'un périphérique.
+Pøehraje definovaný zvuk po odpojení zaøízení.
 ; This sound will be replayed everytime\na device is removed from the bus.
 ;
 MSG_PANEL_POPO_DISCONSOUND_SELECT
-Choisir un son...
+Vyberte po¾adovaný zvuk
 ; Select a sound file to be replayed...
 ;
 MSG_PANEL_CONFIG
-\33c\33bGestionnaire de configuration (Utilisez le glisser/déposer)
+\33c\33bMo¾nosti konfigurace
 ; \33c\33bConfiguration management (Use drag & drop)
 ;
 MSG_PANEL_CONFIG_HELP
-Dans cette boite vous pouvez voir toutes\nles préférences sauvées dans ENVARC:.\nVous pouvez utiliser ce panneau pour effacer ou\nexporter vos préférences.\n\nUtilisez le glisser/déposer pour copier ou remplacer les préférences.
+Zobrazuje pøehled v¹ech konfiguraèních souborù, které\nPoseidon zapisuje do ENVARC:.\nLze vyu¾ít ke smazání nebo exportu vybraných souborù,\npøíp. i zkopírování nebo nahrazení (metodou 'táhnout\na pustit').
 ; In this box you can see all the preferences that are\nsaved along the prefs file in ENVARC:.\nYou can use this panel to delete or export prefs.\n\nUse drag & drop to copy or replace preferences.\n
 ;
 MSG_PANEL_CONFIG_COLS_TYPE
-
+\33uDruh
 ; \33uType
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_DESC
-
+\33uPopis
 ; \33uDescription
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_OWNER
-
+\33uZdroj
 ; \33uOwner
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_COLS_SIZE
-
+\33uVelikost
 ; \33uSize
 ;
-; ***NEW***
-;
 MSG_PANEL_CONFIG_SAVEAS
-\33c Sauver sous
+\33cUlo¾it jako
 ; \33c Save as
 ;
 MSG_PANEL_CONFIG_SAVEAS_HELP
-Sauvez les préférences sous un nom donné.
+Umo¾ní konsolidovat a ulo¾it v¹echny konfiguraèní\nsoubory do jednoho pro pozdìj¹í pou¾ití.
 ; Save all the prefs under given name\nfor reloading it later.
 ;
 MSG_PANEL_CONFIG_EXPORT
-\33cExporter
+\33cExportovat
 ; \33c Export
 ;
 MSG_PANEL_CONFIG_EXPORT_HELP
-Permet de sauver la sélection pour plus tard.
+Umo¾ní vyexportovat vybraný konfiguraèní soubor.
 ; Allows you to save a selected entry\nto reload it later.
 ;
 MSG_PANEL_CONFIG_IMPORT
-\33cImporter
+\33cImportovat
 ; \33c Import
 ;
 MSG_PANEL_CONFIG_IMPORT_HELP
-Importer des préférences.
+Umo¾ní naèíst konfiguraèní soubor.
 ; Imports a previously saved piece of prefs.
 ;
 MSG_PANEL_CONFIG_REMOVE
-\33cEffacer
+\33cOdstranit
 ; \33c Remove
 ;
 MSG_PANEL_CONFIG_REMOVE_HELP
-Effacer les préférences sélectionnées.
+Umo¾ní smazat vybraný konfiguraèní soubor.
 ; Deletes the selected prefs entry.
 ;
 MSG_PANEL_CONFIG_MSGLOG
-Journal
+Výpis hlá¹ení
 ; Message Log
 ;
 MSG_PANEL_CONFIG_INFLVL
-Niveau d'alerte :
+Ve výpisu:
 ; Information level:
 ;
 MSG_PANEL_CONFIG_INFLVL_HELP
-Détermine le montant et le type de messages.
+Definuje míru podrobnosti výpisu hlá¹ení programu.
 ; This gadget determines the amount and\ntype of messages shown below.
 ;
 MSG_PANEL_CONFIG_LOGSAVE
-\33cSauver sur disque
+\33cUlo¾it na disk
 ; \33c Save to disk
 ;
 MSG_PANEL_CONFIG_LOGSAVE_HELP
-Générer un journal des erreurs,\npar ex. pour envoyer ces informations par mail.
+Umo¾ní ulo¾it výpis hlá¹ení programu do souboru.
 ; To generate a logfile of the errors,\ne.g. to send the information to me\nfor bug reporting or help.
 ;
 MSG_PANEL_CONFIG_LOGFLUSH
-\33cEffacer tout
+\33cVymazat v¹e
 ; \33c Flush all
 ;
 MSG_PANEL_CONFIG_LOGFLUSH_HELP
-Effacera tout les messages.\nIl n'y a pas de retour possible.
+Umo¾ní vymazat obsah výpisu hlá¹ení programu.
 ; Clicking on this button will remove all\nthe messages in the stack. There's no way\nto get them back.
 ;
 MSG_PANEL_CONFIG_LOGHELP
-Voici les messages générés par Poseidon jusqu'ici.\nPour effacer cette liste, cliquez sur 'Effacer tout'.
+Zobrazuje pøehled výpisu hlá¹ení programu. Chcete-li\nvymazat tento seznam, kliknìte na tlaèítko 'Vymazat v¹e'.
 ; These are the messages of the Poseidon stack\ngenerated so far. If you want to clear this list\njust click on the 'Flush all messages' button.
 ;
 MSG_PANEL_CONFIG_ALLONLINE
-\33cTout en ligne
+\33cV¹e online
 ; \33c All Online
 ;
 MSG_PANEL_CONFIG_ALLONLINE_HELP
-Démarre tous les périphériques USB. Leurs liaisons seront testées.
+Spustí v¹echny ovladaèe hardwaru USB uvedené v sekci\n'Øadièe'. V souvislosti s touto akcí se zaktualizují\nv¹echna propojení.
 ; Start all USB hardware device drivers that\nhave been entered in the 'Hardware' panel.\nMoreover, the found devices will be checked\nfor possible bindings.
 ;
 MSG_PANEL_CONFIG_ALLOFFLINE
-\33cTout hors ligne
+\33cV¹e offline
 ; \33c All Offline
 ;
 MSG_PANEL_CONFIG_ALLOFFLINE_HELP
-Ceci stoppe totalement Poseidon.
+Ukonèí ve¹keré ovladaèe hardwaru USB.
 ; Using 'Offline' you can take down all the USB\nhardware device drivers.\nThis totally halts the stack.
 ;
 MSG_PANEL_CONFIG_RESTART
-\33cRedémarrer
+\33cRestartovat
 ; \33c Restart
 ;
 MSG_PANEL_CONFIG_RESTART_HELP
-Ceci stoppe et redémarre tous les pilotes.
+Kliknutím na toto tlaèítko ukonèíte a znovu spustíte\nv¹echny ovladaèe hardwaru USB.
 ; Clicking on 'Restart' will stop and restart\nall hardware device drivers.
 ;
 MSG_PANEL_CONFIG_SAVE
-\33cSauver
+\33cUlo¾it
 ; \33c Save
 ;
 MSG_PANEL_CONFIG_SAVE_HELP
-Sauver les préférences sur disque.
+Umo¾ní trvale ulo¾it nastavení programu.
 ; To save your current prefs to disk, click\non this button. The configuration will be\nstored in both ENVARC: and\n ENV:.
 ;
 MSG_PANEL_CONFIG_USE
-\33cUtiliser
+\33cPou¾ít
 ; \33c Use
 ;
 MSG_PANEL_CONFIG_USE_HELP
-Sauver temporairement.
+Umo¾ní doèasnì (do pøí¹tího restartu) ulo¾it\nnastavení programu.
 ; To use, but not permanently save your prefs\nclick this button. The configuration will be\nstored in ENV:.
 ;
 MSG_UNKNOWN
-inconnu
+neznámé
 ; unknown
 ;
 MSG_HARDWARE_WINDOW
-Fenêtre d'information du pilote
+Informace o ovladaèi hardwaru
 ; Hardware driver information window
 ;
 MSG_HARDWARE_WINDOW_HELP
-Informations générales concernat le pilote.
+Zobrazí pøehled informací o vybraném ovladaèi hardwaru.
 ; These fields show some general information\non the USB hardware driver.
 ;
 MSG_HARDWARE_WINDOW_FRAME
-Information générale du pilote USB
+Pøehled informací o ovladaèi hardwaru
 ; General USB hardware driver information
 ;
 MSG_HARDWARE_WINDOW_LABEL
-Périph :\nUnité :\nVersion :\nProduit :\nFabricant :\nDescription :\nCopyright :
+Zaøízení:\nJednotka:\nVerze:\nProdukt:\nVýrobce:\nPopis:\nCopyright:
 ; Device:\nUnit:\nVersion:\nProduct:\nManufacturer:\nDescription:\nCopyright:
 ;
 MSG_ACTION_SAVE_ERR
-Choisir où sauver le journal des erreurs...
+Vyberte soubor pro výpis hlá¹ení
 ; Select file to save errors to...
 ;
 MSG_ACTION_SAVE_ERR_FILE
-Erreurs.log
+Errors.log
 ; Errors.log
 ;
 MSG_ACTION_ERR_SAVED
-Journal des erreurs sauvé dans %s.
+Výpis hlá¹ení ulo¾en do souboru %s.
 ; Error log saved to file %s.
 ;
 MSG_ACTION_ERR_SAVED_ERRWRITE
-Erreur lors de l'écriture dans %s.
+Chyba pøi zápisu do souboru %s.
 ; Error opening file %s for writing.
 ;
 MSG_ACTION_SAVE_DEV
-Choisir où sauver la liste des périphs...
+Vyberte soubor pro seznam zaøízení
 ; Select file to save device list to...
 ;
 MSG_ACTION_SAVE_DEV_FILE
@@ -894,103 +856,103 @@ DevList.log
 ; DevList.log
 ;
 MSG_ACTION_SAVE_DEV_ERREXE
-Erreur d'exécution sur PsdDevLister
+Chyba pøi provádìní funkce PsdDevLister
 ; Error executing PsdDevLister
 ;
 MSG_ACTION_DEV_SAVED
-DevLister sauvé en %s.
+Seznam zaøízení ulo¾en do souboru %s.
 ; DevLister saved to %s.
 ;
 MSG_ACTION_PREFS_LOAD
-Choisir un fichier Poseidon...
+Vyberte konfiguraèní soubor
 ; Select a Poseidon Prefs file...
 ;
 MSG_ACTION_PREFS_LOADED
-Configuration chargée depuis %s.
+Konfigurace naètena ze souboru %s.
 ; Config loaded from %s.
 ;
 MSG_ACTION_PREFS_SAVEAS
-Choisir où sauver les préférences...
+Vyberte konfiguraèní soubor
 ; Select file to save prefs to...
 ;
 MSG_ACTION_PREFS_SAVED
-Configuration sauvée dans %s avec succès.
+Konfigurace ulo¾ena do souboru %s.
 ; Configuration successfully saved to %s.
 ;
 MSG_ACTION_PREFS_SAVEDERR
-Impossible de sauver la config. dans %s.
+Konfiguraci nelze ulo¾it do souboru %s.
 ; Couldn't save config to %s.
 ;
 MSG_ACTION_PREFS_NOTSAVED
-Configuration non sauvegardée !
+Konfigurace nebyla ulo¾ena!
 ; Config not saved!
 ;
 MSG_ACTION_PREFS_SAVEDSUCCESS
-Config. sauvée avec succès.
+Zmìny v konfiguraci byly ulo¾eny.
 ; Configuration successfully saved.
 ;
 MSG_ACTION_USEQUIT
-Utiliser|Sauver|Annuler
+Pou¾ít|Ulo¾it|Zru¹it
 ; Use|Save|Cancel
 ;
 MSG_ACTION_CONFIGCHANGED
-La config. courante a été changée\nmais pas sauvegardée.
+Konfigurace byla zmìnìna. Co si pøejete udìlat?
 ; The current configuration has been changed\nand not been saved yet.
 ;
 MSG_ACTION_SAVEQUIT
-Impossible de sauver la configuration !
+Zmìny v konfiguraci se nepodaøilo ulo¾it.
 ; Couldn't save config.
 ;
 MSG_ACTION_DEV_FORCEBIND_NONE
-Aucun
+---
 ; None
 ;
 MSG_ACTION_DEV_FORCE_REQ
-Je ne suis pas fou|Je vais réfléchir
+Vynutit|Rad¹i ne
 ; I'm not dumb!|I'll reconsider
 ;
 MSG_ACTION_DEV_FORCE_REQ_TXT
-Vous êtes sur le point de \33bforcer la liaison\33n d'un périphérique.\n\nEtes vous sûr ?
+Právì se chystáte vynutit propojení zaøízení. Vezmìte\nprosím, ¾e toto \33bnení\33n bì¾ný typ propojení a v¹echny\npøípadné následky (pád systému, ztrátu dat atp.) pøiètìte\npouze sami sobì.
 ; You are about to establish a forced \33bdevice\33n\nbinding. This is not an interface binding. As\nmost people are not capable of reading the\nmanual and they cause more harm than good.\nPlease make sure you know, what you're doing\nand not breaking things (and then bugger me with\nsilly emails).
 ;
 MSG_ACTION_DEV_FORCE
-Forcer la liaison de %s à %s.
+Vynucení propojení %s se zaøízením %s.
 ; Forcing device binding of %s to %s.
 ;
 MSG_ACTION_DEV_FORCE_REMOVE
-Effacer la liaison forcée de %s.
+Odstranìno vynucené propojení s %s.
 ; Removed forced device binding of %s.
 ;
 MSG_ACTION_CFG_REMOVE
-Effacer|Annuler
+Odstranit|Zru¹it
 ; Remove|Cancel
 ;
 MSG_ACTION_CFG_REMOVE_HELP
-Vous êtes sur le point d'effacer la configuration de \33b%s\33n.\n\nEtes-vous sûr ?
+Právì se chystáte odstranit konfiguraci zaøízení\ns ID \33b%s\33n\na v¹echna s ním související individuální nastavení\npro danou kategorii.\n\nOpravdu chcete odebrat vý¹e popsanou konfiguraci?
 ; You are about to \33bremove\33n the configuration\ndata related to the device with the ID\n\33b%s\33n.\nThis includes all individually saved class\nsetting for the device or interfaces, as well\nas the stuff Trident saves (such as custom name or\npopup inhibit).\n\nAre you sure you want to remove these prefs?
 ;
 MSG_ACTION_CFG_REMOVE_DEFAULT
-Vous êtes sur le point \33bd'effacer\33b la configuration de la classe \33b%s\33n.\n\nEtes-vous sûr ?
+Právì se chystáte odstranit (výchozí) konfiguraci\nkategorie \33b%s\33n.\nPøi pøí¹tím spu¹tìní pou¾ije Poseidon interní výchozí\nnastavení, co¾ za bì¾ných podmínek nemá vliv\nna individuální konfigurace.\n\nOpravdu chcete odebrat vý¹e popsanou konfiguraci?
 ; You are about to \33bremove\33n the (default)\nconfiguration of the class \33b%s\33n.\nThis will set the classes initial prefs to the\ninternal defaults \33bon next boot\33n!\nIt does normally not affect the device or interface\nindividually saved settings.\n\nAre you sure you want to remove these prefs?
 ;
 MSG_ACTION_CFG_REMOVE_CLASS
-Vous êtes sur le point \33bd'effacer\33n la configuration de la classe \33b%s\33n\nsauvée spécifiquement pour le périphérique \33b%s\33n\n\nEtes-vous sûr ?
+Právì se chystáte odstranit konfiguraci kategorie\n\33b%s\33n urèenou konkrétnì pro zaøízení\ns ID \33b%s\33n.\n\nOpravdu chcete odebrat vý¹e popsanou konfiguraci?
 ; You are about to \33bremove\33n the class\nconfiguration of the class \33b%s\33n,\nspecifically saved for device with ID\n\33b%s\33n.\n\nAre you sure you want to remove these prefs?
 ;
 MSG_ACTION_CFG_REMOVE_CLASS_DEF
-Vous êtes sur le point \33bd'effacer\33n la configuration de la classe \33b%s\33n\nsauvée pour l'interface \33b%s\33n du périphérique\n\33b%s\33n\n\nEtes-vous sûr ?
+Právì se chystáte odstranit konfiguraci kategorie\n\33b%s\33n urèenou konkrétnì pro rozhraní\n\33b%s\33n zaøízení\ns ID \33b%s\33n.\n\nOpravdu chcete odebrat vý¹e popsanou konfiguraci?
 ; You are about to \33bremove\33n the class\nconfiguration of the class \33b%s\33n\nsaved for the particular interface\n\33b%s\33n of the device with ID\n\33b%s\33n.\n\nAre you sure you want to remove these prefs?
 ;
 MSG_ACTION_CFG_REMOVE_UNKNOWN
-Voulez-vous vraiment effacer ces données des préférences ?
+Opravdu chcete odstranit vybranou konfiguraci?
 ; Do you really want to remove this\n\33bunknown prefs data\33n from the preferences?
 ;
 MSG_ACTION_MEMPOOL_FORMAT
-%ld Ko
+%ld KB
 ; %ld KB
 ;
 MSG_ACTION_CFG_EXPORT
-Choisir où exporter les préférences...
+Vyberte soubor pro export
 ; Select file to export prefs to...
 ;
 MSG_ACTION_CFG_PREFS_FILE
@@ -1018,188 +980,150 @@ ifclscfg.prefs
 ; ifclscfg.prefs
 ;
 MSG_ACTION_CFG_FAIL
-Échec à l'ouverture de %s.
+Chyba pøi otevírání souboru %s.
 ; Failed to open file %s.
 ;
 MSG_ACTION_CFG_IMPORT
-Choisir d'où importer les préférences...
+Vyberte konfiguraèní soubor
 ; Select file to import prefs from...
 ;
 MSG_ACTION_CFGDATA_OOPS
-Ouille !
+Ale ne!
 ; Oops!
 ;
 MSG_ACTION_CFGDATA_OOPS_HELP
-Pour importer des préférences, vous avez besoin de choisir\nle périph.
+Chcete-li naimportovat tento druh konfiguraèního\nsouboru, vyberte nejprve po¾adované zaøízení.
 ; To import device or interface\nprefs data, you need to select\nthe device entry where it should be added.
 ;
 MSG_ACTION_CFGDATA_ERR
-Format de préférences inconnu !
+Vybraný konfiguraèní soubor nelze naèíst.
 ; I don't know that kind of prefs file.
 ;
 MSG_ACTION_CFGDATA_ERR_READ
-Erreur de lecture sur %s !
+Chyba pøi ètení konfiguraèního souboru %s.
 ; Read error on loading prefs file %s.
 ;
 MSG_ACTION_CFGDATA_ERR_ALLOC
-Échec d'allocation d'un tampon pour charger %s !
+Chyba pøi alokaci pamìti pro soubor %s.
 ; Failed to allocate buffer for loading %s.
 ;
 MSG_ACTION_CFGDATA_ERR_IFF
-%s n'est pas un fichier IFF valide !
+Soubor %s není konfigurace pro Poseidon.
 ; %s does not seem to be an iff file.
 ;
 MSG_ACTION_CFGDATA_ERR_OPEN
-Échec à l'ouverture de %s !
+Chyba pøi otevírání souboru %s.
 ; Failed to open file %s.
 ;
 MSG_APPLYDRAGACTION_DEVICECFG
-Remplacer|Joindre|Annuler
+Nahradit|Slouèit|Zru¹it
 ; Replace|Merge|Cancel
 ;
 MSG_APPLYDRAGACTION_DEVICECFG_HELP
-Voulez-vous \33bremplacer\33n ou \33bjoindre\33n les préférences de\n\33b%s\33n avec le contenu de \33b%s\33n ?
+Chcete nahradit nebo slouèit konfiguraci zaøízení\n%s touto konfigurací pro %s?
 ; Do you want to \33breplace\33n or \33bmerge\33n the prefs of\n\33b%s\33n\nwith the contents from\n\33b%s\33n?
 ;
 MSG_APPLYDRAGACTION_DEVCFGDATA
-Ajouter au périphérique|Annuler
+Pøidat|Zru¹it
 ; Add to device|Cancel
 ;
 MSG_APPLYDRAGACTION_DEVCFGDATA_HELP
-Désolé, mais seulement les préfs. de la même source peuvent être remplacées.\nVoulez-vous ajouter ces préfs. au périphériqe à la place ?
+Nahradit lze pouze konfigurace ze stejného zdroje.\nChcete dané nastavení pøidat k zaøízení?
 ; Sorry, but only prefs of the same owner can\nbe replaced.\n\nDo you wish to add this prefs\nto the device instead?
 ;
 MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE
-Remplace|Annule
+Nahradit|Zru¹it
 ; Replace|Cancel
 ;
 MSG_APPLYDRAGACTION_DEVCFGDATA_REPLACE_HELP
-Voulez-vous \33bremplacer\33n les préfs de \33b%s\33n par celles de \33b%s\33n ?
+Chcete nahradit konfiguraci zaøízení %s\ntouto konfigurací pro %s?
 ; Do you want to \33breplace\33n the prefs of\n\33b%s\33n\nby those of\n\33b%s\33n?
 ;
 MSG_APPLYDRAGACTION_DEVICECFG_REPLACE
-Rempacer|Annuler
+Nahradit|Zru¹it
 ; Replace|Cancel
 ;
 MSG_APPLYDRAGACTION_DEVICECFG_REPLACE_HELP
-Voulez-vous \33bremplacer\33n les préfs. de \33b%s\33n par celles dans \33b%s\33n ?
+Chcete nahradit konfiguraci zaøízení %s\njednou z konfigurací v %s?
 ; Do you want to \33breplace\33n the prefs of\n\33b%s\33n\nby the one in\n\33b%s\33n?
 ;
 MSG_APPLYDRAGACTION_DEVICECFG_ADD
-Ajouter|Annuler
+Pøidat|Zru¹it
 ; Add|Cancel
 ;
 MSG_APPLYDRAGACTION_DEVICECFG_ADD_HELP
-Voulez-vous \33bajouter\33n les préfs. de \33b%s\33n au périph. \33b%s\33n ?
+Chcete pøidat konfiguraci zaøízení %s\nke konfigurací zaøízení %s?
 ; Do you want to \33badd\33n the prefs of\n\33b%s\33n\nto the device\n\33b%s\33n?
 ;
 MSG_CFGLISTDISPATCHER_OOPS
-Ouille !
+Ale ne!
 ; Oops!
 ;
 MSG_CFGLISTDISPATCHER_OOPS_HELP
-Désolé, le glisser/déposer sur cette cible 'est pas supporté !
+Tato operace není podporována.
 ; Sorry, drag'n drop operation to\nthat target is not supported.
 ;
 MSG_DEVICE_SPEED_LOW
-
+USB 1.1 (pomalé)
 ; Low
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_HIGH
-
+USB 1.1 (rychlé)
 ; High
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_FULL
-
+USB 2.0
 ; Full
 ;
-; ***NEW***
-;
 MSG_DEVICE_SPEED_SUPER
-
+USB 3.0
 ; Super
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_SUSPENDED
-
+uspané
 ; Suspended
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEAD
-
+nereaguje
 ; Dead
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEADLP
-
+nereaguje \/ nap.
 ; Dead \/ LP
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_LOWPOWER
-
+bez napájení
 ; Low Power
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_CONFIGURED
-
+v poøádku
 ; Running
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_DEVDESC
-
+DevDesc
 ; DevDesc
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_HASADDRESS
-
+ValidAddr
 ; ValidAddr
 ;
-; ***NEW***
-;
 MSG_DEVICE_STATE_CONNECTED
-
+pøipojené
 ; Connected
-;
-; ***NEW***
 ;
 MSG_LOGLEVEL_OK
 
 ; 
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_WARNING
-
+Upozornìní
 ; Warning
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_ERROR
-
+Bì¾ná chyba
 ; Error
 ;
-; ***NEW***
-;
 MSG_LOGLEVEL_FAILURE
-
+Záv. chyba
 ; Failure
-;
-; ***NEW***
-;
-MSG_LOGLEVEL_OTHER
-
-; ???
-;
-; ***NEW***
 ;

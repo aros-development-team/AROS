@@ -164,6 +164,27 @@ MSG_PANEL_HARDWARE_LABEL1 (//)
 MSG_PANEL_HARDWARE_CONTROLLER_HELP (//)
 This is the list of available hardware controllers.\nSeveral different controllers can be in the system at\nthe same time.\nTo add an entry, use the 'New' gadget at the bottom.\nYou need to manually set an hardware controller online\nthe first time you add the device.
 ;
+MSG_PANEL_HARDWARE_COLS_NAME (//)
+\33uName
+;
+MSG_PANEL_HARDWARE_COLS_UNIT (//)
+\33uUnit
+;
+MSG_PANEL_HARDWARE_COLS_ONLINE (//)
+\33uOnline
+;
+MSG_PANEL_HARDWARE_COLS_PRODUCT (//)
+\33uProduct
+;
+MSG_PANEL_HARDWARE_ONLINE_YES (//)
+Yes
+;
+MSG_PANEL_HARDWARE_ONLINE_NO (//)
+No
+;
+MSG_PANEL_HARDWARE_UNKNOWN (//)
+\33iunknown until online
+;
 MSG_PANEL_HARDWARE_LABEL2 (//)
 Device:
 ;
@@ -221,6 +242,21 @@ MSG_PANEL_DEVICES_LABEL (//)
 MSG_PANEL_DEVICES_HELP (//)
 This is the list of USB devices (functions)\ncurrently in the system. It also shows the\ncurrently existing device or interface bindings.
 ;
+MSG_PANEL_DEVICES_COLS_NAME (//)
+\33uName
+;
+MSG_PANEL_DEVICES_COLS_SPEED (//)
+\33uSpeed
+;
+MSG_PANEL_DEVICES_COLS_STATE (//)
+\33uState
+;
+MSG_PANEL_DEVICES_COLS_CLASS (//)
+\33uClass
+;
+MSG_PANEL_DEVICES_COLS_BINDINGS (//)
+\33uBindings
+;
 MSG_PANEL_DEVICES_SCAN (//)
 \33c Class Scan
 ;
@@ -243,7 +279,7 @@ MSG_PANEL_DEVICES_SETTINGS (//)
 \33c Settings
 ;
 MSG_PANEL_DEVICES_SETTINGS_HELP (//)
-If there is a device binding and the class\nsupports a configuration GUI. Clicking on this\nbutton will open the preferences window.\n\nNote well, that the corrsponding button for the\ninterface binding settings can be found inside\nthe information window.
+If there is a device binding and the class\nsupports a configuration GUI, clicking on this\nbutton will open the preferences window.\n\nNote well, that the corresponding button for the\ninterface binding settings can be found inside\nthe information window.
 ;
 MSG_PANEL_DEVICES_SUSPEND (//)
 \33c Suspend
@@ -277,6 +313,15 @@ MSG_PANEL_CLASSES (//)
 ;
 MSG_PANEL_CLASSES_HELP (//)
 This is the list of USB classes available.\nEach class is a software driver for a group of\nUSB devices. Classes can be manually added using\nthe 'Add' button or automatically with 'Dir Scan'.
+;
+MSG_PANEL_CLASSES_COLS_NAME (//)
+\33uName
+;
+MSG_PANEL_CLASSES_COLS_USE (//)
+\33uUse#
+;
+MSG_PANEL_CLASSES_COLS_DESC (//)
+\33uDescription
 ;
 MSG_PANEL_CLASSES_LABEL (//)
 Class library:
@@ -469,6 +514,18 @@ MSG_PANEL_CONFIG (//)
 ;
 MSG_PANEL_CONFIG_HELP (//)
 In this box you can see all the preferences that are\nsaved along the prefs file in ENVARC:.\nYou can use this panel to delete or export prefs.\n\nUse drag & drop to copy or replace preferences.\n
+;
+MSG_PANEL_CONFIG_COLS_TYPE (//)
+\33uType
+;
+MSG_PANEL_CONFIG_COLS_DESC (//)
+\33uDescription
+;
+MSG_PANEL_CONFIG_COLS_OWNER (//)
+\33uOwner
+;
+MSG_PANEL_CONFIG_COLS_SIZE (//)
+\33uSize
 ;
 MSG_PANEL_CONFIG_SAVEAS (//)
 \33c Save as
@@ -736,4 +793,55 @@ Oops!
 ;
 MSG_CFGLISTDISPATCHER_OOPS_HELP (//)
 Sorry, drag'n drop operation to\nthat target is not supported.
+;
+MSG_DEVICE_SPEED_LOW (//)
+Low
+;
+MSG_DEVICE_SPEED_HIGH (//)
+High
+;
+MSG_DEVICE_SPEED_FULL (//)
+Full
+;
+MSG_DEVICE_SPEED_SUPER (//)
+Super
+;
+MSG_DEVICE_STATE_SUSPENDED (//)
+Suspended
+;
+MSG_DEVICE_STATE_DEAD (//)
+Dead
+;
+MSG_DEVICE_STATE_DEADLP (//)
+Dead \/ LP
+;
+MSG_DEVICE_STATE_LOWPOWER (//)
+Low Power
+;
+MSG_DEVICE_STATE_CONFIGURED (//)
+Running
+;
+MSG_DEVICE_STATE_DEVDESC (//)
+DevDesc
+;
+MSG_DEVICE_STATE_HASADDRESS (//)
+ValidAddr
+;
+MSG_DEVICE_STATE_CONNECTED (//)
+Connected
+;
+MSG_LOGLEVEL_OK (//)
+
+;
+MSG_LOGLEVEL_WARNING (//)
+Warning
+;
+MSG_LOGLEVEL_ERROR (//)
+Error
+;
+MSG_LOGLEVEL_FAILURE (//)
+Failure
+;
+MSG_LOGLEVEL_OTHER (//)
+???
 ;
