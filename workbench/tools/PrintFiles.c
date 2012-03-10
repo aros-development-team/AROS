@@ -10,21 +10,31 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/datatypes.h>
+#include <proto/icon.h>
 
+#include <workbench/startup.h>
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
+
+#include <stdlib.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
 
-const char *vers = "$VER: PrintFiles 1.0 (07.03.2012)";
+#define USAGE "Usage: PrintFiles [-f] [-u N] file [file] [file...] (-f=formfeed -u=unit number)\n"
+
+const char *vers = "$VER: PrintFiles 1.1 (10.03.2012)";
 
 static struct MsgPort *mp;
 static union printerIO *io;
 
+char __stdiowin[]="CON:/30/400/100/PrintFiles/AUTO/CLOSE/WAIT";
+
 
 static BOOL initdevice(ULONG unit)
 {
+    D(bug("[PrintFiles] init unit %d\n", unit));
+
     if ((mp = CreateMsgPort()))
     {
         if ((io = CreateIORequest(mp, sizeof(union printerIO))))
@@ -99,7 +109,36 @@ static void printfile(STRPTR filename, BOOL formfeed)
             {
                 Printf("Failed to print %s\n", filename);
             }
+            DisposeDTObject(o);
         }
+    }
+}
+
+
+static void read_icon(struct WBArg *wbarg, BOOL *formfeed, ULONG *unit)
+{
+    struct DiskObject *dobj;
+    STRPTR *toolarray;
+    STRPTR result;
+
+    *formfeed = FALSE;
+    *unit = 0;
+
+    dobj = GetDiskObject(wbarg->wa_Name);
+    if (dobj)
+    {
+        toolarray = dobj->do_ToolTypes;
+
+        if (FindToolType(toolarray, "FORMFEED"))
+        {
+            *formfeed = TRUE;
+        }
+        result = FindToolType(toolarray, "UNIT");
+        if (result)
+        {
+            *unit = atoi(result);
+        }
+        FreeDiskObject(dobj);
     }
 }
 
@@ -108,38 +147,86 @@ int main(int argc, char **argv)
 {
     ULONG unit = 0;
     BOOL formfeed = FALSE;
-    ULONG i, first;
+    ULONG i;
 
     if (argc == 0)
     {
         // started from Workbench
-        // TODO: implement
+        struct WBStartup *wbmsg = (struct WBStartup *)argv;
+        struct WBArg *wbarg = wbmsg->sm_ArgList;
+        BPTR olddir = (BPTR)-1;
+
+        D(bug("[PrintFiles] numargs %d wa_lock %lx wa_name %s\n", wbmsg->sm_NumArgs, wbarg[0].wa_Lock, wbarg[0].wa_Name));
+        if (wbmsg->sm_NumArgs > 1 && wbarg[0].wa_Lock && *wbarg[0].wa_Name)
+        {
+            // handle program's icon
+            olddir = CurrentDir(wbarg->wa_Lock);
+            read_icon(wbarg, &formfeed, &unit);
+            if (olddir != (BPTR)-1)
+                CurrentDir(olddir);
+            if (initdevice(unit))
+            {
+                // handle project icons
+                for (i = 1; i < wbmsg->sm_NumArgs; i++)
+                {
+                    D(bug("[PrintFiles] i %d wa_lock %lx wa_name %s\n", i, wbarg[i].wa_Lock, wbarg[i].wa_Name));
+                    olddir = (BPTR)-1;
+                    if ((wbarg[i].wa_Lock) && (*wbarg[i].wa_Name) )
+                    {
+                        olddir = CurrentDir(wbarg[i].wa_Lock);
+
+                        printfile(wbarg[i].wa_Name, formfeed);
+                        
+                        if (olddir != (BPTR)-1)
+                            CurrentDir(olddir);
+                    }
+                }
+            }
+        }
     }
     else
     {
         // started from CLI
-        if (argc > 1 && argv[1][0] != '?')
+        
+        if (argc == 1 || argv[1][0] == '?')
         {
-            first = 1;
-            if (strcmp(argv[1], "-f") == 0)
+            PutStr(USAGE);
+            return RETURN_ERROR;
+        }
+
+        // read options
+        i = 1;
+        while (i < argc && argv[i][0] == '-')
+        {
+            if (argv[i][1] == 'f')
             {
-                first = 2;
                 formfeed = TRUE;
             }
-            if (initdevice(unit))
+            else if (argv[i][1] == 'u' && (i + 1 < argc))
             {
-                for (i = first; i < argc; i++)
-                {
-                    printfile(argv[i], formfeed);
-                }
+                i++;
+                unit = atoi(argv[i]);
             }
-            cleanupdevice();
+            else
+            {
+                PutStr(USAGE);
+                return RETURN_ERROR;
+            }
+            i++;
         }
-        else
+
+        // print files
+        if (initdevice(unit))
         {
-            PutStr("Usage: PrintFiles [-f] file [file] [file...] (-f=formfeed)\n");
+            while (i < argc)
+            {
+                printfile(argv[i], formfeed);
+                i++;
+            }
         }
     }
+
+    cleanupdevice();
 
     return 0;
 }
