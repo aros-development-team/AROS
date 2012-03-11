@@ -38,10 +38,6 @@ static UBYTE popcount(IPTR x);
 #define DLONGSZ     	    (sizeof (ULONG) * 2)
 #define DTAG_TO_IDX(dtag)   (((dtag) & 0x7FFFF000) >> 12)
 
-/* Does not 100% match AOS but better than nothing */
-#define TOHTICKS(w) ((22 * 640 + w / 2) / w)
-#define TOVTICKS(h) ((22 * 512 + h / 2) / h)
-
 /*****************************************************************************
 
     NAME */
@@ -156,10 +152,12 @@ static UBYTE popcount(IPTR x);
     	case DTAG_DISP:
 	{
 	    struct DisplayInfo *di;
+	    const struct MonitorSpec *ms;
 	    IPTR redmask, greenmask, bluemask;
 	    IPTR width, height;
 	    IPTR val = 0;
 
+	    OOP_GetAttr(sync, aHidd_Sync_MonitorSpec, (IPTR *)&ms);
 	    HIDD_Gfx_ModeProperties(gfxhidd, hiddmode, &HIDDProps, sizeof(HIDDProps));
 	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp, &height);
@@ -221,18 +219,13 @@ static UBYTE popcount(IPTR x);
 	    di->PaletteRange = (val > 65535) ? 65535 : val;
 
 	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
+	    OOP_GetAttr(sync, aHidd_Sync_PixelClock, &val);
 
 	    /*
-	     * FIXME: don't know what to put here
-	     * These seems to be some made-up units reflecting pixel ratio.
-	     * In original AmigaOS(tm) they are hardcoded in monitor driver for
-	     * every mode.
-	     * They have something to do with ratioh and ratiov fields in struct MonitorSpec.
-	     *
-	     * They are called "ticks" and base unit seems to be 44 = 1 hires pixel.
+	     * Display resolution in ticks
 	     */
-	    di->Resolution.x = TOHTICKS(width);
-	    di->Resolution.y = TOVTICKS(height);
+	    di->Resolution.x = (1280 * 11 * ms->ratioh / width) >> RATIO_FIXEDPART;
+	    di->Resolution.y = (1024 * 11 * ms->ratiov / height) >> RATIO_FIXEDPART;
 
 	    if (val)
 	        di->PixelSpeed = 1000000000 / val;
@@ -347,8 +340,10 @@ static UBYTE popcount(IPTR x);
 	    mi->DefaultViewPosition.Y = ?;
 	    */
 
-            mi->ViewResolution.x = TOHTICKS(width);
-            mi->ViewResolution.y = TOVTICKS(height);
+            /* Resolution in ticks
+             */
+            mi->ViewResolution.x = (1280 * 11 * mi->Mspc->ratioh / width) >> RATIO_FIXEDPART;
+            mi->ViewResolution.y = (1024 * 11 * mi->Mspc->ratiov / height) >> RATIO_FIXEDPART;
 
 	    if (mi->Mspc)
 	    {
