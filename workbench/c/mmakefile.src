@@ -69,7 +69,6 @@ PURE_FILES := \
     GfxControl \
     AROSMonDrvs \
     Play \
-    Print \
     SetKeyboard \
     WaitX
 
