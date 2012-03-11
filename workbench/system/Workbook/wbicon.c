@@ -27,7 +27,6 @@
 #include "classes.h"
 
 struct wbIcon {
-    BPTR               Lock;
     STRPTR             File;
     struct DiskObject *Icon;
     STRPTR             Label;
@@ -80,7 +79,6 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     my = INST_DATA(cl, obj);
 
     my->File = NULL;
-    my->Lock = (BPTR)GetTagData(WBIA_Lock, (IPTR)BNULL, ops->ops_AttrList);
     my->Icon = (struct DiskObject *)GetTagData(WBIA_Icon, (IPTR)NULL, ops->ops_AttrList);
     my->Screen = (struct Screen *)GetTagData(WBIA_Screen, (IPTR)NULL, ops->ops_AttrList);
     if (my->Icon != NULL) {
@@ -88,8 +86,6 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
     	    my->Icon->do_Gadget.GadgetText->IText != NULL)
     	    label = my->Icon->do_Gadget.GadgetText->IText;
     } else {
-    	BPTR oldLock;
-
 	file = (CONST_STRPTR)GetTagData(WBIA_File, (IPTR)NULL, ops->ops_AttrList);
 	if (file == NULL)
 	    goto error;
@@ -102,12 +98,10 @@ static IPTR wbIconNew(Class *cl, Object *obj, struct opSet *ops)
 
 	label = FilePart(my->File);
 
-	oldLock = CurrentDir(my->Lock);
 	my->Icon = GetIconTags(my->File,
 	                       ICONGETA_Screen, my->Screen,
 	                       ICONGETA_FailIfUnavailable, FALSE,
 	                       TAG_END);
-	CurrentDir(oldLock);
 	if (my->Icon == NULL)
 	    goto error;
 
@@ -250,7 +244,6 @@ static IPTR wbIconOpen(Class *cl, Object *obj, Msg msg)
 
     struct TagItem tags[] = {
 	{ NP_Seglist,     (IPTR)wb->wb_OpenerSegList },
-	{ NP_CurrentDir,  (IPTR)DupLock(my->Lock) },
 	{ NP_Arguments,   (IPTR)my->File },
 	{ NP_FreeSeglist, FALSE },
 	{ TAG_END, 0 },
@@ -278,7 +271,7 @@ static IPTR wbIconInfo(Class *cl, Object *obj, Msg msg)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbIcon *my = INST_DATA(cl, obj);
 
-    return WBInfo(my->Lock, my->File, NULL);
+    return WBInfo(BNULL, my->File, NULL);
 }
 
 // WBIM_Snapshot
