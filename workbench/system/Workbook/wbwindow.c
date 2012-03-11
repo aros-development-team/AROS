@@ -226,6 +226,17 @@ static void wbAddFiles(Class *cl, Object *obj)
     struct ExAllControl *eac;
     struct ExAllData *ead;
     const ULONG eadSize = sizeof(struct ExAllData) + 1024;
+    TEXT *path;
+    int file_part;
+
+    path = AllocVec(1024, MEMF_ANY);
+    if (!path)
+        return;
+
+    if (!NameFromLock(my->Lock, path, 1024)) {
+        FreeVec(path);
+    }
+    file_part = strlen(path);
 
     ead = AllocVec(eadSize, MEMF_CLEAR);
     if (ead != NULL) {
@@ -243,20 +254,25 @@ static void wbAddFiles(Class *cl, Object *obj)
 
 		more = ExAll(my->Lock, ead, eadSize, ED_NAME, eac);
 		for (i = 0; i < eac->eac_Entries; i++, tmp=tmp->ed_Next) {
-		    Object *iobj = NewObject(WBIcon, NULL,
-				       WBIA_Lock, my->Lock,
-				       WBIA_File, tmp->ed_Name,
-				       WBIA_Label, tmp->ed_Name,
-				       WBIA_Screen, my->Window->WScreen,
-				       TAG_END);
-		    if (iobj != NULL)
-			wbwiAppend(cl, obj, iobj);
+		    Object *iobj;
+		    path[file_part] = 0;
+		    if (AddPart(path, tmp->ed_Name, 1024)) {
+		        iobj = NewObject(WBIcon, NULL,
+		                WBIA_File, path,
+		                WBIA_Label, tmp->ed_Name,
+		                WBIA_Screen, my->Window->WScreen,
+		                TAG_END);
+		        if (iobj != NULL)
+		            wbwiAppend(cl, obj, iobj);
+		    }
 		}
 	    }
 	    FreeDosObject(DOS_EXALLCONTROL, eac);
 	}
 	FreeVec(ead);
     }
+
+    FreeVec(path);
 }
 
 static void wbAddVolumeIcons(Class *cl, Object *obj)

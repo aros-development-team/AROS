@@ -117,11 +117,10 @@ Class *WBSet_MakeClass(struct WorkbookBase *wb);
 
 /* Attributes */
 #define WBIA_Dummy               (TAG_USER | 0x40440000)
-#define WBIA_Lock                (WBIA_Dummy+1)	/* BPTR */
-#define WBIA_File                (WBIA_Dummy+2)	/* CONST_STRPTR */
-#define WBIA_Icon                (WBIA_Dummy+3)	/* struct DiskObject * */
-#define WBIA_Label               (WBIA_Dummy+4)	/* CONST_STRPTR */
-#define WBIA_Screen              (WBIA_Dummy+5)	/* struct Screen * */
+#define WBIA_File                (WBIA_Dummy+1)	/* CONST_STRPTR */
+#define WBIA_Icon                (WBIA_Dummy+2)	/* struct DiskObject * */
+#define WBIA_Label               (WBIA_Dummy+3)	/* CONST_STRPTR */
+#define WBIA_Screen              (WBIA_Dummy+4)	/* struct Screen * */
 
 /* Methods */
 #define WBIM_Dummy               (TAG_USER | 0x40440100)
