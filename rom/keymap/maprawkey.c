@@ -114,7 +114,7 @@
     	            idx = 3;
     	            c = GetMapChar(ki.Key_Mapping, idx);
 
-		    /* clear bit 5 and 5 */
+		    /* clear bit 5 and 6 */
     	            c &= ~((1 << 5)|(1 << 6));
     		}
     		else
