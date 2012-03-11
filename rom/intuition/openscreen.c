@@ -142,6 +142,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         { TAG_DONE          	    	}
     };
     ULONG   	    	     modeid = INVALID_ID;
+    struct DisplayInfo       dispinfo;
 
     /* Intuition not up yet? */
     if (!GetPrivIBase(IntuitionBase)->DefaultPointer)
@@ -646,6 +647,16 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
     success = FALSE;
 
     if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
+        GetDisplayInfoData(displayinfo, (APTR)&dispinfo, sizeof(dispinfo), DTAG_DISP, modeid)) {
+        screen->DInfo.dri.dri_Resolution.X = dispinfo.Resolution.x;
+        screen->DInfo.dri.dri_Resolution.Y = dispinfo.Resolution.y;
+    } else {
+        /* Fake a resolution */
+        screen->DInfo.dri.dri_Resolution.X = 22;
+        screen->DInfo.dri.dri_Resolution.Y = 22;
+    }
+ 
+    if ((displayinfo = FindDisplayInfo(modeid)) != NULL &&
         GetDisplayInfoData(displayinfo, (APTR)&dimensions, sizeof(dimensions), DTAG_DIMS, modeid) &&
 #ifdef __MORPHOS__
         GetDisplayInfoData(displayinfo, &monitor, sizeof(monitor), DTAG_MNTR, modeid)
@@ -1119,9 +1130,6 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         screen->DInfo.dri.dri_Pens = screen->Pens;
         /* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
         screen->DInfo.dri.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8;
-	/* FIXME: Resolution should be monitor dependent */
-        screen->DInfo.dri.dri_Resolution.X = 44;
-        screen->DInfo.dri.dri_Resolution.Y = 44;
 
         if (ns.Depth > 8) screen->DInfo.dri.dri_Flags = DRIF_DIRECTCOLOR;
 
