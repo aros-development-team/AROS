@@ -39,6 +39,20 @@ struct Key
     BOOL immutable;
 };
 
+// copied from rom/keymap/defaultkeymap.c
+const BYTE keymapstr_table[8][8] =
+{
+    {0, 0, 0, 0, 0, 0, 0, 0},   /* KCF_NOQUAL                   == 0 */
+    {0, 1, 0, 1, 0, 1, 0, 1},   /* KCF_SHIFT                    == 1 */
+    {0, 0, 1, 1, 0, 0, 1, 1},   /* KCF_ALT                      == 2 */
+    {0, 1, 2, 3, 0, 1, 2, 3},   /* KCF_SHIFT|KCF_ALT            == 3 */
+    {0, 0, 0, 0, 1, 1, 1, 1},   /* KCF_CONTROL                  == 4 */
+    {0, 1, 0, 1, 2, 3, 2, 3},   /* KCF_SHIFT|KCF_CONTROL        == 5 */
+    {0, 0, 1, 1, 2, 2, 3, 3},   /* KCF_ALT|KCF_CONTROL          == 6 */
+    {0, 1, 2, 3, 4, 5, 6, 7}    /* KCF_SHIFT|KCF_ALT|KCF_CONTROL == KC__VANILLA == 7 */
+};
+
+
 struct KeyboardGroup_DATA
 {
     struct Key *key;
@@ -55,6 +69,150 @@ static void set_immutable_key(struct Key *key, ULONG idx, CONST_STRPTR content)
 }
 
 
+static void parse_normal_key(struct Key *key, UBYTE type, IPTR value)
+{
+    switch (type)
+    {
+        case KC_NOQUAL:
+            (*key).alone[0]     = value & 0xff;
+            break;
+        case KCF_SHIFT:
+            (*key).alone[0]     = value & 0xff;
+            (*key).shift[0]     = (value >> 8) & 0xff;
+            break;
+        case KCF_ALT:
+            (*key).alone[0]     = value & 0xff;
+            (*key).alt[0]       = (value >> 8) & 0xff;
+            break;
+        case KCF_CONTROL:
+            (*key).alone[0]     = value & 0xff;
+            (*key).ctrl[0]      = (value >> 8) & 0xff;
+            break;
+        case KCF_ALT + KCF_SHIFT:
+            (*key).alone[0]     = value & 0xff;
+            (*key).shift[0]     = (value >> 8) & 0xff;
+            (*key).alt[0]       = (value >> 16) & 0xff;
+            (*key).shift_alt[0] = (value >> 24) & 0xff;
+            break;
+        case KCF_CONTROL + KCF_ALT:
+            (*key).alone[0]     = value & 0xff;
+            (*key).alt[0]       = (value >> 8) & 0xff;
+            (*key).ctrl[0]      = (value >> 16) & 0xff;
+            (*key).ctrl_alt[0]  = (value >> 24) & 0xff;
+            break;
+        case KCF_CONTROL + KCF_SHIFT:
+            (*key).alone[0]     = value & 0xff;
+            (*key).shift[0]     = (value >> 8) & 0xff;
+            (*key).ctrl[0]      = (value >> 16) & 0xff;
+            (*key).ctrl_shift[0]= (value >> 24) & 0xff;
+            break;
+        case KC_VANILLA:
+            (*key).alone[0]     = value & 0xff;
+            (*key).shift[0]     = (value >> 8) & 0xff;
+            (*key).alt[0]       = (value >> 16) & 0xff;
+            (*key).shift_alt[0] = (value >> 24) & 0xff;
+            (*key).ctrl[0]      = '^';
+            (*key).ctrl[1]      = value & 0xff;
+            break;
+    }
+}
+
+
+static UBYTE set_string_key(UBYTE type, IPTR value, BYTE qual)
+{
+    D(bug("[KeyShow] set_string_key type %u value %u\n", type, value));
+
+    BYTE idx;
+
+    D(bug("[KeyShow] getting idx at [%d][%d]\n", type, qual));
+    idx = keymapstr_table[type][qual];
+
+    if (idx != -1)
+    {
+        UBYTE *str_descrs = (UBYTE *)value;
+        UBYTE len, offset;
+
+        /* Since each string descriptor uses two bytes we multiply by 2 */
+        idx *= 2;
+
+        /* Get string info from string descriptor table */
+        len    = str_descrs[idx];
+        offset = str_descrs[idx + 1];
+
+        D(bug("[KeyShow] len=%d, offset=%d\n", len, offset));
+
+        /* Return char only if len is 1 */
+        if (len == 1)
+        {
+            D(bug("[KeyShow] retval %d", str_descrs[offset]));
+            return str_descrs[offset];
+        }
+    } /* if (idx != -1) */
+
+    return 0;
+}
+
+
+static void parse_string_key(struct Key *key, UBYTE type, IPTR value)
+{
+    D(bug("[KeyShow] parse_string_key type %u value %u\n", type, value));
+
+    switch (type)
+    {
+        case KC_NOQUAL:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            break;
+        case KCF_SHIFT:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            break;
+        case KCF_ALT:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
+            break;
+        case KCF_CONTROL:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            break;
+        case KCF_ALT + KCF_SHIFT:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
+            (*key).shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
+            break;
+        case KCF_CONTROL + KCF_ALT:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
+            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            (*key).ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
+            break;
+        case KCF_CONTROL + KCF_SHIFT:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            (*key).ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            break;
+        case KC_VANILLA:
+            (*key).alone[0]     = set_string_key(type, value, KC_NOQUAL);
+            (*key).shift[0]     = set_string_key(type, value, KCF_SHIFT);
+            (*key).alt[0]       = set_string_key(type, value, KCF_ALT);
+            (*key).shift_alt[0] = set_string_key(type, value, KCF_ALT + KCF_SHIFT);
+            (*key).ctrl[0]      = set_string_key(type, value, KCF_CONTROL);
+            (*key).ctrl_alt[0]  = set_string_key(type, value, KCF_CONTROL + KCF_ALT);
+            (*key).ctrl_shift[0]= set_string_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            break;
+    }
+}
+
+
+static void parse_dead_key(struct Key *key, UBYTE type, IPTR value)
+{
+    D(bug("[KeyShow] parse_string_key key %p type %u value %u\n", key, type, value));
+
+    // TODO: implement me
+}
+
+
 static struct Key *read_keymap(void)
 {
     struct Key *key = AllocVec(sizeof(struct Key) * 128, MEMF_CLEAR);
@@ -62,7 +220,7 @@ static struct Key *read_keymap(void)
     {
         struct KeyMap *km = AskKeyMapDefault();
         LONG i;
-        ULONG value;
+        IPTR value;
         UBYTE type;
         for (i = 0; i < 128; i++)
         {
@@ -77,49 +235,17 @@ static struct Key *read_keymap(void)
                 value = km->km_HiKeyMap[i-64];
             }
 
-            switch (type)
+            if (type & KCF_STRING)
             {
-                case KC_NOQUAL:
-                    key[i].alone[0]     = value & 0xff;
-                    break;
-                case KCF_SHIFT:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].shift[0]     = (value >> 8) & 0xff;
-                    break;
-                case KCF_ALT:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].alt[0]       = (value >> 8) & 0xff;
-                    break;
-                case KCF_CONTROL:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].ctrl[0]      = (value >> 8) & 0xff;
-                    break;
-                case KCF_ALT + KCF_SHIFT:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].shift[0]     = (value >> 8) & 0xff;
-                    key[i].alt[0]       = (value >> 16) & 0xff;
-                    key[i].shift_alt[0] = (value >> 24) & 0xff;
-                    break;
-                case KCF_CONTROL + KCF_ALT:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].alt[0]       = (value >> 8) & 0xff;
-                    key[i].ctrl[0]      = (value >> 16) & 0xff;
-                    key[i].ctrl_alt[0]  = (value >> 24) & 0xff;
-                    break;
-                case KCF_CONTROL + KCF_SHIFT:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].shift[0]     = (value >> 8) & 0xff;
-                    key[i].ctrl[0]      = (value >> 16) & 0xff;
-                    key[i].ctrl_shift[0]= (value >> 24) & 0xff;
-                    break;
-                case KC_VANILLA:
-                    key[i].alone[0]     = value & 0xff;
-                    key[i].shift[0]     = (value >> 8) & 0xff;
-                    key[i].alt[0]       = (value >> 16) & 0xff;
-                    key[i].shift_alt[0] = (value >> 24) & 0xff;
-                    key[i].ctrl[0]      = '^';
-                    key[i].ctrl[1]      = value & 0xff;
-                    break;
+                parse_string_key(&key[i], type & KC_VANILLA, value);
+            }
+            else if (type & KCF_DEAD)
+            {
+                parse_dead_key(&key[i], type & KC_VANILLA, value);
+            }
+            else
+            {
+                parse_normal_key(&key[i], type, value);
             }
         }
         // Qualifier keys
@@ -139,7 +265,7 @@ static struct Key *read_keymap(void)
         set_immutable_key(key, RAWKEY_CAPSLOCK, _(MSG_KEY_LOCK));
         set_immutable_key(key, RAWKEY_BACKSPACE,  _(MSG_KEY_BACKSP));
         set_immutable_key(key, RAWKEY_TAB,  _(MSG_KEY_TAB));
-        set_immutable_key(key, RAWKEY_RETURN,  _(MSG_KEY_ENTER));
+        set_immutable_key(key, RAWKEY_RETURN,  _(MSG_KEY_RETURN));
         set_immutable_key(key, RAWKEY_ESCAPE, _(MSG_KEY_ESC));
 
         set_immutable_key(key, RAWKEY_HELP, _(MSG_KEY_HELP));

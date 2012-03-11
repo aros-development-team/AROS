@@ -62,8 +62,8 @@ Page v
 MSG_KEY_NUM (//)
 Num
 ;
-MSG_KEY_ENTER (//)
-Enter
+MSG_KEY_RETURN (//)
+^M
 ;
 MSG_KEY_BACKSP (//)
 ^H
