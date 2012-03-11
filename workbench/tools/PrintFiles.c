@@ -16,14 +16,12 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
 
-#include <stdlib.h>
-
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #define USAGE "Usage: PrintFiles [-f] [-u N] file [file] [file...] (-f=formfeed -u=unit number)\n"
 
-const char *vers = "$VER: PrintFiles 1.1 (10.03.2012)";
+const char *vers = "$VER: PrintFiles 1.1 (12.03.2012)";
 
 static struct MsgPort *mp;
 static union printerIO *io;
@@ -136,7 +134,7 @@ static void read_icon(struct WBArg *wbarg, BOOL *formfeed, ULONG *unit)
         result = FindToolType(toolarray, "UNIT");
         if (result)
         {
-            *unit = atoi(result);
+            StrToLong(result, unit);
         }
         FreeDiskObject(dobj);
     }
@@ -205,7 +203,7 @@ int main(int argc, char **argv)
             else if (argv[i][1] == 'u' && (i + 1 < argc))
             {
                 i++;
-                unit = atoi(argv[i]);
+                StrToLong(argv[i], &unit);
             }
             else
             {
