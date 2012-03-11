@@ -78,9 +78,10 @@
     }
     
     /* Get some info from the bitmap object */
-    if (!HIDD_BM_ObtainDirectAccess(HIDD_BM_OBJ(bm), &baseaddress, &width, &height, &banksize, &memsize))
-    	return NULL;
-    
+    if (!HIDD_BM_ObtainDirectAccess(HIDD_BM_OBJ(bm), &baseaddress, &width, &height, &banksize, &memsize)) {
+        D(bug("!!! CAN'T HIDD_BM_ObtainDirectAccess() on the object\n"));
+        return NULL;
+    }
     
     while ((tag = NextTagItem(&tags)))
     {
