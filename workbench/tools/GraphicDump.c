@@ -25,9 +25,11 @@
 #include <proto/utility.h>
 #include <proto/icon.h>
 
-#include <stdlib.h>
+//#define DEBUG 1
+#include <aros/debug.h>
 
-const char *vers = "$VER: GraphicDump 1.0 (11.03.2012)";
+
+const char *vers = "$VER: GraphicDump 1.1 (12.03.2012)";
 
 #define ARG_TEMPLATE "SIZE/K,TINY/S,SMALL/S,MEDIUM/S,LARGE/S,DELAY/N/K,UNIT/N/K,DOTS"
 
@@ -49,11 +51,21 @@ enum
     SIZE_TINY,  // 1/4
     SIZE_SMALL, // 1/2
     SIZE_MEDIUM,// 3/4
-    SIZE_LARGE  // 1/1
+    SIZE_LARGE, // 1/1
+    SIZE_DOTS,  // X:Y
+    SIZE_COUNT
 };
 
+// scale factors as fraction x/0xffffffff
+static ULONG scale[] =
+{
+    0x3fffffff, // TINY
+    0x7fffffff, // SMALL
+    0xbfffffff, // MEDIUM
+    0xffffffff, // LARGE
+    0           // DOTS
+};
 
-#if 0
 /* Possible printer.device and I/O errors */
 static UBYTE *ErrorText[] =
 {
@@ -71,16 +83,55 @@ static UBYTE *ErrorText[] =
     "IOERR_NOCMD",
     "IOERR_BADLENGTH"
 };
-#endif
 
-void dump(ULONG unit, ULONG size)
+// copy the bitmap of the frontmost screen
+// return value must be freed with FreeBitMap()
+static struct BitMap *dup_firstscreen_bitmap(struct Screen **screen)
+{
+    struct BitMap *newbm = NULL;
+
+    ULONG ilock = LockIBase(0);
+    *screen = IntuitionBase->FirstScreen;
+    if (*screen)
+    {
+        newbm = AllocBitMap
+        (
+            (*screen)->Width, (*screen)->Height, 0,
+            BMF_MINPLANES, (*screen)->RastPort.BitMap
+        );
+        if (newbm)
+        {
+            BltBitMap
+            (
+                (*screen)->RastPort.BitMap, 0, 0, newbm,
+                0, 0, (*screen)->Width, (*screen)->Height,
+                0xC0, 0xff, NULL
+            );
+        };
+    }
+    UnlockIBase(ilock);
+    D(bug("[GraphicDump/dup_firstscreen_bitmap] screen %p bitmap %p width %d height %d\n",
+        *screen, newbm, (*screen)->Width, (*screen)->Height));
+
+    return newbm;
+}
+
+
+static void dump(ULONG unit, ULONG size, ULONG width, ULONG height)
 {
     struct MsgPort  *PrinterMP;
     union printerIO *PIO;
-    struct Screen *pubscreen;
-    struct ViewPort *vp;
+    struct Screen *screen;
+    struct BitMap *screenbitmap;
+    struct ViewPort *viewport;
     LONG modeID;
     ULONG signal;
+
+    // sanity
+    if (size > SIZE_COUNT)
+        size = SIZE_SMALL;
+
+    D(bug("[GraphicDump/dump] unit %u size %u\n", unit, size));
 
     if ((PrinterMP = CreateMsgPort()) != NULL)
     {
@@ -88,33 +139,32 @@ void dump(ULONG unit, ULONG size)
         {
             if (!(OpenDevice("printer.device", 0, (struct IORequest *)PIO, unit)))
             {
-                // TODO: use frontmost screen
-                if ((pubscreen = LockPubScreen(NULL)) != NULL)
+                if ((screenbitmap = dup_firstscreen_bitmap(&screen)) != NULL)
                 {
-                    vp = &(pubscreen->ViewPort);
-                    if ((modeID = GetVPModeID(vp)) != INVALID_ID)
+                    viewport = &(screen->ViewPort);
+                    if ((modeID = GetVPModeID(viewport)) != INVALID_ID)
                     {
                         PIO->iodrp.io_Command = PRD_DUMPRPORT;
-                        PIO->iodrp.io_RastPort = &(pubscreen->RastPort);
-                        PIO->iodrp.io_ColorMap = vp->ColorMap;
+                        PIO->iodrp.io_RastPort = &(screen->RastPort);
+                        PIO->iodrp.io_ColorMap = viewport->ColorMap;
                         PIO->iodrp.io_Modes = modeID;
-                        PIO->iodrp.io_SrcX = pubscreen->LeftEdge;
-                        PIO->iodrp.io_SrcY = pubscreen->TopEdge;
-                        PIO->iodrp.io_SrcWidth = pubscreen->Width;
-                        PIO->iodrp.io_SrcHeight = pubscreen->Height;
-#if 1
-                        // FIXME: doesn't work
-                        // I'm getting an empty sheet with the postscript driver
-                        PIO->iodrp.io_Special = SPECIAL_ASPECT | SPECIAL_FRACCOLS;
-                        PIO->iodrp.io_DestCols = 0xffff / 2;
-                        PIO->iodrp.io_DestRows = 0;
-#else
-                        // FIXME: doesn't work
-                        // It prints on the full paper height
-                        PIO->iodrp.io_Special = SPECIAL_ASPECT;
-                        PIO->iodrp.io_DestCols = 300;
-                        PIO->iodrp.io_DestRows = 0;
-#endif
+                        PIO->iodrp.io_SrcX = screen->LeftEdge;
+                        PIO->iodrp.io_SrcY = screen->TopEdge;
+                        PIO->iodrp.io_SrcWidth = screen->Width;
+                        PIO->iodrp.io_SrcHeight = screen->Height;
+
+                        if (size == SIZE_DOTS)
+                        {
+                            PIO->iodrp.io_DestCols = width;
+                            PIO->iodrp.io_DestRows = height;
+                        }
+                        else
+                        {
+                            PIO->iodrp.io_Special = SPECIAL_ASPECT | SPECIAL_FRACCOLS;
+                            PIO->iodrp.io_DestCols = scale[size];
+                            PIO->iodrp.io_DestRows = 0;
+                        }
+
                         SendIO((struct IORequest *)PIO);
                         signal = Wait(1 << PrinterMP->mp_SigBit | SIGBREAKF_CTRL_C);
                         if (signal & SIGBREAKF_CTRL_C)
@@ -128,18 +178,18 @@ void dump(ULONG unit, ULONG size)
                         }
                         if (PIO->iodrp.io_Error != 0)
                         {
-                            Printf("GraphicsDump: Error %ld\n", PIO->iodrp.io_Error);
+                            Printf("GraphicsDump: Error %s\n", ErrorText[PIO->iodrp.io_Error]);
                         }
                     }
                     else
                     {
                         PutStr("GraphicsDump: Invalid ModeID\n");
                     }
-                    UnlockPubScreen(NULL, pubscreen);
+                    FreeBitMap(screenbitmap);
                 }
                 else
                 {
-                    PutStr("GraphicsDump: Can't lock Public Screen\n");
+                    PutStr("GraphicsDump: Can't copy screen bitmap\n");
                 }
                 CloseDevice((struct IORequest *)PIO);
             }
@@ -162,7 +212,36 @@ void dump(ULONG unit, ULONG size)
 }
 
 
-static void read_icon(struct WBArg *wbarg, ULONG *unit, ULONG *delay, ULONG *size)
+// split a string with the pattern x:y
+// if no colon exists the actual values are kept
+static CONST_STRPTR split_xy(CONST_STRPTR string, ULONG *x, ULONG *y)
+{
+    // search for :
+    const char *colon = NULL;
+    const char *str = string;
+    do
+    {
+        if ((unsigned char)*str == ':')
+        {
+            colon = str;
+        }
+    } while (*(str++));
+
+    // get x and y value
+    if (colon)
+    {
+        StrToLong(string, x);
+        StrToLong(colon + 1, y);
+    }
+
+    D(bug("[GraphicDump/split_xy] x %u y %u\n", *x, *y));
+
+    return colon;
+}
+
+
+// parse tooltypes
+static void read_icon(struct WBArg *wbarg, ULONG *unit, ULONG *delay, ULONG *size, ULONG *width, ULONG *height)
 {
     struct DiskObject *dobj;
     STRPTR *toolarray;
@@ -193,7 +272,8 @@ static void read_icon(struct WBArg *wbarg, ULONG *unit, ULONG *delay, ULONG *siz
             }
             else
             {
-                // TODO: check for x:y
+                *size = SIZE_DOTS;
+                split_xy(result, width, height);
             }
         }
         if (FindToolType(toolarray, "TINY"))
@@ -215,17 +295,18 @@ static void read_icon(struct WBArg *wbarg, ULONG *unit, ULONG *delay, ULONG *siz
         result = FindToolType(toolarray, "DELAY");
         if (result)
         {
-            *delay = atoi(result);
+            StrToLong(result, delay);
         }
         result = FindToolType(toolarray, "UNIT");
         if (result)
         {
-            *unit = atoi(result);
+            StrToLong(result, unit);
         }
         result = FindToolType(toolarray, "DOTS");
         if (result)
         {
-            // TODO: implement
+            *size = SIZE_DOTS;
+            split_xy(result, width, height);
         }
         FreeDiskObject(dobj);
     }
@@ -236,7 +317,9 @@ int main(int argc, char **argv)
 {
     ULONG unit = 0;
     ULONG delay = 10;
-    ULONG size = SIZE_LARGE;
+    ULONG size = SIZE_SMALL;
+    ULONG width = 300;
+    ULONG height = 300;
 
     if (argc == 0)
     {
@@ -248,7 +331,7 @@ int main(int argc, char **argv)
         if ((wbmsg->sm_NumArgs > 0) && (wbarg[0].wa_Lock) && (*wbarg[0].wa_Name))
         {
             olddir = CurrentDir(wbarg[0].wa_Lock);
-            read_icon(wbarg, &unit, &delay, &size);
+            read_icon(wbarg, &unit, &delay, &size, &width, &height);
             if (olddir != (BPTR)-1)
             {
                 CurrentDir(olddir);
@@ -287,7 +370,8 @@ int main(int argc, char **argv)
             }
             else
             {
-                // TODO: check for x:y
+                size = SIZE_DOTS;
+                split_xy((CONST_STRPTR)args[ARG_SIZE], &width, &height);
             }
         }
         if (args[ARG_TINY])
@@ -316,14 +400,15 @@ int main(int argc, char **argv)
         }
         if (args[ARG_DOTS])
         {
-            // TODO: implement
+            size = SIZE_DOTS;
+            split_xy((CONST_STRPTR)args[ARG_DOTS], &width, &height);
         }
         FreeArgs(rda);
     }
 
     Delay(delay * 50);
 
-    dump(unit, size);
+    dump(unit, size, width, height);
 
     return 0;
 }
