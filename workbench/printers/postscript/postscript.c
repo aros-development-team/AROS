@@ -889,7 +889,7 @@ static LONG ps_RenderClose(SIPTR error, ULONG flags)
          * has already been moved to after the raster
          */
         ps_PWrite("grestore (\n",);
-        FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 6 + 1);
+        FreeMem(PD->pd_PrintBuf, ps_PrintBufLen * 8 + 1);
         PD->pd_PrintBuf=NULL;
         ps_PrintBufLen=0;
     }
