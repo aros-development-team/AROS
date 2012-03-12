@@ -2603,6 +2603,34 @@ void wanderer_menufunc_icon_format(void)
 }
 ///
 
+///wanderer_menufunc_icon_emptytrash
+void wanderer_menufunc_icon_emptytrash(void)
+{
+    Object                *window   = (Object *) XGET(_WandererIntern_AppObj, MUIA_Wanderer_ActiveWindow);
+    Object                *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+    struct IconList_Entry *entry    = ( void*) MUIV_IconList_NextIcon_Start;
+
+    D(bug("[Wanderer]: %s\n", __PRETTY_FUNCTION__));
+
+    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR) &entry);
+
+    /* Process only first selected entry */
+    if ((IPTR)entry != MUIV_IconList_NextIcon_End)
+    {
+        if (entry->type == ILE_TYPE_APPICON)
+        {
+            struct AppIcon *ai = (struct AppIcon *)entry->ile_IconEntry->ie_User1;
+            SendAppIconMenuMessage(ai, AMCLASSICON_EmptyTrash);
+        }
+        /*
+        else {
+            // TODO: Implement for icons(!=ILE_TYPE_APPICON) of disks having a trashcan
+    }
+        */
+    }
+}
+///
+
 ///wanderer_menufunc_wanderer_AROS_guisettings()
 void wanderer_menufunc_wanderer_AROS_guisettings(void)
 {
@@ -2908,6 +2936,8 @@ VOID SetMenuDefaultNotifies(Object *wanderer, Object *strip, STRPTR path)
                                 wanderer_menufunc_icon_delete, NULL);
     DoMenuNotify(strip, MEN_ICON_FORMAT, MUIA_Menuitem_Trigger,
                                 wanderer_menufunc_icon_format, NULL);
+    DoMenuNotify(strip, MEN_ICON_EMPTYTRASH, MUIA_Menuitem_Trigger,
+                                wanderer_menufunc_icon_emptytrash, NULL);
 
     if ((item = FindMenuitem(strip, MEN_WANDERER_BACKDROP)))
     {
@@ -3824,7 +3854,7 @@ Object * Wanderer__Func_CreateWandererIntuitionMenu( BOOL isRoot, BOOL isBackdro
                 {NM_ITEM,       NM_BARLABEL },
                 {NM_ITEM,       _(MSG_MEN_DELETE),      NULL                    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_DELETE },
                 {NM_ITEM,       _(MSG_MEN_FORMAT),      NULL                    , NM_ITEMDISABLED },
-                {NM_ITEM,       _(MSG_EMPTY_TRASH),     NULL                    , NM_ITEMDISABLED },
+                {NM_ITEM,       _(MSG_EMPTY_TRASH),     NULL                    , NM_ITEMDISABLED                       , 0, (APTR) MEN_ICON_EMPTYTRASH},
             {NM_TITLE,          _(MSG_MEN_TOOLS),       NULL                    , NM_MENUDISABLED },
             {NM_END}
         };
