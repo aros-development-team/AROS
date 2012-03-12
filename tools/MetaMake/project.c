@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -137,19 +137,29 @@ readvars (struct Project * prj)
 
     /* handle prj->genmakefiledeps */
     NewList(&deps);
+    /* algorithm has changed from:
+     * copying nodes to deps list and then generating dep nodes
+     * which will be put back to genmakefiledeps list
+     * to:
+     * generating new dep nodes and putting them into the deps list,
+     * then copy them back into genmakefiledeps list
+     * reason for change:
+     * in recent versions of gcc (>= 4.6) the first loop over all
+     * genmakefiledeps list nodes was optimized away, so deps list
+     * was always empty and the second loop never did anything */
     ForeachNodeSafe (&prj->genmakefiledeps, node, next)
     {
-	Remove (node);
-	AddTail (&deps, node);
+        Remove (node);
+        dep = newdepnode (substvars (&prj->vars, node->name));
+        AddTail (&deps, dep);
+        xfree (node->name);
+        xfree (node);
     }
 
     ForeachNodeSafe (&deps, node, next)
     {
-	Remove (node);
-	dep = newdepnode (substvars (&prj->vars, node->name));
-	AddTail (&prj->genmakefiledeps, dep);
-	xfree (node->name);
-	xfree (node);
+        Remove (node);
+        AddTail (&prj->genmakefiledeps, node);
     }
 
     if (debug)
