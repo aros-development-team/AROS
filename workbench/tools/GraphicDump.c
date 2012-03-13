@@ -29,7 +29,9 @@
 #include <aros/debug.h>
 
 
-const char *vers = "$VER: GraphicDump 1.1 (12.03.2012)";
+const char *vers = "$VER: GraphicDump 1.2 (13.03.2012)";
+
+char __stdiowin[]="CON:/30/400/100/GraphicDump/AUTO/CLOSE/WAIT";
 
 #define ARG_TEMPLATE "SIZE/K,TINY/S,SMALL/S,MEDIUM/S,LARGE/S,DELAY/N/K,UNIT/N/K,DOTS"
 
@@ -84,36 +86,26 @@ static UBYTE *ErrorText[] =
     "IOERR_BADLENGTH"
 };
 
-// copy the bitmap of the frontmost screen
-// return value must be freed with FreeBitMap()
-static struct BitMap *dup_firstscreen_bitmap(struct Screen **screen)
+// check if frontmost screen is a Pubscreen
+// if yes lock it, otherwise return NULL
+static struct Screen *lock_front_pubscreen(void)
 {
-    struct BitMap *newbm = NULL;
-
-    ULONG ilock = LockIBase(0);
-    *screen = IntuitionBase->FirstScreen;
-    if (*screen)
+    struct Screen *screen = NULL;
+    struct PubScreenNode *psn = NULL;
+    struct List *psl = LockPubScreenList();
+    // FIXME: must or must not to do LockIBase()
+    ForeachNode(psl, psn)
     {
-        newbm = AllocBitMap
-        (
-            (*screen)->Width, (*screen)->Height, 0,
-            BMF_MINPLANES, (*screen)->RastPort.BitMap
-        );
-        if (newbm)
+        if (psn->psn_Screen == IntuitionBase->FirstScreen)
         {
-            BltBitMap
-            (
-                (*screen)->RastPort.BitMap, 0, 0, newbm,
-                0, 0, (*screen)->Width, (*screen)->Height,
-                0xC0, 0xff, NULL
-            );
-        };
+            screen = LockPubScreen(psn->psn_Node.ln_Name);
+            break;
+        }
     }
-    UnlockIBase(ilock);
-    D(bug("[GraphicDump/dup_firstscreen_bitmap] screen %p bitmap %p width %d height %d\n",
-        *screen, newbm, (*screen)->Width, (*screen)->Height));
+    UnlockPubScreenList();
+    D(bug("[GraphicDump/lock_front_pubscreen] screen %p\n", screen));
 
-    return newbm;
+    return screen;
 }
 
 
@@ -122,13 +114,12 @@ static void dump(ULONG unit, ULONG size, ULONG width, ULONG height)
     struct MsgPort  *PrinterMP;
     union printerIO *PIO;
     struct Screen *screen;
-    struct BitMap *screenbitmap;
     struct ViewPort *viewport;
     LONG modeID;
     ULONG signal;
 
     // sanity
-    if (size > SIZE_COUNT)
+    if (size >= SIZE_COUNT)
         size = SIZE_SMALL;
 
     D(bug("[GraphicDump/dump] unit %u size %u\n", unit, size));
@@ -139,7 +130,7 @@ static void dump(ULONG unit, ULONG size, ULONG width, ULONG height)
         {
             if (!(OpenDevice("printer.device", 0, (struct IORequest *)PIO, unit)))
             {
-                if ((screenbitmap = dup_firstscreen_bitmap(&screen)) != NULL)
+                if ((screen = lock_front_pubscreen()) != NULL)
                 {
                     viewport = &(screen->ViewPort);
                     if ((modeID = GetVPModeID(viewport)) != INVALID_ID)
@@ -185,11 +176,11 @@ static void dump(ULONG unit, ULONG size, ULONG width, ULONG height)
                     {
                         PutStr("GraphicsDump: Invalid ModeID\n");
                     }
-                    FreeBitMap(screenbitmap);
+                    UnlockPubScreen(NULL, screen);
                 }
                 else
                 {
-                    PutStr("GraphicsDump: Can't copy screen bitmap\n");
+                    PutStr("GraphicsDump: Can't lock Pubscreen\n");
                 }
                 CloseDevice((struct IORequest *)PIO);
             }
