@@ -1,5 +1,5 @@
 /*
- *  Copyright © 2004-2011 The AROS Developmemt Team. All rights reserved.
+ *  Copyright © 2004-2012 The AROS Developmemt Team. All rights reserved.
  *  $Id$
  *
  *  ISO C99 Standard: Sizes of integer types <limits.h>
@@ -8,6 +8,8 @@
 
 #ifndef _LIMITS_H_
 #define _LIMITS_H_ 1
+
+#include <aros/cpu.h> /* For __WORDSIZE */
 
 /*
  *  Define ANSI <limits.h> for standard 32-bit words.
