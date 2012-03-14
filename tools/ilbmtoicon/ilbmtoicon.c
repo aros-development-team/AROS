@@ -159,6 +159,10 @@ struct Palette scalos16colpal =
     }
 };
 
+/* Convert from DPI to Amiga 'ticks' resolution */
+#define TPD_X(x)        ((11*1280*100/104/(x)+5)/10)
+#define TPD_Y(y)        ((11*1024*100/78/(y)+5)/10)
+
 /****************************************************************************************/
 
 static char 	     	    *filename, *outfilename, *infilename;
@@ -169,6 +173,8 @@ static long 	     	    filepos;
 static struct ILBMImage     img1, img2;
 static BOOL 	    	    have_bmhd, have_cmap, have_body, is_png;
 
+/* 'ticks' per dot, corresponding to ~72dpi */
+static ULONG	    	    tpdX = TPD_X(72), tpdY = TPD_Y(72);
 static char 	    	    *image1option;
 static char 	    	    *image2option;
 static char 	    	    *defaulttooloption;
@@ -265,6 +271,22 @@ static void getarguments(int argc, char **argv)
         }
         if (strcmp(argv[1],"--no-argb") == 0) {
             nosaveIFF = 1;
+            continue;
+        }
+        if (strcmp(argv[1],"--dpi") == 0) {
+            char *cp;
+            long dpiX, dpiY;
+            argc--;
+            argv++;
+            dpiX = strtol(argv[1], &cp, 0);
+            if (*cp == ':') {
+                cp++;
+                dpiY = strtol(cp, NULL, 0);
+            } else {
+                dpiY = dpiX;
+            }
+            tpdX = TPD_X(dpiX);
+            tpdY = TPD_Y(dpiY);
             continue;
         }
     }
@@ -1447,7 +1469,7 @@ static void writediskobject(void)
     }
     
     SET_LONG(do_gadget_gadgettext, 0);
-    SET_LONG(do_gadget_mutualexclude, 0);
+    SET_LONG(do_gadget_mutualexclude, (1 << 31) | (tpdX << 8) | (tpdY << 0));
     SET_LONG(do_gadget_specialinfo, 0);
     SET_WORD(do_gadget_gadgetid, 0);
     SET_LONG(do_gadget_userdata, 1); /* full drawer data */
