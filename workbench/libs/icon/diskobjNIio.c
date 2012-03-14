@@ -150,7 +150,7 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
     height = tt[2] - 0x21;
 
     /* Selected image must have same size as normal image otherwise ignore it. */
-    if (which && ((width != icon->ni_Width) || (height != icon->ni_Height)))
+    if (which && ((width != icon->ni_Face.Width) || (height != icon->ni_Face.Height)))
     {
     	return FALSE;
     }
@@ -165,10 +165,10 @@ static BOOL ReadImageNI(struct NativeIcon *icon, WORD which, STRPTR *tooltypes,
 
     if (!which)
     {
-    	icon->ni_Width  = width;
-	icon->ni_Height = height;
-	icon->ni_Frameless = TRUE;
-	icon->ni_Aspect = PACK_ICON_ASPECT_RATIO(1,1);
+        icon->ni_Frameless = TRUE;
+        icon->ni_Face.Width  = width;
+        icon->ni_Face.Height = height;
+        icon->ni_Face.Aspect = PACK_ICON_ASPECT_RATIO(1,1);
     }
     
     size = numcols * sizeof(struct ColorRegister);

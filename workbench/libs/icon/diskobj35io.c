@@ -553,10 +553,10 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
     } /* if ((iff = AllocIFF())) */
 
     if (have_face) {
-    	icon->ni_Width  = fc.Width + 1;
-	icon->ni_Height = fc.Height + 1;
+    	icon->ni_Face.Width  = fc.Width + 1;
+	icon->ni_Face.Height = fc.Height + 1;
 	//icon->icon35.flags  = fc.Flags;
-	icon->ni_Aspect = fc.Aspect;
+	icon->ni_Face.Aspect = fc.Aspect;
     }
 
     if (have_argb1)
@@ -716,7 +716,7 @@ static BOOL WriteARGB35(struct IFFHandle *iff, struct NativeIcon *icon,
     BOOL ok = FALSE;
 
     /* Assume uncompressible.. */
-    zsize = size = icon->ni_Width * icon->ni_Height * 4;
+    zsize = size = icon->ni_Face.Width * icon->ni_Face.Height * 4;
 
     zdest = AllocVec(zsize, MEMF_ANY);
     if (!zdest)
@@ -773,7 +773,7 @@ static BOOL WriteImage35(struct IFFHandle *iff, struct NativeIcon *icon,
         imageflags |= IMAGE35F_HASTRANSPARENTCOLOR;
     
     imagedata = Encode35(&icon->ni_DiskObject, 8, &imagepacked, &imagesize,
-    	    	    	 icon->ni_Width * icon->ni_Height, img->ImageData, IconBase);
+    	    	    	 icon->ni_Face.Width * icon->ni_Face.Height, img->ImageData, IconBase);
 		    
     if (!imagedata)
     {
@@ -897,10 +897,10 @@ BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook,
    	    	
 		    D(bug("WriteIcon35. PushChunk(ID_ICON, ID_FACE) okay\n"));
 		    
-		    fc.Width  = icon->ni_Width - 1;
-		    fc.Height = icon->ni_Height - 1;
+		    fc.Width  = icon->ni_Face.Width - 1;
+		    fc.Height = icon->ni_Face.Height - 1;
 		    fc.Flags  = (icon->ni_Frameless) ? ICON35F_FRAMELESS : 0;
-		    fc.Aspect = icon->ni_Aspect;
+		    fc.Aspect = icon->ni_Face.Aspect;
 		    
 		    cmapentries = icon->ni_Image[0].Pens;
 		    

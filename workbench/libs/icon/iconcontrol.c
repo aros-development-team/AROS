@@ -406,7 +406,7 @@
             case ICONCTRLA_SetAspectRatio:
                 if (nativeicon)
                 {
-                    nativeicon->ni_Aspect = (UBYTE)tag->ti_Data;
+                    nativeicon->ni_Face.Aspect = (UBYTE)tag->ti_Data;
                     processed++;
                 }
                 break;
@@ -414,7 +414,7 @@
             case ICONCTRLA_GetAspectRatio:
                 if (nativeicon)
                 {
-                    STORE((UBYTE *)tag->ti_Data, nativeicon->ni_Aspect);
+                    STORE((UBYTE *)tag->ti_Data, nativeicon->ni_Face.Aspect);
                 } else {
                     STORE((UBYTE *)tag->ti_Data, ICON_ASPECT_RATIO_UNKNOWN);
                 }
@@ -426,7 +426,7 @@
                 {
                     ULONG width = (ULONG)tag->ti_Data;
                     if (width > 0 && width <= 256) {
-                        nativeicon->ni_Width = width;
+                        nativeicon->ni_Face.Width = width;
                         /* Mark that the original imagery has been modified */
                         nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
@@ -436,9 +436,9 @@
                 break;
                 
             case ICONCTRLA_GetWidth:
-	    	if (nativeicon && nativeicon->ni_Width > 0)
+	    	if (nativeicon && nativeicon->ni_Face.Width > 0)
 		{
-		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Width);
+		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Width);
 		    processed++;
 		}
                 break;
@@ -448,7 +448,7 @@
                 {
                     ULONG height = (ULONG)tag->ti_Data;
                     if (height > 0 && height <= 256) {
-                        nativeicon->ni_Height = height;
+                        nativeicon->ni_Face.Height = height;
                         /* Mark that the original imagery has been modified */
                         nativeicon->ni_Extra.Size = 0;
                         /* NOTE: Error code is not modified here */
@@ -460,7 +460,7 @@
             case ICONCTRLA_GetHeight:
 	    	if (nativeicon)
 		{
-		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Height);
+		    STORE((ULONG *)tag->ti_Data, nativeicon->ni_Face.Height);
 		    processed++;
 		}
                 break;

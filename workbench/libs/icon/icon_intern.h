@@ -86,7 +86,6 @@ struct NativeIcon
     /* Parameters */
     BOOL              ni_IsDefault;
     BOOL              ni_Frameless;
-    UBYTE             ni_Aspect;        /* Source aspect ratio */
 
     /* The 'laid out' icon. The laid out data will
      * also be resized for the screen's aspect ratio,
@@ -100,6 +99,12 @@ struct NativeIcon
 
     /* Pens for drawing the border and frame */
     UWORD ni_Pens[NUMDRIPENS];        /* Copied from DrawInfo for the screen */
+
+    struct NativeIconFace {
+        UBYTE         Aspect;        /* Source aspect ratio */
+        ULONG         Width;
+        ULONG         Height;
+    } ni_Face;
 
     struct NativeIconImage {
         /* This data was either allocated during icon load
@@ -121,6 +126,7 @@ struct NativeIcon
         ULONG         *Pen;         /* Pallete n to Pen m mapping */
         struct BitMap *BitMap;      /* 'friend' of the Screen */
         PLANEPTR       BitMask;     /* TransparentColor >= 0 bitmask */
+        APTR           ARGBMap;     /* ARGB, rescaled version */
     } ni_Image[2];
 };
 

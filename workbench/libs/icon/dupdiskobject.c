@@ -159,12 +159,12 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 	
         mem->ni_IsDefault = srcnativeicon->ni_IsDefault;
         mem->ni_Frameless = srcnativeicon->ni_Frameless;
-        mem->ni_Aspect    = srcnativeicon->ni_Aspect;
-        mem->ni_Width     = srcnativeicon->ni_Width;
-        mem->ni_Height    = srcnativeicon->ni_Height;
+        mem->ni_Face      = srcnativeicon->ni_Face;
 
         /* The duplicate will *not* be laid out to a specific screen */
         mem->ni_Screen = NULL;
+        mem->ni_Width  = 0;
+        mem->ni_Height = 0;
 
         /* Duplicate any extra data */
         if (srcnativeicon->ni_Extra.Data && srcnativeicon->ni_Extra.Size > 0) {
@@ -181,7 +181,7 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
             dst = &mem->ni_Image[i];
 
             if (src->ARGB) {
-                dst->ARGB = MemDupIcon(dobj, src->ARGB, srcnativeicon->ni_Width * srcnativeicon->ni_Height * 4, IconBase);
+                dst->ARGB = MemDupIcon(dobj, src->ARGB, srcnativeicon->ni_Face.Width * srcnativeicon->ni_Face.Height * 4, IconBase);
                 if (!dst->ARGB)
                     goto fail;
             }
@@ -197,7 +197,7 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
             }
 
             if (src->ImageData) {
-                dst->ImageData = MemDupIcon(dobj, src->ImageData, srcnativeicon->ni_Width * srcnativeicon->ni_Height * sizeof(UBYTE), IconBase);
+                dst->ImageData = MemDupIcon(dobj, src->ImageData, srcnativeicon->ni_Face.Width * srcnativeicon->ni_Face.Height * sizeof(UBYTE), IconBase);
                 if (!dst->ImageData) goto fail;
             }
 
