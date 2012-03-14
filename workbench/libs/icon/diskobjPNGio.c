@@ -249,8 +249,9 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 	    return FALSE;
         }
 
-	icon->ni_Width  = width;
-	icon->ni_Height = height;
+	icon->ni_Face.Width  = width;
+	icon->ni_Face.Height = height;
+	icon->ni_Face.Aspect = ICON_ASPECT_RATIO_UNKNOWN;
 	
 	#define DO(x) (&x->ni_DiskObject)
 	
@@ -514,7 +515,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
 	    icon->ni_Extra.PNG[0].Size = offset;
 	    icon->ni_Extra.PNG[1].Offset = offset;
 	    icon->ni_Extra.PNG[1].Size = (filesize - icon->ni_Extra.PNG[0].Size);
-	    icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Width, &icon->ni_Height, NULL, NULL, IconBase);
+	    icon->ni_Image[1].ARGB = ReadMemPNG(&icon->ni_DiskObject, filepos, &icon->ni_Face.Width, &icon->ni_Face.Height, NULL, NULL, IconBase);
 	}
     	
     } /**/
@@ -522,7 +523,7 @@ BOOL ReadIconPNG(struct DiskObject *dobj, BPTR file, struct IconBase *IconBase)
     /* If there's no image for selected-state, generate one */
     if (!icon->ni_Image[1].ARGB)
     {
-    	ULONG size = icon->ni_Width * icon->ni_Height;
+    	ULONG size = icon->ni_Face.Width * icon->ni_Face.Height;
 	
     	if ((icon->ni_Image[1].ARGB = AllocMemIcon(&icon->ni_DiskObject, size * sizeof(ULONG), MEMF_PUBLIC)))
 	{

@@ -65,13 +65,13 @@
     LONG wDelta,textTop,textLeft;
     struct NativeIcon *ni;
     struct Rectangle rect = { };
-    ULONG bmdepth;
     struct DrawInfo *DrawInfo;
     BOOL EraseBackground;
     BOOL Frameless;
     BOOL Borderless;
     BOOL selected = (state == IDS_SELECTED);
     UWORD Pens[NUMDRIPENS];
+    UWORD Width, Height;
     int i;
 
     /* No GfxBase? No RastPort? Then we can't draw anything. */
@@ -80,9 +80,9 @@
 
     ni = GetNativeIcon(icon, LB(IconBase));
 
-    Frameless = GetTagData(ICONDRAWA_Frameless, IconBase->ib_Frameless || ni->ni_Frameless, tags);
+    Frameless = GetTagData(ICONDRAWA_Frameless, IconBase->ib_Frameless || (ni && ni->ni_Frameless), tags);
     Borderless = GetTagData(ICONDRAWA_Borderless, FALSE, tags);
-    EraseBackground = GetTagData(ICONDRAWA_EraseBackground, !(IconBase->ib_Frameless || ni->ni_Frameless), tags);
+    EraseBackground = GetTagData(ICONDRAWA_EraseBackground, !(IconBase->ib_Frameless || (ni && ni->ni_Frameless)), tags);
     DrawInfo = (struct DrawInfo *)GetTagData(ICONDRAWA_DrawInfo, (IPTR)NULL, tags);
 
     for (i = 0; i < NUMDRIPENS; i++) {
@@ -91,8 +91,6 @@
         else
             Pens[i] = ni->ni_Pens[i];
     }
-
-    bmdepth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
 
     if (!Borderless) {
         rect = IconBase->ib_EmbossRectangle;
@@ -111,6 +109,14 @@
     textTop = 0;
     textLeft = 0;
 
+    if (ni && ni->ni_Screen) {
+        Width = ni->ni_Width;
+        Height = ni->ni_Height;
+    } else {
+        Width = icon->do_Gadget.Width;
+        Height = icon->do_Gadget.Height;
+    }
+
     if (label != NULL) {
         struct TextExtent extent;
         LONG txtlen = strlen(label);
@@ -118,8 +124,8 @@
         if (txtlen > IconBase->ib_MaxNameLength)
             txtlen = IconBase->ib_MaxNameLength;
 
-        wDelta = ni->ni_Width + (rect.MaxX - rect.MinX);
-        textTop = ni->ni_Height + (rect.MaxY - rect.MinY);
+        wDelta = Width + (rect.MaxX - rect.MinX);
+        textTop = Height + (rect.MaxY - rect.MinY);
 
         TextExtent(rp, label, txtlen, &extent);
 
@@ -150,10 +156,8 @@
     if (EraseBackground) {
         SetAPen(rp, Pens[BACKGROUNDPEN]);
         RectFill(rp, leftEdge + rect.MinX, topEdge + rect.MinY,
-                     leftEdge + ni->ni_Width + rect.MaxX - 1, topEdge + ni->ni_Height + rect.MaxY - 1);
+                     leftEdge + Width + rect.MaxX - 1, topEdge + Height + rect.MaxY - 1);
     }
-
-    D(bug("[%s] Target bitmap depth: %d\n", __func__, bmdepth));
 
     if (ni)
     {
@@ -164,23 +168,13 @@
 
         id = selected ? 1 : 0;
         image = &ni->ni_Image[id];
-           
-#ifndef FORCE_LUT_ICONS
-        if ((bmdepth > 8) && CyberGfxBase)
-	{
-	    if (ni->ni_Extra.PNG[id].Size && image->ARGB == NULL) {
-                image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.PNG[id].Offset, &ni->ni_Width, &ni->ni_Height, NULL, NULL, IconBase);
-            }
-            if (image->ARGB) {
-                D(bug("[%s] ARGB[%d] = %p\n", __func__, id, image->ARGB));
-
-                WritePixelArrayAlpha((APTR)image->ARGB, 0, 0, ni->ni_Width * sizeof(ULONG),
-                                     rp, leftEdge, topEdge,
-                                     ni->ni_Width,  ni->ni_Height, 0);
-                goto emboss;
-            }
-	}
-#endif
+         
+        if (image->ARGBMap) {
+            WritePixelArrayAlpha(image->ARGBMap, 0, 0, ni->ni_Width * sizeof(ULONG),
+                                       rp, leftEdge, topEdge,
+                                       ni->ni_Width,  ni->ni_Height, 0);
+            goto emboss;
+        }
 
         /* If we don't have selected bitmap,
          * use the normal bitmap
@@ -207,14 +201,14 @@
 	        bug("[%s] Planes[%d] = %p\n", __func__, i, bm->Planes[i]);
 #endif
 
-	    if (mask) {
+            if (mask) {
                 BltMaskBitMapRastPort(bm, 0, 0,
                                       rp, leftEdge, topEdge,
-                                      ni->ni_Width, ni->ni_Height, ABC|ABNC|ANBC, mask);
+                                      Width, Height, ABC|ABNC|ANBC, mask);
             } else {
                 BltBitMapRastPort(bm, 0, 0,
                                   rp, leftEdge, topEdge,
-                                  ni->ni_Width, ni->ni_Height, ABC|ABNC);
+                                  Width, Height, ABC|ABNC);
             }
             goto emboss;
         }
@@ -225,8 +219,8 @@
     D(bug("[Icon] No image present\n"));
     SetAPen(rp, selected ? Pens[SHINEPEN] : Pens[SHADOWPEN]);
     RectFill(rp, leftEdge, topEdge,
-                 leftEdge + ni->ni_Width - 1,
-                 topEdge + ni->ni_Height - 1);
+                 leftEdge + Width - 1,
+                 topEdge + Height - 1);
 
 emboss:
     /* Draw the 3D border */
@@ -234,9 +228,9 @@ emboss:
         D(bug("[Icon] Embossing\n"));
 
         rect.MinX += leftEdge;
-        rect.MaxX += leftEdge + ni->ni_Width - 1;
+        rect.MaxX += leftEdge + Width - 1;
         rect.MinY += topEdge;
-        rect.MaxY += topEdge + ni->ni_Height - 1;
+        rect.MaxY += topEdge + Height - 1;
 
         /* Draw the left and top lines */
         SetAPen(rp, selected ? Pens[SHADOWPEN] : Pens[SHINEPEN]);

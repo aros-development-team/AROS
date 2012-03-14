@@ -168,20 +168,20 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
 
         if (image->ARGB == NULL && ni->ni_Extra.Offset[i].PNG >= 0) {
             image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
-                                         &ni->ni_Width, &ni->ni_Height,
+                                         &ni->ni_Face.Width, &ni->ni_Face.Height,
                                          NULL, NULL, IconBase);
         }
 
         if (!image->ARGB)
             continue;
 
-        image->ImageData = AllocMemIcon(icon, ni->ni_Width * ni->ni_Height, MEMF_PUBLIC);
+        image->ImageData = AllocMemIcon(icon, ni->ni_Face.Width * ni->ni_Face.Height, MEMF_PUBLIC);
         image->Pens = 17;
         image->Palette = ehb_palette;
         image->TransparentColor = 17;
         pixel = (UBYTE *)image->ARGB;
         idata = (UBYTE *)image->ImageData;
-        for (count = 0; count < ni->ni_Width * ni->ni_Height; count++, pixel+=4, idata++) {
+        for (count = 0; count < ni->ni_Face.Width * ni->ni_Face.Height; count++, pixel+=4, idata++) {
             if (pixel[0] == 0) {
                 *idata = image->TransparentColor;
             } else {
@@ -216,7 +216,7 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
     image = &ni->ni_Image[1];
     if (image->ARGB == NULL && ni->ni_Image[0].ARGB != NULL) {
         /* Synthesize a selected ARGB icon */
-        ULONG area = ni->ni_Width * ni->ni_Height;
+        ULONG area = ni->ni_Face.Width * ni->ni_Face.Height;
         image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4, MEMF_PUBLIC);
         if (image->ARGB) {
             CopyMem(ni->ni_Image[0].ARGB, (APTR)image->ARGB, area * sizeof(UBYTE) * 4);
@@ -234,10 +234,10 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
         ni->ni_Extra.Offset[1].PNG < 0) {
 
         image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
-                                     &ni->ni_Width, &ni->ni_Height,
+                                     &ni->ni_Face.Width, &ni->ni_Face.Height,
                                      NULL, NULL, IconBase);
         if (image->ARGB) {
-                ULONG size = ni->ni_Width * ni->ni_Height * sizeof(ULONG);
+                ULONG size = ni->ni_Face.Width * ni->ni_Face.Height * sizeof(ULONG);
                 UBYTE *pixel;
                 for (pixel = (UBYTE *)image->ARGB; pixel - (UBYTE *)image->ARGB  < size; pixel+=4) {
                     struct ColorRegister cr = {
