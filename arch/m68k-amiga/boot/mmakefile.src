@@ -231,7 +231,7 @@ KDEVS   :=
 KHNDLRS := 
 KHIDDS  := 
 KRSRCS  := kernel
-KHOOKS  :=
+KHOOKS  := diag
 
 KOBJS_local := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS))) \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _device.ko  ,$(KDEVS))) \
@@ -262,7 +262,7 @@ KHNDLRS := cdrom con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
 KRSRCS  := battclock processor lddemon dosboot cia potgo disk \
            misc shell shellcommands workbook wbtag cardres FileSystem
-KHOOKS  := alert diag romboot
+KHOOKS  := alert romboot
 
 KOBJS_any := \
 	$(addprefix $(KOBJSDIR)/,$(addsuffix _library.ko ,$(KLIBS)  )) \
