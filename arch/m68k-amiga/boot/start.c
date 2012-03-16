@@ -279,11 +279,34 @@ static void protectKick(struct MemHeader *mh, struct MemList *ml, ULONG *mask)
     return;
 }
 
+void InitKickMemDiag(void)
+{
+    struct MemList *ml = PrivExecBase(SysBase)->PlatformData.ep_KickMemPtr;
+    DEBUGPUTS(("KickMem allocation phase 2/2\n"));
+    while (ml) {
+        int i;
+        for (i = 0; i < ml->ml_NumEntries; i++) {
+        APTR start = ml->ml_ME[i].me_Addr;
+        ULONG len = ml->ml_ME[i].me_Length;
+
+        DEBUGPUTHEX(("Addr", (IPTR)start));
+        DEBUGPUTHEX(("Len", len));
+
+        /* Simply attempt to allocate everything again */
+        if (InternalAllocAbs(start, len, SysBase))
+            DEBUGPUTS(("-> Allocated\n"));
+
+        }
+        ml = (struct MemList*)ml->ml_Node.ln_Succ;
+    }
+}
+
 static BOOL InitKickMem(ULONG *mask, struct ExecBase *SysBase)
 {
     int ndx = 0;
     struct MemList *ml = SysBase->KickMemPtr;
     ULONG protectKickBits = *mask;
+    BOOL ok = TRUE;
 
     DEBUGPUTHEX(("KickMemPtr", (IPTR)ml));
 
@@ -297,8 +320,15 @@ static BOOL InitKickMem(ULONG *mask, struct ExecBase *SysBase)
 	    if (ndx < 32 && !(protectKickBits & (1 << ndx)))
 	        continue;
 
-	    DEBUGPUTHEX(("      Addr", (IPTR)start));
-	    DEBUGPUTHEX(("       Len", len));
+	    DEBUGPUTHEX(("Addr", (IPTR)start));
+	    DEBUGPUTHEX(("Len", len));
+
+            if (TypeOfMem(start) == 0) {
+                /* Do not stop if memory is not in memory list yet */
+                DEBUGPUTS(("-> unavailable\n"));
+                ok = FALSE;
+                continue;
+            }
 
 	    /* Use the non-mungwalling AllocAbs */
 	    if (!InternalAllocAbs(start, len, SysBase))
@@ -311,7 +341,7 @@ static BOOL InitKickMem(ULONG *mask, struct ExecBase *SysBase)
 
     *mask = protectKickBits;
 
-    return TRUE;
+    return ok;
 }
 #if 0 // debug stuff, do not remove
 static ULONG SumKickDataX(struct ExecBase *sb)
@@ -769,16 +799,18 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	/* Before we allocate anything else, we need to
 	 * lock down the entries in KickMemPtr
 	 *
-	 * If we get a single failure, don't run any
-	 * of the KickTags.
+	 * If we get a single failure, try again in diag module
 	 */
 	if (SysBase->KickCheckSum) {
 	    if (SysBase->KickCheckSum == (APTR)SumKickData()) {
+		DEBUGPUTS(("KickMem allocation phase 1/2\n"));
 		if (!InitKickMem(&KickMemMask, SysBase)) {
-	    	    DEBUGPUTS(("[KickMem] KickMem failed an allocation. Ignoring KickTags\n"));
-	    	    SysBase->KickTagPtr = NULL;
-	    	}
-	    } else {
+                    /* We'll try again after diag rom module */
+	    	    DEBUGPUTS(("KickMem failed an allocation.\n"));
+ 	    	} else {
+                    DEBUGPUTS(("All KickMem nodes allocated succesfully.\n"));
+                }
+ 	    } else {
 	    	DEBUGPUTS(("[KickMem] Checksum mismatch\n"));
 		SysBase->KickTagPtr = NULL;
 	    }

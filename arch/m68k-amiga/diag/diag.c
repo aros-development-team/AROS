@@ -166,6 +166,9 @@ static void callroms(struct ExpansionBase *ExpansionBase)
 	D(bug("callroms done\n"));
 }
 
+
+void InitKickMemDiag(void);
+
 static AROS_UFH3 (APTR, Init,
 		  AROS_UFHA(struct Library *, lh, D0),
 		  AROS_UFHA(BPTR, segList, A0),
@@ -183,6 +186,11 @@ static AROS_UFH3 (APTR, Init,
    callroms(eb);
 
    D(debugRAM());
+
+   /* ArosBootStrap mode? Check for kick modules again if some of our kick modules
+    * are located in diag initialized ram (Blizzard A1200 accelerator boards)
+    */
+   InitKickMemDiag();
 
    AROS_USERFUNC_EXIT
 
