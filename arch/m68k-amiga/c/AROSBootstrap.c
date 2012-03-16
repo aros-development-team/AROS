@@ -65,7 +65,7 @@ static inline void bug(const char *fmt, ...)
 struct DosLibrary *DOSBase;
 
 static BOOL ROM_Loaded = FALSE;
-static BOOL forceFAST = FALSE;
+static BOOL forceCHIP = FALSE;
 static BOOL debug_enabled = FALSE;
 static struct List mlist;
 
@@ -458,29 +458,25 @@ static AROS_UFH3(APTR, elfAlloc,
      */
     size += sizeof(struct MemChunk) + sizeof(struct MemList);
 
-    /* If it's MEMF_LOCAL or MEMF_CHIP, our Exec init
-     * will automatically protect it from allocation after reset.
-     */
     if (flags & MEMF_KICK) {
-        if (SysBase->LibNode.lib_Version < 39) {
-            /* Ok, can't use MEMF_KICK.
-             * We are forced to use MEMF_CHIP, unless
-             * the user has specified FORCEFAST
-             */
-            flags &= ~(MEMF_KICK | MEMF_CHIP | MEMF_FAST);
-            if (forceFAST)
-                flags |= MEMF_FAST;
-            else
-                flags |= MEMF_CHIP;
+        D(DWriteF("MEMF_KICK %N\n", size));
+        if (forceCHIP) {
+            flags |= MEMF_CHIP;
+        } else {
+            /* Prefer MEMF_KICK | MEMF_FAST if available */
+            flags |= MEMF_FAST;
         }
     }
 
     /* Hmm. MEMF_LOCAL is only available on v36 and later.
      * Use MEMF_CHIP if we have to.
      */
-    if ((flags & MEMF_LOCAL) && (SysBase->LibNode.lib_Version < 36)) {
-    	flags &= ~MEMF_LOCAL;
-    	flags |= MEMF_CHIP;
+    if (flags & MEMF_LOCAL) {
+        D(DWriteF("MEMF_LOCAL %N\n", size));
+        if (SysBase->LibNode.lib_Version < 36 || forceCHIP) {
+            flags &= ~MEMF_LOCAL;
+            flags |= MEMF_CHIP;
+        }
     }
 
     /* MEMF_31BIT is not available on AOS */
@@ -496,9 +492,15 @@ static AROS_UFH3(APTR, elfAlloc,
     D(DWriteF("ELF: Attempt to allocate %N bytes of type %X8\n", size, flags));
     mem = AllocPageAligned(&size, flags | MEMF_CLEAR);
     if (mem == NULL) {
-    	D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
-    	meminfo();
-    	return NULL;
+        if ((flags & (MEMF_KICK | MEMF_FAST)) == (MEMF_KICK | MEMF_FAST)) {
+            /* Couldn't allocate MEMF_KICK | MEMF_FAST, fall back to any memory */
+            mem = AllocPageAligned(&size, MEMF_CLEAR);
+        }
+        if (mem == NULL) {
+    	    D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
+    	    meminfo();
+    	    return NULL;
+        }
     }
     D(DWriteF("ELF: Got memory at %X8, size %N\n", (IPTR)mem, size));
 
@@ -509,7 +511,6 @@ static AROS_UFH3(APTR, elfAlloc,
 
     /* Add to the KickMem list */
     AddTail(&mlist, (struct Node*)ml);
-    D(DWriteF("ELF: Got memory at %X8, size %N\n", (IPTR)(&ml[1]), size));
 
     return &ml[1];
 
@@ -612,10 +613,11 @@ static void RTGPatch(struct Resident *r, BPTR seg)
 
 static BOOL PatchResidents(BPTR seg)
 {
+    const LONG ressize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
     while(seg) {
 	ULONG *ptr = BADDR(seg);
 	UWORD *res;
-	UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - offsetof(struct Resident, rt_Init) - sizeof(APTR));
+	UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - ressize);
     
 	res = (UWORD*)(ptr + 1);
 	while (res < end) {
@@ -623,10 +625,13 @@ static BOOL PatchResidents(BPTR seg)
 		struct Resident *r = (struct Resident*)res;
 		r->rt_Flags |= 1 << 5;
 		if (r->rt_EndSkip <= (APTR)res) {
-		    WriteF("Invalid rt_EndSkip at %X8\n", r);
-		    return FALSE;
-		}
-		res = (UWORD*)r->rt_EndSkip - 1;
+#if DEBUG > 1
+                    WriteF("Invalid rt_EndSkip: %X8, Resident: %X8\n", r->rt_EndSkip, r);
+#endif
+                    res += ressize / sizeof(WORD) - 1;
+		} else {
+                    res = (UWORD*)r->rt_EndSkip - 1;
+                }
 	    }
 	    res++;
 	}
@@ -640,9 +645,10 @@ static BOOL PatchResidents(BPTR seg)
 
 static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG *resleft, ULONG flags)
 {
+    const LONG ressize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
     ULONG *ptr = BADDR(seg);
     UWORD *res;
-    UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - offsetof(struct Resident, rt_Init) - sizeof(APTR));
+    UWORD *end = (UWORD*)((ULONG)ptr + ptr[-1] - ressize);
     
     res = (UWORD*)(ptr + 1);
     while (res < end) {
@@ -671,7 +677,10 @@ static struct Resident **LoadResident(BPTR seg, struct Resident **reslist, ULONG
             *(reslist++) = r;
             (*resleft)--;
 
-            res = (UWORD*)r->rt_EndSkip - 1;
+            if (r->rt_EndSkip <= (APTR)res)
+		res += ressize / sizeof(WORD) - 1;
+            else
+                res = (UWORD*)r->rt_EndSkip - 1;
         }
         res++;
     }
@@ -1198,6 +1207,14 @@ static void DumpKickTags(ULONG num, struct Resident **list)
 }
 #endif
 
+static struct Resident **ScanROMSegment(BPTR ROMSegList, struct Resident **resnext, ULONG *resleft)
+{
+    BPTR seg;
+    /* Only scan 2nd ROM section */
+    seg = *((BPTR*)BADDR(ROMSegList));
+    return LoadResident(seg, resnext, resleft, LRF_NOPATCH);
+}
+
 #define KERNELTAGS_SIZE 10
 #define CMDLINE_SIZE 512
 
@@ -1239,20 +1256,20 @@ __startup static AROS_ENTRY(int, startup,
      * against overlapping allocations with the initial
      * stack.
      */
-    lowmem = AllocMem(4096, MEMF_CHIP);
-    	
+    lowmem = AllocMem(PAGE_SIZE, MEMF_CHIP);
+
     NEWLIST(&mlist);
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCEFAST = 18, ARG_DEBUG = 19, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_DEBUG = 19, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
     	 * So only 16 modules are supported
     	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCEFAST/S,DEBUG/S");
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,DEBUG/S");
     	/* Make sure the args are in .bss, not stack */
     	static ULONG args[16 + 4 + 256] __attribute__((aligned(4))) = { };
 
@@ -1263,15 +1280,32 @@ __startup static AROS_ENTRY(int, startup,
 #if DEBUG > 1
         DWriteF("ROM: %S\n", args[ARG_ROM]);
         DWriteF("CMD: %S\n", args[ARG_CMD]);
-        DWriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
+        DWriteF("FORCECHIP: %N\n", args[ARG_FORCECHIP]);
         DWriteF("MOD: %S\n", args[0]);
         DWriteF("   : %S\n", args[1]);
         DWriteF("   : %S\n", args[2]);
         DWriteF("   : %S\n", args[3]);
 
 #endif
-        forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
+        forceCHIP = args[ARG_FORCECHIP] ? TRUE : FALSE;
         debug_enabled = args[ARG_DEBUG] ? TRUE : FALSE;
+
+        /* Blizzard A1200 accelerator boards have strange MAP ROM
+         * feature, even when it is disabled, ROM is copied to
+         * last 512K of RAM, so we have to make sure all our
+         * allocations ignore this region.
+         * Blizzard Fast RAM memory type is plain MEMF_FAST.
+         */
+        if (SysBase->LibNode.lib_Version >= 37 && !AvailMem(MEMF_KICK | MEMF_FAST)) {
+            if (AvailMem(MEMF_FAST)) {
+                WriteF("Reserving non-MEMF_KICK Fast RAM\n");
+                int i;
+                /* Allocate in PAGE_SIZE byte chunks, it is smallest allocated size */
+                for (i = 0; i < 524288 / PAGE_SIZE; i++)
+                    AllocMem(PAGE_SIZE, MEMF_FAST | MEMF_REVERSE);
+            }
+        }
+
         meminfo();
 
 #if DEBUG
@@ -1294,8 +1328,7 @@ __startup static AROS_ENTRY(int, startup,
 
 		PatchResidents(ROMSegList);
                 resnext = &reshead;
-                /* Only scan the 2nd section of the ROM segment */
-                resnext = LoadResident(*((BPTR *)BADDR(ROMSegList)), resnext, &resleft, LRF_NOPATCH);
+                resnext = ScanROMSegment(ROMSegList, resnext, &resleft);
                 resnext = LoadResidents(&args[ARG_MODULES], resnext, &resleft);
                 KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
                 ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
@@ -1322,7 +1355,7 @@ __startup static AROS_ENTRY(int, startup,
     	CloseLibrary((APTR)DOSBase);
     }
 
-    FreeMem(lowmem, 4096);
+    FreeMem(lowmem, PAGE_SIZE);
 
     return IoErr();
 
