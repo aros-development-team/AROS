@@ -78,7 +78,7 @@ struct amigavideo_staticdata
 	UWORD spritepos, spritectl;
 	UWORD *sprite_null;
 	UWORD *sprite;
-	UWORD spritex, spritey;
+	WORD  spritex, spritey;
 	UWORD bplcon0_null, bplcon3;
 	UBYTE fmode_bpl, fmode_spr;
 	UWORD ddfstrt, ddfstop;

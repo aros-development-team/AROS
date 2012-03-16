@@ -584,10 +584,12 @@ void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
     data->spritey = y;
     if (!data->sprite || data->sprite_height == 0)
     	return;
+    x -= (1 << data->res);     // FIXME: Why this adjustment? I don't know - Jason McMullan
     x += data->startx << data->res;
     x <<= (2 - data->res); // convert x to shres coordinates
     if (data->interlace)
     	y /= 2; // y is always in nonlaced
+    y -= 2;     // FIXME: Why this ajustement? I don't know - Jason McMullan
     y += data->starty;
     pos = (y << 8) | (x >> 3);
     ctl = ((y + data->sprite_height) << 8);
