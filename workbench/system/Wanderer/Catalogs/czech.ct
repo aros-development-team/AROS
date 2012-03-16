@@ -1,4 +1,4 @@
-## version $VER: Wanderer.catalog 1.2 (12.1.2012)
+## version $VER: Wanderer.catalog 2.1 (10.3.2012)
 ## language czech
 ## codeset 5
 ;
@@ -88,7 +88,7 @@ N
 ; N
 ;
 MSG_MEN_OPENPAR
-Vy¹¹í adresáø
+Nadøazený adresáø
 ; Open parent
 ;
 MSG_MEN_CLOSE
@@ -260,7 +260,7 @@ Vyberte prosím po¾adovanou akci.
 ; What would you like to do?
 ;
 MSG_SHUTDOWN_BUTTONS
-Vypnout|Restartovat hardware|Restartovat AROS|*Zru¹it
+Vypnout|Restartovat hardware|Restartovat systém|*Zru¹it
 ; Power Off|Restart Computer|Restart AROS|*Cancel
 ;
 MSG_ACTION_NOT_SUPPORTED
@@ -463,4 +463,3 @@ MSG_WANDERER_FILEACCESS_TOTAL
 Celková velikost:
 ; Overall size:
 ;
-
