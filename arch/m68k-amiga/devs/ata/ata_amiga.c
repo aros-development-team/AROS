@@ -290,7 +290,16 @@ static void callbusirq(struct amiga_driverdata *ddata)
     status2 = 0;
     if (ddata->doubler == 2)
         status2 = port[0x1000 + ata_Status * 4];
+    /*
+     * Message disabled because A1200 Gayle interrupt needs to be cleared
+     * after drive status register has been read but before next command
+     * is executed. Needs ata.device updates first.
+     * 
+     * A4000 does not have this problem because interrupt clears automatically
+     * when interrupt request register is read.
+     *
     bug("[ATA] Spurious interrupt: %02X %02X\n", status1, status2);
+    */
 }
 
 AROS_UFH4(APTR, IDE_Handler_A1200,
@@ -304,7 +313,9 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
     struct amiga_driverdata *ddata = data;
     UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
-	/* Clear interrupt */
+        /* Clear interrupt, we get another possible spurious interrupt
+         * immediately after exiting this handler. Better than freeze.
+         */
 	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
 	callbusirq(ddata);
     }
