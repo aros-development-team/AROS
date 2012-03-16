@@ -123,12 +123,13 @@ static void mmuprotectregion(void *KernelBase, const UBYTE *name, APTR addr, ULO
     	APTR newmem = AllocPagesAligned(allocsize / PAGE_SIZE);
     	if (newmem) {
     	    CopyMem(addr, newmem, size);
-    	    D(bug("Remapped %d byte Chip region to Fast, %p -> %p (%s), flags %08x\n", size, addr, newmem, name, flags));
+    	    D(bug("Remapped %d byte Chip region to Fast, %p - %p -> %p - %p (%s), flags %08x\n",
+                size, addr, addr + size - 1, newmem, newmem + size - 1, name, flags));
 	    KrnMapGlobal(addr, newmem, allocsize, flags);
     	    return;
     	}
     }
-    D(bug("Protected %d byte region @%p (%s) using flags %08x\n", size, addr, name, flags));
+    D(bug("Protected %d byte region %p - %p (%s) using flags %08x\n", size, addr, addr + size - 1, name, flags));
     KrnSetProtection(addr, allocsize, flags);
 }
 
