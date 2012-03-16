@@ -66,6 +66,7 @@ struct DosLibrary *DOSBase;
 
 static BOOL ROM_Loaded = FALSE;
 static BOOL forceCHIP = FALSE;
+static BOOL forceFAST = FALSE;
 static BOOL debug_enabled = FALSE;
 static struct List mlist;
 
@@ -473,7 +474,9 @@ static AROS_UFH3(APTR, elfAlloc,
      */
     if (flags & MEMF_LOCAL) {
         D(DWriteF("MEMF_LOCAL %N\n", size));
-        if (SysBase->LibNode.lib_Version < 36 || forceCHIP) {
+        if (forceFAST) {
+            flags &= ~MEMF_LOCAL;
+        } else if (SysBase->LibNode.lib_Version < 36 || forceCHIP) {
             flags &= ~MEMF_LOCAL;
             flags |= MEMF_CHIP;
         }
@@ -1263,15 +1266,15 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_DEBUG = 19, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_FORCEFAST = 19, ARG_DEBUG = 20, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
     	 * So only 16 modules are supported
     	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,DEBUG/S");
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,FORCEFAST/S,DEBUG/S");
     	/* Make sure the args are in .bss, not stack */
-    	static ULONG args[16 + 4 + 256] __attribute__((aligned(4))) = { };
+    	static ULONG args[16 + 5 + 256] __attribute__((aligned(4))) = { };
 
     	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
@@ -1281,6 +1284,7 @@ __startup static AROS_ENTRY(int, startup,
         DWriteF("ROM: %S\n", args[ARG_ROM]);
         DWriteF("CMD: %S\n", args[ARG_CMD]);
         DWriteF("FORCECHIP: %N\n", args[ARG_FORCECHIP]);
+        DWriteF("FORCEFAST: %N\n", args[ARG_FORCEFAST]);
         DWriteF("MOD: %S\n", args[0]);
         DWriteF("   : %S\n", args[1]);
         DWriteF("   : %S\n", args[2]);
@@ -1288,6 +1292,7 @@ __startup static AROS_ENTRY(int, startup,
 
 #endif
         forceCHIP = args[ARG_FORCECHIP] ? TRUE : FALSE;
+        forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
         debug_enabled = args[ARG_DEBUG] ? TRUE : FALSE;
 
         /* Blizzard A1200 accelerator boards have strange MAP ROM
