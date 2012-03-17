@@ -29,6 +29,26 @@
 
 #define SS_STACK_SIZE	0x02000
 
+/* Must match with AROSBootstrap.c! */
+#define ABS_BOOT_MAGIC 0x4d363801
+struct BootStruct
+{
+    ULONG magic;
+    struct TagItem *kerneltags;
+    APTR ss_address;
+    ULONG ss_size;
+};
+
+static struct BootStruct *GetBootStruct(struct ExecBase *eb)
+{
+    if (eb->DebugData) {
+        struct BootStruct *BootS = (struct BootStruct*)eb->DebugData;
+        if (BootS->magic == ABS_BOOT_MAGIC)
+            return BootS;
+    }
+    return NULL;
+}
+
 extern const struct Resident Exec_resident;
 extern struct ExecBase *AbsExecBase;
 
@@ -115,31 +135,38 @@ extern void SuperstackSwap(void);
 /* This calls the register-ABI library
  * routine Exec/InitCode, for use in NewStackSwap()
  */
-static LONG doInitCode(void)
+static LONG doInitCode(struct BootStruct *BootS)
 {
 	/* Attempt to allocate a new supervisor stack */
 	do {
 	    APTR ss_stack;
+            ULONG ss_stack_size;
 
-	    ss_stack = AllocMem(SS_STACK_SIZE, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
-	    if (ss_stack && ((ULONG)ss_stack & (PAGE_SIZE - 1))) {
-	    	/* Normally ss_stack is page aligned because it is first MEMF_REVERSE
-	    	 * allocation. But we must check it because enabled mungwall or expansion
-	    	 * boot rom code can allocate some memory.
-	    	 */
-	    	FreeMem(ss_stack, SS_STACK_SIZE);
-	        ss_stack = AllocMem(SS_STACK_SIZE + PAGE_SIZE - 1, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
-	        ss_stack = (APTR)(((ULONG)ss_stack + PAGE_SIZE - 1) & PAGE_MASK);
+            if (BootS && BootS->ss_address) {
+                ss_stack = BootS->ss_address;
+                ss_stack_size = BootS->ss_size;
+            } else {
+                ss_stack = AllocMem(SS_STACK_SIZE, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+                if (ss_stack && ((ULONG)ss_stack & (PAGE_SIZE - 1))) {
+	    	    /* Normally ss_stack is page aligned because it is first MEMF_REVERSE
+	    	     * allocation. But we must check it because enabled mungwall or expansion
+	    	     * boot rom code can allocate some memory.
+	    	     */
+	    	    FreeMem(ss_stack, SS_STACK_SIZE);
+	            ss_stack = AllocMem(SS_STACK_SIZE + PAGE_SIZE - 1, MEMF_ANY | MEMF_CLEAR | MEMF_REVERSE);
+	            ss_stack = (APTR)(((ULONG)ss_stack + PAGE_SIZE - 1) & PAGE_MASK);
+                }
+                ss_stack_size = SS_STACK_SIZE;
 	    }
 	    DEBUGPUTHEX(("SS  lower", (ULONG)ss_stack));
-	    DEBUGPUTHEX(("SS  upper", (ULONG)ss_stack + SS_STACK_SIZE - 1));
+	    DEBUGPUTHEX(("SS  upper", (ULONG)ss_stack + ss_stack_size - 1));
 	    if (ss_stack == NULL) {
 	    	DEBUGPUTS(("Strange. Can't allocate a new system stack\n"));
 	    	Early_Alert(CODE_ALLOC_FAIL);
 	    	break;
 	    }
             SysBase->SysStkLower    = ss_stack;
-            SysBase->SysStkUpper    = ss_stack + SS_STACK_SIZE;
+            SysBase->SysStkUpper    = ss_stack + ss_stack_size;
 	    SetSysBaseChkSum();
 
 	    Supervisor((ULONG_FUNC)SuperstackSwap);
@@ -486,6 +513,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	ULONG KickMemMask = 0;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
+        struct BootStruct *BootS = NULL;
 	/* We can't use the global 'SysBase' symbol, since
 	 * the compiler does not know that PrepareExecBase
 	 * may change it out from under us.
@@ -576,8 +604,9 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    if (wasvalid) {
 	        arosbootstrapmode = TRUE;
 	    	DEBUGPUTHEX(("[SysBase] fakebase at", (ULONG)oldSysBase));
-	    	if (oldSysBase->DebugData)
-	    	    bootmsgptr = (struct TagItem*)oldSysBase->DebugData;
+	    	BootS = GetBootStruct(oldSysBase);
+                if (BootS)
+                    bootmsgptr = BootS->kerneltags;
 	    	wasvalid = TRUE;
 	    } else {
 	    	DEBUGPUTHEX(("[SysBase] invalid at", (ULONG)oldSysBase));
@@ -856,12 +885,14 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    	"or.b	#2,0xbfe001\n"
 	    	"move.l %0,%%usp\n"
 	    	"move.w #0,%%sr\n"
-	    	"pea.l 0f\n"
+                "move.l %2,%%sp@-\n"
+	    	"pea 0f\n"
 	    	"jmp %1@\n"
 	    	"0:\n"
 	    	:
 	    	: "a" (&usp[size-3]),
-	    	  "a" (doInitCode)
+	    	  "a" (doInitCode),
+                  "a" (BootS)
 	    	:);
 	} while (0);
 
