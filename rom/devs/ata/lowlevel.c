@@ -56,6 +56,7 @@
  * 2009-03-05  T. Wiszkowski       remade timeouts, added timer-based and benchmark-based delays.
  * 2011-05-19  P. Fedin            The Big Rework. Separated bus-specific code. Made 64-bit-friendly.
  * 2012-02-12  T. Wilen            DEVHEAD_VAL, ata_HandleIRQ returns BOOL.
+ * 2012-03-17  T. Wilen            AckInterrupt(). Required by A600/A1200 Gayle IDE hardware.
  */
 /*
  * TODO:
@@ -270,7 +271,7 @@ BOOL ata_HandleIRQ(struct ata_Bus *bus)
             for_us =
                 (ATA_IN(dma_Status, unit->au_DMAPort) & DMAF_Interrupt) != 0;
         } else {
-	    status = ata_ReadStatus(bus);
+            status = ata_ReadStatus(bus);
             for_us = (status & ATAF_BUSY) == 0;
         }
     }
@@ -285,6 +286,10 @@ BOOL ata_HandleIRQ(struct ata_Bus *bus)
             ATA_OUT(ATA_IN(dma_Status, unit->au_DMAPort) |
                 DMAF_Error | DMAF_Interrupt, dma_Status, unit->au_DMAPort);
             status = ata_ReadStatus(bus);
+        } else {
+            /* Acknowledge PIO hardware interrupt (Amiga A600/A1200 Gayle) */
+            if (bus->ab_Driver->AckInterrupt)
+                bus->ab_Driver->AckInterrupt(bus);
         }
 
         /*

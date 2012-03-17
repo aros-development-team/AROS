@@ -19,4 +19,5 @@ struct ata_BusDriver
      * to become HIDD methods.
      */
     APTR (*CreateInterrupt)(struct ata_Bus *bus);
+    VOID (*AckInterrupt)(struct ata_Bus *bus);
 };
