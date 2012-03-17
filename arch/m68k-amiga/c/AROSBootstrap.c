@@ -10,10 +10,7 @@
  * image cannot be loaded by this application.
  *
  * As you can probably guess, you will need at least 1MB of
- * MEMF_LOCAL RAM to get this to work. 
- *
- * We also use MEMF_KICK, since some MEMF_KICK ram may will
- * be available after  expansion.library processing.
+ * extra free RAM to get this to work. 
  *
  * Also - no AROS specific code can go in here! We have to run
  * on AOS 1.3 and up.
@@ -23,9 +20,26 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+#include <proto/expansion.h>
 #include <exec/resident.h>
 #include <aros/kernel.h>
 #include <hardware/cpu/memory.h>
+#include <libraries/configvars.h>
+
+/* This much memory is wasted in single reset proof allocation */
+#define ALLOCATION_EXTRA (sizeof(struct MemChunk) + sizeof(struct MemList))
+#define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
+
+#define SS_STACK_SIZE	0x2000
+/* This must match with start.c! */
+#define ABS_BOOT_MAGIC 0x4d363801
+struct BootStruct
+{
+    ULONG magic;
+    struct TagItem *kerneltags;
+    APTR ss_address;
+    LONG ss_size;
+};
 
 #include <stddef.h> /* offsetof */
 #include <string.h> /* memcpy, memset */
@@ -63,6 +77,7 @@ static inline void bug(const char *fmt, ...)
 #include <loadseg.h>
 
 struct DosLibrary *DOSBase;
+struct Library *ExpansionBase;
 
 static BOOL ROM_Loaded = FALSE;
 static BOOL forceCHIP = FALSE;
@@ -210,8 +225,6 @@ void meminfo(void)
 
 /* Allocate MMU page aligned memory chunks */
 
-#define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
-
 static APTR AllocPageAligned(ULONG *psize, ULONG flags)
 {
     APTR ret;
@@ -355,7 +368,7 @@ static APTR aosAllocMem(ULONG size, ULONG flags, struct ExecBase *SysBase)
     	flags |= MEMF_CHIP;
     }
 
-    size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    size += ALLOCATION_EXTRA;
     mem = AllocMem(size, flags | MEMF_CLEAR);
     if (mem == NULL) {
     	WriteF("AOS: Failed to allocate %N bytes of type %X8\n", size, flags);
@@ -393,7 +406,7 @@ static AROS_UFH3(void, aosFree,
     addr -= sizeof(struct MemList);
     Remove((struct Node*)addr);
     addr -= sizeof(struct MemChunk);
-    size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    size += ALLOCATION_EXTRA;
     FreeMem(addr, size);
 
     AROS_USERFUNC_EXIT
@@ -443,12 +456,8 @@ static AROS_UFH4(LONG, elfSeek,
     AROS_USERFUNC_EXIT
 }
 
-static AROS_UFH3(APTR, elfAlloc,
-	AROS_UFHA(ULONG, size, D0),
-	AROS_UFHA(ULONG, flags, D1),
-	AROS_UFHA(struct ExecBase *, SysBase, A6))
+static APTR specialAlloc(ULONG size, ULONG flags, struct ExecBase *SysBase)
 {
-    AROS_USERFUNC_INIT
     APTR mem;
     struct MemList *ml;
 
@@ -457,7 +466,7 @@ static AROS_UFH3(APTR, elfAlloc,
      * with the KickMem wrapper until after allocation,
      * we always adjust the size as if we have to.
      */
-    size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    size += ALLOCATION_EXTRA;
 
     if (flags & MEMF_KICK) {
         D(DWriteF("MEMF_KICK %N\n", size));
@@ -517,6 +526,17 @@ static AROS_UFH3(APTR, elfAlloc,
 
     return &ml[1];
 
+}
+
+static AROS_UFH3(APTR, elfAlloc,
+	AROS_UFHA(ULONG, size, D0),
+	AROS_UFHA(ULONG, flags, D1),
+	AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    AROS_USERFUNC_INIT
+    
+    return specialAlloc(size, flags, SysBase);
+
     AROS_USERFUNC_EXIT
 }
 
@@ -535,7 +555,7 @@ static AROS_UFH3(void, elfFree,
     addr -= sizeof(struct MemList);
     Remove((struct Node*)addr);
     addr -= sizeof(struct MemChunk);
-    size += sizeof(struct MemChunk) + sizeof(struct MemList);
+    size += ALLOCATION_EXTRA;
     D(DWriteF("ELF: FREE memory at %X8, size %N\n", (IPTR)addr, size));
     FreePageAligned(addr, size);
 
@@ -1050,7 +1070,7 @@ static void doreboot(void)
 }
 
 APTR entry, kicktags;
-struct TagItem *kerneltags;
+struct BootStruct *bootstruct;
 
 static void supercode(void)
 {
@@ -1085,8 +1105,8 @@ static void supercode(void)
     memset(sysbase, 0, FAKEBASESIZE);
     /* Misuse DebugData as a kernel tag pointer,
      */
-    if (kerneltags)
-    	sysbase->DebugData = kerneltags;
+    if (bootstruct)
+    	sysbase->DebugData = bootstruct;
 
     /* Detached node */
     sysbase->LibNode.lib_Node.ln_Pred = &sysbase->LibNode.lib_Node;
@@ -1129,13 +1149,13 @@ static void supercode(void)
     doreboot();
 }
 
-void BootROM(BPTR romlist, struct Resident **reslist, struct TagItem *tags)
+void BootROM(BPTR romlist, struct Resident **reslist, struct BootStruct *BootS)
 {
     APTR GfxBase;
 
     entry = BADDR(romlist)+sizeof(ULONG);
     kicktags = reslist;
-    kerneltags = tags;
+    bootstruct = BootS;
 
 #if DEBUG
     DebugPutStr("Booting..\n");
@@ -1210,6 +1230,47 @@ static void DumpKickTags(ULONG num, struct Resident **list)
 }
 #endif
 
+#define HC_FORCEFAST 1
+struct HardwareConfig
+{
+    UWORD manufacturer;
+    UBYTE product;
+    const UBYTE *name;
+    UBYTE flags;
+};
+
+static const struct HardwareConfig hc[] =
+{
+    { 8512, 17, "Blizzard A1200 Accelerator", HC_FORCEFAST }, // Blizzard 1230 IV, 1240 or 1260.
+    { 0 }
+};
+
+static void DetectHardware(void)
+{
+    struct ConfigDev *cd = NULL;
+    int i;
+    
+    ExpansionBase = (APTR)OpenLibrary("expansion.library", 0);
+    if (!ExpansionBase)
+        return;
+    while((cd = FindConfigDev(cd, -1, -1))) {
+        for (i = 0; hc[i].manufacturer; i++) {
+            if (cd->cd_Rom.er_Manufacturer == hc[i].manufacturer && cd->cd_Rom.er_Product == hc[i].product) {
+                BSTR bname;
+                bname = ConvertCSTR(hc[i].name);
+                WriteF("%S: ", bname);
+                if (hc[i].flags & HC_FORCEFAST) {
+                    forceFAST = TRUE;
+                    WriteF("ForceFast enabled");
+                }
+                WriteF("\n");
+                FreeBSTR(bname);
+            }
+        }
+    }
+    CloseLibrary(ExpansionBase);
+}
+
 static struct Resident **ScanROMSegment(BPTR ROMSegList, struct Resident **resnext, ULONG *resleft)
 {
     BPTR seg;
@@ -1221,14 +1282,16 @@ static struct Resident **ScanROMSegment(BPTR ROMSegList, struct Resident **resne
 #define KERNELTAGS_SIZE 10
 #define CMDLINE_SIZE 512
 
-static struct TagItem *AllocKernelTags(UBYTE *cmdline)
+static struct BootStruct *AllocBootStruct(UBYTE *cmdline)
 {
     struct TagItem *tags;
+    struct BootStruct *boots;
     UBYTE *cmd;
     
-    tags = aosAllocMem(sizeof(struct TagItem) * KERNELTAGS_SIZE + CMDLINE_SIZE, MEMF_CLEAR, SysBase);
-    if (!tags)
+    boots = aosAllocMem(sizeof(struct BootStruct) + sizeof(struct TagItem) * KERNELTAGS_SIZE + CMDLINE_SIZE, MEMF_CLEAR, SysBase);
+    if (!boots)
     	return NULL;
+    tags = (struct TagItem*)(boots + 1);
     cmd = (UBYTE*)(tags + KERNELTAGS_SIZE);
     /* cmdline is a BCPL string! */
     if (cmdline && cmdline[0])
@@ -1238,7 +1301,18 @@ static struct TagItem *AllocKernelTags(UBYTE *cmdline)
     tags[0].ti_Tag = KRN_CmdLine;
     tags[0].ti_Data = (IPTR)cmd;
     tags[1].ti_Tag = TAG_DONE;
-    return tags;
+
+    boots->magic = ABS_BOOT_MAGIC;
+    boots->kerneltags = tags;
+    if (forceFAST) {
+        UBYTE *addr = specialAlloc(SS_STACK_SIZE + 1, MEMF_FAST | MEMF_REVERSE, SysBase); /* +1 = guaranteed extra page at the end */
+        if (addr) {
+            addr = (UBYTE*)(((ULONG)(addr + PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1));
+            boots->ss_address = addr;
+            boots->ss_size = SS_STACK_SIZE;
+        }
+    }
+    return boots;
 }
 
 __startup static AROS_ENTRY(int, startup,
@@ -1312,6 +1386,7 @@ __startup static AROS_ENTRY(int, startup,
         }
 
         meminfo();
+        DetectHardware();
 
 #if DEBUG
         DebugInit();
@@ -1326,7 +1401,7 @@ __startup static AROS_ENTRY(int, startup,
             if (ROMSegList != BNULL) {
                 ULONG resleft = 0;
                 struct Resident **ResidentList;
-                struct TagItem *KernelTags;
+                struct BootStruct *BootS;
                 WriteF("Successfully loaded ROM\n");
                 ROM_Loaded = TRUE;
                 struct Resident **resnext, *reshead = NULL;
@@ -1335,7 +1410,7 @@ __startup static AROS_ENTRY(int, startup,
                 resnext = &reshead;
                 resnext = ScanROMSegment(ROMSegList, resnext, &resleft);
                 resnext = LoadResidents(&args[ARG_MODULES], resnext, &resleft);
-                KernelTags = AllocKernelTags(BADDR(args[ARG_CMD]));
+                BootS = AllocBootStruct(BADDR(args[ARG_CMD]));
                 ResidentList = (APTR)((IPTR)reshead & ~RESLIST_NEXT);
 
 #if DEBUG
@@ -1347,7 +1422,7 @@ __startup static AROS_ENTRY(int, startup,
 		WriteF("Booting...\n");
                 Delay(50);
 
-                BootROM(ROMSegList, ResidentList, KernelTags);
+                BootROM(ROMSegList, ResidentList, BootS);
 
                 UnLoadSeg(ROMSegList);
             } else {
