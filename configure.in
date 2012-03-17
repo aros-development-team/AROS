@@ -383,6 +383,11 @@ case "$host_os" in
             aros_host_cpu="i386"
             ;;
 
+        mingw32*)
+            dnl Native i386 gcc for MinGW32 reports 'mingw32' with -dumpmachine switch
+            aros_host_cpu="i386"
+            ;;
+
         *x86_64*)
             aros_host_cpu="x86_64"
             dnl Dragon's x86_64-w64-mingw32-gcc is a bit broken. It ignores standard $prefix/include
