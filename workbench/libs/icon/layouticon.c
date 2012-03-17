@@ -144,7 +144,11 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
 
     ret = TRUE;
 
-    if (mutualexclude & (1 << 31)) {
+    /* Check for a magic MutualExlcude value
+     * that encodes Tick-Per-Dot information.
+     * MutalExclude of 0xffffffff is not valid.
+     */
+    if ((mutualexclude != 0xffffffff) && (mutualexclude & (1 << 31))) {
         /* tpd information is in the lower 16 bits */
         tpdX = (mutualexclude >>  8) & 0xff;
         tpdY = (mutualexclude >>  0) & 0xff;
