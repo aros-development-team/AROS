@@ -223,38 +223,7 @@ SHARED	:= \
 	labs \
 	lcong48 \
 	link \
-	locale/big5		\
-	locale/collate		\
-	locale/collcmp		\
-	locale/euc		\
-	locale/fix_grouping	\
-	locale/gb18030		\
-	locale/gb2312		\
-	locale/gbk		\
-	locale/iswctype		\
-	locale/ldpart		\
-	locale/localeconv	\
-	locale/lmessages	\
-	locale/lmonetary	\
-	locale/lnumeric		\
-	locale/mbrlen		\
-	locale/mbrtowc		\
-	locale/mbsinit		\
-	locale/mbsnrtowcs	\
-	locale/mskanji		\
-	locale/none		\
-	locale/rune		\
-	locale/runetype		\
-	locale/setlocale	\
-	locale/setrunelocale	\
-	locale/table		\
-	locale/tolower		\
-	locale/toupper		\
-	locale/utf8		\
-	locale/wcrtomb		\
-	locale/wcsnrtombs	\
-	locale/wctrans		\
-	locale/wctype		\
+        localeconv \
 	localtime \
         localtime_r \
 	lrand48 \
@@ -310,6 +279,7 @@ SHARED	:= \
 	setgid \
 	setgrent \
 	setlinebuf \
+        setlocale \
         setpwent \
         setrlimit \
 	setuid \
@@ -333,7 +303,6 @@ SHARED	:= \
 	srand48 \
 	sscanf \
 	stat \
-	stdtime/timelocal	\
 	strftime \
 	strerror \
 	strptime \
