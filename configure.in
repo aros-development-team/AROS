@@ -1,4 +1,4 @@
-dnl Copyright © 1997-2011, The AROS Development Team. All rights reserved.
+dnl Copyright © 1997-2012, The AROS Development Team. All rights reserved.
 dnl $Id$
 dnl
 dnl Desc: Autoconf source for configuration file
@@ -44,7 +44,7 @@ if test "$host_os" = "mingw32" ; then
     PWDCMD="pwd -W"
 fi
 
-#don't know where else to put this...
+# Don't know where else to put this...
 AC_MSG_CHECKING([building AROS in])
 AROS_BUILDDIR=`${PWDCMD-pwd}`
 AROS_BUILDDIR_UNIX=${PWD}
@@ -57,8 +57,8 @@ AC_MSG_RESULT($SRCDIR)
 
 # Parse the target field into something useful.
 changequote(<<,>>)
-target_os=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\1/'`
-target_cpu=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\2/'`
+target_os=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\1/'`
+target_cpu=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\2/'`
 changequote([,])
 
 dnl --------------------------------------------------------------------

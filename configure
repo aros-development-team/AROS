@@ -2721,7 +2721,7 @@ if test "$host_os" = "mingw32" ; then
     PWDCMD="pwd -W"
 fi
 
-#don't know where else to put this...
+# Don't know where else to put this...
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking building AROS in" >&5
 $as_echo_n "checking building AROS in... " >&6; }
 AROS_BUILDDIR=`${PWDCMD-pwd}`
@@ -2738,8 +2738,8 @@ $as_echo "$SRCDIR" >&6; }
 
 # Parse the target field into something useful.
 
-target_os=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\1/'`
-target_cpu=`echo $target | sed 's/^\([^-]*\)-\(.*\)$/\2/'`
+target_os=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\1/'`
+target_cpu=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\2/'`
 
 
 aros_default_wbwidth=800
