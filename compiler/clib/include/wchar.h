@@ -124,8 +124,8 @@ wint_t btowc(int c);
 int wctob(wint_t c);
 int mbsinit(const mbstate_t *ps);
 size_t mbrlen(const char * restrict s, size_t n, mbstate_t * restrict ps);
-size_t mbrtowc(wchar_t * restrict pwc, const char * restrict s, size_t n,
-	mbstate_t * restrict ps);
+//size_t mbrtowc(wchar_t * restrict pwc, const char * restrict s, size_t n,
+//	mbstate_t * restrict ps);
 size_t wcrtomb(char * restrict s, wchar_t wc, mbstate_t * restrict ps);
 size_t mbsrtowcs(wchar_t * restrict dst, const char ** restrict src,
 	size_t len, mbstate_t * restrict ps);
