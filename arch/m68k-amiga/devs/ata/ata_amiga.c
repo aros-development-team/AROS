@@ -270,6 +270,19 @@ static UBYTE *getport(struct amiga_driverdata *ddata)
     /* we may have connected drives */
     return (UBYTE*)port;
 }
+static void ackint(struct amiga_driverdata *ddata)
+{
+    if (ddata->a4000)
+        return;
+    /* Clear A600/A1200 IDE interrupt. (Stupid Gayle hardware) */
+    *ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
+}
+static void ata_AckInterrupt(struct ata_Bus *bus)
+{
+    struct amiga_busdata *bdata = bus->ab_DriverData;
+    struct amiga_driverdata *ddata = bdata->ddata;
+    ackint(ddata);
+}
 
 static void callbusirq(struct amiga_driverdata *ddata)
 {
@@ -290,16 +303,8 @@ static void callbusirq(struct amiga_driverdata *ddata)
     status2 = 0;
     if (ddata->doubler == 2)
         status2 = port[0x1000 + ata_Status * 4];
-    /*
-     * Message disabled because A1200 Gayle interrupt needs to be cleared
-     * after drive status register has been read but before next command
-     * is executed. Needs ata.device updates first.
-     * 
-     * A4000 does not have this problem because interrupt clears automatically
-     * when interrupt request register is read.
-     *
+    ackint(ddata);
     bug("[ATA] Spurious interrupt: %02X %02X\n", status1, status2);
-    */
 }
 
 AROS_UFH4(APTR, IDE_Handler_A1200,
@@ -313,10 +318,6 @@ AROS_UFH4(APTR, IDE_Handler_A1200,
     struct amiga_driverdata *ddata = data;
     UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
-        /* Clear interrupt, we get another possible spurious interrupt
-         * immediately after exiting this handler. Better than freeze.
-         */
-	*ddata->gayleirqbase = 0x7c | (*ddata->gayleirqbase & 3);
 	callbusirq(ddata);
     }
     return 0;
@@ -425,7 +426,8 @@ static const struct ata_BusDriver amiga_driver0 =
     ata_outsw,
     ata_insw,	/* These are intentionally the same as 16-bit routines */
     ata_outsw,
-    ata_CreateInterrupt0
+    ata_CreateInterrupt0,
+    ata_AckInterrupt
 };
 static const struct ata_BusDriver amiga_driver1 = 
 {
@@ -436,7 +438,8 @@ static const struct ata_BusDriver amiga_driver1 =
     ata_outsw,
     ata_insw,	/* These are intentionally the same as 16-bit routines */
     ata_outsw,
-    ata_CreateInterrupt1
+    ata_CreateInterrupt1,
+    ata_AckInterrupt
 };
 static const struct ata_BusDriver amiga_driver_pcmcia = 
 {
@@ -447,7 +450,8 @@ static const struct ata_BusDriver amiga_driver_pcmcia =
     ata_pcmcia_outsw,
     ata_pcmcia_insw,
     ata_pcmcia_outsw,
-    ata_CreateInterrupt_pcmcia
+    ata_CreateInterrupt_pcmcia,
+    NULL
 };
 
 static BOOL ata_amiga_ide_init(struct ataBase *LIBBASE)
