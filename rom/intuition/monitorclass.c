@@ -83,10 +83,6 @@ static void SetPointerPos(struct MonitorData *data, struct IntuitionBase *Intuit
     DB2(bug("[monitorclass] SetPointerPos(%d, %d), pointer 0x%p\n", x, y, data->pointer));
     if (data->pointer)
     {
-        /* Take HotSpot into account */
-	x += data->pointer->xoffset;
-        y += data->pointer->yoffset;
-
 	/* Update sprite position, just for backwards compatibility */
 	data->pointer->sprite->es_SimpleSprite.x = x;
 	data->pointer->sprite->es_SimpleSprite.y = y;
