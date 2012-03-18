@@ -2742,6 +2742,16 @@ target_os=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\1/'`
 target_cpu=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\2/'`
 
 
+# Some debug output, to be removed again.
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for target system (debug output)" >&5
+$as_echo_n "checking for target system (debug output)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_os" >&5
+$as_echo "$target_os" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for target cpu (debug output)" >&5
+$as_echo_n "checking for target cpu (debug output)... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $target_cpu" >&5
+$as_echo "$target_cpu" >&6; }
+
 aros_default_wbwidth=800
 aros_default_wbheight=600
 aros_default_wbdepth=4
