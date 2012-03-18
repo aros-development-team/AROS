@@ -17,13 +17,8 @@
 #ifndef _MATH_PRIVATE_H_
 #define _MATH_PRIVATE_H_
 
-#ifndef __AROS__
-#include <sys/types.h>
-#include <machine/endian.h>
-#else
 #include <aros/system.h>
 #include <stdint.h>
-#endif
 
 /*
  * The original fdlibm code used statements like:
@@ -50,8 +45,8 @@ typedef union
   double value;
   struct
   {
-    u_int32_t msw;
-    u_int32_t lsw;
+    uint32_t msw;
+    uint32_t lsw;
   } parts;
 } ieee_double_shape_type;
 
@@ -64,8 +59,8 @@ typedef union
   double value;
   struct
   {
-    u_int32_t	lsw;
-    u_int32_t	msw;
+    uint32_t	lsw;
+    uint32_t	msw;
   } parts;
 } ieee_double_shape_type;
 

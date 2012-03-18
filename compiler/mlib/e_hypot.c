@@ -67,7 +67,7 @@ __ieee754_hypot(double x, double y)
 	k=0;
 	if(ha > 0x5f300000) {	/* a>2**500 */
 	   if(ha >= 0x7ff00000) {	/* Inf or NaN */
-	       u_int32_t low;
+	       uint32_t low;
 	       w = a+b;			/* for sNaN */
 	       GET_LOW_WORD(low,a);
 	       if(((ha&0xfffff)|low)==0) w = a;
@@ -82,7 +82,7 @@ __ieee754_hypot(double x, double y)
 	}
 	if(hb < 0x20b00000) {	/* b < 2**-500 */
 	    if(hb <= 0x000fffff) {	/* subnormal b or 0 */
-	        u_int32_t low;
+	        uint32_t low;
 		GET_LOW_WORD(low,b);
 		if((hb|low)==0) return a;
 		t1=0;
@@ -116,7 +116,7 @@ __ieee754_hypot(double x, double y)
 	    w  = sqrt(t1*y1-(w*(-w)-(t1*y2+t2*b)));
 	}
 	if(k!=0) {
-	    u_int32_t high;
+	    uint32_t high;
 	    t1 = 1.0;
 	    GET_HIGH_WORD(high,t1);
 	    SET_HIGH_WORD(t1,high+(k<<20));

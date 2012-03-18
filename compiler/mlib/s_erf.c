@@ -195,7 +195,7 @@ erf(double x)
 	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {		/* erf(nan)=nan */
-	    i = ((u_int32_t)hx>>31)<<1;
+	    i = ((uint32_t)hx>>31)<<1;
 	    return (double)(1-i)+one/x;	/* erf(+-inf)=+-1 */
 	}
 
@@ -248,7 +248,7 @@ erfc(double x)
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {			/* erfc(nan)=nan */
 						/* erfc(+-inf)=0,2 */
-	    return (double)(((u_int32_t)hx>>31)<<1)+one/x;
+	    return (double)(((uint32_t)hx>>31)<<1)+one/x;
 	}
 
 	if(ix < 0x3feb0000) {		/* |x|<0.84375 */

@@ -46,7 +46,7 @@ __ieee754_log10f(float x)
         }
 	if (hx >= 0x7f800000) return x+x;
 	k += (hx>>23)-127;
-	i  = ((u_int32_t)k&0x80000000)>>31;
+	i  = ((uint32_t)k&0x80000000)>>31;
         hx = (hx&0x007fffff)|((0x7f-i)<<23);
         y  = (float)(k+i);
 	SET_FLOAT_WORD(x,hx);

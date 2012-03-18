@@ -24,7 +24,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_fabs.c,v 1.7 2002/05/28 18:1
 double
 fabs(double x)
 {
-	u_int32_t high;
+	uint32_t high;
 	GET_HIGH_WORD(high,x);
 	SET_HIGH_WORD(x,high&0x7fffffff);
         return x;
