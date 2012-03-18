@@ -61,6 +61,12 @@ target_os=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\1/'`
 target_cpu=`echo $target | sed 's/^\([^-].*\)-\(.*\)$/\2/'`
 changequote([,])
 
+# Some debug output, to be removed again.
+AC_MSG_CHECKING([for target system (debug output)])
+AC_MSG_RESULT($target_os)
+AC_MSG_CHECKING([for target cpu (debug output)])
+AC_MSG_RESULT($target_cpu)
+
 dnl --------------------------------------------------------------------
 dnl Set the default Workbench resolution
 dnl --------------------------------------------------------------------
