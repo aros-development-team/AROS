@@ -27,12 +27,10 @@
  */
 
 #include <complex.h>
+#undef cimagf
 
-/* AROS has this as a macro in complex.h */
-#ifndef cimagf
 float
 cimagf(float complex z)
 {
 	return -z * I;
 }
-#endif

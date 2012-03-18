@@ -27,12 +27,10 @@
  */
 
 #include <complex.h>
+#undef crealf
 
-/* AROS has this as a macro in complex.h */
-#ifndef crealf
 float
 crealf(float complex z)
 {
 	return z;
 }
-#endif
