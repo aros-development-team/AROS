@@ -761,8 +761,8 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
 BOOL UAEGFXCl__Hidd_Gfx__SetCursorPos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorPos *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    pw(csd->boardinfo + PSSO_BoardInfo_MouseX, msg->x);
-    pw(csd->boardinfo + PSSO_BoardInfo_MouseY, msg->y);
+    pw(csd->boardinfo + PSSO_BoardInfo_MouseX, msg->x + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseXOffset]);
+    pw(csd->boardinfo + PSSO_BoardInfo_MouseY, msg->y + (BYTE)csd->boardinfo[PSSO_BoardInfo_MouseYOffset]);
     SetSpritePosition(csd);
     return TRUE;
 }

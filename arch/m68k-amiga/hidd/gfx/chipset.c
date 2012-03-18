@@ -228,8 +228,8 @@ static void setcopperscroll2(struct amigavideo_staticdata *data, struct amigabm_
 	offset -= (minearly << data->res) / 4;
     }
 
-    copptr[1] = (y << 8) | 0x0081; //(y << 8) + (x + 1);
-    copptr[3] = (yend << 8) | 0x0c1; //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
+    copptr[1] = (y << 8) | (data->startx); //(y << 8) + (x + 1);
+    copptr[3] = (yend << 8) | ((data->startx + 0x140) & 0xff); //((y + (bm->rows >> data->interlace)) << 8) + ((x + 1 + (bm->width >> data->res)) & 0x00ff);
     copptr[5] = ((y >> 8) & 7) | (((yend >> 8) & 7) << 8) | 0x2000;
 
     copbpl = c2d->copper2_bpl;
@@ -313,6 +313,7 @@ static void createcopperlist(struct amigavideo_staticdata *data, struct amigabm_
     	bplcon0_res = 0;
 
     data->bplcon0_null = 0x0201 | (data->interlace ? 4 : 0) | bplcon0_res;
+    data->bplcon3 = ((data->sprite_res + 1) << 6) | 2; // spriteres + bordersprite
 
     *c++ = 0x01fe;
     *c++ = 0xfffe;
@@ -550,6 +551,8 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
 	    return FALSE;
 	data->sprite_width = width;
 	data->sprite_height = height;
+        data->sprite_offset_x = shape->xoffset;
+        data->sprite_offset_y = shape->yoffset;
     }
     p = data->sprite;
     p += fetchsize;
@@ -561,7 +564,15 @@ BOOL setsprite(struct amigavideo_staticdata *data, WORD width, WORD height, stru
     	    	UBYTE c = 0;
     	    	if (xx + x < bitmapwidth)
     	    	    c = HIDD_BM_GetPixel(shape->shape, xx + x, y);
-    	    	pix1 <<= 1;
+#if 0
+                /* Sprite alignment grid */
+                if (xx + x == 0 || xx + x == width - 1 || y == 0 || y == height - 1) {
+                    c = 2;
+                } else if (0) {
+                    c = 0;
+                }
+#endif
+                pix1 <<= 1;
     	    	pix2 <<= 1;
     	    	pix1 |= (c & 1) ? 1 : 0;
     	    	pix2 |= (c & 2) ? 1 : 0;
@@ -584,13 +595,16 @@ void setspritepos(struct amigavideo_staticdata *data, WORD x, WORD y)
     data->spritey = y;
     if (!data->sprite || data->sprite_height == 0)
     	return;
-    x -= (1 << data->res);     // FIXME: Why this adjustment? I don't know - Jason McMullan
-    x += data->startx << data->res;
+
+    x += data->sprite_offset_x << data->res;
     x <<= (2 - data->res); // convert x to shres coordinates
+    x += (data->startx - 1) << 2; // display left edge offset
+ 
     if (data->interlace)
     	y /= 2; // y is always in nonlaced
-    y -= 2;     // FIXME: Why this ajustement? I don't know - Jason McMullan
     y += data->starty;
+    y += data->sprite_offset_y;
+
     pos = (y << 8) | (x >> 3);
     ctl = ((y + data->sprite_height) << 8);
     ctl |= ((y >> 8) << 2) | (((y + data->sprite_height) >> 8) << 1) | ((x >> 2) & 1) | ((x & 3) << 3);
@@ -902,7 +916,7 @@ void initcustom(struct amigavideo_staticdata *data)
     AbleICR(GfxBase->cia, 0x80 | (1 << 2));
     Enable();
 
-    data->startx = 0x80;
+    data->startx = 0x81;
     data->starty = 0x28;
 
     vposr = custom->vposr & 0x7f00;
@@ -921,6 +935,7 @@ void initcustom(struct amigavideo_staticdata *data)
     data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
     data->copper1 = AllocVec(20 * 2 * sizeof(WORD), MEMF_CLEAR | MEMF_CHIP);
     data->sprite_null = AllocMem(2 * 8, MEMF_CLEAR | MEMF_CHIP);
+    data->sprite_res = 0; /* lores */
     c = data->copper1;
     for (i = 0; i < 8; i++) {
 	*c++ = 0x0120 + i * 4;
@@ -938,7 +953,6 @@ void initcustom(struct amigavideo_staticdata *data)
     custom->cop1lc = (ULONG)data->copper1;
     custom->cop2lc = (ULONG)data->copper2_backup;
     custom->dmacon = 0x8000 | 0x0080 | 0x0040 | 0x0020;
-    data->bplcon3 = ((data->res + 1) << 6) | 2; // spriteres + bordersprite
     
     GfxBase->copinit = (struct copinit*)data->copper1;
 

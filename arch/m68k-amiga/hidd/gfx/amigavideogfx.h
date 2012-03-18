@@ -79,6 +79,8 @@ struct amigavideo_staticdata
 	UWORD *sprite_null;
 	UWORD *sprite;
 	WORD  spritex, spritey;
+	BYTE sprite_offset_x, sprite_offset_y;
+	BYTE sprite_res;
 	UWORD bplcon0_null, bplcon3;
 	UBYTE fmode_bpl, fmode_spr;
 	UWORD ddfstrt, ddfstop;
@@ -101,8 +103,8 @@ struct amigavideo_staticdata
 	UBYTE initialized;
 	UBYTE bploffsets[8];
 
-    void (*acb)(void *data, void *bm);
-    APTR acbdata;
+	void (*acb)(void *data, void *bm);
+	APTR acbdata;
 
     BPTR  cs_SegList;
     struct Library *cs_OOPBase;
