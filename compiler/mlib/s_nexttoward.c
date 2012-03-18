@@ -36,7 +36,7 @@ nexttoward(double x, long double y)
 	union IEEEl2bits uy;
 	volatile double t;
 	int32_t hx,ix;
-	u_int32_t lx;
+	uint32_t lx;
 
 	EXTRACT_WORDS(hx,lx,x);
 	ix = hx&0x7fffffff;		/* |x| */

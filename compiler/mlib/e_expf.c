@@ -43,7 +43,7 @@ __ieee754_expf(float x)	/* default IEEE double exp */
 {
 	float y,hi=0.0,lo=0.0,c,t;
 	int32_t k=0,xsb;
-	u_int32_t hx;
+	uint32_t hx;
 
 	GET_FLOAT_WORD(hx,x);
 	xsb = (hx>>31)&1;		/* sign bit of x */
@@ -82,12 +82,12 @@ __ieee754_expf(float x)	/* default IEEE double exp */
 	if(k==0) 	return one-((x*c)/(c-(float)2.0)-x);
 	else 		y = one-((lo-(x*c)/((float)2.0-c))-hi);
 	if(k >= -125) {
-	    u_int32_t hy;
+	    uint32_t hy;
 	    GET_FLOAT_WORD(hy,y);
 	    SET_FLOAT_WORD(y,hy+(k<<23));	/* add k to y's exponent */
 	    return y;
 	} else {
-	    u_int32_t hy;
+	    uint32_t hy;
 	    GET_FLOAT_WORD(hy,y);
 	    SET_FLOAT_WORD(y,hy+((k+100)<<23));	/* add k to y's exponent */
 	    return y*twom100;

@@ -66,7 +66,7 @@ __ieee754_acos(double x)
 	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
 	if(ix>=0x3ff00000) {	/* |x| >= 1 */
-	    u_int32_t lx;
+	    uint32_t lx;
 	    GET_LOW_WORD(lx,x);
 	    if(((ix-0x3ff00000)|lx)==0) {	/* |x|==1 */
 		if(hx>0) return 0.0;		/* acos(1) = 0  */

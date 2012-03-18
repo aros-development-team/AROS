@@ -32,7 +32,7 @@ nextafter(double x, double y)
 {
 	volatile double t;
 	int32_t hx,hy,ix,iy;
-	u_int32_t lx,ly;
+	uint32_t lx,ly;
 
 	EXTRACT_WORDS(hx,lx,x);
 	EXTRACT_WORDS(hy,ly,y);

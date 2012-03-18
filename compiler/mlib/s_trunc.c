@@ -31,7 +31,7 @@ double
 trunc(double x)
 {
 	int32_t i0,i1,j0;
-	u_int32_t i;
+	uint32_t i;
 	EXTRACT_WORDS(i0,i1,x);
 	j0 = ((i0>>20)&0x7ff)-0x3ff;
 	if(j0<20) {
@@ -51,7 +51,7 @@ trunc(double x)
 	    if(j0==0x400) return x+x;	/* inf or NaN */
 	    else return x;		/* x is integral */
 	} else {
-	    i = ((u_int32_t)(0xffffffff))>>(j0-20);
+	    i = ((uint32_t)(0xffffffff))>>(j0-20);
 	    if((i1&i)==0) return x;	/* x is integral */
 	    if(huge+x>0.0)		/* raise inexact flag */
 		i1 &= (~i);

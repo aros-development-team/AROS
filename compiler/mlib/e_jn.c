@@ -64,7 +64,7 @@ __ieee754_jn(int n, double x)
 	EXTRACT_WORDS(hx,lx,x);
 	ix = 0x7fffffff&hx;
     /* if J(n,NaN) is NaN */
-	if((ix|((u_int32_t)(lx|-lx))>>31)>0x7ff00000) return x+x;
+	if((ix|((uint32_t)(lx|-lx))>>31)>0x7ff00000) return x+x;
 	if(n<0){
 		n = -n;
 		x = -x;
@@ -217,7 +217,7 @@ __ieee754_yn(int n, double x)
 	EXTRACT_WORDS(hx,lx,x);
 	ix = 0x7fffffff&hx;
     /* if Y(n,NaN) is NaN */
-	if((ix|((u_int32_t)(lx|-lx))>>31)>0x7ff00000) return x+x;
+	if((ix|((uint32_t)(lx|-lx))>>31)>0x7ff00000) return x+x;
 	if((ix|lx)==0) return -one/zero;
 	if(hx<0) return zero/zero;
 	sign = 1;
@@ -250,7 +250,7 @@ __ieee754_yn(int n, double x)
 		}
 		b = invsqrtpi*temp/sqrt(x);
 	} else {
-	    u_int32_t high;
+	    uint32_t high;
 	    a = __ieee754_y0(x);
 	    b = __ieee754_y1(x);
 	/* quit if b is -inf */

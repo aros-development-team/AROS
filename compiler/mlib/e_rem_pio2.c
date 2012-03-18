@@ -81,7 +81,7 @@ int32_t __ieee754_rem_pio2(double x, double *y)
 	double z,w,t,r,fn;
 	double tx[3];
 	int32_t e0,i,j,nx,n,ix,hx;
-	u_int32_t low;
+	uint32_t low;
 
 	GET_HIGH_WORD(hx,x);		/* high word of x */
 	ix = hx&0x7fffffff;
@@ -121,7 +121,7 @@ int32_t __ieee754_rem_pio2(double x, double *y)
 	    if(n<32&&ix!=npio2_hw[n-1]) {
 		y[0] = r-w;	/* quick check no cancellation */
 	    } else {
-	        u_int32_t high;
+	        uint32_t high;
 	        j  = ix>>20;
 	        y[0] = r-w;
 		GET_HIGH_WORD(high,y[0]);
