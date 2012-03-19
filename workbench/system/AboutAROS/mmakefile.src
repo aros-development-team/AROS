@@ -1,12 +1,12 @@
-# Copyright © 2003, The AROS Development Team. All rights reserved.
+# Copyright © 2003, 2012, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main aboutaros locale
-EXEDIR      := $(AROS_SYSTEM)
+FILES        := main aboutaros locale
+EXEDIR       := $(AROS_SYSTEM)
 
-SVNREV       := $(shell svn info $(SRCDIR) | sed -n 's/Revision: //p')
+SVNREV       := $(shell $(SRCDIR)/scripts/svnrev.sh $(SRCDIR))
 USER_CFLAGS  := -DADATE="\"$(shell date '+%d.%m.%Y')\"" -DSVNREV=\"$(SVNREV)\"
 USER_INCLUDES = -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)
 
