@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"KeyShow",
-        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.4 (11.03.2012)",
+        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.5 (19.03.2012)",
         MUIA_Application_Copyright, (IPTR)_(MSG_AppCopyright),
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)_(MSG_AppDescription),
