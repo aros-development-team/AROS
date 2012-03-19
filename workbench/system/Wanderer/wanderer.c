@@ -560,7 +560,8 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 /* If we have arguments, populate argsTagList with them */
                 if ( argsCounted > 1 ) /* "ent" is selected and has been counted */
                 {
-                    argsTagList = AllocateTagItems(argsCounted);
+                    BPTR argLock;
+                    argsTagList = AllocateTagItems((argsCounted * 2) - 1); /* first time for wa_Name, second wa_Lock */
                     firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
                     while ( (windowItem = NextObject(&firstWindow)) )
                     {
@@ -570,20 +571,25 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                             ent2     = (void*) MUIV_IconList_NextIcon_Start;
                             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
 
-                            while ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
+                            while ((IPTR)ent2 != MUIV_IconList_NextIcon_End)
                             {
-                                if ( ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name )
+                                if (ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name)
                                 {
-                                    argsTagList[i].ti_Tag  = WBOPENA_ArgName;
-                                    argsTagList[i].ti_Data = (IPTR) ent2->ile_IconEntry->ie_IconNode.ln_Name;
-                                    D(bug("[Wanderer] argsTagList[%d]: %s\n", i, argsTagList[i].ti_Data));
+                                    argLock = Lock(ent2->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
+                                    argsTagList[i].ti_Tag  = WBOPENA_ArgLock;
+                                    argsTagList[i].ti_Data = (IPTR) ParentDir(argLock);
+                                    D(bug("[Wanderer] argsTagList[%d]: Lock = %lx\n", i, argsTagList[i].ti_Data));
+                                    UnLock(argLock);
+                                    argsTagList[++i].ti_Tag = WBOPENA_ArgName;
+                                    argsTagList[i].ti_Data  = (IPTR) FilePart(ent2->ile_IconEntry->ie_IconNode.ln_Name);
+                                    D(bug("[Wanderer] argsTagList[%d]: Name = %s\n", i, argsTagList[i].ti_Data));
                                     i++;
                                 }
                                 DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
                             }
                         }
                     } /* while ( (windowItem = NextObject(&cstate)) ) */
-                    argsTagList[(argsCounted - 1)].ti_Tag = TAG_DONE;
+                    argsTagList[i].ti_Tag = TAG_DONE;
                     /*
                     ** TODO: the user should be able to select the tool in one window, and some arguments
                     ** in other windows, in that very order. For now Wanderer only handles selected icons
@@ -599,6 +605,13 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                 if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
                 {
                     execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
+                }
+                struct TagItem * tag = argsTagList;
+                while ((tag = FindTagItem(WBOPENA_ArgLock, tag)))
+                {
+                    D(bug("[Wanderer] UnLocking %lx\n", tag->ti_Data));
+                    UnLock((BPTR)tag->ti_Data);
+                    tag++;
                 }
                 FreeTagItems(argsTagList); /* FreeTagItems() only frees memory if non NULL */
                 CurrentDir(oldwd);
@@ -3489,7 +3502,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
 
     STRPTR scr_title = GetUserScreenTitle(data->wd_Prefs);
 
-    D(bug("[Wanderer] Timer event, user screen title %s\n", scr_title));
+//    D(bug("[Wanderer] Timer event, user screen title %s\n", scr_title));
 
     while ((child = NextObject(&cstate)))
     {
@@ -3497,7 +3510,7 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer
         STRPTR current_title = NULL;
 
         GET(child, MUIA_Window_ScreenTitle, &current_title);
-        D(bug("[Wanderer] Current title %s\n", current_title));
+//        D(bug("[Wanderer] Current title %s\n", current_title));
 
         if ((current_title == NULL) || (strcmp(current_title, scr_title) != 0))
 	{
