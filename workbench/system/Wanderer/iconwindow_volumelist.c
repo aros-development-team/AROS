@@ -1,5 +1,5 @@
 /*
-  Copyright  2004-2011, The AROS Development Team. All rights reserved.
+  Copyright  2004-2012, The AROS Development Team. All rights reserved.
   $Id$
 */
 
@@ -1223,7 +1223,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object 
 {
     D(bug("[Wanderer:Volumelist]: %s()\n", __PRETTY_FUNCTION__));
 
-    /* If the Entry is an AppIcon, and it has a renderhook - use the hook to perform the rendering, otherwise fallback to our parents handling */
+    /* If the Entry is an AppIcon, and it has a renderhook - use the hook to perform the rendering, otherwise fall back to our parent's handling */
     if (message->entry->ie_IconListEntry.type == ILE_TYPE_APPICON)
     {
         if (AppIcon_Supports((struct AppIcon *)message->entry->ie_User1, WBAPPICONA_RenderHook))
@@ -1249,7 +1249,7 @@ IPTR IconWindowVolumeList__MUIM_IconList_DrawEntry(struct IClass *CLASS, Object 
             renderMsg.arm_Tags = renderTags;
 
             D(bug("[Wanderer:Volumelist] %s: Using AppIcon RenderHook for AppIcon 0x%p with DiskObj 0x%p and RastPort 0x%p\n",
-                    __PRETTY_FUNCTION__, diEntry->di_Data, renderMsg.arm_Icon, renderMsg.arm_RastPort));
+                    __PRETTY_FUNCTION__, message->entry->ie_User1, renderMsg.arm_Icon, renderMsg.arm_RastPort));
             D(bug("[Wanderer:Volumelist] %s: Render @ %d, %d (%d x %d pixels)\n", __PRETTY_FUNCTION__,
                     renderMsg.arm_Left, renderMsg.arm_Top, renderMsg.arm_Width, renderMsg.arm_Height));
 
