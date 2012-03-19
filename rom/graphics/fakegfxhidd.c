@@ -64,6 +64,8 @@ struct gfx_data
     BOOL    	    	    curs_on;
     LONG    	    	    curs_x;
     LONG    	    	    curs_y;
+    LONG    	    	    curs_xoffset;
+    LONG    	    	    curs_yoffset;
     ULONG   	    	    curs_width;
     ULONG   	    	    curs_height;
     LONG    	    	    curs_maxx;
@@ -406,6 +408,8 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_x	 = data->curs_y		= 0;
 	data->curs_maxx  = data->curs_maxy	= 0;
 	data->curs_width = data->curs_height	= 0;
+	data->curs_xoffset = 0;
+	data->curs_yoffset = 0;
 
 	if (NULL != data->curs_backup)
 	{
@@ -455,6 +459,8 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	data->curs_maxx	  = data->curs_x + curs_width  - 1;
 	data->curs_maxy	  = data->curs_y + curs_height - 1;
 	data->curs_pixels = new_curs_pixels;
+	data->curs_xoffset = msg->xoffset;
+	data->curs_yoffset = msg->yoffset;
 
 	ok = rethink_cursor(data, GfxBase);
 	UFB(data);
@@ -488,6 +494,9 @@ static BOOL gfx_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetC
 
     data->curs_x = msg->x - xoffset;
     data->curs_y = msg->y - yoffset;
+    /* Shift to the hotspot location */
+    data->curs_x += data->curs_xoffset;
+    data->curs_y += data->curs_yoffset;
     data->curs_maxx = data->curs_x + data->curs_width  - 1;
     data->curs_maxy = data->curs_y + data->curs_height - 1;
     
