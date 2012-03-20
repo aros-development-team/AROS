@@ -16,6 +16,8 @@
 #include <devices/rawkeycodes.h>
 #include <zune/customclasses.h>
 
+#include <stdio.h>
+
 #include "keyboardgroup_class.h"
 #include "locale.h"
 
@@ -61,7 +63,6 @@ struct KeyboardGroup_DATA
     struct Key *key;
     Object *keybutton[128]; // 64-127 are high keys
     struct Hook change_qualifier_hook;
-    ULONG kbtype; // Amiga, PC105 etc.
 };
 
 
@@ -208,12 +209,12 @@ static void parse_string_key(struct Key *key, UBYTE type, IPTR value)
 }
 
 
-static UBYTE set_dead_key(UBYTE type, IPTR value, BYTE qual)
+static void set_dead_key(STRPTR buffer, UBYTE type, IPTR value, BYTE qual)
 {
     D(bug("[KeyShow] set_dead_key type %u value %u\n", type, value));
 
     BYTE idx;
-    UBYTE retval = 0;
+    UBYTE result;
 
     /* Use keymap_str table to get idx to right key descriptor */
     idx = keymapstr_table[type & KC_VANILLA][qual];
@@ -221,32 +222,45 @@ static UBYTE set_dead_key(UBYTE type, IPTR value, BYTE qual)
     {
         UBYTE *dead_descr = (UBYTE *)value;
 
-        if (dead_descr[idx * 2] == DPF_DEAD)
+        switch (dead_descr[idx * 2])
         {
-            D(bug("[KeyShow] set_dead_key DPF_DEAD\n"));
-            BYTE deadidx = dead_descr[idx * 2 + 1];
-            if (deadidx < 8)
-            {
-                retval = deadkey_table[deadidx];
-            }
-        }
-        else if (dead_descr[idx * 2] == DPF_MOD)
-        {
-            D(bug("[KeyShow] set_dead_key DPF_MOD\n"));
-            retval = dead_descr[dead_descr[idx * 2 + 1]];
-        }
-        else if (dead_descr[idx * 2] == 0)
-        {
-            D(bug("[KeyShow] set_dead_key DPF 0\n"));
-            retval = dead_descr[idx * 2 + 1];
+            case DPF_DEAD:
+                // dead key
+                D(bug("[KeyShow] set_dead_key DPF_DEAD\n"));
+                UBYTE deadidx = dead_descr[idx * 2 + 1];
+                if (deadidx < 8)
+                {
+                    result = deadkey_table[deadidx];
+                    if (result > 31)
+                    {
+                        // render char. with pen number 5
+                        snprintf(buffer, KBUFSIZE - 1, "\0335%c", result);
+                    }
+                }
+                break;
+
+            case DPF_MOD:
+                // deadable key
+                D(bug("[KeyShow] set_dead_key DPF_MOD\n"));
+                result = dead_descr[dead_descr[idx * 2 + 1]];
+                if (result > 31)
+                {
+                    // render char. in bold
+                    snprintf(buffer, KBUFSIZE - 1, "\033b%c", result);
+                }
+                break;
+
+            case 0:
+                D(bug("[KeyShow] set_dead_key DPF 0\n"));
+                result = dead_descr[idx * 2 + 1];
+                if (result > 31)
+                {
+                    buffer[0] = result;
+                }
+                break;
+
         }
     }
-
-    if (retval < 32)
-        retval = 0;
-
-    bug("[KeyShow] set_dead_key retval %u\n", retval);
-    return retval;
 }
 
 
@@ -257,46 +271,46 @@ static void parse_dead_key(struct Key *key, UBYTE type, IPTR value)
     switch (type)
     {
         case KC_NOQUAL:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
             break;
         case KCF_SHIFT:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_dead_key(type, value, KCF_SHIFT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).shift, type, value, KCF_SHIFT);
             break;
         case KCF_ALT:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).alt[0]       = set_dead_key(type, value, KCF_ALT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).alt, type, value, KCF_ALT);
             break;
         case KCF_CONTROL:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).ctrl[0]      = set_dead_key(type, value, KCF_CONTROL);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
             break;
         case KCF_ALT + KCF_SHIFT:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_dead_key(type, value, KCF_SHIFT);
-            (*key).alt[0]       = set_dead_key(type, value, KCF_ALT);
-            (*key).shift_alt[0] = set_dead_key(type, value, KCF_ALT + KCF_SHIFT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).shift, type, value, KCF_SHIFT);
+            set_dead_key((*key).alt, type, value, KCF_ALT);
+            set_dead_key((*key).shift_alt, type, value, KCF_ALT + KCF_SHIFT);
             break;
         case KCF_CONTROL + KCF_ALT:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).alt[0]       = set_dead_key(type, value, KCF_ALT);
-            (*key).ctrl[0]      = set_dead_key(type, value, KCF_CONTROL);
-            (*key).ctrl_alt[0]  = set_dead_key(type, value, KCF_CONTROL + KCF_ALT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).alt, type, value, KCF_ALT);
+            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
+            set_dead_key((*key).ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
             break;
         case KCF_CONTROL + KCF_SHIFT:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_dead_key(type, value, KCF_SHIFT);
-            (*key).ctrl[0]      = set_dead_key(type, value, KCF_CONTROL);
-            (*key).ctrl_shift[0]= set_dead_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).shift, type, value, KCF_SHIFT);
+            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
+            set_dead_key((*key).ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
             break;
         case KC_VANILLA:
-            (*key).alone[0]     = set_dead_key(type, value, KC_NOQUAL);
-            (*key).shift[0]     = set_dead_key(type, value, KCF_SHIFT);
-            (*key).alt[0]       = set_dead_key(type, value, KCF_ALT);
-            (*key).shift_alt[0] = set_dead_key(type, value, KCF_ALT + KCF_SHIFT);
-            (*key).ctrl[0]      = set_dead_key(type, value, KCF_CONTROL);
-            (*key).ctrl_alt[0]  = set_dead_key(type, value, KCF_CONTROL + KCF_ALT);
-            (*key).ctrl_shift[0]= set_dead_key(type, value, KCF_CONTROL + KCF_SHIFT);
+            set_dead_key((*key).alone, type, value, KC_NOQUAL);
+            set_dead_key((*key).shift, type, value, KCF_SHIFT);
+            set_dead_key((*key).alt, type, value, KCF_ALT);
+            set_dead_key((*key).shift_alt, type, value, KCF_ALT + KCF_SHIFT);
+            set_dead_key((*key).ctrl, type, value, KCF_CONTROL);
+            set_dead_key((*key).ctrl_alt, type, value, KCF_CONTROL + KCF_ALT);
+            set_dead_key((*key).ctrl_shift, type, value, KCF_CONTROL + KCF_SHIFT);
             break;
     }
 }

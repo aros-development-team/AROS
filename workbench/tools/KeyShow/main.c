@@ -22,6 +22,18 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
+
+/*
+    TODO
+    - fix layout, maybe we need a render hook
+    - a custom class for the keys might be useful
+    - keys are rendered too small to show control state e.g. ^X
+    - original KeyShow prefixes some control keys with ~ and others with ^. WTF?
+    - original KeyShow prints $$ when pressing shift and tab. WTF?
+    - fix handling of control keys for dead keys
+*/
+
+
 static void cleanup_exit(CONST_STRPTR str);
 static void HandleAll(void);
 
@@ -99,7 +111,7 @@ int main(int argc, char **argv)
 
     app = ApplicationObject,
         MUIA_Application_Title, (IPTR)"KeyShow",
-        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.5 (19.03.2012)",
+        MUIA_Application_Version, (IPTR)"$VER: KeyShow 1.6 (20.03.2012)",
         MUIA_Application_Copyright, (IPTR)_(MSG_AppCopyright),
         MUIA_Application_Author, (IPTR)"The AROS Development Team",
         MUIA_Application_Description, (IPTR)_(MSG_AppDescription),
