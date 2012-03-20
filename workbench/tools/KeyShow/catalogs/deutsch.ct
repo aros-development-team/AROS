@@ -1,0 +1,120 @@
+## version $VER: KeyShow.catalog 1.0 (20.03.2012)
+## language deutsch
+## codeset 0
+;
+MSG_AppDescription
+Zeige Tastaturanordnung
+; Show Keyboard Layout
+;
+MSG_AppCopyright
+Copyright © 2012 The AROS Development Team
+; Copyright © 2012 The AROS Development Team
+;
+MSG_WI_TITLE
+KeyShow
+; KeyShow
+;
+MSG_OK
+OK
+; _OK
+;
+; Error messages
+;
+MSG_ERR
+Fehler
+; Error
+;
+MSG_ERR_NO_APPLICATION
+Kann Application nicht erzeugen
+; Can't create application
+;
+MSG_ERR_NO_MEM
+Speichermangel
+; Out of memory
+;
+; Key descriptions
+;
+MSG_KEY_SHIFT
+Shift
+; Shift
+;
+MSG_KEY_CTRL
+Strg
+; Ctrl
+;
+MSG_KEY_ALT
+Alt
+; Alt
+;
+MSG_KEY_LOCK
+Lock
+; Lock
+;
+MSG_KEY_HELP
+Hilfe
+; Help
+;
+MSG_KEY_A
+A
+; A
+;
+MSG_KEY_INSERT
+Einfg
+; Insert
+;
+MSG_KEY_HOME
+Pos1
+; Home
+;
+MSG_KEY_PAGEUP
+Seite ^
+; Page ^
+;
+MSG_KEY_DELETE
+Entf
+; Delete
+;
+MSG_KEY_END
+Ende
+; End
+;
+MSG_KEY_PAGEDOWN
+Seite v
+; Page v
+;
+MSG_KEY_NUM
+Num
+; Num
+;
+MSG_KEY_RETURN
+^M
+; ^M
+;
+MSG_KEY_BACKSP
+^H
+; ^H
+;
+MSG_KEY_TAB
+^I
+; ^I
+;
+MSG_KEY_ESC
+^[
+; ^[
+;
+MSG_KEY_NUM_ENTER
+^M
+; ^M
+;
+MSG_KEY_PRTSCREEN
+Druck
+; Print
+;
+MSG_KEY_SCRLOCK
+Rollen
+; ScrLock
+;
+MSG_KEY_PAUSE
+Pause
+; Pause
+;
