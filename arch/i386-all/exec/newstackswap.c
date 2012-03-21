@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: NewStackSwap() - Call a function with swapped stack.
@@ -37,7 +37,7 @@ AROS_LH3(IPTR, NewStackSwap,
 
     if (t->tc_Flags & TF_STACKCHK)
     {
-    	UBYTE* startfill = sss->stk_Lower;
+    	volatile UBYTE* startfill = sss->stk_Lower;
 
     	while (startfill < (UBYTE *)sp)
 	    *startfill++ = 0xE1;

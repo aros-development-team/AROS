@@ -4,6 +4,7 @@ include $(TOP)/config/make.cfg
 FILES  := alert_cpu cpu_init newstackswap preparecontext
 AFILES := execstubs stackswap copymem_SSE
 
+USER_CFLAGS   := -O0
 USER_AFLAGS   := -I$(GENINCDIR)
 USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
 
