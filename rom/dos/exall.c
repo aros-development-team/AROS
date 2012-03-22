@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Examine a directory.
@@ -41,7 +41,7 @@
                  which is filled with (partial) ExAllData structures
 		 (see NOTES)
     size     --  size of 'buffer' in bytes
-    type     --  type of the data to be returned
+    data     --  type of the data to be returned
     control  --  a control structure allocated by AllocDosObject()
 
     RESULT
@@ -56,7 +56,7 @@
     The following information is essential information on the ExAllData
     structure:
 
-    ead_type :
+    ed_Type:
 
     ED_NAME        --  filename
     ED_TYPE        --  type
@@ -74,8 +74,8 @@
     If a filesystem doesn't support a particular type, ERROR_BAD_NUMBER must
     be returned.
 
-    ead_Next : pointer to the next entry in the buffer. The last entry
-               has a NULL value for ead_Next.
+    ed_Next : pointer to the next entry in the buffer. The last entry
+               has a NULL value for ed_Next.
 
 
     The control structure have the following fields.
