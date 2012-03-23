@@ -182,6 +182,16 @@
                 STORE((LONG *) tag->ti_Data, LB(IconBase)->ib_ColorIconSupport);
                 processed++;
                 break;
+
+            case ICONCTRLA_SetGlobalScaleBox:
+                LB(IconBase)->ib_ScaleBox = (ULONG)tag->ti_Data;
+                processed++;
+                break;
+
+            case ICONCTRLA_GetGlobalScaleBox:
+                STORE((ULONG *) tag->ti_Data, LB(IconBase)->ib_ScaleBox);
+                processed++;
+                break;
             
             
             /* Local tags --------------------------------------------------*/
@@ -570,6 +580,23 @@
                 SET_ERRORCODE(0);
                 processed++;
                 break;
+
+            case ICONCTRLA_SetScaleBox:
+                if (nativeicon)
+                {
+                    nativeicon->ni_ScaleBox = (ULONG)tag->ti_Data;
+                    processed++;
+                }
+                break;
+
+            case ICONCTRLA_GetScaleBox:
+                if (nativeicon)
+                {
+                    STORE((ULONG *)tag->ti_Data, nativeicon->ni_ScaleBox);
+                    processed++;
+                }
+                break;
+                
             default:
                 SET_ERRORTAGITEM(tag);
                 break;

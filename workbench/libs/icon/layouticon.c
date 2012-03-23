@@ -14,10 +14,17 @@
 #include "icon_intern.h"
 
 /* Bitmap scaling */
-static BOOL scaleFromTo(ULONG SrcWidth, ULONG SrcHeight,
+static BOOL scaleToResolution(ULONG SrcWidth, ULONG SrcHeight,
                    UWORD SrcResX, UWORD SrcResY,
                    ULONG *DstWidth, ULONG *DstHeight,
                    UWORD DstResX, UWORD DstResY,
+                   ULONG *ScaleXSrc, ULONG *ScaleYSrc,
+                   ULONG *ScaleXDst, ULONG *ScaleYDst,
+                   struct IconBase *IconBase);
+
+static BOOL scaleToBounds(ULONG SrcWidth, ULONG SrcHeight,
+                   UWORD MaxWidth, UWORD MaxHeight,
+                   ULONG *DstWidth, ULONG *DstHeight,
                    ULONG *ScaleXSrc, ULONG *ScaleYSrc,
                    ULONG *ScaleXDst, ULONG *ScaleYDst,
                    struct IconBase *IconBase);
@@ -63,9 +70,9 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
 
     /* Default source DPI is the Amiga PAL DPI */
     ULONG width, height;
-    UBYTE tpdX = 0, tpdY = 0;
     ULONG scaleXsrc = 1, scaleYsrc = 1, scaleXdst = 1, scaleYdst = 1;
     ULONG mutualexclude = (ULONG)icon->do_Gadget.MutualExclude;
+    ULONG scalebox;
     struct NativeIcon *ni;
     struct RastPort rp;
     struct DrawInfo *dri;
@@ -144,16 +151,6 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
 
     ret = TRUE;
 
-    /* Check for a magic MutualExlcude value
-     * that encodes Tick-Per-Dot information.
-     * MutalExclude of 0xffffffff is not valid.
-     */
-    if ((mutualexclude != 0xffffffff) && (mutualexclude & (1 << 31))) {
-        /* tpd information is in the lower 16 bits */
-        tpdX = (mutualexclude >>  8) & 0xff;
-        tpdY = (mutualexclude >>  0) & 0xff;
-    }
-
     /* Calculate the scaling factors
      */
     if (ni->ni_Face.Width && ni->ni_Face.Height) {
@@ -163,16 +160,48 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
         width = icon->do_Gadget.Width;
         height = icon->do_Gadget.Height;
     }
-    if (!(tpdX || tpdY) || !scaleFromTo(width, height, tpdX, tpdY,
-                     &ni->ni_Width, &ni->ni_Height, dri->dri_Resolution.X, dri->dri_Resolution.Y,
-                     &scaleXsrc, &scaleYsrc, &scaleXdst, &scaleYdst,
-                     IconBase)) {
-        ni->ni_Width = width;
-        ni->ni_Height = height;
-    }
 
-    D(bug("%s: Icon tpd (%d:%d), Screen tpd (%d:%d)\n", __func__,
-                tpdX, tpdY,  dri->dri_Resolution.X, dri->dri_Resolution.Y));
+    if (ni->ni_ScaleBox == ICON_SCALEBOX_DEFAULT)
+        scalebox = LB(IconBase)->ib_ScaleBox;
+    else
+        scalebox = ni->ni_ScaleBox;
+
+    ni->ni_Width = width;
+    ni->ni_Height = height;
+
+    /* Are we rescaling dynamically? */
+    if (scalebox == ICON_SCALEBOX_AUTOSCALE) {
+        UBYTE tpdX = 0, tpdY = 0;
+
+        /* Check for a magic MutualExlcude value
+         * that encodes Tick-Per-Dot information.
+         * MutalExclude of 0xffffffff is not valid.
+         */
+        if ((mutualexclude != 0xffffffff) && (mutualexclude & (1 << 31))) {
+            /* tpd information is in the lower 16 bits */
+            tpdX = (mutualexclude >>  8) & 0xff;
+            tpdY = (mutualexclude >>  0) & 0xff;
+        }
+
+        if (tpdX && tpdY) {
+            scaleToResolution(width, height, tpdX, tpdY,
+                         &ni->ni_Width, &ni->ni_Height, dri->dri_Resolution.X, dri->dri_Resolution.Y,
+                         &scaleXsrc, &scaleYsrc, &scaleXdst, &scaleYdst,
+                         IconBase);
+        }
+        D(bug("%s: Icon tpd (%d:%d), Screen tpd (%d:%d)\n", __func__,
+                    tpdX, tpdY,  dri->dri_Resolution.X, dri->dri_Resolution.Y));
+
+    } else {
+        WORD MaxWidth, MaxHeight;
+
+        UNPACK_ICON_SCALEBOX(scalebox, MaxWidth, MaxHeight);
+
+        scaleToBounds(width, height, MaxWidth, MaxHeight,
+                      &ni->ni_Width, &ni->ni_Height,
+                      &scaleXsrc, &scaleYsrc, &scaleXdst, &scaleYdst,
+                      IconBase);
+    }
 
     for (i = 0; i < 2; i++) {
         struct NativeIconImage *image = &ni->ni_Image[i];
@@ -440,7 +469,64 @@ exit:
 } /* LayoutIconA() */
 
 
-static BOOL scaleFromTo(ULONG SrcWidth, ULONG SrcHeight,
+static BOOL scaleToBounds(ULONG SrcWidth, ULONG SrcHeight,
+                   UWORD MaxWidth, UWORD MaxHeight,
+                   ULONG *DstWidth, ULONG *DstHeight,
+                   ULONG *ScaleXSrc, ULONG *ScaleYSrc,
+                   ULONG *ScaleXDst, ULONG *ScaleYDst,
+                   struct IconBase *IconBase)
+{
+    ULONG scaleXsrc, scaleYsrc, scaleXdst, scaleYdst;
+
+    if (MaxWidth <= 0 || MaxHeight <= 0) 
+        return FALSE;
+
+    /* Scaling calculations
+     */
+    scaleXsrc = SrcWidth;
+    scaleYsrc = SrcHeight;
+    scaleXdst = MaxWidth;
+    scaleYdst = SrcHeight * MaxWidth / SrcWidth;
+
+    if (scaleYdst > MaxHeight) {
+        LONG delta = scaleYdst - MaxHeight;
+        scaleXdst -= delta * SrcWidth / SrcHeight;
+        scaleYdst -= delta;
+    }
+
+    while (scaleXsrc > 168383 || scaleXdst > 168383) {
+        scaleXsrc >>= 1;
+        scaleXdst >>= 1;
+        if (scaleXsrc == 0 || scaleXdst == 0) {
+            D(bug("\tCan't scale X from %dx%d to %dx%d\n", scaleXsrc, scaleYsrc, scaleXdst, scaleYdst));
+            return FALSE;
+        }
+    }
+
+    while (scaleYsrc > 168383 || scaleYdst > 168383) {
+        scaleYsrc >>= 1;
+        scaleYdst >>= 1;
+        if (scaleYsrc == 0 || scaleYdst == 0) {
+            D(bug("\tCan't scale Y from %dx%d to %dx%d\n", scaleXsrc, scaleYsrc, scaleXdst, scaleYdst));
+            return FALSE;
+        }
+    }
+
+    *DstWidth = ScalerDiv(SrcWidth, scaleXdst, scaleXsrc);
+    *DstHeight = ScalerDiv(SrcHeight, scaleYdst, scaleYsrc);
+
+    *ScaleXSrc = scaleXsrc;
+    *ScaleYSrc = scaleYsrc;
+
+    *ScaleXDst = scaleXdst;
+    *ScaleYDst = scaleYdst;
+
+    D(bug("[%s] Scale icon %dx%d to box %dx%d => %dx%d\n", __func__, SrcWidth, SrcHeight, MaxWidth, MaxHeight, *DstWidth, *DstHeight));
+
+    return TRUE;
+}
+
+static BOOL scaleToResolution(ULONG SrcWidth, ULONG SrcHeight,
                    UWORD SrcResX, UWORD SrcResY,
                    ULONG *DstWidth, ULONG *DstHeight,
                    UWORD DstResX, UWORD DstResY,

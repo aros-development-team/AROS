@@ -72,6 +72,20 @@
 #define ICONCTRLA_SetGlobalMaxNameLength     (ICONA_BASE+67)
 #define ICONCTRLA_GetGlobalMaxNameLength     (ICONA_BASE+68)
 
+/*** AROS Specific ******************************/
+/*
+    Scale all icons to a bounding box.
+    width is the upper 16 bits, height is the lower 16.
+
+    If set to -1.-1, icons which have source resolution
+    information are dynamically rescaled. All others
+    are left unchanged.
+
+    If set to 0.0, icons are shown pixel-for-pixel.
+ */
+#define ICONCTRLA_GetGlobalScaleBox     (ICONA_BASE+401)
+#define ICONCTRLA_SetGlobalScaleBox     (ICONA_BASE+402)
+
 /*** Per icon local options for IconControlA() ******************************/
 /* Get the icon rendering masks (PLANEPTR) */
 #define ICONCTRLA_GetImageMask1         (ICONA_BASE+14)
@@ -142,6 +156,28 @@
     solely of a statically allocated DiskObject. (LONG *)
 */
 #define ICONCTRLA_IsNativeIcon          (ICONA_BASE+80)
+
+/*** AROS Specific ******************************/
+/*
+    Scale all icons to a bounding box.
+    width is the upper 16 bits, height is the lower 16.
+
+    If set to 0.0, the global defaults are used.
+
+    If set to -1.-1, the icon is shown pixel-for-pixel
+ */
+#define ICONCTRLA_GetScaleBox           (ICONA_BASE+403)
+#define ICONCTRLA_SetScaleBox           (ICONA_BASE+404)
+
+#define ICON_SCALEBOX_DEFAULT            (0)
+#define ICON_SCALEBOX_AUTOSCALE          (0xffffffff)
+#define PACK_ICON_SCALEBOX(maxw, maxh)   ((((ULONG)maxw)<<16) | (UWORD)(maxh))
+#define UNPACK_ICON_SCALEBOX(v, maxw, maxh) \
+    do {                                    \
+        maxw = (WORD)(((v) >> 16) & 0xffff); \
+        maxh = (WORD)(((v) >>  0) & 0xffff); \
+    } while (0)
+
 
 /*** Icon aspect handling ***************************************************/
 /* Icon aspect ratio is not known */

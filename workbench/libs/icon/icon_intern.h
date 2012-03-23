@@ -86,6 +86,7 @@ struct NativeIcon
     /* Parameters */
     BOOL              ni_IsDefault;
     BOOL              ni_Frameless;
+    ULONG             ni_ScaleBox;
 
     /* The 'laid out' icon. The laid out data will
      * also be resized for the screen's aspect ratio,
@@ -164,6 +165,7 @@ struct IconBase
     LONG                    ib_Precision;
     struct Rectangle        ib_EmbossRectangle;
     BOOL                    ib_Frameless;
+    ULONG                   ib_ScaleBox;
     struct Hook            *ib_IdentifyHook;
     LONG                    ib_MaxNameLength;
     BOOL                    ib_NewIconsSupport;

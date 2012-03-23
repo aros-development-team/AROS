@@ -159,6 +159,7 @@ STATIC struct Image *ImageDupIcon(struct DiskObject *dobj, struct Image *src, BO
 	
         mem->ni_IsDefault = srcnativeicon->ni_IsDefault;
         mem->ni_Frameless = srcnativeicon->ni_Frameless;
+        mem->ni_ScaleBox  = srcnativeicon->ni_ScaleBox;
         mem->ni_Face      = srcnativeicon->ni_Face;
 
         /* The duplicate will *not* be laid out to a specific screen */
