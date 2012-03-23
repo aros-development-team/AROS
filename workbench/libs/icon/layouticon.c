@@ -219,10 +219,7 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
         /* If we can use ARGB data, then use it! */
         D(bug("[%s] Screen depth is %d\n", __func__, bmdepth));
         if ((bmdepth > 8) && CyberGfxBase) {
-            if (ni->ni_Extra.PNG[i].Size && image->ARGB == NULL) {
-                image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.PNG[i].Offset,
-                                               &width, &height, NULL, NULL, IconBase);
-            }
+            FetchIconARGB(icon, i);
             if (image->ARGB) {
                 if (width != ni->ni_Width || height != ni->ni_Height) {
                     if ((image->ARGBMap = AllocVec(ni->ni_Width * ni->ni_Height * sizeof(ULONG), MEMF_PUBLIC))) {
@@ -247,7 +244,8 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
             goto exit;
         }
 
-        /* This should have been loaded earlier */
+        FetchIconImage(icon, i);
+
         if (!image->ImageData) {
             struct Image *gi = NULL;
             ULONG state;

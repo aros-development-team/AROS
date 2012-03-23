@@ -17,6 +17,8 @@ BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase);
 struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase);
 BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct TagItem *tags, struct IconBase *IconBase);
 VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase);
+VOID __FetchIconARGB_WB(struct DiskObject *icon, int id, struct IconBase *IconBase);
+VOID __FetchIconImage_WB(struct DiskObject *icon, int id, struct IconBase *IconBase);
 
 BPTR __LockObject_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase);
 VOID __UnLockObject_WB(BPTR lock, struct IconBase *IconBase);
@@ -36,6 +38,8 @@ struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconB
 
 #define ReadIcon(file) (__ReadIcon_WB((file), LB(IconBase)))
 #define WriteIcon(file, icon, tags) (__WriteIcon_WB((file), (icon), (tags), LB(IconBase)))
+#define FetchIconARGB(icon, id) (__FetchIconARGB_WB((icon), (id), LB(IconBase)))
+#define FetchIconImage(icon, id) (__FetchIconImage_WB((icon), (id), LB(IconBase)))
 #define PrepareIcon(icon) (__PrepareIcon_WB((icon), LB(IconBase)))
 
 #define LockObject(name, mode) (__LockObject_WB((name), (mode), IconBase))

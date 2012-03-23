@@ -124,57 +124,88 @@ static const struct ColorRegister ehb_palette[] =
     { 0x00, 0x00, 0x00 },       /* 'Transparent' */
 };
 
-/* Any last-minute changes to the Icon go here before it
- * is returned.
- */
-VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
+VOID __FetchIconARGB_WB(struct DiskObject *icon, int id, struct IconBase *IconBase)
 {
     struct NativeIcon *ni = NATIVEICON(icon);
     struct NativeIconImage *image;
 
-    /* Ensure that do_DrawerData exists for WBDISK and WBDRAWER objects */
-    if ((icon->do_Type == WBDISK || icon->do_Type == WBDRAWER) &&
-        icon->do_DrawerData == NULL) {
-        icon->do_DrawerData = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
-        icon->do_DrawerData->dd_NewWindow.LeftEdge = 50;
-        icon->do_DrawerData->dd_NewWindow.TopEdge = 50;
-        icon->do_DrawerData->dd_NewWindow.Width = 400;
-        icon->do_DrawerData->dd_NewWindow.Height = 150;
+    image = &ni->ni_Image[id];
+
+    if (image->ARGB)
+        return;
+
+    if (ni->ni_Extra.PNG[id].Offset >= 0) {
+        image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.PNG[id].Offset,
+                                     &ni->ni_Face.Width, &ni->ni_Face.Height,
+                                     NULL, NULL, IconBase);
     }
 
-    /* Clean out dangling pointers that should no long be
-     * present
-     */
-    if (icon->do_DrawerData) {
-        icon->do_DrawerData->dd_NewWindow.FirstGadget = NULL;
-        icon->do_DrawerData->dd_NewWindow.Screen = NULL;
-        icon->do_DrawerData->dd_NewWindow.BitMap = NULL;
-    }
-
-#if 0 /* Commented out - safe, but too slow */
-    /* If we have ARGB imagery, but no Palettized imagery,
-     * synthesize some. Use an EHB palette, similar to the
-     * VGA-16 color palette.
-     *
-     * The goal here is to be fast & usable, not slow and accurate.
-     */
-    for (i = 0; i < 2; i++) {
-        UBYTE *pixel, *idata;
-        ULONG count;
-        image = &ni->ni_Image[i];
-
-        if (image->ImageData)
-            continue;
-
-        if (image->ARGB == NULL && ni->ni_Extra.Offset[i].PNG >= 0) {
-            image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
-                                         &ni->ni_Face.Width, &ni->ni_Face.Height,
-                                         NULL, NULL, IconBase);
+    /* Prepare ARGB selected imagery, if needed */
+    if (image->ARGB == NULL && ni->ni_Image[0].ARGB != NULL) {
+        /* Synthesize a selected ARGB icon */
+        ULONG area = ni->ni_Face.Width * ni->ni_Face.Height;
+        image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4, MEMF_PUBLIC);
+        if (image->ARGB) {
+            CopyMem(ni->ni_Image[0].ARGB, (APTR)image->ARGB, area * sizeof(UBYTE) * 4);
+            UBYTE *cp;
+            for (cp = (APTR)image->ARGB; area > 0; area--, cp += 4) {
+                struct ColorRegister *cr = (APTR)&cp[1];
+                ChangeToSelectedIconColor(cr);
+            }
         }
+    }
 
-        if (!image->ARGB)
-            continue;
+    return;
+}
 
+/* If we have ARGB imagery, but no Palettized imagery,
+ * synthesize some. Use an EHB palette, similar to the
+ * VGA-16 color palette.
+ *
+ * The goal here is to be fast & usable, not slow and accurate.
+ */
+VOID __FetchIconImage_WB(struct DiskObject *icon, int id, struct IconBase *IconBase)
+{
+    struct NativeIcon *ni = NATIVEICON(icon);
+    struct NativeIconImage *image;
+    UBYTE *pixel, *idata;
+    ULONG count;
+
+    image = &ni->ni_Image[id];
+
+    if (image->ImageData)
+        return;
+
+    FetchIconARGB(icon, id);
+
+    /* If no ARGB, and we're the selected image... */
+    if (!image->ARGB) {
+        if (id == 1 &&
+            image->Palette == NULL &&
+            image->ImageData == NULL &&
+            ni->ni_Image[0].Palette != NULL &&
+            ni->ni_Image[0].ImageData != NULL) {
+
+            ULONG pens = ni->ni_Image[0].Pens;
+            struct ColorRegister *newpal;
+
+            newpal = AllocMemIcon(icon, sizeof(struct ColorRegister)*pens, MEMF_PUBLIC);
+            if (newpal) {
+                ULONG i;
+
+                image->Pens = pens;
+                image->TransparentColor = ni->ni_Image[0].TransparentColor;
+                image->ImageData = ni->ni_Image[0].ImageData;
+                CopyMem(ni->ni_Image[0].Palette, newpal, sizeof(struct ColorRegister)*image->Pens);
+                for (i = 0; i < image->Pens; i++) {
+                    if (i == image->TransparentColor)
+                        continue;
+                    ChangeToSelectedIconColor(&newpal[i]);
+                }
+                image->Palette = newpal;
+            }
+        }
+    } else if (image->ARGB) {
         image->ImageData = AllocMemIcon(icon, ni->ni_Face.Width * ni->ni_Face.Height, MEMF_PUBLIC);
         image->Pens = 17;
         image->Palette = ehb_palette;
@@ -209,77 +240,31 @@ VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
             }
         }
     }
-#endif
+}
 
 
-    /* Prepare ARGB selected imagery, if needed */
-    image = &ni->ni_Image[1];
-    if (image->ARGB == NULL && ni->ni_Image[0].ARGB != NULL) {
-        /* Synthesize a selected ARGB icon */
-        ULONG area = ni->ni_Face.Width * ni->ni_Face.Height;
-        image->ARGB = AllocMemIcon(icon, area * sizeof(UBYTE) * 4, MEMF_PUBLIC);
-        if (image->ARGB) {
-            CopyMem(ni->ni_Image[0].ARGB, (APTR)image->ARGB, area * sizeof(UBYTE) * 4);
-            UBYTE *cp;
-            for (cp = (APTR)image->ARGB; area > 0; area--, cp += 4) {
-                struct ColorRegister *cr = (APTR)&cp[1];
-                ChangeToSelectedIconColor(cr);
-            }
-        }
+/* Any last-minute changes to the Icon go here before it
+ * is returned.
+ */
+VOID __PrepareIcon_WB(struct DiskObject *icon, struct IconBase *IconBase)
+{
+    /* Ensure that do_DrawerData exists for WBDISK and WBDRAWER objects */
+    if ((icon->do_Type == WBDISK || icon->do_Type == WBDRAWER) &&
+        icon->do_DrawerData == NULL) {
+        icon->do_DrawerData = AllocMemIcon(icon, sizeof(struct DrawerData), MEMF_PUBLIC | MEMF_CLEAR);
+        icon->do_DrawerData->dd_NewWindow.LeftEdge = 50;
+        icon->do_DrawerData->dd_NewWindow.TopEdge = 50;
+        icon->do_DrawerData->dd_NewWindow.Width = 400;
+        icon->do_DrawerData->dd_NewWindow.Height = 150;
     }
 
-#if 0 /* Commented out - safe, but too slow */
-    if (image->ARGB == NULL &&
-        ni->ni_Extra.Offset[0].PNG >= 0 && 
-        ni->ni_Extra.Offset[1].PNG < 0) {
-
-        image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.Offset[0].PNG,
-                                     &ni->ni_Face.Width, &ni->ni_Face.Height,
-                                     NULL, NULL, IconBase);
-        if (image->ARGB) {
-                ULONG size = ni->ni_Face.Width * ni->ni_Face.Height * sizeof(ULONG);
-                UBYTE *pixel;
-                for (pixel = (UBYTE *)image->ARGB; pixel - (UBYTE *)image->ARGB  < size; pixel+=4) {
-                    struct ColorRegister cr = {
-                        .red = pixel[1],
-                        .green = pixel[2],
-                        .blue = pixel[3],
-                    };
-
-                    ChangeToSelectedIconColor(&cr);
-
-                    pixel[1] = cr.red;
-                    pixel[2] = cr.green;
-                    pixel[3] = cr.blue;
-                }
-        }
-    }
-#endif
-
-    /* Do the same for the palette mapped icon data */
-    if (image->Palette == NULL &&
-        image->ImageData == NULL &&
-        ni->ni_Image[0].Palette != NULL &&
-        ni->ni_Image[0].ImageData != NULL) {
-
-        ULONG pens = ni->ni_Image[0].Pens;
-        struct ColorRegister *newpal;
-
-        newpal = AllocMemIcon(icon, sizeof(struct ColorRegister)*pens, MEMF_PUBLIC);
-        if (newpal) {
-            ULONG i;
-
-            image->Pens = pens;
-            image->TransparentColor = ni->ni_Image[0].TransparentColor;
-            image->ImageData = ni->ni_Image[0].ImageData;
-            CopyMem(ni->ni_Image[0].Palette, newpal, sizeof(struct ColorRegister)*image->Pens);
-            for (i = 0; i < image->Pens; i++) {
-                if (i == image->TransparentColor)
-                    continue;
-                ChangeToSelectedIconColor(&newpal[i]);
-            }
-            image->Palette = newpal;
-        }
+    /* Clean out dangling pointers that should no long be
+     * present
+     */
+    if (icon->do_DrawerData) {
+        icon->do_DrawerData->dd_NewWindow.FirstGadget = NULL;
+        icon->do_DrawerData->dd_NewWindow.Screen = NULL;
+        icon->do_DrawerData->dd_NewWindow.BitMap = NULL;
     }
 
     return;
