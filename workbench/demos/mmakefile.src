@@ -29,6 +29,7 @@ FILES	:= \
     gtdemo \
     gtmultiselect \
     intuitext \
+    iconscale \
     lens \
     listfonts \
     menudemo \
