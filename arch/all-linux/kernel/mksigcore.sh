@@ -2,7 +2,7 @@
 
 sigcontextpath=/usr/include/bits/sigcontext.h
 if [ ! -f $sigcontextpath ] ; then
-    sigcontextpath=/usr/include/i386-linux-gnu/bits/sigcontext.h
+    sigcontextpath=/usr/include/${CPU}-linux-gnu/bits/sigcontext.h
     if [ ! -f $sigcontextpath ] ; then
         echo "Could not find bits/sigcontext.h"
         exit 20
