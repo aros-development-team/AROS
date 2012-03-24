@@ -133,6 +133,11 @@ asktable [] =
     {"Numeric pad 5th row: Press 0", 0x0F, 1, XK_VoidSymbol},
     {"Numeric pad 5th row: Press COMMA", 0x3C, 1, XK_VoidSymbol},
     {"Numeric pad 5th row: Press ENTER", 0x43, 1, XK_VoidSymbol},
+
+    {"Press PRINTSCREEN (or ESCAPE if key doesn't exist)", 0x6c, 1, XK_Escape},
+    {"Press SCROLL LOCK (or ESCAPE if key doesn't exist)", 0x6b, 1, XK_Escape},
+    {"Press PAUSE (or ESCAPE if key doesn't exist)", 0x6e, 1, XK_Escape},
+
     {0, 0, 0, XK_VoidSymbol}
 };
 

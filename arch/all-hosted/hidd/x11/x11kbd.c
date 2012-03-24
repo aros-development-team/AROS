@@ -94,6 +94,8 @@ keytable[] =
     {XK_Insert,		0x47 },
     {XK_Prior,		0x48 }, /* PageUP */
     {XK_Next,		0x49 }, /* PageDown */
+    {XK_Print,		0x6c },
+    {XK_Scroll_Lock,	0x6b },
     {XK_Pause,		0x6e },
     
     {XK_KP_Enter,	0x43 },
