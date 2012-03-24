@@ -4,7 +4,7 @@
 #
 
 if test -d $1/.svn; then
-    svn info $(SRCDIR) | sed -n 's/Revision: //p'
+    svn info $1 | sed -n 's/Revision: //p'
 else
     if test -d $1/.git; then
         cd $1
