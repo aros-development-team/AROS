@@ -14,16 +14,16 @@
     NAME */
 #include <clib/keymap_protos.h>
 
-	AROS_LH1(void, SetKeyMapDefault,
+        AROS_LH1(void, SetKeyMapDefault,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct KeyMap *, keyMap, A0),
+        AROS_LHA(struct KeyMap *, keyMap, A0),
 
 /*  LOCATION */
-	struct Library *, KeymapBase, 5, Keymap)
+        struct Library *, KeymapBase, 5, Keymap)
 
 /*  FUNCTION
-	Sets the systemwide default keymap.
+        Sets the systemwide default keymap.
 
     INPUTS
         keyMap - pointer to KeyMap to set as system default.
@@ -41,18 +41,18 @@
     EXAMPLE
 
     BUGS
-    	When adding the keymap to the keymap.resource one must use
-    	Forbid()/Permit() to arbitrate. Ideally one should use semaphores,
-    	but the keymap.resource contains no semaphore for this purpose.
+        When adding the keymap to the keymap.resource one must use
+        Forbid()/Permit() to arbitrate. Ideally one should use semaphores,
+        but the keymap.resource contains no semaphore for this purpose.
 
     SEE ALSO
-    	AskKeyMapDefault()
+        AskKeyMapDefault()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    keymap_lib.fd and clib/keymap_protos.h
+        27-11-96    digulla automatically created from
+                            keymap_lib.fd and clib/keymap_protos.h
 
 *****************************************************************************/
 {

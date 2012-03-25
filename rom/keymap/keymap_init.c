@@ -32,15 +32,15 @@ static struct KeyMapNode *AddKeymap(char *name, struct KeyMap *data, struct Keym
 
     if (kmn)
     {
-	kmn->kn_Node.ln_Name = name;
-	CopyMem(data, &kmn->kn_KeyMap, sizeof(struct KeyMap));
+        kmn->kn_Node.ln_Name = name;
+        CopyMem(data, &kmn->kn_KeyMap, sizeof(struct KeyMap));
 
-	/*
-	 * We are being called under Forbid(), so I don't have to arbitrate
-	 * That notwithstanding, if keymap resource or exec library loading
-	 * ever become semaphore based, there may be some problems.
-	 */
-	AddTail(&(LIBBASE->KeymapResource.kr_List), &kmn->kn_Node);
+        /*
+         * We are being called under Forbid(), so I don't have to arbitrate
+         * That notwithstanding, if keymap resource or exec library loading
+         * ever become semaphore based, there may be some problems.
+         */
+        AddTail(&(LIBBASE->KeymapResource.kr_List), &kmn->kn_Node);
     }
     return kmn;
 }
@@ -61,7 +61,7 @@ static int KeymapInit(LIBBASETYPEPTR LIBBASE)
 
     /* AmigaOS default built-in keymap has "usa" name */
     if (!AddKeymap("usa", &def_km, LIBBASE))
-    	return FALSE;
+        return FALSE;
 
 #ifdef __mc68000
     /* Add ROM built-in usa1 keymap, keeps WB3.0 C:IPrefs quiet

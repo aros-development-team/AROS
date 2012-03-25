@@ -14,21 +14,21 @@
     NAME */
 #include <clib/keymap_protos.h>
 
-	AROS_LH0(struct KeyMap *, AskKeyMapDefault,
+        AROS_LH0(struct KeyMap *, AskKeyMapDefault,
 
 /*  SYNOPSIS */
-	/* void */
+        /* void */
 
 /*  LOCATION */
-	struct Library *, KeymapBase, 6, Keymap)
+        struct Library *, KeymapBase, 6, Keymap)
 
 /*  FUNCTION
-	Gives you a pointer to the current system default keymap.
+        Gives you a pointer to the current system default keymap.
 
     INPUTS
 
     RESULT
-    	Pointer to the system defaul keymap.
+        Pointer to the system defaul keymap.
 
     NOTES
 
@@ -37,13 +37,13 @@
     BUGS
 
     SEE ALSO
-    	SetKeyMapDefault()
+        SetKeyMapDefault()
 
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    keymap_lib.fd and clib/keymap_protos.h
+        27-11-96    digulla automatically created from
+                            keymap_lib.fd and clib/keymap_protos.h
 
 *****************************************************************************/
 {
