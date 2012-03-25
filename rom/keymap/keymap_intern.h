@@ -39,14 +39,14 @@ struct BufInfo
 
 struct KeyInfo
 {
-    UBYTE	Key_MapType; /* KCF_xxx */ 
+    UBYTE       Key_MapType; /* KCF_xxx */ 
     
     /* 4 character combo, pointer to string descr, or pointer to deadkey descr,
     ** all ccording to Key_MapType
     */
-    IPTR 	Key_Mapping;
+    IPTR        Key_Mapping;
     
-    UBYTE	KCFQual; /* The qualifiers for the keycode, converted to KCF_xxx format */ 
+    UBYTE       KCFQual; /* The qualifiers for the keycode, converted to KCF_xxx format */ 
 };
 
 
@@ -54,7 +54,7 @@ struct KeyInfo
 BOOL WriteToBuffer(struct BufInfo *bufinfo, UBYTE *string, LONG numchars);
 WORD GetKeyInfo(struct KeyInfo *ki, UWORD code, UWORD qual, struct KeyMap *km);
 WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
-	
+        
 /* Macros */
 #define GetBitProperty(ubytearray, idx) \
     ( (ubytearray)[(idx) / 8] & ( 1 << ((idx) & 0x07) ))
@@ -63,7 +63,7 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
 ** id can be 0, 1, 2, 3
 */
 #define GetMapChar(key_mapping, idx)    \
-	( (key_mapping >> ((3 - (idx)) * 8)) & 0x000000FF )
+        ( (key_mapping >> ((3 - (idx)) * 8)) & 0x000000FF )
     
 #define KMBase(x) ((struct KeymapBase *)x)
 
@@ -71,9 +71,9 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
 /* Librarybase struct */
 struct KeymapBase
 {
-    struct Library 		 LibNode;
-    struct KeyMap		*DefaultKeymap;
-    struct KeyMapResource	 KeymapResource;
+    struct Library               LibNode;
+    struct KeyMap               *DefaultKeymap;
+    struct KeyMapResource        KeymapResource;
 };
 
 
