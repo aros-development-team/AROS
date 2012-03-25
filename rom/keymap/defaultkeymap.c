@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: 
@@ -27,68 +27,70 @@
 #define ST KCF_STRING
 #define NOP KCF_NOP
 
+#define EUR 0xA4 /* ISO 8859-15: Euro = 164 = 0xA4) */
+
 static CONST UBYTE lokeymaptypes[] =
 {
-    S,          /* 00 */
+    V,          /* 00 */
     S|A,        /* 01 */
-    S|A,        /* 02 */
+    V,          /* 02 */
     S|A,        /* 03 */
     S|A,        /* 04 */
     S|A,        /* 05 */
-    S|A,        /* 06 */
+    V,          /* 06 */
     S|A,        /* 07 */
     S|A,        /* 08 */
     S|A,        /* 09 */
     S|A,        /* 0A */
-    S,          /* 0B */
+    V,          /* 0B */
     S,          /* 0C */
-    S,          /* 0D */
-    N,          /* 0E */
-    S|A,        /* 0F */
+    V,          /* 0D */
+    NOP,        /* 0E */
+    N,          /* 0F */
     V,          /* 10 q */
     V,          /* 11 w */
-    V,          /* 12 e */
+    D|V,        /* 12 e */
     V,          /* 13 r */
     V,          /* 14 t */
-    V,          /* 15 z */
-    V,          /* 16 u */
-    V,          /* 17 i */
-    V,          /* 18 o */
+    D|V,        /* 15 z */
+    D|V,        /* 16 u */
+    D|V,        /* 17 i */
+    D|V,        /* 18 o */
     V,          /* 19 p */
-    S|A,        /* 1A */
-    S|A,        /* 1B */
-    S|A,        /* 1C */
-    S|A,        /* 1D */
-    S|A,        /* 1E */
-    S|A,        /* 1F */
-    V,          /* 20 a */
+    V,          /* 1A */
+    V,          /* 1B */
+    NOP,        /* 1C */
+    N,          /* 1D */
+    N,          /* 1E */
+    N,          /* 1F */
+    D|V,        /* 20 a */
     V,          /* 21 s */
     V,          /* 22 d */
-    V,          /* 23 f */
-    V,          /* 24 g */
-    V,          /* 25 h */
-    V,          /* 26 j */
-    V,          /* 27 k */
+    D|V,        /* 23 f */
+    D|V,        /* 24 g */
+    D|V,        /* 25 h */
+    D|V,        /* 26 j */
+    D|V,        /* 27 k */
     V,          /* 28 l */
     S,          /* 29 */
     S,          /* 2A */
-    V,          /* 2B */
-    N,          /* 2C */
+    NOP,        /* 2B */
+    NOP,        /* 2C */
     N,          /* 2D */
     N,          /* 2E */
     N,          /* 2F */
-    S,          /* 30 */
+    S|A,        /* 30 */
     V,          /* 31 y */
     V,          /* 32 x */
     V,          /* 33 c */
     V,          /* 34 v */
     V,          /* 35 b */
-    V,          /* 36 n */
+    D|V,        /* 36 n */
     V,          /* 37 m */
-    S|A,        /* 38 */
-    S|A,        /* 39 */
+    S,          /* 38 */
+    S,          /* 39 */
     S,          /* 3A */
-    N,          /* 3B */
+    NOP,        /* 3B */
     N,          /* 3C */
     N,          /* 3D */
     N,          /* 3E */
@@ -98,7 +100,7 @@ static CONST UBYTE lokeymaptypes[] =
 
 static CONST UBYTE hikeymaptypes[] =
 {
-    N,          /* 40 SPACE */
+    D|A,        /* 40 SPACE */
     N,          /* 41 BACKSPACE */
     ST|S,       /* 42 TAB */
     N,          /* 43 ENTER */
@@ -184,77 +186,262 @@ static CONST UBYTE hikeymaptypes[] =
 #define BYTES(b0, b1, b2, b3) \
         (((UBYTE)b0)<<24) | (((UBYTE)b1)<<16) | (((UBYTE)b2)<<8) | (((UBYTE)b3)<<0)
 
+
+/* dead symbols
+ 
+  1= ´
+  2 = `
+  3 = ^
+  4 = ~
+  5 = " 
+  6 = °
+  
+*/
+
+STATIC CONST UBYTE a_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, 'æ', /* 0xE6 */
+    0, 'Æ', /* 0xC6 */
+    0, 0x01,
+    0, 0x01,
+    0, 0x81,
+    0, 0x81,
+    
+    'a', 'á' /*0xE1*/, 'à' /*0xE0*/, 'â' /*0xE2*/, 'ã' /*0xE3*/, 'ä' /*0xE4*/, 'å' /*0xE5*/,
+    
+    'A', 'Á' /*0xC1*/, 'À' /*0xC0*/, 'Â' /*0xC2*/, 'Ã' /*0xC3*/, 'Ä' /*0xC4*/, 'Å' /*0xC5*/
+};
+
+STATIC CONST UBYTE e_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, '©',
+    0, '©',
+    0, 0x05,
+    0, 0x05,
+    0, 0x85,
+    0, 0x85,
+    
+    'e', 'é' /*0xE9*/, 'è' /*0xE8*/, 'ê' /*0xEA*/, 'e', 'ë' /*0xEB*/, 'e',
+    
+    'E', 'É' /*0xC9*/, 'È' /*0xC8*/, 'Ê' /*0xCA*/, 'E', 'Ë' /*0xCB*/, 'E'
+};
+
+STATIC CONST UBYTE u_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, 'µ', /* 0xB5 */
+    0, 'µ', /* 0xB5 */
+    0, 0x15,
+    0, 0x15,
+    0, 0x95,
+    0, 0x95,
+    
+    'u', 'ú' /*0xFA*/, 'ù' /*0xF9*/, 'û' /*0xFB*/, 'u', 'ü' /*0xFC*/, 'u',
+    
+    'U', 'Ú' /*0xDA*/, 'Ù' /*0xD9*/, 'Û' /*0xDB*/, 'U', 'Ü' /*0xDC*/, 'U'
+};
+
+STATIC CONST UBYTE i_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, '¡', /* 0xA1 */
+    0, '¦', /* 0xA6 */
+    0, 0x09,
+    0, 0x09,
+    0, 0x89,
+    0, 0x89,
+    
+    'i', 'í' /*0xED*/, 'ì' /*0xEC*/, 'î' /*0xEE*/, 'i', 'ï' /*0xEF*/, 'i',
+    
+    'I', 'Í' /*0xCD*/, 'Ì' /*0xCC*/, 'Î' /*0xCE*/, 'I', 'Ï' /*0xCF*/, 'I'
+};
+
+STATIC CONST UBYTE o_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, 'ø', /* 0xF8 */
+    0, 'Ø', /* 0xD8 */
+    0, 0x0F,
+    0, 0x0F,
+    0, 0x8F,
+    0, 0x8F,
+    
+    'o', 'ó' /*0xF3*/, 'ò' /*0xF2*/, 'ô' /*0xF4*/, 'õ' /*0xF5*/, 'ö' /*0xF6*/, 'o',
+    
+    'O', 'Ó' /*0xD3*/, 'Ò' /*0xD2*/, 'Ô' /*0xD4*/, 'Õ' /*0xD5*/, 'Ö' /*0xD6*/, 'O'
+};
+ 
+STATIC CONST UBYTE y_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, EUR,
+    0, '¥',
+    0, 0x19,
+    0, 0x19,
+    0, 0x99,
+    0, 0x99,
+    
+    'y', 'ý', 'y', 'y', 'y', 'ÿ', 'y',
+    
+    'Y', 'Ý', 'Y', 'Y', 'Y', 'Y', 'Y'
+};
+
+STATIC CONST UBYTE n_descr[] =
+{
+    DPF_MOD, 0x10,
+    DPF_MOD, 0x17,
+    0, 0x00,
+    0, '¯',
+    0, 0x0E,
+    0, 0x0E,
+    0, 0x8E,
+    0, 0x8E,
+    
+    'n', 'n', 'n', 'n', 'ñ', 'n', 'n',
+    
+    'N', 'N', 'N', 'N', 'Ñ', 'N', 'N'
+};
+
+STATIC CONST UBYTE f_descr[] =
+{
+    0, 'f', 
+    0, 'F', 
+    DPF_DEAD, 1,
+    DPF_DEAD, 1,
+    0, 0x6, 
+    0, 0x6, 
+    0, 0x86, 
+    0, 0x86, 
+};
+
+STATIC CONST UBYTE g_descr[] =
+{
+    0, 'g', 
+    0, 'G', 
+    DPF_DEAD, 2,
+    DPF_DEAD, 2,
+    0, 0x7, 
+    0, 0x7, 
+    0, 0x87, 
+    0, 0x87, 
+};
+
+STATIC CONST UBYTE h_descr[] =
+{
+    0, 'h', 
+    0, 'H', 
+    DPF_DEAD, 3,
+    DPF_DEAD, 3,
+    0, 0x8, 
+    0, 0x8, 
+    0, 0x88, 
+    0, 0x88, 
+};
+
+STATIC CONST UBYTE j_descr[] =
+{
+    0, 'j', 
+    0, 'J', 
+    DPF_DEAD, 4,
+    DPF_DEAD, 4,
+    0, 0xa, 
+    0, 0xa, 
+    0, 0x8a, 
+    0, 0x8a, 
+};
+
+STATIC CONST UBYTE k_descr[] =
+{
+    0, 'k', 
+    0, 'K', 
+    DPF_DEAD, 5,
+    DPF_DEAD, 5,
+    0, 0xb, 
+    0, 0xb, 
+    0, 0x8b, 
+    0, 0x8b, 
+};
+
+
 static CONST IPTR lokeymap[] =
 {
     BYTES('~', '`', '~', '`'),          /* 00 Left of 1 Key */
-    BYTES(0xB9, 0xA1, '!', '1'),        /* 01 1 */
-    BYTES(0xB2, '@', '@', '2'),         /* 02 2 */
-    BYTES(0xB3, 0xA3, '#', '3'),        /* 03 3 */
-    BYTES(0xBC, 0xA4, '$', '4'),        /* 04 4 */
-    BYTES(0xBD, 0xBD, '%', '5'),        /* 05 5 */
-    BYTES(0xBE, 0xBE, '^', '6'),        /* 06 6 */
-    BYTES(0xF7, '{', '&', '7'),         /* 07 7 */
-    BYTES('[', '[', '*', '8'),          /* 08 8 */
-    BYTES(']', ']', '(', '9'),          /* 09 9 */
-    BYTES('}', '}', ')', '0'),          /* 0A 0 */
+    BYTES('!', '¹', '!', '1'),          /* 01 1 */
+    BYTES('@', '²', '@', '2'),          /* 02 2 */
+    BYTES('#', '³', '#', '3'),          /* 03 3 */
+    BYTES('$', '¢', '$', '4'),          /* 04 4 */
+    BYTES('%', '¼', '%', '5'),          /* 05 5 */
+    BYTES('^', '½', '^', '6'),          /* 06 6 */
+    BYTES('&', '¾', '&', '7'),          /* 07 7 */
+    BYTES('*', '·', '*', '8'),          /* 08 8 */
+    BYTES('(', '«', '(', '9'),          /* 09 9 */
+    BYTES(')', '»', ')', '0'),          /* 0A 0 */
     BYTES('_', '-', '_', '-'),          /* 0B Right of 0 */
     BYTES('+', '=', '+', '='),          /* 0C 2nd right of 0 */
     BYTES('|', '\\', '|', '\\'),        /* 0D 3rd right of 0 */
     BYTES(0, 0, 0, 0),                  /* 0E undefined */
     BYTES('0', '0', '0', '0'),          /* 0F NUM 0 */
-    BYTES('Q', 'q', 'Q', 'q'),          /* 10 */
-    BYTES('W', 'w', 'W', 'w'),          /* 11 */
-    BYTES('E', 'e', 'E', 'e'),          /* 12 */
-    BYTES('R', 'r', 'R', 'r'),          /* 13 */
-    BYTES('T', 't', 'T', 't'),          /* 14 */
-    BYTES('Y', 'y', 'Y', 'y'),          /* 15 */
-    BYTES('U', 'u', 'U', 'u'),          /* 16 */
-    BYTES('I', 'i', 'I', 'i'),          /* 17 */
-    BYTES('O', 'o', 'O', 'o'),          /* 18 */
-    BYTES('P', 'p', 'P', 'p'),          /* 19 */
+    BYTES('Å', 'å', 'Q', 'q'),          /* 10 */
+    BYTES('°', '°', 'W', 'w'),          /* 11 */
+    DEAD(e_descr),                      /* 12 */
+    BYTES('®', '®', 'R', 'r'),          /* 13 */
+    BYTES('Þ', 'þ', 'T', 't'),          /* 14 */
+    DEAD(y_descr),                      /* 15 */
+    DEAD(u_descr),                      /* 16 */
+    DEAD(i_descr),                      /* 17 */
+    DEAD(o_descr),                      /* 18 */
+    BYTES('¶', '¶', 'P', 'p'),          /* 19 */
     
     BYTES('{', '[', '{', '['),          /* 1A */
     BYTES('}', ']', '}', ']'),          /* 1B */
     BYTES(0, 0, 0, 0),                  /* 1C undefined */
-    BYTES('1', '1', '1', '1'),          /* 1D NUM 1*/
-    BYTES('2', '2', '2', '2'),          /* 1E NUM 2*/
-    BYTES('3', '3', '3', '3'),          /* 1F NUM 3*/
+    BYTES('0', '0', '0', '1'),          /* 1D NUM 1*/
+    BYTES('0', '0', '0', '2'),          /* 1E NUM 2*/
+    BYTES('0', '0', '0', '3'),          /* 1F NUM 3*/
     
-    BYTES('A', 'a', 'A', 'a'),          /* 20 */
-    BYTES('S', 's', 'S', 's'),          /* 21 */
-    BYTES('D', 'd', 'D', 'd'),          /* 22 */
-    BYTES('F', 'f', 'F', 'f'),          /* 23 */
-    BYTES('G', 'g', 'G', 'g'),          /* 24 */
-    BYTES('H', 'h', 'H', 'h'),          /* 25 */
-    BYTES('J', 'j', 'J', 'j'),          /* 26 */
-    BYTES('K', 'k', 'K', 'k'),          /* 27 */
-    BYTES('L', 'l', 'L', 'l'),          /* 28 */
+    DEAD(a_descr),                      /* 20 */
+    BYTES('§', 'ß', 'S', 's'),          /* 21 */
+    BYTES('Ð', 'ð', 'D', 'd'),          /* 22 */
+    DEAD(f_descr),                      /* 23 */
+    DEAD(g_descr),                      /* 24 */
+    DEAD(h_descr),                      /* 25 */
+    DEAD(j_descr),                      /* 26 */
+    DEAD(k_descr),                      /* 27 */
+    BYTES('£', '£', 'L', 'l'),          /* 28 */
     
     BYTES(':', ';', ':', ';'),          /* 29 */
-    BYTES('"', 0x27, '"', 0x27),        /* 2A */
-    BYTES('|', '\\', '|', '\\'),        /* 2B */
+    BYTES('"', '\'', '"', '\''),        /* 2A */
+    BYTES(0, 0, 0, 0),                  /* 2B undefined */
     BYTES(0, 0, 0, 0),                  /* 2C undefined */
-    BYTES('4', '4', '4', '4'),          /* 2D NUM 4 */
-    BYTES('5', '5', '5', '5'),          /* 2E NUM 5 */
-    BYTES('6', '6', '6', '6'),          /* 2F NUM 6 */
-    BYTES('>', '<', '>', '<'),           /* 30 */
+    BYTES('0', '0', '0', '4'),          /* 2D NUM 4 */
+    BYTES('0', '0', '0', '5'),          /* 2E NUM 5 */
+    BYTES('0', '0', '0', '6'),          /* 2F NUM 6 */
+    BYTES('»', '«', '>', '<'),          /* 30 */
     
-    BYTES('Z', 'z', 'Z', 'z'),          /* 31 */
-    BYTES('X', 'x', 'X', 'x'),          /* 32 */
-    BYTES('C', 'c', 'C', 'c'),          /* 33 */
-    BYTES('V', 'v', 'V', 'v'),          /* 34 */
-    BYTES('B', 'b', 'B', 'b'),          /* 35 */
-    BYTES('N', 'n', 'N', 'n'),          /* 36 */
-    BYTES('M', 'm', 'M', 'm'),          /* 37 */
+    BYTES('¬', '±', 'Z', 'z'),          /* 31 */
+    BYTES('÷', '×', 'X', 'x'),          /* 32 */
+    BYTES('Ç', 'ç', 'C', 'c'),          /* 33 */
+    BYTES('ª', 'ª', 'V', 'v'),          /* 34 */
+    BYTES('º', 'º', 'B', 'b'),          /* 35 */
+    DEAD(n_descr),                      /* 36 */
+    BYTES('¿', '¸', 'M', 'm'),          /* 37 */
     
     BYTES('<', ',', '<', ','),          /* 38 */
     BYTES('>', '.', '>', '.'),          /* 39 */
     BYTES('?', '/', '?', '/'),          /* 3A */
     BYTES(0, 0, 0, 0),  /* 3B */
-    BYTES('.', '.', '.', '.'),          /* 3C NUM . */
-    BYTES('7', '7', '7', '7'),          /* 3D NUM 7 */
-    BYTES('8', '8', '8', '8'),          /* 3E NUM 8 */
-    BYTES('9', '9', '9', '9'),          /* 3F NUM 9 */
+    BYTES('0', '0', '0', '.'),          /* 3C NUM . */
+    BYTES('0', '0', '0', '7'),          /* 3D NUM 7 */
+    BYTES('0', '0', '0', '8'),          /* 3E NUM 8 */
+    BYTES('0', '0', '0', '9'),          /* 3F NUM 9 */
 };
 
 /* Strings for the F1 key. In a real AmigaOS keymap, these would have come after
@@ -489,9 +676,17 @@ CONST UBYTE help_descr[] =
     0x9B,'?','~'
 };
 
+STATIC CONST UBYTE space_descr[] =
+{
+    DPF_MOD, 0x4,
+    0, 0XA0,
+
+    ' ', '´' /*0xB4*/, '`','^','~', '¨' /*0xA8*/, '°' /*0xB0*/
+};
+
 static CONST IPTR hikeymap[] =
 {
-    BYTES(' ', ' ', ' ', ' '),  /* 40 */
+    DEAD(space_descr),          /* 40 SPACE */
     BYTES(8, 8, 8, 8),          /* 41 BACKSPACE*/
     STRING(tab_descr),          /* 42 TAB */
     BYTES(13, 13, 13, 13),      /* 43 ENTER */
