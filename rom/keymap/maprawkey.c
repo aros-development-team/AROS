@@ -228,11 +228,13 @@
                         {
                             WORD dki_2;
 
+                            dk_idx = (dki_1 & DP_2DINDEXMASK) * (dki_1 >> DP_2DFACSHIFT);
+
                             dki_2 = GetDeadKeyIndex(event->ie_Prev2DownCode, event->ie_Prev2DownQual, keyMap);
                             if (dki_2 != -1) /* Was it a dead key ? */
                             {
                                 /* Compute deadkey index - explained in RKM:L p. 826 */
-                                dk_idx = (dki_1 & DP_2DINDEXMASK) * (dki_1 >> DP_2DFACSHIFT) + (dki_2 & DP_2DINDEXMASK);
+                                dk_idx += (dki_2 & DP_2DINDEXMASK);
                             }
                         }
                     }
