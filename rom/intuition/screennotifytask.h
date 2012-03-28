@@ -6,7 +6,7 @@
     $Id$
 */
 
-#define SCREENNOTIFYTASK_NAME 	    	" Screennotify Handler "
+#define SCREENNOTIFYTASK_NAME 	    	"Screennotify Handler >>"
 #define SCREENNOTIFYTASK_STACKSIZE  	AROS_STACKSIZE
 #define SCREENNOTIFYTASK_PRIORITY   	0
 
