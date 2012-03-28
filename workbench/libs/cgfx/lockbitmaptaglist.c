@@ -92,7 +92,7 @@
 	    	break;
 
 	    case LBMI_BYTESPERROW:
-		OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
+        OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_BytesPerRow, (IPTR *)tag->ti_Data);
 		break;
 
 	    case LBMI_BYTESPERPIX:
