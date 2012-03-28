@@ -98,7 +98,7 @@ struct MyEditHookMsg
 
 /*****************************************************************************************/
 
-const STRPTR CONCLIP_TASKNAME = "« ConClip »";
+const STRPTR CONCLIP_TASKNAME = "ConClip >>";
 const STRPTR CONCLIP_PORTNAME = "ConClip.rendezvous";
 
 /*****************************************************************************************/

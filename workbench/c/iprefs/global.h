@@ -173,7 +173,7 @@
 #define GET_WORD(x) x
 #endif
 
-#define IPREFS_SEM_NAME     "« IPrefs »"
+#define IPREFS_SEM_NAME     "IPrefs >>"
 #define DO_LOCALE_PATCHES   0
 
 struct IPrefsSem

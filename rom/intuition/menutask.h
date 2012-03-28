@@ -7,7 +7,7 @@
     $Id$
 */
 
-#define MENUTASK_NAME 	    	" Menu Handler "
+#define MENUTASK_NAME 	    	"Menu Handler >>"
 #define MENUTASK_STACKSIZE  	AROS_STACKSIZE
 #ifdef __MORPHOS__
 #define MENUTASK_PRIORITY   	19
