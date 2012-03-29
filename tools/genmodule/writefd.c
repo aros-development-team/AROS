@@ -17,7 +17,7 @@ static void write_fd_func(FILE *out, struct functionhead *funclistit, unsigned i
         if (funclistit->lvo == lvo + 2)
             fprintf(out, "private()()\n");
         else
-            fprintf(out, "##bias %u\n", (funclistit->lvo - 1) * 6);
+            fprintf(out, "##bias %u\n", funclistit->lvo * 6);
     }
 
     fprintf(out, "%s(", funclistit->name);
