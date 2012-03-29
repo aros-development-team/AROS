@@ -80,11 +80,27 @@ static void CleanupLocale(void)
 
 static CONST_STRPTR MSG(ULONG id)
 {
+    ULONG arridx;
+
+    // we have defined message IDs in the *.cd file, so we must first search
+    // for the ID in the array
+    for
+    (
+        arridx = 0;
+        arridx < sizeof (CatCompArray) / sizeof (struct CatCompArrayType) - 1;
+        arridx++
+    )
+    {
+        if (CatCompArray[arridx].cca_ID == id)
+        {
+            break;
+        }
+    }
     if (catalog != NULL)
     {
-        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[arridx].cca_Str);
     }
-    return CatCompArray[id].cca_Str;
+    return CatCompArray[arridx].cca_Str;
 }
 
 
