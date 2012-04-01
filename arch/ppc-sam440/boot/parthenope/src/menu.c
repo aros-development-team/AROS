@@ -734,6 +734,6 @@ void menu_free(menu_t * self)
 	while (self != NULL) {
 		entry = self;
 		self = self->next;
-		entry_free(self);
+		entry_free(entry);
 	}
 }

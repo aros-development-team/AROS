@@ -501,6 +501,7 @@ boot_dev_t *cdrom_create()
 		char huge_array[1000];
 		huge_array[1] = 1;
 		huge_array[999] = 2;
+		(void)huge_array; /* Placeholder to eat stack */
 
 		boot->phys = dev;
 		boot->dev.load_file =

@@ -6,7 +6,7 @@ FILES     := parthenope cdrom context elf ext2 menu rdb sfs support tftp
 DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
 
-USER_CFLAGS += -DUSE_UBOOT -ffixed-r2 -ffixed-r14 -ffixed-r29 -Wall -fno-builtin -nostdinc -nostdlib -DIN_PARTHENOPE -Os -DVERSION=\"91\" -DDATE=\"`date +%-d.%-m.%Y`\"
+USER_CFLAGS += -DUSE_UBOOT -ffixed-r2 -ffixed-r14 -ffixed-r29 -Wall -fno-builtin -nostdinc -nostdlib -DIN_PARTHENOPE -O2 -DVERSION=\"91\" -DDATE=\"`date +%-d.%-m.%Y`\"
 
 #MM parthenope-sam440:
 parthenope-sam440: $(AROSDIR)/Parthenope
