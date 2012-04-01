@@ -166,7 +166,7 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 {
 	struct SfsObject *o;
 	void *buffer;
-	uint32_t i, next, readed, size, offset, tocopy;
+	uint32_t i, next, readed, size, tocopy;
 	struct SfsExtentBNode *sebn;
 
 	if ((o = sfs_find(self, filename)) == NULL) {
@@ -178,7 +178,6 @@ static int sfs_loadfile(sfs_boot_dev_t * self, char *filename, void *filebuffer)
 
 	next = o->object.file.data;
 	size = o->object.file.size;
-	offset = 0;
 	readed = 0;
 	while (next != 0 && readed < size) {
 		sebn = (struct SfsExtentBNode *)get_bnode(self, next);
