@@ -87,11 +87,11 @@ void EMAC_MAL_Init(struct EMACBase *EMACBase)
 
     KernelBase = OpenResource("kernel.resource");
 
-    EMACBase->emb_MALHandlers[0] = KrnAddIRQHandler(INTR_MTE,   MALIRQHandler, EMACBase, INTR_MTE);
-    EMACBase->emb_MALHandlers[1] = KrnAddIRQHandler(INTR_MRE,   MALIRQHandler, EMACBase, INTR_MRE);
-    EMACBase->emb_MALHandlers[2] = KrnAddIRQHandler(INTR_MTDE,  MALIRQHandler, EMACBase, INTR_MTDE);
-    EMACBase->emb_MALHandlers[3] = KrnAddIRQHandler(INTR_MRDE,  MALIRQHandler, EMACBase, INTR_MRDE);
-    EMACBase->emb_MALHandlers[4] = KrnAddIRQHandler(INTR_MS,    MALIRQHandler, EMACBase, INTR_MS);
+    EMACBase->emb_MALHandlers[0] = KrnAddIRQHandler(INTR_MTE,   MALIRQHandler, EMACBase, (APTR)INTR_MTE);
+    EMACBase->emb_MALHandlers[1] = KrnAddIRQHandler(INTR_MRE,   MALIRQHandler, EMACBase, (APTR)INTR_MRE);
+    EMACBase->emb_MALHandlers[2] = KrnAddIRQHandler(INTR_MTDE,  MALIRQHandler, EMACBase, (APTR)INTR_MTDE);
+    EMACBase->emb_MALHandlers[3] = KrnAddIRQHandler(INTR_MRDE,  MALIRQHandler, EMACBase, (APTR)INTR_MRDE);
+    EMACBase->emb_MALHandlers[4] = KrnAddIRQHandler(INTR_MS,    MALIRQHandler, EMACBase, (APTR)INTR_MS);
 
     intptr_t buffers = (intptr_t)AllocPooled(EMACBase->emb_Pool,
                                             32 + 4 * (RX_RING_SIZE + TX_RING_SIZE) * ((RXTX_ALLOC_BUFSIZE+31)& ~31));

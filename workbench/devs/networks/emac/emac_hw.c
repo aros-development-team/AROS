@@ -19,16 +19,6 @@ void EMAC_Startup(struct EMACUnit *unit)
 
     D(bug("[EMAC%d] Startup\n", unit->eu_UnitNum));
 
-#if DEBUG
-
-    unit->eu_DevAddr[0] = unit->eu_OrgAddr[0] = 0;
-    unit->eu_DevAddr[1] = unit->eu_OrgAddr[1] = 1;
-    unit->eu_DevAddr[2] = unit->eu_OrgAddr[2] = 2;
-    unit->eu_DevAddr[3] = unit->eu_OrgAddr[3] = 3;
-    unit->eu_DevAddr[4] = unit->eu_OrgAddr[4] = 4;
-    unit->eu_DevAddr[5] = unit->eu_OrgAddr[5] = 5 + unit->eu_UnitNum;
-
-#else
     tmp = inl((uint32_t*)(unit->eu_IOBase + EMAC_IAH));
 
     unit->eu_DevAddr[0] = unit->eu_OrgAddr[0] = (tmp >> 8) & 0xff;
@@ -40,15 +30,11 @@ void EMAC_Startup(struct EMACUnit *unit)
     unit->eu_DevAddr[3] = unit->eu_OrgAddr[3] = (tmp >> 16) & 0xff;
     unit->eu_DevAddr[4] = unit->eu_OrgAddr[4] = (tmp >> 8) & 0xff;
     unit->eu_DevAddr[5] = unit->eu_OrgAddr[5] = (tmp >> 0) & 0xff;
-#endif
     D(bug("[EMAC%d] HW addr=%02x:%02x:%02x:%02x:%02x:%02x\n", unit->eu_UnitNum,
               unit->eu_DevAddr[0],unit->eu_DevAddr[1],
               unit->eu_DevAddr[2],unit->eu_DevAddr[3],
               unit->eu_DevAddr[4],unit->eu_DevAddr[5]));
 }
-
-#undef D
-#define D(x) /* */
 
 int EMAC_miiphy_read(struct EMACUnit *unit, uint8_t reg, uint16_t *value)
 {
@@ -105,7 +91,6 @@ int EMAC_miiphy_write(struct EMACUnit *unit, uint8_t reg, uint16_t value)
 {
     unsigned long sta_reg;  /* STA scratch area */
     unsigned long i;
-    unsigned long emac_reg;
 
     /* see if it is ready for 1000 nsec */
      i = 0;
