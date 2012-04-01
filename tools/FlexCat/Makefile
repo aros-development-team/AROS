@@ -6,7 +6,7 @@
 
 # Things of interest.
 SRC	:=  flexcat.c
-SDFILES	:=  C_c_orig.sd C_h_orig.sd gcccatcomp.sd
+SDFILES	:=  C_h_aros.sd gcccatcomp.sd
 
 include $(TOP)/config/make.cfg
 
