@@ -77,7 +77,7 @@
     D(bug("[exec] CachePreDMA(%08x, %d, %c) = %08x\n", address, *length, flags & DMA_ReadFromRAM ? 'R':'W', addr));
 
     /* At PreDMA stage only data caches need to be flushed */
-   	CacheClearE(address, *length, CACRF_ClearD);
+    CacheClearE(address, *length, CACRF_ClearD);
 
     return addr;
 

@@ -5,7 +5,7 @@
 
 #define CLID_I2C_AMCC440	"hidd.i2c.amcc440"
 
-typedef struct regs {
+typedef struct cpuregs {
     uint32_t    gpr[32];
     uint32_t    srr0;
     uint32_t    srr1;
@@ -15,15 +15,15 @@ typedef struct regs {
     uint32_t    ccr;
     uint32_t    dar;
     uint32_t    dsisr;
-} regs_t;
+} cpuregs_t;
 
 typedef struct fpuregs {
     double      fpr[32];
     uint64_t    fpscr;
 } fpuregs_t;
 
-typedef struct context {
-    regs_t      cpu;
+typedef struct AROSCPUContext {
+    cpuregs_t   cpu;
     fpuregs_t   fpu;
 } context_t;
 

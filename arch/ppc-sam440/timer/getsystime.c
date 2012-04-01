@@ -54,7 +54,7 @@
     struct TimerBase *timerBase = (struct TimerBase *)TimerBase;
 
     Disable();
-    EClockUpdate(TimerBase);
+    EClockUpdate(timerBase);
     dest->tv_secs = timerBase->tb_CurrentTime.tv_secs;
     dest->tv_micro = timerBase->tb_CurrentTime.tv_micro;
     Enable();

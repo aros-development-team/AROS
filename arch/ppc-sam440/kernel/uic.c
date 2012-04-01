@@ -1,10 +1,15 @@
+
+#include <aros/debug.h>
 #include <asm/amcc440.h>
 #include <exec/lists.h>
 #include <stddef.h>
 
+#include LC_LIBDEFS_FILE
 #include "kernel_intern.h"
+#include "kernel_globals.h"
+#include "kernel_intr.h"
 
-void __attribute__((noreturn)) uic_handler(regs_t *ctx, uint8_t exception, void *self)
+void uic_handler(context_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
     

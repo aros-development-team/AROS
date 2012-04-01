@@ -34,7 +34,9 @@
 //#include "timer_intern.h"
 #include LC_LIBDEFS_FILE
 
-#include "../kernel/syscall.h"
+#include "kernel_syscall.h"
+#include "kernel_globals.h"
+#include "kernel_intern.h"
 
 #include "lowlevel.h"
 
@@ -45,22 +47,17 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = rdspr(SPRG4U);
-    struct ExecBase *SysBase = rdspr(SPRG5U);
+    void *KernelBase = getKernelBase();
+    struct ExecBase *SysBase = getSysBase();
     
     TimerBase->tb_prev_tick = inl(GPT0_TBC);
     
     /* Setup the timer.device data */
     LIBBASE->tb_CurrentTime.tv_secs = 0;
     LIBBASE->tb_CurrentTime.tv_micro = 0;
-    LIBBASE->tb_VBlankTime.tv_secs = 0;
-    LIBBASE->tb_VBlankTime.tv_micro = 1000000 / (SysBase->VBlankFrequency * SysBase->PowerSupplyFrequency);
     LIBBASE->tb_Elapsed.tv_secs = 0;
     LIBBASE->tb_Elapsed.tv_micro = 0;
 
-    D(kprintf("Timer period: %ld secs, %ld micros\n",
-        LIBBASE->tb_VBlankTime.tv_secs, LIBBASE->tb_VBlankTime.tv_micro));
-    
     /* Initialise the lists */
     NEWLIST( &LIBBASE->tb_Lists[0] );
     NEWLIST( &LIBBASE->tb_Lists[1] );
@@ -132,7 +129,7 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = rdspr(SPRG4U);
+    void *KernelBase = getKernelBase();
     
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     

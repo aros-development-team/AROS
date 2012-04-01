@@ -20,19 +20,19 @@
 void METHOD(I2C440, Hidd_I2C, PutBits)
 {
 	/* Put i2c bus into reset state. Mandatory in order to control it manually */
-	outb(IIC_XTCNTLSS_SRST, IIC0_XTCNTLSS);
+	outb(IIC_XTCNTLSS_SRST, (UBYTE *)IIC0_XTCNTLSS);
 
 	UBYTE val=0;
 
 	val |= (msg->scl ? IIC_DIRECTCNTL_SCLC : 0);
 	val |= (msg->sda ? IIC_DIRECTCNTL_SDAC : 0);
 
-	outb(val, IIC0_DIRECTCNTL);
+	outb(val, (UBYTE *)IIC0_DIRECTCNTL);
 }
 
 void METHOD(I2C440, Hidd_I2C, GetBits)
 {
-	UBYTE val = inb(IIC0_DIRECTCNTL);
+	UBYTE val = inb((UBYTE *)IIC0_DIRECTCNTL);
 
     *msg->sda = (val & IIC_DIRECTCNTL_MSDA) != 0;
     *msg->scl = (val & IIC_DIRECTCNTL_MSCL) != 0;
