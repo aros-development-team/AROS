@@ -61,7 +61,7 @@ AROS_UFH3(void, Enumerator,
 	port = CreateMsgPort();
 	tr = CreateIORequest(port, sizeof(struct timerequest));
 
-	OpenDevice("timer.device", UNIT_VBLANK, tr, 0);
+	OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0);
 
     struct pHidd_PCIDevice_WriteConfigLong wl;
     struct pHidd_PCIDevice_ReadConfigLong rl;
@@ -78,7 +78,7 @@ AROS_UFH3(void, Enumerator,
     };
 
     OOP_SetAttrs(pciDevice, (struct TagItem *)attrs);
-    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, &base);
+    OOP_GetAttr(pciDevice, aHidd_PCIDevice_Base0, (IPTR *)&base);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_Driver, (void *)&driver);
 
     cap_length = mmio_b(base);
@@ -119,7 +119,7 @@ AROS_UFH3(void, Enumerator,
             	tr->tr_node.io_Command = TR_ADDREQUEST;
             	tr->tr_time.tv_sec = 0;
             	tr->tr_time.tv_usec = 40000;
-            	DoIO(tr);
+            	DoIO((struct IORequest *)tr);
                 delay--;
                 rl.reg = offset;
                 cap = OOP_DoMethod(driver, &rl.mID);
@@ -161,7 +161,7 @@ AROS_UFH3(void, Enumerator,
         	tr->tr_node.io_Command = TR_ADDREQUEST;
         	tr->tr_time.tv_sec = 0;
         	tr->tr_time.tv_usec = 40000;
-        	DoIO(tr);
+        	DoIO((struct IORequest *)tr);
             value = mmio_l(reg_base + 0x04);
             if ((value == ~(uint32_t)0) || value & 0x1000)
                 break;
@@ -176,7 +176,7 @@ AROS_UFH3(void, Enumerator,
 	tr->tr_node.io_Command = TR_ADDREQUEST;
 	tr->tr_time.tv_sec = 0;
 	tr->tr_time.tv_usec = 100000;
-	DoIO(tr);
+	DoIO((struct IORequest *)tr);
     mmio_l(reg_base + 0) = 0;
 
     hcc_params &= 0xf;
@@ -186,7 +186,7 @@ AROS_UFH3(void, Enumerator,
         mmio_l(reg_base + 0x44 + 4*hcc_params) = 1 << 13;
     }
 
-    CloseDevice(tr);
+    CloseDevice((struct IORequest *)tr);
     DeleteIORequest(tr);
     DeleteMsgPort(port);
 

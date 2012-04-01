@@ -215,8 +215,10 @@ OOP_Object *METHOD(USBDevice, Root, New)
 
             D(bug("[USBDevice::New] iProduct = \"%s\"\n", dev->product_name));
         }
-        else
-        	dev->product_name = unknown_name;
+        else {
+            dev->product_name = AllocVecPooled(SD(cl)->MemPool, 1 + strlen(unknown_name));
+            CopyMem(unknown_name, dev->product_name, strlen(unknown_name) + 1);
+        }
 
         if (dev->descriptor.iManufacturer && HIDD_USBDevice_GetString(o, dev->descriptor.iManufacturer, langid, &string))
         {
@@ -229,8 +231,11 @@ OOP_Object *METHOD(USBDevice, Root, New)
 
             D(bug("[USBDevice::New] iManufacturer = \"%s\"\n", dev->manufacturer_name));
         }
-        else
-			dev->manufacturer_name = unknown_manufacturer;
+        else {
+            dev->manufacturer_name = AllocVecPooled(SD(cl)->MemPool, 1 + strlen(unknown_manufacturer));
+            CopyMem(unknown_manufacturer, dev->manufacturer_name, strlen(unknown_manufacturer) + 1);
+        }
+
 
         if (dev->descriptor.iSerialNumber && HIDD_USBDevice_GetString(o, dev->descriptor.iSerialNumber, langid, &string))
         {
@@ -243,8 +248,10 @@ OOP_Object *METHOD(USBDevice, Root, New)
 
             D(bug("[USBDevice::New] iSerial = \"%s\"\n", dev->serialnumber_name));
         }
-        else
-        	dev->serialnumber_name = unknown_serial;
+        else {
+            dev->serialnumber_name = AllocVecPooled(SD(cl)->MemPool, 1 + strlen(unknown_serial));
+            CopyMem(unknown_serial, dev->serialnumber_name, strlen(unknown_serial) + 1);
+        }
     }
 
     D(bug("[USB] USBDevice::New() = %p\n",o));
@@ -378,7 +385,7 @@ static usb_interface_descriptor_t *find_idesc(usb_config_descriptor_t *cd, int i
     return (NULL);
 }
 
-static usb_endpoint_descriptor_t *find_edesc(usb_config_descriptor_t *cd, int ifaceidx, int altidx,
+static inline usb_endpoint_descriptor_t *find_edesc(usb_config_descriptor_t *cd, int ifaceidx, int altidx,
                 int endptidx)
 {
     char *p = (char *)cd;
@@ -601,7 +608,7 @@ usb_endpoint_descriptor_t * METHOD(USBDevice, Hidd_USBDevice, GetEndpoint)
         }
     }
 
-    DumpDescriptor(d);
+    DumpDescriptor((usb_descriptor_t *)d);
 
     return d;
 }
@@ -717,7 +724,6 @@ void METHOD(USBDevice, Root, Set)
     uint32_t idx;
     struct TagItem *tag;
     struct TagItem *tags = msg->attrList;
-    DeviceData *dev = OOP_INST_DATA(cl, o);
 
     while ((tag = NextTagItem(&tags)))
     {

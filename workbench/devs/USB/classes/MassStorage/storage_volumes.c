@@ -85,7 +85,7 @@ static const struct _pt {
 static STRPTR MatchHandler(IPTR DosType)
 {
     int i;
-    IPTR fs = 0;
+    STRPTR fs = NULL;
 
     for (i = 0; i < (sizeof(DosTypes) / sizeof(struct _dt)); i++)
     {
@@ -397,7 +397,7 @@ static void USBMSS_Automounter()
 	struct ExpansionBase *ExpansionBase;
 	struct BootNode *bn;
 
-	ExpansionBase = OpenLibrary("expansion.library", 0);
+	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
 
 	D(bug("[MSS] Automounter process\n"));
 
@@ -411,7 +411,7 @@ static void USBMSS_Automounter()
         	CheckPartitions(ExpansionBase, SysBase, bn);
 		}
 
-		CloseLibrary(ExpansionBase);
+		CloseLibrary((struct Library *)ExpansionBase);
 	}
 
 	D(bug("[MSS] Automounter did the job.\n"));
@@ -490,7 +490,7 @@ BOOL USBMSS_AddVolume(mss_unit_t *unit)
                     if (DOSBase)
                     {
                     	struct TagItem tags[] = {
-                    			{ NP_UserData,		bn },
+                    			{ NP_UserData,		(IPTR)bn },
                     			{ NP_StackSize,		10240 },
                     			{ NP_Name,			(IPTR)"Automounter process" },
                     			{ NP_Entry,			(IPTR)USBMSS_Automounter },
@@ -498,7 +498,7 @@ BOOL USBMSS_AddVolume(mss_unit_t *unit)
                     			{ TAG_DONE, 0UL }
                     	};
                     	D(bug("[MSS] dos.library is up. Do the job a volume.resource should!\n"));
-#warning FIXME: AROS needs volume.resource, which would perform the job done here....
+// FIXME: AROS needs volume.resource, which would perform the job done here....
 
                     	CreateNewProc(tags);
 

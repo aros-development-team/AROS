@@ -215,7 +215,7 @@ OOP_Object *METHOD(USBMouse, Root, New)
 	t->tc_Node.ln_Type = NT_TASK;
 	t->tc_Node.ln_Pri = 20;     /* same priority as input.device */
 
-	NewAddTask(t, mouse_process, NULL, &tags);
+	NewAddTask(t, mouse_process, NULL, &tags[0]);
 	mouse->mouse_task = t;
 		}
 	}
@@ -242,7 +242,6 @@ void METHOD(USBMouse, Root, Dispose)
 static void mouse_process(OOP_Class *cl, OOP_Object *o)
 {
 	MouseData *mouse = OOP_INST_DATA(cl, o);
-	struct hid_staticdata *sd = mouse->sd;
 	uint32_t sigset;
 
 	uint8_t dos_not_ready = 1;
@@ -298,7 +297,6 @@ static void mouse_process(OOP_Class *cl, OOP_Object *o)
 				while (mouse->tail != mouse->head)
 				{
 					int x=0,y=0,z=0,buttons=0,b_down=0,b_up=0;
-					int i;
 					int iec = 0;
 
 					x = mouse->report_ring[mouse->tail].dx;
@@ -345,7 +343,7 @@ static void mouse_process(OOP_Class *cl, OOP_Object *o)
 						req->io_Length = sizeof(struct InputEvent);
 						req->io_Command = IND_WRITEEVENT;
 
-						DoIO(req);
+						DoIO((struct IORequest *)req);
 					}
 
 					else if (x!=0 || y!=0)
@@ -467,7 +465,7 @@ static void mouse_process(OOP_Class *cl, OOP_Object *o)
 						req->io_Length = iec * sizeof(struct InputEvent);
 						req->io_Command = IND_ADDEVENT;
 
-						DoIO(req);
+						DoIO((struct IORequest *)req);
 					}
 
 				}

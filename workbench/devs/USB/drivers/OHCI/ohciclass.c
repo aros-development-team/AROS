@@ -182,7 +182,7 @@ OOP_Object *METHOD(OHCI, Root, New)
             /* Link this pointers with HCCA table */
             ohci->hcca->hccaIntrTab[i] = AROS_LONG2OHCI((uint32_t)ohci->int32[i]);
         }
-        CacheClearE(ohci->hcca, sizeof(ohci_hcca_t), CACRF_ClearD);
+        CacheClearE((APTR)ohci->hcca, sizeof(ohci_hcca_t), CACRF_ClearD);
 
         /* Reset OHCI */
 

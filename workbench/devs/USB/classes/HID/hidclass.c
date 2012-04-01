@@ -256,7 +256,6 @@ OOP_Object *METHOD(HID, Root, New)
 
         if (hid->cdesc)
         {
-            uint32_t flags;
             uint16_t repid;
 
             D(bug("[HID::New()] Getting config descriptor of size %d...\n",AROS_LE2WORD(cdesc.wTotalLength)));
@@ -300,11 +299,11 @@ OOP_Object *METHOD(HID, Root, New)
                 if ((ep->bmAttributes & UE_XFERTYPE) != UE_INTERRUPT)
                 {
                     bug("[HID::New()] Wrong endpoint type\n");
-#warning TODO: unconfigure, error, coercemethod
+// TODO: unconfigure, error, coercemethod
                 }
 
                 OOP_Object *drv = NULL;
-                OOP_GetAttr(o, aHidd_USBDevice_Bus, &drv);
+                OOP_GetAttr(o, aHidd_USBDevice_Bus, (IPTR *)&drv);
 
                 if (drv)
                 {

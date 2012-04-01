@@ -93,7 +93,7 @@ OOP_Object *METHOD(USBHub, Root, New)
     if (o)
     {
         HubData *hub = OOP_INST_DATA(cl, o);
-        STRPTR name;
+        char *name;
 
         /* HUB devices do need a bit longer timeout than anything else */
         HIDD_USBDevice_SetTimeout(o, NULL, 5000);
@@ -107,7 +107,7 @@ OOP_Object *METHOD(USBHub, Root, New)
         hub->got_descriptor = HIDD_USBHub_GetHubDescriptor(o, &hub->descriptor);
 
         if (hub->got_descriptor)
-            DumpDescriptor(&hub->descriptor);
+            DumpDescriptor((usb_descriptor_t *)&hub->descriptor);
         else
         {
             D(bug("[USBHub] HUB descriptor not present. I will try later...\n"));
@@ -118,8 +118,6 @@ OOP_Object *METHOD(USBHub, Root, New)
                 hub->root ? "Root" : "A", hub->descriptor.bNbrPorts));
 
         hub->children = AllocVecPooled(SD(cl)->MemPool, hub->descriptor.bNbrPorts * sizeof(OOP_Object *));
-
-        struct usbEvent message;
 
         D(bug("[USB] USBHub has name \"%s\"\n", name));
 
@@ -137,17 +135,17 @@ OOP_Object *METHOD(USBHub, Root, New)
 
         if (ep)
         {
-            DumpDescriptor(ep);
+            DumpDescriptor((usb_descriptor_t *)ep);
 
             if ((ep->bmAttributes & UE_XFERTYPE) != UE_INTERRUPT)
             {
                 bug("[USBHub] Wrong endpoint type\n");
                 HIDD_USBDevice_Configure(o, USB_UNCONFIG_INDEX);
-#warning TODO: unconfigure, error, coercemethod
+// TODO: unconfigure, error, coercemethod
             }
 
             OOP_Object *drv = NULL;
-            OOP_GetAttr(o, aHidd_USBDevice_Bus, &drv);
+            OOP_GetAttr(o, aHidd_USBDevice_Bus, (IPTR *)&drv);
 
             if (drv)
             {
@@ -194,7 +192,7 @@ OOP_Object *METHOD(USBHub, Root, New)
             t->tc_Node.ln_Type = NT_TASK;
             t->tc_Node.ln_Pri = 0;
 
-            NewAddTask(t, hub_process, NULL, &tags);
+            NewAddTask(t, hub_process, NULL, &tags[0]);
             hub->hub_task = t;
         }
 
@@ -529,7 +527,7 @@ static BOOL hub_explore(OOP_Class *cl, OOP_Object *o)
         {
             D(bug("[USBHub Process]   C_PORT_ENABLED\n"));
             HIDD_USBHub_ClearPortFeature(o, port, UHF_C_PORT_ENABLE);
-#warning: TODO: Extend
+// TODO: Extend
         }
 
         if (change & UPS_C_CONNECT_STATUS)
@@ -623,7 +621,7 @@ static void hub_process(HubData *hub, OOP_Object *o, struct Task *parent)
 
     rescan = USBCreateTimer();
 
-    OOP_GetAttr(o, aHidd_USBDevice_Bus, &drv);
+    OOP_GetAttr(o, aHidd_USBDevice_Bus, (IPTR *)&drv);
     SetTaskPri(hub_task, 10);
 
     D(bug("[USBHub Process] HUB process (%p)\n", FindTask(NULL)));
@@ -694,7 +692,6 @@ static void hub_process(HubData *hub, OOP_Object *o, struct Task *parent)
 	    (sigset & sigmask))
         {
             struct usb_driver *d = NULL, *d2 = NULL;
-            uint8_t addr = 0;
 
 	    if (sigset & sigmask)
 		USBTimerDone(rescan);

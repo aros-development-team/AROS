@@ -105,7 +105,6 @@ static AROS_UFH3(void, HubInterrupt,
 static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 {
     UHCIData *uhci = (UHCIData *)irq->h_Data;
-    UHCI_QueueHeader *qh = NULL;
     UHCI_Pipe *p;
 
     uint16_t status = inw(uhci->iobase + UHCI_STS);
@@ -114,6 +113,12 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     uint16_t port2 = inw(uhci->iobase + UHCI_PORTSC2);
     uint16_t cmd = inw(uhci->iobase + UHCI_CMD);
     uint16_t sof = inb(uhci->iobase + UHCI_SOF);
+
+    (void)frame; //unused;
+    (void)port1; // unused
+    (void)port2; // unused
+    (void)sof; // unused;
+    (void)cmd; // unused;
 
     /* Check if there's really an interrupt for us */
     if((status & UHCI_STS_USBINT) == 0)
@@ -171,7 +176,7 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         Disable();
         ForeachNode(&uhci->ControlLS, p)
         {
-            UHCI_TransferDesc *td = p->p_FirstTD;
+            UHCI_TransferDesc *td = (UHCI_TransferDesc *)p->p_FirstTD;
             BOOL changed = FALSE;
 
             if (p->p_Queue->qh_VLink == UHCI_PTR_T)
@@ -214,7 +219,7 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         Disable();
         ForeachNode(&uhci->ControlFS, p)
         {
-            UHCI_TransferDesc *td = p->p_FirstTD;
+            UHCI_TransferDesc *td = (UHCI_TransferDesc *)p->p_FirstTD;
             BOOL changed = FALSE;
 
             if (p->p_Queue->qh_VLink & UHCI_PTR_T)
@@ -260,7 +265,7 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         Disable();
         ForeachNode(&uhci->Bulk, p)
         {
-            UHCI_TransferDesc *td = p->p_FirstTD;
+            UHCI_TransferDesc *td = (UHCI_TransferDesc *)p->p_FirstTD;
             BOOL changed = FALSE;
 
             if (p->p_Queue->qh_VLink == UHCI_PTR_T)
@@ -333,7 +338,7 @@ OOP_Object *METHOD(UHCI, Root, New)
         NEWLIST(&uhci->intList);
 
         if (uhci->tmp)
-            AddTail(&uhci->intList, uhci->tmp);
+            AddTail(&uhci->intList, (struct Node *)uhci->tmp);
 
         uhci->tr = (struct timerequest *)CreateIORequest(
                 CreateMsgPort(), sizeof(struct timerequest));
@@ -648,7 +653,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, AddInterrupt)
             intr->i_intr = msg->interrupt;
 
             uhci_QueuedRead(cl, o, p, msg->buffer, msg->length);
-            AddTail(&p->p_Intr, &intr->i_node);
+            AddTail((struct List *)&p->p_Intr, (struct Node *)&intr->i_node);
 
             /*
              intr->i_td = uhci_AllocTD(cl, o);
@@ -705,7 +710,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, RemInterrupt)
 
     if (p == (UHCI_Pipe *)0xdeadbeef)
     {
-        Remove(msg->interrupt);
+        Remove((struct Node *)msg->interrupt);
         return TRUE;
     }
     else
@@ -719,7 +724,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, RemInterrupt)
         if (intr)
         {
             Disable();
-            Remove(&intr->i_node);
+            Remove((struct Node *)&intr->i_node);
             Enable();
 
             uhci_FreeTD(cl, o, intr->i_td);
@@ -734,7 +739,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, RemInterrupt)
 BOOL METHOD(UHCI, Hidd_USBDrv, ControlTransfer)
 {
     UHCI_Pipe *p = msg->pipe;
-    UHCIData *uhci = OOP_INST_DATA(cl, o);
+    D(UHCIData *uhci = OOP_INST_DATA(cl, o));
 
     BOOL retval = TRUE;
 
@@ -778,7 +783,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, ControlTransfer)
         {
             bug("[UHCI] !!!TIMEOUT!!!\n");
             p->p_Queue->qh_VLink = UHCI_PTR_T;
-            UHCI_TransferDesc *td = p->p_FirstTD;
+            UHCI_TransferDesc *td = (UHCI_TransferDesc *)p->p_FirstTD;
 
             GetMsg(p->p_Timeout->tr_node.io_Message.mn_ReplyPort);
 
@@ -791,7 +796,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, ControlTransfer)
                 td = tnext;
                 p->p_FirstTD = tnext;
             }
-            p->p_LastTD=UHCI_PTR_T;
+            p->p_LastTD=(APTR)UHCI_PTR_T;
 
             retval = FALSE;
         }
@@ -814,7 +819,6 @@ BOOL METHOD(UHCI, Hidd_USBDrv, ControlTransfer)
 BOOL METHOD(UHCI, Hidd_USBDrv, BulkTransfer)
 {
     UHCI_Pipe *p = msg->pipe;
-    UHCIData *uhci = OOP_INST_DATA(cl, o);
 
     BOOL retval = TRUE;
 
@@ -848,7 +852,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, BulkTransfer)
         {
             bug("[UHCI] !!!TIMEOUT!!!\n");
             p->p_Queue->qh_VLink = UHCI_PTR_T;
-            UHCI_TransferDesc *td = p->p_FirstTD;
+            UHCI_TransferDesc *td = (UHCI_TransferDesc *)p->p_FirstTD;
 
             GetMsg(p->p_Timeout->tr_node.io_Message.mn_ReplyPort);
 
@@ -861,7 +865,7 @@ BOOL METHOD(UHCI, Hidd_USBDrv, BulkTransfer)
                 td = tnext;
                 p->p_FirstTD = tnext;
             }
-            p->p_LastTD=UHCI_PTR_T;
+            p->p_LastTD=(APTR)UHCI_PTR_T;
 
             retval = FALSE;
         }
@@ -933,7 +937,6 @@ BOOL METHOD(UHCI, Hidd_USBHub, GetPortStatus)
 {
     UHCIData *uhci = OOP_INST_DATA(cl, o);
     uint16_t port, x, status=0, change=0;
-    BOOL retval = FALSE;
 
     if (msg->port == 1)
         port = UHCI_PORTSC1;
@@ -1168,7 +1171,7 @@ static const usb_endpoint_descriptor_t endpoint_descriptor = {
 usb_endpoint_descriptor_t * METHOD(UHCI, Hidd_USBDevice, GetEndpoint)
 {
     if (msg->interface == 0 && msg->endpoint == 0)
-        return &endpoint_descriptor;
+        return (usb_endpoint_descriptor_t *)&endpoint_descriptor;
     else
         return NULL;
 }

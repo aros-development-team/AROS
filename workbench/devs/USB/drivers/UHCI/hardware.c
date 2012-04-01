@@ -310,32 +310,32 @@ void uhci_RebuildList(OOP_Class *cl, OOP_Object *o)
             p->p_Queue->qh_HLink = UHCI_PTR_T;
 
             qh->qh_HLink = (uint32_t)p->p_Queue | UHCI_PTR_QH;
-            qh = p->p_Queue;
+            qh = (UHCI_QueueHeader *)p->p_Queue;
         }
     }
 
     if (!IsListEmpty(&uhci->ControlFS))
     {
-        first_fast = ((UHCI_Pipe *)(GetHead(&uhci->ControlFS)))->p_Queue;
+        first_fast = (UHCI_QueueHeader *)((UHCI_Pipe *)(GetHead(&uhci->ControlFS)))->p_Queue;
 
         ForeachNode(&uhci->ControlFS, p)
         {
             p->p_Queue->qh_HLink = UHCI_PTR_T;
             qh->qh_HLink = (uint32_t)p->p_Queue | UHCI_PTR_QH;
-            qh = p->p_Queue;
+            qh = (UHCI_QueueHeader *)p->p_Queue;
         }
     }
 
     if (!IsListEmpty(&uhci->Bulk))
     {
         if (!first_fast)
-            first_fast = ((UHCI_Pipe *)(GetHead(&uhci->Bulk)))->p_Queue;
+            first_fast = (UHCI_QueueHeader *)((UHCI_Pipe *)(GetHead(&uhci->Bulk)))->p_Queue;
 
             ForeachNode(&uhci->Bulk, p)
             {
                 p->p_Queue->qh_HLink = UHCI_PTR_T;
                 qh->qh_HLink = (uint32_t)p->p_Queue | UHCI_PTR_QH;
-                qh = p->p_Queue;
+                qh = (UHCI_QueueHeader *)p->p_Queue;
             }
     }
 
@@ -364,7 +364,7 @@ void uhci_DeletePipe(OOP_Class *cl, OOP_Object *o, UHCI_Pipe *pipe)
 
     if (pipe)
     {
-        UHCI_TransferDesc *td = pipe->p_FirstTD;
+        UHCI_TransferDesc *td = (UHCI_TransferDesc *)pipe->p_FirstTD;
 
         /* Lock interrupts */
         Disable();

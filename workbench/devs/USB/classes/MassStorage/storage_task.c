@@ -28,7 +28,7 @@ static void DoChangeInt(mss_unit_t *unit)
 	Forbid();
 	ForeachNode(&unit->msu_diskChangeList, msg)
 	{
-		Cause((struct Intertupt *)IOStdReq(msg)->io_Data);
+		Cause((struct Interrupt *)IOStdReq(msg)->io_Data);
 	}
 	Permit();
 
@@ -75,7 +75,6 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 	uint32_t rcvd;
 	mss_unit_t *unit;
 	struct timerequest *timer_io;
-	char tmp[512];
 
 	/* Make sure the access is exclusive as long as the init is not ready */
 	ObtainSemaphore(&mss->lock);
@@ -150,11 +149,11 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 
 		/* timer request will be used to pool periodically for disk changes */
 		timer_io = CreateIORequest(CreateMsgPort(), sizeof(struct timerequest));
-		OpenDevice("timer.device", UNIT_MICROHZ, timer_io, 0);
+		OpenDevice("timer.device", UNIT_MICROHZ, (struct IORequest *)timer_io, 0);
 
 		sigset |= 1 << timer_io->tr_node.io_Message.mn_ReplyPort->mp_SigBit;
 
-		AddTail(&SD(cl)->unitList, unit);
+		AddTail((struct List *)&SD(cl)->unitList, (struct Node *)unit);
 
 		/* Get rid of exclusive access */
 		ReleaseSemaphore(&mss->lock);
@@ -163,7 +162,7 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 		timer_io->tr_node.io_Command = TR_ADDREQUEST;
 		timer_io->tr_time.tv_secs = 2;
 		timer_io->tr_time.tv_micro = 0;
-		SendIO(timer_io);
+		SendIO((struct IORequest *)timer_io);
 
 		mss->unit[lun] = unit;
 
@@ -213,9 +212,9 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 				else /* Handle removal of the device */
 				{
 					/* Cancel the timer */
-					if (!CheckIO(timer_io))
-						AbortIO(timer_io);
-					WaitIO(timer_io);
+					if (!CheckIO((struct IORequest *)timer_io))
+						AbortIO((struct IORequest *)timer_io);
+					WaitIO((struct IORequest *)timer_io);
 					SetSignal(0, 1 << timer_io->tr_node.io_Message.mn_ReplyPort->mp_SigBit);
 
 					unit->msu_flags |= MSF_DeviceRemoved | MSF_DiskChanged;
@@ -245,7 +244,7 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 						/* Empty the queue */
 						while ((msg = (struct IORequest *)GetMsg(&unit->msu_unit.unit_MsgPort)))
 						{
-							HandleIO(msg, msg->io_Device, unit);
+							HandleIO(msg, (mss_device_t *)msg->io_Device, unit);
 
 							if (msg->io_Command != TD_ADDCHANGEINT)
 								ReplyMsg((struct Message *)msg);
@@ -319,9 +318,9 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 					/*
 					 * Something else appeared? Cancel the timer request.
 					 */
-					if (!CheckIO(timer_io))
-						AbortIO(timer_io);
-					WaitIO(timer_io);
+					if (!CheckIO((struct IORequest *)timer_io))
+						AbortIO((struct IORequest *)timer_io);
+					WaitIO((struct IORequest *)timer_io);
 					SetSignal(0, 1 << timer_io->tr_node.io_Message.mn_ReplyPort->mp_SigBit);
 				}
 
@@ -339,17 +338,17 @@ void StorageTask(OOP_Class *cl, OOP_Object *o, uint32_t lun, struct Task *parent
 				timer_io->tr_node.io_Command = TR_ADDREQUEST;
 				timer_io->tr_time.tv_secs = 2;
 				timer_io->tr_time.tv_micro = 0;
-				SendIO(timer_io);
+				SendIO((struct IORequest *)timer_io);
 			}
 		} while(!(rcvd & SIGBREAKF_CTRL_C));
 
-		if (!CheckIO(timer_io))
-			AbortIO(timer_io);
-		WaitIO(timer_io);
+		if (!CheckIO((struct IORequest *)timer_io))
+			AbortIO((struct IORequest *)timer_io);
+		WaitIO((struct IORequest *)timer_io);
 
 		/* CTRL_C sent? Make a nice cleanup. */
 		DeleteMsgPort(timer_io->tr_node.io_Message.mn_ReplyPort);
-		DeleteIORequest(timer_io);
+		DeleteIORequest((struct IORequest *)timer_io);
 
 		FreeVecPooled(SD(cl)->MemPool, unit);
 	}

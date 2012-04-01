@@ -139,7 +139,7 @@ AROS_UFH3(void, Enumerator,
     struct timerequest *tr = USBCreateTimer();
     USBDelay(tr, 10);
     USBDeleteTimer(tr);
-    if (inw(LIBBASE->sd.iobase[counter] + UHCI_CMD) & UHCI_CMD_HCRESET)
+    if (inw((uint16_t *)(LIBBASE->sd.iobase[counter] + UHCI_CMD)) & UHCI_CMD_HCRESET)
         D(bug("[UHCI]   Wrrr. Reset not yet completed\n"));
     
     outw(0, LIBBASE->sd.iobase[counter] + UHCI_INTR);  

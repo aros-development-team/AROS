@@ -36,7 +36,7 @@ OOP_AttrBase HiddUSBAttrBase;
 OOP_AttrBase HiddUSBDeviceAttrBase;
 OOP_AttrBase HiddUSBHubAttrBase;
 
-int scan_hub(OOP_Object *hub, int depth)
+void scan_hub(OOP_Object *hub, int depth)
 {
     intptr_t nports, i;
     intptr_t address = 0;
@@ -56,7 +56,7 @@ int scan_hub(OOP_Object *hub, int depth)
     
     D(bug("[lsusb] hub with %d ports\n", nports));
     
-    printf("%s%03d: %04x:%04x %s\n", pad, address, productid, vendorid, name);
+    printf("%s%03d: %04x:%04x %s\n", pad, (int)address, (int)productid, (int)vendorid, name);
     
     for (i=1; i <= nports; i++)
     {
@@ -74,7 +74,7 @@ int scan_hub(OOP_Object *hub, int depth)
             if (ports > 0)
                 scan_hub(child, depth+1);
             else
-                printf("%s %03d: %04x:%04x %s\n", pad, address, productid, vendorid, name);
+                printf("%s %03d: %04x:%04x %s\n", pad, (int)address, (int)productid, (int)vendorid, name);
 
             D(bug("[lsusb] Child %d: %p (%s) with %d ports\n", i, child, name, nports));
         }
@@ -102,7 +102,7 @@ int main(void)
         PutStr("USB device tree:\n");
 
         do {
-            OOP_GetAttr(usb, aHidd_USB_Bus, &bus);
+            OOP_GetAttr(usb, aHidd_USB_Bus, (IPTR *)&bus);
             if (bus)
             {
                 D(bug("[lsusb] bus=%p\n", bus));

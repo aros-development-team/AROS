@@ -50,11 +50,11 @@ void usb_process();
 
 static void USB_ProcessStarter(struct usb_staticdata *sd, struct Task *parent)
 {
-	struct DOSBase *DOSBase = NULL;
+	struct Library *DOSBase;
 	struct MsgPort *msgPort = CreateMsgPort();
 	struct timerequest *tr = CreateIORequest(msgPort, sizeof(struct timerequest));
 
-	OpenDevice("timer.device", UNIT_VBLANK, tr, 0);
+	OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0);
 
 	D(bug("[USB] Process starter\n"));
 
@@ -64,7 +64,7 @@ static void USB_ProcessStarter(struct usb_staticdata *sd, struct Task *parent)
 		tr->tr_time.tv_sec = 2;
 		tr->tr_node.io_Command = TR_ADDREQUEST;
 
-		DoIO(tr);
+		DoIO((struct IORequest *)tr);
 	};
 
 	D(bug("[USB] Process starter: dos.library up and running\n"));
@@ -89,7 +89,7 @@ static void USB_ProcessStarter(struct usb_staticdata *sd, struct Task *parent)
 	DeleteMsgPort(message.ev_Message.mn_ReplyPort);
 
 	CloseLibrary(DOSBase);
-	CloseDevice(tr);
+	CloseDevice((struct IORequest *)tr);
 	DeleteIORequest(tr);
 	DeleteMsgPort(msgPort);
 
@@ -121,7 +121,7 @@ static int USB_Init(LIBBASETYPEPTR LIBBASE)
 
         if ((LIBBASE->sd.MemPool = CreatePool(MEMF_PUBLIC|MEMF_CLEAR|MEMF_SEM_PROTECTED, 8192, 4096)) != NULL)
         {
-        	struct DOSBase *DOSBase = OpenLibrary("dos.library", 0);
+        	struct Library *DOSBase = OpenLibrary("dos.library", 0);
 
         	struct TagItem tags[] = {
         			{ TASKTAG_ARG1,   (IPTR)&LIBBASE->sd },
@@ -161,7 +161,7 @@ static int USB_Init(LIBBASETYPEPTR LIBBASE)
         		t->tc_Node.ln_Pri = 1;     /* same priority as input.device */
 
         		/* Add task. It will get back in touch soon */
-        		NewAddTask(t, USB_ProcessStarter, NULL, &tags);
+        		NewAddTask(t, USB_ProcessStarter, NULL, &tags[0]);
 
         		if (DOSBase)
         			Wait(SIGF_SINGLE);

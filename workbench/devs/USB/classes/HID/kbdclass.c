@@ -99,7 +99,6 @@ static const uint8_t keyconv[] = {
 void METHOD(USBKbd, Hidd_USBHID, ParseReport)
 {
 	KbdData *kbd = OOP_INST_DATA(cl, o);
-	uint8_t *buff = msg->report;
 	int i;
 
 	if (kbd->kbd_task)
@@ -138,7 +137,6 @@ OOP_Object *METHOD(USBKbd, Root, New)
 		kbd->sd = SD(cl);
 		kbd->o = o;
 		kbd->hd = HIDD_USBHID_GetHidDescriptor(o);
-		uint32_t flags;
 
 		HIDD_USBHID_SetIdle(o, 500 / 4, 0);
 		HIDD_USBHID_SetProtocol(o, 1);
@@ -232,7 +230,7 @@ t->tc_Node.ln_Name = "HID USB Keyboard";
 t->tc_Node.ln_Type = NT_TASK;
 t->tc_Node.ln_Pri = 20;     /* same priority as input.device */
 
-NewAddTask(t, kbd_process, NULL, &tags);
+NewAddTask(t, kbd_process, NULL, &tags[0]);
 kbd->kbd_task = t;
 		}
 	}
@@ -266,7 +264,7 @@ void METHOD(USBKbd, Root, Dispose)
 /* Maximal number of input events before forced flush is issued */
 #define IEC_MAX 16
 
-static inline ie_send(struct IOStdReq *req, struct InputEvent *ie, int iec)
+static inline void ie_send(struct IOStdReq *req, struct InputEvent *ie, int iec)
 {
 	if (iec)
 	{
@@ -274,7 +272,7 @@ static inline ie_send(struct IOStdReq *req, struct InputEvent *ie, int iec)
 		req->io_Length = iec * sizeof(struct InputEvent);
 		req->io_Command = IND_ADDEVENT;
 
-		DoIO(req);
+		DoIO((struct IORequest *)req);
 	}
 }
 
@@ -335,7 +333,6 @@ static uint16_t code2qual(uint16_t code)
 static void kbd_process(OOP_Class *cl, OOP_Object *o)
 {
 	KbdData *kbd = OOP_INST_DATA(cl, o);
-	struct hid_staticdata *sd = kbd->sd;
 	uint32_t sigset;
 	uint8_t dos_not_ready = 1;
 

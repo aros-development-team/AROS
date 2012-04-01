@@ -93,7 +93,7 @@ static void cmd_ChangeNum(struct IORequest *io, mss_device_t *dev, mss_unit_t *u
 
 static void cmd_ProtStatus(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit)
 {
-	IOStdReq(io)->io_Actual = unit->msu_inquiry[0] & 0x1f == DG_CDROM ? -1 : 0;
+	IOStdReq(io)->io_Actual = ((unit->msu_inquiry[0] & 0x1f) == DG_CDROM) ? -1 : 0;
 }
 
 static void cmd_ChangeState(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit)
@@ -119,7 +119,7 @@ static void cmd_GetGeometry(struct IORequest *io, mss_device_t *dev, mss_unit_t 
 		dg->dg_CylSectors		= 255*63;
 		dg->dg_BufMemType		= MEMF_PUBLIC;
 		dg->dg_DeviceType		= unit->msu_inquiry[0] & 0x1f;
-		dg->dg_Flags			= unit->msu_inquiry[0] & 0x1f == DG_CDROM ? DGF_REMOVABLE : 0;
+		dg->dg_Flags			= (dg->dg_DeviceType == DG_CDROM) ? DGF_REMOVABLE : 0;
 		dg->dg_Reserved			= 0;
 
 		IOStdReq(io)->io_Actual = sizeof(struct DriveGeometry);
@@ -155,7 +155,6 @@ static void cmd_Read32(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit
 		{
 			block >>= unit->msu_blockShift;
 			count >>= unit->msu_blockShift;
-			uint32_t cnt = 0;
 
 			if (block + count - 1> unit->msu_blockCount)
 			{
@@ -214,7 +213,6 @@ static void cmd_Read64(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit
 		{
 			block >>= unit->msu_blockShift;
 			count >>= unit->msu_blockShift;
-			uint32_t cnt = 0;
 
 			if (block + count - 1> unit->msu_blockCount)
 			{
@@ -271,7 +269,6 @@ static void cmd_Write32(struct IORequest *io, mss_device_t *dev, mss_unit_t *uni
 		{
 			block >>= unit->msu_blockShift;
 			count >>= unit->msu_blockShift;
-			uint32_t cnt = 0;
 
 			if (block + count - 1> unit->msu_blockCount)
 			{
@@ -329,7 +326,6 @@ static void cmd_Write64(struct IORequest *io, mss_device_t *dev, mss_unit_t *uni
 		{
 			block >>= unit->msu_blockShift;
 			count >>= unit->msu_blockShift;
-			uint32_t cnt = 0;
 
 			if (block + count - 1 > unit->msu_blockCount)
 			{
@@ -473,7 +469,7 @@ static const uint16_t supported_commands[] = {
 		0
 };
 
-static const void (*map32[HD_SCSICMD+1])(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit) = {
+static void (*map32[HD_SCSICMD+1])(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit) = {
 		[CMD_INVALID]		= cmd_Invalid,
 		[CMD_RESET]     	= cmd_Reset,
 		[CMD_READ]      	= cmd_Read32,
@@ -504,7 +500,7 @@ static const void (*map32[HD_SCSICMD+1])(struct IORequest *io, mss_device_t *dev
 		[HD_SCSICMD]    	= cmd_DirectSCSI,
 };
 
-static const void (*map64[4])(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit) = {
+static void (*map64[4])(struct IORequest *io, mss_device_t *dev, mss_unit_t *unit) = {
 		[NSCMD_TD_READ64 - 0xc000] 		= cmd_Read64,
 		[NSCMD_TD_WRITE64 - 0xc000] 	= cmd_Write64,
 		[NSCMD_TD_SEEK64 - 0xc000] 		= cmd_NULL,
@@ -604,7 +600,7 @@ AROS_LH3 (void, dev_OpenLib,
 	if (found)
 	{
 		ioreq->io_Device = &lh->mss_device;
-		ioreq->io_Unit = found;
+		ioreq->io_Unit = (struct Unit *)found;
 		ioreq->io_Error = 0;
 
 		found->msu_unit.unit_OpenCnt++;
@@ -802,7 +798,7 @@ static int StorageDev_Init(LIBBASETYPEPTR LIBBASE)
 	dev->mss_device.dd_Library.lib_Revision = 0;
 
 	MakeFunctions(dev, Storage_dev_FuncTable, NULL);
-	AddDevice(dev);
+	AddDevice((struct Device *)dev);
 
 	return TRUE;
 }
