@@ -4,11 +4,11 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=build-tools-ilbmtoicon \
     progname=ilbmtoicon targetdir=$(AROSDIR)/Build/Tools \
-    files=ilbmtoicon uselibs="arosc png"
+    files=ilbmtoicon uselibs="arosc png z"
 
 %build_prog mmake=build-tools-infoinfo \
     progname=infoinfo targetdir=$(AROSDIR)/Build/Tools \
-    files=infoinfo uselibs="arosc png"
+    files=infoinfo uselibs="arosc png z"
 
 %common
 
