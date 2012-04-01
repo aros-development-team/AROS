@@ -124,7 +124,7 @@ static unit_cache_t *GetUnitFromCache(OOP_Class *cl, OOP_Object *o, uint8_t crea
 		ObtainSemaphore(&sd->Lock);
 		u->unitNumber = sd->unitNum;
 		sd->unitNum += mss->maxLUN + 1;
-		AddTail(&sd->unitCache, u);
+		AddTail((struct List *)&sd->unitCache, (struct Node *)u);
 		ReleaseSemaphore(&sd->Lock);
 	}
 
@@ -241,7 +241,7 @@ OOP_Object *METHOD(Storage, Root, New)
 
 					for (i=0; i <= mss->maxLUN; i++)
 					{
-						mss->unit[i] = REMHEAD(&mss->cache->units);
+						mss->unit[i] = (mss_unit_t *)REMHEAD(&mss->cache->units);
 						if (mss->unit[i])
 						{
 							mss->unit[i]->msu_object = o;
@@ -250,7 +250,7 @@ OOP_Object *METHOD(Storage, Root, New)
 							{
 								mss->handler[i] = mss->unit[i]->msu_handler;
 
-								AddTail(&SD(cl)->unitList, mss->unit[i]);
+								AddTail((struct List *)&SD(cl)->unitList, (struct Node *)mss->unit[i]);
 							}
 						}
 						if (mss->handler[i])
@@ -312,7 +312,7 @@ OOP_Object *METHOD(Storage, Root, New)
 							t->tc_Node.ln_Pri = 1;     /* same priority as input.device */
 
 							/* Add task. It will get back in touch soon */
-							NewAddTask(t, StorageTask, NULL, &tags);
+							NewAddTask(t, StorageTask, NULL, &tags[0]);
 							/* Keep the initialization synchronous */
 							Wait(SIGF_SINGLE);
 							mss->handler[i] = t;
@@ -393,6 +393,8 @@ BOOL METHOD(Storage, Hidd_USBStorage, Reset)
 
 	HIDD_USBDevice_ControlMessage(o, NULL, &req, NULL, 0);
 	ReleaseSemaphore(&mss->lock);
+
+	return TRUE;
 }
 
 uint8_t METHOD(Storage, Hidd_USBStorage, GetMaxLUN)

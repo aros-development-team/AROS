@@ -89,22 +89,22 @@ void METHOD(USB, Root, Get)
                 {
                     ForeachNode(&SD(cl)->driverList, driver)
                     {
-                        if (driver->d_Driver == *msg->storage)
+                        if ((IPTR)driver->d_Driver == *msg->storage)
                             break;
                     }
 
                     if (driver)
-                        driver = GetSucc(&driver->d_Node);
+                        driver = (usb_driver_t *)GetSucc(&driver->d_Node);
                 }
                 else
-                    driver = GetHead(&SD(cl)->driverList);
+                    driver = (usb_driver_t *)GetHead(&SD(cl)->driverList);
 
                 D(bug("[USB] driver=%p\n", driver));
 
                 if (driver)
-                    *msg->storage = driver->d_Driver;
+                    *msg->storage = (IPTR)driver->d_Driver;
                 else
-                    *msg->storage = NULL;
+                    *msg->storage = (IPTR)NULL;
 
                 ReleaseSemaphore(&SD(cl)->driverListLock);
                 break;
@@ -185,8 +185,8 @@ void METHOD(USB, Hidd_USB, AddClass)
         ec->ec_Node.ln_Name = AllocVecPooled(SD(cl)->MemPool, strlen(msg->className)+1);
         CopyMem(msg->className, ec->ec_Node.ln_Name, strlen(msg->className)+1);
         ec->ec_ShortName = AllocVecPooled(SD(cl)->MemPool, strlen(msg->className)+1);
-        CopyMem(msg->className, ec->ec_ShortName, strlen(msg->className)+1);
-        AddTail(&SD(cl)->extClassList, ec);
+        CopyMem(msg->className, (char *)ec->ec_ShortName, strlen(msg->className)+1);
+        AddTail(&SD(cl)->extClassList, &ec->ec_Node);
     }
 }
 

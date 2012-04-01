@@ -58,7 +58,7 @@ struct hid_data {
     enum hid_kind kind;
 };
 
-int hid_maxrepid(struct hid_data *s, int len)
+int hid_maxrepid(void *s, int len)
 {
     struct hid_item h;
     struct hid_data *d;

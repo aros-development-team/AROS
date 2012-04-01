@@ -94,7 +94,7 @@ void ohci_DeleteTimer(struct timerequest *tr)
     if (tr)
     {
         tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = AllocSignal(-1);
-        CloseDevice(tr);
+        CloseDevice((struct IORequest *)tr);
         DeleteMsgPort(tr->tr_node.io_Message.mn_ReplyPort);
         DeleteIORequest((struct IORequest *)tr);
     }
@@ -280,7 +280,7 @@ void ohci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     mmio(ohci->regs->HcInterruptDisable) = AROS_LONG2OHCI(HC_INTR_MIE);
 
-    CacheClearE(ohci->hcca, sizeof(ohci_hcca_t), CACRF_InvalidateD);
+    CacheClearE((APTR)ohci->hcca, sizeof(ohci_hcca_t), CACRF_InvalidateD);
     done = AROS_OHCI2LONG(ohci->hcca->hccaDoneHead);
 
     if (done != 0)
@@ -300,7 +300,7 @@ void ohci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             ohci->hcca->hccaDoneHead = 0;
         }
     }
-    CacheClearE(ohci->hcca, sizeof(ohci_hcca_t), CACRF_ClearD);
+    CacheClearE((APTR)ohci->hcca, sizeof(ohci_hcca_t), CACRF_ClearD);
 
     intrs &= ~HC_INTR_MIE;
     /* Ack interrupts */
@@ -533,12 +533,12 @@ BOOL METHOD(OHCI, Hidd_USBDrv, RemInterrupt)
 {
     if (msg->pipe == (void *)0xdeadbeef)
     {
-        Remove(msg->interrupt);
+        Remove((struct Node *)msg->interrupt);
         return TRUE;
     }
     else
     {
-#warning TODO:
+// TODO:
         return FALSE;
     }
 }
@@ -721,7 +721,6 @@ void METHOD(OHCI, Hidd_USBDrv, SetTimeout)
 
 void METHOD(OHCI, Hidd_USBDrv, DeletePipe)
 {
-    ohci_data_t *ohci = OOP_INST_DATA(cl, o);
     ohci_pipe_t *pipe = msg->pipe;
 
     D(bug("[OHCI] DeletePipe(%p, ed=%p)\n", pipe, pipe->ed));
@@ -1035,8 +1034,8 @@ BOOL METHOD(OHCI, Hidd_USBDrv, BulkTransfer)
         		td->tdFlags |= AROS_LONG2OHCI(0x00080000);
 
         	td->tdPipe = pipe;
-        	td->tdCurrentBufferPointer = AROS_LONG2OHCI(buff);
-        	td->tdBufferEnd = AROS_LONG2OHCI(buff + len - 1);
+        	td->tdCurrentBufferPointer = AROS_LONG2OHCI((IPTR)buff);
+        	td->tdBufferEnd = AROS_LONG2OHCI((IPTR)buff + len - 1);
 
         	buff += len;
         	length -= len;
@@ -1048,11 +1047,11 @@ BOOL METHOD(OHCI, Hidd_USBDrv, BulkTransfer)
                 td = newtd;
         	}
         }
-        td->tdNextTD = AROS_LONG2OHCI(tail);
+        td->tdNextTD = (IPTR)AROS_LONG2OHCI((IPTR)tail);
         CacheClearE(td, sizeof(ohci_td_t), CACRF_ClearD);
 
         D(bug("[OHCI] Transfer:\n"));
-        for (td = first_td; td; td = AROS_OHCI2LONG(td->tdNextTD))
+        for (td = first_td; td; td = (ohci_td_t *)AROS_OHCI2LONG(td->tdNextTD))
         {
             D(bug("[OHCI]   DATA=%p (%p %p %p %p)\n", td, AROS_OHCI2LONG(td->tdFlags), AROS_OHCI2LONG(td->tdCurrentBufferPointer), AROS_OHCI2LONG(td->tdBufferEnd), AROS_OHCI2LONG(td->tdNextTD)));
         }

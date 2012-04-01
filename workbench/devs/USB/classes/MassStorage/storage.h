@@ -181,7 +181,7 @@ struct mssbase
 #define IOStdReq(io) ((struct IOStdReq *)io)
 
 
-static volatile uint32_t getTID(struct mss_staticdata *sd)
+static inline volatile uint32_t getTID(struct mss_staticdata *sd)
 {
 	uint32_t id;
 	Disable(); id = sd->tid++; Enable();

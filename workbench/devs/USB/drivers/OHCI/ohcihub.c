@@ -59,7 +59,6 @@ BOOL METHOD(OHCI, Hidd_USBHub, OnOff)
 {
     ohci_data_t *ohci = OOP_INST_DATA(cl, o);
     BOOL retval = FALSE;
-    int i;
 
     D(bug("[OHCI] USBHub::OnOff(%d)\n", msg->on));
 

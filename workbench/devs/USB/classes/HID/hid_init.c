@@ -38,6 +38,7 @@
 #include "hid.h"
 #include LC_LIBDEFS_FILE
 
+#undef SD
 #define SD(x) (&LIBBASE->sd)
 
 static int HID_Init(LIBBASETYPEPTR LIBBASE)

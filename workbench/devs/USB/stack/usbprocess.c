@@ -92,7 +92,7 @@ void setBitmap(uint32_t *bmp, uint8_t addr)
     }
 }
 
-static void ScanDirectory(struct DOSBase *DOSBase, struct usb_staticdata *sd, STRPTR dir)
+static void ScanDirectory(struct Library *DOSBase, struct usb_staticdata *sd, STRPTR dir)
 {
     struct AnchorPath   ap;
     uint8_t               match[2048];
@@ -142,8 +142,8 @@ static void ScanDirectory(struct DOSBase *DOSBase, struct usb_staticdata *sd, ST
                         ec->ec_Node.ln_Name = AllocVecPooled(sd->MemPool, strlen(match)+1);
                         CopyMem(match, ec->ec_Node.ln_Name, strlen(match)+1);
                         ec->ec_ShortName = AllocVecPooled(sd->MemPool, strlen(ap.ap_Info.fib_FileName)+1);
-                        CopyMem(ap.ap_Info.fib_FileName, ec->ec_ShortName, strlen(ap.ap_Info.fib_FileName)+1);
-                        AddTail(&sd->extClassList, ec);
+                        CopyMem(ap.ap_Info.fib_FileName, (char *)ec->ec_ShortName, strlen(ap.ap_Info.fib_FileName)+1);
+                        AddTail(&sd->extClassList, &ec->ec_Node);
                     }
                 }
             }
@@ -153,7 +153,7 @@ static void ScanDirectory(struct DOSBase *DOSBase, struct usb_staticdata *sd, ST
     MatchEnd(&ap);
 }
 
-void UpdatePaths(struct DOSBase *DOSBase, struct usb_staticdata *sd)
+void UpdatePaths(struct Library *DOSBase, struct usb_staticdata *sd)
 {
     struct DosList *dl = LockDosList(LDF_READ | LDF_ASSIGNS);
 
@@ -201,16 +201,16 @@ void usb_process()
     struct MsgPort *port;
     struct timerequest *tr;
 
-    struct DOSBase *DOSBase = OpenLibrary("dos.library", 0);
+    struct Library *DOSBase = OpenLibrary("dos.library", 0);
 
     port = CreateMsgPort();
     tr = CreateIORequest(port, sizeof(struct timerequest));
-    OpenDevice("timer.device", UNIT_VBLANK, tr, 0);
+    OpenDevice("timer.device", UNIT_VBLANK, (struct IORequest *)tr, 0);
 
     tr->tr_node.io_Command = TR_ADDREQUEST;
     tr->tr_time.tv_sec = 10;
     tr->tr_time.tv_usec = 0;
-    SendIO(tr);
+    SendIO((struct IORequest *)tr);
 
     D(bug("[USB Process] Hello. Task @ %p, signals = %08x\n", FindTask(NULL), FindTask(NULL)->tc_SigAlloc));
 
@@ -228,7 +228,7 @@ void usb_process()
             tr->tr_node.io_Command = TR_ADDREQUEST;
             tr->tr_time.tv_sec = 10;
             tr->tr_time.tv_usec = 0;
-            SendIO(tr);
+            SendIO((struct IORequest *)tr);
         }
 
         while ((ev = (struct usbEvent *)GetMsg(&usbProcess->pr_MsgPort)) != NULL)

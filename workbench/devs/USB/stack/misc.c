@@ -180,7 +180,7 @@ void USBDeleteTimer(struct timerequest *tr)
     if (tr)
     {
         tr->tr_node.io_Message.mn_ReplyPort->mp_SigBit = AllocSignal(-1);
-        CloseDevice(tr);
+        CloseDevice((struct IORequest *)tr);
         DeleteMsgPort(tr->tr_node.io_Message.mn_ReplyPort);
         DeleteIORequest((struct IORequest *)tr);
     }
