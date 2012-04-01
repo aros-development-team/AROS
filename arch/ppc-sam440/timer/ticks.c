@@ -2,7 +2,9 @@
 #include <asm/amcc440.h>
 #include <asm/io.h>
 
-#include "../kernel/kernel_intern.h"
+#include "kernel_intern.h"
+#include "kernel_globals.h"
+#include "kernel_base.h"
 
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
@@ -20,7 +22,7 @@ inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
     uint32_t retval;
     uint64_t tmp = ((uint64_t)tick) * 1000000;
 
-    retval = (uint32_t)((tmp) / KernelBase->kb_OPBFreq);
+    retval = (uint32_t)((tmp) / KernelBase->kb_PlatformData->pd_OPBFreq);
 
     return retval;
 }
@@ -29,7 +31,7 @@ inline uint32_t __attribute__((const)) usec2tick(uint32_t usec)
 {
     uint32_t retval;
     struct KernelBase *KernelBase = getKernelBase();
-    uint64_t tmp = ((uint64_t)usec) * KernelBase->kb_OPBFreq;
+    uint64_t tmp = ((uint64_t)usec) * KernelBase->kb_PlatformData->pd_OPBFreq;
 
     retval = (tmp) / 1000000;
 
@@ -40,7 +42,6 @@ void EClockUpdate(struct TimerBase *TimerBase)
 {
     uint32_t time;
     uint32_t diff;
-    int show = 0;
     struct KernelBase *KernelBase = getKernelBase();
 
     time = inl(GPT0_TBC);
@@ -52,16 +53,16 @@ void EClockUpdate(struct TimerBase *TimerBase)
     TimerBase->tb_ticks_sec += diff;
     TimerBase->tb_ticks_elapsed += diff;
 
-    if (TimerBase->tb_ticks_sec >= KernelBase->kb_OPBFreq)
+    if (TimerBase->tb_ticks_sec >= KernelBase->kb_PlatformData->pd_OPBFreq)
     {
-        TimerBase->tb_ticks_sec -= KernelBase->kb_OPBFreq;
+        TimerBase->tb_ticks_sec -= KernelBase->kb_PlatformData->pd_OPBFreq;
         TimerBase->tb_CurrentTime.tv_secs++;
         //show = 1;
     }
 
-    if (TimerBase->tb_ticks_elapsed >= KernelBase->kb_OPBFreq)
+    if (TimerBase->tb_ticks_elapsed >= KernelBase->kb_PlatformData->pd_OPBFreq)
     {
-        TimerBase->tb_ticks_elapsed -= KernelBase->kb_OPBFreq;
+        TimerBase->tb_ticks_elapsed -= KernelBase->kb_PlatformData->pd_OPBFreq;
         TimerBase->tb_Elapsed.tv_secs++;
     }
 
@@ -82,7 +83,7 @@ void EClockSet(struct TimerBase *TimerBase)
 void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
 {
 	struct KernelBase *KernelBase = getKernelBase();
-    int32_t delay = KernelBase->kb_OPBFreq / 50;  /* 50Hz in worst case */
+    int32_t delay = KernelBase->kb_PlatformData->pd_OPBFreq / 50;  /* 50Hz in worst case */
     struct timeval time;
     struct timerequest *tr;
     uint32_t current_time;

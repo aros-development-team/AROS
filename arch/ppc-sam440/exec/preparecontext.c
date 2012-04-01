@@ -16,7 +16,6 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
                     const struct TagItem *tagList, struct ExecBase *SysBase)
 {
     context_t   *ctx;
-    int         i;
     IPTR        *sp=(IPTR *)((IPTR)task->tc_SPReg & 0xfffffff0);
     IPTR        args[8] = {0};
     WORD        numargs = 0;
@@ -69,8 +68,6 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     if (!(ctx = (context_t *)task->tc_UnionETask.tc_ETask->et_RegFrame))
         return FALSE;
 
-    SuperState();
-
     if (numargs)
     {
         switch (numargs)
@@ -96,7 +93,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     }
 
     /* Push fallBack address */
-    ctx->cpu.lr = fallBack;
+    ctx->cpu.lr = (IPTR)fallBack;
     /* 
      * Task will be started upon interrupt resume. Push entrypoint into SRR0 
      * and the MSR register into SRR1. Enable FPU at the beginning
@@ -104,7 +101,7 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     ctx->cpu.srr0 = (IPTR)entryPoint;
     ctx->cpu.srr1 = MSR_PR | MSR_EE | MSR_CE | MSR_ME;
     ctx->cpu.srr1 |= MSR_FP;
-    ctx->cpu.gpr[1] = sp;
+    ctx->cpu.gpr[1] = (IPTR)sp;
     
     task->tc_SPReg = sp;
    
@@ -126,8 +123,6 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
              ctx->cpu.gpr[24],ctx->cpu.gpr[25],ctx->cpu.gpr[26],ctx->cpu.gpr[27]));
     D(bug("[exec] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
              ctx->cpu.gpr[28],ctx->cpu.gpr[29],ctx->cpu.gpr[30],ctx->cpu.gpr[31]));
-
-    UserState(NULL);
 
     return TRUE;
 }

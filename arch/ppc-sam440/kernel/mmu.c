@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
 #include <aros/kernel.h>
@@ -33,7 +34,8 @@ static int alloc_tlb()
     return bit;
 }
 
-static int free_tlb(int entry)
+#if 0
+static void free_tlb(int entry)
 {
     if (entry >=0 && entry < 32)
     {
@@ -65,6 +67,7 @@ static int free_tlb(int entry)
         D(bug("[KRN] Wrong TLB\n"));
     }
 }
+#endif
 
 static struct mmu_page_size {
     uint8_t     code;
@@ -131,23 +134,6 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
     }
     tlb_temp -= tlb_free;
     D(bug("%2d TLB%s\n", tlb_temp, tlb_temp > 1 ? "s":""));
-}
-
-AROS_LH1(void *, KrnVirtualToPhysical,
-		AROS_LHA(void *, virtual, A0),
-		struct KernelBase *, KernelBase, 20, Kernel)
-{
-	AROS_LIBFUNC_INIT
-
-	uintptr_t virt = (uintptr_t)virtual;
-	uintptr_t phys = virt;
-
-	if (virt >= 0xff000000)
-		phys = virt - 0xff000000;
-
-	return (void*)phys;
-
-	AROS_LIBFUNC_EXIT
 }
 
 void mmu_init(struct TagItem *tags)

@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/rom/timer
+USER_INCLUDES := -I$(SRCDIR)/rom/timer $(PRIV_KERNEL_INCLUDES)
 
 include $(SRCDIR)/$(CURDIR)/make.opts
 

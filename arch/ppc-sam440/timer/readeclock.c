@@ -16,7 +16,9 @@
 #include <asm/amcc440.h>
 
 #include "lowlevel.h"
-#include "../kernel/kernel_intern.h"
+#include "kernel_intern.h"
+#include "kernel_base.h"
+#include "kernel_globals.h"
 
         AROS_LH1(ULONG, ReadEClock,
 
@@ -67,7 +69,7 @@
     dest->ev_lo = TimerBase->tb_ticks_total & 0xffffffff;
     
     Enable();
-    return KernelBase->kb_OPBFreq;
+    return KernelBase->kb_PlatformData->pd_OPBFreq;
 
     AROS_LIBFUNC_EXIT
 } /* CmpTime */

@@ -14,9 +14,9 @@
 
 #include <proto/exec.h>
 
-#include "kernel_intern.h"
 #include LC_LIBDEFS_FILE
-#include "syscall.h"
+#include <kernel_romtags.h>
+#include "kernel_intern.h"
 
 /* forward declarations */
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg);
@@ -61,7 +61,7 @@ asm(".section .aros.init,\"ax\"\n\t"
     "li %r9,0; mttbl %r9; mttbu %r9; mttbl %r9\n\t"
     "lis %r9,tmp_stack_end@ha\n\t"      /* Use temporary stack while clearing BSS */
     "lwz %r1,tmp_stack_end@l(%r9)\n\t"
-    "bl __clear_bss\n\t"                /* Clear 'em ALL!!! */
+    "bl __clear_bss_tagged\n\t"                /* Clear 'em ALL!!! */
     "lis %r11,target_address@ha\n\t"    /* Load the address of init code in C */
     "mr %r3,%r29\n\t"                   /* restore the message */
     "lwz %r11,target_address@l(%r11)\n\t"
@@ -73,18 +73,11 @@ asm(".section .aros.init,\"ax\"\n\t"
     "\n\t.text\n\t"
 );
 
-static void __attribute__((used)) __clear_bss(struct TagItem *msg) 
+static void __attribute__((used)) __clear_bss_tagged(struct TagItem *msg) 
 {
     struct KernelBSS *bss = (struct KernelBSS *) krnGetTagData(KRN_KernelBss, 0, msg);
 
-    if (bss)
-    {
-        while (bss->addr && bss->len)
-        {
-            bzero(bss->addr, bss->len);
-            bss++;
-        }   
-    }
+    __clear_bss(bss);
 }
 
 static union {
@@ -96,17 +89,96 @@ static uint32_t        stack[STACK_SIZE]       __attribute__((used, aligned(16))
 static uint32_t        stack_super[STACK_SIZE] __attribute__((used, aligned(16)));
 static const uint32_t *stack_end               __attribute__((used, section(".text"))) = &stack[STACK_SIZE-4];
 static const void     *target_address          __attribute__((used, section(".text"))) = (void*)kernel_cstart;
-static struct TagItem *BootMsg                 __attribute__((used));
 static char            CmdLine[200]            __attribute__((used));
 
 module_t *	modlist;
 uint32_t	modlength;
 uintptr_t	memlo;
 
+static uint32_t exec_SelectMbs(uint32_t bcr)
+{
+    switch (bcr & SDRAM_SDSZ_MASK)
+    {
+        case SDRAM_SDSZ_256MB: return 256;
+        case SDRAM_SDSZ_128MB: return 128;
+        case  SDRAM_SDSZ_64MB: return  64;
+        case  SDRAM_SDSZ_32MB: return  32;
+        case  SDRAM_SDSZ_16MB: return  16;
+        case   SDRAM_SDSZ_8MB: return   8;
+    }
+
+    return 0;
+}
+
+/* Detect and report amount of available memory in mega bytes via device control register bus */
+static uint32_t exec_GetMemory()
+{
+    uint32_t mem;
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B0CR);
+    mem = exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B0CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B1CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B1CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B2CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B2CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    wrdcr(SDRAM0_CFGADDR, SDRAM0_B3CR);
+    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
+    //D(bug("[exec] B3CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+
+    return mem;
+}
+
+void exec_main(struct TagItem *msg, void *entry)
+{
+    UWORD *memrange[3];
+    uint32_t mem;
+    struct MemHeader *mh;
+
+    D(bug("[exec] AROS for Sam440 - The AROS Research OS\n"));
+
+    /* Prepare the exec base */
+    D(bug("[exec] Preparing the ExecBase...\n"));
+
+    /* Get the kernel memory locations */
+    memrange[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
+    memrange[1] = (UWORD *)((krnGetTagData(KRN_KernelHighest, 0, msg) + 0xffff) & 0xffff0000);
+    memrange[2] = (UWORD *)-1;
+
+    krnCreateMemHeader("RAM", -10, (APTR)(memrange[1]), 0x01000000 - (IPTR)memrange[1], 
+               MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
+    mh = (struct MemHeader *)memrange[1];
+
+    krnPrepareExecBase(memrange, mh, msg);
+    wrspr(SPRG5, SysBase);
+    D(bug("[exec] ExecBase at %08x\n", SysBase));
+
+    mem = exec_GetMemory();
+    D(bug("[exec] Adding memory (%uM)\n", mem));
+
+    AddMemList((mem - 16) * 1024*1024,
+               MEMF_FAST | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL,
+               0,
+               (APTR)0x01000000,
+               "Fast RAM");
+    
+    D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
+    InitCode(RTF_SINGLETASK, 0);
+
+    D(bug("[exec] InitCode(RTF_COLDSTART)\n"));
+    InitCode(RTF_COLDSTART, 0);
+
+    D(bug("[exec] I should never get here...\n"));
+}
+
+
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     struct TagItem *tmp = tmp_struct.bootup_tags;
-    uint32_t reg;
 
     /* Lowest usable kernel memory */
     memlo = 0xff000000;
@@ -146,13 +218,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         else if (tmp->ti_Tag == KRN_BootLoader)
         {
         	tmp->ti_Data = (STACKIPTR) memlo;
-        	memlo += (strlen(memlo) + 4) & ~3;
+        	memlo += (strlen((char *)memlo) + 4) & ~3;
         	strcpy((char*)tmp->ti_Data, (const char*) msg->ti_Data);
         }
         else if (tmp->ti_Tag == KRN_DebugInfo)
         {
         	int i;
-        	struct MinList *mlist = tmp->ti_Data;
+        	struct MinList *mlist = (struct MinList *)tmp->ti_Data;
 
         	D(bug("[KRN] DebugInfo at %08x\n", mlist));
 
@@ -161,13 +233,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         	ListLength(mlist, modlength);
         	modlist = mod;
 
-        	memlo = &mod[modlength];
+        	memlo = (uintptr_t)&mod[modlength];
 
         	D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
         	/* Copy the module entries */
         	for (i=0; i < modlength; i++)
         	{
-        		module_t *m = REMHEAD(mlist);
+        		module_t *m = (module_t *)REMHEAD(mlist);
         		symbol_t *sym;
 
         		mod[i].m_lowest = m->m_lowest;
@@ -182,10 +254,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
         		ForeachNode(&m->m_symbols, sym)
         		{
-        			symbol_t *newsym = memlo;
+        			symbol_t *newsym = (symbol_t *)memlo;
         			memlo += sizeof(symbol_t);
 
-        			newsym->s_name = memlo;
+        			newsym->s_name = (char *)memlo;
         			memlo += (strlen(sym->s_name)+4)&~3;
         			strcpy(newsym->s_name, sym->s_name);
 
@@ -227,63 +299,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     while(1) {
         wrmsr(rdmsr() | MSR_POW);
     }
-}
-
-AROS_LH0(void *, KrnCreateContext,
-         struct KernelBase *, KernelBase, 18, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    context_t *ctx;
-
-    uint32_t oldmsr = goSuper();
-
-    ctx = Allocate(KernelBase->kb_SupervisorMem, sizeof(context_t));
-    bzero(ctx, sizeof(context_t));
-
-    wrmsr(oldmsr);
-
-    if (!ctx)
-        ctx = AllocMem(sizeof(context_t), MEMF_PUBLIC|MEMF_CLEAR);
-
-    return ctx;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(void, KrnDeleteContext,
-                AROS_LHA(void *, context, A0),
-         struct KernelBase *, KernelBase, 19, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Was context in supervisor space? Deallocate it there :) */
-    if (((intptr_t)context & 0xf0000000) == 0xf0000000)
-    {
-        uint32_t oldmsr = goSuper();
-
-        Deallocate(KernelBase->kb_SupervisorMem, context, sizeof(context_t));
-
-        wrmsr(oldmsr);
-    }
-    else
-        FreeMem(context, sizeof(context_t));
-
-    /* Was this context owning a FPU? Make FPU totally free then */
-    if (KernelBase->kb_FPUOwner == context)
-        KernelBase->kb_FPUOwner = NULL;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH0I(struct TagItem *, KrnGetBootInfo,
-         struct KernelBase *, KernelBase, 11, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    return BootMsg;
-
-    AROS_LIBFUNC_EXIT
 }
 
 struct MemHeader mh;
@@ -363,26 +378,26 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     }
 
     uint32_t vco = (m * 66666666) + m/2;
-    LIBBASE->kb_CPUFreq = vco / fwdva;
-    LIBBASE->kb_PLBFreq = vco / fwdvb / perdv0;
-    LIBBASE->kb_OPBFreq = LIBBASE->kb_PLBFreq / opbdv0;
-    LIBBASE->kb_EPBFreq = LIBBASE->kb_PLBFreq / perdv0;
-    LIBBASE->kb_PCIFreq = LIBBASE->kb_PLBFreq / spcid0;
+    LIBBASE->kb_PlatformData->pd_CPUFreq = vco / fwdva;
+    LIBBASE->kb_PlatformData->pd_PLBFreq = vco / fwdvb / perdv0;
+    LIBBASE->kb_PlatformData->pd_OPBFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / opbdv0;
+    LIBBASE->kb_PlatformData->pd_EPBFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / perdv0;
+    LIBBASE->kb_PlatformData->pd_PCIFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / spcid0;
 
     /*
      * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
      * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
      */
-    wrspr(DECAR, LIBBASE->kb_OPBFreq / 50);
+    wrspr(DECAR, LIBBASE->kb_PlatformData->pd_OPBFreq / 50);
     wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
 
     D(bug("[KRN] Kernel resource post-exec init\n"));
 
-    D(bug("[KRN] CPU Speed: %dHz\n", LIBBASE->kb_CPUFreq));
-    D(bug("[KRN] PLB Speed: %dHz\n", LIBBASE->kb_PLBFreq));
-    D(bug("[KRN] OPB Speed: %dHz\n", LIBBASE->kb_OPBFreq));
-    D(bug("[KRN] EPB Speed: %dHz\n", LIBBASE->kb_EPBFreq));
-    D(bug("[KRN] PCI Speed: %dHz\n", LIBBASE->kb_PCIFreq));
+    D(bug("[KRN] CPU Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_CPUFreq));
+    D(bug("[KRN] PLB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_PLBFreq));
+    D(bug("[KRN] OPB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_OPBFreq));
+    D(bug("[KRN] EPB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_EPBFreq));
+    D(bug("[KRN] PCI Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_PCIFreq));
 
     /* 4K granularity for data sections */
     krn_lowest &= 0xfffff000;
@@ -404,7 +419,9 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     for (i=0; i < 64; i++)
         NEWLIST(&LIBBASE->kb_Interrupts[i]);
 
-    NEWLIST(&LIBBASE->kb_Modules);
+    LIBBASE->kb_ContextSize = sizeof(context_t);
+
+    NEWLIST(&LIBBASE->kb_PlatformData->pd_Modules);
 
     D(bug("[KRN] Preparing kernel private memory "));
     /* Prepare MemHeader structure to allocate from private low memory */
@@ -422,7 +439,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[KRN] %08x - %08x, %d KB free\n", mh.mh_Lower, mh.mh_Upper, mh.mh_Free >> 10));
 
-    LIBBASE->kb_SupervisorMem = &mh;
+    LIBBASE->kb_PlatformData->pd_SupervisorMem = &mh;
 
     /*
      * Add MemHeader about kernel memory to public MemList to avoid invalid
@@ -437,7 +454,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     mh->mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
     mh->mh_First           = NULL;
     mh->mh_Free            = 0;
-    mh->mh_Lower           = LIBBASE->kb_SupervisorMem;
+    mh->mh_Lower           = LIBBASE->kb_PlatformData->pd_SupervisorMem;
     mh->mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_highest - 1);
     
     Enqueue(&SysBase->MemList, &mh->mh_Node);

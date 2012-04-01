@@ -99,7 +99,7 @@ BOOL timer_addToWaitList(struct TimerBase *, struct MinList *, struct timereques
     {
 #if NEWSTYLE_DEVICE
         case NSCMD_DEVICEQUERY:
-#warning In timer.device this is maybe a bit problematic, as the timerequest structure does not have io_Data and io_Length members
+// FIXME: In timer.device this is maybe a bit problematic, as the timerequest structure does not have io_Data and io_Length members
 
             if (timereq->tr_node.io_Message.mn_Length < sizeof(struct IOStdReq))
             {

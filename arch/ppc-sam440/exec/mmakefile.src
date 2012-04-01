@@ -2,15 +2,16 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init preparecontext rawputchar prepareexecbase \
+        exec_init preparecontext rawputchar \
         cachepostdma cachepredma supervisor superstate userstate \
         coldreboot
 
 #MM kernel-exec : kernel-exec-sam440-ppc
 #MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes
 
-USER_CFLAGS     := $(PRIV_EXEC_INCLUDES) -Os
-USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR) -Os
+USER_CFLAGS     := $(PRIV_EXEC_INCLUDES)
+USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec arch=sam440-ppc \
   files=$(CFILES) modulename=exec

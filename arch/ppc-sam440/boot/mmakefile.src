@@ -58,6 +58,20 @@ include $(TOP)/config/make.cfg
 #MM     kernel-usb-usbromstartup \
 #MM     kernel-processor
 
+#MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-sam440-ppc-quick
+
+#MM
+kernel-link-sam440-ppc: $(BINDIR)/boot/aros-amcc440
+
+#MM
+kernel-link-sam440-ppc-quick: $(BINDIR)/boot/aros-amcc440
+
+$(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
+        -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
+        -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit -lgcc
+
+
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos poseidon
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb

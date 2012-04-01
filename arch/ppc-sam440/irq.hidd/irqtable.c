@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <asm/amcc440.h>
+
 /* The constants are in reverse order! */
 const char IRQ_Table[15] =
 {

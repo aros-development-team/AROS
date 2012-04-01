@@ -1,8 +1,8 @@
 #include <aros/debug.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
-#include "../kernel/syscall.h"
-#include "../kernel/kernel_intern.h"
+#include "kernel_syscall.h"
+#include "kernel_intern.h"
 
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>

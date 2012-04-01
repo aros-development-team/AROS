@@ -3,7 +3,7 @@
 
 #include "kernel_intern.h"
 
-struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
+struct TagItem *krnNextTagItem(struct TagItem **tagListPtr)
 {
     if (!(*tagListPtr)) return 0;
 
@@ -34,7 +34,7 @@ struct TagItem *krnNextTagItem(const struct TagItem **tagListPtr)
     }
 }
 
-struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
+struct TagItem *krnFindTagItem(Tag tagValue, struct TagItem *tagList)
 {
     struct TagItem *tag;
     struct TagItem *tagptr = tagList;
@@ -48,7 +48,7 @@ struct TagItem *krnFindTagItem(Tag tagValue, const struct TagItem *tagList)
     return 0;
 }
 
-intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, const struct TagItem *tagList)
+intptr_t krnGetTagData(Tag tagValue, intptr_t defaultVal, struct TagItem *tagList)
 {
     struct TagItem *ti = 0;
 

@@ -79,7 +79,7 @@ ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub
     ULONG temp;
     
     Disable();
-    outl_le(CFGADD(bus, dev, sub, reg),(ULONG*)PCIC0_CFGADDR);
+    outl_le(CFGADD(bus, dev, sub, reg),PCIC0_CFGADDR);
     temp=inl_le(PCIC0_CFGDATA);
     //D(bug("[PCI440] -> %08x = %08x\n", CFGADD(bus, dev, sub, reg), temp));
     Enable();
@@ -156,7 +156,6 @@ void PCI440__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
 static int PCI440_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *pci;
-    ULONG temp;
     
     D(bug("PCI440: Driver initialization\n"));
 

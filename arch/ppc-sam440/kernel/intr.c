@@ -1,170 +1,18 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <asm/amcc440.h>
 #include <stddef.h>
 
+#include "kernel_base.h"
+
 #include <proto/exec.h>
 #include <proto/kernel.h>
 
 #include "kernel_intern.h"
-#include "syscall.h"
-
-AROS_LH4(void *, KrnAddIRQHandler,
-         AROS_LHA(uint8_t, irq, D0),
-         AROS_LHA(void *, handler, A0),
-         AROS_LHA(void *, handlerData, A1),
-         AROS_LHA(void *, handlerData2, A2),
-         struct KernelBase *, KernelBase, 7, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    struct ExecBase *SysBase = getSysBase();
-    struct IntrNode *handle = NULL;
-    D(bug("[KRN] KrnAddIRQHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-
-    if (irq < 63)
-    {
-        /* Go to supervisor mode */
-        goSuper();
-
-        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
-
-        if (handle)
-        {
-            handle->in_Handler = handler;
-            handle->in_HandlerData = handlerData;
-            handle->in_HandlerData2 = handlerData2;
-            handle->in_type = it_interrupt;
-            handle->in_nr = irq;
-
-            Disable();
-            ADDHEAD(&KernelBase->kb_Interrupts[irq], &handle->in_Node);
-
-            if (irq < 32)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
-            }
-            else
-            {
-                wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
-            }
-
-            Enable();
-        }
-
-        goUser();
-    }
-
-    D(bug("[KRN]   handle=%012p\n", handle));
-    return handle;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(void, KrnRemIRQHandler,
-         AROS_LHA(void *, handle, A0),
-         struct KernelBase *, KernelBase, 8, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    struct ExecBase *SysBase = getSysBase();
-    struct IntrNode *h = handle;
-    uint8_t irq = h->in_nr;
-
-    if (h && (h->in_type == it_interrupt))
-    {
-        goSuper();
-
-        Disable();
-        REMOVE(h);
-        if (IsListEmpty(&KernelBase->kb_Interrupts[irq]))
-        {
-            if (irq < 30)
-            {
-                wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
-            }
-            else if (irq > 31)
-            {
-                wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 32)));
-            }
-        }
-        Enable();
-
-        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-
-        goUser();
-    }
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH4(void *, KrnAddExceptionHandler,
-         AROS_LHA(uint8_t, irq, D0),
-         AROS_LHA(void *, handler, A0),
-         AROS_LHA(void *, handlerData, A1),
-         AROS_LHA(void *, handlerData2, A2),
-         struct KernelBase *, KernelBase, 14, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    struct ExecBase *SysBase = getSysBase();
-    struct IntrNode *handle = NULL;
-    D(bug("[KRN] KrnAddExceptionHandler(%02x, %012p, %012p, %012p):\n", irq, handler, handlerData, handlerData2));
-
-    if (irq < 16)
-    {
-        /* Go to supervisor mode */
-        goSuper();
-
-        handle = Allocate(KernelBase->kb_SupervisorMem, sizeof(struct IntrNode));
-        D(bug("[KRN]   handle=%012p\n", handle));
-
-        if (handle)
-        {
-            handle->in_Handler = handler;
-            handle->in_HandlerData = handlerData;
-            handle->in_HandlerData2 = handlerData2;
-            handle->in_type = it_exception;
-            handle->in_nr = irq;
-
-            Disable();
-            ADDHEAD(&KernelBase->kb_Exceptions[irq], &handle->in_Node);
-            Enable();
-        }
-
-        goUser();
-    }
-
-    return handle;
-
-    AROS_LIBFUNC_EXIT
-}
-
-AROS_LH1(void, KrnRemExceptionHandler,
-         AROS_LHA(void *, handle, A0),
-         struct KernelBase *, KernelBase, 15, Kernel)
-{
-    AROS_LIBFUNC_INIT
-
-    struct ExecBase *SysBase = getSysBase();
-    struct IntrNode *h = handle;
-
-    if (h && (h->in_type == it_exception))
-    {
-        goSuper();
-
-        Disable();
-        REMOVE(h);
-        Enable();
-
-        Deallocate(KernelBase->kb_SupervisorMem, h, sizeof(struct IntrNode));
-
-        goUser();
-    }
-
-    AROS_LIBFUNC_EXIT
-}
+#include "kernel_syscall.h"
+#include "kernel_globals.h"
+#include "kernel_intr.h"
 
 void *__EXCEPTION_0_Prolog();
 void *__EXCEPTION_1_Prolog();
@@ -251,19 +99,19 @@ void intr_init()
                   "stw %%r2,%[xer](%%r3)    \n\t" \
                   \
                   :: \
-                  [gpr0]"i"(offsetof(regs_t, gpr[0])), \
-                  [gpr1]"i"(offsetof(regs_t, gpr[1])), \
-                  [gpr2]"i"(offsetof(regs_t, gpr[2])), \
-                  [gpr3]"i"(offsetof(regs_t, gpr[3])), \
-                  [gpr4]"i"(offsetof(regs_t, gpr[4])), \
-                  [gpr5]"i"(offsetof(regs_t, gpr[5])), \
+                  [gpr0]"i"(offsetof(struct cpuregs, gpr[0])), \
+                  [gpr1]"i"(offsetof(struct cpuregs, gpr[1])), \
+                  [gpr2]"i"(offsetof(struct cpuregs, gpr[2])), \
+                  [gpr3]"i"(offsetof(struct cpuregs, gpr[3])), \
+                  [gpr4]"i"(offsetof(struct cpuregs, gpr[4])), \
+                  [gpr5]"i"(offsetof(struct cpuregs, gpr[5])), \
                   \
-                  [ccr]"i"(offsetof(regs_t, ccr)), \
-                  [srr0]"i"(offsetof(regs_t, srr0)), \
-                  [srr1]"i"(offsetof(regs_t, srr1)), \
-                  [ctr]"i"(offsetof(regs_t, ctr)), \
-                  [lr]"i"(offsetof(regs_t, lr)), \
-                  [xer]"i"(offsetof(regs_t, xer)), \
+                  [ccr]"i"(offsetof(struct cpuregs, ccr)), \
+                  [srr0]"i"(offsetof(struct cpuregs, srr0)), \
+                  [srr1]"i"(offsetof(struct cpuregs, srr1)), \
+                  [ctr]"i"(offsetof(struct cpuregs, ctr)), \
+                  [lr]"i"(offsetof(struct cpuregs, lr)), \
+                  [xer]"i"(offsetof(struct cpuregs, xer)), \
                   [irq]"i"(num) \
                   ); \
                  /* \
@@ -282,7 +130,7 @@ void intr_init()
 uint64_t idle_time;
 static uint64_t last_calc;
 
-void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exception, void *self)
+void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
@@ -323,16 +171,16 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
     /* Idle time calculator */
 
     uint64_t current = mftbu();
-    if (current - last_calc > KernelBase->kb_OPBFreq)
+    if (current - last_calc > KernelBase->kb_PlatformData->pd_OPBFreq)
     {
     	uint32_t total_time = current - last_calc;
 
     	if (total_time < idle_time)
     		total_time = idle_time;
 
-    	KernelBase->kb_CPUUsage = 1000 - ((uint32_t)idle_time) / (total_time / 1000);
+    	KernelBase->kb_PlatformData->pd_CPUUsage = 1000 - ((uint32_t)idle_time) / (total_time / 1000);
 
-    	if (KernelBase->kb_CPUUsage > 999)
+    	if (KernelBase->kb_PlatformData->pd_CPUUsage > 999)
     	{
     		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10,
     				SysBase->ThisTask->tc_Node.ln_Name));
@@ -348,7 +196,7 @@ void __attribute__((noreturn)) decrementer_handler(regs_t *ctx, uint8_t exceptio
 }
 
 
-void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, void *self)
+void generic_handler(context_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
     struct ExecBase *SysBase = getSysBase();
@@ -368,10 +216,10 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     if (SysBase)
     {
         struct Task *t = FindTask(NULL);
-        uint32_t offset;
+        D(uint32_t offset);
         char *func, *mod;
 
-        offset = findNames(ctx->srr0, &mod, &func);
+        D(offset = findNames(ctx->cpu.srr0, &mod, &func));
 
         D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
 
@@ -382,37 +230,37 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 
         D(bug("[KRN] SPLower=%08x SPUpper=%08x\n", t->tc_SPLower, t->tc_SPUpper));
         D(bug("[KRN] Stack usage: %d bytes (%d %%)\n", t->tc_SPUpper - ctx->gpr[1],
-        		100 * ((uintptr_t)t->tc_SPUpper - ctx->gpr[1]) / ((uintptr_t)t->tc_SPUpper - (uintptr_t)t->tc_SPLower)));
+        		100 * ((IPTR)t->tc_SPUpper - ctx->cpu.gpr[1]) / ((IPTR)t->tc_SPUpper - (IPTR)t->tc_SPLower)));
 
-        if (ctx->gpr[1] >= t->tc_SPLower && ctx->gpr[1] < t->tc_SPUpper)
+        if (ctx->cpu.gpr[1] >= (IPTR)t->tc_SPLower && ctx->cpu.gpr[1] < (IPTR)t->tc_SPUpper)
         	D(bug("[KRN] Stack in bounds\n"));
         else
         	D(bug("[KRN] Stack exceeded the allowed size!\n"));
     }
-    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->srr0, ctx->srr1, rdspr(DEAR), rdspr(ESR)));
-    D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->ctr, ctx->lr, ctx->xer, ctx->ccr));
-    D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->dar, ctx->dsisr));
+    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR)));
+    D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->cpu.ctr, ctx->cpu.lr, ctx->cpu.xer, ctx->cpu.ccr));
+    D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->cpu.dar, ctx->cpu.dsisr));
     D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
-             ctx->gpr[0],ctx->gpr[1],ctx->gpr[2],ctx->gpr[3]));
+             ctx->cpu.gpr[0],ctx->cpu.gpr[1],ctx->cpu.gpr[2],ctx->cpu.gpr[3]));
     D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
-             ctx->gpr[4],ctx->gpr[5],ctx->gpr[6],ctx->gpr[7]));
+             ctx->cpu.gpr[4],ctx->cpu.gpr[5],ctx->cpu.gpr[6],ctx->cpu.gpr[7]));
     D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
-             ctx->gpr[8],ctx->gpr[9],ctx->gpr[10],ctx->gpr[11]));
+             ctx->cpu.gpr[8],ctx->cpu.gpr[9],ctx->cpu.gpr[10],ctx->cpu.gpr[11]));
     D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
-             ctx->gpr[12],ctx->gpr[13],ctx->gpr[14],ctx->gpr[15]));
+             ctx->cpu.gpr[12],ctx->cpu.gpr[13],ctx->cpu.gpr[14],ctx->cpu.gpr[15]));
 
     D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
-             ctx->gpr[16],ctx->gpr[17],ctx->gpr[18],ctx->gpr[19]));
+             ctx->cpu.gpr[16],ctx->cpu.gpr[17],ctx->cpu.gpr[18],ctx->cpu.gpr[19]));
     D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
-             ctx->gpr[20],ctx->gpr[21],ctx->gpr[22],ctx->gpr[23]));
+             ctx->cpu.gpr[20],ctx->cpu.gpr[21],ctx->cpu.gpr[22],ctx->cpu.gpr[23]));
     D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
-             ctx->gpr[24],ctx->gpr[25],ctx->gpr[26],ctx->gpr[27]));
+             ctx->cpu.gpr[24],ctx->cpu.gpr[25],ctx->cpu.gpr[26],ctx->cpu.gpr[27]));
     D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
-             ctx->gpr[28],ctx->gpr[29],ctx->gpr[30],ctx->gpr[31]));
+             ctx->cpu.gpr[28],ctx->cpu.gpr[29],ctx->cpu.gpr[30],ctx->cpu.gpr[31]));
 
     D(bug("[KRN] Instruction dump:\n"));
     int i;
-    ULONG *p = (ULONG*)ctx->srr0;
+    D(ULONG *p = (ULONG*)ctx->cpu.srr0);
     for (i=0; i < 8; i++)
     {
         D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
@@ -420,11 +268,11 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
 
     {
         char *mod, *func;
-        uint32_t offset;
+        D(uint32_t offset);
 
-        offset = findNames(ctx->lr, &mod, &func);
+        D(offset = findNames(ctx->cpu.lr, &mod, &func));
 
-        D(bug("[KRN] LR=%08x", ctx->lr));
+        D(bug("[KRN] LR=%08x", ctx->cpu.lr));
 
         if (func)
                 D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
@@ -436,14 +284,14 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     }
 
     D(bug("[KRN] Backtrace:\n"));
-    uint32_t *sp = ctx->gpr[1];
+    uint32_t *sp = (uint32_t *)ctx->cpu.gpr[1];
     while(*sp)
     {
             char *mod, *func;
             sp = (uint32_t *)sp[0];
-            uint32_t offset;
+            D(uint32_t offset);
 
-            offset = findNames(sp[1], &mod, &func);
+            D(offset = findNames(sp[1], &mod, &func));
 
             if (func)
                     D(bug("[KRN]  %08x: byte %d in func %s, module %s\n", sp[1], offset, func, mod));
@@ -466,11 +314,9 @@ void __attribute__((noreturn)) generic_handler(regs_t *ctx, uint8_t exception, v
     core_ExitInterrupt(ctx);
 }
 
-void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void *self)
+void  mmu_handler(context_t *ctx, uint8_t exception, void *self)
 {
-    struct KernelBase *KernelBase = getKernelBase();
-
-    uint32_t insn = *(uint32_t *)ctx->srr0;
+    uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
 
     /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4 */
     if ((insn & 0xfc000000) == 0x80000000 && rdspr(DEAR) == 4)
@@ -480,8 +326,8 @@ void __attribute__((noreturn)) mmu_handler(regs_t *ctx, uint8_t exception, void 
 //        D(bug("[KRN] Pagefault exception. Someone tries to get SysBase (%08x) from 0x00000004 into r%d. EVIL EVIL EVIL!\n",
 //              getSysBase(), reg));
 
-        ctx->gpr[reg] = getSysBase();
-        ctx->srr0 += 4;
+        ctx->cpu.gpr[reg] = (IPTR)getSysBase();
+        ctx->cpu.srr0 += 4;
 
         core_LeaveInterrupt(ctx);
     }
@@ -635,19 +481,9 @@ void stfs(float v, intptr_t addr)
 	}
 }
 
-void __attribute__((noreturn)) alignment_handler(context_t *ctx, uint8_t exception, void *self)
+void alignment_handler(context_t *ctx, uint8_t exception, void *self)
 {
-    struct KernelBase *KernelBase = getKernelBase();
     int fixed = 1;
-
-    union {
-    	uint8_t		u8[8];
-    	uint16_t	u16[4];
-    	uint32_t 	u32[2];
-    	uint64_t 	u64;
-    	float 		f[2];
-    	double 		d;
-    } conv __attribute__((aligned(16)));
 
     intptr_t dear = rdspr(DEAR);
     uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
@@ -798,32 +634,32 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 			"stw %%r30,%[gpr30](%%r3) \n\t"
 			"stw %%r31,%[gpr31](%%r3) \n\t"
 			::
-			[gpr6]"i"(offsetof(regs_t, gpr[6])),
-			[gpr7]"i"(offsetof(regs_t, gpr[7])),
-			[gpr8]"i"(offsetof(regs_t, gpr[8])),
-			[gpr9]"i"(offsetof(regs_t, gpr[9])),
-			[gpr10]"i"(offsetof(regs_t, gpr[10])),
-			[gpr11]"i"(offsetof(regs_t, gpr[11])),
-			[gpr12]"i"(offsetof(regs_t, gpr[12])),
-			[gpr13]"i"(offsetof(regs_t, gpr[13])),
-			[gpr14]"i"(offsetof(regs_t, gpr[14])),
-			[gpr15]"i"(offsetof(regs_t, gpr[15])),
-			[gpr16]"i"(offsetof(regs_t, gpr[16])),
-			[gpr17]"i"(offsetof(regs_t, gpr[17])),
-			[gpr18]"i"(offsetof(regs_t, gpr[18])),
-			[gpr19]"i"(offsetof(regs_t, gpr[19])),
-			[gpr20]"i"(offsetof(regs_t, gpr[20])),
-			[gpr21]"i"(offsetof(regs_t, gpr[21])),
-			[gpr22]"i"(offsetof(regs_t, gpr[22])),
-			[gpr23]"i"(offsetof(regs_t, gpr[23])),
-			[gpr24]"i"(offsetof(regs_t, gpr[24])),
-			[gpr25]"i"(offsetof(regs_t, gpr[25])),
-			[gpr26]"i"(offsetof(regs_t, gpr[26])),
-			[gpr27]"i"(offsetof(regs_t, gpr[27])),
-			[gpr28]"i"(offsetof(regs_t, gpr[28])),
-			[gpr29]"i"(offsetof(regs_t, gpr[29])),
-			[gpr30]"i"(offsetof(regs_t, gpr[30])),
-			[gpr31]"i"(offsetof(regs_t, gpr[31]))
+			[gpr6]"i"(offsetof(struct cpuregs, gpr[6])),
+			[gpr7]"i"(offsetof(struct cpuregs, gpr[7])),
+			[gpr8]"i"(offsetof(struct cpuregs, gpr[8])),
+			[gpr9]"i"(offsetof(struct cpuregs, gpr[9])),
+			[gpr10]"i"(offsetof(struct cpuregs, gpr[10])),
+			[gpr11]"i"(offsetof(struct cpuregs, gpr[11])),
+			[gpr12]"i"(offsetof(struct cpuregs, gpr[12])),
+			[gpr13]"i"(offsetof(struct cpuregs, gpr[13])),
+			[gpr14]"i"(offsetof(struct cpuregs, gpr[14])),
+			[gpr15]"i"(offsetof(struct cpuregs, gpr[15])),
+			[gpr16]"i"(offsetof(struct cpuregs, gpr[16])),
+			[gpr17]"i"(offsetof(struct cpuregs, gpr[17])),
+			[gpr18]"i"(offsetof(struct cpuregs, gpr[18])),
+			[gpr19]"i"(offsetof(struct cpuregs, gpr[19])),
+			[gpr20]"i"(offsetof(struct cpuregs, gpr[20])),
+			[gpr21]"i"(offsetof(struct cpuregs, gpr[21])),
+			[gpr22]"i"(offsetof(struct cpuregs, gpr[22])),
+			[gpr23]"i"(offsetof(struct cpuregs, gpr[23])),
+			[gpr24]"i"(offsetof(struct cpuregs, gpr[24])),
+			[gpr25]"i"(offsetof(struct cpuregs, gpr[25])),
+			[gpr26]"i"(offsetof(struct cpuregs, gpr[26])),
+			[gpr27]"i"(offsetof(struct cpuregs, gpr[27])),
+			[gpr28]"i"(offsetof(struct cpuregs, gpr[28])),
+			[gpr29]"i"(offsetof(struct cpuregs, gpr[29])),
+			[gpr30]"i"(offsetof(struct cpuregs, gpr[30])),
+			[gpr31]"i"(offsetof(struct cpuregs, gpr[31]))
 	);
 
 	asm volatile(
@@ -941,26 +777,26 @@ static void __attribute__((used)) __core_LeaveInterrupt()
 			"lwz %%r13,%[gpr13](%%r3)      \n\t"
 			"lwz %%r12,%[gpr12](%%r3)      \n\t"
 			::
-			[gpr12]"i"(offsetof(regs_t, gpr[12])),
-			[gpr13]"i"(offsetof(regs_t, gpr[13])),
-			[gpr14]"i"(offsetof(regs_t, gpr[14])),
-			[gpr15]"i"(offsetof(regs_t, gpr[15])),
-			[gpr16]"i"(offsetof(regs_t, gpr[16])),
-			[gpr17]"i"(offsetof(regs_t, gpr[17])),
-			[gpr18]"i"(offsetof(regs_t, gpr[18])),
-			[gpr19]"i"(offsetof(regs_t, gpr[19])),
-			[gpr20]"i"(offsetof(regs_t, gpr[20])),
-			[gpr21]"i"(offsetof(regs_t, gpr[21])),
-			[gpr22]"i"(offsetof(regs_t, gpr[22])),
-			[gpr23]"i"(offsetof(regs_t, gpr[23])),
-			[gpr24]"i"(offsetof(regs_t, gpr[24])),
-			[gpr25]"i"(offsetof(regs_t, gpr[25])),
-			[gpr26]"i"(offsetof(regs_t, gpr[26])),
-			[gpr27]"i"(offsetof(regs_t, gpr[27])),
-			[gpr28]"i"(offsetof(regs_t, gpr[28])),
-			[gpr29]"i"(offsetof(regs_t, gpr[29])),
-			[gpr30]"i"(offsetof(regs_t, gpr[30])),
-			[gpr31]"i"(offsetof(regs_t, gpr[31]))
+			[gpr12]"i"(offsetof(struct cpuregs, gpr[12])),
+			[gpr13]"i"(offsetof(struct cpuregs, gpr[13])),
+			[gpr14]"i"(offsetof(struct cpuregs, gpr[14])),
+			[gpr15]"i"(offsetof(struct cpuregs, gpr[15])),
+			[gpr16]"i"(offsetof(struct cpuregs, gpr[16])),
+			[gpr17]"i"(offsetof(struct cpuregs, gpr[17])),
+			[gpr18]"i"(offsetof(struct cpuregs, gpr[18])),
+			[gpr19]"i"(offsetof(struct cpuregs, gpr[19])),
+			[gpr20]"i"(offsetof(struct cpuregs, gpr[20])),
+			[gpr21]"i"(offsetof(struct cpuregs, gpr[21])),
+			[gpr22]"i"(offsetof(struct cpuregs, gpr[22])),
+			[gpr23]"i"(offsetof(struct cpuregs, gpr[23])),
+			[gpr24]"i"(offsetof(struct cpuregs, gpr[24])),
+			[gpr25]"i"(offsetof(struct cpuregs, gpr[25])),
+			[gpr26]"i"(offsetof(struct cpuregs, gpr[26])),
+			[gpr27]"i"(offsetof(struct cpuregs, gpr[27])),
+			[gpr28]"i"(offsetof(struct cpuregs, gpr[28])),
+			[gpr29]"i"(offsetof(struct cpuregs, gpr[29])),
+			[gpr30]"i"(offsetof(struct cpuregs, gpr[30])),
+			[gpr31]"i"(offsetof(struct cpuregs, gpr[31]))
 	);
 
 	asm volatile(
@@ -1068,23 +904,23 @@ static void __attribute__((used)) __core_LeaveInterrupt()
 			"mfsprg1 %%r3                  \n\t"
 			"sync; isync; rfi"
 			::
-			[ccr]"i"(offsetof(regs_t, ccr)),        /* */
-			[srr0]"i"(offsetof(regs_t, srr0)),      /* */
-			[srr1]"i"(offsetof(regs_t, srr1)),/* */
-			[ctr]"i"(offsetof(regs_t, ctr)),/**/
-			[lr]"i"(offsetof(regs_t, lr)),/**/
-			[xer]"i"(offsetof(regs_t, xer)),
-			[gpr0]"i"(offsetof(regs_t, gpr[0])),
-			[gpr1]"i"(offsetof(regs_t, gpr[1])),
-			[gpr2]"i"(offsetof(regs_t, gpr[2])),
-			[gpr3]"i"(offsetof(regs_t, gpr[3])),
-			[gpr4]"i"(offsetof(regs_t, gpr[4])),
-			[gpr5]"i"(offsetof(regs_t, gpr[5])),
-			[gpr6]"i"(offsetof(regs_t, gpr[6])),
-			[gpr7]"i"(offsetof(regs_t, gpr[7])),
-			[gpr8]"i"(offsetof(regs_t, gpr[8])),
-			[gpr9]"i"(offsetof(regs_t, gpr[9])),
-			[gpr10]"i"(offsetof(regs_t, gpr[10])),
-			[gpr11]"i"(offsetof(regs_t, gpr[11]))
+			[ccr]"i"(offsetof(struct cpuregs, ccr)),        /* */
+			[srr0]"i"(offsetof(struct cpuregs, srr0)),      /* */
+			[srr1]"i"(offsetof(struct cpuregs, srr1)),/* */
+			[ctr]"i"(offsetof(struct cpuregs, ctr)),/**/
+			[lr]"i"(offsetof(struct cpuregs, lr)),/**/
+			[xer]"i"(offsetof(struct cpuregs, xer)),
+			[gpr0]"i"(offsetof(struct cpuregs, gpr[0])),
+			[gpr1]"i"(offsetof(struct cpuregs, gpr[1])),
+			[gpr2]"i"(offsetof(struct cpuregs, gpr[2])),
+			[gpr3]"i"(offsetof(struct cpuregs, gpr[3])),
+			[gpr4]"i"(offsetof(struct cpuregs, gpr[4])),
+			[gpr5]"i"(offsetof(struct cpuregs, gpr[5])),
+			[gpr6]"i"(offsetof(struct cpuregs, gpr[6])),
+			[gpr7]"i"(offsetof(struct cpuregs, gpr[7])),
+			[gpr8]"i"(offsetof(struct cpuregs, gpr[8])),
+			[gpr9]"i"(offsetof(struct cpuregs, gpr[9])),
+			[gpr10]"i"(offsetof(struct cpuregs, gpr[10])),
+			[gpr11]"i"(offsetof(struct cpuregs, gpr[11]))
 	);
 }
