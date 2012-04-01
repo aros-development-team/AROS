@@ -109,7 +109,7 @@
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ cc=$(AROS_CC)
 	%mkdir_q dir="$(dir %(to))"
 	@$(ECHO) "Makedepend $(CURDIR)/$(notdir %(from))..."
-	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
+	@AROS_CC="%(cc)" $(MKDEPEND) %(flags) -I$(TOP)/$(CURDIR) -I$(SRCDIR)/$(CURDIR) %(from) -o %(to)
 %end
 #------------------------------------------------------------------------------
 
@@ -1938,7 +1938,7 @@ GLOB_MKDIRS += %(objdir) %(libdir)
 
 %define build_catalogs mmake=/A name=/A subdir=/A \
  catalogs= source="../strings.h" description= dir=$(AROS_CATALOGS) \
- sourcedescription="$(TOOLDIR)/C_h_orig" srcdir="$(SRCDIR)/$(CURDIR)"
+ sourcedescription="$(TOOLDIR)/C_h_aros" srcdir="$(SRCDIR)/$(CURDIR)"
 
 ifeq (%(description),)
 BD_DESC := $(basename $(wildcard %(srcdir)/*.cd))
