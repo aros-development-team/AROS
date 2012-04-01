@@ -168,8 +168,9 @@ struct config *initconfig(int argc, char **argv)
 
     cfg->modulename = argv[optind+1];
     cfg->modulenameupper = strdup(cfg->modulename);
-    for (s=cfg->modulenameupper; *s!='\0'; *s = toupper(*s), s++)
-	;
+    for (s=cfg->modulenameupper; *s!='\0'; *s = toupper(*s), s++) {
+        if (!isalnum(*s)) *s = '_';
+    }
 
     if (strcmp(argv[optind+2],"library")==0)
     {
