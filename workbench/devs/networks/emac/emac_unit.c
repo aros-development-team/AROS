@@ -16,7 +16,7 @@
 #include "emac.h"
 #include LC_LIBDEFS_FILE
 
-#warning TODO: Implement CmdFlush!!!!!!!!!
+// TODO: Implement CmdFlush!!!!!!!!!
 
 static void EMAC_UDelay(struct EMACUnit *unit, uint32_t usec)
 {
@@ -776,7 +776,7 @@ AROS_UFH3(void, EMAC_UnitProcess,
 
     EMAC_Startup(unit);
 
-    Signal(parent, SIGF_SINGLE);
+    Signal((struct Task *)parent, SIGF_SINGLE);
 
     do {
         uint32_t sigset = 1 << iport->mp_SigBit |
@@ -883,7 +883,7 @@ struct EMACUnit *CreateUnit(struct EMACBase *EMACBase, uint8_t num)
         /* Create the unit's process */
 
         /* Unit's process pointer will temporarly contain the parent */
-        unit->eu_Process = FindTask(NULL);
+        unit->eu_Process = (struct Process *)FindTask(NULL);
         CreateNewProcTags(
                          NP_Entry, (IPTR)EMAC_UnitProcess,
                          NP_Name, EMAC_Units[num].ui_TaskName,

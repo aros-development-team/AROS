@@ -264,7 +264,7 @@ static BOOL CmdWrite(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 
 static BOOL CmdFlush(LIBBASETYPEPTR LIBBASE, struct IORequest *request)
 {
-#warning TODO: Implement CmdFlush!!!!!!!!!
+// TODO: Implement CmdFlush!!!!!!!!!
     //    FlushUnit(LIBBASE, (APTR)request->io_Unit, EVENT_QUEUE, IOERR_ABORTED);
     return TRUE;
 }

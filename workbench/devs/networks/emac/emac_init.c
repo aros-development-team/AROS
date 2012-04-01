@@ -113,7 +113,7 @@ static int GM_UNIQUENAME(Open)
     }
     else
     {
-        unit = req->ios2_Req.io_Unit = LIBBASE->emb_Units[unitnum];
+        unit = (struct EMACUnit *)(req->ios2_Req.io_Unit = (struct Unit *)LIBBASE->emb_Units[unitnum]);
     }
 
     /* Handle device sharing */
@@ -174,7 +174,7 @@ static int GM_UNIQUENAME(Close)
     struct IOSana2Req* req
 )
 {
-    struct EMACUnit *unit = req->ios2_Req.io_Unit;
+    struct EMACUnit *unit = (struct EMACUnit *)req->ios2_Req.io_Unit;
     struct Opener *opener;
 
     if (unit)
