@@ -11,6 +11,23 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#if defined(DEBUG) && DEBUG
+#include <aros/debug.h>
+struct KernelBase;
+#include "kernel_debug.h"
+
+/* Early definition of 'bug'
+ */
+#undef bug
+static inline void bug(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    krnBug(fmt, args, NULL);
+    va_end(args);
+}
+#endif
+
 #define KERNEL_PHYS_BASE        0x00800000
 #define KERNEL_VIRT_BASE        0xff800000
 
