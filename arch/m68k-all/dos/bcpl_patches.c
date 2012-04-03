@@ -1,7 +1,12 @@
+
 #include <aros/asmcall.h>
-#include <dos/dosextens.h>
+#include <string.h>
 #include <exec/libraries.h>
+#include <dos/dosextens.h>
+#include <dos/dos.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 
 #include "bcpl.h"
 
@@ -21,12 +26,70 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(BPTR, fh, D3),
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
+static AROS_ENTRY(LONG, SetPatch_noop,
+	AROS_UFHA(char *, argstr, A0),
+	AROS_UFHA(ULONG, argsize, D0),
+	struct ExecBase *, SysBase)
+{
+    AROS_USERFUNC_INIT
+
+    APTR DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+
+    if (DOSBase) {
+    	struct CommandLineInterface *cli = Cli();
+    	if (cli && cli->cli_Interactive) {
+    	    Printf("SetPatch is a reserved program name.\n");
+    	}
+    	CloseLibrary(DOSBase);
+    }
+
+    return RETURN_WARN;
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH5(BPTR, LoadSeg_Check,
+    AROS_UFPA(UBYTE*, name, D1),
+    AROS_UFPA(BPTR, hunktable, D2),
+    AROS_UFPA(BPTR, fh, D3),
+    AROS_UFPA(APTR, LoadSeg_Original, A0),
+    AROS_UFPA(struct DosLibrary *, DOSBase, A6))
+{ 
+    AROS_USERFUNC_INIT
+
+    /* name == NULL: Overlay LoadSeg */
+    if (name == NULL)
+        return AROS_UFC4(BPTR, LoadSeg_Overlay,
+            AROS_UFCA(UBYTE*, name, D1),
+            AROS_UFCA(BPTR, hunktable, D2),
+            AROS_UFCA(BPTR, fh, D3),
+            AROS_UFCA(struct DosLibrary *, DOSBase, A6));
+
+    /* On m68k, we map SetPatch to a no-op seglist,
+     * due to the fact that OS 3.x and higher's SetPatch
+     * blindly patches without checking OS versions.
+     */
+    if (stricmp(FilePart(name),"setpatch") == 0)
+    	return CreateSegList(SetPatch_noop);
+    /* Do not allow Picasso96 to load, it is not
+     * compatible with built-in AROS RTG system */
+    if (stricmp(FilePart(name),"rtg.library") == 0)
+    	return BNULL;
+
+    /* Call original LoadSeg function */  
+    return AROS_UFC2(BPTR, LoadSeg_Original,
+        AROS_UFCA(UBYTE*, name, D1),
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6));
+
+    AROS_USERFUNC_EXIT
+}
+
 extern void *BCPL_jsr, *BCPL_rts;
 extern const ULONG BCPL_GlobVec[(BCPL_GlobVec_NegSize + BCPL_GlobVec_PosSize) >> 2];
     
 const UWORD highfunc = 37, lowfunc = 5, skipfuncs = 2;
 
-#define PATCHMEM_SIZE (10 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 16 * sizeof(UWORD))
+#define PATCHMEM_SIZE (10 * (highfunc - lowfunc + 1 - skipfuncs) * sizeof(UWORD) + 13 * sizeof(UWORD))
 
 /* This patches two compatibility problems with badly written programs:
  * 1) Return value in both D0 and D1.
@@ -85,12 +148,9 @@ static int PatchDOS(struct DosLibrary *dosbase)
     *asmcall++ = 0x41f9; // LEA func,A0
     *asmcall++ = (UWORD)(func >> 16);
     *asmcall++ = (UWORD)(func >>  0);
-    *asmcall++ = 0x4a81; // TST.L D1
-    *asmcall++ = 0x6606; // BNE.B +6 (D1 not NULL = normal LoadSeg)
-    *asmcall++ = 0x41f9; // LEA LoadSeg_Overlay,A0
-    *asmcall++ = (UWORD)((ULONG)LoadSeg_Overlay >> 16);
-    *asmcall++ = (UWORD)((ULONG)LoadSeg_Overlay >>  0);
-    *asmcall++ = 0x4e90; // JSR (A0)
+    *asmcall++ = 0x4eb9; // jsr func
+    *asmcall++ = (UWORD)((ULONG)LoadSeg_Check >> 16);
+    *asmcall++ = (UWORD)((ULONG)LoadSeg_Check >>  0);
     *asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
     *asmcall++ = 0x2200; // MOVE.L D0,D1
     *asmcall++ = 0x4e75; // RTS
