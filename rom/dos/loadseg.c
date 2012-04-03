@@ -9,7 +9,6 @@
 #include <aros/asmcall.h>
 #include <aros/config.h>
 #include <dos/dos.h>
-#include <dos/dosextens.h>
 #include <dos/stdio.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
@@ -70,30 +69,6 @@ static AROS_UFH3(void, FreeFunc,
     AROS_USERFUNC_EXIT
 }
 
-#ifdef __mc68000
-static AROS_ENTRY(LONG, SetPatch_noop,
-	AROS_UFHA(char *, argstr, A0),
-	AROS_UFHA(ULONG, argsize, D0),
-	struct ExecBase *, SysBase)
-{
-    AROS_USERFUNC_INIT
-
-    APTR DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
-
-    if (DOSBase) {
-    	struct CommandLineInterface *cli = Cli();
-    	if (cli && cli->cli_Interactive) {
-    	    Printf("SetPatch is a reserved program name.\n");
-    	}
-    	CloseLibrary(DOSBase);
-    }
-
-    return RETURN_WARN;
-
-    AROS_USERFUNC_EXIT
-}
-#endif
-
 /*****************************************************************************
 
     NAME */
@@ -143,19 +118,6 @@ static AROS_ENTRY(LONG, SetPatch_noop,
     	(LONG_FUNC)FreeFunc,
     	(LONG_FUNC)SeekFunc,	/* Only needed for ELF */
     };
-
-#ifdef __mc68000
-    /* On m68k, we map SetPatch to a no-op seglist,
-     * due to the fact that OS 3.x and higher's SetPatch
-     * blindly patches without checking OS versions.
-     */
-    if (Stricmp(FilePart(name),"SetPatch") == 0)
-    	return CreateSegList(SetPatch_noop);
-    /* Do not allow Picasso96 to load, it is not
-     * compatible with built-in AROS RTG system */
-    if (Stricmp(FilePart(name),"rtg.library") == 0)
-    	return BNULL;
-#endif
 
     /* Open the file */
     D(bug("[LoadSeg] Opening '%s'...\n", name));
