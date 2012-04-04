@@ -38,7 +38,7 @@ static AROS_ENTRY(LONG, SetPatch_noop,
     if (DOSBase) {
     	struct CommandLineInterface *cli = Cli();
     	if (cli && cli->cli_Interactive) {
-    	    Printf("SetPatch is a reserved program name.\n");
+    	    Printf("Only AROS m68k SetPatch is supported.\n");
     	}
     	CloseLibrary(DOSBase);
     }
@@ -46,6 +46,67 @@ static AROS_ENTRY(LONG, SetPatch_noop,
     return RETURN_WARN;
 
     AROS_USERFUNC_EXIT
+}
+
+/* from C:Version */
+static CONST_STRPTR FindSegmentVER(BPTR  Segment, LONG *length)
+{
+    while (Segment)
+    {
+        void        *MySegment;
+        CONST_STRPTR    MyBuffer;
+        ULONG       BufferLen;
+        CONST_STRPTR    EndBuffer;
+        CONST_STRPTR    SegmentEnd;
+
+        MySegment   = BADDR(Segment);
+        MyBuffer    = (CONST_STRPTR) (MySegment + sizeof(BPTR));
+        BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
+        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - 1) * 4);
+        EndBuffer   = SegmentEnd - 5;
+
+        while (MyBuffer < EndBuffer)
+        {
+            if (MyBuffer[0] == '$' &&
+                MyBuffer[1] == 'V' &&
+                MyBuffer[2] == 'E' &&
+                MyBuffer[3] == 'R' &&
+                MyBuffer[4] == ':')
+            {
+                CONST_STRPTR EndPtr;
+
+                MyBuffer += 5;
+                /* Required because some smartass could end his $VER: tag
+                 * without '\0' in the segment to save space. - Piru
+                 */
+                for (EndPtr = MyBuffer; EndPtr < SegmentEnd && *EndPtr; EndPtr++)
+                    ;
+                if (EndPtr - MyBuffer)
+                {
+                    *length = EndPtr - MyBuffer;
+                    return MyBuffer;
+                }
+            }
+
+            MyBuffer++;
+        }
+
+        Segment =*(BPTR *)MySegment;
+    }
+    return NULL;
+}
+
+/* Check if SetPatch includes magic $VER: string */
+static BSTR LoadSeg_Check_SetPatch(BSTR segs, struct DosLibrary *DOSBase)
+{
+    LONG len;
+    CONST_STRPTR ver = FindSegmentVER(segs, &len);
+    if (ver && len >= 18 + 1) {
+        if (!memcmp (ver + 1, "SetPatch AROS-m68k", 18))
+            return segs;
+    }
+    UnLoadSeg(segs);
+    return CreateSegList(SetPatch_noop);
 }
 
 AROS_UFH5(BPTR, LoadSeg_Check,
@@ -57,6 +118,8 @@ AROS_UFH5(BPTR, LoadSeg_Check,
 { 
     AROS_USERFUNC_INIT
 
+    UBYTE *filename;
+
     /* name == NULL: Overlay LoadSeg */
     if (name == NULL)
         return AROS_UFC4(BPTR, LoadSeg_Overlay,
@@ -65,15 +128,22 @@ AROS_UFH5(BPTR, LoadSeg_Check,
             AROS_UFCA(BPTR, fh, D3),
             AROS_UFCA(struct DosLibrary *, DOSBase, A6));
 
-    /* On m68k, we map SetPatch to a no-op seglist,
+    filename = FilePart(name);
+    /* On m68k, we map AOS SetPatch to a no-op seglist,
      * due to the fact that OS 3.x and higher's SetPatch
      * blindly patches without checking OS versions.
      */
-    if (stricmp(FilePart(name),"setpatch") == 0)
-    	return CreateSegList(SetPatch_noop);
+    if (stricmp(filename,"setpatch") == 0) {
+        BSTR segs =  AROS_UFC2(BPTR, LoadSeg_Original,
+        AROS_UFCA(UBYTE*, name, D1),
+        AROS_UFCA(struct DosLibrary *, DOSBase, A6));
+        if (segs == BNULL)
+            return BNULL;
+        return LoadSeg_Check_SetPatch (segs, DOSBase);
+    }
     /* Do not allow Picasso96 to load, it is not
      * compatible with built-in AROS RTG system */
-    if (stricmp(FilePart(name),"rtg.library") == 0)
+    if (stricmp(filename,"rtg.library") == 0)
     	return BNULL;
 
     /* Call original LoadSeg function */  
@@ -138,7 +208,7 @@ static int PatchDOS(struct DosLibrary *dosbase)
 	*asmcall++ = 0x4e75; // RTS
     }
 
-    /* Redirect LoadSeg() to LoadSeg_Overlay() if D1 == NULL */
+    /* LoadSeg() patch */
     func = (IPTR)__AROS_GETJUMPVEC(dosbase, 25)->vec;
     __AROS_SETVECADDR(dosbase, 25, asmcall);
     *asmcall++ = 0x2f0e; // MOVE.L A6,-(SP)
