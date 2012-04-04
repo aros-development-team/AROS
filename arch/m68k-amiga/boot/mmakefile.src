@@ -98,7 +98,7 @@ $(DISTDIR)/aros-amiga-m68k-rom.elf: $(KOBJS_rom) $(OBJS_rom)
 FILES   := 
 AFILES  := ext_entry
 
-KLIBS   :=  keymap graphics layers intuition gadtools icon workbench 680x0 \
+KLIBS   :=  keymap graphics layers intuition gadtools icon workbench \
             mathffp mathieeesingbas
 KDEVS   := 
 KHNDLRS := cdrom
@@ -256,7 +256,7 @@ FILES   :=
 AFILES  := 
 
 KLIBS   := aros utility dos oop mathffp mathieeesingbas partition \
-           keymap graphics layers intuition gadtools icon workbench 680x0
+           keymap graphics layers intuition gadtools icon workbench
 KDEVS   := timer input keyboard console trackdisk gameport audio ata
 KHNDLRS := cdrom con afs amberram
 KHIDDS  := hiddclass graphics keyboard mouse amigakbd amigamouse amigavideo uaegfx
