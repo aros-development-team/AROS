@@ -12,6 +12,14 @@
 
 #include "newimage.h"
 
+struct ScreenTitleChild
+{
+    LONG ChildWidth;
+    UWORD ChildBgPen;
+    void (*ChildRender)(struct RastPort *rp, struct Rectangle *bounds);
+    void (*ChildInput)(ULONG x, ULONG y);
+};
+
 struct ScreenData
 {
     /* These are default decorator images translated to depth/attributes of screen
@@ -39,6 +47,7 @@ struct ScreenData
 
 #define SDA_DecorImages     0x20003
 #define SDA_DecorConfig     0x20004
+#define SDA_TitleChild     0x20005
 
 struct IClass * MakeScreenDecorClass();
 #endif

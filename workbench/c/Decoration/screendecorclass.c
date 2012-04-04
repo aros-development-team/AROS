@@ -23,6 +23,7 @@ struct scrdecor_data
     /* These are original images loaded from disk */
     struct DecorImages * di;
     struct DecorConfig * dc;
+    struct ScreenTitleChild *tc;
 };
 
 static void DisposeScreenSkinning(struct scrdecor_data *data)
@@ -59,6 +60,7 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
         data = INST_DATA(cl, obj);
         struct DecorConfig * dc = (struct DecorConfig *) GetTagData(SDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
         struct DecorImages * di = (struct DecorImages *) GetTagData(SDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
+        data->tc = NULL;
 
         if (!InitScreenSkinning(data, di, dc))
         {
@@ -101,6 +103,31 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
     return 1;
 }
 
+static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tstate;
+    struct TagItem *tag;
+
+    tstate = tags;
+    while (tag = NextTagItem(&tstate))
+    {
+        switch (tag->ti_Tag)
+        {
+            case SDA_TitleChild: 
+                if ((tag->ti_Data)  && !(data->tc))
+                {
+                    data->tc = tag->ti_Data;
+                }
+                break;
+            default:
+                return DoSuperMethodA(cl, obj, (Msg)msg);
+        }
+    }
+    return 1;
+}
+
 /**************************************************************************************************/
 
 static void scr_findtitlearea(struct Screen *scr, LONG *left, LONG *right)
@@ -135,14 +162,15 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
+    struct Rectangle bounds;
 
     if (beeping) {
         SetAPen(rp, pens[BARDETAILPEN]);
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
     } else {
         if (sd->img_stitlebar->ok)
-	        WriteVerticalScalledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
-	        sd->img_stitlebar->w, 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
+            WriteVerticalScalledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
+                sd->img_stitlebar->w, 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
     }
     if (sd->img_sbarlogo->ok)
         WriteTiledImageHorizontal(rp, sd->img_sbarlogo, 0, 0, 
@@ -156,6 +184,9 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     {
         scr_findtitlearea(scr, &left, &right);
         titlelen = strlen(scr->Title);
+        if (data->tc) {
+            right = right - (LONG)data->tc->ChildWidth; 
+        }
         titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
         if (titlelen == 0) hastitle = 0;
     }
@@ -174,40 +205,52 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
         if (!sd->truecolor || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
         {
-	    SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
+            SetAPen(rp, pens[beeping ? BARBLOCKPEN : BARDETAILPEN]);
             Move(rp, tx, ty);
             Text(rp, scr->Title, titlelen);
         }
         else if (data->dc->STitleOutline)
         {
+            SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
+            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
 
-                SetSoftStyle(rp, FSF_BOLD, AskSoftStyle(rp));
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+            Move(rp, tx + 1, ty ); Text(rp, scr->Title, titlelen);
+            Move(rp, tx + 2, ty ); Text(rp, scr->Title, titlelen);
+            Move(rp, tx , ty ); Text(rp, scr->Title, titlelen);
+            Move(rp, tx, ty + 1);  Text(rp, scr->Title, titlelen);
+            Move(rp, tx, ty + 2);  Text(rp, scr->Title, titlelen);
+            Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, titlelen);
+            Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, titlelen);
+            Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, titlelen);
 
-                Move(rp, tx + 1, ty ); Text(rp, scr->Title, titlelen);
-                Move(rp, tx + 2, ty ); Text(rp, scr->Title, titlelen);
-                Move(rp, tx , ty ); Text(rp, scr->Title, titlelen);
-                Move(rp, tx, ty + 1);  Text(rp, scr->Title, titlelen);
-                Move(rp, tx, ty + 2);  Text(rp, scr->Title, titlelen);
-                Move(rp, tx + 1, ty + 2);  Text(rp, scr->Title, titlelen);
-                Move(rp, tx + 2, ty + 1);  Text(rp, scr->Title, titlelen);
-                Move(rp, tx + 2, ty + 2);  Text(rp, scr->Title, titlelen);
-
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
-                Move(rp, tx + 1, ty + 1);
-                Text(rp, scr->Title, titlelen);
-                SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
+            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+            Move(rp, tx + 1, ty + 1);
+            Text(rp, scr->Title, titlelen);
+            SetSoftStyle(rp, FS_NORMAL, AskSoftStyle(rp));
         }
         else
         {
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
-                Move(rp, tx + 1, ty + 1 );
-                Text(rp, scr->Title, titlelen);
+            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorShadow, TAG_DONE);
+            Move(rp, tx + 1, ty + 1 );
+            Text(rp, scr->Title, titlelen);
 
-                SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
-                Move(rp, tx, ty);
-                Text(rp, scr->Title, titlelen);
+            SetRPAttrs(rp, RPTAG_PenMode, FALSE, RPTAG_FgColor, data->dc->STitleColorText, TAG_DONE);
+            Move(rp, tx, ty);
+            Text(rp, scr->Title, titlelen);
+        }
+    }
 
+    if (data->tc) {
+        bounds.MinX = right;
+        bounds.MinY = 0;
+        bounds.MaxX = bounds.MinX + data->tc->ChildWidth;
+        bounds.MaxY = bounds.MinY + sd->img_stitlebar->h;
+        if (data->tc->ChildRender) {
+            data->tc->ChildRender(rp, &bounds);
+        }
+        else {
+            SetAPen(rp, data->tc->ChildBgPen);
+            RectFill(rp, bounds.MinX, bounds.MinY, bounds.MaxX, bounds.MaxY);
         }
     }
     return TRUE;
@@ -398,6 +441,10 @@ static IPTR scrdecor_dispatcher(struct IClass *cl, Object *obj, Msg msg)
 
         case OM_GET:
             retval = scrdecor_get(cl, obj, (struct opGet *)msg);
+            break;
+
+        case OM_SET:
+            retval = scrdecor_set(cl, obj, (struct opSet *)msg);
             break;
 
         case SDM_GETDEFSIZE_SYSIMAGE:
