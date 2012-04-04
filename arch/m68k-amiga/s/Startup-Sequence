@@ -1,4 +1,5 @@
 boot/AROSBootstrap ROM boot/aros.hunk.gz
+SetPatch QUIET
 SetClock LOAD
 
 FailAt 21
@@ -117,5 +118,5 @@ EndIf
 WANDERER:Wanderer
 
 If NOT ERROR
-    EndCLI
+    EndCLI >NIL:
 EndIf

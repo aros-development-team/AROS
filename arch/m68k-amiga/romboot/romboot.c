@@ -78,36 +78,6 @@ static void romtaginit(struct ExpansionBase *ExpansionBase)
 	D(bug("romtaginit done\n"));
 }
 
-static void Enable68060SuperScalar(void)
-{
-    asm volatile (
-	".text\n"
-	/* enable supercalar */
-	"dc.l	0x4e7a0808\n"	// movec %pcr,%d0
-	"bset	#0,%d0\n"
-	"dc.l	0x4e7b0808\n"	// movec %d0,%pcr
-	/* enable code&data caches, store buffer and branch cache */
-	"dc.l	0x4e7a0002\n"	// movec %cacr,%d0
-	"or.l	#0xa0808000,%d0\n"
-	"dc.l	0x4e7b0002\n"	// movec %d0,%cacr
-	"rte\n"
-    );
-}
-static ULONG Check68030MMU(void)
-{
-    register UWORD ret asm("%d0");
-    asm volatile (
-    	".chip 68030\n"
-    	"subq.l	#4,%%sp\n"
-    	"pmove	%%tc,(%%sp)\n"
-    	"move.l	(%%sp),%%d0\n"
-    	"addq.l	#4,%%sp\n"
-    	"rte\n"
-    	: "=r" (ret)
-    );
-    return ret;
-};
-
 /* Stupid hack.
  * romtaginit() would initialize WinUAE built-in uaegfx.card which unfortunately also
  * disables direct RTG uaelib calls that uaegfx needs if uaelib is not called at least once.
@@ -150,22 +120,6 @@ static AROS_UFH3 (APTR, Init,
 	uaegfxhack(res, "uaelib_demux");
 
    romtaginit(eb);
-
-   // enable 68040+ data caches and 68060 superscalar mode
-   // this is not the right place but we can't enable them
-   // any earlier (memory detection, boot roms that breaks if
-   // full 68060 caching enabled)
-   CacheClearU();
-   if (SysBase->AttnFlags & AFF_68060) {
-	Supervisor((ULONG_FUNC)Enable68060SuperScalar);
-   } else if (SysBase->AttnFlags & AFF_68040) {
-	CacheControl(CACRF_EnableD, CACRF_EnableD);
-   } else if (SysBase->AttnFlags & AFF_68030) {
-	ULONG tc = Supervisor((ULONG_FUNC)Check68030MMU);
-	if (tc & (1 << 31)) { /* Only if MMU enabled */
-	    CacheControl(CACRF_EnableD | CACRF_WriteAllocate, CACRF_EnableD | CACRF_WriteAllocate);
-	}
-   }
 
    CloseLibrary((struct Library*)eb);
 
