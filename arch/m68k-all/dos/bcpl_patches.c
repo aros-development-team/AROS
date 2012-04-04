@@ -62,7 +62,7 @@ static CONST_STRPTR FindSegmentVER(BPTR  Segment, LONG *length)
         MySegment   = BADDR(Segment);
         MyBuffer    = (CONST_STRPTR) (MySegment + sizeof(BPTR));
         BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
-        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - 1) * 4);
+        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - sizeof(BPTR)));
         EndBuffer   = SegmentEnd - 5;
 
         while (MyBuffer < EndBuffer)
@@ -218,7 +218,7 @@ static int PatchDOS(struct DosLibrary *dosbase)
     *asmcall++ = 0x41f9; // LEA func,A0
     *asmcall++ = (UWORD)(func >> 16);
     *asmcall++ = (UWORD)(func >>  0);
-    *asmcall++ = 0x4eb9; // jsr func
+    *asmcall++ = 0x4eb9; // jsr LoadSeg_Check
     *asmcall++ = (UWORD)((ULONG)LoadSeg_Check >> 16);
     *asmcall++ = (UWORD)((ULONG)LoadSeg_Check >>  0);
     *asmcall++ = 0x2C5F; // MOVE.L (SP)+,A6
