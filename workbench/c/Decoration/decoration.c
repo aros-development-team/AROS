@@ -35,6 +35,11 @@
 
 ******************************************************************************/
 
+#define DEBUG 0
+#include <aros/debug.h>
+
+#include <clib/alib_protos.h>
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -47,14 +52,12 @@
 #include "newimage.h"
 #include "config.h"
 
-#define DEBUG 0
-#include <aros/debug.h>
-
 struct IClass *wndcl, *scrcl, *menucl;
 
 STRPTR __detached_name = "Decoration";
 
-#define MAGIC_PRIVATE_SKIN      0x0001
+#define MAGIC_PRIVATE_SKIN		0x0001
+#define MAGIC_PRIVATE_TITLECHILD 	0x0F0F
 
 struct DefaultNewDecorator
 {
@@ -101,7 +104,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
         nd = (struct NewDecorator *)dnd;
 
         dnd->dc = LoadConfig(newpath);
-	D(bug("GetDecorator: dnd->dc=%p\n", dnd->dc));
+        D(bug("GetDecorator: dnd->dc=%p\n", dnd->dc));
         if (!dnd->dc)
         {
             DeleteDecorator(nd);
@@ -109,7 +112,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
         }
         
         dnd->di = LoadImages(dnd->dc);
-	D(bug("GetDecorator: dnd->di=%p\n", dnd->di));
+        D(bug("GetDecorator: dnd->di=%p\n", dnd->di));
         if (!dnd->di)
         {
             DeleteDecorator(nd);
@@ -127,7 +130,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
             nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
         }
         
-	D(bug("GetDecorator: nd->nd_Screen=%p\n", nd->nd_Screen));
+        D(bug("GetDecorator: nd->nd_Screen=%p\n", nd->nd_Screen));
         if (nd->nd_Screen)
         {
             struct TagItem WindowTags[] = 
@@ -149,7 +152,7 @@ struct NewDecorator *GetDecorator(STRPTR path)
 
             nd->nd_Window = NewObjectA(wndcl, NULL, WindowTags);
             nd->nd_Menu = NewObjectA(menucl, NULL, MenuTags);
-	    D(bug("GetDecorator: nd->nd_Window=%p, nd->nd_Menu=%p\n", nd->nd_Window, nd->nd_Menu));
+            D(bug("GetDecorator: nd->nd_Window=%p, nd->nd_Menu=%p\n", nd->nd_Window, nd->nd_Menu));
             if ((nd->nd_Menu == NULL ) || (nd->nd_Window == NULL) || (nd->nd_Screen == NULL))
             {
                 DeleteDecorator(nd);
@@ -195,7 +198,7 @@ int main(void)
     }
 
     Forbid();
-    if (FindPort("DECORATIONS")) {
+    if (FindPort(__detached_name)) {
         struct MsgPort *port = CreateMsgPort();
         if (port) {
             struct SkinMessage msg;
@@ -204,7 +207,7 @@ int main(void)
             msg.class = 0;
             msg.path = (STRPTR) rd_Args[0];
             msg.id = (STRPTR) rd_Args[1];
-            PutMsg(FindPort("DECORATIONS"), (struct Message *) &msg);
+            PutMsg(FindPort(__detached_name), (struct Message *) &msg);
             WaitPort(port);
             GetMsg(port);
             Permit();
@@ -225,25 +228,24 @@ int main(void)
         if (scrcl)
         {
 
-		
             menucl = MakeMenuDecorClass();
             if (menucl)
             {
-		D(bug("Decoration: Classes made\n"));
+                D(bug("Decoration: Classes made\n"));
 
                 struct MsgPort *port = CreateMsgPort();
                 ULONG  skinSignal;
                 if (port)
                 {
                     skinSignal = 1 << port->mp_SigBit;
-                    port->mp_Node.ln_Name="DECORATIONS";
+                    port->mp_Node.ln_Name=__detached_name;
                     AddPort(port);
 
-		    D(bug("Decoration: Port created and added\n"));
+                    D(bug("Decoration: Port created and added\n"));
 
                     struct  NewDecorator *decor = GetDecorator((STRPTR) rd_Args[0]);
 
-		    D(bug("Decoration: Got decorator\n"));
+                    D(bug("Decoration: Got decorator\n"));
 
                     if (decor != NULL)
                     {
@@ -252,11 +254,11 @@ int main(void)
                         ChangeDecoration(DECORATION_SET, decor);
                     }
 
-		    D(bug("Before Detach()\n"));
+                    D(bug("Before Detach()\n"));
 
                     Detach();
 
-		    D(bug("After Detach()\n"));
+                    D(bug("After Detach()\n"));
 
                     BOOL running = TRUE;
 
@@ -275,6 +277,18 @@ int main(void)
                             {
                                 switch(msg->msg.mn_Magic)
                                 {
+                                    case MAGIC_PRIVATE_TITLECHILD:
+                                        dmsg = (struct DecoratorMessage *) msg;
+                                        if (decor)
+                                        {
+                                            struct TagItem TCTags[] = 
+                                            { 
+                                                {SDA_TitleChild, (IPTR)dmsg->dm_Object},
+                                                {TAG_DONE} 
+                                            };
+                                            DoMethod(decor->nd_Screen, OM_SET, TCTags);
+                                        }
+                                        break;
                                     case MAGIC_PRIVATE_SKIN:
                                         decor = GetDecorator(msg->path);
                                         if (decor != NULL)
