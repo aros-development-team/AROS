@@ -1452,7 +1452,7 @@ STRPTR FindSegmentVER(BPTR  Segment)
         MySegment   = BADDR(Segment);
         MyBuffer    = (CONST_STRPTR) (MySegment + sizeof(BPTR));
         BufferLen   = *(ULONG *)(MySegment - sizeof(ULONG));
-        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - 1) * 4);
+        SegmentEnd  = (CONST_STRPTR) (MySegment + (BufferLen - sizeof(BPTR)));
         EndBuffer   = SegmentEnd - 5;
 
         while (MyBuffer < EndBuffer)
