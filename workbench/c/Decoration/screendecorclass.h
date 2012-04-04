@@ -16,7 +16,7 @@ struct ScreenTitleChild
 {
     LONG ChildWidth;
     UWORD ChildBgPen;
-    void (*ChildRender)(struct RastPort *rp, struct Rectangle *bounds);
+    void (*ChildRender)(struct RastPort *rp, UWORD *pens, struct Rectangle *bounds);
     void (*ChildInput)(ULONG x, ULONG y);
 };
 

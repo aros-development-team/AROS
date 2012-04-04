@@ -18,6 +18,8 @@
 
 #define SETIMAGE_SCR(id) sd->di->img_##id = CreateNewImageContainerMatchingScreen(data->di->img_##id, truecolor, screen)
 
+#define CHILDPADDING 2
+
 struct scrdecor_data
 {
     /* These are original images loaded from disk */
@@ -157,8 +159,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct TextExtent       te;
     struct RastPort        *rp = msg->sdp_RPort;
     struct Screen          *scr = msg->sdp_Screen;
-    UWORD                  *pens = msg->sdp_Dri->dri_Pens;
     struct DrawInfo        *dri = msg->sdp_Dri;
+    UWORD                  *pens = dri->dri_Pens;
     LONG                    left, right, titlelen = 0;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
@@ -242,14 +244,14 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
     if (data->tc) {
         bounds.MinX = right;
-        bounds.MinY = 0;
-        bounds.MaxX = bounds.MinX + data->tc->ChildWidth;
-        bounds.MaxY = bounds.MinY + sd->img_stitlebar->h;
+        bounds.MinY = 0 + CHILDPADDING;
+        bounds.MaxX = bounds.MinX + data->tc->ChildWidth - CHILDPADDING;
+        bounds.MaxY = (bounds.MinY - CHILDPADDING) + (sd->img_stitlebar->h - CHILDPADDING);
         if (data->tc->ChildRender) {
-            data->tc->ChildRender(rp, &bounds);
+            data->tc->ChildRender(rp, pens, &bounds);
         }
         else {
-            SetAPen(rp, data->tc->ChildBgPen);
+            SetAPen(rp, pens[data->tc->ChildBgPen]);
             RectFill(rp, bounds.MinX, bounds.MinY, bounds.MaxX, bounds.MaxY);
         }
     }
