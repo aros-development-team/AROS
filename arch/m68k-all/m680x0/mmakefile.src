@@ -1,6 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- workbench-c-m68k : kernel-m680x0
+
 FILES := init
 AFILES := m68k_060sp
 

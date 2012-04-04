@@ -41,10 +41,48 @@ static AROS_UFH1(ULONG, DummyLib,
     AROS_USERFUNC_EXIT
 }
 
-static const APTR funcLib[] = { OpenLib, CloseLib, DummyLib, DummyLib, (void*)-1 };
+/* This is totally undocumented so complain if something calls our functions */
+#define UNUSED(x) \
+static AROS_UFH1(ULONG, x, \
+AROS_UFHA(struct Library*, base, A6)) { \
+    AROS_USERFUNC_INIT \
+    bug("680x0: " #x "\n"); \
+    return 0; \
+    AROS_USERFUNC_EXIT \
+}
+
+UNUSED(Unused5);
+UNUSED(Unused6);
+UNUSED(Unused7);
+UNUSED(Unused8);
+UNUSED(Unused9);
+UNUSED(Unused10);
+UNUSED(Unused11);
+UNUSED(Unused12);
+UNUSED(Unused13);
+UNUSED(Unused14);
+UNUSED(Unused15);
+UNUSED(Unused16);
+
+static const APTR funcLib[] = {
+	OpenLib, CloseLib, DummyLib, DummyLib,
+	Unused5,
+	Unused6,
+	Unused7,
+	Unused8,
+	Unused9,
+	Unused10,
+	Unused11,
+	Unused12,
+	Unused13,
+	Unused14,
+	Unused15,
+	Unused16,
+	(void*)-1 };
 
 static const UBYTE lib68040[] = "68040.library";
 static const UBYTE lib68060[] = "68060.library";
+
 
 static int M680x0Init(struct M680x0Base *M680x0Base)
 {
@@ -69,29 +107,30 @@ static int M680x0Init(struct M680x0Base *M680x0Base)
      * (Maybe this is getting too far..)
      */
     if (SysBase->AttnFlags & AFF_68060) {
-	lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
- 	if (lib) {
-	    lib->lib_Node.ln_Name = (UBYTE*)lib68060;
-	    lib->lib_IdString = lib->lib_Node.ln_Name;
-	    lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
-	    lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
-	    lib->lib_OpenCnt = 1;
-	    AddLibrary(lib);
-	}
+        lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
+        if (lib) {
+            lib->lib_Node.ln_Name = (UBYTE*)lib68060;
+            lib->lib_IdString = lib->lib_Node.ln_Name;
+            lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
+            lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
+            lib->lib_OpenCnt = 1;
+            AddLibrary(lib);
+        }
     }
     lib = MakeLibrary(funcLib, NULL, NULL, sizeof(struct Library), BNULL);
     if (lib) {
-	lib->lib_Node.ln_Name = (UBYTE*)lib68040;
-	lib->lib_IdString = lib->lib_Node.ln_Name;
-	lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
-	lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
-	lib->lib_OpenCnt = 1;
-	AddLibrary(lib);
+        lib->lib_Node.ln_Name = (UBYTE*)lib68040;
+        lib->lib_IdString = lib->lib_Node.ln_Name;
+        lib->lib_Version = M680x0Base->pb_LibNode.lib_Version;
+        lib->lib_Revision = M680x0Base->pb_LibNode.lib_Revision;
+        lib->lib_OpenCnt = 1;
+        AddLibrary(lib);
     }
 
-    M680x0Base->pb_LibNode.lib_OpenCnt++;
     /* emulation installed, full 68881/68882 instruction set now supported  */
     SysBase->AttnFlags |= AFF_68881 | AFF_68882;
+    /* do not expunge us */
+    M680x0Base->pb_LibNode.lib_OpenCnt++;
     return TRUE;
 }
 
