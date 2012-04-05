@@ -18,7 +18,7 @@
 
 #define SETIMAGE_SCR(id) sd->di->img_##id = CreateNewImageContainerMatchingScreen(data->di->img_##id, truecolor, screen)
 
-#define CHILDPADDING 2
+#define CHILDPADDING 1
 
 struct scrdecor_data
 {
@@ -186,8 +186,8 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     {
         scr_findtitlearea(scr, &left, &right);
         titlelen = strlen(scr->Title);
-        if (data->tc) {
-            right = right - (LONG)data->tc->ChildWidth; 
+        if (data->tc && (data->tc->ChildWidth > 2)) {
+            right = right - (LONG)(data->tc->ChildWidth + 1); 
         }
         titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
         if (titlelen == 0) hastitle = 0;
@@ -242,11 +242,11 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         }
     }
 
-    if (data->tc) {
+    if (data->tc && (data->tc->ChildWidth > 0)) {
         bounds.MinX = right;
         bounds.MinY = 0 + CHILDPADDING;
-        bounds.MaxX = bounds.MinX + data->tc->ChildWidth - CHILDPADDING;
-        bounds.MaxY = (bounds.MinY - CHILDPADDING) + (sd->img_stitlebar->h - CHILDPADDING);
+        bounds.MaxX = bounds.MinX + data->tc->ChildWidth - CHILDPADDING + 1;
+        bounds.MaxY = (bounds.MinY - CHILDPADDING) + (sd->img_stitlebar->h - (CHILDPADDING + 1));
         if (data->tc->ChildRender) {
             data->tc->ChildRender(rp, pens, &bounds);
         }
