@@ -113,14 +113,14 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
     struct TagItem *tag;
 
     tstate = tags;
-    while (tag = NextTagItem(&tstate))
+    while ((tag = NextTagItem(&tstate)))
     {
         switch (tag->ti_Tag)
         {
             case SDA_TitleChild: 
                 if ((tag->ti_Data)  && !(data->tc))
                 {
-                    data->tc = tag->ti_Data;
+                    data->tc = (struct ScreenTitleChild *)tag->ti_Data;
                 }
                 break;
             default:
@@ -161,7 +161,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     struct Screen          *scr = msg->sdp_Screen;
     struct DrawInfo        *dri = msg->sdp_Dri;
     UWORD                  *pens = dri->dri_Pens;
-    LONG                    left, right, titlelen = 0;
+    LONG                    left, right = 0, titlelen = 0;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
     struct Rectangle bounds;
