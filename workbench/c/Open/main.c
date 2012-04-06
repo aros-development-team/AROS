@@ -1,3 +1,12 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Open CLI command
+    Lang: English
+*/
+
+
 #include <exec/types.h>
 #include <dos/dos.h>
 
@@ -13,8 +22,8 @@
 
 AROS_SH2H
 (
-    Open, 0.2,                              "Open/launch a workbench object as if its icon was double-clicked",
-    AROS_SHAH(STRPTR  , , NAME     , /A, NULL,"\tName of the object to be opened"),
+    Open, 0.3,                              "Open/launch a workbench object as if its icon was double-clicked",
+    AROS_SHAH(STRPTR  , , NAME     , /A, "","\tName of the object to be opened"),
     AROS_SHAH(STRPTR *, , ARGUMENTS, /M, NULL,"List of parameters (Workbench arguments)\n"
                                       "\t\t\t\tto pass to the tool/project to be launched")
 )
