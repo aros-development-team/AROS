@@ -57,6 +57,19 @@ static void TransFunc(CxMsg *, CxObj *, struct CommoditiesBase *CxBase);
 static void SendFunc(CxMsg *, CxObj *, struct CommoditiesBase *CxBase);
 BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to, struct CommoditiesBase *CxBase);
 
+#ifdef __mc68000
+extern void cx_Thunk(void);
+asm (
+    ".global cx_Thunk\n"
+    "cx_Thunk:\n"
+        "movem.l %a0-%a1/%a6,%sp@-\n"
+        "jsr.l  %a2@\n"
+        "addq.l #8,%sp\n"
+        "addq.l #4,%sp\n"
+        "rts\n"
+    );
+#endif
+
 AROS_UFH2(struct InputEvent *, CxTree,
     AROS_UFHA(struct InputEvent *     , events , A0),
     AROS_UFHA(struct CommoditiesBase *, CxBase , A6))
@@ -284,10 +297,19 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	     */
 	    if (co->co_Ext.co_CustomExt->cext_Action)
 	    {
+#ifdef __mc68000
 		/* The autodocs suggest the arguments should be passed on the stack.
 		 * But they were also in a0/a1 and some things seem to rely on that.
 		 * Let's also pass CxBase in a6 just in case.
+		 *
+		 * All other architectures (should) be using the stack.
 		 */
+		AROS_UFC4(void, cx_Thunk,
+		      AROS_UFCA(CxMsg*, msg, A0),
+		      AROS_UFCA(CxObj*, co, A1),
+		      AROS_UFCA(APTR, co->co_Ext.co_CustomExt->cext_Action, A2),
+		      AROS_UFCA(struct CommoditiesBase *, CxBase, A6));
+#else
 #ifdef __MORPHOS__
 		REG_A7 -= 8;
 		*(CxMsg**)REG_A7 = msg;
@@ -299,6 +321,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 		      AROS_UFCA(struct CommoditiesBase *, CxBase, A6));
 #ifdef __MORPHOS__
 		REG_A7 += 8;
+#endif
 #endif
 	    }
 	    break;
