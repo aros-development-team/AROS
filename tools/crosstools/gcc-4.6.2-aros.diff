@@ -44,7 +44,7 @@ diff -ruN gcc-4.6.2/configure.ac gcc-4.6.2.aros/configure.ac
  
 diff -ruN gcc-4.6.2/fixincludes/configure gcc-4.6.2.aros/fixincludes/configure
 --- gcc-4.6.2/fixincludes/configure	2010-06-03 08:45:02.000000000 +0200
-+++ gcc-4.6.2.aros/fixincludes/configure	2012-04-04 22:19:45.045567698 +0200
++++ gcc-4.6.2.aros/fixincludes/configure	2012-03-31 21:49:20.807979739 +0200
 @@ -4245,6 +4245,7 @@
  fi
  else
@@ -55,7 +55,7 @@ diff -ruN gcc-4.6.2/fixincludes/configure gcc-4.6.2.aros/fixincludes/configure
  	x86_64-*-mingw32* | \
 diff -ruN gcc-4.6.2/fixincludes/configure.ac gcc-4.6.2.aros/fixincludes/configure.ac
 --- gcc-4.6.2/fixincludes/configure.ac	2010-06-03 08:45:02.000000000 +0200
-+++ gcc-4.6.2.aros/fixincludes/configure.ac	2012-04-04 22:19:45.045567698 +0200
++++ gcc-4.6.2.aros/fixincludes/configure.ac	2012-03-31 21:49:20.807979739 +0200
 @@ -49,6 +49,7 @@
  	TARGET=oneprocess
  fi],
@@ -301,7 +301,6 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros
 +#define LINK_SPEC "%{!m32:-m elf_x86_64} %{m32:-m elf_i386}" 
 +
 +/* FIXME: AROS doesn't support dw2 unwinding yet.  */
-+#undef MD_FALLBACK_FRAME_STATE_FOR
 diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
 --- gcc-4.6.2/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/i386/aros.h	2012-04-04 22:19:45.045567698 +0200
@@ -718,10 +717,36 @@ diff -ruN gcc-4.6.2/gcc/config/rs6000/rs6000.h gcc-4.6.2.aros/gcc/config/rs6000/
 diff -ruN gcc-4.6.2/gcc/config/t-aros gcc-4.6.2.aros/gcc/config/t-aros
 --- gcc-4.6.2/gcc/config/t-aros	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/t-aros	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,3 @@
+@@ -0,0 +1,29 @@
 +# In AROS, "/usr" is a four-letter word.
 +# Must match STANDARD_INCLUDE_DIR in aros.h !
 +NATIVE_SYSTEM_HEADER_DIR = /include
++
++# Don't add AROS target include path when compiling host compiler
++CPPFLAGS =
++
++# Copy AROS specific include replacement files
++LIBGCC_DEPS += stmp-aros-hrds
++
++EXTRA_AROS_HEADERS = aros/types/size_t.h aros/types/ptrdiff_t.h \
++    aros/types/wchar_t.h aros/types/wint_t.h aros/types/null.h
++
++stmp-int-hdrs : | include/aros/types
++
++include/aros/types : $(addprefix $(srcdir)/ginclude/,$(EXTRA_AROS_HEADERS))
++	-if [ -d include ] ; then true; else mkdir include; chmod a+rx include; fi
++	-if [ -d include/aros/types ] ; \
++          then true; \
++	  else \
++	    mkdir include/aros; chmod a+rx include/aros; \
++	    mkdir include/aros/types; chmod a+rx include/aros/types; \
++	fi
++	for file in $(EXTRA_AROS_HEADERS); do \
++	  $(STAMP) include/$$file; \
++	  rm -fr include/$$file; \
++	  cp $(srcdir)/ginclude/$$file include/$$file; \
++	  chmod a+r include/$$file; \
++	done
 diff -ruN gcc-4.6.2/gcc/config.build gcc-4.6.2.aros/gcc/config.build
 --- gcc-4.6.2/gcc/config.build	2010-04-12 20:36:30.000000000 +0200
 +++ gcc-4.6.2.aros/gcc/config.build	2012-04-04 22:19:45.045567698 +0200
@@ -826,6 +851,92 @@ diff -ruN gcc-4.6.2/gcc/config.host gcc-4.6.2.aros/gcc/config.host
 +    host_xm_file=xm-aros.h
 +    ;;
  esac
+diff -ruN gcc-4.6.2/gcc/ginclude/aros/types/null.h gcc-4.6.2.aros/gcc/ginclude/aros/types/null.h
+--- gcc-4.6.2/gcc/ginclude/aros/types/null.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/aros/types/null.h	2012-03-31 21:49:20.807979739 +0200
+@@ -0,0 +1,3 @@
++/* Replace AROS' NULL definition with gcc's one */
++#define __need_NULL
++#include <stddef.h>
+diff -ruN gcc-4.6.2/gcc/ginclude/aros/types/ptrdiff_t.h gcc-4.6.2.aros/gcc/ginclude/aros/types/ptrdiff_t.h
+--- gcc-4.6.2/gcc/ginclude/aros/types/ptrdiff_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/aros/types/ptrdiff_t.h	2012-03-31 21:49:20.807979739 +0200
+@@ -0,0 +1,3 @@
++/* Replace AROS' ptrdiff_t definition with gcc's one */
++#define __need_ptrdiff_t
++#include <stddef.h>
+diff -ruN gcc-4.6.2/gcc/ginclude/aros/types/size_t.h gcc-4.6.2.aros/gcc/ginclude/aros/types/size_t.h
+--- gcc-4.6.2/gcc/ginclude/aros/types/size_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/aros/types/size_t.h	2012-03-31 21:49:20.807979739 +0200
+@@ -0,0 +1,3 @@
++/* Replace AROS' size_t definition with gcc's one */
++#define __need_size_t
++#include <stddef.h>
+diff -ruN gcc-4.6.2/gcc/ginclude/aros/types/wchar_t.h gcc-4.6.2.aros/gcc/ginclude/aros/types/wchar_t.h
+--- gcc-4.6.2/gcc/ginclude/aros/types/wchar_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/aros/types/wchar_t.h	2012-03-31 21:49:20.807979739 +0200
+@@ -0,0 +1,3 @@
++/* Replace AROS' wchar_t definition with gcc's one */
++#define __need_wchar_t
++#include <stddef.h>
+diff -ruN gcc-4.6.2/gcc/ginclude/aros/types/wint_t.h gcc-4.6.2.aros/gcc/ginclude/aros/types/wint_t.h
+--- gcc-4.6.2/gcc/ginclude/aros/types/wint_t.h	1970-01-01 01:00:00.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/aros/types/wint_t.h	2012-03-31 21:49:20.807979739 +0200
+@@ -0,0 +1,3 @@
++/* Replace AROS' wint_t definition with gcc's one */
++#define __need_wint_t
++#include <stddef.h>
+diff -ruN gcc-4.6.2/gcc/ginclude/stddef.h gcc-4.6.2.aros/gcc/ginclude/stddef.h
+--- gcc-4.6.2/gcc/ginclude/stddef.h	2011-01-29 23:15:52.000000000 +0100
++++ gcc-4.6.2.aros/gcc/ginclude/stddef.h	2012-03-31 21:49:20.807979739 +0200
+@@ -134,6 +134,7 @@
+ #ifndef __PTRDIFF_T
+ #ifndef _PTRDIFF_T_
+ #ifndef _BSD_PTRDIFF_T_
++#ifndef _AROS_TYPES_PTRDIFF_T_H
+ #ifndef ___int_ptrdiff_t_h
+ #ifndef _GCC_PTRDIFF_T
+ #define _PTRDIFF_T
+@@ -142,6 +143,7 @@
+ #define __PTRDIFF_T
+ #define _PTRDIFF_T_
+ #define _BSD_PTRDIFF_T_
++#define _AROS_TYPES_PTRDIFF_T_H
+ #define ___int_ptrdiff_t_h
+ #define _GCC_PTRDIFF_T
+ #ifndef __PTRDIFF_TYPE__
+@@ -150,6 +152,7 @@
+ typedef __PTRDIFF_TYPE__ ptrdiff_t;
+ #endif /* _GCC_PTRDIFF_T */
+ #endif /* ___int_ptrdiff_t_h */
++#endif /* _AROS_TYPES_PTRDIFF_T_H */
+ #endif /* _BSD_PTRDIFF_T_ */
+ #endif /* _PTRDIFF_T_ */
+ #endif /* __PTRDIFF_T */
+@@ -176,6 +179,7 @@
+ #ifndef __SIZE_T
+ #ifndef _SIZE_T_
+ #ifndef _BSD_SIZE_T_
++#ifndef _AROS_TYPES_SIZE_T_H
+ #ifndef _SIZE_T_DEFINED_
+ #ifndef _SIZE_T_DEFINED
+ #ifndef _BSD_SIZE_T_DEFINED_	/* Darwin */
+@@ -193,6 +197,7 @@
+ #define __SIZE_T
+ #define _SIZE_T_
+ #define _BSD_SIZE_T_
++#define _AROS_TYPES_SIZE_T_H
+ #define _SIZE_T_DEFINED_
+ #define _SIZE_T_DEFINED
+ #define _BSD_SIZE_T_DEFINED_	/* Darwin */
+@@ -222,6 +227,7 @@
+ #endif /* _BSD_SIZE_T_DEFINED_ */
+ #endif /* _SIZE_T_DEFINED */
+ #endif /* _SIZE_T_DEFINED_ */
++#endif /* _AROS_TYPES_SIZE_T_H */
+ #endif /* _BSD_SIZE_T_ */
+ #endif /* _SIZE_T_ */
+ #endif /* __SIZE_T */
 diff -ruN gcc-4.6.2/include/filenames.h gcc-4.6.2.aros/include/filenames.h
 --- gcc-4.6.2/include/filenames.h	2011-02-28 19:23:25.000000000 +0100
 +++ gcc-4.6.2.aros/include/filenames.h	2012-04-04 22:19:45.045567698 +0200
