@@ -22,7 +22,6 @@ GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS
 GCC_EXTRA_OPTS += --disable-bootstrap 
 GCC_EXTRA_OPTS += --with-headers=$(AROS_DEVELOPMENT)/include --with-libs=$(AROS_DEVELOPMENT)/lib
 GCC_EXTRA_OPTS += --enable-sjlj-exceptions=no --enable-tls=no
-GCC_INCLUDES    = $(CROSSTOOLSDIR)/lib/gcc/$(AROS_TARGET_CPU)-aros/$(GCC_VERSION)/include
 GCC_PATH        = `LANG=en_US $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros-gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 GCC_UNUSED_BUT_SET_VARIABLE := -Wno-unused-but-set-variable
 GCC_ARRAY_BOUNDS            := -Wno-array-bounds
@@ -39,22 +38,13 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
-#MM
-sysinclude-gcc: $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h
-
-#MM- sysinclude-gcc: includes-copy-mlib
-
-$(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include/math.h: $(AROS_DEVELOPMENT)/include/math.h
-	@$(MKDIR) -p $(CROSSTOOLSDIR)/$(AROS_TARGET_CPU)-aros/sys-include
-	@$(CP) $^ $@
-
 #MM- tools-crosstools-m68k   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-i386   : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-x86_64 : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-ppc    : tools-crosstools-gcc crosstools-gcc
 #MM- tools-crosstools-arm    : tools-crosstools-gcc crosstools-gcc
 
-#MM- crosstools-gcc: sysinclude-gcc core-linklibs
+#MM- crosstools-gcc: includes-copy-mlib core-linklibs
 
 #MM tools-crosstools-gcc : tools-crosstools-binutils tools-crosstools-collect-aros \
 #MM                        compiler-includes compiler-clib-includes \
