@@ -83,17 +83,15 @@ AROS_UFH3S(void, ResetHandler,
 **********************/
 
 #ifdef __mc68000
-struct InputEvent *is_Code_Wrapper(void) {
-    struct InputEvent *ret;
-    asm volatile (
-       "movem.l %%d2-%%d4/%%a2,%%sp@-\n"
-       "jsr (%%a2)\n"
-       "movem.l %%sp@+,%%d2-%%d4/%%a2\n"
-       "move.l %%d0,%0\n"
-       : "=g" (ret)
-    );
-    return ret;
-}
+extern APTR is_Code_Wrapper(void);
+asm (
+   ".global is_Code_Wrapper\n"
+   "is_Code_Wrapper:\n"
+   "movem.l %d2-%d4/%a2,%sp@-\n"
+   "jsr (%a2)\n"
+   "movem.l %sp@+,%d2-%d4/%a2\n"
+   "rts\n"
+);
 #endif
 
 /* Forwards a chain of events to the inputhandlers */
