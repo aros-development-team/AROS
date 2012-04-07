@@ -45,7 +45,7 @@
 #include <proto/dos.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
-#include <dos_commanderrors.h>
+#include "dos_commanderrors.h"
 
 #include <aros/shcommands.h>
 

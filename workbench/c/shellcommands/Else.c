@@ -57,7 +57,7 @@
 #include <dos/rdargs.h>
 #include <dos/stdio.h>
 #include <proto/dos.h>
-#include <dos_commanderrors.h>
+#include "dos_commanderrors.h"
 
 #include <aros/shcommands.h>
 

@@ -42,8 +42,7 @@ FILES	:= \
     Unsetenv \
     Why
 
-USER_CFLAGS := -I$(SRCDIR)/rom/dos \
-	       -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
+USER_CFLAGS := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench-c : workbench-c-shellcommands
@@ -63,8 +62,7 @@ $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
 # Embedded side of the world
 
 
-USER_CFLAGS := -I$(SRCDIR)/rom/dos \
-	       -D__NOLIBBASE__ \
+USER_CFLAGS := -D__NOLIBBASE__ \
 		   -DADATE="\"$(shell date "+%d.%m.%Y")\""
 USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
 
