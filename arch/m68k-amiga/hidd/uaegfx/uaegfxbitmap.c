@@ -43,7 +43,7 @@ static APTR allocrtgvrambitmap(struct uaegfx_staticdata *csd, struct bm_data *bm
     SetMemoryMode(csd, RGBFB_CLUT);
     vmem = Allocate(csd->vmem, bm->memsize);
     SetMemoryMode(csd, bm->rgbformat);
-    DVRAM(bug("BM %p: %p,%d VRAM allocated.\n", bm, vmem, bm->memsize));
+    DVRAM(bug("BM %p (%dx%dx%d %d): %p,%d VRAM allocated.\n", bm, bm->width, bm->height, bm->bytesperpixel, bm->bytesperline, vmem, bm->memsize));
     return vmem;
 }
 
@@ -186,6 +186,8 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR 	    	     width, height, multi;
     IPTR		     displayable;
     HIDDT_ModeID 	     modeid;
+    int bitsperpixel;
+    struct TagItem tags[2];
 
     DB2(bug("UAEGFXBitmap__Root__New\n"));
 
@@ -205,8 +207,10 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
  
+    bitsperpixel = multi * 8;
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
     data->width = width;
+    width = (width + bitsperpixel - 1) & ~(bitsperpixel - 1);
     width = CalculateBytesPerRow(csd, width, data->rgbformat);
     data->bytesperline = width;
     data->height = height;
@@ -214,7 +218,12 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     allocrtgbitmap(csd, data, TRUE);
     AddTail(&csd->bitmaplist, (struct Node*)&data->node);
  
-    DB2(bug("%dx%dx%d RGBF=%08x P=%08x\n", width, height, multi, data->rgbformat, data->VideoData));
+    tags[0].ti_Tag = aHidd_BitMap_BytesPerRow;
+    tags[0].ti_Data = data->bytesperline;
+    tags[1].ti_Tag = TAG_DONE;
+    OOP_SetAttrs(o, tags);
+
+    DB2(bug("%dx%dx%d %d RGBF=%08x P=%08x\n", data->width, height, multi, width, data->rgbformat, data->VideoData));
 
     if (data->VideoData == NULL)
     	ok = FALSE;
@@ -381,7 +390,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    *msg->storage = data->disp;
 	    return;
 	case aoHidd_BitMap_Align:
-	    *msg->storage = 16;
+	    *msg->storage = data->bytesperpixel == 0 ? 8 : data->bytesperpixel * 8;
 	    return;
 	case aoHidd_BitMap_IsLinearMem:
 	    *msg->storage = TRUE;
