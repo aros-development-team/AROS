@@ -16,9 +16,9 @@
  */
 #include <sys/stat.h>
 
-#include <aros/types/pid_t.h>
 #include <aros/types/mode_t.h>
 #include <aros/types/off_t.h>
+#include <aros/types/pid_t.h>
 
 /* Flags for open */
 
@@ -118,9 +118,9 @@ struct flock
 /* Prototypes */
 __BEGIN_DECLS
 
+int creat (const char * filename, int mode);
 int fcntl (int fd, int cmd, ...);
 int open  (const char * filename, int flags, ...);
-int creat (const char * filename, int mode);
 
 /* NOTIMPL int posix_fadvise(int fd, off_t offset, size_t len, int advice); */
 /* NOTIMPL int posix_fallocate(int fd, off_t offset, size_t len); */

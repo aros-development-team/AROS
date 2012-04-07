@@ -2,10 +2,10 @@
 #define _INTTYPES_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Standard fixed sized integral types.
+    C99 header file inttypes.h with standard fixed sized integral types.
 */
 
 #include <aros/system.h>
@@ -244,11 +244,13 @@
 
 __BEGIN_DECLS
 
+/* Functions for greatest-width integer types */
+/* NOTIMPL intmax_t imaxabs(intmax_t j); */
+/* NOTIMPL imaxdiv_t imaxdic(intmax_t numer, intmax_t denom); */
 intmax_t strtoimax(const char * restrict nptr,
 		    char ** restrict endptr, int base);
 uintmax_t strtoumax(const char * restrict nptr,
 		    char ** restrict endptr, int base);
-
 /* NOTIMPL intmax_t wcstoimax(const wchar_t * restrict nptr,
 		    wchar_t ** restrict endptr, int base); */
 /* NOTIMPL uintmax_t wcstoumax(const wchar_t * restrict nptr,

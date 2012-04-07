@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function exit()
-    Lang: english
+    C99 function exit()
 */
 
 #include "__arosc_privdata.h"

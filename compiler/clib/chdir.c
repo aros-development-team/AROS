@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function chdir().
+    POSIX.1-2008 function chdir().
 */
 
 #include "__arosc_privdata.h"

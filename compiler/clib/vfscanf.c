@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Scan a stream and write the result in the parameters.
+    C99 function vfscanf()
 */
 
 /* Original source from libnix */

@@ -1,13 +1,15 @@
 #ifndef _SYS_TIMEB_H_
 #define _SYS_TIMEB_H_
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Header <sys/timeb.h>
+    Desc: POSIX.1-2001 header file <sys/timeb.h>
+          This is deprecated and not present anymore in POSIX.1-2008
 */
 
 #include <aros/system.h>
+
 #include <aros/types/time_t.h>
 
 struct timeb
@@ -19,7 +21,9 @@ struct timeb
 };
 
 __BEGIN_DECLS
+
 int ftime(struct timeb *tp);
+
 __END_DECLS
 
 #endif /* _SYS_TIMEB_H_ */

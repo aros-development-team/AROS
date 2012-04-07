@@ -2,15 +2,16 @@
 #define _AROS_TYPES_SIGACTION_S_H
 
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/sigaction_s.h 35142 2010-10-23T20:40:12.589298Z verhaegs  $
 
-    POSIX.1-2008 struct sigaction definition
+    Desc: POSIX.1-2008 struct sigaction definition
 */
 
 #include <aros/types/sigset_t.h>
 #include <aros/types/siginfo_t.h>
 
+/* sa_flags field */
 #define SA_NOCLDSTOP	0x0001
 #define SA_ONSTACK	0x0002
 #define	SA_RESETHAND	0x0004
@@ -29,8 +30,8 @@ struct sigaction
 	void		(*__sa_handler)(int);
 	void		(*__sa_sigaction)(int, siginfo_t *, void *);
     } __sigaction_u;			/* signal handler */
-    int			sa_flags;	/* see below */
     sigset_t		sa_mask;	/* signal mask to apply */
+    int			sa_flags;	/* see above */
 };
 
 #define sa_handler	__sigaction_u.__sa_handler

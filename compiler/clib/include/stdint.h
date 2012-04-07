@@ -2,11 +2,14 @@
 #define _STDINT_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Standard fixed sized integral types.
+    Desc: C99 header file stdint.h
+          Standard fixed sized integral types.
 */
+
+#include <aros/cpu.h>
 
 #include <aros/types/int_t.h>
 
@@ -15,9 +18,6 @@
 
 
 #if !defined(__cplusplus) || defined(__STDC_LIMIT_MACROS)
-
-#define SIG_ATOMIC_MIN  AROS_SIG_ATOMIC_MIN
-#define SIG_ATOMIC_MAX  AROS_SIG_ATOMIC_MAX
 
 #define INT8_MIN    (-128)
 #define INT16_MIN   (-32767-1)
@@ -34,13 +34,10 @@
 #define UINT32_MAX  (4294967295U)
 #define UINT64_MAX  (AROS_MAKE_UINT64(18446744073709551615))
 
-#endif
+#define SIG_ATOMIC_MIN  AROS_SIG_ATOMIC_MIN
+#define SIG_ATOMIC_MAX  AROS_SIG_ATOMIC_MAX
 
-
-/*
-        TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-
-#if defined __cplusplus && defined __STDC_LIMIT_MACROS
+/* TODO:
 	    INT_LEAST<N>_MIN, INT_LEAST<N>_MAX, UINT_LEAST<N>_MAX
 	    INT_FAST<N>_MIN, INT_FAST<N>_MAX, UINT_FAST<N>_MAX
 	    INTPTR_MIN, INTPTR_MAX, UINTPTR_MAX
@@ -49,9 +46,10 @@
 	    SIZE_MAX
 	    WCHAR_MIN, _MAX (must be <= -127 or >= 127)
 	    WINT_MIN, _MAX (must be <= -65535 or >= 65535)
+*/
+
 #endif
 
-*/
 
 #if !defined __cplusplus || defined __STDC_CONSTANT_MACROS
 
@@ -91,6 +89,6 @@
 /* Maximal unsigned integer (unsigned long long) size */
 # define UINTMAX_MAX     UINT64_MAX
 
-#endif
+#endif /* !__cplusplus || __STDC_CONSTANT_MACROS */
 
 #endif /* _STDINT_H_ */

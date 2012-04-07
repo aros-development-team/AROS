@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function opendir().
+    POSIX.1-2008 function opendir().
 */
 
 #include <dos/dos.h>

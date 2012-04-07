@@ -2,7 +2,7 @@
     Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function puts().
+    C99 function puts().
 */
 
 /*****************************************************************************

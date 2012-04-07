@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function getcwd().
+    POSIX.1-2008 function getcwd().
 */
 
 #include <stdlib.h>

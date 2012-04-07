@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C functions rand() and srand().
+    C99 functions rand() and srand().
 */
 
 #include <stdlib.h>

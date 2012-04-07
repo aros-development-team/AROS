@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function free().
+    C99 function free().
 */
 
 #include "__arosc_privdata.h"

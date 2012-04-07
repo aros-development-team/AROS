@@ -2,13 +2,11 @@
 #define _SYS_STAT_H
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI-C header file sys/stat.h
-    Lang: english
+    Desc: POSIX.1-2008 header file sys/stat.h
 */
-
 #include <aros/system.h>
 
 /* POSIX.1-2008 */
@@ -33,20 +31,28 @@ struct stat
     gid_t           st_gid;	    /* group ID of the file's group */
     dev_t           st_rdev;	    /* device type */
     off_t           st_size;	    /* file size, in bytes */
-    time_t          st_atime;	    /* time of last access */
-    long            st_spare1;
-    time_t          st_mtime;	    /* time of last data modification */
-    long            st_spare2;
-    time_t          st_ctime;	    /* time of last file status change */
-    long            st_spare3;
+    struct timespec st_atim;	    /* time of last access */
+    struct timespec st_mtim;	    /* time of last data modification */
+    struct timespec st_ctim;	    /* time of last file status change */
     blksize_t       st_blksize;	    /* optimal blocksize for I/O */
     blkcnt_t        st_blocks;	    /* blocks allocated for file */
     unsigned long   st_flags;	    /* user defined flags for file */
     unsigned long   st_gen;         /* file generation number */
 };
 
-#define	S_ISUID	0004000			/* set user id on execution */
-#define	S_ISGID	0002000			/* set group id on execution */
+#define st_atime st_atim.tv_sec
+#define st_mtime st_mtim.tv_sec
+#define st_ctime st_ctim.tv_sec
+
+/* mode_t values */
+#define	S_IFMT	 0170000		/* type of file */
+#define	S_IFBLK	 0060000		/* block special */
+#define	S_IFCHR	 0020000		/* character special */
+#define	S_IFIFO	 0010000		/* named pipe (fifo) */
+#define	S_IFREG	 0100000		/* regular */
+#define	S_IFDIR	 0040000		/* directory */
+#define	S_IFLNK	 0120000		/* symbolic link */
+#define	S_IFSOCK 0140000		/* socket */
 
 #define	S_IRWXU	0000700			/* RWX mask for owner */
 #define	S_IRUSR	0000400			/* R for owner */
@@ -62,17 +68,26 @@ struct stat
 #define	S_IROTH	0000004			/* R for other */
 #define	S_IWOTH	0000002			/* W for other */
 #define	S_IXOTH	0000001			/* X for other */
+#define	S_ISUID	0004000			/* set user id on execution */
+#define	S_ISGID	0002000			/* set group id on execution */
+#define	S_ISVTX	0001000			/* save swapped text even after use */
+#define	S_ISBLK(m)	((m & 0170000) == 0060000)	/* block special */
+#define	S_ISCHR(m)	((m & 0170000) == 0020000)	/* char special */
+#define	S_ISDIR(m)	((m & 0170000) == 0040000)	/* directory */
+#define	S_ISFIFO(m)	((m & 0170000) == 0010000)	/* fifo */
+#define	S_ISREG(m)	((m & 0170000) == 0100000)	/* regular file */
+#define	S_ISLNK(m)	((m & 0170000) == 0120000)	/* symbolic link */
+#define S_ISSOCK(m)	((m & 0170000) == 0140000)	/* socket */
 
-#define	S_IFMT	 0170000		/* type of file */
-#define	S_IFIFO	 0010000		/* named pipe (fifo) */
-#define	S_IFCHR	 0020000		/* character special */
-#define	S_IFDIR	 0040000		/* directory */
-#define	S_IFBLK	 0060000		/* block special */
-#define	S_IFREG	 0100000		/* regular */
-#define	S_IFLNK	 0120000		/* symbolic link */
-#define	S_IFSOCK 0140000		/* socket */
-#define	S_ISVTX	 0001000		/* save swapped text even after use */
+/* NOTIMPL
+S_TYPEISMQ(buf)
+S_TYPEISSEM(buf)
+S_TYPEISSHM(buf)
+S_TYPEISTMO(buf)
+*/
 
+/* Extras */
+/* FIXME: Are they needed ? */
 #define	ACCESSPERMS	(S_IRWXU|S_IRWXG|S_IRWXO)	/* 0777 */
 							/* 7777 */
 #define	ALLPERMS	(S_ISUID|S_ISGID|S_ISTXT|S_IRWXU|S_IRWXG|S_IRWXO)
@@ -82,27 +97,25 @@ struct stat
 #define S_BLKSIZE	512		/* block size used in the stat struct */
 
 
-#define	S_ISDIR(m)	((m & 0170000) == 0040000)	/* directory */
-#define	S_ISCHR(m)	((m & 0170000) == 0020000)	/* char special */
-#define	S_ISBLK(m)	((m & 0170000) == 0060000)	/* block special */
-#define	S_ISREG(m)	((m & 0170000) == 0100000)	/* regular file */
-#define	S_ISLNK(m)	((m & 0170000) == 0120000)	/* symbolic link */
-#define S_ISSOCK(m)	((m & 0170000) == 0140000)	/* socket */
-#define	S_ISFIFO(m)	((m & 0170000) == 0010000)	/* fifo */
 
 __BEGIN_DECLS
 
-int stat(const char * restrict path, struct stat * restrict sb);
-int lstat(const char * restrict path, struct stat * restrict sb);
-int fstat(int fd, struct stat *sb);
-
-mode_t umask(mode_t numask);
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
-
+/* NOTIMPL int fchmodat(int, const char *, mode_t, int); */
+int fstat(int fd, struct stat *sb);
+/* NOTIMPL int fstatat(int, const char *restrict, struct stat *restrict, int); */
+/* NOTIMPL int futimens(int, const struct timespec [2]); */
+int lstat(const char * restrict path, struct stat * restrict sb);
 int mkdir(const char *path, mode_t mode);
-int mkfifo(const char *path, mode_t mode);
+/* NOTIMPL int mkdirat(int, const char *, mode_t); */
+/* NOTIMPL int mkfifo(const char *path, mode_t mode); */
+/* NOTIMPL int mkfifoat(int, const char *, mode_t); */
 int mknod(const char *path, mode_t mode, dev_t dev);
+/* NOTIMPL int mknodat(int, const char *, mode_t, dev_t); */
+int stat(const char * restrict path, struct stat * restrict sb);
+mode_t umask(mode_t numask);
+/* NOTIMPL int utimensat(int, const char *, const struct timespec [2], int); */
 
 __END_DECLS
 

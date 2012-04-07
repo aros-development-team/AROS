@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function readlink().
+    POSIX.1-2008 function readlink().
 */
 
 #include <aros/debug.h>

@@ -5,12 +5,13 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI-C header file sys/time.h
-    Lang: english
+    Desc: POSIX.1-2008 header file sys/time.h
 */
 
 #include <aros/system.h>
 #include <aros/types/timeval_s.h> /* get struct timeval */
+
+#include <sys/select.h>
 
 /* struct itimerval is used by the interval timers getitimer()/setitimer() */
 struct itimerval
@@ -75,18 +76,12 @@ struct timezone
 
 __BEGIN_DECLS
 
-/* clib functions */
-int getitimer(int which, struct itimerval *);
-int setitimer(int which, const struct itimerval *, struct itimerval *);
-int gettimeofday(struct timeval * tv, struct timezone * tz);
-int settimeofday(const struct timeval * tv, const struct timezone * tz);
-int utimes(const char *file, const struct timeval tvp[2]);
+/* NOTIMPL int getitimer(int which, struct itimerval *); */
+int gettimeofday(struct timeval * restrict, struct timezone * restrict);
+/* NOTIMPL int setitimer(int which, const struct itimerval * restrict, struct itimerval * restrict); */
+/* select() is defined by inclusion of <sys/select.h> */
+int utimes(const char *, const struct timeval tvp[2]);
 
 __END_DECLS
-
-/*
-    SUSv2 says that select() is defined here. BSD however defines it in
-    unistd.h. So does AROS, as that makes more sense.
-*/
 
 #endif /* _SYS_TIME_H_ */

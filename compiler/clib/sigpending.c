@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function sigpending().
+    POSIX.1-2008 function sigpending().
 */
 
 #include <aros/debug.h>

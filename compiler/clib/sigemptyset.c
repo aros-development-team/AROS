@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function sigemptyset().
+    POSIX.1-2008 function sigemptyset().
 */
 
 #include <string.h>

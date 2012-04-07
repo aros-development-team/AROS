@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
-
-    Sleeps for a specified number of seconds.
+    
+    POSIX.1-2008 function sleep()
 */
 #include <proto/dos.h>
 

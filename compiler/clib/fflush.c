@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function fflush().
+    C99 function fflush().
 */
 
 #include "__arosc_privdata.h"

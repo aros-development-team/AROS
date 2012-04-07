@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function strerror().
+    C99 function strerror().
 */
 
 #include <proto/dos.h>
@@ -42,10 +42,8 @@ extern const char * _errstrings[];
 
 ******************************************************************************/
 {
-    if (n > MAX_ERRNO)
-    {    
-	return NULL;
-    }
+    if (n > ELAST)
+	return "Errno out of range";
 
     return (char *)_errstrings[n];
 } /* strerror */

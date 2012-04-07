@@ -1,13 +1,15 @@
 #ifndef _LOCALE_H_
 #define _LOCALE_H_
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    C Standard Library: locale.h
+    C99 & POSIX-2008.1 locale.h
 */
 
 #include <aros/system.h>
+
+/* C99 */
 
 /*
     struct lconv contains members relating to the formatting of numerical
@@ -50,13 +52,27 @@ struct lconv
 #define LC_MONETARY	    3
 #define LC_NUMERIC	    4
 #define LC_TIME		    5
+
+__BEGIN_DECLS
+
+char *setlocale(int category, const char *locale);
+struct lconv *localeconv(void);
+
+__END_DECLS
+
+
+/* POSIX 2008.1 */
 #define LC_MESSAGES	    6
 #define _LC_LAST	    7 /* marks end */
 
 
 __BEGIN_DECLS
-char *setlocale(int category, const char *locale);
-struct lconv *localeconv(void);
+
+/* NOTIMPL locale_t      duplocale(locale_t); */
+/* NOTIMPL void          freelocale(locale_t); */
+/* NOTIMPL locale_t      newlocale(int, const char *, locale_t); */
+/* NOTIMPL locale_t      uselocale (locale_t); */
+
 __END_DECLS
 
 #endif /* _LOCALE_H_ */

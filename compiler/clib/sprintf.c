@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function sprintf().
+    C99 function sprintf().
 */
 
 #define _LIBC_KERNEL_

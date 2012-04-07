@@ -2,11 +2,10 @@
 #define _ASSERT_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI-C header file assert.h
-    Lang: english
+    C99 header file assert.h
 */
 
 #include <aros/system.h>
@@ -26,7 +25,7 @@
 
 __BEGIN_DECLS
 
-extern void __assert (const char *, const char *, unsigned int);
+void __assert(const char *, const char *, unsigned int);
 
 __END_DECLS
 

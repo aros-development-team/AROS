@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function gets().
+    C99 function gets().
 */
 
 #include <dos/dos.h>

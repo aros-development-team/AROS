@@ -1,6 +1,5 @@
-/*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
-    $Id$
+/* Include _strings.h; it will also be included from string.h
+   and this way string.h does not need to include strings.h
+   with gives possible conflicts with catcomp generated strings.h file.
 */
-
-#include <string.h>
+#include <_strings.h>

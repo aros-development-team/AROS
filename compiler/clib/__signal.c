@@ -18,7 +18,7 @@ struct signal_func_data *__sig_getfuncdata(int signum)
     struct aroscbase *aroscbase = __GM_GetBase();
     int i;
 
-    if (signum < SIGHUP || signum > SIGRTMAX)
+    if (signum < SIGHUP || signum > _SIGMAX)
     {
         errno = EINVAL;
         return NULL;
@@ -28,7 +28,7 @@ struct signal_func_data *__sig_getfuncdata(int signum)
     {
         aroscbase->acb_sigfunc_array =
             AllocPooled(aroscbase->acb_internalpool,
-                        SIGRTMAX*sizeof(struct signal_func_data)
+                        _SIGMAX*sizeof(struct signal_func_data)
             );
 
         if (!aroscbase->acb_sigfunc_array)
@@ -37,7 +37,7 @@ struct signal_func_data *__sig_getfuncdata(int signum)
             return NULL;
         }
 
-        for (i = 0; i < SIGRTMAX; i++)
+        for (i = 0; i < _SIGMAX; i++)
         {
             aroscbase->acb_sigfunc_array[i].sigfunc = SIG_DFL;
             aroscbase->acb_sigfunc_array[i].flags = 0;

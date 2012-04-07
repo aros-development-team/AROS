@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function memcpy().
+    C99 function memcpy().
 */
 
 #include <proto/exec.h>

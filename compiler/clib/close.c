@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function close().
+    POSIX.1-2008 function close().
 */
 
 #include "__arosc_privdata.h"

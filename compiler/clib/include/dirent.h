@@ -17,6 +17,7 @@
 #ifndef NAME_MAX
 #define NAME_MAX 255
 #endif
+#define	MAXNAMLEN NAME_MAX
 
 #define DT_UNKNOWN     0
 #define DT_FIFO        1
@@ -31,10 +32,9 @@
 struct dirent
 {
     ino_t   d_ino;
+    char    d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
     unsigned short int d_reclen;
     unsigned char d_type;
-#define	MAXNAMLEN NAME_MAX
-    char    d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
 };
 
 /* structure describing an open directory. */
