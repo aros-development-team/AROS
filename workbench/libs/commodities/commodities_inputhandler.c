@@ -62,10 +62,9 @@ extern void cx_Thunk(void);
 asm (
     ".global cx_Thunk\n"
     "cx_Thunk:\n"
-        "movem.l %a0-%a1/%a6,%sp@-\n"
+        "movem.l %a0-%a1,%sp@-\n"
         "jsr.l  %a2@\n"
         "addq.l #8,%sp\n"
-        "addq.l #4,%sp\n"
         "rts\n"
     );
 #endif
