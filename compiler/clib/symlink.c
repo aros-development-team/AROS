@@ -2,7 +2,7 @@
     Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function symlink().
+    POSIX.1-2008 function symlink().
 */
 
 #include <aros/debug.h>

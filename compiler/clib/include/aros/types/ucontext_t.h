@@ -2,10 +2,11 @@
 #define _AROS_TYPES_UCONTEXT_T_H
 
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id: /aros/branches/ABI_V1/trunk-aroscsplit/AROS/compiler/arosnixc/include/aros/types/ucontext_t.h 35143 2010-10-23T21:19:57.420395Z verhaegs  $
 
-    POSIX.1-2008 mcontext_t and ucontext_t type definition
+    Desc: POSIX.1-2004 mcontext_t and ucontext_t type definition
+          Not present anymore in POSIX.1-2008
 */
 
 #include <aros/types/sigset_t.h>
@@ -19,11 +20,10 @@ typedef struct
 
 typedef struct __ucontext
 {
-    mcontext_t		 uc_mcontext;
-
     struct __ucontext	*uc_link;
     sigset_t		 uc_sigmask;
     stack_t		 uc_stack;
+    mcontext_t		 uc_mcontext;
 } ucontext_t;
 
 #endif /* _AROS_TYPES_UCONTEXT_T_H */

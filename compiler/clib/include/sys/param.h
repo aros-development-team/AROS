@@ -11,6 +11,8 @@
 
     Many of these things are Unix kernel or just plain BSD specific, and as
     such have been left out.
+
+    TODO: Check if it is needed anyway.
 */
 
 #include <sys/types.h>

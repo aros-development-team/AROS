@@ -1,8 +1,9 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function bzero().
+    POSIX.1-2001 function bzero().
+    Function is deprecated and removed from POSIX.1-2008
 */
 
 #include <proto/exec.h>

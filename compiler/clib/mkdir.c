@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function mkdir().
+    POSIX.1-2008 function mkdir().
 */
 
 #include <string.h>

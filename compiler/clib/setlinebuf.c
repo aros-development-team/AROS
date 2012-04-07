@@ -2,7 +2,8 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function setlinebuf().
+    BSD legacy function setlinebuf().
+    Function is deprecated and not part of POSIX standard.
 */
 
 /*****************************************************************************

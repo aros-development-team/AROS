@@ -5,15 +5,14 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI-C header file stdlib.h
-    Lang: English
+    Desc: C99 & POSIX.1-2008 header file stdlib.h
 */
 
 #include <aros/system.h>
-#include <sys/arosc.h>
 
-/* It seems that also stdlib.h defines alloca() */
-#include <alloca.h>
+
+/* C99 */
+#include <sys/arosc.h>
 
 #include <aros/types/size_t.h>
 #include <aros/types/wchar_t.h>
@@ -36,9 +35,7 @@ typedef struct lldiv_t {
 } lldiv_t;
 #endif
 
-#ifndef NULL
-#define NULL	    0
-#endif
+#include <aros/types/null.h>
 
 #define EXIT_SUCCESS	0  /* Success exit status */
 #define EXIT_FAILURE	20 /* Failing exit status */
@@ -46,90 +43,62 @@ typedef struct lldiv_t {
 /* Gives the largest size of a multibyte character for the current locale */
 #define MB_CUR_MAX      (__get_arosc_userdata()->acud_mb_cur_max)
 
+#define RAND_MAX	   2147483647
+
 __BEGIN_DECLS
 
-/* String conversion functions */
+/* Numeric conversion functions */
 double atof(const char *nptr);
 int atoi(const char *nptr);
 long int atol(const char *nptr);
 #if defined AROS_HAVE_LONG_LONG
-long long int atoll(const char *nptr);
+/* NOTIMPL long long int atoll(const char *nptr); */
 #endif
 
 double strtod(const char * restrict nptr, char ** restrict endptr);
+/* NOTIMPL float strtof(const char * restrict nptr, char ** restrict endptr); */
+/* NOTIMPL long double strtold(const char * restrict nptr, char ** restrict endptr); */
+
 long int strtol(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
-unsigned long int strtoul(const char * restrict nptr,
-		char ** restrict endptr,
-		int base);
-
 #if defined AROS_HAVE_LONG_LONG
 long long int strtoll(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
+#endif
+unsigned long int strtoul(const char * restrict nptr,
+		char ** restrict endptr,
+		int base);
+#if defined AROS_HAVE_LONG_LONG
 unsigned long long int strtoull(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
 #endif
 
-/* Pseudo-random number generation functions */
+/* Pseudo-random sequence generation functions */
 int rand (void);
 void srand (unsigned int seed);
 
-/* Max. number returned by rand() */
-#ifndef RAND_MAX
-#   define RAND_MAX	   2147483647
-#endif
-
-/* Unix pseudo-random functions */
-#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
-double drand48(void);
-double erand48(unsigned short int xsubi[3]);
-long int lrand48(void);
-long int nrand48(unsigned short int xsubi[3]);
-long int mrand48(void);
-long int jrand48(unsigned short int xsubi[3]);
-void srand48(long int seedval);
-unsigned short int *seed48(unsigned short int seed16v[3]);
-void lcong48(unsigned short int param[7]);
-
-/* Thread safe random */
-int       rand_r(unsigned int *);
-
-long random(void);
-void srandom(unsigned seed);
-char *initstate(unsigned seed, char *state, int n);
-char *setstate(char *state);
-#endif /* !_ANSI_SOURCE  && !_POSIX_SOURCE */
-
 /* Memory management functions */
-void *malloc(size_t size);
 void *calloc(size_t count, size_t size);
+void free(void *memory);
+void *malloc(size_t size);
 void *realloc(void *oldmem, size_t newsize);
-void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
-void  free(void *memory);
-int   posix_memalign(void **memptr, size_t alignment, size_t size);
 
 /* Communication with the environment */
-void  abort (void) __noreturn;
-int   atexit(void (*func)(void));
-int   on_exit(void (*func)(int, void *), void *);
-void  exit (int code) __noreturn;
-int   system(const char *string);
+void abort (void) __noreturn;
+int atexit(void (*func)(void));
+void exit(int code) __noreturn;
+/* NOTIMPL void _Exit(int status); */
 char *getenv(const char *name);
-
-#if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
-int   putenv(const char *string);
-int   setenv(const char *name, const char *value, int overwrite);
-void  unsetenv(const char *name);
-#endif
+int system(const char *string);
 
 /* Searching and sorting utilities */
-void qsort(void * array, size_t count, size_t elementsize,
-	int (*comparefunction)(const void * element1, const void * element2));
 void *bsearch(const void * key, const void * base, size_t count,
 	size_t size, int (*comparefunction)(const void *, const void *));
+void qsort(void * array, size_t count, size_t elementsize,
+	int (*comparefunction)(const void * element1, const void * element2));
 
 /* Integer arithmetic functions */
 int abs (int j);
@@ -144,43 +113,23 @@ ldiv_t ldiv(long int numer, long int denom);
 lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
-/* Multibyte character functions */
+/* Multibyte/wide character conversion functions */
 int mblen(const char *s, size_t n);
 /* INLINE int mbtowc(wchar_t * restrict pwc, const char * restrict s, size_t n); */
 /* INLINE int wctomb(char *s, wchar_t wchar); */
 
-/* Multibyte string functions */
+/* Multibyte/wide string conversion functions */
 /* INLINE size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n); */
 /* INLINE size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n); */
 
-/* Miscellaneous BSD functions */
-int getloadavg(double loadavg[], int n);
-
-/* The following are POSIX/SUS additions */
-#if !defined(_ANSI_SOURCE)
-long  a64l(const char *);
-#if 0 /* FIXME: not implemented */
-char *ecvt(double, int, int *, int *); 
-char *fcvt (double, int, int *, int *);
-#endif
-char *gcvt(double, int, char *);
-int   getsubopt(char **, char *const *, char **);
-int   grantpt(int);
-char *l64a(long);
-char *mktemp(char *);
-int   mkstemp(char *);
-char *ptsname(int);
-char *realpath(const char *, char *);
-void  setkey(const char *);
-int   unlockpt(int);
-#endif /* _ANSI_SOURCE */
-
-
+/* AROS extra */
+void *realloc_nocopy(void *oldmem, size_t newsize); /* AROS specific */
+int   on_exit(void (*func)(int, void *), void *);
 
 /* inline code */
 /* The multi-byte character functions are implemented inline so that they adapt to the
    size of wchar_t used by the compiler. This would not be possible if the code would
-   be compiled in the shared library or even the static link library
+   be compiled in the shared library or even the static link library.
 */
 
 #if !defined(_STDC_NOINLINE) && !defined(_STDC_NOINLINE_STDLIB)
@@ -280,6 +229,51 @@ size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n)
 
 
 #endif /* !_STDC_NOINLINE && !_STDC_NOINLINE_STDLIB */
+
+__END_DECLS
+
+
+/* POSIX.1-2008 */
+/* It seems that also stdlib.h defines alloca() */
+#include <alloca.h>
+
+__BEGIN_DECLS
+
+/* NOTIMPL long a64l(const char *); */
+double drand48(void);
+double erand48(unsigned short [3]);
+/* NOTIMPL int getsubopt(char **, char *const *, char **); */
+/* NOTIMPL int grantpt(int); */
+char *initstate(unsigned, char *, int);
+long int jrand48(unsigned short int [3]);
+/* NOTIMPL char *l64a(long); */
+void lcong48(unsigned short int [7]);
+long int lrand48(void);
+/* NOTIMPL char *mkdtemp(char *); */
+int mkstemp(char *);
+long int mrand48(void);
+long int nrand48(unsigned short int [3]);
+int posix_memalign(void **memptr, size_t alignment, size_t size);
+/* NOTIMPL int posix_openpt(int); */
+/* NOTIMPL char *ptsname(int); */
+int putenv(const char *);
+/* NOTIMPL int rand_r(unsigned int *); */
+long random(void);
+/* NOTIMPL char *realpath(const char * restrict , char * restrict); */
+unsigned short int *seed48(unsigned short int [3]);
+int setenv(const char *, const char *, int);
+/* NOTIMPL void setkey(const char *); */
+char *setstate(char *);
+void srand48(long int);
+void srandom(unsigned);
+/* NOTIMPL int unlockpt(int); */
+void unsetenv(const char *);
+
+/* The following are deprecated POSIX functions */
+char *mktemp(char *);
+
+/* BSD */
+int getloadavg(double loadavg[], int n);
 
 __END_DECLS
 

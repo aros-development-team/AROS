@@ -1,8 +1,8 @@
 /*
-    Copyright © 2008, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX.1-2001 function nanosleep().
+    POSIX.1-2008 function nanosleep().
 */
 
 #include <unistd.h>

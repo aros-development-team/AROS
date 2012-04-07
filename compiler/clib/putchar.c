@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ISO C function putchar()
+    C99 function putchar()
 */
 
 /*****************************************************************************

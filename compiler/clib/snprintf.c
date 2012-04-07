@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function snprintf().
+    C99 function snprintf().
 */
 
 #define DEBUG 0

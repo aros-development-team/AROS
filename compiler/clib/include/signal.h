@@ -2,90 +2,57 @@
 #define _SIGNAL_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    System header file <signal.h>
-    Based on SUSv2 with help from C99.
+    C99 & POSIX.1-2008 system header file <signal.h>
 */
 
 #include <aros/system.h>
 
+
+/* C99 */
 #include <aros/types/__sighandler_t.h>
 
 #define SIG_DFL	    ((__sighandler_t *)0)   /* default signal handling */
 #define SIG_IGN	    ((__sighandler_t *)1)   /* ignore this signal */
-#if !defined(_ANSI_SOURCE)
-#define SIG_HOLD    ((__sighandler_t *)2)   /* hold this signal */
-#endif
 #define SIG_ERR	    ((__sighandler_t *)-1)  /* return from signal() on error */
 
 typedef AROS_SIG_ATOMIC_T   sig_atomic_t;
 
-/* Definitions to make signal manipulation easier. From FreeBSD */
-#define _SIG_IDX(sig)		((sig) - 1)
-#define _SIG_WORD(sig)		(_SIG_IDX(sig) >> 5)
-#define _SIG_BIT(sig)		(1 << (_SIG_IDX(sig) & 31))
-#define _SIG_VALID(sig)		((sig) < _SIG_MAXSIG && (sig) > 0)
+/* Signal values */
+#define SIGABRT		6	/* abort() */
+#define SIGFPE		8	/* floating point exception */
+#define SIGILL		4	/* illegal instr. */
+#define SIGINT		2	/* interrupt */
+#define SIGSEGV		11	/* segmentation violation */
+#define SIGTERM		15	/* software termination */
 
-/* Almost all the remaining definitions are not part of ANSI C */
-#if !defined(_ANSI_SOURCE)
+/* Function Prototypes */
+__BEGIN_DECLS
 
+__sighandler_t *signal(int, __sighandler_t *);
+int raise(int);
+
+__END_DECLS
+
+
+
+/* POSIX-2008.1 */
+#define SIG_HOLD    ((__sighandler_t *)2)   /* hold this signal */
+
+/* TODO: support for pthread_t, pthread_attr_t */
+/* NOTSUPP pthread_t */
+#include <aros/types/size_t.h>
+#include <aros/types/uid_t.h>
+#include <aros/types/timespec_s.h>
 #include <aros/types/sigset_t.h>
 #include <aros/types/pid_t.h>
+/* NOTSUPP pthread_attr_t */
+#include <aros/types/sigevent_s.h>
 
-#endif /* !_ANSI_SOURCE */
-
-/* Signal values */
-#define SIGHUP		1	/* hangup */
-#define SIGINT		2	/* interrupt */
-#define SIGQUIT		3	/* quit */
-#define SIGILL		4	/* illegal instr. */
-#if !defined(_POSIX_SOURCE)
-#define SIGTRAP		5	/* trace/breakpoint track */
-#endif
-#define SIGABRT		6	/* abort() */
-#if !defined(_POSIX_SOURCE)
-#define SIGEMT		7	/* EMT instruction (emulator trap) */
-#endif
-#define SIGFPE		8	/* floating point exception */
-#define SIGKILL		9	/* kill (cannot be caught or ignored) */
-#if !defined(_POSIX_SOURCE)
-#define SIGBUS		10	/* bus error */
-#endif
-#define SIGSEGV		11	/* segmentation violation */
-#if !defined(_POSIX_SOURCE)
-#define SIGSYS		12	/* non-existent system call */
-#endif
-#define SIGPIPE		13	/* write on a pipe without a reader */
-#define SIGALRM		14	/* alarm clock */
-#define SIGTERM		15	/* software termination */
-#if !defined(_POSIX_SOURCE)
-#define SIGURG		16	/* urgent IO condition */
-#endif
-#define SIGSTOP		17	/* sendable stop signal */
-#define SIGTSTP		18	/* terminal stop signal */
-#define SIGCONT		19	/* continue a stopped process */
-#define SIGCHLD		20	/* to parent on child stop or exit */
-#define SIGTTIN		21	/* to reader to background tty read */
-#define SIGTTOU		22	/* to writer on background tty write */
-#if !defined(_POSIX_SOURCE)
-#define SIGXCPU		23	/* exceeded CPU time limit */
-#define SIGXFSZ		24	/* exceeded file size limit */
-#define SIGVTALRM	25	/* virtual timer alarm */
-#define SIGPROF		26	/* profiling time alarm */
-#define SIGWINCH	27	/* window size changes */
-#endif
-#define SIGUSR1		28	/* user defined signal 1 */
-#define SIGUSR2		29	/* user defined signal 2 */
-
-#if !defined(_POSIX_SOURCE)
-/*  BSD defines SIGIO and SIGINFO, we should probably include these */
-#define SIGIO		30	/* IO event */
-#define SIGINFO		31	/* terminal info request */
-#endif
-
-/* Real time signals as specified by POSIX 1003.1B */
+/* Real time signals as specified by POSIX.1-2008 */
+/* TODO: implement SIGRT signals
 #define SIGRTMIN	33
 #define SIGRT1		33
 #define SIGRT2		34
@@ -122,95 +89,89 @@ typedef AROS_SIG_ATOMIC_T   sig_atomic_t;
 #define SIGRTMAX	64
 
 #define RTSIG_MAX	32
-
-/*
-    sigevent() is an advanced call that allows a process to request the
-    system to perform more advanced signal delivery that calling signal
-    handlers.
-
-    AROS allows for signals to be queued, delivered normally, or by
-    creating a new thread and calling a function.
-
-    See the sigevent() manual page for more information.
 */
-#include <aros/types/sigevent_s.h>
 
-/*
-    Call a function.
-    XXX Note that we do not support sigev_notify_attributes
-*/
-#define sigev_notify_function	\
-    __sigev_u.__sigev_notify_call.__sigenv_notify_function
+#define _SIGMAX 64
 
-#if !defined(_ANSI_SOURCE)
+/* Extra POSIX-2008.1 signal values */
+#define SIGALRM		14	/* alarm clock */
+#define SIGBUS		10	/* bus error */
+#define SIGCHLD		20	/* to parent on child stop or exit */
+#define SIGCONT		19	/* continue a stopped process */
+#define SIGHUP		1	/* hangup */
+#define SIGKILL		9	/* kill (cannot be caught or ignored) */
+#define SIGPIPE		13	/* write on a pipe without a reader */
+#define SIGQUIT		3	/* quit */
+#define SIGSTOP		17	/* sendable stop signal */
+#define SIGTSTP		18	/* terminal stop signal */
+#define SIGTTIN		21	/* to reader to background tty read */
+#define SIGTTOU		22	/* to writer on background tty write */
+#define SIGUSR1		28	/* user defined signal 1 */
+#define SIGUSR2		29	/* user defined signal 2 */
+//FIXME: #define SIGPOLL
+#define SIGPROF		26	/* profiling time alarm */
+#define SIGSYS		12	/* non-existent system call */
+#define SIGTRAP		5	/* trace/breakpoint track */
+#define SIGURG		16	/* urgent IO condition */
+#define SIGVTALRM	25	/* virtual timer alarm */
+#define SIGXCPU		23	/* exceeded CPU time limit */
+#define SIGXFSZ		24	/* exceeded file size limit */
 
 #include <aros/types/sigaction_s.h>
-
-#if !defined(_POSIX_SOURCE)
-
-#include <aros/types/size_t.h>
-#include <aros/types/stack_t.h>
-
-struct sigstack
-{
-    int		     ss_onstack;	/* non-zero when signal stack in use */
-    void	    *ss_sp;		/* signal stack pointer */
-};
-
-#define MINSIGSTKSZ	8192
-#define SIGSTKSZ	(MINSIGSTKSZ + 40960)
-
-#include <aros/types/ucontext_t.h>
-#include <aros/types/siginfo_t.h>
-
-/* Tag for struct timespec */
-struct timespec;
-
-#endif /* !_POSIX_SOURCE */
 
 /* Flags for sigprocmask() */
 #define SIG_BLOCK	1
 #define SIG_UNBLOCK	2
 #define SIG_SETMASK	34
 
-#endif /* !_ANSI_SOURCE */
+/* TODO: determine proper values for MINSIGSTKSZ and SIGSTKSZ */
+#define MINSIGSTKSZ	8192
+#define SIGSTKSZ	(MINSIGSTKSZ + 40960)
 
-/* Function Prototypes */
+#include <aros/types/ucontext_t.h> /* Also defines mcontext_t */
+#include <aros/types/stack_t.h>
+#include <aros/types/siginfo_t.h>
+
+/* Non-standard signals
+   FIXME: remove ?
+*/
+#if !defined(_POSIX_SOURCE)
+// NOTIMPL #define SIGEMT		7	/* EMT instruction (emulator trap) */
+// NOTIMPL #define SIGWINCH	27	/* window size changes */
+/*  BSD defines SIGIO and SIGINFO, we should probably include these */
+// NOTIMPL #define SIGIO		30	/* IO event */
+// NOTIMPL #define SIGINFO		31	/* terminal info request */
+#endif
+
+
 __BEGIN_DECLS
 
-int	raise(int);
-__sighandler_t *signal(int, __sighandler_t *);
-
-#if !defined(_ANSI_SOURCE)
 int	kill(pid_t, int);
-
+/* NOTIMPL int	killpg(pid_t, int); */
+/* NOTIMPL void   psiginfo(const siginfo_t *, const char *); */
+/* NOTIMPL void   psignal(int, const char *); */
+/* NOTIMPL int    pthread_kill(pthread_t, int); */
+/* NOTIMPL int    pthread_sigmask(int, const sigset_t *restrict, sigset_t *restrict); */
 int	sigaction(int, const struct sigaction *, struct sigaction *);
 int	sigaddset(sigset_t *, int);
+/* NOTIMPL int	sigaltstack(const stack_t *, stack_t *); */
 int	sigdelset(sigset_t *, int);
 int	sigemptyset(sigset_t *);
 int	sigfillset(sigset_t *);
 /* NOTIMPL int	sighold(int); */
 /* NOTIMPL int	sigignore(int); */
+/* NOTIMPL int	siginterrupt(int); */
 int	sigismember(const sigset_t *, int);
+/* NOTIMPL int	sigpause(int); */
 int	sigpending(sigset_t *);
 int	sigprocmask(int, const sigset_t *, sigset_t *);
+/* NOTIMPL int	sigqueue(pid_t, int, const union sigval); */
 /* NOTIMPL int	sigrelse(int); */
 /* NOTIMPL int	sigset(__sighandler_t *, int); */
 int	sigsuspend(const sigset_t *);
-/* NOTIMPL int	sigwait(const sigset_t *, int *); */
-
-#if !defined(_POSIX_SOURCE)
-/* NOTIMPL int	killpg(pid_t, int); */
-/* NOTIMPL int	sigaltstack(const stack_t *, stack_t *); */
-/* NOTIMPL int	siginterrupt(int); */
-/* NOTIMPL int	sigpause(int); */
-#endif /* !_POSIX_SOURCE */
-
-/* NOTIMPL int	sigqueue(pid_t, int, const union sigval); */
 /* NOTIMPL int	sigtimedwait(const sigset_t *, siginfo_t *, const struct timespec *); */
+/* NOTIMPL int	sigwait(const sigset_t *, int *); */
 /* NOTIMPL int	sigwaitinfo(const sigset_t *, siginfo_t *); */
-
-#endif /* !_ANSI_SOURCE */
 
 __END_DECLS
 

@@ -2,12 +2,13 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function strerror().
+    C99 function strerror().
 */
 
 #include "__arosc_privdata.h"
 
 #include <proto/dos.h>
+#include <clib/macros.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -52,7 +53,16 @@ extern const char * _errstrings[];
 
 	return aroscbase->acb_fault_buf;
     }
+    else
+    {
+        char *s;
 
-    return (char *)_errstrings[n];
+        s = (char *)_errstrings[MIN(n, ELAST+1)];
+
+        if (s == NULL)
+            s = (char *)"Errno out of range";
+
+        return s;
+    }
 } /* strerror */
 

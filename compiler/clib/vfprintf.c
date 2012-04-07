@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Format a string and call a usercallback to output each char.
+    C99 function vfprintf()
 */
 /* Original source from libnix */
 

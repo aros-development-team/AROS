@@ -2,11 +2,13 @@
 #define _SYS_TIMES_H
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
+
+    Desc: POSIX.1-2008 header file sys/times.h
 */
 
-#include <sys/types.h>
+#include <aros/types/clock_t.h>
 
 struct tms 
 {
@@ -17,7 +19,9 @@ struct tms
 };
 
 __BEGIN_DECLS
+
 clock_t times(struct tms *buffer);
+
 __END_DECLS
 
 #endif /* _SYS_TIMES_H */

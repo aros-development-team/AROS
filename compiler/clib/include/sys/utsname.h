@@ -2,11 +2,10 @@
 #define _SYS_UTSNAME_H
 
 /*
-    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: POSIX header file sys/utsname.h
-    Lang: english
+    Desc: POSIX.1-2008 header file sys/utsname.h
 */
 
 #include <aros/system.h>
@@ -20,14 +19,11 @@ struct utsname
   char release[_UTS_LEN];
   char version[_UTS_LEN];
   char machine[_UTS_LEN]; /* hardware type */
-#ifdef _GNU_SOURCE
-    char domainname[_UTS_LEN];
-#endif
 };
 
 __BEGIN_DECLS
 
-int uname (struct utsname *name);
+int uname(struct utsname *name);
 
 __END_DECLS
 

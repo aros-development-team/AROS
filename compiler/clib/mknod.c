@@ -2,7 +2,7 @@
     Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    POSIX function mknod().
+    POSIX.1-2008 function mknod().
 */
 
 #include <sys/types.h>

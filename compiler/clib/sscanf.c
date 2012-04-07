@@ -2,7 +2,7 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function sscanf().
+    C99 function sscanf().
 */
 
 #include <stdarg.h>
