@@ -54,7 +54,7 @@
 
 struct IClass *wndcl, *scrcl, *menucl;
 
-STRPTR __detached_name = "Decoration";
+STRPTR __detached_name = "Decorator";
 
 #define MAGIC_PRIVATE_SKIN		0x0001
 #define MAGIC_PRIVATE_TITLECHILD 	0x0F0F
@@ -281,12 +281,8 @@ int main(void)
                                         dmsg = (struct DecoratorMessage *) msg;
                                         if (decor)
                                         {
-                                            struct TagItem TCTags[] = 
-                                            { 
-                                                {SDA_TitleChild, (IPTR)dmsg->dm_Object},
-                                                {TAG_DONE} 
-                                            };
-                                            DoMethod(decor->nd_Screen, OM_SET, TCTags);
+                                            bug("[decoration] got MAGIC_PRIVATE_TITLECHILD with 0x%p\n", dmsg->dm_Object);
+                                            SetAttrs(decor->nd_Screen, SDA_TitleChild, dmsg->dm_Object, TAG_DONE);
                                         }
                                         break;
                                     case MAGIC_PRIVATE_SKIN:

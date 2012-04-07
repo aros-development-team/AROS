@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <clib/alib_protos.h>
 
 #include <graphics/rpattr.h>
@@ -11,6 +14,8 @@
 #include <proto/graphics.h>
 #include <proto/exec.h>
 #include <string.h>
+
+#include <intuition/cghooks.h>
 
 #include "screendecorclass.h"
 #include "drawfuncs.h"
@@ -25,7 +30,7 @@ struct scrdecor_data
     /* These are original images loaded from disk */
     struct DecorImages * di;
     struct DecorConfig * dc;
-    struct ScreenTitleChild *tc;
+    Object *FirstChild;
 };
 
 static void DisposeScreenSkinning(struct scrdecor_data *data)
@@ -60,9 +65,11 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
     if (obj)
     {
         data = INST_DATA(cl, obj);
+
         struct DecorConfig * dc = (struct DecorConfig *) GetTagData(SDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
         struct DecorImages * di = (struct DecorImages *) GetTagData(SDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
-        data->tc = NULL;
+
+        data->FirstChild = NULL;
 
         if (!InitScreenSkinning(data, di, dc))
         {
@@ -118,9 +125,20 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
         switch (tag->ti_Tag)
         {
             case SDA_TitleChild: 
-                if ((tag->ti_Data)  && !(data->tc))
+                if (tag->ti_Data)
                 {
-                    data->tc = (struct ScreenTitleChild *)tag->ti_Data;
+                    if (!(data->FirstChild))
+                    {
+                        struct gpLayout childlayoutmsg;
+                        bug("[screendecor] setting titlechild  0x%p\n", tag->ti_Data);
+                        data->FirstChild = (Object *)tag->ti_Data;
+
+                        childlayoutmsg.MethodID = GM_LAYOUT;
+                        childlayoutmsg.gpl_GInfo = NULL;
+                        childlayoutmsg.gpl_Initial = NULL;
+
+                        DoMethodA(data->FirstChild, &childlayoutmsg);
+                    }
                 }
                 break;
             default:
@@ -186,8 +204,12 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     {
         scr_findtitlearea(scr, &left, &right);
         titlelen = strlen(scr->Title);
-        if (data->tc && (data->tc->ChildWidth > 2)) {
-            right = right - (LONG)(data->tc->ChildWidth + 1); 
+        if (data->FirstChild)
+        {
+            if (((struct Gadget *)(data->FirstChild))->Width > 2) {
+                bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width);
+                right = right - ((struct Gadget *)(data->FirstChild))->Width + 1; 
+            }
         }
         titlelen = TextFit(rp, scr->Title, titlelen, &te, NULL, 1, right - data->dc->STitleOffset, scr->BarHeight);
         if (titlelen == 0) hastitle = 0;
@@ -242,18 +264,28 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         }
     }
 
-    if (data->tc && (data->tc->ChildWidth > 0)) {
-        bounds.MinX = right;
-        bounds.MinY = 0 + CHILDPADDING;
-        bounds.MaxX = bounds.MinX + data->tc->ChildWidth - CHILDPADDING + 1;
-        bounds.MaxY = (bounds.MinY - CHILDPADDING) + (sd->img_stitlebar->h - (CHILDPADDING + 1));
-        if (data->tc->ChildRender) {
-            data->tc->ChildRender(rp, pens, &bounds);
-        }
-        else {
-            SetAPen(rp, pens[data->tc->ChildBgPen]);
-            RectFill(rp, bounds.MinX, bounds.MinY, bounds.MaxX, bounds.MaxY);
-        }
+    if (data->FirstChild && (((struct Gadget *)(data->FirstChild))->Width > 0)) {
+        struct GadgetInfo childgadinf;
+        struct gpRender childrendermsg =
+        {
+            GM_RENDER,
+            &childgadinf,
+            rp,
+            GREDRAW_REDRAW
+        };
+
+        childgadinf.gi_Screen = scr;
+        childgadinf.gi_RastPort = rp;
+        childgadinf.gi_Pens.DetailPen = pens[DETAILPEN];
+        childgadinf.gi_Pens.BlockPen = pens[BLOCKPEN];
+        childgadinf.gi_DrInfo = dri;
+        childgadinf.gi_Domain.Left = right;
+        childgadinf.gi_Domain.Top = 0 + CHILDPADDING;
+        childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
+        childgadinf.gi_Domain.Height = sd->img_stitlebar->h - (CHILDPADDING << 1);
+        bug("[screendecor] draw_screenbar: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", data->FirstChild, &childrendermsg, &childgadinf);
+        DoMethodA(data->FirstChild, &childrendermsg);
+
     }
     return TRUE;
 }

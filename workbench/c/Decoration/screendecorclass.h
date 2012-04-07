@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -11,14 +11,6 @@
 #include <intuition/classes.h>
 
 #include "newimage.h"
-
-struct ScreenTitleChild
-{
-    LONG ChildWidth;
-    UWORD ChildBgPen;
-    void (*ChildRender)(struct RastPort *rp, UWORD *pens, struct Rectangle *bounds);
-    void (*ChildInput)(ULONG x, ULONG y);
-};
 
 struct ScreenData
 {
