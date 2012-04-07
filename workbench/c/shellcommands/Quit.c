@@ -48,7 +48,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/rdargs.h>
-#include <dos_commanderrors.h>
+#include "dos_commanderrors.h"
 
 #include <aros/shcommands.h>
 

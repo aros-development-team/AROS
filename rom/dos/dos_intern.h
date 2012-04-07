@@ -230,8 +230,6 @@ struct markerarray
 
 #define MATCHFUNCS_NO_DUPLOCK 	0
 
-#include "dos_commanderrors.h"
-
 #define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
 

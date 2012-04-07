@@ -92,7 +92,7 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
-#include <dos_commanderrors.h>
+#include "dos_commanderrors.h"
 
 #define SH_GLOBAL_DOSBASE 1
 
