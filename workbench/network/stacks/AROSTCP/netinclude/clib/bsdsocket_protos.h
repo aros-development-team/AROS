@@ -7,6 +7,7 @@
 
 #include <aros/libcall.h>
 #include <sys/types.h>
+#include <sys/select.h>
 /* Stub macros for 'emulation' of some functions */
 #define select(nfds,rfds,wfds,efds,timeout) WaitSelect(nfds,rfds,wfds,efds,timeout,NULL)
 #define inet_ntoa(addr) Inet_NtoA(((struct in_addr)addr).s_addr)

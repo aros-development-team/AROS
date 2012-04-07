@@ -1853,7 +1853,9 @@ MapErrnoToIoErr(int error)
 		{ EBADF,			ERROR_INVALID_LOCK },			/* Bad file descriptor */
 		{ ENOMEM,			ERROR_NO_FREE_STORE },			/* Cannot allocate memory */
 		{ EACCES,			ERROR_OBJECT_IN_USE },			/* Permission denied */
+#ifdef ENOTBLK
 		{ ENOTBLK,			ERROR_OBJECT_WRONG_TYPE },		/* Block device required */
+#endif
 		{ EBUSY,			ERROR_OBJECT_IN_USE },			/* Device busy */
 		{ EEXIST,			ERROR_OBJECT_EXISTS },			/* File exists */
 		{ EXDEV,			ERROR_NOT_IMPLEMENTED },		/* Cross-device link */
@@ -1893,7 +1895,9 @@ MapErrnoToIoErr(int error)
 		{ EHOSTUNREACH,		ERROR_OBJECT_NOT_FOUND },		/* No route to host */
 		{ ENOTEMPTY,		ERROR_DIRECTORY_NOT_EMPTY },	/* Directory not empty */
 		{ EPROCLIM,			ERROR_TASK_TABLE_FULL },		/* Too many processes */
+#ifdef EUSERS
 		{ EUSERS,			ERROR_TASK_TABLE_FULL },		/* Too many users */
+#endif
 		{ EDQUOT,			ERROR_DISK_FULL },				/* Disc quota exceeded */
 		{ ENOLCK,			ERROR_NOT_IMPLEMENTED },		/* no locks available */
 		{ -1,				-1 }

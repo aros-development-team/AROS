@@ -8,7 +8,7 @@
 #include "__arosc_privdata.h"
 
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>

@@ -22,7 +22,7 @@
  * $Id$
  */
 
-#include <strings.h>
+#include <string.h>
 
 #include "identify_intern.h"
 

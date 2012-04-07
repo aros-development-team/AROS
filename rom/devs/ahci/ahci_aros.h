@@ -13,6 +13,7 @@
 #include <errno.h>
 
 #include <sys/types.h>
+#include <sys/select.h>
 
 #include <aros/debug.h>
 

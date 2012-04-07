@@ -23,7 +23,7 @@
 #include <machine/_limits.h>
 #else
 #include <aros/system.h>
-#include <sys/types.h>
+#include <inttypes.h>
 #include <limits.h>
 
 /* AROS doesn't define __INT_MAX, but INT_MAX will do just as well */
