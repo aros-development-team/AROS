@@ -55,13 +55,6 @@
     const ULONG *src = source;
     ULONG *dst = dest;
 
-#ifdef __mc68000 // FIXME: remove after CopyMemQuick() problems found and fixed
-    if ((size & 3) || ((ULONG)source & 3) || ((ULONG)dest & 3)) {
-	bug("Unaligned CopyMemQuick(%x,%x,%x)!\n", source, dest, size);
-	Alert(AO_ExecLib | AN_MemoryInsane); /* bogus but unique */
-    }
-#endif
-
     /* Calculate number of ULONGs to copy */
     size/=sizeof(ULONG);
 
