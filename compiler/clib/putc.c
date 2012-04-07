@@ -2,30 +2,21 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function putc().
+    C99 function putc().
 */
-
-#include <dos/dos.h>
-#include <dos/dosextens.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include "__fdesc.h"
-
-#define _STDIO_H_NOMACRO
-#include <stdio.h>
 
 /*****************************************************************************
 
-    NAME */
+    NAME
 #include <stdio.h>
 
 	int putc (
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	int    c,
 	FILE * stream)
 
-/*  FUNCTION
+    FUNCTION
 	Write one character to the specified stream.
 
     INPUTS
@@ -42,11 +33,9 @@
     BUGS
 
     SEE ALSO
+        fputc()
 
     INTERNALS
+        putc() is just an alias for fputc()
 
 ******************************************************************************/
-{
-    return fputc(c, stream);
-} /* putc */
-

@@ -2,29 +2,20 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    ANSI C function getc().
+    C99 function getc().
 */
-
-#include <dos/dos.h>
-#include <dos/dosextens.h>
-#include <proto/exec.h>
-#include <proto/dos.h>
-#include "__fdesc.h"
-
-#define _STDIO_H_NOMACRO
-#include <stdio.h>
 
 /*****************************************************************************
 
-    NAME */
+    NAME
 #include <stdio.h>
 
 	int getc (
 
-/*  SYNOPSIS */
+    SYNOPSIS
 	FILE * stream)
 
-/*  FUNCTION
+    FUNCTION
 	Read one character from the stream. If there is no character
 	available or an error occurred, the function returns EOF.
 
@@ -44,9 +35,6 @@
 	fgetc(), fputc(), putc()
 
     INTERNALS
+        getc() is just an alias for fgetc().
 
 ******************************************************************************/
-{
-    return fgetc(stream);
-} /* getc */
-
