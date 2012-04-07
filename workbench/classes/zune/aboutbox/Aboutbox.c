@@ -20,7 +20,7 @@
 #include "Aboutbox_mcc.h"
 #include "Aboutbox_private.h"
 
-#include <strings.h>
+#include <string.h>
 #include <stdio.h>
 
 #ifndef ICONDRAWA_Transparency

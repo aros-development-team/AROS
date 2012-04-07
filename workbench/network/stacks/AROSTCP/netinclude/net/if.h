@@ -65,6 +65,7 @@
 #ifndef _TIME_ /*  XXX fast fix for SNMP, going away soon */
 #include <sys/time.h>
 #endif
+#include <sys/cdefs.h>
 
 #ifndef KERNEL
 #ifdef __STDC__

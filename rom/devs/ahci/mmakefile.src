@@ -13,6 +13,9 @@ FILES = ahci_init \
         timer \
         subr_prf
 
+# Contains code from openbsd.org
+USER_CFLAGS := -D__BSD_VISIBLE
+
 %build_module mmake=kernel-ahci \
   modname=ahci modtype=device \
   files="$(FILES)" \
