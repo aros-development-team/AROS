@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := About FixFonts Format FTManager Themes SysMon WorkBook
+ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-system-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-system

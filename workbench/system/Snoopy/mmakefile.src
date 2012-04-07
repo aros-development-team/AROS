@@ -1,0 +1,18 @@
+# Copyright © 2006-2008, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES   := gui main patches setup locale
+EXEDIR  := $(AROS_SYSTEM)
+
+#MM- workbench-system : includes linklibs workbench-system-snoopy
+
+#MM  workbench-system-snoopy : \
+#MM  workbench-system-snoopy-catalogs
+
+%build_prog mmake=workbench-system-snoopy \
+    progname=Snoopy targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga"
+
+%common
