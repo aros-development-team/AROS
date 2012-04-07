@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME    "System/Utilities/Snoopy.catalog"
+#define CATALOG_NAME    "System/System/Snoopy.catalog"
 #define CATALOG_VERSION 2
 
 /*** Variables **************************************************************/
