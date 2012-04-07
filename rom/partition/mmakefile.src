@@ -44,7 +44,6 @@ FUNCS := \
 
 USER_CFLAGS := -DDEBUG=0 \
 	       -D__UTILITY_NOLIBBASE__
-USER_INCLUDES := -I$(SRCDIR)/rom/dos/include
 USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_module mmake=kernel-partition \

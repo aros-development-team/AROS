@@ -72,7 +72,7 @@ PURE_FILES := \
     SetKeyboard \
     WaitX
 
-USER_CFLAGS     := -I$(SRCDIR)/rom/dos -DADATE="\"$(shell date "+%d.%m.%Y")\""
+USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
