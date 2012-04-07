@@ -154,8 +154,7 @@ FUNCS := \
 	windowtofront \
 	zipwindow
 
-USER_INCLUDES := -I$(SRCDIR)/rom/dos \
-                 -D__DOS_NOLIBBASE__ \
+USER_INCLUDES := -D__DOS_NOLIBBASE__ \
                  -D__INTUITION_NOLIBBASE__ \
                  -D__LAYERS_NOLIBBASE__ \
                  -D__UTILITY_NOLIBBASE__ \
