@@ -12,7 +12,6 @@
 
 #include <aros/types/null.h>
 #include <aros/types/size_t.h>
-#include <sdgstd.h>
 
 __BEGIN_DECLS
 
@@ -86,6 +85,9 @@ void bcopy (const void * src, void * dst, size_t n);
 void bzero (void * src, size_t n);
 
 char *strsep(char **, const char *); /* BSD */
+
+char *strlwr(char *); /* Unix */
+char *strupr(char *); /* Unix */
 
 /* Macros */
 #define stricmp  strcasecmp
