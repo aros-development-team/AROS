@@ -1946,6 +1946,8 @@ else
 BD_DESC := %(description)
 endif
 
+BD_SRC := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
+
 ifeq (%(catalogs),)
 BD_LNGS := $(basename $(notdir $(call WILDCARD, %(srcdir)/*.ct)))
 else
@@ -1966,10 +1968,11 @@ GLOB_MKDIRS += $(BD_DIRS)
 	@$(FLEXCAT) $(BD_DESC).cd $< CATALOG=%(dir)/$*/%(subdir)/%(name).catalog || [ $$? -lt 10 ]
 
 ifneq (%(source),)
-%(source) : TMP_SOURCEDESCRIPTION := $(shell echo %(sourcedescription) | sed 's/^\(.\):\//\/\1\//')
-%(source) : $(BD_DESC).cd | $(dir %(source))
-	@$(ECHO) "Creating   %(name) catalog source file %(source)"
-	@$(FLEXCAT) $(BD_DESC).cd %(source)=$(TMP_SOURCEDESCRIPTION).sd
+%(source) : BD_DESC := $(BD_DESC)
+%(source) : BD_SRC := $(BD_SRC)
+%(source) : $(BD_DESC).cd $(BD_SRC).sd | $(dir %(source))
+	@$(ECHO) "Creating   %(name) catalog source file $@"
+	@$(FLEXCAT) $(BD_DESC).cd $@=$(BD_SRC).sd
 endif
 
 #MM
