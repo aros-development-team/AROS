@@ -107,8 +107,9 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
     OOP_Object      	    	*gc;
     Point   	    	    	src;
 
-    EnterFunc(bug("BltMaskBitMapRastPort(%d %d %d, %d, %d, %d)\n"
-    	, xSrc, ySrc, xDest, yDest, xSize, ySize));
+    EnterFunc(bug("BltMaskBitMapRastPort(%p (%d*%d), %d*%d, %p, %d*%d, %d*%d, %02x, %p)\n",
+        srcBitMap, srcBitMap->BytesPerRow, srcBitMap->Rows, xSrc, ySrc,
+        destRP, xDest, yDest, xSize, ySize, minterm, bltMask));
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);
