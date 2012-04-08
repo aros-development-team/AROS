@@ -34,7 +34,7 @@
 #define SetSysLogPort() \
     __SetSysLogPort_WB(MiamiBase)
 
-#define __QueryInterfaceTagList_WB(__MiamiBase) \
+#define __QueryInterfaceTagList_WB(__MiamiBase, __arg1, __arg2) \
         AROS_LC2NR(void, QueryInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
                   AROS_LCA(struct TagItem *, (__arg2), A1), \
