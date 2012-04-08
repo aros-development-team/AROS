@@ -18,6 +18,7 @@
 #include <proto/dos.h>
 #include <proto/alib.h>
 #include <proto/utility.h>
+#include <proto/partition.h>
 #include <utility/tagitem.h>
 #include <resources/filesysres.h>
 
@@ -60,6 +61,61 @@ THIS_PROGRAM_HANDLES_SYMBOLSETS
 DEFINESET(INITLIB)
 DEFINESET(EXPUNGELIB)
 
+static void init_fs(struct DosLibrary *DOSBase)
+{
+	struct FileSysResource *fsr;
+    struct Library *PartitionBase;
+
+    PartitionBase = OpenLibrary("partition.library", 3);
+    if (PartitionBase) {
+        LoadBootFileSystems();
+        CloseLibrary(PartitionBase);
+    }
+
+   	/*
+   	 * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
+   	 * if it's been loaded. Otherwise, use the first handler
+   	 * on the FileSystemResource list that has fse_PatchFlags
+   	 * set to mark it with a valid SegList
+   	 */
+   	if ((fsr = OpenResource("FileSystem.resource")))
+   	{
+        struct FileSysEntry *fse;
+   	    BPTR defseg = BNULL;
+   	    const ULONG DosMagic = 0x444f5301; /* DOS\001 */
+
+   	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
+   	    {
+   	        if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
+   	        {
+	            /* We prefer DOS\001 */
+                if (fse->fse_DosType == DosMagic)
+   	            {
+   	            	defseg = fse->fse_SegList;
+   	                break;
+   	            }
+    	        /* This will remember the first defined seglist */
+   	    	    if (!defseg)
+   	    	        defseg = fse->fse_SegList;
+   	    	}
+   	    }
+        DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
+        /* Add all that have both Handler and SegList defined to the Resident list */
+        ForeachNode(&fsr->fsr_FileSysEntries, fse)
+        {
+   	    	if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
+   	            (fse->fse_PatchFlags & FSEF_SEGLIST) &&
+   	            (fse->fse_Handler != BNULL) &&
+   	            (fse->fse_SegList != BNULL))
+   	        {
+   	            D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
+   	                fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
+   	            AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
+            }
+        }
+    }
+}
+
 /*
  * Init routine is intentionally written by hands in order to be reentrant.
  * Reentrancy is needed when there are already some devices mounted, but
@@ -83,7 +139,6 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
     {
 	IPTR *taskarray;
 	struct DosInfo *dosinfo;
-	struct FileSysResource *fsr;
 
 	D(bug("[DosInit] Creating dos.library...\n"));
 
@@ -177,52 +232,6 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
     	    return NULL;
     	}
 
-    	/*
-     	 * Set dl_Root->rn_FileHandlerSegment to the AFS handler,
-     	 * if it's been loaded. Otherwise, use the first handler
-     	 * on the FileSystemResource list that has fse_PatchFlags
-     	 * set to mark it with a valid SegList
-     	 */
-    	if ((fsr = OpenResource("FileSystem.resource")))
-    	{
-    	    struct FileSysEntry *fse;
-    	    BPTR defseg = BNULL;
-    	    const ULONG DosMagic = 0x444f5301; /* DOS\001 */
-
-    	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
-    	    {
-    	    	if ((fse->fse_PatchFlags & FSEF_SEGLIST) && fse->fse_SegList)
-    	    	{
-		    /* We prefer DOS\001 */
-    	            if (fse->fse_DosType == DosMagic)
-    	            {
-    	            	defseg = fse->fse_SegList;
-    	            	break;
-    	            }
-
-    	            /* This will remember the first defined seglist */
-    	    	    if (!defseg)
-    	    	    	defseg = fse->fse_SegList;
-    	    	}
-    	    }
-
-    	    DOSBase->dl_Root->rn_FileHandlerSegment = defseg;
-
-    	    /* Add all that have both Handler and SegList defined to the Resident list */
-	    ForeachNode(&fsr->fsr_FileSysEntries, fse)
-    	    {
-    	    	if ((fse->fse_PatchFlags & FSEF_HANDLER) &&
-    	            (fse->fse_PatchFlags & FSEF_SEGLIST) &&
-    	            (fse->fse_Handler != BNULL) &&
-    	            (fse->fse_SegList != BNULL))
-    	        {
-    	            D(bug("[DosInit] Adding \"%b\" (%p) at %p to the resident list\n",
-    	                  fse->fse_Handler, BADDR(fse->fse_Handler), BADDR(fse->fse_SegList)));
-    	            AddSegment(AROS_BSTR_ADDR(fse->fse_Handler), fse->fse_SegList, CMD_SYSTEM);
-              	}
-            }
-        }
-
 	/* Call platform-specific init code (if any) */
     	if (!set_call_libfuncs(SETNAME(INITLIB), 1, 1, DOSBase))
     	{
@@ -235,6 +244,8 @@ AROS_UFH3S(struct DosLibrary *, DosInit,
 
 	/* Initialization finished */
 	AddLibrary(&DOSBase->dl_lib);
+
+    init_fs(DOSBase);
    }
 
    /* Try to boot */

@@ -72,11 +72,7 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
     LONG bootable;
     ULONG pttype = PHPTT_UNKNOWN;
     BOOL appended, changed;
-
-    /*
-     * TODO: Try to locate RDB filesystem for this volume and make it bootable.
-     * Use FindFileSystem() and AddBootFileSystem() for this.
-     */
+    struct Node *fsnode;
 
     D(bug("[Boot] AddPartitionVolume\n"));
     GetPartitionTableAttrsTags(table, PTT_TYPE, &pttype, TAG_DONE);
@@ -222,6 +218,12 @@ static VOID AddPartitionVolume(struct ExpansionBase *ExpansionBase, struct Libra
                 changed = TRUE;
             }
         }
+    }
+
+    fsnode = FindFileSystem(table, FST_ID, pp[4 + DE_DOSTYPE], TAG_DONE);
+    if (fsnode) {
+        D(bug("[Boot] Found on-disk filesystem 0x%08x\n", pp[4 + DE_DOSTYPE]));
+        AddBootFileSystem(fsnode);
     }
 
     devnode = MakeDosNode(pp);

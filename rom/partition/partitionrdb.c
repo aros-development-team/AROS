@@ -151,80 +151,17 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
     fakefile.size       = LSEGDATASIZE;
     fakefile.fsn        = node;
 
-    return InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
+    /* InternalLoadSeg((BPTR)&fakefile, BNULL, FunctionArray, NULL);
+     * with A6 = NULL. Check internalloadseg.c for more information
+     */
+
+    return AROS_CALL4(BPTR, __AROS_GETVECADDR(DOSBase, 126),
+        AROS_LCA(BPTR, (BPTR)&fakefile, D0),
+        AROS_LCA(BPTR, BNULL, A0),
+        AROS_LCA(LONG_FUNC*, FunctionArray, A1),
+        AROS_LCA(LONG*, NULL, A2),
+        struct DOSLibrary*, NULL);
 }
-
-/*
- * Insert RDB LSEG filesystem to FileSystem.resource
- * FIXME: this is an obsolete hack. Use new filesystem API
- * in Boot Strap instead.
- */
-
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-
-/* We can't use InternalLoadSeg() because DOS isn't initialized
- * at this point. To allow this to be built as a relocatable
- * library, we will use the loadseg linklib.
- */
-
-#include <loadseg.h>
-
-void register_elf(BPTR file, BPTR hunks, struct elfheader *eh, struct sheader *sh, struct DosLibrary *DOSBase)
-{
-    /* Do-nothing function to make the linker happy */
-}
-
-static void AddFS(struct RDBData *data)
-{
-    struct FileSysResource *fsr;
-    struct FileSysNode *node;
-    void (* FunctionArray[4])();
-    struct FileSysReader fakefile;
-
-    FunctionArray[0] = (void(*))ReadFunc;
-    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33); /* AllocMem() */
-    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35); /* FreeMem() */
-    FunctionArray[3] = (void(*))SeekFunc;
-
-    fsr = OpenResource("FileSystem.resource");
-    if (!fsr)
-    	return;
-
-    ForeachNode(&data->fsheaderlist, node) {
-    	struct FileSysEntry *fsrnode;
-    	ULONG dostype = node->fhb.fhb_DosType;
-    	ULONG version = node->fhb.fhb_Version;
-    	BOOL newerinstalled = FALSE;
-    	ULONG size = LSEGDATASIZE;
-
-    	ForeachNode(&fsr->fsr_FileSysEntries, fsrnode) {
-    	    if (fsrnode->fse_DosType == dostype && fsrnode->fse_Version >= version)
-    	    	newerinstalled = TRUE;
-    	}
-    	if (newerinstalled)
-    	    continue;
-    	fsrnode = AllocVec(sizeof(struct FileSysEntry), MEMF_PUBLIC | MEMF_CLEAR);
-    	if (!fsrnode)
-    	    break;
-    	fakefile.count = 0;
-    	fakefile.offset = 0;
-    	fakefile.size = size;
-    	fakefile.fsn = node;
-	if (node->filesystem[0].lsb_LoadData[0] == 0x000003f3) {
-	    APTR DOSBase = NULL;
-	    BPTR seg = LoadSegment((BPTR)&fakefile, BNULL, (SIPTR*)FunctionArray, NULL);
-	    if (seg) {
-    	    	D(bug("RDB fs %08x %d.%d '%s' seg=%08x added\n",
-    	    	    dostype, version >> 16, version & 0xffff, &node->fhb.fhb_FileSysName, seg));
-    	    	CopyMem(&node->fhb.fhb_DosType, &fsrnode->fse_DosType, sizeof(struct FileSysEntry) - sizeof(struct Node));
-    	    	fsrnode->fse_SegList = seg;
-    	    	AddHead(&fsr->fsr_FileSysEntries, &fsrnode->fse_Node);
-    	    }
-    	}
-    }
-}
-
-#endif
 
 static ULONG calcChkSum(ULONG *ptr, ULONG size)
 {
@@ -581,10 +518,7 @@ UBYTE i;
                 else
                     break;
             }
-   	    FreeVec(buffer);
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT) && defined(__mc68000)
-   	    AddFS(data);
-#endif
+            FreeVec(buffer);
             return 0;
         }
         FreeMem(data, sizeof(struct RDBData));
@@ -1042,7 +976,7 @@ struct Node *PartitionRDBFindFileSystem(struct Library *PartitionBase, struct Pa
     {
 	if (idTag)
 	{
-	    if (fn->fhb.fhb_ID != idTag->ti_Data)
+	    if (fn->fhb.fhb_DosType != idTag->ti_Data)
 	    	continue;
 	}
 
