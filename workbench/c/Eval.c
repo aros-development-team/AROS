@@ -340,7 +340,7 @@ STRPTR fixExpression(STRPTR val1, STRPTR op, STRPTR *vals)
 
 /* For linking with the evalParser.y output
  */
-void *malloc(size_t size)
+void *malloc(YYSIZE_T size)
 {
     return AllocVec(size, MEMF_ANY);
 }
