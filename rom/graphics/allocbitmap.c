@@ -396,7 +396,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		    OOP_GetAttr(bm_obj, aHidd_BitMap_PixFmt, (IPTR *)&pf);
 		    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
 
-		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld (%ld px-aligned)\n", width, height, bmdepth, align));
+		    D(bug("[AllocBitMap] Resulting HIDD bitmap: %ldx%ldx%ld (%ld px-aligned)\n", sizex, sizey, depth, align));
 
     		    /* Store object and supplementary data in plane array */
     		    HIDD_BM_OBJ(nbm)        = bm_obj;
@@ -420,7 +420,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 #else
     		nbm->Depth	 = depth;
 #endif
-    		nbm->Flags	 = flags | BMF_SPECIALFMT;
+    		/* TODO: Allow interleaved Amiga chipset bitmaps. */
+    		nbm->Flags	 = (flags & ~BMF_INTERLEAVED) | BMF_SPECIALFMT;
 
     		/* If this is a displayable bitmap, create a color table for it */
     		if (bm_obj && (friend_bitmap ||
@@ -501,7 +502,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 	} /* if (nbm) */
 	
     }
-    else /* Otherwise init a plain Amiga bitmap */
+    else /* Otherwise init a plain Amiga bitmap. TODO: BMF_INTERLEAVED support */
     {
 	nbm = AllocMem (sizeof(struct BitMap) + ((depth > 8) ? (depth - 8) * sizeof(PLANEPTR) : 0),
 	    	    	MEMF_ANY | MEMF_CLEAR);
@@ -541,6 +542,7 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 		}
 	    }
 	}
+	ReturnPtr("AllocBitMap", struct BitMap *, nbm);
     }
 
     return nbm;
