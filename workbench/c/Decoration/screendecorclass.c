@@ -135,7 +135,7 @@ static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
 
                         childlayoutmsg.MethodID = GM_LAYOUT;
                         childlayoutmsg.gpl_GInfo = NULL;
-                        childlayoutmsg.gpl_Initial = NULL;
+                        childlayoutmsg.gpl_Initial = 0;
 
                         DoMethodA(data->FirstChild, &childlayoutmsg);
                     }
@@ -182,7 +182,6 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
     LONG                    left, right = 0, titlelen = 0;
     BOOL                    hastitle = TRUE;
     BOOL		    beeping = scr->Flags & BEEPING;
-    struct Rectangle bounds;
 
     if (beeping) {
         SetAPen(rp, pens[BARDETAILPEN]);
