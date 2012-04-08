@@ -1026,7 +1026,6 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 {
    UWORD slot, packet_size;
    struct DevBase *base;
-   BOOL is_orphan;
    ULONG rx_status, *desc, dma_size;
    UBYTE *buffer;
 
@@ -1041,7 +1040,6 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
    {
       if((rx_status & RH_DESC_RXSTATUSF_OK) != 0)
       {
-         is_orphan = TRUE;
          packet_size = ((rx_status & RH_DESC_RXSTATUSF_LENGTH)
             >> RH_DESC_RXSTATUSB_LENGTH) - ETH_CRCSIZE;
          buffer = unit->rx_buffers[slot];
