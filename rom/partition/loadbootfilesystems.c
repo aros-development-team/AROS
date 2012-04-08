@@ -46,9 +46,11 @@
     AROS_LIBFUNC_INIT
 
     struct BootFileSystem *bfs, *bfs2;
-    struct DosLibrary *DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 36);
+    struct DosLibrary *DOSBase;
     ULONG lasterr = 0;
 
+    PBASE(PartitionBase)->pb_DOSBase = OpenLibrary("dos.library", 36);
+    DOSBase = (struct DosLibrary *)PBASE(PartitionBase)->pb_DOSBase;
     /* We should really have dos.library online now */
     D(bug("[LoadBootPartitions] DOSBase 0x%p\n", DOSBase));
     if (!DOSBase)
