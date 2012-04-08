@@ -207,7 +207,7 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
  
-    bitsperpixel = multi * 8;
+    bitsperpixel = multi > 2 ? 32 : 16;
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
     data->width = width;
     width = (width + bitsperpixel - 1) & ~(bitsperpixel - 1);
@@ -390,7 +390,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    *msg->storage = data->disp;
 	    return;
 	case aoHidd_BitMap_Align:
-	    *msg->storage = data->bytesperpixel == 0 ? 8 : data->bytesperpixel * 8;
+	    *msg->storage = data->bytesperpixel < 4 ? 16 : 32;
 	    return;
 	case aoHidd_BitMap_IsLinearMem:
 	    *msg->storage = TRUE;
