@@ -2,66 +2,52 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id: $
 
-    Desc: Optimized CopyMemQuick by Matt Hey.
+    Desc: Optimized CopyMem by Matt Hey.
     Lang: english
 */
 
 	#include "aros/m68k/asm.h"
 
-#define UNALIGNEDWARNING 1
-
 	.text
 	.balign 4
 
-	.globl	AROS_SLIB_ENTRY(CopyMemQuick,Exec,105)
-	.type	AROS_SLIB_ENTRY(CopyMemQuick,Exec,105),@function
-AROS_SLIB_ENTRY(CopyMemQuick,Exec,105):
+	.globl	AROS_SLIB_ENTRY(CopyMem,Exec,104)
+	.type	AROS_SLIB_ENTRY(CopyMem,Exec,104),@function
+AROS_SLIB_ENTRY(CopyMem,Exec,104):
 
-#if UNALIGNEDWARNING
-	move.w	%d0,%d1
-	and.w	#3,%d1
-	beq.s	0f
-	movem.l %d0-%d1/%a0-%a1,-(%sp)
-	move.l	%d0,-(%sp)
-	move.l	%a1,-(%sp)
-	move.l	%a0,-(%sp)
-	pea format
-	jsr kprintf
-	lea	16(%sp),%sp
-	movem.l (%sp)+,%d0-%d1/%a0-%a1
-0:
-#endif
-
-	subq.l #4,%d0		// size is 4.b less than actual
-	bls.b ism4or0		// if d0<=0
-prem4:
-	cmp.l #256-4,%d0	// min size for bigmove loop, less than 128 is dangerous!
-	bcc.b bigmov
-m4loop:
+	subq.l #4,%d0			// size is 4 less than actual!
+	bls.b smallcopy		// if size<=4 bytes
+	move.l %a1,%d1
+	btst #0,%d1
+	beq.b daligned2
+	move.b (%a0)+,(%a1)+
+	addq.l #1,%d1
+	subq.l #1,%d0
+daligned2:					// dest should be WORD aligned now
+	btst #1,%d1
+	beq.b daligned4
+	move.w (%a0)+,(%a1)+
+	subq.l #2,%d0
+	bcs.b last2				// if size<0
+daligned4:					// dest should be LONG aligned now
+	cmp.l #256-4,%d0		// min size for move16, less than 252 is dangerous!
+	bcc.b bigmove
+move4loop:
 	move.l (%a0)+,(%a1)+
-	move.l (%a0)+,(%a1)+
-	subq.w #8,%d0			// 8 less bytes to MOVE
-	bhi.b m4loop			// if d0>0
-ism4or0:
-	beq.b lastm4
-	rts
-lastm4:
+	subq.w #4,%d0
+	bhi.b move4loop		// if size>0
+smallcopy:
+	bne.b last2
+move4:
 	move.l (%a0),(%a1)
 	rts
 
 	.balign 4
-lastloop:
-	move.l (%a0)+,(%a1)+
-	subq.w #4,%d0
-	bhi.b lastloop			// if d0>=0
-	rts
-
-	.balign 4
-bigmov:
+bigmove:
 	moveq #128-4,%d1
 	sub.l %d1,%d0				// size is now 128 less than actual
 	addq.l #4,%d1			// d1=128=bytes to move per loop
-bigmov4:
+bigmove4:
 	move.l (%a0)+,(%a1)+
 	move.l (%a0)+,(%a1)+
 	move.l (%a0)+,(%a1)+
@@ -95,12 +81,23 @@ bigmov4:
 	move.l (%a0)+,(%a1)+
 	move.l (%a0)+,(%a1)+
 	sub.l	%d1,%d0				// d0=d0-128
-	bcc.b	bigmov4			// if d0>=0
+	bcc.b	bigmove4			// if d0>=0
 	add.l %d1,%d0				// d0=d0+128, back to positive
-	bne.b lastloop
+	subq.l #4,%d0
+	bcs.b last2
+lloop:
+	move.l (%a0)+,(%a1)+
+	subq.w #4,%d0
+	bcc.b lloop
+last2:
+	btst #1,%d0
+	beq.b last1
+	move.w (%a0)+,(%a1)+
+last1:
+	btst #0,%d0
+	bne.b move1
 	rts
-
-#if UNALIGNEDWARNING
-format:
-	.string "CopyMemQuick(%p,%p,%08x) unaligned size\n"
-#endif
+	.balign 4
+move1:
+	move.b (%a0),(%a1)
+	rts
