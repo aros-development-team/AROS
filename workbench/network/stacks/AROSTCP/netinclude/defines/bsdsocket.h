@@ -472,199 +472,336 @@
     __GetSocketEvents_WB(SocketBase, (arg1))
 
 #if defined(__CONFIG_ROADSHOW__)
+
 /* RoadShow Extensions .. */
 
-/*
+#define __bpf_open_WB(__SocketBase, __arg1) \
         AROS_LC1(long, bpf_open, \
                   AROS_LCA(long, (__arg1), D0), \
-        struct Library *, (__SocketBase), 57, BSDSocket)
+        struct Library *, (__SocketBase), 61, BSDSocket)
 
+#define bpf_open(arg1) \
+    __bpf_open_WB(SocketBase, (arg1))
+
+#define __bpf_close_WB(__SocketBase, __arg1) \
         AROS_LC1(long, bpf_close, \
                   AROS_LCA(long, (__arg1), D0), \
-        struct Library *, (__SocketBase), 58, BSDSocket)
+        struct Library *, (__SocketBase), 62, BSDSocket)
 
+#define bpf_close(arg1) \
+    __bpf_close_WB(SocketBase, (arg1))
+
+#define __bpf_read_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, bpf_read, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(void *, (__arg2), A0), \
                   AROS_LCA(long, (__arg3), D1), \
-        struct Library *, (__SocketBase), 59, BSDSocket)
+        struct Library *, (__SocketBase), 63, BSDSocket)
 
+#define bpf_read(arg1, arg2, arg3) \
+    __bpf_read_WB(SocketBase, arg1, arg2, arg3)
+
+#define __bpf_write_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, bpf_write, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(void *, (__arg2), A0), \
                   AROS_LCA(long, (__arg3), D1), \
-        struct Library *, (__SocketBase), 60, BSDSocket)
+        struct Library *, (__SocketBase), 64, BSDSocket)
 
+#define bpf_write(arg1, arg2, arg3) \
+    __bpf_write_WB(SocketBase, arg1, arg2, arg3)
+
+#define __bpf_set_notify_mask_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(long, bpf_set_notify_mask, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(unsigned long, (__arg2), D1), \
-        struct Library *, (__SocketBase), 61, BSDSocket)
+        struct Library *, (__SocketBase), 65, BSDSocket)
 
+#define bpf_set_notify_mask(arg1, arg2) \
+    __bpf_set_notify_mask_WB(SocketBase, arg1, arg2)
+
+#define __bpf_set_interrupt_mask_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(long, bpf_set_interrupt_mask, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(unsigned long, (__arg2), D1), \
-        struct Library *, (__SocketBase), 62, BSDSocket)
+        struct Library *, (__SocketBase), 66, BSDSocket)
 
+#define bpf_set_interrupt_mask(arg1, arg2) \
+    __bpf_set_interrupt_mask_WB(SocketBase, arg1, arg2)
+
+#define __bpf_ioctl_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, bpf_ioctl, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(unsigned long, (__arg2), D1), \
                   AROS_LCA(char *, (__arg3), A0), \
-        struct Library *, (__SocketBase), 63, BSDSocket)
-
-        AROS_LC1(long, bpf_data_waiting, \
-                  AROS_LCA(long, (__arg1), D0), \
-        struct Library *, (__SocketBase), 64, BSDSocket)
-
-        AROS_LC1(long, AddRouteTagList, \
-                  AROS_LCA(struct TagItem *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 65, BSDSocket)
-
-        AROS_LC1(long, DeleteRouteTagList, \
-                  AROS_LCA(struct TagItem *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 66, BSDSocket)
-
-        AROS_LC1(long, ChangeRouteTagList, \
-                  AROS_LCA(struct TagItem *, (__arg1), A0), \
         struct Library *, (__SocketBase), 67, BSDSocket)
 
-        AROS_LC1NR(void, FreeRouteInfo, \
-                  AROS_LCA(struct rt_msghdr *, (__arg1), A0), \
+#define bpf_ioctl(arg1, arg2, arg3) \
+    __bpf_ioctl_WB(SocketBase, arg1, arg2, arg3)
+
+#define __bpf_data_waiting_WB(__SocketBase, __arg1) \
+        AROS_LC1(long, bpf_data_waiting, \
+                  AROS_LCA(long, (__arg1), D0), \
         struct Library *, (__SocketBase), 68, BSDSocket)
 
+#define bpf_data_waiting(arg1) \
+    __bpf_data_waiting_WB(SocketBase, arg1)
+
+#define __AddRouteTagList_WB(__SocketBase, __arg1) \
+        AROS_LC1(long, AddRouteTagList, \
+                  AROS_LCA(struct TagItem *, (__arg1), A0), \
+        struct Library *, (__SocketBase), 69, BSDSocket)
+
+#define AddRouteTagList(arg1) \
+    __AddRouteTagList_WB(SocketBase, arg1)
+
+#define __DeleteRouteTagList_WB(__SocketBase, __arg1) \
+        AROS_LC1(long, DeleteRouteTagList, \
+                  AROS_LCA(struct TagItem *, (__arg1), A0), \
+        struct Library *, (__SocketBase), 70, BSDSocket)
+
+#define DeleteRouteTagList(arg1) \
+    __DeleteRouteTagList_WB(SocketBase, arg1)
+
+#define __ChangeRouteTagList_WB(__SocketBase, __arg1) \
+        AROS_LC1(long, ChangeRouteTagList, \
+                  AROS_LCA(struct TagItem *, (__arg1), A0), \
+        struct Library *, (__SocketBase), 71, BSDSocket)
+
+#define ChangeRouteTagList(arg1) \
+    __ChangeRouteTagList_WB(SocketBase, arg1)
+
+#define __FreeRouteInfo_WB(__SocketBase, __arg1) \
+        AROS_LC1NR(void, FreeRouteInfo, \
+                  AROS_LCA(struct rt_msghdr *, (__arg1), A0), \
+        struct Library *, (__SocketBase), 72, BSDSocket)
+
+#define FreeRouteInfo(arg1) \
+    __FreeRouteInfo_WB(SocketBase, arg1)
+
+#define __GetRouteInfo_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(struct rt_msghdr *, GetRouteInfo, \
                   AROS_LCA(LONG, (__arg1), D0), \
                   AROS_LCA(LONG, (__arg2), D1), \
-        struct Library *, (__SocketBase), 69, BSDSocket)
+        struct Library *, (__SocketBase), 73, BSDSocket)
 
+#define GetRouteInfo(arg1, arg2) \
+    __GetRouteInfo_WB(SocketBase, arg1, arg2)
+
+#define __AddInterfaceTagList_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(long, AddInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
                   AROS_LCA(STRPTR, (__arg2), A1), \
                   AROS_LCA(long, (__arg3), D0), \
                   AROS_LCA(struct TagItem *, (__arg4), A2), \
-        struct Library *, (__SocketBase), 70, BSDSocket)
+        struct Library *, (__SocketBase), 74, BSDSocket)
 
+#define AddInterfaceTagList(arg1, arg2, arg3, arg4) \
+    __AddInterfaceTagList_WB(SocketBase, arg1, arg2, arg3, arg4)
+
+#define __ConfigureInterfaceTagList_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(long, ConfigureInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
                   AROS_LCA(struct TagItem *, (__arg2), A1), \
-        struct Library *, (__SocketBase), 71, BSDSocket)
+        struct Library *, (__SocketBase), 75, BSDSocket)
 
+#define ConfigureInterfaceTagList(arg1, arg2) \
+    __ConfigureInterfaceTagList_WB(SocketBase, arg1, arg2)
+
+#define __ReleaseInterfaceList_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, ReleaseInterfaceList, \
                   AROS_LCA(struct List *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 72, BSDSocket)
+        struct Library *, (__SocketBase), 76, BSDSocket)
 
+#define ReleaseInterfaceList(arg1) \
+    __ReleaseInterfaceList_WB(SocketBase, arg1)
+
+#define __ObtainInterfaceList_WB(__SocketBase) \
         AROS_LC0(struct List *, ObtainInterfaceList, \
-        struct Library *, (__SocketBase), 73, BSDSocket)
-*/
+        struct Library *, (__SocketBase), 77, BSDSocket)
+
+#define ObtainInterfaceList() \
+    __ObtainInterfaceList_WB(SocketBase)
+
 #define __QueryInterfaceTagList_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(long, QueryInterfaceTagList, \
                   AROS_LCA(STRPTR, (__arg1), A0), \
                   AROS_LCA(struct TagItem *, (__arg2), A1), \
-        struct Library *, (__SocketBase), 74, BSDSocket)
+        struct Library *, (__SocketBase), 78, BSDSocket)
 
 #define QueryInterfaceTagList(arg1, arg2) \
     __QueryInterfaceTagList_WB(SocketBase, (arg1), (arg2))
-/*
+
+#define __CreateAddrAllocMessageA_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4, __arg5) \
         AROS_LC5(LONG, CreateAddrAllocMessageA, \
                   AROS_LCA(LONG, (__arg1), D0), \
                   AROS_LCA(LONG, (__arg2), D1), \
                   AROS_LCA(STRPTR, (__arg3), A0), \
                   AROS_LCA(struct AddressAllocationMessage *, (__arg4), A1), \
                   AROS_LCA(struct TagItem *, (__arg5), A2), \
-        struct Library *, (__SocketBase), 75, BSDSocket)
+        struct Library *, (__SocketBase), 79, BSDSocket)
 
+#define CreateAddrAllocMessageA(arg1, arg2, arg3, arg4, arg5) \
+    __CreateAddrAllocMessageA(SocketBase, arg1, arg2, arg3, arg4, arg5)
+
+#define __DeleteAddrAllocMessage_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, DeleteAddrAllocMessage, \
                   AROS_LCA(struct AddressAllocationMessage *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 76, BSDSocket)
+        struct Library *, (__SocketBase), 80, BSDSocket)
 
+#define DeleteAddrAllocMessage(arg1) \
+    __DeleteAddrAllocMessage_WB(SocketBase, arg1)
+
+#define __BeginInterfaceConfig_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, BeginInterfaceConfig, \
                   AROS_LCA(struct AddressAllocationMessage *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 77, BSDSocket)
+        struct Library *, (__SocketBase), 81, BSDSocket)
 
+#define BeginInterfaceConfig(arg1) \
+    __BeginInterfaceConfig_WB(SocketBase, arg1)
+
+#define __AbortInterfaceConfig_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, AbortInterfaceConfig, \
                   AROS_LCA(struct AddressAllocationMessage *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 78, BSDSocket)
+        struct Library *, (__SocketBase), 82, BSDSocket)
 
+#define AbortInterfaceConfig(arg1) \
+    __AbortInterfaceConfig_WB(SocketBase, arg1)
+
+#define __AddNetMonitorHookTagList_WB(__SocketBase, __arg1, __arg2, __arg3) \
         AROS_LC3(long, AddNetMonitorHookTagList, \
                   AROS_LCA(long, (__arg1), D0), \
                   AROS_LCA(struct Hook *, (__arg2), A0), \
                   AROS_LCA(struct TagItem *, (__arg3), A1), \
-        struct Library *, (__SocketBase), 79, BSDSocket)
+        struct Library *, (__SocketBase), 83, BSDSocket)
 
+#define AddNetMonitorHookTagList(arg1, arg2, arg3) \
+    __AddNetMonitorHookTagList_WB(SocketBase, arg1, arg2, arg3)
+
+#define __RemoveNetMonitorHook_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, RemoveNetMonitorHook, \
                   AROS_LCA(struct Hook *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 80, BSDSocket)
+        struct Library *, (__SocketBase), 84, BSDSocket)
 
+#define RemoveNetMonitorHook(arg1) \
+    __RemoveNetMonitorHook_WB(SocketBase, arg1)
+
+#define __GetNetworkStatistics_WB(__SocketBase, __arg1, __arg2, __arg3, __arg4) \
         AROS_LC4(LONG, GetNetworkStatistics, \
                   AROS_LCA(LONG, (__arg1), D0), \
                   AROS_LCA(LONG, (__arg2), D1), \
                   AROS_LCA(APTR, (__arg3), A0), \
                   AROS_LCA(LONG, (__arg4), D2), \
-        struct Library *, (__SocketBase), 81, BSDSocket)
-
-        AROS_LC1(LONG, AddDomainNameServer, \
-                  AROS_LCA(STRPTR, (__arg1), A0), \
-        struct Library *, (__SocketBase), 82, BSDSocket)
-
-        AROS_LC1(LONG, RemoveDomainNameServer, \
-                  AROS_LCA(STRPTR, (__arg1), A0), \
-        struct Library *, (__SocketBase), 83, BSDSocket)
-
-        AROS_LC1NR(void, ReleaseDomainNameServerList, \
-                  AROS_LCA(struct List *, (__arg1), A0), \
-        struct Library *, (__SocketBase), 84, BSDSocket)
-
-        AROS_LC0(struct List *, ObtainDomainNameServerList, \
         struct Library *, (__SocketBase), 85, BSDSocket)
 
-        AROS_LC1NR(void, setnetent, \
-                  AROS_LCA(int, (__arg1), D0), \
+#define GetNetworkStatistics(arg1, arg2, arg3, arg4) \
+    __GetNetworkStatistics_WB(SocketBase, arg1, arg2, arg3, arg4)
+
+#define __AddDomainNameServer_WB(__SocketBase, __arg1) \
+        AROS_LC1(LONG, AddDomainNameServer, \
+                  AROS_LCA(STRPTR, (__arg1), A0), \
         struct Library *, (__SocketBase), 86, BSDSocket)
 
-        AROS_LC0NR(void, endnetent, \
+#define AddDomainNameServer(arg1) \
+    __AddDomainNameServer_WB(SocketBase, arg1)
+
+#define __RemoveDomainNameServer_WB(__SocketBase, __arg1) \
+        AROS_LC1(LONG, RemoveDomainNameServer, \
+                  AROS_LCA(STRPTR, (__arg1), A0), \
         struct Library *, (__SocketBase), 87, BSDSocket)
 
-        AROS_LC0(struct netent *, getnetent, \
+#define RemoveDomainNameServer(arg1) \
+    __RemoveDomainNameServer_WB(SocketBase, arg1)
+
+#define __ReleaseDomainNameServerList_WB(__SocketBase, __arg1) \
+        AROS_LC1NR(void, ReleaseDomainNameServerList, \
+                  AROS_LCA(struct List *, (__arg1), A0), \
         struct Library *, (__SocketBase), 88, BSDSocket)
 
+#define ReleaseDomainNameServerList(arg1) \
+    __ReleaseDomainNameServerList_WB(SocketBase, arg1)
+
+#define __ObtainDomainNameServerList_WB(__SocketBase) \
+    AROS_LC0(struct List *, ObtainDomainNameServerList, \
+        struct Library *, (__SocketBase), 89, BSDSocket)
+
+#define ObtainDomainNameServerList() \
+    __ObtainDomainNameServerList_WB(SocketBase)
+
+#define __setnetent_WB(__SocketBase, __arg1) \
+        AROS_LC1NR(void, setnetent, \
+                  AROS_LCA(int, (__arg1), D0), \
+        struct Library *, (__SocketBase), 90, BSDSocket)
+
+#define setnetent(arg1) \
+    __setnetent_WB(SocketBase, arg1)
+
+#define __endnetent_WB(__SocketBase) \
+        AROS_LC0NR(void, endnetent, \
+        struct Library *, (__SocketBase), 91, BSDSocket)
+
+#define endnetent() \
+    __endnetent_WB(SocketBase)
+
+#define __getnetent_WB(__SocketBase) \
+        AROS_LC0(struct netent *, getnetent, \
+        struct Library *, (__SocketBase), 92, BSDSocket)
+
+#define getnetent() \
+    __getnetent_WB(SocketBase)
+
+#define __setprotoent_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, setprotoent, \
                   AROS_LCA(int, (__arg1), D0), \
-        struct Library *, (__SocketBase), 89, BSDSocket)
-*/
+        struct Library *, (__SocketBase), 93, BSDSocket)
+
+#define setprotoent(__arg1) \
+    __setprotoent__WB(SocketBase, __arg1)
 
 #define __endprotoent_WB(__SocketBase) \
         AROS_LC0NR(void, endprotoent, \
-        struct Library *, (__SocketBase), 90, BSDSocket)
+        struct Library *, (__SocketBase), 94, BSDSocket)
 
 #define endprotoent() \
     __endprotoent_WB(SocketBase)
 
 #define __getprotoent_WB(__SocketBase) \
         AROS_LC0(struct protoent *, getprotoent, \
-        struct Library *, (__SocketBase), 91, BSDSocket)
+        struct Library *, (__SocketBase), 95, BSDSocket)
 
 #define getprotoent() \
     __getprotoent_WB(SocketBase)
 
-/*
+#define __setservent_WB(__SocketBase, __arg1) \
         AROS_LC1NR(void, setservent, \
                   AROS_LCA(int, (__arg1), D0), \
-        struct Library *, (__SocketBase), 92, BSDSocket)
+        struct Library *, (__SocketBase), 96, BSDSocket)
 
+#define setservent(arg1) \
+    __setservent_WB(SocketBase, arg1)
+
+#define __endservent_WB(__SocketBase) \
         AROS_LC0NR(void, endservent, \
-        struct Library *, (__SocketBase), 93, BSDSocket)
+        struct Library *, (__SocketBase), 97, BSDSocket)
 
+#define endservent() \
+    __endservent_WB(SocketBase)
+
+#define __getservent_WB(__SocketBase) \
         AROS_LC0(struct servent *, getservent, \
-        struct Library *, (__SocketBase), 94, BSDSocket)
+        struct Library *, (__SocketBase), 98, BSDSocket)
 
-*/
+#define getservent() \
+    __getservent_WB(SocketBase)
 
 #define __inet_aton_WB(__SocketBase, __arg1, __arg2) \
         AROS_LC2(LONG, inet_aton, \
                   AROS_LCA(CONST_STRPTR,(__arg1),A0), \
                   AROS_LCA(struct in_addr *,(__arg2),A1), \
-        struct Library *, (__SocketBase), 95, BSDSocket)
+        struct Library *, (__SocketBase), 99, BSDSocket)
 
 #define inet_aton(arg1, arg2) \
     __inet_aton_WB(SocketBase, (arg1), (arg2))
+
 #endif /* __CONFIG_ROADSHOW__ */
 #endif /* DEFINES_BSDSOCKET_PROTOS_H*/
