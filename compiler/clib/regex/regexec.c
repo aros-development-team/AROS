@@ -91,6 +91,7 @@ __RCSID("$NetBSD: regexec.c,v 1.20 2007/02/09 23:44:18 junyoung Exp $");
  * representations for state sets.
  */
 #include <sys/types.h>
+#include <inttypes.h>
 
 #include <assert.h>
 #include <ctype.h>
