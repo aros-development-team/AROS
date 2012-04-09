@@ -67,7 +67,7 @@ diff -ruN gcc-4.6.2/fixincludes/configure.ac gcc-4.6.2.aros/fixincludes/configur
 diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 --- gcc-4.6.2/gcc/config/arm/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/arm/aros.h	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,79 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -97,8 +97,9 @@ diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 +  do 						\
 +    {						\
 +      TARGET_BPABI_CPP_BUILTINS();		\
-+	builtin_define_std ("unix");		\
 +	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
 +	builtin_assert ("system=posix");	\
 +	if (flag_pic)				\
 +	  {					\
@@ -149,7 +150,7 @@ diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 --- gcc-4.6.2/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/aros.h	2012-04-04 22:29:20.938567559 +0200
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,97 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -191,8 +192,9 @@ diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 +#define TARGET_OS_CPP_BUILTINS()		\
 +  do						\
 +    {						\
-+	builtin_define_std ("unix");            \
 +	builtin_define_std ("AROS");            \
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
 +	builtin_define ("__ELF__");		\
 +	builtin_assert ("system=posix");        \
 +    }						\
@@ -466,7 +468,7 @@ diff -ruN gcc-4.6.2/gcc/config/m68k/m68k.md gcc-4.6.2.aros/gcc/config/m68k/m68k.
 diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/aros.h
 --- gcc-4.6.2/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/rs6000/aros.h	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,164 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -501,8 +503,9 @@ diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/ar
 +#define TARGET_OS_CPP_BUILTINS()		\
 +  do						\
 +    {						\
-+	builtin_define_std ("unix");		\
 +	builtin_define_std ("AROS");		\
++       builtin_define ("AMIGA");               \
++       builtin_define ("_AMIGA");              \
 +	builtin_define ("__powerpc__");		\
 +	builtin_define ("__ELF__");		\
 +	builtin_assert ("system=posix");	\
