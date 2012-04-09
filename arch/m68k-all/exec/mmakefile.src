@@ -11,7 +11,7 @@ AFILES=newstackswap stackswap \
        cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
        setsr cachecontrol_ \
        obtainquickvector \
-       copymemquick
+       copymem copymemquick
 
 USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
