@@ -67,7 +67,7 @@ diff -ruN gcc-4.6.2/fixincludes/configure.ac gcc-4.6.2.aros/fixincludes/configur
 diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 --- gcc-4.6.2/gcc/config/arm/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/arm/aros.h	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,78 @@
 +/* Configuration file for ARM AROS EABI targets.
 +   Copyright (C) 2004, 2005, 2006, 2007, 2010
 +   Free Software Foundation, Inc.
@@ -107,18 +107,6 @@ diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 +	  }					\
 +    }						\
 +  while (false)
-+
-+#undef SIZE_TYPE
-+#define SIZE_TYPE "unsigned int"
-+
-+#undef PTRDIFF_TYPE
-+#define PTRDIFF_TYPE "int"
-+
-+#undef WCHAR_TYPE
-+#define WCHAR_TYPE "long int"
-+
-+#undef WCHAR_TYPE_SIZE
-+#define WCHAR_TYPE_SIZE BITS_PER_WORD
 +
 +/* We default to a softfp ABI so that we are compatible
 +   with the Linux EABI (as used by the linker).  */
@@ -161,7 +149,7 @@ diff -ruN gcc-4.6.2/gcc/config/arm/aros.h gcc-4.6.2.aros/gcc/config/arm/aros.h
 diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 --- gcc-4.6.2/gcc/config/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/aros.h	2012-04-04 22:29:20.938567559 +0200
-@@ -0,0 +1,92 @@
+@@ -0,0 +1,96 @@
 +/* Definitions for AROS
 +   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000 Free Software Foundation, Inc.
 +   Contributed by Fabio Alemagna
@@ -187,13 +175,17 @@ diff -ruN gcc-4.6.2/gcc/config/aros.h gcc-4.6.2.aros/gcc/config/aros.h
 +/* Don't assume anything about the header files.  */
 +#define NO_IMPLICIT_EXTERN_C
 +
-+/* AROS uses ctype from libc.a. I am not sure how complete it is.
-+   For now, we play safe. It may change later.  */
++#undef SIZE_TYPE
++#define SIZE_TYPE "long unsigned int"
 +
-+#if 0
-+#undef MULTIBYTE_CHARS
-+#define MULTIBYTE_CHARS 1
-+#endif
++#undef WCHAR_TYPE
++#define WCHAR_TYPE "char"
++
++#undef WCHAR_TYPE_SIZE
++#define WCHAR_TYPE_SIZE 8
++
++#undef PTRDIFF_TYPE
++#define PTRDIFF_TYPE "long int"
 +
 +#undef TARGET_OS_CPP_BUILTINS
 +#define TARGET_OS_CPP_BUILTINS()		\
@@ -304,7 +296,7 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros
 diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
 --- gcc-4.6.2/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/i386/aros.h	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,108 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -361,18 +353,6 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
 +
 +#undef SUBTARGET_FRAME_POINTER_REQUIRED
 +#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
-+
-+#undef SIZE_TYPE
-+#define SIZE_TYPE "unsigned int"
-+
-+#undef PTRDIFF_TYPE
-+#define PTRDIFF_TYPE "int"
-+
-+#undef WCHAR_TYPE
-+#define WCHAR_TYPE "long int"
-+
-+#undef WCHAR_TYPE_SIZE
-+#define WCHAR_TYPE_SIZE BITS_PER_WORD
 +
 +#undef CPP_SPEC
 +#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"
@@ -486,7 +466,7 @@ diff -ruN gcc-4.6.2/gcc/config/m68k/m68k.md gcc-4.6.2.aros/gcc/config/m68k/m68k.
 diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/aros.h
 --- gcc-4.6.2/gcc/config/rs6000/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/rs6000/aros.h	2012-04-04 22:19:45.045567698 +0200
-@@ -0,0 +1,175 @@
+@@ -0,0 +1,163 @@
 +/* Definitions for Powerpc running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -592,18 +572,6 @@ diff -ruN gcc-4.6.2/gcc/config/rs6000/aros.h gcc-4.6.2.aros/gcc/config/rs6000/ar
 +#define SUBTARGET_FRAME_POINTER_REQUIRED crtl->profile
 +seems to be handled by rs6000/rs6000.h
 +*/
-+
-+#undef SIZE_TYPE
-+#define SIZE_TYPE "unsigned int"
-+
-+#undef PTRDIFF_TYPE
-+#define PTRDIFF_TYPE "int"
-+
-+#undef WCHAR_TYPE
-+#define WCHAR_TYPE "long int"
-+
-+#undef WCHAR_TYPE_SIZE
-+#define WCHAR_TYPE_SIZE BITS_PER_WORD
 +
 +#undef CPP_SPEC
 +#define CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT}"

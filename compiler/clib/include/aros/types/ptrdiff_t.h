@@ -8,8 +8,6 @@
     ptrdiff_t
 */
 
-#include <aros/cpu.h>
-
-typedef signed AROS_INTPTR_TYPE ptrdiff_t;
+typedef long int ptrdiff_t;
 
 #endif /* _AROS_TYPES_PTRDIFF_T_H */

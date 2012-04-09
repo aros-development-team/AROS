@@ -8,8 +8,6 @@
     size_t
 */
 
-#include <aros/cpu.h>
-
-typedef unsigned AROS_INTPTR_TYPE size_t;
+typedef long unsigned int size_t;
 
 #endif /* _AROS_TYPES_SIZE_T_H */
