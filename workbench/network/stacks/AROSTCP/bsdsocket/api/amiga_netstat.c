@@ -150,12 +150,14 @@ D(bug("[AROSTCP] amiga_netstat.c: __QueryInterfaceTagList()\n"));
 	}
 }
 
+#if defined(__CONFIG_ROADSHOW__)
 AROS_LH2(long, QueryInterfaceTagList,
    AROS_LHA(STRPTR, name, A0),
    AROS_LHA(struct TagItem *, tags, A1),
-   struct SocketBase *, libPtr, 74, UL)
+   struct SocketBase *, libPtr, 78, UL)
 {
 	AROS_LIBFUNC_INIT
+
 #if defined(__AROS__)
 D(bug("[AROSTCP.RS] amiga_netstat.c: QueryInterfaceTagList()\n"));
 #endif
@@ -164,3 +166,4 @@ D(bug("[AROSTCP.RS] amiga_netstat.c: QueryInterfaceTagList()\n"));
 
 	AROS_LIBFUNC_EXIT
 }
+#endif
