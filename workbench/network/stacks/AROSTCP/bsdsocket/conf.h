@@ -312,7 +312,7 @@ GLOBAL struct RxsLib *RexxSysBase;
 
 /* Global define to enable Debug output for AROS */
 #if defined(__AROS__)
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif
 
