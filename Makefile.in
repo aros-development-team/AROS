@@ -200,9 +200,9 @@ query : tools
 # Calling standard main targets, but is usable as a shortcut for MetaMake
 # if it was not installed globally
 #
-# The '%-quick:' targets are special - we don't want to wait around
+# The '%-quick' and '%-clean' targets are special - we don't want to wait around
 # for building crosstools if we just want to build one subtarget
-%-quick: 
+%-quick %-clean: 
 	@+$(CALL) $(MMAKE) $(MMAKE_OPTIONS) AROS.$@
 
 .DEFAULT :
