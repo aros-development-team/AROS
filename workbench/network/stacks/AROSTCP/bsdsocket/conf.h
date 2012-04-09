@@ -57,13 +57,13 @@
  * For m68k, AmigaOS4 and AROS we build Roadshow-compatible version
  */
 #ifdef __mc68000
-#define COMPAT_ROADSHOW
+#define __CONFIG_ROADSHOW__
 #endif
 #ifdef __AMIGAOS4__
-#define COMPAT_ROADSHOW
+#define __CONFIG_ROADSHOW__
 #endif
 #if defined(__AROS__)
-#define COMPAT_ROADSHOW
+#define __CONFIG_ROADSHOW__
 #endif
 /* 
  * Include first configuration information
@@ -312,7 +312,7 @@ GLOBAL struct RxsLib *RexxSysBase;
 
 /* Global define to enable Debug output for AROS */
 #if defined(__AROS__)
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 #endif
 
@@ -320,4 +320,4 @@ GLOBAL struct RxsLib *RexxSysBase;
 /* Defines used by the stack to Allocate sufficient memory space for _ALL_ allocated blocks */
 /*       see kern_malloc.c                                                                  */
 #define __MALLOC_POOLSIZE            (128*1024)               // original Value was (16x1024)bytes
-#define __MALLOC_POOLSIZE_THRESHOLD  (8*1024)
+#define __MALLOC_POOLSIZE_THRESHOLD  (16*1024)
