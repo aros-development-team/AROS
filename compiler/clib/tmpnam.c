@@ -80,7 +80,7 @@ extern char *_mktemp(char *);
 
 ******************************************************************************/
 {
-	static u_long tmpcount;
+	static unsigned int tmpcount;
 	static char buf[L_tmpnam];
 
 	if (s == NULL)

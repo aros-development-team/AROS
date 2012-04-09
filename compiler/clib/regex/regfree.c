@@ -84,6 +84,7 @@ __RCSID("$NetBSD: regfree.c,v 1.15 2007/02/09 23:44:18 junyoung Exp $");
 #endif
 
 #include <sys/types.h>
+#include <inttypes.h>
 
 #include <assert.h>
 #include <stdio.h>

@@ -11,9 +11,6 @@ USER_CFLAGS :=  -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/$(CURDIR)/include \
 	-DADATE="\"$(shell date '+%d.%m.%Y')\"" \
 	-fno-builtin
 
-# FIXME: temporary fix for local/xxx.c
-USER_CFLAGS += -D__BSD_VISIBLE=1
-
 TESTDIR := $(BINDIR)/Tests
 
 # Lists of files
