@@ -264,175 +264,175 @@ AROS_LP1(LONG, GetSocketEvents,
 #if defined(__CONFIG_ROADSHOW__)
 AROS_LP1(long, bpf_open,
          AROS_LPA(long, channel, D0),
-         LIBBASETYPEPTR, SocketBase, 57, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 61, BSDSocket
 );
 AROS_LP1(long, bpf_close,
          AROS_LPA(long, handle, D0),
-         LIBBASETYPEPTR, SocketBase, 58, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 62, BSDSocket
 );
 AROS_LP3(long, bpf_read,
          AROS_LPA(long, handle, D0),
          AROS_LPA(void *, buffer, A0),
          AROS_LPA(long, len, D1),
-         LIBBASETYPEPTR, SocketBase, 59, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 63, BSDSocket
 );
 AROS_LP3(long, bpf_write,
          AROS_LPA(long, handle, D0),
          AROS_LPA(void *, buffer, A0),
          AROS_LPA(long, len, D1),
-         LIBBASETYPEPTR, SocketBase, 60, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 64, BSDSocket
 );
 AROS_LP2(long, bpf_set_notify_mask,
          AROS_LPA(long, handle, D0),
          AROS_LPA(unsigned long, mask, D1),
-         LIBBASETYPEPTR, SocketBase, 61, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 65, BSDSocket
 );
 AROS_LP2(long, bpf_set_interrupt_mask,
          AROS_LPA(long, handle, D0),
          AROS_LPA(unsigned long, mask, D1),
-         LIBBASETYPEPTR, SocketBase, 62, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 66, BSDSocket
 );
 AROS_LP3(long, bpf_ioctl,
          AROS_LPA(long, handle, D0),
          AROS_LPA(unsigned long, request, D1),
          AROS_LPA(char *, argp, A0),
-         LIBBASETYPEPTR, SocketBase, 63, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 67, BSDSocket
 );
 AROS_LP1(long, bpf_data_waiting,
          AROS_LPA(long, handle, D0),
-         LIBBASETYPEPTR, SocketBase, 64, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 68, BSDSocket
 );
 AROS_LP1(long, AddRouteTagList,
          AROS_LPA(struct TagItem *, tags, A0),
-         LIBBASETYPEPTR, SocketBase, 65, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 69, BSDSocket
 );
 AROS_LP1(long, DeleteRouteTagList,
          AROS_LPA(struct TagItem *, tags, A0),
-         LIBBASETYPEPTR, SocketBase, 66, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 70, BSDSocket
 );
 AROS_LP1(long, ChangeRouteTagList,
          AROS_LPA(struct TagItem *, tags, A0),
-         LIBBASETYPEPTR, SocketBase, 67, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 71, BSDSocket
 );
-AROS_LP1I(void, FreeRouteInfo,
+AROS_LP1(void, FreeRouteInfo,
          AROS_LPA(struct rt_msghdr *, table, A0),
-         LIBBASETYPEPTR, SocketBase, 68, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 72, BSDSocket
 );
 AROS_LP2(struct rt_msghdr *, GetRouteInfo,
          AROS_LPA(LONG, address_family, D0),
          AROS_LPA(LONG, flags, D1),
-         LIBBASETYPEPTR, SocketBase, 69, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 73, BSDSocket
 );
 AROS_LP4(long, AddInterfaceTagList,
          AROS_LPA(STRPTR, name, A0),
          AROS_LPA(STRPTR, device, A1),
          AROS_LPA(long, unit, D0),
          AROS_LPA(struct TagItem *, tags, A2),
-         LIBBASETYPEPTR, SocketBase, 70, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 74, BSDSocket
 );
 AROS_LP2(long, ConfigureInterfaceTagList,
          AROS_LPA(STRPTR, name, A0),
          AROS_LPA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, SocketBase, 71, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 75, BSDSocket
 );
-AROS_LP1I(void, ReleaseInterfaceList,
+AROS_LP1(void, ReleaseInterfaceList,
          AROS_LPA(struct List *, list, A0),
-         LIBBASETYPEPTR, SocketBase, 72, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 76, BSDSocket
 );
-AROS_LP0I(struct List *, ObtainInterfaceList,
-         LIBBASETYPEPTR, SocketBase, 73, BSDSocket
+AROS_LP0(struct List *, ObtainInterfaceList,
+         LIBBASETYPEPTR, SocketBase, 77, BSDSocket
 );
 AROS_LP2(long, QueryInterfaceTagList,
          AROS_LPA(STRPTR, name, A0),
          AROS_LPA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, SocketBase, 74, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 78, BSDSocket
 );
-AROS_LP5I(LONG, CreateAddrAllocMessageA,
+AROS_LP5(LONG, CreateAddrAllocMessageA,
          AROS_LPA(LONG, version, D0),
          AROS_LPA(LONG, protocol, D1),
          AROS_LPA(STRPTR, interface_name, A0),
          AROS_LPA(struct AddressAllocationMessage *, result_ptr, A1),
          AROS_LPA(struct TagItem *, tags, A2),
-         LIBBASETYPEPTR, SocketBase, 75, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 79, BSDSocket
 );
-AROS_LP1I(void, DeleteAddrAllocMessage,
+AROS_LP1(void, DeleteAddrAllocMessage,
          AROS_LPA(struct AddressAllocationMessage *, message, A0),
-         LIBBASETYPEPTR, SocketBase, 76, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 80, BSDSocket
 );
-AROS_LP1I(void, BeginInterfaceConfig,
+AROS_LP1(void, BeginInterfaceConfig,
          AROS_LPA(struct AddressAllocationMessage *, message, A0),
-         LIBBASETYPEPTR, SocketBase, 77, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 81, BSDSocket
 );
-AROS_LP1I(void, AbortInterfaceConfig,
+AROS_LP1(void, AbortInterfaceConfig,
          AROS_LPA(struct AddressAllocationMessage *, message, A0),
-         LIBBASETYPEPTR, SocketBase, 78, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 82, BSDSocket
 );
 AROS_LP3(long, AddNetMonitorHookTagList,
          AROS_LPA(long, type, D0),
          AROS_LPA(struct Hook *, hook, A0),
          AROS_LPA(struct TagItem *, tags, A1),
-         LIBBASETYPEPTR, SocketBase, 79, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 83, BSDSocket
 );
-AROS_LP1I(void, RemoveNetMonitorHook,
+AROS_LP1(void, RemoveNetMonitorHook,
          AROS_LPA(struct Hook *, hook, A0),
-         LIBBASETYPEPTR, SocketBase, 80, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 84, BSDSocket
 );
 AROS_LP4(LONG, GetNetworkStatistics,
          AROS_LPA(LONG, type, D0),
          AROS_LPA(LONG, version, D1),
          AROS_LPA(APTR, destination, A0),
          AROS_LPA(LONG, size, D2),
-         LIBBASETYPEPTR, SocketBase, 81, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 85, BSDSocket
 );
 AROS_LP1(LONG, AddDomainNameServer,
          AROS_LPA(STRPTR, address, A0),
-         LIBBASETYPEPTR, SocketBase, 82, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 86, BSDSocket
 );
 AROS_LP1(LONG, RemoveDomainNameServer,
          AROS_LPA(STRPTR, address, A0),
-         LIBBASETYPEPTR, SocketBase, 83, BSDSocket
-);
-AROS_LP1I(void, ReleaseDomainNameServerList,
-         AROS_LPA(struct List *, list, A0),
-         LIBBASETYPEPTR, SocketBase, 84, BSDSocket
-);
-AROS_LP0I(struct List *, ObtainDomainNameServerList,
-         LIBBASETYPEPTR, SocketBase, 85, BSDSocket
-);
-AROS_LP1I(void, setnetent,
-         AROS_LPA(int, stayopen, D0),
-         LIBBASETYPEPTR, SocketBase, 86, BSDSocket
-);
-AROS_LP0I(void, endnetent,
          LIBBASETYPEPTR, SocketBase, 87, BSDSocket
 );
-AROS_LP0I(struct netent *, getnetent,
+AROS_LP1(void, ReleaseDomainNameServerList,
+         AROS_LPA(struct List *, list, A0),
          LIBBASETYPEPTR, SocketBase, 88, BSDSocket
 );
-AROS_LP1I(void, setprotoent,
-         AROS_LPA(int, stayopen, D0),
+AROS_LP0(struct List *, ObtainDomainNameServerList,
          LIBBASETYPEPTR, SocketBase, 89, BSDSocket
 );
-AROS_LP0(void, endprotoent,
+AROS_LP1(void, setnetent,
+         AROS_LPA(int, stayopen, D0),
          LIBBASETYPEPTR, SocketBase, 90, BSDSocket
 );
-AROS_LP0(struct protoent *, getprotoent,
+AROS_LP0(void, endnetent,
          LIBBASETYPEPTR, SocketBase, 91, BSDSocket
 );
-AROS_LP1I(void, setservent,
-         AROS_LPA(int, stayopen, D0),
+AROS_LP0(struct netent *, getnetent,
          LIBBASETYPEPTR, SocketBase, 92, BSDSocket
 );
-AROS_LP0I(void, endservent,
+AROS_LP1(void, setprotoent,
+         AROS_LPA(int, stayopen, D0),
          LIBBASETYPEPTR, SocketBase, 93, BSDSocket
 );
-AROS_LP0I(struct servent *, getservent,
+AROS_LP0(void, endprotoent,
          LIBBASETYPEPTR, SocketBase, 94, BSDSocket
+);
+AROS_LP0(struct protoent *, getprotoent,
+         LIBBASETYPEPTR, SocketBase, 95, BSDSocket
+);
+AROS_LP1(void, setservent,
+         AROS_LPA(int, stayopen, D0),
+         LIBBASETYPEPTR, SocketBase, 96, BSDSocket
+);
+AROS_LP0(void, endservent,
+         LIBBASETYPEPTR, SocketBase, 97, BSDSocket
+);
+AROS_LP0(struct servent *, getservent,
+         LIBBASETYPEPTR, SocketBase, 98, BSDSocket
 );
 AROS_LP2(LONG, inet_aton,
          AROS_LPA(STRPTR, cp, A0),
          AROS_LPA(struct in_addr *, addr, A1),
-         LIBBASETYPEPTR, SocketBase, 95, BSDSocket
+         LIBBASETYPEPTR, SocketBase, 99, BSDSocket
 );
 #endif /* __CONFIG_ROADSHOW__ */
 #endif /* CLIB_BSDSOCKET_PROTOS_H */
