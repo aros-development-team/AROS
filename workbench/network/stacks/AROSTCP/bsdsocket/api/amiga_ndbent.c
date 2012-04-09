@@ -115,8 +115,9 @@ struct protoent *__getprotoent(struct SocketBase *libPtr)
 		return NULL;
 }
 
+#if defined(__CONFIG_ROADSHOW__)
 AROS_LH0(struct protoent *,  getprotoent,
-                struct SocketBase *, libPtr, 91, UL)
+                struct SocketBase *, libPtr, 95, UL)
 {
 	AROS_LIBFUNC_INIT
 
@@ -124,6 +125,7 @@ AROS_LH0(struct protoent *,  getprotoent,
 
 	AROS_LIBFUNC_EXIT
 }
+#endif
 
 AROS_LH0(struct protoent *, Miami_getprotoent,
          struct MiamiBase *, MiamiBase, 14, Miami
@@ -147,8 +149,9 @@ void __endprotoent(struct SocketBase *libPtr)
 	return;
 }
 
+#if defined(__CONFIG_ROADSHOW__)
 AROS_LH0(void, endprotoent,
-                 struct SocketBase *, libPtr, 90, UL)
+                 struct SocketBase *, libPtr, 94, UL)
 {
 	AROS_LIBFUNC_INIT
 
@@ -156,6 +159,7 @@ AROS_LH0(void, endprotoent,
 
 	AROS_LIBFUNC_EXIT
 }
+#endif
 
 AROS_LH0(void, Miami_endprotoent,
          struct MiamiBase *, MiamiBase, 15, Miami

@@ -206,10 +206,11 @@ LONG __inet_aton(CONST_STRPTR cp,  struct in_addr * addr)
 	return (1);
 }
 
+#if defined(__CONFIG_ROADSHOW__)
 AROS_LH2(LONG, inet_aton,
    AROS_LHA(STRPTR, cp, A0),
    AROS_LHA(struct in_addr *, addr, A1),
-   struct SocketBase *, libPtr, 95, UL)
+   struct SocketBase *, libPtr, 99, UL)
 {
 	AROS_LIBFUNC_INIT
 
@@ -218,6 +219,7 @@ AROS_LH2(LONG, inet_aton,
 	AROS_LIBFUNC_EXIT
 
 }
+#endif
 
 /*
  * Ascii internet address interpretation routine.
