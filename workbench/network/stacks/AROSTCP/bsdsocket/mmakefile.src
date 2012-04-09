@@ -162,7 +162,7 @@ USER_INCLUDES := -isystem $(SRCDIR)/$(CURDIR)/../netinclude -isystem $(SRCDIR)/$
 USER_CFLAGS := \
 	-Wno-uninitialized -Wno-parentheses \
 	-Wno-implicit-function-declaration -DAMITCP -DKERNEL \
-	-DDIRECTED_BROADCAST -D__BSD_VISIBLE=1
+	-DDIRECTED_BROADCAST -D__BSD_VISIBLE=1 -D__CONFIG_ROADSHOW__
 
 #MM- workbench-network-stacks-arostcp : workbench-network-stacks-arostcp-bsdsocket
 %build_prog mmake=workbench-network-stacks-arostcp-bsdsocket \
