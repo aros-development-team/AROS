@@ -22,6 +22,12 @@
 
 #include <conf.h>
 
+#include <proto/dos.h>
+#include <proto/bsdsocket.h>
+
+#include <dos/dos.h>
+#include <dos/rdargs.h>
+
 #include <sys/param.h>
 #include <sys/systm.h>
 #include <sys/syslog.h>
@@ -41,12 +47,6 @@
 #include <net/route.h>
 #include <netinet/in.h>
 #include <protos/net/if_protos.h>
-
-#include <dos/dos.h>
-#include <dos/rdargs.h>
-
-#include <proto/dos.h>
-#include <proto/bsdsocket.h>
 
 extern struct ifnet *iface_make(struct ssconfig *ifc);
 
