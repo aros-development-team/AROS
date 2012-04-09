@@ -116,6 +116,8 @@ static void mmusetup(BOOL quiet)
     Enable();
 }
 
+extern void patches(BOOL);
+
 int main (void)
 {
     struct RDArgs *rda;
@@ -124,7 +126,14 @@ int main (void)
     rda = ReadArgs(TEMPLATE, args, NULL);
     if (rda) {
         BOOL x68040 = FALSE, x68060 = FALSE;
+        BOOL ox68040 = FALSE, ox68060 = FALSE;
 
+        Forbid();
+        if (FindName(&SysBase->LibList, "68040.library"))
+            ox68040 = TRUE;
+        if (FindName(&SysBase->LibList, "68060.library"))
+            ox68060 = TRUE;
+        Permit();
         CloseLibrary(OpenLibrary("680x0.library", 0));
         Forbid();
         if (FindName(&SysBase->LibList, "68040.library"))
@@ -132,6 +141,9 @@ int main (void)
         if (FindName(&SysBase->LibList, "68060.library"))
             x68060 = TRUE;
         Permit();
+
+        if ((!ox68040 && !ox68060) && (x68040 || x68060))
+            patches(args[ARG_QUIET]);
  
         if (args[ARG_NOCACHE] == FALSE) {
             if (!(SysBase->AttnFlags & (AFF_68040 | AFF_68060)) || x68040 || x68060)

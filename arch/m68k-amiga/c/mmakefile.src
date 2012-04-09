@@ -71,10 +71,12 @@ CFILES	      := mmudump
     files=$(CFILES) targetdir=$(AROS_C) \
     usestartup=no uselibs="arossupport amiga rom"
 
-CFILES	      := SetPatch
+CFILES		:= SetPatch patches
+AFILES		:= copymem_040 copymem_060
+USER_INCLUDES := -isystem
 
 %build_prog mmake=workbench-c-m68k-setpatch progname=SetPatch \
-    files=$(CFILES) targetdir=$(AROS_C) \
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C) \
     uselibs="arossupport amiga rom"
 
 %common
