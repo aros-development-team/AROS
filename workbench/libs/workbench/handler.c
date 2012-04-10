@@ -304,7 +304,8 @@ static VOID __HandleLaunch_WB
     cd = CurrentDir(startup->sm_ArgList[0].wa_Lock);
     
     /* Load the program from disk */
-    startup->sm_Segment = LoadSeg(name);
+    if (startup->sm_Segment == BNULL)
+        startup->sm_Segment = LoadSeg(name);
     if (startup->sm_Segment == BNULL) goto error;
     
     /* Duplicate lock for NP_HomeDir */
