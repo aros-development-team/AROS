@@ -188,7 +188,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         RectFill(rp, 0, 0, scr->Width, sd->img_stitlebar->h);
     } else {
         if (sd->img_stitlebar->ok)
-            WriteVerticalScalledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
+            WriteVerticalScaledTiledImageHorizontal(rp, sd->img_stitlebar, 0, 0,
                 sd->img_stitlebar->w, 0, 0, data->dc->SBarHeight, scr->Width, scr->BarHeight + 1);
     }
     if (sd->img_sbarlogo->ok)
@@ -322,7 +322,7 @@ static IPTR scrdecor_draw_sysimage(Class *cl, Object *obj, struct sdpDrawSysImag
     {
         if (&sd->img_sdepth)
         {
-            DrawScalledStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top, width, height);
+            DrawScaledStatefulGadgetImageToRP(rp, sd->img_sdepth, state, left, top, width, height);
         }
         else return DoSuperMethodA(cl, obj, (Msg) msg);
     }
@@ -382,7 +382,7 @@ static IPTR scrdecor_initscreen(Class *cl, Object *obj, struct sdpInitScreen *ms
     else
         msg->sdp_WBorTop = data->dc->BarHeight - 1 - msg->sdp_FontHeight;
 
-    /* Allow scalling title bar above decoration defined height */
+    /* Allow scaling title bar above decoration defined height */
     msg->sdp_BarHeight = msg->sdp_FontHeight > (data->dc->SBarHeight - 1) ? msg->sdp_FontHeight : (data->dc->SBarHeight - 1);
 
     msg->sdp_BarHBorder = 1;

@@ -30,7 +30,7 @@
 /* srcdata point directly to (0,0) point of subbuffer to be read from */
 ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSrc, LONG heightSrc, LONG widthDest, LONG heightDest)
 {
-    ULONG * scalleddata = (ULONG *) AllocVec(sizeof(ULONG) * widthDest * heightDest, MEMF_ANY);
+    ULONG * scaleddata = (ULONG *) AllocVec(sizeof(ULONG) * widthDest * heightDest, MEMF_ANY);
     LONG srcline = -1;
     UWORD * linepattern = (UWORD *) AllocVec(sizeof(UWORD) * widthDest, MEMF_ANY);
     ULONG count = 0;
@@ -45,7 +45,7 @@ ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSr
     LONG accuyd = - (dys >> 1);
     LONG accuxd = - (dxs >> 1);
     ULONG x;
-    ULONG * lastscalledlineptr = scalleddata + ((heightDest - 1) * widthDest);
+    ULONG * lastscaledlineptr = scaleddata + ((heightDest - 1) * widthDest);
 
     count = 0;
     while (count < widthDest) {
@@ -75,19 +75,19 @@ ULONG * ScaleBuffer(ULONG * srcdata, LONG widthBuffer /* stride */, LONG widthSr
 
             /* New: use last line as temp buffer */
             for (x = 0; x < widthDest; x++)
-                lastscalledlineptr[x] = srcptr[linepattern[x]];
+                lastscaledlineptr[x] = srcptr[linepattern[x]];
 
         }
 
         //HIDD_BM_PutImage(msg->dst, msg->gc, (UBYTE *) dstbuf, bsa->bsa_DestWidth * sizeof(ULONG), bsa->bsa_DestX, bsa->bsa_DestY + count, bsa->bsa_DestWidth, 1, vHidd_StdPixFmt_Native32);
-        CopyMem(lastscalledlineptr, scalleddata + (count * widthDest), widthDest * sizeof(ULONG));
+        CopyMem(lastscaledlineptr, scaleddata + (count * widthDest), widthDest * sizeof(ULONG));
 
         count++;
     }
 
     FreeVec(linepattern);
 
-    return scalleddata;
+    return scaleddata;
 }
 
 void DisposeImageContainer(struct NewImage *ni)

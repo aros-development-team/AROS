@@ -143,6 +143,7 @@ static IPTR menudecor_draw_sysimage(Class *cl, Object *obj, struct mdpDrawSysIma
 
 static IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBackground *msg)
 {
+    struct menudecor_data *data = INST_DATA(cl, obj);
     struct RastPort    *rp = msg->mdp_RPort;
     struct NewImage    *ni;
     struct MenuData    *md = (struct MenuData *) msg->mdp_UserBuffer;
@@ -154,7 +155,7 @@ static IPTR menudecor_renderbackground(Class *cl, Object *obj, struct mdpDrawBac
         if (ni)
         {
             DrawPartToImage(md->ni, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop, msg->mdp_ItemWidth, msg->mdp_ItemHeight, 0, 0);
-            SetImageTint(ni, 60, 0x00888800);
+            SetImageTint(ni, 255 - (data->dc->MenuHighlightTint >> 24), data->dc->MenuHighlightTint & 0xffffff);
             PutImageToRP(rp, ni, msg->mdp_ItemLeft, msg->mdp_ItemTop);
         }
     }
@@ -251,7 +252,7 @@ static BOOL InitMenuSkinning(struct menudecor_data *data, struct DecorImages * d
         
     data->dc = dc;
 
-    /* Set pointers to gadget images, used only to get gadget sizes as their
+    /* Set pointers to gadget images, used only to get gadget sizes as they
        are requested prior to creation of menu object */
     data->img_amigakey  = di->img_amigakey;
     data->img_menucheck = di->img_menucheck;
