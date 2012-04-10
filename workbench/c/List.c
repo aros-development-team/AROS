@@ -341,6 +341,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                         char buf[256];
                         buf[255] = '\0';
+                        int fill, i;
 
                         char *bufpos = &buf[254];
 
@@ -351,7 +352,12 @@ int printLformat(STRPTR format, struct lfstruct *lf)
                             bufpos--;
                         } while (filesize);
 
-                        Printf("%s", &bufpos[1]);
+                        fill = 13 - (&buf[254] - bufpos);
+                        for (i = 0; i < fill; i++)
+                        {
+                            Printf(" ");
+                        }
+                        Printf("%s ", &bufpos[1]);
                     }
                 }
 
@@ -556,7 +562,7 @@ int printFileData(struct AnchorPath *ap,
 
                 if (!quick)
                 {
-                    Printf("  <Dir> %7s ", flags);
+                    Printf("        <Dir> %7s ", flags);
                 }
                 
                 if (!noDates && (!quick || dates))
@@ -611,6 +617,7 @@ int printFileData(struct AnchorPath *ap,
 
                         char buf[256];
                         buf[255] = '\0';
+                        int fill, i;
 
                         char *bufpos = &buf[254];
 
@@ -621,7 +628,12 @@ int printFileData(struct AnchorPath *ap,
                             bufpos--;
                         } while (filesize);
 
-                        Printf("%s", &bufpos[1]);
+                        fill = 13 - (&buf[254] - bufpos);
+                        for (i = 0; i < fill; i++)
+                        {
+                            Printf(" ");
+                        }    
+                        Printf("%s ", &bufpos[1]);
                     }
                     else
                     {
