@@ -96,17 +96,21 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH2(NewShell, 41.1,
-AROS_SHA(STRPTR, ,WINDOW, ,"CON:10/20/640/480/AROS-Shell/CLOSE"),
-AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
+AROS_SH3(NewShell, 41.2,
+AROS_SHA(STRPTR, ,WINDOW, ,"CON:0/50//130/AROS-Shell/CLOSE"),
+AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"),
+AROS_SHA(ULONG,  ,STACK,  ,AROS_STACKSIZE))
 {
     AROS_SHCOMMAND_INIT
 
     BPTR from = Open(SHArg(FROM),   MODE_OLDFILE);
     BPTR win  = Open(SHArg(WINDOW), MODE_OLDFILE);
+    ULONG stack = SHArg(STACK);
 
     LONG rc = RETURN_FAIL;
 
+    if (stack < AROS_STACKSIZE)
+        stack = AROS_STACKSIZE;
 
     if (win)
     {
@@ -119,6 +123,7 @@ AROS_SHA(STRPTR, ,FROM,   ,"S:Shell-Startup"))
 	    { SYS_Error,       (IPTR)NULL },
 	    { SYS_ScriptInput, (IPTR)from },
 	    { SYS_UserShell,   TRUE       },
+	    { NP_StackSize,    stack      },
 	    { TAG_DONE,        0          }
         };
 
