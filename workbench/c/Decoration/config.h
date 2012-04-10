@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -129,6 +129,7 @@ struct DecorConfig
     LONG    MenuTileTop;
     LONG    MenuTileRight;
     LONG    MenuTileBottom;
+    ULONG   MenuHighlightTint;
     
     /* Menu Section - not used */
     LONG    MenuInnerLeft;

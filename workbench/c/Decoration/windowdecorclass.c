@@ -865,7 +865,7 @@ static IPTR windecor_draw_sysimage(Class *cl, Object *obj, struct wdpDrawSysImag
     if (ni)
     {
         if (titlegadget)
-            DrawScalledStatefulGadgetImageToRP(rp, ni, state, left + addx, top + addy, -1, height);
+            DrawScaledStatefulGadgetImageToRP(rp, ni, state, left + addx, top + addy, -1, height);
         else
             DrawStatefulGadgetImageToRP(rp, ni, state, left + addx, top + addy);
     }

@@ -1,5 +1,5 @@
 /*
-    Copyright  2011, The AROS Development Team.
+    Copyright  2011-2012, The AROS Development Team.
     $Id$
 */
 
@@ -86,11 +86,13 @@ static void GetColors(STRPTR v, LONG *v1, LONG *v2)
         if (cnt == 2)
         {
             *v1 = a;
-            *v2 = b;
+            if (v2 != NULL)
+                *v2 = b;
         }
+        else if (cnt == 1)
+            *v1 = a;
     }
 }
-
 
 static BOOL GetBool(STRPTR v, STRPTR id)
 {
@@ -114,6 +116,7 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     dc->MenuInnerTop = 0;
     dc->MenuInnerRight = 0;
     dc->MenuInnerBottom = 0;
+    dc->MenuHighlightTint = 0x9900aadd;
 
     lock = Lock(path, ACCESS_READ);
     if (lock)
@@ -164,6 +167,10 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
                 else  if ((v = strstr(line, "InnerBottom ")) == line)
                 {
                     dc->MenuInnerBottom = GetInt(v);
+                }
+                else if ((v = strstr(line, "HighlightTint ")) == line)
+                {
+                    GetColors(v, &dc->MenuHighlightTint, NULL);
                 }
             }
         }
