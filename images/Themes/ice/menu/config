@@ -7,3 +7,5 @@ InnerTop = 6
 InnerRight = 12
 InnerBottom = 11
 InnerLeft = 6
+
+HighlightTint = 0x770044dd
