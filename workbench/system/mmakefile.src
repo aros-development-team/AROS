@@ -5,7 +5,8 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
-    FixFonts
+    FixFonts \
+    CLI
 
 #MM- workbench : workbench-system
 #MM workbench-system : includes linklibs
