@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2011, The AROS Development Team.
+    Copyright  1995-2012, The AROS Development Team.
     $Id$
 */
 
@@ -51,6 +51,8 @@
 #include "menudecorclass.h"
 #include "newimage.h"
 #include "config.h"
+
+const TEXT version_string[] = "$VER: Decoration 1.2 (12.4.2012)";
 
 struct IClass *wndcl, *scrcl, *menucl;
 
