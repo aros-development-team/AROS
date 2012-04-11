@@ -30,13 +30,15 @@
 #define SS_STACK_SIZE	0x02000
 
 /* Must match with AROSBootstrap.c! */
-#define ABS_BOOT_MAGIC 0x4d363801
+#define ABS_BOOT_MAGIC 0x4d363802
 struct BootStruct
 {
     ULONG magic;
     struct TagItem *kerneltags;
     APTR ss_address;
     ULONG ss_size;
+    APTR magicfastmem;
+    LONG magicfastmemsize;
 };
 
 static struct BootStruct *GetBootStruct(struct ExecBase *eb)
@@ -218,18 +220,22 @@ static void protectROM(struct MemHeader *mh)
     DEBUGPUTHEX(("Bytes  ", (IPTR)mh->mh_First->mc_Bytes));
 }
 
-static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct MemList *ml, ULONG *mask)
+static struct MemHeader *addmemoryregion(ULONG startaddr, ULONG size, struct MemList *ml, ULONG *mask, BOOL magicfast)
 {
 	if (size < 65536)
 		return NULL;
-	if (startaddr < 0x00c00000) {
+	if (magicfast) {
+		krnCreateMemHeader("magic fast memory", -8, 
+			(APTR)startaddr, size,
+			MEMF_FAST | MEMF_PUBLIC | ((startaddr & 0xff000000) == 0 ? MEMF_24BITDMA : 0));
+	} else if (startaddr < 0x00c00000) {
 		krnCreateMemHeader("chip memory", -10,
 			(APTR)startaddr, size,
 			 MEMF_CHIP | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
 	} else {
 		krnCreateMemHeader("memory", -5, 
 			(APTR)startaddr, size,
-			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | MEMF_24BITDMA);
+			MEMF_FAST | MEMF_KICK | MEMF_PUBLIC | MEMF_LOCAL | ((startaddr & 0xff000000) == 0 ? MEMF_24BITDMA : 0));
 	}
 
         /* Must be done first, in case SS is in it */
@@ -313,16 +319,15 @@ void InitKickMemDiag(void)
     while (ml) {
         int i;
         for (i = 0; i < ml->ml_NumEntries; i++) {
-        APTR start = ml->ml_ME[i].me_Addr;
-        ULONG len = ml->ml_ME[i].me_Length;
+            APTR start = ml->ml_ME[i].me_Addr;
+            ULONG len = ml->ml_ME[i].me_Length;
 
-        DEBUGPUTHEX(("Addr", (IPTR)start));
-        DEBUGPUTHEX(("Len", len));
+            DEBUGPUTHEX(("Addr", (IPTR)start));
+            DEBUGPUTHEX(("Len", len));
 
-        /* Simply attempt to allocate everything again */
-        if (InternalAllocAbs(start, len, SysBase))
-            DEBUGPUTS(("-> Allocated\n"));
-
+            /* Simply attempt to allocate everything again */
+            if (InternalAllocAbs(start, len, SysBase))
+                DEBUGPUTS(("-> Allocated\n"));
         }
         ml = (struct MemList*)ml->ml_Node.ln_Succ;
     }
@@ -513,7 +518,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	APTR ColdCapture = NULL, CoolCapture = NULL, WarmCapture = NULL;
 	ULONG KickMemMask = 0;
 	APTR KickMemPtr = NULL, KickTagPtr = NULL, KickCheckSum = NULL;
-        struct BootStruct *BootS = NULL;
+	struct BootStruct *BootS = NULL;
 	/* We can't use the global 'SysBase' symbol, since
 	 * the compiler does not know that PrepareExecBase
 	 * may change it out from under us.
@@ -632,15 +637,25 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    oldSysBase = NULL;
 	}
 	
+	if (BootS && BootS->magicfastmem) {
+	    /* Add early magic fast ram pool
+	     * Makes it possible to have execbase and others in fast ram even
+	     * if fast ram is non-autocnfig diagrom type.
+	     */
+	    membanks -= 2;
+	    membanks[0] = (ULONG)BootS->magicfastmem;
+	    membanks[1] = BootS->magicfastmemsize;
+	}
+	
 	/* Adjust to skip the first 1K/4K bytes of
 	 * Chip RAM. It's reserved for the Trap area.
 	 */
-        for (i = 0; membanks[i + 2 + 1]; i += 2);
-        if (arosbootstrapmode || (attnflags & AFF_68030))
-            membanks[i + 0] = 0x1000;
-        else
-            membanks[i + 0] = 0x400;
-        membanks[i + 1] -= membanks[i + 0];
+    for (i = 0; membanks[i + 2 + 1]; i += 2);
+    if (arosbootstrapmode || (attnflags & AFF_68030))
+        membanks[i + 0] = 0x1000;
+    else
+        membanks[i + 0] = 0x400;
+    membanks[i + 1] -= membanks[i + 0];
  
 #if AROS_SERIAL_DEBUG
 	for (i = 0; membanks[i + 1]; i += 2) {
@@ -684,10 +699,10 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 	Early_ScreenCode(CODE_RAM_CHECK);
 
-        /* Mark all the kick memory as 'unprotected' */
+    /* Mark all the kick memory as 'unprotected' */
 	markKick(KickMemPtr, &KickMemMask);
 
-	mh = addmemoryregion(membanks[0], membanks[1], KickMemPtr, &KickMemMask);
+	mh = addmemoryregion(membanks[0], membanks[1], KickMemPtr, &KickMemMask, BootS && (ULONG)BootS->magicfastmem == membanks[0]);
 	if (mh == NULL) {
 	    DEBUGPUTS(("Can't create initial memory header!\n"));
 	    Early_Alert(AT_DeadEnd | AG_NoMemory);
@@ -704,9 +719,9 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 #undef SysBase
 	DEBUGPUTHEX(("[SysBase at]", (ULONG)SysBase));
 
-        PrivExecBase(SysBase)->PlatformData.BootMsg = bootmsgptr;
+    PrivExecBase(SysBase)->PlatformData.BootMsg = bootmsgptr;
 	SysBase->ThisTask->tc_SPLower = &_ss;
-        SysBase->ThisTask->tc_SPUpper = &_ss_end;
+    SysBase->ThisTask->tc_SPUpper = &_ss_end;
 
     	if (wasvalid) {
     	    SysBase->ColdCapture = ColdCapture;
@@ -765,7 +780,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 
 		DEBUGPUTHEX(("RAM Addr: ", addr));
 		DEBUGPUTHEX(("RAM Size: ", size));
-		mh = addmemoryregion(addr, size, KickMemPtr, &KickMemMask);
+		mh = addmemoryregion(addr, size, KickMemPtr, &KickMemMask, FALSE);
 		Enqueue(&SysBase->MemList, &mh->mh_Node);
 
 		/* Adjust MaxLocMem and MaxExtMem as needed */

@@ -63,7 +63,8 @@ arosbootstrap_init:
 
 	/* temp system stack */
 	lea.l	_ss_end,%sp		/* System stack */
-	lea.l	_ss,%a5	/* Put the memory bank array at the bottom of the stack */
+	/* Put the memory bank array at the bottom of the stack, reserve space for extra memory bank */
+	lea.l	_ss,%a5
 
 	/* Do we have a Gayle? */
 	sub.l	%a6,%a6
@@ -78,7 +79,7 @@ arosbootstrap_init:
 	swap	%d6
 
 	move.l	%a5,%a4	/* Space for CPU/FPU data array */
-	addq.l	#8,%a5
+	lea		16(%a5),%a5	/* Space also reserved for extra membank */
 	move.l	%a4,%a0
 	jsr	_cpu_detect
 	/* High word = gayle flag, low word = AttnFlags */
@@ -129,7 +130,7 @@ arosbootstrap_init:
 
 	lea.l	_ss,%a5
 	move.l	%a5,%sp@-	/* CPU/FPU data array */
-	addq.l	#8,%a5
+	lea		16(%a5),%a5
 	move.l	%a5,%sp@-	/* memory bank array */
 	jsr		exec_boot
 
