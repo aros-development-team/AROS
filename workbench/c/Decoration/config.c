@@ -116,7 +116,7 @@ static void LoadMenuConfig(STRPTR path, struct DecorConfig * dc)
     dc->MenuInnerTop = 0;
     dc->MenuInnerRight = 0;
     dc->MenuInnerBottom = 0;
-    dc->MenuHighlightTint = 0x9900aadd;
+    dc->MenuHighlightTint = 0x770044dd;
 
     lock = Lock(path, ACCESS_READ);
     if (lock)
