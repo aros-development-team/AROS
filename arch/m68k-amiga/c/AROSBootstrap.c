@@ -31,14 +31,17 @@
 #define ALLOCPADDING (sizeof(struct MemChunk) + 2 * sizeof(BPTR))
 
 #define SS_STACK_SIZE	0x2000
+#define MAGIC_FAST_SIZE 65536
 /* This must match with start.c! */
-#define ABS_BOOT_MAGIC 0x4d363801
+#define ABS_BOOT_MAGIC 0x4d363802
 struct BootStruct
 {
     ULONG magic;
     struct TagItem *kerneltags;
     APTR ss_address;
     LONG ss_size;
+    APTR magicfastmem;
+    LONG magicfastmemsize;
 };
 
 #include <stddef.h> /* offsetof */
@@ -1305,11 +1308,14 @@ static struct BootStruct *AllocBootStruct(UBYTE *cmdline)
     boots->magic = ABS_BOOT_MAGIC;
     boots->kerneltags = tags;
     if (forceFAST) {
-        UBYTE *addr = specialAlloc(SS_STACK_SIZE + 1, MEMF_FAST | MEMF_REVERSE, SysBase); /* +1 = guaranteed extra page at the end */
+        UBYTE *addr = specialAlloc(SS_STACK_SIZE + MAGIC_FAST_SIZE + 1, MEMF_FAST | MEMF_REVERSE, SysBase); /* +1 = guaranteed extra page at the end */
         if (addr) {
             addr = (UBYTE*)(((ULONG)(addr + PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1));
             boots->ss_address = addr;
             boots->ss_size = SS_STACK_SIZE;
+            /* magic fast mem pool for early allocations that normally can't be allocated from fast memory */
+            boots->magicfastmem = boots->ss_address + SS_STACK_SIZE;
+            boots->magicfastmemsize = MAGIC_FAST_SIZE;
         }
     }
     return boots;
