@@ -6,6 +6,12 @@
     Lang: english
 */
 
+#ifndef KERNEL_GLOBALS_H
+#define KERNEL_GLOBALS_H
+
+struct KernelBase;
+extern struct KernelBase *KernelBase;
+
 static inline struct KernelBase *getKernelBase(void)
 {
     return KernelBase;
@@ -15,3 +21,5 @@ static inline void setKernelBase(struct KernelBase *base)
 {
     KernelBase = base;
 }
+
+#endif /* KERNEL_GLOBALS_H */
