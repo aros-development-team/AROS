@@ -9,7 +9,6 @@
 #include <exec/execbase.h>
 #include <hardware/intbits.h>
 
-#include "exec_intern.h"
 #include "etask.h"
 
 #include "kernel_intern.h"

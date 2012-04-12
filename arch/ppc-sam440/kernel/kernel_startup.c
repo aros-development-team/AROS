@@ -94,6 +94,7 @@ static char            CmdLine[200]            __attribute__((used));
 module_t *	modlist;
 uint32_t	modlength;
 uintptr_t	memlo;
+struct ExecBase *SysBase;
 
 static uint32_t exec_SelectMbs(uint32_t bcr)
 {
@@ -136,7 +137,7 @@ static uint32_t exec_GetMemory()
 void exec_main(struct TagItem *msg, void *entry)
 {
     UWORD *memrange[3];
-    uint32_t mem;
+    uint32_t mem, krnLowest, krnHighest;
     struct MemHeader *mh;
 
     D(bug("[exec] AROS for Sam440 - The AROS Research OS\n"));
@@ -145,13 +146,17 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Preparing the ExecBase...\n"));
 
     /* Get the kernel memory locations */
-    memrange[0] = (UWORD *)krnGetTagData(KRN_KernelLowest, 0, msg);
-    memrange[1] = (UWORD *)((krnGetTagData(KRN_KernelHighest, 0, msg) + 0xffff) & 0xffff0000);
-    memrange[2] = (UWORD *)-1;
-
-    krnCreateMemHeader("RAM", -10, (APTR)(memrange[1]), 0x01000000 - (IPTR)memrange[1], 
+    krnLowest = krnGetTagData(KRN_KernelLowest, 0, msg);
+    krnHighest = (krnGetTagData(KRN_KernelHighest, 0, msg) + 0xffff) & 0xffff0000;
+    D(bug("[exec] Create memory header @%p - %p\n", krnHighest, 0x01000000-1));
+    krnCreateMemHeader("RAM", -10, (APTR)(krnHighest), 0x01000000 - (IPTR)krnHighest,
                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
     mh = (struct MemHeader *)memrange[1];
+
+    D(bug("[exec] Prepare exec base in %p\n", mh));
+    memrange[0] = (UWORD *)(krnLowest + 0xff000000);
+    memrange[1] = (UWORD *)(krnHighest + 0xff000000);
+    memrange[2] = (UWORD *)-1;
 
     krnPrepareExecBase(memrange, mh, msg);
     wrspr(SPRG5, SysBase);

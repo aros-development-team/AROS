@@ -5,6 +5,10 @@
     Desc: Global KernelBase access
     Lang: english
 */
+#ifndef KERNEL_GLOBALS_H
+#define KERNEL_GLOBALS_H
+
+struct KernelBase;
 
 static inline struct KernelBase *getKernelBase(void)
 {
@@ -15,3 +19,5 @@ static inline void setKernelBase(struct KernelBase *base)
 {
     wrspr(SPRG4U, base);
 }
+
+#endif /* KERNEL_GLOBALS_H */
