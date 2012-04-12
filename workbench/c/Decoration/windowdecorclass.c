@@ -882,7 +882,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
     struct WindowData      *wd = (struct WindowData *) msg->wdp_UserBuffer;
     struct NewImage        *ni = NULL;
     UWORD                  *pens = msg->wdp_Dri->dri_Pens;
-    ULONG                   bc = 0, color, s_col, e_col, arc;
+    ULONG                   bc, color, s_col, e_col, arc;
     UWORD                   bl, bt, br, bb, ww, wh;
     LONG    pen = -1;
 
@@ -917,6 +917,7 @@ static IPTR windecor_draw_winborder(Class *cl, Object *obj, struct wdpDrawWinBor
         s_col = data->dc->DeactivatedGradientColor_s;
         e_col = data->dc->DeactivatedGradientColor_e;
         arc = data->dc->DeactivatedGradientColor_a;
+        bc = data->dc->BaseColors_d;
         if (!data->dc->UseGradients)
         {
             if (wd->img_border_deactivated->ok) ni = wd->img_border_deactivated;
