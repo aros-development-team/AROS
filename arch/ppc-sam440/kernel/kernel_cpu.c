@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -16,6 +16,8 @@
 #include "kernel_syscall.h"
 #include "kernel_scheduler.h"
 #include "kernel_intr.h"
+
+#include <strings.h>
 
 /*
  * Task dispatcher. Basically it may be the same one no matter what scheduling algorithm is used
