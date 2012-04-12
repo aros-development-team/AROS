@@ -132,40 +132,13 @@ void syscall_handler(context_t *ctx, uint8_t exception, void *self)
 
                 D(bug("[KRN] REBOOT..."));
 
-                {
-                        char *mod, *func;
-                        D(uint32_t offset);
-
-                        D(offset = findNames(ctx->cpu.lr, &mod, &func));
-
-                        D(bug("[KRN] LR=%08x", ctx->cpu.lr));
-
-                        if (func)
-                                D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
-                        else if (mod)
-                                D(bug(": byte %d in module %s\n", offset, mod));
-                        else
-                                D(bug("\n"));
-
-                    }
-
-                    D(bug("[KRN] Backtrace:\n"));
-                    uint32_t *sp = (uint32_t *)ctx->cpu.gpr[1];
-                    while(*sp)
-                    {
-                            char *mod, *func;
-                            sp = (uint32_t *)sp[0];
-                            D(uint32_t offset);
-
-                            D(offset = findNames(sp[1], &mod, &func));
-
-                            if (func)
-                                    D(bug("[KRN]  %08x: byte %d in func %s, module %s\n", sp[1], offset, func, mod));
-                            else if (mod)
-                                    D(bug("[KRN]  %08x: byte %d in module %s\n", sp[1], offset, mod));
-                            else
-                                    D(bug("[KRN]  %08x\n", sp[1]));
-                    }
+                D(bug("[KRN] LR=%08x", ctx->cpu.lr));
+                D(bug("[KRN] Backtrace:\n"));
+                uint32_t *sp = (uint32_t *)ctx->cpu.gpr[1];
+                while(*sp) {
+                    sp = (uint32_t *)sp[0];
+                    D(bug("[KRN]  %08x\n", sp[1]));
+                }
 
                 uint64_t newtbu = mftbu() + KernelBase->kb_PlatformData->pd_OPBFreq;
                 while(newtbu > mftbu());

@@ -5,10 +5,6 @@
 #include <stddef.h>
 
 #include "kernel_base.h"
-
-#include <proto/exec.h>
-#include <proto/kernel.h>
-
 #include "kernel_intern.h"
 #include "kernel_syscall.h"
 #include "kernel_globals.h"
@@ -182,11 +178,11 @@ void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
 
     	if (KernelBase->kb_PlatformData->pd_CPUUsage > 999)
     	{
-    		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10,
+    		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10,
     				SysBase->ThisTask->tc_Node.ln_Name));
     	}
     	else
-    		D(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_CPUUsage / 10, KernelBase->kb_CPUUsage % 10));
+    		D(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10));
 
     	idle_time = 0;
     	last_calc = current;
@@ -194,7 +190,6 @@ void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
 
     core_ExitInterrupt(ctx);
 }
-
 
 void generic_handler(context_t *ctx, uint8_t exception, void *self)
 {
@@ -213,30 +208,6 @@ void generic_handler(context_t *ctx, uint8_t exception, void *self)
     }
 
     D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
-    if (SysBase)
-    {
-        struct Task *t = FindTask(NULL);
-        D(uint32_t offset);
-        char *func, *mod;
-
-        D(offset = findNames(ctx->cpu.srr0, &mod, &func));
-
-        D(bug("[KRN] %s %p (%s)\n", t->tc_Node.ln_Type == NT_TASK ? "Task":"Process", t, t->tc_Node.ln_Name ? t->tc_Node.ln_Name : "--unknown--"));
-
-        if (func)
-        	D(bug("[KRN] Crash at byte %d in func %s, module %s\n", offset, func, mod));
-        else if (mod)
-        	D(bug("[KRN] Crash at byte %d in module %s\n", offset, mod));
-
-        D(bug("[KRN] SPLower=%08x SPUpper=%08x\n", t->tc_SPLower, t->tc_SPUpper));
-        D(bug("[KRN] Stack usage: %d bytes (%d %%)\n", t->tc_SPUpper - ctx->gpr[1],
-        		100 * ((IPTR)t->tc_SPUpper - ctx->cpu.gpr[1]) / ((IPTR)t->tc_SPUpper - (IPTR)t->tc_SPLower)));
-
-        if (ctx->cpu.gpr[1] >= (IPTR)t->tc_SPLower && ctx->cpu.gpr[1] < (IPTR)t->tc_SPUpper)
-        	D(bug("[KRN] Stack in bounds\n"));
-        else
-        	D(bug("[KRN] Stack exceeded the allowed size!\n"));
-    }
     D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR)));
     D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->cpu.ctr, ctx->cpu.lr, ctx->cpu.xer, ctx->cpu.ccr));
     D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->cpu.dar, ctx->cpu.dsisr));
@@ -266,39 +237,14 @@ void generic_handler(context_t *ctx, uint8_t exception, void *self)
         D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
     }
 
-    {
-        char *mod, *func;
-        D(uint32_t offset);
-
-        D(offset = findNames(ctx->cpu.lr, &mod, &func));
-
-        D(bug("[KRN] LR=%08x", ctx->cpu.lr));
-
-        if (func)
-                D(bug(": byte %d in func %s, module %s\n", offset, func, mod));
-        else if (mod)
-                D(bug(": byte %d in module %s\n", offset, mod));
-        else
-                D(bug("\n"));
-
-    }
+    D(bug("[KRN] LR=%08x", ctx->cpu.lr));
 
     D(bug("[KRN] Backtrace:\n"));
     uint32_t *sp = (uint32_t *)ctx->cpu.gpr[1];
     while(*sp)
     {
-            char *mod, *func;
             sp = (uint32_t *)sp[0];
-            D(uint32_t offset);
-
-            D(offset = findNames(sp[1], &mod, &func));
-
-            if (func)
-                    D(bug("[KRN]  %08x: byte %d in func %s, module %s\n", sp[1], offset, func, mod));
-            else if (mod)
-                    D(bug("[KRN]  %08x: byte %d in module %s\n", sp[1], offset, mod));
-            else
-                    D(bug("[KRN]  %08x\n", sp[1]));
+            D(bug("[KRN]  %08x\n", sp[1]));
     }
 
 
