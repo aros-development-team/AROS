@@ -160,7 +160,7 @@ static BPTR LoadFS(struct FileSysNode *node, struct DosLibrary *DOSBase)
         AROS_LCA(BPTR, BNULL, A0),
         AROS_LCA(LONG_FUNC*, FunctionArray, A1),
         AROS_LCA(LONG*, NULL, A2),
-        struct DOSLibrary*, NULL);
+        struct Library*, NULL);
 }
 
 static ULONG calcChkSum(ULONG *ptr, ULONG size)
