@@ -516,53 +516,34 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
         } 
         else if ((ent->type == ST_FILE) || (ent->type == ST_LINKFILE))
         {
-            BPTR newwd, oldwd, file;
+            BPTR newwd, oldwd;
+            STRPTR path;
+            
+            path = StrDup(ent->ile_IconEntry->ie_IconNode.ln_Name);
 
-            /* Set the CurrentDir to the path of the executable to be started */
-            file = Lock(ent->ile_IconEntry->ie_IconNode.ln_Name, SHARED_LOCK);
-            if(file)
-            {
-                newwd = ParentDir(file);
-                oldwd = CurrentDir(newwd);
-                struct IconList_Entry *ent2        = (void*)MUIV_IconList_NextIcon_Start;
-                int                    argsCounted = 0,
-                                       i           = 0;
-                struct TagItem        *argsTagList = NULL;
-                Object                *firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
-                Object                *windowItem,
-                                      *iconList;
+            if (path) {
+                /* Set the CurrentDir to the path of the executable to be started */
+                *PathPart(path) = 0;
 
-                /*
-                ** If we have more than one icon selected, the first one
-                ** is our command,  and the next ones are the arguments.
-                ** We take care of icons selected on other windows.
-                */
-                
-                /* Count the selected icons */
-                while ( (windowItem = NextObject(&firstWindow)) )
+                newwd = Lock(path, SHARED_LOCK);
+                if(newwd)
                 {
-                    iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
-                    if (iconList != NULL) /* Wanderer has non-iconlist windows as well */
-                    {
-                        ent2     = (void*) MUIV_IconList_NextIcon_Start;
-                        DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
-                        do
-                        {
-                            if ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
-                                argsCounted++;
-                            DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
-                        }
-                        while ((IPTR)ent2 != MUIV_IconList_NextIcon_End );
-                    }
-                } /* while ( (windowItem = NextObject(&firstWindow)) ) */
-                D(bug("[Wanderer] argsCounted = %d\n", argsCounted));
-                        
-                /* If we have arguments, populate argsTagList with them */
-                if ( argsCounted > 1 ) /* "ent" is selected and has been counted */
-                {
-                    BPTR argLock;
-                    argsTagList = AllocateTagItems((argsCounted * 2) - 1); /* first time for wa_Name, second wa_Lock */
-                    firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
+                    struct IconList_Entry *ent2        = (void*)MUIV_IconList_NextIcon_Start;
+                    int                    argsCounted = 0,
+                                           i           = 0;
+                    struct TagItem        *argsTagList = NULL;
+                    Object                *firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
+                    Object                *windowItem,
+                                          *iconList;
+
+                    oldwd = CurrentDir(newwd);
+                    /*
+                    ** If we have more than one icon selected, the first one
+                    ** is our command,  and the next ones are the arguments.
+                    ** We take care of icons selected on other windows.
+                    */
+                    
+                    /* Count the selected icons */
                     while ( (windowItem = NextObject(&firstWindow)) )
                     {
                         iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
@@ -570,53 +551,78 @@ D(bug("[Wanderer] %s: ICONWINDOW_ACTION_OPEN: offset = %d, buf = %s\n", __PRETTY
                         {
                             ent2     = (void*) MUIV_IconList_NextIcon_Start;
                             DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
-
-                            while ((IPTR)ent2 != MUIV_IconList_NextIcon_End)
+                            do
                             {
-                                if (ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name)
-                                {
-                                    argLock = Lock(ent2->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
-                                    argsTagList[i].ti_Tag  = WBOPENA_ArgLock;
-                                    argsTagList[i].ti_Data = (IPTR) ParentDir(argLock);
-                                    D(bug("[Wanderer] argsTagList[%d]: Lock = %lx\n", i, argsTagList[i].ti_Data));
-                                    UnLock(argLock);
-                                    argsTagList[++i].ti_Tag = WBOPENA_ArgName;
-                                    argsTagList[i].ti_Data  = (IPTR) FilePart(ent2->ile_IconEntry->ie_IconNode.ln_Name);
-                                    D(bug("[Wanderer] argsTagList[%d]: Name = %s\n", i, argsTagList[i].ti_Data));
-                                    i++;
-                                }
+                                if ((IPTR)ent2 != MUIV_IconList_NextIcon_End )
+                                    argsCounted++;
                                 DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
                             }
+                            while ((IPTR)ent2 != MUIV_IconList_NextIcon_End );
                         }
-                    } /* while ( (windowItem = NextObject(&cstate)) ) */
-                    argsTagList[i].ti_Tag = TAG_DONE;
-                    /*
-                    ** TODO: the user should be able to select the tool in one window, and some arguments
-                    ** in other windows, in that very order. For now Wanderer only handles selected icons
-                    ** per window, and so doesn't provide an easy way to know about _all_ selected icons.
-                    ** At least we can browse all windows and keep track of all selected icons on each of
-                    ** them. But then we don't have a way to know which icon was selected first (which is
-                    ** the tool one). The trick for the user is to select first all arguments that aren't
-                    ** in  the  tool's window, and only then select the tool on its window and  the  last
-                    ** arguments in the tool's window, and of course double-click the very last icon.
-                    */
-                } /* if (argsCounted > 1) */
+                    } /* while ( (windowItem = NextObject(&firstWindow)) ) */
+                    D(bug("[Wanderer] argsCounted = %d\n", argsCounted));
+                            
+                    /* If we have arguments, populate argsTagList with them */
+                    if ( argsCounted > 1 ) /* "ent" is selected and has been counted */
+                    {
+                        BPTR argLock;
+                        argsTagList = AllocateTagItems((argsCounted * 2) - 1); /* first time for wa_Name, second wa_Lock */
+                        firstWindow = (Object *) (((struct List*)XGET(_app(obj), MUIA_Application_WindowList))->lh_Head);
+                        while ( (windowItem = NextObject(&firstWindow)) )
+                        {
+                            iconList = (Object *) XGET(windowItem, MUIA_IconWindow_IconList);
+                            if (iconList != NULL) /* Wanderer has non-iconlist windows as well */
+                            {
+                                ent2     = (void*) MUIV_IconList_NextIcon_Start;
+                                DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
 
-                if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
-                {
-                    execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
+                                while ((IPTR)ent2 != MUIV_IconList_NextIcon_End)
+                                {
+                                    if (ent2->ile_IconEntry->ie_IconNode.ln_Name != ent->ile_IconEntry->ie_IconNode.ln_Name)
+                                    {
+                                        argLock = Lock(ent2->ile_IconEntry->ie_IconNode.ln_Name, ACCESS_READ);
+                                        argsTagList[i].ti_Tag  = WBOPENA_ArgLock;
+                                        argsTagList[i].ti_Data = (IPTR) ParentDir(argLock);
+                                        D(bug("[Wanderer] argsTagList[%d]: Lock = %lx\n", i, argsTagList[i].ti_Data));
+                                        UnLock(argLock);
+                                        argsTagList[++i].ti_Tag = WBOPENA_ArgName;
+                                        argsTagList[i].ti_Data  = (IPTR) FilePart(ent2->ile_IconEntry->ie_IconNode.ln_Name);
+                                        D(bug("[Wanderer] argsTagList[%d]: Name = %s\n", i, argsTagList[i].ti_Data));
+                                        i++;
+                                    }
+                                    DoMethod(iconList, MUIM_IconList_NextIcon, MUIV_IconList_NextIcon_Selected, (IPTR)&ent2);
+                                }
+                            }
+                        } /* while ( (windowItem = NextObject(&cstate)) ) */
+                        argsTagList[i].ti_Tag = TAG_DONE;
+                        /*
+                        ** TODO: the user should be able to select the tool in one window, and some arguments
+                        ** in other windows, in that very order. For now Wanderer only handles selected icons
+                        ** per window, and so doesn't provide an easy way to know about _all_ selected icons.
+                        ** At least we can browse all windows and keep track of all selected icons on each of
+                        ** them. But then we don't have a way to know which icon was selected first (which is
+                        ** the tool one). The trick for the user is to select first all arguments that aren't
+                        ** in  the  tool's window, and only then select the tool on its window and  the  last
+                        ** arguments in the tool's window, and of course double-click the very last icon.
+                        */
+                    } /* if (argsCounted > 1) */
+
+                    if ( !OpenWorkbenchObjectA(ent->ile_IconEntry->ie_IconNode.ln_Name, argsTagList) )
+                    {
+                        execute_open_with_command(newwd, FilePart(ent->ile_IconEntry->ie_IconNode.ln_Name));
+                    }
+                    struct TagItem * tag = argsTagList;
+                    while ((tag = FindTagItem(WBOPENA_ArgLock, tag)))
+                    {
+                        D(bug("[Wanderer] UnLocking %lx\n", tag->ti_Data));
+                        UnLock((BPTR)tag->ti_Data);
+                        tag++;
+                    }
+                    FreeTagItems(argsTagList); /* FreeTagItems() only frees memory if non NULL */
+                    CurrentDir(oldwd);
+                    UnLock(newwd);
                 }
-                struct TagItem * tag = argsTagList;
-                while ((tag = FindTagItem(WBOPENA_ArgLock, tag)))
-                {
-                    D(bug("[Wanderer] UnLocking %lx\n", tag->ti_Data));
-                    UnLock((BPTR)tag->ti_Data);
-                    tag++;
-                }
-                FreeTagItems(argsTagList); /* FreeTagItems() only frees memory if non NULL */
-                CurrentDir(oldwd);
-                UnLock(newwd);
-                UnLock(file);
+                FreeVec(path);
             }
         }
         else if (ent->type == ILE_TYPE_APPICON)
