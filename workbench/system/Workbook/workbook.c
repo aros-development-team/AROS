@@ -68,6 +68,9 @@ exit:
 #undef WorkbenchBase
 #undef DOSBase
 
+/* This wrapper is needed, so that we can start 
+ * workbench items from an Input handler
+ */
 AROS_ENTRY(LONG, wbOpener,
 	AROS_UFHA(STRPTR, argstr, A0),
 	AROS_UFHA(ULONG, argsize, D0),
@@ -79,18 +82,8 @@ AROS_ENTRY(LONG, wbOpener,
     APTR DOSBase = OpenLibrary("dos.library", 0);
 
     if (WorkbenchBase && DOSBase) {
-    	/* Convert from relative to absolute path */
-    	BPTR lock = Lock(argstr, SHARED_LOCK);
-    	TEXT buffer[1024];
-    	BOOL ok;
-
-    	if (lock != BNULL) {
-    	    ok = NameFromLock(lock, buffer, sizeof(buffer)-1);
-    	    UnLock(lock);
-
-    	    if (ok)
-    	    	OpenWorkbenchObject(buffer, TAG_END);
-    	}
+        /* 'argstr' is already an absolute path */
+        OpenWorkbenchObject(argstr, TAG_END);
     }
 
     CloseLibrary(DOSBase);
