@@ -44,8 +44,8 @@
 #define WBMENU_WN__SNAP_WINDOW	40, "Window",            0, Broken 0, 0
 #define WBMENU_WN__SNAP_ALL	41, "All",               0, Broken 0, 0
 #define WBMENU_WN__SHOW		"Show"
-#define WBMENU_WN__SHOW_ICONS	45, "Only icons",      "-", Broken CHECKIT|CHECKED, ~((1 << 0))
-#define WBMENU_WN__SHOW_ALL	46, "All files",       "+", Broken CHECKIT, ~((1 << 1))
+#define WBMENU_WN__SHOW_ICONS	45, "Only icons",      "-", CHECKIT|CHECKED, ~((1 << 0))
+#define WBMENU_WN__SHOW_ALL	46, "All files",       "+", CHECKIT, ~((1 << 1))
 #define WBMENU_WN__VIEW		"View by"
 #define WBMENU_WN__VIEW_ICON	50, "Icon",            "1", Broken CHECKIT|CHECKED, ~((1 << 0))
 #define WBMENU_WN__VIEW_DETAILS	51, "Details",           0, Broken CHECKIT, ~((1 << 1))

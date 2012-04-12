@@ -52,6 +52,7 @@ struct wbWindow {
     Object        *ScrollV;
     Object        *Area;      /* Virual area of icons */
     Object        *Set;       /* Set of icons */
+    APTR           FilterHook;
 
     ULONG          Flags;
     IPTR           Tick;
@@ -155,20 +156,52 @@ static BOOL wbMenuEnable(Class *cl, Object *obj, int id, BOOL onoff)
     return rc;
 }
 
-AROS_UFH3(ULONG, wbIgnoreInfo_Hook,
+AROS_UFH3(ULONG, wbFilterIcons_Hook,
     AROS_UFHA(struct Hook*, hook, A0),
     AROS_UFHA(struct ExAllData*, ead, A2),
     AROS_UFHA(LONG *, type, A1))
 {
+    AROS_USERFUNC_INIT
     int i;
 
-    AROS_USERFUNC_INIT
+    if (stricmp(ead->ed_Name, "disk.info") == 0)
+        return FALSE;
 
     i = strlen(ead->ed_Name);
-    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0)
-    	return FALSE;
+    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+        ead->ed_Name[i-5] = 0;
+        return TRUE;
+    }
+
     if (stricmp(ead->ed_Name, ".backdrop") == 0)
-    	return FALSE;
+        return FALSE;
+
+    return FALSE;
+    
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3(ULONG, wbFilterAll_Hook,
+    AROS_UFHA(struct Hook*, hook, A0),
+    AROS_UFHA(struct ExAllData*, ead, A2),
+    AROS_UFHA(LONG *, type, A1))
+{
+    AROS_USERFUNC_INIT
+
+    int i;
+
+    if (stricmp(ead->ed_Name, "disk.info") == 0)
+        return FALSE;
+
+    i = strlen(ead->ed_Name);
+    if (i >= 5 && stricmp(&ead->ed_Name[i-5], ".info") == 0) {
+        ead->ed_Name[i-5] = 0;
+        return TRUE;
+    }
+
+    if (stricmp(ead->ed_Name, ".backdrop") == 0)
+        return FALSE;
+
     return TRUE;
     
     AROS_USERFUNC_EXIT
@@ -210,6 +243,10 @@ static void wbwiAppend(Class *cl, Object *obj, Object *iobj)
 
 	/* Insert in Alpha order */
 	ForeachNode((struct List *)&my->IconList, tmp) {
+	    if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) == 0) {
+	        DisposeObject(iobj);
+	        return;
+	    }
 	    if (wbwiIconCmp(cl, obj, tmp->wbwiObject, wbwi->wbwiObject) < 0)
 	        break;
 	    pred = tmp;
@@ -245,7 +282,9 @@ static void wbAddFiles(Class *cl, Object *obj)
 	    struct Hook hook;
 	    BOOL more = TRUE;
 
-	    hook.h_Entry = (APTR)wbIgnoreInfo_Hook;
+	    hook.h_Entry = my->FilterHook;
+	    hook.h_SubEntry = NULL;
+	    hook.h_Data = wb;
 
 	    eac->eac_MatchFunc = &hook;
 	    while (more) {
@@ -456,6 +495,7 @@ static IPTR WBWindowNew(Class *cl, Object *obj, struct opSet *ops)
     my = INST_DATA(cl, obj);
 
     NEWLIST(&my->IconList);
+    my->FilterHook = wbFilterIcons_Hook;
 
     path = (CONST_STRPTR)GetTagData(WBWA_Path, (IPTR)NULL, ops->ops_AttrList);
     if (path == NULL) {
@@ -823,6 +863,14 @@ static IPTR WBWindowMenuPick(Class *cl, Object *obj, struct wbwm_MenuPick *wbwmp
 	    UnLock(lock);
 	}
     	break;
+    case WBMENU_ID(WBMENU_WN__SHOW_ICONS):
+        my->FilterHook = wbFilterIcons_Hook;
+        wbRescan(cl, obj);
+        break;
+    case WBMENU_ID(WBMENU_WN__SHOW_ALL):
+        my->FilterHook = wbFilterAll_Hook;
+        wbRescan(cl, obj);
+        break;
     case WBMENU_ID(WBMENU_WB_SHELL):
     	NewCLI(cl, obj);
     	break;
