@@ -1,7 +1,5 @@
 #include <proto/exec.h>
 
-#include <kernel_globals.h>
-
 /* Main scheduler entry points */
 void core_ExitInterrupt(regs_t *regs);
 void core_SysCall(int sc, regs_t *regs);
@@ -33,8 +31,11 @@ static inline void core_Cause(unsigned char n, unsigned int mask)
 /* Call exec trap handler, if possible */
 static inline int core_Trap(ULONG code, void *regs)
 {
-    /* exec.library Alert() is inoperative without KernelBase */
-    if (SysBase && getKernelBase())
+    /* exec.library Alert() is inoperative without KernelBase,
+     * but SysBase should not be valid if KernelBase is
+     * not set up.
+     */
+    if (SysBase)
     {
 	void (*trapHandler)(ULONG, void *) = SysBase->TaskTrapCode;
         struct Task *t = SysBase->ThisTask;
