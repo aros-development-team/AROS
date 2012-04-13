@@ -34,6 +34,7 @@ struct MUIP_Family_GetChild    {STACKED ULONG MethodID; STACKED LONG nr; STACKED
 /*** Attributes *************************************************************/
 #define MUIA_Family_Child      (MUIB_MUI|0x0042c696) /* MUI: V8  i.. Object *          */
 #define MUIA_Family_List       (MUIB_MUI|0x00424b9e) /* MUI: V8  ..g struct MinList *  */
+#define MUIA_Family_ChildCount (MUIB_MUI|0x0042b25a) /* MUI: V20 ..g LONG              */
 
 #define MUIV_Family_GetChild_First      0
 #define MUIV_Family_GetChild_Last       -1

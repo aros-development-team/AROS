@@ -163,6 +163,14 @@ IPTR Family__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
         case MUIA_Revision:
             *store = __revision;
             return TRUE;
+
+        case MUIA_Family_ChildCount:
+        {
+            Object *cstate = (Object *)data->childs.lh_Head;
+            *store = 0;
+            while (NextObject(&cstate)) (*store)++;
+            return TRUE;
+        }
     }
 
     return(DoSuperMethodA(cl, obj, (Msg) msg));
