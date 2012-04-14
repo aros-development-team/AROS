@@ -59,6 +59,6 @@
 	return -1;
     }
 
-    return __stat(desc->fcb->fh, sb, TRUE);
+    return __stat(desc->fcb->fh, sb, desc->fcb->isdir ? FALSE : TRUE);
 }
 

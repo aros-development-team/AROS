@@ -14,7 +14,8 @@
 /* file control block - one per file handle */
 typedef struct _fcb
 {
-    BPTR fh;
+    BPTR fh;    // if isdir == TRUE:  BCPL pointer to struct FileLock  
+                // if isdir == FALSE: BCPL pointer to struct FileHandle
     int  flags;
     unsigned int opencount;
     char  isdir;
