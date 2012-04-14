@@ -28,8 +28,7 @@
 /*  FUNCTION
 	Get the full path name associated with a lock to a file or
 	directory into a user supplied buffer.
-	If the lock is zero the buffer will be filled with the volume name
-	for the assignment "SYS:".
+	If the lock is zero the buffer will be filled with "SYS:".
 
     INPUTS
 	lock   - Lock to file or directory or 0.
