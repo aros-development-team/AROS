@@ -111,7 +111,18 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
     }
     while(TRUE);
 
-    __fill_statbuffer(sb, (char*) buffer, fib, fallback_to_defaults, lock);
+    // We need a FileLock. Otherwise a call of Info() within __fill_statbuffer() will crash
+    // FIXME: how can we get a lock on an exclusive file?
+    if (filehandle)
+    {
+        BPTR filelock = DupLockFromFH(lock);
+        __fill_statbuffer(sb, (char*) buffer, fib, fallback_to_defaults, filelock);
+        UnLock(filelock);
+    }
+    else
+    {
+        __fill_statbuffer(sb, (char*) buffer, fib, fallback_to_defaults, lock);
+    }
 
     FreeVec(buffer);
     FreeDosObject(DOS_FIB, fib);
