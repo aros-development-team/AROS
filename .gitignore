@@ -229,6 +229,9 @@
 # /arch/all-ios/bootstrap/
 /arch/all-ios/bootstrap/mmakefile
 
+# /arch/all-ios/hidd/uikit/
+/arch/all-ios/hidd/uikit/mmakefile
+
 # /arch/all-ios/kernel/
 /arch/all-ios/kernel/mmakefile
 
@@ -294,6 +297,12 @@
 # /arch/all-mingw32/kernel/
 /arch/all-mingw32/kernel/mmakefile
 
+# /arch/all-mingw32/testboot/
+/arch/all-mingw32/testboot/mmakefile
+
+# /arch/all-mingw32/timer/
+/arch/all-mingw32/timer/mmakefile
+
 # /arch/all-native/
 /arch/all-native/mmakefile
 
@@ -303,6 +312,9 @@
 # /arch/all-native/hidd/vga.hidd/
 /arch/all-native/hidd/vga.hidd/mmakefile
 /arch/all-native/hidd/vga.hidd/libdefs.h
+
+# /arch/all-native/kernel/
+/arch/all-native/kernel/mmakefile
 
 # /arch/all-netbsd/
 /arch/all-netbsd/mmakefile
@@ -396,6 +408,9 @@
 # /arch/all-pc/boot/grub2-host/
 /arch/all-pc/boot/grub2-host/mmakefile
 
+# /arch/all-pc/boot/grub2-tools/
+/arch/all-pc/boot/grub2-tools/mmakefile
+
 # /arch/all-pc/bootstrap/
 /arch/all-pc/bootstrap/mmakefile
 
@@ -472,11 +487,17 @@
 # /arch/all-unix/libs/oss/
 /arch/all-unix/libs/oss/mmakefile
 
+# /arch/all-unix/timer/
+/arch/all-unix/timer/mmakefile
+
 # /arch/arm-all/arm-aeabi/
 /arch/arm-all/arm-aeabi/mmakefile
 
 # /arch/arm-all/clib/
 /arch/arm-all/clib/mmakefile
+
+# /arch/arm-all/dos/
+/arch/arm-all/dos/mmakefile
 
 # /arch/arm-all/exec/
 /arch/arm-all/exec/mmakefile
@@ -498,6 +519,12 @@
 
 # /arch/arm-linux/exec/
 /arch/arm-linux/exec/mmakefile
+
+# /arch/arm-linux/processor/
+/arch/arm-linux/processor/mmakefile
+
+# /arch/arm-native/ceboot/
+/arch/arm-native/ceboot/mmakefile
 
 # /arch/i386-all/
 /arch/i386-all/mmakefile
@@ -555,12 +582,6 @@
 # /arch/i386-pc/drivers/
 /arch/i386-pc/drivers/mmakefile
 
-# /arch/i386-pc/drivers/irq.hidd/
-/arch/i386-pc/drivers/irq.hidd/mmakefile
-/arch/i386-pc/drivers/irq.hidd/libdefs.h
-/arch/i386-pc/drivers/irq.hidd/irq.s
-/arch/i386-pc/drivers/irq.hidd/irq_init.s
-
 # /arch/i386-pc/drivers/keyboard/
 /arch/i386-pc/drivers/keyboard/mmakefile
 /arch/i386-pc/drivers/keyboard/libdefs.h
@@ -600,6 +621,9 @@
 
 # /arch/m68k-all/dos/
 /arch/m68k-all/dos/mmakefile
+
+# /arch/m68k-all/dosboot/
+/arch/m68k-all/dosboot/mmakefile
 
 # /arch/m68k-all/exec/
 /arch/m68k-all/exec/mmakefile
@@ -652,10 +676,14 @@
 # /arch/m68k-amiga/boot/floppy/
 /arch/m68k-amiga/boot/floppy/mmakefile
 
+# /arch/m68k-amiga/boot/iso/
+/arch/m68k-amiga/boot/iso/mmakefile
+
 # /arch/m68k-amiga/c/
 /arch/m68k-amiga/c/mmakefile
 
 # /arch/m68k-amiga/card/
+/arch/m68k-amiga/card/mmakefile
 
 # /arch/m68k-amiga/cia/
 /arch/m68k-amiga/cia/mmakefile
@@ -683,6 +711,9 @@
 
 # /arch/m68k-amiga/devs/trackdisk/
 /arch/m68k-amiga/devs/trackdisk/mmakefile
+
+# /arch/m68k-amiga/diag/
+/arch/m68k-amiga/diag/mmakefile
 
 # /arch/m68k-amiga/disk/
 /arch/m68k-amiga/disk/mmakefile
@@ -716,6 +747,12 @@
 
 # /arch/m68k-amiga/potgo/
 /arch/m68k-amiga/potgo/mmakefile
+
+# /arch/m68k-amiga/romboot/
+/arch/m68k-amiga/romboot/mmakefile
+
+# /arch/m68k-amiga/s/
+/arch/m68k-amiga/s/mmakefile
 
 # /arch/m68k-amiga/timer/
 /arch/m68k-amiga/timer/mmakefile
@@ -801,12 +838,6 @@
 # /arch/ppc-chrp/efika/boot/
 /arch/ppc-chrp/efika/boot/mmakefile
 
-# /arch/ppc-chrp/efika/bootloader/
-/arch/ppc-chrp/efika/bootloader/mmakefile
-
-# /arch/ppc-chrp/efika/bootmenu/
-/arch/ppc-chrp/efika/bootmenu/mmakefile
-
 # /arch/ppc-chrp/efika/include/
 /arch/ppc-chrp/efika/include/mmakefile
 
@@ -828,14 +859,17 @@
 # /arch/ppc-chrp/hidd.radeon/
 /arch/ppc-chrp/hidd.radeon/mmakefile
 
-# /arch/ppc-chrp/irq.hidd/
-/arch/ppc-chrp/irq.hidd/mmakefile
+# /arch/ppc-chrp/pegasos/kernel/
+/arch/ppc-chrp/pegasos/kernel/mmakefile
 
 # /arch/ppc-chrp/rtas/
 /arch/ppc-chrp/rtas/mmakefile
 
 # /arch/ppc-morphos/include/
 /arch/ppc-morphos/include/mmakefile
+
+# /arch/ppc-native/kernel/
+/arch/ppc-native/kernel/mmakefile
 
 # /arch/ppc-sam440/battclock/
 /arch/ppc-sam440/battclock/mmakefile
@@ -848,12 +882,6 @@
 
 # /arch/ppc-sam440/boot/parthenope/src/
 /arch/ppc-sam440/boot/parthenope/src/mmakefile
-
-# /arch/ppc-sam440/bootloader/
-/arch/ppc-sam440/bootloader/mmakefile
-
-# /arch/ppc-sam440/dos/
-/arch/ppc-sam440/dos/mmakefile
 
 # /arch/ppc-sam440/dosboot/
 /arch/ppc-sam440/dosboot/mmakefile
@@ -923,6 +951,9 @@
 
 # /boot/
 /boot/mmakefile
+
+# /bootstrap/
+/bootstrap/mmakefile
 
 # /compiler/
 /compiler/fdlibm
@@ -1214,6 +1245,7 @@
 /rom/bootloader/mmakefile
 
 # /rom/card/
+/rom/card/mmakefile
 
 # /rom/dbus/
 /rom/dbus/mmakefile
@@ -1223,9 +1255,6 @@
 
 # /rom/devs/
 /rom/devs/makefile
-
-# /rom/devs/ahci.device/
-/rom/devs/ahci.device/mmakefile
 
 # /rom/devs/ata/
 /rom/devs/ata/mmakefile
@@ -1259,6 +1288,9 @@
 
 # /rom/dosboot/
 /rom/dosboot/mmakefile
+
+# /rom/efi/
+/rom/efi/mmakefile
 
 # /rom/exec/
 /rom/exec/*.s
@@ -1313,8 +1345,12 @@
 # /rom/filesys/pfs3/
 
 # /rom/filesys/pfs3/fs/
+/rom/filesys/pfs3/fs/mmakefile
 
 # /rom/filesys/pfs3/fs/doc/
+
+# /rom/filesys/pfs3/fs/m68k/
+/rom/filesys/pfs3/fs/m68k/mmakefile
 
 # /rom/filesystem/
 /rom/filesystem/mmakefile
@@ -1374,6 +1410,9 @@
 
 # /rom/keymap/
 /rom/keymap/mmakefile
+
+# /rom/lddemon/
+/rom/lddemon/mmakefile
 
 # /rom/misc/
 /rom/misc/mmakefile
@@ -1485,6 +1524,15 @@
 # /rom/usb/pciusb/
 /rom/usb/pciusb/mmakefile
 
+# /rom/usb/pciusbhc/
+/rom/usb/pciusbhc/mmakefile
+
+# /rom/usb/pciusbhc/ehci/
+/rom/usb/pciusbhc/ehci/mmakefile
+
+# /rom/usb/pciusbhc/uhci/
+/rom/usb/pciusbhc/uhci/mmakefile
+
 # /rom/usb/poseidon/
 /rom/usb/poseidon/mmakefile
 
@@ -1569,6 +1617,9 @@
 
 # /test/kernel/
 /test/kernel/mmakefile
+
+# /test/layers/
+/test/layers/mmakefile
 
 # /test/library/
 /test/library/mmakefile
@@ -1766,6 +1817,12 @@
 /workbench/classes/datatypes/bmp/mmakefile
 /workbench/classes/datatypes/bmp/libdefs.h
 
+# /workbench/classes/datatypes/degas/
+/workbench/classes/datatypes/degas/mmakefile
+
+# /workbench/classes/datatypes/gemimage/
+/workbench/classes/datatypes/gemimage/mmakefile
+
 # /workbench/classes/datatypes/gif/
 /workbench/classes/datatypes/gif/mmakefile
 /workbench/classes/datatypes/gif/libdefs.h
@@ -1844,6 +1901,9 @@
 /workbench/classes/gadgets/gradientslider/libdefs.h
 /workbench/classes/gadgets/gradientslider/mmakefile
 
+# /workbench/classes/zune/aboutbox/
+/workbench/classes/zune/aboutbox/mmakefile
+
 # /workbench/classes/zune/aboutwindow/
 /workbench/classes/zune/aboutwindow/mmakefile
 /workbench/classes/zune/aboutwindow/strings.h
@@ -1880,6 +1940,9 @@
 # /workbench/classes/zune/lamp/
 /workbench/classes/zune/lamp/mmakefile
 
+# /workbench/classes/zune/listtree/
+/workbench/classes/zune/listtree/mmakefile
+
 # /workbench/classes/zune/loginwindow/
 /workbench/classes/zune/loginwindow/mmakefile
 
@@ -1893,6 +1956,9 @@
 
 # /workbench/classes/zune/prefswindow/catalogs/
 /workbench/classes/zune/prefswindow/catalogs/mmakefile
+
+# /workbench/classes/zune/rawimage/
+/workbench/classes/zune/rawimage/mmakefile
 
 # /workbench/classes/zune/systemprefswindow/
 /workbench/classes/zune/systemprefswindow/mmakefile
@@ -2071,6 +2137,9 @@
 
 # /workbench/devs/networks/realtek8180/
 /workbench/devs/networks/realtek8180/mmakefile
+
+# /workbench/devs/networks/rhine/
+/workbench/devs/networks/rhine/mmakefile
 
 # /workbench/devs/networks/rtl8029/
 /workbench/devs/networks/rtl8029/mmakefile
@@ -2699,9 +2768,13 @@
 
 # /workbench/prefs/palette/
 /workbench/prefs/palette/mmakefile
+/workbench/prefs/palette/strings.h
 
 # /workbench/prefs/palette/catalogs/
 /workbench/prefs/palette/catalogs/mmakefile
+
+# /workbench/prefs/palette/icons/
+/workbench/prefs/palette/icons/mmakefile
 
 # /workbench/prefs/pointer/
 /workbench/prefs/pointer/strings.h
@@ -2752,6 +2825,15 @@
 # /workbench/prefs/wanderer/catalogs/
 /workbench/prefs/wanderer/catalogs/mmakefile
 
+# /workbench/printers/
+/workbench/printers/mmakefile
+
+# /workbench/printers/postscript/
+/workbench/printers/postscript/mmakefile
+
+# /workbench/printers/skeleton/
+/workbench/printers/skeleton/mmakefile
+
 # /workbench/rexxc/
 /workbench/rexxc/mmakefile
 
@@ -2775,6 +2857,13 @@
 
 # /workbench/system/BHFormat/catalogs/
 /workbench/system/BHFormat/catalogs/mmakefile
+
+# /workbench/system/Snoopy/
+/workbench/system/Snoopy/mmakefile
+/workbench/system/Snoopy/strings.h
+
+# /workbench/system/Snoopy/catalogs/
+/workbench/system/Snoopy/catalogs/mmakefile
 
 # /workbench/system/SysMon/
 /workbench/system/SysMon/mmakefile
@@ -2904,12 +2993,22 @@
 /workbench/tools/InstallAROS/main.c.newest
 /workbench/tools/InstallAROS/iotask.c
 
+# /workbench/tools/KeyShow/
+/workbench/tools/KeyShow/strings.h
+/workbench/tools/KeyShow/mmakefile
+
+# /workbench/tools/KeyShow/catalogs/
+/workbench/tools/KeyShow/catalogs/mmakefile
+
 # /workbench/tools/ScreenGrabber/
 /workbench/tools/ScreenGrabber/mmakefile
 /workbench/tools/ScreenGrabber/strings.h
 
 # /workbench/tools/ScreenGrabber/catalogs/
 /workbench/tools/ScreenGrabber/catalogs/mmakefile
+
+# /workbench/tools/ShowConfig/
+/workbench/tools/ShowConfig/mmakefile
 
 # /workbench/tools/commodities/
 /workbench/tools/commodities/mmakefile
@@ -2960,13 +3059,3 @@
 
 # /workbench/utilities/Presenter/
 /workbench/utilities/Presenter/mmakefile
-
-# /workbench/utilities/Snoopy/
-/workbench/utilities/Snoopy/mmakefile
-/workbench/utilities/Snoopy/strings.h
-
-# /workbench/utilities/Snoopy/catalogs/
-/workbench/utilities/Snoopy/catalogs/mmakefile
-
-# /workbench/utilities/Snoopy/icons/
-/workbench/utilities/Snoopy/icons/mmakefile
