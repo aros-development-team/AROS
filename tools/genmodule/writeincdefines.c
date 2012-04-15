@@ -297,7 +297,6 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	fprintf(out,
 		"...) \\\n"
 		"({ \\\n"
-		"    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \\\n"
 		"    %s(",
 		funclistit->name
 	);
@@ -313,7 +312,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	    {
 		type = getargtype(arglistit);
 		assert(type != NULL);
-		fprintf(out, "(%s)__args", type);
+		fprintf(out, "(%s)(IPTR []){ AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }", type);
 		free(type);
 	    }
 	    else
