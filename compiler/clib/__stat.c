@@ -580,7 +580,7 @@ static void __fill_statbuffer(
 	fib->fib_DirEntryType = ST_PIPEFILE;
     }
 
-    sb->st_dev     = (dev_t)((struct FileLock *)BADDR(lock))->fl_Volume;
+    sb->st_dev     = (dev_t) (lock ? ((struct FileLock *)BADDR(lock))->fl_Volume : NULL);
     sb->st_ino     = hash;    /* hash value will be truncated if st_ino size is
                                  smaller than uint64_t, but it's ok */
     sb->st_size    = (off_t)fib->fib_Size;
@@ -595,7 +595,7 @@ static void __fill_statbuffer(
     {
         struct InfoData info;
 
-        if (Info(lock, &info))
+        if (lock && Info(lock, &info))
         {
             sb->st_blksize = info.id_BytesPerBlock;
         }
