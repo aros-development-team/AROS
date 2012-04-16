@@ -52,7 +52,7 @@
 #include "newimage.h"
 #include "config.h"
 
-const TEXT version_string[] = "$VER: Decoration 1.2 (12.4.2012)";
+const TEXT version_string[] = "$VER: Decoration 1.3 (16.4.2012)";
 
 struct IClass *wndcl, *scrcl, *menucl;
 
