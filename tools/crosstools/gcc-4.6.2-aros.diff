@@ -301,7 +301,7 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros64.h gcc-4.6.2.aros/gcc/config/i386/aros
 diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
 --- gcc-4.6.2/gcc/config/i386/aros.h	1970-01-01 01:00:00.000000000 +0100
 +++ gcc-4.6.2.aros/gcc/config/i386/aros.h	2012-04-14 16:50:17.996003545 +0200
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,28 @@
 +/* Definitions for Intel 386 running AROS systems with ELF format.
 +   Copyright (C) 1994, 1995, 1996, 1997, 1998, 1999, 2001, 2002
 +   Free Software Foundation, Inc.
@@ -325,6 +325,7 @@ diff -ruN gcc-4.6.2/gcc/config/i386/aros.h gcc-4.6.2.aros/gcc/config/i386/aros.h
 +the Free Software Foundation, 59 Temple Place - Suite 330,
 +Boston, MA 02111-1307, USA.  */
 +
++#undef TARGET_VERSION
 +#define TARGET_VERSION fprintf (stderr, " (i386 AROS/ELF)");
 +
 +#undef	LINK_SPEC
