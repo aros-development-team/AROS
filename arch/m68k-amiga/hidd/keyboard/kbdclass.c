@@ -58,14 +58,30 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
     struct Library *TimerBase = kbddata->TimerBase;
     struct EClockVal eclock1, eclock2;
     UBYTE keycode;
-    
+
+    if (kbddata->resetstate == 2) {
+        // do nothing, we'll reset automatically in 10seconds
+        return 0;
+    }
+
     keycode = ciaa->ciasdr;
 
     ciaa->ciacra |= 0x40;
     ReadEClock(&eclock1);
 
     keycode = ~((keycode >> 1) | (keycode << 7));
-    kbddata->kbd_callback(kbddata->callbackdata, keycode);
+
+    if (keycode == 0x78) { // reset warning
+        kbddata->resetstate++;
+        if (kbddata->resetstate == 2) {
+            kbddata->kbd_callback(kbddata->callbackdata, keycode);
+            // second reset warning, no handshake = starts 10s delay before forced reset
+            return 0;
+        }
+        // first reset warning, handle it normally
+    } else {
+        kbddata->kbd_callback(kbddata->callbackdata, keycode);
+    }
     /* "release" UAE mouse wheel up/down key codes */
     if (keycode == 0x7a || keycode == 0x7b)
 	kbddata->kbd_callback(kbddata->callbackdata, 0x80 | keycode);
@@ -76,11 +92,11 @@ static AROS_UFH4(ULONG, keyboard_interrupt,
     	if ((LONG)(eclock2.ev_lo - eclock1.ev_lo) >= 80)
     	    break;
     }
-    		
+
     ciaa->ciacra &= ~0x40; // end handshake
-	
+
     return 0;
-	
+
     AROS_USERFUNC_EXIT
 }
 

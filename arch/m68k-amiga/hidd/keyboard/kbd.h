@@ -83,6 +83,7 @@ struct kbd_data
     VOID    (*kbd_callback)(APTR, UWORD);
     APTR    callbackdata;
     struct Library *TimerBase;
+    UBYTE resetstate;
 };
 
 /****************************************************************************************/
