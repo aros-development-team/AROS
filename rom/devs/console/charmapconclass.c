@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code for CONU_CHARMAP console units.
@@ -217,7 +217,7 @@ static VOID charmapcon_add_prop(Class * cl, Object * o)
 								TAG_END) ))
 				{
 					struct Gadget *G = (void *)pg;
-					WORD voffset = size_width / 4;
+					WORD hoffset = size_width / 4;
 					
 					pg->down.GadgetRender = pg->down.SelectRender = (APTR)pg->downimage;
 
@@ -227,8 +227,8 @@ static VOID charmapcon_add_prop(Class * cl, Object * o)
 					/* Now init all sizes/positions relative to window's borders */
 					G->Height		= -(win->BorderTop + size_height + 2*height + 2);
 					G->TopEdge		= win->BorderTop + 1;
-					G->Width			= size_width - voffset * 2;
-					G->LeftEdge		= -(size_width - voffset - 1); G++;
+					G->Width			= size_width - hoffset * 2 + 2;
+					G->LeftEdge		= -(size_width - hoffset); G++;
 					pg->up.LeftEdge=
 					G->LeftEdge		= -(size_width - 1);
 					G->Width			= pg->up.Width  = size_width;
