@@ -2,12 +2,13 @@
 #define _TERMIOS_H 1
 
 /*
- * Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+ * Copyright © 1995-2012, The AROS Development Team. All rights reserved.
  * $Id$
  *
- * POSIX Standard: 7.1-2 General Terminal Interface        <termios.h>
+ * POSIX.1-2008 header file <termios.h>
  */
 
+/* FIXME: Are these OK ? */
 typedef unsigned char	cc_t;
 typedef unsigned int	speed_t;
 typedef unsigned int	tcflag_t;
@@ -18,12 +19,8 @@ struct termios {
     tcflag_t c_oflag;	/* output mode flags */
     tcflag_t c_cflag;	/* control mode flags */
     tcflag_t c_lflag;	/* local mode flags */
-    cc_t c_line;	/* line discipline */
     cc_t c_cc[NCCS];	/* control characters */
-    speed_t c_ispeed;	/* input speed */
-    speed_t c_ospeed;	/* output speed */
-#define _HAVE_STRUCT_TERMIOS_C_ISPEED 1
-#define _HAVE_STRUCT_TERMIOS_C_OSPEED 1
+    char internal[64];  /* Private */
 };
 
 /* c_cc characters */
