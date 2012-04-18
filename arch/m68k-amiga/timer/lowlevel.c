@@ -126,7 +126,8 @@ void CheckTimer(struct TimerBase *TimerBase, UWORD unitnum)
 			UBYTE lo, hi;
 			UWORD val;
 			// already active but new item was added to head
-			*TimerBase->tb_micro_cr = 0x08;
+			*TimerBase->tb_micro_cr &= 0x40;
+			*TimerBase->tb_micro_cr |= 0x08;
 			hi = *TimerBase->tb_micro_hi;
 			lo = *TimerBase->tb_micro_lo;
 			val = (hi << 8) | lo;
@@ -241,7 +242,9 @@ AROS_UFH4(APTR, ciaint_timer,
 			newcount = 0xffff;
 		TimerBase->tb_micro_started = newcount;
 		// reset control register, some badly behaving programs may have changed it
-		*TimerBase->tb_micro_cr = 0x08;
+		// do not touch bit 6 because it is used by keyboard handshake and reset warning
+		*TimerBase->tb_micro_cr &= 0x40;
+		*TimerBase->tb_micro_cr |= 0x08;
 		// reload new timer value (timer autostarts)
 		*TimerBase->tb_micro_lo = (UBYTE)(newcount >> 0);
 		*TimerBase->tb_micro_hi = (UBYTE)(newcount >> 8);
