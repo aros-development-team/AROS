@@ -31,7 +31,7 @@ int main(void)
                      if (memcmp(mem, mem2, size))
                      {
                          kprintf("=== memcmp failure!!\n");
-                         asm volatile("int3");
+                         //asm volatile("int3");
                      }
                  }
              }
