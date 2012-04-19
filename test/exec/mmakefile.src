@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Makefile for AROS kernel.resource tests
+#   Makefile for AROS exec.library tests
 
 include $(TOP)/config/make.cfg
 
@@ -10,6 +10,7 @@ FILES :=		\
     avltest		\
     childstatus		\
     childwait		\
+    copymem		\
     dumpmem		\
     enqueue		\
     messagetest		\
