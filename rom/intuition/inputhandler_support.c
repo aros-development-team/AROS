@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -557,6 +557,7 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
 {
     struct LayersBase *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
     struct Screen *scr;
+    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
 
     switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
     {
@@ -580,7 +581,8 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
         break;
 
     case GTYP_WDEPTH:
-        if (!IsLayerHiddenBySibling(WLAYER(gi->gi_Window), FALSE))
+        if (!IsLayerHiddenBySibling(WLAYER(gi->gi_Window), FALSE)
+            || (iihd->ActQualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) != 0)
         {
             /* Send window to back */
             WindowToBack(gi->gi_Window);
