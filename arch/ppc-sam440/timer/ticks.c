@@ -2,10 +2,6 @@
 #include <asm/amcc440.h>
 #include <asm/io.h>
 
-#include "kernel_intern.h"
-#include "kernel_globals.h"
-#include "kernel_base.h"
-
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
 #include <exec/execbase.h>
@@ -14,11 +10,11 @@
 #include <proto/exec.h>
 #include <proto/timer.h>
 
-#include "lowlevel.h"
+#include <timer_intern.h>
+#include <kernel_intern.h>
 
-inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
+inline uint32_t __attribute__((const)) tick2usec(struct TimerBase *TimerBase, uint32_t tick)
 {
-    struct KernelBase *KernelBase = getKernelBase();
     uint32_t retval;
     uint64_t tmp = ((uint64_t)tick) * 1000000;
 
@@ -27,10 +23,9 @@ inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
     return retval;
 }
 
-inline uint32_t __attribute__((const)) usec2tick(uint32_t usec)
+inline uint32_t __attribute__((const)) usec2tick(struct TimerBase *TimerBase, uint32_t usec)
 {
     uint32_t retval;
-    struct KernelBase *KernelBase = getKernelBase();
     uint64_t tmp = ((uint64_t)usec) * KernelBase->kb_PlatformData->pd_OPBFreq;
 
     retval = (tmp) / 1000000;
@@ -42,7 +37,6 @@ void EClockUpdate(struct TimerBase *TimerBase)
 {
     uint32_t time;
     uint32_t diff;
-    struct KernelBase *KernelBase = getKernelBase();
 
     time = inl(GPT0_TBC);
     diff = (time - TimerBase->tb_prev_tick);
@@ -66,8 +60,8 @@ void EClockUpdate(struct TimerBase *TimerBase)
         TimerBase->tb_Elapsed.tv_secs++;
     }
 
-    TimerBase->tb_Elapsed.tv_micro = tick2usec(TimerBase->tb_ticks_elapsed);
-    TimerBase->tb_CurrentTime.tv_micro = tick2usec(TimerBase->tb_ticks_sec);
+    TimerBase->tb_Elapsed.tv_micro = tick2usec(TimerBase, TimerBase->tb_ticks_elapsed);
+    TimerBase->tb_CurrentTime.tv_micro = tick2usec(TimerBase, TimerBase->tb_ticks_sec);
 
 //    if (show)
 //        bug("[timer] CurrentTime: %d:%06d\n", TimerBase->tb_CurrentTime.tv_secs, TimerBase->tb_CurrentTime.tv_micro);
@@ -76,13 +70,12 @@ void EClockUpdate(struct TimerBase *TimerBase)
 
 void EClockSet(struct TimerBase *TimerBase)
 {
-    TimerBase->tb_ticks_sec = usec2tick(TimerBase->tb_CurrentTime.tv_micro);
+    TimerBase->tb_ticks_sec = usec2tick(TimerBase, TimerBase->tb_CurrentTime.tv_micro);
 }
 
 
 void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
 {
-	struct KernelBase *KernelBase = getKernelBase();
     int32_t delay = KernelBase->kb_PlatformData->pd_OPBFreq / 50;  /* 50Hz in worst case */
     struct timeval time;
     struct timerequest *tr;
@@ -105,8 +98,8 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         {
             if (time.tv_micro < 20000)
             {
-                if (delay > usec2tick(time.tv_micro))
-                    delay = usec2tick(time.tv_micro);
+                if (delay > usec2tick(TimerBase, time.tv_micro))
+                    delay = usec2tick(TimerBase, time.tv_micro);
             }
         }
     }
@@ -128,18 +121,18 @@ void TimerSetup(struct TimerBase *TimerBase, uint32_t waste)
         {
             if (time.tv_micro < 20000)
             {
-                if (delay > usec2tick(time.tv_micro))
-                    delay = usec2tick(time.tv_micro);
+                if (delay > usec2tick(TimerBase, time.tv_micro))
+                    delay = usec2tick(TimerBase, time.tv_micro);
             }
         }
     }
 
     current_time = inl(GPT0_TBC);
-    delay -= current_time - waste + corr;
+    delay -= current_time - waste + TimerBase->tb_Platform.corr;
 
     if (delay < 100) delay = 100;
 
-    tbc_expected = current_time + delay;
+    TimerBase->tb_Platform.tbc_expected = current_time + delay;
 
     outl(delay, GPT0_DCT0);
 }

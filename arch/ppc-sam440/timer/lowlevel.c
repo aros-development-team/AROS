@@ -12,11 +12,7 @@
 #include <proto/exec.h>
 #include <proto/timer.h>
 
-#include "lowlevel.h"
-
-uint32_t tbc_expected;
-uint32_t tbc_achieved;
-int32_t corr;
+#include <timer_intern.h>
 
 //inline uint32_t __attribute__((const)) tick2usec(uint32_t tick)
 //{
@@ -62,12 +58,12 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
         outl(GPT0_DCIS_DCIS, GPT0_DCIS);
         EClockUpdate(TimerBase);
 
-        tbc_achieved = startup_time;
+        TimerBase->tb_Platform.tbc_achieved = startup_time;
 
         /* Timer errors bigger than approx 15 microseconds shouldn't be taken into account */
-        if (tbc_achieved > tbc_expected && (tbc_achieved - tbc_expected) < 1000)
+        if (TimerBase->tb_Platform.tbc_achieved > TimerBase->tb_Platform.tbc_expected && (TimerBase->tb_Platform.tbc_achieved - TimerBase->tb_Platform.tbc_expected) < 1000)
         {
-            corr = ((int32_t)(tbc_achieved - tbc_expected))-1;
+            TimerBase->tb_Platform.corr = ((int32_t)(TimerBase->tb_Platform.tbc_achieved - TimerBase->tb_Platform.tbc_expected))-1;
         }
 
 

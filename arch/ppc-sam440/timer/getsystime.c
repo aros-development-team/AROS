@@ -5,8 +5,9 @@
     Desc: GetSysTime() - Find out what time it is.
     Lang: english
 */
-#include "lowlevel.h"
 #include <proto/exec.h>
+
+#include <timer_intern.h>
 
 /*****************************************************************************
 
