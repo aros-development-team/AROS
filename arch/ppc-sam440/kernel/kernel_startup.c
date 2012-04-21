@@ -1,3 +1,5 @@
+#define DEBUG 1
+
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
@@ -335,33 +337,11 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     }
 }
 
-struct MemHeader mh;
-
-static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
+void SetupClocking440(struct PlatformData *pd)
 {
-    int i;
-    struct PlatformData *pd;
-    struct ExecBase *SysBase = getSysBase();
-    uint32_t reg;
-    
-    uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
-    uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
-
-    D(bug("Kernel_Init Entered\n"));
-    /* Get the PLB and CPU speed */
-
-    pd = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
-    if (!pd)
-        return FALSE;
-
-    LIBBASE->kb_PlatformData = pd;
-
-    /* Stash the PVR value */
-    pd->pd_PVR = rdspr(PVR);
-
     /* PLL divisors */
     wrdcr(CPR0_CFGADDR, CPR0_PLLD0);
-    reg = rddcr(CPR0_CFGDATA);
+    uint32_t reg = rddcr(CPR0_CFGDATA);
 
     uint32_t fbdv = (reg >> 24) & 0x1f;
     if (fbdv == 0)
@@ -423,11 +403,11 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     }
 
     uint32_t vco = (m * 66666666) + m/2;
-    LIBBASE->kb_PlatformData->pd_CPUFreq = vco / fwdva;
-    LIBBASE->kb_PlatformData->pd_PLBFreq = vco / fwdvb / perdv0;
-    LIBBASE->kb_PlatformData->pd_OPBFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / opbdv0;
-    LIBBASE->kb_PlatformData->pd_EPBFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / perdv0;
-    LIBBASE->kb_PlatformData->pd_PCIFreq = LIBBASE->kb_PlatformData->pd_PLBFreq / spcid0;
+    pd->pd_CPUFreq = vco / fwdva;
+    pd->pd_PLBFreq = vco / fwdvb / perdv0;
+    pd->pd_OPBFreq = pd->pd_PLBFreq / opbdv0;
+    pd->pd_EPBFreq = pd->pd_PLBFreq / perdv0;
+    pd->pd_PCIFreq = pd->pd_PLBFreq / spcid0;
 
     /*
      * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
@@ -435,14 +415,164 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      */
     wrspr(DECAR, LIBBASE->kb_PlatformData->pd_OPBFreq / 50);
     wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+}
+
+
+const uint8_t fbdv_map[256] = {
+      1, 123, 117, 251, 245,  69, 111, 125,
+    119,  95, 105, 197, 239, 163,  63, 253,
+    247, 187,  57, 223, 233, 207, 157,  71,
+    113,  15,  89,  37, 191,  19,  99, 127,
+    121, 109,  93,  61, 185, 155,  13,  97,
+    107,  11,   9,  81,  31,  49,  83, 199,
+    241,  33, 181, 143, 217, 173,  51, 165,
+     65,  85, 151, 147, 227,  41, 201, 255,
+    249, 243, 195, 237, 221, 231,  35, 189,
+     59, 183,  79,  29, 141, 215, 145, 225,
+    235, 219,  27, 139, 137, 135, 175, 209,
+    159,  53,  45, 177, 211,  23, 167,  73,
+    115,  67, 103, 161,  55, 205,  87,  17,
+     91, 153,   7,  47, 179, 171, 149,  39,
+    193, 229,  77, 213,  25, 133,  43,  21,
+    101, 203,   5, 169,  75, 131,   3, 129,
+      1, 250, 244, 124, 118, 196, 238, 252,
+    246, 222, 232,  70, 112,  36, 190, 126,
+    120,  60, 184,  96, 106,  80,  30, 198,
+    240, 142, 216, 164,  64, 146, 226, 254,
+    248, 236, 220, 188,  58,  28, 140, 224,
+    234, 138, 136, 208, 158, 176, 210,  72,
+    114, 160,  54,  16,  90,  46, 178,  38,
+    192, 212,  24,  20, 100, 168,  74, 128,
+    122, 116,  68, 110,  94, 104, 162,  62,
+    186,  56, 206, 156,  14,  88,  18,  98,
+    108,  92, 154,  12,  10,   8,  48,  82,
+     32, 180, 172,  50,  84, 150,  40, 200,
+    242, 194, 230,  34, 182,  78, 214, 144,
+    218,  26, 134, 174,  52,  44,  22, 166,
+     66, 102, 204,  86, 152,   6, 170, 148,
+    228,  76, 132,  42, 202,   4, 130,   2,
+};
+
+static const uint8_t fwdv_map[16] = {
+    1,   2,  14,   9,   4,  11,  16,  13,
+    12,   5,   6,  15,  10,   7,   8,   3,
+};
+
+void SetupClocking460(struct PlatformData *pd)
+{
+    uint32_t reg;
+
+    /* PLL divisors */
+    wrdcr(CPR0_CFGADDR, CPR0_PLLD);
+    reg = rddcr(CPR0_CFGDATA);
+
+    uint32_t fbdv = fbdv_map[(reg >> 24) & 0xff];
+    uint32_t fwdva = fwdv_map[((reg >> 16) & 0xf)];
+    uint32_t fwdvb = fwdv_map[(reg >> 8) & 0xf];
+    (void)fwdvb; // Unused
+
+    /* Early PLL divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_PLBED);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t plbed = (reg >> 24) & 0xf;
+    if (plbed == 0)
+        plbed = 8;
+
+    /* OPB clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_OPBD);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t opbd = (reg >> 24) & 3;
+    if (opbd == 0)
+        opbd = 4;
+
+    /* Peripheral clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_PERD);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t perd = (reg >> 24) & 3;
+    if (perd == 0)
+        perd = 4;
+
+    /* AHB clock divisor */
+    wrdcr(CPR0_CFGADDR, CPR0_AHBD);
+    reg = rddcr(CPR0_CFGDATA);
+    uint32_t ahbd = (reg >> 24) & 1;
+    if (ahbd == 0)
+        ahbd = 2;
+
+    /* All divisors there.
+     * Read PLL control register and calculate the m value
+     */
+    wrdcr(CPR0_CFGADDR, CPR0_PLLC0);
+    reg = rddcr(CPR0_CFGDATA);
+
+    uint32_t m;
+    if (((reg >> 24) & 3) == 0) {
+        /* PLL internal feedback */
+        m = fbdv;
+    } else {
+        /* PLL Per-Clock feedback */
+        m = fwdva * plbed * opbd * ahbd;
+    }
+
+    D(bug("fbdv %d, fwdva = %d, fwdvb = %d\n", fbdv, fwdva, fwdvb));
+    D(bug("plbed %d, opbd = %d, perd = %d, ahbd = %d\n",
+                plbed, opbd, perd, ahbd));
+
+    uint32_t vco = (m * 50000000) + m/2;
+    pd->pd_CPUFreq = vco / fwdva;
+    pd->pd_PLBFreq = vco / fwdva / plbed;
+    pd->pd_OPBFreq = pd->pd_PLBFreq / opbd;
+    pd->pd_EPBFreq = pd->pd_PLBFreq / perd;
+    pd->pd_PCIFreq = pd->pd_PLBFreq / ahbd;
+
+    /*
+     * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
+     * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
+     */
+    wrspr(DECAR, pd->pd_OPBFreq / 50);
+    wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+}
+
+struct MemHeader mh;
+
+static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
+{
+    int i;
+    struct PlatformData *pd;
+    struct ExecBase *SysBase = getSysBase();
+    
+    uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
+    uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
+
+    D(bug("Kernel_Init Entered\n"));
+    /* Get the PLB and CPU speed */
+
+    pd = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!pd)
+        return FALSE;
+
+    LIBBASE->kb_PlatformData = pd;
+
+    /* Stash the PVR value */
+    pd->pd_PVR = rdspr(PVR);
+    D(bug("[KRN] PVR: 0x%08x\n", pd->pd_PVR));
+
+    if (krnIsPPC440(pd->pd_PVR)) {
+        SetupClocking440(pd);
+    } else if (krnIsPPC460(pd->pd_PVR)) {
+        SetupClocking460(pd);
+    } else {
+        bug("kernel.resource: Unknown PVR model 0x%08x\n", pd->pd_PVR);
+        for (;;);
+    }
 
     D(bug("[KRN] Kernel resource post-exec init\n"));
 
-    D(bug("[KRN] CPU Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_CPUFreq));
-    D(bug("[KRN] PLB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_PLBFreq));
-    D(bug("[KRN] OPB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_OPBFreq));
-    D(bug("[KRN] EPB Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_EPBFreq));
-    D(bug("[KRN] PCI Speed: %dHz\n", LIBBASE->kb_PlatformData->pd_PCIFreq));
+    D(bug("[KRN] CPU Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_CPUFreq / 1000000));
+    D(bug("[KRN] PLB Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_PLBFreq / 1000000));
+    D(bug("[KRN] OPB Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_OPBFreq / 1000000));
+    D(bug("[KRN] EPB Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_EPBFreq / 1000000));
+    D(bug("[KRN] PCI Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_PCIFreq / 1000000));
 
     /* 4K granularity for data sections */
     krn_lowest &= 0xfffff000;
