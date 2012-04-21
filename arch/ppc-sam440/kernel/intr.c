@@ -194,7 +194,6 @@ void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
 void generic_handler(context_t *ctx, uint8_t exception, void *self)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    struct ExecBase *SysBase = getSysBase();
 
     if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
     {
