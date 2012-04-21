@@ -76,9 +76,6 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR InputDevice)
     					   TASKTAG_ARG1	      , InputDevice,
     					   TAG_DONE);
 
-    /* Initialise the input.device task. */
-    InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
-
     if(InputDevice->InputTask)
     {
 	D(bug("[InputDev] Done\n"));

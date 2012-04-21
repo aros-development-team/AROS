@@ -546,8 +546,11 @@ void ProcessEvents (struct inputbase *InputDevice)
 	    InputDevice->ResetSig = 0;
 
 	    /* Blank screen(s) in order to indicate upcoming machine reset */
+	    /* Don't blank on m68k because we have programs that shows status information while waiting for reset. */
 	    if (GfxBase) {
+#ifndef __mc68000
 	        LoadView(NULL);
+#endif
 	        CloseLibrary(GfxBase);
 	    }
 
