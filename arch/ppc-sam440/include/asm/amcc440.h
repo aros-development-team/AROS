@@ -152,6 +152,11 @@ typedef struct AROSCPUContext {
 #define ICDBDR  0x3D3   /* Instruction Cache Debug Data Register */
 #define DBDR    0x3F3   /* Debug Data Register */
 
+/* PVR register */
+#define PVR_PPC440EP_B     0x422218D3
+#define PVR_PPC440EP_C     0x422218D4
+#define PVR_PPC460EX_B     0x130218a4
+
 /* TCR register */
 #define TCR_WP          0xc0000000
 #define TCR_WP21        0x00000000

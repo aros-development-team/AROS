@@ -327,6 +327,9 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->kb_PlatformData = pd;
 
+    /* Stash the PVR value */
+    pd->pd_PVR = rdspr(PVR);
+
     /* PLL divisors */
     wrdcr(CPR0_CFGADDR, CPR0_PLLD0);
     reg = rddcr(CPR0_CFGDATA);
