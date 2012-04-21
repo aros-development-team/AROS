@@ -6,57 +6,57 @@
     Lang: english
 */
 
-/*****i***********************************************************************
-
-    NAME */
-#include <aros/libcall.h>
-#include <proto/exec.h>
 #include <proto/kernel.h>
 
-#include "../kernel/kernel_intern.h"
+#include <asm/io.h>
+#include <asm/amcc440.h>
 
 #include "exec_intern.h"
 
-        AROS_LH1(void, RawPutChar,
+/*****i***********************************************************************
+
+    NAME */
+#include <proto/exec.h>
+
+	AROS_LH1(void, RawPutChar,
 
 /*  SYNOPSIS */
-        AROS_LHA(UBYTE, chr, D0),
+	AROS_LHA(UBYTE, chr, D0),
 
 /*  LOCATION */
-        struct ExecBase *, SysBase, 86, Exec)
+	struct ExecBase *, SysBase, 86, Exec)
 
 /*  FUNCTION
-        Emits a single character.
+	Emits a single character into low-level debug output stream
 
     INPUTS
-        chr - The character to emit
+	chr - The character to emit
 
     RESULT
-        None.
+	None.
 
     NOTES
-        This function is for very low level debugging only.
+	This function is for very low level debugging only.
+
+	Zero bytes are ignored by this function.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        RawIOInit(), RawPutChar(), RawMayGetChar()
+	RawIOInit(), RawPutChar(), RawMayGetChar()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    
-    /* Don't write 0 bytes */
-    if (chr)
-    {
-        bug("%c",chr);
-    }
+
+    if (chr == '\n')
+        RawPutChar('\r');
+    while(!(inb(UART0_LSR) & UART_LSR_TEMT));
+    outb(chr, UART0_THR);
 
     AROS_LIBFUNC_EXIT
 } /* RawPutChar */
