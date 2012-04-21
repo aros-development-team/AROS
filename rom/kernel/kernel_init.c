@@ -19,6 +19,8 @@
 
 #include LC_LIBDEFS_FILE
 
+#include <kernel_globals.h>
+
 #include <kernel_debug.h>
 
 /* We have own bug(), so don't use aros/debug.h to avoid conflicts */
@@ -78,7 +80,7 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
 {
     AROS_USERFUNC_INIT
 
-    struct KernelBase *KernelBase;
+    struct KernelBase *KernelBase = NULL;
     int i;
 
     D(bug("[KRN] Kernel_Init()\n"));
@@ -114,6 +116,10 @@ AROS_UFH3S(struct KernelBase *, Kernel_Init,
     	return NULL;
 
     D(bug("[KRN] Kernel_Init() done\n"));
+
+    /* Set global KernelBase storage and return */
+    D(bug("[%s] Set global KernelBase\n"));
+    setKernelBase(KernelBase);
 
     return KernelBase;
     

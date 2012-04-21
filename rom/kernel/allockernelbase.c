@@ -28,7 +28,5 @@ struct KernelBase *AllocKernelBase(struct ExecBase *SysBase)
     /* Skip past the vector table */
     mem += i;
 
-    /* Set global KernelBase storage and return */
-    setKernelBase(mem);
     return mem;
 }
