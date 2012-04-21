@@ -198,18 +198,29 @@ typedef struct AROSCPUContext {
     do { asm volatile("mtdcr %0,%1"::"i"(reg),"r"(val)); } while(0)
 
 /* System device control */
-#define CPR0_CFGADDR	0x000C	/* Clocking Configuration Address Register */
-#define CPR0_CFGDATA	0x000D	/* Clocking Configuration Data Register */
-#define CPR0_CLKUPD		0x0020	/* Clocking Update Register */
-#define CPR0_PLLC0		0x0040	/* PLL Control Register */
-#define CPR0_PLLD0		0x0060	/* PLL Divisor Register */
-#define CPR0_PRIMAD0	0x0080	/* Primary A Divisor Register */
-#define CPR0_PRIMBD0	0x00A0	/* Primary B Divisor Register */
-#define CPR0_OPBD0		0x00C0	/* OPB Clock Divisor Register */
-#define CPR0_PERD0		0x00E0	/* Peripheral Clock Divisor Register */
-#define CPR0_MALD		0x0100	/* MAL Clock Divisor Register */
-#define CPR0_SPCID		0x0120	/* Sync PCI Clock Divisor Register */
-#define CPR0_ICFG		0x0140	/* Clock/Power Configuration Register */
+#define CPR0_CFGADDR    0x000C  /* Clocking Configuration Address Register */
+#define CPR0_CFGDATA    0x000D  /* Clocking Configuration Data Register */
+#define CPR0_CLKUPD     0x0020  /* Clocking Update Register */
+#define CPR0_ICFG       0x0140  /* Clock/Power Configuration Register */
+
+/* PPC440 specific registers */
+#define CPR0_PLLC0      0x0040  /* PLL Control Register */
+#define CPR0_PLLD0      0x0060  /* PLL Divisor Register */
+#define CPR0_PRIMAD0    0x0080  /* Primary A Divisor Register */
+#define CPR0_PRIMBD0    0x00A0  /* Primary B Divisor Register */
+#define CPR0_OPBD0      0x00C0  /* OPB Clock Divisor Register */
+#define CPR0_PERD0      0x00E0  /* Peripheral Clock Divisor Register */
+#define CPR0_MALD       0x0100  /* MAL Clock Divisor Register */
+#define CPR0_SPCID      0x0120  /* Sync PCI Clock Divisor Register */
+
+/* PPC460 specific registers */
+#define CPR0_PLLC       0x0040  /* PLL Control Register */
+#define CPR0_PLLD       0x0060  /* PLL Divisor Register */
+#define CPR0_PLBED      0x0080  /* PLB Early Divisor Register */
+#define CPR0_PLB2D      0x00A0  /* PLB Divisor Register */
+#define CPR0_OPBD       0x00C0  /* OPB Clock Divisor Register */
+#define CPR0_PERD       0x00E0  /* Peripheral Clock Divisor Register */
+#define CPR0_AHBD       0x0100  /* AHB Clock Divisor Register */
 
 #define SDR0_CFGADDR    0x000E  /* R/W System DCR Configuration Address Register */
 #define SDR0_CFGDATA    0x000F  /* R/W System DCR Configuration Data Register */
