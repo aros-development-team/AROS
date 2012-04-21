@@ -96,9 +96,14 @@ uint32_t	modlength;
 uintptr_t	memlo;
 struct ExecBase *SysBase;
 
-static uint32_t exec_SelectMbs(uint32_t bcr)
+static uint32_t exec_SelectMbs440(uint32_t bcr)
 {
-    switch (bcr & SDRAM_SDSZ_MASK)
+    uint32_t val;
+
+    wrdcr(SDRAM0_CFGADDR, bcr);
+    val = rddcr(SDRAM0_CFGDATA);
+
+    switch (val & SDRAM_SDSZ_MASK)
     {
         case SDRAM_SDSZ_256MB: return 256;
         case SDRAM_SDSZ_128MB: return 128;
@@ -111,25 +116,48 @@ static uint32_t exec_SelectMbs(uint32_t bcr)
     return 0;
 }
 
+static uint32_t exec_SelectMbs460(uint32_t val)
+{
+    D(bug("[%s] DCR 0x%08x\n", __func__, val));
+    switch (val & MQ0_BASSZ_MASK)
+    {
+        case MQ0_BASSZ_4096MB: return 4096;
+        case MQ0_BASSZ_2048MB: return 2048;
+        case MQ0_BASSZ_1024MB: return 1024;
+        case  MQ0_BASSZ_512MB: return 512;
+        case  MQ0_BASSZ_256MB: return 256;
+        case  MQ0_BASSZ_128MB: return 128;
+        case   MQ0_BASSZ_64MB: return  64;
+        case   MQ0_BASSZ_32MB: return  32;
+        case   MQ0_BASSZ_16MB: return  16;
+        case    MQ0_BASSZ_8MB: return   8;
+    }
+
+    return 0;
+}
+
 /* Detect and report amount of available memory in mega bytes via device control register bus */
 static uint32_t exec_GetMemory()
 {
-    uint32_t mem;
-    wrdcr(SDRAM0_CFGADDR, SDRAM0_B0CR);
-    mem = exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
-    //D(bug("[exec] B0CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+    uint32_t mem = 0;
+    uint32_t pvr = rdspr(PVR);
 
-    wrdcr(SDRAM0_CFGADDR, SDRAM0_B1CR);
-    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
-    //D(bug("[exec] B1CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
-
-    wrdcr(SDRAM0_CFGADDR, SDRAM0_B2CR);
-    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
-    //D(bug("[exec] B2CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
-
-    wrdcr(SDRAM0_CFGADDR, SDRAM0_B3CR);
-    mem += exec_SelectMbs(rddcr(SDRAM0_CFGDATA));
-    //D(bug("[exec] B3CR %08x %uM\n", rddcr(SDRAM0_CFGDATA), mem));
+    if (krnIsPPC440(pvr)) {
+        mem += exec_SelectMbs440(SDRAM0_B0CR);
+        mem += exec_SelectMbs440(SDRAM0_B1CR);
+        mem += exec_SelectMbs440(SDRAM0_B2CR);
+        mem += exec_SelectMbs440(SDRAM0_B3CR);
+    } else if (krnIsPPC460(pvr)) {
+        /* Hmm. Probably a 460EX */
+        mem += exec_SelectMbs460(rddcr(MQ0_B0BAS));
+        mem += exec_SelectMbs460(rddcr(MQ0_B1BAS));
+        mem += exec_SelectMbs460(rddcr(MQ0_B2BAS));
+        mem += exec_SelectMbs460(rddcr(MQ0_B3BAS));
+    } else {
+        bug("Memory: Unrecognized PVR model 0x%08x\n", pvr);
+        bug("Memory: Assuming you have 64M of RAM\n");
+        mem = 64;
+    }
 
     return mem;
 }
@@ -151,13 +179,14 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Create memory header @%p - %p\n", krnHighest, 0x01000000-1));
     krnCreateMemHeader("RAM", -10, (APTR)(krnHighest), 0x01000000 - (IPTR)krnHighest,
                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
-    mh = (struct MemHeader *)memrange[1];
 
-    D(bug("[exec] Prepare exec base in %p\n", mh));
     memrange[0] = (UWORD *)(krnLowest + 0xff000000);
     memrange[1] = (UWORD *)(krnHighest + 0xff000000);
     memrange[2] = (UWORD *)-1;
 
+    mh = (struct MemHeader *)krnHighest;
+
+    D(bug("[exec] Prepare exec base in %p\n", mh));
     krnPrepareExecBase(memrange, mh, msg);
     wrspr(SPRG5, SysBase);
     D(bug("[exec] ExecBase at %08x\n", SysBase));

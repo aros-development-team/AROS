@@ -263,7 +263,7 @@ typedef struct AROSCPUContext {
 #define SDR0_MFR_ZMII_MODE_RMII_10M     0x20000000
 #define SDR0_MFR_ZMII_MODE_RMII_100M    0x30000000
 
-/* DDR SDRAM Controller */
+/* 440EP DDR SDRAM Controller */
 #define SDRAM0_CFGADDR  0x0010  /* R/W DDR-SDRAM Address Register */
 #define SDRAM0_CFGDATA  0x0011  /* R/W DDR-SDRAM Data Register */
 #define SDRAM0_B0CR     0x0040  /* R/W DDR SDRAM Bank 0 Configuration */
@@ -278,6 +278,27 @@ typedef struct AROSCPUContext {
 #define SDRAM_SDSZ_32MB  0x00060000
 #define SDRAM_SDSZ_16MB  0x00040000
 #define SDRAM_SDSZ_8MB   0x00020000
+
+/* 460EX DDR MQ Controller */
+#define MQ0_B0BAS       0x0040
+#define MQ0_B1BAS       0x0041
+#define MQ0_B2BAS       0x0042
+#define MQ0_B3BAS       0x0043
+
+#define MQ0_BASSZ_MASK  0x0000FFC0
+#define MQ0_BASSZ_0MB    0x0000
+#define MQ0_BASSZ_8MB    0xFFC0
+#define MQ0_BASSZ_16MB   0xFF80
+#define MQ0_BASSZ_32MB   0xFF00
+#define MQ0_BASSZ_64MB   0xFE00
+#define MQ0_BASSZ_128MB  0xFC00
+#define MQ0_BASSZ_256MB  0xF800
+#define MQ0_BASSZ_512MB  0xF000
+#define MQ0_BASSZ_1024MB 0xE000
+#define MQ0_BASSZ_2048MB 0xC000
+#define MQ0_BASSZ_4096MB 0x8000
+
+
 
 /* Universal Interrupt Controller 0 */
 #define UIC0_SR         0x00C0 /* R/Clear UIC 0 Status Register */
