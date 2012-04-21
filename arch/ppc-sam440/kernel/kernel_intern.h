@@ -44,7 +44,19 @@ struct PlatformData {
     uint32_t            pd_OPBFreq;
     uint32_t            pd_PCIFreq;
     uint32_t            pd_EPBFreq;
+
+    uint32_t            pd_PVR;         /* Cache of the PVR SPR */
 };
+
+static inline BOOL krnIsPPC440(uint32_t pvr)
+{
+    return (pvr == PVR_PPC440EP_B || pvr == PVR_PPC440EP_C);
+}
+
+static inline BOOL krnIsPPC460(uint32_t pvr)
+{
+    return (pvr == PVR_PPC460EX_B);
+}
 
 enum intr_types {
     it_exception = 0xe0,
