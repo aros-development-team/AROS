@@ -67,6 +67,7 @@ kernel-link-sam440-ppc: $(BINDIR)/boot/aros-amcc440
 kernel-link-sam440-ppc-quick: $(BINDIR)/boot/aros-amcc440
 
 $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o
+	@$(ECHO) "Linking    boot/aros-amcc440"
 	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
         -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit -lgcc
