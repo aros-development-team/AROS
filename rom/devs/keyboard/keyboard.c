@@ -526,7 +526,10 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 			  AROS_UFCA(struct ExecBase *, SysBase, A6));
 	    }
 	}
-    ColdReboot();	/* Bye bye AROS */
+	else
+	{
+	    ColdReboot();	/* Bye bye AROS */
+	}
     }
     
     return moreevents;
