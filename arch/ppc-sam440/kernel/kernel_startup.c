@@ -311,13 +311,21 @@ struct MemHeader mh;
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
+    struct PlatformData *pd;
     struct ExecBase *SysBase = getSysBase();
     uint32_t reg;
     
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
-    
+
+    D(bug("Kernel_Init Entered\n"));
     /* Get the PLB and CPU speed */
+
+    pd = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
+    if (!pd)
+        return FALSE;
+
+    LIBBASE->kb_PlatformData = pd;
 
     /* PLL divisors */
     wrdcr(CPR0_CFGADDR, CPR0_PLLD0);
