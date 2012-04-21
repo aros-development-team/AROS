@@ -15,10 +15,8 @@
 
 #include <asm/amcc440.h>
 
-#include "lowlevel.h"
+#include <timer_intern.h>
 #include "kernel_intern.h"
-#include "kernel_base.h"
-#include "kernel_globals.h"
 
         AROS_LH1(ULONG, ReadEClock,
 
@@ -59,8 +57,6 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct KernelBase *KernelBase = getKernelBase();
-    
     Disable();
 
     EClockUpdate(TimerBase);

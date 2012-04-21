@@ -6,13 +6,14 @@
     Lang: english
 */
 
-#include "lowlevel.h"
-#include <devices/newstyle.h>
+#include <proto/exec.h>
 #include <exec/errors.h>
 #include <exec/initializers.h>
-#include <proto/exec.h>
+#include <devices/newstyle.h>
 #include <asm/io.h>
 #include <asm/amcc440.h>
+
+#include <timer_intern.h>
 
 /****************************************************************************************/
 

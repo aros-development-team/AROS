@@ -18,6 +18,8 @@
 #include <devices/timer.h>
 #include <hardware/intbits.h>
 
+#include <timer_intern.h>
+
 #include <proto/exec.h>
 #include <proto/timer.h>
 #include <proto/kernel.h>
@@ -31,14 +33,7 @@
 #undef kprintf
 #include <proto/arossupport.h>
 
-//#include "timer_intern.h"
 #include LC_LIBDEFS_FILE
-
-#include "kernel_syscall.h"
-#include "kernel_globals.h"
-#include "kernel_intern.h"
-
-#include "lowlevel.h"
 
 void DecrementerHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
@@ -47,8 +42,10 @@ void GPTHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase);
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = getKernelBase();
-    struct ExecBase *SysBase = getSysBase();
+    /* We must have kernel.resource */
+    D(bug("[Timer] KernelBase = 0x%p\n", KernelBase));
+    if (!KernelBase)
+    	return FALSE;
     
     TimerBase->tb_prev_tick = inl(GPT0_TBC);
     
@@ -129,8 +126,6 @@ static int GM_UNIQUENAME(Open)
 
 static int GM_UNIQUENAME(Expunge)(LIBBASETYPEPTR LIBBASE)
 {
-    void *KernelBase = getKernelBase();
-    
     KrnRemIRQHandler(LIBBASE->tb_TimerIRQHandle);
     
     return TRUE;
