@@ -5,22 +5,24 @@
 
 #include "kernel_intern.h"
 
-static long tlb_bitmap[2] = {0xffffffff, 0xffffffff};
-static long tlb_free      = 64;
+struct tlb_info {
+        uint32_t bitmap[2];
+        int      free;
+};
 
 /* Alloc TLB in the bitmap. Returns -1 if the allocation cannot be done */
-static int alloc_tlb()
+static int alloc_tlb(struct tlb_info *info)
 {
     /* It should be done in locked state only! */
     
-    int bit = __builtin_clz(tlb_bitmap[0]);
+    int bit = __builtin_clz(info->bitmap[0]);
     if (bit == 32)
     {
-        bit += __builtin_clz(tlb_bitmap[1]);
+        bit += __builtin_clz(info->bitmap[1]);
     }
     else
     {
-        tlb_bitmap[0] &= ~(0x80000000 >> bit);
+        info->bitmap[0] &= ~(0x80000000 >> bit);
     }
     if (bit == 64)
     {
@@ -28,46 +30,47 @@ static int alloc_tlb()
     }
     else
     {
-        tlb_bitmap[1] &= ~(0x80000000 >> (bit-32));
+        info->bitmap[1] &= ~(0x80000000 >> (bit-32));
     }
-    tlb_free--;
+    info->free--;
     return bit;
 }
 
-#if 0
-static void free_tlb(int entry)
+static void free_tlb(struct tlb_info *info, int entry)
 {
     if (entry >=0 && entry < 32)
     {
-        if (tlb_bitmap[0] & (0x80000000 >> entry))
+        asm volatile("tlbwe %0,%1,0;" ::"r"(0), "r"(entry));
+        if (info->bitmap[0] & (0x80000000 >> entry))
         {
             D(bug("[KRN] Freeing already free TLB!!!\n"));
         }
         else
         {
-            tlb_bitmap[0] |= (0x80000000 >> entry);
-            tlb_free++;
+            info->bitmap[0] |= (0x80000000 >> entry);
+            info->free++;
         }
     }
     else if (entry < 64)
     {
+        asm volatile("tlbwe %0,%1,0;" ::"r"(0), "r"(entry));
         entry -= 32;
-        if (tlb_bitmap[1] & (0x80000000 >> entry))
+        if (info->bitmap[1] & (0x80000000 >> entry))
         {
             D(bug("[KRN] Freeing already free TLB!!!\n"));
         }
         else
         {
-            tlb_bitmap[1] |= (0x80000000 >> entry);
-            tlb_free++;
+            info->bitmap[1] |= (0x80000000 >> entry);
+            info->free++;
         }
     }
     else
     {
         D(bug("[KRN] Wrong TLB\n"));
+        return;
     }
 }
-#endif
 
 static struct mmu_page_size {
     uint8_t     code;
@@ -84,9 +87,9 @@ static struct mmu_page_size {
         { 0xff, 0xffffffff },   /* END MARKER */
 };
 
-void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32_t prot)
+void map_region(struct tlb_info *info, uint8_t extra, uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32_t prot)
 {
-    long tlb_temp = tlb_free;
+    long tlb_temp = info->free;
     
     D(bug("[KRN] map_region(%08x, %08x, %08x, %04x): ", physbase, virtbase, length, prot));
     
@@ -111,7 +114,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         }
         
         /* get free TLB */
-        tlb = alloc_tlb();
+        tlb = alloc_tlb(info);
         if (tlb == -1)
         {
             D(bug("\n[KRN] map_region: No more free TLB entries\n"));
@@ -124,7 +127,7 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         
         /* Do really write to the tlb */
         asm volatile("tlbwe %0,%3,0; tlbwe %1,%3,1; tlbwe %2,%3,2"
-                     ::"r"(virtbase | allowable_pages[i].code | TLB_V), "r"(physbase), "r"(prot), "r"(tlb));
+                     ::"r"(virtbase | allowable_pages[i].code | TLB_V), "r"(physbase | extra), "r"(prot), "r"(tlb));
         //D(bug("%08x %08x %08x ", virtbase | allowable_pages[i].code | 0x200, physbase, prot));
         
         length -= allowable_pages[i].mask + 1;
@@ -132,19 +135,114 @@ void map_region(uintptr_t physbase, uintptr_t virtbase, uintptr_t length, uint32
         virtbase += allowable_pages[i].mask + 1;
         
     }
-    tlb_temp -= tlb_free;
+    tlb_temp -= info->free;
     D(bug("%2d TLB%s\n", tlb_temp, tlb_temp > 1 ? "s":""));
 }
+
+static void free_remaining(struct tlb_info *info)
+{
+    int tlb;
+
+    if (info->free == 0)
+        return;
+
+    tlb = alloc_tlb(info);
+    D(bug("[KRN] TLB%02x: Clear\n", tlb));
+    free_remaining(info);
+    free_tlb(info, tlb);
+}
+
+#if DEBUG
+struct tlb { int tlb; uint32_t reg[3]; };
+
+static void tlb_dump_entry(const struct tlb *tlb)
+{
+    uint32_t tlb_0, tlb_1, tlb_2;
+    uint32_t phys, virt, size;
+
+    tlb_0 = tlb->reg[0];
+    tlb_1 = tlb->reg[1];
+    tlb_2 = tlb->reg[2];
+
+    if (!(tlb_0 & TLB_V))
+        return;
+
+    size = 1024 << (2 * ((tlb_0 >> 4) & 0xf));
+    virt = tlb_0 & ~((1 << 10)-1);
+    phys = tlb_1 & ~((1 << 10)-1);
+
+    D(bug("[KRN] TLB%02x: ",tlb->tlb));
+    D(bug("%c%c%c%c%c%c%c%c%c%c%c ",
+          (tlb_2 & TLB_W) ? 'W' : '-',
+          (tlb_2 & TLB_I) ? 'I' : '-',
+          (tlb_2 & TLB_M) ? 'M' : '-',
+          (tlb_2 & TLB_G) ? 'G' : '-',
+          (tlb_2 & TLB_E) ? 'E' : '-',
+          (tlb_2 & TLB_UR) ? 'r' : '-',
+          (tlb_2 & TLB_UW) ? 'w' : '-',
+          (tlb_2 & TLB_UX) ? 'x' : '-',
+          (tlb_2 & TLB_SR) ? 'r' : '-',
+          (tlb_2 & TLB_SW) ? 'w' : '-',
+          (tlb_2 & TLB_SX) ? 'x' : '-'));
+    D(bug("%08x - %08x : %08x: 0:%08x 1:%08x 2:%08x\n",
+                virt, virt + size - 1, phys,
+                tlb_0, tlb_1, tlb_2));
+}
+
+static int tlbcmp(const void *a, const void *b)
+{
+    const struct tlb *ta =a , *tb = b;
+
+    if (ta->reg[0] < tb->reg[0])
+        return -1;
+    if (ta->reg[0] == tb->reg[0])
+        return 0;
+    return 1;
+}
+
+#include <stdlib.h>
+
+static void tlb_dump(void)
+{
+    int tlb;
+    struct tlb tlbs[64];
+    D(static int some_bss);
+    D(static int some_data=0xdeadcafe);
+
+    D(bug("[KRN] Executing at %p, stack at %p, bss at %p, data at %p\n", __builtin_return_address(0), __builtin_frame_address(0), &some_bss, &some_data));
+    for (tlb = 0; tlb < 64; tlb++) {
+        asm volatile("tlbre %0,%3,0; tlbre %1,%3,1; tlbre %2,%3,2"
+                     :"=r" (tlbs[tlb].reg[0]),
+                      "=r" (tlbs[tlb].reg[1]),
+                      "=r" (tlbs[tlb].reg[2])
+                     :"r"(tlb));
+        tlbs[tlb].tlb = tlb;
+    }
+
+    qsort(tlbs, 64, sizeof(tlbs[0]), tlbcmp);
+
+    for (tlb = 0; tlb < 64; tlb++)
+        tlb_dump_entry(&tlbs[tlb]);
+}
+#endif
 
 void mmu_init(struct TagItem *tags)
 {
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, tags);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, tags);
     uintptr_t krn_base    = krnGetTagData(KRN_KernelBase,    0, tags);
-    
+    struct tlb_info info = {
+        .bitmap = { ~0, ~0 },
+        .free = 64
+    };
+
+    uint32_t pvr = rdspr(PVR);
+
     D(bug("[KRN] MMU Init\n"));
     D(bug("[KRN] lowest = %p, base = %p, highest = %p\n", krn_lowest, krn_base, krn_highest));
     D(bug("[KRN] Kernel size: %dKB code, %dKB data\n", (krn_highest - krn_base)/1024, (krn_base - krn_lowest)/1024));
+
+    D(tlb_dump());
 
     /*
      * In order to reduce the usage of TLB entries, align the kernel regions.
@@ -160,20 +258,38 @@ void mmu_init(struct TagItem *tags)
      * The very first entry has to cover the executable part of kernel, 
      * where exception handlers are located
      */
-    map_region(krn_base, 0xff000000 + krn_base, krn_highest - krn_base, TLB_SR | TLB_SX | TLB_UR | TLB_UX);
+    map_region(&info, 0x0, krn_base, 0xff000000 + krn_base, krn_highest - krn_base, TLB_SR | TLB_SX | TLB_UR | TLB_UX);
     /* Now the data area for kernel. Make it read/write for both user and supervisor. No execution allowed */
-    map_region(krn_lowest, 0xff000000 + krn_lowest, krn_base - krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_UW);
+    map_region(&info, 0x0, krn_lowest, 0xff000000 + krn_lowest, krn_base - krn_lowest, TLB_SR | TLB_SW | TLB_UR | TLB_UW);
     /* The low memory will be RW assigned to the supervisor mode. No access from usermode! */
-    map_region(0, 0xff000000, krn_lowest, TLB_SR | TLB_SW);
+    map_region(&info, 0x0, 0, 0xff000000, krn_lowest, TLB_SR | TLB_SW);
     
     /* The regular RAM, make 1GB of it - amcc440 cannot do more. */
-    map_region(krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX);
-    /* map the PCI bus */
-    map_region(0xa0000000, 0xa0000000, 0x40000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
-    /* PCI control registers and onboard devices */
-    map_region(0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
+    map_region(&info, 0x0, krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX);
 
-    D(bug("[KRN] TLB status: %d used, %d free\n", 64 - tlb_free, tlb_free));
+    if (krnIsPPC440(pvr)) {
+        D(bug("MMU: Configure for PPC440\n"));
+        /* map some 440EP peripherials bus */
+        map_region(&info, 0x0, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
+        /* map the PCI bus */
+        map_region(&info, 0x0, 0xa0000000, 0xa0000000, 0x40000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
+        /* PCI control registers and onboard devices */
+        map_region(&info, 0x0, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
+    } else if (krnIsPPC460(pvr)) {
+        D(bug("MMU: Configure for PPC460\n"));
+        /* map some 460EX peripherials bus */
+        map_region(&info, 0xc, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
+        /* UART control registers and onboard devices */
+        map_region(&info, 0x4, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
+    } else {
+        bug("MMU: Cannot configure - unknown PVR model 0x%08x\n", pvr);
+        for(;;);
+    }
+
+    free_remaining(&info);
+    D(tlb_dump());
+
+    D(bug("[KRN] TLB status: %d used, %d free\n", 64 - info.free, info.free));
     
     /* flush TLB shadow regs */
     asm volatile("isync;");
