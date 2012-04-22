@@ -413,7 +413,7 @@ void SetupClocking440(struct PlatformData *pd)
      * Slow down the decrement interrupt a bit. Rough guess is that UBoot has left us with
      * 1kHz DEC counter. Enable decrementer timer and automatic reload of decrementer value.
      */
-    wrspr(DECAR, LIBBASE->kb_PlatformData->pd_OPBFreq / 50);
+    wrspr(DECAR, pd->pd_OPBFreq / 50);
     wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
 }
 
