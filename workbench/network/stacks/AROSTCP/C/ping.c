@@ -248,7 +248,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/file.h>
-#include <sys/signal.h>
 
 #include <netinet/in_systm.h>
 #include <netinet/in.h>
