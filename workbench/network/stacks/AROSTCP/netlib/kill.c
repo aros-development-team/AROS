@@ -1,7 +1,7 @@
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <errno.h>
 
