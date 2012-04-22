@@ -1,31 +1,30 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    System header file <alloca.h>
+    UNIX header file <alloca.h>
+    It is not part of POSIX or C99 but we provide for legacy applications.
 */
 
 #ifndef	_ALLOCA_H
 #define	_ALLOCA_H
 
 #include <aros/system.h>
-#include <stddef.h>
 
-/* Discard any previous definition.  */
-#undef alloca
+#include <aros/types/size_t.h>
 
 __BEGIN_DECLS
 
 /* Allocate a block of memory which will be automatically freed upon function exiting. */
-extern void *alloca(size_t size);
+void *alloca(size_t size);
 
+#ifdef __GNUC__
 /* Private function to get the upper or lower bound (depending on the architecture)
    of the stack.  */
-extern void *__alloca_get_stack_limit(void);
-__END_DECLS
+/* FIXME: Can't it be made more general ? */
+void *__alloca_get_stack_limit(void);
 
 /* GNU C provides a builtin alloca function. */
-#ifdef __GNUC__
 #    if AROS_STACK_GROWS_DOWNWARDS
 #        define alloca(size)                                                            \
          ({                                                                             \
@@ -42,6 +41,8 @@ __END_DECLS
          })
 #    endif /* AROS_STACK_GROWS_DOWNWARDS */
 #endif /* GCC.  */
+
+__END_DECLS
 
 
 #endif /* alloca.h */

@@ -2,14 +2,13 @@
 #define _CTYPE_H_
 
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file ctype.h
     Lang: english
 */
 
-#include <sys/arosc.h>
 #include <aros/system.h>
 
 #define _ISupper    0x0001  /* UPPERCASE */
@@ -51,11 +50,13 @@ __ctype_make_func(isblank,  _istype(c,_ISblank))
 __ctype_make_func(iscntrl,  _istype(c,_IScntrl))
 __ctype_make_func(ispunct,  _istype(c,_ISpunct))
 __ctype_make_func(isalnum,  _istype(c,_ISalnum))
-__ctype_make_func(isascii,  (c & ~0x7F) == 0)
-__ctype_make_func(toascii,  c & 0x7F)
-__ctype_make_func(iscsym,   isalnum(c) || toascii(c) == 0x5F)
-__ctype_make_func(iscsymf,  isalpha(c) || toascii(c) == 0x5F)
 __ctype_make_func(toupper,  __ctype_toupper[c])
 __ctype_make_func(tolower,  __ctype_tolower[c])
+
+/* POSIX.1-2008/XSI extensions that are provided in arosstdc.library */
+__ctype_make_func(isascii,  (c & ~0x7F) == 0)
+__ctype_make_func(toascii,  c & 0x7F)
+#define _toupper(c) toupper(c)
+#define _tolower(c) tolower(c)
 
 #endif /* _CTYPE_H_ */

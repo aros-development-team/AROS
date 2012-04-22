@@ -5,7 +5,10 @@
     $Id$
     
     Desc: 4.4BSD header file sys/file.h
+          This file is not part of POSIX.1-2008 standard
 */
+
+#ifndef _POSIX_SOURCE
 
 #include <aros/system.h>
 
@@ -26,5 +29,7 @@ __BEGIN_DECLS
 int flock (int fd, int operation);
 
 __END_DECLS
+
+#endif /* !_POSIX_SOURCE */
 
 #endif /* _SYS__FILE_H_ */

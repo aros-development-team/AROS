@@ -1,5 +1,6 @@
 /*
   Desc: BSD4.4 header file sys/mount.h
+        This file is not part of POSIX.1-2008 standard
 */
 
 /*
@@ -40,6 +41,8 @@
 
 #ifndef _SYS_MOUNT_H_
 #define _SYS_MOUNT_H_
+
+#ifndef _POSIX_SOURCE
 
 #include <stdint.h>
 
@@ -109,8 +112,12 @@ static char __attribute__((unused)) *mnt_names[] = {
 };
 
 __BEGIN_DECLS
+
 int getfsstat (struct statfs *, long, int);
 int statfs(const char *path, struct statfs *buf);
+
 __END_DECLS
+
+#endif /* ! _POSIX_SOURCE */
 
 #endif /* !_SYS_MOUNT_H_ */

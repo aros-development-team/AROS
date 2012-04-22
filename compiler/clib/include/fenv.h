@@ -34,13 +34,18 @@ __BEGIN_DECLS
 extern const fenv_t	__fe_dfl_env;
 #define	FE_DFL_ENV	(&__fe_dfl_env)
 
+/* Floating-point exceptions */
 int feclearexcept(int excepts);
 int fegetexceptflag(fexcept_t *flagp, int excepts);
-int fesetexceptflag(const fexcept_t *flagp, int excepts);
 int feraiseexcept(int excepts);
+int fesetexceptflag(const fexcept_t *flagp, int excepts);
 int fetestexcept(int excepts);
+
+/* Rounding */
 int fegetround(void);
 int fesetround(int round);
+
+/* Environment */
 int fegetenv(fenv_t *envp);
 int feholdexcept(fenv_t *envp);
 int fesetenv(const fenv_t *envp);
