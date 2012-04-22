@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <clib/alib_protos.h>
 
 #include <intuition/windecorclass.h>
@@ -678,6 +681,8 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
 {
     struct windecor_data *data;
 
+    D(bug("windecor_new(tags @ 0x%p)\n", msg->ops_AttrList));
+
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
@@ -685,6 +690,9 @@ static IPTR windecor_new(Class *cl, Object *obj, struct opSet *msg)
 
          struct DecorImages * di = (struct DecorImages *) GetTagData(WDA_DecorImages, (IPTR)NULL, msg->ops_AttrList);
          struct DecorConfig * dc = (struct DecorConfig *) GetTagData(WDA_DecorConfig, (IPTR)NULL, msg->ops_AttrList);
+
+        D(bug("windecor_new: DecorImages @ 0x%p\n", di));
+        D(bug("windecor_new: DecorConfig @ 0x%p\n", dc));
 
          if (!InitWindowSkinning(data, di, dc))
          {

@@ -1424,15 +1424,15 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
         if (nd != NULL)
         {
-            screen->ScrDecorObj = nd->nd_Screen;
-            screen->WinDecorObj = nd->nd_Window;
-            screen->MenuDecorObj = nd->nd_Menu;
+            screen->ScrDecorObj = NewObjectA(nd->nd_ScreenClass, NULL, nd->nd_ScreenTags);
+            screen->MenuDecorObj = NewObjectA(nd->nd_MenuClass, NULL, nd->nd_MenuTags);
+            screen->WinDecorObj = NewObjectA(nd->nd_WindowClass, NULL, nd->nd_WindowTags);
         }
         else
         {
-            screen->ScrDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorObj;
-            screen->WinDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorObj;
-            screen->MenuDecorObj = ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorObj;
+            screen->ScrDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->ScrDecorClass, NULL, GetPrivIBase(IntuitionBase)->ScrDecorTags);
+            screen->MenuDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->MenuDecorClass, NULL, GetPrivIBase(IntuitionBase)->MenuDecorTags);
+            screen->WinDecorObj = NewObjectA(GetPrivIBase(IntuitionBase)->WinDecorClass, NULL, GetPrivIBase(IntuitionBase)->WinDecorTags);
         }
         screen->Decorator = nd;
 

@@ -877,8 +877,8 @@ struct ColorSpec
 #define AUTONEXTTEXT  NULL
 
 /* NewDecorator structure used by ChangeDecoration
-   the three Objects (nd_Window, nd_Screen and nd_Menu
-   must be installed and point to decorator objects
+   configure class pointers (nd_WindowClass, nd_ScreenClass and nd_MenuClass)
+   to overide the default/internal decoration classes.
    the port is used for different issues and will be filled
    up with DecoratorMessages */
 
@@ -888,15 +888,21 @@ struct NewDecorator
             UWORD    nd_cnt;
             STRPTR   nd_Pattern;
             STRPTR   nd_IntPattern; /* Private, transformated Pattern be dos/ParsePattern() */
-            Object  *nd_Window;
-            Object  *nd_Screen;
-            Object  *nd_Menu;
+            struct IClass *nd_ScreenClass;
+            struct TagItem *nd_ScreenTags;
+            IPTR nd_ScreenObjOffset;
+            struct IClass *nd_MenuClass;
+            struct TagItem *nd_MenuTags;
+            IPTR nd_ScreenMenuObjOffset;
+            struct IClass *nd_WindowClass;
+            struct TagItem *nd_WindowTags;
+            IPTR nd_ScreenWindowObjOffset;
 };
 
 struct DecoratorMessage
 {
     struct MagicMessage dm_Message;
-    ULONG               dm_Class;
+    IPTR               dm_Class;
     ULONG               dm_Code;
     ULONG               dm_Flags;
     IPTR                dm_Object;

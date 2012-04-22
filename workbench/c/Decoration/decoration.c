@@ -52,21 +52,21 @@
 #include "newimage.h"
 #include "config.h"
 
-const TEXT version_string[] = "$VER: Decoration 1.3 (16.4.2012)";
-
-struct IClass *wndcl, *scrcl, *menucl;
+const TEXT version_string[] = "$VER: Decoration 1.5 (22.4.2012)";
 
 STRPTR __detached_name = "Decorator";
 
 #define MAGIC_PRIVATE_SKIN		0x0001
 #define MAGIC_PRIVATE_TITLECHILD 	0x0F0F
 
-struct DefaultNewDecorator
+struct DecorationDecorator
 {
     struct NewDecorator base;   /* MUST BE FIRST */
     struct DecorConfig * dc;
     struct DecorImages * di;
 };
+
+struct  DecorationDecorator *basedecor = NULL;
 
 struct SkinMessage {
     struct MagicMessage msg;
@@ -78,96 +78,87 @@ struct SkinMessage {
 void DeleteDecorator(struct NewDecorator *nd)
 {
     if (nd == NULL) return;
-    if (nd->nd_Menu != NULL) DisposeObject(nd->nd_Menu);
-    if (nd->nd_Window != NULL) DisposeObject(nd->nd_Window);
-    if (nd->nd_Screen != NULL) DisposeObject(nd->nd_Screen);
-    if (((struct DefaultNewDecorator *)nd)->dc != NULL) FreeConfig(((struct DefaultNewDecorator *)nd)->dc);
-    if (((struct DefaultNewDecorator *)nd)->di != NULL) FreeImages(((struct DefaultNewDecorator *)nd)->di);
+    if (((struct DecorationDecorator *)nd)->dc != NULL) FreeConfig(((struct DecorationDecorator *)nd)->dc);
+    if (((struct DecorationDecorator *)nd)->di != NULL) FreeImages(((struct DecorationDecorator *)nd)->di);
     FreeVec(nd);
 }
 
-struct NewDecorator *GetDecorator(STRPTR path)
+struct DecorationDecorator *LoadDecoration(STRPTR path)
 {
-    struct NewDecorator *nd = NULL;
-    struct DefaultNewDecorator * dnd = NULL;
+    struct DecorationDecorator * dnd = NULL;
+    struct TagItem *screenTags, *menuTags, *windowTags;
 
-    D(bug("GetDecorator: Entering\n"));
+    D(bug("LoadDecoration: Entering\n"));
 
     STRPTR newpath;
 
     if (path != NULL) newpath = path; else newpath = "Theme:";
 
-    dnd = AllocVec(sizeof(struct DefaultNewDecorator), MEMF_CLEAR | MEMF_ANY);
+    dnd = AllocVec(sizeof(struct DecorationDecorator), MEMF_CLEAR | MEMF_ANY);
     
-    D(bug("GetDecorator: dnd=%p\n", dnd));
+    D(bug("LoadDecoration: decorator @ 0x%p\n", dnd));
 
     if (dnd)
     {
-        nd = (struct NewDecorator *)dnd;
-
         dnd->dc = LoadConfig(newpath);
-        D(bug("GetDecorator: dnd->dc=%p\n", dnd->dc));
+        D(bug("LoadDecoration: config @ 0x%p\n", dnd->dc));
         if (!dnd->dc)
         {
-            DeleteDecorator(nd);
+            DeleteDecorator(&dnd->base);
             return NULL;
         }
         
         dnd->di = LoadImages(dnd->dc);
-        D(bug("GetDecorator: dnd->di=%p\n", dnd->di));
+        D(bug("LoadDecoration: images @ 0x%p\n", dnd->di));
         if (!dnd->di)
         {
-            DeleteDecorator(nd);
+            DeleteDecorator(&dnd->base);
             return NULL;
         }
 
+        dnd->base.nd_ScreenTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
+        dnd->base.nd_MenuTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);       
+        dnd->base.nd_WindowTags = AllocVec(sizeof(struct TagItem) * 4, MEMF_CLEAR | MEMF_ANY);
+
+        if (basedecor)
         {
-            struct TagItem ScreenTags[] = 
-            { 
-                {SDA_UserBuffer, sizeof(struct ScreenData)},
-                {SDA_DecorImages, (IPTR)dnd->di},
-                {SDA_DecorConfig, (IPTR)dnd->dc},
-                {TAG_DONE}
-            };
-            nd->nd_Screen = NewObjectA(scrcl, NULL, ScreenTags);
+            D(bug("LoadDecoration: copying base classes\n"));
+            dnd->base.nd_ScreenClass = basedecor->base.nd_ScreenClass;
+            dnd->base.nd_MenuClass = basedecor->base.nd_MenuClass;
+            dnd->base.nd_WindowClass = basedecor->base.nd_WindowClass;
         }
+
+        screenTags = dnd->base.nd_ScreenTags;
+        menuTags = dnd->base.nd_MenuTags;
+        windowTags = dnd->base.nd_WindowTags;
+
+        screenTags[0].ti_Tag = SDA_UserBuffer;
+        menuTags[0].ti_Tag = MDA_UserBuffer;
+        windowTags[0].ti_Tag = WDA_UserBuffer;
+        screenTags[0].ti_Data = sizeof(struct ScreenData);
+        menuTags[0].ti_Data = sizeof(struct MenuData);
+        windowTags[0].ti_Data = sizeof(struct WindowData);
+
+        screenTags[1].ti_Tag = SDA_DecorImages;
+        menuTags[1].ti_Tag = MDA_DecorImages;
+        windowTags[1].ti_Tag = WDA_DecorImages;
+        screenTags[1].ti_Data = (IPTR)dnd->di;
+        menuTags[1].ti_Data = (IPTR)dnd->di;
+        windowTags[1].ti_Data = (IPTR)dnd->di;
+
+        screenTags[2].ti_Tag =  SDA_DecorConfig;
+        menuTags[2].ti_Tag = MDA_DecorConfig;
+        windowTags[2].ti_Tag = WDA_DecorConfig;
+        screenTags[2].ti_Data = (IPTR)dnd->dc;
+        menuTags[2].ti_Data = (IPTR)dnd->dc;
+        windowTags[2].ti_Data = (IPTR)dnd->dc;
         
-        D(bug("GetDecorator: nd->nd_Screen=%p\n", nd->nd_Screen));
-        if (nd->nd_Screen)
-        {
-            struct TagItem WindowTags[] = 
-            { 
-                {WDA_UserBuffer, sizeof(struct WindowData)},
-                {WDA_DecorImages, (IPTR)dnd->di},
-                {WDA_DecorConfig, (IPTR)dnd->dc},
-                {TAG_DONE} 
-            };
+        screenTags[3].ti_Tag = TAG_DONE;
+        menuTags[3].ti_Tag = TAG_DONE;
+        windowTags[3].ti_Tag = TAG_DONE;
 
-            struct TagItem MenuTags[] = 
-            { 
-                {MDA_UserBuffer, sizeof(struct MenuData)},
-                {MDA_DecorImages, (IPTR)dnd->di},
-                {MDA_DecorConfig, (IPTR)dnd->dc},
-                {TAG_DONE} 
-            };
-
-
-            nd->nd_Window = NewObjectA(wndcl, NULL, WindowTags);
-            nd->nd_Menu = NewObjectA(menucl, NULL, MenuTags);
-            D(bug("GetDecorator: nd->nd_Window=%p, nd->nd_Menu=%p\n", nd->nd_Window, nd->nd_Menu));
-            if ((nd->nd_Menu == NULL ) || (nd->nd_Window == NULL) || (nd->nd_Screen == NULL))
-            {
-                DeleteDecorator(nd);
-                nd = NULL;
-            }
-        }
-        else
-        {
-            DeleteDecorator(nd);
-            nd = NULL;
-        }
     }
-    return nd;
+    return dnd;
 }
 
 #define ARGUMENT_TEMPLATE "PATH,SCREENID=ID/K"
@@ -178,6 +169,8 @@ char usage[] =
 
 int main(void)
 {
+    struct  NewDecorator *decor;
+    struct MsgPort *port;
 
     IPTR rd_Args[] = {0, 0, };
 
@@ -199,53 +192,45 @@ int main(void)
         return 0;
     }
 
+    if ((port = CreateMsgPort()) == NULL)
+        return 0;
+
     Forbid();
     if (FindPort(__detached_name)) {
-        struct MsgPort *port = CreateMsgPort();
-        if (port) {
-            struct SkinMessage msg;
-            msg.msg.mn_ReplyPort = port;
-            msg.msg.mn_Magic = MAGIC_PRIVATE_SKIN;
-            msg.class = 0;
-            msg.path = (STRPTR) rd_Args[0];
-            msg.id = (STRPTR) rd_Args[1];
-            PutMsg(FindPort(__detached_name), (struct Message *) &msg);
-            WaitPort(port);
-            GetMsg(port);
-            Permit();
-            DeleteMsgPort(port);
-            FreeArgs(args);
-            return 0;
-        }
+        struct SkinMessage msg;
+        msg.msg.mn_ReplyPort = port;
+        msg.msg.mn_Magic = MAGIC_PRIVATE_SKIN;
+        msg.class = 0;
+        msg.path = (STRPTR) rd_Args[0];
+        msg.id = (STRPTR) rd_Args[1];
+        PutMsg(FindPort(__detached_name), (struct Message *) &msg);
+        WaitPort(port);
+        GetMsg(port);
+        Permit();
+        DeleteMsgPort(port);
+        FreeArgs(args);
+        return 0;
     }
     Permit();
 
     D(bug("Decoration: making classes...\n"));
 
-    wndcl = MakeWindowDecorClass();
-    if (wndcl)
+    if ((basedecor = LoadDecoration((STRPTR) rd_Args[0])) != NULL)
     {
-
-        scrcl = MakeScreenDecorClass();
-        if (scrcl)
+        decor = &basedecor->base;
+        if ((basedecor->base.nd_ScreenClass = MakeScreenDecorClass()) != NULL)
         {
-
-            menucl = MakeMenuDecorClass();
-            if (menucl)
+            if ((basedecor->base.nd_MenuClass = MakeMenuDecorClass()) != NULL)
             {
-                D(bug("Decoration: Classes made\n"));
-
-                struct MsgPort *port = CreateMsgPort();
-                ULONG  skinSignal;
-                if (port)
+                if ((basedecor->base.nd_WindowClass = MakeWindowDecorClass()) != NULL)
                 {
-                    skinSignal = 1 << port->mp_SigBit;
+                    D(bug("Decoration: Classes made (screen @ 0x%p, menu @ 0x%p, win @ 0x%p)\n", basedecor->base.nd_ScreenClass, basedecor->base.nd_MenuClass, basedecor->base.nd_WindowClass));
+
+                    ULONG  skinSignal = 1 << port->mp_SigBit;
                     port->mp_Node.ln_Name=__detached_name;
                     AddPort(port);
 
                     D(bug("Decoration: Port created and added\n"));
-
-                    struct  NewDecorator *decor = GetDecorator((STRPTR) rd_Args[0]);
 
                     D(bug("Decoration: Got decorator\n"));
 
@@ -283,12 +268,11 @@ int main(void)
                                         dmsg = (struct DecoratorMessage *) msg;
                                         if (decor)
                                         {
-                                            bug("[decoration] got MAGIC_PRIVATE_TITLECHILD with 0x%p\n", dmsg->dm_Object);
-                                            SetAttrs(decor->nd_Screen, SDA_TitleChild, dmsg->dm_Object, TAG_DONE);
+                                            SetAttrs((Object *)*((Object **)((IPTR)dmsg->dm_Class + (IPTR)decor->nd_ScreenObjOffset)), SDA_TitleChild, dmsg->dm_Object, TAG_DONE);
                                         }
                                         break;
                                     case MAGIC_PRIVATE_SKIN:
-                                        decor = GetDecorator(msg->path);
+                                        decor = (struct NewDecorator *)LoadDecoration(msg->path);
                                         if (decor != NULL)
                                         {
                                             decor->nd_Pattern = msg->id;
@@ -306,12 +290,12 @@ int main(void)
                             }
                         }
                     }
+                    FreeClass(decor->nd_WindowClass);
                 }
-                FreeClass(menucl);
+                FreeClass(decor->nd_MenuClass);
             }
-            FreeClass(scrcl);
+            FreeClass(decor->nd_ScreenClass);
         }
-        FreeClass(wndcl);
     }
     FreeDosObject (DOS_RDARGS, (APTR) newargs);
     FreeArgs(args);

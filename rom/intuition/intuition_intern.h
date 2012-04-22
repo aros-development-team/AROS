@@ -569,16 +569,15 @@ struct IntIntuitionBase
     struct RastPort         	 DoGadgetMethodRP;
     struct GadgetInfo       	 DoGadgetMethodGI;
 
-    struct SignalSemaphore   	 WinDecorSem;
-    Object  	    	    	*WinDecorObj;
     struct SignalSemaphore   	 ScrDecorSem;
-    Object  	    	    	*ScrDecorObj;
+    struct IClass   	    	 *ScrDecorClass;
+    struct TagItem   	    	 *ScrDecorTags;
     struct SignalSemaphore   	 MenuDecorSem;
-    Object  	    	    	*MenuDecorObj;
-
-    Object                      *DefWinDecorObj;
-    Object                      *DefScrDecorObj;
-    Object                      *DefMenuDecorObj;
+    struct IClass                *MenuDecorClass;
+    struct TagItem   	    	 *MenuDecorTags;
+    struct SignalSemaphore   	 WinDecorSem;
+    struct IClass   	    	 *WinDecorClass;
+    struct TagItem   	    	 *WinDecorTags;
 
     struct List                 Decorations;
     struct NewDecorator         *Decorator;
@@ -683,9 +682,9 @@ struct IntScreen
     ULONG                    MenuVerifyMicros;
     ULONG                    DecorUserBufferSize;
     IPTR                     DecorUserBuffer;
-    Object                  *WinDecorObj;
     Object                  *ScrDecorObj;
     Object                  *MenuDecorObj;
+    Object                  *WinDecorObj;
     struct NewDecorator     *Decorator;
 
     struct BitMap           *AllocatedBitmap;
