@@ -10,9 +10,8 @@ AROS_LH0I(void *, KrnCreateContext,
     AROS_LIBFUNC_INIT
 
     struct ExceptionContext *ctx;
-    cpumode_t mode = goSuper();
 
-    /* Our context is not accessible in user mode */
+    /* Allocate a new context */
     ctx = krnAllocCPUContext();
 
     /* Initialize the context */
@@ -34,8 +33,6 @@ AROS_LH0I(void *, KrnCreateContext,
         for (i = 0; i < 32; i++)
             ctx->fpr[i] = 0.0;
     }
-
-    goBack(mode);
 
     return ctx;
 
