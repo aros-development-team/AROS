@@ -31,15 +31,15 @@
 #include <aros/cpu.h>
 
 #if defined __i386__
-#   include <aros/i386/_fpmath.h>
+#   include "i386/_fpmath.h"
 #elif defined __x86_64__
-#   include <aros/x86_64/_fpmath.h>
+#   include "x86_64/_fpmath.h"
 #elif defined __mc68000__
-#   include <aros/m68k/_fpmath.h>
+#   include "m68k/_fpmath.h"
 #elif defined __powerpc__
-#   include <aros/ppc/_fpmath.h>
+#   include "ppc/_fpmath.h"
 #elif defined __arm__
-#   include <aros/arm/_fpmath.h>
+#   include "arm/_fpmath.h"
 #else
 #   error unsupported CPU type
 #endif
