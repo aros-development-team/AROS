@@ -44,9 +44,6 @@
 #   error unsupported CPU type
 #endif
 
-#define _BYTE_ORDER     AROS_BIG_ENDIAN
-#define _LITTLE_ENDIAN  0
-
 #else /* !__AROS__ */
 #include <sys/endian.h>
 #include "_fpmath.h"
