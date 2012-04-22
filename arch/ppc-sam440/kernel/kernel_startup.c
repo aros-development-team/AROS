@@ -474,7 +474,7 @@ void SetupClocking460(struct PlatformData *pd)
     /* Early PLL divisor */
     wrdcr(CPR0_CFGADDR, CPR0_PLBED);
     reg = rddcr(CPR0_CFGDATA);
-    uint32_t plbed = (reg >> 24) & 0xf;
+    uint32_t plbed = (reg >> 24) & 0x7;
     if (plbed == 0)
         plbed = 8;
 
@@ -502,7 +502,7 @@ void SetupClocking460(struct PlatformData *pd)
     /* All divisors there.
      * Read PLL control register and calculate the m value
      */
-    wrdcr(CPR0_CFGADDR, CPR0_PLLC0);
+    wrdcr(CPR0_CFGADDR, CPR0_PLLC);
     reg = rddcr(CPR0_CFGDATA);
 
     uint32_t m;
@@ -518,11 +518,11 @@ void SetupClocking460(struct PlatformData *pd)
     D(bug("plbed %d, opbd = %d, perd = %d, ahbd = %d\n",
                 plbed, opbd, perd, ahbd));
 
-    uint32_t vco = (m * 50000000) + m/2;
+    uint64_t vco = (m * 50000000) + m/2;
     pd->pd_CPUFreq = vco / fwdva;
     pd->pd_PLBFreq = vco / fwdva / plbed;
     pd->pd_OPBFreq = pd->pd_PLBFreq / opbd;
-    pd->pd_EPBFreq = pd->pd_PLBFreq / perd;
+    pd->pd_EPBFreq = pd->pd_OPBFreq / perd;
     pd->pd_PCIFreq = pd->pd_PLBFreq / ahbd;
 
     /*
