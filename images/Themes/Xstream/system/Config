@@ -39,9 +39,15 @@ NoInactiveSelected  = No          /* Window border gadgets have only 3 states? *
 
 /* =================================================================== */
 
-SBarHeight          = 18           /* height of the Screentitlebar */
+SBarHeight          = 20           /* height of the Screentitlebar */
 LogoOffset          = 0            /* put the Screenlogo at this offset (horizontal position) */
 TitleOffset         = 20          /* offset for the Title of a Screen */
+SBarChildPre       = 1010   19
+SBarChildFill       = 1030   24
+SBarChildPost       = 1055   19
+SBarGadPre       = 1542   42
+SBarGadFill       = 1585   8
+SBarGadPost       = 1594   5
 
 /* =================================================================== */
 
