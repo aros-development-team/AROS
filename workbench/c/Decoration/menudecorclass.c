@@ -3,6 +3,9 @@
     $Id$
 */
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include <clib/alib_protos.h>
 
 #include <intuition/intuition.h>
@@ -265,6 +268,8 @@ static IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct menudecor_data *data;
 
+    D(bug("menudecor__OM_NEW(tags @ 0x%p)\n", msg->ops_AttrList));
+
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (obj)
     {
@@ -272,6 +277,9 @@ static IPTR menudecor__OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 
         struct DecorImages * di = (struct DecorImages *) GetTagData(MDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
         struct DecorConfig * dc = (struct DecorConfig *) GetTagData(MDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
+
+        D(bug("menudecor__OM_NEW: DecorImages @ 0x%p\n", di));
+        D(bug("menudecor__OM_NEW: DecorConfig @ 0x%p\n", dc));
 
         if (!InitMenuSkinning(data, di, dc))
         {

@@ -13,7 +13,7 @@
 #include "newimage.h"
 #include "config.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 static STRPTR SkipChars(STRPTR v)
@@ -289,6 +289,18 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
     dc->SLogoOffset = 0;
     dc->STitleOffset = 0;
     dc->SBarHeight = 0;
+    dc->SBarChildPre_o = 0;
+    dc->SBarChildPre_s = 0;
+    dc->SBarChildFill_o = 0;
+    dc->SBarChildFill_s = 0;
+    dc->SBarChildPost_o = 0;
+    dc->SBarChildPost_s = 0;
+    dc->SBarGadPre_o = 0;
+    dc->SBarGadPre_s = 0;
+    dc->SBarGadFill_o = 0;
+    dc->SBarGadFill_s = 0;
+    dc->SBarGadPost_o = 0;
+    dc->SBarGadPost_s = 0;
     dc->STitleOutline = FALSE;
     dc->STitleShadow = FALSE;
     dc->LUTBaseColors_a = 0x00CCCCCC;
@@ -434,6 +446,18 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
                     dc->STitleOffset = GetInt(v);
                 } else  if ((v = strstr(line, "SBarHeight ")) == line) {
                     dc->SBarHeight = GetInt(v);
+                } else  if ((v = strstr(line, "SBarChildPre ")) == line) {
+                    GetIntegers(v, &dc->SBarChildPre_o, &dc->SBarChildPre_s);
+                } else  if ((v = strstr(line, "SBarChildFill ")) == line) {
+                    GetIntegers(v, &dc->SBarChildFill_o, &dc->SBarChildFill_s);
+                } else  if ((v = strstr(line, "SBarChildPost ")) == line) {
+                    GetIntegers(v, &dc->SBarChildPost_o, &dc->SBarChildPost_s);
+                } else  if ((v = strstr(line, "SBarGadPre ")) == line) {
+                    GetIntegers(v, &dc->SBarGadPre_o, &dc->SBarGadPre_s);
+                } else  if ((v = strstr(line, "SBarGadFill ")) == line) {
+                    GetIntegers(v, &dc->SBarGadFill_o, &dc->SBarGadFill_s);
+                } else  if ((v = strstr(line, "SBarGadPost ")) == line) {
+                    GetIntegers(v, &dc->SBarGadPost_o, &dc->SBarGadPost_s);
                 } else  if ((v = strstr(line, "LUTBaseColors ")) == line) {
                     GetColors(v, &dc->LUTBaseColors_a, &dc->LUTBaseColors_d);
                 } else  if ((v = strstr(line, "ScreenTitleColors ")) == line) {
@@ -445,7 +469,7 @@ static void LoadSystemConfig(STRPTR path, struct DecorConfig * dc)
             }
         }
         while(line);
-	D(bug("Decoration/LoadSystemConfig: file has beenb read\n"));
+	D(bug("Decoration/LoadSystemConfig: file has been read\n"));
         Close(file);
     }
 

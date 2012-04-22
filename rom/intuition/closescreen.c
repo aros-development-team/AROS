@@ -193,6 +193,10 @@ static VOID int_closescreen(struct CloseScreenActionMsg *msg,
     /* Free the sprite */
     ReleaseSharedPointer(((struct IntScreen *)screen)->Pointer, IntuitionBase);
 
+    DisposeObject(((struct IntScreen *)screen)->WinDecorObj);
+    DisposeObject(((struct IntScreen *)screen)->MenuDecorObj);
+    DisposeObject(((struct IntScreen *)screen)->ScrDecorObj);
+
     /* Free the memory */
     if (((struct IntScreen *)screen)->DecorUserBuffer)
     {

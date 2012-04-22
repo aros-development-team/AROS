@@ -243,13 +243,12 @@ static int IntuitionInit(LIBBASETYPEPTR LIBBASE)
 	}
     }
 
-    if (!(GetPrivIBase(LIBBASE)->WinDecorObj = NewObjectA(NULL, WINDECORCLASS, NULL))) return FALSE;
-    if (!(GetPrivIBase(LIBBASE)->ScrDecorObj = NewObjectA(NULL, SCRDECORCLASS, NULL))) return FALSE;
-    if (!(GetPrivIBase(LIBBASE)->MenuDecorObj = NewObjectA(NULL, MENUDECORCLASS, NULL))) return FALSE;
-
-    GetPrivIBase(LIBBASE)->DefWinDecorObj = GetPrivIBase(LIBBASE)->WinDecorObj;
-    GetPrivIBase(LIBBASE)->DefScrDecorObj = GetPrivIBase(LIBBASE)->ScrDecorObj;
-    GetPrivIBase(LIBBASE)->DefMenuDecorObj = GetPrivIBase(LIBBASE)->MenuDecorObj;
+    GetPrivIBase(LIBBASE)->ScrDecorClass = FindClass(SCRDECORCLASS);
+    GetPrivIBase(LIBBASE)->ScrDecorTags = NULL;
+    GetPrivIBase(LIBBASE)->MenuDecorClass = FindClass(MENUDECORCLASS);
+    GetPrivIBase(LIBBASE)->MenuDecorTags = NULL;
+    GetPrivIBase(LIBBASE)->WinDecorClass = FindClass(WINDECORCLASS);
+    GetPrivIBase(LIBBASE)->WinDecorTags = NULL;    
     LIBBASE->ViewLord_ok = FALSE;
 
     DEBUG_INIT(dprintf("LIB_Init: Setting up pointers...\n"));

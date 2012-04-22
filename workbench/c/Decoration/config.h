@@ -19,6 +19,18 @@ struct DecorConfig
     LONG    SLogoOffset;
     LONG    STitleOffset;
     LONG    SBarHeight;
+    LONG    SBarChildPre_o;
+    LONG    SBarChildPre_s;
+    LONG    SBarChildFill_o;
+    LONG    SBarChildFill_s;
+    LONG    SBarChildPost_o;
+    LONG    SBarChildPost_s;
+    LONG    SBarGadPre_o;
+    LONG    SBarGadPre_s;
+    LONG    SBarGadFill_o;
+    LONG    SBarGadFill_s;
+    LONG    SBarGadPost_o;
+    LONG    SBarGadPost_s;
     BOOL    STitleOutline;
     BOOL    STitleShadow;
     LONG    LUTBaseColors_a;

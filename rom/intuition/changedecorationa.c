@@ -68,7 +68,6 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
         ObtainSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);
         if (ID == DECORATION_SET)
         {
-
             {
                 /* if the current decorator isn´t used remove it */
 
@@ -111,14 +110,22 @@ static VOID int_removedecorator(struct RemoveDecoratorMsg *m, struct IntuitionBa
                 }
             }
 
+            nd->nd_ScreenObjOffset = ((IPTR) ( (char *)&((struct IntScreen *)0)->ScrDecorObj - (char *)0 ));
+            nd->nd_ScreenMenuObjOffset = ((IPTR) ( (char *)&((struct IntScreen *)0)->MenuDecorObj - (char *)0 ));
+            nd->nd_ScreenWindowObjOffset = ((IPTR) ( (char *)&((struct IntScreen *)0)->WinDecorObj - (char *)0 ));
+
+            bug("intuition.decor: offsets titleobj = %d, menuobj = %d, winobj = %d\n", nd->nd_ScreenObjOffset, nd->nd_ScreenMenuObjOffset, nd->nd_ScreenWindowObjOffset);
             Enqueue(&((struct IntIntuitionBase *)(IntuitionBase))->Decorations, (struct Node *)nd);
 
             if (global)
             {
                 ((struct IntIntuitionBase *)(IntuitionBase))->Decorator = nd;
-                ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorObj = nd->nd_Window;
-                ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorObj = nd->nd_Menu;
-                ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorObj = nd->nd_Screen;
+                ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorClass = nd->nd_ScreenClass;
+                ((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorTags = nd->nd_ScreenTags;
+                ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorClass = nd->nd_MenuClass;
+                ((struct IntIntuitionBase *)(IntuitionBase))->MenuDecorTags = nd->nd_MenuTags;
+                ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorClass = nd->nd_WindowClass;
+                ((struct IntIntuitionBase *)(IntuitionBase))->WinDecorTags = nd->nd_WindowTags;
             }
         }
         ReleaseSemaphore(&((struct IntIntuitionBase *)(IntuitionBase))->ScrDecorSem);

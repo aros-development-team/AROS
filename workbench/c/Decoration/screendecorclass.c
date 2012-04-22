@@ -27,6 +27,7 @@
 
 struct scrdecor_data
 {
+    struct Screen *Screen;
     /* These are original images loaded from disk */
     struct DecorImages * di;
     struct DecorConfig * dc;
@@ -60,6 +61,8 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
     struct scrdecor_data   *data;
     UWORD                   barh;
 
+    D(bug("scrdecor_new(tags @ 0x%p)\n", msg->ops_AttrList));
+    
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
 
     if (obj)
@@ -68,6 +71,9 @@ static IPTR scrdecor_new(Class *cl, Object *obj, struct opSet *msg)
 
         struct DecorConfig * dc = (struct DecorConfig *) GetTagData(SDA_DecorConfig, (IPTR) NULL, msg->ops_AttrList);
         struct DecorImages * di = (struct DecorImages *) GetTagData(SDA_DecorImages, (IPTR) NULL, msg->ops_AttrList);
+
+        D(bug("scrdecor_new: DecorImages @ 0x%p\n", di));
+        D(bug("scrdecor_new: DecorConfig @ 0x%p\n", dc));
 
         data->FirstChild = NULL;
 
@@ -112,42 +118,6 @@ static IPTR scrdecor_get(Class *cl, Object *obj, struct opGet *msg)
     return 1;
 }
 
-static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
-{
-    struct scrdecor_data *data = INST_DATA(cl, obj);
-    struct TagItem *tags = msg->ops_AttrList;
-    struct TagItem *tstate;
-    struct TagItem *tag;
-
-    tstate = tags;
-    while ((tag = NextTagItem(&tstate)))
-    {
-        switch (tag->ti_Tag)
-        {
-            case SDA_TitleChild: 
-                if (tag->ti_Data)
-                {
-                    if (!(data->FirstChild))
-                    {
-                        struct gpLayout childlayoutmsg;
-                        bug("[screendecor] setting titlechild  0x%p\n", tag->ti_Data);
-                        data->FirstChild = (Object *)tag->ti_Data;
-
-                        childlayoutmsg.MethodID = GM_LAYOUT;
-                        childlayoutmsg.gpl_GInfo = NULL;
-                        childlayoutmsg.gpl_Initial = 0;
-
-                        DoMethodA(data->FirstChild, &childlayoutmsg);
-                    }
-                }
-                break;
-            default:
-                return DoSuperMethodA(cl, obj, (Msg)msg);
-        }
-    }
-    return 1;
-}
-
 /**************************************************************************************************/
 
 static void scr_findtitlearea(struct Screen *scr, LONG *left, LONG *right)
@@ -168,6 +138,68 @@ static void scr_findtitlearea(struct Screen *scr, LONG *left, LONG *right)
             if (g->LeftEdge + scr->Width - 1 - 1 < *right) *right = g->LeftEdge + scr->Width - 1 - 1;
         }
     }
+}
+
+static IPTR scrdecor_set(Class *cl, Object *obj, struct opSet *msg)
+{
+    struct scrdecor_data *data = INST_DATA(cl, obj);
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tstate;
+    struct TagItem *tag;
+
+    tstate = tags;
+    while ((tag = NextTagItem(&tstate)))
+    {
+        switch (tag->ti_Tag)
+        {
+            case SDA_TitleChild: 
+                if (tag->ti_Data)
+                {
+                    if (!(data->FirstChild))
+                    {
+                        LONG                    left, right = 0;
+                        struct GadgetInfo childgadinf;
+                        struct gpLayout childlayoutmsg;
+                        D(bug("[screendecor] SDA_TitleChild: 0x%p\n", tag->ti_Data));
+
+                        if ((childgadinf.gi_Screen = LockPubScreen(NULL)) != NULL)
+                        {
+                            UnlockPubScreen(NULL, childgadinf.gi_Screen);
+                            data->FirstChild = (Object *)tag->ti_Data;
+                            ((struct Gadget *)(data->FirstChild))->SpecialInfo = childgadinf.gi_Screen;
+
+                            childgadinf.gi_RastPort = childgadinf.gi_Screen->BarLayer->rp;
+
+                            if ((childgadinf.gi_DrInfo = GetScreenDrawInfo(childgadinf.gi_Screen)) != NULL)
+                            {
+                                childgadinf.gi_Pens.DetailPen = childgadinf.gi_DrInfo->dri_Pens[DETAILPEN];
+                                childgadinf.gi_Pens.BlockPen = childgadinf.gi_DrInfo->dri_Pens[BLOCKPEN];
+                            }
+
+                            childlayoutmsg.MethodID = GM_LAYOUT;
+                            childlayoutmsg.gpl_GInfo = &childgadinf;
+                            childlayoutmsg.gpl_Initial = 0;
+
+                            ((struct Gadget *)(data->FirstChild))->TopEdge = 0 + CHILDPADDING;
+                            ((struct Gadget *)(data->FirstChild))->Height = childgadinf.gi_Screen->BarHeight - (CHILDPADDING << 1);
+
+                            DoMethodA(data->FirstChild, &childlayoutmsg);
+
+                            scr_findtitlearea((childgadinf.gi_Screen), &left, &right);
+
+                            ((struct Gadget *)(data->FirstChild))->LeftEdge = right - ((struct Gadget *)(data->FirstChild))->Width + 1;
+
+                            childlayoutmsg.MethodID = GM_GOACTIVE;
+                            DoMethodA(data->FirstChild, &childlayoutmsg);
+                        }
+                    }
+                }
+                break;
+            default:
+                return DoSuperMethodA(cl, obj, (Msg)msg);
+        }
+    }
+    return 1;
 }
 
 static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreenBar *msg)
@@ -206,7 +238,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         if (data->FirstChild)
         {
             if (((struct Gadget *)(data->FirstChild))->Width > 2) {
-                bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width);
+                D(bug("[screendecor] draw_screenbar: titlechild width = %d\n", ((struct Gadget *)(data->FirstChild))->Width));
                 right = right - ((struct Gadget *)(data->FirstChild))->Width + 1; 
             }
         }
@@ -223,8 +255,6 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
 
         SetFont(rp, msg->sdp_Dri->dri_Font);
         SetDrMd(rp, JAM1);
-//         Move(rp, data->dc->STitleOffset, (scr->BarHeight + 1 - msg->sdp_Dri->dri_Font->tf_YSize) / 2 + rp->TxBaseline);
-//         Text(rp, scr->Title, titlelen);
 
         if (!sd->truecolor || ((data->dc->STitleOutline == FALSE) && (data->dc->STitleShadow == FALSE)))
         {
@@ -273,7 +303,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
             GREDRAW_REDRAW
         };
 
-        childgadinf.gi_Screen = scr;
+        childgadinf.gi_Screen = ((struct Gadget *)(data->FirstChild))->SpecialInfo = scr;
         childgadinf.gi_RastPort = rp;
         childgadinf.gi_Pens.DetailPen = pens[DETAILPEN];
         childgadinf.gi_Pens.BlockPen = pens[BLOCKPEN];
@@ -282,7 +312,7 @@ static IPTR scrdecor_draw_screenbar(Class *cl, Object *obj, struct sdpDrawScreen
         childgadinf.gi_Domain.Top = 0 + CHILDPADDING;
         childgadinf.gi_Domain.Width = ((struct Gadget *)(data->FirstChild))->Width;
         childgadinf.gi_Domain.Height = sd->img_stitlebar->h - (CHILDPADDING << 1);
-        bug("[screendecor] draw_screenbar: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", data->FirstChild, &childrendermsg, &childgadinf);
+        D(bug("[screendecor] draw_screenbar: rendering titlechild @ 0x%p, msg @ 0x%p, info @ 0x%p\n", data->FirstChild, &childrendermsg, &childgadinf));
         DoMethodA(data->FirstChild, &childrendermsg);
 
     }
@@ -343,7 +373,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
         {
             case GTYP_SDEPTH:
-                gadget->LeftEdge = -gadget->Width + 1;
+                gadget->LeftEdge = -gadget->Width;
                 gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
