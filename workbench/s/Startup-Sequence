@@ -90,7 +90,7 @@ If EXISTS C:Decoration
         C:Decoration <NIL: >NIL:
         If EXISTS THEME:global.prefs
             If EXISTS ENV:Zune/usethemeprefs
-                Copy >NIL: THEME:global.prefs ENV:Zune/ NOPRO NOREQ
+                Copy >NIL: THEME:global.prefs ENV:Zune/ NOPRO NOREQ FORCEOVERWRITE
             EndIf
         EndIf
     EndIf
