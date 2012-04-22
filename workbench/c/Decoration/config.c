@@ -13,7 +13,7 @@
 #include "newimage.h"
 #include "config.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static STRPTR SkipChars(STRPTR v)
