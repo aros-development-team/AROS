@@ -1,6 +1,8 @@
 /*
     Copyright © 2008, The AROS Development Team. All rights reserved.
     $Id$
+
+    POSIX.1-2008 header file libgen.h
 */
 
 #ifndef _LIBGEN_H

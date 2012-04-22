@@ -5,20 +5,23 @@
     Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: header file dirent.h
-    Lang: english
+    Desc: POSIX.1-2008 header file dirent.h
 */
 
 #include <aros/system.h>
 
+/* FIXME: Is this allowed ? */
+#include <limits.h>
+
 #include <aros/types/ino_t.h>
 #include <aros/types/off_t.h>
 
-#ifndef NAME_MAX
-#define NAME_MAX 255
-#endif
-#define	MAXNAMLEN NAME_MAX
+#ifndef _POSIX_SOURCE
+/* These defines seems quite common althoug not defined by POSIX.1-2008
+   so we define these by default
+*/
 
+/* d_type */
 #define DT_UNKNOWN     0
 #define DT_FIFO        1
 #define DT_CHR         2
@@ -29,12 +32,19 @@
 #define DT_SOCK       12
 #define DT_WHT        14
 
+#endif /* !_POSIX_SOURCE */
+
 struct dirent
 {
     ino_t   d_ino;
-    char    d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
+    char    d_name[NAME_MAX + 1];	/* name must be no longer than this */
+#ifndef _POSIX_SOURCE
     unsigned short int d_reclen;
     unsigned char d_type;
+#else
+    unsigned short int reserved1;
+    unsigned char reserved2;
+#endif /* !_POSIX_SOURCE */
 };
 
 /* structure describing an open directory. */
@@ -43,29 +53,19 @@ typedef struct __dirdesc DIR;
 
 __BEGIN_DECLS
 
+/* NOTIMPL int alphasort(const struct dirent **a, const struct dirent **b); */
 int closedir(DIR *dir);
+int dirfd(DIR *dir);
+/* NOTIMPL DIR *fdopendir(int); */
 DIR *opendir(const char *filename);
 struct dirent *readdir(DIR *dir);
+/* NOTIMPL int readdir_r(DIR *restrict, struct dirent *restrict, struct dirent **restrict); */
 void rewinddir(DIR *dir);
-int dirfd(DIR *dir);
-
-/* NOTIMPL int readdir_r(DIR * restrict dir , struct dirent * restrict entry,
-        struct dirent * restrict result); */
-
-void seekdir(DIR *dir, off_t loc);
-long telldir(DIR *dir);
-
-#if __BSD_VISIBLE
-
-#include <aros/types/ssize_t.h>
-
 /* NOTIMPL int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
               int (*compar)(const struct dirent **, const struct dirent **)); */
-
-/* NOTIMPL int alphasort(const struct dirent **a, const struct dirent **b); */
-/* NOTIMPL ssize_t getdirentries(int fd, char *buf, size_t  nbytes, off_t *basep); */
-#endif
+void seekdir(DIR *dir, off_t loc);
+long telldir(DIR *dir);
 
 __END_DECLS
 
