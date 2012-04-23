@@ -131,7 +131,7 @@ VOID __FetchIconARGB_WB(struct DiskObject *icon, int id, struct IconBase *IconBa
 
     image = &ni->ni_Image[id];
 
-    if (image->ARGB)
+    if (image->ARGB || ni->ni_Extra.Data == NULL)
         return;
 
     if (ni->ni_Extra.PNG[id].Offset >= 0) {
