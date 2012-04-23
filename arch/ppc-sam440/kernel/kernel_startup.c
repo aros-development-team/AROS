@@ -126,13 +126,13 @@ static uint32_t exec_SelectMbs460(uint32_t val)
         case MQ0_BASSZ_4096MB: return 4096;
         case MQ0_BASSZ_2048MB: return 2048;
         case MQ0_BASSZ_1024MB: return 1024;
-        case  MQ0_BASSZ_512MB: return 512;
-        case  MQ0_BASSZ_256MB: return 256;
-        case  MQ0_BASSZ_128MB: return 128;
-        case   MQ0_BASSZ_64MB: return  64;
-        case   MQ0_BASSZ_32MB: return  32;
-        case   MQ0_BASSZ_16MB: return  16;
-        case    MQ0_BASSZ_8MB: return   8;
+        case  MQ0_BASSZ_512MB: return  512;
+        case  MQ0_BASSZ_256MB: return  256;
+        case  MQ0_BASSZ_128MB: return  128;
+        case   MQ0_BASSZ_64MB: return   64;
+        case   MQ0_BASSZ_32MB: return   32;
+        case   MQ0_BASSZ_16MB: return   16;
+        case    MQ0_BASSZ_8MB: return    8;
     }
 
     return 0;
@@ -201,7 +201,7 @@ void exec_main(struct TagItem *msg, void *entry)
                0,
                (APTR)0x01000000,
                "Fast RAM");
-    
+
     D(bug("[exec] InitCode(RTF_SINGLETASK)\n"));
     InitCode(RTF_SINGLETASK, 0);
 
@@ -218,10 +218,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 
     /* Lowest usable kernel memory */
     memlo = 0xff000000;
-    
+
     /* Disable interrupts and let FPU work */
     wrmsr((rdmsr() & ~(MSR_CE | MSR_EE | MSR_ME)) | MSR_FP);
-        
+
     /* Enable FPU */
     wrspr(CCR0, rdspr(CCR0) & ~0x00100000);
     wrspr(CCR1, rdspr(CCR1) | (0x80000000 >> 24));
@@ -238,7 +238,7 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     D(bug("[KRN] Kernel resource pre-exec init\n"));
     D(bug("[KRN] MSR=%08x CRR0=%08x CRR1=%08x\n", rdmsr(), rdspr(CCR0), rdspr(CCR1)));
     D(bug("[KRN] USB config %08x\n", rddcr(SDR0_USB0)));
-    
+
     D(bug("[KRN] msg @ %p\n", msg));
     D(bug("[KRN] Copying msg data\n"));
     while(msg->ti_Tag != TAG_DONE)
@@ -253,59 +253,58 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         }
         else if (tmp->ti_Tag == KRN_BootLoader)
         {
-        	tmp->ti_Data = (STACKIPTR) memlo;
-        	memlo += (strlen((char *)memlo) + 4) & ~3;
-        	strcpy((char*)tmp->ti_Data, (const char*) msg->ti_Data);
+            tmp->ti_Data = (STACKIPTR) memlo;
+            memlo += (strlen((char *)memlo) + 4) & ~3;
+            strcpy((char*)tmp->ti_Data, (const char*) msg->ti_Data);
         }
         else if (tmp->ti_Tag == KRN_DebugInfo)
         {
-        	int i;
-        	struct MinList *mlist = (struct MinList *)tmp->ti_Data;
+            int i;
+            struct MinList *mlist = (struct MinList *)tmp->ti_Data;
 
-        	D(bug("[KRN] DebugInfo at %08x\n", mlist));
+            D(bug("[KRN] DebugInfo at %08x\n", mlist));
 
-        	module_t *mod = (module_t *)memlo;
+            module_t *mod = (module_t *)memlo;
 
-        	ListLength(mlist, modlength);
-        	modlist = mod;
+            ListLength(mlist, modlength);
+            modlist = mod;
 
-        	memlo = (uintptr_t)&mod[modlength];
+            memlo = (uintptr_t)&mod[modlength];
 
-        	D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
-        	/* Copy the module entries */
-        	for (i=0; i < modlength; i++)
-        	{
-        		module_t *m = (module_t *)REMHEAD(mlist);
-        		symbol_t *sym;
+            D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
+            /* Copy the module entries */
+            for (i=0; i < modlength; i++)
+            {
+                module_t *m = (module_t *)REMHEAD(mlist);
+                symbol_t *sym;
 
-        		mod[i].m_lowest = m->m_lowest;
-        		mod[i].m_highest = m->m_highest;
-        		mod[i].m_str = NULL;
-        		NEWLIST(&mod[i].m_symbols);
-        		mod[i].m_name = (char *)memlo;
-        		memlo += (strlen(m->m_name) + 4) & ~3;
-        		strcpy(mod[i].m_name, m->m_name);
+                mod[i].m_lowest = m->m_lowest;
+                mod[i].m_highest = m->m_highest;
+                mod[i].m_str = NULL;
+                NEWLIST(&mod[i].m_symbols);
+                mod[i].m_name = (char *)memlo;
+                memlo += (strlen(m->m_name) + 4) & ~3;
+                strcpy(mod[i].m_name, m->m_name);
 
-        		D(bug("[KRN] Module %s\n", m->m_name));
+                D(bug("[KRN] Module %s\n", m->m_name));
 
-        		ForeachNode(&m->m_symbols, sym)
-        		{
-        			symbol_t *newsym = (symbol_t *)memlo;
-        			memlo += sizeof(symbol_t);
+                ForeachNode(&m->m_symbols, sym)
+                {
+                    symbol_t *newsym = (symbol_t *)memlo;
+                    memlo += sizeof(symbol_t);
 
-        			newsym->s_name = (char *)memlo;
-        			memlo += (strlen(sym->s_name)+4)&~3;
-        			strcpy(newsym->s_name, sym->s_name);
+                    newsym->s_name = (char *)memlo;
+                    memlo += (strlen(sym->s_name)+4)&~3;
+                    strcpy(newsym->s_name, sym->s_name);
 
-        			newsym->s_lowest = sym->s_lowest;
-        			newsym->s_highest = sym->s_highest;
+                    newsym->s_lowest = sym->s_lowest;
+                    newsym->s_highest = sym->s_highest;
 
-        			ADDTAIL(&mod[i].m_symbols, newsym);
-        		}
-        	}
+                    ADDTAIL(&mod[i].m_symbols, newsym);
+                }
+            }
 
-        	D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)mod) >> 10));
-
+            D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)mod) >> 10));
         }
 
         ++tmp;
@@ -320,7 +319,6 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* Do a slightly more sophisticated MMU map */
     mmu_init(BootMsg);
     intr_init();
-    
 
     /* Initialize exec.library */
     exec_main(BootMsg, NULL);
@@ -345,44 +343,44 @@ void SetupClocking440(struct PlatformData *pd)
 
     uint32_t fbdv = (reg >> 24) & 0x1f;
     if (fbdv == 0)
-    	fbdv = 32;
+        fbdv = 32;
     uint32_t fwdva = (reg >> 16) & 0x1f;
     if (fwdva == 0)
-    	fwdva = 16;
+        fwdva = 16;
     uint32_t fwdvb = (reg >> 8) & 7;
     if (fwdvb == 0)
-    	fwdvb = 8;
+        fwdvb = 8;
     uint32_t lfbdv = reg & 0x3f;
     if (lfbdv == 0)
-    	lfbdv = 64;
+        lfbdv = 64;
 
     /* OPB clock divisor */
     wrdcr(CPR0_CFGADDR, CPR0_OPBD0);
     reg = rddcr(CPR0_CFGDATA);
     uint32_t opbdv0 = (reg >> 24) & 3;
     if (opbdv0 == 0)
-    	opbdv0 = 4;
+        opbdv0 = 4;
 
     /* Peripheral clock divisor */
     wrdcr(CPR0_CFGADDR, CPR0_PERD0);
     reg = rddcr(CPR0_CFGDATA);
     uint32_t perdv0 = (reg >> 24) & 7;
     if (perdv0 == 0)
-    	perdv0 = 8;
+        perdv0 = 8;
 
     /* PCI clock divisor */
     wrdcr(CPR0_CFGADDR, CPR0_SPCID);
     reg = rddcr(CPR0_CFGDATA);
     uint32_t spcid0 = (reg >> 24) & 3;
     if (spcid0 == 0)
-    	spcid0 = 4;
+        spcid0 = 4;
 
     /* Primary B divisor */
     wrdcr(CPR0_CFGADDR, CPR0_PRIMBD0);
     reg = rddcr(CPR0_CFGDATA);
     uint32_t prbdv0 = (reg >> 24) & 7;
     if (prbdv0 == 0)
-    	prbdv0 = 8;
+        prbdv0 = 8;
 
     /* All divisors there. Read PLL control register and calculate the m value (see 44ep.book) */
     wrdcr(CPR0_CFGADDR, CPR0_PLLC0);
@@ -390,16 +388,16 @@ void SetupClocking440(struct PlatformData *pd)
     uint32_t m;
     switch ((reg >> 24) & 3) /* Feedback selector */
     {
-    case 0:	/* PLL output (A or B) */
-    	if ((reg & 0x20000000)) /* PLLOUTB */
-    		m = lfbdv * fbdv * fwdvb;
-    	else
-    		m = lfbdv * fbdv * fwdva;
-    	break;
+    case 0:/* PLL output (A or B) */
+        if ((reg & 0x20000000)) /* PLLOUTB */
+            m = lfbdv * fbdv * fwdvb;
+        else
+            m = lfbdv * fbdv * fwdva;
+        break;
     case 1: /* CPU */
-		m = fbdv * fwdva;
+        m = fbdv * fwdva;
     default:
-    	m = perdv0 * opbdv0 * fwdvb;
+        m = perdv0 * opbdv0 * fwdvb;
     }
 
     uint32_t vco = (m * 66666666) + m/2;
@@ -540,11 +538,11 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     int i;
     struct PlatformData *pd;
     struct ExecBase *SysBase = getSysBase();
-    
+
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
 
-    D(bug("Kernel_Init Entered\n"));
+    D(bug("[KRN] Entered Kernel_Init()\n"));
     /* Get the PLB and CPU speed */
 
     pd = AllocMem(sizeof(struct PlatformData), MEMF_PUBLIC|MEMF_CLEAR);
@@ -566,8 +564,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
         for (;;);
     }
 
-    D(bug("[KRN] Kernel resource post-exec init\n"));
-
     D(bug("[KRN] CPU Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_CPUFreq / 1000000));
     D(bug("[KRN] PLB Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_PLBFreq / 1000000));
     D(bug("[KRN] OPB Speed: %dMz\n", LIBBASE->kb_PlatformData->pd_OPBFreq / 1000000));
@@ -578,7 +574,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     krn_lowest &= 0xfffff000;
     /* 64K granularity for code sections */
     krn_highest = (krn_highest + 0xffff) & 0xffff0000;
-    
+
     /* 
      * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
      * exec.library itself.
@@ -587,7 +583,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     D(bug("[KRN] Allowing userspace to flush caches\n"));
     wrspr(MMUCR, rdspr(MMUCR) & ~0x000c0000);
-    
+
     for (i=0; i < 16; i++)
         NEWLIST(&LIBBASE->kb_Exceptions[i]);
 
@@ -612,7 +608,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     mh.mh_First->mc_Next  = NULL;
     mh.mh_First->mc_Bytes = mh.mh_Free;
 
-    D(bug("[KRN] %08x - %08x, %d KB free\n", mh.mh_Lower, mh.mh_Upper, mh.mh_Free >> 10));
+    D(bug("%08x - %08x, %d KB free\n", mh.mh_Lower, mh.mh_Upper, mh.mh_Free >> 10));
 
     LIBBASE->kb_PlatformData->pd_SupervisorMem = &mh;
 
@@ -631,15 +627,13 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     mh->mh_Free            = 0;
     mh->mh_Lower           = LIBBASE->kb_PlatformData->pd_SupervisorMem;
     mh->mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_highest - 1);
-    
+
     Enqueue(&SysBase->MemList, &mh->mh_Node);
 
     /* 
-     * kernel.resource is ready to run. Enable external interrupts and leave 
-     * supervisor mode.
+     * kernel.resource is ready to run, leave supervisor mode. External interrupts
+     * will be enabled during late exec init.
      */
-    wrmsr(rdmsr() | MSR_EE);
-    D(bug("[KRN] Interrupts enabled\n"));
 
     goUser();
     D(bug("[KRN] Entered user mode \n"));
