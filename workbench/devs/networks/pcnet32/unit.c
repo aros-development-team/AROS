@@ -804,14 +804,14 @@ VOID CopyPacket(struct PCN32Base *PCNet32Base, struct PCN32Unit *unit,
     struct Opener *opener;
     BOOL filtered = FALSE;
     UBYTE *ptr;
+    const UBYTE broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 D(bug("%s: CopyPacket(packet @ %x, len = %d)\n", unit->pcnu_name, buffer, packet_size));
 
     /* Set multicast and broadcast flags */
 
     request->ios2_Req.io_Flags &= ~(SANA2IOF_BCAST | SANA2IOF_MCAST);
-    if((*((ULONG *)(buffer->eth_packet_dest)) == 0xffffffff) &&
-       (*((UWORD *)(buffer->eth_packet_dest + 4)) == 0xffff))
+    if(memcmp(buffer->eth_packet_dest, broadcast, 6) == 0)
     {
        request->ios2_Req.io_Flags |= SANA2IOF_BCAST;
 D(bug("%s: CopyPacket: BROADCAST Flag set\n", unit->pcnu_name));

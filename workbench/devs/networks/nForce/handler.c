@@ -21,6 +21,8 @@
 
 #define DEBUG 0
 
+#include <string.h>
+
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <exec/io.h>
@@ -343,8 +345,7 @@ static BOOL CmdBroadcast(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     /* Fill in the broadcast address as destination */
 
-    *((ULONG *)request->ios2_DstAddr) = 0xffffffff;
-    *((UWORD *)(request->ios2_DstAddr + 4)) = 0xffff;
+    memset(request->ios2_DstAddr, 0xff, 6);
 
     /* Queue the write as normal */
 

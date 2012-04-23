@@ -395,8 +395,12 @@ static void nv_set_multicast(struct net_device *dev)
                 walk = dev->mc_list;
                 while (walk != NULL) {
                     ULONG a, b;
-                    a = AROS_LE2LONG(*(ULONG *) walk->dmi_addr);
-                    b = AROS_LE2WORD(*(UWORD *) (&walk->dmi_addr[4]));
+                    a = (walk->dmi_addr[0] <<  0) |
+                        (walk->dmi_addr[1] <<  8) |
+                        (walk->dmi_addr[2] << 16) |
+                        (walk->dmi_addr[3] << 24);
+                    b = (walk->dmi_addr[4] <<  0) |
+                        (walk->dmi_addr[5] <<  8);
                     alwaysOn[0] &= a;
                     alwaysOff[0] &= ~a;
                     alwaysOn[1] &= b;

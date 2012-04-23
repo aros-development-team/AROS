@@ -613,7 +613,7 @@ void e1000func_set_multi(struct net_device *unit)
 
         /* The shared function expects a packed array of only addresses. */
         ForeachNode(&unit->e1ku_multicast_ranges, range) {
-            memcpy(mta_list + (i*ETH_ADDRESSSIZE), &range->lower_bound_left, ETH_ADDRESSSIZE);
+            memcpy(mta_list + (i*ETH_ADDRESSSIZE), &range->lower_bound, ETH_ADDRESSSIZE);
             i++;
         }
 

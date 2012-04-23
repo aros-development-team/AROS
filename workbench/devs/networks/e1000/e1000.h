@@ -123,10 +123,8 @@ struct AddressRange
 {
     struct MinNode node;
     ULONG add_count;
-    ULONG lower_bound_left;
-    ULONG upper_bound_left;
-    UWORD lower_bound_right;
-    UWORD upper_bound_right;
+    UBYTE lower_bound[6];
+    UBYTE upper_bound[6];
 };
 
 /* Standard interface flags (netdevice->flags). */

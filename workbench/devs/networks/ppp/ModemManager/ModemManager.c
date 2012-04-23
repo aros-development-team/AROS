@@ -444,10 +444,10 @@ void ConfNetWork(struct PPPcontrolMsg *msg,struct Conf *c){
                 ns_addr.sin_len = sizeof(ns_addr);
                 ns_addr.sin_family = AF_INET;
 
-                ns_addr.sin_addr.s_addr = *(ULONG *)msg->PrimaryDNS;
+                memcpy(&ns_addr.sin_addr.s_addr, msg->PrimaryDNS, 4);
                 AddDynNameServ((struct sockaddr *)&ns_addr);
 
-                ns_addr.sin_addr.s_addr = *(ULONG *)msg->SecondaryDNS;
+                memcpy(&ns_addr.sin_addr.s_addr, msg->SecondaryDNS, 4);
                 AddDynNameServ((struct sockaddr *)&ns_addr);
 
                 EndDynNameServ();

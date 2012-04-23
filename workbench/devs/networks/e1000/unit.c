@@ -392,14 +392,14 @@ VOID CopyPacket(struct e1000Base *e1KBase, struct e1000Unit *unit,
     struct Opener *opener;
     BOOL filtered = FALSE;
     UBYTE *ptr;
+    const UBYTE broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
 D(bug("[%s]: CopyPacket(packet @ %x, len = %d)\n", unit->e1ku_name, buffer, packet_size));
 
     /* Set multicast and broadcast flags */
 
     request->ios2_Req.io_Flags &= ~(SANA2IOF_BCAST | SANA2IOF_MCAST);
-    if((*((ULONG *)(buffer->eth_packet_dest)) == 0xffffffff) &&
-       (*((UWORD *)(buffer->eth_packet_dest + 4)) == 0xffff))
+    if(memcmp(buffer->eth_packet_dest, broadcast, ETH_ADDRESSSIZE) == 0)
     {
        request->ios2_Req.io_Flags |= SANA2IOF_BCAST;
 D(bug("[%s]: CopyPacket: BROADCAST Flag set\n", unit->e1ku_name));
@@ -469,16 +469,11 @@ BOOL AddressFilter(struct e1000Base *e1KBase, struct e1000Unit *unit, UBYTE *add
 {
     struct AddressRange *range, *tail;
     BOOL accept = TRUE;
-    ULONG address_left;
-    UWORD address_right;
+    const UBYTE broadcast[6] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 
     /* Check whether address is unicast/broadcast or multicast */
 
-    address_left = AROS_BE2LONG(*((ULONG *)address));
-    address_right = AROS_BE2WORD(*((UWORD *)(address + 4)));
-
-    if((address_left & 0x01000000) != 0 &&
-        !(address_left == 0xffffffff && address_right == 0xffff))
+    if((address[0] & 0x01) != 0 && memcmp(address, broadcast, ETH_ADDRESSSIZE) != 0)
     {
         /* Check if this multicast address is wanted */
 
@@ -488,12 +483,8 @@ BOOL AddressFilter(struct e1000Base *e1KBase, struct e1000Unit *unit, UBYTE *add
 
         while((range != tail) && !accept)
         {
-            if((address_left > range->lower_bound_left ||
-                (address_left == range->lower_bound_left &&
-                address_right >= range->lower_bound_right)) &&
-                (address_left < range->upper_bound_left ||
-                (address_left == range->upper_bound_left &&
-                address_right <= range->upper_bound_right)))
+            if ((memcmp(address, range->lower_bound, ETH_ADDRESSSIZE) >= 0) &&
+                (memcmp(address, range->upper_bound, ETH_ADDRESSSIZE) <= 0))
                 accept = TRUE;
             range = (APTR)range->node.mln_Succ;
         }
@@ -1026,8 +1017,7 @@ void DeleteUnit(struct e1000Base *e1KBase, struct e1000Unit *unit)
     }
 }
 
-static struct AddressRange *FindMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit,
-   ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left, UWORD upper_bound_right)
+static struct AddressRange *FindMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, const UBYTE *lower_bound, const UBYTE *upper_bound)
 {
     struct AddressRange *range, *tail;
     BOOL found = FALSE;
@@ -1037,10 +1027,8 @@ static struct AddressRange *FindMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1
 
     while((range != tail) && !found)
     {
-        if((lower_bound_left == range->lower_bound_left) &&
-            (lower_bound_right == range->lower_bound_right) &&
-            (upper_bound_left == range->upper_bound_left) &&
-            (upper_bound_right == range->upper_bound_right))
+        if (memcmp(lower_bound, range->lower_bound, ETH_ADDRESSSIZE) == 0 &&
+            memcmp(upper_bound, range->upper_bound, ETH_ADDRESSSIZE) == 0)
             found = TRUE;
         else
             range = (APTR)range->node.mln_Succ;
@@ -1056,16 +1044,8 @@ BOOL AddMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, const UBY
    const UBYTE *upper_bound)
 {
     struct AddressRange *range;
-    ULONG lower_bound_left, upper_bound_left;
-    UWORD lower_bound_right, upper_bound_right;
 
-    lower_bound_left = AROS_BE2LONG(*((ULONG *)lower_bound));
-    lower_bound_right = AROS_BE2WORD(*((UWORD *)(lower_bound + 4)));
-    upper_bound_left = AROS_BE2LONG(*((ULONG *)upper_bound));
-    upper_bound_right = AROS_BE2WORD(*((UWORD *)(upper_bound + 4)));
-
-    range = FindMulticastRange(LIBBASE, unit, lower_bound_left, lower_bound_right,
-        upper_bound_left, upper_bound_right);
+    range = FindMulticastRange(LIBBASE, unit, lower_bound, upper_bound);
 
     if(range != NULL)
         range->add_count++;
@@ -1074,10 +1054,8 @@ BOOL AddMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, const UBY
         range = AllocMem(sizeof(struct AddressRange), MEMF_PUBLIC);
         if(range != NULL)
         {
-            range->lower_bound_left = lower_bound_left;
-            range->lower_bound_right = lower_bound_right;
-            range->upper_bound_left = upper_bound_left;
-            range->upper_bound_right = upper_bound_right;
+            memcpy(range->lower_bound, lower_bound, ETH_ADDRESSSIZE);
+            memcpy(range->upper_bound, upper_bound, ETH_ADDRESSSIZE);
             range->add_count = 1;
 
             Disable();
@@ -1098,16 +1076,8 @@ BOOL AddMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, const UBY
 BOOL RemMulticastRange(LIBBASETYPEPTR LIBBASE, struct e1000Unit *unit, const UBYTE *lower_bound, const UBYTE *upper_bound)
 {
     struct AddressRange *range;
-    ULONG lower_bound_left, upper_bound_left;
-    UWORD lower_bound_right, upper_bound_right;
 
-    lower_bound_left = AROS_BE2LONG(*((ULONG *)lower_bound));
-    lower_bound_right = AROS_BE2WORD(*((UWORD *)(lower_bound + 4)));
-    upper_bound_left = AROS_BE2LONG(*((ULONG *)upper_bound));
-    upper_bound_right = AROS_BE2WORD(*((UWORD *)(upper_bound + 4)));
-
-    range = FindMulticastRange(LIBBASE, unit, lower_bound_left, lower_bound_right,
-        upper_bound_left, upper_bound_right);
+    range = FindMulticastRange(LIBBASE, unit, lower_bound, upper_bound);
 
     if(range != NULL)
     {
