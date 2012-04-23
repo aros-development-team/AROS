@@ -19,6 +19,7 @@ MA 02111-1307, USA.
 
 */
 
+#include <string.h>
 
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -1709,14 +1710,15 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
          send_size = (packet_size + 3) & ~0x3;
          if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
          {
-            unit->LongOut(unit->card, EL3REG_DATA0,
-               *((ULONG *)request->ios2_DstAddr));
-            unit->WordOut(unit->card, EL3REG_DATA0,
-               *((UWORD *)(request->ios2_DstAddr + 4)));
-            unit->WordOut(unit->card, EL3REG_DATA0,
-               *((UWORD *)unit->address));
-            unit->LongOut(unit->card, EL3REG_DATA0,
-               *((ULONG *)(unit->address + 2)));
+            union {
+                UBYTE bytes[12];
+                ULONG ulong[3];
+            } header;
+            memcpy(&header.bytes[0], request->ios2_DstAddr, 6);
+            memcpy(&header.bytes[6], unit->address, 6);
+            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[0]);
+            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[1]);
+            unit->LongOut(unit->card, EL3REG_DATA0, header.ulong[2]);
             unit->BEWordOut(unit->card, EL3REG_DATA0,
                request->ios2_PacketType);
             send_size -= ETH_HEADERSIZE;

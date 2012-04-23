@@ -350,9 +350,7 @@ D(bug("[%s]: CmdConfigInterface()\n", unit->e1ku_name));
 static BOOL CmdBroadcast(LIBBASETYPEPTR LIBBASE, struct IOSana2Req *request)
 {
     /* Fill in the broadcast address as destination */
-
-    *((ULONG *)request->ios2_DstAddr) = 0xffffffff;
-    *((UWORD *)(request->ios2_DstAddr + 4)) = 0xffff;
+    memset(request->ios2_DstAddr, 0xff, SANA2_MAX_ADDR_BYTES);
 
     /* Queue the write as normal */
 
