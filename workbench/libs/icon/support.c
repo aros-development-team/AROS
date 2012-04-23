@@ -131,10 +131,10 @@ VOID __FetchIconARGB_WB(struct DiskObject *icon, int id, struct IconBase *IconBa
 
     image = &ni->ni_Image[id];
 
-    if (image->ARGB || ni->ni_Extra.Data == NULL)
+    if (image->ARGB)
         return;
 
-    if (ni->ni_Extra.PNG[id].Offset >= 0) {
+    if (ni->ni_Extra.Data != NULL && ni->ni_Extra.PNG[id].Offset >= 0) {
         image->ARGB = ReadMemPNG(icon, ni->ni_Extra.Data + ni->ni_Extra.PNG[id].Offset,
                                      &ni->ni_Face.Width, &ni->ni_Face.Height,
                                      NULL, NULL, IconBase);
