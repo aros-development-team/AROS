@@ -422,9 +422,22 @@ end:
 }
 
 
-static ULONG getmfmlong (UWORD *mfmbuf)
+static ULONG getmfmlong(UWORD *mfmbuf)
 {
-    return ((mfmbuf[0] << 16) | mfmbuf[1]) & 0x55555555;
+    return ((ULONG*)mfmbuf)[0] & 0x55555555;
+}
+static ULONG getdecodedlong(UWORD *mfmbuf, UWORD offset)
+{
+    ULONG odd = getmfmlong(mfmbuf);
+    ULONG even = getmfmlong(mfmbuf + offset);
+    return (odd << 1) | even;
+}
+static ULONG getdecodedlongchk(UWORD *mfmbuf, UWORD offset, ULONG *chksum)
+{
+    ULONG odd = getmfmlong(mfmbuf);
+    ULONG even = getmfmlong(mfmbuf + offset);
+    *chksum ^= odd ^ even;
+    return (odd << 1) | even;
 }
 
 static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
@@ -440,7 +453,7 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
         while (tdb->td_sectorbits != (1 << tdu->tdu_sectors) - 1) {
             UWORD *rawnext = raw;
             UBYTE *secdata;
-            ULONG odd, even, chksum, id, dlong;
+            ULONG chksum, id, dlong;
             UBYTE trackoffs;
 
             if (raw != tdb->td_DMABuffer) {
@@ -462,10 +475,10 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             }
 
             rawnext = raw + 544 - 3;
-            odd = getmfmlong(raw);
-            even = getmfmlong(raw + 2);
+ 
+            chksum = 0;
+            id = getdecodedlongchk(raw, 2, &chksum);
             raw += 4;
-            id = (odd << 1) | even;
 
             trackoffs = (id & 0xff00) >> 8;
             if (trackoffs >= tdu->tdu_sectors || (id & 0xff000000) != 0xff000000) {
@@ -479,20 +492,15 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
                 continue;
             }
             // decode header
-            chksum = odd ^ even;
             for (i = 0; i < 4; i++) {
-                odd = getmfmlong (raw);
-                even = getmfmlong (raw + 8);
+                getdecodedlongchk(raw, 8, &chksum);
                 raw += 2;
-                dlong = (odd << 1) | even;
-                chksum ^= odd ^ even;
             }
             raw += 8;
-            odd = getmfmlong (raw);
-            even = getmfmlong (raw + 2);
+            dlong = getdecodedlong(raw, 2);
             raw += 4;
             // header checksum ok?
-            if (((odd << 1) | even) != chksum) {
+            if (dlong != chksum) {
                 lasterr = TDERR_BadHdrSum;
                 D(bug("td_decodebuffer sector %d header checksum error\n", trackoffs));
                 continue;
@@ -506,21 +514,16 @@ static UBYTE td_decodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
             }
 
             // decode data
-            odd = getmfmlong (raw);
-            even = getmfmlong (raw + 2);
+            chksum = getdecodedlong(raw, 2);
             raw += 4;
-            chksum = (odd << 1) | even;
             secdata = data + trackoffs * 512;
             for (i = 0; i < 128; i++) {
-                odd = getmfmlong (raw);
-                even = getmfmlong (raw + 256);
+                dlong = getdecodedlongchk(raw, 256, &chksum);
                 raw += 2;
-                dlong = (odd << 1) | even;
                 *secdata++ = dlong >> 24;
                 *secdata++ = dlong >> 16;
                 *secdata++ = dlong >> 8;
                 *secdata++ = dlong;
-                chksum ^= odd ^ even;
             }
             if (chksum) {
                 lasterr = TDERR_BadSecSum;
@@ -543,16 +546,19 @@ static UBYTE td_decodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
 	return TDERR_TooFewSecs;
 }
 
-static void mfmcode (UWORD *mfm, UWORD words)
+static void mfmcode (ULONG *mfm, UWORD longs)
 {
-	ULONG lastword = 0;
-	while (words--) {
-		ULONG v = *mfm;
-		ULONG lv = (lastword << 16) | v;
-		ULONG nlv = 0x55555555 & ~lv;
-		ULONG mfmbits = (nlv << 1) & (nlv >> 1);
-		*mfm++ = v | mfmbits;
-		lastword = v;
+    ULONG prev = mfm[-1];
+	while (longs--) {
+		ULONG v = (*mfm) & 0x55555555;
+		// if mask1 is not set (previous bit) and mask2 (current bit) is not set: set bit.
+		ULONG mask1 = (prev << 31) | (v >> 1);
+		ULONG mask2 = v << 1;
+        // mfmbits bit set only if bits in both masks are zero.
+		ULONG mfmbits = ((~mask1) & (~mask2)) & 0xaaaaaaaa;
+		prev = v;
+		v |= mfmbits;
+		*mfm++ = v;
 	}
 }
 
@@ -561,78 +567,64 @@ static void td_encodebuffer_ados(struct TDU *tdu, struct TrackDiskBase *tdb)
 	UWORD i;
 	UBYTE sec;
 	UBYTE *databuf = tdb->td_DataBuffer;
-	UWORD *mfmbuf = (UWORD*)tdb->td_DMABuffer;
+	ULONG *mfmbuf = (ULONG*)tdb->td_DMABuffer;
 	UWORD bufsize = DISK_BUFFERSIZE * (tdu->tdu_hddisk ? 2 : 1);
 	UWORD gapsize = bufsize - tdu->tdu_sectors * 2 * 544;
 
-	for (i = 0; i < gapsize / 2 - 2; i++)
-		*mfmbuf++ = 0xaaaa;
+	for (i = 0; i < gapsize / 4 - 1; i++)
+		*mfmbuf++ = 0xaaaaaaaa;
 
 	for (sec = 0; sec < tdu->tdu_sectors; sec++) {
-		UBYTE secbuf[4];
 		ULONG deven, dodd;
 		ULONG hck = 0, dck = 0;
 
-		secbuf[0] = 0xff;
-		secbuf[1] = tdb->td_buffer_track;
-		secbuf[2] = sec;
-		secbuf[3] = tdu->tdu_sectors - sec;
+        // make sure we have valid MFM clock bit here!
+        if (mfmbuf[-1] & 1)
+            mfmbuf[0] = 0x2aaaaaaa;
+        else
+		    mfmbuf[0] = 0xaaaaaaaa;
+		mfmbuf[1] = 0x44894489;
 
-		mfmbuf[0] = mfmbuf[1] = 0xaaaa;
-		mfmbuf[2] = mfmbuf[3] = 0x4489;
-
-		deven = ((secbuf[0] << 24) | (secbuf[1] << 16)
-			| (secbuf[2] << 8) | (secbuf[3]));
+		deven = (0xff << 24) | (tdb->td_buffer_track << 16) | (sec << 8) | ((tdu->tdu_sectors - sec) << 0);
 		dodd = deven >> 1;
-		deven &= 0x55555555;
 		dodd &= 0x55555555;
+		deven &= 0x55555555;
+		mfmbuf[2] = dodd;
+		mfmbuf[3] = deven;
+		hck ^= dodd;
+		hck ^= deven;
 
-		mfmbuf[4] = dodd >> 16;
-		mfmbuf[5] = dodd;
-		mfmbuf[6] = deven >> 16;
-		mfmbuf[7] = deven;
+		for (i = 4; i < 12; i++)
+			mfmbuf[i] = 0;
 
-		for (i = 8; i < 24; i++)
-			mfmbuf[i] = 0xaaaa;
-
-		for (i = 0; i < 512; i += 4) {
-			deven = ((databuf[i + 0] << 24) | (databuf[i + 1] << 16)
-				| (databuf[i + 2] << 8) | (databuf[i + 3]));
+		for (i = 0; i < 128; i++) {
+			deven = ((ULONG*)databuf)[i];
 			dodd = deven >> 1;
-			deven &= 0x55555555;
 			dodd &= 0x55555555;
-			mfmbuf[(i >> 1) + 32] = dodd >> 16;
-			mfmbuf[(i >> 1) + 33] = dodd;
-			mfmbuf[(i >> 1) + 256 + 32] = deven >> 16;
-			mfmbuf[(i >> 1) + 256 + 33] = deven;
+			deven &= 0x55555555;
+			mfmbuf[  0 + 16 + i] = dodd;
+			mfmbuf[128 + 16 + i] = deven;
+			dck ^= dodd;
+			dck ^= deven;
 		}
 
-		for (i = 4; i < 24; i += 2)
-			hck ^= (mfmbuf[i] << 16) | mfmbuf[i + 1];
+		deven = hck;
+		dodd = deven >> 1;
+		mfmbuf[12] = dodd;
+		mfmbuf[13] = deven;
 
-		deven = dodd = hck;
-		dodd >>= 1;
-		mfmbuf[24] = dodd >> 16;
-		mfmbuf[25] = dodd;
-		mfmbuf[26] = deven >> 16;
-		mfmbuf[27] = deven;
+		deven = dck;
+		dodd = deven >> 1;
+		mfmbuf[14] = dodd;
+		mfmbuf[15] = deven;
 
-		for (i = 32; i < 544; i += 2)
-			dck ^= (mfmbuf[i] << 16) | mfmbuf[i + 1];
-
-		deven = dodd = dck;
-		dodd >>= 1;
-		mfmbuf[28] = dodd >> 16;
-		mfmbuf[29] = dodd;
-		mfmbuf[30] = deven >> 16;
-		mfmbuf[31] = deven;
-		mfmcode (mfmbuf + 4, 544 - 4);
+		mfmcode (mfmbuf + 2, 2 * 128 + 16 - 2);
 		
 		databuf += 512;
-		mfmbuf += 544;
+		mfmbuf += 2 * 128 + 16;
 	}
-	*mfmbuf++ = 0xaaaa;
-	*mfmbuf = 0xaaaa;
+	mfmbuf[0] = 0;
+	mfmcode (mfmbuf, 1);
 }
 
 static void td_encodebuffer(struct TDU *tdu, struct TrackDiskBase *tdb)
@@ -862,6 +854,7 @@ UBYTE td_flush(struct TDU *tdu, struct TrackDiskBase *tdb)
 
 	err = 0;
 	td_select(tdu, tdb);
+	td_seek(tdu, tdb->td_buffer_track >> 1, tdb->td_buffer_track & 1, tdb);
 	D(bug("td_flush, writing unit %d track %d wmask=%08x\n",
 		tdb->td_buffer_unit, tdb->td_buffer_track, tdb->td_sectorbits));
 
