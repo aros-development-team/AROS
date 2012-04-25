@@ -1324,13 +1324,13 @@ interpret_long_date(char * p)
 static time_t
 interpret_long_date(char * p)
 {
-    QUAD long_date;
-    long_date  = ((QUAD)DVAL(p,0) << 32) | DVAL(p,4);
+    UQUAD long_date;
+    int sectime;
 
-    long_date -= 116444736000000000ULL;
-    long_date /= 10000000;
+    long_date  = *(UQUAD *)p - (0x2B6109100ULL * 10000000);
+    sectime = long_date / 10000000;
     
-    return((time_t)long_date & 0xFFFFFFFF);
+    return((time_t)sectime);
 }
 #endif
 
