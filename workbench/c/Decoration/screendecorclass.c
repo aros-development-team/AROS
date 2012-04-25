@@ -373,7 +373,7 @@ static IPTR scrdecor_layoutscrgadgets(Class *cl, Object *obj, struct sdpLayoutSc
         switch(gadget->GadgetType & GTYP_SYSTYPEMASK)
         {
             case GTYP_SDEPTH:
-                gadget->LeftEdge = -gadget->Width;
+                gadget->LeftEdge = -gadget->Width + 1;
                 gadget->TopEdge = (data->dc->SBarHeight - sd->img_sdepth->h) >> 1;
                 gadget->Flags &= ~GFLG_RELWIDTH;
                 gadget->Flags |= GFLG_RELRIGHT;
