@@ -1,4 +1,4 @@
-arosz# $Id$
+# $Id$
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES   := -I$(GENINCDIR)
