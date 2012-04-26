@@ -13,7 +13,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #MM- compiler-nofpu : setup includes \
 #MM	linklibs-amiga \
 #MM	linklibs-arosm \
-#MM	linklibs-arosz \
+#MM	linklibs-zlib \
 #MM	linklibs-arossupport \
 #MM	linklibs-autoinit \
 #MM	linklibs-arosc \
