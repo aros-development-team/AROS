@@ -24,21 +24,13 @@ FILES := \
 
 #MM- core-linklibs : linklibs-zlib
 #MM- linklibs : linklibs-zlib
-#MM- linklibs-zlib : linklibs-arosz arosz-setup-link
-#MM linklibs-arosz : includes
+#MM linklibs-zlib : includes
 #MM includes-copy
 
 %copy_includes
 
 USER_CFLAGS := -DHAVE_UNISTD_H
 
-%build_linklib mmake=linklibs-arosz libname=arosz files=$(FILES)
+%build_linklib mmake=linklibs-zlib libname=z files=$(FILES)
 
-$(AROS_LIB)/libz.a : arosz-setup-link
-
-#MM
-arosz-setup-link :
-	@$(RM) $(AROS_LIB)/libz.a
-	@cd $(AROS_LIB); ln -s $(if $(filter aros, $(AROS_HOST_ARCH)),$(AROS_LIB)/libarosz.a,libarosz.a) libz.a
-    
 %common

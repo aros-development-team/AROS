@@ -1,4 +1,4 @@
-# $Id$
+arosz# $Id$
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES   := -I$(GENINCDIR)
@@ -13,7 +13,7 @@ OS_INCLUDES   := -I$(GENINCDIR)
 #MM- compiler-nofpu : setup includes \
 #MM	linklibs-amiga \
 #MM	linklibs-arosm-m68000 \
-#MM	linklibs-arosz \
+#MM	linklibs-zlib \
 #MM	linklibs-arossupport \
 #MM	linklibs-autoinit \
 #MM	linklibs-arosc \
