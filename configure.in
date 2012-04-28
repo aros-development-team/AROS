@@ -942,7 +942,6 @@ case "$target_os" in
                 dnl in order not to fill mmakefiles with garbage
                 x11_hidd_target=kernel-hidd-androidgfx-kobj
                 # Disable implicit PIC mode
-                aros_kernel_cflags="$aros_kernel_cflags -fno-pic"
                 aros_target_cflags="$aros_target_cflags -fno-pic"
                 kernel_tool_prefix="$android_tool_prefix-"
             ;;
@@ -1305,6 +1304,7 @@ case "$target_os" in
         aros_shared_default="no"
         aros_flavour="emulation"
         aros_shared_cflags=""
+        need_crosstools="yes"
         need_dlopen="no"
         rescomp="windres"
         case "$target_cpu" in
@@ -1563,6 +1563,9 @@ dnl The same for MinGW
 if test "$aros_host_arch" == "mingw32" ; then
     if test "$aros_target_arch" != "mingw32" ; then
         cross_compiling=yes
+    else
+        cross_compiling=no
+        kernel_tool_prefix=""
     fi
 fi
 
@@ -1677,7 +1680,7 @@ else
     fi
 fi
 
-AC_MSG_CHECKING([which target tools])
+AC_MSG_CHECKING([which target tools to use])
 if test "$crosstools" = "yes"; then
     AC_MSG_RESULT([$target_tool_prefix])
     # We are are building AROS crosstools
@@ -1694,31 +1697,56 @@ if test "$crosstools" = "yes"; then
     orig_target_objcopy="${tmp_tool_prefix}objcopy"
     orig_target_objdump="${tmp_tool_prefix}objdump"
 else
-    AC_MSG_RESULT([$kernel_tool_prefix])
     # We are *not* building AROS crosstools - use the kernel tools
-    orig_target_cpp="${aros_kernel_cpp}"
+    # However some ports (Windows-hosted for example) can't use kernel tools
+    # to build AROS for sure. In this case we search for preinstalled AROS gcc
+    # CHECKME: Currently i set need_crosstools only for mingw target, however
+    # the same should be true for Android and Darwin ports.
+    if test "$need_crosstools" = "yes" ; then
+        AC_MSG_RESULT([$aros_target_cpu-aros])
+        AC_PATH_PROG(orig_target_cpp,"$aros_target_cpu-aros-cpp")
+        AC_PATH_PROG(orig_target_cc,"$aros_target_cpu-aros-gcc")
+        AC_PATH_PROG(orig_target_cxx,"$aros_target_cpu-aros-g++")
+        AC_PATH_PROG(orig_target_ld,"$aros_target_cpu-aros-ld")
+        AC_PATH_PROG(orig_target_as,"$aros_target_cpu-aros-as")
+        AC_PATH_PROG(orig_target_ar,"$aros_target_cpu-aros-ar")
+        AC_PATH_PROG(orig_target_ranlib,"$aros_target_cpu-aros-ranlib")
+        AC_PATH_PROG(orig_target_nm,"$aros_target_cpu-aros-nm")
+        AC_PATH_PROG(orig_target_strip,"$aros_target_cpu-aros-strip")
+        AC_PATH_PROG(orig_target_objcopy,"$aros_target_cpu-aros-objcopy")
+        AC_PATH_PROG(orig_target_objdump,"$aros_target_cpu-aros-objdump")
+        if test "$aros_gcc_version" != ""; then
+            orig_target_cpp="$orig_target_cpp-$aros_gcc_version"
+            orig_target_cc="$orig_target_cc-$aros_gcc_version"
+            orig_target_cxx="$orig_target_cxx-$aros_gcc_version"
+        fi
+    else
+        AC_MSG_RESULT([$kernel_tool_prefix])
+        orig_target_cpp="${aros_kernel_cpp}"
+        orig_target_cc="${aros_kernel_cc}"
+        orig_target_cxx="${aros_kernel_cxx}"
+        orig_target_ld="${aros_kernel_ld}"
+        orig_target_as="${aros_kernel_as}"
+        orig_target_ar="${aros_kernel_ar}"
+        orig_target_ranlib="${aros_kernel_ranlib}"
+        orig_target_nm="${aros_kernel_nm}"
+        orig_target_strip="${aros_kernel_strip}"
+        orig_target_objcopy="${aros_kernel_objcopy}"
+        orig_target_objdump="${aros_kernel_objdump}"
+    fi
+
     AROS_REQUIRED(cpp,$orig_target_cpp)
-    orig_target_cc="${aros_kernel_cc}"
     AROS_REQUIRED(cc,$orig_target_cc)
-    orig_target_cxx="${aros_kernel_cxx}"
     if test "x$orig_target_cxx" != "x" ; then
         AROS_REQUIRED(cxx,$orig_target_cxx)
     fi
-    orig_target_ld="${aros_kernel_ld}"
     AROS_REQUIRED(ld,$orig_target_ld)
-    orig_target_as="${aros_kernel_as}"
     AROS_REQUIRED(as,$orig_target_as)
-    orig_target_ar="${aros_kernel_ar}"
     AROS_REQUIRED(ar,$orig_target_ar)
-    orig_target_ranlib="${aros_kernel_ranlib}"
     AROS_REQUIRED(ranlib,$orig_target_ranlib)
-    orig_target_nm="${aros_kernel_nm}"
     AROS_REQUIRED(nm,$orig_target_nm)
-    orig_target_strip="${aros_kernel_strip}"
     AROS_REQUIRED(strip,$orig_target_strip)
-    orig_target_objcopy="${aros_kernel_objcopy}"
     AROS_REQUIRED(objcopy,$orig_target_objcopy)
-    orig_target_objdump="${aros_kernel_objdump}"
     AROS_REQUIRED(objdump,$orig_target_objdump)
 fi
 
@@ -1766,7 +1794,7 @@ aros_target_mkdep="$aros_host_mkdep"
 
 # The default tools executables to be linked to.
 if test "$rescomp" != ""; then
-    AROS_TOOL_KERNEL(aros_kernel_rescomp,$rescomp)
+    AC_PATH_PROG(aros_kernel_rescomp,${kernel_tool_prefix}$rescomp)
     AROS_REQUIRED($rescomp,$aros_kernel_rescomp)
 fi
 
