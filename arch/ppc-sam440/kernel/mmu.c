@@ -268,7 +268,7 @@ void mmu_init(struct TagItem *tags)
     map_region(&info, 0x0, krn_highest, krn_highest, 0x40000000 - krn_highest, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_SX | TLB_UX);
 
     if (krnIsPPC440(pvr)) {
-        D(bug("MMU: Configure for PPC440\n"));
+        D(bug("[KRN] MMU: Configure for PPC440\n"));
         /* map some 440EP peripherials bus */
         map_region(&info, 0x0, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
         /* map the PCI bus */
@@ -276,13 +276,13 @@ void mmu_init(struct TagItem *tags)
         /* PCI control registers and onboard devices */
         map_region(&info, 0x0, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
     } else if (krnIsPPC460(pvr)) {
-        D(bug("MMU: Configure for PPC460\n"));
+        D(bug("[KRN] MMU: Configure for PPC460\n"));
         /* map some 460EX peripherials bus */
         map_region(&info, 0xc, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
         /* UART control registers and onboard devices */
         map_region(&info, 0x4, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
     } else {
-        bug("MMU: Cannot configure - unknown PVR model 0x%08x\n", pvr);
+        bug("[KRN] MMU: Cannot configure - unknown PVR model 0x%08x\n", pvr);
         for(;;);
     }
 
