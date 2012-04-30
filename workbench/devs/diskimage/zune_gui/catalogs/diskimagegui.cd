@@ -1,0 +1,140 @@
+MSG_UNIT_LBL (0//)
+Unit
+;
+MSG_DEVICE_LBL (//)
+Device
+;
+MSG_FILENAME_LBL (//)
+Disk Image
+;
+MSG_WRITEPROTECT_LBL (//)
+WP
+;
+MSG_NO_DISK (//)
+No disk present
+;
+MSG_APPDESCRIPTION (//)
+Control GUI for diskimage.device
+;
+MSG_PRIORITY_LBL (50//)
+Pri
+;
+MSG_PLUGIN_LBL (//)
+Plugin
+;
+MSG_PLUGIN_GAD (//)
+Use plugin
+;
+MSG_AUTO_LBL (//)
+(Auto)
+;
+MSG_WRITESUPPORT_LBL (//)
+W
+;
+MSG_PROJECT_ABOUT (100//)
+About...
+;
+MSG_PROJECT_HIDE (//)
+Hide
+;
+MSG_PROJECT_ICONIFY (//)
+Iconify
+;
+MSG_PROJECT_SNAPSHOT (//)
+Snapshot
+;
+MSG_PROJECT_QUIT (//)
+Quit
+;
+MSG_SETTINGS_MENU (//)
+Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR (//)
+Change temp directory...
+;
+MSG_SETTINGS_SAVE (//)
+Save settings
+;
+MSG_SETTINGS_PLUGINS (//)
+Plugins...
+;
+MSG_PROJECT_CLOSE (//)
+Close
+;
+MSG_OK_GAD (200//)
+Ok
+;
+MSG_ABOUT_REQ (//)
+%s version %ld.%ld\n\
+%s version %ld.%ld\n\n\
+Copyright © 2007-2010 Fredrik Wikstrom\n\
+Website: http://a500.org\n\
+E-mail: fredrik@a500.org
+;
+MSG_ERROR (//)
+Error
+;
+MSG_NOAISS_REQ (//)
+AISS assign not found.\n\n\
+Download and install the latest version\n\
+from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ (//)
+AISS v%ld.%ld or newer required.\n\n\
+Download and install the latest version\n\
+from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ (//)
+Image file '%s' not found.
+;
+MSG_CANCEL_GAD (//)
+_Cancel
+;
+MSG_SAVE_GAD (//)
+_Save
+;
+MSG_USE_GAD (//)
+_Use
+;
+MSG_INSERT_GAD (300//)
+Insert
+;
+MSG_EJECT_GAD (//)
+Eject
+;
+MSG_WRITEPROTECT_GAD (//)
+Write Protect
+;
+MSG_REFRESH_GAD (//)
+Refresh
+;
+MSG_PLUGINS_WND (//)
+Plugins
+;
+MSG_MAIN_WND (//)
+%s: Hot Key = <%s>
+;
+MSG_ABOUT_WND (//)
+About - %s
+;
+MSG_ERROR_WND (//)
+Error - %s
+;
+MSG_SETDEVICETYPE_GAD (//)
+Set Device Type
+;
+MSG_SETDEVICETYPE_WND (//)
+Unit: %ld - Device Type
+;
+MSG_DEVICETYPE_GAD (//)
+Device Type
+;
+MSG_DEVICETYPE_DIRECT_ACCESS (//)
+Direct Access (Default setting)
+;
+MSG_DEVICETYPE_CDROM (//)
+CD-ROM
+;
+MSG_DEVICETYPE_OPTICAL_DISK (//)
+Optical Disk
+;

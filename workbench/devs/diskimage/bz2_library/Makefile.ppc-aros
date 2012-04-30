@@ -1,0 +1,40 @@
+CROSS := powerpc-aros
+CC := $(CROSS)-gcc
+AS := $(CROSS)-as
+RM := rm -f
+CP := cp -p --remove-destination
+
+CFLAGS := -fno-stack-protector -O3 -Wall -I../include -I../include/aros -Iinclude \
+	-DBZ_NO_STDIO
+LINK := -nostartfiles
+LIBS := -L../lib -lsupport
+
+TARGET := bz2.library
+VERSION := 1
+OBJS := stub_ppc.o init.o malloc.o bzlib.o compress.o decompress.o huffman.o \
+	blocksort.o crctable.o randtable.o
+RELEASEDIR := ../../release/ppc-aros/diskimage_device
+
+# -------------------------------------------------------------
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) ../lib/libsupport.a
+	$(CC) $(LINK) -o $@ $(OBJS) $(LIBS)
+
+init.o: $(TARGET)_rev.h
+
+../lib/libsupport.a:
+	$(MAKE) -C .. -f Makefile.ppc-aros lib/libsupport.a
+
+install: all
+	$(CP) $(TARGET) LIBS:
+
+dist: all
+	$(CP) $(TARGET) $(RELEASEDIR)/Libs/
+
+clean:
+	$(RM) $(TARGET) $(OBJS)
+
+revision:
+	bumprev $(VERSION) $(TARGET)

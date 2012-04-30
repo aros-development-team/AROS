@@ -1,0 +1,100 @@
+## version $VER: <name>.catalog <ver>.0 (05.10.2010)Tomasz Paul
+## language Polski
+## codeset 0
+;
+MSG_OK_GAD
+_OK
+; _Ok
+;
+MSG_CANCEL_GAD
+Anuluj
+; _Cancel
+;
+MSG_PASSWORD_REQ
+Wpisz has³o:
+; Enter password:
+;
+MSG_NOZLIB
+Wymagana biblioteka z.library
+; z.library required
+;
+MSG_NOCAPSDEV
+Wymagane urz±dzenie capsimage.device
+; capsimage.device required
+;
+MSG_CANCELED
+Operacja anulowana
+; operation canceled
+;
+MSG_NOPASSWD
+Wymagane has³o
+; password required
+;
+MSG_WRONGPASSWD
+Nieprawid³owe has³o
+; wrong password
+;
+MSG_ZLIBERR
+B³±d biblioteki z.library
+; z.library error
+;
+MSG_CAPSERR
+B³±d urz±dzenia capsimage.device
+; capsimage.device error
+;
+MSG_XPKERR
+B³±d biblioteki xpkmaster.library
+; xpkmaster.library error
+;
+MSG_XADERR
+B³±d biblioteki xadmaster.library
+; xadmaster.library error
+;
+MSG_UNKNDISKIMGTYPE
+Nieobs³ugiwany typ/format obrazu dysku
+; unsupported disk image type/format
+;
+MSG_UNKNCOMPMETHOD
+Nieobs³ugiwana metoda kompresji
+; unsupported compression method
+;
+MSG_EOF
+Nieoczekiwany koniec pliku
+; unexpected end of file
+;
+MSG_BADDATA
+Plik zawiera nieprawid³owe dane
+; file contains bad data
+;
+MSG_BADCRC
+B³±d CRC
+; CRC check on file data failed
+;
+MSG_BADCHECKSUM
+B³±d sumy kontrolnej
+; checksum error
+;
+MSG_REQ
+%s jest wymagane
+; %s required
+;
+MSG_REQVER
+%s v%ld lub nowsze jest wymagane
+; %s v%ld or newer required
+;
+MSG_WRONGDAA
+nieprawid³owy plik DAA
+; wrong DAA file (multi-file DAA)
+;
+MSG_EXPATERR
+B³±d biblioteki expat.library
+; expat.library error
+;
+MSG_BZLIBERR
+B³±d biblioteki bz2.library
+; bz2.library error
+;
+MSG_UNKNENCRMETHOD
+Nieobs³ugiwana metoda szyfrowania
+; unsupported encryption method
+;

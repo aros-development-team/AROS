@@ -1,0 +1,87 @@
+;## chunk AUTH Janne Per‰aho
+## language finnish
+## version $VER: diskimagedevice.ct 52.38 (24.4.2008)
+MSG_OK_GAD
+_Ok
+;#DEF _Ok
+;#SET (/1/16)
+MSG_CANCEL_GAD
+_Peru
+;#DEF _Cancel
+;#SET (/1/16)
+MSG_PASSWORD_REQ
+Anna salasana:
+;#DEF Enter password:
+;#SET (/1/32)
+MSG_NOZLIB
+tarvitaan kirjasto z.library
+;#DEF z.library required
+;#SET (/1/48)
+MSG_NOCAPSDEV
+tarvitaan laiteajuri capsimage.device
+;#DEF capsimage.device required
+;#SET (/1/48)
+MSG_CANCELED
+toiminto peruttu
+;#DEF operation canceled
+;#SET (/1/32)
+MSG_NOPASSWD
+tarvitaan salasana
+;#DEF password required
+;#SET (/1/48)
+MSG_WRONGPASSWD
+v‰‰r‰ salasana
+;#DEF wrong password
+;#SET (/1/48)
+MSG_ZLIBERR
+virhe z.library -kirjastossa
+;#DEF z.library error
+;#SET (/1/48)
+MSG_CAPSERR
+virhe capsimage.device -ajurissa
+;#DEF capsimage.device error
+;#SET (/1/48)
+MSG_XPKERR
+virhe xpkmaster.library -kirjastossa
+;#DEF xpkmaster.library error
+;#SET (/1/48)
+MSG_XADERR
+virhe xadmaster.library -kirjastossa
+;#DEF xadmaster.library error
+;#SET (/1/48)
+MSG_UNKNDISKIMGTYPE
+levykuvan tyyppi‰/muotoa ei tueta
+;#DEF unsupported disk image type/format
+;#SET (/1/64)
+MSG_UNKNCOMPMETHOD
+pakkausmenetelm‰‰ ei tueta
+;#DEF unsupported compression method
+;#SET (/1/64)
+MSG_EOF
+tiedosto p‰‰ttyi odottamatta
+;#DEF unexpected end of file
+;#SET (/1/48)
+MSG_BADDATA
+tiedoston sis‰ltˆ on vahingoittunut
+;#DEF file contains bad data
+;#SET (/1/48)
+MSG_BADCRC
+tiedoston CRC-tarkastus ei onnistunut
+;#DEF CRC check on file data failed
+;#SET (/1/48)
+MSG_BADCHECKSUM
+tarkastussummavirhe
+;#DEF checksum error
+;#SET (/1/48)
+MSG_REQ
+tarvitaan %s
+;#DEF %s required
+;#SET (/1/48)
+MSG_REQVER
+tarvitaan %s versio %ld tai uudempi
+;#DEF %s v%ld or newer required
+;#SET (/1/48)
+MSG_WRONGDAA
+v‰‰r‰ DAA-tiedosto (moniosainen DAA-tiedosto)
+;#DEF wrong DAA file (multi-file DAA)
+;#SET (/1/64)

@@ -1,0 +1,40 @@
+CROSS := i386-aros
+CC := $(CROSS)-gcc
+AS := $(CROSS)-as
+RM := rm -f
+CP := cp -p --remove-destination
+
+CFLAGS := -fno-stack-protector -O3 -Wall -I../include -I../include/aros -Iinclude \
+	-DSTDC -DAMIGA -DDYNAMIC_CRC_TABLE
+LINK := -nostartfiles
+LIBS := -L../lib -lsupport
+
+TARGET := z.library
+VERSION := 1
+OBJS := stub_x86.o init.o malloc.o zutil.o deflate.o inflate.o inftrees.o \
+	inffast.o compress.o uncompr.o trees.o crc32.o adler32.o
+RELEASEDIR := ../../release/x86-aros/diskimage_device
+
+# -------------------------------------------------------------
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS) ../lib/libsupport.a
+	$(CC) $(LINK) -o $@ $(OBJS) $(LIBS)
+
+init.o: $(TARGET)_rev.h
+
+../lib/libsupport.a:
+	$(MAKE) -C .. -f Makefile.x86-aros lib/libsupport.a
+
+install: all
+	$(CP) $(TARGET) LIBS:
+
+dist: all
+	$(CP) $(TARGET) $(RELEASEDIR)/Libs/
+
+clean:
+	$(RM) $(TARGET) $(OBJS)
+
+revision:
+	bumprev $(VERSION) $(TARGET)

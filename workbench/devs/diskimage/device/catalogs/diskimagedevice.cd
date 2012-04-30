@@ -1,0 +1,72 @@
+MSG_OK_GAD (//)
+_Ok
+;
+MSG_CANCEL_GAD (//)
+_Cancel
+;
+MSG_PASSWORD_REQ (//)
+Enter password:
+;
+MSG_NOZLIB (//)
+z.library required
+;
+MSG_NOCAPSDEV (//)
+capsimage.device required
+;
+MSG_CANCELED (//)
+operation canceled
+;
+MSG_NOPASSWD (//)
+password required
+;
+MSG_WRONGPASSWD (//)
+wrong password
+;
+MSG_ZLIBERR (//)
+z.library error
+;
+MSG_CAPSERR (//)
+capsimage.device error
+;
+MSG_XPKERR (//)
+xpkmaster.library error
+;
+MSG_XADERR (//)
+xadmaster.library error
+;
+MSG_UNKNDISKIMGTYPE (//)
+unsupported disk image type/format
+;
+MSG_UNKNCOMPMETHOD (//)
+unsupported compression method
+;
+MSG_EOF (//)
+unexpected end of file
+;
+MSG_BADDATA (//)
+file contains bad data
+;
+MSG_BADCRC (//)
+CRC check on file data failed
+;
+MSG_BADCHECKSUM (//)
+checksum error
+;
+MSG_REQ (//)
+%s required
+;
+MSG_REQVER (//)
+%s v%ld or newer required
+;
+MSG_WRONGDAA (//)
+wrong DAA file (multi-file DAA)
+;
+MSG_EXPATERR (//)
+expat.library error
+;
+MSG_BZLIBERR (//)
+bz2.library error
+;
+MSG_UNKNENCRMETHOD (//)
+unsupported encryption method
+;

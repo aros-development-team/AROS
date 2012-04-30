@@ -1,0 +1,16 @@
+==id $Id: bz2_lib.sfd,v 2.1 2010/04/06 20:00:00 Exp $
+==base _BZ2Base
+==basetype struct Library *
+==libname bz2.library
+==bias 30
+==public
+const char *BZ2_bzlibVersion() ()
+LONG BZ2_bzCompressInit(bz_stream *strm, LONG blockSize100k, LONG verbosity, LONG workFactor) (a0,d0,d1,d2)
+LONG BZ2_bzCompress(bz_stream *strm, LONG action) (a0,d0)
+LONG BZ2_bzCompressEnd(bz_stream *strm) (a0)
+LONG BZ2_bzDecompressInit(bz_stream *strm, LONG verbosity, LONG small) (a0,d0,d1)
+LONG BZ2_bzDecompress(bz_stream *strm) (a0)
+LONG BZ2_bzDecompressEnd(bz_stream *strm) (a0)
+LONG BZ2_bzBuffToBuffCompress(APTR dest, ULONG *destLen, CONST_APTR source, ULONG sourceLen, LONG blockSize100k, LONG verbosity, LONG workFactor) (a0,a1,a2,d0,d1,d2,d3)
+LONG BZ2_bzBuffToBuffDecompress(APTR dest, ULONG *destLen, CONST_APTR source, ULONG sourceLen, LONG small, LONG verbosity) (a0,a1,a2,d0,d1,d2)
+==end
