@@ -24,6 +24,11 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
+#ifdef __AROS__
+#define __EXEC_NOLIBBASE__
+#define __DOS_NOLIBBASE__
+#endif
+
 #define USED_PLUGIN_API_VERSION 8
 #include <devices/diskimage.h>
 #include <proto/exec.h>

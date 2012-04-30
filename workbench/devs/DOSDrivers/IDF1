@@ -1,0 +1,10 @@
+FileSystem     = afs.handler
+Device         = diskimage.device
+Unit           = 1
+BlockSize      = 512
+Surfaces       = 2
+BlocksPerTrack = 11
+LowCyl         = 0
+HighCyl        = 79
+Reserved       = 2
+Activate       = 1

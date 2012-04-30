@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS := Zune SYS SYS/Packages
+SUBDIRS := Zune SYS SYS/Packages DiskImage
 FILES   := $(foreach dir, $(SUBDIRS), $(filter-out $(dir)/CVS, $(call WILDCARD, $(dir)/*)))
 
 #MM- workbench-prefs : workbench-prefs-envarc

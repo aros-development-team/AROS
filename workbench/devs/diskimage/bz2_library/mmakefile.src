@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-diskimage-bz2 : workbench-devs-diskimage-support includes linklibs
+
+CFILES := init malloc bzlib compress decompress huffman \
+	blocksort crctable randtable
+
+USER_CFLAGS := -DABIV1 -DBZ_NO_STDIO
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
+USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/..
+
+%build_module_simple mmake=workbench-devs-diskimage-bz2 modname=bz2 modtype=library \
+    files=$(CFILES) uselibs="rom support"
+
+%common

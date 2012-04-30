@@ -30,6 +30,7 @@
 #include <proto/muimaster.h>
 #include <proto/commodities.h>
 #include <proto/diskimage.h>
+#include <clib/alib_protos.h>
 #include "rev/DiskImageGUI_rev.h"
 
 struct GUIElements Gui;

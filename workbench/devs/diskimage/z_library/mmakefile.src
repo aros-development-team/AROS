@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-diskimage-z : workbench-devs-diskimage-support includes linklibs
+
+CFILES := init malloc zutil deflate inflate inftrees \
+	inffast compress uncompr trees crc32 adler32
+
+USER_CFLAGS := -DABIV1 -DSTDC -DAMIGA -DDYNAMIC_CRC_TABLE
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
+USER_LDFLAGS := -L$(GENDIR)/$(CURDIR)/..
+
+%build_module_simple mmake=workbench-devs-diskimage-z modname=z modtype=library \
+    files=$(CFILES) uselibs="rom support"
+
+%common
