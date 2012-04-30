@@ -1403,7 +1403,9 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 # Define metamake targets and their dependencies
 #MM- includes-all : %(mmake)-includes
 #MM- linklibs-%(modname): %(mmake)-linklib
+#MM- linklibs-%(modname)_rel : %(mmake)-linklib
 #MM- includes-%(modname): %(mmake)-includes
+#MM- includes-%(modname)_rel : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-kobj : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
