@@ -1,0 +1,29 @@
+==id $Id: z_lib.sfd,v 1.0 2008/02/14 20:14:05 noname Exp $
+==base _ZBase
+==basetype struct Library *
+==libname z.library
+==bias 30
+==public
+==include <exec/types.h>
+const char * ZlibVersion() ()
+LONG DeflateInit(z_streamp strm, LONG level) (a0,d0)
+LONG Deflate(z_streamp strm, LONG flush) (a0,d0)
+LONG DeflateEnd(z_streamp strm) (a0)
+LONG InflateInit(z_streamp strm) (a0)
+LONG Inflate(z_streamp strm, LONG flush) (a0,d0)
+LONG InflateEnd(z_streamp strm) (a0)
+LONG DeflateInit2(z_streamp strm, LONG level, LONG method, LONG windowBits, LONG memLevel,
+	LONG strategy) (a0,d0,d1,d2,d3,d4)
+LONG DeflateSetDictionary(z_streamp strm, CONST_APTR dictionary, ULONG dictLength) (a0,a1,d0)
+LONG DeflateCopy(z_streamp dest, z_streamp source) (a0,a1)
+LONG DeflateReset(z_streamp strm) (a0)
+LONG DeflateParams(z_streamp strm, LONG level, LONG strategy) (a0,d0,d1)
+LONG InflateInit2(z_streamp strm, LONG windowBits) (a0,d0)
+LONG InflateSetDictionary(z_streamp strm, CONST_APTR dictionary, ULONG dictLength) (a0,a1,d0)
+LONG InflateReset(z_streamp strm) (a0)
+LONG Compress(APTR dest, ULONG * destLen, CONST_APTR source, ULONG sourceLen) (a0,a1,a2,d0)
+LONG Uncompress(APTR dest, ULONG * destLen, CONST_APTR source, ULONG sourceLen) (a0,a1,a2,d0)
+ULONG Adler32(ULONG adler, CONST_APTR buf, ULONG len) (d0,a0,d1)
+ULONG CRC32(ULONG crc, CONST_APTR buf, ULONG len) (d0,a0,d1)
+LONG InflateSync(z_streamp strm) (a0)
+==end

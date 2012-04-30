@@ -1,0 +1,153 @@
+## language swedish
+;
+; *********************
+; ** Unit/drive list **
+; *********************
+;
+MSG_UNIT_LBL
+U
+;U
+;
+MSG_DEVICE_LBL
+Utvecklare
+;Dev
+;
+MSG_FILENAME_LBL
+Disk avbildning
+;Disk Image
+;
+MSG_WRITEPROTECT_LBL
+W
+;W
+;
+MSG_NO_DISK
+Ingen diskett är vald
+;No disk present
+;
+; ******************
+; ** Plugins list **
+; ******************
+;
+MSG_PRIORITY_LBL
+Prioritet
+;Pri
+;
+MSG_PLUGIN_LBL
+Plugin
+;Plugin
+;
+MSG_PLUGIN_GAD
+Använd plugin
+;Use plugin
+;
+MSG_AUTO_LBL
+(Automatiskt)
+;(Auto)
+;
+; *****************
+; ** Menu labels **
+; *****************
+;
+MSG_PROJECT_ABOUT
+Om...
+;About...
+;
+MSG_PROJECT_HIDE
+Göm
+;Hide
+;
+MSG_PROJECT_ICONIFY
+Ikonfiera
+;Iconify
+;
+MSG_PROJECT_QUIT
+Avsluta
+;Quit
+;
+MSG_SETTINGS_MENU
+Inställningar
+;Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Ändra till temporär enhet
+;Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Spara inställningar
+;Save settings
+;
+MSG_SETTINGS_PLUGINS
+Plugins...
+;Plugins...
+;
+MSG_PROJECT_CLOSE
+Stänga
+;Close
+;
+; ****************
+; ** Requesters **
+; ****************
+;
+MSG_OK_GAD
+_Ok
+;
+MSG_ABOUT_REQ
+%s version %ld.%ld\n\
+%s version %ld.%ld\n\n\
+Copyright © 2007-2010 Fredrik Wikstrom\n\
+Website: http://a500.org\n\
+E-mail: fredrik@a500.org
+;
+MSG_ERROR
+Error
+;
+MSG_NOAISS_REQ
+AISS assign är ej funna.\n\n\
+Ladda ner och installera \n\
+den senaste versionen härifrån: \n\
+http://masonicons.de
+;AISS assign not found.\n\n\
+;Download and install the latest version\n\
+;from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+AISS v%ld.%ld eller nyare är kravet. \n\n\
+Ladda ner och installera \n\
+den senaste versionen härifrån: \n\
+http://masonicons.de
+;AISS v%ld.%ld or newer required.\n\n\
+;Download and install the latest version\n\
+;from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Diskett avbildning '%s' är ej funnen
+;Image file '%s' not found.
+;
+; *******************
+; ** Speedbar help **
+; *******************
+;
+MSG_INSERT_GAD
+Ladda
+;Insert
+;
+MSG_EJECT_GAD
+Eject
+;Eject
+;
+MSG_WRITEPROTECT_GAD
+Skrivskyddad
+;Write Protect
+;
+MSG_REFRESH_GAD
+Ladda om på nytt
+;Refresh
+;
+; *******************
+; ** Window titles **
+; *******************
+;
+MSG_PLUGINS_WND
+Plugins
+;Plugins
+;

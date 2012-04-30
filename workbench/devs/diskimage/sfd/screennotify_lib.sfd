@@ -1,0 +1,15 @@
+==id $Id: screennotify_lib.sfd,v 1.0 2010/04/27 18:26:42 noname Exp $
+* "screennotify.library"
+==base _ScreenNotifyBase
+==basetype struct Library *
+==libname screennotify.library
+==bias 30
+==public
+==include <exec/types.h>
+APTR AddCloseScreenClient(struct Screen * screen, struct MsgPort * port, BYTE pri) (a0,a1,d0)
+BOOL RemCloseScreenClient(APTR handle) (a0)
+APTR AddPubScreenClient(struct MsgPort * port, BYTE pri) (a0,d0)
+BOOL RemPubScreenClient(APTR handle) (a0)
+APTR AddWorkbenchClient(struct MsgPort * port, BYTE pri) (a0,d0)
+BOOL RemWorkbenchClient(APTR handle) (a0)
+==end

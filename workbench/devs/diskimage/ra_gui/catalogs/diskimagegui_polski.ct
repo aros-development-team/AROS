@@ -1,0 +1,196 @@
+## version $VER: <name>.catalog <ver>.0 (05.10.2010)Tomasz Paul
+## language Polski
+## codeset 0
+;
+MSG_UNIT_LBL
+Jednostka
+; Unit
+;
+MSG_DEVICE_LBL
+Urz±dzenie
+; Device
+;
+MSG_FILENAME_LBL
+Obraz dysku
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+WP
+; WP
+;
+MSG_NO_DISK
+Brak dysku
+; No disk present
+;
+MSG_APPDESCRIPTION
+GUI dla diskimage.device
+; Control GUI for diskimage.device
+;
+MSG_PRIORITY_LBL
+Pri
+; Pri
+;
+MSG_PLUGIN_LBL
+Wtyczka
+; Plugin
+;
+MSG_PLUGIN_GAD
+U¿yj wtyczki
+; Use plugin
+;
+MSG_AUTO_LBL
+(Auto)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+W
+; W
+;
+MSG_PROJECT_ABOUT
+O programie...
+; About...
+;
+MSG_PROJECT_HIDE
+Ukryj
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Ikonifikuj
+; Iconify
+;
+MSG_PROJECT_SNAPSHOT
+Zrzut
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Zakoñcz
+; Quit
+;
+MSG_SETTINGS_MENU
+Ustawienia
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Zmieñ katalog tymczasowy...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Zapisz ustawienia
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Wtyczki...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Zamknij
+; Close
+;
+MSG_OK_GAD
+OK
+; Ok
+;
+MSG_ABOUT_REQ
+%s wersja %ld.%ld\n\
+%s wersja %ld.%ld\n\n\
+Copyright (C) 2007-2010 Fredrik Wikstrom\n\
+www: http://a500.org\n\
+e-mail: fredrik@a500.org
+; %s version %ld.%ld\n\
+; %s version %ld.%ld\n\n\
+; Copyright © 2007-2010 Fredrik Wikstrom\n\
+; Website: http://a500.org\n\
+; E-mail: fredrik@a500.org
+;
+MSG_ERROR
+B³±d
+; Error
+;
+MSG_NOAISS_REQ
+Przypisanie AISS nie znalezione.\n\n\
+Pobierz i zainstaluj ostatni± wersjê\n\
+ze strony: http://masonicons.de
+; AISS assign not found.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+AISS v%ld.%ld lub nowsze jest wymagane.\n\n\
+Pobierz i zainstaluj ostatni± wersjê\n\
+ze strony: http://masonicons.de
+; AISS v%ld.%ld or newer required.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Plik obrazu '%s'nie znaleziony.
+; Image file '%s' not found.
+;
+MSG_CANCEL_GAD
+Anuluj
+; _Cancel
+;
+MSG_SAVE_GAD
+Zapi_sz
+; _Save
+;
+MSG_USE_GAD
+_U¿yj
+; _Use
+;
+MSG_INSERT_GAD
+W³ó¿
+; Insert
+;
+MSG_EJECT_GAD
+Wyjmij
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+Zabezpiecz przed zapisem
+; Write Protect
+;
+MSG_REFRESH_GAD
+Od¶wie¿
+; Refresh
+;
+MSG_PLUGINS_WND
+Wtyczki
+; Plugins
+;
+MSG_MAIN_WND
+%s: Hot Key = <%s>
+; %s: Hot Key = <%s>
+;
+MSG_ABOUT_WND
+O programie - %s
+; About - %s
+;
+MSG_ERROR_WND
+B³±d - %s
+; Error - %s
+;
+MSG_SETDEVICETYPE_GAD
+Ustaw typ urz±dzenia
+; Set Device Type
+;
+MSG_SETDEVICETYPE_WND
+Jednostka: %ld - typ urz±dzenia
+; Unit: %ld - Device Type
+;
+MSG_DEVICETYPE_GAD
+Typ urz±dzenia
+; Device Type
+;
+MSG_DEVICETYPE_DIRECT_ACCESS
+Bezpo¶redni dostêp (domy¶lnie)
+; Direct Access (Default setting)
+;
+MSG_DEVICETYPE_CDROM
+CD-ROM
+; CD-ROM
+;
+MSG_DEVICETYPE_OPTICAL_DISK
+Dysk optyczny
+; Optical Disk
+;

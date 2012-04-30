@@ -1,0 +1,115 @@
+;## chunk AUTH Janne Peräaho
+## language finnish
+## version $VER: diskimagegui.ct 52.39 (25.9.2009)
+MSG_UNIT_LBL
+Yks.
+;#DEF U
+;#SET (0//)
+MSG_DEVICE_LBL
+Laite
+;#DEF Dev
+;#SET (//)
+MSG_FILENAME_LBL
+Levykuva
+;#DEF Disk Image
+;#SET (//)
+MSG_WRITEPROTECT_LBL
+K
+;#DEF W
+;#SET (//)
+MSG_NO_DISK
+Ei levyä
+;#DEF No disk present
+;#SET (//)
+MSG_PRIORITY_LBL
+Prior.
+;#DEF Pri
+;#SET (50//)
+MSG_PLUGIN_LBL
+Lisäosa
+;#DEF Plugin
+;#SET (//)
+MSG_PLUGIN_GAD
+Käytä lisäosaa:
+;#DEF Use plugin
+;#SET (//)
+MSG_AUTO_LBL
+(automaattinen valinta)
+;#DEF (Auto)
+;#SET (//)
+MSG_PROJECT_ABOUT
+Tietoja...
+;#DEF About...
+;#SET (100//)
+MSG_PROJECT_HIDE
+Piilota
+;#DEF Hide
+;#SET (//)
+MSG_PROJECT_ICONIFY
+Ikoniksi
+;#DEF Iconify
+;#SET (//)
+MSG_PROJECT_QUIT
+Lopeta
+;#DEF Quit
+;#SET (104//)
+MSG_SETTINGS_MENU
+Asetukset
+;#DEF Settings
+;#SET (//)
+MSG_SETTINGS_CHANGETEMPDIR
+Vaihda työhakemistoa...
+;#DEF Change temp directory...
+;#SET (//)
+MSG_SETTINGS_SAVE
+Tallenna asetukset
+;#DEF Save settings
+;#SET (//)
+MSG_SETTINGS_PLUGINS
+Lisäosat...
+;#DEF Plugins...
+;#SET (//)
+MSG_PROJECT_CLOSE
+Sulje
+;#DEF Close
+;#SET (//)
+MSG_OK_GAD
+_Ok
+;#DEF _Ok
+;#SET (200//)
+MSG_ABOUT_REQ
+%s versio %ld.%ld\n%s versio %ld.%ld\n\nTekijänoikeus © 2007-2009 Fredrik Wikström\nKotisivu: http://a500.org\nSähköposti: fredrik@a500.org
+;#DEF %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2009 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
+;#SET (//)
+MSG_ERROR
+Virhe
+;#DEF Error
+;#SET (//)
+MSG_NOAISS_REQ
+AISS-viitettä ei löydy.\n\nLataa ja asenna viimeisin versio\nosoitteesta http://masonicons.de
+;#DEF AISS assign not found.\n\nDownload and install the latest version\nfrom here: http://masonicons.de
+;#SET (//)
+MSG_OLDAISS_REQ
+AISS:stä tarvitaan versio %ld.%ld tai uudempi.\n\nLataa ja asenna viimeisin versio\nosoitteesta http://masonicons.de
+;#DEF AISS v%ld.%ld or newer required.\n\nDownload and install the latest version\nfrom here: http://masonicons.de
+;#SET (//)
+MSG_INSERT_GAD
+Lisää
+;#DEF Insert
+;#SET (300//)
+MSG_EJECT_GAD
+Poista
+;#DEF Eject
+;#SET (//)
+MSG_WRITEPROTECT_GAD
+Kirjoitussuojaus
+;#DEF Write Protect
+;#SET (//)
+MSG_REFRESH_GAD
+Päivitä
+;#DEF Refresh
+;#SET (//)
+MSG_PLUGINS_WND
+Lisäosat
+;#DEF Plugins
+;#SET (//)

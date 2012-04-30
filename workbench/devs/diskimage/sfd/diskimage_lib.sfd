@@ -1,0 +1,19 @@
+==id $Id: diskimage_lib.sfd 52.1 2008/02/13 12:34:00 $
+==base _DiskImageBase
+==basetype struct Library *
+==libname diskimage.device
+==bias 42
+==public
+==include <dos/dos.h>
+==include <devices/trackdisk.h>
+LONG MountImage(ULONG unit_num, CONST_STRPTR filename) (d0,a0)
+LONG UnitInfo(ULONG unit_num, STRPTR *filename, BOOL *writeprotect) (d0,a0,a1)
+LONG WriteProtect(ULONG unit_num, BOOL writeprotect) (d0,d1)
+LONG UnitControlA(ULONG unit_num, struct TagItem *tags) (d0,a0)
+==varargs
+LONG UnitControl(ULONG unit_num, Tag tags, ...) (d0,a0)
+LONG ReloadPlugins() ()
+void DoHookPlugins(struct Hook *hook) (a0)
+void AddDiskChangeHook(struct Hook *hook, BOOL add_or_remove) (a0,d0)
+void AddReloadPluginsHook(struct Hook *hook, BOOL add_or_remove) (a0,d0)
+==end

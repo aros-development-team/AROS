@@ -1,0 +1,164 @@
+## version $VER: diskimagegui.catalog 52.26 (27.09.2010)
+## codeset 0
+## language deutsch
+;
+; *********************
+; ** Unit/drive list **
+; *********************
+;
+MSG_UNIT_LBL
+Unit
+; Unit
+;
+MSG_DEVICE_LBL
+Device
+; Device
+;
+MSG_FILENAME_LBL
+Disk Image
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+WP
+; WP
+;
+MSG_NO_DISK
+Keine Disk eingelegt
+; No disk present
+;
+; ******************
+; ** Plugins list **
+; ******************
+;
+MSG_PRIORITY_LBL
+Pri
+; Pri
+;
+MSG_PLUGIN_LBL
+Plugin
+; Plugin
+;
+MSG_PLUGIN_GAD
+Benutze Plugin
+; Use plugin
+;
+MSG_AUTO_LBL
+(Auto)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+W
+; W
+;
+; *****************
+; ** Menu labels **
+; *****************
+;
+MSG_PROJECT_ABOUT
+Über...
+; About...
+;
+MSG_PROJECT_HIDE
+Verbergen
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Iconifizieren
+; Iconify
+;
+MSG_PROJECT_SNAPSHOT
+Fenster fixieren
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Beenden
+; Quit
+;
+MSG_SETTINGS_MENU
+Einstellungen
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Temp. Verzeichnis ändern...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Einstellungen speichern
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Plugins...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Schliessen
+; Close
+;
+; ****************
+; ** Requesters **
+; ****************
+;
+MSG_OK_GAD
+Ok
+; Ok
+;
+MSG_ABOUT_REQ
+%s Version %ld.%ld\n%s Version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebseite: http://a500.org\nE-Mail: fredrik@a500.org
+; %s version %ld.%ld\n%s version %ld.%ld\n\nCopyright © 2007-2010 Fredrik Wikstrom\nWebsite: http://a500.org\nE-mail: fredrik@a500.org
+;
+MSG_ERROR
+Fehler
+; Error
+;
+MSG_NOAISS_REQ
+AISS Assign nicht gefunden.\n\nLade und installiere die neuste Version\nvon hier: http://masonicons.de
+; AISS assign not found.\n\nDownload and install the latest version\nfrom here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+AISS V%ld.%ld oder neuer wird benötigt.\n\nLade und installiere die neuste Version\nvon hier: http://masonicons.de
+; AISS v%ld.%ld or newer required.\n\nDownload and install the latest version\nfrom here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Imagedatei '%s' nicht gefunden.
+; Image file '%s' not found.
+;
+; *******************
+; ** Speedbar help **
+; *******************
+;
+MSG_INSERT_GAD
+Einlegen
+; Insert
+;
+MSG_EJECT_GAD
+Auswerfen
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+Schreibgeschützt
+; Write Protect
+;
+MSG_REFRESH_GAD
+Aktualisieren
+; Refresh
+;
+; *******************
+; ** Window titles **
+; *******************
+;
+MSG_PLUGINS_WND
+Plugins
+; Plugins
+;
+MSG_MAIN_WND
+%s: Hot Key = <%s>
+; %s: Hot Key = <%s>
+;
+MSG_ABOUT_WND
+Über - %s
+; About - %s
+;
+MSG_ERROR_WND
+Fehler - %s
+; Error - %s
+;
