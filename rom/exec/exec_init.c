@@ -154,8 +154,6 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     ml  = AllocMem(sizeof(struct MemList), MEMF_PUBLIC|MEMF_CLEAR);
     ctx = KrnCreateContext();
 
-    D(bug("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx));
-
     if (!t || !ml || !ctx)
     {
         DINIT("Not enough memory for first task");
@@ -196,6 +194,8 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
         return NULL;
     }
     t->tc_UnionETask.tc_ETask->et_RegFrame = ctx;
+
+    D(bug("[exec] Boot Task 0x%p, ETask 0x%p, CPU context 0x%p\n", t, t->tc_UnionETask.tc_ETask, ctx));
 
     /*
      * Set the current task and elapsed time for it.
