@@ -1,0 +1,154 @@
+@database BoingIkonBar_guide
+@$VER: BIB guide 1.02 (26.04.2012) ©2012 Robert 'Phibrizzo' Krajcarz
+@macro title "@{B}@{FG HighLight}"
+@macro utitle "@{UB}@{FG Text}"
+@node main "BoingIconsBar - description of the program"
+@{jcenter}
+@{title}Boing Icons Bar@{utitle}
+
+Version 1.02
+
+@{I}This program is distributed as Freeware@{UI}
+@{jleft}
+
+                   @{"   What is it?  " link description}
+
+                   @{"  Installation  " link installation}
+
+                   @{" How to operate " link configuration}
+
+                   @{"    History     " link history}
+
+                   @{"     Author     " link author}
+@endnode
+@node description " What is it ? "
+
+    This program creates a toolbar with icons similar to AmiDock,
+    to which it can be an alternative.
+    It requires:
+
+    AmigaOS 3.5+
+    AmigaOS 4.x
+    MorphOS 2.x
+    AROS
+
+    There is a separate version of a program for each system.
+
+    Toolbar supports icon types used in:
+
+    a) AmigaOS 3.5+
+
+    - plain icons (4 colours)
+    - MagicWB
+    - NewIcon
+    - GlowIcon 32
+    - GlowIcon 256 - only with icon.library ver. 46.4.191+
+
+    b) AmigaOS 4.x
+
+    - plain icons (4 colours)
+    - MagicWB
+    - NewIcon
+    - GlowIcon 32
+    - GlowIcon 256
+    - PNG - after installing additional PNG plugin
+
+    c) MorphOS 2.x
+
+    - PNG
+
+    d) AROS
+
+@endnode
+@node Installation "Installation"
+
+   Installation of this program is very easy and it can be done manually:
+
+   1. Copy the settings of the program to ENVARC: and ENV:
+
+   2. Copy the file, suitable for your operating system, to WBStartup or
+     to any other place that you like and then run it from user - startup.
+
+   3. Copy the BiBPrefs file to Sys:Prefs
+
+   In the "bibgfx" folder you can place three gfx files, which can be
+   used as a background (option):
+
+     left - left edge of the background
+   middle - middle
+    right - right edge of the background
+
+   You can only use file "middle", the rest is not required.
+   
+   New for AROS: gfx files are installed in SYS:System/Images/bibgfx.
+
+@endnode
+@node configuration "How to operate and configure"
+@wordwrap
+    After running without any parameters the program always runs hidden.
+    In order for it to be visible you have to go down with your mouse pointer near the middle part of the screen and wait about one second.
+
+    After that time the toolbar with icons should appear on your screen.
+    The change of the levels can be done using:
+
+        a) scroll in your mouse
+        b) after pressing the right mouse button and choosing the option form the menu
+        c) with keys; @{B}F2@{UB} - next level, @{B}F3@{UB} - previous level
+
+    There are additional keyboard shortcuts:
+
+    @{B}LShift + ESC @{UB}- exit program
+    @{B}F1@{UB} - executing REMAP function on icons to the actual colour palette
+        ( check AUTOREMAP parameter )
+
+
+    Available options & parameters (valid as icon tooltypes):
+
+    @{FG HighLight}SPACE/N/K@{FG Text} - an interval between the icons measured in pixels, default option is set to 5 pixels
+
+    @{FG HighLight}STATIC/N/K@{FG Text} - if we want our toolbar to be visible after having been run, you have to specify this parameter with a number bigger than 0. This number informs us about the time in seconds after which the window will be displayed on the screen e.g. during the start up of the operating system.
+
+    @{FG HighLight}AUTOREMAP/S@{FG Text} - this parameter is unavailable for MorphOS users. It can happen that the icons might be displayed inappropriately, e.g. after choosing an option from the menu of Workbench "Tools -> ResetWB". Using this parameter causes automatic remapping of icons to the actual colour palette, before displaying the toolbar.
+   
+    @{FG HighLight}BACKGROUND/S@{FG Text} - (AROS only) Displays the toolbar background images.
+        Images are:
+            SYS:Sytem/Images/bibgfx/left
+            SYS:Sytem/Images/bibgfx/middle
+            SYS:Sytem/Images/bibgfx/right
+
+    Additionally, there is a one more parameter for MorphOS users:
+
+    @{FG HighLight}SIZE/N/K@{FG Text} - Icon scaling. Icons will be displayed in their standard size without this parameter. Stating the number bigger than 0, causes icon scaling every 16 pixels e.g.
+        1 - icons will have a size of 16 pixels
+        2 - 32 pixels
+        3 - 48 pixels
+        etc.
+ 
+@endnode
+@node history "History"
+
+    1.0  - first public release
+    1.02 - first AROS SVN release
+
+@endnode
+@node author "Author"
+
+
+    The author of this program is:
+ 
+        Robert 'Phibrizzo' Krajcarz - jgn@interia.pl
+
+    Preferences program has been written by:
+
+        Adam 'Adater' Terlecki
+        Pawel 'Stefkos' Stefanski
+
+    English Translation has been done by:
+
+        Lukasz 'Sir_Lucas' Kucharuk
+
+    AROS-ification, locale by:
+
+        Olivier Adam
+
+@endnode
