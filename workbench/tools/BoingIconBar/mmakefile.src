@@ -1,0 +1,42 @@
+# Copyright © 2011, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src
+
+include $(TOP)/config/make.cfg
+
+FILES   := iconbar
+PREFS   := iconbar_prefs locale
+CPFILES := BiB_Eng.guide
+ENVFILE := Iconbar.prefs
+BIBGFX  := bibgfx
+
+USER_CFLAGS := -fno-strict-aliasing
+
+#MM- workbench-tools : workbench-tools-iconbar
+#MM  workbench-tools-iconbar : includes linklibs \
+#MM  workbench-tools-iconbar-gfx \
+#MM  workbench-tools-iconbar-files \
+#MM  workbench-tools-iconbar-env
+
+#MM- workbench-prefs : workbench-prefs-iconbar
+#MM  workbench-prefs-iconbar : includes linklibs \
+#MM  workbench-prefs-iconbar-catalogs
+
+
+%build_prog mmake=workbench-tools-iconbar \
+    progname=BoingIconBar targetdir=$(AROS_TOOLS) \
+    files=$(FILES)
+
+%build_prog mmake=workbench-prefs-iconbar \
+    progname=BIBPrefs targetdir=$(AROS_PREFS) \
+    files=$(PREFS) uselibs="mui"
+
+%copy_dir_recursive mmake=workbench-tools-iconbar-gfx \
+	src=$(BIBGFX) dst=$(AROS_IMAGES)/$(BIBGFX)
+
+%copy_files_q mmake=workbench-tools-iconbar-files \
+	files=$(CPFILES) dst=$(AROS_HELP)
+
+%copy_files_q mmake=workbench-tools-iconbar-env \
+	files=$(ENVFILE) src=ENV dst=$(AROS_ENVARC)
+
+%common

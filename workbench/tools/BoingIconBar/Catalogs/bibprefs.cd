@@ -1,0 +1,31 @@
+;
+MSG_APP (//)
+BIBPrefs
+;
+MSG_DESCRIPTION (//)
+BoingIconBar Preferences
+;
+MSG_TITLE (//)
+BoingIconBar Preferences
+;
+MSG_DOCK (//)
+\33cDock
+;
+MSG_ADD_DOCK (//)
+Add
+;
+MSG_DEL_DOCK (//)
+Delete
+;
+MSG_SAVE (//)
+Save
+;
+MSG_PROGRAMS (//)
+\33cPrograms
+;
+MSG_ADD_P (//)
+Add program
+;
+MSG_DEL_P (//)
+Del program
+;
