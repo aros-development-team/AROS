@@ -1,0 +1,10 @@
+FileSystem     = cdrom.handler
+Device         = diskimage.device
+Unit           = 5
+BlockSize      = 2048
+Surfaces       = 1
+BlocksPerTrack = 0
+LowCyl         = 0
+HighCyl        = 0
+Reserved       = 0
+Activate       = 1
