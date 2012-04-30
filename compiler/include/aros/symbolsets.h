@@ -113,13 +113,13 @@ ADD2SET(__aros_libset_##bname, libs, 0)
 
 #define AROS_RELLIBSET(name, btype, bname)                     \
 IPTR bname##_offset;                                           \
-extern const LONG __aros_rellibreq_##bname __attribute__((weak)); \
+extern const LONG __aros_libreq_##bname __attribute__((weak)); \
                                                                \
 AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);\
                                                                \
 static const struct rellibraryset __aros_rellibset_##bname =   \
 {                                                              \
-     name, &__aros_rellibreq_##bname, (void *)&bname##_offset     \
+     name, &__aros_libreq_##bname, &bname##_offset             \
 };                                                             \
 ADD2SET(__aros_rellibset_##bname, libs, 0) 
 
