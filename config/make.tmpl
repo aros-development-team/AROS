@@ -1411,7 +1411,7 @@ GLOB_MKDIRS += %(objdir) $(BD_MODDIR) $(KOBJSDIR)
 #MM %(mmake)-kobj-quick : %(mmake)-includes-quick
 #MM %(mmake)-pkg : %(mmake)-includes core-linklibs linklibs-%(uselibs)
 #MM %(mmake)-pkg-quick : %(mmake)-includes-quick
-#MM %(mmake)-linklib : %(mmake)-includes
+#MM %(mmake)-linklib : %(mmake)-includes includes-%(uselibs)
 #MM %(mmake)-quick : %(mmake)-includes-quick
 #MM %(mmake)-includes : %(mmake)-makefile %(mmake)-includes-dirs \
 #MM     includes-generate-deps %(mmake)-fd
