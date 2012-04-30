@@ -115,9 +115,9 @@ ADD2SET(__aros_libset_##bname, libs, 0)
 IPTR bname##_offset;                                           \
 extern const LONG __aros_rellibreq_##bname __attribute__((weak)); \
                                                                \
-AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);   \
+AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);\
                                                                \
-static const struct rellibraryset __aros_rellibset_##bname =         \
+static const struct rellibraryset __aros_rellibset_##bname =   \
 {                                                              \
      name, &__aros_rellibreq_##bname, (void *)&bname##_offset     \
 };                                                             \
