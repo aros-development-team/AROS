@@ -116,7 +116,7 @@ ULONG   WindowMask      = 0,
         MenuMask        = 0, 
         WindowSignal;
 
-IPTR    args[]          = {(LONG)&Spacing, (LONG)&Static, 0, 0};
+IPTR    args[]          = {(IPTR)&Spacing, (IPTR)&Static, 0, 0};
 
 /*****************************************************************************/
 
