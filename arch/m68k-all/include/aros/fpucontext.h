@@ -4,11 +4,10 @@
 #include <aros/asmcall.h>
 
 #include <aros/m68k/fenv.h>
-#include <aros/m68k/_fpmath.h>
 
 struct FpuContext {
 	fenv_t fpenv;		/* User-visible status register */
-	union IEEEl2bits fp[8];	/* FP registers */
+	UBYTE fp[8*12];		/* 8 FP registers of 12 bytes */
 	union {
 		UBYTE fpu68881[0xb8];
 		UBYTE fpu68882[0xd8];
