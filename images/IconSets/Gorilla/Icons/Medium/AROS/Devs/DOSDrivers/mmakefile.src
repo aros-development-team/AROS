@@ -1,0 +1,16 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+STORAGEICONS := ICD0 ICD1 IDF0 IDF1 ISO0 PC0
+DEVSICONS    := PAR PIPE PRT SER SER0 SER1
+
+#MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-devs-dosdrivers-clean iconset-Gorilla-icons-storage-dosdrivers-clean
+#MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-devs-dosdrivers iconset-Gorilla-icons-storage-dosdrivers
+
+%build_icons mmake=iconset-Gorilla-icons-devs-dosdrivers icons=$(DEVSICONS) \
+             dir=$(AROS_DEVS)/DOSDrivers
+
+%build_icons mmake=iconset-Gorilla-icons-storage-dosdrivers icons=$(STORAGEICONS) \
+             dir=$(AROSDIR)/Storage/DOSDrivers

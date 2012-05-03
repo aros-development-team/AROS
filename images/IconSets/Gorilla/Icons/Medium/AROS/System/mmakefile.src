@@ -1,9 +1,10 @@
-# Copyright © 2004, The AROS Development Team. All rights reserved.
+# Copyright © 2004-2012, The AROS Development Team. All rights reserved.
 # $Id$
 
 include $(TOP)/config/make.cfg
 
-ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy Shell
+ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy Shell \
+         DiskImageGUI
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-system-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-system
