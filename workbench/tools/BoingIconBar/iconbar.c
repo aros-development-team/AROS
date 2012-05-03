@@ -1288,7 +1288,7 @@ void Launch_Program(char *Program)
     BPTR oldlock;
 
     // Get current directory lock
-    oldlock = CurrentDir(NULL);
+    oldlock = CurrentDir(BNULL);
 
     D(bug("[IconBar] Launch_Program %s\n", Program));
     OpenWorkbenchObject(Program, TAG_DONE);
