@@ -33,7 +33,7 @@
 //                                                          //
 //////////////////////////////////////////////////////////////
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <stdio.h>
@@ -47,6 +47,8 @@
 #include <proto/gadtools.h>
 #include <proto/dos.h>
 #include <proto/datatypes.h>
+#include <proto/commodities.h>
+#include <proto/alib.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <workbench/icon.h>
@@ -112,8 +114,10 @@ static char //Background_name[256], // <-- FIXME: Background_name not used at al
             BufferList[20],       //     but might be interesting to implement
             MovingTable[8]  = {0, 4, 7, 9, 10, 9, 7, 4};
 
-static ULONG    WindowMask      = 0, 
-                MenuMask        = 0, 
+static ULONG    WindowMask, 
+                MenuMask, 
+                CxSigMask,
+                NotifMask,
                 WindowSignal;
 
 static IPTR     args[] = {(IPTR)&Spacing, (IPTR)&Static, 0, 0};
@@ -127,6 +131,7 @@ static struct Screen *Screen_struct;
 
 static struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
 static struct RastPort RP_Buffer, RP_DoubleBuffer;
+static CxObj *broker;
 
 // struct of icons
 
@@ -166,6 +171,14 @@ static struct Struct_BackgroundData
     int Height;  // height
 } BackgroundData[3];
 
+static struct NewBroker newbroker = {
+    NB_VERSION,
+    "BoingIconBar",     // string to identify this broker
+    "Icon Toolbar",
+    "Start Programs from Toolbar",
+    NBU_UNIQUE | NBU_NOTIFY,
+    0, 0, 0, 0
+};
 
 /*****************************************************************************/
 // functions
@@ -198,10 +211,26 @@ int main(int argc, char *argv[])
     struct RDArgs        *rda = NULL;
     struct DiskObject    *dob = NULL;
     struct NotifyRequest *nr;
-    struct MsgPort       *BIBport;
+    struct MsgPort       *BIBport, *BrokerMP = NULL;
     BOOL   notification = FALSE;
     BPTR   out = BNULL;
     int result = RETURN_OK;
+
+    if ((BrokerMP = CreateMsgPort()) != NULL)
+    {
+        newbroker.nb_Port = BrokerMP;
+        CxSigMask = 1L << BrokerMP->mp_SigBit;
+        broker = CxBroker(&newbroker, NULL);
+        if (broker == NULL)
+        {
+            D(bug("[IconBar] is already running\n"));
+            DeleteMsgPort(BrokerMP);
+            return 0;
+        }
+    }
+
+    ActivateCxObj(broker, 1);
+    D(bug("[IconBar] broker %p\n", broker));
 
     // Read arguments
     if (argc)
@@ -256,7 +285,6 @@ int main(int argc, char *argv[])
         Static  = *(LONG*)args[ARG_STATIC];
     }
 
-
     D(bug("[IconBar] Specified options: SPACE=%d, STATIC=%d, AUTOREMAP=%d\n", Spacing, Static, Icon_Remap));
 
     // Read the prefs file, fail if it doesn't exist
@@ -278,6 +306,7 @@ int main(int argc, char *argv[])
                 if (StartNotify(nr) != DOSFALSE)
                 {
                     notification = TRUE;
+                    NotifMask = 1L << BIBport->mp_SigBit;
                     D(bug("[IconBar] Notification started\n"));
                 }
             }
@@ -296,45 +325,92 @@ int main(int argc, char *argv[])
 
         while (BiB_Exit==FALSE)
         {
-            if(notification)
+            if (Window_Open || MenuWindow_Open)
+            {
+                WindowSignal = Wait(WindowMask | MenuMask | CxSigMask | NotifMask);
+            }
+            else
+            {
+                Delay(50);
+                CheckMousePosition();
+                WindowSignal = 0;
+            }
+
+            if(WindowSignal & WindowMask)
+            {
+                while((KomIDCMP = GT_GetIMsg(Window_struct->UserPort)))
+                {
+                    CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
+                    GT_ReplyIMsg(KomIDCMP);
+                    Decode_IDCMP(&KopiaIDCMP);
+                }
+
+                if(!(Static) && Window_Active == FALSE) CloseMainWindow();
+            }
+
+            if(WindowSignal & MenuMask)
+            {
+                while((KomIDCMP = GT_GetIMsg(MenuWindow_struct->UserPort)))
+                {
+                    CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
+                    GT_ReplyIMsg(KomIDCMP);
+                    Decode_IDCMP2(&KopiaIDCMP);
+                }
+
+                if(MenuWindow_Open == FALSE) CloseMenuWindow();
+            }
+
+            if(WindowSignal & CxSigMask)
+            {
+                D(bug("[IconBar] Signal received\n"));
+                CxMsg *msg;
+                ULONG msgid, msgtype;
+                while((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
+                {
+                    msgid = CxMsgID(msg);
+                    msgtype = CxMsgType(msg);
+                    ReplyMsg((struct Message *)msg);
+
+                    switch(msgtype)
+                    {
+                        case CXM_COMMAND:
+                            switch(msgid)
+                            {
+                                case CXCMD_DISABLE:
+                                    D(bug("[IconBar] CXCMD_DISABLE\n"));
+                                    ActivateCxObj(broker, 0L);
+                                    break;
+                                case CXCMD_ENABLE:
+                                    D(bug("[IconBar] CXCMD_ENABLE\n"));
+                                    ActivateCxObj(broker, 1L);
+                                    break;
+                                case CXCMD_KILL:
+                                    D(bug("[IconBar] CXCMD_KILL\n"));
+                                    BiB_Exit = TRUE;
+                                    break;
+                                case CXCMD_UNIQUE:
+                                    D(bug("[IconBar] CXCMD_UNIQUE\n"));
+                                    BiB_Exit = TRUE;
+                                    break;
+                                default:
+                                    D(bug("[IconBar] Unknown msgid\n"));
+                                    break;
+                            }
+                            break;
+                        default:
+                            D(bug("[IconBar] Unknown msgtype\n"));
+                            break;
+                    }
+                }
+            }
+
+            if(WindowMask & NotifMask)
             {
                 if (GetMsg(BIBport) != NULL)
                 {
                     D(bug("[IconBar] Prefs modified!\n"));
                     Reload_BiB();
                 }
-            }
-
-            if(Window_Open || MenuWindow_Open)
-            {
-                WindowSignal = Wait(WindowMask | MenuMask);
-
-                if(WindowSignal & WindowMask)
-                {
-                    while((KomIDCMP = GT_GetIMsg(Window_struct->UserPort)))
-                    {
-                        CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
-                        GT_ReplyIMsg(KomIDCMP);
-                        Decode_IDCMP(&KopiaIDCMP);
-                    }
-
-                    if(!(Static) && Window_Active == FALSE) CloseMainWindow();
-                }
-
-                if(WindowSignal & MenuMask)
-                {
-                    while((KomIDCMP = GT_GetIMsg(MenuWindow_struct->UserPort)))
-                    {
-                        CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
-                        GT_ReplyIMsg(KomIDCMP);
-                        Decode_IDCMP2(&KopiaIDCMP);
-                    }
-
-                    if(MenuWindow_Open == FALSE) CloseMenuWindow();
-                }
-            } else {
-                Delay(50);
-                CheckMousePosition();
             }
         } // ---- end of main loop
 
@@ -371,6 +447,14 @@ int main(int argc, char *argv[])
     }
     D(bug("[IconBar] Quitting...\n"));
 
+    if (broker) DeleteCxObjAll(broker);
+    if (BrokerMP)
+    {
+        CxMsg *msg;
+        while ((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
+            ReplyMsg((struct Message *)msg);
+        DeletePort(BrokerMP);
+    }
     if (rda) FreeArgs(rda);
     if (dob) FreeDiskObject(dob);
     return(result);
@@ -538,7 +622,7 @@ static void LoadBackground(void)
             PDTA_Remap,    TRUE,
             PDTA_DestMode, PMODE_V43,
             OBP_Precision, PRECISION_IMAGE,
-            PDTA_Screen,   (ULONG)Screen_struct,
+            PDTA_Screen,   (IPTR)Screen_struct,
             TAG_END);
 
         if (picture[x])
@@ -549,9 +633,9 @@ static void LoadBackground(void)
 
             GetDTAttrs
             (   picture[x],
-                PDTA_DestBitMap,  (LONG)&bm[x],
-                DTA_NominalHoriz, (LONG)&BackgroundData[x].Width,
-                DTA_NominalVert,  (LONG)&BackgroundData[x].Height,
+                PDTA_DestBitMap,  (SIPTR)&bm[x],
+                DTA_NominalHoriz, (SIPTR)&BackgroundData[x].Width,
+                DTA_NominalVert,  (SIPTR)&BackgroundData[x].Height,
                 TAG_END
              );
         }
