@@ -1,0 +1,45 @@
+## version $VER: BIBPrefs.catalog 1.0 (05.05.2012)
+## language deutsch
+## codeset 0
+;
+;
+MSG_APP
+BIBPrefs
+; BIBPrefs
+;
+MSG_DESCRIPTION
+BoingIconBar Voreinstellungen
+; BoingIconBar Preferences
+;
+MSG_TITLE
+BoingIconBar Voreinstellungen
+; BoingIconBar Preferences
+;
+MSG_DOCK
+\33cDock
+; \33cDock
+;
+MSG_ADD_DOCK
+Hinzufügen
+; Add
+;
+MSG_DEL_DOCK
+Entfernen
+; Delete
+;
+MSG_SAVE
+Speichern
+; Save
+;
+MSG_PROGRAMS
+Programme
+; \33cPrograms
+;
+MSG_ADD_P
+Programm hinzufügen
+; Add program
+;
+MSG_DEL_P
+Programm entfernen
+; Del program
+;
