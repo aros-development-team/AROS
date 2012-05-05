@@ -72,65 +72,65 @@
 
 /*****************************************************************************/
 
-BOOL    BiB_Exit        = FALSE,
-        Icon_Remap      = FALSE,
-        Bar_Background  = FALSE,
-        PositionMenuOK  = FALSE,
-        Image           = FALSE, // <--- FIXME: "Image" seems not used at all 
-        Window_Active   = FALSE,
-        Window_Open     = FALSE,
-        MenuWindow_Open = FALSE,
-        FirstOpening    = TRUE;
+static BOOL BiB_Exit        = FALSE,
+            Icon_Remap      = FALSE,
+            Bar_Background  = FALSE,
+            PositionMenuOK  = FALSE,
+            // Image           = FALSE, // <--- FIXME: "Image" seems not used at all 
+            Window_Active   = FALSE,
+            Window_Open     = FALSE,
+            MenuWindow_Open = FALSE,
+            FirstOpening    = TRUE;
 
-int     Static          = 0,
-        Spacing         = 5,
-        CurrentLevel    = 0,
-        lbm             = 0,
-        rbm             = 0;
+static int  Static          = 0,
+            Spacing         = 5,
+            CurrentLevel    = 0,
+            lbm             = 0,
+            rbm             = 0;
 
-int     WindowHeight, 
-        WindowWidth, 
-        ScreenHeight, 
-        ScreenWidth, 
-        IconWidth,
-        ImageWidth, 
-        ImageHeight, // <---  FIXME: ...also: ImageWidth, ImageHeight not used at all 
-        Position,
-        OldPosition,   
-        IconCounter,
-        LevelCounter,
-        MouseIcon,
-        Lenght, 
-        BeginningWindow, 
-        EndingWindow, 
-        Window_Max_X, 
-        Window_Max_Y;
+static int  WindowHeight, 
+            WindowWidth, 
+            ScreenHeight, 
+            ScreenWidth, 
+            IconWidth,
+            // ImageWidth, 
+            // ImageHeight, // <---  FIXME: ...also: ImageWidth, ImageHeight not used at all 
+            Position,
+            OldPosition,   
+            IconCounter,
+            LevelCounter,
+            MouseIcon,
+            Lenght, 
+            BeginningWindow, 
+            EndingWindow, 
+            Window_Max_X, 
+            Window_Max_Y;
 
-char    version[] = "$VER: BoingIconBar 1.02 (26.04.2012) ©2012 Robert 'Phibrizzo' Krajcarz";
+const char version[] = "$VER: BoingIconBar 1.02 (26.04.2012) ©2012 Robert 'Phibrizzo' Krajcarz";
 
-char    Background_name[256], // <-- FIXME: Background_name not used at all,
-        BufferList[20],       //     but might be interesting to implement
-        MovingTable[8]  = {0, 4, 7, 9, 10, 9, 7, 4};
+static char //Background_name[256], // <-- FIXME: Background_name not used at all,
+            BufferList[20],       //     but might be interesting to implement
+            MovingTable[8]  = {0, 4, 7, 9, 10, 9, 7, 4};
 
-ULONG   WindowMask      = 0, 
-        MenuMask        = 0, 
-        WindowSignal;
+static ULONG    WindowMask      = 0, 
+                MenuMask        = 0, 
+                WindowSignal;
 
-IPTR    args[]          = {(IPTR)&Spacing, (IPTR)&Static, 0, 0};
+static IPTR     args[] = {(IPTR)&Spacing, (IPTR)&Static, 0, 0};
 
 /*****************************************************************************/
 
-struct DiskObject *Icon[SUM_ICON]; 
+static struct DiskObject *Icon[SUM_ICON]; 
 
-struct Window *Window_struct, *MenuWindow_struct;    //  FIXME: really ugly _struct names...
-struct Screen *Screen_struct;                       
+static struct Window *Window_struct, *MenuWindow_struct;    //  FIXME: really ugly _struct names...
+static struct Screen *Screen_struct;                       
 
-struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
-struct RastPort RP_Buffer, RP_DoubleBuffer;
+static struct BitMap *BMP_Buffer, *BMP_DoubleBuffer;
+static struct RastPort RP_Buffer, RP_DoubleBuffer;
 
 // struct of icons
 
-struct Icon_Struct 
+static struct Icon_Struct 
 {
     int    Icon_Height;     // icon height 
     int    Icon_Width;      // icon width 
@@ -143,7 +143,7 @@ struct Icon_Struct
 
 // struct of submenu
 
-struct Level_Struct 
+static struct Level_Struct 
 {
      char Level_Name[20];   // name submenu - level name 
      int  Beginning;        // first icon on menu
@@ -151,16 +151,16 @@ struct Level_Struct
      int  WindowPos_Y;      // Y position main window
 } Levels_Struct[11];
 
-struct TextAttr Topaz8 = {"topaz.font",8,0,FPF_ROMFONT};
+static struct TextAttr Topaz8 = {"topaz.font",8,0,FPF_ROMFONT};
 
-struct IntuiText Names = {1,0,JAM1,0,0,&Topaz8,BufferList,NULL};
+static struct IntuiText Names = {1,0,JAM1,0,0,&Topaz8,BufferList,NULL};
 
 //  background pictures
 
-Object *picture[3];
-struct BitMap *bm[3];
+static Object *picture[3];
+static struct BitMap *bm[3];
 
-struct Struct_BackgroundData 
+static struct Struct_BackgroundData 
 {
     int Width;   // width
     int Height;  // height
@@ -169,23 +169,23 @@ struct Struct_BackgroundData
 
 /*****************************************************************************/
 // functions
-int  ReadPrefs(void);   // load prefs
-void LoadBackground(void);  //load background pictures
-void SetWindowParameters(void);   // check window sizes
-void Decode_IDCMP(struct IntuiMessage *KomIDCMP);  //  decode IDCMP main signals
-void Change_State(int Reset);  // change icon state
-void Insert_Icon(int Tryb, int IconNumber);  // draw icon
-void Blink_Icon(int IconNumber); // blink the icon
-BOOL OpenMainWindow(void);  // open main window
-void CloseMainWindow(void);  // close main window
-void CheckMousePosition(void);  // check mouse position
-void Show_Selected_Level(void);  // change the submenu
-void OpenMenuWindow(void); // open menu window
-void CloseMenuWindow(void);  // close menu window
-void Decode_IDCMP2(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu signals
-void Launch_Program(char *Program);  // start the chosed program
-void Settings(void);  // open the prefs program
-void Reload_BiB(void); // reload the BiB
+static int  ReadPrefs(void);   // load prefs
+static void LoadBackground(void);  //load background pictures
+static void SetWindowParameters(void);   // check window sizes
+static void Decode_IDCMP(struct IntuiMessage *KomIDCMP);  //  decode IDCMP main signals
+static void Change_State(int Reset);  // change icon state
+static void Insert_Icon(int Tryb, int IconNumber);  // draw icon
+static void Blink_Icon(int IconNumber); // blink the icon
+static BOOL OpenMainWindow(void);  // open main window
+static void CloseMainWindow(void);  // close main window
+static void CheckMousePosition(void);  // check mouse position
+static void Show_Selected_Level(void);  // change the submenu
+static void OpenMenuWindow(void); // open menu window
+static void CloseMenuWindow(void);  // close menu window
+static void Decode_IDCMP2(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu signals
+static void Launch_Program(char *Program);  // start the chosed program
+static void Settings(void);  // open the prefs program
+static void Reload_BiB(void); // reload the BiB
 
 
 /*****************************************************************************/
@@ -378,7 +378,7 @@ int main(int argc, char *argv[])
 
 /*****************************************************************************/
 
-int ReadPrefs(void)
+static int ReadPrefs(void)
 {
     BPTR Prefs;
     int x, TextLenght, NumChars;
@@ -520,7 +520,7 @@ int ReadPrefs(void)
 
 /*****************************************************************************/
 
-void LoadBackground(void)
+static void LoadBackground(void)
 {
     int x;
     
@@ -560,7 +560,7 @@ void LoadBackground(void)
 
 /*****************************************************************************/
 
-void SetWindowParameters(void)
+static void SetWindowParameters(void)
 {
 
     int x, y;
@@ -673,7 +673,7 @@ void SetWindowParameters(void)
 
 /*****************************************************************************/
 
-void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
+static void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
 {
     int x;
 
@@ -837,7 +837,7 @@ void Decode_IDCMP(struct IntuiMessage *KomIDCMP)
 
 }
 
-void Change_State(int Reset)
+static void Change_State(int Reset)
 {
     int x;
 
@@ -870,7 +870,7 @@ void Change_State(int Reset)
     }
 }
 
-void Insert_Icon(int Tryb, int IconNumber)
+static void Insert_Icon(int Tryb, int IconNumber)
 {
     BltBitMapRastPort(BMP_Buffer,
         Icons_Struct[IconNumber].Icon_PositionX,
@@ -903,7 +903,7 @@ void Insert_Icon(int Tryb, int IconNumber)
         0xC0);
 }
 
-void Blink_Icon(int IconNumber)
+static void Blink_Icon(int IconNumber)
 {
     int x, Tryb=IDS_SELECTED;
 
@@ -917,7 +917,7 @@ void Blink_Icon(int IconNumber)
     }
 }
 
-BOOL OpenMainWindow(void)
+static BOOL OpenMainWindow(void)
 {
     int x, y, a;
 
@@ -1074,7 +1074,7 @@ BOOL OpenMainWindow(void)
     return TRUE;
 }
 
-void CloseMainWindow(void)
+static void CloseMainWindow(void)
 {
     D(bug("[IconBar] ClosingMainWindow...\n"));
 
@@ -1091,7 +1091,7 @@ void CloseMainWindow(void)
     WindowMask = 0;
 }
 
-void CheckMousePosition(void)
+static void CheckMousePosition(void)
 {
     // noisy: D(bug("[IconBar] Mouse current position: Y=%d\n", Screen_struct->MouseY));
 
@@ -1121,7 +1121,7 @@ void CheckMousePosition(void)
     }
 }
 
-void Show_Selected_Level(void)
+static void Show_Selected_Level(void)
 {
     CloseMainWindow();
 
@@ -1140,7 +1140,7 @@ void Show_Selected_Level(void)
     }
 }
 
-void OpenMenuWindow(void)
+static void OpenMenuWindow(void)
 {
     int x;
 
@@ -1194,7 +1194,7 @@ void OpenMenuWindow(void)
     else D(bug("[IconBar] Can't open menu\n"));
 }
 
-void CloseMenuWindow(void)
+static void CloseMenuWindow(void)
 {
     CloseWindow(MenuWindow_struct);
     MenuMask = 0;
@@ -1211,7 +1211,7 @@ void CloseMenuWindow(void)
     }
 }
 
-void Decode_IDCMP2(struct IntuiMessage *KomIDCMP)
+static void Decode_IDCMP2(struct IntuiMessage *KomIDCMP)
 {
     int x, kolA, kolB, dluG, x4;
 
@@ -1283,7 +1283,7 @@ void Decode_IDCMP2(struct IntuiMessage *KomIDCMP)
     }
 }
 
-void Launch_Program(char *Program)
+static void Launch_Program(char *Program)
 {
     BPTR oldlock;
 
@@ -1297,13 +1297,13 @@ void Launch_Program(char *Program)
     CurrentDir(oldlock);
 }
 
-void Settings(void)
+static void Settings(void)
 {
     if (!OpenWorkbenchObject("PROGDIR:BIBPrefs", TAG_DONE))
         OpenWorkbenchObject("SYS:Prefs/BIBPrefs", TAG_DONE);
 }
 
-void Reload_BiB(void)
+static void Reload_BiB(void)
 {
     D(bug("[IconBar] Reloading BiB...\n"));
 
