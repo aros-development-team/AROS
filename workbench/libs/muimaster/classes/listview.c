@@ -2,6 +2,7 @@
     Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
+#include <aros/debug.h>
 
 #include <graphics/gfx.h>
 #include <graphics/view.h>
@@ -12,7 +13,6 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 
-#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -86,8 +86,7 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    /* type is ULONG, because on 64-bit machines it can be padded with garbage */
-    ULONG type = (IPTR)msg[0];
+    SIPTR type = (SIPTR)msg[0];
     SIPTR val = (SIPTR)msg[1];
 
     D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type, val));
@@ -95,6 +94,7 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
     switch (type)
     {
         case PROP_VERT_FIRST:
+            get(data->vert,MUIA_Prop_First,&val);
             nnset(data->list,MUIA_List_VertProp_First,val);
             break;
 
@@ -128,20 +128,23 @@ ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
 IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_ListviewData   *data;
+    struct TagItem *tag, *tags;
     struct Hook *layout_hook;
     Object *group, *vert;
-    Object *list = (Object*)GetTagData(MUIA_Listview_List, 0, msg->ops_AttrList);
-    IPTR entries = 0,first = 0,visible = 0;
-    if (!list) return 0;
+    Object *list = (Object*)GetTagData(MUIA_Listview_List, (IPTR)NULL, msg->ops_AttrList);
+    IPTR  cyclechain = (IPTR)GetTagData(MUIA_CycleChain, (IPTR)0, msg->ops_AttrList);
+    LONG entries = 0,first = 0,visible = 0;
+    if (!list) return NULL;
 
     layout_hook = mui_alloc_struct(struct Hook);
-    if (!layout_hook) return 0;
+    if (!layout_hook) return NULL;
 
     layout_hook->h_Entry = HookEntry;
     layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
+        MUIA_CycleChain, cyclechain,
         MUIA_InnerLeft, 0,
         MUIA_InnerRight, 0,
         Child, (IPTR) (group = GroupObject,
@@ -156,7 +159,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj)
     {
         mui_free(layout_hook);
-        return 0;
+        return NULL;
     }
 
     data = INST_DATA(cl, obj);
@@ -174,6 +177,14 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->selfnofity_hook.h_SubEntry = (HOOKFUNC)SelfNotify_Function;
     data->selfnofity_hook.h_Data = data;
     data->noforward = FALSE;
+
+    /* parse initial taglist */
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    {
+        switch (tag->ti_Tag)
+        {
+            }
+    }
 
     get(list,MUIA_List_VertProp_First,&first);
     get(list,MUIA_List_VertProp_Visible,&visible);
@@ -221,8 +232,8 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem  *tag;
-    struct TagItem  *tags;
+    struct TagItem        *tag;
+    const struct TagItem  *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
