@@ -69,12 +69,12 @@ char name[ 50 ];
 char programs[ MAX_PROGRAMS+1 ][ MAX_PATH ];
 }dock;
 
-dock docs[ MAX_DOCS ];
+static dock docs[ MAX_DOCS ];
 
-int saveSettings( char *name );
-int     loadList( char *name );
+static int saveSettings( char *name );
+static int     loadList( char *name );
 
-void initTable( char *name )
+static void initTable( char *name )
 {
     int i,j;
     
@@ -91,7 +91,7 @@ void initTable( char *name )
     loadList( name );
 }
 
-void deleteTable( char *name )
+static void deleteTable( char *name )
 {
     int i,j;
     
@@ -115,10 +115,11 @@ extern struct Library *SysBase;
 
 ///
 /// Class data
-BOOL running = TRUE;
-int var;
-Object *app, *win, *Dock, *Programs, *S_Dock;
-Object* create_button(char *label, char control)
+static BOOL running = TRUE;
+static int var;
+static Object *app, *win, *Dock, *Programs, *S_Dock;
+
+static Object* create_button(char *label, char control)
 {
     Object *obj;
 
@@ -141,8 +142,8 @@ Object *Baton[ MAX ];
 
 ///
 /// "MUIASL"
-void add(void)
-  {
+static void add(void)
+{
     struct FileRequester *freq;
     STRPTR name = NULL;
     int docsE = 0, docsS = 0;
@@ -156,40 +157,40 @@ void add(void)
     }
 
     if ((freq = AllocAslRequestTags(ASL_FileRequest, TAG_END))!=NULL)
-      {
+    {
         if (AslRequestTags(freq,
           ASLFR_TitleText, _(MSG_ADD_P),
           ASLFR_DoPatterns, TRUE,
           ASLFR_RejectIcons, TRUE,
           TAG_END))
-          {
+        {
             ULONG namelen = strlen(freq->fr_File) + strlen(freq->fr_Drawer) + 4;
 
             if ((name = AllocVec(namelen + 1, MEMF_ANY | MEMF_CLEAR))!=NULL)
-              {
-              int entries = 0;
-              
-              get( Programs, MUIA_List_Entries, &entries );
-              
-              if( entries < MAX_PROGRAMS )
-              {
-                strcpy( name, freq->fr_Drawer);
-                AddPart( name, freq->fr_File, MAX_PATH );
-                DoMethod(Programs, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
-                strcpy( docs[ docsS ].programs[ entries ], name );
-               }
-              FreeVec( name );
-              }
-          }
+            {
+                int entries = 0;
+
+                get( Programs, MUIA_List_Entries, &entries );
+
+                if( entries < MAX_PROGRAMS )
+                {
+                    strcpy( name, freq->fr_Drawer);
+                    AddPart( name, freq->fr_File, MAX_PATH );
+                    DoMethod(Programs, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
+                    strcpy( docs[ docsS ].programs[ entries ], name );
+                }
+                FreeVec( name );
+            }
+        }
         FreeAslRequest(freq);
-      }
+    }
     return;
   }
 ///
 /// "GUI"
 
 
-long GUI (void)
+static long GUI (void)
 {
     app = ApplicationObject,
         MUIA_Application_Title, _(MSG_APP),
@@ -244,41 +245,45 @@ long GUI (void)
 ///
 
 /// support functions
-void load(void)
+static void load(void)
 {
     int vartosc=0;
     {
-    get(S_Dock, MUIA_String_Contents, &vartosc);
-    var=vartosc;
+        get(S_Dock, MUIA_String_Contents, &vartosc);
+        var=vartosc;
     }
 }
 
-void save(void)
+#if 0
+static void save(void)
 {
     return;
 }
+#endif
 ///
 
 ///widelec
 
 /*nazwê doka + tablicê programów warto by³oby IMHO spi±æ w jak±¶ ³adn± strukturê*/
 
-void create_docks(void)
+static void create_docks(void)
 {
     /*wrzuca doki na listê (ca³a tablica, a¿ do NULL
       przy u¿yciu struktur mo¿na zamieniæ na MUIM_List_Insert_Single*/
     //DoMethod(Dock, MUIM_List_Insert, docki,-1, MUIV_List_Insert_Bottom);
 }
 
-void change_programs(void)
+#if 0
+static void change_programs(void)
 {
     //DoMethod(Programs, MUIM_List_Redraw, MUIV_List_Redraw_All); /* odrysuwuje listê, nie wiem czy niezbêdne ;-) */
 }
+#endif
 
 ///
 
 /// Notifications
-VOID notifications (void)
+static VOID notifications (void)
 {
     DoMethod (win, MUIM_Notify, MUIA_Window_CloseRequest,
     MUIV_EveryTime, app, 2, MUIM_Application_ReturnID,
@@ -302,7 +307,7 @@ VOID notifications (void)
 ///
 
 /// "MainLoop"
-VOID mainloop (void)
+static VOID mainloop (void)
 {
     ULONG signals = 0;
 
@@ -500,7 +505,7 @@ int main (int argc, char **argv)
 
 // process priority, encoding password, list post local-host/host-local
 
-int saveSettings( char *name )
+static int saveSettings( char *name )
 {
     FILE *fp;
 
@@ -534,7 +539,7 @@ int saveSettings( char *name )
     return 1;
 }
 
-int loadList( char *name )
+static int loadList( char *name )
 {
     FILE *fp;
     int active = -1;
