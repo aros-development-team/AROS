@@ -4,11 +4,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := zune zunestuff windowp buttonsp groupsp cyclesp slidersp \
+FILES  := zune listview zunestuff windowp buttonsp groupsp cyclesp slidersp \
 scrollbarsp listviewsp stringsp specialp navigationp framesp locale \
 systemp
 
 EXEDIR := $(AROS_PREFS)
+
+USER_CFLAGS := $(PARANOIA_CFLAGS)
 
 #MM- workbench-prefs : workbench-prefs-zune
 #MM workbench-prefs-zune : includes linklibs workbench-prefs-zune-catalogs

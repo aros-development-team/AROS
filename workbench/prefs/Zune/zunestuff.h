@@ -2,13 +2,20 @@
 #define _ZUNE_ZUNESTUFF_H
 
 /*
-    Copyright  2002-2006, The AROS Development Team. All rights reserved.
+    Copyright  2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
 #include <intuition/classusr.h>
+#include <libraries/mui.h>
 #include <libraries/asl.h>
 #include "locale.h"
+
+struct ClassListview_DATA
+{
+    Object *list;
+   struct MUI_EventHandlerNode   ehn;
+};
 
 Object *MakeButton (CONST_STRPTR str);
 Object *MakeCycle (CONST_STRPTR label, CONST_STRPTR entries[]);
