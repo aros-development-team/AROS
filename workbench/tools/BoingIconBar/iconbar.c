@@ -33,7 +33,7 @@
 //                                                          //
 //////////////////////////////////////////////////////////////
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include <stdio.h>
@@ -114,6 +114,8 @@ static char //Background_name[256], // <-- FIXME: Background_name not used at al
             BufferList[20],       //     but might be interesting to implement
             MovingTable[8]  = {0, 4, 7, 9, 10, 9, 7, 4};
 
+static BOOL notification = FALSE;
+
 static ULONG    WindowMask, 
                 MenuMask, 
                 CxSigMask,
@@ -180,6 +182,11 @@ static struct NewBroker newbroker = {
     0, 0, 0, 0
 };
 
+static struct NotifyRequest *nr;
+static struct MsgPort *BIBport, *BrokerMP;
+struct RDArgs *rda;
+static struct DiskObject *dob;
+
 /*****************************************************************************/
 // functions
 static int  ReadPrefs(void);   // load prefs
@@ -199,22 +206,17 @@ static void Decode_IDCMP2(struct IntuiMessage *KomIDCMP);  // decode IDCMP menu 
 static void Launch_Program(char *Program);  // start the chosed program
 static void Settings(void);  // open the prefs program
 static void Reload_BiB(void); // reload the BiB
-
+static void HandleCx(void); // handle Cx messages
+static void CleanExit(CONST_STRPTR msg); // Cleanup and print a message
 
 /*****************************************************************************/
 
 int main(int argc, char *argv[])
 {
-    int x, outt = FALSE;
+    int outt = FALSE;
 
     struct IntuiMessage *KomIDCMP, KopiaIDCMP;
-    struct RDArgs        *rda = NULL;
-    struct DiskObject    *dob = NULL;
-    struct NotifyRequest *nr;
-    struct MsgPort       *BIBport, *BrokerMP = NULL;
-    BOOL   notification = FALSE;
     BPTR   out = BNULL;
-    int result = RETURN_OK;
 
     if ((BrokerMP = CreateMsgPort()) != NULL)
     {
@@ -224,8 +226,7 @@ int main(int argc, char *argv[])
         if (broker == NULL)
         {
             D(bug("[IconBar] is already running\n"));
-            DeleteMsgPort(BrokerMP);
-            return 0;
+            CleanExit("");
         }
     }
 
@@ -288,176 +289,100 @@ int main(int argc, char *argv[])
     D(bug("[IconBar] Specified options: SPACE=%d, STATIC=%d, AUTOREMAP=%d\n", Spacing, Static, Icon_Remap));
 
     // Read the prefs file, fail if it doesn't exist
-    if(ReadPrefs())
+    if (!ReadPrefs())
     {
-        // Set notification of prefs change
-        if ((BIBport = CreateMsgPort()))
-        {
-            if ((nr = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
-            {
-                nr->nr_Name = BIB_PREFS;
-
-                D(bug("[IconBar] prefs filename: %s\n",nr->nr_Name));
-
-                nr->nr_Flags = NRF_SEND_MESSAGE;
-                nr->nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
-                nr->nr_stuff.nr_Msg.nr_Port = BIBport;
-
-                if (StartNotify(nr) != DOSFALSE)
-                {
-                    notification = TRUE;
-                    NotifMask = 1L << BIBport->mp_SigBit;
-                    D(bug("[IconBar] Notification started\n"));
-                }
-            }
-        }
-        if (Bar_Background)
-            LoadBackground();
-
-        if(Static)
-        {
-            Delay(Static * 50);
-            OpenMainWindow();
-            FirstOpening = FALSE;
-        }
-
-        // ---- main loop
-
-        while (BiB_Exit==FALSE)
-        {
-            if (Window_Open || MenuWindow_Open)
-            {
-                WindowSignal = Wait(WindowMask | MenuMask | CxSigMask | NotifMask);
-            }
-            else
-            {
-                Delay(50);
-                CheckMousePosition();
-                WindowSignal = 0;
-            }
-
-            if(WindowSignal & WindowMask)
-            {
-                while((KomIDCMP = GT_GetIMsg(Window_struct->UserPort)))
-                {
-                    CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
-                    GT_ReplyIMsg(KomIDCMP);
-                    Decode_IDCMP(&KopiaIDCMP);
-                }
-
-                if(!(Static) && Window_Active == FALSE) CloseMainWindow();
-            }
-
-            if(WindowSignal & MenuMask)
-            {
-                while((KomIDCMP = GT_GetIMsg(MenuWindow_struct->UserPort)))
-                {
-                    CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
-                    GT_ReplyIMsg(KomIDCMP);
-                    Decode_IDCMP2(&KopiaIDCMP);
-                }
-
-                if(MenuWindow_Open == FALSE) CloseMenuWindow();
-            }
-
-            if(WindowSignal & CxSigMask)
-            {
-                D(bug("[IconBar] Signal received\n"));
-                CxMsg *msg;
-                ULONG msgid, msgtype;
-                while((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
-                {
-                    msgid = CxMsgID(msg);
-                    msgtype = CxMsgType(msg);
-                    ReplyMsg((struct Message *)msg);
-
-                    switch(msgtype)
-                    {
-                        case CXM_COMMAND:
-                            switch(msgid)
-                            {
-                                case CXCMD_DISABLE:
-                                    D(bug("[IconBar] CXCMD_DISABLE\n"));
-                                    ActivateCxObj(broker, 0L);
-                                    break;
-                                case CXCMD_ENABLE:
-                                    D(bug("[IconBar] CXCMD_ENABLE\n"));
-                                    ActivateCxObj(broker, 1L);
-                                    break;
-                                case CXCMD_KILL:
-                                    D(bug("[IconBar] CXCMD_KILL\n"));
-                                    BiB_Exit = TRUE;
-                                    break;
-                                case CXCMD_UNIQUE:
-                                    D(bug("[IconBar] CXCMD_UNIQUE\n"));
-                                    BiB_Exit = TRUE;
-                                    break;
-                                default:
-                                    D(bug("[IconBar] Unknown msgid\n"));
-                                    break;
-                            }
-                            break;
-                        default:
-                            D(bug("[IconBar] Unknown msgtype\n"));
-                            break;
-                    }
-                }
-            }
-
-            if(WindowMask & NotifMask)
-            {
-                if (GetMsg(BIBport) != NULL)
-                {
-                    D(bug("[IconBar] Prefs modified!\n"));
-                    Reload_BiB();
-                }
-            }
-        } // ---- end of main loop
-
-        // ---- close all
-        CloseMainWindow();
-
-        for(x=0; x<SUM_ICON; x++)
-        {
-            if(Icon[x] != NULL)
-            {
-                FreeDiskObject(Icon[x]);
-            }
-        }
-
-        if(BMP_Buffer)   FreeBitMap(BMP_Buffer);
-        if(BMP_DoubleBuffer) FreeBitMap(BMP_DoubleBuffer);
-
-        for(x=0; x<3; x++)
-        {
-            if(picture[x]) DisposeDTObject(picture[x]);
-        }
-
-        // Close notification of prefs change
-        if(notification)
-            EndNotify(nr);
-        if(nr)
-            FreeMem(nr, sizeof(struct NotifyRequest));
-        if(BIBport)
-            DeleteMsgPort(BIBport);
-
-    } else {
-        D(bug("[IconBar] No prefs found!\n"));
-        result = RETURN_FAIL;
+        CleanExit("Can't read preferences\n");
     }
+
+    // Set notification of prefs change
+    if ((BIBport = CreateMsgPort()))
+    {
+        if ((nr = AllocMem(sizeof(struct NotifyRequest), MEMF_CLEAR)))
+        {
+            nr->nr_Name = BIB_PREFS;
+
+            D(bug("[IconBar] prefs filename: %s\n",nr->nr_Name));
+
+            nr->nr_Flags = NRF_SEND_MESSAGE;
+            nr->nr_stuff.nr_Signal.nr_Task = FindTask(NULL);
+            nr->nr_stuff.nr_Msg.nr_Port = BIBport;
+
+            if (StartNotify(nr) != DOSFALSE)
+            {
+                notification = TRUE;
+                NotifMask = 1L << BIBport->mp_SigBit;
+                D(bug("[IconBar] Notification started\n"));
+            }
+        }
+    }
+    if (Bar_Background)
+        LoadBackground();
+
+    if(Static)
+    {
+        Delay(Static * 50);
+        OpenMainWindow();
+        FirstOpening = FALSE;
+    }
+
+    // ---- main loop
+
+    while (BiB_Exit==FALSE)
+    {
+        if (Window_Open || MenuWindow_Open)
+        {
+            WindowSignal = Wait(WindowMask | MenuMask | CxSigMask | NotifMask);
+        }
+        else
+        {
+            Delay(50);
+            CheckMousePosition();
+            WindowSignal = 0;
+        }
+
+        if(WindowSignal & WindowMask)
+        {
+            while((KomIDCMP = GT_GetIMsg(Window_struct->UserPort)))
+            {
+                CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
+                GT_ReplyIMsg(KomIDCMP);
+                Decode_IDCMP(&KopiaIDCMP);
+            }
+
+            if(!(Static) && Window_Active == FALSE) CloseMainWindow();
+        }
+
+        if(WindowSignal & MenuMask)
+        {
+            while((KomIDCMP = GT_GetIMsg(MenuWindow_struct->UserPort)))
+            {
+                CopyMem(KomIDCMP, &KopiaIDCMP, sizeof(struct IntuiMessage));
+                GT_ReplyIMsg(KomIDCMP);
+                Decode_IDCMP2(&KopiaIDCMP);
+            }
+
+            if(MenuWindow_Open == FALSE) CloseMenuWindow();
+        }
+
+        if(WindowSignal & CxSigMask)
+        {
+            HandleCx();
+        }
+
+        if(WindowMask & NotifMask)
+        {
+            if (GetMsg(BIBport) != NULL)
+            {
+                D(bug("[IconBar] Prefs modified!\n"));
+                Reload_BiB();
+            }
+        }
+    } // ---- end of main loop
+
     D(bug("[IconBar] Quitting...\n"));
 
-    if (broker) DeleteCxObjAll(broker);
-    if (BrokerMP)
-    {
-        CxMsg *msg;
-        while ((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
-            ReplyMsg((struct Message *)msg);
-        DeletePort(BrokerMP);
-    }
-    if (rda) FreeArgs(rda);
-    if (dob) FreeDiskObject(dob);
-    return(result);
+    CleanExit(NULL);
+    return 0;
 }
 
 /*****************************************************************************/
@@ -1427,4 +1352,98 @@ static void Reload_BiB(void)
         OpenMainWindow();
         FirstOpening = FALSE;
     }            
+}
+
+void HandleCx(void)
+{
+    D(bug("[IconBar] Cx Signal received\n"));
+    CxMsg *msg;
+    ULONG msgid, msgtype;
+    while((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
+    {
+        msgid = CxMsgID(msg);
+        msgtype = CxMsgType(msg);
+        ReplyMsg((struct Message *)msg);
+
+        switch(msgtype)
+        {
+            case CXM_COMMAND:
+                switch(msgid)
+                {
+                    case CXCMD_DISABLE:
+                        D(bug("[IconBar] CXCMD_DISABLE\n"));
+                        ActivateCxObj(broker, 0L);
+                        break;
+                    case CXCMD_ENABLE:
+                        D(bug("[IconBar] CXCMD_ENABLE\n"));
+                        ActivateCxObj(broker, 1L);
+                        break;
+                    case CXCMD_KILL:
+                        D(bug("[IconBar] CXCMD_KILL\n"));
+                        BiB_Exit = TRUE;
+                        break;
+                    case CXCMD_UNIQUE:
+                        D(bug("[IconBar] CXCMD_UNIQUE\n"));
+                        BiB_Exit = TRUE;
+                        break;
+                    default:
+                        D(bug("[IconBar] Unknown msgid\n"));
+                        break;
+                }
+                break;
+            default:
+                D(bug("[IconBar] Unknown msgtype\n"));
+                break;
+        }
+    }
+}
+
+static void CleanExit(CONST_STRPTR msg)
+{
+    LONG retval = RETURN_OK;
+    int x;
+
+    if (msg)
+    {
+        PutStr(msg);
+        retval = RETURN_FAIL;
+    }
+
+    CloseMainWindow();
+
+    for(x=0; x<SUM_ICON; x++)
+    {
+        if(Icon[x] != NULL)
+        {
+            FreeDiskObject(Icon[x]);
+        }
+    }
+
+    if(BMP_Buffer)   FreeBitMap(BMP_Buffer);
+    if(BMP_DoubleBuffer) FreeBitMap(BMP_DoubleBuffer);
+
+    for(x=0; x<3; x++)
+    {
+        if(picture[x]) DisposeDTObject(picture[x]);
+    }
+
+    // Close notification of prefs change
+    if(notification)
+        EndNotify(nr);
+    if(nr)
+        FreeMem(nr, sizeof(struct NotifyRequest));
+    if(BIBport)
+        DeleteMsgPort(BIBport);
+
+    if (broker) DeleteCxObjAll(broker);
+    if (BrokerMP)
+    {
+        CxMsg *msg;
+        while ((msg = (CxMsg *)GetMsg(BrokerMP)) != NULL)
+            ReplyMsg((struct Message *)msg);
+        DeleteMsgPort(BrokerMP);
+    }
+    if (rda) FreeArgs(rda);
+    if (dob) FreeDiskObject(dob);
+    exit(retval);
 }
