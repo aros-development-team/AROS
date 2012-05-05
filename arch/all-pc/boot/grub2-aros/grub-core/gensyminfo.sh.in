@@ -22,13 +22,13 @@ modname=`echo $module | sed -e 's@\.module.*$@@'`
 
 # Print all symbols defined by module
 if test x@TARGET_APPLE_CC@ = x1; then
-    @NM@ -g -P -p $module | \
+    @TARGET_NM@ -g -P -p $module | \
 	grep -E '^[a-zA-Z0-9_]* [TDS]' | \
 	sed "s@^\([^ ]*\).*@defined $modname \1@g"
 else
-    @NM@ -g --defined-only -P -p $module | \
+    @TARGET_NM@ -g --defined-only -P -p $module | \
 	sed "s@^\([^ ]*\).*@defined $modname \1@g"
 fi
 
 # Print all undefined symbols used by module
-@NM@ -u -P -p $module | sed "s@^\([^ ]*\).*@undefined $modname \1@g"
+@TARGET_NM@ -u -P -p $module | sed "s@^\([^ ]*\).*@undefined $modname \1@g"

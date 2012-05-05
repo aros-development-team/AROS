@@ -717,6 +717,7 @@ TARGET_CCAS
 TARGET_CPP
 OBJCONV
 HOST_CC
+TARGET_NM
 TARGET_STRIP
 TARGET_RANLIB
 NM
@@ -1330,7 +1331,12 @@ LIBS
 CPPFLAGS
 YACC
 YFLAGS
+CC
+LDFLAGS
+LIBS
+CPPFLAGS
 CPP
+CPPFLAGS
 CCAS
 CCASFLAGS'
 
@@ -3036,7 +3042,7 @@ $as_echo "$as_me: loading site script $ac_site_file" >&6;}
       || { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "failed to load site script $ac_site_file
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
   fi
 done
 
@@ -3227,7 +3233,7 @@ fi
 $as_echo "$ac_cv_build" >&6; }
 case $ac_cv_build in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5 ;;
+*) as_fn_error $? "invalid value of canonical build" "$LINENO" 5;;
 esac
 build=$ac_cv_build
 ac_save_IFS=$IFS; IFS='-'
@@ -3260,7 +3266,7 @@ fi
 $as_echo "$ac_cv_host" >&6; }
 case $ac_cv_host in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5 ;;
+*) as_fn_error $? "invalid value of canonical host" "$LINENO" 5;;
 esac
 host=$ac_cv_host
 ac_save_IFS=$IFS; IFS='-'
@@ -3293,7 +3299,7 @@ fi
 $as_echo "$ac_cv_target" >&6; }
 case $ac_cv_target in
 *-*-*) ;;
-*) as_fn_error $? "invalid value of canonical target" "$LINENO" 5 ;;
+*) as_fn_error $? "invalid value of canonical target" "$LINENO" 5;;
 esac
 target=$ac_cv_target
 ac_save_IFS=$IFS; IFS='-'
@@ -3422,11 +3428,11 @@ am_lf='
 '
 case `pwd` in
   *[\\\"\#\$\&\'\`$am_lf]*)
-    as_fn_error $? "unsafe absolute working directory name" "$LINENO" 5 ;;
+    as_fn_error $? "unsafe absolute working directory name" "$LINENO" 5;;
 esac
 case $srcdir in
   *[\\\"\#\$\&\'\`$am_lf\ \	]*)
-    as_fn_error $? "unsafe srcdir value: \`$srcdir'" "$LINENO" 5 ;;
+    as_fn_error $? "unsafe srcdir value: \`$srcdir'" "$LINENO" 5;;
 esac
 
 # Do `set' in a subshell so we don't clobber the current shell's
@@ -3852,7 +3858,7 @@ if test "x$with_platform" = x; then
     powerpc64-*) platform=ieee1275 ;;
     sparc64-*) platform=ieee1275 ;;
     mips-*) platform=yeeloong ;;
-    *) as_fn_error $? "unsupported CPU: \"$target_cpu\"" "$LINENO" 5  ;;
+    *) as_fn_error $? "unsupported CPU: \"$target_cpu\"" "$LINENO" 5 ;;
   esac
 else
   platform="$with_platform"
@@ -3880,7 +3886,7 @@ case "$target_cpu"-"$platform" in
   mips-qemu-mips) ;;
   mips-yeeloong) ;;
   *-emu) ;;
-  *) as_fn_error $? "platform \"$platform\" is not supported for target CPU \"$target_cpu\"" "$LINENO" 5  ;;
+  *) as_fn_error $? "platform \"$platform\" is not supported for target CPU \"$target_cpu\"" "$LINENO" 5 ;;
 esac
 
 case "$target_cpu" in
@@ -4566,7 +4572,7 @@ fi
 test -z "$CC" && { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "no acceptable C compiler found in \$PATH
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 
 # Provide some information about the compiler.
 $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler version" >&5
@@ -4681,7 +4687,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "C compiler cannot create executables
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
@@ -4724,7 +4730,7 @@ else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot compute suffix of executables: cannot compile and link
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 rm -f conftest conftest$ac_cv_exeext
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_exeext" >&5
@@ -4783,7 +4789,7 @@ $as_echo "$ac_try_echo"; } >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot run C compiled programs.
 If you meant to cross compile, use \`--host'.
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
     fi
   fi
 fi
@@ -4835,7 +4841,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "cannot compute suffix of object files: cannot compile
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 rm -f conftest.$ac_cv_objext conftest.$ac_ext
 fi
@@ -5786,7 +5792,7 @@ fi
 test -z "$CC" && { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "no acceptable C compiler found in \$PATH
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 
 # Provide some information about the compiler.
 $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler version" >&5
@@ -6280,7 +6286,7 @@ else
   { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error $? "C preprocessor \"$CPP\" fails sanity check
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 ac_ext=c
@@ -9431,7 +9437,7 @@ $as_echo "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
      ;; #(
    *)
      as_fn_error $? "unknown endianness
- presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5  ;;
+ presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
  esac
 
 # The cast to long int works around a bug in the HP C Compiler
@@ -9450,7 +9456,7 @@ else
      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "cannot compute sizeof (void *)
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
    else
      ac_cv_sizeof_void_p=0
    fi
@@ -9483,7 +9489,7 @@ else
      { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
 $as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
 as_fn_error 77 "cannot compute sizeof (long)
-See \`config.log' for more details" "$LINENO" 5 ; }
+See \`config.log' for more details" "$LINENO" 5; }
    else
      ac_cv_sizeof_long=0
    fi
@@ -9770,7 +9776,7 @@ fi
 
   test -n "$BUILD_CC" && break
 done
-test -n "$BUILD_CC" || BUILD_CC="as_fn_error $? "none of gcc, egcs and cc is found. set BUILD_CC manually." "$LINENO" 5 "
+test -n "$BUILD_CC" || BUILD_CC="as_fn_error $? "none of gcc, egcs and cc is found. set BUILD_CC manually." "$LINENO" 5"
 
 
 # For gnulib.
@@ -19355,7 +19361,7 @@ fi
 done
 
   if test "x$ac_ct_TARGET_CC" = x; then
-    TARGET_CC="as_fn_error $? "none of gcc, egcs and cc is found. set TARGET_CC manually." "$LINENO" 5 "
+    TARGET_CC="as_fn_error $? "none of gcc, egcs and cc is found. set TARGET_CC manually." "$LINENO" 5"
   else
     case $cross_compiling:$ac_tool_warned in
 yes:)
@@ -19827,6 +19833,98 @@ else
   TARGET_STRIP="$ac_cv_prog_TARGET_STRIP"
 fi
 
+  if test -n "$ac_tool_prefix"; then
+  # Extract the first word of "${ac_tool_prefix}nm", so it can be a program name with args.
+set dummy ${ac_tool_prefix}nm; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_TARGET_NM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$TARGET_NM"; then
+  ac_cv_prog_TARGET_NM="$TARGET_NM" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_TARGET_NM="${ac_tool_prefix}nm"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+TARGET_NM=$ac_cv_prog_TARGET_NM
+if test -n "$TARGET_NM"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $TARGET_NM" >&5
+$as_echo "$TARGET_NM" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+if test -z "$ac_cv_prog_TARGET_NM"; then
+  ac_ct_TARGET_NM=$TARGET_NM
+  # Extract the first word of "nm", so it can be a program name with args.
+set dummy nm; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_TARGET_NM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_TARGET_NM"; then
+  ac_cv_prog_ac_ct_TARGET_NM="$ac_ct_TARGET_NM" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_TARGET_NM="nm"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_TARGET_NM=$ac_cv_prog_ac_ct_TARGET_NM
+if test -n "$ac_ct_TARGET_NM"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_TARGET_NM" >&5
+$as_echo "$ac_ct_TARGET_NM" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+  if test "x$ac_ct_TARGET_NM" = x; then
+    TARGET_NM=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    TARGET_NM=$ac_ct_TARGET_NM
+  fi
+else
+  TARGET_NM="$ac_cv_prog_TARGET_NM"
+fi
+
 
   ac_tool_prefix="$tmp_ac_tool_prefix"
 else
@@ -20112,10 +20210,14 @@ else
   NM="$ac_cv_prog_NM"
 fi
 
+  if test "x$TARGET_NM" = x; then
+    TARGET_NM=$NM
+  fi
   if test "x$TARGET_STRIP" = x; then
     TARGET_STRIP=$STRIP
   fi
 fi
+
 
 
 
@@ -23245,7 +23347,7 @@ do
     "stamp-h") CONFIG_FILES="$CONFIG_FILES stamp-h" ;;
     "config.h") CONFIG_FILES="$CONFIG_FILES config.h" ;;
 
-  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5 ;;
+  *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
 done
 
@@ -23564,7 +23666,7 @@ do
   esac
   case $ac_mode$ac_tag in
   :[FHL]*:*);;
-  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5 ;;
+  :L* | :C*:*) as_fn_error $? "invalid tag \`$ac_tag'" "$LINENO" 5;;
   :[FH]-) ac_tag=-:-;;
   :[FH]*) ac_tag=$ac_tag:$ac_tag.in;;
   esac
@@ -23592,7 +23694,7 @@ do
 	   [\\/$]*) false;;
 	   *) test -f "$srcdir/$ac_f" && ac_f="$srcdir/$ac_f";;
 	   esac ||
-	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5 ;;
+	   as_fn_error 1 "cannot find input file: \`$ac_f'" "$LINENO" 5;;
       esac
       case $ac_f in *\'*) ac_f=`$as_echo "$ac_f" | sed "s/'/'\\\\\\\\''/g"`;; esac
       as_fn_append ac_file_inputs " '$ac_f'"
@@ -23619,7 +23721,7 @@ $as_echo "$as_me: creating $ac_file" >&6;}
 
     case $ac_tag in
     *:-:* | *:-) cat >"$ac_tmp/stdin" \
-      || as_fn_error $? "could not create $ac_file" "$LINENO" 5  ;;
+      || as_fn_error $? "could not create $ac_file" "$LINENO" 5 ;;
     esac
     ;;
   esac
