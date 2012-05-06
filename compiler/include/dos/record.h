@@ -24,7 +24,16 @@
 
 
 /* Structure as passed to LockRecords() and UnLockRecords(). */
-struct RecordLock
+struct RecordLock64
+{
+    BPTR  rec_FH;     /* (struct FileHandle *) The file to get the current
+                         record from. */
+    UQUAD rec_Offset; /* The offset, the current record should start. */
+    UQUAD rec_Length; /* The length of the current record. */
+    ULONG rec_Mode;   /* The mode od locking (see above). */
+};
+
+struct RecordLock32
 {
     BPTR  rec_FH;     /* (struct FileHandle *) The file to get the current
                          record from. */
@@ -32,5 +41,11 @@ struct RecordLock
     ULONG rec_Length; /* The length of the current record. */
     ULONG rec_Mode;   /* The mode od locking (see above). */
 };
+
+#if (__DOS64)
+#define RecordLock RecordLock64 
+#else
+#define RecordLock RecordLock32
+#endif
 
 #endif /* DOS_RECORD_H */

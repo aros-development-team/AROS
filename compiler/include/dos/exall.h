@@ -21,7 +21,29 @@
    specified, when calling ExAll(), this structure only consists of the fields
    ed_Name through ed_Size. Therefore you can use the ED_ definitions below
    as longword offsets into this structure. */
-struct ExAllData
+struct ExAllData64
+{
+    struct ExAllData * ed_Next;
+
+    UBYTE * ed_Name;     /* Name of the file. */
+    LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
+    UQUAD   ed_Size;     /* Size of file. */
+    ULONG   ed_Prot;     /* Protection bits. */
+
+    /* The following three fields are de facto an embedded datestamp
+       structure (see <dos/dos.h>), which describes the last modification
+       date. */
+    ULONG ed_Days;
+    ULONG ed_Mins;
+    ULONG ed_Ticks;
+
+    UBYTE * ed_Comment;  /* The file comment. */
+
+    UWORD ed_OwnerUID; /* The owner ID. */
+    UWORD ed_OwnerGID; /* The group-owner ID. */
+};
+
+struct ExAllData32
 {
     struct ExAllData * ed_Next;
 
@@ -42,6 +64,12 @@ struct ExAllData
     UWORD ed_OwnerUID; /* The owner ID. */
     UWORD ed_OwnerGID; /* The group-owner ID. */
 };
+
+#if (__DOS64)
+#define ExAllData ExAllData64
+#else
+#define ExAllData ExAllData32
+#endif
 
 /* Type argument for ExAll(). Each number includes the information of all
    lower numbers, too. If you specify for example ED_SIZE, you will get
