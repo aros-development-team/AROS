@@ -23,7 +23,7 @@
    as longword offsets into this structure. */
 struct ExAllData64
 {
-    struct ExAllData * ed_Next;
+    struct ExAllData64 * ed_Next;
 
     UBYTE * ed_Name;     /* Name of the file. */
     LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
@@ -45,7 +45,7 @@ struct ExAllData64
 
 struct ExAllData32
 {
-    struct ExAllData * ed_Next;
+    struct ExAllData32 * ed_Next;
 
     UBYTE * ed_Name;     /* Name of the file. */
     LONG    ed_Type;     /* Type of file. See <dos/dosextens.h>. */
