@@ -68,7 +68,7 @@ struct FileInfoBlock64
     IPTR	     fib_DiskKey;
       /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
          the file described is a directory, otherwise it is a plain file. */
-    QUAD	     fib_DirEntryType;
+    LONG	     fib_DirEntryType;
       /* The filename.
        *
        *       User applications should always treat this as ASCIIZ.
