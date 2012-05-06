@@ -63,7 +63,35 @@ struct DateStamp
 /* Structure used to describe a directory entry. Note that not all fields
    are supported by all filesystems. This structure should be allocated
    with AllocDosObject(). */
-struct FileInfoBlock
+struct FileInfoBlock64
+{
+    IPTR	     fib_DiskKey;
+      /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
+         the file described is a directory, otherwise it is a plain file. */
+    QUAD	     fib_DirEntryType;
+      /* The filename.
+       *
+       *       User applications should always treat this as ASCIIZ.
+       *
+       * NOTE: This is created as a BCPL string in the ACTION_EXAMINE_*
+       *       filesystem handler code, but is converted to a C style
+       *       '\0'-terminated string by the Dos/Examine???() functions.
+       *
+       */
+    UBYTE	     fib_FileName[MAXFILENAMELENGTH];
+    LONG	     fib_Protection;   /* The protection bits (see below). */
+    LONG	     fib_EntryType;
+    UQUAD	     fib_Size;         /* The size of the file. */
+    UQUAD	     fib_NumBlocks;    /* Number of blocks used for file. */
+    struct DateStamp fib_Date;         /* Date of last change to file. */
+    /* The filecomment. Follows the same BSTR/CSTR rules as fib_FileName */
+    UBYTE	     fib_Comment[MAXCOMMENTLENGTH];
+    UWORD	     fib_OwnerUID;     /* UserID of fileowner. */
+    UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
+    UBYTE	     fib_Reserved[32]; /* PRIVATE */
+};
+
+struct FileInfoBlock32
 {
     IPTR	     fib_DiskKey;
       /* See <dos/dosextens.h> for definitions. Generally: if this is >= 0
@@ -90,6 +118,12 @@ struct FileInfoBlock
     UWORD	     fib_OwnerGID;     /* GroupID of fileowner. */
     UBYTE	     fib_Reserved[32]; /* PRIVATE */
 };
+
+#if (__DOS64)
+#define FileInfoBlock FileInfoBlock64
+#else
+#define FileInfoBlock FileInfoBlock32
+#endif
 
 /* Protection bits for files (fib_Protection). */
 /* Flags for owner (they are active-low, i.e. not set means the action is
@@ -137,7 +171,20 @@ struct FileInfoBlock
  **********************************************************************/
 
 /* Structure used in Info(). Must be longword-aligned. */
-struct InfoData
+struct InfoData64
+{
+    LONG id_NumSoftErrors; /* Number of soft errors on device. */
+    LONG id_UnitNumber;    /* Unit number of device. */
+    LONG id_DiskState;     /* State the current volume is in (see below). */
+    UQUAD id_NumBlocks;     /* Number of blocks on device. */
+    UQUAD id_NumBlocksUsed; /* Number of blocks in use. */
+    LONG id_BytesPerBlock; /* Bytes per block. */
+    LONG id_DiskType;      /* Type of disk (see below). */
+    BPTR id_VolumeNode;
+    IPTR id_InUse;         /* Set, if device is in use. */
+};
+
+struct InfoData32
 {
     LONG id_NumSoftErrors; /* Number of soft errors on device. */
     LONG id_UnitNumber;    /* Unit number of device. */
@@ -149,6 +196,12 @@ struct InfoData
     BPTR id_VolumeNode;
     IPTR id_InUse;         /* Set, if device is in use. */
 };
+
+#if (__DOS64)
+#define InfoData InfoData64 
+#else
+#define InfoData InfoData32
+#endif
 
 /* id_DiskState */
 #define ID_WRITE_PROTECTED 80 /* Volume is write-protected. */
