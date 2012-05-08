@@ -5,13 +5,6 @@
 
 //#define DEBUG 1
 
-#ifdef AROS_USB30_CODE
-#undef DEBUG
-#undef DB_LEVEL
-#define DEBUG 1
-#define DB_LEVEL 1000
-#endif
-
 #include <proto/debug.h>
 
 // DEBUG 0 should equal undefined DEBUG
