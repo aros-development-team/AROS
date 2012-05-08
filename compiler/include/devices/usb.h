@@ -39,11 +39,6 @@
 #define USR_SET_INTERFACE     0x0b
 #define USR_SYNCH_FRAME       0x0c
 
-#ifdef AROS_USB30_CODE
-#define USR_SET_SEL           0x30
-#define USR_SET_ISOCH_DELAY   0x31
-#endif
-
 /* Usb Standard Feature Selectors */
 #define UFS_DEVICE_REMOTE_WAKEUP  0x01 /* Recipient: Device */
 #define UFS_ENDPOINT_HALT         0x00 /* Recipient: Endpoint */

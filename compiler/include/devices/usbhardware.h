@@ -117,33 +117,6 @@ struct IOUsbHWBufferReq
 #define UHDIR_IN         2  /* This is a device to host transfer */
 
 /* Definitions for iouh_Flags */
-#ifdef AROS_USB30_CODE
-#define UHFB_LOWSPEED      0  /* Device operates at low speed */
-#define UHFB_HIGHSPEED     1  /* Device operates at high speed (USB 2.0) */
-#define UHFB_SUPERSPEED    2  /* Device operates at super speed (USB 3.0) */
-#define UHFB_NOSHORTPKT    3  /* Inhibit sending of a short packet at the end of a transfer (if possible) */
-#define UHFB_NAKTIMEOUT    4  /* Allow the request to time-out after the given timeout value */
-#define UHFB_ALLOWRUNTPKTS 5  /* Receiving less data than expected will not cause an UHIOERR_RUNTPACKET */
-#define UHFB_SPLITTRANS    6  /* new for V2.0: Split transaction for Lowspeed/Fullspeed devices at USB2.0 hubs */
-#define UHFB_MULTI_1       7  /* new for V2.1: Number of transactions per microframe bit 0 */
-#define UHFB_MULTI_2       8  /* new for V2.1: Number of transactions per microframe bit 1 */
-#define UHFS_THINKTIME     9  /* new for V2.2: Bit times required at most for intertransaction gap on LS/FS */
-
-#define UHFF_LOWSPEED      (1<<UHFB_LOWSPEED)
-#define UHFF_HIGHSPEED     (1<<UHFB_HIGHSPEED)
-#define UHFF_SUPERSPEED    (1<<UHFB_SUPERSPEED)
-#define UHFF_NOSHORTPKT    (1<<UHFB_NOSHORTPKT)
-#define UHFF_NAKTIMEOUT    (1<<UHFB_NAKTIMEOUT)
-#define UHFF_ALLOWRUNTPKTS (1<<UHFB_ALLOWRUNTPKTS)
-#define UHFF_SPLITTRANS    (1<<UHFB_SPLITTRANS)
-#define UHFF_MULTI_1       (1<<UHFB_MULTI_1)
-#define UHFF_MULTI_2       (1<<UHFB_MULTI_2)
-#define UHFF_MULTI_3       ((1<<UHFB_MULTI_1)|(1<<UHFB_MULTI_2))
-#define UHFF_THINKTIME_8   (0<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_16  (1<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_24  (2<<UHFS_THINKTIME)
-#define UHFF_THINKTIME_32  (3<<UHFS_THINKTIME)
-#else
 #define UHFB_LOWSPEED      0  /* Device operates at low speed */
 #define UHFB_HIGHSPEED     1  /* Device operates at high speed (USB 2.0) */
 #define UHFB_NOSHORTPKT    2  /* Inhibit sending of a short packet at the end of a transfer (if possible) */
@@ -167,7 +140,6 @@ struct IOUsbHWBufferReq
 #define UHFF_THINKTIME_16  (1<<UHFS_THINKTIME)
 #define UHFF_THINKTIME_24  (2<<UHFS_THINKTIME)
 #define UHFF_THINKTIME_32  (3<<UHFS_THINKTIME)
-#endif
 
 /* Tags for UHCMD_QUERYDEVICE */
 
@@ -183,19 +155,6 @@ struct IOUsbHWBufferReq
 #define UHA_Capabilities   (UHA_Dummy + 0x21)
 
 /* Capabilities as returned by UHA_Capabities */
-#ifdef AROS_USB30_CODE
-#define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed */
-#define UHCB_USB30         1 /* Host controller supports USB 3.0 SuperSpeed */
-#define UHCB_ISO           2 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER) */
-#define UHCB_RT_ISO        3 /* Host controller driver supports real time ISO transfers (UHCMD_ADDISOHANDLER) */
-#define UHCB_QUICKIO       4 /* BeginIO()/AbortIO() may be called from interrupts for less overhead */
-
-#define UHCF_USB20         (1<<UHCB_USB20)
-#define UHCF_USB30         (1<<UHCB_USB30)
-#define UHCF_ISO           (1<<UHCB_ISO)
-#define UHCF_RT_ISO        (1<<UHCB_RT_ISO)
-#define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
-#else
 #define UHCB_USB20         0 /* Host controller supports USB 2.0 Highspeed */
 #define UHCB_ISO           1 /* Host controller driver supports ISO transfers (UHCMD_ISOXFER) */
 #define UHCB_RT_ISO        2 /* Host controller driver supports real time ISO transfers (UHCMD_ADDISOHANDLER) */
@@ -205,7 +164,6 @@ struct IOUsbHWBufferReq
 #define UHCF_ISO           (1<<UHCB_ISO)
 #define UHCF_RT_ISO        (1<<UHCB_RT_ISO)
 #define UHCF_QUICKIO       (1<<UHCB_QUICKIO)
-#endif
 
 /* Definitions for UHA_State/iouh_State */
 
