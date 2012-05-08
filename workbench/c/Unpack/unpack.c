@@ -70,6 +70,7 @@
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
+struct Library *BZ2Base;
 
 AROS_SH2
 (
@@ -89,6 +90,7 @@ AROS_SH2
 
     IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 0 );
     GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 0 );
+    BZ2Base = OpenLibrary( "bz2.library", 0 );
     
     //Printf( "%s, %s\n", SHArg(FILE), SHArg(TO) );
     
@@ -110,6 +112,7 @@ cleanup:
     if( newDir != BNULL ) UnLock( newDir );
     if( pkg != NULL ) PKG_Close( pkg );
     
+    if( BZ2Base != NULL ) CloseLibrary( BZ2Base );
     if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );
     if( GfxBase != NULL ) CloseLibrary( (struct Library *) GfxBase );
     

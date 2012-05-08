@@ -42,7 +42,8 @@
 #MM     workbench-libs-openurl \
 #MM     workbench-libs-popupmenu \
 #MM     workbench-libs-version \
-#MM     workbench-libs-identify
+#MM     workbench-libs-identify \
+#MM     workbench-libs-bz2
 
 #MM- includes-generate : \
 #MM     workbench-libs-amigaguide-includes \
@@ -79,4 +80,5 @@
 #MM     workbench-libs-muiscreen-includes \
 #MM     workbench-libs-openurl-includes \
 #MM     workbench-libs-popupmenu-includes \
-#MM     workbench-libs-identify-includes
+#MM     workbench-libs-identify-includes \
+#MM     workbench-libs-bz2-includes

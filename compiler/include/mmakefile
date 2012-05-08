@@ -38,7 +38,7 @@ INCSUBDIRS :=	aros				\
 		utility \
 		workbench
 
-INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp))
+INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)) $(wildcard *.h)
 ARCHINCDIR    := $(SRCDIR)/arch/$(CPU)-$(ARCH)/include/
 ARCH_INCLUDES := $(subst $(ARCHINCDIR),,$(foreach d,$(addprefix $(ARCHINCDIR),$(INCSUBDIRS)),$(wildcard $(d)/*.h) $(wildcard $(d)/*.hpp)))
 INCLUDES      := $(filter-out $(ARCH_INCLUDES),$(INCLUDES))

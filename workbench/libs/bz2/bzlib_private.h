@@ -8,8 +8,8 @@
    This file is part of bzip2/libbzip2, a program and library for
    lossless, block-sorting data compression.
 
-   bzip2/libbzip2 version 1.0.5 of 10 December 2007
-   Copyright (C) 1996-2007 Julian Seward <jseward@bzip.org>
+   bzip2/libbzip2 version 1.0.6 of 6 September 2010
+   Copyright (C) 1996-2010 Julian Seward <jseward@bzip.org>
 
    Please read the WARNING, DISCLAIMER and PATENTS sections in the 
    README file.
@@ -36,7 +36,7 @@
 
 /*-- General stuff. --*/
 
-#define BZ_VERSION  "1.0.5, 10-Dec-2007"
+#define BZ_VERSION  "1.0.6, 6-Sept-2010"
 
 typedef char            Char;
 typedef unsigned char   Bool;
@@ -90,11 +90,11 @@ extern void bz_internal_error ( int errcode );
    { if (!(cond)) bz_internal_error ( errcode ); }
 #define AssertD(cond,msg)                do { } while (0)
 #define VPrintf0(zf)                     do { } while (0)
-#define VPrintf1(zf,za1)                 do { (void)(za1); } while (0)
-#define VPrintf2(zf,za1,za2)             do { (void)(za1); (void)(za2); } while (0)
-#define VPrintf3(zf,za1,za2,za3)         do { (void)(za1); (void)(za2); (void)(za3); } while (0)
-#define VPrintf4(zf,za1,za2,za3,za4)     do { (void)(za1); (void)(za2); (void)(za3); (void)(za4); } while (0)
-#define VPrintf5(zf,za1,za2,za3,za4,za5) do { (void)(za1); (void)(za2); (void)(za3); (void)(za4); (void)(za5); } while (0)
+#define VPrintf1(zf,za1)                 do { } while (0)
+#define VPrintf2(zf,za1,za2)             do { } while (0)
+#define VPrintf3(zf,za1,za2,za3)         do { } while (0)
+#define VPrintf4(zf,za1,za2,za3,za4)     do { } while (0)
+#define VPrintf5(zf,za1,za2,za3,za4,za5) do { } while (0)
 
 #endif
 
