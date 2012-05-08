@@ -77,9 +77,6 @@ int main(int argc, char *argv[])
     IPTR devpowerdrain;
     IPTR devmaxpktsize0;
     IPTR devhubthinktime;
-#ifdef AROS_USB30_CODE
-    IPTR devissuperspeed;
-#endif
 
     struct List *cfgs;
     struct Node *pc;
@@ -174,9 +171,6 @@ int main(int argc, char *argv[])
                         DA_LangIDArray, &devlangarray,
                         DA_IsLowspeed, &devislowspeed,
                         DA_IsHighspeed, &devishighspeed,
-                        #ifdef AROS_USB30_CODE
-                        DA_IsSuperspeed, &devissuperspeed,
-                        #endif
                         DA_IsConnected, &devisconnected,
                         DA_NeedsSplitTrans, &devneedssplit,
                         DA_HasAddress, &devhasaddress,
@@ -242,11 +236,7 @@ int main(int argc, char *argv[])
                    devmanufact, devvendorid,
                    psdNumToStr(NTS_VENDORID, (LONG) devvendorid, "unknown"),
                    devserial, devusbvers,
-                    #ifdef AROS_USB30_CODE
-                   devislowspeed ? "lowspeed " : (devissuperspeed ? "superspeed " : (devishighspeed ? "highspeed " : "fullspeed ")),
-                    #else
                    devislowspeed ? "lowspeed " : (devishighspeed ? "highspeed " : "fullspeed "),
-                    #endif
                    devisconnected ? "connected " : "disconnected ",
                    devhasaddress ? "hasaddress " : "",
                    devhasdevdesc ? "hasdevdesc " : "",
