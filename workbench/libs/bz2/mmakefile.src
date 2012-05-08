@@ -1,0 +1,18 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-bz2-includes : \
+#MM     kernel-exec-includes includes-copy
+
+#MM- workbench-libs-bz2 : linklibs
+
+FILES := init-aros blocksort huffman crctable randtable  \
+         compress decompress bzlib malloc semaphores
+
+USER_CFLAGS := -DBZ_NO_STDIO
+
+%build_module mmake=workbench-libs-bz2 \
+    modname=bz2 modtype=library \
+    files=$(FILES) uselibs="rom"
+
+%common

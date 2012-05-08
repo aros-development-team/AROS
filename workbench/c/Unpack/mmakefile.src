@@ -9,11 +9,11 @@ EXEDIR      := $(AROS_C)
 USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 #MM- workbench-c : workbench-c-unpack
-#MM workbench-c-unpack : includes linklibs-bz2
+#MM workbench-c-unpack : includes linklibs workbench-libs-bz2
 
 %build_prog mmake=workbench-c-unpack \
     progname=Unpack targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="bz2_nostdio amiga arosc" \
+    files=$(FILES) uselibs="amiga arosc bz2" \
     usestartup=no
 
 %common
