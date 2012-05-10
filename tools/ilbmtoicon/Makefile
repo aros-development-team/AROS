@@ -26,16 +26,17 @@ endif
 ifeq ($(AROS_HOST_ARCH),mingw32)
     EXTRALIBS2 := -lws2_32
 endif
-ifneq ($(AROS_HOST_ARCH),linux)
-    # linking of i386 on x86_64 with -lz doesn't work
-    EXTRALIBS1 := -lz
-endif
+# linking of i386 on x86_64 doesn't work unless you make
+# sure to have the i386 build tools for your distribution
+# installed (including libz-dev:i386 and libpng-dev:i386
+# or their equivalents).
+EXTRALIBS1 := -lpng -lz
 
 all : $(ILBMTOICON) $(INFOINFO)
 
 $(ILBMTOICON) : ilbmtoicon.c
 	@$(ECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ -lpng $(EXTRALIBS1)
+	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@ $(EXTRALIBS1)
 	@$(HOST_STRIP) $@
 
 $(INFOINFO) : infoinfo.c
