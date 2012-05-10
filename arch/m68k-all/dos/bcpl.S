@@ -542,6 +542,16 @@ BCPL getvec         /*  74, LONG ^, lw_length */
     moveq	#1,%d1
     jsr		%a6@(114 * -6) /* Exec/AllocVec() */
     lsr.l	#2,%d0
+    tst.l       %d0     /* If the result is NULL... */
+    bne         1f
+    move.l      %a2,%d1
+    tst.l       %d1     /* And we have a GlobVec... */
+    bne         1f
+    move.l      %a2@(GV_DOSBase),%a6
+    move.l      103,%d1 /* ERRROR_NO_FREE_STORE */
+    jsr         %a6@(77 * -6) /* DOS/SetIoErr */
+    clr.l       %d0
+1:
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
