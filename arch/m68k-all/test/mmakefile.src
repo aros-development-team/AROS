@@ -1,0 +1,17 @@
+#   $Id$
+#
+#   Makefile for AROS m68k Test
+
+include $(TOP)/config/make.cfg
+
+EXEDIR := $(AROS_TESTS)
+
+FILES=bcpl_strings
+
+USER_CFLAGS = -I$(SRCDIR)/arch/m68k-all/dos
+
+%build_progs mmake=test-m68k \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    usestartup=no uselibs="rom"
+
+%common
