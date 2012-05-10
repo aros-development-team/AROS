@@ -159,6 +159,8 @@
                      leftEdge + Width + rect.MaxX - 1, topEdge + Height + rect.MaxY - 1);
     }
 
+    D(bug("[%s] Render %ldx%ld icon %p at %ldx%ld\n", __func__, Width, Height, icon, leftEdge, topEdge));
+
     if (ni)
     {
         struct NativeIconImage *image;
