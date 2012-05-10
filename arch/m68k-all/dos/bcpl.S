@@ -1788,8 +1788,9 @@ BCPL strcpy         /* 1cc, void, @src, @dest */
     move.l	%sp@+,%d2
     BRTS
 
-BCPL runCommand    /* 1e4, void, @codeseg, stacklongs, @cmdline, cmdlinelength */
+BCPL runCommand    /* 1e4, ULONG, @codeseg, stacklongs, @cmdline, cmdlinelength */
     movem.l     %a0-%a1/%a6,%sp@-
+    addq.l      #1,%d2
     lsl.l       #2,%d2
     lsl.l       #2,%d3
     move.l      %a2@(GV_DOSBase),%a6
