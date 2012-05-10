@@ -149,28 +149,46 @@ BCPL_\name:
 BCPLd sysRequest     /* -84, void, @line1, @line2, @line3 */
     BRTS
 
+    /* In-place conversion of BSTR to C string */
 BCPL toCStr          /* -80, char *, @string */
-    move.l  %d1,%d0
-    lsl.l   #2,%d0
-    addq.l  #1,%d0
+    movem.l     %a0-%a1,%sp@-
+    move.l      %d1,%d0
+    lsl.l       #2,%d0
+    addq.l      #1,%d0
+    move.l      %d0,%a0
+    clr.l       %d1
+    move.b      %a0@+,%d1
+    subq.l      #1,%d1
+    blt         1f
+0:  
+    move.b      %a0@+,%d2
+    move.b      %d2,%a0@(-2)
+    dbra        %d1,0b
+1:
+    move.b      #0,%a0@(-1)
+    movem.l     %sp@+,%a0-%a1
     BRTS
 
 BCPL toBSTR         /* -7c, void, &src, @dest */
-    movem.l	%d1-%d2,%sp@-
-    lsl.l	#2,%d2
-    move.l	%d2,%d0
-    addq.l	#1,%d2
-    clr.b	%a0@(%d0)
+    movem.l     %d1-%d2/%a0-%a1,%sp@-
+    lsl.l       #2,%d2
+    move.l      %d1,%a0
+    move.l      %d2,%a1
+    clr.l       %d2
+    tst.l       %d1
+    beq         1f      /* src == NULL */
 0:
-    move.b	%a0@(%d2),%a0@(%d1)
-    tst.b	%a0@(%d1)
-    beq		1f
-    addq.l	#1,%d1
-    addq.l	#1,%d2
-    addq.l	#2,%a0@(%d0)
-    jmp		0b
+    move.b      %a0@+,%d0
+    tst.b       %d0
+    beq         1f
+    addq.l      #1,%d2
+    tst.b       %d2
+    beq         1f
+    move.b      %d0,%a1@(%d2)
+    bra         0b
 1:
-    movem.l	%sp@+,%d1-%d2
+    move.b      %d2,%a1@
+    movem.l     %sp@+,%d1-%d2/%a0-%a1
     BRTS
 
 BCPL Execute        /* -6c, BOOL, &command, @input, @output */
