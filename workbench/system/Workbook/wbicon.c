@@ -56,6 +56,22 @@ void wbIcon_Update(Class *cl, Object *obj)
     w = (rect.MaxX - rect.MinX) + 1;
     h = (rect.MaxY - rect.MinY) + 1;
 
+    /* If the icon is outside of the bounds for this
+     * screen, ignore the position information
+     */
+    if ((my->Icon->do_CurrentX != NO_ICON_POSITION ||
+         my->Icon->do_CurrentY != NO_ICON_POSITION) && my->Screen) {
+        if ((my->Icon->do_CurrentX != NO_ICON_POSITION &&
+            (my->Icon->do_CurrentX < my->Screen->LeftEdge ||
+            (my->Icon->do_CurrentX > (my->Screen->LeftEdge + my->Screen->Width - w)))) ||
+            (my->Icon->do_CurrentY != NO_ICON_POSITION &&
+            (my->Icon->do_CurrentY < my->Screen->TopEdge ||
+            (my->Icon->do_CurrentY > (my->Screen->TopEdge + my->Screen->Height - h))))) {
+            my->Icon->do_CurrentY = NO_ICON_POSITION;
+            my->Icon->do_CurrentX = NO_ICON_POSITION;
+        }
+    }
+
     D(bug("%s: %dx%d @%d,%d (%s)\n", my->File, (int)w, (int)h, (WORD)my->Icon->do_CurrentX, (WORD)my->Icon->do_CurrentY, my->Label));
     SetAttrs(obj,
     	GA_Left, (my->Icon->do_CurrentX == NO_ICON_POSITION) ? ~0 : my->Icon->do_CurrentX,
