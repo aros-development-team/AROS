@@ -66,7 +66,7 @@ IPTR ClassListview__MUIM_HandleEvent(struct IClass *CLASS, Object *obj, struct M
     struct ClassListview_DATA        *data = INST_DATA(CLASS, obj);
     IPTR retval = MUI_EventHandlerRC_Eat;
 
-    if ((message->imsg) && (message->imsg->Class == IDCMP_RAWKEY) && (obj == XGET(_win(obj), MUIA_Window_ActiveObject)))
+    if ((message->imsg) && (message->imsg->Class == IDCMP_RAWKEY) && ((IPTR)obj == XGET(_win(obj), MUIA_Window_ActiveObject)))
     {
         switch(message->imsg->Code)
         {

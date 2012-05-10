@@ -134,10 +134,10 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *list = (Object*)GetTagData(MUIA_Listview_List, (IPTR)NULL, msg->ops_AttrList);
     IPTR  cyclechain = (IPTR)GetTagData(MUIA_CycleChain, (IPTR)0, msg->ops_AttrList);
     LONG entries = 0,first = 0,visible = 0;
-    if (!list) return NULL;
+    if (!list) return (IPTR)NULL;
 
     layout_hook = mui_alloc_struct(struct Hook);
-    if (!layout_hook) return NULL;
+    if (!layout_hook) return (IPTR)NULL;
 
     layout_hook->h_Entry = HookEntry;
     layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
@@ -159,7 +159,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!obj)
     {
         mui_free(layout_hook);
-        return NULL;
+        return (IPTR)NULL;
     }
 
     data = INST_DATA(cl, obj);
@@ -179,7 +179,7 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->noforward = FALSE;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem**)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
         switch (tag->ti_Tag)
         {
@@ -232,8 +232,7 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem        *tag;
-    const struct TagItem  *tags;
+    struct TagItem  *tag, *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
