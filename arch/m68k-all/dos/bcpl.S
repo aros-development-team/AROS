@@ -208,7 +208,11 @@ BCPL SetComment     /* -5c, BOOL, &name, &comment */
     movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
-BCPLd QueuePacket    /* -54, void */
+BCPL NoReqLoadSeg   /* -54, SegList ^, @name */
+    movem.l	%a0-%a1/%a6,%sp@-
+    move.l	%a2@(GV_DOSBase),%a6
+    jsr		%a6@(28 * -6)	/* DOS/NoReqLoadSeg() */
+    movem.l	%sp@+,%a0-%a1/%a6
     BRTS
 
 BCPL clearvec       /* -50, void, @buff, lw_length */

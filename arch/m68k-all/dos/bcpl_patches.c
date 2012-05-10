@@ -109,6 +109,36 @@ static BSTR LoadSeg_Check_SetPatch(BSTR segs, struct DosLibrary *DOSBase)
     return CreateSegList(SetPatch_noop);
 }
 
+static AROS_UFH2(BPTR, NoReqLoadSeg,
+    AROS_UFPA(BSTR, name, D1),
+    AROS_UFPA(struct DosLibrary *, DOSBase, A6))
+{
+    AROS_USERFUNC_INIT
+
+    BPTR ret = BNULL;
+
+    if (name != BNULL) {
+        struct Process *me = (struct Process *)FindTask(NULL);
+        int len = AROS_BSTR_strlen(name);
+        TEXT buff[len+1];
+        APTR oldWindowPtr;
+
+        CopyMem(buff, AROS_BSTR_ADDR(name), len);
+        buff[len] = 0;
+
+        oldWindowPtr = me->pr_WindowPtr;
+        me->pr_WindowPtr = (APTR)-1;
+        ret = LoadSeg(buff);
+        me->pr_WindowPtr = oldWindowPtr;
+    } else {
+        SetIoErr(ERROR_OBJECT_NOT_FOUND);
+    }
+
+    return ret;
+
+    AROS_USERFUNC_EXIT
+}
+
 AROS_UFH5(BPTR, LoadSeg_Check,
     AROS_UFPA(UBYTE*, name, D1),
     AROS_UFPA(BPTR, hunktable, D2),
@@ -207,6 +237,9 @@ static int PatchDOS(struct DosLibrary *dosbase)
 	*asmcall++ = 0x2200; // MOVE.L D0,D1
 	*asmcall++ = 0x4e75; // RTS
     }
+
+    /* NoReqLoadSeg() patch */
+    SetFunction((struct Library *)dosbase, 28, NoReqLoadSeg);
 
     /* LoadSeg() patch */
     func = (IPTR)__AROS_GETJUMPVEC(dosbase, 25)->vec;
