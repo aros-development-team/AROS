@@ -1,0 +1,17 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-expat-includes : \
+#MM     kernel-exec-includes includes-copy
+
+#MM- workbench-libs-expat : linklibs
+
+CFILES := init-aros xmlparse xmlrole xmltok malloc semaphores
+
+USER_CFLAGS :=
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+%build_module mmake=workbench-libs-expat modname=expat modtype=library \
+    files=$(CFILES) uselibs="rom"
+
+%common
