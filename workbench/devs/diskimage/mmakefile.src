@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-diskimage : workbench-devs-diskimage-expat workbench-devs-diskimage-bz2 \
-#MM  workbench-devs-diskimage-z workbench-devs-diskimage-prefs workbench-devs-diskimage-device \
+#MM- workbench-devs-diskimage : workbench-devs-diskimage-prefs workbench-devs-diskimage-device \
 #MM  workbench-devs-diskimage-gui workbench-devs-diskimage-mountdiskimage workbench-devs-diskimage-mounthdf \
 #MM  workbench-devs-diskimage-plugins
 
