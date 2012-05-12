@@ -1,17 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-diskimage : workbench-devs-diskimage-includes-libraries workbench-devs-diskimage-includes-devices workbench-devs-diskimage-includes
-
-FILES1 := expat.h bz2.h z.h
-%copy_files_q mmake=workbench-devs-diskimage-includes-libraries files=$(FILES1) src=libraries dst=$(AROS_INCLUDES)/libraries
+#MM- workbench-devs-diskimage : workbench-devs-diskimage-includes-devices workbench-devs-diskimage-includes
 
 FILES2 := diskimage.h
 %copy_files_q mmake=workbench-devs-diskimage-includes-devices files=$(FILES2) src=devices dst=$(AROS_INCLUDES)/devices
 
-FILES3 := clib/diskimage_protos.h clib/bz2_protos.h clib/expat_protos.h clib/z_protos.h \
-defines/expat.h defines/bz2.h /defines/diskimage.h defines/z.h \
-proto/expat.h proto/bz2.h proto/diskimage.h proto/z.h
+FILES3 := clib/diskimage_protos.h defines/diskimage.h proto/diskimage.h
 %copy_files_q mmake=workbench-devs-diskimage-includes files=$(FILES3) src=aros dst=$(AROS_INCLUDES)
 
 %common
