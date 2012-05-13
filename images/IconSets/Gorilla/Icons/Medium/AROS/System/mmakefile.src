@@ -3,10 +3,16 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy Shell \
-         DiskImageGUI
+ICONS := About FixFonts Format FTManager Themes SysMon WorkBook Snoopy Shell
+IMGS  := DiskImageGUI-1.png DiskImageGUI-2.png
+DSKIM := DiskImageGUI
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-system-clean
 #MM- iconset-Gorilla-icons-aros : iconset-Gorilla-icons-aros-system
+#MM  iconset-Gorilla-icons-aros-system : iconset-Gorilla-icons-aros-system-diskimage
+
 %build_icons mmake=iconset-Gorilla-icons-aros-system icons=$(ICONS) \
              dir=$(AROS_SYSTEM)
+
+%build_icons mmake=iconset-Gorilla-icons-aros-system-diskimage \
+             icons=$(DSKIM) dir=$(AROS_SYSTEM) image=$(IMGS)
