@@ -1,0 +1,196 @@
+## version $VER: diskimagegui.catalog 1.0 (09.05.2012)
+## language français
+## codeset 0
+;
+MSG_UNIT_LBL
+Unité
+; Unit
+;
+MSG_DEVICE_LBL
+Périphérique
+; Device
+;
+MSG_FILENAME_LBL
+Image disque
+; Disk Image
+;
+MSG_WRITEPROTECT_LBL
+WP
+; WP
+;
+MSG_NO_DISK
+Pas de disque
+; No disk present
+;
+MSG_APPDESCRIPTION
+Interface de diskimage.device
+; Control GUI for diskimage.device
+;
+MSG_PRIORITY_LBL
+Pri
+; Pri
+;
+MSG_PLUGIN_LBL
+Plugin
+; Plugin
+;
+MSG_PLUGIN_GAD
+Utiliser le plugin
+; Use plugin
+;
+MSG_AUTO_LBL
+(Auto)
+; (Auto)
+;
+MSG_WRITESUPPORT_LBL
+W
+; W
+;
+MSG_PROJECT_ABOUT
+A propos...
+; About...
+;
+MSG_PROJECT_HIDE
+Cacher
+; Hide
+;
+MSG_PROJECT_ICONIFY
+Iconifier
+; Iconify
+;
+MSG_PROJECT_SNAPSHOT
+Figer
+; Snapshot
+;
+MSG_PROJECT_QUIT
+Quitter
+; Quit
+;
+MSG_SETTINGS_MENU
+Préférences
+; Settings
+;
+MSG_SETTINGS_CHANGETEMPDIR
+Changer le répertoire temp...
+; Change temp directory...
+;
+MSG_SETTINGS_SAVE
+Sauver les préférences
+; Save settings
+;
+MSG_SETTINGS_PLUGINS
+Plugins...
+; Plugins...
+;
+MSG_PROJECT_CLOSE
+Fermer
+; Close
+;
+MSG_OK_GAD
+Ok
+; Ok
+;
+MSG_ABOUT_REQ
+%s version %ld.%ld\n\
+%s version %ld.%ld\n\n\
+Copyright © 2007-2010 Fredrik Wikstrom\n\
+Site Web : http://a500.org\n\
+E-mail : fredrik@a500.org
+; %s version %ld.%ld\n\
+; %s version %ld.%ld\n\n\
+; Copyright © 2007-2010 Fredrik Wikstrom\n\
+; Website: http://a500.org\n\
+; E-mail: fredrik@a500.org
+;
+MSG_ERROR
+Erreur
+; Error
+;
+MSG_NOAISS_REQ
+AISS Assignation non trouvée.\n\n\
+Télécharger et installer la dernière version\n\
+depuis ici : http://masonicons.de
+; AISS assign not found.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_OLDAISS_REQ
+AISS v%ld.%ld ou sup. requise.\n\n\
+Télécharger et installer la dernière version\n\
+depuis ici : http://masonicons.de
+; AISS v%ld.%ld or newer required.\n\n\
+; Download and install the latest version\n\
+; from here: http://masonicons.de
+;
+MSG_IMAGENOTFOUND_REQ
+Fichier image '%s' non trouvé
+; Image file '%s' not found.
+;
+MSG_CANCEL_GAD
+_Annuler
+; _Cancel
+;
+MSG_SAVE_GAD
+_Sauver
+; _Save
+;
+MSG_USE_GAD
+_Utiliser
+; _Use
+;
+MSG_INSERT_GAD
+Insérer
+; Insert
+;
+MSG_EJECT_GAD
+Ejecter
+; Eject
+;
+MSG_WRITEPROTECT_GAD
+Prot. en éccriture
+; Write Protect
+;
+MSG_REFRESH_GAD
+Rafraîchir
+; Refresh
+;
+MSG_PLUGINS_WND
+Plugins
+; Plugins
+;
+MSG_MAIN_WND
+%s : Raccourci clavier = <%s>
+; %s: Hot Key = <%s>
+;
+MSG_ABOUT_WND
+A propos - %s
+; About - %s
+;
+MSG_ERROR_WND
+Erreur - %s
+; Error - %s
+;
+MSG_SETDEVICETYPE_GAD
+Choisir le type de périph.
+; Set Device Type
+;
+MSG_SETDEVICETYPE_WND
+Unité : %ld - Type de périph.
+; Unit: %ld - Device Type
+;
+MSG_DEVICETYPE_GAD
+Type de périphérique
+; Device Type
+;
+MSG_DEVICETYPE_DIRECT_ACCESS
+Direct Access (paramètre par défaut)
+; Direct Access (Default setting)
+;
+MSG_DEVICETYPE_CDROM
+CD-ROM
+; CD-ROM
+;
+MSG_DEVICETYPE_OPTICAL_DISK
+Disque optique
+; Optical Disk
+;
