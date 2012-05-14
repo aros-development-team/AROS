@@ -1,0 +1,17 @@
+# $Id$
+# Makefile to make Serial prefs program.
+
+include $(TOP)/config/make.cfg
+
+FILES := main locale bibeditor prefs args misc
+
+EXEDIR      := $(AROSDIR)/Prefs
+
+#MM- workbench-prefs : workbench-prefs-iconbar
+#MM workbench-prefs-iconbar : includes linklibs workbench-prefs-iconbar-catalogs
+
+%build_prog mmake=workbench-prefs-iconbar \
+    progname=BoingIconBar targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+
+%common
