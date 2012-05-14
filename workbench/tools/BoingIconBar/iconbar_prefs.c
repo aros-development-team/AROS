@@ -41,13 +41,10 @@ const char version[] = "$VER: BoingIconBar Prefs 1.3 (14.05.2012) by Robert 'Phi
 #include <proto/icon.h>
 
 #include <exec/exec.h>
-
 #include <libraries/mui.h>
-
 #include <clib/alib_protos.h>
 
 #include <stdio.h>
-
 #include <string.h>
 
 #include "locale.h"
@@ -56,7 +53,7 @@ const char version[] = "$VER: BoingIconBar Prefs 1.3 (14.05.2012) by Robert 'Phi
 //#define  ADD_ID           40
 //#define SAVE_ID           41
 
-enum { ADD_DOCK = 40, DELETE_DOCK, ADD_PROGRAM, DELETE_PROGRAM, SAVE_PREFS, MAX };
+enum { ADD_DOCK = 40, DELETE_DOCK, ADD_PROGRAM, DELETE_PROGRAM, SAVE_PREFS, MAX_BUTTON };
 
 #define MAX_PROGRAMS    20
 #define MAX_DOCS        10
@@ -65,8 +62,8 @@ enum { ADD_DOCK = 40, DELETE_DOCK, ADD_PROGRAM, DELETE_PROGRAM, SAVE_PREFS, MAX 
 static struct DiskObject *disko;
 
 typedef struct dock {
-char name[ 50 ];
-char programs[ MAX_PROGRAMS+1 ][ MAX_PATH ];
+    char name[ 50 ];
+    char programs[ MAX_PROGRAMS+1 ][ MAX_PATH ];
 }dock;
 
 static dock docs[ MAX_DOCS ];
@@ -91,18 +88,6 @@ static void initTable( char *name )
     loadList( name );
 }
 
-static void deleteTable( char *name )
-{
-    int i,j;
-    
-    for( i=0 ; i < MAX_DOCS ; i++ )
-    {
-        for( j=0; j < MAX_PROGRAMS ; j++ )
-        {
-            docs[ i ].programs[ j ][ 0 ] = 0;
-        }
-    }
-}
 
 ///
 /// Structures
@@ -116,8 +101,7 @@ extern struct Library *SysBase;
 ///
 /// Class data
 static BOOL running = TRUE;
-static int var;
-static Object *app, *win, *Dock, *Programs, *S_Dock;
+static Object *app, *win, *Dock_list, *Programs_list, *Dock_string, *Button[ MAX_BUTTON ];
 
 static Object* create_button(char *label, char control)
 {
@@ -138,20 +122,19 @@ static Object* create_button(char *label, char control)
 
     return obj;
 }
-Object *Baton[ MAX ];
 
 ///
 /// "MUIASL"
-static void add(void)
+static void add_program(void)
 {
     struct FileRequester *freq;
     STRPTR name = NULL;
-    int docsE = 0, docsS = 0;
+    int docs_count = 0, docs_selected = 0;
     
-    get( Dock, MUIA_List_Entries, &docsE );
-    get( Dock, MUIA_List_Active, &docsS );
+    get( Dock_list, MUIA_List_Entries, &docs_count );
+    get( Dock_list, MUIA_List_Active, &docs_selected );
     
-    if( docsE < 0 || docsE >= MAX_DOCS )
+    if( docs_count < 0 || docs_selected < 0 || docs_selected >= MAX_DOCS )
     {
         D(bug("[IconBarPrefs] Doc not selected , cannot create_docks program!\n"));
     }
@@ -171,7 +154,7 @@ static void add(void)
             {
                 int entries = 0;
 
-                get( Programs, MUIA_List_Entries, &entries );
+                get( Programs_list, MUIA_List_Entries, &entries );
 
                 if( entries < MAX_PROGRAMS )
                 {
@@ -179,8 +162,8 @@ static void add(void)
                     AddPart( name, freq->fr_File, MAX_PATH );
                     if (strchr( name, ':')) // only absolute paths can be added
                     {
-                        DoMethod(Programs, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
-                        strcpy( docs[ docsS ].programs[ entries ], name );
+                        DoMethod(Programs_list, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
+                        strcpy( docs[ docs_selected ].programs[ entries ], name );
                     }
                 }
                 FreeVec( name );
@@ -210,7 +193,7 @@ static long GUI (void)
                 Child, HGroup,
                     Child, VGroup,
                         Child, TextObject,    MUIA_Text_Contents, _(MSG_DOCK), End,
-                        Child, Dock = ListviewObject,
+                        Child, Dock_list = ListviewObject,
                             MUIA_Listview_List, ListObject,
                                 MUIA_Frame, MUIV_Frame_InputList,
                                 MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
@@ -218,15 +201,15 @@ static long GUI (void)
                             End,
                         End,
                         Child, HGroup,
-                        Child, Baton[ ADD_DOCK ] = create_button(_(MSG_ADD_DOCK),'1'),
-                                Child, Baton[ DELETE_DOCK ] = create_button(_(MSG_DEL_DOCK),'2'),
+                        Child, Button[ ADD_DOCK ] = create_button(_(MSG_ADD_DOCK),'1'),
+                                Child, Button[ DELETE_DOCK ] = create_button(_(MSG_DEL_DOCK),'2'),
                         End,
-                        Child, S_Dock = StringObject, MUIA_String_AdvanceOnCR, TRUE,StringFrame,End,
+                        Child, Dock_string = StringObject, MUIA_String_AdvanceOnCR, TRUE,StringFrame,End,
                         Child, TextObject, End,
                     End,
                     Child, VGroup,
                         Child, TextObject,    MUIA_Text_Contents, _(MSG_PROGRAMS),End,
-                        Child, Programs = ListviewObject,
+                        Child, Programs_list = ListviewObject,
                             MUIA_Listview_List, ListObject,
                                 MUIA_Frame, MUIV_Frame_InputList,
                                 MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
@@ -234,10 +217,10 @@ static long GUI (void)
                             End,
                         End,
                         Child, HGroup,
-                            Child, Baton[ ADD_PROGRAM ] = create_button(_(MSG_ADD_P),'4'),
-                            Child, Baton[ DELETE_PROGRAM ] = create_button(_(MSG_DEL_P),'5'),
+                            Child, Button[ ADD_PROGRAM ] = create_button(_(MSG_ADD_P),'4'),
+                            Child, Button[ DELETE_PROGRAM ] = create_button(_(MSG_DEL_P),'5'),
                         End,
-                        Child, Baton[ SAVE_PREFS ] = create_button(_(MSG_SAVE),'3'),
+                        Child, Button[ SAVE_PREFS ] = create_button(_(MSG_SAVE),'3'),
                     End,
                 End,
             End,
@@ -248,43 +231,6 @@ static long GUI (void)
 
 ///
 
-/// support functions
-static void load(void)
-{
-    int vartosc=0;
-    {
-        get(S_Dock, MUIA_String_Contents, &vartosc);
-        var=vartosc;
-    }
-}
-
-#if 0
-static void save(void)
-{
-    return;
-}
-#endif
-///
-
-///widelec
-
-/*nazwê doka + tablicê programów warto by³oby IMHO spi±æ w jak±¶ ³adn± strukturê*/
-
-static void create_docks(void)
-{
-    /*wrzuca doki na listê (ca³a tablica, a¿ do NULL
-      przy u¿yciu struktur mo¿na zamieniæ na MUIM_List_Insert_Single*/
-    //DoMethod(Dock, MUIM_List_Insert, docki,-1, MUIV_List_Insert_Bottom);
-}
-
-#if 0
-static void change_programs(void)
-{
-    //DoMethod(Programs, MUIM_List_Redraw, MUIV_List_Redraw_All); /* odrysuwuje listê, nie wiem czy niezbêdne ;-) */
-}
-#endif
-
-///
 
 /// Notifications
 static VOID notifications (void)
@@ -293,19 +239,19 @@ static VOID notifications (void)
     MUIV_EveryTime, app, 2, MUIM_Application_ReturnID,
     MUIV_Application_ReturnID_Quit);
 
-    DoMethod (Baton[5], MUIM_Notify, MUIA_Pressed, FALSE, (LONG)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod (Button[5], MUIM_Notify, MUIA_Pressed, FALSE, (LONG)app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod (Baton[ ADD_DOCK ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, ADD_DOCK );
+    DoMethod (Button[ ADD_DOCK ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, ADD_DOCK );
 
-    DoMethod (Baton[ DELETE_DOCK ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, DELETE_DOCK );
+    DoMethod (Button[ DELETE_DOCK ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, DELETE_DOCK );
 
-    DoMethod (Baton[ SAVE_PREFS ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, SAVE_PREFS );
+    DoMethod (Button[ SAVE_PREFS ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, SAVE_PREFS );
 
-    DoMethod (Baton[ ADD_PROGRAM ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, ADD_PROGRAM );
+    DoMethod (Button[ ADD_PROGRAM ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, ADD_PROGRAM );
 
-    DoMethod (Baton[ DELETE_PROGRAM ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, DELETE_PROGRAM );
+    DoMethod (Button[ DELETE_PROGRAM ], MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, DELETE_PROGRAM );
 
-    DoMethod (Dock, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, CURRENT_SELECTION);
+    DoMethod (Dock_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, CURRENT_SELECTION);
 }
 
 ///
@@ -332,14 +278,14 @@ static VOID mainloop (void)
                 char *ptr=NULL;
                 int ent=0;
 
-                get( Dock, MUIA_List_Entries, &ent );
+                get( Dock_list, MUIA_List_Entries, &ent );
 
-                get( S_Dock, MUIA_String_Contents, &ptr );
+                get( Dock_string, MUIA_String_Contents, &ptr );
 
                 if( ptr != NULL && strlen( ptr ) > 0 && ent < 11 )
                 {
                     int i;
-                    DoMethod(Dock, MUIM_List_InsertSingle, ptr, MUIV_List_Insert_Bottom);
+                    DoMethod(Dock_list, MUIM_List_InsertSingle, ptr, MUIV_List_Insert_Bottom);
                     strcpy( docs[ ent ].name, ptr );
 
                         for( i=0; i < MAX_PROGRAMS ; i++ )
@@ -347,7 +293,7 @@ static VOID mainloop (void)
                             docs[ ent ].programs[ i ][ 0 ] = 0;
                         }
 
-                    nnset( Dock, MUIA_List_Active, MUIV_List_Active_Bottom );
+                    nnset( Dock_list, MUIA_List_Active, MUIV_List_Active_Bottom );
                 }
             }
             break;
@@ -356,8 +302,8 @@ static VOID mainloop (void)
             {
                 int dact=0, dent=0;
 
-                get( Dock, MUIA_List_Active, &dact );
-                get( Dock, MUIA_List_Entries, &dent );
+                get( Dock_list, MUIA_List_Active, &dact );
+                get( Dock_list, MUIA_List_Entries, &dent );
 
                 if( dact >= 0 )
                 {
@@ -380,14 +326,14 @@ static VOID mainloop (void)
                             docs[ dent ].programs[ i ][ 0 ] = 0;
                         }
                     }
-                    DoMethod(Dock, MUIM_List_Remove, dact);
+                    DoMethod(Dock_list, MUIM_List_Remove, dact);
                 }
             }
             break;
 
             case ADD_PROGRAM:
             {
-                add();
+                add_program();
             }
             break;
 
@@ -396,9 +342,9 @@ static VOID mainloop (void)
                 int del=0, ent=0;
                 int dact=0;
 
-                get( Dock, MUIA_List_Active, &dact );
-                get( Programs, MUIA_List_Active, &del );
-                get( Programs, MUIA_List_Entries, &ent );
+                get( Dock_list, MUIA_List_Active, &dact );
+                get( Programs_list, MUIA_List_Active, &del );
+                get( Programs_list, MUIA_List_Entries, &ent );
 
                 if( del >= 0 )
                 {
@@ -414,7 +360,7 @@ static VOID mainloop (void)
                             docs[ dact ].programs[ i ][ 0 ] = 0;
                         }
                     }
-                    DoMethod(Programs, MUIM_List_Remove, MUIV_List_Remove_Selected);
+                    DoMethod(Programs_list, MUIM_List_Remove, MUIV_List_Remove_Selected);
                 }
             }
             break;
@@ -432,29 +378,29 @@ static VOID mainloop (void)
                 LONG numer_docka = 0;
                 int j;
 
-                get(Dock, MUIA_List_Active, &numer_docka);
+                get(Dock_list, MUIA_List_Active, &numer_docka);
 
                 if( numer_docka < 0 )
                 {
-                    DoMethod(Programs, MUIM_List_Clear, 0);
+                    DoMethod(Programs_list, MUIM_List_Clear, 0);
                     break;
                 }
 
-                set(Programs, MUIA_List_Quiet, TRUE);
+                set(Programs_list, MUIA_List_Quiet, TRUE);
 
-                DoMethod(Programs, MUIM_List_Clear, 0);
+                DoMethod(Programs_list, MUIM_List_Clear, 0);
 
                 for( j=0; j < MAX_PROGRAMS ; j++ )
                 {
                     if( docs[numer_docka].programs[ j ][ 0 ] != 0 )
                     {
-                        DoMethod(Programs, MUIM_List_InsertSingle,
+                        DoMethod(Programs_list, MUIM_List_InsertSingle,
                             docs[numer_docka].programs[ j ], MUIV_List_Insert_Bottom);  // programs to launch
                         // D(bug("[IconBar] doc %d changed to: \n", numer_docka,docs[numer_docka].programs[ j ] ));
                     }
                 }
 
-                set(Programs, MUIA_List_Quiet, FALSE); /*w³±cza od¶wie¿anie*/
+                set(Programs_list, MUIA_List_Quiet, FALSE); /*w³±cza od¶wie¿anie*/
             }
             break;
         }
@@ -463,7 +409,7 @@ static VOID mainloop (void)
         if (signals & SIGBREAKF_CTRL_C) running = FALSE;
         if (signals & SIGBREAKF_CTRL_F) running = FALSE;
     }
-    deleteTable( "ENV:iconbar.prefs" );
+    initTable( "ENV:iconbar.prefs" );
 
     SetAttrs (win, MUIA_Window_Open, FALSE, TAG_END);
     return;
@@ -490,8 +436,6 @@ int main (int argc, char **argv)
 
     if (GUI())
     {
-        create_docks();
-        load ();
         notifications ();
         mainloop ();
         MUI_DisposeObject (app);
@@ -573,7 +517,7 @@ static int loadList( char *name )
                     active++;
                     strcpy( docs[ active ].name, &buffer[ 1 ] );
                     entries = 0;
-                    DoMethod(Dock, MUIM_List_InsertSingle, &buffer[ 1 ], MUIV_List_Insert_Bottom );
+                    DoMethod(Dock_list, MUIM_List_InsertSingle, &buffer[ 1 ], MUIV_List_Insert_Bottom );
                     D(bug("[IconBarPrefs] %s buffer\n", &buffer[ 1 ] ));
                 }
                 else
