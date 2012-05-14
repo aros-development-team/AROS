@@ -17,7 +17,7 @@
 //                                                          //
 //////////////////////////////////////////////////////////////
 
-char version[] = "$VER: BoingIconBar Prefs 1.02 by Robert 'Phibrizzo' Krajcarz";
+const char version[] = "$VER: BoingIconBar Prefs 1.3 (14.05.2012) by Robert 'Phibrizzo' Krajcarz";
 
 /// "includes"
 
@@ -162,6 +162,7 @@ static void add(void)
           ASLFR_TitleText, _(MSG_ADD_P),
           ASLFR_DoPatterns, TRUE,
           ASLFR_RejectIcons, TRUE,
+          ASLFR_InitialDrawer, "SYS:",
           TAG_END))
         {
             ULONG namelen = strlen(freq->fr_File) + strlen(freq->fr_Drawer) + 4;
@@ -176,8 +177,11 @@ static void add(void)
                 {
                     strcpy( name, freq->fr_Drawer);
                     AddPart( name, freq->fr_File, MAX_PATH );
-                    DoMethod(Programs, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
-                    strcpy( docs[ docsS ].programs[ entries ], name );
+                    if (strchr( name, ':')) // only absolute paths can be added
+                    {
+                        DoMethod(Programs, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
+                        strcpy( docs[ docsS ].programs[ entries ], name );
+                    }
                 }
                 FreeVec( name );
             }
