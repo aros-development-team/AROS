@@ -1309,7 +1309,7 @@ static void Launch_Program(char *Program)
 static void Settings(void)
 {
     if (!OpenWorkbenchObject("PROGDIR:BIBPrefs", TAG_DONE))
-        OpenWorkbenchObject("SYS:Prefs/BIBPrefs", TAG_DONE);
+        OpenWorkbenchObject("SYS:Prefs/BoingIconBar", TAG_DONE);
 }
 
 static void Reload_BiB(void)
