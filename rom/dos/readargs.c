@@ -69,8 +69,10 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
         case '\n':
             seen_space = TRUE;
             break;
+        case '?':
+            break;
         default:
-            seen_question = FALSE;
+            seen_question = seen_space = FALSE;
         }
 
         switch (buff[i])
