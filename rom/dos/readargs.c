@@ -90,58 +90,58 @@ AROS_LH3(struct RDArgs *, ReadArgs,
          struct DosLibrary *, DOSBase, 133, Dos)
 
 /*  FUNCTION
-	Parses the commandline, a given string or Input() and fills
-	an argument array according to the options template given.
-	The array must be initialized to the wanted defaults before
-	each call to ReadArgs(). If the rdargs argument is NULL
-	ReadArgs() tries to parse the commandline and continues
-	on the input channel if it just consists of a single '?',
-	prompting the user for input.
+        Parses the commandline, a given string or Input() and fills
+        an argument array according to the options template given.
+        The array must be initialized to the wanted defaults before
+        each call to ReadArgs(). If the rdargs argument is NULL
+        ReadArgs() tries to parse the commandline and continues
+        on the input channel if it just consists of a single '?',
+        prompting the user for input.
 
     INPUTS
-	template - Template string. The template string is given as
-		   a number of options separated by ',' and modified
-		   by '/' modifiers, e.g. 'NAME,WIDTH/N,HEIGHT/N'
-		   means get a name string and two numbers (width and
-		   height). The possible modifiers are:
-		   /S Option is a switch. It may be either set or
-		      left out.
-		   /T Option is a boolean value. Requires an argument
-		      which may be "ON", "YES" (setting the respective
-		      argument to 1), "OFF" or "NO" (setting the
-		      respective argument to 0).
-		   /N Option is a number. Strings are not allowed.
-		      If the option is optional, a pointer to the
-		      actual number is returned. This is how you know
-		      if it was really given. The number is always of type
-		      LONG.
-		   /A Argument is required. If it is left out ReadArgs()
-		      fails.
-		   /K The keyword must be given when filling the option.
-		      Normally it's skipped.
-		   /M Multiple strings or, when used in combination with /N,
-		      numbers. The result is returned as an array of pointers
-		      to strings or LONGs, and is terminated with NULL. /M
-		      eats all strings that don't fit into any other option.
-		      If there are unfilled /A arguments after parsing they
-		      steal strings from /M. This makes it possible to, for
-		      example, write a Copy command template like
-		      'FROM/A/M,TO/A'. There may be only one /M option in a
-		      template.
-		   /F Eats the rest of the line even if there are option
-		      keywords in it.
-	array	 - Array to be filled with the result values. The array must
-		   be intialized to the default values before calling
-		   ReadArgs().
-	rdargs	 - An optional RDArgs structure determinating the type of
-		   input to process.
+        template - Template string. The template string is given as
+                   a number of options separated by ',' and modified
+                   by '/' modifiers, e.g. 'NAME,WIDTH/N,HEIGHT/N'
+                   means get a name string and two numbers (width and
+                   height). The possible modifiers are:
+                   /S Option is a switch. It may be either set or
+                      left out.
+                   /T Option is a boolean value. Requires an argument
+                      which may be "ON", "YES" (setting the respective
+                      argument to 1), "OFF" or "NO" (setting the
+                      respective argument to 0).
+                   /N Option is a number. Strings are not allowed.
+                      If the option is optional, a pointer to the
+                      actual number is returned. This is how you know
+                      if it was really given. The number is always of type
+                      LONG.
+                   /A Argument is required. If it is left out ReadArgs()
+                      fails.
+                   /K The keyword must be given when filling the option.
+                      Normally it's skipped.
+                   /M Multiple strings or, when used in combination with /N,
+                      numbers. The result is returned as an array of pointers
+                      to strings or LONGs, and is terminated with NULL. /M
+                      eats all strings that don't fit into any other option.
+                      If there are unfilled /A arguments after parsing they
+                      steal strings from /M. This makes it possible to, for
+                      example, write a Copy command template like
+                      'FROM/A/M,TO/A'. There may be only one /M option in a
+                      template.
+                   /F Eats the rest of the line even if there are option
+                      keywords in it.
+        array         - Array to be filled with the result values. The array must
+                   be intialized to the default values before calling
+                   ReadArgs().
+        rdargs         - An optional RDArgs structure determinating the type of
+                   input to process.
 
     RESULT
         A handle for the memory allocated by ReadArgs(). Must be freed
         with FreeArgs() later.
 
     SEE ALSO
-	FreeArgs(), Input()
+        FreeArgs(), Input()
 
 *****************************************************************************/
 {
@@ -163,7 +163,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     LONG it, item, chars;
     struct CSource lcs, *cs;
     BOOL is_file_not_buffer;
-    TEXT argbuff[256 + 1];	/* Maximum BCPL string length + injected \n + ASCIIZ */
+    TEXT argbuff[256 + 1];        /* Maximum BCPL string length + injected \n + ASCIIZ */
 
     ASSERT_VALID_PTR(template);
     ASSERT_VALID_PTR(array);
@@ -186,11 +186,11 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 #define KEYWORD  0x40           /* /K */
 #define MULTIPLE 0x20           /* /M */
 #define TYPEMASK 0x07
-#define NORMAL	 0x00           /* No option */
-#define SWITCH	 0x01           /* /S, implies /K */
-#define TOGGLE	 0x02           /* /T, implies /K */
+#define NORMAL         0x00           /* No option */
+#define SWITCH         0x01           /* /S, implies /K */
+#define TOGGLE         0x02           /* /T, implies /K */
 #define NUMERIC  0x03           /* /N */
-#define REST	 0x04           /* /F */
+#define REST         0x04           /* /F */
 
     /* Flags for each possible character. */
     static const UBYTE argflags[] =
@@ -228,32 +228,32 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     }
     else
     {
-    	BOOL notempty = TRUE;
-    	BPTR input = Input();
+            BOOL notempty = TRUE;
+            BPTR input = Input();
 
-    	D(bug("[ReadArgs] Input: 0x%p\n", input));
-    	is_file_not_buffer = TRUE;
+            D(bug("[ReadArgs] Input: 0x%p\n", input));
+            is_file_not_buffer = TRUE;
 
-	/*
-	 * Take arguments from input stream. They were injected there by either
-	 * runcommand.c or createnewproc.c (see vbuf_inject() routine).
-	 * This is described in Guru Book.
-	 */
-	argbuff[0] = 0;
+        /*
+         * Take arguments from input stream. They were injected there by either
+         * runcommand.c or createnewproc.c (see vbuf_inject() routine).
+         * This is described in Guru Book.
+         */
+        argbuff[0] = 0;
         lcs.CS_Buffer = &argbuff[0];
 
-	/*
-	 * Special kludge for interactive filehandles (i. e. CLI windows).
-	 * Read data only if filehandle's buffer is not empty. Otherwise
-	 * read will cause opening CLI window and waiting for user's input.
-	 * As a consequence we still can use ReadArgs() on input redirected
-	 * from a file, even if we are started from Workbench (hypothetical
-	 * situation).
-	 * This prevents opening a CLI window if the program was started from
-	 * Workbench and redirected its Input() and Output() to own window,
-	 * but still called ReadArgs() after redirection for some reason.
-	 * Streams redirection is widely used in AROS startup code.
-	 */
+        /*
+         * Special kludge for interactive filehandles (i. e. CLI windows).
+         * Read data only if filehandle's buffer is not empty. Otherwise
+         * read will cause opening CLI window and waiting for user's input.
+         * As a consequence we still can use ReadArgs() on input redirected
+         * from a file, even if we are started from Workbench (hypothetical
+         * situation).
+         * This prevents opening a CLI window if the program was started from
+         * Workbench and redirected its Input() and Output() to own window,
+         * but still called ReadArgs() after redirection for some reason.
+         * Streams redirection is widely used in AROS startup code.
+         */
         if (IsInteractive(input))
         {
             struct FileHandle *fh = BADDR(input);
@@ -262,15 +262,15 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         }
 
         if (notempty)
-	    FGets(input, lcs.CS_Buffer, sizeof(argbuff));
+            FGets(input, lcs.CS_Buffer, sizeof(argbuff));
 
-	D(bug("[ReadArgs] Line: %s\n", argbuff));
+        D(bug("[ReadArgs] Line: %s\n", argbuff));
 
         cs1 = lcs.CS_Buffer;
 
-	for (; *cs1 != '\0'; ++cs1);
+        for (; *cs1 != '\0'; ++cs1);
 
-	lcs.CS_Length = cs1 - lcs.CS_Buffer;
+        lcs.CS_Length = cs1 - lcs.CS_Buffer;
         lcs.CS_CurChr = 0;
 
         cs = &lcs;
@@ -319,9 +319,9 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
                 /* Prompt for more input */
 
-		D(bug("[ReadArgs] Only ? found\n"));
-		D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
-		D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
+                D(bug("[ReadArgs] Only ? found\n"));
+                D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
+                D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
 
                 if (FPuts(output, template) || FPuts(output, ": "))
                 {
@@ -334,92 +334,92 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 }
 
                 do {
-	                /* Read a line in. */
-	                c  = -1;
-	                for (;;)
-	                {
-	                    if (c == '\n')
-	                    {
-	                        iline[isize] = '\0'; /* end of string */
-	                        break;
-	                    }
-	                    if (isize >= ibuf)
-	                    {
-	                        /* Buffer too small. Get a new one. */
-	                        STRPTR newiline;
-	
-	                        ibuf += 256;
-	
-	                        newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
-	
-	                        if (newiline == NULL)
-	                        {
-	                            ERROR(ERROR_NO_FREE_STORE);
-	                        }
-	
-	                        if (iline != NULL)
-	                            CopyMemQuick(iline, newiline, isize);
-	
-	                        FreeVec(iline);
-	
-	                        iline = newiline;
-	                    }
-	
-	                    /* Read character */
-	                    if (is_file_not_buffer)
-	                    {
-	                        c = FGetC(input);
-	                    }
-	                    else
-	                    {
-	                        SetIoErr(0);
-	
-	                        if (cs->CS_CurChr >= cs->CS_Length)
-	                            c = EOF;
-	                        else
-	                            c = cs->CS_Buffer[cs->CS_CurChr++];
-	                    }
-	
-	                    /* Check and write it. */
-	                    if (c == EOF && me->pr_Result2)
-	                    {
-	                        ERROR(me->pr_Result2);
-	                    }
-	                
-	                    /* Fix short buffers to have a trailing '\n' */
-	                    if (c == EOF || c == '\0')
-	                        c = '\n';
-	
-	                    iline[isize++] = c;
-	                }
-	                iline[isize] = '\0'; /* end of string */
+                        /* Read a line in. */
+                        c  = -1;
+                        for (;;)
+                        {
+                            if (c == '\n')
+                            {
+                                iline[isize] = '\0'; /* end of string */
+                                break;
+                            }
+                            if (isize >= ibuf)
+                            {
+                                /* Buffer too small. Get a new one. */
+                                STRPTR newiline;
+        
+                                ibuf += 256;
+        
+                                newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
+        
+                                if (newiline == NULL)
+                                {
+                                    ERROR(ERROR_NO_FREE_STORE);
+                                }
+        
+                                if (iline != NULL)
+                                    CopyMemQuick(iline, newiline, isize);
+        
+                                FreeVec(iline);
+        
+                                iline = newiline;
+                            }
+        
+                            /* Read character */
+                            if (is_file_not_buffer)
+                            {
+                                c = FGetC(input);
+                            }
+                            else
+                            {
+                                SetIoErr(0);
+        
+                                if (cs->CS_CurChr >= cs->CS_Length)
+                                    c = EOF;
+                                else
+                                    c = cs->CS_Buffer[cs->CS_CurChr++];
+                            }
+        
+                            /* Check and write it. */
+                            if (c == EOF && me->pr_Result2)
+                            {
+                                ERROR(me->pr_Result2);
+                            }
+                        
+                            /* Fix short buffers to have a trailing '\n' */
+                            if (c == EOF || c == '\0')
+                                c = '\n';
+        
+                            iline[isize++] = c;
+                        }
+                        iline[isize] = '\0'; /* end of string */
 
-			D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
+                        D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
 
-	                /* if user entered single ? again or some string ending
-	                   with space and ? either display template again or
-	                   extended help if it's available */
-	                if (is_question(iline, isize))
-	                {
-	                    helpdisplayed = TRUE;
-	                	isize = 0;
-	                	if(rdargs->RDA_ExtHelp != NULL)
-		                {
-		                    if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
-		                        ERROR(me->pr_Result2);
-		                } 
-	                	else if (FPuts(output, template) || FPuts(output, ": "))
-	                    {
-	                        ERROR(me->pr_Result2);
-	                    }
+                        /* if user entered single ? again or some string ending
+                           with space and ? either display template again or
+                           extended help if it's available */
+                        if (is_question(iline, isize))
+                        {
+                            helpdisplayed = TRUE;
+                                isize = 0;
+                                if(rdargs->RDA_ExtHelp != NULL)
+                                {
+                                    if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
+                                        ERROR(me->pr_Result2);
+                                } 
+                                else if (FPuts(output, template) || FPuts(output, ": "))
+                            {
+                                ERROR(me->pr_Result2);
+                            }
 
-	                    if (!Flush(output))
-	                    {
-	                        ERROR(me->pr_Result2);
-	                    }
-	                }
-	                else 
-	                	helpdisplayed = FALSE;
+                            if (!Flush(output))
+                            {
+                                ERROR(me->pr_Result2);
+                            }
+                        }
+                        else 
+                                helpdisplayed = FALSE;
                 }
                 while(helpdisplayed);
 
@@ -484,7 +484,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         {
             UBYTE argc = ToUpper(*cs1);
             if (argc >= 'A' && argc <= 'Z')
-            	*s2 |= argflags[argc - 'A'];
+                    *s2 |= argflags[argc - 'A'];
         }
     }
 
@@ -525,17 +525,17 @@ AROS_LH3(struct RDArgs *, ReadArgs,
 
     #if 0 /* stegerg: if so a template of CLOSE/S,QUICK/S,COMMAND/F would
                       not work correctly if command line for example is
-		      "CLOSE QUICK" it would all end up being eaten by COMMAND/F
-		      argument */
-		      
+                      "CLOSE QUICK" it would all end up being eaten by COMMAND/F
+                      argument */
+                      
         /* If the current option is of type /F do not look for keywords */
         if ((flags[arg] & TYPEMASK) != REST)
     #endif
-    	
+            
         {
             /* Get item. Quoted items are never keywords. */
             it = READITEM(s1, strbuflen, cs);
-	    D(bug("[ReadArgs] Item %s type %d\n", s1, it));
+            D(bug("[ReadArgs] Item %s type %d\n", s1, it));
 
             if (it == ITEM_UNQUOTED)
             {
@@ -606,7 +606,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
              * we don't need to adjust it. Otherwise we duplicate last character of arguments line.
              */
             if (cs->CS_Buffer[cs->CS_CurChr] != '\n')
-            	cs->CS_CurChr--;
+                    cs->CS_CurChr--;
             s2 = &cs->CS_Buffer[cs->CS_CurChr];
            
             while (cs->CS_CurChr < cs->CS_Length && 
@@ -659,10 +659,10 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             multvec[multnum++] = s1;
 
             D(bug("[ReadArgs] %d: Multiple +\"%s\"\n", arg, s1));
-	    while (*s1++)
-		--strbuflen;
-	    /* Account for the \000 at the end. */
-	    --strbuflen;
+            while (*s1++)
+                --strbuflen;
+            /* Account for the \000 at the end. */
+            --strbuflen;
 
             /* /M takes more than one argument, so retry. */
             nextarg = arg;
@@ -680,14 +680,14 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             argbuf[arg] = s1;
             D(bug("[ReadArgs] %d: Normal: \"%s\"\n", arg, s1));
 
-	    while (*s1++)
-	        --strbuflen;
-	    /* Account for the \000 at the end. */
-	    --strbuflen;
+            while (*s1++)
+                --strbuflen;
+            /* Account for the \000 at the end. */
+            --strbuflen;
         }
 
-	if (cs->CS_CurChr >= cs->CS_Length)
-	    break; /* end of input */
+        if (cs->CS_CurChr >= cs->CS_Length)
+            break; /* end of input */
     }
 
     /* Unfilled /A options steal Arguments from /M */
@@ -923,8 +923,8 @@ AROS_LIBFUNC_EXIT
 char cmlargs[] = "TEST/A";
 
 char usage[] =
-	"This is exthelp for test\n"
-	"Enter something";
+        "This is exthelp for test\n"
+        "Enter something";
 
 #define CML_TEST 0
 #define CML_END  1
