@@ -542,9 +542,6 @@ ignore_undefined_symbols=""
 # Check for X11 by default
 need_x11="auto"
 
-# Leave at 'none' for no external toolchain
-kernel_tool_prefix="none"
-
 #-----------------------------------------------------------------------------
 
 #
@@ -688,12 +685,6 @@ aros_debug_aflags=""
 aros_debug_ldflags="$aros_symbols_debug"
 
 #-----------------------------------------------------------------------------
-#   Checking if we should build crosstools..
-AC_MSG_CHECKING([whether to build crosstools])
-AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--disable-crosstools],[Do not build cross-compiler toolchain]),crosstools="$enableval",crosstools="yes")
-AC_MSG_RESULT($crosstools)
-
-#-----------------------------------------------------------------------------
 #   Checking for distcc and ccache.
 #
 #   Always apply the transforms in this particular order. Basically you should
@@ -832,6 +823,10 @@ ios)
 esac
 
 #-----------------------------------------------------------------------------
+# External toolchains
+kernel_tool_prefix="none"
+aros_tool_prefix="none"
+elf_tool_prefix="${target_cpu}-elf-"
 
 # This is the target configuration switch.
 case "$target_os" in
@@ -1417,24 +1412,44 @@ case "$target_os" in
 esac
 
 #-----------------------------------------------------------------------------
-AC_MSG_CHECKING([where to install or search for cross tools binaries])
-AC_ARG_WITH(crosstools,AC_HELP_STRING([--with-crosstools=DIR],[Where to install or search for cross tools binaries]),with_crosstools=$withval,with_crosstools="default")
-if test "$with_crosstools" = "default"; then
-    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
-else
-    # Disable building crosstools if we are using an external set - otherwise
-    # we may attempt to overwrite them if the tools-crosstools target is made!
-    crosstools=no
-    AROS_CROSSTOOLSDIR="$with_crosstools"
-    PATH="$AROS_CROSSTOOLSDIR:$PATH"
-fi
-AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
+crosstools_guess=yes
 
-AC_MSG_CHECKING([Kernel tool prefix])
-AC_ARG_WITH(kernel-tool-prefix,AC_HELP_STRING([--with-kernel-tool-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"],[kernel_tool_prefix="$kernel_tool_prefix"])
+AC_MSG_CHECKING([Kernel toolchain prefix])
+AC_ARG_WITH(kernel-toolchain-prefix,AC_HELP_STRING([--with-kernel-toolchain-prefix=...],[Specify crosscompile toolchain prefix for kernel objects]),[kernel_tool_prefix="$withval"])
 AC_MSG_RESULT($kernel_tool_prefix)
 
-target_tool_prefix=${target_cpu}-aros-
+AC_MSG_CHECKING([ELF toolchain prefix])
+AC_ARG_WITH(elf-toolchain-prefix,AC_HELP_STRING([--with-elf-toolchain-prefix=...],[Specify crosscompile toolchain prefix to wrap for AROS objects]),[elf_tool_prefix="$withval"
+                                                 crosstools_guess=no])
+AC_MSG_RESULT($elf_tool_prefix)
+
+AC_MSG_CHECKING([AROS toolchain prefix])
+AC_ARG_WITH(aros-toolchain-prefix,AC_HELP_STRING([--with-aros-toolchain-prefix=...],[Specify prebuilt AROS toolchain]),[aros_tool_prefix="$withval"
+                crosstools_guess=no])
+AC_MSG_RESULT($aros_tool_prefix)
+
+#-----------------------------------------------------------------------------
+#   Checking if we should build crosstools..
+AC_MSG_CHECKING([whether to build crosstools])
+AC_ARG_ENABLE(crosstools,AC_HELP_STRING([--disable-crosstools],[Do not build cross-compiler toolchain]),crosstools="$enableval",crosstools="$crosstools_guess")
+AC_MSG_RESULT($crosstools)
+
+if test "${crosstools}" = "yes"; then
+    if test "${crosstools_guess}" = "no"; then
+        AC_MSG_ERROR([Cannot build external toolchain if an external ELF or AROS toolchain is specified])
+    fi
+
+    AC_MSG_CHECKING([where to install the crosstools binaries])
+    AC_ARG_WITH(aros-toolchain-install,AC_HELP_STRING([--with-aros-toolchain-install=DIR],[Where to install or search for cross tools binaries]),[aros_toolchain_install=$withval])
+    if test "x$aros_toolchain_install" = "x"; then
+        AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+    else
+        AROS_CROSSTOOLSDIR="$aros_toolchain_install"
+        PATH="$AROS_CROSSTOOLSDIR:$PATH"
+    fi
+    AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
+fi
+
 
 # Now process extra architecture-specific options.
 # Currently this is implemented only for ARM. We can specify which minimum CPU and FPU to use,\
@@ -1577,7 +1592,7 @@ fi
 #   crosstools             {yes,no}
 #   aros_gcc_version       {default,[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
-#   target_tool_prefix     ${target_cpu}-aros-
+#   aros_tool_prefix       ${target_cpu}-aros-
 #
 # The output is
 #   aros_kernel_{cpp,cc,ar,ld,as,ranlib,nm,strip}
@@ -1614,13 +1629,11 @@ fi
 #      fi
 #   fi
 #
+target_tool_prefix="${target_cpu}-aros-"
 
-AC_MSG_CHECKING([whether to use external toolchain])
+AC_MSG_CHECKING([which kernel tools])
 if test "$kernel_tool_prefix" = "none" ; then
-    AC_MSG_RESULT([no]);
-    if test "$crosstools" != "yes"; then
-        AC_MSG_ERROR([--disable-crosstools requires --with-kernel-tool-prefix= for this arch])
-    fi
+    AC_MSG_RESULT([target]);
     # We are building AROS crosstools, and no kernel
     # tools specified - assume target tools == kernel tools
     tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
@@ -1636,11 +1649,10 @@ if test "$kernel_tool_prefix" = "none" ; then
     aros_kernel_objcopy="${tmp_tool_prefix}objcopy"
     aros_kernel_objdump="${tmp_tool_prefix}objdump"
 else
-    AC_MSG_RESULT([yes]);
-    # Kernel tools specified - find them
+    AC_MSG_RESULT([$kernel_tool_prefix]);
+    # Kernel tools required - find them
     # Note that 'normally', aros_kernel_* overrides will
     # empty, unless specified in the per-arch sections above.
-
     AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
     AROS_REQUIRED(cpp,$aros_kernel_cpp)
     if test "x$aros_kernel_cc" = "x"; then
@@ -1697,56 +1709,36 @@ if test "$crosstools" = "yes"; then
     orig_target_objcopy="${tmp_tool_prefix}objcopy"
     orig_target_objdump="${tmp_tool_prefix}objdump"
 else
-    # We are *not* building AROS crosstools - use the kernel tools
-    # However some ports (Windows-hosted for example) can't use kernel tools
-    # to build AROS for sure. In this case we search for preinstalled AROS gcc
-    # CHECKME: Currently i set need_crosstools only for mingw target, however
-    # the same should be true for Android and Darwin ports.
-    if test "$need_crosstools" = "yes" ; then
-        AC_MSG_RESULT([$aros_target_cpu-aros])
-        AC_PATH_PROG(orig_target_cpp,"$aros_target_cpu-aros-cpp")
-        AC_PATH_PROG(orig_target_cc,"$aros_target_cpu-aros-gcc")
-        AC_PATH_PROG(orig_target_cxx,"$aros_target_cpu-aros-g++")
-        AC_PATH_PROG(orig_target_ld,"$aros_target_cpu-aros-ld")
-        AC_PATH_PROG(orig_target_as,"$aros_target_cpu-aros-as")
-        AC_PATH_PROG(orig_target_ar,"$aros_target_cpu-aros-ar")
-        AC_PATH_PROG(orig_target_ranlib,"$aros_target_cpu-aros-ranlib")
-        AC_PATH_PROG(orig_target_nm,"$aros_target_cpu-aros-nm")
-        AC_PATH_PROG(orig_target_strip,"$aros_target_cpu-aros-strip")
-        AC_PATH_PROG(orig_target_objcopy,"$aros_target_cpu-aros-objcopy")
-        AC_PATH_PROG(orig_target_objdump,"$aros_target_cpu-aros-objdump")
-        if test "$aros_gcc_version" != ""; then
-            orig_target_cpp="$orig_target_cpp-$aros_gcc_version"
-            orig_target_cc="$orig_target_cc-$aros_gcc_version"
-            orig_target_cxx="$orig_target_cxx-$aros_gcc_version"
-        fi
-    else
-        AC_MSG_RESULT([$kernel_tool_prefix])
-        orig_target_cpp="${aros_kernel_cpp}"
-        orig_target_cc="${aros_kernel_cc}"
-        orig_target_cxx="${aros_kernel_cxx}"
-        orig_target_ld="${aros_kernel_ld}"
-        orig_target_as="${aros_kernel_as}"
-        orig_target_ar="${aros_kernel_ar}"
-        orig_target_ranlib="${aros_kernel_ranlib}"
-        orig_target_nm="${aros_kernel_nm}"
-        orig_target_strip="${aros_kernel_strip}"
-        orig_target_objcopy="${aros_kernel_objcopy}"
-        orig_target_objdump="${aros_kernel_objdump}"
+    # Determine whether AROS or ELF tools should be used
+    if test "$aros_tool_prefix" = "none"; then
+        aros_tool_prefix="${elf_tool_prefix}"
     fi
 
+    AC_MSG_RESULT([$aros_tool_prefix])
+    # We are *not* building AROS crosstools - use the AROS or ELF tools
+    AROS_TOOL_TARGET(orig_target_cpp,cpp,${aros_tool_prefix}cpp)
     AROS_REQUIRED(cpp,$orig_target_cpp)
+    AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc)
     AROS_REQUIRED(cc,$orig_target_cc)
     if test "x$orig_target_cxx" != "x" ; then
+        AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++)
         AROS_REQUIRED(cxx,$orig_target_cxx)
     fi
+    AROS_TOOL_TARGET(orig_target_ld,gcc,${aros_tool_prefix}ld)
     AROS_REQUIRED(ld,$orig_target_ld)
+    AROS_TOOL_TARGET(orig_target_as,as,${aros_tool_prefix}as)
     AROS_REQUIRED(as,$orig_target_as)
+    AROS_TOOL_TARGET(orig_target_ar,ar,${aros_tool_prefix}ar)
     AROS_REQUIRED(ar,$orig_target_ar)
+    AROS_TOOL_TARGET(orig_target_ranlib,ar,${aros_tool_prefix}ranlib)
     AROS_REQUIRED(ranlib,$orig_target_ranlib)
+    AROS_TOOL_TARGET(orig_target_nm,nm,${aros_tool_prefix}nm)
     AROS_REQUIRED(nm,$orig_target_nm)
+    AROS_TOOL_TARGET(orig_target_strip,strip,${aros_tool_prefix}strip)
     AROS_REQUIRED(strip,$orig_target_strip)
+    AROS_TOOL_TARGET(orig_target_objcopy,objcopy,${aros_tool_prefix}objcopy)
     AROS_REQUIRED(objcopy,$orig_target_objcopy)
+    AROS_TOOL_TARGET(orig_target_objdump,objdump,${aros_tool_prefix}objdump)
     AROS_REQUIRED(objdump,$orig_target_objdump)
 fi
 
