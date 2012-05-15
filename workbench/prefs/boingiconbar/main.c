@@ -21,7 +21,7 @@
 #include "args.h"
 #include "prefs.h"
 
-/* #define DEBUG 1 */
+// #define DEBUG 1
 #include <aros/debug.h>
 
 #define VERSION "$VER: BIB 2.0 (14.05.2012) AROS Dev Team"

@@ -14,7 +14,7 @@
 
 #include <aros/macros.h>
 
-#define DEBUG 1
+// #define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
