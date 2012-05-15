@@ -29,11 +29,12 @@ struct BibEditor_DATA
     Object *dock_name_str;
     Object *program_lst, *add_program_btn, *del_program_btn;
     struct Hook add_dock_hook, del_dock_hook, change_dock_hook;
-    struct Hook add_program_hook, del_program_hook;
+    struct Hook add_program_hook, del_program_hook, change_program_hook;
 };
 
 STATIC VOID BibPrefs2Gadgets(struct BibEditor_DATA *data);
 STATIC VOID Gadgets2BibPrefs(struct BibEditor_DATA *data);
+STATIC CONST_STRPTR AllocExpandPath(CONST_STRPTR path, CONST_STRPTR file);
 
 /*** Macros *****************************************************************/
 #define SETUP_INST_DATA struct BibEditor_DATA *data = INST_DATA(CLASS, self)
@@ -151,6 +152,13 @@ AROS_UFH3S(void, change_dock_func,
                 MUIV_List_Insert_Bottom
             );
         }
+        SET(data->del_dock_btn, MUIA_Disabled, FALSE);
+        SET(data->add_program_btn, MUIA_Disabled, FALSE);
+    }
+    else
+    {
+        SET(data->del_dock_btn, MUIA_Disabled, TRUE);
+        SET(data->add_program_btn, MUIA_Disabled, TRUE);
     }
     SET(data->program_lst, MUIA_List_Quiet, FALSE);
 
@@ -169,13 +177,21 @@ AROS_UFH3S(void, add_program_func,
     struct BibEditor_DATA *data = h->h_Data;
 
     struct FileRequester *freq;
-    STRPTR name = NULL;
+    CONST_STRPTR name = NULL;
     
     LONG current_dock = XGET(data->dock_lst, MUIA_List_Active);
-    
+    LONG program_count = XGET(data->program_lst, MUIA_List_Entries);
+
     if (current_dock ==  MUIV_List_Active_Off)
     {
-        D(bug("[IconBarPrefs] Doc not selected , cannot create_docks program!\n"));
+        D(bug("[IconBarPrefs] Dock not selected, cannot add program!\n"));
+        return;
+    }
+
+    if (program_count >=  BIB_MAX_PROGRAMS)
+    {
+        D(bug("[IconBarPrefs] Too many programs in dock!\n"));
+        return;
     }
 
     if ((freq = AllocAslRequestTags(ASL_FileRequest, TAG_END)) != NULL)
@@ -193,22 +209,13 @@ AROS_UFH3S(void, add_program_func,
             )
         )
         {
-            ULONG namelen = strlen(freq->fr_File) + strlen(freq->fr_Drawer) + 4;
-
-            if ((name = AllocVec(namelen + 1, MEMF_ANY | MEMF_CLEAR)) != NULL)
+            if ((name = AllocExpandPath(freq->fr_Drawer, freq->fr_File)) != NULL)
             {
-                LONG program_count = XGET(data->program_lst, MUIA_List_Entries);
-
-                if (program_count < BIB_MAX_PROGRAMS - 1)
-                {
-                    strcpy(name, freq->fr_Drawer);
-                    AddPart(name, freq->fr_File, BIB_MAX_PATH);
-                    DoMethod(data->program_lst, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
-                    strcpy(bibprefs.docks[current_dock].programs[program_count], name);
-                    SET(obj, MUIA_PrefsEditor_Changed, TRUE);
-                }
-                FreeVec(name);
+                DoMethod(data->program_lst, MUIM_List_InsertSingle, name, MUIV_List_Insert_Bottom);
+                strcpy(bibprefs.docks[current_dock].programs[program_count], name);
+                SET(obj, MUIA_PrefsEditor_Changed, TRUE);
             }
+            FreeVec((APTR)name);
         }
         FreeAslRequest(freq);
     }
@@ -252,6 +259,31 @@ AROS_UFH3S(void, del_program_func,
         }
         DoMethod(data->program_lst, MUIM_List_Remove, MUIV_List_Remove_Selected);
         SET(obj, MUIA_PrefsEditor_Changed, TRUE);
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+AROS_UFH3S(void, change_program_func,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, obj, A2),
+    AROS_UFHA(APTR, msg, A1))
+{
+    AROS_USERFUNC_INIT
+
+    struct BibEditor_DATA *data = h->h_Data;
+
+    LONG current_program = XGET(data->program_lst, MUIA_List_Active);
+
+    D(bug("[change_dock_func] current_program %d\n", current_program));
+
+    if (current_program != MUIV_List_Active_Off)
+    {
+        SET(data->del_program_btn, MUIA_Disabled, FALSE);
+    }
+    else
+    {
+        SET(data->del_program_btn, MUIA_Disabled, TRUE);
     }
 
     AROS_USERFUNC_EXIT
@@ -340,6 +372,12 @@ Object *BibEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->add_program_hook.h_Data = data;
         data->del_program_hook.h_Entry = (HOOKFUNC)del_program_func;
         data->del_program_hook.h_Data = data;
+        data->change_program_hook.h_Entry = (HOOKFUNC)change_program_func;
+        data->change_program_hook.h_Data = data;
+
+        SET(data->del_dock_btn, MUIA_Disabled, TRUE);
+        SET(data->add_program_btn, MUIA_Disabled, TRUE);
+        SET(data->del_program_btn, MUIA_Disabled, TRUE);
 
         DoMethod
         (
@@ -371,6 +409,12 @@ Object *BibEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
             self, 2, MUIM_CallHook, &data->del_program_hook
         );
 
+        DoMethod
+        (
+            data->program_lst, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
+            self, 2, MUIM_CallHook, &data->change_program_hook
+        );
+
         BibPrefs2Gadgets(data);
     }
 
@@ -392,7 +436,7 @@ STATIC VOID Gadgets2BibPrefs (struct BibEditor_DATA *data)
  */
 STATIC VOID BibPrefs2Gadgets(struct BibEditor_DATA *data)
 {
-    LONG dock, program;
+    LONG dock;
 
     DoMethod(data->dock_lst, MUIM_List_Clear);
     DoMethod(data->program_lst, MUIM_List_Clear);
@@ -405,14 +449,31 @@ STATIC VOID BibPrefs2Gadgets(struct BibEditor_DATA *data)
             MUIM_List_InsertSingle, bibprefs.docks[dock].name, MUIV_List_Insert_Bottom
         );
     }
-    for (program = 0; bibprefs.docks[0].programs[program][0] != '\0'; program++)
+    SET(data->dock_lst, MUIA_List_Active, 0);
+}
+
+/* 
+ * combine path and file and expand it to an absolute path if necessary
+ */
+STATIC CONST_STRPTR AllocExpandPath(CONST_STRPTR path, CONST_STRPTR file)
+{
+    STRPTR result = NULL;
+    BPTR lock;
+
+    if ((result = AllocVec(BIB_MAX_PATH, MEMF_ANY | MEMF_CLEAR)) != NULL)
     {
-        DoMethod
-        (
-            data->program_lst,
-            MUIM_List_InsertSingle, bibprefs.docks[dock].programs[program], MUIV_List_Insert_Bottom
-        );
+        strlcpy(result, path, BIB_MAX_PATH);
+        AddPart(result, file, BIB_MAX_PATH);
+        if (strchr(result, ':') == NULL) // relative path
+        {
+            if ((lock = Lock(result, ACCESS_READ)) != NULL)
+            {
+                NameFromLock(lock, result, BIB_MAX_PATH);
+                UnLock(lock);
+            }
+        }
     }
+    return result;
 }
 
 IPTR BibEditor__MUIM_PrefsEditor_ImportFH (
