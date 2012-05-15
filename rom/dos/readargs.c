@@ -52,6 +52,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
     LONG i, j = 0;
     BOOL escaped       = FALSE,
          quoted        = FALSE,
+         seen_space    = FALSE,
          seen_question = FALSE;
 
     /* Reach end of line */
@@ -61,16 +62,16 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
          * question mark for it to lead to reprompting. BTW, AmigaOS allowed
          * only one space then... but do we need to be _that_ compatible?
          */
-        if (seen_question)
-            switch (buff[i])
-            {
-            case ' ':
-            case '\t':
-            case '\n':
-                break;
-            default:
-                seen_question = FALSE;
-            }
+        switch (buff[i])
+        {
+        case ' ':
+        case '\t':
+        case '\n':
+            seen_space = TRUE;
+            break;
+        default:
+            seen_question = FALSE;
+        }
 
         switch (buff[i])
         {
@@ -85,11 +86,15 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
         case '?':
             if (quoted)
                 escaped = FALSE;
-            else
+            else if (seen_space)
             {
                 seen_question = TRUE;
                 j = i;
             }
+            break;
+        case ' ':
+        case '\t':
+            escaped = FALSE;
             break;
         case EOF:
         case '\n':
@@ -98,7 +103,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
             else
                 return 0;
         default:
-            escaped = FALSE;
+            escaped = seen_space = FALSE;
         }
     }
     return 0;
