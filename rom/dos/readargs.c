@@ -7,6 +7,7 @@
     Lang: english
 */
 
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -43,36 +44,65 @@
      })
 
 /* Returns 0 if this is not a '?' line, otherwise
- * returns the length till after '\n' or buffsize
+ * returns the length between the '?' and the '\n'
  */
-static inline LONG is_question(STRPTR buff, LONG buffsize)
+
+static inline LONG is_question(BYTE * buff, LONG buffsize)
 {
-   BOOL seen_question = FALSE;
-   LONG i;
+    LONG i, j = 0;
+    BOOL escaped       = FALSE,
+         quoted        = FALSE,
+         seen_question = FALSE;
 
-   for (i = 0; i < buffsize; i++) {
-       switch (buff[i]) {
-       case ' ':
-       case '\t':
-           break;
-       case '?':
-           if (!seen_question)
-               seen_question = TRUE;
-           else
-               return 0;
-           break;
-       case '\n':
-           return (seen_question) ? (i + 1) : 0;
-       default:
-           return 0;
-       }
-   }
+    /* Reach end of line */
+    for (i = 0; i < buffsize; i++)
+    {
+        /* Only spaces and return are allowed at the end of the line after the
+         * question mark for it to lead to reprompting. BTW, AmigaOS allowed
+         * only one space then... but do we need to be _that_ compatible?
+         */
+        if (seen_question)
+            switch (buff[i])
+            {
+            case ' ':
+            case '\t':
+            case '\n':
+                break;
+            default:
+                seen_question = FALSE;
+            }
 
-   return (seen_question) ? buffsize : 0;
+        switch (buff[i])
+        {
+        case '*':
+            if (quoted)
+                escaped = !escaped;
+            break;
+        case '"':
+            if (!escaped)
+                quoted = !quoted;
+            break;
+        case '?':
+            if (quoted)
+                escaped = FALSE;
+            else
+            {
+                seen_question = TRUE;
+                j = i;
+            }
+            break;
+        case EOF:
+        case '\n':
+            if (seen_question)
+                return (i + 1 - j);
+            else
+                return 0;
+        default:
+            escaped = FALSE;
+        }
+    }
+    return 0;
 }
-
-
-
 
 /*****************************************************************************
 
@@ -160,7 +190,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     CONST_STRPTR cs1;
     STRPTR s1, s2, *newmult;
     ULONG arg, numargs, nextarg;
-    LONG it, item, chars;
+    LONG it, item, chars, delthis;
     struct CSource lcs, *cs;
     BOOL is_file_not_buffer;
     TEXT argbuff[256 + 1];        /* Maximum BCPL string length + injected \n + ASCIIZ */
@@ -228,11 +258,11 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     }
     else
     {
-            BOOL notempty = TRUE;
-            BPTR input = Input();
+        BOOL notempty = TRUE;
+        BPTR input = Input();
 
-            D(bug("[ReadArgs] Input: 0x%p\n", input));
-            is_file_not_buffer = TRUE;
+        D(bug("[ReadArgs] Input: 0x%p\n", input));
+        is_file_not_buffer = TRUE;
 
         /*
          * Take arguments from input stream. They were injected there by either
@@ -279,155 +309,129 @@ AROS_LH3(struct RDArgs *, ReadArgs,
     /* Check for optional reprompting */
     if (!(rdargs->RDA_Flags & RDAF_NOPROMPT))
     {
-        /* Check commandline for a single '?' */
-        cs1 = &cs->CS_Buffer[cs->CS_CurChr];
-
-        /* Skip leading whitespace */
-        while (cs->CS_CurChr < cs->CS_Length && (*cs1 == ' ' || *cs1 == '\t'))
+        if ((delthis = is_question(cs->CS_Buffer, cs->CS_Length)))
         {
-            cs1++;
-            cs->CS_CurChr++;
-        }
+            /* '?' was found on the commandline. */
+            BPTR input = Input();
+            BPTR output = Output();
+            ULONG isize = 0, ibuf = 0;
+            LONG c;
+            ULONG helpdisplayed = FALSE;
 
-        /* Check for '?' */
-        if (cs->CS_CurChr < cs->CS_Length && *cs1 == '?')
-        {
-            cs1++;
-            cs->CS_CurChr++;
+            /* Prompt for more input */
 
-            /* Skip whitespace */
-            while (cs->CS_CurChr < cs->CS_Length && (*cs1 == ' ' || *cs1 == '\t'))
+            D(bug("[ReadArgs] '?' found, %d chars to be removed\n", delthis));
+            D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
+            D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
+
+            if (FPuts(output, template) || FPuts(output, ": "))
             {
-                cs1++;
-                cs->CS_CurChr++;
+                ERROR(me->pr_Result2);
             }
 
-            /* Check for EOL */
-            if (*cs1 == '\n' || !*cs1)
+            if (!Flush(output))
             {
-                /* Only a single '?' on the commandline. */
-                BPTR input = Input();
-                BPTR output = Output();
-                ULONG isize = 0, ibuf = 0;
-                LONG c;
-                ULONG helpdisplayed = FALSE;
+                ERROR(me->pr_Result2);
+            }
 
-                if (cs->CS_CurChr < cs->CS_Length && *cs1 == '\n') {
-                    cs1++;
-                    cs->CS_CurChr++;
-                }
+            cs->CS_Length -= delthis;
+            isize = ibuf = cs->CS_Length;
+            iline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
+            CopyMemQuick(cs->CS_Buffer, iline, isize);
 
-                /* Prompt for more input */
-
-                D(bug("[ReadArgs] Only ? found\n"));
-                D(bug("[ReadArgs] rdargs=0x%p\n", rdargs));
-                D(if (rdargs) bug ("[ReadArds] rdargs->RDA_ExtHelp=0x%p\n", rdargs->RDA_ExtHelp);)
-
-                if (FPuts(output, template) || FPuts(output, ": "))
+            do
+            {
+                /* Read a line in. */
+                c  = -1;
+                for (;;)
                 {
-                    ERROR(me->pr_Result2);
-                }
-
-                if (!Flush(output))
-                {
-                    ERROR(me->pr_Result2);
-                }
-
-                do {
-                        /* Read a line in. */
-                        c  = -1;
-                        for (;;)
-                        {
-                            if (c == '\n')
-                            {
-                                iline[isize] = '\0'; /* end of string */
-                                break;
-                            }
-                            if (isize >= ibuf)
-                            {
-                                /* Buffer too small. Get a new one. */
-                                STRPTR newiline;
-        
-                                ibuf += 256;
-        
-                                newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
-        
-                                if (newiline == NULL)
-                                {
-                                    ERROR(ERROR_NO_FREE_STORE);
-                                }
-        
-                                if (iline != NULL)
-                                    CopyMemQuick(iline, newiline, isize);
-        
-                                FreeVec(iline);
-        
-                                iline = newiline;
-                            }
-        
-                            /* Read character */
-                            if (is_file_not_buffer)
-                            {
-                                c = FGetC(input);
-                            }
-                            else
-                            {
-                                SetIoErr(0);
-        
-                                if (cs->CS_CurChr >= cs->CS_Length)
-                                    c = EOF;
-                                else
-                                    c = cs->CS_Buffer[cs->CS_CurChr++];
-                            }
-        
-                            /* Check and write it. */
-                            if (c == EOF && me->pr_Result2)
-                            {
-                                ERROR(me->pr_Result2);
-                            }
-                        
-                            /* Fix short buffers to have a trailing '\n' */
-                            if (c == EOF || c == '\0')
-                                c = '\n';
-        
-                            iline[isize++] = c;
-                        }
+                    if (c == '\n')
+                    {
                         iline[isize] = '\0'; /* end of string */
+                        break;
+                    }
+                    if (isize >= ibuf)
+                    {
+                        /* Buffer too small. Get a new one. */
+                        STRPTR newiline;
 
-                        D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
+                        ibuf += 256;
 
-                        /* if user entered single ? again or some string ending
-                           with space and ? either display template again or
-                           extended help if it's available */
-                        if (is_question(iline, isize))
+                        newiline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
+                        if (newiline == NULL)
                         {
-                            helpdisplayed = TRUE;
-                                isize = 0;
-                                if(rdargs->RDA_ExtHelp != NULL)
-                                {
-                                    if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
-                                        ERROR(me->pr_Result2);
-                                } 
-                                else if (FPuts(output, template) || FPuts(output, ": "))
-                            {
-                                ERROR(me->pr_Result2);
-                            }
-
-                            if (!Flush(output))
-                            {
-                                ERROR(me->pr_Result2);
-                            }
+                            ERROR(ERROR_NO_FREE_STORE);
                         }
-                        else 
-                                helpdisplayed = FALSE;
-                }
-                while(helpdisplayed);
 
-                /* Prepare input source for new line. */
-                cs->CS_Buffer = iline;
-                cs->CS_Length = isize;
-                cs->CS_CurChr = 0;
-            }
+                        if (iline != NULL)
+                            CopyMemQuick(iline, newiline, isize);
+
+                        FreeVec(iline);
+
+                        iline = newiline;
+                    }
+
+                    /* Read character */
+                    if (is_file_not_buffer)
+                    {
+                        c = FGetC(input);
+                    }
+                    else
+                    {
+                        SetIoErr(0);
+
+                        if (cs->CS_CurChr >= cs->CS_Length)
+                            c = EOF;
+                        else
+                            c = cs->CS_Buffer[cs->CS_CurChr++];
+                    }
+
+                    /* Check and write it. */
+                    if (c == EOF && me->pr_Result2)
+                    {
+                        ERROR(me->pr_Result2);
+                    }
+                
+                    /* Fix short buffers to have a trailing '\n' */
+                    if (c == EOF || c == '\0')
+                        c = '\n';
+
+                    iline[isize++] = c;
+                }
+                iline[isize] = '\0'; /* end of string */
+
+                D(iline[isize] = 0; bug("[ReadArgs] Size %d, line: '%s'\n", isize, iline));
+
+                /* if user entered single ? again or some string ending
+                   with space and ? either display template again or
+                   extended help if it's available */
+                if ((delthis = is_question(iline, isize)))
+                {
+                    helpdisplayed = TRUE;
+                    isize -= delthis;
+                    if(rdargs->RDA_ExtHelp != NULL)
+                    {
+                        if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
+                            ERROR(me->pr_Result2);
+                    }
+                    else if (FPuts(output, template) || FPuts(output, ": "))
+                    {
+                        ERROR(me->pr_Result2);
+                    }
+
+                    if (!Flush(output))
+                    {
+                        ERROR(me->pr_Result2);
+                    }
+                }
+                else
+                    helpdisplayed = FALSE;
+            } while(helpdisplayed);
+
+            /* Prepare input source for new line. */
+            cs->CS_Buffer = iline;
+            cs->CS_Length = isize;
+            cs->CS_CurChr = 0;
         }
     }
 
@@ -606,16 +610,18 @@ AROS_LH3(struct RDArgs *, ReadArgs,
              * we don't need to adjust it. Otherwise we duplicate last character of arguments line.
              */
             if (cs->CS_Buffer[cs->CS_CurChr] != '\n')
-                    cs->CS_CurChr--;
+                cs->CS_CurChr--;
             s2 = &cs->CS_Buffer[cs->CS_CurChr];
            
             while (cs->CS_CurChr < cs->CS_Length && 
                    strbuflen > 1 &&
                    *s2 &&
-                   *s2 != '\n') {
+                   *s2 != '\n')
+            {
                 cs->CS_CurChr++;
 
-                if (eat_quote && *s2 == '"') {
+                if (eat_quote && *s2 == '"')
+                {
                     s2++;
                     eat_quote = FALSE;
                     continue;
