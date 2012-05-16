@@ -1,0 +1,25 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := elements outline
+EXEDIR          := $(AROS_TESTS)/expat
+
+#MM- test : test-expat
+#MM- test-quick : test-expat-quick
+
+#MM test-expat : includes linklibs workbench-libs-expat test-expat-copy
+
+%build_progs mmake=test-expat \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="arossupport amiga arosc m expat"
+
+#MM
+test-expat-copy : $(EXEDIR)/test.xml
+	$(NOP)
+
+$(EXEDIR)/test.xml : $(SRCDIR)/$(CURDIR)/test.xml
+	$(CP) $< $@
+
+%common
