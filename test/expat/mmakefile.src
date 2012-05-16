@@ -20,6 +20,7 @@ test-expat-copy : $(EXEDIR)/test.xml
 	$(NOP)
 
 $(EXEDIR)/test.xml : $(SRCDIR)/$(CURDIR)/test.xml
+	$(MKDIR) $(EXEDIR)
 	$(CP) $< $@
 
 %common
