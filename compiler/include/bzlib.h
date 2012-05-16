@@ -3,10 +3,10 @@
     $Id$
 */
 
-#ifndef _BZLIB_H
-#define _BZLIB_H
+#ifndef _BZLIB_AU_H
+#define _BZLIB_AU_H
 
-#include <libraries/bz2.h>
-#include <proto/bz2.h>
+#include <libraries/bz2_au.h>
+#include <proto/bz2_au.h>
 
-#endif /* _BZLIB_H */
+#endif /* _BZLIB_AU_H */

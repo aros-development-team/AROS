@@ -12,7 +12,7 @@ FILES := init-aros blocksort huffman crctable randtable  \
 USER_CFLAGS := -DBZ_NO_STDIO
 
 %build_module mmake=workbench-libs-bz2 \
-    modname=bz2 modtype=library \
-    files=$(FILES) uselibs="rom"
+    modname=bz2_au modtype=library \
+    files=$(FILES) uselibs="rom" linklibname="bz2"
 
 %common
