@@ -1,3 +1,6 @@
+#ifndef _AMILIB_H
+#define _AMILIB_H
+
 /* Copyright 2012 The AROS Development Team. All rights reserved.
 **
 ** Redistribution and use in source and binary forms, with or without
@@ -24,64 +27,12 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "support.h"
+#include <exec/libraries.h>
 
-#include <aros/symbolsets.h>
-#include LC_LIBDEFS_FILE
-
-#define DEBUG 1
-#include <aros/debug.h>
-
-IPTR aroscbase_offset;
-
-int malloc_init(void);
-void malloc_exit(void);
-
-void bz_internal_error (int errcode)
+struct BZ2Base
 {
-    Alert(errcode);
-}
-       
-static int InitFunc(LIBBASETYPEPTR LIBBASE)
-{
-    D(bug("Inside Init func of bz2.library\n"));
+   struct Library _lib;
+   struct Library *_aroscbase;
+};
 
-    aroscbase_offset = offsetof(LIBBASETYPE, _aroscbase);
-
-    if (malloc_init())
-    {
-        return TRUE;
-    }
-    return FALSE;
-}
-
-static int OpenFunc(LIBBASETYPEPTR LIBBASE)
-{
-   D(bug("Opening bz2.library\n"));
-
-   LIBBASE->_aroscbase = OpenLibrary("arosc.library", 0);
-
-   D(bug("[bz2.library::OpenLib] aroscbase=%p\n", LIBBASE->_aroscbase));
-
-   return LIBBASE->_aroscbase != NULL;
-}
-
-static int CloseFunc(LIBBASETYPEPTR LIBBASE)
-{
-   D(bug("Closing bz2.library\n"));
-
-   CloseLibrary(LIBBASE->_aroscbase);
-
-   return TRUE;
-}
-
-static int ExpungeFunc(LIBBASETYPEPTR LIBBASE)
-{
-    malloc_exit();
-    return TRUE;
-}
-
-ADD2INITLIB(InitFunc, 0);
-ADD2OPENLIB(OpenFunc, 0);
-ADD2CLOSELIB(CloseFunc, 0);
-ADD2EXPUNGELIB(ExpungeFunc, 0);
+#endif /* _AMILIB_H */

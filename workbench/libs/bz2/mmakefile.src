@@ -9,10 +9,10 @@ include $(TOP)/config/make.cfg
 FILES := init-aros blocksort huffman crctable randtable  \
          compress decompress bzlib malloc semaphores
 
-USER_CFLAGS := -DBZ_NO_STDIO
+USER_CFLAGS :=
 
 %build_module mmake=workbench-libs-bz2 \
     modname=bz2_au modtype=library \
-    files=$(FILES) uselibs="rom" linklibname="bz2"
+    files=$(FILES) uselibs="arosc_rel" linklibname="bz2"
 
 %common
