@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES   := iconbar
+FILES   := locale iconbar
 CPFILES := BiB_Eng.guide
 ENVFILE := Iconbar.prefs
 BIBGFX  := bibgfx
@@ -12,6 +12,7 @@ USER_CFLAGS := -fno-strict-aliasing
 
 #MM- workbench-tools : workbench-tools-iconbar
 #MM  workbench-tools-iconbar : includes linklibs \
+#MM  workbench-tools-iconbar-catalogs \
 #MM  workbench-tools-iconbar-gfx \
 #MM  workbench-tools-iconbar-files \
 #MM  workbench-tools-iconbar-env

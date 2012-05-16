@@ -60,6 +60,8 @@
 #include <devices/rawkeycodes.h>
 #include <dos/dos.h>
 
+#include "locale.h"
+
 #define SUM_ICON  200
 #define ICON_ACTIVE (1<<7)
 #define SELECTED_ICON (1<<6)
@@ -173,14 +175,7 @@ static struct Struct_BackgroundData
     int Height;  // height
 } BackgroundData[3];
 
-static struct NewBroker newbroker = {
-    NB_VERSION,
-    "BoingIconBar",     // string to identify this broker
-    "Icon Toolbar",
-    "Start Programs from Toolbar",
-    NBU_UNIQUE | NBU_NOTIFY,
-    0, 0, 0, 0
-};
+static struct NewBroker newbroker;
 
 static struct NotifyRequest *nr;
 static struct MsgPort *BIBport, *BrokerMP;
@@ -217,6 +212,12 @@ int main(int argc, char *argv[])
 
     struct IntuiMessage *KomIDCMP, KopiaIDCMP;
     BPTR   out = BNULL;
+
+    newbroker.nb_Version = NB_VERSION;
+    newbroker.nb_Name    = _(MSG_CX_NAME);     // string to identify this broker
+    newbroker.nb_Title   = _(MSG_CX_TITLE);
+    newbroker.nb_Descr   = _(MSG_CX_DESC);
+    newbroker.nb_Unique  = NBU_UNIQUE | NBU_NOTIFY;
 
     if ((BrokerMP = CreateMsgPort()) != NULL)
     {
@@ -508,7 +509,7 @@ static int ReadPrefs(void)
 
             CurrentLevel = 0;
 
-            sprintf(Levels_Struct[LevelCounter].Level_Name, "Settings");
+            sprintf(Levels_Struct[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels_Struct[LevelCounter].Level_Name);
 
             TextLenght = IntuiTextLength(&Names);
