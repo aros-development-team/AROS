@@ -1,9 +1,7 @@
-#ifndef LIBRARIES_EXPAT_H
-#define LIBRARIES_EXPAT_H
+#ifndef LIBRARIES_EXPAT_AU_H
+#define LIBRARIES_EXPAT_AU_H
 
-#ifndef STRING_H
-#include <string.h>
-#endif
+#include <stddef.h>
 
 typedef void *XML_Parser;
 typedef char XML_Char;
@@ -12,6 +10,8 @@ typedef unsigned char XML_Bool;
 
 #define XML_TRUE   ((XML_Bool) 1)
 #define XML_FALSE  ((XML_Bool) 0)
+
+#define XMLCALL
 
 enum XML_Error
 {
@@ -259,4 +259,4 @@ typedef int (*XML_UnknownEncodingHandler)(void 		 *encodingHandlerData,
                                           const XML_Char *name,
                                           XML_Encoding 	 *info);
 
-#endif /* LIBRARIES_EXPAT_H */
+#endif /* LIBRARIES_EXPAT_AU_H */

@@ -11,7 +11,7 @@ CFILES := init-aros xmlparse xmlrole xmltok malloc semaphores
 USER_CFLAGS :=
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
 
-%build_module mmake=workbench-libs-expat modname=expat modtype=library \
-    files=$(CFILES) uselibs="rom"
+%build_module mmake=workbench-libs-expat modname=expat_au modtype=library \
+    files=$(CFILES) uselibs="rom" linklibname=expat
 
 %common
