@@ -29,6 +29,12 @@ extern "C" {
 #define BZ_OUTBUFF_FULL      (-8)
 #define BZ_CONFIG_ERROR      (-9)
 
+
+#define BZ_MAX_UNUSED 5000
+
+typedef void BZFILE;
+
+
 typedef 
    struct {
       char *next_in;
