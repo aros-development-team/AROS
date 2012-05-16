@@ -52,7 +52,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
     LONG i, j = 0;
     BOOL escaped       = FALSE,
          quoted        = FALSE,
-         seen_space    = FALSE,
+         seen_space    = TRUE,
          seen_question = FALSE;
 
     /* Reach end of line */
