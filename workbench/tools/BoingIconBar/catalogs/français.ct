@@ -1,0 +1,21 @@
+## version $VER: BoingIconBar.catalog 1.0 (16.05.2012)
+## language français
+## codeset 0
+;
+;
+MSG_CX_NAME
+BoingIconBar
+;BoingIconBar
+;
+MSG_CX_TITLE
+Barre d'outils
+;Icon Toolbar
+;
+MSG_CX_DESC
+Barre d'outils lanceuse de programmes
+;Start Programs from Toolbar
+;
+MSG_MENU_SETTINGS (//)
+Préférences
+;Settings
+;
