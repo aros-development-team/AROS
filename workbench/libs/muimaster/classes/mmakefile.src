@@ -360,7 +360,7 @@ USER_LIBS   := amiga rom m mui
     modname=Pixmap modtype=mui files=pixmap \
     conffile=pixmap.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PIXMAP=0" \
-    uselibs="amiga rom m mui bz2"
+    uselibs="amiga rom m mui bz2 arosc"
 
 %common
 %include_deps
