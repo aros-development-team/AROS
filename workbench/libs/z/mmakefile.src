@@ -1,0 +1,19 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-z-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy
+
+FILES := init-aros adler32 crc32 deflate infback inffast inflate inftrees trees \
+         zutil compress uncompr gzclose gzlib gzread gzwrite \
+	 contrib/blast/blast contrib/infback9/infback9 contrib/infback9/inftree9
+
+USER_CFLAGS := -DSTDC -DAMIGA -DDYNAMIC_CRC_TABLE -DZ_HAVE_UNISTD_H
+
+%build_module mmake=workbench-libs-z \
+  modname=z_au modtype=library \
+  files=$(FILES) uselibs="arosc_rel" linklibname=z
+
+%common

@@ -30,7 +30,7 @@ FILES := \
     pngwtran \
     pngwutil
 
-#MM- linklibs-png : linklibs-png-stdio linklibs-png-nostdio
+#MM- linklibs-png : linklibs-png-stdio linklibs-png-nostdio workbench-libs-z
 #MM- linklibs-png-clean : linklibs-png-stdio-clean linklibs-png-nostdio-clean
 
 USER_INCLUDES	:= -I$(SRCDIR)/$(CURDIR)/include
