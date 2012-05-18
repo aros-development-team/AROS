@@ -48,11 +48,7 @@ static int InitFunc(LIBBASETYPEPTR LIBBASE)
 
     aroscbase_offset = offsetof(LIBBASETYPE, _aroscbase);
 
-    if (malloc_init())
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return TRUE;
 }
 
 static int OpenFunc(LIBBASETYPEPTR LIBBASE)
@@ -75,13 +71,6 @@ static int CloseFunc(LIBBASETYPEPTR LIBBASE)
    return TRUE;
 }
 
-static int ExpungeFunc(LIBBASETYPEPTR LIBBASE)
-{
-    malloc_exit();
-    return TRUE;
-}
-
 ADD2INITLIB(InitFunc, 0);
 ADD2OPENLIB(OpenFunc, 0);
 ADD2CLOSELIB(CloseFunc, 0);
-ADD2EXPUNGELIB(ExpungeFunc, 0);

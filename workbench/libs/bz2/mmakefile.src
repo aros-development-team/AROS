@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 #MM- workbench-libs-bz2 : linklibs
 
 FILES := init-aros blocksort huffman crctable randtable  \
-         compress decompress bzlib malloc semaphores
+         compress decompress bzlib
 
 USER_CFLAGS :=
 
