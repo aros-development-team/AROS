@@ -21,6 +21,8 @@ int main(int argc, char **argv)
 	    writeautoinit(cfg, 0); /* normal */
 	    writeautoinit(cfg, 1); /* relbase */
         }
+        writegetlibbase(cfg, 0); /* normal */
+        writegetlibbase(cfg, 1); /* relbase */
         if (cfg->options & OPTION_STUBS)
         {
             writestubs(cfg, 0); /* normal */
