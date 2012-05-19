@@ -30,7 +30,7 @@ void writegetlibbase(struct config *cfg, int is_rel)
     if (!is_rel)
     {
         fprintf(out,
-                "void *%s;\n"
+                "extern void *%s;\n"
                 "\n"
                 "void *%s_GetLibbase(void)\n"
                 "{\n"
@@ -46,7 +46,7 @@ void writegetlibbase(struct config *cfg, int is_rel)
         fprintf(out,
                 "#include <exec/types.h>\n"
                 "char *__GM_GetBase(void);\n"
-                "IPTR %s_offset;\n"
+                "extern IPTR %s_offset;\n"
                 "\n"
                 "void *%s_GetLibbase(void)\n"
                 "{\n"
