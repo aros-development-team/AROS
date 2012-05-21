@@ -94,7 +94,7 @@ main(int argc, char *argv[])
 
     if (XML_Parse(p, Buff, len, done) == XML_STATUS_ERROR) {
       fprintf(stderr, "Parse error at line %" XML_FMT_INT_MOD "u:\n%s\n",
-              XML_GetCurrentLineNumber(p),
+              (unsigned long)XML_GetCurrentLineNumber(p),
               XML_ErrorString(XML_GetErrorCode(p)));
       exit(-1);
     }

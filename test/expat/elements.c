@@ -56,7 +56,7 @@ main(int argc, char *argv[])
       fprintf(stderr,
               "%s at line %" XML_FMT_INT_MOD "u\n",
               XML_ErrorString(XML_GetErrorCode(parser)),
-              XML_GetCurrentLineNumber(parser));
+              (unsigned long)XML_GetCurrentLineNumber(parser));
       return 1;
     }
   } while (!done);
