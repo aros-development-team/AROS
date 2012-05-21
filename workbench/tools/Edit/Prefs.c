@@ -528,10 +528,8 @@ void setup_winpref( void )
 	if( !send_pref(&prefs, CMD_SHOW) )
 	{
 		JPPath[ sizeof(SYS_DIR PREF_DIR PREF_NAME)-1 ] = 0;
-		/* Search the preference editor in various places */
-		if( !(lock = (void *) Lock(path = JPPath+sizeof(SYS_DIR PREF_DIR)-1, SHARED_LOCK)) &&
-		    !(lock = (void *) Lock(path = JPPath+sizeof(SYS_DIR)-1,          SHARED_LOCK)) &&
-		    !(lock = (void *) Lock(path = JPPath,                            SHARED_LOCK)) )
+		/* Search the preference editor */
+		if( !(lock = (void *) Lock(path = JPPath, SHARED_LOCK)) )
 			/* But maybe it is in the path */
 			path = JPPath+sizeof(SYS_DIR PREF_DIR)-1;
 
