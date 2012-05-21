@@ -56,7 +56,7 @@ typedef struct prefs
 /** Command search to edit preference of editor **/
 #define	SYS_DIR        "SYS:"
 #define	PREF_DIR       "Prefs/"
-#define	PREF_NAME      "Edit"
+#define	PREF_NAME      "Editor"
 
 /** Character types to split words **/
 #define	ALPHA          0

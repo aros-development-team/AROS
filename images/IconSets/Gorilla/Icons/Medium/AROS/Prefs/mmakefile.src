@@ -4,7 +4,7 @@
 include $(TOP)/config/make.cfg
 
 ICONS := Time Locale Serial Presets Input IControl Font ReqTools Wanderer \
-         Zune ScreenMode AHI Edit Trackdisk PSI Network Trident OpenURL \
+         Zune ScreenMode AHI Editor Trackdisk PSI Network Trident OpenURL \
 		 Pointer Printer BoingIconBar
 
 #MM- iconset-Gorilla-icons-aros-clean : iconset-Gorilla-icons-aros-prefs-clean
