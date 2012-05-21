@@ -1,7 +1,7 @@
 # DataType Description for PREF file
 Name=PREF
-Version=$VER: PREF 41.0 (8.10.2006)
-BaseName=pref
+Version=$VER: PREF 41.1 (21.05.2012)
+BaseName=binary
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'P' 'R' 'E' 'F' 'P' 'R' 'H' 'D'
 GroupID=syst
