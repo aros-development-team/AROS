@@ -1,0 +1,98 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 $(BASE_CFLAGS) -DCATCOMP_NUMBERS -D__NOLIBBASE__ -DUSE_FLAC -DUSE_MPG123 -DUSE_VORBIS -DUSE_WAVPACK
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+TARGETDIR := $(AROS_DEVS)/DiskImage
+
+#MM- workbench-devs-diskimage-plugins : \
+#MM  workbench-devs-diskimage-ccd \
+#MM  workbench-devs-diskimage-ciso \
+#MM  workbench-devs-diskimage-cpc \
+#MM  workbench-devs-diskimage-daa \
+#MM  workbench-devs-diskimage-dax \
+#MM  workbench-devs-diskimage-dmg \
+#MM  workbench-devs-diskimage-dms \
+#MM  workbench-devs-diskimage-gi \
+#MM  workbench-devs-diskimage-mds \
+#MM  workbench-devs-diskimage-nrg \
+#MM  workbench-devs-diskimage-uif
+
+# CUE needs things from contrib
+# #MM   workbench-devs-diskimage-cue
+
+# FID has GPL license, so we don't build it by default
+# #MM   workbench-devs-diskimage-fdi 
+
+#MM workbench-devs-diskimage-ccd : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-ciso : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-cpc : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-cue : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-daa : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-dax : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-dmg : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-dms : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-fdi : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-gi  : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-mds : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-nrg : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-uif : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-xad : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+#MM workbench-devs-diskimage-xpk : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
+
+
+%build_prog mmake=workbench-devs-diskimage-ccd progname=CCD files="ccd" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="ciso" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="cpc" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+CFILES := cue/cue cue/flac cue/wavpack audio/aiff audio/flac \
+	audio/mp3_mpg123 audio/vorbis audio/wave audio/wavpack cue/malloc \
+	cue/fdio cue/string cue/stdio cue/select
+
+%build_prog mmake=workbench-devs-diskimage-cue progname=CUE files=$(CFILES) \
+    targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg m diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="daa" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-dax progname=DAX files="dax" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+CFILES := dmg/dmg dmg/base64 dmg/adc
+
+%build_prog mmake=workbench-devs-diskimage-dmg progname=DMG files=$(CFILES) \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+CFILES := ../dms/crc_csum ../dms/getbits ../dms/tables ../dms/maketbl ../dms/u_init \
+	../dms/u_deep ../dms/u_heavy ../dms/u_medium ../dms/u_quick ../dms/u_rle
+
+%build_prog mmake=workbench-devs-diskimage-dms progname=DMS files=$(CFILES) \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-fdi progname=FDI files="fdi/fdi fdi/fdi2raw" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-gi progname=GI files="gi" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-mds progname=MDS files="mds" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-nrg progname=NRG files="nrg" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-uif progname=UIF files="uif" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-xad progname=XAD files="xad" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-xpk progname=XPK files="xpk" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+
+%common

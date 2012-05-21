@@ -1,7 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-diskimage : workbench-devs-diskimage-includes-devices workbench-devs-diskimage-includes
+#MM- workbench-devs-diskimage : includes-copy 
+
+#MM- includes-copy : workbench-devs-diskimage-includes-devices workbench-devs-diskimage-includes
 
 FILES2 := diskimage.h
 %copy_files_q mmake=workbench-devs-diskimage-includes-devices files=$(FILES2) src=devices dst=$(AROS_INCLUDES)/devices

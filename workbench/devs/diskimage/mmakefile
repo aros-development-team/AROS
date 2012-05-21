@@ -1,0 +1,9 @@
+# $Id$
+
+#MM- workbench-devs-diskimage : workbench-devs-diskimage-prefs workbench-devs-diskimage-device \
+#MM  workbench-devs-diskimage-gui workbench-devs-diskimage-mountdiskimage workbench-devs-diskimage-mounthdf \
+#MM  workbench-devs-diskimage-plugins
+
+#MM- workbench-devs-diskimage-clean : workbench-devs-diskimage-support-clean workbench-devs-diskimage-prefs-clean \
+#MM  workbench-devs-diskimage-device-clean workbench-devs-diskimage-gui-clean workbench-devs-diskimage-mountdiskimage-clean \
+#MM  workbench-devs-diskimage-mounthdf-clean workbench-devs-diskimage-plugins-clean

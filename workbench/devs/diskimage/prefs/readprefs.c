@@ -25,10 +25,18 @@
 */
 
 #include "prefs.h"
-#include <libraries/expat.h>
+
+#ifdef __AROS__
+#  include <libraries/expat_au.h>
+#  include <proto/expat_au.h>
+#  include <string.h>
+#else
+#  include <libraries/expat.h>
+#  include <proto/expat.h>
+#endif
+
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/expat.h>
 #include <stdlib.h>
 
 #define PREFS_BUFFER_SIZE 512

@@ -26,7 +26,13 @@
 
 #include "diskimage_device.h"
 #include <libraries/iffparse.h>
+
+#ifdef __AROS__
+#include <proto/expat_au.h>
+#else
 #include <proto/expat.h>
+#endif
+
 #include <SDI_stdarg.h>
 
 struct ChangeInt {

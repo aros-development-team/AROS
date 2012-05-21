@@ -1,0 +1,17 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+BASE_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39
+
+# ----------------------------------------------------------------------------------------
+
+#MM workbench-devs-diskimage-prefs : includes
+
+CFILES := prefs readprefs writeprefs
+USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39
+USER_INCLUDES := -idirafter $(SRCDIR)/$(CURDIR)/../include
+
+%build_linklib mmake=workbench-devs-diskimage-prefs libname=diskimageprefs \
+  files=$(CFILES)
+
+%common
