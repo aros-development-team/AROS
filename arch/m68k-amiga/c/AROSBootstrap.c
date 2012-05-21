@@ -287,12 +287,13 @@ int open(const char *name, int mode)
     return (int)Open(name, MODE_OLDFILE);
 }
 
-void close(int fd)
+int close(int fd)
 {
     Close((BPTR)fd);
+    return 0;
 }
 
-int read(int fd, void *buff, size_t len)
+ssize_t read(int fd, void *buff, size_t len)
 {
     return Read((BPTR)fd, buff, (LONG)len);
 }
