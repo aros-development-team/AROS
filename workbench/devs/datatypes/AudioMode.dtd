@@ -1,10 +1,10 @@
 # DataType Description for AudioMode
 Name=AudioMode
 Version=$VER: AudioMode 41.1 (13.12.2011)
-BaseName=binary
+BaseName=AHIM
 Pattern=#?
 Mask='F' 'O' 'R' 'M' ANY ANY ANY ANY 'A' 'H' 'I' 'M'
 GroupID=syst
-ID=ahi
-Flags=DTF_IFF,DTF_BINARY
+ID=_ahi
+Flags=DTF_IFF
 Priority=0
