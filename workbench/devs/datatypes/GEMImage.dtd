@@ -1,5 +1,5 @@
 # DataType Description for GEM Images
-Name=GEM
+Name=GEMImage
 Version=$VER: GemImage 41.1 (1.3.2009)
 BaseName=gemimage
 Pattern=#?.img
