@@ -1,0 +1,19 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-diskimage-support : includes
+
+CFILES := aros/asprintf aros/asprintfpooled checkbptr \
+	checklib copystringbstrtoc deletelibrary dos64 \
+	envvar getcurrentdir hooks lists messages \
+	mutexes paths ports semaphores strlcpy \
+	swab2 tooltypes istext trimstr diskimagedevice \
+	localeinfo translatefuncs reallocbuf setprocwindow
+
+USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_linklib mmake=workbench-devs-diskimage-support libname=diskimagesupport \
+  files=$(CFILES)
+
+%common

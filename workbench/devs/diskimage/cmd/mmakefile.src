@@ -1,0 +1,17 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-diskimage-mountdiskimage : includes linklibs workbench-devs-diskimage-support
+
+#MM workbench-devs-diskimage-mounthdf : includes linklibs workbench-devs-diskimage-support
+
+USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_prog mmake=workbench-devs-diskimage-mountdiskimage progname=MountDiskImage files="mountdiskimage" \
+    targetdir=$(AROS_C) uselibs="amiga mui diskimagesupport"
+
+%build_prog mmake=workbench-devs-diskimage-mounthdf progname=MountHDF files="mounthdf" \
+    targetdir=$(AROS_C) uselibs="amiga mui diskimagesupport"
+
+%common

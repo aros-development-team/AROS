@@ -1,0 +1,15 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-devs-diskimage-gui : includes linklibs workbench-devs-diskimage-support \
+#MM workbench-devs-diskimage-device workbench-devs-diskimage-gui-catalogs
+
+CFILES := locale main gui drivelist pluginlist driveops requesters images
+
+USER_CFLAGS := -DGUI -DCATCOMP_NUMBERS
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
+
+%build_prog mmake=workbench-devs-diskimage-gui progname=DiskImageGUI files=$(CFILES) \
+    targetdir=$(AROS_SYSTEM) uselibs="amiga mui diskimagesupport"
+
+%common
