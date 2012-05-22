@@ -61,8 +61,8 @@ int main (void) {
 	IPTR ReloadPluginsParams[2];
 	struct Hook *ReloadPluginsHook = NULL;
 	ULONG sigs = 0;
-	
-	InitLocaleInfo((struct Library *)SysBase, &LocaleInfo, PROGNAME".catalog");
+
+    InitLocaleInfo((struct Library *)SysBase, &LocaleInfo, "System/System/"PROGNAME".catalog");
 
 	DiskChangeSignal = AllocSignal(-1);
 	if (DiskChangeSignal == -1) {
