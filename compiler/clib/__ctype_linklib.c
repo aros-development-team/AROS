@@ -11,8 +11,8 @@
 #include "__arosc_privdata.h"
 
 const unsigned short int *__ctype_b;
-const int *__ctype_toupper;
-const int *__ctype_tolower;
+const unsigned char *__ctype_toupper;
+const unsigned char *__ctype_tolower;
 
 struct aroscbase *Arosc_GetLibbase(void);
 

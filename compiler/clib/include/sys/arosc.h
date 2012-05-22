@@ -8,8 +8,8 @@ struct __sFILE;
 
 struct arosc_ctype {
     const unsigned short int *b;
-    const int                *toupper;
-    const int                *tolower;
+    const unsigned char      *toupper;
+    const unsigned char      *tolower;
 };
 
 struct arosc_userdata

@@ -24,12 +24,12 @@
 #define _ISpunct    0x0400  /* .,:;!? */
 #define _ISalnum    (_ISalpha | _ISdigit)
 
-extern const unsigned short int * const __ctype_b;
-extern const int * const __ctype_toupper;
-extern const int * const __ctype_tolower;
+extern const unsigned short int const __ctype_b[256];
+extern const unsigned char const __ctype_toupper[256];
+extern const unsigned char const __ctype_tolower[256];
 
 #define _istype(c,type) \
-    (__ctype_b[(int) (c)] & (unsigned short int) (type))
+    (__ctype_b[((int) (c)) & 0xff] & (unsigned short int) (type))
 
 #define __ctype_make_func(__name__, __body__)    \
 __BEGIN_DECLS                          \
@@ -50,8 +50,8 @@ __ctype_make_func(isblank,  _istype(c,_ISblank))
 __ctype_make_func(iscntrl,  _istype(c,_IScntrl))
 __ctype_make_func(ispunct,  _istype(c,_ISpunct))
 __ctype_make_func(isalnum,  _istype(c,_ISalnum))
-__ctype_make_func(toupper,  __ctype_toupper[c])
-__ctype_make_func(tolower,  __ctype_tolower[c])
+__ctype_make_func(toupper,  (int)__ctype_toupper[((int)(c)) & 0xff])
+__ctype_make_func(tolower,  (int)__ctype_tolower[((int)(c)) & 0xff])
 
 /* POSIX.1-2008/XSI extensions that are provided in arosstdc.library */
 __ctype_make_func(isascii,  (c & ~0x7F) == 0)
