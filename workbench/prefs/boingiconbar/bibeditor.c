@@ -466,7 +466,7 @@ STATIC CONST_STRPTR AllocExpandPath(CONST_STRPTR path, CONST_STRPTR file)
         AddPart(result, file, BIB_MAX_PATH);
         if (strchr(result, ':') == NULL) // relative path
         {
-            if ((lock = Lock(result, ACCESS_READ)) != NULL)
+            if ((lock = Lock(result, ACCESS_READ)) != BNULL)
             {
                 NameFromLock(lock, result, BIB_MAX_PATH);
                 UnLock(lock);

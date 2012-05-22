@@ -509,7 +509,7 @@ static int ReadPrefs(void)
 
             CurrentLevel = 0;
 
-            sprintf(Levels_Struct[LevelCounter].Level_Name, _(MSG_MENU_SETTINGS));
+            sprintf(Levels_Struct[LevelCounter].Level_Name, "%s", _(MSG_MENU_SETTINGS));
             sprintf(Names.IText, "%s", Levels_Struct[LevelCounter].Level_Name);
 
             TextLenght = IntuiTextLength(&Names);
