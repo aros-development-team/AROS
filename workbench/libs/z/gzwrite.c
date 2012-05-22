@@ -300,12 +300,11 @@ int ZEXPORT gzputs(file, str)
 #include <stdarg.h>
 
 /* -- see zlib.h -- */
-int ZEXPORTVA gzprintf (gzFile file, const char *format, ...)
+int ZEXPORT gzvprintf (gzFile file, const char *format, va_list va)
 {
     int size, len;
     gz_statep state;
     z_streamp strm;
-    va_list va;
 
     /* get internal structure */
     if (file == NULL)
@@ -335,25 +334,20 @@ int ZEXPORTVA gzprintf (gzFile file, const char *format, ...)
     /* do the printf() into the input buffer, put length in len */
     size = (int)(state->size);
     state->in[size - 1] = 0;
-    va_start(va, format);
 #ifdef NO_vsnprintf
 #  ifdef HAS_vsprintf_void
     (void)vsprintf((char *)(state->in), format, va);
-    va_end(va);
     for (len = 0; len < size; len++)
         if (state->in[len] == 0) break;
 #  else
     len = vsprintf((char *)(state->in), format, va);
-    va_end(va);
 #  endif
 #else
 #  ifdef HAS_vsnprintf_void
     (void)vsnprintf((char *)(state->in), size, format, va);
-    va_end(va);
     len = strlen((char *)(state->in));
 #  else
     len = vsnprintf((char *)(state->in), size, format, va);
-    va_end(va);
 #  endif
 #endif
 
@@ -366,6 +360,18 @@ int ZEXPORTVA gzprintf (gzFile file, const char *format, ...)
     strm->next_in = state->in;
     state->x.pos += len;
     return len;
+}
+
+int ZEXPORTVA gzprintf (gzFile file, const char *format, ...)
+{
+    int ret;
+    va_list args;
+
+    va_start(args, format);
+    ret = gzvprintf(file, format, args);
+    va_end(args);
+
+    return ret;
 }
 
 #else /* !STDC && !Z_HAVE_STDARG_H */
