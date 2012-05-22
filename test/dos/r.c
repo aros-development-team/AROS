@@ -18,8 +18,8 @@ int main(void)
 
     // shut up DOS error message
     struct Process *me = (struct Process*)FindTask(NULL);
-    BPTR oldwin = me->pr_WindowPtr;
-    me->pr_WindowPtr = (BPTR)-1;
+    APTR oldwin = me->pr_WindowPtr;
+    me->pr_WindowPtr = (APTR)-1;
 
     // execute the command. The purpose of "*>NIL:" is to
     // trigger an error
