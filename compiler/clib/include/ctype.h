@@ -24,9 +24,9 @@
 #define _ISpunct    0x0400  /* .,:;!? */
 #define _ISalnum    (_ISalpha | _ISdigit)
 
-extern const unsigned short int const __ctype_b[256];
-extern const unsigned char const __ctype_toupper[256];
-extern const unsigned char const __ctype_tolower[256];
+extern const unsigned short int __ctype_b[256];
+extern const unsigned char __ctype_toupper[256];
+extern const unsigned char __ctype_tolower[256];
 
 #define _istype(c,type) \
     (__ctype_b[((int) (c)) & 0xff] & (unsigned short int) (type))
