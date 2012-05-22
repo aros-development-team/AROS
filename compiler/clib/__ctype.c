@@ -8,7 +8,7 @@
 
 #include "__arosc_privdata.h"
 
-const unsigned short int const __ctype_b[256] =
+const unsigned short int __ctype_b[256] =
 {
     _IScntrl, /* 0 */
     _IScntrl, /* 1 */
@@ -268,7 +268,7 @@ const unsigned short int const __ctype_b[256] =
     0, /* ÿ */
 };
 
-const unsigned char const __ctype_toupper[256] =
+const unsigned char __ctype_toupper[256] =
 {
       0,  1,  2,  3,   4,  5,  6,  7,
       8,  9, 10, 11,  12, 13, 14, 15,
@@ -305,7 +305,7 @@ const unsigned char const __ctype_toupper[256] =
     248,249,250,251, 252,253,254,255,
 };
 
-const unsigned char const __ctype_tolower[256] =
+const unsigned char __ctype_tolower[256] =
 {
       0,  1,  2,  3,   4,  5,  6,  7,
       8,  9, 10, 11,  12, 13, 14, 15,
