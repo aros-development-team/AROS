@@ -6,14 +6,18 @@ include $(TOP)/config/make.cfg
 #MM     kernel-dos-includes \
 #MM     includes-copy
 
-FILES := init-aros adler32 crc32 deflate infback inffast inflate inftrees trees \
+FILES := adler32 crc32 deflate infback inffast inflate inftrees trees \
          zutil compress uncompr gzclose gzlib gzread gzwrite \
 	 contrib/blast/blast contrib/infback9/infback9 contrib/infback9/inftree9
 
-USER_CFLAGS := -DSTDC -DAMIGA -DDYNAMIC_CRC_TABLE -DZ_HAVE_UNISTD_H
+USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 
 %build_module mmake=workbench-libs-z \
   modname=z_au modtype=library \
-  files=$(FILES) uselibs="arosc_rel" linklibname=z
+  files="init-aros $(FILES)" uselibs="arosc_rel" linklibname=z
+
+#MM- linklibs: linklibs-z_static
+
+%build_linklib mmake=linklibs-z_static libname=z_static files="$(FILES)"
 
 %common
