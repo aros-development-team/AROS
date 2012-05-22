@@ -81,6 +81,6 @@ setup-x11keymaptable :
 	%mkdirs_q $(AROS_DEVS)/Keymaps $(AROS_DEVS)/Keymaps/X11
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
-	$(KERNEL_CC) $(KERNEL_CFLAGS) $(USER_INCLUDES) $< -o $@ $(HOST_X11_LIBS)
+	$(HOST_CC) $(HOST_CFLAGS) $(USER_INCLUDES) $< -o $@ $(HOST_X11_LIBS)
 
 %common
