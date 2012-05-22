@@ -63,7 +63,7 @@ CFILES	      := AROSBootstrap
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap progname=AROSBootstrap \
     files=$(CFILES) targetdir=$(AROS_BOOT) \
-    usestartup=no uselibs="loadseg arossupport amiga z rom"
+    usestartup=no uselibs="loadseg arossupport amiga z_static rom"
 
 CFILES	      := mmudump
 
