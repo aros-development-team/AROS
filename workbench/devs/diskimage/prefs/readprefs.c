@@ -60,7 +60,11 @@ static void character_data_handler (void *user_data, const char *s, int len);
 BOOL ReadPrefs (PrefsObject *dict, CONST_STRPTR filename) {
 	struct Library *ExpatBase;
 	BOOL res = FALSE;
+#ifdef __AROS__
+	ExpatBase = OpenLibrary("expat_au.library", 0);
+#else
 	ExpatBase = OpenLibrary("expat.library", 4);
+#endif
 	if (!ExpatBase) {
 		return res;
 	}
