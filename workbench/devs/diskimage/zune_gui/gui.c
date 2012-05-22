@@ -254,7 +254,11 @@ BOOL CreateGUI (void) {
 		Gui.app, 2, MUIM_CallHook, &DoSetDeviceTypeHook);
 	DoMethod(Gui.gad[GID_SETDEVICETYPE_CANCEL], MUIM_Notify, MUIA_Pressed, FALSE,
 		Gui.wnd[WID_SETDEVICETYPE], 3, MUIM_Set, MUIA_Window_Open, FALSE);
-	
+    DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
+        Gui.app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
+    DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
+        Gui.wnd[WID_MAIN], 3, MUIM_Set, MUIA_Window_Open, TRUE);
+
 	return TRUE;
 error:
 	CleanupGUI();
