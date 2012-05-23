@@ -600,7 +600,8 @@ void HandleSysGadgetVerify(struct GadgetInfo *gi, struct Gadget *gadget,
 
     case GTYP_SDEPTH:
         scr = FindFirstScreen(GetPrivIBase(IntuitionBase)->ActiveMonitor, IntuitionBase);
-        if (gi->gi_Screen == scr)
+        if (gi->gi_Screen == scr
+            || (iihd->ActQualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) != 0)
         {
             ScreenToBack(gi->gi_Screen);
         }
@@ -949,7 +950,7 @@ struct Gadget * FindHelpGadget (struct Window * window,
 
     return (NULL);
 
-} /* FindGadget */
+} /* FindHelpGadget */
 
 
 /****************************************************************************************/
