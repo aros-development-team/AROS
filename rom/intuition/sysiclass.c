@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2012, The AROS Development Team. All rights reserved.
+    Copyright  1995-2011, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -408,8 +408,7 @@ IPTR SysIClass__IM_DRAW(Class *cl, Object *obj, struct impDraw *msg)
 
     sdecormsg.MethodID  = SDM_DRAW_SYSIMAGE;
     sdecormsg.sdp_TrueColor      = tc;
-    sdecormsg.sdp_RPort =
-        &((struct IntDrawInfo *)data->dri)->dri_Screen->RastPort;
+    sdecormsg.sdp_RPort = rport;
     sdecormsg.sdp_X = left;
     sdecormsg.sdp_Y = top;
     sdecormsg.sdp_Width = width;
