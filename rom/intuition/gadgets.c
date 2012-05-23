@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 
@@ -120,7 +120,7 @@ void CalcBBox (struct Window * window, struct Requester * req, struct Gadget * g
 
 /**********************************************************************************************/
 
-/* Figure out the size of the gadget rectangle, taking relative
+/* Figure out the size/position of the gadget rectangle, taking relative
  * positioning into account.
  */
 VOID GetGadgetIBox(struct Gadget *g, struct GadgetInfo *gi, struct IBox *ibox)
@@ -216,7 +216,6 @@ VOID drawrect(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
               struct IntuitionBase *IntuitionBase)
 {
     struct GfxBase *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
-    Move(rp, x1, y1);
 
     /* We RectFill() because it is generally faster than Draw()
        (Draw() uses Set/GetPixel() while RectFill() can do higherlevel
