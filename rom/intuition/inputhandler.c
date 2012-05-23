@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -659,7 +659,7 @@ static struct Gadget *Process_RawMouse(struct InputEvent *ie, struct IIHData *ii
                forget to do this if somewhere else the active
                gadget is changed, for example in ActivateGadget!!! */
 
-            PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w, req);
+            PrepareGadgetInfo(gi, screen, w, req);
             SetGadgetInfoGadget(gi, gadget, IntuitionBase);
             
             gsystype = gadget->GadgetType & GTYP_SYSTYPEMASK;
