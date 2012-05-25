@@ -4719,6 +4719,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     darwin*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
+        cross_compile_native=yes
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
@@ -4819,10 +4820,12 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     morphos*)
         aros_host_arch="morphos"
         aros_host_cpu="ppc"
+        cross_compile_native=yes
         ;;
 
     amiga*)
         aros_host_arch="amiga"
+        cross_compile_native=yes
         SORT="/gg/bin/sort"
         TEST="/gg/bin/test"
         UNIQ="/gg/bin/uniq"
@@ -4846,6 +4849,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     cygwin*)
         aros_host_arch="cygwin"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        cross_compile_native=yes
         android_build_os="windows"
         android_tool="android.bat"
         default_android_sdk="/cygdrive/c/android-sdk-windows-1.6_r1"
@@ -4865,6 +4869,7 @@ $as_echo "$as_me: WARNING: \"Unknown CPU for host -- $host_cpu\"" >&2;}
     mingw32*)
         aros_host_arch="mingw32"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+        cross_compile_native=yes
         android_build_os="windows"
         android_tool="android.bat"
         default_android_sdk="/c/android-sdk-windows-1.6_r1"
@@ -7757,9 +7762,7 @@ case "$target_os" in
                 android_tool_dir_prefix="arm-linux-androideabi"
                 android_tool_prefix="arm-linux-androideabi"
                 android_ndk_arch="arm"
-                if test "$aros_host_cpu" != "arm" ; then
-                    kernel_tool_prefix="arm-linux-gnueabi-"
-                fi
+                kernel_tool_prefix="arm-linux-gnueabi-"
                 ;;
             *)
                 as_fn_error $? "\"Unknown CPU for Linux -- $target_cpu\"" "$LINENO" 5
@@ -8504,41 +8507,29 @@ $as_echo "$aros_target_guitheme" >&6; }
 # Find out if we are cross-compiling (i.e. if we can't use the host compiler
 # for target code)
 cross_compiling=no
-if test "$aros_host_cpu" = "$aros_target_cpu" ; then
-    # If host = target CPU, let's try to use the
-    # host's toolchains if no others were requested
-    if test "$kernel_tool_prefix" = "none" ; then
-        kernel_tool_prefix=""
-    fi
-else
+
+if test "$aros_host_cpu" != "$aros_target_cpu" ; then
     cross_compiling=yes
 fi
 
 if test "$aros_host_cpu" == "x86_64" ; then
     if test "$aros_target_cpu" == "i386" ; then
-        if test "$aros_target_arch" != "mingw32"; then
-            cross_compiling=no
-            kernel_tool_prefix=""
-        fi
+        cross_compiling=no
     fi
 fi
 
-if test "$aros_host_arch" == "darwin" ; then
-    if test "$aros_target_arch" != "darwin" ; then
+if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
+                                    if test "$aros_host_arch" != "$aros_target_arch" ; then
         cross_compiling=yes
-    else
-        cross_compiling=no
-        kernel_tool_prefix=""
+    fi
+else
+            if test "$cross_compile_native" ; then
+        cross_compiling=yes
     fi
 fi
 
-if test "$aros_host_arch" == "mingw32" ; then
-    if test "$aros_target_arch" != "mingw32" ; then
-        cross_compiling=yes
-    else
-        cross_compiling=no
-        kernel_tool_prefix=""
-    fi
+if test "$cross_compiling" = "no" ; then
+    kernel_tool_prefix=""
 fi
 
 #######################################################################
@@ -8590,26 +8581,14 @@ target_tool_prefix="${target_cpu}-aros-"
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking which kernel tools" >&5
 $as_echo_n "checking which kernel tools... " >&6; }
-if test "$kernel_tool_prefix" = "none" ; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: target" >&5
-$as_echo "target" >&6; };
-    # We are building AROS crosstools, and no kernel
-    # tools specified - assume target tools == kernel tools
-    tmp_tool_prefix="$AROS_CROSSTOOLSDIR/${target_tool_prefix}"
-    aros_kernel_cc="${tmp_tool_prefix}gcc${aros_gcc_version}"
-    aros_kernel_cxx="${tmp_tool_prefix}g++${aros_gcc_version}"
-    aros_kernel_cpp="${tmp_tool_prefix}cpp"
-    aros_kernel_ld="${tmp_tool_prefix}ld"
-    aros_kernel_as="${tmp_tool_prefix}as"
-    aros_kernel_ar="${tmp_tool_prefix}ar"
-    aros_kernel_ranlib="${tmp_tool_prefix}ranlib"
-    aros_kernel_nm="${tmp_tool_prefix}nm"
-    aros_kernel_strip="${tmp_tool_prefix}strip"
-    aros_kernel_objcopy="${tmp_tool_prefix}objcopy"
-    aros_kernel_objdump="${tmp_tool_prefix}objdump"
-else
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_prefix" >&5
 $as_echo "$kernel_tool_prefix" >&6; };
+
+if test "$kernel_tool_prefix" = "none" ; then
+        if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
+        as_fn_error $? "--with-kernel-tool-prefix= is required for this arch" "$LINENO" 5
+    fi
+else
     # Kernel tools required - find them
     # Note that 'normally', aros_kernel_* overrides will
     # empty, unless specified in the per-arch sections above.
@@ -12531,6 +12510,23 @@ fi
     if test "$orig_target_objdump" = ""; then
     as_fn_error $? "objdump is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
+fi
+
+if test "$kernel_tool_prefix" = "none" ; then
+    # No kernel tools specified
+    # Assume target tools == kernel tools with ELF wrapper
+    aros_kernel_cc=$orig_target_cc
+    aros_kernel_cxx=$orig_target_cxx
+    aros_kernel_cpp=$orig_target_cpp
+    aros_kernel_ld=$orig_target_ld
+    aros_kernel_as=$orig_target_as
+    aros_kernel_ar=$orig_target_ar
+    aros_kernel_ranlib=$orig_target_ranlib
+    aros_kernel_nm=$orig_target_nm
+    aros_kernel_strip=$orig_target_strip
+    aros_kernel_objcopy=$orig_target_objcopy
+    aros_kernel_objdump=$orig_target_objdump
+    use_kernel_cc_wrapper=yes
 fi
 
 # At this point, all aros_kernel_* and aros_target_*
