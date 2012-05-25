@@ -1424,8 +1424,11 @@ AC_ARG_WITH(elf-toolchain-prefix,AC_HELP_STRING([--with-elf-toolchain-prefix=...
 AC_MSG_RESULT($elf_tool_prefix)
 
 AC_MSG_CHECKING([AROS toolchain prefix])
-AC_ARG_WITH(aros-toolchain-prefix,AC_HELP_STRING([--with-aros-toolchain-prefix=...],[Specify prebuilt AROS toolchain]),[aros_tool_prefix="$withval"
+AC_ARG_WITH(aros-toolchain,AC_HELP_STRING([--with-aros-toolchain=PREFIX],[Specify prebuilt AROS toolchain]),[aros_tool_prefix="$withval"
                 crosstools_guess=no])
+if test "$aros_tool_prefix" = "yes" ; then
+    aros_tool_prefix=$aros_target_cpu-aros-
+fi
 AC_MSG_RESULT($aros_tool_prefix)
 
 #-----------------------------------------------------------------------------
