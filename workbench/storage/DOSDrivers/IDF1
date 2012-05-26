@@ -1,4 +1,4 @@
-FileSystem     = afs.handler
+FileSystem     = afs-handler
 Device         = diskimage.device
 Unit           = 1
 BlockSize      = 512

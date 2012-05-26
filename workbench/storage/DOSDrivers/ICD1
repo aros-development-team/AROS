@@ -1,4 +1,4 @@
-FileSystem     = cdrom.handler
+FileSystem     = cdrom-handler
 Device         = diskimage.device
 Unit           = 5
 BlockSize      = 2048
