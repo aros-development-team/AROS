@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Info Cli Command
@@ -130,7 +130,7 @@ ULONG ExtUDivMod32(ULONG a, ULONG b, ULONG *mod);
 void doInfo();
 
 
-const TEXT VersionStr[] = "$VER: Info 41.1 (16.11.2000)";
+const TEXT VersionStr[] = "$VER: Info 41.2 (26.05.2012)";
 
 struct Catalog  *cat;
 struct Locale   *loc = NULL;
@@ -423,7 +423,16 @@ BOOL ScanDosList(STRPTR *filter)
         else
         {
             BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
-            struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(ptr);
+            struct FileSysStartupMsg *fssm = NULL;
+
+            if (ptr > (BPTR)64)
+            {
+                // GURU book is telling that the content of dol_Startup
+                // is handler specific and only filesystems have
+                // a startup message.
+                // FIXME: is there a way to check for a filesystem?
+                fssm = (struct FileSysStartupMsg *)BADDR(ptr);
+            }
             
             idn->DosType = ID_DOS_DISK;
 
