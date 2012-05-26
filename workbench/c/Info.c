@@ -45,8 +45,8 @@
     Info
 
     Unit                 Size    Used    Free Full Errs   State    Type Name
-    Harddisk:        964.1M  776.7M  187.4M  81%    0 read/write  OFS AROS
-    RAM:                 8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
+    Harddisk:         964.1M  776.7M  187.4M  81%    0 read/write  OFS AROS
+    RAM:                8.0M    7.1M    7.1M  12%    0 read/write  OFS Ram Disk
 
     BUGS
 
@@ -132,7 +132,7 @@ void doInfo();
 
 const TEXT VersionStr[] = "$VER: Info 41.1 (16.11.2000)";
 
-struct Catalog	*cat;
+struct Catalog  *cat;
 struct Locale   *loc = NULL;
 ULONG            MaxLen;
 
@@ -141,7 +141,7 @@ APTR             Pool;
 
 /* catalog string id:s */
 enum 
-{	
+{
     UNIT,
     DEVTITLE,
     DISKSTITLE,
@@ -161,11 +161,11 @@ enum
 struct InfoDosNode 
 {
     struct InfoDosNode *Next;
-    ULONG		IsVolume;
-    ULONG		DosType;
+    ULONG               IsVolume;
+    ULONG               DosType;
     struct MsgPort     *Task;
     struct DateStamp    VolumeDate;
-    TEXT		Name[108];
+    TEXT                Name[108];
 };
 
 struct InfoDosNode *head = NULL;
@@ -221,7 +221,7 @@ int __nocommandline;
 int main(void)
 {
     static struct TagItem loctags[] = { { OC_Version, 1 },
-						{ TAG_END   , 0 } };
+                                                { TAG_END   , 0 } };
     cat = OpenCatalogA(NULL, "info_com.catalog", loctags);
     loc = OpenLocale(NULL);
 
@@ -232,7 +232,7 @@ int main(void)
     CloseLocale(loc);
     CloseCatalog(cat);
 
-    return RETURN_OK;		/* TODO: Fix this */
+    return RETURN_OK;  /* TODO: Fix this */
 }
 
 
@@ -240,7 +240,7 @@ CONST_STRPTR GetStrFromCat(ULONG id, CONST_STRPTR def)
 {
     if(cat != NULL)
     {
-	def = GetCatalogStr(cat, id, def);
+        def = GetCatalogStr(cat, id, def);
     }
     
     return def;
@@ -258,31 +258,31 @@ BOOL myMatchPatternNoCase(STRPTR *array, STRPTR str)
 {
     if(*array != NULL)
     {
-	while(*array != NULL)
-	{
-	    UBYTE   matchstr[128];
-	    UBYTE   name[32];
-	    UBYTE  *p = *array++;
-	    UBYTE   len = strlen(p);
-	    
-	    if(p[len - 1] != ':')
-	    {
-		CopyMem(p, name, len);
-		name[len] = ':';
-		name[len + 1] = 0;
-		p = name;
-	    }
-	    
-	    if(ParsePatternNoCase(p, matchstr, sizeof(matchstr)) != -1)
-	    {
-		if(MatchPatternNoCase(matchstr, str))
-		{
-		    return TRUE;
-		}
-	    }
-	}
-	
-	return FALSE;
+        while(*array != NULL)
+        {
+            UBYTE   matchstr[128];
+            UBYTE   name[32];
+            UBYTE  *p = *array++;
+            UBYTE   len = strlen(p);
+            
+            if(p[len - 1] != ':')
+            {
+                CopyMem(p, name, len);
+                name[len] = ':';
+                name[len + 1] = 0;
+                p = name;
+            }
+            
+            if(ParsePatternNoCase(p, matchstr, sizeof(matchstr)) != -1)
+            {
+                if(MatchPatternNoCase(matchstr, str))
+                {
+                    return TRUE;
+                }
+            }
+        }
+        
+        return FALSE;
     }
     
     return TRUE;
@@ -302,21 +302,21 @@ BOOL ScanDosList(STRPTR *filter)
     
     if(*filter != NULL)
     {
-	strray = AllocPooled(Pool, sizeof(STRPTR)*MAX_MULTIARGS);
+        strray = AllocPooled(Pool, sizeof(STRPTR)*MAX_MULTIARGS);
 
-	if(strray != NULL)
-	{
-	    STRPTR  *p = filter;
-	    LONG     i = 0;
-	    
-	    while(*p)
-		strray[i++] = *p++;
+        if(strray != NULL)
+        {
+            STRPTR  *p = filter;
+            LONG     i = 0;
+            
+            while(*p)
+                strray[i++] = *p++;
 
-	    while(i < MAX_MULTIARGS)
-		strray[i++] = NULL;
-	}
-	else
-	    return FALSE;
+            while(i < MAX_MULTIARGS)
+                strray[i++] = NULL;
+        }
+        else
+            return FALSE;
     }
 
     /* lock list of devices & vols */
@@ -324,143 +324,143 @@ BOOL ScanDosList(STRPTR *filter)
 
     if(strray != NULL)
     {
-	STRPTR *p = strray;
+        STRPTR *p = strray;
 
-	while(*p)
-	    p++;
+        while(*p)
+            p++;
 
-	while((ndl = NextDosEntry(ndl, LDF_ASSIGNS | LDF_VOLUMES | LDF_READ)) != NULL)
-	{
-	    TEXT    name[108];
-	    STRPTR  taskName = NULL;  /* Initialized to avoid a warning */
+        while((ndl = NextDosEntry(ndl, LDF_ASSIGNS | LDF_VOLUMES | LDF_READ)) != NULL)
+        {
+            TEXT    name[108];
+            STRPTR  taskName = NULL;  /* Initialized to avoid a warning */
 
-	    __sprintf(name, "%b:", ndl->dol_Name);
+            __sprintf(name, "%b:", ndl->dol_Name);
 
-	    if ((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
-	    {
-		continue;
-	    }
+            if ((ndl->dol_Type > DLT_VOLUME) || !(myMatchPatternNoCase(strray, name)))
+            {
+                continue;
+            }
 
-	    switch (ndl->dol_Type)
-	    {
-	    case DLT_VOLUME:
-		taskName =  ((struct Task *)ndl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
+            switch (ndl->dol_Type)
+            {
+            case DLT_VOLUME:
+                taskName =  ((struct Task *)ndl->dol_Task->mp_SigTask)->tc_Node.ln_Name;
 
-		D(bug("Found volume %s\n", taskName));
-		break;
+                D(bug("Found volume %s\n", taskName));
+                break;
 
-	    case DLT_DIRECTORY:
-		{
-		    struct AssignList *al = ndl->dol_misc.dol_assign.dol_List;
+            case DLT_DIRECTORY:
+                {
+                    struct AssignList *al = ndl->dol_misc.dol_assign.dol_List;
 
-		    taskName = ((struct Task *)((struct FileLock *)BADDR(ndl->dol_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
+                    taskName = ((struct Task *)((struct FileLock *)BADDR(ndl->dol_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
 
-		    D(bug("Found directory %s\n", taskName));
-		    
-		    while(al != NULL)
-		    {
-			*p++ = ""; // TODO!!!  ((struct Task *)((struct FileLock *)BADDR(al->al_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
-			al = al->al_Next;
-		    }
-		}					
-		break;			
-	    }
-	    
-	    *p++ = taskName;
-	}
+                    D(bug("Found directory %s\n", taskName));
+                    
+                    while(al != NULL)
+                    {
+                        *p++ = ""; // TODO!!!  ((struct Task *)((struct FileLock *)BADDR(al->al_Lock))->fl_Task->mp_SigTask)->tc_Node.ln_Name;
+                        al = al->al_Next;
+                    }
+                }
+                break;
+            }
+            
+            *p++ = taskName;
+        }
     }
     else
-	strray = filter;
+        strray = filter;
     
     ndl = dl;
     
     while((ndl = NextDosEntry(ndl, LDF_VOLUMES | LDF_DEVICES | LDF_READ)) != NULL)
     {
-	UBYTE  len = 0;
-	UBYTE  type = ndl->dol_Type;
-	UBYTE  name[108];
+        UBYTE  len = 0;
+        UBYTE  type = ndl->dol_Type;
+        UBYTE  name[108];
 
- 	/* do not start non-started handlers or open CON: or RAW: windows.. */
-	if(type == DLT_DEVICE && !ndl->dol_Task)
-	    continue;
+        /* do not start non-started handlers or open CON: or RAW: windows.. */
+        if(type == DLT_DEVICE && !ndl->dol_Task)
+            continue;
 
-	__sprintf(name, "%b:", ndl->dol_Name);
-	D(bug("Found name %s\n", name));
+        __sprintf(name, "%b:", ndl->dol_Name);
+        D(bug("Found name %s\n", name));
 
-	if((type == DLT_DEVICE) && (myMatchPatternNoCase(strray, name) == FALSE))
-	{
-	    int i;
+        if((type == DLT_DEVICE) && (myMatchPatternNoCase(strray, name) == FALSE))
+        {
+            int i;
 
-	    D(bug("Failure! -- name = %s, strray = %p\n", name, (void *)strray));
+            D(bug("Failure! -- name = %s, strray = %p\n", name, (void *)strray));
 
-	    for (i = 0; strray[i] != NULL; i++)
-	    {
-		D(bug("Strray %i = %s\n", i, strray[i]));
-	    }
-	    
-	    continue;
-	}
+            for (i = 0; strray[i] != NULL; i++)
+            {
+                D(bug("Strray %i = %s\n", i, strray[i]));
+            }
+            
+            continue;
+        }
 
-	idn = (struct InfoDosNode *)AllocPooled(Pool, sizeof(struct InfoDosNode));
+        idn = (struct InfoDosNode *)AllocPooled(Pool, sizeof(struct InfoDosNode));
 
-	if(idn == NULL)
-	{
-	    err = TRUE;
-	    break;
-	}
-	
-	idn->Task     = ndl->dol_Task;
-	idn->IsVolume = type == DLT_VOLUME;
-	
-	while((idn->Name[len] = name[len])) 
-	    len++;
-	
-	if(type == DLT_VOLUME)
-	{
-	    idn->VolumeDate = ((struct DeviceList *)ndl)->dl_VolumeDate;	
-	    idn->Name[len - 1] = '\0';       /* remove ':' */			
-	}
-	else
-	{
-	    BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
-	    struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(ptr);
-	    
-	    idn->DosType = ID_DOS_DISK;
+        if(idn == NULL)
+        {
+            err = TRUE;
+            break;
+        }
+        
+        idn->Task     = ndl->dol_Task;
+        idn->IsVolume = type == DLT_VOLUME;
+        
+        while((idn->Name[len] = name[len])) 
+            len++;
+        
+        if(type == DLT_VOLUME)
+        {
+            idn->VolumeDate = ((struct DeviceList *)ndl)->dl_VolumeDate;
+            idn->Name[len - 1] = '\0';       /* remove ':' */
+        }
+        else
+        {
+            BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
+            struct FileSysStartupMsg *fssm = (struct FileSysStartupMsg *)BADDR(ptr);
+            
+            idn->DosType = ID_DOS_DISK;
 
-	    //  DLT_DEVICE
-	    if (len > MaxLen)
-		MaxLen = len;
-	    
-	    if (fssm) 
-	    {
-		struct DosEnvec *de;
-		de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
-		    
-		if (de && (de->de_TableSize & 0xffffff00) == 0)
-		    if (de->de_DosType)
-			idn->DosType = de->de_DosType;
-	    }
-	}
-	
-	/* kinda insert sort */
-	{
-	    struct InfoDosNode *work = head;
-	    struct InfoDosNode *prev = NULL;
-	    
-	    while((work != NULL) && (Stricmp(idn->Name, work->Name) > 0))
-	    {
-		prev = work;
-		work = work->Next;
-	    }
-	    
-	    if(prev != NULL)
-		prev->Next = idn;
-	    else
-		head = idn;
-	    
-	    idn->Next = work;
-	}
-    }		
+            //  DLT_DEVICE
+            if (len > MaxLen)
+                MaxLen = len;
+            
+            if (fssm) 
+            {
+                struct DosEnvec *de;
+                de = (struct DosEnvec *)BADDR(fssm->fssm_Environ);
+                    
+                if (de && (de->de_TableSize & 0xffffff00) == 0)
+                    if (de->de_DosType)
+                        idn->DosType = de->de_DosType;
+            }
+        }
+        
+        /* kinda insert sort */
+        {
+            struct InfoDosNode *work = head;
+            struct InfoDosNode *prev = NULL;
+            
+            while((work != NULL) && (Stricmp(idn->Name, work->Name) > 0))
+            {
+                prev = work;
+                work = work->Next;
+            }
+            
+            if(prev != NULL)
+                prev->Next = idn;
+            else
+                head = idn;
+            
+            idn->Next = work;
+        }
+    }
     
     /* unlock list of devices and volumes */
     UnLockDosList(LDF_ASSIGNS | LDF_VOLUMES | LDF_DEVICES | LDF_READ);
@@ -476,29 +476,29 @@ void PrintNum(ULONG num)
     /* MBytes ? */
     if(num > 1023) 
     {
-	ULONG  x, xx;
-	char   fmt = 'M';
-	
-	/* GBytes ? */
-	if(num > 0xfffff)
-	{ 
-	    num >>= 10; 
-	    fmt = 'G'; 
-	}
-	
-	num = ExtUDivMod32(UMult32(num, 100) >> 10, 100, &x);
-	
-	/* round */
-	x = ExtUDivMod32(x, 10, &xx);
+        ULONG  x, xx;
+        char   fmt = 'M';
+        
+        /* GBytes ? */
+        if(num > 0xfffff)
+        { 
+            num >>= 10; 
+            fmt = 'G'; 
+        }
+        
+        num = ExtUDivMod32(UMult32(num, 100) >> 10, 100, &x);
+        
+        /* round */
+        x = ExtUDivMod32(x, 10, &xx);
 
-	if(xx > 4)
-	{
-	    if(++x > 9)
-	    {
-		x = 0;
-		num++;
-	    }
-	}
+        if(xx > 4)
+        {
+            if(++x > 9)
+            {
+                x = 0;
+                num++;
+            }
+        }
 
         IPTR args[] = {num, x, fmt};
         VLPrintf(BIGNUMFMT, "%5ld.%ld%lc", args);
@@ -513,29 +513,29 @@ void PrintNum(ULONG num)
 
 STRPTR GetFSysStr(ULONG DiskType)
 {
-    struct DiskTypeList	*dtlptr = dtl;
+    struct DiskTypeList *dtlptr = dtl;
 
     STRPTR ptr = NULL;
     
     do {
-	if(dtlptr->id == DiskType)
-	{ 
-	    ptr = dtlptr->str;
-	    break;
-	}
-    } while(*((ULONG *)dtlptr++));	
+        if(dtlptr->id == DiskType)
+        { 
+            ptr = dtlptr->str;
+            break;
+        }
+    } while(*((ULONG *)dtlptr++));
     
     if(ptr == NULL)
-    {	
-	static TEXT buffer[5];
-	
-	ptr = (STRPTR)buffer;
-	*((ULONG *)ptr) = AROS_LONG2BE(DiskType);
-	
-	if(ptr[3] < ' ')
-	    ptr[3] += '0';
-	
-	ptr[4] = '\0';
+    {
+        static TEXT buffer[5];
+        
+        ptr = (STRPTR)buffer;
+        *((ULONG *)ptr) = AROS_LONG2BE(DiskType);
+        
+        if(ptr[3] < ' ')
+            ptr[3] += '0';
+        
+        ptr[4] = '\0';
     }
     
     return ptr;
@@ -563,169 +563,169 @@ void doInfo()
     struct InfoData *id = AllocVec(sizeof(struct InfoData), MEMF_ANY);
     
     IPTR   args[] = { (IPTR)FALSE,
-		      (IPTR)FALSE,
-		      (IPTR)FALSE,
-		      (IPTR)FALSE,
-		      (IPTR)NULL };
+                      (IPTR)FALSE,
+                      (IPTR)FALSE,
+                      (IPTR)FALSE,
+                      (IPTR)NULL };
         
     CONST_STRPTR unit = GetStrFromCat(UNIT, "Unit");
 
     if(id == NULL)
     {
-	PrintFault(ERROR_NO_FREE_STORE, NULL);
-	return;
+        PrintFault(ERROR_NO_FREE_STORE, NULL);
+        return;
     }
 
     Pool = CreatePool(MEMF_ANY, 1024, 1024);
 
     if(Pool == NULL)
     {
-	PrintFault(ERROR_NO_FREE_STORE, NULL);
-	return;			/* ??? */
+        PrintFault(ERROR_NO_FREE_STORE, NULL);
+        return;  /* ??? */
     }
 
     D(bug("Calling ReadArgs()\n"));
     
     /* read arguments */
     rdargs = ReadArgs("DISKS/S,VOLS=VOLUMES/S,ALL/S,BLOCKS/S,DEVICES/M",
-		      args, NULL);
+                      args, NULL);
     
     if(rdargs != NULL)
     {
-	BOOL     disks    = (BOOL)args[ARG_DISKS];
-	BOOL     vols     = (BOOL)args[ARG_VOLS];
-	BOOL     showall  = (BOOL)args[ARG_ALL];
-	BOOL     blocks   = (BOOL)args[ARG_BLOCKS];
-	STRPTR  *devs     = (STRPTR *)args[ARG_DEVS];
+        BOOL     disks    = (BOOL)args[ARG_DISKS];
+        BOOL     vols     = (BOOL)args[ARG_VOLS];
+        BOOL     showall  = (BOOL)args[ARG_ALL];
+        BOOL     blocks   = (BOOL)args[ARG_BLOCKS];
+        STRPTR  *devs     = (STRPTR *)args[ARG_DEVS];
 
-    	if (devs && (*devs == NULL)) devs = NULL;
-	
-	/* If nothing is specified, show everything we got */
-	if(devs == NULL && !disks && !vols)
-	{
-	    vols = TRUE;
-	    disks = TRUE;
-	}
+        if (devs && (*devs == NULL)) devs = NULL;
+        
+        /* If nothing is specified, show everything we got */
+        if(devs == NULL && !disks && !vols)
+        {
+            vols = TRUE;
+            disks = TRUE;
+        }
 
-	/* check pattern strings */
-	
-	if(devs != NULL)
-	{
-	    STRPTR  *p = devs;
-	    
-	    while(*p != NULL)
-	    {
-		TEXT  matchstr[128];
+        /* check pattern strings */
+        
+        if(devs != NULL)
+        {
+            STRPTR  *p = devs;
+            
+            while(*p != NULL)
+            {
+                TEXT  matchstr[128];
 
-		if(ParsePatternNoCase(*p, matchstr, sizeof(matchstr)) == -1)
-		{
-		    PrintFault(IoErr(), *p);
-		    goto end;
-		}
-		
-		p++;
-	    }
-	}
+                if(ParsePatternNoCase(*p, matchstr, sizeof(matchstr)) == -1)
+                {
+                    PrintFault(IoErr(), *p);
+                    goto end;
+                }
+                
+                p++;
+            }
+        }
 
-	/* avoid requesters */
-	proc = (struct Process *)FindTask(NULL);
-	win  = (struct Window *)proc->pr_WindowPtr;
-	proc->pr_WindowPtr = (struct Window *)~0;
-	
-	MaxLen = strlen(unit);
+        /* avoid requesters */
+        proc = (struct Process *)FindTask(NULL);
+        win  = (struct Window *)proc->pr_WindowPtr;
+        proc->pr_WindowPtr = (struct Window *)~0;
+        
+        MaxLen = strlen(unit);
 
-	D(bug("Calling ScanDosList()\n"));
-	
-	/* scan doslist */
-	if(ScanDosList(devs))
-	{
-	    CONST_STRPTR  dstate[3] = { GetStrFromCat(READONLY,   "read only"),
-				  GetStrFromCat(VALIDATING, "validating"),
-				  GetStrFromCat(READWRITE,  "read/write") };
-	    STRPTR  datetimeFmt = NULL;
-	    BOOL    first = TRUE;
-	    TEXT    nfmtstr[16];
-	    TEXT    buf[64];
-	    
-	    D(bug("Printing stuff\n"));
+        D(bug("Calling ScanDosList()\n"));
+        
+        /* scan doslist */
+        if(ScanDosList(devs))
+        {
+            CONST_STRPTR  dstate[3] = { GetStrFromCat(READONLY,   "read only"),
+                                  GetStrFromCat(VALIDATING, "validating"),
+                                  GetStrFromCat(READWRITE,  "read/write") };
+            STRPTR  datetimeFmt = NULL;
+            BOOL    first = TRUE;
+            TEXT    nfmtstr[16];
+            TEXT    buf[64];
+            
+            D(bug("Printing stuff\n"));
 
-	    /* get datetimefmt string */
-	    if(loc && (GetVar("info_datetime", buf, sizeof(buf), 0L) > 0L))
-	    {
-		datetimeFmt = buf;
-	    }
-	    
-	    /* calc format string for 'Unit' */
-	    __sprintf(nfmtstr, "%%-%lds", MaxLen);
-	    
-	    /* show device infomation */
-	    if(devs != NULL || disks || !vols)
-	    {
-		for(idn = head; idn; idn = idn->Next)
-		{
-		    BPTR    lock;
-		    STRPTR  name = idn->Name;
+            /* get datetimefmt string */
+            if(loc && (GetVar("info_datetime", buf, sizeof(buf), 0L) > 0L))
+            {
+                datetimeFmt = buf;
+            }
+            
+            /* calc format string for 'Unit' */
+            __sprintf(nfmtstr, "%%-%lds", MaxLen);
+            
+            /* show device infomation */
+            if(devs != NULL || disks || !vols)
+            {
+                for(idn = head; idn; idn = idn->Next)
+                {
+                    BPTR    lock;
+                    STRPTR  name = idn->Name;
 
-		    D(bug("Got name = %s\n", name));
-		    
-		    if(!idn->IsVolume && IsFileSystem(name))
-		    {
-		    	BOOL gotinfo = FALSE;
-			/* if first device to print, print title */
-			if(first || blocks)
-			{		    
-			    if(!first)
-				Printf("\n");
+                    D(bug("Got name = %s\n", name));
+                    
+                    if(!idn->IsVolume && IsFileSystem(name))
+                    {
+                        BOOL gotinfo = FALSE;
+                        /* if first device to print, print title */
+                        if(first || blocks)
+                        {    
+                            if(!first)
+                                Printf("\n");
 
-			    D(bug("Printing device\n"));
-			    
+                            D(bug("Printing device\n"));
+                            
                             VLPrintf(~0, nfmtstr, (IPTR*) &unit);
                             VLPrintf(DEVTITLE, "    Size    Used    Free Full Errs   State    Type    Name\n", NULL);
-			    
-			    first = FALSE;
-			}
-			
+                            
+                            first = FALSE;
+                        }
+                        
                         VLPrintf(~0, nfmtstr, (IPTR*) &name);
 
-			D(bug("Locking \"%s\"\n", name));
-			lock = Lock(name, SHARED_LOCK);
+                        D(bug("Locking \"%s\"\n", name));
+                        lock = Lock(name, SHARED_LOCK);
 
-			D(bug("Lock = %p\n", (APTR)lock));
+                        D(bug("Lock = %p\n", (APTR)lock));
 
-			if(lock != BNULL)
-			{
-			    D(bug("Got lock on %s\n", name));
+                        if(lock != BNULL)
+                        {
+                            D(bug("Got lock on %s\n", name));
 
-			    if(Info(lock, id) == DOSTRUE)
-			    {
-				D(bug("Calling NameFromLock()\n"));
+                            if(Info(lock, id) == DOSTRUE)
+                            {
+                                D(bug("Calling NameFromLock()\n"));
 
-				if(NameFromLock(lock, name, 108L))
-				{
-				    LONG len = strlen(name) - 1;
-				    
-				    if(name[len] == ':')
-				    {
-					name[len] = '\0';
-				    }
-				}
-				
-			    	gotinfo = TRUE;
-			    }
-			    UnLock(lock);
+                                if(NameFromLock(lock, name, 108L))
+                                {
+                                    LONG len = strlen(name) - 1;
+                                    
+                                    if(name[len] == ':')
+                                    {
+                                        name[len] = '\0';
+                                    }
+                                }
+                                
+                                gotinfo = TRUE;
+                            }
+                            UnLock(lock);
 
-			} else if (idn->Task) {
-			    name = NULL;
-			    D(bug("Calling ACTION_DISK_INFO\n"));
-			    if (DoPkt(idn->Task, ACTION_DISK_INFO, (SIPTR)MKBADDR(id), (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL)) {
-			    	gotinfo = TRUE;
-			    }
-			}
-				
-			if (gotinfo) {	
-			    ULONG  x, y;
-				
-			    D(bug("Got info on %s\n", name));
+                        } else if (idn->Task) {
+                            name = NULL;
+                            D(bug("Calling ACTION_DISK_INFO\n"));
+                            if (DoPkt(idn->Task, ACTION_DISK_INFO, (SIPTR)MKBADDR(id), (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL, (SIPTR)BNULL)) {
+                                gotinfo = TRUE;
+                            }
+                        }
+                                
+                        if (gotinfo) {
+                            ULONG  x, y;
+                                
+                            D(bug("Got info on %s\n", name));
 
                             if (id->id_DiskType == ID_NO_DISK_PRESENT) {
                                 VLPrintf(~0, " No disk present\n", NULL);
@@ -734,50 +734,50 @@ void doInfo()
                             } else if (id->id_DiskType == ID_UNREADABLE_DISK) {
                                 VLPrintf(~0, " Unreadable disk\n", NULL);
                             } else {
-				x = ComputeKBytes(id->id_NumBlocks, id->id_BytesPerBlock);
-				y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
-				
-				PrintNum(x);
-				PrintNum(y); 
-				PrintNum(x - y);
-				
-				if(x > 0xfffff)
-				{	 
-				    x >>= 10; 
-				    y >>= 10;
-				}
-				
-				if(x)
-				{
-				    x = ExtUDivMod32(UDivMod32(UMult32(y, 1000), x), 10, &y);
-				    
-				    if(y > 4)
-					x++;
-				}
-				else
-				    x = 0;
+                                x = ComputeKBytes(id->id_NumBlocks, id->id_BytesPerBlock);
+                                y = ComputeKBytes(id->id_NumBlocksUsed, id->id_BytesPerBlock);
+                                
+                                PrintNum(x);
+                                PrintNum(y); 
+                                PrintNum(x - y);
+                                
+                                if(x > 0xfffff)
+                                { 
+                                    x >>= 10; 
+                                    y >>= 10;
+                                }
+                                
+                                if(x)
+                                {
+                                    x = ExtUDivMod32(UDivMod32(UMult32(y, 1000), x), 10, &y);
+                                    
+                                    if(y > 4)
+                                        x++;
+                                }
+                                else
+                                    x = 0;
 
- 				// y = ((struct DeviceList *)BADDR(id->id_VolumeNode))->dl_DiskType;
-				
-				//				if(!y)
-				    y = id->id_DiskType;
-				
-				if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
-				    y = idn->DosType;
+                                // y = ((struct DeviceList *)BADDR(id->id_VolumeNode))->dl_DiskType;
+                                
+                                // if(!y)
+                                    y = id->id_DiskType;
+                                
+                                if((idn->DosType & ID_DOS_DISK) != ID_DOS_DISK)
+                                    y = idn->DosType;
 
-				{
-                               	    IPTR args[] = {
+                                {
+                                    IPTR args[] = {
                                     x,
                                     id->id_NumSoftErrors,
                                     ((id->id_DiskState >= ID_WRITE_PROTECTED) && (id->id_DiskState <= ID_VALIDATED)) ?
-		                    (IPTR) dstate[id->id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
+                                    (IPTR) dstate[id->id_DiskState - ID_WRITE_PROTECTED] : (IPTR) "",
                                     (IPTR) GetFSysStr(y),
                                     (IPTR) name};
                                      VLPrintf(DEVFMTSTR, "%4ld%% %4ld %-11s%-8s%s\n", args);
                                 }
 
-				if(blocks)
-				{
+                                if(blocks)
+                                {
                                     IPTR args[] = {
                                         id->id_NumBlocks,
                                         id->id_NumBlocksUsed,
@@ -787,121 +787,121 @@ void doInfo()
                                             "\nTotal blocks: %-10ld  Blocks used: %ld\n"
                                             " Blocks free: %-10ld    Blocksize: %ld\n",
                                             args);
-				}
-			    }
-			}
-		    	else
-		    	{
-			    D(bug("Info failure\n"));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            D(bug("Info failure\n"));
                             VLPrintf(~0, "\n", NULL);
-			}
-			    
-			{
-			    LONG err = IoErr();
+                        }
+                            
+                        {
+                            LONG err = IoErr();
 
-			    /* just ignore PIPEFS */
-			    if (err == ERROR_ACTION_NOT_KNOWN)
-				if (strcmp(name, "PIPEFS:") == 0)
-				    err = 0;
-			    
-			    if (err && showall)
-			    {
+                            /* just ignore PIPEFS */
+                            if (err == ERROR_ACTION_NOT_KNOWN)
+                                if (strcmp(name, "PIPEFS:") == 0)
+                                    err = 0;
+                            
+                            if (err && showall)
+                            {
                                 VLPrintf(~0, nfmtstr, (IPTR*) &name);
-				PrintFault(err, NULL);
-			    }
-			}
-		    }
-		}
-	    }
-	    
-	    /* show volumes */
-	    if(vols || (!devs && !disks)) 
-	    {
-		if(!first)
-		    PutStr("\n");
-		
+                                PrintFault(err, NULL);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            /* show volumes */
+            if(vols || (!devs && !disks)) 
+            {
+                if(!first)
+                    PutStr("\n");
+                
                 VLPrintf(DISKSTITLE, "Volumes\n", NULL);
-		
-		for(MaxLen = 15, idn = head; idn; idn = idn->Next)
-		{
-		    if(idn->IsVolume)
-		    {     
-			LONG len = strlen(idn->Name);
-			
-			if(len > MaxLen)
-			    MaxLen = len;
-		    }
-		}
-		
-		__sprintf(nfmtstr, "%%-%lds%%-10s", MaxLen+1);
-		
-		for(idn = head; idn; idn = idn->Next)
-		{
-		    if(idn->IsVolume)
-		    {
+                
+                for(MaxLen = 15, idn = head; idn; idn = idn->Next)
+                {
+                    if(idn->IsVolume)
+                    {     
+                        LONG len = strlen(idn->Name);
+                        
+                        if(len > MaxLen)
+                            MaxLen = len;
+                    }
+                }
+                
+                __sprintf(nfmtstr, "%%-%lds%%-10s", MaxLen+1);
+                
+                for(idn = head; idn; idn = idn->Next)
+                {
+                    if(idn->IsVolume)
+                    {
                         IPTR args[] = {
                             (IPTR) idn->Name,
                             (IPTR) GetStrFromCat(MOUNTEDSTR, "[Mounted]")};
                             // idn->Task ? GetStrFromCat(MOUNTEDSTR, "[Mounted]") : ""); TODO
                         VLPrintf(VOLNAMEFMTSTR, nfmtstr, args);
-			
-			if(datetimeFmt)
-			{
-			    UBYTE datestr[128];
-			    static struct Hook hook;
+                        
+                        if(datetimeFmt)
+                        {
+                            UBYTE datestr[128];
+                            static struct Hook hook;
 
-			    memset(&hook, 0, sizeof(struct Hook));
+                            memset(&hook, 0, sizeof(struct Hook));
 
-			    hook.h_SubEntry = (HOOKFUNC)FmtProcedure;
-			    hook.h_Data = datestr;
-			    
-			    FormatDate(loc, datetimeFmt, &idn->VolumeDate, &hook);
-			    
-			    PutStr(datestr);
-			}
-			else
-			{
-			    TEXT  StrDay[LEN_DATSTRING];
-			    TEXT  StrDate[LEN_DATSTRING];
-			    TEXT  StrTime[LEN_DATSTRING];
-			    
-			    struct DateTime dt;
-			    
-			    dt.dat_Flags   = DTF_SUBST;
-			    dt.dat_Format  = FORMAT_DOS;
-			    dt.dat_StrDay  = StrDay;
-			    dt.dat_StrDate = StrDate;
-			    dt.dat_StrTime = StrTime;
-			    dt.dat_Stamp   = idn->VolumeDate;
-			    
-			    if(DateToStr(&dt))
-			    {						
-				if(Strnicmp(StrDate, StrDay, strlen(StrDay)) == 0)
-				{
-				    dt.dat_Flags = 0L;
-				    DateToStr(&dt);		
-				}
-				
+                            hook.h_SubEntry = (HOOKFUNC)FmtProcedure;
+                            hook.h_Data = datestr;
+                            
+                            FormatDate(loc, datetimeFmt, &idn->VolumeDate, &hook);
+                            
+                            PutStr(datestr);
+                        }
+                        else
+                        {
+                            TEXT  StrDay[LEN_DATSTRING];
+                            TEXT  StrDate[LEN_DATSTRING];
+                            TEXT  StrTime[LEN_DATSTRING];
+                            
+                            struct DateTime dt;
+                            
+                            dt.dat_Flags   = DTF_SUBST;
+                            dt.dat_Format  = FORMAT_DOS;
+                            dt.dat_StrDay  = StrDay;
+                            dt.dat_StrDate = StrDate;
+                            dt.dat_StrTime = StrTime;
+                            dt.dat_Stamp   = idn->VolumeDate;
+                            
+                            if(DateToStr(&dt))
+                            {
+                                if(Strnicmp(StrDate, StrDay, strlen(StrDay)) == 0)
+                                {
+                                    dt.dat_Flags = 0L;
+                                    DateToStr(&dt);
+                                }
+                                
                                 IPTR args[] = {(IPTR) StrDay, (IPTR) StrDate, (IPTR) StrTime};
                                 VLPrintf(DATEFMTSTR, "created %.3s, %-10s %s", args);
-			    }
-			}
-			
-			PutStr("\n");
-		    }
-		}
-	    }
-	}
-	else
-	{
-	    PrintFault( ERROR_NO_FREE_STORE, NULL);
-	}
+                            }
+                        }
+                        
+                        PutStr("\n");
+                    }
+                }
+            }
+        }
+        else
+        {
+            PrintFault( ERROR_NO_FREE_STORE, NULL);
+        }
 
-	/* reset window pointer of our process */
-	proc->pr_WindowPtr = win;
-	
-	/* free args */
-	FreeArgs(rdargs);
+        /* reset window pointer of our process */
+        proc->pr_WindowPtr = win;
+        
+        /* free args */
+        FreeArgs(rdargs);
     }
     
     
