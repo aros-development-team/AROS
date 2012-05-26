@@ -144,6 +144,9 @@ typedef gz_header *gz_headerp;
 #define zlib_version zlibVersion()
 /* for compatibility with versions < 1.0.2 */
 
+#ifndef MAX_WBITS
+#  define MAX_WBITS   15 /* 32K LZ77 window */
+#endif
 
 #define deflateInit(strm, level) \
         deflateInit_((strm), (level), ZLIB_VERSION, (int)sizeof(z_stream))
