@@ -3,12 +3,25 @@
     $Id$
 */
 
+/* Move these symbols out of the way, because
+ * we're going to be using a slighty different
+ * definition of these for the static library
+ * (a const *)
+ */
+#define __ctype_b __ctype_b_external
+#define __ctype_toupper __ctype_toupper_external
+#define __ctype_tolower __ctype_tolower_external
+
 #include <aros/symbolsets.h>
 #include <ctype.h>
 
 #include "__arosc_privdata.h"
 
-const unsigned short int __ctype_b[256] =
+#undef __ctype_b
+#undef __ctype_toupper
+#undef __ctype_tolower
+
+static const unsigned short int __ctype_b_array[256] =
 {
     _IScntrl, /* 0 */
     _IScntrl, /* 1 */
@@ -268,7 +281,7 @@ const unsigned short int __ctype_b[256] =
     0, /* ÿ */
 };
 
-const unsigned char __ctype_toupper[256] =
+static const unsigned char __ctype_toupper_array[256] =
 {
       0,  1,  2,  3,   4,  5,  6,  7,
       8,  9, 10, 11,  12, 13, 14, 15,
@@ -305,7 +318,7 @@ const unsigned char __ctype_toupper[256] =
     248,249,250,251, 252,253,254,255,
 };
 
-const unsigned char __ctype_tolower[256] =
+static const unsigned char __ctype_tolower_array[256] =
 {
       0,  1,  2,  3,   4,  5,  6,  7,
       8,  9, 10, 11,  12, 13, 14, 15,
@@ -343,6 +356,10 @@ const unsigned char __ctype_tolower[256] =
 };
 
 #ifdef AROSC_SHARED
+const unsigned short *__ctype_b = &__ctype_b_array[0];
+const unsigned char  *__ctype_toupper = &__ctype_toupper_array[0];
+const unsigned char  *__ctype_tolower = &__ctype_tolower_array[0];
+
 const struct arosc_ctype *__get_arosc_ctype(void)
 {
     return &__get_arosc_userdata()->acud_ctype;
@@ -352,14 +369,18 @@ static int __ctype_init(void)
 {
     struct arosc_userdata *acud = __get_arosc_userdata();
 
-    acud->acud_ctype.b       = &__ctype_b[0];
-    acud->acud_ctype.toupper = &__ctype_toupper[0];
-    acud->acud_ctype.tolower = &__ctype_tolower[0];
+    acud->acud_ctype.b       = __ctype_b;
+    acud->acud_ctype.toupper = __ctype_toupper;
+    acud->acud_ctype.tolower = __ctype_tolower;
 
     return 1;
 }
 
 ADD2INIT(__ctype_init, 20);
+#else
+const unsigned short * const __ctype_b = &__ctype_b_array[0];
+const unsigned char  * const __ctype_toupper = &__ctype_toupper_array[0];
+const unsigned char  * const __ctype_tolower = &__ctype_tolower_array[0];
 #endif
 
 /*****************************************************************************
