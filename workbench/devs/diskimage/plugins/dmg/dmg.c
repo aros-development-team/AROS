@@ -26,15 +26,30 @@
 
 #define USED_PLUGIN_API_VERSION 8
 #include <devices/diskimage.h>
-#include <libraries/expat.h>
-#include <libraries/z.h>
-#include <libraries/bz2.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
-#include <proto/expat.h>
-#include <proto/z.h>
-#include <proto/bz2.h>
+
+#ifdef __AROS__
+#  include <libraries/expat_au.h>
+#  include <libraries/z_au.h>
+#  include <libraries/bz2_au.h>
+#  include <proto/expat_au.h>
+#  include <proto/z_au.h>
+#  include <proto/bz2_au.h>
+#  define Uncompress uncompress
+   struct Library *BZ2Base;
+   struct Library *ZBase;
+   struct Library *ExpatBase;
+#else
+#  include <libraries/expat.h>
+#  include <libraries/z.h>
+#  include <libraries/bz2.h>
+#  include <proto/expat.h>
+#  include <proto/z.h>
+#  include <proto/bz2.h>
+#endif
+
 #include "endian.h"
 #include "base64.h"
 #include "adc.h"
@@ -291,7 +306,11 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 			goto error;
 		}
 
+#ifdef __AROS__
+		image->expatbase = OpenLibrary("expat_au.library", 1);
+#else
 		image->expatbase = OpenLibrary("expat.library", 4);
+#endif
 		if (!image->expatbase) {
 			error = ERROR_OBJECT_NOT_FOUND;
 			error_string = MSG_REQVER;
@@ -388,7 +407,12 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	}
 
 	if (image->uses_zlib) {
+#ifdef __AROS__
+		image->zbase = OpenLibrary("z_au.library", 1);
+		ZBase = image->zbase;
+#else
 		image->zbase = OpenLibrary("z.library", 1);
+#endif
 		if (!image->zbase || !CheckLib(image->zbase, 1, 6)) {
 			error = ERROR_OBJECT_NOT_FOUND;
 			error_string = MSG_REQVER;
@@ -400,7 +424,12 @@ APTR DMG_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	}
 
 	if (image->uses_bzlib) {
+#ifdef __AROS__
+		image->bz2base = OpenLibrary("bz2_au.library", 1);
+		BZ2Base = image->bz2base;
+#else
 		image->bz2base = OpenLibrary("bz2.library", 1);
+#endif
 		if (!image->bz2base) {
 			error = ERROR_OBJECT_NOT_FOUND;
 			error_string = MSG_REQVER;

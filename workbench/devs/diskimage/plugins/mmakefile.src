@@ -40,59 +40,89 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 #MM workbench-devs-diskimage-xad : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-xpk : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 
+#MM- workbench-devs-diskimage-plugins-quick : \
+#MM  workbench-devs-diskimage-ccd-quick \
+#MM  workbench-devs-diskimage-ciso-quick \
+#MM  workbench-devs-diskimage-cpc-quick \
+#MM  workbench-devs-diskimage-daa-quick \
+#MM  workbench-devs-diskimage-dax-quick \
+#MM  workbench-devs-diskimage-dmg-quick \
+#MM  workbench-devs-diskimage-dms-quick \
+#MM  workbench-devs-diskimage-gi-quick \
+#MM  workbench-devs-diskimage-mds-quick \
+#MM  workbench-devs-diskimage-nrg-quick \
+#MM  workbench-devs-diskimage-uif-quick
 
-%build_prog mmake=workbench-devs-diskimage-ccd progname=CCD files="ccd" \
+#MM- workbench-devs-diskimage-plugins-clean : \
+#MM  workbench-devs-diskimage-ccd-clean \
+#MM  workbench-devs-diskimage-ciso-clean \
+#MM  workbench-devs-diskimage-cpc-clean \
+#MM  workbench-devs-diskimage-cue-clean \
+#MM  workbench-devs-diskimage-daa-clean \
+#MM  workbench-devs-diskimage-dax-clean \
+#MM  workbench-devs-diskimage-dmg-clean \
+#MM  workbench-devs-diskimage-dms-clean \
+#MM  workbench-devs-diskimage-fdi-clean \
+#MM  workbench-devs-diskimage-gi-clean \
+#MM  workbench-devs-diskimage-mds-clean \
+#MM  workbench-devs-diskimage-nrg-clean \
+#MM  workbench-devs-diskimage-uif-clean \
+#MM  workbench-devs-diskimage-xad-clean \
+#MM  workbench-devs-diskimage-xpk-clean
+
+
+%build_prog mmake=workbench-devs-diskimage-ccd progname=CCD files="stub_aros ccd" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="ciso" \
+%build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="stub_aros ciso" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="cpc" \
+%build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="stub_aros cpc" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
 CFILES := cue/cue cue/flac cue/wavpack audio/aiff audio/flac \
 	audio/mp3_mpg123 audio/vorbis audio/wave audio/wavpack cue/malloc \
 	cue/fdio cue/string cue/stdio cue/select
 
-%build_prog mmake=workbench-devs-diskimage-cue progname=CUE files=$(CFILES) \
+%build_prog mmake=workbench-devs-diskimage-cue progname=CUE files="stub_aros $(CFILES)" \
     targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg m diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="daa" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+%build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="stub_aros daa" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-dax progname=DAX files="dax" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+%build_prog mmake=workbench-devs-diskimage-dax progname=DAX files="stub_aros dax" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
 
 CFILES := dmg/dmg dmg/base64 dmg/adc
 
-%build_prog mmake=workbench-devs-diskimage-dmg progname=DMG files=$(CFILES) \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+%build_prog mmake=workbench-devs-diskimage-dmg progname=DMG files="stub_aros $(CFILES)" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z bz2 expat" usestartup=no
 
 CFILES := ../dms/crc_csum ../dms/getbits ../dms/tables ../dms/maketbl ../dms/u_init \
 	../dms/u_deep ../dms/u_heavy ../dms/u_medium ../dms/u_quick ../dms/u_rle
 
-%build_prog mmake=workbench-devs-diskimage-dms progname=DMS files=$(CFILES) \
+%build_prog mmake=workbench-devs-diskimage-dms progname=DMS files="stub_aros $(CFILES)" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-fdi progname=FDI files="fdi/fdi fdi/fdi2raw" \
+%build_prog mmake=workbench-devs-diskimage-fdi progname=FDI files="stub_aros fdi/fdi fdi/fdi2raw" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-gi progname=GI files="gi" \
+%build_prog mmake=workbench-devs-diskimage-gi progname=GI files="stub_aros gi" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-mds progname=MDS files="mds" \
+%build_prog mmake=workbench-devs-diskimage-mds progname=MDS files="stub_aros mds" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-nrg progname=NRG files="nrg" \
+%build_prog mmake=workbench-devs-diskimage-nrg progname=NRG files="stub_aros nrg" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-uif progname=UIF files="uif" \
+%build_prog mmake=workbench-devs-diskimage-uif progname=UIF files="stub_aros uif" \
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+
+%build_prog mmake=workbench-devs-diskimage-xad progname=XAD files="stub_aros xad" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
-%build_prog mmake=workbench-devs-diskimage-xad progname=XAD files="xad" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
-
-%build_prog mmake=workbench-devs-diskimage-xpk progname=XPK files="xpk" \
+%build_prog mmake=workbench-devs-diskimage-xpk progname=XPK files="stub_aros xpk" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
 %common

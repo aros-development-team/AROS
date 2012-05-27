@@ -26,11 +26,23 @@
 
 #define USED_PLUGIN_API_VERSION 8
 #include <devices/diskimage.h>
-#include <libraries/z.h>
 #include <proto/diskimage.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/z.h>
+
+#ifdef __AROS__
+#  include <libraries/z_au.h>
+#  include <proto/z_au.h>
+#  define InflateInit2 inflateInit2
+#  define Inflate inflate
+#  define InflateEnd inflateEnd
+#  define InflateReset inflateReset
+   struct Library ZBase;
+#else
+#  include <libraries/z.h>
+#  include <proto/z.h>
+#endif
+
 #include <SDI_compiler.h>
 #include "endian.h"
 #include "device_locale.h"
@@ -151,7 +163,12 @@ APTR CISO_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file, CONST_S
 	image->total_blocks = total_blocks;
 	image->align = ciso.align;
 
+#ifdef __AROS__
+	image->zbase = OpenLibrary("z_au.library", 1);
+	ZBase = image->zbase;
+#else
 	image->zbase = OpenLibrary("z.library", 1);
+#endif
 	if (!image->zbase || !CheckLib(image->zbase, 1, 6)) {
 		error = ERROR_OBJECT_NOT_FOUND;
 		error_string = MSG_REQVER;
