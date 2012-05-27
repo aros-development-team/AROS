@@ -89,9 +89,9 @@ BOOL CreateGUI (void) {
 	
 	popkey = TTString(Icon, "CX_POPKEY", NULL);
 	if (!popkey || !TrimStr(popkey)[0]) {
-		popkey = "none";
+		popkey = NULL;
 	}
-	window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_MAIN_WND), PROGNAME, popkey);
+	window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_MAIN_WND), PROGNAME, popkey ? popkey : (STRPTR)"none");
 	about_window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_ABOUT_WND), PROGNAME);
     device_window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_SETDEVICETYPE_WND), PROGNAME);
 	about_window_text = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_ABOUT_REQ),
@@ -209,11 +209,6 @@ BOOL CreateGUI (void) {
 	End;
 	if (!Gui.app) {
 		goto error;
-	}
-	
-	popkey = TTString(Icon, "CX_POPKEY", NULL);
-	if (!popkey || !TrimStr(popkey)[0]) {
-		popkey = NULL;
 	}
 	broker = (CxObj *)XGET(Gui.app, MUIA_Application_Broker);
 	broker_mp = (struct MsgPort *)XGET(Gui.app, MUIA_Application_BrokerPort);
