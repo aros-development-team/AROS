@@ -12,6 +12,6 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 USER_CFLAGS += -Wno-attributes
 
 %build_archspecific mainmmake=workbench-devs-hostdisk maindir=arch/all-hosted/devs/hostdisk \
-    arch=unix files="hostdisk_host geometry" compiler=kernel
+    arch=unix files="hostdisk_host geometry"
 
 %common

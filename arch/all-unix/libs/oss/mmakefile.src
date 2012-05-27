@@ -37,4 +37,4 @@ endif
 
 %build_module mmake=workbench-libs-oss-unix-module modname=oss \
     modtype=library version=$(AROS_TARGET_PLATFORM) files="$(FILES) oss_init" linklibname=ossshared \
-    uselibs="amiga rom m oop" compiler=kernel
+    uselibs="amiga rom m oop"
