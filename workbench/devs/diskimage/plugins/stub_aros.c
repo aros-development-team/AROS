@@ -1,4 +1,8 @@
-int LibNull(void)
+#include <devices/diskimage.h>
+
+extern struct DiskImagePluginTable plugin_table;
+
+void *LibNull(void)
 {
-    return -1;
+    return &plugin_table;
 }
