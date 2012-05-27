@@ -1871,6 +1871,16 @@ aros_target_strip="${prefix}strip"
 aros_plain_nm="${prefix}nm"
 aros_plain_ar="${prefix}ar"
 
+AC_ARG_ENABLE(includes,
+AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
+[aros_target_incl=$enable_includes], [aros_target_incl="/usr/include"])
+
+if test "$aros_kernel_includes" = ""; then
+    if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
+        aros_kernel_includes="-isystem $aros_target_incl"
+    fi
+fi
+
 if test "$aros_kernel_includes" != "" ; then
     dnl find out about the kernel cc's include path
     AC_MSG_CHECKING([for the kernel compiler's include path])

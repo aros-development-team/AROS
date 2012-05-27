@@ -8,6 +8,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer \
 %build_archspecific \
   mainmmake=kernel-timer maindir=rom/timer \
   arch=unix modulename=timer \
-  files="timer_init" compiler=kernel
+  files="timer_init"
 
 %common
