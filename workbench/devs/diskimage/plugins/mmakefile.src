@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 $(BASE_CFLAGS) -DCATCOMP_NUMBERS -D__NOLIBBASE__ -DUSE_FLAC -DUSE_MPG123 -DUSE_VORBIS -DUSE_WAVPACK
-USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include
+USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/../include -I$(SRCDIR)/$(CURDIR)/../dms
 TARGETDIR := $(AROS_DEVS)/DiskImage
 
 #MM- workbench-devs-diskimage-plugins : \
@@ -101,7 +101,7 @@ CFILES := dmg/dmg dmg/base64 dmg/adc
 CFILES := ../dms/crc_csum ../dms/getbits ../dms/tables ../dms/maketbl ../dms/u_init \
 	../dms/u_deep ../dms/u_heavy ../dms/u_medium ../dms/u_quick ../dms/u_rle
 
-%build_prog mmake=workbench-devs-diskimage-dms progname=DMS files="stub_aros $(CFILES)" \
+%build_prog mmake=workbench-devs-diskimage-dms progname=DMS files="stub_aros dms $(CFILES)" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-fdi progname=FDI files="stub_aros fdi/fdi fdi/fdi2raw" \
