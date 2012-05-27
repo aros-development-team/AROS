@@ -26,10 +26,19 @@
 
 #define USED_PLUGIN_API_VERSION 8
 #include <devices/diskimage.h>
-#include <libraries/z.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/z.h>
+
+#ifdef __AROS__
+#  include <libraries/z_au.h>
+#  include <proto/z_au.h>
+#  define Uncompress uncompress
+   struct Library ZBase;
+#else
+#  include <libraries/z.h>
+#  include <proto/z.h>
+#endif
+
 #include "endian.h"
 #include "device_locale.h"
 #include <SDI_compiler.h>
@@ -175,7 +184,12 @@ APTR DAX_OpenImage (struct DiskImagePlugin *Self, APTR unit, BPTR file,
 	image->block_size = 2048;
 	image->total_blocks = image->total_bytes >> 11;
 
+#ifdef __AROS__
+	image->zbase = OpenLibrary("z_au.library", 1);
+	ZBase = image->zbase;
+#else
 	image->zbase = OpenLibrary("z.library", 1);
+#endif
 	if (!image->zbase || !CheckLib(image->zbase, 1, 6)) {
 		error = ERROR_OBJECT_NOT_FOUND;
 		error_string = MSG_REQVER;

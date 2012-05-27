@@ -7,3 +7,7 @@
 #MM- workbench-devs-diskimage-clean : workbench-devs-diskimage-support-clean workbench-devs-diskimage-prefs-clean \
 #MM  workbench-devs-diskimage-device-clean workbench-devs-diskimage-gui-clean workbench-devs-diskimage-mountdiskimage-clean \
 #MM  workbench-devs-diskimage-mounthdf-clean workbench-devs-diskimage-plugins-clean
+
+#MM- workbench-devs-diskimage-quick : workbench-devs-diskimage-support-quick workbench-devs-diskimage-prefs-quick \
+#MM  workbench-devs-diskimage-device-quick workbench-devs-diskimage-gui-quick workbench-devs-diskimage-mountdiskimage-quick \
+#MM  workbench-devs-diskimage-mounthdf-quick workbench-devs-diskimage-plugins-quick
