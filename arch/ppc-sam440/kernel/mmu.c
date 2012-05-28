@@ -279,8 +279,10 @@ void mmu_init(struct TagItem *tags)
         D(bug("[KRN] MMU: Configure for PPC460\n"));
         /* map some 460EX peripherials bus */
         map_region(&info, 0xc, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
-        /* UART control registers and onboard devices */
-        map_region(&info, 0x4, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
+        /* PCI IO/Mem/Control     0xe8000000-0xef000000 */
+        map_region(&info, 0xc, 0x08000000, 0xe8000000, 0x07000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
+        /* UART, GPT, ZMII, EMAC  0xef600000-0xef610000 */
+        map_region(&info, 0x4, 0xef600000, 0xef600000, 0x00010000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
     } else {
         bug("[KRN] MMU: Cannot configure - unknown PVR model 0x%08x\n", pvr);
         for(;;);
