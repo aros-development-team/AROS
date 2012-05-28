@@ -97,14 +97,16 @@ void writeoopinit(FILE *out, struct classinfo *cl)
 		methlistit->internalname, methlistit->method
 	);
     }
-    /* Close the last declaration */
-    fprintf(out,
-	    "        {NULL, 0}\n"
-	    "    };\n"
-	    "#define NUM_%s_%s_METHODS %d\n"
-	    "\n",
-	    cl->basename, interface->s, methods
-    );
+    if (methods) {
+        /* Close the last declaration */
+        fprintf(out,
+                "        {NULL, 0}\n"
+                "    };\n"
+                "#define NUM_%s_%s_METHODS %d\n"
+                "\n",
+                cl->basename, interface->s, methods
+        );
+    }
 
     /* Write the interface description */
     fprintf(out, "    struct OOP_InterfaceDescr %s_ifdescr[] =\n    {\n", cl->basename);
