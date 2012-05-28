@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES	:= main gui
+FILES   := main gui
 
 EXEDIR  := $(AROS_C)
 
@@ -12,6 +12,6 @@ EXEDIR  := $(AROS_C)
 
 %build_prog mmake=workbench-c-r \
     progname=R targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc"
+    files=$(FILES) uselibs="amiga arosc mui"
 
 %common

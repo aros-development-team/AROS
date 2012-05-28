@@ -42,7 +42,7 @@ static void clean_exit(struct Req *req, CONST_STRPTR s)
         if (req->rda) FreeArgs(req->rda);
         FreeVec(req);
     }
-
+    cleanup_gui();
     exit(retval);
 }
 
@@ -78,6 +78,17 @@ static BOOL handle_args(struct Req *req, int argc, char **argv)
     return TRUE;
 }
 
+
+// search for the command in the Shell's search path. Return TRUE if it exists and
+// if it's not a directory
+static BOOL check_exist(struct Req *req)
+{
+    // FIXME: implement me
+    return TRUE;
+}
+
+
+// execute the command with "?" option and read the command template
 static BOOL get_template(struct Req *req)
 {
     BOOL retval = FALSE;
@@ -176,8 +187,22 @@ static BOOL parse_template(struct Req *req)
     {
         // read name
         TEXT *name_start = chr;
-        while (isalnum(*chr) || *chr == '=')
-            chr++;
+        while (1)
+        {
+            if (isalnum(*chr))
+            {
+                chr++;
+                continue;
+            }
+            else if (*chr == '=')
+            {
+                // we are only interested in the part after the "=".
+                chr++;
+                name_start = chr;
+                continue;
+            }
+            break;
+        }
 
         len = chr - name_start;
         if (len == 0)
@@ -231,10 +256,75 @@ static BOOL parse_template(struct Req *req)
     return TRUE;
 }
 
-static void execute_command(void)
-{
-}
 
+// create the command line from the selected options
+static void execute_command(struct Req *req)
+{
+    ULONG i;
+    CONST_STRPTR str;
+
+    strlcpy(req->cmd_template, req->filename, sizeof req->cmd_template);
+
+    for (i = 0; i < req->arg_cnt; i++)
+    {
+        if (req->cargs[i].s_flag)
+        {
+            if (get_gui_bool(&req->cargs[i]))
+            {
+                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
+            }
+        }
+        else if (req->cargs[i].n_flag)
+        {
+            str = get_gui_string(&req->cargs[i]);
+            if (str[0] != '\0')
+            {
+                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
+                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                strlcat(req->cmd_template, str, sizeof req->cmd_template);
+            }
+        }
+        else
+        {
+            BOOL quote = FALSE;
+            str = get_gui_string(&req->cargs[i]);
+            if (str[0] != '\0')
+            {
+                // do we have a space character in the string?
+                // if yes: quote it
+                if (strchr(str, ' ') && str[0] != '\"')
+                {
+                    quote = TRUE;
+                }                    
+                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
+                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                if (quote)
+                {
+                    strlcat(req->cmd_template, "\"", sizeof req->cmd_template);
+                }
+                strlcat(req->cmd_template, str, sizeof req->cmd_template);
+                if (quote)
+                {
+                    strlcat(req->cmd_template, "\"", sizeof req->cmd_template);
+                }
+            }
+        }
+    }
+
+    D(bug("[R] executing command %s\n", req->cmd_template));
+    LONG result = System
+    (
+        req->cmd_template,
+        NULL
+    );
+    if (result)
+    {
+        Printf("\"%s\" failed, return code %ld\n", req->filename, result);
+    }
+}
 
 
 int main(int argc, char **argv)
@@ -246,16 +336,23 @@ int main(int argc, char **argv)
     if (! handle_args(req, argc, argv))
         clean_exit(req, "Failed to parse arguments\n");
 
+    if (! check_exist(req))
+        clean_exit(req, "Command not found\n");
+
     if (! get_template(req))
         clean_exit(req, "Failed to get template\n");
 
     if (! parse_template(req))
         clean_exit(req, "Failed to parse the template\n");
 
-    create_gui(req);
+    if (! create_gui(req))
+        clean_exit(req, "Failed to create application object\n");
 
-    execute_command();
-    
+    if (handle_gui())
+    {
+        execute_command(req);
+    }
+
     clean_exit(req, NULL);
 
     return RETURN_OK;
