@@ -34,7 +34,6 @@ static inline void bug(const char *fmt, ...)
 #define STACK_SIZE 4096
 
 struct PlatformData {
-    struct MemHeader *  pd_SupervisorMem;
     struct MinList      pd_Modules;
     context_t *         pd_FPUOwner;
     uint32_t            pd_CPUUsage;

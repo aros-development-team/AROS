@@ -531,8 +531,6 @@ void SetupClocking460(struct PlatformData *pd)
     wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
 }
 
-struct MemHeader mh;
-
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
@@ -594,42 +592,20 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     NEWLIST(&LIBBASE->kb_PlatformData->pd_Modules);
 
-    D(bug("[KRN] Preparing kernel private memory "));
-    /* Prepare MemHeader structure to allocate from private low memory */
-    mh.mh_Node.ln_Type    = NT_MEMORY;
-    mh.mh_Node.ln_Pri     = -128;
-    mh.mh_Node.ln_Name    = "Kernel Memory";
-    mh.mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
-    mh.mh_First           = (struct MemChunk *)memlo;
-    mh.mh_Lower           = mh.mh_First;
-    mh.mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_lowest - 1);
-
-    mh.mh_Free            = (uintptr_t)mh.mh_Upper - (uintptr_t)mh.mh_Lower + 1;
-    mh.mh_First->mc_Next  = NULL;
-    mh.mh_First->mc_Bytes = mh.mh_Free;
-
-    D(bug("%08x - %08x, %d KB free\n", mh.mh_Lower, mh.mh_Upper, mh.mh_Free >> 10));
-
-    LIBBASE->kb_PlatformData->pd_SupervisorMem = &mh;
+    D(bug("[KRN] Preparing kernel private memory\n"));
 
     /*
      * Add MemHeader about kernel memory to public MemList to avoid invalid
      * pointer debug messages for pointer that reference correctly into these
      * mem regions.
     */
-    struct MemHeader *mh;
-    mh                     = AllocMem(sizeof(struct MemHeader), MEMF_PUBLIC);
-    mh->mh_Node.ln_Type    = NT_MEMORY;
-    mh->mh_Node.ln_Pri     = -128;
-    mh->mh_Node.ln_Name    = "Kernel Memory, Code + Data Sections";
-    mh->mh_Attributes      = MEMF_FAST | MEMF_KICK | MEMF_LOCAL;
-    mh->mh_First           = NULL;
-    mh->mh_Free            = 0;
-    mh->mh_Lower           = LIBBASE->kb_PlatformData->pd_SupervisorMem;
-    mh->mh_Upper           = (APTR) ((uintptr_t) 0xff000000 + krn_highest - 1);
-
-    Enqueue(&SysBase->MemList, &mh->mh_Node);
-
+    krnCreateMemHeader("Kernel Memory", -10, (APTR)memlo, krn_lowest - ((uintptr_t)memlo & 0x00ffffff), MEMF_FAST | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
+    krnCreateROMHeader("Kernel Reserved",
+            (APTR)0xff000000, (APTR)(memlo - 1));
+    krnCreateROMHeader("Kernel Code + Data Sections",
+            (APTR) ((uintptr_t) 0xff000000 + krn_lowest - 1),
+            (APTR) ((uintptr_t) 0xff000000 + krn_highest - 1));
+    
     /* 
      * kernel.resource is ready to run, leave supervisor mode. External interrupts
      * will be enabled during late exec init.
