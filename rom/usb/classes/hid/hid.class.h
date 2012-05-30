@@ -69,6 +69,7 @@ BOOL nAddExtraReport(struct NepClassHid *nch);
 
 BOOL nParseWacom(struct NepClassHid *nch, UBYTE *buf, ULONG len);
 BOOL nDetectWacom(struct NepClassHid *nch);
+void nQuirkPS3Controller(struct NepClassHid *nch);
 BOOL nAddUsage(struct NepClassHid *nch, struct List *list, ULONG umin, ULONG umax);
 
 void nGenerateOutReport(struct NepClassHid *nch, struct NepHidReport *nhr, UBYTE *buf);
