@@ -26,6 +26,7 @@ endif
 
 X11KEYMAPTABLE_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey.table
 X11KEYMAPTABLE_ALT_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt.table
+X11KEYMAPTABLE_ALT_NB_FILE := $(AROS_DEVS)/Keymaps/X11/keycode2rawkey-alt-nb.table
 
 FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
               x11kbd x11mouse x11clipboard xshm fullscreen bitmap_common
@@ -38,7 +39,7 @@ FILES	   := startup x11_hostlib x11_init x11 support x11gfx onbitmap offbitmap \
   files=$(FILES) uselibs="oop hiddstubs"
 
 #MM x11keymaptable
-x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE) $(X11KEYMAPTABLE_ALT_FILE)
+x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_FILE) $(X11KEYMAPTABLE_ALT_FILE) $(X11KEYMAPTABLE_ALT_NB_FILE)
 	@$(NOP)
 
 #MM change-x11keymaptable
@@ -53,6 +54,9 @@ $(X11KEYMAPTABLE_FILE) : $(X11KEYMAPTABLE_SRC_FILE) setup-x11keymaptable
 	@$(CP) $< $@
 
 $(X11KEYMAPTABLE_ALT_FILE) : alt-x11-keycode2rawkey.table  setup-x11keymaptable
+	@$(CP) $< $@
+
+$(X11KEYMAPTABLE_ALT_NB_FILE) : alt-nb-x11-keycode2rawkey.table setup-x11keymaptable
 	@$(CP) $< $@
 
 #MM backup-x11keymaptable
