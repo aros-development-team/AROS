@@ -84,6 +84,7 @@
 	then \
 	    cat %(objdir)/%(err); \
 	else \
+	    echo "$(AROS_CC) $(NOSTARTUP_LDFLAGS) %(ldflags) $(GENMAP) %(objdir)/%(module).map %(objs) %(libs) %(endtag) -o $@"; \
 	    cat %(objdir)/%(err); \
 	    exit 1; \
 	fi
@@ -1487,12 +1488,18 @@ BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
 
+ifeq (%(modtype),library)
+    BD_LIBSUFFIX := 
+else
+    BD_LIBSUFFIX := .%(modtype)
+endif
+
 BD_LINKLIBCFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBFILES))
 BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
     BD_LINKLIB :=
 else
-    BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname).a
+    BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)$(BD_LIBSUFFIX).a
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
@@ -1501,7 +1508,7 @@ BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
 ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
     BD_RELLINKLIB :=
 else
-    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel.a
+    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel$(BD_LIBSUFFIX).a
 endif
 BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
 
@@ -1585,14 +1592,14 @@ endif
 
 # Link static lib
 ifneq ($(BD_LINKLIB),)
-%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+%rule_link_linklib libname=%(linklibname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
 
 $(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
 ifneq ($(BD_RELLINKLIB),)
-%rule_link_linklib libname=%(linklibname)_rel objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+%rule_link_linklib libname=%(linklibname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
 
 $(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
