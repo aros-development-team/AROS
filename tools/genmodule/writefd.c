@@ -59,14 +59,11 @@ void writefd(struct config *cfg)
         for (i = 0; i < 2; i++)
         {
             if (!funclistit)
-                return;
+                break;
 
             funclistit = funclistit->next;
         }
     }
-
-    if (!funclistit)
-        return;
 
     snprintf(line, 255, "%s/%s_lib.fd", cfg->gendir, cfg->modulename);
 
