@@ -13,7 +13,7 @@ USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-c-unpack \
     progname=Unpack targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc bz2" \
+    files=$(FILES) uselibs="bz2_nostdio" \
     usestartup=no
 
 %common
