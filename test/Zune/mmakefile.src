@@ -34,4 +34,4 @@ EXEDIR := $(AROS_TESTS)/Zune
 
 %build_progs mmake=test-zune \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="mui arossupport amiga arosc"
+    uselibs="mui"

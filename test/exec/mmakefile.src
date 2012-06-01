@@ -37,7 +37,6 @@ USER_CFLAGS := -D__AROS_GIMME_DEPRECATED_STACKSWAP__
 #MM test-exec : includes includes-copy linklibs kernel
 
 %build_progs mmake=test-exec \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

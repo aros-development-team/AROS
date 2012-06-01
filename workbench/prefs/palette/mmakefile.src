@@ -12,6 +12,6 @@ EXEDIR  := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-palette \
     progname=Palette targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+    files=$(FILES) uselibs="mui"
 
 %common

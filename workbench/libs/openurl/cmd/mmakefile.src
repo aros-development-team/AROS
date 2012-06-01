@@ -15,6 +15,6 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-libs-openurl-cmd \
     progname=$(EXE) files=$(FILES) \
-    targetdir=$(EXEDIR) uselibs="amiga arosc"
+    targetdir=$(EXEDIR)
 
 %common

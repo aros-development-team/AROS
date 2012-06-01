@@ -1,7 +1,7 @@
 include $(TOP)/config/make.cfg
 
-# 'fs' package includes necessary filesystems and partition.library.
-# These include filesystems and dos.library starter
+# 'fs' package includes necessary filesystems and partition.
+# These include filesystems and dos starter
 
 #MM kernel-package-fs:		\
 #MM	kernel-fs-afs-pkg	\
@@ -26,7 +26,7 @@ FS_HANDLERS := afs cdrom sfs fat
 	      
 %link_kickstart mmake=kernel-link-fs file=$(BINDIR)/boot/aros-fs \
 	handlers=$(FS_HANDLERS) libs=$(FS_LIBS) \
-	uselibs="amiga arossupport rom debug autoinit libinit" \
+	uselibs="amiga arossupport arosc.static debug autoinit libinit" \
 	map=$(GENDIR)/boot/kernel-fs.map deps=kernel-fs-objs
 
 %common

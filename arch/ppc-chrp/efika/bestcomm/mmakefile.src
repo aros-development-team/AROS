@@ -3,4 +3,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-bestcomm-chrp-ppc-efika 	\
   modname=bestcomm modtype=resource		\
-  files="bestcomm_init" uselibs="rom"
+  files="bestcomm_init"

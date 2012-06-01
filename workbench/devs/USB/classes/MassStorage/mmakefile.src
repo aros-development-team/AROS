@@ -8,7 +8,7 @@ STUBS := storage_stubs
 %build_module mmake=hidd-usb-classes-storage	\
 	modname=storage modtype=hidd		\
 	files="$(FILES)" moduledir=Classes/USB	\
-	uselibs="oop rom amiga hiddstubs"
+	uselibs="oop hiddstubs"
 
 %make_hidd_stubs hidd=storage
 

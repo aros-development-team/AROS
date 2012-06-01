@@ -12,6 +12,6 @@ include $(TOP)/config/make.cfg
 %build_module mmake=workbench-libs-coolimages \
     modname=coolimages modtype=library \
     files="coolimages_init cool_obtainimagea" \
-    uselibs="coolimagesstatic amiga rom"
+    uselibs="coolimagesstatic"
 
 %common

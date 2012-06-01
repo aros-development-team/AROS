@@ -70,7 +70,7 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_libr
 	@$(ECHO) "Linking    boot/aros-amcc440"
 	$(TARGET_CC) -nostartfiles -Wl,-Map -Wl,$(OSGENDIR)/boot/kernel.map -Wl,-T -Wl,$(SRCDIR)/$(CURDIR)/ldscript.lds \
         -o $@ $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_library.o \
-        -L$(LIBDIR) -larossupport -lrom -larosm -lamiga -lautoinit -llibinit -lgcc
+        -L$(LIBDIR) -larossupport -larosc.static -larosm -lamiga -lautoinit -llibinit -lgcc
 
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos poseidon

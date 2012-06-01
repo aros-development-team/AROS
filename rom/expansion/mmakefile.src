@@ -28,5 +28,4 @@ endif
 
 %build_module mmake=kernel-expansion \
   modname=expansion modtype=library version=$(VERSION) \
-  files="expansion_init $(FUNCS)" \
-  uselibs=rom
+  files="expansion_init $(FUNCS)"

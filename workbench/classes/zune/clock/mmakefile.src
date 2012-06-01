@@ -10,8 +10,7 @@ INCLUDE_FILES := clock.h
 %build_module \
     mmake=workbench-classes-zune-clock \
     modname=Clock modtype=mcc \
-    conffile=clock.conf \
-    uselibs="amiga m rom"
+    conffile=clock.conf
     
 %copy_includes path=zune
     

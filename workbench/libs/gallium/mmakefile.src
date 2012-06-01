@@ -20,7 +20,7 @@ LIB_GALLIUM_SOURCES = \
 
 %build_module mmake=workbench-libs-gallium \
     modname=gallium modtype=library linklibname=gallium conffile=gallium.conf \
-    files="$(LIB_GALLIUM_SOURCES)" uselibs="rom oop"
+    files="$(LIB_GALLIUM_SOURCES)" uselibs="oop"
 
 #MM includes-copy
 

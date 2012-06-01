@@ -7,8 +7,7 @@ FILES:= uuid_compare uuid_namespace uuid_parse uuid_pack uuid_clear \
 #MM- workbench-libs : workbench-libs-uuid
 %build_module mmake=workbench-libs-uuid \
     modname=uuid modtype=library \
-    files="uuid_init $(FILES)" \
-    uselibs=rom
+    files="uuid_init $(FILES)"
 
 #MM includes-copy
 INCLUDE_FILES := $(call WILDCARD, include/*.h)

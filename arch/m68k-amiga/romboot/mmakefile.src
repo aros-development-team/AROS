@@ -5,6 +5,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-romboot \
   modname=romboot modtype=hook \
-  files="romboot resident_end" compiler=target uselibs="rom"
+  files="romboot resident_end" compiler=target
 
 %common

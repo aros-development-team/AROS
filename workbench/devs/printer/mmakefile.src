@@ -11,6 +11,6 @@ FILES := printer driver prefs gfx text
 
 %build_module mmake=workbench-devs-printer \
   modname=printer modtype=device \
-  files=$(FILES) uselibs="rom"
+  files=$(FILES)
 
 %common

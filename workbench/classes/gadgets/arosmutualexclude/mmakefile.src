@@ -7,5 +7,5 @@ FILES := mxclass support
 
 %build_module mmake=workbench-gadgets-arosmutualexclude \
   modname=arosmutualexclude modtype=gadget \
-  files=$(FILES) uselibs=rom
+  files=$(FILES)
 

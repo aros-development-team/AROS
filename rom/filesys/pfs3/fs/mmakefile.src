@@ -52,7 +52,7 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
@@ -60,7 +60,7 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3ds \
     modname=pfs3ds modtype=handler \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"
 
 KS13STUFF := \
     -DKS13WRAPPER \
@@ -77,7 +77,7 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3-ks13 \
     modname=pfs3_ks13 modtype=handler \
-    files="$(FILES) ks13wrapper" uselibs="rom"
+    files="$(FILES) ks13wrapper"
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) $(KS13STUFF) \
@@ -85,7 +85,7 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3ds-ks13 \
     modname=pfs3ds_ks13 modtype=handler \
-    files="$(FILES) ks13wrapper" uselibs="rom"
+    files="$(FILES) ks13wrapper"
 
 
 %common

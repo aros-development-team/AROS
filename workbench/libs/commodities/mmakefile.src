@@ -44,7 +44,6 @@ FUNCS := activatecxobj \
 
 %build_module mmake=workbench-libs-commodities \
     modname=commodities modtype=library \
-    files="$(FUNCS) $(FILES) commodities_init" \
-    uselibs="arossupport rom"
+    files="$(FUNCS) $(FILES) commodities_init"
 
 %common

@@ -15,8 +15,7 @@ INCLUDE_FILES := Lamp_mcc.h
 %build_module \
     mmake=workbench-classes-zune-lamp \
     modname=Lamp modtype=mcc \
-    conffile=lamp.conf \
-    uselibs="amiga rom"
+    conffile=lamp.conf
 
 %copy_includes path=mui
 

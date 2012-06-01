@@ -16,8 +16,8 @@ USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
   modname=z_au modtype=library \
   files="init-aros $(FILES)" uselibs="arosc_rel" linklibname=z
 
-#MM- linklibs: linklibs-z_static
+#MM- linklibs: linklibs-z-static
 
-%build_linklib mmake=linklibs-z_static libname=z_static files="$(FILES)"
+%build_linklib mmake=linklibs-z-static libname=z.static files="$(FILES)"
 
 %common

@@ -23,7 +23,7 @@ USER_CFLAGS := -DHAVE_COOLIMAGES
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui amiga uuid m"
+    files=$(FILES) uselibs="mui uuid"
 
 #MM
 workbench-tools-hdtoolbox-prefs : $(PREFSDIR)/hdtoolbox.prefs

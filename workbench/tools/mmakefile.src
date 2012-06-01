@@ -10,8 +10,7 @@ FILES := Calculator GraphicDump InitPrinter PrintFiles WiMP
 #MM workbench-tools : includes linklibs
 
 %build_progs mmake=workbench-tools \
-    files=$(FILES) targetdir=$(AROSDIR)/Tools \
-    uselibs="amiga arosc m"
+    files=$(FILES) targetdir=$(AROSDIR)/Tools
 
 %common
 

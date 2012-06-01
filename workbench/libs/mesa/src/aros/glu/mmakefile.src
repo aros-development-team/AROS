@@ -178,7 +178,7 @@ LDFLAGS += $(CXX_OBJECTS)
 %build_module mmake=workbench-libs-glu-module \
     modname=glu modtype=library linklibname=GLU conffile=glu.conf \
     files="$(LIBRARY_SOURCES)" \
-    uselibs="rom arosm amiga GL"
+    uselibs="GL"
 
 %common
 

@@ -9,7 +9,6 @@ FILES :=    dm9601eth.class dev debug
 
 %build_module mmake=kernel-usb-classes-dm9601eth \
     modname=dm9601eth modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

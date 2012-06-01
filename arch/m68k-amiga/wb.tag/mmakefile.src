@@ -5,6 +5,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-amiga-m68k-wbtag \
     modname=wbtag modtype=resource \
-    files="wbtag resident_end" uselibs="rom"
+    files="wbtag resident_end"
 
 %common

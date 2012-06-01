@@ -7,4 +7,4 @@ FILES := pnmclass
 
 %build_module mmake=workbench-datatypes-pnm \
     modname=pnm modtype=datatype \
-    files=$(FILES) uselibs="amiga rom"
+    files=$(FILES)

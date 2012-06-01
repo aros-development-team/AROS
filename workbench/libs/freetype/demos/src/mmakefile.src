@@ -23,13 +23,13 @@ USER_CFLAGS += -Wno-error
 %build_prog mmake=workbench-libs-freetype-demos-ftstring \
     progname=ftstring targetdir=$(BINDIR)/Demos/FreeType \
     files="ftstring common ftcommon" \
-    uselibs="freetype2 freetypegraph arossupport amiga arosc m"
+    uselibs="freetype2 freetypegraph"
 
 USER_CFLAGS += -DFT2_BUILD_LIBRARY
 
 %build_prog mmake=workbench-libs-freetype-demos-ftview \
     progname=ftview targetdir=$(BINDIR)/Demos/FreeType \
     files="ftview common ftcommon" \
-    uselibs="freetype2 freetypegraph arossupport amiga arosc m"
+    uselibs="freetype2 freetypegraph"
 
 %common

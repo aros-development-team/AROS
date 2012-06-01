@@ -7,5 +7,5 @@ FILES := checkboxclass support
 
 %build_module mmake=workbench-gadgets-aroscheckbox \
   modname=aroscheckbox modtype=gadget \
-  files=$(FILES) uselibs="amiga rom"
+  files=$(FILES)
 

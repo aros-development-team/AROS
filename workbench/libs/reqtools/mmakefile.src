@@ -50,7 +50,6 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-reqtools \
     modname=reqtools modtype=library \
-    files="reqtools_init $(FUNCS) $(FILES)" \
-    uselibs="amiga rom"
+    files="reqtools_init $(FUNCS) $(FILES)"
 
 %common

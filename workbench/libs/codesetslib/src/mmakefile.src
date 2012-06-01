@@ -22,7 +22,6 @@ USER_CFLAGS = -I. -idirafter $(SRCDIR)/$(CURDIR)/../include
 
 %build_module_simple mmake=workbench-libs-codesets \
     modname=codesets modtype=library \
-    files=$(FILES) \
-    uselibs="amiga rom"
+    files=$(FILES) uselibs="arosc.static"
 
 %common

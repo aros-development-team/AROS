@@ -10,4 +10,4 @@ USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION -I$(SRCDIR)/$(CURDIR)
 
 %build_module mmake=workbench-datatypes-amigaguide \
     modname=amigaguide modtype=datatype \
-    files=$(FILES) uselibs="rexxsyslib amiga rom"
+    files=$(FILES) uselibs="rexxsyslib"

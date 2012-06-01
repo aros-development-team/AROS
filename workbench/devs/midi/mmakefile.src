@@ -9,6 +9,6 @@ EXEDIR := $(AROS_DEVS)/Midi
 
 %build_prog mmake=workbench-devs-midi \
     progname=debugdriver targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport rom m"
+    files=$(FILES)
 
 %common

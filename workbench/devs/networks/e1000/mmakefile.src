@@ -18,9 +18,9 @@ CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 %build_module mmake=workbench-devs-networks-e1000-normal \
     modname=e1000 modtype=device \
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" cflags=$(CFLAGSNORMAL) \
-    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop hiddstubs"
 
 %build_module mmake=workbench-devs-networks-e1000-debug \
     modname=e1000_debug modtype=device \
     files="e1000_init $(FILES) $(INTELCOREFILES) $(INTELMACFILES)" conffile=e1000.conf cflags=$(CFLAGSDEBUG) \
-    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop hiddstubs"

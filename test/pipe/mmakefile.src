@@ -14,7 +14,6 @@ EXEDIR          := $(AROS_TESTS)/pipe
 
 %build_progs mmake=test-pipe \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga m" \
     usestartup="no"
 
 %common

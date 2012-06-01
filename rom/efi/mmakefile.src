@@ -5,6 +5,6 @@ FILES := efi_init
 FUNCS := findconfigtable shutdowna
 
 %build_module mmake=kernel-efi modname=efi modtype=resource \
-  files="$(FILES) $(FUNCS)" uselibs=rom
+  files="$(FILES) $(FUNCS)" 
 
 %common

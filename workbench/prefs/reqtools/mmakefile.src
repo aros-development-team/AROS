@@ -13,6 +13,6 @@ EXEDIR := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-reqtools \
     progname=ReqTools targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc m"
+    files=$(FILES)
 
 %common

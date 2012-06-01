@@ -9,4 +9,4 @@ USER_CFLAGS += -D__UTILITY_NOLIBBASE__
 
 %build_module mmake=kernel-bootloader \
     modname=bootloader modtype=resource \
-    files="bootloader_init getbootinfo" uselibs="rom utility"
+    files="bootloader_init getbootinfo"

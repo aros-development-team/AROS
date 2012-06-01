@@ -9,4 +9,4 @@ USER_INCLUDES := -I$(TOP)/rom/devs
 %build_module mmake=kernel-pc-i386-trackdisk \
   modname=trackdisk modtype=device \
   files="trackdisk_device trackdisk_hw" \
-  uselibs="hiddstubs arossupport rom amiga oop"
+  uselibs="hiddstubs oop"

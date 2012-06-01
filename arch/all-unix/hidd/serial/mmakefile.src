@@ -9,7 +9,7 @@ USER_CFLAGS := -DAROS_ARCHITECTURE="\"$(AROS_TARGET_PLATFORM)\"" \
 %build_module mmake=workbench-hidd-unix-serial \
   modname=serial modtype=hidd \
   files=$(FILES) \
-  uselibs="amiga oop rom"
+  uselibs="oop"
 
 
 #MM workbench-hidd-unix-serial : kernel-unixio

@@ -10,6 +10,6 @@ FILES := main locale
 
 %build_prog mmake=workbench-c-loadresource \
     progname=LoadResource targetdir=$(AROS_C) \
-    files=$(FILES) uselibs=""
+    files=$(FILES) uselibs="arosc.static"
 
 %common

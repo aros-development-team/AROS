@@ -11,6 +11,6 @@ EXEDIR      := $(AROS_PREFS)
 
 %build_prog mmake=workbench-prefs-wanderer \
     progname=Wanderer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc"
+    files=$(FILES) uselibs="mui arossupport"
 
 %common

@@ -9,5 +9,5 @@ USER_CFLAGS := -I$(GENDIR)/workbench/devs/AHI/Include/gcc
 
 %build_module mmake=workbench-datatypes-sound \
     modname=sound modtype=datatype \
-    files=$(FILES) uselibs="amiga rom"
+    files=$(FILES)
 

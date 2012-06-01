@@ -4,4 +4,4 @@ include $(TOP)/config/make.cfg
 %build_module mmake=kernel-pci-efika \
   modname=pci-efika modtype=hidd \
   files="pci_efika_init driverclass" \
-  uselibs="rom amiga oop"
+  uselibs="oop"

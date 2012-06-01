@@ -51,8 +51,7 @@ EXEDIR := $(AROS_TESTS)/clib
 #MM test-clib : includes includes-copy linklibs kernel
 
 %build_progs mmake=test-clib \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common
 

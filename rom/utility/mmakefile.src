@@ -23,5 +23,4 @@ FUNCTIONS := \
 
 %build_module mmake=kernel-utility \
   modname=utility modtype=library \
-  files="utility_init $(FUNCTIONS) $(FILES)" \
-  uselibs="rom"
+  files="utility_init $(FUNCTIONS) $(FILES)"

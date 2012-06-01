@@ -23,21 +23,20 @@ USER_CFLAGS := -DNDEBUG -DDEBUG=0
 
 %build_prog mmake=kernel-fs-cdvdfs-cdcontrol \
     progname=cdcontrol targetdir=$(AROS_C) \
-    files="$(CDCONTROL_FILES)" uselibs="amiga arosc"
+    files="$(CDCONTROL_FILES)"
 
 %build_prog mmake=kernel-fs-cdvdfs-cdrom \
     progname=cdrom targetdir=$(TESTSDIR) \
-    files="$(CDROM_FILES)" uselibs="amiga arosc"
+    files="$(CDROM_FILES)"
 
 %build_prog mmake=kernel-fs-cdvdfs-checkcd \
     progname=checkcd targetdir=$(AROS_C) \
-    files="$(CHECKCD_FILES)" uselibs="amiga arosc"
+    files="$(CHECKCD_FILES)"
 
 USER_CFLAGS := -DAROS_KERNEL $(USER_CFLAGS)
 
 %build_module mmake=kernel-fs-cdvdfs \
     modname=cdrom modtype=handler \
-    files="$(HANDLER_FILES)" \
-    uselibs="arossupport rom"
+    files="$(HANDLER_FILES)"
 
 %common

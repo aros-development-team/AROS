@@ -11,6 +11,6 @@ FILES :=    usbaudio.class numtostr debug
 %build_module mmake=kernel-usb-classes-usbaudio \
     modname=usbaudio modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="amiga rom debug"
+    uselibs="debug"
 
 %common

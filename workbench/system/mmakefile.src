@@ -13,6 +13,6 @@ FILES	:= \
 
 %build_progs mmake=workbench-system \
     files=$(FILES) targetdir=$(AROSDIR)/System \
-    uselibs="amiga arosc"
+    uselibs="amiga"
 
 %common

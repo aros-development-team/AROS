@@ -9,7 +9,6 @@ FILES :=    stir4200.class dev debug
 
 %build_module mmake=kernel-usb-classes-stir4200 \
     modname=stir4200 modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

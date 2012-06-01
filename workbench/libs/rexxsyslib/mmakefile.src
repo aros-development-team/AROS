@@ -19,4 +19,4 @@ FUNCS := \
 # TODO: At the moment sprintf needs the math library
 %build_module mmake=workbench-libs-rexxsyslib \
   modname=rexxsyslib modtype=library \
-  files="rexxsyslib_init $(FUNCS)" uselibs="arossupport amiga rom m"
+  files="rexxsyslib_init $(FUNCS)"

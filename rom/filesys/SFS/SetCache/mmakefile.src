@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS     := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-devs-sfs-c-setcache \
-    files=SetCache progname=SetCache targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m"
+    files=SetCache progname=SetCache targetdir=$(AROS_C)
 
 %common

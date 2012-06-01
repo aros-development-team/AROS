@@ -8,6 +8,6 @@ FUNCS := gethpetcount allochpetunit freehpetunit getunitattrsa
 
 %build_module mmake=kernel-pc-hpet \
   modname=hpet modtype=resource \
-  files="$(FILES) $(FUNCS)" uselibs=rom
+  files="$(FILES) $(FUNCS)"
 
 %common

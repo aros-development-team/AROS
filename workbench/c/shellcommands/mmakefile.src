@@ -51,7 +51,6 @@ USER_CFLAGS := -I$(GENDIR)/workbench/c/shellcommands/shellsegs.h \
 
 %build_progs mmake=workbench-c-shellcommands \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom m" \
     usestartup=no
 
 $(OBJDIR)/NewCLI.o : $(OBJDIR)/NewShell.o
@@ -101,7 +100,6 @@ FILES := \
 
 %build_module mmake=kernel-c-shellcommands \
   modname=shellcommands modtype=resource \
-  files="shellcommands_init $(FILES)" \
-  uselibs="rom"
+  files="shellcommands_init $(FILES)"
 
 %common

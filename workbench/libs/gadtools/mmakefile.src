@@ -41,8 +41,7 @@ USER_CFLAGS := -D__NOLIBBASE__
 
 %build_module mmake=workbench-libs-gadtools \
     modname=gadtools modtype=library \
-    files="gadtools_init $(FUNCS) $(FILES)" \
-    uselibs="rom amiga"
+    files="gadtools_init $(FUNCS) $(FILES)"
 
 # (bernie) this hack disables optimization on classes.c to fix a problem in the
 # current Amiga version of gcc and egcs. Using inline asm macros to perform

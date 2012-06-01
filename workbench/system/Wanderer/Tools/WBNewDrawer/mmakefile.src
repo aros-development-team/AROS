@@ -15,6 +15,6 @@ EXEDIR := \
 
 %build_prog mmake=workbench-system-wanderer-tools-wbnewdrawer \
     progname=WBNewDrawer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+    files=$(FILES) uselibs="mui arossupport"
 
 %common

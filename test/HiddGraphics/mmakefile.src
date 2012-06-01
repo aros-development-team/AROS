@@ -10,6 +10,6 @@ FILES := hiddmodeid
 
 %build_progs mmake=test-hidd-graphics \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga hiddstubs oop"
+    uselibs="oop hiddstubs"
 	
 %common

@@ -23,7 +23,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs/commodities
 
 %build_progs mmake=workbench-tools-commodities \
     files=$(FILES) targetdir=$(AROSDIR)/Tools/Commodities \
-    uselibs="mui amiga arosc m"
+    uselibs="mui"
 
 %common
 

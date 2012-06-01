@@ -6,8 +6,7 @@ FILES := DRadioTool PencamTool PowManTool RocketTool SonixcamTool UPSTool
 #MM- kernel-usb-shellapps : kernel-usb-poseidon-includes
 
 %build_progs mmake=kernel-usb-shellapps \
-    files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(AROS_C)
 
 
 %common

@@ -5,6 +5,6 @@ FILES := pcipc_init driverclass pciconf1 pciconf2
 
 %build_module mmake=kernel-pci-pcipc \
     modname=pcipc modtype=hidd \
-    files=$(FILES) uselibs="rom amiga oop"
+    files=$(FILES) uselibs="oop"
 
 %common

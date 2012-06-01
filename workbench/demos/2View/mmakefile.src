@@ -15,6 +15,6 @@ EXEDIR := $(AROSDIR)/Demos
 
 %build_prog mmake=demos \
     progname=2View targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc m"
+    files=$(FILES)
 
 %common

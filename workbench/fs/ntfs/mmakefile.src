@@ -10,6 +10,6 @@ DISABLEDFILES :=   file
 
 %build_prog mmake=workbench-fs-ntfs \
     progname=ntfs-handler targetdir=$(AROS_FS) \
-    files="$(FILES)" usestartup=no uselibs="rom"
+    files="$(FILES)" usestartup=no
 
 %common

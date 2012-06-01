@@ -11,6 +11,6 @@ FILES := Function Guru
 
 %build_progs mmake=workbench-libs-identify-tools \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga arosc identify"
+    uselibs="identify"
 
 %common

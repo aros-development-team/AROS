@@ -15,7 +15,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 
 %build_prog mmake=workbench-classes-zune-texteditor-demo progname=TextEditor-Demo \
     files=$(FILES) targetdir=$(TARGETDIR) \
-    uselibs="amiga mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-texteditor-rexx
 %copy_dir_recursive mmake=workbench-classes-zune-texteditor-rexx src=rexx \

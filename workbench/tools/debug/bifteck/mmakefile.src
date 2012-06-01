@@ -9,6 +9,6 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=workbench-tools \
     progname=Bifteck targetdir=$(AROSDIR)/Tools/Debug \
-    files=Bifteck uselibs="amiga arosc"
+    files=Bifteck
 
 %common

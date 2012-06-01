@@ -60,5 +60,4 @@ USER_CFLAGS := -D__UTILITY_NOLIBBASE__ -D__GRAPHICS_NOLIBBASE__
 
 %build_module mmake=kernel-layers \
   modname=layers modtype=library \
-  files="layers_init $(FUNCS) $(FILES)" \
-  uselibs=rom
+  files="layers_init $(FUNCS) $(FILES)"

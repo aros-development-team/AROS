@@ -34,4 +34,4 @@ USER_LDFLAGS:=--verbose
 %build_module mmake=workbench-libs-mathieeedoubtrans \
     modname=mathieeedoubtrans modtype=library \
     files="$(FILES) $(FUNCS)" \
-    uselibs="mathieeedoubbas rom"
+    uselibs="mathieeedoubbas"

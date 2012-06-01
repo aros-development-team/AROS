@@ -48,6 +48,6 @@ USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_module mmake=kernel-partition \
     modname=partition modtype=library \
-    files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg rom"
+    files="partition_init $(FUNCS) $(FILES)" uselibs="debug loadseg"
 
 %common

@@ -12,4 +12,4 @@ FILES	:= nvidia_init nvidiaclass nvhardware nvidiabitmap planarbm
 %build_module mmake=hidd-nvidia \
     modname=nvidia modtype=hidd \
     files="$(FILES)" \
-    uselibs="oop rom amiga"
+    uselibs="oop"

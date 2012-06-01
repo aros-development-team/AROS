@@ -189,7 +189,7 @@ LIBRARY_SOURCES = \
 %build_module mmake=workbench-libs-mesa-module \
     modname=mesa modtype=library linklibname=GL conffile=arosmesa.conf linklibfiles="arosmesa_getprocaddress" \
     files="$(LIBRARY_SOURCES)" \
-    uselibs="galliumauxiliary rom gallium arosm amiga"
+    uselibs="galliumauxiliary gallium"
 
 
 # NOTE: Both files have been generate and added to AROS repository. Once all 

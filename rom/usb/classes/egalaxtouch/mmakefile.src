@@ -9,7 +9,6 @@ FILES :=    egalaxtouch.class debug
 
 %build_module mmake=kernel-usb-classes-egalaxtouch \
     modname=egalaxtouch modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

@@ -22,6 +22,6 @@ USER_CFLAGS := -D__INTUITION_NOLIBBASE__ -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-afs \
     modname=afs modtype=handler \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"
 
 %common

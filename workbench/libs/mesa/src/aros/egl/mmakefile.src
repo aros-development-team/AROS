@@ -71,7 +71,7 @@ USER_CFLAGS :=  -DFEATURE_GL=1 \
 %build_module mmake=workbench-libs-egl \
     modname=egl modtype=library linklibname=EGL conffile=egl.conf \
     files="$(LIBRARY_SOURCES)" \
-    uselibs="galliumauxiliary rom arosm amiga gallium"
+    uselibs="galliumauxiliary gallium"
 
 %common
 

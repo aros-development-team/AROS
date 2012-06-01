@@ -47,5 +47,4 @@ USER_CFLAGS += -D__DOS_NOLIBBASE__ \
 
 %build_module mmake=workbench-libs-workbench \
   modname=workbench modtype=library \
-  files="workbench_init $(FUNCS) $(FILES)" \
-  uselibs="rom"
+  files="workbench_init $(FUNCS) $(FILES)"

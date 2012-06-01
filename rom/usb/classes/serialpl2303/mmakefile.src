@@ -7,7 +7,6 @@ FILES :=    serialpl2303.class dev debug
 
 %build_module mmake=kernel-usb-classes-serialpl2303 \
     modname=serialpl2303 modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

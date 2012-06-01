@@ -7,6 +7,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-alerthook \
   modname=alert modtype=hook \
-  files="alerthook resident_end" compiler=target uselibs="rom"
+  files="alerthook resident_end" compiler=target
 
 %common

@@ -7,6 +7,6 @@ USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
 %build_module mmake=kernel-hidd-linuxfb \
   modname=linuxfb modtype=hidd \
-  files=$(FILES) uselibs="rom oop"
+  files=$(FILES) uselibs="oop"
 
 %common

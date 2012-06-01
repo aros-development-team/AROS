@@ -7,4 +7,4 @@ FILES := gradientsliderclass support
 
 %build_module mmake=workbench-gadgets-gradientslider \
   modname=gradientslider modtype=gadget \
-  files=$(FILES) uselibs="amiga rom"
+  files=$(FILES)

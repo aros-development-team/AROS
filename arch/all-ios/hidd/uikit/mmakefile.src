@@ -10,7 +10,7 @@ FILES := gfxclass bitmapclass eventtask startup
 
 %build_module mmake=kernel-hidd-uikit \
   modname=uikit modtype=hidd \
-  files=$(FILES) uselibs="oop rom hiddstubs"
+  files=$(FILES) uselibs="oop hiddstubs"
 
 NATIVE_BINDIR := $(BINDIR)/Libs/Host
 NATIVE_OBJDIR := $(GENDIR)/$(CURDIR)

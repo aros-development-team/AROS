@@ -19,7 +19,7 @@ Prefs.c : ../../tools/Edit/Prefs.c
 
 %build_prog mmake=workbench-prefs-editor \
     progname=Editor targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc m"
+    files=$(FILES)
     
 
 %common

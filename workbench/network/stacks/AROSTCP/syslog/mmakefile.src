@@ -14,6 +14,6 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -D__BSD_VISIBLE=1
 
 %build_prog mmake=aros-tcpip-apps-syslog \
     progname=SysLog targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc"
+    files=$(FILES) uselibs="mui"
 
 %common

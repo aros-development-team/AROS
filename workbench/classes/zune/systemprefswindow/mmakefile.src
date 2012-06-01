@@ -11,8 +11,7 @@ INCLUDE_FILES := systemprefswindow.h
 %build_module \
     mmake=workbench-classes-zune-systemprefswindow \
     modname=SystemPrefsWindow modtype=mcc \
-    conffile=systemprefswindow.conf \
-    uselibs="amiga rom"
+    conffile=systemprefswindow.conf
     
 %copy_includes path=zune
     

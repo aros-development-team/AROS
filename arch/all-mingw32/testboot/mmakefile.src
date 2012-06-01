@@ -9,7 +9,7 @@ EXEDIR := $(BINDIR)/boot
 
 %build_prog mmake=test-mingw32-boot \
     progname=testboot targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="rom" \
+    files=$(FILES) \
     usestartup=no
 
 %common

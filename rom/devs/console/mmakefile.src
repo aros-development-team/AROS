@@ -14,8 +14,7 @@ USER_CFLAGS := -D__GRAPHICS_NOLIBBASE__ \
 
 %build_module mmake=kernel-console \
   modname=console modtype=device \
-  files="console $(FUNCS) $(FILES)" \
-  uselibs="amiga rom"
+  files="console $(FUNCS) $(FILES)"
 
 #MM includes-copy
 

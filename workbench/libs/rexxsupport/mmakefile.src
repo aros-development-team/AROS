@@ -17,6 +17,6 @@ FUNCS := arexxdispatch closeportrsrc
 %build_module mmake=workbench-libs-rexxsupport \
     modname=rexxsupport modtype=library \
     files="rexxsupport_init $(FUNCS) $(FILES)" \
-    uselibs="rexxsyslib amiga rom"
+    uselibs="rexxsyslib"
 
 %common

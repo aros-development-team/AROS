@@ -9,7 +9,7 @@ FILES := cache charset direntry disk fat file lock main names packet\
 
 %build_module mmake=kernel-fs-fat \
     modname=fat modtype=handler \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"
 
 
 %common

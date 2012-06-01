@@ -13,7 +13,7 @@ EXEDIR          := $(AROS_TESTS)/expat
 
 %build_progs mmake=test-expat \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m expat"
+    uselibs="expat"
 
 #MM
 test-expat-copy : $(EXEDIR)/test.xml

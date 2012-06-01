@@ -72,7 +72,7 @@ USB_RES     := usbromstartup
 
 %link_kickstart mmake=kernel-link-usb file=$(BINDIR)/boot/poseidon \
 	classes=$(USB_CLASSES) devs=$(USB_DEVS) libs=$(USB_LIBS) res=$(USB_RES) \
-	uselibs="amiga arossupport rom debug hiddstubs autoinit libinit" \
+	uselibs="debug hiddstubs" \
 	map=$(GENDIR)/boot/kernel-usb.map deps=kernel-usb-kobj
 
 %common

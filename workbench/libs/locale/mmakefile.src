@@ -22,6 +22,6 @@ FUNCS := \
 %build_module mmake=workbench-libs-locale \
     modname=locale modtype=library \
     files="locale_init $(FUNCS) $(FILES)" \
-    uselibs=rom
+    uselibs="arosc.static"
 
 %common

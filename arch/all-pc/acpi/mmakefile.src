@@ -6,6 +6,6 @@ FUNCS := findsdt scanentries readreg writereg scansdt shutdowna
 
 %build_module mmake=kernel-pc-acpi \
   modname=acpi modtype=resource \
-  files="$(FILES) $(FUNCS)" uselibs=rom
+  files="$(FILES) $(FUNCS)"
 
 %common

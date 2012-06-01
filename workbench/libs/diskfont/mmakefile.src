@@ -22,6 +22,6 @@ FUNCS	:=  opendiskfont	\
 %build_module mmake=workbench-libs-diskfont \
     modname=diskfont modtype=library \
     files="diskfont_init $(FUNCS) $(FILES)" \
-    uselibs="arossupport amiga rom m"
+    uselibs="arossupport"
 
 %common

@@ -56,7 +56,6 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-iffparse \
     modname=iffparse modtype=library \
-    files="iffparse_init $(FUNCS) $(FILES)" \
-    uselibs="amiga rom"
+    files="iffparse_init $(FUNCS) $(FILES)"
 
 %common

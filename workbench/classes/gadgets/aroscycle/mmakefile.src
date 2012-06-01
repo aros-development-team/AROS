@@ -7,5 +7,5 @@ FILES := cycleclass support
 
 %build_module mmake=workbench-gadgets-aroscycle \
   modname=aroscycle modtype=gadget \
-  files=$(FILES) uselibs=rom
+  files=$(FILES)
 

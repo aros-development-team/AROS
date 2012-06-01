@@ -10,7 +10,7 @@ FILES := moned
 
 %build_prog mmake=workbench-prefs-moned \
     progname=Monitor targetdir=$(AROS_PREFS) \
-    files=$(FILES) uselibs="arossupport amiga arosc m"
+    files=$(FILES)
     
 
 %common

@@ -12,6 +12,6 @@ EXEDIR      := $(AROS_PREFS)
 
 %build_prog mmake=workbench-prefs-screenmode \
     progname=ScreenMode targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc"
+    files=$(FILES) uselibs="mui arossupport"
 
 %common

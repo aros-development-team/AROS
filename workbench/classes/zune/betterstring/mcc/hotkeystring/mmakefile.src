@@ -12,7 +12,7 @@ FILES := Dispatcher HandleInput Debug
 	 
 %build_module_simple mmake=workbench-classes-zune-hotkeystring-class \
   modname=HotkeyString modtype=mcc \
-  files="library $(FILES)" uselibs="amiga mui rom m"
+  files="library $(FILES)"
 
 
 
@@ -21,7 +21,7 @@ USER_INCLUDES = -idirafter $(SRCDIR)/$(CURDIR)/../../include -I$(SRCDIR)/$(CURDI
 %build_prog mmake=workbench-classes-zune-hotkeystring-test \
     progname=HotkeyString-Test files="HotkeyString-Test $(FILES)" \
     targetdir=$(AROS_TESTS)/Zune \
-    uselibs="amiga mui"
+    uselibs="mui"
 
 
 

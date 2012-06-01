@@ -9,6 +9,6 @@ include $(TOP)/config/make.cfg
 
 %build_prog mmake=workbench-tools \
     progname=sashimi targetdir=$(AROSDIR)/Tools/Debug \
-    files=sashimi uselibs="amiga arosc m"
+    files=sashimi
 
 %common

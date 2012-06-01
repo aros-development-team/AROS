@@ -7,7 +7,6 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=workbench-devs-printtofile \
   modname=printtofile modtype=device \
-  files=printtofile \
-  uselibs="rom"
+  files=printtofile
 
 %common

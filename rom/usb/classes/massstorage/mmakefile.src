@@ -9,7 +9,6 @@ FILES :=    massstorage.class dev debug partitions
 
 %build_module mmake=kernel-usb-classes-massstorage \
     modname=massstorage modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

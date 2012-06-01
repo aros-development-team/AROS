@@ -18,4 +18,4 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/devs/AHI/Include/C
 
 %build_module mmake=workbench-devs-eaudio \
     modname=audio modtype=device \
-    files="$(FILES)" uselibs="hiddstubs rom"
+    files="$(FILES)" uselibs="hiddstubs"

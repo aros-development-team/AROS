@@ -42,13 +42,12 @@ FILES := library \
 
 %build_module mmake=workbench-libs-identify-lib \
     modname=identify modtype=library \
-    files="$(FILES)" \
-    uselibs="rom"
+    files="$(FILES)"
 
 %build_prog mmake=workbench-libs-identify-test progname=identifylib files=testidentifylib \
     targetdir=$(AROS_TESTS) \
     cflags=$(CFLAGS) \
-    uselibs="amiga arosc identify"
+    uselibs="identify"
 
 %copy_includes mmake=includes-copy includes=identify.h path=libraries
 
