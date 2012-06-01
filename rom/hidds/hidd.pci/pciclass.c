@@ -126,6 +126,12 @@ void PCI__Hidd_PCI__AddHardwareDriver(OOP_Class *cl, OOP_Object *o,
 	    drv = dn->driverObject = OOP_NewObject(dn->driverClass, NULL, NULL);
 	    dn->highBus = 0;
 
+	    if (!drv) {
+	        FreePooled(PSD(cl)->MemPool, dn, sizeof(*dn));
+	        D(bug("[PCI] Driver did not initialize\n"));
+	        return;
+	    }
+
 	    OOP_GetAttr(drv, aHidd_Name, (APTR)&string);
 	    OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&string2);
 	    D(bug("[PCI] Adding driver %s (%s) to the system\n", string, string2));
