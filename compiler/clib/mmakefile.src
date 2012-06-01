@@ -377,6 +377,7 @@ ROM_COMMON := \
 	memcpy \
 	memmove \
 	memset \
+	random \
 	stccpy \
 	stcd_l \
 	stcl_d \
@@ -416,7 +417,7 @@ ROM_COMMON_ARCH := \
 	longjmp \
 	setjmp
 
-# Objects for libarosc.a, from the static build.
+# Objects for libarosc.static.a, from the static build.
 ROM_STATIC := \
 	__filesystem_support \
 	__isinf \
@@ -466,7 +467,7 @@ ROM_STATIC := \
     libdir=$(OBJDIR)
 
 
-#   Also build $(AROS_LIB)/libarosc.a
+#   Also build $(AROS_LIB)/libarosc.static.a
 #
 #   This is a library that is allowed to be used inside modules and the
 #   kernel. It must include no code which refers to global variables.

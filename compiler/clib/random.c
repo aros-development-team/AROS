@@ -17,9 +17,12 @@
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-/* ATTENTION: there are quite a few static variables in here that will
- *            during execution. But since this is a random-number generator,
- *	      this can only make for better random-results ;-)) */
+#include <string.h>
+#include <proto/exec.h>
+
+#include "__arosc_privdata.h"
+
+#include <aros/symbolsets.h>
 
 /*
  * random.c:
@@ -91,7 +94,6 @@
 #define		DEG_4		63
 #define		SEP_4		1
 
-
 /*
  * Array versions of the above information to make code run faster -- relies
  * on fact that TYPE_i == i.
@@ -99,10 +101,10 @@
 
 #define		MAX_TYPES	5		/* max number of types above */
 
-static  int		degrees[ MAX_TYPES ]	= { DEG_0, DEG_1, DEG_2,
+static  int const	_degrees[ MAX_TYPES ]	= { DEG_0, DEG_1, DEG_2,
 								DEG_3, DEG_4 };
 
-static  int		seps[ MAX_TYPES ]	= { SEP_0, SEP_1, SEP_2,
+static  int const	_seps[ MAX_TYPES ]	= { SEP_0, SEP_1, SEP_2,
 								SEP_3, SEP_4 };
 
 
@@ -118,7 +120,7 @@ static  int		seps[ MAX_TYPES ]	= { SEP_0, SEP_1, SEP_2,
  *	MAX_TYPES*(rptr - state) + TYPE_3 == TYPE_3.
  */
 
-static  long		randtbl[ DEG_3 + 1 ]	= { TYPE_3,
+static  long const	_randtbl[ DEG_3 + 1 ]	= { TYPE_3,
 			    0x9a319039, 0x32d9c024, 0x9b663182, 0x5da1f342,
 			    0xde3b81e0, 0xdf0a6fb5, 0xf103bc02, 0x48f340fb,
 			    0x7449e56b, 0xbeb1dbb0, 0xab5c5918, 0x946554fd,
@@ -140,10 +142,6 @@ static  long		randtbl[ DEG_3 + 1 ]	= { TYPE_3,
  * to point to randtbl[1] (as explained below).
  */
 
-static  long		*fptr			= &randtbl[ SEP_3 + 1 ];
-static  long		*rptr			= &randtbl[ 1 ];
-
-
 
 /*
  * The following things are the pointer to the state information table,
@@ -157,13 +155,73 @@ static  long		*rptr			= &randtbl[ 1 ];
  * the front and rear pointers have wrapped.
  */
 
-static  long		*state			= &randtbl[ 1 ];
+struct random_state {
+        int     degrees[ MAX_TYPES ];
+        int     seps[ MAX_TYPES ];
+        long    randtbl[ DEG_3 + 1 ];
+        long    *fptr;
+        long    *rptr;
+        long    *state;
+        int     rand_type;
+        int     rand_deg;
+        int     rand_sep;
+        long    *end_ptr;
+};
 
-static  int		rand_type		= TYPE_3;
-static  int		rand_deg		= DEG_3;
-static  int		rand_sep		= SEP_3;
+static void init_random_state(struct random_state *rs)
+{
+    memcpy(rs->degrees, _degrees, sizeof(_degrees));
+    memcpy(rs->seps, _seps, sizeof(_seps));
+    memcpy(rs->randtbl, _randtbl, sizeof(_randtbl));
+    rs->fptr = &rs->randtbl[ SEP_3 + 1 ];
+    rs->rptr = &rs->randtbl[ 1 ];
+    rs->state = &rs->randtbl[ 1 ];
+    rs->rand_type = TYPE_3;
+    rs->rand_deg  = DEG_3;
+    rs->rand_sep  = SEP_3;
+    rs->end_ptr   = &rs->randtbl[ DEG_3 + 1 ];
+}
 
-static  long		*end_ptr		= &randtbl[ DEG_3 + 1 ];
+#ifdef AROSC_SHARED
+static struct random_state *get_random_state(void)
+{
+    struct random_state *rs;
+
+    struct aroscbase *base = __GM_GetBase();
+
+    if (base->acb_acud.acud_random)
+        return base->acb_acud.acud_random;
+
+    if ((rs = AllocMem(sizeof(*rs), MEMF_ANY))) {
+        init_random_state(rs);
+
+        base->acb_acud.acud_random = rs;
+        return rs;
+    }
+
+    return NULL;
+}
+
+static void free_random_state(struct aroscbase *base)
+{
+    if (base->acb_acud.acud_random) {
+        FreeMem(base->acb_acud.acud_random, sizeof(struct random_state));
+        base->acb_acud.acud_random = NULL;
+    }
+}
+
+ADD2CLOSELIB(free_random_state, 0)
+#else
+static struct random_state acud_random;
+
+static inline struct random_state *get_random_state(void)
+{
+    if (acud_random.end_ptr == NULL)
+        init_random_state(&acud_random);
+
+    return &acud_random;
+}
+#endif
 
 
 
@@ -188,18 +246,22 @@ void srandom(unsigned x)
 {
     	register  int		i;
 	long random();
+	struct random_state *rs;
 
-	if(  rand_type  ==  TYPE_0  )  {
-	    state[ 0 ] = x;
+	if (!(rs = get_random_state()))
+	    return;
+
+	if(  rs->rand_type  ==  TYPE_0  )  {
+	    rs->state[ 0 ] = x;
 	}
 	else  {
-	    state[ 0 ] = x;
-	    for( i = 1; i < rand_deg; i++ )  {
-		state[i] = 1103515245*state[i - 1] + 12345;
+	    rs->state[ 0 ] = x;
+	    for( i = 1; i < rs->rand_deg; i++ )  {
+		rs->state[i] = 1103515245*rs->state[i - 1] + 12345;
 	    }
-	    fptr = &state[ rand_sep ];
-	    rptr = &state[ 0 ];
-	    for( i = 0; i < 10*rand_deg; i++ )  random();
+	    rs->fptr = &rs->state[ rs->rand_sep ];
+	    rs->rptr = &rs->state[ 0 ];
+	    for( i = 0; i < 10*rs->rand_deg; i++ )  random();
 	}
 }
 
@@ -228,49 +290,55 @@ initstate( seed, arg_state, n )
     char		*arg_state;		/* pointer to state array */
     int			n;			/* # bytes of state info */
 {
-	register  char		*ostate		= (char *)( &state[ -1 ] );
+	struct random_state *rs;
+	register  char		*ostate;
 
-	if(  rand_type  ==  TYPE_0  )  state[ -1 ] = rand_type;
-	else  state[ -1 ] = MAX_TYPES*(rptr - state) + rand_type;
+	if (!(rs = get_random_state()))
+	    return NULL;
+	
+	ostate = (char *)( &rs->state[ -1 ] );
+
+	if(  rs->rand_type  ==  TYPE_0  )  rs->state[ -1 ] = rs->rand_type;
+	else  rs->state[ -1 ] = MAX_TYPES*(rs->rptr - rs->state) + rs->rand_type;
 	if(  n  <  BREAK_1  )  {
 	    if(  n  <  BREAK_0  )  {
 		return 0;
 	    }
-	    rand_type = TYPE_0;
-	    rand_deg = DEG_0;
-	    rand_sep = SEP_0;
+	    rs->rand_type = TYPE_0;
+	    rs->rand_deg = DEG_0;
+	    rs->rand_sep = SEP_0;
 	}
 	else  {
 	    if(  n  <  BREAK_2  )  {
-		rand_type = TYPE_1;
-		rand_deg = DEG_1;
-		rand_sep = SEP_1;
+		rs->rand_type = TYPE_1;
+		rs->rand_deg = DEG_1;
+		rs->rand_sep = SEP_1;
 	    }
 	    else  {
 		if(  n  <  BREAK_3  )  {
-		    rand_type = TYPE_2;
-		    rand_deg = DEG_2;
-		    rand_sep = SEP_2;
+		    rs->rand_type = TYPE_2;
+		    rs->rand_deg = DEG_2;
+		    rs->rand_sep = SEP_2;
 		}
 		else  {
 		    if(  n  <  BREAK_4  )  {
-			rand_type = TYPE_3;
-			rand_deg = DEG_3;
-			rand_sep = SEP_3;
+			rs->rand_type = TYPE_3;
+			rs->rand_deg = DEG_3;
+			rs->rand_sep = SEP_3;
 		    }
 		    else  {
-			rand_type = TYPE_4;
-			rand_deg = DEG_4;
-			rand_sep = SEP_4;
+			rs->rand_type = TYPE_4;
+			rs->rand_deg = DEG_4;
+			rs->rand_sep = SEP_4;
 		    }
 		}
 	    }
 	}
-	state = &(  ( (long *)arg_state )[1]  );	/* first location */
-	end_ptr = &state[ rand_deg ];	/* must set end_ptr before srandom */
+	rs->state = &(  ( (long *)arg_state )[1]  );	/* first location */
+	rs->end_ptr = &rs->state[ rs->rand_deg ];	/* must set end_ptr before srandom */
 	srandom( seed );
-	if(  rand_type  ==  TYPE_0  )  state[ -1 ] = rand_type;
-	else  state[ -1 ] = MAX_TYPES*(rptr - state) + rand_type;
+	if(  rs->rand_type  ==  TYPE_0  )  rs->state[ -1 ] = rs->rand_type;
+	else  rs->state[ -1 ] = MAX_TYPES*(rs->rptr - rs->state) + rs->rand_type;
 	return( ostate );
 }
 
@@ -290,13 +358,23 @@ initstate( seed, arg_state, n )
 
 char *setstate(char *arg_state)
 {
-    register  long *new_state = (long *)arg_state;
-    register  int  type	      = new_state[0]%MAX_TYPES;
-    register  int  rear       = new_state[0]/MAX_TYPES;
-    char           *ostate    = (char *)(&state[-1]);
+    struct random_state *rs;
+    register  long *new_state;
+    register  int  type;
+    register  int  rear;
+    char           *ostate;
 
-    if (rand_type == TYPE_0) state[-1] = rand_type;
-    else  state[ -1 ] = MAX_TYPES*(rptr - state) + rand_type;
+    if (!(rs = get_random_state()) || arg_state == NULL)
+        return NULL;
+
+    new_state = (long *)arg_state;
+    type	      = new_state[0]%MAX_TYPES;
+    rear       = new_state[0]/MAX_TYPES;
+    ostate    = (char *)(&rs->state[-1]);
+
+
+    if (rs->rand_type == TYPE_0) rs->state[-1] = rs->rand_type;
+    else  rs->state[ -1 ] = MAX_TYPES*(rs->rptr - rs->state) + rs->rand_type;
 
     switch (type)
     {
@@ -305,18 +383,18 @@ char *setstate(char *arg_state)
 	case  TYPE_2:
 	case  TYPE_3:
 	case  TYPE_4:
-	    rand_type = type;
-	    rand_deg = degrees[type];
-	    rand_sep = seps[type];
+	    rs->rand_type = type;
+	    rs->rand_deg = rs->degrees[type];
+	    rs->rand_sep = rs->seps[type];
 	    break;
     }
-    state = &new_state[1];
-    if (rand_type != TYPE_0)
+    rs->state = &new_state[1];
+    if (rs->rand_type != TYPE_0)
     {
-	rptr = &state[rear];
-	fptr = &state[(rear + rand_sep)%rand_deg];
+	rs->rptr = &rs->state[rear];
+	rs->fptr = &rs->state[(rear + rs->rand_sep)%rs->rand_deg];
     }
-    end_ptr = &state[rand_deg];       /* set end_ptr too */
+    rs->end_ptr = &rs->state[rs->rand_deg];       /* set end_ptr too */
 
     return ostate;
 }
@@ -341,23 +419,28 @@ char *setstate(char *arg_state)
 long random()
 {
     long i;
+    struct random_state *rs;
+    int rand(void);
 
-    if (rand_type == TYPE_0)
+    if (!(rs = get_random_state()))
+        return rand();
+
+    if (rs->rand_type == TYPE_0)
     {
-	i = state[0] = (state[0]*1103515245 + 12345)&0x7fffffff;
+	i = rs->state[0] = (rs->state[0]*1103515245 + 12345)&0x7fffffff;
     }
     else
     {
-	*fptr += *rptr;
-	i = (*fptr >> 1)&0x7fffffff;	/* chucking least random bit */
-	if (++fptr >= end_ptr)
+	*rs->fptr += *rs->rptr;
+	i = (*rs->fptr >> 1)&0x7fffffff;	/* chucking least random bit */
+	if (++rs->fptr >= rs->end_ptr)
 	{
-	    fptr = state;
-	    ++rptr;
+	    rs->fptr = rs->state;
+	    ++rs->rptr;
 	}
 	else
 	{
-	    if (++rptr >= end_ptr) rptr = state;
+	    if (++rs->rptr >= rs->end_ptr) rs->rptr = rs->state;
 	}
     }
     return i;

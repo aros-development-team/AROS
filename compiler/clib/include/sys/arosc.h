@@ -12,6 +12,9 @@ struct arosc_ctype {
     const unsigned char      *tolower;
 };
 
+/* Defined (privately) in random.c */
+struct random_state;
+
 struct arosc_userdata
 {
     /* stdio.h */
@@ -35,6 +38,9 @@ struct arosc_userdata
     /* Used for arosc startup code */
     int acud_startup_error;
     jmp_buf acud_startup_jmp_buf;
+
+    /* Used for random()/srandom() */
+    struct random_state *acud_random;
 };
 
 __BEGIN_DECLS
@@ -50,5 +56,6 @@ __END_DECLS
 
 #define __arosc_startup_jmp_buf  (__get_arosc_userdata()->acud_startup_jmp_buf)
 #define __arosc_startup_error    (__get_arosc_userdata()->acud_startup_error)
+#define __arosc_random           (__get_arosc_userdata()->acud_random)
 
 #endif /* !_SYS_AROSC_H */
