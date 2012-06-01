@@ -217,4 +217,9 @@ extern void aros_not_implemented ();
     AROS_UFH2(t, n, AROS_UFHA(a1), AROS_UFHA(a2)) \
         bt bn = *((bt *)4);
 
+#define AROS_SWAP_BYTES_LONG_CPU(l)     \
+    ({ ULONG v; __asm__ __volatile__("ror.w #8,%0\nswap %0\nror.w #8,%0":"=d"(v):"0"(l)); v;})
+#define AROS_SWAP_BYTES_WORD_CPU(l)     \
+    ({ UWORD w; __asm__ __volatile__("ror.w #8,%d0\n":"=d"(w):"0"(l)); w;})
+
 #endif /* AROS_M68K_CPU_H */
