@@ -6,13 +6,20 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-libs-bz2 : linklibs
 
-FILES := init-aros blocksort huffman crctable randtable  \
+FILES := blocksort huffman crctable randtable  \
          compress decompress bzlib
 
 USER_CFLAGS :=
 
 %build_module mmake=workbench-libs-bz2 \
     modname=bz2_au modtype=library \
-    files=$(FILES) uselibs="arosc_rel" linklibname="bz2"
+    files="init-aros $(FILES)" uselibs="arosc_rel" linklibname="bz2"
+
+#MM- linklibs: linklibs-bz2-nostdio
+
+USER_CFLAGS := -DBZ_NO_STDIO
+
+%build_linklib mmake=linklibs-bz2-nostdio libname=bz2_nostdio \
+               files="$(FILES)" objdir=$(OBJDIR)/nostdio
 
 %common
