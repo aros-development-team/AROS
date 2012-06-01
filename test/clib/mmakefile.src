@@ -5,46 +5,47 @@
 include $(TOP)/config/make.cfg
 
 FILES := \
-	all-tests \
-	arguments \
-	chdir \
-	exit \
-	jmpbuf \
-	strchr \
-	stpblk \
-	spawnv \
-	spawnvp \
-	tmpfile \
-	chmod \
-	getfsstat \
-	statfs \
-	usleep \
-	fchdir \
-	uname \
-	strptime \
-	fchmod \
-	vfork \
-	vfork_execl \
-	wait \
-	waitpid \
-	lseek \
-	mnt_names \
-	opendir \
-	pipe \
-	fcntl \
-	flock \
-	strtod \
-	strtoul \
-	strtoull \
-	snprintf \
-	setjmp \
-        system \
-        execl \
+        all-tests \
+        arguments \
+        chdir \
+        chmod \
         chown \
-        sscanf \
         ctype \
         environ \
-        raise
+        execl \
+        exit \
+        fchdir \
+        fchmod \
+        fcntl \
+        flock \
+        getfsstat \
+        jmpbuf \
+        lseek \
+        mnt_names \
+        opendir \
+        pipe \
+        raise \
+        random \
+        setjmp \
+        snprintf \
+        spawnv \
+        spawnvp \
+        sscanf \
+        statfs \
+        stpblk \
+        strchr \
+        strptime \
+        strtod \
+        strtoul \
+        strtoull \
+        system \
+        tmpfile \
+        uname \
+        usleep \
+        vfork \
+        vfork_execl \
+        wait \
+        waitpid
 
 EXEDIR := $(AROS_TESTS)/clib
 
