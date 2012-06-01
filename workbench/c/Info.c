@@ -425,12 +425,9 @@ BOOL ScanDosList(STRPTR *filter)
             BPTR ptr = ndl->dol_misc.dol_handler.dol_Startup;
             struct FileSysStartupMsg *fssm = NULL;
 
-            if (ptr > (BPTR)64)
+            if (IsFileSystem(idn->Name))
             {
-                // GURU book is telling that the content of dol_Startup
-                // is handler specific and only filesystems have
-                // a startup message.
-                // FIXME: is there a way to check for a filesystem?
+                // Only filesystems have a valid FileSysStartupMsg
                 fssm = (struct FileSysStartupMsg *)BADDR(ptr);
             }
             
