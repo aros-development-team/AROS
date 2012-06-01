@@ -6,7 +6,6 @@ FUNCS := openkeymap
 
 %build_module mmake=workbench-libs-kms \
     modname=kms modtype=library \
-    files="$(FILES) $(FUNCS)" \
-    uselibs=rom
+    files="$(FILES) $(FUNCS)"
 
 %common

@@ -31,7 +31,6 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-mathtrans \
     modname=mathtrans modtype=library \
-    files="mathtrans_init $(FILES) $(FUNCS)" \
-    uselibs=rom
+    files="mathtrans_init $(FILES) $(FUNCS)"
 
 %common

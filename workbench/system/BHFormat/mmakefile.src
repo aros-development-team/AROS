@@ -14,6 +14,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-system-format \
     progname=Format targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc"
+    files=$(FILES)
 
 %common

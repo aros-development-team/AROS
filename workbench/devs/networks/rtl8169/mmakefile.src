@@ -15,9 +15,9 @@ CFLAGSDEBUG = $(CFLAGS) -DDEBUG=1
 %build_module mmake=workbench-devs-networks-rtl8169-normal \
     modname=rtl8169 modtype=device \
     files="rtl8169_init $(FILES)" cflags=$(CFLAGSNORMAL) \
-    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs"
+    objdir=$(OBJDIR)/normal moduledir=Devs/Networks uselibs="oop hiddstubs"
 
 %build_module mmake=workbench-devs-networks-rtl8169-debug \
     modname=rtl8169_debug modtype=device \
     files="rtl8169_init $(FILES)" conffile=rtl8169.conf cflags=$(CFLAGSDEBUG) \
-    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop rom amiga hiddstubs"
+    objdir=$(OBJDIR)/debug moduledir=Storage/Networks uselibs="oop hiddstubs"

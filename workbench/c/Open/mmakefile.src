@@ -14,8 +14,7 @@ USER_CFLAGS := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 
 %build_prog mmake=workbench-c-open \
     progname=Open targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc" \
-    usestartup=no
+    files=$(FILES) usestartup=no
 
 %common
 

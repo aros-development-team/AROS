@@ -68,6 +68,5 @@ USER_CFLAGS += -Wno-error
     files=$(FT2FILES)
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
-    modtype=library files="$(SHFILES) $(FT2FILES)" linklibname=freetype2shared \
-    uselibs="amiga rom m"
+    modtype=library files="$(SHFILES) $(FT2FILES)" linklibname=freetype2shared
 

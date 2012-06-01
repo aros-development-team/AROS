@@ -12,6 +12,6 @@ EXEDIR  := $(AROS_C)
 
 %build_prog mmake=workbench-c-r \
     progname=R targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="amiga arosc mui"
+    files=$(FILES) uselibs="amiga mui"
 
 %common

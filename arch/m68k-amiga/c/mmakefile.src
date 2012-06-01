@@ -37,46 +37,45 @@ USER_AFLAGS := -I$(GENINCDIR) -Os
 
 AROS_BOOT := $(BINDIR)/boot
 
+USER_LDFLAGS := -noarosc
+
 FILES := gdbstub
 
 %build_progs mmake=workbench-c-m68k-gdbstub \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom" \
     detach=yes
 
 FILES := gdbstop
 
 %build_progs mmake=workbench-c-m68k-gdbstop \
-    files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom" \
+    files=$(FILES) targetdir=$(AROS_C)
 
 CFILES := SetPatchAROS
 AFILES := newstackswap
 USER_INCLUDES := -isystem $(SRCDIR)/rom/dos/include
-USER_LDFLAGS  := -L$(GENDIR)/lib
+USER_LDFLAGS  := -L$(GENDIR)/lib -noarosc
 
 %build_prog mmake=workbench-c-m68k-setpatcharos progname=SetPatchAROS \
     files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_BOOT) \
-    uselibs="loadseg arossupport amiga rom"
+    uselibs="loadseg"
 
 CFILES	      := AROSBootstrap
 
 %build_prog mmake=workbench-c-m68k-arosbootstrap progname=AROSBootstrap \
     files=$(CFILES) targetdir=$(AROS_BOOT) \
-    usestartup=no uselibs="loadseg arossupport amiga z_static rom"
+    usestartup=no uselibs="loadseg z.static"
 
 CFILES	      := mmudump
 
 %build_prog mmake=workbench-c-m68k-mmudump progname=MMUDump \
     files=$(CFILES) targetdir=$(AROS_C) \
-    usestartup=no uselibs="arossupport amiga rom"
+    usestartup=no
 
 CFILES		:= SetPatch patches
 AFILES		:= copymem_040 copymem_060
 USER_INCLUDES := -isystem
 
 %build_prog mmake=workbench-c-m68k-setpatch progname=SetPatch \
-    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom"
+    files=$(CFILES) asmfiles=$(AFILES) targetdir=$(AROS_C)
 
 %common

@@ -9,7 +9,6 @@ FILES :=    dfu.class debug
 
 %build_module mmake=kernel-usb-classes-dfu \
     modname=dfu modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

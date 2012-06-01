@@ -8,4 +8,4 @@ USER_CFLAGS += -D__OOP_NOLIBBASE__ -D__UTILITY_NOLIBBASE__
 
 %build_module mmake=kernel-amiga-m68k-mouse \
     modname=amigamouse modtype=hidd \
-    files="startup mouse_init mouseclass" uselibs="rom oop hiddstubs"
+    files="startup mouse_init mouseclass" uselibs="oop hiddstubs"

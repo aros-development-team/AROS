@@ -11,7 +11,6 @@ EXEDIR := $(AROS_TESTS)/Icon
 #MM test-icon-quick:
 
 %build_progs mmake=test-icon \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

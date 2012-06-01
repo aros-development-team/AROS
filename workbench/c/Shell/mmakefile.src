@@ -33,14 +33,13 @@ USER_CFLAGS += -DADATE="\"$(shell date "+%d.%m.%Y")\"" \
 
 %build_prog mmake=workbench-c-shell	progname=UserShell-Seg \
     files=$(FILES) targetdir=$(AROS_FS)	\
-    usestartup="no" uselibs="rom"
+    usestartup="no"
 
 USER_CFLAGS += -DUSE_EMBEDDED_COMMANDS
 OBJDIR := $(OBJDIR).kernel
 
 %build_module mmake=kernel-shell \
   modname=shell modtype=resource \
-  files="shell_init $(FILES)" \
-  uselibs="rom"
+  files="shell_init $(FILES)"
 
 %common

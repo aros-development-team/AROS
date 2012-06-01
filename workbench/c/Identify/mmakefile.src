@@ -9,7 +9,7 @@ FILES	:= main
 
 %build_prog mmake=workbench-c-identify \
     progname=Identify targetdir=$(AROS_C) \
-    files=$(FILES) uselibs="amiga" 
+    files=$(FILES) uselibs="amiga arosc.static" 
 
 %common
 

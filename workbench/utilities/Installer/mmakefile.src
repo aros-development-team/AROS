@@ -16,7 +16,7 @@ EXEDIR := $(AROSDIR)/Utilities
 
 %build_prog mmake=workbench-utilities-installer \
     progname=Installer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc m autoinit mui"
+    files=$(FILES) uselibs="mui"
 
 
 SCRIPT    := test.script

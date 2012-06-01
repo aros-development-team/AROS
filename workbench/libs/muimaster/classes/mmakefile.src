@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -I$(SRCDIR)/$(CURDIR)/..
 USER_CFLAGS += $(PARANOIA_CFLAGS)
-USER_LIBS   := amiga rom m mui
+USER_LIBS   := mui
 
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \
@@ -87,7 +87,7 @@ USER_LIBS   := amiga rom m mui
     modname=Aboutmui modtype=mui files=aboutmui \
     conffile=aboutmui.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-boopsi : includes
 %build_module \
@@ -95,7 +95,7 @@ USER_LIBS   := amiga rom m mui
     modname=Boopsi modtype=mui files=boopsi \
     conffile=boopsi.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_BOOPSI=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-balance : includes
 %build_module \
@@ -103,7 +103,7 @@ USER_LIBS   := amiga rom m mui
     modname=Balance modtype=mui files=balance \
     conffile=balance.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_BALANCE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-coloradjust : includes
 %build_module \
@@ -111,7 +111,7 @@ USER_LIBS   := amiga rom m mui
     modname=Coloradjust modtype=mui files=coloradjust \
     conffile=coloradjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORADJUST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-colorfield : includes
 %build_module \
@@ -119,7 +119,7 @@ USER_LIBS   := amiga rom m mui
     modname=Colorfield modtype=mui files=colorfield \
     conffile=colorfield.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_COLORFIELD=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-frameadjust : includes
 %build_module \
@@ -127,7 +127,7 @@ USER_LIBS   := amiga rom m mui
     modname=Frameadjust modtype=mui files=frameadjust \
     conffile=frameadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEADJUST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-framedisplay : includes
 %build_module \
@@ -135,7 +135,7 @@ USER_LIBS   := amiga rom m mui
     modname=Framedisplay modtype=mui files=framedisplay \
     conffile=framedisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FRAMEDISPLAY=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-gauge : includes
 %build_module \
@@ -143,7 +143,7 @@ USER_LIBS   := amiga rom m mui
     modname=Gauge modtype=mui files=gauge \
     conffile=gauge.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_GAUGE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-imageadjust : includes
 %build_module \
@@ -151,7 +151,7 @@ USER_LIBS   := amiga rom m mui
     modname=Imageadjust modtype=mui files=imageadjust \
     conffile=imageadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEADJUST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-imagedisplay : includes
 %build_module \
@@ -159,7 +159,7 @@ USER_LIBS   := amiga rom m mui
     modname=Imagedisplay modtype=mui files=imagedisplay \
     conffile=imagedisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_IMAGEDISPLAY=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-penadjust : includes
 %build_module \
@@ -167,7 +167,7 @@ USER_LIBS   := amiga rom m mui
     modname=Penadjust modtype=mui files=penadjust \
     conffile=penadjust.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PENADJUST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-pendisplay : includes
 %build_module \
@@ -175,7 +175,7 @@ USER_LIBS   := amiga rom m mui
     modname=Pendisplay modtype=mui files=pendisplay \
     conffile=pendisplay.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PENDISPLAY=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-popasl : includes
 %build_module \
@@ -183,7 +183,7 @@ USER_LIBS   := amiga rom m mui
     modname=Popasl modtype=mui files=popasl \
     conffile=popasl.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPASL=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-popframe : includes
 %build_module \
@@ -191,7 +191,7 @@ USER_LIBS   := amiga rom m mui
     modname=Popframe modtype=mui files=popframe \
     conffile=popframe.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPFRAME=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-popimage : includes
 %build_module \
@@ -199,7 +199,7 @@ USER_LIBS   := amiga rom m mui
     modname=Popimage modtype=mui files=popimage \
     conffile=popimage.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPIMAGE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-poppen : includes
 %build_module \
@@ -207,7 +207,7 @@ USER_LIBS   := amiga rom m mui
     modname=Poppen modtype=mui files=poppen \
     conffile=poppen.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPPEN=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-radio : includes
 %build_module \
@@ -215,7 +215,7 @@ USER_LIBS   := amiga rom m mui
     modname=Radio modtype=mui files=radio \
     conffile=radio.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_RADIO=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-scale : includes
 %build_module \
@@ -223,7 +223,7 @@ USER_LIBS   := amiga rom m mui
     modname=Scale modtype=mui files=scale \
     conffile=scale.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SCALE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-scrollgroup : includes
 %build_module \
@@ -231,7 +231,7 @@ USER_LIBS   := amiga rom m mui
     modname=Scrollgroup modtype=mui files=scrollgroup \
     conffile=scrollgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SCROLLGROUP=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-settingsgroup : includes
 %build_module \
@@ -239,7 +239,7 @@ USER_LIBS   := amiga rom m mui
     modname=Settingsgroup modtype=mui files=settingsgroup \
     conffile=settingsgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_SETTINGSGROUP=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
     
 #MM workbench-classes-zune-virtgroup : includes
 %build_module \
@@ -247,7 +247,7 @@ USER_LIBS   := amiga rom m mui
     modname=Virtgroup modtype=mui files=virtgroup \
     conffile=virtgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-floattext : includes
 %build_module \
@@ -255,7 +255,7 @@ USER_LIBS   := amiga rom m mui
     modname=Floattext modtype=mui files=floattext \
     conffile=floattext.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_FLOATTEXT=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-volumelist : includes
 %build_module \
@@ -263,7 +263,7 @@ USER_LIBS   := amiga rom m mui
     modname=Volumelist modtype=mui files=volumelist \
     conffile=volumelist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-dirlist : includes
 %build_module \
@@ -271,7 +271,7 @@ USER_LIBS   := amiga rom m mui
     modname=Dirlist modtype=mui files=dirlist \
     conffile=dirlist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DIRLIST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-numericbutton : includes
 %build_module \
@@ -279,7 +279,7 @@ USER_LIBS   := amiga rom m mui
     modname=Numericbutton modtype=mui files=numericbutton \
     conffile=numericbutton.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_NUMERICBUTTON=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-poplist : includes
 %build_module \
@@ -287,7 +287,7 @@ USER_LIBS   := amiga rom m mui
     modname=Poplist modtype=mui files=poplist \
     conffile=poplist.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPLIST=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-popscreen : includes
 %build_module \
@@ -295,7 +295,7 @@ USER_LIBS   := amiga rom m mui
     modname=Popscreen modtype=mui files=popscreen \
     conffile=popscreen.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPSCREEN=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 
 #MM workbench-classes-zune-crawling : includes
@@ -304,7 +304,7 @@ USER_LIBS   := amiga rom m mui
     modname=Crawling modtype=mui modsuffix=mcc files=crawling \
     conffile=crawling.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_CRAWLING=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-levelmeter : includes
 %build_module \
@@ -312,7 +312,7 @@ USER_LIBS   := amiga rom m mui
     modname=Levelmeter modtype=mui files=levelmeter \
     conffile=levelmeter.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_LEVELMETER=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-knob : includes
 %build_module \
@@ -320,7 +320,7 @@ USER_LIBS   := amiga rom m mui
     modname=Knob modtype=mui files=knob \
     conffile=knob.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_KNOB=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-dtpic : includes
 %build_module \
@@ -328,7 +328,7 @@ USER_LIBS   := amiga rom m mui
     modname=Dtpic modtype=mui files=dtpic \
     conffile=dtpic.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_DTPIC=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-palette : includes
 %build_module \
@@ -336,7 +336,7 @@ USER_LIBS   := amiga rom m mui
     modname=Palette modtype=mui files=palette \
     conffile=palette.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PALETTE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-title : includes
 %build_module \
@@ -344,7 +344,7 @@ USER_LIBS   := amiga rom m mui
     modname=Title modtype=mui files=title \
     conffile=title.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_TITLE=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-process : includes
 %build_module \
@@ -352,7 +352,7 @@ USER_LIBS   := amiga rom m mui
     modname=Process modtype=mui files=process \
     conffile=process.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PROCESS=0" \
-    uselibs="amiga rom m mui"
+    uselibs="mui"
 
 #MM workbench-classes-zune-pixmap : includes
 %build_module \
@@ -360,7 +360,7 @@ USER_LIBS   := amiga rom m mui
     modname=Pixmap modtype=mui files=pixmap \
     conffile=pixmap.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_PIXMAP=0" \
-    uselibs="amiga rom m mui bz2 arosc"
+    uselibs="mui bz2_nostdio"
 
 %common
 %include_deps

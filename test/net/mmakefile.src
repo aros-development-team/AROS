@@ -12,6 +12,6 @@ EXEDIR          := $(AROS_TESTS)/net
 
 %build_progs mmake=test-net \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m net"
+    uselibs="net"
 
 %common

@@ -31,4 +31,4 @@ $(AROS_DEVS)/pci.ids : pci.ids
 %build_module mmake=kernel-pci \
     modname=pci modtype=hidd \
     files="$(FILES)" \
-    uselibs="oop rom amiga"
+    uselibs="oop"

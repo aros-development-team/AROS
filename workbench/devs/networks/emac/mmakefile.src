@@ -6,6 +6,6 @@ FILES := emac_hw emac_unit mal handler
 %build_module mmake=workbench-devs-networks-emac-powerpc \
     modname=emac modtype=device \
     files="emac_init $(FILES)" \
-    moduledir=Devs/Networks uselibs="rom amiga hiddstubs"
+    moduledir=Devs/Networks uselibs="hiddstubs"
 
 %common

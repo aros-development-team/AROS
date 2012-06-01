@@ -12,7 +12,6 @@ EXEDIR          := $(AROS_TESTS)/benchmarks/clib
 #MM test-benchmarks-clib : includes linklibs 
 
 %build_progs mmake=test-benchmarks-clib \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

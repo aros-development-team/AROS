@@ -7,4 +7,4 @@ include $(TOP)/config/make.cfg
 %build_module mmake=kernel-amiga-m68k-trackdisk \
   modname=trackdisk modtype=device \
   files="trackdisk_device trackdisk_hw" \
-  uselibs="rom amiga oop"
+  uselibs="oop"

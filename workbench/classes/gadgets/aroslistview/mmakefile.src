@@ -7,5 +7,5 @@ FILES := listviewclass helpfuncs
 
 %build_module mmake=workbench-gadgets-aroslistview \
   modname=aroslistview modtype=gadget \
-  files=$(FILES) uselibs="amiga rom"
+  files=$(FILES)
 

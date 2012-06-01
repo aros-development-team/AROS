@@ -7,7 +7,6 @@ FILES :=    serialcp210x.class dev debug
 
 %build_module mmake=kernel-usb-classes-serialcp210x \
     modname=serialcp210x modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)" 
 
 %common

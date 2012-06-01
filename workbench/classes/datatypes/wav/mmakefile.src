@@ -34,4 +34,4 @@ USER_CFLAGS := -DGSM610_SUPPORT -DG72X_SUPPORT -I$(SRCDIR)/$(CURDIR)/include
 
 %build_module mmake=workbench-datatypes-wave \
     modname=wave modtype=datatype \
-    files=$(FILES) uselibs="gsm amiga rom"
+    files=$(FILES) uselibs="gsm"

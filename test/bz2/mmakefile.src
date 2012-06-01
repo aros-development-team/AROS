@@ -13,6 +13,6 @@ EXEDIR          := $(AROS_TESTS)/bz2
 
 %build_progs mmake=test-bz2 \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m bz2"
+    uselibs="bz2"
 
 %common

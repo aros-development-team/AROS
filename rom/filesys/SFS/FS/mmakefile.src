@@ -29,6 +29,6 @@ USER_CFLAGS := -DSFS_BE -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module mmake=kernel-fs-sfs \
     modname=sfs modtype=handler \
-    files="$(FILES)" uselibs="arossupport rom"
+    files="$(FILES)"
 
 %common

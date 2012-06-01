@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Generate cgxvideo.library
+#   Generate cgxvideo
 #
 include $(TOP)/config/make.cfg
 

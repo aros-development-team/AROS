@@ -9,4 +9,4 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_module_simple mmake=kernel-fs-con \
     modname=con modtype=handler \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"

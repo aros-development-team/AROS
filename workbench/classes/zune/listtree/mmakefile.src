@@ -13,8 +13,7 @@ INCLUDE_FILES := Listtree_mcc.h
 %build_module \
     mmake=workbench-classes-zune-listtree \
     modname=Listtree modtype=mcc \
-    conffile=listtree.conf \
-    uselibs="amiga rom"
+    conffile=listtree.conf
 
 %copy_includes path=mui
 

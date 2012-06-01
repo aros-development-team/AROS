@@ -84,15 +84,17 @@ USER_LDFLAGS := -noarosc
 
 %build_progs mmake=workbench-c \
     files=$(FILES) targetdir=$(AROS_C) \
-    uselibs="uuid arossupport amiga rom m debug"
+    uselibs="uuid debug arossupport"
 
 %build_progs mmake=workbench-c-pure \
     files=$(PURE_FILES) targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom m" usestartup=no
+    usestartup=no
+
+USER_LDFLAGS := 
 
 %build_prog mmake=workbench-c-requeststring progname=RequestString \
     files=RequestString targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom mui"
+    uselibs="mui"
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
 	@$(ECHO) Generating $(notdir $@) from $<...

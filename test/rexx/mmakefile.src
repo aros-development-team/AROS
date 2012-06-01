@@ -13,8 +13,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 #MM- test-rexx : test-rexx-util test-rexx-copy
 
 %build_progs mmake=test-rexx-util \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="amiga arosc"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 #MM
 test-rexx-copy : $(EXEDIR)/vartest.rexx

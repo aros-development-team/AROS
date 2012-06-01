@@ -16,6 +16,6 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses -I$(AROS_DEVELOPMENT)/netincl
 
 %build_prog mmake=workbench-network-smbfs-client \
     progname=SMBFS targetdir=$(AROS_C) \
-    files="$(SMBFSFILES)"  uselibs="rom"
+    files="$(SMBFSFILES)"
 
 %common

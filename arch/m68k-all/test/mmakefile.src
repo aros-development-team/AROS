@@ -12,6 +12,6 @@ USER_CFLAGS = -I$(SRCDIR)/arch/m68k-all/dos
 
 %build_progs mmake=test-m68k \
     files=$(FILES) targetdir=$(EXEDIR) \
-    usestartup=no uselibs="rom"
+    usestartup=no
 
 %common

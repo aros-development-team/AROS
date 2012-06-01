@@ -21,4 +21,4 @@ $(GENINCDIR)/hidd/i2c.h: include/i2c.h
 %build_module mmake=hidd-i2c \
     modname=i2c modtype=hidd \
     files="$(FILES)" \
-    uselibs="oop rom amiga"
+    uselibs="oop utility"

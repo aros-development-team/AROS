@@ -3,4 +3,4 @@ include $(TOP)/config/make.cfg
 
 %build_module mmake=kernel-openfirmware 	\
   modname=openfirmware modtype=resource		\
-  cflags="$(CFLAGS)" files="of_init" uselibs="rom"
+  cflags="$(CFLAGS)" files="of_init"

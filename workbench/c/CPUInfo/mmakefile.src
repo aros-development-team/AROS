@@ -19,6 +19,6 @@ EXEDIR  := $(AROS_C)
 %build_prog mmake=workbench-c-cpuinfo \
     progname=CPUInfo targetdir=$(EXEDIR) \
     files="$(FILES) $(x86FILES)" \
-    uselibs="arossupport amiga arosc m"
+    uselibs="arossupport arosc.static"
 
 %common

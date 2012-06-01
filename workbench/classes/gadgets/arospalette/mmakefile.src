@@ -7,4 +7,4 @@ FILES := paletteclass support
 
 %build_module mmake=workbench-gadgets-arospalette \
   modname=arospalette modtype=gadget \
-  files=$(FILES) uselibs=rom
+  files=$(FILES)

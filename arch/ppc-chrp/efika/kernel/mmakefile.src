@@ -26,6 +26,6 @@ $(BINDIR)/boot/aros-efika: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_librar
 #%build_module mmake=kernel-kernel-chrp-ppc-efika \
 #  modname=kernel modtype=resource                \
 #  cflags="$(CFLAGS) -I$(SRCDIR)/rom/exec"        \
-#  files="$(FILES)" uselibs="rom"
+#  files="$(FILES)"
 
 %common

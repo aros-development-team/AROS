@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES := nforce handler unit
 
-# Linking with arosc.library FORCED (modules should not link with arosc.library)
+# Linking with arosc FORCED (modules should not link with arosc)
 # Needed for:
 #   random
 #   srandom
@@ -11,4 +11,4 @@ FILES := nforce handler unit
 %build_module mmake=workbench-devs-networks-nforce-i386 \
     modname=nforce modtype=device \
     files="nforce_init $(FILES)" \
-    moduledir=Devs/Networks uselibs="oop rom amiga hiddstubs arosc"
+    moduledir=Devs/Networks uselibs="oop hiddstubs"

@@ -44,7 +44,6 @@ USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
 
 %build_module mmake=kernel-exec \
   modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) \
-  files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)" \
-  uselibs="arossupport rom"
+  files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)"
 
 %common

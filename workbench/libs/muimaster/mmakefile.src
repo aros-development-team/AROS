@@ -414,7 +414,7 @@ FILES         := $(FILES) $(CLASSFILES)
 %build_module mmake=workbench-libs-muimaster \
     modname=muimaster modtype=library \
     files="muimaster_init-aros $(FUNCS) $(FILES)" \
-    uselibs="coolimages mui amiga rom m"
+    uselibs="coolimages mui"
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h

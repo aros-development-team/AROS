@@ -8,7 +8,7 @@ FILES := startup gdi_hostlib gdigfx bitmap gdikbd gdimouse
 
 %build_module mmake=kernel-hidd-wingdi \
   modname=wingdi modtype=hidd \
-  files=$(FILES) uselibs="oop rom hiddstubs"
+  files=$(FILES) uselibs="oop hiddstubs"
 
 DISK_FILES  := disk_startup
 DISK_EXEDIR := $(AROS_DEVS)/Monitors

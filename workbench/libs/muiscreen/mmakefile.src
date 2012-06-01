@@ -18,6 +18,6 @@ FUNCS := allocpubscreendesc \
         
 %build_module mmake=workbench-libs-muiscreen \
     modname=muiscreen modtype=library \
-    files="$(FILES) $(FUNCS)" uselibs="rom"
+    files="$(FILES) $(FUNCS)"
 
 %common

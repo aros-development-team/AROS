@@ -12,7 +12,7 @@ USER_CFLAGS := -DAROS_LC_SETFUNCS
 
 %build_module mmake=workbench-datatypes-jpeg \
     modname=jpeg modtype=datatype \
-    files=$(FILES) uselibs="jpeg amiga rom m"
+    files=$(FILES) uselibs="jpeg"
 
 $(MOD_DIR)/jpeg.readme : jpeg.readme
 	@$(CP) $< $@

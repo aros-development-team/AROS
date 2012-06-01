@@ -14,7 +14,7 @@ FILES := \
 
 %build_progs mmake=workbench-demos-zune \
     files=$(FILES) targetdir=$(AROSDIR)/Demos/Zune \
-    uselibs="mui arossupport amiga arosc"
+    uselibs="mui"
 
 %common
 

@@ -10,7 +10,7 @@ EXEDIR  := $(AROS_TOOLS)
 
 %build_prog mmake=workbench-tools-showconfig \
     progname=ShowConfig targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga"
+    files=$(FILES) uselibs="arossupport"
 
 %common
 

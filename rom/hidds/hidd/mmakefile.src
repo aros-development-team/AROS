@@ -7,7 +7,7 @@ USER_CFLAGS := -DAROS_USE_OOP \
 
 %build_module mmake=kernel-hidd \
   modname=hiddclass modtype=hidd \
-  files=hiddclass uselibs="oop rom"
+  files=hiddclass uselibs="oop"
 
 INCLUDE_FILES   :=  $(call WILDCARD, include/*.h)
 %copy_includes path=hidd dir=include

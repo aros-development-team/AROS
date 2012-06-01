@@ -9,8 +9,7 @@ INCLUDE_FILES := iconimage.h
 %build_module \
     mmake=workbench-classes-zune-iconimage \
     modname=IconImage modtype=mcc \
-    conffile=iconimage.conf \
-    uselibs="amiga rom"
+    conffile=iconimage.conf
     
 %copy_includes path=zune
     

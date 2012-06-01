@@ -12,6 +12,6 @@ USER_CFLAGS := -D__AROS
 
 %build_prog mmake=pp-tools \
     progname=TxElf targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="coolimagesstatic arossupport amiga arosc m"
+    files=$(FILES) uselibs="coolimagesstatic"
 
 %common

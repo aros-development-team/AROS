@@ -6,4 +6,4 @@ FILES	:= pcilinux_init driverclass
 %build_module mmake=hidd-pci-linux \
     modname=pcilinux modtype=hidd \
     files=$(FILES) \
-    uselibs="oop rom amiga"
+    uselibs="oop"

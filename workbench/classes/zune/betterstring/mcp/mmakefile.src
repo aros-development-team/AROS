@@ -17,7 +17,7 @@ FILES := library \
 	 
 %build_module_simple mmake=workbench-classes-zune-betterstring-mcp \
   modname=BetterString modtype=mcp \
-  files=$(FILES) uselibs="amiga mui rom m"
+  files=$(FILES) uselibs="mui"
 
 
 #MM includes-copy

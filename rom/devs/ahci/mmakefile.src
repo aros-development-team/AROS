@@ -19,6 +19,6 @@ USER_CFLAGS := -D__BSD_VISIBLE
 %build_module mmake=kernel-ahci \
   modname=ahci modtype=device \
   files="$(FILES)" \
-  uselibs="rom oop hiddstubs"
+  uselibs="oop hiddstubs"
 
 %common

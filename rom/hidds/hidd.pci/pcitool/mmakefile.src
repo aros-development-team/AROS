@@ -13,7 +13,7 @@ EXEDIR = $(AROSDIR)/Tools
 
 %build_prog mmake=workbench-tools-pcitool \
     progname=PCITool targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui amiga arosc m hiddstubs"
+    files=$(FILES) uselibs="mui hiddstubs"
 
 %common
 

@@ -16,7 +16,7 @@ FILES := workbook \
 
 %build_prog mmake=workbench-system-workbook \
     progname=Workbook targetdir=$(AROS_SYSTEM) \
-    files="main $(FILES)" uselibs="amiga rom" \
+    files="main $(FILES)" \
     detach=no
 
 ## For the 'workbook.resource' embedded commands
@@ -26,7 +26,6 @@ OBJDIR := $(OBJDIR).kernel
 
 %build_module mmake=kernel-workbook \
   modname=workbook modtype=resource \
-  files="workbook_init $(FILES)" \
-  uselibs="rom"
+  files="workbook_init $(FILES)"
 
 %common

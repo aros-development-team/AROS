@@ -18,11 +18,10 @@ EXEDIR          := $(AROS_TESTS)/dos
 #MM test-dos : includes linklibs
 
 %build_progs mmake=test-dos \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %build_progs mmake=test-dos-pure \
     files=$(PURE_FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga m" usestartup="no"
+    usestartup="no"
 
 %common

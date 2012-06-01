@@ -12,7 +12,6 @@ EXEDIR := $(AROS_TESTS)/benchmarks/boopsi
 #MM test-benchmarks-boopsi : includes linklibs 
 
 %build_progs mmake=test-benchmarks-boopsi \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

@@ -23,7 +23,6 @@ FUNCS := createplayera \
 
 %build_module mmake=workbench-libs-realtime \
     modname=realtime modtype=library \
-    files="realtime_init $(FUNCS) $(FILES)" \
-    uselibs=amiga
+    files="realtime_init $(FUNCS) $(FILES)"
 
 %common

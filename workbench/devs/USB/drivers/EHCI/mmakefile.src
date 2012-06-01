@@ -6,6 +6,6 @@ FILES := ehci_init
 %build_module mmake=hidd-usb-drivers-ehci	\
 	modname=ehci modtype=hidd		\
 	files="$(FILES)"			\
-	uselibs="oop rom hiddstubs"
+	uselibs="oop hiddstubs"
 
 %common

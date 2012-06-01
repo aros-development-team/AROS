@@ -6,6 +6,6 @@ FILES := ohci_init ohciclass ohcihub ohcideviceclass ohcidriverclass
 %build_module mmake=hidd-usb-drivers-ohci	\
 	modname=ohci modtype=hidd		\
 	files="$(FILES)"			\
-	uselibs="oop rom hiddstubs"
+	uselibs="oop hiddstubs"
 
 %common

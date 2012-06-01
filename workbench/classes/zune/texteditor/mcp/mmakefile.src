@@ -26,7 +26,7 @@ FILES := library \
 	 
 %build_module_simple mmake=workbench-classes-zune-texteditor-mcp \
   modname=TextEditor modtype=mcp \
-  files=$(FILES) uselibs="amiga mui rom m"
+  files=$(FILES) uselibs="mui arosc.static"
 
 #MM includes-copy
 

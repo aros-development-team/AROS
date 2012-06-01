@@ -58,6 +58,6 @@ endif
 
 %link_kickstart mmake=kernel-link-unix file=$(BINDIR)/boot/aros-bsp-$(BSP) \
 	devs=$(KDEVS) handlers=$(KHNDLRS) hidds=$(KHIDDS) libs=$(KLIBS) res=$(KRSRCS) startup=$(KOBJSDIR)/kernel_resource.o \
-	uselibs="arossupport hiddstubs amiga autoinit libinit rom m"
+	uselibs="arossupport hiddstubs amiga autoinit arosc.static libinit m"
 
 %common

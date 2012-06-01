@@ -8,6 +8,6 @@ FILES :=    hub.class debug
 %build_module mmake=kernel-usb-classes-hub \
     modname=hub modtype=usbclass modsuffix="class" \
     files="$(FILES)" \
-    uselibs="amiga rom debug"
+    uselibs="debug"
 
 %common

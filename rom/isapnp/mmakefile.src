@@ -5,7 +5,7 @@ USER_CFLAGS := -fstrict-aliasing -W -Wall -Wstrict-prototypes -Wno-unused -I$(GE
 
 %build_module_simple mmake=kernel-isapnp \
     modname=isapnp modtype=resource \
-    files="$(FILES)" uselibs="rom"
+    files="$(FILES)"
 
 # This causes generation of version.h at makedepend stage. Otherwise the build fails.
 $(OBJDIR)/init.d: $(GENDIR)/$(CURDIR)/version.h
@@ -21,7 +21,7 @@ $(GENDIR)/$(CURDIR)/version.h:	version.rev version.date
 
 %build_prog mmake=workbench-c-isapnp progname=ISApnp \
     files=isapnp targetdir=$(AROS_C) \
-    uselibs="arossupport amiga rom" usestartup=no
+    usestartup=no
 
 INCLUDE_FILES := include/isapnp.h
 %copy_includes path=resources dir=include

@@ -51,7 +51,6 @@ FUNCS := adddtobject \
 
 %build_module mmake=workbench-libs-datatypes \
     modname=datatypes modtype=library \
-    files="datatypes_init $(FUNCS) $(FILES)" \
-    uselibs="amiga rom"
+    files="datatypes_init $(FUNCS) $(FILES)"
 
 %common

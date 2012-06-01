@@ -6,4 +6,4 @@ include $(TOP)/config/make.cfg
 #MM kernel-processor: includes
 
 %build_module mmake=kernel-processor modname=processor modtype=resource \
-    version=$(AROS_TARGET_PLATFORM) files="init getcpuinfo" uselibs="rom utility"
+    version=$(AROS_TARGET_PLATFORM) files="init getcpuinfo"

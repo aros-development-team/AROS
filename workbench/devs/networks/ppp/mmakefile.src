@@ -9,4 +9,4 @@ FILES := init handler ppp serial
 
 %build_module mmake=workbench-devs-networks-ppp \
     modname=ppp modtype=device \
-    moduledir=Devs/Networks uselibs="arosc"
+    moduledir=Devs/Networks

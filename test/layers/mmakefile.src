@@ -3,7 +3,6 @@ include $(TOP)/config/make.cfg
 FILES := CRList DamageList clippingtest layerstest
 
 %build_progs mmake=test-layers \
-    files=$(FILES) targetdir=$(AROS_TESTS)/layers \
-    uselibs="amiga arossupport"
+    files=$(FILES) targetdir=$(AROS_TESTS)/layers
 
 %common

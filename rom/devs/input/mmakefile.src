@@ -10,6 +10,5 @@ USER_CFLAGS += -D__GRAPHICS_NOLIBBASE__
 
 %build_module mmake=kernel-input \
   modname=input modtype=device \
-  files="input $(FUNCS) $(FILES)" \
-  uselibs="rom"
+  files="input $(FUNCS) $(FILES)"
 

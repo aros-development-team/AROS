@@ -55,6 +55,6 @@ USER_CFLAGS := -D__NOLIBBASE__
 %build_module mmake=workbench-libs-icon \
     modname=icon modtype=library \
     files="icon_init $(FUNCS) $(FILES)" \
-    uselibs="z_static arossupport amiga rom m"
+    uselibs="z.static arosc.static arossupport"
 
 %common

@@ -9,4 +9,4 @@ USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION
 
 %build_module mmake=workbench-datatypes-text \
     modname=text modtype=datatype \
-    files=$(FILES) uselibs="amiga rom"
+    files=$(FILES)

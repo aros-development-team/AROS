@@ -10,6 +10,6 @@ FILES := main args
 
 %build_prog mmake=workbench-c-partition \
     progname=Partition targetdir=$(AROS_C) \
-    files=$(FILES) uselibs="amiga arosc m"
+    files=$(FILES) uselibs="arosc.static"
 
 %common

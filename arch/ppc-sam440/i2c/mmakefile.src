@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 %build_module mmake=hidd-i2c-amcc440 \
   modname=i2c-amcc440 modtype=hidd \
   files="i2c-amcc440" \
-  uselibs="rom amiga oop"
+  uselibs="oop"
 
 %common
   

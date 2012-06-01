@@ -23,33 +23,33 @@ USER_LIBS   := amiga arosc m mui
     modname=Icon modtype=mui files=icon \
     conffile=icon.conf \
     cflags="$(CFLAGS)" \
-    uselibs="amiga arosc m mui"
+    uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconlist \
     modname=IconList modtype=mui files=iconlist \
     conffile=iconlist.conf \
     cflags="$(CFLAGS)" \
-    uselibs="amiga arosc m mui"
+    uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-icondrawerlist \
     modname=IconDrawerList modtype=mui files=icondrawerlist \
     conffile=icondrawerlist.conf \
     cflags="$(CFLAGS)" \
-    uselibs="amiga arosc m mui"
+    uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconvolumelist \
     modname=IconVolumeList modtype=mui files=iconvolumelist \
     conffile=iconvolumelist.conf \
     cflags="$(CFLAGS)" \
-    uselibs="amiga arosc m mui"
+    uselibs="mui"
 
 %build_module \
     mmake=wanderer-classes-iconlistview \
     modname=IconListview modtype=mui files=iconlistview \
     conffile=iconlistview.conf \
     cflags="$(CFLAGS)" \
-    uselibs="amiga arosc m mui"
+    uselibs="mui"
 

@@ -8,5 +8,5 @@ FILES := serial_support serial_interrupthandlers
 
 %build_module mmake=workbench-devs-serial \
     modname=serial modtype=device \
-    files="serial_init $(FILES)" uselibs="hiddstubs rom"
+    files="serial_init $(FILES)" uselibs="hiddstubs"
 

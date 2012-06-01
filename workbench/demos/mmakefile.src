@@ -71,7 +71,7 @@ USER_CFLAGS := -I$(SRCDIR)/workbench/libs
 
 %build_progs mmake=demos \
     files=$(FILES) targetdir=$(AROSDIR)/Demos \
-    uselibs="coolimagesstatic arossupport amiga arosc m"
+    uselibs="coolimagesstatic"
 
 
 demos : $(AROSDIR)/Demos/forkbomb

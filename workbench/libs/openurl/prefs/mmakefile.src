@@ -38,7 +38,7 @@ FILES := \
 
 %build_prog mmake=workbench-libs-openurl-prefs \
     progname=$(EXE) files=$(FILES) \
-    targetdir=$(EXEDIR) uselibs="amiga mui"
+    targetdir=$(EXEDIR) uselibs="mui"
 
 locale.h: $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd $(SRCDIR)/$(CURDIR)/locale_h.sd
 	@$(FLEXCAT) $(SRCDIR)/$(CURDIR)/../locale/OpenURL.cd locale.h=$(SRCDIR)/$(CURDIR)/locale_h.sd

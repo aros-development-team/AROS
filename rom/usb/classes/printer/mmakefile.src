@@ -9,7 +9,6 @@ FILES :=    printer.class dev debug
 
 %build_module mmake=kernel-usb-classes-printer \
     modname=printer modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

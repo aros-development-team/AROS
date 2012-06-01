@@ -14,7 +14,7 @@ USER_LDFLAGS := -L $(GENDIR)/lib
 
 %build_prog mmake=test-boot \
     progname=testboot targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="bootconsole rom" \
+    files=$(FILES) uselibs="bootconsole" \
     usestartup=no
 
 %common

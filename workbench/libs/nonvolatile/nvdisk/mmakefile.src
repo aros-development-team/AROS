@@ -16,7 +16,6 @@ FUNCS := meminfonvd \
 
 %build_module mmake=workbench-libs-nvdisk \
     modname=nvdisk modtype=library \
-    files="nvdisk_init $(FUNCS)" \
-    uselibs=rom
+    files="nvdisk_init $(FUNCS)"
 
 %common

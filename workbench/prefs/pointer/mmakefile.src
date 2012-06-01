@@ -14,6 +14,6 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-pointer \
     progname=Pointer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+    files=$(FILES) uselibs="mui"
 
 %common

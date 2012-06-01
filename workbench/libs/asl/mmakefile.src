@@ -46,6 +46,6 @@ FUNCS := allocfilerequest	\
 %build_module mmake=workbench-libs-asl \
     modname=asl modtype=library \
     files="$(FUNCS) $(FILES)" \
-    uselibs="coolimages amiga rom m"
+    uselibs="coolimages"
 
 %common

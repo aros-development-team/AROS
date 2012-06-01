@@ -33,7 +33,6 @@ FUNCS := \
 
 %build_module mmake=workbench-libs-mathieeesingtrans \
     modname=mathieeesingtrans modtype=library \
-    files="mathieeesingtrans_init $(FILES) $(FUNCS)" \
-    uselibs=rom
+    files="mathieeesingtrans_init $(FILES) $(FUNCS)"
 
 %common

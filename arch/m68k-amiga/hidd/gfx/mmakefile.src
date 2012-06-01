@@ -9,4 +9,4 @@ USER_CFLAGS += -D__OOP_NOATTRBASES__ -D__OOP_NOMETHODBASES__ \
 
 %build_module mmake=kernel-amiga-m68k-amigavideo \
     modname=amigavideo modtype=hidd \
-    files="startup amigavideogfx amigavideobitmap chipset blitter" uselibs="rom oop hiddstubs"
+    files="startup amigavideogfx amigavideobitmap chipset blitter" uselibs="oop hiddstubs"

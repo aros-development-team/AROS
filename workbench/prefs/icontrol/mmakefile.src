@@ -14,7 +14,7 @@ EXEDIR      := $(AROSDIR)/Prefs
 
 %build_prog mmake=workbench-prefs-icontrol \
     progname=IControl targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+    files=$(FILES) uselibs="mui"
 
 
 IMAGES	    := menupulldownclassic menupulldown3d menupopupclassic menupopup3d

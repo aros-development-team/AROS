@@ -7,4 +7,4 @@ FILES := htmlclass tables parse layout
 
 %build_module mmake=workbench-datatypes-html \
     modname=html modtype=datatype \
-    files=$(FILES) uselibs="rom amiga"
+    files=$(FILES)

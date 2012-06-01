@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Generate cybergraphics.library
+#   Generate cybergraphics
 #
 include $(TOP)/config/make.cfg
 
@@ -41,7 +41,7 @@ FUNCS := \
 %build_module mmake=workbench-libs-cgfx \
   modname=cybergraphics modtype=library \
   files="$(FUNCS) graphics_driver gfxfuncsupport cybergraphics_init" \
-  uselibs="rom oop"
+  uselibs="oop"
 
 #MM includes-copy
 

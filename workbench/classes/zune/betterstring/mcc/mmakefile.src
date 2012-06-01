@@ -25,7 +25,7 @@ FILES := \
 
 %build_module_simple mmake=workbench-classes-zune-betterstring-class \
   modname=BetterString modtype=mcc \
-  files="library $(FILES)" uselibs="amiga mui rom m"
+  files="library $(FILES)" uselibs="arosc.static"
 
 
 
@@ -35,7 +35,7 @@ USER_CFLAGS := -DNO_INLINE_STDARG
 %build_prog mmake=workbench-classes-zune-betterstring-test \
     progname=BetterString-Test files="BetterString-Test $(FILES)" \
     targetdir=$(AROS_TESTS)/Zune \
-    uselibs="amiga mui"
+    uselibs="mui"
 
 
 

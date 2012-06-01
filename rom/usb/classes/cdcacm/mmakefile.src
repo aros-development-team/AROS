@@ -7,7 +7,6 @@ FILES :=    cdcacm.class dev debug
 
 %build_module mmake=kernel-usb-classes-cdcacm \
     modname=cdcacm modtype=usbclass modsuffix="class" \
-    files="$(FILES)" \
-    uselibs="amiga rom"
+    files="$(FILES)"
 
 %common

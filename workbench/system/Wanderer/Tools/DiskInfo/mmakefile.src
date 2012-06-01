@@ -15,6 +15,6 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 %build_prog mmake=workbench-system-wanderer-tools-diskinfo \
     progname=DiskInfo targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="mui arossupport amiga arosc m"
+    files=$(FILES) uselibs="mui"
 
 %common

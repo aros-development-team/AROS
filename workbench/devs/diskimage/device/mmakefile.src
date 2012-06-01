@@ -11,6 +11,6 @@ USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 -DDEVICE
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_module_simple mmake=workbench-devs-diskimage-device modname=diskimage modtype=device \
-    files=$(CFILES) uselibs="diskimagesupport diskimageprefs rom"
+    files=$(CFILES) uselibs="diskimagesupport diskimageprefs"
 
 %common

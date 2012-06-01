@@ -72,57 +72,57 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 
 
 %build_prog mmake=workbench-devs-diskimage-ccd progname=CCD files="stub_aros ccd" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="stub_aros ciso" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="stub_aros cpc" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 CFILES := cue/cue cue/flac cue/wavpack audio/aiff audio/flac \
 	audio/mp3_mpg123 audio/vorbis audio/wave audio/wavpack cue/malloc \
 	cue/fdio cue/string cue/stdio cue/select
 
 %build_prog mmake=workbench-devs-diskimage-cue progname=CUE files="stub_aros $(CFILES)" \
-    targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg m diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="mpg123 FLAC wavpack vorbisfile vorbis ogg m diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-daa progname=DAA files="stub_aros daa" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-dax progname=DAX files="stub_aros dax" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
 CFILES := dmg/dmg dmg/base64 dmg/adc
 
 %build_prog mmake=workbench-devs-diskimage-dmg progname=DMG files="stub_aros $(CFILES)" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z bz2 expat" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z bz2 expat" usestartup=no
 
 CFILES := ../dms/crc_csum ../dms/getbits ../dms/tables ../dms/maketbl ../dms/u_init \
 	../dms/u_deep ../dms/u_heavy ../dms/u_medium ../dms/u_quick ../dms/u_rle
 
 %build_prog mmake=workbench-devs-diskimage-dms progname=DMS files="stub_aros dms $(CFILES)" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-fdi progname=FDI files="stub_aros fdi/fdi fdi/fdi2raw" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-gi progname=GI files="stub_aros gi" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-mds progname=MDS files="stub_aros mds" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-nrg progname=NRG files="stub_aros nrg" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-uif progname=UIF files="stub_aros uif" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom z" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-xad progname=XAD files="stub_aros xad" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-xpk progname=XPK files="stub_aros xpk" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport rom" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %common

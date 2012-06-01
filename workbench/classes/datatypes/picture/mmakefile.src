@@ -9,5 +9,5 @@ USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-picture \
     modname=picture modtype=datatype \
-    files=$(FILES) uselibs="amiga rom"
+    files=$(FILES)
 

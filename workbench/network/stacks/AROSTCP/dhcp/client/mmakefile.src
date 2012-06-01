@@ -19,4 +19,4 @@ FILES :=	dhclient clparse
 	targetdir="$(AROS_SYSTEM)/Network/AROSTCP/C"	\
 	progname=dhclient					\
 	files="$(FILES)"					\
-	uselibs="arossupport amiga arosc dhcp minires omapip dst"
+	uselibs="dhcp minires omapip dst"

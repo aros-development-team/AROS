@@ -11,7 +11,6 @@ EXEDIR := $(AROS_TESTS)/kernel
 #MM test-kernel : includes includes-copy linklibs includes-kernel
 
 %build_progs mmake=test-kernel \
-    files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="arossupport amiga arosc m"
+    files=$(FILES) targetdir=$(EXEDIR)
 
 %common

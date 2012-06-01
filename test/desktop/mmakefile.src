@@ -9,6 +9,6 @@ EXEDIR := $(AROS_TESTS)/desktop
 
 %build_progs mmake=test-desktop \
     files=$(FILES) targetdir=$(EXEDIR) \
-    uselibs="mui arossupport amiga arosc m"
+    uselibs="mui"
 
 %common
