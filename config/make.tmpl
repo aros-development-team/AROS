@@ -1308,7 +1308,7 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 
 BD_SYMBOLS := $(BD_KBASE)
 
-BD_KLIB := hiddstubs amiga arossupport debug rom arosm autoinit libinit
+BD_KLIB := hiddstubs amiga arossupport arosc.static arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
@@ -1614,7 +1614,7 @@ BD_KBASE := DOSBase IntuitionBase LayersBase GfxBase OOPBase \
 
 BD_SYMBOLS := $(BD_KBASE)
 
-BD_KLIB := hiddstubs amiga arossupport debug rom arosm autoinit libinit
+BD_KLIB := hiddstubs amiga arossupport arosc.static arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
 $(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))

@@ -87,7 +87,7 @@ COMMON_ARCH := \
 	longjmp \
 	setjmp
 
-#   - Shared are in either the shared linklib, or the arosc.library module
+#   - Shared are in either the shared linklib, or the arosc module
 SHARED	:= \
         __arosc_init \
 	__arosc_ioerr2errno \
@@ -416,7 +416,7 @@ ROM_COMMON_ARCH := \
 	longjmp \
 	setjmp
 
-# Objects for rom.lib, from the static build.
+# Objects for libarosc.a, from the static build.
 ROM_STATIC := \
 	__filesystem_support \
 	__isinf \
@@ -466,7 +466,7 @@ ROM_STATIC := \
     libdir=$(OBJDIR)
 
 
-#   Also build $(AROS_LIB)/librom.a
+#   Also build $(AROS_LIB)/libarosc.a
 #
 #   This is a library that is allowed to be used inside modules and the
 #   kernel. It must include no code which refers to global variables.
@@ -479,7 +479,7 @@ ROM_COMMON_OBJS := $(addsuffix .o, \
     $(addprefix $(OBJDIR)/arch/,$(ROM_COMMON_ARCH)) \
 )
 %build_linklib mmake=linklibs-rom \
-    libname=rom files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJS) \
+    libname=arosc.static files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJS) \
     cflags="$(CFLAGS) -DAROSC_STATIC -DAROSC_ROM"
     objdir=$(OBJDIR)/static
 
@@ -498,13 +498,13 @@ USER_LDFLAGS := -L$(OBJDIR)
     uselibs="arosccommon"
 
 
-# x86_64 needs a reduced 32bit librom.a lib.
+# x86_64 needs a reduced 32bit libarosc.a lib.
 %rule_compile_multi basenames=$(ROM_COMMON) \
     cflags="-m32 -DAROSC_LIB32 $(CFLAGS)" targetdir=$(OBJDIR)/32bit
 
 ROM_COMMON_OBJ32 := $(addsuffix .o, $(addprefix $(OBJDIR)/32bit/,$(ROM_COMMON)))
 %build_linklib mmake=linklibs-clib32 \
-    libname=rom files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJ32) \
+    libname=arosc.static files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJ32) \
     cflags="-m32 $(CFLAGS) -DAROSC_LIB32 -DAROSC_STATIC -DAROSC_ROM" \
     objdir=$(OBJDIR)/static libdir=$(GENDIR)/lib32
 
