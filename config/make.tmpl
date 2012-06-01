@@ -675,11 +675,13 @@ $(TMP_TARGETS) : $(TMP_WILDCARD).o : %%(suffix)
     usehostlibs= usestartup=yes detach=no nix=no linker=target
 
 TMP_EXTRA_LDFLAGS := 
+TMP_EXTRA_LIBS :=
 ifeq (%(nix),yes)
     TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
     TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+    TMP_EXTRA_LIBS += arosc.static libinit autoinit
 endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
@@ -695,7 +697,7 @@ TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
 TMP_DIRS += $(LIBDIR)/
 # add lib and .a to static linklib names
-TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
 # search for the linklibs in the given path, ignore ones not found
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
@@ -716,7 +718,7 @@ endif
 
 %(prog) : OBJS := %(objs)
 %(prog) : LDFLAGS := %(ldflags) $(TMP_EXTRA_LDFLAGS)
-%(prog) : LIBS := $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
+%(prog) : LIBS := $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 %(prog) : %(objs) $(TMP_DEPLIBS)
 	%link_q from=$(OBJS) opt=$(LDFLAGS) libs=$(LIBS) cmd=$(CMD) strip=$(STRIPCMD)
 %end
@@ -731,11 +733,13 @@ endif
     usestartup=yes detach=no
 
 TMP_EXTRA_LDFLAGS := 
+TMP_EXTRA_LIBS :=
 ifeq (%(nix),yes)
     TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
 ifeq (%(usestartup),no)
     TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+    TMP_EXTRA_LIBS += arosc.static libinit autoinit
 endif
 ifeq (%(detach),yes)
     TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
@@ -751,14 +755,14 @@ TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 # Add normal linklib path
 TMP_DIRS += $(LIBDIR)/
 # add lib and .a to static linklib names
-TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
 # search for the linklibs in the given path, ignore ones not found
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
 )
 
 $(addprefix %(targetdir)/,%(progs)) : LDFLAGS:= %(ldflags) $(TMP_EXTRA_LDFLAGS)
-$(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))
+$(addprefix %(targetdir)/,%(progs)) : LIBS:= $(addprefix -l,%(uselibs) $(TMP_EXTRA_LIBS) %(usehostlibs))
 $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o $(TMP_DEPLIBS)
 	%link_q from=$< opt=$(LDFLAGS) libs=$(LIBS)
 %end
