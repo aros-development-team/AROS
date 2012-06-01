@@ -1444,17 +1444,17 @@ if test "${crosstools}" = "yes"; then
     if test "${crosstools_guess}" = "no"; then
         AC_MSG_ERROR([Cannot build external toolchain if an external ELF or AROS toolchain is specified])
     fi
-
-    AC_MSG_CHECKING([where to install the crosstools binaries])
-    AC_ARG_WITH(aros-toolchain-install,AC_HELP_STRING([--with-aros-toolchain-install=DIR],[Where to install or search for cross tools binaries]),[aros_toolchain_install=$withval])
-    if test "x$aros_toolchain_install" = "x"; then
-        AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
-    else
-        AROS_CROSSTOOLSDIR="$aros_toolchain_install"
-        PATH="$AROS_CROSSTOOLSDIR:$PATH"
-    fi
-    AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 fi
+
+AC_MSG_CHECKING([where to install the crosstools binaries])
+AC_ARG_WITH(aros-toolchain-install,AC_HELP_STRING([--with-aros-toolchain-install=DIR],[Where to install or search for cross tools binaries]),[aros_toolchain_install=$withval])
+if test "x$aros_toolchain_install" = "x"; then
+    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+else
+    AROS_CROSSTOOLSDIR="$aros_toolchain_install"
+    PATH="$AROS_CROSSTOOLSDIR:$PATH"
+fi
+AC_MSG_RESULT($AROS_CROSSTOOLSDIR)
 
 
 # Now process extra architecture-specific options.
