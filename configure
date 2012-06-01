@@ -8327,8 +8327,9 @@ if test "${crosstools}" = "yes"; then
     if test "${crosstools_guess}" = "no"; then
         as_fn_error $? "Cannot build external toolchain if an external ELF or AROS toolchain is specified" "$LINENO" 5
     fi
+fi
 
-    { $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install the crosstools binaries" >&5
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking where to install the crosstools binaries" >&5
 $as_echo_n "checking where to install the crosstools binaries... " >&6; }
 
 # Check whether --with-aros-toolchain-install was given.
@@ -8336,15 +8337,14 @@ if test "${with_aros_toolchain_install+set}" = set; then :
   withval=$with_aros_toolchain_install; aros_toolchain_install=$withval
 fi
 
-    if test "x$aros_toolchain_install" = "x"; then
-        AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
-    else
-        AROS_CROSSTOOLSDIR="$aros_toolchain_install"
-        PATH="$AROS_CROSSTOOLSDIR:$PATH"
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
-$as_echo "$AROS_CROSSTOOLSDIR" >&6; }
+if test "x$aros_toolchain_install" = "x"; then
+    AROS_CROSSTOOLSDIR="$AROS_BUILDDIR_UNIX/bin/$aros_host_arch-$aros_host_cpu/tools/crosstools"
+else
+    AROS_CROSSTOOLSDIR="$aros_toolchain_install"
+    PATH="$AROS_CROSSTOOLSDIR:$PATH"
 fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $AROS_CROSSTOOLSDIR" >&5
+$as_echo "$AROS_CROSSTOOLSDIR" >&6; }
 
 
 # Now process extra architecture-specific options.
