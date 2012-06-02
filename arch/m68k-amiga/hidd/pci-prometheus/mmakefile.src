@@ -1,0 +1,18 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES=pci-prometheus_init driverclass pci_resource
+
+#MM- workbench-expansion-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU): hidd-pci-prometheus
+
+#MM- hidd-pci-prometheus: kernel-pci hidd-pci-prometheus-hidd hidd-pci-prometheus-icon
+#MM- hidd-pci-prometheus-quick: hidd-pci-prometheus-hidd-quick hidd-pci-prometheus-icon
+
+%build_module mmake=hidd-pci-prometheus-hidd \
+  modname=pci-prometheus modtype=hidd \
+  moduledir=$(AROS_DIR_EXPANSION) \
+  files="$(FILES)" \
+  uselibs="rom amiga oop"
+
+%build_icons mmake=hidd-pci-prometheus-icon \
+  icons=pci-prometheus.hidd dir=$(AROS_EXPANSION)
