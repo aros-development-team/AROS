@@ -1,0 +1,10 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- workbench-expansion-complete : workbench-expansion
+
+#MM- workbench-expansion : includes linklibs \
+#MM    workbench-expansion-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)
+
+#MM- workbench-expansion-quick : \
+#MM    workbench-expansion-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)-quick
