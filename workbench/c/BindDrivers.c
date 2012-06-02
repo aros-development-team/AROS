@@ -265,10 +265,11 @@ AROS_SHA(BOOL, ,DEVICES,/S, FALSE))
             ObtainConfigBinding();
             while ((cdev = FindConfigDev(cdev, -1, -1))) {
                 struct Node *node = cdev->cd_Driver;
-                Printf("%08lX %4ld/%-2ld %s\n",
-                        (ULONG)(IPTR)cdev->cd_BoardAddr,
+                Printf("%5ld/%-3ld %08lx-%08lx %s\n",
                         cdev->cd_Rom.er_Manufacturer,
                         cdev->cd_Rom.er_Product,
+                        (ULONG)(IPTR)cdev->cd_BoardAddr,
+                        (ULONG)(IPTR)cdev->cd_BoardAddr+cdev->cd_BoardSize-1,
                         (cdev->cd_Flags & CDF_CONFIGME) ?
                          "(unbound)" : node->ln_Name);
             }
@@ -319,7 +320,7 @@ AROS_SHA(BOOL, ,DEVICES,/S, FALSE))
             /* If SHArg(DRIVERS) is true, just list the drivers
              */
             if (SHArg(DRIVERS)) {
-                Printf("%4ld/%-2ld %s\n", (ULONG)node->bd_Product[i].mfg, (ULONG)node->bd_Product[i].prod, node->bd_Node.ln_Name);
+                Printf("%5ld/%-3ld %s\n", (ULONG)node->bd_Product[i].mfg, (ULONG)node->bd_Product[i].prod, node->bd_Node.ln_Name);
             } else {
                 LONG err;
                 err = BindDriver((struct Library *)DOSBase, node->bd_Node.ln_Name, node->bd_Product[i].mfg, node->bd_Product[i].prod, node->bd_ProductString, node->bd_Icon->do_ToolTypes);
