@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=pci-prometheus_init driverclass pci_resource
 
-#MM- workbench-expansion-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU): hidd-pci-prometheus
+#MM- workbench-expansion-amiga-m68k: hidd-pci-prometheus
 
 #MM- hidd-pci-prometheus: kernel-pci hidd-pci-prometheus-hidd hidd-pci-prometheus-icon
 #MM- hidd-pci-prometheus-quick: hidd-pci-prometheus-hidd-quick hidd-pci-prometheus-icon
