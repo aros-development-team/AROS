@@ -12,7 +12,7 @@ FILES=pci-mediator_init driverclass pci_resource
   modname=pci-mediator modtype=hidd \
   moduledir=$(AROS_DIR_EXPANSION) \
   files="$(FILES)" \
-  uselibs="rom amiga oop"
+  uselibs="oop"
 
 %build_icons mmake=hidd-pci-mediator-icon \
   icons=pci-mediator.hidd dir=$(AROS_EXPANSION)
