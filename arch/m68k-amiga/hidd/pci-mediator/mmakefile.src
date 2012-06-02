@@ -1,0 +1,18 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES=pci-mediator_init driverclass pci_resource
+
+#MM- workbench-expansion-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU): hidd-pci-mediator
+
+#MM- hidd-pci-mediator: kernel-pci hidd-pci-mediator-hidd hidd-pci-mediator-icon
+#MM- hidd-pci-mediator-quick: hidd-pci-mediator-hidd-quick hidd-pci-mediator-icon
+
+%build_module mmake=hidd-pci-mediator-hidd \
+  modname=pci-mediator modtype=hidd \
+  moduledir=$(AROS_DIR_EXPANSION) \
+  files="$(FILES)" \
+  uselibs="rom amiga oop"
+
+%build_icons mmake=hidd-pci-mediator-icon \
+  icons=pci-mediator.hidd dir=$(AROS_EXPANSION)
