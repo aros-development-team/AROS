@@ -1,5 +1,5 @@
 /*
-    Copyright © 2006-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2006-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -730,7 +730,7 @@ AROS_LH1(struct Task *, New_FindTask,
 	AROS_LDA(STRPTR, name,    A1),
 	struct ExecBase *, SysBase);
 
-    if (patches[PATCH_FindTask].enabled)
+    if ((name != NULL) && patches[PATCH_FindTask].enabled)
     {
 	main_output("FindTask", name, 0, (IPTR)result, TRUE);
     }
