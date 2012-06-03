@@ -66,6 +66,8 @@
 #define EMPB_SETUP_OFF		0x00000000
 #define EMPB_SETUP_SIZE		0xFFFF
 
+#define EMPB_SETUP_CONFIG_OFF	0x0     /* Config bits */
+#define EMPB_SETUP_STATUS_OFF	0x4     /* Status bits */
 #define EMPB_SETUP_WINDOW_OFF	0x2	/* set memory window position */
 #define EMPB_SETUP_BRIDGE_OFF	0x7	/* select between conf or I/O */
 
