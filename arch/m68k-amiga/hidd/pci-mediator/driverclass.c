@@ -8,6 +8,7 @@
 
 #define __OOP_NOATTRBASES__
 
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <exec/types.h>
@@ -75,6 +76,35 @@ static void PCIInitialize(struct pcibase *base)
 {
     int dev, sub;
     const int bus = 0;
+
+    D(bug("MEDIATOR: Attempting init\n"));
+    base->setup[EMPB_SETUP_STATUS_OFF] = 0x00;
+    base->setup[EMPB_SETUP_CONFIG_OFF] = 0x41;
+
+    int i;
+    D(bug("MEDIATOR: Dumping setup area:\n"));
+    for (i = 0; i < 256; i++) {
+        if ((i % 16) == 0) {
+            D(bug("%p:", &base->setup[i]));
+        }
+        D(bug("%c%02x", (i ==8) ? '-' : ' ',base->setup[i]));
+        if ((i % 16) == 15) {
+            D(bug("\n"));
+        }
+    }
+    D(bug("MEDIATOR: Dumping config area for device 0:\n"));
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_CONF;
+    for (i = 0; i < 256/4; i++) {
+        if ((i % 4) == 0) {
+            D(bug("%p:", &base->config[i]));
+        }
+        D(bug("%c%08x", (i ==2) ? '-' : ' ',base->config[i]));
+        if ((i % 4) == 3) {
+            D(bug("\n"));
+        }
+    }
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_IO;
+
 
     /* Initialize all devices attached to this PCIDriver
      *
