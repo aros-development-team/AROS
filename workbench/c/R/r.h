@@ -22,6 +22,7 @@ struct CArg
     BOOL m_flag;
     BOOL n_flag;
     BOOL s_flag;
+    BOOL t_flag;
 };
 
 struct Req
@@ -36,12 +37,14 @@ struct Req
 
     ULONG arg_cnt;
     struct CArg cargs[MAX_ARG_CNT]; // TODO: dynamic allocation
+
+    BOOL do_execute; // TRUE if Execute button was clicked
 };
 
 
 
 BOOL create_gui(struct Req *req);
-BOOL handle_gui(void);
+BOOL handle_gui(struct Req *req);
 void cleanup_gui(void);
 BOOL get_gui_bool(struct CArg *carg);
 CONST_STRPTR get_gui_string(struct CArg *carg);

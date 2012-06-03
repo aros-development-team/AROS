@@ -79,12 +79,76 @@ static BOOL handle_args(struct Req *req, int argc, char **argv)
 }
 
 
-// search for the command in the Shell's search path. Return TRUE if it exists and
-// if it's not a directory
+// return TRUE if name exists and is not a directory
+static BOOL is_file(CONST_STRPTR name)
+{
+    BOOL retval = FALSE;
+
+    if (name && name[0])
+    {
+        struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
+        if (fib)
+        {
+            BPTR lock = Lock(name, SHARED_LOCK);
+            if (lock)
+            {
+                if (Examine(lock, fib))
+                {
+                    if (fib->fib_DirEntryType < 0)
+                    {
+                        retval = TRUE;
+                    }
+                }
+                UnLock(lock);
+            }
+            FreeDosObject(DOS_FIB, fib);
+        }
+    }
+    return retval;
+}
+
+
+// search for the command. It must
+// be an absolute path, exist in the current directory
+// or exist in "C:".
 static BOOL check_exist(struct Req *req)
 {
-    // FIXME: implement me
-    return TRUE;
+    BOOL retval = FALSE;
+
+    if (strchr(req->filename, ':')) // absolute path
+    {
+        if (is_file(req->filename))
+        {
+            D(bug("[R] command found by absolute path\n"));
+            retval = TRUE;
+        }
+    }
+    else if (strchr(req->filename, '/') == NULL) // not in a sub-dir
+    {
+        if (is_file(req->filename)) // in current directory
+        {
+            D(bug("[R] command found in current directory\n"));
+            retval = TRUE;
+        }
+        else // in C:
+        {
+            BPTR lock = Lock("C:", SHARED_LOCK);
+            if (lock)
+            {
+                BPTR olddir = CurrentDir(lock);
+                if (is_file(req->filename))
+                {
+                    D(bug("[R] command found in C:\n"));
+                    retval = TRUE;
+                }
+                CurrentDir(olddir);
+                UnLock(lock);
+            }
+
+        }
+    }
+
+    return retval;
 }
 
 
@@ -242,6 +306,10 @@ static BOOL parse_template(struct Req *req)
                     req->cargs[req->arg_cnt].s_flag = TRUE;
                     chr++;
                     break;
+                case 'T':
+                    req->cargs[req->arg_cnt].t_flag = TRUE;
+                    chr++;
+                    break;
                 default:
                     return FALSE;
                     break;
@@ -267,7 +335,7 @@ static void execute_command(struct Req *req)
 
     for (i = 0; i < req->arg_cnt; i++)
     {
-        if (req->cargs[i].s_flag)
+        if (req->cargs[i].s_flag || req->cargs[i].t_flag)
         {
             if (get_gui_bool(&req->cargs[i]))
             {
@@ -331,24 +399,26 @@ int main(int argc, char **argv)
 {
     struct Req *req = alloc_req();
     if (req == NULL)
-        clean_exit(req, "Can't allocate struct Req\n");
+        clean_exit(req, "r: Can't allocate struct Req\n");
+
+    D(bug("[R/main] req %p\n", req));
 
     if (! handle_args(req, argc, argv))
-        clean_exit(req, "Failed to parse arguments\n");
+        clean_exit(req, "r: Failed to parse arguments\n");
 
     if (! check_exist(req))
-        clean_exit(req, "Command not found\n");
+        clean_exit(req, "r: Command not found\n");
 
     if (! get_template(req))
-        clean_exit(req, "Failed to get template\n");
+        clean_exit(req, "r: Failed to get template\n");
 
     if (! parse_template(req))
-        clean_exit(req, "Failed to parse the template\n");
+        clean_exit(req, "r: Failed to parse the template\n");
 
     if (! create_gui(req))
-        clean_exit(req, "Failed to create application object\n");
+        clean_exit(req, "r: Failed to create application object\n");
 
-    if (handle_gui())
+    if (handle_gui(req))
     {
         execute_command(req);
     }
