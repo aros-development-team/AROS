@@ -139,7 +139,7 @@ Object *PTEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
                         StringFrame,
                         MUIA_CycleChain, 1,
                     End),
-                    MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
+                    MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopFile),
                 End,
                 Child, (IPTR)Label2(__(MSG_ALPHA)),
                 Child, (IPTR)(alphaSlider = (Object *)SliderObject,
