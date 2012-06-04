@@ -7,7 +7,7 @@ FILES   := main gui
 
 EXEDIR  := $(AROS_C)
 
-# #MM- workbench-c : workbench-c-r
+#MM- workbench-c : workbench-c-r
 #MM workbench-c-r : includes linklibs
 
 %build_prog mmake=workbench-c-r \
