@@ -2,18 +2,7 @@
 #undef DB
 #undef KPRINTF
 
-#ifndef DB_LEVEL
-#define DB_LEVEL 200
-#endif
-
-//#define DEBUG 1
-
-#ifdef AROS_USB30_CODE
-#undef DEBUG
-#undef DB_LEVEL
-#define DEBUG 1
-#define DB_LEVEL 1000
-#endif
+#define DEBUG 200
 
 #include <proto/debug.h>
 
@@ -25,13 +14,13 @@
 #endif
 
 #ifdef DEBUG
-#define KPRINTF(l, x) do { if ((l) >= DB_LEVEL) \
-     { KPrintF("%s/%lu: ", __FUNCTION__, __LINE__); KPrintF x;} } while (0)
-#define DB(x) x
-   void dumpmem_pciusb(void *mem, unsigned long int len);
-#else /* !DEBUG */
 
+#define KPRINTF(l, x) do { if ((l) >= DEBUG) \
+     { KPrintF("%s/%lu: ", __FUNCTION__, __LINE__); KPrintF x;} } while (0)
+#define KPRINTF2(l, x) do { if ((l) >= DEBUG) \
+     { KPrintF x;} } while (0)
+#else /* !DEBUG */
 #define KPRINTF(l, x) ((void) 0)
-#define DB(x)
+#define KPRINTF2(l, x) ((void) 0)
 
 #endif /* DEBUG */
