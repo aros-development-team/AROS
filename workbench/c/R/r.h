@@ -9,12 +9,10 @@
 #include <exec/types.h>
 #include <intuition/classusr.h>
 
-#define MAX_ARG_CNT (30)
-#define MAX_NAME_CNT (30)
 
 struct CArg
 {
-    TEXT argname[MAX_NAME_CNT];
+    TEXT *argname;
     Object *object;
     BOOL a_flag;
     BOOL f_flag;
@@ -33,14 +31,16 @@ struct Req
     BOOL nogui;
     STRPTR arguments;
 
-    TEXT cmd_template[2000];
+    TEXT *cmd_template; // template string from outfile
 
     ULONG arg_cnt;
-    struct CArg cargs[MAX_ARG_CNT]; // TODO: dynamic allocation
+    struct CArg *cargs;
 
     BOOL do_execute; // TRUE if Execute button was clicked
 };
 
+
+extern APTR poolmem;
 
 
 BOOL create_gui(struct Req *req);
