@@ -11,7 +11,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#define DEBUG 1
+//#define DEBUG 1
 #include <aros/debug.h>
 
 #include "r.h"
@@ -172,7 +172,7 @@ static BOOL get_template(struct Req *req)
     ULONG cmd_len = 0;
 
     LONG i;
-    LONG cmd_res = 0;
+    __unused LONG cmd_res = 0;
 
     if (req->filename == NULL)
     {

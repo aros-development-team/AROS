@@ -49,6 +49,6 @@ void cleanup_gui(void);
 BOOL get_gui_bool(struct CArg *carg);
 CONST_STRPTR get_gui_string(struct CArg *carg);
 
-#define VERSION "$VER: R 1.0 (28.05.2012)"
+#define VERSION "$VER: R 1.1 (04.06.2012)"
 
 #endif // R_H
