@@ -143,6 +143,7 @@ esac
 
 aros_kernel_cc_includes=""
 aros_target_cc_includes=""
+host_cc_elf=yes
 
 # ----------------------------------------------------------------------------------------
 # Host-specific defaults
@@ -227,7 +228,7 @@ case "$host_os" in
     darwin*)
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
         aros_host_arch="darwin"
-        cross_compile_native=yes
+        host_cc_elf=no
         android_build_os="darwin-x86"
         android_tool="android"
         default_android_sdk="/android-sdk-mac_x86"
@@ -323,12 +324,12 @@ case "$host_os" in
     morphos*)
         aros_host_arch="morphos"
         aros_host_cpu="ppc"
-        cross_compile_native=yes
+        host_cc_elf=no
         ;;
 
     amiga*)
         aros_host_arch="amiga"
-        cross_compile_native=yes
+        host_cc_elf=no
         SORT="/gg/bin/sort"
         TEST="/gg/bin/test"
         UNIQ="/gg/bin/uniq"
@@ -351,7 +352,7 @@ case "$host_os" in
     cygwin*)
         aros_host_arch="cygwin"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-        cross_compile_native=yes
+        host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
         default_android_sdk="/cygdrive/c/android-sdk-windows-1.6_r1"
@@ -370,7 +371,7 @@ case "$host_os" in
     mingw32*)
         aros_host_arch="mingw32"
         aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
-        cross_compile_native=yes
+        host_cc_elf=no
         android_build_os="windows"
         android_tool="android.bat"
         default_android_sdk="/c/android-sdk-windows-1.6_r1"
@@ -1579,13 +1580,16 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
 else
     dnl For a native build we only care if our host_cc can produce static ELF files. If so, we can use
     dnl it as kernel_cc. If not, (e. g. we are on Windows or Darwin), we need a crosscompiler.
-    if test "$cross_compile_native" ; then
+    if test "$host_cc_elf" = "no" ; then
         cross_compiling=yes
     fi
 fi
 
 if test "$cross_compiling" = "no" ; then
     kernel_tool_prefix=""
+    if test "$host_cc_elf" = "yes" ; then
+        elf_tool_prefix=""
+    fi
 fi
 
 #######################################################################
