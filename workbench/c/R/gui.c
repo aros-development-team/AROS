@@ -62,13 +62,13 @@ AROS_UFH3S(void, pop_single_btn_func,
     )
     {
         ULONG buflen = strlen(request->fr_Drawer) + strlen(request->fr_File) + 10;
-        TEXT *buffer = AllocVec(buflen, MEMF_ANY);
+        TEXT *buffer = AllocPooled(poolmem, buflen);
         if (buffer)
         {
             strcpy(buffer, request->fr_Drawer);
             AddPart(buffer, request->fr_File, buflen);
             SET(*str_object, MUIA_String_Contents, buffer);
-            FreeVec(buffer);
+            FreePooled(poolmem, buffer, buflen);
         }
     }
 
@@ -104,7 +104,7 @@ AROS_UFH3S(void, pop_multi_btn_func,
             buflen += strlen(request->fr_Drawer) + strlen(request->fr_ArgList[i].wa_Name) + 5;
         }
 
-        TEXT *buffer = AllocVec(buflen, MEMF_ANY);
+        TEXT *buffer = AllocPooled(poolmem, buflen);
         if (buffer)
         {
             TEXT *ptr = buffer;
@@ -113,13 +113,13 @@ AROS_UFH3S(void, pop_multi_btn_func,
             {
                 *ptr++ = '\"';
                 strcpy(ptr, request->fr_Drawer);
-                AddPart(ptr, request->fr_File, buffer + buflen - ptr - 2);
+                AddPart(ptr, request->fr_ArgList[i].wa_Name, buffer + buflen - ptr - 2);
                 ptr = buffer + strlen(buffer);
                 strcpy(ptr, "\" ");
                 ptr += 2;
             }
             SET(*str_object, MUIA_String_Contents, buffer);
-            FreeVec(buffer);
+            FreePooled(poolmem, buffer, buflen);
         }
     }
 
@@ -175,7 +175,7 @@ BOOL create_gui(struct Req *req)
 
         if (req->cargs[i].s_flag || req->cargs[i].t_flag) // Switch
         {
-            new_obj = Label(req->cargs[i].argname);
+            new_obj = Label1(req->cargs[i].argname);
             if (new_obj)
             {
                 chk_group_tags[chk_cnt].ti_Tag = Child;
@@ -193,7 +193,7 @@ BOOL create_gui(struct Req *req)
         }
         else if (req->cargs[i].n_flag) // Numeric
         {
-            new_obj = Label(req->cargs[i].argname);
+            new_obj = Label2(req->cargs[i].argname);
             if (new_obj)
             {
                 str_group_tags[str_cnt].ti_Tag = Child;
@@ -216,7 +216,7 @@ BOOL create_gui(struct Req *req)
         else if (req->cargs[i].m_flag) // Multiple
         {
             Object *pop_btn;
-            new_obj = Label(req->cargs[i].argname);
+            new_obj = Label2(req->cargs[i].argname);
             if (new_obj)
             {
                 str_group_tags[str_cnt].ti_Tag = Child;
@@ -247,7 +247,7 @@ BOOL create_gui(struct Req *req)
         else
         {
             Object *pop_btn;
-            new_obj = Label(req->cargs[i].argname);
+            new_obj = Label2(req->cargs[i].argname);
             if (new_obj)
             {
                 str_group_tags[str_cnt].ti_Tag = Child;

@@ -17,6 +17,9 @@
 #include "r.h"
 
 #define ARG_TEMPLATE "FILENAME,PROFILE/K,NOGUI/S,ARGUMENTS/F"
+#define CMD_TMPLATE_SIZE (2000)
+
+APTR poolmem;
 
 enum
 {
@@ -40,15 +43,15 @@ static void clean_exit(struct Req *req, CONST_STRPTR s)
     if (req)
     {
         if (req->rda) FreeArgs(req->rda);
-        FreeVec(req);
     }
     cleanup_gui();
+    DeletePool(poolmem);
     exit(retval);
 }
 
 static struct Req *alloc_req(void)
 {
-    return AllocVec(sizeof (struct Req), MEMF_ANY | MEMF_CLEAR);
+    return AllocPooled(poolmem, sizeof (struct Req));
 }
 
 static BOOL handle_args(struct Req *req, int argc, char **argv)
@@ -115,6 +118,9 @@ static BOOL check_exist(struct Req *req)
 {
     BOOL retval = FALSE;
 
+    if (req->filename == NULL)
+        return FALSE;
+
     if (strchr(req->filename, ':')) // absolute path
     {
         if (is_file(req->filename))
@@ -162,13 +168,20 @@ static BOOL get_template(struct Req *req)
 
     TEXT out_file_name[30];
     TEXT in_file_name[30];
-
-    TEXT cmd[255];
+    TEXT *cmd = NULL;
+    ULONG cmd_len = 0;
 
     LONG i;
     LONG cmd_res = 0;
 
     if (req->filename == NULL)
+    {
+        goto cleanup;
+    }
+
+    cmd_len = strlen(req->filename) + 20;
+    cmd = AllocPooled(poolmem, cmd_len);
+    if (cmd == NULL)
     {
         goto cleanup;
     }
@@ -200,8 +213,8 @@ static BOOL get_template(struct Req *req)
     }
 
     // append "*>NIL: ?" to the command
-    strlcpy(cmd, req->filename, sizeof cmd);
-    strlcat(cmd, " *>NIL: ?", sizeof cmd);
+    strlcpy(cmd, req->filename, cmd_len);
+    strlcat(cmd, " *>NIL: ?", cmd_len);
 
     // shut up DOS error message
     struct Process *me = (struct Process*)FindTask(NULL);
@@ -215,9 +228,15 @@ static BOOL get_template(struct Req *req)
     // restore window ptr
     me->pr_WindowPtr = oldwin;
 
+    req->cmd_template = AllocPooled(poolmem, CMD_TMPLATE_SIZE); // FIXME get mem size from file size
+    if (req->cmd_template == NULL)
+    {
+        goto cleanup;
+    }
+
     // go to the beginning of the output file and read the template
     Seek(output_fh, 0, OFFSET_BEGINNING);
-    if (FGets(output_fh, req->cmd_template, sizeof req->cmd_template))
+    if (FGets(output_fh, req->cmd_template, CMD_TMPLATE_SIZE))
     {
         D(bug("[R] template read: %s\n", req->cmd_template));
         retval = TRUE;
@@ -235,19 +254,49 @@ cleanup:
         DeleteFile(out_file_name);
     }
 
+    FreePooled(poolmem, cmd, cmd_len);
+
     return retval;
 }
 
 
 static BOOL parse_template(struct Req *req)
 {
-    TEXT *chr = req->cmd_template;
+    TEXT *chr;
     LONG len;
+    LONG arg;
 
     if (req->cmd_template[0] == '\0')
         return FALSE;
 
-    while (req->arg_cnt < MAX_ARG_CNT)
+    // count number of arguments
+    for
+    (
+        req->arg_cnt = 1, chr = req->cmd_template;
+        *chr != '\0' && req->arg_cnt < 50;
+        chr++
+    )
+    {
+        if (*chr == ',')
+        {
+            req->arg_cnt++;
+        }
+    }
+
+    D(bug("[R/parse_template args found %d\n", req->arg_cnt));
+
+    req->cargs = AllocPooled(poolmem, sizeof (struct CArg) * req->arg_cnt);
+    if (req->cargs == NULL)
+    {
+        return FALSE;
+    }
+
+    for
+    (
+        arg = 0, chr = req->cmd_template;
+        arg < req->arg_cnt;
+        chr++
+    )
     {
         // read name
         TEXT *name_start = chr;
@@ -272,10 +321,16 @@ static BOOL parse_template(struct Req *req)
         if (len == 0)
             return FALSE;
 
-        if (len >= MAX_NAME_CNT - 1)
-            len = MAX_NAME_CNT - 1;
+        if (len >= 35)
+            len = 35;
 
-        memcpy(req->cargs[req->arg_cnt].argname, name_start, len);
+        req->cargs[arg].argname = AllocPooled(poolmem, len + 1);
+        if (req->cargs[arg].argname == NULL)
+        {
+            return FALSE;
+        }
+        memcpy(req->cargs[arg].argname, name_start, len);
+        req->cargs[arg].argname[len] = '\0';
 
         // read modifiers
         while (*chr == '/')
@@ -283,31 +338,31 @@ static BOOL parse_template(struct Req *req)
             switch (*(chr + 1))
             {
                 case 'A':
-                    req->cargs[req->arg_cnt].a_flag = TRUE;
+                    req->cargs[arg].a_flag = TRUE;
                     chr++;
                     break;
                 case 'F':
-                    req->cargs[req->arg_cnt].f_flag = TRUE;
+                    req->cargs[arg].f_flag = TRUE;
                     chr++;
                     break;
                 case 'K':
-                    req->cargs[req->arg_cnt].k_flag = TRUE;
+                    req->cargs[arg].k_flag = TRUE;
                     chr++;
                     break;
                 case 'M':
-                    req->cargs[req->arg_cnt].m_flag = TRUE;
+                    req->cargs[arg].m_flag = TRUE;
                     chr++;
                     break;
                 case 'N':
-                    req->cargs[req->arg_cnt].n_flag = TRUE;
+                    req->cargs[arg].n_flag = TRUE;
                     chr++;
                     break;
                 case 'S':
-                    req->cargs[req->arg_cnt].s_flag = TRUE;
+                    req->cargs[arg].s_flag = TRUE;
                     chr++;
                     break;
                 case 'T':
-                    req->cargs[req->arg_cnt].t_flag = TRUE;
+                    req->cargs[arg].t_flag = TRUE;
                     chr++;
                     break;
                 default:
@@ -316,10 +371,9 @@ static BOOL parse_template(struct Req *req)
             }
             chr++;
         }
-        req->arg_cnt++;
+        arg++;
         if (*chr != ',')
             break;
-        chr++;
     }
     return TRUE;
 }
@@ -330,8 +384,25 @@ static void execute_command(struct Req *req)
 {
     ULONG i;
     CONST_STRPTR str;
+    TEXT *cmd;
 
-    strlcpy(req->cmd_template, req->filename, sizeof req->cmd_template);
+    ULONG cmd_size = strlen(req->filename) + 5;
+    for (i = 0; i < req->arg_cnt; i++)
+    {
+        cmd_size += strlen(req->cargs[i].argname) + 5;
+        if (!req->cargs[i].s_flag && !req->cargs[i].t_flag)
+        {
+            cmd_size += strlen(get_gui_string(&req->cargs[i])) + 5;
+        }
+    }
+
+    cmd = AllocPooled(poolmem, cmd_size);
+    if (cmd == NULL)
+    {
+        return;
+    }
+
+    strcpy(cmd, req->filename);
 
     for (i = 0; i < req->arg_cnt; i++)
     {
@@ -339,8 +410,8 @@ static void execute_command(struct Req *req)
         {
             if (get_gui_bool(&req->cargs[i]))
             {
-                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
-                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
+                strcat(cmd, " ");
+                strcat(cmd, req->cargs[i].argname);
             }
         }
         else if (req->cargs[i].n_flag)
@@ -348,10 +419,10 @@ static void execute_command(struct Req *req)
             str = get_gui_string(&req->cargs[i]);
             if (str[0] != '\0')
             {
-                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
-                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
-                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
-                strlcat(req->cmd_template, str, sizeof req->cmd_template);
+                strcat(cmd, " ");
+                strcat(cmd, req->cargs[i].argname);
+                strcat(cmd, " ");
+                strcat(cmd, str);
             }
         }
         else
@@ -361,31 +432,32 @@ static void execute_command(struct Req *req)
             if (str[0] != '\0')
             {
                 // do we have a space character in the string?
-                // if yes: quote it
-                if (strchr(str, ' ') && str[0] != '\"')
+                // if yes: quote it.
+                // For /M the quotes are already set by the GUI
+                if (!req->cargs[i].m_flag && strchr(str, ' ') && str[0] != '\"')
                 {
                     quote = TRUE;
                 }                    
-                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
-                strlcat(req->cmd_template, req->cargs[i].argname, sizeof req->cmd_template);
-                strlcat(req->cmd_template, " ", sizeof req->cmd_template);
+                strcat(cmd, " ");
+                strcat(cmd, req->cargs[i].argname);
+                strcat(cmd, " ");
                 if (quote)
                 {
-                    strlcat(req->cmd_template, "\"", sizeof req->cmd_template);
+                    strcat(cmd, "\"");
                 }
-                strlcat(req->cmd_template, str, sizeof req->cmd_template);
+                strcat(cmd, str);
                 if (quote)
                 {
-                    strlcat(req->cmd_template, "\"", sizeof req->cmd_template);
+                    strcat(cmd, "\"");
                 }
             }
         }
     }
 
-    D(bug("[R] executing command %s\n", req->cmd_template));
+    D(bug("[R] executing command %s\n", cmd));
     LONG result = System
     (
-        req->cmd_template,
+        cmd,
         NULL
     );
     if (result)
@@ -397,6 +469,10 @@ static void execute_command(struct Req *req)
 
 int main(int argc, char **argv)
 {
+    poolmem = CreatePool(MEMF_ANY | MEMF_CLEAR, 2000, 2000);
+    if (poolmem == NULL)
+        clean_exit(NULL, "r: Can't create poolmem\n");
+
     struct Req *req = alloc_req();
     if (req == NULL)
         clean_exit(req, "r: Can't allocate struct Req\n");
