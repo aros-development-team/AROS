@@ -35,6 +35,18 @@ const struct UsbHubDesc    RHHubDesc = { 9,                                     
                                          1,                                              // 7 DeviceRemovable (size is variable)
                                          0                                               // x PortPwrCtrlMask (size is variable)
                                        };
+#ifdef AROS_USB30_CODE
+const struct UsbSSHubDesc  RHSSHubDesc = { 12,                                           // 0 Number of bytes in this descriptor, including this byte. (12 bytes)
+                                           UDT_SSHUB,                                    // 1 Descriptor Type, value: 2AH for SuperSpeed hub descriptor
+                                           0,                                            // 2 Number of downstream facing ports that this hub supports. The maximum number of ports of ports a hub can support is 15
+                                           WORD2LE(UHCF_INDIVID_POWER|UHCF_INDIVID_OVP), // 3 wHubCharacteristics
+                                           0,                                            // 5 bPwrOn2PwrGood
+                                           10,                                           // 6 bHubContrCurrent
+                                           0,                                            // 7 bHubHdrDecLat
+                                           0,                                            // 8 wHubDelay
+                                           0                                             // 10 DeviceRemovable
+                                         };
+#endif
 
 const CONST_STRPTR RHStrings[] = { "Chris Hodges", "PCI Root Hub Unit x", "Standard Config", "Hub interface" };
 
@@ -502,6 +514,14 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     usdd->bcdUSB = AROS_WORD2LE(0x0200); // signal a highspeed root hub
                                     usdd->bDeviceProtocol = 1; // single TT
                                 }
+                                #ifdef AROS_USB30_CODE
+                                if(unit->hu_RootHub30Ports)
+                                {
+                                    struct UsbStdDevDesc *usdd = (struct UsbStdDevDesc *) ioreq->iouh_Data;
+                                    usdd->bcdUSB = AROS_WORD2LE(0x0300); // signal a superspeed root hub
+                                    usdd->bDeviceProtocol = 3;
+                                }
+                                #endif
                             }
                             return(0);
 
@@ -977,6 +997,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             break;
                         }
+
+                        #ifdef AROS_USB30_CODE
+                        /* (URTF_CLASS|URTF_OTHER) USR_SET_FEATURE */
+                        case HCITYPE_XHCI:
+                        {
+                            cmdgood = TRUE;
+                            if(cmdgood)
+                            {
+                                KPRINTF(1000, ("XHCI (URTF_CLASS|URTF_OTHER) USR_SET_FEATURE\n"));
+                                return(0);
+                            }
+                            break;
+                        }
+                        #endif
+
                     }
                     break;
 
@@ -1199,6 +1234,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             break;
                         }
+
+                        #ifdef AROS_USB30_CODE
+                        /* (URTF_CLASS|URTF_OTHER) USR_CLEAR_FEATURE */
+                        case HCITYPE_XHCI:
+                        {
+                            cmdgood = TRUE;
+                            if(cmdgood)
+                            {
+                                KPRINTF(1000, ("XHCI (URTF_CLASS|URTF_OTHER) USR_CLEAR_FEATURE\n"));
+                                return(0);
+                            }
+                            break;
+                        }
+                        #endif
+
                     }
                     break;
             }
@@ -1350,6 +1400,16 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             KPRINTF(5, ("EHCI Port %ld Change %08lx\n", idx, *mptr));
                             return(0);
                         }
+
+                        #ifdef AROS_USB30_CODE
+                        /* (URTF_IN|URTF_CLASS|URTF_OTHER) USR_GET_STATUS */
+                        case HCITYPE_XHCI:
+                        {
+                            KPRINTF(1000, ("XHCI (URTF_IN|URTF_CLASS|URTF_OTHER) USR_GET_STATUS\n"));
+                            return(0);
+                        }
+                        #endif
+
                     }
                     return(0);
                 }
@@ -1376,6 +1436,28 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                 case USR_GET_DESCRIPTOR:
                     switch(val>>8)
                     {
+//FIXME: Add USB3.0 hub descriptor support
+                        #ifdef AROS_USB30_CODE 
+                        case UDT_SSHUB:
+                        {
+                            ULONG hubdesclen = 12;
+
+                            struct UsbSSHubDesc *uhd = (struct UsbSSHubDesc *) ioreq->iouh_Data;
+                            KPRINTF(1, ("RH: Get(SS)HubDescriptor (%ld)\n", len));
+
+                            ioreq->iouh_Actual = (len > hubdesclen) ? hubdesclen : len;
+                            CopyMem((APTR) &RHSSHubDesc, ioreq->iouh_Data, ioreq->iouh_Actual);
+
+                            if(ioreq->iouh_Length)
+                            {
+                                uhd->bLength = hubdesclen;
+                            }
+
+                            uhd->bNbrPorts = unit->hu_RootHubPorts;
+
+                            return(0);
+                        }
+                        #endif
                         case UDT_HUB:
                         {
                             ULONG hubdesclen = 9;
@@ -1786,6 +1868,11 @@ WORD cmdFlush(struct IOUsbHWReq *ioreq,
                     cmpioreq = (struct IOUsbHWReq *) hc->hc_PeriodicTDQueue.lh_Head;
                 }
                 break;
+            #ifdef AROS_USB30_CODE
+            case HCITYPE_XHCI:
+                KPRINTF(1000, ("XHCI cmdFlush\n"));
+                break;
+            #endif
         }
         hc = (struct PCIController *) hc->hc_Node.ln_Succ;
     }
@@ -2028,6 +2115,13 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base)
                         cmpioreq = (struct IOUsbHWReq *) cmpioreq->iouh_Req.io_Message.mn_Node.ln_Succ;
                     }
                     break;
+
+                #ifdef AROS_USB30_CODE
+                case HCITYPE_XHCI:
+                    KPRINTF(1000, ("XHCI cmdAbortIO\n"));
+                    break;
+                #endif
+
             }
         }
         if(foundit)
@@ -2299,6 +2393,13 @@ AROS_UFH1(void, uhwNakTimeoutInt,
                 }
                 break;
             }
+            #ifdef AROS_USB30_CODE
+            case HCITYPE_XHCI:
+            {
+                //KPRINTF(1000, ("XHCI uhwNakTimeoutInt\n"));
+                break;
+            }
+            #endif
         }
         if(causeint)
         {

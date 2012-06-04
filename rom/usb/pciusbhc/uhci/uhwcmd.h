@@ -5,26 +5,7 @@
 #include "pci_aros.h"
 
 #include "uhcichip.h"
-#include "ohcichip.h"
-#include "ehcichip.h"
-#ifdef AROS_USB30_CODE
-#include "xhcichip.h"
-#endif
-#include "pciusb.h"
-
-#if (__WORDSIZE == 64)
-
-APTR usbGetBuffer(APTR data, ULONG len, UWORD dir);
-void usbReleaseBuffer(APTR buffer, APTR data, ULONG len, UWORD dir);
-
-#else
-
-/* On 32-bit systems we don't need mirroring */
-
-#define usbGetBuffer(data, len, dir) ({ (void)(len); (void)(dir); (data);})
-#define usbReleaseBuffer(buffer, data, len, dir) do { (void)(buffer); (void)(data); (void)(len); (void)(dir); } while (0)
-
-#endif
+#include "pciuhci.h"
 
 struct Unit *Open_Unit(struct IOUsbHWReq *ioreq, LONG unitnr, struct PCIDevice *base);
 void Close_Unit(struct PCIDevice *base, struct PCIUnit *unit, struct IOUsbHWReq *ioreq);
@@ -84,39 +65,6 @@ static inline void uhciFreeQH(struct PCIController *hc, struct UhciQH *uqh);
 static inline struct UhciTD * uhciAllocTD(struct PCIController *hc);
 static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd);
 
-/* ehcichip.c, in order of appearance */
-void ehciFreeAsyncContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
-void ehciFreePeriodicContext(struct PCIController *hc, struct IOUsbHWReq *ioreq);
-void ehciFreeQHandTDs(struct PCIController *hc, struct EhciQH *eqh);
-void ehciUpdateIntTree(struct PCIController *hc);
-void ehciHandleFinishedTDs(struct PCIController *hc);
-void ehciScheduleCtrlTDs(struct PCIController *hc);
-void ehciScheduleIntTDs(struct PCIController *hc);
-void ehciScheduleBulkTDs(struct PCIController *hc);
-void ehciUpdateFrameCounter(struct PCIController *hc);
-void ehciCompleteInt(struct PCIController *hc);
-void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
-BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
-void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
-
-static inline struct EhciQH * ehciAllocQH(struct PCIController *hc);
-static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh);
-static inline struct EhciTD * ehciAllocTD(struct PCIController *hc);
-static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
-
-#ifdef AROS_USB30_CODE
-/* xhcichip.c, in order of appearance */
-void xhciCompleteInt(struct PCIController *hc);
-void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
-IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
-BOOL xhciHaltHC(struct PCIController *hc);
-BOOL xhciResetHC(struct PCIController *hc);
-BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
-void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
-APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment);
-void xhciParseSupProtocol(struct PCIController *hc, IPTR extcap);
-#endif
-
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
 UWORD PCIXReadConfigWord(struct PCIController *hc, UBYTE offset);
 ULONG PCIXReadConfigLong(struct PCIController *hc, UBYTE offset);
@@ -146,9 +94,6 @@ static inline struct UhciQH * uhciAllocQH(struct PCIController *hc)
     }
 
     hc->hc_UhciQHPool = (struct UhciQH *) uqh->uqh_Succ;
-
-    uqh->uqh_SetupBuffer = NULL;
-    uqh->uqh_DataBuffer = NULL;
     return(uqh);
 }
 /* \\\ */
@@ -183,56 +128,6 @@ static inline void uhciFreeTD(struct PCIController *hc, struct UhciTD *utd)
 {
     utd->utd_Succ = (struct UhciXX *) hc->hc_UhciTDPool;
     hc->hc_UhciTDPool = utd;
-}
-/* \\\ */
-
-/* /// "ehciAllocQH()" */
-static inline struct EhciQH * ehciAllocQH(struct PCIController *hc)
-{
-    struct EhciQH *eqh = hc->hc_EhciQHPool;
-
-    if(!eqh)
-    {
-        // out of QHs!
-        KPRINTF(20, ("Out of QHs!\n"));
-        return NULL;
-    }
-
-    hc->hc_EhciQHPool = (struct EhciQH *) eqh->eqh_Succ;
-    return(eqh);
-}
-/* \\\ */
-
-/* /// "ehciFreeQH()" */
-static inline void ehciFreeQH(struct PCIController *hc, struct EhciQH *eqh)
-{
-    eqh->eqh_Succ = hc->hc_EhciQHPool;
-    hc->hc_EhciQHPool = eqh;
-}
-/* \\\ */
-
-/* /// "ehciAllocTD()" */
-static inline struct EhciTD * ehciAllocTD(struct PCIController *hc)
-{
-    struct EhciTD *etd = hc->hc_EhciTDPool;
-
-    if(!etd)
-    {
-        // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
-        return NULL;
-    }
-
-    hc->hc_EhciTDPool = (struct EhciTD *) etd->etd_Succ;
-    return(etd);
-}
-/* \\\ */
-
-/* /// "ehciFreeTD()" */
-static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd)
-{
-    etd->etd_Succ = hc->hc_EhciTDPool;
-    hc->hc_EhciTDPool = etd;
 }
 /* \\\ */
 

@@ -1,9 +1,9 @@
-#ifndef PCIUSB_H
-#define PCIUSB_H
+#ifndef PCIUHCI_H
+#define PCIUHCI_H
 
 /*
  *----------------------------------------------------------------------------
- *                         Includes for pciusb.device
+ *                         Includes for pciuhci.device
  *----------------------------------------------------------------------------
  *                   By Chris Hodges <chrisly@platon42.de>
  */
@@ -47,13 +47,9 @@
 #define RC_DONTREPLY  -1
 
 #define MAX_ROOT_PORTS   16
-#define MAX_USB3_PORTS   255
-
-#define PCI_CLASS_SERIAL_USB 0x0c03
 
 /* The unit node - private */
-struct PCIUnit
-{
+struct PCIUnit {
     struct Unit           hu_Unit;
     LONG                  hu_UnitNo;
 
@@ -73,25 +69,16 @@ struct PCIUnit
 
     ULONG                 hu_DevID;          /* Device ID (BusID+DevNo) */
     struct List           hu_Controllers;    /* List of controllers */
-    UWORD                 hu_RootHub11Ports;
-    UWORD                 hu_RootHub20Ports;
-#ifdef AROS_USB30_CODE
-    UWORD                 hu_RootHub30Ports;
-#endif
+
     UWORD                 hu_RootHubPorts;
     UWORD                 hu_RootHubAddr;    /* Root Hub Address */
     UWORD                 hu_RootPortChanges; /* Merged root hub changes */
-    ULONG                 hu_FrameCounter;   /* Common frame counter */
+
     struct List           hu_RHIOQueue;      /* Root Hub Pending IO Requests */
 
     struct PCIController *hu_PortMap11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 controller */
-    struct PCIController *hu_PortMap20[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 2.0 controller */
-#ifdef AROS_USB30_CODE
-    struct PCIController *hu_PortMap30[MAX_USB3_PORTS]; /* Maps from Global Port to USB 3.0 controller */
-#endif
     UBYTE                 hu_PortNum11[MAX_ROOT_PORTS]; /* Maps from Global Port to USB 1.1 companion controller port */
-    UBYTE                 hu_EhciOwned[MAX_ROOT_PORTS]; /* TRUE, if currently owned by EHCI */
-    UBYTE                 hu_ProductName[80]; /* for Query device */
+
     struct PCIController *hu_DevControllers[128]; /* maps from Device address to controller */
     struct IOUsbHWReq    *hu_DevBusyReq[128*16*2]; /* pointer to io assigned to the Endpoint */
     ULONG                 hu_NakTimeoutFrame[128*16*2]; /* Nak Timeout framenumber */
@@ -99,14 +86,8 @@ struct PCIUnit
 };
 
 #define HCITYPE_UHCI     0x00
-#define HCITYPE_OHCI     0x10
-#define HCITYPE_EHCI     0x20
-#ifdef AROS_USB30_CODE
-#define HCITYPE_XHCI     0x30
-#endif
 
-struct PCIController
-{
+struct PCIController {
     struct Node           hc_Node;
     struct PCIDevice     *hc_Device;        /* Uplink */
     struct PCIUnit       *hc_Unit;          /* Uplink */
@@ -121,24 +102,9 @@ struct PCIController
 
     volatile APTR         hc_RegBase;
 
-    #ifdef AROS_USB30_CODE
-    volatile APTR         xhc_capregbase;
-    volatile APTR         xhc_opregbase;
-    ULONG                 xhc_pagesize;
-    ULONG                 xhc_scratchbufs;
-    ULONG                 xhc_maxslots;
-    APTR                  xhc_dcbaa;
-    APTR                  xhc_dcbaa_original;
-    BOOL                  xhc_contextsize64; 
-
-    UWORD                 xhc_NumPorts;
-    UWORD                 xhc_NumPorts20;
-    UWORD                 xhc_NumPorts30;
-    #endif
-
     APTR                  hc_PCIMem;
     ULONG                 hc_PCIMemSize;
-    IPTR                  hc_PCIVirtualAdjust;
+    ULONG                 hc_PCIVirtualAdjust;
     IPTR                  hc_PCIIntLine;
     HIDDT_IRQ_Handler     hc_PCIIntHandler;
     ULONG                 hc_PCIIntEnMask;
@@ -153,31 +119,10 @@ struct PCIController
     struct UhciTD        *hc_UhciIsoTD;
     struct UhciQH        *hc_UhciTermQH;
 
-    ULONG                 hc_EhciUsbCmd;
-    ULONG                *hc_EhciFrameList;
-    struct EhciQH        *hc_EhciQHPool;
-    struct EhciTD        *hc_EhciTDPool;
 
-    struct EhciQH        *hc_EhciAsyncQH;
-    struct EhciQH        *hc_EhciIntQH[11];
-    struct EhciQH        *hc_EhciTermQH;
     volatile BOOL         hc_AsyncAdvanced;
-    struct EhciQH        *hc_EhciAsyncFreeQH;
-    struct EhciTD        *hc_ShortPktEndTD;
 
-    struct OhciED        *hc_OhciCtrlHeadED;
-    struct OhciED        *hc_OhciCtrlTailED;
-    struct OhciED        *hc_OhciBulkHeadED;
-    struct OhciED        *hc_OhciBulkTailED;
-    struct OhciED        *hc_OhciIntED[5];
-    struct OhciED        *hc_OhciTermED;
-    struct OhciTD        *hc_OhciTermTD;
-    struct OhciHCCA      *hc_OhciHCCA;
-    struct OhciED        *hc_OhciEDPool;
-    struct OhciTD        *hc_OhciTDPool;
-    struct OhciED        *hc_OhciAsyncFreeED;
-    ULONG                 hc_OhciDoneQueue;
-    struct List           hc_OhciRetireQueue;
+    struct EhciTD        *hc_ShortPktEndTD;
 
     ULONG                 hc_FrameCounter;
     struct List           hc_TDQueue;
@@ -191,30 +136,26 @@ struct PCIController
     struct Interrupt      hc_CompleteInt;
     struct Interrupt      hc_ResetInt;
 
-    UBYTE                 hc_PortNum20[MAX_ROOT_PORTS];     /* Global Port number the local controller port corresponds with */
-
+    UBYTE                 hc_PortNumGlobal[MAX_ROOT_PORTS]; /* Contains per unit assigned port number, HC has local ports 0 to 1  */
     UWORD                 hc_PortChangeMap[MAX_ROOT_PORTS]; /* Port Change Map */
 
     BOOL                  hc_complexrouting;
-    ULONG                 hc_portroute;
+    UQUAD                 hc_portroute;
 
 };
 
 /* hc_Flags */
-#define HCF_ALLOCATED	0x0001	/* PCI board allocated		 */
-#define HCF_ONLINE	0x0002	/* Online	    		 */
-#define HCF_STOP_BULK	0x0004	/* Bulk transfers stopped	 */
-#define HCF_STOP_CTRL   0x0008  /* Control transfers stopped	 */
-#define HCF_ABORT	0x0010  /* Aborted requests available	 */
+#define HCF_ALLOCATED   0x0001  /* PCI board allocated */
+#define HCF_ONLINE      0x0002  /* Online */
+#define HCF_STOP_BULK   0x0004  /* Bulk transfers stopped */
+#define HCF_STOP_CTRL   0x0008  /* Control transfers stopped */
+#define HCF_ABORT       0x0010  /* Aborted requests available */
 
 /* The device node - private
 */
-struct PCIDevice
-{
+struct PCIDevice {
     struct Library      hd_Library;       /* standard */
     UWORD               hd_Flags;         /* various flags */
-
-    struct UtilityBase *hd_UtilityBase;   /* for tags etc */
 
     struct List         hd_TempHCIList;
     OOP_Object         *hd_PCIHidd;
@@ -231,4 +172,4 @@ struct PCIDevice
 /* hd_Flags */
 #define HDF_FORCEPOWER	0x01
 
-#endif /* PCIUSB_H */
+#endif /* PCIUHCI_H */

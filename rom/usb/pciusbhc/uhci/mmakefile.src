@@ -1,0 +1,11 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := pci_aros uhcichip dev uhwcmd
+
+%build_module mmake=kernel-usb-pciuhci  \
+	modname=pciuhci modtype=device      \
+	files="$(FILES)"                    \
+	uselibs="oop rom hiddstubs debug"
+
+%common
