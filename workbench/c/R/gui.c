@@ -10,6 +10,8 @@
 #include <proto/intuition.h>
 #include <proto/exec.h>
 #include <proto/alib.h>
+#include <proto/asl.h>
+#include <proto/dos.h>
 
 #include <stdio.h>
 
@@ -18,13 +20,12 @@
 
 #include "r.h"
 
-#define ID_OK (99)
 
 Object *application, *window;
-struct Hook execute_btn_hook;
+struct Hook execute_btn_hook, pop_single_btn_hook, pop_multi_btn_hook;
+struct FileRequester *request;
 
-
-AROS_UFH3(void, execute_btn_func,
+AROS_UFH3S(void, execute_btn_func,
     AROS_UFHA(struct Hook *, h, A0),
     AROS_UFHA(Object *, object, A2),
     AROS_UFHA(struct Req **, msg, A1))
@@ -39,6 +40,93 @@ AROS_UFH3(void, execute_btn_func,
 }
 
 
+AROS_UFH3S(void, pop_single_btn_func,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(Object **, str_object, A1))
+{
+    AROS_USERFUNC_INIT
+
+    D(bug("[R/pop_single_btn_func] msg %p *msg %p\n", str_object, *str_object));
+
+    if
+    (
+        AslRequestTags
+        (
+            request,
+            ASLFR_DoMultiSelect, FALSE,
+            ASLFR_InitialFile, "",
+            ASLFR_InitialDrawer, "",
+            TAG_DONE
+        )
+    )
+    {
+        ULONG buflen = strlen(request->fr_Drawer) + strlen(request->fr_File) + 10;
+        TEXT *buffer = AllocVec(buflen, MEMF_ANY);
+        if (buffer)
+        {
+            strcpy(buffer, request->fr_Drawer);
+            AddPart(buffer, request->fr_File, buflen);
+            SET(*str_object, MUIA_String_Contents, buffer);
+            FreeVec(buffer);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+
+AROS_UFH3S(void, pop_multi_btn_func,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(Object *, object, A2),
+    AROS_UFHA(Object **, str_object, A1))
+{
+    AROS_USERFUNC_INIT
+
+    D(bug("[R/pop_multi_btn_func] msg %p *msg %p\n", str_object, *str_object));
+
+    if
+    (
+        AslRequestTags
+        (
+            request,
+            ASLFR_DoMultiSelect, TRUE,
+            ASLFR_InitialFile, "",
+            ASLFR_InitialDrawer, "",
+            TAG_DONE
+        )
+    )
+    {
+        LONG i;
+        ULONG buflen = 10;
+        for (i = 0; i < request->fr_NumArgs; i++)
+        {
+            buflen += strlen(request->fr_Drawer) + strlen(request->fr_ArgList[i].wa_Name) + 5;
+        }
+
+        TEXT *buffer = AllocVec(buflen, MEMF_ANY);
+        if (buffer)
+        {
+            TEXT *ptr = buffer;
+            *ptr = '\0';
+            for (i = 0; i < request->fr_NumArgs; i++)
+            {
+                *ptr++ = '\"';
+                strcpy(ptr, request->fr_Drawer);
+                AddPart(ptr, request->fr_File, buffer + buflen - ptr - 2);
+                ptr = buffer + strlen(buffer);
+                strcpy(ptr, "\" ");
+                ptr += 2;
+            }
+            SET(*str_object, MUIA_String_Contents, buffer);
+            FreeVec(buffer);
+        }
+    }
+
+    AROS_USERFUNC_EXIT
+}
+
+
 BOOL create_gui(struct Req *req)
 {
     Object *ok_btn, *cancel_btn, *str_group, *chk_group;
@@ -47,7 +135,13 @@ BOOL create_gui(struct Req *req)
 
     LONG i, str_cnt, chk_cnt;
 
+    request = AllocAslRequest(ASL_FileRequest, NULL);
+    if (request == NULL)
+        return FALSE;
+
     execute_btn_hook.h_Entry = (HOOKFUNC)execute_btn_func;
+    pop_single_btn_hook.h_Entry = (HOOKFUNC)pop_single_btn_func;
+    pop_multi_btn_hook.h_Entry = (HOOKFUNC)pop_multi_btn_func;
 
     D
     (
@@ -121,6 +215,7 @@ BOOL create_gui(struct Req *req)
         }
         else if (req->cargs[i].m_flag) // Multiple
         {
+            Object *pop_btn;
             new_obj = Label(req->cargs[i].argname);
             if (new_obj)
             {
@@ -128,25 +223,30 @@ BOOL create_gui(struct Req *req)
                 str_group_tags[str_cnt].ti_Data = (IPTR)new_obj;
                 str_cnt++;
             }
-            new_arg_obj = PopaslObject,
-                MUIA_Popasl_Type, ASL_FileRequest,
-                ASLFR_DoMultiSelect, TRUE,
-                MUIA_Popstring_String, (IPTR)(new_arg_obj = StringObject,
+            new_obj = HGroup,
+                Child, new_arg_obj = StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
-                End),
-                MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
+                End,
+                Child, pop_btn = PopButton(MUII_PopFile),
             End;
-            if (new_arg_obj)
+            if (new_obj)
             {
+                D(bug("[R] pop %p string %p\n", pop_btn, new_arg_obj));
+                DoMethod
+                (
+                    pop_btn, MUIM_Notify, MUIA_Pressed, FALSE,
+                    (IPTR)pop_btn, 3, MUIM_CallHook, &pop_multi_btn_hook, new_arg_obj
+                );
                 str_group_tags[str_cnt].ti_Tag = Child;
-                str_group_tags[str_cnt].ti_Data = (IPTR)new_arg_obj;
+                str_group_tags[str_cnt].ti_Data = (IPTR)new_obj;
                 req->cargs[i].object = new_arg_obj;
                 str_cnt++;
             }
         }
         else
         {
+            Object *pop_btn;
             new_obj = Label(req->cargs[i].argname);
             if (new_obj)
             {
@@ -154,18 +254,23 @@ BOOL create_gui(struct Req *req)
                 str_group_tags[str_cnt].ti_Data = (IPTR)new_obj;
                 str_cnt++;
             }
-            new_arg_obj = PopaslObject,
-                MUIA_Popasl_Type, ASL_FileRequest,
-                MUIA_Popstring_String, (IPTR)(new_arg_obj = StringObject,
+            new_obj = HGroup,
+                Child, new_arg_obj = StringObject,
                     StringFrame,
                     MUIA_CycleChain, 1,
-                End),
-                MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopUp),
+                End,
+                Child, pop_btn = PopButton(MUII_PopFile),
             End;
-            if (new_arg_obj)
+            if (new_obj)
             {
+                D(bug("[R] pop %p string %p\n", pop_btn, new_arg_obj));
+                DoMethod
+                (
+                    pop_btn, MUIM_Notify, MUIA_Pressed, FALSE,
+                    (IPTR)pop_btn, 3, MUIM_CallHook, &pop_single_btn_hook, new_arg_obj
+                );
                 str_group_tags[str_cnt].ti_Tag = Child;
-                str_group_tags[str_cnt].ti_Data = (IPTR)new_arg_obj;
+                str_group_tags[str_cnt].ti_Data = (IPTR)new_obj;
                 req->cargs[i].object = new_arg_obj;
                 str_cnt++;
             }
@@ -281,4 +386,5 @@ CONST_STRPTR get_gui_string(struct CArg *carg)
 void cleanup_gui(void)
 {
     if (application) MUI_DisposeObject(application);
+    if (request) FreeAslRequest(request);
 }
