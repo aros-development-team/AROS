@@ -119,7 +119,7 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 
-const TEXT version[] = "$VER: List 41.8 (05.11.2011)\n";
+const TEXT version[] = "$VER: List 41.9 (04.06.2012)\n";
 
 #define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
 
@@ -320,7 +320,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
                 /* Disk block key */
             case 'K':
-                Printf("[%ld]", lf->key);
+                Printf("[%lu]", lf->key);
                 break;
                 
                 /* File size */
@@ -469,7 +469,7 @@ int printFileData(struct AnchorPath *ap,
     ULONG   	       protection = ap->ap_Info.fib_Protection;
     UQUAD   	       size = ap->ap_Info.fib_Size;
     STRPTR  	       filenote = ap->ap_Info.fib_Comment;
-    LONG    	       diskKey = ap->ap_Info.fib_DiskKey;
+    ULONG    	       diskKey = ap->ap_Info.fib_DiskKey;
     
     int error = 0;
 
@@ -599,7 +599,7 @@ int printFileData(struct AnchorPath *ap,
                     int  fill;
                     int  i;	/* Loop variable */
 
-                    __sprintf(key, "%ld", (long)diskKey);
+                    __sprintf(key, "%lu", (unsigned long)diskKey);
                     fill = 7 - strlen(key) - 2;
 
                     for (i = 0; i < fill; i++)
@@ -607,7 +607,7 @@ int printFileData(struct AnchorPath *ap,
                         Printf(" ");
                     }
 
-                    Printf("[%ld] ", diskKey);
+                    Printf("[%lu] ", diskKey);
                 }
                 else
                 {
