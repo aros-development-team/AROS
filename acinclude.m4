@@ -51,7 +51,7 @@ dnl AROS_KERNEL_TARGET(var,prog,override)
 dnl This is effectively the same as AROS_PROG, but adds the appropriate
 dnl arch prefix when cross compiling. 
 dnl
-AROS_DEFUN([AROS_TOOL_KERNEL],
+AC_DEFUN([AROS_TOOL_KERNEL],
 [
 if test "$3" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -68,7 +68,7 @@ dnl AROS_CACHE_CHECK(message, var, check)
 dnl This is similar to the AC_CACHE_CHECK macro, but it hides the
 dnl prefix and stuff from the coders. We will get aros_$2 on the
 dnl variable, and aros_cv_$2 on the cache variable.
-AROS_DEFUN([AROS_CACHE_CHECK],
+AC_DEFUN([AROS_CACHE_CHECK],
 [AC_MSG_CHECKING([$1])
 AC_CACHE_VAL(aros_cv_[$2],
 [$3
