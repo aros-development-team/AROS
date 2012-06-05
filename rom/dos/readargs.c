@@ -62,18 +62,6 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
          * question mark for it to lead to reprompting. BTW, AmigaOS allowed
          * only one space then... but do we need to be _that_ compatible?
          */
-        switch (buff[i])
-        {
-        case ' ':
-        case '\t':
-        case '\n':
-            seen_space = TRUE;
-            break;
-        case '?':
-            break;
-        default:
-            seen_question = seen_space = FALSE;
-        }
 
         switch (buff[i])
         {
@@ -84,19 +72,26 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
         case '"':
             if (!escaped)
                 quoted = !quoted;
-            break;
-        case '?':
-            if (quoted)
-                escaped = FALSE;
-            else if (seen_space)
-            {
-                seen_question = TRUE;
-                j = i;
-            }
-            break;
+            /* Fall through */
+        default:
+            escaped = FALSE;
+        }
+
+        switch (buff[i])
+        {
         case ' ':
         case '\t':
-            escaped = FALSE;
+            seen_space = TRUE;
+            break;
+        case '?':
+            if ((!quoted) && (seen_space))
+            {
+                seen_question = TRUE;
+                seen_space = FALSE;
+                j = i;
+            }
+            else
+                seen_question = FALSE;
             break;
         case EOF:
         case '\n':
@@ -105,7 +100,7 @@ static inline LONG is_question(BYTE * buff, LONG buffsize)
             else
                 return 0;
         default:
-            escaped = seen_space = FALSE;
+            seen_question = seen_space = FALSE;
         }
     }
     return 0;
@@ -342,7 +337,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             }
 
             cs->CS_Length -= delthis;
-            isize = ibuf = cs->CS_Length;
+            ULONG memsize = isize = ibuf = cs->CS_Length;
             iline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
             CopyMemQuick(cs->CS_Buffer, iline, isize);
 
@@ -412,10 +407,14 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                 /* if user entered single ? again or some string ending
                    with space and ? either display template again or
                    extended help if it's available */
-                if ((delthis = is_question(iline, isize)))
+                if (    (delthis = is_question(iline, isize))
+                     && (memsize <= (isize - delthis))
+                   )
                 {
                     helpdisplayed = TRUE;
-                    isize -= delthis;
+
+                    memsize = isize -= delthis;
+
                     if(rdargs->RDA_ExtHelp != NULL)
                     {
                         if (FPuts(output, rdargs->RDA_ExtHelp) || FPuts(output, ": "))
