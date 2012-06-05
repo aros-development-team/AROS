@@ -163,8 +163,8 @@ static BOOL get_template(struct Req *req)
 {
     BOOL retval = FALSE;
 
-    BPTR input_fh = NULL;
-    BPTR output_fh = NULL;
+    BPTR input_fh = BNULL;
+    BPTR output_fh = BNULL;
 
     TEXT out_file_name[30];
     TEXT in_file_name[30];
@@ -186,28 +186,28 @@ static BOOL get_template(struct Req *req)
         goto cleanup;
     }
 
-    for (i = 0; i < 20 && output_fh == NULL; i++)
+    for (i = 0; i < 20 && output_fh == BNULL; i++)
     {
-        sprintf(out_file_name, "t:%08u.request.outfile", i);
+        sprintf(out_file_name, "t:%08u.request.outfile", (unsigned int)i);
         output_fh = Open(out_file_name, MODE_NEWFILE); 
     }
-    if (output_fh == NULL)
+    if (output_fh == BNULL)
     {
         goto cleanup;
     }
 
-    for (i = 0; i < 20 && input_fh == NULL; i++)
+    for (i = 0; i < 20 && input_fh == BNULL; i++)
     {
-        sprintf(in_file_name, "t:%08u.request.infile", i);
+        sprintf(in_file_name, "t:%08u.request.infile", (unsigned int)i);
         input_fh = Open(in_file_name, MODE_NEWFILE); 
     }
-    if (input_fh == NULL)
+    if (input_fh == BNULL)
     {
         goto cleanup;
     }
     Close(input_fh);
     input_fh = Open(in_file_name, MODE_OLDFILE);
-    if (input_fh == NULL)
+    if (input_fh == BNULL)
     {
         goto cleanup;
     }
