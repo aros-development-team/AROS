@@ -920,19 +920,25 @@ static IPTR Application__OM_SET(struct IClass *cl, Object *obj, struct opSet *ms
 
                             if (dobj == NULL)
                             {
-                                /* Get defaults - first ENV:SYS/def_MUI.info */
-                                dobj = GetDiskObject("ENV:SYS/def_MUI");
+                                /* Get defaults AppIcon either in ENV:SYS or ENVARC:SYS */
+                                dobj = GetDefDiskObject(WBAPPICON);
                                 if (dobj) data->app_DefaultDiskObject = dobj;
                                 else
                                 {
-                                    /* Get defaults - second ENV:SYS/def_Zune.info */
-                                    dobj = GetDiskObject("ENV:SYS/def_Zune");
+                                    /* Get defaults - first ENV:SYS/def_MUI.info */
+                                    dobj = GetDiskObject("ENV:SYS/def_MUI");
                                     if (dobj) data->app_DefaultDiskObject = dobj;
                                     else
                                     {
-                                        /* Get default - third, default tool icon */
-                                        dobj = GetDefDiskObject(WBTOOL);
+                                        /* Get defaults - second ENV:SYS/def_Zune.info */
+                                        dobj = GetDiskObject("ENV:SYS/def_Zune");
                                         if (dobj) data->app_DefaultDiskObject = dobj;
+                                        else
+                                        {
+                                            /* Get default - third, default tool icon */
+                                            dobj = GetDefDiskObject(WBTOOL);
+                                            if (dobj) data->app_DefaultDiskObject = dobj;
+                                        }
                                     }
                                 }
                             }
