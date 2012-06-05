@@ -1,12 +1,12 @@
-## version $VER: wbnewdrawer.catalog 1.1 (13.8.2003)
+## version $VER: wbnewdrawer.catalog 1.2 (05.06.2012)
 ## language français
 ## codeset 0
 ;
 ;
 ;
 MSG_TITLE
-WBNewDrawer
-;Nouveau Répertoire
+Nouveau Répertoire
+;WBNewDrawer
 MSG_DESCRIPTION
 Crée des répertoires et leurs icônes
 ;
@@ -48,7 +48,7 @@ MSG_INFO_ALREADY
 '%s'.info existe déjà !
 ;
 MSG_NEEDS_MORE_ARGS
-Demande 2 arguments!
+Demande 2 arguments !
 ;
 MSG_INVALID_LOCK
 Verrou invalide !
