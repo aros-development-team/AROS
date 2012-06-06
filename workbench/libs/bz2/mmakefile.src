@@ -15,10 +15,14 @@ FILES := blocksort huffman crctable randtable  \
 
 #MM- linklibs: linklibs-bz2-nostdio
 
-USER_CFLAGS := -DBZ_NO_STDIO
+USER_CFLAGS := -DBZ_NO_STDIO -DAROS_BZ2_STATICLIB
 
 %build_linklib mmake=linklibs-bz2-nostdio libname=bz2_nostdio \
                files="$(FILES)" objdir=$(OBJDIR)/nostdio
+
+
+INCLUDE_FILES := bzlib.h
+%copy_includes
 
 ###################################################################################
 

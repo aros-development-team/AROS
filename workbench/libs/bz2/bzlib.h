@@ -271,6 +271,10 @@ BZ_EXTERN const char * BZ_API(BZ2_bzerror) (
    );
 #endif
 
+#if defined(__AROS__) && !defined(AROS_BZ2_STATICLIB)
+#   include <proto/bz2_au.h>
+#endif
+
 #ifdef __cplusplus
 }
 #endif
