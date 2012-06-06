@@ -6,6 +6,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-dos-includes \
 #MM     includes-copy
 
+#MM workbench-libs-z : workbench-libs-z-pc
+
 FILES := adler32 crc32 deflate infback inffast inflate inftrees trees \
          zutil compress uncompr gzclose gzlib gzread gzwrite \
 	 contrib/blast/blast contrib/infback9/infback9 contrib/infback9/inftree9
@@ -16,13 +18,24 @@ USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
   modname=z_au modtype=library \
   files="init-aros $(FILES)" uselibs="arosc_rel" linklibname=z
 
+
 #MM- linklibs: linklibs-z-static
 
 USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H -DAROS_Z_STATICLIB
 
 %build_linklib mmake=linklibs-z-static libname=z.static files="$(FILES)"
 
+
 INCLUDE_FILES := zlib.h zconf.h
 %copy_includes
+
+
+#MM
+workbench-libs-z-pc : $(AROS_LIB)/pkgconfig/zlib.pc
+
+$(AROS_LIB)/pkgconfig/zlib.pc : $(SRCDIR)/$(CURDIR)/zlib.pc.aros
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	$(CP) $^ $@
+
 
 %common
