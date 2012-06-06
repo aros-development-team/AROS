@@ -1737,10 +1737,6 @@ ZEXTERN gzFile         ZEXPORT gzopen_w OF((const wchar_t *path,
                                             const char *mode));
 #endif
 
-#if defined(__AROS__) && !defined(AROS_Z_STATICLIB)
-#   include <proto/z_au.h>
-#endif
-
 #ifdef __cplusplus
 }
 #endif
