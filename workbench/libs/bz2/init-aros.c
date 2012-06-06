@@ -24,8 +24,6 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "support.h"
-
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
@@ -33,9 +31,6 @@
 #include <aros/debug.h>
 
 IPTR aroscbase_offset;
-
-int malloc_init(void);
-void malloc_exit(void);
 
 void bz_internal_error (int errcode)
 {
