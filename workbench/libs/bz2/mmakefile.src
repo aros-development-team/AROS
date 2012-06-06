@@ -16,6 +16,7 @@ FILES := blocksort huffman crctable randtable  \
 #MM- linklibs: linklibs-bz2-nostdio
 
 USER_CFLAGS := -DBZ_NO_STDIO -DAROS_BZ2_STATICLIB
+USER_CFLAGS += $(UNUSED_BUT_SET_VARIABLE_CFLAGS)
 
 %build_linklib mmake=linklibs-bz2-nostdio libname=bz2_nostdio \
                files="$(FILES)" objdir=$(OBJDIR)/nostdio
@@ -31,6 +32,7 @@ SH_FILES  := bzdiff bzgrep bzmore
 MAN_FILES := bzdiff.1 bzgrep.1 bzip2.1 bzmore.1
 
 USER_CFLAGS  := -Winline
+USER_CFLAGS += $(UNUSED_BUT_SET_VARIABLE_CFLAGS)
 
 BIN_DIR := $(AROS_DEVELOPMENT)/bin
 MAN_DIR := $(AROS_DEVELOPMENT)/man/man1
