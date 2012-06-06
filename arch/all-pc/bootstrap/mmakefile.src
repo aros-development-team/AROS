@@ -21,7 +21,7 @@ EXENAME      := bootstrap-pc
 
 %build_prog mmake=kernel-bootstrap-pc progname=$(EXENAME) \
 	files=$(FILES) targetdir=$(EXEDIR) \
-	uselibs="bootstrap bootconsole" usestartup=no linker=kernel
+	uselibs="bootstrap bootconsole arosc.static" usestartup=no linker=kernel
 
 %rule_link_binary file=$(OBJDIR)/vesa.bin.o name=vesa objs=$(OBJDIR)/vesa.o \
 	start=0x1000 ldflags="-m elf_i386"
