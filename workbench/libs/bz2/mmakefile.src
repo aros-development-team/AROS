@@ -9,8 +9,6 @@ include $(TOP)/config/make.cfg
 FILES := blocksort huffman crctable randtable  \
          compress decompress bzlib
 
-USER_CFLAGS :=
-
 %build_module mmake=workbench-libs-bz2 \
     modname=bz2_au modtype=library \
     files="init-aros $(FILES)" uselibs="arosc_rel" linklibname="bz2"
@@ -21,5 +19,59 @@ USER_CFLAGS := -DBZ_NO_STDIO
 
 %build_linklib mmake=linklibs-bz2-nostdio libname=bz2_nostdio \
                files="$(FILES)" objdir=$(OBJDIR)/nostdio
+
+###################################################################################
+
+FILES     := bzip2recover bzip2
+SH_FILES  := bzdiff bzgrep bzmore
+MAN_FILES := bzdiff.1 bzgrep.1 bzip2.1 bzmore.1
+
+USER_CFLAGS  := -Winline
+
+BIN_DIR := $(AROS_DEVELOPMENT)/bin
+MAN_DIR := $(AROS_DEVELOPMENT)/man/man1
+
+#MM- workbench-c : workbench-libs-bz2-bzip2
+
+#MM- workbench-libs-bz2-bzip2 : \
+#MM     workbench-libs-bz2-bzip2-bin \
+#MM     workbench-libs-bz2-bzip2-install-sh \
+#MM     workbench-libs-bz2-bzip2-install-aliases \
+#MM     workbench-libs-bz2-bzip2-install-man \
+#MM     workbench-libs-bz2-bzip2-install-man-cpy
+
+#MM  workbench-libs-bz2-bzip2-bin : workbench-libs-bz2
+
+#MM  workbench-libs-bz2-bzip2-install-man-cpy : workbench-libs-bz2-bzip2-install-man
+
+%build_progs mmake=workbench-libs-bz2-bzip2-bin targetdir=$(BIN_DIR) files=$(FILES) uselibs=bz2 nix=yes
+
+%copy_files_q mmake=workbench-libs-bz2-bzip2-install-sh files=$(SH_FILES) dst=$(BIN_DIR)
+
+#MM
+workbench-libs-bz2-bzip2-install-aliases : \
+        $(BIN_DIR)/bzcat \
+        $(BIN_DIR)/bunzip \
+        $(BIN_DIR)/bzegrep \
+        $(BIN_DIR)/bzfgrep \
+        $(BIN_DIR)/bzless \
+        $(BIN_DIR)/bzcmp
+
+%rule_copy from=$(BIN_DIR)/bzip2  to=$(BIN_DIR)/bzcat
+%rule_copy from=$(BIN_DIR)/bzip2  to=$(BIN_DIR)/bunzip
+%rule_copy from=$(BIN_DIR)/bzgrep to=$(BIN_DIR)/bzegrep
+%rule_copy from=$(BIN_DIR)/bzgrep to=$(BIN_DIR)/bzfgrep
+%rule_copy from=$(BIN_DIR)/bzmore to=$(BIN_DIR)/bzless
+%rule_copy from=$(BIN_DIR)/bzdiff to=$(BIN_DIR)/bzcmp
+
+#MM
+workbench-libs-bz2-bzip2-install-man :
+	@$(IF) $(TEST) ! -d $(MAN_DIR) ; then $(MKDIR) $(MAN_DIR) ; else $(NOP) ; fi
+	echo ".so man1/bzgrep.1" > $(MAN_DIR)/bzegrep.1
+	echo ".so man1/bzgrep.1" > $(MAN_DIR)/bzfgrep.1
+	echo ".so man1/bzmore.1" > $(MAN_DIR)/bzless.1
+	echo ".so man1/bzdiff.1" > $(MAN_DIR)/bzcmp.1
+
+%copy_files_q mmake=workbench-libs-bz2-bzip2-install-man-cpy files=$(MAN_FILES) dst=$(MAN_DIR)
 
 %common
