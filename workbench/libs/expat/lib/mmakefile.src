@@ -1,0 +1,22 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-expat-includes : \
+#MM     kernel-exec-includes includes-copy
+
+#MM workbench-libs-expat : linklibs
+
+CFILES := xmlparse xmlrole xmltok
+
+# USER_CFLAGS :=
+# USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
+
+%build_module mmake=workbench-libs-expat modname=expat_au modtype=library \
+    files=$(CFILES) linklibname=expat
+
+
+INCLUDE_FILES := expat.h
+%copy_includes
+
+
+%common
