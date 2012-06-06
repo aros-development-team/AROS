@@ -18,6 +18,11 @@ USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H
 
 #MM- linklibs: linklibs-z-static
 
+USER_CFLAGS := -DSTDC -DAMIGA -DZ_HAVE_UNISTD_H -DAROS_Z_STATICLIB
+
 %build_linklib mmake=linklibs-z-static libname=z.static files="$(FILES)"
+
+INCLUDE_FILES := zlib.h zconf.h
+%copy_includes
 
 %common

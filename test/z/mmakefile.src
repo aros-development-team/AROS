@@ -1,0 +1,18 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := version
+EXEDIR          := $(AROS_TESTS)/z
+
+#MM- test : test-z
+#MM- test-quick : test-z-quick
+
+#MM test-z : includes linklibs workbench-libs-z
+
+%build_progs mmake=test-z \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="z"
+
+%common
