@@ -1040,10 +1040,6 @@ XML_GetFeatureList(void);
 #define XML_MINOR_VERSION 1
 #define XML_MICRO_VERSION 0
 
-#if defined(__AROS__) && !defined(AROS_EXPAT_STATICLIB)
-#   include <proto/expat_au.h>
-#endif
-
 #ifdef __cplusplus
 }
 #endif
