@@ -35,6 +35,10 @@ struct pcibase {
     volatile UBYTE         *setup;
     volatile ULONG         *config;
 
+    /* Access functions */
+    ULONG (*cfg_readl)(struct pcibase *base, UBYTE bus, UBYTE device, UBYTE func, UBYTE reg);
+    VOID  (*cfg_writel)(struct pcibase *base, UBYTE bus, UBYTE device, UBYTE func, UBYTE reg, ULONG val);
+
     struct MinList         *io;
     struct MinList         *mem;
 };
