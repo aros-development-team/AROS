@@ -35,10 +35,16 @@
 #define HiddPCIDriverAttrBase   (PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase            (PSD(cl)->hiddAB)
 
-static ULONG pcicfg_readl(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+#define pci_readl(b, d, f, r)       base->cfg_readl(base, b, d, f, r)
+#define pci_writel(b, d, f, r, v)   base->cfg_writel(base, b, d, f, r, v)
+
+static ULONG a12k_pci_readl(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
 {
     ULONG tmp;
     UWORD offset;
+
+    if (bus >= 1)
+        return ~0;
 
     offset = EMPB_CONF_DEV_STRIDE  * dev +
              EMPB_CONF_FUNC_STRIDE * sub +
@@ -46,17 +52,20 @@ static ULONG pcicfg_readl(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub,
     offset >>= 2;
 
     Disable();
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_CONF;
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = EMPB_BRIDGE_CONF;
     tmp = base->config[offset];
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_IO;
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = EMPB_BRIDGE_IO;
     Enable();
 
     return AROS_LE2LONG(tmp);
 }
     
-static void pcicfg_writel(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+static VOID a12k_pci_writel(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
 {
     UWORD offset;
+
+    if (bus >= 1)
+        return;
 
     offset = EMPB_CONF_DEV_STRIDE  * dev +
              EMPB_CONF_FUNC_STRIDE * sub +
@@ -66,50 +75,101 @@ static void pcicfg_writel(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub,
     val = AROS_LONG2LE(val);
 
     Disable();
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_CONF;
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = EMPB_BRIDGE_CONF;
     base->config[offset] = val;
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_IO;
+    base->setup[EMPB_SETUP_BRIDGE_OFF] = EMPB_BRIDGE_IO;
     Enable();
 }
 
-static void PCIInitialize(struct pcibase *base)
+static BOOL a12k_init(struct pcibase *base)
+{
+    D(bug("MEDIATOR: Attempting A1200 style init\n"));
+
+    base->setup = base->baseDev->cd_BoardAddr;
+    base->config = base->baseDev->cd_BoardAddr + EMPB_BRIDGE_OFF;
+    base->cfg_readl = a12k_pci_readl;
+    base->cfg_writel = a12k_pci_writel;
+
+    base->io = CreatePCIResourceList((IPTR)base->baseDev->cd_BoardAddr + EMPB_BRIDGE_OFF, EMPB_BRIDGE_SIZE + 1);
+    base->mem = CreatePCIResourceList((IPTR)base->memDev->cd_BoardAddr, base->memDev->cd_BoardSize);
+
+    return TRUE;
+}
+
+static ULONG a4k_pci_readl(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+{
+    ULONG tmp;
+    UWORD offset;
+
+    if (bus >= 64)
+        return ~0;
+
+    offset = EMZ4_CONF_BUS_STRIDE  * bus +
+             EMZ4_CONF_DEV_STRIDE  * dev +
+             EMZ4_CONF_FUNC_STRIDE * sub +
+             reg;
+    offset >>= 2;
+
+    tmp = base->config[offset];
+
+    return AROS_LE2LONG(tmp);
+}
+    
+static VOID a4k_pci_writel(struct pcibase *base, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+{
+    UWORD offset;
+
+    if (bus >= 64)
+        return;
+
+    offset = EMZ4_CONF_BUS_STRIDE  * bus +
+             EMZ4_CONF_DEV_STRIDE  * dev +
+             EMZ4_CONF_FUNC_STRIDE * sub +
+             reg;
+    offset >>= 2;
+
+    base->config[offset] = AROS_LONG2LE(val);
+}
+
+static BOOL a4k_init(struct pcibase *base)
+{
+    D(bug("MEDIATOR: Attempting A3000/4000 style init\n"));
+
+    base->setup[EMZ4_SETUP_STATUS_OFF] = 0x00;
+    base->setup[EMZ4_SETUP_CONFIG_OFF] = 0x41;
+
+    base->setup = base->baseDev->cd_BoardAddr;
+    base->config = base->baseDev->cd_BoardAddr + EMZ4_CONFIG_OFF;
+
+    base->cfg_readl = a4k_pci_readl;
+    base->cfg_writel = a4k_pci_writel;
+
+    base->io = CreatePCIResourceList((IPTR)base->baseDev->cd_BoardAddr + EMZ4_IOPORT_OFF, EMZ4_IOPORT_SIZE + 1);
+    base->mem = CreatePCIResourceList((IPTR)base->memDev->cd_BoardAddr, base->memDev->cd_BoardSize);
+
+    return TRUE;
+}
+
+static void PCIInitialize(struct pcibase *base, int bus, struct MinList *io, struct MinList *mem)
 {
     int dev, sub;
-    const int bus = 0;
-
-    D(bug("MEDIATOR: Attempting init\n"));
-    base->setup[EMPB_SETUP_STATUS_OFF] = 0x00;
-    base->setup[EMPB_SETUP_CONFIG_OFF] = 0x41;
 
     int i;
-    D(bug("MEDIATOR: Dumping setup area:\n"));
-    for (i = 0; i < 256; i++) {
-        if ((i % 16) == 0) {
-            D(bug("%p:", &base->setup[i]));
-        }
-        D(bug("%c%02x", (i ==8) ? '-' : ' ',base->setup[i]));
-        if ((i % 16) == 15) {
-            D(bug("\n"));
-        }
-    }
     D(bug("MEDIATOR: Dumping config area for device 0:\n"));
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_CONF;
     for (i = 0; i < 256/4; i++) {
         if ((i % 4) == 0) {
-            D(bug("%p:", &base->config[i]));
+            D(bug("%p:", i));
         }
-        D(bug("%c%08x", (i ==2) ? '-' : ' ',base->config[i]));
+        D(bug("%c%08x", (i ==2) ? '-' : ' ',pci_readl(0, 0, 0, i)));
         if ((i % 4) == 3) {
             D(bug("\n"));
         }
     }
-    base->setup[EMPB_SETUP_BRIDGE_OFF] = BRIDGE_IO;
 
 
     /* Initialize all devices attached to this PCIDriver
      *
-     * Since the Mediator can't do Type 1 config cycles,
-     * we only need to scan Bus 0.
+     * TODO: Handle PCI bridges
      */
     for (dev = 0; dev < 32; dev++) {
         for (sub = 0; sub < 8; sub++) {
@@ -117,7 +177,7 @@ static void PCIInitialize(struct pcibase *base)
             int i;
             UBYTE cmd = PCICMF_BUSMASTER;
 
-            venprod = pcicfg_readl(base, bus, dev, sub, 0);
+            venprod = pci_readl(bus, dev, sub, 0);
             if (venprod == 0 || venprod == ~0)
                 continue;
 
@@ -127,8 +187,8 @@ static void PCIInitialize(struct pcibase *base)
             for (i = 0; i < 6; i++) {
                 ULONG bar, start, size;
 
-                pcicfg_writel(base, bus, dev, sub, PCICS_BAR0 + i * 4, ~0);
-                bar = pcicfg_readl(base, bus, dev, sub, PCICS_BAR0 + i * 4);
+                pci_writel(bus, dev, sub, PCICS_BAR0 + i * 4, ~0);
+                bar = pci_readl(bus, dev, sub, PCICS_BAR0 + i * 4);
                 size = bar & ((bar & PCIBAR_MASK_TYPE) ? PCIBAR_MASK_IO : PCIBAR_MASK_MEM);
                 size = (~size + 1);
                 if (size == 0)
@@ -151,30 +211,30 @@ static void PCIInitialize(struct pcibase *base)
 
                 D(bug("\tBAR%d: %s 0x%x-0x%x\n", i, (bar & PCIBAR_MASK_TYPE) ? "IO" : "Mem", start, start + size - 1));
 
-                pcicfg_writel(base, bus, dev, sub, PCICS_BAR0 + i*4, start);
+                pci_writel(bus, dev, sub, PCICS_BAR0 + i*4, start);
 
                 if ((bar & PCIBAR_MEMTYPE_MASK) == PCIBAR_MEMTYPE_64BIT) {
                     /* Skip the 2nd part of a 64 bit BAR */
                     i++;
-                    pcicfg_writel(base, bus, dev, sub, PCICS_BAR0 + i*4, 0);
+                    pci_writel(bus, dev, sub, PCICS_BAR0 + i*4, 0);
                 }
             }
 
             /* Set up the interrupt */
-            tmp = pcicfg_readl(base, bus, dev, sub, PCICS_INT_LINE);
+            tmp = pci_readl(bus, dev, sub, PCICS_INT_LINE);
             tmp &= ~0xff;
             tmp |= EMPB_INT;
-            pcicfg_writel(base, bus, dev, sub, PCICS_INT_LINE, tmp);
+            pci_writel(bus, dev, sub, PCICS_INT_LINE, tmp);
 
             /* Enable the device */
-            tmp = pcicfg_readl(base, bus, dev, sub, PCICS_COMMAND);
+            tmp = pci_readl(bus, dev, sub, PCICS_COMMAND);
             tmp &= ~0xff;
             tmp |= cmd;
-            pcicfg_writel(base, bus, dev, sub, PCICS_COMMAND, tmp);
+            pci_writel(bus, dev, sub, PCICS_COMMAND, tmp);
 
             /* If not multi-function, skip the rest */
             if (sub == 0) {
-                tmp = pcicfg_readl(base, bus, dev, sub, PCICS_CACHELS);
+                tmp = pci_readl(bus, dev, sub, PCICS_CACHELS);
                 tmp >>= 16;
                 tmp &= 0xff;
                 if (!(tmp & PCIHT_MULTIFUNC))
@@ -221,11 +281,6 @@ OOP_Object *PCIMediator__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             BASE(cl)->baseDev = baseDev;
             BASE(cl)->memDev = memDev;
 
-            BASE(cl)->setup = baseDev->cd_BoardAddr + EMPB_SETUP_OFF;
-            BASE(cl)->config = baseDev->cd_BoardAddr + EMPB_BRIDGE_OFF;
-            BASE(cl)->io = CreatePCIResourceList((IPTR)baseDev->cd_BoardAddr + EMPB_BRIDGE_OFF, EMPB_BRIDGE_SIZE + 1);
-            BASE(cl)->mem = CreatePCIResourceList((IPTR)memDev->cd_BoardAddr, memDev->cd_BoardSize);
-
             mymsg.mID = msg->mID;
             mymsg.attrList = (struct TagItem *)&mytags;
 
@@ -236,8 +291,22 @@ OOP_Object *PCIMediator__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             }
          
             msg = &mymsg;
-         
-            PCIInitialize(BASE(cl));
+
+            /* Set up board, based on whether the baseDev is
+             * in Zorro III space or not.
+             */
+            if (baseDev->cd_Rom.er_Flags & ERFF_ZORRO_III) {
+                a4k_init(BASE(cl));
+            } else {
+                a12k_init(BASE(cl));
+            }
+        
+            /* Initialize bus 0 */
+            PCIInitialize(BASE(cl), 0, BASE(cl)->io, BASE(cl)->mem);
+
+            /* We don't need these resource lists any longer */
+            DeletePCIResourceList(BASE(cl)->io);
+            DeletePCIResourceList(BASE(cl)->mem);
 
             o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
         } else {
@@ -254,8 +323,6 @@ OOP_Object *PCIMediator__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
 
 VOID PCIMediator__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
-    DeletePCIResourceList(BASE(cl)->io);
-    DeletePCIResourceList(BASE(cl)->mem);
     BASE(cl)->baseDev->cd_Flags |= CDF_CONFIGME;
     BASE(cl)->baseDev->cd_Driver = NULL;
     BASE(cl)->memDev->cd_Flags |= CDF_CONFIGME;
@@ -265,13 +332,13 @@ VOID PCIMediator__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 void PCIMediator__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
-    pcicfg_writel(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
+    BASE(cl)->cfg_writel(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
 }
 
 ULONG PCIMediator__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o, 
                                             struct pHidd_PCIDriver_ReadConfigLong *msg)
 {
-    return pcicfg_readl(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg);
+    return BASE(cl)->cfg_readl(BASE(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
 /* Class initialization and destruction */
