@@ -1,22 +1,41 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM workbench-libs-expat-includes : \
+#MM- workbench-libs-expat : \
+#MM     workbench-libs-expat-lib \
+#MM     workbench-libs-expat-examples \
+#MM     workbench-libs-expat-pc
+
+#MM- workbench-libs-expat-quick : \
+#MM     workbench-libs-expat-lib-quick \
+#MM     workbench-libs-expat-examples-quick
+
+#MM- workbench-libs-expat-clean : \
+#MM     workbench-libs-expat-lib-clean \
+#MM     workbench-libs-expat-examples-clean
+
+#MM  workbench-libs-expat-lib : linklibs
+
+#MM- workbench-libs-expat-includes : \
 #MM     kernel-exec-includes includes-copy
 
-#MM workbench-libs-expat : linklibs
 
 CFILES := xmlparse xmlrole xmltok
 
-# USER_CFLAGS :=
-# USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include
-
-%build_module mmake=workbench-libs-expat modname=expat_au modtype=library \
-    files=$(CFILES) linklibname=expat
+%build_module mmake=workbench-libs-expat-lib modname=expat_au modtype=library \
+    files="init-aros $(CFILES)"  uselibs="arosc_rel" linklibname=expat
 
 
-INCLUDE_FILES := expat.h
+INCLUDE_FILES := expat.h expat_external.h
 %copy_includes
+
+
+#MM
+workbench-libs-expat-pc : $(AROS_LIB)/pkgconfig/expat.pc
+
+$(AROS_LIB)/pkgconfig/expat.pc : $(SRCDIR)/$(CURDIR)/../expat.pc.aros
+	@$(IF) $(TEST) ! -d $(AROS_LIB)/pkgconfig ; then $(MKDIR) $(AROS_LIB)/pkgconfig ; else $(NOP) ; fi
+	$(CP) $^ $@
 
 
 %common

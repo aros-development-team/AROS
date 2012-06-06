@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-expat-examples : \
+#MM     workbench-libs-expat-lib \
+#MM     includes \
+#MM     linklibs
+
+FILES   := elements outline
+EXEDIR  := $(AROS_TESTS)/expat
+
+%build_progs mmake=workbench-libs-expat-examples \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="expat"
+
+%common
