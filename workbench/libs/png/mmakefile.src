@@ -1,0 +1,29 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-png-includes : \
+#MM     kernel-exec-includes includes-copy
+
+#MM- workbench-libs-png : linklibs
+
+FILES := png pngerror\
+	pngget pngmem pngpread pngread pngrio pngrtran pngrutil\
+	pngset pngtrans pngwio pngwrite pngwtran pngwutil
+
+%build_module mmake=workbench-libs-png \
+    modname=png_au modtype=library \
+    files="init-aros $(FILES)" uselibs="z_rel arosc_rel" linklibname="png"
+
+
+# #MM- linklibs: linklibs-png-nostdio
+
+USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_tIME
+
+%build_linklib mmake=linklibs-png-nostdio libname=png_nostdio
+	files=$(FILES) objdir=$(OBJDIR)/no_stdio
+
+
+INCLUDE_FILES := png.h pngconf.h
+%copy_includes
+
+%common
