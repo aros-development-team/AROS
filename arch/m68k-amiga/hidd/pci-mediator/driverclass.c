@@ -295,7 +295,7 @@ OOP_Object *PCIMediator__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
             /* Set up board, based on whether the baseDev is
              * in Zorro III space or not.
              */
-            if (baseDev->cd_Rom.er_Flags & ERFF_ZORRO_III) {
+            if (baseDev->cd_Rom.er_Flags & ERFF_EXTENDED) {
                 a4k_init(BASE(cl));
             } else {
                 a12k_init(BASE(cl));
