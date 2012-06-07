@@ -6,13 +6,13 @@ USER_CFLAGS   := -DMYDEBUG
 FILES := jpegclass stubs memory
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
-#MM workbench-datatypes-jpg : includes linklibs linklibs-jpg
+#MM workbench-datatypes-jpeg : includes linklibs workbench-libs-jpeg-linklib
 
 USER_CFLAGS := -DAROS_LC_SETFUNCS
 
 %build_module mmake=workbench-datatypes-jpeg \
     modname=jpeg modtype=datatype \
-    files=$(FILES) uselibs="jpeg"
+    files=$(FILES) uselibs="jpeg arosc"
 
 $(MOD_DIR)/jpeg.readme : jpeg.readme
 	@$(CP) $< $@

@@ -1,0 +1,29 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM workbench-libs-jpeg-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     includes-copy
+
+FILES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
+        jcdctmgr jchuff jcinit jcmainct jcmarker jcmaster \
+        jcomapi jcparam jcprepct jcsample jctrans jdapimin \
+        jdapistd jdarith jdatadst jdatasrc jdcoefct jdcolor \
+        jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster \
+        jdmerge jdpostct jdsample jdtrans jerror jfdctflt \
+        jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 \
+        jquant2 jutils jmemmgr jmemamiga
+
+USER_CFLAGS := -DNO_GETENV
+
+%build_module mmake=workbench-libs-jpeg \
+  modname=jpeg_au modtype=library \
+  files="init-aros $(FILES)" uselibs="arosc_rel" linklibname=jpeg
+
+
+INCLUDE_FILES := jerror.h jmorecfg.h jpeglib.h jconfig.h
+%copy_includes
+
+
+%common

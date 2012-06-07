@@ -33,7 +33,7 @@
 
 #include <aros/symbolsets.h>
 
-#include <jinclude.h>
+//#include <jinclude.h>
 #include <jpeglib.h>
 #include <jerror.h>
 #include <setjmp.h>
