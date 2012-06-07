@@ -681,8 +681,9 @@ ifeq (%(nix),yes)
 endif
 ifeq (%(usestartup),no)
     TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+    TMP_EXTRA_LIBS += arosc.static
     ifeq (%(linker),target)
-        TMP_EXTRA_LIBS += arosc.static libinit autoinit
+        TMP_EXTRA_LIBS += libinit autoinit
     endif
 endif
 ifeq (%(detach),yes)
