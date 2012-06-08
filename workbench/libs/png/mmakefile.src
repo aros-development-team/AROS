@@ -19,7 +19,7 @@ FILES := png pngerror\
 
 USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_tIME
 
-%build_linklib mmake=linklibs-png-nostdio libname=png_nostdio
+%build_linklib mmake=linklibs-png-nostdio libname=png_nostdio \
 	files=$(FILES) objdir=$(OBJDIR)/no_stdio
 
 
