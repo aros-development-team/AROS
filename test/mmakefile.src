@@ -104,8 +104,11 @@ EXEDIR := $(AROS_TESTS)
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
 
-#MM- test : test-common test-pure test-clib test-kernel test-exec test-layers test-zune workbench-libs-version test-$(AROS_ARCH)
-#MM- test : includes includes-copy workbench-datatypes-png-includes test-testscript
+#MM- test : test-common test-pure test-clib test-kernel test-exec test-layers test-zune workbench-libs-version \
+#MM  test-$(AROS_ARCH) testscript
+
+#MM  test-common : includes workbench-libs-version linklibs
+#MM  test-pure : includes linklibs
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
