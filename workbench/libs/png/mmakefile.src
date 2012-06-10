@@ -20,7 +20,7 @@ USER_CFLAGS += -DPNG_NO_STDIO -DPNG_NO_WRITE_tIME -Wno-implicit-function-declara
 	files=$(FILES) objdir=$(OBJDIR)/no_stdio
 
 #MM includes-copy
-INCLUDE_FILES := png.h pngconf.h
+INCLUDE_FILES := png.h pngconf.h pnglibconf.h
 %copy_includes
 
 %common
