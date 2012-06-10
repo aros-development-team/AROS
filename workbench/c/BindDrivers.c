@@ -6,8 +6,11 @@
     Lang: English
 */
 
+#define __DOS_STDLIBDEF__
+
 #define DEBUG 1
 #include <aros/debug.h>
+
 /******************************************************************************
 
 
@@ -17,7 +20,7 @@
 
     SYNOPSIS
 
-        DEVICES/S,DRIVERS/S
+        DEVICES/S,DRIVERS/S,DIR/K/A
 
     LOCATION
 
@@ -32,9 +35,11 @@
 
     INPUTS
 
-        DEVICES           --  List all devices, and their bindings
+        DEVICES           -- List all devices, and their bindings
 
-        DRIVERS           --  List all drivers, and their supported products
+        DRIVERS           -- List all drivers, and their supported products
+
+        DIR <directory>   -- Directory to search, instead of SYS:Expansion/
 
     RESULT
 
@@ -92,12 +97,7 @@ static LONG BindDriverAdd(struct Library *IconBase, struct List *drivers, CONST_
     LONG err = 0;
     UBYTE *product, *cp;
 
-    icon = GetIconTags(name, ICONGETA_FailIfUnavailable, TRUE,
-                             ICONGETA_GetPaletteMappedIcon, FALSE,
-                             ICONGETA_RemapIcon, FALSE,
-                             ICONGETA_GenerateImageMasks, FALSE,
-                             ICONGETA_Screen, NULL,
-                             ICONA_ErrorCode, &err);
+    icon = GetDiskObject(name);
     if (icon == NULL)
         return err;
 
@@ -117,7 +117,7 @@ static LONG BindDriverAdd(struct Library *IconBase, struct List *drivers, CONST_
                 bd->bd_ProductString = product;
                 bd->bd_Node.ln_Name = (APTR)&bd->bd_Product[products];
                 bd->bd_Icon = icon;
-                D(bug("%s: bd=%p, icon=%p\n", __func__, bd, icon));
+                D(bug("%s: bd=%lx, icon=%lx\n", __func__, bd, icon));
                 strcpy(bd->bd_Node.ln_Name, name);
                 for (i = 0, cp = product; *cp; i++) {
                     unsigned long val;
@@ -170,6 +170,7 @@ static struct Resident *SearchResident(BPTR seglist)
 {
     const int ressize = offsetof(struct Resident, rt_Init) + sizeof(APTR);
 
+    D(bug("%lx: Search for resident...\n", BADDR(seglist)));
     while (seglist) {
         APTR addr = (APTR)((IPTR)BADDR(seglist) - sizeof(ULONG));
         ULONG size = *(ULONG *)addr;
@@ -181,13 +182,16 @@ static struct Resident *SearchResident(BPTR seglist)
             struct Resident *res = (struct Resident *)addr;
 
             if (res->rt_MatchWord == RTC_MATCHWORD &&
-                res->rt_MatchTag  == res)
+                res->rt_MatchTag  == res) {
+                D(bug("%lx: Resident found at %lx\n", BADDR(seglist), res));
                 return res;
+            }
         }
         
         seglist = *(BPTR *)BADDR(seglist);
     }
 
+    D(bug("%lx: No resident\n", BADDR(seglist)));
     return NULL;
 }
 
@@ -216,15 +220,21 @@ static LONG BindDriver(struct Library *DOSBase, STRPTR name, UWORD mfg, UBYTE pr
                 struct Resident *res;
 
                 if ((res = SearchResident(seglist))) {
+                    D(bug("Binding=%lx, name=%s, res=%lx\n", &cb, name, res));
                     ObtainConfigBinding();
                     SetCurrentBinding(&cb, sizeof(cb));
-                    Forbid();
-                    InitResident(res, seglist);
-                    Permit();
+                    D(bug("Calling InitResident via %lx\n", (IPTR)SysBase - 6 * 17));
+                    if (InitResident(res, seglist) == NULL) {
+                        D(bug("\tfailed\n"));
+                        UnLoadSeg(seglist);
+                    } else {
+                        D(bug("\tbound\n"));
+                    }
                     ReleaseConfigBinding();
                 } else {
                     /* No resident? Then never loadable */
                     err = RETURN_FAIL;
+                    D(bug("No resident for %s\n", name));
                     UnLoadSeg(seglist);
                 }
             } else {
@@ -242,9 +252,10 @@ static LONG BindDriver(struct Library *DOSBase, STRPTR name, UWORD mfg, UBYTE pr
     return err;
 }
 
-AROS_SH2(BindDrivers, 41.1,
+AROS_SH3(BindDrivers, 41.1,
 AROS_SHA(BOOL, ,DRIVERS,/S, FALSE),
-AROS_SHA(BOOL, ,DEVICES,/S, FALSE))
+AROS_SHA(BOOL, ,DEVICES,/S, FALSE),
+AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
 {
 
     AROS_SHCOMMAND_INIT
@@ -288,9 +299,9 @@ AROS_SHA(BOOL, ,DEVICES,/S, FALSE))
 
     NEWLIST(&drivers);
 
-    lock = Lock("SYS:Expansion", SHARED_LOCK);
+    lock = Lock(SHArg(DIR), SHARED_LOCK);
     if (lock == BNULL) {
-        Printf("BindDrivers: Can't open SYS:Expansion\n");
+        Printf("BindDrivers: Can't open %s\n", SHArg(DIR));
         return IoErr();
     }
 
