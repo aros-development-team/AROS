@@ -228,7 +228,7 @@ AROS_SHA(STRPTR, ,ARGUMENTS, /F, NULL))
     AROS_BSTR_setstrlen(cli->cli_CommandName, len);
     CopyMem(SHArg(NAME), s, len);
 
-    if (arguments) {
+    if (arguments && strlen(arguments)) {
         struct FileHandle *fh;
         TEXT *fh_buff;
 
