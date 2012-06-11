@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: supervisor.c 31451 2009-06-20 21:21:46Z neil $
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
-    Desc: Supervisor() - Execute some code in a priviledged environment.
+    Desc: ColdReboot() - Reboot the computer.
     Lang: english
 */
 

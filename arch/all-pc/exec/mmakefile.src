@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 38294 2011-04-20 13:14:38Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FILES := coldreboot supervisor shutdowna

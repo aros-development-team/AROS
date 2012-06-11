@@ -1,8 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Supervisor() - Execute some code in a priviledged environment.
+    Desc: Supervisor() - Execute some code in a privileged environment.
     Lang: english
 */
 
@@ -21,7 +21,7 @@
 	struct ExecBase *, SysBase, 5, Exec)
 
 /*  FUNCTION
-	Supervisor will allow a short priviledged instruction sequence to
+	Supervisor will allow a short privileged instruction sequence to
 	be called from user mode. This has very few uses, and it is probably
 	better to use any system supplied method to do anything.
 

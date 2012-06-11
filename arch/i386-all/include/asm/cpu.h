@@ -2,10 +2,10 @@
 #define ASM_I386_CPU_H
 
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id: cpu.h 38295 2011-04-21 11:01:07Z sonic $
 
-    Desc: assembler-level specific definitions for x86-64 CPU
+    Desc: assembler-level specific definitions for x86 CPU
     Lang: english
 */
 
