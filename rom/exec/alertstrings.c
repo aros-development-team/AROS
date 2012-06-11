@@ -49,7 +49,7 @@ static const struct Errors cpustrings[] =
     { ACPU_DivZero,     "Division by zero" },
     { ACPU_CHK,         "CHK instruction error" },
     { ACPU_TRAPV,       "TRAPV instruction error" },
-    { ACPU_PrivErr,     "Priviledge violation error" },
+    { ACPU_PrivErr,     "Privilege violation error" },
     { ACPU_Trace,       "Trace error" },
     { ACPU_LineA,       "Line 1010 (A) E mulator error" },
     { ACPU_LineF,       "Line 1111 (F) Emulator/Coprocessor error" },
