@@ -16,6 +16,8 @@ FILES := jaricom jcapimin jcapistd jcarith jccoefct jccolor \
         jquant2 jutils jmemmgr jmemamiga
 
 USER_CFLAGS := -DNO_GETENV
+# We trust upstream
+USER_CFLAGS += -Wno-main
 
 %build_module mmake=workbench-libs-jpeg \
   modname=jpeg_au modtype=library \
