@@ -38,8 +38,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "atheros5000.device"
 #define VERSION 1
-#define REVISION 1
-#define DATE "15.1.2012"
+#define REVISION 2
+#define DATE "12.6.2012"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
@@ -283,7 +283,7 @@ struct Opener
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
    const VOID *real_rx_function;
    const VOID *real_tx_function;
    const VOID *real_dma_tx_function;

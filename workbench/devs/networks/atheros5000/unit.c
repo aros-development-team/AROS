@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2011 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -57,7 +57,7 @@ MA 02111-1307, USA.
 #define MAX_CHANNEL_COUNT 100
 
 #ifndef AbsExecBase
-#define AbsExecBase (*(struct ExecBase **)4)
+#define AbsExecBase sys_base
 #endif
 
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
@@ -87,7 +87,7 @@ static VOID ResetHandler(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct ExecBase *sys_base);
 
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
@@ -109,6 +109,15 @@ static const struct EmulLibEntry mos_task_trap =
    (APTR)UnitTask
 };
 #define UnitTask &mos_task_trap
+#endif
+#ifdef __AROS__
+#undef AddTask
+#define AddTask(task, initial_pc, final_pc) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+   })
 #endif
 
 
@@ -2892,7 +2901,7 @@ struct TagItem *GetRadioBands(struct DevUnit *unit, APTR pool,
 #undef UnitTask
 #endif
 
-static VOID UnitTask()
+static VOID UnitTask(struct ExecBase *sys_base)
 {
    struct Task *task;
    struct IORequest *request;

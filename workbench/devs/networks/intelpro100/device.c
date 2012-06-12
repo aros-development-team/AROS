@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2009 Neil Cafferkey
+Copyright (C) 2000-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,25 +32,13 @@ MA 02111-1307, USA.
 
 #include "device.h"
 
+#include "device_protos.h"
 #include "pci_protos.h"
 #include "request_protos.h"
 
 
 /* Private prototypes */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
-   REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base));
-static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
-   REG(d0, ULONG unit_num), REG(d1, ULONG flags),
-   REG(BASE_REG, struct DevBase *base));
-static APTR DevClose(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base));
-static APTR DevReserved();
-static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
-static VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
-   REG(BASE_REG, struct DevBase *base));
 static VOID DeleteDevice(struct DevBase *base);
 static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
 
@@ -64,7 +52,7 @@ LONG Main()
 
 
 const TEXT device_name[] = DEVICE_NAME;
-static const TEXT version_string[] =
+const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
 static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT prometheus_name[] = "prometheus.library";
@@ -87,7 +75,7 @@ static const APTR vectors[] =
 #ifdef __MORPHOS__
 #pragma pack(2)
 #endif
-static const struct
+const struct
 {
    SMALLINITBYTEDEF(type);
    SMALLINITPINTDEF(name);
@@ -166,7 +154,7 @@ static const ULONG tx_tags[] =
 *
 */
 
-static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
+struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
    REG(a0, APTR seg_list), REG(BASE_REG, struct DevBase *base))
 {
    BOOL success = TRUE;
@@ -226,7 +214,7 @@ static struct DevBase *DevInit(REG(d0, struct DevBase *dev_base),
 *
 */
 
-static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
+BYTE DevOpen(REG(a1, struct IOSana2Req *request),
    REG(d0, ULONG unit_num), REG(d1, ULONG flags),
    REG(BASE_REG, struct DevBase *base))
 {
@@ -332,7 +320,7 @@ static BYTE DevOpen(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static APTR DevClose(REG(a1, struct IOSana2Req *request),
+APTR DevClose(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    struct DevUnit *unit;
@@ -395,7 +383,7 @@ static APTR DevClose(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
+APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 {
    APTR seg_list;
 
@@ -430,7 +418,7 @@ static APTR DevExpunge(REG(BASE_REG, struct DevBase *base))
 *
 */
 
-static APTR DevReserved()
+APTR DevReserved()
 {
    return NULL;
 }
@@ -451,7 +439,7 @@ static APTR DevReserved()
 *
 */
 
-static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
+VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    struct DevUnit *unit;
@@ -488,7 +476,7 @@ static VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
 *
 */
 
-static VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
+VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base))
 {
    Disable();

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2009 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,9 +36,9 @@ MA 02111-1307, USA.
 #undef Lock
 
 #define DEVICE_NAME "intelpro100.device"
-#define VERSION 0
-#define REVISION 4
-#define DATE "10.6.2009"
+#define VERSION 1
+#define REVISION 1
+#define DATE "12.6.2012"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
@@ -200,7 +200,7 @@ struct Opener
    UBYTE *(*dma_tx_function)(REG(a0, APTR));
    struct Hook *filter_hook;
    struct MinList initial_stats;
-#if defined(__amigaos4__) || defined(__MORPHOS__)
+#if defined(__amigaos4__) || defined(__MORPHOS__) || defined(__AROS__)
    const VOID *real_rx_function;
    const VOID *real_tx_function;
    const VOID *real_dma_tx_function;
@@ -251,9 +251,6 @@ struct AddressRange
 
 /* Library and device bases */
 
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
 #define SysBase (base->sys_base)
 #define UtilityBase (base->utility_base)
 #define ExpansionBase (base->expansion_base)

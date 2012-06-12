@@ -43,7 +43,7 @@ MA 02111-1307, USA.
 #define TX_DESC_SIZE (RH_DESCSIZE * 2 + ETH_HEADERSIZE + 2)
 
 #ifndef AbsExecBase
-#define AbsExecBase (*(struct ExecBase **)4)
+#define AbsExecBase sys_base
 #endif
 
 VOID DeinitialiseAdapter(struct DevUnit *unit, struct DevBase *base);
@@ -68,13 +68,25 @@ static VOID ResetHandler(REG(a1, struct DevUnit *unit),
    REG(a6, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct ExecBase *sys_base);
 UWORD ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
    struct DevBase *base);
 
 
 static const UBYTE broadcast_address[] =
    {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+
+
+#ifdef __AROS__
+#undef AddTask
+#define AddTask(task, initial_pc, final_pc) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+   })
+#endif
+
 
 
 /****i* rhine.device/CreateUnit ********************************************
@@ -1727,7 +1739,7 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 *
 */
 
-static VOID UnitTask()
+static VOID UnitTask(struct ExecBase *sys_base)
 {
    struct Task *task;
    struct IORequest *request;
