@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2011 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ MA 02111-1307, USA.
 #define SIFS_TIME 14
 
 #ifndef AbsExecBase
-#define AbsExecBase (*(struct ExecBase **)4)
+#define AbsExecBase sys_base
 #endif
 
 VOID DeinitialiseAdapter(struct DevUnit *unit, struct DevBase *base);
@@ -79,7 +79,7 @@ static UWORD GetDuration(struct DevUnit *unit, UWORD length, UWORD rate,
    BOOL short_preamble, struct DevBase *base);
 static UWORD AckRate(struct DevUnit *unit, UWORD data_rate,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct ExecBase *sys_base);
 
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
@@ -100,6 +100,15 @@ static const struct EmulLibEntry mos_task_trap =
    (APTR)UnitTask
 };
 #define UnitTask &mos_task_trap
+#endif
+#ifdef __AROS__
+#undef AddTask
+#define AddTask(task, initial_pc, final_pc) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+   })
 #endif
 
 
@@ -2663,7 +2672,7 @@ static UWORD AckRate(struct DevUnit *unit, UWORD data_rate,
 #undef UnitTask
 #endif
 
-static VOID UnitTask()
+static VOID UnitTask(struct ExecBase *sys_base)
 {
    struct Task *task;
    struct IORequest *request;

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2009 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@ MA 02111-1307, USA.
    + ETH_ADDRESSSIZE * MAX_MCAST_ENTRIES)
 
 #ifndef AbsExecBase
-#define AbsExecBase (*(struct ExecBase **)4)
+#define AbsExecBase sys_base
 #endif
 
 static VOID InitialiseAdapter(struct DevUnit *unit, struct DevBase *base);
@@ -73,7 +73,7 @@ static VOID TXEndInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct ExecBase *sys_base);
 static UWORD GetEEPROMAddressSize(struct DevUnit *unit,
    struct DevBase *base);
 static UWORD ReadEEPROM(struct DevUnit *unit, UWORD index,
@@ -118,6 +118,15 @@ static const struct EmulLibEntry mos_task_trap =
    (APTR)UnitTask
 };
 #define UnitTask &mos_task_trap
+#endif
+#ifdef __AROS__
+#undef AddTask
+#define AddTask(task, initial_pc, final_pc) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+   })
 #endif
 
 
@@ -1813,7 +1822,7 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 #undef UnitTask
 #endif
 
-static VOID UnitTask()
+static VOID UnitTask(struct ExecBase *sys_base)
 {
    struct Task *task;
    struct IORequest *request;

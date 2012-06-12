@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2000-2011 Neil Cafferkey
+Copyright (C) 2000-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ MA 02111-1307, USA.
 /* Private prototypes */
 
 static VOID DeleteDevice(struct DevBase *base);
+static struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
 
 
 /* Return an error immediately if someone tries to run the device */
@@ -53,9 +54,9 @@ LONG Main()
 const TEXT device_name[] = DEVICE_NAME;
 const TEXT version_string[] =
    DEVICE_NAME " " STR(VERSION) "." STR(REVISION) " (" DATE ")\n";
-const TEXT utility_name[] = UTILITYNAME;
+static const TEXT utility_name[] = UTILITYNAME;
 static const TEXT poseidon_name[] = "poseidon.library";
-const TEXT timer_name[] = TIMERNAME;
+static const TEXT timer_name[] = TIMERNAME;
 
 
 static const APTR vectors[] =

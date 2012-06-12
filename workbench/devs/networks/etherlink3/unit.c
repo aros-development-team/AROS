@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2001-2011 Neil Cafferkey
+Copyright (C) 2001-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,12 +54,21 @@ MA 02111-1307, USA.
 
 
 #ifndef AbsExecBase
-#define AbsExecBase (*(struct ExecBase **)4)
+#define AbsExecBase sys_base
 #endif
 #ifdef __amigaos4__
 #undef AddTask
 #define AddTask(task, initial_pc, final_pc) \
    IExec->AddTask(task, initial_pc, final_pc, NULL)
+#endif
+#ifdef __AROS__
+#undef AddTask
+#define AddTask(task, initial_pc, final_pc) \
+   ({ \
+      struct TagItem _task_tags[] = \
+         {{TASKTAG_ARG1, (IPTR)SysBase}, {TAG_END, 0}}; \
+      NewAddTask(task, initial_pc, final_pc, _task_tags); \
+   })
 #endif
 
 VOID SelectMedium(struct DevUnit *unit, UWORD transceiver,
@@ -83,7 +92,7 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
    REG(a5, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
-static VOID UnitTask();
+static VOID UnitTask(struct ExecBase *sys_base);
 static UWORD ReadEEPROM(struct DevUnit *unit, UWORD index,
    struct DevBase *base);
 static BOOL ReadMII(struct DevUnit *unit, UWORD phy_no, UWORD reg_no,
@@ -2393,7 +2402,7 @@ static VOID ReportEvents(struct DevUnit *unit, ULONG events,
 *
 */
 
-static VOID UnitTask()
+static VOID UnitTask(struct ExecBase *sys_base)
 {
    struct Task *task;
    struct IORequest *request;

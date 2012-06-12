@@ -5,7 +5,7 @@ USER_CFLAGS := -Wno-uninitialized -Wno-parentheses
 
 %build_prog mmake=workbench-devs-networks-intelpro100 \
     progname="intelpro100.device" \
-    files="startup device request unit pci prometheus" \
+    files="startup aros_device device request unit pci prometheus" \
     targetdir=$(AROSDIR)/Devs/Networks
 
 %common

@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2011 Neil Cafferkey
+Copyright (C) 2011,2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,10 +33,10 @@ MA 02111-1307, USA.
 
 /* Private prototypes */
 
-AROS_LD2(struct DevBase *, AROSDevInit,
-   AROS_LDA(struct DevBase *, dev_base, D0),
-   AROS_LDA(struct DevBase *, seg_list, A0),
-   struct DevBase *, base, 0, S2);
+AROS_UFP3(struct DevBase *, AROSDevInit,
+   AROS_UFPA(struct DevBase *, dev_base, D0),
+   AROS_UFPA(APTR, seg_list, A0),
+   AROS_UFPA(struct DevBase *, base, A6));
 AROS_LD3(BYTE, AROSDevOpen,
    AROS_LDA(struct IOSana2Req *, request, A1),
    AROS_LDA(LONG, unit_num, D0),
@@ -86,7 +86,7 @@ static const APTR init_table[] =
    (APTR)sizeof(struct DevBase),
    (APTR)vectors,
    (APTR)&init_data,
-   (APTR)AROS_SLIB_ENTRY(AROSDevInit, S2, 0),
+   (APTR)AROSDevInit,
 };
 
 
@@ -115,10 +115,10 @@ const struct Resident aros_rom_tag =
 *
 */
 
-AROS_LH2(struct DevBase *, AROSDevInit,
-   AROS_LHA(struct DevBase *, dev_base, D0),
-   AROS_LHA(struct DevBase *, seg_list, A0),
-   struct DevBase *, base, 0, S2)
+AROS_UFH3(struct DevBase *, AROSDevInit,
+   AROS_UFHA(struct DevBase *, dev_base, D0),
+   AROS_UFHA(APTR, seg_list, A0),
+   AROS_UFHA(struct DevBase *, base, A6))
 {
    AROS_LIBFUNC_INIT
 

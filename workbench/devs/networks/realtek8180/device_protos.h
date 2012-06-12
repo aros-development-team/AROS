@@ -1,6 +1,6 @@
 /*
 
-Copyright (C) 2006-2011 Neil Cafferkey
+Copyright (C) 2006-2012 Neil Cafferkey
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ VOID DevBeginIO(REG(a1, struct IOSana2Req *request),
 VOID DevAbortIO(REG(a1, struct IOSana2Req *request),
    REG(BASE_REG, struct DevBase *base));
 VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base);
-struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
 BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base);
 VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base);
 
