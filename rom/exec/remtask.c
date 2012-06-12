@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Remove a task
@@ -32,8 +32,9 @@
 
 /*  FUNCTION
         Remove a task from the task lists. All memory in the tc_MemEntry list
-        is freed and a rescedule is done. It's safe to call RemTask() out
-        of Forbid() or Disable().
+        is freed and a reschedule is done. It's safe to call RemTask() outside
+        Forbid() or Disable().
+
         This function is one way to get rid of the current task. The other way
         is to fall through the end of the entry point.
 
@@ -53,11 +54,11 @@
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    struct MemList *mb;
     struct ETask *et;
     BOOL suicide;
 
@@ -97,18 +98,19 @@
     DREMTASK("Cleaning up ETask et=%p", et);
     CleanupETask(task);
 
-    /*
-     * Send task to task cleaner to clean up memory.
-     * This avoids ripping memory from underneath a running Task.
-     * Message is basically a Node, so we use our task's tc_Node as a message.
-     * We use InternalPutMsg() because it won't change ln_Type. Just in case...
-     */
-    DREMTASK("Sending to garbage man");
-    InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort, (struct Message *)task, SysBase);
-
     /* Freeing myself? */
     if (suicide)
     {
+        /*
+         * Send task to task cleaner to clean up memory. This avoids ripping
+         * memory from underneath a running Task. Message is basically a
+         * Node, so we use our task's tc_Node as a message. We use
+         * InternalPutMsg() because it won't change ln_Type. Just in case...
+         */
+        DREMTASK("Sending to garbage man");
+        InternalPutMsg(((struct IntExecBase *)SysBase)->ServicePort,
+            (struct Message *)task, SysBase);
+
         /* Changing the task lists always needs a Disable(). */
         Disable();
 
@@ -124,6 +126,17 @@
 
         KrnDispatch();
         /* Does not return. */
+    }
+    else
+    {
+        /*
+         * Free all memory in the tc_MemEntry list.
+         * We do this here because it's unsafe to send it to the service task:
+         * by the time the service task processes it, the task structure may
+         * have been freed following the return of this function.
+         */
+        while((mb = (struct MemList *) RemHead(&task->tc_MemEntry)) != NULL)
+            FreeEntry(mb);
     }
 
     /* All done. */
