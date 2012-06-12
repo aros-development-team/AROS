@@ -22,12 +22,40 @@ int strcasecmp(const char *, const char *);
 int strncasecmp(const char *, const char *, size_t);
 /* NOTIMPL int strncasecmp_l(const char *, const char *, size_t, locale_t); */
 
+/* Some name space polution to implement legacy functions as
+   inline functions
+*/
+void *memmove (void * dest, const void * src, size_t n);
+int memcmp (const void * s1, const void * s2, size_t n);
+void *memset (void * dest, int c, size_t n);
+char *strchr (const char * s, int c);
+char *strrchr (const char * s, int c);
+
 /* Deprecated, removed in POSIX.1-2008 */
-int bcmp(const void *, const void *, size_t);
-void bcopy(const void *, void *, size_t);
-void bzero(void *, size_t);
-char *index(const char * s, int c);
-char *rindex(const char * s, int c);
+static inline int bcmp(const void * s1, const void * s2, size_t n)
+{
+    return memcmp(s1, s2, n);
+}
+
+static inline void bcopy(const void * src, void * dest, size_t n)
+{
+    memmove(dest, src, n);
+}
+
+static inline void bzero(void * dest, size_t n)
+{
+    memset(dest, 0, n);
+}
+
+static inline char *index(const char * s, int c)
+{
+    return strchr(s, c);
+}
+
+static inline char *rindex(const char * s, int c)
+{
+    return strrchr(s, c);
+}
 
 /* BSD */
 char *strcasestr(const char * str, const char * search);

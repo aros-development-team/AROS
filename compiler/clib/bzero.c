@@ -8,10 +8,14 @@
 
 #include <proto/exec.h>
 
+#define bzero bzero_inline
+#include <strings.h>
+#undef bzero
+
 /*****************************************************************************
 
     NAME */
-#include <string.h>
+#include <strings.h>
 
 	void bzero (
 
