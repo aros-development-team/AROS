@@ -6,10 +6,14 @@
     Function is deprecated and removed from POSIX.1-2008
 */
 
+#define bcmp bcmp_inline
+#include <strings.h>
+#undef bcmp
+
 /*****************************************************************************
 
     NAME */
-#include <string.h>
+#include <strings.h>
 
 	int bcmp (
 

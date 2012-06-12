@@ -1,3 +1,7 @@
+#define bcopy bcopy_inline
+#include <strings.h>
+#undef bcopy
+
 /*-
  * Copyright (c) 1990, 1993
  *	The Regents of the University of California.  All rights reserved.

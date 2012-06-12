@@ -21,9 +21,6 @@ COMMON	:= \
 	__filesystem_support \
 	__isinf \
 	atof \
-	bcmp \
-	bcopy \
-	bzero \
 	div \
 	_errstrings \
 	getopt \
@@ -348,8 +345,11 @@ SHARED_ARCH := \
     vfork_longjmp
 
 SHARED_LINKLIB := \
-       arosc_environ \
-       __ctype_linklib
+        arosc_environ \
+	bcmp \
+	bcopy \
+	bzero \
+        __ctype_linklib
 
 # Note: These files are compiled differently
 #       depending on whether -DAROSC_ROM is used
@@ -363,9 +363,6 @@ ROM_ONLY := \
 
 ROM_COMMON := \
 	atof \
-	bcmp \
-	bcopy \
-	bzero \
 	div \
 	ldiv \
 	lldiv \
