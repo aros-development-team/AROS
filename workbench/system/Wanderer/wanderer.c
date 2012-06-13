@@ -156,6 +156,8 @@ const UBYTE     wand_namestr[] = WANDERERNAME;
 
 const UBYTE     wand_copyprocnamestr[] = WANDERERNAME" FileCopy Operation";
 
+const UBYTE     wand_backdropprefs[] = "SYS/Wanderer/backdrop.prefs";
+
 /*** Macros *****************************************************************/
 #define SETUP_WANDERER_INST_DATA struct Wanderer_DATA *data = INST_DATA(CLASS, self)
 
@@ -891,6 +893,8 @@ D(bug("[Wanderer] %s: Creating new Workbench window Obj (BACKDROP MODE)..\n", __
 D(bug("[Wanderer] %s: Creating new Workbench window Obj (NORMAL MODE)..\n", __PRETTY_FUNCTION__));
         }
 #endif
+        SetVar(wand_backdropprefs, data->wd_Option_BackDropMode ? "True" : "False", -1, GVF_GLOBAL_ONLY | GVF_SAVE_VAR);
+
         data->wd_WorkbenchWindow = (Object *) DoMethod
           (
             _WandererIntern_AppObj, MUIM_Wanderer_CreateDrawerWindow, (IPTR) NULL
@@ -3225,6 +3229,8 @@ D(bug("[Wanderer]: %s()\n", __PRETTY_FUNCTION__));
     {
         SETUP_WANDERER_INST_DATA;
 
+        TEXT buff[16];
+
     //    ULONG updatedIcons;
 D(bug("[Wanderer] %s: Wanderer Obj @ %p, Instance data @ %p\n", __PRETTY_FUNCTION__, self, data));
 
@@ -3234,11 +3240,15 @@ D(bug("[Wanderer] %s: Wanderer Obj @ %p, Instance data @ %p\n", __PRETTY_FUNCTIO
 
 D(bug("[Wanderer] %s: FSHandlerList @ %p\n", __PRETTY_FUNCTION__, &_WandererIntern_FSHandlerList));
 
+        if (GetVar(wand_backdropprefs, buff, sizeof(buff), GVF_GLOBAL_ONLY) != -1) {
+            data->wd_Option_BackDropMode = (Stricmp(buff, "True") == 0) ? TRUE : FALSE;
+        } else {
 #if defined(WANDERER_DEFAULT_BACKDROP)
-        data->wd_Option_BackDropMode = TRUE;
+            data->wd_Option_BackDropMode = TRUE;
 #else
-        data->wd_Option_BackDropMode = FALSE;
+            data->wd_Option_BackDropMode = FALSE;
 #endif
+        }
 
         /*-- Setup hooks structures ----------------------------------------*/
 #ifdef __AROS__
