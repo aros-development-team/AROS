@@ -3,7 +3,10 @@ include $(TOP)/config/make.cfg
 
 #MM workbench-system-wanderer-env : workbench-system-wanderer-env-dir
 
-workbench-system-wanderer-env: $(AROS_ENVARC)/SYS/Wanderer/global.prefs $(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs $(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs
+workbench-system-wanderer-env: \
+        $(AROS_ENVARC)/SYS/Wanderer/global.prefs \
+        $(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs \
+        $(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs
 
 $(AROS_ENVARC)/SYS/Wanderer/global.prefs: global.prefs
 		@$(CP) $< $@
@@ -12,6 +15,9 @@ $(AROS_ENVARC)/SYS/Wanderer/toolbar.prefs: toolbar.prefs
 		@$(CP) $< $@
 
 $(AROS_ENVARC)/SYS/Wanderer/statusbar.prefs: statusbar.prefs
+		@$(CP) $< $@
+
+$(AROS_ENVARC)/SYS/Wanderer/backdrop.prefs: backdrop.prefs
 		@$(CP) $< $@
 
 #MM
