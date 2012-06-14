@@ -1,0 +1,18 @@
+# Copyright © 2012, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := version
+EXEDIR          := $(AROS_TESTS)/png
+
+#MM- test : test-png
+#MM- test-quick : test-png-quick
+
+#MM test-png : includes linklibs workbench-libs-png
+
+%build_progs mmake=test-png \
+    files=$(FILES) targetdir=$(EXEDIR) \
+    uselibs="png"
+
+%common
