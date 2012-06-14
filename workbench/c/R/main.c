@@ -2,6 +2,8 @@
     Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
+#define DEBUG 1
+#include <aros/debug.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -11,10 +13,8 @@
 #include <string.h>
 #include <ctype.h>
 
-//#define DEBUG 1
-#include <aros/debug.h>
-
 #include "r.h"
+#include "locale.h"
 
 #define ARG_TEMPLATE "FILENAME,PROFILE/K,NOGUI/S,ARGUMENTS/F"
 #define CMD_TMPLATE_SIZE (2000)
@@ -462,7 +462,7 @@ static void execute_command(struct Req *req)
     );
     if (result)
     {
-        Printf("\"%s\" failed, return code %ld\n", req->filename, result);
+        Printf(_(MSG_ERROR_RETURN), req->filename, result);
     }
 }
 
@@ -471,28 +471,28 @@ int main(int argc, char **argv)
 {
     poolmem = CreatePool(MEMF_ANY | MEMF_CLEAR, 2000, 2000);
     if (poolmem == NULL)
-        clean_exit(NULL, "r: Can't create poolmem\n");
+        clean_exit(NULL, _(MSG_ERROR_POOL));
 
     struct Req *req = alloc_req();
     if (req == NULL)
-        clean_exit(req, "r: Can't allocate struct Req\n");
+        clean_exit(req, _(MSG_ERROR_STRUCT));
 
     D(bug("[R/main] req %p\n", req));
 
     if (! handle_args(req, argc, argv))
-        clean_exit(req, "r: Failed to parse arguments\n");
+        clean_exit(req, _(MSG_ERROR_ARGS));
 
     if (! check_exist(req))
-        clean_exit(req, "r: Command not found\n");
+        clean_exit(req, _(MSG_ERROR_NOTFOUND));
 
     if (! get_template(req))
-        clean_exit(req, "r: Failed to get template\n");
+        clean_exit(req, _(MSG_ERROR_TMPLT_GET));
 
     if (! parse_template(req))
-        clean_exit(req, "r: Failed to parse the template\n");
+        clean_exit(req, _(MSG_ERROR_TMPLT_PARSE));
 
     if (! create_gui(req))
-        clean_exit(req, "r: Failed to create application object\n");
+        clean_exit(req, _(MSG_ERROR_GUI));
 
     if (handle_gui(req))
     {
