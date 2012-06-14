@@ -2,6 +2,8 @@
     Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
+#define DEBUG 1
+#include <aros/debug.h>
 
 #include <libraries/mui.h>
 #include <libraries/asl.h>
@@ -15,11 +17,8 @@
 
 #include <stdio.h>
 
-//#define DEBUG 1
-#include <aros/debug.h>
-
 #include "r.h"
-
+#include "locale.h"
 
 Object *application, *window;
 struct Hook execute_btn_hook, pop_single_btn_hook, pop_multi_btn_hook;
@@ -132,7 +131,7 @@ BOOL create_gui(struct Req *req)
     Object *ok_btn, *cancel_btn, *str_group, *chk_group;
     struct TagItem str_group_tags[50];
     struct TagItem chk_group_tags[50];
-
+    TEXT filename[256];
     LONG i, str_cnt, chk_cnt;
 
     request = AllocAslRequest(ASL_FileRequest, NULL);
@@ -299,14 +298,15 @@ BOOL create_gui(struct Req *req)
     chk_group_tags[chk_cnt].ti_Tag = TAG_DONE;
     chk_group = MUI_NewObjectA(MUIC_Group, chk_group_tags);
 
+    sprintf(filename, _(MSG_WIN_TITLE), req->filename);
     application = (Object *)ApplicationObject,
-        MUIA_Application_Title, "R", //__(MSG_TITLE),
+        MUIA_Application_Title, __(MSG_APP_TITLE),
         MUIA_Application_Version, (IPTR) VERSION,
-        MUIA_Application_Description, "R", //__(MSG_TITLE),
+        MUIA_Application_Description, __(MSG_APP_DESCRIPTION),
         MUIA_Application_Base, (IPTR) "REQUEST",
         MUIA_Application_UseCommodities, FALSE,
         SubWindow, (IPTR)(window = (Object *)WindowObject,
-            MUIA_Window_Title, "R - The GUI Generator", //__(MSG_TITLE),
+            MUIA_Window_Title, (IPTR) filename,
             MUIA_Window_ID, MAKE_ID('R','E','Q','U'),
             WindowContents, VGroup,
                 Child, VGroup,
@@ -321,9 +321,9 @@ BOOL create_gui(struct Req *req)
                 End),
                 Child, HGroup,
                     MUIA_Group_SameWidth, TRUE,
-                    Child, ok_btn = SimpleButton("Execute"),
+                    Child, ok_btn = SimpleButton(_(MSG_OK)),
                     Child, HVSpace,
-                    Child, cancel_btn = SimpleButton("Cancel"),
+                    Child, cancel_btn = SimpleButton(_(MSG_CANCEL)),
                 End,
             End,
         End),

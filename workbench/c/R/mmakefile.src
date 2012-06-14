@@ -3,12 +3,13 @@
 
 include $(TOP)/config/make.cfg
 
-FILES   := main gui
+FILES   := locale gui main
 
 EXEDIR  := $(AROS_C)
 
 #MM- workbench-c : workbench-c-r
-#MM workbench-c-r : includes linklibs
+#MM  workbench-c-r : includes linklibs \
+#MM  workbench-c-r-catalogs
 
 %build_prog mmake=workbench-c-r \
     progname=R targetdir=$(EXEDIR) \
