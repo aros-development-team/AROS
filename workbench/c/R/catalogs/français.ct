@@ -1,0 +1,56 @@
+## version $VER: R.catalog 1.0 (14.06.2012)
+## language français
+## codeset 0
+;
+;
+MSG_APP_TITLE
+R
+;
+MSG_APP_DESCRIPTION
+Générateur d'interfaces graphiques
+;
+MSG_WIN_TITLE
+R : %s
+;
+MSG_OK
+OK
+;
+MSG_CANCEL
+Annuler
+;
+MSG_ERROR_ALLOCATE
+Impossible d'allouer la requête\n
+;Can't allocate struct Req\n
+;
+MSG_ERROR_RETURN
+\"%s\" a échoué, le code d'erreur est %ld\n
+;\"%s\" failed, return code %ld\n
+;
+MSG_ERROR_POOL
+Impossible de créer un pool de mémoire\n
+;Can't create poolmem\n
+;
+MSG_ERROR_STRUCT
+Impossible d'allouer une structure Req\n
+;Can't allocate struct Req\n
+;
+MSG_ERROR_ARGS
+Impossible de scruter les arguments\n
+;Failed to parse arguments\n
+;
+MSG_ERROR_NOTFOUND
+Commande introuvable\n
+;Command not found\n
+;
+MSG_ERROR_TMPLT_GET
+Impossible de trouver le modèle\n
+;Failed to get template\n
+;
+MSG_ERROR_TMPLT_PARSE
+Impossible de lire le modèle\n
+;Failed to parse the template\n
+;
+MSG_ERROR_GUI
+Impossible de créer l'objet application\n
+;Failed to create application object\n
+;

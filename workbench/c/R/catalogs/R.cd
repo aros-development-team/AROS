@@ -1,0 +1,42 @@
+MSG_APP_TITLE (//)
+R
+;
+MSG_APP_DESCRIPTION (//)
+GUI Generator
+;
+MSG_WIN_TITLE (//)
+R : %s
+;
+MSG_OK (//)
+OK
+;
+MSG_CANCEL (//)
+Cancel
+;
+MSG_ERROR_ALLOCATE (//)
+Can't allocate struct Req\n
+;
+MSG_ERROR_RETURN (//)
+\"%s\" failed, return code %ld\n
+;
+MSG_ERROR_POOL (//)
+Can't create poolmem\n
+;
+MSG_ERROR_STRUCT (//)
+Can't allocate struct Req\n
+;
+MSG_ERROR_ARGS (//)
+Failed to parse arguments\n
+;
+MSG_ERROR_NOTFOUND (//)
+Command not found\n
+;
+MSG_ERROR_TMPLT_GET (//)
+Failed to get template\n
+;
+MSG_ERROR_TMPLT_PARSE (//)
+Failed to parse the template\n
+;
+MSG_ERROR_GUI (//)
+Failed to create application object\n
+;
