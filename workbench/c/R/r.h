@@ -1,5 +1,5 @@
-#ifndef R_H
-#define R_H
+#ifndef _R_H
+#define _R_H
 
 /*
     Copyright © 2012, The AROS Development Team. All rights reserved.
