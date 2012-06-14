@@ -1,15 +1,17 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs: workbench-libs-png
+#MM workbench-libs-png : workbench-libs-z
 
-FILES := png pngerror\
-	pngget pngmem pngpread pngread pngrio pngrtran pngrutil\
+FILES := png pngerror \
+	pngget pngmem pngpread pngread pngrio pngrtran pngrutil \
 	pngset pngtrans pngwio pngwrite pngwtran pngwutil
+
+USER_CFLAGS := -Wno-deprecated-declarations
 
 %build_module mmake=workbench-libs-png \
     modname=png_au modtype=library \
-    files="init-aros $(FILES)" uselibs="z_rel arosc_rel" linklibname="png"
+    files="init-aros $(FILES)" uselibs="arosc_rel z_rel" linklibname="png"
 
 
 #MM- linklibs: linklibs-png-nostdio
