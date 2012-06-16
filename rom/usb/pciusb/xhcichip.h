@@ -58,8 +58,10 @@
 #define	XHCM_IST        (((1UL<<4)-1)<<XHCB_IST)
 #define	XHCM_ERST_Max   ((1UL<<4)-1)<<XHCB_ERST_Max)
 #define	XHCF_SPR        (1UL<<XHCB_SPR)
-#define	XHCM_SPB_Max    (((1UL<<4)-1)<<XHCB_SPB_Max)
+#define	XHCM_SPB_Max    (((1UL<<5)-1)<<XHCB_SPB_Max)
 #define	XHCV_SPB_Max(p) (((p)&XHCM_SPB_Max)>>XHCB_SPB_Max)
+
+#define XHCI_MAX_SCRATCHPADS    31
 
 /* XHCI_HCSPARAMS3 defines */
 #define	XHCB_U1DEV_LAT  0
@@ -188,7 +190,6 @@
 #define XHCV_SPPORT_PSIC(p)     (((p)&XHCM_SPPORT_PSIC)>>XHCB_SPPORT_PSIC)
 
 #define XHCI_SPPSI(psic) ((psic *4) + 0x10 )
-
 /* XHCI operational register defines */
 /* USB Command Register (USBCMD) */
 #define	XHCI_USBCMD     0x00
@@ -300,7 +301,6 @@
 #define	XHCF_PS_WOE     (1UL<<XHCB_PS_WOE)
 #define	XHCF_PS_DR      (1UL<<XHCB_PS_DR)
 #define	XHCF_PS_WPR     (1UL<<XHCB_PS_WPR)
-
 #define XHCV_PS_SPEED(p)    (((p)&XHCM_PS_SPEED)>>XHCB_PS_SPEED)
 
 #endif /* XHCICHIP_H */
