@@ -113,8 +113,9 @@ BOOL xhciHaltHC(struct PCIController *hc);
 BOOL xhciResetHC(struct PCIController *hc);
 BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void xhciFree(struct PCIController *hc, struct PCIUnit *hu);
-APTR AllocVecAlignedOn4KPage(APTR *original, ULONG bytesize, ULONG alignment);
 void xhciParseSupProtocol(struct PCIController *hc, IPTR extcap);
+APTR AllocVecAligned(ULONG bytesize, ULONG alignment);
+void FreeVecAligned(APTR memory);
 #endif
 
 UBYTE PCIXReadConfigByte(struct PCIController *hc, UBYTE offset);
