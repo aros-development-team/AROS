@@ -97,7 +97,7 @@ AROS_UFH3(LONG, __startup_entry,
         No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
     */
-    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 39);
+    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 36);
     if (!DOSBase) return RETURN_FAIL;
 
     __argstr  = argstr;
