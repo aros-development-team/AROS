@@ -43,9 +43,17 @@
 
 *****************************************************************************/
 {
+#ifdef __mc68000
+    /* Special case for m68k, so that we are AmigaOS 1.x/2.x compliant
+     * New programs should be using snprintf() from arosc.library
+     */
+    const ULONG m68k_string = 0x16c04e75;
+    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string, buffer);
+#else
     va_list args;
 
     va_start(args, format);
     VNewRawDoFmt(format, RAWFMTFUNC_STRING, buffer, args);
     va_end(args);
+#endif
 } /* sprintf */
