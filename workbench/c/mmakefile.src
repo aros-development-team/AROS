@@ -31,7 +31,6 @@ FILES := \
     List \
     Load \
     Lock \
-    LoadWB \
     MakeDir \
     MakeLink \
     Mount \
@@ -61,6 +60,7 @@ FILES := \
     Delay
 
 PURE_FILES := \
+    AROSMonDrvs \
     Assign \
     Beep \
     BindDrivers \
@@ -68,7 +68,7 @@ PURE_FILES := \
     Debug \
     Dir \
     GfxControl \
-    AROSMonDrvs \
+    LoadWB \
     Play \
     SetKeyboard \
     WaitX
