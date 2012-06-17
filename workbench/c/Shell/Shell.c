@@ -106,7 +106,7 @@ __startup AROS_CLI(ShellStart)
     struct Process *me = (struct Process *)FindTask(NULL);
     struct CommandLineInterface *cli;
 
-    DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
+    DOSBase = OpenLibrary("dos.library",36);
     if (!DOSBase)
         return RETURN_FAIL;
 
