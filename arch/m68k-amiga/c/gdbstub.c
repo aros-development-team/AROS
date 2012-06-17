@@ -743,13 +743,13 @@ static APTR UpdateTrapCode(APTR newHandler)
     return oldHandler;
 }
 
-
 int main(int argc, char **argv)
 {
     APTR DOSBase;
     APTR oldTaskTrapCode;
 
-    if ((DOSBase = OpenLibrary("dos.library", 0))) {
+    if ((DOSBase = OpenLibrary("dos.library",36))) {
+    	const char msg[] = "GDB trapping enabled on the serial port\n";
     	/* We need to patch AddTask() to set
     	 * us up as the default stub for tc_TrapCode.
     	 *
@@ -770,7 +770,7 @@ int main(int argc, char **argv)
     	Enable();
 
     	gdbstub();
-    	PutStr("GDB trapping enabled on the serial port\n");
+    	Write(Output(), msg, sizeof(msg)-1);
     	Detach();
     	Wait(SIGBREAKF_CTRL_C);
 
