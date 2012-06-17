@@ -43,6 +43,7 @@ static STRPTR getString(ULONG alertnum, const struct Errors *errs)
 
 static const struct Errors cpustrings[] =
 {
+    { ACPU_AbsExecBase, "Write attempted to AbsExecBase" },
     { ACPU_BusErr,      "Hardware bus fault/address error" },
     { ACPU_AddressErr,  "Illegal address access" },
     { ACPU_InstErr,     "Illegal instruction" },
