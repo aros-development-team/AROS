@@ -135,11 +135,11 @@ static BOOL a4k_init(struct pcibase *base)
 {
     D(bug("MEDIATOR: Attempting A3000/4000 style init\n"));
 
-    base->setup[EMZ4_SETUP_STATUS_OFF] = 0x00;
-    base->setup[EMZ4_SETUP_CONFIG_OFF] = 0x41;
-
     base->setup = base->baseDev->cd_BoardAddr;
     base->config = base->baseDev->cd_BoardAddr + EMZ4_CONFIG_OFF;
+
+    base->setup[EMZ4_SETUP_STATUS_OFF] = 0x00;
+    base->setup[EMZ4_SETUP_CONFIG_OFF] = 0x41;
 
     base->cfg_readl = a4k_pci_readl;
     base->cfg_writel = a4k_pci_writel;
