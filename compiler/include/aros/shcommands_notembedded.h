@@ -25,9 +25,9 @@
 #    define DEFINE_DOSBase_global
 #endif
 
-#define CALL_main(name) name##_main(__shargs, argstr, SysBase, DOSBase)
+#define CALL_main(name) name##_main(__shargs, __argstr, SysBase, DOSBase)
 #define DECLARE_main(name)                                    \
-    static ULONG name##_main(IPTR *__shargs, char * __argstr, \
+    ULONG name##_main(IPTR *__shargs, char * __argstr, \
                              struct ExecBase *SysBase,        \
                              struct DosLibrary *DOSBase)
 #define DEFINE_main(name) DECLARE_main(name)
@@ -48,7 +48,7 @@ DECLARE_main(name);                                                           \
 DECLARE_DOSBase_global                                                        \
                                                                               \
 __startup static AROS_ENTRY(LONG, _entry,                                     \
-    AROS_UFHA(char *,argstr,A0),                                              \
+    AROS_UFHA(char *,__argstr,A0),                                              \
     AROS_UFHA(ULONG,argsize,D0),                                              \
     struct ExecBase *,SysBase                                                 \
 )                                                                             \
@@ -113,11 +113,34 @@ __used static const UBYTE name##_version[] = "$VER: "                         \
 DEFINE_main(name)                                                             \
 {
 
+/* If 'AROS_AUTOINIT' is defined, automatically load
+ * the libraries for this shell command.
+ */
+#ifdef AROS_AUTOINIT
+#include <aros/symbolsets.h>
+
+THIS_PROGRAM_HANDLES_SYMBOLSETS
+
+#define AROS_SHCOMMAND_INIT \
+    DEFINE_main(_automain) { \
+
+#define AROS_SHCOMMAND_EXIT \
+    }                           \
+    ULONG _err = RETURN_FAIL;   \
+    if (set_open_libraries()) { \
+        _err = CALL_main(_automain); \
+        set_close_libraries(); \
+    } \
+    return _err; \
+    } \
+}
+#else
 #define AROS_SHCOMMAND_INIT
 
 #define AROS_SHCOMMAND_EXIT \
     }                       \
 }
+#endif
 
 #define __DEF(x...) {x}
 
