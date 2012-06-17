@@ -27,6 +27,7 @@
 #define AG_ProcCreate 0x000B0000
 
 /* 680x0 */
+#define ACPU_AbsExecBase 0x80000001     /* AbsExecBase changed */
 #define ACPU_BusErr     0x80000002
 #define ACPU_AddressErr 0x80000003
 #define ACPU_InstErr    0x80000004
