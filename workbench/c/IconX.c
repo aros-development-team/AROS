@@ -77,7 +77,7 @@
 #define DEFWAIT   (2 * 50) // two seconds
 #define DEFUSHELL (TRUE)
 
-#define BASECOMMAND "C:Run QUIET EXECUTE "
+#define BASECOMMAND "EXECUTE "
 
 const TEXT version[] = "\0$VER: IconX 41.3 (23.1.2012)";
 int __forceerrorrequester = 1;
