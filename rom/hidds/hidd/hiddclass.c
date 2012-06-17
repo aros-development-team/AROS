@@ -553,7 +553,7 @@ static int init_hiddclass(LIBBASETYPEPTR lh)
     /* If you are not running from ROM, don't use Alert() */
 
     csd = &lh->hd_csd;
-    csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    csd->cs_UtilityBase = OpenLibrary("utility.library", 36);
     if (!csd->cs_UtilityBase)
         return FALSE;
 
