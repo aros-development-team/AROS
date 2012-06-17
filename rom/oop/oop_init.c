@@ -45,7 +45,7 @@ static int OOPInit(LIBBASETYPEPTR LIBBASE)
 {
     D(bug("Enter OOPInit\n"));
 
-    LIBBASE->ob_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY);
+    LIBBASE->ob_UtilityBase = OpenLibrary("utility.library",36);
     if (!LIBBASE->ob_UtilityBase)
         return FALSE;
 
