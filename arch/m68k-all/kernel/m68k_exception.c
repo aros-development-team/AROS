@@ -22,7 +22,7 @@
 /* Here's how it's all laid out on the Amiga
  *    M68K Exception
  *      0	Reset: Initial SP
- *      1	Reset: Initial PC (NOTE: Really is SysBase!)
+ *      1	Reset: Initial PC (NOTE: Really is AbsExecBase!)
  *      2	Bus Error
  *      3	Address Error
  *      4	Illegal Instruction
@@ -69,7 +69,7 @@
  *      47	TRAP #15
  *      48	-
  *      ..
- *      63	-
+ *      63	AbsExecBase (copy)
  *      64	User 1
  *      ..
  *      255	User 191
@@ -244,7 +244,7 @@ asm (
 	"	move.l	%usp,%a0\n"
 	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
-	"	move.l	0x3fc, %a6\n"		// Global SysBase copy in trap[255]
+	"	move.l	0xfc, %a6\n"		// Global SysBase copy in exception[63]
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
 	"	move.l	%d1, %sp@-\n"		// Push Exception Id
 	"	move.l	%d0, %sp@-\n"		// Push regs_t *
@@ -395,11 +395,11 @@ void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBa
 	    M68KExceptionInit_00(SysBase);
 	}
 
-	/* Initialize exception[255] to a copy of this
+	/* Initialize exception[63] to a copy of this
 	 * 'known good' SysBase. This is used to
 	 * help determine if NULL has been written upon.
 	 */
-	exception[255] = (IPTR)SysBase;
+	exception[63] = (IPTR)SysBase;
 
 	if ((ULONG)Table & 1) {
 	    /* Exception Table must be UWORD aligned! */
