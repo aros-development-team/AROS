@@ -261,7 +261,7 @@ OOP_Object *PCIMediator__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_Ne
         { TAG_DONE, 0 }
     };
 
-    if (!(ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+    if (!(ExpansionBase = OpenLibrary("expansion.library",33))) {
         OOP_DisposeObject(o);
         return NULL;
     }

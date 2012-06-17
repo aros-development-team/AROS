@@ -162,7 +162,7 @@ OOP_Object *PCIPrometheus__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_
         { TAG_DONE, 0 }
     };
 
-    if (!(ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
+    if (!(ExpansionBase = OpenLibrary("expansion.library",33))) {
         OOP_DisposeObject(o);
         return NULL;
     }
