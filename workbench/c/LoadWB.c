@@ -18,16 +18,14 @@
 
 /* Very minimal C:LoadWB */
 
-const TEXT version[] = "$VER: LoadWB 42.1 (29.7.2011)";
+const TEXT version[] = "$VER: LoadWB 42.2 (16.6.2012)";
 
-int __nocommandline = 1;
-
-int main(void)
+int __startup _main(void)
 {
-    struct WorkbenchBase *WorkbenchBase = TaggedOpenLibrary(TAGGEDOPEN_WORKBENCH);
+    struct Library *WorkbenchBase = OpenLibrary("workbench.library", 0);
     if (WorkbenchBase) {
     	StartWorkbench(0, NULL);
-    	CloseLibrary((struct Library*)WorkbenchBase);
+    	CloseLibrary(WorkbenchBase);
     }
     return 0;
 }
