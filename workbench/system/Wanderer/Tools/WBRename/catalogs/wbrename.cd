@@ -6,16 +6,16 @@ MSG_DESCRIPTION (//)
 Renames files and drawers
 ;
 MSG_COPYRIGHT (//)
-©2006, AROS Dev Team
+©2012, AROS Dev Team
 ;
 MSG_WINDOW_TITLE (//)
 Rename
 ;
 MSG_LINE (//)
-Enter a new name for:
+Enter a new name for: '%s'
 ;
 MSG_NAME (//)
-\33bNew name:\33n 
+\33bNew name: \33n
 ;
 MSG_OK (//)
 _OK

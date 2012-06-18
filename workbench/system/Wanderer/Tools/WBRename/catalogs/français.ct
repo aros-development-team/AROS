@@ -1,5 +1,5 @@
-## version $VER: XX.catalog XX.XX ($TODAY)
-## language X
+## version $VER: WBRename.catalog 2.0 (05.01.2012)
+## language français
 ## codeset 0
 ;
 ;
@@ -12,20 +12,20 @@ Renomme fichiers et répertoires
 ; Renames files and drawers
 ;
 MSG_COPYRIGHT
-@2006, AROS Dev Team
-; ©2006, AROS Dev Team
+@2012, AROS Dev Team
+; ©2012, AROS Dev Team
 ;
 MSG_WINDOW_TITLE
 Renommer
 ; Rename
 ;
 MSG_LINE
-Entrez un nouveau nom
-; Enter a new name for:
+Entrez un nouveau nom pour '%s'
+; Enter a new name for: '%s'
 ;
 MSG_NAME
-\33bNouveau nom :\33n 
-; \33bNew name:\33n 
+\33bNouveau nom : \33n
+; \33bNew name: \33n
 ;
 MSG_OK
 _Ok
@@ -52,7 +52,7 @@ MSG_ILLEGAL_CHARS
 ; '%s' contains illegal characters!
 ;
 MSG_NEEDS_MORE_ARGS
-Cette application nécessite deux arguments ! 
+Cette application nécessite deux arguments !
 ; Need 2 arguments!
 ;
 MSG_INVALID_LOCK
@@ -64,7 +64,7 @@ Cette application ne fonctionne que depuis le Workbench !
 ; Cannot be started from shell!\n
 ;
 MSG_FAILED_CREATE_APP
-Impossible de créer l'application ! 
+Impossible de créer l'application !
 ; Failed to create Application!
 ;
 MSG_OUTOFMEMORY
