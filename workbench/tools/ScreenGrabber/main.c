@@ -13,6 +13,7 @@
 #include <cybergraphx/cybergraphics.h>
 #include <libraries/mui.h>
 #include <libraries/asl.h>
+#include <workbench/startup.h>
 
 #include <proto/alib.h>
 #include <proto/dos.h>
@@ -21,6 +22,7 @@
 #include <proto/cybergraphics.h>
 #include <proto/muimaster.h>
 #include <proto/graphics.h>
+#include <proto/icon.h>
 
 #include <stdio.h>
 #include "locale.h"
@@ -34,6 +36,7 @@ static Object *app, *MainWindow, *ScreenList, *FilenameString, *SaveButton, *Ref
 static Object *Size, *Title, *DefTitle, *Pause, *Hide, *Progress;
 
 static Object *DTImage = NULL;
+static struct DiskObject *disko;
 
 static struct Hook display_hook;
 static struct Hook refresh_hook;
@@ -309,6 +312,7 @@ BOOL GUIInit()
 	    MUIA_Application_Copyright, (IPTR)"© 2004-2006, The AROS Development Team",
 	    MUIA_Application_Author, (IPTR)"Michal Schulz",
 	    MUIA_Application_Description, _(MSG_WINDOW_TITLE),
+        disko ? MUIA_Application_DiskObject : TAG_IGNORE, (IPTR)disko,
 	    MUIA_Application_Base, (IPTR)"SCREENGRABBER",
 
 	    SubWindow, MainWindow = WindowObject,
@@ -423,8 +427,24 @@ BOOL GUIInit()
     return retval;
 }
 
-int main()
+int main(int argc, char **argv)
 {
+    static struct WBStartup *wbstartup;
+    static struct WBArg *wb_arg;
+    static STRPTR cxname;
+    int result = RETURN_OK;
+    if (argc)
+    {
+        cxname=argv[0];
+    }
+    else
+    {
+        wbstartup = (struct WBStartup *)argv;
+        wb_arg    = wbstartup->sm_ArgList;
+        cxname    = wb_arg->wa_Name;
+    }
+    disko = GetDiskObject(cxname);
+
     display_hook.h_Entry = (APTR)display_function;
     refresh_hook.h_Entry = (APTR)refresh_function;
     select_hook.h_Entry = (APTR)select_function;
@@ -446,8 +466,8 @@ int main()
     else
     {
 	MUI_Request(NULL, NULL, 0, _(MSG_ERROR_TITLE), _(MSG_GAD_OK), _(MSG_ERR_APP), NULL);
-	return RETURN_FAIL;
+    result = RETURN_FAIL;
     }
-
-    return RETURN_OK;
+    if (disko) FreeDiskObject(disko);
+    return result;
 }
