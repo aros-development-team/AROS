@@ -1,0 +1,101 @@
+## version $VER: printerprefs.catalog 1.0 (10.2.2012)
+## language français
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Impossible d'ouvrir %s V%ld!\n
+;Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Impossible de vérouiller l'écran public !
+;Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Impossible d'obtenir DrawInfo !
+;Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Imposible d'obtenir VisualInfo !
+;Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Impossible de créer les gadgets !
+;Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Impossible de créer les menus !
+;Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Impossible de créer la fenêtre !
+;Can't create window!
+;
+MSG_WINTITLE
+Préférences d'impression
+;Printer Preferences
+;
+MSG_MEN_PROJECT
+Projet
+;Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Ouvrir...
+;O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Sauver sous...
+;A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Quitter
+;Q\0Quit
+;
+MSG_MEN_EDIT
+Modifier
+;Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Valeurs par défaut
+;D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Dernier sauvé
+;L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Restaurer
+;R\0Restore
+;
+MSG_MEN_SETTINGS
+Paramètres
+;Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Créer des icônes ?
+;I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Charger des préférences
+;Load Printer Preferences
+;
+MSG_ASL_SAVE_TITLE
+Sauver les préférences
+;Save Printer Preferences
+;
+MSG_OK
+Ok
+;Ok
+;
+MSG_GAD_SAVE
+Sauver
+;Save
+;
+MSG_GAD_USE
+Utiliser
+;Use
+;
+MSG_GAD_CANCEL
+Annuler
+;Cancel
+;
