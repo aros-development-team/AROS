@@ -8,7 +8,10 @@ EXEDIR := \
 
 ICONS := WBRename
 
-%build_icons mmake=workbench-system-wanderer-tools-wbrename-icons icons=$(ICONS) \
+#MM- workbench-system-wanderer-tools-wbrename-icons : workbench-system-wanderer-tools-wbrename-$(AROS_TARGET_ICONSET)-icons
+
+%build_icons mmake=workbench-system-wanderer-tools-wbrename-$(AROS_TARGET_ICONSET)-icons icons=$(ICONS) \
+             image=$(ICONS)_$(AROS_TARGET_ICONSET).png \
              dir=$(EXEDIR)
 
 %common
