@@ -242,11 +242,7 @@ asm (
 	"	move.l	%usp,%a0\n"
 	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
-<<<<<<< HEAD
-	"	move.l	0xfc, %a6\n"		// Global SysBase copy in exception[63]
-=======
 	"	move.l	4, %a6\n"		// Global SysBase
->>>>>>> parent of 71c3da9... m68k: Allow detection and debugging of a clobbered global SysBase
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
 	"	move.l	%d1, %sp@-\n"		// Push Exception Id
 	"	move.l	%d0, %sp@-\n"		// Push regs_t *
