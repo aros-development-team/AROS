@@ -57,6 +57,7 @@
 #include <libraries/mui.h>
 #include <zune/customclasses.h>
 #include <devices/clipboard.h>
+#include <workbench/startup.h>
 
 #include <proto/muimaster.h>
 #include <proto/locale.h>
@@ -66,6 +67,7 @@
 #include <proto/alib.h>
 #include <proto/commodities.h>
 #include <proto/utility.h>
+#include <proto/icon.h>
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -113,6 +115,7 @@ static struct IOClipReq *CBOpen(ULONG unit);
 static void CBClose(struct IOClipReq *ior);
 static BOOL CBWriteFTXT(struct IOClipReq *ior, CONST_STRPTR string);
 static BOOL CBWriteLong(struct IOClipReq *ior, LONG *ldata);
+static struct DiskObject *disko;
 
 /*** ASCIITable class *******************************************************/
 
@@ -438,6 +441,10 @@ static void GetArguments(int argc, char **argv)
     static struct RDArgs *myargs;
     static IPTR args[NUM_ARGS];
     static UBYTE **wbargs;
+    static STRPTR cxname;
+    static struct WBStartup *argmsg;
+    static struct WBArg *wb_arg;
+
     if (argc)
     {
         if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
@@ -456,9 +463,13 @@ static void GetArguments(int argc, char **argv)
         }
         if (args[ARG_CXPOPUP]) cx_popup = TRUE;
         FreeArgs(myargs);
+        cxname = argv[0];
     }
     else
     {
+        argmsg = (struct WBStartup *)argv;
+        wb_arg = argmsg->sm_ArgList;
+        cxname = wb_arg->wa_Name;
         wbargs = ArgArrayInit(argc, (UBYTE**)argv);
         cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
         cx_popkey = StrDup(ArgString(wbargs, "CX_POPKEY", DEF_POPKEY));
@@ -469,6 +480,7 @@ static void GetArguments(int argc, char **argv)
         ArgArrayDone();
     }
     D(bug("ASCIITable Arguments pri %d popkey %s popup %d\n", cx_pri, cx_popkey, cx_popup));
+    disko = GetDiskObject(cxname);
 }
 
 /****************************************************************************/
@@ -595,6 +607,7 @@ static void MakeGUI(void)
         MUIA_Application_Base, (IPTR)"ASCIITABLE",
         MUIA_Application_SingleTask, TRUE,
         MUIA_Application_Menustrip, (IPTR)menu,
+        MUIA_Application_DiskObject, (IPTR)disko,
         SubWindow, (IPTR)(wnd = (Object *)WindowObject,
             MUIA_Window_Title, (IPTR)wintitle,
             MUIA_Window_ID, MAKE_ID('A', 'I', 'T', 'B'),
@@ -673,6 +686,7 @@ static void Cleanup(CONST_STRPTR txt)
 {
     MUI_DisposeObject(app);
     FreeVec(cx_popkey);
+    FreeDiskObject(disko);
     if (txt)
     {
         showSimpleMessage(txt);

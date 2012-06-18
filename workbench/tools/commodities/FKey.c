@@ -150,6 +150,7 @@ static void RethinkKey(struct KeyInfo *ki);
 static void SaveSettings(void);
 static WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext);
 static void StringToKey(void);
+static struct DiskObject *disko;
 
 /*********************************************************************************************/
 
@@ -183,6 +184,7 @@ static void Cleanup(CONST_STRPTR msg)
     }
     
     KillGUI();
+    FreeDiskObject(disko);
     FreeArguments();
     KillCX();
     CleanupLocale();
@@ -299,6 +301,8 @@ static void KillGUI(void)
 
 static void GetArguments(int argc, char **argv)
 {
+    static struct WBArg *wb_arg;
+    static STRPTR cxname;
     if (argc)
     {
     	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
@@ -310,10 +314,13 @@ static void GetArguments(int argc, char **argv)
 	if (args[ARG_CXPRI]) cx_pri = (LONG)*(IPTR *)args[ARG_CXPRI];
 	if (args[ARG_CXPOPKEY]) cx_popkey = (STRPTR)args[ARG_CXPOPKEY];
 	if (args[ARG_CXPOPUP]) cx_popup = TRUE;
+    cxname=argv[0];
     }
     else
     {
     	wbstartup = (struct WBStartup *)argv;
+        wb_arg    = wbstartup->sm_ArgList;
+        cxname    = wb_arg->wa_Name;
     	wbargs = ArgArrayInit(argc, (UBYTE **)argv);
 
 	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
@@ -323,7 +330,8 @@ static void GetArguments(int argc, char **argv)
 	{
 	    cx_popup = TRUE;
 	}
-    }    
+    }
+    disko = GetDiskObject(cxname);
 }
 
 /*********************************************************************************************/
@@ -464,6 +472,7 @@ static void MakeGUI(void)
 	MUIA_Application_Base, (IPTR)"FKey",
 	MUIA_Application_SingleTask, TRUE,
 	menu ? MUIA_Application_Menustrip : TAG_IGNORE, menu,
+    MUIA_Application_DiskObject, (IPTR)disko,
   	SubWindow, wnd = WindowObject,
 	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_ID, MAKE_ID('F','W','I','N'),
