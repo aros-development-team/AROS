@@ -2563,7 +2563,7 @@ endif
 #MM
 %(mmake) :
 	$(FETCH) -ao "%(archive_origins)" -a %(archive) -s "%(suffixes)" -l $(%(mmake)-location) \
-        -d %(destination) -po "%(patches_origins)" -p %(patches_specs)
+        -d %(destination) -po "%(patches_origins)" -p "%(patches_specs)"
 %end
 #------------------------------------------------------------------------------
 
@@ -2698,7 +2698,7 @@ else
 endif
 
 ifeq (%(patch),yes)
-    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-p1
+    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-f,-p1
 else
     %(mmake)-%(subpackage)-patches_specs := ::
 endif
