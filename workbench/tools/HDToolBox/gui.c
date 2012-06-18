@@ -1364,7 +1364,7 @@ AROS_UFH3(void, createml_function,
 
 		    Close(file);
 		    
-		    icon = GetDiskObject("ENV:Sys/def_Mountlist");
+		    icon = GetDiskObject("ENVARC:Sys/def_Mountlist");
 		    if (icon)
 		    {
 			PutDiskObject(pathname, icon);
