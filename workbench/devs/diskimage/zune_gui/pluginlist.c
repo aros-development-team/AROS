@@ -52,8 +52,8 @@ struct PluginListData {
 };
 
 static CONST CONST_STRPTR image_name[PLUG_ICO_MAX] = {
-	"list_plugin",
-	"list_checkmark"
+	"Plugin",
+	"Checkmark"
 };
 static TEXT image_str[PLUG_ICO_MAX][16];
 
