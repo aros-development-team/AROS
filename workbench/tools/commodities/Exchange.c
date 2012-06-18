@@ -60,6 +60,7 @@
 #include <aros/symbolsets.h>
 #include <libraries/iffparse.h>
 #include <libraries/mui.h>
+#include <workbench/startup.h>
 #include <proto/muimaster.h>
 #include <proto/locale.h>
 #include <proto/intuition.h>
@@ -69,6 +70,7 @@
 #include <proto/alib.h>
 #include <proto/commodities.h>
 #include <proto/utility.h>
+#include <proto/icon.h>
 
 #define CATCOMP_ARRAY
 #include "strings.h"
@@ -121,6 +123,7 @@ static void MakeGUI(void);
 static void showSimpleMessage(CONST_STRPTR msgString);
 static void update_list(void);
 static CONST_STRPTR _(ULONG id);
+static struct DiskObject *disko;
 
 /*********************************************************************************************/
 
@@ -176,6 +179,9 @@ static void GetArguments(int argc, char **argv)
     static struct RDArgs *myargs;
     static IPTR args[NUM_ARGS];
     static UBYTE **wbargs;
+    static struct WBStartup *argmsg;
+    static struct WBArg *wb_arg;
+    static STRPTR cxname;
     if (argc)
     {
 	if (!(myargs = ReadArgs(ARG_TEMPLATE, args, NULL)))
@@ -194,9 +200,13 @@ static void GetArguments(int argc, char **argv)
 	}
 	if (args[ARG_CXPOPUP]) cx_popup = TRUE;
 	FreeArgs(myargs);
+    cxname = argv[0];
     }
     else
     {
+        argmsg = (struct WBStartup *)argv;
+        wb_arg = argmsg->sm_ArgList;
+        cxname = wb_arg->wa_Name;
 	wbargs = ArgArrayInit(argc, (UBYTE**)argv);
 	cx_pri = ArgInt(wbargs, "CX_PRIORITY", 0);
 	cx_popkey = StrDup(ArgString(wbargs, "CX_POPKEY", DEF_POPKEY));
@@ -207,6 +217,7 @@ static void GetArguments(int argc, char **argv)
 	ArgArrayDone();
     }
     D(bug("Exchange Arguments pri %d popkey %s popup %d\n", cx_pri, cx_popkey, cx_popup));
+    disko = GetDiskObject(cxname);
 }
 
 /*********************************************************************************************/
@@ -426,6 +437,7 @@ static void MakeGUI(void)
 	MUIA_Application_Base, (IPTR)"EXCHANGE",
 	MUIA_Application_SingleTask, TRUE,
 	MUIA_Application_Menustrip, (IPTR)menu,
+    MUIA_Application_DiskObject, (IPTR)disko,
 	SubWindow, (IPTR)(wnd = (Object *)WindowObject,
 	    MUIA_Window_Title, (IPTR)wintitle,
 	    MUIA_Window_ID, MAKE_ID('E', 'X', 'C', 'H'),
@@ -558,6 +570,7 @@ static void Cleanup(CONST_STRPTR txt)
     MUI_DisposeObject(app);
     FreeVec(cx_popkey);
     FreeBrokerList(&brokerList);
+    FreeDiskObject(disko);
     if (txt)
     {
 	showSimpleMessage(txt);
