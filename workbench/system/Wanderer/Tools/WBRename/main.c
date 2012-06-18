@@ -38,6 +38,7 @@ static Object *app, *window, *bt_ok, *bt_cancel, *str_name;
 static struct Hook bt_ok_hook;
 static BPTR parentlock = (BPTR)-1;
 static STRPTR oldname;
+static TEXT str_line[256];
 static BPTR oldlock = (BPTR)-1;
 static STRPTR illegal_chars = "/:";
 
@@ -81,6 +82,7 @@ int main(int argc, char **argv)
 static void MakeGUI(void)
 {
     bt_ok_hook.h_Entry = (APTR)bt_ok_hook_function;
+    sprintf(str_line, _(MSG_LINE), oldname);
     app = (Object *)ApplicationObject,
     MUIA_Application_Title      , __(MSG_TITLE),
     MUIA_Application_Version    , (IPTR) versionstring,
@@ -92,16 +94,19 @@ static void MakeGUI(void)
     MUIA_Application_UseRexx, FALSE,
         SubWindow, (IPTR)(window = (Object *)WindowObject,
             MUIA_Window_Title, __(MSG_WINDOW_TITLE),
+            MUIA_Window_ID, MAKE_ID('W','B','R','N'),
             MUIA_Window_Width, MUIV_Window_Width_Visible(33),  // Set width at least as 33% of visible screen
             MUIA_Window_NoMenus, TRUE,
             MUIA_Window_CloseGadget, FALSE,
             WindowContents, (IPTR) (VGroup,
             MUIA_Frame, MUIV_Frame_Group,
             Child, (IPTR) (HGroup,
-                Child, (IPTR) HVSpace,               
-                Child, (IPTR) Label2(__(MSG_LINE)),   
-                Child, (IPTR) Label2(oldname),       // FIXME: Instead of two "Label2" would probably be better using a string with %s referring to oldname
-            End),                                    // so that the output looks more like WB 3.1: "Enter a new name for '%s'."  
+                Child, (IPTR) HVSpace,
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_PreParse, (IPTR) "\33r",
+                        MUIA_Text_Contents, (IPTR) str_line,
+                    End,
+            End),
                 Child, (IPTR) (HGroup,
                 Child, (IPTR) Label2(__(MSG_NAME)),
                 Child, (IPTR)(str_name = (Object *)StringObject,
