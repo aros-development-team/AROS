@@ -220,7 +220,7 @@ do_patch()
     
     local patch=`echo "$patch_spec": | cut -d: -f1`
     local subdir=`echo "$patch_spec": | cut -d: -f2`
-    local patch_opt=`echo "$patch_spec": | cut -d: -f3`
+    local patch_opt=`echo "$patch_spec": | cut -d: -f3 | sed -e "s/,/ /gi"`
     
     cd ${subdir:-.}
     
