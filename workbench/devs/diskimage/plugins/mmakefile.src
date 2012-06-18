@@ -25,37 +25,26 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
 # #MM   workbench-devs-diskimage-fdi 
 
 #MM workbench-devs-diskimage-ccd : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
-#MM workbench-devs-diskimage-ciso : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-cpc : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-cue : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
-#MM workbench-devs-diskimage-daa : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
-#MM workbench-devs-diskimage-dax : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
-#MM workbench-devs-diskimage-dmg : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-dms : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-fdi : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-gi  : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-mds : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-nrg : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
-#MM workbench-devs-diskimage-uif : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-xad : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 #MM workbench-devs-diskimage-xpk : includes linklibs workbench-devs-diskimage-device workbench-devs-diskimage-support
 
 #MM- workbench-devs-diskimage-plugins-quick : \
 #MM  workbench-devs-diskimage-ccd-quick \
-#MM  workbench-devs-diskimage-ciso-quick \
 #MM  workbench-devs-diskimage-cpc-quick \
-#MM  workbench-devs-diskimage-daa-quick \
-#MM  workbench-devs-diskimage-dax-quick \
-#MM  workbench-devs-diskimage-dmg-quick \
 #MM  workbench-devs-diskimage-dms-quick \
 #MM  workbench-devs-diskimage-gi-quick \
 #MM  workbench-devs-diskimage-mds-quick \
-#MM  workbench-devs-diskimage-nrg-quick \
-#MM  workbench-devs-diskimage-uif-quick
+#MM  workbench-devs-diskimage-nrg-quick
 
 #MM- workbench-devs-diskimage-plugins-clean : \
 #MM  workbench-devs-diskimage-ccd-clean \
-#MM  workbench-devs-diskimage-ciso-clean \
 #MM  workbench-devs-diskimage-cpc-clean \
 #MM  workbench-devs-diskimage-cue-clean \
 #MM  workbench-devs-diskimage-daa-clean \
@@ -75,7 +64,7 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="stub_aros ciso" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="stub_aros cpc" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
