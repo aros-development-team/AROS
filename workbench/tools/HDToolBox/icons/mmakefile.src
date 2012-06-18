@@ -1,0 +1,10 @@
+# Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+# $Id: mmakefile.src 43322 2011-12-29 15:53:24Z olivieradam $
+
+include $(TOP)/config/make.cfg
+
+ICONS := def_Mountlist
+
+#MM- iconset-Gorilla-icons-aros-prefs-envarc : iconset-Gorilla-icons-aros-prefs-envarc-mountlist
+%build_icons mmake=iconset-Gorilla-icons-aros-prefs-envarc-mountlist icons=$(ICONS) \
+             dir=$(AROS_ENVARC)/SYS
