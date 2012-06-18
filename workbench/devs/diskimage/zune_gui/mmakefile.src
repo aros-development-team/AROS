@@ -1,8 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+DIGFX  := digfx
+
 #MM workbench-devs-diskimage-gui : includes linklibs workbench-devs-diskimage-support \
-#MM workbench-devs-diskimage-device workbench-devs-diskimage-gui-catalogs
+#MM workbench-devs-diskimage-device workbench-devs-diskimage-gui-catalogs \
+#MM workbench-devs-diskimage-gfx
 
 CFILES := locale main gui drivelist pluginlist driveops requesters images
 
@@ -11,5 +14,8 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_prog mmake=workbench-devs-diskimage-gui progname=DiskImageGUI files=$(CFILES) \
     targetdir=$(AROS_SYSTEM) uselibs="mui diskimagesupport"
+
+%copy_dir_recursive mmake=workbench-devs-diskimage-gfx \
+	src=$(DIGFX) dst=$(AROS_IMAGES)/$(DIGFX)
 
 %common
