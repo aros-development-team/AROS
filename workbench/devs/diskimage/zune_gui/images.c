@@ -39,9 +39,8 @@ static BPTR FileExists (CONST_STRPTR dir, CONST_STRPTR file, STRPTR path, int32 
 
 BOOL FindImage (CONST_STRPTR image, STRPTR path, int32 path_size) {
 	return FileExists("PROGDIR:", image, path, path_size)
-		|| FileExists("PROGDIR:Images", image, path, path_size)
-		|| FileExists("SYS:Prefs/Presets/Images", image, path, path_size)
-		|| FileExists("TBImages:", image, path, path_size);
+		|| FileExists("PROGDIR:Images/digfx", image, path, path_size)
+            || FileExists("IMAGES:digfx", image, path, path_size);
 }
 
 Object *LoadImage (CONST_STRPTR image, const struct TagItem *tags) {
