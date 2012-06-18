@@ -13,8 +13,6 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 
-#define AbsExecBase     (*((APTR *)4))
-
 #include "exec_intern.h"
 
 #include "m68k_exception.h"
@@ -244,7 +242,11 @@ asm (
 	"	move.l	%usp,%a0\n"
 	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
 	"	move.l	%sp,%d0\n"		// regs_t
+<<<<<<< HEAD
 	"	move.l	0xfc, %a6\n"		// Global SysBase copy in exception[63]
+=======
+	"	move.l	4, %a6\n"		// Global SysBase
+>>>>>>> parent of 71c3da9... m68k: Allow detection and debugging of a clobbered global SysBase
 	"	move.l	%a6, %sp@-\n"		// Push SysBase
 	"	move.l	%d1, %sp@-\n"		// Push Exception Id
 	"	move.l	%d0, %sp@-\n"		// Push regs_t *
@@ -319,16 +321,6 @@ void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
     	Handler = NULL;
     }
 
-    if (SysBase != AbsExecBase) {
-        /* Looks like someone trashed low memory.
-         * Let's put our 'known good' copy of SysBase
-         * into AbsExecBase.
-         */
-        AbsExecBase = SysBase;
-        D(bug("FATAL: AbsExecBase has changed unexpectedly!\n"));
-        M68KExceptionHandler(regs, 1, SysBase);
-    }
-
 #ifdef AROS_DEBUG_STACK
     if (KernelBase != NULL) {	// Prevents early failure
 	if (regs->sr & 0x2000) {
@@ -394,12 +386,6 @@ void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBa
 	} else {
 	    M68KExceptionInit_00(SysBase);
 	}
-
-	/* Initialize exception[63] to a copy of this
-	 * 'known good' SysBase. This is used to
-	 * help determine if NULL has been written upon.
-	 */
-	exception[63] = (IPTR)SysBase;
 
 	if ((ULONG)Table & 1) {
 	    /* Exception Table must be UWORD aligned! */
