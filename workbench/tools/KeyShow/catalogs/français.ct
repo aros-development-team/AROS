@@ -1,0 +1,96 @@
+## version $VER: KeyShow.catalog 1.1 (26.02.2012)
+## language français
+## codeset 0
+;
+MSG_AppDescription
+Disposition du clavier
+;Show Keyboard Layout
+;
+MSG_AppCopyright
+Copyright © 2012 The AROS Development Team
+;
+MSG_WI_TITLE
+KeyShow
+;
+MSG_OK
+_OK
+;
+; Error messages
+;
+MSG_ERR
+Erreur
+;Error
+;
+MSG_ERR_NO_APPLICATION
+Impossible de créer l'application
+;Can't create application
+;
+MSG_ERR_NO_MEM
+Plus de mémoire
+;Out of memory
+;
+; Key descriptions
+;
+MSG_KEY_SHIFT
+Shift
+;
+MSG_KEY_CTRL
+Ctrl
+;
+MSG_KEY_ALT
+Alt
+;
+MSG_KEY_LOCK
+Verrou
+;
+MSG_KEY_HELP
+Aide
+;
+MSG_KEY_A
+A
+;
+MSG_KEY_INSERT
+Insérer
+;
+MSG_KEY_HOME
+Home
+;
+MSG_KEY_PAGEUP
+Page ^
+;
+MSG_KEY_DELETE
+Effacer
+;
+MSG_KEY_END
+Fin
+;
+MSG_KEY_PAGEDOWN
+Page v
+;
+MSG_KEY_NUM
+Num
+;
+MSG_KEY_RETURN
+^M
+;
+MSG_KEY_BACKSP
+^H
+;
+MSG_KEY_TAB
+^I
+;
+MSG_KEY_ESC
+^[
+;
+MSG_KEY_NUM_ENTER
+^M
+;
+MSG_KEY_PRTSCREEN
+Imp écr
+;
+MSG_KEY_SCRLOCK
+arr déf
+;
+MSG_KEY_PAUSE
+Pause
+;
