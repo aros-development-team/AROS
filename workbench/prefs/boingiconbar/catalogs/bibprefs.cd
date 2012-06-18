@@ -29,3 +29,6 @@ Add program
 MSG_DEL_P (//)
 Del program
 ;
+MSG_OK (//)
+OK
+;
