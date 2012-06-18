@@ -25,7 +25,7 @@ VOID ShowMessage(CONST_STRPTR msg)
             es.es_Flags        = 0;
             es.es_Title        = (CONST_STRPTR) "BIB";
             es.es_TextFormat   = (CONST_STRPTR) msg;
-            es.es_GadgetFormat = "OK"; // _(MSG_OK); FIXME: localize me
+            es.es_GadgetFormat = _(MSG_OK);
 
             EasyRequestArgs(NULL, &es, NULL, NULL); /* win=NULL -> wb screen */
         }
