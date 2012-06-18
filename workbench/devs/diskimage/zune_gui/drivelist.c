@@ -55,9 +55,9 @@ struct DriveListData {
 };
 
 static CONST CONST_STRPTR image_name[DRIVE_ICO_MAX] = {
-	"list_disk",
-	"list_cd",
-	"list_crypt"
+	"Disk",
+	"CD",
+	"Crypt"
 };
 static TEXT image_str[DRIVE_ICO_MAX][16];
 
