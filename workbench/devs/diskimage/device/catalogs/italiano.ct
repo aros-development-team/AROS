@@ -1,0 +1,103 @@
+## version $VER: diskimagedevice.catalog 1.18 (21.02.2012)
+## codeset 0
+## language italiano
+## chunk AUTH Translated by Samir Hawamdeh (http://www.betatesting.it/backforthefuture)
+;
+; Compiled with FlexCat 2.9 PPC (AmigaOS4)
+;
+MSG_OK_GAD
+_Ok
+; _Ok
+;
+MSG_CANCEL_GAD
+_Annulla
+; _Cancel
+;
+MSG_PASSWORD_REQ
+Inserisci password:
+; Enter password:
+;
+MSG_NOZLIB
+La libreria z.library è necessaria
+; z.library required
+;
+MSG_NOCAPSDEV
+Il file capsimage.device è necessario
+; capsimage.device required
+;
+MSG_CANCELED
+Operazione annullata
+; operation canceled
+;
+MSG_NOPASSWD
+Password necessaria
+; password required
+;
+MSG_WRONGPASSWD
+Password errata
+; wrong password
+;
+MSG_ZLIBERR
+Errore nella libreria z.library
+; z.library error
+;
+MSG_CAPSERR
+Errore nel file capsimage.device
+; capsimage.device error
+;
+MSG_XPKERR
+Errore nella libreria xpkmaster.library
+; xpkmaster.library error
+;
+MSG_XADERR
+Errore nella libreria xadmaster.library
+; xadmaster.library error
+;
+MSG_UNKNDISKIMGTYPE
+Formato/tipo di immagine del disco non supportato
+; unsupported disk image type/format
+;
+MSG_UNKNCOMPMETHOD
+Modalità di compressione non supportata
+; unsupported compression method
+;
+MSG_EOF
+Inaspettata fine del file
+; unexpected end of file
+;
+MSG_BADDATA
+Il file contiene dei dati corrotti
+; file contains bad data
+;
+MSG_BADCRC
+La verifica CRC sul file ha generato un errore
+; CRC check on file data failed
+;
+MSG_BADCHECKSUM
+Errore di checksum
+; checksum error
+;
+MSG_REQ
+%s necessaria
+; %s required
+;
+MSG_REQVER
+%s v%ld o superiore necessaria
+; %s v%ld or newer required
+;
+MSG_WRONGDAA
+File DAA errato (file multiplo di tipo DAA)
+; wrong DAA file (multi-file DAA)
+;
+MSG_EXPATERR
+Errore nella libreria expat.library
+; expat.library error
+;
+MSG_BZLIBERR
+Errore nella libreria bz2.library
+; bz2.library error
+;
+MSG_UNKNENCRMETHOD
+Modalità di criptazione dati non supportata
+; unsupported encryption method
+;

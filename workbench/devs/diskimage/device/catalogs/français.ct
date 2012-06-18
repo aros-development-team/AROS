@@ -1,0 +1,100 @@
+## version $VER: diskimagedevice.catalog 1.00 (13.06.2012)
+## codeset 0
+## language français
+;
+MSG_OK_GAD
+D'acc_ord
+; D'acc_ord
+;
+MSG_CANCEL_GAD
+_Abandonner
+; _Abandonner
+;
+MSG_PASSWORD_REQ
+Donnez le mot de passe :
+; Donnez le mot de passe :
+;
+MSG_NOZLIB
+La z.library doit être installée
+; La z.library doit être installée
+;
+MSG_NOCAPSDEV
+Le capsimage.device doit être installé
+; Le capsimage.device doit être installé
+;
+MSG_CANCELED
+opération annulée
+; opération annulée
+;
+MSG_NOPASSWD
+mot de passe nécessaire
+; mot de passe nécessaire
+;
+MSG_WRONGPASSWD
+mot de passe erroné
+; mot de passe erroné
+;
+MSG_ZLIBERR
+erreur de la z.library
+; erreur de la z.library
+;
+MSG_CAPSERR
+erreur du capsimage.device
+; erreur du capsimage.device
+;
+MSG_XPKERR
+erreur de la xpkmaster.library
+; erreur de la xpkmaster.library
+;
+MSG_XADERR
+erreur de la xadmaster.library
+; erreur de la xadmaster.library
+;
+MSG_UNKNDISKIMGTYPE
+type/format d'image disque non supporté
+; type/format d'image disque non supporté
+;
+MSG_UNKNCOMPMETHOD
+méthode de compression non supportée
+; méthode de compression non supportée
+;
+MSG_EOF
+fin de fichier inattendue
+; fin de fichier inattendue
+;
+MSG_BADDATA
+le fichier contient des données corrompues
+; le fichier contient des données corrompues
+;
+MSG_BADCRC
+échec de la vérification CRC des données du fichier
+; échec de la vérification CRC des données du fichier
+;
+MSG_BADCHECKSUM
+erreur de checksum
+; erreur de checksum
+;
+MSG_REQ
+%s demandé
+; %s demandé
+;
+MSG_REQVER
+%s v%ld ou plus récente demandée
+; %s v%ld ou plus récente demandée
+;
+MSG_WRONGDAA
+mauvais fichier DAA (fichier multiple DAA)
+; mauvais fichier DAA (fichier multiple DAA)
+;
+MSG_EXPATERR
+erreur de l'expat.library
+; erreur de l'expat.library
+;
+MSG_BZLIBERR
+erreur de la bz2.library
+; erreur de la bz2.library
+;
+MSG_UNKNENCRMETHOD
+méthode de cryptage inconnue
+; méthode de cryptage inconnue
+;
