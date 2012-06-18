@@ -108,6 +108,7 @@ BOOL CreateGUI (void) {
 		MUIA_Application_SingleTask,			TRUE,
 		MUIA_Application_BrokerPri,				TTInteger(Icon, "CX_PRIORITY", 0),
 		MUIA_Application_BrokerHook,			&BrokerHook,
+        MUIA_Application_Base,                  (IPTR)"DISKIMAGE",
 		MUIA_Application_DiskObject,			Icon,
 		SubWindow,								Gui.wnd[WID_MAIN] = WindowObject,
 			MUIA_Window_ID,						MAKE_ID('M','A','I','N'),
@@ -119,23 +120,23 @@ BOOL CreateGUI (void) {
 				Child,							HGroup,
 					GroupFrame,
 					Child,						Gui.gad[GID_INSERT] = MakeImageButton(
-												"tapeinsert",
+												"Insert",
 												GetString(&LocaleInfo, MSG_INSERT_GAD),
 												TRUE),
 					Child,						Gui.gad[GID_EJECT] = MakeImageButton(
-												"tapeeject",
+												"Eject",
 												GetString(&LocaleInfo, MSG_EJECT_GAD),
 												TRUE),
 					Child,						Gui.gad[GID_WRITEPROTECT] = MakeImageButton(
-												"protectdrive",
+												"Protect",
 												GetString(&LocaleInfo, MSG_WRITEPROTECT_GAD),
 												TRUE),
 					Child,						Gui.gad[GID_SETDEVICETYPE] = MakeImageButton(
-												"prefs",
+												"Prefs",
 												GetString(&LocaleInfo, MSG_SETDEVICETYPE_GAD),
 												TRUE),
 					Child,						Gui.gad[GID_REFRESH] = MakeImageButton(
-												"refresh",
+												"Refresh",
 												GetString(&LocaleInfo, MSG_REFRESH_GAD),
 												FALSE),
 					Child,						RectangleObject,
