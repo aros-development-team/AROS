@@ -3,15 +3,15 @@
 
 include $(TOP)/config/make.cfg
 
-EXEDIR := \
-    $(AROS_WANDERER)/Tools
-
 ICONS := WBRename
 
-#MM- workbench-system-wanderer-tools-wbrename-icons : workbench-system-wanderer-tools-wbrename-$(AROS_TARGET_ICONSET)-icons
+#MM workbench-system-wanderer-tools-wbrename-icons :
+%build_icons mmake=workbench-system-wanderer-tools-wbrename-icons icons=$(ICONS) \
+             dir=$(AROS_WANDERER)/Tools
 
-%build_icons mmake=workbench-system-wanderer-tools-wbrename-$(AROS_TARGET_ICONSET)-icons icons=$(ICONS) \
-             image=$(ICONS)_$(AROS_TARGET_ICONSET).png \
-             dir=$(EXEDIR)
+#MM iconset-Gorilla-workbench-system-wanderer-tools-wbrename :
+%build_icons mmake=iconset-Gorilla-workbench-system-wanderer-tools-wbrename icons=$(ICONS) \
+			 image=$(ICONS)_Gorilla.png \
+		     dir=$(AROS_WANDERER)/Tools
 
 %common
