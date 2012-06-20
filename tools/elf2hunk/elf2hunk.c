@@ -534,9 +534,12 @@ static int relocate
         {
 
             case SHN_UNDEF:
-                bug("[ELF2HUNK] SHN_UNDEF symbol '%s' unsupported\n", symname);
-                      set_error(EINVAL);
-                return 0;
+                if (ELF_R_TYPE(rel->info) != 0) {
+                    bug("[ELF2HUNK] SHN_UNDEF symbol '%s', type %d unsupported\n", symname, ELF_R_TYPE(rel->info));
+                    set_error(EINVAL);
+                    return 0;
+                }
+                break;
 
             case SHN_COMMON:
                 bug("[ELF2HUNK] SHN_COMMON symbol '%s' unsupported\n", symname);
