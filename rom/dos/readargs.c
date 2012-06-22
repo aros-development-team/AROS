@@ -339,7 +339,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             cs->CS_Length -= delthis;
             ULONG memsize = isize = ibuf = cs->CS_Length;
             iline = (STRPTR) AllocVec(ibuf, MEMF_ANY);
-            CopyMemQuick(cs->CS_Buffer, iline, isize);
+            CopyMem(cs->CS_Buffer, iline, isize);
 
             do
             {
@@ -366,7 +366,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
                         }
 
                         if (iline != NULL)
-                            CopyMemQuick(iline, newiline, isize);
+                            CopyMem(iline, newiline, isize);
 
                         FreeVec(iline);
 
