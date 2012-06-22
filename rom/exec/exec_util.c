@@ -273,7 +273,7 @@ BOOL Exec_ExpandTS(struct Task *task, struct ExecBase *SysBase)
     }
 
     /* This copies most of data. */
-    CopyMemQuick(et_old, et_new, oldsize);
+    CopyMem(et_old, et_new, oldsize);
 
     /* ETask includes lists, and we need to fix up pointers in them now */
     FixList((struct List *)&et_old->et_Children, (struct List *)&et_new->et_Children);
