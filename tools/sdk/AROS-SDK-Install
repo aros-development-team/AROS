@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 export LC_ALL=C
 
@@ -10,25 +10,25 @@ G="\\033[1;32m"
 OK="${G}OK.${N}"
 FAILED="${R}FAILED.${N}"
 
-echo \
+echo -e \
 "${CLR}Welcome to the ${B}AROS SDK${N} installation script!\n"
 
-echo \
+echo -e \
 "You are about to be asked a few ${B}questions${N}, each with a ${B}default${N} answer. This answer is written in ${B}bold${N} characters and put inside square brakets; in order to select it just press <${B}ENTER${N}>, whilst to override it write your own answer and then press <${B}ENTER${N}>.\n"
 
-echo \
+echo -e \
 "Remember that in order for the installation to be successful you need a ${B}gcc${N} compiler, and related ${B}binutils${N}, able to produce ${B}i386-elf${N} executables. If you are running an x86 version of Linux, or an x86 version of any of the *BSD operating system, or an x86 version of BeOS, chances are you already have the compiler installed.\n"
 
-echo \
+echo -e \
 "You can even install the SDK on a non-x86 architecture, provided that the proper crosscompiler is installed in the system.\n"
 
-echo \
+echo -e \
 "If you're ready to start the installation, press <${B}ENTER${N}>\n"
 
 cc=`which gcc 2>/dev/null`
 
 while true; do
-    echo -n "Name of the gcc compiler to use, or path to it [${B}${cc}${N}]: "
+    echo -e -n "Name of the gcc compiler to use, or path to it [${B}${cc}${N}]: "
     read cc_tmp
 
     if test "$cc_tmp" != ""; then
@@ -37,7 +37,7 @@ while true; do
         cc_path=$cc
     fi
 
-    echo -n "Trying ${B}$cc_path${N}... "
+    echo -e -n "Trying ${B}$cc_path${N}... "
     cc_path=`which $cc_path 2>/dev/null`
 
     if test "$cc_path" != ""; then
@@ -48,36 +48,36 @@ while true; do
 
     case $cc_cpu in
         i?86)
-	    echo "$OK"
+	    echo -e "$OK"
 	    cc_cpu=i386
 	    break
 	    ;;
         x86_64)
-	    echo "$OK"
+	    echo -e "$OK"
 	    cc_cpu=x86_64
 	    break
 	    ;;
 	*)
-	    echo "$FAILED"
+	    echo -e "$FAILED"
 
             if test "$cc_path" == ""; then
-                echo "The compiler you specified doesn't seem to exist.\n"
+                echo -e "The compiler you specified doesn't seem to exist.\n"
 	    else
-	        echo "The compiler you specified has been configured for the" \
+	        echo -e "The compiler you specified has been configured for the" \
 		        "${B}$cc_cpu${N} cpu which is not supported by this SDK.\n"
 	    fi
     esac
 done
 cc=$cc_path
 
-echo Checking where the compiler stores its own include files...
+echo -e Checking where the compiler stores its own include files...
 cc_os=`$cc -dumpmachine 2>/dev/null | cut -f2- -d-`
 if echo $cc_os | grep freebsd >/dev/null; then
     cc_include=/usr/include
 else
     cc_include=`dirname \`$cc -print-libgcc-file-name\``/include
 fi
-echo "${B}$cc_include${N}"
+echo -e "${B}$cc_include${N}"
 
 #find out where is the compiler going to search for the verious tools
 cc_programs_path=`gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
@@ -85,22 +85,22 @@ cc_programs_path=`gcc -print-search-dirs | grep "programs: =" | cut -c 12-`
 tools_list="ld nm as ar objcopy objdump objcopy ranlib strip"
 
 for tool in $tools_list; do
-    echo -n "Checking ${B}$tool${N}... "
+    echo -e -n "Checking ${B}$tool${N}... "
 
     tool1=`which \`$cc -print-prog-name=$tool\` 2>/dev/null`
 
     if test "$tool1" != ""; then
-        echo $OK
+        echo -e $OK
         export $tool=$tool1
     else
-        echo $FAILED
-        echo "The compiler cannot access ${B}$tool${N}, or there's no ${B}$tool${N}" \
+        echo -e $FAILED
+        echo -e "The compiler cannot access ${B}$tool${N}, or there's no ${B}$tool${N}" \
 	        "installed. Make sure you have the correct binutils installed properly."
         exit 1
     fi
 done
 
-echo -n "Checking whether ${B}ld${N} supports the ELF format... "
+echo -e -n "Checking whether ${B}ld${N} supports the ELF format... "
 
 ld_emu_all="`$ld -V 2>/dev/null` none"
 
@@ -113,10 +113,10 @@ for ld_emu in $ld_emu_all; do
 done
 
 if test "$ld_emu" != "none"; then
-    echo $OK
+    echo -e $OK
 else
-    echo $FAILED
-    echo "Ld doesnt support the ELF executable format." \
+    echo -e $FAILED
+    echo -e "Ld doesnt support the ELF executable format." \
             "You need to configure the binutils so that they can work on ELF objects."
     exit 1
 fi
@@ -124,7 +124,7 @@ fi
 aros_sdk_path=/usr/local/aros-sdk
 
 while true; do
-    echo -n "Directory in which to install the AROS SDK [${B}${aros_sdk_path}${N}]: "
+    echo -e -n "Directory in which to install the AROS SDK [${B}${aros_sdk_path}${N}]: "
     read aros_sdk_path_tmp
 
     if test "$aros_sdk_path_tmp" != ""; then
@@ -133,8 +133,8 @@ while true; do
 
     while true; do
         if ! test -d $aros_sdk_path; then
-            echo -n "The directory ${B}$aros_sdk_path${N} does not exist, "
-	    echo -n "create it [${B}yes${N}]? "
+            echo -e -n "The directory ${B}$aros_sdk_path${N} does not exist, "
+	    echo -e -n "create it [${B}yes${N}]? "
             read answer
 
             if test "$answer" = "yes" -o "$answer" = ""; then
@@ -146,8 +146,8 @@ while true; do
             fi
 	else
 	    if ! test -d $aros_sdk_path; then
-	        echo "${B}$aros_sdk_path${N} already exists but it's not a directory."
-	        echo "Chose a new name or delete the existing ${B}$aros_sdk_path${N}"
+	        echo -e "${B}$aros_sdk_path${N} already exists but it's not a directory."
+	        echo -e "Chose a new name or delete the existing ${B}$aros_sdk_path${N}"
 	        break 1
 	    else
 	        break 2
@@ -156,7 +156,7 @@ while true; do
     done
 done
 
-echo Making directories...
+echo -e Making directories...
 all_dirs="$aros_sdk_path/${cc_cpu}-aros/include $aros_sdk_path/bin $aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib $aros_sdk_path/${cc_cpu}-aros/bin"
 
 for dir in $all_dirs; do
@@ -165,18 +165,21 @@ for dir in $all_dirs; do
     fi
 done
 
-# patch path in env.h
-sed -i -e "25 c \#define LD_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-ld\"" tools/collect-aros/env.h
-sed -i -e "26 c \#define STRIP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-strip\"" tools/collect-aros/env.h
-sed -i -e "27 c \#define NM_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-nm -C -ul\"" tools/collect-aros/env.h
-sed -i -e "28 c \#define OBJDUMP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-objdump\"" tools/collect-aros/env.h
+# Patch paths in env.h.
+# For LD_NAME we can't use $aros_sdk_path/bin/${cc_cpu}-aros-ld because
+# it would cause a recursion which creates error "Argument list too long".
+# TODO: add a check if /usr/bin/ld really exists
+sed -i -e "35 c \#define LD_NAME \"/usr/bin/ld\"" tools/collect-aros/env.h
+sed -i -e "36 c \#define STRIP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-strip\"" tools/collect-aros/env.h
+sed -i -e "37 c \#define NM_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-nm -C -ul\"" tools/collect-aros/env.h
+sed -i -e "38 c \#define OBJDUMP_NAME \"$aros_sdk_path/bin/${cc_cpu}-aros-objdump\"" tools/collect-aros/env.h
 
 if ! make -s -C tools/collect-aros \
     COLLECT-AROS=$aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib/collect-aros; then
     exit 1;
 fi
 
-echo Building scripts...
+echo -e Building scripts...
 sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld_emu@,$ld_emu,g; s,@cc_include@,$cc_include,g; s,@cc_cpu@,$cc_cpu,g" scripts/specs.in > $aros_sdk_path/${cc_cpu}-aros/lib/gcc-lib/specs
 
 sed "s,@aros_sdk_path@,$aros_sdk_path,g; s,@ld@,$ld,g; s,@nm@,$nm,g; s,@cc@,$cc,g; s,@objdump@,$objdump,g; s,@cc_cpu@,$cc_cpu,g; s,@strip@,$strip,g" scripts/aros-gcc.in >  $aros_sdk_path/${cc_cpu}-aros/bin/gcc
@@ -189,21 +192,21 @@ sed "s,@strip@,$strip,g" scripts/aros-strip.in > $aros_sdk_path/${cc_cpu}-aros/b
 chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/strip
 
 cat <<EOF > AROS-SDK-Uninstall
-#!/bin/sh
-echo "${R}ATTENTION!${N} The AROS SDK is about to be uninstalled."
+#!/bin/bash
+echo -e "${R}ATTENTION!${N} The AROS SDK is about to be uninstalled."
 
 while true; do
-    echo -n "Do you really want to proceed [${B}no${N}]? "
+    echo -e -n "Do you really want to proceed [${B}no${N}]? "
     read answer
 
     if test "\$answer" = "yes"; then
-        echo Uninstalling the AROS SDK...
+        echo -e Uninstalling the AROS SDK...
         rm -Rf $aros_sdk_path/${cc_cpu}-aros $aros_sdk_path/bin/i386-aros-* \$0
         break
     fi
 
     if test "\$answer" = "no" -o "\$answer" = ""; then
-        echo Nothing done
+        echo -e Nothing done
         break;
     fi
 done
@@ -211,7 +214,7 @@ EOF
 
 chmod a+x AROS-SDK-Uninstall
 
-echo Copying files...
+echo -e Copying files...
 ln -sf $as      $aros_sdk_path/${cc_cpu}-aros/bin/as
 ln -sf $ar      $aros_sdk_path/${cc_cpu}-aros/bin/ar
 ln -sf $nm      $aros_sdk_path/${cc_cpu}-aros/bin/nm
@@ -232,4 +235,4 @@ ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/strip   $aros_sdk_path/bin/${cc_cpu}-ar
 cp -a $cc_cpu/lib/*     $aros_sdk_path/${cc_cpu}-aros/lib/
 cp -a $cc_cpu/include/* $aros_sdk_path/${cc_cpu}-aros/include/
 
-echo "\nEverything done. Remember to add ${B}$aros_sdk_path/bin${N} to your ${B}PATH${N} environment variable before using the AROS SDK."
+echo -e "\nEverything done. Remember to add ${B}$aros_sdk_path/bin${N} to your ${B}PATH${N} environment variable before using the AROS SDK."
