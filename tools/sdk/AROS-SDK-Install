@@ -132,7 +132,7 @@ while true; do
     fi
 
     while true; do
-        if ! test -d $aros_sdk_path; then
+        if ! test -e $aros_sdk_path; then
             echo -e -n "The directory ${B}$aros_sdk_path${N} does not exist, "
 	    echo -e -n "create it [${B}yes${N}]? "
             read answer
