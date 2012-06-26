@@ -318,12 +318,6 @@ static int relocate
         switch (shindex)
         {
 
-            case SHN_UNDEF:
-                D(bug("[ELF Loader] Undefined symbol '%s'\n",
-                      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
-                      SetIoErr(ERROR_BAD_HUNK);
-                return 0;
-
             case SHN_COMMON:
                 D(bug("[ELF Loader] COMMON symbol '%s'\n",
                       (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
@@ -354,6 +348,15 @@ static int relocate
                     SysBase_no:  s = sym->value;
             #endif
                 break;
+
+            case SHN_UNDEF:
+                if (ELF_R_TYPE(rel->info) != 0) {
+                    D(bug("[ELF Loader] Undefined symbol '%s'\n",
+                      (STRPTR)sh[SHINDEX(shsymtab->link)].addr + sym->name));
+                    SetIoErr(ERROR_BAD_HUNK);
+                    return 0;
+                }
+                /* fall through */
 
             default:
                 s = (IPTR)sh[SHINDEX(shindex)].addr + sym->value;
