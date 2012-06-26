@@ -77,16 +77,16 @@ static inline void _outl_le(uint32_t val, volatile uint32_t *port) {
 #define inl(a)          _inl((volatile uint32_t *)(a))
 #define inw_be(a)       _inw_be((volatile uint16_t *)(a))
 #define inl_be(a)       _inl_be((volatile uint32_t *)(a))
-#define inw_le(a)       _inw_be((volatile uint16_t *)(a))
-#define inl_le(a)       _inl_be((volatile uint32_t *)(a))
+#define inw_le(a)       _inw_le((volatile uint16_t *)(a))
+#define inl_le(a)       _inl_le((volatile uint32_t *)(a))
 
 #define outb(v,a)          _outb(v,(volatile uint8_t *)(a))
 #define outw(v,a)          _outw(v,(volatile uint16_t *)(a))
 #define outl(v,a)          _outl(v,(volatile uint32_t *)(a))
 #define outw_be(v,a)       _outw_be(v,(volatile uint16_t *)(a))
 #define outl_be(v,a)       _outl_be(v,(volatile uint32_t *)(a))
-#define outw_le(v,a)       _outw_be(v,(volatile uint16_t *)(a))
-#define outl_le(v,a)       _outl_be(v,(volatile uint32_t *)(a))
+#define outw_le(v,a)       _outw_le(v,(volatile uint16_t *)(a))
+#define outl_le(v,a)       _outl_le(v,(volatile uint32_t *)(a))
 
 /* This CPU has special little-endian I/O instructions */
 #define HAVE_LE_IO
