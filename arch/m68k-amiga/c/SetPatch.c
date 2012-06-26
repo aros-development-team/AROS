@@ -20,7 +20,7 @@
  * We can't allow original AOS C:SetPatch to run because it pokes undocumented structures.
  * Check arch/m68k-all/dos/bcpl_patches.c
  */
-const TEXT version[] = "$VER: SetPatch AROS-m68k 41.1 (" ADATE ")\n";
+const TEXT version[] = "$VER: SetPatch AROS-m68k 41.2 (" ADATE ")\n";
 
 int __nocommandline;
 
@@ -54,6 +54,36 @@ static ULONG Check68030MMU(void)
     return ret;
 };
 
+static APTR getvbr(void)
+{
+   register APTR ret asm("%d0");
+   asm volatile (
+	".chip 68010\n"
+	"movec %%vbr,%%d0\n"
+	"rte\n"
+     	: "=r" (ret)
+   );
+   return ret;
+}
+static void setvbr(APTR vbr)
+{
+   asm volatile (
+	".chip 68010\n"
+	"move.l	%0,%%d0\n"
+	"movem.l %%a5/%%a6,-(%%sp)\n"
+	"move.l 4.w,%%a6\n"
+	"lea	1f(%%pc),%%a5\n"
+	"jsr	-0x1e(%%a6)\n"
+	"movem.l (%%sp)+,%%a5/%%a6\n"
+	"bra.s	0f\n"
+	"1:\n"
+	"movec %%d0,%%vbr\n"
+	"rte\n"
+	"0:\n"
+	: : "m" (vbr) : "a5", "a6"
+   );
+}
+
 struct mmuportnode
 {
     struct Node node;
@@ -64,22 +94,45 @@ struct mmuportnode
 
 #define PAGE_SIZE 4096
 
-static void p5stuff (BOOL quiet)
+static void fastvbr(BOOL quiet)
+{
+    APTR oldvbr, newvbr;
+
+    if (!(SysBase->AttnFlags & AFF_68010))
+        return;
+    Disable();
+    oldvbr = (APTR)Supervisor((ULONG_FUNC)getvbr);
+    Enable();
+    if (!oldvbr) {
+        newvbr = AllocMem(1024, MEMF_FAST | MEMF_CLEAR);
+        if (!newvbr)
+            return;
+        CopyMemQuick(oldvbr, newvbr, 1024);
+        Disable();
+        setvbr(newvbr);
+        Enable();
+        oldvbr = newvbr;
+    }
+    if (!quiet)
+        Printf("VBR moved to Fast RAM at %p\n", oldvbr);
+}
+
+static void p5stuff(BOOL quiet)
 {
     APTR KernelBase;
     UBYTE *mmuport;
- 	struct mmuportnode *node;
- 	struct List *list;
- 	
- 	mmuport = (UBYTE*)FindPort("BOOT-MMU-Port");
- 	if (!mmuport)
- 	    return;
- 	if (!quiet)
- 	    Printf("Phase 5 BOOT-MMU-Port found at %p\n", mmuport);
- 	KernelBase = OpenResource("kernel.resource");
-	if (!KernelBase)
-	    return;
-	list = (struct List*)(mmuport + 0x26);
+    struct mmuportnode *node;
+    struct List *list;
+
+    mmuport = (UBYTE*)FindPort("BOOT-MMU-Port");
+    if (!mmuport)
+        return;
+    if (!quiet)
+        Printf("Phase 5 BOOT-MMU-Port found at %p\n", mmuport);
+    KernelBase = OpenResource("kernel.resource");
+    if (!KernelBase)
+        return;
+    list = (struct List*)(mmuport + 0x26);
     ForeachNode(list, node) {
         ULONG addr = node->addr, end;
         ULONG len = node->len; 
@@ -100,17 +153,16 @@ static void mmusetup(BOOL quiet)
 {
     // enable 68040+ data caches and 68060 superscalar mode
     // copyback is also enabled if MMU setup was done by rom code
-    p5stuff(quiet);
     CacheClearU();
     Disable();
     if (SysBase->AttnFlags & AFF_68060) {
         Supervisor((ULONG_FUNC)Enable68060SuperScalar);
     } else if (SysBase->AttnFlags & AFF_68040) {
-	    CacheControl(CACRF_EnableD, CACRF_EnableD);
+        CacheControl(CACRF_EnableD, CACRF_EnableD);
     } else if (SysBase->AttnFlags & AFF_68030) {
-	    ULONG tc = Supervisor((ULONG_FUNC)Check68030MMU);
-	    if (tc & (1 << 31)) { /* Only if MMU enabled */
-	        CacheControl(CACRF_EnableD | CACRF_WriteAllocate, CACRF_EnableD | CACRF_WriteAllocate);
+        ULONG tc = Supervisor((ULONG_FUNC)Check68030MMU);
+        if (tc & (1 << 31)) { /* Only if MMU enabled */
+            CacheControl(CACRF_EnableD | CACRF_WriteAllocate, CACRF_EnableD | CACRF_WriteAllocate);
         }
     }
     Enable();
@@ -125,42 +177,56 @@ int main (void)
 
     rda = ReadArgs(TEMPLATE, args, NULL);
     if (rda) {
+        BOOL justinstalled680x0 = FALSE;
+        BOOL installed680x0 = FALSE;
         BOOL x68040 = FALSE, x68060 = FALSE;
-        BOOL ox68040 = FALSE, ox68060 = FALSE;
 
-        Forbid();
-        if (FindName(&SysBase->LibList, "68040.library"))
-            ox68040 = TRUE;
-        if (FindName(&SysBase->LibList, "68060.library"))
-            ox68060 = TRUE;
-        Permit();
-        CloseLibrary(OpenLibrary("680x0.library", 0));
-        Forbid();
-        if (FindName(&SysBase->LibList, "68040.library"))
-            x68040 = TRUE;
-        if (FindName(&SysBase->LibList, "68060.library"))
-            x68060 = TRUE;
-        Permit();
+        if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
+            BOOL ox68040 = FALSE, ox68060 = FALSE;
+    
+            Forbid();
+            if (FindName(&SysBase->LibList, "68040.library"))
+                ox68040 = TRUE;
+            if (FindName(&SysBase->LibList, "68060.library"))
+                ox68060 = TRUE;
+            Permit();
+            CloseLibrary(OpenLibrary("680x0.library", 0));
+            Forbid();
+            if (FindName(&SysBase->LibList, "68040.library"))
+                x68040 = TRUE;
+            if (FindName(&SysBase->LibList, "68060.library"))
+                x68060 = TRUE;
+            Permit();
+            
+            if ((!ox68040 && !ox68060) && (x68040 || x68060))
+                justinstalled680x0 = TRUE;
+            if (x68040 || x68060)
+                installed680x0 = TRUE;
+        }
 
-        if ((!ox68040 && !ox68060) && (x68040 || x68060))
+        fastvbr(args[ARG_QUIET]);
+
+        if (justinstalled680x0)
             patches(args[ARG_QUIET]);
  
         if (args[ARG_NOCACHE] == FALSE) {
-            if (!(SysBase->AttnFlags & (AFF_68040 | AFF_68060)) || x68040 || x68060)
-                mmusetup(args[ARG_QUIET]);
+            if (justinstalled680x0)
+                p5stuff(args[ARG_QUIET]);
+            mmusetup(args[ARG_QUIET]);
         } else {
             CacheControl(0, CACRF_EnableD | CACRF_CopyBack | CACRF_DBE);
         }
+
         if (args[ARG_QUIET] == FALSE) {
             ULONG flags;
-            if (x68040 || x68060) {
+            if (installed680x0) {
                 Printf("%ld Support Code Loaded\n", x68060 ? 68060 : 68040);
             } else if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
                 Printf("WARNING: %ld CPU without LIBS:680x0.library.\n", (SysBase->AttnFlags & AFF_68060) ? 68060 : 68040);
             }
             flags = CacheControl(0, 0);
             if (flags & CACRF_EnableD)
-                Printf("Data Caches Enabled\n");
+                Printf("Data Cache Enabled\n");
             if (flags & CACRF_CopyBack)
                 Printf("CopyBack Enabled\n");
         }
