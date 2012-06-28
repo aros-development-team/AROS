@@ -8,8 +8,10 @@
 
 #include <aros/debug.h>
 #include <exec/interrupts.h>
+#include <libraries/debug.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
+#include <proto/debug.h>
 
 #include <ctype.h>
 #include <string.h>
@@ -319,6 +321,7 @@ static char *NextWord(char *s)
                     "SL - show all available libraries (libbase : libname)\n"
                     "SR - show all available resources (resbase : resname)\n"
                     "SD - show all available devices (devbase : devname)\n"
+                    "SS xxxxxxxx - show symbol for xxxxxxxx\n"
                     "ST - show tasks (T - this, R - ready, W - wait)\n"
                     "HE - this help.\n");
         }
@@ -418,6 +421,26 @@ static char *NextWord(char *s)
             }
             kprintf(" \n");
         }
+        else if (strcmp(comm, "SS") == 0) {
+            char *ptr = GetA(data);
+            STRPTR modname = "(unknown)";
+            STRPTR symname = "(unknown)";
+            APTR   sym_l   = (APTR)(IPTR)0;
+            APTR   sym_h   = (APTR)~(IPTR)0;
+            struct TagItem tags[] = {
+                { DL_ModuleName, (IPTR)&modname },
+                { DL_SymbolName, (IPTR)&symname },
+                { DL_SymbolStart, (IPTR)&sym_l  },
+                { DL_SymbolEnd, (IPTR)&sym_h },
+                { TAG_END }
+            };
+
+            if (DebugBase) {
+                DecodeLocationA(ptr, tags);
+            }
+
+            kprintf("%p-%p %s.%s\n", sym_l, sym_h, modname, symname);
+        } 
         else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
         {
             kprintf("Quitting SAD...\n");
