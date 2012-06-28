@@ -26,13 +26,6 @@
 #define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
 #define HiddAttrBase (PSD(cl)->hiddAB)
 
-typedef union _pcicfg
-{
-    ULONG   ul;
-    UWORD   uw[2];
-    UBYTE   ub[4];
-} pcicfg;
-
 OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
@@ -87,7 +80,7 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigByte *msg)
 {
-    pcicfg temp;
+    ULONG temp;
     struct pHidd_PCIDriver_ReadConfigLong mymsg;
 
     /*
@@ -100,16 +93,16 @@ UBYTE PCIDrv__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o,
     mymsg.sub = msg->sub;
     mymsg.reg = msg->reg & ~3;
 
-    temp.ul = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
 
     // Then, return only this part of the Long which is requested
-    return temp.ub[msg->reg & 3];
+    return (temp >> ((msg->reg & 3) * 8)) & 0xff;
 }
 
 UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
     struct pHidd_PCIDriver_ReadConfigWord *msg)
 {
-    pcicfg temp;
+    ULONG temp;
     struct pHidd_PCIDriver_ReadConfigLong mymsg;
 
     mymsg.mID = PSD(cl)->mid_RL;
@@ -118,17 +111,18 @@ UWORD PCIDrv__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o,
     mymsg.sub = msg->sub;
     mymsg.reg = msg->reg & ~3;
 
-    temp.ul = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
 
-    return temp.uw[(msg->reg&2)>>1];
+    return (temp >> ((msg->reg & 2) * 8)) & 0xffff;
 }
 
 void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigByte *msg)
 {
-    pcicfg temp;
+    ULONG temp;
     struct pHidd_PCIDriver_ReadConfigLong mymsg;
     struct pHidd_PCIDriver_WriteConfigLong mymsg2;
+    const int shift = (msg->reg & 3) * 8;
 
     // Read whole Long from PCI config space.
     mymsg.mID = PSD(cl)->mid_RL;
@@ -137,10 +131,10 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
     mymsg.sub = msg->sub;
     mymsg.reg = msg->reg & ~3;
 
-    temp.ul = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
 
     // Modify proper part of it according to request.
-    temp.ub[msg->reg & 3] = (UBYTE)msg->val;
+    temp = (temp & ~(0xff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
     mymsg2.mID = PSD(cl)->mid_WL;
@@ -148,7 +142,7 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
     mymsg2.dev = msg->dev;
     mymsg2.sub = msg->sub;
     mymsg2.reg = msg->reg & ~3;
-    mymsg2.val = temp.ul;
+    mymsg2.val = temp;
 
     OOP_DoMethod(o, (OOP_Msg)&mymsg2);
 }
@@ -156,9 +150,10 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
 void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
     struct pHidd_PCIDriver_WriteConfigWord *msg)
 {
-    pcicfg temp;
+    ULONG temp;
     struct pHidd_PCIDriver_ReadConfigLong mymsg;
     struct pHidd_PCIDriver_WriteConfigLong mymsg2;
+    const int shift = (msg->reg & 2) * 8;
 
     // Read whole Long from PCI config space.
     mymsg.mID = PSD(cl)->mid_RL;
@@ -167,10 +162,10 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
     mymsg.sub = msg->sub;
     mymsg.reg = msg->reg & ~3;
 
-    temp.ul = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
+    temp = OOP_DoMethod(o, (OOP_Msg)&mymsg); 
 
     // Modify proper part of it according to request.
-    temp.uw[(msg->reg&2)>>1] = (UWORD)msg->val;
+    temp = (temp & ~(0xffff << shift)) | ((ULONG)msg->val << shift);
 
     // And put whole Long again into PCI config space.
     mymsg2.mID = PSD(cl)->mid_WL;
@@ -178,7 +173,7 @@ void PCIDrv__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
     mymsg2.dev = msg->dev;
     mymsg2.sub = msg->sub;
     mymsg2.reg = msg->reg & ~3;
-    mymsg2.val = temp.ul;
+    mymsg2.val = temp;
 
     OOP_DoMethod(o, (OOP_Msg)&mymsg2);
 
