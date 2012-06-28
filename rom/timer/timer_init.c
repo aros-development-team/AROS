@@ -67,19 +67,23 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 {
     struct Interrupt *is;
 
+    /* If no frequency is set, assume 50Hz */
+    if (SysBase->VBlankFrequency == 0)
+        SysBase->VBlankFrequency = 50;
+
     /*
      * Here we do no checks, we simply assume we have working VBlank interrupt,
      * from whatever source it is.
      */
 
     LIBBASE->tb_eclock_rate = SysBase->VBlankFrequency;
-    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", LIBBASE->tb_eclock_rate));
+    D(bug("[timer] Timer IRQ is %d, frequency is %u Hz\n", INTB_VERTB, LIBBASE->tb_eclock_rate));
 
     /* Calculate timer period in us */
     LIBBASE->tb_Platform.tb_VBlankTime.tv_secs  = 0;
     LIBBASE->tb_Platform.tb_VBlankTime.tv_micro = 1000000 / LIBBASE->tb_eclock_rate;
 
-    D(kprintf("Timer period: %ld secs, %ld micros\n",
+    D(bug("Timer period: %ld secs, %ld micros\n",
 	LIBBASE->tb_Platform.tb_VBlankTime.tv_secs, LIBBASE->tb_Platform.tb_VBlankTime.tv_micro));
 
     /* Start up the interrupt server */
