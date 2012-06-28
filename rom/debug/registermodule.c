@@ -8,6 +8,7 @@
 #include <libraries/debug.h>
 #include <proto/exec.h>
 
+#include <stdint.h>
 #include <string.h>
 
 #include "debug_intern.h"
@@ -214,6 +215,86 @@ AROS_LH4(void, RegisterModule,
 		}
 	    }
 	}
+    } else if (debugType == DEBUG_PARTHENOPE) {
+        const struct Parthenope_ModuleInfo *pm;
+
+        ForeachNode(debugInfo, pm) {
+            struct segment *seg;
+           
+            seg = AllocVec(sizeof(struct segment) + sizeof(module_t) + strlen(pm->m_name), MEMF_PUBLIC|MEMF_CLEAR);
+
+            if (seg) {
+                unsigned int symbols;
+                dbg_sym_t *dsym;
+                const struct Parthenope_Symbol *sym;
+                APTR str_l = (APTR)~(uintptr_t)0, str_h = (APTR)(uintptr_t)0;
+                APTR seg_l = (APTR)~(uintptr_t)0, seg_h = (APTR)(uintptr_t)0;
+                module_t *mod = (module_t *)(&seg[1]);
+
+                DSYMS(bug("[Debug] Adding module @%p: %s\n", pm, pm->m_name));
+                strcpy(mod->m_name, pm->m_name);
+
+                seg->s_seg = NULL;
+                seg->s_mod = mod;
+                seg->s_name = mod->m_name;
+                seg->s_num = 0;
+
+                mod->m_shstr = NULL;
+                mod->m_str = NULL;
+                mod->m_segcnt = 0;
+               
+                /* Determine the size of the string table */
+                symbols = 0;
+                ForeachNode(&pm->m_symbols, sym) {
+                    symbols++;
+                    if (sym->s_name) {
+                        APTR end = (APTR)sym->s_name + strlen(sym->s_name) + 1 + 1;
+                        if ((APTR)sym->s_name < str_l)
+                            str_l = (APTR)sym->s_name;
+                        if (end > str_h)
+                            str_h = end;
+                    }
+                    if ((APTR)(uintptr_t)sym->s_lowest < seg_l)
+                        seg_l = (APTR)(uintptr_t)sym->s_lowest;
+                    if ((APTR)(uintptr_t)sym->s_highest > seg_h)
+                        seg_h = (APTR)(uintptr_t)sym->s_highest;
+                }
+
+                if (symbols) {
+                    DSYMS(bug("[Debug]   String table %p-%p (%u bytes)\n", str_l, str_h, (unsigned int)(str_h - str_l)));
+                    DSYMS(bug("[Debug]   Symbols for %p-%p (%u symbols)\n", seg_l, seg_h, symbols));
+
+                    seg->s_lowest = (APTR)seg_l;
+                    seg->s_highest = (APTR)seg_h;
+
+                    mod->m_symcnt = symbols;
+                    mod->m_str = AllocVec(str_h - str_l, MEMF_PUBLIC);
+
+                    if (mod->m_str) {
+                        CopyMem(str_l, mod->m_str, str_h - str_l);
+
+                        mod->m_symbols = AllocVec(sizeof(*mod->m_symbols) * symbols, MEMF_PUBLIC);
+                        if (mod->m_symbols) {
+                            dsym = mod->m_symbols;
+                            ForeachNode(&pm->m_symbols, sym) {
+                                dsym->s_name = ((APTR)sym->s_name - str_l) + mod->m_str;
+                                dsym->s_lowest = (APTR)(uintptr_t)sym->s_lowest;
+                                dsym->s_highest= (APTR)(uintptr_t)sym->s_highest;
+                                dsym++;
+                            }
+                            ObtainSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                            AddTail((struct List *)&DBGBASE(DebugBase)->db_Modules, (struct Node *)seg);
+                            ReleaseSemaphore(&DBGBASE(DebugBase)->db_ModSem);
+                            continue;
+                        }
+
+                        FreeVec(mod->m_str);
+                    }
+
+                    FreeVec(seg);
+                }
+            }
+        }
     }
 
     AROS_LIBFUNC_EXIT

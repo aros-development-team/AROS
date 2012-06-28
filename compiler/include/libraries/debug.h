@@ -9,6 +9,8 @@
 #ifndef LIBRARIES_DEBUG_H
 #define LIBRARIES_DEBUG_H
 
+#include <exec/lists.h>
+#include <exec/nodes.h>
 #include <dos/elf.h>
 
 /* Tags for DecodeLocation() */
@@ -24,8 +26,9 @@
 #define DL_SymbolEnd		(DL_Dummy + 9)
 
 /* Known debug information types */
-#define DEBUG_NONE 0
-#define DEBUG_ELF  1
+#define DEBUG_NONE              0
+#define DEBUG_ELF               1
+#define DEBUG_PARTHENOPE        2
 
 /* ELF module debug information */
 struct ELF_DebugInfo
@@ -42,6 +45,26 @@ struct ELF_ModuleInfo
     unsigned short	   Type; /* DEBUG_ELF, for convenience	   */
     struct elfheader	  *eh;	 /* ELF file header		   */
     struct sheader	  *sh;	 /* ELF section header		   */
+};
+
+/* Parthenope module debug information (pointed to by KRN_DebugInfo ti_Data)
+ *
+ * (This structure has the same layout as Parthenope's "module_t")
+ */
+struct Parthenope_ModuleInfo {
+    struct MinNode      m_node;
+    CONST_STRPTR        m_name;
+    CONST_STRPTR        m_str;
+    ULONG               m_lowest;
+    ULONG               m_highest;
+    struct MinList      m_symbols;
+};
+
+struct Parthenope_Symbol {
+    struct MinNode      s_node;
+    CONST_STRPTR        s_name;
+    ULONG               s_lowest;
+    ULONG               s_highest;
 };
 
 #endif
