@@ -11,13 +11,13 @@
 
 #include "debug_intern.h"
 
-static void FindSymbol(module_t *mod, char **function, void **funstart, void **funend, void *addr)
+static BOOL FindSymbol(module_t *mod, char **function, void **funstart, void **funend, void *addr)
 {
     dbg_sym_t *sym = mod->m_symbols;
     unsigned int i;
 
     if (!addr)
-	return;
+	return FALSE;
 
     for (i = 0; i < mod->m_symcnt; i++)
     {
@@ -32,14 +32,12 @@ static void FindSymbol(module_t *mod, char **function, void **funstart, void **f
 	    *funstart = sym[i].s_lowest;
 	    *funend   = sym[i].s_highest;
 
-	    return;
+	    return TRUE;
 	}
     }
 
     /* Indicate that symbol not found */
-    *function = NULL;
-    *funstart = NULL;
-    *funend   = NULL;
+    return FALSE;
 }
 
 /*****************************************************************************
@@ -196,10 +194,10 @@ AROS_LH2(int, DecodeLocationA,
 	    *secend   = seg->s_highest;
 
 	    /* Now look up the function if requested */
-	    FindSymbol(seg->s_mod, function, funstart, funend, symaddr);
-
-	    ret = 1;
-	    break;
+	    if (FindSymbol(seg->s_mod, function, funstart, funend, symaddr)) {
+                ret = 1;
+                break;
+            }
 	}
     }
 
