@@ -37,9 +37,7 @@ struct DebugBase
     struct ELF_ModuleInfo *db_KernelModules;
     struct SignalSemaphore db_ModSem;
     APTR		   db_KernelBase;
-    APTR		   db_UtilityBase;
 };
 
 #define DBGBASE(x) ((struct DebugBase *)x)
 #define KernelBase  DBGBASE(DebugBase)->db_KernelBase
-#define UtilityBase DBGBASE(DebugBase)->db_UtilityBase
