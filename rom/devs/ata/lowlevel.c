@@ -63,7 +63,6 @@
  * - put a critical section around DMA transfers (shared dma channels)
  */
 
-#define DEBUG 0
 // use #define xxx(a) D(a) to enable particular sections.
 #if DEBUG
 #define DIRQ(a) D(a)
