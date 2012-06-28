@@ -6,7 +6,6 @@
 #include <libraries/debug.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-#include <proto/utility.h>
 
 #include <inttypes.h>
 
@@ -129,7 +128,7 @@ AROS_LH2(int, DecodeLocationA,
     D(bug("[Debug] DecodeLocationA(0x%p)\n", addr));
 
     /* Parse TagList */
-    while ((tag = NextTagItem(&tstate)))
+    while ((tag = LibNextTagItem(&tstate)))
     {
 	switch (tag->ti_Tag)
 	{

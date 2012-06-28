@@ -11,7 +11,6 @@ USER_CFLAGS := -DHOST_OS_$(FAMILY) -D__UTILITY_NOLIBBASE__
 
 %build_module mmake=kernel-debug \
   modname=debug modtype=library \
-  uselibs="utility" \
   files="$(FILES) $(FUNCS)" linklibfiles=$(STATICFUNCS)
 
 %common

@@ -4,7 +4,6 @@
 #include <aros/symbolsets.h>
 #include <proto/exec.h>
 #include <proto/kernel.h>
-#include <proto/utility.h>
 
 #include <inttypes.h>
 
@@ -36,18 +35,14 @@ static int Debug_Init(struct DebugBase *DebugBase)
     if (!KernelBase)
     	return FALSE;
 
-    UtilityBase = OpenLibrary("utility.library", 0);
-    if (!UtilityBase)
-        return FALSE;
-
     NEWLIST(&DebugBase->db_Modules);
     InitSemaphore(&DebugBase->db_ModSem);
 
     bootMsg = KrnGetBootInfo();
-    DebugBase->db_KernelModules = (struct ELF_ModuleInfo *)GetTagData(KRN_DebugInfo, 0, bootMsg);
+    DebugBase->db_KernelModules = (struct ELF_ModuleInfo *)LibGetTagData(KRN_DebugInfo, 0, bootMsg);
 
 #if AROS_MODULES_DEBUG
-    HostIFace = (APTR)GetTagData(KRN_HostInterface, 0, bootMsg);
+    HostIFace = (APTR)LibGetTagData(KRN_HostInterface, 0, bootMsg);
     /*
      * Provide a pointer to our modules list to the bootstrap.
      * This is needed because gdb is actually debugging bootstrap
