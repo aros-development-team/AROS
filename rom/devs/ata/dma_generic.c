@@ -24,7 +24,6 @@
  * 2011-05-19  P. Fedin		   The Big rework. Separated bus-specific code. Made 64-bit-friendly.
  */
 
-#define DEBUG 0
 #include <aros/debug.h>
 
 #include <exec/types.h>

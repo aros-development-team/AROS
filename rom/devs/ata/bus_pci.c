@@ -6,7 +6,6 @@
     Lang: English
 */
 
-#define DEBUG 0
 #define DSATA(x)
 
 /*
