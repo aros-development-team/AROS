@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Enable fullscreen mode.
+    Lang: English.
+*/
+
 #include <aros/config.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -48,7 +56,10 @@ int x11_fullscreen_supported(Display *display)
 void x11_fullscreen_switchmode(Display *display, int *w, int *h)
 {
     int i, mode;
-   
+
+    if (videomodes == NULL)
+	return;
+
     for(i = 1, mode = 0; i < num_videomodes; i++)
     {
     	if ((videomodes[i]->hdisplay >= *w) &&
