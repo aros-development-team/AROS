@@ -62,7 +62,6 @@ struct amigavideo_staticdata
 	ULONG modeid;
 	struct Interrupt inter;
 	volatile UWORD framecounter;
-	volatile UWORD mode;
 	struct amigabm_data *updatescroll;
 
 	WORD width_alignment;
