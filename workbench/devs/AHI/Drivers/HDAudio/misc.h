@@ -35,10 +35,10 @@ void switch_nid_to_output(struct HDAudioChip *card, UBYTE NID);
 void codec_discovery(struct HDAudioChip *card);
 
 // when this function is called, the chip is queried for its NID's etc. instead of looking at the hardcoded values
-void setForceQuery();
+void setForceQuery(void);
 
 // when set, will call codec_discovery, dumping all information about all NID's
-void setDumpAll();
+void setDumpAll(void);
 
 // when set, it uses this as speaker NID instead of querying the chip
 void setForceSpeaker(int speaker_nid);

@@ -31,7 +31,7 @@ struct VendorDevice
 struct VendorDevice *vendor_device_list = NULL;
 static int vendor_device_list_size = 0;
 
-static void parse_config_file();
+static void parse_config_file(void);
 static int hex_char_to_int(char c);
 #define MAX_DEVICE_VENDORS 512
 
@@ -97,7 +97,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
     
     FreeVec(vendor_device_list);
 
-    // Fail if no hardware (prevents the audio modes form being added to
+    // Fail if no hardware (prevents the audio modes from being added to
     // the database if the driver cannot be used).
 
     if (card_base->cards_found == 0)
@@ -124,6 +124,7 @@ BOOL DriverInit(struct DriverBase* ahisubbase)
         card_base->driverdatas[card_no] = AllocDriverData(dev, AHIsubBase);
         if (card_base->driverdatas[card_no] == NULL)
         {
+            FreeVec(card_base->driverdatas);
             return FALSE;
         }
 
@@ -160,7 +161,7 @@ VOID DriverCleanup(struct DriverBase* AHIsubBase)
 }
 
 
-static void parse_config_file()
+static void parse_config_file(void)
 {
     BPTR config_file;
     BPTR handle;
