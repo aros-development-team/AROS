@@ -30,14 +30,14 @@ static void determine_frequencies(struct HDAudioChip *card);
 static void set_frequency_info(struct Freq *freq, UWORD bitnr);
 static BOOL reset_chip(struct HDAudioChip *card);
 static ULONG get_response(struct HDAudioChip *card);
-static void perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
-static void perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
 static int find_pin_widget_with_encoding(struct HDAudioChip *card, UBYTE encoding);
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
 static int find_audio_output(struct HDAudioChip *card, UBYTE digital);
 static int find_speaker_nid(struct HDAudioChip *card);
 static int find_headphone_nid(struct HDAudioChip *card);
-static void power_up_all_nodes(struct HDAudioChip *card);
+static BOOL power_up_all_nodes(struct HDAudioChip *card);
 
 struct Device *TimerBase = NULL;
 struct timerequest *TimerIO = NULL;
@@ -111,6 +111,7 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
     UWORD command_word;
     int i;
     unsigned short uval;
+    BOOL success = TRUE;
 
     card = (struct HDAudioChip *) AllocVec(sizeof(struct HDAudioChip), MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -172,8 +173,7 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
     {
         DebugPrintF("Unable to initialize Card subsystem.\n");
 
-        FreeVec(card);
-        return NULL;
+        success = FALSE;
     }
 
     card->interrupt_added = TRUE;
@@ -185,9 +185,18 @@ struct HDAudioChip* AllocDriverData(APTR dev, struct DriverBase* AHIsubBase)
     card->input_gain     = 0x10000; // 0dB
     card->output_volume  = 0x10000; // 0dB
     
-    set_monitor_volumes(card, -6.0); // -6dB monitor volume
+    if (success)
+    {
+        set_monitor_volumes(card, -6.0); // -6dB monitor volume
 
-    //AddResetHandler(card);
+        //AddResetHandler(card);
+    }
+
+    if (!success)
+    {
+        FreeDriverData(card, AHIsubBase);
+        card = NULL;
+    }
 
     return card;
 }
@@ -252,15 +261,6 @@ int card_init(struct HDAudioChip *card)
         return -1;
     }
 
-    for (i = 0; i < 16; i++)
-    {
-        if (card->codecbits & (1 << i))
-        {
-            card->codecnr = i;
-            break;
-        }
-    }
-    
     if (alloc_streams(card) == FALSE)
     {
         bug("Allocating streams failed!\n");
@@ -289,7 +289,16 @@ int card_init(struct HDAudioChip *card)
     pci_outl(HD_INTCTL_CIE | HD_INTCTL_GLOBAL, HD_INTCTL, card);
     udelay(200);
 
-    power_up_all_nodes(card);
+    /* Find the first codec with an audio function group */
+    for (i = 0; i < 16; i++)
+    {
+        if (card->codecbits & (1 << i))
+        {
+            card->codecnr = i;
+            if (power_up_all_nodes(card))
+                break;
+        }
+    }
 
     if (perform_codec_specific_settings(card) == FALSE)
     {
@@ -480,12 +489,13 @@ void codec_discovery(struct HDAudioChip *card)
 }
 
 
-static void power_up_all_nodes(struct HDAudioChip *card)
+static BOOL power_up_all_nodes(struct HDAudioChip *card)
 {
     int i;
     ULONG node_count_response = get_parameter(0, VERB_GET_PARMS_NODE_COUNT, card);
     UBYTE node_count = node_count_response & 0xFF;
     UBYTE starting_node = (node_count_response >> 16) & 0xFF;
+    BOOL audio_found = FALSE;
    
     bug("power up\n");
     send_command_12(card->codecnr, 1, VERB_SET_POWER_STATE , 0, card); // send function reset to audio node, this should power up all nodes
@@ -504,6 +514,8 @@ static void power_up_all_nodes(struct HDAudioChip *card)
             UBYTE subnode_count = subnode_count_response & 0xFF;
             UBYTE sub_starting_node = (subnode_count_response >> 16) & 0xFF;
             ULONG connections = 0;
+
+            audio_found = TRUE;
 
             for (j = 0; j < subnode_count; j++) // widgets
             {
@@ -530,6 +542,8 @@ static void power_up_all_nodes(struct HDAudioChip *card)
             }
         }
     }
+
+    return audio_found;
 }
 
 
@@ -879,6 +893,7 @@ void AddResetHandler(struct HDAudioChip *card)
 
 static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
 {
+    BOOL found = FALSE;
     ULONG vendor_device_id = get_parameter(0x0, VERB_GET_PARMS_VENDOR_DEVICE, card); // get vendor and device ID from root node
     UBYTE old;
     UWORD vendor = (vendor_device_id >> 16);
@@ -898,13 +913,13 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     
     if (vendor == 0x10EC && forceQuery == FALSE) // Realtek
     {
-        perform_realtek_specific_settings(card, device);
+        found = perform_realtek_specific_settings(card, device);
     }
     else if (vendor == 0x1106 && forceQuery == FALSE) // VIA
     {
-        perform_via_specific_settings(card, device);
+        found = perform_via_specific_settings(card, device);
     }
-    else // default: fall-back 
+    if (!found) // default: fall-back 
     {
         if (interrogate_unknown_chip(card) == FALSE)
         {
@@ -917,10 +932,20 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
 }
 
 
-static void perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device)
+static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device)
 {
     bug("Found Realtek codec\n");
         
+    if (!(device == 0x662
+        || device == 0x663
+        || device == 0x268
+        || device == 0x269
+        || device == 0x888))
+    {
+        bug("Unknown Realtek codec.\n");
+        return FALSE;
+    }
+
     card->dac_nid = 0x2;
     card->dac_volume_nid = 0x2;
     card->adc_nid = 0x8;
@@ -1081,17 +1106,21 @@ static void perform_realtek_specific_settings(struct HDAudioChip *card, UWORD de
             send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR, card); // unmute PCM at index 0
             send_command_4(card->codecnr, 0xC, VERB_SET_AMP_GAIN, INPUT_AMP_GAIN | AMP_GAIN_LR | (1 << 8), card); // unmute monitor mixer at index 1
         }
-        else
-        {
-            bug("Unsupported Realtek codec! Playback may work.\n");
-        }
+
+    return TRUE;
 }
 
 
-static void perform_via_specific_settings(struct HDAudioChip *card, UWORD device)
+static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device)
 {
     bug("Found VIA codec\n");
         
+    if (!(device == 0xE721))
+    {
+        bug("Unknown VIA codec.\n");
+        return FALSE;
+    }
+
     card->dac_nid = 0x10;
     card->adc_nid = 0x13;
         
@@ -1127,10 +1156,8 @@ static void perform_via_specific_settings(struct HDAudioChip *card, UWORD device
         card->adc_max_gain = 33.0;
         card->adc_step_gain = 1.5;
     }
-    else
-    {
-        bug("Unsupported VIA codec! Playback may work.\n");
-    }
+
+    return TRUE;
 }
 
 
@@ -1316,7 +1343,7 @@ static BOOL interrogate_unknown_chip(struct HDAudioChip *card)
 	  }
 	
 	parm = get_parameter(card->dac_volume_nid, VERB_GET_PARMS_OUTPUT_AMP_CAPS , card);
-    if (parm == 0)
+    if ((parm & 0x7fffffff) == 0)
         parm = get_parameter(0x1, VERB_GET_PARMS_OUTPUT_AMP_CAPS, card);
 	bug("Output amp caps = %lx\n", parm);
 	
@@ -1779,13 +1806,13 @@ void switch_nid_to_output(struct HDAudioChip *card, UBYTE NID)
 }
 
 
-void setForceQuery()
+void setForceQuery(void)
 {
     forceQuery = TRUE;
 }
 
 
-void setDumpAll()
+void setDumpAll(void)
 {
     dumpAll = TRUE;
 }
