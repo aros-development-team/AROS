@@ -504,10 +504,8 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     if (data->interlace)
     	data->copper2i.copper2 = AllocVec(get_copper_list_length(data->aga, bm->depth), MEMF_CLEAR | MEMF_CHIP);
     createcopperlist(data, bm, &data->copper2, FALSE);
-    GfxBase->LOFlist = data->copper2.copper2;
     if (data->interlace) {
     	createcopperlist(data, bm, &data->copper2i, TRUE);
-    	GfxBase->SHFlist = data->copper2i.copper2;
     }
  
     setfmode(data);
@@ -519,8 +517,9 @@ BOOL setmode(struct amigavideo_staticdata *data, struct amigabm_data *bm)
     bm->displaywidth = viewwidth;
     bm->displayheight = limitheight(data, bm->height, data->interlace, FALSE);
 
-    data->mode = 1;
-    while (data->mode);
+	GfxBase->LOFlist = data->copper2.copper2;
+	GfxBase->SHFlist = data->interlace ? data->copper2i.copper2 : data->copper2.copper2;
+	custom->dmacon = 0x8100;
 
     setcoppercolors(data);
     setspritepos(data, data->spritex, data->spritey);
@@ -806,27 +805,18 @@ static AROS_UFH4(ULONG, gfx_vblank,
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
 
+    if (data->interlace)
+        custom->cop2lc = (ULONG)((custom->vposr & 0x8000) ? GfxBase->LOFlist : GfxBase->SHFlist);
+    else
+        custom->cop2lc = (ULONG)GfxBase->LOFlist;
+
     data->framecounter++;
     if (data->sprite) {
     	UWORD *p = data->sprite;
     	p[0] = data->spritepos;
     	p[1 << data->fmode_spr] = data->spritectl;
     }
-    if (data->mode == 1) {
-	BOOL start = FALSE;
-    	if (data->interlace) {
-	    if (custom->vposr & 0x8000)
-	    	start = TRUE;
-	} else {
-	    start = TRUE;
-	}
-    	if (start) {
-            custom->cop2lc = (ULONG)data->copper2.copper2;
-  	    custom->copjmp1 = 0x0000;
-    	    custom->dmacon = 0x8100;
-    	    data->mode = 0;
-    	}
-    }
+
     if (data->updatescroll) {
 	setcopperscroll(data, data->updatescroll);
 	data->updatescroll = NULL;
@@ -933,7 +923,7 @@ void initcustom(struct amigavideo_staticdata *data)
     }
     data->max_colors = data->aga ? 256 : 32;
     data->palette = AllocVec(data->max_colors * 3, MEMF_CLEAR);
-    data->copper1 = AllocVec(20 * 2 * sizeof(WORD), MEMF_CLEAR | MEMF_CHIP);
+    data->copper1 = AllocVec(22 * 2 * sizeof(WORD), MEMF_CLEAR | MEMF_CHIP);
     data->sprite_null = AllocMem(2 * 8, MEMF_CLEAR | MEMF_CHIP);
     data->sprite_res = 0; /* lores */
     c = data->copper1;
@@ -945,6 +935,8 @@ void initcustom(struct amigavideo_staticdata *data)
 	*c++ = 0x0122 + i * 4;
 	*c++ = (UWORD)(((ULONG)data->sprite_null) >> 0);
     }
+    *c++ = 0x0c03;
+    *c++ = 0xfffe;
     *c++ = 0x008a;
     *c++ = 0x0000;
     data->copper2_backup = c;
