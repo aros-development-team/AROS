@@ -2111,3 +2111,25 @@ diff -ruN gcc-4.6.2/libstdc++-v3/crossconfig.m4 gcc-4.6.2.aros/libstdc++-v3/cros
    arm*-*-symbianelf*)
      # This is a freestanding configuration; there is nothing to do here.
      ;;
+diff -ruN gcc-4.6.2/libcpp/configure gcc-4.6.2.aros/libcpp/configure
+--- gcc-4.6.2/libcpp/configure	2011-10-26 11:30:24.000000000 +0200
++++ gcc-4.6.2.aros/libcpp/configure	2012-07-04 18:36:53.274313088 +0200
+@@ -7091,6 +7091,7 @@
+ 	alpha*-*-* | \
+ 	arm*-*-*eabi* | \
+ 	arm*-*-symbianelf* | \
++	arm*-*-aros | \
+ 	x86_64-*-* | \
+ 	ia64-*-* | \
+ 	hppa*64*-*-* | \
+diff -ruN gcc-4.6.2/libcpp/configure.ac gcc-4.6.2.aros/libcpp/configure.ac
+--- gcc-4.6.2/libcpp/configure.ac	2010-11-18 08:35:34.000000000 +0100
++++ gcc-4.6.2.aros/libcpp/configure.ac	2012-07-04 18:37:11.315102148 +0200
+@@ -141,6 +141,7 @@
+ 	alpha*-*-* | \
+ 	arm*-*-*eabi* | \
+ 	arm*-*-symbianelf* | \
++	arm*-*-aros | \
+ 	x86_64-*-* | \
+ 	ia64-*-* | \
+ 	hppa*64*-*-* | \
