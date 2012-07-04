@@ -11,12 +11,9 @@
 	.text
 	.balign 4
 
-	.globl	AROS_SLIB_ENTRY(CopyMem,Exec,104)
-	.type	AROS_SLIB_ENTRY(CopyMem,Exec,104),@function
-AROS_SLIB_ENTRY(CopyMem,Exec,104):
-	btst #1,296+1(%a6)
-	bne.s copy_020
-
+	.globl	AROS_SLIB_ENTRY(CopyMem_000,Exec,104)
+	.type	AROS_SLIB_ENTRY(CopyMem_000,Exec,104),@function
+AROS_SLIB_ENTRY(CopyMem_000,Exec,104):
 	moveq #64,%d1
 	cmp.l %d1,%d0
 	bcs.s copy_00_bytes
@@ -55,7 +52,9 @@ copy_00_bytes2:
 	/* Optimized 020+ CopyMem by Matt Hey */
 
 	.balign 4
-copy_020:
+	.globl	AROS_SLIB_ENTRY(CopyMem_020,Exec,104)
+	.type	AROS_SLIB_ENTRY(CopyMem_020,Exec,104),@function
+AROS_SLIB_ENTRY(CopyMem_020,Exec,104):
 	subq.l #4,%d0			// size is 4 less than actual!
 	bls.b smallcopy		// if size<=4 bytes
 	move.l %a1,%d1
