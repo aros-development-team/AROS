@@ -20,10 +20,10 @@
 
 struct draw_render_data
 {
-    LONG x1, y1, x2, y2;    
+    WORD x1, y1, x2, y2;    
 };
 
-static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
+static ULONG draw_render(APTR draw_rd, WORD srcx, WORD srcy,
     	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
 {
@@ -57,8 +57,8 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(LONG             , x, D0),
-	AROS_LHA(LONG             , y, D1),
+	AROS_LHA(WORD             , x, D0),
+	AROS_LHA(WORD             , y, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 41, Graphics)
@@ -100,8 +100,8 @@ static ULONG draw_render(APTR draw_rd, LONG srcx, LONG srcy,
     struct Rectangle 	    rr;
     OOP_Object      	    *gc;
     struct draw_render_data drd;
-    LONG    	    	    dx;
-    LONG    	    	    x1, y1;
+    WORD    	    	    dx;
+    WORD    	    	    x1, y1;
 
     FIX_GFXCOORD(x);
     FIX_GFXCOORD(y);

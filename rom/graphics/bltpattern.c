@@ -28,13 +28,13 @@ struct bp_render_data
     UBYTE   	     invertpattern;
 };
 
-static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
+static ULONG bltpattern_render(APTR bpr_data, WORD srcx, WORD srcy,
     	    	    	       OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	    	       struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct bp_render_data *bprd = bpr_data;
-    ULONG		   width  = rect->MaxX - rect->MinX + 1;
-    ULONG		   height = rect->MaxY - rect->MinY + 1;
+    WORD		   width  = rect->MaxX - rect->MinX + 1;
+    WORD		   height = rect->MaxY - rect->MinY + 1;
     UBYTE		  *mask = bprd->mask + bprd->maskmodulo * srcy;
     WORD		   patsrcx = (srcx + bprd->renderx1) % 16;
     WORD		   patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
@@ -62,10 +62,10 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
 	AROS_LHA(PLANEPTR         , mask, A0),
-	AROS_LHA(LONG             , xMin, D0),
-	AROS_LHA(LONG             , yMin, D1),
-	AROS_LHA(LONG             , xMax, D2),
-	AROS_LHA(LONG             , yMax, D3),
+	AROS_LHA(WORD             , xMin, D0),
+	AROS_LHA(WORD             , yMin, D1),
+	AROS_LHA(WORD             , xMax, D2),
+	AROS_LHA(WORD             , yMax, D3),
 	AROS_LHA(ULONG            , byteCnt, D4),
 
 /*  LOCATION */

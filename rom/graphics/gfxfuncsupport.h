@@ -169,8 +169,8 @@ static inline struct gfx_driverdata *ObtainDriverData(struct RastPort *rp)
     return dd;
 }
 
-typedef ULONG (*RENDERFUNC)(APTR, LONG, LONG, OOP_Object *, OOP_Object *, struct Rectangle *, struct GfxBase *);
-typedef LONG (*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *);
+typedef ULONG (*RENDERFUNC)(APTR, WORD, WORD, OOP_Object *, OOP_Object *, struct Rectangle *, struct GfxBase *);
+typedef LONG (*PIXELFUNC)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *);
 
 /****************************************************************************************/
 
@@ -184,39 +184,39 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
 			RENDERFUNC render_func, APTR funcdata, OOP_Object *gc,
 			BOOL do_update, BOOL get_special_info, struct GfxBase *GfxBase);
 
-ULONG do_pixel_func(struct RastPort *rp, LONG x, LONG y,
-    	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, LONG, LONG, struct GfxBase *),
+ULONG do_pixel_func(struct RastPort *rp, WORD x, WORD y,
+    	    	    LONG (*render_func)(APTR, OOP_Object *, OOP_Object *, WORD, WORD, struct GfxBase *),
 		    APTR funcdata, BOOL do_update, struct GfxBase *GfxBase);
 
-ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
+ULONG fillrect_render(APTR funcdata, WORD srcx, WORD srcy,
     	    	      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	      struct Rectangle *rect, struct GfxBase *GfxBase);
 
-LONG fillrect_pendrmd(struct RastPort *tp, LONG x1, LONG y1, LONG x2, LONG y2,
+LONG fillrect_pendrmd(struct RastPort *tp, WORD x1, WORD y1, WORD x2, WORD y2,
     	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase);
 
-BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
-	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
-		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
+BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
+	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
+		   WORD xSize, WORD ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
 		   struct GfxBase *GfxBase);
 
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+    	    	    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
 		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase);
 
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    	   LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+    	    	    	   WORD xstart, WORD ystart, WORD xstop, WORD ystop,
 		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
 			   BOOL do_update, struct GfxBase *GfxBase);
 
-void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src,
-    	    	     struct BitMap *hidd_bm, LONG x_dest, LONG y_dest,
+void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, WORD x_src , WORD y_src,
+    	    	     struct BitMap *hidd_bm, WORD x_dest, WORD y_dest,
 		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
 		     struct GfxBase * GfxBase);
 
-BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
-    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
+BOOL MoveRaster (struct RastPort * rp, WORD dx, WORD dy, WORD x1, WORD y1,
+    	    	 WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
 
 BOOL GetRPClipRectangleForRect(struct RastPort *rp, struct Rectangle *rect, struct Rectangle *r);
 BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
@@ -224,9 +224,9 @@ BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
 
 void update_bitmap(struct BitMap *bitmap, OOP_Object *bm, UWORD x, UWORD y, UWORD width, UWORD height, struct GfxBase *GfxBase);
 
-void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc, 
-		       struct BitMap *destBitMap, LONG xDest, LONG yDest,
-		       ULONG xSize, ULONG ySize, ULONG minterm,
+void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc, 
+		       struct BitMap *destBitMap, WORD xDest, WORD yDest,
+		       WORD xSize, WORD ySize, ULONG minterm,
 		       struct GfxBase *GfxBase);
 
 /****************************************************************************************/

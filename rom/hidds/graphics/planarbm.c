@@ -332,7 +332,7 @@ VOID PBM__Hidd_BitMap__PutPixel(OOP_Class *cl, OOP_Object *o,
     UBYTE   	    	    **plane;
     struct planarbm_data    *data;
     ULONG   	    	    offset;
-    ULONG   	    	    mask;
+    UWORD   	    	    mask;
     UBYTE   	    	    pixel, notpixel;
     UBYTE   	    	    i;
     
@@ -372,7 +372,7 @@ ULONG PBM__Hidd_BitMap__GetPixel(OOP_Class *cl, OOP_Object *o,
     struct planarbm_data    *data;
     UBYTE   	    	    **plane;
     ULONG   	    	    offset;
-    ULONG   	    	    i;
+    UWORD   	    	    i;
     UBYTE   	    	    pixel;
     ULONG   	    	    retval;
          
@@ -423,8 +423,8 @@ static void PBM_PutImage_Native(UBYTE *src, ULONG modulo, struct BitMap *data, U
 
     	for (d = 0; d < data->Depth; d++)
     	{
-	    ULONG dmask = 1L << d;
-	    ULONG pmask = 0x80 >> startx;
+	    UWORD dmask = 1L << d;
+	    UWORD pmask = 0x80 >> startx;
 	    UBYTE *pl = *plane;
 
 	    if (pl == (UBYTE *)-1) continue;
@@ -476,8 +476,8 @@ static void PBM_PutImage_Native32(HIDDT_Pixel *src, ULONG modulo, struct BitMap 
 
     	for (d = 0; d < data->Depth; d++)
     	{
-	    ULONG dmask = 1L << d;
-	    ULONG pmask = 0x80 >> startx;
+	    UWORD dmask = 1L << d;
+	    UWORD pmask = 0x80 >> startx;
 	    UBYTE *pl = *plane;
 
 	    if (pl == (UBYTE *)-1) continue;
@@ -598,8 +598,8 @@ VOID PBM__Hidd_BitMap__GetImageLUT(OOP_Class *cl, OOP_Object *o,
 	
     	for (d = 0; d < data->bitmap->Depth; d++)
 	{
-	    ULONG dmask = 1L << d;
-	    ULONG pmask = 0x80 >> (msg->x & 7);
+	    UWORD dmask = 1L << d;
+	    UWORD pmask = 0x80 >> (msg->x & 7);
 	    UBYTE *pl = *plane;
 
 	    if (pl == (UBYTE *)-1) continue;

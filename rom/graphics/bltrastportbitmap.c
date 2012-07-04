@@ -12,9 +12,9 @@
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
 
-void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc, 
-		       struct BitMap *destBitMap, LONG xDest, LONG yDest,
-		       ULONG xSize, ULONG ySize, ULONG minterm,
+void BltRastPortBitMap(struct RastPort *srcRastPort, WORD xSrc, WORD ySrc, 
+		       struct BitMap *destBitMap, WORD xDest, WORD yDest,
+		       WORD xSize, WORD ySize, ULONG minterm,
 		       struct GfxBase *GfxBase)
 {
 	struct Layer * srcLayer;
@@ -55,7 +55,7 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc,
 			 * Is the current cliprect withing the
 			 * required region?
 			 */
-			LONG crX0, crX1, crY0, crY1;
+			WORD crX0, crX1, crY0, crY1;
 			/* cr?? have to be coordinates related to the rastport */
 			crX0 = srcCR->bounds.MinX - srcLayer->bounds.MinX;
 			crX1 = srcCR->bounds.MaxX - srcLayer->bounds.MinX;
@@ -69,9 +69,9 @@ void BltRastPortBitMap(struct RastPort *srcRastPort, LONG xSrc, LONG ySrc,
 			      crX1 <  xSrc          || 
 			      crY0 > (ySrc+ySize-1) ||
 			      crY1 <  ySrc)) {
-				ULONG MinX, MinY;
-				ULONG bltSrcX, bltSrcY, bltDestX, bltDestY, bltWidth, bltHeight;
-				ULONG SrcOffsetX;
+				WORD MinX, MinY;
+				WORD bltSrcX, bltSrcY, bltDestX, bltDestY, bltWidth, bltHeight;
+				WORD SrcOffsetX;
 
 				/* this cliprect contains bitmap data that need to be copied */
 				/* 

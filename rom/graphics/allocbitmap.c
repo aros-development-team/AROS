@@ -53,8 +53,8 @@ static HIDDT_StdPixFmt const cyber2hidd_pixfmt[] =
 	AROS_LH5(struct BitMap *, AllocBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG          , sizex, D0),
-	AROS_LHA(ULONG          , sizey, D1),
+	AROS_LHA(UWORD          , sizex, D0),
+	AROS_LHA(UWORD          , sizey, D1),
 	AROS_LHA(ULONG          , depth, D2),
 	AROS_LHA(ULONG          , flags, D3),
 	AROS_LHA(struct BitMap *, friend_bitmap, A0),

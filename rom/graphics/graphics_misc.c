@@ -16,7 +16,7 @@
 
 
 
-BOOL pattern_pen(struct RastPort *rp, LONG x, LONG y, ULONG apen, ULONG bpen, ULONG *pixval_ptr, struct GfxBase *GfxBase)
+BOOL pattern_pen(struct RastPort *rp, WORD x, WORD y, ULONG apen, ULONG bpen, ULONG *pixval_ptr, struct GfxBase *GfxBase)
 {
     ULONG idx, mask;
     ULONG set_pixel, pixval = 0;

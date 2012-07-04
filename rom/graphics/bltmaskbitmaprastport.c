@@ -24,13 +24,13 @@ struct bltmask_render_data
     PLANEPTR	    	       mask;
 };
 
-static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
+static ULONG bltmask_render(APTR bltmask_rd, WORD srcx, WORD srcy,
     	    	    	    OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	    	    struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct bltmask_render_data *brd = bltmask_rd;
-    ULONG width  = rect->MaxX - rect->MinX + 1;
-    ULONG height = rect->MaxY - rect->MinY + 1;
+    WORD width  = rect->MaxX - rect->MinX + 1;
+    WORD height = rect->MaxY - rect->MinY + 1;
     OOP_Object *gfxhidd;
     BOOL ok;
 
@@ -49,13 +49,13 @@ static ULONG bltmask_render(APTR bltmask_rd, LONG srcx, LONG srcy,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct BitMap   *, srcBitMap, A0),
-	AROS_LHA(LONG             , xSrc, D0),
-	AROS_LHA(LONG             , ySrc, D1),
+	AROS_LHA(WORD             , xSrc, D0),
+	AROS_LHA(WORD             , ySrc, D1),
 	AROS_LHA(struct RastPort *, destRP, A1),
-	AROS_LHA(LONG             , xDest, D2),
-	AROS_LHA(LONG             , yDest, D3),
-	AROS_LHA(LONG             , xSize, D4),
-	AROS_LHA(LONG             , ySize, D5),
+	AROS_LHA(WORD             , xDest, D2),
+	AROS_LHA(WORD             , yDest, D3),
+	AROS_LHA(WORD             , xSize, D4),
+	AROS_LHA(WORD             , ySize, D5),
 	AROS_LHA(ULONG            , minterm, D6),
 	AROS_LHA(PLANEPTR         , bltMask, A2),
 

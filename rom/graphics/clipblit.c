@@ -30,13 +30,13 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, srcRP , A0),
-	AROS_LHA(LONG             , xSrc  , D0),
-	AROS_LHA(LONG             , ySrc  , D1),
+	AROS_LHA(WORD             , xSrc  , D0),
+	AROS_LHA(WORD             , ySrc  , D1),
 	AROS_LHA(struct RastPort *, destRP, A1),
-	AROS_LHA(LONG             , xDest , D2),
-	AROS_LHA(LONG             , yDest , D3),
-	AROS_LHA(LONG             , xSize , D4),
-	AROS_LHA(LONG             , ySize , D5),
+	AROS_LHA(WORD             , xDest , D2),
+	AROS_LHA(WORD             , yDest , D3),
+	AROS_LHA(WORD             , xSize , D4),
+	AROS_LHA(WORD             , ySize , D5),
 	AROS_LHA(UBYTE            , minterm, D6),
 
 /*  LOCATION */
@@ -195,7 +195,7 @@
 	    }
 	    else
 	    {
-	    	LONG dx, dy;
+	    	WORD dx, dy;
 		
         	/*
         	   This case is not as difficult as the overlapping
@@ -300,11 +300,11 @@ struct clipblit_render_data
     struct render_special_info   rsi;
     ULONG   	    	         minterm;
     struct RastPort 	    	*destRP;
-    LONG    	    	    	 xDest;
-    LONG    	    	    	 yDest;
+    WORD    	    	    	 xDest;
+    WORD    	    	    	 yDest;
 };
 
-static ULONG clipblit_render(APTR data, LONG srcx, LONG srcy,
+static ULONG clipblit_render(APTR data, WORD srcx, WORD srcy,
     	    	    	     OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	    	     struct Rectangle *rect, struct GfxBase *GfxBase)
 {
@@ -320,13 +320,13 @@ static ULONG clipblit_render(APTR data, LONG srcx, LONG srcy,
 }
 
 void internal_ClipBlit(struct RastPort * srcRP,
-                       LONG xSrc,
-                       LONG ySrc,
+                       WORD xSrc,
+                       WORD ySrc,
                        struct RastPort * destRP,
-                       LONG xDest,
-                       LONG yDest,
-                       LONG xSize,
-                       LONG ySize,
+                       WORD xDest,
+                       WORD yDest,
+                       WORD xSize,
+                       WORD ySize,
                        UBYTE minterm,
                        struct GfxBase * GfxBase)
 {

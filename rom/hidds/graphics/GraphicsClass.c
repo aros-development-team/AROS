@@ -123,7 +123,7 @@ static struct pixfmt_data *find_pixfmt(HIDDT_PixelFormat *tofind
 	, struct class_static_data *_csd);
 
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm
-	, OOP_Object *dst_bm, ULONG width, ULONG height);
+	, OOP_Object *dst_bm, UWORD width, UWORD height);
 
 BOOL parse_pixfmt_tags(struct TagItem *tags, HIDDT_PixelFormat *pf, ULONG attrcheck, struct class_static_data *_csd);
 
@@ -2292,7 +2292,7 @@ BOOL GFX__Hidd_Gfx__SetMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetMo
 /****************************************************************************************/
 
 static VOID copy_bm_and_colmap(OOP_Class *cl, OOP_Object *o,  OOP_Object *src_bm,
-    	    	    	       OOP_Object *dst_bm, ULONG width, ULONG height)
+    	    	    	       OOP_Object *dst_bm, UWORD width, UWORD height)
 {
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     struct HIDDGraphicsData *data;
@@ -2550,7 +2550,7 @@ ULONG GFX__Hidd_Gfx__ShowViewPorts(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
         BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetCursorShape *msg);
 
 	BOOL HIDD_Gfx_SetCursorShape(OOP_Object *gfxHidd, OOP_Object *shape,
-	                             LONG xoffset, LONG yoffset);
+	                             WORD xoffset, WORD yoffset);
 
     LOCATION
 	hidd.graphics.graphics
@@ -2658,7 +2658,7 @@ VOID GFX__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
     SYNOPSIS
         BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_SetCursorPos *msg);
 
-	BOOL HIDD_Gfx_SetCursorPos(OOP_Object *gfxHidd, LONG x, LONG y);
+	BOOL HIDD_Gfx_SetCursorPos(OOP_Object *gfxHidd, WORD x, WORD y);
 
     LOCATION
 	hidd.graphics.graphics
@@ -3197,7 +3197,7 @@ IPTR GFX__Hidd_Gfx__CopyBoxMasked(OOP_Class *cl, OOP_Object *obj, struct pHidd_G
 	    HIDDT_Pixel *srcpixelbuf;
 	    HIDDT_Pixel *destpixelbuf;
 	    UBYTE   	*mask;
-	    ULONG	 x, y;
+	    UWORD	 x, y;
 
 	    doing_lines = lines_per_step;
 	    if (lines_done + doing_lines > msg->height)
@@ -3824,7 +3824,7 @@ BOOL GFX__Hidd_Gfx__QueryHardware3D(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     SYNOPSIS
         BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_Gfx_GetMaxSpriteSize *msg);
 
-	BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *gfxHidd, ULONG Type, ULONG *Width, ULONG *Height);
+	BOOL HIDD_Gfx_GetMaxSpriteSize(OOP_Object *gfxHidd, ULONG Type, UWORD *Width, UWORD *Height);
 
     LOCATION
 	hidd.graphics.graphics
@@ -3835,8 +3835,8 @@ BOOL GFX__Hidd_Gfx__QueryHardware3D(OOP_Class *cl, OOP_Object *o, struct pHidd_G
     INPUTS
 	gfxHidd - A display driver object
 	Type	- Type of the sprite image (one of vHidd_SpriteType_... values)
-	Width	- A pointer to ULONG where width will be placed.
-	Height	- A pointer to ULONG where height will be placed.
+	Width	- A pointer to UWORD where width will be placed.
+	Height	- A pointer to UWORD where height will be placed.
 
     RESULT
 	FALSE is the given sprite type is not supported, otherwise TRUE.

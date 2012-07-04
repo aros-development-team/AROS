@@ -60,7 +60,7 @@ OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase)
 
 /****************************************************************************************/
 
-static ULONG CallRenderFunc(RENDERFUNC render_func, APTR funcdata, ULONG srcx, ULONG srcy,
+static ULONG CallRenderFunc(RENDERFUNC render_func, APTR funcdata, WORD srcx, WORD srcy,
 			    struct BitMap *bm, OOP_Object *gc, struct Rectangle *rect, BOOL do_update,
 			    struct GfxBase *GfxBase)
 {
@@ -103,7 +103,7 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
     struct Layer    	*L = rp->Layer;
     struct Rectangle 	 rp_clip_rectangle;
     BOOL    	    	 have_rp_cliprectangle;
-    LONG    	     	 srcx, srcy;    
+    WORD    	     	 srcx, srcy;    
     LONG    	     	 pixwritten = 0;
 
     if (NULL != src)
@@ -170,7 +170,7 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
 	    {		
 		if (!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect))
 		{
-    		    LONG xoffset, yoffset;
+    		    WORD xoffset, yoffset;
 
 		    xoffset = intersect.MinX - torender.MinX;
 		    yoffset = intersect.MinY - torender.MinY;
@@ -228,7 +228,7 @@ ULONG do_render_with_gc(struct RastPort *rp, Point *src, struct Rectangle *rr,
 /****************************************************************************************/
 
 static LONG CallPixelFunc(PIXELFUNC render_func, APTR funcdata, struct BitMap *bm, OOP_Object *gc,
-			  ULONG x, ULONG y, BOOL do_update, struct GfxBase *GfxBase)
+			  WORD x, WORD y, BOOL do_update, struct GfxBase *GfxBase)
 {
     OOP_Object *bm_obj = OBTAIN_HIDD_BM(bm);
     LONG retval;
@@ -246,7 +246,7 @@ static LONG CallPixelFunc(PIXELFUNC render_func, APTR funcdata, struct BitMap *b
 }
 
 ULONG do_pixel_func(struct RastPort *rp
-	, LONG x, LONG y
+	, WORD x, WORD y
 	, PIXELFUNC render_func
 	, APTR funcdata
         , BOOL do_update
@@ -289,7 +289,7 @@ ULONG do_pixel_func(struct RastPort *rp
     else
     {
         struct ClipRect *CR;
-	LONG absx, absy;
+	WORD absx, absy;
 
 	LockLayerRom( L );
 
@@ -355,7 +355,7 @@ ULONG do_pixel_func(struct RastPort *rp
 
 /****************************************************************************************/
 
-ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
+ULONG fillrect_render(APTR funcdata, WORD srcx, WORD srcy,
     	    	      OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	      struct Rectangle *rect, struct GfxBase *GfxBase)
 {
@@ -366,7 +366,7 @@ ULONG fillrect_render(APTR funcdata, LONG srcx, LONG srcy,
 
 /****************************************************************************************/
 
-LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
+LONG fillrect_pendrmd(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     	    	      HIDDT_Pixel pix, HIDDT_DrawMode drmd, BOOL do_update, struct GfxBase *GfxBase)
 {
     OOP_Object      *gc;
@@ -386,9 +386,9 @@ LONG fillrect_pendrmd(struct RastPort *rp, LONG x1, LONG y1, LONG x2, LONG y2,
 
 /****************************************************************************************/
 
-BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, LONG xSrc, LONG ySrc,
-	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, LONG xDest, LONG yDest,
-		   LONG xSize, LONG ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
+BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj, WORD xSrc, WORD ySrc,
+	    	   struct BitMap *dstBitMap, OOP_Object *dstbm_obj, WORD xDest, WORD yDest,
+		   WORD xSize, WORD ySize, ULONG minterm, OOP_Object *gfxhidd, OOP_Object *gc,
 		   struct GfxBase *GfxBase)
 {
     HIDDT_DrawMode drmd;
@@ -580,12 +580,12 @@ struct wp8_render_data
     HIDDT_PixelLUT *pixlut;
 };
 
-static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
+static ULONG wp8_render(APTR wp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_obj,
     	    	    	OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct wp8_render_data *wp8rd = wp8r_data;
-    ULONG		    width  = rect->MaxX - rect->MinX + 1;
-    ULONG		    height = rect->MaxY - rect->MinY + 1;
+    WORD		    width  = rect->MaxX - rect->MinX + 1;
+    WORD		    height = rect->MaxY - rect->MinY + 1;
 
     HIDD_BM_PutImageLUT(dstbm_obj, dst_gc,
 			wp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wp8rd->modulo), wp8rd->modulo,
@@ -597,7 +597,7 @@ static ULONG wp8_render(APTR wp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_
 /****************************************************************************************/
 
 LONG write_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+    	    	    WORD xstart, WORD ystart, WORD xstop, WORD ystop,
 		    HIDDT_PixelLUT *pixlut, BOOL do_update, struct GfxBase *GfxBase)
 {
     struct wp8_render_data wp8rd;
@@ -646,12 +646,12 @@ struct wtp8_render_data
     UBYTE   	    transparent;
 };
 
-static ULONG wtp8_render(APTR wtp8r_data, LONG srcx, LONG srcy, OOP_Object *dstbm_obj,
+static ULONG wtp8_render(APTR wtp8r_data, WORD srcx, WORD srcy, OOP_Object *dstbm_obj,
     	    	    	OOP_Object *dst_gc, struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct wtp8_render_data *wtp8rd = wtp8r_data;
-    ULONG   	    	     width  = rect->MaxX - rect->MinX + 1;
-    ULONG		     height = rect->MaxY - rect->MinY + 1;
+    WORD   	    	     width  = rect->MaxX - rect->MinX + 1;
+    WORD		     height = rect->MaxY - rect->MinY + 1;
     
     HIDD_BM_PutTranspImageLUT(dstbm_obj, dst_gc,
     			      wtp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, wtp8rd->modulo), wtp8rd->modulo,
@@ -662,7 +662,7 @@ static ULONG wtp8_render(APTR wtp8r_data, LONG srcx, LONG srcy, OOP_Object *dstb
 /****************************************************************************************/
 
 LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
-    	    	    	   LONG xstart, LONG ystart, LONG xstop, LONG ystop,
+    	    	    	   WORD xstart, WORD ystart, WORD xstop, WORD ystop,
 		    	   HIDDT_PixelLUT *pixlut, UBYTE transparent,
 			   BOOL do_update, struct GfxBase *GfxBase)
 {
@@ -727,8 +727,8 @@ LONG write_transp_pixels_8(struct RastPort *rp, UBYTE *array, ULONG modulo,
 
 #endif
 
-BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
-    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
+BOOL MoveRaster (struct RastPort * rp, WORD dx, WORD dy, WORD x1, WORD y1,
+    	    	 WORD x2, WORD y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
 {
     struct Layer     *L       = rp->Layer;
     struct Rectangle  ScrollRect;
@@ -1070,7 +1070,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
                 {
                     struct BitMap   *srcbm;
 		    struct ClipRect *DstCR;
-                    LONG             corrsrcx, corrsrcy;
+                    WORD             corrsrcx, corrsrcy;
                     ULONG            area;
 
                     if (SrcCR->lobs)
@@ -1096,7 +1096,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 	        	srcbm = rp->BitMap;
 	    	    }
 
-                    area = (ULONG)(Rect.MaxX - Rect.MinX + 1) * (ULONG)(Rect.MaxY - Rect.MinY + 1);
+                    area = (Rect.MaxX - Rect.MinX + 1) * (Rect.MaxY - Rect.MinY + 1);
 
             	    for (DstCR = L->ClipRect ; area && DstCR; DstCR = DstCR->Next)
             	    {
@@ -1105,9 +1105,9 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
                         if (_AndRectRect(Bounds(DstCR), &Rect, &Rect2))
  			{
                             struct BitMap   *dstbm;
-	                    LONG             corrdstx, corrdsty;
+	                    WORD             corrdstx, corrdsty;
 
-                            area -= (ULONG)(Rect2.MaxX - Rect2.MinX + 1) * (ULONG)(Rect2.MaxY - Rect2.MinY + 1);
+                            area -= (Rect2.MaxX - Rect2.MinX + 1) * (Rect2.MaxY - Rect2.MinY + 1);
 
                             if (DstCR->lobs)
 	                    {

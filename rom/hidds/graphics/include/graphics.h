@@ -300,15 +300,15 @@ struct pHidd_Gfx_SetCursorShape
 {
     OOP_MethodID    mID;
     OOP_Object      *shape;
-    LONG            xoffset;
-    LONG            yoffset;
+    WORD            xoffset;
+    WORD            yoffset;
 };
 
 struct pHidd_Gfx_SetCursorPos
 {
     OOP_MethodID    mID;
-    LONG            x;
-    LONG            y;
+    WORD            x;
+    WORD            y;
 };
 
 struct pHidd_Gfx_SetCursorVisible
@@ -402,8 +402,8 @@ struct pHidd_Gfx_GetMaxSpriteSize
 {
     OOP_MethodID mID;
     ULONG        Type;
-    ULONG        *Width;
-    ULONG        *Height;
+    WORD         *Width;
+    WORD         *Height;
 };
 
 struct pHidd_Gfx_MakeViewPort
@@ -755,8 +755,8 @@ struct pHidd_BitMap_SetColors
 {
     OOP_MethodID    mID;
     HIDDT_Color     *colors;
-    ULONG           firstColor;
-    ULONG           numColors;
+    UWORD           firstColor;
+    UWORD           numColors;
 };
 
 /* messages for a graphics context */
@@ -971,7 +971,7 @@ struct pHidd_BitMap_BytesPerLine
 {
     OOP_MethodID    mID;
     HIDDT_StdPixFmt pixFmt;
-    ULONG           width;
+    UWORD           width;
 };
 
 
@@ -988,8 +988,8 @@ struct pHidd_BitMap_ConvertPixels
     
     ULONG               dstMod;
     
-    ULONG               width;
-    ULONG               height;
+    WORD                width;
+    WORD                height;
 
     HIDDT_PixelLUT      *pixlut;
     
@@ -1423,7 +1423,7 @@ struct pHidd_BitMap_BitMapScale
 
 typedef ULONG (*HIDDT_RGBConversionFunction)(APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, 
                                              APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt,
-                                             ULONG width, ULONG height);
+                                             UWORD width, UWORD height);
 
 struct pHidd_BitMap_SetRGBConversionFunction
 {
@@ -1452,10 +1452,10 @@ enum
 struct pHidd_GC_SetClipRect
 {
     OOP_MethodID    mID;
-    LONG            x1;
-    LONG            y1;
-    LONG            x2;
-    LONG            y2;
+    WORD            x1;
+    WORD            y1;
+    WORD            x2;
+    WORD            y2;
 };
 
 
@@ -1795,8 +1795,8 @@ struct pHidd_ColorMap_SetColors
 {
     OOP_MethodID    mID;
     HIDDT_Color     *colors;
-    ULONG           firstColor;
-    ULONG           numColors;
+    UWORD           firstColor;
+    UWORD           numColors;
     OOP_Object      *pixFmt;
 };
 
