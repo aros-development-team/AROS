@@ -625,12 +625,20 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
             default:
                 break;
             }
+#ifdef __mc68000
+            /* Got OpenScreenTags modeid without monitor, select system default.
+             * We really need proper mode promotion support.
+             */
+            if ((modeid & MONITOR_ID_MASK) == 0) {
+                modeid |= (GfxBase->DisplayFlags & PAL) ? PAL_MONITOR_ID : NTSC_MONITOR_ID;
+            }
+#endif
         }
     }
 
     if (INVALID_ID == modeid)
     {
-        /* HAM or EHB requested? */
+        /* Old-style HAM or EHB request? */
         if (newScreen->ViewModes & (HAM | EXTRA_HALFBRITE)) {
             if (newScreen->ViewModes & HAM)
                 modetags[3].ti_Data |= DIPF_IS_HAM;
