@@ -139,6 +139,7 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
         { BIDTAG_Depth        	, 0UL   },
         { BIDTAG_DesiredWidth   , 0UL   },
         { BIDTAG_DesiredHeight  , 0UL   },
+        { BIDTAG_DIPFMustHave   , 0UL   },
         { TAG_DONE          	    	}
     };
     ULONG   	    	     modeid = INVALID_ID;
@@ -153,13 +154,14 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 #define COPY(x)     screen->Screen.x = ns.x
 #define SetError(x) if (errorPtr != NULL) *errorPtr = x;
 
-    D(bug("OpenScreen (%p = { Left=%d Top=%d Width=%d Height=%d Depth=%d })\n"
+    D(bug("OpenScreen (%p = { Left=%d Top=%d Width=%d Height=%d Depth=%d Mode=%04x })\n"
           , newScreen
           , newScreen->LeftEdge
           , newScreen->TopEdge
           , newScreen->Width
           , newScreen->Height
           , newScreen->Depth
+          , newScreen->ViewModes
          ));
 
     FireScreenNotifyMessage((IPTR) newScreen, SNOTIFY_BEFORE_OPENSCREEN, IntuitionBase);
@@ -628,6 +630,15 @@ extern const ULONG defaultdricolors[DRIPEN_NUMDRIPENS];
 
     if (INVALID_ID == modeid)
     {
+        /* HAM or EHB requested? */
+        if (newScreen->ViewModes & (HAM | EXTRA_HALFBRITE)) {
+            if (newScreen->ViewModes & HAM)
+                modetags[3].ti_Data |= DIPF_IS_HAM;
+            if (newScreen->ViewModes & EXTRA_HALFBRITE)
+                modetags[3].ti_Data |= DIPF_IS_EXTRAHALFBRITE;
+        } else {
+            modetags[3].ti_Tag = TAG_IGNORE;
+        }
         modeid = BestModeIDA(modetags);
         if (INVALID_ID == modeid)
         {
