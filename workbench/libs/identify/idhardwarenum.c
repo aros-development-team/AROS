@@ -393,7 +393,7 @@
 
         case IDHW_CPUCLOCK:
         {
-            IPTR speed = 0;
+            QUAD speed = 0;
             APTR ProcessorBase = OpenResource(PROCESSORNAME);
             if (ProcessorBase)
             {
