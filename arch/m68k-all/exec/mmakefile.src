@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 FILES=offsets getcc preparecontext \
       cachecleare cacheclearu cachepostdma cachepredma \
-      cachecontrol setfunction alert_cpu
+      cachecontrol setfunction copymem alert_cpu
 
 AFILES=newstackswap stackswap \
        supervisor superstate userstate \
@@ -11,7 +11,7 @@ AFILES=newstackswap stackswap \
        cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
        setsr cachecontrol_ \
        obtainquickvector \
-       copymem copymemquick
+       copymem_ copymemquick
 
 USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
