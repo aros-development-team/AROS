@@ -64,7 +64,7 @@ struct chunkybm_data
     OOP_Object *gfxhidd;       	/* Cached driver object				*/
     UBYTE      *buffer;		/* Pixelbuffer		  			*/
     ULONG	bytesperrow;	/* Cached for faster access 			*/
-    ULONG	bytesperpixel;
+    UWORD	bytesperpixel;
     BOOL	own_buffer;	/* Whether the buffer was allocated by us	*/
 };
 
@@ -160,9 +160,9 @@ struct HIDDBitMapData
 {
     struct _hidd_bitmap_protected prot;
 
-    ULONG	 width;         /* width of the bitmap in pixel  */
-    ULONG	 height;        /* height of the bitmap in pixel */
-    ULONG	 align;		/* Default alignment		 */
+    UWORD	 width;         /* width of the bitmap in pixel  */
+    UWORD	 height;        /* height of the bitmap in pixel */
+    UWORD	 align;		/* Default alignment		 */
     BOOL	 displayable;   /* bitmap displayable?           */
     BOOL	 framebuffer;	/* is a framebuffer ?		 */
     BOOL	 pf_registered;	/* Registered own pixelformat ?	 */

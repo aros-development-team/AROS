@@ -10,7 +10,7 @@
 
 ULONG Convert_RGB24_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -42,7 +42,7 @@ ULONG Convert_RGB24_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR24_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -74,7 +74,7 @@ ULONG Convert_BGR24_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB16_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -108,7 +108,7 @@ ULONG Convert_RGB16_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB16LE_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -142,7 +142,7 @@ ULONG Convert_RGB16LE_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR16_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -176,7 +176,7 @@ ULONG Convert_BGR16_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR16LE_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -210,7 +210,7 @@ ULONG Convert_BGR16LE_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_ARGB32_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -243,7 +243,7 @@ ULONG Convert_ARGB32_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGRA32_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -276,7 +276,7 @@ ULONG Convert_BGRA32_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGBA32_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -309,7 +309,7 @@ ULONG Convert_RGBA32_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_ABGR32_To_BGR032(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -342,7 +342,7 @@ ULONG Convert_ABGR32_To_BGR032(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR032_To_ARGB32(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -375,7 +375,7 @@ ULONG Convert_BGR032_To_ARGB32(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB24_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -405,7 +405,7 @@ ULONG Convert_RGB24_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR24_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -435,7 +435,7 @@ ULONG Convert_BGR24_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB16_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -464,7 +464,7 @@ ULONG Convert_RGB16_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB16LE_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -493,7 +493,7 @@ ULONG Convert_RGB16LE_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR16_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -525,7 +525,7 @@ ULONG Convert_BGR16_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGR16LE_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -557,7 +557,7 @@ ULONG Convert_BGR16LE_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_ARGB32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -588,7 +588,7 @@ ULONG Convert_ARGB32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_BGRA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -619,7 +619,7 @@ ULONG Convert_BGRA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGBA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -650,7 +650,7 @@ ULONG Convert_RGBA32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_ABGR32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;
@@ -681,7 +681,7 @@ ULONG Convert_ABGR32_To_RGB16LE(APTR srcPixels, ULONG srcMod,
 
 ULONG Convert_RGB16LE_To_ARGB32(APTR srcPixels, ULONG srcMod,
     HIDDT_StdPixFmt srcPixFmt, APTR dstPixels, ULONG dstMod,
-    HIDDT_StdPixFmt dstPixFmt, ULONG width, ULONG height)
+    HIDDT_StdPixFmt dstPixFmt, UWORD width, UWORD height)
 {
     WORD x, y, src_step, dst_step;
     UBYTE *p = srcPixels, *q = dstPixels;

@@ -14,7 +14,7 @@
 #include "gfxfuncsupport.h"
 
 static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
-    	    	      LONG x, LONG y, struct GfxBase *GfxBase);
+    	    	      WORD x, WORD y, struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
@@ -24,8 +24,8 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(LONG             , x, D0),
-	AROS_LHA(LONG             , y, D1),
+	AROS_LHA(WORD             , x, D0),
+	AROS_LHA(WORD             , y, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 54, Graphics)
@@ -79,7 +79,7 @@ static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
 
 
 static LONG pix_write(APTR pr_data, OOP_Object *bm, OOP_Object *gc,
-    	    	      LONG x, LONG y, struct GfxBase *GfxBase)
+    	    	      WORD x, WORD y, struct GfxBase *GfxBase)
 {
     HIDD_BM_PutPixel(bm, x, y, (IPTR)pr_data);
 

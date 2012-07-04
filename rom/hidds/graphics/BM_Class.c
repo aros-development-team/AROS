@@ -77,17 +77,17 @@
 
 *****************************************************************************************/
 
-#define PIXBUFBYTES 65536
+#define PIXBUFBYTES 16384
 
-static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, ULONG startx, ULONG starty, ULONG width, ULONG height,
+static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWORD starty, UWORD width, UWORD height,
                                 BOOL getimage, HIDDT_StdPixFmt stdpf, void (*operation)(), void *userdata)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     ULONG bytesperline = width * sizeof(ULONG);
-    ULONG buflines     = PIXBUFBYTES / bytesperline;
+    UWORD buflines     = PIXBUFBYTES / 4; /* Remove slow division */
     ULONG bufsize;
-    ULONG endy = starty + height;
-    ULONG y;
+    UWORD endy = starty + height;
+    UWORD y;
     UBYTE *buf;
 
     if (buflines == 0)
@@ -136,7 +136,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, ULONG startx, ULON
         aoHidd_BitMap_Width
 
     SYNOPSIS
-        [ISG], ULONG
+        [ISG], UWORD
 
     LOCATION
         hidd.graphics.bitmap
@@ -167,7 +167,7 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, ULONG startx, ULON
         aoHidd_BitMap_Height
 
     SYNOPSIS
-        [ISG], ULONG
+        [ISG], UWORD
 
     LOCATION
         hidd.graphics.bitmap
@@ -851,8 +851,8 @@ static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, ULONG startx, ULON
 static ULONG GetBytesPerRow(struct HIDDBitMapData *data, struct class_static_data *csd)
 {
     struct Library *OOPBase = csd->cs_OOPBase;
-    ULONG align = data->align - 1;
-    ULONG width = (data->width + align) & ~align;
+    UWORD align = data->align - 1;
+    UWORD width = (data->width + align) & ~align;
     IPTR bytesperpixel, stdpf;
 
     OOP_GetAttr(data->prot.pixfmt, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
@@ -1210,7 +1210,7 @@ VOID BM__Root__Get(OOP_Class *cl, OOP_Object *obj, struct pRoot_Get *msg)
         BOOL OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_SetColors *msg);
 
         BOOL HIDD_BM_SetColors (OOP_Object *obj, HIDDT_Color *colors,
-                                ULONG firstColor, ULONG numColors);
+                                UWORD firstColor, UWORD numColors);
 
     LOCATION
         hidd.graphics.bitmap
@@ -1446,7 +1446,7 @@ VOID BM__Hidd_BitMap__DrawLine
 )
 {
     WORD        dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
-    LONG        x1, y1, x2, y2;
+    WORD        x1, y1, x2, y2;
     UWORD       maskLine;  /* for line pattern */
     ULONG       fg;   /* foreground pen   */
     APTR        doclip;
@@ -1852,11 +1852,11 @@ VOID BM__Hidd_BitMap__DrawEllipse(OOP_Class *cl, OOP_Object *obj,
     WORD        x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    LONG        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    LONG        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    LONG        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    LONG        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    LONG        d2 = (t1 >> 1) - t8 + t5;
+    WORD        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    WORD        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    WORD        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    WORD        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    WORD        d2 = (t1 >> 1) - t8 + t5;
 
     APTR        doclip = GC_DOCLIP(gc);
 
@@ -2014,11 +2014,11 @@ VOID BM__Hidd_BitMap__FillEllipse(OOP_Class *cl, OOP_Object *obj,
     WORD        x = msg->rx, y = 0;     /* ellipse points */
 
     /* intermediate terms to speed up loop */
-    LONG        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
-    LONG        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
-    LONG        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
-    LONG        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
-    LONG        d2 = (t1 >> 1) - t8 + t5;
+    WORD        t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    WORD        t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    WORD        t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    WORD        d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    WORD        d2 = (t1 >> 1) - t8 + t5;
 
     EnterFunc(bug("BitMap::FillEllipse()"));
 
@@ -2533,7 +2533,7 @@ VOID BM__Hidd_BitMap__GetImage(OOP_Class *cl, OOP_Object *o,
     WORD                    x, y;
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     APTR                    ppixarray = &pixarray;
-    LONG                    bpp;
+    WORD                    bpp;
     struct HIDDBitMapData   *data;
 
     data = OOP_INST_DATA(cl, o);
@@ -2689,7 +2689,7 @@ VOID BM__Hidd_BitMap__PutImage(OOP_Class *cl, OOP_Object *o,
     UBYTE                   *pixarray = (UBYTE *)msg->pixels;
     APTR                    ppixarray = &pixarray;
     ULONG                   old_fg;
-    LONG                    bpp;
+    WORD                    bpp;
     struct HIDDBitMapData   *data;
     OOP_Object              *gc = msg->gc;
 
@@ -2912,9 +2912,9 @@ struct paib_data
  * 3. Reuse the new code for other buffered operations (currently using old macros).
  */
 
-static void PutAlphaImageBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct paib_data *data)
+static void PutAlphaImageBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct paib_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3072,9 +3072,9 @@ struct ptb_data
     UWORD invert;
 };
 
-static void JAM1TemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ptb_data *data)
+static void JAM1TemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ptb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3101,9 +3101,9 @@ static void JAM1TemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG h
     }
 }
 
-static void ComplementTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ptb_data *data)
+static void ComplementTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ptb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3130,9 +3130,9 @@ static void ComplementTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, U
     }
 }
 
-static void JAM2TemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ptb_data *data)
+static void JAM2TemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ptb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3165,7 +3165,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
 {
     OOP_Object *gc = msg->gc;
     BOOL get = TRUE;
-    void (*op)(ULONG *, ULONG, ULONG, ULONG, struct ptb_data *);
+    void (*op)(ULONG *, UWORD, UWORD, UWORD, struct ptb_data *);
     struct ptb_data data;
 
     EnterFunc(bug("BitMap::PutTemplate(x=%d, y=%d, width=%d, height=%d)\n"
@@ -3261,9 +3261,9 @@ struct patb_data
     UBYTE  invert;
 };
 
-static void JAM1AlphaTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct patb_data *data)
+static void JAM1AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct patb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3288,9 +3288,9 @@ static void JAM1AlphaTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, UL
     }
 }       
 
-static void ComplementAlphaTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct patb_data *data)
+static void ComplementAlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct patb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3309,9 +3309,9 @@ static void ComplementAlphaTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG wid
     }
 }
 
-static void JAM2AlphaTemplateBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct patb_data *data)
+static void JAM2AlphaTemplateBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct patb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3340,7 +3340,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
 { 
     OOP_Object *gc = msg->gc;
     BOOL get = TRUE;
-    void (*op)(ULONG *, ULONG, ULONG, ULONG, struct patb_data *);
+    void (*op)(ULONG *, UWORD, UWORD, UWORD, struct patb_data *);
     struct patb_data data;
     HIDDT_Color color;
 
@@ -3441,9 +3441,9 @@ struct ppb_data
     UWORD *patarray;
     void  *maskarray;
     ULONG *patternlut;
-    ULONG  patternsrcy;
-    ULONG  desty;
-    ULONG  patternheight;
+    UWORD  patternsrcy;
+    UWORD  desty;
+    UWORD  patternheight;
     ULONG  maskmodulo;
     ULONG  fg;
     ULONG  bg;
@@ -3453,9 +3453,9 @@ struct ppb_data
     UWORD  invert;
 };
 
-static void JAM1PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+static void JAM1PatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
             
     for (y = 0; y < height; y++)
     {
@@ -3498,9 +3498,9 @@ static void JAM1PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG he
     } /* for (y) */
 }       
 
-static void ComplementPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+static void ComplementPatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
             
     for (y = 0; y < height; y++)
     {
@@ -3543,9 +3543,9 @@ static void ComplementPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, UL
     } /* for (y) */
 }
 
-static void JAM2PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+static void JAM2PatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
             
     for (y = 0; y < height; y++)
     {
@@ -3590,9 +3590,9 @@ static void JAM2PatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG he
     } /* for (y) */
 }
 
-static void ColorPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data)
+static void ColorPatternBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data)
 {
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -3652,7 +3652,7 @@ static void ColorPatternBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG h
 VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
                                  struct pHidd_BitMap_PutPattern *msg)
 {
-    void (*op)(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ppb_data *data);
+    void (*op)(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ppb_data *data);
     BOOL get = TRUE;
     struct ppb_data data;
 
@@ -3904,10 +3904,10 @@ struct ptilb_data
     UBYTE                     transparent;
 };
 
-static void PutTranspImageLUTBuffered(ULONG *xbuf, ULONG starty, ULONG width, ULONG height, struct ptilb_data *data)
+static void PutTranspImageLUTBuffered(ULONG *xbuf, UWORD starty, UWORD width, UWORD height, struct ptilb_data *data)
 {
     struct class_static_data *csd = data->csd;
-    ULONG x, y;
+    UWORD x, y;
 
     for (y = 0; y < height; y++)
     {
@@ -4147,7 +4147,7 @@ VOID BM__Hidd_BitMap__BlitColorExpansion(OOP_Class *cl, OOP_Object *o,
 #ifdef __RESERVED__
     ULONG   cemd;
     ULONG   fg, bg;
-    LONG    x, y;
+    WORD    x, y;
 
     OOP_Object *gc = msg->gc;
 
@@ -4212,7 +4212,7 @@ else
     SYNOPSIS
         ULONG OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_BytesPerLine *msg);
 
-        ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
+        ULONG HIDD_BM_BytesPerLine(OOP_Object *obj, HIDDT_StdPixFmt pixFmt, UWORD width);
 
     LOCATION
         hidd.graphics.bitmap
@@ -4470,7 +4470,7 @@ HIDDT_Pixel BM__Hidd_BitMap__MapColor(OOP_Class *cl, OOP_Object *o,
         struct HIDDBitMapData   *data = OOP_INST_DATA(cl, o);
         HIDDT_Color             *ctab;
         HIDDT_ColorLUT          *cmap;
-        ULONG i;
+        UWORD i;
         ULONG best_ndx = ~0, best_dist = ~0;
 
         cmap = (HIDDT_ColorLUT *)data->colmap;
@@ -4698,20 +4698,20 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
 {
     struct BitScaleArgs *bsa = msg->bsa;
     ULONG *srcbuf, *dstbuf;
-    LONG srcline = -1;
+    WORD srcline = -1;
     UWORD *linepattern;
-    ULONG count;
+    UWORD count;
     UWORD ys = bsa->bsa_SrcY;
-    ULONG xs = bsa->bsa_SrcX;
-    ULONG dyd = bsa->bsa_DestHeight;
-    ULONG dxd = bsa->bsa_DestWidth;
-    LONG accuys = dyd;
-    LONG accuxs = dxd;
-    ULONG dxs = bsa->bsa_SrcWidth;
-    ULONG dys = bsa->bsa_SrcHeight;
-    LONG accuyd = - (dys >> 1);
-    LONG accuxd = - (dxs >> 1);
-    ULONG x;
+    UWORD xs = bsa->bsa_SrcX;
+    UWORD dyd = bsa->bsa_DestHeight;
+    UWORD dxd = bsa->bsa_DestWidth;
+    WORD accuys = dyd;
+    WORD accuxs = dxd;
+    UWORD dxs = bsa->bsa_SrcWidth;
+    UWORD dys = bsa->bsa_SrcHeight;
+    WORD accuyd = - (dys >> 1);
+    WORD accuxd = - (dxs >> 1);
+    UWORD x;
 
     if ((srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG), 0)) == NULL)
         return;

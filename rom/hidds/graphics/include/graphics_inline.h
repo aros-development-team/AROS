@@ -241,7 +241,7 @@ static inline HIDDT_ModeID HIDD_Gfx_NextModeID_(OOP_MethodID GfxBase, OOP_Object
 	({OOP_Object *__obj = obj;\
 	  HIDD_Gfx_SetCursorShape_(HiddGfxBase, __obj, shape, xoffset, yoffset); })
 
-static inline BOOL HIDD_Gfx_SetCursorShape_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *shape, LONG xoffset, LONG yoffset)
+static inline BOOL HIDD_Gfx_SetCursorShape_(OOP_MethodID GfxBase, OOP_Object *obj, OOP_Object *shape, WORD xoffset, WORD yoffset)
 {
     struct pHidd_Gfx_SetCursorShape p;
 
@@ -259,7 +259,7 @@ static inline BOOL HIDD_Gfx_SetCursorShape_(OOP_MethodID GfxBase, OOP_Object *ob
 	({OOP_Object *__obj = obj;\
 	  HIDD_Gfx_SetCursorPos_(HiddGfxBase, __obj, x, y); })
 
-static inline BOOL HIDD_Gfx_SetCursorPos_(OOP_MethodID GfxBase, OOP_Object *obj, LONG x, LONG y)
+static inline BOOL HIDD_Gfx_SetCursorPos_(OOP_MethodID GfxBase, OOP_Object *obj, WORD x, WORD y)
 {
     struct pHidd_Gfx_SetCursorPos p;
 
@@ -600,7 +600,7 @@ static inline OOP_MethodID HIDD_BitMap_GetMethodBase(OOP_Object *obj)
 	({OOP_Object *__obj = obj;\
 	  HIDD_BM_SetColors_(HiddBitMapBase, __obj, colors, firstColor, numColors); })
 
-static inline BOOL HIDD_BM_SetColors_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors)
+static inline BOOL HIDD_BM_SetColors_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_Color *colors, UWORD firstColor, UWORD numColors)
 {
     struct pHidd_BitMap_SetColors p;
     
@@ -1171,7 +1171,7 @@ static inline VOID     HIDD_BM_GetImageLUT_(OOP_MethodID BitMapBase, OOP_Object 
 	({OOP_Object *__obj = obj;\
 	  HIDD_BM_BytesPerLine_(HiddBitMapBase, __obj, pixFmt, width); })
 
-static inline ULONG HIDD_BM_BytesPerLine_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width)
+static inline ULONG HIDD_BM_BytesPerLine_(OOP_MethodID BitMapBase, OOP_Object *obj, HIDDT_StdPixFmt pixFmt, UWORD width)
 {
     struct pHidd_BitMap_BytesPerLine p;
 
@@ -1192,7 +1192,7 @@ static inline ULONG HIDD_BM_BytesPerLine_(OOP_MethodID BitMapBase, OOP_Object *o
 	({OOP_Object *__obj = obj;\
 	  HIDD_BM_ConvertPixels_(HiddBitMapBase, __obj, srcPixels, srcPixFmt, srcMod, dstBuf, dstPixFmt, dstMod, width, height, pixlut); })
 
-static inline VOID     HIDD_BM_ConvertPixels_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR *srcPixels, HIDDT_PixelFormat *srcPixFmt, ULONG srcMod, APTR *dstBuf, HIDDT_PixelFormat *dstPixFmt, ULONG dstMod, ULONG width, ULONG height, HIDDT_PixelLUT *pixlut)
+static inline VOID     HIDD_BM_ConvertPixels_(OOP_MethodID BitMapBase, OOP_Object *obj, APTR *srcPixels, HIDDT_PixelFormat *srcPixFmt, ULONG srcMod, APTR *dstBuf, HIDDT_PixelFormat *dstPixFmt, ULONG dstMod, UWORD width, UWORD height, HIDDT_PixelLUT *pixlut)
 {
     struct pHidd_BitMap_ConvertPixels p;
     
@@ -2000,7 +2000,7 @@ static inline OOP_MethodID HIDD_GC_GetMethodBase(OOP_Object *obj)
 	({OOP_Object *__obj = obj;\
 	  HIDD_GC_SetClipRect_(HiddGCBase, __obj, x1, y1, x2, y2); })
 
-static inline VOID HIDD_GC_SetClipRect_(OOP_MethodID GCBase, OOP_Object *obj, LONG x1, LONG y1, LONG x2, LONG y2)
+static inline VOID HIDD_GC_SetClipRect_(OOP_MethodID GCBase, OOP_Object *obj, WORD x1, WORD y1, WORD x2, WORD y2)
 {
     struct pHidd_GC_SetClipRect p;
 
@@ -2097,7 +2097,7 @@ static inline OOP_MethodID HIDD_ColorMap_GetMethodBase(OOP_Object *obj)
 	({OOP_Object *__obj = obj;\
 	  HIDD_CM_SetColors_(HiddColorMapBase, __obj, colors, firstColor, numColors, pixFmt); })
 
-static inline BOOL HIDD_CM_SetColors_(OOP_MethodID ColorMapBase, OOP_Object *obj, HIDDT_Color *colors, ULONG firstColor, ULONG numColors, OOP_Object *pixFmt)
+static inline BOOL HIDD_CM_SetColors_(OOP_MethodID ColorMapBase, OOP_Object *obj, HIDDT_Color *colors, UWORD firstColor, UWORD numColors, OOP_Object *pixFmt)
 {
     struct pHidd_ColorMap_SetColors p;
     

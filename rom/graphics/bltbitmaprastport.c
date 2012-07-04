@@ -22,18 +22,18 @@ struct bitmap_render_data
     OOP_Object      	      *srcbm_obj;
 };
 
-static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
+static ULONG bitmap_render(APTR bitmap_rd, WORD srcx, WORD srcy,
     	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
     	    	    	   struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct bitmap_render_data *brd = bitmap_rd;
     OOP_Object		      *gfxhidd = SelectDriverObject(brd->srcbm, dstbm_obj, GfxBase);
-    ULONG		       width  = rect->MaxX - rect->MinX + 1;
-    ULONG		       height = rect->MaxY - rect->MinY + 1;
+    WORD		       width  = rect->MaxX - rect->MinX + 1;
+    WORD		       height = rect->MaxY - rect->MinY + 1;
     BOOL		       res;
 
 //    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
-//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
+//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, rect->MinX, rect->MinY, rect->MaxX, rect->MaxY, GfxBase));
 
     /*
      * Get some info on the colormaps. We have to make sure
@@ -55,13 +55,13 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct BitMap   *, srcBitMap, A0),
-	AROS_LHA(LONG             , xSrc, D0),
-	AROS_LHA(LONG             , ySrc, D1),
+	AROS_LHA(WORD             , xSrc, D0),
+	AROS_LHA(WORD             , ySrc, D1),
 	AROS_LHA(struct RastPort *, destRP, A1),
-	AROS_LHA(LONG             , xDest, D2),
-	AROS_LHA(LONG             , yDest, D3),
-	AROS_LHA(LONG             , xSize, D4),
-	AROS_LHA(LONG             , ySize, D5),
+	AROS_LHA(WORD             , xDest, D2),
+	AROS_LHA(WORD             , yDest, D3),
+	AROS_LHA(WORD             , xSize, D4),
+	AROS_LHA(WORD             , ySize, D5),
 	AROS_LHA(ULONG            , minterm, D6),
 
 /*  LOCATION */
@@ -108,8 +108,8 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
     OOP_Object      	    	*gc;
     Point   	    	    	src;
 
-    EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
-    	, xSrc, ySrc, xDest, yDest, xSize, ySize));
+    EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d, %x, %p, %p)\n"
+    	, xSrc, ySrc, xDest, yDest, xSize, ySize, minterm, srcBitMap, destRP));
 
     FIX_GFXCOORD(xSrc);
     FIX_GFXCOORD(ySrc);

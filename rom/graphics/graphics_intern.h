@@ -236,10 +236,10 @@ struct GfxBase_intern
 #define XCOORD_TO_WORDIDX( x ) 	(( x ) >> 4)
 
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-				( ( ((LONG)(y)) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
+				( ( (y) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
 
 #define CHUNKY8_COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-				( ( ((LONG)(y)) * (bytes_per_row)) + (x) )
+				( ( (y) * (bytes_per_row)) + (x) )
 
 #define XCOORD_TO_MASK(x)   	(128L >> ((x) & 0x07))
 
@@ -268,13 +268,13 @@ struct gfx_driverdata *AllocDriverData(struct RastPort *rp, BOOL alloc, struct G
 
 /* a function needed by ClipBlit */
 void internal_ClipBlit(struct RastPort * srcRP,
-                       LONG xSrc,
-                       LONG ySrc,
+                       WORD xSrc,
+                       WORD ySrc,
                        struct RastPort * destRP,
-                       LONG xDest,
-                       LONG yDest,
-                       LONG xSize,
-                       LONG ySize,
+                       WORD xDest,
+                       WORD yDest,
+                       WORD xSize,
+                       WORD ySize,
                        UBYTE minterm,
                        struct GfxBase * GfxBase);
 
@@ -293,7 +293,7 @@ extern void UninstallFB(struct monitor_driverdata *mdd);
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp
-	, LONG x, LONG y
+	, WORD x, WORD y
 	, ULONG apen, ULONG bpen
 	, ULONG *pixval_ptr
 	, struct GfxBase *GfxBase);

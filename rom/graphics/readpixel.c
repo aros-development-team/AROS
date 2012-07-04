@@ -22,7 +22,7 @@ struct prlut8_render_data
 };
 
 static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
-	    	          LONG x, LONG y, struct GfxBase *GfxBase);
+	    	          WORD x, WORD y, struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
@@ -32,8 +32,8 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(LONG             , x, D0),
-	AROS_LHA(LONG             , y, D1),
+	AROS_LHA(WORD             , x, D0),
+	AROS_LHA(WORD             , y, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 53, Graphics)
@@ -101,7 +101,7 @@ static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
 } /* ReadPixel */
 
 static LONG pix_read_lut8(APTR prlr_data, OOP_Object *bm, OOP_Object *gc,
-    	    	    	  LONG x, LONG y, struct GfxBase *GfxBase)
+    	    	    	  WORD x, WORD y, struct GfxBase *GfxBase)
 {
     struct prlut8_render_data *prlrd;
     UBYTE pen;

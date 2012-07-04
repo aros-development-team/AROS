@@ -18,8 +18,8 @@
 	AROS_LH2(PLANEPTR, AllocRaster,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG          , width, D0),
-	AROS_LHA(ULONG          , height, D1),
+	AROS_LHA(UWORD          , width, D0),
+	AROS_LHA(UWORD          , height, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 82, Graphics)

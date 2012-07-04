@@ -21,13 +21,13 @@ struct rp8_render_data
     HIDDT_PixelLUT *pixlut;
 };
 
-static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
+static ULONG rp8_render(APTR rp8r_data, WORD srcx, WORD srcy,
     	    	        OOP_Object *srcbm_obj, OOP_Object *gc,
     	    	        struct Rectangle *rect, struct GfxBase *GfxBase)
 {
     struct rp8_render_data *rp8rd  = rp8r_data;
-    ULONG   	    	    width  = rect->MaxX - rect->MinX + 1;
-    ULONG		    height = rect->MaxY - rect->MinY + 1;
+    WORD   	    	    width  = rect->MaxX - rect->MinX + 1;
+    WORD		    height = rect->MaxY - rect->MinY + 1;
     
     HIDD_BM_GetImageLUT(srcbm_obj, rp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, rp8rd->modulo), rp8rd->modulo,
     			rect->MinX, rect->MinY, width, height, rp8rd->pixlut);
@@ -44,10 +44,10 @@ static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *	, rp		, A0),
-	AROS_LHA(LONG             	, xstart	, D0),
-	AROS_LHA(LONG             	, ystart	, D1),
-	AROS_LHA(LONG             	, xstop		, D2),
-	AROS_LHA(LONG             	, ystop		, D3),
+	AROS_LHA(WORD             	, xstart	, D0),
+	AROS_LHA(WORD             	, ystart	, D1),
+	AROS_LHA(WORD             	, xstop		, D2),
+	AROS_LHA(WORD             	, ystop		, D3),
 	AROS_LHA(UBYTE * 		, array		, A2),
 	AROS_LHA(struct RastPort *	, temprp	, A1),
 
