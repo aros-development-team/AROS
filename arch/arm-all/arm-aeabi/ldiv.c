@@ -30,8 +30,14 @@ int64_t __ldiv(int64_t a, int64_t b)
 	}
 	else
 	{
-		int first_bit_a = __builtin_clz(a);
-		int first_bit_b = __builtin_clz(b);
+		int first_bit_a = __builtin_clz(a >> 32);
+		int first_bit_b = __builtin_clz(b >> 32);
+		
+		if (first_bit_a == 32)
+		    first_bit_a += __builtin_clz(a & 0xffffffff);
+		if (first_bit_b == 32)
+		    first_bit_b += __builtin_clz(b & 0xffffffff);
+		    
 		uint64_t mask = 0x00000001ULL << (first_bit_b-first_bit_a);
 		b <<= (first_bit_b - first_bit_a);
 
