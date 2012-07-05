@@ -125,18 +125,24 @@ static inline UWORD custom_r(ULONG reg)
  */
 static BOOL LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
 {
-	if (*((UWORD *)regs->pc) == KRN_SYSCALL_INST &&
-	     regs->a[0] == KRN_SYSCALL_MAGIC &&
-	     (regs->sr & 0x2000) == 0) {
-	     	/* Move past the instruction */
-		regs->pc += 2;	
+    if (*((UWORD *)regs->pc) == KRN_SYSCALL_INST
+        && regs->a[0] == KRN_SYSCALL_MAGIC
+/* COMPATIBILTY HACK!
+ * Do not check supervisor state, allows some badly coded programs to work.
+ */
+#if 0
+        && (regs->sr & 0x2000) == 0
+#endif
+    ) {
+        /* Move past the instruction */
+        regs->pc += 2;	
 
-	     	/* AROS syscall */
-	     	core_SysCall(regs->d[0], regs);
-		return TRUE;
-	}
+        /* AROS syscall */
+        core_SysCall(regs->d[0], regs);
+        return TRUE;
+    }
 
-	return FALSE;
+    return FALSE;
 }
 
 /* Wrapper to work around GCC frame pointer bugs
