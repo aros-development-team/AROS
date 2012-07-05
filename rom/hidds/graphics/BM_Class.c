@@ -4705,12 +4705,12 @@ VOID BM__Hidd_BitMap__BitMapScale(OOP_Class * cl, OOP_Object *o,
     UWORD xs = bsa->bsa_SrcX;
     UWORD dyd = bsa->bsa_DestHeight;
     UWORD dxd = bsa->bsa_DestWidth;
-    WORD accuys = dyd;
-    WORD accuxs = dxd;
+    LONG accuys = dyd;
+    LONG accuxs = dxd;
     UWORD dxs = bsa->bsa_SrcWidth;
     UWORD dys = bsa->bsa_SrcHeight;
-    WORD accuyd = - (dys >> 1);
-    WORD accuxd = - (dxs >> 1);
+    LONG accuyd = - (dys >> 1);
+    LONG accuxd = - (dxs >> 1);
     UWORD x;
 
     if ((srcbuf = AllocVec(bsa->bsa_SrcWidth * sizeof(ULONG), 0)) == NULL)
