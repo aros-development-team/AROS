@@ -226,16 +226,24 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     { MUIA_Numeric_Min,        0 },
                     { MUIA_Numeric_Max,        0 },
                     { MUIA_Numeric_Default,    0 },
-                    { MUIA_Disabled,	    FALSE},
+                    { MUIA_Disabled,        FALSE},
                     { TAG_DONE,                0 }
                 };
                 
                 struct DimensionInfo dim;
                 BOOL autoscroll;
+                ULONG tmpid;
 
-                D(bug("[smproperties] Set DisplayID = 0x%08lx\n", tag->ti_Data));
+                tmpid = tag->ti_Data;
+                D(bug("[smproperties] Set DisplayID = 0x%08lx\n", tmpid));
                 
-                if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tag->ti_Data))
+                if (!GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tmpid))
+                {
+                    tmpid = BestModeID(TAG_DONE);
+                    nnset(data->def_width, MUIA_Selected, TRUE);
+                    nnset(data->def_height, MUIA_Selected, TRUE);
+                }
+                if (GetDisplayInfoData(NULL, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, tmpid))
                 {
                     IPTR isdefault, val;
 
@@ -243,7 +251,7 @@ IPTR ScreenModeProperties__OM_SET(Class *CLASS, Object *self, struct opSet *mess
                     depth_tags[2].ti_Data  = dim.MaxDepth;
                     depth_tags[3].ti_Data  = dim.MaxDepth;
 
-                    id = tag->ti_Data;
+                    id = tmpid;
                     data->DefWidth = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
                     data->DefHeight = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
                     data->DefDepth = depth_tags[3].ti_Data;
