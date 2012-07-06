@@ -96,9 +96,11 @@ IPTR IconImage__MUIM_Draw
         self, MUIM_DrawParentBackground,  
         _mleft(self), _mtop(self), _mwidth(self), _mheight(self), 0, 0, 0
     );
-    
+
     get(self, MUIA_Selected, &selected);
-    
+
+    LayoutIcon(data->iid_DiskObject, _screen(self), TAG_END);
+
     DrawIconState
     (
         _rp(self), data->iid_DiskObject, NULL, 
@@ -124,6 +126,7 @@ IPTR IconImage__MUIM_AskMinMax
     
     memset(&size, 0, sizeof(struct Rectangle));
     
+    LayoutIcon(data->iid_DiskObject, _screen(self), TAG_END);
     if
     (
         GetIconRectangle
