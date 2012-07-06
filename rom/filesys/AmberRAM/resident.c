@@ -103,7 +103,7 @@ static AROS_UFH3 (APTR, Init,
    if (seg == BNULL)
       Alert(AT_DeadEnd | AG_NoMemory);
 
-   dev_node->dn_Handler = (BSTR)handler_name;
+   dev_node->dn_Handler = AROS_CONST_BSTR(HANDLER_NAME);
    dev_node->dn_StackSize = 10000;
    dev_node->dn_SegList = seg;
    dev_node->dn_Priority = 10;
@@ -128,7 +128,7 @@ static AROS_UFH3 (APTR, Init,
           fse->fse_DosType      = MAKE_ID('A', 'R', 'A', 'M');
           fse->fse_Version      = (VERSION << 16) | REVISION;
           fse->fse_PatchFlags   = FSEF_HANDLER | FSEF_STACKSIZE | FSEF_PRIORITY | FSEF_SEGLIST;
-          fse->fse_Handler      = AROS_CONST_BSTR(HANDLER_NAME);
+          fse->fse_Handler      = dev_node->dn_Handler;
           fse->fse_StackSize    = 16384;
           fse->fse_Priority     = -5;
           fse->fse_SegList      = seg;
