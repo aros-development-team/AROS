@@ -153,6 +153,15 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
                 Alert(AT_DeadEnd | AN_BootStrap);
             }
             Close(cis);
+            {   /* Do not flush cos (show banner) if we got this far, we don't want to
+                 * see shell window quickly opening and then immediately closing at
+                 * the end of startup-sequence.
+                 *
+                 * There has to be less hacky way..
+                 */
+                struct FileHandle *fh = ((struct FileHandle*)BADDR(cos));
+                fh->fh_Flags &= ~0x80000000;
+            }
             Close(cos);
             /* NOTE: 'cas' will will already have been closed by the Shell */
         }
