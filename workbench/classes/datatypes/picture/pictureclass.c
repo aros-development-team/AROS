@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -589,22 +589,17 @@ static void render_on_rastport(struct Picture_Data *pd, struct Gadget *g, LONG S
 
     if ((depth >= 15) && (bmhd->bmh_Masking == mskHasAlpha))
     {
-        /* FIXME: This method does not work on scaled datatype images */
         /* Transparency on high color rast port with alpha channel in picture */
+        struct RastPort srcRP;
         ULONG * img = (ULONG *) AllocVec(SizeX * SizeY * 4, MEMF_ANY);
         if (img)
         {
-            struct pdtBlitPixelArray pa;
-            pa.MethodID = PDTM_READPIXELARRAY;
-            pa.pbpa_PixelData = (UBYTE *) img;
-            pa.pbpa_PixelFormat = PBPAFMT_ARGB;
-            pa.pbpa_PixelArrayMod = SizeX * 4;
-            pa.pbpa_Left = 0;
-            pa.pbpa_Top = 0;
-            pa.pbpa_Width = SizeX;
-            pa.pbpa_Height = SizeY;
-            if(DoMethodA((Object *) g, (Msg) &pa))
-                WritePixelArrayAlpha(img, SrcX, SrcY, SizeX * 4, destRP, DestX, DestY, SizeX, SizeY, 0xffffffff);
+            InitRastPort(&srcRP);
+            srcRP.BitMap = pd->DestBM;
+
+            ReadPixelArray(img, 0, 0, SizeX * 4, &srcRP, SrcX, SrcY, SizeX, SizeY, RECTFMT_ARGB);
+
+            WritePixelArrayAlpha(img, 0, 0, SizeX * 4, destRP, DestX, DestY, SizeX, SizeY, 0xffffffff);
             FreeVec((APTR) img);
         }
     }
@@ -698,7 +693,7 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 
 	render_on_rastport(pd, g, SrcX, SrcY, msg->gpr_RPort, DestX, DestY, SizeX, SizeY);
     }
-    else /* if(pd->DestBuffer) || if(pd->DestBM) */
+    else
     {
         D(bug("picture.datatype/GM_RENDER: No destination picture present !\n"));
         return FALSE;
