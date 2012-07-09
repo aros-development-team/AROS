@@ -133,7 +133,7 @@ static struct BNode *get_bnode(sfs_boot_dev_t * self, uint32_t key)
 	void *buffer;
 	struct BNode *bnode, *tmp;
 	uint32_t next;
-	uint16_t i;
+	int i;
 
 	bnode = NULL;
 	buffer = malloc(self->blocksize);
