@@ -117,7 +117,7 @@ static int get_partition_info(block_dev_desc_t * dev_desc,
 	if (p == NULL)
 		return -1;
 
-	g = (struct AmigaPartitionGeometry *)&(p->pb_Environment);
+	g = (struct AmigaPartitionGeometry *)&(p->pb_Environment[0]);
 	info->start = g->apg_LowCyl * g->apg_BlockPerTrack * g->apg_Surfaces;
 	info->size = (g->apg_HighCyl - g->apg_LowCyl + 1)
 	    * g->apg_BlockPerTrack * g->apg_Surfaces - 1;
