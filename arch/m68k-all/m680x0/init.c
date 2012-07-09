@@ -83,6 +83,35 @@ static const APTR funcLib[] = {
 static const UBYTE lib68040[] = "68040.library";
 static const UBYTE lib68060[] = "68060.library";
 
+/* m68k identify.library calls these, purpose unknown */
+AROS_LH0(ULONG, Dummy1, struct M680x0Base*, M680x0Base, 5, m680x0)
+{
+    AROS_LIBFUNC_INIT
+    bug("680x0: dummy1\n");
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+AROS_LH0(ULONG, Dummy2, struct M680x0Base*, M680x0Base, 6, m680x0)
+{
+    AROS_LIBFUNC_INIT
+    bug("680x0: dummy2\n");
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+AROS_LH0(ULONG, Dummy3, struct M680x0Base*, M680x0Base, 7, m680x0)
+{
+    AROS_LIBFUNC_INIT
+    bug("680x0: dummy3\n");
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+AROS_LH0(ULONG, Dummy4, struct M680x0Base*, M680x0Base, 8, m680x0)
+{
+    AROS_LIBFUNC_INIT
+    bug("680x0: dummy4\n");
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
 
 static int M680x0Init(struct M680x0Base *M680x0Base)
 {
