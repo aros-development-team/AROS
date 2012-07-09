@@ -234,7 +234,7 @@ AROS_LH4(void, RegisterModule,
                 DSYMS(bug("[Debug] Adding module @%p: %s\n", pm, pm->m_name));
                 strcpy(mod->m_name, pm->m_name);
 
-                seg->s_seg = NULL;
+                seg->s_seg = BNULL;
                 seg->s_mod = mod;
                 seg->s_name = mod->m_name;
                 seg->s_num = 0;
