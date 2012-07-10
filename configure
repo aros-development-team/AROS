@@ -8177,13 +8177,8 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -${gcc_target_cpu} -fbuiltin -Wno-volatile-register-var -Os"
-                aros_config_aflags="$aros_config_aflags -${gcc_target_cpu}"
-                # Needed to get the correct multilib
-                aros_config_ldflags="-${gcc_target_cpu}"
-                aros_shared_ldflags="-${gcc_target_cpu}"
-                aros_kernel_ldflags="-${gcc_target_cpu}"
-                aros_target_nostdlib_ldflags="-${gcc_target_cpu}"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -Os"
+                aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_default_wbwidth=640
                 aros_default_wbheight=256
@@ -8265,7 +8260,7 @@ fi
                 aros_shared_aflags=""
                 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
                 aros_kernel_ldflags="-Wl,-rpath,./lib"
-                aros_debug_cflags="$aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
+                aros_debug_cflags="$aros_symbols_debug  $aros_messages_debug"
                 aros_debug_aflags=""
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
@@ -8298,7 +8293,7 @@ fi
                 aros_shared_aflags=""
                 aros_shared_ldflags="-Wl,-rpath,./lib -shared"
                 aros_kernel_ldflags="-Wl,-rpath,./lib"
-                aros_debug_cflags="$aros_symbols_debug $aros_messages_debug -mc68000"
+                aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
                 aros_debug_aflags=""
                 aros_debug_ldflags="$aros_symbols_debug"
                 aros_mungwall_debug="0"
