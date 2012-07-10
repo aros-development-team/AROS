@@ -284,7 +284,8 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
 	{
 	    ULONG ioerr = IoErr();
 	    /* Ignore error if ACTION_SET_FILE_SIZE is not implemented */
-	    if(ioerr != ERROR_NOT_IMPLEMENTED)
+	    if(ioerr != ERROR_NOT_IMPLEMENTED &&
+	       ioerr != ERROR_ACTION_NOT_KNOWN)
 	    {
 		D(bug("__open: SetFileSize ioerr=%d\n", ioerr));
 	        errno = __arosc_ioerr2errno(ioerr);
