@@ -1705,6 +1705,7 @@ else
     # Determine whether AROS or ELF tools should be used
     if test "$aros_tool_prefix" = "none"; then
         aros_tool_prefix="${elf_tool_prefix}"
+        crosstools_cxx_target=tools-crosstools
     fi
 
     AC_MSG_RESULT([$aros_tool_prefix])
@@ -1713,7 +1714,7 @@ else
     AROS_REQUIRED(cpp,$orig_target_cpp)
     AROS_TOOL_TARGET(orig_target_cc,gcc,${aros_tool_prefix}gcc)
     AROS_REQUIRED(cc,$orig_target_cc)
-    if test "x$orig_target_cxx" != "x" ; then
+    if test "x${crosstools_cxx_target}" = "x" ; then
         AROS_TOOL_TARGET(orig_target_cxx,g++,${aros_tool_prefix}g++)
         AROS_REQUIRED(cxx,$orig_target_cxx)
     fi
@@ -1803,8 +1804,6 @@ fi
 # Set up the sources for the symlink farm
 if test "$crosstools" = "yes"; then
     crosstools_target=tools-crosstools
-else
-    crosstools_cxx_target=tools-crosstools
 fi
 
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"

@@ -10616,6 +10616,7 @@ else
     # Determine whether AROS or ELF tools should be used
     if test "$aros_tool_prefix" = "none"; then
         aros_tool_prefix="${elf_tool_prefix}"
+        crosstools_cxx_target=tools-crosstools
     fi
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: $aros_tool_prefix" >&5
@@ -10973,7 +10974,7 @@ fi
     if test "$orig_target_cc" = ""; then
     as_fn_error $? "cc is required to build AROS. Please install and run configure again." "$LINENO" 5
 fi
-    if test "x$orig_target_cxx" != "x" ; then
+    if test "x${crosstools_cxx_target}" = "x" ; then
 
 if test "${aros_tool_prefix}g++" = ""; then
     if test "$cross_compiling" = "yes" ; then
@@ -12688,8 +12689,6 @@ fi
 # Set up the sources for the symlink farm
 if test "$crosstools" = "yes"; then
     crosstools_target=tools-crosstools
-else
-    crosstools_cxx_target=tools-crosstools
 fi
 
 aros_kernel_cc="$aros_kernel_cc $kernel_tool_flags"
