@@ -11,10 +11,12 @@
 #include <proto/dos.h>
 #include <proto/kernel.h>
 
-#define TEMPLATE "QUIET/S,NOCACHE/S"
+#define TEMPLATE "QUIET/S,NOCACHE/S,NOCOPYMEM/S,NOVBRMOVE/S"
 #define ARG_QUIET   0
 #define ARG_NOCACHE 1
-#define ARG_NUM 2
+#define ARG_NOCOPYMEM 2
+#define ARG_NOVBRMOVE 3
+#define ARG_NUM 4
 
 /* "SetPatch AROS-m68k" is magic string that is checked in LoadSeg() compatibility hack.
  * We can't allow original AOS C:SetPatch to run because it pokes undocumented structures.
@@ -168,12 +170,12 @@ static void mmusetup(BOOL quiet)
     Enable();
 }
 
-extern void patches(BOOL);
+extern void patches(BOOL, ULONG);
 
 int main (void)
 {
     struct RDArgs *rda;
-    IPTR args[ARG_NUM] = { FALSE, FALSE };
+    IPTR args[ARG_NUM] = { FALSE, FALSE, FALSE, FALSE };
 
     rda = ReadArgs(TEMPLATE, args, NULL);
     if (rda) {
@@ -204,10 +206,11 @@ int main (void)
                 installed680x0 = TRUE;
         }
 
-        fastvbr(args[ARG_QUIET]);
+        if (!args[ARG_NOVBRMOVE])
+            fastvbr(args[ARG_QUIET]);
 
         if (justinstalled680x0)
-            patches(args[ARG_QUIET]);
+            patches(args[ARG_QUIET], args[ARG_NOCOPYMEM] ? 0 : 1);
  
         if (args[ARG_NOCACHE] == FALSE) {
             if (justinstalled680x0)

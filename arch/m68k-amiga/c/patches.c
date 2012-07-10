@@ -26,8 +26,10 @@ static void patch_function(UBYTE *start, UBYTE *end, void *library, WORD lvo)
     SetFunction(library, lvo * -LIB_VECTSIZE, mem);
 }
 
-void patches(BOOL quiet)
+void patches(BOOL quiet, ULONG flags)
 {
+    if (!(flags & 1))
+        return;
     if (SysBase->AttnFlags & AFF_68060) {
         patch_function(&copymem_060, &copymeme_060, SysBase, 104);
         patch_function(&copymemquick_060, &copymemquicke_060, SysBase, 105);
