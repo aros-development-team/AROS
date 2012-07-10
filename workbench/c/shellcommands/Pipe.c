@@ -157,7 +157,7 @@ static LONG pcharExecute(struct Library *DOSBase, STRPTR cmd, CONST_STRPTR pchar
 
 
 AROS_SH1(Pipe, 41.1,
-AROS_SHA(STRPTR, , , /F,   NULL))
+AROS_SHA(STRPTR, , , /F,   ""))
 {
     AROS_SHCOMMAND_INIT
     CONST_STRPTR cmd = SHArg( );
