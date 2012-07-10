@@ -222,7 +222,7 @@ static const char *pf_to_string[num_Hidd_AllPf + 1] =
 #define CONVERTFUNC(a,b) static ULONG convert_ ## a ## _ ## b \
     (APTR srcPixels, ULONG srcMod, HIDDT_StdPixFmt srcPixFmt, \
     APTR dstPixels, ULONG dstMod, HIDDT_StdPixFmt dstPixFmt, \
-    ULONG width, ULONG height) \
+    UWORD width, UWORD height) \
 { \
     if (noisy) bug("== PixelConversion " #a " to " #b " (%s to %s)\n", pf_to_string[srcPixFmt], pf_to_string[dstPixFmt]);
         
