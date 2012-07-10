@@ -711,13 +711,13 @@ diff -ruN gcc-4.6.2/gcc/config.gcc gcc-4.6.2.aros/gcc/config.gcc
  	use_gcc_stdint=wrap
          ;;
 +m68k-*-aros*)
-+	default_m68k_cpu=68020
++	default_m68k_cpu=68000
 +	default_cf_cpu=5206
 +	tm_file="${tm_file} m68k/m68k-none.h m68k/m68kelf.h dbxelf.h elfos.h newlib-stdint.h m68k/m68kemb.h m68k/m68020-elf.h"
 +	tm_file="${tm_file} aros.h"
 +	tm_defines="${tm_defines} MOTOROLA=1"
 +	tmake_file="m68k/t-floatlib m68k/t-m68kbare m68k/t-m68kelf"
-+	tmake_file="$tmake_file m68k/t-mlibs t-aros"
++	tmake_file="$tmake_file m68k/t-aros m68k/t-mlibs t-aros"
 +	extra_parts="crtbegin.o crtend.o"
 +	;;
  m68k-*-elf* | fido-*-elf*)
@@ -2133,3 +2133,9 @@ diff -ruN gcc-4.6.2/libcpp/configure.ac gcc-4.6.2.aros/libcpp/configure.ac
  	x86_64-*-* | \
  	ia64-*-* | \
  	hppa*64*-*-* | \
+diff -ruN gcc-4.6.2/gcc/config/m68k/t-aros gcc-4.6.2.aros/gcc/config/m68k/t-aros
+--- /dev/null
++++ gcc-4.6.2.aros/gcc/config/m68k/t-aros
+@@ -0,0 +1,2 @@
++# Custom multilibs for AROS
++M68K_MLIB_CPU += && match(MLIB, "^68")
