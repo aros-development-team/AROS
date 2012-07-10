@@ -59,7 +59,8 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
              : Examine(lock, fib);
     if (!Examined)
     {
-	if(IoErr() == ERROR_NOT_IMPLEMENTED)
+	if(IoErr() == ERROR_NOT_IMPLEMENTED ||
+	   IoErr() == ERROR_ACTION_NOT_KNOWN)
 	{
 	    fallback_to_defaults = 1;
 	}
@@ -91,6 +92,7 @@ int __stat(BPTR lock, struct stat *sb, BOOL filehandle)
             break;
         else if(   IoErr() == ERROR_OBJECT_IN_USE
                 || IoErr() == ERROR_NOT_IMPLEMENTED
+                || IoErr() == ERROR_ACTION_NOT_KNOWN
                 || (IoErr() == ERROR_OBJECT_NOT_FOUND && fib->fib_EntryType == ST_PIPEFILE))
         {
             /* We can't retrieve name because lock is an exclusive lock
@@ -222,7 +224,8 @@ int __stat_from_path(const char *path, struct stat *sb)
     /* examine parent directory of object to stat */
     if (!Examine(lock, fib))
     {
-        if (IoErr() == ERROR_NOT_IMPLEMENTED)
+        if (IoErr() == ERROR_NOT_IMPLEMENTED ||
+            IoErr() == ERROR_ACTION_NOT_KNOWN)
             fallback_to_defaults = 1;
         else
         {
