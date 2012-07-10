@@ -80,7 +80,7 @@
 #define PIXBUFBYTES 16384
 
 static BOOL DoBufferedOperation(OOP_Class *cl, OOP_Object *o, UWORD startx, UWORD starty, UWORD width, UWORD height,
-                                BOOL getimage, HIDDT_StdPixFmt stdpf, void (*operation)(), void *userdata)
+                                BOOL getimage, HIDDT_StdPixFmt stdpf, VOID_FUNC operation, void *userdata)
 {
     struct HIDDBitMapData *data = OOP_INST_DATA(cl, o);
     ULONG bytesperline = width * sizeof(ULONG);
@@ -2966,7 +2966,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
         return;
 
     if (!DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_ARGB32,
-                            PutAlphaImageBuffered, &data))
+                            (VOID_FUNC)PutAlphaImageBuffered, &data))
     {
         /* Buffered method failed, use slow pixel-by-pixel method */
         for (y = msg->y; y < msg->y + msg->height; y++)
@@ -3195,7 +3195,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
     data.bg       = GC_BG(msg->gc);
     data.invert   = msg->inverttemplate ? 0 : 0xFFFF;
 
-    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, op, &data);
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, (VOID_FUNC)op, &data);
 
     /* TODO: write fallback */
 
@@ -3378,7 +3378,7 @@ VOID BM__Hidd_BitMap__PutAlphaTemplate(OOP_Class *cl, OOP_Object *o,
     data.modulo   = msg->modulo;
     data.invert   = msg->invertalpha ? 255 : 0;
 
-    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_ARGB32, op, &data);
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_ARGB32, (VOID_FUNC)op, &data);
 
     /* TODO: write fallback */
 
@@ -3709,7 +3709,7 @@ VOID BM__Hidd_BitMap__PutPattern(OOP_Class *cl, OOP_Object *o,
 
     DPUTPATTERN(bug("[PutPattern] MaskArray 0x%p, MaskMask 0x%04X\n", data.maskarray, data.maskmask));
 
-    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, op, &data);
+    DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, get, vHidd_StdPixFmt_Native32, (VOID_FUNC)op, &data);
 
     /* TODO: Write fallback */
 
@@ -3970,7 +3970,7 @@ VOID BM__Hidd_BitMap__PutTranspImageLUT(OOP_Class *cl, OOP_Object *o,
         userdata.lut = msg->pixlut->pixels;
 
     DoBufferedOperation(cl, o, msg->x, msg->y, msg->width, msg->height, TRUE, vHidd_StdPixFmt_Native32,
-                        PutTranspImageLUTBuffered, &userdata);
+                        (VOID_FUNC)PutTranspImageLUTBuffered, &userdata);
 
     /* TODO: Write fallback */
 
