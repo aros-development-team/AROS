@@ -11,6 +11,7 @@
 #include <aros/system.h>
 #include <stdint.h>
 
+#define __BIT_TYPES_DEFINED__
 
 #if !defined __cplusplus || defined __STDC_FORMAT_MACROS
 
