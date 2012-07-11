@@ -549,6 +549,16 @@ OOP_Object *METHOD(I2C, Root, New)
     return o;
 }
 
+VOID METHOD(I2C, Root, Dispose)
+{
+    tDrvData *drv = (tDrvData *)OOP_INST_DATA(cl, o);
+
+    D(bug("[I2C] Dispose()\n"));
+
+    CloseDevice((struct IORequest *)&drv->tr);
+
+    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+}
 
 /* Class initialization and destruction */
 

@@ -83,6 +83,10 @@ struct i2cbase {
     struct i2c_staticdata	sd;
 };
 
+/* Dummy struct for the Dispose method
+ */
+struct pRoot_Dispose;
+
 #define BASE(lib) ((struct i2cbase*)(lib))
 
 #define SD(cl) (&BASE(cl->UserData)->sd)
