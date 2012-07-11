@@ -93,11 +93,16 @@ MODULES := \
 TARGET_ISO := $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
 
 .PHONY: $(DISTDIR)/aros$(AROS_TARGET_SUFFIX)-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU).iso
-	
+
+#MM kernel-package-sam440-ppc-quick:
+kernel-package-sam440-ppc-quick: kernel-package-sam440-ppc
+	@$(ECHO)
+
 kernel-package-sam440-ppc:
+	@$(ECHO) Copying modules to boot/modules/
 	$(RM) -rf $(BINDIR)/boot/modules
 	%mkdirs_q $(BINDIR)/boot/modules
-	@mv $(MODULES) $(BINDIR)/boot/modules/
+	@$(CP) $(MODULES) $(BINDIR)/boot/modules/
 	#$(SRCDIR)/tools/package/pkg c $(BINDIR)/boot/kernel.pkg $(BINDIR)/.pkg
 	
 bootiso-sam440-ppc: $(AROSDIR)/.backdrop $(TARGET_ISO)
