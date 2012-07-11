@@ -29,11 +29,11 @@ GCC_ENUM_COMPARE            := -Wno-enum-compare
 GNU_REPOSITORY := gnu://
 MPC_REPOSITORY := http://www.multiprecision.org/mpc/download/
 
-binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)
+binutils-installflag := $(CROSSTOOLSDIR)/.installflag-binutils-$(BINUTILS_VERSION)-$(AROS_TARGET_CPU)
 gmp-installflag := $(CROSSTOOLSDIR)/.installflag-gmp-$(GMP_VERSION)
 mpfr-installflag := $(CROSSTOOLSDIR)/.installflag-mpfr-$(MPFR_VERSION)
 mpc-installflag := $(CROSSTOOLSDIR)/.installflag-mpc-$(MPC_VERSION)
-gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)
+gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_TARGET_CPU)
 
 #MM- tools-crosstools : tools-crosstools-$(AROS_TARGET_CPU)
 
