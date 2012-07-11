@@ -1,0 +1,16 @@
+# $Id$
+#
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I$(SRCDIR)/rom/processor
+
+FILES := \
+    getcpuinfo \
+    processor_init \
+
+#MM- kernel-processor-ppc : includes
+
+USER_CFLAGS += -D__UTILITY_NOLIBBASE__
+
+%build_archspecific mainmmake=kernel-processor maindir=rom/processor \
+    arch=ppc files=$(FILES)
