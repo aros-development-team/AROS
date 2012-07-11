@@ -80,10 +80,12 @@ struct ata__legacybus
 
 static const struct ata__legacybus LegacyBuses[] = 
 {
+#if defined(__i386__) || defined(__x86_64__)
     {0x1f0, 0x3f4, 14, 0, 0},
     {0x170, 0x374, 15, 0, 1},
     {0x168, 0x36c, 10, 1, 0},
     {0x1e8, 0x3ec,  11, 1, 1},
+#endif
     {0, 0,  0, 0, 0},
 };
 
