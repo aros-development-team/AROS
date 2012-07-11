@@ -168,7 +168,6 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
      */
     Disable();
     Exec_SystemAlert(alertNum, location, stack, type, data, SysBase);
-    Enable();
 
     if (alertNum & AT_DeadEnd)
     {
@@ -177,6 +176,8 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	ColdReboot();
 	ShutdownA(SD_ACTION_COLDREBOOT);
     }
+
+    Enable();
 
     /*
      * We succesfully displayed an alert in supervisor mode.
