@@ -204,10 +204,6 @@ OOP_Object *METHOD(USBHub, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(USBHub, Root, Dispose)
 {
     D(bug("[USB] USBHub::Dispose\n"));

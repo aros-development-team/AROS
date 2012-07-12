@@ -334,10 +334,6 @@ OOP_Object *METHOD(Storage, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(Storage, Root, Dispose)
 {
     StorageData *mss = OOP_INST_DATA(cl, o);

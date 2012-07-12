@@ -40,10 +40,6 @@
 	|| (y) < GC_CLIPY1(gc)		\
 	|| (y) > GC_CLIPY2(gc) )
 
-struct pRoot_Dispose {
-    OOP_MethodID mID;
-};
-
 OOP_Object *METHOD(ATIOffBM, Root, New)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Root, New))));
 

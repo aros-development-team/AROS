@@ -151,6 +151,10 @@ struct pRoot_New
     struct TagItem *attrList;
 };
 
+struct pRoot_Dispose {
+    OOP_MethodID mID;
+};
+
 struct pRoot_Set
 {
     OOP_MethodID mID;

@@ -54,10 +54,6 @@ OOP_Object *METHOD(USB, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(USB, Root, Dispose)
 {
     struct Library *base = &BASE(cl->UserData)->LibNode;

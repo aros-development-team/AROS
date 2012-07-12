@@ -238,10 +238,6 @@ kbd->kbd_task = t;
 	return o;
 }
 
-struct pRoot_Dispose {
-	OOP_MethodID        mID;
-};
-
 void METHOD(USBKbd, Root, Dispose)
 {
 	KbdData *kbd = OOP_INST_DATA(cl, o);

@@ -50,10 +50,6 @@ struct __ROP ROP_table[] = {
 	|| (y) < GC_CLIPY1(gc)		\
 	|| (y) > GC_CLIPY2(gc) )
 
-struct pRoot_Dispose {
-    OOP_MethodID mID;
-};
-
 static BOOL CanAccelerateBlits(UWORD product_id)
 {
     return product_id >= 0x2582
