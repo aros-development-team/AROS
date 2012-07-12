@@ -42,6 +42,7 @@ title AROS on Sam440
     module boot/modules/oop.library
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
+    module boot/modules/pci-amcc460.hidd
     module boot/modules/pci.hidd
     module boot/modules/pciusb.device
     module boot/modules/poseidon.library
@@ -89,6 +90,7 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/oop.library
     module boot/modules/partition.library
     module boot/modules/pci-amcc440.hidd
+    module boot/modules/pci-amcc460.hidd
     module boot/modules/pci.hidd
     module boot/modules/processor.resource
     module boot/modules/radeon.hidd
