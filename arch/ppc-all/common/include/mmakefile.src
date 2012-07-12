@@ -2,46 +2,6 @@
 
 include $(TOP)/config/make.cfg
 
-_INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))	\
-            $(foreach f,$(shell ls aros/*.[hi]), $(f))	\
-            $(foreach f,$(shell ls asm/*.[hi]), $(f))	\
-            $(foreach f,$(shell ls libcore/*.[hic]), $(f))	\
-            $(foreach f,$(shell ls inline/*.[hi]), $(f))
-
-INCFILES := $(foreach f,$(_INCLUDES), $(AROS_INCLUDES)/$(f) $(GENINCDIR)/$(f))
-
-DIRS :=	$(AROS_INCLUDES) $(GENINCDIR) \
-	$(foreach d, aros asm libcore inline, $(AROS_INCLUDES)/$(d) $(GENINCDIR)/$(d))
-
-MACHINE_H := $(GENINCDIR)/aros/machine.h
-
-#MM
-includes-copy-ppc : setup-includes $(INCFILES) $(GENINCDIR)/sigcore.h
-
-setup-includes :
-	@$(FOR) dir in $(DIRS) ; do \
-	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ; \
-	done
-
-#MM
-clean ::
-	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
-
-$(AROS_INCLUDES)/% : %
-	$(CP) $< $@
-
-$(GENINCDIR)/% : %
-	$(CP) $< $@
-
-# geninc is run on the host (which is incorrect...)
-GENINC_CFLAGS := $(USER_CFLAGS) $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
-
-$(GENINC) : geninc.c
-	@echo "CFLAGS=$(GENINC_CFLAGS)"
-	@echo "Creating geninc..."
-	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
-
-machine.i : $(GENINC) $(MACHINE_H)
-	$(GENINC) > machine.i
+copy_includes includes=multiboot.h dir=aros
 
 %common
