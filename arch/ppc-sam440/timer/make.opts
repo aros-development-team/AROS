@@ -1,5 +1,0 @@
-# This version needs VBlank emulator
-USER_CFLAGS += -DUSE_VBLANK_EMU
-
-USER_INCLUDES += $(PRIV_KERNEL_INCLUDES) \
-                 -I$(SRCDIR)/$(CURDIR) -I$(SRCDIR)/rom/timer

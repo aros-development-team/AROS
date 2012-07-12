@@ -26,5 +26,5 @@ const char IRQ_Table[15] =
     -1,		/* Serial2	*/
     -1,		/* Serial1	*/
     -1,		/* Keyboard	*/
-    INTR_GDP	/* Timer	*/
+    -1,		/* Timer	*/
 };

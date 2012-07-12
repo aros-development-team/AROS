@@ -1,3 +1,4 @@
+
 #include <aros/debug.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
@@ -54,34 +55,74 @@ static void _write_config_word(int reg, uint16_t val)
         _write_config_long(reg, temp.ul);
 }
 
+/*
+ * Interrupt controller functions. Actually have the following prototypes:
+ *
+ * void enable_irq(uint8_t num);
+ * void disable_irq(uint8_t num);
+ */
 
-void syscall_handler(context_t *ctx, uint8_t exception, void *self)
+/* Master copy of UICn_ER */
+ULONG uic_er[4];
+
+static inline void enable_irq(int irq)
+{
+    ULONG mask = (0x80000000 >> (irq & 0x1f));
+
+    uic_er[irq >> 5] |= mask;
+
+    switch (irq >> 5) {
+    case 0: wrdcr(UIC0_ER, uic_er[0]); break;
+    case 1: wrdcr(UIC1_ER, uic_er[1]); break;
+    case 2: wrdcr(UIC2_ER, uic_er[2]); break;
+    case 3: wrdcr(UIC3_ER, uic_er[3]); break;
+    default: break;
+    }
+}
+
+static inline void disable_irq(int irq)
+{
+    ULONG mask = (0x80000000 >> (irq & 0x1f));
+
+    uic_er[irq >> 5] &= ~mask;
+
+    switch (irq >> 5) {
+    case 0: wrdcr(UIC0_ER, uic_er[0]); break;
+    case 1: wrdcr(UIC1_ER, uic_er[1]); break;
+    case 2: wrdcr(UIC2_ER, uic_er[2]); break;
+    case 3: wrdcr(UIC3_ER, uic_er[3]); break;
+    default: break;
+    }
+}
+
+void syscall_handler(context_t *ctx, uint8_t exception)
 {
     struct KernelBase *KernelBase = getKernelBase();
-    int cause = 0;
 
-//    D(bug("[KRN] SysCall handler. context @ %p SC=%d\n", ctx, ctx->cpu.gpr[3]));
+    D(bug("[KRN] SysCall: SRR0=%p, SRR1=%p, SC=%d\n", ctx->cpu.srr0, ctx->cpu.srr1, ctx->cpu.gpr[3]));
    
-#if 0
-    if ((char**)ctx->cpu.srr0 < &__text_start || (char**)ctx->cpu.srr0 >= &__text_end)
-    {
-        D(bug("[KRN] ERROR ERROR! SysCall issued directly outside kernel.resource!!!!!\n"));
-        core_LeaveInterrupt(ctx);
-    }
-#endif
-    
     switch (ctx->cpu.gpr[3])
     {
         case SC_CLI:
-            ctx->cpu.srr1 &= ~MSR_EE;
+            /* Disable all external interrupts */
+            wrdcr(UIC0_ER, 0);
             break;
         
         case SC_STI:
-            ctx->cpu.srr1 |= MSR_EE;
+            /* Enable selected external interrupts */
+            wrdcr(UIC0_ER, uic_er[0]);
+            break;
+
+        case SC_IRQ_ENABLE:
+            enable_irq(ctx->cpu.gpr[4]);
+            break;
+        
+        case SC_IRQ_DISABLE:
+            disable_irq(ctx->cpu.gpr[4]);
             break;
         
         case SC_SUPERSTATE:
-                ctx->cpu.gpr[3] = ctx->cpu.srr1;
+            ctx->cpu.gpr[3] = ctx->cpu.srr1;
             ctx->cpu.srr1 &= ~MSR_PR;
             break;
         
@@ -90,22 +131,6 @@ void syscall_handler(context_t *ctx, uint8_t exception, void *self)
                 ctx->cpu.gpr[3] = 0;
             else
                 ctx->cpu.gpr[3] = 1;
-            break;
-        
-        case SC_CAUSE:
-                cause=1;
-                break;
-        
-        case SC_DISPATCH:
-            core_Dispatch();
-            break;
-        
-        case SC_SWITCH:
-            core_Switch();
-            break;
-        
-        case SC_SCHEDULE:
-            core_Schedule();
             break;
         
         case SC_INVALIDATED:
@@ -168,10 +193,8 @@ void syscall_handler(context_t *ctx, uint8_t exception, void *self)
                 asm volatile("mtsrr0 %0; mtsrr1 %1; rfi"::"r"(0xfffffffc), "r"(1 << 6));
                 while(1);
         }
+        default:
+                core_SysCall(ctx->cpu.gpr[3], ctx);
+                break;
     }
-
-    if (cause)
-        core_ExitInterrupt(ctx);
-    else
-        core_LeaveInterrupt(ctx);
 }

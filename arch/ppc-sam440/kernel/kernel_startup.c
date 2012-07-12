@@ -88,13 +88,11 @@ static union {
 } tmp_struct                                   __attribute__((used, section(".data"), aligned(16)));
 static const uint32_t *tmp_stack_end           __attribute__((used, section(".text"))) = &tmp_struct.tmp_stack[124];
 static uint32_t        stack[STACK_SIZE]       __attribute__((used, aligned(16)));
-static uint32_t        stack_super[STACK_SIZE] __attribute__((used, aligned(16)));
 static const uint32_t *stack_end               __attribute__((used, section(".text"))) = &stack[STACK_SIZE-4];
 static const void     *target_address          __attribute__((used, section(".text"))) = (void*)kernel_cstart;
 static char            CmdLine[200]            __attribute__((used));
 
-module_t *	modlist;
-uint32_t	modlength;
+struct MinList *modlist;
 uintptr_t	memlo;
 struct ExecBase *SysBase;
 
@@ -167,7 +165,7 @@ static uint32_t exec_GetMemory()
 void exec_main(struct TagItem *msg, void *entry)
 {
     UWORD *memrange[3];
-    uint32_t mem, krnLowest, krnHighest;
+    uint32_t mem, krnLowest, krnHighest, memLowest;
     struct MemHeader *mh;
 
     D(bug("[exec] AROS for Sam440 - The AROS Research OS\n"));
@@ -177,21 +175,32 @@ void exec_main(struct TagItem *msg, void *entry)
 
     /* Get the kernel memory locations */
     krnLowest = krnGetTagData(KRN_KernelLowest, 0, msg);
-    krnHighest = (krnGetTagData(KRN_KernelHighest, 0, msg) + 0xffff) & 0xffff0000;
-    D(bug("[exec] Create memory header @%p - %p\n", krnHighest, 0x01000000-1));
-    krnCreateMemHeader("RAM", -10, (APTR)(krnHighest), 0x01000000 - (IPTR)krnHighest,
+    krnHighest = krnGetTagData(KRN_KernelHighest, 0, msg);
+
+    memLowest = (krnHighest + 0xffff) & 0xffff0000;
+
+    D(bug("[exec] Kernel and romtags:  @%p - %p\n", krnLowest, krnHighest));
+    D(bug("[exec] Create memory header @%p - %p\n", memLowest, 0x01000000-1));
+    krnCreateMemHeader("RAM", -10, (APTR)(memLowest), 0x01000000 - (IPTR)memLowest,
                MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA);
 
     memrange[0] = (UWORD *)(krnLowest + 0xff000000);
     memrange[1] = (UWORD *)(krnHighest + 0xff000000);
     memrange[2] = (UWORD *)-1;
 
-    mh = (struct MemHeader *)krnHighest;
+    mh = (struct MemHeader *)memLowest;
 
     D(bug("[exec] Prepare exec base in %p\n", mh));
     krnPrepareExecBase(memrange, mh, msg);
-    wrspr(SPRG5, SysBase);
     D(bug("[exec] ExecBase at %08x\n", SysBase));
+
+    /* Set up %r2 to point to SysBase
+     * For now, this is only used by the mmu_handler
+     * to patch up the damage that Parthenope does
+     * when it loads modules, and assumes that
+     * &SysBase == (void **)4;
+     */
+    asm volatile ("mr %%r2, %0\n" :: "r"(SysBase));
 
     mem = exec_GetMemory();
     D(bug("[exec] Adding memory (%uM)\n", mem));
@@ -215,6 +224,7 @@ void exec_main(struct TagItem *msg, void *entry)
 static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
 {
     struct TagItem *tmp = tmp_struct.bootup_tags;
+    int modlength;
 
     /* Lowest usable kernel memory */
     memlo = 0xff000000;
@@ -229,9 +239,10 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* First message after FPU is enabled, otherwise illegal instruction */
     D(bug("[KRN] Sam440 Kernel built on %s\n", __DATE__));
 
-    /* Set supervisor stack */
-    wrspr(SPRG0, (uint32_t)&stack_super[STACK_SIZE-4]);
-
+    wrspr(SPRG0, 0);
+    wrspr(SPRG1, 0);
+    wrspr(SPRG2, 0);
+    wrspr(SPRG3, 0);
     wrspr(SPRG4, 0);    /* Clear KernelBase */
     wrspr(SPRG5, 0);    /* Clear SysBase */
 
@@ -249,26 +260,30 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
         {
             strcpy(CmdLine, (char*) msg->ti_Data);
             tmp->ti_Data = (STACKIPTR) CmdLine;
-            D(bug("[KRN] CmdLine %s\n", tmp->ti_Data));
+            D(bug("[KRN] CmdLine: %s\n", tmp->ti_Data));
         }
         else if (tmp->ti_Tag == KRN_BootLoader)
         {
             tmp->ti_Data = (STACKIPTR) memlo;
-            memlo += (strlen((char *)memlo) + 4) & ~3;
             strcpy((char*)tmp->ti_Data, (const char*) msg->ti_Data);
+            memlo += (strlen((char *)memlo) + 4) & ~3;
+            D(bug("[KRN] BootLoader: %s\n", tmp->ti_Data));
         }
         else if (tmp->ti_Tag == KRN_DebugInfo)
         {
             int i;
             struct MinList *mlist = (struct MinList *)tmp->ti_Data;
+            module_t *mod;
 
             D(bug("[KRN] DebugInfo at %08x\n", mlist));
 
-            module_t *mod = (module_t *)memlo;
+            modlist = (struct MinList *)memlo;
+            memlo += sizeof(*modlist);
+            NEWLIST(modlist);
+
+            mod = (module_t *)memlo;
 
             ListLength(mlist, modlength);
-            modlist = mod;
-
             memlo = (uintptr_t)&mod[modlength];
 
             D(bug("[KRN] Bootstrap loaded debug info for %d modules\n", modlength));
@@ -277,34 +292,55 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
             {
                 module_t *m = (module_t *)REMHEAD(mlist);
                 symbol_t *sym;
+                ULONG str_l = ~0, str_h = 0;
+
+                D(bug("[KRN] Module %s\n", m->m_name));
+
+                /* Discover size of the string table */
+                ForeachNode(&m->m_symbols, sym) {
+                    ULONG end = (ULONG)sym->s_name + strlen(sym->s_name) + 1 + 1;
+                    if ((ULONG)sym->s_name < str_l)
+                        str_l = (ULONG)sym->s_name;
+                    if (end > str_h)
+                        str_h = end;
+                }
+
+                if (str_l > str_h)
+                    str_h = str_l = 0;
 
                 mod[i].m_lowest = m->m_lowest;
                 mod[i].m_highest = m->m_highest;
-                mod[i].m_str = NULL;
-                NEWLIST(&mod[i].m_symbols);
+                mod[i].m_str = (char *)memlo;
+                memcpy(mod[i].m_str, (char *)str_l, str_h - str_l);
+                memlo += ((str_h - str_l) + 3) & ~3;
                 mod[i].m_name = (char *)memlo;
                 memlo += (strlen(m->m_name) + 4) & ~3;
                 strcpy(mod[i].m_name, m->m_name);
 
-                D(bug("[KRN] Module %s\n", m->m_name));
+                NEWLIST(&mod[i].m_symbols);
 
                 ForeachNode(&m->m_symbols, sym)
                 {
                     symbol_t *newsym = (symbol_t *)memlo;
                     memlo += sizeof(symbol_t);
 
-                    newsym->s_name = (char *)memlo;
-                    memlo += (strlen(sym->s_name)+4)&~3;
-                    strcpy(newsym->s_name, sym->s_name);
-
+                    newsym->s_name = (IPTR)sym->s_name - str_l + mod[i].m_str;
                     newsym->s_lowest = sym->s_lowest;
                     newsym->s_highest = sym->s_highest;
 
                     ADDTAIL(&mod[i].m_symbols, newsym);
                 }
+
+                ADDTAIL(modlist, &mod[i]);
             }
 
-            D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)mod) >> 10));
+            D(bug("[KRN] Debug info uses %d KB of memory\n", ((intptr_t)memlo - (intptr_t)modlist) >> 10));
+            D(bug("[KRN] Debug info relocated from %p to %p\n", tmp->ti_Data, modlist));
+
+            /* Ugh. Parthenope doesn't use the ELF_ModuleInfo format.
+             * Prevent debug.library from becoming confused.
+             */
+            tmp->ti_Data = 0;
         }
 
         ++tmp;
@@ -323,16 +359,13 @@ static void __attribute__((used)) kernel_cstart(struct TagItem *msg)
     /* Initialize exec.library */
     exec_main(BootMsg, NULL);
 
-    goSuper();
-    D(bug("[KRN] Uhm? Nothing to do?\n[KRN] STOPPED\n"));
+    bug("[KRN] Uhm? Nothing to do?\n[KRN] STOPPED\n");
 
     /* 
      * Do never ever try to return. This code would attempt to go back to the physical address
      * of asm trampoline, not the virtual one!
      */
-    while(1) {
-        wrmsr(rdmsr() | MSR_POW);
-    }
+    for (;;);
 }
 
 void SetupClocking440(struct PlatformData *pd)
@@ -529,13 +562,13 @@ void SetupClocking460(struct PlatformData *pd)
      */
     wrspr(DECAR, pd->pd_OPBFreq / 50);
     wrspr(TCR, rdspr(TCR) | TCR_DIE | TCR_ARE);
+    wrspr(CCR1, rdspr(CCR1) & ~(0x80000000 >> 24));
 }
 
 static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 {
     int i;
     struct PlatformData *pd;
-    struct ExecBase *SysBase = getSysBase();
 
     uintptr_t krn_lowest  = krnGetTagData(KRN_KernelLowest,  0, BootMsg);
     uintptr_t krn_highest = krnGetTagData(KRN_KernelHighest, 0, BootMsg);
@@ -573,12 +606,6 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
     /* 64K granularity for code sections */
     krn_highest = (krn_highest + 0xffff) & 0xffff0000;
 
-    /* 
-     * Set the KernelBase into SPRG4. At this stage the SPRG5 should be already set by
-     * exec.library itself.
-     */
-    wrspr(SPRG4, LIBBASE);
-
     D(bug("[KRN] Allowing userspace to flush caches\n"));
     wrspr(MMUCR, rdspr(MMUCR) & ~0x000c0000);
 
@@ -590,7 +617,8 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
 
     LIBBASE->kb_ContextSize = sizeof(context_t);
 
-    NEWLIST(&LIBBASE->kb_PlatformData->pd_Modules);
+    D(bug("[KRN] Setting DebugInfo to %p\n", modlist));
+    LIBBASE->kb_PlatformData->pd_DebugInfo = (APTR)modlist;
 
     D(bug("[KRN] Preparing kernel private memory\n"));
 
@@ -611,7 +639,7 @@ static int Kernel_Init(LIBBASETYPEPTR LIBBASE)
      * will be enabled during late exec init.
      */
 
-    goUser();
+    wrmsr(rdmsr() | MSR_PR);
     D(bug("[KRN] Entered user mode \n"));
 
     return TRUE;

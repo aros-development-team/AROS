@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 CFILES          := \
-        exec_init preparecontext rawputchar \
+        exec_init preparecontext \
         cachepostdma cachepredma supervisor superstate userstate \
         coldreboot
 

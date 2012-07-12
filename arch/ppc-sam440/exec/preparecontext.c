@@ -102,6 +102,13 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     ctx->cpu.srr1 = MSR_PR | MSR_EE | MSR_CE | MSR_ME;
     ctx->cpu.srr1 |= MSR_FP;
     ctx->cpu.gpr[1] = (IPTR)sp;
+
+    /* We storage SysBase in %r2
+     * This is needed for Parthenope fixup, and is a nice place to store
+     * it anyway, since the PowerPC ABI says this is a 'do not touch'
+     * register.
+     */
+    ctx->cpu.gpr[2] = (IPTR)SysBase;
     
     task->tc_SPReg = sp;
    
