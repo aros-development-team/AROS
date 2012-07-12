@@ -277,9 +277,9 @@ void mmu_init(struct TagItem *tags)
         map_region(&info, 0x0, 0xe0000000, 0xe0000000, 0x10000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
     } else if (krnIsPPC460(pvr)) {
         D(bug("[KRN] MMU: Configure for PPC460\n"));
-        /* map some 460EX peripherials bus */
+        /* PCI Memory             0x80000000-0xa0000000 */
         map_region(&info, 0xc, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
-        /* PCI IO/Mem/Control     0xe8000000-0xef000000 */
+        /* PCI IO/Control         0xe8000000-0xef000000 */
         map_region(&info, 0xc, 0x08000000, 0xe8000000, 0x07000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
         /* USB                    0xef000000-0xef010000 */
         map_region(&info, 0x4, 0xbffd0000, 0xef000000, 0x00010000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);

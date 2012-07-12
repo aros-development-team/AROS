@@ -710,9 +710,33 @@ typedef struct AROSCPUContext {
 #define UART_LSR_DDSR   0x02
 #define UART_LSR_DCTS   0x01
 
-#define PCIC0_IO        0xe8000000
-#define PCIC0_CFGADDR   0xeec00000
-#define PCIC0_CFGDATA   0xeec00004
+#define PCI0_IO        0xe8000000
+#define PCI0_IO_SIZE   0x04000000
+#define PCI0_MEM       0x80000000
+#define PCI0_MEM_SIZE  0x20000000
+
+#define PCI0_CFGADDR   0xeec00000
+#define PCI0_CFGDATA   0xeec00004
+
+#define PCI0_BAR0L     0xeec80010
+#define PCI0_BAR0H     0xeec80014
+
+#define PCI0_POM0LAL   0xeec80068 
+#define PCI0_POM0LAH   0xeec8006c 
+#define PCI0_POM0SA    0xeec80070 
+#define PCI0_POM0PCIAL 0xeec80074 
+#define PCI0_POM0PCIAH 0xeec80078
+
+#define PCI0_POM1LAL   0xeec8007c 
+#define PCI0_POM1LAH   0xeec80080 
+#define PCI0_POM1SA    0xeec80084 
+#define PCI0_POM1PCIAL 0xeec80088 
+#define PCI0_POM1PCIAH 0xeec8008c
+
+#define PCI0_PIM0SAL   0xeec80098
+#define PCI0_PIM0SAH   0xeec800f8
+#define PCI0_PIM0LAL   0xeec8009c
+#define PCI0_PIM0LAH   0xeec800a0
 
 #define GPT0_TBC        0xef600000
 #define GPT0_DCT0       0xef600110

@@ -34,7 +34,7 @@
 #define HiddAttrBase            (PSD(cl)->hiddAB)
 
 #define CFGADD(bus,dev,func,reg)    \
-    ( 0x80000000 | ((bus)<<16) |    \
+    ( 0x00000000 | ((bus)<<16) |    \
     ((dev)<<11) | ((func)<<8) | ((reg)&~3))
 
 typedef union _pcicfg
@@ -74,15 +74,15 @@ OOP_Object *PCI440__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     return o;
 }
 
-ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
 {
     ULONG temp;
     
     Disable();
-    outl_le(CFGADD(bus, dev, sub, reg),PCIC0_CFGADDR);
-    temp=inl_le(PCIC0_CFGDATA);
-    //D(bug("[PCI440] -> %08x = %08x\n", CFGADD(bus, dev, sub, reg), temp));
+    outl_le(CFGADD(bus, dev, sub, reg),PCI0_CFGADDR);
+    temp=inl_le(PCI0_CFGDATA);
     Enable();
+    DB2(bug("[PCI440] -> %08x = %08x\n", CFGADD(bus, dev, sub, reg), temp));
 
     return temp;
 }
@@ -93,35 +93,12 @@ ULONG PCI440__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     return ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
-UWORD ReadConfigWord(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+static void WriteConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
 {
-    pcicfg temp;
-
-    temp.ul = ReadConfigLong(psd, bus, dev, sub, reg);
-    return temp.uw[1 - ((reg&2)>>1)];
-}
-    
-
-UWORD PCI440__Hidd_PCIDriver__ReadConfigWord(OOP_Class *cl, OOP_Object *o, 
-                                            struct pHidd_PCIDriver_ReadConfigWord *msg)
-{
-    return ReadConfigWord(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
-}
-
-UBYTE PCI440__Hidd_PCIDriver__ReadConfigByte(OOP_Class *cl, OOP_Object *o, 
-                                            struct pHidd_PCIDriver_ReadConfigByte *msg)
-{
-    pcicfg temp;
-
-    temp.ul = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg); 
-    return temp.ub[3 - (msg->reg & 3)];
-}
-
-void WriteConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
-{
+    DB2(bug("[PCI440] <- %08x = %08x\n", CFGADD(bus, dev, sub, reg), val));
     Disable();
-    outl_le(CFGADD(bus, dev, sub, reg),PCIC0_CFGADDR);
-    outl_le(val,PCIC0_CFGDATA);
+    outl_le(CFGADD(bus, dev, sub, reg),PCI0_CFGADDR);
+    outl_le(val,PCI0_CFGDATA);
     Enable();
 }
 
@@ -129,26 +106,6 @@ void PCI440__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
                                             struct pHidd_PCIDriver_WriteConfigLong *msg)
 {
     WriteConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg, msg->val);
-}
-
-void PCI440__Hidd_PCIDriver__WriteConfigWord(OOP_Class *cl, OOP_Object *o,
-                                            struct pHidd_PCIDriver_WriteConfigWord *msg)
-{
-    pcicfg temp;
-    
-    temp.ul = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
-    temp.uw[1 - ((msg->reg&2)>>1)] = msg->val;
-    WriteConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg, temp.ul);
-}
-
-void PCI440__Hidd_PCIDriver__WriteConfigByte(OOP_Class *cl, OOP_Object *o,
-                                            struct pHidd_PCIDriver_WriteConfigByte *msg)
-{
-    pcicfg temp;
-    
-    temp.ul = ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
-    temp.ub[3 - (msg->reg & 3)] = msg->val;
-    WriteConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg, temp.ul);
 }
 
 /* Class initialization and destruction */
@@ -176,6 +133,24 @@ static int PCI440_InitClass(LIBBASETYPEPTR LIBBASE)
     pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
     OOP_DoMethod(pci, (OOP_Msg)pmsg);
     OOP_DisposeObject(pci);
+
+    D(bug("PCI440: CPU %p%p:%p%p PCI (0x%08x)\n",
+                inl_le(PCI0_POM0LAH), inl_le(PCI0_POM0LAL),
+                inl_le(PCI0_POM0PCIAH), inl_le(PCI0_POM0PCIAL),
+                ~(inl_le(PCI0_POM0SA) & ~0xf) + 1
+                ));
+    D(bug("PCI440: CPU %p%p:%p%p PCI (0x%08x)\n",
+                inl_le(PCI0_POM1LAH), inl_le(PCI0_POM1LAL),
+                inl_le(PCI0_POM1PCIAH), inl_le(PCI0_POM1PCIAL),
+                ~(inl_le(PCI0_POM1SA) & ~0xf) + 1
+                ));
+    uint64_t sa = ((uint64_t)inl_le(PCI0_PIM0SAH) << 32) | inl_le(PCI0_PIM0SAL);
+    sa = ~(sa & ~0xfULL) + 1;
+    D(bug("PCI440: PCI %p%p:%p%p CPU (0x%08x%08x)\n",
+                inl_le(PCI0_BAR0H), inl_le(PCI0_BAR0L) & ~0xf,
+                inl_le(PCI0_PIM0LAH), inl_le(PCI0_PIM0LAL),
+                (uint32_t)(sa >>32), (uint32_t)sa
+                ));
 
     D(bug("PCI440: All OK\n"));
 
