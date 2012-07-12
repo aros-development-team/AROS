@@ -30,7 +30,7 @@ struct shcommand
 static ULONG name##_main(CONST_STRPTR , IPTR *,                \
                          struct ExecBase *SysBase,             \
                          struct DosLibrary *);                 \
-static AROS_UFP2(LONG, name##_entry,                           \
+AROS_UFP2S(LONG, name##_entry,                                 \
     AROS_UFPA(char *,argstr,A0),                               \
     AROS_UFPA(ULONG,argsize,D0)                                \
 );                                                             \
