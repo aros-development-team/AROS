@@ -201,6 +201,9 @@ usb_hid_descriptor_t *METHOD(HID, Hidd_USBHID, GetHidDescriptor)
         usb_interface_descriptor_t *idesc = find_idesc(hid->cdesc, iface, 0);
         D(bug("[HID] cdesc=%p, idesc=%p\n", hid->cdesc, idesc));
 
+        if (!idesc)
+            return NULL;
+
         p = (char *)idesc + idesc->bLength;
         end = (char *)hid->cdesc + AROS_LE2WORD(hid->cdesc->wTotalLength);
 
@@ -262,69 +265,76 @@ OOP_Object *METHOD(HID, Root, New)
 
             HIDD_USBDevice_GetDescriptor(o, UDESC_CONFIG, 0, AROS_LE2WORD(cdesc.wTotalLength), hid->cdesc);
             hid->hd = HIDD_USBHID_GetHidDescriptor(o);
-            D(bug("[HID::New()] Hid descriptor @ %p\n", hid->hd));
-            D(bug("[HID::New()] Number of Report descriptors: %d\n", hid->hd->bNumDescriptors));
-            hid->reportLength = AROS_LE2WORD(hid->hd->descrs[0].wDescriptorLength);
-            hid->report = AllocVecPooled(SD(cl)->MemPool, hid->reportLength);
+            if (hid->hd) {
+                D(bug("[HID::New()] Hid descriptor @ %p\n", hid->hd));
+                D(bug("[HID::New()] Number of Report descriptors: %d\n", hid->hd->bNumDescriptors));
+                hid->reportLength = AROS_LE2WORD(hid->hd->descrs[0].wDescriptorLength);
+                hid->report = AllocVecPooled(SD(cl)->MemPool, hid->reportLength);
 
-            D(bug("[HID::New()] Getting report descriptor 1 of size %d\n", hid->reportLength));
+                D(bug("[HID::New()] Getting report descriptor 1 of size %d\n", hid->reportLength));
 
-            HIDD_USBHID_GetReportDescriptor(o, hid->reportLength, hid->report);
+                HIDD_USBHID_GetReportDescriptor(o, hid->reportLength, hid->report);
 
-            hid->nreport = hid_maxrepid(hid->report, hid->reportLength) + 1;
-            hid->buflen = 0;
+                hid->nreport = hid_maxrepid(hid->report, hid->reportLength) + 1;
+                hid->buflen = 0;
 
-            for (repid = 0; repid < hid->nreport; repid++)
-            {
-                uint16_t repsize = hid_report_size(hid->report, hid->reportLength, hid_input, repid);
-                D(bug("[HID::New()] Report %d: size %d\n", repid, repsize));
-                if (repsize > hid->buflen)
-                    hid->buflen = repsize;
-            }
-
-            /* If there is more than one report ID, make a space for report ID */
-            if (hid->nreport != 1)
-                hid->buflen++;
-
-            hid->buffer = AllocVecPooled(SD(cl)->MemPool, hid->buflen);
-
-            D(bug("[HID::New()] Length of input report is %d\n", hid->buflen));
-
-            usb_endpoint_descriptor_t *ep = HIDD_USBDevice_GetEndpoint(o, iface, 0);
-
-            D(bug("[HID::New()] Endpoint descriptor %p addr %02x\n", ep, ep->bEndpointAddress));
-
-            if (ep)
-            {
-                if ((ep->bmAttributes & UE_XFERTYPE) != UE_INTERRUPT)
+                for (repid = 0; repid < hid->nreport; repid++)
                 {
-                    bug("[HID::New()] Wrong endpoint type\n");
-// TODO: unconfigure, error, coercemethod
+                    uint16_t repsize = hid_report_size(hid->report, hid->reportLength, hid_input, repid);
+                    D(bug("[HID::New()] Report %d: size %d\n", repid, repsize));
+                    if (repsize > hid->buflen)
+                        hid->buflen = repsize;
                 }
 
-                OOP_Object *drv = NULL;
-                OOP_GetAttr(o, aHidd_USBDevice_Bus, (IPTR *)&drv);
+                /* If there is more than one report ID, make a space for report ID */
+                if (hid->nreport != 1)
+                    hid->buflen++;
 
-                if (drv)
+                hid->buffer = AllocVecPooled(SD(cl)->MemPool, hid->buflen);
+
+                D(bug("[HID::New()] Length of input report is %d\n", hid->buflen));
+
+                usb_endpoint_descriptor_t *ep = HIDD_USBDevice_GetEndpoint(o, iface, 0);
+
+                D(bug("[HID::New()] Endpoint descriptor %p addr %02x\n", ep, ep->bEndpointAddress));
+
+                if (ep)
                 {
-                    hid->interrupt.is_Data = hid;
-                    hid->interrupt.is_Code = HidInterrupt;
-                    hid->intr_pipe = HIDD_USBDevice_CreatePipe(o, PIPE_Interrupt, ep->bEndpointAddress, ep->bInterval, AROS_LE2WORD(ep->wMaxPacketSize), 0);
-                    HIDD_USBDrv_AddInterrupt(drv, hid->intr_pipe, hid->buffer, hid->buflen, &hid->interrupt);
+                    if ((ep->bmAttributes & UE_XFERTYPE) != UE_INTERRUPT)
+                    {
+                        bug("[HID::New()] Wrong endpoint type\n");
+    // TODO: unconfigure, error, coercemethod
+                    }
+
+                    OOP_Object *drv = NULL;
+                    OOP_GetAttr(o, aHidd_USBDevice_Bus, (IPTR *)&drv);
+
+                    if (drv)
+                    {
+                        hid->interrupt.is_Data = hid;
+                        hid->interrupt.is_Code = HidInterrupt;
+                        hid->intr_pipe = HIDD_USBDevice_CreatePipe(o, PIPE_Interrupt, ep->bEndpointAddress, ep->bInterval, AROS_LE2WORD(ep->wMaxPacketSize), 0);
+                        if (hid->intr_pipe) {
+                            HIDD_USBDrv_AddInterrupt(drv, hid->intr_pipe, hid->buffer, hid->buflen, &hid->interrupt);
+                            D(bug("[HID] HID::New() = %p\n", o));
+                            return o;
+                        }
+                    }
                 }
-
+                if (hid->report)
+                    FreeVecPooled(SD(cl)->MemPool, hid->report);
+                if (hid->buffer)
+                    FreeVecPooled(SD(cl)->MemPool, hid->buffer);
             }
-
-
+            FreeVecPooled(SD(cl)->MemPool, hid->cdesc);
         }
     }
 
-    D(bug("[HID] HID::New() = %p\n", o));
+    D(bug("[HID] HID::New() = NULL\n"));
 
-    if (!o)
-        BASE(cl->UserData)->LibNode.lib_OpenCnt--;
+    BASE(cl->UserData)->LibNode.lib_OpenCnt--;
 
-    return o;
+    return NULL;
 }
 
 void METHOD(HID, Root, Dispose)
