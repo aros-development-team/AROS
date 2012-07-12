@@ -902,4 +902,8 @@ typedef struct AROSCPUContext {
 /* all the errors we care about */
 #define EMAC_RX_ERRORS          (0x03FF)
 
+/* AMCC460 USB */
+#define OHCI0_HCREV             (0xef000000)    /* 0x4 bffd0000 */
+#define EHCI0_HCCAPBASE         (0xef000400)    /* 0x4 bffd0400 */
+
 #endif /*ASM_AMCC440_H*/
