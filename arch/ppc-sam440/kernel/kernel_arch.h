@@ -7,6 +7,7 @@
  * This file is just a sample providing necessary minimum.
  */
 #include <asm/amcc440.h>
+#include "kernel_cpu.h"
 
 struct KernelBase;
 
@@ -22,19 +23,12 @@ struct KernelBase;
 
 static inline void ictl_enable_irq(int irq, struct KernelBase *base)
 {
-    if (irq < 32) {
-        wrdcr(UIC0_ER, rddcr(UIC0_ER) | (0x80000000 >> irq));
-    } else {
-        wrdcr(UIC1_ER, rddcr(UIC1_ER) | (0x80000000 >> (irq - 32)));
-        wrdcr(UIC0_ER, rddcr(UIC0_ER) | 0x00000003);
-    }
+    /* Call the architecture specific syscall */
+    krnSysCall1(SC_IRQ_ENABLE, irq);
 }
 
 static inline void ictl_disable_irq(int irq, struct KernelBase *base)
 {
-    if (irq < 30) {
-        wrdcr(UIC0_ER, rddcr(UIC0_ER) & ~(0x80000000 >> irq));
-    } else if (irq > 31) {
-        wrdcr(UIC1_ER, rddcr(UIC0_ER) & ~(0x80000000 >> (irq - 32)));
-    }
+    /* Call the architecture specific syscall */
+    krnSysCall1(SC_IRQ_DISABLE, irq);
 }

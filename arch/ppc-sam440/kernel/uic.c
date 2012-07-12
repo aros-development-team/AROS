@@ -9,50 +9,66 @@
 #include "kernel_globals.h"
 #include "kernel_intr.h"
 
-void uic_handler(context_t *ctx, uint8_t exception, void *self)
+void uic_handler(context_t *ctx, uint8_t exception)
 {
     struct KernelBase *KernelBase = getKernelBase();
     
     /* Get the interrupt sources */
-    uint32_t uic0_sr = rddcr(UIC0_MSR);
-    uint32_t uic1_sr = rddcr(UIC1_MSR);
+    uint32_t uic_sr[4];
+    uint32_t uic_tr[4];
+
+    uint32_t uic0_cascade;
+    uint32_t pvr = rdspr(PVR);
+
+    uic_sr[0] = rddcr(UIC0_MSR);
+    uic_sr[1] = rddcr(UIC1_MSR);
+    uic_tr[0] = rddcr(UIC0_TR);
+    uic_tr[1] = rddcr(UIC1_TR);
+    if (krnIsPPC460(pvr)) {
+        uic_sr[2] = rddcr(UIC2_MSR);
+        uic_sr[3] = rddcr(UIC3_MSR);
+        uic_tr[2] = rddcr(UIC2_TR);
+        uic_tr[3] = rddcr(UIC3_TR);
+        uic0_cascade = INTR_UIC0_CASCADE;
+    } else {
+        uic_sr[2] = 0;
+        uic_sr[3] = 0;
+        uic_tr[2] = 0;
+        uic_tr[3] = 0;
+        uic0_cascade = 0x00000003;
+    }
     
-    /* kernel.resource up and running? Good. */
+    /* Acknowledge edge interrups now */
+    if (krnIsPPC460(pvr)) {
+        wrdcr(UIC3_SR, uic_sr[3] & uic_tr[3]);
+        wrdcr(UIC2_SR, uic_sr[2] & uic_tr[2]);
+    }
+    wrdcr(UIC1_SR, uic_sr[1] & uic_tr[1]);
+    wrdcr(UIC0_SR, uic_sr[0] & uic_tr[0]);
+
+     /* kernel.resource up and running? Good. */
     if (KernelBase)
     {
-        /*
-         * Process the interrupt sources in the priority order. Start with 
-         * the external interrupt 0 (bit 0 in UIC0_SR). If the interrupt is signalled,
-         * try to execute all handlers in the list
-         */
-        if (uic0_sr)
-        {
-            uint32_t mask = 0x80000000;
-            uint32_t irq = 0;
-            
-            for (mask = 0x80000000; mask; mask >>= 1, irq++)
-            {
-                if (mask & uic0_sr)
-                {
-                    if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
-                    {
-                        struct IntrNode *in, *in2;
+        int i;
+        uint32_t irq = 0;
 
-                        ForeachNodeSafe(&KernelBase->kb_Interrupts[irq], in, in2)
-                        {
-                            if (in->in_Handler)
-                                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-                        }
-                    }
-                    else if (irq < 30){
-                        D(bug("[KRN] Orphan interrupt %d occured\n", irq));
-                    }
-                }
+        /*
+         * Process the interrupt sources in the priority order.
+         */
+        for (i = 0; i < 4; i++) {
+            uint32_t mask;
+
+            if (uic_sr[i] == 0) {
+                irq += 32;
+                continue;
             }
 
             for (mask = 0x80000000; mask; mask >>= 1, irq++)
             {
-                if (mask & uic1_sr)
+                if (i == 0 && (mask & uic0_cascade))
+                    continue;
+
+                if (mask & uic_sr[i])
                 {
                     if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
                     {
@@ -63,18 +79,19 @@ void uic_handler(context_t *ctx, uint8_t exception, void *self)
                             if (in->in_Handler)
                                 in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
                         }
-                    }
-                    else {
-                        D(bug("[KRN] Orphan interrupt %d occured\n", irq));
                     }
                 }
             }
         }
     }
     
-    /* Acknowledge the interrupts once the handlers are done. */
-    wrdcr(UIC1_SR, uic1_sr);
-    wrdcr(UIC0_SR, uic0_sr | 0x00000003);
+    /* Acknowledge the level interrupts once the handlers are done. */
+    if (krnIsPPC460(pvr)) {
+        wrdcr(UIC3_SR, uic_sr[3] & ~uic_tr[3]);
+        wrdcr(UIC2_SR, uic_sr[2] & ~uic_tr[2]);
+    }
+    wrdcr(UIC1_SR, uic_sr[1] & ~uic_tr[1]);
+    wrdcr(UIC0_SR, uic_sr[0] & ~uic_tr[0]);
     
-    core_ExitInterrupt(ctx);
+    ExitInterrupt(ctx);
 }

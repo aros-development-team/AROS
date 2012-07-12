@@ -1,8 +1,11 @@
+
 #include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
+#include <hardware/intbits.h>
 #include <asm/amcc440.h>
 #include <stddef.h>
+
 
 #include "kernel_base.h"
 #include "kernel_intern.h"
@@ -10,8 +13,8 @@
 #include "kernel_globals.h"
 #include "kernel_intr.h"
 
-void *__EXCEPTION_0_Prolog();
-void *__EXCEPTION_1_Prolog();
+void *__cEXCEPTION_0_Prolog();
+void *__mcEXCEPTION_1_Prolog();
 void *__EXCEPTION_2_Prolog();
 void *__EXCEPTION_3_Prolog();
 void *__EXCEPTION_4_Prolog();
@@ -22,18 +25,18 @@ void *__EXCEPTION_8_Prolog();
 void *__EXCEPTION_9_Prolog();
 void *__EXCEPTION_10_Prolog();
 void *__EXCEPTION_11_Prolog();
-void *__EXCEPTION_12_Prolog();
+void *__cEXCEPTION_12_Prolog();
 void *__EXCEPTION_13_Prolog();
 void *__EXCEPTION_14_Prolog();
-void *__EXCEPTION_15_Prolog();
+void *__cEXCEPTION_15_Prolog();
 
 void intr_init()
 {
     D(bug("[KRN] Setting up exception handlers\n"));
-    wrspr(IVPR, ((uint32_t)&__EXCEPTION_0_Prolog) & 0xffff0000);
+    wrspr(IVPR, ((uint32_t)&__cEXCEPTION_0_Prolog) & 0xffff0000);
 
-    wrspr(IVOR0, ((uint32_t)&__EXCEPTION_0_Prolog) & 0x0000fff0);
-    wrspr(IVOR1, ((uint32_t)&__EXCEPTION_1_Prolog) & 0x0000fff0);
+    wrspr(IVOR0, ((uint32_t)&__cEXCEPTION_0_Prolog) & 0x0000fff0);
+    wrspr(IVOR1, ((uint32_t)&__mcEXCEPTION_1_Prolog) & 0x0000fff0);
     wrspr(IVOR2, ((uint32_t)&__EXCEPTION_2_Prolog) & 0x0000fff0);
     wrspr(IVOR3, ((uint32_t)&__EXCEPTION_3_Prolog) & 0x0000fff0);
     wrspr(IVOR4, ((uint32_t)&__EXCEPTION_4_Prolog) & 0x0000fff0);
@@ -44,125 +47,289 @@ void intr_init()
     wrspr(IVOR9, ((uint32_t)&__EXCEPTION_9_Prolog) & 0x0000fff0);
     wrspr(IVOR10, ((uint32_t)&__EXCEPTION_10_Prolog) & 0x0000fff0);
     wrspr(IVOR11, ((uint32_t)&__EXCEPTION_11_Prolog) & 0x0000fff0);
-    wrspr(IVOR12, ((uint32_t)&__EXCEPTION_12_Prolog) & 0x0000fff0);
+    wrspr(IVOR12, ((uint32_t)&__cEXCEPTION_12_Prolog) & 0x0000fff0);
     wrspr(IVOR13, ((uint32_t)&__EXCEPTION_13_Prolog) & 0x0000fff0);
     wrspr(IVOR14, ((uint32_t)&__EXCEPTION_14_Prolog) & 0x0000fff0);
-    wrspr(IVOR15, ((uint32_t)&__EXCEPTION_15_Prolog) & 0x0000fff0);
+    wrspr(IVOR15, ((uint32_t)&__cEXCEPTION_15_Prolog) & 0x0000fff0);
 
     /* Disable external interrupts completely */
-    wrdcr(UIC0_ER, 0);
-    wrdcr(UIC1_ER, 0);
+    if (krnIsPPC460(rdspr(PVR))) {
+        uic_er[0] = INTR_UIC0_CASCADE;
+        wrdcr(UIC0_ER, uic_er[0]);
+        wrdcr(UIC0_PR, INTR_UIC0_POLARITY);
+        wrdcr(UIC0_CR, INTR_UIC0_CRITICAL);
+        wrdcr(UIC0_TR, INTR_UIC0_TRIGGER);
+        wrdcr(UIC0_SR, 0xffffffff);
+        wrdcr(UIC0_VCR, 0);
+
+        uic_er[1] = 0;
+        wrdcr(UIC1_ER, uic_er[0]);
+        wrdcr(UIC1_PR, INTR_UIC1_POLARITY);
+        wrdcr(UIC1_CR, INTR_UIC1_CRITICAL);
+        wrdcr(UIC1_TR, INTR_UIC1_TRIGGER);
+        wrdcr(UIC1_SR, 0xffffffff);
+        wrdcr(UIC1_VCR, 0);
+
+        uic_er[2] = 0;
+        wrdcr(UIC2_ER, uic_er[2]);
+        wrdcr(UIC2_PR, INTR_UIC2_POLARITY);
+        wrdcr(UIC2_CR, INTR_UIC2_CRITICAL);
+        wrdcr(UIC2_TR, INTR_UIC2_TRIGGER);
+        wrdcr(UIC2_SR, 0xffffffff);
+        wrdcr(UIC2_VCR, 0);
+
+        uic_er[3] = 0;
+        wrdcr(UIC3_ER, uic_er[3]);
+        wrdcr(UIC3_PR, INTR_UIC3_POLARITY);
+        wrdcr(UIC3_CR, INTR_UIC3_CRITICAL);
+        wrdcr(UIC3_TR, INTR_UIC3_TRIGGER);
+        wrdcr(UIC3_SR, 0xffffffff);
+        wrdcr(UIC3_VCR, 0);
+    } else {
+        wrdcr(UIC0_ER, 0);
+        wrdcr(UIC1_ER, 0);
+    }
+}
+
+#define EXCEPTION_STACK_SIZE    4096
+/* Exception Stack
+ * Principle of operation:
+ *
+ *   If an exception occurs from MSR_PR context (user space), switch
+ *   the stack to the exception stack.
+ *
+ *   If an exception occurs from ~MSR_PR context (supervisor), use
+ *   the existing stack (whether exception or original supervisor).
+ */
+ULONG __attribute__((aligned(16))) exception_stack[EXCEPTION_STACK_SIZE / sizeof(ULONG)];
+
+exception_handler * const exception_handlers[16] = {
+    generic_handler,            /*  0 - Critical Input   CE */
+    generic_handler,            /*  1 - Machine Check    ME */
+    generic_handler,            /*  2 - Data Storage     -- */
+    generic_handler,            /*  3 - Instr. Storage   -- */
+    uic_handler,                /*  4 - External Input   EE */
+    alignment_handler,          /*  5 - Alignment        -- */
+    generic_handler,            /*  6 - Program          -- */
+    generic_handler,            /*  7 - FP Unavailable   -- */
+    syscall_handler,            /*  8 - System Call      -- */
+    generic_handler,            /*  9 - AP Unavailable   -- */
+    decrementer_handler,        /* 10 - Decrementer      EE */
+    generic_handler,            /* 11 - Fixed Interval   EE */
+    generic_handler,            /* 12 - Watchdog         CE */
+    mmu_handler,                /* 13 - Data TLB         -- */
+    mmu_handler,                /* 14 - Inst TLB         -- */
+    generic_handler,            /* 15 - Debug            DE */
+};
+
+#if DEBUG
+
+#include <proto/debug.h>
+#include <libraries/debug.h>
+
+static CONST_STRPTR symbolfor(struct Library *DebugBase, IPTR addr)
+{
+    STRPTR modname = "(unknown)";
+    STRPTR symname = "(unknown)";
+    IPTR offset = 0;
+    static TEXT buff[70];
+    struct TagItem tags[] = {
+        { DL_ModuleName, (IPTR)&modname },
+        { DL_SymbolName, (IPTR)&symname },
+        { DL_SymbolStart, (IPTR)&offset },
+        { TAG_END }
+    };
+    if (DebugBase) {
+        DecodeLocationA((APTR)addr, tags);
+        snprintf(buff, sizeof(buff), "%s.%s+0x%x", modname, symname, (unsigned)(addr - offset));
+        buff[sizeof(buff)-1]=0;
+    } else {
+        buff[0] = 0;
+    }
+
+    return buff;
+}
+#else
+static inline CONST_STRPTR symbolfor(struct Library *DebugBase, IPTR addr) { return ""; }
+#endif
+
+
+void dumpregs(context_t *ctx, int exception)
+{
+    uint32_t *sp;
+    ULONG *p;
+    int i;
+    struct Library *DebugBase = OpenLibrary("debug.library", 0);
+
+    bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase);
+    bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR));
+    bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->cpu.ctr, ctx->cpu.lr, ctx->cpu.xer, ctx->cpu.ccr);
+    bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->cpu.dar, ctx->cpu.dsisr);
+
+    for (i = 0; i < 32; i++) {
+        if ((i & 3) == 0)
+            bug("[KRN]");
+        bug(" GPR%02d=%08x", i, ctx->cpu.gpr[i]);
+        if ((i & 3) == 3)
+            bug("\n");
+    }
+
+    bug("[KRN] Instruction dump:");
+    p = (ULONG*)ctx->cpu.srr0;
+    for (i=0; i < 8; i++)
+    {
+        if ((i % 4) == 0)
+            bug("\n[KRN] %08x:", &p[i]);
+        bug(" %08x", p[i]);
+    }
+
+    bug("\n[KRN] Stackdump:");
+    sp = (uint32_t *)ctx->cpu.gpr[1];
+    for (i = 0; i < 64; i++) {
+        if ((i % 4) == 0)
+            bug("\n[KRN] %08x:", &sp[i]);
+        bug(" %08x", sp[i]);
+    }
+
+    bug("\n[KRN] Backtrace:  %s\n", symbolfor(DebugBase, ctx->cpu.srr0));
+    bug("[KRN] LR=%08x %s\n", ctx->cpu.lr, symbolfor(DebugBase, ctx->cpu.lr));
+    sp = (uint32_t *)ctx->cpu.gpr[1];
+    while(*sp)
+    {
+            sp = (uint32_t *)sp[0];
+            bug("[KRN]    %08x %s\n", sp[1], symbolfor(DebugBase, sp[1]));
+    }
+    CloseLibrary(DebugBase);
+
+    Debug(0);
+}
+
+void handle_exception(context_t *ctx, uint8_t exception)
+{
+    const ULONG marker = 0x00dead00 | (exception << 24) | exception;
+
+    if (SysBase) {
+        struct Task *task = SysBase->ThisTask;
+        if (task && (ctx->cpu.srr1 & MSR_PR) && ((APTR)ctx->cpu.gpr[1] <= task->tc_SPLower ||
+            (APTR)ctx->cpu.gpr[1] > task->tc_SPUpper)) {
+            bug("[KRN]: When did my stack base go from %p to %p?\n",
+                    task->tc_SPReg, (APTR)ctx->cpu.gpr[1]);
+            dumpregs(ctx, exception);
+            for (;;);
+        }
+    }
+
+    exception_stack[exception] = marker;
+    exception_handlers[exception](ctx, exception);
+    if ( exception_stack[exception] != marker) {
+       bug("[KRN]: Stack overflow processing exception %d\n", exception);
+       dumpregs(ctx, exception);
+       for (;;);
+    }
+    DB2(bug("[KRN]: Exception %d: Done\n", exception));
+
+    /* Always disable MSR_POW when exiting */
+    ctx->cpu.srr1 &= ~MSR_POW;
 }
 
 #define _STR(x) #x
 #define STR(x) _STR(x)
-#define PUT_INTR_TEMPLATE(num, handler) \
-    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __EXCEPTION_" STR(num) "_Prolog\n\t.type __EXCEPTION_" STR(num) "_Prolog,@function\n"    \
-        "__EXCEPTION_" STR(num) "_Prolog: \n\t"                                                       \
-                 "mtsprg1 %%r3          \n\t"   /* save %r3 */                                                  \
-                 "mfcr %%r3             \n\t"   /* copy CR to %r3 */                                            \
-                 "mtsprg2 %%r3          \n\t"   /* save %r3 */                                                  \
-                 "mfsrr1 %%r3           \n\t"   /* srr1 (previous MSR) reg into %r3 */                          \
-                 "andi. %%r3,%%r3,%0    \n\t"   /* Was the PR bit set in MSR already? */                        \
-                 "beq- 1f               \n\t"   /* No, we were in supervisor mode */                           \
-                                                                                                                \
-                 "mfsprg0 %%r3          \n\t"   /* user mode case: SSP into %r3 */                              \
-                 "b 2f                  \n"                                                                     \
-        "1:       mr %%r3,%%r1          \n\t"   /* Supervisor case: use current stack */                        \
-        "2:       addi %%r3,%%r3,%1     "                                                                       \
-                 ::"i"(MSR_PR),"i"(-sizeof(context_t))); \
-        asm volatile("stw %%r0, %[gpr0](%%r3)  \n\t" \
-                  "stw %%r1, %[gpr1](%%r3)  \n\t" \
-                  "stw %%r2, %[gpr2](%%r3)  \n\t" \
-                  "mfsprg1 %%r0             \n\t" \
-                  "stw %%r4, %[gpr4](%%r3)  \n\t" \
-                  "stw %%r0, %[gpr3](%%r3)  \n\t" \
-                  "stw %%r5, %[gpr5](%%r3)  \n\t" \
-                  "mfsprg2 %%r2             \n\t" \
-                  "mfsrr0 %%r0              \n\t" \
-                  "mfsrr1 %%r1              \n\t" \
-                  "lis %%r5, " #handler "@ha\n\t" \
-                  "la %%r5, " #handler "@l(%%r5)\n\t" \
-                  "li %%r4, %[irq]          \n\t" \
-                  "stw %%r2,%[ccr](%%r3)    \n\t" \
-                  "stw %%r0,%[srr0](%%r3)   \n\t" \
-                  "stw %%r1,%[srr1](%%r3)   \n\t" \
-                  "mfctr %%r0               \n\t" \
-                  "mflr %%r1                \n\t" \
-                  "mfxer %%r2               \n\t" \
-                  "stw %%r0,%[ctr](%%r3)    \n\t" \
-                  "stw %%r1,%[lr](%%r3)     \n\t" \
-                  "stw %%r2,%[xer](%%r3)    \n\t" \
+#define PUT_INTR_TEMPLATE(num, type) \
+    asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl __" #type "EXCEPTION_" STR(num) "_Prolog\n\t.type __" #type "EXCEPTION_" STR(num) "_Prolog,@function\n"    \
+        "__" #type "EXCEPTION_" STR(num) "_Prolog: \n\t"             \
+                  "mtsprg1   %%r3           \n\t" /* SPRG1 = %r3 */  \
+                  "mfcr      %%r3           \n\t"                    \
+                  "mtsprg2   %%r3           \n\t" /* SPRG2 = %ccr */ \
+                  "mfsrr1    %%r3           \n\t" \
+                  "andi.     %%r3, %%r3, %[msr_pr] \n\t" \
+                  "beq  1f                  \n\t" \
+                  "lis       %%r3, exception_stack+%[exc]@ha \n\t" \
+                  "la        %%r3, exception_stack+%[exc]@l(%%r3) \n\t" \
+                  "b    2f                  \n\t" \
+                  "1:                       \n\t" \
+                  "addi      %%r3, %%r1, -%[ctx] \n\t" \
+                  "2:                       \n\t" \
+                  "stw       %%r0, %[gpr0](%%r3)  \n\t" \
+                  "stw       %%r1, %[gpr1](%%r3)  \n\t" \
+                  "stw       %%r2, %[gpr2](%%r3)  \n\t" \
+                  "mfsprg2   %%r0           \n\t" \
+                  "stw       %%r0, %[ccr](%%r3)   \n\t" \
+                  "mfsprg1   %%r0           \n\t" \
+                  "stw       %%r0, %[gpr3](%%r3)  \n\t" \
+                  "mr        %%r1, %%r3     \n\t" \
+                 :: \
+                  [gpr0]"i"(offsetof(context_t, cpu.gpr[0])), \
+                  [gpr1]"i"(offsetof(context_t, cpu.gpr[1])), \
+                  [gpr2]"i"(offsetof(context_t, cpu.gpr[2])), \
+                  [gpr3]"i"(offsetof(context_t, cpu.gpr[3])), \
+                  [ccr]"i"(offsetof(context_t, cpu.ccr)), \
+                  [ctx]"i"(sizeof(context_t)), \
+                  [exc]"i"(sizeof(exception_stack) - sizeof(context_t)), \
+                  [msr_pr]"i"(MSR_PR)); \
+        asm volatile (\
+                  "mf" #type "srr0 %%r0              \n\t" \
+                  "stw       %%r0,%[srr0](%%r3)   \n\t" \
+                  "mf" #type "srr1 %%r0              \n\t" \
+                  "stw       %%r0,%[srr1](%%r3)   \n\t" \
+                  "mfctr     %%r0               \n\t" \
+                  "stw       %%r0,%[ctr](%%r3)    \n\t" \
+                  "mflr      %%r0                \n\t" \
+                  "stw       %%r0,%[lr](%%r3)     \n\t" \
+                  "mfxer     %%r0               \n\t" \
+                  "stw       %%r0,%[xer](%%r3)    \n\t" \
+                  "stw       %%r4, %[gpr4](%%r3)  \n\t" \
+                  "stw       %%r5, %[gpr5](%%r3)  \n\t" \
+                  "li        %%r4, %[irq]          \n\t" \
+                  "bl        __EXCEPTION_Trampoline\n\t" \
+                  "lwz       %%r5, %[gpr5](%%r3)  \n\t" \
+                  "lwz       %%r4, %[gpr4](%%r3)  \n\t" \
+                  "addi      %%r0, %%r3, -4    \n\t" /* Dummy write */    \
+                  "stwcx.    %%r0, 0, %%r0     \n\t" /* to clear resv. */ \
+                  "lwz       %%r0, %[xer](%%r3)   \n\t" \
+                  "mtxer     %%r0               \n\t" \
+                  "lwz       %%r0, %[lr](%%r3)    \n\t" \
+                  "mtlr      %%r0                \n\t" \
+                  "lwz       %%r0, %[ctr](%%r3)   \n\t" \
+                  "mtctr     %%r0               \n\t" \
+                  "lwz       %%r0,%[srr1](%%r3)   \n\t" \
+                  "mt" #type "srr1 %%r0              \n\t" \
+                  "lwz       %%r0,%[srr0](%%r3)   \n\t" \
+                  "mt" #type "srr0 %%r0              \n\t" \
+                  "lwz       %%r0, %[ccr](%%r3)   \n\t" \
+                  "mtcr      %%r0                \n\t" \
+                  "lwz       %%r0, %[gpr0](%%r3)  \n\t" \
+                  "lwz       %%r1, %[gpr1](%%r3)  \n\t" \
+                  "lwz       %%r2, %[gpr2](%%r3)  \n\t" \
+                  "lwz       %%r3, %[gpr3](%%r3)  \n\t" \
+                  "sync; isync; rf" #type "i \n\t" \
                   \
                   :: \
-                  [gpr0]"i"(offsetof(struct cpuregs, gpr[0])), \
-                  [gpr1]"i"(offsetof(struct cpuregs, gpr[1])), \
-                  [gpr2]"i"(offsetof(struct cpuregs, gpr[2])), \
-                  [gpr3]"i"(offsetof(struct cpuregs, gpr[3])), \
-                  [gpr4]"i"(offsetof(struct cpuregs, gpr[4])), \
-                  [gpr5]"i"(offsetof(struct cpuregs, gpr[5])), \
-                  \
-                  [ccr]"i"(offsetof(struct cpuregs, ccr)), \
-                  [srr0]"i"(offsetof(struct cpuregs, srr0)), \
-                  [srr1]"i"(offsetof(struct cpuregs, srr1)), \
-                  [ctr]"i"(offsetof(struct cpuregs, ctr)), \
-                  [lr]"i"(offsetof(struct cpuregs, lr)), \
-                  [xer]"i"(offsetof(struct cpuregs, xer)), \
+                  [gpr0]"i"(offsetof(context_t, cpu.gpr[0])), \
+                  [gpr1]"i"(offsetof(context_t, cpu.gpr[1])), \
+                  [gpr2]"i"(offsetof(context_t, cpu.gpr[2])), \
+                  [gpr3]"i"(offsetof(context_t, cpu.gpr[3])), \
+                  [gpr4]"i"(offsetof(context_t, cpu.gpr[4])), \
+                  [gpr5]"i"(offsetof(context_t, cpu.gpr[5])), \
+                  [ccr]"i"(offsetof(context_t, cpu.ccr)), \
+                  [srr0]"i"(offsetof(context_t, cpu.srr0)), \
+                  [srr1]"i"(offsetof(context_t, cpu.srr1)), \
+                  [ctr]"i"(offsetof(context_t, cpu.ctr)), \
+                  [lr]"i"(offsetof(context_t, cpu.lr)), \
+                  [xer]"i"(offsetof(context_t, cpu.xer)), \
                   [irq]"i"(num) \
                   ); \
-                 /* \
-                  * Registers %r0 to %r5 are now saved together with CPU state. Go to the \
-                  * trampoline code which will care about the rest. Adjust the stack frame pointer now, \
-                  * or else it will be destroyed later by C code. \
-                  */ \
-                 asm volatile("addi %r1,%r3,-16"); \
-                 \
-                 /* \
-                  * Go to the trampoline code. Use long call within whole 4GB addresspace in order to \
-                  * avoid any trouble in future. \
-                  */ \
-                 asm volatile( "b __EXCEPTION_Trampoline\n\t");
 
 uint64_t idle_time;
 static uint64_t last_calc;
 
-void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
+void decrementer_handler(context_t *ctx, uint8_t exception)
 {
-    struct KernelBase *KernelBase = getKernelBase();
-    struct ExecBase *SysBase = getSysBase();
-
     /* Clear the DIS bit - we have received decrementer exception */
     wrspr(TSR, TSR_DIS);
-    //D(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->srr1));
+    DB2(bug("[KRN] Decrementer handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
 
-    if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
-    {
-        struct IntrNode *in, *in2;
-
-        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
-        {
-            if (in->in_Handler)
-                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-        }
-    }
-
-    if (SysBase && SysBase->Elapsed)
-    {
-        if (--SysBase->Elapsed == 0)
-        {
-        	if (IsListEmpty(&SysBase->TaskReady))
-        	{
-        		SysBase->Elapsed = SysBase->Quantum;
-        	}
-        	else
-        	{
-        		bug("[KRN] Force reschedule (Task %08x '%s')\n", SysBase->ThisTask, SysBase->ThisTask ? SysBase->ThisTask->tc_Node.ln_Name : "???");
-            	SysBase->SysFlags |= 0x2000;
-            	SysBase->AttnResched |= 0x80;
-            	SysBase->ThisTask->tc_Node.ln_Pri = -128;
-        	}
-        }
-    }
+    if (!KernelBase)
+        return;
 
     /* Idle time calculator */
 
@@ -178,22 +345,29 @@ void decrementer_handler(context_t *ctx, uint8_t exception, void *self)
 
     	if (KernelBase->kb_PlatformData->pd_CPUUsage > 999)
     	{
-    		D(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10,
+    		DB2(bug("[KRN] CPU usage: %3d.%d (%s)\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10,
     				SysBase->ThisTask->tc_Node.ln_Name));
     	}
     	else
-    		D(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10));
+    		DB2(bug("[KRN] CPU usage: %3d.%d\n", KernelBase->kb_PlatformData->pd_CPUUsage / 10, KernelBase->kb_PlatformData->pd_CPUUsage % 10));
 
     	idle_time = 0;
     	last_calc = current;
     }
 
-    core_ExitInterrupt(ctx);
+    /* Signal the Exec VBlankServer */
+    if (SysBase) {
+        core_Cause(INTB_VERTB, 1L << INTB_VERTB);
+    }
+
+    ExitInterrupt(ctx);
 }
 
-void generic_handler(context_t *ctx, uint8_t exception, void *self)
+void generic_handler(context_t *ctx, uint8_t exception)
 {
     struct KernelBase *KernelBase = getKernelBase();
+
+    DB2(bug("[KRN] Generic handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
 
     if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
     {
@@ -206,49 +380,9 @@ void generic_handler(context_t *ctx, uint8_t exception, void *self)
         }
     }
 
-    D(bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase));
-    D(bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR)));
-    D(bug("[KRN] CTR=%08x LR=%08x XER=%08x CCR=%08x\n", ctx->cpu.ctr, ctx->cpu.lr, ctx->cpu.xer, ctx->cpu.ccr));
-    D(bug("[KRN] DAR=%08x DSISR=%08x\n", ctx->cpu.dar, ctx->cpu.dsisr));
-    D(bug("[KRN] GPR00=%08x GPR01=%08x GPR02=%08x GPR03=%08x\n",
-             ctx->cpu.gpr[0],ctx->cpu.gpr[1],ctx->cpu.gpr[2],ctx->cpu.gpr[3]));
-    D(bug("[KRN] GPR04=%08x GPR05=%08x GPR06=%08x GPR07=%08x\n",
-             ctx->cpu.gpr[4],ctx->cpu.gpr[5],ctx->cpu.gpr[6],ctx->cpu.gpr[7]));
-    D(bug("[KRN] GPR08=%08x GPR09=%08x GPR10=%08x GPR11=%08x\n",
-             ctx->cpu.gpr[8],ctx->cpu.gpr[9],ctx->cpu.gpr[10],ctx->cpu.gpr[11]));
-    D(bug("[KRN] GPR12=%08x GPR13=%08x GPR14=%08x GPR15=%08x\n",
-             ctx->cpu.gpr[12],ctx->cpu.gpr[13],ctx->cpu.gpr[14],ctx->cpu.gpr[15]));
-
-    D(bug("[KRN] GPR16=%08x GPR17=%08x GPR18=%08x GPR19=%08x\n",
-             ctx->cpu.gpr[16],ctx->cpu.gpr[17],ctx->cpu.gpr[18],ctx->cpu.gpr[19]));
-    D(bug("[KRN] GPR20=%08x GPR21=%08x GPR22=%08x GPR23=%08x\n",
-             ctx->cpu.gpr[20],ctx->cpu.gpr[21],ctx->cpu.gpr[22],ctx->cpu.gpr[23]));
-    D(bug("[KRN] GPR24=%08x GPR25=%08x GPR26=%08x GPR27=%08x\n",
-             ctx->cpu.gpr[24],ctx->cpu.gpr[25],ctx->cpu.gpr[26],ctx->cpu.gpr[27]));
-    D(bug("[KRN] GPR28=%08x GPR29=%08x GPR30=%08x GPR31=%08x\n",
-             ctx->cpu.gpr[28],ctx->cpu.gpr[29],ctx->cpu.gpr[30],ctx->cpu.gpr[31]));
-
-    D(bug("[KRN] Instruction dump:\n"));
-    int i;
-    D(ULONG *p = (ULONG*)ctx->cpu.srr0);
-    for (i=0; i < 8; i++)
-    {
-        D(bug("[KRN] %08x: %08x\n", &p[i], p[i]));
-    }
-
-    D(bug("[KRN] LR=%08x", ctx->cpu.lr));
-
-    D(bug("[KRN] Backtrace:\n"));
-    uint32_t *sp = (uint32_t *)ctx->cpu.gpr[1];
-    while(*sp)
-    {
-            sp = (uint32_t *)sp[0];
-            D(bug("[KRN]  %08x\n", sp[1]));
-    }
-
-
     if (IsListEmpty(&KernelBase->kb_Exceptions[exception]))
     {
+        D(dumpregs(ctx, exception));
         D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
 
         while(1) {
@@ -256,28 +390,36 @@ void generic_handler(context_t *ctx, uint8_t exception, void *self)
         }
     }
 
-    core_ExitInterrupt(ctx);
+    ExitInterrupt(ctx);
 }
 
-void  mmu_handler(context_t *ctx, uint8_t exception, void *self)
+void  mmu_handler(context_t *ctx, uint8_t exception)
 {
     uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
 
-    /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4 */
+    /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4
+     * It is unfortunate that the Parthenope bootloader forces SysBase
+     * to 4UL in loaded modules.
+     */
     if ((insn & 0xfc000000) == 0x80000000 && rdspr(DEAR) == 4)
     {
         int reg = (insn & 0x03e00000) >> 21;
 
-//        D(bug("[KRN] Pagefault exception. Someone tries to get SysBase (%08x) from 0x00000004 into r%d. EVIL EVIL EVIL!\n",
-//              getSysBase(), reg));
-
-        ctx->cpu.gpr[reg] = (IPTR)getSysBase();
-        ctx->cpu.srr0 += 4;
-
-        core_LeaveInterrupt(ctx);
+        DB2(bug("Parthnope patchup to R%d, SRR0=%p\n", reg, ctx->cpu.srr0));
+        /* patch from lwz %rN => mr %rN, %r2 */
+        insn = 0x7c401378 | (reg << 16);
+        *(uint32_t *)ctx->cpu.srr0 = insn;
+        /* Flush this new instuction out of the cache */
+        asm volatile(
+                "dcbst 0,%0; sync;"
+                "icbi 0,%0; isync;"
+                ::"r"(ctx->cpu.srr0));
     }
     else
-        generic_handler(ctx, exception, self);
+    {   
+        /* Any other MMU activity is fatal for now. */
+        dumpregs(ctx, exception);
+    }
 }
 
 double lfd(intptr_t addr)
@@ -426,7 +568,7 @@ void stfs(float v, intptr_t addr)
 	}
 }
 
-void alignment_handler(context_t *ctx, uint8_t exception, void *self)
+void alignment_handler(context_t *ctx, uint8_t exception)
 {
     int fixed = 1;
 
@@ -435,6 +577,8 @@ void alignment_handler(context_t *ctx, uint8_t exception, void *self)
 
     uint8_t reg = (insn >> 21) & 0x1f;		// source/dest register
     uint8_t areg = (insn >> 16) & 0x1f;		// register to be updated with dear value
+
+    D(bug("[KRN] Alignment handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
 
 
     switch (insn >> 26)
@@ -511,12 +655,12 @@ void alignment_handler(context_t *ctx, uint8_t exception, void *self)
     if (fixed)
     {
     	ctx->cpu.srr0 += 4;
-    	core_LeaveInterrupt(ctx);
+    	return;
     }
     else
     {
         D(bug("[KRN] Alignment exception handler failed to help... INSN=%08x, DEAR=%08x\n", insn, dear));
-    	generic_handler(ctx, exception, self);
+    	generic_handler(ctx, exception);
     }
 }
 
@@ -530,22 +674,22 @@ static void __attribute__((used)) __EXCEPTION_Prolog_template()
      * jump to general trampoline...
      */
 
-    PUT_INTR_TEMPLATE(0, generic_handler); /* crit */
-    PUT_INTR_TEMPLATE(1, generic_handler);
-    PUT_INTR_TEMPLATE(2, generic_handler);
-    PUT_INTR_TEMPLATE(3, generic_handler);
-    PUT_INTR_TEMPLATE(4, uic_handler);
-    PUT_INTR_TEMPLATE(5, alignment_handler);
-    PUT_INTR_TEMPLATE(6, generic_handler);
-    PUT_INTR_TEMPLATE(7, generic_handler);
-    PUT_INTR_TEMPLATE(8, syscall_handler);
-    PUT_INTR_TEMPLATE(9, generic_handler);
-    PUT_INTR_TEMPLATE(10, decrementer_handler);
-    PUT_INTR_TEMPLATE(11, generic_handler);
-    PUT_INTR_TEMPLATE(12, generic_handler); /* crit */
-    PUT_INTR_TEMPLATE(13, mmu_handler);
-    PUT_INTR_TEMPLATE(14, mmu_handler);
-    PUT_INTR_TEMPLATE(15, generic_handler); /* crit */
+    PUT_INTR_TEMPLATE(0,c);    /* crit */
+    PUT_INTR_TEMPLATE(1,mc);   /* machine check */
+    PUT_INTR_TEMPLATE(2,);
+    PUT_INTR_TEMPLATE(3,);
+    PUT_INTR_TEMPLATE(4,);
+    PUT_INTR_TEMPLATE(5,);
+    PUT_INTR_TEMPLATE(6,);
+    PUT_INTR_TEMPLATE(7,);
+    PUT_INTR_TEMPLATE(8,);
+    PUT_INTR_TEMPLATE(9,);
+    PUT_INTR_TEMPLATE(10,);
+    PUT_INTR_TEMPLATE(11,);
+    PUT_INTR_TEMPLATE(12, c);  /* crit */
+    PUT_INTR_TEMPLATE(13,);
+    PUT_INTR_TEMPLATE(14,);
+    PUT_INTR_TEMPLATE(15, c);  /* crit */
 }
 
 static void __attribute__((used)) __EXCEPTION_Trampoline_template()
@@ -579,32 +723,32 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 			"stw %%r30,%[gpr30](%%r3) \n\t"
 			"stw %%r31,%[gpr31](%%r3) \n\t"
 			::
-			[gpr6]"i"(offsetof(struct cpuregs, gpr[6])),
-			[gpr7]"i"(offsetof(struct cpuregs, gpr[7])),
-			[gpr8]"i"(offsetof(struct cpuregs, gpr[8])),
-			[gpr9]"i"(offsetof(struct cpuregs, gpr[9])),
-			[gpr10]"i"(offsetof(struct cpuregs, gpr[10])),
-			[gpr11]"i"(offsetof(struct cpuregs, gpr[11])),
-			[gpr12]"i"(offsetof(struct cpuregs, gpr[12])),
-			[gpr13]"i"(offsetof(struct cpuregs, gpr[13])),
-			[gpr14]"i"(offsetof(struct cpuregs, gpr[14])),
-			[gpr15]"i"(offsetof(struct cpuregs, gpr[15])),
-			[gpr16]"i"(offsetof(struct cpuregs, gpr[16])),
-			[gpr17]"i"(offsetof(struct cpuregs, gpr[17])),
-			[gpr18]"i"(offsetof(struct cpuregs, gpr[18])),
-			[gpr19]"i"(offsetof(struct cpuregs, gpr[19])),
-			[gpr20]"i"(offsetof(struct cpuregs, gpr[20])),
-			[gpr21]"i"(offsetof(struct cpuregs, gpr[21])),
-			[gpr22]"i"(offsetof(struct cpuregs, gpr[22])),
-			[gpr23]"i"(offsetof(struct cpuregs, gpr[23])),
-			[gpr24]"i"(offsetof(struct cpuregs, gpr[24])),
-			[gpr25]"i"(offsetof(struct cpuregs, gpr[25])),
-			[gpr26]"i"(offsetof(struct cpuregs, gpr[26])),
-			[gpr27]"i"(offsetof(struct cpuregs, gpr[27])),
-			[gpr28]"i"(offsetof(struct cpuregs, gpr[28])),
-			[gpr29]"i"(offsetof(struct cpuregs, gpr[29])),
-			[gpr30]"i"(offsetof(struct cpuregs, gpr[30])),
-			[gpr31]"i"(offsetof(struct cpuregs, gpr[31]))
+			[gpr6]"i"(offsetof(context_t, cpu.gpr[6])),
+			[gpr7]"i"(offsetof(context_t, cpu.gpr[7])),
+			[gpr8]"i"(offsetof(context_t, cpu.gpr[8])),
+			[gpr9]"i"(offsetof(context_t, cpu.gpr[9])),
+			[gpr10]"i"(offsetof(context_t, cpu.gpr[10])),
+			[gpr11]"i"(offsetof(context_t, cpu.gpr[11])),
+			[gpr12]"i"(offsetof(context_t, cpu.gpr[12])),
+			[gpr13]"i"(offsetof(context_t, cpu.gpr[13])),
+			[gpr14]"i"(offsetof(context_t, cpu.gpr[14])),
+			[gpr15]"i"(offsetof(context_t, cpu.gpr[15])),
+			[gpr16]"i"(offsetof(context_t, cpu.gpr[16])),
+			[gpr17]"i"(offsetof(context_t, cpu.gpr[17])),
+			[gpr18]"i"(offsetof(context_t, cpu.gpr[18])),
+			[gpr19]"i"(offsetof(context_t, cpu.gpr[19])),
+			[gpr20]"i"(offsetof(context_t, cpu.gpr[20])),
+			[gpr21]"i"(offsetof(context_t, cpu.gpr[21])),
+			[gpr22]"i"(offsetof(context_t, cpu.gpr[22])),
+			[gpr23]"i"(offsetof(context_t, cpu.gpr[23])),
+			[gpr24]"i"(offsetof(context_t, cpu.gpr[24])),
+			[gpr25]"i"(offsetof(context_t, cpu.gpr[25])),
+			[gpr26]"i"(offsetof(context_t, cpu.gpr[26])),
+			[gpr27]"i"(offsetof(context_t, cpu.gpr[27])),
+			[gpr28]"i"(offsetof(context_t, cpu.gpr[28])),
+			[gpr29]"i"(offsetof(context_t, cpu.gpr[29])),
+			[gpr30]"i"(offsetof(context_t, cpu.gpr[30])),
+			[gpr31]"i"(offsetof(context_t, cpu.gpr[31]))
 	);
 
 	asm volatile(
@@ -667,14 +811,13 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 			"stfd %%f29,%[fr29](%%r3)               \n\t"
 			"stfd %%f30,%[fr30](%%r3)               \n\t"
 			"stfd %%f31,%[fr31](%%r3)               \n\t"
-			"mr %%r28,%%r3            \n\t"
-			"mr %%r29,%%r4            \n\t"
-			"mr %%r30,%%r5            \n\t"
-			"mtsrr0 %%r5           \n\t"
-			"lis %%r9, %[msrval]@ha  \n\t"
-			"ori %%r9,%%r9, %[msrval]@l \n\t"
-			"mtsrr1 %%r9              \n\t"
-			"sync; isync; rfi"
+			"mflr %%r30                             \n\t"
+			"mr   %%r31, %%r3                       \n\t"
+			"addi %%r1, %%r1, -16                   \n\t"
+			"bl handle_exception                    \n\t"
+			"addi %%r1, %%r1, 16                    \n\t"
+			"mr   %%r3, %%r31                       \n\t"
+			"mtlr %%r30                             \n\t"
 			::
 			[fr16]"i"(offsetof(context_t, fpu.fpr[16])),
 			[fr17]"i"(offsetof(context_t, fpu.fpr[17])),
@@ -691,16 +834,9 @@ static void __attribute__((used)) __EXCEPTION_Trampoline_template()
 			[fr28]"i"(offsetof(context_t, fpu.fpr[28])),
 			[fr29]"i"(offsetof(context_t, fpu.fpr[29])),
 			[fr30]"i"(offsetof(context_t, fpu.fpr[30])),
-			[fr31]"i"(offsetof(context_t, fpu.fpr[31])),
-			[msrval]"i"(MSR_ME|MSR_CE|MSR_FP)
+			[fr31]"i"(offsetof(context_t, fpu.fpr[31]))
 	);
-}
-
-
-static void __attribute__((used)) __core_LeaveInterrupt()
-{
-	asm volatile(".section .text,\"ax\"\n\t.align 5\n\t.globl core_LeaveInterrupt\n\t.type core_LeaveInterrupt,@function\n"
-			"core_LeaveInterrupt: wrteei 0           \n\t"
+	asm volatile(
 			"lwz %%r31,%[gpr31](%%r3)      \n\t"
 			"lwz %%r30,%[gpr30](%%r3)      \n\t"
 			"lwz %%r29,%[gpr29](%%r3)      \n\t"
@@ -722,26 +858,26 @@ static void __attribute__((used)) __core_LeaveInterrupt()
 			"lwz %%r13,%[gpr13](%%r3)      \n\t"
 			"lwz %%r12,%[gpr12](%%r3)      \n\t"
 			::
-			[gpr12]"i"(offsetof(struct cpuregs, gpr[12])),
-			[gpr13]"i"(offsetof(struct cpuregs, gpr[13])),
-			[gpr14]"i"(offsetof(struct cpuregs, gpr[14])),
-			[gpr15]"i"(offsetof(struct cpuregs, gpr[15])),
-			[gpr16]"i"(offsetof(struct cpuregs, gpr[16])),
-			[gpr17]"i"(offsetof(struct cpuregs, gpr[17])),
-			[gpr18]"i"(offsetof(struct cpuregs, gpr[18])),
-			[gpr19]"i"(offsetof(struct cpuregs, gpr[19])),
-			[gpr20]"i"(offsetof(struct cpuregs, gpr[20])),
-			[gpr21]"i"(offsetof(struct cpuregs, gpr[21])),
-			[gpr22]"i"(offsetof(struct cpuregs, gpr[22])),
-			[gpr23]"i"(offsetof(struct cpuregs, gpr[23])),
-			[gpr24]"i"(offsetof(struct cpuregs, gpr[24])),
-			[gpr25]"i"(offsetof(struct cpuregs, gpr[25])),
-			[gpr26]"i"(offsetof(struct cpuregs, gpr[26])),
-			[gpr27]"i"(offsetof(struct cpuregs, gpr[27])),
-			[gpr28]"i"(offsetof(struct cpuregs, gpr[28])),
-			[gpr29]"i"(offsetof(struct cpuregs, gpr[29])),
-			[gpr30]"i"(offsetof(struct cpuregs, gpr[30])),
-			[gpr31]"i"(offsetof(struct cpuregs, gpr[31]))
+			[gpr12]"i"(offsetof(context_t, cpu.gpr[12])),
+			[gpr13]"i"(offsetof(context_t, cpu.gpr[13])),
+			[gpr14]"i"(offsetof(context_t, cpu.gpr[14])),
+			[gpr15]"i"(offsetof(context_t, cpu.gpr[15])),
+			[gpr16]"i"(offsetof(context_t, cpu.gpr[16])),
+			[gpr17]"i"(offsetof(context_t, cpu.gpr[17])),
+			[gpr18]"i"(offsetof(context_t, cpu.gpr[18])),
+			[gpr19]"i"(offsetof(context_t, cpu.gpr[19])),
+			[gpr20]"i"(offsetof(context_t, cpu.gpr[20])),
+			[gpr21]"i"(offsetof(context_t, cpu.gpr[21])),
+			[gpr22]"i"(offsetof(context_t, cpu.gpr[22])),
+			[gpr23]"i"(offsetof(context_t, cpu.gpr[23])),
+			[gpr24]"i"(offsetof(context_t, cpu.gpr[24])),
+			[gpr25]"i"(offsetof(context_t, cpu.gpr[25])),
+			[gpr26]"i"(offsetof(context_t, cpu.gpr[26])),
+			[gpr27]"i"(offsetof(context_t, cpu.gpr[27])),
+			[gpr28]"i"(offsetof(context_t, cpu.gpr[28])),
+			[gpr29]"i"(offsetof(context_t, cpu.gpr[29])),
+			[gpr30]"i"(offsetof(context_t, cpu.gpr[30])),
+			[gpr31]"i"(offsetof(context_t, cpu.gpr[31]))
 	);
 
 	asm volatile(
@@ -820,52 +956,18 @@ static void __attribute__((used)) __core_LeaveInterrupt()
 
 	asm volatile(
 			"lwz %%r11,%[gpr11](%%r3)      \n\t"
-			"lwz %%r0,%[srr0](%%r3)        \n\t"
-			"mtsrr0 %%r0                   \n\t"
-			"lwz %%r0,%[srr1](%%r3)        \n\t"
-			"rlwinm %%r0,%%r0,0,14,12      \n\t"
-			"mtsrr1 %%r0                   \n\t"
-			"lwz %%r0,%[ctr](%%r3)         \n\t"
-			"mtctr %%r0                    \n\t"
-			"lwz %%r0,%[lr](%%r3)          \n\t"
-			"mtlr %%r0                     \n\t"
-			"lwz %%r0,%[xer](%%r3)         \n\t"
-			"mtxer %%r0                    \n\t"
 			"lwz %%r10,%[gpr10](%%r3)      \n\t"
 			"lwz %%r9,%[gpr9](%%r3)        \n\t"
 			"lwz %%r8,%[gpr8](%%r3)        \n\t"
 			"lwz %%r7,%[gpr7](%%r3)        \n\t"
 			"lwz %%r6,%[gpr6](%%r3)        \n\t"
-			"lwz %%r5,%[gpr5](%%r3)        \n\t"
-			"lwz %%r4,%[gpr4](%%r3)        \n\t"
-			"lwz %%r0,%[gpr3](%%r3)        \n\t"
-			"mtsprg1 %%r0                  \n\t"
-			"lwz %%r2,%[gpr2](%%r3)        \n\t"
-			"stwcx. %%r0,0,%%r1            \n\t"
-			"lwz %%r0,%[ccr](%%r3)         \n\t"
-			"mtcr %%r0                     \n\t"
-			"lwz %%r1,%[gpr1](%%r3)        \n\t"
-			"lwz %%r0,%[gpr0](%%r3)        \n\t"
-			"mfsprg1 %%r3                  \n\t"
-			"sync; isync; rfi"
+			"blr\n"
 			::
-			[ccr]"i"(offsetof(struct cpuregs, ccr)),        /* */
-			[srr0]"i"(offsetof(struct cpuregs, srr0)),      /* */
-			[srr1]"i"(offsetof(struct cpuregs, srr1)),/* */
-			[ctr]"i"(offsetof(struct cpuregs, ctr)),/**/
-			[lr]"i"(offsetof(struct cpuregs, lr)),/**/
-			[xer]"i"(offsetof(struct cpuregs, xer)),
-			[gpr0]"i"(offsetof(struct cpuregs, gpr[0])),
-			[gpr1]"i"(offsetof(struct cpuregs, gpr[1])),
-			[gpr2]"i"(offsetof(struct cpuregs, gpr[2])),
-			[gpr3]"i"(offsetof(struct cpuregs, gpr[3])),
-			[gpr4]"i"(offsetof(struct cpuregs, gpr[4])),
-			[gpr5]"i"(offsetof(struct cpuregs, gpr[5])),
-			[gpr6]"i"(offsetof(struct cpuregs, gpr[6])),
-			[gpr7]"i"(offsetof(struct cpuregs, gpr[7])),
-			[gpr8]"i"(offsetof(struct cpuregs, gpr[8])),
-			[gpr9]"i"(offsetof(struct cpuregs, gpr[9])),
-			[gpr10]"i"(offsetof(struct cpuregs, gpr[10])),
-			[gpr11]"i"(offsetof(struct cpuregs, gpr[11]))
+			[gpr6]"i"(offsetof(context_t, cpu.gpr[6])),
+			[gpr7]"i"(offsetof(context_t, cpu.gpr[7])),
+			[gpr8]"i"(offsetof(context_t, cpu.gpr[8])),
+			[gpr9]"i"(offsetof(context_t, cpu.gpr[9])),
+			[gpr10]"i"(offsetof(context_t, cpu.gpr[10])),
+			[gpr11]"i"(offsetof(context_t, cpu.gpr[11]))
 	);
 }

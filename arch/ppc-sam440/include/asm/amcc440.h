@@ -309,8 +309,6 @@ typedef struct AROSCPUContext {
 #define MQ0_BASSZ_2048MB 0xC000
 #define MQ0_BASSZ_4096MB 0x8000
 
-
-
 /* Universal Interrupt Controller 0 */
 #define UIC0_SR         0x00C0 /* R/Clear UIC 0 Status Register */
 #define UIC0_SRS        0x00C1 /* W/Set   UIC 0 Status Register Set (reserved for debug only) */
@@ -333,7 +331,31 @@ typedef struct AROSCPUContext {
 #define UIC1_VR         0x00D7 /*   R     UIC 1 Vector Register */
 #define UIC1_VCR        0x00D8 /*   W     UIC 1 Vector Configuration Register */
 
-/* External interrupt sources */
+/* 460EX only */
+
+/* Universal Interrupt Controller 2 */
+#define UIC2_SR         0x00E0 /* R/Clear UIC 2 Status Register */
+#define UIC2_SRS        0x00E1 /* W/Set   UIC 2 Status Register Set (reserved for debug only) */
+#define UIC2_ER         0x00E2 /*  R/W    UIC 2 Enable Register */
+#define UIC2_CR         0x00E3 /*  R/W    UIC 2 Critical Register */
+#define UIC2_PR         0x00E4 /*  R/W    UIC 2 Polarity Register */
+#define UIC2_TR         0x00E5 /*  R/W    UIC 2 Triggering Register */
+#define UIC2_MSR        0x00E6 /*   R     UIC 2 Masked Status Register */
+#define UIC2_VR         0x00E7 /*   R     UIC 2 Vector Register */
+#define UIC2_VCR        0x00E8 /*   W     UIC 2 Vector Configuration Register */
+
+/* Universal Interrupt Controller 3 */
+#define UIC3_SR         0x00F0 /* R/Clear UIC 3 Status Register */
+#define UIC3_SRS        0x00F1 /* W/Set   UIC 3 Status Register Set (reserved for debug only) */
+#define UIC3_ER         0x00F2 /*  R/W    UIC 3 Enable Register */
+#define UIC3_CR         0x00F3 /*  R/W    UIC 3 Critical Register */
+#define UIC3_PR         0x00F4 /*  R/W    UIC 3 Polarity Register */
+#define UIC3_TR         0x00F5 /*  R/W    UIC 3 Triggering Register */
+#define UIC3_MSR        0x00F6 /*   R     UIC 3 Masked Status Register */
+#define UIC3_VR         0x00F7 /*   R     UIC 3 Vector Register */
+#define UIC3_VCR        0x00F8 /*   W     UIC 3 Vector Configuration Register */
+
+/* External 440 interrupt sources */
 #define INTR_U0         0       /* UART0 Interrupt Status*/
 #define INTR_U1         1       /* UART1 Interrupt Status*/
 #define INTR_IIC0       2       /* IIC0 Interrupt Status*/
@@ -397,6 +419,162 @@ typedef struct AROSCPUContext {
 #define INTR_EWU0       61      /* Ethernet 0 Wake-up Interrupt Status */
 #define INTR_ETH1       62      /* Ethernet 1 Interrupt Status */
 #define INTR_EWU1       63      /* Ethernet 1 Wake-up Interrupt Status */
+
+/* 460ex Interrupts       [High/Low Polarity,Level Sensitivity]
+ *  UIC0                  [   Rising/Falling,Edge Sensitivity ] */
+#define INTR_UIC0_BASE           0
+#define INTR_UIC0_CRITICAL       0x00104001
+#define INTR_UIC0_POLARITY       0xffffffff
+#define INTR_UIC0_TRIGGER        0x01800800
+#define INTR_UIC0_CASCADE        0x0030c003
+#define INTR_UIC0_UART1          1      // H L  UART1 
+#define INTR_UIC0_IIC0           2      // H L 
+#define INTR_UIC0_IIC1           3      // H L 
+#define INTR_UIC0_PCI0_IN        4      // H L  PCI0 Inbound Message 
+#define INTR_UIC0_PCI0_CWR       5      // H L  PCI0 Command Write Register 
+#define INTR_UIC0_PCI0_PWR       6      // H L  PCI0 Power management 
+#define INTR_UIC0_PCI0_VPD       7      // R E  PCI0 VPD Access 
+#define INTR_UIC0_PCI0_MSI0      8      // R E  PCI0 MSI Level 0 
+#define INTR_UIC0_EXT_IRQ0       9      // ? ?  External IRQ 0 
+#define INTR_UIC0_UIC2_NC       10      // H L  UIC2 Cascade (Non-Critical)
+#define INTR_UIC0_UIC2_CR       11      // H L  UIC2 Cascade (Critical)
+#define INTR_UIC0_DMA2P40_CH0   12      // H L  DMA2P40 Channel 0
+#define INTR_UIC0_DMA2P40_CH1   13      // H L  DMA2P40 Channel 1
+#define INTR_UIC0_DMA2P40_CH2   14      // H L  DMA2P40 Channel 2
+#define INTR_UIC0_DMA2P40_CH3   15      // H L  DMA2P40 Channel 3
+#define INTR_UIC0_UIC3_NC       16      // H L  UIC3 Cascade (Non-Critical)
+#define INTR_UIC0_UIC3_CR       17      // H L  UIC3 Cascade (Critical)
+#define INTR_UIC0_EXT_IRQ1      18      // ? ?  External IRQ 1 
+#define INTR_UIC0_TRNG_READY    19      // H L  TRNG ready
+#define INTR_UIC0_PKA           20      // R E  PKA Ready
+#define INTR_UIC0_HSDMA_FULL    21      // H L  HSDMA Command Pointer FIFO Full
+#define INTR_UIC0_HSDMA_STATUS  22      // H L  HSDMA Command Status FIFO
+#define INTR_UIC0_I2O_DOORBELL  23      // H L  I2O Inbound Doorbell
+#define INTR_UIC0_I2O_N_EMPTY   24      // H L  I2O Inbound FIFO Not Empty
+#define INTR_UIC0_I2O_LLW0      25      // H L  I2O Region 0 Low Latency PLB Write
+#define INTR_UIC0_I2O_LLW1      26      // H L  I2O Region 1 Low Latency PLB Write
+#define INTR_UIC0_I2O_HBW0      27      // H L  I2O Region 0 High Bandwidth PLB Write
+#define INTR_UIC0_I2O_HBW1      28      // H L  I2O Region 1 High Bandwidth PLB Write
+#define INTR_UIC0_EIP94         29      // H L  Security EIP-94
+#define INTR_UIC0_UIC1_NC       30      // H L  UIC1 Cascade (Non-Critical)
+#define INTR_UIC0_UIC1_CR       31      // H L  UIC1 Cascade (Critical)
+
+/* 460ex Interrupts       [High/Low Polarity,Level Sensitivity]
+ *  UIC1                  [   Rising/Falling,Edge Sensitivity ] */
+#define INTR_UIC1_BASE          32
+#define INTR_UIC1_CRITICAL       0x00000000
+#define INTR_UIC1_POLARITY       0xffffffff
+#define INTR_UIC1_TRIGGER        0x00fff000
+#define INTR_UIC1_EXT_IRQ2       0      // ? ?  External IRQ 2
+#define INTR_UIC1_UART0          1      // H L  Uart 0
+#define INTR_UIC1_SPI            2      // H L  SPI
+#define INTR_UIC1_TRNG_ALARM     3      // H L  TRNG Alarm
+#define INTR_UIC1_ECC            4      // H L
+#define INTR_UIC1_EBC            5      // H L
+#define INTR_UIC1_NDFC           6      // H L
+#define INTR_UIC1_EIPPKP_SLAVE   7      // H L
+#define INTR_UIC1_PCI0_MSI1      8      // R E  PCI MSI Level 1
+#define INTR_UIC1_PCI0_MSI2      9      // R E  PCI MSI Level 2
+#define INTR_UIC1_PCI0_MSI3     10      // R E  PCI MSI Level 3
+#define INTR_UIC1_L2            11      // R E
+#define INTR_UIC1_GPT_CMP0      12      // R E  GPT Compare Timer 0
+#define INTR_UIC1_GPT_CMP1      13      // R E  GPT Compare Timer 1
+#define INTR_UIC1_GPT_CMP2      14      // R E  GPT Compare Timer 2
+#define INTR_UIC1_GPT_CMP3      15      // R E  GPT Compare Timer 3
+#define INTR_UIC1_GPT_CMP4      16      // R E  GPT Compare Timer 4
+#define INTR_UIC1_GPT_CMP5      17      // R E  GPT Compare Timer 5
+#define INTR_UIC1_GPT_CMP6      18      // R E  GPT Compare Timer 6
+#define INTR_UIC1_GPT_DCT       19      // R E  GPT Down Count Timer
+#define INTR_UIC1_EXT_IRQ3      20      // ? ?
+#define INTR_UIC1_EXT_IRQ4      21      // ? ?
+#define INTR_UIC1_HSDMA_ERR     22      // H L
+#define INTR_UIC1_I2O_ERR       23      // H L
+#define INTR_UIC1_SROM_ERR      24      // H L
+#define INTR_UIC1_PCI0_ERROR    25      // H L
+#define INTR_UIC1_EXT_IRQ5      26      // ? ?
+#define INTR_UIC1_EXT_IRQ6      27      // ? ?
+#define INTR_UIC1_UART2         28      // H L
+#define INTR_UIC1_UART3         29      // H L
+#define INTR_UIC1_EXT_IRQ7      30      // ? ?
+#define INTR_UIC1_EXT_IRQ8      31      // ? ?
+
+/* 460ex Interrupts       [High/Low Polarity,Level Sensitivity]
+ *  UIC2                  [   Rising/Falling,Edge Sensitivity ] */
+#define INTR_UIC2_BASE          64
+#define INTR_UIC2_CRITICAL       0x00000000
+#define INTR_UIC2_POLARITY       0xffffffff
+#define INTR_UIC2_TRIGGER        0x00ff0000
+#define INTR_UIC2_TAHOE0         0      // H L
+#define INTR_UIC2_TAHOE1         1      // H L
+#define INTR_UIC2_EXT_IRQ9       2      // ? ?
+#define INTR_UIC2_MAL_SERR       3      // H L
+#define INTR_UIC2_MAL_TXDE       4      // H L
+#define INTR_UIC2_MAL_RXDE       5      // H L
+#define INTR_UIC2_MAL_TX_EOB     6      // H L
+#define INTR_UIC2_MAL_RX_EOB     7      // H L
+#define INTR_UIC2_MAL_TX0        8      // R E
+#define INTR_UIC2_MAL_TX1        9      // R E
+#define INTR_UIC2_MAL_TX2       10      // R E
+#define INTR_UIC2_MAL_TX3       11      // R E
+#define INTR_UIC2_MAL_RX0       12      // R E
+#define INTR_UIC2_MAL_RX1       13      // R E
+#define INTR_UIC2_MAL_RX2       14      // R E
+#define INTR_UIC2_MAL_RX3       15      // R E
+#define INTR_UIC2_EMAC0         16      // H L
+#define INTR_UIC2_EMAC1         17      // H L
+#define INTR_UIC2_EMAC2         18      // H L
+#define INTR_UIC2_EMAC3         19      // H L
+#define INTR_UIC2_EMAC0_WAKE    20      // H L
+#define INTR_UIC2_EMAC1_WAKE    21      // H L
+#define INTR_UIC2_EMAC2_WAKE    22      // H L
+#define INTR_UIC2_EMAC3_WAKE    23      // H L
+#define INTR_UIC2_EXT_IRQ10     24      // H L
+#define INTR_UIC2_EXT_IRQ11     25      // ? ?
+/* UIC1, IRQ port 26 is reserved */
+#define INTR_UIC2_AHBARB_ERR    27      // H L
+#define INTR_UIC2_USB_OTG       28      // H L
+#define INTR_UIC2_USB_EHCI      29      // H L
+#define INTR_UIC2_USB_OHCI      30      // H L
+#define INTR_UIC2_USB_OHCI_SMI  31      // H L
+
+/* 460ex Interrupts       [High/Low Polarity,Level Sensitivity]
+ *  UIC3                  [   Rising/Falling,Edge Sensitivity ] */
+#define INTR_UIC3_BASE          96
+#define INTR_UIC3_CRITICAL       0x00000000
+#define INTR_UIC3_POLARITY       0xf7dfffff
+#define INTR_UIC3_TRIGGER        0x69a000ff
+#define INTR_UIC3_PE0_AL         0      // H L
+#define INTR_UIC3_PE0_VPD        1      // R E
+#define INTR_UIC3_PE0_HOTPLUG    2      // R E
+#define INTR_UIC3_PE0_TCR        3      // H L
+#define INTR_UIC3_PE0_VCO        4      // F E
+#define INTR_UIC3_PE0_DCR        5      // H L
+#define INTR_UIC3_PE1_AL         6      // H L
+#define INTR_UIC3_PE1_VPD        7      // R E
+#define INTR_UIC3_PE1_HOTPLUG    8      // R E
+#define INTR_UIC3_PE1_TCR        9      // H L
+#define INTR_UIC3_PE1_VCO       10      // F E
+#define INTR_UIC3_PE1_DCR       11      // H L
+#define INTR_UIC3_PE0_INTA      12      // H L
+#define INTR_UIC3_PE0_INTB      13      // H L
+#define INTR_UIC3_PE0_INTC      14      // H L
+#define INTR_UIC3_PE0_INTD      15      // H L
+#define INTR_UIC3_PE1_INTA      16      // H L
+#define INTR_UIC3_PE1_INTB      17      // H L
+#define INTR_UIC3_PE1_INTC      18      // H L
+#define INTR_UIC3_PE1_INTD      19      // H L
+#define INTR_UIC3_EXT_IRQ12     20      // ? ?
+#define INTR_UIC3_EXT_IRQ13     21      // ? ?
+#define INTR_UIC3_EXT_IRQ14     22      // ? ?
+#define INTR_UIC3_EXT_IRQ15     23      // ? ?
+#define INTR_UIC3_PE_MSI0       24      // R E
+#define INTR_UIC3_PE_MSI1       25      // R E
+#define INTR_UIC3_PE_MSI2       26      // R E
+#define INTR_UIC3_PE_MSI3       27      // R E
+#define INTR_UIC3_PE_MSI4       28      // R E
+#define INTR_UIC3_PE_MSI5       29      // R E
+#define INTR_UIC3_PE_MSI6       30      // R E
+#define INTR_UIC3_PE_MSI7       31      // R E
 
 /* UART registers */
 
