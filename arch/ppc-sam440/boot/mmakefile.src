@@ -51,6 +51,7 @@ include $(TOP)/config/make.cfg
 #MM     workbench-libs-workbench \
 #MM     kernel-hidd-irq \
 #MM     kernel-fs-cdvdfs \
+#MM     kernel-fs-fat \
 #MM     kernel-fs-sfs \
 #MM     kernel-fs-amberram \
 #MM     kernel-hidd-graphics \
@@ -78,7 +79,7 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_libr
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
-PKG_HANDLERS := con amberram cdrom sfs afs
+PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 radeon irq usb ohci
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage

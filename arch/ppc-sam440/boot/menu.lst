@@ -20,6 +20,7 @@ title AROS on Sam440
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
     module boot/modules/expansion.library
+    module boot/modules/fat-handler
     module boot/modules/FileSystem.resource
     module boot/modules/gameport.device
     module boot/modules/graphics.hidd
@@ -69,6 +70,7 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
     module boot/modules/expansion.library
+    module boot/modules/fat-handler
     module boot/modules/FileSystem.resource
     module boot/modules/gameport.device
     module boot/modules/graphics.hidd
