@@ -281,7 +281,7 @@ void mmu_init(struct TagItem *tags)
         map_region(&info, 0xc, 0x80000000, 0x80000000, 0x20000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I );
         /* PCI IO/Control         0xe8000000-0xef000000 */
         map_region(&info, 0xc, 0x08000000, 0xe8000000, 0x07000000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
-        /* USB                    0xef000000-0xef010000 */
+        /* USB, SATA              0xef000000-0xef010000 */
         map_region(&info, 0x4, 0xbffd0000, 0xef000000, 0x00010000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
         /* UART, GPT, ZMII, EMAC  0xef600000-0xef610000 */
         map_region(&info, 0x4, 0xef600000, 0xef600000, 0x00010000, TLB_SR | TLB_SW | TLB_UR | TLB_UW | TLB_G | TLB_I);
