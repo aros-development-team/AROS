@@ -98,7 +98,7 @@ FILES := \
 	 Why \
 	# End of list
 
-%build_module mmake=kernel-c-shellcommands \
+%build_module mmake=kernel-shellcommands \
   modname=shellcommands modtype=resource \
   files="shellcommands_init $(FILES)"
 
