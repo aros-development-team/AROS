@@ -543,7 +543,8 @@ typedef struct AROSCPUContext {
 #define INTR_UIC3_CRITICAL       0x00000000
 #define INTR_UIC3_POLARITY       0xf7dfffff
 #define INTR_UIC3_TRIGGER        0x69a000ff
-#define INTR_UIC3_PE0_AL         0      // H L
+#define INTR_UIC3_PE0_AL         0      // H L  PCIE0 (if SATA is disabled)
+#define INTR_UIC3_SATA           0      // H L  SATA (if PCIE0 is disabled)
 #define INTR_UIC3_PE0_VPD        1      // R E
 #define INTR_UIC3_PE0_HOTPLUG    2      // R E
 #define INTR_UIC3_PE0_TCR        3      // H L
@@ -929,5 +930,9 @@ typedef struct AROSCPUContext {
 /* AMCC460 USB */
 #define OHCI0_HCREV             (0xef000000)    /* 0x4 bffd0000 */
 #define EHCI0_HCCAPBASE         (0xef000400)    /* 0x4 bffd0400 */
+
+/* AMCC460 IDE/SATA */
+#define SATA0_CDR0              (0xef001000)    /* 0x4 bffd1000 */
+#define SATA0_SCR0              (0xef001024)    /* 0x4 bffd1024 */
 
 #endif /*ASM_AMCC440_H*/
