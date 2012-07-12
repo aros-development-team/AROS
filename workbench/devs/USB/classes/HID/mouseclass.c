@@ -223,10 +223,6 @@ OOP_Object *METHOD(USBMouse, Root, New)
 	return o;
 }
 
-struct pRoot_Dispose {
-	OOP_MethodID        mID;
-};
-
 void METHOD(USBMouse, Root, Dispose)
 {
 	MouseData *mouse = OOP_INST_DATA(cl, o);

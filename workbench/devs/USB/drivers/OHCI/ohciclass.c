@@ -285,10 +285,6 @@ OOP_Object *METHOD(OHCI, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(OHCI, Root, Dispose)
 {
     ohci_data_t *ohci = OOP_INST_DATA(cl, o);

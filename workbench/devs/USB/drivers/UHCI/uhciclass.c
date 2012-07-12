@@ -516,10 +516,6 @@ OOP_Object *METHOD(UHCI, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID	mID;
-};
-
 void METHOD(UHCI, Root, Dispose)
 {
     UHCIData *uhci = OOP_INST_DATA(cl, o);

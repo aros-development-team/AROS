@@ -613,10 +613,6 @@ usb_endpoint_descriptor_t * METHOD(USBDevice, Hidd_USBDevice, GetEndpoint)
     return d;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID	mID;
-};
-
 void METHOD(USBDevice, Root, Dispose)
 {
     DeviceData *dev = OOP_INST_DATA(cl, o);

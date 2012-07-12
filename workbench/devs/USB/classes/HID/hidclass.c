@@ -327,10 +327,6 @@ OOP_Object *METHOD(HID, Root, New)
     return o;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(HID, Root, Dispose)
 {
     HidData *hid = OOP_INST_DATA(cl, o);

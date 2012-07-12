@@ -263,10 +263,6 @@ OOP_Object *METHOD(EHCI, Root, New)
     return NULL;
 }
 
-struct pRoot_Dispose {
-    OOP_MethodID        mID;
-};
-
 void METHOD(EHCI, Root, Dispose)
 {
 }
