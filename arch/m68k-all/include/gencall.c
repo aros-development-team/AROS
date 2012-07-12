@@ -32,15 +32,15 @@
 #define FLAG_BN		(1 << 0)
 #define FLAG_DOUBLE	(1 << 1)
 
-void aros_ufp(int id, int is_static)
+void aros_ufp(int id)
 {
     int i;
 
-    printf("#define AROS_UFP%d%s(t,n", id, is_static ? "S" : "");
+    printf("#define AROS_UFP%d(t,n", id);
     for (i = 0; i < id; i++)
         printf(",a%d", i + 1);
     printf(") \\\n");
-    printf("\t%st n (void)\n", is_static ? "static " : "");
+    printf("\tt n (void)\n");
 }
 
 void aros_ufh(int id, int is_static)
@@ -569,10 +569,7 @@ int main(int argc, char **argv)
         printf("#define __AROS_CPU_SPECIFIC_ASMCALLS\n\n");
 
         for (i = 0; i < GENCALL_MAX; i++)
-            aros_ufp(i, 0);
-
-        for (i = 0; i < GENCALL_MAX; i++)
-            aros_ufp(i, 1);
+            aros_ufp(i);
 
         for (i = 0; i < GENCALL_MAX; i++)
             aros_ufh(i, 0);
