@@ -609,6 +609,17 @@ typedef unsigned int (*ULONG_FUNC)();
 	__AROS_UFP_PREFIX t n (\
 	__AROS_UFPA(a1),\
 	__AROS_UFPA(a2))
+#   if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS))
+#	define AROS_UFP2S(t,n,a1,a2) \
+	    __AROS_UFP_PREFIX static t n (\
+	    __AROS_UFPA(a1),\
+	    __AROS_UFPA(a2))
+#   else
+#	define AROS_UFP2S(t,n,a1,a2) \
+	    __AROS_UFP_PREFIX t n (\
+	    __AROS_UFPA(a1),\
+	    __AROS_UFPA(a2))
+#   endif
 #   define AROS_UFP3(t,n,a1,a2,a3) \
 	__AROS_UFP_PREFIX t n (\
 	__AROS_UFPA(a1),\
