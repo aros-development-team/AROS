@@ -27,8 +27,8 @@ typedef union _pcicfg
 static uint32_t _read_config_long(int reg)
 {
         uint32_t temp;
-    outl_le(CFGADD(0, 0, 0, reg),PCIC0_CFGADDR);
-    temp=inl_le(PCIC0_CFGDATA);
+    outl_le(CFGADD(0, 0, 0, reg),PCI0_CFGADDR);
+    temp=inl_le(PCI0_CFGDATA);
     return temp;
 }
 
@@ -42,8 +42,8 @@ static uint16_t _read_config_word(int reg)
 
 static void _write_config_long(int reg, uint32_t val)
 {
-        outl_le(CFGADD(0, 0, 0, reg),PCIC0_CFGADDR);
-        outl_le(val,PCIC0_CFGDATA);
+        outl_le(CFGADD(0, 0, 0, reg),PCI0_CFGADDR);
+        outl_le(val,PCI0_CFGDATA);
 }
 
 static void _write_config_word(int reg, uint16_t val)
