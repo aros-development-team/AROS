@@ -1,0 +1,16 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CFILES := \
+        debug_init_arch
+
+#MM kernel-debug-sam440-ppc : kernel-kernel-ppc-includes kernel-debug-includes
+
+USER_CFLAGS     := $(PRIV_KERNEL_INCLUDES) \
+                   -I$(SRCDIR)/rom/debug
+
+%build_archspecific \
+  mainmmake=kernel-debug maindir=rom/debug arch=sam440-ppc \
+  files=$(CFILES) modulename=debug
+
+TARGETDIR = $(BD_OBJDIR$(BDID))

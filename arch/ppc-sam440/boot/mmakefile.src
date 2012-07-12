@@ -40,6 +40,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-dos \
 #MM	kernel-lddemon \
 #MM     kernel-dosboot \
+#MM     kernel-debug \
 #MM     kernel-ata \
 #MM     hidd-i2c \
 #MM     hidd-i2c-amcc440 \
@@ -73,7 +74,7 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_libr
         -L$(LIBDIR) -larossupport -larosc.static -larosm -lamiga -lautoinit -llibinit -lgcc
 
 
-PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos poseidon
+PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con amberram cdrom sfs afs
