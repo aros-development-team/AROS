@@ -2,7 +2,7 @@
  * fat.handler - FAT12/16/32 filesystem handler
  *
  * Copyright © 2006 Marek Szyprowski
- * Copyright © 2007-2011 The AROS Development Team
+ * Copyright © 2007-2012 The AROS Development Team
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the same terms as AROS itself.
@@ -62,7 +62,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
     }
 
     /* give the block back if they asked for it (needed to mark the block
-     * dirty if they're writing */
+     * dirty if they're writing) */
     if (rb != NULL)
         *rb = sb->fat_blocks[entry_cache_offset >> sb->sectorsize_bits];
 
@@ -262,8 +262,6 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->first_data_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors;
     D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
 
-    sb->free_clusters = 0xffffffff;
-
     /* check if disk is in fact a FAT filesystem */
 
     /* valid sector size: 512, 1024, 2048, 4096 */
@@ -382,6 +380,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
 
     /* get initial number of free clusters */
     sb->free_clusters = -1;
+    sb->next_cluster = -1;
     if (sb->type == 32) {
         sb->fsinfo_block = Cache_GetBlock(sb->cache, sb->first_device_sector
             + AROS_LE2WORD(boot->type.fat32.bpb_fs_info), (UBYTE **)&fsinfo);
@@ -390,7 +389,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
                 && fsinfo->struct_sig == AROS_LONG2LE(FSI_STRUCT_SIG)
                 && fsinfo->trail_sig == AROS_LONG2LE(FSI_TRAIL_SIG)) {
                 sb->free_clusters = AROS_LE2LONG(fsinfo->free_count);
-                fsinfo->next_free = -1;
+                sb->next_cluster = AROS_LE2LONG(fsinfo->next_free);
                 D(bug("[fat] valid FATFSInfo block found\n"));
                 sb->fsinfo_buffer = fsinfo;
             }
@@ -400,9 +399,12 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     }
     if (sb->free_clusters == -1)
         CountFreeClusters(sb);
+    if (sb->next_cluster == -1)
+        sb->next_cluster = 2;
 
     D(bug("\tFAT Filesystem successfully detected.\n"));
     D(bug("\tFree Clusters = %ld\n", sb->free_clusters));
+    D(bug("\tNext Free Cluster = %ld\n", sb->next_cluster));
     FreeMem(boot, bsize);
     return 0;
 }
@@ -553,32 +555,43 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     return err;
 }
 
+
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
     ULONG cluster = 0;
+    BOOL found = FALSE;
 
-    /*
-     * XXX this implementation is extremely naive. things we
-     * could do to make it better:
-     *
-     *  - don't start looking for a free cluster at the start
-     *    each time. start from the current cluster and wrap
-     *    around when we hit the end
-     *  - track where we last found a free cluster and start
-     *    from there
-     *  - allocate several contiguous clusters at a time to
-     *    reduce fragmentation
-     */
+    for (cluster = sb->next_cluster;
+        cluster < 2 + sb->clusters_count && !found;
+        cluster++)
+    {
+        if (GET_NEXT_CLUSTER(sb, cluster) == 0)
+        {
+            *rcluster = cluster;
+            found = TRUE;
+        }
+    }
 
-    for (cluster = 2; cluster < sb->clusters_count && GET_NEXT_CLUSTER(sb, cluster) != 0; cluster++);
+    if (!found)
+    {
+        for (cluster = 2; cluster < sb->next_cluster && !found;
+            cluster++)
+        {
+            if (GET_NEXT_CLUSTER(sb, cluster) == 0)
+            {
+                *rcluster = cluster;
+                found = TRUE;
+            }
+        }
+    }
 
-    if (cluster == sb->clusters_count) {
+    if (!found) {
         D(bug("[fat] no more free clusters, we're out of space\n"));
         return ERROR_DISK_FULL;
     }
 
-    D(bug("[fat] found free cluster %ld\n", cluster));
+    sb->next_cluster = *rcluster;
 
-    *rcluster = cluster;
+    D(bug("[fat] found free cluster %ld\n", *rcluster));
 
     return 0;
 }
@@ -599,10 +612,11 @@ void CountFreeClusters(struct FSSuper *sb) {
 
     /* loop over all the data clusters */
     for (cluster = 2; cluster < sb->clusters_count + 2; cluster++)
-
+    {
         /* record the free ones */
         if (GET_NEXT_CLUSTER(sb, cluster) == 0)
             free++;
+    }
 
     /* put the value away for later */
     sb->free_clusters = free;
@@ -615,6 +629,7 @@ void AllocCluster(struct FSSuper *sb, ULONG cluster) {
     sb->free_clusters--;
     if (sb->fsinfo_buffer != NULL) {
         sb->fsinfo_buffer->free_count = AROS_LONG2LE(sb->free_clusters);
+        sb->fsinfo_buffer->next_free = AROS_LONG2LE(sb->next_cluster);
         Cache_MarkBlockDirty(sb->cache, sb->fsinfo_block);
     }
 }
