@@ -544,6 +544,16 @@ LONG OpCreateDir(struct ExtFileLock *dirlock, UBYTE *name, ULONG namelen, struct
         return err;
     }
 
+    /* Make sure 'name' is just the FilePart() */
+    for (i = namelen-1; i > 0; i--) {
+        if (name[i] == '/' ||
+            name[i] == ':') {
+            namelen -= (i + 1);
+            name    += (i + 1);
+            break;
+        }
+    }
+
     /* if the dir is write protected, can't do anything. root dir is never
      * write protected */
     if (dh.ioh.first_cluster != dh.ioh.sb->rootdir_cluster) {
