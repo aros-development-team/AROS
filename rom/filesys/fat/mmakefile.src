@@ -1,12 +1,15 @@
+# $Id$
+
 include $(TOP)/config/make.cfg
 
-#MM- workbench-fs-complete : workbench-fs-fat
-
-FILES := startup cache charset direntry disk fat file lock main names packet\
+FILES := cache charset direntry disk fat file lock main names packet\
  ops support notify timer
 
-%build_prog mmake=workbench-fs-fat \
-    progname=fat-handler targetdir=$(AROS_FS) \
-    files="$(FILES)" usestartup=no uselibs="rom"
+#MM- kernel-fs-fat : includes linklibs
+
+%build_module mmake=kernel-fs-fat \
+    modname=fat modtype=handler \
+    files="$(FILES)"
+
 
 %common
