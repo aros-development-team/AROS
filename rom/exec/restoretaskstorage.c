@@ -22,7 +22,7 @@
 
 /*  LOCATION */
         AROS_LHA(APTR, id, A0),
-        struct ExecBase *, SysBase, 178, Exec)
+        struct ExecBase *, SysBase, 183, Exec)
 
 /*  FUNCTION
         The will remmeber the current state of the task storage slots

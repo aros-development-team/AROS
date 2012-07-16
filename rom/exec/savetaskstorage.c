@@ -20,7 +20,7 @@
         AROS_LH0(APTR, SaveTaskStorage,
 
 /*  LOCATION */
-        struct ExecBase *, SysBase, 177, Exec)
+        struct ExecBase *, SysBase, 182, Exec)
 
 /*  FUNCTION
         The will remember the current state of the task storage slots

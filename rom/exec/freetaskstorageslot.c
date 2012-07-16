@@ -15,7 +15,7 @@
 
 /*  LOCATION */
         AROS_LHA(int, slot, D0),
-        struct ExecBase *, SysBase, 140, Exec)
+        struct ExecBase *, SysBase, 181, Exec)
 
 /*  FUNCTION
         This function will free a slot in taskstorage 
