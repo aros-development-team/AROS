@@ -3,6 +3,7 @@ include $(TOP)/config/make.cfg
 #MM- test : test-library
 #MM- test-library : test-library-dummytest \
 #MM-     test-library-dummytest_auto \
+#MM-     test-library-usereltest \
 #MM-     test-library-peropenertest \
 #MM-     test-library-peropenertest_child
 #MM test-library-dummytest : test-library-dummylib
@@ -11,13 +12,15 @@ include $(TOP)/config/make.cfg
 #MM     test-library-pertasklib
 #MM test-library-peropenertest_child : \
 #MM     test-library-pertasklib
+#MM test-library-usereltest :  test-library-userellib
 #MM- test-library-clean : \
 #MM      test-library-dummytest-clean \
 #MM      test-library-dummytest_auto-clean \
 #MM      test-library-peropenertest-clean \
 #MM      test-library-dummylib-clean \
 #MM      test-library-peropenerlib-clean \
-#MM      test-library-pertasklib-clean
+#MM      test-library-pertasklib-clean \
+#MM      test-library-userellib-clean
 
 TARGETDIR := $(AROSDIR)/Tests/Library
 
@@ -37,6 +40,9 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 %build_prog mmake=test-library-dummytest_auto \
     files=dummytest_auto progname=dummytest_auto targetdir=$(TARGETDIR) \
     uselibs=dummy
+%build_prog mmake=test-library-usereltest \
+    progname=usereltest targetdir=$(TARGETDIR) \
+    uselibs="userel"
 
 %build_module mmake=test-library-dummylib \
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
@@ -46,3 +52,8 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 
 %build_module mmake=test-library-pertasklib \
     modname=pertask modtype=library files=getparentbase prefix=$(TARGETDIR)
+
+%build_module mmake=test-library-userellib \
+    modname=userel modtype=library \
+    files="dummyadd pertaskgetparentbase" \
+    prefix=$(TARGETDIR) uselibs="dummy_rel pertask_rel"
