@@ -1,15 +1,19 @@
 include $(TOP)/config/make.cfg
 
 #MM- test : test-library
-#MM- test-library : test-library-dummytest test-library-peropenertest \
+#MM- test-library : test-library-dummytest \
+#MM-     test-library-dummytest_auto \
+#MM-     test-library-peropenertest \
 #MM-     test-library-peropenertest_child
 #MM test-library-dummytest : test-library-dummylib
+#MM test-library-dummytest_auto : test-library-dummylib
 #MM test-library-peropenertest : test-library-peropenerlib \
 #MM     test-library-pertasklib
 #MM test-library-peropenertest_child : \
 #MM     test-library-pertasklib
 #MM- test-library-clean : \
 #MM      test-library-dummytest-clean \
+#MM      test-library-dummytest_auto-clean \
 #MM      test-library-peropenertest-clean \
 #MM      test-library-dummylib-clean \
 #MM      test-library-peropenerlib-clean \
@@ -20,15 +24,19 @@ TARGETDIR := $(AROSDIR)/Tests/Library
 USER_CFLAGS := -I$(TARGETDIR)/Development/include
 USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 
-%build_prog mmake=test-library-dummytest \
-    progname=dummytest targetdir=$(TARGETDIR)
-
 %build_prog mmake=test-library-peropenertest \
     progname=peropenertest targetdir=$(TARGETDIR)
 
 %build_prog mmake=test-library-peropenertest_child \
     progname=peropenertest_child targetdir=$(TARGETDIR) \
     uselibs="pertask"
+
+%build_prog mmake=test-library-dummytest \
+    progname=dummytest targetdir=$(TARGETDIR) \
+
+%build_prog mmake=test-library-dummytest_auto \
+    files=dummytest_auto progname=dummytest_auto targetdir=$(TARGETDIR) \
+    uselibs=dummy
 
 %build_module mmake=test-library-dummylib \
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
