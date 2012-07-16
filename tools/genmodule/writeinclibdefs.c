@@ -176,7 +176,7 @@ void writeinclibdefs(struct config *cfg)
             );
         fprintf(out,
                 "\n"
-                "LIBBASETYPEPTR __GM_GetBase(void);\n"
+                "void *__GM_GetBase(void);\n"
         );
     }
 

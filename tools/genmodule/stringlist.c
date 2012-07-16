@@ -74,3 +74,12 @@ int slist_remove(struct stringlist **list, struct stringlist *node)
     else
 	return 0;
 }
+
+int slist_length(struct stringlist *slist)
+{
+    int i;
+
+    for (i=0; slist; i++, slist=slist->next);
+
+    return i;
+}

@@ -54,8 +54,6 @@ void funcsetinternalname(struct functionhead *funchead, const char *intername);
 struct config;
 void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist);
 void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclist);
-void writefuncinlines(FILE *out, struct config *cfg, struct functionhead *funclist);
-void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *funclist);
 
 /* getargtype remove the variable name from a variable definition and leave return
  * the type of the variable

@@ -15,5 +15,6 @@ struct stringlist {
 struct stringlist *slist_append(struct stringlist **list, const char *s);
 struct stringlist *slist_prepend(struct stringlist **list, const char *s);
 int slist_remove(struct stringlist **list, struct stringlist *node);
+int slist_length(struct stringlist *list);
 
 #endif //STRINGLIST_H

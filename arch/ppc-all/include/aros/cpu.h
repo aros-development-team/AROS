@@ -153,7 +153,7 @@ struct JumpVec
 	asm volatile( \
 	    ".weak " #fname "\n" \
 	    "\t" #fname ":\n" \
-            "\tbl   __comp_get_relbase\n" \
+            "\tbl   __GM_GetBase\n" \
 	    "\tlis  11," #libbasename "_offset@ha\n" \
 	    "\tlwz  11," #libbasename "_offset@l(11)\n" \
             "\tadd  11, 11, 3\n" \

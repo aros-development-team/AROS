@@ -214,95 +214,46 @@ static void writedecl(FILE *out, struct config *cfg)
 		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
 		"#endif\n"
                 "static int __baseslot;\n"
-                "LIBBASETYPEPTR __GM_GetBase(void)\n"
-                "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot];\n"
-                "}\n"
+                "#if defined __x86_64__\n"
                 /* On AMD64 don't clobber registers used for argument passing,
                  * only clobber rax, r10 and r11
                  */
-                "#if defined __x86_64__\n"
-                "asm(\".global __comp_get_relbase\\n\"\n"
-                "    \"__comp_get_relbase :\\n\"\n"
+                "extern void *__GM_GetBase(void);\n"
+                "extern void __GM_SetBase(void *base);\n"
+                "asm(\".text\\n\"\n"
+                "    \".global __GM_GetBase\\n\"\n"
+                "    \".func __GM_GetBase\\n\"\n"
+                "    \"__GM_GetBase :\\n\"\n"
                 "    \"\\tmovq SysBase(%%rip), %%rax\\n\"\n"
                 "    \"\\tmovq 552(%%rax), %%rax\\n\"\n"
                 "    \"\\tmovq 56(%%rax), %%r10\\n\"\n"
                 "    \"\\tmovslq __baseslot(%%rip),%%r11\\n\"\n"
                 "    \"\\tmovq (%%r10,%%r11,8), %%rax\\n\"\n"
                 "    \"\\tret\\n\"\n"
+                "    \".endfunc\\n\"\n"
+                ");\n"
+                "asm(\".text\\n\"\n"
+                "    \".global __GM_SetBase\\n\"\n"
+                "    \".func __GM_SetBase\\n\"\n"
+                "    \"__GM_SetBase:\\n\"\n"
+                "    \"\\tmovq %%rdi,%%r11\\n\"\n"
+                "    \"\\tmovq SysBase(%%rip), %%rax\\n\"\\\n"
+                "    \"\\tmovslq __baseslot(%%rip),%%r10\\n\"\\\n"
+                "    \"\\tmovq 552(%%rax), %%rax\\n\"\\\n"
+                "    \"\\tmovq 56(%%rax), %%rax\\n\"\\\n"
+                "    \"\\tmovq %%rdi,(%%rax,%%r10,8)\\n\"\\\n"
+                "    \"\\tret\\n\"\n"
+                "    \".endfunc\\n\"\n"
                 ");\n"
                 "#else\n"
-                "AROS_MAKE_ALIAS(__GM_GetBase, __comp_get_relbase);\n"
-                "#endif\n"
+                "void *__GM_GetBase(void)\n"
+                "{\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot];\n"
+                "}\n"
                 "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
                 "{\n"
                 "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot] = (IPTR)base;\n"
                 "}\n"
-                "#if defined __i386__\n"
-                "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tpushl %%eax\\n\"\\\n"
-                "        \"\\tcall __GM_SetBase\\n\"\\\n"
-                "        \"\\tpopl %%eax\\n\"\\\n"
-                "        \"\\tjmp \" #fname \"\\n\"\\\n"
-                "    )\n"
-                "#elif defined __x86_64__\n"
-                /* On AMD64 we can't call __GM_SetBase() as it will mess
-                 * up with the parameters passed in registers
-                 */
-                "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                /* On x86_64 we can use r10 and r11 in between function call and entry
-                   r11 contains libbase */
-                "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tpushq %%rax\\n\"\\\n"
-                "        \"\\tmovq SysBase(%%rip), %%rax\\n\"\\\n"
-                "        \"\\tmovslq __baseslot(%%rip),%%r10\\n\"\\\n"
-                "        \"\\tmovq 552(%%rax), %%rax\\n\"\\\n"
-                "        \"\\tmovq 56(%%rax), %%rax\\n\"\\\n"
-                "        \"\\tmovq %%r11,(%%rax,%%r10,8)\\n\"\\\n"
-                "        \"\\tpopq %%rax\\n\"\\\n"
-                "        \"\\tjmp \" #fname \"\\n\"\\\n"
-                "    )\n"
-                "#elif defined __mc68000__\n"
-                "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tmove.l %%a1,%%sp@-\\n\"\\\n"
-                "        \"\\tjsr __GM_SetBase\\n\"\\\n"
-                "        \"\\tmove.l %%sp@+,%%a1\\n\"\\\n"
-                "        \"\\tjmp \" #fname \"\\n\"\\\n"
-                "    )\n"
-                "#elif defined __powerpc__\n"
-                /* FIXME: struct offsets are from i386,
-                   need to be checked ! */
-                "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                /* On PPC we can use r0, r11, r12 in between function call and entry
-                 * r12 contains libbase
-                 */
-                "    asm(#fname \"_stub :\\n\"\\\n"
-                /* r0 = SysBase->ThisTask->tc_UnionETask.tc_TaskStorage */
-                "        \"\\tlis 11, SysBase@ha\\n\"\\\n"
-                "        \"\\tlwz 11, SysBase@l(11)\\n\"\\\n"
-                "        \"\\tlwz 11, 284(11)\\n\"\\\n"
-                "        \"\\tlwz 0, 36(11)\\n\"\\\n"
-                /* r11 = r0 + __baseslot */
-                "        \"\\tlis 11, __baseslot@ha\\n\"\\\n"
-                "        \"\\tlwz 11, __baseslot@l(11)\\n\"\\\n"
-                "        \"\\tadd 11,0,11\\n\"\\\n"
-                /* *r11 = r12 (== libbase) */
-                "        \"\\tstw 12, 0(11)\\n\"\\\n"
-                "        \"\\tb \" #fname \"\\n\"\\\n"
-                "    )\n"
-                "#elif defined __arm__\n"
-                "#define GM_INTERNALFUNCSTUB(fname)\\\n"
-                "    asm(#fname \"_stub :\\n\"\\\n"
-                "        \"\\tpush {r0, r1, r2, r3, lr}\\n\"\\\n"
-                "        \"\\tmov r0, r12\\n\"\\\n"
-                "        \"\\tbl __GM_SetBase\\n\"\\\n" /* r12 may be scratched */
-                "        \"\\tpop {r0, r1, r2, r3, lr}\\n\"\\\n"
-                "        \"\\tb \" #fname \"\\n\"\\\n" /* call function */
-                "    )\n"
-                "#else\n"
-                "#   error unsupported CPU type\n"
                 "#endif\n"
                 "struct __GM_DupBase {\n"
                 "    LIBBASETYPE base;\n"
@@ -317,10 +268,30 @@ static void writedecl(FILE *out, struct config *cfg)
                     "    LIBBASETYPEPTR oldpertaskbase;\n"
             );
         }
+        if (cfg->relbases)
+        {
+            fprintf(out,
+                    "    struct Library *relbase[%d];\n"
+                    , slist_length(cfg->relbases)
+            );
+        }
         fprintf(out,
                 "};\n"
                 "#define LIBBASESIZE sizeof(struct __GM_DupBase)\n"
         );
+        if (cfg->relbases)
+        {
+            struct stringlist *sl;
+            int i;
+
+            for (sl=cfg->relbases, i = 0; sl; sl=sl->next, i++) {
+                fprintf(out,
+                        "const IPTR %s_offset = offsetof(struct __GM_DupBase, relbase[%d]);\n"
+                        , sl->s
+                        , i
+                );
+            }
+        }
         if (cfg->options & OPTION_PERTASKBASE)
         {
             fprintf(out,
@@ -338,6 +309,19 @@ static void writedecl(FILE *out, struct config *cfg)
                     "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot] = (IPTR)base;\n"
                     "}\n"
             );
+        }
+        if (cfg->relbases)
+        {
+            struct stringlist *sl;
+
+            for (sl = cfg->relbases; sl; sl = sl->next)
+            {
+                fprintf(out,
+                        "AROS_IMPORT_ASM_SYM(void *,__%s,__aros_rellib_%s);\n"
+                        , sl->s
+                        , sl->s
+                );
+            }
         }
     }
     else
@@ -414,8 +398,6 @@ static void writedecl(FILE *out, struct config *cfg)
     
     /* Write out the defines for the functions of the function table */
     writefuncdefs(out, cfg, cfg->funclist);
-    /* Write internal stubs */
-    writefuncinternalstubs(out, cfg, cfg->funclist);
     fprintf(out, "\n");
 
 
@@ -1454,8 +1436,7 @@ writefunctable(FILE *out,
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    fprintf(out, "    &%s%s,\n", funclistit->internalname,
-                    cfg->options & OPTION_DUPBASE ? "_stub" : ""
+	    fprintf(out, "    &%s,\n", funclistit->internalname
             );
 	    break;
 	    

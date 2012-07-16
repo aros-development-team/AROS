@@ -121,7 +121,7 @@ do                                                       \
         asm volatile( \
             ".weak " #fname "\n" \
             #fname " :\n" \
-            "\tjsr __comp_get_relbase\n" \
+            "\tjsr __GM_GetBase\n" \
             "\tmove.l " #libbasename "_offset, %%a0\n" \
             "\tmove.l %%a0@(%%d0), %%a1\n" \
             "\tjmp %%a1@(%c0)\n" \
