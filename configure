@@ -617,6 +617,9 @@ aros_android_level
 aros_ios_sdk
 aros_ios_version
 aros_ios_platform
+gcc_default_cpu
+gcc_default_fpu
+gcc_default_float_abi
 aros_enable_mmu
 aros_nesting_supervisor
 aros_palm_debug_hack
@@ -7800,6 +7803,24 @@ case "$target_os" in
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc -D__linux__"
                 aros_default_wbdepth=8
                 gcc_target_cpu="ppc"
+                ;;
+            *armhf*)
+                aros_target_cpu="arm"
+                target_cpu="arm"
+                aros_object_format="armelf_linux_eabi"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
+                gcc_target_cpu="arm"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
+                aros_arch_libs="-laeabi"
+                gcc_default_fpu="vfpv3-d16"
+                gcc_default_float_abi="hard"
+                gcc_default_cpu="armv7-a"
+                android_tool_dir_prefix="arm-linux-androideabi"
+                android_tool_prefix="arm-linux-androideabi"
+                android_ndk_arch="arm"
+                kernel_tool_prefix="arm-linux-gnueabihf-"
                 ;;
             *arm*)
                 aros_target_cpu="arm"

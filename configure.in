@@ -895,6 +895,23 @@ case "$target_os" in
                 aros_default_wbdepth=8
                 gcc_target_cpu="ppc"
                 ;;
+            *armhf*)
+                aros_target_cpu="arm"
+                target_cpu="arm"
+                aros_object_format="armelf_linux_eabi"
+                aros_flavour="emulation"
+                aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Darm -D__linux__"
+                gcc_target_cpu="arm"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -fno-omit-frame-pointer"
+                aros_config_aflags="$aros_config_aflags -fno-strict-aliasing"
+                aros_arch_libs="-laeabi"
+                gcc_default_fpu="vfpv3-d16"
+                gcc_default_float_abi="hard"
+                android_tool_dir_prefix="arm-linux-androideabi"
+                android_tool_prefix="arm-linux-androideabi"
+                android_ndk_arch="arm"
+                kernel_tool_prefix="arm-linux-gnueabihf-"
+                ;;
             *arm*)
                 aros_target_cpu="arm"
                 aros_object_format="armelf_linux_eabi"
@@ -2569,6 +2586,11 @@ AC_SUBST(aros_enable_mmu)
 AC_SUBST(aros_ios_platform)
 AC_SUBST(aros_ios_version)
 AC_SUBST(aros_ios_sdk)
+
+# ARM default GCC target related
+AC_SUBST(gcc_default_cpu)
+AC_SUBST(gcc_default_fpu)
+AC_SUBST(gcc_default_float_abi)
 
 # Android related
 AC_SUBST(android_tool)
