@@ -64,9 +64,14 @@ void writestubs(struct config *cfg, int is_rel)
     fprintf
     (
         out,
-        "#include <exec/types.h>\n"
+        "#include <stddef.h>\n"
+        "\n"
         "#include <aros/cpu.h>\n"
         "#include <aros/libcall.h>\n"
+        "\n"
+        "#include <exec/types.h>\n"
+        "#include <exec/execbase.h>\n"
+        "#include <exec/tasks.h>\n"
         "\n"
     );
     
