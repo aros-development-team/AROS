@@ -213,48 +213,25 @@ static void writedecl(FILE *out, struct config *cfg)
 		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
 		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
 		"#endif\n"
-                "static int __baseslot;\n"
-                "#if defined __x86_64__\n"
-                /* On AMD64 don't clobber registers used for argument passing,
-                 * only clobber rax, r10 and r11
+                "int __GM_BaseSlot;\n"
+                /* If AROS_GM_GETBASE is defined, then it is a 
+                 * macro that generates the __GM_GetBase() function
+                 * in assembly. See include/aros/x86_64/cpu.h for
+                 * an example implementation.
                  */
+                "#ifdef AROS_GM_GETBASE\n"
                 "extern void *__GM_GetBase(void);\n"
-                "extern void __GM_SetBase(void *base);\n"
-                "asm(\".text\\n\"\n"
-                "    \".global __GM_GetBase\\n\"\n"
-                "    \".func __GM_GetBase\\n\"\n"
-                "    \"__GM_GetBase :\\n\"\n"
-                "    \"\\tmovq SysBase(%%rip), %%rax\\n\"\n"
-                "    \"\\tmovq 552(%%rax), %%rax\\n\"\n"
-                "    \"\\tmovq 56(%%rax), %%r10\\n\"\n"
-                "    \"\\tmovslq __baseslot(%%rip),%%r11\\n\"\n"
-                "    \"\\tmovq (%%r10,%%r11,8), %%rax\\n\"\n"
-                "    \"\\tret\\n\"\n"
-                "    \".endfunc\\n\"\n"
-                ");\n"
-                "asm(\".text\\n\"\n"
-                "    \".global __GM_SetBase\\n\"\n"
-                "    \".func __GM_SetBase\\n\"\n"
-                "    \"__GM_SetBase:\\n\"\n"
-                "    \"\\tmovq %%rdi,%%r11\\n\"\n"
-                "    \"\\tmovq SysBase(%%rip), %%rax\\n\"\\\n"
-                "    \"\\tmovslq __baseslot(%%rip),%%r10\\n\"\\\n"
-                "    \"\\tmovq 552(%%rax), %%rax\\n\"\\\n"
-                "    \"\\tmovq 56(%%rax), %%rax\\n\"\\\n"
-                "    \"\\tmovq %%rdi,(%%rax,%%r10,8)\\n\"\\\n"
-                "    \"\\tret\\n\"\n"
-                "    \".endfunc\\n\"\n"
-                ");\n"
+                "AROS_GM_GETBASE()\n"
                 "#else\n"
                 "void *__GM_GetBase(void)\n"
                 "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot];\n"
-                "}\n"
-                "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
-                "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__baseslot] = (IPTR)base;\n"
+                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__GM_BaseSlot];\n"
                 "}\n"
                 "#endif\n"
+                "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
+                "{\n"
+                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__GM_BaseSlot] = (IPTR)base;\n"
+                "}\n"
                 "struct __GM_DupBase {\n"
                 "    LIBBASETYPE base;\n"
                 "    LIBBASETYPEPTR oldbase;\n"
@@ -795,7 +772,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 
     if (cfg->options & OPTION_DUPBASE)
         fprintf(out,
-                "    __baseslot = AllocTaskStorageSlot();\n"
+                "    __GM_BaseSlot = AllocTaskStorageSlot();\n"
                 "    __GM_SetBase(lh);\n"
         );
     if (cfg->options & OPTION_PERTASKBASE)

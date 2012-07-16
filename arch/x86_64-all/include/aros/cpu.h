@@ -105,6 +105,29 @@ struct JumpVec
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_GETJUMPVEC(lib,n)->vec = (addr))
 #define __AROS_INITVEC(lib,n)           __AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
+/* Macro for generating the __GM_GetBase() function
+ * for a library. Optional for most architectures,
+ * but we can save quite a bit of pushing and popping
+ * with this optimized version.
+ */
+#define __AROS_GM_GETBASE() \
+    asm volatile (  "    movq SysBase(%%rip), %%rax\n"  \
+                    "    movq %c[task](%%rax), %%rax\n"  \
+                    "    movq %c[ts](%%rax), %%r10\n"  \
+                    "    movslq __GM_BaseSlot(%%rip),%%r11\n"  \
+                    "    movq (%%r10,%%r11,8), %%rax\n" \
+                 : : [task] "i"(offsetof(struct ExecBase, ThisTask)), \
+                     [ts] "i"(offsetof(struct Task, tc_UnionETask.tc_TaskStorage)));
+
+#define AROS_GM_GETBASE() \
+    void __GM_GetBase_wrapper(void) { \
+        asm volatile (  ".global __GM_GetBase\n"  \
+                        ".func __GM_GetBase\n"  \
+                        "__GM_GetBase :\n" );  \
+                        __AROS_GM_GETBASE() \
+        asm volatile (  "    ret\n"  \
+                        ".endfunc\n" ); \
+    }
 
 /* Macros for generating library stub functions and aliases. */
 
@@ -141,8 +164,9 @@ struct JumpVec
     { \
         asm volatile( \
             ".weak " #fname "\n" \
-            "\t" #fname " :\n" \
-            "\tcall __GM_GetBase\n" \
+            "\t" #fname " :\n"); \
+            __AROS_GM_GETBASE() \
+        asm volatile( \
             "\taddq " #libbasename "_offset(%%rip), %%rax\n" \
             "\tmovq (%%rax),%%r11\n" \
             "\tjmp  *%c0(%%r11)\n" \
