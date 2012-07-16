@@ -1,21 +1,26 @@
 include $(TOP)/config/make.cfg
 
 BINUTILS_VERSION = 2.21.1
-GMP_VERSION=5.0.1
-MPFR_VERSION=3.0.1
+GMP_VERSION=5.0.5
+MPFR_VERSION=3.1.0
 MPC_VERSION=0.9
 
 # gcc 4.6.2 can't build arm Objective C support without
 # a compiler error.
 ifneq (,$(findstring $(AROS_TARGET_CPU),arm))
 GCC_LANGUAGES = c,c++
+GCC_EXTRA_OPTS = \
+  --with-arch=$(GCC_DEFAULT_CPU) --with-float=$(GCC_DEFAULT_FLOAT_ABI) --with-fpu=$(GCC_DEFAULT_FPU) --with-mode=arm \
+  --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
+  --enable-long-long --enable-version-specific-runtime-libs
 else
 GCC_LANGUAGES = c,c++,objc
-endif
-
 GCC_EXTRA_OPTS = \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
   --enable-long-long --enable-version-specific-runtime-libs
+
+endif
+
 
 GCC_VERSION     = 4.6.2
 GCC_EXTRA_OPTS += --with-sysroot=$(AROS_DEVELOPMENT) --with-build-sysroot=$(AROS_DEVELOPMENT)
@@ -72,7 +77,7 @@ tools-crosstools-gmp :
 
 %fetch_and_build mmake=crosstools-gmp package=gmp version=$(GMP_VERSION) compiler=host \
 	package_repo="$(GNU_REPOSITORY)/gmp" \
-	patch=yes \
+	patch=no \
 	prefix="$(CROSSTOOLSDIR)" \
 	extraoptions="--bindir=$(CROSSTOOLSDIR) --disable-shared"
 
