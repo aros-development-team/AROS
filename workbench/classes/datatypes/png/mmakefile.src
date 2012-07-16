@@ -4,10 +4,10 @@ include $(TOP)/config/make.cfg
 FILES := pngclass memory directaccess
 
 #MM- workbench-datatypes-complete: workbench-datatypes-png
-#MM workbench-datatypes-png : includes linklibs linklibs-zlib linklibs-png
+#MM workbench-datatypes-png : includes linklibs workbench-libs-z workbench-libs-png
 
 USER_CFLAGS   := -DMYDEBUG
 
 %build_module mmake=workbench-datatypes-png \
     modname=png modtype=datatype \
-    files=$(FILES) uselibs="png_nostdio z.static"
+    files=$(FILES) uselibs="png_rel z_rel arosc_rel"
