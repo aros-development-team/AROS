@@ -82,6 +82,11 @@ IOS_PLATFORM    := @aros_ios_platform@
 IOS_OS_VERSION  := @aros_ios_version@
 IOS_SDK_PATH    := @aros_ios_sdk@
 
+# ARM gcc default target
+GCC_DEFAULT_CPU := @gcc_default_cpu@
+GCC_DEFAULT_FPU := @gcc_default_fpu@
+GCC_DEFAULT_FLOAT_ABI := @gcc_default_float_abi@
+
 # --------------------------------------------------------------------------
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
 # configured version of this file to find out a number of variables.
