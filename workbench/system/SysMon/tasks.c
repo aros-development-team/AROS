@@ -119,7 +119,7 @@ AROS_UFH3(VOID, TasksListDisplayFunction,
 
     if (obj)
     {
-        __sprintf(bufprio, "%d", obj->Priority);
+        __sprintf(bufprio, "%ld", (LONG)obj->Priority);
         strings[0] = obj->Name;
         strings[1] = bufprio;
         strings[2] = obj->Type == NT_TASK ? (STRPTR)_(MSG_TASK) : (STRPTR)_(MSG_PROCESS);
