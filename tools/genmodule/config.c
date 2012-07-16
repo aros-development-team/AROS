@@ -635,7 +635,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"superclass_field", "residentpri", "options", "sysbase_field",
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
-		"initpri", "type", "addromtag", "oopbase_field"
+		"initpri", "type", "addromtag", "oopbase_field",
+		"relbase"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -1018,6 +1019,9 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 27: /* oopbase_field */
 	    	cfg->oopbase_field = strdup(s);
 	    	break;
+	    case 28: /* relbase */
+	        slist_append(&cfg->relbases, s);
+	        break;
 		    }
 	}
 	else /* Line starts with ## */

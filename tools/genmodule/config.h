@@ -76,6 +76,7 @@ struct classinfo
 
     /* Interfaces used in this class (only for HIDD classes) */
     struct stringlist *interfaces;
+
 };
 
 /* DOS handlers */
@@ -161,6 +162,10 @@ struct config
 
     /* The DOS IDs and handlers for this module */
     struct handlerinfo *handlerlist;
+
+    /* Relative bases used by this library
+     */
+    struct stringlist *relbases;
 };
 
 /* Function prototypes */

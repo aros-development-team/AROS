@@ -156,7 +156,7 @@ struct JumpVec
             /* return address is in lr register */                      \
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
             "\tpush {r0, r1, r2, r3, lr}\n"                             \
-            /* r0 = __comp_get_relbase() */                             \
+            /* r0 = __GM_GetBase() */                             \
             "\tldr r12, 2f\n"                                           \
             "\tblx r12\n"                                               \
             /* r12 = libbase */                                         \
@@ -168,7 +168,7 @@ struct JumpVec
             /* Compute function address and jump */                     \
             "\tldr pc, [r12, #%c0]\n"                                   \
 	    "1:	.word " #libbasename "_offset\n"                        \
-            "2: .word __comp_get_relbase\n"                             \
+            "2: .word __GM_GetBase\n"                             \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
     }

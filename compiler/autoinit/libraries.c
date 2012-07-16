@@ -85,7 +85,7 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
     int pos;
     struct rellibraryset *set;
 
-    D(bug("[Autoinit] Opening libraries for %s @ 0x%p...\n", ((struct Node *)base)->ln_Name, base));
+    D(bug("[Autoinit] Opening relative libraries for %s @ 0x%p...\n", ((struct Node *)base)->ln_Name, base));
 
     ForeachElementInSet(list, 1, pos, set)
     {
