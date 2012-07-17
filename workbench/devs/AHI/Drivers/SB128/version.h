@@ -1,3 +1,3 @@
 #define VERSION 5
-#define REVISION 25
-#define VERS "5.25 (28.08.11)"
+#define REVISION 26
+#define VERS "5.26 (17.7.2012)"
