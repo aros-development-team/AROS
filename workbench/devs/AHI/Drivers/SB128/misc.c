@@ -81,21 +81,18 @@ void micro_delay(unsigned int val)
     TimerBase = (struct Device *)TimerIO->tr_node.io_Device;
   }
   
-  if (TimerIO)
-  {
-    TimerIO->tr_node.io_Command = TR_ADDREQUEST;
-    TimerIO->tr_time.tv_secs = 0;
-    TimerIO->tr_time.tv_micro = val;
-    DoIO((struct IORequest *)TimerIO);
-    DeleteIORequest((struct IORequest *)TimerIO);
-    TimerIO = NULL;
-    CloseDevice((struct IORequest *)TimerIO);
-  }
+  TimerIO->tr_node.io_Command = TR_ADDREQUEST;
+  TimerIO->tr_time.tv_secs = 0;
+  TimerIO->tr_time.tv_micro = val;
+  DoIO((struct IORequest *)TimerIO);
+  CloseDevice((struct IORequest *)TimerIO);
+  DeleteIORequest((struct IORequest *)TimerIO);
+  TimerIO = NULL;
 
-    if (replymp)
-    {
-        DeleteMsgPort(replymp);
-    }
+  if (replymp)
+  {
+    DeleteMsgPort(replymp);
+  }
 }
 
 unsigned long src_ready(struct SB128_DATA *card)
