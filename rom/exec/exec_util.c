@@ -185,7 +185,8 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
         {
             child->et_Parent = et->et_Parent;
             //Forbid();
-            ADDTAIL(&parent->et_Children, child);
+            if (parent)
+                ADDTAIL(&parent->et_Children, child);
             //Permit();
         }
 

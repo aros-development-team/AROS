@@ -15,13 +15,16 @@
 #include "exec_intern.h"
 #include "exec_util.h"
 
-/* User-mode code where the task jumps to */
+/* User-mode code where the task jumps to.
+ * NOTE: This is only called on ETasks!
+ */
 static void Exec_CrashHandler(void)
 {
     struct Task *task = FindTask(NULL);
     struct IntETask *iet = GetIntETask(task);
 
-    iet->iet_AlertFlags &= ~AF_Alert;	/* Makes Alert() attempting to bring up Intuition requester */
+    /* Makes Alert() attempting to bring up Intuition requester */
+    iet->iet_AlertFlags &= ~AF_Alert;
 
     Alert(iet->iet_AlertCode);
 }
