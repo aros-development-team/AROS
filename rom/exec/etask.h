@@ -48,8 +48,7 @@ struct IntETask
 #endif
 };
 
-#define GetIntETask(task)   ((struct IntETask *)(((struct Task *) \
-				(task))->tc_UnionETask.tc_ETask))
+#define GetIntETask(task)   ((struct IntETask *)GetETask(task))
 #define IntETask(etask)	    ((struct IntETask *)(etask))
 
 /* iet_AlertFlags */

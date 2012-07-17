@@ -74,14 +74,14 @@ static const ULONG contextSizes[] =
 void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR data, struct ExecBase *SysBase)
 {
     struct Task *task = SysBase->ThisTask;
-    struct IntETask *iet = NULL;
     int supervisor = KrnIsSuper();
+    struct IntETask *iet = NULL;
 
     D(bug("[exec] Alert 0x%08X, supervisor %d\n", alertNum, supervisor));
 
     if (task && (task->tc_Flags & TF_ETASK) && (task->tc_State != TS_REMOVED))
     {
-	iet = GetIntETask(task);
+        iet = GetIntETask(task);
 	
 	D(bug("[Alert] Task 0x%p, ETask 0x%p\n", task, iet));
 
@@ -153,7 +153,8 @@ void Exec_ExtAlert(ULONG alertNum, APTR location, APTR stack, UBYTE type, APTR d
 	     * UserAlert() succeeded and the user decided to continue the task.
 	     * Clear crash status and return happily
 	     */
-    	    ResetETask(iet);
+	    if (iet)
+	        ResetETask(iet);
 	    return;
 	}
     }

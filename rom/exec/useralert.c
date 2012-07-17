@@ -60,7 +60,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 
         if (buffer)
         {
-     	    struct IntETask *iet = GetIntETask(task);
+            struct IntETask *iet = GetIntETask(task);
 	    char *buf, *end;
 	    struct EasyStruct es = {
         	sizeof (struct EasyStruct),
@@ -71,7 +71,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
             };
 
 	    buf = Alert_AddString(buffer, startstring);
-	    buf = FormatAlert(buf, alertNum, task, iet->iet_AlertLocation, iet->iet_AlertType, SysBase);
+	    buf = FormatAlert(buf, alertNum, task, iet ? iet->iet_AlertLocation : NULL, iet ? iet->iet_AlertType : AT_NONE, SysBase);
 	    end = buf;
 	    buf = Alert_AddString(buf, endstring);
 	    *buf = 0;
@@ -87,7 +87,7 @@ static LONG AskSuspend(struct Task *task, ULONG alertNum, struct ExecBase *SysBa
 	    if (choice == 1)
 	    {
     		/* 'More' has been pressed. Append full alert data */
-		FormatAlertExtra(end, iet->iet_AlertStack, iet->iet_AlertType, &iet->iet_AlertData, SysBase);
+		FormatAlertExtra(end, iet->iet_AlertStack, iet ? iet->iet_AlertType : AT_NONE, iet ? &iet->iet_AlertData : NULL, SysBase);
 
 		/* Re-post the alert, without 'More...' this time */
 		es.es_GadgetFormat = (alertNum & AT_DeadEnd) ? full_deadend_buttons : full_recoverable_buttons;
@@ -123,33 +123,35 @@ ULONG Exec_UserAlert(ULONG alertNum, struct ExecBase *SysBase)
         return alertNum;
 
     /* Get internal task structure */
-    iet = GetIntETask(task);
-    /*
-     * If we already have alert number for this task, we are in double-crash during displaying
-     * intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
-     * and proceed with arch-specific Alert().
-     * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
-     */
-    D(bug("[UserAlert] Task alert state: 0x%02X\n", iet->iet_AlertFlags));
-    if (iet->iet_AlertFlags & AF_Alert)
-    {
+    if ((iet = GetIntETask(task))) {
         /*
-	 * Some more logic here. Nested AN_SysScrnType should not make original alert deadend.
-	 * It just means we were unable to display it using Intuition requested because there
-	 * are no display drivers at all.
-	 */
-	if (alertNum == AN_SysScrnType)
-	    return iet->iet_AlertCode;
-	else
-	    return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
+         * If we already have alert number for this task, we are in double-crash during displaying
+         * intuition requester. Well, take the initial alert code (because it's more helpful to the programmer)
+         * and proceed with arch-specific Alert().
+         * Since this is a double-crash, we may append AT_DeadEnd flag if our situation has become unrecoverable.
+         */
+        D(bug("[UserAlert] Task alert state: 0x%02X\n", iet->iet_AlertFlags));
+        if (iet->iet_AlertFlags & AF_Alert)
+        {
+            /*
+             * Some more logic here. Nested AN_SysScrnType should not make original alert deadend.
+             * It just means we were unable to display it using Intuition requested because there
+             * are no display drivers at all.
+             */
+            if (alertNum == AN_SysScrnType)
+                return iet->iet_AlertCode;
+            else
+                return iet->iet_AlertCode | (alertNum & AT_DeadEnd);
+        }
+
+        /*
+         * Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
+         * in order to indicate crash condition
+         */
+        iet->iet_AlertFlags |= AF_Alert;
+        iet->iet_AlertCode   = alertNum;
     }
 
-    /*
-     * Otherwise we can try to put up Intuition requester first. Store alert code in order in ETask
-     * in order to indicate crash condition
-     */
-    iet->iet_AlertFlags |= AF_Alert;
-    iet->iet_AlertCode   = alertNum;
     /*
      * AN_SysScrnType is somewhat special. We remember it in the ETask (just in case),
      * but propagate it to supervisor mode immediately. We do it because this error
