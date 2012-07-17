@@ -807,7 +807,7 @@ void __startup AFS_work(void)
 			break;
 		default:
 		    ok = DOSFALSE;
-		    res2 = ERROR_NOT_IMPLEMENTED;
+		    res2 = ERROR_ACTION_NOT_KNOWN;
 		    D(bug("[AFS] %d not implemented\n", dp->dp_Type));
 		    break;
 		}
