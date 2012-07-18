@@ -60,7 +60,7 @@
     status = dopacket2(DOSBase, &res, fl1->fl_Task, ACTION_SAME_LOCK, lock1, lock2);
     if (status)
     	return LOCK_SAME;
-    if (res == ERROR_NOT_IMPLEMENTED) {
+    if (res == ERROR_ACTION_NOT_KNOWN) {
     	SetIoErr(0);
     	if (fl1->fl_Volume == fl2->fl_Volume && fl1->fl_Key == fl2->fl_Key)
     	    return LOCK_SAME;
