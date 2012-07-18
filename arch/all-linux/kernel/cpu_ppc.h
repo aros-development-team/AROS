@@ -37,7 +37,7 @@ struct ucontext;
 #define SIGHANDLER_T	__sighandler_t
 
 #define GLOBAL_SIGNAL_INIT(sighandler) \
-	static void sighandler ## _gate (int sig, siginfo_t *blub, struct ucontext *u) 	\
+	static void sighandler ## _gate (int sig, siginfo_t *blub, void *u) 	\
 	{ 										\
 	    sighandler(sig, u); 							\
 	}
