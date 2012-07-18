@@ -72,73 +72,73 @@ enum
 
 struct uioMsg
 {
-    STACKULONG um_MethodID;
-    STACKULONG um_Filedesc;
-    STACKULONG um_Filedesc_Type;
-    STACKULONG um_Mode;
+    STACKED ULONG um_MethodID;
+    STACKED ULONG um_Filedesc;
+    STACKED ULONG um_Filedesc_Type;
+    STACKED ULONG um_Mode;
 };
 
 struct uioMsgOpenFile
 {
-    STACKULONG  um_MethodID;
-    STRPTR      um_FileName;
-    STACKULONG  um_Flags;
-    STACKULONG  um_Mode;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED CONST_STRPTR um_FileName;
+    STACKED ULONG  um_Flags;
+    STACKED ULONG  um_Mode;
+    STACKED int   *um_ErrNoPtr;
 };
 
 struct uioMsgCloseFile
 {
-    STACKULONG  um_MethodID;
-    APTR        um_FD;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_FD;
+    STACKED int   *um_ErrNoPtr;
 };
 
 struct uioMsgWriteFile
 {
-    STACKULONG  um_MethodID;
-    APTR        um_FD;
-    APTR        um_Buffer;
-    STACKULONG  um_Count;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_FD;
+    STACKED CONST_APTR   um_Buffer;
+    STACKED ULONG  um_Count;
+    STACKED int   *um_ErrNoPtr;
 };
 
 struct uioMsgIOControlFile
 {
-    STACKULONG  um_MethodID;
-    APTR        um_FD;
-    STACKULONG  um_Request;
-    APTR    	um_Param;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_FD;
+    STACKED ULONG  um_Request;
+    STACKED APTR   um_Param;
+    STACKED int   *um_ErrNoPtr;
 };
 
 struct uioMsgReadFile
 {
-    STACKULONG  um_MethodID;
-    APTR        um_FD;
-    APTR        um_Buffer;
-    STACKULONG  um_Count;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED APTR um_FD;
+    STACKED APTR um_Buffer;
+    STACKED ULONG  um_Count;
+    STACKED int *um_ErrNoPtr;
 };
 
 struct uioMsgAddInterrupt
 {
-    STACKULONG	         um_MethodID;
-    struct uioInterrupt *um_Int;
+    STACKED ULONG                um_MethodID;
+    STACKED struct uioInterrupt *um_Int;
 };
 
 struct uioMsgRemInterrupt
 {
-    STACKULONG	         um_MethodID;
-    struct uioInterrupt *um_Int;
+    STACKED ULONG                um_MethodID;
+    STACKED struct uioInterrupt *um_Int;
 };
 
 struct uioMsgPoll
 {
-    STACKULONG  um_MethodID;
-    APTR        um_FD;
-    STACKULONG  um_Mode;
-    int        *um_ErrNoPtr;
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_FD;
+    STACKED ULONG  um_Mode;
+    STACKED int   *um_ErrNoPtr;
 };
 
 /* I/O mode flags */

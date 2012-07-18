@@ -47,7 +47,7 @@ struct UnixIO_Waiter
 
 struct LibCInterface
 {
-    int	    (*open)(char *path, int oflag, ...);
+    int	    (*open)(const char *path, int oflag, ...);
     int	    (*close)(int filedes);
     int	    (*ioctl)(int d, int request, ...);
     int	    (*fcntl)(int fd, int cmd, ...);
