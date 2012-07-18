@@ -26,64 +26,68 @@ const TEXT version[] = "$VER: SetPatch AROS-m68k 41.2 (" ADATE ")\n";
 
 int __nocommandline;
 
-static void Enable68060SuperScalar(void)
-{
-    asm volatile (
-	".text\n"
-	/* enable supercalar */
-	"dc.l	0x4e7a0808\n"	// movec %pcr,%d0
-	"bset	#0,%d0\n"
-	"dc.l	0x4e7b0808\n"	// movec %d0,%pcr
-	/* enable code&data caches, store buffer and branch cache */
-	"dc.l	0x4e7a0002\n"	// movec %cacr,%d0
-	"or.l	#0xa0808000,%d0\n"
-	"dc.l	0x4e7b0002\n"	// movec %d0,%cacr
-	"rte\n"
-    );
-}
-static ULONG Check68030MMU(void)
-{
-    register UWORD ret asm("%d0");
-    asm volatile (
-    	".chip 68030\n"
-    	"subq.l	#4,%%sp\n"
-    	"pmove	%%tc,(%%sp)\n"
-    	"move.l	(%%sp),%%d0\n"
-    	"addq.l	#4,%%sp\n"
-    	"rte\n"
-    	: "=r" (ret)
-    );
-    return ret;
-};
+void Enable68060SuperScalar(void);
+asm (
+    ".text\n"
+    ".global Enable68060SuperScalar\n"
+    ".func Enable68060SuperScalar\n"
+    "Enable68060SuperScalar:\n"
+    /* enable supercalar */
+    "dc.l 0x4e7a0808\n" // movec %pcr,%d0
+    "bset #0,%d0\n"
+    "dc.l 0x4e7b0808\n" // movec %d0,%pcr
+    /* enable code&data caches, store buffer and branch cache */
+    "dc.l 0x4e7a0002\n" // movec %cacr,%d0
+    "or.l #0xa0808000,%d0\n"
+    "dc.l 0x4e7b0002\n" // movec %d0,%cacr
+    "rte\n"
+    ".endfunc\n"
+);
 
-static APTR getvbr(void)
-{
-   register APTR ret asm("%d0");
-   asm volatile (
-	".chip 68010\n"
-	"movec %%vbr,%%d0\n"
-	"rte\n"
-     	: "=r" (ret)
-   );
-   return ret;
-}
+ULONG Check68030MMU(void);
+asm (
+    ".text\n"
+    ".chip 68030\n"
+    ".global Check68030MMU\n"
+    ".func Check68030MMU\n"
+    "Check68030MMU:\n"
+    "subq.l #4,%sp\n"
+    "pmove %tc,(%sp)\n"
+    "move.l (%sp),%d0\n"
+    "addq.l #4,%sp\n"
+    "rte\n"
+    ".endfunc\n"
+);
+
+APTR getvbr(void);
+asm (
+    ".text\n"
+    ".chip 68010\n"
+    ".global getvbr\n"
+    ".func getvbr\n"
+    "getvbr:\n"
+    "movec %vbr,%d0\n"
+    "rte\n"
+    ".endfunc\n"
+);
+
 static void setvbr(APTR vbr)
 {
-   asm volatile (
-	".chip 68010\n"
-	"move.l	%0,%%d0\n"
-	"movem.l %%a5/%%a6,-(%%sp)\n"
-	"move.l 4.w,%%a6\n"
-	"lea	1f(%%pc),%%a5\n"
-	"jsr	-0x1e(%%a6)\n"
-	"movem.l (%%sp)+,%%a5/%%a6\n"
-	"bra.s	0f\n"
-	"1:\n"
-	"movec %%d0,%%vbr\n"
-	"rte\n"
-	"0:\n"
-	: : "m" (vbr) : "a5", "a6"
-   );
+    asm volatile (
+    ".chip 68010\n"
+    "move.l %0,%%d0\n"
+    "movem.l %%a5/%%a6,-(%%sp)\n"
+    "move.l 4.w,%%a6\n"
+    "lea 1f(%%pc),%%a5\n"
+    "jsr -0x1e(%%a6)\n"
+    "movem.l (%%sp)+,%%a5/%%a6\n"
+    "bra.s 0f\n"
+    "1:\n"
+    "movec %%d0,%%vbr\n"
+    "rte\n"
+    "0:\n"
+    : : "m" (vbr)
+    );
 }
 
 struct mmuportnode
@@ -106,10 +110,10 @@ static void fastvbr(BOOL quiet)
     oldvbr = (APTR)Supervisor((ULONG_FUNC)getvbr);
     Enable();
     if (!oldvbr) {
-        newvbr = AllocMem(1024, MEMF_FAST | MEMF_CLEAR);
+        newvbr = AllocMem(4 * 256, MEMF_FAST | MEMF_CLEAR);
         if (!newvbr)
             return;
-        CopyMemQuick(oldvbr, newvbr, 1024);
+        CopyMemQuick(oldvbr, newvbr, 4 * 256);
         Disable();
         setvbr(newvbr);
         Enable();
@@ -172,7 +176,7 @@ static void mmusetup(BOOL quiet)
 
 extern void patches(BOOL, ULONG);
 
-int main (void)
+int main(void)
 {
     struct RDArgs *rda;
     IPTR args[ARG_NUM] = { FALSE, FALSE, FALSE, FALSE };
@@ -185,7 +189,7 @@ int main (void)
 
         if (SysBase->AttnFlags & (AFF_68040 | AFF_68060)) {
             BOOL ox68040 = FALSE, ox68060 = FALSE;
-    
+
             Forbid();
             if (FindName(&SysBase->LibList, "68040.library"))
                 ox68040 = TRUE;
@@ -199,7 +203,7 @@ int main (void)
             if (FindName(&SysBase->LibList, "68060.library"))
                 x68060 = TRUE;
             Permit();
-            
+
             if ((!ox68040 && !ox68060) && (x68040 || x68060))
                 justinstalled680x0 = TRUE;
             if (x68040 || x68060)
@@ -233,10 +237,8 @@ int main (void)
             if (flags & CACRF_CopyBack)
                 Printf("CopyBack Enabled\n");
         }
-        
+
         FreeArgs(rda);
     }
     return 0;
 }
-
-   
