@@ -1657,7 +1657,7 @@ AC_MSG_RESULT([$kernel_tool_prefix]);
 if test "$kernel_tool_prefix" = "none" ; then
     dnl ELF wrapper can be used only for native bootstrap
     if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
-        AC_MSG_ERROR([--with-kernel-tool-prefix= is required for this arch])
+        AC_MSG_ERROR([--with-kernel-toolchain-prefix= is required for this arch])
     fi
 else
     # Kernel tools required - find them
@@ -1888,7 +1888,7 @@ aros_plain_ar="${prefix}ar"
 
 AC_ARG_ENABLE(includes,
 AC_HELP_STRING([--enable-includes=dir],[Alternative system include directory]),
-[aros_target_incl=$enable_includes], [aros_target_incl="/usr/include"])
+[aros_target_incl=$enable_includes], [aros_target_incl=`$aros_kernel_cc -print-sysroot`/`$aros_kernel_cc --print-sysroot-headers-suffix 2>/dev/null || echo usr/include`])
 
 if test "$aros_kernel_includes" = ""; then
     if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
