@@ -13,4 +13,4 @@ FILES := \
 USER_CFLAGS += -D__UTILITY_NOLIBBASE__
 
 %build_archspecific mainmmake=kernel-processor maindir=rom/processor \
-    arch=ppc files=$(FILES)
+    arch=native-ppc files=$(FILES)
