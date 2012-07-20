@@ -68,7 +68,9 @@ int main(void) {
     DEFINE(tc_SPUpper    , offsetof (struct Task, tc_SPUpper));
     DEFINE(tc_IDNestCnt  , offsetof (struct Task, tc_IDNestCnt));
     DEFINE(tc_ETask      , offsetof (struct Task, tc_UnionETask.tc_ETask));
-    DEFINE(tc_TaskStorage, offsetof (struct Task, tc_UnionETask.tc_TaskStorage));
+
+    asm volatile("\n/* struct ETask */" ::);
+    DEFINE(et_TaskStorage, offsetof (struct ETask, et_TaskStorage));
 
     asm volatile("\n/* struct Process */" ::);
     DEFINE(pr_CES        , offsetof (struct Process, pr_CES));

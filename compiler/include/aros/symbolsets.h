@@ -101,11 +101,11 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
    a library. An error message will be shown if the library cannot be opened.  */
 #define AROS_LIBSET(name, btype, bname)                        \
 btype bname;                                                   \
-extern const LONG __aros_libreq_##bname __attribute__((weak)); \
+extern const LONG const __aros_libreq_##bname __attribute__((weak)); \
                                                                \
 AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling);   \
                                                                \
-static const struct libraryset __aros_libset_##bname =         \
+static const struct libraryset const __aros_libset_##bname =         \
 {                                                              \
      name, &__aros_libreq_##bname, (void *)&bname              \
 };                                                             \
@@ -117,13 +117,13 @@ ADD2SET(__aros_libset_##bname, libs, 0)
  * AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_##bname);
  */
 #define AROS_RELLIBSET(name, btype, bname)                     \
-const ULONG __aros_rellib_##bname = 0;                         \
-extern const IPTR bname##_offset;                              \
-extern const LONG __aros_libreq_##bname __attribute__((weak)); \
+const ULONG const __aros_rellib_##bname = 0;                         \
+extern const IPTR const bname##_offset;                              \
+extern const LONG const __aros_libreq_##bname __attribute__((weak)); \
                                                                \
 AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);\
                                                                \
-static const struct rellibraryset __aros_rellibset_##bname =   \
+static const struct rellibraryset const __aros_rellibset_##bname =   \
 {                                                              \
      name, &__aros_libreq_##bname, &bname##_offset             \
 };                                                             \
@@ -132,7 +132,7 @@ ADD2SET(__aros_rellibset_##bname, rellibs, 0)
 
 #define ADD2LIBS(name, ver, btype, bname) \
 AROS_LIBSET(name, btype, bname)           \
-const LONG __aros_libreq_##bname = ver;
+const LONG const __aros_libreq_##bname = ver;
 
 #define AROS_LIBREQ(bname, ver) \
     asm volatile ( \
@@ -140,7 +140,7 @@ const LONG __aros_libreq_##bname = ver;
                   "__aros_libreq_" #bname "." #ver "=" #ver);
 
 #define SETRELLIBOFFSET(bname, libbasetype, fname) \
-extern IPTR bname##_offset;                        \
+extern const IPTR const bname##_offset;            \
 static int __ ## bname ## _setoffset(void)         \
 {                                                  \
     bname##_offset = offsetof(libbasetype, fname); \

@@ -85,7 +85,7 @@ do                                                       \
 
 #define KERNEL_PANIC_BUFFER (char*)0x800
 
-/* Macros for generating library stub functions and aliases. */
+/* Macros for generating library stub functions and aliases for stack libcalls. */
 
 /* Macro: AROS_LIBFUNCSTUB(functionname, libbasename, lvo)
    This macro will generate code for a stub function for
@@ -114,6 +114,10 @@ do                                                       \
 /* Macro: AROS_RELLIBFUNCSTUB(functionname, libbasename, lvo)
    Same as AROS_LIBFUNCSTUB but finds libbase at an offset in
    the current libbase
+
+   For the m68k C ABI, all operands are on the stack, so
+   'scratch' registers d0-d1/a0-a1 are free for use by this
+   stub.
 */
 #define __AROS_RELLIBFUNCSTUB(fname, libbasename, lvo) \
     void __ ## fname ## _ ## libbasename ## _relwrapper(IPTR args) \

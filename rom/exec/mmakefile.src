@@ -15,7 +15,7 @@ ALL_FUNCTIONS := \
 	checkio childfree childorphan childstatus childwait closedevice \
 	closelibrary coldreboot copymem copymemquick createiorequest \
 	createmsgport createpool deallocate debug deleteiorequest \
-	deletemsgport deletepool disable dispatch doio enable enqueue \
+	deletemsgport deletepool disable doio enable enqueue \
 	exception findname findport findresident findsemaphore findtask findtaskbypid \
 	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
 	getmsg initcode initresident initsemaphore initstruct insert \
@@ -32,7 +32,7 @@ ALL_FUNCTIONS := \
 	newaddtask newminlist avl vnewrawdofmt shutdowna useralert \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska \
         alloctaskstorageslot freetaskstorageslot savetaskstorage \
-        restoretaskstorage
+        restoretaskstorage settaskstorageslot gettaskstorageslot
 
 INIT_FILES := exec_init prepareexecbase
 FILES	   := alertextra alert_cpu systemalert initkicktags intservers \

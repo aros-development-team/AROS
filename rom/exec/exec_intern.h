@@ -36,7 +36,6 @@ struct IntExecBase
     ULONG  PageSize;                            /* Memory page size                                      */
     ULONG  IntFlags;                            /* Internal flags, see below                             */
     struct MsgPort *ServicePort;                /* Message port for service task                         */
-    int    TaskStorageSize;                     /* Size of buffer in tc_ETask->et_TaskStorage            */
     struct MinList TaskStorageSlots;            /* List of free slots, always one element with next slot */
     struct Exec_PlatformData PlatformData;      /* Platform-specific stuff                               */
     char   AlertBuffer[ALERT_BUFFER_SIZE];      /* Buffer for alert text                                 */
@@ -54,7 +53,8 @@ struct IntExecBase
 /* Additional private task states */
 #define TS_SERVICE 128
 
-#define TASKSTORAGEPUDDLE 256*sizeof(IPTR)
+/* Puddle size, in slots. Must be at least 1 */
+#define TASKSTORAGEPUDDLE 16
 
 #if UseLVOs
 extern void __AROS_InitExecBase (void);

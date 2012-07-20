@@ -176,7 +176,7 @@ void writeinclibdefs(struct config *cfg)
             );
         fprintf(out,
                 "\n"
-                "extern int __GM_BaseSlot;\n"
+                "extern LONG __GM_BaseSlot;\n"
                 "void *__GM_GetBase(void);\n"
         );
     }

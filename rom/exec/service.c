@@ -64,13 +64,6 @@ void ServiceTask(struct ExecBase *SysBase)
                 break;
 
             default:
-                /*
-                 * Currently we only get "TSS enlarge" requests here. However in
-                 * future we could do more interesting things, like stack guarding,
-                 * hard crash escapes, etc.
-                 */
-                Exec_ExpandTS(task, SysBase);
-
                 /* FIXME: Add fault handling here. Perhaps kernel-level GURU. */
 
                 /* The task is ready to run again. Move it back to TaskReady list. */

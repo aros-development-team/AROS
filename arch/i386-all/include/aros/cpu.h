@@ -80,7 +80,7 @@ struct JumpVec
 #define __AROS_INITVEC(lib,n)           __AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 
-/* Macros for generating library stub functions and aliases. */
+/* Macros for generating library stub functions and aliases for stack libcalls. */
 
 /* Macro: AROS_LIBFUNCSTUB(functionname, libbasename, lvo)
    This macro will generate code for a stub function for

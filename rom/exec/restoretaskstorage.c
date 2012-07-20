@@ -48,12 +48,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR *tsrestore = id, *taskstorage;
-    struct Task *thistask = FindTask(NULL);
-    ULONG size1, size2, size;
-    char *src, *dest;
+    struct ETask *et = GetETask(FindTask(NULL));
+    IPTR *tsrestore = id;
 
-    if (!tsrestore)
+    if (!et)
         return;
 
     /* Be sure no other tasks access the information when it is in an
@@ -61,21 +59,13 @@
     */
     Forbid();
 
-    /* Restore content of TaskStorage */
-    size1 = (ULONG)tsrestore[__TS_FIRSTSLOT];
-    taskstorage = thistask->tc_UnionETask.tc_TaskStorage;
-    size2 = (ULONG)taskstorage[__TS_FIRSTSLOT];
+    if (et->et_TaskStorage) {
+        IPTR slots = et->et_TaskStorage[__TS_FIRSTSLOT];
+        FreeMem(et->et_TaskStorage, slots * sizeof(IPTR));
+    }
 
-    size = MIN(size1, size2) - sizeof(struct ETask);
-    src = ((char *)tsrestore) + sizeof(struct ETask);
-    dest = ((char *)taskstorage) + sizeof(struct ETask);
-    if (size > 0)
-        CopyMem(src, dest, size);
-    taskstorage[__TS_FIRSTSLOT] = size2;
-    D(bug("RestoreTaskStorage: Freeing tsrestore=%x of size %d\n",
-          tsrestore, size1
-    ));
-    FreeMem(tsrestore, size1);
+    /* Restore content of TaskStorage */
+    et->et_TaskStorage = tsrestore;
 
     Permit();
 
