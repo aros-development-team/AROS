@@ -66,6 +66,7 @@ typedef char *   STRPTR;
 #define HUNKF_ADVISORY     (1L<<29)
 #define HUNKF_CHIP         (1L<<30)
 #define HUNKF_FAST         (1L<<31)
+#define HUNKF_MEMFLAGS     (HUNKF_CHIP | HUNKF_FAST)
 
 
 #define HUNK_CODE	1001
@@ -898,14 +899,14 @@ int elf2hunk(int file, int hunk_fd, const char *libname, int flags)
     	case 0:
     	    break;
     	default:
-    	    count |= HUNKF_ADVISORY;
+    	    count |= HUNKF_MEMFLAGS;
     	    break;
     	}
 
     	D(bug("\tHunk #%d, %s, lsize=%d\n", hh[i]->hunk, names[hh[i]->type - HUNK_CODE], (int)(hh[i]->size+4)/4));
     	wlong(hunk_fd, count);
 
-    	if (count & HUNKF_ADVISORY)
+    	if ((count & HUNKF_MEMFLAGS) == HUNKF_MEMFLAGS)
     	    wlong(hunk_fd, hh[i]->memflags | MEMF_PUBLIC | MEMF_CLEAR);
     }
 
