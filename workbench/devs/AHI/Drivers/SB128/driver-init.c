@@ -23,9 +23,9 @@ All Rights Reserved.
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <clib/alib_protos.h>
 
 #include "library.h"
-#include "version.h"
 #include "misc.h"
 #include "regs.h"
 
@@ -189,7 +189,7 @@ DriverInit( struct DriverBase* ahisubbase )
         Remove(devTmp);
 
         dev = devTmp->ln_Name;
-        bug("[SB128] %s: Prepairing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
+        bug("[SB128] %s: Preparing card #%d pci obj @ 0x%p\n", __PRETTY_FUNCTION__, card_no, dev);
         SB128Base->driverdatas[ card_no ] = AllocDriverData( dev, AHIsubBase );
         
         FreeVec(devTmp);
