@@ -1,5 +1,5 @@
 /*
-    Copyright  1995-2010, The AROS Development Team. All rights reserved.
+    Copyright  1995-2012, The AROS Development Team. All rights reserved.
     Copyright  2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -43,30 +43,30 @@ static VOID int_activatewindow(struct ActivateWindowActionMsg *msg,
          struct IntuitionBase *, IntuitionBase, 75, Intuition)
 
 /*  FUNCTION
-    Activates the specified window. The window gets the focus
-    and all further input it sent to that window. If the window
-    requested it, it will get a IDCMP_ACTIVEWINDOW message.
+        Activates the specified window. The window gets the focus
+        and all further input is sent to that window. If the window
+        requested it, it will get a IDCMP_ACTIVEWINDOW message.
 
     INPUTS
-    window - The window to activate
+        window - The window to activate
 
     RESULT
-    None.
+        None.
 
     NOTES
-    If the user has an autopointer tool (sunmouse), the call will
-    succeed, but the tool will deactivate the window right after
-    this function has activated it. It is no good idea to try to
-    prevent this by waiting for IDCMP_INACTIVEWINDOW and activating
-    the window again since that will produce an anoying flicker and
-    it will slow down the computer a lot.
+        If the user has an autopointer tool (sunmouse), the call will
+        succeed, but the tool will deactivate the window right after
+        this function has activated it. It is not a good idea to try to
+        prevent this by waiting for IDCMP_INACTIVEWINDOW and activating
+        the window again since that will produce an annoying flicker and
+        it will slow down the computer a lot.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-    ModifyIDCMP(), OpenWindow(), CloseWindow()
+        ModifyIDCMP(), OpenWindow(), CloseWindow()
 
     INTERNALS
 
