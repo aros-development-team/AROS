@@ -193,6 +193,10 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
     samples = card->current_bytesize >> 1;
 
     src     = card->mix_buffer;
+#if !defined(__AMIGAOS4__) && !AROS_BIG_ENDIAN
+    if(skip == 2)
+        src++;
+#endif
     dst     = card->current_buffer;
 
     i = samples;
@@ -203,7 +207,7 @@ PlaybackInterrupt( struct CMI8738_DATA* card )
 #ifdef __AMIGAOS4__
       *dst = ( ( *src & 0xff ) << 8 ) | ( ( *src & 0xff00 ) >> 8 );
 #else
-    *dst = *src;
+      *dst = AROS_WORD2LE(*src);
 #endif
 
       src += skip;
@@ -250,8 +254,9 @@ RecordInterrupt( struct CMI8738_DATA* card )
 
   while( i < shorts )
   {
+#if defined(__AMIGAOS4__) || AROS_BIG_ENDIAN
     *ptr = ( ( *ptr & 0xff ) << 8 ) | ( ( *ptr & 0xff00 ) >> 8 );
-
+#endif
     ++i;
     ++ptr;
   }
