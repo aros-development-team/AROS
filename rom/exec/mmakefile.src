@@ -15,8 +15,9 @@ ALL_FUNCTIONS := \
 	checkio childfree childorphan childstatus childwait closedevice \
 	closelibrary coldreboot copymem copymemquick createiorequest \
 	createmsgport createpool deallocate debug deleteiorequest \
-	deletemsgport deletepool disable doio enable enqueue \
-	exception findname findport findresident findsemaphore findtask findtaskbypid \
+	deletemsgport deletepool disable dispatch doio \
+	enable enqueue exception exitintr \
+	findname findport findresident findsemaphore findtask findtaskbypid \
 	forbid freeentry freemem freepooled freesignal freetrap freevec getcc \
 	getmsg initcode initresident initsemaphore initstruct insert \
 	makefunctions makelibrary obtainquickvector obtainsemaphore \
@@ -25,9 +26,9 @@ ALL_FUNCTIONS := \
 	rawioinit rawmaygetchar rawputchar readgayle releasesemaphore \
 	releasesemaphorelist remdevice remhead remintserver remlibrary \
 	remmemhandler remove remport remresource remsemaphore remtail remtask \
-	replymsg reschedule sendio setexcept setfunction setintvector \
+	replymsg reschedule schedule sendio setexcept setfunction setintvector \
 	setsignal setsr settaskpri signal stackswap sumkickdata sumlibrary \
-	superstate supervisor taggedopenlibrary typeofmem userstate \
+	superstate supervisor switch taggedopenlibrary typeofmem userstate \
 	vacate wait waitio waitport allocvecpooled freevecpooled newallocentry \
 	newaddtask newminlist avl vnewrawdofmt shutdowna useralert \
 	addresetcallback remresetcallback doresetcallbacks newcreatetaska \

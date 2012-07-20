@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=cli sti kernel_debug kernel_timer maygetchar amiga_irq \
+FILES=cause cli sti kernel_debug kernel_timer maygetchar amiga_irq \
       getbootinfo kernel_globals
 
 AFILES=

@@ -123,47 +123,6 @@ static inline UWORD custom_r(ULONG reg)
  *      ..
  *      255	User 191
  */
-static BOOL LineF_Decode(regs_t *regs, int id, struct ExecBase *SysBase)
-{
-    if (*((UWORD *)regs->pc) == KRN_SYSCALL_INST
-        && regs->a[0] == KRN_SYSCALL_MAGIC
-/* COMPATIBILTY HACK!
- * Do not check supervisor state, allows some badly coded programs to work.
- */
-#if 0
-        && (regs->sr & 0x2000) == 0
-#endif
-    ) {
-        /* Move past the instruction */
-        regs->pc += 2;	
-
-        /* AROS syscall */
-        core_SysCall(regs->d[0], regs);
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-/* Wrapper to work around GCC frame pointer bugs
- */
-static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase)
-{
-    /* If we don't have handler, ignore it */
-    if (SysBase->IntVects[irq].iv_Code == NULL) {
-    	bug("SPURIOUS IRQ: %d mask=0x%04x\n", irq, mask);
-    	return FALSE;
-    }
-
-    AROS_UFC5(void, SysBase->IntVects[irq].iv_Code,			\
-		    AROS_UFCA(ULONG, mask, D1),				\
-		    AROS_UFCA(ULONG, 0xDFF000, A0),			\
-		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Data, A1),\
-		    AROS_UFCA(APTR, SysBase->IntVects[irq].iv_Code, A5),\
-		    AROS_UFCA(struct ExecBase *, SysBase, A6));
-
-    return TRUE;
-}
 
 #define PAULA_IRQ_CHECK(valid_mask) \
     const UWORD irq_mask = valid_mask; \
@@ -184,16 +143,41 @@ static inline BOOL Amiga_Paula_IRQ(int irq, UWORD mask, struct ExecBase *SysBase
 #define PAULA_IRQ_EXIT()	\
 	/* mask = custom_r(INTENAR) & custom_r(INTREQR) & (irq_mask); */ \
     } while (0); \
-    /* If the caller was not nested, call core_ExitInterrupt */	\
-    if (!(regs->sr & 0x2000))					\
-    	core_ExitInterrupt(regs); \
+    /* Call Exec/ExitIntr */	\
     return TRUE;
+
+#define DECLARE_TrapCode(handler) \
+    BOOL handler(VOID); \
+    VOID handler##_TrapCode(ULONG Id); \
+    asm ( \
+            "   .global " #handler "_TrapCode\n" \
+            "   .func " #handler "_TrapCode\n" \
+            #handler "_TrapCode:\n" \
+            "   addq.l  #4,%sp\n"       /* Drop the ID */   \
+            "   movem.l %d0/%d1/%a0/%a1/%a5/%a6,%sp@-\n"    \
+            "   jsr     " #handler "\n" \
+            "   tst.w   %d0\n"          \
+            "   beq     0f\n"           \
+            "   jmp     Exec_6_ExitIntr\n" \
+            "0:\n" \
+            "   movem.l %sp@+,%d0/%d1/%a0/%a1/%a5/%a6\n" \
+            "   rte\n" \
+            "   .endfunc\n" \
+        ); \
 
 /* AOS interrupt handlers will clear INTREQ before executing interrupt code,
  * servers will clear INTREQ after whole server chain has been executed.
  */
 
-static BOOL Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
+DECLARE_TrapCode(Amiga_Level_1);
+DECLARE_TrapCode(Amiga_Level_2);
+DECLARE_TrapCode(Amiga_Level_3);
+DECLARE_TrapCode(Amiga_Level_4);
+DECLARE_TrapCode(Amiga_Level_5);
+DECLARE_TrapCode(Amiga_Level_6);
+DECLARE_TrapCode(Amiga_Level_7);
+
+BOOL Amiga_Level_1(VOID)
 {
     /* Paula IRQs 0 - Serial port TX done
      *            1 - Disk DMA finished
@@ -214,7 +198,7 @@ static BOOL Amiga_Level_1(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_2(VOID)
 {
     /* Paula IRQs 3 - CIA-A
      */
@@ -227,7 +211,7 @@ static BOOL Amiga_Level_2(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_3(VOID)
 {
     /* Paula IRQs 4 - Copper
      *            5 - Vert Blank
@@ -245,7 +229,7 @@ static BOOL Amiga_Level_3(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_4(VOID)
 {
     /* Paula IRQs  7 - Audio 0
      *             8 - Audio 1
@@ -264,7 +248,7 @@ static BOOL Amiga_Level_4(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_5(VOID)
 {
     /* Paula IRQs  11 - Serial RX
      *             12 - Disk Sync
@@ -279,7 +263,7 @@ static BOOL Amiga_Level_5(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_6(VOID)
 {
     /* Paula IRQ  13 - CIA-B & IRQ6
      *            14 - INTEN (manually setting INTEN bit in INTREQ triggers it)
@@ -294,7 +278,7 @@ static BOOL Amiga_Level_6(regs_t *regs, int id, struct ExecBase *SysBase)
     PAULA_IRQ_EXIT();
 }
 
-static BOOL Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
+BOOL Amiga_Level_7(VOID)
 {
     /* NMI - no way around it.
      */
@@ -305,19 +289,17 @@ static BOOL Amiga_Level_7(regs_t *regs, int id, struct ExecBase *SysBase)
     /* Don't reschedule on the way out - so don't
      * call PAULA_IRQ_EXIT()
      */
-
-    return TRUE;
+    return FALSE;
 }
 
 const struct M68KException AmigaExceptionTable[] = {
-	{ .Id =  11, .Handler = LineF_Decode },
-	{ .Id =  25, .Handler = Amiga_Level_1 },
-	{ .Id =  26, .Handler = Amiga_Level_2 },
-	{ .Id =  27, .Handler = Amiga_Level_3 },
-	{ .Id =  28, .Handler = Amiga_Level_4 },
-	{ .Id =  29, .Handler = Amiga_Level_5 },
-	{ .Id =  30, .Handler = Amiga_Level_6 },
-	{ .Id =  31, .Handler = Amiga_Level_7 },
+	{ .Id =  25, .Handler = Amiga_Level_1_TrapCode },
+	{ .Id =  26, .Handler = Amiga_Level_2_TrapCode },
+	{ .Id =  27, .Handler = Amiga_Level_3_TrapCode },
+	{ .Id =  28, .Handler = Amiga_Level_4_TrapCode },
+	{ .Id =  29, .Handler = Amiga_Level_5_TrapCode },
+	{ .Id =  30, .Handler = Amiga_Level_6_TrapCode },
+	{ .Id =  31, .Handler = Amiga_Level_7_TrapCode },
 	{ .Id =   0, }
 };
 

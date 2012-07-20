@@ -1,7 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES=m68k_exception kernel_cpu platform_init setprotection mapglobal mmu #kernel_gdb
+FILES=dispatch schedule switch m68k_exception kernel_cpu kernel_intr \
+      platform_init setprotection mapglobal mmu #kernel_gdb
 
 AFILES=issuper fpusavecontext fpurestorecontext buserror
 

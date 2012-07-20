@@ -54,8 +54,8 @@
  */
 struct M68KException {
 	UWORD Id;
-	/* Returns TRUE if handled, FALSE if it didn't */
-	BOOL (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
+	/* tc_TrapCode style handler - MUST PRESERVE ALL REGISTERS! */
+	void (*Handler)(ULONG id);
 };
 
 void M68KExceptionInit(const struct M68KException *Table, struct ExecBase *SysBase);

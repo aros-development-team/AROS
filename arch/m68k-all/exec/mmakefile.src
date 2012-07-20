@@ -6,6 +6,7 @@ FILES=offsets getcc preparecontext \
       cachecontrol setfunction copymem alert_cpu
 
 AFILES=newstackswap stackswap \
+       exitintr schedule switch dispatch \
        supervisor superstate userstate \
        forbid \
        cacheclearu_ cachecleare_ cachepostdma_ cachepredma_ \
@@ -14,7 +15,7 @@ AFILES=newstackswap stackswap \
        copymem_ copymemquick
 
 USER_CFLAGS := $(PRIV_EXEC_INCLUDES)
-USER_AFLAGS := -I$(GENINCDIR) -DDoRegisterCalls -m68060
+USER_AFLAGS := -I$(GENINCDIR) -m68060
 
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
