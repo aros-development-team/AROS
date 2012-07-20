@@ -145,6 +145,10 @@ PlaybackInterrupt( struct SB128_DATA* card )
     samples = card->current_bytesize >> 1;
 
     src     = card->mix_buffer;
+#if !AROS_BIG_ENDIAN
+    if(skip == 2)
+        src++;
+#endif
     dst     = card->current_buffer;
 
     i = samples;
