@@ -60,6 +60,15 @@ void core_Switch(void)
 
     D(bug("[KRN] core_Switch(): Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
+#ifndef __mc68000
+    if (task->tc_SPReg <= task->tc_SPLower || task->tc_SPReg > task->tc_SPUpper)
+    {
+        bug("[KRN] Task %s went out of stack limits\n", task->tc_Node.ln_Name);
+        bug("[KRN] Lower %p, upper %p, SP %p\n", task->tc_SPLower, task->tc_SPUpper, task->tc_SPReg);
+        Alert(AT_DeadEnd|AN_StackProbe);
+    }
+#endif
+
     task->tc_IDNestCnt = SysBase->IDNestCnt;
 
     if (task->tc_Flags & TF_SWITCH)
