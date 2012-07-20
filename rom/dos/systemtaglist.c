@@ -310,8 +310,10 @@
         isCLI = FALSE;
     }
 
-    if (!shellseg)
+    if (!shellseg) {
+        D(bug("[SystemTagList] No shell available\n"));
         goto end;
+    }
 
 #ifdef __mc68000
     if (isCLI)

@@ -103,6 +103,7 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
         struct sheader sh;
 
         if (eh->shoff == 0) {
+            D(bug("[ELF Loader] No section header\n"));
             SetIoErr(ERROR_NOT_EXECUTABLE);
             return 0;
         }
@@ -114,8 +115,10 @@ static ULONG read_shnum(BPTR file, struct elfheader *eh, SIPTR *funcarray, struc
         shnum = sh.size;
 
         /* sanity, if they're still invalid then this isn't elf */
-        if (shnum == 0)
+        if (shnum == 0) {
+            D(bug("[ELF Loader] Empty section header\n"));
             SetIoErr(ERROR_NOT_EXECUTABLE);
+        }
     }
 
     return shnum;
@@ -872,6 +875,7 @@ BPTR InternalLoadSeg_ELF
 
                 if (!res)
                 {
+                    D(bug("[ELF Loader] Can't parse ARM attributes\n"));
                     SetIoErr(ERROR_NOT_EXECUTABLE);
                     goto error;
                 }

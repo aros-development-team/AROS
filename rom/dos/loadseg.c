@@ -145,8 +145,8 @@ static AROS_UFH3(void, FreeFunc,
 #endif
         SetIoErr(err);
     }
-  D(else
-        bug("[LoadSeg] Failed to open '%s'\n", name));
+
+    D(bug("[LoadSeg] Returns '%p', IoErr=%d\n", segs, IoErr()));
   
 
     /* And return */
