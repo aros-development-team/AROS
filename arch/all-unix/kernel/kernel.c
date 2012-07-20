@@ -199,8 +199,13 @@ int core_Start(void *libc)
     pd->errnoPtr = pd->iface->__error();
     AROS_HOST_BARRIER
 
+#if DEBUG
+    /* Pass unhandled exceptions to the debugger, if present */
+    SIGEMPTYSET(&pd->sig_int_mask);
+#else
     /* We only want signal that we can handle at the moment */
     SIGFILLSET(&pd->sig_int_mask);
+#endif
     SIGEMPTYSET(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
 
@@ -233,8 +238,20 @@ int core_Start(void *libc)
 
     /* Install interrupt handlers */
     SETHANDLER(sa, core_IRQ);
+#if DEBUG
+    /* Use VTALRM instead of ALRM during debugging, so
+     * that stepping though code won't have to deal
+     * with constant SIGALRM processing.
+     *
+     * NOTE: This will cause the AROS clock to march slower
+     *       than the host clock in debug builds!
+     */
+    pd->iface->sigaction(SIGVTALRM, &sa, NULL);
+    AROS_HOST_BARRIER
+#else
     pd->iface->sigaction(SIGALRM, &sa, NULL);
     AROS_HOST_BARRIER
+#endif
     pd->iface->sigaction(SIGIO  , &sa, NULL);
     AROS_HOST_BARRIER
 

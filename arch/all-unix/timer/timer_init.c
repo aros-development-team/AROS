@@ -96,7 +96,19 @@ static int Timer_Init(struct TimerBase *TimerBase)
     	return FALSE;
 
     /* Install timer IRQ handler */
+#if DEBUG
+    /* Uses ITIMER_VIRTUAL/SIGVTALRM instead of the
+     * ITIMER_REAL/SIGALRM in debug builds, so
+     * that stepping though code won't have to deal
+     * with constant SIGALRM processing.
+     *
+     * NOTE: This will cause the AROS clock to march slower
+     *       than the host clock in debug builds!
+     */
+    TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(SIGVTALRM, TimerTick, TimerBase, SysBase);
+#else
     TimerBase->tb_TimerIRQHandle = KrnAddIRQHandler(SIGALRM, TimerTick, TimerBase, SysBase);
+#endif
     if (!TimerBase->tb_TimerIRQHandle)
     	return FALSE;
 
@@ -142,7 +154,11 @@ static int Timer_Init(struct TimerBase *TimerBase)
 
     HostLib_Lock();
 
+#if DEBUG
+    ret = TimerBase->tb_Platform.setitimer(ITIMER_VIRTUAL, &interval, NULL);
+#else
     ret = TimerBase->tb_Platform.setitimer(ITIMER_REAL, &interval, NULL);
+#endif
     AROS_HOST_BARRIER
 
     HostLib_Unlock();
