@@ -510,7 +510,7 @@ static APTR specialAlloc(ULONG size, ULONG flags, struct ExecBase *SysBase)
     if (mem == NULL) {
         if ((flags & (MEMF_KICK | MEMF_FAST)) == (MEMF_KICK | MEMF_FAST)) {
             /* Couldn't allocate MEMF_KICK | MEMF_FAST, fall back to any memory */
-            mem = AllocPageAligned(&size, MEMF_CLEAR);
+            mem = AllocPageAligned(&size, (flags & MEMF_REVERSE) | MEMF_CLEAR);
         }
         if (mem == NULL) {
     	    D(DWriteF("ELF: Failed to allocate %N bytes of type %X8\n", size, flags));
