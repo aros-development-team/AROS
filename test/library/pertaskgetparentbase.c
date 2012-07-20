@@ -8,12 +8,11 @@
 /*****************************************************************************
 
     NAME */
-        AROS_LH0(APTR, PertaskGetParentBase,
+        APTR PertaskGetParentBase()
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-        struct Library *, UserelBase, 6, Userel)
 
 /*  FUNCTION
 
@@ -35,10 +34,6 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
     return GetParentBase();
-
-    AROS_LIBFUNC_EXIT
 }
 

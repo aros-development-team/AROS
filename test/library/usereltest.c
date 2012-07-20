@@ -19,6 +19,9 @@ int main (int argc, char ** argv)
 
     VPrintf((STRPTR)"ParentBase = %ld\n",vec);
 
+    Printf("101 202 303 404:\n");
+    DummyPrint4(101, 202, 303, 404);
+
     Flush (Output ());
     
     return 0;
