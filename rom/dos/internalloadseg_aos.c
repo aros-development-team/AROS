@@ -153,8 +153,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       req |= MEMF_CHIP;
       break;
 
-      case HUNKF_ADVISORY:
-      D(bug("ADVISORY"));
+      case HUNKF_FAST | HUNKF_CHIP:
+      D(bug("FAST | CHIP"));
       if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
         goto end;
       req = AROS_BE2LONG(req);
@@ -264,8 +264,8 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             req = MEMF_CHIP;
           break;
 
-          case HUNKF_ADVISORY:
-            D(bug("ADVISORY"));
+          case HUNKF_FAST | HUNKF_CHIP:
+            D(bug("FAST | CHIP"));
             if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
               goto end;
 
@@ -292,6 +292,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_RELOC32:
+      case HUNK_RELRELOC32:
         D(bug("HUNK_RELOC32:\n"));
         while (1)
         {
@@ -325,7 +326,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
             /* See the above MEMF_31 explanation for why this
              * works on AROS 64-bit.
              */
-            *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
+            if ((hunktype & 0xFFFFFF) == HUNK_RELRELOC32)
+              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)(GETHUNKPTR(count) - GETHUNKPTR(curhunk)));
+            else
+              *addr = (ULONG)(AROS_BE2LONG(*addr) + (IPTR)GETHUNKPTR(count));
 
             --i;
           }
