@@ -48,16 +48,22 @@
 {
     AROS_LIBFUNC_INIT
 
-    IPTR *taskstorage = FindTask(NULL)->tc_UnionETask.tc_TaskStorage,
-        *tsout;
-    int size = (int)taskstorage[__TS_FIRSTSLOT];
+    struct ETask *et = GetETask(FindTask(NULL));
+    IPTR *taskstorage, *tsout;
+    IPTR slots;
+    
+    if (!et || et->et_TaskStorage == NULL)
+        return NULL;
 
-    tsout = AllocMem(size, MEMF_PUBLIC);
+    taskstorage = et->et_TaskStorage;
+    slots = taskstorage[__TS_FIRSTSLOT];
+
+    /* NOTE: Saved task storage *must not* be passed around
+     *       to another task! This is why it is not MEMF_PUBLIC.
+     */
+    tsout = AllocMem(slots * sizeof(tsout[0]), MEMF_ANY);
     if (tsout) {
-        if (((size&3) == 0))
-            CopyMemQuick(taskstorage, tsout, size);
-        else
-            CopyMem(taskstorage, tsout, size);
+        CopyMemQuick(taskstorage, tsout, slots * sizeof(tsout[0]));
     }
 
     D(bug("SaveTaskStorage: taskstorage=%x, size=%d, tsout=%x\n",

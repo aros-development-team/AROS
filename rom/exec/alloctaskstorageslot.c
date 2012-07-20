@@ -49,7 +49,10 @@
 
     struct TaskStorageFreeSlot *tsfs = (struct TaskStorageFreeSlot *)GetHead(&PrivExecBase(SysBase)->TaskStorageSlots);
     int slot;
-    struct Task *t;
+    struct IntETask *iet = GetIntETask(FindTask(NULL));
+
+    if (!iet)
+        return 0;
 
     if (!tsfs)
         Alert(AT_DeadEnd|AN_MemoryInsane);
@@ -58,37 +61,10 @@
 
     D(bug("[TSS] Task 0x%p (%s): Allocated slot %d\n", FindTask(NULL), FindTask(NULL)->tc_Node.ln_Name, slot));
 
-    if ((slot + 1)*sizeof(IPTR) > PrivExecBase(SysBase)->TaskStorageSize)
-    {
-        t = FindTask(NULL);
-
-        if (!Exec_ExpandTS(t, SysBase))
-            return 0;
-    }
-
     if (GetSucc(tsfs) == NULL)
     {
         /* Last element always points to highest element and is a new slot */
         tsfs->FreeSlot++;
-    }
-    else
-    {
-        Remove((struct Node *)tsfs);
-        FreeMem(tsfs, sizeof(struct TaskStorageFreeSlot));
-
-        /* Clean previous values in slot on all tasks */
-        Forbid();
-        ForeachNode(&SysBase->TaskReady, t)
-        {
-            if (t->tc_Flags & TF_ETASK)
-                t->tc_UnionETask.tc_TaskStorage[slot] = (IPTR)0;
-        }
-        ForeachNode(&SysBase->TaskWait, t)
-        {
-            if (t->tc_Flags & TF_ETASK)
-                t->tc_UnionETask.tc_TaskStorage[slot] = (IPTR)0;
-        }
-        Permit();
     }
 
     return slot;

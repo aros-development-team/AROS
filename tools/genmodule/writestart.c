@@ -213,7 +213,7 @@ static void writedecl(FILE *out, struct config *cfg)
 		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
 		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
 		"#endif\n"
-                "int __GM_BaseSlot;\n"
+                "LONG __GM_BaseSlot;\n"
                 /* If AROS_GM_GETBASE is defined, then it is a 
                  * macro that generates the __GM_GetBase() function
                  * in assembly. See include/aros/x86_64/cpu.h for
@@ -222,15 +222,20 @@ static void writedecl(FILE *out, struct config *cfg)
                 "#ifdef AROS_GM_GETBASE\n"
                 "extern void *__GM_GetBase(void);\n"
                 "AROS_GM_GETBASE()\n"
+                "static inline void *__GM_GetBase_Safe(void)\n"
+                "{\n"
+                "    return (LIBBASETYPEPTR)GetTaskStorageSlot(__GM_BaseSlot);\n"
+                "}\n"
                 "#else\n"
                 "void *__GM_GetBase(void)\n"
                 "{\n"
-                "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__GM_BaseSlot];\n"
+                "    return (void *)GetTaskStorageSlot(__GM_BaseSlot);\n"
                 "}\n"
+                "#define __GM_GetBase_Safe() __GM_GetBase()\n"
                 "#endif\n"
-                "static __used void __GM_SetBase(LIBBASETYPEPTR base)\n"
+                "static inline BOOL __GM_SetBase_Safe(LIBBASETYPEPTR base)\n"
                 "{\n"
-                "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__GM_BaseSlot] = (IPTR)base;\n"
+                "    return SetTaskStorageSlot(__GM_BaseSlot, (IPTR)base);\n"
                 "}\n"
                 "struct __GM_DupBase {\n"
                 "    LIBBASETYPE base;\n"
@@ -272,18 +277,18 @@ static void writedecl(FILE *out, struct config *cfg)
         if (cfg->options & OPTION_PERTASKBASE)
         {
             fprintf(out,
-                    "static int __pertaskslot;\n"
+                    "static LONG __pertaskslot;\n"
                     "LIBBASETYPEPTR __GM_GetBaseParent(LIBBASETYPEPTR base)\n"
                     "{\n"
                     "    return ((struct __GM_DupBase *)base)->oldpertaskbase;\n"
                     "}\n"
                     "static inline LIBBASETYPEPTR __GM_GetPerTaskBase(void)\n"
                     "{\n"
-                    "    return (LIBBASETYPEPTR)SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot];\n"
+                    "    return (LIBBASETYPEPTR)GetTaskStorageSlot(__pertaskslot);\n"
                     "}\n"
                     "static inline void __GM_SetPerTaskBase(LIBBASETYPEPTR base)\n"
                     "{\n"
-                    "    SysBase->ThisTask->tc_UnionETask.tc_TaskStorage[__pertaskslot] = (IPTR)base;\n"
+                    "    SetTaskStorageSlot(__pertaskslot, (IPTR)base);\n"
                     "}\n"
             );
         }
@@ -773,7 +778,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->options & OPTION_DUPBASE)
         fprintf(out,
                 "    __GM_BaseSlot = AllocTaskStorageSlot();\n"
-                "    __GM_SetBase(lh);\n"
+                "    if (!__GM_SetBase_Safe(lh)) {\n"
+                "        FreeTaskStorageSlot(__GM_BaseSlot);\n"
+                "        return NULL;\n"
+                "    }\n"
         );
     if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
@@ -989,7 +997,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		    "    struct Library *newlib = NULL;\n"
 		    "    UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
-                    "    LIBBASETYPEPTR oldbase = __GM_GetBase();\n"
+                    "    LIBBASETYPEPTR oldbase = __GM_GetBase_Safe();\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
@@ -1024,7 +1032,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "            return NULL;\n"
 		    "\n"
 		    "        CopyMem(lh, newlib, possize);\n"
-                    "        __GM_SetBase((LIBBASETYPEPTR)newlib);\n"
+                    "        __GM_SetBase_Safe((LIBBASETYPEPTR)newlib);\n"
                     "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
                     "        dupbase->oldbase = oldbase;\n"
             );
@@ -1139,7 +1147,7 @@ static void writecloselib(FILE *out, struct config *cfg)
                 "\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
                 "    set_close_rellibraries(lh);\n"
-                "    __GM_SetBase(dupbase->oldbase);\n"
+                "    __GM_SetBase_Safe(dupbase->oldbase);\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,

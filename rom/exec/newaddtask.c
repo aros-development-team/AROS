@@ -122,8 +122,7 @@
         task->tc_Flags |= TF_STACKCHK;
 
     /* Initialize ETask */
-    InitETask(task);
-    if (!task->tc_UnionETask.tc_ETask)
+    if (!InitETask(task))
         return NULL;
 
     /* Get new stackpointer. */

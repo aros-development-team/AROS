@@ -6,7 +6,6 @@
     Lang: english
 */
 
-#define DEBUG 0
 #include <aros/debug.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
@@ -75,7 +74,7 @@
     return NULL;
 }
 
-void
+BOOL
 Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
 {
     struct Task *thistask = FindTask(NULL);
@@ -84,27 +83,36 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
      *  RemTask(), rather by somebody else calling ChildFree().
      *  Alternatively, an orphaned task will free its own ETask.
      */
-    IPTR *ts = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-    D(bug("[TSS] Create new TS=%x for task=%x with size %d\n",
-          ts, task, PrivExecBase(SysBase)->TaskStorageSize
+    struct IntETask *iet = AllocMem(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
+    D(bug("[TSS] Create new ETask=%x for task=%x with size %d\n",
+          iet, task, sizeof(iet)
     ));
 
-    /* IntETask is embedded in TaskStorage */
-    struct ETask *et = (struct ETask *)ts;
-    task->tc_UnionETask.tc_TaskStorage = ts;
-    if (!ts)
-        return;
+    struct ETask *et = (struct ETask *)iet;
+    task->tc_UnionETask.tc_ETask = et;
+    if (!et)
+        return FALSE;
     task->tc_Flags |= TF_ETASK;
 
-    ts[__TS_FIRSTSLOT] = (IPTR)PrivExecBase(SysBase)->TaskStorageSize;
     if (thistask != NULL)
     {
-        /* Clone TaskStorage */
-        CopyMem(&thistask->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT+1],
-                &task->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT+1],
-                ((ULONG)thistask->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT])-(__TS_FIRSTSLOT+1)*sizeof(IPTR)
-        );
+        /* Clone parent's TaskStorage */
+        struct ETask *thiset = GetETask(thistask);
+        if (thiset) {
+            IPTR *thists = thiset->et_TaskStorage;
+
+            if (thists) {
+                IPTR *ts = AllocMem(thists[__TS_FIRSTSLOT] * sizeof(ts[0]), MEMF_ANY);
+                if (!ts) {
+                    FreeMem(iet, sizeof(*iet));
+                    return FALSE;
+                }
+                CopyMem(thists, ts, thists[__TS_FIRSTSLOT] * sizeof(ts[0]));
+                et->et_TaskStorage = ts;
+            }
+        }
     }
+
     et->et_Parent = thistask;
     NEWLIST(&et->et_Children);
 
@@ -151,6 +159,8 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
 	ADDHEAD(&GetETask(et->et_Parent)->et_Children, et);
 	Permit();
     }
+
+    return TRUE;
 }
 
 void
@@ -222,7 +232,7 @@ Exec_CleanupETask(struct Task *task, struct ExecBase *SysBase)
 void
 Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 {
-    IPTR *ts = (IPTR *)et;
+    IPTR *ts = et->et_TaskStorage;
 
     if(et->et_Result2)
         FreeVec(et->et_Result2);
@@ -230,68 +240,12 @@ Exec_ExpungeETask(struct ETask *et, struct ExecBase *SysBase)
 #ifdef DEBUG_ETASK
     FreeVec(IntETask(et)->iet_Me);
 #endif
-    D(bug("Exec_ExpungeETask: Freeing ts=%x, size=%d\n",
-          ts, (ULONG)ts[__TS_FIRSTSLOT]
+    D(bug("Exec_ExpungeETask: Freeing et=%x, ts=%x, size=%d\n",
+          et, ts, ts ? (ULONG)ts[__TS_FIRSTSLOT] : 0
     ));
-    FreeMem(ts, (ULONG)ts[__TS_FIRSTSLOT]);
-}
-
-static inline void FixList(struct List *from, struct List *to)
-{
-    /*
-     * This sequence is incomplete. It is valid only after the whole structure has been copied.
-     * !!! DO NOT remove the second line !!!
-     * If the list is empty, the first line actually modifies from->lh_TailPred, so that
-     * to->lh_TailPred gets correct value !
-     */
-    to->lh_Head->ln_Pred     = (struct Node *)&to->lh_Head;
-    to->lh_TailPred          = from->lh_TailPred;
-    to->lh_TailPred->ln_Succ = (struct Node *)&to->lh_Tail;
-}
-
-BOOL Exec_ExpandTS(struct Task *task, struct ExecBase *SysBase)
-{
-    struct Task *me = FindTask(NULL);
-    ULONG oldsize = task->tc_UnionETask.tc_TaskStorage[__TS_FIRSTSLOT];
-    struct ETask *et_old = task->tc_UnionETask.tc_ETask;
-    struct ETask *et_new;
-
-    D(bug("[TSS] Increasing storage (%d to %d) for task 0x%p (%s)\n", oldsize, PrivExecBase(SysBase)->TaskStorageSize, task, task->tc_Node.ln_Name));
-
-    /* Allocate new storage */
-    et_new = AllocMem(PrivExecBase(SysBase)->TaskStorageSize, MEMF_PUBLIC|MEMF_CLEAR);
-    if (!et_new)
-        return FALSE;
-
-    if (task == me)
-    {
-        /*
-         * If we are updating ourselves, we need to disable task switching.
-         * Otherwise our ETask can become inconsistent (data in old ETask will
-         * be modified in the middle of copying).
-         */
-        Forbid();
-    }
-
-    /* This copies most of data. */
-    CopyMem(et_old, et_new, oldsize);
-
-    /* ETask includes lists, and we need to fix up pointers in them now */
-    FixList((struct List *)&et_old->et_Children, (struct List *)&et_new->et_Children);
-    FixList(&et_old->et_TaskMsgPort.mp_MsgList, &et_new->et_TaskMsgPort.mp_MsgList);
-
-    /* Set new TSS size, and install new ETask */
-    ((IPTR *)et_new)[__TS_FIRSTSLOT] = PrivExecBase(SysBase)->TaskStorageSize;
-    task->tc_UnionETask.tc_ETask = et_new;
-
-    if (task == me)
-    {
-        /* All done, enable multitask again */
-        Permit();
-    }
-
-    FreeMem(et_old, oldsize);
-    return TRUE;
+    FreeMem(et, sizeof(struct IntETask));
+    if (ts)
+        FreeMem(ts, ts[__TS_FIRSTSLOT] * sizeof(ts[0]));
 }
 
 BOOL Exec_CheckTask(struct Task *task, struct ExecBase *SysBase)

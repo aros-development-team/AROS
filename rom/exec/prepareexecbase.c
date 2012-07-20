@@ -281,7 +281,6 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh, struct TagItem *msg)
 	    SysBase->ex_DebugFlags = ParseFlags(&opts[9], ExecFlagNames);
     }
 
-    PrivExecBase(SysBase)->TaskStorageSize = sizeof(struct IntETask) + TASKSTORAGEPUDDLE;
     NEWLIST(&PrivExecBase(SysBase)->TaskStorageSlots);
 
     SetSysBaseChkSum();

@@ -187,8 +187,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     AddHead(&t->tc_MemEntry, &ml->ml_Node);
 
     /* Create a ETask structure and attach CPU context */
-    InitETask(t);
-    if (!t->tc_UnionETask.tc_ETask)
+    if (!InitETask(t))
     {
         DINIT("Not enough memory for first task");
         return NULL;

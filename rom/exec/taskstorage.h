@@ -14,6 +14,6 @@ struct TaskStorageFreeSlot
     int FreeSlot;
 };
 
-#define __TS_FIRSTSLOT ((int)((sizeof(struct IntETask)+sizeof(IPTR)-1)/sizeof(IPTR)))
+#define __TS_FIRSTSLOT 0
 
 #endif /* TASKSTORAGE_H */
