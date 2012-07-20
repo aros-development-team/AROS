@@ -18,7 +18,7 @@
 /*  SYNOPSIS */
 	AROS_LHA(struct ViewPort *, vp, A0),
 	AROS_LHA(UWORD           *, colors, A1),
-	AROS_LHA(LONG             , count, D0),
+	AROS_LHA(WORD             , count, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 32, Graphics)
@@ -54,7 +54,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    LONG t;
+    WORD t;
 
     if (!vp)
         return;
