@@ -45,12 +45,10 @@
 
 	Kernel                      Effect
 	-------------------------------------------------------------------
-	i386 (under emulation)      None
 	m68k (native)               Runs the process in supervisor mode.
 				    The process must end with an RTE
 				    instruction. It should save any
 				    registers which is uses.
-	m68k (under emulation)
 
     EXAMPLE
 
@@ -81,10 +79,6 @@
 	.globl AROS_SLIB_ENTRY(Supervisor,Exec,5)
 	.type	AROS_SLIB_ENTRY(Supervisor,Exec,5),@function
 AROS_SLIB_ENTRY(Supervisor,Exec,5):
-#ifndef DoRegisterCalls
-	move.l	%a5,%sp@-
-	move.l	%sp@(-8),%a5
-#endif
 	/* CRITICAL SECTION - DO NOT USE THE STACK */
 Exec_Supervisor_Entry:
 	or.w	#0x2000, %sr	// Caused exception on 68000
@@ -101,9 +95,6 @@ Exec_Supervisor_Entry:
 	jmp	(%a5)
 Exec_Supervisor_Exit:
 	/* END CRITICAL SECTION - CALLER'S STACK */
-#ifndef DoRegisterCalls
-	move.l	%sp@+,%a5
-#endif
     	rts
 
 	/* 68000 privilege violation stack frame:

@@ -49,15 +49,9 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 
 	// Here's how the stack looks right now
 	// 0(%sp) : Return Address
-#ifndef DoRegisterCalls
-	// 4(%sp) : pointer to StackSwap structure
-#endif
 
 	/* Preserve returnaddress and fix sp */
 	move.l	(%sp)+,%d1       // d1 contains return address
-#ifndef DoRegisterCalls
-	move.l	(%sp)+,%a0       // a0 holds param to this function
-#endif
 	                         // now the stack is 'clean'
 
 	move.l  %a6,%sp@-       // save contents of %a6
@@ -72,14 +66,8 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	movem.l	%d0/%a0/%a1,%sp@- // d0: save return address on stack
                                    // a0: param to this function onto stack
 	                           // a1: address of task to stack
-#ifndef DoRegisterCalls
-	move.l  %a6,-(%sp)         // a6: Execbase onto stack
-#endif	
 	/* Just to be sure interrupts always find a good stackframe */
 	jsr	Disable(%a6)       // disable interrupts
-#ifndef DoRegisterCalls
-	move.l  %sp@+,%a6     	    // a6: Execbase from stack
-#endif	
  	movem.l	%sp@+,%d0/%a0/%a1  // a1 holds address of task
 	                            // a0 holds param to this function
                                     // d0 holds return address
@@ -108,20 +96,9 @@ AROS_SLIB_ENTRY(StackSwap,Exec,122):
 	
 	/* Reenable interrupts. */
 	move.l  0x4,%a6                     // get ExecBase
-#ifndef DoRegisterCalls
-	move.l  %a6,%sp@-                   // ExecBase onto stack
-#endif
 	jsr	Enable(%a6)                 // Enable interrupts
-#ifndef DoRegisterCalls
-	move.l  %sp@+,%a6                   // dummy
-#endif
 	movem.l	%sp@+,%d0/%a6       // restore orig. content of %a6 register
 	                             // restore return address to d0
-
-#ifndef DoRegisterCalls
-	move.l	#0,%sp@-         // write fake parameter to this function
-	                         // onto stack
-#endif
 	/* Restore returnaddress and return */
 	move.l	%d0,%sp@-       // return address onto stack 
 

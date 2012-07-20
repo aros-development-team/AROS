@@ -9,6 +9,8 @@
 #define DEBUG 0
 #include <aros/kernel.h>
 #include <aros/debug.h>
+#include <aros/asmcall.h>
+
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -215,62 +217,71 @@ static void M68KExceptionInit_10(struct ExecBase *SysBase)
  * When we call M68KExceptionAction:
  *     Return PC                (4)
  *     Return SR                (2)
- *     D0-D7/A0-A7		(16 * 4)	<= NO TOUCHING!
- *     SysBase			(4)	A6
- *     SP			(4)	D1
- *     Exception Vector		(4)	D0
+ *     TrapArg                  (4)
+ *     TrapCode                 (4)
+ *     D0-D1/A0-A1		(4 * 4)	<= NO TOUCHING!
+ *     Pointer to trapcode/arg  (4)
+ *     Exception Vector		(4)
  *
  * When we come back:
- *     Drop SysBase, SP, and Exception args
- *     Restore D0-D1/A0-A1/A6
- *     Drop the Exception # word
+ *     Restore D0-D1/A0-A1
+ *     Either execute the trap, or just return.
  *     RTE
  */
 extern void M68KExceptionHelper(void);
 asm (
-	"	.text\n"
-	"	.globl M68KExceptionHelper\n"
-	"M68KExceptionHelper:\n"
-	"	lea.l	%sp@(-12),%sp\n"	// Fix stack to below regs.a[6]
-	"	move.l	%a6,%sp@(0)\n"		// Save A6 in regs.a[6]
-	"	move.l	%sp@(12),%a6\n"		// Get Exception Id into A6
-	"	clr.l	%sp@(12)\n"		// Clear TrapCode arg
-	"	move.l	#0f,%sp@(8)\n"		// Save default TrapCode
-	"	move.l	%a6,%sp@(4)\n"		// Save Exception ID to regs.a[7]
-	"	movem.l	%d0-%d7/%a0-%a5,%sp@-\n"// Push everything - SP is now 'regs_t'
-	"	move.l	%sp@(15*4),%d1\n"	// Exception Id (regs.a[7])
-	"	move.l	%usp,%a0\n"
-	"	move.l	%a0,%sp@(4*15)\n"	// Fix up SP in regs as USP
-	"	move.l	%sp,%d0\n"		// regs_t
-	"	move.l	4, %a6\n"		// Global SysBase
-	"	move.l	%a6, %sp@-\n"		// Push SysBase
-	"	move.l	%d1, %sp@-\n"		// Push Exception Id
-	"	move.l	%d0, %sp@-\n"		// Push regs_t *
-	"	jsr	M68KExceptionAction\n"
-	"	lea	%sp@(12),%sp\n"		// Drop all stack args
-	"	movem.l	%sp@+,%d0-%d7/%a0-%a5\n"	// Restore all but a6
-	"	move.l	%sp@(4),%a6\n"		//   Get USP from regs_t
-	"	move.l	%a6,%usp\n"		//   Set USP
-	"	move.l	%sp@+,%a6\n"		//   Restore A6
-	"	addq.l	#4,%sp\n"		//   Pop off A7
-	"	tst.l	%sp@\n"			// New tasks have a NULL trapcode
-	"	beq.s	1f\n"
-	"       rts\n"				// Execute tc_TrapCode
-	"1:\n"
-	"	addq.l	#4,%sp\n"
-	"0:\n"
-	"	addq.l	#4,%sp\n"		//   Drop TrapCode parameter
-	"	rte\n"				//   And return
+        "       .text\n"
+        "       .globl M68KExceptionHelper\n"
+        "M68KExceptionHelper:\n"
+        "       clr.l   %sp@-\n"                // Save space for tc
+        "       movem.l %d0-%d1/%a0-%a1,%sp@-\n"// Save regs
+        "       lea.l   %sp@(4*(4)),%a0\n"      // Get location of tc/ta
+        "       move.l  %sp@(4*(4+1)),%d0\n"    // Get exception vector
+        "       jsr     M68KExceptionAction\n"  // Call action routine
+        "       movem.l %sp@+,%d0-%d1/%a0-%a1\n"// Restore regs
+        "       tst.l   %sp@\n"                 // NULL trapcode? Just return
+        "       beq.s   1f\n"
+        "       rts\n"                          // Execute tc_TrapCode
+        "1:\n"
+        "       addq.l  #4,%sp\n"
+        "0:\n"
+        "       addq.l  #4,%sp\n"               //   Drop TrapCode parameter
+        "       rte\n"                          //   And return
 );
 
 /* Default handler */
 extern void Exec_MagicResetCode(void);
-void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
-{
-    VOID (*trapHandler)(ULONG, void *);
+extern struct ExecBase *AbsExecBase;
 
-    if (SysBase == NULL ||
-    	KernelBase == NULL) {
+struct M68KTrapCode {
+    APTR  trapcode;
+    ULONG traparg;
+};
+
+AROS_UFH2(VOID, M68KExceptionAction,
+        AROS_UFHA(ULONG, vector, D0),
+        AROS_UFHA(struct M68KTrapCode *, tc, A0))
+{
+    AROS_USERFUNC_INIT
+
+    ULONG Id;
+    VOID (*Handler)(ULONG id);
+
+    if (vector & 1) {
+    	/* vector is really a pointer to a M68KException table entry */
+    	struct M68KException *Exception;
+
+    	Exception = (APTR)(vector & ~1);
+
+    	Id = Exception->Id;
+    	Handler = Exception->Handler;
+    } else {
+    	Id = vector >> 2;
+    	Handler = NULL;
+    }
+
+#if DEBUG
+    if (SysBase == NULL || KernelBase == NULL) {
     	volatile LONG *LastAlert = (volatile LONG *)(64 * sizeof(LONG));
     	/* SysBase has been corrupted! Mark the alert,
     	 * and reboot.
@@ -288,81 +299,18 @@ void M68KExceptionHandler(regs_t *regs, int id, struct ExecBase *SysBase)
     	Exec_MagicResetCode();
     	return;
     }
-
-    trapHandler = FindTask(NULL)->tc_TrapCode;
-    /* Call an AmigaOS trap handler, in supervisor
-     * mode, that *may* alter almost any of our
-     * registers, by abusing the stack frame
-     * via 'regs_t'. Whee!
-     */
-    regs->trapcode = (IPTR)trapHandler;
-    regs->traparg  = (ULONG)id;
-}
-
-void M68KExceptionAction(regs_t *regs, ULONG vector, struct ExecBase *SysBase)
-{
-    int Id;
-    BOOL (*Handler)(regs_t *regs, int id, struct ExecBase *SysBase);
-
-    if (vector & 1) {
-    	/* vector is really a pointer to a M68KException table entry */
-    	struct M68KException *Exception;
-
-    	Exception = (APTR)(vector & ~1);
-
-    	Id = Exception->Id;
-    	Handler = Exception->Handler;
-    } else {
-    	Id = vector >> 2;
-    	Handler = NULL;
-    }
-
-#ifdef AROS_DEBUG_STACK
-    if (KernelBase != NULL) {	// Prevents early failure
-	if (regs->sr & 0x2000) {
-		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
-			D(bug("Supervisor: iStack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
-			D(bug("Exception: %d\n", Id));
-			D(PRINT_CPU_CONTEXT(regs));
-			Alert(AT_DeadEnd | AN_StackProbe);
-		}
-	} else {
-#if 0	/* can't do this, in old times if was popular to reallocate new stacks manually.. */
-		struct Task *t = SysBase->ThisTask;
-		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
-			D(bug("[%s]: iStack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
-			D(bug("Exception: %d\n", Id));
-			D(PRINT_CPU_CONTEXT(regs));
-			Alert(AT_DeadEnd | AN_StackProbe);
-		}
-#endif
-	}
-    }
 #endif
 
-    if (Handler == NULL || !Handler(regs, Id, SysBase))
-    	M68KExceptionHandler(regs, Id, SysBase);
-
-#ifdef AROS_DEBUG_STACK
-    if (KernelBase != NULL) {
-	if (regs->sr & 0x2000) {
-		if ((APTR)regs < (SysBase->SysStkLower+0x10) || (((APTR)regs)-1) > SysBase->SysStkUpper) {
-			D(bug("Supervisor: Stack overflow %p (%p-%p)\n", (APTR)regs, SysBase->SysStkLower, SysBase->SysStkUpper));
-			D(bug("Exception: %d\n", Id));
-			D(PRINT_CPU_CONTEXT(regs));
-			Alert(AT_DeadEnd | AN_StackProbe);
-		}
-	} else {
-		struct Task *t = SysBase->ThisTask;
-		if ((APTR)regs->a[7] < (t->tc_SPLower+0x10) || (APTR)(regs->a[7]-1) > t->tc_SPUpper) {
-			D(bug("[%s]: Stack overflow %p (%p-%p)\n", t->tc_Node.ln_Name, (APTR)regs->a[7], t->tc_SPLower, t->tc_SPUpper));
-			D(bug("Exception: %d\n", Id));
-			D(PRINT_CPU_CONTEXT(regs));
-			Alert(AT_DeadEnd | AN_StackProbe);
-		}
-	}
+    tc->traparg = Id;
+    if (!Handler) {
+        Handler = FindTask(NULL)->tc_TrapCode;
+        if (!Handler) {
+            Handler = SysBase->TaskTrapCode;
+        }
     }
-#endif
+    tc->trapcode = Handler;
+
+    AROS_USERFUNC_EXIT
 }
 
 /* We assume that the caller has already set up
