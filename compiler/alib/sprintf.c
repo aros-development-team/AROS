@@ -7,6 +7,10 @@
 #include <proto/exec.h>
 #include <stdarg.h>
 
+#ifdef __mc68000
+const ULONG m68k_string_sprintf = 0x16c04e75;
+#endif
+
 /*****************************************************************************
 
     NAME */
@@ -47,8 +51,7 @@
     /* Special case for m68k, so that we are AmigaOS 1.x/2.x compliant
      * New programs should be using snprintf() from arosc.library
      */
-    const ULONG m68k_string = 0x16c04e75;
-    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string, buffer);
+    RawDoFmt(format, &format+1, (VOID_FUNC)&m68k_string_sprintf, buffer);
 #else
     va_list args;
 
