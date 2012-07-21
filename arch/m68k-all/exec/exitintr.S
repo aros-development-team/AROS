@@ -35,7 +35,8 @@ AROS_SLIB_ENTRY(ExitIntr,Exec,6):
          */
         jsr     core_ExitIntr
         tst.w   %d0
-        bne     __Schedule_this
+        beq     0f
+        jmp     __Schedule_this
 0:
         movem.l %sp@+,%d0-%d1/%a0-%a1/%a5-%a6
         rte

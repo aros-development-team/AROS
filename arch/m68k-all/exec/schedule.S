@@ -22,6 +22,8 @@ __Schedule_this:
         jsr     core_Schedule
         tst.w   %d0                     /* Something to do? */
         movem.l %sp@+,%d0-%d1/%a0-%a1/%a5-%a6   /* Restore regs */
-        bne     AROS_SLIB_ENTRY(Switch,Exec,9)
+        beq     0f
+        jmp     AROS_SLIB_ENTRY(Switch,Exec,9)
+0:
         rte
         .endfunc
