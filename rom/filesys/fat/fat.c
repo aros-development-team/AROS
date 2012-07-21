@@ -34,7 +34,8 @@
 
 /* helper function to get the location of a fat entry for a cluster. it used
  * to be a define until it got too crazy */
-static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
+static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb,
+    UWORD fat_no) {
     ULONG entry_cache_block = offset >> sb->fat_cachesize_bits;
     ULONG entry_cache_offset = offset & (sb->fat_cachesize - 1);
     ULONG num;
@@ -42,7 +43,8 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
 
     /* if the target cluster is not within the currently loaded chunk of fat,
      * we need to get the right data in */
-    if (sb->fat_cache_block != entry_cache_block) {
+    if (sb->fat_cache_block != entry_cache_block
+        || sb->fat_cache_no != fat_no) {
         D(bug("[fat] loading %ld FAT sectors starting at sector %ld\n", sb->fat_blocks_count, entry_cache_block << (sb->fat_cachesize_bits - sb->sectorsize_bits)));
         /* put the old ones back */
         if (sb->fat_cache_block != 0xffffffff)
@@ -51,7 +53,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
 
         /* load some more */
         num = sb->first_device_sector + sb->first_fat_sector
-            + (entry_cache_block
+            + sb->fat_size * fat_no + (entry_cache_block
             << (sb->fat_cachesize_bits - sb->sectorsize_bits));
         for (i = 0; i < sb->fat_blocks_count; i++)
             sb->fat_blocks[i] =
@@ -59,6 +61,7 @@ static UBYTE *GetFatEntryPtr(struct FSSuper *sb, ULONG offset, APTR *rb) {
 
         /* remember where we are for next time */
         sb->fat_cache_block = entry_cache_block;
+        sb->fat_cache_no = fat_no;
     }
 
     /* give the block back if they asked for it (needed to mark the block
@@ -95,11 +98,11 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
     if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
         D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-        val = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
-        val |= *GetFatEntryPtr(sb, offset, NULL);
+        val = *GetFatEntryPtr(sb, offset + 1, NULL, 0) << 8;
+        val |= *GetFatEntryPtr(sb, offset, NULL, 0);
     }
     else
-        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL)));
+        val = AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, offset, NULL, 0)));
 
     if (n & 1)
         val >>= 4;
@@ -115,11 +118,11 @@ static ULONG GetFat12Entry(struct FSSuper *sb, ULONG n) {
  * split across blocks. Why can't everything be this simple?
  */
 static ULONG GetFat16Entry(struct FSSuper *sb, ULONG n) {
-    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1, NULL)));
+    return AROS_LE2WORD(*((UWORD *) GetFatEntryPtr(sb, n << 1, NULL, 0)));
 }
 
 static ULONG GetFat32Entry(struct FSSuper *sb, ULONG n) {
-    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL)))
+    return AROS_LE2LONG(*((ULONG *) GetFatEntryPtr(sb, n << 2, NULL, 0)))
         & 0x0fffffff;
 }
 
@@ -127,60 +130,74 @@ static void SetFat12Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     APTR b;
     ULONG offset = n + n/2;
     BOOL boundary = FALSE;
-    UWORD *fat = NULL, newval;
+    UWORD *fat = NULL, newval, i;
 
-    if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
-        boundary = TRUE;
+    for (i = 0; i < sb->fat_count; i++);
+    {
+        if ((offset & (sb->sectorsize-1)) == sb->sectorsize-1) {
+            boundary = TRUE;
 
-        D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
+            D(bug("[fat] fat12 cluster pair on block boundary, compensating\n"));
 
-        newval = *GetFatEntryPtr(sb, offset + 1, NULL) << 8;
-        newval |= *GetFatEntryPtr(sb, offset, NULL);
-    }
-    else {
-        fat = (UWORD *) GetFatEntryPtr(sb, offset, &b);
-        newval = AROS_LE2WORD(*fat);
-    }
+            newval = *GetFatEntryPtr(sb, offset + 1, NULL, i) << 8;
+            newval |= *GetFatEntryPtr(sb, offset, NULL, i);
+        }
+        else {
+            fat = (UWORD *) GetFatEntryPtr(sb, offset, &b, i);
+            newval = AROS_LE2WORD(*fat);
+        }
 
-    if (n & 1) {
-        val <<= 4;
-        newval = (newval & 0xf) | val;
-    }
-    else {
-        newval = (newval & 0xf000) | val;
-    }
+        if (n & 1) {
+            val <<= 4;
+            newval = (newval & 0xf) | val;
+        }
+        else {
+            newval = (newval & 0xf000) | val;
+        }
 
-    if (boundary) {
-        /* XXX ideally we'd mark both blocks dirty at the same time or only do
-         * it once if they're the same block. unfortunately b is essentially
-         * invalid after a call to GetFatEntryPtr, as it may have swapped the
-         * previous cache out. This is probably safe enough. */
-        *GetFatEntryPtr(sb, offset+1, &b) = newval >> 8;
-        Cache_MarkBlockDirty(sb->cache, b);
-        *GetFatEntryPtr(sb, offset, &b) = newval & 0xff;
-        Cache_MarkBlockDirty(sb->cache, b);
-    }
-    else {
-        *fat = AROS_WORD2LE(newval);
-        Cache_MarkBlockDirty(sb->cache, b);
+        if (boundary) {
+            /* XXX ideally we'd mark both blocks dirty at the same time or
+             * only do it once if they're the same block. unfortunately any 
+             * old value of b is invalid after a call to GetFatEntryPtr, as
+             * it may have swapped the previous cache out. This is probably
+             * safe enough. */
+            *GetFatEntryPtr(sb, offset+1, &b, i) = newval >> 8;
+            Cache_MarkBlockDirty(sb->cache, b);
+            *GetFatEntryPtr(sb, offset, &b, i) = newval & 0xff;
+            Cache_MarkBlockDirty(sb->cache, b);
+        }
+        else {
+            *fat = AROS_WORD2LE(newval);
+            Cache_MarkBlockDirty(sb->cache, b);
+        }
     }
 }
 
 static void SetFat16Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     APTR b;
+    UWORD i;
 
-    *((UWORD *) GetFatEntryPtr(sb, n << 1, &b)) = AROS_WORD2LE((UWORD) val);
-
-    Cache_MarkBlockDirty(sb->cache, b);
+    for (i = 0; i < sb->fat_count; i++);
+    {
+        *((UWORD *) GetFatEntryPtr(sb, n << 1, &b, i)) =
+            AROS_WORD2LE((UWORD) val);
+        Cache_MarkBlockDirty(sb->cache, b);
+    }
 }
 
 static void SetFat32Entry(struct FSSuper *sb, ULONG n, ULONG val) {
     APTR b;
-    ULONG *fat = (ULONG *) GetFatEntryPtr(sb, n << 2, &b);
+    ULONG *fat;
+    UWORD i;
 
-    *fat = (*fat & 0xf0000000) | val;
+    for (i = 0; i < sb->fat_count; i++)
+    {
+        fat = (ULONG *) GetFatEntryPtr(sb, n << 2, &b, i);
 
-    Cache_MarkBlockDirty(sb->cache, b);
+        *fat = (*fat & 0xf0000000) | val;
+
+        Cache_MarkBlockDirty(sb->cache, b);
+    }
 }
 
 LONG ReadFATSuper(struct FSSuper *sb ) {
@@ -235,6 +252,9 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->first_fat_sector = AROS_LE2WORD(boot->bpb_rsvd_sect_count);
     D(bug("\tFirst FAT Sector = %ld\n", sb->first_fat_sector));
 
+    sb->fat_count = boot->bpb_num_fats;
+    D(bug("\tNumber of FATs = %d\n", sb->fat_count));
+
     if (boot->bpb_fat_size_16 != 0)
         sb->fat_size = AROS_LE2WORD(boot->bpb_fat_size_16);
     else
@@ -250,16 +270,16 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     sb->rootdir_sectors = ((AROS_LE2WORD(boot->bpb_root_entries_count) * sizeof(struct FATDirEntry)) + (sb->sectorsize - 1)) >> sb->sectorsize_bits;
     D(bug("\tRootDir Sectors = %ld\n", sb->rootdir_sectors));
 
-    sb->data_sectors = sb->total_sectors - (sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors);
+    sb->data_sectors = sb->total_sectors - (sb->first_fat_sector + (sb->fat_count * sb->fat_size) + sb->rootdir_sectors);
     D(bug("\tData Sectors = %ld\n", sb->data_sectors));
 
     sb->clusters_count = sb->data_sectors >> sb->cluster_sectors_bits;
     D(bug("\tClusters Count = %ld\n", sb->clusters_count));
 
-    sb->first_rootdir_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size);
+    sb->first_rootdir_sector = sb->first_fat_sector + (sb->fat_count * sb->fat_size);
     D(bug("\tFirst RootDir Sector = %ld\n", sb->first_rootdir_sector));
 
-    sb->first_data_sector = sb->first_fat_sector + (boot->bpb_num_fats * sb->fat_size) + sb->rootdir_sectors;
+    sb->first_data_sector = sb->first_fat_sector + (sb->fat_count * sb->fat_size) + sb->rootdir_sectors;
     D(bug("\tFirst Data Sector = %ld\n", sb->first_data_sector));
 
     /* check if disk is in fact a FAT filesystem */
@@ -279,7 +299,7 @@ LONG ReadFATSuper(struct FSSuper *sb ) {
     if (sb->first_fat_sector == 0)
         invalid = TRUE;
 
-    if (boot->bpb_num_fats == 0)
+    if (sb->fat_count == 0)
         invalid = TRUE;
 
     if (boot->bpb_media < 0xF0)
@@ -554,7 +574,6 @@ LONG SetVolumeName(struct FSSuper *sb, UBYTE *name) {
     ReleaseDirHandle(&dh);
     return err;
 }
-
 
 LONG FindFreeCluster(struct FSSuper *sb, ULONG *rcluster) {
     ULONG cluster = 0;
