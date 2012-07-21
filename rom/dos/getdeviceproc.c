@@ -204,39 +204,22 @@ static struct DevProc *deviceproc_internal(struct DosLibrary *DOSBase, CONST_STR
         /* obtain a lock on the target */
         lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 
-        /* unlock the list, either we have a lock and need to assign it, or we
-         * don't and need to bail out */
-        UnLockDosList(LDF_ALL | LDF_READ);
-
-        /* XXX there's a race here. with the doslist unlocked, it's possible
-         * that some other process will add or remove this assign, blowing
-         * everything up. need more tuits before attempting a fix */
-
         /* didn't find the target */
         if (lock == BNULL) {
-            FreeMem(dp, sizeof(struct DevProc));
-            return NULL;
-        }
-
-        /* try to assign it */
-        if (AssignLock(vol, lock) == DOSFALSE) {
-            UnLock(lock);
-            FreeMem(dp, sizeof(struct DevProc));
-            return NULL;
-        }
-
-        /* we made the assign! now we have to go back over the list and find
-         * the new entry */
-        dl = LockDosList(LDF_ALL | LDF_READ);
-        dl = FindDosEntry(dl, vol, LDF_ALL);
-
-        /* not found. XXX this will only happen if we hit that race above */
-        if (dl == NULL) {
             UnLockDosList(LDF_ALL | LDF_READ);
             FreeMem(dp, sizeof(struct DevProc));
-            SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
             return NULL;
         }
+
+        /* Directly change assign type without calling AssignXXX(),
+         * mimics AOS behavior, AOS programs assume it is safe to
+         * keep LDF_WRITE lock while calling Lock("late assign:");
+         */
+        dl->dol_Type = DLT_DIRECTORY;
+        dl->dol_Lock = lock;
+        dl->dol_Task = ((struct FileLock*)BADDR(lock))->fl_Task;
+        FreeVec(dl->dol_misc.dol_assign.dol_AssignName);
+        dl->dol_misc.dol_assign.dol_AssignName = NULL;
 
         /* the added entry will be a DLT_DIRECTORY, so we can just copy the
          * details in and get out of here */
