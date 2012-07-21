@@ -61,7 +61,7 @@
     BOOL            ret;
 
     ASSERT_VALID_PROCESS(me);
-    ASSERT_VALID_PTR(BADDR(stream));
+    ASSERT_VALID_PTR_OR_NULL(BADDR(stream));
     ASSERT_VALID_PTR_OR_NULL(header);
 
     /* Fault() will do all the formatting of the string */
