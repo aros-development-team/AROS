@@ -135,38 +135,24 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       goto end;
 
     count = AROS_BE2LONG(count);
-
-    tmp = count & 0xFF000000;
+    tmp = count & (HUNKF_FAST | HUNKF_CHIP);
     count &= 0xFFFFFF;
     D(bug("\tHunk %d size: 0x%06lx bytes in ", i, count*4));
     req = MEMF_CLEAR | MEMF_PUBLIC;
-
-    switch(tmp)
-    {
-      case HUNKF_FAST:
-      D(bug("FAST"));
-      req |= MEMF_FAST;
-      break;
-
-      case HUNKF_CHIP:
-      D(bug("CHIP"));
-      req |= MEMF_CHIP;
-      break;
-
-      case HUNKF_FAST | HUNKF_CHIP:
-      D(bug("FAST | CHIP"));
+    if (tmp == (HUNKF_FAST | HUNKF_CHIP)) {
       if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
         goto end;
       req = AROS_BE2LONG(req);
-      break;
-
-      default:
-      D(bug("ANY"));
-      req |= MEMF_ANY;
-      break;
+      D(bug("FLAGS=%08x", req));
+    } else if (tmp == HUNKF_FAST) {
+      D(bug("FAST"));
+      req |= MEMF_FAST;
+    } else if (tmp == HUNKF_CHIP) {
+      D(bug("CHIP"));
+      req |= MEMF_CHIP;
     }
-
     D(bug(" memory"));
+
     /*
      * We need space for the code, the length of this hunk and
      * for a pointer to the next hunk.
@@ -252,34 +238,6 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
 
-        switch(hunktype & 0xFF000000)
-        {
-          case HUNKF_FAST:
-            D(bug("FAST"));
-            req = MEMF_FAST;
-          break;
-
-          case HUNKF_CHIP:
-            D(bug("CHIP"));
-            req = MEMF_CHIP;
-          break;
-
-          case HUNKF_FAST | HUNKF_CHIP:
-            D(bug("FAST | CHIP"));
-            if (read_block(fh, &req, sizeof(req), funcarray, DOSBase))
-              goto end;
-
-            req = AROS_BE2LONG(req);
-
-          break;
-
-          default:
-            D(bug("ANY"));
-            req = MEMF_ANY;
-          break;
-        }
-
-        D(bug(" memory\n"));
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
 	{
           if (read_block(fh, GETHUNKPTR(curhunk), count*4, funcarray, DOSBase))
@@ -464,8 +422,17 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         goto done;
 
       default:
-        bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF);
-        ERROR(ERROR_BAD_HUNK);
+        if (hunktype & HUNKF_ADVISORY) {
+          D(bug("Unknown hunk 0x%06lx with advisory flag skipped\n", hunktype & 0xFFFFFF));
+          if (read_block(fh, &count, sizeof(count), funcarray, DOSBase))
+            goto end;
+          count = AROS_BE2LONG(count);
+          if (seek_forward(fh, count * 4, funcarray, DOSBase))
+            goto end;
+        } else {
+          bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF);
+          ERROR(ERROR_BAD_HUNK);
+        }
     } /* switch */
   } /* while */
 done:
