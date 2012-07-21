@@ -292,7 +292,7 @@ static struct MsgPort *mountBootNode(struct DeviceNode *dn, struct FileSysResour
     	    break;
     }
 
-    UnLockDosList(LDF_ALL | LDF_READ);
+    UnLockDosList(LDF_DEVICES | LDF_READ);
 
     /* Found in DOS list? Do nothing. */
     if (dl)
