@@ -232,9 +232,14 @@ struct config *initconfig(int argc, char **argv)
 	cfg->modtype = HANDLER;
 	cfg->moddir = "$(AROS_DIR_FS)";
     }
+    else if (strcmp(argv[optind+2], "hook")==0)
+    {
+	cfg->modtype = HANDLER;
+	cfg->moddir = "Devs";
+    }
     else
     {
-	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[2]);
+	fprintf(stderr, "Unknown modtype \"%s\" specified for second argument\n", argv[optind+2]);
 	exit(20);
     }
 
