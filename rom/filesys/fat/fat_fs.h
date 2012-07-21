@@ -183,6 +183,7 @@ struct FSSuper {
     ULONG data_sectors;
     ULONG clusters_count;
     ULONG fat_size;
+    UWORD fat_count;
 
     ULONG free_clusters;
     ULONG next_cluster;
@@ -198,6 +199,7 @@ struct FSSuper {
     ULONG fat_cachesize;
     ULONG fat_cachesize_bits;
     ULONG fat_cache_block;
+    UWORD fat_cache_no;    /* FAT number that cached FAT blocks belong to */
 
     APTR fsinfo_block;
     struct FATFSInfo *fsinfo_buffer;
