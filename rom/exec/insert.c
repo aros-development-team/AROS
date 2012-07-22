@@ -56,7 +56,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    ASSERT(list != NULL);
+    // ASSERT(list != NULL); // MUIBase calls Insert(NULL, ...)
     ASSERT(node != NULL);
 
     /* If we have a node to insert behind... */
