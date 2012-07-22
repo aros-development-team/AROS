@@ -185,9 +185,19 @@
         }
     }
 
-    /* Ensure that empty displays get normal pointer */
     if (!failure)
-	ResetPointer(IntuitionBase);
+    {
+        /* validate screen positions, scrolling limits are not necessarily same anymore. */
+        for (screen = IntuitionBase->FirstScreen; screen; screen = screen->NextScreen)
+        {
+            if ((screen->ViewPort.Modes & VP_HIDE) == 0)
+            {
+                ScreenPosition( screen, SPOS_RELATIVE, 0,0,0,0  );
+            }
+        }
+        /* Ensure that empty displays get normal pointer */
+        ResetPointer(IntuitionBase);
+    }
 
     UnlockIBase(ilock);
 
