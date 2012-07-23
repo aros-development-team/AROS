@@ -168,3 +168,20 @@ void collect_libs(const char *file, setnode **liblist_ptr)
 
     bfd_close(abfd);
 }
+
+int set_os_and_abi(const char *file)
+{
+    FILE *pipe;
+    char buf[200];
+    int cnt;
+
+    pipe = my_popen(ELFEDIT_NAME " --output-osabi=AROS ", file);
+    if (!pipe)
+        return 0;
+
+    while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0);
+
+    pclose(pipe);
+
+    return 1;
+}
