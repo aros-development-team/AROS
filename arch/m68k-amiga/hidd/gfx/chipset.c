@@ -906,6 +906,11 @@ void initcustom(struct amigavideo_staticdata *data)
     AbleICR(GfxBase->cia, 0x80 | (1 << 2));
     Enable();
 
+    GfxBase->NormalDisplayColumns = 640;
+    GfxBase->NormalDisplayRows = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
+    GfxBase->MaxDisplayColumn = 640;
+    GfxBase->MaxDisplayRow = (GfxBase->DisplayFlags & NTSC) ? 200 : 256;
+
     data->startx = 0x81;
     data->starty = 0x28;
 
