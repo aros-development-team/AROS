@@ -218,9 +218,6 @@ struct GfxBase_intern
 #define HiddGfxBase		(PrivGBase(GfxBase)->HiddGfxBase)
 #define HiddPlanarBMBase	(PrivGBase(GfxBase)->HiddPlanarBMBase)
 
-/* This must be included before defining OOPBase */
-#include <hidd/graphics_inline.h>
-
 /* struct Utilitybase is used in the following file so include it
    before defining Utilitybase
 */

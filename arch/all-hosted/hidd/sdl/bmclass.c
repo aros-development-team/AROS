@@ -701,19 +701,19 @@ VOID SDLBitMap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pH
 
     switch (bmdata->surface->format->BytesPerPixel) {
         case 1:
-            HIDD_BM_PutMemTemplate8(o, msg->gc, msg->template, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
+            HIDD_BM_PutMemTemplate8(o, msg->gc, msg->masktemplate, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
             break;
 
         case 2:
-            HIDD_BM_PutMemTemplate16(o, msg->gc, msg->template, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
+            HIDD_BM_PutMemTemplate16(o, msg->gc, msg->masktemplate, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
             break;
 
         case 3:
-            HIDD_BM_PutMemTemplate24(o, msg->gc, msg->template, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
+            HIDD_BM_PutMemTemplate24(o, msg->gc, msg->masktemplate, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
             break;
 
         case 4:
-            HIDD_BM_PutMemTemplate32(o, msg->gc, msg->template, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
+            HIDD_BM_PutMemTemplate32(o, msg->gc, msg->masktemplate, msg->modulo, msg->srcx, bmdata->surface->pixels, bmdata->surface->pitch, msg->x, msg->y, msg->width, msg->height, msg->inverttemplate);
             break;
     }
 

@@ -762,7 +762,7 @@ VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	case 1:
 	    HIDD_BM_PutMemTemplate8(o,
 	    	    	    	    msg->gc,
-				    msg->template,
+				    msg->masktemplate,
 				    msg->modulo,
 				    msg->srcx,
 				    data->buffer,
@@ -777,7 +777,7 @@ VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	case 2:
 	    HIDD_BM_PutMemTemplate16(o,
 	    	    	    	     msg->gc,
-				     msg->template,
+				     msg->masktemplate,
 				     msg->modulo,
 				     msg->srcx,
 				     data->buffer,
@@ -792,7 +792,7 @@ VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	case 3:
 	    HIDD_BM_PutMemTemplate24(o,
 	    	    	    	     msg->gc,
-				     msg->template,
+				     msg->masktemplate,
 				     msg->modulo,
 				     msg->srcx,
 				     data->buffer,
@@ -807,7 +807,7 @@ VOID CBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
 	case 4:
 	    HIDD_BM_PutMemTemplate32(o,
 	    	    	    	     msg->gc,
-				     msg->template,
+				     msg->masktemplate,
 				     msg->modulo,
 				     msg->srcx,
 				     data->buffer,

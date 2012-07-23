@@ -8,7 +8,9 @@
 
 #include "compositing.h"
 
+#include <exec/nodes.h>
 #include <exec/lists.h>
+#include <exec/semaphores.h>
 #include <graphics/gfx.h>
 
 struct StackBitMapNode

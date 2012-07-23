@@ -897,7 +897,7 @@ VOID BM__Hidd_BitMap__PutMemTemplate8(OOP_Class *cl, OOP_Object *o, struct pHidd
     
     if (msg->inverttemplate) type++;
     
-    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitarray = msg->masktemplate + ((msg->srcx / 16) * 2);
     bitmask = 0x8000 >> (msg->srcx & 0xF);
     
     buf = msg->dst + msg->y * msg->dstMod + msg->x;
@@ -1042,7 +1042,7 @@ VOID BM__Hidd_BitMap__PutMemTemplate16(OOP_Class *cl, OOP_Object *o, struct pHid
     
     if (msg->inverttemplate) type++;
     
-    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitarray = msg->masktemplate + ((msg->srcx / 16) * 2);
     bitmask = 0x8000 >> (msg->srcx & 0xF);
     
     buf = msg->dst + msg->y * msg->dstMod + msg->x * 2;
@@ -1208,7 +1208,7 @@ VOID BM__Hidd_BitMap__PutMemTemplate24(OOP_Class *cl, OOP_Object *o, struct pHid
     
     if (msg->inverttemplate) type++;
     
-    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitarray = msg->masktemplate + ((msg->srcx / 16) * 2);
     bitmask = 0x8000 >> (msg->srcx & 0xF);
     
     buf = msg->dst + msg->y * msg->dstMod + msg->x * 3;
@@ -1396,7 +1396,7 @@ VOID BM__Hidd_BitMap__PutMemTemplate32(OOP_Class *cl, OOP_Object *o, struct pHid
     
     if (msg->inverttemplate) type++;
     
-    bitarray = msg->template + ((msg->srcx / 16) * 2);
+    bitarray = msg->masktemplate + ((msg->srcx / 16) * 2);
     bitmask = 0x8000 >> (msg->srcx & 0xF);
     
     buf = msg->dst + msg->y * msg->dstMod + msg->x * 4;

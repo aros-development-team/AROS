@@ -30,7 +30,6 @@
 
 #include "graphics_intern.h"
 
-
 /****************************************************************************************/
 
 #define POINT_OUTSIDE_CLIP(gc, x, y)    \
@@ -3018,7 +3017,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
     SYNOPSIS
         VOID OOP_DoMethod(OOP_Object *obj, struct pHidd_BitMap_PutTemplate *msg);
 
-        VOID HIDD_BM_PutTemplate (OOP_Object *obj, OOP_Object *gc, UBYTE *template, ULONG modulo,
+        VOID HIDD_BM_PutTemplate (OOP_Object *obj, OOP_Object *gc, UBYTE *masktemplate, ULONG modulo,
                                   WORD srcx, WORD x, WORD y, WORD width, WORD height, BOOL inverttemplate);
 
     LOCATION
@@ -3039,7 +3038,7 @@ VOID BM__Hidd_BitMap__PutAlphaImage(OOP_Class *cl, OOP_Object *o,
     INPUTS
         obj            - A bitmap to draw on
         gc             - A GC object, holding operation parameters
-        template       - A pointer to a bit mask
+        masktemplate       - A pointer to a bit mask
         modulo         - Number of bytes per line in the mask
         srcx           - Horizontal offset of the mask
         x, y           - Top-left corner of the bitmap's region to affect
@@ -3188,7 +3187,7 @@ VOID BM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_Bit
         get = FALSE;
     }
 
-    data.bitarray = msg->template + ((msg->srcx / 16) * 2);
+    data.bitarray = msg->masktemplate + ((msg->srcx / 16) * 2);
     data.bitmask  = 0x8000 >> (msg->srcx & 0xF);
     data.modulo   = msg->modulo;
     data.fg       = GC_FG(msg->gc);

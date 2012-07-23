@@ -438,7 +438,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
     	type++;
 
     D(bug("puttemplate: %x srcx=%d x=%d y=%d w=%d h=%d type=%d fg=%d bg=%d\n",
-	tmpl->Template, tmpl->srcx, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
+	tmpl->masktemplate, tmpl->srcx, tmpl->x, tmpl->y, tmpl->width, tmpl->height, type, fgpen, bgpen));
 
     srcoffset = (srcx / 16) * 2;
     dstoffset = bm->bytesperrow * dsty + (dstx / 16) * 2;
@@ -558,7 +558,7 @@ BOOL blit_puttemplate(struct amigavideo_staticdata *data, struct amigabm_data *b
 	custom->bltcon0 = shifta | chmask | minterm;
 	custom->bltcon1 = (reverse ? 0x0002 : 0x0000) | shiftbv;
 	custom->bltbdat = 0xffff;
-	custom->bltbpt = (APTR)(tmpl->Template + srcoffset);
+	custom->bltbpt = (APTR)(tmpl->masktemplate + srcoffset);
     	custom->bltcpt = (APTR)(bm->planes[i] + dstoffset);
     	custom->bltdpt = (APTR)(bm->planes[i] + dstoffset);
     	startblitter(data, width, height);
