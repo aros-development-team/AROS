@@ -34,16 +34,16 @@ int main(int argc, char **argv)
 	break;
 	
     case INCLUDES:
-        if (!(cfg->options & OPTION_INCLUDES))
+        if (cfg->options & OPTION_INCLUDES)
         {
-            fprintf(stderr, "%s called with writeincludes when no includes are present\n", argv[0]);
-            exit(20);
+            writeincproto(cfg, 0); /* normal */
+            writeincproto(cfg, 1); /* relbase */
+            writeincclib(cfg);
+            writeincdefines(cfg);
+            writeincinline(cfg);
         }
-        writeincproto(cfg, 0); /* normal */
-        writeincproto(cfg, 1); /* relbase */
-        writeincclib(cfg);
-        writeincdefines(cfg);
-        writeincinline(cfg);
+        if (cfg->interfacelist)
+            writeincinterfaces(cfg);
 	break;
 	
     case LIBDEFS:

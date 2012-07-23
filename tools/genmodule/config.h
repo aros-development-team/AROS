@@ -79,6 +79,23 @@ struct classinfo
 
 };
 
+/* interfaceinfo is used to store the information of a BOOPSI class */
+struct interfaceinfo
+{
+    struct interfaceinfo *next;
+
+    /* id and base name of the interface */
+    char *interfaceid;
+    char *interfacename;
+    char *methodstub;
+    char *methodbase;
+    char *attributebase;
+    
+    struct functionhead *methodlist;
+    struct functionhead *attributelist;
+};
+
+
 /* DOS handlers */
 struct handlerinfo {
     struct handlerinfo *next;
@@ -159,6 +176,9 @@ struct config
     
     /* The classes defined in this module */
     struct classinfo *classlist;
+
+    /* The interface defined in this module */
+    struct interfaceinfo *interfacelist;
 
     /* The DOS IDs and handlers for this module */
     struct handlerinfo *handlerlist;
