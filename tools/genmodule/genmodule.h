@@ -21,6 +21,7 @@ void writeincclib(struct config *);
 void writeincdefines(struct config *);
 void writeincinline(struct config *);
 void writeinclibdefs(struct config *);
+void writeincinterfaces(struct config *);
 void writestart(struct config *);
 void writeend(struct config *);
 void writeautoinit(struct config *, int);

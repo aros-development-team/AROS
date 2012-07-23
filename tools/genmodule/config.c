@@ -49,6 +49,7 @@ const static char usage[] =
 static void readconfig(struct config *);
 static struct classinfo *newclass(struct config *);
 static struct handlerinfo *newhandler(struct config *);
+static struct interfaceinfo *newinterface(struct config *);
 
 /* the method prefices for the supported classes */
 static const char *muimprefix[] =
@@ -306,15 +307,16 @@ struct config *initconfig(int argc, char **argv)
 
 #include "fileread.h"
 
-static char *readsections(struct config *, struct classinfo *, int);
-static void readsectionconfig(struct config *, struct classinfo *, int);
+static char *readsections(struct config *, struct classinfo *cl, struct interfaceinfo *in, int inclass);
+static void readsectionconfig(struct config *, struct classinfo *cl, struct interfaceinfo *in, int inclass);
 static void readsectioncdef(struct config *);
 static void readsectioncdefprivate(struct config *);
 static void readsectionstartup(struct config *);
-static void readsectionfunctionlist(struct config *);
-static void readsectionmethodlist(struct classinfo *);
+static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute);
+static void readsectionclass_methodlist(struct classinfo *);
 static void readsectionclass(struct config *);
 static void readsectionhandler(struct config *);
+static void readsectioninterface(struct config *);
 
 static void readconfig(struct config *cfg)
 {
@@ -388,7 +390,7 @@ static void readconfig(struct config *cfg)
     }
 
     /* Read all sections and see that we are at the end of the file */
-    if (readsections(cfg, mainclass, 0) != NULL)
+    if (readsections(cfg, mainclass, NULL, 0) != NULL)
 	exitfileerror(20, "Syntax error");
     
     fileclose();
@@ -404,7 +406,7 @@ static void readconfig(struct config *cfg)
  * int inclass: Boolean to indicate if we are in a class part. If not we are in the main
  *     part of the config file.
  */
-static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
+static char *readsections(struct config *cfg, struct classinfo *cl, struct interfaceinfo *in, int inclass)
 {
     char *line, *s, *s2;
     int hasconfig = 0;
@@ -415,7 +417,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	{
 	    static char *parts[] =
 	    {
-		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler",
+		"config", "cdefprivate", "cdef", "startup", "functionlist", "methodlist", "class", "handler", "interface", "attributelist"
 	    };
 	    const unsigned int nums = sizeof(parts)/sizeof(char *);
 	    unsigned int partnum;
@@ -448,7 +450,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	    switch (partnum)
 	    {
 	    case 1: /* config */
-		readsectionconfig(cfg, cl, inclass);
+		readsectionconfig(cfg, cl, in, inclass);
                 hasconfig = 1;
 		break;
 		
@@ -473,25 +475,41 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
 	    case 5: /* functionlist */
 		if (inclass)
 		    exitfileerror(20, "functionlist section not allow in class section\n");
-		readsectionfunctionlist(cfg);
+                if (cfg->basename==NULL)
+                    exitfileerror(20, "section functionlist has to come after section config\n");
+
+		readsectionfunctionlist("functionlist", &cfg->funclist, cfg->firstlvo, 0);
 		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 
 	    case 6: /* methodlist */
-		if (cl == NULL)
-		    exitfileerror(20, "methodlist section when not in a class\n");
-		readsectionmethodlist(cl);
+		if (cl == NULL && in == NULL)
+		    exitfileerror(20, "methodlist section when not in a class or interface\n");
+		if (cl)
+		    readsectionclass_methodlist(cl);
+                else
+                    readsectionfunctionlist("methodlist", &in->methodlist, 0, 0);
 		cfg->intcfg |= CFG_NOREADFUNCS;
 		break;
 		
 	    case 7: /* class */
 		if (inclass)
-		    exitfileerror(20, "class section may not be nested\n");
+		    exitfileerror(20, "class section may not be in nested\n");
 		readsectionclass(cfg);
 		break;
             case 8: /* handler */
 		readsectionhandler(cfg);
 		break;
+	    case 9: /* interface */
+	        if (inclass)
+	            exitfileerror(20, "interface section may not be nested\n");
+	        readsectioninterface(cfg);
+	        break;
+	    case 10: /* attributelist */
+	        if (!in)
+	            exitfileerror(20, "attributelist only valid in interface sections\n");
+	        readsectionfunctionlist("attributelist", &in->attributelist, 0, 1);
+	        break;
 	    }
 	}
 	else if (strlen(line)!=0)
@@ -619,7 +637,7 @@ static char *readsections(struct config *cfg, struct classinfo *cl, int inclass)
     return NULL;
 }
 
-static void readsectionconfig(struct config *cfg, struct classinfo *cl, int inclass)
+static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct interfaceinfo *in, int inclass)
 {
     int atend = 0, i;
     char *line, *s, *s2, *libbasetypeextern = NULL;
@@ -641,7 +659,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
 		"initpri", "type", "addromtag", "oopbase_field",
-		"relbase"
+		"relbase", "interfaceid", "interfacename",
+		"methodstub", "methodbase", "attributebase"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -677,6 +696,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 		    cfg->basename = strdup(s);
 		if (cl != NULL)
 		    cl->basename = strdup(s);
+		if (in != NULL)
+		    exitfileerror(20, "basename not valid config option when in a interface section\n");
 		break;
 		
 	    case 2: /* libbase */
@@ -1027,6 +1048,31 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, int incl
 	    case 28: /* relbase */
 	        slist_append(&cfg->relbases, s);
 	        break;
+	    case 29: /* interfaceid */
+	        if (!in)
+		    exitfileerror(20, "interfaceid only valid config option for an interface\n");
+		in->interfaceid = strdup(s);
+		break;
+	    case 30: /* interfacename */
+	        if (!in)
+		    exitfileerror(20, "interfacename only valid config option for an interface\n");
+		in->interfacename = strdup(s);
+		break;
+	    case 31: /* methodstub */
+	        if (!in)
+		    exitfileerror(20, "methodstub only valid config option for an interface\n");
+		in->methodstub = strdup(s);
+		break;
+	    case 32: /* methodbase */
+	        if (!in)
+		    exitfileerror(20, "methodbase only valid config option for an interface\n");
+		in->methodbase = strdup(s);
+		break;
+	    case 33: /* attributebase */
+	        if (!in)
+		    exitfileerror(20, "attributebase only valid config option for an interface\n");
+		in->attributebase = strdup(s);
+		break;
 		    }
 	}
 	else /* Line starts with ## */
@@ -1331,22 +1377,18 @@ static void readsectionstartup(struct config *cfg)
     }
 }
 
-static void readsectionfunctionlist(struct config *cfg)
+static void readsectionfunctionlist(const char *type, struct functionhead **funclistptr, unsigned int firstlvo, int isattribute)
 {
     int atend = 0, i;
     char *line, *s, *s2;
-    unsigned int lvo = cfg->firstlvo;
+    unsigned int lvo = firstlvo;
     int minversion = 0;
-    struct functionhead **funclistptr = &cfg->funclist;
     
-    if (cfg->basename==NULL)
-	exitfileerror(20, "section functionlist has to come after section config\n");
-
     while (!atend)
     {
 	line = readline();
 	if (line==NULL)
-	    exitfileerror(20, "unexptected EOF in functionlist section\n");
+	    exitfileerror(20, "unexpected EOF in functionlist section\n");
 	if (strlen(line)==0)
 	{
 	    if (*funclistptr != NULL)
@@ -1371,14 +1413,14 @@ static void readsectionfunctionlist(struct config *cfg)
 	    s = line+2;
 	    while (isspace(*s)) s++;
 	    if (strncmp(s, "end", 3)!=0)
-		exitfileerror(20, "\"##end functionlist\" expected\n");
+		exitfileerror(20, "\"##end %s\" expected\n", type);
 
 	    s += 3;
 	    while (isspace(*s)) s++;
-	    if (strncmp(s, "functionlist", 12)!=0)
-		exitfileerror(20, "\"##end functionlist\" expected\n");
+	    if (strncmp(s, type, strlen(type))!=0)
+		exitfileerror(20, "\"##end %s\" expected\n", type);
 
-	    s += 12;
+	    s += strlen(type);
 	    while (isspace(*s)) s++;
 	    if (*s!='\0')
 		exitfileerror(20, "unexpected character on position %d\n", s-line);
@@ -1520,34 +1562,50 @@ static void readsectionfunctionlist(struct config *cfg)
 	}
 	else if (*line!='#') /* Ignore line that is a comment, e.g. that starts with a # */
 	{
-	    /* The line is a function prototype. It can have two syntax
+	    /* The line is a function or attribute prototype.
+	     * A function can have one of two syntaxes:
 	     * type funcname(argproto1, argproto2, ...)
 	     * type funcname(argproto1, argproto2, ...) (reg1, reg2, ...)
 	     * The former is for C type function argument passing, the latter for
 	     * register argument passing.
+	     * An attribute has the following syntax:
+	     * type attribute
 	     */
-	    char c, *args[64], *regs[64], *funcname;
+	    char c, *args[64], *regs[64], *funcname, *cp;
 	    int len, argcount = 0, regcount = 0, brcount = 0;
 
+	    cp = strchr(line,'#');
+	    if (cp)
+	        *(cp++) = 0;
+
 	    /* Parse 'type functionname' at the beginning of the line */
-	    s = strchr(line, '(');
-	    if (s == NULL)
-		exitfileerror(20, "( expected at position %d\n", strlen(line) + 1);
-	    
+	    if (isattribute) {
+	        s = line + strlen(line);
+	    } else {
+	        s = strchr(line, '(');
+	        if (s == NULL)
+	            exitfileerror(20, "( expected at position %d\n", strlen(line) + 1);
+	    }
+
 	    s2 = s;
 	    while (isspace(*(s2-1)))
-		s2--;
+	        s2--;
 	    *s2 = '\0';
 	    
 	    while (s2 > line && !isspace(*(s2-1)) && !(*(s2-1) == '*'))
 		s2--;
 	    
 	    if (s2 == line)
-		exitfileerror(20, "No type specifier before function name\n");
+		exitfileerror(20, "No type specifier before %s name\n", isattribute ? "attribute" : "function");
 	    
 	    if (*funclistptr != NULL)
 		funclistptr = &((*funclistptr)->next);
 	    *funclistptr = newfunctionhead(s2, STACK);
+
+	    if (cp)
+	        (*funclistptr)->comment = strdup(cp);
+            else
+                (*funclistptr)->comment = NULL;
 	    
 	    while (isspace(*(s2-1)))
 		s2--;
@@ -1556,6 +1614,9 @@ static void readsectionfunctionlist(struct config *cfg)
 	    (*funclistptr)->lvo = lvo;
 	    (*funclistptr)->version = minversion;
 	    lvo++;
+
+	    if (isattribute)
+	        continue;
 
 	    /* Parse function prototype */
 	    s++;
@@ -1694,7 +1755,7 @@ static void readsectionfunctionlist(struct config *cfg)
     }
 }
 
-static void readsectionmethodlist(struct classinfo *cl)
+static void readsectionclass_methodlist(struct classinfo *cl)
 {
     int atend = 0, i;
     char *line, *s, *s2;
@@ -1887,13 +1948,70 @@ static void readsectionmethodlist(struct classinfo *cl)
 }
 
 static void
+readsectioninterface(struct config *cfg)
+{
+    char *s;
+    struct interfaceinfo *in;
+    
+    in = newinterface(cfg);
+    s = readsections(cfg, NULL, in, 1);
+    if (s == NULL)
+	exitfileerror(20, "Unexpected end of file\n");
+
+    if (strncmp(s, "##", 2) != 0)
+	exitfileerror(20, "'##end interface' expected\n");
+    s += 2;
+
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "end", 3) != 0)
+	exitfileerror(20, "'##end interface' expected\n");
+    s += 3;
+
+    if (!isspace(*s))
+	exitfileerror(20, "'##end interface' expected\n");
+    while (isspace(*s)) s++;
+    
+    if (strncmp(s, "interface", 9) != 0)
+	exitfileerror(20, "'##end interface' expected\n");
+    s += 9;
+    
+    while (isspace(*s)) s++;
+    if (*s != '\0')
+	exitfileerror(20, "'##end interface' expected\n");
+
+    if (!in->interfaceid)
+        exitfileerror(20, "interface has no 'interfaceid' defined!\n");
+
+    if (!in->interfacename)
+        exitfileerror(20, "interface has no 'interfacename' defined!\n");
+
+    if (!in->methodstub)
+        in->methodstub = strdup(in->interfacename);
+
+    if (!in->methodbase) {
+        int len = strlen(in->interfacename);
+        in->methodbase = malloc(len + 4 + 1);
+        strcpy(in->methodbase, in->interfacename);
+        strcat(in->methodbase, "Base");
+    }
+
+    if (!in->attributebase) {
+        int len = strlen(in->interfacename);
+        in->attributebase = malloc(len + 4 + 4 + 1);
+        strcpy(in->attributebase, in->interfacename);
+        strcat(in->attributebase, "AttrBase");
+    }
+}
+
+static void
 readsectionclass(struct config *cfg)
 {
     char *s;
     struct classinfo *cl;
     
     cl = newclass(cfg);
-    s = readsections(cfg, cl, 1);
+    s = readsections(cfg, cl, NULL, 1);
     if (s == NULL)
 	exitfileerror(20, "Unexpected end of file\n");
 
@@ -1963,6 +2081,36 @@ static struct handlerinfo *newhandler(struct config *cfg)
     cfg->handlerlist = hl;
     return hl;
 }
+
+static struct interfaceinfo *newinterface(struct config *cfg)
+{
+    struct interfaceinfo *in, *interfacelistit;
+
+    in = malloc(sizeof(struct interfaceinfo));
+    if (in == NULL)
+    {
+	fprintf(stderr, "Out of memory\n");
+	exit(20);
+    }
+    memset(in, 0, sizeof(struct interfaceinfo));
+    
+    if (cfg->interfacelist == NULL)
+	cfg->interfacelist = in;
+    else
+    {
+	for
+	(
+	    interfacelistit = cfg->interfacelist;
+	    interfacelistit->next != NULL;
+	    interfacelistit = interfacelistit->next
+	)
+	    ;
+	interfacelistit->next = in;
+    }
+    
+    return in;
+}
+
 
 static int getdirective(char *s, const char *directive, int range_min, int range_max, int *val)
 {

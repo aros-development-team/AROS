@@ -26,7 +26,7 @@ struct functionarg {
 struct functionhead {
     struct functionhead *next;
     char *name, *internalname;
-    char *type;
+    char *type, *comment;
     enum libcall libcall;
     unsigned int argcount;
     struct functionarg *arguments;

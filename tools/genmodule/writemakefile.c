@@ -67,6 +67,16 @@ void writemakefile(struct config *cfg)
         if (cfg->modtype == LIBRARY)
             fprintf(out, " proto/%s_rel.h", cfg->modulename);
     }
+    if (cfg->interfacelist)
+    {
+        struct interfaceinfo *in;
+        for (in = cfg->interfacelist; in; in = in->next)
+            fprintf(out,
+                    " interface/%s.h"
+                    , in->interfacename
+            );
+    }
+
     fprintf(out, "\n");
 
     if (ferror(out))
