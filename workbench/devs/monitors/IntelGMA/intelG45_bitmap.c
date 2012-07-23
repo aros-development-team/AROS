@@ -2013,7 +2013,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutTemplate)
             struct pHidd_BitMap_PutMemTemplate8 __m = {
                     sd->mid_PutMemTemplate8,
                     msg->gc,
-                    msg->template,
+                    msg->masktemplate,
                     msg->modulo,
                     msg->srcx,
                     (APTR)VideoData,
@@ -2034,7 +2034,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutTemplate)
             struct pHidd_BitMap_PutMemTemplate16 __m = {
                     sd->mid_PutMemTemplate16,
                     msg->gc,
-                    msg->template,
+                    msg->masktemplate,
                     msg->modulo,
                     msg->srcx,
                     (APTR)VideoData,
@@ -2055,7 +2055,7 @@ VOID METHOD(GMABM, Hidd_BitMap, PutTemplate)
             struct pHidd_BitMap_PutMemTemplate32 __m = {
                     sd->mid_PutMemTemplate32,
                     msg->gc,
-                    msg->template,
+                    msg->masktemplate,
                     msg->modulo,
                     msg->srcx,
                     (APTR)VideoData,

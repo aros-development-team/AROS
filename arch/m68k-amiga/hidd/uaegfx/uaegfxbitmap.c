@@ -1059,7 +1059,7 @@ VOID UAEGFXBitmap__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
 	if (msg->inverttemplate)
 	     drawmode |= INVERSVID;
 
-	tmpl.Memory = msg->Template;
+	tmpl.Memory = msg->masktemplate;
 	tmpl.BytesPerRow = msg->modulo;
 	tmpl.XOffset = msg->srcx;
 	tmpl.DrawMode = drawmode;

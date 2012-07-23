@@ -770,7 +770,7 @@ VOID AmigaVideoBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct
     CLEARCACHE;
     if (!blit_puttemplate(csd, data, msg)) {
 	CMDDEBUGUNIMP(bug("PutTemplate: %x x=%d y=%d w=%d h=%d srcx=%d modulo=%d invert=%d\n",
-    	    msg->Template, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
+    	    msg->masktemplate, msg->x, msg->y, msg->width, msg->height, msg->srcx, msg->inverttemplate));
     	OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     }
 }

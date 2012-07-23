@@ -1327,7 +1327,7 @@ VOID NVBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 		struct pHidd_BitMap_PutMemTemplate8 __m = {
 				_sd->mid_PutMemTemplate8,
 				msg->gc,
-				msg->template,
+				msg->masktemplate,
 				msg->modulo,
 				msg->srcx,
 				(APTR)VideoData,
@@ -1348,7 +1348,7 @@ VOID NVBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 		struct pHidd_BitMap_PutMemTemplate16 __m = {
 				_sd->mid_PutMemTemplate16,
 				msg->gc,
-				msg->template,
+				msg->masktemplate,
 				msg->modulo,
 				msg->srcx,
 				(APTR)VideoData,
@@ -1369,7 +1369,7 @@ VOID NVBM__Hidd_BitMap__PutTemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_B
 		struct pHidd_BitMap_PutMemTemplate32 __m = {
 				_sd->mid_PutMemTemplate32,
 				msg->gc,
-				msg->template,
+				msg->masktemplate,
 				msg->modulo,
 				msg->srcx,
 				(APTR)VideoData,

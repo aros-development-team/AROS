@@ -13,14 +13,17 @@
 #define DSTACK(x)
 #define DUPDATE(x)
 
-#include "compositing_intern.h"
-
 #include <aros/debug.h>
-#include <hidd/graphics_inline.h>
+
+#include <graphics/view.h>
+
+#include <hidd/graphics.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
+
+#include "compositing_intern.h"
 
 #define _RECT(x) x.MinX, x.MinY, x.MaxX, x.MaxY
 

@@ -20,7 +20,7 @@
 #define HiddColorMapBase	(csd->hiddColorMapBase)
 #define HiddGfxBase		(csd->hiddGfxBase)
 
-#include <hidd/graphics_inline.h>
+#include <hidd/graphics.h>
 
 #define UtilityBase ((csd)->cs_UtilityBase)
 

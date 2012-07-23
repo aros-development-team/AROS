@@ -733,7 +733,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
         {
             struct pHidd_BitMap_PutMemTemplate16 __m = 
             {
-                SD(cl)->mid_PutMemTemplate16, msg->gc, msg->template, msg->modulo,
+                SD(cl)->mid_PutMemTemplate16, msg->gc, msg->masktemplate, msg->modulo,
                 msg->srcx, bmdata->bo->map, bmdata->pitch, msg->x, msg->y,
                 msg->width, msg->height, msg->inverttemplate
             }, *m = &__m;
@@ -745,7 +745,7 @@ VOID METHOD(NouveauBitMap, Hidd_BitMap, PutTemplate)
         {
             struct pHidd_BitMap_PutMemTemplate32 __m = 
             {
-                SD(cl)->mid_PutMemTemplate32, msg->gc, msg->template, msg->modulo,
+                SD(cl)->mid_PutMemTemplate32, msg->gc, msg->masktemplate, msg->modulo,
                 msg->srcx, bmdata->bo->map, bmdata->pitch, msg->x, msg->y,
                 msg->width, msg->height, msg->inverttemplate
             }, *m = &__m;
