@@ -177,5 +177,7 @@ int main(int argc, char *argv[])
         docommandlp(strip_name, strip_name, "--strip-unneeded", output, NULL);
     }
 
+    set_os_and_abi(output);
+
     return 0;
 }
