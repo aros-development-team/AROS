@@ -14,6 +14,7 @@
 #include <proto/exec.h>
 #include <aros/libcall.h>
 #include <aros/symbolsets.h>
+#include <aros/config.h>
 #include <hardware/intbits.h>
 #include <dos/dos.h>
 #include <exec/execbase.h>
@@ -84,6 +85,11 @@ static int GfxInit(struct GfxBase *LIBBASE)
 
     LIBBASE->HashTableSemaphore = &PrivGBase(GfxBase)->hashtab_sema;
     LIBBASE->ActiViewCprSemaphore = &PrivGBase(GfxBase)->view_sema;
+
+    LIBBASE->NormalDisplayColumns = AROS_DEFAULT_WBWIDTH;
+    LIBBASE->NormalDisplayRows = AROS_DEFAULT_WBHEIGHT;
+    LIBBASE->MaxDisplayColumn = AROS_DEFAULT_WBWIDTH;
+    LIBBASE->MaxDisplayRow = AROS_DEFAULT_WBHEIGHT;
 
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
