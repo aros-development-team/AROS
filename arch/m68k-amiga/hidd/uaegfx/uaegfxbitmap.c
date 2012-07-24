@@ -186,7 +186,6 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     IPTR 	    	     width, height, multi;
     IPTR		     displayable;
     HIDDT_ModeID 	     modeid;
-    int bitsperpixel;
     struct TagItem tags[2];
 
     DB2(bug("UAEGFXBitmap__Root__New\n"));
@@ -207,10 +206,10 @@ OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_N
     OOP_GetAttr(o, aHidd_BitMap_PixFmt, (APTR)&data->pixfmtobj);
     OOP_GetAttr(data->pixfmtobj, aHidd_PixFmt_BytesPerPixel, &multi);
  
-    bitsperpixel = multi > 2 ? 32 : 16;
     data->rgbformat = getrtgformat(csd, data->pixfmtobj);
     data->width = width;
-    width = (width + bitsperpixel - 1) & ~(bitsperpixel - 1);
+    if (!displayable)
+        width = (width + 16 - 1) & ~(16 - 1);
     width = CalculateBytesPerRow(csd, width, data->rgbformat);
     data->bytesperline = width;
     data->height = height;
@@ -390,7 +389,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    *msg->storage = data->disp;
 	    return;
 	case aoHidd_BitMap_Align:
-	    *msg->storage = data->bytesperpixel < 4 ? 16 : 32;
+	    *msg->storage = 16;
 	    return;
 	case aoHidd_BitMap_IsLinearMem:
 	    *msg->storage = TRUE;
