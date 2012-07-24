@@ -36,8 +36,8 @@
 #define mutex_unlock(x)                 ReleaseSemaphore(x.semaphore)
 #define mutex_trylock(x)                AttemptSemaphore(x.semaphore)
 #define mutex_init(x)                   InitSemaphore(x.semaphore);
-#define likely(x)                       __builtin_expect((ULONG)(x),1)
-#define unlikely(x)                     __builtin_expect((ULONG)(x),0)
+#define likely(x)                       __builtin_expect((IPTR)(x),1)
+#define unlikely(x)                     __builtin_expect((IPTR)(x),0)
 #define mb()                            __asm __volatile("lock; addl $0,0(%%esp)" : : : "memory");
 #define wmb()                           __asm __volatile("" : : : "memory");
 #define ffs(x)                          __builtin_ffs(x)
