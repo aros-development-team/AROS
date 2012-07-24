@@ -392,20 +392,16 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, Clear)
     UNLOCK_BITMAP
 }
 
-struct pHidd_BitMap_FillRect {
-    struct pHidd_BitMap_DrawRect dr;
-};
-
 VOID METHOD(ATIOffBM, Hidd_BitMap, FillRect)
     __attribute__((alias(METHOD_NAME_S(ATIOnBM, Hidd_BitMap, FillRect))));
 
 VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
 {
-    OOP_Object *gc = msg->dr.gc;
+    OOP_Object *gc = msg->gc;
     atiBitMap *bm = OOP_INST_DATA(cl, o);
 
     D(bug("[ATI] FillRect(%p, %d:%d - %d:%d)\n",
-        bm->framebuffer, msg->dr.minX, msg->dr.minY, msg->dr.maxX, msg->dr.maxY));
+        bm->framebuffer, msg->minX, msg->minY, msg->maxX, msg->maxY));
 
     LOCK_BITMAP
 
@@ -433,8 +429,8 @@ VOID METHOD(ATIOnBM, Hidd_BitMap, FillRect)
 
         RADEONWaitForFifo(sd, 2);
 
-        OUTREG(RADEON_DST_Y_X,          (msg->dr.minY << 16) | (UWORD)msg->dr.minX);
-        OUTREG(RADEON_DST_WIDTH_HEIGHT, ((msg->dr.maxX - msg->dr.minX + 1) << 16) | (UWORD)(msg->dr.maxY - msg->dr.minY + 1));
+        OUTREG(RADEON_DST_Y_X,          (msg->minY << 16) | (UWORD)msg->minX);
+        OUTREG(RADEON_DST_WIDTH_HEIGHT, ((msg->maxX - msg->minX + 1) << 16) | (UWORD)(msg->maxY - msg->minY + 1));
 
         UNLOCK_HW
     }

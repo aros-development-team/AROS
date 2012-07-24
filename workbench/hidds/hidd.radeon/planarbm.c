@@ -734,7 +734,6 @@ BOOL ATIPlanBM__Hidd_PlanarBM__SetBitMap(OOP_Class *cl, OOP_Object *o,
 	{
 			{ aHidd_BitMap_Width	    , 0UL },
 			{ aHidd_BitMap_Height	    , 0UL },
-			{ aHidd_BitMap_PixFmtTags   , 0UL },
 			{ TAG_DONE  	    	    , 0UL }
 	};
 
