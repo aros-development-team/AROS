@@ -11,7 +11,7 @@
 #include "compositing_driver.h"
 #include "gfxfuncsupport.h"
 
-#include <hidd/graphics_inline.h>
+#include <hidd/graphics.h>
 
 AROS_LH5(void, UpdateBitMap,
 	 AROS_LHA(struct BitMap *, bitmap, A0),

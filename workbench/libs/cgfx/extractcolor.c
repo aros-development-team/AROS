@@ -9,7 +9,6 @@
 #include <aros/debug.h>
 #include <clib/macros.h>
 #include <hidd/graphics.h>
-#include <hidd/graphics_inline.h>
 #include <proto/exec.h>
 #include <proto/oop.h>
 

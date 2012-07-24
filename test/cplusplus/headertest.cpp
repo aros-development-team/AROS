@@ -545,7 +545,6 @@
 #include <hidd/agp.h>
 #include <hidd/config.h>
 #include <hidd/gallium.h>
-#include <hidd/graphics_inline.h>
 #include <hidd/graphics.h>
 #include <hidd/hidd.h>
 #include <hidd/i2c.h>
