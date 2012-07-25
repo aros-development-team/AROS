@@ -237,16 +237,6 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 
             wbscreen = OpenScreenTagList(NULL, screenTags);
         }
-	else
-	    /*
-	     * If we have no disphandle here, we are in a real trouble. We have no display modes
-	     * in our database and we can't open a screen at all. We're dead.
-	     * However note that in some special cases this Alert() may return. This happens
-	     * when Alert() attempts to issue an Intuition requester and hits this point
-	     * because there are no display drivers (yet). In this case this Alert() will be
-	     * silently ignored.
-	     */
-	    Alert(AN_SysScrnType);
 
         if( !wbscreen )
         {

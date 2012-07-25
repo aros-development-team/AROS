@@ -56,7 +56,7 @@ static struct PubScreenNode *findcasename(struct List *list, const UBYTE *name);
     struct List *publist;
 
     DEBUG_UNLOCKPUBSCREEN(dprintf("UnlockPubScreen: name <%s> screen %p\n",
-                                  name ? name : "NULL", screen));
+                                  name ? (const char *)name : "NULL", screen));
     DEBUG_UNLOCKPUBSCREEN(dprintf("LockPubScreen: task %p <%s>\n",
                                   SysBase->ThisTask,
                                   SysBase->ThisTask->tc_Node.ln_Name ? SysBase->ThisTask->tc_Node.ln_Name : "NULL"));
