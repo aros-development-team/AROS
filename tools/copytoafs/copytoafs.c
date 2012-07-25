@@ -298,6 +298,7 @@ int retval = 1;
 		if (S_ISBLK(st.st_mode))
 		{
 			printf("block device\n");
+			retval=0;
 		}
 		else if (S_ISREG(st.st_mode))
 		{
