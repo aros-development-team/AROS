@@ -19,6 +19,7 @@ title AROS on Sam440
     module boot/modules/debug.library
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
+    module boot/modules/econsole.hook
     module boot/modules/expansion.library
     module boot/modules/fat-handler
     module boot/modules/FileSystem.resource
@@ -54,6 +55,8 @@ title AROS on Sam440
     module boot/modules/usbromstartup.resource
     module boot/modules/utility.library
     module boot/modules/workbench.library
+    module boot/modules/shell.resource
+    module boot/modules/shellcommands.resource
 
 title AROS on Sam440 Test Alternative Usb
     kernel boot/aros-amcc440
@@ -69,6 +72,7 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/debug.library
     module boot/modules/dosboot.resource
     module boot/modules/dos.library
+    module boot/modules/econsole.hook
     module boot/modules/expansion.library
     module boot/modules/fat-handler
     module boot/modules/FileSystem.resource
@@ -101,3 +105,5 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/usb.hidd
     module boot/modules/utility.library
     module boot/modules/workbench.library
+    module boot/modules/shell.resource
+    module boot/modules/shellcommands.resource
