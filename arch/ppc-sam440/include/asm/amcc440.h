@@ -934,5 +934,6 @@ typedef struct AROSCPUContext {
 /* AMCC460 IDE/SATA */
 #define SATA0_CDR0              (0xef001000)    /* 0x4 bffd1000 */
 #define SATA0_SCR0              (0xef001024)    /* 0x4 bffd1024 */
+#define SATA0_SCR2              (0xef00102c)    /* 0x4 bffd102c */
 
 #endif /*ASM_AMCC440_H*/
