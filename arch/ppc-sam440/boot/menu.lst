@@ -38,7 +38,7 @@ title AROS on Sam440
     module boot/modules/keyboard.hidd
     module boot/modules/keymap.library
     module boot/modules/layers.library
-    module boot/modules/lddemon.library
+    module boot/modules/lddemon.resource
     module boot/modules/massstorage.class
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
@@ -91,7 +91,7 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/keyboard.hidd
     module boot/modules/keymap.library
     module boot/modules/layers.library
-    module boot/modules/lddemon.library
+    module boot/modules/lddemon.resource
     module boot/modules/misc.resource
     module boot/modules/mouse.hidd
     module boot/modules/ohci.hidd
