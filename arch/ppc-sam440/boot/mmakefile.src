@@ -59,7 +59,10 @@ include $(TOP)/config/make.cfg
 #MM     kernel-hidd-mouse \
 #MM     kernel-usb-sam440-ppc \
 #MM     kernel-usb-usbromstartup \
-#MM     kernel-processor
+#MM     kernel-processor \
+#MM     kernel-econsole \
+#MM     kernel-shell \
+#MM     kernel-shellcommands
 
 #MM- kernel-link-sam440-ppc: setup-sam440-ppc kernel-kernel-kobj kernel-exec-kobj kernel-sam440-ppc-quick
 
@@ -77,17 +80,19 @@ $(BINDIR)/boot/aros-amcc440: $(KOBJSDIR)/kernel_resource.o $(KOBJSDIR)/exec_libr
 
 
 PKG_LIBS     := aros partition expansion utility oop graphics layers intuition keymap workbench dos debug poseidon
-PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem
+PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem shell shellcommands
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con amberram cdrom sfs fat afs
 PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 radeon irq usb ohci
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
+PKG_HOOKS    := econsole
 
 MODULES := \
 	$(addprefix $(BINDIR)/Libs/, $(addsuffix .library, $(PKG_LIBS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .device, $(PKG_DEVS))) \
 	$(addprefix $(BINDIR)/Devs/, $(addsuffix .resource, $(PKG_RSRC))) \
+	$(addprefix $(BINDIR)/Devs/, $(addsuffix .hook, $(PKG_HOOKS))) \
 	$(addprefix $(BINDIR)/L/, $(addsuffix -handler, $(PKG_HANDLERS))) \
 	$(addprefix $(BINDIR)/Devs/Drivers/, $(addsuffix .hidd, $(PKG_HIDDS))) \
 	$(addprefix $(BINDIR)/Classes/USB/, $(addsuffix .hidd, $(PKG_USB))) \
