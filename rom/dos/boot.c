@@ -119,7 +119,14 @@ void __dos_Boot(struct DosLibrary *DOSBase, ULONG BootFlags, UBYTE Flags)
         }
     }
 
-    cis = Open("CON:////AROS/AUTO/CLOSE/SMART", MODE_OLDFILE);
+    if (BootFlags & BF_EMERGENCY_CONSOLE) {
+        BootFlags |= BF_NO_STARTUP_SEQUENCE;
+        cis = Open("ECON:", MODE_OLDFILE);
+    }
+
+    if (cis == BNULL)
+        cis = Open("CON:////AROS/AUTO/CLOSE/SMART", MODE_OLDFILE);
+
     if (cis) {
         BPTR cos = OpenFromLock(DupLockFromFH(cis));
         BYTE const C[] = "Copyright © 1995-2012, The AROS Development Team.\n"
