@@ -159,7 +159,7 @@ void dumpregs(context_t *ctx, int exception)
     uint32_t *sp;
     ULONG *p;
     int i;
-    struct Library *DebugBase = OpenLibrary("debug.library", 0);
+    struct Library *DebugBase = (APTR)FindName(&SysBase->LibList, "debug.library");
 
     bug("[KRN] Exception %d handler. Context @ %p, SysBase @ %p, KernelBase @ %p\n", exception, ctx, SysBase, KernelBase);
     bug("[KRN] SRR0=%08x, SRR1=%08x DEAR=%08x ESR=%08x\n",ctx->cpu.srr0, ctx->cpu.srr1, rdspr(DEAR), rdspr(ESR));
