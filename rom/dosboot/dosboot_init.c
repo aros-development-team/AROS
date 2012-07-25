@@ -141,7 +141,13 @@ int dosboot_Init(LIBBASETYPEPTR LIBBASE)
 		    LIBBASE->db_BootDevice = &node->ln_Name[11];
 		    selectBootDevice(LIBBASE);
 		}
+                else if (0 == stricmp(node->ln_Name, "econsole"))
+                {
+                    LIBBASE->db_BootFlags |= BF_EMERGENCY_CONSOLE;
+                    D(bug("[Boot] Emergency console selected\n"));
+                }
     	    }
+    	    ExpansionBase->eb_BootFlags = LIBBASE->db_BootFlags;
     	}
     }
 

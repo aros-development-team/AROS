@@ -61,6 +61,7 @@ struct ExpansionBase
 #define BF_NO_STARTUP_SEQUENCE 0x0001
 #define BF_NO_DISPLAY_DRIVERS  0x0002
 #define BF_NO_COMPOSITION      0x0004
+#define BF_EMERGENCY_CONSOLE   0x0008    /* Use emergency console */
 
 /*  The error codes from expansion boards */
 #define EE_OK           0   /* no error */

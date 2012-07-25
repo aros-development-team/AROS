@@ -1,0 +1,18 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := econsole
+
+# Emergency CON: device, operating over the Exec Raw*() interace
+# Enabled with the bootarg of 'econsole'
+#
+# Also supplies a minimal boot disk at priority -127.
+
+USER_CFLAGS += -DAROS_CPU="\"$(AROS_TARGET_CPU)\""
+
+%build_module mmake=kernel-econsole \
+  modname=econsole modtype=hook \
+  files="$(FILES)"
+
+
+%common
