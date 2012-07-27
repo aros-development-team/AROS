@@ -472,13 +472,12 @@ ROM_STATIC := \
 #   Currently the main difference is that it includes a different __assert()
 #   function to handle asserts in the kernel.
 
-ROM_COMMON_OBJS := $(addsuffix .o, \
-    $(addprefix $(OBJDIR)/,$(ROM_COMMON)) \
+ROM_ARCH_OBJS := $(addsuffix .o, \
     $(addprefix $(OBJDIR)/arch/,$(ROM_COMMON_ARCH)) \
 )
 %build_linklib mmake=linklibs-rom \
-    libname=arosc.static files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJS) \
-    cflags="$(CFLAGS) -DAROSC_STATIC -DAROSC_ROM"
+    libname=arosc.static files="$(ROM_ONLY) $(ROM_COMMON) $(ROM_STATIC)" objs="$(ROM_ARCH_OBJS)" \
+    cflags="$(CFLAGS) -DAROSC_STATIC -DAROSC_ROM" \
     objdir=$(OBJDIR)/static
 
 
