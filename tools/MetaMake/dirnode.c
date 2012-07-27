@@ -355,6 +355,7 @@ void
 freemakefiletarget (struct MakefileTarget * mftarget)
 {
     freelist (&mftarget->deps);
+    Remove(mftarget);
     xfree (mftarget);
 }
 
