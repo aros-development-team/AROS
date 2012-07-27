@@ -41,16 +41,12 @@ void writemakefile(struct config *cfg)
         fprintf(out, " %s_stubs", cfg->modulename);
     if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_autoinit", cfg->modulename);
-    if (cfg->modtype == LIBRARY)
-        fprintf(out, " %s_getlibbase", cfg->modulename);
     fprintf(out, "\n");
     fprintf(out, "%s_RELLINKLIBFILES :=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
         fprintf(out, " %s_relstubs", cfg->modulename);
     if (cfg->options & OPTION_AUTOINIT)
         fprintf(out, " %s_relautoinit", cfg->modulename);
-    if (cfg->modtype == LIBRARY)
-        fprintf(out, " %s_relgetlibbase", cfg->modulename);
     fprintf(out, "\n");
 
     /* Currently there are no asm files anymore */
