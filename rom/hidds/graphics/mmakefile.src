@@ -1,10 +1,6 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-#MM- kernel-hidd-graphics : kernel-oop-linklib
-#MM- kernel-hidd-graphics-kobj : kernel-oop-linklib
-#MM- linklibs : kernel-hidd-graphics-stubs
-
 FILES       := graphics_init GraphicsClass BM_Class CM_Class GC_Class  \
                planarbm chunkybm convertpixels memblit	\
 	       pixfmt sync rgbconv
