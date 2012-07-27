@@ -32,6 +32,7 @@ static BOOL reset_chip(struct HDAudioChip *card);
 static ULONG get_response(struct HDAudioChip *card);
 static BOOL perform_realtek_specific_settings(struct HDAudioChip *card, UWORD device);
 static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device);
+static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device);
 static int find_pin_widget_with_encoding(struct HDAudioChip *card, UBYTE encoding);
 static BOOL interrogate_unknown_chip(struct HDAudioChip *card);
 static int find_audio_output(struct HDAudioChip *card, UBYTE digital);
@@ -527,7 +528,7 @@ static BOOL power_up_all_nodes(struct HDAudioChip *card)
                         ULONG power_state = 0;
                         
                         power_state = send_command_12(card->codecnr, NID, VERB_GET_POWER_STATE , 0, card);
-                        bug("%xh: power state = %xh\n", power_state);
+                        bug("%xh: power state = %xh\n", NID, power_state);
                         
                         if (power_state != 0)
                         {
@@ -915,7 +916,12 @@ static BOOL perform_codec_specific_settings(struct HDAudioChip *card)
     else if (vendor == 0x1106 && forceQuery == FALSE) // VIA
     {
         found = perform_via_specific_settings(card, device);
+    }    
+    else if (vendor == 0x111d /*&& forceQuery == FALSE*/) // IDT
+    {
+        found = perform_idt_specific_settings(card, device);
     }
+
     if (!found) // default: fall-back 
     {
         if (interrogate_unknown_chip(card) == FALSE)
@@ -1152,6 +1158,83 @@ static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device
         card->adc_min_gain = -13.5;
         card->adc_max_gain = 33.0;
         card->adc_step_gain = 1.5;
+    }
+
+    return TRUE;
+}
+
+/*
+  IDT specific settings
+
+  information: http://www.idt.com/document/92hd75b-datasheet-92hd75-being-discontinued-see-pdn-notice
+
+  TODO: input
+
+*/
+static BOOL perform_idt_specific_settings(struct HDAudioChip *card, UWORD device)
+{
+    bug("Found IDT codec\n");
+    
+    if (!(device == 0x7608))
+    {
+        bug("Unknown IDT codec.\n");
+        return FALSE;
+    }
+
+    card->dac_nid = 0x10;
+    card->adc_nid = 0x12;
+    card->adc_mixer_nid = 0x1C;
+    card->dac_volume_nid = 0x10;
+   
+    card->speaker_nid = 0x0D;
+    card->headphone_nid = 0x0A;
+
+    card->line_in_nid = 0x0B;
+    card->mic1_nid = 0x0B;
+    card->mic2_nid = 0x0C;
+    card->cd_nid = 0x0E; /* no cd but ...*/
+
+    card->adc_mixer_is_mux = TRUE;
+
+    /* to not to enable headphone and the speaker at the same time */
+    card->speaker_active = TRUE;
+
+    /* enable eapd. Specs says this is spdif out, but this is required */
+    send_command_12(card->codecnr, 0x1f, VERB_SET_EAPD, 0x2, card);
+
+    /* set connections */
+    send_command_12 (card->codecnr, 0x0f, VERB_SET_CONNECTION_SELECT, 0, card); /* 48QFN specific */
+    send_command_12 (card->codecnr, 0x0a, VERB_SET_CONNECTION_SELECT, 0, card); /* headset */
+    send_command_12 (card->codecnr, 0x0d, VERB_SET_CONNECTION_SELECT, 0, card); /* speaker */
+
+    /* set output gains */
+    send_command_4 (card->codecnr, 0x0f, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+    send_command_4 (card->codecnr, 0x0a, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+    send_command_4 (card->codecnr, 0x0d, VERB_SET_AMP_GAIN, OUTPUT_AMP_GAIN | AMP_GAIN_LR, card);
+
+    /* enable outputs */
+    send_command_12(card->codecnr, 0x0f, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+    send_command_12(card->codecnr, 0x0a, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+    send_command_12(card->codecnr, 0x0d, VERB_SET_PIN_WIDGET_CONTROL, 0x40, card);
+ 
+    if (device == 0x7608)
+    {
+        /* move 0x7608 specific stuff here */
+
+        /* Not sure about indices */
+        card->adc_mixer_indices[0] = 3;   // line in
+        card->adc_mixer_indices[1] = 2;   // mic1
+        card->adc_mixer_indices[2] = 4;   // mic2
+        card->adc_mixer_indices[3] = 1;   // cd
+        card->adc_mixer_indices[4] = 255; // no mon mixer
+
+        card->adc_min_gain = 0.0;
+        card->adc_max_gain = 22.5;
+        card->adc_step_gain = 1.5;
+        
+        card->dac_min_gain = -95.25;
+        card->dac_max_gain = 0.0;
+        card->dac_step_gain = 0.75;
     }
 
     return TRUE;
