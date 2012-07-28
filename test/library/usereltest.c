@@ -5,7 +5,10 @@
 
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <proto/pertask.h>
 #include <proto/userel.h>
+
+#include "pertaskvalue.h"
 
 int main (int argc, char ** argv)
 {
@@ -21,6 +24,12 @@ int main (int argc, char ** argv)
 
     Printf("101 202 303 404:\n");
     DummyPrint4(101, 202, 303, 404);
+
+    pertaskvalue = 1;
+    Printf("\n1 == %ld ?\n", PertaskGetValue());
+
+    PertaskSetValue(2);
+    Printf("2 == %ld ?\n", GetChildValue());
 
     Flush (Output ());
     
