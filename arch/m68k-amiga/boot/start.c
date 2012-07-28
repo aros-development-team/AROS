@@ -500,7 +500,7 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	struct TagItem bootmsg[] = {
 #if AROS_SERIAL_DEBUG
 	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode" },
-//	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode,mmu,mungwall" },
+//	    { KRN_CmdLine, (IPTR)"sysdebug=InitCode,debugmmu,mungwall" },
 #endif
             { KRN_KernelStackBase, (IPTR)&_ss },
             { KRN_KernelStackSize, (IPTR)(&_ss_end - &_ss) },
@@ -891,9 +891,6 @@ void exec_boot(ULONG *membanks, ULONG *cpupcr)
 	    	Early_Alert(CODE_ALLOC_FAIL);
 		break;
 	    }
-
-	    SysBase->ThisTask->tc_SPUpper = &usp[size];
-	    SysBase->ThisTask->tc_SPLower = usp;
 
 	    /* Leave supervisor mode, switch power led on */
 	    asm volatile (
