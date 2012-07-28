@@ -17,11 +17,6 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
-#ifndef __AROS__
-#include <sys/cdefs.h>
-#include <sys/_types.h>
-#include <machine/_limits.h>
-#else
 #include <aros/system.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -31,7 +26,6 @@
 
 #define __GNUC_PREREQ__ __GNUC_PREREQ
 
-#endif /* __AROS__ */
 
 /*
  * ANSI/POSIX
@@ -94,10 +88,10 @@ extern const union __nan_un {
 #define	FP_NORMAL	0x04
 #define	FP_SUBNORMAL	0x08
 #define	FP_ZERO		0x10
-#define	fpclassify(x) \
-    ((sizeof (x) == sizeof (float)) ? __fpclassifyf(x) \
-    : (sizeof (x) == sizeof (double)) ? __fpclassifyd(x) \
-    : __fpclassifyl(x))
+// NOT IMPL #define	fpclassify(x)                          \
+// NOT IMPL     ((sizeof (x) == sizeof (float)) ? __fpclassifyf(x) \
+// NOT IMPL     : (sizeof (x) == sizeof (double)) ? __fpclassifyd(x) \
+// NOT IMPL     : __fpclassifyl(x))
 
 #define	isfinite(x)					\
     ((sizeof (x) == sizeof (float)) ? __isfinitef(x)	\
@@ -107,17 +101,10 @@ extern const union __nan_un {
     ((sizeof (x) == sizeof (float)) ? __isinff(x)	\
     : (sizeof (x) == sizeof (double)) ? isinf(x)	\
     : __isinfl(x))
-#ifndef __AROS__
-#define	isnan(x)					\
-    ((sizeof (x) == sizeof (float)) ? isnanf(x)		\
-    : (sizeof (x) == sizeof (double)) ? isnan(x)	\
-    : __isnanl(x))
-#else
 #define	isnan(x)					\
     ((sizeof (x) == sizeof (float)) ? isnanf(x)		\
     : (sizeof (x) == sizeof (double)) ? __isnan(x)	\
     : __isnanl(x))
-#endif
 #define	isnormal(x)					\
     ((sizeof (x) == sizeof (float)) ? __isnormalf(x)	\
     : (sizeof (x) == sizeof (double)) ? __isnormal(x)	\
@@ -176,12 +163,7 @@ typedef long double float_t;
 #define	MAXFLOAT	((float)3.40282346638528860e+38)
 extern int signgam;
 
-#if 0
-/* Old value from 4.4BSD-Lite math.h; this is probably better. */
-#define	HUGE		HUGE_VAL
-#else
 #define	HUGE		MAXFLOAT
-#endif
 
 /*
  * Most of these functions depend on the rounding mode and have the side
@@ -192,17 +174,15 @@ __BEGIN_DECLS
 /*
  * ANSI/POSIX
  */
-int	__fpclassifyd(double) __pure2;
-int	__fpclassifyf(float) __pure2;
-int	__fpclassifyl(long double) __pure2;
+// NOT IMPL int	__fpclassifyd(double) __pure2;
+// NOT IMPL int	__fpclassifyf(float) __pure2;
+// NOT IMPL int	__fpclassifyl(long double) __pure2;
 int	__isfinitef(float) __pure2;
 int	__isfinite(double) __pure2;
 int	__isfinitel(long double) __pure2;
 int	__isinff(float) __pure2;
 int	__isinfl(long double) __pure2;
-#ifdef __AROS__
 int     __isnan(double) __pure2;
-#endif
 int	__isnanl(long double) __pure2;
 int	__isnormalf(float) __pure2;
 int	__isnormal(double) __pure2;
@@ -401,82 +381,64 @@ float	significandf(float);
 /*
  * long double versions of ISO/POSIX math functions
  */
-#if 0
-long double	acoshl(long double);
-long double	acosl(long double);
-long double	asinhl(long double);
-long double	asinl(long double);
-long double	atan2l(long double, long double);
-long double	atanhl(long double);
-long double	atanl(long double);
-long double	cbrtl(long double);
-#endif
+// NOT IMPL long double	acoshl(long double);
+// NOT IMPL long double	acosl(long double);
+// NOT IMPL long double	asinhl(long double);
+// NOT IMPL long double	asinl(long double);
+// NOT IMPL long double	atan2l(long double, long double);
+// NOT IMPL long double	atanhl(long double);
+// NOT IMPL long double	atanl(long double);
+// NOT IMPL long double	cbrtl(long double);
 long double	ceill(long double);
 long double	copysignl(long double, long double) __pure2;
-#if 0
-long double	coshl(long double);
-long double	cosl(long double);
-long double	erfcl(long double);
-long double	erfl(long double);
-long double	exp2l(long double);
-long double	expl(long double);
-long double	expm1l(long double);
-#endif
+// NOT IMPL long double	coshl(long double);
+// NOT IMPL long double	cosl(long double);
+// NOT IMPL long double	erfcl(long double);
+// NOT IMPL long double	erfl(long double);
+// NOT IMPL long double	exp2l(long double);
+// NOT IMPL long double	expl(long double);
+// NOT IMPL long double	expm1l(long double);
 long double	fabsl(long double) __pure2;
 long double	fdiml(long double, long double);
 long double	floorl(long double);
 long double	fmal(long double, long double, long double);
 long double	fmaxl(long double, long double) __pure2;
 long double	fminl(long double, long double) __pure2;
-#if 0
-long double	fmodl(long double, long double);
-#endif
+// NOT IMPL long double	fmodl(long double, long double);
 long double	frexpl(long double value, int *); /* fundamentally !__pure2 */
-#if 0
-long double	hypotl(long double, long double);
-#endif
+// NOT IMPL long double	hypotl(long double, long double);
 int		ilogbl(long double) __pure2;
 long double	ldexpl(long double, int);
-#if 0
-long double	lgammal(long double);
-long long	llrintl(long double);
-#endif
+// NOT IMPL long double	lgammal(long double);
+// NOT IMPL long long	llrintl(long double);
 long long	llroundl(long double);
-#if 0
-long double	log10l(long double);
-long double	log1pl(long double);
-long double	log2l(long double);
-long double	logbl(long double);
-long double	logl(long double);
-long		lrintl(long double);
-#endif
+// NOT IMPL long double	log10l(long double);
+// NOT IMPL long double	log1pl(long double);
+// NOT IMPL long double	log2l(long double);
+// NOT IMPL long double	logbl(long double);
+// NOT IMPL long double	logl(long double);
+// NOT IMPL long		lrintl(long double);
 long		lroundl(long double);
 long double	modfl(long double, long double *); /* fundamentally !__pure2 */
-#if 0
-long double	nanl(const char *) __pure2;
-long double	nearbyintl(long double);
-#endif
+// NOT IMPL long double	nanl(const char *) __pure2;
+// NOT IMPL long double	nearbyintl(long double);
 long double	nextafterl(long double, long double);
 double		nexttoward(double, long double);
 float		nexttowardf(float, long double);
 long double	nexttowardl(long double, long double);
-#if 0
-long double	powl(long double, long double);
-long double	remainderl(long double, long double);
-long double	remquol(long double, long double, int *);
-long double	rintl(long double);
-#endif
+// NOT IMPL long double	powl(long double, long double);
+// NOT IMPL long double	remainderl(long double, long double);
+// NOT IMPL long double	remquol(long double, long double, int *);
+// NOT IMPL long double	rintl(long double);
 long double	roundl(long double);
 long double	scalblnl(long double, long);
 long double	scalbnl(long double, int);
-#if 0
-long double	sinhl(long double);
-long double	sinl(long double);
-long double	sqrtl(long double);
-long double	tanhl(long double);
-long double	tanl(long double);
-long double	tgammal(long double);
-#endif
+// NOT IMPL long double	sinhl(long double);
+// NOT IMPL long double	sinl(long double);
+// NOT IMPL long double	sqrtl(long double);
+// NOT IMPL long double	tanhl(long double);
+// NOT IMPL long double	tanl(long double);
+// NOT IMPL long double	tgammal(long double);
 long double	truncl(long double);
 long double     nanl(const char *tagp);
 
