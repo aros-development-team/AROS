@@ -26,13 +26,10 @@
  * $FreeBSD: src/lib/msun/src/s_isnan.c,v 1.8 2004/08/05 01:46:11 das Exp $
  */
 
+#include <aros/system.h>
 #include <math.h>
 
 #include "fpmath.h"
-
-/* FreeBSD has this in libc */
-#ifdef __AROS__
-#include <sys/cdefs.h>
 
 int
 __isnan(double d)
@@ -45,8 +42,7 @@ __isnan(double d)
 
 /* isnan is now a macro in math.h, but we need to keep a proper symbol around
  * for anyone linking to us without recompiling with new headers */
-__weak_reference(__isnan, isnan);
-#endif
+AROS_MAKE_ALIAS(__isnan, isnan);
 
 int
 isnanf(float f)

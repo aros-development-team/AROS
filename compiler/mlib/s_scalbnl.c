@@ -27,7 +27,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbnl.c,v 1.1 2005/03/07 0
  * for scalbn(), so we don't use this routine.
  */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <float.h>
 #include <math.h>
 
@@ -68,4 +68,4 @@ scalbnl (long double x, int n)
         return u.e*0x1p-128;
 }
 
-__strong_reference(scalbnl, ldexpl);
+AROS_MAKE_ALIAS(scalbnl, ldexpl);

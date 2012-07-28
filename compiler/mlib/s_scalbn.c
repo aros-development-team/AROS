@@ -21,7 +21,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbn.c,v 1.11 2005/03/07 2
  * exponentiation or a multiplication.
  */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <float.h>
 
 #include "math.h"
@@ -61,11 +61,11 @@ scalbn (double x, int n)
 }
 
 #if (LDBL_MANT_DIG == 53)
-__weak_reference(scalbn, ldexpl);
-__weak_reference(scalbn, scalbnl);
+AROS_MAKE_ALIAS(scalbn, ldexpl);
+AROS_MAKE_ALIAS(scalbn, scalbnl);
 #endif
 
 /* FreeBSD has ldexp() in libc */
 #ifdef __AROS__
-__strong_reference(scalbn, ldexp);
+AROS_MAKE_ALIAS(scalbn, ldexp);
 #endif

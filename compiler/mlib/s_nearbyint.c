@@ -24,7 +24,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 __FBSDID("$FreeBSD: src/lib/msun/src/s_nearbyint.c,v 1.1 2004/07/06 04:46:08 das Exp $");
 
 #include <fenv.h>

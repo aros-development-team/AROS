@@ -24,8 +24,9 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 __FBSDID("$FreeBSD: src/lib/msun/src/s_fma.c,v 1.4 2005/03/18 02:27:59 das Exp $");
+
+#include <aros/system.h>
 
 #include <fenv.h>
 #include <float.h>
@@ -198,5 +199,5 @@ fma(double x, double y, double z)
 #endif	/* LDBL_MANT_DIG != 113 */
 
 #if (LDBL_MANT_DIG == 53)
-__weak_reference(fma, fmal);
+AROS_MAKE_ALIAS(fma, fmal);
 #endif
