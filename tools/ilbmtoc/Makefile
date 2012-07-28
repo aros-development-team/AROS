@@ -17,7 +17,7 @@ all : $(ILBMTOC)
 
 $(ILBMTOC) : ilbmtoc.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) $(USER_CFLAGS) $< -o $@
 	@$(HOST_STRIP) $@
 
 clean:
