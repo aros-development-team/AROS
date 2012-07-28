@@ -1,8 +1,9 @@
 /*
-    Copyright © 2009, The AROS Development Team. All rights reserved.
+    Copyright © 2009-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
-#include <exec/libraries.h>
+
+#include <proto/pertask.h>
 #include <aros/libcall.h>
 
 #include LC_LIBDEFS_FILE
@@ -16,4 +17,11 @@ AROS_LH0(struct Library *, GetParentBase,
     return __GM_GetBaseParent(PertaskBase);
     
     AROS_LIBFUNC_EXIT
+}
+
+struct Library *GetParentBase2(void)
+{
+    struct Library *PertaskBase = __GM_GetBase();
+
+    return __GM_GetBaseParent(PertaskBase);
 }
