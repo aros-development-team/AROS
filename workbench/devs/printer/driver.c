@@ -46,6 +46,14 @@ const struct EasyStruct driverMisuse = { \
     .es_GadgetFormat = "Ok",
 };
 
+/* Internal, private message
+ */
+struct PrinterMessage {
+	struct Message mm_Message;
+	ULONG   mm_Magic;
+	ULONG   mm_Version;
+};
+
 #define TASK_PRINTERDATA(pd)   \
     struct PrinterData *pd =(struct PrinterData *)FindTask(NULL)->tc_UserData; \
     if (pd == NULL ||                                                   \
@@ -512,7 +520,7 @@ static LONG pd_DriverTask(VOID)
 
     struct Process *me = (struct Process *)FindTask(NULL);
     struct PrinterExtendedData *ped = &pd->pd_SegmentData->ps_PED;
-    struct MagicMessage *msg = NULL;
+    struct PrinterMessage *msg = NULL;
     union printerIO *pio;
     UWORD cmd;
     BOOL stopped = FALSE;
@@ -524,14 +532,14 @@ static LONG pd_DriverTask(VOID)
      */
     D(bug("%s: Waiting for startup. pd=%p\n", __func__, pd));
     WaitPort(&me->pr_MsgPort);
-    msg = (struct MagicMessage *)GetMsg(&me->pr_MsgPort);
+    msg = (struct PrinterMessage *)GetMsg(&me->pr_MsgPort);
 
     D(bug("%s: Initializing driver, Unit Port %p\n", __func__, &pd->pd_Unit));
     ret = pd_Init(pd);
 
     D(bug("%s: Replying with %d\n", __func__, ret));
-    msg->mn_Version = ret;
-    ReplyMsg((struct Message *)msg);
+    msg->mm_Version = ret;
+    ReplyMsg(&msg->mm_Message);
 
     if (0 != ret)
         return ret;
@@ -787,24 +795,24 @@ struct PrinterUnit *Printer_Unit(struct PrinterBase *PrinterBase, LONG unitnum)
 
 
                         if ((port = CreateMsgPort())) {
-                            struct MagicMessage startup, *reply;
+                            struct PrinterMessage startup, *reply;
 
                             D(bug("%s: Driver unit port %p\n", __func__, port));
-                            startup.mn_ReplyPort=port;
-                            startup.mn_Length = sizeof(startup);
-                            startup.mn_Magic = AROS_MAKE_ID('p','r','u','n');
-                            startup.mn_Version = 0;
+                            startup.mm_Message.mn_ReplyPort=port;
+                            startup.mm_Message.mn_Length = sizeof(startup);
+                            startup.mm_Magic = AROS_MAKE_ID('p','r','u','n');
+                            startup.mm_Version = 0;
                             PutMsg(&proc->pr_MsgPort, (struct Message *)&startup);
                             WaitPort(port);
                             D(bug("%s: Driver replied\n", __func__));
-                            reply = (struct MagicMessage *)GetMsg(port);
+                            reply = (struct PrinterMessage *)GetMsg(port);
                             D(bug("%s: Driver reply = %p\n", __func__, reply));
                             DeleteMsgPort(port);
                             D(bug("%s: Driver port %p gone\n", __func__, port));
                             if (reply == &startup &&
-                                reply->mn_Length == sizeof(*reply) &&
-                                reply->mn_Magic == AROS_MAKE_ID('p','r','u','n') &&
-                                reply->mn_Version == 0) {
+                                reply->mm_Message.mn_Length == sizeof(*reply) &&
+                                reply->mm_Magic == AROS_MAKE_ID('p','r','u','n') &&
+                                reply->mm_Version == 0) {
                                 /* Success! */
                                 D(bug("%s: Driver started\n", __func__));
                                 return pu;
