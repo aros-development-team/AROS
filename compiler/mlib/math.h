@@ -21,9 +21,6 @@
 #include <inttypes.h>
 #include <limits.h>
 
-/* AROS doesn't define __INT_MAX, but INT_MAX will do just as well */
-#define __INT_MAX INT_MAX
-
 #define __GNUC_PREREQ__ __GNUC_PREREQ
 
 
@@ -54,8 +51,8 @@ extern const union __nan_un {
 #define	HUGE_VAL	(__infinity.__ud)
 #endif
 
-#define        FP_ILOGB0       (-__INT_MAX)
-#define        FP_ILOGBNAN     __INT_MAX
+#define        FP_ILOGB0       (-INT_MAX)
+#define        FP_ILOGBNAN     INT_MAX
 
 #ifdef __MATH_BUILTIN_CONSTANTS
 #define	HUGE_VALF	__builtin_huge_valf()
