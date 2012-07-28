@@ -28,7 +28,8 @@ USER_CFLAGS := -I$(TARGETDIR)/Development/include
 USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 
 %build_prog mmake=test-library-peropenertest \
-    progname=peropenertest targetdir=$(TARGETDIR)
+    progname=peropenertest targetdir=$(TARGETDIR) \
+    uselibs=peropener
 
 %build_prog mmake=test-library-peropenertest_child \
     progname=peropenertest_child targetdir=$(TARGETDIR) \
@@ -49,7 +50,7 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
 
 %build_module mmake=test-library-peropenerlib \
-    modname=peropener modtype=library files=empty prefix=$(TARGETDIR)
+    modname=peropener modtype=library files=peropenervalue prefix=$(TARGETDIR)
 
 %build_module mmake=test-library-pertasklib \
     modname=pertask modtype=library \
