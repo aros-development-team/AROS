@@ -588,7 +588,7 @@ static void packdata(void)
 static void gensource(void)
 {
     unsigned char *buffer;
-    LONG i, x, y, buffersize;
+    LONG i, x, buffersize;
     
     printf("#include <exec/types.h>\n");
     printf("\n");
@@ -661,9 +661,9 @@ static void genbrush2csource(void)
 	for (i = 0; i < cmapentries; i++)
 	{
 	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		(long) (red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i]),
-		(long) (green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i]),
-		(long) (blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]));
+		(long) ((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
+		(long) ((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
+		(long) ((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
 	}
 	printf("};\n");
 	printf("#endif\n\n");
@@ -709,9 +709,9 @@ static void genbrush2pixsource(void)
 	for (i = 0; i < cmapentries; i++)
 	{
 	    printf("\t0x%08lx,0x%08lx,0x%08lx,\n",
-		(long)(red[i] << 24 | red[i] << 16 | red[i] << 8 | red[i]),
-		(long)(green[i] << 24 | green[i] << 16 | green[i] << 8 | green[i]),
-		(long)(blue[i] << 24 | blue[i] << 16 | blue[i] << 8 | blue[i]));
+		(long)((ULONG)red[i] << 24 | (ULONG)red[i] << 16 | (ULONG)red[i] << 8 | (ULONG)red[i]),
+		(long)((ULONG)green[i] << 24 | (ULONG)green[i] << 16 | (ULONG)green[i] << 8 | (ULONG)green[i]),
+		(long)((ULONG)blue[i] << 24 | (ULONG)blue[i] << 16 | (ULONG)blue[i] << 8 | (ULONG)blue[i]));
 	}
 	printf("};\n\n");
     }
