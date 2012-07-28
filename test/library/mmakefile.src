@@ -43,7 +43,7 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 
 %build_prog mmake=test-library-usereltest \
     progname=usereltest targetdir=$(TARGETDIR) \
-    uselibs="userel"
+    uselibs="userel pertask"
 
 %build_module mmake=test-library-dummylib \
     modname=dummy modtype=library files=dummylib prefix=$(TARGETDIR)
@@ -52,9 +52,11 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
     modname=peropener modtype=library files=empty prefix=$(TARGETDIR)
 
 %build_module mmake=test-library-pertasklib \
-    modname=pertask modtype=library files=getparentbase prefix=$(TARGETDIR)
+    modname=pertask modtype=library \
+    files="getparentbase pertaskvalue" linklibfiles=pertaskvalue_linklib \
+    prefix=$(TARGETDIR)
 
 %build_module mmake=test-library-userellib \
     modname=userel modtype=library \
-    files="dummyadd pertaskgetparentbase dummyprint4" \
+    files="dummyadd pertaskgetparentbase dummyprint4 getchildvalue" \
     prefix=$(TARGETDIR) uselibs="dummy_rel pertask_rel"
