@@ -17,7 +17,7 @@
 static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_scalbnf.c,v 1.8 2005/03/07 04:52:43 das Exp $";
 #endif
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 
 #include "math.h"
 #include "math_private.h"
@@ -55,4 +55,4 @@ scalbnf (float x, int n)
         return x*twom25;
 }
 
-__strong_reference(scalbnf, ldexpf);
+AROS_MAKE_ALIAS(scalbnf, ldexpf);

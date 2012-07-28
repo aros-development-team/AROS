@@ -21,7 +21,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafter.c,v 1.11 2005/03/0
  *   Special cases:
  */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <float.h>
 
 #include "math.h"
@@ -79,7 +79,7 @@ nextafter(double x, double y)
 }
 
 #if (LDBL_MANT_DIG == 53)
-__weak_reference(nextafter, nexttoward);
-__weak_reference(nextafter, nexttowardl);
-__weak_reference(nextafter, nextafterl);
+AROS_MAKE_ALIAS(nextafter, nexttoward);
+AROS_MAKE_ALIAS(nextafter, nexttowardl);
+AROS_MAKE_ALIAS(nextafter, nextafterl);
 #endif

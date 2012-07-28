@@ -38,7 +38,7 @@
 
 #include <float.h>
 #include <math.h>
-#include <sys/types.h>
+#include <stdint.h>
 
 #include "fpmath.h"
 

@@ -21,7 +21,7 @@ static char rcsid[] = "$FreeBSD: src/lib/msun/src/s_nextafterl.c,v 1.1 2005/03/0
  *   Special cases:
  */
 
-#include <sys/cdefs.h>
+#include <aros/system.h>
 #include <float.h>
 
 #include "fpmath.h"
@@ -79,4 +79,4 @@ nextafterl(long double x, long double y)
 	return ux.e;
 }
 
-__strong_reference(nextafterl, nexttowardl);
+AROS_MAKE_ALIAS(nextafterl, nexttowardl);

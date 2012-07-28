@@ -27,7 +27,6 @@
  * $FreeBSD: src/lib/libc/include/fpmath.h,v 1.3 2005/02/06 03:23:31 das Exp $
  */
 
-#ifdef __AROS__
 #include <aros/cpu.h>
 
 #if defined __i386__
@@ -44,19 +43,14 @@
 #   error unsupported CPU type
 #endif
 
-#else /* !__AROS__ */
-#include <sys/endian.h>
-#include "_fpmath.h"
-#endif
-
 union IEEEf2bits {
 	float	f;
 	struct {
-#if _BYTE_ORDER == _LITTLE_ENDIAN
+#if !AROS_BIG_ENDIAN
 		unsigned int	man	:23;
 		unsigned int	exp	:8;
 		unsigned int	sign	:1;
-#else /* _BIG_ENDIAN */
+#else /* AROS_BIG_ENDIAN */
 		unsigned int	sign	:1;
 		unsigned int	exp	:8;
 		unsigned int	man	:23;
@@ -70,12 +64,12 @@ union IEEEf2bits {
 union IEEEd2bits {
 	double	d;
 	struct {
-#if _BYTE_ORDER == _LITTLE_ENDIAN
+#if !AROS_BIG_ENDIAN
 		unsigned int	manl	:32;
 		unsigned int	manh	:20;
 		unsigned int	exp	:11;
 		unsigned int	sign	:1;
-#else /* _BIG_ENDIAN */
+#else /* AROS_BIG_ENDIAN */
 		unsigned int	sign	:1;
 		unsigned int	exp	:11;
 		unsigned int	manh	:20;
