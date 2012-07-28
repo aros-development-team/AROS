@@ -8,6 +8,8 @@
 #include <proto/peropener.h>
 #include <proto/pertask.h>
 
+struct Library *PeropenerBase = NULL;
+
 int main (int argc, char ** argv)
 {
     struct Library *base1, *base2;
@@ -17,6 +19,25 @@ int main (int argc, char ** argv)
     
     base1=OpenLibrary((STRPTR)"peropener.library",0);
     base2=OpenLibrary((STRPTR)"peropener.library",0);
+
+    /* Set value for base1 */
+    PeropenerBase = base1;
+    PeropenerSetValue(1);
+
+    /* Set value for base2 */
+    PeropenerBase = base2;
+    PeropenerSetValue(2);
+
+    /* Check value for base2 */
+    Printf((STRPTR)"Checking value for base2: %s\n",
+           (PeropenerGetValue() == 2) ? "OK" : "FAIL!"
+    );
+
+    /* Check value for base2 */
+    PeropenerBase = base1;
+    Printf((STRPTR)"Checking value for base1: %s\n",
+           (PeropenerGetValue() == 1) ? "OK" : "FAIL!"
+    );
 
     FPrintf(Output(), (STRPTR)"base1=%lx, base2=%lx\n", base1, base2);
     
