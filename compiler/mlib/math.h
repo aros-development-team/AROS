@@ -85,10 +85,13 @@ extern const union __nan_un {
 #define	FP_NORMAL	0x04
 #define	FP_SUBNORMAL	0x08
 #define	FP_ZERO		0x10
-// NOT IMPL #define	fpclassify(x)                          \
-// NOT IMPL     ((sizeof (x) == sizeof (float)) ? __fpclassifyf(x) \
-// NOT IMPL     : (sizeof (x) == sizeof (double)) ? __fpclassifyd(x) \
-// NOT IMPL     : __fpclassifyl(x))
+
+#if 0
+    NOT IMPL #define	fpclassify(x)                          \
+    NOT IMPL     ((sizeof (x) == sizeof (float)) ? __fpclassifyf(x) \
+    NOT IMPL     : (sizeof (x) == sizeof (double)) ? __fpclassifyd(x) \
+    NOT IMPL     : __fpclassifyl(x))
+#endif
 
 #define	isfinite(x)					\
     ((sizeof (x) == sizeof (float)) ? __isfinitef(x)	\
