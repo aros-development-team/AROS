@@ -27,9 +27,10 @@ int main (int argc, char ** argv)
 
     pertaskvalue = 1;
     Printf("\n1 == %ld ?\n", PertaskGetValue());
+    Printf("1 == %ld ?\n", GetChildValue());
 
     PertaskSetValue(2);
-    Printf("2 == %ld ?\n", GetChildValue());
+    Printf("\n2 == %ld ?\n", GetChildValue());
 
     Flush (Output ());
     
