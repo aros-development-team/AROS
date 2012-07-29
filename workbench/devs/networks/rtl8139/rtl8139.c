@@ -32,6 +32,7 @@
 
 #include <oop/oop.h>
 
+#include <devices/timer.h>
 #include <devices/sana2.h>
 #include <devices/sana2specialstats.h>
 
@@ -57,6 +58,7 @@
 #undef LIBBASE
 #define LIBBASE (unit->rtl8139u_device)
 
+#if defined(__i386__) || defined(__x86_64__)
 #define TIMER_RPROK 3599597124UL
 
 static ULONG usec2tick(ULONG usec)
@@ -86,6 +88,40 @@ void udelay(LONG usec)
 		oldtick = tick;
 	}
 }
+#else
+
+struct timerequest timerio;
+struct MsgPort *timermp;
+
+void udelay(LONG usec)
+{
+	timerio.tr_node.io_Command = TR_ADDREQUEST;
+	timerio.tr_time.tv_secs = usec / 1000000;
+	timerio.tr_time.tv_micro = usec % 1000000;
+	DoIO(&timerio.tr_node);
+}
+
+int init_timer(void)
+{
+	if ((timermp = CreateMsgPort())) {
+		timerio.tr_node.io_Message.mn_Node.ln_Type=NT_MESSAGE;
+		timerio.tr_node.io_Message.mn_ReplyPort = timermp;
+		timerio.tr_node.io_Message.mn_Length=sizeof(timerio);
+		if (0 == OpenDevice("timer.device", UNIT_MICROHZ, &timerio.tr_node, 0)) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+ADD2INIT(init_timer, 10);
+
+void exit_timer(void)
+{
+	CloseDevice(&timerio.tr_node);
+	DeleteMsgPort(timermp);
+}
+ADD2EXIT(exit_timer, 10);
+#endif
 
 static inline struct fe_priv *get_pcnpriv(struct net_device *unit)
 {

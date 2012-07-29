@@ -872,7 +872,7 @@ struct RTL8139Unit *CreateUnit(struct RTL8139Base *RTL8139DeviceBase, OOP_Object
             FreeMem(unit, sizeof(struct RTL8139Unit));
             return NULL;
 		}
-        sprintf((char *)unit->rtl8139u_name, "rtl8139.%d", unit->rtl8139u_UnitNum);
+        sprintf((char *)unit->rtl8139u_name, "rtl8139.%d", (int)unit->rtl8139u_UnitNum);
 
 RTLD(bug("[rtl8139] CreateUnit: Unit allocated @ 0x%p\n", unit))
 

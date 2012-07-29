@@ -1,9 +1,6 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-#MM- workbench-devs-networks-rtl8139-i386 : workbench-devs-networks-rtl8139
-#MM- workbench-devs-networks-rtl8139-x86_64 : workbench-devs-networks-rtl8139
-
 FILES := handler unit rtl8139
 
 CFLAGSNORMAL = $(CFLAGS) -DDEBUG=0
