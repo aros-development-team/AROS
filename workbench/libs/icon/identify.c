@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -87,7 +87,7 @@ LONG __FindType_WB(BPTR lock, struct IconBase *IconBase)
                             && dth->dth_ID      == ID_EXECUTABLE
                         )
                         {
-                            /* It's a executable file */
+                            /* It's an executable file */
                             type = WBTOOL;
                         }
                         else
@@ -305,7 +305,7 @@ struct DiskObject *__FindDefaultIcon_WB
                     && dth->dth_ID      == ID_EXECUTABLE
                 )
                 {
-                    /* It's a executable file ------------------------------*/
+                    /* It's an executable file -----------------------------*/
                     icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
                     
                     if (icon != NULL)

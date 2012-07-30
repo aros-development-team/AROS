@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,9 +31,9 @@
     TAGS
 	ICONA_ErrorCode (LONG *)
 	ICONGETA_GetDefaultType (LONG) - Default icon type to get. This
-		overrides the "name" paramter.
+		overrides the "name" parameter.
 	ICONGETA_GetDefaultName (STRPTR) - Name of default icon to get. This
-		overrides the "name" paramter.
+		overrides the "name" parameter.
 	ICONGETA_FailIfUnavailable (BOOL)
 	ICONGETA_GetPaletteMappedIcon (BOOL)
 	ICONGETA_IsDefaultIcon (LONG *) - Upon completion of this function, the
@@ -288,7 +288,7 @@
 
     if (generateImageMasks) {
         D(bug("[%s] %p: Generate image masks\n", __func__, icon));
-        /* A side effect of pallette mapping the icon... */
+        /* A side effect of palette mapping the icon... */
         getPaletteMappedIcon = TRUE;
     }
 
