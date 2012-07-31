@@ -84,3 +84,11 @@ AROS_SLIB_ENTRY(Flt_6888x,MathIeeeDoubBas, 6):
 	fmove.d %fp0,%sp@-
 	movem.l %sp@+,%d0-%d1
 	rts
+
+	.globl init_6888x_double
+init_6888x_double:
+	/* Round to zero, double precision */
+	moveq #0,%d0
+	move.w #0x10+0x80,%d0
+	fmove.l %d0,%fpcr
+	rts

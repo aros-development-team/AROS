@@ -31,8 +31,14 @@ extern void AROS_SLIB_ENTRY(Asin_6888x,MathIeeeDoubTrans,19)(void);
 extern void AROS_SLIB_ENTRY(Acos_6888x,MathIeeeDoubTrans,20)(void);
 extern void AROS_SLIB_ENTRY(Log10_6888x,MathIeeeDoubTrans,21)(void);
 
+struct Library *MathIeeeDoubBasBase;
+
 static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
 {
+    MathIeeeDoubBasBase = OpenLibrary("mathieeedoubbas.library", 39);
+    if (!MathIeeeDoubBasBase)
+	return FALSE;
+
     if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40)) {
 	SetFunc(5, ATan_6888x);
 	SetFunc(6, Sin_6888x);
@@ -55,4 +61,12 @@ static int IEEEDPT_Init(struct MathIeeeDoubTransBase *lh)
     return TRUE;
 }
 
+static int IEEEDPT_Expunge(struct Library *lh)
+{
+    if (MathIeeeDoubBasBase)
+	CloseLibrary (MathIeeeDoubBasBase);
+    return TRUE;
+}
+
 ADD2INITLIB(IEEEDPT_Init, 0)
+ADD2EXPUNGELIB(IEEEDPT_Expunge, 0);

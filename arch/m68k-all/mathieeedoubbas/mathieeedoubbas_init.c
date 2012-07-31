@@ -22,6 +22,14 @@ extern void AROS_SLIB_ENTRY(Add_6888x,MathIeeeDoubBas,11)(void);
 extern void AROS_SLIB_ENTRY(Sub_6888x,MathIeeeDoubBas,12)(void);
 extern void AROS_SLIB_ENTRY(Mul_6888x,MathIeeeDoubBas,13)(void);
 extern void AROS_SLIB_ENTRY(Div_6888x,MathIeeeDoubBas,14)(void);
+extern void init_6888x_double(void);
+
+static int IEEEDP_Open(struct MathIeeeDoubBasBase *lh)
+{
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40))
+	init_6888x_double();
+    return TRUE;
+}
 
 static int IEEEDP_Init(struct MathIeeeDoubBasBase *lh)
 {
@@ -43,3 +51,4 @@ static int IEEEDP_Init(struct MathIeeeDoubBasBase *lh)
 }
 
 ADD2INITLIB(IEEEDP_Init, 0)
+ADD2OPENLIB(IEEEDP_Open, 0)
