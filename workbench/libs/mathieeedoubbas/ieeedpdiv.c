@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <aros/debug.h>
 #include "mathieeedoubbas_intern.h"
 
 /*
@@ -53,6 +54,9 @@ AROS_LHQUAD2(double, IEEEDPDiv,
 #endif
     
     Res.i = 0x0badc0de0badc0deULL;
+
+    aros_print_not_implemented("Software IEEEDPDiv");
+
     return Res.d;
 
     AROS_LIBFUNC_EXIT
