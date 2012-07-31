@@ -286,7 +286,9 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
     BOOL haveCommand = FALSE;
     LONG result;
 
-    if ((result = convertLine(ss, in, out, &haveCommand, DOSBase)) == 0)
+    result = convertLine(ss, in, out, &haveCommand, DOSBase);
+
+    if (result == 0)
     {
         D(bug("convertLine: haveCommand = %ld, out->buf=%s\n", haveCommand, out->buf));
 	/* Only a comment or dot command ? */
@@ -298,15 +300,19 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 
 	/* OK, we've got a command. Let's execute it! */
 	result = executeLine(ss, out->buf, DOSBase);
-
-	/* If the command changed the cli's definition
-	 * of cli_StandardInput/StandardOutput, let's
-	 * reflect that.
-	 */
-	SelectInput(cli->cli_StandardInput);
-	SelectOutput(cli->cli_StandardOutput);
     }
-    else
+
+    /* If the command changed the cli's definition
+     * of cli_StandardInput/StandardOutput, let's
+     * reflect that.
+     *
+     * This also stops redirection, so that command errors go to
+     * the console instead of the redirected file.
+     */
+    SelectInput(cli->cli_StandardInput);
+    SelectOutput(cli->cli_StandardOutput);
+
+    if (result)
     {
         D(bug("convertLine: error = %ld\n", result));
 	PrintFault(result, haveCommand ? ss->command + 2 : NULL);
@@ -616,16 +622,10 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
 	unloadCommand(ss, module, homeDirChanged, residentCommand, DOSBase);
 
-	cli->cli_Result2 = IoErr();
+	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
     }
     else
     {
-	/* Implicit CD ? */
-	if (ss->newIn || ss->newOut) {
-	    error = ERROR_TOO_MANY_ARGS;
-	    goto errexit;
-	}
-
 	/* SFS returns ERROR_INVALID_COMPONENT_NAME if you try to open "" */
 	error = IoErr();
 
@@ -655,15 +655,11 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 		    FreeDosObject(DOS_FIB, fib);
 		}
 
+		error = IoErr();
+
 		/* UnLock the old currentdir */
 		UnLock(lock);
 	    }
-	}
-
-	if ((error = IoErr()))
-	{
-	    cli->cli_Result2 = error;
-	    PrintFault(error, command);
 	}
     }
 errexit:
