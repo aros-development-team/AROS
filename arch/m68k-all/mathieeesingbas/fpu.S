@@ -67,6 +67,14 @@ AROS_SLIB_ENTRY(Fix_6888x,MathIeeeSingBas,5):
 	.globl	AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas,6)
 	.type	AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas,6),@function
 AROS_SLIB_ENTRY(Flt_6888x,MathIeeeSingBas,6):
-    fmove.l %d0,%fp0
-    fmove.s %fp0,%d0
+	fmove.l %d0,%fp0
+	fmove.s %fp0,%d0
+	rts
+
+	.globl init_6888x_single
+init_6888x_single:
+	/* Round to nearest, single precision */
+	moveq #0,%d0
+	move.w #0x00+0x40,%d0
+	fmove.l %d0,%fpcr
 	rts

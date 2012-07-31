@@ -22,6 +22,14 @@ extern void AROS_SLIB_ENTRY(Add_6888x,MathIeeeSingBas,11)(void);
 extern void AROS_SLIB_ENTRY(Sub_6888x,MathIeeeSingBas,12)(void);
 extern void AROS_SLIB_ENTRY(Mul_6888x,MathIeeeSingBas,13)(void);
 extern void AROS_SLIB_ENTRY(Div_6888x,MathIeeeSingBas,14)(void);
+extern void init_6888x_single(void);
+
+static int IEEESP_Open(struct Library *lh)
+{
+    if (SysBase->AttnFlags & (AFF_68881 | AFF_68882 | AFF_FPU40))
+	init_6888x_single();
+    return TRUE;
+}
 
 static int IEEESP_Init(struct Library *lh)
 {
@@ -43,3 +51,4 @@ static int IEEESP_Init(struct Library *lh)
 }
 
 ADD2INITLIB(IEEESP_Init, 0)
+ADD2OPENLIB(IEEESP_Open, 0)
