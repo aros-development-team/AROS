@@ -878,7 +878,7 @@ static int nv_open(struct net_device *dev)
     writel(NVREG_OFFLOAD_NORMAL, base + NvRegOffloadConfig);
 
     writel(readl(base + NvRegReceiverStatus), base + NvRegReceiverStatus);
-    i = random();
+    i = rand();
     writel(NVREG_RNDSEED_FORCE | (i&NVREG_RNDSEED_MASK), base + NvRegRandomSeed);
     writel(NVREG_UNKSETUP1_VAL, base + NvRegUnknownSetupReg1);
     writel(NVREG_UNKSETUP2_VAL, base + NvRegUnknownSetupReg2);

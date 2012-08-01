@@ -374,7 +374,6 @@ ROM_COMMON := \
 	memcpy \
 	memmove \
 	memset \
-	random \
 	stccpy \
 	stcd_l \
 	stcl_d \
