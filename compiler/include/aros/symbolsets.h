@@ -140,13 +140,8 @@ const LONG const __aros_libreq_##bname = ver;
                   "__aros_libreq_" #bname "." #ver "=" #ver);
 
 #define SETRELLIBOFFSET(bname, libbasetype, fname) \
-extern const IPTR const bname##_offset;            \
-static int __ ## bname ## _setoffset(void)         \
-{                                                  \
-    bname##_offset = offsetof(libbasetype, fname); \
-    return 1;                                      \
-}                                                  \
-ADD2INIT(__ ## bname ## _setoffset, 0)
+const IPTR bname##_offset = offsetof(libbasetype, fname); \
+AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_##bname);
 
 /* Traverse the set from the first element to the last one, or vice versa,
    depending on the value of 'direction': >=0 means first -> last, <0 means
