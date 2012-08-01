@@ -867,7 +867,7 @@ AROS_UFH3(void, NF_Scheduler,
 
     /* Randomize the generator with current time */
     BattClockBase =  OpenResource("battclock.resource");
-    srandom(ReadBattClock());
+    srand(ReadBattClock());
 
     dev->nu_TimerSlowPort = CreateMsgPort();
 
