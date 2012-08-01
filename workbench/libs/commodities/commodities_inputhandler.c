@@ -477,7 +477,7 @@ static void DebugFunc(CxMsg *msg, CxObj *co, struct CommoditiesBase *CxBase)
 BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 			   struct CommoditiesBase *CxBase)
 {
-    bcopy(from, to, sizeof(struct InputEvent));
+    memmove(to, from, sizeof(struct InputEvent));
 
     if (from->ie_Class == IECLASS_NEWPOINTERPOS)
     {
@@ -490,7 +490,7 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 		return FALSE;
 	    }
 
-	    bcopy(from->ie_EventAddress, to->ie_EventAddress, sizeof(struct IEPointerPixel));
+	    memmove(to->ie_EventAddress, from->ie_EventAddress, sizeof(struct IEPointerPixel));
 	    break;
 
 	case IESUBCLASS_TABLET :
@@ -500,7 +500,7 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 		return FALSE;
 	    }
 
-	    bcopy(from->ie_EventAddress, to->ie_EventAddress, sizeof(struct IEPointerTablet));
+	    memmove(to->ie_EventAddress, from->ie_EventAddress, sizeof(struct IEPointerTablet));
 	    break;
 
 	case IESUBCLASS_NEWTABLET :
@@ -510,7 +510,7 @@ BOOL CopyInputEvent(struct InputEvent *from, struct InputEvent *to,
 		return FALSE;
 	    }
 
-	    bcopy(from->ie_EventAddress, to->ie_EventAddress, sizeof(struct IENewTablet));
+	    memmove(to->ie_EventAddress, from->ie_EventAddress, sizeof(struct IENewTablet));
 	    break;
 
 	default :

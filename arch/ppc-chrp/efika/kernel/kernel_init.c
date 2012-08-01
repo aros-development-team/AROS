@@ -151,7 +151,7 @@ static void __attribute__((used)) __clear_bss(struct TagItem *msg)
     {
         while (bss->addr && bss->len)
         {
-            bzero(bss->addr, bss->len);
+            memset(bss->addr, 0, bss->len);
             bss++;
         }
     }
@@ -402,7 +402,7 @@ AROS_LH0(void *, KrnCreateContext,
     uint32_t oldmsr = goSuper();
 
     ctx = Allocate(KernelBase->kb_SupervisorMem, sizeof(context_t));
-    bzero(ctx, sizeof(context_t));
+    memset(ctx, 0, sizeof(context_t));
 
     wrmsr(oldmsr);
 
