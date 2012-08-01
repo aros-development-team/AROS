@@ -88,7 +88,7 @@ void cpu_Switch(context_t *regs)
     task = SysBase->ThisTask;
         
     /* Copy current task's context into the ETask structure */
-    bcopy(regs, task->tc_UnionETask.tc_ETask->et_RegFrame, sizeof(context_t));
+    memmove(task->tc_UnionETask.tc_ETask->et_RegFrame, regs, sizeof(context_t));
         
     /* Copy the fpu, mmx, xmm state */
 // FIXME: Change to the lazy saving of the FPU state!!!!

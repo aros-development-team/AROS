@@ -198,7 +198,7 @@ void mmu_init(char *mmu_dir, uint32_t mmu_size)
 	{
 		uint32_t ea;
 		/* Clear the MMU tables */
-		bzero(mmu_dir, mmu_size);
+		memset(mmu_dir, 0, mmu_size);
 
 		uint32_t sdr = (intptr_t)mmu_dir | ((mmu_size >> 16) - 1);
 

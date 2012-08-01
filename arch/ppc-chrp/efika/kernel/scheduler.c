@@ -172,7 +172,7 @@ void core_Switch(regs_t *regs)
         //D(bug("[KRN] Old task = %p (%s)\n", task, task->tc_Node.ln_Name));
 
         /* Copy current task's context into the ETask structure */
-        bcopy(regs, task->tc_UnionETask.tc_ETask->et_RegFrame, sizeof(context_t));
+        memmove(task->tc_UnionETask.tc_ETask->et_RegFrame, regs, sizeof(context_t));
 
         /* Copy the fpu, mmx, xmm state */
 

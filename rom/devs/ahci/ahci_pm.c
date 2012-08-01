@@ -130,7 +130,7 @@ retry:
 	 * flags.
 	 */
 	fis = ccb->ccb_cmd_table->cfis;
-	bzero(fis, sizeof(ccb->ccb_cmd_table->cfis));
+	memset(fis, 0, sizeof(ccb->ccb_cmd_table->cfis));
 	fis[0] = ATA_FIS_TYPE_H2D;
 	fis[1] = 0x0F;			/* Target 15 */
 	fis[15] = ATA_FIS_CONTROL_SRST | ATA_FIS_CONTROL_4BIT;
@@ -194,7 +194,7 @@ retry:
 	 */
 	ccb->ccb_xa.flags = ATA_F_POLL | ATA_F_SILENT;
 
-	bzero(fis, sizeof(ccb->ccb_cmd_table->cfis));
+	memset(fis, 0, sizeof(ccb->ccb_cmd_table->cfis));
 	fis[0] = ATA_FIS_TYPE_H2D;
 	fis[1] = 0x0F;
 	fis[15] = ATA_FIS_CONTROL_4BIT;
@@ -593,7 +593,7 @@ retry:
 	ccb->ccb_xa.at = at;
 
 	fis = ccb->ccb_cmd_table->cfis;
-	bzero(fis, sizeof(ccb->ccb_cmd_table->cfis));
+	memset(fis, 0, sizeof(ccb->ccb_cmd_table->cfis));
 	fis[0] = ATA_FIS_TYPE_H2D;
 	fis[1] = at->at_target;
 	fis[15] = ATA_FIS_CONTROL_SRST|ATA_FIS_CONTROL_4BIT;
@@ -658,7 +658,7 @@ retry:
 	 * It is unclear which other fields in the FIS are used.  Just zero
 	 * everything.
 	 */
-	bzero(fis, sizeof(ccb->ccb_cmd_table->cfis));
+	memset(fis, 0, sizeof(ccb->ccb_cmd_table->cfis));
 	fis[0] = ATA_FIS_TYPE_H2D;
 	fis[1] = at->at_target;
 	fis[15] = ATA_FIS_CONTROL_4BIT;

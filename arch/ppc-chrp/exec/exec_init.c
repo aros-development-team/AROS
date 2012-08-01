@@ -121,7 +121,7 @@ void exec_main(struct TagItem *msg, void *entry)
     D(bug("[exec] Clearing ExecBase\n"));
 
     /* How about clearing most of ExecBase structure? */
-    bzero(&SysBase->IntVects[0], sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
+    memset(&SysBase->IntVects[0], 0, sizeof(struct IntExecBase) - offsetof(struct ExecBase, IntVects[0]));
 
     SysBase->KickMemPtr = NULL;
     SysBase->KickTagPtr = NULL;
