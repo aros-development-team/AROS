@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of workbench.library/AddAppMenuItemA()
@@ -17,7 +17,7 @@
 	struct AppMenuItem * AddAppMenuItem (
 
 /*  SYNOPSIS */
-	ULONG id,
+	IPTR id,
 	IPTR  userdata,
 	STRPTR text,
 	struct MsgPort * msgport,

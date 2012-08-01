@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Add a dropzone to an AppWindow's list of AppWindowDropZones.
@@ -22,7 +22,7 @@
 
 /*  SYNOPSIS */
         AROS_LHA(struct AppWindow *, aw      , A0),
-        AROS_LHA(ULONG             , id      , D0),
+        AROS_LHA(IPTR              , id      , D0),
         AROS_LHA(IPTR              , userdata, D1),
         AROS_LHA(struct TagItem *  , tags    , A1),
 

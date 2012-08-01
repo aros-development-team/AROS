@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of workbench.library/AddAppWindowDropZoneA()
@@ -19,7 +19,7 @@
 
 /*  SYNOPSIS */
         struct AppWindow * aw,
-        ULONG              id,
+        IPTR               id,
         IPTR               userdata,
         Tag                tag1,
         ...)

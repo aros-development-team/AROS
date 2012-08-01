@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add a window to Workbench's list of AppWindows.
@@ -24,7 +24,7 @@
         AROS_LH5(struct AppWindow *, AddAppWindowA,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG           , id      , D0),
+        AROS_LHA(IPTR            , id      , D0),
         AROS_LHA(IPTR            , userdata, D1),
         AROS_LHA(struct Window * , window  , A0),
         AROS_LHA(struct MsgPort *, msgport , A1),
@@ -35,10 +35,10 @@
 
 /*  FUNCTION
 
-    Try to add an AppWindow to workbench.library's list of AppWindow:s.
+    Try to add an AppWindow to workbench.library's list of AppWindows.
     The supplied message port will be used to send notification messages
     whenever an icon is dropped on the window. The message will be of
-    type 'MTYPE_APPWINDOW' and am_ArgList will point to the list of icons
+    type 'AMTYPE_APPWINDOW' and am_ArgList will point to the list of icons
     that were dropped in the window.
 
     INPUTS
@@ -54,8 +54,8 @@
     RESULT
 
     A pointer to an AppWindow structure to use with RemoveAppWindow() when
-    you want to remove the window from the list of AppWindow:s, or NULL
-    if it was not possible to add the 'window' to the AppWindow list.
+    you want to remove the window from the list of AppWindows, or NULL
+    if it was not possible to add the window to the AppWindow list.
 
     NOTES
 
@@ -82,7 +82,7 @@
 
     if (window == NULL || msgport == NULL)
     {
-	return NULL;
+        return NULL;
     }
 
     appWindow = AllocVec(sizeof(struct AppWindow), MEMF_ANY | MEMF_CLEAR);
