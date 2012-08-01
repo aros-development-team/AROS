@@ -79,7 +79,7 @@ struct WorkbenchBase
 #define IconBase	(LB(WorkbenchBase)->wb_IconBase)
 
 /*
- * Defintion of internal structures.
+ * Definition of internal structures.
  */
 
 struct AppIcon
@@ -88,7 +88,7 @@ struct AppIcon
     UWORD              ai_AppID;
     UWORD              ai_Type;
 
-    ULONG              ai_ID;
+    IPTR               ai_ID;
     IPTR               ai_UserData;
 
     struct MsgPort    *ai_MsgPort;
@@ -128,7 +128,7 @@ struct AppWindow
     UWORD           aw_AppID;
     UWORD           aw_Type;
 
-    ULONG           aw_ID;
+    IPTR            aw_ID;
     IPTR            aw_UserData;
 
     struct MsgPort *aw_MsgPort;
@@ -155,7 +155,7 @@ struct AppWindowDropZone
 {
     struct Node       awdz_Node;
 
-    ULONG             awdz_ID;
+    IPTR              awdz_ID;
     IPTR              awdz_UserData;
 
     struct IBox       awdz_Box;
@@ -174,7 +174,7 @@ struct AppMenuItem
     UWORD           aw_AppID;
     UWORD           aw_Type;
 
-    ULONG           ami_ID;
+    IPTR            ami_ID;
     IPTR            ami_UserData;
 
     struct MsgPort *ami_MsgPort;

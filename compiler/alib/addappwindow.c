@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of workbench.library/AddAppWindowA()
@@ -17,7 +17,7 @@
 	struct AppWindow * AddAppWindow (
 
 /*  SYNOPSIS */
-	ULONG id,
+	IPTR id,
 	IPTR  userdata,
 	struct Window * window,
 	struct MsgPort * msgport,

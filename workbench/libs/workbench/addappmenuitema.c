@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Add a menuitem to Workbench's list of AppMenuItems.
@@ -23,7 +23,7 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase);
 
         AROS_LH5(struct AppMenuItem *, AddAppMenuItemA,
 /*  SYNOPSIS */
-        AROS_LHA(ULONG           , id      , D0),
+        AROS_LHA(IPTR            , id      , D0),
         AROS_LHA(IPTR            , userdata, D1),
         AROS_LHA(APTR            , text    , A0),
         AROS_LHA(struct MsgPort *, msgport , A1),

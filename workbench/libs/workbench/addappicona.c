@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Add an icon to Workbench's list of AppIcons.
@@ -26,7 +26,7 @@
 
         AROS_LH7(struct AppIcon *, AddAppIconA,
 /*  SYNOPSIS */
-        AROS_LHA(ULONG,               id,       D0),
+        AROS_LHA(IPTR,                id,       D0),
         AROS_LHA(IPTR,                userdata, D1),
         AROS_LHA(const char *,        text,     A0),
         AROS_LHA(struct MsgPort *,    msgport,  A1),

@@ -22,8 +22,8 @@
 
 /*  FUNCTION
         The workbench application uses this function to register itself with
-        the library. When it has done this, the library send messages to this 
-        port about actions the application is supposed to carry out.
+        the library. When it has done this, the library sends messages to the
+        specified port about actions the application is supposed to carry out.
         
         All messages sent to the message port are of struct WBHandlerMessage,
         which is specified in <workbench/handler.h>. The wbhm_Type field 
@@ -47,7 +47,7 @@
         WBHM_TYPE_UPDATE
             The state of the specified disk object has changed, and this 
             message serves as a notification and suggestion that you should
-            update it's visual representation to the user. For example, it
+            update its visual representation to the user. For example, it
             might have been deleted or renamed.
 
     INPUTS
