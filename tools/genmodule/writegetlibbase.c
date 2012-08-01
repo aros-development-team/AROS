@@ -50,7 +50,7 @@ void writegetlibbase(struct config *cfg, int is_rel)
                 "\n"
                 "void *%s_GetLibbase(void)\n"
                 "{\n"
-                "    return ((void *)((char *)__GM_GetBase()+%s_offset));\n"
+                "    return *((void **)((char *)__GM_GetBase()+%s_offset));\n"
                 "}\n",
                 cfg->libbase,
                 cfg->basename,
