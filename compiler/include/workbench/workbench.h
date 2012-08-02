@@ -2,7 +2,7 @@
 #define WORKBENCH_WORKBENCH_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -112,7 +112,7 @@ struct AppMessage
     struct Message am_Message;
     UWORD          am_Type;     /* see below */
     IPTR           am_UserData;
-    ULONG          am_ID;
+    IPTR           am_ID;
     LONG           am_NumArgs;
     struct WBArg * am_ArgList;
     UWORD          am_Version;  /* see below */
@@ -165,7 +165,7 @@ struct AppWindowDropZoneMsg
 {
     struct RastPort *adzm_RastPort;
     struct IBox      adzm_DropZoneBox;
-    ULONG            adzm_ID;
+    IPTR             adzm_ID;
     IPTR             adzm_UserData;
     LONG             adzm_Action;  /* see below */
 };
