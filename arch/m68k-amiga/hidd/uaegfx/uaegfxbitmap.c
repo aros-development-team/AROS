@@ -166,7 +166,6 @@ static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
     SetSwitch(csd, FALSE);
     csd->dmodeid = 0;
     bm->locked--;
-    bm->disp = FALSE;
     csd->disp = NULL;
 }
 
@@ -260,7 +259,7 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     WaitBlitter(csd);
     
     DB2(bug("UAEGFXBitmap__Root__Dispose %x bm=%x (%p,%d)\n", o, data, data->VideoData, data->memsize));
-    if (data->disp)
+    if (csd->disp == data)
     	hidescreen(csd, data);
 
     FreeVec(data->palette);
@@ -337,7 +336,6 @@ VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg
 		    SetDisplay(csd, TRUE);
 		    SetSwitch(csd, TRUE);
 	    	    SetInterrupt(csd, TRUE);
-	            data->disp = TRUE;
 	            csd->disp = data;
 	            csd->disp->locked++;
 		} else {
@@ -386,7 +384,7 @@ VOID UAEGFXBitmap__Root__Get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg
 	    *msg->storage = 0;//data->topedge;
 	    return;
 	case aoHidd_BitMap_Visible:
-	    *msg->storage = data->disp;
+	    *msg->storage = csd->disp == data;
 	    return;
 	case aoHidd_BitMap_Align:
 	    *msg->storage = 16;

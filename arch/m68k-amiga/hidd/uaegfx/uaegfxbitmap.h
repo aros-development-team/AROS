@@ -27,7 +27,6 @@ struct bm_data
     WORD bytesperline;
     UBYTE *palette;
     WORD topedge, leftedge;
-    BOOL disp;
     WORD locked;
 };
 
