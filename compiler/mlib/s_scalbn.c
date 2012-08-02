@@ -60,12 +60,14 @@ scalbn (double x, int n)
         return x*twom54;
 }
 
-#if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ALIAS(scalbn, ldexpl);
-AROS_MAKE_ALIAS(scalbn, scalbnl);
-#endif
-
-/* FreeBSD has ldexp() in libc */
-#ifdef __AROS__
 AROS_MAKE_ALIAS(scalbn, ldexp);
+
+#if (LDBL_MANT_DIG == 53)
+/* Alias scalbn -> ldexpl */
+AROS_MAKE_ASM_SYM(typeof(ldexpl), ldexpl, AROS_CSYM_FROM_ASM_NAME(ldexpl), AROS_CSYM_FROM_ASM_NAME(scalbn));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ldexpl));
+
+/* Alias scalbn -> scalbnl */
+AROS_MAKE_ASM_SYM(typeof(scalbnl), scalbnl, AROS_CSYM_FROM_ASM_NAME(scalbnl), AROS_CSYM_FROM_ASM_NAME(nextafter));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(scalbnl));
 #endif
