@@ -804,11 +804,16 @@ static AROS_UFH4(ULONG, gfx_vblank,
 
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
+    BOOL lof = (custom->vposr & 0x8000) != 0;
 
-    if (data->interlace)
-        custom->cop2lc = (ULONG)((custom->vposr & 0x8000) ? GfxBase->LOFlist : GfxBase->SHFlist);
-    else
+    if (data->interlace) {
+        custom->cop2lc = (ULONG)(lof ? GfxBase->LOFlist : GfxBase->SHFlist);
+    } else {
         custom->cop2lc = (ULONG)GfxBase->LOFlist;
+        /* We may be in SHF mode after switching interlace off. Fix it here. */
+        if (!lof)
+            custom->vposw = custom->vposr | 0x8000;
+    }
 
     data->framecounter++;
     if (data->sprite) {
