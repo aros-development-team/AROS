@@ -54,5 +54,7 @@ frexp(double x, int *eptr)
 }
 
 #if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ALIAS(frexp, frexpl);
+/* Alias frexp -> frexpl */
+AROS_MAKE_ASM_SYM(typeof(frexpl), frexpl, AROS_CSYM_FROM_ASM_NAME(frexpl), AROS_CSYM_FROM_ASM_NAME(frexp));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(frexpl));
 #endif

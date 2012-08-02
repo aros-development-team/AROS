@@ -79,7 +79,15 @@ nextafter(double x, double y)
 }
 
 #if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ALIAS(nextafter, nexttoward);
-AROS_MAKE_ALIAS(nextafter, nexttowardl);
-AROS_MAKE_ALIAS(nextafter, nextafterl);
+/* Alias nextafter -> nexttoward */
+AROS_MAKE_ASM_SYM(typeof(nexttoward), nexttoward, AROS_CSYM_FROM_ASM_NAME(nexttoward), AROS_CSYM_FROM_ASM_NAME(nextafter));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(nexttoward));
+
+/* Alias nextafter -> nexttowardl */
+AROS_MAKE_ASM_SYM(typeof(nexttowardl), nexttowardl, AROS_CSYM_FROM_ASM_NAME(nexttowardl), AROS_CSYM_FROM_ASM_NAME(nextafter));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(nexttowardl));
+
+/* Alias nextafter -> nextafterl */
+AROS_MAKE_ASM_SYM(typeof(nextafterl), nextafterl, AROS_CSYM_FROM_ASM_NAME(nextafterl), AROS_CSYM_FROM_ASM_NAME(nextafter));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(nextafterl));
 #endif

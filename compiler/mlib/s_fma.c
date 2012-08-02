@@ -199,5 +199,7 @@ fma(double x, double y, double z)
 #endif	/* LDBL_MANT_DIG != 113 */
 
 #if (LDBL_MANT_DIG == 53)
-AROS_MAKE_ALIAS(fma, fmal);
+/* Alias fma -> fmal */
+AROS_MAKE_ASM_SYM(typeof(fmal), fmal, AROS_CSYM_FROM_ASM_NAME(fmal), AROS_CSYM_FROM_ASM_NAME(fma));
+AROS_EXPORT_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(fmal));
 #endif
