@@ -12,6 +12,7 @@
 #include <proto/icon.h>
 
 #include "icon_intern.h"
+#include "support_builtin.h"
 
 /* Bitmap scaling */
 static BOOL scaleToResolution(ULONG SrcWidth, ULONG SrcHeight,
@@ -225,13 +226,16 @@ static void ScaleRect(ULONG *Target, const ULONG *Source, int SrcWidth, int SrcH
                     if ((image->ARGBMap = AllocVec(ni->ni_Width * ni->ni_Height * sizeof(ULONG), MEMF_PUBLIC))) {
                         D(bug("[%s] ARGB scaling\n"));
                         ScaleRect(image->ARGBMap, image->ARGB, width, height, ni->ni_Width, ni->ni_Height);
-                        continue;
+                        width = ni->ni_Width;
+                        height = ni->ni_Height;
                     }
                 } else {
                     image->ARGBMap = (APTR)image->ARGB;
                 }
             }
-            if (!image->ARGBMap) {
+            if (image->ARGBMap) {
+                continue;
+            } else {
                 D(bug("[%s] No ARGB image\n"));
             }
         }
@@ -451,6 +455,20 @@ rescale:
                 image->BitMap = bm;
             }
         }
+    }
+
+    /* Hack to support Directory Opus 4/5, which insists
+     * on drawing its own icon imagery instead of calling
+     * DrawIconState().
+     */
+    if (!icon->do_Gadget.GadgetRender) {
+        GetBuiltinImage(&ni->ni_Image[0].Render, icon->do_Type, FALSE);
+        icon->do_Gadget.GadgetRender = &ni->ni_Image[0].Render;
+    }
+
+    if (!icon->do_Gadget.SelectRender) {
+        GetBuiltinImage(&ni->ni_Image[1].Render, icon->do_Type, TRUE);
+        icon->do_Gadget.SelectRender = &ni->ni_Image[1].Render;
     }
 
     ni->ni_Screen = screen;

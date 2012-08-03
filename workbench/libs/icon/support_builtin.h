@@ -9,9 +9,11 @@
 */
 
 /*** Prototypes *************************************************************/
+BOOL __GetBuiltinImage_WB(struct Image *image, LONG type, BOOL selected, struct IconBase *IconBase);
 struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase);
 
 /*** Macros *****************************************************************/
+#define GetBuiltinImage(image, type, selected) (__GetBuiltinImage_WB((image), (type), (selected), LB(IconBase)))
 #define GetBuiltinIcon(type) (__GetBuiltinIcon_WB((type), LB(IconBase)))
 
 #endif /* _SUPPORT_BUILTIN_H_ */
