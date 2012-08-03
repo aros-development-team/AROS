@@ -111,7 +111,7 @@ STATIC struct FileEntry *ReadFileEntry(struct ExAllData *ead, struct DiskfontBas
 	return NULL;
     }
     
-    strsize = strlen(ead->ed_Name) + 1;
+    strsize = (strlen(ead->ed_Name) + 1 + 1) & ~1;
     size = sizeof(struct FileEntry) + strsize + fdh->NumEntries * sizeof(struct TTextAttr);
     if (fdh->ContentsID == OFCH_ID) /* Reserve extra Attr for outline fonts */
          size += sizeof(struct TTextAttr);
@@ -419,6 +419,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 
 	if (ok)
 	{
+	    int namelen = (strlen(fe2.FileName) + 1 + 1) & ~1;
 	    attrs = AllocVec(fe2.Numentries * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
 
 	    ok = ok && attrs != NULL;
@@ -445,7 +446,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 	    if (ok)
 	    {
 		ULONG size = sizeof(struct FileEntry) +
-		    strlen(fe2.FileName)+1 +
+		    namelen +
 		    fe2.Numentries * sizeof(struct TTextAttr) +
 		    totnumtags * sizeof(struct TagItem);
 		
@@ -462,7 +463,7 @@ STATIC BOOL StreamInFileList(struct DirEntry *direntry, BPTR fh, struct Diskfont
 		fe->SupportedStyles = fe2.SupportedStyles;
 		fe->FontStyle = fe2.FontStyle;
 		fe->Numentries = fe2.Numentries;
-		fe->Attrs = (struct TTextAttr *)(fe->FileName + strlen(fe2.FileName)+1);
+		fe->Attrs = (struct TTextAttr *)(fe->FileName + namelen);
 
 		tagptr = (struct TagItem *)(fe->Attrs + fe2.Numentries);
 		for (i = 0; i < fe2.Numentries; i++)
