@@ -128,6 +128,11 @@ struct NativeIcon
         struct BitMap *BitMap;      /* 'friend' of the Screen */
         PLANEPTR       BitMask;     /* TransparentColor >= 0 bitmask */
         APTR           ARGBMap;     /* ARGB, rescaled version */
+
+        /* For m68k legacy support, the struct Image render
+         * is stored here.
+         */
+        struct Image   Render;
     } ni_Image[2];
 };
 

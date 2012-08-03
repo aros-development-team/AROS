@@ -11,6 +11,7 @@
 #include <proto/icon.h>
 
 #include "icon_intern.h"
+#include "support_builtin.h"
 
 #define ICON_WIDTH  (32)
 #define ICON_HEIGHT (32)
@@ -176,12 +177,44 @@ static const UBYTE tool_data_2[] =
     0x00,0x23,0x90,0x00,0x00,0x08,0x20,0x00,0x00,0x02,0x40,0x00,0x00,0x00,0x80,0x00
 };
 
+BOOL __GetBuiltinImage_WB(struct Image *img, LONG type, BOOL selected, struct IconBase *IconBase)
+{
+    if (type < WBDISK || type > WBPROJECT)
+        return FALSE;
+
+    img->Depth     = ICON_DEPTH;
+    img->Width     = ICON_WIDTH;
+    img->Height    = ICON_HEIGHT;
+    img->PlanePick  = (1 << ICON_DEPTH) - 1;
+    img->PlaneOnOff = (1 << ICON_DEPTH) - 1;
+    
+    switch (type)
+    {
+        case WBDISK:
+            img->ImageData     = (UWORD *) (selected ? disk_data_2 : disk_data_1);
+            break;
+        
+        case WBDRAWER:
+            img->ImageData     = (UWORD *) (selected ? drawer_data_2 : drawer_data_1);
+            break;
+        
+        case WBPROJECT:
+            img->ImageData     = (UWORD *) (selected ? project_data_2 : project_data_1);
+            break;
+        
+        case WBTOOL:
+            img->ImageData     = (UWORD *) (selected ? tool_data_2 : tool_data_1);
+            break;
+    }
+
+    return TRUE;
+}
+
 struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
 {
     struct DiskObject  temp = { 0 };
     struct Image       img1 = { 0 };
     struct Image       img2 = { 0 };
-    struct Image      *gad,*sel;
     struct DiskObject *dobj;
     
     /* Only WBDISK, WBDRAWER, WBTOOL and WBPROJECT are supported */
@@ -192,53 +225,17 @@ struct DiskObject *__GetBuiltinIcon_WB(LONG type, struct IconBase *IconBase)
     temp.do_Type                 = type;
     temp.do_CurrentX             = NO_ICON_POSITION;
     temp.do_CurrentY             = NO_ICON_POSITION;
+
+    GetBuiltinImage(&img1, type, FALSE);
+    GetBuiltinImage(&img2, type, FALSE);
+
     temp.do_Gadget.GadgetRender  = &img1;
     temp.do_Gadget.SelectRender  = &img2;
-    temp.do_Gadget.Width         = ICON_HEIGHT;
-    temp.do_Gadget.Height        = ICON_HEIGHT;
+    temp.do_Gadget.Width         = img1.Width;
+    temp.do_Gadget.Height        = img1.Height;
     temp.do_Gadget.Flags        |= GFLG_GADGIMAGE;
     temp.do_DefaultTool          = (type == WBDISK) ? "SYS:System/DiskCopy" : "";
-    // FIXME: probably need to setup some more fields 
    
-    img1.Depth     = ICON_DEPTH;
-    img1.Width     = ICON_WIDTH;
-    img1.Height    = ICON_HEIGHT;
-    img1.PlanePick  = (1 << ICON_DEPTH) - 1;
-    img1.PlaneOnOff = (1 << ICON_DEPTH) - 1;
-    img2.Depth     = ICON_DEPTH;
-    img2.Width     = ICON_WIDTH;
-    img2.Height    = ICON_HEIGHT;
-    img2.PlanePick  = (1 << ICON_DEPTH) - 1;
-    img2.PlaneOnOff = (1 << ICON_DEPTH) - 1;
-
-    /* Default drawer data will be filled in by PrepareIcon() */
-
-    gad = temp.do_Gadget.GadgetRender;
-    sel = temp.do_Gadget.SelectRender;
-
-    switch (type)
-    {
-        case WBDISK:
-            gad->ImageData     = (UWORD *) disk_data_1;
-            sel->ImageData     = (UWORD *) disk_data_2;
-            break;
-        
-        case WBDRAWER:
-            gad->ImageData     = (UWORD *) drawer_data_1;
-            sel->ImageData     = (UWORD *) drawer_data_2;
-            break;
-        
-        case WBPROJECT:
-            gad->ImageData     = (UWORD *) project_data_1;
-            sel->ImageData     = (UWORD *) project_data_2;
-            break;
-        
-        case WBTOOL:
-            gad->ImageData     = (UWORD *) tool_data_1;
-            sel->ImageData     = (UWORD *) tool_data_2;
-            break;
-    }
-
     dobj = DupDiskObject(&temp,
     	    ICONDUPA_DuplicateImages, TRUE,
     	    ICONDUPA_DuplicateImageData, TRUE,
