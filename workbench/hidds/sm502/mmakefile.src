@@ -1,0 +1,15 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES	:=	\
+	sm502_init \
+	sm502gfxclass \
+	hardware \
+	bitmap
+
+#MM- workbench-hidds: hidd-sm502
+#MM- hidd-sm502: includes
+
+%build_module mmake=hidd-sm502 \
+  modname=sm502 modtype=hidd \
+  files=$(FILES) uselibs="oop"
