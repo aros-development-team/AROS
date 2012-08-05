@@ -38,8 +38,8 @@ struct Library *MUIMasterBase = NULL;
 struct UtilityBase *UtilityBase = NULL;
 struct PCIInfo SaveDeviceInfo;
 
-OOP_AttrBase __IHidd_PCIDev;
-OOP_AttrBase __IHidd_PCIDrv;
+OOP_AttrBase __IHidd_PCIDevice;
+OOP_AttrBase __IHidd_PCIDriver;
 OOP_AttrBase HiddAttrBase;
 
 OOP_Object *pci;
@@ -48,8 +48,8 @@ int openLibs()
 {
     if ((OOPBase=OpenLibrary("oop.library", 0)) != NULL)
     {
-	__IHidd_PCIDev = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-	__IHidd_PCIDrv = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
+	__IHidd_PCIDevice = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+	__IHidd_PCIDriver = OOP_ObtainAttrBase(IID_Hidd_PCIDriver);
 	HiddAttrBase = OOP_ObtainAttrBase(IID_Hidd);
 	
 	if ((MUIMasterBase=OpenLibrary("muimaster.library", 0)) != NULL)

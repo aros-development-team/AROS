@@ -7,6 +7,7 @@ CFLAGS := $(CFLAGS) -D__KERNEL__
 
 FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 
+#MM- includes: kernel-pci-includes
 #MM kernel-pci : kernel-pci-ids
 #MM kernel-pci-kobj : kernel-pci-ids
 
