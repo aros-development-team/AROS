@@ -275,7 +275,8 @@ static void mouse_process(OOP_Class *cl, OOP_Object *o)
 				CloseLibrary(l);
 			}
 		}
-		else
+
+		if (!dos_not_ready)
 		{
 			if (sigset & SIGBREAKF_CTRL_C)
 			{
