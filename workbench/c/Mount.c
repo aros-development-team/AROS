@@ -1935,6 +1935,9 @@ void ShowFault(LONG code, char *s, ...)
 	strcpy(&buf[l], ": ");
 	l += 2;
 	Fault(code, NULL, &buf[l], sizeof(buf) - l);
+	if (buf[l] == 0)
+	    snprintf(&buf[l], sizeof(buf) - l, "%d", code);
+	buf[sizeof(buf)-1] = 0;
 	if (IsCli)
 	{
 		PutStr(buf);
