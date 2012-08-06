@@ -58,7 +58,7 @@ if test x@TARGET_APPLE_CC@ != x1; then
 	    @TARGET_OBJ2ELF@ $tmpfile || exit 1
 	fi
 	if test x@platform@ != xemu; then
-	    @STRIP@ --strip-unneeded \
+	    @TARGET_STRIP@ --strip-unneeded \
 		-K grub_mod_init -K grub_mod_fini \
 		-K _grub_mod_init -K _grub_mod_fini \
 		-R .note -R .comment $tmpfile || exit 1
