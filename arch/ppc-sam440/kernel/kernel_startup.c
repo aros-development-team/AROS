@@ -549,7 +549,7 @@ void SetupClocking460(struct PlatformData *pd)
     D(bug("plbed %d, opbd = %d, perd = %d, ahbd = %d\n",
                 plbed, opbd, perd, ahbd));
 
-    uint64_t vco = (m * 50000000) + m/2;
+    uint64_t vco = m * 55000000;
     pd->pd_CPUFreq = vco / fwdva;
     pd->pd_PLBFreq = vco / fwdva / plbed;
     pd->pd_OPBFreq = pd->pd_PLBFreq / opbd;
