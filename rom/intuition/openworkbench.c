@@ -182,6 +182,18 @@ static ULONG FindMode(ULONG width, ULONG height, ULONG depth, struct IntuitionBa
 
 	if (modeid == INVALID_ID)
 	{
+	    /* We don't have any modes with the specified resolution. Try SVGA default (800x600) */
+	    modeid = FindMode(800, 600, depth, IntuitionBase);
+	}
+
+	if (modeid == INVALID_ID)
+	{
+	    /* We don't have any modes with the specified resolution. Try VGA default (640x480) */
+	    modeid = FindMode(640, 480, depth, IntuitionBase);
+	}
+
+	if (modeid == INVALID_ID)
+	{
 	    /* We don't have any modes with the specified resolution. Try Amiga default (640x200) */
 	    modeid = FindMode(640, 200, depth, IntuitionBase);
 	}
