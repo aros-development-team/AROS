@@ -4,7 +4,7 @@ delay 5
 default 0
 
 title AROS on Sam440
-    kernel boot/aros-amcc440 econsole nomonitors nocomposition # sysdebug=all
+    kernel boot/aros-amcc440 nomonitors nocomposition # econsole # sysdebug=all
     module boot/modules/afs-handler
     module boot/modules/amberram-handler
     module boot/modules/aros.library
@@ -61,7 +61,7 @@ title AROS on Sam440
     module boot/modules/shellcommands.resource
 
 title AROS on Sam440 Test Alternative Usb
-    kernel boot/aros-amcc440
+    kernel boot/aros-amcc440 nomonitors nocomposition # econsole # sysdebug=all
     module boot/modules/afs-handler
     module boot/modules/amberram-handler
     module boot/modules/aros.library
