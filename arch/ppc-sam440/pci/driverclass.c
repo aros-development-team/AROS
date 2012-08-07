@@ -55,16 +55,17 @@ OOP_Object *PCI440__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct TagItem mytags[] = {
         { aHidd_Name, (IPTR)"PCINative" },
         { aHidd_HardwareName, (IPTR)"AMCC440 native direct access PCI driver" },
+        { aHidd_PCIDriver_IOBase, PCI0_IO },
         { TAG_DONE, 0 }
     };
 
     mymsg.mID = msg->mID;
-    mymsg.attrList = (struct TagItem *)&mytags;
+    mymsg.attrList = (struct TagItem *)&mytags[0];
 
     if (msg->attrList)
     {
-        mytags[2].ti_Tag = TAG_MORE;
-        mytags[2].ti_Data = (IPTR)msg->attrList;
+        mytags[3].ti_Tag = TAG_MORE;
+        mytags[3].ti_Data = (IPTR)msg->attrList;
     }
  
     msg = &mymsg;
@@ -74,7 +75,7 @@ OOP_Object *PCI440__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     return o;
 }
 
-static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg)
+static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg)
 {
     ULONG temp;
     
@@ -93,7 +94,7 @@ ULONG PCI440__Hidd_PCIDriver__ReadConfigLong(OOP_Class *cl, OOP_Object *o,
     return ReadConfigLong(PSD(cl), msg->bus, msg->dev, msg->sub, msg->reg);
 }
 
-static void WriteConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UBYTE reg, ULONG val)
+static void WriteConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub, UWORD reg, ULONG val)
 {
     DB2(bug("[PCI440] <- %08x = %08x\n", CFGADD(bus, dev, sub, reg), val));
     Disable();
