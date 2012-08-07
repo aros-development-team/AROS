@@ -38,8 +38,8 @@ MA 02111-1307, USA.
 
 #define DEVICE_NAME "atheros5000.device"
 #define VERSION 1
-#define REVISION 2
-#define DATE "12.6.2012"
+#define REVISION 3
+#define DATE "1.8.2012"
 
 #define UTILITY_VERSION 39
 #define PROMETHEUS_VERSION 2
