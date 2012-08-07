@@ -3,11 +3,11 @@
 
 
 /*
-**	$VER: diskimage_protos.h 52.1 (23.11.2011)
+**	$VER: diskimage_protos.h 52.1 (28.05.2012)
 **
 **	C prototypes. For use with 32 bit integers only.
 **
-**	Copyright © 2011 
+**	Copyright © 2012 
 **	All Rights Reserved
 */
 
