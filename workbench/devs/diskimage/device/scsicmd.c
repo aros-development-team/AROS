@@ -214,9 +214,9 @@ LONG DoSCSICmd (struct IOStdReq *io, struct SCSICmd *scsi) {
 							BytePackWrite8(&data, track->track_num);
 							BytePackWrite8(&data, 0);
 							if (cmd[1] & 2) {
-								uint8 h, m, s, f;
-								ADDR2HMSF(addr, h, m, s, f);
-								BytePackWrite8(&data, h);
+								uint8 m, s, f;
+								ADDR2MSF(addr, m, s, f);
+								BytePackWrite8(&data, 0);
 								BytePackWrite8(&data, m);
 								BytePackWrite8(&data, s);
 								BytePackWrite8(&data, f);
@@ -231,9 +231,9 @@ LONG DoSCSICmd (struct IOStdReq *io, struct SCSICmd *scsi) {
 						BytePackWrite8(&data, 0xaa);
 						BytePackWrite8(&data, 0);
 						if (cmd[1] & 2) {
-							uint8 h, m, s, f;
-							ADDR2HMSF(addr, h, m, s, f);
-							BytePackWrite8(&data, h);
+							uint8 m, s, f;
+							ADDR2MSF(addr, m, s, f);
+							BytePackWrite8(&data, 0);
 							BytePackWrite8(&data, m);
 							BytePackWrite8(&data, s);
 							BytePackWrite8(&data, f);

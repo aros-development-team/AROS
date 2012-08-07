@@ -3,11 +3,11 @@
 
 
 /*
-**	$VER: z_protos.h 1.0 (23.11.2011)
+**	$VER: z_protos.h 1.0 (28.05.2012)
 **
 **	C prototypes. For use with 32 bit integers only.
 **
-**	Copyright © 2011 
+**	Copyright © 2012 
 **	All Rights Reserved
 */
 
