@@ -32,6 +32,7 @@ OOP_Object *PCIDrv__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     struct DrvInstData *instance = (struct DrvInstData *)OOP_INST_DATA(cl, o);
 
     instance->DirectBus = GetTagData(aHidd_PCIDriver_DirectBus, TRUE, msg->attrList);
+    instance->IOBase = GetTagData(aHidd_PCIDriver_IOBase, 0, msg->attrList);
 
     return o;
 }
@@ -279,6 +280,10 @@ VOID PCIDrv__Root__Get(OOP_Class *cl, OOP_Object *o,
 	{
 	    case aoHidd_PCIDriver_DirectBus:
 		*msg->storage = (IPTR)instance->DirectBus;
+		break;
+
+            case aoHidd_PCIDriver_IOBase:
+		*msg->storage = (IPTR)instance->IOBase;
 		break;
 	    
 	    default:

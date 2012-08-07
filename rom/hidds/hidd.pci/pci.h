@@ -35,6 +35,7 @@ struct DriverNode {
 
 struct DrvInstData {
     BOOL DirectBus;
+    IPTR IOBase;
 };
 
 struct PciDevice {
