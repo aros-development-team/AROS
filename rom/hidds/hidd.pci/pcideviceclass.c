@@ -21,6 +21,8 @@
 
 #undef HiddPCIDeviceAttrBase
 #define	HiddPCIDeviceAttrBase	(PSD(cl)->hiddPCIDeviceAB)
+#undef HiddPCIDriverAttrBase
+#define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
 
 static void setLong(OOP_Class *cl, OOP_Object *o, ULONG reg, ULONG value)
 {
@@ -424,7 +426,10 @@ static void dispatch_base(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
     *msg->storage = (IPTR)dev->BaseReg[id].addr;
     if ((dev->BaseReg[id].addr & PCIBAR_MASK_TYPE)==PCIBAR_TYPE_IO)
     {
+        IPTR IOBase = 0;
 	*msg->storage &= PCIBAR_MASK_IO;
+	OOP_GetAttr(dev->driver, aHidd_PCIDriver_IOBase, &IOBase);
+	*msg->storage += IOBase;
     }
     else
     {
