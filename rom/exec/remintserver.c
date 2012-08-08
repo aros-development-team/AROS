@@ -10,8 +10,10 @@
 #include <exec/interrupts.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 #include <aros/libcall.h>
 
+#include "exec_intern.h"
 #include "chipset.h"
 
 /*****************************************************************************
@@ -46,6 +48,11 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if (intNumber >= INTB_KERNEL) {
+        KrnRemIRQHandler(interrupt->is_Node.ln_Succ);
+        return;
+    }
 
     Disable();
 
