@@ -58,4 +58,12 @@ struct SoftIntList
 #define INTB_NMI      15
 #define INTF_NMI (1L<<15)
 
+/* Offset of kernel interrupt vectors.
+ *
+ * Usage:
+ *   AddIntServer(INTB_KERNEL + irq, irq_handler);
+ *   RemIntServer(INTB_KERNEL + irq, irq_handler);
+ */
+#define INTB_KERNEL       (16)
+
 #endif /* EXEC_INTERRUPTS_H */

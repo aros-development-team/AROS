@@ -12,8 +12,26 @@
 #include <exec/interrupts.h>
 #include <hardware/intbits.h>
 #include <proto/exec.h>
+#include <proto/kernel.h>
 
+#include "exec_intern.h"
 #include "chipset.h"
+
+static void krnIRQwrapper(void *data1, void *data2)
+{
+    struct Interrupt *irq = (struct Interrupt *)data1;
+#ifdef __mc68000
+    struct Custom *custom = (APTR)(IPTR)0xdff000;
+#else
+    struct Custom *custom = 0;
+#endif
+
+    AROS_UFC4(int, irq->is_Code,
+            AROS_UFCA(struct Custom *, custom, A0),
+            AROS_UFCA(APTR, irq->is_Data, A1),
+            AROS_UFCA(APTR, irq->is_Code, A5),
+            AROS_UFCA(struct ExecBase *, SysBase, A6));
+}
 
 /*****************************************************************************
 
@@ -49,6 +67,11 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if (intNumber >= INTB_KERNEL) {
+        interrupt->is_Node.ln_Succ = KrnAddIRQHandler(intNumber - INTB_KERNEL, krnIRQwrapper, interrupt, NULL);
+        return;
+    }
 
     Disable();
 
