@@ -22,7 +22,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 $(AROS_DEVS)/Keymaps/% : $(OBJDIR)/%.o
 	%link_q opt="$(LDFLAGS) $(NOSTARTUP_LDFLAGS)"
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : $(SRCDIR)/$(CURDIR)/%.c
 	%compile_q cmd=$(TARGET_CC)
 
 #MM workbench-devs-keymaps-setup
