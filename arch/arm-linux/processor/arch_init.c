@@ -219,6 +219,12 @@ static ULONG arch_Init(struct ProcessorBase *ProcessorBase)
                         HostLib_Unlock();
                     }
                     data->Version = (revision << 16) | variant;
+
+                    /* Hack for qemu-arm support */
+                    if (data->Arch == 0) {
+                        data->Arch = CPUFAMILY_ARM_6;
+                        data->Features |= FF_VFP;
+                    }
                 }
 
                 FreeMem(buf, BUFFER_SIZE);
