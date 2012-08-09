@@ -92,7 +92,8 @@ COMMONTESTFILES := \
     runtests \
     fsresource \
     taskstorage \
-    mountlist
+    mountlist \
+    smult
 
 PURETESTFILES=\
     pcilist
