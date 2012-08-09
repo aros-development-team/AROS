@@ -12,7 +12,7 @@ GCC_LANGUAGES = c,c++
 GCC_EXTRA_OPTS = \
   --with-arch=$(GCC_DEFAULT_CPU) --with-float=$(GCC_DEFAULT_FLOAT_ABI) --with-fpu=$(GCC_DEFAULT_FPU) --with-mode=arm \
   --target=$(AROS_TARGET_CPU)-aros --bindir=$(CROSSTOOLSDIR) --enable-languages=$(GCC_LANGUAGES) \
-  --enable-long-long --enable-version-specific-runtime-libs
+  --enable-long-long --enable-version-specific-runtime-libs --disable-multilib
 else
 GCC_LANGUAGES = c,c++,objc
 GCC_EXTRA_OPTS = \
