@@ -42,7 +42,7 @@ void cpu_Switch(regs_t *regs)
 
     /* If we have an FPU, save the FPU context */
     if (SysBase->AttnFlags & AFF_FPU)
-            AROS_UFC2(void, FpuSaveContext,
+            AROS_UFC2NR(void, FpuSaveContext,
                             AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
                             AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 
@@ -79,7 +79,7 @@ void cpu_Dispatch(regs_t *regs)
 
     /* If we have an FPU, restore the FPU context */
     if (SysBase->AttnFlags & AFF_FPU)
-            AROS_UFC2(void, FpuRestoreContext,
+            AROS_UFC2NR(void, FpuRestoreContext,
                             AROS_UFCA(struct FpuContext *, &ctx->fpu, A0),
                             AROS_UFCA(UWORD, (SysBase->AttnFlags & AFF_68060) ? 2 : 0, D0));
 

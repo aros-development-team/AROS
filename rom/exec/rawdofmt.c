@@ -138,7 +138,7 @@ do                                        \
 	}						\
 	else						\
 	{						\
-            AROS_UFC2(void, PutChProc,        		\
+        AROS_UFC2NR(void, PutChProc,        		\
 	    AROS_UFCA(UBYTE, (ch), D0),       		\
 	    AROS_UFCA(APTR , PutChData, A3)); 		\
 	}						\

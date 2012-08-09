@@ -42,7 +42,7 @@ void _ilsFreeVec(SIPTR *funcarray, void *buf);
     )				    
 
 #define ilsFreeMem(addr, size)          \
-    AROS_UFC3                        \
+    AROS_UFC3NR                      \
     (                                \
         void, (APTR)(funcarray[2]),  \
         AROS_UFCA(void *, addr, A1), \

@@ -75,7 +75,7 @@ BOOL InitCard(struct uaegfx_staticdata *csd)
 void WaitBlitter(struct uaegfx_staticdata *csd)
 {
     if (csd->CardBase)
-    	AROS_CALL1(void, gptr(csd, PSSO_BoardInfo_WaitBlitter),
+    	AROS_CALL1NR(void, gptr(csd, PSSO_BoardInfo_WaitBlitter),
     	    AROS_LCA(APTR, csd->boardinfo, A0),
     	    struct Library*, csd->CardBase);
 }

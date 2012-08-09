@@ -31,6 +31,7 @@
 
 #define FLAG_BN		(1 << 0)
 #define FLAG_DOUBLE	(1 << 1)
+#define FLAG_NR    	(1 << 2)
 
 void aros_ufp(int id, int is_static)
 {
@@ -61,7 +62,6 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
 {
     int i;
     int has_bn = (flags & FLAG_BN);
-    int ret_d  = (flags & FLAG_DOUBLE);
 
     /* Input values */
     for (i = 0; i < id; i++)
@@ -72,9 +72,6 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
         printf("\t   ULONG _bn_arg = (ULONG)bn; \\\n");
 
     /* Define registers */
-    printf("\t   register volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
-    if (ret_d)
-        printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
     for (i = 0; i < id; i++)
         printf("\t   register volatile ULONG __AROS_%sTA(a%d) asm(__AROS_%sSA(a%d)); \\\n",
                type, i + 1, type, i + 1
@@ -135,28 +132,35 @@ static void asm_regs_init(int id, int flags, const char *type, const char *jmp, 
 
 static void asm_regs_exit(int id, int flags)
 {
-    int ret_d  = (flags & FLAG_DOUBLE);
-    
+    if (flags & FLAG_NR) {
+        printf("\t   asm volatile (\"\" : : : \"%%d0\", \"%%d1\", \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
+        return;
+    }
+
     /* Get the return code */
-    if (ret_d)
-    {
-        printf("\t   asm volatile (\"\" : \"=r\" (_ret0), \"=r\" (_ret1) : : \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
-        printf("\t   (t)({union { struct { ULONG r0,r1; } v; double d; } rv;\\\n");
-        printf("\t        rv.v.r0 = _ret0; rv.v.r1 = _ret1; rv.d; });\\\n");
-    }
-    else
-    {
-        printf("\t   asm volatile (\"\" : \"=r\" (_ret0) : : \"%%d1\", \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
-        printf("\t   (t)_ret0; \\\n");
-    }
+    printf("\t   register volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
+    printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
+    printf("\t   asm volatile (\"\" : \"=r\" (_ret0), \"=r\" (_ret1) : : \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
+    printf("\t   (sizeof(t) < sizeof(QUAD)) ? (t)(_ret0) :\\\n");
+    printf("\t      ({struct { ULONG r0,r1; } rv;\\\n");
+    printf("\t        t *t_ptr = (void *)&rv.r0;\\\n");
+    printf("\t        rv.r0 = _ret0; rv.r1 = _ret1; *t_ptr; });\\\n");
 }
 
-static void aros_ufc(int id)
+static inline const char *nr(int flags)
+{
+    if (flags & FLAG_NR)
+        return "NR";
+    else
+        return "";
+}
+
+static void aros_ufc(int id, int flags)
 {
     int i;
     char jmp[256];
 
-    printf("#define __AROS_UFC%d(t,n", id);
+    printf("#define __AROS_UFC%d%s(t,n", id, nr(flags));
     for (i = 0; i < id; i++)
         printf(",a%d", i + 1);
     printf(") \\\n");
@@ -168,19 +172,20 @@ static void aros_ufc(int id)
              "0:\\n"
     );
     jmp[sizeof(jmp)-1]=0;
-    asm_regs_init(i, 0, "UF", jmp, "\"r\" (_n), \"i\" (__LINE__)");
+    asm_regs_init(i, flags, "UF", jmp, "\"r\" (_n), \"i\" (__LINE__)");
 
-    asm_regs_exit(i, 0);
+    asm_regs_exit(i, flags);
     printf("\t  })\n\n");
-    printf("#define AROS_UFC%d __AROS_UFC%d\n", id, id);
+    printf("#define AROS_UFC%d%s __AROS_UFC%d%s\n", id, nr(flags), id, nr(flags));
 }
 
-void aros_lc(int id, int is_double)
+void aros_lc(int id, int flags)
 {
     int i;
-    int flags = FLAG_BN | (is_double ? FLAG_DOUBLE : 0);
+    int is_double = (flags & FLAG_DOUBLE);
+    flags |= FLAG_BN;
 
-    printf("#define __AROS_LC%d%s(t,n,", id, is_double ? "D" : "");
+    printf("#define __AROS_LC%d%s%s(t,n,", id, is_double ? "D" : "", nr(flags));
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
@@ -188,7 +193,7 @@ void aros_lc(int id, int is_double)
     asm_regs_init(id, flags, "L", "jsr %c1(%%a6)", "\"i\" (-1 * (o) * LIB_VECTSIZE), \"r\" (_bn)");
     asm_regs_exit(id, flags);
     printf("\t  })\n\n");
-    printf("#define AROS_LC%d%s __AROS_LC%d%s\n", id, is_double ? "D" : "", id, is_double ? "D" : "");
+    printf("#define AROS_LC%d%s%s __AROS_LC%d%s%s\n", id, is_double ? "D" : "", nr(flags), id, is_double ? "D" : "", nr(flags));
 }
 
 void aros_lp(int id, int is_ignored)
@@ -228,59 +233,34 @@ void aros_lh(int id, int is_ignored)
     printf("#define AROS_LH%d%s __AROS_LH%d%s\n", id, is_ignored ? "I" : "", id, is_ignored ? "I" : "");
 }
 
-static void aros_lcnr(int id)
-{
-    printf("#define AROS_LC%dNR __AROS_LC%d\n", id, id);
-}
-
-static void aros_call(int id)
+static void aros_call(int id, int flags)
 {
     int i;
-    printf("#define __AROS_CALL%d(t,n,", id);
+    printf("#define __AROS_CALL%d%s(t,n,", id, nr(flags));
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn) \\\n");
-    printf("\tAROS_UFC%d(t,n", id + 1);
+    printf("\tAROS_UFC%d%s(t,n", id + 1, nr(flags));
     for (i = 0; i < id; i++)
     {
         printf(",AROS_UFCA(a%d)", i + 1);
     }
     printf(",AROS_UFCA(bt,bn,A6))\n");
-    printf("#define AROS_CALL%d __AROS_CALL%d\n", id, id);
+    printf("#define AROS_CALL%d%s __AROS_CALL%d%s\n", id, nr(flags), id, nr(flags));
 }
 
-static void aros_callnr(int id)
-{
-    printf("#define __AROS_CALL%dNR __AROS_CALL%d\n", id, id);
-    printf("#define AROS_CALL%dNR __AROS_CALL%dNR\n", id, id);
-}
-
-static void aros_lvo_call(int id)
+static void aros_lvo_call(int id, int flags)
 {
     int i;
-    printf("#define __AROS_LVO_CALL%d(t,", id);
+    printf("#define __AROS_LVO_CALL%d%s(t,", id, nr(flags));
     for (i = 0; i < id; i++)
         printf("a%d,", i + 1);
     printf("bt,bn,o,s) \\\n");
-    printf("\t__AROS_CALL%d(t,__AROS_GETVECADDR(bn,o), \\\n", id);
+    printf("\t__AROS_CALL%d%s(t,__AROS_GETVECADDR(bn,o), \\\n", id, nr(flags));
     for (i = 0; i < id; i++)
         printf("\t\tAROS_LCA(a%d), \\\n", i + 1);
     printf("\t\tbt,bn)\n");
-    printf("#define AROS_LVO_CALL%d __AROS_LVO_CALL%d\n", id, id);
-}
-
-static void aros_lvo_callnr(int id)
-{
-    int i;
-    printf("#define __AROS_LVO_CALL%dNR(t,", id);
-    for (i = 0; i < id; i++)
-        printf("a%d,", i + 1);
-    printf("bt,bn,o,s) \\\n");
-    printf("\t__AROS_CALL%dNR(t,__AROS_GETVECADDR(bn,o), \\\n", id);
-    for (i = 0; i < id; i++)
-        printf("\t\tAROS_LCA(a%d), \\\n", i + 1);
-    printf("\t\tbt,bn)\n");
-    printf("#define AROS_LVO_CALL%dNR __AROS_LVO_CALL%dNR\n", id, id);
+    printf("#define AROS_LVO_CALL%d%s __AROS_LVO_CALL%d%s\n", id, nr(flags), id, nr(flags));
 }
 
 static void aros_ld(int id, int is_ignored)
@@ -581,7 +561,10 @@ int main(int argc, char **argv)
             aros_ufh(i, 1);
 
         for (i = 0; i < GENCALL_MAX; i++)
-            aros_ufc(i);
+            aros_ufc(i, 0);
+
+        for (i = 0; i < GENCALL_MAX; i++)
+            aros_ufc(i, FLAG_NR);
 
         printf("\n%s\n", asmextra);
 
@@ -619,28 +602,26 @@ int main(int argc, char **argv)
         printf("\n");
         printf("#define __AROS_CPU_SPECIFIC_LC\n\n");
 	
-        for (i = 0; i < GENCALL_MAX; i++)
+        for (i = 0; i < GENCALL_MAX; i++) {
             aros_lc(i, 0);
+            aros_lc(i, FLAG_NR);
+        }
 
         /* For double return AROS_LC2D..AROS_LC4D */
-        aros_lc(2, 1);
-        aros_lc(3, 1);
-        aros_lc(4, 1);
+        aros_lc(2, FLAG_DOUBLE);
+        aros_lc(3, FLAG_DOUBLE);
+        aros_lc(4, FLAG_DOUBLE);
+
+        for (i = 0; i < GENCALL_MAX; i++) {
+            aros_call(i, 0);
+            aros_call(i, FLAG_NR);
+        }
 
         for (i = 0; i < GENCALL_MAX; i++)
-            aros_lcnr(i);
+            aros_lvo_call(i, 0);
 
         for (i = 0; i < GENCALL_MAX; i++)
-            aros_call(i);
-
-        for (i = 0; i < GENCALL_MAX; i++)
-            aros_callnr(i);
-
-        for (i = 0; i < GENCALL_MAX; i++)
-            aros_lvo_call(i);
-
-        for (i = 0; i < GENCALL_MAX; i++)
-            aros_lvo_callnr(i);
+            aros_lvo_call(i, FLAG_NR);
 
         printf("\n");
         printf("#define __AROS_CPU_SPECIFIC_LD\n\n");

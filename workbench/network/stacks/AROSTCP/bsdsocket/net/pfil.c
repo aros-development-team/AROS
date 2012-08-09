@@ -108,7 +108,7 @@ pfil_run_hooks(struct mbuf *m, struct ifnet *ifp, unsigned char pr)
 		DPF(kprintf("Executing packet filter routine: 0x%08lx\n", pfil_func);)
 		switch (pfh->pfil_hooktype) {
 		case MIAMICPU_M68KREG:
-			AROS_UFC3(void, pfil_func,
+			AROS_UFC3NR(void, pfil_func,
 				AROS_UFCA(struct Hook *, pfh->pfil_hook, A0),
 				AROS_UFCA(APTR, pfh, A2),
 				AROS_UFCA(struct MiamiPFBuffer *, &pfb, A1));

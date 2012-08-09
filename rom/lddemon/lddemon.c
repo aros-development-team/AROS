@@ -206,7 +206,7 @@ static struct Library *LDInit(BPTR seglist, struct List *list, STRPTR resname, s
     /* If struct Resident was not found, just run the code. SegList in A0.
      * Required to load WB1.x devs:narrator.device. */
     Forbid();
-    AROS_UFC1(void, BADDR(seglist) + sizeof(ULONG), AROS_UFCA(BPTR, seglist, A0));
+    AROS_UFC1NR(void, BADDR(seglist) + sizeof(ULONG), AROS_UFCA(BPTR, seglist, A0));
     node = FindName(list, resname);
     Permit();
     D(bug("[LDInit] Done direct calling %s, seg %p, node %p\n", resname, BADDR(seglist), node));

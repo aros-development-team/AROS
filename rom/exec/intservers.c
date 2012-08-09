@@ -63,7 +63,7 @@ AROS_UFH5(void, VBlankServer,
     }
 
     /* Chain to the generic routine */
-    AROS_UFC5(void, IntServer,
+    AROS_UFC5NR(void, IntServer,
 	      AROS_UFCA(ULONG, intMask, D1),
 	      AROS_UFCA(struct Custom *, custom, A0),
 	      AROS_UFCA(struct List *, intList, A1),

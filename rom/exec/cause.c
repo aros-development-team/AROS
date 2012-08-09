@@ -178,7 +178,7 @@ AROS_UFH5(void, SoftIntDispatch,
                     KrnSti();
 
                     /* Call the software interrupt. */
-                    AROS_UFC3(void, intr->is_Code,
+                    AROS_UFC3NR(void, intr->is_Code,
                               AROS_UFCA(APTR, intr->is_Data, A1),
                               AROS_UFCA(APTR, intr->is_Code, A5),
                               AROS_UFCA(struct ExecBase *, SysBase, A6));

@@ -57,7 +57,7 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
 	volatile struct Custom *custom = (struct Custom*)0xdff000;
   	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_Index.is_Code) {
  		D(bug("disk_index %p %p\n", DiskBase->dr_Current->dru_Index.is_Code, DiskBase->dr_Current->dru_Index.is_Data));
- 		AROS_UFC4(void, DiskBase->dr_Current->dru_Index.is_Code,
+ 		AROS_UFC4NR(void, DiskBase->dr_Current->dru_Index.is_Code,
 			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_Index.is_Data, A1),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_Index.is_Code, A5),
@@ -80,7 +80,7 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
  	custom->intreq = INTF_DSKSYNC;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscSync.is_Code) {
  		D(bug("disk_sync %p %p\n", DiskBase->dr_Current->dru_DiscSync.is_Code, DiskBase->dr_Current->dru_DiscSync.is_Data));
- 		AROS_UFC4(void, DiskBase->dr_Current->dru_DiscSync.is_Code,
+ 		AROS_UFC4NR(void, DiskBase->dr_Current->dru_DiscSync.is_Code,
  			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscSync.is_Data, A1),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscSync.is_Code, A5),
@@ -103,7 +103,7 @@ static AROS_UFH4(ULONG, disk_index_interrupt,
  	custom->intreq = INTF_DSKBLK;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscBlock.is_Code) {
  		D(bug("disk_block %p %p\n", DiskBase->dr_Current->dru_DiscBlock.is_Code, DiskBase->dr_Current->dru_DiscBlock.is_Data));
-  		AROS_UFC4(void, DiskBase->dr_Current->dru_DiscBlock.is_Code,
+  		AROS_UFC4NR(void, DiskBase->dr_Current->dru_DiscBlock.is_Code,
  			AROS_UFCA(struct Custom *, custom, A0),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscBlock.is_Data, A1),
 			AROS_UFCA(APTR, DiskBase->dr_Current->dru_DiscBlock.is_Code, A5),

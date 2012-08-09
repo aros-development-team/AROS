@@ -118,7 +118,7 @@ AROS_LD3(void, CacheClearE,
        Note that we call this function directly because MakeFunctions() is also
        used for building ExecBase itself. */
     if (SysBase->LibNode.lib_Node.ln_Type != NT_LIBRARY) {
-        AROS_CALL3(void, AROS_SLIB_ENTRY(CacheClearE, Exec, 107),
+        AROS_CALL3NR(void, AROS_SLIB_ENTRY(CacheClearE, Exec, 107),
 	      AROS_UFCA(APTR, lastvec, A0),
 	      AROS_UFCA(ULONG, n, D0),
 	      AROS_UFCA(ULONG, CACRF_ClearI|CACRF_ClearD, D1),

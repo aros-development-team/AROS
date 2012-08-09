@@ -93,9 +93,9 @@ void FastPutMsg(struct MsgPort *port, struct Message *message, struct ExecBase *
     ASSERT_VALID_PTR(((struct Interrupt *) port->mp_SoftInt)->is_Code);
 
     /* call the "interrupt" with the message as an argument */
-    AROS_UFC4(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
+    AROS_UFC4NR(void, ((struct Interrupt *) port->mp_SoftInt)->is_Code,
              AROS_UFCA(APTR, ((struct Interrupt *) port->mp_SoftInt)->is_Data, A1),
-	     AROS_UFCA(ULONG_FUNC, (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
+	         AROS_UFCA(ULONG_FUNC, (ULONG_FUNC)((struct Interrupt *) port->mp_SoftInt)->is_Code, A5),
              AROS_UFCA(struct Message *,  message, D0),
              AROS_UFCA(struct ExecBase *, SysBase, A6));
 }
@@ -130,7 +130,7 @@ void InternalPutMsg(struct MsgPort *port, struct Message *message, struct ExecBa
 
             case PA_CALL:
                 /* Call the function in mp_SigTask. */
-                AROS_UFC2(void, port->mp_SigTask,
+                AROS_UFC2NR(void, port->mp_SigTask,
                     AROS_UFCA(struct MsgPort *,  port,    D0),
                     AROS_UFCA(struct ExecBase *, SysBase, A6));
                 break;

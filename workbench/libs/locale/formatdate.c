@@ -355,7 +355,7 @@ VOID _WriteString(CONST_STRPTR string, const struct Hook *hook,
 VOID _WriteChar(char token, const struct Hook *hook,
     const struct Locale *locale)
 {
-    AROS_UFC3(VOID, hook->h_Entry,
+    AROS_UFC3NR(VOID, hook->h_Entry,
         AROS_UFCA(const struct Hook *, hook, A0),
         AROS_UFCA(const struct Locale *, locale, A2),
         AROS_UFCA(char, token, A1));

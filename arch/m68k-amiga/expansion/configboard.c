@@ -97,7 +97,7 @@ AROS_UFH5(void, writeexpansion,
 			configDev->cd_SlotSize = slotsize;
 			configDev->cd_Flags |= CDF_CONFIGME;
 			IntExpBase(ExpansionBase)->eb_z3Slot = newslot + slotsize;
-			AROS_UFC5(void, writeexpansion,
+			AROS_UFC5NR(void, writeexpansion,
 				AROS_UFCA(APTR,  board, A0),
 				AROS_UFCA(APTR,  configDev, A3),
 				AROS_UFCA(UBYTE, type, D0),
@@ -168,7 +168,7 @@ AROS_UFH5(void, writeexpansion,
 				configDev->cd_Flags |= CDF_CONFIGME;
 				configDev->cd_SlotAddr = (startaddr >> 16);
 				configDev->cd_SlotSize = size >> 16;
-				AROS_UFC5(void, writeexpansion,
+				AROS_UFC5NR(void, writeexpansion,
 					AROS_UFCA(APTR,  board, A0),
 					AROS_UFCA(APTR,  configDev, A3),
 					AROS_UFCA(UBYTE, type, D0),

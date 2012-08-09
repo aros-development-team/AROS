@@ -72,7 +72,7 @@ void core_Switch(void)
     task->tc_IDNestCnt = SysBase->IDNestCnt;
 
     if (task->tc_Flags & TF_SWITCH)
-        AROS_UFC1(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+        AROS_UFC1NR(void, task->tc_Switch, AROS_UFCA(struct ExecBase *, SysBase, A6));
 }
 
 /*
@@ -126,7 +126,7 @@ struct Task *core_Dispatch(void)
 #endif
 
     if (task->tc_Flags & TF_LAUNCH)
-        AROS_UFC1(void, task->tc_Launch, AROS_UFCA(struct ExecBase *, SysBase, A6));
+        AROS_UFC1NR(void, task->tc_Launch, AROS_UFCA(struct ExecBase *, SysBase, A6));
 
     /* Leave interrupt and jump to the new task */
     return task;

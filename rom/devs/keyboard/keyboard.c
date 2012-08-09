@@ -520,7 +520,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    {
 		/* We may be inside an interrupt when we come here. Maybe
 		   we shall use some other technique? */
-		AROS_UFC3(VOID, node->is_Code,
+		AROS_UFC3NR(VOID, node->is_Code,
 			  AROS_UFCA(APTR, node->is_Data, A1),
 			  AROS_UFCA(APTR, node->is_Code, A5),
 			  AROS_UFCA(struct ExecBase *, SysBase, A6));
@@ -652,7 +652,7 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 	D(bug("doing software irq\n"));
 	Cause(&KBBase->kb_Interrupt);
 #else
-	AROS_UFC3(VOID, kbdSendQueuedEvents,
+	AROS_UFC3NR(VOID, kbdSendQueuedEvents,
 	    AROS_UFCA(struct KeyboardBase *, KBBase  , A1),
 	    AROS_UFCA(APTR                 , NULL, A5),
 	    AROS_UFCA(struct ExecBase *    , SysBase , A6));

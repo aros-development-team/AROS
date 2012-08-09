@@ -541,7 +541,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 	Cause(&GPBase->gp_Interrupt);	
 #else
-	AROS_UFC3(VOID, gpSendQueuedEvents,
+	AROS_UFC3NR(VOID, gpSendQueuedEvents,
 		  AROS_UFCA(struct GameportBase *, GPBase  , A1),
 		  AROS_UFCA(APTR                 , NULL, A5),
 		  AROS_UFCA(struct ExecBase *    , SysBase , A6));

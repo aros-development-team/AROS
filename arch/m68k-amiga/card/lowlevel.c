@@ -113,7 +113,7 @@ AROS_UFH4(ULONG, card_level2,
     }
     if (poststatus) {
     	INTDEBUG(bug("poststatus\n"));
-	AROS_UFC4(void, cah->cah_CardStatus->is_Code,
+	AROS_UFC4NR(void, cah->cah_CardStatus->is_Code,
 	    AROS_UFCA(UBYTE, 0, D0),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
 	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),

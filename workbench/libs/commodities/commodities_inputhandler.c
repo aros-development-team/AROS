@@ -303,7 +303,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
 		 *
 		 * All other architectures (should) be using the stack.
 		 */
-		AROS_UFC4(void, cx_Thunk,
+		AROS_UFC4NR(void, cx_Thunk,
 		      AROS_UFCA(CxMsg*, msg, A0),
 		      AROS_UFCA(CxObj*, co, A1),
 		      AROS_UFCA(APTR, co->co_Ext.co_CustomExt->cext_Action, A2),

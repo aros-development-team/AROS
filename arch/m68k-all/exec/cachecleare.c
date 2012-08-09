@@ -95,7 +95,7 @@ extern void AROS_SLIB_ENTRY(CacheClearE_4060,Exec,107)(void);
         /* Everybody else (68000, 68010) */
         func = AROS_SLIB_ENTRY(CacheClearE_00, Exec, 107);
     }
-    AROS_UFC3(void, func,
+    AROS_UFC3NR(void, func,
 	AROS_UFCA(APTR, address, A0),
 	AROS_UFCA(ULONG, length, D0),
 	AROS_UFCA(ULONG, caches, D1));
