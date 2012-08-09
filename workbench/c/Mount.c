@@ -1936,7 +1936,7 @@ void ShowFault(LONG code, char *s, ...)
 	l += 2;
 	Fault(code, NULL, &buf[l], sizeof(buf) - l);
 	if (buf[l] == 0)
-	    snprintf(&buf[l], sizeof(buf) - l, "%d", code);
+	    snprintf(&buf[l], sizeof(buf) - l, "%ld", (long)code);
 	buf[sizeof(buf)-1] = 0;
 	if (IsCli)
 	{
