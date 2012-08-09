@@ -597,6 +597,22 @@ typedef unsigned int (*ULONG_FUNC)();
     __AROS_UFCA(a14),\
     __AROS_UFCA(a15)\
     ))
+#define AROS_UFC0NR AROS_UFC0
+#define AROS_UFC1NR AROS_UFC1
+#define AROS_UFC2NR AROS_UFC2
+#define AROS_UFC3NR AROS_UFC3
+#define AROS_UFC4NR AROS_UFC4
+#define AROS_UFC5NR AROS_UFC5
+#define AROS_UFC6NR AROS_UFC6
+#define AROS_UFC7NR AROS_UFC7
+#define AROS_UFC8NR AROS_UFC8
+#define AROS_UFC9NR AROS_UFC9
+#define AROS_UFC10NR AROS_UFC10
+#define AROS_UFC11NR AROS_UFC11
+#define AROS_UFC12NR AROS_UFC12
+#define AROS_UFC13NR AROS_UFC13
+#define AROS_UFC14NR AROS_UFC14
+#define AROS_UFC15NR AROS_UFC15
 #endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 
 /* Prototypes for user functions */

@@ -46,7 +46,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
         (*((ULONG *) pdata))++;
         break;
     default:
-        AROS_UFC3(void, hook->h_SubEntry,
+        AROS_UFC3NR(void, hook->h_SubEntry,
             AROS_UFCA(char, fill, D0),
             AROS_UFCA(APTR, pdata, A3),
             AROS_UFCA(struct ExecBase *, SysBase, A6));

@@ -182,7 +182,7 @@ APTR InternalFormatString(const struct Locale * locale,
              */
             if (!scanning)
             {
-                AROS_UFC3(VOID, putCharFunc->h_Entry,
+                AROS_UFC3NR(VOID, putCharFunc->h_Entry,
                     AROS_UFCA(const struct Hook *, putCharFunc, A0),
                     AROS_UFCA(const struct Locale *, locale, A2),
                     AROS_UFCA(UBYTE, fmtTemplate[template_pos], A1));
@@ -251,7 +251,7 @@ APTR InternalFormatString(const struct Locale * locale,
             {
                 if (!scanning)
                 {
-                    AROS_UFC3(VOID, putCharFunc->h_Entry,
+                    AROS_UFC3NR(VOID, putCharFunc->h_Entry,
                         AROS_UFCA(const struct Hook *, putCharFunc, A0),
                         AROS_UFCA(const struct Locale *, locale, A2),
                         AROS_UFCA(UBYTE, fmtTemplate[template_pos], A1));
@@ -724,7 +724,7 @@ APTR InternalFormatString(const struct Locale * locale,
                     /* Print padding if right aligned */
                     if (!left)
                         for (i = buflen; i < width; i++)
-                            AROS_UFC3(VOID, putCharFunc->h_Entry,
+                            AROS_UFC3NR(VOID, putCharFunc->h_Entry,
                                 AROS_UFCA(const struct Hook *, putCharFunc, A0),
                                 AROS_UFCA(const struct Locale *, locale, A2),
                                 AROS_UFCA(UBYTE, fill, A1));
@@ -732,7 +732,7 @@ APTR InternalFormatString(const struct Locale * locale,
                     /* Print body up to buflen */
                     for (i = 0; i < buflen; i++)
                     {
-                        AROS_UFC3(VOID, putCharFunc->h_Entry,
+                        AROS_UFC3NR(VOID, putCharFunc->h_Entry,
                             AROS_UFCA(const struct Hook *, putCharFunc, A0),
                             AROS_UFCA(const struct Locale *, locale, A2),
                             AROS_UFCA(UBYTE, *buffer++, A1));
@@ -741,7 +741,7 @@ APTR InternalFormatString(const struct Locale * locale,
                     /* Pad right if left aligned */
                     if (left)
                         for (i = buflen; i < width; i++)
-                            AROS_UFC3(VOID, putCharFunc->h_Entry,
+                            AROS_UFC3NR(VOID, putCharFunc->h_Entry,
                                 AROS_UFCA(const struct Hook *, putCharFunc, A0),
                                 AROS_UFCA(const struct Locale *, locale, A2),
                                 AROS_UFCA(UBYTE, fill, A1));

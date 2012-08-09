@@ -221,7 +221,7 @@ static BOOL dosboot_BootBlock(struct BootNode *bn, struct ExpansionBase *Expansi
 	 * test, trying to mount a filesystem and read the volume.
 	 * We hope it won't do any harm for NDOS game disks.
 	 */
-       AROS_UFC3(void, init,
+       AROS_UFC3NR(void, init,
        		 AROS_UFCA(APTR, NULL, D0),
        		 AROS_UFCA(BPTR, BNULL, A0),
        		 AROS_UFCA(struct ExecBase *, SysBase, A6));

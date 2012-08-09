@@ -153,7 +153,7 @@ void _CallLayerHook(struct Hook * h,
     msg.OffsetX = offsetX;
     msg.OffsetY = offsetY;
     
-    AROS_UFC3(void, h->h_Entry,
+    AROS_UFC3NR(void, h->h_Entry,
         AROS_UFCA(struct Hook *,         h   ,A0),
         AROS_UFCA(struct RastPort *,     rp  ,A2),
         AROS_UFCA(struct layerhookmsg *, &msg,A1)

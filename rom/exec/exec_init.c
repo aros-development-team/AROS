@@ -277,7 +277,7 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
     {
         DINIT("Calling CoolCapture at 0x%p", SysBase->CoolCapture);
 
-        AROS_UFC1(void, SysBase->CoolCapture,
+        AROS_UFC1NR(void, SysBase->CoolCapture,
             AROS_UFCA(struct Library *, (struct Library *)SysBase, A6));
     }
 
