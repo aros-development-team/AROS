@@ -1530,7 +1530,7 @@ BYTE ata_Identify(struct ata_Unit* unit)
     SWAP_LE_WORD(unit->au_Drive->id_MWDMA_MinCycleTime);
     SWAP_LE_WORD(unit->au_Drive->id_MWDMA_DefCycleTime);
     SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTime);
-    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTImeIORDY);
+    SWAP_LE_WORD(unit->au_Drive->id_PIO_MinCycleTimeIORDY);
     SWAP_LE_WORD(unit->au_Drive->id_QueueDepth);
     SWAP_LE_WORD(unit->au_Drive->id_ATAVersion);
     SWAP_LE_WORD(unit->au_Drive->id_ATARevision);
