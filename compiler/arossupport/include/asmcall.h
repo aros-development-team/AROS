@@ -831,6 +831,44 @@ typedef unsigned int (*ULONG_FUNC)();
     ) {
 #endif
 
+/* AROS Interrupt is_Code handler
+ *
+ * Handler should return TRUE (interrupt handled)
+ * or FALSE (continue interrupt processing)
+ */
+#define AROS_UFIH4(n, type, data, intmask, custom, code) \
+        AROS_UFH5(ULONG, n,                         \
+          AROS_UFHA(APTR,      __ufi_data, A1),     \
+          AROS_UFHA(VOID_FUNC, code,       A5),     \
+          AROS_UFHA(struct ExecBase *, SysBase, A6),\
+          AROS_UFHA(ULONG,     intmask,    D1),     \
+          AROS_UFHA(APTR,      custom,     A0)      \
+        ) type __unused data = __ufi_data;
+#define AROS_UFIH3(n, type, data, intmask, custom) AROS_UFIH4(n, type, data, intmask, custom, __ufi_code)
+#define AROS_UFIH2(n, type, data, intmask) AROS_UFIH4(n, type, data, intmask, __ufi_custom, __ufi_code)
+#define AROS_UFIH1(n, type, data)          AROS_UFIH4(n, type, data, __ufi_intmask, __ufi_custom, __ufi_code)
+#define AROS_UFIH0(n)                      AROS_UFIH4(n, APTR, data, __ufi_intmask, __ufi_custom, __ufi_code)
+
+#define AROS_UFIC4(n, data, intmask, custom, code)         \
+        AROS_UFC5(ULONG, n,                                \
+                AROS_UFCA(APTR,      data,    A1),         \
+                AROS_UFCA(VOID_FUNC, code,    A5),         \
+                AROS_UFCA(struct ExecBase *, SysBase, A6), \
+                AROS_UFCA(ULONG,     intmask, D1),         \
+                AROS_UFCA(APTR,      custom,  A0))
+#define AROS_UFIC3(n, data, intmask, custom) AROS_UFIC4(n, data, intmask, custom, (VOID_FUNC)(n))
+#define AROS_UFIC2(n, data, intmask)         AROS_UFIC4(n, data, intmask, (APTR)(IPTR)0xdff000, (VOID_FUNC)(n));
+#define AROS_UFIC1(n, data)                  AROS_UFIC4(n, data, 0, (APTR)(IPTR)0xdff000, (VOID_FUNC)(n));
+
+#define AROS_UFIP(n)                                       \
+        AROS_UFP5(ULONG, n,                                \
+          AROS_UFPA(APTR,      __ufi_data,    A1),         \
+          AROS_UFPA(VOID_FUNC, __ufi_code,    A5),         \
+          AROS_UFPA(struct ExecBase *, __ufi_SysBase, A6), \
+          AROS_UFPA(ULONG,     __ufi_intmask, D1),         \
+          AROS_UFPA(APTR,      __ufi_custom,  A0))
+
+
 /******************************************************************************
 *****  ENDE aros/asmcall.h
 ******************************************************************************/

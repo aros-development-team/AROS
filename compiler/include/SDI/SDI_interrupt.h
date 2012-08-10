@@ -114,17 +114,21 @@
 
 #elif defined(__AROS__)
 
+  /* This is the same prototype for both Cause() and
+   * AddIntServer() functions
+   */
   #define INTERRUPTPROTO(name, ret, obj, data) \
-      ret name(obj, data); \
-      AROS_UFH4(int, name##_wrapper, \
-          AROS_UFHA(APTR, custom, A0), \
+      ret name(obj, data, struct ExecBase *SysBase); \
+      AROS_UFH5(int, name##_wrapper, \
           AROS_UFHA(APTR, is_Data, A1), \
           AROS_UFHA(APTR, is_Code, A5), \
-          AROS_UFHA(struct ExecBase *, SysBase, A6)) \
+          AROS_UFHA(struct ExecBase *, sysBase, A6), \
+          AROS_UFHA(APTR, mask, D1), \
+          AROS_UFHA(APTR, custom, A0)) \
       { AROS_USERFUNC_INIT \
-        name(custom, is_Data); return 0; \
+        name(custom, is_Data, sysBase ); return 0; \
         AROS_USERFUNC_EXIT }  \
-      ret name(obj, data)
+      ret name(obj, data, struct ExecBase *SysBase)
 
 #else
 
