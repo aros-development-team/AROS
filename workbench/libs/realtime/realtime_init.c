@@ -99,14 +99,9 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
 
 
 /* RealTime timer interrupt -- currently only a VBlank interrupt */
-AROS_UFH4(ULONG, rtVBlank,
-	  AROS_UFHA(ULONG, dummy, A0),
-	  AROS_UFHA(void *, data, A1),
-	  AROS_UFHA(ULONG, dummy2, A5),
-	  AROS_UFHA(struct ExecBase *, mySysBase, A6))
+static AROS_UFIH1(rtVBlank, struct internal_RealTimeBase *, RealTimeBase)
 {
     AROS_USERFUNC_INIT
-    struct internal_RealTimeBase *RealTimeBase = GPB(data);
 
     // kprintf("Signalling task %p\n", RealTimeBase->rtb_PulseTask);
     Signal(RealTimeBase->rtb_PulseTask, SIGF_SINGLE);
