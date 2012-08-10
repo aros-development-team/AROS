@@ -21,7 +21,6 @@
 #   include <exec/semaphores.h>
 #endif
 
-#include <hidd/irq.h>
 #include <hidd/mouse.h>
 
 /* defines for buttonstate */
@@ -106,8 +105,7 @@ struct mouse_data
         } usb;
         struct
         {
-            OOP_Object      	    	*irqhidd;
-            HIDDT_IRQ_Handler 	    	*irq;
+            struct Interrupt  	    	irq;
             UBYTE           	    	mouse_data[5];
             UBYTE           	    	mouse_collected_bytes;
     	    UBYTE   	    	    	mouse_protocol;

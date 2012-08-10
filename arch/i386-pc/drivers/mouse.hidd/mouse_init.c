@@ -35,4 +35,3 @@ static int PCMouse_Init(LIBBASETYPEPTR LIBBASE)
 }
 
 ADD2INITLIB(PCMouse_Init, 0)
-ADD2LIBS("irq.hidd", 0, struct Library *, __irqhidd)

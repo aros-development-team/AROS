@@ -19,8 +19,9 @@
 
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
-#include <hidd/irq.h>
 #include <devices/inputevent.h>
+
+#include <SDI/SDI_interrupt.h>
 
 #include "mouse.h"
 
@@ -48,7 +49,6 @@ int mouse_wait_for_input(void);
 
 /****************************************************************************************/
 
-void mouse_ps2int(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 int mouse_ps2reset(struct mouse_data *);
 
 /****************************************************************************************/
@@ -211,183 +211,10 @@ int mouse_wait_for_input(void)
 
 /****************************************************************************************/
 
-int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
+AROS_UFIH1(mouse_ps2int,struct mouse_data *, data)
 {
-    struct mouse_data *data = OOP_INST_DATA(cl, o);
-    struct Library *kbd_hidd;
+    AROS_USERFUNC_INIT
 
-    /* Test for a PS/2 controller */
-    if ((kbd_hidd = OpenLibrary("kbd.hidd", 0)) == NULL)
-        return 0;
-    CloseLibrary(kbd_hidd);
-
-    /* Open IRQ Hidd */
-    if ((data->u.ps2.irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
-    {
-        HIDDT_IRQ_Handler   *irq;
-
-        data->u.ps2.irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR | MEMF_PUBLIC);
-        if (irq != NULL)
-        {
-            int result;
-
-            irq->h_Node.ln_Pri  = 127;
-            irq->h_Node.ln_Name = "PS/2 mouse class irq";
-            irq->h_Code         = mouse_ps2int;
-            irq->h_Data         = (APTR)data;
-
-            HIDD_IRQ_AddHandler(data->u.ps2.irqhidd, irq, vHidd_IRQ_Mouse);
-
-            Disable();
-            result = mouse_ps2reset(data);
-            Enable();
-
-            /* If mouse_ps2reset() returned non-zero value, there is vaild PS/2 mouse */
-            if (result)
-            {
-                return 1;
-            }
-            /* Either no PS/2 mouse or problems with it */
-            /* Remove mouse interrupt */
-            HIDD_IRQ_RemHandler(data->u.ps2.irqhidd, irq);
-            /* Free IRQ structure as it's not needed anymore */
-            FreeMem(irq, sizeof(HIDDT_IRQ_Handler));
-        }
-        /* Dispose IRQ object */
-        OOP_DisposeObject(data->u.ps2.irqhidd);
-    }
-    /* Report no PS/2 mouse */
-    return 0;
-}
-
-void dispose_mouse_ps2(OOP_Class *cl, OOP_Object *o) {
-struct mouse_data *data = OOP_INST_DATA(cl, o);
-
-   HIDD_IRQ_RemHandler(data->u.ps2.irqhidd, data->u.ps2.irq);
-   FreeMem(data->u.ps2.irq, sizeof(HIDDT_IRQ_Handler));
-   OOP_DisposeObject(data->u.ps2.irqhidd);
-}
-
-/****************************************************************************************/
-
-void getps2State(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event)
-{
-#if 0
-struct mouse_data *data = OOP_INST_DATA(cl, o);
-UBYTE ack;
-
-/* The following doesn't seem to do anything useful */
-	mouse_write(KBD_OUTCMD_DISABLE);
-	/* switch to remote mode */
-	mouse_write(KBD_OUTCMD_SET_REMOTE_MODE);
-	/* we want data */
-	ack = data->u.ps2.expected_mouse_acks+1;
-	mouse_write(KBD_OUTCMD_READ_DATA);
-	while (data->u.ps2.expected_mouse_acks>=ack)
-		mouse_usleep(1000);
-	/* switch back to stream mode */
-	mouse_write(KBD_OUTCMD_SET_STREAM_MODE);
-	mouse_write(KBD_OUTCMD_ENABLE);
-#endif
-}
-
-/****************************************************************************************/
-
-static int detect_aux()
-{
-    int loops = 10;
-    int retval = 0;
-
-    mouse_wait();
-
-    mouse_write_command(KBD_CTRLCMD_WRITE_AUX_OBUF);
-
-    mouse_wait();
-    mouse_write_output(0x5a);
-
-    do
-    {
-	unsigned char status = mouse_read_status();
-
-	if (status & KBD_STATUS_OBF)
-	{
-	    (void) mouse_read_input();
-	    if (status & KBD_STATUS_MOUSE_OBF)
-	    {
-		retval = 1;
-	    }
-	    break;
-	}
-
-	mouse_usleep(1000);
-
-    } while (--loops);
-
-    D(bug("PS/2 Auxilliary port %sdetected\n", retval ? "" : "not "));
-    return retval;
-}
-
-/****************************************************************************************/
-
-static int query_mouse(UBYTE *buf, int size, int timeout)
-{
-    int ret = 0;
-
-    do
-    {
-	UBYTE status = mouse_read_status();
-
-	if (status & KBD_STATUS_OBF)
-	{
-	    UBYTE c = mouse_read_input();
-
-	    if ((c != KBD_REPLY_ACK) && (status & KBD_STATUS_MOUSE_OBF))
-	    {
-		buf[ret++] = c;
-	    }
-	}
-    	else
-	{
-	    mouse_usleep(1000);
-	}
-
-    } while ((--timeout) && (ret < size));
-
-    return ret;
-
-}
-
-/****************************************************************************************/
-
-static int detect_intellimouse(void)
-{
-    UBYTE id = 0;
-
-    /* Try to switch into IMPS2 mode */
-
-    mouse_write_ack(KBD_OUTCMD_SET_RATE);
-    mouse_write_ack(200);
-    mouse_write_ack(KBD_OUTCMD_SET_RATE);
-    mouse_write_ack(100);
-    mouse_write_ack(KBD_OUTCMD_SET_RATE);
-    mouse_write_ack(80);
-    mouse_write_ack(KBD_OUTCMD_GET_ID);
-    mouse_write_noack(KBD_OUTCMD_GET_ID);
-
-    query_mouse(&id, 1, 20);
-
-    return ((id == 3) || (id == 4)) ? id : 0;
-}
-
-/****************************************************************************************/
-
-#undef SysBase
-#define SysBase (hw->sysBase)
-
-
-void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct mouse_data           *data =(struct mouse_data *)irq->h_Data;
     struct pHidd_Mouse_Event    *e = &data->u.ps2.event;
     UWORD   	    	    	buttonstate;
     WORD    	    	    	work = 10000;
@@ -528,12 +355,170 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         D(bug("mouse.hidd: controller jammed (0x%02X).\n", info));
     }
 
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-#undef SysBase
-#define SysBase (*(struct ExecBase **)4L)
+int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
+{
+    struct mouse_data *data = OOP_INST_DATA(cl, o);
+    struct Library *kbd_hidd;
+    struct Interrupt    *irq;
+    int result;
+
+    /* Test for a PS/2 controller */
+    if ((kbd_hidd = OpenLibrary("kbd.hidd", 0)) == NULL)
+        return 0;
+    CloseLibrary(kbd_hidd);
+
+    irq = &data->u.ps2.irq;
+
+    irq->is_Node.ln_Type = NT_INTERRUPT;
+    irq->is_Node.ln_Pri  = 127;
+    irq->is_Node.ln_Name = "PS/2 mouse class irq";
+    irq->is_Code         = (VOID_FUNC)mouse_ps2int;
+    irq->is_Data         = (APTR)data;
+
+    AddIntServer(INTB_KERNEL + 12, irq);
+
+    Disable();
+    result = mouse_ps2reset(data);
+    Enable();
+
+    /* If mouse_ps2reset() returned non-zero value, there is vaild PS/2 mouse */
+    if (result)
+    {
+        return 1;
+    }
+    /* Either no PS/2 mouse or problems with it */
+    /* Remove mouse interrupt */
+    RemIntServer(INTB_KERNEL + 12, irq);
+
+    /* Report no PS/2 mouse */
+    return 0;
+}
+
+void dispose_mouse_ps2(OOP_Class *cl, OOP_Object *o) {
+struct mouse_data *data = OOP_INST_DATA(cl, o);
+
+   RemIntServer(INTB_KERNEL + 12, &data->u.ps2.irq);
+}
+
+/****************************************************************************************/
+
+void getps2State(OOP_Class *cl, OOP_Object *o, struct pHidd_Mouse_Event *event)
+{
+#if 0
+struct mouse_data *data = OOP_INST_DATA(cl, o);
+UBYTE ack;
+
+/* The following doesn't seem to do anything useful */
+	mouse_write(KBD_OUTCMD_DISABLE);
+	/* switch to remote mode */
+	mouse_write(KBD_OUTCMD_SET_REMOTE_MODE);
+	/* we want data */
+	ack = data->u.ps2.expected_mouse_acks+1;
+	mouse_write(KBD_OUTCMD_READ_DATA);
+	while (data->u.ps2.expected_mouse_acks>=ack)
+		mouse_usleep(1000);
+	/* switch back to stream mode */
+	mouse_write(KBD_OUTCMD_SET_STREAM_MODE);
+	mouse_write(KBD_OUTCMD_ENABLE);
+#endif
+}
+
+/****************************************************************************************/
+
+static int detect_aux()
+{
+    int loops = 10;
+    int retval = 0;
+
+    mouse_wait();
+
+    mouse_write_command(KBD_CTRLCMD_WRITE_AUX_OBUF);
+
+    mouse_wait();
+    mouse_write_output(0x5a);
+
+    do
+    {
+	unsigned char status = mouse_read_status();
+
+	if (status & KBD_STATUS_OBF)
+	{
+	    (void) mouse_read_input();
+	    if (status & KBD_STATUS_MOUSE_OBF)
+	    {
+		retval = 1;
+	    }
+	    break;
+	}
+
+	mouse_usleep(1000);
+
+    } while (--loops);
+
+    D(bug("PS/2 Auxilliary port %sdetected\n", retval ? "" : "not "));
+    return retval;
+}
+
+/****************************************************************************************/
+
+static int query_mouse(UBYTE *buf, int size, int timeout)
+{
+    int ret = 0;
+
+    do
+    {
+	UBYTE status = mouse_read_status();
+
+	if (status & KBD_STATUS_OBF)
+	{
+	    UBYTE c = mouse_read_input();
+
+	    if ((c != KBD_REPLY_ACK) && (status & KBD_STATUS_MOUSE_OBF))
+	    {
+		buf[ret++] = c;
+	    }
+	}
+    	else
+	{
+	    mouse_usleep(1000);
+	}
+
+    } while ((--timeout) && (ret < size));
+
+    return ret;
+
+}
+
+/****************************************************************************************/
+
+static int detect_intellimouse(void)
+{
+    UBYTE id = 0;
+
+    /* Try to switch into IMPS2 mode */
+
+    mouse_write_ack(KBD_OUTCMD_SET_RATE);
+    mouse_write_ack(200);
+    mouse_write_ack(KBD_OUTCMD_SET_RATE);
+    mouse_write_ack(100);
+    mouse_write_ack(KBD_OUTCMD_SET_RATE);
+    mouse_write_ack(80);
+    mouse_write_ack(KBD_OUTCMD_GET_ID);
+    mouse_write_noack(KBD_OUTCMD_GET_ID);
+
+    query_mouse(&id, 1, 20);
+
+    return ((id == 3) || (id == 4)) ? id : 0;
+}
+
+/****************************************************************************************/
 
 #define AUX_INTS_OFF (KBD_MODE_KCC | KBD_MODE_DISABLE_MOUSE | KBD_MODE_SYS | KBD_MODE_KBD_INT)
 #define AUX_INTS_ON  (KBD_MODE_KCC | KBD_MODE_SYS | KBD_MODE_MOUSE_INT | KBD_MODE_KBD_INT)
