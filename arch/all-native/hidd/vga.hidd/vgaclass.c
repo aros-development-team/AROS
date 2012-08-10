@@ -34,10 +34,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static AROS_UFH3(void, ResetHandler,
-		 AROS_UFHA(struct vga_staticdata *, xsd, A1),
-		 AROS_UFHA(APTR, unused, A5),
-		 AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(ResetHandler, struct vga_staticdata *, xsd)
 {
     AROS_USERFUNC_INIT
 
@@ -54,7 +51,9 @@ static AROS_UFH3(void, ResetHandler,
 	
 	vgaEraseArea(data, &box);
     }
-    
+
+    return 0;
+
     AROS_USERFUNC_EXIT
 }
 
@@ -188,7 +187,7 @@ OOP_Object *PCVGA__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg
     if (o) {
         struct Vga_Data *data = OOP_INST_DATA(cl, o);
 
-	data->ResetInterrupt.is_Code = ResetHandler;
+	data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
 	data->ResetInterrupt.is_Data = XSD(cl);
 	AddResetCallback(&data->ResetInterrupt);
     }
