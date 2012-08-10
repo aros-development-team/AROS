@@ -44,7 +44,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -227,9 +226,9 @@ struct RTL8139Unit {
 
 	struct Process          *rtl8139u_Process;
 
-	HIDDT_IRQ_Handler       *rtl8139u_irqhandler;
-	HIDDT_IRQ_Handler       *rtl8139u_touthandler;
-	IPTR	                  rtl8139u_DeviceID;
+	struct Interrupt        rtl8139u_irqhandler;
+	struct Interrupt        rtl8139u_touthandler;
+	IPTR	                rtl8139u_DeviceID;
 	APTR                    rtl8139u_BaseMem;
 	IPTR                    rtl8139u_SizeMem;
 	IPTR	                  rtl8139u_BaseIO;
