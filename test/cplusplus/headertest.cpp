@@ -548,7 +548,6 @@
 #include <hidd/graphics.h>
 #include <hidd/hidd.h>
 #include <hidd/i2c.h>
-#include <hidd/irq.h>
 #include <hidd/keyboard.h>
 #include <hidd/mouse.h>
 #include <hidd/parallel.h>

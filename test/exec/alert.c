@@ -15,16 +15,15 @@
  * in hosted AROS are running on a simulated supervisor level for internal
  * purposes (in order to avoid nesting interrupts).
  */
-AROS_UFH3(void, superAlert,
-	  AROS_UFHA(APTR, interruptData, A1),
-	  AROS_UFHA(APTR, interruptCode, A5),
-	  AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(superAlert, APTR, interruptData)
 {
     AROS_USERFUNC_INIT
 
     D(bug("Supervisor code called\n"));
 
     Alert((IPTR)interruptData);
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
@@ -51,7 +50,7 @@ int main(int argc, char **argv)
 	D(bug("Calling supervisor alert...\n"));
 
 	MyInt.is_Data = (APTR)n;
-	MyInt.is_Code = superAlert;
+	MyInt.is_Code = (APTR)superAlert;
 
 	Cause(&MyInt);
     }

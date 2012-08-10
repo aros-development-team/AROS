@@ -28,16 +28,14 @@ AROS_UFH3(void, taskentry,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3(void, intentry,
-          AROS_UFHA(APTR,              data,    A1),
-          AROS_UFHA(APTR,              code,    A5),
-          AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+AROS_UFIH1(intentry, struct MsgPort *, port)
+{
     AROS_USERFUNC_INIT
-
-    struct MsgPort *port = (struct MsgPort *) data;
 
     WaitPort(port);
     ReplyMsg(GetMsg(port));
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
@@ -108,7 +106,7 @@ int main(int argc, char **argv) {
     printf("PA_SIGNAL: %ld.%lds\n",(long)( end.tv_sec - start.tv_sec), (long)(end.tv_usec - start.tv_usec) / 1000);
 
     intr = AllocVec(sizeof(struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
-    intr->is_Code = intentry;
+    intr->is_Code = (APTR)intentry;
     intr->is_Data = port;
 
     port->mp_Flags = PA_SOFTINT;
