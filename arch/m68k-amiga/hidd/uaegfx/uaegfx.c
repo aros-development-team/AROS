@@ -802,14 +802,11 @@ static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
-AROS_UFH4(APTR, rtg_vblank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(APTR, boardinfo, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(rtg_vblank, APTR, boardinfo)
 {
     AROS_USERFUNC_INIT
 
+    (void)boardinfo;
     return 0;	
 
     AROS_USERFUNC_EXIT
