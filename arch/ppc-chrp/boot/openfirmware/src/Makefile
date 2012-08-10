@@ -1,6 +1,6 @@
 # $Id: Makefile 51 2008-03-20 15:51:17Z michalsc $
 
-FILES 		:= bootstrap of1275 support menu elf
+FILES 		:= bootstrap of1275 support menu elf gpr
 TARGETDIR	:= .obj
 
 all:	depend ../bin/bootloader

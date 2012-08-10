@@ -11,7 +11,7 @@
 
 char *remove_path(const char *in)
 {
-    char *p = &in[strlen(in)-1];
+    char *p = (char *)&in[strlen(in)-1];
 
     while (p > in && p[-1] != '/' && p[-1] != ':') p--;
     return p;
