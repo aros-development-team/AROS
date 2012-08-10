@@ -38,7 +38,6 @@
 #include <utility/hooks.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
@@ -267,37 +266,19 @@ static void drain_ring(struct net_device *dev)
 
 static int request_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    BOOL ret;
-
 D(bug("%s: request_irq()\n", dev->rhineu_name));
 
-    if (irq)
-    {
-        ret = HIDD_IRQ_AddHandler(irq, dev->rhineu_irqhandler, dev->rhineu_IRQ);
-        HIDD_IRQ_AddHandler(irq, dev->rhineu_touthandler, vHidd_IRQ_Timer);
+    AddIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
+    AddIntServer(INTB_VERTB, &dev->rhineu_touthandler);
 
 D(bug("%s: request_irq: IRQ Handlers configured\n", dev->rhineu_name));
-
-        OOP_DisposeObject(irq);
-
-        if (ret)
-        {
-            return 0;
-        }
-    }
-    return 1;
+    return 0;
 }
 
 static void free_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (irq)
-    {
-        HIDD_IRQ_RemHandler(irq, dev->rhineu_irqhandler);
-        HIDD_IRQ_RemHandler(irq, dev->rhineu_touthandler);
-        OOP_DisposeObject(irq);
-    }
+    RemIntServer(INTB_KERNEL + dev->rhineu_IRQ, &dev->rhineu_irqhandler);
+    RemIntServer(INTB_VERTB, &dev->rhineu_touthandler);
 }
 
 int viarhinenic_rx_setmode(struct net_device *dev)

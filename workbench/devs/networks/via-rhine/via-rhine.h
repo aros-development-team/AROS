@@ -32,7 +32,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -170,9 +169,9 @@ struct VIARHINEUnit {
     struct Process          *rhineu_Process;
 
     struct VIARHINEBase    *rhineu_device;
-    HIDDT_IRQ_Handler       *rhineu_irqhandler;
-    HIDDT_IRQ_Handler       *rhineu_touthandler;
-    IPTR	                  rhineu_DeviceID;
+    struct Interrupt        rhineu_irqhandler;
+    struct Interrupt        rhineu_touthandler;
+    IPTR	                rhineu_DeviceID;
     IPTR                    rhineu_DriverFlags;
     IPTR                    rhineu_IRQ;
     IPTR                    rhineu_BaseMem;
