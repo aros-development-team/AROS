@@ -37,11 +37,7 @@
 extern int  driver_init (struct GfxBase *);
 extern void driver_expunge (struct GfxBase *);
 
-AROS_UFP4(ULONG, TOF_VBlank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6));
+AROS_UFIP(TOF_VBlank);
 
 #ifndef SYSFONTNAME
 #   define SYSFONTNAME  "topaz.font"
@@ -132,7 +128,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
     if(LIBBASE->LibNode.lib_OpenCnt == 0)
     {
 	NEWLIST(&LIBBASE->TOF_WaitQ);
-	LIBBASE->vbsrv.is_Code         = (APTR)TOF_VBlank;
+	LIBBASE->vbsrv.is_Code         = (VOID_FUNC)TOF_VBlank;
 	LIBBASE->vbsrv.is_Data         = LIBBASE;
 	LIBBASE->vbsrv.is_Node.ln_Name = "Graphics TOF server";
 	LIBBASE->vbsrv.is_Node.ln_Pri  = 10;
@@ -153,16 +149,11 @@ ADD2OPENLIB(GfxOpen, 0);
 
 #undef SysBase
 
-AROS_UFH4(ULONG, TOF_VBlank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(TOF_VBlank, struct GfxBase *, GfxBase)
 {
     AROS_USERFUNC_INIT
 
     struct Node *tNode;
-    struct GfxBase * GfxBase = (struct GfxBase *)data;
 
     GfxBase->VBCounter++;
     if(!IsListEmpty(&GfxBase->TOF_WaitQ))
