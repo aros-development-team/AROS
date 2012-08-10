@@ -162,12 +162,8 @@ static struct IntData
     ULONG signal;
 } DiskChangeIntData;
 
-AROS_UFH3(static BOOL, DiskChangeIntHandler,
-    AROS_UFHA(struct IntData *,  MyIntData, A1),
-    AROS_UFHA(APTR,              dummy, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
 {
-
     AROS_USERFUNC_INIT
 
     struct ExecBase *SysBase = MyIntData->SysBase;
