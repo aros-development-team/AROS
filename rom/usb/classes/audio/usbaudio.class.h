@@ -136,14 +136,11 @@ AROS_LD3(IPTR, subLibHardwareControl,
          AROS_LDA(struct AHIAudioCtrlDrv *, audioctrl, A2),
          SUBLIBBASETYPEPTR, nas, 19, nep);
 
-AROS_UFP1(void, subLibPlayerIntV4,
-          AROS_UFPA(struct NepAudioMode *, nam, A1));
+AROS_UFIP(subLibPlayerIntV4);
           
-AROS_UFP1(void, subLibPlayerIntV6,
-          AROS_UFPA(struct NepAudioMode *, nam, A1));
+AROS_UFIP(subLibPlayerIntV6);
 
-AROS_UFP1(void, subLibPlayerIntDummy,
-          AROS_UFPA(struct NepAudioMode *, nam, A1));
+AROS_UFIP(subLibPlayerIntDummy);
 
 struct NepClassAudio * nAllocAudio(void);
 void nFreeAudio(struct NepClassAudio *nch);
