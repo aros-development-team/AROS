@@ -307,48 +307,34 @@ static void callbusirq(struct amiga_driverdata *ddata)
     bug("[ATA] Spurious interrupt: %02X %02X\n", status1, status2);
 }
 
-AROS_UFH4(APTR, IDE_Handler_A1200,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(IDE_Handler_A1200, struct amiga_driverdata *, ddata)
 {
     AROS_USERFUNC_INIT
 
-    struct amiga_driverdata *ddata = data;
     UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
 	callbusirq(ddata);
     }
-    return 0;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH4(APTR, IDE_Handler_A4000,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(IDE_Handler_A4000, struct amiga_driverdata *, ddata)
 {
     AROS_USERFUNC_INIT
 
-    struct amiga_driverdata *ddata = data;
     /* A4000 interrupt clears when register is read */
     UWORD irqmask = *((UWORD*)ddata->gayleirqbase);
     if (irqmask & (GAYLE_IRQ_IDE << 8)) {
 	callbusirq(ddata);
     }
-    return 0;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFH4(UBYTE, IDE_PCMCIA_Handler,
-    AROS_UFHA(UBYTE, status, D0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH2(IDE_PCMCIA_Handler, void *, data, status)
 { 
     AROS_USERFUNC_INIT
 
@@ -365,7 +351,7 @@ AROS_UFH4(UBYTE, IDE_PCMCIA_Handler,
     AROS_USERFUNC_EXIT
 }
 
-static APTR ata_CreateInterrupt(struct ata_Bus *bus, UBYTE num)
+static BOOL ata_CreateInterrupt(struct ata_Bus *bus, UBYTE num)
 {
     struct amiga_busdata *bdata = bus->ab_DriverData;
     struct amiga_driverdata *ddata = bdata->ddata;
@@ -376,7 +362,7 @@ static APTR ata_CreateInterrupt(struct ata_Bus *bus, UBYTE num)
     ddata->bus[num] = bdata;
 
     if (ddata->ideintdone)
-    	return bdata;
+    	return TRUE;
     ddata->ideintdone = TRUE;
 
     if (ddata->a4000) {
@@ -395,17 +381,17 @@ static APTR ata_CreateInterrupt(struct ata_Bus *bus, UBYTE num)
     if (gayleintbase)
         *gayleintbase |= GAYLE_INT_IDE;
 
-    return bdata;
+    return TRUE;
 }
-static APTR ata_CreateInterrupt0(struct ata_Bus *bus)
+static BOOL ata_CreateInterrupt0(struct ata_Bus *bus)
 {
     return ata_CreateInterrupt(bus, 0);
 }
-static APTR ata_CreateInterrupt1(struct ata_Bus *bus)
+static BOOL ata_CreateInterrupt1(struct ata_Bus *bus)
 {
     return ata_CreateInterrupt(bus, 1);
 }
-static APTR ata_CreateInterrupt_pcmcia(struct ata_Bus *bus)
+static BOOL ata_CreateInterrupt_pcmcia(struct ata_Bus *bus)
 {
     struct amiga_busdata *bdata = bus->ab_DriverData;
     struct amiga_pcmcia_driverdata *ddata = bdata->ddata;
@@ -414,7 +400,7 @@ static APTR ata_CreateInterrupt_pcmcia(struct ata_Bus *bus)
     ddata->bus[0] = bdata;
 
     ddata->intena = 1;
-    return bdata;
+    return TRUE;
 }
 
 static const struct ata_BusDriver amiga_driver0 = 

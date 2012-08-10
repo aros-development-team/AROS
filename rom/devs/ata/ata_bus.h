@@ -18,6 +18,6 @@ struct ata_BusDriver
      * The following doesn't require high speed, and it is going
      * to become HIDD methods.
      */
-    APTR (*CreateInterrupt)(struct ata_Bus *bus);
+    BOOL (*CreateInterrupt)(struct ata_Bus *bus);
     VOID (*AckInterrupt)(struct ata_Bus *bus);
 };

@@ -14,7 +14,6 @@
 #include <asm/io.h>
 #include <asm/amcc440.h>
 #include <exec/lists.h>
-#include <hidd/irq.h>
 #include <oop/oop.h>
 #include <resources/processor.h>
 #include <proto/exec.h>
@@ -85,53 +84,31 @@ static VOID ata460_outsl(APTR address, UWORD port, ULONG count, APTR data)
     ata460_outsw(address, port, count, data);
 }
 
-static void ata460_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+static AROS_UFIH1(ata460_Interrupt, struct ata_Bus *, bus)
 {
+    AROS_USERFUNC_INIT
     /*
      * Our interrupt handler should call this function.
-     * It's our problem how to store bus pointer. Here we use h_Data for it.
      */
-    ata_HandleIRQ(irq->h_Data);
+    ata_HandleIRQ(bus);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 /* Actually a quick hack. Proper implementation really needs HIDDizing this code. */
-static APTR ata460_CreateInterrupt(struct ata_Bus *bus)
+static BOOL ata460_CreateInterrupt(struct ata_Bus *bus)
 {
-    HIDDT_IRQ_Handler *IntHandler = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC);
+    bus->ab_IntHandler.is_Node.ln_Type = NT_INTERRUPT;
+    bus->ab_IntHandler.is_Node.ln_Name = "Sam460ex SATA/IDE";
+    bus->ab_IntHandler.is_Node.ln_Pri  = 0;
+    bus->ab_IntHandler.is_Code = (VOID_FUNC)ata460_Interrupt;
+    bus->ab_IntHandler.is_Data = bus;
 
-    if (IntHandler)
-    {
-        OOP_Object *o;
+    AddIntServer(INTB_KERNEL + bus->ab_IRQ, &bus->ab_IntHandler);
 
-        /*
-            Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
-            it should work quite well
-        */
-        IntHandler->h_Node.ln_Pri = 10;
-        IntHandler->h_Node.ln_Name = "<ppc460ex ATA>";
-        IntHandler->h_Code = ata460_Interrupt;
-        IntHandler->h_Data = bus;
-
-        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-        if (o)
-        {
-            struct pHidd_IRQ_AddHandler msg =
-            {
-                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-                handlerinfo:    IntHandler,
-                id:             bus->ab_IRQ,
-            };
-            int retval = OOP_DoMethod(o, &msg.mID);
-
-            OOP_DisposeObject(o);
-            
-            if (retval)
-            	return IntHandler;
-        }
-    }
-
-    FreeMem(IntHandler, sizeof(HIDDT_IRQ_Handler));
-    return NULL;
+    return TRUE;
 }
 
 static const struct ata_BusDriver ppc460_driver = 
@@ -198,4 +175,3 @@ static int ata460_Scan(struct ataBase *base)
  * All bus scanners must run between them.
  */
 ADD2INITLIB(ata460_Scan, 40)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
