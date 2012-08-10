@@ -82,9 +82,7 @@
 #include "clib_stuff.h"
 #include <exec/interrupts.h>
 
-AROS_UFH2(ULONG, CDChangeHandler,
-    AROS_UFHA(struct CDVDBase *, global, A1),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(CDChangeHandler, struct CDVDBase *, global)
 { 
     AROS_USERFUNC_INIT
 
@@ -195,7 +193,7 @@ CDROM *Open_CDROM
 	    cd->changeint.is_Node.ln_Type = NT_INTERRUPT;
 	    cd->changeint.is_Node.ln_Name = "CDFS ChangeInt";
 	    cd->changeint.is_Data = (APTR)global;
-	    cd->changeint.is_Code = (APTR)CDChangeHandler;
+	    cd->changeint.is_Code = (VOID_FUNC)CDChangeHandler;
 	    cd->iochangeint->io_Length  = sizeof(struct Interrupt);
 	    cd->iochangeint->io_Data    = &cd->changeint;
 	    cd->iochangeint->io_Command = TD_ADDCHANGEINT;
