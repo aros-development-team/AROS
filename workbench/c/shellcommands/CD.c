@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CD CLI command
@@ -50,17 +50,18 @@
 
 #include <aros/shcommands.h>
 
-AROS_SH1(CD, 41.1,
-AROS_SHA(STRPTR, ,DIR, ,NULL))
+static STRPTR GetLockName(BPTR lock, struct ExecBase *SysBase,
+    struct DosLibrary *DOSBase);
+
+AROS_SH1(CD, 41.2,
+    AROS_SHA(STRPTR, , DIR, , NULL))
 {
     AROS_SHCOMMAND_INIT
 
     BPTR dir,newdir;
     STRPTR buf;
-    ULONG i;
     struct FileInfoBlock *fib;
-    LONG error = 0;
-
+    LONG return_code = 0, error = 0;
 
     if (SHArg(DIR))
     {
@@ -79,103 +80,84 @@ AROS_SHA(STRPTR, ,DIR, ,NULL))
 			newdir = dir;
 			dir = CurrentDir(newdir);
 
-			for (i = 256;;i += 256)
-			{
-			    buf = AllocVec(i, MEMF_ANY);
-
-			    if (buf == NULL)
-			    {
-				SetIoErr(ERROR_NO_FREE_STORE);
-				error = RETURN_ERROR;
-				break;
-			    }
-
-			    if (NameFromLock(newdir, buf, i))
-			    {
-				SetCurrentDirName(buf);
-				FreeVec(buf);
-			        break;
-			    }
-
+			buf = GetLockName(newdir, SysBase, DOSBase);
+		        if (buf != NULL)
+		        {
+			    SetCurrentDirName(buf);
 			    FreeVec(buf);
-
-			    if (IoErr() != ERROR_LINE_TOO_LONG)
-			    {
-				error = RETURN_ERROR;
-				break;
-			    }
-			}
+		        }
 		    }
 		    else
-		    {
-			SetIoErr(ERROR_OBJECT_WRONG_TYPE);
-			error = RETURN_ERROR;
-		    }
+			error = ERROR_OBJECT_WRONG_TYPE;
 		}
 		else
-		{
-		    error = RETURN_ERROR;
-		}
+		    error = IoErr();
 
 		FreeDosObject(DOS_FIB, fib);
 	    }
 	    else
-	    {
-		SetIoErr(ERROR_NO_FREE_STORE);
-		error = RETURN_ERROR;
-	    }
+		error = IoErr();
 
 	    UnLock(dir);
 	}
 	else
-	{
-	    error = RETURN_ERROR;
-	}
+	    error = IoErr();
     }
     else
     {
 	dir = CurrentDir(BNULL);
 
-	for(i = 256;;i += 256)
-	{
-	    buf = AllocVec(i, MEMF_ANY);
-
-	    if (buf == NULL)
-	    {
-		SetIoErr(ERROR_NO_FREE_STORE);
-		error = RETURN_ERROR;
-		break;
-	    }
-
-	    if (NameFromLock(dir, buf, i))
-	    {
-		if (FPuts(Output(), buf) < 0 || FPuts(Output(), "\n") < 0)
-		{
-		    error = RETURN_ERROR;
-		}
-		
-		FreeVec(buf);
-		break;
-	    }
-	    
-	    FreeVec(buf);
-
-	    if (IoErr() != ERROR_LINE_TOO_LONG)
-	    {
-		error = RETURN_ERROR;
-		break;
-	    }
-	}
-
+        buf = GetLockName(dir, SysBase, DOSBase);
+        if (buf != NULL)
+        {
+            if (FPuts(Output(), buf) < 0 || FPuts(Output(), "\n") < 0)
+                error = IoErr();
+        }
+        else
+            error = IoErr();
+	FreeVec(buf);
 	CurrentDir(dir);
     }
-    
-    if (error)
+
+    if (error != 0)
     {
-	PrintFault(IoErr(), "CD");
+        PrintFault(error, "CD");
+        return_code = RETURN_ERROR;
     }
 
-    return error;
+    return return_code;
 
     AROS_SHCOMMAND_EXIT
+}
+
+
+static STRPTR GetLockName(BPTR lock, struct ExecBase *SysBase, struct DosLibrary *DOSBase)
+{
+    LONG error = 0;
+    STRPTR buf = NULL;
+    ULONG i;
+
+    for(i = 256; buf == NULL && error == 0; i += 256)
+    {
+        buf = AllocVec(i, MEMF_PUBLIC);
+        if (buf != NULL)
+        {
+            if (!NameFromLock(lock, buf, i))
+            {
+                error = IoErr();
+                if (error == ERROR_LINE_TOO_LONG)
+                {
+                    error = 0;
+                    FreeVec(buf);
+                    buf = NULL;
+                }
+            }
+        }
+        else
+            error = IoErr();
+    }
+
+    if (error != 0)
+        SetIoErr(error);
+    return buf;
 }
