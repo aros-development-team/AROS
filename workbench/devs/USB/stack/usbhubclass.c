@@ -62,18 +62,15 @@ static void hub_process();
  * The HubInterrupt() is a tiny software interrupt routine that signals the
  * hub process about the need of hub exploration
  */
-static AROS_UFH3(void, HubInterrupt,
-          AROS_UFHA(APTR, interruptData, A1),
-          AROS_UFHA(APTR, interruptCode, A5),
-          AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(HubInterrupt, HubData *, hub)
 {
     AROS_USERFUNC_INIT
 
     /* Signal the HUB process about incoming interrupt */
-    HubData *hub = interruptData;
-
     if (hub->hub_task)
         Signal(hub->hub_task, 1 << hub->sigInterrupt);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -150,7 +147,7 @@ OOP_Object *METHOD(USBHub, Root, New)
             if (drv)
             {
                 hub->interrupt.is_Data = hub;
-                hub->interrupt.is_Code = HubInterrupt;
+                hub->interrupt.is_Code = (VOID_FUNC)HubInterrupt;
                 hub->intr_pipe = HIDD_USBDevice_CreatePipe(o, PIPE_Interrupt, ep->bEndpointAddress, ep->bInterval, AROS_LE2WORD(ep->wMaxPacketSize), 0);
 //                HIDD_USBDrv_AddInterrupt(drv, hub->intr_pipe, &hub->status[0], AROS_LE2WORD(ep->wMaxPacketSize), &hub->interrupt);
                 HIDD_USBDrv_AddInterrupt(drv, hub->intr_pipe, &hub->status[0], 1, &hub->interrupt);

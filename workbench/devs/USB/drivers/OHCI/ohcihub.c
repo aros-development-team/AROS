@@ -34,7 +34,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -263,14 +262,9 @@ BOOL METHOD(OHCI, Hidd_USBHub, SetPortFeature)
     return TRUE;
 }
 
-AROS_UFH3(void, OHCI_HubInterrupt,
-                 AROS_UFHA(APTR, interruptData, A1),
-                 AROS_UFHA(APTR, interruptCode, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(OHCI_HubInterrupt, ohci_data_t *,ohci)
 {
     AROS_USERFUNC_INIT
-
-    ohci_data_t *ohci = interruptData;
 
     /* Remove self from the msg queue */
     GetMsg(&ohci->timerPort);
@@ -278,7 +272,7 @@ AROS_UFH3(void, OHCI_HubInterrupt,
     if (ohci->timerReq->tr_node.io_Error == IOERR_ABORTED)
     {
         D(bug("[OHCI] INTR: Abrted\n"));
-        return;
+        return FALSE;
     }
 
     D(bug("[OHCI] INTR: Reenabling the RHSC interrupt\n"));
@@ -286,6 +280,8 @@ AROS_UFH3(void, OHCI_HubInterrupt,
     /* Reenable the RHSC interrupt */
     mmio(ohci->regs->HcInterruptStatus) = AROS_LONG2OHCI(HC_INTR_RHSC);
     mmio(ohci->regs->HcInterruptEnable) = AROS_LONG2OHCI(HC_INTR_RHSC);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
