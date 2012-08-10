@@ -5,6 +5,7 @@ FILES := pci_aros uhcichip dev uhwcmd
 
 %build_module mmake=kernel-usb-pciuhci  \
 	modname=pciuhci modtype=device      \
+	moduledir=Devs/USBHardware \
 	files="$(FILES)"                    \
 	uselibs="oop rom hiddstubs debug"
 
