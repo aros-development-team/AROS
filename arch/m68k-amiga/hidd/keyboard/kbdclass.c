@@ -45,15 +45,10 @@
 
 // CIA-A level 2 serial interrupt handler
 
-static AROS_UFH4(ULONG, keyboard_interrupt,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+static AROS_UFIH1(keyboard_interrupt, struct kbd_data *, kbddata)
 { 
     AROS_USERFUNC_INIT
 
-    struct kbd_data *kbddata = (struct kbd_data*)data;
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
     struct Library *TimerBase = kbddata->TimerBase;
     struct EClockVal eclock1, eclock2;
