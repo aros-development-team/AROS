@@ -89,21 +89,21 @@ VOID PPP_Process(VOID){
 
 		if( ! (timer=OpenTimer())) break;
 
-		bug("PPP process: forewer loop...\n");
+		bug("PPP process: for ever loop...\n");
 
 		SetTimer(timer,TIMERVALUE);
 		LIBBASE->sdu_Proc_run = TRUE;
 
 		for(;;){
 
-			// if Serial device is not ok,close it.
+			// if Serial device is not ok, close it.
 			if(LIBBASE->ser ){
 				if( ! LIBBASE->ser->Ok){
 					CloseSerial(LIBBASE->ser);
 				}
 			}
 
-			// device is down ,close serial
+			// device is down, close serial
 			if( Phase() == PPP_PHASE_DEAD ){
 				CloseSerial(LIBBASE->ser);
 			}
@@ -458,7 +458,7 @@ static int GM_UNIQUENAME(Close)
 
 
 /*
-** This funcion is used to locate an IO request in a linked
+** This function is used to locate an IO request in a linked
 ** list and abort it if found.
 */
 ULONG AbortReq(LIBBASETYPEPTR LIBBASE,struct MinList *minlist, struct IOSana2Req *ios2){
@@ -533,14 +533,4 @@ ADD2INITLIB(GM_UNIQUENAME(Init),0)
 ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge),0)
 ADD2OPENDEV(GM_UNIQUENAME(Open),0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close),0)
-
-
-
-
-
-
-
-
-
-
 

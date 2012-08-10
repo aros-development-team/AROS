@@ -34,7 +34,7 @@ BOOL CheckSemaphore(struct SignalSemaphore *sigSem, struct TraceLocation *caller
     {
         struct Task *me = FindTask(NULL);
 
-        kprintf("%s called on a not intialized semaphore!!!\n"
+        kprintf("%s called on a not initialized semaphore!!!\n"
                 "sem = 0x%p task = 0x%p (%s)\n\n", caller->function, sigSem, me, me->tc_Node.ln_Name);
         Exec_ExtAlert(AN_SemCorrupt, __builtin_return_address(0), CALLER_FRAME, 0, NULL, SysBase);
 
