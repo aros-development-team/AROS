@@ -24,16 +24,12 @@
 #define __stackalign static inline
 #endif
 
-AROS_UFH4(static ULONG, vblHandler,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct UIKitBase *, base, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(vblHandler, struct UIKitBase *,base)
 {
     AROS_USERFUNC_INIT
 
     Signal(base->eventTask, base->eventMask);
-    return 0;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -53,7 +49,7 @@ void EventTask(struct UIKitBase *base)
 
     base->eventMask = 1 << signal;
     base->eventInt.is_Node.ln_Name = "Cocoa Touch events poll";
-    base->eventInt.is_Code	   = (APTR)vblHandler;
+    base->eventInt.is_Code	   = (VOID_FUNC)vblHandler;
     base->eventInt.is_Data	   = base;
 
     AddIntServer(INTB_VERTB, &base->eventInt);
