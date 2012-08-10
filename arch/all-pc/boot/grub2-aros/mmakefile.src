@@ -15,7 +15,7 @@ EXCL_FLAGS := -Werror -Werror-implicit-function-declaration
 CFLAGS1 := $(filter-out -s --strip-all $(EXCL_FLAGS),$(HOST_CFLAGS))
 CFLAGS2 := $(filter-out -s --strip-all $(EXCL_FLAGS),$(CFLAGS))
 
-# avoid the mate.tmpl s_flag in order to disable stripping of binaries
+# avoid the make.tmpl s_flag in order to disable stripping of binaries
 # WE SHOULD FIND A WORKAROUND AGAINST THIS HACK, I didn't check if extract
 # code is linked in grub modules & utils
 export DEBUG         := yes

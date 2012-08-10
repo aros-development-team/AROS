@@ -884,7 +884,7 @@ void pEventHandler(LIBBASETYPEPTR ps)
                             {
                                 usbDoMethod((ULONG) UCM_HubPowerCyclePort, hubpd, pd->pd_HubPort);
                                 psdAddErrorMsg(RETURN_WARN, ps->ps_Library.lib_Node.ln_Name,
-                                               "Automatically powercycling port for '%s' due death event.",
+                                               "Automatically powercycling port for '%s' due to death event.",
                                                pd->pd_ProductStr);
                                 autodismsg = "\n\n\33bAutomatically powercycling port!\33n";
                             } else {
