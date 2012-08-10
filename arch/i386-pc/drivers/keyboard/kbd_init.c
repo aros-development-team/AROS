@@ -30,5 +30,4 @@ static int PCKbd_Init(LIBBASETYPEPTR LIBBASE)
 }
 
 ADD2INITLIB(PCKbd_Init, 0)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
 

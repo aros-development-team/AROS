@@ -18,7 +18,6 @@
 #include <exec/memory.h>
 
 #include <hidd/hidd.h>
-#include <hidd/irq.h>
 #include <hidd/keyboard.h>
 
 #include <aros/system.h>
@@ -41,7 +40,6 @@
 
 /* Predefinitions */
 
-void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void kbd_process_key(struct kbd_data *, UBYTE,
     struct ExecBase *SysBase);
 
@@ -75,6 +73,52 @@ int  kbd_wait_for_input(void);
 #include "e0keytable.h"
 
 /****************************************************************************************/
+AROS_UFIH1(kbd_keyint, struct kbd_data *, data)
+{
+    AROS_USERFUNC_INIT
+
+    UBYTE   	    keycode;        /* Recent Keycode get */
+    UBYTE   	    info = 0;       /* Data from info reg */
+    WORD    	    work = 10000;
+
+    D(bug("ki: {\n")); 
+    for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
+    {
+    	/* data from information port */
+    	if (info & KBD_STATUS_MOUSE_OBF)
+	{
+	    /*
+	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
+	    ** if we break out of while loop here :-\
+	    */
+	    break;
+	}
+        keycode = kbd_read_input();
+
+    	D(bug("ki: keycode %d (%x)\n", keycode, keycode));
+	if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
+	{
+            /* Ignore errors and messages for mouse -> eat status/error byte */
+	    continue;
+	}
+
+        kbd_process_key(data, keycode, SysBase);
+    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
+
+    if (!work)
+    {
+        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
+    }
+    
+    //return 0;	/* Enable processing other intServers */
+
+    D(bug("ki: }\n"));
+
+    AROS_USERFUNC_EXIT
+
+    return FALSE;
+}
+
 
 OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
@@ -145,48 +189,36 @@ OOP_Object * PCKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     if (o)
     {
         struct kbd_data *data = OOP_INST_DATA(cl, o);
+        struct Interrupt *irq;
         
         data->kbd_callback   = (VOID (*)(APTR, UWORD))callback;
         data->callbackdata   = callbackdata;
     	data->prev_amigacode = -2;
 	data->prev_keycode   = 0;
 	
-        /* Get irq.hidd */
+        /* Install keyboard interrupt */
 
-        if ((XSD(cl)->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
-        {
-            /* Install keyboard interrupt */
+        irq = &XSD(cl)->irq;
+            
+        irq->is_Node.ln_Type = NT_INTERRUPT;
+        irq->is_Node.ln_Pri  = 127;		/* Set the highest pri */
+        irq->is_Node.ln_Name = "Keyboard class irq";
+        irq->is_Code         = (VOID_FUNC)kbd_keyint;
+        irq->is_Data         = (APTR)data;
+        Disable();
+        kbd_reset();		/* Reset the keyboard */
+        kbd_updateleds(0);
+        Enable();
 
-            HIDDT_IRQ_Handler   *irq;
+        /* Report last key received before keyboard was reset, so that
+         * keyboard.device knows about any key currently held down */
+        if (last_code > 0)
+            kbd_process_key(data, (UBYTE)last_code, SysBase);
 
-            XSD(cl)->irq = irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-
-            if (!irq)
-            {
-                kprintf("ERROR: Cannot install Keyboard\n");
-                Alert( AT_DeadEnd | AN_IntrMem );
-            }
-	        
-            irq->h_Node.ln_Pri  = 127;		/* Set the highest pri */
-            irq->h_Node.ln_Name = "Keyboard class irq";
-            irq->h_Code         = kbd_keyint;
-            irq->h_Data         = (APTR)data;
-            Disable();
-	    kbd_reset();		/* Reset the keyboard */
-            kbd_updateleds(0);
-            Enable();
-
-            /* Report last key received before keyboard was reset, so that
-             * keyboard.device knows about any key currently held down */
-            if (last_code > 0)
-                kbd_process_key(data, (UBYTE)last_code, SysBase);
-
-            HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
-            ObtainSemaphore(&XSD(cl)->sema);
-            XSD(cl)->kbdhidd = o;
-            ReleaseSemaphore(&XSD(cl)->sema);
-
-        } /* if ((XSD(cl)->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL))) */
+        AddIntServer(INTB_KERNEL + 1, irq);
+        ObtainSemaphore(&XSD(cl)->sema);
+        XSD(cl)->kbdhidd = o;
+        ReleaseSemaphore(&XSD(cl)->sema);
 	
     } /* if (o) */
     
@@ -198,9 +230,7 @@ VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     ObtainSemaphore(&XSD(cl)->sema);
     XSD(cl)->kbdhidd = NULL;
     ReleaseSemaphore(&XSD(cl)->sema);
-    HIDD_IRQ_RemHandler(XSD(cl)->irqhidd, XSD(cl)->irq);
-    FreeMem(XSD(cl)->irq, sizeof(HIDDT_IRQ_Handler));
-    OOP_DisposeObject(XSD(cl)->irqhidd);
+    RemIntServer(INTB_KERNEL + 1, &XSD(cl)->irq);
     OOP_DoSuperMethod(cl, o, msg);
 }
 
@@ -285,56 +315,6 @@ void kbd_updateleds(ULONG kbd_keystate)
     kbd_write_output_w(kbd_keystate & 0x07);
     WaitForInput;
     kbd_read_input();
-}
-
-/****************************************************************************************/
-
-#undef SysBase
-#define SysBase (hw->sysBase)
-
-/****************************************************************************************/
-
-void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct kbd_data *data = (struct kbd_data *)irq->h_Data;
-    UBYTE   	    keycode;        /* Recent Keycode get */
-    UBYTE   	    info = 0;       /* Data from info reg */
-    WORD    	    work = 10000;
-
-    D(bug("ki: {\n")); 
-    for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--)
-    {
-    	/* data from information port */
-    	if (info & KBD_STATUS_MOUSE_OBF)
-	{
-	    /*
-	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
-	    ** if we break out of while loop here :-\
-	    */
-	    break;
-	}
-        keycode = kbd_read_input();
-
-    	D(bug("ki: keycode %d (%x)\n", keycode, keycode));
-	if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
-	{
-            /* Ignore errors and messages for mouse -> eat status/error byte */
-	    continue;
-	}
-
-        kbd_process_key(data, keycode, SysBase);
-    } /* for(; ((info = kbd_read_status()) & KBD_STATUS_OBF) && work; work--) */
-
-    if (!work)
-    {
-        D(bug("kbd.hidd: controller jammed (0x%02X).\n", info));
-    }
-    
-    //return 0;	/* Enable processing other intServers */
-
-    D(bug("ki: }\n"));
-
-    return;
 }
 
 #undef SysBase
