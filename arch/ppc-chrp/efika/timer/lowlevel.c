@@ -78,13 +78,7 @@ void SliceHandler(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 
                     if (iv->iv_Code)
                     {
-                        AROS_UFC5(void, iv->iv_Code,
-                            AROS_UFCA(ULONG, 0, D1),
-                            AROS_UFCA(ULONG, 0, A0),
-                            AROS_UFCA(APTR, iv->iv_Data, A1),
-                            AROS_UFCA(APTR, iv->iv_Code, A5),
-                            AROS_UFCA(struct ExecBase *, SysBase, A6)
-                        );
+                        AROS_UFIC1(iv->iv_Code, iv->iv_Data);
                     }
                     /* Automatically requeue/reactivate request */
 

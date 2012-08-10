@@ -9,11 +9,7 @@
 #ifdef USE_VBLANK_INT
 
 /* exec.library VBlank interrupt handler  */
-AROS_UFH4(static ULONG, VBlankInt,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
 {
     AROS_USERFUNC_INIT
 
@@ -32,7 +28,7 @@ int vblank_Init(struct TimerBase *LIBBASE)
     LIBBASE->tb_VBlankInt.is_Node.ln_Pri  = 0;
     LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
     LIBBASE->tb_VBlankInt.is_Node.ln_Name = LIBBASE->tb_Device.dd_Library.lib_Node.ln_Name;
-    LIBBASE->tb_VBlankInt.is_Code         = (APTR)VBlankInt;
+    LIBBASE->tb_VBlankInt.is_Code         = (VOID_FUNC)VBlankInt;
     LIBBASE->tb_VBlankInt.is_Data	  = LIBBASE;
 
     AddIntServer(INTB_VERTB, &LIBBASE->tb_VBlankInt);

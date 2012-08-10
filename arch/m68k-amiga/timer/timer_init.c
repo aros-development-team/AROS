@@ -46,23 +46,9 @@
 #include <timer_intern.h>
 #include <timer_platform.h>
 
-AROS_UFP4(APTR, ciab_eclock,
-    AROS_UFPA(ULONG, dummy, A0),
-   	AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
-
-AROS_UFP4(APTR, ciaint_timer,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
-
-AROS_UFP4(APTR, cia_vbint,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, mySysBase, A6)); 
+AROS_UFIP(ciab_eclock);
+AROS_UFIP(ciaint_timer);
+AROS_UFIP(cia_vbint);
 
 /****************************************************************************************/
 
