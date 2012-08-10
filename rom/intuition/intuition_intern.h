@@ -554,6 +554,8 @@ struct IntIntuitionBase
 
     ULONG                   	 LastClickSecs;
     ULONG                   	 LastClickMicro; /* for doubleclick to front */
+    ULONG                        LastMenuDownSecs;
+    ULONG                        LastMenuDownMicro; /* for auto sticky/non-sticky menus */
     ULONG                   	 DoubleClickCounter;
     ULONG                    	 DoubleClickButton;
 
