@@ -6,7 +6,6 @@
 #include <aros/io.h>
 #include <oop/oop.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 #include <aros/asmcall.h>
 
 #include <proto/oop.h>
@@ -20,7 +19,7 @@
 struct Library *OOPBase;
 
 static OOP_AttrBase __IHidd_PCIDev;
-static OOP_Object *pciobj, *irqobj;
+static OOP_Object *pciobj;
 
 static OOP_MethodID mid_RB;
 static OOP_MethodID mid_RW;
@@ -30,7 +29,6 @@ static OOP_MethodID mid_WB;
 static OOP_MethodID mid_WW;
 static OOP_MethodID mid_WL;
 
-static HIDDT_IRQ_Handler inthandler;
 static BOOL inthandler_added;
 
 BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
@@ -42,9 +40,8 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
         if (__IHidd_PCIDev)
         {
             pciobj = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-            irqobj = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 
-            if (pciobj && irqobj)
+            if (pciobj)
             {
                 mid_RB = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
                 mid_RW = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigWord);
@@ -64,8 +61,6 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
 
 void ahi_pci_exit(void)
 {
-    if (irqobj)
-        OOP_DisposeObject(irqobj);
     if (pciobj)
         OOP_DisposeObject(pciobj);
     if (__IHidd_PCIDev)
@@ -292,34 +287,13 @@ ULONG ahi_pci_get_irq(APTR dev)
     return (ULONG)val;
 }
 
-static void interrupt_code(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    struct Interrupt *i = (struct Interrupt *)irq->h_Data;
-
-    AROS_UFC3(void, i->is_Code,
-        AROS_UFCA(APTR, i->is_Data, A1),
-        AROS_UFCA(APTR, i->is_Code, A5),
-        AROS_UFCA(struct ExecBase *, SysBase, A6));	
-}
-
-
 BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 {
-    struct pHidd_IRQ_AddHandler __msg__, *msg = &__msg__;
     IPTR val;
 
     OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
 
-    inthandler.h_Node.ln_Pri = 1;
-    inthandler.h_Node.ln_Name = "SB128 IRQ";
-    inthandler.h_Code = interrupt_code;
-    inthandler.h_Data = i;
-
-    msg->mID = OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler);
-    msg->handlerinfo = &inthandler;
-    msg->id = val;
-
-    OOP_DoMethod(irqobj, (OOP_Msg)msg);
+    AddIntServer(INTB_KERNEL + val, i);
 
     inthandler_added = TRUE;
 
@@ -330,14 +304,12 @@ void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
 {    
     if (inthandler_added)
     {
-        struct pHidd_IRQ_RemHandler __msg__ =
-        {
-            mID:		    OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-            handlerinfo:	    &inthandler,
-        }, *msg = &__msg__;
+        IPTR val;
 
-        OOP_DoMethod(irqobj, (OOP_Msg)msg);
+        OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
         	
+        RemIntServer(INTB_KERNEL + val, i);
+
         inthandler_added = FALSE;
     }   
 

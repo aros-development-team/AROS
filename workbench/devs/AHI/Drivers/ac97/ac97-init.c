@@ -2,8 +2,6 @@
 #include <aros/debug.h>
 #include <asm/io.h>
 
-#include <hidd/irq.h>
-
 #include <config.h>
 
 #include "library.h"

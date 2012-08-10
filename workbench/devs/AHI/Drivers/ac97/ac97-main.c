@@ -16,7 +16,6 @@
 #include <proto/utility.h>
 #include <stddef.h>
 
-#include <hidd/irq.h>
 #include <asm/io.h>
 
 #include "library.h"
@@ -93,7 +92,7 @@ static UWORD LinToLog(ULONG vol)
     return 0x1f;
 }
 
-static void play_int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
+static AROS_UFIP(play_int);
 
 
 /******************************************************************************
@@ -106,8 +105,6 @@ _AHIsub_AllocAudio( struct TagItem*         taglist,
 		    struct DriverBase*      AHIsubBase )
 {
   struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-  OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-  
  
   AudioCtrl->ahiac_DriverData = AllocVec( sizeof( struct AC97Data ),
 		 MEMF_CLEAR | MEMF_PUBLIC );
@@ -129,24 +126,14 @@ D(bug("AHI: AllocAudio: dd=%08x\n", dd));
     return AHISF_ERROR;
   }
 
-    dd->irq = AllocVec(sizeof (HIDDT_IRQ_Handler), MEMF_CLEAR | MEMF_PUBLIC);
-
-  if (dd->irq)
   {
-      struct pHidd_IRQ_AddHandler __msg__ = {
-	  mID:		    OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-	  handlerinfo:	    dd->irq,
-	  id:		    ac97Base->irq_num,
-      }, *msg = &__msg__;
-      
-	dd->irq->h_Node.ln_Pri = 0;
-	dd->irq->h_Node.ln_Name = "AHI Int";
-	dd->irq->h_Code = play_int;
-	dd->irq->h_Data = AudioCtrl;
-	
-	OOP_DoMethod(irq, (OOP_Msg)msg);
-	
-	OOP_DisposeObject(irq);
+	dd->irq.is_Node.ln_Type = NT_INTERRUPT;
+	dd->irq.is_Node.ln_Pri = 0;
+	dd->irq.is_Node.ln_Name = "AHI Int";
+	dd->irq.is_Code = play_int;
+	dd->irq.is_Data = AudioCtrl;
+
+	AddIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
   }
   
 D(bug("AHI: AllocAudio: Everything OK\n"));
@@ -174,19 +161,10 @@ _AHIsub_FreeAudio( struct AHIAudioCtrlDrv* AudioCtrl,
 		   struct DriverBase*      AHIsubBase )
 {
   struct ac97Base* ac97Base = (struct ac97Base*) AHIsubBase;
-  OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 
 D(bug("AHI: FreeAudio\n"));
 
-  if (dd->irq)
-  {
-      struct pHidd_IRQ_RemHandler __msg__ = {
-	  mID:		    OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-	  handlerinfo:	    dd->irq,
-      }, *msg = &__msg__;
-      OOP_DoMethod(irq, (OOP_Msg)msg);
-      FreeVec(dd->irq);
-  }
+  RemIntServer(INTB_KERNEL + ac97Base->irq_num, &dd->irq);
 
 D(bug("AHI: FreeAudio: IRQ removed\n"));
 
@@ -202,11 +180,6 @@ D(bug("AHI: FreeAudio: DriverData freed\n"));
 
     AudioCtrl->ahiac_DriverData = NULL;
   }
-  
-  OOP_DisposeObject(irq);
-
-D(bug("AHI: FreeAudio: IRQ object freed\n"));
-
 }
 
 
@@ -499,17 +472,16 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 }
 
 #undef SysBase
-static void play_int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+
+static AROS_UFIH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
 {
-    struct AHIAudioCtrlDrv* AudioCtrl;
+    AROS_USERFUNC_INIT
+
     struct DriverBase*      AHIsubBase;
     struct ac97Base*        ac97Base;
-    struct ExecBase	    *SysBase;
 
-    AudioCtrl  = (struct AHIAudioCtrlDrv*) irq->h_Data;
     AHIsubBase = (struct DriverBase*) dd->ahisubbase;
     ac97Base   = (struct ac97Base*) AHIsubBase;
-    SysBase    = (struct SysBase*) ac97Base->sysbase;
 
     dd->old_SR = inw(ac97Base->dmabase + ac97Base->off_po_sr);
     outw(dd->old_SR & 0x1c, ac97Base->dmabase + ac97Base->off_po_sr);
@@ -519,4 +491,8 @@ static void play_int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         /* Signaling the slave task */
         Signal((struct Task *)dd->slavetask, SIGBREAKF_CTRL_E);
     }
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }

@@ -69,12 +69,21 @@ MyKPrintFArgs( UBYTE*           fmt,
 #elif defined(__AROS__)
 
 # include <aros/asmcall.h>
-# define INTGW(q,t,n,f)							\
-	q AROS_UFH3(t, n,						\
-	  AROS_UFHA(APTR, d, A1),					\
-	  AROS_UFHA(ULONG, _b, A5),					\
-	  AROS_UFHA(struct ExecBase *, sysbase, A6)) {			\
-      AROS_USERFUNC_INIT return f(d); AROS_USERFUNC_EXIT }
+# define INTGW_void(q,n,f)							\
+	q AROS_UFIH1(n, void *, d) { \
+	    AROS_USERFUNC_INIT \
+	    f(d); \
+	    return FALSE; \
+	    AROS_USERFUNC_EXIT \
+    }
+# define INTGW_ULONG(q,n,f)							\
+	q AROS_UFIH1(n, void *, d) { \
+	    AROS_USERFUNC_INIT \
+	    return f(d); \
+	    AROS_USERFUNC_EXIT \
+    }
+# define INTGW(q,t,n,f) \
+    INTGW_##t(q,n,f)
 # define PROCGW(q,t,n,f)						\
 	q t n(void) { return f(); }
 # define INTERRUPT_NODE_TYPE NT_INTERRUPT

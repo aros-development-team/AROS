@@ -73,19 +73,19 @@ AllocDriverData( APTR               dev,
   dd->interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->interrupt.is_Node.ln_Pri  = 0;
   dd->interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->interrupt.is_Code         = (void(*)(void)) &emu10kxinterrupt;
+  dd->interrupt.is_Code         = emu10kxinterrupt;
   dd->interrupt.is_Data         = (APTR) dd;
 
   dd->playback_interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->playback_interrupt.is_Node.ln_Pri  = 0;
   dd->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->playback_interrupt.is_Code         = (void(*)(void)) &playbackinterrupt;
+  dd->playback_interrupt.is_Code         = playbackinterrupt;
   dd->playback_interrupt.is_Data         = (APTR) dd;
 
   dd->record_interrupt.is_Node.ln_Type = INTERRUPT_NODE_TYPE;
   dd->record_interrupt.is_Node.ln_Pri  = 0;
   dd->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-  dd->record_interrupt.is_Code         = (void(*)(void)) &recordinterrupt;
+  dd->record_interrupt.is_Code         = recordinterrupt;
   dd->record_interrupt.is_Data         = (APTR) dd;
   
   dd->card.pci_dev = dev;
