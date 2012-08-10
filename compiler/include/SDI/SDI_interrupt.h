@@ -112,6 +112,20 @@
 
   #define ENTRY(func) (APTR)&Gate_##func
 
+#elif defined(__AROS__)
+
+  #define INTERRUPTPROTO(name, ret, obj, data) \
+      ret name(obj, data); \
+      AROS_UFH4(int, name##_wrapper, \
+          AROS_UFHA(APTR, custom, A0), \
+          AROS_UFHA(APTR, is_Data, A1), \
+          AROS_UFHA(APTR, is_Code, A5), \
+          AROS_UFHA(struct ExecBase *, SysBase, A6)) \
+      { AROS_USERFUNC_INIT \
+        name(custom, is_Data); return 0; \
+        AROS_USERFUNC_EXIT }  \
+      ret name(obj, data)
+
 #else
 
   #define INTERRUPTPROTO(name, ret, obj, data)                               \
