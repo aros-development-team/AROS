@@ -204,7 +204,7 @@ struct DriveIdent {
    UWORD       id_MWDMA_MinCycleTime;  // 65
    UWORD       id_MWDMA_DefCycleTime;  // 66
    UWORD       id_PIO_MinCycleTime;    // 67
-   UWORD       id_PIO_MinCycleTImeIORDY; // 68
+   UWORD       id_PIO_MinCycleTimeIORDY; // 68
    UWORD       pad8[6];                // 69-74
    UWORD       id_QueueDepth;          // 75
    UWORD       pad9[4];                // 76-79
