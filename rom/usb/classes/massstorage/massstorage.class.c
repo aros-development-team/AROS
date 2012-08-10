@@ -1397,7 +1397,7 @@ struct NepClassMS * GM_UNIQUENAME(nAllocMS)(void)
     {
         if(!(ncm->ncm_Base = OpenLibrary("poseidon.library", 4)))
         {
-            Alert(AG_OpenLib);
+            Alert(AG_OpenLib | AO_Unknown);
             break;
         }
         ncm->ncm_EPInt = psdFindEndpoint(ncm->ncm_Interface, NULL,
@@ -4738,17 +4738,17 @@ struct NepMSBase * GM_UNIQUENAME(nAllocRT)(void)
     {
         if(!(ExpansionBase = OpenLibrary("expansion.library", 37)))
         {
-            Alert(AG_OpenLib);
+            Alert(AG_OpenLib | AO_ExpansionLib);
             break;
         }
         if(!(PartitionBase = OpenLibrary("partition.library", 1)))
         {
-            Alert(AG_OpenLib);
+            Alert(AG_OpenLib | AO_Unknown);
             break;
         }
         if(!(ps = OpenLibrary("poseidon.library", 4)))
         {
-            Alert(AG_OpenLib);
+            Alert(AG_OpenLib | AO_Unknown);
             break;
         }
         if(!(nh->nh_IOMsgPort = CreateMsgPort()))
