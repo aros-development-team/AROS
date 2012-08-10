@@ -8,10 +8,13 @@
 #include <proto/kernel.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
+#include <proto/processor.h>
 
 #include <utility/utility.h>
 #include <utility/hooks.h>
 #include <utility/tagitem.h>
+
+#include <resources/processor.h>
 
 #include "emac.h"
 #include LC_LIBDEFS_FILE
@@ -811,10 +814,29 @@ static const struct UnitInfo {
     char       *ui_TaskName;
     intptr_t    ui_IOBase;
     uint8_t     ui_PHYAddr;
-} EMAC_Units[2] = {
+} EMAC_Units_sam440[2] = {
         { INTR_ETH0, EMAC_TASK1_NAME, EMAC0_BASE, 24 },
         { INTR_ETH1, EMAC_TASK2_NAME, EMAC1_BASE, 25 },
+}, EMAC_Units_sam460[2] = {
+        { INTR_UIC2_BASE + INTR_UIC2_EMAC0, EMAC_TASK1_NAME, EMAC0_BASE, 24 },
+        { INTR_UIC2_BASE + INTR_UIC2_EMAC0, EMAC_TASK2_NAME, EMAC1_BASE, 25 },
 };
+
+static inline ULONG GetPVR(void)
+{
+    struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
+    ULONG pvr = 0;
+
+    if (ProcessorBase) {
+        struct TagItem tags[] = {
+            { GCIT_Model, (IPTR)&pvr },
+            { TAG_END }
+        };
+        GetCPUInfo(tags);
+    }
+
+    return pvr;
+}
 
 struct EMACUnit *CreateUnit(struct EMACBase *EMACBase, uint8_t num)
 {
@@ -827,6 +849,13 @@ struct EMACUnit *CreateUnit(struct EMACBase *EMACBase, uint8_t num)
     if (unit)
     {
         int i;
+        const struct UnitInfo *EMAC_Units;
+
+        if (GetPVR() == PVR_PPC460EX_B) {
+            EMAC_Units = &EMAC_Units_sam460[0];
+        } else {
+            EMAC_Units = &EMAC_Units_sam440[0];
+        }
 
         InitSemaphore(&unit->eu_Lock);
 
