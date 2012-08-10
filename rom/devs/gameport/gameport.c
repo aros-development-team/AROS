@@ -98,27 +98,20 @@ static const UWORD SupportedCommands[] =
 static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_ExtEvent *ev);
-AROS_UFP3S(VOID, gpSendQueuedEvents,
-	   AROS_UFPA(struct GameportBase *, GPBase  , A1),
-	   AROS_UFPA(APTR                 , thisfunc, A5),
-	   AROS_UFPA(struct ExecBase *    , SysBase , A6));
+static AROS_UFIP(gpSendQueuedEvents);
 
 
 /****************************************************************************************/
 
 /* 'data' is a pointer to GPBase->gp_nTicks. */
 
-AROS_UFH4(ULONG, gpVBlank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(gpVBlank, LIBBASETYPEPTR, GPBase)
 { 
     AROS_USERFUNC_INIT
 
-    if ((*(ULONG *)data) < ~0)
+    if (GPBase->gp_nTicks < ~0)
     {
-	(*(ULONG *)data)++;
+        GPBase->gp_nTicks++;
     }
 
     return 0;
@@ -145,10 +138,10 @@ static int GM_UNIQUENAME(init)(LIBBASETYPEPTR GPBase)
     GPBase->gp_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
     GPBase->gp_Interrupt.is_Node.ln_Pri  = 0;
     GPBase->gp_Interrupt.is_Data 	 = (APTR)GPBase;
-    GPBase->gp_Interrupt.is_Code 	 = gpSendQueuedEvents;
+    GPBase->gp_Interrupt.is_Code 	 = (VOID_FUNC)gpSendQueuedEvents;
 
-    GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
-    GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
+    GPBase->gp_VBlank.is_Code         = (VOID_FUNC)gpVBlank;
+    GPBase->gp_VBlank.is_Data         = GPBase;
     GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
     GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
     GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
@@ -541,10 +534,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 	Cause(&GPBase->gp_Interrupt);	
 #else
-	AROS_UFC3NR(VOID, gpSendQueuedEvents,
-		  AROS_UFCA(struct GameportBase *, GPBase  , A1),
-		  AROS_UFCA(APTR                 , NULL, A5),
-		  AROS_UFCA(struct ExecBase *    , SysBase , A6));
+    AROS_UFIC1(gpSendQueuedEvents, GPBase);
 #endif
     }
     
@@ -558,10 +548,7 @@ Copied and pasted from the function above */
 
 #undef SysBase
 
-AROS_UFH3S(VOID, gpSendQueuedEvents,
-    AROS_UFHA(struct GameportBase *, GPBase, A1),
-    AROS_UFHA(APTR, thisfunc, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(gpSendQueuedEvents, struct GameportBase *, GPBase)
 {
     AROS_USERFUNC_INIT
 
@@ -596,6 +583,8 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
     {
 	gpUn->gpu_flags &= ~GBUF_PENDING;
     }
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
