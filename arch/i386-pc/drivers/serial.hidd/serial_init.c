@@ -11,8 +11,6 @@
 
 #include <aros/symbolsets.h>
 
-#include <hidd/irq.h>
-
 #include <proto/oop.h>
 #include <proto/exec.h>
 
@@ -25,50 +23,36 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-void serial_int_13(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-void serial_int_24(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+AROS_UFIP(serial_int_13);
+AROS_UFIP(serial_int_24);
 
 static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
 {
     struct class_static_data *csd = &LIBBASE->hdg_csd; /* SerialHidd static data */
+    struct Interrupt *irq;
 
     EnterFunc(bug("SerialHIDD_Init()\n"));
 
-    csd->irqhidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (csd->irqhidd)
-    {
-	HIDDT_IRQ_Handler *irq;
-			
-	/* Install COM1 and COM3 interrupt */
-	irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-	if(!irq)
-	{
-	    kprintf("  ERROR: Cannot install Serial\n");
-	    Alert( AT_DeadEnd | AN_IntrMem );
-	}
-	irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-	irq->h_Code = serial_int_13;
-	irq->h_Data = (APTR)csd;
-	HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial1);
+    /* Install COM1 and COM3 interrupt */
+    irq = &csd->intHandler[0];
+    irq->is_Node.ln_Name = "COM1/COM3";
+    irq->is_Node.ln_Type = NT_INTERRUPT;
+    irq->is_Node.ln_Pri=127;		/* Set the highest pri */
+    irq->is_Code = (VOID_FUNC)serial_int_13;
+    irq->is_Data = (APTR)csd;
+    AddIntServer(INTB_KERNEL + 4, irq);
 
-	/* Install COM2 and COM4 interrupt */
-	irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-	if(!irq)
-	{
-	    kprintf("  ERROR: Cannot install Serial\n");
-	    Alert( AT_DeadEnd | AN_IntrMem );
-	}
-	irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-	irq->h_Code = serial_int_24;
-	irq->h_Data = (APTR)csd;
-	HIDD_IRQ_AddHandler(csd->irqhidd, irq, vHidd_IRQ_Serial2);
+    /* Install COM2 and COM4 interrupt */
+    irq = &csd->intHandler[1];
+    irq->is_Node.ln_Name = "COM2/COM4";
+    irq->is_Node.ln_Type = NT_INTERRUPT;
+    irq->is_Node.ln_Pri=127;		/* Set the highest pri */
+    irq->is_Code = (VOID_FUNC)serial_int_24;
+    irq->is_Data = (APTR)csd;
+    AddIntServer(INTB_KERNEL + 3, irq);
 
-	D(bug("  Got Interrupts\n"));
-	ReturnInt("SerialHIDD_Init", ULONG, TRUE);
-    }
-
-    ReturnInt("SerialHIDD_Init", ULONG, FALSE);
+    D(bug("  Got Interrupts\n"));
+    ReturnInt("SerialHIDD_Init", ULONG, TRUE);
 }
 
 ADD2INITLIB(PCSer_Init, 0)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

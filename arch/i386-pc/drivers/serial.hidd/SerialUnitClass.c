@@ -28,10 +28,11 @@
 #include <utility/tagitem.h>
 #include <hidd/serial.h>
 #include <hidd/unixio.h>
-#include <hidd/irq.h>
 #include <intuition/preferences.h>
 
 #include <devices/serial.h>
+
+#include <SDI/SDI_interrupt.h>
 
 #include "serial_intern.h"
 
@@ -606,12 +607,7 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
 
 /* Serial interrupts */
 
-#undef SysBase
-#define SysBase (hw->sysBase)
-#define csd ((struct class_static_data *)(irq->h_Data))
-
-static void common_serial_int_handler(HIDDT_IRQ_Handler *irq, 
-                                      HIDDT_IRQ_HwInfo *hw,
+static void common_serial_int_handler(struct class_static_data *csd,
                                       ULONG unitnum)
 {
 	UBYTE code = UART_IIR_NO_INT;
@@ -646,16 +642,28 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler *irq,
 	}	
 }
 
-void serial_int_13(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+AROS_UFIH1(serial_int_13, void *, data)
 {
-	common_serial_int_handler(irq, hw, 0);
-	common_serial_int_handler(irq, hw, 2);
+    AROS_USERFUNC_INIT
+
+	common_serial_int_handler(data, 0);
+	common_serial_int_handler(data, 2);
+
+    return FALSE;
+
+	AROS_USERFUNC_EXIT
 }
 
-void serial_int_24(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
+AROS_UFIH1(serial_int_24, void *, data)
 {
-	common_serial_int_handler(irq, hw, 1);
-	common_serial_int_handler(irq, hw, 3);
+    AROS_USERFUNC_INIT
+
+	common_serial_int_handler(data, 1);
+	common_serial_int_handler(data, 3);
+
+    return FALSE;
+
+	AROS_USERFUNC_EXIT
 }
 
 static void adapt_data(struct HIDDSerialUnitData * data,
