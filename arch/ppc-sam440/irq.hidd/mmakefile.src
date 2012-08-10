@@ -1,8 +1,0 @@
-# $Id$
-include $(TOP)/config/make.cfg
-
-%build_archspecific \
-  mainmmake=kernel-hidd-irq maindir=rom/hidds/irq \
-  arch=sam440-ppc files=irqtable
-
-%common

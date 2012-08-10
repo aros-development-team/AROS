@@ -33,7 +33,6 @@ title AROS on Sam440
     module boot/modules/i2c-amcc440.hidd
     module boot/modules/input.device
     module boot/modules/intuition.library
-    module boot/modules/irq.hidd
     module boot/modules/keyboard.device
     module boot/modules/keyboard.hidd
     module boot/modules/keymap.library
@@ -87,7 +86,6 @@ title AROS on Sam440 Test Alternative Usb
     module boot/modules/i2c-amcc440.hidd
     module boot/modules/input.device
     module boot/modules/intuition.library
-    module boot/modules/irq.hidd
     module boot/modules/keyboard.device
     module boot/modules/keyboard.hidd
     module boot/modules/keymap.library

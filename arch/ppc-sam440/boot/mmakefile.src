@@ -49,7 +49,6 @@ include $(TOP)/config/make.cfg
 #MM     hidd-usb \
 #MM     kernel-partition \
 #MM     workbench-libs-workbench \
-#MM     kernel-hidd-irq \
 #MM     kernel-fs-cdvdfs \
 #MM     kernel-fs-fat \
 #MM     kernel-fs-sfs \
@@ -84,7 +83,7 @@ PKG_LIBS     := aros partition expansion utility oop graphics layers intuition k
 PKG_RSRC     := misc bootloader battclock dosboot lddemon usbromstartup processor FileSystem shell shellcommands
 PKG_DEVS     := input gameport keyboard console timer ata USBHardware/pciusb
 PKG_HANDLERS := con amberram cdrom sfs fat afs
-PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 radeon irq usb ohci sm502
+PKG_HIDDS    := graphics mouse keyboard hiddclass pci pci-amcc440 pci-amcc460 i2c i2c-amcc440 radeon usb ohci sm502
 PKG_USB      := hid
 PKG_USB_PSD  := hid hub bootmouse bootkeyboard massstorage
 PKG_HOOKS    := econsole

@@ -16,7 +16,6 @@ include $(TOP)/config/make.cfg
 #MM     linklibs-clib \
 #MM     kernel-bootloader \
 #MM     kernel-bestcomm-chrp-ppc-efika \
-#MM     kernel-hidd-irq \
 #MM     kernel-expansion \
 #MM     kernel-utility \
 #MM     kernel-openfirmware \
@@ -64,7 +63,7 @@ PKG_EFI_LIBS 	:=
 PKG_EFI_RSRC 	:= battclock bootloader openfirmware processor
 PKG_EFI_DEVS 	:= timer ata
 PKG_EFI_HANDLERS:= 
-PKG_EFI_HIDDS	:= radeon pci-efika irq
+PKG_EFI_HIDDS	:= radeon pci-efika
 
 PKG_HIDDS_USB 	:= usb ohci
 PKG_USB			:= hid storage

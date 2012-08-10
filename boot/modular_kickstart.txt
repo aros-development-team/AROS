@@ -98,4 +98,3 @@ not portable.
  bootable storage device drivers (ata.device, trackdisk.device)
  basic input device drivers (keyboard, mouse)
  at least one basic display driver
- irq.hidd (oldstyle IRQ handling API for native)
