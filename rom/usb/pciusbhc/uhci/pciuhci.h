@@ -36,7 +36,6 @@
 #include <devices/newstyle.h>
 
 #include <oop/oop.h>
-#include <hidd/irq.h>
 
 #include "debug.h"
 
@@ -106,7 +105,7 @@ struct PCIController {
     ULONG                 hc_PCIMemSize;
     ULONG                 hc_PCIVirtualAdjust;
     IPTR                  hc_PCIIntLine;
-    HIDDT_IRQ_Handler     hc_PCIIntHandler;
+    struct Interrupt      hc_PCIIntHandler;
     ULONG                 hc_PCIIntEnMask;
 
     ULONG                *hc_UhciFrameList;

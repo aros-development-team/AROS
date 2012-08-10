@@ -51,10 +51,13 @@ static inline void ehciFreeTD(struct ehc_controller *ehc, struct EhciTD *etd) {
     ehc->ehc_EhciTDPool = etd;
 }
 
-static AROS_UFH3(void, ehciResetHandler, AROS_UFHA(struct ehc_controller *, ehc, A1), AROS_UFHA(APTR, unused, A5), AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+static AROS_UFIH1(ehciResetHandler, struct ehc_controller *, ehc)
+{
     AROS_USERFUNC_INIT
 
     CONSTWRITEREG32_LE(ehc->ehc_opregbase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));     /* Resets the controller */
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }

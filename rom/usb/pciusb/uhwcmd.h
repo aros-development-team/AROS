@@ -56,8 +56,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
 void TermIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
-AROS_UFP1(void, uhwNakTimeoutInt,
-          AROS_UFPA(struct PCIUnit *,  unit, A1));
+AROS_UFIP(uhwNakTimeoutInt);
 
 BOOL pciInit(struct PCIDevice *hd);
 void pciExpunge(struct PCIDevice *hd);
@@ -74,8 +73,6 @@ void uhciScheduleCtrlTDs(struct PCIController *hc);
 void uhciScheduleIntTDs(struct PCIController *hc);
 void uhciScheduleBulkTDs(struct PCIController *hc);
 void uhciUpdateFrameCounter(struct PCIController *hc);
-void uhciCompleteInt(struct PCIController *hc);
-void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
@@ -94,8 +91,6 @@ void ehciScheduleCtrlTDs(struct PCIController *hc);
 void ehciScheduleIntTDs(struct PCIController *hc);
 void ehciScheduleBulkTDs(struct PCIController *hc);
 void ehciUpdateFrameCounter(struct PCIController *hc);
-void ehciCompleteInt(struct PCIController *hc);
-void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu);
 void ehciFree(struct PCIController *hc, struct PCIUnit *hu);
 
@@ -106,8 +101,6 @@ static inline void ehciFreeTD(struct PCIController *hc, struct EhciTD *etd);
 
 #ifdef AROS_USB30_CODE
 /* xhcichip.c, in order of appearance */
-void xhciCompleteInt(struct PCIController *hc);
-void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap);
 BOOL xhciHaltHC(struct PCIController *hc);
 BOOL xhciResetHC(struct PCIController *hc);

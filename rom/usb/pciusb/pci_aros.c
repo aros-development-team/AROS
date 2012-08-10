@@ -8,7 +8,6 @@
 #include <devices/timer.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 #include <resources/acpi.h>
 
 #include <proto/acpi.h>
@@ -81,10 +80,8 @@ AROS_UFH3(void, pciEnumerator,
     	switch (hcitype)
     	{
     	case HCITYPE_OHCI:
-#ifndef __powerpc__	/* It was not from me. Perhaps on PPC these drivers suffer from CPU cache problems? (sonic) */
     	case HCITYPE_EHCI:
     	case HCITYPE_UHCI:
-#endif
 #ifdef AROS_USB30_CODE
     	case HCITYPE_XHCI:
 #endif
@@ -139,12 +136,6 @@ BOOL pciInit(struct PCIDevice *hd)
 
     NewList(&hd->hd_TempHCIList);
 
-    if(!(hd->hd_IRQHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_IRQ, NULL)))
-    {
-        KPRINTF(20, ("Unable to create IRQHidd object!\n"));
-        return FALSE;
-    }
-
     if((hd->hd_PCIHidd = OOP_NewObject(NULL, (STRPTR) CLID_Hidd_PCI, NULL)))
     {
         struct TagItem tags[] =
@@ -174,7 +165,6 @@ BOOL pciInit(struct PCIDevice *hd)
         HIDD_PCI_EnumDevices(hd->hd_PCIHidd, &findHook, (struct TagItem *) &tags);
     } else {
         KPRINTF(20, ("Unable to create PCIHidd object!\n"));
-        OOP_DisposeObject(hd->hd_IRQHidd);
         return FALSE;
     }
 
@@ -594,10 +584,10 @@ void pciFreeUnit(struct PCIUnit *hu)
     while(hc->hc_Node.ln_Succ)
     {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
-        if(hc->hc_PCIIntHandler.h_Node.ln_Name)
+        if(hc->hc_PCIIntHandler.is_Node.ln_Name)
         {
-            HIDD_IRQ_RemHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler);
-            hc->hc_PCIIntHandler.h_Node.ln_Name = NULL;
+            RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
+            hc->hc_PCIIntHandler.is_Node.ln_Name = NULL;
         }
 #if 0
 
@@ -645,10 +635,6 @@ void pciExpunge(struct PCIDevice *hd)
         OOP_ReleaseAttrBases(attrbases);
 
         OOP_DisposeObject(hd->hd_PCIHidd);
-    }
-    if(hd->hd_IRQHidd)
-    {
-        OOP_DisposeObject(hd->hd_IRQHidd);
     }
 }
 /* \\\ */

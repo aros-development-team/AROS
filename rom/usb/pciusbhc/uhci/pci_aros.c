@@ -8,7 +8,6 @@
 #include <devices/timer.h>
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 #include <proto/bootloader.h>
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -249,7 +248,7 @@ void pciFreeUnit(struct PCIUnit *hu) {
     {
         OOP_SetAttrs(hc->hc_PCIDeviceObject, (struct TagItem *) pciDeactivate); // deactivate busmaster and IO/Mem
         if(hc->hc_PCIIntHandler.h_Node.ln_Name) {
-            HIDD_IRQ_RemHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler);
+            RemIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
             hc->hc_PCIIntHandler.h_Node.ln_Name = NULL;
         }
 

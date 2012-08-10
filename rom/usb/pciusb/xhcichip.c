@@ -18,11 +18,7 @@
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
 
-static
-AROS_UFH3(void, xhciResetHandler,
-        AROS_UFHA(struct PCIController *, hc, A1),
-        AROS_UFHA(APTR, unused, A5),
-        AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(xhciResetHandler, struct PCIController *, hc)
 {
     AROS_USERFUNC_INIT
 
@@ -37,19 +33,28 @@ AROS_UFH3(void, xhciResetHandler,
 	/* Reset controller */
     xhciResetHC(hc);
 
+    return 0;
+
     AROS_USERFUNC_EXIT
 }
 
-void xhciCompleteInt(struct PCIController *hc)
+static AROS_UFIH1(xhciCompleteInt, struct PCIController *, hc)
 {
+    AROS_USERFUNC_INIT
+
     KPRINTF(1, ("CompleteInt!\n"));
 
     KPRINTF(1, ("CompleteDone\n"));
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
-void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+static AROS_UFIH1(xhciIntCode, struct PCIController *, hc)
 {
-    struct PCIController *hc = (struct PCIController *) irq->h_Data;
+    AROS_USERFUNC_INIT
+
 //    struct PCIDevice *base = hc->hc_Device;
 //    struct PCIUnit *unit = hc->hc_Unit;
 
@@ -89,6 +94,10 @@ void xhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
         } // not online
     }
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {
@@ -366,7 +375,7 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 hc->hc_CompleteInt.is_Node.ln_Name = "XHCI CompleteInt";
                 hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
                 hc->hc_CompleteInt.is_Data = hc;
-                hc->hc_CompleteInt.is_Code = (void (*)(void)) &xhciCompleteInt;
+                hc->hc_CompleteInt.is_Code = xhciCompleteInt;
 
                 // add reset handler
                 hc->hc_ResetInt.is_Code = xhciResetHandler;
@@ -374,11 +383,12 @@ BOOL xhciInit(struct PCIController *hc, struct PCIUnit *hu) {
                 AddResetCallback(&hc->hc_ResetInt);
 
                 // add interrupt handler
-                hc->hc_PCIIntHandler.h_Node.ln_Name = "XHCI PCI (pciusb.device)";
-                hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-                hc->hc_PCIIntHandler.h_Code = xhciIntCode;
-                hc->hc_PCIIntHandler.h_Data = hc;
-                HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+                hc->hc_PCIIntHandler.is_Node.ln_Name = "XHCI PCI (pciusb.device)";
+                hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
+                hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
+                hc->hc_PCIIntHandler.is_Code = xhciIntCode;
+                hc->hc_PCIIntHandler.is_Data = hc;
+                AddIntServer(INTF_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
 
                 /* Clears (RW1C) Host System Error(HSE), Event Interrupt(EINT), Port Change Detect(PCD) and Save/Restore Error(SRE) */
                 temp = opreg_readl(XHCI_USBSTS);

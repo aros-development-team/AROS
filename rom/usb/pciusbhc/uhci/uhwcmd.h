@@ -56,7 +56,6 @@ void uhciScheduleIntTDs(struct PCIController *hc);
 void uhciScheduleBulkTDs(struct PCIController *hc);
 void uhciUpdateFrameCounter(struct PCIController *hc);
 void uhciCompleteInt(struct PCIController *hc);
-void uhciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu);
 void uhciFree(struct PCIController *hc, struct PCIUnit *hu);
 
