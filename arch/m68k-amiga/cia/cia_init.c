@@ -69,11 +69,7 @@ AROS_LD1(WORD, SetICR,
 static const char resident_name[] = RESIDENT_NAME;
 static const char resident_id[]   = "\0$VER:" RESIDENT_NAME " " STR(RESIDENT_VERSION) "." STR(RESIDENT_REVISION) " (" ADATE ")";
 
-AROS_UFP4 (APTR, Cia_Handler,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, mySysBase, A6));
+AROS_UFIP(Cia_Handler);
 
 static AROS_UFP3 (APTR, Cia_Init,
 		  AROS_UFPA(struct Library *, lh, D0),
