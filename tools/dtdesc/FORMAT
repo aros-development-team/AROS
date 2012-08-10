@@ -1,12 +1,12 @@
 Fileformat of a dtd-file
 
 createdtdesc uses an ASCII-file to obtain the description
-for an DataType-descriptor.
+for a DataType-descriptor.
 examinedtdesc creates one out of a DataType-descriptor.
 These ASCII-files are the DataTypeDescriptions (*.dtd) .
 *.dtd files consist of Keyword=Data pairs in separate lines.
 Lines starting with a '#' or empty lines are ignored.
-In fact, my parser is so dump, that it ignores anything
+In fact, my parser is so dumb, that it ignores anything
 but the keywords. But this may change in future!
 Currently you can feed this file FORMAT to createdtdesc and
 it will produce a valid DataType descriptor.

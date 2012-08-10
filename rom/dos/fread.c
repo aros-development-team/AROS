@@ -34,7 +34,7 @@
 
     RESULT
 	The number of blocks read from the file or 0 on EOF.
-	This function may return less than the requested number of blocks
+	This function may return fewer than the requested number of blocks.
 	IoErr() gives additional information in case of an error.
 
     NOTES

@@ -39,7 +39,7 @@ $(BOOT_GRUB)/unicode.pf2: unicode.pf2 $(BOOT_GRUB)
 $(BOOT_EFI)/unicode.pf2: unicode.pf2 $(BOOT_EFI)
 		$(CP) $< $(BOOT_EFI)
 
-# avoid the mate.tmpl s_flag in order to disable stripping of binaries
+# avoid the make.tmpl s_flag in order to disable stripping of binaries
 export DEBUG		:= yes
 # remove all flags, just in case
 export HOST_CFLAGS	:= 

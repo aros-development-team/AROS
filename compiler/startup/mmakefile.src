@@ -1,6 +1,6 @@
 #   $Id$
 #
-#   Generate the amiga.lib library (normally called libamiga.a).
+#   Generate the startup code.
 #
 include $(TOP)/config/make.cfg
 

@@ -214,7 +214,7 @@ usbhardware.device/UHCMD_USBSUSPEND
         io_Device    - pointer to device node, must be set by (or copied from
                        I/O block set by) OpenDevice() function
         io_Unit      - pointer to unit node to use, set by OpenDevice()
-        io_Command   - command number for UHCMD_CONTROLXFER
+        io_Command   - command number for UHCMD_BULKXFER
         io_Flags     - flags, must be cleared if not use:
                        IOF_QUICK - (CLEAR) reply I/O request
 

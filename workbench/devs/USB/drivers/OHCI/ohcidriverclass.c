@@ -101,9 +101,9 @@ void ohci_DeleteTimer(struct timerequest *tr)
 }
 
 /*
- * This function allocats new 32-byte Transfer Descriptor from the
+ * This function allocates a new 32-byte Transfer Descriptor from the
  * pool of 4K-aligned PCI-accessible memory regions. Within each 4K page,
- * a bitmap is used to determine, which of the TD elements are available
+ * a bitmap is used to determine which of the TD elements are available
  * for use.
  *
  * This function returns NULL if no free TD's are found and no more memory
