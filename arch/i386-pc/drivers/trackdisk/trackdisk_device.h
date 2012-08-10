@@ -74,6 +74,9 @@ struct TrackDiskBase
     UBYTE			td_pcn;
     UBYTE			td_inttmo;
     BOOL			td_nomount;
+
+    struct Interrupt            td_FloppyInt;
+    struct Interrupt            td_TimerInt;
 };
 
 #endif /* TRACKDISK_DEVICE_H */

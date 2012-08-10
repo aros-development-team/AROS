@@ -64,14 +64,10 @@ static void giveunit(struct TrackDiskBase *tdb)
     GiveUnit();
 }
 
-static AROS_UFH3(ULONG, disk_block_interrupt,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5))
+static AROS_UFIH1(disk_block_interrupt, struct TrackDiskBase *, tdb)
 { 
     AROS_USERFUNC_INIT
  
-    struct TrackDiskBase *tdb = (struct TrackDiskBase*)data;
     Signal (tdb->td_task, 1L << tdb->td_IntBit);
     return 0;
 	
