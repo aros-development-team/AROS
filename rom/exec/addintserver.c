@@ -20,17 +20,8 @@
 static void krnIRQwrapper(void *data1, void *data2)
 {
     struct Interrupt *irq = (struct Interrupt *)data1;
-#ifdef __mc68000
-    struct Custom *custom = (APTR)(IPTR)0xdff000;
-#else
-    struct Custom *custom = 0;
-#endif
 
-    AROS_UFC4(int, irq->is_Code,
-            AROS_UFCA(struct Custom *, custom, A0),
-            AROS_UFCA(APTR, irq->is_Data, A1),
-            AROS_UFCA(APTR, irq->is_Code, A5),
-            AROS_UFCA(struct ExecBase *, SysBase, A6));
+    AROS_UFIC1(irq->is_Code, irq->is_Data);
 }
 
 /*****************************************************************************

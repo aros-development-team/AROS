@@ -223,9 +223,9 @@ AROS_UFH3S(struct ExecBase *, GM_UNIQUENAME(init),
             sil = (struct SoftIntList *)((struct Interrupt *)is + 1);
 
             if (i == INTB_VERTB)
-                is->is_Code = &VBlankServer;
+                is->is_Code = (VOID_FUNC)VBlankServer;
             else
-                is->is_Code = &IntServer;
+                is->is_Code = (VOID_FUNC)IntServer;
             is->is_Data = sil;
             NEWLIST((struct List *)sil);
             SetIntVector(i,is);

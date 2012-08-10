@@ -10,7 +10,6 @@
 #include <exec/execbase.h>
 #include <exec/ptrace.h>
 #include <proto/exec.h>
-#include <hidd/irq.h>
 
 #include <aros/core.h>
 #include <asm/irq.h>
