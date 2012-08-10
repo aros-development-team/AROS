@@ -12,7 +12,6 @@
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <hardware/ahci.h>
-#include <hidd/irq.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
@@ -148,4 +147,3 @@ static int ahci_pci_scan(struct AHCIBase *AHCIBase)
  * All bus scanners must run between them.
  */
 ADD2INITLIB(ahci_pci_scan, 30)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

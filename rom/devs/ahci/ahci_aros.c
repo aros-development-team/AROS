@@ -11,7 +11,6 @@
 #include <proto/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 
@@ -212,70 +211,47 @@ void ahci_os_unlock_port(struct ahci_port *ap)
 	lockmgr(&ap->ap_lock, LK_RELEASE);
 }
 
-static void ahci_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+AROS_UFIH1(ahci_Interrupt, void **, fa)
 {
-        driver_intr_t *func = irq->h_Data;
-        void *arg =  *(void **)(&irq[1]);
+    AROS_USERFUNC_INIT
 
-        func(arg);
+    driver_intr_t *func = fa[0];
+    void *arg =  fa[1];
+
+    func(arg);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 /* IRQ management */
 int bus_setup_intr(device_t dev, struct resource *r, int flags, driver_intr_t func, void *arg, void **cookiep, void *serializer)
 {
-    HIDDT_IRQ_Handler *handler = AllocVec(sizeof(HIDDT_IRQ_Handler)+sizeof(void *), MEMF_PUBLIC);
-    OOP_Object *o;
+    struct Interrupt *handler = AllocVec(sizeof(struct Interrupt)+sizeof(void *)*2, MEMF_PUBLIC);
+    void **fa;
     
     if (handler == NULL)
         return ENOMEM;
 
-    handler->h_Node.ln_Pri = 10;
-    handler->h_Node.ln_Name = device_get_name(dev);
-    handler->h_Code = ahci_Interrupt;
-    handler->h_Data = func;
-    *(void **)(&handler[1]) = arg;
+    handler->is_Node.ln_Pri = 10;
+    handler->is_Node.ln_Name = device_get_name(dev);
+    handler->is_Code = (VOID_FUNC)ahci_Interrupt;
+    fa = (void **)&handler[1];
+    fa[0] = func;
+    fa[1] = arg;
+    handler->is_Data = fa;
 
-    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (o != NULL) {
-        int retval;
-        struct pHidd_IRQ_AddHandler msg = {
-            .mID = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-            .handlerinfo = handler,
-            .id = r->res_tag,
-        };
-
-        retval = OOP_DoMethod(o, &msg.mID);
-        OOP_DisposeObject(o);
-        if (retval) {
-            *cookiep = handler;
-            return 0;
-        }
-    }
-
-    FreeVec(handler);
-    return ENOMEM;
+    AddIntServer(INTB_KERNEL + r->res_tag, handler);
+    *cookiep = handler;
+    
+    return 0;
 }
 
 int bus_teardown_intr(device_t dev, struct resource *r, void *cookie)
 {
-    HIDDT_IRQ_Handler *handler = cookie;
-    OOP_Object *o;
-    
-    if (handler == NULL)
-        return 0;
+    RemIntServer(INTB_KERNEL + r->res_tag, (struct Interrupt *)cookie);
+    FreeVec(cookie);
 
-    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (o != NULL) {
-        struct pHidd_IRQ_RemHandler msg = {
-            .mID = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-            .handlerinfo = handler,
-        };
-
-        OOP_DoMethod(o, &msg.mID);
-        FreeVec(handler);
-        OOP_DisposeObject(o);
-        return 0;
-    }
-
-    return ENOMEM;
+    return 0;
 }
