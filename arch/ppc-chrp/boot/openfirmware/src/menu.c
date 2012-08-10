@@ -49,7 +49,6 @@ menu_entry_t *execute_menu()
     else if (menu_entries_cnt > 1)
     {
         int i;
-        int timeout = timeout_option * 10;
         int selected = default_option;
         char chr;
 
@@ -77,7 +76,6 @@ menu_entry_t *execute_menu()
 			if (chr >= 1 && chr <= menu_entries_cnt) {
 				D(bug("[BOOT] correct key\r\n"));
 				selected = chr-1;
-				timeout = 0;
 			}
 			else return NULL;
         }

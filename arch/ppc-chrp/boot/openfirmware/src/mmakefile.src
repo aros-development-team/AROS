@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR := $(GENDIR)/$(CURDIR)
-FILES     := bootstrap elf menu of1275 support
+FILES     := bootstrap elf menu of1275 support gpr
 DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
 
@@ -24,6 +24,9 @@ $(TARGETDIR)/%.o : %.S
 	%compile_q opt="$(CFLAGS)"
 
 $(TARGETDIR)/%.d : %.c
+	%mkdepend_q
+
+$(TARGETDIR)/%.d : %.S
 	%mkdepend_q
 
 -include $(DEPS)

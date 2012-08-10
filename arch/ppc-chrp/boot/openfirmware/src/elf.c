@@ -360,7 +360,7 @@ int load_elf_file(const char *name, void *file, unsigned long virt)
 							sym->s_lowest = sh[st[j].shindex].addr + st[j].value + virt - KERNEL_PHYS_BASE;
 							sym->s_highest = sym->s_lowest + st[j].size;
 
-							add_head(&mod->m_symbols, sym);
+							add_head(&mod->m_symbols, (node_t *)sym);
 						}
 					}
 
@@ -368,7 +368,7 @@ int load_elf_file(const char *name, void *file, unsigned long virt)
 				}
 			}
 
-			add_head(debug_info, mod);
+			add_head(debug_info, (node_t *)mod);
 		}
 	}
 
