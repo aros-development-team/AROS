@@ -169,11 +169,7 @@ ULONG GetEClock(struct TimerBase *TimerBase)
 	return diff;
 }
 
-AROS_UFH4(APTR, ciab_eclock,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(ciab_eclock, struct TimerBase *, TimerBase)
 {
 	AROS_USERFUNC_INIT
 
@@ -191,16 +187,12 @@ AROS_UFH4(APTR, ciab_eclock,
 		TimerBase->tb_CurrentTime.tv_secs++;
 	}
 
-	return 0;	
+	return FALSE;	
 
 	AROS_USERFUNC_EXIT
 }
 
-AROS_UFH4(APTR, ciaint_timer,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(ciaint_timer, struct TimerBase *, TimerBase)
 {
 	AROS_USERFUNC_INIT
 
@@ -261,12 +253,7 @@ AROS_UFH4(APTR, ciaint_timer,
 	AROS_USERFUNC_EXIT
 }
 
-
-AROS_UFH4(APTR, cia_vbint,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(cia_vbint, struct TimerBase *, TimerBase)
 {
     	AROS_USERFUNC_INIT
 	

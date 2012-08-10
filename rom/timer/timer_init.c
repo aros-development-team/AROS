@@ -32,11 +32,7 @@
 #include "timer_macros.h"
 
 /* exec.library VBlank interrupt handler  */
-AROS_UFH4(static ULONG, VBlankInt,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct TimerBase *, TimerBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
 {
     AROS_USERFUNC_INIT
 
@@ -93,7 +89,7 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR LIBBASE)
 	is->is_Node.ln_Pri = 0;
 	is->is_Node.ln_Type = NT_INTERRUPT;
 	is->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-	is->is_Code = (void *)VBlankInt;
+	is->is_Code = (VOID_FUNC)VBlankInt;
 	is->is_Data = LIBBASE;
 
 	AddIntServer(INTB_VERTB, is);
