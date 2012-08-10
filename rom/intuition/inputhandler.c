@@ -135,7 +135,7 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
                            expect is_Data to point to the IIHData structure, so don't
                            change this! */
 
-                        iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
+                        iihandler->is_Code = (VOID_FUNC)AROS_ASMSYMNAME(IntuiInputHandler);
                         iihandler->is_Data = iihdata;
                         iihandler->is_Node.ln_Pri   = 50;
                         iihandler->is_Node.ln_Name  = "Intuition InputHandler";
