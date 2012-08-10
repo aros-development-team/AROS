@@ -42,7 +42,7 @@ struct TypeStats *FindTypeStats(struct DevUnit *unit, struct MinList *list,
    ULONG packet_type, struct DevBase *base);
 VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
    struct DevBase *base);
-BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+AROS_UFIP(StatusInt);
 VOID UpdateStats(struct DevUnit *unit, struct DevBase *base);
 
 

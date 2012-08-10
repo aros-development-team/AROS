@@ -76,20 +76,17 @@ VOID SelectMedium(struct DevUnit *unit, UWORD transceiver,
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
    UWORD upper_bound_right, struct DevBase *base);
-static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code));
+static AROS_UFIP(RXInt);
 static VOID CopyPacket(struct DevUnit *unit, struct IOSana2Req *request,
    UWORD packet_size, UWORD packet_type, UBYTE *buffer, BOOL all_read,
    struct DevBase *base);
 static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
    struct DevBase *base);
-static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code));
+static AROS_UFIP(TXInt);
 static VOID TxError(struct DevUnit *unit, struct DevBase *base);
-static VOID DMARXInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code));
-static VOID DMATXInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code));
-static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code));
+static AROS_UFIP(DMARXInt);
+static AROS_UFIP(DMATXInt);
+static AROS_UFIP(DMATXEndInt);
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
 static VOID UnitTask(struct ExecBase *sys_base);
@@ -370,7 +367,7 @@ struct DevUnit *CreateUnit(ULONG index, APTR card,
 
       unit->tx_end_int.is_Node.ln_Name =
          base->device.dd_Library.lib_Node.ln_Name;
-      unit->tx_end_int.is_Code = DMATXEndInt;
+      unit->tx_end_int.is_Code = (APTR)DMATXEndInt;
       unit->tx_end_int.is_Data = unit;
 
       unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
@@ -1334,13 +1331,13 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 *
 ****************************************************************************
 *
-* int_code is really in A5, but GCC 2.95.3 doesn't seem able to handle that.
-* Since we don't use this parameter, we can lie.
-*
 */
+#undef SysBase
 
-BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
+AROS_UFIH1(StatusInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    struct DevBase *base;
    UWORD ints;
 
@@ -1389,6 +1386,8 @@ BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
    }
 
    return FALSE;
+
+   AROS_USERFUNC_EXIT
 }
 
 
@@ -1407,8 +1406,10 @@ BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 *
 */
 
-static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
+static AROS_UFIH1(RXInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    UWORD rx_status, packet_size;
    struct DevBase *base;
    BOOL is_orphan, accepted;
@@ -1514,7 +1515,9 @@ static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
 
    unit->LEWordOut(unit->card, EL3REG_COMMAND,
       EL3CMD_SETINTMASK | unit->int_mask);
-   return;
+   return 0;
+
+   AROS_USERFUNC_EXIT
 }
 
 
@@ -1681,8 +1684,10 @@ static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
 *
 */
 
-static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
+static AROS_UFIH1(TXInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    UWORD packet_size, data_size, send_size;
    struct DevBase *base;
    struct IOSana2Req *request;
@@ -1799,7 +1804,9 @@ static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a5, APTR int_code))
       unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
    }
 
-   return;
+   return 0;
+
+   AROS_USERFUNC_EXIT
 }
 
 
@@ -1933,9 +1940,10 @@ VOID UpdateStats(struct DevUnit *unit, struct DevBase *base)
 *
 */
 
-static VOID DMARXInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code))
+static AROS_UFIH1(DMARXInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    UWORD packet_size;
    struct DevBase *base;
    BOOL is_orphan, accepted;
@@ -2052,7 +2060,9 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
    unit->LEWordOut(unit->card, EL3REG_COMMAND,
       EL3CMD_SETINTMASK | unit->int_mask);
 #endif
-   return;
+   return 0;
+
+   AROS_USERFUNC_EXIT
 }
 
 
@@ -2071,9 +2081,10 @@ static VOID DMARXInt(REG(a1, struct DevUnit *unit),
 *
 */
 
-static VOID DMATXInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code))
+static AROS_UFIH1(DMATXInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    UWORD packet_size, data_size, slot, new_slot, *p, *q, i;
    struct DevBase *base;
    struct IOSana2Req *request;
@@ -2219,7 +2230,9 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
    else
       unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
 
-   return;
+   return 0;
+
+   AROS_USERFUNC_EXIT
 }
 
 
@@ -2242,9 +2255,10 @@ static VOID DMATXInt(REG(a1, struct DevUnit *unit),
 *
 */
 
-static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
-   REG(a5, APTR int_code))
+static AROS_UFIH1(DMATXEndInt, struct DevUnit *, unit)
 {
+   AROS_USERFUNC_INIT
+
    UWORD data_size, packet_size, new_out_slot, i;
    UBYTE *buffer;
    struct DevBase *base;
@@ -2318,7 +2332,9 @@ static VOID DMATXEndInt(REG(a1, struct DevUnit *unit),
    if(unit->request_ports[WRITE_QUEUE]->mp_Flags == PA_IGNORE)
       Cause(&unit->tx_int);
 
-   return;
+   return 0;
+
+   AROS_USERFUNC_EXIT
 }
 
 
