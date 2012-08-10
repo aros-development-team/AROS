@@ -131,15 +131,10 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     }
 }
 
-AROS_UFH4(ULONG, audio_int,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(audio_int, struct AudioInterrupt *, ai)
 { 
     AROS_USERFUNC_INIT
 
-    struct AudioInterrupt *ai = data;
     audioirq(ai->ab, ai->ch);
 
     return 0;
