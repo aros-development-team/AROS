@@ -27,7 +27,7 @@
 #include "support.h"
 #include <devices/diskimage.h>
 #include <proto/exec.h>
-#include <proto/diskimage.h>
+//#include <proto/diskimage.h>
 
 struct MsgPort *DiskImagePort;
 struct IORequest *DiskImageIO;

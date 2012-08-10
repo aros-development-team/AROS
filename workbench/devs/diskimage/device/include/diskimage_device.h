@@ -74,9 +74,6 @@ struct DiskImageBase {
 	struct Library *SysBase;
 	struct Library *DOSBase;
 	struct Library *UtilityBase;
-#ifdef __AROS__
-	struct Library *aroscbase;
-#endif
 	struct Library *IntuitionBase;
 };
 
@@ -141,16 +138,7 @@ struct DiskImageUnit {
 };
 
 /* io.c */
-#ifdef __AROS__
-AROS_LD1(void, LibBeginIO,
-	AROS_LPA(struct IOExtTD *, iotd, A1),
-	struct DiskImageBase *, libBase, 5, DiskImage
-);
-AROS_LD1(LONG, LibAbortIO,
-	AROS_LPA(struct IOStdReq *, which_io, A1),
-	struct DiskImageBase *, libBase, 6, DiskImage
-);
-#else
+#ifndef __AROS__
 LONG LibAbortIO (REG(a1, struct IOStdReq *which_io), REG(a6, struct DiskImageBase *libBase));
 void LibBeginIO (REG(a1, struct IOExtTD *iotd), REG(a6, struct DiskImageBase *libBase));
 #endif
@@ -174,46 +162,7 @@ VARARGS68K void SetDiskImageError (APTR Self, struct DiskImageUnit *unit, LONG e
 LONG DoSCSICmd (struct IOStdReq *io, struct SCSICmd *scsi);
 
 /* main_vectors.c */
-#ifdef __AROS__
-AROS_LD2(LONG, MountImage,
-	AROS_LPA(ULONG, unit_num, D0),
-	AROS_LPA(CONST_STRPTR, filename, A0),
-	struct DiskImageBase *, libBase, 7, DiskImage
-);
-AROS_LD3(LONG, UnitInfo,
-	AROS_LPA(ULONG, unit_num, D0),
-	AROS_LPA(STRPTR *, filename, A0),
-	AROS_LPA(BOOL *, writeprotect, A1),
-	struct DiskImageBase *, libBase, 8, DiskImage
-);
-AROS_LD2(LONG, WriteProtect,
-	AROS_LPA(ULONG, unit_num, D0),
-	AROS_LPA(BOOL, writeprotect, D1),
-	struct DiskImageBase *, libBase, 9, DiskImage
-);
-AROS_LD2(LONG, UnitControlA,
-	AROS_LPA(ULONG, unit_num, D0),
-	AROS_LPA(struct TagItem *, tags, A0),
-	struct DiskImageBase *, libBase, 10, DiskImage
-);
-AROS_LD0(LONG, ReloadPlugins,
-	struct DiskImageBase *, libBase, 11, DiskImage
-);
-AROS_LD1(void, DoHookPlugins,
-	AROS_LPA(struct Hook *, hook, A0),
-	struct DiskImageBase *, libBase, 12, DiskImage
-);
-AROS_LD2(void, AddDiskChangeHook,
-	AROS_LPA(struct Hook *, hook, A0),
-	AROS_LPA(BOOL, add_or_remove, D0),
-	struct DiskImageBase *, libBase, 13, DiskImage
-);
-AROS_LD2(void, AddReloadPluginsHook,
-	AROS_LPA(struct Hook *, hook, A0),
-	AROS_LPA(BOOL, add_or_remove, D0),
-	struct DiskImageBase *, libBase, 14, DiskImage
-);
-#else
+#ifndef __AROS__
 LONG MountImage (REG(d0, ULONG unit_num), REG(a0, CONST_STRPTR filename),
 	REG(a6, struct DiskImageBase *libBase));
 LONG UnitInfo (REG(d0, ULONG unit_num), REG(a0, STRPTR *filename), REG(a1, BOOL *writeprotect),

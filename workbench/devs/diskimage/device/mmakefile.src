@@ -4,13 +4,13 @@ include $(TOP)/config/make.cfg
 #MM workbench-devs-diskimage-device : includes linklibs workbench-devs-diskimage-support \
 #MM workbench-devs-diskimage-prefs workbench-devs-diskimage-device-catalogs
 
-CFILES := init io unit scsicmd locale plugins tempfile progress password \
+CFILES := init_aros io unit scsicmd locale plugins tempfile progress password \
 	main_vectors plugin_vectors ../plugins/generic ../plugins/adf ../plugins/d64 ../plugins/iso
 
 USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 -DDEVICE
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
 
-%build_module_simple mmake=workbench-devs-diskimage-device modname=diskimage modtype=device \
-    files=$(CFILES) uselibs="diskimagesupport diskimageprefs"
+%build_module mmake=workbench-devs-diskimage-device modname=diskimage modtype=device \
+    files=$(CFILES) uselibs="diskimagesupport diskimageprefs arosc_rel expat_rel"
 
 %common

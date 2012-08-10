@@ -97,7 +97,7 @@ int UnitProcMain (struct DiskImageUnit *unit) {
 	struct Library *UtilityBase = libBase->UtilityBase;
 	struct IOExtTD *iotd;
 	struct DiskImageMsg *msg;
-	const struct TagItem *ti, *tstate;
+	struct TagItem *ti, *tstate;
 	LONG err;
 	ULONG sigmask;
 	CONST_STRPTR filename, plugin_name;

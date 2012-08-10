@@ -3,12 +3,9 @@ include $(TOP)/config/make.cfg
 
 #MM- workbench-devs-diskimage : includes-copy 
 
-#MM- includes-copy : workbench-devs-diskimage-includes-devices workbench-devs-diskimage-includes
+#MM- includes-copy : workbench-devs-diskimage-includes-devices
 
 FILES2 := diskimage.h
 %copy_files_q mmake=workbench-devs-diskimage-includes-devices files=$(FILES2) src=devices dst=$(AROS_INCLUDES)/devices
-
-FILES3 := clib/diskimage_protos.h defines/diskimage.h proto/diskimage.h
-%copy_files_q mmake=workbench-devs-diskimage-includes files=$(FILES3) src=aros dst=$(AROS_INCLUDES)
 
 %common

@@ -27,8 +27,7 @@
 #include "prefs.h"
 
 #ifdef __AROS__
-#  include <libraries/expat_au.h>
-#  include <proto/expat_au.h>
+#  include <expat.h>
 #  include <string.h>
 #else
 #  include <libraries/expat.h>
