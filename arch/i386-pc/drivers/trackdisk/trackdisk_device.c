@@ -30,8 +30,9 @@
 #include <proto/utility.h>
 #include <proto/bootloader.h>
 #include <proto/dos.h>
-#include <hidd/irq.h>
 #include <asm/io.h>
+
+#include <SDI/SDI_interrupt.h>
 
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
@@ -43,8 +44,6 @@
 
 #undef kprintf
 
-void td_floppytimer(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
-void td_floppyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 int td_getbyte(unsigned char *, struct TrackDiskBase *);
 int td_sendbyte(unsigned char, struct TrackDiskBase *);
 ULONG TD_InitTask(struct TrackDiskBase *);
@@ -156,12 +155,44 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     return (unit);
 }
 
+static AROS_UFIH1(td_floppytimer, struct TrackDiskBase *, TDBase)
+{
+    AROS_USERFUNC_INIT
+
+    // Does anyone wait for io?
+    if (TDBase->td_inttmo)
+    {
+	// Decrease timeout
+	TDBase->td_inttmo--;
+	// timeout?
+	if (!TDBase->td_inttmo)
+	{
+	    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_TmoBit));
+	}
+    }
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
+static AROS_UFIH1(td_floppyint, struct TrackDiskBase *, TDBase)
+{
+    AROS_USERFUNC_INIT
+
+    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
+}
+
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 {
-    struct Library *OOPBase;
     struct BootLoaderBase *BootLoaderBase;
     ULONG i;
     UBYTE drives;
+    struct Interrupt *irq;
 
     D(bug("TD: Init\n"));
     
@@ -204,52 +235,24 @@ static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)
 
     for (i=0; i<TD_NUMUNITS; i++)
 	TDBase->td_Units[i] = NULL;
+    
+    irq = &TDBase->td_FloppyInt;
+    irq->is_Node.ln_Type = NT_INTERRUPT;
+    irq->is_Node.ln_Pri=127;		/* Set the highest pri */
+    irq->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+    irq->is_Code = (VOID_FUNC)td_floppyint;
+    irq->is_Data = (APTR)TDBase;
 
-    /* Set up the IRQ system */
-    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
+    AddIntServer(INTB_KERNEL + 6, irq);
 
-    if (OOPBase)
-    {
-	OOP_Object *o;
+    irq = &TDBase->td_TimerInt;
+    irq->is_Node.ln_Type = NT_INTERRUPT;
+    irq->is_Node.ln_Pri=10;		/* Set the highest pri */
+    irq->is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
+    irq->is_Code = (VOID_FUNC)td_floppytimer;
+    irq->is_Data = (APTR)TDBase;
 
-	o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-	
-	if (o)
-	{
-	    HIDDT_IRQ_Handler *irq;
-
-	    irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-
-	    if(!irq)
-	    {
-		/* PANIC! No memory for trackdisk IntServer ! */
-		Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
-	    }
-	    irq->h_Node.ln_Pri=127;		/* Set the highest pri */
-	    irq->h_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-	    irq->h_Code = td_floppyint;
-	    irq->h_Data = (APTR)TDBase;
-
-	    HIDD_IRQ_AddHandler(o, irq, vHidd_IRQ_Floppy);
-
-	    irq = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-
-	    if(!irq)
-	    {
-		/* PANIC! No memory for trackdisk IntServer ! */
-		Alert(AT_DeadEnd|AO_TrackDiskDev|AN_IntrMem);
-	    }
-	    irq->h_Node.ln_Pri=10;		/* Set the highest pri */
-	    irq->h_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
-	    irq->h_Code = td_floppytimer;
-	    irq->h_Data = (APTR)TDBase;
-
-	    HIDD_IRQ_AddHandler(o, irq, vHidd_IRQ_Timer);
-
-	    OOP_DisposeObject(o);
-	}
-	CloseLibrary(OOPBase);
-    }
+    AddIntServer(INTB_KERNEL + 0, irq);
 
     /* Swap drivebits around */
     drives = ( (drives&0xf0)>>4 | (drives&0x0f)<<4 );
@@ -315,7 +318,6 @@ static int GM_UNIQUENAME(Close)
 ADD2INITLIB(GM_UNIQUENAME(Init), 0)
 ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
 ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)
 
 AROS_LH1(void, beginio,
  AROS_LHA(struct IOExtTD *, iotd, A1),
@@ -784,23 +786,4 @@ static void TD_DevTask(struct TrackDiskBase *tdb)
     }
 }
 
-#define TDBase ((struct TrackDiskBase *)irq->h_Data)
-void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    // Does anyone wait for io?
-    if (TDBase->td_inttmo)
-    {
-	// Decrease timeout
-	TDBase->td_inttmo--;
-	// timeout?
-	if (!TDBase->td_inttmo)
-	{
-	    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_TmoBit));
-	}
-    }
-}
 
-void td_floppyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-    Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
-}
