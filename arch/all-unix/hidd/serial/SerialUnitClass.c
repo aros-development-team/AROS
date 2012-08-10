@@ -595,14 +595,10 @@ UWORD UXSerUnit__Hidd_SerialUnit__GetStatus(OOP_Class *cl, OOP_Object *o, struct
 
 #define READBUFFER_SIZE 513
 
-AROS_UFH3(void, serialunit_receive_data,
-   AROS_UFHA(APTR, iD, A1),
-   AROS_UFHA(APTR, iC, A5),
-   AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(serialunit_receive_data, struct HIDDSerialUnitData *, data)
 {
   AROS_USERFUNC_INIT
 
-  struct HIDDSerialUnitData * data = iD;
   ssize_t len;
   UBYTE buffer[READBUFFER_SIZE];
 //  struct Message * msg;
@@ -624,17 +620,15 @@ AROS_UFH3(void, serialunit_receive_data,
   if (NULL != data->DataReceivedCallBack)
     data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
+  return FALSE;
+
   AROS_USERFUNC_EXIT
 }
 
-AROS_UFH3(void, serialunit_write_more_data,
-   AROS_UFHA(APTR, iD, A1),
-   AROS_UFHA(APTR, iC, A5),
-   AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(serialunit_write_more_data, struct HIDDSerialUnitData *, data)
 {
   AROS_USERFUNC_INIT
 
-  struct HIDDSerialUnitData * data = iD;
 //  struct Message * msg;
 
   /*
@@ -653,6 +647,8 @@ AROS_UFH3(void, serialunit_write_more_data,
 
   if (NULL != data->DataWriteCallBack)
     data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+
+  return FALSE;
 
   AROS_USERFUNC_EXIT
 }
