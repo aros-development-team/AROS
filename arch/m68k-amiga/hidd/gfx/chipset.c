@@ -674,11 +674,7 @@ UBYTE bltnode_wrapper(void)
 #define BQ_BEAMSYNCWAITING 4
 #define BQ_MISSED 8
 
-static AROS_UFH4(ULONG, gfx_blit,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct GfxBase *, GfxBase, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(ULONG, dummy3, A6))
+static AROS_UFIH1(gfx_blit, struct GfxBase *, GfxBase)
 { 
     AROS_USERFUNC_INIT
 
@@ -773,11 +769,7 @@ static AROS_UFH4(ULONG, gfx_blit,
     AROS_USERFUNC_EXIT
 }
 
-static AROS_UFH4(ULONG, gfx_beamsync,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+static AROS_UFIH1(gfx_beamsync, struct amigavideo_staticdata*, data)
 { 
     AROS_USERFUNC_INIT
 
@@ -789,16 +781,12 @@ static AROS_UFH4(ULONG, gfx_beamsync,
 	custom->intreq = INTF_SETCLR | INTF_BLIT;
     }
 
-    return 0;
+    return FALSE;
 	
     AROS_USERFUNC_EXIT
 }
 
-static AROS_UFH4(ULONG, gfx_vblank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(struct amigavideo_staticdata*, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+static AROS_UFIH1(gfx_vblank, struct amigavideo_staticdata*, data)
 { 
     AROS_USERFUNC_INIT
 
@@ -830,7 +818,7 @@ static AROS_UFH4(ULONG, gfx_vblank,
     if (bqvar & BQ_BEAMSYNC)
 	bqvar |= BQ_MISSED;
 
-    return 0;
+    return FALSE;
 	
     AROS_USERFUNC_EXIT
 }
