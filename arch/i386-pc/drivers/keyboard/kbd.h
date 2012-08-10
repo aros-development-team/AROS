@@ -21,8 +21,8 @@
 #   include <exec/semaphores.h>
 #endif
 
+#include <exec/interrupts.h>
 #include <dos/bptr.h>
-#include <hidd/irq.h>
 /****************************************************************************************/
 
 #define KBD_STATUS_OBF 			0x01 	/* keyboard output buffer full */
@@ -135,11 +135,10 @@ struct kbd_staticdata
 
     OOP_Class 			*kbdclass;
 
-    OOP_Object 			*irqhidd;
     OOP_Object 			*kbdhidd;
     
     OOP_AttrBase        hiddKbdAB;
-    HIDDT_IRQ_Handler	*irq;
+    struct Interrupt    irq;
 
     BPTR                cs_SegList;
     struct Library     *cs_OOPBase;
