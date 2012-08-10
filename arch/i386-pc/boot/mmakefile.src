@@ -28,7 +28,6 @@ include $(TOP)/config/make.cfg
 #MM	kernel-isapnp-kobj 		\
 #MM	kernel-debug-kobj 		\
 #MM	kernel-pc-i386-drivers 		\
-#MM     kernel-hidd-irq-kobj		\
 #MM     kernel-hidd-pci-kobj		\
 #MM     kernel-hidd-vesa-kobj 		\
 #MM     kernel-hidd-vga-kobj		\
@@ -40,7 +39,7 @@ USELIBS	:= hiddstubs amiga arossupport debug arosc.static arosm autoinit libinit
 KRSRCS  := acpi battclock hpet processor
 KLIBS   := exec expansion oop utility debug
 KDEVS   := timer ahci ata trackdisk
-KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc irq
+KHIDDS  := kbd ps2mouse vesagfx vgah pci pcipc
 ##Disabled RSRC cpu isapnp
 
 %link_kickstart mmake=kernel-bsp-pc-i386 file=$(EXEDIR)/aros-bsp-pc-i386 \
