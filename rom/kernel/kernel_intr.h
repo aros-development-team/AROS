@@ -20,12 +20,7 @@ static inline void core_Cause(unsigned char n, unsigned int mask)
 
     /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
     if (iv->iv_Code)
-        AROS_UFC5NR(void, iv->iv_Code,
-		  AROS_UFCA(ULONG, mask, D1),
-		  AROS_UFCA(APTR, _CUSTOM, A0),
-		  AROS_UFCA(APTR, iv->iv_Data, A1),
-		  AROS_UFCA(APTR, iv->iv_Code, A5),
-		  AROS_UFCA(struct ExecBase *, SysBase, A6));
+        AROS_UFIC3(iv->iv_Code, iv->iv_Data, mask, _CUSTOM);
 }
 
 /* Call exec trap handler, if possible */
