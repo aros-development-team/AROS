@@ -34,7 +34,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -272,9 +271,10 @@ void ohci_FreeED(OOP_Class *cl, OOP_Object *o, ohci_ed_t *ed)
     ohci_FreeTD(cl, o, (ohci_td_t *)ed);
 }
 
-void ohci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+AROS_UFIH1(ohci_Handler, ohci_data_t *,ohci)
 {
-    ohci_data_t *ohci = (ohci_data_t *)irq->h_Data;
+    AROS_USERFUNC_INIT
+
     uint32_t intrs = 0;
     uint32_t done;
 
@@ -444,6 +444,10 @@ void ohci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     }
 
     mmio(ohci->regs->HcInterruptEnable) = AROS_LONG2OHCI(HC_INTR_MIE);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 BOOL METHOD(OHCI, Hidd_USBDrv, AddInterrupt)
@@ -812,7 +816,6 @@ BOOL METHOD(OHCI, Hidd_USBDrv, ControlTransfer)
     ohci_pipe_t *pipe = msg->pipe;
     int8_t sig = AllocSignal(-1);
     int8_t toutsig = AllocSignal(-1);
-    int32_t msec = pipe->timeoutVal;
     BOOL retval = FALSE;
     ULONG length;
 
@@ -892,6 +895,7 @@ BOOL METHOD(OHCI, Hidd_USBDrv, ControlTransfer)
         /* Fire the transfer */
         if (pipe->timeoutVal != 0)
         {
+            int32_t msec = pipe->timeoutVal + 10000;
             pipe->timeout->tr_node.io_Message.mn_ReplyPort->mp_SigBit = toutsig;
             pipe->timeout->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 
@@ -985,7 +989,6 @@ BOOL METHOD(OHCI, Hidd_USBDrv, BulkTransfer)
     ohci_pipe_t *pipe = msg->pipe;
     int8_t sig = AllocSignal(-1);
     int8_t toutsig = AllocSignal(-1);
-    int32_t msec = pipe->timeoutVal;
     uint32_t length = msg->length;
     uint8_t *buff;
     BOOL retval = FALSE;
@@ -1062,6 +1065,7 @@ BOOL METHOD(OHCI, Hidd_USBDrv, BulkTransfer)
         /* Fire the transfer */
         if (pipe->timeoutVal != 0)
         {
+            int32_t msec = pipe->timeoutVal + 10000;
             pipe->timeout->tr_node.io_Message.mn_ReplyPort->mp_SigBit = toutsig;
             pipe->timeout->tr_node.io_Message.mn_ReplyPort->mp_SigTask = FindTask(NULL);
 

@@ -62,14 +62,10 @@ static usb_interface_descriptor_t *find_idesc(usb_config_descriptor_t *cd, int i
     return (NULL);
 }
 
-static AROS_UFH3(void, HidInterrupt,
-                 AROS_UFHA(APTR, interruptData, A1),
-                 AROS_UFHA(APTR, interruptCode, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(HidInterrupt, HidData *, hid)
 {
     AROS_USERFUNC_INIT
 
-    HidData *hid = interruptData;
     uint8_t reportid = 0;
 
     /* Invalidate the cache. Report has been sent through DMA */
@@ -84,6 +80,8 @@ static AROS_UFH3(void, HidInterrupt,
     }
     else
         HIDD_USBHID_ParseReport(hid->o, 0, hid->buffer, hid->buflen);
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
@@ -312,7 +310,7 @@ OOP_Object *METHOD(HID, Root, New)
                     if (drv)
                     {
                         hid->interrupt.is_Data = hid;
-                        hid->interrupt.is_Code = HidInterrupt;
+                        hid->interrupt.is_Code = (VOID_FUNC)HidInterrupt;
                         hid->intr_pipe = HIDD_USBDevice_CreatePipe(o, PIPE_Interrupt, ep->bEndpointAddress, ep->bInterval, AROS_LE2WORD(ep->wMaxPacketSize), 0);
                         if (hid->intr_pipe) {
                             HIDD_USBDrv_AddInterrupt(drv, hid->intr_pipe, hid->buffer, hid->buflen, &hid->interrupt);

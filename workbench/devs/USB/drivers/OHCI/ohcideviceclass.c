@@ -31,7 +31,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>

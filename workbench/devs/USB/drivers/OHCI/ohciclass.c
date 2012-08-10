@@ -34,7 +34,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>
@@ -51,6 +50,9 @@ static const usb_hub_descriptor_t hub_descriptor = {
     bHubContrCurrent:   0,
     DeviceRemovable:    {0,},
 };
+
+AROS_UFIP(OHCI_HubInterrupt);
+AROS_UFIP(ohci_Handler);
 
 OOP_Object *METHOD(OHCI, Root, New)
 {
@@ -75,7 +77,7 @@ OOP_Object *METHOD(OHCI, Root, New)
         ohci->timerPort.mp_Flags = PA_SOFTINT;
         ohci->timerPort.mp_Node.ln_Type = NT_MSGPORT;
         ohci->timerPort.mp_SigTask = &ohci->timerInt;
-        ohci->timerInt.is_Code = OHCI_HubInterrupt;
+        ohci->timerInt.is_Code = (VOID_FUNC)OHCI_HubInterrupt;
         ohci->timerInt.is_Data = ohci;
 
         ohci->timerReq = CreateIORequest(&ohci->timerPort, sizeof(struct timerequest));
@@ -92,14 +94,13 @@ OOP_Object *METHOD(OHCI, Root, New)
         ohci->hubDescr.bNbrPorts = GetTagData(aHidd_USBHub_NumPorts, 0, msg->attrList);
         ohci->hubDescr.wHubCharacteristics = AROS_WORD2LE(UHD_PWR_NO_SWITCH | UHD_OC_INDIVIDUAL);
 
-        ohci->irqHandler = AllocPooled(SD(cl)->memPool, sizeof(HIDDT_IRQ_Handler));
+        ohci->irqHandler.is_Node.ln_Name = "UHCI Intr";
+        ohci->irqHandler.is_Node.ln_Pri = 127;
+        ohci->irqHandler.is_Node.ln_Type = NT_INTERRUPT;
+        ohci->irqHandler.is_Code = (VOID_FUNC)ohci_Handler;
+        ohci->irqHandler.is_Data = ohci;
 
-        ohci->irqHandler->h_Node.ln_Name = "UHCI Intr";
-        ohci->irqHandler->h_Node.ln_Pri = 127;
-        ohci->irqHandler->h_Code = ohci_Handler;
-        ohci->irqHandler->h_Data = ohci;
-
-        HIDD_IRQ_AddHandler(SD(cl)->irq, ohci->irqHandler, ohci->irqNum);
+        AddIntServer(INTB_KERNEL + ohci->irqNum, &ohci->irqHandler);
         D(bug("[OHCI] IRQHandler = %08x int = %d\n", ohci->irqHandler, ohci->irqNum));
 
         D(bug("[OHCI] New(): o=%p, ports=%d, regs=%p, drv=%p, dev=%p, hcca=%p\n", o,
@@ -335,7 +336,6 @@ static int OHCI_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("[OHCI] InitClass\n"));
 
     HiddOHCIAttrBase = OOP_ObtainAttrBase(IID_Drv_USB_OHCI);
-    LIBBASE->sd.irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 
     if (HiddOHCIAttrBase)
     {

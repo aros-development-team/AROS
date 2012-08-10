@@ -37,7 +37,6 @@
 
 #include <oop/oop.h>
 
-#include <hidd/irq.h>
 #include <usb/usb.h>
 #include <usb/usb_core.h>
 
@@ -173,7 +172,7 @@ typedef struct {
     OOP_Object	*pciDriver;
     OOP_Object	*device;
 
-    HIDDT_IRQ_Handler	*irqHandler;
+    struct Interrupt   irqHandler;
 
     struct timerequest	*tr;
 

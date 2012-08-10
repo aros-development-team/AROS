@@ -34,7 +34,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <usb/usb.h>
 
@@ -52,15 +51,11 @@
 
 OOP_AttrBase HiddUHCIAttrBase;
 
-static AROS_UFH3(void, HubInterrupt,
-                 AROS_UFHA(APTR, interruptData, A1),
-                 AROS_UFHA(APTR, interruptCode, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(HubInterrupt, UHCIData *, uhci)
 {
     AROS_USERFUNC_INIT
 
     /* Signal the HUB process about incoming interrupt */
-    UHCIData *uhci = interruptData;
     uint8_t sts = 0;
     struct Interrupt *intr;
 
@@ -70,7 +65,7 @@ static AROS_UFH3(void, HubInterrupt,
     if (uhci->timereq->tr_node.io_Error == IOERR_ABORTED)
     {
         D(bug("[UHCI] INTR Aborted\n"));
-        return;
+        return FALSE;
     }
 
     if (inw(uhci->iobase + UHCI_PORTSC1) & (UHCI_PORTSC_CSC|UHCI_PORTSC_OCIC))
@@ -99,12 +94,15 @@ static AROS_UFH3(void, HubInterrupt,
     uhci->timereq->tr_time.tv_micro = 255000;
     SendIO((struct IORequest *)uhci->timereq);
 
+    return FALSE;
+
     AROS_USERFUNC_EXIT
 }
 
-static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+static AROS_UFIH1(uhci_Handler, UHCIData *, uhci)
 {
-    UHCIData *uhci = (UHCIData *)irq->h_Data;
+    AROS_USERFUNC_INIT
+
     UHCI_Pipe *p;
 
     uint16_t status = inw(uhci->iobase + UHCI_STS);
@@ -124,7 +122,7 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     if((status & UHCI_STS_USBINT) == 0)
     {
         outw(status, uhci->iobase + UHCI_STS);
-        return;
+        return FALSE;
     }
 
     D(bug("[UHCI] INTR Cmd=%04x, SOF=%04x, Status = %04x, Frame=%04x, PortSC1=%04x, PortSC2=%04x\n",
@@ -303,6 +301,10 @@ static void uhci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     }
 
     outw(status, uhci->iobase + UHCI_STS);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 OOP_Object *METHOD(UHCI, Root, New)
@@ -321,7 +323,7 @@ OOP_Object *METHOD(UHCI, Root, New)
         uhci->mport.mp_Flags = PA_SOFTINT;
         uhci->mport.mp_Node.ln_Type = NT_MSGPORT;
         uhci->mport.mp_SigTask = &uhci->timerint;
-        uhci->timerint.is_Code = HubInterrupt;
+        uhci->timerint.is_Code = (VOID_FUNC)HubInterrupt;
         uhci->timerint.is_Data = uhci;
 
         uhci->timereq = CreateIORequest(&uhci->mport, sizeof(struct timerequest));
@@ -417,15 +419,14 @@ OOP_Object *METHOD(UHCI, Root, New)
 
         outl((uint32_t)uhci->Frame, uhci->iobase + UHCI_FLBASEADDR);
 
-        uhci->irqHandler = AllocPooled(SD(cl)->MemPool, sizeof(HIDDT_IRQ_Handler));
+        uhci->irqHandler.is_Node.ln_Type = NT_INTERRUPT;
+        uhci->irqHandler.is_Node.ln_Name = "UHCI Intr";
+        uhci->irqHandler.is_Node.ln_Pri = 127;
+        uhci->irqHandler.is_Code = (VOID_FUNC)uhci_Handler;
+        uhci->irqHandler.is_Data = uhci;
 
-        uhci->irqHandler->h_Node.ln_Name = "UHCI Intr";
-        uhci->irqHandler->h_Node.ln_Pri = 127;
-        uhci->irqHandler->h_Code = uhci_Handler;
-        uhci->irqHandler->h_Data = uhci;
-
-        HIDD_IRQ_AddHandler(SD(cl)->irq, uhci->irqHandler, uhci->irq);
-        D(bug("[UHCI]   IRQHandler = %08x\n", uhci->irqHandler));
+        AddIntServer(INTB_KERNEL + uhci->irq, &uhci->irqHandler);
+        D(bug("[UHCI]   IRQHandler = %08x\n", &uhci->irqHandler));
 
         struct pHidd_PCIDevice_WriteConfigWord __msg = {
                 OOP_GetMethodID((STRPTR)IID_Hidd_PCIDevice, moHidd_PCIDevice_WriteConfigWord), 0xc0, 0x8f00
@@ -530,8 +531,7 @@ void METHOD(UHCI, Root, Dispose)
     HIDD_PCIDriver_FreePCIMem(uhci->pciDriver, uhci->Frame);
 
     D(bug("[UHCI]   Removing IRQ handler\n"));
-    HIDD_IRQ_RemHandler(SD(cl)->irq, uhci->irqHandler);
-    FreePooled(SD(cl)->MemPool, uhci->irqHandler, sizeof(HIDDT_IRQ_Handler));
+    RemIntServer(INTB_KERNEL + uhci->irq, &uhci->irqHandler);
 
     AbortIO((struct IORequest *)uhci->timereq);
     DeleteIORequest((struct IORequest *)uhci->timereq);
@@ -1219,7 +1219,6 @@ static int UHCI_InitClass(LIBBASETYPEPTR LIBBASE)
     D(bug("[UHCI] InitClass\n"));
 
     HiddUHCIAttrBase = OOP_ObtainAttrBase(IID_Drv_USB_UHCI);
-    LIBBASE->sd.irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
 
     if (HiddUHCIAttrBase)
     {

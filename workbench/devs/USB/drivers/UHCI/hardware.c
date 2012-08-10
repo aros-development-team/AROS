@@ -33,7 +33,6 @@
 
 #include <hidd/hidd.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <usb/usb.h>
 

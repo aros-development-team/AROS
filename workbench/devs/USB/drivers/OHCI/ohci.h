@@ -29,8 +29,6 @@
 #include <exec/semaphores.h>
 #include <devices/timer.h>
 
-#include <hidd/irq.h>
-
 #include LC_LIBDEFS_FILE
 
 #ifndef BIG_ENDIAN_OHCI
@@ -261,7 +259,6 @@ struct ohci_staticdata
 {
     OOP_Class           *ohciClass;
 
-    OOP_Object          *irq;
     OOP_Object          *usb;
     OOP_Object          *pci;
 
@@ -309,7 +306,7 @@ typedef struct ohci_data {
 
     struct timerequest          *tr;
 
-    HIDDT_IRQ_Handler           *irqHandler;
+    struct Interrupt            irqHandler;
     intptr_t                    irqNum;
 
     OOP_Object                  *pciDriver;
@@ -359,19 +356,12 @@ enum {
 #define PCI_SUB_CLASS_USB       0x03
 #define PCI_INTERFACE_OHCI      0x10
 
-AROS_UFP3(void, OHCI_HubInterrupt,
-          AROS_UFPA(APTR, interruptData, A1),
-          AROS_UFPA(APTR, interruptCode, A5),
-          AROS_UFPA(struct ExecBase *, SysBase, A6));
-
 ohci_td_t *ohci_AllocTD(OOP_Class *cl, OOP_Object *o);
 ohci_ed_t *ohci_AllocED(OOP_Class *cl, OOP_Object *o);
 void ohci_FreeTDQuick(ohci_data_t *ohci, ohci_td_t *td);
 void ohci_FreeEDQuick(ohci_data_t *ohci, ohci_ed_t *ed);
 void ohci_FreeTD(OOP_Class *cl, OOP_Object *o, ohci_td_t *td);
 void ohci_FreeED(OOP_Class *cl, OOP_Object *o, ohci_ed_t *ed);
-
-void ohci_Handler(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw);
 
 void ohci_Delay(struct timerequest *tr, uint32_t msec);
 struct timerequest *ohci_CreateTimer();
