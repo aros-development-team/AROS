@@ -59,7 +59,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -280,8 +279,8 @@ struct RTL8169Unit {
 
     struct Process		*rtl8169u_Process;
 
-    HIDDT_IRQ_Handler	*rtl8169u_irqhandler;
-    HIDDT_IRQ_Handler	*rtl8169u_touthandler;
+    struct Interrupt            rtl8169u_irqhandler;
+    struct Interrupt            rtl8169u_touthandler;
     IPTR			rtl8169u_DeviceID;
     APTR			rtl8169u_BaseMem;
     IPTR			rtl8169u_SizeMem;

@@ -22,7 +22,6 @@
 #include <utility/hooks.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
