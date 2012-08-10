@@ -17,9 +17,6 @@
 
 /* Private prototypes */
 
-static VOID WrapperIRQ(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw_info);
-
-
 static const struct TagItem map_tag_list[] =
 {
    {PRM_Vendor,         aoHidd_PCIDevice_VendorID},
@@ -459,35 +456,17 @@ static const struct TagItem map_tag_list[] =
    AROS_LIBFUNC_INIT
 
    struct LibBase *base = (APTR)PrometheusBase;
-   BOOL success = TRUE;
-   HIDDT_IRQ_Handler *aros_irq;
+   BOOL success = FALSE;
    UPINT int_no;
 
-   /* Allocate AROS int structure */
-
-   if(board == NULL || board->aros_irq != NULL)
-      success = FALSE;
-
-   if(success)
-   {
-      aros_irq =
-         AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC | MEMF_CLEAR);
-      if(aros_irq == NULL)
-         success = FALSE;
-   }
-
    /* Add AROS int to system */
-
-   if(success)
-   {
+   if(board && board->aros_irq == NULL) {
       OOP_GetAttr(board->aros_board,
          base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, (IPTR *)&int_no);
-      board->aros_irq = aros_irq;
-      aros_irq->h_Node.ln_Name = interrupt->is_Node.ln_Name;
-      aros_irq->h_Code = WrapperIRQ;
-      aros_irq->h_Data = interrupt;
+      board->aros_irq = interrupt;
 
-      success = HIDD_IRQ_AddHandler(base->irq_hidd, aros_irq, int_no);
+      AddIntServer(INTB_KERNEL + int_no, interrupt);
+      success = TRUE;
    }
 
    return success;
@@ -520,11 +499,13 @@ static const struct TagItem map_tag_list[] =
    AROS_LIBFUNC_INIT
 
    struct LibBase *base = (APTR)PrometheusBase;
+   IPTR int_no;
 
    if(board != NULL)
    {
-      HIDD_IRQ_RemHandler(base->irq_hidd, board->aros_irq);
-      FreeMem(board->aros_irq, sizeof(HIDDT_IRQ_Handler));
+      OOP_GetAttr(board->aros_board,
+         base->pcidevice_attr_base + aoHidd_PCIDevice_INTLine, (IPTR *)&int_no);
+      RemIntServer(INTB_KERNEL + int_no, board->aros_irq);
       board->aros_irq = NULL;
    }
 
@@ -627,20 +608,3 @@ static const struct TagItem map_tag_list[] =
 
    AROS_LIBFUNC_EXIT
 }
-
-
-
-static VOID WrapperIRQ(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw_info)
-{
-   struct Interrupt *interrupt;
-
-   interrupt = (struct Interrupt *)irq->h_Data;
-   AROS_UFC2(BOOL, interrupt->is_Code,
-      AROS_UFCA(APTR, interrupt->is_Data, A1),
-      AROS_UFCA(APTR, interrupt->is_Code, A5));
-
-   return;
-}
-
-
-

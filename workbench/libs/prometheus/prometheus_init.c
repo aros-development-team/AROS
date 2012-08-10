@@ -41,19 +41,16 @@ static const TEXT utility_name[] = UTILITYNAME;
 
 static int LibInit(LIBBASETYPEPTR base)
 {
-   BOOL success = TRUE;
-   struct Hook *hook;
-   struct HookContext *hook_context;
+    BOOL success = TRUE;
+    struct Hook *hook;
+    struct HookContext *hook_context;
 
-   /* Open HIDDs */
+    NewList((APTR)&base->boards);
 
-   NewList((APTR)&base->boards);
-
+    /* Open HIDDs */
     base->pci_hidd = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-    base->irq_hidd = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
     base->pcidevice_attr_base = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
-    if(base->pci_hidd == NULL || base->irq_hidd == NULL
-       || base->pcidevice_attr_base == 0)
+    if(base->pci_hidd == NULL || base->pcidevice_attr_base == 0)
          success = FALSE;
 
    /* Make a list of all boards in the system */
@@ -138,8 +135,6 @@ static int DeleteLibrary(LIBBASETYPE *base)
 
    if(base->pcidevice_attr_base != 0)
       OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-   if(base->irq_hidd != NULL)
-      OOP_DisposeObject(base->irq_hidd);
    if(base->pci_hidd != NULL)
       OOP_DisposeObject(base->pci_hidd);
 
@@ -150,4 +145,3 @@ static int DeleteLibrary(LIBBASETYPE *base)
 
 ADD2INITLIB(LibInit, 0);
 ADD2EXPUNGELIB(DeleteLibrary, 0);
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd);
