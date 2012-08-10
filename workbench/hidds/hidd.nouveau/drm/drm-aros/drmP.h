@@ -38,8 +38,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <oop/oop.h>
+
 #include "drm.h"
-#include <hidd/irq.h>
 #include "drm_aros_config.h"
 #include "drm_compat_funcs.h"
 #include "drm_redefines.h"
@@ -279,7 +280,7 @@ struct drm_device
     uint32_t flush_domains;         /* domains pending flush */
 
     /* AROS specific fields */
-    HIDDT_IRQ_Handler       *IntHandler;
+    struct Interrupt        IntHandler;
 };
 
 static __inline__ int drm_core_check_feature(struct drm_device *dev,

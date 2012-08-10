@@ -6,7 +6,8 @@
 #if !defined(DRM_AROS_H)
 #define DRM_AROS_H
 
-#include <hidd/irq.h>
+#include <oop/oop.h>
+
 extern struct Library   * OOPBase_DRM;
 extern OOP_Object       * pciDriver;
 extern OOP_Object       * pciBus;

@@ -393,20 +393,19 @@ int drm_irq_install(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_irq_install);
 #else
-static void interrupt_handler(HIDDT_IRQ_Handler * irq, HIDDT_IRQ_HwInfo *hw)
+static AROS_UFIH1(interrupt_handler, struct drm_device *, dev)
 {
-    struct drm_device *dev = (struct drm_device*)irq->h_Data;
-    
-    /* FIXME: What if INT is shared between devices? */
+    AROS_USERFUNC_INIT
     if (dev->driver->irq_handler)
         dev->driver->irq_handler(dev);
+    return FALSE;
+    AROS_USERFUNC_EXIT
 }
 
 int drm_irq_install(struct drm_device *dev)
 {
-    struct OOP_Object *o = NULL;
     IPTR INTLine = 0;
-    int retval = -EINVAL;
+    int retval = 0;
     
     ObtainSemaphore(&dev->struct_mutex.semaphore);
     if (dev->irq_enabled) {
@@ -418,43 +417,17 @@ int drm_irq_install(struct drm_device *dev)
     if (dev->driver->irq_preinstall)
         dev->driver->irq_preinstall(dev);
 
-    dev->IntHandler = (HIDDT_IRQ_Handler *)HIDDNouveauAlloc(sizeof(HIDDT_IRQ_Handler));
-    
-    if (dev->IntHandler)
-    {
-        dev->IntHandler->h_Node.ln_Pri = 10;
-        dev->IntHandler->h_Node.ln_Name = "Gallium3D INT Handler";
-        dev->IntHandler->h_Code = interrupt_handler;
-        dev->IntHandler->h_Data = dev;
+    dev->IntHandler.is_Node.ln_Type = NT_INTERRUPT;
+    dev->IntHandler.is_Node.ln_Pri = 10;
+    dev->IntHandler.is_Node.ln_Name = "Gallium3D INT Handler";
+    dev->IntHandler.is_Code = (VOID_FUNC)interrupt_handler;
+    dev->IntHandler.is_Data = dev;
 
-        OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
-        DRM_DEBUG("INTLine: %d\n", INTLine);
+    OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
+    DRM_DEBUG("INTLine: %d\n", INTLine);
 
-        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+    AddIntServer(INTB_KERNEL + INTLine, &dev->IntHandler);
 
-        if (o)
-        {
-            struct pHidd_IRQ_AddHandler __msg__ = {
-                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-                handlerinfo:    dev->IntHandler,
-                id:             INTLine,
-            }, *msg = &__msg__;
-
-            if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
-                retval = 0;
-
-            OOP_DisposeObject((OOP_Object *)o);
-        }
-    }
-
-    if (retval != 0)
-    {
-        ObtainSemaphore(&dev->struct_mutex.semaphore);
-        dev->irq_enabled = 0;
-        ReleaseSemaphore(&dev->struct_mutex.semaphore);
-        return retval;
-    }
-    
     if (dev->driver->irq_postinstall)
     {
         retval = dev->driver->irq_postinstall(dev);
@@ -525,8 +498,8 @@ EXPORT_SYMBOL(drm_irq_uninstall);
 int drm_irq_uninstall(struct drm_device *dev)
 {
     int irq_enabled;
-    struct OOP_Object *o = NULL;
     int retval = -EINVAL;
+    IPTR INTLine;
 
     ObtainSemaphore(&dev->struct_mutex.semaphore);
     irq_enabled = dev->irq_enabled;
@@ -539,26 +512,12 @@ int drm_irq_uninstall(struct drm_device *dev)
     if (dev->driver->irq_uninstall)
         dev->driver->irq_uninstall(dev);
 
-    o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
+    OOP_GetAttr((OOP_Object *)dev->pdev->oopdev, aHidd_PCIDevice_INTLine, &INTLine);
+    DRM_DEBUG("INTLine: %d\n", INTLine);
 
-    if (o)
-    {
-        struct pHidd_IRQ_RemHandler __msg__ = {
-            mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-            handlerinfo:    dev->IntHandler,
-        }, *msg = &__msg__;
+    RemIntServer(INTB_KERNEL + INTLine, &dev->IntHandler);
 
-        if (OOP_DoMethod((OOP_Object *)o, (OOP_Msg)msg))
-        {
-            HIDDNouveauFree(dev->IntHandler);
-            dev->IntHandler = NULL;
-            retval = 0;
-        }
-
-        OOP_DisposeObject((OOP_Object *)o);
-    }
-
-    return retval;
+    return 0;
 }
 #endif
 
