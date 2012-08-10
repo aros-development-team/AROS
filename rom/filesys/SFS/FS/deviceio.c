@@ -143,11 +143,7 @@ UBYTE isdiskpresent(void)
 }
 
 #ifdef __AROS__
-static
-AROS_UFH3(LONG, changeintserver,
-    AROS_UFHA(struct IntData *, intdata, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(ULONG, dummy3, A6))
+static AROS_UFIH1(changeintserver, struct IntData *, intdata)
 {
     AROS_USERFUNC_INIT
  
@@ -173,7 +169,7 @@ LONG addchangeint(struct Task *task, ULONG signal)
     globals->intdata.signal=signal;
 
     globals->changeint.is_Data=&globals->intdata;
-    globals->changeint.is_Code=(void (*)())changeintserver;
+    globals->changeint.is_Code=(VOID_FUNC)changeintserver;
 
     globals->ioreqchangeint->io_Command=TD_ADDCHANGEINT;
     globals->ioreqchangeint->io_Flags=0;
