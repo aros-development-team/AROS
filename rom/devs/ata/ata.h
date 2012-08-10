@@ -144,7 +144,7 @@ struct ata_Bus
    struct ata_Unit         *ab_Units[MAX_BUSUNITS];    /* Units on the bus */
    struct ata_Unit         *ab_SelectedUnit;    /* Currently selected unit */
 
-   APTR			   ab_IntHandler;
+   struct Interrupt        ab_IntHandler;
    ULONG                   ab_IntCnt;
 
    struct Task             *ab_Task;       /* Bus task handling all not-immediate transactions */

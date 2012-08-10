@@ -19,7 +19,6 @@
 #include <asm/io.h>
 #include <exec/lists.h>
 #include <hardware/ahci.h>
-#include <hidd/irq.h>
 #include <hidd/pci.h>
 #include <oop/oop.h>
 #include <proto/exec.h>
@@ -223,53 +222,37 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count, APTR data)
 
 #endif
 
-static void ata_Interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+AROS_UFIH1(ata_Interrupt, APTR, data)
 {
+    AROS_USERFUNC_INIT
     /*
      * Our interrupt handler should call this function.
      * It's our problem how to store bus pointer. Here we use h_Data for it.
      */
-    ata_HandleIRQ(irq->h_Data);
+    ata_HandleIRQ(data);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 /* Actually a quick hack. Proper implementation really needs HIDDizing this code. */
-static APTR CreateInterrupt(struct ata_Bus *bus)
+static BOOL CreateInterrupt(struct ata_Bus *bus)
 {
-    HIDDT_IRQ_Handler *IntHandler = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_PUBLIC);
+    struct Interrupt *IntHandler = &bus->ab_IntHandler;
 
-    if (IntHandler)
-    {
-        OOP_Object *o;
+    /*
+        Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
+        it should work quite well
+    */
+    IntHandler->is_Node.ln_Type = NT_INTERRUPT;
+    IntHandler->is_Node.ln_Pri = 10;
+    IntHandler->is_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
+    IntHandler->is_Code = (VOID_FUNC)ata_Interrupt;
+    IntHandler->is_Data = bus;
 
-        /*
-            Prepare nice interrupt for our bus. Even if interrupt sharing is enabled,
-            it should work quite well
-        */
-        IntHandler->h_Node.ln_Pri = 10;
-        IntHandler->h_Node.ln_Name = bus->ab_Task->tc_Node.ln_Name;
-        IntHandler->h_Code = ata_Interrupt;
-        IntHandler->h_Data = bus;
-
-        o = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-        if (o)
-        {
-            struct pHidd_IRQ_AddHandler msg =
-            {
-                mID:            OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler),
-                handlerinfo:    IntHandler,
-                id:             bus->ab_IRQ,
-            };
-            int retval = OOP_DoMethod(o, &msg.mID);
-
-            OOP_DisposeObject(o);
-            
-            if (retval)
-            	return IntHandler;
-        }
-    }
-
-    FreeMem(IntHandler, sizeof(HIDDT_IRQ_Handler));
-    return NULL;
+    AddIntServer(INTB_KERNEL + bus->ab_IRQ, IntHandler);
+    return TRUE;
 }
 
 static const struct ata_BusDriver pci_driver = 
@@ -579,4 +562,3 @@ static int ata_pci_Scan(struct ataBase *base)
  * All bus scanners must run between them.
  */
 ADD2INITLIB(ata_pci_Scan, 30)
-ADD2LIBS("irq.hidd", 0, static struct Library *, __irqhidd)

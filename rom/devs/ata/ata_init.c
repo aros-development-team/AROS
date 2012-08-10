@@ -142,10 +142,7 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
-static AROS_UFH3(void, ATAResetHandler,
-    AROS_UFHA(struct ata_Bus *, bus, A1),
-    AROS_UFHA(APTR, int_code, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(ATAResetHandler,struct ata_Bus *, bus)
 {
     AROS_USERFUNC_INIT
 
@@ -168,6 +165,8 @@ static AROS_UFH3(void, ATAResetHandler,
 
     /* Disable interrupts */
     BUS_OUT(0x2, ata_AltControl, bus->ab_Alt);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -252,13 +251,13 @@ void ata_RegisterBus(IPTR IOBase, IPTR IOAlt, IPTR INTLine, IPTR DMABase, ULONG 
     /*
      * add reset handler for this bus
      */
-    ab->ab_ResetInt.is_Code = ATAResetHandler;
+    ab->ab_ResetInt.is_Code = (VOID_FUNC)ATAResetHandler;
     ab->ab_ResetInt.is_Data = ab;
     AddResetCallback(&ab->ab_ResetInt);
 
     /* catch possible spurious interrupts */
     if (Flags & ARBF_EarlyInterrupt)
-        ab->ab_IntHandler = ab->ab_Driver->CreateInterrupt(ab);
+        ab->ab_Driver->CreateInterrupt(ab);
 
     /*
      * scan bus - try to locate all devices (disables irq)

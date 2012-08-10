@@ -924,8 +924,7 @@ void BusTaskCode(struct ata_Bus *bus, struct Task* parent, struct SignalSemaphor
     /*
      * set up irq handler now. all irqs are disabled, so prepare them one by one
      */
-    bus->ab_IntHandler = bus->ab_Driver->CreateInterrupt(bus);
-    if (!bus->ab_IntHandler)
+    if (!bus->ab_Driver->CreateInterrupt(bus))
     {
         D(bug("[ATA  ] Something wrong with creating interrupt?\n"));
     }
