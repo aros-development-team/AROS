@@ -27,6 +27,8 @@
 #include <aros/macros.h>
 #include <aros/io.h>
 
+#include <hardware/intbits.h>
+
 #include <oop/oop.h>
 
 #include <devices/sana2.h>
@@ -37,7 +39,6 @@
 #include <utility/hooks.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
@@ -631,38 +632,21 @@ void e1000func_set_multi(struct net_device *unit)
 
 int request_irq(struct net_device *unit)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    BOOL ret;
-
     D(bug("[%s]: %s()\n", unit->e1ku_name, __PRETTY_FUNCTION__));
 
-    if (irq)
-    {
-        ret = HIDD_IRQ_AddHandler(irq, unit->e1ku_irqhandler, unit->e1ku_IRQ);
-        HIDD_IRQ_AddHandler(irq, unit->e1ku_touthandler, vHidd_IRQ_Timer);
+    AddIntServer(INTB_KERNEL | unit->e1ku_IRQ, &unit->e1ku_irqhandler);
+    AddIntServer(INTB_VERTB, &unit->e1ku_touthandler);
 
-	D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __PRETTY_FUNCTION__));
+    D(bug("[%s] %s: IRQ Handlers configured\n", unit->e1ku_name, __PRETTY_FUNCTION__));
 
-        OOP_DisposeObject(irq);
-
-        if (ret)
-        {
-            return 0;
-        }
-    }
     return 1;
 }
 
 #if 0
 static void free_irq(struct net_device *unit)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (irq)
-    {
-        HIDD_IRQ_RemHandler(irq, unit->e1ku_irqhandler);
-        HIDD_IRQ_RemHandler(irq, unit->e1ku_touthandler);
-        OOP_DisposeObject(irq);
-    }
+    RemIntServer(INTB_KERNEL | unit->e1ku_IRQ, unit->e1ku_irqhandler);
+    RemIntServer(INTB_VERTB, unit->e1ku_touthandler);
 }
 #endif
 
