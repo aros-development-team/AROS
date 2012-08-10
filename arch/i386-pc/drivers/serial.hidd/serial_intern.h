@@ -20,6 +20,7 @@
 #   include <hidd/serial.h>
 #endif
 #include <dos/dos.h>
+#include <exec/interrupts.h>
 #include <hardware/uart.h>
 
 #define SER_MAX_UNITS	4
@@ -60,10 +61,9 @@ struct class_static_data
     OOP_Class		 *serialhiddclass;
     OOP_Class		 *serialunitclass;
 
-    OOP_Object               *irqhidd;
-
     struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
     OOP_AttrBase                hiddSerialUnitAB;
+    struct Interrupt            intHandler[2];
 };
 
 #define __IHidd_SerialUnitAB   (csd->hiddSerialUnitAB)
