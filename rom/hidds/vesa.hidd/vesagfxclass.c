@@ -32,14 +32,13 @@
 
 #include LC_LIBDEFS_FILE
 
-static AROS_UFH3(void, ResetHandler,
-		 AROS_UFHA(struct HWData *, hwdata, A1),
-		 AROS_UFHA(APTR, unused, A5),
-		 AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(ResetHandler, struct HWData *, hwdata)
 {
     AROS_USERFUNC_INIT
 
     ClearBuffer(hwdata);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -121,7 +120,7 @@ OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	D(bug("Got object from super\n"));
 	XSD(cl)->vesagfxhidd = o;
 
-	data->ResetInterrupt.is_Code = ResetHandler;
+	data->ResetInterrupt.is_Code = (VOID_FUNC)ResetHandler;
 	data->ResetInterrupt.is_Data = &XSD(cl)->data;
 	AddResetCallback(&data->ResetInterrupt);
     }
