@@ -165,7 +165,7 @@ AROS_LH3(struct RDArgs *, ReadArgs,
         array         - Array to be filled with the result values. The array must
                    be intialized to the default values before calling
                    ReadArgs().
-        rdargs         - An optional RDArgs structure determinating the type of
+        rdargs         - An optional RDArgs structure determining the type of
                    input to process.
 
     RESULT

@@ -2,7 +2,7 @@
 #define DOS_RDARGS_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Definitions for the dos function ReadArgs().
@@ -45,9 +45,9 @@ struct RDArgs
 
     IPTR RDA_DAList; /* PRIVATE. Must be initialized to 0. */
 
-    /* The next two fields allow an application to supply a buffer to be parsed
-       to ReadArgs(). If either of these fields is 0, ReadArgs() allocates this
-       buffer itself. */
+    /* The next two fields allow an application to supply a buffer in which
+       ReadArgs() will store parsed data. If either of these fields is 0,
+       ReadArgs() allocates this buffer itself. */
     UBYTE * RDA_Buffer; /* Pointer to buffer. May be NULL. */
     LONG    RDA_BufSiz; /* Size of the supplied buffer. May be 0. */
 

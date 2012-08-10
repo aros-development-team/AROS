@@ -4382,7 +4382,7 @@ IPTR IconList__MUIM_IconList_CreateEntry(struct IClass *CLASS, Object *obj, stru
         entry->ie_IconListEntry.type = ST_USERDIR;
     }
 
-    /* Override type if specified during createntry */
+    /* Override type if specified during CreateEntry */
     if (message->type != 0)
     {
         entry->ie_IconListEntry.type = message->type;

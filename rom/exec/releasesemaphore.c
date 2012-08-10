@@ -73,7 +73,7 @@
     if (!CheckSemaphore(sigSem, &tp, SysBase))
         return;
 
-    /* Protect the semaphore srtucture from multiple access. */
+    /* Protect the semaphore structure from multiple access. */
     Forbid();
 
     /* Release one on the nest count */
