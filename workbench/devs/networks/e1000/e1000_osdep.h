@@ -244,8 +244,8 @@ struct e1000Unit {
 
     struct MsgPort          *e1ku_request_ports[REQUEST_QUEUE_COUNT];
 
-    HIDDT_IRQ_Handler       *e1ku_irqhandler;
-    HIDDT_IRQ_Handler       *e1ku_touthandler;
+    struct Interrupt         e1ku_irqhandler;
+    struct Interrupt         e1ku_touthandler;
 
     struct MsgPort          *e1ku_TimerSlowPort;
     struct timerequest      *e1ku_TimerSlowReq;
