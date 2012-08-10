@@ -2,7 +2,7 @@
  * Copyright (C) 1993 AmiTCP/IP Group, <amitcp-group@hut.fi>
  *                    Helsinki University of Technology, Finland.
  *                    All rights reserved.
- * Copyright (C) 2005 - 2007 The AROS Dev Team
+ * Copyright (C) 2005 - 2012 The AROS Dev Team
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -80,6 +80,7 @@ struct sana_softc {
   UWORD              ss_cflags;	      /* configuration flags */
   struct IOIPReq     *ss_reqs;	      /* allocated requests */
   struct MinList     ss_freereq;	      /* free requests */
+  struct IOIPReq     *ss_connectreq;  /* request for connect event */
 #if	INET
   struct {
     UWORD reqno;	      /* for listening ip packets */
