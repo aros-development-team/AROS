@@ -526,16 +526,14 @@ void rx_int(struct EMACUnit *unit, struct ExecBase *SysBase)
     }
 }
 
-static
-AROS_UFH3(void, EMAC_RX_Int,
-    AROS_UFHA(struct EMACUnit *, unit,  A1),
-    AROS_UFHA(APTR,              dummy, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(EMAC_RX_Int, struct EMACUnit *, unit)
 {
     AROS_USERFUNC_INIT
 
     D(bug("[EMAC%d] RX Int\n", unit->eu_UnitNum));
     rx_int(unit, SysBase);
+
+    return 0;
 
     AROS_USERFUNC_EXIT
 }
@@ -691,29 +689,25 @@ void tx_int(struct EMACUnit *unit, struct ExecBase *SysBase)
 
 }
 
-static
-AROS_UFH3(void, EMAC_TX_Int,
-    AROS_UFHA(struct EMACUnit *, unit,  A1),
-    AROS_UFHA(APTR,              dummy, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(EMAC_TX_Int, struct EMACUnit *, unit)
 {
     AROS_USERFUNC_INIT
 
     D(bug("[EMAC%d] TX Int\n", unit->eu_UnitNum));
     tx_int(unit, SysBase);
 
+    return 0;
+
     AROS_USERFUNC_EXIT
 }
 
-static
-AROS_UFH3(void, EMAC_TXEnd_Int,
-    AROS_UFHA(struct EMACUnit *, unit,  A1),
-    AROS_UFHA(APTR,              dummy, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(EMAC_TXEnd_Int, struct EMACUnit *, unit)
 {
     AROS_USERFUNC_INIT
 
     D(bug("[EMAC%d] TX End Int\n", unit->eu_UnitNum));
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -879,15 +873,15 @@ struct EMACUnit *CreateUnit(struct EMACBase *EMACBase, uint8_t num)
         unit->udelay = EMAC_UDelay;
 
         unit->eu_RXInt.is_Node.ln_Name = "EMAC RX Int";
-        unit->eu_RXInt.is_Code = EMAC_RX_Int;
+        unit->eu_RXInt.is_Code = (VOID_FUNC)EMAC_RX_Int;
         unit->eu_RXInt.is_Data = unit;
 
         unit->eu_TXInt.is_Node.ln_Name = "EMAC TX Int";
-        unit->eu_TXInt.is_Code = EMAC_TX_Int;
+        unit->eu_TXInt.is_Code = (VOID_FUNC)EMAC_TX_Int;
         unit->eu_TXInt.is_Data = unit;
 
         unit->eu_TXEndInt.is_Node.ln_Name = "EMAC TX Int";
-        unit->eu_TXEndInt.is_Code = EMAC_TXEnd_Int;
+        unit->eu_TXEndInt.is_Code = (VOID_FUNC)EMAC_TXEnd_Int;
         unit->eu_TXEndInt.is_Data = unit;
 
         unit->eu_RXChannel = (mal_packet_t *)EMACBase->emb_MALRXChannels[num];
