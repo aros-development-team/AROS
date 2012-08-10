@@ -38,12 +38,13 @@
 #include <utility/hooks.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/battclock.h>
+
+#include <hardware/intbits.h>
 
 #include <stdlib.h>
 
@@ -258,37 +259,17 @@ static void drain_ring(struct net_device *dev)
 
 static int request_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    BOOL ret;
-
 D(bug("%s: request_irq()\n", dev->pcnu_name));
 
-    if (irq)
-    {
-        ret = HIDD_IRQ_AddHandler(irq, dev->pcnu_irqhandler, dev->pcnu_IRQ);
-        HIDD_IRQ_AddHandler(irq, dev->pcnu_touthandler, vHidd_IRQ_Timer);
-
-D(bug("%s: request_irq: IRQ Handlers configured\n", dev->pcnu_name));
-
-        OOP_DisposeObject(irq);
-
-        if (ret)
-        {
-            return 0;
-        }
-    }
+    AddIntServer(INTB_KERNEL | dev->pcnu_IRQ, &dev->pcnu_irqhandler);
+    AddIntServer(INTB_VERTB, &dev->pcnu_touthandler);
     return 1;
 }
 
 static void free_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (irq)
-    {
-        HIDD_IRQ_RemHandler(irq, dev->pcnu_irqhandler);
-        HIDD_IRQ_RemHandler(irq, dev->pcnu_touthandler);
-        OOP_DisposeObject(irq);
-    }
+    RemIntServer(INTB_KERNEL | dev->pcnu_IRQ, &dev->pcnu_irqhandler);
+    RemIntServer(INTB_VERTB, &dev->pcnu_touthandler);
 }
 
 static void pcnet32_set_mac(struct net_device *dev)
