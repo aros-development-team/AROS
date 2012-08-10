@@ -67,8 +67,8 @@ struct MathIeeeDoubBasBase
 #define IEEEDPPInfty_Lo        0xFFFFFFFF
 #define IEEEDPPInfty_64        0x7FEFFFFFFFFFFFFFULL
 
-#define IEEEDPMantisse_Mask_64 0x0007FFFFFFFFFFFFULL /* 51 bit for the mantisse */
-#define IEEEDPExponent_Mask_64 0x7FF8000000000000ULL /* 12 bit for the exponent */
+#define IEEEDPMantisse_Mask_64 0x000FFFFFFFFFFFFFULL /* 52 bit for the mantisse */
+#define IEEEDPExponent_Mask_64 0x7FF0000000000000ULL /* 11 bit for the exponent */
 #define IEEEDPSign_Mask_64     0x8000000000000000ULL /*  1 bit for the sign     */
 
 #define IEEESPMantisse_Mask    0x007FFFFF /* 23 bit for the mantisse */
