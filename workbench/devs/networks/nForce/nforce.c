@@ -41,12 +41,13 @@
 #include <utility/hooks.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/battclock.h>
+
+#include <hardware/intbits.h>
 
 #include <stdlib.h>
 
@@ -712,33 +713,15 @@ static void drain_ring(struct net_device *dev)
 
 static int request_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    BOOL ret;
-
-    if (irq)
-    {
-        ret = HIDD_IRQ_AddHandler(irq, dev->nu_irqhandler, dev->nu_IRQ);
-        HIDD_IRQ_AddHandler(irq, dev->nu_touthandler, vHidd_IRQ_Timer);
-
-        OOP_DisposeObject(irq);
-
-        if (ret)
-        {
-            return 0;
-        }
-    }
-    return 1;
+    AddIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
+    AddIntServer(INTB_VERTB, &dev->nu_touthandler);
+    return 0;
 }
 
 static void free_irq(struct net_device *dev)
 {
-    OOP_Object *irq = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-    if (irq)
-    {
-        HIDD_IRQ_RemHandler(irq, dev->nu_irqhandler);
-        HIDD_IRQ_RemHandler(irq, dev->nu_touthandler);
-        OOP_DisposeObject(irq);
-    }
+    RemIntServer(INTB_KERNEL + dev->nu_IRQ, &dev->nu_irqhandler);
+    RemIntServer(INTB_VERTB, &dev->nu_touthandler);
 }
 
 static void nv_set_mac(struct net_device *dev)

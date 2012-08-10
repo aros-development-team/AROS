@@ -32,7 +32,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -154,8 +153,8 @@ struct NFUnit {
     struct Process          *nu_Process;
 
     struct NFBase           *nu_device;
-    HIDDT_IRQ_Handler       *nu_irqhandler;
-    HIDDT_IRQ_Handler       *nu_touthandler;
+    struct Interrupt        nu_irqhandler;
+    struct Interrupt        nu_touthandler;
     IPTR	                nu_DeviceID;
     IPTR                    nu_DriverFlags;
     IPTR                    nu_IRQ;
