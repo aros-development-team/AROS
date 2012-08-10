@@ -63,10 +63,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-AROS_UFH3S(void, ResetHandler,
-    AROS_UFHA(struct inputbase *, InputDevice, A1),
-    AROS_UFHA(APTR, code, A5),
-    AROS_UFHA(struct ExecBase *, sysBase, A6))
+AROS_UFIH1(ResetHandler, struct inputbase *, InputDevice)
 {
     AROS_USERFUNC_INIT
     
@@ -74,6 +71,8 @@ AROS_UFH3S(void, ResetHandler,
     {
     	Signal(InputDevice->InputTask, InputDevice->ResetSig);
     }
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -201,7 +200,7 @@ void ProcessEvents (struct inputbase *InputDevice)
     resethandler.is_Node.ln_Type = NT_INTERRUPT;
     resethandler.is_Node.ln_Pri = -128;
     
-    resethandler.is_Code = (VOID (*)())ResetHandler;
+    resethandler.is_Code = (VOID_FUNC)ResetHandler;
     resethandler.is_Data = InputDevice;
     
     kbdio->io_Command = KBD_ADDRESETHANDLER;
