@@ -1,5 +1,5 @@
 /*
-    Copyright © 2004-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2004-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -1209,7 +1209,6 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                     unit->au_Write64        = ata_WriteSector64;
                 }
             }
-            dma=FALSE;
         }
         else if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_MDMA2))
         {
@@ -1220,7 +1219,6 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadDMA64;
                 unit->au_Write64        = ata_WriteDMA64;
             }
-            dma=TRUE;
         }
         else if ((mode >= AB_XFER_UDMA0) && (mode <= AB_XFER_UDMA6))
         {
@@ -1231,7 +1229,6 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadDMA64;
                 unit->au_Write64        = ata_WriteDMA64;
             }
-            dma=TRUE;
         }
         else
         {
@@ -1242,7 +1239,6 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
                 unit->au_Read64         = ata_ReadSector64;
                 unit->au_Write64        = ata_WriteSector64;
             }
-            dma=FALSE;
         }
     }
 
@@ -1254,10 +1250,12 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
     else if ((mode >= AB_XFER_MDMA0) && (mode <= AB_XFER_MDMA2))
     {
         type = 32 + (mode - AB_XFER_MDMA0);
+        dma=TRUE;
     }
     else if ((mode >= AB_XFER_UDMA0) && (mode <= AB_XFER_UDMA6))
     {
         type = 64 + (mode - AB_XFER_UDMA0);
+        dma=TRUE;
     }
     else
     {
@@ -1297,6 +1295,9 @@ static void common_SetXferMode(struct ata_Unit* unit, ata_XferMode mode)
             dma = FALSE;
         }
     }
+#else
+    if (mode >= AB_XFER_MDMA0)
+        dma = TRUE;
 #endif
 
     if (dma)
