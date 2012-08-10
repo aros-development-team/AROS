@@ -137,13 +137,19 @@ static void asm_regs_exit(int id, int flags)
         return;
     }
 
-    /* Get the return code */
+    /* Get the return code
+     *
+     * We rely upon the compiler to optimize this to either
+     * as single %d0 for BYTE..LONG, or %d0/%d1 for QUAD/double
+     *
+     * Struct returns are not supported.
+     */
     printf("\t   register volatile ULONG _ret0 asm(\"%%d0\"); \\\n");
     printf("\t   register volatile ULONG _ret1 asm(\"%%d1\"); \\\n");
     printf("\t   asm volatile (\"\" : \"=r\" (_ret0), \"=r\" (_ret1) : : \"%%a0\", \"%%a1\", \"cc\", \"memory\"); \\\n");
     printf("\t   (sizeof(t) < sizeof(QUAD)) ? (t)(_ret0) :\\\n");
     printf("\t      ({struct { ULONG r0,r1; } rv;\\\n");
-    printf("\t        t *t_ptr = (void *)&rv.r0;\\\n");
+    printf("\t        t *t_ptr = (t *)&rv.r0;\\\n");
     printf("\t        rv.r0 = _ret0; rv.r1 = _ret1; *t_ptr; });\\\n");
 }
 
