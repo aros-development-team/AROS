@@ -34,7 +34,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -187,8 +186,8 @@ struct PCN32Unit {
     struct Process          *pcnu_Process;
 
     struct PCN32Base     *pcnu_device;
-    HIDDT_IRQ_Handler       *pcnu_irqhandler;
-    HIDDT_IRQ_Handler       *pcnu_touthandler;
+    struct Interrupt        pcnu_irqhandler;
+    struct Interrupt        pcnu_touthandler;
     IPTR	                  pcnu_DeviceID;
     IPTR                    pcnu_DriverFlags;
     IPTR                    pcnu_IRQ;
