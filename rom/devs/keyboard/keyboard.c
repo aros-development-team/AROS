@@ -107,10 +107,7 @@ static const UWORD SupportedCommands[] =
 /****************************************************************************************/
 
 VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
-AROS_UFP3(VOID, kbdSendQueuedEvents,
-    AROS_UFPA(struct KeyboardBase *, KBBase, A1),
-    AROS_UFPA(APTR, thisfunc, A5),
-    AROS_UFPA(struct ExecBase *, SysBase, A6));
+AROS_UFIP(kbdSendQueuedEvents);
 static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 /****************************************************************************************/
@@ -192,7 +189,7 @@ static int GM_UNIQUENAME(Open)
     KBBase->kb_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
     KBBase->kb_Interrupt.is_Node.ln_Pri = 0;
     KBBase->kb_Interrupt.is_Data = (APTR)KBBase;
-    KBBase->kb_Interrupt.is_Code = kbdSendQueuedEvents;
+    KBBase->kb_Interrupt.is_Code = (VOID_FUNC)kbdSendQueuedEvents;
 	    
     if(!KBBase->kb_KbdHiddBase)
     {
@@ -520,10 +517,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    {
 		/* We may be inside an interrupt when we come here. Maybe
 		   we shall use some other technique? */
-		AROS_UFC3NR(VOID, node->is_Code,
-			  AROS_UFCA(APTR, node->is_Data, A1),
-			  AROS_UFCA(APTR, node->is_Code, A5),
-			  AROS_UFCA(struct ExecBase *, SysBase, A6));
+		    AROS_UFIC1(node->is_Code, node->is_Data);
 	    }
 	}
 	else
@@ -652,10 +646,7 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 	D(bug("doing software irq\n"));
 	Cause(&KBBase->kb_Interrupt);
 #else
-	AROS_UFC3NR(VOID, kbdSendQueuedEvents,
-	    AROS_UFCA(struct KeyboardBase *, KBBase  , A1),
-	    AROS_UFCA(APTR                 , NULL, A5),
-	    AROS_UFCA(struct ExecBase *    , SysBase , A6));
+    AROS_UFIC1(kbdSendQueuedEvents, KBBase);
 #endif
     }
     
@@ -674,10 +665,7 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 
 #undef SysBase
 
-AROS_UFH3(VOID, kbdSendQueuedEvents,
-    AROS_UFHA(struct KeyboardBase *, KBBase, A1),
-    AROS_UFHA(APTR, thisfunc, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
 {
     AROS_USERFUNC_INIT
 
@@ -703,6 +691,8 @@ AROS_UFH3(VOID, kbdSendQueuedEvents,
     }
 
     if (IsListEmpty(pendingList)) kbUn->kbu_flags &= ~KBUF_PENDING;
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
