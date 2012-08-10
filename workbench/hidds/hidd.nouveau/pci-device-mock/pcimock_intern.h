@@ -39,10 +39,6 @@ LIBBASETYPE
 
 #define SD(cl)                      (&BASE(cl->UserData)->sd)
 
-struct HIDDIRQMockData
-{
-};
-
 #define ADD_DEVICE(sd, dev, class)                                              \
         sd->mockHardwareBus0[dev] = OOP_NewObject(NULL, class, NULL);   \
     
