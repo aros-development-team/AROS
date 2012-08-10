@@ -78,17 +78,13 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 /****************************************************************************************/
 
-AROS_UFH4(ULONG, x11VBlank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(x11VBlank, struct Task *, task)
 {
     AROS_USERFUNC_INIT
 
-    Signal((struct Task *)data, SIGBREAKF_CTRL_D);
+    Signal(task, SIGBREAKF_CTRL_D);
     
-    return 0;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -120,7 +116,7 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     NEWLIST(&nmsg_list);
     NEWLIST(&xwindowlist);
   
-    myint.is_Code         = (APTR)&x11VBlank;
+    myint.is_Code         = (VOID_FUNC)x11VBlank;
     myint.is_Data         = FindTask(NULL);
     myint.is_Node.ln_Name = "X11 VBlank server";
     myint.is_Node.ln_Pri  = 0;
