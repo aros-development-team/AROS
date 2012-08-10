@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -228,7 +228,7 @@ static void SetColors(UWORD *p, UBYTE first, UBYTE cnt, struct IntuitionBase *In
 
     /* TODO: Is there any further immediate action to be taken when the prefences are updated? */
 
-    return (struct Preferences *) prefbuffer;
+    return prefbuffer;
 
     AROS_LIBFUNC_EXIT
 } /* SetPrefs() */
