@@ -2532,8 +2532,7 @@ AROS_LH0(SUBLIBBASETYPEPTR, subLibReserved,
 /* \\\ */
 
 /* /// "subLibPlayerIntV4()" */
-AROS_UFH1(void, subLibPlayerIntV4,
-          AROS_UFHA(struct NepAudioMode *, nam, A1))
+AROS_UFIH1(subLibPlayerIntV4, struct NepAudioMode *, nam)
 {
     AROS_USERFUNC_INIT
     
@@ -2551,13 +2550,14 @@ AROS_UFH1(void, subLibPlayerIntV4,
         nam->nam_NextBufW = 1 - bufnum;
     }
     
+    return FALSE;
+    
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "subLibPlayerIntV6()" */
-AROS_UFH1(void, subLibPlayerIntV6,
-          AROS_UFHA(struct NepAudioMode *, nam, A1))
+AROS_UFIH1(subLibPlayerIntV6, struct NepAudioMode *, nam)
 {
     AROS_USERFUNC_INIT
     
@@ -2577,14 +2577,15 @@ AROS_UFH1(void, subLibPlayerIntV6,
         nam->nam_NextBufW = 1 - bufnum;
     }
     CallHookPkt(audioctrl->ahiac_PostTimerFunc, nam->nam_AudioCtrl, NULL);
+
+    return FALSE;
     
     AROS_USERFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "subLibPlayerIntDummy()" */
-AROS_UFH1(void, subLibPlayerIntDummy,
-          AROS_UFHA(struct NepAudioMode *, nam, A1))
+AROS_UFIH1(subLibPlayerIntDummy, struct NepAudioMode *, nam)
 {
     AROS_USERFUNC_INIT
 
@@ -2598,6 +2599,8 @@ AROS_UFH1(void, subLibPlayerIntDummy,
     nam->nam_TimerIOReq->tr_time.tv_secs = 0;
     nam->nam_TimerIOReq->tr_time.tv_micro = 1000000 / (audioctrl->ahiac_PlayerFreq>>16);
     SendIO((struct IORequest *) nam->nam_TimerIOReq);
+
+    return FALSE;
     
     AROS_USERFUNC_EXIT
 }
@@ -2749,7 +2752,7 @@ AROS_UFH3(void, nReleaseHook,
         // we can only stop recording, we still need to call the player func until audio is done
         psdAddErrorMsg(RETURN_ERROR, (STRPTR) libname, "Violently stopped recording!");
     } else {
-        nam->nam_PlayerInt.is_Code = (void (*)(void)) &subLibPlayerIntDummy;
+        nam->nam_PlayerInt.is_Code = (VOID_FUNC)subLibPlayerIntDummy;
         // start timer device
         nam->nam_FallbackTimer = TRUE;
         Cause(&nam->nam_PlayerInt);
@@ -3424,10 +3427,10 @@ AROS_LH2(ULONG, subLibAllocAudio,
     if(nam->nam_Unit->nch_AHIBase->lib_Version < 6)
     {
         KPRINTF(10, ("Using V4 code\n"));
-        nam->nam_PlayerInt.is_Code = (APTR) subLibPlayerIntV4;
+        nam->nam_PlayerInt.is_Code = (VOID_FUNC) subLibPlayerIntV4;
     } else {
         KPRINTF(10, ("Using V6 code\n"));
-        nam->nam_PlayerInt.is_Code = (APTR) subLibPlayerIntV6;
+        nam->nam_PlayerInt.is_Code = (VOID_FUNC) subLibPlayerIntV6;
     }
     nam->nam_SamConvHook.h_Data = nam->nam_AHIBuffer;
 
