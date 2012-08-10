@@ -14,7 +14,6 @@
 #include <libraries/prometheus.h>
 #include <oop/oop.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 
@@ -33,7 +32,6 @@ struct LibBase
 {
    struct Library lib_header;
    OOP_Object *pci_hidd;
-   OOP_Object *irq_hidd;
    OOP_AttrBase pcidevice_attr_base;
    struct MinList boards;
 };
@@ -44,7 +42,7 @@ struct PCIBoard
    struct MinNode node;
    const VOID *owner;
    OOP_Object *aros_board;
-   HIDDT_IRQ_Handler *aros_irq;
+   struct Interrupt *aros_irq;
 };
 
 
