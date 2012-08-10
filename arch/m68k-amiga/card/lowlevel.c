@@ -17,15 +17,10 @@
 
 /* Card Change Detect interrupt */
 
-AROS_UFH4(ULONG, card_level6,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(card_level6, struct CardResource *, CardResource)
 { 
     AROS_USERFUNC_INIT
 
-    struct CardResource *CardResource = (struct CardResource*)data;
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     UBYTE intreq, intena;
 
@@ -58,15 +53,10 @@ AROS_UFH4(ULONG, card_level6,
 #define INTMASK (GAYLE_IRQ_BVD1 | GAYLE_IRQ_BVD2 | GAYLE_IRQ_WR | GAYLE_IRQ_BSY)
 #define NOINTMASK (GAYLE_IRQ_IDE | GAYLE_IRQ_CCDET)
 
-AROS_UFH4(ULONG, card_level2,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+AROS_UFIH1(card_level2, struct CardResource *, CardResource)
 { 
     AROS_USERFUNC_INIT
 
-    struct CardResource *CardResource = (struct CardResource*)data;
     struct CardHandle *cah = CardResource->ownedcard;
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     UBYTE intreq, intena, status;
@@ -100,11 +90,7 @@ AROS_UFH4(ULONG, card_level2,
 	   intreq,
 	   cah->cah_CardStatus->is_Data,
 	   cah->cah_CardStatus->is_Code));
-	status = AROS_UFC4(UBYTE, cah->cah_CardStatus->is_Code,
-	    AROS_UFCA(UBYTE, intreq, D0),
-	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
-	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
-	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
+	status = AROS_UFIC1(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data);
 	INTDEBUG(bug("returned=%d\n", status));
     }
     if (status) {
@@ -113,11 +99,7 @@ AROS_UFH4(ULONG, card_level2,
     }
     if (poststatus) {
     	INTDEBUG(bug("poststatus\n"));
-	AROS_UFC4NR(void, cah->cah_CardStatus->is_Code,
-	    AROS_UFCA(UBYTE, 0, D0),
-	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Data, A1),
-	    AROS_UFCA(APTR, cah->cah_CardStatus->is_Code, A5),
-	    AROS_UFCA(struct ExecBase *, mySysBase, A6));
+	AROS_UFIC1(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data);
 	INTDEBUG(bug("returned\n"));
     }
 

@@ -14,17 +14,8 @@
 #include <aros/symbolsets.h>
 #include "card_intern.h"
 
-AROS_UFP4 (APTR, card_level2,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, mySysBase, A6));
-
-AROS_UFP4 (APTR, card_level6,
-    AROS_UFPA(ULONG, dummy, A0),
-    AROS_UFPA(void *, data, A1),
-    AROS_UFPA(ULONG, dummy2, A5),
-    AROS_UFPA(struct ExecBase *, mySysBase, A6));
+AROS_UFIP(card_level2);
+AROS_UFIP(card_level6);
 
 void CardTask(struct Task *parent, struct CardResource *CardResource);
 
