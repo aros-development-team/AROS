@@ -50,7 +50,7 @@ void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
             interrupt->is_Node.ln_Type = NT_SOFTINT;
             Forbid(); // make sure code is not interrupted by other tasks
             Enable();
-            (*((void (*)(struct Interrupt *)) (interrupt->is_Code)))(interrupt->is_Data);
+            AROS_UFIH1(interrupt->is_Code, interrupt->is_Data);
             Disable();
             Permit();
         } while(interrupt->is_Node.ln_Type != NT_SOFTINT);
@@ -167,7 +167,7 @@ struct Unit * Open_Unit(struct IOUsbHWReq *ioreq,
             unit->hu_NakTimeoutInt.is_Node.ln_Name = "PCI NakTimeout";
             unit->hu_NakTimeoutInt.is_Node.ln_Pri  = -16;
             unit->hu_NakTimeoutInt.is_Data = unit;
-            unit->hu_NakTimeoutInt.is_Code = (void (*)(void)) &uhwNakTimeoutInt;
+            unit->hu_NakTimeoutInt.is_Code = uhwNakTimeoutInt;
 
             CopyMem(unit->hu_TimerReq, &unit->hu_NakTimeoutReq, sizeof(struct timerequest));
             unit->hu_NakTimeoutReq.tr_node.io_Message.mn_ReplyPort = &unit->hu_NakTimeoutMsgPort;
@@ -1396,8 +1396,7 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
 /* \\\ */
 
 /* /// "uhwNakTimeoutInt()" */
-AROS_UFH1(void, uhwNakTimeoutInt,
-          AROS_UFHA(struct PCIUnit *,  unit, A1))
+AROS_UFIH1(uhwNakTimeoutInt, struct PCIUnit *, unit)
 {
     AROS_USERFUNC_INIT
 

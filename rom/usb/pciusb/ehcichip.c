@@ -16,15 +16,14 @@
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
 
-static AROS_UFH3(void, EhciResetHandler,
-                 AROS_UFHA(struct PCIController *, hc, A1),
-                 AROS_UFHA(APTR, unused, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(EhciResetHandler, struct PCIController *, hc)
 {
     AROS_USERFUNC_INIT
 
     // reset controller
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -1089,7 +1088,9 @@ void ehciUpdateFrameCounter(struct PCIController *hc) {
     Enable();
 }
 
-void ehciCompleteInt(struct PCIController *hc) {
+static AROS_UFIH1(ehciCompleteInt, struct PCIController *, hc)
+{
+    AROS_USERFUNC_INIT
 
     KPRINTF(1, ("CompleteInt!\n"));
     ehciUpdateFrameCounter(hc);
@@ -1139,11 +1140,16 @@ void ehciCompleteInt(struct PCIController *hc) {
     }
 
     KPRINTF(1, ("CompleteDone\n"));
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
-void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
+static AROS_UFIH1(ehciIntCode, struct PCIController *, hc)
+{
+    AROS_USERFUNC_INIT
 
-    struct PCIController *hc = (struct PCIController *) irq->h_Data;
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr;
@@ -1156,7 +1162,7 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
         //KPRINTF(1, ("INT=%04lx\n", intr));
         if (!(hc->hc_Flags & HCF_ONLINE))
         {
-            return;
+            return FALSE;
         }
         if(intr & EHSF_FRAMECOUNTOVER)
         {
@@ -1214,6 +1220,10 @@ void ehciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw) {
             SureCause(base, &hc->hc_CompleteInt);
         }
     }
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
@@ -1259,7 +1269,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_CompleteInt.is_Node.ln_Name = "EHCI CompleteInt";
     hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
     hc->hc_CompleteInt.is_Data = hc;
-    hc->hc_CompleteInt.is_Code = (void (*)(void)) &ehciCompleteInt;
+    hc->hc_CompleteInt.is_Code = (VOID_FUNC)ehciCompleteInt;
 
     /*
         FIXME: Check the real size from USBCMD Frame List Size field (bits3:2)
@@ -1498,16 +1508,17 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS, EHSF_ALL_INTS);
 
         // install reset handler
-        hc->hc_ResetInt.is_Code = EhciResetHandler;
+        hc->hc_ResetInt.is_Code = (VOID_FUNC)EhciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
         // add interrupt
-        hc->hc_PCIIntHandler.h_Node.ln_Name = "EHCI PCI (pciusb.device)";
-        hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-        hc->hc_PCIIntHandler.h_Code = ehciIntCode;
-        hc->hc_PCIIntHandler.h_Data = hc;
-        HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+        hc->hc_PCIIntHandler.is_Node.ln_Name = "EHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
+        hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
+        hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)ehciIntCode;
+        hc->hc_PCIIntHandler.is_Data = hc;
+        AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
 
         hc->hc_PCIIntEnMask = EHSF_ALL_INTS;
         WRITEREG32_LE(hc->hc_RegBase, EHCI_USBINTEN, hc->hc_PCIIntEnMask);

@@ -64,15 +64,14 @@ static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *h
 #define PrintED(txt, oed, hc)
 #endif
 
-static AROS_UFH3(void, OhciResetHandler,
-                 AROS_UFHA(struct PCIController *, hc, A1),
-                 AROS_UFHA(APTR, unused, A5),
-                 AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(OhciResetHandler, struct PCIController *, hc)
 {
     AROS_USERFUNC_INIT
 
     // reset controller
     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -1037,8 +1036,10 @@ void ohciUpdateFrameCounter(struct PCIController *hc)
     Enable();
 }
 
-static void ohciCompleteInt(struct PCIController *hc)
+static AROS_UFIH1(ohciCompleteInt, struct PCIController *,hc)
 {
+    AROS_USERFUNC_INIT
+
     ULONG restartmask = 0;
 
     KPRINTF(1, ("CompleteInt!\n"));
@@ -1086,11 +1087,16 @@ static void ohciCompleteInt(struct PCIController *hc)
     }
 
     KPRINTF(1, ("CompleteDone\n"));
+
+    return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
-static void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
+static AROS_UFIH1(ohciIntCode, struct PCIController *, hc)
 {
-    struct PCIController *hc = (struct PCIController *) irq->h_Data;
+    AROS_USERFUNC_INIT
+
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr = 0;
@@ -1156,7 +1162,7 @@ static void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                 // interrupt by disabling the interrupt bit
                 ohciDisableInt(hc, OISF_HUBCHANGE);
             }
-            return;
+            return FALSE;
         }
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, OISF_HUBCHANGE);
         if(intr & OISF_FRAMECOUNTOVER)
@@ -1265,6 +1271,10 @@ static void ohciIntCode(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     /* Unlock interrupts  */
     WRITEREG32_LE(&hc->hc_RegBase, OHCI_INTEN, OISF_MASTERENABLE);
+
+    return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 /*
@@ -1382,7 +1392,7 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
     hc->hc_CompleteInt.is_Node.ln_Name = "OHCI CompleteInt";
     hc->hc_CompleteInt.is_Node.ln_Pri  = 0;
     hc->hc_CompleteInt.is_Data = hc;
-    hc->hc_CompleteInt.is_Code = (void (*)(void)) &ohciCompleteInt;
+    hc->hc_CompleteInt.is_Code = (VOID_FUNC)ohciCompleteInt;
 
     hc->hc_PCIMemSize = OHCI_HCCA_SIZE + OHCI_HCCA_ALIGNMENT + 1;
     hc->hc_PCIMemSize += sizeof(struct OhciED) * OHCI_ED_POOLSIZE;
@@ -1589,16 +1599,17 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
         SYNC;
 
         // install reset handler
-        hc->hc_ResetInt.is_Code = OhciResetHandler;
+        hc->hc_ResetInt.is_Code = (VOID_FUNC)OhciResetHandler;
         hc->hc_ResetInt.is_Data = hc;
         AddResetCallback(&hc->hc_ResetInt);
 
         // add interrupt
-        hc->hc_PCIIntHandler.h_Node.ln_Name = "OHCI PCI (pciusb.device)";
-        hc->hc_PCIIntHandler.h_Node.ln_Pri = 5;
-        hc->hc_PCIIntHandler.h_Code = ohciIntCode;
-        hc->hc_PCIIntHandler.h_Data = hc;
-        HIDD_IRQ_AddHandler(hd->hd_IRQHidd, &hc->hc_PCIIntHandler, hc->hc_PCIIntLine);
+        hc->hc_PCIIntHandler.is_Node.ln_Name = "OHCI PCI (pciusb.device)";
+        hc->hc_PCIIntHandler.is_Node.ln_Pri = 5;
+        hc->hc_PCIIntHandler.is_Node.ln_Type = NT_INTERRUPT;
+        hc->hc_PCIIntHandler.is_Code = (VOID_FUNC)ohciIntCode;
+        hc->hc_PCIIntHandler.is_Data = hc;
+        AddIntServer(INTB_KERNEL + hc->hc_PCIIntLine, &hc->hc_PCIIntHandler);
 
         hc->hc_PCIIntEnMask = OISF_DONEHEAD|OISF_RESUMEDTX|OISF_HOSTERROR|OISF_FRAMECOUNTOVER|OISF_HUBCHANGE;
 
