@@ -24,16 +24,13 @@
 
 #define MAX_EVENTS (64)
 
-AROS_UFH4(ULONG, tick_handler,
-          AROS_UFHA(ULONG,             dummy, A0),
-          AROS_UFHA(struct Task,       *task, A1),
-          AROS_UFHA(ULONG,             dummy2, A5),
-          AROS_UFHA(struct ExecBase *, SysBase, A6)) {
+AROS_UFIH1(tick_handler, struct Task *,task)
+{
     AROS_USERFUNC_INIT
 
     Signal(task, SIGBREAKF_CTRL_D);
 
-    return 0;
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }
@@ -46,7 +43,7 @@ VOID sdl_event_task(struct Task *creator, ULONG sync, LIBBASETYPEPTR LIBBASE) {
 
     D(bug("[sdl] event loop task starting up\n"));
 
-    tick_int.is_Code         = (APTR) &tick_handler;
+    tick_int.is_Code         = (VOID_FUNC)tick_handler;
     tick_int.is_Data         = FindTask(NULL);
     tick_int.is_Node.ln_Name = "SDL event tick";
     tick_int.is_Node.ln_Pri  = 0;
