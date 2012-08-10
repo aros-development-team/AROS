@@ -702,7 +702,7 @@ static ULONG LDDemon_Init(struct LDDemonBase *ldBase)
 
     ldBase->dl_LDHandler.is_Node.ln_Name = (STRPTR)ldDemonName;
     ldBase->dl_LDHandler.is_Node.ln_Pri = 0;
-    ldBase->dl_LDHandler.is_Code = (void (*)())LDFlush;
+    ldBase->dl_LDHandler.is_Code = (VOID_FUNC)LDFlush;
     ldBase->dl_LDHandler.is_Data = NULL;
 
     ldBase->dl_DOSBase = DOSBase;
