@@ -20,6 +20,12 @@ BOOL PrepareContext(struct Task *task, APTR entryPoint, APTR fallBack,
     IPTR        args[8] = {0};
     WORD        numargs = 0;
 
+    /* Reserve some space for the fallBack routine's stack frame */
+    sp -= 4;
+
+    /* Mark the end of the stack frames */
+    sp[0] = sp[1] = 0;
+
     while(tagList)
     {
         switch(tagList->ti_Tag)
