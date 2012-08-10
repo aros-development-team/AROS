@@ -155,11 +155,8 @@ static struct IntData {
     ULONG signal;
 } DiskChangeIntData;
 
-AROS_UFH3(static BOOL, DiskChangeIntHandler,
-    AROS_UFHA(struct IntData *,  MyIntData, A1),
-    AROS_UFHA(APTR,              dummy, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)) {
-
+static AROS_UFIH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
+{
     AROS_USERFUNC_INIT
 
     struct ExecBase *SysBase = MyIntData->SysBase;
@@ -204,7 +201,7 @@ LONG InitDiskHandler (struct FileSysStartupMsg *fssm) {
                         DiskChangeIntData.Interrupt.is_Node.ln_Pri = 0;
                         DiskChangeIntData.Interrupt.is_Node.ln_Name = "FATFS";
                         DiskChangeIntData.Interrupt.is_Data = &DiskChangeIntData;
-			DiskChangeIntData.Interrupt.is_Code = (void (*)(void))AROS_ASMSYMNAME(DiskChangeIntHandler);
+                        DiskChangeIntData.Interrupt.is_Code = (VOID_FUNC)AROS_ASMSYMNAME(DiskChangeIntHandler);
 
                         /* fill io request data */
                         glob->diskchgreq->iotd_Req.io_Command = TD_ADDCHANGEINT;
