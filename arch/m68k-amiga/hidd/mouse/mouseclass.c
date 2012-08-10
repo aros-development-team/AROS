@@ -45,15 +45,10 @@
 #define RIGHT_BUTTON 	2
 #define MIDDLE_BUTTON	4
 
-static AROS_UFH4(ULONG, mouse_vblank,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, mySysBase, A6))
+static AROS_UFIH1(mouse_vblank, struct mouse_data *, mousedata)
 { 
     AROS_USERFUNC_INIT
 
-    struct mouse_data *mousedata = (struct mouse_data*)data;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *cia = (struct CIA*)0xbfe001;
     struct pHidd_Mouse_Event *e = &mousedata->event;
