@@ -8,7 +8,6 @@
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include "DriverBase.h"
 
@@ -56,7 +55,7 @@ struct AC97Data
     APTR		mixbuffer;
     UWORD		old_SR;
     
-    HIDDT_IRQ_Handler	*irq;
+    struct Interrupt 	irq;
 
     ULONG		out_volume;
 };

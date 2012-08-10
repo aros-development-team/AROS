@@ -52,15 +52,11 @@ void SlaveEntry(void)
 
 #include <hardware/intbits.h>
 
-AROS_UFH4(ULONG, AHITimerTickCode,
-    AROS_UFHA(ULONG, dummy, A0),
-    AROS_UFHA(void *, data, A1),
-    AROS_UFHA(ULONG, dummy2, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH1(AHITimerTickCode, struct Task *, task)
 {
     AROS_USERFUNC_INIT
 
-    Signal((struct Task *)data, SIGBREAKF_CTRL_F);
+    Signal(task, SIGBREAKF_CTRL_F);
     return 0;
 
     AROS_USERFUNC_EXIT

@@ -32,10 +32,10 @@ The Original Code is written by Davy Wentzler.
 
 #define CACHELINE_SIZE 32
 
-#ifdef __AROS__
+#ifdef INTGW
 #define DebugPrintF bug
-INTGW(static, void,  playbackinterrupt, PlaybackInterrupt);
-INTGW(static, void,  recordinterrupt,   RecordInterrupt);
+INTGW(static, void,   playbackinterrupt, PlaybackInterrupt);
+INTGW(static, void,   recordinterrupt,   RecordInterrupt);
 INTGW(static, ULONG, cardinterrupt,  CardInterrupt);
 #endif
 
@@ -173,8 +173,8 @@ AllocDriverData( struct PCIDevice *dev,
     card->interrupt.is_Node.ln_Type = IRQTYPE;
     card->interrupt.is_Node.ln_Pri  = 0;
     card->interrupt.is_Node.ln_Name = (STRPTR) LibName;
-#ifdef __AROS__
-    card->interrupt.is_Code         = (void(*)(void))&cardinterrupt;
+#ifdef INTGW
+    card->interrupt.is_Code         = (VOID_FUNC)cardinterrupt;
 #else
     card->interrupt.is_Code         = (void(*)(void))CardInterrupt;
 #endif
@@ -183,8 +183,8 @@ AllocDriverData( struct PCIDevice *dev,
     card->playback_interrupt.is_Node.ln_Type = IRQTYPE;
     card->playback_interrupt.is_Node.ln_Pri  = 0;
     card->playback_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-#ifdef __AROS__
-    card->playback_interrupt.is_Code         = (void(*)(void))&playbackinterrupt;
+#ifdef INTGW
+    card->playback_interrupt.is_Code         = (VOID_FUNC)playbackinterrupt;
 #else
     card->playback_interrupt.is_Code         = (void(*)(void))PlaybackInterrupt;
 #endif
@@ -193,8 +193,8 @@ AllocDriverData( struct PCIDevice *dev,
     card->record_interrupt.is_Node.ln_Type = IRQTYPE;
     card->record_interrupt.is_Node.ln_Pri  = 0;
     card->record_interrupt.is_Node.ln_Name = (STRPTR) LibName;
-#ifdef __AROS__
-    card->record_interrupt.is_Code         = (void(*)(void))&recordinterrupt;
+#ifdef INTGW
+    card->record_interrupt.is_Code         = (VOID_FUNC)recordinterrupt;
 #else
     card->record_interrupt.is_Code         = (void(*)(void))RecordInterrupt;
 #endif

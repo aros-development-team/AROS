@@ -6,7 +6,6 @@
 #include <asm/io.h>
 #include <oop/oop.h>
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 #include <aros/asmcall.h>
 
 #include <proto/oop.h>
@@ -20,7 +19,7 @@
 struct Library *OOPBase;
 
 OOP_AttrBase __IHidd_PCIDev;
-static OOP_Object *pciobj, *irqobj;
+static OOP_Object *pciobj;
 
 static OOP_MethodID mid_RB;
 static OOP_MethodID mid_RW;
@@ -30,7 +29,6 @@ static OOP_MethodID mid_WB;
 static OOP_MethodID mid_WW;
 static OOP_MethodID mid_WL;
 
-static HIDDT_IRQ_Handler inthandler;
 static BOOL inthandler_added;
 
 BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
@@ -48,8 +46,7 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
       KPrintF("== ahi_pci_init 3\n");
 
       pciobj = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
-      irqobj = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL);
-      if(pciobj && irqobj)
+      if(pciobj)
       {
 	KPrintF("== ahi_pci_init 4\n");
 	mid_RB = OOP_GetMethodID(IID_Hidd_PCIDevice, moHidd_PCIDevice_ReadConfigByte);
@@ -71,14 +68,12 @@ BOOL ahi_pci_init(struct DriverBase* AHIsubBase)
 void ahi_pci_exit(void)
 {
   KPrintF("== ahi_pci_exit 1\n");
-  if (irqobj) OOP_DisposeObject(irqobj);
-  KPrintF("== ahi_pci_exit 2\n");
   if (pciobj) OOP_DisposeObject(pciobj);
-  KPrintF("== ahi_pci_exit 3\n");
+  KPrintF("== ahi_pci_exit 2\n");
   if (__IHidd_PCIDev) OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
-  KPrintF("== ahi_pci_exit 4\n");
+  KPrintF("== ahi_pci_exit 3\n");
   if (OOPBase) CloseLibrary(OOPBase);
-  KPrintF("== ahi_pci_exit 5\n");
+  KPrintF("== ahi_pci_exit 4\n");
 }
 
 struct enum_data
@@ -247,19 +242,8 @@ ULONG ahi_pci_get_irq(APTR dev)
   return (ULONG)val;
 }
 
-static void interrupt_code(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
-{
-  struct Interrupt *i = (struct Interrupt *)irq->h_Data;
-
-  AROS_UFC3(void, i->is_Code,
-	    AROS_UFCA(APTR, i->is_Data, A1),
-	    AROS_UFCA(APTR, i->is_Code, A5),
-	    AROS_UFCA(struct ExecBase *, SysBase, A6));	
-}
-
 BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 {
-  struct pHidd_IRQ_AddHandler __msg__, *msg = &__msg__;
   IPTR val;
     
   KPrintF("ahi_pci_add_intserver\n");
@@ -267,16 +251,7 @@ BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
   OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
   KPrintF("ahi_pci_add_intserver: irq = %ld\n", val);
 
-  inthandler.h_Node.ln_Pri = 0;
-  inthandler.h_Node.ln_Name = "AHI SBLive Int";
-  inthandler.h_Code = interrupt_code;
-  inthandler.h_Data = i;
-
-  msg->mID = OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_AddHandler);
-  msg->handlerinfo = &inthandler;
-  msg->id = val;
-
-  OOP_DoMethod(irqobj, (OOP_Msg)msg);
+  AddIntServer(INTB_KERNEL + val, i);
 
   KPrintF("ahi_pci_add_intserver done\n");
 
@@ -287,17 +262,17 @@ BOOL ahi_pci_add_intserver(struct Interrupt *i, APTR dev)
 
 void ahi_pci_rem_intserver(struct Interrupt *i, APTR dev)
 {    
+  KPrintF("ahi_pci_add_intserver\n");
+
   KPrintF("ahi_pci_rem_intserver\n");
   if (inthandler_added)
   {
-    struct pHidd_IRQ_RemHandler __msg__ =
-      {
-	mID:		    OOP_GetMethodID(CLID_Hidd_IRQ, moHidd_IRQ_RemHandler),
-	handlerinfo:	    &inthandler,
-      }, *msg = &__msg__;
-	
-    OOP_DoMethod(irqobj, (OOP_Msg)msg);
+    IPTR val;
+        
+    OOP_GetAttr((OOP_Object *)dev, aHidd_PCIDevice_INTLine, &val);
     	
+    RemIntServer(INTB_KERNEL + val, i);
+
     inthandler_added = FALSE;
   }    
   KPrintF("ahi_pci_rem_intserver\n");
