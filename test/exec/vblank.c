@@ -9,14 +9,11 @@ int __nocommandline = 1;
 
 static int counter = 0;
 
-AROS_UFH4(static ULONG, vblank_handler,
-	  AROS_UFHA(APTR, unused, A0),
-	  AROS_UFHA(APTR, mydata, A1),
-	  AROS_UFHA(APTR, self, A5),
-	  AROS_UFHA(struct ExecBase *, SysBase, A6))
+static AROS_UFIH1(vblank_handler, APTR, mydata)
 {
     AROS_USERFUNC_INIT
 
+    (void)mydata;
     counter++;
     return 0;
     
