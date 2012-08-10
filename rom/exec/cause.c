@@ -47,15 +47,9 @@
 
 	The software interrupt is called with the following prototype:
 
-	AROS_UFH3(void, YourIntCode,
-	    AROS_UFHA(APTR, interruptData, A1),
-	    AROS_UFHA(APTR, interruptCode, A5),
-	    AROS_UFHA(struct ExecBase *, SysBase, A6))
+    AROS_UFIC1(YourIntCode, APTR, interruptData)
 
-	The interruptData is the value of the is_Data field, interruptCode
-	is the value of the is_Code field - it is included for historical
-	and compatibility reasons. You can ignore the value of interruptCode,
-	but you must declare it.
+	The interruptData is the value of the is_Data field.
 
     INPUTS
 	softint     -   The interrupt you wish to schedule. When setting up
@@ -135,12 +129,7 @@
     This procedure could be more efficient.
 */
 
-AROS_UFH5(void, SoftIntDispatch,
-    AROS_UFHA(ULONG, intReady, D1),
-    AROS_UFHA(volatile struct Custom *, custom, A0),
-    AROS_UFHA(IPTR, intData, A1),
-    AROS_UFHA(ULONG_FUNC, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH0(SoftIntDispatch)
 {
     AROS_USERFUNC_INIT
 
@@ -178,10 +167,7 @@ AROS_UFH5(void, SoftIntDispatch,
                     KrnSti();
 
                     /* Call the software interrupt. */
-                    AROS_UFC3NR(void, intr->is_Code,
-                              AROS_UFCA(APTR, intr->is_Data, A1),
-                              AROS_UFCA(APTR, intr->is_Code, A5),
-                              AROS_UFCA(struct ExecBase *, SysBase, A6));
+                    AROS_UFIC1(intr->is_Code, intr->is_Data);
 
                     /* Get out and start loop *all* over again *from scratch*! */
                     break;
@@ -204,6 +190,8 @@ AROS_UFH5(void, SoftIntDispatch,
 
     /* re-enable soft ints */
     CUSTOM_ENABLE(INTB_SOFTINT);
+
+    return FALSE;
 
     AROS_USERFUNC_EXIT
 }

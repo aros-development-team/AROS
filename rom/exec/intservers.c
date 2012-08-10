@@ -16,42 +16,29 @@
  * to replace it... TODO: this can be done after merging exec_init.c from
  * i386 and PPC native.
 */
-AROS_UFH5(void, IntServer,
-    AROS_UFHA(ULONG, intMask, D0),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH3(IntServer, struct List *, intList, intMask, custom)
 {
     AROS_USERFUNC_INIT
 
     struct Interrupt * irq;
+    BOOL ret = FALSE;
 
-    ForeachNode(intList, irq)
-    {
-	if( AROS_UFC4(int, irq->is_Code,
-		AROS_UFCA(struct Custom *, custom, A0),
-		AROS_UFCA(APTR, irq->is_Data, A1),
-		AROS_UFCA(APTR, irq->is_Code, A5),
-		AROS_UFCA(struct ExecBase *, SysBase, A6)
-	))
-#ifdef __mc68000
-	    ;
-#else
-	    break;
+    ForeachNode(intList, irq) {
+        if (AROS_UFIC3(irq->is_Code, irq->is_Data, intMask, custom)) {
+#ifndef __mc68000
+            ret = TRUE;
+            break;
 #endif
+         }
     }
+
+    return ret;
 
     AROS_USERFUNC_EXIT
 }
 
 /* VBlankServer. The same as general purpose IntServer but also counts task's quantum */
-AROS_UFH5(void, VBlankServer,
-    AROS_UFHA(ULONG, intMask, D1),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(struct List *, intList, A1),
-    AROS_UFHA(APTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH3(VBlankServer, struct List *, intList, intMask, custom)
 {
     AROS_USERFUNC_INIT
 
@@ -63,12 +50,7 @@ AROS_UFH5(void, VBlankServer,
     }
 
     /* Chain to the generic routine */
-    AROS_UFC5NR(void, IntServer,
-	      AROS_UFCA(ULONG, intMask, D1),
-	      AROS_UFCA(struct Custom *, custom, A0),
-	      AROS_UFCA(struct List *, intList, A1),
-	      AROS_UFCA(APTR, intCode, A5),
-	      AROS_UFCA(struct ExecBase *, SysBase, A6));
+    return AROS_UFIC3(IntServer, intList, intMask, custom);
 
     AROS_USERFUNC_EXIT
 }

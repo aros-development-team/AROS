@@ -69,13 +69,7 @@ AROS_LH1(void, Cause,
 
 				if (iv->iv_Code)
 				{
-					  AROS_UFC5(void, iv->iv_Code,
-					      AROS_UFCA(ULONG, 0, D1),
-					      AROS_UFCA(ULONG, 0, A0),
-					      AROS_UFCA(APTR, NULL, A1),
-					      AROS_UFCA(APTR, iv->iv_Code, A5),
-					      AROS_UFCA(struct ExecBase *, SysBase, A6)
-					  );
+				    AROS_UFIC1(iv->iv_Code, iv->iv_Data);
 				}
 			}
 		}
@@ -109,29 +103,8 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
 
 	if (iv->iv_Code)
 	{
-		/*  Call it. I call with all these parameters for a reason.
-
-		In my `Amiga ROM Kernel Reference Manual: Libraries and
-		Devices' (the 1.3 version), interrupt servers are called
-		with the following 5 parameters.
-
-		D1 - Mask of INTENAR and INTREQR
-		A0 - 0xDFF000 (base of custom chips)
-		A1 - Interrupt Data
-		A5 - Interrupt Code vector
-		A6 - SysBase
-
-		It is quite possible that some code uses all of these, so
-		I must supply them here. Obviously I will dummy some of these
-		though.
-		*/
-		AROS_UFC5(void, iv->iv_Code,
-		    AROS_UFCA(ULONG, 0, D1),
-		    AROS_UFCA(ULONG, 0, A0),
-		    AROS_UFCA(APTR, regs, A1),
-		    AROS_UFCA(APTR, iv->iv_Code, A5),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6)
-		);
+		/*  Call it. */
+		AROS_UFIC1(iv->iv_Code, regs);
 	}
 
 	/* Has an interrupt told us to dispatch when leaving */
@@ -197,12 +170,7 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
     in the kernel.
 */
 
-AROS_UFH5(void, SoftIntDispatch,
-    AROS_UFHA(ULONG, intReady, D1),
-    AROS_UFHA(struct Custom *, custom, A0),
-    AROS_UFHA(IPTR, intData, A1),
-    AROS_UFHA(IPTR, intCode, A5),
-    AROS_UFHA(struct ExecBase *, SysBase, A6))
+AROS_UFIH0(SoftIntDispatch)
 {
 	AROS_USERFUNC_INIT
 
@@ -224,16 +192,16 @@ AROS_UFH5(void, SoftIntDispatch,
 		  		intr->is_Node.ln_Type = NT_INTERRUPT;
 
 		 		/* Call the software interrupt. */
-		  		AROS_UFC3(void, intr->is_Code,
-				   AROS_UFCA(APTR, intr->is_Data, A1),
-				   AROS_UFCA(APTR, intr->is_Code, A5),
-				   AROS_UFCA(struct ExecBase *, SysBase, A6));
+		 		AROS_UFIC1(intr->is_Code, intr->is_Data);
 			}
 		}
 
 		/* We now re-enable software interrupts. */
 		softblock = 0;
 	}
+
+	return FALSE;
+
 	AROS_USERFUNC_EXIT
 }
 
