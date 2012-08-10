@@ -34,7 +34,6 @@
 #include <oop/oop.h>
 
 #include <hidd/pci.h>
-#include <hidd/irq.h>
 
 #include <devices/timer.h>
 #include <devices/sana2.h>
@@ -174,8 +173,8 @@ struct SiS900Unit {
 
     struct MsgPort          *sis900u_request_ports[REQUEST_QUEUE_COUNT];
 
-    HIDDT_IRQ_Handler       *sis900u_irqhandler;
-    HIDDT_IRQ_Handler       *sis900u_touthandler;
+    struct Interrupt         sis900u_irqhandler;
+    struct Interrupt         sis900u_touthandler;
 
     struct MsgPort          *sis900u_TimerSlowPort;
     struct timerequest      *sis900u_TimerSlowReq;
