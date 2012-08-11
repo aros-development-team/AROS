@@ -8199,7 +8199,7 @@ fi
                 aros_object_format="m68kelf"
                 aros_flavour="standcompat"
                 gcc_target_cpu="m68000"
-                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -Os"
+                aros_config_cflags="$aros_config_cflags -fno-strict-aliasing -ffreestanding -fomit-frame-pointer -fbuiltin -Wno-volatile-register-var -Os -DNOLIBINLINE"
                 aros_config_aflags="$aros_config_aflags"
                 aros_target_strip_flags="-R.comment --strip-debug"
                 aros_default_wbwidth=640
