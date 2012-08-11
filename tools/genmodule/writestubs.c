@@ -30,6 +30,8 @@ void writestubs(struct config *cfg, int is_rel)
         (
             out,
             "%s"
+            "#undef  NOLIBINLINE\n"
+            "#undef  NOLIBDEFINES\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
             "void *__GM_GetBase(void);\n"
@@ -44,6 +46,8 @@ void writestubs(struct config *cfg, int is_rel)
         (
             out,
             "%s"
+            "#undef  NOLIBINLINE\n"
+            "#undef  NOLIBDEFINES\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
             "/* Be sure that the libbases are included in the stubs file */\n"
