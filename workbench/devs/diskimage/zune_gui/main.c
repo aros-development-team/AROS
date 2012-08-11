@@ -166,6 +166,7 @@ error:
 		AddReloadPluginsHook(ReloadPluginsHook, FALSE);
 		FreeHook(ReloadPluginsHook);
 	}
+	FreeSignal(ReloadPluginsSignal);
 	if (DiskChangeHook) {
 		AddDiskChangeHook(DiskChangeHook, FALSE);
 		FreeHook(DiskChangeHook);
