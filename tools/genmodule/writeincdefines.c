@@ -99,7 +99,7 @@ void
 writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
 {
     struct functionarg *arglistit;
-    int count, isvoid;
+    int count, isvoid, nquad = 0, narg = 0;
     char *type;
     
     isvoid = strcmp(funclistit->type, "void") == 0
@@ -116,6 +116,11 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     )
     {
 	fprintf(out, ", __arg%d", count);
+	if (strchr(arglistit->reg, '/') != NULL) {
+	    nquad++;
+	} else {
+	    narg++;
+	}
     }
     fprintf(out,
                     ") ({\\\n"
@@ -126,9 +131,7 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
 		    cfg->libbase, funclistit->version
         );       
     }
-    if (funclistit->arguments == NULL
-	|| strchr(funclistit->arguments->reg, '/') == NULL
-    )
+    if (nquad == 0)
     {
 	    fprintf(out,
 		    "        AROS_LC%d%s(%s, %s, \\\n",
@@ -152,32 +155,44 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     }
     else
     {
-	 fprintf(out,
-		    "        AROS_LCQUAD%d%s(%s, %s, \\\n",
-		    funclistit->argcount, (isvoid) ? "NR" : "",
+        if (narg) {
+	    fprintf(out,
+		    "    AROS_LC%dQUAD%d%s(%s, %s,\\\n",
+		    narg, nquad, (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name
-	);
+	    );
+	} else {
+       	    fprintf(out,
+		    "    AROS_LCQUAD%d%s(%s, %s,\\\n",
+		    nquad, (isvoid) ? "NR" : "",
+		    funclistit->type, funclistit->name
+	    );
+	}
 
 	for (arglistit = funclistit->arguments, count = 1;
 	     arglistit != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
-	    if (strlen(arglistit->reg) != 5)
-	    {
-		fprintf(stderr, "Internal error: ../.. register format expected\n");
-		exit(20);
-	    }
+	    char *quad2 = strchr(arglistit->reg, '/');
+	 
 	    arglistit->reg[2] = 0;
-
 	    type = getargtype(arglistit);
 	    assert(type != NULL);
 	
-	    fprintf(out,
-		    "         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
-		    type, count, arglistit->reg, arglistit->reg+3
-	    );
-	    arglistit->reg[2] = '/';
+	    if (quad2 != NULL) {
+	    	*quad2 = 0;
+		fprintf(out,
+			"         AROS_LCAQUAD(%s, (__arg%d), %s, %s), \\\n",
+			type, count, arglistit->reg, quad2+1
+		);
+		*quad2 = '/';
+	    } else {
+		fprintf(out,
+			"         AROS_LCA(%s, (__arg%d), %s), \\\n",
+			type, count, arglistit->reg
+		);
+	    }
 	    free(type);
 	}
     }
@@ -374,7 +389,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		varargname
 	);
 	for (arglistit = funclistit->arguments, count = 1;
-	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
@@ -385,7 +400,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 		varargname, cfg->libbase
 	);
 	for (arglistit = funclistit->arguments, count = 1;
-	     arglistit != NULL && arglistit->next != NULL;
+	     arglistit != NULL && arglistit->next != NULL && arglistit->next->next != NULL;
 	     arglistit = arglistit->next, count++
 	)
 	{
