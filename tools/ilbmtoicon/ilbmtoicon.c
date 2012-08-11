@@ -1966,8 +1966,6 @@ static LONG writeargb(APTR argb, ULONG argb_size)
 
     writelong(ID_ARGB);
     formsize = 10 + zsize;
-    if (formsize & 1)
-        formsize++;
     writelong(formsize);
     writelong(1);
     writelong(zsize);
@@ -1980,6 +1978,8 @@ static LONG writeargb(APTR argb, ULONG argb_size)
 
     free(zdest);
 
+    if (formsize & 1)
+        formsize++;
     return 8 + formsize;
 }
 
