@@ -24,6 +24,9 @@
 ** POSSIBILITY OF SUCH DAMAGE.
 */
 
+// ensure that DiskImageBase is struct Library *
+#define __DISKIMAGE_STDLIBBASE__
+
 #include "diskimagegui.h"
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -64,7 +67,7 @@ BOOL CreateGUI (void) {
 	STRPTR popkey;
 	CONST_STRPTR window_title;
 	CONST_STRPTR about_window_title;
-    CONST_STRPTR device_window_title;
+	CONST_STRPTR device_window_title;
 	CONST_STRPTR about_window_text;
 	CxObj *broker;
 	struct MsgPort *broker_mp;
@@ -93,7 +96,7 @@ BOOL CreateGUI (void) {
 	}
 	window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_MAIN_WND), PROGNAME, popkey ? popkey : (STRPTR)"none");
 	about_window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_ABOUT_WND), PROGNAME);
-    device_window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_SETDEVICETYPE_WND), PROGNAME);
+	device_window_title = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_SETDEVICETYPE_WND), PROGNAME);
 	about_window_text = ASPrintfPooled(Gui.pool, GetString(&LocaleInfo, MSG_ABOUT_REQ),
 		DiskImageBase->lib_Node.ln_Name, (LONG)DiskImageBase->lib_Version,
 		(LONG)DiskImageBase->lib_Revision, PROGNAME, (LONG)VERSION, (LONG)REVISION);
@@ -103,12 +106,12 @@ BOOL CreateGUI (void) {
 	
 	Gui.app = ApplicationObject,
 		MUIA_Application_Title,					PROGNAME,
-        MUIA_Application_Description,           GetString(&LocaleInfo, MSG_APPDESCRIPTION),
+		MUIA_Application_Description,			GetString(&LocaleInfo, MSG_APPDESCRIPTION),
 		MUIA_Application_Version,				&verstag[1],
 		MUIA_Application_SingleTask,			TRUE,
 		MUIA_Application_BrokerPri,				TTInteger(Icon, "CX_PRIORITY", 0),
 		MUIA_Application_BrokerHook,			&BrokerHook,
-        MUIA_Application_Base,                  (IPTR)"DISKIMAGE",
+		MUIA_Application_Base,					(IPTR)"DISKIMAGE",
 		MUIA_Application_DiskObject,			Icon,
 		SubWindow,								Gui.wnd[WID_MAIN] = WindowObject,
 			MUIA_Window_ID,						MAKE_ID('M','A','I','N'),
@@ -166,7 +169,7 @@ BOOL CreateGUI (void) {
 		End,
 		SubWindow,								Gui.wnd[WID_ABOUT] = WindowObject,
 			MUIA_Window_Title,					about_window_title,
-            MUIA_Window_ID,                     MAKE_ID('A','B','O','U'),
+			MUIA_Window_ID,						MAKE_ID('A','B','O','U'),
 			WindowContents,						VGroup,
 				Child,							TextObject,
 					NoFrame,
@@ -189,8 +192,8 @@ BOOL CreateGUI (void) {
 			End,
 		End,
 		SubWindow,				Gui.wnd[WID_SETDEVICETYPE] = WindowObject,
-            MUIA_Window_Title,  device_window_title,
-            MUIA_Window_ID,     MAKE_ID('W','D','E','V'),
+			MUIA_Window_Title,  device_window_title,
+			MUIA_Window_ID,		MAKE_ID('W','D','E','V'),
 			WindowContents,		VGroup,
 				Child,			HGroup,
 					Child,		Label(GetString(&LocaleInfo, MSG_DEVICETYPE_GAD)),
@@ -256,10 +259,10 @@ BOOL CreateGUI (void) {
 		Gui.app, 2, MUIM_CallHook, &DoSetDeviceTypeHook);
 	DoMethod(Gui.gad[GID_SETDEVICETYPE_CANCEL], MUIM_Notify, MUIA_Pressed, FALSE,
 		Gui.wnd[WID_SETDEVICETYPE], 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
-        Gui.app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
-    DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
-        Gui.wnd[WID_MAIN], 3, MUIM_Set, MUIA_Window_Open, TRUE);
+	DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
+		Gui.app, 3, MUIM_Set, MUIA_Application_Iconified, FALSE);
+	DoMethod(Gui.app, MUIM_Notify, MUIA_Application_DoubleStart, TRUE,
+		Gui.wnd[WID_MAIN], 3, MUIM_Set, MUIA_Window_Open, TRUE);
 
 	return TRUE;
 error:
