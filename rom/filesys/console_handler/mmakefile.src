@@ -1,12 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := resident con_handler support completion resident_end
+FILES := con_handler support completion
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
-%build_module_simple mmake=kernel-fs-con \
+%build_module mmake=kernel-fs-con \
     modname=con modtype=handler \
     files="$(FILES)"
