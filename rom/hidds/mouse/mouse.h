@@ -40,3 +40,6 @@ struct mousebase
 };
 
 #define CSD(cl) (&((struct mousebase *)cl->UserData)->csd)
+
+#define SysBase (CSD(cl)->cs_SysBase)
+#define OOPBase (CSD(cl)->cs_OOPBase)
