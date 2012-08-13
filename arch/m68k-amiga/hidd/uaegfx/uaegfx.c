@@ -237,7 +237,6 @@ static const UBYTE rgbtypelist[] = {
 OOP_Object *UAEGFXCl__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     struct LibResolution *r;
     WORD rescnt, i, j, k, l;
     struct TagItem *reslist, *restags, *pflist, *modetags;
@@ -584,7 +583,6 @@ void UAEGFXCl__Hidd_Gfx__CleanViewPort(OOP_Class *cl, OOP_Object *o, struct pHid
 static void doshow(struct uaegfx_staticdata *csd, OOP_Object *bm, struct ViewPort *vp, BOOL offonly)
 {
     struct IntuitionBase *ib = (struct IntuitionBase*)csd->cs_IntuitionBase;
-    struct Library *OOPBase = csd->cs_OOPBase;
     struct ViewPort *vpi = NULL;
 
     if (ib->FirstScreen)
@@ -695,7 +693,6 @@ BOOL UAEGFXCl__Hidd_Gfx__SetCursorShape(OOP_Class *cl, OOP_Object *shape, struct
     WORD x, y, hiressprite, i;
     UWORD *p;
     ULONG flags;
-    struct Library *OOPBase = csd->cs_OOPBase;
 
     OOP_GetAttr(msg->shape, aHidd_BitMap_Width, &width);
     OOP_GetAttr(msg->shape, aHidd_BitMap_Height, &height);
@@ -775,7 +772,6 @@ VOID UAEGFXCl__Hidd_Gfx__SetCursorVisible(OOP_Class *cl, OOP_Object *o, struct p
 BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CheckMode *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     IPTR width, height, bpp;
     
     OOP_GetAttr(msg->sync, aHidd_Sync_HDisp, &width);
@@ -791,8 +787,6 @@ BOOL UAEGFXCl__Hidd_Gfx__CheckMode(OOP_Class *cl, OOP_Object *o, struct pHidd_Gf
 
 static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
 {
-    struct Library *OOPBase = GM_OOPBASE_FIELD(LIBBASE);
-
     OOP_ReleaseAttrBase(IID_Hidd_BitMap);
     OOP_ReleaseAttrBase(IID_Hidd_UAEGFXBitMap);
     OOP_ReleaseAttrBase(IID_Hidd_GC);
@@ -802,16 +796,7 @@ static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
-AROS_UFIH1(rtg_vblank, APTR, boardinfo)
-{
-    AROS_USERFUNC_INIT
-
-    (void)boardinfo;
-    return 0;	
-
-    AROS_USERFUNC_EXIT
-
-}
+AROS_UFIP(rtg_vblank);
 
 struct P96RTGmode
 {
@@ -915,9 +900,7 @@ static int openall(struct uaegfx_staticdata *csd)
 {
     if ((csd->cs_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY))) {
     	if ((csd->cs_IntuitionBase = TaggedOpenLibrary(TAGGEDOPEN_INTUITION))) {
-    	    if ((csd->cs_OOPBase = OpenLibrary("oop.library", 0))) {
-    	        return TRUE;
-            }
+    	    return TRUE;
     	}
     }
     return FALSE;
@@ -926,7 +909,6 @@ static void freeall(struct uaegfx_staticdata *csd)
 {
     CloseLibrary(csd->cs_IntuitionBase);
     CloseLibrary(csd->cs_UtilityBase);
-    CloseLibrary(csd->cs_OOPBase);
     FreeMem(csd->vmem, sizeof(struct MemHeader));
     csd->vmem = NULL;
     FreeVec(csd->boardinfo);
@@ -984,7 +966,6 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 {
     struct uaegfx_staticdata *csd = &LIBBASE->csd;
     struct MemChunk *mc;
-    struct Library *OOPBase;
     UBYTE i;
     struct Interrupt *intr;
     struct Node *node;
@@ -997,8 +978,6 @@ BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
     	freeall(csd);
     	return FALSE;
     }
-
-    OOPBase = csd->cs_OOPBase;
 
     csd->boardinfo = AllocVec(PSSO_BoardInfo_SizeOf + PSSO_BitMapExtra_Last + sizeof(struct ModeInfo), MEMF_CLEAR | MEMF_PUBLIC);
     if (!csd->boardinfo) {
@@ -1128,3 +1107,16 @@ static int Expunge_UAEGFXClass(LIBBASETYPEPTR LIBBASE)
 }
 
 ADD2EXPUNGELIB(Expunge_UAEGFXClass, 1)
+
+#undef SysBase
+
+AROS_UFIH1(rtg_vblank, APTR, boardinfo)
+{
+    AROS_USERFUNC_INIT
+
+    return 0;	
+
+    AROS_USERFUNC_EXIT
+
+}
+

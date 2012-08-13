@@ -54,6 +54,7 @@ struct uaegfx_staticdata
 	struct List rtglist;
 	struct List bitmaplist;
 	struct Library *CardBase;
+	struct ExecBase *cs_SysBase;
 	struct Library *cs_IntuitionBase;
 	struct Library *cs_UtilityBase;
 	struct Library *cs_OOPBase;
@@ -93,12 +94,13 @@ struct UAEGFXclbase
     
     struct uaegfx_staticdata csd;
     IPTR                  cs_SegList;
-    struct Library       *cs_SysBase;
-    struct Library       *cs_OOPBase;
 };
 
 #undef CSD
 #define CSD(cl)     	(&((struct UAEGFXclbase *)cl->UserData)->csd)
+
+#define SysBase         (csd->cs_SysBase)
+#define OOPBase         (csd->cs_OOPBase)
 
 /* Private instance data for Gfx hidd class */
 struct gfx_data

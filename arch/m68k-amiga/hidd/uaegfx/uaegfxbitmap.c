@@ -179,7 +179,6 @@ static void hidescreen(struct uaegfx_staticdata *csd, struct bm_data *bm)
 OOP_Object *UAEGFXBitmap__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     BOOL  ok = TRUE;      
     struct bm_data *data;
     IPTR 	    	     width, height, multi;
@@ -272,7 +271,6 @@ VOID UAEGFXBitmap__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 VOID UAEGFXBitmap__Root__Set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 {
     struct uaegfx_staticdata *csd = CSD(cl);
-    struct Library *OOPBase = csd->cs_OOPBase;
     struct bm_data *data = OOP_INST_DATA(cl, o);
     struct TagItem  *tag, *tstate;
     ULONG   	    idx;

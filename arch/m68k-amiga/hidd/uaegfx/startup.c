@@ -16,10 +16,14 @@
 
 BOOL Init_UAEGFXClass(LIBBASETYPEPTR LIBBASE);
 
+#undef SysBase
+#undef OOPBase
+
 static int UAEGFX_Init(LIBBASETYPEPTR LIBBASE)
 {
     ULONG err;
-    struct Library *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
+    struct ExecBase *SysBase = LIBBASE->csd.cs_SysBase;
+    struct Library  *GfxBase = TaggedOpenLibrary(TAGGEDOPEN_GRAPHICS);
  	
     D(bug("************************* UAEGFX_Init ******************************\n"));
 
