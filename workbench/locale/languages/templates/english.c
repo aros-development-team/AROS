@@ -171,7 +171,7 @@ const APTR inittabl[4] =
 AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_UFHA(struct Language *, language, D0),
     AROS_UFHA(BPTR,             segList, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    AROS_UFHA(struct ExecBase *, _SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -189,7 +189,7 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     language->library.lib_IdString = (APTR)&version[6];
 
     language->seglist = segList;
-    language->sysbase = SysBase;
+    language->sysbase = _SysBase;
 
     /*
 	Although it is unlikely, you would return NULL if you for some

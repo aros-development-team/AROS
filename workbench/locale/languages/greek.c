@@ -95,12 +95,12 @@ const APTR inittabl[4] =
     &AROS_SLIB_ENTRY(init,language,0)
 };
 
-struct ExecBase *mySysBase;
+struct ExecBase *SysBase;
 
 AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_UFHA(struct Language *, language, D0),
     AROS_UFHA(BPTR,             segList, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    AROS_UFHA(struct ExecBase *, _SysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
@@ -118,8 +118,8 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     language->library.lib_IdString = (APTR)&version[7];
 
     language->seglist = segList;
-    language->sysbase = SysBase;
-    mySysBase = SysBase;
+    language->sysbase = _SysBase;
+    SysBase = _SysBase;
 
     /*
         Although it is unlikely, you would return NULL if you for some
@@ -131,7 +131,6 @@ AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language,0),
     AROS_USERFUNC_EXIT
 }
 
-#define SysBase language->sysbase
 
 AROS_LH1(struct Language *, open,
     AROS_LHA(ULONG, version, D0),
@@ -200,8 +199,6 @@ AROS_LH0I(int, null, struct Language *, language, 0, language)
    Language specific functions
  ------------------------------------------------------------------------ */
 
-#undef SysBase
-#define SysBase mySysBase
 
 /* ULONG LanguageMask():
     This function is to inform locale.library what functions it should
