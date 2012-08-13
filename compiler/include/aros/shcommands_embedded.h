@@ -28,8 +28,8 @@ struct shcommand
 #undef __AROS_SH_ARGS
 #define __AROS_SH_ARGS(name, version, numargs, defl, templ, help)       \
 static ULONG name##_main(CONST_STRPTR , IPTR *,                \
-                         struct ExecBase *SysBase,             \
-                         struct DosLibrary *);                 \
+                         struct ExecBase *_SysBase,            \
+                         struct DosLibrary *_DOSBase);         \
 AROS_UFP2S(LONG, name##_entry,                                 \
     AROS_UFPA(char *,argstr,A0),                               \
     AROS_UFPA(ULONG,argsize,D0)                                \
@@ -98,10 +98,15 @@ __exit:                                                        \
                                                                \
     AROS_USERFUNC_EXIT                                         \
 }                                                              \
+DEFINE_SysBase_global                                          \
+DEFINE_DOSBase_global                                          \
 static ULONG name##_main(CONST_STRPTR __argstr,                \
                          IPTR *__shargs,                       \
-                         struct ExecBase *SysBase,             \
-                         struct DosLibrary *DOSBase)           \
-{
+                         struct ExecBase *_SysBase,            \
+                         struct DosLibrary *_DOSBase)          \
+{                                                              \
+    DEFINE_SysBase_local                                       \
+    DEFINE_DOSBase_local                                       \
+    SysBase = _SysBase; DOSBase = _DOSBase;
 
 #endif

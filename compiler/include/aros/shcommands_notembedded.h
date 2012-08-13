@@ -15,21 +15,31 @@
 #define _stringify(x) #x
 #define stringify(x) _stringify(x)
 
+#if SH_GLOBAL_SYSBASE
+#    define DECLARE_SysBase_global extern struct ExecBase *SysBase;
+#    define DEFINE_SysBase_global struct ExecBase *SysBase;
+#    define DEFINE_SysBase_local
+#else
+#    define DECLARE_SysBase_global
+#    define DEFINE_SysBase_local struct ExecBase __unused *SysBase;
+#    define DEFINE_SysBase_global
+#endif
+
 #if SH_GLOBAL_DOSBASE
 #    define DECLARE_DOSBase_global extern struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_global struct DosLibrary *DOSBase;
 #    define DEFINE_DOSBase_local
 #else
 #    define DECLARE_DOSBase_global
-#    define DEFINE_DOSBase_local struct DosLibrary *DOSBase;
+#    define DEFINE_DOSBase_local struct DosLibrary __unused *DOSBase;
 #    define DEFINE_DOSBase_global
 #endif
 
 #define CALL_main(name) name##_main(__shargs, __argstr, SysBase, DOSBase)
 #define DECLARE_main(name)                                    \
-    ULONG name##_main(IPTR *__shargs, char * __argstr, \
-                             struct ExecBase *SysBase,        \
-                             struct DosLibrary *DOSBase)
+    ULONG name##_main(IPTR *__shargs, char * __argstr,        \
+                             struct ExecBase *_SysBase,       \
+                             struct DosLibrary *_DOSBase)
 #define DEFINE_main(name) DECLARE_main(name)
 
 #define SHArg(name) (*(SHA_##name##_type *)&__shargs[SHA_##name])
@@ -103,6 +113,7 @@ __exit:                                                                       \
     AROS_USERFUNC_EXIT                                                        \
 }                                                                             \
                                                                               \
+DEFINE_SysBase_global                                                         \
 DEFINE_DOSBase_global                                                         \
                                                                               \
 __used static const UBYTE name##_version[] = "$VER: "                         \
@@ -111,7 +122,10 @@ __used static const UBYTE name##_version[] = "$VER: "                         \
                                  "(" ADATE ") © The AROS Development Team\n"; \
                                                                               \
 DEFINE_main(name)                                                             \
-{
+{                                                                             \
+    DEFINE_SysBase_local                                                      \
+    DEFINE_DOSBase_local                                                      \
+    SysBase = _SysBase; DOSBase = _DOSBase;
 
 /* If 'AROS_AUTOINIT' is defined, automatically load
  * the libraries for this shell command.

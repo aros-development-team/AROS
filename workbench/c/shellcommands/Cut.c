@@ -98,7 +98,7 @@ struct Bounds
 };
 
 
-static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase);
+static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase, struct ExecBase *SysBase);
 
 AROS_SH4H(Cut,50.1, "extract some characters or words from a string\n",
 AROS_SHAH(STRPTR,  ,STRING   ,/A,NULL,"Quoted string from which to extract CHARacters or WORDs"),
@@ -126,7 +126,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K," " ,"Specify a string of any length to be used
 
     if (SHArg(WORD))
     {
-        if ((wordBounds = getBoundaries(SHArg(WORD), DOSBase)) != NULL)
+        if ((wordBounds = getBoundaries(SHArg(WORD), DOSBase, SysBase)) != NULL)
         {
             if (0 != wordBounds->Start)
             {
@@ -166,7 +166,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K," " ,"Specify a string of any length to be used
 
     if (SHArg(CHAR))
     {
-        if ((charBounds = getBoundaries(SHArg(CHAR), DOSBase)) != NULL)
+        if ((charBounds = getBoundaries(SHArg(CHAR), DOSBase, SysBase)) != NULL)
         {
             if (0 != charBounds->Start)
                 stringBuf += charBounds->Start - 1;
@@ -197,7 +197,7 @@ AROS_SHAH(STRPTR,S=,SEPARATOR,/K," " ,"Specify a string of any length to be used
 }
 
 
-static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase)
+static struct Bounds *getBoundaries(STRPTR String, APTR DOSBase, struct ExecBase *SysBase)
 {
     CONST_STRPTR buffer;
     struct Bounds *bounds;
