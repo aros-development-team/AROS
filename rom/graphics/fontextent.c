@@ -9,6 +9,8 @@
 #include <proto/graphics.h>
 #include <graphics/text.h>
 
+#include "graphics_intern.h"
+
 #define max(a,b)  (((a) > (b)) ? (a) : (b))
 #define min(a,b)  (((a) < (b)) ? (a) : (b))
 

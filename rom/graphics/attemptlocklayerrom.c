@@ -10,6 +10,8 @@
 #include <proto/exec.h>
 #include <exec/types.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

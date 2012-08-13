@@ -12,6 +12,8 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
+#include "graphics_intern.h"
+
 #ifdef DEBUG
 #undef DEBUG
 #endif

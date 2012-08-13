@@ -123,6 +123,6 @@ static LONG dummy_init(void);
 
 static LONG dummy_init(void)
 {
-    bug("xln_Init called\n");
+    D(bug("xln_Init called\n"));
     return 0;
 }

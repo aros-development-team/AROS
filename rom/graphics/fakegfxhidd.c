@@ -86,7 +86,7 @@ static OOP_Object *create_fake_fb(OOP_Object *framebuffer, struct gfx_data *data
 #if SPECIAL_LOCKING
 
 static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urgent,
-    	    	    	    	    	struct ExecBase *SysBase)
+    	    	    	    	    	struct GfxBase *GfxBase)
 {
     struct Task *me;
     
@@ -164,7 +164,7 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
 /******************************************************************************/
 
 static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
-    	    	    	    	    	 struct ExecBase *SysBase)
+    	    	    	    	    	 struct GfxBase *GfxBase)
 {
    /* Protect the semaphore structure from multiple access. */
     Forbid();
@@ -265,10 +265,10 @@ static void FakeGfxHidd_ReleaseSemaphore(struct SignalSemaphore *sigSem,
 
 /******************************************************************************/
 
-#define LFB(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, FALSE, SysBase)
-#define UFB(data)	FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
-#define LFB_QUICK(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, TRUE, SysBase)
-#define UFB_QUICK(data) FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, SysBase)
+#define LFB(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, FALSE, GfxBase)
+#define UFB(data)	FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, GfxBase)
+#define LFB_QUICK(data)	FakeGfxHidd_ObtainSemaphore(&(data)->fbsema, TRUE, GfxBase)
+#define UFB_QUICK(data) FakeGfxHidd_ReleaseSemaphore(&(data)->fbsema, GfxBase)
 
 #else	/* !SPECIAL_LOCKING */
 

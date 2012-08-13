@@ -9,6 +9,8 @@
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

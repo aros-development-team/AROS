@@ -225,6 +225,7 @@ struct GfxBase_intern
 #define CyberGfxBase		(PrivGBase(GfxBase)->CyberGfxBase)
 #define OOPBase			(PrivGBase(GfxBase)->OOPBase)
 #define UtilityBase		(PrivGBase(GfxBase)->UtilityBase)
+#define SysBase                 (GfxBase->ExecBase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
 #define WIDTH_TO_WORDS(width) 	((( (width) + 15) & ~15) >> 4)

@@ -8,6 +8,8 @@
 #include <aros/debug.h>
 #include <graphics/sprite.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */
