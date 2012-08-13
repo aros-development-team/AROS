@@ -8,7 +8,7 @@
 #include "buffer.h"
 #include "Shell.h"
 
-LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+LONG convertRedir(ShellState *ss, Buffer *in, Buffer *out)
 {
     STRPTR s = in->buf + in->cur;
     BOOL newIn = FALSE, newOut = FALSE;

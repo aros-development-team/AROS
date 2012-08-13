@@ -12,7 +12,7 @@
 #include <aros/debug.h>
 
 /* environment variables handling (locals and globals) */
-LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase)
+LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 {
     STRPTR p = in->buf + in->cur;
     STRPTR s = p + 1;
@@ -56,12 +56,12 @@ LONG convertVar(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
     if ((bra != 1) && (i > 0) && ((len = GetVar(varName, varValue, 256, LV_VAR)) != -1))
     {
 	D(bug("[Shell] found var: %s = %s\n", varName, varValue));
-	bufferAppend(varValue, len, out);
+	bufferAppend(varValue, len, out, SysBase);
     }
     else
     {
 	D(bug("[Shell] var not found: %s\n", varName));
-	bufferAppend(p, ++i + bra, out);
+	bufferAppend(p, ++i + bra, out, SysBase);
     }
 
     in->cur = s - in->buf;

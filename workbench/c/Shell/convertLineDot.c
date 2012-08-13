@@ -36,7 +36,7 @@ static LONG getArgumentIdx(ShellState *ss, STRPTR name, LONG len)
     return i;
 }
 
-static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len, APTR DOSBase)
+static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len)
 {
     struct SArg *a;
     LONG i, result;
@@ -80,7 +80,7 @@ static LONG dotDef(ShellState *ss, STRPTR szz, Buffer *in, LONG len, APTR DOSBas
     return ERROR_REQUIRED_ARG_MISSING;
 }
 
-static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
+static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in)
 {
     LONG error, i, j, len;
     struct SArg *a;
@@ -165,7 +165,7 @@ static LONG dotKey(ShellState *ss, STRPTR s, Buffer *in, APTR DOSBase)
     return 0;
 }
 
-LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase)
+LONG convertLineDot(ShellState *ss, Buffer *in)
 {
     STRPTR s = in->buf + in->cur;
     TEXT *res = NULL;
@@ -184,13 +184,13 @@ LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase)
 	s += 4;
     }
     else if (strncasecmp(s, "key ", 4) == 0)
-	return dotKey(ss, s + 4, in, DOSBase);
+	return dotKey(ss, s + 4, in);
     else if (strncasecmp(s, "k ", 2) == 0)
-	return dotKey(ss, s + 2, in, DOSBase);
+	return dotKey(ss, s + 2, in);
     else if (strncasecmp(s, "def ", 4) == 0)
-	return dotDef(ss, s + 4, in, 5, DOSBase);
+	return dotDef(ss, s + 4, in, 5);
     else if (strncasecmp(s, "default ", 8) == 0)
-	return dotDef(ss, s + 4, in, 9, DOSBase);
+	return dotDef(ss, s + 4, in, 9);
     else if (strncasecmp(s, "dol ", 4) == 0)
     {
 	res = &ss->dollar;
@@ -229,14 +229,14 @@ LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase)
     else if (*s == 'k' || *s == 'K')
     {
 	if (*++s == ' ') /* .k */
-	    return dotKey(ss, ++s, in, DOSBase);
+	    return dotKey(ss, ++s, in);
 
 	if (*s == 'e' || *s == 'E')
 	{
 	    if (*++s == 'y' || *s == 'Y') /* .key */
 	    {
 		if (*++s == ' ')
-		    return dotKey(ss, ++s, in, DOSBase);
+		    return dotKey(ss, ++s, in);
 	    }
 	    else if (*s == 't' || *s == 'T') /* .ket */
 		if (*++s == ' ')
@@ -250,14 +250,14 @@ LONG convertLineDot(ShellState *ss, Buffer *in, APTR DOSBase)
 	    if (*++s == 'f' || *s == 'F')
 	    {
 		if (*++s == ' ') /* .def */
-		    return dotDef(ss, ++s, in, 5, DOSBase);
+		    return dotDef(ss, ++s, in, 5);
 
 		if (*s == 'a' || *s == 'A')
 		    if (*++s == 'u' || *s == 'U')
 			if (*++s == 'l' || *s == 'L')
 			    if (*++s == 't' || *s == 'T')
 				if (*++s == ' ') /* .default */
-				    return dotDef(ss, ++s, in, 9, DOSBase);
+				    return dotDef(ss, ++s, in, 9);
 	    }
 	}
 	else if (*s == 'o' || *s == 'O')

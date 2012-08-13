@@ -12,7 +12,7 @@
 
 #define BUF_SIZE 512
 
-static BOOL bufferExpand(Buffer *out, LONG size)
+static BOOL bufferExpand(Buffer *out, LONG size, APTR SysBase)
 {
     ULONG newLength = out->len + size;
 
@@ -39,10 +39,10 @@ static BOOL bufferExpand(Buffer *out, LONG size)
     return TRUE;
 }
 
-LONG bufferInsert(STRPTR str, ULONG size, Buffer *out)
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
 {
     ULONG newLength;
-    if (!bufferExpand(out, size))
+    if (!bufferExpand(out, size, SysBase))
         return ERROR_NO_FREE_STORE;
 
     memmove(out->buf + size, out->buf, out->len);
@@ -54,10 +54,10 @@ LONG bufferInsert(STRPTR str, ULONG size, Buffer *out)
     return 0;
 }
 
-LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
+LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, APTR SysBase)
 {
     ULONG newLength;
-    if (!bufferExpand(out, size))
+    if (!bufferExpand(out, size, SysBase))
         return ERROR_NO_FREE_STORE;
 
     CopyMem(str, out->buf + out->len, size);
@@ -68,15 +68,15 @@ LONG bufferAppend(STRPTR str, ULONG size, Buffer *out)
     return 0;
 }
 
-LONG bufferCopy(Buffer *in, Buffer *out, ULONG size)
+LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, APTR SysBase)
 {
     STRPTR s = in->buf + in->cur;
-    LONG ret = bufferAppend(s, size, out);
+    LONG ret = bufferAppend(s, size, out, SysBase);
     in->cur += size;
     return ret;
 }
 
-void bufferFree(Buffer *b)
+void bufferFree(Buffer *b, APTR SysBase)
 {
     if (b->mem <= 0)
 	return;

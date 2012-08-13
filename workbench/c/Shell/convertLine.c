@@ -14,8 +14,8 @@
 
 #include <aros/debug.h>
 
-static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BOOL *, APTR DOSBase),
-                        LONG a, ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BOOL *),
+                        LONG a, ShellState *ss, Buffer *in, Buffer *out)
 {
     LONG c, p = 0, error, n = in->len;
     BOOL quoted = FALSE;
@@ -29,16 +29,16 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
         }
         else if (c == a)
         {
-            if ((error = (*convertItem)(ss, in, out, &quoted, DOSBase)))
+            if ((error = (*convertItem)(ss, in, out, &quoted)))
                 return error;
         }
         else if (!quoted && c == ';' && c != ss->mchar0)
@@ -47,14 +47,14 @@ static LONG convertLoop(LONG (*convertItem)(ShellState *, Buffer *, Buffer *, BO
              break;
         }
         else
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
     }
 
     in->cur = n;
     return 0;
 }
 
-static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out)
 {
     LONG c, p = 0, error, n = in->len;
     BOOL quoted = FALSE;
@@ -69,25 +69,25 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
         if (p == '*')
         {
             c = 0;
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
         }
         else if (c == '"')
         {
             quoted = !quoted;
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
         }
         else if (quoted)
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
         else if (c == '<' || c == '>')
         {
-            if ((error = convertRedir(ss, in, out, DOSBase)))
+            if ((error = convertRedir(ss, in, out)))
             {
                 D(bug("[convertLoopRedir] convertRedir(%s) error %u\n", in->buf, error));
                 return error;
             }
         }
         else
-            bufferCopy(in, out, 1);
+            bufferCopy(in, out, 1, SysBase);
     }
 
     in->cur = n;
@@ -95,7 +95,7 @@ static LONG convertLoopRedir(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBa
 }
 
 static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
-                         struct List *aliased, APTR DOSBase)
+                         struct List *aliased)
 {
     STRPTR command = ss->command + 2;
     TEXT buf[FILE_MAX];
@@ -109,7 +109,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
     case ITEM_QUOTED: /* no alias expansion */
         if (in->cur < in->len)
             ++in->cur; /* skip separator */
-        return bufferCopy(in, out, in->len - in->cur);
+        return bufferCopy(in, out, in->len - in->cur, SysBase);
     case ITEM_UNQUOTED:
         break;
     case ITEM_NOTHING:
@@ -148,7 +148,7 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
         a.cur = 0;
 
         /* vars substitution */
-        if ((error = convertLoop(convertVar, '$', ss, &a, &b, DOSBase)))
+        if ((error = convertLoop(convertVar, '$', ss, &a, &b)))
             goto endReadAlias;
 
         /* alias foo bar1 [] bar2 */
@@ -157,44 +157,44 @@ static LONG readCommandR(ShellState *ss, Buffer *in, Buffer *out,
                 break;
 
         bufferReset(&a);
-        bufferCopy(&b, &a, i);
+        bufferCopy(&b, &a, i, SysBase);
 
         if (NULL == strchr(buf, ' '))
             /*
              * We need a separator here, between the command
              * and its first argument
              */
-            bufferAppend(" ", 1, &a);
+            bufferAppend(" ", 1, &a, SysBase);
 
-        bufferCopy(in, &a, in->len - in->cur);
+        bufferCopy(in, &a, in->len - in->cur, SysBase);
 
         if (i < b.len)
         {
             b.cur += 2; /* skip [] */
-            bufferCopy(&b, &a, b.len - b.cur);
+            bufferCopy(&b, &a, b.len - b.cur, SysBase);
         }
 
-        error = readCommandR(ss, &a, out, aliased, DOSBase);
+        error = readCommandR(ss, &a, out, aliased);
 
 endReadAlias:
-        bufferFree(&a);
-        bufferFree(&b);
+        bufferFree(&a, SysBase);
+        bufferFree(&b, SysBase);
         return error;
     }
 
     D(bug("[readCommandR] Copying buffer %s, len %d, pos %d\n", in->buf, in->len, in->cur));
 
-    return bufferCopy(in, out, in->len - in->cur);
+    return bufferCopy(in, out, in->len - in->cur, SysBase);
 }
 
-static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
+static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out)
 {
     struct List aliased;
 
     NewList(&aliased);
     bufferReset(out);
 
-    return readCommandR(ss, in, out, &aliased, DOSBase);
+    return readCommandR(ss, in, out, &aliased);
 }
 
 /* The shell has the following semantics when it comes to command lines:
@@ -205,7 +205,7 @@ static LONG readCommand(ShellState *ss, Buffer *in, Buffer *out, APTR DOSBase)
    should be substituted for the command text. Aliasing only applies to
    commands and not to options, for instance. Variables (set by SetEnv or Set)
    may be referenced by prepending a '$' to the variable name. */
-LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APTR DOSBase)
+LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand)
 {
     LONG c = in->buf[in->cur], error;
 
@@ -213,7 +213,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
         return 0;
 
     if (c == ss->dot) /* .dot command at start of line */
-        return convertLineDot(ss, in, DOSBase);
+        return convertLineDot(ss, in);
 
     /* Vars and BackTicks can't be properly handled by using FindItem() as
        it wouldn't find them when they aren't surrounded with blank spaces,
@@ -234,7 +234,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 1: `backticks` substitution */
     D(bug("[convertLine] Pass 1: on (%s)\n", in->buf));
-    if ((error = convertLoop(convertBackTicks, '`', ss, in, out, DOSBase)))
+    if ((error = convertLoop(convertBackTicks, '`', ss, in, out)))
     {
         D(bug("[convertLine] Pass 1: Error %lu parsing backticks\n", error));
         return error;
@@ -242,7 +242,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 2: <args> substitution & CLI# <$$>*/
     D(bug("[convertLine] Pass 2: on (%s)\n", out->buf));
-    if ((error = convertLoop(convertArg, ss->bra, ss, out, in, DOSBase)))
+    if ((error = convertLoop(convertArg, ss->bra, ss, out, in)))
     {
         D(bug("[convertLine] Pass 2: Error %lu parsing <arguments> substitution and <$$> CLI#\n", error));
         return error;
@@ -250,7 +250,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 3: ${vars} substitution */
     D(bug("[convertLine] Pass 3: on (%s)\n", in->buf));
-    if ((error = convertLoop(convertVar, '$', ss, in, out, DOSBase)))
+    if ((error = convertLoop(convertVar, '$', ss, in, out)))
     {
         D(bug("[convertLine] Pass 3: Error %lu parsing variables\n", error));
         return error;
@@ -258,7 +258,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 4: command & aliases */
     D(bug("[convertLine] Pass 4: on (%s)\n", out->buf));
-    if ((error = readCommand(ss, out, in, DOSBase)))
+    if ((error = readCommand(ss, out, in)))
     {
         D(bug("[convertLine] Pass 4: Error %lu parsing aliases\n", error));
         return error;
@@ -268,7 +268,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
 
     /* PASS 5: redirections */
     D(bug("[convertLine] Pass 5: cur %d len %d (%s)\n", in->cur, in->len, in->buf));
-    error = convertLoopRedir(ss, in, out, DOSBase);
+    error = convertLoopRedir(ss, in, out);
     if (error)
     {
         D(bug("[convertLine] Pass 5: Error %lu parsing redirect\n", error));
@@ -284,7 +284,7 @@ LONG convertLine(ShellState *ss, Buffer *in, Buffer *out, BOOL *haveCommand, APT
          * ReadArgs() will halt, waiting for it.
          */
         D(bug("[convertLine] Appending a newline\n"));
-        error = bufferAppend("\n", 1, out);
+        error = bufferAppend("\n", 1, out, SysBase);
     }
 
     D(bug("[convertLine] Result: cur %d len %d (%s)\n", out->cur, out->len, out->buf));

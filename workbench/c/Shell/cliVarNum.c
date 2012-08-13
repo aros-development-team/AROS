@@ -30,7 +30,7 @@ LONG l2a(LONG x, STRPTR buf) /* long to ascii */
     return len;
 }
 
-void cliVarNum(CONST_STRPTR name, LONG value, APTR DOSBase)
+void cliVarNum(ShellState *ss, CONST_STRPTR name, LONG value)
 {
     TEXT buf[32];
     LONG len = l2a(value, buf);
