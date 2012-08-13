@@ -9,6 +9,8 @@
 #include <graphics/view.h>
 #include <graphics/sprite.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

@@ -8,6 +8,8 @@
 #include <graphics/displayinfo.h>
 #include <graphics/modeid.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

@@ -10,6 +10,7 @@
 */
 
 #include <graphics/gels.h>
+#include <graphics/gfxbase.h>
 #include <exec/types.h>
 
 struct IntVSprite

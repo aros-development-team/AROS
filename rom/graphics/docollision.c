@@ -8,6 +8,8 @@
 #include <graphics/rastport.h>
 #include <graphics/gels.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

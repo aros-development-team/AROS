@@ -8,6 +8,8 @@
 #include <proto/layers.h>
 #include <proto/exec.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

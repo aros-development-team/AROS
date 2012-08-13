@@ -11,6 +11,7 @@
 /****************************************************************************************/
 
 #include <graphics/clip.h>
+#include <graphics/gfxbase.h>
 #include <hidd/graphics.h>
 
 #define PEN_BITS    8

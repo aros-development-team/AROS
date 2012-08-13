@@ -9,6 +9,8 @@
 #include <proto/exec.h>
 #include <graphics/clip.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

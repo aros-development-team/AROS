@@ -8,6 +8,8 @@
 #include <aros/debug.h>
 #include <graphics/monitor.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */

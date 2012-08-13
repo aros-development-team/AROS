@@ -11,6 +11,8 @@
 #include <hardware/blit.h>
 #include <graphics/gfxbase.h>
 
+#include "graphics_intern.h"
+
 /*****************************************************************************
 
     NAME */
