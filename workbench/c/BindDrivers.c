@@ -6,12 +6,6 @@
     Lang: English
 */
 
-#define __DOS_STDLIBDEF__
-#define AROS_AUTOINIT
-
-#define DEBUG 1
-#include <aros/debug.h>
-
 /******************************************************************************
 
 
@@ -63,6 +57,10 @@
 
 ******************************************************************************/
 
+#define __NOLIBBASE__
+
+#include <aros/debug.h>
+
 #include <ctype.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -74,6 +72,9 @@
 #include <proto/dos.h>
 #include <proto/expansion.h>
 
+#if DEBUG
+#define SH_GLOBAL_SYSBASE 1     /* for kprintf() */
+#endif
 #include <aros/shcommands.h>
 
 #define PROD_ANY        ~0
@@ -91,7 +92,7 @@ struct BindDriverNode {
     } bd_Product[0];
 };
 
-static LONG BindDriverAdd(struct List *drivers, CONST_STRPTR name)
+static LONG BindDriverAdd(struct List *drivers, CONST_STRPTR name, APTR IconBase, APTR SysBase)
 {
     struct BindDriverNode *bd;
     struct DiskObject *icon;
@@ -196,7 +197,7 @@ static struct Resident *SearchResident(BPTR seglist)
     return NULL;
 }
 
-static LONG BindDriver(STRPTR name, UWORD mfg, UBYTE prod, UBYTE *prodstr, UBYTE **tooltypes)
+static LONG BindDriver(STRPTR name, UWORD mfg, UBYTE prod, UBYTE *prodstr, UBYTE **tooltypes, APTR ExpansionBase, APTR DOSBase, APTR SysBase)
 {
     BPTR seglist;
     LONG err = RETURN_OK;
@@ -262,6 +263,16 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
     BPTR lock, olddir;
     struct List drivers;
     struct BindDriverNode *node, *tmp;
+    struct Library *ExpansionBase;
+    struct Library *IconBase;
+
+    if (!(ExpansionBase = OpenLibrary("expansion.library", 33)))
+        return RETURN_FAIL;
+
+    if (!(IconBase = OpenLibrary("icon.library", 36))) {
+        CloseLibrary(ExpansionBase);
+        return RETURN_FAIL;
+    }
 
     /* Just dump what devices we have */
     if (SHArg(DEVICES)) {
@@ -279,6 +290,8 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
                      "(unbound)" : node->ln_Name);
         }
         ReleaseConfigBinding();
+        CloseLibrary(IconBase);
+        CloseLibrary(ExpansionBase);
         return RETURN_OK;
     }
 
@@ -287,6 +300,8 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
     lock = Lock(SHArg(DIR), SHARED_LOCK);
     if (lock == BNULL) {
         Printf("BindDrivers: Can't open %s\n", SHArg(DIR));
+        CloseLibrary(IconBase);
+        CloseLibrary(ExpansionBase);
         return IoErr();
     }
 
@@ -305,7 +320,7 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
                 struct ExAllData *ead;
                 
                 for (ead = (APTR)&eadarr[0]; ead; ead=ead->ed_Next)
-                    BindDriverAdd(&drivers, ead->ed_Name);
+                    BindDriverAdd(&drivers, ead->ed_Name, IconBase, SysBase);
             }
         } while (more);
     }
@@ -319,7 +334,7 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
                 Printf("%5ld/%-3ld %s\n", (ULONG)node->bd_Product[i].mfg, (ULONG)node->bd_Product[i].prod, node->bd_Node.ln_Name);
             } else {
                 LONG err;
-                err = BindDriver(node->bd_Node.ln_Name, node->bd_Product[i].mfg, node->bd_Product[i].prod, node->bd_ProductString, node->bd_Icon->do_ToolTypes);
+                err = BindDriver(node->bd_Node.ln_Name, node->bd_Product[i].mfg, node->bd_Product[i].prod, node->bd_ProductString, node->bd_Icon->do_ToolTypes, ExpansionBase, DOSBase, SysBase);
                 if (err != RETURN_OK)
                     break;
             }
@@ -332,6 +347,8 @@ AROS_SHA(STRPTR, ,DIR,/K, "SYS:Expansion"))
     CurrentDir(olddir);
     UnLock(lock);
 
+    CloseLibrary(IconBase);
+    CloseLibrary(ExpansionBase);
     return RETURN_OK;
 
     AROS_SHCOMMAND_EXIT
