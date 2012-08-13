@@ -204,6 +204,15 @@ struct MidiPortData MidiPortData =
 
 /*** Init *********************************************************************/
 
+#ifdef __AROS__
+#include <aros/symbolsets.h>
+
+THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
+THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)
+DEFINESET(INIT)
+DEFINESET(EXIT)
+#endif
+
 VOID
 _Expunge( ULONG dummy );
 
@@ -213,10 +222,15 @@ _Init( struct ExecBase* sysbase )
   struct Library* camdlib;
   
 #ifdef __AROS__
-  APTR SysBase = sysbase;
+  SysBase = sysbase;
 #else
   // sysbase is not valid in the original CAMD anyway
   SysBase = *(struct ExecBase**) 4;
+#endif
+
+#ifdef __AROS__
+  if (!set_call_funcs(SETNAME(INIT), 1, 1))
+      return NULL;
 #endif
 
   EMU10kxBase = OpenLibrary( "DEVS:AHI/emu10kx.audio", VERSION );
@@ -266,6 +280,10 @@ _Expunge( ULONG dummy )
   {
     ReleaseSemaphore( &EMU10kxCamd->Semaphore );
   }
+
+#ifdef __AROS__
+  set_call_funcs(SETNAME(EXIT), -1, 0);
+#endif
 
   CloseLibrary( EMU10kxBase );
 }
