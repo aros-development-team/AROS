@@ -56,38 +56,13 @@ asm(".set __importnoinitexitsets, __noinitexitsets");
 extern void __startup_entries_init(void);
 
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
-#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-	/* On AmigaOS, A6 is *not* SysBase on entry. */
-AROS_UFP2(LONG, __startup_entry,
+__startup AROS_ENTRY(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
-    AROS_UFHA(ULONG,argsize,D0)
-) __attribute__((section(".aros.startup")));
-
-AROS_UFH2(LONG, __startup_entry,
-    AROS_UFHA(char *,argstr,A0),
-    AROS_UFHA(ULONG,argsize,D0)
+    AROS_UFHA(ULONG,argsize,D0),
+    struct ExecBase *, sysbase
 )
 {
     AROS_USERFUNC_INIT
-
-    struct ExecBase *sysbase = *((APTR *)4);
-#else
-AROS_UFP3(LONG, __startup_entry,
-    AROS_UFHA(char *,argstr,A0),
-    AROS_UFHA(ULONG,argsize,D0),
-    AROS_UFHA(struct ExecBase *,sysbase,A6)
-) __attribute__((section(".aros.startup")));
-
-/* TODO: reset and initialize the FPU */
-/* TODO: resident startup */
-AROS_UFH3(LONG, __startup_entry,
-    AROS_UFHA(char *,argstr,A0),
-    AROS_UFHA(ULONG,argsize,D0),
-    AROS_UFHA(struct ExecBase *,sysbase,A6)
-)
-{
-    AROS_USERFUNC_INIT
-#endif
 
     SysBase = sysbase;
 
