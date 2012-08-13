@@ -806,9 +806,10 @@ static void writeinitlib(FILE *out, struct config *cfg)
             "    struct ExecBase *SysBase = sysBase;\n"
             "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
             "#else\n"
-            "    SysBase = sysBase;\n"
+            "    if (!SysBase)\n"
+            "        SysBase = sysBase;\n"
             "#endif\n"
-            "    if (SysBase->LibNode.lib_Version < __aros_libreq_SysBase)\n"
+            "    if (!SysBase || SysBase->LibNode.lib_Version < __aros_libreq_SysBase)\n"
             "        return NULL;\n"
             "\n"
     );
