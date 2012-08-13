@@ -150,9 +150,6 @@ int main(int argc, char *argv[])
     if (incremental == 0)
     	fputs("LONG(0)\n", ldscriptfile);
     fwrite(LDSCRIPT_PART3, sizeof(LDSCRIPT_PART3) - 1, 1, ldscriptfile);
-    if (incremental == 0) {
-        fputs("PROVIDE(SysBase = 0x515BA5E);\n", ldscriptfile);
-    }
     fwrite(LDSCRIPT_PART4, sizeof(LDSCRIPT_PART4) - 1, 1, ldscriptfile);
 
     fclose(ldscriptfile);

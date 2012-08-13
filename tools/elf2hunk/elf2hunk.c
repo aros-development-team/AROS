@@ -38,8 +38,6 @@ typedef uint32_t IPTR;
 typedef int32_t  SIPTR;
 typedef char *   STRPTR;
 
-#define SysBase	0x0004
-
 #if !defined(FALSE)&&!defined(TRUE)
 #define FALSE 0
 #define TRUE (!FALSE)
@@ -489,8 +487,6 @@ static int relocate
     h->reloc = realloc(h->reloc, h->relocs * sizeof(struct hunkreloc));
     struct hunkreloc *hrel = &h->reloc[hrels];
 
-    struct symbol *SysBase_sym = NULL;
-
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol sym;
@@ -549,21 +545,7 @@ static int relocate
                 return 0;
 
             case SHN_ABS:
-	        if (SysBase_sym == NULL)
-		{
-		    if (strncmp(symname, "SysBase", 8) == 0)
-			goto SysBase_yes;
-		    else
-		        goto SysBase_no;
-	        }
-		else
-		if (SysBase_sym == &sym)
-		{
-		    SysBase_yes: hunk = ~0; value = SysBase;
-		}
-		else {
-		    SysBase_no:  hunk = ~0; value = sym.value;
-		}
+		hunk = ~0; value = sym.value;
                 break;
 
   	    default:
