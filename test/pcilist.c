@@ -16,6 +16,8 @@
 #include <proto/oop.h>
 #include <proto/dos.h>
 
+#include <aros/shcommands.h>
+
 struct Library *DOSBase;
 struct Library *OOPBase;
 OOP_AttrBase HiddPCIDeviceAttrBase;
@@ -43,36 +45,36 @@ struct Hook PCIHook = {
     .h_Entry = (APTR)Callback,
 };
 
-int __startup _main(void)
+AROS_SH0(pcilist, 0.0)
 {
+    AROS_SHCOMMAND_INIT
+
     int ret = RETURN_FAIL;
 
-    if ((DOSBase = OpenLibrary("dos.library", 0))) {
+    if ((OOPBase = OpenLibrary("oop.library", 0))) {
+        OOP_Object *pci;
 
-        if ((OOPBase = OpenLibrary("oop.library", 0))) {
-            OOP_Object *pci;
+        if ((pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
+            struct pHidd_PCI_EnumDevices msg;
+            Printf("PCI Devices:\n");
+            HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
 
-            if ((pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL))) {
-                struct pHidd_PCI_EnumDevices msg;
-                Printf("PCI Devices:\n");
-                HiddPCIDeviceAttrBase = OOP_ObtainAttrBase(IID_Hidd_PCIDevice);
+            msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices);
+            msg.callback = &PCIHook;
+            msg.requirements = NULL;
 
-                msg.mID = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_EnumDevices);
-                msg.callback = &PCIHook;
-                msg.requirements = NULL;
-
-                OOP_DoMethod(pci, (OOP_Msg)&msg);
-                OOP_DisposeObject(pci);
-                ret = RETURN_OK;
-            } else {
-                Printf("Can't open pci.hidd\n");
-            }
-            CloseLibrary(OOPBase);
+            OOP_DoMethod(pci, (OOP_Msg)&msg);
+            OOP_DisposeObject(pci);
+            ret = RETURN_OK;
         } else {
-            Printf("Can't open oop.library\n");
+            Printf("Can't open pci.hidd\n");
         }
-        CloseLibrary(DOSBase);
+        CloseLibrary(OOPBase);
+    } else {
+        Printf("Can't open oop.library\n");
     }
 
     return ret;
+
+    AROS_SHCOMMAND_EXIT
 }

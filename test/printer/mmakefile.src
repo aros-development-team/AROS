@@ -10,6 +10,7 @@ TESTFILES := \
     printertxt
 
 EXEDIR := $(AROS_TESTS)/printer
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
 #MM- test: test-printer
 
