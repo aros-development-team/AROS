@@ -85,7 +85,6 @@ static AROS_UFH5(APTR, myRawDoFmt,
 /*************  DosLibrary Patches ******************/
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
-#define NO_SYSBASE_REMAP
 
 /* Really stupid way to deal with this,
  * but what we're going to do is make our
