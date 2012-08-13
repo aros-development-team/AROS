@@ -76,8 +76,16 @@ void writemakefile(struct config *cfg)
                     , in->interfacename
             );
     }
-
     fprintf(out, "\n");
+
+    fprintf(out, "%s_CFLAGS  +=", cfg->modulename);
+    fprintf(out, "\n");
+
+    fprintf(out, "%s_DFLAGS  +=", cfg->modulename);
+    fprintf(out, "\n");
+
+    fprintf(out, "%s_LDFLAGS +=", cfg->modulename);
+    fprintf(out,"\n");
 
     if (ferror(out))
     {
