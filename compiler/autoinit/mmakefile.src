@@ -23,8 +23,7 @@ STARTUPFILES := \
         programentries
 
 MISCFILES := \
-	detach \
-	initkernelbases
+	detach
 
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(STARTUPFILES) $(MISCFILES)
 
