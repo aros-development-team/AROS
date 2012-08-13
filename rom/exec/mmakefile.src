@@ -6,6 +6,8 @@ include $(TOP)/config/make.cfg
 #MM     kernel-exec-includes-$(ARCH)-$(CPU) \
 #MM     includes-$(ARCH)-$(CPU)
 
+#MM- core-linklibs : linklibs-exec
+
 ALL_FUNCTIONS := \
 	abortio adddevice addhead addintserver addlibrary addmemhandler \
 	addmemlist addport addresource addsemaphore addtail addtask alert alertstrings \
@@ -43,12 +45,8 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
 
-#MM- core-linklibs : linklibs-exec
-
-exec_LINKLIBFILES += exec_autoinit
-
 %build_module mmake=kernel-exec \
   modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) \
-  files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)"
+  linklibfiles=exec_autoinit files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)"
 
 %common
