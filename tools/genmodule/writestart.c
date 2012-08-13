@@ -431,7 +431,12 @@ static void writedecl(FILE *out, struct config *cfg)
 static void writedeclsets(FILE *out, struct config *cfg)
 {
     fprintf(out,
-	    "THIS_PROGRAM_HANDLES_SYMBOLSETS\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(CTORS)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXPUNGELIB)\n"
 	    "DECLARESET(INIT)\n"
 	    "DECLARESET(EXIT)\n"
 	    "DECLARESET(CTORS)\n"
@@ -439,22 +444,40 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "DECLARESET(INITLIB)\n"
 	    "DECLARESET(EXPUNGELIB)\n"
     );
+    if (!(cfg->options & OPTION_NOAUTOLIB))
+    {
+        fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)\n"
+	    "DECLARESET(LIBS)\n"
+	);
+	if (cfg->options & OPTION_DUPBASE)
+            fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(RELLIBS)\n"
+	    "DECLARESET(RELLIBS)\n"
+            );
+    }
     if (!(cfg->options & OPTION_NOOPENCLOSE))
         fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(OPENLIB)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(CLOSELIB)\n"
 	    "DECLARESET(OPENLIB)\n"
 	    "DECLARESET(CLOSELIB)\n"
 	);
     if (cfg->modtype == DEVICE)
         fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(OPENDEV)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(CLOSEDEV)\n"
 	    "DECLARESET(OPENDEV)\n"
 	    "DECLARESET(CLOSEDEV)\n"
 	);
     if (cfg->classlist != NULL)
 	fprintf(out,
+                "THIS_PROGRAM_HANDLES_SYMBOLSET(CLASSESINIT)\n"
+                "THIS_PROGRAM_HANDLES_SYMBOLSET(CLASSESEXPUNGE)\n"
 		"DECLARESET(CLASSESINIT)\n"
 		"DECLARESET(CLASSESEXPUNGE)\n"
-		"#define ADD2INITCLASSES(symbol, pri) ADD2SET(symbol, classesinit, pri)\n"
-		"#define ADD2EXPUNGECLASSES(symbol, pri) ADD2SET(symbol, classesexpunge, pri)\n"
+		"#define ADD2INITCLASSES(symbol, pri) ADD2SET(symbol, CLASSESINIT, pri)\n"
+		"#define ADD2EXPUNGECLASSES(symbol, pri) ADD2SET(symbol, CLASSESEXPUNGE, pri)\n"
 	);
     fprintf(out, "\n");
 }

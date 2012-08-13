@@ -39,4 +39,4 @@ static void __arosc_startup(void)
     D(bug("[__arosc_startup] Leave\n"));
 }
 
-ADD2SET(__arosc_startup, program_entries, 0);
+ADD2SET(__arosc_startup, PROGRAM_ENTRIES, 0);

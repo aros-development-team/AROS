@@ -398,12 +398,26 @@ __asm( ".globl HookEntry;HookEntry=_HookEntry" );
 ** Library init ***************************************************************
 ******************************************************************************/
 
+#ifdef __AROS__
+#include <aros/symbolsets.h>
+
+THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
+THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)
+DEFINESET(INIT)
+DEFINESET(EXIT)
+#endif
+
 struct DriverBase*
 _LibInit( struct DriverBase* AHIsubBase,
 	  BPTR               seglist,
 	  struct ExecBase*   sysbase )
 {
   SysBase = sysbase;
+
+#ifdef __AROS__
+  if (!set_call_funcs(SETNAME(INIT), 1, 1))
+      return NULL;
+#endif
 
 #ifdef __AMIGAOS4__
   IExec = (struct ExecIFace*) SysBase->MainInterface; 
@@ -506,6 +520,10 @@ _LibExpunge( struct DriverBase* AHIsubBase )
     /* Close libraries */
     CloseLibrary(&IntuitionBase->LibNode );
     CloseLibrary(&UtilityBase->ub_LibNode );
+
+#ifdef __AROS__
+    set_call_funcs(SETNAME(EXIT), -1, 0);
+#endif
 
     DeleteLibrary(&AHIsubBase->library);
   }

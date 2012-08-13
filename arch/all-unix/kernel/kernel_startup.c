@@ -41,7 +41,7 @@
 /* Global HostIFace is needed for krnPutC() to work before KernelBase is set up */
 struct HostInterface *HostIFace;
 
-/* THIS_PROGRAM_HANDLES_SYMBOLSETS is declared in kernel_init.c. */
+THIS_PROGRAM_HANDLES_SYMBOLSET(STARTUP)
 DEFINESET(STARTUP);
 
 /*

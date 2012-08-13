@@ -2,7 +2,7 @@
     Copyright © 2009, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: autoinit library - functions for handling the program_entries symbolset
+    Desc: autoinit library - functions for handling the PROGRAM_ENTRIES symbolset
 */
 #include <aros/symbolsets.h>
 

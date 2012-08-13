@@ -61,7 +61,7 @@ void __clear_bss(const struct KernelBSS *bss)
 
 extern const APTR GM_UNIQUENAME(FuncTable)[];
 
-THIS_PROGRAM_HANDLES_SYMBOLSETS
+THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)
 DEFINESET(INITLIB)
 
 /*
