@@ -13,7 +13,7 @@
 
 #define PIPE_NAME "PIPE "
 
-static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen, APTR DOSBase)
+static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen)
 {
    LONG c, n;
    BOOL quoted = FALSE;
@@ -39,7 +39,7 @@ static BOOL checkPipe(STRPTR pchar, STRPTR mchar, STRPTR in, LONG inlen, APTR DO
     return FALSE;
 }
 
-LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WORD *moreLeft, APTR DOSBase)
+LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WORD *moreLeft)
 {
     BPTR fh = cli->cli_CurrentInput;
     STRPTR buf = out->buf; /* pre-allocated by caller */
@@ -100,10 +100,10 @@ LONG readLine(ShellState *ss, struct CommandLineInterface *cli, Buffer *out, WOR
     }
 
     buf[j] = '\0';
-    bufferAppend(buf, j, out);
+    bufferAppend(buf, j, out, SysBase);
 
-    if (checkPipe(pchar, mchar, buf, j, DOSBase))
-        bufferInsert(PIPE_NAME, strlen(PIPE_NAME), out);
+    if (checkPipe(pchar, mchar, buf, j))
+        bufferInsert(PIPE_NAME, strlen(PIPE_NAME), out, SysBase);
 
     *moreLeft = (c != ENDSTREAMCH);
 

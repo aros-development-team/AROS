@@ -22,7 +22,7 @@
 /* BackTicks handling... like V45, we allow several embedded
  * commands, while V40 only allows one per line.
  */
-LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase)
+LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 {
     Buffer embedIn = {0}, embedOut = {0}; /* TODO pre-alloc */
     LONG c = 0, error = 0, n = in->len, p = 0;
@@ -36,17 +36,17 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APT
 	if (p == '*')
 	{
 	    c = 0;
-	    bufferCopy(in, &embedIn, 1);
+	    bufferCopy(in, &embedIn, 1, SysBase);
 	}
 	else if (c == '`')
 	    break;
 	else
-	    bufferCopy(in, &embedIn, 1);
+	    bufferCopy(in, &embedIn, 1, SysBase);
     }
 
     if (c != '`')
     {
-	bufferCopy(&embedIn, out, embedIn.len);
+	bufferCopy(&embedIn, out, embedIn.len, SysBase);
 	goto freebufs;
     }
 
@@ -82,7 +82,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APT
     /* Embedded command isn't echo'ed, but its result will be integrated
        in final command line, which will be echo'ed if the var is set. */
     D(bug("[Shell] embedded command: %s\n", embedIn.buf));
-    if ((error = checkLine(&ess, &embedIn, &embedOut, FALSE, DOSBase)) == 0)
+    if ((error = checkLine(&ess, &embedIn, &embedOut, FALSE)) == 0)
     {
 	LONG i, len = -1, size;
 
@@ -100,7 +100,7 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APT
 		if (size <= 0 && buf[i] == '\n')
 		    --len;
 
-		bufferAppend(buf, len, out);
+		bufferAppend(buf, len, out, SysBase);
 	    }
 	}
 
@@ -109,11 +109,11 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APT
     }
 
 cleanup:
-    Redirection_release(&ess, DOSBase);
+    Redirection_release(&ess);
     /* TODO: delete generated file */
 freebufs:
-    bufferFree(&embedIn);
-    bufferFree(&embedOut);
+    bufferFree(&embedIn, SysBase);
+    bufferFree(&embedOut, SysBase);
 
     D(bug("[Shell] embedded command done, error = %d\n", error));
     return error;

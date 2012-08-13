@@ -7,7 +7,7 @@
 #include "Shell.h"
 
 /* subsitute one script argument and leaves the input after .ket */
-LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSBase)
+LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
 {
     STRPTR s = in->buf + in->cur;
     STRPTR p = s;
@@ -19,13 +19,13 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
     {
         TEXT buf[16];
         LONG len = l2a(ss->cliNumber, buf);
-        bufferAppend(buf, len, out);
+        bufferAppend(buf, len, out, SysBase);
         in->cur += 4;
         return 0;
     }
 
     if (!*quoted && *p == '<' && *q == '>') /* Run <>NIL: ... */
-        return convertRedir(ss, in, out, DOSBase);
+        return convertRedir(ss, in, out);
 
     for (; *q != ss->ket && *q != ss->dollar && *q != '\0'; ++q)
     {
@@ -35,9 +35,9 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
             case '"':
             case ' ':
                 if (*p == '<') /* input redirection */
-                    return convertRedir(ss, in, out, DOSBase);
+                    return convertRedir(ss, in, out);
 
-                bufferAppend(s, q - s, out);
+                bufferAppend(s, q - s, out, SysBase);
                 return 0;
             }
     }
@@ -74,10 +74,10 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
                 for (j = 0; (arg = m[j]); ++j)
                 {
                     if (j > 0)
-                        bufferAppend(" ", 1, out);
+                        bufferAppend(" ", 1, out, SysBase);
 
                     len = cliLen(arg);
-                    bufferAppend(arg, len, out);
+                    bufferAppend(arg, len, out, SysBase);
                 }
             }
             else
@@ -98,7 +98,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
         }
 
         if (arg)
-            bufferAppend(arg, len, out);
+            bufferAppend(arg, len, out, SysBase);
         break;
     }
 
@@ -108,7 +108,7 @@ LONG convertArg(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted, APTR DOSB
         in->cur = q - in->buf;
     }
     else
-        bufferCopy(in, out, 1);
+        bufferCopy(in, out, 1, SysBase);
 
     return 0;
 }

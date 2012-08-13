@@ -78,6 +78,12 @@
 
 #include "Shell.h"
 
+/* Prevent inclusion of the ErrorOutput() linklib
+ * routine from -lamiga, so that we don't need a global
+ * SysBase
+ */
+#define ErrorOutput()  (((struct Process *)FindTask(NULL))->pr_CES)
+
 #define IS_SYSTEM ((ss->flags & (FNF_VALIDFLAGS | FNF_SYSTEM)) == (FNF_VALIDFLAGS | FNF_SYSTEM))
 #define IS_SCRIPT (cli->cli_CurrentInput != cli->cli_StandardInput)
 
@@ -98,86 +104,8 @@ BOOL setInteractive(struct CommandLineInterface *cli, ShellState *ss)
     return cli->cli_Interactive;
 }
 
-__startup AROS_CLI(ShellStart)
-{
-    LONG error;
-    ShellState *ss;
-    APTR DOSBase;
-    struct Process *me = (struct Process *)FindTask(NULL);
-    struct CommandLineInterface *cli;
-
-    DOSBase = OpenLibrary("dos.library",36);
-    if (!DOSBase)
-        return RETURN_FAIL;
-
-    D(bug("[Shell] executing\n"));
-    ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
-    if (!ss) {
-    	SetIoErr(ERROR_NO_FREE_STORE);
-    	CloseLibrary(DOSBase);
-    	return RETURN_FAIL;
-    }
-
-    /* Cache the CLI flags, passed in by the AROS_CLI() macro */
-    ss->flags = AROS_CLI_Flags;
-
-    /* Select the input and output streams.
-     * We don't use CurrentInput here, as it may
-     * contain our script input.
-     *
-     * Note that if CurrentInput contained, for example:
-     * ECHO ?
-     * DIR
-     *
-     * The behaviour would be that ECHO would put its
-     * ReadArgs query onto StandardOutput, and expects
-     * its input on StandardInput, and then execute DIR.
-     *
-     * This is AOS compatible behavior. It would be
-     * incorrect to assume that ECHO would print "DIR" on
-     * StandardOutput
-     */
-    cli = Cli();
-
-    SelectInput(cli->cli_StandardInput);
-    SelectOutput(cli->cli_StandardOutput);
-    setPath(BNULL, DOSBase);
-
-    ss->cliNumber = me->pr_TaskNum;
-    cliVarNum("process", ss->cliNumber, DOSBase);
-
-    initDefaultInterpreterState(ss);
-
-    if (AROS_CLI_Type == CLI_RUN) {
-        FPrintf(cli->cli_StandardError, "[CLI %ld]\n", me->pr_TaskNum);
-    }
-    if (AROS_CLI_Type == CLI_NEWCLI) {
-        FPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", me->pr_TaskNum);
-    }
-
-    error = interact(ss, DOSBase);
-
-    D(bug("Shell %d: exiting, error = %ld\n", ss->cliNumber, error));
-
-    if (ss->arg_rd)
-        FreeDosObject(DOS_RDARGS, ss->arg_rd);
-
-    FreeMem(ss, sizeof(ShellState));
-
-    /* Make sure Input(), Output() and pr_CES don't
-     * point to any dangling files.
-     */
-    SelectInput(BNULL);
-    SelectOutput(BNULL);
-    me->pr_CES = BNULL;
-
-    CloseLibrary(DOSBase);
-
-    return error ? RETURN_FAIL : RETURN_OK;
-}
-
 /* First we execute the script, then we interact with the user */
-LONG interact(ShellState *ss, APTR DOSBase)
+LONG interact(ShellState *ss)
 {
     struct CommandLineInterface *cli = Cli();
     Buffer in = {0}, out = {0};
@@ -187,23 +115,23 @@ LONG interact(ShellState *ss, APTR DOSBase)
     setInteractive(cli, ss);
 
     /* pre-allocate input buffer */
-    if ((error = bufferAppend("?", 1, &in))) /* FIXME drop when readLine ok */
+    if ((error = bufferAppend("?", 1, &in, SysBase))) /* FIXME drop when readLine ok */
 	return error;
 
     do {
 	if ((error = Redirection_init(ss)) == 0)
 	{
-	    cliPrompt(ss, DOSBase);
+	    cliPrompt(ss);
 
 	    bufferReset(&in); /* reuse allocated buffers */
 	    bufferReset(&out);
 
 	    D(bug("Shell %d: Reading in a line of input...\n", ss->cliNumber));
-	    error = readLine(ss, cli, &in, &moreLeft, DOSBase);
+	    error = readLine(ss, cli, &in, &moreLeft);
 	    D(bug("Shell %d: moreLeft=%ld, error=%ld, Line is: %ld bytes (%s)\n", ss->cliNumber, moreLeft, error, in.len, in.buf));
 
 	    if (error == 0 && in.len > 0)
-		error = checkLine(ss, &in, &out, TRUE, DOSBase);
+		error = checkLine(ss, &in, &out, TRUE);
 
             /* The command may have modified cli_Background.
              * C:Execute does that.
@@ -226,7 +154,7 @@ LONG interact(ShellState *ss, APTR DOSBase)
 		}
 	    }
 
-	    Redirection_release(ss, DOSBase);
+	    Redirection_release(ss);
 	}
 
 	if (moreLeft)
@@ -273,20 +201,21 @@ LONG interact(ShellState *ss, APTR DOSBase)
         }
     } while (moreLeft);
 
-    bufferFree(&in);
-    bufferFree(&out);
+    bufferFree(&in, SysBase);
+    bufferFree(&out, SysBase);
 
     return error;
 }
 
+
 /* Take care of one command line */
-LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
+LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo)
 {
     struct CommandLineInterface *cli = Cli();
     BOOL haveCommand = FALSE;
     LONG result;
 
-    result = convertLine(ss, in, out, &haveCommand, DOSBase);
+    result = convertLine(ss, in, out, &haveCommand);
 
     if (result == 0)
     {
@@ -296,10 +225,10 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 	    goto exit;
 
 	if (echo)
-	    cliEcho(ss, out->buf, DOSBase);
+	    cliEcho(ss, out->buf);
 
 	/* OK, we've got a command. Let's execute it! */
-	result = executeLine(ss, out->buf, DOSBase);
+	result = executeLine(ss, out->buf);
     }
 
     /* If the command changed the cli's definition
@@ -323,8 +252,8 @@ LONG checkLine(ShellState *ss, Buffer *in, Buffer *out, BOOL echo, APTR DOSBase)
 exit:
     /* FIXME error handling is bullshit */
 
-    cliVarNum("RC", cli->cli_ReturnCode, DOSBase);
-    cliVarNum("Result2", cli->cli_Result2, DOSBase);
+    cliVarNum(ss, "RC", cli->cli_ReturnCode);
+    cliVarNum(ss, "Result2", cli->cli_Result2);
 
     if (cli->cli_Interactive)
     {
@@ -346,8 +275,7 @@ exit:
  * Output:   --
  */
 static void unloadCommand(ShellState *ss, BPTR commandSeg,
-			  BOOL homeDirChanged, BOOL residentCommand,
-			  APTR DOSBase)
+			  BOOL homeDirChanged, BOOL residentCommand)
 {
     struct CommandLineInterface *cli = Cli();
 
@@ -390,8 +318,7 @@ static void unloadCommand(ShellState *ss, BPTR commandSeg,
  *                     error
  */
 static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
-			BOOL *homeDirChanged, BOOL *residentCommand,
-			APTR DOSBase)
+			BOOL *homeDirChanged, BOOL *residentCommand)
 {
     struct CommandLineInterface *cli = Cli();
     BPTR oldCurDir;
@@ -515,7 +442,7 @@ static BPTR loadCommand(ShellState *ss, STRPTR commandName, BPTR *scriptLock,
 }
 
 /* Execute one command */
-LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
+LONG executeLine(ShellState *ss, STRPTR commandArgs)
 {
     struct CommandLineInterface *cli = Cli();
     STRPTR command = ss->command + 2;
@@ -531,7 +458,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
     	return ERROR_NO_FREE_STORE;
 
     module = loadCommand(ss, command, &scriptLock,
-			 &homeDirChanged, &residentCommand, DOSBase);
+			 &homeDirChanged, &residentCommand);
 
     /* Set command name even if we couldn't load the command to be able to
        report errors correctly */
@@ -620,7 +547,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 
 	D(bug("[Shell] returned %ld: %s\n", cli->cli_ReturnCode, command));
 	pr->pr_Task.tc_Node.ln_Name = oldtaskname;
-	unloadCommand(ss, module, homeDirChanged, residentCommand, DOSBase);
+	unloadCommand(ss, module, homeDirChanged, residentCommand);
 
 	error = (cli->cli_ReturnCode == RETURN_OK) ? 0 : IoErr();
     }
@@ -645,7 +572,7 @@ LONG executeLine(ShellState *ss, STRPTR commandArgs, APTR DOSBase)
 		    {
 			if (fib->fib_DirEntryType > 0)
 			{
-			    setPath(lock, DOSBase);
+			    setPath(ss, lock);
 			    lock = CurrentDir(lock);
 			}
 			else
@@ -667,7 +594,7 @@ errexit:
     return error;
 }
 
-void setPath(BPTR lock, APTR DOSBase)
+void setPath(ShellState *ss, BPTR lock)
 {
     BPTR dir;
     STRPTR buf;
@@ -698,3 +625,88 @@ void setPath(BPTR lock, APTR DOSBase)
     if (lock == BNULL)
 	CurrentDir(dir);
 }
+
+#undef SysBase
+#undef DOSBase
+
+__startup AROS_CLI(ShellStart)
+{
+    LONG error;
+    ShellState *ss;
+    APTR DOSBase;
+    struct Process *me = (struct Process *)FindTask(NULL);
+    struct CommandLineInterface *cli;
+
+    DOSBase = OpenLibrary("dos.library",36);
+    if (!DOSBase)
+        return RETURN_FAIL;
+
+    D(bug("[Shell] executing\n"));
+    ss = AllocMem(sizeof(ShellState), MEMF_CLEAR);
+    if (!ss) {
+    	SetIoErr(ERROR_NO_FREE_STORE);
+    	CloseLibrary(DOSBase);
+    	return RETURN_FAIL;
+    }
+
+    ss->ss_DOSBase = DOSBase;
+    ss->ss_SysBase = SysBase;
+
+    /* Cache the CLI flags, passed in by the AROS_CLI() macro */
+    ss->flags = AROS_CLI_Flags;
+
+    /* Select the input and output streams.
+     * We don't use CurrentInput here, as it may
+     * contain our script input.
+     *
+     * Note that if CurrentInput contained, for example:
+     * ECHO ?
+     * DIR
+     *
+     * The behaviour would be that ECHO would put its
+     * ReadArgs query onto StandardOutput, and expects
+     * its input on StandardInput, and then execute DIR.
+     *
+     * This is AOS compatible behavior. It would be
+     * incorrect to assume that ECHO would print "DIR" on
+     * StandardOutput
+     */
+    cli = Cli();
+
+    SelectInput(cli->cli_StandardInput);
+    SelectOutput(cli->cli_StandardOutput);
+    setPath(ss, BNULL);
+
+    ss->cliNumber = me->pr_TaskNum;
+    cliVarNum(ss, "process", ss->cliNumber);
+
+    initDefaultInterpreterState(ss);
+
+    if (AROS_CLI_Type == CLI_RUN) {
+        FPrintf(cli->cli_StandardError, "[CLI %ld]\n", me->pr_TaskNum);
+    }
+    if (AROS_CLI_Type == CLI_NEWCLI) {
+        FPrintf(cli->cli_StandardOutput, "New Shell process %ld\n", me->pr_TaskNum);
+    }
+
+    error = interact(ss);
+
+    D(bug("Shell %d: exiting, error = %ld\n", ss->cliNumber, error));
+
+    if (ss->arg_rd)
+        FreeDosObject(DOS_RDARGS, ss->arg_rd);
+
+    FreeMem(ss, sizeof(ShellState));
+
+    /* Make sure Input(), Output() and pr_CES don't
+     * point to any dangling files.
+     */
+    SelectInput(BNULL);
+    SelectOutput(BNULL);
+    me->pr_CES = BNULL;
+
+    CloseLibrary(DOSBase);
+
+    return error ? RETURN_FAIL : RETURN_OK;
+}
+

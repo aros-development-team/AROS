@@ -17,13 +17,13 @@ typedef struct {
     ULONG  mem; /* allocated memory */
 } Buffer;
 
-LONG bufferAppend(STRPTR str, ULONG size, Buffer *out);
-LONG bufferInsert(STRPTR str, ULONG size, Buffer *out);
+LONG bufferAppend(STRPTR str, ULONG size, Buffer *out, APTR SysBase);
+LONG bufferInsert(STRPTR str, ULONG size, Buffer *out, APTR SysBase);
 
 /* read 'size' chars from 'in' and append them to 'out' */
-LONG bufferCopy(Buffer *in, Buffer *out, ULONG size);
+LONG bufferCopy(Buffer *in, Buffer *out, ULONG size, APTR SysBase);
 
-void bufferFree(Buffer *b);
+void bufferFree(Buffer *b, APTR SysBase);
 
 LONG bufferReadItem(STRPTR buf, ULONG size, Buffer *in, APTR DOSBase);
 
