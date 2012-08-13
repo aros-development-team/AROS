@@ -55,7 +55,6 @@ struct BootStruct
 #endif
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
-#define NO_SYSBASE_REMAP
 
 #if DEBUG
 #define AROS_DEBUG_H
@@ -79,6 +78,7 @@ static inline void bug(const char *fmt, ...)
 
 #include <loadseg.h>
 
+struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 struct Library *ExpansionBase;
 
@@ -1325,10 +1325,11 @@ static struct BootStruct *AllocBootStruct(UBYTE *cmdline)
 __startup static AROS_ENTRY(int, startup,
 	  AROS_UFHA(char *, argstr, A0),
 	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, SysBase)
+	  struct ExecBase *, sysBase)
 {
     AROS_USERFUNC_INIT
 
+    SysBase = sysBase;
     APTR lowmem;
 
     /* See if we're already running on AROS.

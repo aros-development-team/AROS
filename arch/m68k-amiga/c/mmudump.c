@@ -15,7 +15,6 @@
 #include <stdio.h>
 
 #define PROTO_KERNEL_H      /* Don't pick up AROS kernel hooks */
-#define NO_SYSBASE_REMAP
 
 #define MMU030 1
 #define MMU040 2
