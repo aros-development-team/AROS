@@ -59,7 +59,8 @@ FILES := \
     Which \
     Delay
 
-PURE_FILES := \
+# Files that use AROS_SHx() instead of main()
+SH_FILES := \
     AROSMonDrvs \
     Assign \
     Beep \
@@ -78,8 +79,8 @@ USER_CFLAGS     := -DADATE="\"$(shell date "+%d.%m.%Y")\""
 #MM- workbench : workbench-c
 #MM- workbench-quick : workbench-c-quick
 
-#MM workbench-c : includes linklibs workbench-c-pure workbench-c-requeststring workbench-libs-uuid
-#MM workbench-c-quick : workbench-c-pure-quick workbench-c-requeststring-quick
+#MM workbench-c : includes linklibs workbench-c-sh workbench-c-requeststring workbench-libs-uuid
+#MM workbench-c-quick : workbench-c-sh-quick workbench-c-requeststring-quick
 
 USER_LDFLAGS := -noarosc
 
@@ -87,8 +88,8 @@ USER_LDFLAGS := -noarosc
     files=$(FILES) targetdir=$(AROS_C) \
     uselibs="uuid debug arossupport"
 
-%build_progs mmake=workbench-c-pure \
-    files=$(PURE_FILES) targetdir=$(AROS_C) \
+%build_progs mmake=workbench-c-sh \
+    files=$(SH_FILES) targetdir=$(AROS_C) \
     usestartup=no
 
 USER_LDFLAGS := 
