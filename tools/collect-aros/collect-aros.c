@@ -139,8 +139,14 @@ int main(int argc, char *argv[])
     collect_libs(tempoutput, &liblist);
     collect_sets(tempoutput, &setlist);
 
-    if (setlist != NULL)
-        fprintf(ldscriptfile, "EXTERN(__this_program_requires_symbol_sets_handling)\n");
+    if (setlist) {
+        struct setnode *n;
+        for (n = setlist; n; n = n->next) {
+            if (strncmp(n->secname,".aros.set.",10) == 0) {
+               fprintf(ldscriptfile, "EXTERN(__%s__symbol_set_handler_missing)\n", &n->secname[10]);
+            }
+        }
+    }
 
     fwrite(LDSCRIPT_PART1, sizeof(LDSCRIPT_PART1) - 1, 1, ldscriptfile);
     emit_sets(setlist, ldscriptfile);

@@ -19,9 +19,9 @@
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 
-THIS_PROGRAM_HANDLES_SYMBOLSETS
-
 struct DosLibrary *DOSBase;
+
+THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
 
 extern int main(int argc, char ** argv);
 int (*__main_function_ptr)(int argc, char ** argv) __attribute__((__weak__)) = main;
@@ -102,7 +102,7 @@ static void __startup_main(void)
     D(bug("Leaving __startup_main\n"));
 }
 
-ADD2SET(__startup_main, program_entries, 127);
+ADD2SET(__startup_main, PROGRAM_ENTRIES, 127);
 
 
 /*

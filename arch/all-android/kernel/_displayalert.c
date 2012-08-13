@@ -97,4 +97,4 @@ static int Alert_Init(void *libc)
 }
 
 /* kernel.resource's STARTUP set is executed on very early startup */
-ADD2SET(Alert_Init, startup, 0);
+ADD2SET(Alert_Init, STARTUP, 0);

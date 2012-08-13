@@ -60,4 +60,4 @@ static void __startup_fromwb(void)
     D(bug("Leaving __startup_fromwb\n"));
 }
 
-ADD2SET(__startup_fromwb, program_entries, -50);
+ADD2SET(__startup_fromwb, PROGRAM_ENTRIES, -50);

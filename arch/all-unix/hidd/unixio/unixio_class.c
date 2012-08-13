@@ -1091,4 +1091,4 @@ static int UXIO_Dispose(struct unixio_base *LIBBASE)
 
 ADD2INITLIB(UXIO_Init, 0)
 ADD2EXPUNGELIB(UXIO_Cleanup, 0)
-ADD2SET(UXIO_Dispose, classesexpunge, 0)
+ADD2SET(UXIO_Dispose, CLASSESEXPUNGE, 0)

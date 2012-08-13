@@ -64,4 +64,4 @@ static int Alert_Init(void *libc)
     return FALSE;
 }
 
-ADD2SET(Alert_Init, startup, 0);
+ADD2SET(Alert_Init, STARTUP, 0);

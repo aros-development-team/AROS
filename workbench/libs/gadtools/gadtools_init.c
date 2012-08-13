@@ -122,7 +122,7 @@ static int Expunge(LIBBASETYPEPTR LIBBASE)
 /****************************************************************************************/
 
 DECLARESET(CLASSESINIT);
-ADD2SET(InitRootClass, classesinit, -20);
+ADD2SET(InitRootClass, CLASSESINIT, -20);
 
 ADD2INITLIB(Init, 0);
 ADD2OPENLIB(Open, 0);

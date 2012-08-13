@@ -36,6 +36,11 @@ extern void *__eh_frame_start;
 void __attribute__((weak)) __register_frame(void *begin) {}
 void __attribute__((weak)) __deregister_frame(void *begin) {}
 
+THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)
+THIS_PROGRAM_HANDLES_SYMBOLSET(CTORS)
+THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)
+THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
+THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)
 DEFINESET(CTORS);
 DEFINESET(DTORS);
 DEFINESET(INIT);
@@ -67,4 +72,4 @@ static void __startup_initexit(void)
     D(bug("Leaving __startup_initexit\n"));
 }
 
-ADD2SET(__startup_initexit, program_entries, -20);
+ADD2SET(__startup_initexit, PROGRAM_ENTRIES, -20);

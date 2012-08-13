@@ -77,7 +77,7 @@ const struct __attribute__((section(".text"))) Resident Exec_resident =
         exec_main               /* Library initializer (for exec this value is irrelevant since we've jumped there at the begining to bring the system up */
 };
 
-THIS_PROGRAM_HANDLES_SYMBOLSETS
+THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)
 DEFINESET(INITLIB)
 
 void exec_main(struct TagItem *msg, void *entry)

@@ -16,7 +16,7 @@
 #include <aros/symbolsets.h>
 #include <aros/shcommands.h>
 
-THIS_PROGRAM_HANDLES_SYMBOLSETS
+THIS_PROGRAM_HANDLES_SYMBOLSET(SHCOMMANDS)
 DEFINESET(SHCOMMANDS)
 
 #include LC_LIBDEFS_FILE

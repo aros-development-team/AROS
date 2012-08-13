@@ -130,7 +130,7 @@ static void __startup_detach(void)
     D(bug("Leaving __startup_detach\n"));
 }
 
-ADD2SET(__startup_detach, program_entries, -100);
+ADD2SET(__startup_detach, PROGRAM_ENTRIES, -100);
 
 void __Detach(LONG retval);
 

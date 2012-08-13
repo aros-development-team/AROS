@@ -54,8 +54,8 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
     The functions have to be invoked respectively right before the program enters
     the main() function and right after the program exits the main() function.
 */
-#define ADD2CTORS(symbol, pri) ADD2SET(symbol, ctors, pri)
-#define ADD2DTORS(symbol, pri) ADD2SET(symbol, dtors, pri)
+#define ADD2CTORS(symbol, pri) ADD2SET(symbol, CTORS, pri)
+#define ADD2DTORS(symbol, pri) ADD2SET(symbol, DTORS, pri)
 
 /*
     init and exit sets are like the ctors and dtors sets, except that they take
@@ -68,8 +68,8 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
     it holds an error code.
 */
 
-#define ADD2INIT(symbol, pri) ADD2SET(symbol, init, pri)
-#define ADD2EXIT(symbol, pri) ADD2SET(symbol, exit, pri)
+#define ADD2INIT(symbol, pri) ADD2SET(symbol, INIT, pri)
+#define ADD2EXIT(symbol, pri) ADD2SET(symbol, EXIT, pri)
 
 /*
     initlib, expungelib, openlib, closelib sets are similar to the init and exit
@@ -90,12 +90,12 @@ const void * const SETNAME(set)[] __attribute__((weak))={0,0};
     finally the initlib set.
 */
 
-#define ADD2INITLIB(symbol, pri)    ADD2SET(symbol, initlib, pri)
-#define ADD2EXPUNGELIB(symbol, pri) ADD2SET(symbol, expungelib, pri)
-#define ADD2OPENLIB(symbol, pri)    ADD2SET(symbol, openlib, pri)
-#define ADD2CLOSELIB(symbol, pri)   ADD2SET(symbol, closelib, pri)
-#define ADD2OPENDEV(symbol, pri)    ADD2SET(symbol, opendev, pri)
-#define ADD2CLOSEDEV(symbol, pri)   ADD2SET(symbol, closedev, pri)
+#define ADD2INITLIB(symbol, pri)    ADD2SET(symbol, INITLIB, pri)
+#define ADD2EXPUNGELIB(symbol, pri) ADD2SET(symbol, EXPUNGELIB, pri)
+#define ADD2OPENLIB(symbol, pri)    ADD2SET(symbol, OPENLIB, pri)
+#define ADD2CLOSELIB(symbol, pri)   ADD2SET(symbol, CLOSELIB, pri)
+#define ADD2OPENDEV(symbol, pri)    ADD2SET(symbol, OPENDEV, pri)
+#define ADD2CLOSEDEV(symbol, pri)   ADD2SET(symbol, CLOSEDEV, pri)
 
 /* this macro generates the necessary symbols to open and close automatically
    a library. An error message will be shown if the library cannot be opened.  */
@@ -109,7 +109,7 @@ static const struct libraryset const __aros_libset_##bname =         \
 {                                                              \
      name, &__aros_libreq_##bname, (void *)&bname              \
 };                                                             \
-ADD2SET(__aros_libset_##bname, libs, 0) 
+ADD2SET(__aros_libset_##bname, LIBS, 0) 
 
 /* NOTE: Users of this symbolset will need to provide:
  * 
@@ -127,7 +127,7 @@ static const struct rellibraryset const __aros_rellibset_##bname =   \
 {                                                              \
      name, &__aros_libreq_##bname, &bname##_offset             \
 };                                                             \
-ADD2SET(__aros_rellibset_##bname, rellibs, 0) 
+ADD2SET(__aros_rellibset_##bname, RELLIBS, 0) 
 
 
 #define ADD2LIBS(name, ver, btype, bname) \
@@ -164,9 +164,9 @@ for                                                                          \
    or else your program won't link when symbolsets are used.
    This is so to ensure that symbolsets are properly handled and thus things get
    properly initialized. */
-#define THIS_PROGRAM_HANDLES_SYMBOLSETS \
-    AROS_MAKE_ASM_SYM(int, __this_program_requires_symbol_sets_handling, __this_program_requires_symbol_sets_handling, 0); \
-    AROS_EXPORT_ASM_SYM(__this_program_requires_symbol_sets_handling);
+#define THIS_PROGRAM_HANDLES_SYMBOLSET(x) \
+    AROS_MAKE_ASM_SYM(int, __##x##__symbol_set_handler_missing, __##x##__symbol_set_handler_missing, 0); \
+    AROS_EXPORT_ASM_SYM(__##x##__symbol_set_handler_missing);
     
 #endif
 

@@ -473,7 +473,7 @@ static int IntuitionOpen(LIBBASETYPEPTR LIBBASE)
 }
 
 DECLARESET(CLASSESINIT);
-ADD2SET(InitRootClass, classesinit, -20);
+ADD2SET(InitRootClass, CLASSESINIT, -20);
 ADD2INITLIB(IntuitionInit, 0);
 ADD2OPENLIB(IntuitionOpen, 0);
 

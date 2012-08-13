@@ -99,4 +99,4 @@ static void __startup_stdiowin(void)
     D(bug("[__startup_stdiowin] Done!\n"));
 }
 
-ADD2SET(__startup_stdiowin, program_entries, -20);
+ADD2SET(__startup_stdiowin, PROGRAM_ENTRIES, -20);

@@ -133,7 +133,7 @@ DEFINE_main(name)                                                             \
 #ifdef AROS_AUTOINIT
 #include <aros/symbolsets.h>
 
-THIS_PROGRAM_HANDLES_SYMBOLSETS
+THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)
 
 #define AROS_SHCOMMAND_INIT \
     DEFINE_main(_automain) { \
