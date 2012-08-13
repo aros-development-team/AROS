@@ -100,6 +100,7 @@ char tab[127];
 struct CPUBase *CPUBase;
 
 #define APICBase        (CPUBase->CPUB_APICBase)
+#define SysBase         (CPUBase->CPUB_SysBase)
 
 /**********************************************************************/
 /* from smp.c ........... */
