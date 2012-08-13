@@ -125,12 +125,10 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     fprintf(out,
                     ") ({\\\n"
     );
-    if (cfg->options & OPTION_AUTOINIT) {
-        fprintf(out,
-		    "        AROS_LIBREQ(%s,%d)\\\n",
-		    cfg->libbase, funclistit->version
-        );       
-    }
+    fprintf(out,
+                "        AROS_LIBREQ(%s,%d)\\\n",
+                cfg->libbase, funclistit->version
+    );       
     if (nquad == 0)
     {
 	    fprintf(out,
