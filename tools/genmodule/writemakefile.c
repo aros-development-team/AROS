@@ -28,15 +28,15 @@ void writemakefile(struct config *cfg)
     }
 
     fprintf(out,
-	    "%s_STARTFILES := %s_start\n"
-	    "%s_ENDFILES := %s_end\n"
-	    "%s_MODDIR := %s\n",
+	    "%s_STARTFILES += %s_start\n"
+	    "%s_ENDFILES += %s_end\n"
+	    "%s_MODDIR += %s\n",
 	    cfg->modulename, cfg->modulename,
 	    cfg->modulename, cfg->modulename,
 	    cfg->modulename, cfg->moddir
     );
 
-    fprintf(out, "%s_LINKLIBFILES :=", cfg->modulename);
+    fprintf(out, "%s_LINKLIBFILES +=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
         fprintf(out, " %s_stubs", cfg->modulename);
     if (cfg->options & OPTION_AUTOINIT)
@@ -44,7 +44,7 @@ void writemakefile(struct config *cfg)
     if (cfg->modtype == LIBRARY)
         fprintf(out, " %s_getlibbase", cfg->modulename);
     fprintf(out, "\n");
-    fprintf(out, "%s_RELLINKLIBFILES :=", cfg->modulename);
+    fprintf(out, "%s_RELLINKLIBFILES +=", cfg->modulename);
     if (cfg->options & OPTION_STUBS)
         fprintf(out, " %s_relstubs", cfg->modulename);
     if (cfg->options & OPTION_AUTOINIT)
@@ -54,10 +54,10 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     /* Currently there are no asm files anymore */
-    fprintf(out, "%s_LINKLIBAFILES :=\n", cfg->modulename);
-    fprintf(out, "%s_RELLINKLIBAFILES :=\n", cfg->modulename);
+    fprintf(out, "%s_LINKLIBAFILES +=\n", cfg->modulename);
+    fprintf(out, "%s_RELLINKLIBAFILES +=\n", cfg->modulename);
 
-    fprintf(out, "%s_INCLUDES := ", cfg->modulename);
+    fprintf(out, "%s_INCLUDES += ", cfg->modulename);
     if (cfg->options & OPTION_INCLUDES)
     {
 	fprintf(out,
