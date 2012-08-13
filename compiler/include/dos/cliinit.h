@@ -136,7 +136,7 @@
     { \
        AROS_USERFUNC_INIT \
        \
-       extern SIPTR _shell_##main(ULONG flags, LONG type D(, struct DosPacket *dp)); \
+       extern SIPTR _shell_##main(ULONG flags, LONG type, struct ExecBase *SysBase D(, struct DosPacket *dp)); \
        struct Process *me = (struct Process *)FindTask(NULL); \
        D(struct DosPacket olddp;)\
        ULONG flags; \
@@ -174,7 +174,7 @@
        segArray[4] = segArray[3]; \
        segArray[3] = BNULL; \
        segArray[0] = (BPTR)3; \
-       ret = _shell_##main(flags, type D(, &olddp)); \
+       ret = _shell_##main(flags, type, SysBase D(, &olddp)); \
        cli = Cli(); \
        if (flags & FNF_VALIDFLAGS) { \
            D(bug("AROS_CLI: System Exit\n")); \
@@ -223,6 +223,6 @@
        \
        AROS_USERFUNC_EXIT \
     } \
-    SIPTR _shell_##main(ULONG AROS_CLI_Flags, LONG AROS_CLI_Type D(, struct DosPacket *AROS_CLI_DosPacket))
+    SIPTR _shell_##main(ULONG AROS_CLI_Flags, LONG AROS_CLI_Type, struct ExecBase *SysBase D(, struct DosPacket *AROS_CLI_DosPacket))
 
 #endif /* DOS_CLIINIT_H */
