@@ -449,7 +449,6 @@ WORD getrtgdepth(ULONG rgbformat)
 ULONG getrtgformat(struct uaegfx_staticdata *csd, OOP_Object *pixfmt)
 {
     IPTR depth, redmask, bluemask, endianswitch;
-    struct Library *OOPBase = csd->cs_OOPBase;
 
     OOP_GetAttr(pixfmt, aHidd_PixFmt_Depth, &depth);
     OOP_GetAttr(pixfmt, aHidd_PixFmt_RedMask, &redmask);
@@ -502,7 +501,6 @@ void makerenderinfo(struct uaegfx_staticdata *csd, struct RenderInfo *ri, struct
 
 struct ModeInfo *getrtgmodeinfo(struct uaegfx_staticdata *csd, OOP_Object *sync, OOP_Object *pixfmt, struct ModeInfo *modeinfo)
 {
-    struct Library *OOPBase = csd->cs_OOPBase;
     struct LibResolution *node;
     IPTR width, height, depth;
 
