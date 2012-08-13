@@ -57,14 +57,18 @@ static void DosExpunge(struct DosLibrary *DOSBase);
 
 extern const APTR GM_UNIQUENAME(FuncTable)[];
 
+THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
+THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)
 THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)
 THIS_PROGRAM_HANDLES_SYMBOLSET(EXPUNGELIB)
+DEFINESET(INIT)
+DEFINESET(EXIT)
 DEFINESET(INITLIB)
 DEFINESET(EXPUNGELIB)
 
 static void init_fs(struct DosLibrary *DOSBase)
 {
-	struct FileSysResource *fsr;
+    struct FileSysResource *fsr;
     struct Library *PartitionBase;
 
     PartitionBase = OpenLibrary("partition.library", 3);
@@ -127,12 +131,20 @@ static void init_fs(struct DosLibrary *DOSBase)
 AROS_UFH3S(struct DosLibrary *, DosInit,
     AROS_UFHA(ULONG, dummy, D0),
     AROS_UFHA(BPTR, segList, A0),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
 )
 {
     AROS_USERFUNC_INIT
 
-    struct DosLibrary *DOSBase = (struct DosLibrary *)FindName(&SysBase->LibList, "dos.library");
+    struct DosLibrary *DOSBase;
+
+    if (!SysBase)
+        SysBase = sysBase;
+
+    if (!set_call_funcs(SETNAME(INIT), 1, 1))
+        return NULL;
+    
+    DOSBase = (struct DosLibrary *)FindName(&SysBase->LibList, "dos.library");
 
     D(bug("[DosInit] DOSBase 0x%p\n", DOSBase));
 
@@ -344,6 +356,9 @@ static void DosExpunge(struct DosLibrary *DOSBase)
     }
 
     FreeMem((char *)DOSBase - DOSBase->dl_lib.lib_NegSize, DOSBase->dl_lib.lib_NegSize + DOSBase->dl_lib.lib_PosSize);
+
+    set_call_funcs(SETNAME(EXIT), -1, 0);
+    
     D(bug("%s: Expunged.\n", __func__));
 }
 
