@@ -20,7 +20,7 @@
 	AROS_LHA(ULONG  , length, D0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 21, RexxSys)
+	struct RxsLib *, RexxSysBase, 21, RexxSys)
 
 /*  FUNCTION
         This function will create a RexxArg structure and copy the supplied

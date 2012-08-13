@@ -15,6 +15,7 @@ FUNCS := \
 
 #MM- workbench-libs-rexxsyslib-includes : kernel-exec-includes includes-copy
 #MM- workbench-libs-rexxsyslib : includes linklibs
+USER_CFLAGS += -D__NOLIBBASE__
 
 # TODO: At the moment sprintf needs the math library
 %build_module mmake=workbench-libs-rexxsyslib \

@@ -18,7 +18,7 @@
 	AROS_LHA(struct RexxMsg *, packet, A0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 25, RexxSys)
+	struct RxsLib *, RexxSysBase, 25, RexxSys)
 
 /*  FUNCTION
          Deletes a RexxMsg structure
