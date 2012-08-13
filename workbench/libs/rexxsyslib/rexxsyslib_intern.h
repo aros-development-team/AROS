@@ -56,4 +56,7 @@ struct RexxSysBase_intern
 
 #define RSBI(base) ((struct RexxSysBase_intern *)base)
 
+#define SysBase (RexxSysBase->rl_SysBase)
+#define DOSBase (RexxSysBase->rl_DOSBase)
+
 #endif /* REXXSYSLIB_INTERN_H */

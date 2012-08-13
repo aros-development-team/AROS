@@ -16,14 +16,15 @@
 #include <aros/symbolsets.h>
 #include LC_LIBDEFS_FILE
 
-static int InitData(LIBBASETYPEPTR LIBBASE)
+static int InitData(struct RexxSysBase_intern *RSBI)
 {
-   LIBBASE->rexxmsgid = "RexxMsgId";
-   InitSemaphore(&LIBBASE->semaphore);
-   NewList(&LIBBASE->library.rl_LibList);
-   LIBBASE->library.rl_NumLib = 0;
-   NewList(&LIBBASE->library.rl_ClipList);
-   LIBBASE->library.rl_NumClip = 0;
+   struct RxsLib *RexxSysBase = &RSBI->library;
+   RSBI->rexxmsgid = "RexxMsgId";
+   InitSemaphore(&RSBI->semaphore);
+   NewList(&RexxSysBase->rl_LibList);
+   RexxSysBase->rl_NumLib = 0;
+   NewList(&RexxSysBase->rl_ClipList);
+   RexxSysBase->rl_NumClip = 0;
    
    return TRUE;
 }

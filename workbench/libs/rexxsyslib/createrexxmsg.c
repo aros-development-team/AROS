@@ -22,7 +22,7 @@
 	AROS_LHA(UBYTE          *, host     , D0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 24, RexxSys)
+	struct RxsLib *, RexxSysBase, 24, RexxSys)
 
 /*  FUNCTION
         Creation and initialization of a RexxMsg structure

@@ -18,7 +18,7 @@
 	AROS_LHA(ULONG, resource, D0),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 75, RexxSys)
+	struct RxsLib *, RexxSysBase, 75, RexxSys)
 
 /*  FUNCTION
 

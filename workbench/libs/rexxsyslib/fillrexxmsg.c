@@ -22,7 +22,7 @@
 	AROS_LHA(ULONG           , mask  , D1),
 
 /*  LOCATION */
-	struct Library *, RexxSysBase, 27, RexxSys)
+	struct RxsLib *, RexxSysBase, 27, RexxSys)
 
 /*  FUNCTION
         This function will convert the value(s) provided in rm_Args of the
