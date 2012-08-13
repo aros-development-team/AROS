@@ -1,11 +1,12 @@
 include $(TOP)/config/make.cfg
 
-FILES := resident handler commands filesystem notification support resident_end
+FILES := handler commands filesystem notification support
 
 USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-%build_module_simple mmake=kernel-fs-amberram \
+%build_module mmake=kernel-fs-amberram \
     modname=amberram modtype=handler \
     files="$(FILES)"
+
 
 %common
