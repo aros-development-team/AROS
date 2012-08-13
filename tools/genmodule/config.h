@@ -109,8 +109,10 @@ struct handlerinfo {
     char *name;
     int   autodetect;           /* Autodetect priority (0 for not autodetectable) */
     /* DeviceNode overrides */
+    int bootpri;                /* Boot priority */
     int priority;               /* Task priority */
     int stacksize;              /* Stacksize information */
+    int startup;                /* Startup id */
 
     char *handler;              /* Name of the handler */
 };

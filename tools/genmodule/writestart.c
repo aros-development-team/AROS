@@ -589,15 +589,16 @@ static void writeresident(FILE *out, struct config *cfg)
 
 static void writehandler(FILE *out, struct config *cfg)
 {
-    int i;
+    int i, handlers=0;
     struct handlerinfo *hl;
+    int need_fse = 0, need_dos = 0;
 
     fprintf(out,
                "\n"
                "#include <resources/filesysres.h>\n"
                "#include <aros/system.h>\n"
                "#include <proto/arossupport.h>\n"
-               "#include <proto/dos.h>\n"
+               "#include <proto/expansion.h>\n"
                "\n"
                );
 
@@ -605,95 +606,151 @@ static void writehandler(FILE *out, struct config *cfg)
         fprintf(out,
                "extern void %s(void);\n",
                hl->handler);
+        if (hl->type == HANDLER_DOSNODE)
+            need_dos = 1;
+        else
+            need_fse = 1;
+        handlers++;
     }
 
     fprintf(out,
                "\n"
                "void GM_UNIQUENAME(InitHandler)(void)\n"
                "{\n"
+               "    BPTR seg;\n"
+           );
+    if (need_dos) {
+        fprintf(out,
+               "    struct Library *ExpansionBase;\n"
+        );
+    }
+    if (need_fse) {
+        fprintf(out,
                "    struct FileSysResource *fsr;\n"
-               "    int i;\n"
-               "    const struct {\n"
-               "        ULONG id;\n"
-               "        BSTR name;\n"
-               "        BYTE autodetect;\n"
-               "        BYTE priority;\n"
-               "        ULONG stacksize;\n"
-               "        void (*handler)(void);\n"
-               "    } const __handler[] = { \n");
+               "    struct FileSysEntry *fse;\n"
+        );
+    }
+    if (need_fse) {
+        fprintf(out,
+               "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
+               "    if (fsr == NULL)\n"
+               "        return;\n"
+        );
+    }
+    if (need_dos) {
+        fprintf(out, 
+               "    ExpansionBase = OpenLibrary(\"expansion.library\", 36);\n"
+               "    if (ExpansionBase == NULL)\n"
+               "        return;\n"
+        );
+    }
     for (hl = cfg->handlerlist; hl != NULL; hl = hl->next)
     {
         switch (hl->type)
         {
-        case HANDLER_RESIDENT:
+        case HANDLER_DOSNODE:
             fprintf(out,
-               "        { .id = 0, .name = AROS_CONST_BSTR(\"%s\"), .handler = %s }, \n",
-               hl->name, hl->handler);
+                   "\n"
+                   "    {\n"
+                   "        struct DeviceNode *node;\n"
+                   "        IPTR pp[] = { \n"
+                   "            (IPTR)\"%s\",\n"
+                   "            (IPTR)NULL,\n"
+                   "            (IPTR)0,\n"
+                   "            (IPTR)0,\n"
+                   "            (IPTR)0\n"
+                   "        };\n"
+                   "        node = MakeDosNode((APTR)pp);\n"
+                   "        if (node == NULL) \n"
+                   "            goto exit;\n"
+                   "        \n"
+                   "        seg = CreateSegList(%s);\n"
+                   "        if (seg == BNULL) {\n"
+                   "            FreeVec(node);\n"
+                   "            goto exit;\n"
+                   "        }\n"
+                   "        node->dn_StackSize = %u;\n"
+                   "        node->dn_SegList = seg;\n"
+                   "        node->dn_Startup = (BPTR)%d;\n"
+                   "        node->dn_Priority = %d;\n"
+                   "        node->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
+                   "        AddBootNode(%d, 0, node, NULL);\n"
+                   "    }\n"
+                   "\n"
+                   , hl->name
+                   , hl->handler
+                   , hl->stacksize
+                   , hl->startup
+                   , hl->priority
+                   , hl->bootpri
+            );
             break;
+        case HANDLER_RESIDENT:
         case HANDLER_DOSTYPE:
             fprintf(out,
-               "        { .id = 0x%08x, .name = AROS_CONST_BSTR(MOD_NAME_STRING), .handler = %s, .autodetect = %d, .priority = %d, .stacksize = %d*sizeof(IPTR) }, \n",
-               hl->id, hl->handler, hl->autodetect, hl->priority, hl->stacksize);
+                   "\n"
+                   "    /* Check to see if we can allocate the memory for the fse */\n"
+                   "    fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
+                   "    if (!fse)\n"
+                   "        return;\n"
+                   "\n"
+                   "    seg = CreateSegList(%s);\n"
+                   "    if (seg == BNULL) {\n"
+                   "        FreeMem(fse, sizeof(*fse));\n"
+                   "        goto exit;\n"
+                   "    }\n"
+                   " \n"
+                   "    fse->fse_Node.ln_Name = VERSION_STRING;\n"
+                   "    fse->fse_Node.ln_Pri  = %d;\n"
+                   "    fse->fse_DosType = 0x%08x;\n"
+                   "    fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
+                   "    fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_HANDLER | FSEF_PRIORITY;\n"
+                   , hl->handler
+                   , hl->autodetect
+                   , hl->id
+               );
+            if (hl->stacksize)
+            {
+                fprintf(out,
+                   "    fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
+                   "    fse->fse_StackSize = %d;\n"
+                   , hl->stacksize
+                   );
+            }
+            fprintf(out,
+                   "    fse->fse_Handler = AROS_CONST_BSTR(\"%s\");\n"
+                   "    fse->fse_Priority = %d;\n"
+                   "    fse->fse_SegList = seg;\n"
+                   "    fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
+                   "    fse->fse_Startup   = (BPTR)%d;\n"
+                   "\n"
+                   "    /* Add to the list. I know forbid and permit are\n"
+                   "     * a little unnecessary for the pre-multitasking state\n"
+                   "     * we should be in at this point, but you never know\n"
+                   "     * who's going to blindly copy this code as an example.\n"
+                   "     */\n"
+                   "    Forbid();\n"
+                   "    Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
+                   "    Permit();\n"
+                   , hl->name
+                   , hl->priority
+                   , hl->startup
+                  );
             break;
         }
     }
+    if (handlers) {
+        fprintf(out,
+            "    exit:\n");
+    }
+    if (need_dos) {
+        fprintf(out, 
+            "    CloseLibrary(ExpansionBase);\n"
+        );
+    }
     fprintf(out,
-               "    };\n"
-               "    BPTR seg[sizeof(__handler)/sizeof(__handler[0])] = { };\n"
-               "\n"
-               "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
-               "    if (fsr == NULL)\n"
-               "        return;\n"
-               "\n"
-               "    for (i = 0; i < sizeof(__handler)/sizeof(__handler[0]); i++) {\n"
-               "        struct FileSysEntry *fse;\n"
-               "        int j;\n"
-               "\n"
-               "        /* Check to see if we can allocate the memory for the fse */\n"
-               "        fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
-               "        if (!fse)\n"
-               "            return;\n"
-               "\n"
-               "        /* Did we already make a segment for this handler? */\n"
-               "        for (j = 0; j < i; j++)\n"
-               "            if (__handler[i].handler == __handler[j].handler)\n"
-               "                break;\n"
-               "        if (seg[j] == (BPTR)0)\n"
-               "            seg[j] = CreateSegList(__handler[j].handler);\n"
-               "        if (seg[j] == BNULL) {\n"
-               "            FreeMem(fse, sizeof(*fse));\n"
-               "            return;\n"
-               "        }\n"
-               " \n"
-               "        /* DOS ID based handlers\n"
-               "         * NOTE: fse_DosType == 0 is a special flag use in\n"
-               "         * dos.library's init to add the handler to the\n"
-               "         * resident segment list\n"
-               "         */\n"
-               "        fse->fse_Node.ln_Name = VERSION_STRING;\n"
-               "        fse->fse_Node.ln_Pri  = __handler[i].autodetect;\n"
-               "        fse->fse_DosType = __handler[i].id;\n"
-               "        fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
-               "        fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_HANDLER | FSEF_PRIORITY;\n"
-               "        if (__handler[i].stacksize) {\n"
-               "            fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
-               "            fse->fse_StackSize = __handler[i].stacksize;\n"
-               "        }\n"
-               "        fse->fse_Handler = __handler[i].name;\n"
-               "        fse->fse_Priority = __handler[i].priority;\n"
-               "        fse->fse_SegList = seg[j];\n"
-               "        fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
-               "    \n"
-               "        /* Add to the list. I know forbid and permit are\n"
-               "         * a little unnecessary for the pre-multitasking state\n"
-               "         * we should be in at this point, but you never know\n"
-               "         * who's going to blindly copy this code as an example.\n"
-               "         */\n"
-               "        Forbid();\n"
-               "        Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
-               "        Permit();\n"
-               "    }\n"
-               "}\n");
+            "    return;\n"
+            "}\n");
 }
 
 static void writeinitlib(FILE *out, struct config *cfg)

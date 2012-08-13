@@ -2145,18 +2145,16 @@ readsectionhandler(struct config *cfg)
     char *line = NULL, *s;
     struct handlerinfo *hl;
     unsigned char autolevel = 0;
-    unsigned int stacksize;
-    char priority;
+    unsigned int stacksize = 0;
+    int startup = 0;
+    char priority = 10;
+    int bootpri = -128;
     
     for (;;)
     {
         char *function;
         int function_len;
         char *tmp;
-
-        /* Defaults */
-        stacksize = 0;
-        priority = 10;
 
         s = line = readline();
 
@@ -2187,6 +2185,10 @@ readsectionhandler(struct config *cfg)
                 stacksize = val;
             } else if (getdirective(s, "priority", -128, 127, &val)) {
                 priority = val;
+            } else if (getdirective(s, "bootpri", -128, 127, &val)) {
+                bootpri = val;
+            } else if (getdirective(s, "startup", INT_MIN, INT_MAX, &val)) {
+                startup = val;
             } else {
                 exitfileerror(20, "Unrecognized directive \"%s\"\n", line);
             }
@@ -2226,6 +2228,7 @@ readsectionhandler(struct config *cfg)
                 hl->stacksize = stacksize;
                 hl->priority = priority;
                 hl->handler = strdup(function);
+                hl->startup = startup;
             } else if (strncasecmp(s,"dosnode=",8)==0) {
                 char *dev;
 
@@ -2246,6 +2249,8 @@ readsectionhandler(struct config *cfg)
                 hl->handler = strdup(function);
                 hl->stacksize = stacksize;
                 hl->priority = priority;
+                hl->startup = startup;
+                hl->bootpri = bootpri;
             } else if (strncasecmp(s,"dostype=",8) == 0) {
                 s = strchr(s, '=') + 1;
 
@@ -2270,6 +2275,7 @@ readsectionhandler(struct config *cfg)
                 hl->handler = strdup(function);
                 hl->stacksize = stacksize;
                 hl->priority = priority;
+                hl->startup = startup;
             } else {
                 for (tmp = s; !isspace(*tmp); tmp++);
                 exitfileerror(20, "Unknown option \"%.*s\"\n", tmp - s, s);
