@@ -16,6 +16,8 @@
 #include <proto/dos.h>
 #include <proto/icon.h>
 
+#include <aros/shcommands.h>
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -60,7 +62,7 @@ static BYTE checkIcon(STRPTR name, struct Library *IconBase)
     return pri;
 }
 
-static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, struct Library *IconBase, APTR poolmem)
+static BOOL findMonitors(struct List *monitorsList, struct DosLibrary *DOSBase, struct Library *IconBase, struct ExecBase *SysBase, APTR poolmem)
 {
     BOOL retvalue = TRUE;
     LONG error;
@@ -134,28 +136,17 @@ static void loadMonitors(struct List *monitorsList, struct DosLibrary *DOSBase)
     D(bug("--------------------------\n"));
 }
 
-__startup BOOL _main(void)
+AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
+        AROS_SHAH(BOOL, , NOCOMPOSITION,/S,FALSE, "Only load Monitors"),
+        AROS_SHAH(BOOL, , ONLYCOMPOSITION,/S,FALSE, "Only load Compositor"))
 {
+    AROS_SHCOMMAND_INIT
+
     APTR pool;
     struct Library *IconBase;
-    APTR DOSBase;
-    struct RDArgs *rda;
     BPTR dir, olddir;
     BOOL res = TRUE;
     IPTR args[2] = {FALSE, FALSE};
-
-    DOSBase = OpenLibrary("dos.library", 0);
-    if (DOSBase == NULL)
-        return RETURN_FAIL;
-
-    rda = ReadArgs("NOCOMPOSITION/S,ONLYCOMPOSITION/S", args, NULL);
-    if (!rda)
-    {
-    	PrintFault(IoErr(), "AROSMonDrvs");
-
-    	CloseLibrary(DOSBase);
-    	return RETURN_FAIL;
-    }
 
     dir = Lock(MONITORS_DIR, SHARED_LOCK);
     D(bug("[LoadMonDrvs] Monitors directory 0x%p\n", dir));
@@ -182,7 +173,7 @@ __startup BOOL _main(void)
 	    	IconBase = OpenLibrary("icon.library", 0);
 	    	if (IconBase)
 	    	{
-                    findMonitors(&MonitorsList, DOSBase, IconBase, pool);
+                    findMonitors(&MonitorsList, DOSBase, IconBase, SysBase, pool);
                     loadMonitors(&MonitorsList, DOSBase);
 		    CloseLibrary(IconBase);
             	}
@@ -196,8 +187,7 @@ __startup BOOL _main(void)
 	UnLock(dir);
     }
     
-    FreeArgs(rda);
-    CloseLibrary(DOSBase);
-
     return res;
+
+    AROS_SHCOMMAND_EXIT
 }
