@@ -14,18 +14,19 @@
 #include <workbench/workbench.h>
 #include <proto/workbench.h>
 
-#include <strings.h>
+#include <aros/shcommands.h>
 
 /* Very minimal C:LoadWB */
-
-const TEXT version[] = "$VER: LoadWB 42.2 (16.6.2012)";
-
-int __startup _main(void)
+AROS_SH0H(LoadWB, 42.2, "Load the default Workbench")
 {
+    AROS_SHCOMMAND_INIT
+
     struct Library *WorkbenchBase = OpenLibrary("workbench.library", 0);
     if (WorkbenchBase) {
     	StartWorkbench(0, NULL);
     	CloseLibrary(WorkbenchBase);
     }
     return 0;
+
+    AROS_SHCOMMAND_EXIT
 }
