@@ -17,18 +17,32 @@
 ULONG __abox__ = 1;
 #endif
 
-#ifndef __AROS__
 struct ExecBase *SysBase;
-#endif
-
 extern void handler(void);
 
-void startup (void) {
-#ifndef __AROS__
-    SysBase = *(struct ExecBase **)4L;
+
+#ifdef __AROS__
+__startup static AROS_ENTRY(int, startup,
+	  AROS_UFHA(char *, argstr, A0),
+	  AROS_UFHA(ULONG, argsize, D0),
+	  struct ExecBase *, sysBase)
+#else
+#define AROS_USERFUNC_INIT
+#define AROS_USERFUNC_EXIT
+#define sysBase (*(struct ExecBase **)4L)
+void startup(void)
 #endif
+{
+    AROS_USERFUNC_INIT
+
+    SysBase = sysBase;
+
     D(bug("[NTFS]: %s()\n", __PRETTY_FUNCTION__));
 
     D(bug("[NTFS] %s: handler starting..\n", __PRETTY_FUNCTION__));
     handler();
+
+    return RETURN_OK;
+
+    AROS_USERFUNC_EXIT
 }
