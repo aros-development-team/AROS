@@ -44,6 +44,7 @@
 ******************************************************************************/
 
 #define DEBUG 0
+#include <aros/debug.h>
 
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -51,9 +52,9 @@
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <string.h>
-#include <aros/shcommands.h>
-#include <aros/debug.h>
 
+#define SH_GLOBAL_SYSBASE       1       /* for kprintf() */
+#include <aros/shcommands.h>
 
 AROS_SH2(KEcho, 41.1,
 AROS_SHA(STRPTR *, , STRINGS, /M,   NULL),

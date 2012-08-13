@@ -45,6 +45,7 @@
 //#define DEBUG 1
 #include <aros/debug.h>
 
+#define SH_GLOBAL_SYSBASE       1
 #include <aros/shcommands.h>
 
 /*

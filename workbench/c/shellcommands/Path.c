@@ -60,7 +60,6 @@
 #include <proto/dos.h>
 #include "dos_commanderrors.h"
 
-#define SH_GLOBAL_DOSBASE 1
 #include <aros/shcommands.h>
 
 #include <aros/debug.h>

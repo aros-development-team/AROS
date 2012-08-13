@@ -83,8 +83,6 @@
 #include <utility/tagitem.h>
 #include <stdio.h>
 
-#define SH_GLOBAL_DOSBASE 1 /* because of Printf from amiga.lib */
-
 #include <aros/shcommands.h>
 
 AROS_SH3(Setenv, 45.0,

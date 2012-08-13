@@ -52,10 +52,12 @@
 #include <proto/alib.h>
 #include <string.h>
 
-#define SH_GLOBAL_SYSBASE 1
-
 #define DEBUG 0
 #include <aros/debug.h>
+
+#ifndef USE_EMBEDDED_COMMANDS
+#define SH_GLOBAL_SYSBASE       1       /* For __sprintf */
+#endif
 #include <aros/shcommands.h>
 
 AROS_SH2(Execute, 41.1,
