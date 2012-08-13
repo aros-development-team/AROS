@@ -85,6 +85,12 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     fprintf(out, "%s_LDFLAGS +=", cfg->modulename);
+    if (cfg->sysbase_field)
+    {
+        fprintf(out,
+                " -nosysbase"
+        );
+    }
     fprintf(out,"\n");
 
     if (ferror(out))
