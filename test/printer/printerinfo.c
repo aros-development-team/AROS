@@ -9,8 +9,12 @@
 #include <proto/exec.h>
 #include <devices/prtbase.h>
 
-__startup int _main(void)
+#include <aros/shcommands.h>
+
+AROS_SH0(printerinfo, 1.0)
 {
+    AROS_SHCOMMAND_INIT
+
     struct {
         CONST_STRPTR file;
     } Args = { };
@@ -53,5 +57,7 @@ __startup int _main(void)
     CloseLibrary(DOSBase);
 
     return RETURN_OK;
+
+    AROS_SHCOMMAND_EXIT
 }
 

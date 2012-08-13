@@ -9,6 +9,8 @@
 #include <proto/exec.h>
 #include <devices/prtbase.h>
 
+#include <aros/shcommands.h>
+
 TEXT const printertxt[] = 
         "aRIS\033c\n"
         "aRIN\033#1\n"
@@ -48,8 +50,10 @@ TEXT const printertxt[] =
         "a?MS  (test needs to be written)\n"
         ;
 
-__startup LONG _main(void)
+AROS_SH0(printertxt, 1.0)
 {
+    AROS_SHCOMMAND_INIT
+
     struct MsgPort *mp;
     LONG err = RETURN_FAIL;
     struct Library *DOSBase;
@@ -91,5 +95,7 @@ __startup LONG _main(void)
     CloseLibrary(DOSBase);
 
     return err;
+
+    AROS_SHCOMMAND_EXIT
 }
 

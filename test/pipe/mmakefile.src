@@ -12,6 +12,8 @@ EXEDIR          := $(AROS_TESTS)/pipe
 
 #MM test-pipe : includes linklibs
 
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
+
 %build_progs mmake=test-pipe \
     files=$(FILES) targetdir=$(EXEDIR) \
     usestartup="no"
