@@ -802,7 +802,7 @@ endif
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
     ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
-TMP_LDFLAGS  := %(ldflags)
+TMP_LDFLAGS  := %(ldflags) $(%(module)_LDFLAGS)
 # Make a list of the lib files the programs depend on.
 # In LDFLAGS remove white space between -L and directory
 TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
@@ -1492,8 +1492,8 @@ BD_ARCHOBJS   := $(wildcard %(objdir)/arch/*.o)
 BD_ARCHFILES  := $(basename $(notdir $(BD_ARCHOBJS)))
 BD_NARCHFILES := $(filter-out $(BD_ARCHFILES),$(BD_FILES))
 
-BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
-BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC)
+BD_CFLAGS     := %(cflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_CFLAGS)
+BD_DFLAGS     := %(dflags) -I%(objdir)/include -include $(BD_DEFLIBDEFSINC) $(%(modname)_DFLAGS)
 
 ifeq (%(modtype),library)
     BD_LIBSUFFIX := 
