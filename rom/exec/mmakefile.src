@@ -43,6 +43,10 @@ FILES	   := alertextra alert_cpu systemalert initkicktags intservers \
 # platform.h can be overriden in arch-specific directory
 USER_INCLUDES += $(PRIV_EXEC_INCLUDES) -DAROS_ARCH_$(ARCH)
 
+#MM- core-linklibs : linklibs-exec
+
+exec_LINKLIBFILES += exec_autoinit
+
 %build_module mmake=kernel-exec \
   modname=exec modtype=library version=$(AROS_TARGET_PLATFORM) \
   files="$(INIT_FILES) $(ALL_FUNCTIONS) $(FILES)"

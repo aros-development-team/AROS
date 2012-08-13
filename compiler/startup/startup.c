@@ -21,7 +21,6 @@
 
 THIS_PROGRAM_HANDLES_SYMBOLSETS
 
-struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 
 extern int main(int argc, char ** argv);
