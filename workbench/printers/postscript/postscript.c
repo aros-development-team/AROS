@@ -271,8 +271,12 @@ static LONG ps_SpacingLPI;
 static LONG ps_FontCPI;
 static UWORD ps_PrintShade;
 
+struct ExecBase *SysBase;
+
 static LONG ps_Init(struct PrinterData *pd)
 {
+    SysBase = pd->pd_Device.dd_ExecBase;
+
     D(bug("ps_Init: pd=%p\n", pd));
     PD = pd;
     return 0;
