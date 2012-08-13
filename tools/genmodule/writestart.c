@@ -183,8 +183,8 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "\n"
 	    "#include <proto/exec.h>\n"
             "#include <proto/alib.h>\n"
-            "#ifndef __AROS__\n"
-            "struct ExecBase *SysBase = NULL;\n"
+            "#ifndef GM_SYSBASE_FIELD\n"
+            "extern struct ExecBase *SysBase;\n"
             "#endif\n"
 	    "\n",
 	    cfg->modulename
@@ -702,6 +702,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         writehandler(out, cfg);
 
     fprintf(out,
+            "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
@@ -718,16 +719,18 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	);
     fprintf(out,
 	    "\n"
+            "#ifdef GM_SYSBASE_FIELD\n"
+            "    struct ExecBase *SysBase = sysBase;\n"
+            "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
+            "#else\n"
+            "    SysBase = sysBase;\n"
+            "#endif\n"
+            "    if (SysBase->LibNode.lib_Version < __aros_libreq_SysBase)\n"
+            "        return NULL;\n"
+            "\n"
     );
-
     if (cfg->options & OPTION_RESAUTOINIT) {
         fprintf(out,
-                "#ifndef __AROS__\n"
-                "    SysBase = sysBase;\n"
-                "#endif\n"
-                "#ifdef GM_SYSBASE_FIELD\n"
-                "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
-                "#endif\n"
                 "#ifdef GM_OOPBASE_FIELD\n"
                 "    GM_OOPBASE_FIELD(lh) = OpenLibrary(\"oop.library\",0);\n"
                 "    if (GM_OOPBASE_FIELD(lh) == NULL)\n"
@@ -1202,6 +1205,13 @@ static void writeexpungelib(FILE *out, struct config *cfg)
     );
     if (!(cfg->options & OPTION_NOEXPUNGE))
     {
+        if (cfg->options & OPTION_RESAUTOINIT) {
+            fprintf(out,
+                    "#ifdef GM_SYSBASE_FIELD\n"
+                    "    struct ExecBase *SysBase = (struct ExecBase *)GM_SYSBASE_FIELD(lh);\n"
+                    "#endif\n"
+            );
+        }
 	fprintf(out,
 		"\n"
 		"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
