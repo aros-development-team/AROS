@@ -95,7 +95,7 @@ COMMONTESTFILES := \
     mountlist \
     smult
 
-PURETESTFILES=\
+SHTESTFILES=\
     pcilist
 
 HOSTEDTESTFILES :=  \
@@ -104,19 +104,20 @@ HOSTEDTESTFILES :=  \
 EXEDIR := $(AROS_TESTS)
 
 USER_INCLUDES := -I$(SRCDIR)/workbench/libs
+USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
 
-#MM- test : test-common test-pure test-clib test-kernel test-exec test-layers test-zune workbench-libs-version \
+#MM- test : test-common test-sh test-clib test-kernel test-exec test-layers test-zune workbench-libs-version \
 #MM  test-$(AROS_ARCH) testscript
 
 #MM  test-common : includes workbench-libs-version linklibs
-#MM  test-pure : includes linklibs
+#MM  test-sh : includes linklibs
 
 %build_progs mmake=test-common \
     files=$(COMMONTESTFILES) targetdir=$(EXEDIR) \
     uselibs="coolimagesstatic hiddstubs oop"
 
-%build_progs mmake=test-pure \
-    files=$(PURETESTFILES) targetdir=$(EXEDIR) \
+%build_progs mmake=test-sh \
+    files=$(SHTESTFILES) targetdir=$(EXEDIR) \
     usestartup=no
 
 
