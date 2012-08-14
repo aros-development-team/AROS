@@ -13,6 +13,6 @@ USER_INCLUDES := $(PRIV_EXEC_INCLUDES)
   asmfiles=$(AFILES) files=$(FILES) \
   arch=i386
 
-#MM kernel-exec-i386 : includes-asm_h-i386
+#MM kernel-exec-i386 : includes-asm_h-i386 includes-kernel
 
 %common
