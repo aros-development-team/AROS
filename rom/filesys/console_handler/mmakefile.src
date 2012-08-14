@@ -8,5 +8,5 @@ USER_CFLAGS := -DADATE="\"$(shell date '+%d.%m.%Y')\""
 #MM- kernel-fs-con : includes linklibs kernel-fs-con-linklib
 
 %build_module mmake=kernel-fs-con \
-    modname=con modtype=handler \
+    conffile=con_handler.conf modname=con modtype=handler \
     files="$(FILES)"
