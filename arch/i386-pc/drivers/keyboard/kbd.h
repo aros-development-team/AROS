@@ -2,7 +2,7 @@
 #define HIDD_KBD_H
 
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Include for the kbd HIDD.
@@ -108,18 +108,6 @@ static inline void outb(unsigned char value, unsigned short port)
 /* IDs */
 #define IID_Hidd_HwKbd		"hidd.kbd.hw"
 #define CLID_Hidd_HwKbd		"hidd.kbd.hw"
-
-/* Methods */
-enum
-{
-    moHidd_Kbd_HandleEvent
-};
-
-struct pHidd_Kbd_HandleEvent
-{
-    OOP_MethodID 		mID;
-    ULONG 			event;
-};
 
 /* misc */
 
