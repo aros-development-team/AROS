@@ -174,8 +174,12 @@ struct ETask
     APTR	    et_Result2;	    /* Result data pointer (AllocVec)	*/
     struct MsgPort  et_TaskMsgPort;
     void	   *et_MemPool;	    /* Task's private memory pool	*/
-    void	   *et_Reserved[1]; /* PowerPC stack in MorphOS		*/
+#ifdef __AROS__
+    IPTR	    et_Reserved[1]; /* MorphOS Private                  */
     IPTR	   *et_TaskStorage; /* Task Storage Slots		*/
+#else
+    IPTR	    et_Reserved[2]; /* MorphOS Private                  */
+#endif
     void	   *et_RegFrame;
     /* Internal fields follow */
 };
