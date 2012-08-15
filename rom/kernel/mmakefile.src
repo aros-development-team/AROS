@@ -1,8 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-#MM- compiler-includes: includes-kernel
-
+#
 # Allow to override include files by placing them in arch-specific directories
 # Note that kernel_#?.h files must be included using #include <name>, not #include "name"
 # for this to work.
