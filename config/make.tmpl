@@ -1012,7 +1012,7 @@ $(TMP_TARGETS) : OPTS := $(TMP_OPTS)
 $(TMP_TARGETS) : MODNAME := %(modname)
 $(TMP_TARGETS) : MODTYPE := %(modtype)
 $(TMP_TARGETS) : $(TMP_DEPS)
-	@$(ECHO) "Generating include files"
+	@$(ECHO) "Generating $(MODNAME).$(MODTYPE) includes"
 	@$(GENMODULE) $(OPTS) writeincludes $(MODNAME) $(MODTYPE)
 endif
 %end
