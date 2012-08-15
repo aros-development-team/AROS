@@ -7,7 +7,6 @@ CFLAGS := $(CFLAGS) -D__KERNEL__
 
 FILES	:= pci_init pcidriverclass pcideviceclass pciclass pciutil
 
-#MM- includes: kernel-pci-includes
 #MM kernel-pci : kernel-pci-ids
 #MM kernel-pci-kobj : kernel-pci-ids
 
@@ -26,8 +25,6 @@ kernel-pci-ids : $(AROS_DEVS)/pci.ids
 $(AROS_DEVS)/pci.ids : pci.ids
 	%mkdirs_q $(AROS_DEVS)
 	@$(CP) $^ $@
-
-#unused MM- kernel-objs: kernel-pci-kobj
 
 %build_module mmake=kernel-pci \
     modname=pci modtype=hidd \
