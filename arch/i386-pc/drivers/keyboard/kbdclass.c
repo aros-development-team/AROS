@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2010, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: The main keyboard class.
@@ -89,7 +89,7 @@ AROS_UFIH1(kbd_keyint, struct kbd_data *, data)
 	{
 	    /*
 	    ** Data from PS/2 mouse. Hopefully this gets through to mouse interrupt
-	    ** if we break out of while loop here :-\
+	    ** if we break out of loop here :-\
 	    */
 	    break;
 	}
@@ -114,9 +114,9 @@ AROS_UFIH1(kbd_keyint, struct kbd_data *, data)
 
     D(bug("ki: }\n"));
 
-    AROS_USERFUNC_EXIT
-
     return FALSE;
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -236,16 +236,6 @@ VOID PCKbd__Root__Dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 
 /****************************************************************************************/
 
-VOID PCKbd__Hidd_Kbd__HandleEvent(OOP_Class *cl, OOP_Object *o, struct pHidd_Kbd_HandleEvent *msg)
-{
-    EnterFunc(bug("kbd_handleevent()\n"));
-
-    ReturnVoid("Kbd::HandleEvent");
-}
-
-
-/****************************************************************************************/
-
 static int PCKbd_InitAttrs(LIBBASETYPEPTR LIBBASE)
 {
     struct OOP_ABDescr attrbases[] =
@@ -325,7 +315,7 @@ void kbd_process_key(struct kbd_data *data, UBYTE keycode,
     ULONG   	    kbd_keystate = data->kbd_keystate;
     UBYTE   	    downkeycode;
     UBYTE   	    releaseflag;
-    UWORD   	    event;          /* Event sent to handleevent method */
+    UWORD   	    event;
     WORD    	    amigacode;
 
     if ((keycode == KBD_REPLY_ACK) || (keycode == KBD_REPLY_RESEND))
