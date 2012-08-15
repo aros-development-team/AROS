@@ -20,6 +20,7 @@ include $(TOP)/config/make.cfg
 #MM	kernel-devs-keyboard \
 #MM     kernel-hidd \
 #MM     kernel-oop \
+#MM     kernel-pci \
 #MM     kernel-layers \
 #MM     kernel-usb-$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU) \
 #MM	workbench-devs-amberram
@@ -29,6 +30,7 @@ include $(TOP)/config/make.cfg
 # acpi.resource, efi.resource, etc). This is because our SDK is universal.
 
 #MM- includes-generate : \
+#MM     kernel-kernel-includes \
 #MM     kernel-exec-includes \
 #MM     kernel-aros-includes \
 #MM     kernel-cia-includes \
@@ -46,6 +48,7 @@ include $(TOP)/config/make.cfg
 #MM     kernel-layers-includes \
 #MM     kernel-timer-includes \
 #MM     kernel-oop-includes \
+#MM     kernel-pci-includes \
 #MM     kernel-battclock-includes \
 #MM     kernel-misc-includes \
 #MM	kernel-openfirmware-includes \
