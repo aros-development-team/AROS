@@ -63,26 +63,23 @@ struct Task
 
 /* Macros */
 #define GetTrapAlloc(t) \
-	((((struct Task *)t)->tc_Flags & TF_ETASK) ? \
-	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask))-> \
-		et_TrapAlloc : \
-	    ((struct Task *)t)->tc_UnionETask.tc_ETrap.tc_ETrapAlloc)
+	({struct Task *_t = (struct Task *)t;\
+	  (_t->tc_Flags & TF_ETASK) ? _t->tc_UnionETask.tc_ETask->et_TrapAlloc : \
+	  _t->tc_UnionETask.tc_ETrap.tc_ETrapAlloc; \
+	 })
 #define GetTrapAble(t) \
-	((((struct Task *)t)->tc_Flags & TF_ETASK) ? \
-	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask))-> \
-		et_TrapAble : \
-	    ((struct Task *)t)->tc_UnionETask.tc_ETrap.tc_ETrapAble)
+	({struct Task *_t = (struct Task *)t;\
+	  (_t->tc_Flags & TF_ETASK) ? _t->tc_UnionETask.tc_ETask->et_TrapAble : \
+	  _t->tc_UnionETask.tc_ETrap.tc_ETrapAble;\
+	 })
 #define GetETask(t) \
-	((((struct Task *)t)->tc_Flags & TF_ETASK) ? \
-	    ((struct ETask *)(((struct Task *)t)->tc_UnionETask.tc_ETask)) \
-	    : NULL \
-	)
+	({struct Task *_t = (struct Task *)t;\
+	   (_t->tc_Flags & TF_ETASK) ? _t->tc_UnionETask.tc_ETask : NULL; \
+         })
 #define GetETaskID(t) \
-	(   (((struct Task *)(t))->tc_Flags & TF_ETASK) \
-	    ? (((struct ETask *) \
-		(((struct Task *)(t))->tc_UnionETask.tc_ETask))->et_UniqueID) \
-	    : 0UL \
-	)
+	({struct Task *_t = (struct Task *)t;\
+	  (_t->tc_Flags & TF_ETASK) ? _t->tc_UnionETask.tc_ETask->et_UniqueID: 0UL; \
+         })
 
 
 /* Stack swap structure as passed to StackSwap() */
