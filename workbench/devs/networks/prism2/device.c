@@ -641,3 +641,54 @@ VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base)
    return;
 }
 
+
+
+/****i* prism2.device/WrapCardInt ******************************************
+*
+*   NAME
+*	WrapCardInt 
+*
+****************************************************************************
+*
+*/
+
+BOOL WrapCardInt(struct Interrupt *interrupt, struct DevBase *base)
+{
+   BOOL success = TRUE;
+   APTR *int_data;
+
+   if(base->wrapper_card_code != NULL)
+   {
+      int_data = AllocMem(2 * sizeof(APTR), MEMF_PUBLIC | MEMF_CLEAR);
+      if(int_data != NULL)
+      {
+         int_data[0] = interrupt->is_Code;
+         int_data[1] = interrupt->is_Data;
+         interrupt->is_Code = base->wrapper_card_code;
+         interrupt->is_Data = int_data;
+      }
+      else
+         success = FALSE;
+   }
+
+   return success;
+}
+
+
+
+/****i* prism2.device/UnwrapCardInt ****************************************
+*
+*   NAME
+*	UnwrapCardInt
+*
+****************************************************************************
+*
+*/
+
+VOID UnwrapCardInt(struct Interrupt *interrupt, struct DevBase *base)
+{
+   if(interrupt->is_Code == base->wrapper_card_code)
+      FreeMem(interrupt->is_Data, 2 * sizeof(APTR));
+
+   return;
+}

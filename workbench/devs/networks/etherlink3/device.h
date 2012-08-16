@@ -97,6 +97,7 @@ struct DevBase
    struct TimerIFace *i_timer;
 #endif
    VOID (*wrapper_int_code)();
+   VOID (*wrapper_card_code)();
 };
 
 

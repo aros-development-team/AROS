@@ -42,6 +42,8 @@ VOID CloseUnit(struct IOSana2Req *request, struct DevBase *base);
 struct DevUnit *GetUnit(ULONG unit_num, struct DevBase *base);
 BOOL WrapInt(struct Interrupt *interrupt, struct DevBase *base);
 VOID UnwrapInt(struct Interrupt *interrupt, struct DevBase *base);
+BOOL WrapCardInt(struct Interrupt *interrupt, struct DevBase *base);
+VOID UnwrapCardInt(struct Interrupt *interrupt, struct DevBase *base);
 
 #endif
 
