@@ -69,9 +69,12 @@ static VOID CardRemovedHook(struct BusContext *context,
    struct DevBase *base);
 static BOOL CardInsertedHook(struct BusContext *context,
    struct DevBase *base);
-static AROS_CARDP(CardRemovedInt);
-static AROS_CARDP(CardInsertedInt);
-static AROS_CARDP(CardStatusInt);
+static VOID CardRemovedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code));
+static VOID CardInsertedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code));
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask));
 static VOID WordsInHook(struct BusContext *context,
    ULONG offset, UWORD *buffer, ULONG count);
 static VOID WordsOutHook(struct BusContext *context, ULONG offset,
@@ -410,16 +413,16 @@ static struct BusContext *AllocCard(struct DevBase *base)
    {
       /* Try to gain access to card */
 
-      card_removed_int->is_Code = (VOID_FUNC)CardRemovedInt;
+      card_removed_int->is_Code = CardRemovedInt;
       card_removed_int->is_Data = context;
-      card_inserted_int->is_Code = (VOID_FUNC)CardInsertedInt;
+      card_inserted_int->is_Code = CardInsertedInt;
       card_inserted_int->is_Data = context;
-      card_status_int->is_Code = (VOID_FUNC)CardStatusInt;
+      card_status_int->is_Code = (APTR)CardStatusInt;
       card_status_int->is_Data = context;
 
-      if(!(WrapInt(card_removed_int, base)
-         && WrapInt(card_inserted_int, base)
-         && WrapInt(card_status_int, base)))
+      if(!(WrapCardInt(card_removed_int, base)
+         && WrapCardInt(card_inserted_int, base)
+         && WrapCardInt(card_status_int, base)))
          success = FALSE;
    }
  
@@ -473,9 +476,9 @@ static VOID FreeCard(struct BusContext *context, struct DevBase *base)
          CardResetCard(card_handle);
       }
       ReleaseCard(card_handle, CARDF_REMOVEHANDLE);
-      UnwrapInt(card_handle->cah_CardStatus, base);
-      UnwrapInt(card_handle->cah_CardInserted, base);
-      UnwrapInt(card_handle->cah_CardRemoved, base);
+      UnwrapCardInt(card_handle->cah_CardStatus, base);
+      UnwrapCardInt(card_handle->cah_CardInserted, base);
+      UnwrapCardInt(card_handle->cah_CardRemoved, base);
 
       FreeVec(card_handle->cah_CardStatus);
       FreeVec(card_handle->cah_CardInserted);
@@ -720,16 +723,17 @@ static BOOL CardInsertedHook(struct BusContext *context,
 *	CardRemovedInt
 *
 *   SYNOPSIS
-*	mask = CardRemovedInt(APTR unit, ULONG mask) (A1, D0)
+*	CardRemovedInt(unit)
+*
+*	VOID CardRemovedInt(struct DevUnit *);
 *
 ****************************************************************************
 *
 */
 
-static AROS_CARDH(CardRemovedInt, struct BusContext *, context, mask)
+static VOID CardRemovedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code))
 {
-   AROS_CARDFUNC_INIT
-
    struct DevBase *base;
    struct DevUnit *unit;
 
@@ -747,9 +751,7 @@ static AROS_CARDH(CardRemovedInt, struct BusContext *, context, mask)
    if (unit != NULL)
       Signal(unit->task, unit->card_removed_signal);
 
-   return mask;
-
-   AROS_CARDFUNC_EXIT
+   return;
 }
 
 
@@ -760,16 +762,17 @@ static AROS_CARDH(CardRemovedInt, struct BusContext *, context, mask)
 *	CardInsertedInt
 *
 *   SYNOPSIS
-*	mask = CardInsertedInt(APTR unit, ULONG mask) (A1, D0)
+*	CardInsertedInt(unit)
+*
+*	VOID CardInsertedInt(struct DevUnit *);
 *
 ****************************************************************************
 *
 */
 
-static AROS_CARDH(CardInsertedInt, struct BusContext *, context, mask)
+static VOID CardInsertedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code))
 {
-   AROS_CARDFUNC_INIT
-
    struct DevBase *base;
    struct DevUnit *unit;
 
@@ -780,9 +783,7 @@ static AROS_CARDH(CardInsertedInt, struct BusContext *, context, mask)
       Signal(unit->task, unit->card_inserted_signal);
    }
 
-   return mask;
-
-   AROS_CARDFUNC_EXIT
+   return;
 }
 
 
@@ -804,12 +805,9 @@ static AROS_CARDH(CardInsertedInt, struct BusContext *, context, mask)
 *
 */
 
-static AROS_CARDH(CardStatusInt, struct BusContext *,context, mask)
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask))
 {
-   AROS_CARDFUNC_INIT
-
-   struct DevBase *base;
-
 #if defined(__mc68000) && !defined(__AROS__)
    if(context->resource_version < 39)
    {
@@ -820,14 +818,10 @@ static AROS_CARDH(CardStatusInt, struct BusContext *,context, mask)
    }
 #endif
 
-   if(context->unit != NULL) {
-      base = context->unit->device;
-      return AROS_UFIC1(StatusInt, context->unit);
-   }
+   if(context->unit != NULL)
+      StatusInt(context->unit, StatusInt);
 
    return mask;
-
-   AROS_CARDFUNC_EXIT
 }
 
 

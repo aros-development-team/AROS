@@ -24,6 +24,8 @@ MA 02111-1307, USA.
 #include <exec/resident.h>
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
+#include <resources/card.h>
+
 #include "initializers.h"
 
 #include "device.h"
@@ -59,6 +61,7 @@ static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size);
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size);
 static UBYTE *DMATXFunction(struct IOSana2Req *request);
 AROS_UFIP(AROSInt);
+AROS_CARDP(AROSCardInt);
 
 extern const APTR init_data;
 extern const struct Resident rom_tag;
@@ -121,8 +124,10 @@ AROS_UFH3(struct DevBase *, AROSDevInit,
 
    base = DevInit(dev_base, seg_list, base);
 
-   if(base != NULL)
+   if(base != NULL) {
       base->wrapper_int_code = (APTR)AROSInt;
+      base->wrapper_card_code = (APTR)AROSCardInt;
+   }
    return base;
 
    AROS_LIBFUNC_EXIT
@@ -382,6 +387,7 @@ static UBYTE *DMATXFunction(struct IOSana2Req *request)
 */
 #undef SysBase
 
+/* Mask is in D1 */
 AROS_UFIH2(AROSInt, APTR *, int_data, mask)
 {
    AROS_USERFUNC_INIT
@@ -394,5 +400,24 @@ AROS_UFIH2(AROSInt, APTR *, int_data, mask)
    AROS_USERFUNC_EXIT
 }
 
+/****i* etherlink3.device/AROSCardInt **************************************
+*
+*   NAME
+*	AROSCardInt
+*
+****************************************************************************
+*
+*/
+/* Mask is in D0 */
+AROS_CARDH(AROSCardInt, APTR *, int_data, mask)
+{
+   AROS_CARDFUNC_INIT
 
+   BOOL (*int_code)(APTR, APTR, UBYTE);
+
+   int_code = int_data[0];
+   return int_code(int_data[1], int_code, mask);
+
+   AROS_CARDFUNC_EXIT
+}
 
