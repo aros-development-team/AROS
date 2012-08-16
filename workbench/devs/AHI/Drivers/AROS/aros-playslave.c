@@ -30,10 +30,10 @@ AROS_UFH3(LONG, SlaveEntry,
 	  AROS_UFHA(ULONG, argSize, D0),
 	  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-   AROS_INTFUNC_INIT
+   AROS_USERFUNC_INIT
    Slave( SysBase );
    return 0;
-   AROS_INTFUNC_EXIT
+   AROS_USERFUNC_EXIT
 }
 
 #else
