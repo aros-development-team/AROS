@@ -60,15 +60,15 @@ static VOID GetDefaults(struct DevUnit *unit, struct DevBase *base);
 static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
    UWORD upper_bound_right, struct DevBase *base);
-static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+static AROS_UFIP(RXInt);
 static VOID CopyPacket(struct DevUnit *unit, struct IOSana2Req *request,
    UWORD packet_size, UWORD packet_type, UBYTE *buffer, BOOL all_read,
    UWORD frame_id, struct DevBase *base);
 static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
    struct DevBase *base);
 static VOID SetMulticast(struct DevUnit *unit, struct DevBase *base);
-static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
-static VOID InfoInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+static AROS_UFIP(TXInt);
+static AROS_UFIP(InfoInt);
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
 static BOOL LoadFirmware(struct DevUnit *unit, struct DevBase *base);
@@ -1082,232 +1082,6 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 
 
 
-/****i* prism2.device/StatusInt ********************************************
-*
-*   NAME
-*	StatusInt
-*
-*   SYNOPSIS
-*	finished = StatusInt(unit)
-*
-*	BOOL StatusInt(struct DevUnit *);
-*
-*   FUNCTION
-*
-*   INPUTS
-*	unit
-*
-*   RESULT
-*	finished
-*
-****************************************************************************
-*
-* int_code is really in A5, but GCC 2.95.3 doesn't seem able to handle that.
-* Since we don't use this parameter, we can lie.
-*
-*/
-
-BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
-{
-   struct DevBase *base;
-   UWORD events, int_mask;
-
-   base = unit->device;
-   events = unit->LEWordIn(unit->card, P2_REG_EVENTS);
-
-   /* Turning off ints acknowledges the request? */
-
-   int_mask = unit->LEWordIn(unit->card, P2_REG_INTMASK);
-   unit->LEWordOut(unit->card, P2_REG_INTMASK, 0);
-
-   /* Handle events */
-
-   if((events & P2_EVENTF_INFO) != 0)
-   {
-      int_mask &= ~P2_EVENTF_INFO;
-      Cause(&unit->info_int);
-   }
-   if((events & P2_EVENTF_RX) != 0)
-   {
-      int_mask &= ~P2_EVENTF_RX;
-      Cause(&unit->rx_int);
-   }
-   if((events & P2_EVENTF_ALLOCMEM) != 0)
-   {
-      unit->tx_frame_id = unit->LEWordIn(unit->card, P2_REG_ALLOCFID);
-      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_ALLOCMEM);
-      Cause(&unit->tx_int);
-   }
-   if((events & P2_EVENTF_TXFAIL) != 0)
-   {
-      ReportEvents(unit, S2EVENT_ERROR | S2EVENT_HARDWARE | S2EVENT_TX,
-         base);
-      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_TXFAIL);
-   }
-
-#ifdef __MORPHOS__
-   int_mask = INT_MASK;
-#endif
-   unit->LEWordOut(unit->card, P2_REG_INTMASK, int_mask);
-
-   return FALSE;
-}
-
-
-
-/****i* prism2.device/RXInt ************************************************
-*
-*   NAME
-*	RXInt -- Soft interrupt for packet reception.
-*
-*   SYNOPSIS
-*	RXInt(unit)
-*
-*	VOID RXInt(struct DevUnit *);
-*
-*   FUNCTION
-*
-*   INPUTS
-*	unit - A unit of this device.
-*
-*   RESULT
-*	None.
-*
-****************************************************************************
-*
-*/
-
-static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
-{
-   UWORD frame_status, offset, packet_size, frame_id, message_type;
-   struct DevBase *base;
-   BOOL is_orphan, accepted, is_snap;
-   ULONG packet_type;
-   UBYTE *buffer;
-   struct IOSana2Req *request, *request_tail;
-   struct Opener *opener, *opener_tail;
-   struct TypeStats *tracker;
-
-   base = unit->device;
-   buffer = unit->rx_buffer;
-
-   while((unit->LEWordIn(unit->card, P2_REG_EVENTS) & P2_EVENTF_RX) != 0)
-   {
-      unit->stats.PacketsReceived++;
-      frame_id = unit->LEWordIn(unit->card, P2_REG_RXFID);
-      P2Seek(unit, 1, frame_id, P2_FRM_STATUS, base);
-      frame_status = unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      if((frame_status & (P2_FRM_STATUSF_BADCRYPT | P2_FRM_STATUSF_BADCRC))
-         == 0)
-      {
-         /* Read packet header */
-
-         is_orphan = TRUE;
-         if(unit->firmware_type == HERMES2_FIRMWARE)
-            offset = P2_H2FRM_ETHFRAME;
-         else
-            offset = P2_FRM_ETHFRAME;
-         P2Seek(unit, 1, frame_id, offset, base);
-         unit->WordsIn(unit->card, P2_REG_DATA1, (UWORD *)buffer,
-            ETH_SNAPHEADERSIZE / 2);
-
-         if(AddressFilter(unit, buffer + ETH_PACKET_DEST, base))
-         {
-            packet_size = BEWord(*((UWORD *)(buffer + ETH_PACKET_IEEELEN)))
-               + ETH_HEADERSIZE;
-            message_type = frame_status >> P2_FRM_STATUSB_MSGTYPE;
-            is_snap = message_type == P2_MSGTYPE_RFC1042 ||
-               message_type == P2_MSGTYPE_TUNNEL;
-            if(is_snap)
-            {
-               packet_type =
-                  BEWord(*((UWORD *)(buffer + ETH_PACKET_SNAPTYPE)));
-               packet_size -= ETH_SNAPHEADERSIZE - ETH_HEADERSIZE;
-            }
-            else
-               packet_type =
-                  BEWord(*((UWORD *)(buffer + ETH_PACKET_IEEELEN)));
-
-            opener = (APTR)unit->openers.mlh_Head;
-            opener_tail = (APTR)&unit->openers.mlh_Tail;
-
-            /* Offer packet to every opener */
-
-            while(opener != opener_tail)
-            {
-               request = (APTR)opener->read_port.mp_MsgList.lh_Head;
-               request_tail = (APTR)&opener->read_port.mp_MsgList.lh_Tail;
-               accepted = FALSE;
-
-               /* Offer packet to each request until it's accepted */
-
-               while(request != request_tail && !accepted)
-               {
-                  if(request->ios2_PacketType == packet_type)
-                  {
-                     CopyPacket(unit, request, packet_size, packet_type,
-                        buffer, !is_orphan, frame_id, base);
-                     accepted = TRUE;
-                  }
-                  request =
-                     (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
-               }
-
-               if(accepted)
-                  is_orphan = FALSE;
-               opener = (APTR)opener->node.mln_Succ;
-            }
-
-            /* If packet was unwanted, give it to S2_READORPHAN request */
-
-            if(is_orphan)
-            {
-               unit->stats.UnknownTypesReceived++;
-               if(!IsMsgPortEmpty(unit->request_ports[ADOPT_QUEUE]))
-               {
-                  CopyPacket(unit,
-                     (APTR)unit->request_ports[ADOPT_QUEUE]->
-                     mp_MsgList.lh_Head, packet_size, packet_type, buffer,
-                     FALSE, frame_id, base);
-               }
-            }
-
-            /* Update remaining statistics */
-
-            if(packet_type <= ETH_MTU)
-               packet_type = ETH_MTU;
-            tracker =
-               FindTypeStats(unit, &unit->type_trackers, packet_type, base);
-            if(tracker != NULL)
-            {
-               tracker->stats.PacketsReceived++;
-               tracker->stats.BytesReceived += packet_size;
-            }
-         }
-      }
-      else
-      {
-         ReportEvents(unit, S2EVENT_ERROR | S2EVENT_HARDWARE | S2EVENT_RX,
-            base);
-      }
-
-      /* Discard packet */
-
-      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_RX);
-   }
-
-   /* Re-enable RX interrupts */
-
-   Disable();
-   unit->LEWordOut(unit->card, P2_REG_INTMASK,
-      unit->LEWordIn(unit->card, P2_REG_INTMASK) | P2_EVENTF_RX);
-   Enable();
-   return;
-}
-
-
-
 /****i* prism2.device/CopyPacket *******************************************
 *
 *   NAME
@@ -1466,186 +1240,6 @@ static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
 
 
 
-/****i* prism2.device/TXInt ************************************************
-*
-*   NAME
-*	TXInt -- Soft interrupt for packet transmission.
-*
-*   SYNOPSIS
-*	TXInt(unit)
-*
-*	VOID TXInt(struct DevUnit *);
-*
-*   FUNCTION
-*
-*   INPUTS
-*	unit - A unit of this device.
-*
-*   RESULT
-*	None.
-*
-****************************************************************************
-*
-*/
-
-static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
-{
-   UWORD i, packet_size, data_size, packet_type, ieee_length,
-      frame_id;
-   UBYTE *buffer;
-   struct DevBase *base;
-   struct IOSana2Req *request;
-   BOOL is_ieee;
-   struct Opener *opener;
-   ULONG wire_error;
-   UBYTE *(*dma_tx_function)(REG(a0, APTR));
-   BYTE error = 0;
-   struct MsgPort *port;
-   struct TypeStats *tracker;
-
-   base = unit->device;
-   port = unit->request_ports[WRITE_QUEUE];
-
-   if(unit->tx_frame_id != 0 && !IsMsgPortEmpty(port))
-   {
-      request = (APTR)port->mp_MsgList.lh_Head;
-      data_size = packet_size = request->ios2_DataLength;
-
-      if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
-         packet_size += ETH_PACKET_DATA;
-
-      /* Get packet data */
-
-      opener = request->ios2_BufferManagement;
-      dma_tx_function = opener->dma_tx_function;
-      if(dma_tx_function != NULL)
-         buffer = dma_tx_function(request->ios2_Data);
-      else
-         buffer = NULL;
-
-      if(buffer == NULL)
-      {
-         buffer = unit->tx_buffer;
-         if(!opener->tx_function(buffer, request->ios2_Data, data_size))
-         {
-            error = S2ERR_NO_RESOURCES;
-            wire_error = S2WERR_BUFF_ERROR;
-            ReportEvents(unit,
-               S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF | S2EVENT_TX,
-               base);
-         }
-      }
-
-      if(error == 0)
-      {
-         /* Get packet type or length */
-
-         if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
-            packet_type = BEWord(*(UWORD *)(buffer + ETH_PACKET_TYPE));
-         else
-            packet_type = request->ios2_PacketType;
-         is_ieee = packet_type <= ETH_MTU;
-
-         /* Write packet descriptor */
-
-         if(unit->firmware_type == HERMES2_FIRMWARE)
-         {
-            P2Seek(unit, 0, unit->tx_frame_id, 0, base);
-            for(i = 0; i < P2_H2FRM_ETHFRAME / 2; i++)
-               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
-         }
-         else
-         {
-            P2Seek(unit, 0, unit->tx_frame_id, 0, base);
-            for(i = 0; i < P2_FRM_HEADER / 2; i++)
-               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
-            unit->LEWordOut(unit->card, P2_REG_DATA0,
-               IEEE802_11_FRMTYPE_DATA << IEEE802_11_FRM_CONTROLB_TYPE);
-            for(i++; i < P2_FRM_ETHFRAME / 2; i++)
-               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
-         }
-
-         /* Write packet header */
-
-         if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
-         {
-            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)buffer,
-               ETH_ADDRESSSIZE * 2 / 2);
-            buffer += ETH_HEADERSIZE;
-         }
-         else
-         {
-            unit->WordsOut(unit->card, P2_REG_DATA0,
-               (UWORD *)request->ios2_DstAddr, ETH_ADDRESSSIZE / 2);
-            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)unit->address,
-               ETH_ADDRESSSIZE / 2);
-         }
-
-         if(is_ieee)
-         {
-            ieee_length = packet_type;
-         }
-         else
-         {
-            ieee_length = request->ios2_DataLength + ETH_SNAPHEADERSIZE
-               - ETH_HEADERSIZE;
-            if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
-               ieee_length -= ETH_HEADERSIZE;
-         }
-
-         unit->BEWordOut(unit->card, P2_REG_DATA0, ieee_length);
-
-         if(!is_ieee)
-         {
-            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)snap_stuff,
-               (ETH_PACKET_SNAPTYPE - ETH_HEADERSIZE) / 2);
-            unit->BEWordOut(unit->card, P2_REG_DATA0, packet_type);
-         }
-
-         /* Write packet data and send */
-
-         unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)buffer,
-            (packet_size - ETH_HEADERSIZE + 1) / 2);
-         frame_id = unit->tx_frame_id;
-         unit->tx_frame_id = 0;
-         P2DoCmd(unit, P2_CMD_TX | P2_CMDF_RECLAIM, frame_id, base);
-      }
-
-      /* Reply request */
-
-      request->ios2_Req.io_Error = error;
-      request->ios2_WireError = wire_error;
-      Remove((APTR)request);
-      ReplyMsg((APTR)request);
-
-      /* Update statistics */
-
-      if(error == 0)
-      {
-         unit->stats.PacketsSent++;
-
-         tracker = FindTypeStats(unit, &unit->type_trackers,
-            request->ios2_PacketType, base);
-         if(tracker != NULL)
-         {
-            tracker->stats.PacketsSent++;
-            tracker->stats.BytesSent += packet_size;
-         }
-      }
-   }
-
-   /* Don't try to keep sending packets if there's no space left */
-
-   if(unit->tx_frame_id != 0)
-      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
-   else
-      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
-
-   return;
-}
-
-
-
 /****i* prism2.device/UpdateStats ******************************************
 *
 *   NAME
@@ -1686,93 +1280,6 @@ VOID UpdateStats(struct DevUnit *unit, struct DevBase *base)
 
    return;
 }
-
-
-
-/****i* prism2.device/InfoInt *********************************************
-*
-*   NAME
-*	InfoInt
-*
-*   SYNOPSIS
-*	InfoInt(unit)
-*
-*	VOID InfoInt(struct DevUnit *);
-*
-*   FUNCTION
-*
-*   INPUTS
-*	unit - A unit of this device.
-*
-*   RESULT
-*	None.
-*
-*   NOTES
-*	The only reason this is a (soft) interrupt is so that it won't
-*	interfere with RXInt() by interrupting it. This would be dangerous
-*	because they use the same data channel.
-*
-****************************************************************************
-*
-*/
-
-static VOID InfoInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
-{
-   struct DevBase *base;
-   UWORD id;
-
-   base = unit->device;
-   id = unit->LEWordIn(unit->card, P2_REG_INFOFID);
-
-   /* Read useful stats and skip others */
-
-   P2Seek(unit, 1, id, 2, base);
-
-   if(unit->LEWordIn(unit->card, P2_REG_DATA1) == P2_INFO_COUNTERS)
-   {
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->special_stats[S2SS_ETHERNET_RETRIES & 0xffff] +=
-         unit->LEWordIn(unit->card, P2_REG_DATA1) +
-         unit->LEWordIn(unit->card, P2_REG_DATA1) +
-         unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->stats.BadData += unit->LEWordIn(unit->card, P2_REG_DATA1);
-      unit->stats.Overruns += unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->LEWordIn(unit->card, P2_REG_DATA1);
-
-      unit->stats.BadData += unit->LEWordIn(unit->card, P2_REG_DATA1);
-   }
-
-   /* Acknowledge event and re-enable info interrupts */
-
-   unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_INFO);
-   Disable();
-   if((unit->flags & UNITF_ONLINE) != 0)
-      unit->LEWordOut(unit->card, P2_REG_INTMASK,
-         unit->LEWordIn(unit->card, P2_REG_INTMASK) | P2_EVENTF_INFO);
-   Enable();
-
-   return;
-}
-
-
 
 /****i* prism2.device/ReportEvents *****************************************
 *
@@ -2402,6 +1909,511 @@ static UPINT StrLen(const TEXT *s)
    for(p = s; *p != '\0'; p++);
    return p - s;
 }
+
+#undef SysBase
+
+/****i* prism2.device/StatusInt ********************************************
+*
+*   NAME
+*	StatusInt
+*
+*   SYNOPSIS
+*	finished = StatusInt(unit)
+*
+*	BOOL StatusInt(struct DevUnit *);
+*
+*   FUNCTION
+*
+*   INPUTS
+*	unit
+*
+*   RESULT
+*	finished
+*
+****************************************************************************
+*
+* int_code is really in A5, but GCC 2.95.3 doesn't seem able to handle that.
+* Since we don't use this parameter, we can lie.
+*
+*/
+
+AROS_UFIH1(StatusInt, struct DevUnit *, unit)
+{
+   AROS_USERFUNC_INIT
+
+   struct DevBase *base;
+   UWORD events, int_mask;
+
+   base = unit->device;
+   events = unit->LEWordIn(unit->card, P2_REG_EVENTS);
+
+   /* Turning off ints acknowledges the request? */
+
+   int_mask = unit->LEWordIn(unit->card, P2_REG_INTMASK);
+   unit->LEWordOut(unit->card, P2_REG_INTMASK, 0);
+
+   /* Handle events */
+
+   if((events & P2_EVENTF_INFO) != 0)
+   {
+      int_mask &= ~P2_EVENTF_INFO;
+      Cause(&unit->info_int);
+   }
+   if((events & P2_EVENTF_RX) != 0)
+   {
+      int_mask &= ~P2_EVENTF_RX;
+      Cause(&unit->rx_int);
+   }
+   if((events & P2_EVENTF_ALLOCMEM) != 0)
+   {
+      unit->tx_frame_id = unit->LEWordIn(unit->card, P2_REG_ALLOCFID);
+      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_ALLOCMEM);
+      Cause(&unit->tx_int);
+   }
+   if((events & P2_EVENTF_TXFAIL) != 0)
+   {
+      ReportEvents(unit, S2EVENT_ERROR | S2EVENT_HARDWARE | S2EVENT_TX,
+         base);
+      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_TXFAIL);
+   }
+
+#ifdef __MORPHOS__
+   int_mask = INT_MASK;
+#endif
+   unit->LEWordOut(unit->card, P2_REG_INTMASK, int_mask);
+
+   return FALSE;
+
+   AROS_USERFUNC_EXIT
+}
+
+
+
+/****i* prism2.device/RXInt ************************************************
+*
+*   NAME
+*	RXInt -- Soft interrupt for packet reception.
+*
+*   SYNOPSIS
+*	RXInt(unit)
+*
+*	VOID RXInt(struct DevUnit *);
+*
+*   FUNCTION
+*
+*   INPUTS
+*	unit - A unit of this device.
+*
+*   RESULT
+*	None.
+*
+****************************************************************************
+*
+*/
+
+static AROS_UFIH1(RXInt, struct DevUnit *, unit)
+{
+   AROS_USERFUNC_INIT
+
+   UWORD frame_status, offset, packet_size, frame_id, message_type;
+   struct DevBase *base;
+   BOOL is_orphan, accepted, is_snap;
+   ULONG packet_type;
+   UBYTE *buffer;
+   struct IOSana2Req *request, *request_tail;
+   struct Opener *opener, *opener_tail;
+   struct TypeStats *tracker;
+
+   base = unit->device;
+   buffer = unit->rx_buffer;
+
+   while((unit->LEWordIn(unit->card, P2_REG_EVENTS) & P2_EVENTF_RX) != 0)
+   {
+      unit->stats.PacketsReceived++;
+      frame_id = unit->LEWordIn(unit->card, P2_REG_RXFID);
+      P2Seek(unit, 1, frame_id, P2_FRM_STATUS, base);
+      frame_status = unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      if((frame_status & (P2_FRM_STATUSF_BADCRYPT | P2_FRM_STATUSF_BADCRC))
+         == 0)
+      {
+         /* Read packet header */
+
+         is_orphan = TRUE;
+         if(unit->firmware_type == HERMES2_FIRMWARE)
+            offset = P2_H2FRM_ETHFRAME;
+         else
+            offset = P2_FRM_ETHFRAME;
+         P2Seek(unit, 1, frame_id, offset, base);
+         unit->WordsIn(unit->card, P2_REG_DATA1, (UWORD *)buffer,
+            ETH_SNAPHEADERSIZE / 2);
+
+         if(AddressFilter(unit, buffer + ETH_PACKET_DEST, base))
+         {
+            packet_size = BEWord(*((UWORD *)(buffer + ETH_PACKET_IEEELEN)))
+               + ETH_HEADERSIZE;
+            message_type = frame_status >> P2_FRM_STATUSB_MSGTYPE;
+            is_snap = message_type == P2_MSGTYPE_RFC1042 ||
+               message_type == P2_MSGTYPE_TUNNEL;
+            if(is_snap)
+            {
+               packet_type =
+                  BEWord(*((UWORD *)(buffer + ETH_PACKET_SNAPTYPE)));
+               packet_size -= ETH_SNAPHEADERSIZE - ETH_HEADERSIZE;
+            }
+            else
+               packet_type =
+                  BEWord(*((UWORD *)(buffer + ETH_PACKET_IEEELEN)));
+
+            opener = (APTR)unit->openers.mlh_Head;
+            opener_tail = (APTR)&unit->openers.mlh_Tail;
+
+            /* Offer packet to every opener */
+
+            while(opener != opener_tail)
+            {
+               request = (APTR)opener->read_port.mp_MsgList.lh_Head;
+               request_tail = (APTR)&opener->read_port.mp_MsgList.lh_Tail;
+               accepted = FALSE;
+
+               /* Offer packet to each request until it's accepted */
+
+               while(request != request_tail && !accepted)
+               {
+                  if(request->ios2_PacketType == packet_type)
+                  {
+                     CopyPacket(unit, request, packet_size, packet_type,
+                        buffer, !is_orphan, frame_id, base);
+                     accepted = TRUE;
+                  }
+                  request =
+                     (APTR)request->ios2_Req.io_Message.mn_Node.ln_Succ;
+               }
+
+               if(accepted)
+                  is_orphan = FALSE;
+               opener = (APTR)opener->node.mln_Succ;
+            }
+
+            /* If packet was unwanted, give it to S2_READORPHAN request */
+
+            if(is_orphan)
+            {
+               unit->stats.UnknownTypesReceived++;
+               if(!IsMsgPortEmpty(unit->request_ports[ADOPT_QUEUE]))
+               {
+                  CopyPacket(unit,
+                     (APTR)unit->request_ports[ADOPT_QUEUE]->
+                     mp_MsgList.lh_Head, packet_size, packet_type, buffer,
+                     FALSE, frame_id, base);
+               }
+            }
+
+            /* Update remaining statistics */
+
+            if(packet_type <= ETH_MTU)
+               packet_type = ETH_MTU;
+            tracker =
+               FindTypeStats(unit, &unit->type_trackers, packet_type, base);
+            if(tracker != NULL)
+            {
+               tracker->stats.PacketsReceived++;
+               tracker->stats.BytesReceived += packet_size;
+            }
+         }
+      }
+      else
+      {
+         ReportEvents(unit, S2EVENT_ERROR | S2EVENT_HARDWARE | S2EVENT_RX,
+            base);
+      }
+
+      /* Discard packet */
+
+      unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_RX);
+   }
+
+   /* Re-enable RX interrupts */
+
+   Disable();
+   unit->LEWordOut(unit->card, P2_REG_INTMASK,
+      unit->LEWordIn(unit->card, P2_REG_INTMASK) | P2_EVENTF_RX);
+   Enable();
+   return FALSE;
+
+   AROS_USERFUNC_EXIT
+}
+
+/****i* prism2.device/TXInt ************************************************
+*
+*   NAME
+*	TXInt -- Soft interrupt for packet transmission.
+*
+*   SYNOPSIS
+*	TXInt(unit)
+*
+*	VOID TXInt(struct DevUnit *);
+*
+*   FUNCTION
+*
+*   INPUTS
+*	unit - A unit of this device.
+*
+*   RESULT
+*	None.
+*
+****************************************************************************
+*
+*/
+
+static AROS_UFIH1(TXInt, struct DevUnit *, unit)
+{
+   AROS_USERFUNC_INIT
+
+   UWORD i, packet_size, data_size, packet_type, ieee_length,
+      frame_id;
+   UBYTE *buffer;
+   struct DevBase *base;
+   struct IOSana2Req *request;
+   BOOL is_ieee;
+   struct Opener *opener;
+   ULONG wire_error;
+   UBYTE *(*dma_tx_function)(REG(a0, APTR));
+   BYTE error = 0;
+   struct MsgPort *port;
+   struct TypeStats *tracker;
+
+   base = unit->device;
+   port = unit->request_ports[WRITE_QUEUE];
+
+   if(unit->tx_frame_id != 0 && !IsMsgPortEmpty(port))
+   {
+      request = (APTR)port->mp_MsgList.lh_Head;
+      data_size = packet_size = request->ios2_DataLength;
+
+      if((request->ios2_Req.io_Flags & SANA2IOF_RAW) == 0)
+         packet_size += ETH_PACKET_DATA;
+
+      /* Get packet data */
+
+      opener = request->ios2_BufferManagement;
+      dma_tx_function = opener->dma_tx_function;
+      if(dma_tx_function != NULL)
+         buffer = dma_tx_function(request->ios2_Data);
+      else
+         buffer = NULL;
+
+      if(buffer == NULL)
+      {
+         buffer = unit->tx_buffer;
+         if(!opener->tx_function(buffer, request->ios2_Data, data_size))
+         {
+            error = S2ERR_NO_RESOURCES;
+            wire_error = S2WERR_BUFF_ERROR;
+            ReportEvents(unit,
+               S2EVENT_ERROR | S2EVENT_SOFTWARE | S2EVENT_BUFF | S2EVENT_TX,
+               base);
+         }
+      }
+
+      if(error == 0)
+      {
+         /* Get packet type or length */
+
+         if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
+            packet_type = BEWord(*(UWORD *)(buffer + ETH_PACKET_TYPE));
+         else
+            packet_type = request->ios2_PacketType;
+         is_ieee = packet_type <= ETH_MTU;
+
+         /* Write packet descriptor */
+
+         if(unit->firmware_type == HERMES2_FIRMWARE)
+         {
+            P2Seek(unit, 0, unit->tx_frame_id, 0, base);
+            for(i = 0; i < P2_H2FRM_ETHFRAME / 2; i++)
+               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
+         }
+         else
+         {
+            P2Seek(unit, 0, unit->tx_frame_id, 0, base);
+            for(i = 0; i < P2_FRM_HEADER / 2; i++)
+               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
+            unit->LEWordOut(unit->card, P2_REG_DATA0,
+               IEEE802_11_FRMTYPE_DATA << IEEE802_11_FRM_CONTROLB_TYPE);
+            for(i++; i < P2_FRM_ETHFRAME / 2; i++)
+               unit->LEWordOut(unit->card, P2_REG_DATA0, 0);
+         }
+
+         /* Write packet header */
+
+         if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
+         {
+            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)buffer,
+               ETH_ADDRESSSIZE * 2 / 2);
+            buffer += ETH_HEADERSIZE;
+         }
+         else
+         {
+            unit->WordsOut(unit->card, P2_REG_DATA0,
+               (UWORD *)request->ios2_DstAddr, ETH_ADDRESSSIZE / 2);
+            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)unit->address,
+               ETH_ADDRESSSIZE / 2);
+         }
+
+         if(is_ieee)
+         {
+            ieee_length = packet_type;
+         }
+         else
+         {
+            ieee_length = request->ios2_DataLength + ETH_SNAPHEADERSIZE
+               - ETH_HEADERSIZE;
+            if((request->ios2_Req.io_Flags & SANA2IOF_RAW) != 0)
+               ieee_length -= ETH_HEADERSIZE;
+         }
+
+         unit->BEWordOut(unit->card, P2_REG_DATA0, ieee_length);
+
+         if(!is_ieee)
+         {
+            unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)snap_stuff,
+               (ETH_PACKET_SNAPTYPE - ETH_HEADERSIZE) / 2);
+            unit->BEWordOut(unit->card, P2_REG_DATA0, packet_type);
+         }
+
+         /* Write packet data and send */
+
+         unit->WordsOut(unit->card, P2_REG_DATA0, (UWORD *)buffer,
+            (packet_size - ETH_HEADERSIZE + 1) / 2);
+         frame_id = unit->tx_frame_id;
+         unit->tx_frame_id = 0;
+         P2DoCmd(unit, P2_CMD_TX | P2_CMDF_RECLAIM, frame_id, base);
+      }
+
+      /* Reply request */
+
+      request->ios2_Req.io_Error = error;
+      request->ios2_WireError = wire_error;
+      Remove((APTR)request);
+      ReplyMsg((APTR)request);
+
+      /* Update statistics */
+
+      if(error == 0)
+      {
+         unit->stats.PacketsSent++;
+
+         tracker = FindTypeStats(unit, &unit->type_trackers,
+            request->ios2_PacketType, base);
+         if(tracker != NULL)
+         {
+            tracker->stats.PacketsSent++;
+            tracker->stats.BytesSent += packet_size;
+         }
+      }
+   }
+
+   /* Don't try to keep sending packets if there's no space left */
+
+   if(unit->tx_frame_id != 0)
+      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_SOFTINT;
+   else
+      unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
+
+   return FALSE;
+
+   AROS_USERFUNC_EXIT
+}
+
+
+/****i* prism2.device/InfoInt *********************************************
+*
+*   NAME
+*	InfoInt
+*
+*   SYNOPSIS
+*	InfoInt(unit)
+*
+*	VOID InfoInt(struct DevUnit *);
+*
+*   FUNCTION
+*
+*   INPUTS
+*	unit - A unit of this device.
+*
+*   RESULT
+*	None.
+*
+*   NOTES
+*	The only reason this is a (soft) interrupt is so that it won't
+*	interfere with RXInt() by interrupting it. This would be dangerous
+*	because they use the same data channel.
+*
+****************************************************************************
+*
+*/
+
+static AROS_UFIH1(InfoInt, struct DevUnit *, unit)
+{
+   AROS_USERFUNC_INIT
+
+   struct DevBase *base;
+   UWORD id;
+
+   base = unit->device;
+   id = unit->LEWordIn(unit->card, P2_REG_INFOFID);
+
+   /* Read useful stats and skip others */
+
+   P2Seek(unit, 1, id, 2, base);
+
+   if(unit->LEWordIn(unit->card, P2_REG_DATA1) == P2_INFO_COUNTERS)
+   {
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->special_stats[S2SS_ETHERNET_RETRIES & 0xffff] +=
+         unit->LEWordIn(unit->card, P2_REG_DATA1) +
+         unit->LEWordIn(unit->card, P2_REG_DATA1) +
+         unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->stats.BadData += unit->LEWordIn(unit->card, P2_REG_DATA1);
+      unit->stats.Overruns += unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->LEWordIn(unit->card, P2_REG_DATA1);
+
+      unit->stats.BadData += unit->LEWordIn(unit->card, P2_REG_DATA1);
+   }
+
+   /* Acknowledge event and re-enable info interrupts */
+
+   unit->LEWordOut(unit->card, P2_REG_ACKEVENTS, P2_EVENTF_INFO);
+   Disable();
+   if((unit->flags & UNITF_ONLINE) != 0)
+      unit->LEWordOut(unit->card, P2_REG_INTMASK,
+         unit->LEWordIn(unit->card, P2_REG_INTMASK) | P2_EVENTF_INFO);
+   Enable();
+
+   return FALSE;
+
+   AROS_USERFUNC_EXIT
+}
+
 
 
 

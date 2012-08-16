@@ -90,7 +90,7 @@ AROS_UFIH1(card_level2, struct CardResource *, CardResource)
 	   intreq,
 	   cah->cah_CardStatus->is_Data,
 	   cah->cah_CardStatus->is_Code));
-	status = AROS_UFIC1(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data);
+	status = AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, status);
 	INTDEBUG(bug("returned=%d\n", status));
     }
     if (status) {
@@ -99,7 +99,7 @@ AROS_UFIH1(card_level2, struct CardResource *, CardResource)
     }
     if (poststatus) {
     	INTDEBUG(bug("poststatus\n"));
-	AROS_UFIC1(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data);
+	AROS_CARDC(cah->cah_CardStatus->is_Code, cah->cah_CardStatus->is_Data, 0);
 	INTDEBUG(bug("returned\n"));
     }
 

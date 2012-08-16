@@ -334,9 +334,9 @@ AROS_UFIH1(IDE_Handler_A4000, struct amiga_driverdata *, ddata)
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFIH2(IDE_PCMCIA_Handler, void *, data, status)
+static AROS_CARDH(IDE_PCMCIA_Handler, void *, data, status)
 { 
-    AROS_USERFUNC_INIT
+    AROS_CARDFUNC_INIT
 
     struct amiga_pcmcia_driverdata *ddata = data;
     if (ddata->poststatus) {
@@ -348,7 +348,7 @@ AROS_UFIH2(IDE_PCMCIA_Handler, void *, data, status)
 
     return status;
 
-    AROS_USERFUNC_EXIT
+    AROS_CARDFUNC_EXIT
 }
 
 static BOOL ata_CreateInterrupt(struct ata_Bus *bus, UBYTE num)
@@ -595,7 +595,7 @@ static BOOL ata_amiga_pcmcia_init(struct ataBase *LIBBASE)
     ch->cah_CardRemoved = &ddata->removalint;
     ch->cah_CardInserted = &ddata->insertint;
     ch->cah_CardStatus->is_Data = ddata;
-    ch->cah_CardStatus->is_Code = (void*)IDE_PCMCIA_Handler;
+    ch->cah_CardStatus->is_Code = (VOID_FUNC)IDE_PCMCIA_Handler;
 #if 0
     ch->cah_CardRemoved->is_Data = ddata;
     ch->cah_CardRemoved->is_Code = (void*)IDE_PCMCIA_Removed;
