@@ -34,8 +34,8 @@ void pcmcia_newowner(struct CardResource *CardResource, BOOL doNotify)
 	    CARDDEBUG(bug("Executing cah_CardInserted(%p, %p)\n",
 		CardResource->ownedcard->cah_CardInserted->is_Data,
 		CardResource->ownedcard->cah_CardInserted->is_Code));
-		AROS_UFIC1(CardResource->ownedcard->cah_CardInserted->is_Code,
-		           CardResource->ownedcard->cah_CardInserted->is_Data);
+		AROS_CARDC(CardResource->ownedcard->cah_CardInserted->is_Code,
+		           CardResource->ownedcard->cah_CardInserted->is_Data, 0);
 	}
     }
     Permit();
@@ -50,8 +50,8 @@ void pcmcia_removeowner(struct CardResource *CardResource)
 	    CARDDEBUG(bug("Executing cah_CardRemoved(%p, %p)\n",
 		CardResource->ownedcard->cah_CardRemoved->is_Data,
 		CardResource->ownedcard->cah_CardRemoved->is_Code));
-		AROS_UFIC1(CardResource->ownedcard->cah_CardRemoved->is_Code,
-		           CardResource->ownedcard->cah_CardRemoved->is_Data);
+		AROS_CARDC(CardResource->ownedcard->cah_CardRemoved->is_Code,
+		           CardResource->ownedcard->cah_CardRemoved->is_Data, 0);
 	}
     }
     Permit();
