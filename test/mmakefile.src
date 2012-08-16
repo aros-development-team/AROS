@@ -96,7 +96,8 @@ COMMONTESTFILES := \
     smult
 
 SHTESTFILES=\
-    pcilist
+    pcilist \
+    true
 
 HOSTEDTESTFILES :=  \
     hostlib
