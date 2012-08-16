@@ -45,9 +45,9 @@
 #define RIGHT_BUTTON 	2
 #define MIDDLE_BUTTON	4
 
-static AROS_UFIH1(mouse_vblank, struct mouse_data *, mousedata)
+static AROS_INTH1(mouse_vblank, struct mouse_data *, mousedata)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     volatile struct CIA *cia = (struct CIA*)0xbfe001;
@@ -92,7 +92,7 @@ static AROS_UFIH1(mouse_vblank, struct mouse_data *, mousedata)
 
     return 0;
 	
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /***** Mouse::New()  ***************************************/

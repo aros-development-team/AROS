@@ -16,16 +16,16 @@
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
 
-static AROS_UFIH1(EhciResetHandler, struct PCIController *, hc)
+static AROS_INTH1(EhciResetHandler, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     // reset controller
     CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static void ehciFinishRequest(struct PCIUnit *unit, struct IOUsbHWReq *ioreq)
@@ -1088,9 +1088,9 @@ void ehciUpdateFrameCounter(struct PCIController *hc) {
     Enable();
 }
 
-static AROS_UFIH1(ehciCompleteInt, struct PCIController *, hc)
+static AROS_INTH1(ehciCompleteInt, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     KPRINTF(1, ("CompleteInt!\n"));
     ehciUpdateFrameCounter(hc);
@@ -1143,12 +1143,12 @@ static AROS_UFIH1(ehciCompleteInt, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(ehciIntCode, struct PCIController *, hc)
+static AROS_INTH1(ehciIntCode, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
@@ -1223,7 +1223,7 @@ static AROS_UFIH1(ehciIntCode, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {

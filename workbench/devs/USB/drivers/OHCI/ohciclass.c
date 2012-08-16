@@ -51,8 +51,8 @@ static const usb_hub_descriptor_t hub_descriptor = {
     DeviceRemovable:    {0,},
 };
 
-AROS_UFIP(OHCI_HubInterrupt);
-AROS_UFIP(ohci_Handler);
+AROS_INTP(OHCI_HubInterrupt);
+AROS_INTP(ohci_Handler);
 
 OOP_Object *METHOD(OHCI, Root, New)
 {

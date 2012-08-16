@@ -642,28 +642,28 @@ static void common_serial_int_handler(struct class_static_data *csd,
 	}	
 }
 
-AROS_UFIH1(serial_int_13, void *, data)
+AROS_INTH1(serial_int_13, void *, data)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
 	common_serial_int_handler(data, 0);
 	common_serial_int_handler(data, 2);
 
     return FALSE;
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
-AROS_UFIH1(serial_int_24, void *, data)
+AROS_INTH1(serial_int_24, void *, data)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
 	common_serial_int_handler(data, 1);
 	common_serial_int_handler(data, 3);
 
     return FALSE;
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
 static void adapt_data(struct HIDDSerialUnitData * data,

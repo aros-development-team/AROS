@@ -16,15 +16,15 @@
  * to replace it... TODO: this can be done after merging exec_init.c from
  * i386 and PPC native.
 */
-AROS_UFIH3(IntServer, struct List *, intList, intMask, custom)
+AROS_INTH3(IntServer, struct List *, intList, intMask, custom)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct Interrupt * irq;
     BOOL ret = FALSE;
 
     ForeachNode(intList, irq) {
-        if (AROS_UFIC3(irq->is_Code, irq->is_Data, intMask, custom)) {
+        if (AROS_INTC3(irq->is_Code, irq->is_Data, intMask, custom)) {
 #ifndef __mc68000
             ret = TRUE;
             break;
@@ -34,13 +34,13 @@ AROS_UFIH3(IntServer, struct List *, intList, intMask, custom)
 
     return ret;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* VBlankServer. The same as general purpose IntServer but also counts task's quantum */
-AROS_UFIH3(VBlankServer, struct List *, intList, intMask, custom)
+AROS_INTH3(VBlankServer, struct List *, intList, intMask, custom)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* First decrease Elapsed time for current task */
     if (SysBase->Elapsed && (--SysBase->Elapsed == 0))
@@ -50,7 +50,7 @@ AROS_UFIH3(VBlankServer, struct List *, intList, intMask, custom)
     }
 
     /* Chain to the generic routine */
-    return AROS_UFIC3(IntServer, intList, intMask, custom);
+    return AROS_INTC3(IntServer, intList, intMask, custom);
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }

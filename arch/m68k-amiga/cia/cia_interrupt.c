@@ -6,9 +6,9 @@
 
 #include "cia_intern.h"
 
-AROS_UFIH1(Cia_Handler, struct CIABase *, CiaBase)
+AROS_INTH1(Cia_Handler, struct CIABase *, CiaBase)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     UBYTE mask;
      
@@ -23,7 +23,7 @@ AROS_UFIH1(Cia_Handler, struct CIABase *, CiaBase)
             if (mask & (1 << i)) {
                 struct Interrupt *ciaint = CiaBase->Vectors[i];
                 if (ciaint) {
-                    AROS_UFIC1(ciaint->is_Code, ciaint->is_Data);
+                    AROS_INTC1(ciaint->is_Code, ciaint->is_Data);
                 }
             }
         }
@@ -32,5 +32,5 @@ AROS_UFIH1(Cia_Handler, struct CIABase *, CiaBase)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }

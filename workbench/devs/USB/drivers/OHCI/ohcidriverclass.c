@@ -271,9 +271,9 @@ void ohci_FreeED(OOP_Class *cl, OOP_Object *o, ohci_ed_t *ed)
     ohci_FreeTD(cl, o, (ohci_td_t *)ed);
 }
 
-AROS_UFIH1(ohci_Handler, ohci_data_t *,ohci)
+AROS_INTH1(ohci_Handler, ohci_data_t *,ohci)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     uint32_t intrs = 0;
     uint32_t done;
@@ -447,7 +447,7 @@ AROS_UFIH1(ohci_Handler, ohci_data_t *,ohci)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 BOOL METHOD(OHCI, Hidd_USBDrv, AddInterrupt)

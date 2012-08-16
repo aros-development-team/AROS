@@ -267,7 +267,7 @@ LONG getGeometry
 	return DoIO((struct IORequest *)&ioh->ioreq->iotd_Req);
 }
 
-AROS_UFIP(changeIntCode);
+AROS_INTP(changeIntCode);
 
 LONG addChangeInt(struct AFSBase *afsbase, struct IOHandle *ioh) {
 
@@ -558,14 +558,14 @@ BOOL retry = TRUE;
 
 #undef SysBase
 
-AROS_UFIH1(changeIntCode, struct IOHandle *, ioh)
+AROS_INTH1(changeIntCode, struct IOHandle *, ioh)
 {
-	AROS_USERFUNC_INIT
+	AROS_INTFUNC_INIT
 
 	ioh->ioflags |= IOHF_MEDIA_CHANGE;
 	Signal(ioh->afsbase->port.mp_SigTask, 1<<ioh->afsbase->port.mp_SigBit);
 
 	return FALSE;
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }

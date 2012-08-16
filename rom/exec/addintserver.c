@@ -21,7 +21,7 @@ static void krnIRQwrapper(void *data1, void *data2)
 {
     struct Interrupt *irq = (struct Interrupt *)data1;
 
-    AROS_UFIC1(irq->is_Code, irq->is_Data);
+    AROS_INTC1(irq->is_Code, irq->is_Data);
 }
 
 /*****************************************************************************

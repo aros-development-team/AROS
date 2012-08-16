@@ -51,15 +51,15 @@ static inline void ehciFreeTD(struct ehc_controller *ehc, struct EhciTD *etd) {
     ehc->ehc_EhciTDPool = etd;
 }
 
-static AROS_UFIH1(ehciResetHandler, struct ehc_controller *, ehc)
+static AROS_INTH1(ehciResetHandler, struct ehc_controller *, ehc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     CONSTWRITEREG32_LE(ehc->ehc_opregbase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));     /* Resets the controller */
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void ehciFreeAsyncContext(struct ehc_controller *ehc, struct EhciQH *eqh) {

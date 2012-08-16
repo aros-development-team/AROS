@@ -45,9 +45,9 @@
 
 // CIA-A level 2 serial interrupt handler
 
-static AROS_UFIH1(keyboard_interrupt, struct kbd_data *, kbddata)
+static AROS_INTH1(keyboard_interrupt, struct kbd_data *, kbddata)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     volatile struct CIA *ciaa = (struct CIA*)0xbfe001;
     struct Library *TimerBase = kbddata->TimerBase;
@@ -92,7 +92,7 @@ static AROS_UFIH1(keyboard_interrupt, struct kbd_data *, kbddata)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 OOP_Object * AmigaKbd__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)

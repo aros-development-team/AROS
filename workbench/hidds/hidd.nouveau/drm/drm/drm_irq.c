@@ -393,13 +393,13 @@ int drm_irq_install(struct drm_device *dev)
 }
 EXPORT_SYMBOL(drm_irq_install);
 #else
-static AROS_UFIH1(interrupt_handler, struct drm_device *, dev)
+static AROS_INTH1(interrupt_handler, struct drm_device *, dev)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     if (dev->driver->irq_handler)
         dev->driver->irq_handler(dev);
     return FALSE;
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 int drm_irq_install(struct drm_device *dev)

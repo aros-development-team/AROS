@@ -32,9 +32,9 @@
 #include "timer_macros.h"
 
 /* exec.library VBlank interrupt handler  */
-static AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
+static AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /*
      * First increment the current time. No need to Disable() here as
@@ -54,7 +54,7 @@ static AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/

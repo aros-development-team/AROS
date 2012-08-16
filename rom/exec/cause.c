@@ -47,7 +47,7 @@
 
 	The software interrupt is called with the following prototype:
 
-    AROS_UFIC1(YourIntCode, APTR, interruptData)
+    AROS_INTC1(YourIntCode, APTR, interruptData)
 
 	The interruptData is the value of the is_Data field.
 
@@ -129,9 +129,9 @@
     This procedure could be more efficient.
 */
 
-AROS_UFIH0(SoftIntDispatch)
+AROS_INTH0(SoftIntDispatch)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct Interrupt *intr = NULL;
     BYTE i;
@@ -167,7 +167,7 @@ AROS_UFIH0(SoftIntDispatch)
                     KrnSti();
 
                     /* Call the software interrupt. */
-                    AROS_UFIC1(intr->is_Code, intr->is_Data);
+                    AROS_INTC1(intr->is_Code, intr->is_Data);
 
                     /* Get out and start loop *all* over again *from scratch*! */
                     break;
@@ -193,5 +193,5 @@ AROS_UFIH0(SoftIntDispatch)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }

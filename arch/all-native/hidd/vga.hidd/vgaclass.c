@@ -34,9 +34,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static AROS_UFIH1(ResetHandler, struct vga_staticdata *, xsd)
+static AROS_INTH1(ResetHandler, struct vga_staticdata *, xsd)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
 /* On my machine this fills the screen with colorful vertical stripes
    instead of blanking. So for now we use software method.
@@ -54,7 +54,7 @@ static AROS_UFIH1(ResetHandler, struct vga_staticdata *, xsd)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* Default graphics modes */

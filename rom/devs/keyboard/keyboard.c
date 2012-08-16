@@ -107,7 +107,7 @@ static const UWORD SupportedCommands[] =
 /****************************************************************************************/
 
 VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
-AROS_UFIP(kbdSendQueuedEvents);
+AROS_INTP(kbdSendQueuedEvents);
 static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 /****************************************************************************************/
@@ -517,7 +517,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    {
 		/* We may be inside an interrupt when we come here. Maybe
 		   we shall use some other technique? */
-		    AROS_UFIC1(node->is_Code, node->is_Data);
+		    AROS_INTC1(node->is_Code, node->is_Data);
 	    }
 	}
 	else
@@ -646,7 +646,7 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 	D(bug("doing software irq\n"));
 	Cause(&KBBase->kb_Interrupt);
 #else
-    AROS_UFIC1(kbdSendQueuedEvents, KBBase);
+    AROS_INTC1(kbdSendQueuedEvents, KBBase);
 #endif
     }
     
@@ -665,9 +665,9 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 
 #undef SysBase
 
-AROS_UFIH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
+AROS_INTH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* Broadcast keys */
     struct IORequest *ioreq, *nextnode;
@@ -694,7 +694,7 @@ AROS_UFIH1(kbdSendQueuedEvents, struct KeyboardBase *, KBBase)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/

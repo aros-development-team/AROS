@@ -14,8 +14,8 @@
 #include <aros/symbolsets.h>
 #include "card_intern.h"
 
-AROS_UFIP(card_level2);
-AROS_UFIP(card_level6);
+AROS_INTP(card_level2);
+AROS_INTP(card_level6);
 
 void CardTask(struct Task *parent, struct CardResource *CardResource);
 

@@ -211,9 +211,9 @@ void ahci_os_unlock_port(struct ahci_port *ap)
 	lockmgr(&ap->ap_lock, LK_RELEASE);
 }
 
-AROS_UFIH1(ahci_Interrupt, void **, fa)
+AROS_INTH1(ahci_Interrupt, void **, fa)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     driver_intr_t *func = fa[0];
     void *arg =  fa[1];
@@ -222,7 +222,7 @@ AROS_UFIH1(ahci_Interrupt, void **, fa)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* IRQ management */

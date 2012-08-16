@@ -64,16 +64,16 @@ static void PrintED(const char *txt, struct OhciED *oed, struct PCIController *h
 #define PrintED(txt, oed, hc)
 #endif
 
-static AROS_UFIH1(OhciResetHandler, struct PCIController *, hc)
+static AROS_INTH1(OhciResetHandler, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     // reset controller
     CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static void ohciFreeTDChain(struct PCIController *hc, struct OhciTD *nextotd)
@@ -1036,9 +1036,9 @@ void ohciUpdateFrameCounter(struct PCIController *hc)
     Enable();
 }
 
-static AROS_UFIH1(ohciCompleteInt, struct PCIController *,hc)
+static AROS_INTH1(ohciCompleteInt, struct PCIController *,hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     ULONG restartmask = 0;
 
@@ -1090,12 +1090,12 @@ static AROS_UFIH1(ohciCompleteInt, struct PCIController *,hc)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(ohciIntCode, struct PCIController *, hc)
+static AROS_INTH1(ohciIntCode, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct PCIDevice *base = hc->hc_Device;
     struct PCIUnit *unit = hc->hc_Unit;
@@ -1274,7 +1274,7 @@ static AROS_UFIH1(ohciIntCode, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /*

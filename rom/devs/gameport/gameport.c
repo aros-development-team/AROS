@@ -98,16 +98,16 @@ static const UWORD SupportedCommands[] =
 static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_ExtEvent *ev);
-static AROS_UFIP(gpSendQueuedEvents);
+static AROS_INTP(gpSendQueuedEvents);
 
 
 /****************************************************************************************/
 
 /* 'data' is a pointer to GPBase->gp_nTicks. */
 
-AROS_UFIH1(gpVBlank, LIBBASETYPEPTR, GPBase)
+AROS_INTH1(gpVBlank, LIBBASETYPEPTR, GPBase)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     if (GPBase->gp_nTicks < ~0)
     {
@@ -116,7 +116,7 @@ AROS_UFIH1(gpVBlank, LIBBASETYPEPTR, GPBase)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static int GM_UNIQUENAME(init)(LIBBASETYPEPTR GPBase)
@@ -534,7 +534,7 @@ static VOID mouseCallback(struct GameportBase *GPBase,
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 	Cause(&GPBase->gp_Interrupt);	
 #else
-    AROS_UFIC1(gpSendQueuedEvents, GPBase);
+    AROS_INTC1(gpSendQueuedEvents, GPBase);
 #endif
     }
     
@@ -548,9 +548,9 @@ Copied and pasted from the function above */
 
 #undef SysBase
 
-static AROS_UFIH1(gpSendQueuedEvents, struct GameportBase *, GPBase)
+static AROS_INTH1(gpSendQueuedEvents, struct GameportBase *, GPBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* Broadcast keys */
     struct IORequest 	*ioreq, *nextnode;
@@ -586,7 +586,7 @@ static AROS_UFIH1(gpSendQueuedEvents, struct GameportBase *, GPBase)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -162,9 +162,9 @@ static struct IntData
     ULONG signal;
 } DiskChangeIntData;
 
-static AROS_UFIH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
+static AROS_INTH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct ExecBase *SysBase = MyIntData->SysBase;
 
@@ -173,7 +173,7 @@ static AROS_UFIH1(DiskChangeIntHandler, struct IntData *,  MyIntData)
     Signal(MyIntData->task, MyIntData->signal);
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 LONG InitDiskHandler (struct FileSysStartupMsg *fssm)

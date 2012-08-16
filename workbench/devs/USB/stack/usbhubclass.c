@@ -62,9 +62,9 @@ static void hub_process();
  * The HubInterrupt() is a tiny software interrupt routine that signals the
  * hub process about the need of hub exploration
  */
-AROS_UFIH1(HubInterrupt, HubData *, hub)
+AROS_INTH1(HubInterrupt, HubData *, hub)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* Signal the HUB process about incoming interrupt */
     if (hub->hub_task)
@@ -72,7 +72,7 @@ AROS_UFIH1(HubInterrupt, HubData *, hub)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /*

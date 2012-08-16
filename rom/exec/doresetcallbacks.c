@@ -25,5 +25,5 @@ void Exec_DoResetCallbacks(struct IntExecBase *IntSysBase)
 
     for (i = (struct Interrupt *)IntSysBase->ResetHandlers.lh_Head; i->is_Node.ln_Succ;
          i = (struct Interrupt *)i->is_Node.ln_Succ)
-        AROS_UFIC1(i->is_Code, i->is_Data);
+        AROS_INTC1(i->is_Code, i->is_Data);
 }

@@ -78,15 +78,15 @@ Cause() a software irq, but Cause() does not work at the moment..
 
 /****************************************************************************************/
 
-AROS_UFIH1(x11VBlank, struct Task *, task)
+AROS_INTH1(x11VBlank, struct Task *, task)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(task, SIGBREAKF_CTRL_D);
     
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/

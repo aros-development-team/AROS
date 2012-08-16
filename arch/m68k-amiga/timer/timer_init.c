@@ -46,9 +46,9 @@
 #include <timer_intern.h>
 #include <timer_platform.h>
 
-AROS_UFIP(ciab_eclock);
-AROS_UFIP(ciaint_timer);
-AROS_UFIP(cia_vbint);
+AROS_INTP(ciab_eclock);
+AROS_INTP(ciaint_timer);
+AROS_INTP(cia_vbint);
 
 /****************************************************************************************/
 

@@ -50,7 +50,7 @@ void SureCause(struct PCIDevice *base, struct Interrupt *interrupt)
             interrupt->is_Node.ln_Type = NT_SOFTINT;
             Forbid(); // make sure code is not interrupted by other tasks
             Enable();
-            AROS_UFIH1(interrupt->is_Code, interrupt->is_Data);
+            AROS_INTH1(interrupt->is_Code, interrupt->is_Data);
             Disable();
             Permit();
         } while(interrupt->is_Node.ln_Type != NT_SOFTINT);
@@ -1396,9 +1396,9 @@ void uhwCheckSpecialCtrlTransfers(struct PCIController *hc, struct IOUsbHWReq *i
 /* \\\ */
 
 /* /// "uhwNakTimeoutInt()" */
-AROS_UFIH1(uhwNakTimeoutInt, struct PCIUnit *, unit)
+AROS_INTH1(uhwNakTimeoutInt, struct PCIUnit *, unit)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct PCIDevice *base = unit->hu_Device;
     struct PCIController *hc;
@@ -1480,7 +1480,7 @@ AROS_UFIH1(uhwNakTimeoutInt, struct PCIUnit *, unit)
 
     KPRINTF(1, ("Exit NakTimeoutInt(0x%p)\n", unit));
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 /* \\\ */
 

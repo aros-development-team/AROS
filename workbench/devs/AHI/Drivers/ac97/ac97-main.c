@@ -92,7 +92,7 @@ static UWORD LinToLog(ULONG vol)
     return 0x1f;
 }
 
-static AROS_UFIP(play_int);
+static AROS_INTP(play_int);
 
 
 /******************************************************************************
@@ -473,9 +473,9 @@ _AHIsub_HardwareControl( ULONG                   attribute,
 
 #undef SysBase
 
-static AROS_UFIH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
+static AROS_INTH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct DriverBase*      AHIsubBase;
     struct ac97Base*        ac97Base;
@@ -494,5 +494,5 @@ static AROS_UFIH1(play_int, struct AHIAudioCtrlDrv *, AudioCtrl)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }

@@ -262,7 +262,7 @@ void handleMicroHZ(struct TimerBase *TimerBase, struct ExecBase *SysBase)
 	    	/* VBlank Emu */
 		if (iv->iv_Code)
 		{
-		    AROS_UFIC2(iv->iv_Code, iv->iv_Data, INTF_VERTB);
+		    AROS_INTC2(iv->iv_Code, iv->iv_Data, INTF_VERTB);
 		}
 
 		/*

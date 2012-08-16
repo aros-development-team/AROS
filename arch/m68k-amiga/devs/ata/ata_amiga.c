@@ -307,9 +307,9 @@ static void callbusirq(struct amiga_driverdata *ddata)
     bug("[ATA] Spurious interrupt: %02X %02X\n", status1, status2);
 }
 
-AROS_UFIH1(IDE_Handler_A1200, struct amiga_driverdata *, ddata)
+AROS_INTH1(IDE_Handler_A1200, struct amiga_driverdata *, ddata)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     UBYTE irqmask = *ddata->gayleirqbase;
     if (irqmask & GAYLE_IRQ_IDE) {
@@ -317,12 +317,12 @@ AROS_UFIH1(IDE_Handler_A1200, struct amiga_driverdata *, ddata)
     }
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-AROS_UFIH1(IDE_Handler_A4000, struct amiga_driverdata *, ddata)
+AROS_INTH1(IDE_Handler_A4000, struct amiga_driverdata *, ddata)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* A4000 interrupt clears when register is read */
     UWORD irqmask = *((UWORD*)ddata->gayleirqbase);
@@ -331,7 +331,7 @@ AROS_UFIH1(IDE_Handler_A4000, struct amiga_driverdata *, ddata)
     }
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static AROS_CARDH(IDE_PCMCIA_Handler, void *, data, status)

@@ -143,15 +143,15 @@ UBYTE isdiskpresent(void)
 }
 
 #ifdef __AROS__
-static AROS_UFIH1(changeintserver, struct IntData *, intdata)
+static AROS_INTH1(changeintserver, struct IntData *, intdata)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
  
     *intdata->diskchanged=1;
     Signal(intdata->task, intdata->signal);
     return(0);
      
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 #else
 static LONG __interrupt __saveds __asm changeintserver(register __a1 struct IntData *intdata)

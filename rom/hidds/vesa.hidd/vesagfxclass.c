@@ -32,15 +32,15 @@
 
 #include LC_LIBDEFS_FILE
 
-AROS_UFIH1(ResetHandler, struct HWData *, hwdata)
+AROS_INTH1(ResetHandler, struct HWData *, hwdata)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     ClearBuffer(hwdata);
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 OOP_Object *PCVesa__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)

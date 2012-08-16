@@ -211,9 +211,9 @@ int mouse_wait_for_input(void)
 
 /****************************************************************************************/
 
-AROS_UFIH1(mouse_ps2int,struct mouse_data *, data)
+AROS_INTH1(mouse_ps2int,struct mouse_data *, data)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct pHidd_Mouse_Event    *e = &data->u.ps2.event;
     UWORD   	    	    	buttonstate;
@@ -357,7 +357,7 @@ AROS_UFIH1(mouse_ps2int,struct mouse_data *, data)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /****************************************************************************************/

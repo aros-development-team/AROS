@@ -155,9 +155,9 @@ struct TDU *TD_InitUnit(ULONG num, struct TrackDiskBase *tdb)
     return (unit);
 }
 
-static AROS_UFIH1(td_floppytimer, struct TrackDiskBase *, TDBase)
+static AROS_INTH1(td_floppytimer, struct TrackDiskBase *, TDBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     // Does anyone wait for io?
     if (TDBase->td_inttmo)
@@ -173,18 +173,18 @@ static AROS_UFIH1(td_floppytimer, struct TrackDiskBase *, TDBase)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(td_floppyint, struct TrackDiskBase *, TDBase)
+static AROS_INTH1(td_floppyint, struct TrackDiskBase *, TDBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(&TDBase->td_TaskData->td_Task,(1L << TDBase->td_IntBit));
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static int GM_UNIQUENAME(Init)(LIBBASETYPEPTR TDBase)

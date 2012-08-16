@@ -37,7 +37,7 @@
 extern int  driver_init (struct GfxBase *);
 extern void driver_expunge (struct GfxBase *);
 
-AROS_UFIP(TOF_VBlank);
+AROS_INTP(TOF_VBlank);
 
 #ifndef SYSFONTNAME
 #   define SYSFONTNAME  "topaz.font"
@@ -149,9 +149,9 @@ ADD2OPENLIB(GfxOpen, 0);
 
 #undef SysBase
 
-AROS_UFIH1(TOF_VBlank, struct GfxBase *, GfxBase)
+AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct Node *tNode;
 
@@ -166,7 +166,7 @@ AROS_UFIH1(TOF_VBlank, struct GfxBase *, GfxBase)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 

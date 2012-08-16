@@ -674,9 +674,9 @@ UBYTE bltnode_wrapper(void)
 #define BQ_BEAMSYNCWAITING 4
 #define BQ_MISSED 8
 
-static AROS_UFIH1(gfx_blit, struct GfxBase *, GfxBase)
+static AROS_INTH1(gfx_blit, struct GfxBase *, GfxBase)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     volatile struct Custom *custom = (struct Custom*)0xdff000;
     struct bltnode *bn = NULL;
@@ -766,12 +766,12 @@ static AROS_UFIH1(gfx_blit, struct GfxBase *, GfxBase)
 
     return 0;
 	
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(gfx_beamsync, struct amigavideo_staticdata*, data)
+static AROS_INTH1(gfx_beamsync, struct amigavideo_staticdata*, data)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
 
@@ -783,12 +783,12 @@ static AROS_UFIH1(gfx_beamsync, struct amigavideo_staticdata*, data)
 
     return FALSE;
 	
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(gfx_vblank, struct amigavideo_staticdata*, data)
+static AROS_INTH1(gfx_vblank, struct amigavideo_staticdata*, data)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct GfxBase *GfxBase = (APTR)data->cs_GfxBase;
     volatile struct Custom *custom = (struct Custom*)0xdff000;
@@ -820,7 +820,7 @@ static AROS_UFIH1(gfx_vblank, struct amigavideo_staticdata*, data)
 
     return FALSE;
 	
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void initcustom(struct amigavideo_staticdata *data)

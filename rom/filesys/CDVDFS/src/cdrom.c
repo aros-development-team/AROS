@@ -82,14 +82,14 @@
 #include "clib_stuff.h"
 #include <exec/interrupts.h>
 
-AROS_UFIH1(CDChangeHandler, struct CDVDBase *, global)
+AROS_INTH1(CDChangeHandler, struct CDVDBase *, global)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(&global->DosProc->pr_Task, global->g_changeint_sigbit);
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /*

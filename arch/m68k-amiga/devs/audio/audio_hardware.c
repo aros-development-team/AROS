@@ -131,15 +131,15 @@ static void audioirq(struct AudioBase *ab, UBYTE ch)
     }
 }
 
-AROS_UFIH1(audio_int, struct AudioInterrupt *, ai)
+AROS_INTH1(audio_int, struct AudioInterrupt *, ai)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     audioirq(ai->ab, ai->ch);
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void audiohw_reset(struct AudioBase *ab, UWORD mask)

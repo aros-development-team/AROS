@@ -130,7 +130,7 @@
 /* external globals
  */
 extern CONST UBYTE *version;
-extern AROS_UFIP(DiskChangeHandler);
+extern AROS_INTP(DiskChangeHandler);
 
 /* prototypes
  */
