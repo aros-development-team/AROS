@@ -17,6 +17,17 @@
 
 int __forceerrorrequester __attribute__((weak)) = 0;
 
+static AROS_UFH2(IPTR, RawPutc,
+        AROS_UFHA(UBYTE, c, D0),
+        AROS_UFHA(struct ExecBase *, SysBase, A3))
+{
+    AROS_USERFUNC_INIT
+    if (c)
+        RawPutChar(c);
+    return c;
+    AROS_USERFUNC_EXIT
+}
+
 void __showerror(char *format, const IPTR *args)
 {
     struct IntuitionBase *IntuitionBase;
@@ -65,10 +76,10 @@ void __showerror(char *format, const IPTR *args)
     {
         if (name) {
             IPTR args[] = { (IPTR)name };
-            RawDoFmt("%s: ", (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+            RawDoFmt("%s: ", (APTR)args, (VOID_FUNC)RawPutc, SysBase);
         }
 
-        RawDoFmt(format, (APTR)args, (VOID_FUNC)RAWFMTFUNC_SERIAL, NULL);
+        RawDoFmt(format, (APTR)args, (VOID_FUNC)RawPutc, SysBase);
         RawPutChar('\n');
     }
 }
