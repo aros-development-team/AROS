@@ -60,7 +60,7 @@ AROS_LD1(VOID, AROSDevAbortIO,
 static BOOL RXFunction(struct IOSana2Req *request, APTR buffer, ULONG size);
 static BOOL TXFunction(APTR buffer, struct IOSana2Req *request, ULONG size);
 static UBYTE *DMATXFunction(struct IOSana2Req *request);
-AROS_UFIP(AROSInt);
+AROS_INTP(AROSInt);
 AROS_CARDP(AROSCardInt);
 
 extern const APTR init_data;
