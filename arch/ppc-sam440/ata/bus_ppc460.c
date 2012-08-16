@@ -84,9 +84,9 @@ static VOID ata460_outsl(APTR address, UWORD port, ULONG count, APTR data)
     ata460_outsw(address, port, count, data);
 }
 
-static AROS_UFIH1(ata460_Interrupt, struct ata_Bus *, bus)
+static AROS_INTH1(ata460_Interrupt, struct ata_Bus *, bus)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     /*
      * Our interrupt handler should call this function.
      */
@@ -94,7 +94,7 @@ static AROS_UFIH1(ata460_Interrupt, struct ata_Bus *, bus)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* Actually a quick hack. Proper implementation really needs HIDDizing this code. */

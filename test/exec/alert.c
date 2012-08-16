@@ -15,9 +15,9 @@
  * in hosted AROS are running on a simulated supervisor level for internal
  * purposes (in order to avoid nesting interrupts).
  */
-static AROS_UFIH1(superAlert, APTR, interruptData)
+static AROS_INTH1(superAlert, APTR, interruptData)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     D(bug("Supervisor code called\n"));
 
@@ -25,7 +25,7 @@ static AROS_UFIH1(superAlert, APTR, interruptData)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 struct Interrupt MyInt;

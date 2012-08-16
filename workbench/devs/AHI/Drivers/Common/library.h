@@ -70,17 +70,17 @@ MyKPrintFArgs( UBYTE*           fmt,
 
 # include <aros/asmcall.h>
 # define INTGW_void(q,n,f)							\
-	q AROS_UFIH1(n, void *, d) { \
-	    AROS_USERFUNC_INIT \
+	q AROS_INTH1(n, void *, d) { \
+	    AROS_INTFUNC_INIT \
 	    f(d); \
 	    return FALSE; \
-	    AROS_USERFUNC_EXIT \
+	    AROS_INTFUNC_EXIT \
     }
 # define INTGW_ULONG(q,n,f)							\
-	q AROS_UFIH1(n, void *, d) { \
-	    AROS_USERFUNC_INIT \
+	q AROS_INTH1(n, void *, d) { \
+	    AROS_INTFUNC_INIT \
 	    return f(d); \
-	    AROS_USERFUNC_EXIT \
+	    AROS_INTFUNC_EXIT \
     }
 # define INTGW(q,t,n,f) \
     INTGW_##t(q,n,f)

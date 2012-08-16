@@ -142,9 +142,9 @@ BOOL ata_RegisterVolume(ULONG StartCyl, ULONG EndCyl, struct ata_Unit *unit)
     return FALSE;
 }
 
-static AROS_UFIH1(ATAResetHandler,struct ata_Bus *, bus)
+static AROS_INTH1(ATAResetHandler,struct ata_Bus *, bus)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct ata_Unit *unit;
     UWORD i;
@@ -168,7 +168,7 @@ static AROS_UFIH1(ATAResetHandler,struct ata_Bus *, bus)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /*

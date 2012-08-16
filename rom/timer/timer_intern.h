@@ -78,7 +78,7 @@ static inline void vblank_Cause(struct ExecBase *SysBase)
     struct IntVector *iv = &SysBase->IntVects[INTB_VERTB];
 
     if (iv->iv_Code)
-        AROS_UFIC2(iv->iv_Code, iv->iv_Data, INTF_VERTB);
+        AROS_INTC2(iv->iv_Code, iv->iv_Data, INTF_VERTB);
 }
 
 #endif /* _TIMER_INTERN_H */

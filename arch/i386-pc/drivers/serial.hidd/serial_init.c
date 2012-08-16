@@ -23,8 +23,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-AROS_UFIP(serial_int_13);
-AROS_UFIP(serial_int_24);
+AROS_INTP(serial_int_13);
+AROS_INTP(serial_int_24);
 
 static int PCSer_Init(LIBBASETYPEPTR LIBBASE)
 {

@@ -333,6 +333,6 @@ void core_Cause(struct ExecBase *SysBase)
     /* If the SoftInt vector in SysBase is set, call it. It will do the rest for us */
     if (iv->iv_Code)
     {
-        AROS_UFIC1(iv->iv_Code, iv->iv_Data);
+        AROS_INTC1(iv->iv_Code, iv->iv_Data);
     }
 }

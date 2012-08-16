@@ -18,9 +18,9 @@
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
 
-static AROS_UFIH1(xhciResetHandler, struct PCIController *, hc)
+static AROS_INTH1(xhciResetHandler, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
 	/* Halt controller */
     #ifdef DEBUG
@@ -35,12 +35,12 @@ static AROS_UFIH1(xhciResetHandler, struct PCIController *, hc)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(xhciCompleteInt, struct PCIController *, hc)
+static AROS_INTH1(xhciCompleteInt, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     KPRINTF(1, ("CompleteInt!\n"));
 
@@ -48,12 +48,12 @@ static AROS_UFIH1(xhciCompleteInt, struct PCIController *, hc)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(xhciIntCode, struct PCIController *, hc)
+static AROS_INTH1(xhciIntCode, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
 //    struct PCIDevice *base = hc->hc_Device;
 //    struct PCIUnit *unit = hc->hc_Unit;
@@ -97,7 +97,7 @@ static AROS_UFIH1(xhciIntCode, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 IPTR xhciSearchExtCap(struct PCIController *hc, ULONG id, IPTR extcap) {

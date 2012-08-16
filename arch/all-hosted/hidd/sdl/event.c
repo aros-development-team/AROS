@@ -24,15 +24,15 @@
 
 #define MAX_EVENTS (64)
 
-AROS_UFIH1(tick_handler, struct Task *,task)
+AROS_INTH1(tick_handler, struct Task *,task)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(task, SIGBREAKF_CTRL_D);
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 

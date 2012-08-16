@@ -1,5 +1,5 @@
 #include <hardware/custom.h>
 
-AROS_UFIP(IntServer);
-AROS_UFIP(VBlankServer);
-AROS_UFIP(SoftIntDispatch);
+AROS_INTP(IntServer);
+AROS_INTP(VBlankServer);
+AROS_INTP(SoftIntDispatch);

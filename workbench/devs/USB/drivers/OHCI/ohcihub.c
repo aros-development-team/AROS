@@ -262,9 +262,9 @@ BOOL METHOD(OHCI, Hidd_USBHub, SetPortFeature)
     return TRUE;
 }
 
-AROS_UFIH1(OHCI_HubInterrupt, ohci_data_t *,ohci)
+AROS_INTH1(OHCI_HubInterrupt, ohci_data_t *,ohci)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* Remove self from the msg queue */
     GetMsg(&ohci->timerPort);
@@ -283,5 +283,5 @@ AROS_UFIH1(OHCI_HubInterrupt, ohci_data_t *,ohci)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }

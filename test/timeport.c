@@ -28,16 +28,16 @@ AROS_UFH3(void, taskentry,
     AROS_USERFUNC_EXIT
 }
 
-AROS_UFIH1(intentry, struct MsgPort *, port)
+AROS_INTH1(intentry, struct MsgPort *, port)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     WaitPort(port);
     ReplyMsg(GetMsg(port));
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 AROS_UFH4(void, fastentry,

@@ -51,9 +51,9 @@
 
 OOP_AttrBase HiddUHCIAttrBase;
 
-static AROS_UFIH1(HubInterrupt, UHCIData *, uhci)
+static AROS_INTH1(HubInterrupt, UHCIData *, uhci)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* Signal the HUB process about incoming interrupt */
     uint8_t sts = 0;
@@ -96,12 +96,12 @@ static AROS_UFIH1(HubInterrupt, UHCIData *, uhci)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(uhci_Handler, UHCIData *, uhci)
+static AROS_INTH1(uhci_Handler, UHCIData *, uhci)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     UHCI_Pipe *p;
 
@@ -304,7 +304,7 @@ static AROS_UFIH1(uhci_Handler, UHCIData *, uhci)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 OOP_Object *METHOD(UHCI, Root, New)

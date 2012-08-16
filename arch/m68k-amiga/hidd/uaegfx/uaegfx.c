@@ -796,7 +796,7 @@ static void freeattrbases(LIBBASETYPEPTR LIBBASE, struct uaegfx_staticdata *csd)
     OOP_ReleaseAttrBase(IID_Hidd_ColorMap);
 }
 
-AROS_UFIP(rtg_vblank);
+AROS_INTP(rtg_vblank);
 
 struct P96RTGmode
 {
@@ -1110,13 +1110,13 @@ ADD2EXPUNGELIB(Expunge_UAEGFXClass, 1)
 
 #undef SysBase
 
-AROS_UFIH1(rtg_vblank, APTR, boardinfo)
+AROS_INTH1(rtg_vblank, APTR, boardinfo)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     return 0;	
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 
 }
 

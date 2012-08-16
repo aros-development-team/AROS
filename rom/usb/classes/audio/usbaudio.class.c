@@ -2532,9 +2532,9 @@ AROS_LH0(SUBLIBBASETYPEPTR, subLibReserved,
 /* \\\ */
 
 /* /// "subLibPlayerIntV4()" */
-AROS_UFIH1(subLibPlayerIntV4, struct NepAudioMode *, nam)
+AROS_INTH1(subLibPlayerIntV4, struct NepAudioMode *, nam)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     
     struct NepAudioSubLibBase *nas = nam->nam_SubLibBase;
     struct AHIAudioCtrlDrv *audioctrl = nam->nam_AudioCtrl;
@@ -2552,14 +2552,14 @@ AROS_UFIH1(subLibPlayerIntV4, struct NepAudioMode *, nam)
     
     return FALSE;
     
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "subLibPlayerIntV6()" */
-AROS_UFIH1(subLibPlayerIntV6, struct NepAudioMode *, nam)
+AROS_INTH1(subLibPlayerIntV6, struct NepAudioMode *, nam)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     
     struct NepAudioSubLibBase *nas = nam->nam_SubLibBase;
     struct AHIAudioCtrlDrv *audioctrl = nam->nam_AudioCtrl;
@@ -2580,14 +2580,14 @@ AROS_UFIH1(subLibPlayerIntV6, struct NepAudioMode *, nam)
 
     return FALSE;
     
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 /* \\\ */
 
 /* /// "subLibPlayerIntDummy()" */
-AROS_UFIH1(subLibPlayerIntDummy, struct NepAudioMode *, nam)
+AROS_INTH1(subLibPlayerIntDummy, struct NepAudioMode *, nam)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct NepAudioSubLibBase *nas = nam->nam_SubLibBase;
     struct AHIAudioCtrlDrv *audioctrl = nam->nam_AudioCtrl;
@@ -2602,7 +2602,7 @@ AROS_UFIH1(subLibPlayerIntDummy, struct NepAudioMode *, nam)
 
     return FALSE;
     
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 /* \\\ */
 

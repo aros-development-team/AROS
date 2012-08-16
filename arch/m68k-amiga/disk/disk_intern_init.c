@@ -45,53 +45,53 @@ void readunitid_internal (struct DiscResource *DiskBase, LONG unitNum)
 	DiskBase->dr_UnitID[unitNum] = id;
 }
 
-static AROS_UFIH3(disk_index_interrupt, struct DiscResource *, DiskBase, mask, custom)
+static AROS_INTH3(disk_index_interrupt, struct DiscResource *, DiskBase, mask, custom)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
  
   	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_Index.is_Code) {
  		D(bug("disk_index %p %p\n", DiskBase->dr_Current->dru_Index.is_Code, DiskBase->dr_Current->dru_Index.is_Data));
- 		return AROS_UFIC3(DiskBase->dr_Current->dru_Index.is_Code,
+ 		return AROS_INTC3(DiskBase->dr_Current->dru_Index.is_Code,
  		                  DiskBase->dr_Current->dru_Index.is_Data,
  		                  0, custom);
  	}
  	return 0;
 	
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH3(disk_sync_interrupt, struct DiscResource *, DiskBase, mask, _custom)
+static AROS_INTH3(disk_sync_interrupt, struct DiscResource *, DiskBase, mask, _custom)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     volatile struct Custom *custom = _custom;
  	custom->intreq = INTF_DSKSYNC;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscSync.is_Code) {
  		D(bug("disk_sync %p %p\n", DiskBase->dr_Current->dru_DiscSync.is_Code, DiskBase->dr_Current->dru_DiscSync.is_Data));
- 		return AROS_UFIC3(DiskBase->dr_Current->dru_DiscSync.is_Code,
+ 		return AROS_INTC3(DiskBase->dr_Current->dru_DiscSync.is_Code,
  		                  DiskBase->dr_Current->dru_DiscSync.is_Data,
  		                  0, custom);
  	}
  	return 0;
 	
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH3(disk_block_interrupt, struct DiscResource *, DiskBase, mask, _custom)
+static AROS_INTH3(disk_block_interrupt, struct DiscResource *, DiskBase, mask, _custom)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
  
     volatile struct Custom *custom = _custom;
  	custom->intreq = INTF_DSKBLK;
  	if (DiskBase->dr_Current && DiskBase->dr_Current->dru_DiscBlock.is_Code) {
  		D(bug("disk_block %p %p\n", DiskBase->dr_Current->dru_DiscBlock.is_Code, DiskBase->dr_Current->dru_DiscBlock.is_Data));
- 		return AROS_UFIC3(DiskBase->dr_Current->dru_DiscBlock.is_Code,
+ 		return AROS_INTC3(DiskBase->dr_Current->dru_DiscBlock.is_Code,
                        DiskBase->dr_Current->dru_DiscBlock.is_Data,
                        0, custom);
   	}
  	return FALSE;
 	
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
 BOOL disk_internal_init (struct DiscResource *DiskBase)

@@ -9,15 +9,15 @@ int __nocommandline = 1;
 
 static int counter = 0;
 
-static AROS_UFIH1(vblank_handler, APTR, mydata)
+static AROS_INTH1(vblank_handler, APTR, mydata)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     (void)mydata;
     counter++;
     return 0;
     
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 
 }
 

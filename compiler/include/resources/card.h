@@ -151,25 +151,36 @@ struct TP_AmigaXIP
  */
 #include <aros/asmcall.h>
 
-/* Define a function prototype for cah_CardRemoved,
- * cah_CardInserted and cah_CardStatus's is_Code fields.
+/* Define a function prototype and call methods
+ * for cah_CardRemoved, cah_CardInserted and 
+ * cah_CardStatus's is_Code fields.
+ *
+ * The prototype matches:
+ *
+ * mask = func(APTR is_Data, ULONG mask, VOID_FUNC is_Code) (A1, D0, A5)
  *
  * Note that while 'mask' is only valid for cah_CardStatus,
  * it should be returned (unchanged) from all routines.
+ *
+ * Also note that A6 is considered scratch, and is *not* guaranteed
+ * to have any specific value upon entry on m68k architectures.
  */
-#define AROS_CARDP(func)   AROS_UFP3(ULONG, func,\
-        AROS_UFPA(APTR, _card_Data, A1), \
-        AROS_UFPA(ULONG, _card_Mask, D0), \
+#define AROS_CARDP(func)                       \
+    AROS_UFP3(ULONG, func,                     \
+        AROS_UFPA(APTR, _card_Data, A1),       \
+        AROS_UFPA(ULONG, _card_Mask, D0),      \
         AROS_UFPA(VOID_FUNC, _card_Code, A5))
 
-#define AROS_CARDC(func, data, mask)   AROS_UFC3(ULONG, func,\
-        AROS_UFCA(APTR, data, A1), \
-        AROS_UFCA(ULONG, mask, D0), \
+#define AROS_CARDC(func, data, mask)   \
+    AROS_UFC3(ULONG, func,       \
+        AROS_UFCA(APTR, data, A1),     \
+        AROS_UFCA(ULONG, mask, D0),    \
         AROS_UFCA(VOID_FUNC, func, A5))
 
-#define AROS_CARDH(func, type, data, mask)   AROS_UFH3(ULONG, func, \
-        AROS_UFHA(APTR, _card_Data, A1), \
-        AROS_UFHA(ULONG, mask, D0), \
+#define AROS_CARDH(func, type, data, mask)    \
+    AROS_UFH3(ULONG, func,                    \
+        AROS_UFHA(APTR, _card_Data, A1),      \
+        AROS_UFHA(ULONG, mask, D0),           \
         AROS_UFHA(VOID_FUNC, _card_Code, A5)) \
         { AROS_USERFUNC_INIT \
           type __unused data = _card_Data;

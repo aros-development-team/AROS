@@ -17,9 +17,9 @@
 
 /* Card Change Detect interrupt */
 
-AROS_UFIH1(card_level6, struct CardResource *, CardResource)
+AROS_INTH1(card_level6, struct CardResource *, CardResource)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
     UBYTE intreq, intena;
@@ -45,7 +45,7 @@ AROS_UFIH1(card_level6, struct CardResource *, CardResource)
 
     return 1;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* All other PCMCIA related interrupts */
@@ -53,9 +53,9 @@ AROS_UFIH1(card_level6, struct CardResource *, CardResource)
 #define INTMASK (GAYLE_IRQ_BVD1 | GAYLE_IRQ_BVD2 | GAYLE_IRQ_WR | GAYLE_IRQ_BSY)
 #define NOINTMASK (GAYLE_IRQ_IDE | GAYLE_IRQ_CCDET)
 
-AROS_UFIH1(card_level2, struct CardResource *, CardResource)
+AROS_INTH1(card_level2, struct CardResource *, CardResource)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct CardHandle *cah = CardResource->ownedcard;
     volatile struct GayleIO *gio = (struct GayleIO*)GAYLE_BASE;
@@ -107,7 +107,7 @@ AROS_UFIH1(card_level2, struct CardResource *, CardResource)
 
     return 1;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void pcmcia_reset(struct CardResource *CardResource)

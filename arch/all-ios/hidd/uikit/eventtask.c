@@ -24,14 +24,14 @@
 #define __stackalign static inline
 #endif
 
-static AROS_UFIH1(vblHandler, struct UIKitBase *,base)
+static AROS_INTH1(vblHandler, struct UIKitBase *,base)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(base->eventTask, base->eventMask);
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 __stackalign void PollEvents(struct UIKitBase *base)

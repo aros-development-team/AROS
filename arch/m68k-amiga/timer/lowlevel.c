@@ -169,9 +169,9 @@ ULONG GetEClock(struct TimerBase *TimerBase)
 	return diff;
 }
 
-AROS_UFIH1(ciab_eclock, struct TimerBase *, TimerBase)
+AROS_INTH1(ciab_eclock, struct TimerBase *, TimerBase)
 {
-	AROS_USERFUNC_INIT
+	AROS_INTFUNC_INIT
 
 	D(bug("eclock int\n"));
 
@@ -189,12 +189,12 @@ AROS_UFIH1(ciab_eclock, struct TimerBase *, TimerBase)
 
 	return FALSE;	
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
-AROS_UFIH1(ciaint_timer, struct TimerBase *, TimerBase)
+AROS_INTH1(ciaint_timer, struct TimerBase *, TimerBase)
 {
-	AROS_USERFUNC_INIT
+	AROS_INTFUNC_INIT
 
 	struct timerequest *tr, *next;
 	ULONG old;
@@ -250,12 +250,12 @@ AROS_UFIH1(ciaint_timer, struct TimerBase *, TimerBase)
 
 	return 0;	
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 
-AROS_UFIH1(cia_vbint, struct TimerBase *, TimerBase)
+AROS_INTH1(cia_vbint, struct TimerBase *, TimerBase)
 {
-    	AROS_USERFUNC_INIT
+    	AROS_INTFUNC_INIT
 	
    	 struct timerequest *tr, *next;
 
@@ -283,6 +283,6 @@ AROS_UFIH1(cia_vbint, struct TimerBase *, TimerBase)
 	
 	return 0;	
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 
 }

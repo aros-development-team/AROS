@@ -64,14 +64,14 @@ static void giveunit(struct TrackDiskBase *tdb)
     GiveUnit();
 }
 
-static AROS_UFIH1(disk_block_interrupt, struct TrackDiskBase *, tdb)
+static AROS_INTH1(disk_block_interrupt, struct TrackDiskBase *, tdb)
 { 
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
  
     Signal (tdb->td_task, 1L << tdb->td_IntBit);
     return 0;
 	
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static void TestInsert(struct TrackDiskBase *tdb, struct TDU *tdu, BOOL dostep)

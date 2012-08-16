@@ -17,9 +17,9 @@
 #undef HiddAttrBase
 #define HiddAttrBase (hd->hd_HiddAB)
 
-static AROS_UFIH1(UhciResetHandler, struct PCIController *, hc)
+static AROS_INTH1(UhciResetHandler, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     // stop controller and disable all interrupts
     WRITEIO16_LE(hc->hc_RegBase, UHCI_USBCMD, 0);
@@ -27,7 +27,7 @@ static AROS_UFIH1(UhciResetHandler, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void uhciFreeQContext(struct PCIController *hc, struct UhciQH *uqh) {
@@ -935,9 +935,9 @@ void uhciUpdateFrameCounter(struct PCIController *hc) {
     Enable();
 }
 
-static AROS_UFIH1(uhciCompleteInt, struct PCIController *,hc)
+static AROS_INTH1(uhciCompleteInt, struct PCIController *,hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     KPRINTF(1, ("CompleteInt!\n"));
     uhciUpdateFrameCounter(hc);
@@ -968,12 +968,12 @@ static AROS_UFIH1(uhciCompleteInt, struct PCIController *,hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(uhciIntCode, struct PCIController *, hc)
+static AROS_INTH1(uhciIntCode, struct PCIController *, hc)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     struct PCIDevice *base = hc->hc_Device;
     UWORD intr;
@@ -1002,7 +1002,7 @@ static AROS_UFIH1(uhciIntCode, struct PCIController *, hc)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 BOOL uhciInit(struct PCIController *hc, struct PCIUnit *hu) {

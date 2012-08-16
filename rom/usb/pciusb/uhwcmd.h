@@ -56,7 +56,7 @@ BOOL cmdAbortIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
 void TermIO(struct IOUsbHWReq *ioreq, struct PCIDevice *base);
 
-AROS_UFIP(uhwNakTimeoutInt);
+AROS_INTP(uhwNakTimeoutInt);
 
 BOOL pciInit(struct PCIDevice *hd);
 void pciExpunge(struct PCIDevice *hd);

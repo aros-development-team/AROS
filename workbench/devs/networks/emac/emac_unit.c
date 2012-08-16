@@ -526,16 +526,16 @@ void rx_int(struct EMACUnit *unit, struct ExecBase *SysBase)
     }
 }
 
-static AROS_UFIH1(EMAC_RX_Int, struct EMACUnit *, unit)
+static AROS_INTH1(EMAC_RX_Int, struct EMACUnit *, unit)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     D(bug("[EMAC%d] RX Int\n", unit->eu_UnitNum));
     rx_int(unit, SysBase);
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 void tx_int(struct EMACUnit *unit, struct ExecBase *SysBase)
@@ -689,27 +689,27 @@ void tx_int(struct EMACUnit *unit, struct ExecBase *SysBase)
 
 }
 
-static AROS_UFIH1(EMAC_TX_Int, struct EMACUnit *, unit)
+static AROS_INTH1(EMAC_TX_Int, struct EMACUnit *, unit)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     D(bug("[EMAC%d] TX Int\n", unit->eu_UnitNum));
     tx_int(unit, SysBase);
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
-static AROS_UFIH1(EMAC_TXEnd_Int, struct EMACUnit *, unit)
+static AROS_INTH1(EMAC_TXEnd_Int, struct EMACUnit *, unit)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     D(bug("[EMAC%d] TX End Int\n", unit->eu_UnitNum));
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 struct TypeStats *FindTypeStats(struct EMACBase *EMACBase, struct EMACUnit *unit,

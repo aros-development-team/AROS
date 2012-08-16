@@ -62,9 +62,9 @@ static usb_interface_descriptor_t *find_idesc(usb_config_descriptor_t *cd, int i
     return (NULL);
 }
 
-static AROS_UFIH1(HidInterrupt, HidData *, hid)
+static AROS_INTH1(HidInterrupt, HidData *, hid)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     uint8_t reportid = 0;
 
@@ -83,7 +83,7 @@ static AROS_UFIH1(HidInterrupt, HidData *, hid)
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 BOOL METHOD(HID, Hidd_USBHID, GetReportDescriptor)

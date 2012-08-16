@@ -30,10 +30,10 @@ AROS_UFH3(LONG, SlaveEntry,
 	  AROS_UFHA(ULONG, argSize, D0),
 	  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
-   AROS_USERFUNC_INIT
+   AROS_INTFUNC_INIT
    Slave( SysBase );
    return 0;
-   AROS_USERFUNC_EXIT
+   AROS_INTFUNC_EXIT
 }
 
 #else
@@ -52,14 +52,14 @@ void SlaveEntry(void)
 
 #include <hardware/intbits.h>
 
-AROS_UFIH1(AHITimerTickCode, struct Task *, task)
+AROS_INTH1(AHITimerTickCode, struct Task *, task)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     Signal(task, SIGBREAKF_CTRL_F);
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 static void SmallDelay(struct ExecBase *SysBase)

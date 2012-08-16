@@ -63,9 +63,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-AROS_UFIH1(ResetHandler, struct inputbase *, InputDevice)
+AROS_INTH1(ResetHandler, struct inputbase *, InputDevice)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     
     if (InputDevice->ResetSig)
     {
@@ -74,7 +74,7 @@ AROS_UFIH1(ResetHandler, struct inputbase *, InputDevice)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
  
 /**********************

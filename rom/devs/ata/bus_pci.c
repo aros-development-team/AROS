@@ -222,9 +222,9 @@ static VOID ata_outsl(APTR address, UWORD port, ULONG count, APTR data)
 
 #endif
 
-AROS_UFIH1(ata_Interrupt, APTR, data)
+AROS_INTH1(ata_Interrupt, APTR, data)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
     /*
      * Our interrupt handler should call this function.
      * It's our problem how to store bus pointer. Here we use h_Data for it.
@@ -233,7 +233,7 @@ AROS_UFIH1(ata_Interrupt, APTR, data)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 /* Actually a quick hack. Proper implementation really needs HIDDizing this code. */

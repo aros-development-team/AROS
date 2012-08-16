@@ -9,9 +9,9 @@
 #ifdef USE_VBLANK_INT
 
 /* exec.library VBlank interrupt handler  */
-AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
+AROS_INTH1(VBlankInt, struct TimerBase *, TimerBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     /* UpdateEClock and process VBlank timer*/
     EClockUpdate(TimerBase);
@@ -20,7 +20,7 @@ AROS_UFIH1(VBlankInt, struct TimerBase *, TimerBase)
     /* exec should continue with other servers */
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 int vblank_Init(struct TimerBase *LIBBASE)

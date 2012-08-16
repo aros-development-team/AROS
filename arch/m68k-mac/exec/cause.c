@@ -69,7 +69,7 @@ AROS_LH1(void, Cause,
 
 				if (iv->iv_Code)
 				{
-				    AROS_UFIC1(iv->iv_Code, iv->iv_Data);
+				    AROS_INTC1(iv->iv_Code, iv->iv_Data);
 				}
 			}
 		}
@@ -104,7 +104,7 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
 	if (iv->iv_Code)
 	{
 		/*  Call it. */
-		AROS_UFIC1(iv->iv_Code, regs);
+		AROS_INTC1(iv->iv_Code, regs);
 	}
 
 	/* Has an interrupt told us to dispatch when leaving */
@@ -170,9 +170,9 @@ extern void RestoreRegs(struct Task *task, struct pt_regs *regs);
     in the kernel.
 */
 
-AROS_UFIH0(SoftIntDispatch)
+AROS_INTH0(SoftIntDispatch)
 {
-	AROS_USERFUNC_INIT
+	AROS_INTFUNC_INIT
 
 	struct Interrupt *intr;
 	UBYTE i;
@@ -192,7 +192,7 @@ AROS_UFIH0(SoftIntDispatch)
 		  		intr->is_Node.ln_Type = NT_INTERRUPT;
 
 		 		/* Call the software interrupt. */
-		 		AROS_UFIC1(intr->is_Code, intr->is_Data);
+		 		AROS_INTC1(intr->is_Code, intr->is_Data);
 			}
 		}
 
@@ -202,6 +202,6 @@ AROS_UFIH0(SoftIntDispatch)
 
 	return FALSE;
 
-	AROS_USERFUNC_EXIT
+	AROS_INTFUNC_EXIT
 }
 

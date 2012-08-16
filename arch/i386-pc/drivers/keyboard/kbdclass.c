@@ -73,9 +73,9 @@ int  kbd_wait_for_input(void);
 #include "e0keytable.h"
 
 /****************************************************************************************/
-AROS_UFIH1(kbd_keyint, struct kbd_data *, data)
+AROS_INTH1(kbd_keyint, struct kbd_data *, data)
 {
-    AROS_USERFUNC_INIT
+    AROS_INTFUNC_INIT
 
     UBYTE   	    keycode;        /* Recent Keycode get */
     UBYTE   	    info = 0;       /* Data from info reg */
@@ -116,7 +116,7 @@ AROS_UFIH1(kbd_keyint, struct kbd_data *, data)
 
     return FALSE;
 
-    AROS_USERFUNC_EXIT
+    AROS_INTFUNC_EXIT
 }
 
 
