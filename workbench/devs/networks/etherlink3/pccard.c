@@ -69,9 +69,12 @@ static VOID CardRemovedHook(struct BusContext *context,
    struct DevBase *base);
 static BOOL CardInsertedHook(struct BusContext *context,
    struct DevBase *base);
-static AROS_UFIP(CardRemovedInt);
-static AROS_UFIP(CardInsertedInt);
-static AROS_UFIP(CardStatusInt);
+static VOID CardRemovedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code));
+static VOID CardInsertedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code));
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask));
 static UBYTE ByteInHook(struct BusContext *context, ULONG offset);
 static ULONG LongInHook(struct BusContext *context, ULONG offset);
 static VOID ByteOutHook(struct BusContext *context, ULONG offset,
@@ -406,9 +409,9 @@ static struct BusContext *AllocCard(struct DevBase *base)
    {
       /* Try to gain access to card */
 
-      card_removed_int->is_Code = (APTR)CardRemovedInt;
+      card_removed_int->is_Code = CardRemovedInt;
       card_removed_int->is_Data = context;
-      card_inserted_int->is_Code = (APTR)CardInsertedInt;
+      card_inserted_int->is_Code = CardInsertedInt;
       card_inserted_int->is_Data = context;
       card_status_int->is_Code = (APTR)CardStatusInt;
       card_status_int->is_Data = context;
@@ -726,12 +729,11 @@ static BOOL CardInsertedHook(struct BusContext *context,
 ****************************************************************************
 *
 */
-#undef SysBase
 
-static AROS_UFIH1(CardRemovedInt, struct BusContext *, context)
+static VOID CardRemovedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
+   struct DevBase *base;
    struct DevUnit *unit;
 
    /* Record loss of card and get our task to call ReleaseCard() */
@@ -739,6 +741,7 @@ static AROS_UFIH1(CardRemovedInt, struct BusContext *, context)
    unit = context->unit;
    if(unit != NULL)
    {
+      base = unit->device;
       if((unit->flags & UNITF_ONLINE) != 0)
          unit->flags |= UNITF_WASONLINE;
       unit->flags &= ~(UNITF_HAVEADAPTER | UNITF_ONLINE);
@@ -747,9 +750,7 @@ static AROS_UFIH1(CardRemovedInt, struct BusContext *, context)
    if(unit != NULL)
       Signal(unit->task, unit->card_removed_signal);
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -768,21 +769,20 @@ static AROS_UFIH1(CardRemovedInt, struct BusContext *, context)
 *
 */
 
-static AROS_UFIH1(CardInsertedInt, struct BusContext *, context)
+static VOID CardInsertedInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
+   struct DevBase *base;
    struct DevUnit *unit;
 
    unit = context->unit;
    if (unit != NULL) {
+      base = unit->device;
       context->have_card = TRUE;
       Signal(unit->task, unit->card_inserted_signal);
    }
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -804,10 +804,9 @@ static AROS_UFIH1(CardInsertedInt, struct BusContext *, context)
 *
 */
 
-static AROS_UFIH2(CardStatusInt, struct BusContext *, context, mask)
+static UBYTE CardStatusInt(REG(a1, struct BusContext *context),
+   REG(a6, APTR int_code), REG(d0, UBYTE mask))
 {
-    AROS_USERFUNC_INIT
-
    if(context->resource_version < 39)
    {
       /* Work around gayle interrupt bug */
@@ -817,11 +816,9 @@ static AROS_UFIH2(CardStatusInt, struct BusContext *, context, mask)
    }
 
    if(context->unit != NULL)
-      AROS_UFIC1(StatusInt, context->unit);
+      StatusInt(context->unit, StatusInt);
 
    return mask;
-
-   AROS_USERFUNC_EXIT
 }
 
 

@@ -64,8 +64,8 @@ static struct AddressRange *FindMulticastRange(struct DevUnit *unit,
    ULONG lower_bound_left, UWORD lower_bound_right, ULONG upper_bound_left,
    UWORD upper_bound_right, struct DevBase *base);
 static VOID SetMulticast(struct DevUnit *unit, struct DevBase *base);
-static AROS_UFIP(StatusInt);
-static AROS_UFIP(RXInt);
+static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
 static UBYTE *GetRXBuffer(struct DevUnit *unit, const UBYTE *address,
    UWORD frag_no, UWORD *buffer_no, struct DevBase *base);
 static VOID DistributeRXPacket(struct DevUnit *unit, UBYTE *frame,
@@ -77,14 +77,18 @@ static BOOL AddressFilter(struct DevUnit *unit, UBYTE *address,
    struct DevBase *base);
 static VOID DistributeMgmtFrame(struct DevUnit *unit, UBYTE *frame,
    UWORD frame_size, struct DevBase *base);
-static AROS_UFIP(TXInt);
-static AROS_UFIP(TXEndInt);
-static AROS_UFIP(MgmtTXInt);
-static AROS_UFIP(MgmtTXEndInt);
-static AROS_UFIP(ResetHandler);
+static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+static VOID TXEndInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code));
+static VOID MgmtTXInt(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code));
+static VOID MgmtTXEndInt(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code));
+static VOID ResetHandler(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code));
 static VOID ReportEvents(struct DevUnit *unit, ULONG events,
    struct DevBase *base);
 static VOID UnitTask(struct ExecBase *sys_base);
+
 
 static const UBYTE snap_template[] = {0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00};
 static const UBYTE broadcast_address[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
@@ -1459,7 +1463,6 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 }
 
 
-#undef SysBase
 
 /****i* atheros5000.device/StatusInt ***************************************
 *
@@ -1481,15 +1484,18 @@ VOID FlushUnit(struct DevUnit *unit, UBYTE last_queue, BYTE error,
 *
 ****************************************************************************
 *
+* int_code is really in A5, but GCC 2.95.3 doesn't seem able to handle that.
+* Since we don't use this parameter, we can lie.
+*
 */
 
-static AROS_UFIH1(StatusInt, struct DevUnit *, unit)
+static BOOL StatusInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
+   struct DevBase *base;
    uint32_t queue_mask;
    HAL_INT ints, int_mask;
 
+   base = unit->device;
    int_mask = unit->hal->ah_getInterrupts(unit->hal);
 
    if(!unit->hal->ah_isInterruptPending(unit->hal)) return FALSE;
@@ -1521,8 +1527,6 @@ static AROS_UFIH1(StatusInt, struct DevUnit *, unit)
 //   unit->hal->ah_setInterrupts(unit->hal, int_mask))
 
    return FALSE;
-
-   AROS_USERFUNC_EXIT
 }
 
 
@@ -1549,10 +1553,8 @@ static AROS_UFIH1(StatusInt, struct DevUnit *, unit)
 *
 */
 
-static AROS_UFIH1(RXInt, struct DevUnit *, unit)
+static VOID RXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
    UWORD ieee_length, frame_control, frame_type, slot, next_slot,
       encryption, key_no, buffer_no, old_length;
    struct DevBase *base;
@@ -1746,9 +1748,7 @@ static AROS_UFIH1(RXInt, struct DevUnit *, unit)
    Enable();
 #endif
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -2144,10 +2144,8 @@ static VOID DistributeMgmtFrame(struct DevUnit *unit, UBYTE *frame,
 *
 */
 
-static AROS_UFIH1(TXInt, struct DevUnit *, unit)
+static VOID TXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
    struct DevBase *base;
    UWORD i, frame_size, data_size, packet_type, body_size, slot, new_slot,
       last_slot, encryption, subtype, duration;
@@ -2420,9 +2418,7 @@ static AROS_UFIH1(TXInt, struct DevUnit *, unit)
    else
       unit->request_ports[WRITE_QUEUE]->mp_Flags = PA_IGNORE;
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -2445,10 +2441,9 @@ static AROS_UFIH1(TXInt, struct DevUnit *, unit)
 *
 */
 
-static AROS_UFIH1(TXEndInt, struct DevUnit *, unit)
+static VOID TXEndInt(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
    UWORD frame_size, new_out_slot, i;
    UBYTE *frame;
    struct DevBase *base;
@@ -2506,9 +2501,7 @@ static AROS_UFIH1(TXEndInt, struct DevUnit *, unit)
    if(unit->request_ports[WRITE_QUEUE]->mp_Flags == PA_IGNORE)
       Cause(&unit->tx_int);
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -2535,10 +2528,9 @@ static AROS_UFIH1(TXEndInt, struct DevUnit *, unit)
 *
 */
 
-static AROS_UFIH1(MgmtTXInt, struct DevUnit *, unit)
+static VOID MgmtTXInt(REG(a1, struct DevUnit *unit), REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
+   struct DevBase *base;
    UWORD frame_size, slot, new_slot, last_slot, i, duration;
    UBYTE *frame;
    struct IOSana2Req *request;
@@ -2548,6 +2540,7 @@ static AROS_UFIH1(MgmtTXInt, struct DevUnit *, unit)
    struct MsgPort *port;
    const HAL_RATE_TABLE *rate_table;
 
+   base = unit->device;
    port = unit->request_ports[MGMT_QUEUE];
    rate_table = unit->rate_table;
 
@@ -2642,9 +2635,7 @@ static AROS_UFIH1(MgmtTXInt, struct DevUnit *, unit)
    else
       unit->request_ports[MGMT_QUEUE]->mp_Flags = PA_IGNORE;
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -2667,17 +2658,18 @@ static AROS_UFIH1(MgmtTXInt, struct DevUnit *, unit)
 *
 */
 
-static AROS_UFIH1(MgmtTXEndInt, struct DevUnit *, unit)
+static VOID MgmtTXEndInt(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
    UWORD new_out_slot, i;
    UBYTE *frame;
+   struct DevBase *base;
    struct IOSana2Req *request;
    ULONG dma_size;
 
    /* Find out which packets have completed */
 
+   base = unit->device;
    new_out_slot = (unit->mgmt_in_slot + MGMT_SLOT_COUNT
       - unit->hal->ah_numTxPending(unit->hal, unit->mgmt_queue_no))
       % MGMT_SLOT_COUNT;
@@ -2711,9 +2703,7 @@ static AROS_UFIH1(MgmtTXEndInt, struct DevUnit *, unit)
    if(unit->request_ports[MGMT_QUEUE]->mp_Flags == PA_IGNORE)
       Cause(&unit->mgmt_int);
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
@@ -2732,10 +2722,9 @@ static AROS_UFIH1(MgmtTXEndInt, struct DevUnit *, unit)
 *
 */
 
-static AROS_UFIH1(ResetHandler, struct DevUnit *, unit)
+static VOID ResetHandler(REG(a1, struct DevUnit *unit),
+   REG(a6, APTR int_code))
 {
-   AROS_USERFUNC_INIT
-
    if((unit->flags & UNITF_HAVEADAPTER) != 0)
    {
       /* Disable frame transmission */
@@ -2753,9 +2742,7 @@ static AROS_UFIH1(ResetHandler, struct DevUnit *, unit)
       unit->hal->ah_setInterrupts(unit->hal, 0);
    }
 
-   return 0;
-
-   AROS_USERFUNC_EXIT
+   return;
 }
 
 
