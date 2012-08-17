@@ -54,7 +54,7 @@ AROS_LH3(IPTR, NewStackSwap,
     asm volatile
     (
     /* Save original SP by adding one more stack frame */
-    "	push	{fp, lr}\n"
+    "	push	{fp}\n"
     "	add	fp, sp, #4\n"
     /* Actually change the stack */
     "	mov 	sp, %2\n"
@@ -81,10 +81,10 @@ AROS_LH3(IPTR, NewStackSwap,
 
     /* Restore original SP. Function's return value is in %0 now. */
     "	sub	sp, fp, #4\n"
-    "	pop	{fp, lr}\n"
+    "	pop	{fp}\n"
     : "=r"(ret)
     : "r"(entry), "r"(sp), "r"(args), "r"(SysBase)
-    : "r0", "r1", "r2", "r3", "r12", "cc");
+    : "r0", "r1", "r2", "r3", "r12", "lr", "cc");
 
     /* Change limits back and return */
     t->tc_SPLower = splower;
