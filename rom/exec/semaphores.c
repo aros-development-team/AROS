@@ -110,6 +110,9 @@ void InternalObtainSemaphore(struct SignalSemaphore *sigSem, struct Task *owner,
         struct SemaphoreRequest sr;
         sr.sr_Waiter = me;
 
+        if (owner == NULL)
+            sr.sr_Waiter = (struct Task *)((IPTR)(sr.sr_Waiter) | SM_SHARED);
+
         /*
          * Have to clear the signal to make sure that we don't
          * return immediately. We then add the SemReq to the
