@@ -1718,7 +1718,6 @@ if test "$crosstools" = "yes"; then
     orig_target_strip="${tmp_tool_prefix}strip"
     orig_target_objcopy="${tmp_tool_prefix}objcopy"
     orig_target_objdump="${tmp_tool_prefix}objdump"
-    orig_target_elfedit="${tmp_tool_prefix}elfedit"
 else
     # Determine whether AROS or ELF tools should be used
     if test "$aros_tool_prefix" = "none"; then
@@ -1752,8 +1751,6 @@ else
     AROS_REQUIRED(objcopy,$orig_target_objcopy)
     AROS_TOOL_TARGET(orig_target_objdump,objdump,${aros_tool_prefix}objdump)
     AROS_REQUIRED(objdump,$orig_target_objdump)
-    AROS_TOOL_TARGET(orig_target_elfedit,elfedit,${aros_tool_prefix}elfedit)
-    AROS_REQUIRED(elfedit,$orig_target_elfedit)
 fi
 
 if test "$kernel_tool_prefix" = "none" ; then
@@ -1883,7 +1880,6 @@ aros_target_ld="${prefix}ld"
 aros_target_ar="${prefix}ar $aros_target_ar_flags"
 aros_target_objcopy="${prefix}objcopy"
 aros_target_objdump="${prefix}objdump"
-aros_target_elfedit="${prefix}elfedit"
 aros_target_ranlib="${prefix}ranlib $aros_target_ranlib_flags"
 aros_target_nm="${prefix}nm $aros_target_nm_flags"
 aros_target_strip="${prefix}strip"
@@ -2518,7 +2514,6 @@ AC_SUBST(aros_target_ld)
 AC_SUBST(aros_kernel_ld)
 AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_target_cc_path)
-AC_SUBST(aros_target_elfedit)
 AC_SUBST(aros_target_objdump)
 AC_SUBST(aros_target_objcopy)
 AC_SUBST(aros_target_strip)
@@ -2682,7 +2677,6 @@ AC_CONFIG_COMMANDS([compiler_executable],
         ln -sf $orig_target_as$aros_host_exe_suffix      ${prefix2}-as$aros_host_exe_suffix
         ln -sf $orig_target_nm$aros_host_exe_suffix      ${prefix2}-nm$aros_host_exe_suffix
         ln -sf $orig_target_ar$aros_host_exe_suffix      ${prefix2}-ar$aros_host_exe_suffix
-        ln -sf $orig_target_elfedit$aros_host_exe_suffix ${prefix2}-elfedit$aros_host_exe_suffix
         ln -sf $orig_target_ranlib$aros_host_exe_suffix  ${prefix2}-ranlib$aros_host_exe_suffix
         ln -sf $orig_target_objcopy$aros_host_exe_suffix ${prefix2}-objcopy$aros_host_exe_suffix
         ln -sf $orig_target_objdump$aros_host_exe_suffix ${prefix2}-objdump$aros_host_exe_suffix
@@ -2701,7 +2695,6 @@ AC_CONFIG_COMMANDS([compiler_executable],
         orig_target_ar=${orig_target_ar}
         orig_target_ranlib=${orig_target_ranlib}
         orig_target_objdump=${orig_target_objdump}
-        orig_target_elfedit=${orig_target_elfedit}
         orig_target_objcopy=${orig_target_objcopy}
         orig_target_strip=${orig_target_strip}
         aros_kernel_ld=${aros_kernel_ld}

@@ -8,35 +8,6 @@
 #include "misc.h"
 #include "backend.h"
 
-#ifndef ELFEDIT_NAME
-#define ELFEDIT_NAME	"elfedit"
-#endif
-
-static FILE *my_popen(const char *command, const char *file)
-{
-    static char command_buf[MAXPATHLEN];
-
-    size_t command_len = strlen(command);
-    size_t file_len    = strlen(file);
-
-    FILE *pipe;
-
-    if (file_len + command_len >= sizeof(command_buf))
-        fatal("collect_sets()", strerror(ENAMETOOLONG));
-
-    memcpy(command_buf, command, command_len);
-    memcpy(command_buf + command_len, file, file_len + 1);
-
-    set_compiler_path();
-
-    pipe = popen(command_buf, "r");
-    if (pipe == NULL)
-        fatal(command_buf, strerror(errno));
-
-    return pipe;
-}
-
-
 static void bfd_fatal(const char *msg)
 {
     fatal(msg, bfd_errmsg(bfd_get_error()));
@@ -201,19 +172,4 @@ void collect_libs(const char *file, setnode **liblist_ptr)
     bfd_close(abfd);
 }
 
-int set_os_and_abi(const char *file)
-{
-    FILE *pipe;
-    char buf[200];
-    int cnt;
 
-    pipe = my_popen(ELFEDIT_NAME " --output-osabi=AROS ", file);
-    if (!pipe)
-        return 0;
-
-    while ((cnt = fread(buf, 1, sizeof(buf), pipe)) != 0);
-
-    pclose(pipe);
-
-    return 1;
-}

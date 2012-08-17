@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 #include "env.h"
@@ -12,6 +14,12 @@
 #include "gensets.h"
 
 #define EXTRA_ARG_CNT 2
+
+#define EI_OSABI        7
+#define EI_ABIVERSION   8
+
+#define ELFOSABI_AROS   15
+
 
 static char *ldscriptname, *tempoutput, *ld_name, *strip_name;
 static FILE *ldscriptfile;
@@ -26,6 +34,32 @@ static void exitfunc(void)
 
     if (tempoutput != NULL)
         remove(tempoutput);
+}
+
+static int set_os_and_abi(const char *file)
+{
+    int f;
+    const unsigned char osabi = ELFOSABI_AROS;
+    const unsigned char abiversion = 1;
+
+    /* Modify OS and ABI fields */
+
+    f = open(file, O_RDWR);
+    if (f >= 0) {
+        lseek(f, EI_OSABI, SEEK_SET);
+        if (write(f, &osabi, 1) == 1) {
+            lseek(f, EI_ABIVERSION, SEEK_SET);
+            if (write(f, &abiversion, 1) == 1) {
+                close(f);
+                return 1;
+            }
+        }
+    }
+
+    perror(file);
+    if (f >= 0)
+    	    close(f);
+    return 0;
 }
 
 int main(int argc, char *argv[])
@@ -134,7 +168,7 @@ int main(int argc, char *argv[])
     docommandvp(ld_name, ldargs);
 
     if (incremental == 1)
-        return EXIT_SUCCESS;
+        return set_os_and_abi(output) ? EXIT_SUCCESS : EXIT_FAILURE;
 
     collect_libs(tempoutput, &liblist);
     collect_sets(tempoutput, &setlist);
@@ -165,7 +199,7 @@ int main(int argc, char *argv[])
         tempoutput, "-T", ldscriptname, do_verbose, NULL);
 
     if (incremental != 0)
-        return EXIT_SUCCESS;
+        return set_os_and_abi(output) ? EXIT_SUCCESS : EXIT_FAILURE;
         
     if (!ignore_undefined_symbols && check_and_print_undefined_symbols(output))
     {
@@ -180,7 +214,11 @@ int main(int argc, char *argv[])
         docommandlp(strip_name, strip_name, "--strip-unneeded", output, NULL);
     }
 
-    set_os_and_abi(output);
+    if (!set_os_and_abi(output))
+    {
+        remove(output);
+        return EXIT_FAILURE;
+    }
 
     return 0;
 }
