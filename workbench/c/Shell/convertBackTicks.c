@@ -29,6 +29,9 @@ LONG convertBackTicks(ShellState *ss, Buffer *in, Buffer *out, BOOL *quoted)
     TEXT buf[512] = SHELL_EMBED;
     ShellState ess = {0};
 
+    ess.ss_DOSBase = DOSBase;
+    ess.ss_SysBase = SysBase;
+
     for (++in->cur; in->cur < n; p = c)
     {
 	c = in->buf[in->cur];
