@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS	:= $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS	:= $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
 
+#MM- kernel-exec-arm: includes-asm_h-arm
+
 %build_archspecific \
   mainmmake=kernel-exec maindir=rom/exec \
   files="alert_cpu newstackswap preparecontext" asmfiles="execstubs stackswap" \
