@@ -502,7 +502,7 @@ ROM_COMMON_OBJ32 := $(addsuffix .o, $(addprefix $(OBJDIR)/32bit/,$(ROM_COMMON)))
 %build_linklib mmake=linklibs-clib32 \
     libname=arosc.static files="$(ROM_ONLY) $(ROM_STATIC)" objs=$(ROM_COMMON_OBJ32) \
     cflags="-m32 $(CFLAGS) -DAROSC_LIB32 -DAROSC_STATIC -DAROSC_ROM" \
-    objdir=$(OBJDIR)/static libdir=$(GENDIR)/lib32
+    objdir=$(GENDIR)/$(CURDIR)/32bit libdir=$(GENDIR)/lib32
 
 
 #MM
