@@ -1,7 +1,6 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <exec/memory.h>
@@ -528,7 +527,8 @@ static const struct PartitionAttribute PartitionMBRPartitionAttrs[]=
     {TAG_DONE, 0}
 };
 
-static ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root)
+ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase,
+    struct PartitionHandle *root)
 {
     struct MBR *mbr = root->table->data;
 

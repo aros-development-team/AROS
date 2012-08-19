@@ -2,9 +2,8 @@
 #define PARTITIONMBR_H
 
 /*
-    Copyright © 2007-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
     $Id$
-
 */
 
 #include <exec/types.h>
@@ -36,7 +35,6 @@ struct MBR {
 #define MBR_STATUS_VALID(status) ((!(status & 0x0F)) || (status & 0x80))
 
 LONG MBRCheckPartitionTable(struct Library *PartitionBase, struct PartitionHandle *root, void *buffer);
-
 void PartitionMBRSetGeometry
     (
         struct PartitionHandle *root,
@@ -45,6 +43,8 @@ void PartitionMBRSetGeometry
         ULONG count,
         ULONG relative_sector  
     );
+ULONG PartitionMBRDestroyPartitionTable(struct Library *PartitionBase,
+    struct PartitionHandle *root);
 
 #define MBR_MAX_PARTITIONS (4)
 #define MBRT_EXTENDED      (0x05)

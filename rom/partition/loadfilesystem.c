@@ -1,6 +1,6 @@
 /*
     Copyright © 2011, The AROS Development Team. All rights reserved.
-    $Id: querypartitionattrs.c 38180 2011-04-12 12:32:14Z sonic $
+    $Id$
 
 */
 #include "partition_support.h"

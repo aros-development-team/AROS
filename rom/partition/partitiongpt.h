@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#ifndef PARTITIONGPT_H
+#define PARTITIONGPT_H
+
 #include <libraries/uuid.h>
 
 /* Type ID for legacy MBR */
@@ -16,7 +24,7 @@ struct GPTHeader
     UQUAD  DataStart;		/* Number of the first usable block for data		  */
     UQUAD  DataEnd;		/* Number of the last usable block for data		  */
     uuid_t DiskID;		/* Disk unique ID					  */
-    UQUAD  StartBlock;		/* Number if the first partition entry block		  */
+    UQUAD  StartBlock;		/* Number of the first partition entry block		  */
     ULONG  NumEntries;		/* Number of partitions in the table			  */
     ULONG  EntrySize;		/* Size of one entry					  */
     ULONG  PartCRC32;		/* CRC32 of the partition entries array			  */
@@ -47,3 +55,5 @@ struct GPTPartition
 /* AROS-specific flags */
 #define GPT_PF1_AROS_BOOTABLE (1 << 28)
 #define GPT_PF1_AROS_BOOTPRI  0x000000FF	/* Mask for boot priority */
+
+#endif /* PARTITIONGPT_H */

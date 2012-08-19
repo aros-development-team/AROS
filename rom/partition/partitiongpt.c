@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
     
     Desc: GPT partition table handler
@@ -648,6 +648,12 @@ static LONG PartitionGPTSetPartitionAttrs(struct Library *PartitionBase, struct 
     return 0;
 }
 
+static ULONG PartitionGPTDestroyPartitionTable(struct Library *PartitionBase,
+    struct PartitionHandle *root)
+{
+    return PartitionMBRDestroyPartitionTable(PartitionBase, root);
+}
+
 static const struct PartitionAttribute PartitionGPTPartitionTableAttrs[]=
 {
     {PTT_TYPE,           PLAM_READ},
@@ -684,6 +690,6 @@ const struct PTFunctionTable PartitionGPT =
     PartitionGPTSetPartitionAttrs,
     PartitionGPTPartitionTableAttrs,
     PartitionGPTPartitionAttrs,
-    NULL,
+    PartitionGPTDestroyPartitionTable,
     NULL
 };
