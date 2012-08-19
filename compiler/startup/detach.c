@@ -134,10 +134,10 @@ ADD2SET(__startup_detach, PROGRAM_ENTRIES, -100);
 
 void __Detach(LONG retval);
 
-AROS_UFH3S(LONG, __detach_trampoline,
-AROS_UFHA(char *,argstr,A0),
-AROS_UFHA(ULONG,argsize,D0),
-AROS_UFHA(struct ExecBase *,SysBase,A6))
+AROS_ENTRY(LONG, __detach_trampoline,
+    AROS_UFHA(char *,argstr,A0),
+    AROS_UFHA(ULONG,argsize,D0),
+    struct ExecBase *,SysBase)
 {
     AROS_USERFUNC_INIT
     
