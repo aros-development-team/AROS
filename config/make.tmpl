@@ -1306,11 +1306,11 @@ endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
-		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
 BD_KAUTOLIB := dos intuition layers graphics oop utility expansion keymap
@@ -1603,11 +1603,11 @@ endif
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
-		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
-		 uselibs="%(uselibs)" usehostlibs="%(usehostlibs)"
+		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
 ifneq ($(BD_LINKLIB),)
@@ -1642,7 +1642,7 @@ BD_SYMBOLS := $(BD_KBASE)
 
 BD_KLIB := hiddstubs amiga arossupport arosc.static arosm autoinit libinit
 BD_KOBJ_LIBS := $(filter-out $(BD_KLIB),%(uselibs)) $(BD_KAUTOLIB)
-$(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS)
+$(BD_KOBJ) : LINKLIBS:=$(BD_KOBJ_LIBS) $(%(modname)_LIBS)
 $(BD_KOBJ) : FILTBASES:=$(addprefix -L ,$(BD_SYMBOLS))
 $(BD_KOBJ) : USER_LDFLAGS:=$(USER_LDFLAGS)
 $(BD_KOBJ) : $(BD_OBJS) $(USER_OBJS) $(BD_ENDOBJS)
