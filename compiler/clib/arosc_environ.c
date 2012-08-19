@@ -14,7 +14,7 @@
 
 char **environ;
 
-static int __environ_init(void)
+static int __environ_init(struct ExecBase *SysBase)
 {
     __arosc_set_environptr(&environ);
 

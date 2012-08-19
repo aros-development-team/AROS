@@ -16,7 +16,7 @@ const unsigned char *__ctype_tolower;
 
 struct aroscbase *_aroscbase;
 
-static int __ctype_init(void)
+static int __ctype_init(struct ExecBase *SysBase)
 {
     const struct arosc_ctype *ctype;
 
@@ -32,7 +32,7 @@ static int __ctype_init(void)
     return 1;
 }
 
-static void __ctype_exit(void)
+static void __ctype_exit(struct ExecBase *SysBase)
 {
     CloseLibrary((struct Library *)_aroscbase);
 }

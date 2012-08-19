@@ -365,7 +365,7 @@ const struct arosc_ctype *__get_arosc_ctype(void)
     return &__get_arosc_userdata()->acud_ctype;
 }
 
-static int __ctype_init(void)
+static int __ctype_init(struct ExecBase *SysBase)
 {
     struct arosc_userdata *acud = __get_arosc_userdata();
 
