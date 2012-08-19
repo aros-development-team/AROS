@@ -1,0 +1,21 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := pci buffer chip roothub dev cmd debug
+USER_CFLAGS := -Wno-parentheses
+
+WBUSBHARDWAREDIR := $(AROSDIR)/Devs/USBHardware 
+
+#MM
+kernel-usb-pciusb-directories ::
+    %mkdirs_q $(WBUSBHARDWAREDIRS)
+
+#MM- kernel-usb-hw-ohci : kernel-usb-pciusb-directories 
+
+%build_module mmake=kernel-usb-hw-ohci \
+    modname=ohci modtype=device \
+    moduledir=Devs/USBHardware \
+    files="$(FILES)" \
+    uselibs="oop hiddstubs debug"
+
+%common
