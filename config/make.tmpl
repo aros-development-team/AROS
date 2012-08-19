@@ -1512,7 +1512,10 @@ BD_LINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_LINKLIBAFILES))
 ifeq ($(strip $(%(modname)_LINKLIBFILES) $(%(modname)_LINKLIBAFILES) %(linklibfiles)),)
     BD_LINKLIB :=
 else
-    BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)$(BD_LIBSUFFIX).a
+    BD_LINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(modname)$(BD_LIBSUFFIX).a
+    ifneq (%(modname),%(linklibname))
+        BD_LINKLIB += %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)$(BD_LIBSUFFIX).a
+    endif
 endif
 BD_LINKLIBFILES := $(BD_LINKLIBCFILES) $(BD_LINKLIBAFILES)
 
@@ -1521,7 +1524,10 @@ BD_RELLINKLIBAFILES := $(addprefix %(objdir)/,$(%(modname)_RELLINKLIBAFILES))
 ifeq ($(strip $(%(modname)_RELLINKLIBFILES) $(%(modname)_RELLINKLIBAFILES) %(linklibfiles)),)
     BD_RELLINKLIB :=
 else
-    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel$(BD_LIBSUFFIX).a
+    BD_RELLINKLIB := %(prefix)/$(AROS_DIR_LIB)/lib%(modname)_rel$(BD_LIBSUFFIX).a
+    ifneq (%(modname),%(linklibname))
+        BD_RELLINKLIB += %(prefix)/$(AROS_DIR_LIB)/lib%(linklibname)_rel$(BD_LIBSUFFIX).a
+    endif
 endif
 BD_RELLINKLIBFILES := $(BD_RELLINKLIBCFILES) $(BD_RELLINKLIBAFILES)
 
@@ -1605,14 +1611,21 @@ endif
 
 # Link static lib
 ifneq ($(BD_LINKLIB),)
+%rule_link_linklib libname=%(modname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+
+ifneq (%(modname),%(linklibname))
 %rule_link_linklib libname=%(linklibname)$(BD_LIBSUFFIX) objs=$(BD_LINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+endif
 
 $(BD_LINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
 endif
 
 ifneq ($(BD_RELLINKLIB),)
+%rule_link_linklib libname=%(modname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+ifneq (%(modname),%(linklibname))
 %rule_link_linklib libname=%(linklibname)_rel$(BD_LIBSUFFIX) objs=$(BD_RELLINKLIBOBJS) libdir=%(prefix)/$(AROS_DIR_LIB)
+endif
 
 $(BD_RELLINKLIB) : | %(prefix)/$(AROS_DIR_LIB)
 GLOB_MKDIRS += %(prefix)/$(AROS_DIR_LIB)
