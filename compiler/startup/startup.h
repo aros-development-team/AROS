@@ -15,6 +15,7 @@ extern struct WBStartup *WBenchMsg;
 extern LONG __startup_error;
 
 DECLARESET(PROGRAM_ENTRIES);
-void __startup_entries_next(void);
+#define __startup_entries_next() ___startup_entries_next(SysBase)
+void ___startup_entries_next(struct ExecBase *SysBase);
 
 #endif /* !__AROS_STARTUP_H */

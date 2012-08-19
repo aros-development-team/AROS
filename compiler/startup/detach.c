@@ -51,7 +51,7 @@ AROS_UFPA(char *,argstr,A0),
 AROS_UFPA(ULONG,argsize,D0),
 AROS_UFPA(struct ExecBase *,SysBase,A6));
 
-static void __startup_detach(void)
+static void __startup_detach(struct ExecBase *SysBase)
 {
     struct CommandLineInterface *cli;
     struct Process              *newproc;
