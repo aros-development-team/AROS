@@ -214,16 +214,24 @@ static struct filehandle *open_con(struct DosPacket *dp, LONG *perr)
     	if (!fh)
     		return NULL;
 
-    	fh->timermp = CreateMsgPort();
-    	fh->timerreq = (struct timerequest*)CreateIORequest(fh->timermp, sizeof(struct timerequest));
-   	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)fh->timerreq, 0);
-
-	fh->intuibase = (APTR)OpenLibrary("intuition.library", 0);
+    	fh->intuibase = (APTR)OpenLibrary("intuition.library", 0);
 	fh->dosbase = (APTR)OpenLibrary("dos.library", 0);
 	fh->utilbase = (APTR)OpenLibrary("utility.library", 0);
 	Forbid();
     	fh->inputbase = (struct Device *)FindName(&SysBase->DeviceList, "input.device");
     	Permit();
+
+	if (!fh->intuibase || !fh->dosbase || !fh->utilbase || !fh->inputbase) {
+	    CloseLibrary((APTR)fh->utilbase);
+	    CloseLibrary((APTR)fh->dosbase);
+	    CloseLibrary((APTR)fh->intuibase);
+	    FreeVec(fh);
+	    return NULL;
+        }
+
+	fh->timermp = CreateMsgPort();
+    	fh->timerreq = (struct timerequest*)CreateIORequest(fh->timermp, sizeof(struct timerequest));
+   	OpenDevice(TIMERNAME, UNIT_MICROHZ, (struct IORequest *)fh->timerreq, 0);
 
 	err = 0;
 	filename = BSTR2C((BSTR)dp->dp_Arg1);
