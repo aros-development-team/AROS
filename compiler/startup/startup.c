@@ -20,6 +20,7 @@
 #include <aros/startup.h>
 
 struct DosLibrary *DOSBase;
+extern const LONG const __aros_libreq_DOSBase __attribute__((weak));
 
 THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)
 
@@ -58,12 +59,10 @@ extern void __startup_entries_init(void);
 __startup AROS_ENTRY(LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
-    struct ExecBase *, sysbase
+    struct ExecBase *, SysBase
 )
 {
     AROS_USERFUNC_INIT
-
-    SysBase = sysbase;
 
     D(bug("Entering __startup_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
 
@@ -71,8 +70,10 @@ __startup AROS_ENTRY(LONG, __startup_entry,
         No one program will be able to do anything useful without the dos.library,
         so we open it here instead of using the automatic opening system
     */
-    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 36);
+    DOSBase = (struct DosLibrary *)OpenLibrary(DOSNAME, 0);
     if (!DOSBase) return RETURN_FAIL;
+    if (((struct Library *)DOSBase)->lib_Version < __aros_libreq_DOSBase)
+        return RETURN_FAIL;
 
     __argstr  = argstr;
     __argsize = argsize;
@@ -91,7 +92,7 @@ __startup AROS_ENTRY(LONG, __startup_entry,
 } /* entry */
 
 
-static void __startup_main(void)
+static void __startup_main(struct ExecBase *SysBase)
 {
     D(bug("Entering __startup_main\n"));
 
