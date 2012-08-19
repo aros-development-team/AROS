@@ -9,7 +9,7 @@
  */
 static char *_CommandName = NULL;
 
-char *__get_command_name(void)
+char *___get_command_name(struct ExecBase *SysBase)
 {
     if (!_CommandName)
     {

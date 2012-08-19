@@ -11,14 +11,14 @@
 
 DEFINESET(LIBS)
 
-int set_open_libraries_list(const void * const list[])   __attribute__ ((weak));
-void set_close_libraries_list(const void * const list[]) __attribute__ ((weak));
+int _set_open_libraries_list(const void * const list[], struct ExecBase *SysBase)   __attribute__ ((weak));
+void _set_close_libraries_list(const void * const list[], struct ExecBase *SysBase) __attribute__ ((weak));
 
-int set_open_libraries_list(const void * const list[])
+int _set_open_libraries_list(const void * const list[], struct ExecBase *SysBase)
 {
     return 1;
 }
 
-void set_close_libraries_list(const void * const list[])
+void _set_close_libraries_list(const void * const list[], struct ExecBase *SysBase)
 {
 }

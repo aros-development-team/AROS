@@ -171,7 +171,8 @@ for                                                                          \
 #endif
 
 /* Function prototypes from autoinit and libinit */
-extern int set_call_funcs(const void * const set[], int direction, int test_fail);
+extern int _set_call_funcs(const void * const set[], int direction, int test_fail, struct ExecBase *sysBase);
+#define set_call_funcs(set, dir, fail) _set_call_funcs(set, dir, fail, SysBase)
 extern int set_call_libfuncs(const void * const *set, int order, int test_fail, void *libbase);
 extern int set_call_devfuncs
 (
@@ -191,7 +192,11 @@ DECLARESET(RELLIBS)
 #define set_open_rellibraries(base) set_open_rellibraries_list(base,SETNAME(RELLIBS))
 #define set_close_libraries() set_close_libraries_list(SETNAME(LIBS))
 #define set_close_rellibraries(base) set_close_rellibraries_list(base,SETNAME(RELLIBS))
-extern int set_open_libraries_list(const void * const list[]);
-extern int set_open_rellibraries_list(APTR base, const void * const list[]);
-extern void set_close_libraries_list(const void * const list[]);
-extern void set_close_rellibraries_list(APTR base, const void * const list[]);
+#define set_open_libraries_list(list) _set_open_libraries_list(list, SysBase)
+#define set_open_rellibraries_list(base, list) _set_open_rellibraries_list(base, list, SysBase)
+#define set_close_libraries_list(list) _set_close_libraries_list(list, SysBase)
+#define set_close_rellibraries_list(base, list) _set_close_rellibraries_list(base, list, SysBase)
+extern int _set_open_libraries_list(const void * const list[], struct ExecBase *sysBase);
+extern int _set_open_rellibraries_list(APTR base, const void * const list[], struct ExecBase *sysBase);
+extern void _set_close_libraries_list(const void * const list[], struct ExecBase *sysBase);
+extern void _set_close_rellibraries_list(APTR base, const void * const list[], struct ExecBase *sysBase);

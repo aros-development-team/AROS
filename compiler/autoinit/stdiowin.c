@@ -36,7 +36,7 @@ static BPTR DupFH(BPTR fh, LONG mode, struct DosLibrary * DOSBase)
     return nfh;
 }
 
-static void __startup_stdiowin(void)
+static void __startup_stdiowin(struct ExecBase *SysBase)
 {
     struct Process *me;
 
