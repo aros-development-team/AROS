@@ -701,6 +701,12 @@ TMP_DIRS := $(subst //,/,$(addsuffix /,$(TMP_DIRS)))
 TMP_DIRS += $(LIBDIR)/
 # add lib and .a to static linklib names
 TMP_LIBS := $(addprefix lib,$(addsuffix .a,%(uselibs) $(TMP_EXTRA_LIBS)))
+ifeq (%(usestartup),yes)
+    TMP_LIBS += startup.o
+endif
+ifeq (%(detach),yes)
+    TMP_LIBS += detach.o
+endif
 # search for the linklibs in the given path, ignore ones not found
 TMP_DEPLIBS := $(foreach lib,$(TMP_LIBS), \
     $(firstword $(wildcard $(addsuffix $(lib),$(TMP_DIRS)))) \
