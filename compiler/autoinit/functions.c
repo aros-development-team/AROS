@@ -11,9 +11,9 @@
 #include <aros/symbolsets.h>
 #include <aros/debug.h>
 
-int set_call_funcs(const void * const set[], int direction, int test_fail)
+int _set_call_funcs(const void * const set[], int direction, int test_fail, struct ExecBase *SysBase)
 {
-    int pos, (*func)(void);
+    int pos, (*func)(struct ExecBase *SysBase);
 
     D(bug("entering set_call_funcs() - %p\n", set));
     
@@ -23,14 +23,14 @@ int set_call_funcs(const void * const set[], int direction, int test_fail)
 
         if (test_fail)
 	{
-	    int ret = (*func)();
+	    int ret = (*func)(SysBase);
 	    D(bug(" => %d", ret));
 	    if (!ret)
 	        return 0;
 	}
 	else
 	{
-	    (void)(*func)();
+	    (void)(*func)(SysBase);
 	}
 	D(bug("\n"));
     }

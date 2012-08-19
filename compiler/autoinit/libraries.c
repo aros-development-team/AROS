@@ -22,7 +22,7 @@ DEFINESET(LIBS);
 AROS_MAKE_ASM_SYM(int, dummy, __includelibrarieshandling, 0);
 AROS_EXPORT_ASM_SYM(__includelibrarieshandling);
                              
-int set_open_libraries_list(const void * const list[])
+int _set_open_libraries_list(const void * const list[], struct ExecBase *SysBase)
 {
     int pos;
     struct libraryset *set;
@@ -46,10 +46,11 @@ int set_open_libraries_list(const void * const list[])
 
 	if (!do_not_fail && *set->baseptr == NULL)
 	{
+	    const IPTR args[] = {version, (IPTR)set->name};
 	    __showerror
 	    (
 	        "Could not open version %ld or higher of library \"%s\".",
-		(const IPTR []){version, (IPTR)set->name}
+	        args
 	    );
 
 	    return 0;
@@ -60,7 +61,7 @@ int set_open_libraries_list(const void * const list[])
     return 1;
 }
 
-void set_close_libraries_list(const void * const list[])
+void _set_close_libraries_list(const void * const list[], struct ExecBase *SysBase)
 {
     int pos;
     struct libraryset *set;
@@ -80,7 +81,7 @@ DEFINESET(RELLIBS);
 AROS_MAKE_ASM_SYM(int, dummyrel, __includerellibrarieshandling, 0);
 AROS_EXPORT_ASM_SYM(__includerellibrarieshandling);
 
-int set_open_rellibraries_list(APTR base, const void * const list[])
+int _set_open_rellibraries_list(APTR base, const void * const list[], struct ExecBase *SysBase)
 {
     int pos;
     struct rellibraryset *set;
@@ -105,10 +106,11 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
 
 	if (!do_not_fail && *baseptr == NULL)
 	{
+	    const IPTR args[]= {version, (IPTR)set->name};
 	    __showerror
 	    (
 	        "Could not open version %ld or higher of library \"%s\".",
-		(const IPTR []){version, (IPTR)set->name}
+	        args
 	    );
 
 	    return 0;
@@ -119,7 +121,7 @@ int set_open_rellibraries_list(APTR base, const void * const list[])
     return 1;
 }
 
-void set_close_rellibraries_list(APTR base, const void * const list[])
+void _set_close_rellibraries_list(APTR base, const void * const list[], struct ExecBase *SysBase)
 {
     int pos;
     struct rellibraryset *set;

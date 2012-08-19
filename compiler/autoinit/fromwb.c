@@ -18,7 +18,7 @@ struct WBStartup *WBenchMsg;
 
 int __nowbsupport __attribute__((weak)) = 0;
 
-static void __startup_fromwb(void)
+static void __startup_fromwb(struct ExecBase *SysBase)
 {
     struct Process *myproc;
     BPTR curdir = BNULL;

@@ -46,7 +46,7 @@ DEFINESET(DTORS);
 DEFINESET(INIT);
 DEFINESET(EXIT);
 
-static void __startup_initexit(void)
+static void __startup_initexit(struct ExecBase *SysBase)
 {
     D(bug("Entering __startup_initexit\n"));
 

@@ -15,7 +15,7 @@
 
 #include <stdarg.h>
 
-int __forceerrorrequester __attribute__((weak)) = 0;
+const int __forceerrorrequester __attribute__((weak)) = 0;
 
 static AROS_UFH2(IPTR, RawPutc,
         AROS_UFHA(UBYTE, c, D0),
@@ -28,7 +28,7 @@ static AROS_UFH2(IPTR, RawPutc,
     AROS_USERFUNC_EXIT
 }
 
-void __showerror(char *format, const IPTR *args)
+void ___showerror(char *format, const IPTR *args, struct ExecBase *SysBase)
 {
     struct IntuitionBase *IntuitionBase;
     struct DosLibrary *DOSBase = NULL;

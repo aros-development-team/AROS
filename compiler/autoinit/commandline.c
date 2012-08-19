@@ -8,6 +8,7 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
+#include <aros/startup.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -16,7 +17,6 @@
 
 int __nocommandline __attribute__((weak)) = 0;
 
-extern void *WBenchMsg;
 extern char *__argstr;
 extern ULONG __argsize;
 
@@ -28,12 +28,14 @@ static int  __argmax;
 
 static void process_cmdline(int *argc, char *args, char *argv[]);
 
-int __initcommandline(void)
+static void __initcommandline(struct ExecBase *SysBase)
 {
     char *ptr    = NULL;
 
-    if (WBenchMsg)
-        return 1;
+    if (WBenchMsg) {
+        __startup_entries_next();
+        return;
+    }
 
     if (__argsize)
     {
@@ -41,7 +43,7 @@ int __initcommandline(void)
 
         /* Copy args into buffer */
     	if (!(__args = AllocMem(__argsize+1, MEMF_ANY)))
-	    return 0;
+	    return;
 
     	ptr = __args;
     	size= __argsize;
@@ -53,7 +55,7 @@ int __initcommandline(void)
 	process_cmdline(&__argmax, __args, NULL);
 
 	if (!(__argv = AllocMem (sizeof (char *) * (__argmax+1), MEMF_ANY | MEMF_CLEAR)) )
-	    return 0;
+	    return;
 
 	D(bug("arg(%d)=\"%s\", argmax=%d\n", __argsize, __args, __argmax));
 
@@ -65,7 +67,7 @@ int __initcommandline(void)
 	__argmax = 1;
 	__argc = 1;
 	if (!(__argv = AllocMem (sizeof (char *)*2, MEMF_CLEAR | MEMF_ANY)))
-	    return 0;
+	    return;
     }
 
     /*
@@ -84,7 +86,16 @@ int __initcommandline(void)
 
 #endif
 
-    return 1;
+    __startup_entries_next();
+
+    if (WBenchMsg != NULL)
+        return;
+
+    if (__argv)
+	FreeMem(__argv, sizeof (char *) * (__argmax+1));
+
+    if (__args)
+	FreeMem(__args, __argsize+1);
 }
 
 static BOOL is_space(char c)
@@ -219,17 +230,4 @@ static void process_cmdline(int *pargc, char *args, char *argv[])
 	*pargc = argc;
 }
 
-void __exitcommandline(void)
-{
-    if (WBenchMsg != NULL)
-        return;
-
-    if (__argv)
-	FreeMem(__argv, sizeof (char *) * (__argmax+1));
-
-    if (__args)
-	FreeMem(__args, __argsize+1);
-}
-
-ADD2INIT(__initcommandline, 0);
-ADD2EXIT(__exitcommandline, 0);
+ADD2SET(__initcommandline, PROGRAM_ENTRIES, -10);
