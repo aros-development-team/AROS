@@ -5,11 +5,13 @@ include $(TOP)/config/make.cfg
 USER_CFLAGS := -I$(SRCDIR)/rom/processor
 
 FILES := \
-    getcpuinfo
+    processor_init \
 
 #MM- kernel-processor-ppc : includes
 
 USER_CFLAGS += -D__UTILITY_NOLIBBASE__
 
+USER_INCLUDES += -I$(SRCDIR)/arch/ppc-native/processor
+
 %build_archspecific mainmmake=kernel-processor maindir=rom/processor \
-    arch=ppc files=$(FILES)
+    arch=sam440-ppc files=$(FILES)
