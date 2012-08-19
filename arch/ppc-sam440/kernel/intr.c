@@ -141,7 +141,7 @@ static CONST_STRPTR symbolfor(struct Library *DebugBase, IPTR addr)
     };
     if (DebugBase) {
         DecodeLocationA((APTR)addr, tags);
-        snprintf(buff, sizeof(buff), "%s.%s+0x%x", modname, symname, (unsigned)(addr - offset));
+        snprintf(buff, sizeof(buff), "%s %s+0x%x", modname, symname, (unsigned)(addr - offset));
         buff[sizeof(buff)-1]=0;
     } else {
         buff[0] = 0;
