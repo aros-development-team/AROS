@@ -7,7 +7,7 @@ CFILES          := \
         coldreboot
 
 #MM kernel-exec : kernel-exec-sam440-ppc
-#MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes
+#MM kernel-exec-sam440-ppc : kernel-kernel-ppc-includes kernel-exec-includes kernel-kernel-includes
 
 USER_CFLAGS     := $(PRIV_EXEC_INCLUDES)
 USER_AFLAGS     := $(PRIV_EXEC_INCLUDES) -I$(GENINCDIR)
