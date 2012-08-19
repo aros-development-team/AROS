@@ -358,7 +358,7 @@ struct __reg_fdarray {
 static struct SignalSemaphore __fdsem;
 static struct MinList __fdreglist;
     
-int __init_vars(void)
+int __init_vars(struct ExecBase *SysBase)
 {
     InitSemaphore(&__fdsem);
     NEWLIST(&__fdreglist);

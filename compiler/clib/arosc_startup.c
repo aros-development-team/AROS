@@ -12,7 +12,7 @@
 
 #include <sys/arosc.h>
 
-static void __arosc_startup(void)
+static void __arosc_startup(struct ExecBase *SysBase)
 {
     struct arosc_userdata *udata = __get_arosc_userdata();
 
