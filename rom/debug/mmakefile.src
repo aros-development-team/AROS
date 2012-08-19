@@ -1,4 +1,4 @@
-# $Id: mmakefile.src 38290 2011-04-20 07:35:30Z sonic $
+# $Id$
 include $(TOP)/config/make.cfg
 
 FUNCS       := registermodule unregistermodule decodelocation
