@@ -8,14 +8,12 @@
 
 #include <aros/symbolsets.h>
 #include <aros/asmcall.h>
+#include <aros/autoinit.h>
 
 #include <exec/libraries.h>
 
 #include <proto/exec.h>
 #include <proto/dos.h>
-
-/* From libautoinit.a */
-void __showerror(char *format, const IPTR *);
 
 /* Linklib to provide a 'SysBase' symbol. Also verifies that
  * the symbol is set appropriately.
@@ -23,10 +21,12 @@ void __showerror(char *format, const IPTR *);
 struct ExecBase *SysBase;
 extern const LONG const __aros_libreq_SysBase __attribute__((weak));
 
-static int SysBase_check_init(void)
+static int SysBase_autoinit(struct ExecBase *sysBase)
 {
-    if (SysBase == NULL)
+    if (sysBase == NULL)
         return FALSE;
+
+    SysBase = sysBase;
 
     if (__aros_libreq_SysBase > SysBase->LibNode.lib_Version) {
         IPTR arr[] = {
@@ -41,4 +41,4 @@ static int SysBase_check_init(void)
     return TRUE;
 }
 
-ADD2INIT(SysBase_check_init,127)
+ADD2INIT(SysBase_autoinit,-128)
