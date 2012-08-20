@@ -2932,11 +2932,13 @@ endif
 %(mmake)-quick : %(file)
 
 %(file): KOBJS := $(KOBJS)
-%(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS)
+%(file): LDFLAGS := $(TMP_LDFLAGS) $(NOSTARTUP_LDFLAGS) \
+                    -noarosc -nosysbase \
+                    -Wl,--defsym=SysBase=0
 %(file): LDLIBS := $(addprefix -l, %(uselibs))
 %(file): $(KOBJS) $(DEPLIBS) | $(TMP_DIRS)
-	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
-	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS) -noarosc
+	@$(ECHO) "Kickstart  $(subst $(TARGETDIR)/,,$@)..."
+	@$(TARGET_CC) -o $@ $(KOBJS) $(LDFLAGS) $(LDLIBS) -noarosc -nosysbase
 	@$(STRIP) $@
 
 %compress_file mmake=%(mmake) file=%(file)
