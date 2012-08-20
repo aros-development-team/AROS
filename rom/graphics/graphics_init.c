@@ -47,21 +47,11 @@ BOOL InitROMFont(struct GfxBase *);
 
 static int GfxInit(struct GfxBase *LIBBASE)
 {    
-    OOPBase = (APTR)OpenLibrary("oop.library", 41);
-    if (OOPBase == NULL)
-        return FALSE;
-
     HiddBitMapBase = OOP_GetMethodID(IID_Hidd_BitMap, 0);
     HiddColorMapBase = OOP_GetMethodID(IID_Hidd_ColorMap, 0);
     HiddGfxBase = OOP_GetMethodID(IID_Hidd_Gfx, 0);
     HiddGCBase = OOP_GetMethodID(IID_Hidd_GC, 0);
     HiddPlanarBMBase = OOP_GetMethodID(IID_Hidd_PlanarBM, 0);
-
-    UtilityBase = (APTR)OpenLibrary("utility.library", 0);
-    if (UtilityBase == NULL) {
-        CloseLibrary((APTR)OOPBase);
-        return FALSE;
-    }
 
     NEWLIST(&LIBBASE->BlitWaitQ);
     NEWLIST(&LIBBASE->TextFonts);
@@ -168,5 +158,3 @@ AROS_INTH1(TOF_VBlank, struct GfxBase *, GfxBase)
 
     AROS_INTFUNC_EXIT
 }
-
-

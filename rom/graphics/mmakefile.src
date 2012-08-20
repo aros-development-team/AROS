@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I$(SRCDIR)/rom/cgfx -D__GRAPHICS_NOHIDDBASE__ -D__NOLIBBASE__
+USER_INCLUDES := -I$(SRCDIR)/rom/cgfx -D__OOP_NOMETHODBASES__
 
 FILES	  := \
 	intregions \
@@ -217,6 +217,8 @@ FUNCTIONS := \
 #MM kernel-graphics     : includes-composition-copy
 #MM kernel-graphics-kobj: includes-composition-copy
 #MM kernel-graphics-pkg : includes-composition-copy
+
+USER_LDFLAGS := -nosysbase
 
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
