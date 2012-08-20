@@ -23,7 +23,7 @@ include $(TOP)/config/make.cfg
 CFILES := xmlparse xmlrole xmltok
 
 %build_module mmake=workbench-libs-expat-lib modname=expat_au modtype=library \
-    files="$(CFILES)"  uselibs="arosc_rel" linklibname=expat
+    files="$(CFILES)"  linklibname=expat
 
 
 INCLUDE_FILES := expat.h expat_external.h
