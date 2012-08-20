@@ -29,14 +29,25 @@ void writeincproto(struct config *cfg, int is_rel)
 	    "\n"
             "%s"
 	    "\n"
+	    , cfg->modulenameupper, is_rel ? "_REL" : ""
+            , cfg->modulenameupper, is_rel ? "_REL" : ""
+            , banner
+    );
+    if (!is_rel)
+        fprintf(out,
+	    "#ifdef __%s_RELLIBBASE__\n"
+	    "#include <proto/%s_rel.h>\n"
+	    "#else /* !__%s_RELLIBBASE__ */\n"
+	    , cfg->modulenameupper
+	    , cfg->modulename
+	    , cfg->modulenameupper
+        );
+    fprintf(out,
 	    "#include <exec/types.h>\n"
 	    "#include <aros/system.h>\n"
 	    "\n"
 	    "#include <clib/%s_protos.h>\n"
 	    "\n",
-	    cfg->modulenameupper, is_rel ? "_REL" : "",
-            cfg->modulenameupper, is_rel ? "_REL" : "",
-            banner,
 	    cfg->modulename
     );
     freeBanner(banner);
@@ -61,20 +72,18 @@ void writeincproto(struct config *cfg, int is_rel)
     {
         fprintf(out,
                 "#if !defined(%s) && !defined(__NOLIBBASE__) && !defined(__%s_NOLIBBASE__)\n"
-                " extern IPTR %s_offset;\n"
-                " void *__GM_GetBase(void);\n"
-                " #ifdef __%s_STDLIBBASE__\n"
-                "  #define %s (*(struct Library **)((char *)__GM_GetBase()+%s_offset))\n"
-                " #else\n"
-                "  #define %s (*(%s*)((char *)__GM_GetBase()+%s_offset))\n"
-                " #endif\n"
+                "#ifndef __aros_getbase\n"
+                " void *__aros_getbase(void);\n"
+                "#endif\n"
+                " extern const IPTR __aros_rellib_offset_%s;\n"
+                "#define AROS_RELLIB_BASE_%s __aros_rellib_base_%s\n"
+                "#define AROS_RELLIB_OFFSET_%s __aros_rellib_offset_%s\n"
                 "#endif\n"
                 "\n",
                 cfg->libbase, cfg->modulenameupper,
                 cfg->libbase,
-                cfg->modulenameupper,
-                cfg->libbase, cfg->libbase,
-                cfg->libbase, cfg->libbasetypeptrextern, cfg->libbase
+                cfg->modulenameupper, cfg->libbase,
+                cfg->modulenameupper, cfg->libbase
         );
     }
 
@@ -93,19 +102,28 @@ void writeincproto(struct config *cfg, int is_rel)
     {
         fprintf(out,
                 "#if !defined(NOLIBINLINE) && !defined(%s_NOLIBINLINE)\n"
-                "#   include <inline/%s.h>\n",
+                "#   include <inline/%s%s.h>\n",
                 define, cfg->modulename
+	    , (is_rel) ? "_rel" : ""
         );
     }
 
     fprintf(out,
 	    "#%sif !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
-	    "#   include <defines/%s.h>\n"
+	    "#   include <defines/%s%s.h>\n"
 	    "#endif\n"
-	    "\n"
-	    "#endif /* PROTO_%s_H */\n",
+	    "\n",
             (is_rel) ? "" : "el",
-	    define, cfg->modulename,
+	    define, cfg->modulename
+	    , (is_rel) ? "_rel" : ""
+    );
+    if (!is_rel)
+        fprintf(out,
+            "#endif /* !__%s_RELLIBBASE__ */\n"
+	    , cfg->modulenameupper
+	);
+    fprintf(out,
+	    "#endif /* PROTO_%s_H */\n",
             cfg->modulenameupper
     );
     fclose(out);

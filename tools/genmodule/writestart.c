@@ -23,6 +23,19 @@ static void writeextfunclib(FILE *, struct config *);
 static void writefunctable(FILE *, struct config *);
 static void writesets(FILE *, struct config *);
 
+static inline const char *upname(const char *s)
+{
+    static char name[512];
+    int i = 0;
+
+    while (s && i < (sizeof(name)-1))
+        name[i++] = toupper(*(s++));
+    name[i] = 0;
+
+    return &name[0];
+}
+
+
 /* Some general info on the function of the generated code and how they work
    for .library modules (TODO: add docs for other module types):
 
@@ -129,13 +142,13 @@ void writestart(struct config *cfg)
 	    /* Second argument to next call: the class is not the main class if it is not
 	     * the first class or the modtype is not a MUI class
 	     */
-	    writemccinit(out, cl != cfg->classlist || cfg->modtype != cl->classtype, cl);
+	    writemccinit(cfg, out, cl != cfg->classlist || cfg->modtype != cl->classtype, cl);
 	    break;
 	case GADGET:
 	case DATATYPE:
 	case CLASS:
 	case IMAGE:
-	    writeclassinit(out, cl);
+	    writeclassinit(cfg, out, cl);
 	    break;
 	case HIDD:
 	    writeoopinit(out, cl);
@@ -152,7 +165,7 @@ void writestart(struct config *cfg)
 
 static void writedecl(FILE *out, struct config *cfg)
 {
-    struct stringlist *linelistit;
+    struct stringlist *linelistit, *s;
     int boopsiinc=0, muiinc=0, oopinc=0;
     struct functionhead *funclistit;
     struct functionarg *arglistit;
@@ -173,9 +186,19 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "#include <aros/libcall.h>\n"
 	    "#include <aros/asmcall.h>\n"
 	    "#include <aros/symbolsets.h>\n"
+	    "#include <aros/genmodule.h>\n"
 	    "#include <dos/dos.h>\n"
 	    "\n"
 	    "#include \"%s_libdefs.h\"\n"
+	    "\n"
+	    , cfg->modulename
+    );
+    for (s = cfg->rellibs; s; s = s->next)
+        fprintf(out,
+                "#include <proto/%s_rel.h>\n"
+                , s->s
+        );
+    fprintf(out,
 	    "\n"
 	    "#ifdef SysBase\n"
 	    "#undef SysBase\n"
@@ -186,11 +209,7 @@ static void writedecl(FILE *out, struct config *cfg)
 	    "\n"
 	    "#include <proto/exec.h>\n"
             "#include <proto/alib.h>\n"
-            "#ifndef GM_SYSBASE_FIELD\n"
-            "extern struct ExecBase *SysBase;\n"
-            "#endif\n"
-	    "\n",
-	    cfg->modulename
+	    "\n"
     );
 
     /* Write out declaration section provided in the config file */
@@ -205,41 +224,22 @@ static void writedecl(FILE *out, struct config *cfg)
 	fprintf(out,
 		"#ifndef GM_SEGLIST_FIELD\n"
 		"static BPTR __attribute__((unused)) GM_UNIQUENAME(seglist);\n"
-		"#define GM_SEGLIST_FIELD(lh) (GM_UNIQUENAME(seglist))\n"
+		"#define GM_SEGLIST_FIELD(LIBBASE) (GM_UNIQUENAME(seglist))\n"
 		"#endif\n"
 	);
     }
+    if (cfg->options & OPTION_DUPBASE)
+        fprintf(out,
+                "/* Required for TaskStorage manipulation */\n"
+                "extern struct ExecBase *SysBase;\n"
+        );
     if (cfg->options & OPTION_DUPBASE)
     {
         fprintf(out,
 		"#ifndef GM_ROOTBASE_FIELD\n"
 		"static LIBBASETYPEPTR GM_UNIQUENAME(rootbase);\n"
-		"#define GM_ROOTBASE_FIELD(lh) (GM_UNIQUENAME(rootbase))\n"
+		"#define GM_ROOTBASE_FIELD(LIBBASE) (GM_UNIQUENAME(rootbase))\n"
 		"#endif\n"
-                "LONG __GM_BaseSlot;\n"
-                /* If AROS_GM_GETBASE is defined, then it is a 
-                 * macro that generates the __GM_GetBase() function
-                 * in assembly. See include/aros/x86_64/cpu.h for
-                 * an example implementation.
-                 */
-                "#ifdef AROS_GM_GETBASE\n"
-                "extern void *__GM_GetBase(void);\n"
-                "AROS_GM_GETBASE()\n"
-                "static inline void *__GM_GetBase_Safe(void)\n"
-                "{\n"
-                "    return (LIBBASETYPEPTR)GetTaskStorageSlot(__GM_BaseSlot);\n"
-                "}\n"
-                "#else\n"
-                "void *__GM_GetBase(void)\n"
-                "{\n"
-                "    return (void *)GetTaskStorageSlot(__GM_BaseSlot);\n"
-                "}\n"
-                "#define __GM_GetBase_Safe() __GM_GetBase()\n"
-                "#endif\n"
-                "static inline BOOL __GM_SetBase_Safe(LIBBASETYPEPTR base)\n"
-                "{\n"
-                "    return SetTaskStorageSlot(__GM_BaseSlot, (IPTR)base);\n"
-                "}\n"
                 "struct __GM_DupBase {\n"
                 "    LIBBASETYPE base;\n"
                 "    LIBBASETYPEPTR oldbase;\n"
@@ -253,30 +253,9 @@ static void writedecl(FILE *out, struct config *cfg)
                     "    LIBBASETYPEPTR oldpertaskbase;\n"
             );
         }
-        if (cfg->relbases)
-        {
-            fprintf(out,
-                    "    struct Library *relbase[%d];\n"
-                    , slist_length(cfg->relbases)
-            );
-        }
         fprintf(out,
                 "};\n"
-                "#define LIBBASESIZE sizeof(struct __GM_DupBase)\n"
         );
-        if (cfg->relbases)
-        {
-            struct stringlist *sl;
-            int i;
-
-            for (sl=cfg->relbases, i = 0; sl; sl=sl->next, i++) {
-                fprintf(out,
-                        "const IPTR %s_offset = offsetof(struct __GM_DupBase, relbase[%d]);\n"
-                        , sl->s
-                        , i
-                );
-            }
-        }
         if (cfg->options & OPTION_PERTASKBASE)
         {
             fprintf(out,
@@ -295,22 +274,95 @@ static void writedecl(FILE *out, struct config *cfg)
                     "}\n"
             );
         }
-        if (cfg->relbases)
-        {
-            struct stringlist *sl;
+    }
 
-            for (sl = cfg->relbases; sl; sl = sl->next)
-            {
-                fprintf(out,
-                        "AROS_IMPORT_ASM_SYM(void *,__%s,__aros_rellib_%s);\n"
-                        , sl->s
-                        , sl->s
-                );
-            }
+    /* Set the size of the library base to accomodate the relbases */
+    if (cfg->options & OPTION_DUPBASE)
+    {
+        fprintf(out,
+                 "#define LIBBASESIZE (sizeof(struct __GM_DupBase) + sizeof(struct Library *)*%d)\n"
+                 , slist_length(cfg->rellibs)
+
+        );
+    } else {
+        fprintf(out,
+                "#define LIBBASESIZE (sizeof(LIBBASETYPE) + sizeof(struct Library *)*%d)\n"
+                , slist_length(cfg->rellibs)
+        );
+    }
+
+    if (cfg->rellibs) {
+        struct stringlist *sl;
+        int i, n = slist_length(cfg->rellibs);
+
+        for (sl=cfg->rellibs; sl; sl=sl->next, n--) {
+            fprintf(out,
+                    "#ifndef AROS_RELLIB_OFFSET_%s\n"
+                    "#  error '%s' is not a relative library\n"
+                    "#endif\n"
+                    "const IPTR AROS_RELLIB_OFFSET_%s = LIBBASESIZE-sizeof(struct Library *)*%d;\n"
+                    , upname(sl->s)
+                    , sl->s
+                    , upname(sl->s)
+                    , n
+            );
         }
     }
-    else
-        fprintf(out, "#define LIBBASESIZE sizeof(LIBBASETYPE)\n");
+
+    if (cfg->options & OPTION_DUPBASE) {
+        fprintf(out,
+            "static LONG __GM_BaseSlot;\n"
+            "void *__aros_getbase(void)\n"
+            "{\n"
+            "    return (void *)GetTaskStorageSlot(__GM_BaseSlot);\n"
+            "}\n"
+            "BOOL __aros_setbase(void *base)\n"
+            "{\n"
+            "    return SetTaskStorageSlot(__GM_BaseSlot, (IPTR)base);\n"
+            "}\n"
+        );
+    } else if (cfg->rellibs || (cfg->options & OPTION_STACKCALL)) {
+        fprintf(out,
+            "#ifdef __aros_getbase\n"
+        );
+        if ((cfg->options & OPTION_STACKCALL))
+            fprintf(out,
+             "#error Redefining __aros_setbase is not permitted with stackcall APIs\n"
+            );
+        else
+            fprintf(out,
+            "/* __aros_getbase defined */\n"
+            ); 
+        fprintf(out,
+            "#else /* !__aros_getbase */\n"
+            "static void *__GM_Base;\n"
+            "void *__aros_getbase(void)\n"
+            "{\n"
+            "    return __GM_Base;\n"
+            "}\n"
+            "BOOL __aros_setbase(void *base)\n"
+            "{\n"
+            "    __GM_Base = base;\n"
+            "    return TRUE;\n"
+            "}\n"
+            "#endif /* __aros_getbase */\n"
+            "\n"
+        );
+    }
+
+    if (cfg->rellibs)
+    {
+        struct stringlist *sl;
+
+        for (sl = cfg->rellibs; sl; sl = sl->next)
+        {
+            fprintf(out,
+                    "AROS_IMPORT_ASM_SYM(void *,__GM_rellib_base_%s,AROS_RELLIB_BASE_%s);\n"
+                    , sl->s
+                    , upname(sl->s)
+            );
+        }
+    }
     
     for (classlistit = cfg->classlist; classlistit != NULL; classlistit = classlistit->next)
     {
@@ -322,13 +374,13 @@ static void writedecl(FILE *out, struct config *cfg)
                 fprintf(out,
                         "#if !defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
                         "static APTR GM_UNIQUENAME(%sClass);\n"
-                        "#define GM_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
-                        "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+                        "#define GM_CLASSPTR_FIELD(LIBBASE) (GM_UNIQUENAME(%sClass))\n"
+                        "#define %s_CLASSPTR_FIELD(LIBBASE) (GM_UNIQUENAME(%sClass))\n"
                         "#define %s_STORE_CLASSPTR 1\n"
                         "#elif defined(GM_CLASSPTR_FIELD) && !defined(%s_CLASSPTR_FIELD)\n"
-                        "#define %s_CLASSPTR_FIELD(lh) (GM_CLASSPTR_FIELD(lh))\n"
+                        "#define %s_CLASSPTR_FIELD(LIBBASE) (GM_CLASSPTR_FIELD(LIBBASE))\n"
                         "#elif !defined(GM_CLASSPTR_FIELD) && defined(%s_CLASSPTR_FIELD)\n"
-                        "#define GM_CLASSPTR_FIELD(lh) (%s_CLASSPTR_FIELD(lh))\n"
+                        "#define GM_CLASSPTR_FIELD(LIBBASE) (%s_CLASSPTR_FIELD(LIBBASE))\n"
                         "#endif\n",
                         classlistit->basename,
                         classlistit->basename,
@@ -344,8 +396,8 @@ static void writedecl(FILE *out, struct config *cfg)
             else
             {
                 fprintf(out,
-                        "#define GM_CLASSPTR_FIELD(lh) (%s)\n"
-                        "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+                        "#define GM_CLASSPTR_FIELD(LIBBASE) (%s)\n"
+                        "#define %s_CLASSPTR_FIELD(LIBBASE) (%s)\n"
                         "#define %s_STORE_CLASSPTR 1\n",
                         classlistit->classptr_var,
                         classlistit->basename, classlistit->classptr_var,
@@ -360,7 +412,7 @@ static void writedecl(FILE *out, struct config *cfg)
                 fprintf(out,
                         "#if !defined(%s_CLASSPTR_FIELD)\n"
                         "static APTR GM_UNIQUENAME(%sClass);\n"
-                        "#define %s_CLASSPTR_FIELD(lh) (GM_UNIQUENAME(%sClass))\n"
+                        "#define %s_CLASSPTR_FIELD(LIBBASE) (GM_UNIQUENAME(%sClass))\n"
                         "#define %s_STORE_CLASSPTR 1\n"
                         "#endif\n",
                         classlistit->basename,
@@ -372,7 +424,7 @@ static void writedecl(FILE *out, struct config *cfg)
             else
             {
                 fprintf(out,
-                        "#define %s_CLASSPTR_FIELD(lh) (%s)\n"
+                        "#define %s_CLASSPTR_FIELD(LIBBASE) (%s)\n"
                         "#define %s_STORE_CLASSPTR 1\n",
                         classlistit->basename, classlistit->classptr_var,
                         classlistit->basename
@@ -383,6 +435,8 @@ static void writedecl(FILE *out, struct config *cfg)
     
     /* Write out the defines for the functions of the function table */
     writefuncdefs(out, cfg, cfg->funclist);
+    /* Write internal stubs */
+    writefuncinternalstubs(out, cfg, cfg->funclist);
     fprintf(out, "\n");
 
 
@@ -450,7 +504,7 @@ static void writedeclsets(FILE *out, struct config *cfg)
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(LIBS)\n"
 	    "DECLARESET(LIBS)\n"
 	);
-	if (cfg->options & OPTION_DUPBASE)
+	if (cfg->rellibs)
             fprintf(out,
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(RELLIBS)\n"
 	    "DECLARESET(RELLIBS)\n"
@@ -510,13 +564,13 @@ static void writeresident(FILE *out, struct config *cfg)
     if (cfg->options & OPTION_RESAUTOINIT)
     {
          fprintf(out,
-            "#define __freebase(lh)\\\n"
+            "#define __freebase(LIBBASE)\\\n"
             "do {\\\n"
             "    UWORD negsize, possize;\\\n"
-            "    UBYTE *negptr = (UBYTE *)lh;\\\n"
-            "    negsize = ((struct Library *)lh)->lib_NegSize;\\\n"
+            "    UBYTE *negptr = (UBYTE *)LIBBASE;\\\n"
+            "    negsize = ((struct Library *)LIBBASE)->lib_NegSize;\\\n"
             "    negptr -= negsize;\\\n"
-            "    possize = ((struct Library *)lh)->lib_PosSize;\\\n"
+            "    possize = ((struct Library *)LIBBASE)->lib_PosSize;\\\n"
             "    FreeMem (negptr, negsize+possize);\\\n"
             "} while(0)\n"
             "\n");
@@ -524,7 +578,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	
     fprintf(out,
 	    "AROS_UFP3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
-	    "    AROS_UFPA(LIBBASETYPEPTR, lh, D0),\n"
+	    "    AROS_UFPA(LIBBASETYPEPTR, LIBBASE, D0),\n"
 	    "    AROS_UFPA(BPTR, segList, A0),\n"
 	    "    AROS_UFPA(struct ExecBase *, sysBase, A6)\n"
 	    ");\n"
@@ -534,7 +588,7 @@ static void writeresident(FILE *out, struct config *cfg)
 	fprintf(out,
 		"AROS_LD1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
 		"    AROS_LDA(LIBBASETYPEPTR, extralh, D0),\n"
-		"    LIBBASETYPEPTR, lh, 3, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 3, %s\n"
 		");\n"
 		"\n",
 		cfg->basename
@@ -787,7 +841,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     fprintf(out,
             "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
-	    "    AROS_UFHA(LIBBASETYPEPTR, lh, D0),\n"
+	    "    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
 	    "    AROS_UFHA(struct ExecBase *, sysBase, A6)\n"
 	    ")\n"
@@ -800,14 +854,19 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	fprintf(out,
 	    "    int initcalled = 0;\n"
 	);
+    /* Set the global SysBase, needed for __aros_setbase()/__aros_getbase() */
+    if (cfg->options & OPTION_DUPBASE)
+        fprintf(out,
+            "    SysBase = sysBase;\n"
+        );
+    else
+        fprintf(out,
+            "    struct ExecBase *SysBase = sysBase;\n"
+        );
     fprintf(out,
 	    "\n"
             "#ifdef GM_SYSBASE_FIELD\n"
-            "    struct ExecBase *SysBase = sysBase;\n"
-            "    GM_SYSBASE_FIELD(lh) = (APTR)sysBase;\n"
-            "#else\n"
-            "    if (!SysBase)\n"
-            "        SysBase = sysBase;\n"
+            "    GM_SYSBASE_FIELD(LIBBASE) = (APTR)SysBase;\n"
             "#endif\n"
             "    if (!SysBase || SysBase->LibNode.lib_Version < __aros_libreq_SysBase)\n"
             "        return NULL;\n"
@@ -816,8 +875,8 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->options & OPTION_RESAUTOINIT) {
         fprintf(out,
                 "#ifdef GM_OOPBASE_FIELD\n"
-                "    GM_OOPBASE_FIELD(lh) = OpenLibrary(\"oop.library\",0);\n"
-                "    if (GM_OOPBASE_FIELD(lh) == NULL)\n"
+                "    GM_OOPBASE_FIELD(LIBBASE) = OpenLibrary(\"oop.library\",0);\n"
+                "    if (GM_OOPBASE_FIELD(LIBBASE) == NULL)\n"
                 "        return NULL;\n"
                 "#endif\n"
         );
@@ -838,18 +897,18 @@ static void writeinitlib(FILE *out, struct config *cfg)
 		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC|MEMF_CLEAR);\n"
 		"    if (mem == NULL)\n"
 		"         return NULL;\n"
-		"    lh = (LIBBASETYPEPTR)(mem + vecsize);\n"
-		"    n = (struct Node *)lh;\n"
+		"    LIBBASE = (LIBBASETYPEPTR)(mem + vecsize);\n"
+		"    n = (struct Node *)LIBBASE;\n"
 		"    n->ln_Type = NT_RESOURCE;\n"
 		"    n->ln_Pri = RESIDENTPRI;\n"
 		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
-		"    MakeFunctions(lh, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
+		"    MakeFunctions(LIBBASE, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
 	    );
 	    if ((cfg->modtype != RESOURCE) && (cfg->options & OPTION_SELFINIT))
 	    {
 		fprintf(out,
-			"    ((struct Library*)lh)->lib_NegSize = vecsize;\n"
-			"    ((struct Library*)lh)->lib_PosSize = sizeof(LIBBASETYPE);\n"
+			"    ((struct Library*)LIBBASE)->lib_NegSize = vecsize;\n"
+			"    ((struct Library*)LIBBASE)->lib_PosSize = sizeof(LIBBASETYPE);\n"
 		);
 		
 	    }
@@ -857,7 +916,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	else
     	{
 	    fprintf(out,
-		"    ((struct Library *)lh)->lib_Revision = REVISION_NUMBER;\n"
+		"    ((struct Library *)LIBBASE)->lib_Revision = REVISION_NUMBER;\n"
 	    );
     	}
     }
@@ -865,10 +924,14 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->options & OPTION_DUPBASE)
         fprintf(out,
                 "    __GM_BaseSlot = AllocTaskStorageSlot();\n"
-                "    if (!__GM_SetBase_Safe(lh)) {\n"
+                "    if (!SetTaskStorageSlot(__GM_BaseSlot, (IPTR)LIBBASE)) {\n"
                 "        FreeTaskStorageSlot(__GM_BaseSlot);\n"
                 "        return NULL;\n"
                 "    }\n"
+        );
+    else if (cfg->rellibs || (cfg->options & OPTION_STACKCALL))
+        fprintf(out,
+                "    __aros_setbase(LIBBASE);\n"
         );
     if (cfg->options & OPTION_PERTASKBASE)
         fprintf(out,
@@ -876,16 +939,21 @@ static void writeinitlib(FILE *out, struct config *cfg)
         );
 
     if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
-	fprintf(out, "    GM_SEGLIST_FIELD(lh) = segList;\n");
+	fprintf(out, "    GM_SEGLIST_FIELD(LIBBASE) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
-	fprintf(out, "    GM_ROOTBASE_FIELD(lh) = (LIBBASETYPEPTR)lh;\n");
+	fprintf(out, "    GM_ROOTBASE_FIELD(LIBBASE) = (LIBBASETYPEPTR)LIBBASE;\n");
     fprintf(out, "    if (");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "set_open_libraries() && ");
-    if (cfg->classlist != NULL)
-	fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, 1, lh) && ");
+    if (cfg->rellibs)
+        fprintf(out, "set_open_rellibraries(LIBBASE) && ");
     fprintf(out,
-	    "set_call_funcs(SETNAME(INIT), 1, 1) )\n"
+	    "set_call_funcs(SETNAME(INIT), 1, 1) &&"
+    );
+    if (cfg->classlist != NULL)
+	fprintf(out, "set_call_libfuncs(SETNAME(CLASSESINIT), 1, 1, LIBBASE) && ");
+    fprintf(out,
+	    "1)\n"
 	    "    {\n"
 	    "        set_call_funcs(SETNAME(CTORS), -1, 0);\n"
 	    "\n"
@@ -897,7 +965,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     else
     	fprintf(out,
 	    "        initcalled = 1;\n"
-	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, lh);\n");
+	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, LIBBASE);\n");
     fprintf(out,
 	    "    }\n"
 	    "    else\n"
@@ -910,14 +978,16 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (cfg->modtype != HANDLER)
     	fprintf(out,
 	    "        if (initcalled)\n"
-	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, lh);\n");
+	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n");
 
     fprintf(out,
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
     if (cfg->classlist != NULL)
-	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
+	fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
+    if (cfg->rellibs)
+        fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
 
@@ -927,7 +997,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	{
 	    fprintf(out,
 		"\n"
-		"        __freebase(lh);\n"
+		"        __freebase(LIBBASE);\n"
 	    );
     	}
     	else
@@ -950,11 +1020,11 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	switch (cfg->modtype)
     	{
     	case RESOURCE:
-    	    fprintf(out, "        AddResource(lh);\n");
+    	    fprintf(out, "        AddResource(LIBBASE);\n");
     	    break;
 
     	case DEVICE:
-    	    fprintf(out, "        AddDevice(lh);\n");
+    	    fprintf(out, "        AddDevice(LIBBASE);\n");
 
     	case HANDLER:
     	    /* Bare handlers don't require adding at all */
@@ -962,7 +1032,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 
     	default:
     	    /* Everything else is library */
-	    fprintf(out, "        AddLibrary(lh);\n");
+	    fprintf(out, "        AddLibrary(LIBBASE);\n");
 	    break;
     	}
     }
@@ -971,7 +1041,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
         fprintf(out, "        GM_UNIQUENAME(InitHandler)();\n");
 
     fprintf(out,
-	    "        return  lh;\n"
+	    "        return  LIBBASE;\n"
 	    "    }\n"
 	    "\n"
 	    "    AROS_USERFUNC_EXIT\n"
@@ -997,7 +1067,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"    AROS_LDA(struct IORequest *, ioreq, A1),\n"
 		"    AROS_LDA(ULONG, unitnum, D0),\n"
 		"    AROS_LDA(ULONG, flags, D1),\n"
-		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 1, %s\n"
 		");\n",
 		cfg->basename
 	    );
@@ -1008,7 +1078,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
 		"    AROS_LHA(IPTR, unitnum, D0),\n"
 		"    AROS_LHA(ULONG, flags, D1),\n"
-		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 1, %s\n"
 		")\n",
 		cfg->basename
 	    );
@@ -1016,12 +1086,12 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
 		"\n"
-		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh)\n"
-		"         && set_call_devfuncs(SETNAME(OPENDEV), 1, 1, lh, ioreq, unitnum, flags)\n"
+		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, LIBBASE)\n"
+		"         && set_call_devfuncs(SETNAME(OPENDEV), 1, 1, LIBBASE, ioreq, unitnum, flags)\n"
 		"    )\n"
 		"    {\n"
-		"        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		"        ((struct Library *)LIBBASE)->lib_OpenCnt++;\n"
+		"        ((struct Library *)LIBBASE)->lib_Flags &= ~LIBF_DELEXP;\n"
 		"\n"
 		"        ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;\n"
 		"    }\n"
@@ -1045,7 +1115,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		"AROS_LD1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LDA (ULONG, version, D0),\n"
-		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 1, %s\n"
 		");\n",
 		cfg->basename
 	    );
@@ -1054,7 +1124,7 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
 		"    AROS_LHA (ULONG, version, D0),\n"
-		"    LIBBASETYPEPTR, lh, 1, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 1, %s\n"
 		")\n"
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
@@ -1063,13 +1133,12 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	);
 	if (!(cfg->options & OPTION_DUPBASE))
 	{
-	    fprintf(out,
-		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, lh) )\n"
+            fprintf(out,
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, 1, LIBBASE) )\n"
 		    "    {\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
-		    "\n"
-		    "        return lh;\n"
+		    "        ((struct Library *)LIBBASE)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)LIBBASE)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "        return LIBBASE;\n"
 		    "    }\n"
 		    "\n"
 		    "    return NULL;\n"
@@ -1083,8 +1152,8 @@ static void writeopenlib(FILE *out, struct config *cfg)
 	{
 	    fprintf(out,
 		    "    struct Library *newlib = NULL;\n"
-		    "    UWORD possize = ((struct Library *)lh)->lib_PosSize;\n"
-                    "    LIBBASETYPEPTR oldbase = __GM_GetBase_Safe();\n"
+		    "    UWORD possize = ((struct Library *)LIBBASE)->lib_PosSize;\n"
+                    "    LIBBASETYPEPTR oldbase = __aros_getbase();\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
@@ -1118,10 +1187,10 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "        if (newlib == NULL)\n"
 		    "            return NULL;\n"
 		    "\n"
-		    "        CopyMem(lh, newlib, possize);\n"
-                    "        __GM_SetBase_Safe((LIBBASETYPEPTR)newlib);\n"
+		    "        CopyMem(LIBBASE, newlib, possize);\n"
                     "        struct __GM_DupBase *dupbase = (struct __GM_DupBase *)newlib;\n"
                     "        dupbase->oldbase = oldbase;\n"
+		    "        __aros_setbase((LIBBASETYPEPTR)newlib);\n"
             );
             if (cfg->options & OPTION_PERTASKBASE)
                 fprintf(out,
@@ -1147,8 +1216,8 @@ static void writeopenlib(FILE *out, struct config *cfg)
 		    "            return NULL;\n"
 		    "        }\n"
 		    "\n"
-		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "        ((struct Library *)LIBBASE)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)LIBBASE)->lib_Flags &= ~LIBF_DELEXP;\n"
                     "    }\n"
 		    "\n"
 		    "    return (LIBBASETYPEPTR)newlib;\n"
@@ -1169,7 +1238,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	if (cfg->modtype != DEVICE)
 	    fprintf(out,
 		"AROS_LD0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
-		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 2, %s\n"
 		");\n",
 		cfg->basename
 	    );
@@ -1177,7 +1246,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	    fprintf(out,
 		"AROS_LD1(BPTR, GM_UNIQUENAME(CloseLib),\n"
 		"    AROS_LDA(struct IORequest *, ioreq, A1),\n"
-		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 2, %s\n"
 		");\n",
 		cfg->basename
 	    );
@@ -1186,7 +1255,7 @@ static void writecloselib(FILE *out, struct config *cfg)
     if (cfg->modtype != DEVICE)
 	fprintf(out,
 		"AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
-		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 2, %s\n"
 		")\n",
 		cfg->basename
 	);
@@ -1194,7 +1263,7 @@ static void writecloselib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"AROS_LH1(BPTR, GM_UNIQUENAME(CloseLib),\n"
 		"    AROS_LHA(struct IORequest *, ioreq, A1),\n"
-		"    LIBBASETYPEPTR, lh, 2, %s\n"
+		"    LIBBASETYPEPTR, LIBBASE, 2, %s\n"
 		")\n",
 		cfg->basename
 	);
@@ -1206,7 +1275,7 @@ static void writecloselib(FILE *out, struct config *cfg)
     );
     if (cfg->modtype == DEVICE)
 	fprintf(out,
-		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, lh, ioreq, 0, 0))\n"
+		"    if (!set_call_devfuncs(SETNAME(CLOSEDEV), -1, 1, LIBBASE, ioreq, 0, 0))\n"
                 "    {\n"
 		"        return BNULL;\n"
                 "    }\n"
@@ -1214,15 +1283,15 @@ static void writecloselib(FILE *out, struct config *cfg)
     if (!(cfg->options & OPTION_DUPBASE))
     {
 	fprintf(out,
-		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
-		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
+		"    ((struct Library *)LIBBASE)->lib_OpenCnt--;\n"
+		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, LIBBASE);\n"
 	);
     }
     else /* OPTION_DUPBASE */
     {
 	fprintf(out,
-		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(lh);\n"
-                "    struct __GM_DupBase *dupbase = (struct __GM_DupBase *)lh;\n"
+		"    LIBBASETYPEPTR rootbase = GM_ROOTBASE_FIELD(LIBBASE);\n"
+                "    struct __GM_DupBase *dupbase = (struct __GM_DupBase *)LIBBASE;\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
@@ -1232,18 +1301,18 @@ static void writecloselib(FILE *out, struct config *cfg)
             );
         fprintf(out,
                 "\n"
-		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, lh);\n"
-                "    set_close_rellibraries(lh);\n"
-                "    __GM_SetBase_Safe(dupbase->oldbase);\n"
+		"    set_call_libfuncs(SETNAME(CLOSELIB), -1, 0, LIBBASE);\n"
+                "    set_close_rellibraries(LIBBASE);\n"
+                "    __aros_setbase(dupbase->oldbase);\n"
         );
         if (cfg->options & OPTION_PERTASKBASE)
             fprintf(out,
-                    "    __GM_SetPerTaskBase(((struct __GM_DupBase *)lh)->oldpertaskbase);\n"
+                    "    __GM_SetPerTaskBase(((struct __GM_DupBase *)LIBBASE)->oldpertaskbase);\n"
             );
         fprintf(out,
-                "    __freebase(lh);\n"
-		"    lh = rootbase;\n"
-		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
+                "    __freebase(LIBBASE);\n"
+		"    LIBBASE = rootbase;\n"
+		"    ((struct Library *)LIBBASE)->lib_OpenCnt--;\n"
 		"\n"
 	);
     }
@@ -1251,13 +1320,13 @@ static void writecloselib(FILE *out, struct config *cfg)
 	fprintf(out,
 		"    if\n"
 		"    (\n"
-		"        (((struct Library *)lh)->lib_OpenCnt == 0)\n"
-		"        && (((struct Library *)lh)->lib_Flags & LIBF_DELEXP)\n"
+		"        (((struct Library *)LIBBASE)->lib_OpenCnt == 0)\n"
+		"        && (((struct Library *)LIBBASE)->lib_Flags & LIBF_DELEXP)\n"
 		"    )\n"
 		"    {\n"
 		"        return AROS_LC1(BPTR, GM_UNIQUENAME(ExpungeLib),\n"
-		"                   AROS_LCA(LIBBASETYPEPTR, lh, D0),\n"
-		"                   LIBBASETYPEPTR, lh, 3, %s\n"
+		"                   AROS_LCA(LIBBASETYPEPTR, LIBBASE, D0),\n"
+		"                   LIBBASETYPEPTR, LIBBASE, 3, %s\n"
 		"        );\n"
 		"    }\n",
 		cfg->basename
@@ -1278,7 +1347,7 @@ static void writeexpungelib(FILE *out, struct config *cfg)
     fprintf(out,
 	    "AROS_LH1 (BPTR, GM_UNIQUENAME(ExpungeLib),\n"
 	    "    AROS_LHA(LIBBASETYPEPTR, extralh, D0),\n"
-	    "    LIBBASETYPEPTR, lh, 3, %s\n"
+	    "    LIBBASETYPEPTR, LIBBASE, 3, %s\n"
 	    ")\n",
 	    cfg->basename
     );
@@ -1292,33 +1361,35 @@ static void writeexpungelib(FILE *out, struct config *cfg)
         if (cfg->options & OPTION_RESAUTOINIT) {
             fprintf(out,
                     "#ifdef GM_SYSBASE_FIELD\n"
-                    "    struct ExecBase *SysBase = (struct ExecBase *)GM_SYSBASE_FIELD(lh);\n"
+                    "    struct ExecBase *SysBase = (struct ExecBase *)GM_SYSBASE_FIELD(LIBBASE);\n"
                     "#endif\n"
             );
         }
 	fprintf(out,
 		"\n"
-		"    if ( ((struct Library *)lh)->lib_OpenCnt == 0 )\n"
+		"    if ( ((struct Library *)LIBBASE)->lib_OpenCnt == 0 )\n"
 		"    {\n"
-		"        BPTR seglist = GM_SEGLIST_FIELD(lh);\n"
+		"        BPTR seglist = GM_SEGLIST_FIELD(LIBBASE);\n"
 		"\n"
-		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, lh))\n"
+		"        if(!set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 1, LIBBASE))\n"
 		"        {\n"
-		"            ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
+		"            ((struct Library *)LIBBASE)->lib_Flags |= LIBF_DELEXP;\n"
 		"            return BNULL;\n"
 		"        }\n"
 		"\n"
-		"        Remove((struct Node *)lh);\n"
+		"        Remove((struct Node *)LIBBASE);\n"
 		"\n"
 		"        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 		"        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
 	);
 	if (cfg->classlist != NULL)
-	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, lh);\n");
+	    fprintf(out, "        set_call_libfuncs(SETNAME(CLASSESEXPUNGE), -1, 0, LIBBASE);\n");
+        if (cfg->rellibs)
+	    fprintf(out, "        set_close_rellibraries(LIBBASE);\n");
 	if (!(cfg->options & OPTION_NOAUTOLIB))
 	    fprintf(out, "        set_close_libraries();\n"
 	                 "#ifdef GM_OOPBASE_FIELD\n"
-	                 "        CloseLibrary((struct Library *)GM_OOPBASE_FIELD(lh));\n"
+	                 "        CloseLibrary((struct Library *)GM_OOPBASE_FIELD(LIBBASE));\n"
 	                 "#endif\n"
 	            );
         if (cfg->options & OPTION_PERTASKBASE)
@@ -1328,12 +1399,12 @@ static void writeexpungelib(FILE *out, struct config *cfg)
             );
         fprintf(out,
         	"\n"
-		"        __freebase(lh);\n"
+		"        __freebase(LIBBASE);\n"
 		"\n"
 		"        return seglist;\n"
 		"    }\n"
 		"\n"
-		"    ((struct Library *)lh)->lib_Flags |= LIBF_DELEXP;\n"
+		"    ((struct Library *)LIBBASE)->lib_Flags |= LIBF_DELEXP;\n"
 	);
     }
     fprintf(out,
@@ -1351,7 +1422,7 @@ static void writeextfunclib(FILE *out, struct config *cfg)
 {
     fprintf(out,
 	    "AROS_LH0 (LIBBASETYPEPTR, GM_UNIQUENAME(ExtFuncLib),\n"
-	    "    LIBBASETYPEPTR, lh, 4, %s\n"
+	    "    LIBBASETYPEPTR, LIBBASE, 4, %s\n"
 	    ")\n"
 	    "{\n"
 	    "    AROS_LIBFUNC_INIT\n"
@@ -1515,10 +1586,6 @@ writefunctable(FILE *out,
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    fprintf(out, "    &%s,\n", funclistit->internalname
-            );
-	    break;
-	    
 	case REGISTER:
 	case REGISTERMACRO:
 	    if (funclistit->version != lastversion) {

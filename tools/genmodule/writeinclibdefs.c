@@ -138,11 +138,6 @@ void writeinclibdefs(struct config *cfg)
 	    storeptr = 1;
 	    snprintf(line, 1023, "((LIBBASETYPEPTR)lh)->%s", classlistit->classptr_field);
 	}
-	else if (classlistit->classptr_var != NULL)
-	{
-	    storeptr = 1;
-	    snprintf(line, 1023, "%s", classlistit->classptr_var);
-	}
 	else if ((classlistit->classid != NULL) && !(classlistit->options & COPTION_PRIVATE))
 	{
 	    storeptr = 0;
@@ -174,12 +169,17 @@ void writeinclibdefs(struct config *cfg)
                     "#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
                     cfg->rootbase_field
             );
+    }
+
+    if (cfg->rellibs || (cfg->options & OPTION_DUPBASE) || (cfg->options & OPTION_STACKCALL))
         fprintf(out,
                 "\n"
-                "extern LONG __GM_BaseSlot;\n"
-                "void *__GM_GetBase(void);\n"
+                "%s\n"
+                "void *__aros_getbase(void);\n"
+                "%s\n"
+                , !(cfg->options & OPTION_STACKCALL) ? "#ifndef __aros_getbase" : "/* Thus must be externally visible for stackcall libs */"
+                , !(cfg->options & OPTION_STACKCALL) ? "#endif" : ""
         );
-    }
 
     if (cfg->options & OPTION_PERTASKBASE)
     {

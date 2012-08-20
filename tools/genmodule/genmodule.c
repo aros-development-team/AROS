@@ -39,8 +39,10 @@ int main(int argc, char **argv)
             writeincproto(cfg, 0); /* normal */
             writeincproto(cfg, 1); /* relbase */
             writeincclib(cfg);
-            writeincdefines(cfg);
-            writeincinline(cfg);
+            writeincdefines(cfg, 0); /* normal */
+            writeincdefines(cfg, 1); /* relbase */
+            writeincinline(cfg, 0); /* normal */
+            writeincinline(cfg, 1); /* relbase */
         }
         if (cfg->interfacelist)
             writeincinterfaces(cfg);

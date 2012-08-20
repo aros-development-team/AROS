@@ -17,7 +17,7 @@ void writemuiincludes(FILE *out)
     );
 }
 
-void writemccinit(FILE *out, int inclass, struct classinfo *cl)
+void writemccinit(struct config *cfg, FILE *out, int inclass, struct classinfo *cl)
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
@@ -41,7 +41,7 @@ void writemccinit(FILE *out, int inclass, struct classinfo *cl)
 	     cl->basename, cl->classdatatype
 	);
     
-    writeboopsidispatcher(out, cl);
+    writeboopsidispatcher(cfg, out, cl);
     
     fprintf
     (

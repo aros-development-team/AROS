@@ -18,8 +18,8 @@
 void writemakefile(struct config *);
 void writeincproto(struct config *, int);
 void writeincclib(struct config *);
-void writeincdefines(struct config *);
-void writeincinline(struct config *);
+void writeincdefines(struct config *, int is_rel);
+void writeincinline(struct config *, int is_rel);
 void writeinclibdefs(struct config *);
 void writeincinterfaces(struct config *);
 void writestart(struct config *);
@@ -29,7 +29,7 @@ void writestubs(struct config *, int);
 void writefunclist(struct config *);
 void writefd(struct config *);
 void writeskel(struct config *cfg);
-void writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg);
+void writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg, int is_rel);
 void writegetlibbase(struct config *cfg, int is_rel);
 
 #endif
