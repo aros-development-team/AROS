@@ -16,10 +16,6 @@
 
 static int PartitionInit(LIBBASETYPEPTR LIBBASE)
 {
-    /* REMOVE ONCE ABIv1 HAS STABILIZED */
-    if (!(LIBBASE->pb_UtilityBase = TaggedOpenLibrary(TAGGEDOPEN_UTILITY)))
-    	return FALSE;
-
     LIBBASE->partbase.tables =  (struct PartitionTableInfo **)PartitionSupport;
     NewList(&LIBBASE->bootList);
     InitSemaphore(&LIBBASE->bootSem);
@@ -42,10 +38,6 @@ static int PartitionCleanup(struct PartitionBase_intern *base)
 
     if (base->pb_DOSBase)
     	CloseLibrary(base->pb_DOSBase);
-
-    /* REMOVE ONCE ABIv1 HAS STABILIZED */
-    if (base->pb_UtilityBase)
-	CloseLibrary(base->pb_UtilityBase);
 
     return TRUE;
 }

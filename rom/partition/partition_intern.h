@@ -22,22 +22,16 @@ struct PartitionBase_intern
     BPTR segList;
     struct List bootList;
     struct SignalSemaphore bootSem;
-    struct Library *pb_DOSBase;
 
-    /* REMOVE ONCE ABIv1 HAS STABALIZED */
-    struct Library *pb_UtilityBase;
+    /* We do NOT autoinit DOSBase, because we want to be
+     * explicit about all uses of DOSBase, since it may
+     * be NULL (and that's ok!).
+     */
+    struct Library *pb_DOSBase;
 };
 
 #define PBASE(x) ((struct PartitionBase_intern *)x)
 
 #define PTYPE(x) ((struct PartitionType *)x)
-
-/* We do NOT define DOSBase, because we want to be
- * explicit about all uses of DOSBase, since it may
- * be NULL.
- */
-
-/* REMOVE ONCE ABIv1 HAS STABALIZED */
-#define UtilityBase (((struct PartitionBase_intern *)PartitionBase)->pb_UtilityBase)
 
 #endif /* PARTITION_INTERN_H */

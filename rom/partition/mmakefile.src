@@ -42,8 +42,7 @@ FUNCS := \
 #MM kernel-partition-kobj : core-linklibs core-linklibs
 #MM- core-linklibs: linklibs-partition
 
-USER_CFLAGS := -DDEBUG=0 \
-	       -D__UTILITY_NOLIBBASE__
+USER_CFLAGS := -DDEBUG=0
 USER_LDFLAGS  := -L$(GENDIR)/lib
 
 %build_module mmake=kernel-partition \
