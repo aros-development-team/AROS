@@ -10,20 +10,21 @@
 
 #include "__arosc_privdata.h"
 
+void *__aros_getbase_aroscbase(void);
+
 const unsigned short int *__ctype_b;
 const unsigned char *__ctype_toupper;
 const unsigned char *__ctype_tolower;
 
-struct aroscbase *_aroscbase;
-
 static int __ctype_init(struct ExecBase *SysBase)
 {
     const struct arosc_ctype *ctype;
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
-    _aroscbase = (struct aroscbase *)OpenLibrary("arosc.library", 0);
-    if (!_aroscbase)
+    if (!aroscbase)
     	    return 0;
-    ctype = &_aroscbase->acb_acud.acud_ctype;
+
+    ctype = &aroscbase->acb_acud.acud_ctype;
 
     __ctype_b = ctype->b;
     __ctype_toupper = ctype->toupper;
@@ -32,10 +33,4 @@ static int __ctype_init(struct ExecBase *SysBase)
     return 1;
 }
 
-static void __ctype_exit(struct ExecBase *SysBase)
-{
-    CloseLibrary((struct Library *)_aroscbase);
-}
-
 ADD2INIT(__ctype_init, 20);
-ADD2EXIT(__ctype_exit, 20);
