@@ -11,7 +11,7 @@ FILES := blocksort huffman crctable randtable  \
 
 %build_module mmake=workbench-libs-bz2 \
     modname=bz2_au modtype=library \
-    files="$(FILES)" uselibs="arosc_rel" linklibname="bz2"
+    files="$(FILES)" linklibname="bz2"
 
 #MM- linklibs: linklibs-bz2-nostdio
 
