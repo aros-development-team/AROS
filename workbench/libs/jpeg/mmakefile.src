@@ -21,7 +21,7 @@ USER_CFLAGS += -Wno-main
 
 %build_module mmake=workbench-libs-jpeg \
   modname=jpeg_au modtype=library \
-  files="$(FILES)" uselibs="arosc_rel" linklibname=jpeg
+  files="$(FILES)" linklibname=jpeg
 
 
 INCLUDE_FILES := jerror.h jmorecfg.h jpeglib.h jconfig.h
