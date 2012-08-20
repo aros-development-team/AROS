@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2007, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     RequestFile CLI command.
@@ -87,7 +87,7 @@ enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_MULTISELECT, ARG_DRAWERSONLY, ARG_NOICONS, ARG_PUBSCREEN,
        ARG_INITIALVOLUMES, TOTAL_ARGS };
 
-const TEXT version[] = "$VER: RequestFile 42.1 (18.10.2005)\n";
+const TEXT version[] = "$VER: RequestFile 42.2 (19.8.2012)\n";
 
 extern struct Library *AslBase;
 
@@ -114,6 +114,8 @@ struct TagItem FileTags[] =
 
 int __nocommandline;
 
+static UBYTE *ParsePatternArg(IPTR **args, UWORD ArgNum);
+
 int main(void)
 {
     struct RDArgs        *rda;
@@ -129,12 +131,6 @@ int main(void)
     BOOL                  Success;
     int                   i;
 
-#define  DoSave    (args[ARG_SAVEMODE] != NULL)
-#define  DoMulti   (args[ARG_MULTISELECT] != NULL)
-#define  DoDrawers (args[ARG_DRAWERSONLY] != NULL)
-#define  DoIcons   (args[ARG_NOICONS] != NULL)
-#define  DoPattern (args[ARG_PATTERN] != NULL)
-
     Buffer = (char *)AllocVec(MAX_PATH_LEN, MEMF_ANY | MEMF_CLEAR);
     if (Buffer != NULL)
     {
@@ -147,28 +143,28 @@ int main(void)
             FileTags[ARG_TITLE].ti_Data         = (IPTR)args[ARG_TITLE];
             FileTags[ARG_POSITIVE].ti_Data      = (IPTR)args[ARG_POSITIVE];
             FileTags[ARG_NEGATIVE].ti_Data      = (IPTR)args[ARG_NEGATIVE];
-            FileTags[ARG_ACCEPTPAT].ti_Data     = (IPTR)args[ARG_ACCEPTPAT];
-            FileTags[ARG_REJECTPAT].ti_Data     = (IPTR)args[ARG_REJECTPAT];
-            FileTags[ARG_SAVEMODE].ti_Data      = DoSave;
-            FileTags[ARG_MULTISELECT].ti_Data   = DoMulti;
-            FileTags[ARG_DRAWERSONLY].ti_Data   = DoDrawers;
-            FileTags[ARG_NOICONS].ti_Data       = DoIcons;
+            ParsePatternArg(args, ARG_ACCEPTPAT);
+            ParsePatternArg(args, ARG_REJECTPAT);
+            FileTags[ARG_SAVEMODE].ti_Data      = (IPTR)args[ARG_SAVEMODE];
+            FileTags[ARG_MULTISELECT].ti_Data   = (IPTR)args[ARG_MULTISELECT];
+            FileTags[ARG_DRAWERSONLY].ti_Data   = (IPTR)args[ARG_DRAWERSONLY];
+            FileTags[ARG_NOICONS].ti_Data       = (IPTR)args[ARG_NOICONS];
             FileTags[ARG_PUBSCREEN].ti_Data     = (IPTR)args[ARG_PUBSCREEN];
-            FileTags[ARG_PUBSCREEN + 1].ti_Data = DoPattern;
+            FileTags[ARG_PUBSCREEN + 1].ti_Data = args[ARG_PATTERN] != NULL;
 	    if (!args[ARG_INITIALVOLUMES])
 	    {
 		FileTags[ARG_INITIALVOLUMES + 1].ti_Tag = TAG_IGNORE;
 	    }
 
             FileReq = (struct FileRequester *)AllocAslRequest(ASL_FileRequest,
-                                                              FileTags);
+                FileTags);
             if(FileReq != NULL)
             {
                 Success = AslRequest(FileReq, NULL); 
 
                 if(Success != FALSE)
                 {
-                    if(DoMulti == FALSE)
+                    if(!(IPTR)args[ARG_MULTISELECT])
                     {
 			strncpy(Buffer, FileReq->fr_Drawer, MAX_PATH_LEN);
 			
@@ -238,6 +234,8 @@ int main(void)
 	    Return_Value = RETURN_ERROR;
         }
 	
+        FreeVec((APTR)FileTags[ARG_ACCEPTPAT].ti_Data);
+        FreeVec((APTR)FileTags[ARG_REJECTPAT].ti_Data);
         FreeVec(Buffer);
     }
     else
@@ -250,3 +248,29 @@ int main(void)
     return Return_Value;
     
 } /* main */
+
+static UBYTE *ParsePatternArg(IPTR **args, UWORD ArgNum)
+{
+    UBYTE *PatternBuffer = NULL;
+    LONG PatternBufferSize;
+    STRPTR pattern = (STRPTR)args[ArgNum];
+
+    PatternBufferSize = 2 * strlen((char *)pattern);
+    PatternBuffer = AllocVec(PatternBufferSize, MEMF_PUBLIC);
+    if (PatternBuffer != NULL)
+    {
+        if (ParsePatternNoCase((STRPTR)pattern,
+            PatternBuffer, PatternBufferSize) >= 0)
+        {
+            FileTags[ArgNum].ti_Data = (IPTR)PatternBuffer;
+        }
+        else
+        {
+            FreeVec(PatternBuffer);
+            PatternBuffer = NULL;
+            FileTags[ArgNum].ti_Tag = TAG_IGNORE;
+        }
+    }
+
+    return PatternBuffer;
+}
