@@ -42,6 +42,5 @@ struct IntExpansionBase
 };
 
 #define IntExpBase(eb)	((struct IntExpansionBase*)(eb))
-#define SysBase		(((struct IntExpansionBase *)ExpansionBase)->eb_SysBase)
 
 #endif /* _EXPANSION_INTERN_H */
