@@ -144,6 +144,7 @@ struct aroscbase
 /* This function is added by genmodule and returns the current active
    libbase.
 */
-void *__GM_GetBase(void);
+void *__aros_getbase(void);
+#define __GM_GetBase() __aros_getbase()
 
 #endif /* !___AROSC_PRIVDATA_H */

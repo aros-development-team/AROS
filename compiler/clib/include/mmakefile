@@ -2,7 +2,7 @@
 
 include $(TOP)/config/make.cfg
 
-INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def aros/types/*.h)
+INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def aros/types/*.h proto/*.h)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 DIRS            := $(AROS_INCLUDES) $(AROS_INCLUDES)/sys $(AROS_INCLUDES)/sys/types
 
