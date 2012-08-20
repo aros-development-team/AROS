@@ -8,7 +8,6 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <string.h>
-#define __CYBERGRAPHICS_NOLIBBASE__
 #include <proto/cybergraphics.h>
 #include <aros/macros.h>
 #include <aros/debug.h>

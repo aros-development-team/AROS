@@ -24,6 +24,8 @@
 #include <proto/exec.h>
 #include <graphics/scale.h>
 
+#include LC_LIBDEFS_FILE
+
 #include "fontsupport.h"
 #include "objcache.h"
 
@@ -193,8 +195,6 @@ struct GfxBase_intern
 
     /* Private library bases */
     struct Library	       *CyberGfxBase;
-    struct Library	       *OOPBase;
-    struct Library	       *UtilityBase;
 
     /* Private HIDD method bases */
     OOP_MethodID                HiddBitMapBase;
@@ -223,8 +223,10 @@ struct GfxBase_intern
 */
 #include <proto/utility.h>
 #define CyberGfxBase		(PrivGBase(GfxBase)->CyberGfxBase)
-#define OOPBase			(PrivGBase(GfxBase)->OOPBase)
-#define UtilityBase		(PrivGBase(GfxBase)->UtilityBase)
+
+/* For historical reasons, graphics.library has an internal
+ * copy of SysBase.
+ */
 #define SysBase                 (GfxBase->ExecBase)
 
 #define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
