@@ -24,7 +24,7 @@ void writeboopsiincludes(FILE *out)
     );
 }
 
-void writeboopsidispatcher(FILE *out, struct classinfo *cl)
+void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
@@ -51,9 +51,17 @@ void writeboopsidispatcher(FILE *out, struct classinfo *cl)
             "/*** Dispatcher *************************************************************/\n"
             "BOOPSI_DISPATCHER(IPTR, %s_Dispatcher, CLASS, self, message)\n"
             "{\n"
+            , cl->basename
+        );
+        if (cfg->options & OPTION_DUPBASE)
+            fprintf(out,
+            "    __GM_SetBase(CLASS->cl_UserData);\n"
+            );
+        fprintf
+        (
+            out,
             "    switch (message->MethodID)\n"
-            "    {\n",
-            cl->basename
+            "    {\n"
         );
         
         for 
@@ -145,7 +153,7 @@ void writeboopsidispatcher(FILE *out, struct classinfo *cl)
     }
 }
 
-void writeclassinit(FILE *out, struct classinfo *cl)
+void writeclassinit(struct config *cfg, FILE *out, struct classinfo *cl)
 {
     struct functionhead *methlistit;
     struct functionarg *arglistit;
@@ -159,7 +167,7 @@ void writeclassinit(FILE *out, struct classinfo *cl)
         "\n"
     );
         
-    writeboopsidispatcher(out, cl);
+    writeboopsidispatcher(cfg, out, cl);
 
     if (cl->classdatatype == NULL)
 	fprintf(out, "#define %s_DATA_SIZE (0)\n", cl->basename);

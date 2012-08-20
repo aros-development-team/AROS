@@ -21,7 +21,8 @@ enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, IMAGE, GAD
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
 	         BIT_DUPBASE, BIT_PERTASKBASE, BIT_INCLUDES, BIT_NOINCLUDES,
                  BIT_STUBS, BIT_NOSTUBS, BIT_AUTOINIT, BIT_NOAUTOINIT,
-		 BIT_RESAUTOINIT, BIT_NOOPENCLOSE, BIT_SELFINIT
+		 BIT_RESAUTOINIT, BIT_NOOPENCLOSE, BIT_SELFINIT,
+		 BIT_STACKCALL
 };
 enum optionflags
 {
@@ -38,7 +39,8 @@ enum optionflags
     OPTION_NOAUTOINIT = 1<<BIT_NOAUTOINIT,
     OPTION_RESAUTOINIT = 1<<BIT_RESAUTOINIT,
     OPTION_NOOPENCLOSE = 1<<BIT_NOOPENCLOSE,
-    OPTION_SELFINIT = 1<<BIT_SELFINIT
+    OPTION_SELFINIT = 1<<BIT_SELFINIT,
+    OPTION_STACKCALL = 1<<BIT_STACKCALL,
 };
 
 enum coptionbit { CBIT_PRIVATE };
@@ -185,9 +187,9 @@ struct config
     /* The DOS IDs and handlers for this module */
     struct handlerinfo *handlerlist;
 
-    /* Relative bases used by this library
+    /* Relative libraries used by this library
      */
-    struct stringlist *relbases;
+    struct stringlist *rellibs;
 };
 
 /* Function prototypes */

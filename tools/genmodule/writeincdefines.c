@@ -6,17 +6,17 @@
 */
 #include "genmodule.h"
 
-static void writedefineregister(FILE *, struct functionhead *, struct config *);
+static void writedefineregister(FILE *, struct functionhead *, struct config *, int is_rel);
 static void writedefinevararg(FILE *, struct functionhead *, struct config *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
-void writeincdefines(struct config *cfg)
+void writeincdefines(struct config *cfg, int is_rel)
 {
     FILE *out;
     char line[256], *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/defines/%s.h", cfg->gendir, cfg->modulename);
+    snprintf(line, 255, "%s/defines/%s%s.h", cfg->gendir, cfg->modulename, is_rel ? "_rel" : "");
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -62,13 +62,13 @@ void writeincdefines(struct config *cfg)
 
 	    if (funclistit->libcall != STACK)
 	    {
-		writedefineregister(out, funclistit, cfg);
+		writedefineregister(out, funclistit, cfg, is_rel);
 		if (!funclistit->novararg)
 		    writedefinevararg(out, funclistit, cfg);
 	    }
 	    else /* libcall == STACK */
 	    {
-		writedefinestack(out, funclistit, cfg);
+		writedefinestack(out, funclistit, cfg, is_rel);
 	    }
 	    
 	    writealiases(out, funclistit, cfg);
@@ -96,7 +96,7 @@ void writeincdefines(struct config *cfg)
 
 
 void
-writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg)
+writedefineregister(FILE *out, struct functionhead *funclistit, struct config *cfg, int is_rel)
 {
     struct functionarg *arglistit;
     int count, isvoid, nquad = 0, narg = 0;
@@ -209,7 +209,10 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	    fprintf(out, ", ");
 	fprintf(out, "arg%d", count);
     }
-    fprintf(out, ") \\\n    __%s_WB(%s", funclistit->name, cfg->libbase);
+    fprintf(out, ") \\\n    __%s_WB(%s%s%s", funclistit->name, 
+            is_rel ? "*(void **)((void *)__aros_getbase() + __aros_rellib_offset_" : ""
+            , cfg->libbase
+            , is_rel ? ")" : "");
     for (arglistit = funclistit->arguments, count = 1;
 	 arglistit != NULL;
 	 arglistit = arglistit->next, count++
@@ -414,7 +417,7 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 }
 
 void
-writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
+writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg, int is_rel)
 {
     struct functionarg *arglistit;
 
@@ -432,7 +435,11 @@ writedefinestack(FILE *out, struct functionhead *funclistit, struct config *cfg)
 	if (arglistit->next != NULL)
 	    fprintf(out, ", ");
     }
-    fprintf(out, "))__AROS_GETVECADDR(%s,%d))\n", cfg->libbase, funclistit->lvo);
+    fprintf(out, "))__AROS_GETVECADDR(%s%s%s,%d))\n",
+            is_rel ? "*(void **)((void *)__aros_getbase() + __aros_rellib_offset_" : "",
+            cfg->libbase,
+            is_rel ? ")" : "",
+            funclistit->lvo);
 }
 
 void

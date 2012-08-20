@@ -113,20 +113,20 @@ ADD2SET(__aros_libset_##bname, LIBS, 0)
 
 /* NOTE: Users of this symbolset will need to provide:
  * 
- * const IPTR bname##_offset = offsetof(struct MyBase, my_bname);
- * AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_##bname);
+ * const IPTR __aros_rellib_offset_##bname = offsetof(struct MyBase, my_bname);
+ * AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_base_##bname);
  */
-#define AROS_RELLIBSET(name, btype, bname)                     \
-const ULONG const __aros_rellib_##bname = 0;                         \
-extern const IPTR const bname##_offset;                              \
+#define AROS_RELLIBSET(name, btype, bname)                           \
+const ULONG const __aros_rellib_base_##bname = 0;                    \
+extern const IPTR const __aros_rellib_offset_##bname;                \
 extern const LONG const __aros_libreq_##bname __attribute__((weak)); \
-                                                               \
-AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);\
-                                                               \
+                                                                     \
+AROS_IMPORT_ASM_SYM(int, dummy, __includerellibrarieshandling);      \
+                                                                     \
 static const struct rellibraryset const __aros_rellibset_##bname =   \
-{                                                              \
-     name, &__aros_libreq_##bname, &bname##_offset             \
-};                                                             \
+{                                                                    \
+     name, &__aros_libreq_##bname, &__aros_rellib_offset_##bname     \
+};                                                                   \
 ADD2SET(__aros_rellibset_##bname, RELLIBS, 0) 
 
 
@@ -140,8 +140,8 @@ const LONG const __aros_libreq_##bname = ver;
                   "__aros_libreq_" #bname "." #ver "=" #ver);
 
 #define SETRELLIBOFFSET(bname, libbasetype, fname) \
-const IPTR bname##_offset = offsetof(libbasetype, fname); \
-AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_##bname);
+const IPTR __aros_rellib_offset_##bname = offsetof(libbasetype, fname); \
+AROS_IMPORT_ASM_SYM(void *, _##bname, __aros_rellib_base_##bname);
 
 /* Traverse the set from the first element to the last one, or vice versa,
    depending on the value of 'direction': >=0 means first -> last, <0 means

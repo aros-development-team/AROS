@@ -300,6 +300,18 @@ struct config *initconfig(int argc, char **argv)
 	exit(20);
     }
 
+    /* See if we have any stackcall options */
+    if (cfg->funclist) {
+	struct functionhead *funchead;
+
+	for (funchead = cfg->funclist; funchead; funchead = funchead->next) {
+	    if (funchead->libcall == STACK) {
+	        cfg->options |= OPTION_STACKCALL;
+	        break;
+            }
+        }
+    }
+
     return cfg;
 }
 
@@ -659,7 +671,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
 		"seglist_field", "rootbase_field", "classptr_field", "classptr_var",
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
 		"initpri", "type", "addromtag", "oopbase_field",
-		"relbase", "interfaceid", "interfacename",
+		"rellib", "interfaceid", "interfacename",
 		"methodstub", "methodbase", "attributebase"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
@@ -1045,8 +1057,8 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
 	    case 27: /* oopbase_field */
 	    	cfg->oopbase_field = strdup(s);
 	    	break;
-	    case 28: /* relbase */
-	        slist_append(&cfg->relbases, s);
+	    case 28: /* rellib */
+	        slist_append(&cfg->rellibs, s);
 	        break;
 	    case 29: /* interfaceid */
 	        if (!in)

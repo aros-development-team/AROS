@@ -12,10 +12,23 @@
 #include "genmodule.h"
 #include "config.h"
 
+static inline const char *upname(const char *s)
+{
+    static char name[512];
+    int i = 0;
+
+    while (s && i < (sizeof(name)-1))
+        name[i++] = toupper(*(s++));
+    name[i] = 0;
+
+    return &name[0];
+}
+
 void writemakefile(struct config *cfg)
 {
     FILE *out;
     char name[512];
+    struct stringlist *s;
     
     snprintf(name, sizeof(name), "%s/Makefile.%s", cfg->gendir, cfg->modulename);
     
@@ -65,7 +78,8 @@ void writemakefile(struct config *cfg)
 		cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
 	);
         if (cfg->modtype == LIBRARY)
-            fprintf(out, " proto/%s_rel.h", cfg->modulename);
+            fprintf(out, " inline/%s_rel.h defines/%s_rel.h proto/%s_rel.h",
+                cfg->modulename, cfg->modulename, cfg->modulename);
     }
     if (cfg->interfacelist)
     {
@@ -79,18 +93,21 @@ void writemakefile(struct config *cfg)
     fprintf(out, "\n");
 
     fprintf(out, "%s_CFLAGS  +=", cfg->modulename);
+    for (s = cfg->rellibs; s ; s = s->next)
+        fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     fprintf(out, "\n");
 
     fprintf(out, "%s_DFLAGS  +=", cfg->modulename);
+    for (s = cfg->rellibs; s ; s = s->next)
+        fprintf(out, " -D__%s_RELLIBBASE__", upname(s->s));
     fprintf(out, "\n");
 
     fprintf(out, "%s_LDFLAGS +=", cfg->modulename);
-    if (cfg->sysbase_field)
-    {
-        fprintf(out,
-                " -nosysbase"
-        );
-    }
+    fprintf(out,"\n");
+
+    fprintf(out, "%s_LIBS +=", cfg->modulename);
+    for (s = cfg->rellibs; s ; s = s->next)
+        fprintf(out, " %s_rel", s->s);
     fprintf(out,"\n");
 
     if (ferror(out))

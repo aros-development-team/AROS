@@ -4,5 +4,5 @@
 #include <stdio.h>
 
 void writeboopsiincludes(FILE *out);
-void writeclassinit(FILE *out, struct classinfo *);
-void writeboopsidispatcher(FILE *out, struct classinfo *);
+void writeclassinit(struct config *cfg, FILE *out, struct classinfo *);
+void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *);

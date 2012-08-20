@@ -34,7 +34,7 @@ void writestubs(struct config *cfg, int is_rel)
             "#undef  NOLIBDEFINES\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
-            "void *__GM_GetBase(void);\n"
+            "void *__aros_getbase(void);\n"
             "#ifndef __%s_NOLIBBASE__\n"
             "/* Do not include the libbase */\n"
             "#define __%s_NOLIBBASE__\n"
@@ -62,7 +62,13 @@ void writestubs(struct config *cfg, int is_rel)
     {
         fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
         if (is_rel)
-            fprintf(out, "extern IPTR %s_offset;\n", cfg->libbase);
+            fprintf(out,
+                    "extern IPTR __aros_rellib_offset_%s;\n"
+                    "#define AROS_RELLIB_OFFSET_%s __aros_rellib_offset_%s\n"
+                    , cfg->libbase
+                    , cfg->modulenameupper
+                    , cfg->libbase
+                    );
     }
     
     fprintf
@@ -115,7 +121,7 @@ void writestubs(struct config *cfg, int is_rel)
                 );
                 if (is_rel) {
                     fprintf(out,
-                        "    %s %s = __GM_GetBase() + %s_offset;\n",
+                        "    %s %s = __aros_getbase() + __aros_rellib_offset_%s;\n",
                         cfg->libbasetypeptrextern, cfg->libbase,
                         cfg->libbase
                     );
@@ -201,7 +207,7 @@ void writestubs(struct config *cfg, int is_rel)
             }
             else /* libcall==STACK */
             {
-                fprintf(out, "AROS_%sLIBFUNCSTUB(%s, %s, %d)\n",
+                fprintf(out, "AROS_GM_%sLIBFUNCSTUB(%s, %s, %d)\n",
                         is_rel ? "REL" : "",
                         funclistit->name, cfg->libbase, funclistit->lvo
                 );
@@ -212,7 +218,7 @@ void writestubs(struct config *cfg, int is_rel)
                  aliasesit = aliasesit->next
             )
             {
-                fprintf(out, "AROS_FUNCALIAS(%s, %s)\n",
+                fprintf(out, "AROS_GM_LIBFUNCALIAS(%s, %s)\n",
                         funclistit->name, aliasesit->s
                 );
             }
