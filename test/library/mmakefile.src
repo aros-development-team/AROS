@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 #MM-     test-library-usereltest \
 #MM-     test-library-peropenertest \
 #MM-     test-library-peropenertest_child
+#MM- test-library-userellib: includes-pertask includes-dummy linklibs-pertask linklibs-dummy
 #MM test-library-dummytest : test-library-dummylib
 #MM test-library-dummytest_auto : test-library-dummylib
 #MM test-library-peropenertest : test-library-peropenerlib \
@@ -60,4 +61,4 @@ USER_LDFLAGS := -L$(TARGETDIR)/Development/lib
 %build_module mmake=test-library-userellib \
     modname=userel modtype=library \
     files="dummyadd pertaskgetparentbase dummyprint4 getchildvalue" \
-    prefix=$(TARGETDIR) uselibs="dummy_rel pertask_rel"
+    prefix=$(TARGETDIR)

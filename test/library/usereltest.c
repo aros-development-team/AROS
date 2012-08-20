@@ -22,7 +22,7 @@ int main (int argc, char ** argv)
 
     VPrintf((STRPTR)"ParentBase = %ld\n",vec);
 
-    Printf("101 202 303 404:\n");
+    Printf("104 205 306 407:\n");
     DummyPrint4(101, 202, 303, 404);
 
     pertaskvalue = 1;

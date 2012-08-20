@@ -2,7 +2,7 @@
 
 void PeropenerSetValue(int value)
 {
-    struct PeropenerBase *PeropenerBase = __GM_GetBase();
+    struct PeropenerBase *PeropenerBase = __aros_getbase();
 
     PeropenerBase->value = value;
 }
@@ -10,7 +10,7 @@ void PeropenerSetValue(int value)
 
 int PeropenerGetValue(void)
 {
-    struct PeropenerBase *PeropenerBase = __GM_GetBase();
+    struct PeropenerBase *PeropenerBase = __aros_getbase();
 
     return PeropenerBase->value;
 }

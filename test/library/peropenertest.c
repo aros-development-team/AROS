@@ -29,14 +29,15 @@ int main (int argc, char ** argv)
     PeropenerSetValue(2);
 
     /* Check value for base2 */
-    Printf((STRPTR)"Checking value for base2: %s\n",
-           (PeropenerGetValue() == 2) ? "OK" : "FAIL!"
+    Printf((STRPTR)"Checking value for base2: 2 == %ld %s\n",
+           PeropenerGetValue(), (PeropenerGetValue() == 2) ? "OK" : "FAIL!"
     );
 
     /* Check value for base2 */
     PeropenerBase = base1;
-    Printf((STRPTR)"Checking value for base1: %s\n",
-           (PeropenerGetValue() == 1) ? "OK" : "FAIL!"
+    PeropenerGetValue();
+    Printf((STRPTR)"Checking value for base1: 1 == %ld %s\n",
+           PeropenerGetValue(), (PeropenerGetValue() == 1) ? "OK" : "FAIL!"
     );
 
     FPrintf(Output(), (STRPTR)"base1=%lx, base2=%lx\n", base1, base2);
