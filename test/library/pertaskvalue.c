@@ -2,7 +2,7 @@
 
 void PertaskSetValue(int value)
 {
-    struct PertaskBase *PertaskBase = __GM_GetBase();
+    struct PertaskBase *PertaskBase = __aros_getbase();
 
     PertaskBase->value = value;
 }
@@ -10,7 +10,7 @@ void PertaskSetValue(int value)
 
 int PertaskGetValue(void)
 {
-    struct PertaskBase *PertaskBase = __GM_GetBase();
+    struct PertaskBase *PertaskBase = __aros_getbase();
 
     return PertaskBase->value;
 }

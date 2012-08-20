@@ -4,7 +4,7 @@
 */
 
 #include <aros/debug.h>
-#include <proto/dummy_rel.h>
+#include <proto/dummy.h>
 
 /*****************************************************************************
 

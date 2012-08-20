@@ -6,4 +6,4 @@ struct PertaskBase
     int value;
 };
 
-APTR __GM_GetBase();
+APTR __aros_getbase();
