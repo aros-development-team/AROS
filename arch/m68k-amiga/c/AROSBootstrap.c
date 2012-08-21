@@ -83,6 +83,7 @@ struct DosLibrary *DOSBase;
 struct Library *ExpansionBase;
 
 static BOOL ROM_Loaded = FALSE;
+static BOOL forceAROS = FALSE;
 static BOOL forceCHIP = FALSE;
 static BOOL forceFAST = FALSE;
 static BOOL debug_enabled = FALSE;
@@ -1332,11 +1333,6 @@ __startup static AROS_ENTRY(int, startup,
     SysBase = sysBase;
     APTR lowmem;
 
-    /* See if we're already running on AROS.
-     */
-    if (OpenResource("kernel.resource"))
-    	return RETURN_OK;
-
     /* Allocate some low MEMF_CHIP ram, as a buffer
      * against overlapping allocations with the initial
      * stack.
@@ -1348,17 +1344,16 @@ __startup static AROS_ENTRY(int, startup,
     if (DOSBase != NULL) {
     	BPTR ROMSegList;
     	BSTR name = AROS_CONST_BSTR("aros.elf");
-    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_FORCEFAST = 19, ARG_DEBUG = 20, ARG_MODULES = 0 };
+    	enum { ARG_ROM = 16, ARG_CMD = 17, ARG_FORCECHIP = 18, ARG_FORCEFAST = 19, ARG_DEBUG = 20, ARG_FORCEAROS = 21, ARG_MODULES = 0 };
     	/* It would be nice to use the '/M' switch, but that
     	 * is not supported under the AOS BCPL RdArgs routine.
     	 *
     	 * So only 16 modules are supported
     	 */
-    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,FORCEFAST/S,DEBUG/S");
+    	BSTR format = AROS_CONST_BSTR(",,,,,,,,,,,,,,,,ROM/K,CMD/K,FORCECHIP/S,FORCEFAST/S,DEBUG/S,FORCEAROS/S");
     	/* Make sure the args are in .bss, not stack */
-    	static ULONG args[16 + 5 + 256] __attribute__((aligned(4))) = { };
+    	static ULONG args[16 + 6 + 256] __attribute__((aligned(4))) = { };
 
-    	WriteF("AROSBootstrap " ADATE "\n");
         args[0] = name;
 
         RdArgs(format, MKBADDR(args), sizeof(args)/sizeof(args[0]));
@@ -1373,9 +1368,26 @@ __startup static AROS_ENTRY(int, startup,
         DWriteF("   : %S\n", args[3]);
 
 #endif
+	forceAROS = args[ARG_FORCEAROS] ? TRUE : FALSE;
         forceCHIP = args[ARG_FORCECHIP] ? TRUE : FALSE;
         forceFAST = args[ARG_FORCEFAST] ? TRUE : FALSE;
         debug_enabled = args[ARG_DEBUG] ? TRUE : FALSE;
+
+        /* See if we're already running on AROS.
+         */
+        if (OpenResource("kernel.resource") != NULL) {
+        	if (!forceAROS) {
+        		CloseLibrary(DOSBase);
+        		FreeMem(lowmem, PAGE_SIZE);
+        		return RETURN_OK;
+		}
+	} else {
+		forceAROS = FALSE;
+	}
+
+    	WriteF("AROSBootstrap " ADATE "\n");
+    	if (forceAROS)
+    		WriteF("Forcing load of AROS on existing AROS\n");
 
         /* Blizzard A1200 accelerator boards have strange MAP ROM
          * feature, even when it is disabled, ROM is copied to
