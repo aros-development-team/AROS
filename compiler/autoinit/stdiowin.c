@@ -16,7 +16,7 @@
    IO to the standard file descriptors.
    If none is provided a default value will be used
 */
-extern char __stdiowin[];
+extern char const __stdiowin[];
 
 int __nostdiowin __attribute__((weak)) = 0;
 
