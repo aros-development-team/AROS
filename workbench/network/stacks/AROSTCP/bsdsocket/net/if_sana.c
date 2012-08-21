@@ -1033,7 +1033,7 @@ sana_connect(struct sana_softc *ssc, struct IOIPReq *req)
   }
 
   /* Send request back for next event */
-  if (!(events & S2EVENT_OFFLINE)) {
+  if (req->ioip_s2.ios2_Req.io_Error == 0 && !(events & S2EVENT_OFFLINE)) {
     req->ioip_s2.ios2_Req.io_Command = S2_ONEVENT;
     req->ioip_s2.ios2_WireError =  S2EVENT_OFFLINE | S2EVENT_CONNECT;
     BeginIO((struct IORequest *)req);
