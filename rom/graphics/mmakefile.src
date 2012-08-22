@@ -218,8 +218,6 @@ FUNCTIONS := \
 #MM kernel-graphics-kobj: includes-composition-copy
 #MM kernel-graphics-pkg : includes-composition-copy
 
-USER_LDFLAGS := -nosysbase
-
 %build_module mmake=kernel-graphics \
   modname=graphics modtype=library \
   files="graphics_init $(FUNCTIONS) $(FILES)" \
