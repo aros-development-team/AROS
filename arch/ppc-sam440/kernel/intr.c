@@ -52,43 +52,7 @@ void intr_init()
     wrspr(IVOR14, ((uint32_t)&__EXCEPTION_14_Prolog) & 0x0000fff0);
     wrspr(IVOR15, ((uint32_t)&__cEXCEPTION_15_Prolog) & 0x0000fff0);
 
-    /* Disable external interrupts completely */
-    if (krnIsPPC460(rdspr(PVR))) {
-        uic_er[0] = INTR_UIC0_CASCADE;
-        wrdcr(UIC0_ER, uic_er[0]);
-        wrdcr(UIC0_PR, INTR_UIC0_POLARITY);
-        wrdcr(UIC0_CR, INTR_UIC0_CRITICAL);
-        wrdcr(UIC0_TR, INTR_UIC0_TRIGGER);
-        wrdcr(UIC0_SR, 0xffffffff);
-        wrdcr(UIC0_VCR, 0);
-
-        uic_er[1] = 0;
-        wrdcr(UIC1_ER, uic_er[0]);
-        wrdcr(UIC1_PR, INTR_UIC1_POLARITY);
-        wrdcr(UIC1_CR, INTR_UIC1_CRITICAL);
-        wrdcr(UIC1_TR, INTR_UIC1_TRIGGER);
-        wrdcr(UIC1_SR, 0xffffffff);
-        wrdcr(UIC1_VCR, 0);
-
-        uic_er[2] = 0;
-        wrdcr(UIC2_ER, uic_er[2]);
-        wrdcr(UIC2_PR, INTR_UIC2_POLARITY);
-        wrdcr(UIC2_CR, INTR_UIC2_CRITICAL);
-        wrdcr(UIC2_TR, INTR_UIC2_TRIGGER);
-        wrdcr(UIC2_SR, 0xffffffff);
-        wrdcr(UIC2_VCR, 0);
-
-        uic_er[3] = 0;
-        wrdcr(UIC3_ER, uic_er[3]);
-        wrdcr(UIC3_PR, INTR_UIC3_POLARITY);
-        wrdcr(UIC3_CR, INTR_UIC3_CRITICAL);
-        wrdcr(UIC3_TR, INTR_UIC3_TRIGGER);
-        wrdcr(UIC3_SR, 0xffffffff);
-        wrdcr(UIC3_VCR, 0);
-    } else {
-        wrdcr(UIC0_ER, 0);
-        wrdcr(UIC1_ER, 0);
-    }
+    uic_init();
 }
 
 #define EXCEPTION_STACK_SIZE    4096
@@ -154,7 +118,7 @@ static inline CONST_STRPTR symbolfor(struct Library *DebugBase, IPTR addr) { ret
 #endif
 
 
-void dumpregs(context_t *ctx, int exception)
+void dumpregs(context_t *ctx, uint8_t exception)
 {
     uint32_t *sp;
     ULONG *p;

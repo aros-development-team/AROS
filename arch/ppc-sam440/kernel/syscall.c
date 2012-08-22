@@ -55,46 +55,6 @@ static void _write_config_word(int reg, uint16_t val)
         _write_config_long(reg, temp.ul);
 }
 
-/*
- * Interrupt controller functions. Actually have the following prototypes:
- *
- * void enable_irq(uint8_t num);
- * void disable_irq(uint8_t num);
- */
-
-/* Master copy of UICn_ER */
-ULONG uic_er[4];
-
-static inline void enable_irq(int irq)
-{
-    ULONG mask = (0x80000000 >> (irq & 0x1f));
-
-    uic_er[irq >> 5] |= mask;
-
-    switch (irq >> 5) {
-    case 0: wrdcr(UIC0_ER, uic_er[0]); break;
-    case 1: wrdcr(UIC1_ER, uic_er[1]); break;
-    case 2: wrdcr(UIC2_ER, uic_er[2]); break;
-    case 3: wrdcr(UIC3_ER, uic_er[3]); break;
-    default: break;
-    }
-}
-
-static inline void disable_irq(int irq)
-{
-    ULONG mask = (0x80000000 >> (irq & 0x1f));
-
-    uic_er[irq >> 5] &= ~mask;
-
-    switch (irq >> 5) {
-    case 0: wrdcr(UIC0_ER, uic_er[0]); break;
-    case 1: wrdcr(UIC1_ER, uic_er[1]); break;
-    case 2: wrdcr(UIC2_ER, uic_er[2]); break;
-    case 3: wrdcr(UIC3_ER, uic_er[3]); break;
-    default: break;
-    }
-}
-
 void syscall_handler(context_t *ctx, uint8_t exception)
 {
     struct KernelBase *KernelBase = getKernelBase();
@@ -114,11 +74,11 @@ void syscall_handler(context_t *ctx, uint8_t exception)
             break;
 
         case SC_IRQ_ENABLE:
-            enable_irq(ctx->cpu.gpr[4]);
+            uic_enable(ctx->cpu.gpr[4]);
             break;
         
         case SC_IRQ_DISABLE:
-            disable_irq(ctx->cpu.gpr[4]);
+            uic_disable(ctx->cpu.gpr[4]);
             break;
         
         case SC_SUPERSTATE:
