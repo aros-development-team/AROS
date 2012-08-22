@@ -115,7 +115,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
         sysTA.ta_YSize = def->tf_YSize;
     }
 
-    if(LIBBASE->LibNode.lib_OpenCnt == 0)
+    if(! LIBBASE->VBlank)
     {
 	NEWLIST(&LIBBASE->TOF_WaitQ);
 	LIBBASE->vbsrv.is_Code         = (VOID_FUNC)TOF_VBlank;
@@ -126,6 +126,7 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 	
 	/* Add a VBLANK server to take care of TOF waiting tasks. */
 	AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
+	LIBBASE->VBlank = 50;
     }
 
     if (!GfxBase->gb_LayersBase)
