@@ -32,6 +32,9 @@ int set_call_libfuncs
 {
     int pos, (*func)(APTR);
 
+    if (!set)
+    	    return TRUE;
+
     ForeachElementInSet(set, order, pos, func)
     {
         if (test_fail)
@@ -60,6 +63,9 @@ int set_call_devfuncs
 )
 {
     int pos;
+
+    if (!set)
+    	    return TRUE;
 
     if (order>=0)
     {
