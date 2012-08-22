@@ -104,12 +104,16 @@ struct TagItem *krnFindTagItem(Tag tagValue, struct TagItem *tagList);
 struct TagItem *krnNextTagItem(struct TagItem **tagListPtr);
 
 void core_ExitInterrupt(context_t *ctx);
-void dumpregs(context_t *ctx, int exception);
+void dumpregs(context_t *ctx, uint8_t exception);
 
 void mmu_init(struct TagItem *tags);
 void intr_init();
 
 extern ULONG uic_er[4];
+
+void uic_init(void);
+void uic_enable(int irq);
+void uic_disable(int irq);
 
 static inline void ExitInterrupt(context_t *ctx)
 {
