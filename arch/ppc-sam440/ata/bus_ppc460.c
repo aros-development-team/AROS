@@ -160,7 +160,7 @@ static int ata460_Scan(struct ataBase *base)
             ULONG scr0 = inl_le(SATA0_SCR0);
             if ((scr0 & 0xf) == 0x3) {
                 D(bug("[ATA] Enabling Sam460EX SATA in ATA PIO mode\n"));
-                ata_RegisterBus(0, 0x18, INTR_UIC3_BASE + INTR_UIC3_SATA, 0,
+                ata_RegisterBus(0, 0x18, INTR_UIC3_SATA, 0,
                                 ARBF_EarlyInterrupt | ARBF_80Wire, &ppc460_driver, 
                                 (APTR)SATA0_CDR0, base);
             }
