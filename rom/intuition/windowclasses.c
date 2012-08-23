@@ -62,7 +62,12 @@ on screen.
 #endif
 
 //#define DELAYEDDRAG
-//#define DELAYEDSIZE
+/* Delayed resizing is enabled, due to a layer deadlock
+ * that can occur between console.device and this
+ * gadget when Commodities/ClickToFront is enabled and
+ * DELAYEDSIZE is disabled.
+ */
+#define DELAYEDSIZE
 
 /***********************************************************************************/
 
@@ -1246,6 +1251,9 @@ fail:
 IPTR SizeButtonClass__GM_HANDLEINPUT(Class *cl, struct Gadget *g, struct gpInput *msg)
 {
     struct IntuitionBase *IntuitionBase = (struct IntuitionBase *)cl->cl_UserData;
+#ifdef DELAYEDSIZE
+    struct LayersBase   *LayersBase = GetPrivIBase(IntuitionBase)->LayersBase;
+#endif
     struct GfxBase      *GfxBase = GetPrivIBase(IntuitionBase)->GfxBase;
     struct GadgetInfo   *gi = msg->gpi_GInfo;
     IPTR            	 retval = GMR_MEACTIVE;
