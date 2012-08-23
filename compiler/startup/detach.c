@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Common startup code
@@ -92,7 +92,9 @@ static void __startup_detach(struct ExecBase *SysBase)
                 { NP_Name,      (IPTR)detached_name        },
                 { NP_Arguments, (IPTR)__argstr             },
                 { NP_Input,     (IPTR)in                   },
+                { NP_CloseInput,FALSE                      },
                 { NP_Output,    (IPTR)out                  },
+                { NP_CloseOutput,FALSE                     },
                 { NP_Cli,       TRUE                       },
                 { TAG_DONE,     0                          }
             };
