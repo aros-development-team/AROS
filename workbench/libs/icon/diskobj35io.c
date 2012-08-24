@@ -552,11 +552,16 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook,
 	
     } /* if ((iff = AllocIFF())) */
 
+    /* Only use the Width and Height fields of a FACE section
+     * if it also contains image data.
+     */
     if (have_face) {
-    	icon->ni_Face.Width  = fc.Width + 1;
-	icon->ni_Face.Height = fc.Height + 1;
-	//icon->icon35.flags  = fc.Flags;
-	icon->ni_Face.Aspect = fc.Aspect;
+        if (have_argb1 || have_argb2 || have_imag1 || have_imag2) {
+            icon->ni_Face.Width  = fc.Width + 1;
+            icon->ni_Face.Height = fc.Height + 1;
+        }
+        //icon->icon35.flags  = fc.Flags;
+        icon->ni_Face.Aspect = fc.Aspect;
     }
 
     if (have_argb1)
