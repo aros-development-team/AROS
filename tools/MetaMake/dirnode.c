@@ -1,5 +1,5 @@
 /* MetaMake - A Make extension
-   Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+   Copyright © 1995-2012, The AROS Development Team. All rights reserved.
 
 This file is part of MetaMake.
 
@@ -128,7 +128,7 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 	    int count, count2, t;
 
 #if 0
-	    printf ("found #MM in %s\n", makefile->name);
+	    printf ("found #MM in %s\n", makefile->node.name);
 #endif
 
 	    /* Read in next lines if there is continuation */
@@ -197,6 +197,28 @@ readtargets(struct DirNode * node, struct Makefile * makefile, FILE * fh)
 
 	    while (isspace (*ptr))
 		ptr ++;
+
+            if (*ptr == '-')
+            {
+                errno = 0;
+                if (flags & FLAG_VIRTUAL)
+                {
+                    error("%s/%s:%d:malformed virtual target, only one '-' allowed",
+                            getcwd (NULL, 0),
+                            makefile->node.name,
+                            lineno
+                            );
+                }
+                else
+                {
+                    error("%s/%s:%d:malformed virtual target, '-' must follow directly after '#MM'",
+                            getcwd (NULL, 0),
+                            makefile->node.name,
+                            lineno
+                         );
+                }
+                exit(20);
+            }
 
 	    if (!*ptr)
 	    {
