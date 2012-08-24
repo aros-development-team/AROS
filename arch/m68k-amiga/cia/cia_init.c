@@ -120,9 +120,6 @@ static struct CIABase *InitResource(char *Name, struct ExecBase *SysBase)
     return base;
 }
 
-THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)
-DECLARESET(INIT)
-
 static AROS_UFH3 (APTR, Cia_Init,
 		  AROS_UFHA(struct Library *, lh, D0),
 		  AROS_UFHA(BPTR, segList, A0),
@@ -132,10 +129,6 @@ static AROS_UFH3 (APTR, Cia_Init,
     AROS_USERFUNC_INIT
 
     struct CIABase *base;
-
-    /* Process any init sets */
-    if (!set_call_libfuncs(SETNAME(INIT), 1, 1, SysBase))
-    	    return NULL;
 
     /* Initialize ciaa.resource */
     base = InitResource("ciaa.resource", SysBase);
