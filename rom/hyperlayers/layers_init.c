@@ -26,8 +26,14 @@ static int LayersInit(LIBBASETYPEPTR LIBBASE)
     }
  
     LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR|MEMF_PUBLIC|MEMF_SEM_PROTECTED, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
-    if (!LIBBASE->lb_ClipRectPool)
-	return FALSE;
+    if (!LIBBASE->lb_ClipRectPool) {
+        CloseLibrary(UtilityBase);
+        CloseLibrary(GfxBase);
+        return FALSE;
+    }
+
+    /* Install ourself as graphics.library's layer manager */
+    GfxBase->gb_LayersBase = LIBBASE;
 
     return TRUE;    
 }
