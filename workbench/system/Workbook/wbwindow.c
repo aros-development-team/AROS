@@ -412,6 +412,24 @@ static void wbRedimension(Class *cl, Object *obj)
                      WBVA_VirtHeight, setHeight,
                      TAG_END);
 
+    /* Clear the background to the right of the icons*/
+    if (setWidth < real.Width) {
+        SetAPen(win->RPort,0);
+        RectFill(win->RPort, win->BorderLeft + setWidth, win->BorderTop, 
+                win->Width - win->BorderRight - 1,
+                win->Height - win->BorderBottom - 1);
+    } else {
+        setWidth = real.Width;
+    }
+
+    /* Clear the background beneath the icons*/
+    if (setHeight < real.Height) {
+        SetAPen(win->RPort,0);
+        RectFill(win->RPort, win->BorderLeft, win->BorderTop + setHeight, 
+                setWidth - win->BorderRight - 1,
+                win->Height - win->BorderBottom - 1);
+    }
+
 }
 
 /* Rescan the Lock for new entries */
@@ -801,13 +819,27 @@ static IPTR WBWindowNewSize(Class *cl, Object *obj, Msg msg)
 {
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbWindow *my = INST_DATA(cl, obj);
+    struct Window *win = my->Window;
+    struct Region *clip;
 
-    SetAttrs(my->Set, WBSA_MaxWidth, my->Window->Width - (my->Window->BorderLeft + my->Window->BorderRight));
+    SetAttrs(my->Set, WBSA_MaxWidth, win->Width - (win->BorderLeft + win->BorderRight));
+
+    /* Clip to the window for drawing */
+    clip = wbClipWindow(wb, win);
     wbRedimension(cl, obj);
-    BeginRefresh(my->Window);
-    RefreshWindowFrame(my->Window);
-    RefreshGadgets(my->Window->FirstGadget, my->Window, NULL);
-    EndRefresh(my->Window, TRUE);
+    wbUnclipWindow(wb, win, clip);
+
+    return 0;
+}
+
+static IPTR WBWindowRefresh(Class *cl, Object *obj, Msg msg)
+{
+    struct WorkbookBase *wb = (APTR)cl->cl_UserData;
+    struct wbWindow *my = INST_DATA(cl, obj);
+    struct Window *win = my->Window;
+
+    BeginRefresh(win);
+    EndRefresh(win, TRUE);
 
     return 0;
 }
@@ -957,6 +989,7 @@ static IPTR dispatcher(Class *cl, Object *obj, Msg msg)
     case WBWM_NEWSIZE:   rc = WBWindowNewSize(cl, obj, (APTR)msg); break;
     case WBWM_MENUPICK:  rc = WBWindowMenuPick(cl, obj, (APTR)msg); break;
     case WBWM_INTUITICK: rc = WBWindowIntuiTick(cl, obj, (APTR)msg); break;
+    case WBWM_REFRESH:   rc = WBWindowRefresh(cl, obj, (APTR)msg); break;
     default:             rc = DoSuperMethodA(cl, obj, msg); break;
     }
 

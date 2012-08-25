@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -D__NOLIBBASE__
 
-FILES := workbook \
+FILES := workbook workbook_intern \
 	 wbapp \
 	 wbwindow \
 	 wbvirtual \

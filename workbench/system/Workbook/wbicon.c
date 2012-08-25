@@ -195,14 +195,19 @@ static IPTR wbIconRender(Class *cl, Object *obj, struct gpRender *gpr)
     struct WorkbookBase *wb = (APTR)cl->cl_UserData;
     struct wbIcon *my = INST_DATA(cl, obj);
     struct RastPort *rp = gpr->gpr_RPort;
+    struct Window *win = gpr->gpr_GInfo->gi_Window;
+    struct Region *clip;
     struct Gadget *gadget = (struct Gadget *)obj;	/* Legal for 'gadgetclass' */
     WORD x,y;
 
     x = gadget->LeftEdge;
     y = gadget->TopEdge;
 
+    /* Clip to the window for drawing */
+    clip = wbClipWindow(wb, win);
     DrawIconStateA(rp, my->Icon, (STRPTR)my->Label, x, y,
     	(gadget->Flags & GFLG_SELECTED) ? TRUE : FALSE, (struct TagItem *)wbIcon_DrawTags);
+    wbUnclipWindow(wb, win, clip);
 
     return 0;
 }
@@ -214,9 +219,13 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
     struct wbIcon *my = INST_DATA(cl, obj);
     struct Gadget *gadget = (struct Gadget *)obj;
     BOOL dclicked;
+    struct Region *clip;
 
     gadget->Flags ^= GFLG_SELECTED;
+    /* Clip to the window for drawing */
+    clip = wbClipWindow(wb, gpi->gpi_GInfo->gi_Window);
     DoMethod(obj, GM_RENDER, gpi->gpi_GInfo, gpi->gpi_GInfo->gi_RastPort,GREDRAW_TOGGLE);
+    wbUnclipWindow(wb, gpi->gpi_GInfo->gi_Window, clip);
     
     /* On a double-click, don't go 'active', just
      * do the action.
