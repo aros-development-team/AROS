@@ -111,7 +111,7 @@
 
     /* overlapping and non-overlapping blits are handled differently. */
 
-    if (srcRP->Layer &&
+    if (LayersBase && srcRP->Layer &&
 	destRP->Layer &&
 	(srcRP->Layer != destRP->Layer) &&
 	(srcRP->Layer->LayerInfo == destRP->Layer->LayerInfo))

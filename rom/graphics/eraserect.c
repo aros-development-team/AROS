@@ -66,7 +66,14 @@
 
     struct Rectangle r;
     struct Hook     *h = LAYERS_BACKFILL;
-    
+   
+    if (!LayersBase) {
+        rp->DrawMode ^= INVERSVID;
+        RectFill(rp, xMin, yMin, xMax, yMax);
+        rp->DrawMode ^= INVERSVID;
+        return;
+    }
+
     FIX_GFXCOORD(xMin);
     FIX_GFXCOORD(yMin);
     FIX_GFXCOORD(xMax);
@@ -76,18 +83,18 @@
     r.MinY = yMin;
     r.MaxX = xMax;
     r.MaxY = yMax;
-    
+
     if (rp->Layer)
     {
-    	LockLayerRom(rp->Layer);
-	h = rp->Layer->BackFill;	
+        LockLayerRom(rp->Layer);
+        h = rp->Layer->BackFill;
     }
-    
+
     DoHookClipRects(h, rp, &r);
     
     if (rp->Layer)
     {
-    	UnlockLayerRom(rp->Layer);
+        UnlockLayerRom(rp->Layer);
     }
 
     ReturnVoid("EraseRect");

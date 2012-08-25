@@ -8,7 +8,6 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
-#include <proto/layers.h>
 #include <proto/arossupport.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
