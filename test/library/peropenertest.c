@@ -32,6 +32,10 @@ int main (int argc, char ** argv)
     PeropenerBase = base2;
     PeropenerSetValue(2);
 
+    /* Check .function option with base2 */
+    if (PeropenerNameChange() != 1)
+        Printf("Error calling PeropenerNameChange()\n");
+
     /* Check value for base2 */
     Printf((STRPTR)"Checking value for base2: 2 == %ld %s\n",
            PeropenerGetValue(), (PeropenerGetValue() == 2) ? "OK" : "FAIL!"

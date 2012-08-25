@@ -391,7 +391,7 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
 	    {
 	        fprintf(out,
 		        "AROS_GM_STACKCALL(%s,%s,%d);\n"
-		        , funclistit->name
+		        , funclistit->internalname
 		        , cfg->basename
 		        , funclistit->lvo
 		);
@@ -400,7 +400,7 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
 	    {
 	        fprintf(out,
 		        "AROS_GM_STACKALIAS(%s,%s,%d);\n"
-		        , funclistit->name
+		        , funclistit->internalname
 		        , cfg->basename
 		        , funclistit->lvo
 		);
