@@ -129,9 +129,6 @@ static int GfxOpen(struct GfxBase *LIBBASE)
 	LIBBASE->VBlank = 50;
     }
 
-    if (!GfxBase->gb_LayersBase)
-        GfxBase->gb_LayersBase = (ULONG *)OpenLibrary("layers.library", 0);
-
     return TRUE;
 }
 

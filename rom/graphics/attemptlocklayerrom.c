@@ -5,8 +5,8 @@
     Desc: Graphics function AttemptLockLayerRom()
     Lang: english
 */
-#include <proto/layers.h>
 #include <graphics/clip.h>
+#include <graphics/layers.h>
 #include <proto/exec.h>
 #include <exec/types.h>
 

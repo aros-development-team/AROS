@@ -7,9 +7,9 @@
 
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
+#include <proto/layers.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
-#include <proto/layers.h>
 #include <proto/oop.h>
 #include <clib/macros.h>
 
@@ -23,6 +23,8 @@
 #include <aros/debug.h>
 
 #define DEBUG_PLANARBM(x)
+
+#define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
 
 /****************************************************************************************/
 
@@ -860,9 +862,8 @@ BOOL MoveRaster (struct RastPort * rp, WORD dx, WORD dy, WORD x1, WORD y1,
 
         AROS_BEGIN_PROFILING(SortLayerCR)
 
-        #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
-	SortLayerCR(L, dx, dy);
-	#undef LayersBase
+        if (LayersBase)
+            SortLayerCR(L, dx, dy);
 
         AROS_END_PROFILING
 

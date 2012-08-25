@@ -5,8 +5,8 @@
     Desc: Graphics function LockLayerRom()
     Lang: english
 */
-#include <proto/layers.h>
 #include <proto/exec.h>
+#include <graphics/layers.h>
 #include <graphics/clip.h>
 
 #include "graphics_intern.h"

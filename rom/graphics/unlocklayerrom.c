@@ -5,8 +5,8 @@
     Desc: Graphics function UnlockLayerRom()
     Lang: english
 */
-#include <proto/layers.h>
 #include <proto/exec.h>
+#include <graphics/layers.h>
 
 #include "graphics_intern.h"
 
