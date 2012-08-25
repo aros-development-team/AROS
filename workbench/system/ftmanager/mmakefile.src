@@ -10,6 +10,6 @@ EXEDIR := $(AROS_SYSTEM)
 
 %build_prog mmake=workbench-system-ftmanager \
     progname=FTManager targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="freetype2shared mui"
+    files=$(FILES) uselibs="freetype2 mui"
 
 %common
