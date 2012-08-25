@@ -14,6 +14,7 @@
 
 #include <dos/bptr.h>
 #include <intuition/classes.h>
+#include <intuition/intuition.h>
 
 struct WorkbookBase {
     APTR wb_IntuitionBase;
@@ -74,5 +75,8 @@ static inline STRPTR StrDup(CONST_STRPTR str)
 
     return cp;
 }
+
+struct Region *wbClipWindow(struct WorkbookBase *wb, struct Window *win);
+void wbUnclipWindow(struct WorkbookBase *wb, struct Window *win, struct Region *clip);
 
 #endif /* WORKBOOK_H */

@@ -164,6 +164,15 @@ static Object *wbLookupWindow(Class *cl, Object *obj, struct Window *win)
     return NULL;
 }
 
+static void wbRefreshWindow(Class *cl, Object *obj, struct Window *win)
+{
+    Object *owin;
+
+    if ((owin = wbLookupWindow(cl, obj, win))) {
+    	DoMethod(owin, WBWM_REFRESH);
+    }
+}
+
 static void wbNewSizeWindow(Class *cl, Object *obj, struct Window *win)
 {
     Object *owin;
@@ -318,6 +327,10 @@ static IPTR WBAppWorkbench(Class *cl, Object *obj, Msg msg)
     	    	case IDCMP_CLOSEWINDOW:
     	    	    /* Dispose the window */
     	    	    wbCloseWindow(cl, obj, im->IDCMPWindow);
+    	    	    break;
+    	    	case IDCMP_REFRESHWINDOW:
+    	    	    /* call WBWM_REFRESH on the window */
+    	    	    wbRefreshWindow(cl, obj, im->IDCMPWindow);
     	    	    break;
     	    	case IDCMP_NEWSIZE:
     	    	    /* call WBWM_NEWSIZE on the window */
