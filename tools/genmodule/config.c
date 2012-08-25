@@ -1569,6 +1569,12 @@ static void readsectionfunctionlist(const char *type, struct functionhead **func
 
 	        minversion = ver;
 	    }
+            else if (strncmp(s, "unusedlibbase", 13) == 0)
+            {
+		if (*funclistptr == NULL)
+		    exitfileerror(20, ".unusedlibbase has to come after a function declaration\n");
+                (*funclistptr)->unusedlibbase = 1;
+            }
 	    else
 		exitfileerror(20, "Syntax error");
 	}

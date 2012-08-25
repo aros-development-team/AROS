@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write defines/modulename.h. Part of genmodule.
@@ -132,8 +132,9 @@ writedefineregister(FILE *out, struct functionhead *funclistit, struct config *c
     if (nquad == 0)
     {
 	    fprintf(out,
-		    "        AROS_LC%d%s(%s, %s, \\\n",
-		    funclistit->argcount, (isvoid) ? "NR" : "",
+		    "        AROS_LC%d%s%s(%s, %s, \\\n",
+		    funclistit->argcount, funclistit->unusedlibbase ? "I" : "",
+                    (isvoid) ? "NR" : "",
 		    funclistit->type, funclistit->name
 	    );
 

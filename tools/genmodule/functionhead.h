@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: global include for genmodule. Defines global variables and
@@ -37,6 +37,7 @@ struct functionhead {
     int version;  /* First library version number this appeared in*/
     int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
+    int unusedlibbase : 1; /* Libbase must no be made available internally */
 };
 
 struct functionhead *newfunctionhead(const char *name, enum libcall libcall);

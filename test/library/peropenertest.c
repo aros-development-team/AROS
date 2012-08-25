@@ -24,6 +24,10 @@ int main (int argc, char ** argv)
     PeropenerBase = base1;
     PeropenerSetValue(1);
 
+    /* Check .unusedlibbase option with base1 */
+    if (PeropenerNoLib() != 1)
+        Printf("Error calling PeropenerNoLib()\n");
+
     /* Set value for base2 */
     PeropenerBase = base2;
     PeropenerSetValue(2);
