@@ -1453,18 +1453,18 @@ BOOL InitController(struct PCIController *hc, struct PCIUnit *hu)
             (IPTR) (&td->td_TD.Ctrl) + hc->hc_PCIVirtualAdjust);
         memptr += sizeof(struct TDNode) * OHCI_TD_POOLSIZE;
 
+        // terminating TD
+        hc->hc_TermTD = td = AllocTD(hc);
+        td->td_Node.mln_Succ = NULL;
+        td->td_Node.mln_Pred = NULL;
+        td->td_TD.NextTD = 0;
+
         // terminating ED
         hc->hc_TermED = ed = AllocED(hc);
         ed->ed_Node.mln_Succ = NULL;
         ed->ed_Node.mln_Pred = NULL;
         CONSTWRITEMEM32_LE(&ed->ed_ED.EPCaps, OECF_SKIP);
         ed->ed_ED.NextED = 0L;
-
-        // terminating TD
-        hc->hc_TermTD = td = AllocTD(hc);
-        td->td_Node.mln_Succ = NULL;
-        td->td_Node.mln_Pred = NULL;
-        td->td_TD.NextTD = 0;
 
         for (cnt = 0; cnt < XFER_COUNT + INT_LIST_COUNT - 1; cnt++)
             NewList((struct List *)&hc->hc_EDLists[cnt]);
