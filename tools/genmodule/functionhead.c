@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
     
     The code for storing information of functions present in the module
@@ -27,6 +27,7 @@ struct functionhead *newfunctionhead(const char *name, enum libcall libcall)
 	funchead->method = NULL;
 	funchead->novararg = 0;
 	funchead->priv= 0;
+        funchead->unusedlibbase = 0;
     }
     else
     {
@@ -117,8 +118,9 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 		fprintf(out, "%s", arglistit->arg);
 	    }
 	    fprintf(out,
-		    ");\nAROS_LH%d(%s, %s,\n",
-		    funclistit->argcount, funclistit->type, funclistit->internalname
+		    ");\nAROS_LH%d%s(%s, %s,\n",
+		    funclistit->argcount, funclistit->unusedlibbase ? "I" : "",
+                    funclistit->type, funclistit->internalname
 	    );
 	    for (arglistit = funclistit->arguments;
 		 arglistit!=NULL;
@@ -169,8 +171,9 @@ void writefuncdefs(FILE *out, struct config *cfg, struct functionhead *funclist)
 		|| strchr(funclistit->arguments->reg, '/') == NULL)
 	    {
 		fprintf(out,
-			"AROS_LD%d(%s, %s,\n",
-			funclistit->argcount, funclistit->type, funclistit->internalname
+			"AROS_LD%d%s(%s, %s,\n",
+			funclistit->argcount, funclistit->unusedlibbase ? "I" : "",
+                        funclistit->type, funclistit->internalname
 		);
 		for (arglistit = funclistit->arguments;
 		     arglistit!=NULL;
@@ -289,8 +292,9 @@ void writefuncprotos(FILE *out, struct config *cfg, struct functionhead *funclis
 	    )
 	    {
 		fprintf(out,
-			"AROS_LP%d(%s, %s,\n",
-			funclistit->argcount, funclistit->type, funclistit->name
+			"AROS_LP%d%s(%s, %s,\n",
+			funclistit->argcount, funclistit->unusedlibbase ? "I" : "",
+                        funclistit->type, funclistit->name
 		);
 		for (arglistit = funclistit->arguments;
 		     arglistit!=NULL;
@@ -381,7 +385,9 @@ void writefuncinternalstubs(FILE *out, struct config *cfg, struct functionhead *
 	switch (funclistit->libcall)
 	{
 	case STACK:
-	    if (cfg->options & OPTION_DUPBASE)
+	    if ((cfg->options & OPTION_DUPBASE)
+                && !funclistit->unusedlibbase
+            )
 	    {
 	        fprintf(out,
 		        "AROS_GM_STACKCALL(%s,%s,%d);\n"
