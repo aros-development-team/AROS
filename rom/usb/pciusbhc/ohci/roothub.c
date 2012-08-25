@@ -334,20 +334,20 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                     /* case UFS_PORT_CONNECTION: not possible */
                 case UFS_PORT_ENABLE:
                     KPRINTF(10, ("Enabling Port (%s)\n",
-                            oldval & OHPF_PORTENABLE ? "already" : "ok"));
+                            val & OHPF_PORTENABLE ? "already" : "ok"));
                     reg_val = OHPF_PORTENABLE;
                     break;
 
                 case UFS_PORT_SUSPEND:
                     KPRINTF(10, ("Suspending Port (%s)\n",
-                            oldval & OHPF_PORTSUSPEND ? "already" : "ok"));
+                            val & OHPF_PORTSUSPEND ? "already" : "ok"));
                     reg_val = OHPF_PORTSUSPEND;
                     break;
 
                     /* case UFS_PORT_OVER_CURRENT: not possible */
                 case UFS_PORT_POWER:
                     KPRINTF(10, ("Powering Port (%s)\n",
-                            oldval & OHPF_PORTPOWER ? "already" : "ok"));
+                            val & OHPF_PORTPOWER ? "already" : "ok"));
                     reg_val = OHPF_PORTPOWER;
                     break;
 

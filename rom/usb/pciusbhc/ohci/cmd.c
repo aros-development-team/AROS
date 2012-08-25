@@ -18,6 +18,9 @@
 #include "chip_protos.h"
 #include "pci_protos.h"
 
+#include "pci.h"
+#include "chip.h"
+
 struct my_NSDeviceQueryResult
 {
     ULONG DevQueryFormat;       /* this is type 0               */
@@ -732,9 +735,9 @@ void CheckSpecialCtrlTransfers(struct PCIController *hc,
 /* \\\ */
 
 /* /// "NakTimeoutInt()" */
-AROS_UFIH1(NakTimeoutInt, struct PCIUnit *, unit)
+AROS_INTH1(NakTimeoutInt, struct PCIUnit *, unit)
 {
-    AROS_USERFUNC_INIT struct PCIController *hc;
+    AROS_INTFUNC_INIT struct PCIController *hc;
     struct IOUsbHWReq *ioreq;
     UWORD target;
     ULONG framecnt;
@@ -811,5 +814,5 @@ AROS_UFIH1(NakTimeoutInt, struct PCIUnit *, unit)
 
     return FALSE;
 
-AROS_USERFUNC_EXIT}
+AROS_INTFUNC_EXIT}
 /* \\\ */
