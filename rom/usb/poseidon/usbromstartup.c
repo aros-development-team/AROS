@@ -77,6 +77,33 @@ AROS_UFH3(static IPTR, usbromstartup_init,
             cnt++;
         }
 
+        if (cnt == 0) {
+            /* now this finds all other usb hardware pci cards */
+            while((phw = psdAddHardware("ehci.device", cnt)))
+            {
+                D(bug("[USBROMStartup] Added ehci.device unit %u\n", cnt));
+
+                psdEnumerateHardware(phw);
+                cnt++;
+            }
+            cnt = 0;
+            while((phw = psdAddHardware("ohci.device", cnt)))
+            {
+                D(bug("[USBROMStartup] Added ohci.device unit %u\n", cnt));
+
+                psdEnumerateHardware(phw);
+                cnt++;
+            }
+            cnt = 0;
+            while((phw = psdAddHardware("uhci.device", cnt)))
+            {
+                D(bug("[USBROMStartup] Added uhci.device unit %u\n", cnt));
+
+                psdEnumerateHardware(phw);
+                cnt++;
+            }
+        }
+
 	D(bug("[USBROMStartup] Scanning classes...\n"));
         psdClassScan();
 
