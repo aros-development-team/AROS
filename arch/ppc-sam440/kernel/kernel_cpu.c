@@ -33,31 +33,25 @@ void cpu_Dispatch(context_t *regs)
     __asm__ __volatile__("wrteei 0;");
     idle = mftbu();
 
+    /* 
+     * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
+     * It should be extended by some plugin mechanism which would put CPU and whole machine
+     * into some more sophisticated sleep states (ACPI?)
+     */
+
     while (!(task = core_Dispatch())) {
-        /* 
-         * Is the list of ready tasks empty? Well, increment the idle switch cound and halt CPU.
-         * It should be extended by some plugin mechanism which would put CPU and whole machine
-         * into some more sophisticated sleep states (ACPI?)
-         */
-        if (SysBase->IDNestCnt < 0) {
-            wrdcr(UIC0_ER, uic_er[0]);
-        }
         wrmsr(rdmsr() | MSR_POW | MSR_EE);
         __asm__ __volatile__("sync; isync;");
         __asm__ __volatile__("wrteei 0");
         idle_time += mftbu() - idle;
+
+        if (SysBase->SysFlags & SFF_SoftInt)
+            core_Cause(INTB_SOFTINT, 1l << INTB_SOFTINT);
     }
 
     /* Restore the task's state */
     CopyMem(task->tc_UnionETask.tc_ETask->et_RegFrame, regs, sizeof(regs_t));
     regs->cpu.gpr[1] = (IPTR)task->tc_SPReg;
-
-    /* Set the external interrupts */
-    if (SysBase->IDNestCnt < 0) {
-        wrdcr(UIC0_ER, uic_er[0]);
-    } else {
-        wrdcr(UIC0_ER, 0);
-    }
 
     /* Handle tasks's flags */
     if (task->tc_Flags & TF_EXCEPT)
