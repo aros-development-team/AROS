@@ -157,11 +157,13 @@ void dumpregs(context_t *ctx, uint8_t exception)
 
     bug("\n[KRN] Backtrace:  %s\n", symbolfor(DebugBase, ctx->cpu.srr0));
     bug("[KRN] LR=%08x %s\n", ctx->cpu.lr, symbolfor(DebugBase, ctx->cpu.lr));
-    sp = (uint32_t *)ctx->cpu.gpr[1];
-    while(*sp)
-    {
-            sp = (uint32_t *)sp[0];
-            bug("[KRN]    %08x %s\n", sp[1], symbolfor(DebugBase, sp[1]));
+    if (exception != 13) {
+        sp = (uint32_t *)ctx->cpu.gpr[1];
+        while(*sp)
+        {
+                sp = (uint32_t *)sp[0];
+                bug("[KRN]    %08x %s\n", sp[1], symbolfor(DebugBase, sp[1]));
+        }
     }
     CloseLibrary(DebugBase);
 
