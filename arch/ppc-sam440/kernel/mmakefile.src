@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES := kernel_startup kernel_cpu intr mmu tags syscall \
          kernel_debug uic virtualtophysical \
-         obtaininput maygetchar
+         obtaininput maygetchar \
+         sti cli
 
 #MM kernel-kernel-sam440-ppc : includes kernel-kernel-native-ppc
 #MM kernel-kernel-sam440-ppc-kobj : includes kernel-kernel-native-ppc
