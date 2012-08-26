@@ -359,31 +359,8 @@ void generic_handler(context_t *ctx, uint8_t exception)
 
 void  mmu_handler(context_t *ctx, uint8_t exception)
 {
-    uint32_t insn = *(uint32_t *)ctx->cpu.srr0;
-
-    /* SysBase access at 4UL? Occurs only with lwz instruction and DEAR=4
-     * It is unfortunate that the Parthenope bootloader forces SysBase
-     * to 4UL in loaded modules.
-     */
-    if ((insn & 0xfc000000) == 0x80000000 && rdspr(DEAR) == 4)
-    {
-        int reg = (insn & 0x03e00000) >> 21;
-
-        DB2(bug("Parthnope patchup to R%d, SRR0=%p\n", reg, ctx->cpu.srr0));
-        /* patch from lwz %rN => mr %rN, %r2 */
-        insn = 0x7c401378 | (reg << 16);
-        *(uint32_t *)ctx->cpu.srr0 = insn;
-        /* Flush this new instuction out of the cache */
-        asm volatile(
-                "dcbst 0,%0; sync;"
-                "icbi 0,%0; isync;"
-                ::"r"(ctx->cpu.srr0));
-    }
-    else
-    {   
-        /* Any other MMU activity is fatal for now. */
-        dumpregs(ctx, exception);
-    }
+    /* Any MMU activity is fatal for now. */
+    dumpregs(ctx, exception);
 }
 
 double lfd(intptr_t addr)
