@@ -1,3 +1,4 @@
+#include <aros/debug.h>
 #include <aros/kernel.h>
 #include <aros/libcall.h>
 
@@ -42,7 +43,7 @@ AROS_LH0I(void, KrnSti,
 {
     AROS_LIBFUNC_INIT
 
-    /* The implementation of this function is entirely architecture-specific */
+    aros_print_not_implemented ("KrnSti");
 
     AROS_LIBFUNC_EXIT
 }
