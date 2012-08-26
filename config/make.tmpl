@@ -2318,7 +2318,61 @@ DEPS := $(DEPS) $(STUBS_DEP)
 # *NOTICE*: DO NOT put a trailing '/' (slash) after $PROGDIR, as the variable
 # already contains either a '/' (slash) or a ':' (colon), thus simply attach it
 # to the name which has to follow it.
-
+#
+# Arguments:
+#
+#     - mmake           = the meta make target.
+#     - package         = name of the package to be built.
+#     - srcdir          = the location of the unpacked source code. Defaults
+#                         to $(SRCDIR)/$(CURDIR).
+#     - prefix          = the target directory. Must be an absolute path of the
+#                         host system. Defaults to $(AROS_CONTRIB).
+#     - aros_prefix     = set a path which is valid within the AROS filesystem.
+#                         Defaults to the value of the prefix option.
+#     - extraoptions    = additional options for the configure script.
+#     - extracflags     = additional flags which are used for both C and C++.
+#     - nix_dir_layout  = if yes the binary will be stored in a bin subdirectory.
+#                         Defaults to the value of the nix argument.
+#     - nix             = enable u*nix path handling, i.e. a path like
+#                         /progdir//./file will be translated to
+#                         progdir:file during run-time. Defaults to no.
+#     - compiler        = target, host or kernel. Defaults to target.
+#     - install_target  = the command used for installing. Defaults to install.
+#     - preconfigure    = a metatarget which is executed before configure is called.
+#     - postconfigure   = a metatarget which is executed after configure is called.
+#     - postinstall     = a metatarget which is executed after installing.
+#     - install_env     = set additional options for installing.
+#     - use_build_env   = if yes the configuration environment is used for
+#                         installing, too. Defaults to no.
+#
+# The arguments aros_prefix, nix and nix_dir_layout are related. The logic is
+# like this:
+#
+# if nix_dir_layout
+#    --prefix = $(aros_prefix)
+#    progdir = $(aros_prefix)/bin
+# else
+#    if nix
+#        --prefix = /PROGDIR
+#        --bindir = /PROGDIR
+#        --sbindir = /PROGDIR
+#        --libdir = /LIB
+#        --includedir = /INCLUDE
+#        --oldincludedir = /INCLUDE   
+#    else
+#        --prefix = $(aros_prefix)
+#    endif
+#
+#    progdir = $(aros_prefix)
+#
+#    # Install options
+#    bindir = $(prefix)
+#    sbindir = $(prefix)
+#    libdir = $(AROS_LIB)
+#    includedir = $(AROS_INCLUDES)
+#    oldincludedir = $(AROS_INCLUDES)
+# endif
+#
 
 %define build_with_configure mmake=/A package= srcdir=$(SRCDIR)/$(CURDIR) prefix= \
     aros_prefix= extraoptions= extracflags= nix_dir_layout= nix=no compiler=target \
