@@ -18,6 +18,9 @@
 #include <proto/utility.h>
 #include <proto/oop.h>
 
+#include <resources/processor.h>
+#include <proto/processor.h>
+
 #include <aros/symbolsets.h>
 #include <asm/amcc440.h>
 #include <asm/io.h>
@@ -83,6 +86,10 @@ static ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UB
     outl_le(CFGADD(bus, dev, sub, reg),PCI0_CFGADDR);
     temp=inl_le(PCI0_CFGDATA);
     Enable();
+    if (reg == 0x3c && psd->IntLine != 0xff) { /* PCICS_INT_LINE */
+        temp &= ~0xff;
+        temp |= psd->IntLine;
+    }
     DB2(bug("[PCI440] -> %08x = %08x\n", CFGADD(bus, dev, sub, reg), temp));
 
     return temp;
@@ -110,12 +117,35 @@ void PCI440__Hidd_PCIDriver__WriteConfigLong(OOP_Class *cl, OOP_Object *o,
 }
 
 /* Class initialization and destruction */
+static inline ULONG GetPVR(void)
+{
+    struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
+    ULONG pvr = 0;
+
+    if (ProcessorBase) {
+        struct TagItem tags[] = {
+            { GCIT_Model, (IPTR)&pvr },
+            { TAG_END }
+        };
+        GetCPUInfo(tags);
+    }
+
+    return pvr;
+}
 
 static int PCI440_InitClass(LIBBASETYPEPTR LIBBASE)
 {
     OOP_Object *pci;
+    ULONG pvr;
     
     D(bug("PCI440: Driver initialization\n"));
+
+    pvr = GetPVR();
+    if (pvr == PVR_PPC460EX_B) {
+        LIBBASE->psd.IntLine = INTR_UIC0_PCI0_IN;
+    } else {
+        LIBBASE->psd.IntLine = 0xff;
+    }
 
     struct pHidd_PCI_AddHardwareDriver msg,*pmsg=&msg;
     
