@@ -21,6 +21,8 @@ struct pci_staticdata {
     OOP_AttrBase        hiddAB;
 
     OOP_Class           *driverClass;
+
+    UBYTE               IntLine;
 };
 
 struct pcibase {
