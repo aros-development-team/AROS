@@ -6,6 +6,8 @@
 #include LC_LIBDEFS_FILE
 #include "kernel_intern.h"
 #include "kernel_globals.h"
+#include "kernel_interrupts.h"
+
 #include "kernel_intr.h"
 
 /*
@@ -146,16 +148,7 @@ void uic_handler(context_t *ctx, uint8_t exception)
 
                 if (mask & uic_sr[i])
                 {
-                    if (!IsListEmpty(&KernelBase->kb_Interrupts[irq]))
-                    {
-                        struct IntrNode *in, *in2;
-
-                        ForeachNodeSafe(&KernelBase->kb_Interrupts[irq], in, in2)
-                        {
-                            if (in->in_Handler)
-                                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-                        }
-                    }
+                    krnRunIRQHandlers(KernelBase, irq);
                 }
             }
         }

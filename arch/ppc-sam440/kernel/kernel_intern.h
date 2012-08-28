@@ -58,20 +58,6 @@ static inline BOOL krnIsPPC460(uint32_t pvr)
     return (pvr == PVR_PPC460EX_B);
 }
 
-enum intr_types {
-    it_exception = 0xe0,
-    it_interrupt = 0xf0
-};
-
-struct IntrNode {
-    struct MinNode      in_Node;
-    void                (*in_Handler)(void *, void *);
-    void                *in_HandlerData;
-    void                *in_HandlerData2;
-    uint8_t             in_type;
-    uint8_t             in_nr;
-};
-
 typedef struct {
         struct MinNode  m_node;
         char *          m_name;
