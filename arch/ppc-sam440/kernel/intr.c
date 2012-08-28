@@ -323,7 +323,7 @@ void decrementer_handler(context_t *ctx, uint8_t exception)
     }
 
     /* Signal the Exec VBlankServer */
-    if (SysBase) {
+    if (SysBase && (SysBase->IDNestCnt < 0)) {
         core_Cause(INTB_VERTB, 1L << INTB_VERTB);
     }
 
