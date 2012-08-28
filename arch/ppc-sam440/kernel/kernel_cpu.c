@@ -39,6 +39,13 @@ void cpu_Dispatch(context_t *regs)
      * into some more sophisticated sleep states (ACPI?)
      */
 
+    /* Break Disable() if needed */
+    if (SysBase->IDNestCnt >= 0) {
+        SysBase->IDNestCnt = -1;
+        /* Enable selected external interrupts */
+        wrdcr(UIC0_ER, uic_er[0]);
+    }
+
     while (!(task = core_Dispatch())) {
         wrmsr(rdmsr() | MSR_POW | MSR_EE);
         __asm__ __volatile__("sync; isync;");
