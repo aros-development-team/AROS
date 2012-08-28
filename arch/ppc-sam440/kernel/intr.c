@@ -11,6 +11,7 @@
 #include "kernel_intern.h"
 #include "kernel_syscall.h"
 #include "kernel_globals.h"
+#include "kernel_interrupts.h"
 #include "kernel_intr.h"
 
 void *__cEXCEPTION_0_Prolog();
@@ -335,18 +336,7 @@ void generic_handler(context_t *ctx, uint8_t exception)
 
     DB2(bug("[KRN] Generic handler. Context @ %p. srr1=%08x\n", ctx, ctx->cpu.srr1));
 
-    if (!IsListEmpty(&KernelBase->kb_Exceptions[exception]))
-    {
-        struct IntrNode *in, *in2;
-
-        ForeachNodeSafe(&KernelBase->kb_Exceptions[exception], in, in2)
-        {
-            if (in->in_Handler)
-                in->in_Handler(in->in_HandlerData, in->in_HandlerData2);
-        }
-    }
-
-    if (IsListEmpty(&KernelBase->kb_Exceptions[exception]))
+    if (!krnRunExceptionHandlers(KernelBase, exception, ctx))
     {
         D(dumpregs(ctx, exception));
         D(bug("[KRN] **UNHANDLED EXCEPTION** stopping here...\n"));
@@ -361,8 +351,11 @@ void generic_handler(context_t *ctx, uint8_t exception)
 
 void  mmu_handler(context_t *ctx, uint8_t exception)
 {
-    /* Any MMU activity is fatal for now. */
-    dumpregs(ctx, exception);
+    if (!!krnRunExceptionHandlers(KernelBase, exception, ctx))
+    {
+        /* Any unhandled MMU activity is fatal for now. */
+        dumpregs(ctx, exception);
+    }
 }
 
 double lfd(intptr_t addr)
