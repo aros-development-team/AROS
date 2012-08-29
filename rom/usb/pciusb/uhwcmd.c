@@ -644,7 +644,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 /* case UFS_PORT_CONNECTION: not possible */
                                 case UFS_PORT_ENABLE:
-                                    KPRINTF(10, ("Enabling Port (%s)\n", newval & UHPF_PORTENABLE ? "already" : "ok"));
+                                    KPRINTF(10, ("UHCI: Enabling Port (%s)\n", newval & UHPF_PORTENABLE ? "already" : "ok"));
                                     newval |= UHPF_PORTENABLE;
                                     cmdgood = TRUE;
                                     break;
@@ -657,7 +657,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
                                 /* case UFS_PORT_OVER_CURRENT: not possible */
                                 case UFS_PORT_RESET:
-                                    KPRINTF(10, ("Resetting Port (%s)\n", newval & UHPF_PORTRESET ? "already" : "ok"));
+                                    KPRINTF(10, ("UHCI: Resetting Port (%s)\n", newval & UHPF_PORTRESET ? "already" : "ok"));
 
                                     // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
@@ -665,13 +665,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                     uhwDelayMS(25, unit);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
-                                    KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
+                                    KPRINTF(10, ("UHCI: Reset=%s\n", newval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     // like windows does it
                                     newval &= ~UHPF_PORTRESET;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                     uhwDelayMicro(50, unit);
                                     newval = READIO16_LE(hc->hc_RegBase, portreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-                                    KPRINTF(10, ("Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
+                                    KPRINTF(10, ("UHCI: Reset=%s\n", newval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
                                     newval &= ~(UHPF_PORTSUSPEND|UHPF_PORTRESET);
                                     newval |= UHPF_PORTENABLE;
                                     WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
@@ -685,9 +685,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     } while(--cnt && (!(newval & UHPF_PORTENABLE)));
                                     if(cnt)
                                     {
-                                        KPRINTF(10, ("Enabled after %ld ticks\n", 100-cnt));
+                                        KPRINTF(10, ("UHCI: Enabled after %ld ticks\n", 100-cnt));
                                     } else {
-                                        KPRINTF(20, ("Port refuses to be enabled!\n"));
+                                        KPRINTF(20, ("UHCI: Port refuses to be enabled!\n"));
                                         return(UHIOERR_HOSTERROR);
                                     }
                                     // make enumeration possible
@@ -696,7 +696,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     break;
 
                                 case UFS_PORT_POWER:
-                                    KPRINTF(10, ("Powering Port\n"));
+                                    KPRINTF(10, ("UHCI: Powering Port\n"));
                                     // ignore for UHCI, is always powered
                                     cmdgood = TRUE;
                                     break;
@@ -710,7 +710,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             if(cmdgood)
                             {
-                                KPRINTF(5, ("Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+                                KPRINTF(5, ("UHCI: Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
                                 WRITEIO16_LE(hc->hc_RegBase, portreg, newval);
                                 return(0);
                             }
@@ -726,13 +726,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 /* case UFS_PORT_CONNECTION: not possible */
                                 case UFS_PORT_ENABLE:
-                                    KPRINTF(10, ("Enabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "already" : "ok"));
+                                    KPRINTF(10, ("OHCI: Enabling Port (%s)\n", oldval & OHPF_PORTENABLE ? "already" : "ok"));
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTENABLE);
                                     cmdgood = TRUE;
                                     break;
 
                                 case UFS_PORT_SUSPEND:
-                                    KPRINTF(10, ("Suspending Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "already" : "ok"));
+                                    KPRINTF(10, ("OHCI: Suspending Port (%s)\n", oldval & OHPF_PORTSUSPEND ? "already" : "ok"));
                                     //hc->hc_PortChangeMap[hciport] |= UPSF_PORT_SUSPEND; // manually fake suspend change
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTSUSPEND);
                                     cmdgood = TRUE;
@@ -740,7 +740,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
                                 /* case UFS_PORT_OVER_CURRENT: not possible */
                                 case UFS_PORT_RESET:
-                                    KPRINTF(10, ("Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok"));
+                                    KPRINTF(10, ("OHCI: Resetting Port (%s)\n", oldval & OHPF_PORTRESET ? "already" : "ok"));
                                     // make sure we have at least 50ms of reset time here, as required for a root hub port
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
                                     uhwDelayMS(10, unit);
@@ -753,13 +753,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTRESET);
                                     uhwDelayMS(15, unit);
                                     oldval = READREG32_LE(hc->hc_RegBase, portreg);
-                                    KPRINTF(10, ("OHCI Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                    KPRINTF(10, ("OHCI: Reset release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                  oldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
                                     if(oldval & OHPF_PORTRESET)
                                     {
                                          uhwDelayMS(40, unit);
                                          oldval = READREG32_LE(hc->hc_RegBase, portreg);
-                                         KPRINTF(10, ("OHCI Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                         KPRINTF(10, ("OHCI: Reset 2nd release (%s %s)\n", oldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                           oldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
                                     }
                                     // make enumeration possible
@@ -768,7 +768,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     break;
 
                                 case UFS_PORT_POWER:
-                                    KPRINTF(10, ("Powering Port (%s)\n", oldval & OHPF_PORTPOWER ? "already" : "ok"));
+                                    KPRINTF(10, ("OHCI: Powering Port (%s)\n", oldval & OHPF_PORTPOWER ? "already" : "ok"));
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, OHPF_PORTPOWER);
                                     cmdgood = TRUE;
                                     break;
@@ -796,7 +796,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             {
                                 /* case UFS_PORT_CONNECTION: not possible */
                                 case UFS_PORT_ENABLE:
-                                    KPRINTF(10, ("Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
+                                    KPRINTF(10, ("EHCI: Enabling Port (%s)\n", newval & EHPF_PORTENABLE ? "already" : "ok"));
                                     newval |= EHPF_PORTENABLE;
                                     cmdgood = TRUE;
                                     break;
@@ -809,7 +809,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
 
                                 /* case UFS_PORT_OVER_CURRENT: not possible */
                                 case UFS_PORT_RESET:
-                                    KPRINTF(10, ("Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
+                                    KPRINTF(10, ("EHCI: Resetting Port (%s)\n", newval & EHPF_PORTRESET ? "already" : "ok"));
 
                                     // this is an ugly blocking workaround to the inability of EHCI to clear reset automatically
                                     newval &= ~(EHPF_PORTSUSPEND|EHPF_PORTENABLE);
@@ -817,19 +817,19 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                     uhwDelayMS(50, unit);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND|EHPF_PORTENABLE);
-                                    KPRINTF(10, ("Reset=%s\n", newval & EHPF_PORTRESET ? "GOOD" : "BAD!"));
+                                    KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "GOOD" : "BAD!"));
                                     newval &= ~EHPF_PORTRESET;
                                     WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                     uhwDelayMS(10, unit);
                                     newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
-                                    KPRINTF(10, ("Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
-                                    KPRINTF(10, ("Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
-                                    KPRINTF(10, ("EHCI Port status=%08lx\n", newval));
+                                    KPRINTF(10, ("EHCI: Reset=%s\n", newval & EHPF_PORTRESET ? "BAD!" : "GOOD"));
+                                    KPRINTF(10, ("EHCI: Highspeed=%s\n", newval & EHPF_PORTENABLE ? "YES!" : "NO"));
+                                    KPRINTF(10, ("EHCI: Port status=%08lx\n", newval));
                                     if(!(newval & EHPF_PORTENABLE))
                                     {
                                         // if not highspeed, release ownership
-                                        KPRINTF(20, ("Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
-                                        KPRINTF(10, ("Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
+                                        KPRINTF(20, ("EHCI: Transferring ownership to UHCI/OHCI port %ld\n", unit->hu_PortNum11[idx - 1]));
+                                        KPRINTF(10, ("EHCI: Device is %s\n", newval & EHPF_LINESTATUS_DM ? "LOWSPEED" : "FULLSPEED"));
                                         newval |= EHPF_NOTPORTOWNER;
                                         if(!chc)
                                         {
@@ -855,21 +855,21 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
                                                 ULONG __unused ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
 
-                                                KPRINTF(10, ("OHCI Port status before handover=%08lx\n", ohcioldval));
-                                                KPRINTF(10, ("Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
+                                                KPRINTF(10, ("OHCI: Port status before handover=%08lx\n", ohcioldval));
+                                                KPRINTF(10, ("OHCI: Powering Port (%s)\n", ohcioldval & OHPF_PORTPOWER ? "already" : "ok"));
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTPOWER);
                                                 uhwDelayMS(10, unit);
-                                                KPRINTF(10, ("OHCI Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg)));
+                                                KPRINTF(10, ("OHCI: Port status after handover=%08lx\n", READREG32_LE(chc->hc_RegBase, ohciportreg)));
                                                 break;
                                             }
                                         }
                                         newval = READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND);
-                                        KPRINTF(10, ("EHCI Port status (reread)=%08lx\n", newval));
+                                        KPRINTF(10, ("EHCI: Port status (reread)=%08lx\n", newval));
                                         newval |= EHPF_NOTPORTOWNER;
                                         unit->hu_EhciOwned[idx - 1] = FALSE;
                                         WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                         uhwDelayMS(90, unit);
-                                        KPRINTF(10, ("EHCI Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND)));
+                                        KPRINTF(10, ("EHCI: Port status (after handover)=%08lx\n", READREG32_LE(hc->hc_RegBase, portreg) & ~(EHPF_OVERCURRENTCHG|EHPF_ENABLECHANGE|EHPF_CONNECTCHANGE|EHPF_PORTSUSPEND)));
                                         // enable companion controller port
                                         switch(chc->hc_HCIType)
                                         {
@@ -880,22 +880,22 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 ULONG uhcinewval;
 
                                                 uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-                                                KPRINTF(10, ("UHCI Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
+                                                KPRINTF(10, ("UHCI: Reset=%s\n", uhcinewval & UHPF_PORTRESET ? "BAD!" : "GOOD"));
                                                 if((uhcinewval & UHPF_PORTRESET))//|| (newval & EHPF_LINESTATUS_DM))
                                                 {
                                                     // this is an ugly blocking workaround to the inability of UHCI to clear reset automatically
-                                                    KPRINTF(20, ("Uhm, UHCI reset was bad!\n"));
+                                                    KPRINTF(20, ("UHCI: Uhm, reset was bad!\n"));
                                                     uhcinewval &= ~(UHPF_PORTSUSPEND|UHPF_PORTENABLE);
                                                     uhcinewval |= UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                     uhwDelayMS(50, unit);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND|UHPF_PORTENABLE);
-                                                    KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
+                                                    KPRINTF(10, ("UHCI: ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "GOOD" : "BAD!"));
                                                     uhcinewval &= ~UHPF_PORTRESET;
                                                     WRITEIO16_LE(chc->hc_RegBase, uhciportreg, uhcinewval);
                                                     uhwDelayMicro(50, unit);
                                                     uhcinewval = READIO16_LE(chc->hc_RegBase, uhciportreg) & ~(UHPF_ENABLECHANGE|UHPF_CONNECTCHANGE|UHPF_PORTSUSPEND);
-                                                    KPRINTF(10, ("ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
+                                                    KPRINTF(10, ("UHCI: ReReset=%s\n", uhcinewval & UHPF_PORTRESET ? "STILL BAD!" : "GOOD"));
                                                 }
                                                 uhcinewval &= ~UHPF_PORTRESET;
                                                 uhcinewval |= UHPF_PORTENABLE;
@@ -910,9 +910,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 } while(--cnt && (!(uhcinewval & UHPF_PORTENABLE)));
                                                 if(cnt)
                                                 {
-                                                    KPRINTF(10, ("Enabled after %ld ticks\n", 100-cnt));
+                                                    KPRINTF(10, ("UHCI: Enabled after %ld ticks\n", 100-cnt));
                                                 } else {
-                                                    KPRINTF(20, ("Port refuses to be enabled!\n"));
+                                                    KPRINTF(20, ("UHCI: Port refuses to be enabled!\n"));
                                                     return(UHIOERR_HOSTERROR);
                                                 }
                                                 break;
@@ -923,7 +923,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 UWORD ohcihciport = unit->hu_PortNum11[idx - 1];
                                                 UWORD ohciportreg = OHCI_PORTSTATUS + (ohcihciport<<2);
                                                 ULONG ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                                                KPRINTF(10, ("OHCI Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
+                                                KPRINTF(10, ("OHCI: Resetting Port (%s)\n", ohcioldval & OHPF_PORTRESET ? "already" : "ok"));
                                                 // make sure we have at least 50ms of reset time here, as required for a root hub port
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
                                                 uhwDelayMS(10, unit);
@@ -936,13 +936,13 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                                 WRITEREG32_LE(chc->hc_RegBase, ohciportreg, OHPF_PORTRESET);
                                                 uhwDelayMS(15, unit);
                                                 ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                                                KPRINTF(10, ("OHCI Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                KPRINTF(10, ("OHCI: Reset release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                              ohcioldval & OHPF_PORTENABLE ? "enabled" : "not enabled"));
                                                 if(ohcioldval & OHPF_PORTRESET)
                                                 {
                                                     uhwDelayMS(40, unit);
                                                     ohcioldval = READREG32_LE(chc->hc_RegBase, ohciportreg);
-                                                    KPRINTF(10, ("OHCI Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
+                                                    KPRINTF(10, ("OHCI: Reset 2nd release (%s %s)\n", ohcioldval & OHPF_PORTRESET ? "didn't turn off" : "okay",
                                                                                                      ohcioldval & OHPF_PORTENABLE ? "enabled" : "still not enabled"));
                                                 }
                                                 break;
@@ -965,9 +965,9 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         } while(--cnt && (!(newval & EHPF_PORTENABLE)));
                                         if(cnt)
                                         {
-                                            KPRINTF(10, ("Enabled after %ld ticks\n", 100-cnt));
+                                            KPRINTF(10, ("EHCI: Enabled after %ld ticks\n", 100-cnt));
                                         } else {
-                                            KPRINTF(20, ("Port refuses to be enabled!\n"));
+                                            KPRINTF(20, ("EHCI: Port refuses to be enabled!\n"));
                                             return(UHIOERR_HOSTERROR);
                                         }
                                         // make enumeration possible
@@ -977,7 +977,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                     break;
 
                                 case UFS_PORT_POWER:
-                                    KPRINTF(10, ("Powering Port\n"));
+                                    KPRINTF(10, ("EHCI: Powering Port\n"));
                                     newval |= EHPF_PORTPOWER;
                                     cmdgood = TRUE;
                                     break;
@@ -991,7 +991,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                             }
                             if(cmdgood)
                             {
-                                KPRINTF(5, ("Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
+                                KPRINTF(5, ("EHCI: Port %ld SET_FEATURE %04lx->%04lx\n", idx, oldval, newval));
                                 WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                 return(0);
                             }
