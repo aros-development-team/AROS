@@ -51,59 +51,57 @@ extern struct Library *MUIMasterBase;
 #define SHIFT (sizeof(ULONG)*8 - (8 + 1))
 
 STATIC VOID TrueDitherV
-(
-    struct RastPort *rp,
+    (struct RastPort *rp,
     WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD oy1, WORD oy2,
-    ULONG *start_rgb, ULONG *end_rgb
-)
+    WORD oy1, WORD oy2, ULONG * start_rgb, ULONG * end_rgb)
 {
     LONG max_delta_y = (oy2 - oy1 > 0) ? oy2 - oy1 : 1;
-    LONG width       = x2  - x1 + 1;
+    LONG width = x2 - x1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
     LONG delta_g = end_rgb[1] - start_rgb[1];
     LONG delta_b = end_rgb[2] - start_rgb[2];
 
-    LONG step_r = (delta_r << SHIFT)/max_delta_y;
-    LONG step_g = (delta_g << SHIFT)/max_delta_y;
-    LONG step_b = (delta_b << SHIFT)/max_delta_y;
+    LONG step_r = (delta_r << SHIFT) / max_delta_y;
+    LONG step_g = (delta_g << SHIFT) / max_delta_y;
+    LONG step_b = (delta_b << SHIFT) / max_delta_y;
 
     LONG y, offset_y = y1 - oy1;
 
-    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_y*step_r;
-    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_y*step_g;
-    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_y*step_b;
+    LONG red =
+        ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_y * step_r;
+    LONG green =
+        ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_y * step_g;
+    LONG blue =
+        ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_y * step_b;
 
-    for(y = y1; y <= y2; y++)
+    for (y = y1; y <= y2; y++)
     {
         FillPixelArray(rp, x1, y, width, 1,
-                       ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) + (blue >> SHIFT));
+            ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) +
+            (blue >> SHIFT));
 
-        red   += step_r;
+        red += step_r;
         green += step_g;
-        blue  += step_b;
+        blue += step_b;
     }
 }
 
 STATIC VOID TrueDitherH
-(
-    struct RastPort *rp,
+    (struct RastPort *rp,
     WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD ox1, WORD ox2,
-    ULONG *start_rgb, ULONG *end_rgb
-)
+    WORD ox1, WORD ox2, ULONG *start_rgb, ULONG *end_rgb)
 {
     LONG max_delta_x = (ox2 - ox1 > 0) ? ox2 - ox1 : 1;
-    LONG height      = y2  - y1 + 1;
+    LONG height = y2 - y1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
     LONG delta_g = end_rgb[1] - start_rgb[1];
     LONG delta_b = end_rgb[2] - start_rgb[2];
 
-    LONG step_r = (delta_r << SHIFT)/max_delta_x;
-    LONG step_g = (delta_g << SHIFT)/max_delta_x;
-    LONG step_b = (delta_b << SHIFT)/max_delta_x;
+    LONG step_r = (delta_r << SHIFT) / max_delta_x;
+    LONG step_g = (delta_g << SHIFT) / max_delta_x;
+    LONG step_b = (delta_b << SHIFT) / max_delta_x;
 
     LONG x, offset_x = x1 - ox1;
 
@@ -112,62 +110,71 @@ STATIC VOID TrueDitherH
        rounding is done properly. That is, a+x, with 0 < x < 0.5, is rounded
        down to a, and a+x, with 0.5 <= x < 1, is rounded up to a+1. */
 
-    LONG red   = ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_x*step_r;
-    LONG green = ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_x*step_g;
-    LONG blue  = ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_x*step_b;
+    LONG red =
+        ((1 << SHIFT) >> 1) + (start_rgb[0] << SHIFT) + offset_x * step_r;
+    LONG green =
+        ((1 << SHIFT) >> 1) + (start_rgb[1] << SHIFT) + offset_x * step_g;
+    LONG blue =
+        ((1 << SHIFT) >> 1) + (start_rgb[2] << SHIFT) + offset_x * step_b;
 
-    for(x = x1; x <= x2; x++)
+    for (x = x1; x <= x2; x++)
     {
         FillPixelArray(rp, x, y1, 1, height,
-                       ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) + (blue >> SHIFT));
+            ((red >> SHIFT) << 16) + ((green >> SHIFT) << 8) +
+            (blue >> SHIFT));
 
-        red   += step_r;
+        red += step_r;
         green += step_g;
-        blue  += step_b;
+        blue += step_b;
     }
 }
 
 struct myrgb
 {
-    int red,green,blue;
+    int red, green, blue;
 };
 
-void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt, int xb, int yb, int xp, int yp, int w, int h, ULONG *start_rgb, ULONG *end_rgb, int angle, int xoff, int yoff)
+void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt,
+    int xb, int yb, int xp, int yp, int w, int h, ULONG *start_rgb,
+    ULONG *end_rgb, int angle, int xoff, int yoff)
 {
-    /* The basic idea of this algorithm is to calc the intersection between the
-    * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
-    * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
-    *
-    * Having the intersection point we then know the color of the pixel.
-    *
-    * TODO: Turn the algorithm into a incremental one
-    *       Remove the use of floating point variables
-    */
-    double rad = angle*M_PI/180;
+    /* The basic idea of this algorithm is to calc the intersection between
+     * the diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with
+     * the line starting at (x,y) (every pixel inside the rectangle) and
+     * angle angle with direction vector (vx,vy).
+     *
+     * Having the intersection point we then know the color of the pixel.
+     *
+     * TODO: Turn the algorithm into a incremental one
+     *       Remove the use of floating point variables
+     */
+    double rad = angle * M_PI / 180;
     double cosarc = cos(rad);
     double sinarc = sin(rad);
 
-    struct myrgb startRGB,endRGB;
-    
+    struct myrgb startRGB, endRGB;
+
     int diffR, diffG, diffB;
 
-    int r,t; /* some helper variables to short the code */
-    int l,y,c,x;
-    int y1; /* The intersection point */
-    int incr_y1; /* increment of y1 */
-    int xs,ys,xw,yw;
-    int xadd,ystart,yadd;
+    int r, t;                   /* some helper variables to shorten the code */
+    int l, y, c, x;
+    int y1;                     /* The intersection point */
+    int incr_y1;                /* increment of y1 */
+    int xs, ys, xw, yw;
+    int xadd, ystart, yadd;
 //    double vx = -cosarc;
 //    double vy = sinarc;
-    int vx = (int)(-cosarc*0xff);
-    int vy = (int)(sinarc*0xff);
-    
+    int vx = (int)(-cosarc * 0xff);
+    int vy = (int)(sinarc * 0xff);
+
     int width = xb - xt + 1;
     int height = yb - yt + 1;
-    
-    if ((w <= 0) || (h <= 0)) return;
-    UBYTE *buf = AllocVec(w*h*3, 0);
-    if (buf == NULL) return;
+
+    if ((w <= 0) || (h <= 0))
+        return;
+    UBYTE *buf = AllocVec(w * h * 3, 0);
+    if (buf == NULL)
+        return;
 
     startRGB.red = start_rgb[0];
     startRGB.green = start_rgb[1];
@@ -182,100 +189,113 @@ void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt, int xb,
     diffB = endRGB.blue - startRGB.blue;
 
     /* Normalize the angle */
-    if (angle < 0) angle = 360 - ((-angle)%360);
-    if (angle >= 0) angle = angle % 360;
+    if (angle < 0)
+        angle = 360 - ((-angle) % 360);
+    if (angle >= 0)
+        angle = angle % 360;
 
     if (angle <= 90 || (angle > 180 && angle <= 270))
     {
-        /* The to be intersected diagonal goes from the top left edge to the bottom right edge */
+        /* The to be intersected diagonal goes from the top left edge to the
+           bottom right edge */
         xs = 0;
         ys = 0;
         xw = width;
         yw = height;
-    } else
+    }
+    else
     {
-        /* The to be intersected diagonal goes from the bottom left edge to the top right edge */
+        /* The to be intersected diagonal goes from the bottom left edge to
+           the top right edge */
         xs = 0;
         ys = height;
         xw = width;
         yw = -height;
     }
-		
+
     if (angle > 90 && angle <= 270)
     {
-	/* for these angle we have y1 = height - y1. Instead of
-        *
-        *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
-        *
-        * we can write
-        *
-        *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
-        *
-        * so height - y1 can be expressed with the normal formular adapting some parameters.
-        *
-        * Note that if one would exchanging startRGB/endRGB the values would only work
-        * for linear color gradients
- */
+        /* for these angle we have y1 = height - y1. Instead of
+         *
+         *  y1 = height - (-vy*(yw*  xs -xw*  ys)
+         *       + yw*(vy*  x -vx*  y)) / (-yw*vx + xw*vy);
+         *
+         * we can write
+         *
+         *  y1 = (-vy*(yw*(-xs)-xw*(-ys+height))
+         *       + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
+         *
+         * so height - y1 can be expressed with the normal formula adapting
+         * some parameters.
+         *
+         * Note that if one would exchanging startRGB/endRGB the values would
+         * only work for linear color gradients
+         */
         xadd = -1;
         yadd = -1;
         ystart = height;
 
         xs = -xs;
         ys = -ys + height;
-    } else
+    }
+    else
     {
         xadd = 1;
         yadd = 1;
         ystart = 0;
     }
 
-    r = -vy*(yw*xs-xw*ys);
-    t = -yw*vx + xw*vy;
+    r = -vy * (yw * xs - xw * ys);
+    t = -yw * vx + xw * vy;
 
-    /* The formular as shown above is
-    *
-    * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
-    *
-    * We see that only yw*(vy*x-vx*y) changes during the loop.
-    *
-    * We write
-    *
-    *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
-    *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t
-    *
-    *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y) = yw*vy*xadd;
-    *
-    */
+    /* The formula as shown above is
+     *
+     *   y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+     *
+     * We see that only yw*(vy*x-vx*y) changes during the loop.
+     *
+     * We write
+     *
+     *   Current Pixel: y1(x,y) = (r + yw*(vy*x-vx*y))/t = r/t + yw*(vy*x-vx*y)/t
+     *   Next Pixel:    y1(x+xadd,y) = (r + vw*(vy*(x+xadd)-vx*y))/t
+     *
+     *   t*(y1(x+xadd,y) - y1(x,y)) = yw*(vy*(x+xadd)-vx*y) - yw*(vy*x-vx*y)
+     *   = yw*vy*xadd;
+     *
+     */
 
-    incr_y1 = yw*vy*xadd;
+    incr_y1 = yw * vy * xadd;
     UBYTE *bufptr = buf;
-    for (l = 0, y = ystart + ((yp - yt)* yadd); l < h; l++, y+=yadd)
+    for (l = 0, y = ystart + ((yp - yt) * yadd); l < h; l++, y += yadd)
     {
 
-	/* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
-        * a good idea to add here also a value of (t-1)/2 to ensure the correct rounding
-        * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
- * vx nothing is left, currently 9 bits are used for vx or vy */
-        int y1_mul_t_accu = r - yw*vx*y;
-
+        /* Calculate initial y1 accu, can be brought out of the loop as
+         * well (x=0). It's probably a good idea to add here also a value of
+         * (t-1)/2 to ensure the correct rounding.
+         * This (and for r) is also a place were actually a overflow can
+         * happen |yw|=16 |y|=16. So for vx nothing is left, currently 9 bits
+         * are used for vx or vy */
+        int y1_mul_t_accu = r - yw * vx * y;
 
         y1_mul_t_accu += (incr_y1 * (xp - xt));
 
-        for (c = 0, x = ((xp - xt) * xadd); c < w; c++, x+=xadd)
+        for (c = 0, x = ((xp - xt) * xadd); c < w; c++, x += xadd)
         {
-            int red,green,blue;
+            int red, green, blue;
 
-	    /* Calculate the intersection of two lines, this is not the fastet way to do but
-            * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
-            * and making it incremental)...update: it's now incremental and no FFP is used
-            * but it probably can be optimized more by removing some more of the divisions and
-     * further specialize the stuff here (use of three accus). */
-            /*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
+            /* Calculate the intersection of two lines, this is not the
+             * fastest way to do but it is intuitive. Note: very slow! Will
+             * be optimzed later (remove FFP usage and making it incremental)
+             * ...update: it's now incremental and no FFP is used but it
+             * probably can be optimized more by removing some more of the
+             * divisions and further specialize the stuff here (use of three
+             * accus). */
+            /*      y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy)); */
             y1 = y1_mul_t_accu / t;
-					
-            red = startRGB.red + (int)(diffR*y1/height);
-            green = startRGB.green + (int)(diffG*y1/height);
-            blue = startRGB.blue + (int)(diffB*y1/height);
+
+            red = startRGB.red + (int)(diffR * y1 / height);
+            green = startRGB.green + (int)(diffG * y1 / height);
+            blue = startRGB.blue + (int)(diffB * y1 / height);
             /* By using full 32 bits this can be made faster as well */
             *bufptr++ = red;
             *bufptr++ = green;
@@ -283,10 +303,11 @@ void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt, int xb,
 
             y1_mul_t_accu += incr_y1;
         }
-	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
- * to WritePixelArray() can be made also faster */
+        /* By bringing building the gradient array in the same format as the
+         * RastPort BitMap a call to WritePixelArray() can be made also
+         * faster */
     }
-    WritePixelArray(buf,0,0,w*3, rp,0,0,w,h,RECTFMT_RGB);
+    WritePixelArray(buf, 0, 0, w * 3, rp, 0, 0, w, h, RECTFMT_RGB);
     FreeVec(buf);
 }
 
@@ -295,11 +316,13 @@ void FillPixelArrayGradientRelative(struct RastPort *rp, int xt, int yt, int xb,
  Fill the given rectangle with a angle oriented gradient. The
  unit angle uses are degrees
 ******************************************************************/
-STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, int yb, ULONG *start_rgb, ULONG *end_rgb, int angle)
+STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt,
+    int xb, int yb, ULONG *start_rgb, ULONG *end_rgb, int angle)
 {
     /* The basic idea of this algorithm is to calc the intersection between the
-     * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line starting
-     * at (x,y) (every pixel inside the rectangle) and angle angle with direction vector (vx,vy).
+     * diagonal of the rectangle (xs,ys) with dimension (xw,yw) a with the line
+     * starting at (x,y) (every pixel inside the rectangle) and angle angle
+     * with direction vector (vx,vy).
      * 
      * Having the intersection point we then know the color of the pixel.
      * 
@@ -307,29 +330,30 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
      *       Remove the use of floating point variables
      */
 
-    double rad = angle*M_PI/180;
+    double rad = angle * M_PI / 180;
     double cosarc = cos(rad);
     double sinarc = sin(rad);
 
-    struct myrgb startRGB,endRGB;
+    struct myrgb startRGB, endRGB;
     int diffR, diffG, diffB;
 
-    int r,t; /* some helper variables to short the code */
-    int l,y,c,x;
-    int y1; /* The intersection point */
-    int incr_y1; /* increment of y1 */
-    int xs,ys,xw,yw;
-    int xadd,ystart,yadd;
+    int r, t;                   /* some helper variables to shorten the code */
+    int l, y, c, x;
+    int y1;                     /* The intersection point */
+    int incr_y1;                /* increment of y1 */
+    int xs, ys, xw, yw;
+    int xadd, ystart, yadd;
 //    double vx = -cosarc;
 //    double vy = sinarc;
-    int vx = (int)(-cosarc*0xff);
-    int vy = (int)(sinarc*0xff);
+    int vx = (int)(-cosarc * 0xff);
+    int vy = (int)(sinarc * 0xff);
 
     int width = xb - xt + 1;
     int height = yb - yt + 1;
 
-    UBYTE *buf = (UBYTE*)AllocVec(width*3,0);
-    if (!buf) return 0;
+    UBYTE *buf = (UBYTE *) AllocVec(width * 3, 0);
+    if (!buf)
+        return 0;
 
     startRGB.red = start_rgb[0];
     startRGB.green = start_rgb[1];
@@ -344,59 +368,65 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
     diffB = endRGB.blue - startRGB.blue;
 
     /* Normalize the angle */
-    if (angle < 0) angle = 360 - ((-angle)%360);
-    if (angle >= 0) angle = angle % 360;
+    if (angle < 0)
+        angle = 360 - ((-angle) % 360);
+    if (angle >= 0)
+        angle = angle % 360;
 
     if (angle <= 90 || (angle > 180 && angle <= 270))
     {
-	/* The to be intersected diagonal goes from the top left edge to the bottom right edge */
-	xs = 0;
-	ys = 0;
-	xw = width;
-	yw = height;
-    } else
-    {
-	/* The to be intersected diagonal goes from the bottom left edge to the top right edge */
-	xs = 0;
-	ys = height;
-	xw = width;
-	yw = -height;
+        /* The to be intersected diagonal goes from the top left edge to the
+           bottom right edge */
+        xs = 0;
+        ys = 0;
+        xw = width;
+        yw = height;
     }
-		
+    else
+    {
+        /* The to be intersected diagonal goes from the bottom left edge to
+           the top right edge */
+        xs = 0;
+        ys = height;
+        xw = width;
+        yw = -height;
+    }
+
     if (angle > 90 && angle <= 270)
     {
-	/* for these angle we have y1 = height - y1. Instead of
-	 * 
-	 *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
-	 * 
-	 * we can write
-	 * 
+        /* for these angle we have y1 = height - y1. Instead of
+         * 
+         *  y1 = height - (-vy*(yw*  xs -xw*  ys)         + yw*(vy*  x -vx*  y))        /(-yw*vx + xw*vy);
+         * 
+         * we can write
+         * 
          *  y1 =          (-vy*(yw*(-xs)-xw*(-ys+height)) + yw*(vy*(-x)-vx*(-y+height)))/(-yw*vx + xw*vy);
          * 
          * so height - y1 can be expressed with the normal formular adapting some parameters.
-	 * 
-	 * Note that if one would exchanging startRGB/endRGB the values would only work
-	 * for linear color gradients
-	 */
-	xadd = -1;
-	yadd = -1;
-	ystart = height;
+         * 
+         * Note that if one would exchanging startRGB/endRGB the values would only work
+         * for linear color gradients
+         */
+        xadd = -1;
+        yadd = -1;
+        ystart = height;
 
-	xs = -xs;
-	ys = -ys + height;
-    } else
+        xs = -xs;
+        ys = -ys + height;
+    }
+    else
     {
-	xadd = 1;
-	yadd = 1;
-	ystart = 0;
+        xadd = 1;
+        yadd = 1;
+        ystart = 0;
     }
 
-    r = -vy*(yw*xs-xw*ys); 
-    t = -yw*vx + xw*vy;
+    r = -vy * (yw * xs - xw * ys);
+    t = -yw * vx + xw * vy;
 
     /* The formular as shown above is
      * 
-     * 	 y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
+     *   y1 = ((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));
      * 
      * We see that only yw*(vy*x-vx*y) changes during the loop.
      * 
@@ -409,45 +439,45 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
      * 
      */
 
-    incr_y1 = yw*vy*xadd;
+    incr_y1 = yw * vy * xadd;
 
-    for (l = 0, y = ystart; l < height; l++, y+=yadd)
+    for (l = 0, y = ystart; l < height; l++, y += yadd)
     {
-	UBYTE *bufptr = buf;
+        UBYTE *bufptr = buf;
 
-	/* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
+        /* Calculate initial y1 accu, can be brought out of the loop as well (x=0). It's probably a
          * a good idea to add here also a value of (t-1)/2 to ensure the correct rounding
-	 * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
+         * This (and for r) is also a place were actually a overflow can happen |yw|=16 |y|=16. So for
          * vx nothing is left, currently 9 bits are used for vx or vy */
-	int y1_mul_t_accu = r - yw*vx*y;
+        int y1_mul_t_accu = r - yw * vx * y;
 
-	for (c = 0, x = 0; c < width; c++, x+=xadd)
-	{
-	    int red,green,blue;
+        for (c = 0, x = 0; c < width; c++, x += xadd)
+        {
+            int red, green, blue;
 
-	    /* Calculate the intersection of two lines, this is not the fastet way to do but
-	     * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
+            /* Calculate the intersection of two lines, this is not the fastet way to do but
+             * it is intuitive. Note: very slow! Will be optimzed later (remove FFP usage
              * and making it incremental)...update: it's now incremental and no FFP is used
              * but it probably can be optimized more by removing some more of the divisions and
              * further specialize the stuff here (use of three accus). */
 /*	    y1 = (int)((-vy*(yw*xs-xw*ys) + yw*(vy*x-vx*y)) /(-yw*vx + xw*vy));*/
-	    y1 = y1_mul_t_accu / t;
-					
-	    red = startRGB.red + (int)(diffR*y1/height);
-	    green = startRGB.green + (int)(diffG*y1/height);
-	    blue = startRGB.blue + (int)(diffB*y1/height);
+            y1 = y1_mul_t_accu / t;
 
-	    /* By using full 32 bits this can be made faster as well */
-	    *bufptr++ = red;
-	    *bufptr++ = green;
-	    *bufptr++ = blue;
+            red = startRGB.red + (int)(diffR * y1 / height);
+            green = startRGB.green + (int)(diffG * y1 / height);
+            blue = startRGB.blue + (int)(diffB * y1 / height);
 
-	    y1_mul_t_accu += incr_y1;
-	}
-	/* By bringing building the gradient array in the same format as the RastPort BitMap a call
+            /* By using full 32 bits this can be made faster as well */
+            *bufptr++ = red;
+            *bufptr++ = green;
+            *bufptr++ = blue;
+
+            y1_mul_t_accu += incr_y1;
+        }
+        /* By bringing building the gradient array in the same format as the RastPort BitMap a call
          * to WritePixelArray() can be made also faster */
-	WritePixelArray(buf,0,0,width*3 /* srcMod */,
-			rp,xt,yt+l,width,1,RECTFMT_RGB);
+        WritePixelArray(buf, 0, 0, width * 3 /* srcMod */ ,
+            rp, xt, yt + l, width, 1, RECTFMT_RGB);
     }
     FreeVec(buf);
     return 1;
@@ -455,34 +485,34 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
 
 /***************************************************************************************************/
 
-VOID zune_gradient_drawfast
-(
-    struct MUI_ImageSpec_intern *spec,
-    struct RastPort *rp,
-    struct MUI_RenderInfo *mri,
-    WORD mode, WORD abs_l, WORD abs_t, WORD abs_r, WORD abs_b,
-    WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD xoff, WORD yoff
-)
+VOID zune_gradient_drawfast(struct MUI_ImageSpec_intern *spec,
+    struct RastPort *rp, struct MUI_RenderInfo *mri, WORD mode, WORD abs_l,
+    WORD abs_t, WORD abs_r, WORD abs_b, WORD x1, WORD y1, WORD x2, WORD y2,
+    WORD xoff, WORD yoff)
 {
     ULONG *start_rgb = spec->u.gradient.start_rgb;
-    ULONG *end_rgb   = spec->u.gradient.end_rgb;
+    ULONG *end_rgb = spec->u.gradient.end_rgb;
 
-    if (!(CyberGfxBase && (mri->mri_Flags & MUIMRI_TRUECOLOR) && spec->u.gradient.obj))
+    if (!(CyberGfxBase && (mri->mri_Flags & MUIMRI_TRUECOLOR)
+            && spec->u.gradient.obj))
     {
-    	SetAPen(rp, spec->u.gradient.start_pen);
-	RectFill(rp, x1, y1, x2, y2);
-    	return;
+        SetAPen(rp, spec->u.gradient.start_pen);
+        RectFill(rp, x1, y1, x2, y2);
+        return;
     }
-    if (mode == 1) return FillPixelArrayGradientRelative(rp, abs_l, abs_t, abs_r, abs_b, x1, y1, x2-x1+1, y2-y1+1, start_rgb, end_rgb, spec->u.gradient.angle, xoff, yoff);
+    if (mode == 1)
+        return FillPixelArrayGradientRelative(rp, abs_l, abs_t, abs_r,
+            abs_b, x1, y1, x2 - x1 + 1, y2 - y1 + 1, start_rgb, end_rgb,
+            spec->u.gradient.angle, xoff, yoff);
 
-    switch(spec->u.gradient.angle)
+    switch (spec->u.gradient.angle)
     {
-        case 0:
+    case 0:
         {
-            LONG oy1 = _top(spec->u.gradient.obj), oy2 = _bottom(spec->u.gradient.obj);
+            LONG oy1 = _top(spec->u.gradient.obj), oy2 =
+                _bottom(spec->u.gradient.obj);
             LONG delta_oy = (oy2 - oy1 > 0) ? oy2 - oy1 : 1;
-            LONG hh = (delta_oy + 1)*2;
+            LONG hh = (delta_oy + 1) * 2;
             LONG mid_y;
 
             yoff %= hh;
@@ -490,7 +520,8 @@ VOID zune_gradient_drawfast
             if (yoff < 0)
                 yoff += hh;
 
-            oy1 -= yoff; oy2 -= yoff;
+            oy1 -= yoff;
+            oy2 -= yoff;
 
             if (y2 > oy2)
             {
@@ -499,12 +530,12 @@ VOID zune_gradient_drawfast
                 if (yoff > delta_oy)
                 {
                     ULONG *tmp = start_rgb;
-                    start_rgb  = end_rgb;
-                    end_rgb    = tmp;
+                    start_rgb = end_rgb;
+                    end_rgb = tmp;
 
                     mid_y += delta_oy;
-                    oy1   += delta_oy;
-                    oy2   += delta_oy;
+                    oy1 += delta_oy;
+                    oy2 += delta_oy;
                 }
             }
             else
@@ -513,31 +544,24 @@ VOID zune_gradient_drawfast
             }
 
             TrueDitherV
-            (
-                rp,
-                x1, y1, x2, mid_y,
-                oy1, oy2,
-                start_rgb, end_rgb
-            );
+                (rp, x1, y1, x2, mid_y, oy1, oy2, start_rgb, end_rgb);
 
             if (mid_y < y2)
             {
                 TrueDitherV
-                (
-                    rp,
-                    x1, mid_y+1, x2, y2,
-                    oy1+delta_oy, oy2+delta_oy,
-                    end_rgb, start_rgb
-                );
+                    (rp,
+                    x1, mid_y + 1, x2, y2,
+                    oy1 + delta_oy, oy2 + delta_oy, end_rgb, start_rgb);
             }
 
             break;
         }
-        case 90:
+    case 90:
         {
-            LONG ox1 = _left(spec->u.gradient.obj), ox2 = _right(spec->u.gradient.obj);
+            LONG ox1 = _left(spec->u.gradient.obj), ox2 =
+                _right(spec->u.gradient.obj);
             LONG delta_ox = (ox2 - ox1 > 0) ? ox2 - ox1 : 1;
-            LONG ww = (delta_ox + 1)*2;
+            LONG ww = (delta_ox + 1) * 2;
             LONG mid_x;
 
 
@@ -545,7 +569,8 @@ VOID zune_gradient_drawfast
             if (xoff < 0)
                 xoff += ww;
 
-            ox1 -= xoff; ox2 -= xoff;
+            ox1 -= xoff;
+            ox2 -= xoff;
 
             if (x2 > ox2)
             {
@@ -554,12 +579,12 @@ VOID zune_gradient_drawfast
                 if (xoff > delta_ox)
                 {
                     ULONG *tmp = start_rgb;
-                    start_rgb  = end_rgb;
-                    end_rgb    = tmp;
+                    start_rgb = end_rgb;
+                    end_rgb = tmp;
 
                     mid_x += delta_ox;
-                    ox1   += delta_ox;
-                    ox2   += delta_ox;
+                    ox1 += delta_ox;
+                    ox2 += delta_ox;
                 }
             }
             else
@@ -568,48 +593,30 @@ VOID zune_gradient_drawfast
             }
 
             TrueDitherH
-            (
-                rp,
-                x1, y1, mid_x, y2,
-                ox1, ox2,
-                start_rgb, end_rgb
-            );
+                (rp, x1, y1, mid_x, y2, ox1, ox2, start_rgb, end_rgb);
 
             if (mid_x < x2)
             {
                 TrueDitherH
-                (
-                    rp,
-                    mid_x+1, y1, x2, y2,
-                    ox1+delta_ox, ox2+delta_ox,
-                    end_rgb, start_rgb
-                );
+                    (rp,
+                    mid_x + 1, y1, x2, y2,
+                    ox1 + delta_ox, ox2 + delta_ox, end_rgb, start_rgb);
             }
 
             break;
         }
-	default:
-	    FillPixelArrayGradient(rp, x1, y1, x2, y2, start_rgb, end_rgb, spec->u.gradient.angle);
-	    break;
-    } /* switch(angle) */
+    default:
+        FillPixelArrayGradient(rp, x1, y1, x2, y2, start_rgb, end_rgb,
+            spec->u.gradient.angle);
+        break;
+    }                           /* switch(angle) */
 }
-VOID zune_gradient_draw
-(
-    struct MUI_ImageSpec_intern *spec,
-    struct MUI_RenderInfo *mri,
-    WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD xoff, WORD yoff
-)
+VOID zune_gradient_draw(struct MUI_ImageSpec_intern *spec,
+    struct MUI_RenderInfo *mri, WORD x1, WORD y1, WORD x2, WORD y2,
+    WORD xoff, WORD yoff)
 {
-    zune_gradient_drawfast
-    (
-        spec,
-        mri->mri_RastPort,
-        mri, 0,
-        x1, y1, x2, y2,
-        x1, y1, x2, y2,
-        xoff, yoff
-    );
+    zune_gradient_drawfast(spec, mri->mri_RastPort,
+        mri, 0, x1, y1, x2, y2, x1, y1, x2, y2, xoff, yoff);
 }
 /*************************************************************************
  Converts a gradient string to a internal image spec
@@ -620,162 +627,176 @@ VOID zune_gradient_draw
  numbers.
 **************************************************************************/
 BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
-                                     struct MUI_ImageSpec_intern *spec)
+    struct MUI_ImageSpec_intern *spec)
 {
     LONG converted;
     ULONG angle;
     ULONG start_r, start_g, start_b;
     ULONG end_r, end_g, end_b;
 
-    if (!str || !spec) return FALSE;
+    if (!str || !spec)
+        return FALSE;
 
     /* Find out about the gradient angle */
     switch (str[0])
     {
-	case    'H':
-	case    'h':
-	        angle = 90;
-	        converted = 1;
-		break;
+    case 'H':
+    case 'h':
+        angle = 90;
+        converted = 1;
+        break;
 
-	case 'V':
-	case 'v':
-		angle = 0;
-		converted = 1;
-		break;
+    case 'V':
+    case 'v':
+        angle = 0;
+        converted = 1;
+        break;
 
-	default:
-		converted = StrToLong((STRPTR)str,(LONG*)&angle);
-		if (converted == -1) return FALSE;
-		break;
+    default:
+        converted = StrToLong((STRPTR) str, (LONG *) & angle);
+        if (converted == -1)
+            return FALSE;
+        break;
     }
 
     str += converted;
 
     /* convert the color information */
-    if (*str != ',') return FALSE;
+    if (*str != ',')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&start_r);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &start_r);
+    if (converted == -1)
+        return FALSE;
     str += converted;
 
-    if (*str != ',') return FALSE;
+    if (*str != ',')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&start_g);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &start_g);
+    if (converted == -1)
+        return FALSE;
     str += converted;
 
-    if (*str != ',') return FALSE;
+    if (*str != ',')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&start_b);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &start_b);
+    if (converted == -1)
+        return FALSE;
     str += converted;
 
-    if (*str != '-') return FALSE;
+    if (*str != '-')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&end_r);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &end_r);
+    if (converted == -1)
+        return FALSE;
     str += converted;
 
-    if (*str != ',') return FALSE;
+    if (*str != ',')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&end_g);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &end_g);
+    if (converted == -1)
+        return FALSE;
     str += converted;
 
-    if (*str != ',') return FALSE;
+    if (*str != ',')
+        return FALSE;
     str++;
-    converted = HexToLong((STRPTR)str,&end_b);
-    if (converted == -1) return FALSE;
+    converted = HexToLong((STRPTR) str, &end_b);
+    if (converted == -1)
+        return FALSE;
 
     /* Fill in the spec */
     spec->u.gradient.angle = angle;
 
-    spec->u.gradient.start_rgb[0] = start_r>>24;
-    spec->u.gradient.start_rgb[1] = start_g>>24;
-    spec->u.gradient.start_rgb[2] = start_b>>24;
+    spec->u.gradient.start_rgb[0] = start_r >> 24;
+    spec->u.gradient.start_rgb[1] = start_g >> 24;
+    spec->u.gradient.start_rgb[2] = start_b >> 24;
 
-    spec->u.gradient.end_rgb[0] = end_r>>24;
-    spec->u.gradient.end_rgb[1] = end_g>>24;
-    spec->u.gradient.end_rgb[2] = end_b>>24;
+    spec->u.gradient.end_rgb[0] = end_r >> 24;
+    spec->u.gradient.end_rgb[1] = end_g >> 24;
+    spec->u.gradient.end_rgb[2] = end_b >> 24;
 
     return TRUE;
 }
 
-VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
-                                    STRPTR buf)
+VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *
+    spec, STRPTR buf)
 {
     sprintf(buf, "7:%d,%08x,%08x,%08x-%08x,%08x,%08x",
-                 (int)spec->u.gradient.angle,
-                 (unsigned int)spec->u.gradient.start_rgb[0]*0x01010101,
-                 (unsigned int)spec->u.gradient.start_rgb[1]*0x01010101,
-                 (unsigned int)spec->u.gradient.start_rgb[2]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[0]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[1]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[2]*0x01010101);
+        (int)spec->u.gradient.angle,
+        (unsigned int)spec->u.gradient.start_rgb[0] * 0x01010101,
+        (unsigned int)spec->u.gradient.start_rgb[1] * 0x01010101,
+        (unsigned int)spec->u.gradient.start_rgb[2] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[0] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[1] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[2] * 0x01010101);
 }
 
 VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
-                                    STRPTR buf)
+    STRPTR buf)
 {
     sprintf(buf, "8:%d,%08x,%08x,%08x-%08x,%08x,%08x",
-                 (int)spec->u.gradient.angle,
-                 (unsigned int)spec->u.gradient.start_rgb[0]*0x01010101,
-                 (unsigned int)spec->u.gradient.start_rgb[1]*0x01010101,
-                 (unsigned int)spec->u.gradient.start_rgb[2]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[0]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[1]*0x01010101,
-                 (unsigned int)spec->u.gradient.end_rgb[2]*0x01010101);
+        (int)spec->u.gradient.angle,
+        (unsigned int)spec->u.gradient.start_rgb[0] * 0x01010101,
+        (unsigned int)spec->u.gradient.start_rgb[1] * 0x01010101,
+        (unsigned int)spec->u.gradient.start_rgb[2] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[0] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[1] * 0x01010101,
+        (unsigned int)spec->u.gradient.end_rgb[2] * 0x01010101);
 }
 
-BOOL zune_gradientspec_setup(struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo *mri)
+BOOL zune_gradientspec_setup(struct MUI_ImageSpec_intern *spec,
+    struct MUI_RenderInfo *mri)
 {
     spec->u.gradient.mri = mri;
-    
+
     if (!(mri->mri_Flags & MUIMRI_TRUECOLOR))
     {
-	ULONG *rgbptr  = spec->u.gradient.start_rgb;
-	ULONG *penptr  = &spec->u.gradient.start_pen;
-	BOOL  *flagptr = &spec->u.gradient.start_pen_is_allocated;
-    	LONG   pen, i;
-	
-	struct TagItem obp_tags[] =
-	{
-	    { OBP_FailIfBad, FALSE  },
-	    { TAG_DONE	    	    }
-	};
+        ULONG *rgbptr = spec->u.gradient.start_rgb;
+        ULONG *penptr = &spec->u.gradient.start_pen;
+        BOOL *flagptr = &spec->u.gradient.start_pen_is_allocated;
+        LONG pen, i;
 
-    	for(i = 0; i < 2; i++)
-	{
-	    ULONG r = rgbptr[0] * 0x01010101;
-	    ULONG g = rgbptr[1] * 0x01010101;
-	    ULONG b = rgbptr[2] * 0x01010101;
-	    
-    	    pen = ObtainBestPenA(mri->mri_Colormap, r, g, b, obp_tags);
-	    
-	    if (pen == -1)
-	    {
-	    	*flagptr = FALSE;
-		*penptr = FindColor(mri->mri_Colormap, r, g, b, -1);
-	    }
-	    else
-	    {
-	    	*flagptr = TRUE;
-		*penptr = pen;
-	    }
-	    
-	    rgbptr  = spec->u.gradient.end_rgb;
-	    penptr  = &spec->u.gradient.end_pen;
-	    flagptr = &spec->u.gradient.end_pen_is_allocated;
-	}
-	
+        struct TagItem obp_tags[] = {
+            {OBP_FailIfBad, FALSE},
+            {TAG_DONE}
+        };
+
+        for (i = 0; i < 2; i++)
+        {
+            ULONG r = rgbptr[0] * 0x01010101;
+            ULONG g = rgbptr[1] * 0x01010101;
+            ULONG b = rgbptr[2] * 0x01010101;
+
+            pen = ObtainBestPenA(mri->mri_Colormap, r, g, b, obp_tags);
+
+            if (pen == -1)
+            {
+                *flagptr = FALSE;
+                *penptr = FindColor(mri->mri_Colormap, r, g, b, -1);
+            }
+            else
+            {
+                *flagptr = TRUE;
+                *penptr = pen;
+            }
+
+            rgbptr = spec->u.gradient.end_rgb;
+            penptr = &spec->u.gradient.end_pen;
+            flagptr = &spec->u.gradient.end_pen_is_allocated;
+        }
+
     }
     else
     {
-    	spec->u.gradient.start_pen_is_allocated = FALSE;
-    	spec->u.gradient.end_pen_is_allocated = FALSE;	
+        spec->u.gradient.start_pen_is_allocated = FALSE;
+        spec->u.gradient.end_pen_is_allocated = FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -783,15 +804,17 @@ void zune_gradientspec_cleanup(struct MUI_ImageSpec_intern *spec)
 {
     if (spec->u.gradient.start_pen_is_allocated)
     {
-    	ReleasePen(spec->u.gradient.mri->mri_Colormap, spec->u.gradient.start_pen);
-	spec->u.gradient.start_pen_is_allocated = FALSE;
+        ReleasePen(spec->u.gradient.mri->mri_Colormap,
+            spec->u.gradient.start_pen);
+        spec->u.gradient.start_pen_is_allocated = FALSE;
     }
 
     if (spec->u.gradient.end_pen_is_allocated)
     {
-    	ReleasePen(spec->u.gradient.mri->mri_Colormap, spec->u.gradient.end_pen);
-	spec->u.gradient.end_pen_is_allocated = FALSE;
+        ReleasePen(spec->u.gradient.mri->mri_Colormap,
+            spec->u.gradient.end_pen);
+        spec->u.gradient.end_pen_is_allocated = FALSE;
     }
-    
+
     spec->u.gradient.mri = NULL;
 }

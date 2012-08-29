@@ -65,16 +65,25 @@
 #define ScrmodelistObject   MUIOBJMACRO_START(MUIC_Scrmodelist)
 #define KeyentryObject      MUIOBJMACRO_START(MUIC_Keyentry)
 #define VGroup              MUIOBJMACRO_START(MUIC_Group)
-#define HGroup              MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Horiz, TRUE
-#define ColGroup(columns)   MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Columns, (columns)
-#define RowGroup(rows)      MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Rows   , (rows)
-#define PageGroup           MUIOBJMACRO_START(MUIC_Group), MUIA_Group_PageMode, TRUE
+#define HGroup \
+    MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Horiz, TRUE
+#define ColGroup(columns) \
+    MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Columns, (columns)
+#define RowGroup(rows) \
+    MUIOBJMACRO_START(MUIC_Group), MUIA_Group_Rows   , (rows)
+#define PageGroup \
+    MUIOBJMACRO_START(MUIC_Group), MUIA_Group_PageMode, TRUE
 #define VGroupV             MUIOBJMACRO_START(MUIC_Virtgroup)
-#define HGroupV             MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Horiz, TRUE
-#define ColGroupV(columns)  MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Columns, (columns)
-#define RowGroupV(rows)     MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Rows   , (rows)
-#define PageGroupV          MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
-#define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, ((IPTR) (ts))
+#define HGroupV \
+    MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Horiz, TRUE
+#define ColGroupV(columns) \
+    MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Columns, (columns)
+#define RowGroupV(rows) \
+    MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_Rows   , (rows)
+#define PageGroupV \
+    MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
+#define RegisterGroup(ts) \
+    MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, ((IPTR) (ts))
 
 #define End                 OBJMACRO_END
 
@@ -98,7 +107,8 @@
 #define GaugeFrame       MUIA_Frame, MUIV_Frame_Gauge
 #define VirtualFrame     MUIA_Frame, MUIV_Frame_Virtual
 #define GroupFrame       MUIA_Frame, MUIV_Frame_Group
-#define GroupFrameT(t)   MUIA_Frame, MUIV_Frame_Group, MUIA_FrameTitle, ((IPTR) (t)), MUIA_Background, MUII_GroupBack
+#define GroupFrameT(t)   MUIA_Frame, MUIV_Frame_Group, MUIA_FrameTitle, \
+    ((IPTR) (t)), MUIA_Background, MUII_GroupBack
 
 
 /**************************************************************************
@@ -109,10 +119,13 @@
 #define VSpace(x)         MUI_MakeObject(MUIO_VSpace,x)
 #define HBar(x)           MUI_MakeObject(MUIO_HBar,x)
 #define VBar(x)           MUI_MakeObject(MUIO_VBar,x)
-#define HCenter(obj)      (HGroup, GroupSpacing(0), Child, (IPTR)HSpace(0), Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
-#define VCenter(obj)      (VGroup, GroupSpacing(0), Child, (IPTR)VSpace(0), Child, (IPTR)(obj), Child, (IPTR)VSpace(0), End)
-#define InnerSpacing(h,v) MUIA_InnerLeft,(h),MUIA_InnerRight,(h),MUIA_InnerTop,(v),MUIA_InnerBottom,(v)
-#define GroupSpacing(x)   MUIA_Group_Spacing,x
+#define HCenter(obj)      (HGroup, GroupSpacing(0), Child, (IPTR)HSpace(0), \
+    Child, (IPTR)(obj), Child, (IPTR)HSpace(0), End)
+#define VCenter(obj)      (VGroup, GroupSpacing(0), Child, (IPTR)VSpace(0), \
+    Child, (IPTR)(obj), Child, (IPTR)VSpace(0), End)
+#define InnerSpacing(h, v) MUIA_InnerLeft, (h) ,MUIA_InnerRight, (h), \
+    MUIA_InnerTop, (v), MUIA_InnerBottom, (v)
+#define GroupSpacing(x)   MUIA_Group_Spacing, x
 
 #ifdef MUI_OBSOLETE
 /**************************************************************************
@@ -141,8 +154,14 @@
  These macros will create a simple checkmark gadget. Don't use this in
  new code. Use MUI_MakeObject() instead.
 **************************************************************************/
-#define CheckMark(sel) ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected, sel, End
-#define KeyCheckMark(sel,ctrl) ImageObject, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_ShowSelState, FALSE, MUIA_Selected, sel, MUIA_ControlChar, ctrl, End
+#define CheckMark(sel) ImageObject, ImageButtonFrame, MUIA_InputMode, \
+    MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, \
+    MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, \
+    MUIA_ShowSelState, FALSE, MUIA_Selected, sel, End
+#define KeyCheckMark(sel,ctrl) ImageObject, ImageButtonFrame, \
+    MUIA_InputMode, MUIV_InputMode_Toggle, MUIA_Image_Spec, MUII_CheckMark, \
+    MUIA_Image_FreeVert, TRUE, MUIA_Background, MUII_ButtonBack, \
+    MUIA_ShowSelState, FALSE, MUIA_Selected, sel, MUIA_ControlChar, ctrl, End
 #endif
 
 
@@ -151,38 +170,52 @@
  MUI_MakeObject()
 **************************************************************************/
 #define SimpleButton(label) MUI_MakeObject(MUIO_Button,(IPTR)(label))
-#define ImageButton(label, imagePath) MUI_MakeObject(MUIO_ImageButton, (IPTR) (label), (IPTR) (imagePath))
+#define ImageButton(label, imagePath) MUI_MakeObject(MUIO_ImageButton, \
+    (IPTR) (label), (IPTR) (imagePath))
 
-#define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), (IPTR)(image), 0)
-#define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
+#define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, \
+    (IPTR)(label), (IPTR)(image), 0)
+#define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, \
+    (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
 
 #ifdef MUI_OBSOLETE
 /**************************************************************************
  A Keybutton macro. The key should be in lower case.
  Don't use this in new code. Use MUI_MakeObject() instead.
 **************************************************************************/
-#define KeyButton(name,key) TextObject, ButtonFrame, MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Background, MUII_ButtonBack, End
+#define KeyButton(name,key) TextObject, ButtonFrame, \
+    MUIA_Font, MUIV_Font_Button, MUIA_Text_Contents, (IPTR)(name), \
+    MUIA_Text_PreParse, "\33c", MUIA_Text_HiChar, (IPTR)(key), \
+    MUIA_ControlChar, key, MUIA_InputMode, MUIV_InputMode_RelVerify, \
+    MUIA_Background, MUII_ButtonBack, End
 #endif
 
 
 #ifdef MUI_OBSOLETE
 /**************************************************************************
- Obsolette Cycle macros
+ Obsolete Cycle macros
 **************************************************************************/
-#define Cycle(ent)        CycleObject, MUIA_Font, MUIV_Font_Button, MUIA_Cycle_Entries, ent, End
-#define KeyCycle(ent,key) CycleObject, MUIA_Font, MUIV_Font_Button, MUIA_Cycle_Entries, ent, MUIA_ControlChar, key, End
+#define Cycle(ent)        CycleObject, MUIA_Font, MUIV_Font_Button, \
+    MUIA_Cycle_Entries, ent, End
+#define KeyCycle(ent,key) CycleObject, MUIA_Font, MUIV_Font_Button, \
+    MUIA_Cycle_Entries, ent, MUIA_ControlChar, key, End
 
 /**************************************************************************
- Obsolette Radios macros
+ Obsolete Radios macros
 **************************************************************************/
-#define Radio(name,array) RadioObject, GroupFrameT(name), MUIA_Radio_Entries, (IPTR)(array), End
-#define KeyRadio(name,array,key) RadioObject, GroupFrameT(name), MUIA_Radio_Entries, (IPTR)(array), MUIA_ControlChar, (IPTR)(key), End
+#define Radio(name,array) RadioObject, GroupFrameT(name), \
+    MUIA_Radio_Entries, (IPTR)(array), End
+#define KeyRadio(name,array,key) RadioObject, GroupFrameT(name), \
+    MUIA_Radio_Entries, (IPTR)(array), MUIA_ControlChar, (IPTR)(key), End
 
 /**************************************************************************
- Obsolette Slider macros
+ Obsolete Slider macros
 **************************************************************************/
-#define Slider(min,max,level) SliderObject, MUIA_Numeric_Min, min, MUIA_Numeric_Max, max, MUIA_Numeric_Value, level, End
-#define KeySlider(min,max,level,key) SliderObject, MUIA_Numeric_Min, min, MUIA_Numeric_Max, max, MUIA_Numeric_Value, level, MUIA_ControlChar, key, End
+#define Slider(min,max,level) SliderObject, MUIA_Numeric_Min, min, \
+    MUIA_Numeric_Max, max, MUIA_Numeric_Value, level, End
+#define KeySlider(min,max,level,key) SliderObject, MUIA_Numeric_Min, min, \
+    MUIA_Numeric_Max, max, MUIA_Numeric_Value, level, MUIA_ControlChar, key, \
+    End
 #endif
 
 
@@ -208,54 +241,90 @@
 
 /* Right aligned */
 #define Label(label)   MUI_MakeObject(MUIO_Label, (IPTR)(label), 0)
-#define Label1(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame)
-#define Label2(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_DoubleFrame)
+#define Label1(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame)
+#define Label2(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_DoubleFrame)
 
 /* Left aligned */
-#define LLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned)
-#define LLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
-#define LLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
+#define LLabel(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned)
+#define LLabel1(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
+#define LLabel2(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
 
 /* Centered */
-#define CLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered)
-#define CLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_SingleFrame)
-#define CLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_DoubleFrame)
+#define CLabel(label) \
+    MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered)
+#define CLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_Centered | MUIO_Label_SingleFrame)
+#define CLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_Centered | MUIO_Label_DoubleFrame)
 
 /* Freevert - Right aligned */
-#define FreeLabel(label)   MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert)
-#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_SingleFrame)
-#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_DoubleFrame)
+#define FreeLabel(label)   MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert)
+#define FreeLabel1(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_SingleFrame)
+#define FreeLabel2(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_DoubleFrame)
 
 /* Freevert - Left aligned */
-#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned)
-#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
-#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
+#define FreeLLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned)
+#define FreeLLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame)
+#define FreeLLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame)
 
 /* Freevert - Centered */
-#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered)
-#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame)
-#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame)
+#define FreeCLabel(label)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered)
+#define FreeCLabel1(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame)
+#define FreeCLabel2(label) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame)
 
 /* The same as above + keys */
 #define KeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (IPTR)(label), key)
-#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_SingleFrame | (key))
-#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_DoubleFrame | (key))
-#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | (key))
-#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_SingleFrame|(key))
-#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame|(key))
-#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | (key))
-#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_SingleFrame|(key))
-#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_Centered | MUIO_Label_DoubleFrame|(key))
+#define KeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_SingleFrame | (key))
+#define KeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_DoubleFrame | (key))
+#define KeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_LeftAligned | (key))
+#define KeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_LeftAligned | MUIO_Label_SingleFrame|(key))
+#define KeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame|(key))
+#define KeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_Centered | (key))
+#define KeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_Centered | MUIO_Label_SingleFrame|(key))
+#define KeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_Centered | MUIO_Label_DoubleFrame|(key))
 
-#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | (key))
-#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_SingleFrame | (key))
-#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_DoubleFrame | (key))
-#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | (key))
-#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame | (key))
-#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame | (key))
-#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | (key))
-#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame | (key))
-#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyLabel(label,key)   MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | (key))
+#define FreeKeyLabel1(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_SingleFrame | (key))
+#define FreeKeyLabel2(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyLLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned | (key))
+#define FreeKeyLLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_SingleFrame | (key))
+#define FreeKeyLLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_LeftAligned | MUIO_Label_DoubleFrame | (key))
+#define FreeKeyCLabel(label,key)  MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered | (key))
+#define FreeKeyCLabel1(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_SingleFrame | (key))
+#define FreeKeyCLabel2(label,key) MUI_MakeObject(MUIO_Label, (IPTR)(label), \
+    MUIO_Label_FreeVert | MUIO_Label_Centered | MUIO_Label_DoubleFrame | (key))
 
 
 /* Some macros */
@@ -286,25 +355,28 @@
 })
 #endif /* __GNUC__ */
 
-#define set(obj,attr,value) SetAttrs(obj,attr,(IPTR)(value),TAG_DONE)
-#define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,(IPTR)(value),TAG_DONE)
+#define set(obj, attr, value) SetAttrs(obj, attr, (IPTR)(value), TAG_DONE)
+#define nnset(obj, attr, value) SetAttrs(obj, MUIA_NoNotify, TRUE, attr, \
+    (IPTR)(value), TAG_DONE)
 
 /* Zune */
-#define nfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,attr,(IPTR)(value),TAG_DONE)
-#define nnfset(obj,attr,value) SetAttrs(obj,MUIA_Group_Forward,FALSE,MUIA_NoNotify,TRUE,attr,(IPTR)(value),TAG_DONE)
+#define nfset(obj, attr, value) SetAttrs(obj, MUIA_Group_Forward, FALSE, \
+    attr, (IPTR)(value), TAG_DONE)
+#define nnfset(obj, attr, value) SetAttrs(obj, MUIA_Group_Forward, FALSE, \
+    MUIA_NoNotify, TRUE, attr, (IPTR)(value), TAG_DONE)
 
 /* Some aliases... */
-#define GET(obj,attr,store) get(obj,attr,store)
-#define SET(obj,attr,value) set(obj,attr,value)
-#define NNSET(obj,attr,value) nnset(obj,attr,value)
-#define NFSET(obj,attr,value) nfset(obj,attr,value)
-#define NNFSET(obj,attr,value) nnfset(obj,attr,value)
+#define GET(obj, attr, store) get(obj, attr, store)
+#define SET(obj, attr, value) set(obj, attr, value)
+#define NNSET(obj, attr, value) nnset(obj, attr, value)
+#define NFSET(obj, attr, value) nfset(obj, attr, value)
+#define NNFSET(obj, attr, value) nnfset(obj, attr, value)
 
-#define setmutex(obj,n)     set(obj,MUIA_Radio_Active,n)
-#define setcycle(obj,n)     set(obj,MUIA_Cycle_Active,n)
-#define setstring(obj,s)    set(obj,MUIA_String_Contents,(IPTR)(s))
-#define setcheckmark(obj,b) set(obj,MUIA_Selected,b)
-#define setslider(obj,l)    set(obj,MUIA_Numeric_Value,l)
+#define setmutex(obj, n)     set(obj, MUIA_Radio_Active, n)
+#define setcycle(obj, n)     set(obj, MUIA_Cycle_Active, n)
+#define setstring(obj, s)    set(obj, MUIA_String_Contents, (IPTR)(s))
+#define setcheckmark(obj, b) set(obj, MUIA_Selected, b)
+#define setslider(obj, l)    set(obj, MUIA_Numeric_Value, l)
 
 #endif /* __cplusplus */
 
@@ -327,9 +399,12 @@ struct __dummyAreaData__
 #define muiNotifyData(obj) (&(((struct __dummyAreaData__ *)(obj))->mnd))
 #define muiAreaData(obj)   (&(((struct __dummyAreaData__ *)(obj))->mad))
 
-#define muiGlobalInfo(obj) (((struct __dummyAreaData__ *)(obj))->mnd.mnd_GlobalInfo)
-#define muiUserData(obj)   (((struct __dummyAreaData__ *)(obj))->mnd.mnd_UserData)
-#define muiRenderInfo(obj) (((struct __dummyAreaData__ *)(obj))->mad.mad_RenderInfo)
+#define muiGlobalInfo(obj) \
+    (((struct __dummyAreaData__ *)(obj))->mnd.mnd_GlobalInfo)
+#define muiUserData(obj)   \
+    (((struct __dummyAreaData__ *)(obj))->mnd.mnd_UserData)
+#define muiRenderInfo(obj) \
+    (((struct __dummyAreaData__ *)(obj))->mad.mad_RenderInfo)
 
 
 /* the following macros are only valid inbetween MUIM_Setup and MUIM_Cleanup */

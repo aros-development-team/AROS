@@ -13,14 +13,14 @@
 /*void dt_init(void);*/
 /*void dt_cleanup(void);*/
 
-struct	  NewImage
+struct NewImage
 {
-    UWORD   w;
-    UWORD   h;
-    ULONG  *data;
+    UWORD w;
+    UWORD h;
+    ULONG *data;
     Object *o;
-    struct  BitMap *bitmap;
-    APTR    mask;
+    struct BitMap *bitmap;
+    APTR mask;
 };
 
 #define MODE_DEFAULT    0
@@ -31,15 +31,15 @@ struct dt_frame_image
     Object *o;
     struct NewImage *img_up;
     struct NewImage *img_down;
-    short  tile_left;
-    short  tile_top;
-    short  tile_right;
-    short  tile_bottom;
-    short  inner_left;
-    short  inner_top;
-    short  inner_right;
-    short  inner_bottom;
-    BOOL   noalpha;
+    short tile_left;
+    short tile_top;
+    short tile_right;
+    short tile_bottom;
+    short inner_left;
+    short inner_top;
+    short inner_right;
+    short inner_bottom;
+    BOOL noalpha;
 };
 
 struct dt_node
@@ -62,22 +62,22 @@ struct dt_node
     struct NewImage *img_left;
     struct NewImage *img_right;
 
-    int              ContainerTop_o, ContainerTop_s;
-    int              ContainerVertTile_o, ContainerVertTile_s;
-    int              ContainerBottom_o, ContainerBottom_s;
-    int              KnobTop_o, KnobTop_s;
-    int              KnobTileTop_o, KnobTileTop_s;
-    int              KnobVertGripper_o, KnobVertGripper_s;
-    int              KnobTileBottom_o, KnobTileBottom_s;
-    int              KnobBottom_o, KnobBottom_s;
-    int              ContainerLeft_o, ContainerLeft_s;
-    int              ContainerHorTile_o, ContainerHorTile_s;
-    int              ContainerRight_o, ContainerRight_s;
-    int              KnobLeft_o, KnobLeft_s;
-    int              KnobTileLeft_o, KnobTileLeft_s;
-    int              KnobHorGripper_o, KnobHorGripper_s;
-    int              KnobTileRight_o, KnobTileRight_s;
-    int              KnobRight_o, KnobRight_s;
+    int ContainerTop_o, ContainerTop_s;
+    int ContainerVertTile_o, ContainerVertTile_s;
+    int ContainerBottom_o, ContainerBottom_s;
+    int KnobTop_o, KnobTop_s;
+    int KnobTileTop_o, KnobTileTop_s;
+    int KnobVertGripper_o, KnobVertGripper_s;
+    int KnobTileBottom_o, KnobTileBottom_s;
+    int KnobBottom_o, KnobBottom_s;
+    int ContainerLeft_o, ContainerLeft_s;
+    int ContainerHorTile_o, ContainerHorTile_s;
+    int ContainerRight_o, ContainerRight_s;
+    int KnobLeft_o, KnobLeft_s;
+    int KnobTileLeft_o, KnobTileLeft_s;
+    int KnobHorGripper_o, KnobHorGripper_s;
+    int KnobTileRight_o, KnobTileRight_s;
+    int KnobRight_o, KnobRight_s;
 
 };
 
@@ -89,13 +89,18 @@ void dt_dispose_picture(struct dt_node *node);
 
 int dt_width(struct dt_node *node);
 int dt_height(struct dt_node *node);
-void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y);
-void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp, int x, int y, int state);
+void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x,
+    int y);
+void dt_put_mim_on_rastport(struct dt_node *node, struct RastPort *rp,
+    int x, int y, int state);
 
-void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp, int x1, int y1, int x2, int y2, int xoffset, int yoffset);
-void dt_put_on_rastport_quicktiled(struct RastPort *rp, struct dt_node *node, UWORD x, UWORD y, UWORD w, UWORD h);
-struct dt_frame_image * load_custom_frame(CONST_STRPTR filename, struct Screen *scr);
-void dispose_custom_frame(struct dt_frame_image * fi);
+void dt_put_on_rastport_tiled(struct dt_node *node, struct RastPort *rp,
+    int x1, int y1, int x2, int y2, int xoffset, int yoffset);
+void dt_put_on_rastport_quicktiled(struct RastPort *rp,
+    struct dt_node *node, UWORD x, UWORD y, UWORD w, UWORD h);
+struct dt_frame_image *load_custom_frame(CONST_STRPTR filename,
+    struct Screen *scr);
+void dispose_custom_frame(struct dt_frame_image *fi);
 
 #if AROS_BIG_ENDIAN
 #define GET_A(rgb) ((rgb >> 24) & 0xff)

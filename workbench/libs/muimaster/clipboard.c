@@ -35,82 +35,72 @@ extern struct Library *MUIMasterBase;
 void clipboard_write_text(STRPTR text, LONG textlen)
 {
     struct IFFHandle *iff;
-    
-    if((iff = AllocIFF()))
+
+    if ((iff = AllocIFF()))
     {
-	if((iff->iff_Stream = (IPTR)OpenClipboard(0)))
-	{
-	    InitIFFasClip(iff);
-	    if(!OpenIFF(iff,IFFF_WRITE))
-	    {
-		if(!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN))
-		{
-		    if(!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN))
-		    {
-		        WriteChunkBytes(iff, text, textlen);
-			
-			PopChunk(iff);
-			
-		    } /* if(!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN)) */
-		    PopChunk(iff);
-		    
-		} /* if(!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN)) */
-		CloseIFF(iff);
-		
-	    } /* if(!OpenIFF(iff,IFFF_WRITE)) */
-	    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
-	    
-	} /* if((iff->iff_Stream = (IPTR)OpenClipboard(clipunit))) */
-	FreeIFF(iff);
-	
-    } /* if((iff = AllocIFF()))) */
-    
+        if ((iff->iff_Stream = (IPTR) OpenClipboard(0)))
+        {
+            InitIFFasClip(iff);
+            if (!OpenIFF(iff, IFFF_WRITE))
+            {
+                if (!PushChunk(iff, ID_FTXT, ID_FORM, IFFSIZE_UNKNOWN))
+                {
+                    if (!PushChunk(iff, ID_FTXT, ID_CHRS, IFFSIZE_UNKNOWN))
+                    {
+                        WriteChunkBytes(iff, text, textlen);
+
+                        PopChunk(iff);
+
+                    }
+                    PopChunk(iff);
+                }
+                CloseIFF(iff);
+            }
+            CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+        }
+        FreeIFF(iff);
+    }
 }
 
 STRPTR clipboard_read_text(void)
-{    
-    struct IFFHandle    *iff;
-    struct ContextNode  *cn;
-    STRPTR  	    	 retval = 0;
-    
-    if((iff = AllocIFF()))
+{
+    struct IFFHandle *iff;
+    struct ContextNode *cn;
+    STRPTR retval = 0;
+
+    if ((iff = AllocIFF()))
     {
-	if((iff->iff_Stream = (IPTR)OpenClipboard(0)))
-	{
-	    InitIFFasClip(iff);
+        if ((iff->iff_Stream = (IPTR) OpenClipboard(0)))
+        {
+            InitIFFasClip(iff);
 
-	    if(!OpenIFF(iff, IFFF_READ))
-	    {
-		if (!(StopChunk(iff, ID_FTXT, ID_CHRS)))
-		{
-		    if (!ParseIFF(iff, IFFPARSE_SCAN))
-		    {
-		        cn = CurrentChunk(iff);
+            if (!OpenIFF(iff, IFFF_READ))
+            {
+                if (!(StopChunk(iff, ID_FTXT, ID_CHRS)))
+                {
+                    if (!ParseIFF(iff, IFFPARSE_SCAN))
+                    {
+                        cn = CurrentChunk(iff);
 
-               		if ((cn->cn_Type == ID_FTXT) && (cn->cn_ID == ID_CHRS) && (cn->cn_Size > 0))
-			{
-			    if ((retval = mui_alloc(cn->cn_Size + 1)))
-			    {
-			        ReadChunkBytes(iff, retval, cn->cn_Size);
-				
-				retval[cn->cn_Size] = '\0';
-			    }
-			    
-			} /* if ((cn->cn_Type == ID_FTXT) && (cn->cn_ID == ID_CHRS) && (cn->cn_Size > 0)) */
-			
-		    } /* if (!ParseIFF(iff, IFFPARSE_SCAN)) */
-		    
-		} /* if (!(StopChunk(iff, ID_FTXT, ID_CHRS))) */
-		
-		CloseIFF(iff);
-		
-	    } /* if(!OpenIFF(iff, IFFF_READ)) */
-	    CloseClipboard((struct ClipboardHandle*)iff->iff_Stream);
-	    
-	} /* if((iff->iff_Stream = (IPTR)OpenClipboard(clipunit))) */
-	FreeIFF(iff);
-	
-    } /* if((iff = AllocIFF()))) */
+                        if ((cn->cn_Type == ID_FTXT)
+                            && (cn->cn_ID == ID_CHRS) && (cn->cn_Size > 0))
+                        {
+                            if ((retval = mui_alloc(cn->cn_Size + 1)))
+                            {
+                                ReadChunkBytes(iff, retval, cn->cn_Size);
+
+                                retval[cn->cn_Size] = '\0';
+                            }
+                        }
+                    }
+                }
+                CloseIFF(iff);
+            }
+            CloseClipboard((struct ClipboardHandle *)iff->iff_Stream);
+
+        }
+        FreeIFF(iff);
+    }
 
     return retval;
 }
@@ -119,5 +109,3 @@ void clipboard_free_text(STRPTR text)
 {
     mui_free(text);
 }
-
-
