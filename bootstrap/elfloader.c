@@ -152,8 +152,19 @@ static int relocate(struct elfheader *eh, struct sheader *sh, long shrel_idx, el
         switch (sym->shindex)
         {
         case SHN_UNDEF:
-            DREL(kprintf("[ELF Loader] Undefined symbol '%s'\n", name));
-            return 0;
+            if (Strcmp(name, "SysBase") == 0) {
+                if (!SysBase_ptr)
+                {
+                    SysBase_ptr = DefSysBase;
+                    D(kprintf("[ELF Loader] SysBase pointer set to default %p\n", (void *)SysBase_ptr));
+                }
+
+                s = SysBase_ptr;
+            } else {
+                DREL(kprintf("[ELF Loader] Undefined symbol '%s'\n", name));
+                return 0;
+            }
+            break;
 
         case SHN_COMMON:
             DREL(kprintf("[ELF Loader] COMMON symbol '%s'\n", name));
