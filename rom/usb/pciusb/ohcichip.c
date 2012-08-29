@@ -1615,7 +1615,10 @@ BOOL ohciInit(struct PCIController *hc, struct PCIUnit *hu) {
 
         WRITEREG32_LE(hc->hc_RegBase, OHCI_INTEN, hc->hc_PCIIntEnMask|OISF_MASTERENABLE);
 
-        CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBRESET);
+        /* Don't try to enter RESET state via OHCI_CONTROL - this flakes out
+         * some chips, particularly the Sam460ex
+         */
+        CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CONTROL, OCLF_PERIODICENABLE|OCLF_CTRLENABLE|OCLF_BULKENABLE|OCLF_ISOENABLE|OCLF_USBOPER);
         SYNC;
 
         // make sure the ports are on with chipset quirk workaround
