@@ -56,7 +56,7 @@ void intr_init()
     uic_init();
 }
 
-#define EXCEPTION_STACK_SIZE    4096
+#define EXCEPTION_STACK_SIZE    8192
 /* Exception Stack
  * Principle of operation:
  *
