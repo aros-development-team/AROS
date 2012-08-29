@@ -9,8 +9,8 @@
 #ifndef _ZUNE_CLIPBOARD_H__
 #define _ZUNE_CLIPBOARD_H__
 
-void   clipboard_write_text(STRPTR text, LONG textlen);
+void clipboard_write_text(STRPTR text, LONG textlen);
 STRPTR clipboard_read_text(void);
-void   clipboard_free_text(STRPTR text);
+void clipboard_free_text(STRPTR text);
 
 #endif

@@ -37,11 +37,11 @@ int name ## _Initialize(void)                                         \
     if (!name ## _CLASS)                                              \
     {                                                                 \
         __showerror                                                   \
-	( (char *)                                                    \
-	    "Could not create Zune custom class `" #name "'.", NULL   \
-	);                                                            \
+        ( (char *)                                                    \
+            "Could not create Zune custom class `" #name "'.", NULL   \
+        );                                                            \
                                                                       \
-	return 0;                                                     \
+        return 0;                                                     \
     }                                                                 \
                                                                       \
     return 1;                                                         \
@@ -50,7 +50,7 @@ int name ## _Initialize(void)                                         \
 void name ## _Deinitialize(void);                                     \
 void name ## _Deinitialize(void)                                      \
 {                                                                     \
-    MUI_DeleteCustomClass(name ## _CLASS);        \
+    MUI_DeleteCustomClass(name ## _CLASS);                            \
 }                                                                     \
                                                                       \
 ADD2INIT(name ## _Initialize,   100);                                 \

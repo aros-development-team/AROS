@@ -37,10 +37,13 @@
 #ifdef __AMIGAOS4__
 #    undef SysBase
 #    include <proto/exec.h>
-#    define D(x) do {Forbid();DebugPrintF("%s/%ld Task \"%s\" [%s()] => ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name,__PRETTY_FUNCTION__);(x);Permit();} while(0);
+#    define D(x) do {Forbid();DebugPrintF("%s/%ld Task \"%s\" [%s()] => ", \
+    __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name,__PRETTY_FUNCTION__); \
+    (x);Permit();} while(0);
 #else
 void kprintf(char *string, ...);
-#    define D(x) {kprintf("%s/%ld (%s): ", __FILE__, __LINE__, FindTask(NULL)->tc_Node.ln_Name);(x);};
+#    define D(x) {kprintf("%s/%ld (%s): ", __FILE__, __LINE__, \
+    FindTask(NULL)->tc_Node.ln_Name);(x);};
 #endif
 
 #else
