@@ -97,7 +97,7 @@ const ULONG ohci0[256/4] = {
 const ULONG ehci0[256/4] = {
 /* 0x00 */    0x046010e8, /* Device / Vendor */
 /* 0x04 */    0x00b00006, /* Enable */
-/* 0x08 */    0x0c032000, /* EHCI CLASSC */
+/* 0x08 */    0, // Disabled for now, should be: 0x0c032000, /* EHCI CLASSC */
 /* 0x0c */    0x00800000, /* Multifunction */
 /* 0x10 */    EHCI0_HCCAPBASE,    /* AMCC460's EHCI0 base address */
 /* 0x14 */    0x00000000,
