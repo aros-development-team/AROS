@@ -87,6 +87,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     ULONG                        old_sig = 0;
     APTR                         entry;
+    /* This *must* be marked volatile, to prevent the
+     * compiler from re-ordering around the flags=process->pr_Flags
+     * assignment
+     */
+    volatile LONG                flags;
 
     /* TODO: NP_CommandName */
 
@@ -150,7 +155,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     D({
         int i;
         for (i = 0;  defaults[i].ti_Tag; i++)
-            bug("%2d: %08x = %08x\n", i, defaults[i].ti_Tag, defaults[i].ti_Data);
+            bug("'%s' %2d: %08x = %08x\n", defaults[10].ti_Data, i, defaults[i].ti_Tag, defaults[i].ti_Data);
       }
     );
 
@@ -487,13 +492,24 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     /* Abuse pr_Result2 to point to the *real* entry point */
     process->pr_Result2 = (SIPTR)entry;
 
+    /* Stash away flags before we call AddTask(). If the priority
+     * of the new process is higher than ours, the new process
+     * can be scheduled, completed, and freed before we get
+     * to the PRF_SYNCHRONOUS check - and we could be comparing
+     * via a pointer to a stale structure that has been overwritten.
+     *
+     * If we *are* synchronous, then 'process' will still be a valid
+     * pointer, so we only need to stash 'pr_Flags'.
+     */
+    flags = process->pr_Flags;
+
     /* Use AddTask() instead of NewAddTask().
      * Blizzard SCSI Kit boot ROM plays SetFunction() tricks with
      * AddTask() and assumes it is called by a process early enough!
      */
     if (AddTask(&process->pr_Task, DosEntry, NULL))
     {
-        if (process->pr_Flags & PRF_SYNCHRONOUS)
+        if (flags & PRF_SYNCHRONOUS)
         {
              SIPTR oldSignal = 0;
              struct FileHandle *fh = NULL;
