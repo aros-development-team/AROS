@@ -14,20 +14,20 @@
         AROS_LH1(void, FreeTaskStorageSlot,
 
 /*  LOCATION */
-        AROS_LHA(int, slot, D0),
+        AROS_LHA(LONG, slot, D0),
         struct ExecBase *, SysBase, 181, Exec)
 
 /*  FUNCTION
         This function will free a slot in taskstorage 
 
     INPUTS
-	The slot to free.
+	slot - The slot to free.
 
     RESULT
-        None
+        None.
 
     NOTES
-        Currently no checks are performed if one is owner of the slot.
+        Currently no checks are performed if one is the owner of the slot.
         This may be added in the future so one should deallocate a slot
         from the same task that allocated the slot.
 
@@ -49,7 +49,7 @@
 
     if (tsfs == NULL)
     {
-        /* Don't do anything, we'll just loose the freed slot */
+        /* Don't do anything, we'll just lose the freed slot */
         return;
     }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -27,11 +27,11 @@
         Get a value for a task storage slot.
 
     INPUTS
-        id - id returned from AllocTaskStorageSlot()
+        id - slot ID returned from AllocTaskStorageSlot().
 
     RESULT
-        Values stored by SetTaskStorage(), or (IPTR)NULL if
-        the slot was never used.
+        Value stored by SetTaskStorage(), or (IPTR)NULL if the slot was
+        never used.
 
     NOTES
 
@@ -40,7 +40,7 @@
     BUGS
 
     SEE ALSO
-        AllocTaskStorage()/FreeTaskStorage()/SetTaskStorageSlot()
+        AllocTaskStorage(), FreeTaskStorage(), SetTaskStorageSlot()
 
     INTERNALS
 
