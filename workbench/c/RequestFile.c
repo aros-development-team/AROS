@@ -87,9 +87,7 @@ enum { ARG_DRAWER = 0, ARG_FILE, ARG_PATTERN, ARG_TITLE, ARG_POSITIVE,
        ARG_MULTISELECT, ARG_DRAWERSONLY, ARG_NOICONS, ARG_PUBSCREEN,
        ARG_INITIALVOLUMES, TOTAL_ARGS };
 
-const TEXT version[] = "$VER: RequestFile 42.2 (19.8.2012)\n";
-
-extern struct Library *AslBase;
+const TEXT version[] = "$VER: RequestFile 42.3 (30.8.2012)\n";
 
 struct TagItem FileTags[] =
 {
@@ -251,6 +249,12 @@ int main(void)
 
 static UBYTE *ParsePatternArg(IPTR **args, UWORD ArgNum)
 {
+    if (!args[ArgNum]) /* AROS crashes on strlen(NULL) */
+    {
+        FileTags[ArgNum].ti_Tag = TAG_IGNORE;
+        return NULL;
+    }
+
     UBYTE *PatternBuffer = NULL;
     LONG PatternBufferSize;
     STRPTR pattern = (STRPTR)args[ArgNum];
