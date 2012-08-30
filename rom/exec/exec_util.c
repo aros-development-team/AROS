@@ -83,12 +83,11 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
      *  RemTask(), rather by somebody else calling ChildFree().
      *  Alternatively, an orphaned task will free its own ETask.
      */
-    struct IntETask *iet = AllocMem(sizeof(struct IntETask), MEMF_PUBLIC|MEMF_CLEAR);
-    D(bug("[TSS] Create new ETask=%x for task=%x with size %d\n",
-          iet, task, sizeof(iet)
-    ));
+    struct ETask *et =
+        AllocMem(sizeof(struct IntETask), MEMF_PUBLIC | MEMF_CLEAR);
+    D(bug("[TSS] Create new ETask=%p for task=%p with size %d\n",
+        et, task, sizeof(struct IntETask)));
 
-    struct ETask *et = (struct ETask *)iet;
     task->tc_UnionETask.tc_ETask = et;
     if (!et)
         return FALSE;
@@ -102,12 +101,12 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
             IPTR *thists = thiset->et_TaskStorage;
 
             if (thists) {
-                IPTR *ts = AllocMem(thists[__TS_FIRSTSLOT] * sizeof(ts[0]), MEMF_ANY);
+                IPTR *ts = AllocMem(thists[__TS_FIRSTSLOT] * sizeof(thists[0]), MEMF_ANY);
                 if (!ts) {
-                    FreeMem(iet, sizeof(*iet));
+                    FreeMem(et, sizeof(struct IntETask));
                     return FALSE;
                 }
-                CopyMem(thists, ts, thists[__TS_FIRSTSLOT] * sizeof(ts[0]));
+                CopyMem(thists, ts, thists[__TS_FIRSTSLOT] * sizeof(thists[0]));
                 et->et_TaskStorage = ts;
             }
         }
@@ -134,12 +133,12 @@ Exec_InitETask(struct Task *task, struct ExecBase *SysBase)
     }
 #endif
 
-    /* Get an unique identifier for this task */
+    /* Get a unique identifier for this task */
     Forbid();
     while(et->et_UniqueID == 0)
     {
 	/*
-	 *	Add some fuzz on wrapping. Its likely that the early numbers
+	 *	Add some fuzz on wrapping. It's likely that the early numbers
 	 *	where taken by somebody else.
 	 */
 	if(++SysBase->ex_TaskID == 0)
