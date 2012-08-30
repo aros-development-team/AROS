@@ -525,6 +525,8 @@ IPTR ImageBackFill__MUIM_IconWindow_BackFill_ProcessBackground
                           TAG_DONE)))
     {
       D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Opened Datatype Object @ %x for image '%s'\n", this_BFI->bfi_Source->bfsir_DTPictureObject, this_BFI->bfi_Source->bfsir_SourceImage));
+      /* Scale to fit the background */
+      DoMethod(this_BFI->bfi_Source->bfsir_DTPictureObject, PDTM_SCALE, this_BFI->bfi_Screen->Width, this_BFI->bfi_Screen->Height, 0);
       if (DoMethod(this_BFI->bfi_Source->bfsir_DTPictureObject, DTM_PROCLAYOUT, NULL, 1))
       {
         D(bug("[IconWindow.ImageBackFill] MUIM_IconWindow_BackFill_ProcessBackground: Caused Datatype Object LAYOUT\n"));
