@@ -118,6 +118,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     struct Library *OOPBase = CSD(cl)->cs_OOPBase;
     IPTR height, bytesperrow;
     UBYTE depth;
+    IPTR displayable = FALSE;
     BOOL ok = FALSE;
     struct planarbm_data *data;
     struct TagItem *tag;
@@ -156,6 +157,7 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     /* Not late initialization. Get some info on the bitmap */	
     OOP_GetAttr(o, aHidd_BitMap_Height,	&height);
     OOP_GetAttr(o, aHidd_BitMap_BytesPerRow, &bytesperrow);
+    OOP_GetAttr(o, aHidd_BitMap_Displayable, &displayable);
 
     data->bitmap = AllocMem(sizeof(struct BitMap), MEMF_CLEAR);
     if (data->bitmap)
@@ -169,11 +171,15 @@ OOP_Object *PBM__Root__New(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
     	data->bitmap->BytesPerRow = bytesperrow;
 	data->bitmap->Depth       = depth;
 	data->bitmap->Flags	  = BMF_STANDARD|BMF_MINPLANES; /* CHECKME */
+	if (displayable)
+	    data->bitmap->Flags |= BMF_DISPLAYABLE;
 
-	/* Allocate memory for all the planes. Use chip memory. */
+	/* Allocate memory for all the planes.
+	 * Use chip memory only if BMF_DISPLAYABLE.
+	 */
 	for (i = 0; i < depth; i++)
 	{
-	    data->bitmap->Planes[i] = AllocMem(height * bytesperrow, MEMF_CHIP|MEMF_CLEAR);
+	    data->bitmap->Planes[i] = AllocMem(height * bytesperrow, MEMF_PUBLIC | (displayable ? MEMF_CHIP : 0) | MEMF_CLEAR);
 
 	    if (NULL == data->bitmap->Planes[i])
 	    {
