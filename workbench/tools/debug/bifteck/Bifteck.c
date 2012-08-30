@@ -1,5 +1,5 @@
 /*
-      Copyright © 2009, The AROS Development Team. All rights reserved.
+      Copyright © 2009-2012, The AROS Development Team. All rights reserved.
       $Id$
 
       Bifteck -- Retrieves memory-stored debug output.
@@ -31,15 +31,11 @@ struct LogData
       APTR pool;
 };
 
-struct ExecBase *SysBase;
-struct DosLibrary *DOSBase;
-struct LocaleBase *LocaleBase;
-
 static TEXT GetLogChar(struct LogData *data, struct LogBlock **block,
      ULONG *pos);
 
 const TEXT template[] = "TO/K";
-const TEXT version_string[] = "$VER: Bifteck 41.1 (29.5.2009)";
+const TEXT version_string[] = "$VER: Bifteck 41.2 (30.8.2012)";
 static const TEXT data_name[] = "bifteck";
 
 
