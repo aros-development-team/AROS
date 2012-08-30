@@ -220,12 +220,16 @@ static IPTR wbIconGoActive(Class *cl, Object *obj, struct gpInput *gpi)
     struct Gadget *gadget = (struct Gadget *)obj;
     BOOL dclicked;
     struct Region *clip;
+    struct RastPort *rp;
 
-    gadget->Flags ^= GFLG_SELECTED;
-    /* Clip to the window for drawing */
-    clip = wbClipWindow(wb, gpi->gpi_GInfo->gi_Window);
-    DoMethod(obj, GM_RENDER, gpi->gpi_GInfo, gpi->gpi_GInfo->gi_RastPort,GREDRAW_TOGGLE);
-    wbUnclipWindow(wb, gpi->gpi_GInfo->gi_Window, clip);
+    if ((rp = ObtainGIRPort(gpi->gpi_GInfo))) {
+        gadget->Flags ^= GFLG_SELECTED;
+        /* Clip to the window for drawing */
+        clip = wbClipWindow(wb, gpi->gpi_GInfo->gi_Window);
+        DoMethod(obj, GM_RENDER, gpi->gpi_GInfo, rp, GREDRAW_TOGGLE);
+        wbUnclipWindow(wb, gpi->gpi_GInfo->gi_Window, clip);
+        ReleaseGIRPort(rp);
+    }
     
     /* On a double-click, don't go 'active', just
      * do the action.
