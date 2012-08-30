@@ -1,6 +1,6 @@
 /*
-    Copyright Â© 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: rawdofmt.c 37154 2011-02-22 18:42:00Z jmcmullan $
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Runtime debugging support
     Lang: english

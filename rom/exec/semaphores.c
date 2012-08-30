@@ -1,6 +1,6 @@
 /*
-    Copyright ¿ 1995-2011, The AROS Development Team. All rights reserved.
-    $Id: obtainsemaphore.c 43362 2011-12-30 07:45:42Z sonic $
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    $Id$
 
     Desc: Semaphore internal handling
     Lang: english
