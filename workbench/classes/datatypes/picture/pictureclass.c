@@ -1529,8 +1529,9 @@ STATIC IPTR DT_Print(struct IClass *cl, Object *o, struct dtPrint *msg)
         if ((s = gi->gi_Screen)) {
             if ((pio->io_Modes = GetVPModeID(&s->ViewPort)) != INVALID_ID) {
                 pio->io_ColorMap = s->ViewPort.ColorMap;
-                if ((pio->io_RastPort = gi->gi_RastPort)) {
+                if ((pio->io_RastPort = ObtainGIRPort(gi))) {
                     RetVal = DoIO((struct IORequest *)pio);
+                    ReleaseGIRPort(pio->io_RastPort);
                 }
             }
         }
