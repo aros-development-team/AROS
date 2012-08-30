@@ -44,10 +44,12 @@ void writeincproto(struct config *cfg, int is_rel)
         );
     fprintf(out,
 	    "#include <exec/types.h>\n"
+	    "%s"
 	    "#include <aros/system.h>\n"
 	    "\n"
 	    "#include <clib/%s_protos.h>\n"
 	    "\n",
+	    (cfg->modtype == DEVICE) ? "#include <exec/devices.h>\n" : "",
 	    cfg->modulename
     );
     freeBanner(banner);
