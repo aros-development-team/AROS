@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -25,13 +25,13 @@
         struct ExecBase *, SysBase, 183, Exec)
 
 /*  FUNCTION
-        The will remmeber the current state of the task storage slots
+        This function restores the current state of the task storage slots.
 
     INPUTS
-        id - id returned from SaveTaskStorage() referring to the state
+        id - ID returned from SaveTaskStorage() referring to the state.
 
     RESULT
-        -
+        None.
 
     NOTES
 

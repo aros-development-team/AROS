@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2012, The AROS Development Team. All rights reserved.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -24,15 +24,15 @@
         struct ExecBase *, SysBase, 184, Exec)
 
 /*  FUNCTION
-        The will remember the current state of the task storage slots
+        Puts a new value in a task storage slot. If necessary, the number of
+        task storage slots will be increased.
 
     INPUTS
-        None.
+        id - slot ID returned from AllocTaskStorageSlot().
+        value - value to store in the slot.
 
     RESULT
-        An id will be returned whit which the current state can be restored
-        using RestoreTaskStorageSlots().
-        NULL is returned when not enough memory was available.
+        success - TRUE if the value was successfully stored.
 
     NOTES
 
@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-        AllocTaskStorageSlot()/FreeTaskStorageSlot()/GetTaskStorageSlot()
+        AllocTaskStorageSlot(), FreeTaskStorageSlot(), GetTaskStorageSlot()
 
     INTERNALS
 

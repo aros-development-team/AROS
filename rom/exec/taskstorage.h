@@ -1,5 +1,5 @@
 /*
-    Copyright Â© 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef TASKSTORAGE_H
@@ -11,7 +11,7 @@
 struct TaskStorageFreeSlot
 {
     struct MinNode _node;
-    int FreeSlot;
+    LONG FreeSlot;
 };
 
 #define __TS_FIRSTSLOT 0
