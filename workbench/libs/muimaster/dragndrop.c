@@ -545,7 +545,8 @@ STATIC VOID BltBitMapNode(struct BitMapNode *src_bmn, LONG offx, LONG offy,
         }
         else
         {
-            if (src_bmn->bmn_BitMapBuffer)
+            IPTR depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+            if (depth > 8 && src_bmn->bmn_BitMapBuffer)
             {
                 /* This should be done using BltBitMapRastPortAlpha with
                  * direct video card alpha blit, but this function is not
