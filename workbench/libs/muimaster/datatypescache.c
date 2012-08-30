@@ -796,12 +796,15 @@ void dt_put_on_rastport(struct dt_node *node, struct RastPort *rp, int x,
     struct pdtBlitPixelArray pa;
     ULONG *img;
     Object *o;
+    IPTR depth;
 
     o = node->o;
     if (NULL == o)
         return;
 
-    if (node->mask == mskHasAlpha)
+    depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
+
+    if (depth > 8 && node->mask == mskHasAlpha)
     {
         img =
             (ULONG *) AllocVec(dt_width(node) * dt_height(node) * 4,
