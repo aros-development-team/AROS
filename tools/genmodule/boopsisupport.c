@@ -55,7 +55,7 @@ void writeboopsidispatcher(struct config *cfg, FILE *out, struct classinfo *cl)
         );
         if (cfg->options & OPTION_DUPBASE)
             fprintf(out,
-            "    __GM_SetBase(CLASS->cl_UserData);\n"
+            "    __aros_setbase(CLASS->cl_UserData);\n"
             );
         fprintf
         (
