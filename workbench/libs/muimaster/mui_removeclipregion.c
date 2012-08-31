@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. 
+    Copyright © 2002-2012, The AROS Development Team.
     All rights reserved.
     
     $Id$
@@ -16,14 +16,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(VOID, MUI_RemoveClipRegion,
+        AROS_LH2(VOID, MUI_RemoveClipRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(APTR, handle, A1),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(APTR, handle, A1),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 31, MUIMaster)
+        struct Library *, MUIMasterBase, 31, MUIMaster)
 
 /*  FUNCTION
 
@@ -33,8 +33,8 @@
 
     NOTES
 
-	sba: This function frees the region given in MUI_AddClipRegion, but this seems wrong to me.
-	MUI_AddClipRegion should better duplicate the region.
+        sba: This function frees the region given in MUI_AddClipRegion, but this seems wrong to me.
+        MUI_AddClipRegion should better duplicate the region.
 
     EXAMPLE
 
@@ -43,8 +43,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -68,7 +66,7 @@
 
     if ((w != NULL) && (mri->mri_Flags & MUIMRI_REFRESHMODE))
     {
-    	LockLayerInfo(&w->WScreen->LayerInfo);
+            LockLayerInfo(&w->WScreen->LayerInfo);
         EndRefresh(w, FALSE);
     }
     
@@ -88,7 +86,7 @@
     if ((w != NULL) && (mri->mri_Flags & MUIMRI_REFRESHMODE))
     {
         BeginRefresh(w);
-	UnlockLayerInfo(&w->WScreen->LayerInfo);
+        UnlockLayerInfo(&w->WScreen->LayerInfo);
     }
 
     DisposeRegion(mri->mri_rArray[mri->mri_rCount]);

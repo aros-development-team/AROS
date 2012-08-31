@@ -16,17 +16,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(VOID, MUI_FreeClass,
+        AROS_LH1(VOID, MUI_FreeClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(Class *, cl, A0),
+        AROS_LHA(Class *, cl, A0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 14, MUIMaster)
+        struct Library *, MUIMasterBase, 14, MUIMaster)
 
 /*  FUNCTION
-	Frees a class returned by MUI_GetClass(). This function is
-	obsolete. Use MUI_DeleteCustomClass() instead.
+        Frees a class returned by MUI_GetClass(). This function is
+        obsolete. Use MUI_DeleteCustomClass() instead.
 
     INPUTS
         cl - The pointer to the class.
@@ -44,8 +44,6 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -57,25 +55,25 @@
     {
         Class *super = cl->cl_Super;
 
-	if (--cl->cl_Dispatcher.h_Data == 0)
-	{
-  	    ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
+        if (--cl->cl_Dispatcher.h_Data == 0)
+        {
+              ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
 
-	    if (FreeClass(cl))
-	    {
+            if (FreeClass(cl))
+            {
                 CloseLibrary(MUIMasterBase);
-	        if (strcmp(super->cl_ID, ROOTCLASS) != 0)
-	            MUI_FreeClass(super);
-	    }
+                if (strcmp(super->cl_ID, ROOTCLASS) != 0)
+                    MUI_FreeClass(super);
+            }
             else
-	    {
-	        /* Re-add the class to the list since freeing it failed */
+            {
+                /* Re-add the class to the list since freeing it failed */
                 ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
-		/* And also increase the reference counter again */
-		cl->cl_Dispatcher.h_Data++;
-	    }
-	}
+                /* And also increase the reference counter again */
+                cl->cl_Dispatcher.h_Data++;
+            }
+        }
 
         ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     }

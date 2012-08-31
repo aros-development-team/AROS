@@ -226,7 +226,7 @@ do                                                                           \
 #define ZUNE_RemoveBuiltinClass(cl, mb) \
 do                                      \
 {                                       \
-	(cl)->cl_Flags &= ~CLF_INLIST;      \
+    (cl)->cl_Flags &= ~CLF_INLIST;      \
     (void)Remove((struct Node *)(cl));  \
 } while (0)
 
@@ -242,8 +242,8 @@ AROS_UFP3
 #ifdef __AROS__
 
 #define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
-		                    AROS_LCA(LONG, (x), D0),           \
-				    struct Library *, mcclib, 5, lib);
+                                    AROS_LCA(LONG, (x), D0),           \
+                                    struct Library *, mcclib, 5, lib);
 
 #else
 
@@ -253,14 +253,14 @@ AROS_UFP3
 
 /* TODO: Use the interface if possible */
 #define MCC_Query(x ) ({ \
-	APTR _ret; \
-	_ret = EmulateTags(mcclib, \
-			ET_Offset, -30, \
-			ET_RegisterD0, x, \
-			ET_RegisterA6, mcclib, \
-			ET_SaveRegs, TRUE, \
-			TAG_DONE); \
-	_ret; \
+        APTR _ret; \
+        _ret = EmulateTags(mcclib, \
+                        ET_Offset, -30, \
+                        ET_RegisterD0, x, \
+                        ET_RegisterA6, mcclib, \
+                        ET_SaveRegs, TRUE, \
+                        TAG_DONE); \
+        _ret; \
 })
 
 #else 

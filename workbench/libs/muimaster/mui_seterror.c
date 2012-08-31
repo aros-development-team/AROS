@@ -9,13 +9,13 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(LONG, MUI_SetError,
+        AROS_LH1(LONG, MUI_SetError,
 
 /*  SYNOPSIS */
-	AROS_LHA(LONG, num, D0),
+        AROS_LHA(LONG, num, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 12, MUIMaster)
+        struct Library *, MUIMasterBase, 12, MUIMaster)
 
 /*  FUNCTION
 
@@ -32,8 +32,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

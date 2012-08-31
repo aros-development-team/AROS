@@ -11,21 +11,21 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(VOID, MUI_DisposeObject,
+        AROS_LH1(VOID, MUI_DisposeObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, obj, A0),
+        AROS_LHA(Object *, obj, A0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 6, MUIMaster)
+        struct Library *, MUIMasterBase, 6, MUIMaster)
 
 /*  FUNCTION
-	Deletes MUI object and its child objects.
-	
+        Deletes MUI object and its child objects.
+        
     INPUTS
-	obj - pointer to MUI object created with MUI_NewObject. Maybe NULL,
-	      in which case this function has no effect.
-	
+        obj - pointer to MUI object created with MUI_NewObject. May be NULL,
+              in which case this function has no effect.
+        
     RESULT
 
     NOTES
@@ -37,17 +37,15 @@
     SEE ALSO
 
     INTERNALS
-	MUI will call DisposeObject(), then call CloseLibrary() on
-	OCLASS(obj)->h_Data if cl_ID!=NULL && h_Data!=NULL.
+        MUI will call DisposeObject(), then call CloseLibrary() on
+        OCLASS(obj)->h_Data if cl_ID!=NULL && h_Data!=NULL.
 
-    HISTORY
-	2006-04-11 NULL check added.
-	
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    if ( ! obj) return;
+    if (obj == NULL)
+        return;
     
     Class *cl = OCLASS(obj);
 

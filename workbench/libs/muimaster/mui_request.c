@@ -47,19 +47,19 @@ AROS_UFH2S(void, len_func,
 /*****************************************************************************
 
     NAME */
-	AROS_LH7(LONG, MUI_RequestA,
+        AROS_LH7(LONG, MUI_RequestA,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR,         app,     D0),
-	AROS_LHA(APTR,         win,     D1),
-	AROS_LHA(LONGBITS,     flags,   D2),
-	AROS_LHA(CONST_STRPTR, title,   A0),
-	AROS_LHA(CONST_STRPTR, gadgets, A1),
-	AROS_LHA(CONST_STRPTR, format,  A2),
-	AROS_LHA(APTR,         params,  A3),
+        AROS_LHA(APTR,         app,     D0),
+        AROS_LHA(APTR,         win,     D1),
+        AROS_LHA(LONGBITS,     flags,   D2),
+        AROS_LHA(CONST_STRPTR, title,   A0),
+        AROS_LHA(CONST_STRPTR, gadgets, A1),
+        AROS_LHA(CONST_STRPTR, format,  A2),
+        AROS_LHA(APTR,         params,  A3),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 7, MUIMaster)
+        struct Library *, MUIMasterBase, 7, MUIMaster)
 
 /*  FUNCTION
 
@@ -91,17 +91,17 @@ AROS_UFH2S(void, len_func,
 
     Object *req_wnd;
     Object *req_group;
-    Object *req_but[32]; /* more than 32 buttongadgets within a requester shouldn`t happen */
+    Object *req_but[32]; /* shouldn't be more than 32 buttons per requester */
 
     if (!app)
     {
-	struct EasyStruct es;
-	es.es_StructSize   = sizeof(struct EasyStruct);
-	es.es_Flags        = 0;
-	es.es_Title        = title;
-	es.es_TextFormat   = format;
-	es.es_GadgetFormat = gadgets;
-	return EasyRequestArgs(NULL,&es,NULL,params);
+        struct EasyStruct es;
+        es.es_StructSize   = sizeof(struct EasyStruct);
+        es.es_Flags        = 0;
+        es.es_Title        = title;
+        es.es_TextFormat   = format;
+        es.es_GadgetFormat = gadgets;
+        return EasyRequestArgs(NULL,&es,NULL,params);
     }
 
     reqtxt_len = 0;
@@ -111,16 +111,19 @@ AROS_UFH2S(void, len_func,
     RawDoFmt(format,params,(void(*)())&len_func,&reqtxt_len);
 #endif
 
-    if (!(reqtxt = AllocVec(reqtxt_len+1,0))) return 0; /* Return cancel if something failed */
+    /* Return cancel if something failed */
+    if (!(reqtxt = AllocVec(reqtxt_len+1,0)))
+        return 0;
 
 #ifdef __AROS__
     {
-    	char *reqtxtptr = reqtxt;
-	
-	RawDoFmt(format,params,(VOID_FUNC)AROS_ASMSYMNAME(cpy_func),&reqtxtptr);
+        char *reqtxtptr = reqtxt;
+
+        RawDoFmt(format, params, (VOID_FUNC)AROS_ASMSYMNAME(cpy_func),
+            &reqtxtptr);
     }  
 #else
-    RawDoFmt(format,params,(void(*)())&cpy_func,reqtxt);
+    RawDoFmt(format, params, (void(*)())&cpy_func, reqtxt);
 #endif
     
     if (title == NULL && app != NULL)
@@ -129,135 +132,135 @@ AROS_UFH2S(void, len_func,
     }
 
     req_wnd = WindowObject,
-	MUIA_Window_Title,        title,
-	MUIA_Window_RefWindow,    win,
-	MUIA_Window_LeftEdge,     MUIV_Window_LeftEdge_Centered,
-	MUIA_Window_TopEdge,      MUIV_Window_TopEdge_Centered,
-	MUIA_Window_CloseGadget,  FALSE,
-	MUIA_Window_SizeGadget,   FALSE,
-	WindowContents, VGroup,
-	    MUIA_Background,       MUII_RequesterBack,
-	    Child, HGroup,
-		TextFrame,
-		MUIA_Background,    MUII_TextBack,
-		Child, HSpace(0),
-		Child, TextObject,
-		    MUIA_InnerBottom,   8,
-		    MUIA_InnerLeft,     8,
-		    MUIA_InnerRight,    8,
-		    MUIA_InnerTop,      8,
-		    MUIA_Text_SetMax,   TRUE,
-		    MUIA_Text_Contents, reqtxt,
-		    End,
-		Child, HSpace(0),
-		End,
-	    Child, VSpace(2),
-	    Child, req_group = HGroup, End,
+        MUIA_Window_Title,        title,
+        MUIA_Window_RefWindow,    win,
+        MUIA_Window_LeftEdge,     MUIV_Window_LeftEdge_Centered,
+        MUIA_Window_TopEdge,      MUIV_Window_TopEdge_Centered,
+        MUIA_Window_CloseGadget,  FALSE,
+        MUIA_Window_SizeGadget,   FALSE,
+        WindowContents, VGroup,
+            MUIA_Background,       MUII_RequesterBack,
+            Child, HGroup,
+                TextFrame,
+                MUIA_Background,    MUII_TextBack,
+                Child, HSpace(0),
+                Child, TextObject,
+                    MUIA_InnerBottom,   8,
+                    MUIA_InnerLeft,     8,
+                    MUIA_InnerRight,    8,
+                    MUIA_InnerTop,      8,
+                    MUIA_Text_SetMax,   TRUE,
+                    MUIA_Text_Contents, reqtxt,
+                    End,
+                Child, HSpace(0),
+                End,
+            Child, VSpace(2),
+            Child, req_group = HGroup, End,
             End,
-	End;
+        End;
 
-  FreeVec(reqtxt);
+    FreeVec(reqtxt);
 
-  result = 0;
+    result = 0;
 
     if (req_wnd)
     {
-	char *gadgs = StrDup(gadgets);
-	if (gadgs)
-	{
-    	    char *current = gadgs;
-	    int active = -1;
-	    int num_gads = 0;
-	    IPTR isopen = FALSE;
+        char *gadgs = StrDup(gadgets);
+        if (gadgs)
+        {
+            char *current = gadgs;
+            int active = -1;
+            int num_gads = 0;
+            IPTR isopen = FALSE;
 
-//	    set(app, MUIA_Application_Sleep, TRUE);
-	    DoMethod(app, OM_ADDMEMBER, (IPTR)req_wnd);
+//            set(app, MUIA_Application_Sleep, TRUE);
+            DoMethod(app, OM_ADDMEMBER, (IPTR)req_wnd);
 
-	    while(current)
-	    {
-		char *next = strchr(current,'|');
-		if (next) *next++ = 0;
+            while(current)
+            {
+                char *next = strchr(current,'|');
+                if (next) *next++ = 0;
 
-		if (current[0] == '*')
-		{
-		    current++;
-		    active = num_gads;
-		}
+                if (current[0] == '*')
+                {
+                    current++;
+                    active = num_gads;
+                }
 
-		if (!(req_but[num_gads] = SimpleButton(current)))
-		    break;
-		num_gads++;
-		current = next;
-	    }
+                if (!(req_but[num_gads] = SimpleButton(current)))
+                    break;
+                num_gads++;
+                current = next;
+            }
 
-	    FreeVec(gadgs);
-	    DoMethod(req_group, MUIM_Group_InitChange);
+            FreeVec(gadgs);
+            DoMethod(req_group, MUIM_Group_InitChange);
 
-	    /* if this is only one button lets add it separatly */
-	    if (num_gads == 1)
-	    {
-	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
-	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[0]);
-	        DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
-	        DoMethod(req_but[0], MUIM_Notify, MUIA_Pressed, FALSE,
-			 (IPTR)app, 2, MUIM_Application_ReturnID, 2);
-	    }
-	    else
-	    {
-	        int j;
+            /* if this is only one button lets add it separatly */
+            if (num_gads == 1)
+            {
+                DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+                DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[0]);
+                DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+                DoMethod(req_but[0], MUIM_Notify, MUIA_Pressed, FALSE,
+                         (IPTR)app, 2, MUIM_Application_ReturnID, 2);
+            }
+            else
+            {
+                int j;
 
-	        for(j = 0; j < num_gads; j++)
-	        {
-	            if (j > 0)
-		    {
-			DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
-		    }
-	            DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[j]);
-	            DoMethod(req_but[j], MUIM_Notify, MUIA_Pressed, FALSE,
-			     (IPTR)app, 2, MUIM_Application_ReturnID,
-			     (j+2 <= num_gads) ? j+2 : 1);
-	            set(req_but[j], MUIA_CycleChain, 1);
-	        }
-	    }
-	    DoMethod(req_group, MUIM_Group_ExitChange);
+                for(j = 0; j < num_gads; j++)
+                {
+                    if (j > 0)
+                    {
+                        DoMethod(req_group, OM_ADDMEMBER, (IPTR)HSpace(0));
+                    }
+                    DoMethod(req_group, OM_ADDMEMBER, (IPTR)req_but[j]);
+                    DoMethod(req_but[j], MUIM_Notify, MUIA_Pressed, FALSE,
+                             (IPTR)app, 2, MUIM_Application_ReturnID,
+                             (j+2 <= num_gads) ? j+2 : 1);
+                    set(req_but[j], MUIA_CycleChain, 1);
+                }
+            }
+            DoMethod(req_group, MUIM_Group_ExitChange);
 
-	    /* now activate that button with a starting "*" */
-	    if(active != -1) set(req_wnd, MUIA_Window_ActiveObject, (IPTR) req_but[active]);
+            /* now activate that button with a starting "*" */
+            if(active != -1) set(req_wnd, MUIA_Window_ActiveObject, (IPTR) req_but[active]);
 
-	    /* lets collect the waiting returnIDs now */
-	    // COLLECT_RETURNIDS;
+            /* lets collect the waiting returnIDs now */
+            // COLLECT_RETURNIDS;
 
-	    set(req_wnd, MUIA_Window_Open, TRUE);
-	    get(req_wnd, MUIA_Window_Open, &isopen);
+            set(req_wnd, MUIA_Window_Open, TRUE);
+            get(req_wnd, MUIA_Window_Open, &isopen);
 
-	    if (isopen)
-	    {
-	        ULONG sigs = 0;
-	        result = -1;
+            if (isopen)
+            {
+                ULONG sigs = 0;
+                result = -1;
 
-	        while (result == -1)
-	        {
-		    ULONG ret = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
+                while (result == -1)
+                {
+                    ULONG ret = DoMethod(app, MUIM_Application_NewInput, (IPTR)&sigs);
 
-		    /* if a button was hit, lets get outda here. */
-		    if (ret > 0 && ret <= num_gads+1)
-		    {
-		        result = ret-1;
-		        break;
-		    }
+                    /* if a button was hit, lets get outda here. */
+                    if (ret > 0 && ret <= num_gads+1)
+                    {
+                        result = ret-1;
+                        break;
+                    }
 
-		    if (sigs) sigs = Wait(sigs);
-	        }
-	    }
+                    if (sigs) sigs = Wait(sigs);
+                }
+            }
 
-	    /* now lets reissue the collected returnIDs again */
-	    // REISSUE_RETURNIDS;
+            /* now lets reissue the collected returnIDs again */
+            // REISSUE_RETURNIDS;
 
-//	    set(app, MUIA_Application_Sleep, FALSE);
+//            set(app, MUIA_Application_Sleep, FALSE);
         }
 
-	DoMethod(app, OM_REMMEMBER, (IPTR)req_wnd);
-	MUI_DisposeObject(req_wnd);
+        DoMethod(app, OM_REMMEMBER, (IPTR)req_wnd);
+        MUI_DisposeObject(req_wnd);
     }
     return result;
 

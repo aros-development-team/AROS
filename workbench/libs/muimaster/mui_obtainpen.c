@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,19 +17,19 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH3(LONG, MUI_ObtainPen,
+        AROS_LH3(LONG, MUI_ObtainPen,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(struct MUI_PenSpec *, spec, A1),
-	AROS_LHA(ULONG, flags, D0),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(struct MUI_PenSpec *, spec, A1),
+        AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 26, MUIMaster)
+        struct Library *, MUIMasterBase, 26, MUIMaster)
 
 /*  FUNCTION
-	Turns struct MUI_PenSpec (the result of a Poppen object) into
-	a pen for SetAPen().
+        Turns struct MUI_PenSpec (the result of a Poppen object) into
+        a pen for SetAPen().
 
     INPUTS
 
@@ -42,11 +42,9 @@
     BUGS
 
     SEE ALSO
-	MUI_ReleasePen()
+        MUI_ReleasePen()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -58,16 +56,16 @@
     if (!spec || !mri || !mri->mri_Colormap) return -1;
 
     if (!zune_pen_spec_to_intern(spec, &intern))
-	return -1;
+        return -1;
     if (!zune_penspec_setup(&intern, mri))
-	return -1;
+        return -1;
     retval = intern.p_pen;
     if ((retval != -1) && (intern.p_is_allocated))
     {
-	/* flag to indicate that ReleasePen() needs to be called
-	   in MUI_ReleasePen() */
-		       
-	retval |= 0x10000;
+        /* flag to indicate that ReleasePen() needs to be called
+           in MUI_ReleasePen() */
+                       
+        retval |= 0x10000;
     }
 
     return retval;

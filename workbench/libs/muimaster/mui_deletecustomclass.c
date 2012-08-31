@@ -14,23 +14,23 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(BOOL, MUI_DeleteCustomClass,
+        AROS_LH1(BOOL, MUI_DeleteCustomClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_CustomClass *, mcc, A0),
+        AROS_LHA(struct MUI_CustomClass *, mcc, A0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 19, MUIMaster)
+        struct Library *, MUIMasterBase, 19, MUIMaster)
 
 /*  FUNCTION
-	Delete private or public custom classes.
+        Delete private or public custom classes.
 
     INPUTS
-	mcc - pointer from MUI_CreateCustomClass()
+        mcc - pointer from MUI_CreateCustomClass()
 
     RESULT
-	TRUE  : success
-	FALSE : some objects or sub classes were still in use.
+        TRUE  : success
+        FALSE : some objects or sub classes were still in use.
 
     NOTES
 
@@ -39,11 +39,9 @@
     BUGS
 
     SEE ALSO
-	MUI_CreateCustomClass()
+        MUI_CreateCustomClass()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -52,14 +50,14 @@
     if (mcc)
     {
         Class *super = mcc->mcc_Super;
-	
-	if (FreeClass(mcc->mcc_Class))
+        
+        if (FreeClass(mcc->mcc_Class))
         {
-	    mui_free(mcc);
+            mui_free(mcc);
 
             MUI_FreeClass(super);
 
-  	    return TRUE;
+            return TRUE;
         }
     }
 

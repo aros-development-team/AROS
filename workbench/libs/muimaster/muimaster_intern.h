@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -47,7 +47,6 @@
 #include "prefs.h"
 #include "penspec.h"
 
-/****************************************************************************************/
 
 struct MUIMasterBase_intern
 {
@@ -87,7 +86,6 @@ struct MUIMasterBase_intern
     struct MinList Applications;
 };
 
-/****************************************************************************************/
 
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)

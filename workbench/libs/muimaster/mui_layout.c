@@ -17,18 +17,18 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH6(BOOL, MUI_Layout,
+        AROS_LH6(BOOL, MUI_Layout,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object *, obj, A0),
-	AROS_LHA(LONG, left, D0),
-	AROS_LHA(LONG, top, D1),
-	AROS_LHA(LONG, width, D2),
-	AROS_LHA(LONG, height, D3),
-	AROS_LHA(ULONG, flags, D4),
+        AROS_LHA(Object *, obj, A0),
+        AROS_LHA(LONG, left, D0),
+        AROS_LHA(LONG, top, D1),
+        AROS_LHA(LONG, width, D2),
+        AROS_LHA(LONG, height, D3),
+        AROS_LHA(ULONG, flags, D4),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 21, MUIMaster)
+        struct Library *, MUIMasterBase, 21, MUIMaster)
 
 /*  FUNCTION
 
@@ -46,8 +46,6 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -62,12 +60,13 @@
 
     if (_flags(parent) & MADF_ISVIRTUALGROUP)
     {
-	/* I'm not yet sure what to do by virtual groups in virtual groups, eighter add their offsets too or not, will be tested soon */
-	IPTR val = 0;
-	get(parent,MUIA_Virtgroup_Left,&val);
-	left -= val;
-	get(parent,MUIA_Virtgroup_Top,&val);
-	top -= val;
+        /* I'm not yet sure what to do by virtual groups in virtual groups,
+         * eighter add their offsets too or not, will be tested soon */
+        IPTR val = 0;
+        get(parent,MUIA_Virtgroup_Left,&val);
+        left -= val;
+        get(parent,MUIA_Virtgroup_Top,&val);
+        top -= val;
     }
 
     _left(obj) = left + _mleft(parent);

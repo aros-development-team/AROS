@@ -20,29 +20,29 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(struct IClass *, MUI_GetClass,
+        AROS_LH1(struct IClass *, MUI_GetClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(ClassID, classid, A0),
+        AROS_LHA(ClassID, classid, A0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 13, MUIMaster)
+        struct Library *, MUIMasterBase, 13, MUIMaster)
 
 /*  FUNCTION
         Get a pointer to a MUI Class.
 
-	The main use for this function is to retrieve the pointer to a MUI class
-	for use by intuition.library/MakeClass() as superclass pointer. However,
-	this function is obsolete since MUI V8, so DO NOT USE IT, use
-	MUI_CreateCustomClass() instead.
+        The main use for this function is to retrieve the pointer to a MUI class
+        for use by intuition.library/MakeClass() as superclass pointer. However,
+        this function is obsolete since MUI V8, so DO NOT USE IT, use
+        MUI_CreateCustomClass() instead.
 
     INPUTS
-	classid - the ID of the class whose pointer is to be retrieved.
+        classid - the ID of the class whose pointer is to be retrieved.
 
     RESULT
         The class pointer is returned. DO NOT use it for any other reason that
-	as an argument of intuition.library/MakeClass(). DO NOT assume anything
-	about its content.
+        as an argument of intuition.library/MakeClass(). DO NOT assume anything
+        about its content.
 
     NOTES
         Once the pointer is not needed anymore, do not forget to call MUI_FreeClass().
@@ -59,8 +59,6 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -68,7 +66,7 @@
     Class *cl;
 
     if (!classid)
-	return NULL;
+        return NULL;
 
     cl = ZUNE_GetBuiltinClass(classid, MUIMasterBase);
 

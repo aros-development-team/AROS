@@ -30,7 +30,7 @@
 #   include "support_aros.h"
 #else
 #   include "support_amigaos.h"
-#endif 
+#endif
 
 struct MUI_RenderInfo;
 struct IntuiMessage;
@@ -44,7 +44,8 @@ struct Library;
 #define mui_free(x) FreeVec(x)
 
 
-int isRegionWithinBounds(struct Region *r, int left, int top, int width, int height);
+int isRegionWithinBounds(struct Region *r, int left, int top, int width,
+    int height);
 ULONG ConvertKey(struct IntuiMessage *imsg);
 
 #define _between(a,x,b) ((x)>=(a) && (x)<=(b))
@@ -55,22 +56,24 @@ ULONG ConvertKey(struct IntuiMessage *imsg);
 #define _handle_bool_tag(flags, tag, mask) \
 ((tag != 0) ? ((flags) |= (mask)) : ((flags) &= ~(mask)))
 
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define CLAMP(x, low, high) \
+    (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
 #ifndef __GNUC__
-IPTR XGET(Object *obj, Tag attr);
+IPTR XGET(Object * obj, Tag attr);
 #endif
 
-IPTR DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
-IPTR DoShowMethod(Object *obj);
-IPTR DoHideMethod(Object *obj);
+IPTR DoSetupMethod(Object * obj, struct MUI_RenderInfo *info);
+IPTR DoShowMethod(Object * obj);
+IPTR DoHideMethod(Object * obj);
 
 /* returns next node of this node */
 void *Node_Next(APTR node);
 /* returns first node of this list */
 void *List_First(APTR list);
 
-WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b, struct Rectangle *destrectarray);
-ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase);
+WORD SubtractRectFromRect(struct Rectangle *a, struct Rectangle *b,
+    struct Rectangle *destrectarray);
+ULONG IsObjectVisible(Object * child, struct Library *MUIMasterBase);
 
 #endif /* _MUIMASTER_SUPPORT_H */
