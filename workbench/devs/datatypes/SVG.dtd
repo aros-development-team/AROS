@@ -1,0 +1,9 @@
+# DataType Description for HTML
+Name=SVG
+Version=$VER: SVG 41.0 (8.31.2012)
+BaseName=svg
+Pattern=#?.svg
+GroupID=pict
+ID=_svg
+Flags=DTF_ASCII,DTF_CASE
+Priority=0
