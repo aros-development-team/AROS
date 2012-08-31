@@ -100,7 +100,7 @@ SHTESTFILES=\
     true
 
 HOSTEDTESTFILES :=  \
-    hostlib
+    hostlib windebug
 
 EXEDIR := $(AROS_TESTS)
 
@@ -121,6 +121,8 @@ USER_CFLAGS += -DADATE="\"$(shell date '+%d.%m.%Y')\""
     files=$(SHTESTFILES) targetdir=$(EXEDIR) \
     usestartup=no
 
+%build_progs mmake=test-hosted \
+    files=$(HOSTEDTESTFILES) targetdir=$(EXEDIR)
 
 %copy_files_q mmake=test-testscript files="testscript" dst=$(EXEDIR)
 
