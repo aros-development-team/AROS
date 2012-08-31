@@ -18,17 +18,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH5(struct MUI_CustomClass *, MUI_CreateCustomClass,
+        AROS_LH5(struct MUI_CustomClass *, MUI_CreateCustomClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Library *,         base,       A0),
-	AROS_LHA(ClassID,                  supername,  A1),
-	AROS_LHA(struct MUI_CustomClass *, supermcc,   A2),
-	AROS_LHA(ULONG,                    datasize,   D0),
-	AROS_LHA(APTR,                     dispatcher, A3),
+        AROS_LHA(struct Library *,         base,       A0),
+        AROS_LHA(ClassID,                  supername,  A1),
+        AROS_LHA(struct MUI_CustomClass *, supermcc,   A2),
+        AROS_LHA(ULONG,                    datasize,   D0),
+        AROS_LHA(APTR,                     dispatcher, A3),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 18, MUIMaster)
+        struct Library *, MUIMasterBase, 18, MUIMaster)
 
 /*  FUNCTION
 
@@ -46,36 +46,34 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
     struct MUI_CustomClass *mcc;
-    struct IClass	*cl, *super;
-    ClassID		 id = NULL;
+    struct IClass        *cl, *super;
+    ClassID                 id = NULL;
 
     if ((supername == NULL) && (supermcc == NULL))
-	return NULL;
+        return NULL;
 
     if (!supermcc)
     {
         super = MUI_GetClass(supername);
-	if (!super) return NULL;
+        if (!super) return NULL;
     }
     else super = supermcc->mcc_Class;
 
     if (!(mcc = mui_alloc_struct(struct MUI_CustomClass)))
-	return NULL;
+        return NULL;
 
     if (base)
-	id = FilePart(((struct Node *)base)->ln_Name);
+        id = FilePart(((struct Node *)base)->ln_Name);
 
     if (!(cl = MakeClass(id, NULL, super, datasize, 0)))
     {
-	mui_free(mcc);
-	return NULL;
+        mui_free(mcc);
+        return NULL;
     }
 
     mcc->mcc_UtilityBase   = (struct Library *)UtilityBase;

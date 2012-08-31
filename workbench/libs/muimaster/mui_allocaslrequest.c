@@ -11,23 +11,23 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(APTR, MUI_AllocAslRequest,
+        AROS_LH2(APTR, MUI_AllocAslRequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(unsigned long, reqType, D0),
-	AROS_LHA(struct TagItem *, tagList, A0),
+        AROS_LHA(unsigned long, reqType, D0),
+        AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 8, MUIMaster)
+        struct Library *, MUIMasterBase, 8, MUIMaster)
 
 /*  FUNCTION
-	Interface to asl.library.
+        Interface to asl.library.
 
     INPUTS
-	see asl.library/AllocAslRequest()
+        see asl.library/AllocAslRequest()
 
     RESULT
-	Pointer to AslRequest
+        Pointer to AslRequest
 
     NOTES
 
@@ -36,17 +36,15 @@
     BUGS
 
     SEE ALSO
-	asl.library/AllocAslRequest()
+        asl.library/AllocAslRequest()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return AllocAslRequest(reqType,tagList);
+    return AllocAslRequest(reqType, tagList);
 
     AROS_LIBFUNC_EXIT
 

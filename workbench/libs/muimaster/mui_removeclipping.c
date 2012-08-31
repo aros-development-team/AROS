@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -11,14 +11,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(VOID, MUI_RemoveClipping,
+        AROS_LH2(VOID, MUI_RemoveClipping,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(APTR, handle, A1),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(APTR, handle, A1),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 29, MUIMaster)
+        struct Library *, MUIMasterBase, 29, MUIMaster)
 
 /*  FUNCTION
 
@@ -35,8 +35,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

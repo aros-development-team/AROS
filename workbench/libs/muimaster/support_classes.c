@@ -22,8 +22,7 @@
 /*#define MYDEBUG*/
 #include "debug.h"
 
-static const struct __MUIBuiltinClass * const builtins[] =
-{
+static const struct __MUIBuiltinClass *const builtins[] = {
     &_MUI_Notify_desc,
     &_MUI_Family_desc,
     &_MUI_Application_desc,
@@ -37,16 +36,13 @@ static const struct __MUIBuiltinClass * const builtins[] =
     &_MUI_Numeric_desc,
     &_MUI_Slider_desc,
     &_MUI_String_desc,
-    ZUNE_BOOPSI_DESC
-    &_MUI_Prop_desc,
+    ZUNE_BOOPSI_DESC & _MUI_Prop_desc,
     &_MUI_Scrollbar_desc,
     &_MUI_Register_desc,
     &_MUI_Menuitem_desc,
     &_MUI_Menu_desc,
     &_MUI_Menustrip_desc,
-    ZUNE_VIRTGROUP_DESC
-    ZUNE_SCROLLGROUP_DESC
-    &_MUI_Scrollbutton_desc,
+    ZUNE_VIRTGROUP_DESC ZUNE_SCROLLGROUP_DESC & _MUI_Scrollbutton_desc,
     &_MUI_Semaphore_desc,
     &_MUI_Dataspace_desc,
     &_MUI_Bitmap_desc,
@@ -56,48 +52,43 @@ static const struct __MUIBuiltinClass * const builtins[] =
     &_MUI_Popstring_desc,
     &_MUI_Listview_desc,
     &_MUI_List_desc,
-    ZUNE_POPASL_DESC
-    &_MUI_Popobject_desc,
+    ZUNE_POPASL_DESC & _MUI_Popobject_desc,
     ZUNE_GAUGE_DESC
-    ZUNE_ABOUTMUI_DESC
-    ZUNE_SETTINGSGROUP_DESC
-    ZUNE_IMAGEADJUST_DESC
-    ZUNE_POPIMAGE_DESC
-    ZUNE_SCALE_DESC
-    ZUNE_RADIO_DESC
-    ZUNE_ICONLISTVIEW_DESC
-    ZUNE_BALANCE_DESC
-    ZUNE_COLORFIELD_DESC
-    ZUNE_COLORADJUST_DESC
-    ZUNE_IMAGEDISPLAY_DESC
-    ZUNE_PENDISPLAY_DESC
-    ZUNE_PENADJUST_DESC
-    ZUNE_POPPEN_DESC
-    &_MUI_Mccprefs_desc,
+        ZUNE_ABOUTMUI_DESC
+        ZUNE_SETTINGSGROUP_DESC
+        ZUNE_IMAGEADJUST_DESC
+        ZUNE_POPIMAGE_DESC
+        ZUNE_SCALE_DESC
+        ZUNE_RADIO_DESC
+        ZUNE_ICONLISTVIEW_DESC
+        ZUNE_BALANCE_DESC
+        ZUNE_COLORFIELD_DESC
+        ZUNE_COLORADJUST_DESC
+        ZUNE_IMAGEDISPLAY_DESC
+        ZUNE_PENDISPLAY_DESC
+        ZUNE_PENADJUST_DESC ZUNE_POPPEN_DESC & _MUI_Mccprefs_desc,
     ZUNE_FRAMEDISPLAY_DESC
-    ZUNE_POPFRAME_DESC
-    ZUNE_FRAMEADJUST_DESC
-    ZUNE_VOLUMELIST_DESC
-    ZUNE_DIRLIST_DESC
-    ZUNE_NUMERICBUTTON_DESC
-    ZUNE_POPLIST_DESC
-    ZUNE_CRAWLING_DESC
-    ZUNE_POPSCREEN_DESC
-    ZUNE_LEVELMETER_DESC
-    ZUNE_KNOB_DESC
-    ZUNE_DTPIC_DESC
-    ZUNE_PALETTE_DESC
+        ZUNE_POPFRAME_DESC
+        ZUNE_FRAMEADJUST_DESC
+        ZUNE_VOLUMELIST_DESC
+        ZUNE_DIRLIST_DESC
+        ZUNE_NUMERICBUTTON_DESC
+        ZUNE_POPLIST_DESC
+        ZUNE_CRAWLING_DESC
+        ZUNE_POPSCREEN_DESC
+        ZUNE_LEVELMETER_DESC
+        ZUNE_KNOB_DESC ZUNE_DTPIC_DESC ZUNE_PALETTE_DESC
 };
 
-Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)
+Class *ZUNE_GetExternalClass(ClassID classname,
+    struct Library *MUIMasterBase)
 {
-    struct Library         *mcclib = NULL;
-    struct MUI_CustomClass *mcc    = NULL ;
-    CONST_STRPTR const     *pathptr;
-    TEXT                    s[255];
+    struct Library *mcclib = NULL;
+    struct MUI_CustomClass *mcc = NULL;
+    CONST_STRPTR const *pathptr;
+    TEXT s[255];
 
-    static CONST_STRPTR const searchpaths[] =
-    {
+    static CONST_STRPTR const searchpaths[] = {
         "Zune/%s",
         "Classes/Zune/%s",
         "MUI/%s",
@@ -106,33 +97,35 @@ Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)
 
     for (pathptr = searchpaths; *pathptr; pathptr++)
     {
-	snprintf(s, 255, *pathptr, classname);
+        snprintf(s, 255, *pathptr, classname);
 
-	D(bug("Trying opening of %s\n",s));
+        D(bug("Trying opening of %s\n", s));
 
         if ((mcclib = OpenLibrary(s, 0)))
-	{
-	    D(bug("Calling MCC Query. Librarybase at 0x%lx\n",mcclib));
+        {
+            D(bug("Calling MCC Query. Librarybase at 0x%lx\n", mcclib));
 
-	    mcc = MCC_Query(0);
-	    if (!mcc) mcc = MCC_Query(1); /* MCP? */
-	    
-	    if (mcc)
-	    {
-		if (mcc->mcc_Class)
-		{
-		    mcc->mcc_Module = mcclib;
-		    D(bug("Successfully opened %s as external class\n",classname));
+            mcc = MCC_Query(0);
+            if (!mcc)
+                mcc = MCC_Query(1);     /* MCP? */
 
-		    return mcc->mcc_Class;
-		}
-	    }
+            if (mcc)
+            {
+                if (mcc->mcc_Class)
+                {
+                    mcc->mcc_Module = mcclib;
+                    D(bug("Successfully opened %s as external class\n",
+                            classname));
 
-	    CloseLibrary(mcclib);
-	}
+                    return mcc->mcc_Class;
+                }
+            }
+
+            CloseLibrary(mcclib);
+        }
     }
 
-    D(bug("Failed to open external class %s\n",classname));
+    D(bug("Failed to open external class %s\n", classname));
     return NULL;
 }
 
@@ -144,71 +137,75 @@ static Class *ZUNE_FindBuiltinClass(ClassID classid, struct Library *mb)
     ForeachNode(&MUIMB(mb)->BuiltinClasses, cl2)
     {
         if (!strcmp(cl2->cl_ID, classid))
-	{
+        {
             cl = cl2;
-	    break;
-	}
+            break;
+        }
     }
 
     return cl;
 }
 
-static Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
+static Class *ZUNE_MakeBuiltinClass(ClassID classid,
+    struct Library *MUIMasterBase)
 {
     int i;
-    Class *cl          = NULL;
+    Class *cl = NULL;
     struct Library *mb = NULL;
 
-    D(bug("Makeing Builtinclass %s\n",classid));
+    D(bug("Makeing Builtinclass %s\n", classid));
 
-    for (i = 0; i < sizeof(builtins)/sizeof(builtins[0]); i++)
+    for (i = 0; i < sizeof(builtins) / sizeof(builtins[0]); i++)
     {
-	if (!strcmp(builtins[i]->name, classid))
-	{
-            Class   *supercl;
-            ClassID  superclid;
+        if (!strcmp(builtins[i]->name, classid))
+        {
+            Class *supercl;
+            ClassID superclid;
 
-	    /* This may seem strange, but opening muimaster.library here is done in order to
-               increase muimaster.library's open count, so that it doesn't get expunged
-	       while some of its internal classes are still in use.
-	       We don't use muimaster.library directly but the name of the library
-	       stored inside the base, because the library can be compiled also as
-	       zunemaster.library  */
+            /* This may seem strange, but opening muimaster.library here is
+               done in order to increase muimaster.library's open count, so
+               that it doesn't get expunged while some of its internal
+               classes are still in use. We don't use muimaster.library
+               directly but the name of the library stored inside the base,
+               because the library can be compiled also as zunemaster.library
+             */
 
-	    mb = OpenLibrary(MUIMasterBase->lib_Node.ln_Name, 0);
+            mb = OpenLibrary(MUIMasterBase->lib_Node.ln_Name, 0);
 
             /* It can't possibly fail, but well... */
-	    if (!mb)
-	        break;
+            if (!mb)
+                break;
 
-	    if (strcmp(builtins[i]->supername, ROOTCLASS) == 0)
+            if (strcmp(builtins[i]->supername, ROOTCLASS) == 0)
             {
-                superclid  = ROOTCLASS;
-                supercl    = NULL;
+                superclid = ROOTCLASS;
+                supercl = NULL;
             }
             else
             {
-                superclid  = NULL;
-                supercl    = MUI_GetClass(builtins[i]->supername);
+                superclid = NULL;
+                supercl = MUI_GetClass(builtins[i]->supername);
 
-                if (!supercl) break;
-	    }
+                if (!supercl)
+                    break;
+            }
 
-            cl = MakeClass(builtins[i]->name, superclid, supercl, builtins[i]->datasize, 0);
-	    if (cl)
+            cl = MakeClass(builtins[i]->name, superclid, supercl,
+                builtins[i]->datasize, 0);
+            if (cl)
             {
 #if defined(__MAXON__) || defined(__amigaos4__)
-                cl->cl_Dispatcher.h_Entry    = builtins[i]->dispatcher;
+                cl->cl_Dispatcher.h_Entry = builtins[i]->dispatcher;
 #else
-                cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
+                cl->cl_Dispatcher.h_Entry = (HOOKFUNC) metaDispatcher;
                 cl->cl_Dispatcher.h_SubEntry = builtins[i]->dispatcher;
 #endif
                 /* Use this as a reference counter */
-                cl->cl_Dispatcher.h_Data     = 0;
-	    }
+                cl->cl_Dispatcher.h_Data = 0;
+            }
 
-	    break;
-	}
+            break;
+        }
     }
 
     if (!cl && mb)
@@ -217,7 +214,7 @@ static Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBa
     return cl;
 }
 
-Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
+Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library * mb)
 {
     Class *cl;
 
@@ -229,13 +226,13 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
     {
         cl = ZUNE_MakeBuiltinClass(classid, mb);
 
-	if (cl)
-	{
-	    ZUNE_AddBuiltinClass(cl, mb);
+        if (cl)
+        {
+            ZUNE_AddBuiltinClass(cl, mb);
 
-	    /* Increase the reference counter */
-	    cl->cl_Dispatcher.h_Data++;
-	}
+            /* Increase the reference counter */
+            cl->cl_Dispatcher.h_Data++;
+        }
     }
 
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -249,34 +246,31 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
 
 #ifdef __AROS__
 AROS_UFH3(IPTR, metaDispatcher,
-	AROS_UFHA(struct IClass  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
+    AROS_UFHA(struct IClass *, cl, A0),
+    AROS_UFHA(Object *, obj, A2), AROS_UFHA(Msg, msg, A1))
 {
     AROS_USERFUNC_INIT
-    
-    return AROS_UFC4(IPTR, cl->cl_Dispatcher.h_SubEntry,
-        AROS_UFPA(Class  *, cl,  A0),
+        return AROS_UFC4(IPTR, cl->cl_Dispatcher.h_SubEntry,
+        AROS_UFPA(Class *, cl, A0),
         AROS_UFPA(Object *, obj, A2),
-        AROS_UFPA(Msg     , msg, A1),
-        AROS_UFPA(APTR    , cl->cl_Dispatcher.h_Data, A6)
-    );
+        AROS_UFPA(Msg, msg, A1),
+        AROS_UFPA(APTR, cl->cl_Dispatcher.h_Data, A6));
 
-    AROS_USERFUNC_EXIT
-}
+AROS_USERFUNC_EXIT}
 
 #else
 #ifdef __SASC
-__asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
+__asm ULONG metaDispatcher(register __a0 struct IClass * cl,
+    register __a2 Object * obj, register __a1 Msg msg)
 {
-    __asm ULONG (*entry)(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg) =
-	(__asm ULONG (*)(register __a0 struct IClass *, register __a2 Object *, register __a1 Msg))cl->cl_Dispatcher.h_SubEntry;
+    __asm ULONG(*entry) (register __a0 struct IClass * cl,
+        register __a2 Object * obj, register __a1 Msg msg) =
+        (__asm ULONG(*)(register __a0 struct IClass *,
+            register __a2 Object *,
+            register __a1 Msg))cl->cl_Dispatcher.h_SubEntry;
 
-    putreg(REG_A6,(long)cl->cl_Dispatcher.h_Data);
-    return entry(cl,obj,msg);
+    putreg(REG_A6, (long)cl->cl_Dispatcher.h_Data);
+    return entry(cl, obj, msg);
 }
 #endif
 #endif
-
-
-

@@ -9,15 +9,15 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH0(LONG, MUI_Error,
+        AROS_LH0(LONG, MUI_Error,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 11, MUIMaster)
+        struct Library *, MUIMasterBase, 11, MUIMaster)
 
 /*  FUNCTION
-	Obsolete function. Use SetIoErr()/IoErr() instead.
+        Obsolete function. Use SetIoErr()/IoErr() instead.
 
     INPUTS
 
@@ -30,11 +30,9 @@
     BUGS
 
     SEE ALSO
-	MUI_SetError()
+        MUI_SetError()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

@@ -16,24 +16,24 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(Object *, MUI_NewObjectA,
+        AROS_LH2(Object *, MUI_NewObjectA,
 
 /*  SYNOPSIS */
-	AROS_LHA(ClassID, classid,     A0),
-	AROS_LHA(struct TagItem *, tags, A1),
+        AROS_LHA(ClassID, classid,     A0),
+        AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 5, MUIMaster)
+        struct Library *, MUIMasterBase, 5, MUIMaster)
 
 /*  FUNCTION
-	Create object from MUI class.
+        Create object from MUI class.
 
     INPUTS
-	classid - case sensitive name/ID string of a MUI class.
-	taglist - attribute/value pairs for the new object.
+        classid - case sensitive name/ID string of a MUI class.
+        taglist - attribute/value pairs for the new object.
 
     RESULT
-	Pointer to object. NULL means failure.
+        Pointer to object. NULL means failure.
 
     NOTES
 
@@ -42,12 +42,10 @@
     BUGS
 
     SEE ALSO
-	MUI_DisposeObject(), intuition.library/SetAttrsA()
-	intuition.library/GetAttr()
+        MUI_DisposeObject(), intuition.library/SetAttrsA()
+        intuition.library/GetAttr()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
@@ -58,12 +56,12 @@
     cl = MUI_GetClass(classid);
     if (cl)
     {
-	Object *obj = NewObjectA(cl, NULL, tags);
+        Object *obj = NewObjectA(cl, NULL, tags);
 
-	if (obj) return obj;
+        if (obj) return obj;
 
         bug("*** Could not create object of %s\n", classid);
-	MUI_FreeClass(cl);
+        MUI_FreeClass(cl);
     }
 
     bug("*** Couldn't find %s\n", classid);

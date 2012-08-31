@@ -14,14 +14,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(VOID, MUI_EndRefresh,
+        AROS_LH2(VOID, MUI_EndRefresh,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(ULONG, flags, D0),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 33, MUIMaster)
+        struct Library *, MUIMasterBase, 33, MUIMaster)
 /*  FUNCTION
 
     INPUTS
@@ -37,8 +37,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

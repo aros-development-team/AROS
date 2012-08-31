@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2007, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -14,14 +14,14 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(VOID, MUI_ReleasePen,
+        AROS_LH2(VOID, MUI_ReleasePen,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(LONG, pen, D0),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(LONG, pen, D0),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 27, MUIMaster)
+        struct Library *, MUIMasterBase, 27, MUIMaster)
 
 /*  FUNCTION
 
@@ -38,8 +38,6 @@
     SEE ALSO
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {

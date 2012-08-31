@@ -11,17 +11,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH2(BOOL, MUI_AslRequest,
+        AROS_LH2(BOOL, MUI_AslRequest,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, requester, A0),
-	AROS_LHA(struct TagItem *, tagList, A1),
+        AROS_LHA(APTR, requester, A0),
+        AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 9, MUIMaster)
+        struct Library *, MUIMasterBase, 9, MUIMaster)
 
 /*  FUNCTION
-	Interface to asl.library.
+        Interface to asl.library.
 
     INPUTS
 
@@ -34,17 +34,15 @@
     BUGS
 
     SEE ALSO
-	asl.library/AslRequest()
+        asl.library/AslRequest()
 
     INTERNALS
-
-    HISTORY
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    return AslRequest(requester,tagList);
+    return AslRequest(requester, tagList);
 
     AROS_LIBFUNC_EXIT
 

@@ -54,9 +54,11 @@ enum {
     ZTEXT_ARG_HICHARIDX, /* following arg is the HiCharIdx */
 };
 
-ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content, int argtype, TEXT arg);
+ZText *zune_text_new (CONST_STRPTR preparse, CONST_STRPTR content,
+    int argtype, TEXT arg);
 void zune_text_destroy (ZText *text);
 void zune_text_get_bounds (ZText *text, Object *obj);
-void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top);
+void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right,
+    WORD top);
 
 #endif

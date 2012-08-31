@@ -15,17 +15,17 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH5(APTR, MUI_AddClipping,
+        AROS_LH5(APTR, MUI_AddClipping,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(WORD, left, D0),
-	AROS_LHA(WORD, top, D1),
-	AROS_LHA(WORD, width, D2),
-	AROS_LHA(WORD, height, D3),
+        AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+        AROS_LHA(WORD, left, D0),
+        AROS_LHA(WORD, top, D1),
+        AROS_LHA(WORD, width, D2),
+        AROS_LHA(WORD, height, D3),
 
 /*  LOCATION */
-	struct Library *, MUIMasterBase, 28, MUIMaster)
+        struct Library *, MUIMasterBase, 28, MUIMaster)
 
 /*  FUNCTION
 
@@ -43,23 +43,22 @@
 
     INTERNALS
 
-    HISTORY
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
 
-    struct Region   	*r;
-    struct Rectangle 	 rect;
-    APTR    	    	 handle;
-    
+    struct Region *r;
+    struct Rectangle rect;
+    APTR handle;
+
     if ((width >= MUI_MAXMAX) || (height >= MUI_MAXMAX))
         return (APTR)-1;
 
     if (mri->mri_rCount > 0)
     {
-	if (isRegionWithinBounds(mri->mri_rArray[mri->mri_rCount-1], left, top, width, height))
-	    return (APTR)-1;
+        if (isRegionWithinBounds(mri->mri_rArray[mri->mri_rCount-1],
+            left, top, width, height))
+            return (APTR)-1;
     }
 
     if ((r = NewRegion()) == NULL)
@@ -80,7 +79,7 @@
     }
 #endif    
     return handle;
-    
+
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_AddClipping */

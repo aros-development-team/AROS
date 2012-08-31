@@ -1,5 +1,5 @@
 /*
-    Copyright  2002-2010, The AROS Development Team. All rights reserved.
+    Copyright  2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -150,8 +150,9 @@ enum
 #define MUIO_Label_Centered      (1<<11)
 #define MUIO_Label_FreeVert      (1<<12)
 
-/* flag for MUIO_MenustripNM */
-#define MUIO_MenustripNM_CommandKeyCheck (1<<0) /* check for "localized" menu items such as "O\0Open" */
+/* flag for MUIO_MenustripNM: check for "localized" menu items such
+ * as "O\0Open" */
+#define MUIO_MenustripNM_CommandKeyCheck (1<<0)
 
 /* flag for MUI_CoolButton  */
 #define MUIO_CoolButton_CoolImageID (1<<0)
@@ -194,7 +195,7 @@ struct MUI_MinMax
 /* Possible keyevents (user configurable) */
 enum
 {
-    MUIKEY_RELEASE      = -2, /* this one is faked only, and thereforce not configurable */
+    MUIKEY_RELEASE      = -2, /* this one is faked only, so not configurable */
     MUIKEY_NONE         = -1,
     MUIKEY_PRESS        = 0,
     MUIKEY_TOGGLE       = 1,
@@ -568,7 +569,7 @@ struct MUI_RGBcolor
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
-/* configured by the user within the prefs programm */
+/* configured by the user within the prefs program */
 #define MUII_WindowBack        0UL
 #define MUII_RequesterBack     1UL
 #define MUII_ButtonBack        2UL
@@ -613,7 +614,7 @@ struct MUI_RGBcolor
 #define MUII_ReadListBack      41UL
 #define MUII_Count             42UL
 
-/* direct color's and combinations */
+/* direct colors and combinations */
 #define MUII_BACKGROUND        128UL
 #define MUII_SHADOW            129UL
 #define MUII_SHINE             130UL
