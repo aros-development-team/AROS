@@ -28,12 +28,13 @@ unsigned char PendingInts[256];
 unsigned char AllocatedInts[256];
 
 /* Virtual CPU control registers */
-         int           (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
-         int           (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
-         int           Ints_Enabled;
-         int           Supervisor;
-         unsigned char Sleep_Mode;
-         DWORD *       LastErrorPtr;
+         __declspec(dllexport) int           (*TrapVector)(unsigned int num, ULONG_PTR *args, CONTEXT *regs);
+         __declspec(dllexport) int           (*IRQVector)(unsigned char *irqs, CONTEXT *regs);
+         __declspec(dllexport) int           NonMaskableInt = -1;
+volatile __declspec(dllexport) int           Ints_Enabled;
+volatile __declspec(dllexport) int           Supervisor;
+volatile __declspec(dllexport) unsigned char Sleep_Mode;
+volatile __declspec(dllexport) DWORD *       LastErrorPtr;
 
 /*
  * This can't be placed on stack because noone knows
@@ -154,7 +155,7 @@ DWORD WINAPI TaskSwitcher()
         }
 
         /* Process interrupts if we are allowed to */
-        if (Ints_Enabled && INT_SAFE(MainCtx))
+        if (Ints_Enabled && INT_SAFE(MainCtx) && (obj != NonMaskableInt))
         {
             Supervisor = 1;
             /* 
@@ -350,48 +351,6 @@ int __declspec(dllexport) __aros core_init(unsigned int TimerPeriod)
     CloseHandle(IntObjects[IRQ_TIMER]);
     return 0;
 }
-
-/* Host side KernelInterface API */
-void __declspec(dllexport) __aros Set_TrapVector(void *trapVector)
-{
-    TrapVector = trapVector;
-}
-
-void __declspec(dllexport) __aros Set_IRQVector(void *irqVector)
-{
-    IRQVector = irqVector;
-}
-
-void __declspec(dllexport) __aros Set_SleepMode(unsigned char state)
-{
-    Sleep_Mode = state;
-}
-
-unsigned char __declspec(dllexport) __aros Get_SleepMode(void)
-{
-    return Sleep_Mode;
-}
-
-void __declspec(dllexport) __aros Set_IntState(int state)
-{
-    Ints_Enabled = state;
-}
-
-int __declspec(dllexport) __aros Get_SuperState(void)
-{
-    return Supervisor;
-}
-
-DWORD __declspec(dllexport) __aros Get_LastError(void)
-{
-    return *LastErrorPtr;
-}
-
-void __declspec(dllexport) __aros Set_LastError(DWORD err)
-{
-    *LastErrorPtr = err;
-}
-
 
 /*
  * The following is host-side IRQ API.

@@ -177,14 +177,12 @@ static const char *kernel_functions[] =
     "core_putc",
     "core_getc",
     "core_alert",
-    "Set_TrapVector",
-    "Set_IRQVector",
-    "Get_SuperState",
-    "Set_IntState",
-    "Get_SleepMode",
-    "Set_SleepMode",
-    "Get_LastError",
-    "Set_LastError",
+    "TrapVector",
+    "IRQVector",
+    "Supervisor",
+    "Ints_Enabled",
+    "Sleep_Mode",
+    "LastErrorPtr",
     NULL
 };
 
@@ -206,8 +204,8 @@ static int Platform_Init(struct KernelBase *KernelBase)
 
     D(bug("[Kernel] initializing host-side kernel module, timer frequency is %u\n", SysBase->VBlankFrequency));
 
-    KernelIFace.Set_TrapVector(core_TrapHandler);
-    KernelIFace.Set_IRQVector(core_IRQHandler);
+    *KernelIFace.TrapVector = core_TrapHandler;
+    *KernelIFace.IRQVector  = core_IRQHandler;
 
     return KernelIFace.core_init(SysBase->VBlankFrequency);
 }
