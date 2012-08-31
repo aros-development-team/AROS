@@ -44,7 +44,7 @@ void core_ExitInterrupt(CONTEXT *regs)
 
     /* No tasks active (AROS is in idle state)? If yes, just pick up
        a new ready task (if there is any) */
-    if (Sleep_Mode != SLEEP_MODE_OFF)
+    if (*KernelIFace.SleepState != SLEEP_MODE_OFF)
     {
         cpu_Dispatch(regs);
         return;
@@ -128,7 +128,7 @@ int core_TrapHandler(unsigned int num, IPTR *args, CONTEXT *regs)
         /* Restore saved context and continue */
 	ctx = (struct AROSCPUContext *)args[0];
 	RESTOREREGS(regs, ctx);
-	SetLastError(ctx->LastError);
+	**KernelIFace.LastError = ctx->LastError;
 	break;
 
     default:

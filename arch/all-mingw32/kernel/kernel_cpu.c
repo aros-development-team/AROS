@@ -1,5 +1,5 @@
 /*
-    Copyright © 2008-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2008-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU-specific add-ons for Windows-hosted scheduler.
@@ -73,7 +73,7 @@ void cpu_Switch(CONTEXT *regs)
 
     /* Actually save the context */
     SAVEREGS(regs, ctx);
-    ctx->LastError = GetLastError();
+    ctx->LastError = **KernelIFace.LastError;
 
     /* Update tc_SPReg */
     t->tc_SPReg = GET_SP(ctx);
@@ -115,19 +115,18 @@ void cpu_Dispatch(CONTEXT *regs)
         SysBase->IDNestCnt = -1;
 
         /* We are entering sleep mode */
-        Set_Sleep_Mode(SLEEP_MODE_PENDING);
+        *KernelIFace.SleepState = SLEEP_MODE_PENDING;
 
         return;
     }
 
-    DSLEEP(if (Get_Sleep_Mode()) bug("[KRN] Exiting idle state\n");)
-    Set_Sleep_Mode(SLEEP_MODE_OFF);
+    *KernelIFace.SleepState = SLEEP_MODE_OFF;
 
     D(bug("[KRN] Dispatched task 0x%p (%s)\n", task, task->tc_Node.ln_Name));
     /* Restore the task's context */
     ctx = task->tc_UnionETask.tc_ETask->et_RegFrame;
     RESTOREREGS(regs, ctx);
-    SetLastError(ctx->LastError);
+    **KernelIFace.LastError = ctx->LastError;
 
     /* Handle exception if requested */
     if (task->tc_Flags & TF_EXCEPT)
