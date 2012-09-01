@@ -695,7 +695,7 @@ static void writehandler(FILE *out, struct config *cfg)
 
     fprintf(out,
                "\n"
-               "void GM_UNIQUENAME(InitHandler)(void)\n"
+               "void GM_UNIQUENAME(InitHandler)(struct ExecBase *SysBase)\n"
                "{\n"
                "    BPTR seg;\n"
            );
@@ -1038,7 +1038,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
     }
 
     if (cfg->handlerlist)
-        fprintf(out, "        GM_UNIQUENAME(InitHandler)();\n");
+        fprintf(out, "        GM_UNIQUENAME(InitHandler)(SysBase);\n");
 
     fprintf(out,
 	    "        return  LIBBASE;\n"
