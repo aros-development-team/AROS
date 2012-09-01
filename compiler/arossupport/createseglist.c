@@ -20,10 +20,10 @@ struct phony_segment
     NAME */
 #include <proto/arossupport.h>
 
-        BPTR CreateSegList(
+        BPTR __CreateSegList(
 
 /*  SYNOPSIS */
-        APTR function )
+        APTR function, struct ExecBase *SysBase )
 
 /*  LOCATION */
 

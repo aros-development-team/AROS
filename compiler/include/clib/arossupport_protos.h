@@ -57,7 +57,8 @@ BOOL    IsDosEntryA  (char *Name, ULONG Flags);
 
 /* dos.library-compatible data generation */
 BSTR CreateBSTR(CONST_STRPTR src);
-BPTR CreateSegList(APTR function);
+BPTR __CreateSegList(APTR function, struct ExecBase *sysBase);
+#define CreateSegList(func) __CreateSegList(func, SysBase)
 
 /*
  * Taglist parsing functions.
