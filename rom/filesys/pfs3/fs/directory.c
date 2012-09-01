@@ -1137,8 +1137,8 @@ void GetNextEntry(lockentry_t *file, globaldata * g)
 static ULONG FillInData(struct ExAllData *buffer, LONG type,
 						struct direntry *direntry, ULONG spaceleft)
 {
-	UWORD nameoffset, commentoffset;
-	UBYTE *name, *comment;
+	UWORD nameoffset, commentoffset = 0;
+	UBYTE *name, *comment = NULL;
 	UCOUNT size;
 	struct extrafields extrafields;
 
@@ -3939,7 +3939,7 @@ struct deldirentry *GetDeldirEntryQuick(ULONG ddnr, globaldata *g)
 static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 		struct deldirentry *dde, ULONG ddenr, ULONG spaceleft, globaldata *g)
 {
-	UWORD nameoffset, commentoffset;
+	UWORD nameoffset, commentoffset = 0;
 	UBYTE *nameptr;
 	UCOUNT size;
 	unsigned i;
