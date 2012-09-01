@@ -392,6 +392,13 @@ static BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **p
 		{
 			BCPLtoCString(name, (UBYTE *)BADDR(startup->fssm_Device));
 			*trackdisk = (strcmp(name, "trackdisk.device") == 0) || (strcmp(name, "diskspare.device") == 0);
+
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("Opening device..\n");
+	DebugPutStr(name);
+	DebugPutStr("\n");
+#endif
+
 			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request,
 				startup->fssm_Flags) == 0)
 				return TRUE;

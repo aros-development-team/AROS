@@ -30,16 +30,29 @@
 static struct DosLibrary *DOSBase = (APTR)-1;
 static APTR IntuitionBase = (APTR)-1;
 
-#define ISKS20 (SysBase->LibNode.lib_Version >= 37)
+/* Must use DOSBase, CDTV extended ROM 2.x includes v37 SysBase replacement */
+#define ISKS20 (DOSBase->dl_lib.lib_Version >= 37)
 
 #define MIN_STACKSIZE 8000
 
 extern void EntryPoint2(void);
 
+static void wrapper_init(void)
+{
+    DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
+    IntuitionBase = OpenLibrary ("intuition.library", MIN_LIB_VERSION);
+    if (!DOSBase || !IntuitionBase)
+        Alert(AT_DeadEnd | AG_OpenLib);
+}
+static void wrapper_free(void)
+{
+    CloseLibrary(DOSBase);
+    CloseLibrary(IntuitionBase);
+}
+
 AROS_UFP2(void, StackSwap,
     AROS_UFPA(struct StackSwapStruct*, stack, A0),
     AROS_UFPA(struct ExecBase*, SysBase, A6));
-
 
 void wrapper_stackswap(void)
 {
@@ -47,17 +60,20 @@ void wrapper_stackswap(void)
     APTR stackptr;
     struct Task *tc;
     struct StackSwapStruct *stack;
-    
+
+    wrapper_init();
     tc = FindTask(NULL);
     stacksize = (UBYTE *)tc->tc_SPUpper - (UBYTE *)tc->tc_SPLower;
     if (stacksize >= MIN_STACKSIZE) {
         EntryPoint2();
+        wrapper_free();
         return;
     }
 
     stack = AllocMem(sizeof(struct StackSwapStruct) + MIN_STACKSIZE, MEMF_CLEAR | MEMF_PUBLIC);
     if (!stack) {
-        Alert(AG_NoMemory);
+        wrapper_free();
+        Alert(AT_DeadEnd | AG_NoMemory);
         return;
     }
     stackptr = stack + 1;
@@ -67,11 +83,11 @@ void wrapper_stackswap(void)
 
     if (ISKS20) {
         AROS_LVO_CALL1(void,
-		    AROS_LCA(struct StackSwapStruct*, stack, A0),
+            AROS_LCA(struct StackSwapStruct*, stack, A0),
             struct ExecBase*, SysBase, 122, );
         EntryPoint2();
         AROS_LVO_CALL1(void,
-		    AROS_LCA(struct StackSwapStruct*, stack, A0),
+            AROS_LCA(struct StackSwapStruct*, stack, A0),
             struct ExecBase*, SysBase, 122, );
     } else {
         AROS_UFC2(void, StackSwap,
@@ -84,12 +100,7 @@ void wrapper_stackswap(void)
     }
     
     FreeMem(stack, sizeof(struct StackSwapStruct) + MIN_STACKSIZE);
-}
-
-void wrapper_init(APTR intuitionbase, APTR dosbase)
-{
-	DOSBase = dosbase;
-	IntuitionBase = intuitionbase;
+    wrapper_free();
 }
 
 #if KS13WRAPPER_DEBUG
@@ -247,7 +258,7 @@ BOOL MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str)
 		AROS_LCA(CONST_STRPTR, pat, D1),
 		AROS_LCA(CONST_STRPTR, str, D2),
 		struct DosLibrary*, DOSBase, 162, );
-    /* Used by ACTION_EXAMINE_ALL which is 2.0+ packet */
+    /* Used by ACTION_EXAMINE_ALL which is 2.0+ only packet */
     return FALSE;
 }
 
@@ -383,11 +394,12 @@ LONG RemDosEntry(struct DosList *dlist)
 
 void FreeDosEntry(struct DosList *dlist)
 {
-    if (ISKS20)
-	return AROS_LVO_CALL1(void,
+    if (ISKS20) {
+	AROS_LVO_CALL1(void,
 		AROS_LCA(struct DosList*, dlist, D1),
 		struct DosLibrary*, DOSBase, 117, );
-
+	return;
+    }
     if (dlist == NULL)
     	return;
     FreeVec(BADDR(dlist->dol_Name));
