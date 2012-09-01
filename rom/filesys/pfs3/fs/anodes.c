@@ -683,11 +683,11 @@ struct cindexblock *GetIndexBlock (UWORD nr, globaldata *g)
 static struct cindexblock *NewIndexBlock (UWORD seqnr, globaldata *g)
 {
   struct cindexblock *blok;
-  struct cindexblock *superblok;
+  struct cindexblock *superblok = NULL;
   struct volumedata *volume = g->currentvolume;
   ULONG  superblnr;
   LONG blocknr;
-  UWORD	 superoffset;
+  UWORD	 superoffset = 0;
 
 	DB(Trace(10,"NewIndexBlock", "seqnr = %ld\n", seqnr));
 

@@ -24,6 +24,15 @@
 
 #endif
 
+#else
+
+#define DebugPutStr(x)
+#define DebugPutHex(x,y)
+#define DB(x)
+#define Trace(x)
+#define ENTER(x)
+#define EXIT(x)
+
 #endif
 
 #else
