@@ -218,6 +218,9 @@ static UBYTE debugbuf[120];
 #ifdef KS13WRAPPER
 void __saveds __startup EntryPoint (void)
 {
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("PFS3 starting..\n");
+#endif
 	wrapper_stackswap();
 }
 void EntryPoint2(void)
@@ -259,9 +262,6 @@ void __saveds __startup EntryPoint (void)
 	UtilityBase = OpenLibrary ("utility.library",0L);
 #endif
 	DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
-#ifdef KS13WRAPPER
-	wrapper_init(IntuitionBase, DOSBase);
-#endif
 	msgport = &((struct Process *)FindTask (NULL))->pr_MsgPort;
 
 	if (
@@ -276,7 +276,9 @@ void __saveds __startup EntryPoint (void)
 	}
 
 	//DebugMsg("Requester debug enabled");
-
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("Waiting for Start-up packet..\n");
+#endif
 	/* get startpacket */
 	WaitPort (msgport);
 	msg = GetMsg (msgport);
@@ -297,6 +299,9 @@ void __saveds __startup EntryPoint (void)
 	 */
 	devnode->dn_Task = msgport;
 
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("Mounting..\n");
+#endif
 	DB(Trace(1,"boot","g=%lx\n",g));
 	if (!Initialize ((DSTR)mountname, fssm, devnode, g))
 	{
@@ -309,6 +314,10 @@ void __saveds __startup EntryPoint (void)
 		FreeVec (g);
 		return;
 	}
+
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("Mount done..\n");
+#endif
 
 	g->DoCommand = NormalCommands;  //%4.5
 	g->inhibitcount = 0;

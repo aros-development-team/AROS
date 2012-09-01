@@ -8,7 +8,6 @@
 #include <intuition/intuition.h>
 
 void wrapper_stackswap(void);
-void wrapper_init(APTR, APTR);
 /* dos */
 BOOL MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str);
 STRPTR FilePart(CONST_STRPTR path);
