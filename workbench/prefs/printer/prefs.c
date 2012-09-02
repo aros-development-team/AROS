@@ -395,7 +395,7 @@ BOOL Prefs_Default(int PrinterUnit)
     txt->pt_Pitch = PP_PICA;
     txt->pt_Spacing = PS_SIX_LPI;
     txt->pt_LeftMargin = 5;
-    txt->pt_RightMargin = 5;
+    txt->pt_RightMargin = 75;
     txt->pt_Quality = PQ_LETTER;
 
     unit->pu_UnitNum = PrinterUnit; /* printtofile.device unit == printer.device unit */
