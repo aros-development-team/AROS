@@ -111,14 +111,11 @@ int strtoi(STRPTR string);
 
 LONG MainEntry(struct ExecBase *SysBase);
 
-__startup static AROS_ENTRY(int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, sBase)
+__startup static AROS_PROCH(Start, argstr, argsize, sBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
     return MainEntry(sBase);
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 

@@ -16,18 +16,15 @@ struct ExecBase *SysBase;
 #ifdef __AROS__
 #include <aros/asmcall.h>
 
-__startup static AROS_ENTRY(int, pipe_main,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, sysBase)
+__startup static AROS_PROCH(pipe_main, argstr, argsize, sysBase)
 #else
-#define AROS_USERFUNC_INIT
-#define AROS_USERFUNC_EXIT
+#define AROS_PROCFUNC_INIT
+#define AROS_PROCFUNC_EXIT
 #define sysBase (*(struct ExecBase **)4L)
 void startup(void)
 #endif
 {
-	AROS_USERFUNC_INIT
+	AROS_PROCFUNC_INIT
 
         SysBase = sysBase;
 
@@ -44,5 +41,5 @@ void startup(void)
 
         return RETURN_OK;
 
-	AROS_USERFUNC_EXIT
+	AROS_PROCFUNC_EXIT
 }

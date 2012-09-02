@@ -201,14 +201,11 @@ struct ArgList
     IPTR devices;
 };
 
-AROS_ENTRY(__startup static int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, sBase)
+__startup AROS_PROCH(Start, argstr, argsize, sBase)
 {
-	AROS_USERFUNC_INIT
+	AROS_PROCFUNC_INIT
 	return Main(sBase);
-	AROS_USERFUNC_EXIT
+	AROS_PROCFUNC_EXIT
 }
 
 static int Main(struct ExecBase *sBase)

@@ -645,12 +645,9 @@ AROS_UFH3(LONG, LDFlush,
     request for a library comes, when it will then find the library
     and hopefully open it.
 */
-static AROS_ENTRY(VOID, LDDemon,
-        AROS_UFHA(APTR, argptr, A0),
-        AROS_UFHA(APTR, argsize, D0),
-        struct ExecBase *, SysBase)
+static AROS_PROCH(LDDemon, argptr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct LDDemonBase *ldBase = SysBase->ex_RamLibPrivate;
     struct Library *DOSBase = ldBase->dl_DOSBase;
@@ -670,7 +667,10 @@ static AROS_ENTRY(VOID, LDDemon,
 	} /* messages available */
     }
 
-    AROS_USERFUNC_EXIT
+    /* lddemon died */
+    return 0;
+
+    AROS_PROCFUNC_EXIT
 }
 
 static ULONG LDDemon_Init(struct LDDemonBase *ldBase)

@@ -822,14 +822,23 @@ typedef unsigned int (*ULONG_FUNC)();
 #   define AROS_USERFUNC_EXIT }}
 #endif
 
-#ifndef AROS_ENTRY
-#define AROS_ENTRY(t, n, a1, a2, bt, bn)	\
-    __AROS_UFH_PREFIX t n (			\
-    __AROS_UFHA(a1),				\
-    __AROS_UFHA(a2),				\
-    __AROS_UFHA(bt, bn, A6)			\
-    ) {
+/* DOS/CreateProc() entry point definition
+ */
+#ifndef AROS_PROCH
+#define AROS_PROCH(n, _argptr, _argsize, _SysBase) \
+    AROS_UFH3(SIPTR, n,                           \
+        AROS_UFHA(STRPTR, _argptr, A0),           \
+        AROS_UFHA(ULONG,  _argsize, D0),          \
+        AROS_UFHA(struct ExecBase *, _SysBase, A6))
+#define AROS_PROCP(n) \
+    AROS_UFP3(SIPTR, n,                           \
+        AROS_UFPA(STRPTR, _argptr, A0),           \
+        AROS_UFPA(ULONG,  _argsize, D0),          \
+        AROS_UFPA(struct ExecBase *, _SysBase, A6))
 #endif
+
+#define AROS_PROCFUNC_INIT      AROS_USERFUNC_INIT
+#define AROS_PROCFUNC_EXIT      AROS_USERFUNC_EXIT
 
 /******************************************************************************
 *****  ENDE aros/asmcall.h

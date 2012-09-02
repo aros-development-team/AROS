@@ -192,16 +192,13 @@ ULONG __abox__ = 1;
 #endif
 
 #ifdef __AROS__
-AROS_ENTRY(__startup LONG, Main,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, sBase)
+__startup AROS_PROCH(Main, argptr, argsize, sBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     return handler(sBase);
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 #else
 

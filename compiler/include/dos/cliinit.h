@@ -129,13 +129,11 @@
  * See Amiga Mail II-65: "Writing a UserShell" for details.
  */
 #define AROS_CLI(main) \
-    AROS_ENTRY(SIPTR, main, \
-            AROS_UFHA(struct DosPacket *, dp, A0), \
-            AROS_UFHA(ULONG, unused, D0), \
-            struct ExecBase *, SysBase) \
+    AROS_PROCH(main, argptr, argsize, SysBase) \
     { \
-       AROS_USERFUNC_INIT \
+       AROS_PROCFUNC_INIT \
        \
+       struct DosPacket *dp = (struct DosPacket *)argptr; \
        extern SIPTR _shell_##main(ULONG flags, LONG type, struct ExecBase *SysBase D(, struct DosPacket *dp)); \
        struct Process *me = (struct Process *)FindTask(NULL); \
        D(struct DosPacket olddp;)\
@@ -221,7 +219,7 @@
        \
        return ret; \
        \
-       AROS_USERFUNC_EXIT \
+       AROS_PROCFUNC_EXIT \
     } \
     SIPTR _shell_##main(ULONG AROS_CLI_Flags, LONG AROS_CLI_Type, struct ExecBase *SysBase D(, struct DosPacket *AROS_CLI_DosPacket))
 

@@ -15,12 +15,9 @@ void test()
     Printf("Exit() did not work!\n");
 }
 
-AROS_ENTRY(__startup static int, Start,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, SysBase)
+__startup static AROS_PROCH(Start, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct Process *me;
     IPTR *stackbase;
@@ -39,5 +36,5 @@ AROS_ENTRY(__startup static int, Start,
     CloseLibrary(&DOSBase->dl_lib);
     return RETURN_OK;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }

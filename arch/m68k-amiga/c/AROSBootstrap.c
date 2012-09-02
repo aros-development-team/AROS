@@ -1323,12 +1323,9 @@ static struct BootStruct *AllocBootStruct(UBYTE *cmdline)
     return boots;
 }
 
-__startup static AROS_ENTRY(int, startup,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, sysBase)
+__startup static AROS_PROCH(startup, argstr, argsize, sysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     SysBase = sysBase;
     APTR lowmem;
@@ -1459,5 +1456,5 @@ __startup static AROS_ENTRY(int, startup,
 
     return IoErr();
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }

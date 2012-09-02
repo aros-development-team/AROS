@@ -79,12 +79,9 @@ AROS_UFH3(APTR, MyLockBitMapTagList,
 
 /****************************************************************************************/
 
-AROS_ENTRY(LONG, PatchTask,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, SysBase)
+AROS_PROCH(PatchTask, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct Library *CyberGfxBase;
     struct MsgPort *port;
@@ -111,17 +108,14 @@ AROS_ENTRY(LONG, PatchTask,
     CloseLibrary(CyberGfxBase);
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-__startup static AROS_ENTRY(int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, SysBase)
+__startup static AROS_PROCH(Start, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct RDArgs *myargs;
     IPTR args[NUM_ARGS] = {0};
@@ -185,5 +179,5 @@ __startup static AROS_ENTRY(int, Start,
     CloseLibrary((struct Library *)DOSBase);
     return rc;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }

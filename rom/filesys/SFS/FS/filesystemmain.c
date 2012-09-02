@@ -269,16 +269,13 @@ LONG mainprogram(struct ExecBase *);
 #endif
 
 #ifdef __AROS__
-AROS_ENTRY(__startup ULONG, Start,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, sBase)
+__startup AROS_PROCH(Start, argstr, argsize, sBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     return mainprogram(sBase);
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 #else
 LONG __saveds trampoline(void)
