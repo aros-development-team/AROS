@@ -7,18 +7,16 @@
  */
 
 #include <exec/types.h>
+#include <exec/execbase.h>
 #include <dos/dos.h>
 #include <aros/asmcall.h>
 
 /* Smallest possible AROS program */
-AROS_ENTRY(__startup ULONG, True,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, sBase)
+__startup AROS_PROCH(True, argstr, argsize, sBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     return (sBase != 0) ? RETURN_OK : RETURN_FAIL;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }

@@ -56,13 +56,9 @@ asm(".set __importnoinitexitsets, __noinitexitsets");
 extern void __startup_entries_init(void);
 
 /* Guarantee that __startup_entry is placed at the beginning of the binary */
-__startup AROS_ENTRY(LONG, __startup_entry,
-    AROS_UFHA(char *,argstr,A0),
-    AROS_UFHA(ULONG,argsize,D0),
-    struct ExecBase *, SysBase
-)
+__startup AROS_PROCH(__startup_entry, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     D(bug("Entering __startup_entry(\"%s\", %d, %x)\n", argstr, argsize, SysBase));
 
@@ -88,7 +84,7 @@ __startup AROS_ENTRY(LONG, __startup_entry,
 
     return __startup_error;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 } /* entry */
 
 

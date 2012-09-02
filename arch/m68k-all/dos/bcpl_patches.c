@@ -26,12 +26,9 @@ AROS_UFP4(BPTR, LoadSeg_Overlay,
     AROS_UFPA(BPTR, fh, D3),
     AROS_UFPA(struct DosLibrary *, DosBase, A6));
 
-static AROS_ENTRY(LONG, SetPatch_noop,
-	AROS_UFHA(char *, argstr, A0),
-	AROS_UFHA(ULONG, argsize, D0),
-	struct ExecBase *, SysBase)
+static AROS_PROCH(SetPatch_noop, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     APTR DOSBase = TaggedOpenLibrary(TAGGEDOPEN_DOS);
 
@@ -45,7 +42,7 @@ static AROS_ENTRY(LONG, SetPatch_noop,
 
     return RETURN_WARN;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 /* from C:Version */

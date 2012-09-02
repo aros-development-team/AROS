@@ -57,13 +57,9 @@
 DECLARE_main(name);                                                           \
 DECLARE_DOSBase_global                                                        \
                                                                               \
-__startup static AROS_ENTRY(LONG, _entry,                                     \
-    AROS_UFHA(char *,__argstr,A0),                                              \
-    AROS_UFHA(ULONG,argsize,D0),                                              \
-    struct ExecBase *,SysBase                                                 \
-)                                                                             \
+__startup static AROS_PROCH(_entry, __argstr, argsize, SysBase)               \
 {                                                                             \
-    AROS_USERFUNC_INIT                                                        \
+    AROS_PROCFUNC_INIT                                                        \
                                                                               \
     DEFINE_DOSBase_local                                                      \
                                                                               \
@@ -110,7 +106,7 @@ __exit:                                                                       \
                                                                               \
     return __retcode;                                                         \
                                                                               \
-    AROS_USERFUNC_EXIT                                                        \
+    AROS_PROCFUNC_EXIT                                                        \
 }                                                                             \
                                                                               \
 DEFINE_SysBase_global                                                         \

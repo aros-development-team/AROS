@@ -74,12 +74,9 @@ enum
     NOOFARGS
 };
 
-AROS_ENTRY(__startup static ULONG, Start,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, SysBase)
+__startup AROS_PROCH(Start, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct DosLibrary *DOSBase;
     struct Library *KeymapBase;
@@ -134,5 +131,5 @@ AROS_ENTRY(__startup static ULONG, Start,
 
     return rc;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }

@@ -169,12 +169,9 @@ enum
     ARG_INTER
 };
 
-__startup static AROS_ENTRY(int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, sBase)
+__startup static AROS_PROCH(Start, argstr, argsize, sBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct data _data, *data = &_data;
     struct RDArgs *rda;
@@ -296,7 +293,7 @@ __startup static AROS_ENTRY(int, Start,
 
     return error;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 static

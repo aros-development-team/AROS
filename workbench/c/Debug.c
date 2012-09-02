@@ -29,18 +29,14 @@
 ******************************************************************************/
 
 #include <proto/exec.h>
+#include <aros/shcommands.h>
 
-const TEXT version[] = "$VER: Debug 1.0 (16.08.2010)";
-
-AROS_ENTRY(__startup static ULONG, Start,
-	   AROS_UFHA(char *, argstr, A0),
-	   AROS_UFHA(ULONG, argsize, D0),
-	   struct ExecBase *, SysBase)
+AROS_SH0(Debug, 1.0)
 {
-    AROS_USERFUNC_INIT
+    AROS_SHCOMMAND_INIT
 
     Debug(0);
     return 0;
     
-    AROS_USERFUNC_EXIT
+    AROS_SHCOMMAND_EXIT
 }

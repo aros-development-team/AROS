@@ -552,13 +552,10 @@ static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct Copy
 int main()
 {
 #else
-__startup static AROS_ENTRY(int, Start,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, SysBase)
+__startup static AROS_PROCH(Start, argstr, argsize, SysBase)
 #endif
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     struct DosLibrary *DOSBase;
     struct Process *task;
@@ -1198,7 +1195,7 @@ __startup static AROS_ENTRY(int, Start,
     }
     return retval;
     
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 /* This code is pure and has library bases in explicitly allocated data structure */

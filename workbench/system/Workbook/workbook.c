@@ -71,12 +71,9 @@ exit:
 /* This wrapper is needed, so that we can start 
  * workbench items from an Input handler
  */
-AROS_ENTRY(LONG, wbOpener,
-	AROS_UFHA(STRPTR, argstr, A0),
-	AROS_UFHA(ULONG, argsize, D0),
-	struct ExecBase *, SysBase)
+AROS_PROCH(wbOpener, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     APTR WorkbenchBase = OpenLibrary("workbench.library", 0);
     APTR DOSBase = OpenLibrary("dos.library", 0);
@@ -91,7 +88,7 @@ AROS_ENTRY(LONG, wbOpener,
 
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
 

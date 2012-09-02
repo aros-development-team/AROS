@@ -183,12 +183,9 @@ static void dump_mmu(ULONG *root)
 	}
 }			
 
-__startup static AROS_ENTRY(int, startup,
-	  AROS_UFHA(char *, argstr, A0),
-	  AROS_UFHA(ULONG, argsize, D0),
-	  struct ExecBase *, SysBase)
+__startup static AROS_PROCH(startup, argstr, argsize, SysBase)
 {
-    AROS_USERFUNC_INIT
+    AROS_PROCFUNC_INIT
 
     DOSBase = (APTR)OpenLibrary("dos.library", 0);
 
@@ -233,7 +230,7 @@ end:
     CloseLibrary((APTR)DOSBase);
     return 0;
 
-    AROS_USERFUNC_EXIT
+    AROS_PROCFUNC_EXIT
 }
 
    
