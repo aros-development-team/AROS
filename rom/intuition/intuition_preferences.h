@@ -9,7 +9,7 @@ CONST struct Preferences IntuitionDefaultPreferences =
 {
     8,      // FontHeight
     0,      // PrinterPort
-    0,      // BaudRate
+    5,      // BaudRate
 
     {
 	{ 0 },{ 40000 }
@@ -68,22 +68,22 @@ CONST struct Preferences IntuitionDefaultPreferences =
 
     0,      // PointerType
     {
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+        'g','e','n','e','r','i','c',0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     }
     ,// PrinterFilename (30 chars)
 
     0,      // PrintPitch
     0,      // PrintQuality
     0,      // PrintSpacing
-    0,      // PrintLeftMargin
-    0,      // PrintRightMargin
+    5,      // PrintLeftMargin
+    75,     // PrintRightMargin
     0,      // PrintImage
     0,      // PrintAspect
-    0,      // PrintShade
-    0,      // PrintTreshold
+    1,      // PrintShade
+    2,      // PrintTreshold
 
-    0,      // PaperSize
-    0,      // PaperLength
+    32,     // PaperSize
+    66,     // PaperLength
     0,      // PaperType
 
     0,      // SerRWBits
