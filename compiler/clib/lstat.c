@@ -59,7 +59,7 @@ static BPTR __lock(
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     int res = 0;
     BPTR lock;
 

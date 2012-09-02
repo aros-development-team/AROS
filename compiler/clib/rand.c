@@ -41,7 +41,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     aroscbase->acb_srand_seed = aroscbase->acb_srand_seed * 1103515245 + 12345;
 
@@ -85,7 +85,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     aroscbase->acb_srand_seed = seed;
 } /* srand */

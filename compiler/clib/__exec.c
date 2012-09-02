@@ -40,7 +40,7 @@ static void __exec_cleanup(struct aroscbase *aroscbase);
 
 APTR __exec_prepare(const char *filename, int searchpath, char *const argv[], char *const envp[])
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     char *filename2 = NULL;
     int argssize = 512;
     struct Process *me;
@@ -390,7 +390,7 @@ error:
 
 void __exec_do(APTR id)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     char *oldtaskname;
     struct CommandLineInterface *cli = Cli();
     struct Task *self = FindTask(NULL);
@@ -400,8 +400,8 @@ void __exec_do(APTR id)
 
     /* id is unused */
     (void)id;
-    /* When exec is not called under vfork condition id == __GM_GetBase()
-       When exec is called under vfork condition we need to use __GM_GetBase() in the
+    /* When exec is not called under vfork condition id == __aros_getbase()
+       When exec is called under vfork condition we need to use __aros_getbase() in the
        parent to check for PRETEND_CHILD and find the udata for signaling the child
     */
 
@@ -445,8 +445,8 @@ void __exec_do(APTR id)
         strlen(aroscbase->acb_exec_args)
     );
 
-    D(bug("[__exec_do] Program ran, aroscbase=%x, __GM_GetBase()=%x\n",
-          aroscbase, __GM_GetBase()
+    D(bug("[__exec_do] Program ran, aroscbase=%x, __aros_getbase()=%x\n",
+          aroscbase, __aros_getbase()
       )
     );
 
@@ -462,7 +462,7 @@ void __exec_do(APTR id)
 
 char *const *__exec_valist2array(const char *arg1, va_list list)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     int argc, i;
     static char *no_arg[] = {NULL};
     va_list list2;
@@ -506,7 +506,7 @@ char *const *__exec_valist2array(const char *arg1, va_list list)
 
 void __exec_cleanup_array()
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     if (aroscbase->acb_exec_tmparray)
     {
         free((void *)aroscbase->acb_exec_tmparray);

@@ -42,7 +42,7 @@
 	global variable errno.
 */
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     ssize_t          res = -1;
     struct DevProc   *dvp = NULL;
     LONG             error;

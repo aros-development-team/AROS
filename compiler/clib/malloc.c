@@ -53,7 +53,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     UBYTE *mem = NULL;
 
     /* Allocate the memory */

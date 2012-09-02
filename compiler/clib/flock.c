@@ -220,7 +220,7 @@ void RemoveFromList(struct SignalSemaphore *sem);
 
 LONG AddToList(struct SignalSemaphore *sem)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     struct FlockNode *node;
     node = AllocMem(sizeof(struct FlockNode), MEMF_ANY | MEMF_CLEAR);
     if(!node)
@@ -232,7 +232,7 @@ LONG AddToList(struct SignalSemaphore *sem)
 
 void RemoveFromList(struct SignalSemaphore *sem)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     struct FlockNode *varNode;
     struct Node *tmpNode;
     

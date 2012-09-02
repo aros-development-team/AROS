@@ -39,7 +39,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     mode_t oumask = aroscbase->acb_umask;
 
     aroscbase->acb_umask = numask;

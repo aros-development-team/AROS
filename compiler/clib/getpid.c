@@ -40,7 +40,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     struct ETask *et;
 
     if(aroscbase->acb_flags & PRETEND_CHILD)

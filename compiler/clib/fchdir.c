@@ -50,7 +50,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     BPTR oldlock = BNULL;
     BPTR newlock = BNULL;
     BPTR handle = BNULL;

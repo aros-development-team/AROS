@@ -64,7 +64,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     UBYTE *mem = NULL, *orig;
 
     /* check the alignment is valid */
