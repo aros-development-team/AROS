@@ -207,7 +207,7 @@ APTR LoadChunk(struct IFFHandle *iff, LONG size, ULONG memtype);
 
 void LocalePrefs_Handler(STRPTR filename);
 
-/* sscreenmodeprefs.c */
+/* screenmodeprefs.c */
 
 void ScreenModePrefs_Handler(STRPTR filename);
 
@@ -235,6 +235,10 @@ void RootPatternCleanup (void);
 /* pointerprefs.c */
 
 void PointerPrefs_Handler(STRPTR filename);
+
+/* printerprefs.c */
+
+void PrinterPrefs_Handler(STRPTR filename);
 
 /*********************************************************************************************/
 

@@ -103,7 +103,7 @@ preftable[] =
     {"icontrol"     , icontrolprefsname  , IControlPrefs_Handler   },
     {"screenmode"   , screenmodeprefsname, ScreenModePrefs_Handler },
     {"serial"	    , serialprefsname	 , SerialPrefs_Handler     },
-    {"printer"	    , printerprefsname	 , NULL                    },
+    {"printer"	    , printerprefsname	 , PrinterPrefs_Handler    },
     {"pointer"	    , pointerprefsname   , PointerPrefs_Handler    },
     {"overscan"     , overscanprefsname  , NULL                    },
     {NULL   	    	    	    	      	    	    	   }
