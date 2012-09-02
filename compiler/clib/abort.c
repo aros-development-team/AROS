@@ -54,7 +54,7 @@
 {
     raise(SIGABRT);
 
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     /* Abort anyway */
     aroscbase->acb_flags |= ABNORMAL_EXIT;

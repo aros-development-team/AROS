@@ -11,7 +11,7 @@
 
 int __addexitfunc(struct AtExitNode *aen)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     
     ADDHEAD((struct List *)&aroscbase->acb_atexit_list, (struct Node *)aen);
 
@@ -27,7 +27,7 @@ int __init_atexit(struct aroscbase *aroscbase)
 
 void __callexitfuncs(void)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     struct AtExitNode *aen;
 
     while (

@@ -91,7 +91,7 @@ err1:
 
 static __env_item **internal_findvar(register const char *name)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
    __env_item **curr;
 

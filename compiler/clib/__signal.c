@@ -15,7 +15,7 @@
 
 struct signal_func_data *__sig_getfuncdata(int signum)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     int i;
 
     if (signum < SIGHUP || signum > _SIGMAX)
@@ -50,7 +50,7 @@ struct signal_func_data *__sig_getfuncdata(int signum)
 /* Handler for SIG_DFL */
 void __sig_default(int signum)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     switch (signum)
     {

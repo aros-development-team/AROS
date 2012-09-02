@@ -46,7 +46,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     return (clock_t)time(NULL) - aroscbase->acb_starttime;
 } /* clock */

@@ -18,7 +18,7 @@ void __arosc_program_startup(void)
 {
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", __GM_GetBase()));
+    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", __aros_getbase()));
 
     /* Function is just a placeholder for the future */
 
@@ -34,7 +34,7 @@ void __arosc_program_startup(void)
 
 void __arosc_program_end(void)
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     D(bug("[__arosc_program_end]\n"));
 
     if (!(aroscbase->acb_flags & ABNORMAL_EXIT))

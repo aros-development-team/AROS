@@ -57,7 +57,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     BPTR lock = BNULL;
     struct FileInfoBlock *fib = NULL;
     int result = -1;

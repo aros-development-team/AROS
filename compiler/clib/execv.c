@@ -52,7 +52,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     char **environ = (aroscbase->acb_environptr) ? *aroscbase->acb_environptr : NULL;
     APTR id = __exec_prepare(path, 0, argv, environ);
     if (!id)

@@ -145,6 +145,5 @@ struct aroscbase
    libbase.
 */
 void *__aros_getbase(void);
-#define __GM_GetBase() __aros_getbase()
 
 #endif /* !___AROSC_PRIVDATA_H */

@@ -64,7 +64,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     int oflags, wanted_accmode, current_accmode;
     fdesc *fdesc;
     FILENODE *fn;

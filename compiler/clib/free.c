@@ -47,7 +47,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     if (memory)
     {
 	unsigned char *mem;

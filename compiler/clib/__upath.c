@@ -50,7 +50,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     const char *newpath;
 
     /* Does the path really need to be converted?  */
@@ -130,7 +130,7 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
     const char *old_apath = apath;
     char ch, *upath, *old_upath;
     size_t size = 0;

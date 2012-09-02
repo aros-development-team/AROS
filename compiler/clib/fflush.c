@@ -50,7 +50,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __GM_GetBase();
+    struct aroscbase *aroscbase = __aros_getbase();
 
     /* flush all streams opened for output */
     if (!stream)
