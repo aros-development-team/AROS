@@ -1024,6 +1024,27 @@ endif
 %end
 #------------------------------------------------------------------------------
 
+#------------------------------------------------------------------------------
+# Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
+# 'start' is an optional starting address
+# 'ldflags' is optional additional flags for the linker
+%define rule_link_binary file=/A name=/A objs=/A start=0 ldflags=
+
+BD_OUTDIR := $(dir %(file))
+# This trick removes the trailing '/', otherwise findstring below fails, causing a warning
+BD_OUTDIR := $(subst /*,,$(addsuffix *,$(BD_OUTDIR)))
+BD_TMPDIR := $(GENDIR)/$(CURDIR)
+
+%(file) : %(objs) $(BD_OUTDIR)
+	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
+	@$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
+	@cd $(BD_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
+
+ifeq ($(findstring $(BD_OUTDIR),$(GLOB_MKDIRS)),)
+    GLOB_MKDIRS += $(BD_OUTDIR)
+endif
+
+%end
 
 #------------------------------------------------------------------------------
 # Common rules for all makefiles
@@ -2337,7 +2358,8 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #                         /progdir//./file will be translated to
 #                         progdir:file during run-time. Defaults to no.
 #     - compiler        = target, host or kernel. Defaults to target.
-#     - install_target  = the command used for installing. Defaults to install.
+#     - install_target  = the command used for installing. Defaults to install. Leave
+#                         it empty if you want to suppress installing.
 #     - preconfigure    = a metatarget which is executed before configure is called.
 #     - postconfigure   = a metatarget which is executed after configure is called.
 #     - postinstall     = a metatarget which is executed after installing.
@@ -2692,10 +2714,7 @@ endif
 
 
 #------------------------------------------------------------------------------
-# Joins the features of %fetch and %build_with_configure, taking advantage of
-# the naming scheme of GNU packages. GNU packages names are in the form
-#
-#     <package name>-<version number>.<archive format suffix>
+# Joins the features of %fetch and %build_with_configure.
 #
 # If a patch is provided, it *must* be named the following way:
 #
@@ -2708,36 +2727,40 @@ endif
 # the %fetch_and_build macro only accepts *one* patch for each package. It's up to you
 # to make that patch fully comprehensive.
 #
-# NOTE: GNU packages are always compiled with *nix semantics turned on.
-#
 # Arguments:
 #
-#    - mmake        = the meta make target, as would be supplied to the %build_with_configure
-#                     macro.
-#    - package      = the GNU package name, sans version and archive format suffixes.
-#    - version      = the package's version number, or otherwise any other version string.
-#                     It gets appended to the package name to form the basename of the archive.
-#    - suffixes     = a list of suffixes to apped to the the package name plus the
-#                     version. Each one of them is tried until a matching archive is found.
-#                     Defaults to "tar.bz2 tar.gz".
-#    - destination  = same meaning as the one for the %fetch macro
-#    - location     = same meaning as the one for the %fetch macro
-#    - package_repo = same meaning as the one of the %fetch macro's %(archive_origins) argument
-#    - patch        = "yes" or "no", depending on whether a patch for this package needs to be
-#                     fetched or not
-#    - patch_repo   = same meaning as the one of the %fetch macro's %(patches_origins) argument
-#    - prefix       = same meaning as the one for the %build_with_configure macro. Defaults to
-#                     $(GNUDIR).
-#    - aros_prefix  = same meaning as the one for the %build_with_configure macro. Defaults to
-#                     /GNU.
-#    - extraoptions = same meaning as the one for the %build_with_configure macro.
-#    - extracflags  = same meaning as the one for the %build_with_configure macro.
-#    - postinstall  = same meaning as the one for the %build_with_configure macro.
-#    - create_pkg   = create a distributable package of the compiled sources, defaults to no
+#    - mmake            = the meta make target.
+#    - package          = the GNU package name, sans version and archive format suffixes.
+#    - subpackage       = ???
+#    - compiler         = same meaning as the one for the %build_with_configure macro.
+#    - install_target   = same meaning as the one for the %build_with_configure macro.
+#    - version          = the package's version number, or otherwise any other version string.
+#                         It gets appended to the package name to form the basename of the archive.
+#    - suffixes         = a list of suffixes to apped to the the package name plus the
+#                         version. Each one of them is tried until a matching archive is found.
+#                         Defaults to "tar.bz2 tar.gz".
+#    - srcdir           = ???
+#    - package_repo     = same meaning as the one of the %fetch macro's %(archive_origins) argument
+#    - patch            = "yes" or "no", depending on whether a patch for this package needs to be
+#                         fetched or not. Default to no.
+#    - patch_repo       = same meaning as the one of the %fetch macro's %(patches_origins) argument
+#    - prefix           = same meaning as the one for the %build_with_configure macro.
+#    - aros_prefix      = same meaning as the one for the %build_with_configure macro.
+#    - extraoptions     = same meaning as the one for the %build_with_configure macro.
+#    - extracflags      = same meaning as the one for the %build_with_configure macro.
+#    - preconfigure     = same meaning as the one for the %build_with_configure macro.
+#    - postconfigure    = same meaning as the one for the %build_with_configure macro.
+#    - postinstall      = same meaning as the one for the %build_with_configure macro.
+#    - install_env      = same meaning as the one for the %build_with_configure macro.
+#    - use_build_env    = same meaning as the one for the %build_with_configure macro.
+#    - nix              = same meaning as the one for the %build_with_configure macro.
+#    - nix_dir_layout   = same meaning as the one for the %build_with_configure macro.
+#    - create_pkg       = create a distributable package of the compiled sources, defaults to no
 
-%define fetch_and_build mmake=/A package=/A subpackage= compiler=target version=/A suffixes="tar.bz2 tar.gz" \
-    srcdir= package_repo= patch=no patch_repo= prefix= aros_prefix= extraoptions= extracflags= \
-    preconfigure= postconfigure= postinstall= nix=no nix_dir_layout= create_pkg=no
+%define fetch_and_build mmake=/A package=/A subpackage= compiler=target install_target=install \
+    version=/A suffixes="tar.bz2 tar.gz" srcdir= package_repo= patch=no patch_repo= \
+    prefix= aros_prefix= extraoptions= extracflags= preconfigure= postconfigure= postinstall= \
+    install_env= use_build_env=no nix=no nix_dir_layout= create_pkg=no
 
 #MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
 #MM- %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
@@ -2798,8 +2821,8 @@ ifneq (%(create_pkg),no)
     %(mmake)-%(subpackage)-package := $(%(mmake)-%(subpackage)-package-basename).tar.bz2
 endif
 
-%build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) \
-     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) \
+%build_with_configure mmake=%(mmake)-%(subpackage) package=%(package) compiler=%(compiler) install_target=%(install_target) \
+     srcdir=$(%(mmake)-portdir)/$(%(mmake)-%(subpackage)-srcdir) install_env=%(install_env) use_build_env=%(use_build_env) \
      nix=%(nix) nix_dir_layout=%(nix_dir_layout) prefix="$(%(mmake)-prefix)" \
      aros_prefix="%(aros_prefix)" preconfigure="%(preconfigure)" postconfigure="%(postconfigure)" postinstall="%(postinstall) \
      %(mmake)-%(subpackage)-make-package"  extraoptions="%(extraoptions)" extracflags="%(extracflags)"
@@ -2830,6 +2853,31 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
 
 
 #------------------------------------------------------------------------------
+# Joins the features of %fetch and %build_with_configure, taking advantage of
+# the naming scheme of GNU packages. GNU packages names are in the form
+#
+#     <package name>-<version number>.<archive format suffix>
+#
+# If a patch is provided, it *must* be named the following way:
+#
+#    <package name>-<version number>-aros.diff
+#
+# Moreover, it *must* be appliable with the -p1 option of the `patch' command after
+# CD'ing into the archive's extracted directory.
+#
+# Note that whilst the %fetch macro accepts a list of patches for any given archive,
+# the %fetch_and_build macro only accepts *one* patch for each package. It's up to you
+# to make that patch fully comprehensive.
+#
+# NOTE: GNU packages are always compiled with *nix semantics turned on.
+#
+# Arguments:
+#
+#    Arguments have the same meaning as the one for the %fetch_and_build macro, except:
+#
+#    - prefix           = defaults to $(GNUDIR).
+#    - aros_prefix      = defaults to /GNU.
+
 %define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= extracflags= preconfigure= postconfigure= postinstall= 
@@ -2879,9 +2927,13 @@ postinstall-%(package)-delete-la-files:
 #------------------------------------------------------------------------------
 
 # Builds a kickstart package in PKG format
-# mmake   - target name
-# file    - Destination file name with path
-# startup - The file which will be put first
+#
+# Arguments:
+#
+#    - mmake   = target name
+#    - file    = destination file name with path
+#    - startup = the file which will be put first
+#
 # Other arguments are self-explanatory
 
 %define make_package mmake=/A file=/A classes= devs= handlers= hidds= libs= res= startup=
@@ -3000,24 +3052,3 @@ GLOB_MKDIRS += $(TMP_DIRS)
 
 %end
 
-#------------------------------------------------------------------------------
-# Link %(objs) to binary blob in %(file) using %(name) as name of embedded binary object
-# 'start' is an optional starting address
-# 'ldflags' is optional additional flags for the linker
-%define rule_link_binary file=/A name=/A objs=/A start=0 ldflags=
-
-BD_OUTDIR := $(dir %(file))
-# This trick removes the trailing '/', otherwise findstring below fails, causing a warning
-BD_OUTDIR := $(subst /*,,$(addsuffix *,$(BD_OUTDIR)))
-BD_TMPDIR := $(GENDIR)/$(CURDIR)
-
-%(file) : %(objs) $(BD_OUTDIR)
-	@$(ECHO) "Linking    $(subst $(TARGETDIR)/,,$@)..."
-	@$(KERNEL_LD) %(ldflags) --entry=%(start) --oformat=binary -Ttext=%(start) -o $(BD_TMPDIR)/%(name) %(objs)
-	@cd $(BD_TMPDIR) && $(AROS_LD) %(ldflags) -r --format binary %(name) -o $@
-
-ifeq ($(findstring $(BD_OUTDIR),$(GLOB_MKDIRS)),)
-    GLOB_MKDIRS += $(BD_OUTDIR)
-endif
-
-%end
