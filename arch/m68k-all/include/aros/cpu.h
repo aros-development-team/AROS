@@ -157,12 +157,12 @@ extern void aros_not_implemented ();
 #define AROS_PROCH(n, _argptr, _argsize, _SysBase) \
     AROS_UFH2(SIPTR, n,                            \
             AROS_UFHA(STRPTR, _argptr, A0),        \
-            AROS_UFHA(STRPTR, _argsize, D0))       \
-        struct ExecBase *_SysBase = *((struct ExecBase *)4);
+            AROS_UFHA(ULONG , _argsize, D0))       \
+        struct ExecBase *_SysBase = *((struct ExecBase **)4);
 #define AROS_PROCP(n)                              \
     AROS_UFP2(LONG, n,                             \
             AROS_UFHA(STRPTR, _argptr, A0),        \
-            AROS_UFHA(STRPTR, _argsize, D0))
+            AROS_UFHA(ULONG , _argsize, D0))
 
 #define AROS_SWAP_BYTES_LONG_CPU(l)     \
     ({ ULONG v; __asm__ __volatile__("ror.w #8,%0\nswap %0\nror.w #8,%0":"=d"(v):"0"(l)); v;})
