@@ -219,7 +219,7 @@ int main(void)
         printf("Done, exiting\n");
 
         /* Disable NMI, or bad things may happen if someone reuses this IRQ number */
-        *kernelIf->NonMaskableIRQ = debugIRQ;
+        *kernelIf->NonMaskableIRQ = -1;
     }
     else
         printf("Failed to install console hook\n");
