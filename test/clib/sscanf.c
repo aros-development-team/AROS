@@ -46,6 +46,20 @@ int main(void)
     TEST(cnt == 0);
     TEST(i == 123456);
 
+    cnt = sscanf("0.1", "%f", &f);
+    TEST(cnt == 1);
+
+    cnt = sscanf(".1", "%f", &f);
+    TEST(cnt == 1);
+
+    cnt = sscanf("1", "%f", &f);
+    TEST(cnt == 1);
+
+    cnt = sscanf("-.1", "%f", &f);
+    TEST(cnt == 1);
+
+    cnt = sscanf("x", "%f", &f);
+    TEST(cnt == 0);
 
     return 0;
 }
