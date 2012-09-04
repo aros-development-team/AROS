@@ -316,8 +316,10 @@ const static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values
                         PREV(c);
                         c=min;
                     }
-                    if(size==1)
+                    if(size==1) {
+                        PREV(c);
                         break;
+                    }
 
                     if(VAL(tolower(c)=='e'))
                     {
