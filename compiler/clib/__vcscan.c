@@ -16,9 +16,7 @@
 #include <ctype.h>
 #include <math.h>
 
-#ifndef AROSC_ROM
 #define FULL_SPECIFIERS
-#endif
 
 /* some macros to cut this short
  * NEXT(c);         read next character
