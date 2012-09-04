@@ -9,88 +9,24 @@
 
 #include <string.h>
 
+#include <exec/rawfmt.h>
+
 #include "exec_intern.h"
 #include "exec_util.h"
 
-static inline char *addHex(char *buff, ULONG val)
-{
-    *(buff++) = "0123456789ABCDEF"[val & 0xf];
-
-    return buff;
-}
-
-static inline char *addHexen(char *buff, ULONG val)
-{
-    int i;
-
-    for (i = 0; i < 8; i++)
-    	buff = addHex(buff, (val >> (28 - i * 4)) & 0xf);
-
-    return buff;
-}
-
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
-    char *buf = buffer;
-    char tmp[16];
-    int i;
-    UWORD sr = (ctx)->sr;
+    VOID_FUNC dest = buffer ? RAWFMTFUNC_STRING : RAWFMTFUNC_SERIAL;
+    char *buf;
     
-    if (!buffer)
-    {
-        /*
-         * FIXME: SAD now calls this routine with buffer = NULL in order to dump
-         * the context to debug output.
-         * This is very simple with (New)RawDoFmt(), but this code is
-         * completely another thing...
-         */
-        kprintf("FIXME: Not implemented yet\n");
-        return NULL;
-    }
+    buf = RawDoFmt("D0: %08lx %08lx %08lx %08lx\n"
+                   "D4: %08lx %08lx %08lx %08lx\n"
+                   "A0: %08lx %08lx %08lx %08lx\n"
+                   "A4: %08lx %08lx %08lx %08lx\n"
+                   "SR:     %04x\n"
+                   "PC: %08lx", ctx, dest, buffer);
 
-    for (i = 0; i < 8; i++) {
-    	tmp[0] = 'D';
-    	tmp[1] = '0' + i;
-    	tmp[2] = ':';
-    	tmp[3] = ' ';
-    	tmp[4] = 0;
-    	buf = Alert_AddString(buf, tmp);
-    	buf = addHexen(buf, (ctx)->d[i]);
-    	if ((i%4) == 3)
-    	    *buf = '\n';
-    	else
-    	    *buf = ' ';
-    	buf++;
-    }
-    for (i = 0; i < 8; i++) {
-    	tmp[0] = 'A';
-    	tmp[1] = '0' + i;
-    	tmp[2] = ':';
-    	tmp[3] = ' ';
-    	tmp[4] = 0;
-    	buf = Alert_AddString(buf, tmp);
-    	buf = addHexen(buf, (ctx)->a[i]);
-    	if ((i%4) == 3)
-    	    *buf = '\n';
-    	else
-    	    *buf = ' ';
-    	buf++;
-    }
-    buf = Alert_AddString(buf, "SR: T="); buf = addHex(buf, (sr >> 14) & 3);
-    buf = Alert_AddString(buf, " S="); buf = addHex(buf, (sr >> 13) & 1);
-    buf = Alert_AddString(buf, " M="); buf = addHex(buf, (sr >> 5) & 1);
-    buf = Alert_AddString(buf, " X="); buf = addHex(buf, (sr >> 4) & 1);
-    buf = Alert_AddString(buf, " N="); buf = addHex(buf, (sr >> 3) & 1);
-    buf = Alert_AddString(buf, " Z="); buf = addHex(buf, (sr >> 2) & 1);
-    buf = Alert_AddString(buf, " V="); buf = addHex(buf, (sr >> 1) & 1);
-    buf = Alert_AddString(buf, " C="); buf = addHex(buf, (sr >> 0) & 1);
-    buf = Alert_AddString(buf, " IMASK="); buf = addHex(buf, (sr >> 8) & 7);
-    /* PC was already printed out */
-    // buf = Alert_AddString(buf, "\nPC: "); buf = addHexen(buf, ctx->pc);
-    *(buf++) = '\n';
-    *buf = 0;
-
-    return buf;
+    return buf - 1;
 }
 
 /* Unwind a single stack frame */
