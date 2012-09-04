@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal debugger.
@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "exec_intern.h"
+#include "exec_util.h"
 
 /****************************************************************************************/
 
@@ -92,14 +93,12 @@ static char *NextWord(char *s)
     char *data;
     BOOL ignorelf = FALSE;
 
-#ifdef KrnObtainInput
     /*
      * Try to obtain debug input from the kernel.
      * If it failed, we will hang up in RawMayGetChar(), so exit immediately.
      */
     if (!KrnObtainInput())
         return;
-#endif
 
     RawIOInit();
 
@@ -174,46 +173,51 @@ static char *NextWord(char *s)
         /* Disable command */
         else if (strcmp(comm, "DI") == 0)
             Disable();
-        /* Show active task information */
+        /* Show task information */
         else if (strcmp(comm, "TI") == 0)
         {
-            struct Task *t = SysBase->ThisTask;
+            struct Task *t = GetA(data);
 
-            kprintf("Active task (%p = '%s'):\n"
+            if (!Exec_CheckTask(t, SysBase))
+            {
+                kprintf("Task 0x%P not found\n", t);
+                continue;
+            }
+
+            kprintf("Task status (%p = '%s'):\n"
                             "tc_Node.ln_Pri = %d\n"
-                            "tc_SigAlloc = %04.4lx\n"
-                            "tc_SPLower = %p\n"
-                            "tc_SPUpper = %p\n"
-                            "tc_Flags = %p\n"
-                            "tc_SPReg = %p\n",
+                            "tc_Flags       = %p\n"
+                            "tc_SigAlloc    = %04.4lx\n"
+                            "tc_SigWait     = %04.4lx\n"
+                            "tc_SPLower     = %p\n"
+                            "tc_SPReg       = %p\n"
+                            "tc_SPUpper     = %p\n"
+                            "tc_IDNestCnt   = %d\n"
+                            "tc_TDNestCnt   = %d\n",
                             t, t->tc_Node.ln_Name,
                             t->tc_Node.ln_Pri,
-                            t->tc_SigAlloc,
-                            t->tc_SPLower,
-                            t->tc_SPUpper,
                             t->tc_Flags,
-                            t->tc_SPReg);                               
+                            t->tc_SigAlloc,
+                            t->tc_SigWait,
+                            t->tc_SPLower,
+                            t->tc_SPReg,
+                            t->tc_SPUpper,
+                            t->tc_IDNestCnt,
+                            t->tc_TDNestCnt);
         }
         else if (strcmp(comm,"RI") == 0)
         {
-            /*
-             * TODO: this function is not useful at all in its current implementation.
-             * When the task is running its context is not valid. It would be much better
-             * to be able to examine contexts of other tasks.
-             * I left this here for demonstration purposes.
-             *
-             * 24.12.2010: reference to kernel.resource's private includes is removed,
-             * so PRINT_CPU_CONTEXT is not defined at all. Exec needs some CPU-specific
-             * .c file where all CPU-dependent functionality needs to be gathered. This
-             * is going to include full CPU context dump, stack trace, etc.
-             */
-#ifdef PRINT_CPU_CONTEXT
-            struct ExceptionContext *r = SysBase->ThisTask->tc_UnionETask.tc_ETask->et_RegFrame;
+            struct Task *t = GetA(data);
 
-            PRINT_CPU_CONTEXT(r);
-#else
-            kprintf("Not implemented on this platform.\n");
-#endif
+            if (!Exec_CheckTask(t, SysBase))
+            {
+                kprintf("Task 0x%P not found\n", t);
+                continue;
+            }
+
+            kprintf("Task context (%p = '%s'):\n", t, t->tc_Node.ln_Name);
+            FormatCPUContext(NULL, t->tc_UnionETask.tc_ETask->et_RegFrame, SysBase);
+            RawPutChar('\n');
         }
         /* Enable command */
         else if (strcmp(comm, "EN") == 0)
@@ -303,7 +307,7 @@ static char *NextWord(char *s)
                     "EN - Enable()\n"
                     "SI - Show IRQ lines status\n"
                     "TI - Show Active task info\n"
-                    "RI - Show registers inside task's context\n"
+                    "RI xxxxxxxx - Show registers inside task's context\n"
                     "AM xxxxxxxx yyyyyyyy - AllocVec - size=xxxxxxxx, "
                     "requiments=yyyyyyyy\n"
                     "FM xxxxxxxx - FreeVec from xxxxxxxx\n"
@@ -444,11 +448,7 @@ static char *NextWord(char *s)
         else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
         {
             kprintf("Quitting SAD...\n");
-
-#ifdef KrnReleaseInput
-            /* Release debug input */
-            KrnReleaseInput();
-#endif
+            KrnReleaseInput(); /* Release debug input */
             return;
         }
         else kprintf("?? Type HE for help\n");

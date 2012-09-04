@@ -23,15 +23,16 @@ static const char *seg_fmt = "\nCS=%04lx  SS=%04lx  DS=%04lx\n"
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
+    VOID_FUNC dest = buffer ? RAWFMTFUNC_STRING : RAWFMTFUNC_SERIAL;
     char *buf;
 
-    buf = NewRawDoFmt(gpr_fmt, RAWFMTFUNC_STRING, buffer,
+    buf = NewRawDoFmt(gpr_fmt, dest, buffer,
 		      ctx->eax, ctx->ebx, ctx->ecx, ctx->edx,
 		      ctx->esi, ctx->edi, ctx->esp, ctx->ebp,
 		      ctx->eip, ctx->esp, ctx->eflags);
     if (ctx->Flags & ECF_SEGMENTS)
     {
-	buf = NewRawDoFmt(seg_fmt, RAWFMTFUNC_STRING, buf - 1,
+	buf = NewRawDoFmt(seg_fmt, dest, buf - 1,
 			  ctx->cs, ctx->ss, ctx->ds,
 			  ctx->es, ctx->fs, ctx->gs);
     }
