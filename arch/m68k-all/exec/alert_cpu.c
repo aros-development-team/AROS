@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: CPU context parsing routines. Dummy nonfunctional template.
@@ -35,6 +35,19 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
     char tmp[16];
     int i;
     UWORD sr = (ctx)->sr;
+    
+    if (!buffer)
+    {
+        /*
+         * FIXME: SAD now calls this routine with buffer = NULL in order to dump
+         * the context to debug output.
+         * This is very simple with (New)RawDoFmt(), but this code is
+         * completely another thing...
+         */
+        kprintf("FIXME: Not implemented yet\n");
+        return NULL;
+    }
+
     for (i = 0; i < 8; i++) {
     	tmp[0] = 'D';
     	tmp[1] = '0' + i;

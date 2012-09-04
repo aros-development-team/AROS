@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ARM CPU context parsing routines.
@@ -20,9 +20,10 @@ static const char *gpr_fmt = "R0=0x%08lx  R1=0x%08lx  R2 =0x%08lx  R3 =0x%08lx\n
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
+    VOID_FUNC dest = buffer ? RAWFMTFUNC_STRING : RAWFMTFUNC_SERIAL;
     char *buf;
 
-    buf = NewRawDoFmt(gpr_fmt, RAWFMTFUNC_STRING, buffer,
+    buf = NewRawDoFmt(gpr_fmt, dest, buffer,
 		      ctx->r[0], ctx->r[1], ctx->r[2] , ctx->r[3] , 
 		      ctx->r[4], ctx->r[5], ctx->r[6] , ctx->r[7] , 
 		      ctx->r[8], ctx->r[9], ctx->r[10], ctx->r[11], 

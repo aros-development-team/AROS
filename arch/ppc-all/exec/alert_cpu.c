@@ -1,5 +1,5 @@
 /*
-    Copyright © 2010, The AROS Development Team. All rights reserved.
+    Copyright © 2010-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: PowerPC CPU context parsing routines.
@@ -31,9 +31,10 @@ static const char *gp2_fmt =          " R13=%08lx   R14=%08lx  R15=%08lx\n"
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
+    VOID_FUNC dest = buffer ? RAWFMTFUNC_STRING : RAWFMTFUNC_SERIAL;
     char *buf;
 
-    buf = NewRawDoFmt(gpr_fmt, RAWFMTFUNC_STRING, buffer,
+    buf = NewRawDoFmt(gpr_fmt, dest, buffer,
 		      ctx->msr    , ctx->ip    , ctx->cr     , ctx->xer,
 		      ctx->ctr    , ctx->lr    , ctx->dsisr  , ctx->dar,
 		      ctx->gpr[0] , ctx->gpr[1], ctx->gpr[2] , ctx->gpr[3],
@@ -42,7 +43,7 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 		      ctx->gpr[12]);
     if (ctx->Flags & ECF_FULL_GPRS)
     {
-	buf = NewRawDoFmt(gp2_fmt, RAWFMTFUNC_STRING, buf - 1,
+	buf = NewRawDoFmt(gp2_fmt, dest, buf - 1,
 			  ctx->gpr[13], ctx->gpr[14], ctx->gpr[15],
 			  ctx->gpr[16], ctx->gpr[17], ctx->gpr[18],  ctx->gpr[19],
 			  ctx->gpr[20], ctx->gpr[21], ctx->gpr[22],  ctx->gpr[23],

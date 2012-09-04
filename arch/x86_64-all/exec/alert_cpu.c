@@ -1,5 +1,5 @@
 /*
-    Copyright © 2011, The AROS Development Team. All rights reserved.
+    Copyright © 2011-2012, The AROS Development Team. All rights reserved.
     $Id: alert_cpu.c 36262 2010-12-27 12:17:48Z sonic $
 
     Desc: CPU context parsing routines, x86-64 version.
@@ -25,9 +25,10 @@ static const char *seg_fmt = "\nCS=%04lx  SS=%04lx  DS=%04lx\n"
 
 char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBase *SysBase)
 {
+    VOID_FUNC dest = buffer ? RAWFMTFUNC_STRING : RAWFMTFUNC_SERIAL;
     char *buf;
 
-    buf = NewRawDoFmt(gpr_fmt, RAWFMTFUNC_STRING, buffer,
+    buf = NewRawDoFmt(gpr_fmt, dest, buffer,
 		      ctx->rax, ctx->rbx, ctx->rcx, ctx->rdx,
 		      ctx->rsi, ctx->rdi, ctx->rsp, ctx->rbp,
 		      ctx->r8 , ctx->r9 , ctx->r10, ctx->r11,
@@ -35,7 +36,7 @@ char *FormatCPUContext(char *buffer, struct ExceptionContext *ctx, struct ExecBa
 		      ctx->rip, ctx->rsp, ctx->rflags);
     if (ctx->Flags & ECF_SEGMENTS)
     {
-	buf = NewRawDoFmt(seg_fmt, RAWFMTFUNC_STRING, buf - 1,
+	buf = NewRawDoFmt(seg_fmt, dest, buf - 1,
 			  ctx->cs, ctx->ss, ctx->ds,
 			  ctx->es, ctx->fs, ctx->gs);
     }
