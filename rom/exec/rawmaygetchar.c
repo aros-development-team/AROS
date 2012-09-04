@@ -45,11 +45,7 @@
 {
     AROS_LIBFUNC_INIT
 
-#ifdef KrnMayGetChar
     return KrnMayGetChar();
-#else
-    return -1;
-#endif
 
     AROS_LIBFUNC_EXIT
 } /* RawMayGetChar */
