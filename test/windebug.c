@@ -21,16 +21,30 @@
 #define __stdcall __attribute__((stdcall))
 #endif
 
+#define WAIT_TIMEOUT 0x00000102
+
 struct KernelInterface
 {
     int  (*KrnAllocIRQ)(void);
     void (*KrnFreeIRQ)(unsigned char irq);
     void (*KrnCauseIRQ)(unsigned char irq);
     int   *NonMaskableIRQ;
+    int   *Supervisor;
 };
 
-static LONG  debugIRQ;
+struct Kernel32Interface
+{
+    ULONG __stdcall (*SetConsoleCtrlHandler)(void *HandlerRoutine, ULONG Add);
+    APTR  __stdcall (*CreateEvent)(void *lpEventAttributes, ULONG bManualReset, ULONG bInitialState, const char *lpName);
+    ULONG __stdcall (*CloseHandle)(APTR hObject);
+    ULONG __stdcall (*SetEvent)(APTR hEvent);
+    ULONG __stdcall (*WaitForSingleObject)(void *hHandle, ULONG dwMilliseconds);
+};
+
+static LONG debugIRQ;
+static APTR intAck;
 static struct KernelInterface *kernelIf;
+static struct Kernel32Interface *winIf;
 
 static const char *symbols[] =
 {
@@ -38,11 +52,31 @@ static const char *symbols[] =
     "KrnFreeIRQ",
     "KrnCauseIRQ",
     "NonMaskableInt",
+    "Supervisor",
+    NULL
+};
+
+static const char *kern32_symbols[] =
+{
+    "SetConsoleCtrlHandler",
+    "CreateEventA",
+    "CloseHandle",
+    "SetEvent",
+    "WaitForSingleObject",
     NULL
 };
 
 static void DebugInterrupt(void *a1, void *a2)
 {
+    /*
+     * Acknowledge the interrupt and call SAD.
+     * Acknowledgement mechanism is needed for very heavy lockups, when interrupts
+     * become inresponsive. Our console hook will wait for 3 seconds, and if this
+     * timeout expores, we consider that our virtualized CPU is dead, and run SAD
+     * right from within console hook. Doing this under normal circumstances results
+     * in crash because of asynchronous re-entering user-mode code.
+     */
+    winIf->SetEvent(intAck);
     Debug(0);
 }
 
@@ -54,8 +88,26 @@ static ULONG __stdcall ConsoleHook(ULONG event)
 {
     if (event == 1) /* CTRL_BREAK_EVENT */
     {
+        ULONG status;
+
         kernelIf->KrnCauseIRQ(debugIRQ);
-        return TRUE;
+        status = winIf->WaitForSingleObject(intAck, 3000);
+
+        if (status != WAIT_TIMEOUT)
+            return TRUE;
+
+        /*
+         * This will set supervisor flag. After this it's OK to call kprintf().
+         * We add 1 instead of just setting 1 in order to be able to know
+         * its original value.
+         * Note that here we are running outside of both AROS threads
+         * (supervisor and user). It's OK only because if we are here, interrupt
+         * thread went defunct, and this is the only thread running.
+         */
+        *kernelIf->Supervisor += 1;
+
+        kprintf("Timeout waiting for NMI ACK, entering emergency SAD\n");
+        Debug(0);
     }
     return FALSE;
 }
@@ -67,7 +119,6 @@ int main(void)
     char *errStr;
     APTR kern32, kernel;
     ULONG unres;
-    ULONG __stdcall (*SetConsoleCtrlHandler)(void *HandlerRoutine, ULONG Add);
     APTR KernelBase, HostLibBase;
     APTR intHandle;
     
@@ -93,11 +144,13 @@ int main(void)
         return 10;
     }
 
-    SetConsoleCtrlHandler = HostLib_GetPointer(kern32, "SetConsoleCtrlHandler", &errStr);
-    if (!SetConsoleCtrlHandler)
+    winIf = (struct Kernel32Interface *)HostLib_GetInterface(kern32, kern32_symbols, &unres);
+    if ((!winIf) || unres)
     {
-        printf("SetConsoleCtrlHandler: %s\n", errStr);
-        HostLib_FreeErrorStr(errStr);
+        printf("Failed to obtain kernel.dll interface, %u symbols unresolved\n", unres);
+        
+        if (winIf)
+            HostLib_DropInterface((void **)winIf);
         HostLib_Close(kern32, NULL);
         return 10;
     }
@@ -107,6 +160,7 @@ int main(void)
     {
         printf("kernel.dll: %s\n", errStr);
         HostLib_FreeErrorStr(errStr);
+        HostLib_DropInterface((void **)winIf);
         HostLib_Close(kern32, NULL);
         return 10;
     }
@@ -118,6 +172,7 @@ int main(void)
         
         if (kernelIf)
             HostLib_DropInterface((void **)kernelIf);
+        HostLib_DropInterface((void **)winIf);
         HostLib_Close(kernel, NULL);
         HostLib_Close(kern32, NULL);
         return 10;
@@ -128,6 +183,7 @@ int main(void)
     {
         printf("Failed to create NMI interrupt!\n");
         HostLib_DropInterface((void **)kernelIf);
+        HostLib_DropInterface((void **)winIf);
         HostLib_Close(kernel, NULL);
         HostLib_Close(kern32, NULL);
 
@@ -140,37 +196,44 @@ int main(void)
         printf("Failed to add IRQ handler\n");
 
         HostLib_DropInterface((void **)kernelIf);
+        HostLib_DropInterface((void **)winIf);
         HostLib_Close(kernel, NULL);
         HostLib_Close(kern32, NULL);
         return 10;
     }
 
     Forbid();
-    unres = SetConsoleCtrlHandler(ConsoleHook, TRUE);
+    intAck = winIf->CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (intAck)
+        unres = winIf->SetConsoleCtrlHandler(ConsoleHook, TRUE);
     Permit();
-    
+
     if (unres)
     {
         /* Yes, NonMaskable IRQ exists solely for us dirty hackers */
         *kernelIf->NonMaskableIRQ = debugIRQ; /* This turns IRQ into NMI */
 
-        printf("Debug NMI installed, press Ctrl-C to uninstall\n");
+        printf("Debug NMI#%d installed, press Ctrl-C to uninstall\n", debugIRQ);
         Wait(SIGBREAKF_CTRL_C);
 
         printf("Done, exiting\n");
 
         /* Disable NMI, or bad things may happen if someone reuses this IRQ number */
         *kernelIf->NonMaskableIRQ = debugIRQ;
-        Forbid();
-        SetConsoleCtrlHandler(ConsoleHook, FALSE);
-        Permit();
     }
     else
         printf("Failed to install console hook\n");
 
+    Forbid();
+    if (unres)
+        winIf->SetConsoleCtrlHandler(ConsoleHook, FALSE);
+    winIf->CloseHandle(intAck);
+    Permit();
+
     KrnRemIRQHandler(intHandle);
     kernelIf->KrnFreeIRQ(debugIRQ);
     HostLib_DropInterface((void **)kernelIf);
+    HostLib_DropInterface((void **)winIf);
     HostLib_Close(kernel, NULL);
     HostLib_Close(kern32, NULL);
 
