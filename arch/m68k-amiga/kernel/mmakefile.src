@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 FILES=cause cli sti kernel_debug kernel_timer maygetchar amiga_irq \
-      getbootinfo kernel_globals
+      getbootinfo kernel_globals obtaininput releaseinput
 
 AFILES=
 
