@@ -175,28 +175,33 @@ DWORD WINAPI TaskSwitcher()
             Ints_Enabled = IRQVector(PendingInts, &MainCtx);
             /* All IRQs have been processed */
             ZeroMemory(PendingInts, sizeof(PendingInts));
+            /* Leave supervisor mode. Interrupt state is already updated by IRQVector(). */
+            Supervisor = 0;
 
-            /* If AROS is not going to sleep, set new CPU context */
+            /* Resume main thread if AROS is not sleeping */
             if (Sleep_Mode == SLEEP_MODE_OFF)
             {
                 DS(printf("[Task switcher] new CPU context: ****\n"));
                 DS(PRINT_CPUCONTEXT(&MainCtx));
                 SetThreadContext(MainThread, &MainCtx);
+                ResumeThread(MainThread);
             }
-
-            /* Leave supervisor mode. Interrupt state is already updated by IRQVector(). */
-            Supervisor = 0;
-        }
-
-        /* Resuming main thread if AROS is not sleeping */
-        if (Sleep_Mode == SLEEP_MODE_OFF)
-        {
-            DS(printf("[Task switcher] Resuming main thread\n"));
-            ResumeThread(MainThread);
+            else
+            {
+                /* We've entered sleep mode. Main thread is kept suspended. */
+                Sleep_Mode = SLEEP_MODE_ON;
+            }
         }
         else
-            /* We've entered sleep mode */
-            Sleep_Mode = SLEEP_MODE_ON;
+        {
+            /*
+             * Interrupts are disabled here. Do not commit sleep mode, or we
+             * end up in sleeping main thread before it enables interrupt.
+             * This will cause a deadlock.
+             */
+            if (Sleep_Mode != SLEEP_MODE_ON)
+                ResumeThread(MainThread);
+        }
     }
     return 0;
 }
