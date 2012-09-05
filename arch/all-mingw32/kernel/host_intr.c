@@ -155,7 +155,7 @@ DWORD WINAPI TaskSwitcher()
         }
 
         /* Process interrupts if we are allowed to */
-        if (Ints_Enabled && INT_SAFE(MainCtx) && (obj != NonMaskableInt))
+        if ((Ints_Enabled && INT_SAFE(MainCtx)) || (obj == NonMaskableInt))
         {
             Supervisor = 1;
             /* 
