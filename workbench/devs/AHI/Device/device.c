@@ -299,6 +299,13 @@ _DevOpen ( struct AHIRequest* ioreq,
 
         *windowptr = oldwindowptr;
       }
+
+      // Load Void driver if no real hardware was found
+
+      if(AHI_NextAudioID(AHI_INVALID_ID) == (ULONG) AHI_INVALID_ID)
+      {
+        AHI_LoadModeFile("SYS:Storage/AudioModes/VOID");
+      }
     }
   }
 
@@ -582,7 +589,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   {
     /* Internal defaults for device unit */
     iounit->AudioMode       = AHI_INVALID_ID;   // See at the end of the function!
-    iounit->Frequency       = 10000;
+    iounit->Frequency       = 44100;
     iounit->Channels        = 4;
     iounit->MonitorVolume   = ~0;
     iounit->InputGain       = ~0;
@@ -594,7 +601,7 @@ ReadConfig ( struct AHIDevUnit *iounit,
   {
     /* Internal defaults for low-level mode */
     AHIBase->ahib_AudioMode       = AHI_INVALID_ID;
-    AHIBase->ahib_Frequency       = 10000;
+    AHIBase->ahib_Frequency       = 44100;
     AHIBase->ahib_MonitorVolume   = 0x00000;
     AHIBase->ahib_InputGain       = 0x10000;
     AHIBase->ahib_OutputVolume    = 0x10000;

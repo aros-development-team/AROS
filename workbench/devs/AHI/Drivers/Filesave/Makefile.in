@@ -12,4 +12,6 @@ MODEFILE	= FILESAVE
 OBJECTS		= filesave-init.o filesave-main.o filesave-accel.o \
 		  filesave-playslave.o filesave-recslave.o
 
+DEST		= Storage
+
 include ../Common/Makefile.common

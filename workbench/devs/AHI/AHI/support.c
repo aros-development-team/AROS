@@ -286,7 +286,7 @@ static BOOL AddUnit(struct List *list, int unit) {
   u->prefs.ahiup_Unit           = unit;
   u->prefs.ahiup_Channels       = 1;
   u->prefs.ahiup_AudioMode      = AHI_BestAudioID(AHIDB_Realtime, TRUE, TAG_DONE);
-  u->prefs.ahiup_Frequency      = 8000;
+  u->prefs.ahiup_Frequency      = 44100;
   u->prefs.ahiup_MonitorVolume  = 0x00000;
   u->prefs.ahiup_InputGain      = 0x10000;
   u->prefs.ahiup_OutputVolume   = 0x10000;
