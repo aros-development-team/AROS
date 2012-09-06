@@ -1181,7 +1181,7 @@ static void handlePacket(struct emulbase *emulbase, struct filehandle *fhv, stru
     ReplyPkt(dp, Res1, Res2);
 }
 
-void EmulHandler_work(void)
+static void EmulHandler_work(struct ExecBase *SysBase)
 {
     struct DosLibrary *DOSBase;
     struct DosPacket *dp;
@@ -1244,5 +1244,16 @@ void EmulHandler_work(void)
     RemDosEntry(fhv->dl);
     free_lock(emulbase, fhv);
     CloseLibrary((APTR)DOSBase);
+}
+
+AROS_PROCH(EmulHandlerMain, argptr, argstr, SysBase)
+{
+    AROS_PROCFUNC_INIT
+
+    EmulHandler_work(SysBase);
+
+    return RETURN_OK;
+
+    AROS_PROCFUNC_EXIT
 }
 

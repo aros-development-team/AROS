@@ -157,7 +157,7 @@ BOOL debug=FALSE;
 
 /* protos */
 // extern void __saveds EntryWithNewStack(void);
-void __saveds EntryPoint(void);
+LONG EntryPoint(struct ExecBase *);
 void NormalCommands(struct DosPacket *, globaldata *);
 void HandleSleepMsg (globaldata *g);
 void ReturnPacket(struct DosPacket *, struct MsgPort *, globaldata *);
@@ -214,19 +214,9 @@ static UBYTE debugbuf[120];
 /*                                MAIN                                */
 /*                                MAIN                                */
 /**********************************************************************/
+#undef SysBase
 
-#ifdef KS13WRAPPER
-void __saveds __startup EntryPoint (void)
-{
-#if KS13WRAPPER_DEBUG
-	DebugPutStr("PFS3 starting..\n");
-#endif
-	wrapper_stackswap();
-}
-void EntryPoint2(void)
-#else
-void __saveds __startup EntryPoint (void)
-#endif
+LONG EntryPoint(struct ExecBase *SysBase)
 {
 	/* globals */
 	struct globaldata *g;
@@ -238,13 +228,6 @@ void __saveds __startup EntryPoint (void)
 	UBYTE *mountname;
 	ULONG signal, dossig, timesig, notifysig, sleepsig, waitmask;
 
-#ifndef __AROS__
-#undef SysBase
-	struct ExecBase *SysBase;
-
-	SysBase =  *((struct ExecBase **)4);
-#endif
-
 	/* init globaldata */
 	g = AllocVec (sizeof(struct globaldata), MEMF_CLEAR);
 	if (!g)
@@ -252,9 +235,7 @@ void __saveds __startup EntryPoint (void)
 		Alert (AG_NoMemory);
 		Wait (0);
 	}
-#ifndef __AROS__
 	g->g_SysBase = SysBase;
-#endif
 
 	/* open libs */
 	IntuitionBase = (APTR)OpenLibrary ("intuition.library", MIN_LIB_VERSION);
@@ -312,7 +293,7 @@ void __saveds __startup EntryPoint (void)
 		RES1(pkt) = DOSFALSE;
 		ReturnPacket (pkt, msgport, g);
 		FreeVec (g);
-		return;
+		return RETURN_FAIL;
 	}
 
 #if KS13WRAPPER_DEBUG
@@ -341,10 +322,6 @@ void __saveds __startup EntryPoint (void)
 
 #if MULTIUSER
 	g->muFS_ready = FALSE;
-#endif
-
-#ifndef __AROS__
-#define SysBase g->g_SysBase
 #endif
 
 	while (1)
@@ -482,7 +459,11 @@ void __saveds __startup EntryPoint (void)
 	terminate:
 
 	Quit (g);
+
+	return RETURN_OK;
 }
+
+#define SysBase g->g_SysBase
 
 void ReturnPacket (struct DosPacket *packet, struct MsgPort *sender, globaldata *g)
 {
@@ -652,3 +633,26 @@ static void Quit (globaldata *g)
 	FreeVec (g);
 	AfsDie ();
 }
+
+#undef SysBase
+
+#ifdef __AROS__
+LONG Start(struct ExecBase *SysBase)
+{
+#ifdef KS13WRAPPER
+#if KS13WRAPPER_DEBUG
+	DebugPutStr("PFS3 starting..\n");
+#endif
+	return wrapper_stackswap(EntryPoint, SysBase);
+#else
+        return EntryPoint(SysBase);
+#endif
+}
+#else
+LONG __saveds __startup Main(void)
+{
+    return EntryPoint(*(struct ExecBase **)4L);
+}
+#endif
+
+

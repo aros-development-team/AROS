@@ -115,8 +115,6 @@ struct handlerinfo {
     int priority;               /* Task priority */
     int stacksize;              /* Stacksize information */
     int startup;                /* Startup id */
-
-    char *handler;              /* Name of the handler */
 };
 
 struct config
@@ -185,6 +183,7 @@ struct config
     struct interfaceinfo *interfacelist;
 
     /* The DOS IDs and handlers for this module */
+    char *handlerfunc;
     struct handlerinfo *handlerlist;
 
     /* Relative libraries used by this library

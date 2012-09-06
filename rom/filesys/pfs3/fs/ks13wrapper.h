@@ -5,9 +5,10 @@
 
 #include <dos/dosextens.h>
 #include <exec/ports.h>
+#include <exec/execbase.h>
 #include <intuition/intuition.h>
 
-void wrapper_stackswap(void);
+LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *);
 /* dos */
 BOOL MatchPatternNoCase(CONST_STRPTR pat, CONST_STRPTR str);
 STRPTR FilePart(CONST_STRPTR path);

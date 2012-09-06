@@ -227,7 +227,7 @@ static CONST_STRPTR skipdevname(CONST_STRPTR fn)
  Input : proc - our process structure
  Output: -
 ********************************************/
-void __startup AFS_work(void)
+LONG AFS_work(struct ExecBase *SysBase)
 {
     struct MsgPort *mp;
     struct DosPacket *dp;
@@ -248,7 +248,7 @@ void __startup AFS_work(void)
     if (handler == NULL) {
     	D(bug("[AFS] Can't allocate an instance of the handler for this volume\n"));
     	replypkt(dp, DOSFALSE);
-    	return ;
+    	return RETURN_FAIL;
     }
 
     volume = AFS_open_volume(handler, dp, &retval);
@@ -256,7 +256,7 @@ void __startup AFS_work(void)
     	D(bug("[AFS] Can't open volume\n"));
     	replypkt2(dp, DOSFALSE, retval);
     	AFS_free(handler);
-    	return;
+    	return RETURN_FAIL;
     }
 
     /* make non-packet functions to see our volume */
@@ -820,6 +820,7 @@ void __startup AFS_work(void)
 
     AFS_free(handler);
     replypkt(dp, DOSTRUE);
-    return;
+
+    return RETURN_OK;
 }
 

@@ -352,7 +352,7 @@ static void stopread(struct filehandle *fh, struct DosPacket *waitingdp)
     }
 }
 
-LONG CONMain(void)
+LONG CONMain(struct ExecBase *SysBase)
 {
 	struct MsgPort *mp;
 	struct DosPacket *dp;

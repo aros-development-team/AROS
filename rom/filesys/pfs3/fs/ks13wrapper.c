@@ -27,54 +27,55 @@
 
 #endif
 
-static struct DosLibrary *DOSBase = (APTR)-1;
-static APTR IntuitionBase = (APTR)-1;
-
 /* Must use DOSBase, CDTV extended ROM 2.x includes v37 SysBase replacement */
 #define ISKS20 (DOSBase->dl_lib.lib_Version >= 37)
 
 #define MIN_STACKSIZE 8000
 
-extern void EntryPoint2(void);
+static struct DosLibrary *DOSBase = (APTR)-1;
+static struct Library *IntuitionBase = (APTR)-1;
+struct ExecBase *SysBase = (APTR)-1;
 
-static void wrapper_init(void)
-{
-    DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION);
-    IntuitionBase = OpenLibrary ("intuition.library", MIN_LIB_VERSION);
-    if (!DOSBase || !IntuitionBase)
-        Alert(AT_DeadEnd | AG_OpenLib);
-}
-static void wrapper_free(void)
-{
-    CloseLibrary(DOSBase);
-    CloseLibrary(IntuitionBase);
-}
+#define wrapper_init() do { \
+    DOSBase = (struct DosLibrary *)OpenLibrary ("dos.library", MIN_LIB_VERSION); \
+    IntuitionBase = OpenLibrary ("intuition.library", MIN_LIB_VERSION); \
+    if (!DOSBase || !IntuitionBase) \
+        Alert(AT_DeadEnd | AG_OpenLib); \
+} while (0)
+
+#define wrapper_free() do { \
+    CloseLibrary(DOSBase); \
+    CloseLibrary(IntuitionBase); \
+} while (0)
 
 AROS_UFP2(void, StackSwap,
     AROS_UFPA(struct StackSwapStruct*, stack, A0),
     AROS_UFPA(struct ExecBase*, SysBase, A6));
 
-void wrapper_stackswap(void)
+LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *sysBase)
 {
     ULONG stacksize;
     APTR stackptr;
     struct Task *tc;
     struct StackSwapStruct *stack;
+    LONG ret;
+
+    SysBase = sysBase;
 
     wrapper_init();
     tc = FindTask(NULL);
     stacksize = (UBYTE *)tc->tc_SPUpper - (UBYTE *)tc->tc_SPLower;
     if (stacksize >= MIN_STACKSIZE) {
-        EntryPoint2();
+        ret = func(SysBase);
         wrapper_free();
-        return;
+        return ret;
     }
 
     stack = AllocMem(sizeof(struct StackSwapStruct) + MIN_STACKSIZE, MEMF_CLEAR | MEMF_PUBLIC);
     if (!stack) {
         wrapper_free();
         Alert(AT_DeadEnd | AG_NoMemory);
-        return;
+        return RETURN_FAIL;
     }
     stackptr = stack + 1;
     stack->stk_Lower = stackptr;
@@ -85,7 +86,7 @@ void wrapper_stackswap(void)
         AROS_LVO_CALL1(void,
             AROS_LCA(struct StackSwapStruct*, stack, A0),
             struct ExecBase*, SysBase, 122, );
-        EntryPoint2();
+        ret = func(SysBase);
         AROS_LVO_CALL1(void,
             AROS_LCA(struct StackSwapStruct*, stack, A0),
             struct ExecBase*, SysBase, 122, );
@@ -93,7 +94,7 @@ void wrapper_stackswap(void)
         AROS_UFC2(void, StackSwap,
             AROS_UFCA(struct StackSwapStruct*, stack, A0),
             AROS_UFCA(struct ExecBase*, SysBase, A6));
-        EntryPoint2();
+        ret = func(SysBase);
         AROS_UFC2(void, StackSwap,
             AROS_UFCA(struct StackSwapStruct*, stack, A0),
             AROS_UFCA(struct ExecBase*, SysBase, A6));
@@ -101,6 +102,8 @@ void wrapper_stackswap(void)
     
     FreeMem(stack, sizeof(struct StackSwapStruct) + MIN_STACKSIZE);
     wrapper_free();
+
+    return ret;
 }
 
 #if KS13WRAPPER_DEBUG
@@ -309,7 +312,7 @@ static BOOL CMPBSTR(BSTR s1, BSTR s2)
     UBYTE *ss2 = BADDR(s2);
     return memcmp(ss1, ss2, ss1[0] + 1);
 }
-static struct DosList *getdoslist(void)
+static struct DosList *getdoslist(struct ExecBase *SysBase)
 {
     struct DosInfo *di;
     
@@ -317,7 +320,7 @@ static struct DosList *getdoslist(void)
     Forbid();
     return (struct DosList *)&di->di_DevInfo;
 }
-static void freedoslist(void)
+static void freedoslist(struct ExecBase *SysBase)
 {
     Permit();
 }
@@ -372,7 +375,7 @@ LONG RemDosEntry(struct DosList *dlist)
     if(dlist == NULL)
 	return 0;
 
-    dl = getdoslist();
+    dl = getdoslist(SysBase);
 
     while(TRUE)
     {
@@ -387,7 +390,7 @@ LONG RemDosEntry(struct DosList *dlist)
 	dl = dl2;
     }
 
-    freedoslist();
+    freedoslist(SysBase);
 
     return 1;
 }
@@ -423,7 +426,7 @@ LONG AddDosEntry(struct DosList *dlist)
         dlist->dol_Name, dlist->dol_Type, dlist,
         FindTask(NULL)->tc_Node.ln_Name));
 
-    dl = getdoslist();
+    dl = getdoslist(SysBase);
 
     if(dlist->dol_Type != DLT_VOLUME)
     {
@@ -451,7 +454,7 @@ LONG AddDosEntry(struct DosList *dlist)
 	dinf->di_DevInfo = MKBADDR(dlist);
     }
 
-    freedoslist();
+    freedoslist(SysBase);
 
     return success;    
 }

@@ -268,16 +268,7 @@ LONG mainprogram(struct ExecBase *);
 #undef SysBase
 #endif
 
-#ifdef __AROS__
-__startup AROS_PROCH(Start, argstr, argsize, sBase)
-{
-    AROS_PROCFUNC_INIT
-
-    return mainprogram(sBase);
-
-    AROS_PROCFUNC_EXIT
-}
-#else
+#ifndef __AROS__
 LONG __saveds trampoline(void)
 {
     struct ExecBase *sBase = (*((struct ExecBase **)4));

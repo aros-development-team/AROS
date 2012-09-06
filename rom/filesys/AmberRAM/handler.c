@@ -48,7 +48,11 @@ static VOID ReplyPacket(struct MsgPort *proc_port, struct DosPacket *packet,
 static TEXT *BStr(struct Handler *h, UBYTE *b_str);
 static TEXT *BStr2(struct Handler *h, UBYTE *b_str);
 
+#ifdef __AROS__
+LONG AmberMain(struct ExecBase *SysBase)
+#else
 LONG AmberMain(void)
+#endif
 {
    struct Handler *handler;
    struct MsgPort *proc_port;
