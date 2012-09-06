@@ -38,8 +38,8 @@ FUNCS := \
 #MM kernel-partition-includes : \
 #MM    kernel-exec-includes \
 #MM    includes-copy
-#MM kernel-partition : core-linklibs core-linklibs
-#MM kernel-partition-kobj : core-linklibs core-linklibs
+#MM kernel-partition : core-linklibs
+#MM kernel-partition-kobj : core-linklibs
 #MM- core-linklibs: linklibs-partition
 
 USER_CFLAGS := -DDEBUG=0
