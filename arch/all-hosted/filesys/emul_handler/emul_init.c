@@ -65,15 +65,10 @@ static LONG startup(struct emulbase *emulbase)
         dn = MakeDosNode(pp);
         if (dn)
         {
-            /*
-             * The handler will already be in the FileSystem.resource list
-             * by the time we need it (thanks to genmodule's auto
-             * generated *.handler init code), so no need to specify
-             * the dn_SegList here.
-             */
+            dn->dn_SegList = CreateSegList(EmulHandlerMain);
             dn->dn_Handler = AROS_CONST_BSTR("emul.handler");
             dn->dn_StackSize = 16384;
-	    dn->dn_GlobalVec = (BPTR)-1;
+            dn->dn_GlobalVec = (BPTR)-1;
 
             AddDosNode(0, ADNF_STARTPROC, dn);
         }

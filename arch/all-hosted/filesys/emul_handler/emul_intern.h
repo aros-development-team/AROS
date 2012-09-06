@@ -51,7 +51,7 @@ struct emulbase
 #define HostLibBase emulbase->HostLibBase
 #define KernelBase  emulbase->KernelBase
 
-void EmulHandler_work(void);
+AROS_PROCP(EmulHandlerMain);
 
 /* File name manipulation functions (filenames.c) */
 BOOL shrink(char *filename);

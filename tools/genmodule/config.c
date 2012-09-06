@@ -312,6 +312,15 @@ struct config *initconfig(int argc, char **argv)
         }
     }
 
+    /* Verify that a handler has a handler */
+    if (cfg->modtype == HANDLER) {
+        if (cfg->handlerfunc == NULL) {
+            fprintf(stderr, "handler modules require a 'handler_func' ##config option\n");
+            exit(20);
+        }
+        cfg->options |= OPTION_NOAUTOLIB | OPTION_NOEXPUNGE | OPTION_NOOPENCLOSE;
+    }
+
     return cfg;
 }
 
@@ -672,7 +681,7 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
 		"classid", "classdatatype", "beginio_func", "abortio_func", "dispatcher",
 		"initpri", "type", "addromtag", "oopbase_field",
 		"rellib", "interfaceid", "interfacename",
-		"methodstub", "methodbase", "attributebase"
+		"methodstub", "methodbase", "attributebase", "handler_func"
             };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
@@ -1085,6 +1094,11 @@ static void readsectionconfig(struct config *cfg, struct classinfo *cl, struct i
 		    exitfileerror(20, "attributebase only valid config option for an interface\n");
 		in->attributebase = strdup(s);
 		break;
+            case 34: /* handler_func */
+                if (cfg->modtype != HANDLER)
+                    exitfileerror(20, "handler specified when not a handler\n");
+                cfg->handlerfunc = strdup(s);
+                break;
 		    }
 	}
 	else /* Line starts with ## */
@@ -2167,6 +2181,7 @@ readsectionhandler(struct config *cfg)
     int startup = 0;
     char priority = 10;
     int bootpri = -128;
+    int has_filesystem = 0;
     
     for (;;)
     {
@@ -2213,16 +2228,6 @@ readsectionhandler(struct config *cfg)
             continue;
         }
 
-        function = s;
-        while (*s && !isspace(*s)) s++;
-        function_len = s - function;
-
-        if (!*s)
-            exitfileerror(20, "No identifier specified for the handler");
-
-        function[function_len] = 0;
-        s++;
-
         do {
             unsigned int id = 0;
 
@@ -2245,7 +2250,6 @@ readsectionhandler(struct config *cfg)
                 hl->autodetect = autolevel--;
                 hl->stacksize = stacksize;
                 hl->priority = priority;
-                hl->handler = strdup(function);
                 hl->startup = startup;
             } else if (strncasecmp(s,"dosnode=",8)==0) {
                 char *dev;
@@ -2264,7 +2268,6 @@ readsectionhandler(struct config *cfg)
                 hl->id = 0;
                 hl->name = strdup(dev);
                 hl->autodetect = autolevel ? autolevel-- : 0;
-                hl->handler = strdup(function);
                 hl->stacksize = stacksize;
                 hl->priority = priority;
                 hl->startup = startup;
@@ -2290,7 +2293,6 @@ readsectionhandler(struct config *cfg)
                 hl->id = id;
                 hl->name = NULL;
                 hl->autodetect = autolevel ? autolevel-- : 0;
-                hl->handler = strdup(function);
                 hl->stacksize = stacksize;
                 hl->priority = priority;
                 hl->startup = startup;

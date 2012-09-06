@@ -487,17 +487,20 @@ static void writedeclsets(FILE *out, struct config *cfg)
     fprintf(out,
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)\n"
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)\n"
-	    "THIS_PROGRAM_HANDLES_SYMBOLSET(CTORS)\n"
-	    "THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)\n"
-	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)\n"
-	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXPUNGELIB)\n"
 	    "DECLARESET(INIT)\n"
 	    "DECLARESET(EXIT)\n"
+    );
+    if (cfg->modtype != HANDLER)
+        fprintf(out,
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(CTORS)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(DTORS)\n"
 	    "DECLARESET(CTORS)\n"
 	    "DECLARESET(DTORS)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INITLIB)\n"
+	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXPUNGELIB)\n"
 	    "DECLARESET(INITLIB)\n"
 	    "DECLARESET(EXPUNGELIB)\n"
-    );
+        );
     if (!(cfg->options & OPTION_NOAUTOLIB))
     {
         fprintf(out,
@@ -683,9 +686,6 @@ static void writehandler(FILE *out, struct config *cfg)
                );
 
     for (hl = cfg->handlerlist; hl != NULL; hl = hl->next) {
-        fprintf(out,
-               "extern void %s(void);\n",
-               hl->handler);
         if (hl->type == HANDLER_DOSNODE)
             need_dos = 1;
         else
@@ -694,143 +694,174 @@ static void writehandler(FILE *out, struct config *cfg)
     }
 
     fprintf(out,
-               "\n"
-               "void GM_UNIQUENAME(InitHandler)(struct ExecBase *SysBase)\n"
-               "{\n"
-               "    BPTR seg;\n"
+           "\n"
+           "LONG %s(struct ExecBase *sysBase);\n"
+           "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
+           "\n"
+           "__startup AROS_PROCH(GM_UNIQUENAME(Handler), argptr, argsize, SysBase)\n"
+           "{\n"
+           "    AROS_PROCFUNC_INIT\n"
+           "\n"
+           "    LONG ret = RETURN_FAIL;\n"
+           "\n"
+           "    if (!SysBase || SysBase->LibNode.lib_Version < __aros_libreq_SysBase)\n"
+           "        return ERROR_INVALID_RESIDENT_LIBRARY;\n"
+           "    if (set_call_funcs(SETNAME(INIT), 1, 1)) {\n"
+           "        ret = %s(SysBase);\n"
+           "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
+           "    }\n"
+           "\n"
+           "    return ret;\n"
+           "\n"
+           "    AROS_PROCFUNC_EXIT\n"
+           "}\n"
+           , cfg->handlerfunc
+           , cfg->handlerfunc
+    );
+
+    fprintf(out,
+            "\n"
+            "static inline BOOL GM_UNIQUENAME(InitHandler)(struct ExecBase *SysBase)\n"
+            "{\n"
            );
+
+    if (!need_dos && !need_fse) {
+        fprintf(out,
+            "    return TRUE;\n"
+            "}\n"
+        );
+        return;
+    }
+
+    fprintf(out,
+            "    BPTR seg;\n"
+           );
+ 
     if (need_dos) {
         fprintf(out,
-               "    struct Library *ExpansionBase;\n"
+            "    struct Library *ExpansionBase;\n"
         );
     }
     if (need_fse) {
         fprintf(out,
-               "    struct FileSysResource *fsr;\n"
-               "    struct FileSysEntry *fse;\n"
+            "    struct FileSysResource *fsr;\n"
+            "    struct FileSysEntry *fse;\n"
         );
     }
     if (need_fse) {
         fprintf(out,
-               "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
-               "    if (fsr == NULL)\n"
-               "        return;\n"
+            "    fsr = (struct FileSysResource *)OpenResource(\"FileSystem.resource\");\n"
+            "    if (fsr == NULL)\n"
+            "        return FALSE;\n"
         );
     }
     if (need_dos) {
         fprintf(out, 
-               "    ExpansionBase = OpenLibrary(\"expansion.library\", 36);\n"
-               "    if (ExpansionBase == NULL)\n"
-               "        return;\n"
+            "    ExpansionBase = OpenLibrary(\"expansion.library\", 36);\n"
+            "    if (ExpansionBase == NULL)\n"
+            "        return FALSE;\n"
         );
     }
+    fprintf(out,
+            "    seg = CreateSegList(GM_UNIQUENAME(Handler));\n"
+            "    if (seg != BNULL) {\n"
+    );
     for (hl = cfg->handlerlist; hl != NULL; hl = hl->next)
     {
         switch (hl->type)
         {
         case HANDLER_DOSNODE:
             fprintf(out,
-                   "\n"
-                   "    {\n"
-                   "        struct DeviceNode *node;\n"
-                   "        IPTR pp[] = { \n"
-                   "            (IPTR)\"%s\",\n"
-                   "            (IPTR)NULL,\n"
-                   "            (IPTR)0,\n"
-                   "            (IPTR)0,\n"
-                   "            (IPTR)0\n"
-                   "        };\n"
-                   "        node = MakeDosNode((APTR)pp);\n"
-                   "        if (node == NULL) \n"
-                   "            goto exit;\n"
-                   "        \n"
-                   "        seg = CreateSegList(%s);\n"
-                   "        if (seg == BNULL) {\n"
-                   "            FreeVec(node);\n"
-                   "            goto exit;\n"
-                   "        }\n"
-                   "        node->dn_StackSize = %u;\n"
-                   "        node->dn_SegList = seg;\n"
-                   "        node->dn_Startup = (BPTR)%d;\n"
-                   "        node->dn_Priority = %d;\n"
-                   "        node->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
-                   "        AddBootNode(%d, 0, node, NULL);\n"
-                   "    }\n"
-                   "\n"
-                   , hl->name
-                   , hl->handler
-                   , hl->stacksize
-                   , hl->startup
-                   , hl->priority
-                   , hl->bootpri
+            "\n"
+            "        {\n"
+            "            struct DeviceNode *node;\n"
+            "            IPTR pp[] = { \n"
+            "                (IPTR)\"%s\",\n"
+            "                (IPTR)NULL,\n"
+            "                (IPTR)0,\n"
+            "                (IPTR)0,\n"
+            "                (IPTR)0\n"
+            "            };\n"
+            "            node = MakeDosNode((APTR)pp);\n"
+            "            if (node) {\n"
+            "                node->dn_StackSize = %u;\n"
+            "                node->dn_SegList = seg;\n"
+            "                node->dn_Startup = (BPTR)%d;\n"
+            "                node->dn_Priority = %d;\n"
+            "                node->dn_GlobalVec = (BPTR)(SIPTR)-1;\n"
+            "                AddBootNode(%d, 0, node, NULL);\n"
+            "            }\n"
+            "        }\n"
+            "\n"
+            , hl->name
+            , hl->stacksize
+            , hl->startup
+            , hl->priority
+            , hl->bootpri
             );
             break;
         case HANDLER_RESIDENT:
         case HANDLER_DOSTYPE:
             fprintf(out,
                    "\n"
-                   "    /* Check to see if we can allocate the memory for the fse */\n"
-                   "    fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
-                   "    if (!fse)\n"
-                   "        return;\n"
-                   "\n"
-                   "    seg = CreateSegList(%s);\n"
-                   "    if (seg == BNULL) {\n"
-                   "        FreeMem(fse, sizeof(*fse));\n"
-                   "        goto exit;\n"
-                   "    }\n"
-                   " \n"
-                   "    fse->fse_Node.ln_Name = VERSION_STRING;\n"
-                   "    fse->fse_Node.ln_Pri  = %d;\n"
-                   "    fse->fse_DosType = 0x%08x;\n"
-                   "    fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
-                   "    fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_HANDLER | FSEF_PRIORITY;\n"
-                   , hl->handler
+                   "        /* Check to see if we can allocate the memory for the fse */\n"
+                   "        fse = AllocMem(sizeof(*fse), MEMF_CLEAR);\n"
+                   "        if (fse) {\n"
+                   "            fse->fse_Node.ln_Name = VERSION_STRING;\n"
+                   "            fse->fse_Node.ln_Pri  = %d;\n"
+                   "            fse->fse_DosType = 0x%08x;\n"
+                   "            fse->fse_Version = (MAJOR_VERSION << 16) | MINOR_VERSION;\n"
+                   "            fse->fse_PatchFlags = FSEF_SEGLIST | FSEF_GLOBALVEC | FSEF_PRIORITY;\n"
                    , hl->autodetect
                    , hl->id
                );
             if (hl->stacksize)
             {
                 fprintf(out,
-                   "    fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
-                   "    fse->fse_StackSize = %d;\n"
+                   "            fse->fse_PatchFlags |= FSEF_STACKSIZE;\n"
+                   "            fse->fse_StackSize = %d;\n"
                    , hl->stacksize
                    );
             }
+            if (hl->name)
+                fprintf(out,
+                   "            fse->fse_PatchFlags |= FSEF_HANDLER;\n"
+                   "            fse->fse_Handler = AROS_CONST_BSTR(\"%s\");\n"
+                   , hl->name);
             fprintf(out,
-                   "    fse->fse_Handler = AROS_CONST_BSTR(\"%s\");\n"
-                   "    fse->fse_Priority = %d;\n"
-                   "    fse->fse_SegList = seg;\n"
-                   "    fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
-                   "    fse->fse_Startup   = (BPTR)%d;\n"
+                   "            fse->fse_Priority = %d;\n"
+                   "            fse->fse_SegList = seg;\n"
+                   "            fse->fse_GlobalVec = (BPTR)(SIPTR)-1;\n"
+                   "            fse->fse_Startup   = (BPTR)%d;\n"
                    "\n"
-                   "    /* Add to the list. I know forbid and permit are\n"
-                   "     * a little unnecessary for the pre-multitasking state\n"
-                   "     * we should be in at this point, but you never know\n"
-                   "     * who's going to blindly copy this code as an example.\n"
-                   "     */\n"
-                   "    Forbid();\n"
-                   "    Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
-                   "    Permit();\n"
-                   , hl->name
+                   "            /* Add to the list. I know forbid and permit are\n"
+                   "             * a little unnecessary for the pre-multitasking state\n"
+                   "             * we should be in at this point, but you never know\n"
+                   "             * who's going to blindly copy this code as an example.\n"
+                   "             */\n"
+                   "            Forbid();\n"
+                   "            Enqueue(&fsr->fsr_FileSysEntries, (struct Node *)fse);\n"
+                   "            Permit();\n"
+                   "        }\n"
                    , hl->priority
                    , hl->startup
                   );
             break;
         }
     }
-    if (handlers) {
-        fprintf(out,
-            "    exit:\n");
-    }
+    fprintf(out,
+            "    }\n"
+            );
     if (need_dos) {
         fprintf(out, 
             "    CloseLibrary(ExpansionBase);\n"
         );
     }
     fprintf(out,
-            "    return;\n"
-            "}\n");
+            "    return TRUE;\n"
+            "}\n"
+            "\n"
+            );
 }
 
 static void writeinitlib(FILE *out, struct config *cfg)
@@ -840,6 +871,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
 
     fprintf(out,
             "extern const LONG const __aros_libreq_SysBase __attribute__((weak));\n"
+            "\n"
 	    "AROS_UFH3 (LIBBASETYPEPTR, GM_UNIQUENAME(InitLib),\n"
 	    "    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, D0),\n"
 	    "    AROS_UFHA(BPTR, segList, A0),\n"
@@ -847,11 +879,24 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    ")\n"
 	    "{\n"
 	    "    AROS_USERFUNC_INIT\n"
+    );
+
+    if (cfg->modtype == HANDLER) {
+        fprintf(out,
+             "\n"
+             "    GM_UNIQUENAME(InitHandler)(sysBase);\n"
+             "    return LIBBASE;\n"
+             "\n"
+             "    AROS_USERFUNC_EXIT\n"
+             "}\n"
+             "\n"
+        );
+        return;
+    }
+
+    fprintf(out,
 	    "\n"
 	    "    int ok;\n"
-    );
-    if (cfg->modtype != HANDLER)
-	fprintf(out,
 	    "    int initcalled = 0;\n"
 	);
     /* Set the global SysBase, needed for __aros_setbase()/__aros_getbase() */
@@ -872,6 +917,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
             "        return NULL;\n"
             "\n"
     );
+
     if (cfg->options & OPTION_RESAUTOINIT) {
         fprintf(out,
                 "#ifdef GM_OOPBASE_FIELD\n"
@@ -882,43 +928,40 @@ static void writeinitlib(FILE *out, struct config *cfg)
         );
     }
 
-    if (cfg->modtype != HANDLER)
+    if (!(cfg->options & OPTION_RESAUTOINIT))
     {
-    	if (!(cfg->options & OPTION_RESAUTOINIT))
-    	{
-	    fprintf(out,
-		"    int vecsize;\n"
-		"    struct Node *n;\n"
-		"    char *mem;\n"
-		"\n"
-		"    vecsize = FUNCTIONS_COUNT * LIB_VECTSIZE;\n"
-		"    if (vecsize > 0)\n"
-		"        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);\n"
-		"    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC|MEMF_CLEAR);\n"
-		"    if (mem == NULL)\n"
-		"         return NULL;\n"
-		"    LIBBASE = (LIBBASETYPEPTR)(mem + vecsize);\n"
-		"    n = (struct Node *)LIBBASE;\n"
-		"    n->ln_Type = NT_RESOURCE;\n"
-		"    n->ln_Pri = RESIDENTPRI;\n"
-		"    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
-		"    MakeFunctions(LIBBASE, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
-	    );
-	    if ((cfg->modtype != RESOURCE) && (cfg->options & OPTION_SELFINIT))
-	    {
-		fprintf(out,
-			"    ((struct Library*)LIBBASE)->lib_NegSize = vecsize;\n"
-			"    ((struct Library*)LIBBASE)->lib_PosSize = sizeof(LIBBASETYPE);\n"
-		);
-		
-	    }
-	}
-    	else
-    	{
-	    fprintf(out,
-		"    ((struct Library *)LIBBASE)->lib_Revision = REVISION_NUMBER;\n"
-	    );
-    	}
+        fprintf(out,
+            "    int vecsize;\n"
+            "    struct Node *n;\n"
+            "    char *mem;\n"
+            "\n"
+            "    vecsize = FUNCTIONS_COUNT * LIB_VECTSIZE;\n"
+            "    if (vecsize > 0)\n"
+            "        vecsize = ((vecsize-1)/sizeof(IPTR) + 1)*sizeof(IPTR);\n"
+            "    mem = AllocMem(vecsize+sizeof(LIBBASETYPE), MEMF_PUBLIC|MEMF_CLEAR);\n"
+            "    if (mem == NULL)\n"
+            "         return NULL;\n"
+            "    LIBBASE = (LIBBASETYPEPTR)(mem + vecsize);\n"
+            "    n = (struct Node *)LIBBASE;\n"
+            "    n->ln_Type = NT_RESOURCE;\n"
+            "    n->ln_Pri = RESIDENTPRI;\n"
+            "    n->ln_Name = (char *)GM_UNIQUENAME(LibName);\n"
+            "    MakeFunctions(LIBBASE, (APTR)GM_UNIQUENAME(FuncTable), NULL);\n"
+        );
+        if ((cfg->modtype != RESOURCE) && (cfg->options & OPTION_SELFINIT))
+        {
+            fprintf(out,
+                    "    ((struct Library*)LIBBASE)->lib_NegSize = vecsize;\n"
+                    "    ((struct Library*)LIBBASE)->lib_PosSize = sizeof(LIBBASETYPE);\n"
+            );
+            
+        }
+    }
+    else
+    {
+        fprintf(out,
+            "    ((struct Library *)LIBBASE)->lib_Revision = REVISION_NUMBER;\n"
+        );
     }
 
     if (cfg->options & OPTION_DUPBASE)
@@ -938,7 +981,7 @@ static void writeinitlib(FILE *out, struct config *cfg)
                 "    __pertaskslot = AllocTaskStorageSlot();\n"
         );
 
-    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE && cfg->modtype != HANDLER)
+    if (!(cfg->options & OPTION_NOEXPUNGE) && cfg->modtype!=RESOURCE)
 	fprintf(out, "    GM_SEGLIST_FIELD(LIBBASE) = segList;\n");
     if (cfg->options & OPTION_DUPBASE)
 	fprintf(out, "    GM_ROOTBASE_FIELD(LIBBASE) = (LIBBASETYPEPTR)LIBBASE;\n");
@@ -959,28 +1002,17 @@ static void writeinitlib(FILE *out, struct config *cfg)
 	    "\n"
     );
     
-    if (cfg->modtype == HANDLER)
-    	fprintf(out,
-    	    "        ok = 1;\n");
-    else
-    	fprintf(out,
-	    "        initcalled = 1;\n"
-	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, LIBBASE);\n");
     fprintf(out,
+	    "        initcalled = 1;\n"
+	    "        ok = set_call_libfuncs(SETNAME(INITLIB), 1, 1, LIBBASE);\n"
 	    "    }\n"
 	    "    else\n"
 	    "        ok = 0;\n"
 	    "\n"
 	    "    if (!ok)\n"
 	    "    {\n"
-    );
-    
-    if (cfg->modtype != HANDLER)
-    	fprintf(out,
 	    "        if (initcalled)\n"
-	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n");
-
-    fprintf(out,
+	    "            set_call_libfuncs(SETNAME(EXPUNGELIB), -1, 0, LIBBASE);\n"
 	    "        set_call_funcs(SETNAME(DTORS), 1, 0);\n"
 	    "        set_call_funcs(SETNAME(EXIT), -1, 0);\n"
     );
@@ -991,22 +1023,19 @@ static void writeinitlib(FILE *out, struct config *cfg)
     if (!(cfg->options & OPTION_NOAUTOLIB))
 	fprintf(out, "        set_close_libraries();\n");
 
-    if (cfg->modtype != HANDLER)
+    if (cfg->options & OPTION_RESAUTOINIT)
     {
-    	if (cfg->options & OPTION_RESAUTOINIT)
-    	{
-	    fprintf(out,
-		"\n"
-		"        __freebase(LIBBASE);\n"
-	    );
-    	}
-    	else
-    	{
-	    fprintf(out,
-		"\n"
-		"        FreeMem(mem, vecsize+LIBBASESIZE);\n"
-	    );
-    	}
+        fprintf(out,
+            "\n"
+            "        __freebase(LIBBASE);\n"
+        );
+    }
+    else
+    {
+        fprintf(out,
+            "\n"
+            "        FreeMem(mem, vecsize+LIBBASESIZE);\n"
+        );
     }
     fprintf(out,
 	    "        return NULL;\n"
@@ -1026,19 +1055,12 @@ static void writeinitlib(FILE *out, struct config *cfg)
     	case DEVICE:
     	    fprintf(out, "        AddDevice(LIBBASE);\n");
 
-    	case HANDLER:
-    	    /* Bare handlers don't require adding at all */
-    	    break;
-
     	default:
     	    /* Everything else is library */
 	    fprintf(out, "        AddLibrary(LIBBASE);\n");
 	    break;
     	}
     }
-
-    if (cfg->handlerlist)
-        fprintf(out, "        GM_UNIQUENAME(InitHandler)(SysBase);\n");
 
     fprintf(out,
 	    "        return  LIBBASE;\n"
@@ -1613,11 +1635,11 @@ static void writesets(FILE *out, struct config *cfg)
     fprintf(out,
 	    "DEFINESET(INIT)\n"
 	    "DEFINESET(EXIT)\n"
-	    "DEFINESET(CTORS)\n"
-	    "DEFINESET(DTORS)\n"
     );
     if (cfg->modtype != HANDLER)
 	fprintf(out,
+	    "DEFINESET(CTORS)\n"
+	    "DEFINESET(DTORS)\n"
 	    "DEFINESET(INITLIB)\n"
 	    "DEFINESET(EXPUNGELIB)\n"
     	);

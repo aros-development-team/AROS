@@ -26,6 +26,7 @@ struct portBase {
     LONG  pb_DeviceFlags;
     enum { PORT_SERIAL, PORT_PARALLEL, PORT_PRINTER, PORT_STREAM } pb_Mode;
     struct Library *pb_UtilityBase;
+    struct ExecBase *pb_SysBase;
 
     /* Per-open settable arguments */
     struct portArgs {
@@ -192,6 +193,7 @@ static void portSerialDefaults(struct portArgs *pa)
  */
 static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
 {
+    struct ExecBase *SysBase = pb->pb_SysBase;
     int len;
     struct FileSysStartupMsg *fssm;
     struct DosEnvec *env;
@@ -265,6 +267,7 @@ static SIPTR decodeStartup(struct portBase *pb, BPTR startup)
 static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR name, SIPTR *err)
 {
     int len = AROS_BSTR_strlen(name);
+    struct ExecBase *SysBase = pb->pb_SysBase;
 
     if ((pa = AllocVec(sizeof(*pa) + len + 1, MEMF_ANY))) {
         CopyMem(&pb->pb_Defaults, pa, sizeof(*pa));
@@ -323,7 +326,7 @@ static struct portArgs *portOpen(struct portBase *pb, struct portArgs *pa, BPTR 
     return NULL;
 }
 
-static void portClose(struct portArgs *pa)
+static void portClose(struct portArgs *pa, struct ExecBase *SysBase)
 {
     D(bug("%s: Close %s\n", pa->pa_Node.ln_Name));
     Remove(&pa->pa_Node);
@@ -333,7 +336,7 @@ static void portClose(struct portArgs *pa)
     FreeVec(pa);
 }
 
-void replyPkt(struct DosPacket *dp)
+void replyPkt(struct DosPacket *dp, struct ExecBase *SysBase)
 {
     struct MsgPort *mp;
     struct Message *mn;
@@ -346,7 +349,7 @@ void replyPkt(struct DosPacket *dp)
     PutMsg(mp, mn);
 }
 
-__startup void port_handler(void)
+LONG port_handler(struct ExecBase *SysBase)
 {
     struct DosPacket *dp;
     struct MsgPort *mp;
@@ -355,6 +358,8 @@ __startup void port_handler(void)
     struct FileHandle *fh;
     struct portBase pb = {};
     struct portArgs *pa;
+
+    pb.pb_SysBase = SysBase;
 
     NEWLIST(&pb.pb_Files);
 
@@ -376,7 +381,7 @@ __startup void port_handler(void)
     dp->dp_Res1 = (dp->dp_Res2 == 0) ? DOSTRUE : DOSFALSE;
 
     do {
-        replyPkt(dp);
+        replyPkt(dp, SysBase);
         WaitPort(mp);
         dp = (struct DosPacket *)(GetMsg(mp)->mn_Node.ln_Name);
         D(bug("%s: type=%d\n", __func__, dp->dp_Type));
@@ -441,7 +446,7 @@ __startup void port_handler(void)
             break;
         case ACTION_END:
             if ((pa = (struct portArgs *)dp->dp_Arg1)) {
-                portClose(pa);
+                portClose(pa, SysBase);
                 dp->dp_Res1 = DOSTRUE;
                 dp->dp_Res2 = 0;
             } else {
@@ -469,7 +474,9 @@ __startup void port_handler(void)
 /* ACTION_DIE ends up here... */
     D(bug("%s: Exiting\n"));
 
-    replyPkt(dp);
+    replyPkt(dp, SysBase);
 
     CloseLibrary(pb.pb_UtilityBase);
+
+    return RETURN_OK;
 }

@@ -52,7 +52,7 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3 \
     modname=pfs3 modtype=handler \
-    files="$(FILES)"
+    files="$(FILES)" objdir=$(OBJDIR)/pfs3
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) -DMIN_LIB_VERSION=36 \
@@ -60,7 +60,9 @@ USER_CFLAGS := \
 
 %build_module mmake=kernel-fs-pfs3ds \
     modname=pfs3ds modtype=handler \
-    files="$(FILES)"
+    files="$(FILES)" objdir=$(OBJDIR)/pfs3ds
+
+USER_LDFLAGS += -nosysbase
 
 KS13STUFF := \
     -DKS13WRAPPER \
@@ -74,18 +76,30 @@ KS13STUFF := \
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3_CFLAGS) $(KS13STUFF) \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
+USER_AFLAGS := \
+	-I$(GENDIR)/include
+
+%build_archspecific mainmmake=kernel-fs-pfs3-ks13 \
+    maindir=$(CURDIR)/pfs3-ks13 arch=$(AROS_TARGET_CPU) \
+    asmfiles="$(AROS_TARGET_CPU)/stackswap"
 
 %build_module mmake=kernel-fs-pfs3-ks13 \
     modname=pfs3_ks13 modtype=handler \
-    files="$(FILES) ks13wrapper"
+    files="$(FILES) ks13wrapper" \
+    objdir=$(OBJDIR)/pfs3-ks13
 
 USER_CFLAGS := \
     -DAROS_KERNEL $(PFS3DS_CFLAGS) $(KS13STUFF) \
 	-I$(SRCDIR)/rom/devs/filesys/pfs3/fs
 
+%build_archspecific mainmmake=kernel-fs-pfs3ds-ks13 \
+    maindir=$(CURDIR)/pfs3ds-ks13 arch=$(AROS_TARGET_CPU) \
+    asmfiles="$(AROS_TARGET_CPU)/stackswap" 
+
 %build_module mmake=kernel-fs-pfs3ds-ks13 \
     modname=pfs3ds_ks13 modtype=handler \
-    files="$(FILES) ks13wrapper"
+    files="$(FILES) ks13wrapper" \
+    objdir=$(OBJDIR)/pfs3ds-ks13
 
 
 %common

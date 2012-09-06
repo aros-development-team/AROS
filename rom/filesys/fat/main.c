@@ -42,7 +42,7 @@ struct Globals *glob = &global_data;
 
 const TEXT version_string[] = "$VER: fat.handler 41.52 (28.12.2011)";
 
-void handler(void) {
+LONG handler(struct ExecBase *SysBase) {
     struct Message *msg;
     struct DosPacket *startuppacket;
     LONG error = ERROR_NO_FREE_STORE;
@@ -145,7 +145,7 @@ void handler(void) {
         ReplyPacket(startuppacket);
     }
 
-    return;
+    return RETURN_OK;
 }
 
 static struct IntData {

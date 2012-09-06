@@ -191,17 +191,7 @@ static void btos(BSTR, char *);
 ULONG __abox__ = 1;
 #endif
 
-#ifdef __AROS__
-__startup AROS_PROCH(Main, argptr, argsize, sBase)
-{
-    AROS_PROCFUNC_INIT
-
-    return handler(sBase);
-
-    AROS_PROCFUNC_EXIT
-}
-#else
-
+#ifndef __AROS__
 char __version__[] = "\0$VER: CDVDFS 1.4 (16-Jun-2008)";
 
 LONG SAVEDS Main(void)
@@ -233,7 +223,7 @@ LONG handler(struct ExecBase *SysBase)
 register PACKET *packet;
 MSG     *msg;
 ULONG signals;
-  
+
     struct CDVDBase *global = AllocCDVDBase(SysBase);
 
     D(bug("[CDVDFS] In handler, cdvd=%p\n", global));

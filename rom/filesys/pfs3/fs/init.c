@@ -351,7 +351,7 @@ static void InstallDiskChangeHandler(struct globaldata *g)
 	di->is_Node.ln_Type = NT_INTERRUPT;
 	di->is_Node.ln_Name = intname;
 	di->is_Data = (APTR)g;
-	di->is_Code = DiskChangeHandler;
+	di->is_Code = (VOID_FUNC)DiskChangeHandler;
 
 	signal = AllocSignal(-1);
 	g->diskchangesignal = 1 << signal;
