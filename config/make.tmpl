@@ -808,7 +808,7 @@ endif
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A objdir=$(OBJDIR) \
     ldflags=$(LDFLAGS) uselibs= usehostlibs=
 
-TMP_LDFLAGS  := %(ldflags) $(%(module)_LDFLAGS)
+TMP_LDFLAGS  := %(ldflags)
 # Make a list of the lib files the programs depend on.
 # In LDFLAGS remove white space between -L and directory
 TMP_DIRS := $(subst -L ,-L,$(strip $(TMP_LDFLAGS)))
@@ -1327,10 +1327,12 @@ endif
 
 %rule_linkmodule module=$(BD_MODULE) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
+		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs=$(BD_OBJS) \
 		 endobj= err=$(BD_ERR) objdir=%(objdir) \
+		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link kernel object file
@@ -1624,10 +1626,12 @@ endif
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
+		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 %rule_linkmodule module=$(BD_PKGMOD) objs="$(BD_STARTOBJS) $(BD_OBJS) $(USER_OBJS)" \
 		 endobj=$(BD_ENDOBJS) err=$(BD_ERR) objdir=%(objdir) \
+		 ldflags="$(LDFLAGS) $(%(modname)_LDFLAGS)" \
 		 uselibs="%(uselibs) $(%(modname)_LIBS)" usehostlibs="%(usehostlibs)"
 
 # Link static lib
