@@ -830,11 +830,20 @@ typedef unsigned int (*ULONG_FUNC)();
         AROS_UFHA(STRPTR, _argptr, A0),           \
         AROS_UFHA(ULONG,  _argsize, D0),          \
         AROS_UFHA(struct ExecBase *, _SysBase, A6))
+#endif
+#ifndef AROS_PROCP
 #define AROS_PROCP(n) \
     AROS_UFP3(SIPTR, n,                           \
         AROS_UFPA(STRPTR, _argptr, A0),           \
         AROS_UFPA(ULONG,  _argsize, D0),          \
         AROS_UFPA(struct ExecBase *, _SysBase, A6))
+#endif
+#ifndef AROS_PROCC
+#define AROS_PROCC(n) \
+    AROS_UFC3(SIPTR, n,                           \
+        AROS_UFCA(STRPTR, _argptr, A0),           \
+        AROS_UFCA(ULONG,  _argsize, D0),          \
+        AROS_UFCA(struct ExecBase *, _SysBase, A6))
 #endif
 
 #define AROS_PROCFUNC_INIT      AROS_USERFUNC_INIT
