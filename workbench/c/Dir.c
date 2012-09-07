@@ -27,6 +27,11 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
+#define SH_GLOBAL_SYSBASE       1
+#define SH_GLOBAL_DOSBASE       1
+
+#include <aros/shcommands.h>
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -94,10 +99,6 @@
  
 ******************************************************************************/
 
-#define	VERSTAG	"\0$VER: Dir 50.8 (27.11.2004)"
-
-const TEXT version[] = VERSTAG;
-
 struct table
 {
     char **entries;
@@ -105,43 +106,29 @@ struct table
     int    max;
 };
 
-
-struct data
-{
-    struct ExecBase	*SysBase;
-    struct DosLibrary	*DOSBase;
-    struct Library	*UtilityBase;
-    int                 g_indent;
-};
-
-/* FIXME: Remove these #define xxxBase hacks
-   Do not use this in new code !
-*/
-#define SysBase		data->SysBase
-#define DOSBase		data->DOSBase
-#define UtilityBase	data->UtilityBase
-#define g_indent	data->g_indent
-
+/* Global variables */
+int g_indent;
+struct UtilityBase *UtilityBase;
 
 /*  Prototypes  */
 
 static
-LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles,
-                  BOOL inter, struct data *data);
+LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles,
+                  BOOL inter);
 static
-LONG doDir(STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter, struct data *data);
+LONG doDir(CONST_STRPTR dir, BOOL all, BOOL dirs, BOOL files, BOOL inter);
 
 static
-void showline(char *fmt, IPTR *args, struct data *data);
+void showline(char *fmt, IPTR *args);
 static
-void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data);
+void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter);
 static
-void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data);
+void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter);
 
 static
 int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
              struct ExAllControl *eac, struct table *dirs,
-             struct table *files, struct data *data);
+             struct table *files);
 
 
 #define  INTERARG_TEMPLATE  "E=ENTER/S,B=BACK/S,DEL=DELETE/S,Q=QUIT/S,C=COM/S,COMMAND"
@@ -157,147 +144,119 @@ enum
     NOOFINTERARGS
 };
 
-#define  ARG_TEMPLATE  "DIR,OPT/K,ALL/S,DIRS/S,FILES/S,INTER/S"
-
-enum
+__startup AROS_SH6(Dir, 50.9,
+        AROS_SHA(CONST_STRPTR, ,DIR  ,    , NULL),
+        AROS_SHA(CONST_STRPTR, ,OPT  , /K , NULL),
+        AROS_SHA(BOOL,         ,ALL  , /S , FALSE),
+        AROS_SHA(BOOL,         ,DIRS , /S , FALSE),
+        AROS_SHA(BOOL,         ,FILES, /S , FALSE),
+        AROS_SHA(BOOL,         ,INTER, /S , FALSE)
+)
 {
-    ARG_DIR = 0,
-    ARG_OPT,
-    ARG_ALL,
-    ARG_DIRS,
-    ARG_FILES,
-    ARG_INTER
-};
+    AROS_SHCOMMAND_INIT
 
-__startup static AROS_PROCH(Start, argstr, argsize, sBase)
-{
-    AROS_PROCFUNC_INIT
+    LONG         error = RETURN_FAIL;
+    CONST_STRPTR dir = SHArg(DIR);
+    CONST_STRPTR opt = SHArg(OPT);
+    BOOL         all = SHArg(ALL);
+    BOOL         dirs = SHArg(DIRS);
+    BOOL         files = SHArg(FILES);
+    BOOL         inter = SHArg(INTER);
 
-    struct data _data, *data = &_data;
-    struct RDArgs *rda;
-    IPTR           args[] = { (IPTR)NULL, (IPTR)NULL, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE, (IPTR)FALSE };
+    LONG iswild;
 
-    LONG error = RETURN_FAIL;
+    g_indent = 0;
 
-    SysBase = sBase;
-    if ((DOSBase=(struct DosLibrary *)OpenLibrary("dos.library",37)))
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 37);
+    if (!UtilityBase)
+        return error;
+
+    /* Convert the OPT arguments (if any) into the regular switches */
+    if (opt != NULL)
     {
-        if ((UtilityBase=OpenLibrary("utility.library",37)))
+        while (*opt != 0)
         {
-            error = RETURN_ERROR;
-
-            rda = ReadArgs(ARG_TEMPLATE, args, NULL);
-
-            if (rda != NULL)
+            switch (ToUpper(*opt))
             {
-                STRPTR dir = (STRPTR)args[ARG_DIR];
-                STRPTR opt = (STRPTR)args[ARG_OPT];
-                BOOL   all = (BOOL)args[ARG_ALL];
-                BOOL   dirs = (BOOL)args[ARG_DIRS];
-                BOOL   files = (BOOL)args[ARG_FILES];
-                BOOL   inter = (BOOL)args[ARG_INTER];
+            case 'D':
+                dirs = TRUE;
+                break;
 
-                LONG iswild;
+            case 'F':
+                files = TRUE;
+                break;
 
-                g_indent = 0;
+            case 'A':
+                all = TRUE;
+                break;
 
-                /* Convert the OPT arguments (if any) into the regular switches */
-                if (opt != NULL)
-                {
-                    while (*opt != 0)
-                    {
-                        switch (ToUpper(*opt))
-                        {
-                        case 'D':
-                            dirs = TRUE;
-                            break;
+            case 'I':
+                inter = TRUE;
+                break;
 
-                        case 'F':
-                            files = TRUE;
-                            break;
-
-                        case 'A':
-                            all = TRUE;
-                            break;
-
-                        case 'I':
-                            inter = TRUE;
-                            break;
-
-                        default:
-                            Printf("%lc option ignored\n", *opt);
-                            break;
-                        }
-                        opt++;
-                    }
-                }
-
-                if(dir == NULL)
-                {
-                    dir = "";
-                    iswild = 0;
-                }
-                else
-                {
-                    ULONG toklen = strlen(dir) * 2;
-                    STRPTR pattok = AllocMem(toklen, MEMF_PUBLIC | MEMF_ANY);
-                    iswild = ParsePattern(dir, pattok, toklen);
-                    FreeMem(pattok, toklen);
-                }
-
-                if(!files && !dirs)
-                {
-                    files = TRUE;
-                    dirs  = TRUE;
-                }
-
-
-                if (iswild == 1)
-                {
-                    error = doPatternDir(dir, all, dirs, files, inter, data);
-                }
-                else
-                {
-                    error = doDir(dir, all, dirs, files, inter, data);
-                }
-
-                if (error != RETURN_OK)
-                {
-                    LONG ioerr = IoErr();
-                    switch (ioerr)
-                    {
-                    case ERROR_NO_MORE_ENTRIES:
-                        ioerr = 0;
-                        break;
-                    case ERROR_OBJECT_WRONG_TYPE:
-                        Printf("%s is not a directory\n", (IPTR)dir);
-                        ioerr = ERROR_DIR_NOT_FOUND;
-                        break;
-                    default:
-                        Printf("Could not get information for %s\n", (IPTR)dir);
-                    }
-                    PrintFault(ioerr, NULL);
-                }
-
-                FreeArgs(rda);
+            default:
+                Printf("%lc option ignored\n", *opt);
+                break;
             }
-            else
-            {
-		PrintFault(IoErr(), NULL);
-            }
-
-            CloseLibrary((struct Library *)UtilityBase);
+            opt++;
         }
-        CloseLibrary((struct Library *)DOSBase);
     }
 
+    if(dir == NULL)
+    {
+        dir = "";
+        iswild = 0;
+    }
+    else
+    {
+        ULONG toklen = strlen(dir) * 2;
+        STRPTR pattok = AllocMem(toklen, MEMF_PUBLIC | MEMF_ANY);
+        iswild = ParsePattern(dir, pattok, toklen);
+        FreeMem(pattok, toklen);
+    }
+
+    if(!files && !dirs)
+    {
+        files = TRUE;
+        dirs  = TRUE;
+    }
+
+
+    if (iswild == 1)
+    {
+        error = doPatternDir(dir, all, dirs, files, inter);
+    }
+    else
+    {
+        error = doDir(dir, all, dirs, files, inter);
+    }
+
+    if (error != RETURN_OK)
+    {
+        LONG ioerr = IoErr();
+        switch (ioerr)
+        {
+        case ERROR_NO_MORE_ENTRIES:
+            ioerr = 0;
+            break;
+        case ERROR_OBJECT_WRONG_TYPE:
+            Printf("%s is not a directory\n", (IPTR)dir);
+            ioerr = ERROR_DIR_NOT_FOUND;
+            break;
+        default:
+            Printf("Could not get information for %s\n", (IPTR)dir);
+        }
+        PrintFault(ioerr, NULL);
+    }
+
+    CloseLibrary((struct Library *)UtilityBase);
     return error;
 
-    AROS_PROCFUNC_EXIT
+    AROS_SHCOMMAND_EXIT
 }
 
 static
-int AddEntry(struct table *table, char *entry, struct data *data)
+int AddEntry(struct table *table, char *entry)
 {
     char *dup;
     int len;
@@ -367,9 +326,9 @@ int compare_strings(const void * s1, const void * s2)
 
 
 static
-void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data)
+void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter)
 {
-    maybeShowline(format, args, doIt, inter, data);
+    maybeShowline(format, args, doIt, inter);
 
     if (!inter)
     {
@@ -380,11 +339,11 @@ void maybeShowlineCR(char *format, IPTR *args, BOOL doIt, BOOL inter, struct dat
 
 
 static
-void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data *data)
+void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter)
 {
     if(doIt)
     {
-        showline(format, args, data);
+        showline(format, args);
 
 #if 0
         if(inter)
@@ -436,7 +395,7 @@ void maybeShowline(char *format, IPTR *args, BOOL doIt, BOOL inter, struct data 
 
 
 static
-void showline(char *fmt, IPTR *args, struct data *data)
+void showline(char *fmt, IPTR *args)
 {
     int t;
 
@@ -448,7 +407,7 @@ void showline(char *fmt, IPTR *args, struct data *data)
 
 // Returns TRUE if all lines shown, FALSE if broken by SIGBREAKF_CTRL_C
 static
-BOOL showfiles(struct table *files, BOOL inter, struct data *data)
+BOOL showfiles(struct table *files, BOOL inter)
 {
     IPTR argv[2];
     ULONG t;
@@ -466,21 +425,21 @@ BOOL showfiles(struct table *files, BOOL inter, struct data *data)
             return FALSE;
         }
 
-        maybeShowlineCR("  %-32.s %s", argv, TRUE, inter, data);
+        maybeShowlineCR("  %-32.s %s", argv, TRUE, inter);
     }
     return TRUE;
 }
 
 static
-BOOL showdir(char *dirName, BOOL inter, struct data *data)
+BOOL showdir(char *dirName, BOOL inter)
 {
     IPTR argv[1] = {(IPTR)dirName};
-    maybeShowlineCR("%s (dir)", argv, TRUE, inter, data);
+    maybeShowlineCR("%s (dir)", argv, TRUE, inter);
     return TRUE;
 }
 
 static
-LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct data *data)
+LONG doPatternDir(CONST_STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 {
     struct table files;
     struct AnchorPath *ap;	/* Matching structure */
@@ -522,17 +481,17 @@ LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter
                             name[0] = 0;
                             NameFromLock(l, name, 512);
                             UnLock(l);
-                            showdir(name, inter, data);
+                            showdir(name, inter);
                         }
                     }
                     if (all)
                     {
-                        error = doDir(ap->ap_Buf, all, doDirs, doFiles, inter, data);
+                        error = doDir(ap->ap_Buf, all, doDirs, doFiles, inter);
                     }
                 }
                 else if (doFiles)
                 {
-                    if (!AddEntry(&files, ap->ap_Info.fib_FileName, data))
+                    if (!AddEntry(&files, ap->ap_Info.fib_FileName))
                     {
                         ioerr = ERROR_NO_FREE_STORE;
                         error = RETURN_FAIL;
@@ -553,7 +512,7 @@ LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter
             g_indent--;
             if (error == RETURN_OK && files.num != 0)
             {
-                if (!showfiles(&files, inter, data))
+                if (!showfiles(&files, inter))
                 {
                     error = RETURN_FAIL;
                 }
@@ -578,7 +537,7 @@ LONG doPatternDir(STRPTR dirPat, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter
 
 
 static
-LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct data *data)
+LONG doDir(CONST_STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter)
 {
     BPTR  lock;
     static UBYTE buffer[4096];
@@ -604,7 +563,7 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
 
             eac->eac_LastKey = 0;
 
-            error = CheckDir(lock, (struct ExAllData *)buffer, sizeof(buffer), eac, &dirs, &files, data);
+            error = CheckDir(lock, (struct ExAllData *)buffer, sizeof(buffer), eac, &dirs, &files);
             FreeDosObject(DOS_EXALLCONTROL, eac);
 
             if (SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
@@ -642,8 +601,8 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
                                 if (AddPart(newpath, dirs.entries[t], len))
                                 {
                                     if (doDirs)
-                                        showdir(dirname, inter, data);
-                                    error = doDir(newpath, all, doDirs, doFiles, inter, data);
+                                        showdir(dirname, inter);
+                                    error = doDir(newpath, all, doDirs, doFiles, inter);
                                 }
                                 else
                                 {
@@ -662,7 +621,7 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
                         }
                         else if (doDirs)
                         {
-                            showdir(dirname, inter, data);
+                            showdir(dirname, inter);
                         }
                     }
                     g_indent--;
@@ -672,7 +631,7 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
             // Output the files
             if (error == RETURN_OK && (files.num != 0 && doFiles))
             {
-                if (!showfiles(&files, inter, data))
+                if (!showfiles(&files, inter))
                 {
                     error = RETURN_FAIL;
                 }
@@ -756,7 +715,7 @@ LONG doDir(STRPTR dir, BOOL all, BOOL doDirs, BOOL doFiles, BOOL inter, struct d
 static
 int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
              struct ExAllControl *eac, struct table *dirs,
-             struct table *files, struct data *data)
+             struct table *files)
 {
     int   error = RETURN_OK;
     BOOL  loop;
@@ -803,7 +762,7 @@ int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
                 }
 #endif /* USE_SOFTLINKCHECK */
 
-                if (!AddEntry(ead->ed_Type > 0 ? dirs : files,ead->ed_Name, data))
+                if (!AddEntry(ead->ed_Type > 0 ? dirs : files,ead->ed_Name))
                 {
                     loop = 0;
                     error = RETURN_FAIL;
