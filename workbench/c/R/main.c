@@ -212,9 +212,9 @@ static BOOL get_template(struct Req *req)
         goto cleanup;
     }
 
-    // append "*>NIL: ?" to the command
+    // append "!GETTEMPLATE!" to the command
     strlcpy(cmd, req->filename, cmd_len);
-    strlcat(cmd, " *>NIL: ?", cmd_len);
+    strlcat(cmd, " !GETTEMPLATE!", cmd_len);
 
     // shut up DOS error message
     struct Process *me = (struct Process*)FindTask(NULL);
