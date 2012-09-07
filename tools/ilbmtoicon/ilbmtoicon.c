@@ -1,11 +1,11 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Tool to convert IFF ILBM images into Amiga icon file.
-	      
-    Lang: 
-    
+
+    Lang: English
+
 */
 
 #define D(x)
@@ -18,6 +18,7 @@
 #include <ctype.h>
 
 #include <png.h>
+#include <zlib.h>
 
 /****************************************************************************************/
 
