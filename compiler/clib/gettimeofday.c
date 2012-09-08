@@ -17,6 +17,10 @@
 #include <aros/debug.h>
 
 #include <time.h>
+#include <errno.h>
+
+struct Device *TimerBase;
+static void __init_timerbase(void);
 
 /*****************************************************************************
 
@@ -99,12 +103,23 @@
 
 ******************************************************************************/
 {
+    if (!TimerBase)
+        __init_timerbase();
+
     if (tv)
     {
-        GetSysTime(tv);
+        if (TimerBase)
+        {
+            GetSysTime(tv);
 
-        /* Adjust with the current timezone, stored in minutes west of GMT */
-        tv->tv_sec += (2922 * 1440 + __arosc_gmtoffset()) * 60;
+            /* Adjust with the current timezone, stored in minutes west of GMT */
+            tv->tv_sec += (2922 * 1440 + __arosc_gmtoffset()) * 60;
+        }
+        else
+        {
+            errno = EACCES;
+            return -1;
+        }
     }
 
     if (tz)
@@ -118,23 +133,24 @@
 } /* gettimeofday */
 
 
-struct Device *TimerBase;
+static struct timerequest __timereq;
+static struct MsgPort __timeport;
 
-static int __init_timerbase(struct aroscbase *aroscbase)
+static void __init_timerbase(void)
 {
-    aroscbase->acb_timeport.mp_Node.ln_Type   = NT_MSGPORT;
-    aroscbase->acb_timeport.mp_Node.ln_Pri    = 0;
-    aroscbase->acb_timeport.mp_Node.ln_Name   = NULL;
-    aroscbase->acb_timeport.mp_Flags          = PA_IGNORE;
-    aroscbase->acb_timeport.mp_SigTask        = FindTask(NULL);
-    aroscbase->acb_timeport.mp_SigBit         = 0;
-    NEWLIST(&aroscbase->acb_timeport.mp_MsgList);
+    __timeport.mp_Node.ln_Type   = NT_MSGPORT;
+    __timeport.mp_Node.ln_Pri    = 0;
+    __timeport.mp_Node.ln_Name   = NULL;
+    __timeport.mp_Flags          = PA_IGNORE;
+    __timeport.mp_SigTask        = FindTask(NULL);
+    __timeport.mp_SigBit         = 0;
+    NEWLIST(&__timeport.mp_MsgList);
 
-    aroscbase->acb_timereq.tr_node.io_Message.mn_Node.ln_Type    = NT_MESSAGE;
-    aroscbase->acb_timereq.tr_node.io_Message.mn_Node.ln_Pri     = 0;
-    aroscbase->acb_timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
-    aroscbase->acb_timereq.tr_node.io_Message.mn_ReplyPort       = &aroscbase->acb_timeport;
-    aroscbase->acb_timereq.tr_node.io_Message.mn_Length          = sizeof (aroscbase->acb_timereq);
+    __timereq.tr_node.io_Message.mn_Node.ln_Type    = NT_MESSAGE;
+    __timereq.tr_node.io_Message.mn_Node.ln_Pri     = 0;
+    __timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
+    __timereq.tr_node.io_Message.mn_ReplyPort       = &__timeport;
+    __timereq.tr_node.io_Message.mn_Length          = sizeof (__timereq);
 
     if
     (
@@ -142,28 +158,22 @@ static int __init_timerbase(struct aroscbase *aroscbase)
         (
             "timer.device",
             UNIT_VBLANK,
-            (struct IORequest *)&aroscbase->acb_timereq,
+            (struct IORequest *)&__timereq,
             0
         )
         ==
         0
     )
     {
-        TimerBase = (struct Device *)aroscbase->acb_timereq.tr_node.io_Device;
-        return 1;
-    }
-    else
-    {
-        return 0;
+        TimerBase = (struct Device *)__timereq.tr_node.io_Device;
     }
 }
 
 
-static void __exit_timerbase(struct aroscbase *aroscbase)
+static void __exit_timerbase(APTR dummy)
 {
     if (TimerBase != NULL)
-        CloseDevice((struct IORequest *)&aroscbase->acb_timereq);
+        CloseDevice((struct IORequest *)&__timereq);
 }
 
-ADD2OPENLIB(__init_timerbase, 0);
-ADD2CLOSELIB(__exit_timerbase, 0);
+ADD2EXIT(__exit_timerbase, 0);

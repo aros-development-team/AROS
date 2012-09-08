@@ -62,10 +62,6 @@ struct aroscbase
     int  acb_cd_changed;
     BPTR acb_cd_lock;
 
-    /* gettimeofday */
-    struct timerequest  acb_timereq;
-    struct MsgPort      acb_timeport;
-
     /* __arosc_usedata  */
     APTR  acb_process_returnaddr;
     ULONG acb_usercount;
