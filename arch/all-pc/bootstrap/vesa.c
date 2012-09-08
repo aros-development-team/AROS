@@ -1,5 +1,5 @@
 /*
-    Copyright © 2007-2010, The AROS Development Team. All rights reserved.
+    Copyright © 2007-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Real-mode code to set VBE mode.
@@ -293,14 +293,18 @@ asm(
         "               movl %eax, %esp\n"
         "               movl %ecx, (%esp)\n"
         "               xorl %eax, %eax\n"
+        "               sidt IDT_reg16\n"
+        "               lidt IDT_reg32\n"
         "               ret\n"
         "\n"
         "               .code32\n\t.globl go16\n\t.type go16,@function\n"
         "go16:          lgdt GDT_reg\n"
+        "               sidt IDT_reg32\n"
+        "               lidt IDT_reg16\n"
         "               movl %esp, stack32\n"
         "               movl (%esp), %eax\n"
-        "               movl %eax, begin + 0xff8\n"
-        "               movl $begin + 0xff8, %esp\n"
+        "               movl %eax, scratch + 63\n"
+        "               movl $scratch + 63, %esp\n"
         "               movw $0x20, %ax\n"
         "               movw %ax, %ds\n"
         "               movw %ax, %es\n"
@@ -336,9 +340,12 @@ const struct
     unsigned short l1 __attribute__((packed));
     const void *l3 __attribute__((packed));
 }
-GDT_reg = {sizeof(GDT_Table)-1, GDT_Table};
+GDT_reg = {sizeof(GDT_Table)-1, GDT_Table},
+IDT_reg16 = {0x400, 0},
+IDT_reg32;
 
 unsigned long           stack32;
+unsigned long           scratch[64];
 struct vbe_controller   controllerinfo;
 struct vbe_mode         modeinfo;
 struct CRTCInfoBlock    timings;
