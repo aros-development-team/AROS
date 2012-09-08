@@ -23,11 +23,6 @@ struct arosc_userdata
     int acud_errno;
 
     struct arosc_ctype acud_ctype;
- 
-    /* Used by time.h functions */
-    int        acud_daylight;
-    long int   acud_timezone;
-    char     **acud_tzname;
 
     /* Used by multi-byte functions */
     int acud_mb_cur_max;
