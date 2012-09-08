@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
  
     Desc: Dir CLI command
@@ -144,7 +144,7 @@ enum
     NOOFINTERARGS
 };
 
-__startup AROS_SH6(Dir, 50.9,
+AROS_SH6(Dir, 50.9,
         AROS_SHA(CONST_STRPTR, ,DIR  ,    , NULL),
         AROS_SHA(CONST_STRPTR, ,OPT  , /K , NULL),
         AROS_SHA(BOOL,         ,ALL  , /S , FALSE),
