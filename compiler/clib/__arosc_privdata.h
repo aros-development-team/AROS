@@ -111,6 +111,10 @@ struct aroscbase
 
     /* Used for random()/srandom() */
     struct random_state *acb_random;
+
+    /* Used for arosc startup code */
+    int *acb_startup_error_ptr;
+    jmp_buf acb_exit_jmp_buf;
 };
 
 /* acb_flags */

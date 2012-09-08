@@ -58,10 +58,12 @@
 
 ******************************************************************************/
 {
+    struct aroscbase *aroscbase = __aros_getbase();
+
     D(bug("[arosc] exit(%d)\n", code));
 
-    __arosc_startup_error = code;
-    longjmp (__arosc_startup_jmp_buf, 1);
+    *aroscbase->acb_startup_error_ptr = code;
+    longjmp (aroscbase->acb_exit_jmp_buf, 1);
 
     /* never reached */
 } /* exit */

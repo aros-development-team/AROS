@@ -74,7 +74,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         D(bug("__arosc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
 	{
-	    __arosc_startup_error = RETURN_FAIL;
+            *aroscbase->acb_startup_error_ptr = RETURN_FAIL;
 	    goto err_vars;
 	}
     }
@@ -85,9 +85,9 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         update_PATH();
 
     /* Call the real main.  */
-    if (setjmp(__arosc_startup_jmp_buf) == 0)
+    if (setjmp(aroscbase->acb_exit_jmp_buf) == 0)
     {
-        __arosc_startup_error = (*main)(argc, argv);
+        *aroscbase->acb_startup_error_ptr = (*main)(argc, argv);
     }
     else
         D(bug("__arosc_nixmain: setjmp() != 0\n"));
@@ -107,7 +107,7 @@ err_vars:
 
     D(bug("__arosc_nixmain: @end, Task=%x\n", FindTask(NULL)));
 
-    return __arosc_startup_error;
+    return *aroscbase->acb_startup_error_ptr;
 }
 
 /* Clone the process' environment variables list. Once this function returns,

@@ -14,13 +14,15 @@
 #include <dos/stdio.h>
 #include <proto/dos.h>
 
-void __arosc_program_startup(void)
+void __arosc_program_startup(jmp_buf exitjmp, int *error_ptr)
 {
+    struct aroscbase *aroscbase = __aros_getbase();
     struct Process *me = (struct Process *)FindTask(NULL);
 
-    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", __aros_getbase()));
+    D(bug("[__arosc_program_startup] aroscbase 0x%p\n", aroscbase));
 
-    /* Function is just a placeholder for the future */
+    aroscbase->acb_startup_error_ptr = error_ptr;
+    *aroscbase->acb_exit_jmp_buf = *exitjmp;
 
     /* A some C error IO routines evidently rely on this, and
      * should be fixed!
