@@ -99,19 +99,17 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
-
     if (tv)
     {
         GetSysTime(tv);
 
         /* Adjust with the current timezone, stored in minutes west of GMT */
-        tv->tv_sec += (2922 * 1440 + aroscbase->acb_gmtoffset) * 60;
+        tv->tv_sec += (2922 * 1440 + __arosc_gmtoffset()) * 60;
     }
 
     if (tz)
     {
-	tz->tz_minuteswest = aroscbase->acb_gmtoffset;
+	tz->tz_minuteswest = __arosc_gmtoffset();
 	/* FIXME: set tz->tz_dsttime */
 	tz->tz_dsttime	   = DST_NONE;
     }
@@ -137,15 +135,6 @@ static int __init_timerbase(struct aroscbase *aroscbase)
     aroscbase->acb_timereq.tr_node.io_Message.mn_Node.ln_Name    = NULL;
     aroscbase->acb_timereq.tr_node.io_Message.mn_ReplyPort       = &aroscbase->acb_timeport;
     aroscbase->acb_timereq.tr_node.io_Message.mn_Length          = sizeof (aroscbase->acb_timereq);
-
-    struct Locale *locale = OpenLocale(NULL);
-    if (locale)
-    {
-        aroscbase->acb_gmtoffset = locale->loc_GMTOffset;
-        CloseLocale(locale);
-    }
-    else
-        aroscbase->acb_gmtoffset = 0;
 
     if
     (

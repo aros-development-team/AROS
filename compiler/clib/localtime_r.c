@@ -73,11 +73,9 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
-
     time_t ti = *tt;
 
-    ti -= aroscbase->acb_gmtoffset * 60;
+    ti -= __arosc_gmtoffset() * 60;
 
     return gmtime_r (&ti, tm);
 } /* localtime_r */

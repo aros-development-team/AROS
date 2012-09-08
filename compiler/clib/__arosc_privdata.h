@@ -65,7 +65,6 @@ struct aroscbase
     /* gettimeofday */
     struct timerequest  acb_timereq;
     struct MsgPort      acb_timeport;
-    LONG                acb_gmtoffset;
 
     /* __arosc_usedata  */
     APTR  acb_process_returnaddr;
