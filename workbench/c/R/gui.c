@@ -2,7 +2,8 @@
     Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
-#define DEBUG 1
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <libraries/mui.h>

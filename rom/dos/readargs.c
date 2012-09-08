@@ -1,6 +1,6 @@
 
 /*
-    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -297,34 +297,6 @@ AROS_LH3(struct RDArgs *, ReadArgs,
             FGets(input, lcs.CS_Buffer, sizeof(argbuff));
 
         D(bug("[ReadArgs] Line: %s\n", argbuff));
-
-        /*
-         * If "!GETTEMPLATE!" is given as argument print the template and
-         * exit with an error code. This makes a "R" like tool more reliable.
-         */
-        if
-        (
-            !(rdargs->RDA_Flags & RDAF_NOPROMPT)
-            &&
-            (strncmp(argbuff, "!GETTEMPLATE!", 13) == 0)
-        )
-        {
-            D(bug("[ReadArgs] !GETTEMPLATE! found\n"));
-
-            BPTR output = Output();
-
-            if (FPuts(output, template) || FPuts(output, ": "))
-            {
-                ERROR(me->pr_Result2);
-            }
-
-            if (!Flush(output))
-            {
-                ERROR(me->pr_Result2);
-            }
-
-            ERROR(ERROR_BAD_TEMPLATE);
-        }
 
         cs1 = lcs.CS_Buffer;
 
