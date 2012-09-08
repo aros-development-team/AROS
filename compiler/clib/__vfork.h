@@ -18,10 +18,10 @@
 struct vfork_data
 {
     struct vfork_data *prev;
-    jmp_buf vfork_jump;
+    jmp_buf vfork_jmp;
 
     struct Task *parent;
-    jmp_buf startup_jmp_buf;
+    jmp_buf arosc_exit_jmp;
 
     ULONG child_id;
     BYTE parent_signal;

@@ -58,7 +58,7 @@
 
     /* Abort anyway */
     aroscbase->acb_flags |= ABNORMAL_EXIT;
-    longjmp(__arosc_startup_jmp_buf, 20);
+    longjmp(aroscbase->acb_exit_jmp_buf, 20);
 
     assert(0); /* Should not be reached and will likely bomb recursively */
 }
