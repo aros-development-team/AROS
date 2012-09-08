@@ -189,13 +189,13 @@ static struct random_state *get_random_state(void)
 
     struct aroscbase *base = __aros_getbase();
 
-    if (base->acb_acud.acud_random)
-        return base->acb_acud.acud_random;
+    if (base->acb_random)
+        return base->acb_random;
 
     if ((rs = AllocMem(sizeof(*rs), MEMF_ANY))) {
         init_random_state(rs);
 
-        base->acb_acud.acud_random = rs;
+        base->acb_random = rs;
         return rs;
     }
 
@@ -204,22 +204,22 @@ static struct random_state *get_random_state(void)
 
 static void free_random_state(struct aroscbase *base)
 {
-    if (base->acb_acud.acud_random) {
-        FreeMem(base->acb_acud.acud_random, sizeof(struct random_state));
-        base->acb_acud.acud_random = NULL;
+    if (base->acb_random) {
+        FreeMem(base->acb_random, sizeof(struct random_state));
+        base->acb_random = NULL;
     }
 }
 
 ADD2CLOSELIB(free_random_state, 0)
 #else
-static struct random_state acud_random;
+static struct random_state __random;
 
 static inline struct random_state *get_random_state(void)
 {
-    if (acud_random.end_ptr == NULL)
-        init_random_state(&acud_random);
+    if (__random.end_ptr == NULL)
+        init_random_state(&__random);
 
-    return &acud_random;
+    return &__random;
 }
 #endif
 
