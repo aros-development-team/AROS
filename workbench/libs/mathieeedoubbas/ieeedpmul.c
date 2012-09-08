@@ -101,15 +101,15 @@ AROS_LHQUAD2(double, IEEEDPMul,
 
     D(bug("%08x %08x %08x %08x\n", x1, x2, y1, y2));
 
-    Qtmp1 = SMult64(x1, y1);
+    Qtmp1 = UMult64(x1, y1);
     t1[0] = Get_High32of64(Qtmp1);
     t1[1] = Get_Low32of64(Qtmp1);
 
-    Qtmp1 = SMult64(x2, y2);
+    Qtmp1 = UMult64(x2, y2);
     t1[2] = Get_High32of64(Qtmp1);
     t1[3] = Get_Low32of64(Qtmp1);
 
-    Qtmp1 = SMult64(x1, y2);
+    Qtmp1 = UMult64(x1, y2);
     t2[3] = 0;
     t2[2] = Get_High32of64(Qtmp1);
     t2[1] = Get_Low32of64(Qtmp1);
@@ -117,7 +117,7 @@ AROS_LHQUAD2(double, IEEEDPMul,
 
     add128(t2, t1);
 
-    Qtmp1 = SMult64(x2, y1);
+    Qtmp1 = UMult64(x2, y1);
     t2[3] = 0;
     t2[2] = Get_High32of64(Qtmp1);
     t2[1] = Get_Low32of64(Qtmp1);
