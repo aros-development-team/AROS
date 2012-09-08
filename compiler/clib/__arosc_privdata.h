@@ -12,10 +12,12 @@
 #include <sys/arosc.h>
 
 #include <aros/types/clock_t.h>
+/* Some structs that are defined privately */
 struct _fdesc;
 struct __env_item;
 struct vfork_data;
 struct signal_func_data;
+struct random_state;
 
 struct aroscbase
 {
@@ -106,6 +108,9 @@ struct aroscbase
 
     /* rand */
     unsigned int acb_srand_seed;
+
+    /* Used for random()/srandom() */
+    struct random_state *acb_random;
 };
 
 /* acb_flags */
