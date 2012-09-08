@@ -2,7 +2,8 @@
     Copyright © 2012, The AROS Development Team. All rights reserved.
     $Id$
 */
-#define DEBUG 1
+
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -212,9 +213,10 @@ static BOOL get_template(struct Req *req)
         goto cleanup;
     }
 
-    // append "!GETTEMPLATE!" to the command
+    // append "= ?" to the command to make ReadArgs fail so
+    // that the command prints the template and stops
     strlcpy(cmd, req->filename, cmd_len);
-    strlcat(cmd, " !GETTEMPLATE!", cmd_len);
+    strlcat(cmd, " = ?", cmd_len);
 
     // shut up DOS error message
     struct Process *me = (struct Process*)FindTask(NULL);
@@ -283,7 +285,7 @@ static BOOL parse_template(struct Req *req)
         }
     }
 
-    D(bug("[R/parse_template args found %d\n", req->arg_cnt));
+    D(bug("[R/parse_template] args found %d\n", req->arg_cnt));
 
     req->cargs = AllocPooled(poolmem, sizeof (struct CArg) * req->arg_cnt);
     if (req->cargs == NULL)
