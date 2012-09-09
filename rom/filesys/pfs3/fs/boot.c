@@ -637,7 +637,7 @@ static void Quit (globaldata *g)
 #undef SysBase
 
 #ifdef __AROS__
-LONG Start(struct ExecBase *SysBase)
+LONG AROSEntryPoint(struct ExecBase *SysBase)
 {
 #ifdef KS13WRAPPER
 #if KS13WRAPPER_DEBUG
