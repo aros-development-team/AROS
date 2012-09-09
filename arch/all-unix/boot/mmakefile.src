@@ -14,11 +14,11 @@ endif
 boot-unix: $(BINDIR)/boot/AROSBootstrap.conf
 
 $(BINDIR)/boot/AROSBootstrap.conf: mkbootconf.sh $(BINDIR)/boot AROSBootstrap.conf
-	@$(ECHO) Writing $@...
+	@$(ECHO) "Writing    $@..."
 	@$(SRCDIR)/$(CURDIR)/mkbootconf.sh $(SRCDIR)/$(CURDIR) $(BSP) >$@
 
 $(BINDIR)/boot:
-	@$(ECHO) Making $@...
+	@$(ECHO) "Making     $@..."
 	@mkdir -p $(BINDIR)/boot
 
 # -------- Kickstart part --------
