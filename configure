@@ -865,6 +865,7 @@ enable_build_type
 enable_debug
 enable_distcc
 enable_ccache
+with_kernel_gcc_version
 with_gcc_version
 with_optimization
 with_paranoia
@@ -7450,9 +7451,9 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking what specific host gcc version to use" >&5
 $as_echo_n "checking what specific host gcc version to use... " >&6; }
 
-# Check whether --with-gcc-version was given.
-if test "${with_gcc_version+set}" = set; then :
-  withval=$with_gcc_version; kernel_tool_version="$withval"
+# Check whether --with-kernel-gcc-version was given.
+if test "${with_kernel_gcc_version+set}" = set; then :
+  withval=$with_kernel_gcc_version; kernel_tool_version="-$withval"
 else
   kernel_tool_version="default"
 fi
@@ -7979,7 +7980,10 @@ case "$target_os" in
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="ld -arch ppc"
+		aros_kernel_as="as -arch ppc"
                 aros_kernel_ranlib="ranlib -arch ppc"
+		aros_kernel_nm="nm -arch ppc"
+		aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 ;;
             *arm*)
@@ -8661,8 +8665,11 @@ else
     # Kernel tools required - find them
     # Note that 'normally', aros_kernel_* overrides will
     # empty, unless specified in the per-arch sections above.
+    if test "x$aros_kernel_cpp" = "x"; then
+        aros_kernel_cpp=${kernel_tool_prefix}cpp
+    fi
 
-if test "$aros_kernel_cpp" = ""; then
+if test "$aros_kernel_cpp${kernel_tool_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cpp", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cpp; ac_word=$2
@@ -8792,8 +8799,8 @@ fi
 fi
     fi
 else
-    # Extract the first word of "$aros_kernel_cpp", so it can be a program name with args.
-set dummy $aros_kernel_cpp; ac_word=$2
+    # Extract the first word of "$aros_kernel_cpp${kernel_tool_version}", so it can be a program name with args.
+set dummy $aros_kernel_cpp${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cpp+:} false; then :
@@ -8841,7 +8848,7 @@ fi
         aros_kernel_cc=${kernel_tool_prefix}gcc
     fi
 
-if test "$aros_kernel_cc${aros_gcc_version}" = ""; then
+if test "$aros_kernel_cc${kernel_tool_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cc", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cc; ac_word=$2
@@ -8971,8 +8978,8 @@ fi
 fi
     fi
 else
-    # Extract the first word of "$aros_kernel_cc${aros_gcc_version}", so it can be a program name with args.
-set dummy $aros_kernel_cc${aros_gcc_version}; ac_word=$2
+    # Extract the first word of "$aros_kernel_cc${kernel_tool_version}", so it can be a program name with args.
+set dummy $aros_kernel_cc${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cc+:} false; then :
@@ -9020,7 +9027,7 @@ fi
         aros_kernel_cxx=${kernel_tool_prefix}g++
     fi
 
-if test "$aros_kernel_cxx${aros_gcc_version}" = ""; then
+if test "$aros_kernel_cxx${kernel_tool_version}" = ""; then
     if test "$cross_compiling" = "yes" ; then
         # Extract the first word of "${kernel_tool_prefix}cxx", so it can be a program name with args.
 set dummy ${kernel_tool_prefix}cxx; ac_word=$2
@@ -9150,8 +9157,8 @@ fi
 fi
     fi
 else
-    # Extract the first word of "$aros_kernel_cxx${aros_gcc_version}", so it can be a program name with args.
-set dummy $aros_kernel_cxx${aros_gcc_version}; ac_word=$2
+    # Extract the first word of "$aros_kernel_cxx${kernel_tool_version}", so it can be a program name with args.
+set dummy $aros_kernel_cxx${kernel_tool_version}; ac_word=$2
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
 $as_echo_n "checking for $ac_word... " >&6; }
 if ${ac_cv_path_aros_kernel_cxx+:} false; then :

@@ -716,7 +716,7 @@ fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific host gcc version to use])
-AC_ARG_WITH(gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),kernel_tool_version="$withval",kernel_tool_version="default")
+AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),kernel_tool_version="-$withval",kernel_tool_version="default")
 AC_MSG_RESULT($kernel_tool_version)
 
 #-----------------------------------------------------------------------------
@@ -1078,7 +1078,10 @@ case "$target_os" in
                 aros_kernel_ar="ar"
                 aros_kernel_ar_flags="-cr"
                 aros_kernel_ld="ld -arch ppc"
+		aros_kernel_as="as -arch ppc"
                 aros_kernel_ranlib="ranlib -arch ppc"
+		aros_kernel_nm="nm -arch ppc"
+		aros_kernel_strip="strip -arch ppc"
                 kernel_tool_prefix="powerpc-apple-darwin10-"
                 ;;
             *arm*)
@@ -1663,17 +1666,20 @@ else
     # Kernel tools required - find them
     # Note that 'normally', aros_kernel_* overrides will
     # empty, unless specified in the per-arch sections above.
-    AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp)
+    if test "x$aros_kernel_cpp" = "x"; then
+        aros_kernel_cpp=${kernel_tool_prefix}cpp
+    fi
+    AROS_TOOL_KERNEL(aros_kernel_cpp,cpp,$aros_kernel_cpp${kernel_tool_version})
     AROS_REQUIRED(cpp,$aros_kernel_cpp)
     if test "x$aros_kernel_cc" = "x"; then
         aros_kernel_cc=${kernel_tool_prefix}gcc
     fi
-    AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc${aros_gcc_version})
+    AROS_TOOL_KERNEL(aros_kernel_cc,cc,$aros_kernel_cc${kernel_tool_version})
     AROS_REQUIRED(cc,$aros_kernel_cc)
     if test "x$aros_kernel_cxx" = "x"; then
         aros_kernel_cxx=${kernel_tool_prefix}g++
     fi
-    AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx${aros_gcc_version})
+    AROS_TOOL_KERNEL(aros_kernel_cxx,cxx,$aros_kernel_cxx${kernel_tool_version})
     # If it's set, make sure it's really there
     if test "x$aros_kernel_cxx" != "x" ; then
         AROS_REQUIRED(cxx,$aros_kernel_cxx)
