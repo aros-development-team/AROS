@@ -21,9 +21,8 @@ struct vfork_data
     jmp_buf vfork_jmp;
 
     struct Task *parent;
-    jmp_buf arosc_exit_jmp;
-
-    ULONG child_id;
+    int *parent_olderrorptr;
+    jmp_buf parent_oldexitjmp, parent_newexitjmp;
     BYTE parent_signal;
     struct aroscbase *parent_aroscbase;
     APTR parent_mempool;
@@ -35,12 +34,14 @@ struct vfork_data
     int parent_numslots;
     fdesc **parent_fd_array;
 
+    ULONG child_id;
     struct Task *child;
     struct arosc_privdata *cpriv;
     int child_executed;
-    int child_errno;
+    int child_error, child_errno;
     BYTE child_signal;
     struct aroscbase *child_aroscbase;
+    jmp_buf child_exitjmp;
 
     const char *exec_filename;
     char *const *exec_argv;

@@ -54,11 +54,8 @@
 {
     raise(SIGABRT);
 
-    struct aroscbase *aroscbase = __aros_getbase();
-
     /* Abort anyway */
-    aroscbase->acb_flags |= ABNORMAL_EXIT;
-    longjmp(aroscbase->acb_exit_jmp_buf, 20);
+    __arosc_jmp2exit(0, 20);
 
     assert(0); /* Should not be reached and will likely bomb recursively */
 }
