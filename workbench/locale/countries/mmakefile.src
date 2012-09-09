@@ -26,7 +26,7 @@ workbench-locale-countries: workbench-locale-countries-quick
 
 #MM
 workbench-locale-countries-quick: $(MAKECOUNTRY) $(COUNTRYDIR)
-	@$(ECHO) Making country files...
+	@$(ECHO) "Making     country files..."
 	@cd $(SRCDIR)/$(CURDIR); $(MAKECOUNTRY) $(COUNTRYDIR)/ --all
 	
 $(MAKECOUNTRY) : $(OBJS) $(OBJDIR)/makecountry.o
