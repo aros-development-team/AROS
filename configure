@@ -5994,10 +5994,11 @@ _ACEOF
 
   LIBS="-lpng $LIBS"
 
-else
-  as_fn_error $? "libpng development files missing" "$LINENO" 5
 fi
 
+if test "$ac_cv_lib_png_png_read_png" = ""; then
+    as_fn_error $? "libpng is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
 
 FOR=for
 

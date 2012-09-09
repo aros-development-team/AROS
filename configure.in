@@ -462,7 +462,8 @@ AROS_REQUIRED(patch,$PATCH)
 
 AM_PATH_PYTHON(2.5)
 
-AC_CHECK_LIB(png, png_read_png, , AC_MSG_ERROR([libpng development files missing]))
+AC_CHECK_LIB(png, png_read_png)
+AROS_REQUIRED(libpng, $ac_cv_lib_png_png_read_png)
 
 AC_SUBST(FOR, for)
 AC_SUBST(IF, if)
