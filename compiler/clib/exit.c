@@ -8,9 +8,10 @@
 #include "__arosc_privdata.h"
 
 #include <aros/debug.h>
-#include <exec/types.h>
-#include <setjmp.h>
 #include <aros/startup.h>
+#include <exec/types.h>
+
+#include <assert.h>
 
 /*****************************************************************************
 
@@ -58,13 +59,11 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
-
     D(bug("[arosc] exit(%d)\n", code));
 
-    *aroscbase->acb_startup_error_ptr = code;
-    longjmp (aroscbase->acb_exit_jmp_buf, 1);
+    __arosc_jmp2exit(1, code);
 
     /* never reached */
+    assert(0);
 } /* exit */
 

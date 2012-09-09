@@ -36,6 +36,9 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 int __get_default_file(int file_descriptor, long* file_handle);
 void __arosc_program_startup(jmp_buf exitjmp, int *error_ptr);
 void __arosc_program_end(void);
+int *__arosc_set_errorptr(int *errorptr);
+void __arosc_set_exitjmp(jmp_buf exitjmp, jmp_buf previousjmp);
+void __arosc_jmp2exit(int normal, int returncode) __noreturn;
 
 __END_DECLS
 

@@ -53,13 +53,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
-
-    *aroscbase->acb_startup_error_ptr = code;
-
-    D(bug("_exit() - returning via jmp_buf %p\n", aroscbase->acb_exit_jmp_buf));
-    aroscbase->acb_flags |= ABNORMAL_EXIT;
-    longjmp (aroscbase->acb_exit_jmp_buf, 1);
+    __arosc_jmp2exit(0, code);
 
     /* never reached */
     assert(0);

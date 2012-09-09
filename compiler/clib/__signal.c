@@ -50,8 +50,6 @@ struct signal_func_data *__sig_getfuncdata(int signum)
 /* Handler for SIG_DFL */
 void __sig_default(int signum)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
-
     switch (signum)
     {
     case SIGABRT:
@@ -67,8 +65,7 @@ void __sig_default(int signum)
         break;
     }
 
-    aroscbase->acb_flags |= ABNORMAL_EXIT;
-    longjmp(aroscbase->acb_exit_jmp_buf, 20);
+    __arosc_jmp2exit(0, 20);
 
     assert(0); /* Should not be reached */
 }
