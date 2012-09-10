@@ -7,10 +7,10 @@ include $(TOP)/config/make.cfg
 CFILES := init_aros io unit scsicmd locale plugins tempfile progress password \
 	main_vectors plugin_vectors ../plugins/generic ../plugins/adf ../plugins/d64 ../plugins/iso
 
-USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 -DDEVICE
+USER_CFLAGS := -DABIV1 -DMIN_OS_VERSION=39 -DDEVICE -D__DOS_STDLIBBASE__ -D__INTUITION_STDLIBBASE__ -D__UTILITY_STDLIBBASE__
 USER_INCLUDES := -I$(SRCDIR)/$(CURDIR)/include -I$(SRCDIR)/$(CURDIR)/../include
 
 %build_module mmake=workbench-devs-diskimage-device modname=diskimage modtype=device \
-    files=$(CFILES) uselibs="diskimagesupport diskimageprefs arosc_rel expat_rel"
+    files=$(CFILES) uselibs="diskimagesupport diskimageprefs"
 
 %common

@@ -31,12 +31,9 @@
 #include <proto/utility.h>
 
 #ifdef __AROS__
-#  include <libraries/expat_au.h>
-#  include <libraries/z_au.h>
-#  include <libraries/bz2_au.h>
-#  include <proto/expat_au.h>
-#  include <proto/z_au.h>
-#  include <proto/bz2_au.h>
+#  include <expat.h>
+#  include <zlib.h>
+#  include <bzlib.h>
 #  define Uncompress uncompress
    struct Library *BZ2Base;
    struct Library *ZBase;

@@ -32,8 +32,7 @@
 #include <string.h>
 
 #ifdef __AROS__
-#  include <libraries/z_au.h>
-#  include <proto/z_au.h>
+#  include <zlib.h>
 #  define InflateInit2 inflateInit2
 #  define Inflate inflate
 #  define InflateEnd inflateEnd
