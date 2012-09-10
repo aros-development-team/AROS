@@ -719,7 +719,7 @@ fi
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what specific host gcc version to use])
-AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),kernel_tool_version="-$withval",kernel_tool_version="default")
+AC_ARG_WITH(kernel-gcc-version,AC_HELP_STRING([--with-kernel-gcc-version=VERSION],[Use host gcc-VERSION for building AROS]),kernel_tool_version="-$withval",kernel_tool_version="")
 AC_MSG_RESULT($kernel_tool_version)
 
 #-----------------------------------------------------------------------------
@@ -1616,7 +1616,8 @@ fi
 #
 # This takes, as input:
 #   crosstools             {yes,no}
-#   aros_gcc_version       {default,[version]}
+#   kernel_tool_version    {"",[version]}
+#   aros_gcc_version       {"",[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
 #   aros_tool_prefix       ${target_cpu}-aros-
 #

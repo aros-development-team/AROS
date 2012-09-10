@@ -7504,7 +7504,7 @@ $as_echo_n "checking what specific host gcc version to use... " >&6; }
 if test "${with_kernel_gcc_version+set}" = set; then :
   withval=$with_kernel_gcc_version; kernel_tool_version="-$withval"
 else
-  kernel_tool_version="default"
+  kernel_tool_version=""
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $kernel_tool_version" >&5
@@ -8660,7 +8660,8 @@ fi
 #
 # This takes, as input:
 #   crosstools             {yes,no}
-#   aros_gcc_version       {default,[version]}
+#   kernel_tool_version    {"",[version]}
+#   aros_gcc_version       {"",[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
 #   aros_tool_prefix       ${target_cpu}-aros-
 #
