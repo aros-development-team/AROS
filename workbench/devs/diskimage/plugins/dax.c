@@ -30,8 +30,7 @@
 #include <proto/dos.h>
 
 #ifdef __AROS__
-#  include <libraries/z_au.h>
-#  include <proto/z_au.h>
+#  include <zlib.h>
 #  define Uncompress uncompress
    struct Library ZBase;
 #else

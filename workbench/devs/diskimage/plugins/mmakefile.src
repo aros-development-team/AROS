@@ -64,7 +64,7 @@ TARGETDIR := $(AROS_DEVS)/DiskImage
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-ciso progname=CISO files="stub_aros ciso" \
-    targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
+    targetdir=$(TARGETDIR) uselibs="diskimagesupport z" usestartup=no
 
 %build_prog mmake=workbench-devs-diskimage-cpc progname=CPC files="stub_aros cpc" \
     targetdir=$(TARGETDIR) uselibs="diskimagesupport" usestartup=no
