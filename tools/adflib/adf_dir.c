@@ -460,6 +460,11 @@ RETCODE adfToRootDir(struct Volume *vol)
     return RC_OK;
 }
 
+SECTNUM adfCurrentDir(struct Volume* vol)
+{
+    return vol->curDirPtr;
+}
+
 
 /*
  * adfChangeDir

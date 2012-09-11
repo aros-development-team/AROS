@@ -41,6 +41,9 @@ RETCODE adfWriteLSEGblock(struct Device *dev, ULONG nSect, struct bLSEGblock* ls
 RETCODE adfReadBOOTblock(struct Device* dev, ULONG nSect, struct bBOOTblock* blk);
 RETCODE adfWriteBOOTblock(struct Device *dev, ULONG nSect, struct bBOOTblock* lseg);
 
+/* Write BOOT code
+ */
+RETCODE adfWriteBOOT(struct Device *dev, const UBYTE *code, size_t size);
 
 #endif /* _ADF_HD_H */
 

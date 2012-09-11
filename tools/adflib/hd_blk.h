@@ -12,8 +12,16 @@
 
 #include "adf_str.h"
 
-/* ------- RDSK ---------*/
+/* ------- Generic ---------*/
+struct bNONEblock {
+/*000*/ TEXT    id[4];          /* NONE */
+/*004*/ ULONG   size;           /* 64 ULONGs */
+/*008*/ ULONG   checksum;
+/*00c*/ ULONG   hostID;         /* 7 */
+/*010*/ ULONG   longData[124];  /* Data */
+};
 
+/* ------- RDSK ---------*/
 struct bRDSKblock {
 /*000*/ TEXT    id[4];          /* RDSK */
 /*004*/ ULONG   size;           /* 64 ULONGs */
@@ -114,16 +122,16 @@ struct bLSEGblock {
 /*008*/ ULONG   checksum;
 /*00c*/ ULONG   hostID;         /* 7 */
 /*010*/ ULONG   next;
-/*014*/ TEXT    loadData[123*4];
+/*014*/ ULONG   loadData[123];
 };
 
 struct bBOOTblock {
 /*000*/ TEXT    id[4];          /* BOOT */
 /*004*/ ULONG   size;           /* 128 ULONGs */
 /*008*/ ULONG   checksum;
-/*00c*/ ULONG   hostID;         /* 0 */
+/*00c*/ ULONG   hostID;         /* 7 */
 /*010*/ ULONG   next;
-/*014*/ TEXT    loadData[123*4];
+/*014*/ ULONG   loadData[123];
 };
 
 struct bFSHDblock {

@@ -556,8 +556,10 @@ RETCODE adfCreateHd(struct Device* dev, int n, struct Partition** partList )
         return RC_ERROR;
     }
     for(i=0; i<n; i++) {
-        if (memcmp(partList[i]->volType, "DOS", 3) != 0)
+        if (memcmp(partList[i]->volType, "DOS", 3) != 0) {
+            (*adfEnv.eFct)("adfCreateHd : Skipping non-DOS volume\n");
             continue;
+        }
         dev->volList[i] = adfCreateVol( dev, 
                     partList[i]->startCyl, 
                     partList[i]->lenCyl, 
@@ -621,12 +623,27 @@ void adfUnMountDev( struct Device* dev)
 RETCODE adfReadBlockDev( struct Device* dev, ULONG nSect, ULONG size, unsigned char* buf )
 {
     struct nativeFunctions *nFct;
+    RETCODE rc;
     
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
-        return (*nFct->adfNativeReadSector)(dev, nSect, size, buf);
+        rc = (*nFct->adfNativeReadSector)(dev, nSect, size, buf);
     else
-        return adfReadDumpSector(dev, nSect, size, buf);
+        rc = adfReadDumpSector(dev, nSect, size, buf);
+
+    if (rc != RC_OK)
+        return rc;
+
+    if (buf[0] == 0 && buf[1] == 0 && buf[2] == 0 && buf[3] == 0)
+        rc |= RC_BLOCKTYPE;
+
+    if ( Long(buf + 8) == 0)
+        rc |= RC_BLOCKSTYPE;
+
+    if ( Long(buf + 8) != adfNormalSum(buf,8,Long(buf + 4) * 4) )
+         rc |= RC_BLOCKSUM;
+
+    return rc;
 }
 
 /*
@@ -635,6 +652,11 @@ RETCODE adfReadBlockDev( struct Device* dev, ULONG nSect, ULONG size, unsigned c
 RETCODE adfWriteBlockDev( struct Device* dev, ULONG nSect, ULONG size, unsigned char* buf )
 {
     struct nativeFunctions *nFct;
+    ULONG sum;
+
+    memset(buf+8, 0, 4);
+    sum = adfNormalSum(buf, 8, Long(buf + 4) * 4);
+    swLong(buf+8, sum);
     
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
@@ -652,16 +674,10 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
 {
 
     UCHAR buf[256];
-    struct nativeFunctions *nFct;
     RETCODE rc2;
     RETCODE rc = RC_OK;
-    
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc2 =(*nFct->adfNativeReadSector)(dev, 0, 256, buf);
-    else
-        rc2 = adfReadDumpSector(dev, 0, 256, buf);
 
+    rc2 = adfReadBlockDev(dev, 0, 256, buf);
     if (rc2!=RC_OK)
        return(RC_ERROR);
 
@@ -679,11 +695,6 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
     if ( blk->size != 64 )
         (*adfEnv.wFct)("ReadRDSKBlock : size != 64\n");
 
-    if ( blk->checksum != adfNormalSum(buf,8,256) ) {
-         (*adfEnv.wFct)("ReadRDSKBlock : incorrect checksum\n");
-         rc|=RC_BLOCKSUM;
-    }
-    
     if ( blk->blockSize != 512 )
          (*adfEnv.wFct)("ReadRDSKBlock : blockSize != 512\n");
 
@@ -702,9 +713,6 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
 adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    ULONG newSum;
-    struct nativeFunctions *nFct;
-    RETCODE rc2, rc = RC_OK;
 
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWriteRDSKblock : can't write block, read only device");
@@ -727,19 +735,7 @@ adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
     swapEndian(buf, SWBL_RDSK);
 #endif
 
-    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
-    swLong(buf+8, newSum);
-
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc2=(*nFct->adfNativeWriteSector)(dev, 0, LOGICAL_BLOCK_SIZE, buf);
-    else
-        rc2=adfWriteDumpSector(dev, 0, LOGICAL_BLOCK_SIZE, buf);
-
-    if (rc2!=RC_OK)
-       return RC_ERROR;
-
-    return rc;
+    return adfWriteBlockDev(dev, 0, LOGICAL_BLOCK_SIZE, buf);
 }
 
 
@@ -751,15 +747,9 @@ adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
 adfReadPARTblock( struct Device* dev, ULONG nSect, struct bPARTblock* blk )
 {
     UCHAR buf[ sizeof(struct bPARTblock) ];
-    struct nativeFunctions *nFct;
     RETCODE rc2, rc = RC_OK;
-    
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc2=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bPARTblock), buf);
-    else
-        rc2=adfReadDumpSector(dev, nSect, sizeof(struct bPARTblock), buf);
 
+    rc2 = adfReadBlockDev(dev, nSect, sizeof(struct bPARTblock), buf);
     if (rc2!=RC_OK)
        return RC_ERROR;
 
@@ -782,9 +772,6 @@ adfReadPARTblock( struct Device* dev, ULONG nSect, struct bPARTblock* blk )
         return RC_ERROR;
     }
 
-    if ( blk->checksum != adfNormalSum(buf,8,256) )
-        (*adfEnv.wFct)( "ReadPARTBlock : incorrect checksum");
-
     return rc;
 }
 
@@ -797,9 +784,6 @@ adfReadPARTblock( struct Device* dev, ULONG nSect, struct bPARTblock* blk )
 adfWritePARTblock(struct Device *dev, ULONG nSect, struct bPARTblock* part)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    ULONG newSum;
-    struct nativeFunctions *nFct;
-    RETCODE rc2, rc = RC_OK;
     
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWritePARTblock : can't write block, read only device");
@@ -821,19 +805,7 @@ adfWritePARTblock(struct Device *dev, ULONG nSect, struct bPARTblock* part)
     swapEndian(buf, SWBL_PART);
 #endif
 
-    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
-    swLong(buf+8, newSum);
-//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
-
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc2=(*nFct->adfNativeWriteSector)(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    else
-        rc2=adfWriteDumpSector(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    if (rc2!=RC_OK)
-        return RC_ERROR;
-
-    return rc;
+    return adfWriteBlockDev(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
 }
 
 /*
@@ -844,14 +816,9 @@ adfWritePARTblock(struct Device *dev, ULONG nSect, struct bPARTblock* part)
 adfReadFSHDblock( struct Device* dev, ULONG nSect, struct bFSHDblock* blk)
 {
     UCHAR buf[sizeof(struct bFSHDblock)];
-    struct nativeFunctions *nFct;
     RETCODE rc;
-    
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc = (*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bFSHDblock), buf);
-    else
-        rc = adfReadDumpSector(dev, nSect, sizeof(struct bFSHDblock), buf);
+   
+    rc = adfReadBlockDev(dev, nSect, sizeof(struct bFSHDblock), buf);
     if (rc!=RC_OK)
         return RC_ERROR;
         
@@ -869,9 +836,6 @@ adfReadFSHDblock( struct Device* dev, ULONG nSect, struct bFSHDblock* blk)
     if ( blk->size != 64 )
          (*adfEnv.wFct)("ReadFSHDblock : size != 64");
 
-    if ( blk->checksum != adfNormalSum(buf,8,256) )
-        (*adfEnv.wFct)( "ReadFSHDblock : incorrect checksum");
-
     return RC_OK;
 }
 
@@ -884,9 +848,6 @@ adfReadFSHDblock( struct Device* dev, ULONG nSect, struct bFSHDblock* blk)
 adfWriteFSHDblock(struct Device *dev, ULONG nSect, struct bFSHDblock* fshd)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    ULONG newSum;
-    struct nativeFunctions *nFct;
-    RETCODE rc = RC_OK;
 
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWriteFSHDblock : can't write block, read only device");
@@ -903,19 +864,7 @@ adfWriteFSHDblock(struct Device *dev, ULONG nSect, struct bFSHDblock* fshd)
     swapEndian(buf, SWBL_FSHD);
 #endif
 
-    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
-    swLong(buf+8, newSum);
-//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
-
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc=(*nFct->adfNativeWriteSector)(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    else
-        rc=adfWriteDumpSector(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    if (rc!=RC_OK)
-        return RC_ERROR;
-
-    return RC_OK;
+    return adfWriteBlockDev(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
 }
 
 
@@ -927,14 +876,9 @@ adfWriteFSHDblock(struct Device *dev, ULONG nSect, struct bFSHDblock* fshd)
 adfReadLSEGblock(struct Device* dev, ULONG nSect, struct bLSEGblock* blk)
 {
     UCHAR buf[sizeof(struct bLSEGblock)];
-    struct nativeFunctions *nFct;
     RETCODE rc;
-    
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bLSEGblock), buf);
-    else
-        rc=adfReadDumpSector(dev, nSect, sizeof(struct bLSEGblock), buf);
+   
+    rc = adfReadBlockDev(dev, nSect, sizeof(struct bLSEGblock), buf);
     if (rc!=RC_OK)
         return RC_ERROR;
         
@@ -948,9 +892,6 @@ adfReadLSEGblock(struct Device* dev, ULONG nSect, struct bLSEGblock* blk)
         (*adfEnv.eFct)("ReadLSEGblock : LSEG id not found");
         return RC_ERROR;
     }
-
-    if ( blk->checksum != adfNormalSum(buf,8,sizeof(struct bLSEGblock)) )
-        (*adfEnv.wFct)("ReadLSEGBlock : incorrect checksum");
 
     if ( blk->next!=-1 && blk->size != 128 )
         (*adfEnv.wFct)("ReadLSEGBlock : size != 128");
@@ -967,9 +908,6 @@ adfReadLSEGblock(struct Device* dev, ULONG nSect, struct bLSEGblock* blk)
 adfWriteLSEGblock(struct Device *dev, ULONG nSect, struct bLSEGblock* lseg)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    ULONG newSum;
-    struct nativeFunctions *nFct;
-    RETCODE rc;
 
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWriteLSEGblock : can't write block, read only device");
@@ -986,20 +924,7 @@ adfWriteLSEGblock(struct Device *dev, ULONG nSect, struct bLSEGblock* lseg)
     swapEndian(buf, SWBL_LSEG);
 #endif
 
-    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
-    swLong(buf+8,newSum);
-//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
-
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc=(*nFct->adfNativeWriteSector)(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    else
-        rc=adfWriteDumpSector(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-
-    if (rc!=RC_OK)
-        return RC_ERROR;
-
-    return RC_OK;
+    return adfWriteBlockDev(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
 }
 
 /*
@@ -1010,14 +935,9 @@ adfWriteLSEGblock(struct Device *dev, ULONG nSect, struct bLSEGblock* lseg)
 adfReadBOOTblock(struct Device* dev, ULONG nSect, struct bBOOTblock* blk)
 {
     UCHAR buf[sizeof(struct bBOOTblock)];
-    struct nativeFunctions *nFct;
     RETCODE rc;
-    
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bBOOTblock), buf);
-    else
-        rc=adfReadDumpSector(dev, nSect, sizeof(struct bBOOTblock), buf);
+   
+    rc = adfReadBlockDev(dev, nSect, sizeof(struct bBOOTblock), buf);
     if (rc!=RC_OK)
         return RC_ERROR;
         
@@ -1031,9 +951,6 @@ adfReadBOOTblock(struct Device* dev, ULONG nSect, struct bBOOTblock* blk)
         (*adfEnv.eFct)("ReadBOOTblock : BOOT id not found");
         return RC_ERROR;
     }
-
-    if ( blk->checksum != adfNormalSum(buf,8,sizeof(struct bBOOTblock)) )
-        (*adfEnv.wFct)("ReadBOOTBlock : incorrect checksum");
 
     if ( blk->next!=-1 && blk->size != 128 )
         (*adfEnv.wFct)("ReadBOOTBlock : size != 128");
@@ -1050,9 +967,6 @@ adfReadBOOTblock(struct Device* dev, ULONG nSect, struct bBOOTblock* blk)
 adfWriteBOOTblock(struct Device *dev, ULONG nSect, struct bBOOTblock* lseg)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    ULONG newSum;
-    struct nativeFunctions *nFct;
-    RETCODE rc;
 
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWriteBOOTblock : can't write block, read only device");
@@ -1069,20 +983,87 @@ adfWriteBOOTblock(struct Device *dev, ULONG nSect, struct bBOOTblock* lseg)
     swapEndian(buf, SWBL_BOOT);
 #endif
 
-    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
-    swLong(buf+8,newSum);
-//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
+    return adfWriteBlockDev(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
+}
 
-    nFct = adfEnv.nativeFct;
-    if (dev->isNativeDev)
-        rc=(*nFct->adfNativeWriteSector)(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
-    else
-        rc=adfWriteDumpSector(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
+/* Write BOOT code
+ */
+RETCODE adfWriteBOOT(struct Device *dev, const UBYTE *code, size_t size)
+{
+    struct bRDSKblock rdsk;
+    struct bBOOTblock boot;
+    UBYTE buf[LOGICAL_BLOCK_SIZE];
+    ULONG *sector, *next_block;
+    int i, sectors, n;
+    RETCODE rc;
 
-    if (rc!=RC_OK)
+    if (size & 3) {
+        printf("adfWriteBOOT: Size must be a multiple of 4\n");
         return RC_ERROR;
+    }
 
-    return RC_OK;
+    rc = adfReadRDSKblock(dev, &rdsk);
+    if (rc != RC_OK)
+        return rc;
+
+    /* Sector map of sectors we can use for boot code */
+    sectors = (size + sizeof(boot.loadData) - 1) / sizeof(boot.loadData);
+    sector = alloca((rdsk.rdbBlockHi - rdsk.rdbBlockLo + 1) * sizeof(sector[0]));
+
+    /* Do we have space for the new boot code? */
+    next_block = &rdsk.bootBlockList;
+    for (n = 0, i = rdsk.rdbBlockLo; i <= rdsk.rdbBlockHi; i++) {
+        sector[i - rdsk.rdbBlockLo] = (ULONG)-1;
+        rc = adfReadBlockDev(dev, i, sizeof(buf), buf);
+        if (rc == RC_OK) {
+            if (memcmp(buf, "BOOT", 4) != 0)
+                continue;
+        } else if (rc & RC_BLOCKREAD) {
+            /* Skip unreadable blocks */
+            continue;
+        }
+        if (n < sectors) {
+            *next_block = i;
+            next_block = &sector[i - rdsk.rdbBlockLo];
+            n++;
+        } else
+            sector[i - rdsk.rdbBlockLo] = (ULONG)-2;       /* Erase sector */
+    }
+    *next_block = (ULONG)-1;
+
+    if (n < sectors) {
+        printf("Needed %d sectors for the BOOT code, only found %d\n", sectors, n);
+        return RC_ERROR;
+    }
+
+    /* Clear out unused sectors */
+    memset(buf, 0, 512);
+    for (i = rdsk.rdbBlockLo; i <= rdsk.rdbBlockHi; i++) {
+        if (sector[i - rdsk.rdbBlockLo] == (ULONG)-2)
+            adfWriteBlockDev(dev, i, sizeof(buf), buf);
+    }
+
+    /* Write the new boot code */
+    n = rdsk.bootBlockList;
+    while (size > 0) {
+        int longs = (size > sizeof(boot.loadData)) ? sizeof(boot.loadData) : size;
+        longs = (longs + 3) / 4;
+        boot.size = longs + 5;
+        boot.hostID = 7;        /* Default */
+        boot.next = sector[n - rdsk.rdbBlockLo];
+        memset(boot.loadData, 0xff, sizeof(boot.loadData));
+        for (i = 0; i < longs; i++) {
+            swLong((UBYTE *)(&boot.loadData[i]), *(ULONG *)code);
+            code += 4;
+            size -= 4;
+        }
+
+        adfWriteBOOTblock(dev, n, &boot);
+
+        n = sector[n - rdsk.rdbBlockLo];
+    }
+
+    return adfWriteRDSKblock(dev, &rdsk);
 }
 
 /*##########################################################################*/
