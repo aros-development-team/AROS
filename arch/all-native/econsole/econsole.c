@@ -197,7 +197,7 @@ const struct econsole_file *econsole_file_of(BSTR bname, SIPTR *errcode)
     return NULL;
 }
 
-static void econ_handler(void)
+LONG econ_handler(struct ExecBase *SysBase)
 {
     struct DosPacket *dp;
     struct MsgPort *mp;
@@ -342,38 +342,6 @@ static void econ_handler(void)
     D(bug("%s: Exiting\n", __func__));
 
     replyPkt(dp);
+
+    return RETURN_OK;
 }
-            
-static BOOL EConsole_Init(void)
-{
-    struct Library *ExpansionBase;
-
-    if ((ExpansionBase = TaggedOpenLibrary(TAGGEDOPEN_EXPANSION))) {
-        IPTR pp[] = {
-            (IPTR)"ECON",
-            (IPTR)NULL,         /* device */
-            (IPTR)0,            /* unit */
-            (IPTR)0,            /* flags */
-            (IPTR)DE_TABLESIZE, /* DE_TABLESIZE */
-        };
-        struct DeviceNode *dn;
-
-        if ((dn = MakeDosNode(pp))) {
-            dn->dn_SegList   = CreateSegList(econ_handler);
-            dn->dn_GlobalVec = (BPTR)(SIPTR)-1;
-
-            D(bug("%s: AddBootNode: %p\n", __func__, dn));
-            AddBootNode(-127, ADNF_STARTPROC, dn, NULL);
-
-            CloseLibrary(ExpansionBase);
-            return TRUE;
-        }
-
-        CloseLibrary(ExpansionBase);
-    }
-
-    D(bug("%s: failed\n", __func__));
-    return FALSE;
-}
-
-ADD2INIT(EConsole_Init, 0)
