@@ -28,7 +28,7 @@
 #include <libraries/iffparse.h>
 
 #ifdef __AROS__
-#include <proto/expat_au.h>
+#include <expat.h>
 #else
 #include <proto/expat.h>
 #endif
