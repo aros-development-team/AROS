@@ -377,9 +377,10 @@ adfReadBlock(struct Volume* vol, ULONG nSect, unsigned char* buf)
     nFct = adfEnv.nativeFct;
     rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
 //printf("rc=%ld\n",rc);
-    if (rc!=RC_OK)
+    if (rc!=RC_OK) {
+        (*adfEnv.wFct)("adfReadBlock : Can't read sector");
         return RC_ERROR;
-    else
+    } else
         return RC_OK;
 }
 

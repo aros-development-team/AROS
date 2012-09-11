@@ -6,15 +6,15 @@
  * Amiga Dump File specific routines
  */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 
-#include"adf_defs.h"
-#include"adf_str.h"
-#include"adf_disk.h"
-#include"adf_nativ.h"
-#include"adf_err.h"
+#include "adf_defs.h"
+#include "adf_str.h"
+#include "adf_disk.h"
+#include "adf_nativ.h"
+#include "adf_err.h"
 
 extern struct Env adfEnv;
 
@@ -26,8 +26,6 @@ RETCODE adfInitDumpDevice(struct Device* dev, char* name, BOOL ro)
 {
     struct nativeDevice* nDev;
     long size;
-
-    nDev = (struct nativeDevice*)dev->nativeDev;
 
     nDev = (struct nativeDevice*)malloc(sizeof(struct nativeDevice));
     if (!nDev) {
@@ -63,7 +61,17 @@ RETCODE adfInitDumpDevice(struct Device* dev, char* name, BOOL ro)
 	size = ftell(nDev->fd);
     fseek(nDev->fd, 0, SEEK_SET);
 
+    /* Let's make some guesses about geometry...
+     */
     dev->size = size;
+    if (size <= (11 * 80 * 512 * 2)) {
+        dev->sectors = 11;
+        dev->heads = 2;
+    } else {
+        dev->sectors = 128;
+        dev->heads   = 4;
+    }
+    dev->cylinders = dev->size / 512 / dev->sectors / dev->heads;
 	
     return RC_OK;
 }

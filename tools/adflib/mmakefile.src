@@ -31,11 +31,6 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(AROS_INCLUDES)/adf -I$(SRCDIR)/$(CURD
 
 %build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
 
-%build_linklib mmake=host-linklibs-adf libname=adf files=$(FILES) \
-                     cflags="$(USER_INCLUDES) -g3 -Wall -Werror" compiler=host \
-                     libdir="$(HOSTGENDIR)/tools"
-
-
 #MM
 includes-copy : $(AROS_INCLUDES)/adf/adflib.h \
 		$(AROS_INCLUDES)/adf/defendian.h \
@@ -53,5 +48,34 @@ $(AROS_INCLUDES)/adf/defendian.h : Generic/defendian.h | $(AROS_INCLUDES)/adf
 	@$(CP) $< $@
 
 GLOB_MKDIRS += $(AROS_INCLUDES)/adf
+
+### Host build
+
+#MM- host-linklibs-adf: host-includes-copy
+
+HOST_INCLUDES := $(CROSSTOOLSDIR)/include
+
+%build_linklib mmake=host-linklibs-adf libname=adf files=$(FILES) \
+                     cflags="-I$(SRCDIR)/$(CURDIR)/Generic -I$(HOST_INCLUDES) -g3 -Wall -Werror" \
+                     compiler=host libdir="$(CROSSTOOLSDIR)/lib"
+
+
+#MM
+host-includes-copy : $(HOST_INCLUDES)/adf/adflib.h \
+		$(HOST_INCLUDES)/adf/defendian.h \
+		$(HOST_INCLUDES)/adf/hd_blk.h \
+		$(HOST_INCLUDES)/adf/adf_blk.h \
+		$(HOST_INCLUDES)/adf/adf_defs.h \
+		$(HOST_INCLUDES)/adf/adf_err.h \
+		$(HOST_INCLUDES)/adf/adf_hd.h \
+		$(HOST_INCLUDES)/adf/adf_str.h
+
+$(HOST_INCLUDES)/adf/%.h : %.h | $(HOST_INCLUDES)/adf
+	$(CP) $< $(HOST_INCLUDES)/adf
+
+$(HOST_INCLUDES)/adf/defendian.h : Generic/defendian.h | $(HOST_INCLUDES)/adf
+	@$(CP) $< $@
+
+GLOB_MKDIRS += $(HOST_INCLUDES)/adf
 
 %common
