@@ -486,6 +486,13 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
         part.blocksPerTrack = dev->sectors;
         part.lowCyl = partList[i]->startCyl;
         part.highCyl = partList[i]->startCyl + partList[i]->lenCyl -1;
+        part.maxTransfer = 0x00ffffff;
+        part.mask = 0xfffffffe;
+        part.dosReserved = 2;
+        part.numBuffer = 100;
+        part.vectorSize = 16;
+        part.blockSize = 128;
+        part.sectorsPerBlock = 1;
 
         memcpy(part.dosType, partList[i]->volType, 4);
             
