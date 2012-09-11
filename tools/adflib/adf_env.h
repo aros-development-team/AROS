@@ -9,7 +9,7 @@
  *  
  */
 
-#include"prefix.h"
+#include "adf_defs.h"
 
 PREFIX void adfEnvInitDefault();
 PREFIX void adfSetEnvFct( void(*e)(char*), void(*w)(char*), void(*v)(char*),

@@ -26,7 +26,7 @@ void rwHeadAccess(SECTNUM physical, SECTNUM logical, BOOL write)
 {
     /* display the physical sector, the logical block, and if the access is read or write */
 
-    fprintf(stderr, "phy %ld / log %ld : %c\n", physical, logical, write ? 'W' : 'R');
+    fprintf(stderr, "phy %ld / log %ld : %c\n", (long)physical, (long)logical, write ? 'W' : 'R');
 }
 
 void progressBar(int perCentDone)
@@ -75,10 +75,12 @@ void adfEnvInitDefault()
 
     /* internal checking */
 
-    if (sizeof(short)!=2) 
-        { fprintf(stderr,"Compilation error : sizeof(short)!=2\n"); exit(1); }
-    if (sizeof(long)!=4) 
-        { fprintf(stderr,"Compilation error : sizeof(short)!=2\n"); exit(1); }
+    if (sizeof(UBYTE)!=1) 
+        { fprintf(stderr,"Compilation error : sizeof(UBYTE)!=1\n"); exit(1); }
+    if (sizeof(USHORT)!=2) 
+        { fprintf(stderr,"Compilation error : sizeof(USHORT)!=2\n"); exit(1); }
+    if (sizeof(ULONG)!=4) 
+        { fprintf(stderr,"Compilation error : sizeof(ULONG)!=4\n"); exit(1); }
     if (sizeof(struct bEntryBlock)!=512)
         { fprintf(stderr,"Internal error : sizeof(struct bEntryBlock)!=512\n"); exit(1); }
     if (sizeof(struct bRootBlock)!=512)

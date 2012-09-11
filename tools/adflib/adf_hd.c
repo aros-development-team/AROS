@@ -40,9 +40,9 @@ int adfDevType(struct Device* dev)
     else if (dev->size>512*22*2*80)
         return(DEVTYPE_HARDDISK);
     else {
-		(*adfEnv.eFct)("adfDevType : unknown device type");
-		return(-1);
-	}
+        (*adfEnv.eFct)("adfDevType : unknown device type");
+        return(-1);
+    }
 }
 
 
@@ -56,12 +56,12 @@ int adfDevType(struct Device* dev)
  */
 void adfDeviceInfo(struct Device *dev)
 {
-	int i;
-	
-	printf("Cylinders   = %ld\n",dev->cylinders);
-    printf("Heads       = %ld\n",dev->heads);
-    printf("Sectors/Cyl = %ld\n\n",dev->sectors);
-	if (!dev->isNativeDev)
+    int i;
+    
+    printf("Cylinders   = %ld\n",(long)dev->cylinders);
+    printf("Heads       = %ld\n",(long)dev->heads);
+    printf("Sectors/Cyl = %ld\n\n",(long)dev->sectors);
+    if (!dev->isNativeDev)
         printf("Dump device\n\n");
     else
         printf("Real device\n\n");
@@ -84,15 +84,15 @@ void adfDeviceInfo(struct Device *dev)
     for(i=0; i<dev->nVol; i++) {
         if (dev->volList[i]->volName)
             printf("%2d :  %7ld ->%7ld, \"%s\"", i,
-			dev->volList[i]->firstBlock,
-			dev->volList[i]->lastBlock,
-			dev->volList[i]->volName);
+            (long)dev->volList[i]->firstBlock,
+            (long)dev->volList[i]->lastBlock,
+            dev->volList[i]->volName);
         else
             printf("%2d :  %7ld ->%7ld\n", i,
-			dev->volList[i]->firstBlock,
-			dev->volList[i]->lastBlock);
+            (long)dev->volList[i]->firstBlock,
+            (long)dev->volList[i]->lastBlock);
         if (dev->volList[i]->mounted)
-			printf(", mounted");
+            printf(", mounted");
         putchar('\n');
     }
 }
@@ -111,7 +111,7 @@ void adfFreeTmpVolList(struct List *root)
     while(cell!=NULL) {
         vol = (struct Volume *)cell->content;
         if (vol->volName!=NULL)
-			free(vol->volName);  
+            free(vol->volName);  
         cell = cell->next;
     }
     freeList(root);
@@ -127,14 +127,14 @@ RETCODE adfMountHdFile(struct Device *dev)
 {
     struct Volume* vol;
     unsigned char buf[512];
-    long size;
+    ULONG size;
     BOOL found;
 
     dev->devType = DEVTYPE_HARDFILE;
     dev->nVol = 0;
     dev->volList = (struct Volume**)malloc(sizeof(struct Volume*));
     if (!dev->volList) { 
-		(*adfEnv.eFct)("adfMountHdFile : malloc");
+        (*adfEnv.eFct)("adfMountHdFile : malloc");
         return RC_ERROR;
     }
 
@@ -187,8 +187,8 @@ RETCODE adfMountHd(struct Device *dev)
     struct bRDSKblock rdsk;
     struct bPARTblock part;
     struct bFSHDblock fshd;
-	struct bLSEGblock lseg;
-	long next;
+    struct bLSEGblock lseg;
+    ULONG next;
     struct List *vList, *listRoot;
     int i;
     struct Volume* vol;
@@ -231,9 +231,9 @@ RETCODE adfMountHd(struct Device *dev)
         vol->volName = (char*)malloc(len+1);
         if (!vol->volName) { 
             adfFreeTmpVolList(listRoot);
-			(*adfEnv.eFct)("adfMount : malloc");
+            (*adfEnv.eFct)("adfMount : malloc");
             return RC_ERROR;
-		}
+        }
         memcpy(vol->volName,part.name,len);
         vol->volName[len] = '\0';
 
@@ -247,7 +247,7 @@ RETCODE adfMountHd(struct Device *dev)
 
         if (vList==NULL) {
             adfFreeTmpVolList(listRoot);
-			(*adfEnv.eFct)("adfMount : newCell() malloc");
+            (*adfEnv.eFct)("adfMount : newCell() malloc");
             return RC_ERROR;
         }
 
@@ -258,7 +258,7 @@ RETCODE adfMountHd(struct Device *dev)
     dev->volList = (struct Volume**)malloc(sizeof(struct Volume*) * dev->nVol);
     if (!dev->volList) { 
         adfFreeTmpVolList(listRoot);
-		(*adfEnv.eFct)("adfMount : unknown device type");
+        (*adfEnv.eFct)("adfMount : unknown device type");
         return RC_ERROR;
     }
     vList = listRoot;
@@ -268,6 +268,7 @@ RETCODE adfMountHd(struct Device *dev)
     }
     freeList(listRoot);
 
+    fshd.segListBlock = -1;
     next = rdsk.fileSysHdrList;
     while( next!=-1 ) {
         if (adfReadFSHDblock( dev, next, &fshd )!=RC_OK) {
@@ -301,10 +302,10 @@ RETCODE adfMountHd(struct Device *dev)
  */
 RETCODE adfMountFlop(struct Device* dev)
 {
-	struct Volume *vol;
-	struct bRootBlock root;
-	char diskName[35];
-	
+    struct Volume *vol;
+    struct bRootBlock root;
+    char diskName[35];
+    
     dev->cylinders = 80;
     dev->heads = 2;
     if (dev->devType==DEVTYPE_FLOPDD)
@@ -314,7 +315,7 @@ RETCODE adfMountFlop(struct Device* dev)
 
     vol=(struct Volume*)malloc(sizeof(struct Volume));
     if (!vol) { 
-		(*adfEnv.eFct)("adfMount : malloc");
+        (*adfEnv.eFct)("adfMount : malloc");
         return RC_ERROR;
     }
 
@@ -325,23 +326,23 @@ RETCODE adfMountFlop(struct Device* dev)
     vol->blockSize = 512;
     vol->dev = dev;
  
-	if (adfReadRootBlock(vol, vol->rootBlock, &root)!=RC_OK)
-		return RC_ERROR;
-	memset(diskName, 0, 35);
-	memcpy(diskName, root.diskName, root.nameLen);
+    if (adfReadRootBlock(vol, vol->rootBlock, &root)!=RC_OK)
+        return RC_ERROR;
+    memset(diskName, 0, 35);
+    memcpy(diskName, root.diskName, root.nameLen);
 
     vol->volName = strdup(diskName);
-	
+    
     dev->volList =(struct Volume**) malloc(sizeof(struct Volume*));
     if (!dev->volList) {
         free(vol);
-		(*adfEnv.eFct)("adfMount : malloc");
+        (*adfEnv.eFct)("adfMount : malloc");
         return RC_ERROR;
     }
     dev->volList[0] = vol;
     dev->nVol = 1;
 
-/*printf("root=%d\n",vol->rootBlock);	    */
+/*printf("root=%d\n",vol->rootBlock);       */
     return RC_OK;
 }
 
@@ -358,11 +359,11 @@ struct Device* adfMountDev( char* filename, BOOL ro)
     struct Device* dev;
     struct nativeFunctions *nFct;
     RETCODE rc;
-    unsigned char buf[512];
+    UBYTE buf[512];
 
     dev = (struct Device*)malloc(sizeof(struct Device));
     if (!dev) {
-		(*adfEnv.eFct)("adfMountDev : malloc error");
+        (*adfEnv.eFct)("adfMountDev : malloc error");
         return NULL;
     }
 
@@ -398,21 +399,22 @@ struct Device* adfMountDev( char* filename, BOOL ro)
         }
 
         /* a file with the first three bytes equal to 'DOS' */
-    	if (!dev->isNativeDev && strncmp("DOS",buf,3)==0) {
+        if (!dev->isNativeDev && strncmp("DOS",(char *)buf,3)==0) {
             if (adfMountHdFile(dev)!=RC_OK) {
                 free(dev); return NULL;
             }
         }
         else if (adfMountHd(dev)!=RC_OK) {
-            free(dev); return NULL;
+            /* Just return the device */
+            return dev;
         }
-	    break;
+        break;
 
     default:
         (*adfEnv.eFct)("adfMountDev : unknown device type");
     }
 
-	return dev;
+    return dev;
 }
 
 
@@ -432,30 +434,36 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
     int i;
     struct bRDSKblock rdsk;
     struct bPARTblock part;
-    struct bFSHDblock fshd;
-    struct bLSEGblock lseg;
     SECTNUM j;
     int len;
-
 
     /* RDSK */ 
  
     memset((unsigned char*)&rdsk,0,sizeof(struct bRDSKblock));
+    memset((unsigned char*)&part,0,sizeof(struct bPARTblock));
 
     rdsk.rdbBlockLo = 0;
-	rdsk.rdbBlockHi = (dev->sectors*dev->heads*2)-1;
-	rdsk.loCylinder = 2;
-	rdsk.hiCylinder = dev->cylinders-1;
-	rdsk.cylBlocks = dev->sectors*dev->heads;
+    rdsk.rdbBlockHi = (dev->sectors*dev->heads*2)-1;
+    rdsk.loCylinder = 2;
+    rdsk.hiCylinder = dev->cylinders-1;
+    rdsk.cylBlocks = dev->sectors*dev->heads;
 
     rdsk.cylinders = dev->cylinders;
-	rdsk.sectors = dev->sectors;
-	rdsk.heads = dev->heads;
-	
-	rdsk.badBlockList = -1;
-	rdsk.partitionList = 1;
-	rdsk.fileSysHdrList = 1 + dev->nVol;
-	
+    rdsk.sectors = dev->sectors;
+    rdsk.heads = dev->heads;
+    
+    rdsk.badBlockList = -1;
+    rdsk.partitionList = 1;
+    rdsk.fileSysHdrList = -1;
+    rdsk.driveInit = -1;
+    rdsk.bootBlockList = -1;
+    for ( i = 0; i < 5; i++)
+        rdsk.r1[i] = -1;
+
+    /* Clear all sectors in the header */
+    for (i = rdsk.rdbBlockLo; i <= rdsk.rdbBlockHi; i++)
+        adfWriteBlockDev(dev, i, sizeof(part), (unsigned char *)&part);
+    
     if (adfWriteRDSKblock(dev, &rdsk)!=RC_OK)
         return RC_ERROR;
 
@@ -468,7 +476,7 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
         if (i<dev->nVol-1)
             part.next = j+1;
         else
-			part.next = -1;
+            part.next = -1;
 
         len = min(MAXNAMELEN,strlen(partList[i]->volName));
         part.nameLen = len;
@@ -476,31 +484,15 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
 
         part.surfaces = dev->heads;
         part.blocksPerTrack = dev->sectors;
-		part.lowCyl = partList[i]->startCyl;
-		part.highCyl = partList[i]->startCyl + partList[i]->lenCyl -1;
-        strncpy(part.dosType, "DOS", 3);
+        part.lowCyl = partList[i]->startCyl;
+        part.highCyl = partList[i]->startCyl + partList[i]->lenCyl -1;
 
-        part.dosType[3] = partList[i]->volType & 0x01;
-			
+        memcpy(part.dosType, partList[i]->volType, 4);
+            
         if (adfWritePARTblock(dev, j, &part))
             return RC_ERROR;
         j++;
     }
-
-    /* FSHD */
-
-    strncpy(fshd.dosType,"DOS",3);
-    fshd.dosType[3] = partList[0]->volType;
-	fshd.next = -1;
-	fshd.segListBlock = j+1;
-    if (adfWriteFSHDblock(dev, j, &fshd)!=RC_OK)
-        return RC_ERROR;
-	j++;
-	
-	/* LSEG */
-	lseg.next = -1;
-    if (adfWriteLSEGblock(dev, j, &lseg)!=RC_OK)
-        return RC_ERROR;
 
     return RC_OK;
 }
@@ -520,7 +512,7 @@ RETCODE adfCreateFlop(struct Device* dev, char* volName, int volType )
     }
     dev->volList =(struct Volume**) malloc(sizeof(struct Volume*));
     if (!dev->volList) { 
-		(*adfEnv.eFct)("adfCreateFlop : unknown device type");
+        (*adfEnv.eFct)("adfCreateFlop : unknown device type");
         return RC_ERROR;
     }
     dev->volList[0] = adfCreateVol( dev, 0L, 80L, volName, volType );
@@ -560,15 +552,17 @@ RETCODE adfCreateHd(struct Device* dev, int n, struct Partition** partList )
 
     dev->volList =(struct Volume**) malloc(sizeof(struct Volume*)*n);
     if (!dev->volList) {
-		(*adfEnv.eFct)("adfCreateFlop : malloc");
+        (*adfEnv.eFct)("adfCreateFlop : malloc");
         return RC_ERROR;
     }
     for(i=0; i<n; i++) {
+        if (memcmp(partList[i]->volType, "DOS", 3) != 0)
+            continue;
         dev->volList[i] = adfCreateVol( dev, 
-					partList[i]->startCyl, 
-					partList[i]->lenCyl, 
-					partList[i]->volName, 
-					partList[i]->volType );
+                    partList[i]->startCyl, 
+                    partList[i]->lenCyl, 
+                    partList[i]->volName, 
+                    partList[i]->volType[3] );
         if (dev->volList[i]==NULL) {
            for(j=0; j<i; j++) {
                free( dev->volList[i] );
@@ -601,8 +595,8 @@ void adfUnMountDev( struct Device* dev)
     int i;
     struct nativeFunctions *nFct;
 
-	if (dev==0)
-	   return;
+    if (dev==0)
+       return;
 
     for(i=0; i<dev->nVol; i++) {
         free(dev->volList[i]->volName);
@@ -621,13 +615,39 @@ void adfUnMountDev( struct Device* dev)
     free(dev);
 }
 
+/*
+ * adfReadBlockDev
+ */
+RETCODE adfReadBlockDev( struct Device* dev, ULONG nSect, ULONG size, unsigned char* buf )
+{
+    struct nativeFunctions *nFct;
+    
+    nFct = adfEnv.nativeFct;
+    if (dev->isNativeDev)
+        return (*nFct->adfNativeReadSector)(dev, nSect, size, buf);
+    else
+        return adfReadDumpSector(dev, nSect, size, buf);
+}
 
+/*
+ * adfWriteBlockDev
+ */
+RETCODE adfWriteBlockDev( struct Device* dev, ULONG nSect, ULONG size, unsigned char* buf )
+{
+    struct nativeFunctions *nFct;
+    
+    nFct = adfEnv.nativeFct;
+    if (dev->isNativeDev)
+        return (*nFct->adfNativeWriteSector)(dev, nSect, size, buf);
+    else
+        return adfWriteDumpSector(dev, nSect, size, buf);
+}
 
 /*
  * ReadRDSKblock
  *
  */
-	RETCODE
+    RETCODE
 adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
 {
 
@@ -635,7 +655,7 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
     struct nativeFunctions *nFct;
     RETCODE rc2;
     RETCODE rc = RC_OK;
-	
+    
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
         rc2 =(*nFct->adfNativeReadSector)(dev, 0, 256, buf);
@@ -663,7 +683,7 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
          (*adfEnv.wFct)("ReadRDSKBlock : incorrect checksum\n");
          rc|=RC_BLOCKSUM;
     }
-	
+    
     if ( blk->blockSize != 512 )
          (*adfEnv.wFct)("ReadRDSKBlock : blockSize != 512\n");
 
@@ -682,7 +702,7 @@ adfReadRDSKblock( struct Device* dev, struct bRDSKblock* blk )
 adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    unsigned long newSum;
+    ULONG newSum;
     struct nativeFunctions *nFct;
     RETCODE rc2, rc = RC_OK;
 
@@ -694,7 +714,7 @@ adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
     memset(buf,0,LOGICAL_BLOCK_SIZE);
 
     strncpy(rdsk->id,"RDSK",4);
-    rdsk->size = sizeof(struct bRDSKblock)/sizeof(long);
+    rdsk->size = sizeof(struct bRDSKblock)/sizeof(ULONG);
     rdsk->blockSize = LOGICAL_BLOCK_SIZE;
     rdsk->badBlockList = -1;
 
@@ -728,12 +748,12 @@ adfWriteRDSKblock(struct Device *dev, struct bRDSKblock* rdsk)
  *
  */
     RETCODE
-adfReadPARTblock( struct Device* dev, long nSect, struct bPARTblock* blk )
+adfReadPARTblock( struct Device* dev, ULONG nSect, struct bPARTblock* blk )
 {
     UCHAR buf[ sizeof(struct bPARTblock) ];
     struct nativeFunctions *nFct;
     RETCODE rc2, rc = RC_OK;
-	
+    
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
         rc2=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bPARTblock), buf);
@@ -750,7 +770,7 @@ adfReadPARTblock( struct Device* dev, long nSect, struct bPARTblock* blk )
 #endif
 
     if ( strncmp(blk->id,"PART",4)!=0 ) {
-    	(*adfEnv.eFct)("ReadPARTblock : PART id not found");
+        (*adfEnv.eFct)("ReadPARTblock : PART id not found");
         return RC_ERROR;
     }
 
@@ -758,7 +778,7 @@ adfReadPARTblock( struct Device* dev, long nSect, struct bPARTblock* blk )
         (*adfEnv.wFct)("ReadPARTBlock : size != 64");
 
     if ( blk->blockSize!=128 ) {
-    	(*adfEnv.eFct)("ReadPARTblock : blockSize!=512, not supported (yet)");
+        (*adfEnv.eFct)("ReadPARTblock : blockSize!=512, not supported (yet)");
         return RC_ERROR;
     }
 
@@ -774,13 +794,13 @@ adfReadPARTblock( struct Device* dev, long nSect, struct bPARTblock* blk )
  *
  */
     RETCODE
-adfWritePARTblock(struct Device *dev, long nSect, struct bPARTblock* part)
+adfWritePARTblock(struct Device *dev, ULONG nSect, struct bPARTblock* part)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    unsigned long newSum;
+    ULONG newSum;
     struct nativeFunctions *nFct;
     RETCODE rc2, rc = RC_OK;
-	
+    
     if (dev->readOnly) {
         (*adfEnv.wFct)("adfWritePARTblock : can't write block, read only device");
         return RC_ERROR;
@@ -789,12 +809,12 @@ adfWritePARTblock(struct Device *dev, long nSect, struct bPARTblock* part)
     memset(buf,0,LOGICAL_BLOCK_SIZE);
 
     strncpy(part->id,"PART",4);
-    part->size = sizeof(struct bPARTblock)/sizeof(long);
+    part->size = sizeof(struct bPARTblock)/sizeof(ULONG);
     part->blockSize = LOGICAL_BLOCK_SIZE;
     part->vectorSize = 16;
-	part->blockSize = 128;
+    part->blockSize = 128;
     part->sectorsPerBlock = 1;
-	part->dosReserved = 2;
+    part->dosReserved = 2;
 
     memcpy(buf, part, sizeof(struct bPARTblock));
 #ifdef LITT_ENDIAN
@@ -803,7 +823,7 @@ adfWritePARTblock(struct Device *dev, long nSect, struct bPARTblock* part)
 
     newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
     swLong(buf+8, newSum);
-//    *(long*)(buf+8) = swapLong((unsigned char*)&newSum);
+//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
 
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
@@ -821,12 +841,12 @@ adfWritePARTblock(struct Device *dev, long nSect, struct bPARTblock* part)
  *
  */
     RETCODE
-adfReadFSHDblock( struct Device* dev, long nSect, struct bFSHDblock* blk)
+adfReadFSHDblock( struct Device* dev, ULONG nSect, struct bFSHDblock* blk)
 {
     UCHAR buf[sizeof(struct bFSHDblock)];
     struct nativeFunctions *nFct;
     RETCODE rc;
-	
+    
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
         rc = (*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bFSHDblock), buf);
@@ -834,7 +854,7 @@ adfReadFSHDblock( struct Device* dev, long nSect, struct bFSHDblock* blk)
         rc = adfReadDumpSector(dev, nSect, sizeof(struct bFSHDblock), buf);
     if (rc!=RC_OK)
         return RC_ERROR;
-		
+        
     memcpy(blk, buf, sizeof(struct bFSHDblock));
 #ifdef LITT_ENDIAN
     /* big to little = 68000 to x86 */
@@ -842,7 +862,7 @@ adfReadFSHDblock( struct Device* dev, long nSect, struct bFSHDblock* blk)
 #endif
 
     if ( strncmp(blk->id,"FSHD",4)!=0 ) {
-    	(*adfEnv.eFct)("ReadFSHDblock : FSHD id not found");
+        (*adfEnv.eFct)("ReadFSHDblock : FSHD id not found");
         return RC_ERROR;
     }
 
@@ -861,10 +881,10 @@ adfReadFSHDblock( struct Device* dev, long nSect, struct bFSHDblock* blk)
  *
  */
     RETCODE
-adfWriteFSHDblock(struct Device *dev, long nSect, struct bFSHDblock* fshd)
+adfWriteFSHDblock(struct Device *dev, ULONG nSect, struct bFSHDblock* fshd)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    unsigned long newSum;
+    ULONG newSum;
     struct nativeFunctions *nFct;
     RETCODE rc = RC_OK;
 
@@ -876,7 +896,7 @@ adfWriteFSHDblock(struct Device *dev, long nSect, struct bFSHDblock* fshd)
     memset(buf,0,LOGICAL_BLOCK_SIZE);
 
     strncpy(fshd->id,"FSHD",4);
-    fshd->size = sizeof(struct bFSHDblock)/sizeof(long);
+    fshd->size = sizeof(struct bFSHDblock)/sizeof(ULONG);
 
     memcpy(buf, fshd, sizeof(struct bFSHDblock));
 #ifdef LITT_ENDIAN
@@ -885,7 +905,7 @@ adfWriteFSHDblock(struct Device *dev, long nSect, struct bFSHDblock* fshd)
 
     newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
     swLong(buf+8, newSum);
-//    *(long*)(buf+8) = swapLong((unsigned char*)&newSum);
+//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
 
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
@@ -904,12 +924,12 @@ adfWriteFSHDblock(struct Device *dev, long nSect, struct bFSHDblock* fshd)
  *
  */
    RETCODE
-adfReadLSEGblock(struct Device* dev, long nSect, struct bLSEGblock* blk)
+adfReadLSEGblock(struct Device* dev, ULONG nSect, struct bLSEGblock* blk)
 {
     UCHAR buf[sizeof(struct bLSEGblock)];
     struct nativeFunctions *nFct;
     RETCODE rc;
-	
+    
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)
         rc=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bLSEGblock), buf);
@@ -917,7 +937,7 @@ adfReadLSEGblock(struct Device* dev, long nSect, struct bLSEGblock* blk)
         rc=adfReadDumpSector(dev, nSect, sizeof(struct bLSEGblock), buf);
     if (rc!=RC_OK)
         return RC_ERROR;
-		
+        
     memcpy(blk, buf, sizeof(struct bLSEGblock));
 #ifdef LITT_ENDIAN
     /* big to little = 68000 to x86 */
@@ -925,7 +945,7 @@ adfReadLSEGblock(struct Device* dev, long nSect, struct bLSEGblock* blk)
 #endif
 
     if ( strncmp(blk->id,"LSEG",4)!=0 ) {
-    	(*adfEnv.eFct)("ReadLSEGblock : LSEG id not found");
+        (*adfEnv.eFct)("ReadLSEGblock : LSEG id not found");
         return RC_ERROR;
     }
 
@@ -944,10 +964,10 @@ adfReadLSEGblock(struct Device* dev, long nSect, struct bLSEGblock* blk)
  *
  */
     RETCODE
-adfWriteLSEGblock(struct Device *dev, long nSect, struct bLSEGblock* lseg)
+adfWriteLSEGblock(struct Device *dev, ULONG nSect, struct bLSEGblock* lseg)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-    unsigned long newSum;
+    ULONG newSum;
     struct nativeFunctions *nFct;
     RETCODE rc;
 
@@ -959,7 +979,7 @@ adfWriteLSEGblock(struct Device *dev, long nSect, struct bLSEGblock* lseg)
     memset(buf,0,LOGICAL_BLOCK_SIZE);
 
     strncpy(lseg->id,"LSEG",4);
-    lseg->size = sizeof(struct bLSEGblock)/sizeof(long);
+    lseg->size = sizeof(struct bLSEGblock)/sizeof(ULONG);
 
     memcpy(buf, lseg, sizeof(struct bLSEGblock));
 #ifdef LITT_ENDIAN
@@ -968,7 +988,90 @@ adfWriteLSEGblock(struct Device *dev, long nSect, struct bLSEGblock* lseg)
 
     newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
     swLong(buf+8,newSum);
-//    *(long*)(buf+8) = swapLong((unsigned char*)&newSum);
+//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
+
+    nFct = adfEnv.nativeFct;
+    if (dev->isNativeDev)
+        rc=(*nFct->adfNativeWriteSector)(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
+    else
+        rc=adfWriteDumpSector(dev, nSect, LOGICAL_BLOCK_SIZE, buf);
+
+    if (rc!=RC_OK)
+        return RC_ERROR;
+
+    return RC_OK;
+}
+
+/*
+ * ReadBOOTblock
+ *
+ */
+   RETCODE
+adfReadBOOTblock(struct Device* dev, ULONG nSect, struct bBOOTblock* blk)
+{
+    UCHAR buf[sizeof(struct bBOOTblock)];
+    struct nativeFunctions *nFct;
+    RETCODE rc;
+    
+    nFct = adfEnv.nativeFct;
+    if (dev->isNativeDev)
+        rc=(*nFct->adfNativeReadSector)(dev, nSect, sizeof(struct bBOOTblock), buf);
+    else
+        rc=adfReadDumpSector(dev, nSect, sizeof(struct bBOOTblock), buf);
+    if (rc!=RC_OK)
+        return RC_ERROR;
+        
+    memcpy(blk, buf, sizeof(struct bBOOTblock));
+#ifdef LITT_ENDIAN
+    /* big to little = 68000 to x86 */
+    swapEndian((unsigned char*)blk, SWBL_BOOT);
+#endif
+
+    if ( strncmp(blk->id,"BOOT",4)!=0 ) {
+        (*adfEnv.eFct)("ReadBOOTblock : BOOT id not found");
+        return RC_ERROR;
+    }
+
+    if ( blk->checksum != adfNormalSum(buf,8,sizeof(struct bBOOTblock)) )
+        (*adfEnv.wFct)("ReadBOOTBlock : incorrect checksum");
+
+    if ( blk->next!=-1 && blk->size != 128 )
+        (*adfEnv.wFct)("ReadBOOTBlock : size != 128");
+
+    return RC_OK;
+}
+
+
+/*
+ * adfWriteBOOTblock
+ *
+ */
+    RETCODE
+adfWriteBOOTblock(struct Device *dev, ULONG nSect, struct bBOOTblock* lseg)
+{
+    unsigned char buf[LOGICAL_BLOCK_SIZE];
+    ULONG newSum;
+    struct nativeFunctions *nFct;
+    RETCODE rc;
+
+    if (dev->readOnly) {
+        (*adfEnv.wFct)("adfWriteBOOTblock : can't write block, read only device");
+        return RC_ERROR;
+    }
+
+    memset(buf,0,LOGICAL_BLOCK_SIZE);
+
+    strncpy(lseg->id,"BOOT",4);
+    lseg->size = sizeof(struct bBOOTblock)/sizeof(ULONG);
+
+    memcpy(buf, lseg, sizeof(struct bBOOTblock));
+#ifdef LITT_ENDIAN
+    swapEndian(buf, SWBL_BOOT);
+#endif
+
+    newSum = adfNormalSum(buf, 8, LOGICAL_BLOCK_SIZE);
+    swLong(buf+8,newSum);
+//    *(ULONG*)(buf+8) = swapLong((unsigned char*)&newSum);
 
     nFct = adfEnv.nativeFct;
     if (dev->isNativeDev)

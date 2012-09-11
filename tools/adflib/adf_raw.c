@@ -6,6 +6,7 @@
  * logical disk/volume code
  */
 
+#include <stdio.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +36,8 @@ int swapTable[MAX_SWTYPE+1][15]={
     { 4, SW_CHAR, 8, SW_LONG, 32, SW_CHAR, 31, SW_LONG, 4, SW_CHAR, /* PART */
       15, SW_LONG, 0, 256 },
     { 4, SW_CHAR, 7, SW_LONG, 4, SW_CHAR, 55, SW_LONG, 0, 256 }, /* FSHD */
-    { 4, SW_CHAR, 4, SW_LONG, 492, SW_CHAR, 0, 512 }             /* LSEG */
+    { 4, SW_CHAR, 4, SW_LONG, 492, SW_CHAR, 0, 512 },            /* LSEG */
+    { 4, SW_CHAR, 4, SW_LONG, 492, SW_CHAR, 0, 512 }             /* BOOT */
     };
 
 
@@ -46,7 +48,7 @@ int swapTable[MAX_SWTYPE+1][15]={
  */
 
     void
-swapEndian( unsigned char *buf, int type )
+swapEndian( UBYTE *buf, int type )
 {
     int i,j;
     int p;
@@ -61,11 +63,11 @@ swapEndian( unsigned char *buf, int type )
         for(j=0; j<swapTable[type][i]; j++) {
             switch( swapTable[type][i+1] ) {
             case SW_LONG:
-                *(unsigned long*)(buf+p)=Long(buf+p);
+                *(ULONG*)(buf+p)=Long(buf+p);
                 p+=4;
                 break;
             case SW_SHORT:
-                *(unsigned short*)(buf+p)=Short(buf+p);
+                *(USHORT*)(buf+p)=Short(buf+p);
                 p+=2;
                 break;
             case SW_CHAR:
@@ -93,7 +95,7 @@ swapEndian( unsigned char *buf, int type )
  * ENDIAN DEPENDENT
  */
 RETCODE
-adfReadRootBlock(struct Volume* vol, long nSect, struct bRootBlock* root)
+adfReadRootBlock(struct Volume* vol, ULONG nSect, struct bRootBlock* root)
 {
 	unsigned char buf[LOGICAL_BLOCK_SIZE];
 
@@ -123,10 +125,10 @@ adfReadRootBlock(struct Volume* vol, long nSect, struct bRootBlock* root)
  *
  * 
  */
-RETCODE adfWriteRootBlock(struct Volume* vol, long nSect, struct bRootBlock* root)
+RETCODE adfWriteRootBlock(struct Volume* vol, ULONG nSect, struct bRootBlock* root)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-	unsigned long newSum;
+	ULONG newSum;
 
 
     root->type = T_HEADER;
@@ -148,7 +150,7 @@ RETCODE adfWriteRootBlock(struct Volume* vol, long nSect, struct bRootBlock* roo
 
 	newSum = adfNormalSum(buf,20,LOGICAL_BLOCK_SIZE);
     swLong(buf+20, newSum);
-//	*(unsigned long*)(buf+20) = swapLong((unsigned char*)&newSum);
+//	*(ULONG*)(buf+20) = swapLong((unsigned char*)&newSum);
 
 // 	dumpBlock(buf);
 	if (adfWriteBlock(vol, nSect, buf)!=RC_OK)
@@ -177,7 +179,7 @@ adfReadBootBlock(struct Volume* vol, struct bBootBlock* boot)
 
     memcpy(boot, buf, LOGICAL_BLOCK_SIZE*2);
 #ifdef LITT_ENDIAN
-    swapEndian((unsigned char*)boot,SWBL_BOOT);
+    swapEndian((unsigned char*)boot,SWBL_BOOTBLOCK);
 #endif
 	if ( strncmp("DOS",boot->dosType,3)!=0 ) {
 		(*adfEnv.wFct)("adfReadBootBlock : DOS id not found");
@@ -185,7 +187,7 @@ adfReadBootBlock(struct Volume* vol, struct bBootBlock* boot)
     }
 
 	if ( boot->data[0]!=0 && adfBootSum(buf)!=boot->checkSum ) {
-printf("compsum=%lx sum=%lx\n",	adfBootSum(buf),boot->checkSum );
+printf("compsum=%lx sum=%lx\n",	(long)adfBootSum(buf),(long)boot->checkSum );
 		(*adfEnv.wFct)("adfReadBootBlock : incorrect checksum"); 
     }
 
@@ -202,21 +204,21 @@ RETCODE
 adfWriteBootBlock(struct Volume* vol, struct bBootBlock* boot)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE*2];
-	unsigned long newSum;
+	ULONG newSum;
 
     boot->dosType[0] = 'D';
     boot->dosType[1] = 'O';
     boot->dosType[2] = 'S';
 	memcpy(buf, boot, LOGICAL_BLOCK_SIZE*2);
 #ifdef LITT_ENDIAN
-    swapEndian(buf, SWBL_BOOT);
+    swapEndian(buf, SWBL_BOOTBLOCK);
 #endif
 
     if (boot->rootBlock==880 || boot->data[0]!=0) {
         newSum = adfBootSum(buf);
 //fprintf(stderr,"sum %x %x\n",newSum,adfBootSum2(buf));
         swLong(buf+4,newSum);
-//        *(unsigned long*)(buf+4) = swapLong((unsigned char*)&newSum);
+//        *(ULONG*)(buf+4) = swapLong((unsigned char*)&newSum);
     }
 
 /*	dumpBlock(buf);
@@ -238,10 +240,10 @@ adfWriteBootBlock(struct Volume* vol, struct bBootBlock* boot)
  * offset = checksum place (in bytes)
  * bufLen = buffer length (in bytes)
  */
-    unsigned long
+    ULONG
 adfNormalSum( UCHAR* buf, int offset, int bufLen )
 {
-    long newsum;
+    ULONG newsum;
     int i;
 
     newsum=0L;
@@ -257,10 +259,10 @@ adfNormalSum( UCHAR* buf, int offset, int bufLen )
  * adfBitmapSum
  *
  */
-	unsigned long 
+	ULONG 
 adfBitmapSum(unsigned char *buf)
 {
-	unsigned long newSum;
+	ULONG newSum;
 	int i;
 	
 	newSum = 0L;
@@ -274,10 +276,10 @@ adfBitmapSum(unsigned char *buf)
  * adfBootSum
  *
  */
-    unsigned long 
+    ULONG 
 adfBootSum(unsigned char *buf)
 {
-    unsigned long d, newSum;
+    ULONG d, newSum;
     int i;
 	
     newSum=0L;
@@ -294,14 +296,14 @@ adfBootSum(unsigned char *buf)
     return(newSum);
 }
 
-    unsigned long 
+    ULONG 
 adfBootSum2(unsigned char *buf)
 {
-    unsigned long prevsum, newSum;
+    ULONG prevsum, newSum;
     int i;
 
     prevsum = newSum=0L;
-    for(i=0; i<1024/sizeof(unsigned long); i++) {
+    for(i=0; i<1024/sizeof(ULONG); i++) {
         if (i!=1) {
             prevsum = newSum;
             newSum += Long(buf+i*4);

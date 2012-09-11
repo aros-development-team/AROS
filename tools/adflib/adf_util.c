@@ -5,8 +5,9 @@
  *
  */
 
-#include<stdlib.h>
-#include<time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "adf_util.h"
 #include "adf_err.h"
@@ -18,20 +19,20 @@ extern struct Env adfEnv;
 /*
  * swLong
  *
- * write an unsigned long value (val) (in) 
+ * write an ULONG value (val) (in) 
  * to an unsigned char* buffer (buf) (out)
  * 
  * used in adfWrite----Block() functions
  */
-void swLong(unsigned char* buf, unsigned long val)
+void swLong(UBYTE* buf, ULONG val)
 {
-	buf[0]= (unsigned char)((val & 0xff000000) >>24UL);
-	buf[1]= (unsigned char)((val & 0x00ff0000) >>16UL);
-	buf[2]= (unsigned char)((val & 0x0000ff00) >>8UL);
-	buf[3]= (unsigned char)(val & 0x000000ff);
+	buf[0]= (UBYTE)((val & 0xff000000) >>24UL);
+	buf[1]= (UBYTE)((val & 0x00ff0000) >>16UL);
+	buf[2]= (UBYTE)((val & 0x0000ff00) >>8UL);
+	buf[3]= (UBYTE)(val & 0x000000ff);
 }
 
-void swShort(unsigned char* buf, unsigned short val)
+void swShort(UBYTE* buf, USHORT val)
 {
 	buf[0]= (val & 0xff00) >>8UL;
 	buf[1]= (val & 0x00ff) ;
@@ -84,7 +85,7 @@ void freeList(struct List* list)
  */
 
 void 
-adfDays2Date(long days, int *yy, int *mm, int *dd)
+adfDays2Date(ULONG days, int *yy, int *mm, int *dd)
 {
     int y,m;
     int nd;
@@ -168,7 +169,7 @@ adfGiveCurrentTime( void )
  * converts date and time (dt) into Amiga format : day, min, ticks
  */
     void
-adfTime2AmigaTime(struct DateTime dt, long *day, long *min, long *ticks )
+adfTime2AmigaTime(struct DateTime dt, ULONG *day, ULONG *min, ULONG *ticks )
 {
     int jm[12]={ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 

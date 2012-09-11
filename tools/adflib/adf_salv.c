@@ -5,8 +5,9 @@
  *
  */
 
-#include<string.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "adf_salv.h"
 #include "adf_bitm.h"
@@ -115,7 +116,7 @@ RETCODE adfReadGenBlock(struct Volume *vol, SECTNUM nSect, struct GenBlock *bloc
         case ST_LFILE:
         case ST_LDIR:
             len = min(MAXNAMELEN, buf[vol->blockSize-80]);
-            strncpy(name, buf+vol->blockSize-79, len);
+            strncpy(name, (char *)(buf+vol->blockSize-79), len);
             name[len] = '\0';
             block->name = strdup(name);
             block->parent = swapLong(buf+vol->blockSize-12);

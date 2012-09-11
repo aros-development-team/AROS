@@ -9,8 +9,6 @@
  *  structures/constants definitions
  */
 
-#include<stdio.h>
-
 #include"adf_defs.h"
 #include"adf_blk.h"
 #include"adf_err.h"
@@ -34,7 +32,7 @@ struct Volume {
 
     BOOL mounted;
 
-    long bitmapSize;             /* in blocks */
+    ULONG bitmapSize;             /* in blocks */
     SECTNUM *bitmapBlocks;       /* bitmap blocks pointers */
     struct bBitmapBlock **bitmapTable;
     BOOL *bitmapBlocksChg;
@@ -44,10 +42,10 @@ struct Volume {
 
 
 struct Partition {
-    long startCyl;
-    long lenCyl;
+    ULONG startCyl;
+    ULONG lenCyl;
     char* volName;
-    int volType;
+    UBYTE volType[4];
 };
 
 /* ----- DEVICES ----- */
@@ -58,18 +56,18 @@ struct Partition {
 #define DEVTYPE_HARDFILE 	4
 
 struct Device {
-    int devType;               /* see below */
-    BOOL readOnly;
-    long size;                 /* in bytes */
+    int   devType;               /* see below */
+    BOOL  readOnly;
+    ULONG size;                  /* in bytes */
 
-    int nVol;                  /* partitions */
+    int   nVol;                  /* partitions */
     struct Volume** volList;  
-	
-    long cylinders;            /* geometry */
-    long heads;
-    long sectors;
 
-    BOOL isNativeDev;
+    ULONG cylinders;            /* geometry */
+    ULONG heads;
+    ULONG sectors;
+
+    BOOL  isNativeDev;
     void *nativeDev;
 };
 
@@ -83,9 +81,9 @@ struct File {
     void *currentData;
     struct bFileExtBlock* currentExt;
 
-    long nDataBlock;
+    ULONG nDataBlock;
     SECTNUM curDataPtr;
-    unsigned long pos;
+    ULONG pos;
 
     int posInDataBlk;
     int posInExtBlk;
@@ -102,8 +100,8 @@ struct Entry{
     SECTNUM real;
     SECTNUM parent;
     char* comment;
-    unsigned long size;
-	long access;
+    long  size;
+    long  access;
     int year, month, days;
     int hour, mins, secs;
 };
@@ -175,37 +173,37 @@ struct GenBlock{
 
 struct FileBlocks{
     SECTNUM header;
-    long nbExtens;
+    ULONG nbExtens;
     SECTNUM* extens;
-    long nbData;
+    ULONG nbData;
     SECTNUM* data;
 };
 
 struct bEntryBlock {
-/*000*/	long	type;		/* T_HEADER == 2 */
-/*004*/	long	headerKey;	/* current block number */
-        long	r1[3];
-/*014*/	unsigned long	checkSum;
-/*018*/	long	hashTable[HT_SIZE];
-        long	r2[2];
-/*140*/	long	access;	/* bit0=del, 1=modif, 2=write, 3=read */
-/*144*/	long	byteSize;
-/*148*/	char	commLen;
-/*149*/	char	comment[MAXCMMTLEN+1];
-        char	r3[91-(MAXCMMTLEN+1)];
-/*1a4*/	long	days;
-/*1a8*/	long	mins;
-/*1ac*/	long	ticks;
-/*1b0*/	char	nameLen;
-/*1b1*/	char	name[MAXNAMELEN+1];
-        long	r4;
-/*1d4*/	long	realEntry;
-/*1d8*/	long	nextLink;
-        long	r5[5];
-/*1f0*/	long	nextSameHash;
-/*1f4*/	long	parent;
-/*1f8*/	long	extension;
-/*1fc*/	long	secType;
+/*000*/	ULONG	type;		/* T_HEADER == 2 */
+/*004*/	ULONG	headerKey;	/* current block number */
+        ULONG	r1[3];
+/*014*/	ULONG	checkSum;
+/*018*/	ULONG	hashTable[HT_SIZE];
+        ULONG	r2[2];
+/*140*/	ULONG	access;	/* bit0=del, 1=modif, 2=write, 3=read */
+/*144*/	ULONG	byteSize;
+/*148*/	UBYTE	commLen;
+/*149*/	TEXT	comment[MAXCMMTLEN+1];
+        UBYTE	r3[91-(MAXCMMTLEN+1)];
+/*1a4*/	ULONG	days;
+/*1a8*/	ULONG	mins;
+/*1ac*/	ULONG	ticks;
+/*1b0*/	UBYTE	nameLen;
+/*1b1*/	TEXT	name[MAXNAMELEN+1];
+        ULONG	r4;
+/*1d4*/	ULONG	realEntry;
+/*1d8*/	ULONG	nextLink;
+        ULONG	r5[5];
+/*1f0*/	ULONG	nextSameHash;
+/*1f4*/	ULONG	parent;
+/*1f8*/	ULONG	extension;
+/*1fc*/	ULONG	secType;
 	};
 
 

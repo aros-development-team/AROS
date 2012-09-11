@@ -8,8 +8,6 @@
  *
  */
 
-#include"prefix.h"
-
 #include "adf_str.h"
 
 RETCODE adfReadGenBlock(struct Volume *vol, SECTNUM nSect, struct GenBlock *block);

@@ -23,7 +23,7 @@
 
 extern struct Env adfEnv;
 
-unsigned long bitMask[32] = { 
+ULONG bitMask[32] = { 
     0x1, 0x2, 0x4, 0x8,
 	0x10, 0x20, 0x40, 0x80,
     0x100, 0x200, 0x400, 0x800,
@@ -113,7 +113,7 @@ void adfVolumeInfo(struct Volume *vol)
 		printf ("DIRCACHE ");
 	putchar('\n');
 
-    printf("Free blocks = %ld\n", adfCountFreeBlocks(vol));
+    printf("Free blocks = %ld\n", (long)adfCountFreeBlocks(vol));
     if (vol->readOnly)
         printf("Read only\n");
     else
@@ -122,13 +122,13 @@ void adfVolumeInfo(struct Volume *vol)
     /* created */
 	adfDays2Date(root.coDays, &year, &month, &days);
     printf ("created %d/%02d/%02d %ld:%02ld:%02ld\n",days,month,year,
-	    root.coMins/60,root.coMins%60,root.coTicks/50);	
+	    (long)root.coMins/60,(long)root.coMins%60,(long)root.coTicks/50);	
 	adfDays2Date(root.days, &year, &month, &days);
     printf ("last access %d/%02d/%02d %ld:%02ld:%02ld,   ",days,month,year,
-	    root.mins/60,root.mins%60,root.ticks/50);	
+	    (long)root.mins/60,(long)root.mins%60,(long)root.ticks/50);	
 	adfDays2Date(root.cDays, &year, &month, &days);
     printf ("%d/%02d/%02d %ld:%02ld:%02ld\n",days,month,year,
-	    root.cMins/60,root.cMins%60,root.cTicks/50);	
+	    (long)root.cMins/60,(long)root.cMins%60,(long)root.cTicks/50);	
 }
 
 
@@ -140,7 +140,7 @@ void adfVolumeInfo(struct Volume *vol)
  */
 struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
 {
-    long nBlock;
+    ULONG nBlock;
     struct bRootBlock root;
 	struct bBootBlock boot;
 	struct Volume* vol;
@@ -216,7 +216,7 @@ void adfUnMount(struct Volume *vol)
  *
  * 
  */
-struct Volume* adfCreateVol( struct Device* dev, long start, long len, 
+struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len, 
     char* volName, int volType )
 {
     struct bBootBlock boot;
@@ -261,7 +261,7 @@ struct Volume* adfCreateVol( struct Device* dev, long start, long len,
         (*adfEnv.progressBar)(25);
 
     memset(&boot, 0, 1024);
-    boot.dosType[3] = volType;
+    boot.dosType[3] = (UBYTE)volType;
 /*printf("first=%d last=%d\n", vol->firstBlock, vol->lastBlock);
 printf("name=%s root=%d\n", vol->volName, vol->rootBlock);
 */
@@ -347,10 +347,10 @@ printf("%3d %x, ",i,vol->bitmapTable[0]->map[i]);
  * read logical block
  */
 RETCODE
-adfReadBlock(struct Volume* vol, long nSect, unsigned char* buf)
+adfReadBlock(struct Volume* vol, ULONG nSect, unsigned char* buf)
 {
   /*    char strBuf[80];*/
-    long pSect;
+    ULONG pSect;
     struct nativeFunctions *nFct;
     RETCODE rc;
 
@@ -375,10 +375,7 @@ adfReadBlock(struct Volume* vol, long nSect, unsigned char* buf)
     }
 //printf("pSect R =%ld\n",pSect);
     nFct = adfEnv.nativeFct;
-    if (vol->dev->isNativeDev)
-        rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
-    else
-        rc = adfReadDumpSector(vol->dev, pSect, 512, buf);
+    rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
 //printf("rc=%ld\n",rc);
     if (rc!=RC_OK)
         return RC_ERROR;
@@ -391,9 +388,9 @@ adfReadBlock(struct Volume* vol, long nSect, unsigned char* buf)
  * adfWriteBlock
  *
  */
-RETCODE adfWriteBlock(struct Volume* vol, long nSect, unsigned char *buf)
+RETCODE adfWriteBlock(struct Volume* vol, ULONG nSect, unsigned char *buf)
 {
-    long pSect;
+    ULONG pSect;
     struct nativeFunctions *nFct;
     RETCODE rc;
 
@@ -419,10 +416,7 @@ RETCODE adfWriteBlock(struct Volume* vol, long nSect, unsigned char *buf)
 
     nFct = adfEnv.nativeFct;
 //printf("nativ=%d\n",vol->dev->isNativeDev);
-    if (vol->dev->isNativeDev)
-        rc = (*nFct->adfNativeWriteSector)(vol->dev, pSect, 512, buf);
-    else
-        rc = adfWriteDumpSector(vol->dev, pSect, 512, buf);
+    rc = (*nFct->adfNativeWriteSector)(vol->dev, pSect, 512, buf);
 
     if (rc!=RC_OK)
         return RC_ERROR;

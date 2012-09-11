@@ -16,7 +16,7 @@
 #include"adf_util.h"
 #include"defendian.h"
 
-extern unsigned long bitMask[32];
+extern ULONG bitMask[32];
 
 extern struct Env adfEnv;
 
@@ -58,9 +58,9 @@ RETCODE adfUpdateBitmap(struct Volume *vol)
  * adfCountFreeBlocks
  *
  */
-long adfCountFreeBlocks(struct Volume* vol)
+ULONG adfCountFreeBlocks(struct Volume* vol)
 {
-    long freeBlocks;
+    ULONG freeBlocks;
     int j;
 
 	freeBlocks = 0L;
@@ -76,10 +76,10 @@ long adfCountFreeBlocks(struct Volume* vol)
  * adfReadBitmap
  *
  */
-RETCODE adfReadBitmap(struct Volume* vol, long nBlock, struct bRootBlock* root)
+RETCODE adfReadBitmap(struct Volume* vol, SECTNUM nBlock, struct bRootBlock* root)
 {
-	long mapSize, nSect;
-	long j, i;
+	ULONG mapSize, nSect;
+	ULONG j, i;
 	struct bBitmapExtBlock bmExt;
 
     mapSize = nBlock / (127*32);
@@ -186,7 +186,7 @@ printf("res=%x,  ",vol->bitmapTable[ block ]->map[ indexInMap ]
  */
 void adfSetBlockFree(struct Volume* vol, SECTNUM nSect)
 {
-    unsigned long oldValue;
+    ULONG oldValue;
     int sectOfMap = nSect-2;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
@@ -211,7 +211,7 @@ printf("bit=%d,  ",sectOfMap%32);
  */
 void adfSetBlockUsed(struct Volume* vol, SECTNUM nSect)
 {
-    unsigned long oldValue;
+    ULONG oldValue;
     int sectOfMap = nSect-2;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
@@ -244,7 +244,7 @@ BOOL adfGetFreeBlocks(struct Volume* vol, int nbSect, SECTNUM* sectList)
 {
 	int i, j;
     BOOL endSearch;
-    long block = vol->rootBlock;
+    ULONG block = vol->rootBlock;
 
     i = 0;
     endSearch = FALSE;
@@ -281,7 +281,7 @@ BOOL adfGetFreeBlocks(struct Volume* vol, int nbSect, SECTNUM* sectList)
  */
 RETCODE adfCreateBitmap(struct Volume *vol)
 {
-    long nBlock, mapSize ;
+    ULONG nBlock, mapSize ;
     int i, j;
 
     nBlock = vol->lastBlock - vol->firstBlock +1 - 2;
@@ -454,7 +454,7 @@ RETCODE
 adfWriteBitmapBlock(struct Volume* vol, SECTNUM nSect, struct bBitmapBlock* bitm)
 {
     unsigned char buf[LOGICAL_BLOCK_SIZE];
-	unsigned long newSum;
+	ULONG newSum;
 	
 	memcpy(buf,bitm,LOGICAL_BLOCK_SIZE);
 #ifdef LITT_ENDIAN
