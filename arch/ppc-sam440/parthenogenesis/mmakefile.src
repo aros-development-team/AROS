@@ -1,0 +1,20 @@
+# parthenogenesis: Tool to make a bootable USB device for Sam4xx machines
+# 
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- host-tools-parthenogenesis: host-linklibs-adf
+
+FILES=parthenogenesis
+
+USER_INCLUDES := -I$(CROSSTOOLSDIR)/include
+USER_LDFLAGS  := -L$(CROSSTOOLSDIR)/lib
+
+%build_prog mmake=host-tools-parthenogenesis \
+	files=$(FILES) compiler=host \
+	progname=parthenogenesis cflags="$(USER_INCLUDES) -g3" \
+	ldflags="$(USER_LDFLAGS) -g3" \
+	targetdir="$(HOSTGENDIR)/tools" \
+	uselibs=adf
+
+%common
