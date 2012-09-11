@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 #MM workbench-devs-diskimage-device : includes linklibs workbench-devs-diskimage-support \
-#MM workbench-devs-diskimage-prefs workbench-devs-diskimage-device-catalogs
+#MM workbench-devs-diskimage-prefs workbench-devs-diskimage-device-catalogs workbench-libs-expat
 
 CFILES := init_aros io unit scsicmd locale plugins tempfile progress password \
 	main_vectors plugin_vectors ../plugins/generic ../plugins/adf ../plugins/d64 ../plugins/iso
