@@ -6,18 +6,19 @@
  *  file code
  */
 
-#include<stdlib.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include"adf_util.h"
-#include"adf_file.h"
-#include"adf_str.h"
-#include"defendian.h"
-#include"adf_raw.h"
-#include"adf_disk.h"
-#include"adf_dir.h"
-#include"adf_bitm.h"
-#include"adf_cache.h"
+#include "adf_util.h"
+#include "adf_file.h"
+#include "adf_str.h"
+#include "defendian.h"
+#include "adf_raw.h"
+#include "adf_disk.h"
+#include "adf_dir.h"
+#include "adf_bitm.h"
+#include "adf_cache.h"
 
 extern struct Env adfEnv;
 
@@ -77,10 +78,10 @@ void adfFlushFile(struct File *file)
 RETCODE adfGetFileBlocks(struct Volume* vol, struct bFileHeaderBlock* entry,
     struct FileBlocks* fileBlocks)
 {
-    long n, m;
+    ULONG n, m;
     SECTNUM nSect;
     struct bFileExtBlock extBlock;
-    long i;
+    ULONG i;
 
     fileBlocks->header = entry->headerKey;
     adfFileRealSize( entry->byteSize, vol->datablockSize, 
@@ -151,9 +152,9 @@ RETCODE adfFreeFileBlocks(struct Volume* vol, struct bFileHeaderBlock *entry)
  * Compute number of datablocks and file extension blocks
  *
  */
-long adfFileRealSize(unsigned long size, int blockSize, long *dataN, long *extN)
+ULONG adfFileRealSize(ULONG size, int blockSize, ULONG *dataN, ULONG *extN)
 {
-    long data, ext;
+    ULONG data, ext;
 
    /*--- number of data blocks ---*/
     data = size / blockSize;
@@ -184,7 +185,7 @@ long adfFileRealSize(unsigned long size, int blockSize, long *dataN, long *extN)
 RETCODE adfWriteFileHdrBlock(struct Volume *vol, SECTNUM nSect, struct bFileHeaderBlock* fhdr)
 {
     unsigned char buf[512];
-    unsigned long newSum;
+    ULONG newSum;
     RETCODE rc = RC_OK;
 //printf("adfWriteFileHdrBlock %ld\n",nSect);
     fhdr->type = T_HEADER;
@@ -197,7 +198,7 @@ RETCODE adfWriteFileHdrBlock(struct Volume *vol, SECTNUM nSect, struct bFileHead
 #endif
     newSum = adfNormalSum(buf,20,sizeof(struct bFileHeaderBlock));
     swLong(buf+20, newSum);
-//    *(unsigned long*)(buf+20) = swapLong((unsigned char*)&newSum);
+//    *(ULONG*)(buf+20) = swapLong((unsigned char*)&newSum);
 
     adfWriteBlock(vol, nSect, buf);
 
@@ -209,10 +210,10 @@ RETCODE adfWriteFileHdrBlock(struct Volume *vol, SECTNUM nSect, struct bFileHead
  * adfFileSeek
  *
  */
-void adfFileSeek(struct File *file, unsigned long pos)
+void adfFileSeek(struct File *file, ULONG pos)
 {
     SECTNUM extBlock, nSect;
-    unsigned long nPos;
+    ULONG nPos;
     int i;
     
     nPos = min(pos, file->fileHdr->byteSize);
@@ -347,9 +348,9 @@ void adfCloseFile(struct File *file)
  * adfReadFile
  *
  */
-long adfReadFile(struct File* file, long n, unsigned char *buffer)
+ULONG adfReadFile(struct File* file, ULONG n, unsigned char *buffer)
 {
-    long bytesRead;
+    ULONG bytesRead;
     unsigned char *dataPtr, *bufPtr;
 	int blockSize, size;
 
@@ -451,9 +452,9 @@ RETCODE adfReadNextFileBlock(struct File* file)
  * adfWriteFile
  *
  */
-long adfWriteFile(struct File *file, long n, unsigned char *buffer)
+ULONG adfWriteFile(struct File *file, ULONG n, unsigned char *buffer)
 {
-    long bytesWritten;
+    ULONG bytesWritten;
     unsigned char *dataPtr, *bufPtr;
     int size, blockSize;
     struct bOFSDataBlock *dataB;
@@ -598,10 +599,10 @@ SECTNUM adfCreateNextFileBlock(struct File* file)
  * adfPos2DataBlock
  *
  */
-long adfPos2DataBlock(long pos, int blockSize, 
-    int *posInExtBlk, int *posInDataBlk, long *curDataN )
+ULONG adfPos2DataBlock(ULONG pos, int blockSize, 
+    int *posInExtBlk, int *posInDataBlk, ULONG *curDataN )
 {
-    long extBlock;
+    ULONG extBlock;
 
     *posInDataBlk = pos%blockSize;
     *curDataN = pos/blockSize;
@@ -665,7 +666,7 @@ RETCODE adfReadDataBlock(struct Volume *vol, SECTNUM nSect, void *data)
 RETCODE adfWriteDataBlock(struct Volume *vol, SECTNUM nSect, void *data)
 {
     unsigned char buf[512];
-    unsigned long newSum;
+    ULONG newSum;
     struct bOFSDataBlock *dataB;
     RETCODE rc = RC_OK;
 
@@ -679,7 +680,7 @@ RETCODE adfWriteDataBlock(struct Volume *vol, SECTNUM nSect, void *data)
 #endif
         newSum = adfNormalSum(buf,20,512);
         swLong(buf+20,newSum);
-//        *(long*)(buf+20) = swapLong((unsigned char*)&newSum);
+//        *(ULONG*)(buf+20) = swapLong((unsigned char*)&newSum);
         adfWriteBlock(vol,nSect,buf);
     }
     else {
@@ -732,7 +733,7 @@ RETCODE adfReadFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtBl
 RETCODE adfWriteFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtBlock* fext)
 {
     unsigned char buf[512];
-    unsigned long newSum;
+    ULONG newSum;
     RETCODE rc = RC_OK;
 
     fext->type = T_LIST;
@@ -746,7 +747,7 @@ RETCODE adfWriteFileExtBlock(struct Volume *vol, SECTNUM nSect, struct bFileExtB
 #endif
     newSum = adfNormalSum(buf,20,512);
     swLong(buf+20,newSum);
-//    *(long*)(buf+20) = swapLong((unsigned char*)&newSum);
+//    *(ULONG*)(buf+20) = swapLong((unsigned char*)&newSum);
 
     adfWriteBlock(vol,nSect,buf);
 

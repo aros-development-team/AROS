@@ -8,20 +8,18 @@
  *
  */
 
-#include"prefix.h"
-
 #include "adf_str.h"
 
 
-void swLong(unsigned char* buf, unsigned long val);
-void swShort(unsigned char* buf, unsigned short val);
+void swLong(unsigned char* buf, ULONG val);
+void swShort(unsigned char* buf, USHORT val);
 
 PREFIX struct List* newCell(struct List* list, void* content);
 PREFIX void freeList(struct List* list);
-void adfDays2Date(long days, int *yy, int *mm, int *dd);
+void adfDays2Date(ULONG days, int *yy, int *mm, int *dd);
 BOOL adfIsLeap(int y);
     void
-adfTime2AmigaTime(struct DateTime dt, long *day, long *min, long *ticks );
+adfTime2AmigaTime(struct DateTime dt, ULONG *day, ULONG *min, ULONG *ticks );
     struct DateTime
 adfGiveCurrentTime( void );
 

@@ -10,11 +10,11 @@
 #ifndef _ADF_DEFS_H
 #define _ADF_DEFS_H 1
 
-#define ADFLIB_VERSION "0.7.9b"
-#define ADFLIB_DATE "10 september, 2000"
+#include <sys/types.h>
+#include <stdint.h>
 
-#define SECTNUM long
-#define RETCODE long
+#define ADFLIB_VERSION "0.8.0"
+#define ADFLIB_DATE "10 September, 2012"
 
 #ifndef TRUE
 #define TRUE    1
@@ -23,11 +23,15 @@
 #define FALSE   0
 #endif
 
-#define ULONG   unsigned long
-#define USHORT  unsigned short
-#define UCHAR   unsigned char
 #define BOOL    int
+#define ULONG   uint32_t
+#define USHORT  uint16_t
+#define UCHAR   uint8_t
+#define UBYTE   uint8_t
+#define TEXT    char
 
+#define SECTNUM ULONG
+#define RETCODE long
 
 /* defines max and min */
 
@@ -50,7 +54,11 @@
 #define swapShort(p) ((p)[0]<<8 | (p)[1])
 #define swapLong(p) (swapShort(p)<<16 | swapShort(p+2))
 
-
+#ifdef WIN32DLL
+#define PREFIX __declspec(dllexport)
+#else
+#define PREFIX 
+#endif /* WIN32DLL */
 
 #endif /* _ADF_DEFS_H */
 /*##########################################################################*/

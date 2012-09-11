@@ -9,10 +9,10 @@
  *  
  */
 
-#include"prefix.h"
+#include "adf_defs.h"
 
 PREFIX RETCODE adfBlockPtr2EntryName(struct Volume *vol, SECTNUM nSect, SECTNUM lPar, 
-	char **name, long *size);
+	char **name, ULONG *size);
 
 
 #endif /* ADF_LINK_H */

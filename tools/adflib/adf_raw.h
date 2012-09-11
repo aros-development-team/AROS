@@ -14,9 +14,9 @@
 #define SW_SHORT 2
 #define SW_CHAR  1
 
-#define MAX_SWTYPE 11
+#define MAX_SWTYPE 12
 
-#define SWBL_BOOT         0
+#define SWBL_BOOTBLOCK    0
 #define SWBL_ROOT         1
 #define SWBL_DATA         2
 #define SWBL_FILE         3
@@ -32,14 +32,15 @@
 #define SWBL_PART         9
 #define SWBL_FSHD         10 
 #define SWBL_LSEG         11
+#define SWBL_BOOT         12    /* AmigaOS 4 Second Level Boot blocks */
 
-RETCODE adfReadRootBlock(struct Volume*, long nSect, struct bRootBlock* root);
-RETCODE adfWriteRootBlock(struct Volume* vol, long nSect, struct bRootBlock* root);
+RETCODE adfReadRootBlock(struct Volume*, ULONG nSect, struct bRootBlock* root);
+RETCODE adfWriteRootBlock(struct Volume* vol, ULONG nSect, struct bRootBlock* root);
 RETCODE adfReadBootBlock(struct Volume*, struct bBootBlock* boot);
 RETCODE adfWriteBootBlock(struct Volume* vol, struct bBootBlock* boot);
 
-unsigned long adfBootSum(unsigned char *buf);
-unsigned long adfNormalSum( unsigned char *buf, int offset, int bufLen );
+ULONG adfBootSum(unsigned char *buf);
+ULONG adfNormalSum( unsigned char *buf, int offset, int bufLen );
 
 void swapEndian( unsigned char *buf, int type );
 

@@ -31,10 +31,15 @@ USER_INCLUDES := -I$(SRCDIR)/$(CURDIR) -I$(AROS_INCLUDES)/adf -I$(SRCDIR)/$(CURD
 
 %build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
 
+%build_linklib mmake=host-linklibs-adf libname=adf files=$(FILES) \
+                     cflags="$(USER_INCLUDES) -g3 -Wall -Werror" compiler=host \
+                     libdir="$(HOSTGENDIR)/tools"
+
 
 #MM
 includes-copy : $(AROS_INCLUDES)/adf/adflib.h \
 		$(AROS_INCLUDES)/adf/defendian.h \
+		$(AROS_INCLUDES)/adf/hd_blk.h \
 		$(AROS_INCLUDES)/adf/adf_blk.h \
 		$(AROS_INCLUDES)/adf/adf_defs.h \
 		$(AROS_INCLUDES)/adf/adf_err.h \
@@ -44,7 +49,7 @@ includes-copy : $(AROS_INCLUDES)/adf/adflib.h \
 $(AROS_INCLUDES)/adf/%.h : %.h | $(AROS_INCLUDES)/adf
 	$(CP) $< $(AROS_INCLUDES)/adf
 
-$(AROS_INCLUDES)/adf/defendian.h : AROS/defendian.h | $(AROS_INCLUDES)/adf
+$(AROS_INCLUDES)/adf/defendian.h : Generic/defendian.h | $(AROS_INCLUDES)/adf
 	@$(CP) $< $@
 
 GLOB_MKDIRS += $(AROS_INCLUDES)/adf

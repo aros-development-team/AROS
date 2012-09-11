@@ -12,8 +12,6 @@
 #include"adf_err.h"
 #include"adf_defs.h"
 
-#include"prefix.h"
-
 PREFIX RETCODE adfToRootDir(struct Volume *vol);
 BOOL isDirEmpty(struct bDirBlock *dir);
 PREFIX RETCODE adfRemoveEntry(struct Volume *vol, SECTNUM pSect, char *name);
@@ -34,15 +32,15 @@ RETCODE adfReadEntryBlock(struct Volume* vol, SECTNUM nSect, struct bEntryBlock*
 RETCODE adfWriteDirBlock(struct Volume* vol, SECTNUM nSect, struct bDirBlock *dir);
 RETCODE adfWriteEntryBlock(struct Volume* vol, SECTNUM nSect, struct bEntryBlock *ent);
 
-char* adfAccess2String(long acc);
-unsigned char adfIntlToUpper(unsigned char c);
-int adfGetHashValue(unsigned char *name, BOOL intl);
-void myToUpper( unsigned char *ostr, unsigned char *nstr, int,BOOL intl );
+char* adfAccess2String(ULONG acc);
+char adfIntlToUpper(char c);
+int adfGetHashValue(char *name, BOOL intl);
+void myToUpper( char *ostr, char *nstr, int,BOOL intl );
 PREFIX RETCODE adfChangeDir(struct Volume* vol, char *name);
 PREFIX RETCODE adfParentDir(struct Volume* vol);
-PREFIX RETCODE adfSetEntryAccess(struct Volume*, SECTNUM, char*, long);
+PREFIX RETCODE adfSetEntryAccess(struct Volume*, SECTNUM, char*, ULONG);
 PREFIX RETCODE adfSetEntryComment(struct Volume*, SECTNUM, char*, char*);
-SECTNUM adfNameToEntryBlk(struct Volume *vol, long ht[], char* name, 
+SECTNUM adfNameToEntryBlk(struct Volume *vol, ULONG ht[], char* name, 
     struct bEntryBlock *entry, SECTNUM *);
 
 PREFIX void printEntry(struct Entry* entry);
