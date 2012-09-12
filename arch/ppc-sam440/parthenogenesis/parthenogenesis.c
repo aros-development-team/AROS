@@ -25,7 +25,7 @@
 static int usage(const char *program)
 {
     printf("Usage:\n"
-           "%s /dev/sdb /path/to/Parthnope /path/to/AROS\n"
+           "%s /dev/sdb /path/to/Parthnope [/path/to/AROS]\n"
            , program);
     return EXIT_FAILURE;
 }
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     };
     struct Partition *part[] = { &part_boot, &part_work };
 
-    if (argc != 4) {
+    if (argc != 3 && argc != 4) {
         return usage(argv[0]);
     }
 
@@ -145,18 +145,16 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    dir = opendir(argv[3]);
-    if (!dir) {
-        free(code);
-        perror(argv[3]);
-        return EXIT_FAILURE;
-    }
-    closedir(dir);
-
     adfEnvInitDefault();
 
     dev = adfMountDev(argv[1], FALSE);
-    if (dev) {
+    if (dev && argc == 3) {
+        if (adfWriteBOOT(dev, code, size) == RC_OK) {
+            printf("SLB updated\n");
+        }
+        free(code);
+        adfUnMountDev(dev);
+    } else if (dev) {
         ULONG lastcyl;
         int parts = 2;
 
