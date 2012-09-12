@@ -148,11 +148,7 @@ void LibBeginIO (REG(a1, struct IOExtTD *iotd), REG(a6, struct DiskImageBase *li
 
 /* unit.c */
 #ifdef __AROS__
-AROS_UFP3(LONG, UnitProcEntry,
-	AROS_UFPA(STRPTR, argstr, A0),
-	AROS_UFPA(ULONG, arglen, D0),
-	AROS_UFPA(struct Library *, SysBase, A6)
-);
+AROS_PROCP (UnitProcEntry);
 #else
 int UnitProcEntry (void);
 #endif
