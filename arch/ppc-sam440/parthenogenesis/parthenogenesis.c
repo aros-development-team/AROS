@@ -19,6 +19,7 @@
 #include <adf/adflib.h>
 #include <adf/adf_hd.h>
 
+#define SZ_1G   (1UL << 30)
 #define SZ_2G   (1UL << 31)
 
 static int usage(const char *program)
@@ -159,7 +160,7 @@ int main(int argc, char **argv)
         ULONG lastcyl;
         int parts = 2;
 
-        lastcyl = SZ_2G / 512 / dev->sectors / dev->heads;
+        lastcyl = SZ_1G / 512 / dev->sectors / dev->heads;
         if (lastcyl > dev->cylinders) {
             lastcyl = dev->cylinders;
             parts = 1;
