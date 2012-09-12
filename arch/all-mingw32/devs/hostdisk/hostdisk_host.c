@@ -1,6 +1,7 @@
 #include <aros/debug.h>
 #include <aros/symbolsets.h>
 #include <devices/trackdisk.h>
+#include <exec/errors.h>
 #include <proto/exec.h>
 #include <proto/hostlib.h>
 
@@ -11,9 +12,9 @@ static ULONG error(ULONG winerr)
 {
     switch(winerr)
     {
-/*      case ERROR_SEEK_ERROR:
-            return TDERR_SeekError;*/
-            
+        case ERROR_INVALID_PARAMETER:
+            return IOERR_BADADDRESS;
+
         case ERROR_WRITE_PROTECT:
             return TDERR_WriteProt;
 
@@ -70,7 +71,12 @@ LONG Host_Read(struct unit *Unit, APTR buf, ULONG size, ULONG *ioerr)
     Permit();
 
     if (ret)
+    {
+        DB2(bug("hostdisk: Host_Read(0x%p, 0x%08X): Success\n", buf, size));
         return resSize;
+    }
+
+    D(bug("hostdisk: Host_Read(0x%p, 0x%08X): Windows error %u\n", buf, size, err));
 
     *ioerr = error(err);
     return -1;
