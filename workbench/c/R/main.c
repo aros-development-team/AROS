@@ -496,6 +496,9 @@ int main(int argc, char **argv)
     if (! create_gui(req))
         clean_exit(req, _(MSG_ERROR_GUI));
 
+    if (! set_defaults(req))
+        clean_exit(req, _(MSG_ERROR_DEFAULTS));
+
     if (handle_gui(req))
     {
         execute_command(req);

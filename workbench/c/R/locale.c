@@ -1,7 +1,6 @@
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
-    This file is part of the LoadResource program, which is distributed under
-    the terms of version 2 of the GNU General Public License.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <aros/symbolsets.h>
@@ -12,7 +11,7 @@
 #include "strings.h"
 
 #define CATALOG_NAME     "System/C/R.catalog"
-#define CATALOG_VERSION  0
+#define CATALOG_VERSION  2
 
 /*** Variables **************************************************************/
 static struct Catalog *catalog;
