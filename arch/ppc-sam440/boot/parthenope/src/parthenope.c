@@ -25,6 +25,7 @@
 #include "tftp.h"
 #include "ext2.h"
 #include "sfs.h"
+#include "dos.h"
 #include "menu.h"
 #include "elf.h"
 #include "image.h"
@@ -350,8 +351,11 @@ int __startup bootstrap(context_t * ctx)
 						  entry->partition);
 		if(partition == NULL)
 			break;
-		if ((boot = ext2_create(partition)) == NULL)
-			boot = sfs_create(partition);
+		boot = ext2_create(partition);
+		if (boot == NULL)
+		    boot = sfs_create(partition);
+		if (boot == NULL)
+		    boot = dos_create(partition);
 	}
 		break;
 	case TFTP_TYPE:

@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 TARGETDIR := $(GENDIR)/$(CURDIR)
-FILES     := parthenope cdrom context elf ext2 menu rdb sfs support tftp
+FILES     := parthenope cdrom context dos elf ext2 menu rdb sfs support tftp
 DEPS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).d)
 OBJS      := $(foreach f, $(FILES), $(TARGETDIR)/$(f).o)
 
