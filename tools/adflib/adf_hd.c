@@ -1060,7 +1060,7 @@ RETCODE adfWriteBOOT(struct Device *dev, const UBYTE *code, size_t size)
         boot.next = sector[n - rdsk.rdbBlockLo];
         memset(boot.loadData, 0xff, sizeof(boot.loadData));
         for (i = 0; i < longs; i++) {
-            swLong((UBYTE *)(&boot.loadData[i]), *(ULONG *)code);
+            boot.loadData[i] = *(ULONG *)code;
             code += 4;
             size -= 4;
         }
