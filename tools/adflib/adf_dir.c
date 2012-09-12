@@ -681,13 +681,13 @@ SECTNUM adfCreateEntry(struct Volume *vol, struct bEntryBlock *dir, char *name,
     nSect = dir->hashTable[ hashValue ];
 
     if ( nSect==0 ) {
-        if (thisSect!=-1)
+        if (thisSect!=(SECTNUM)-1)
             newSect = thisSect;
         else {
             newSect = adfGet1FreeBlock(vol);
-            if (newSect==-1) {
+            if (newSect==(SECTNUM)-1) {
                (*adfEnv.wFct)("adfCreateEntry : nSect==-1");
-               return -1;
+               return (SECTNUM)-1;
             }
         }
 
@@ -705,7 +705,7 @@ SECTNUM adfCreateEntry(struct Volume *vol, struct bEntryBlock *dir, char *name,
 //puts("adfCreateEntry out, dir");
         if (rc!=RC_OK) {
             adfSetBlockFree(vol, newSect);    
-            return -1;
+            return (SECTNUM)-1;
         }
         else
             return( newSect );
@@ -713,24 +713,24 @@ SECTNUM adfCreateEntry(struct Volume *vol, struct bEntryBlock *dir, char *name,
 
     do {
         if (adfReadEntryBlock(vol, nSect, &updEntry)!=RC_OK)
-			return -1;
+			return (SECTNUM)-1;
         if (updEntry.nameLen==len) {
             myToUpper(name3,(char *)updEntry.name,updEntry.nameLen,intl);
             if (strncmp(name3,name2,len)==0) {
                 (*adfEnv.wFct)("adfCreateEntry : entry already exists");
-                return -1;
+                return (SECTNUM)-1;
             }
         }
         nSect = updEntry.nextSameHash;
     }while(nSect!=0);
 
-    if (thisSect!=-1)
+    if (thisSect!=(SECTNUM)-1)
         newSect2 = thisSect;
     else {
         newSect2 = adfGet1FreeBlock(vol);
-        if (newSect2==-1) {
+        if (newSect2==(SECTNUM)-1) {
             (*adfEnv.wFct)("adfCreateEntry : nSect==-1");
-            return -1;
+            return (SECTNUM)-1;
         }
     }
 	 
@@ -747,7 +747,7 @@ SECTNUM adfCreateEntry(struct Volume *vol, struct bEntryBlock *dir, char *name,
 //puts("adfCreateEntry out, hash");
     if (rc!=RC_OK) {
         adfSetBlockFree(vol, newSect2);    
-        return -1;
+        return (SECTNUM)-1;
     }
     else
         return(newSect2);

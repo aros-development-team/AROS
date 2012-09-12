@@ -16,8 +16,6 @@
 #include"adf_util.h"
 #include"defendian.h"
 
-extern ULONG bitMask[32];
-
 extern struct Env adfEnv;
 
 /*
@@ -168,15 +166,9 @@ BOOL adfIsBlockFree(struct Volume* vol, SECTNUM nSect)
     int sectOfMap = nSect-2;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
-	
-/*printf("sect=%d block=%d ind=%d,  ",sectOfMap,block,indexInMap);
-printf("bit=%d,  ",sectOfMap%32);
-printf("bitm=%x,  ",bitMask[ sectOfMap%32]);
-printf("res=%x,  ",vol->bitmapTable[ block ]->map[ indexInMap ]
-        & bitMask[ sectOfMap%32 ]);
-*/
+
     return ( (vol->bitmapTable[ block ]->map[ indexInMap ]
-        & bitMask[ sectOfMap%32 ])!=0 );
+        & (1UL << (sectOfMap & 0x1f)))!=0 );
 }
 
 
@@ -186,20 +178,12 @@ printf("res=%x,  ",vol->bitmapTable[ block ]->map[ indexInMap ]
  */
 void adfSetBlockFree(struct Volume* vol, SECTNUM nSect)
 {
-    ULONG oldValue;
     int sectOfMap = nSect-2;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
 
-/*printf("sect=%d block=%d ind=%d,  ",sectOfMap,block,indexInMap);
-printf("bit=%d,  ",sectOfMap%32);
-*printf("bitm=%x,  ",bitMask[ sectOfMap%32]);*/
-
-    oldValue = vol->bitmapTable[ block ]->map[ indexInMap ];
-/*printf("old=%x,  ",oldValue);*/
     vol->bitmapTable[ block ]->map[ indexInMap ]
-	    = oldValue | bitMask[ sectOfMap%32 ];
-/*printf("new=%x,  ",vol->bitmapTable[ block ]->map[ indexInMap ]);*/
+	    |= (1UL << (sectOfMap & 0x1f));
 
     vol->bitmapBlocksChg[ block ] = TRUE;
 }
@@ -211,15 +195,12 @@ printf("bit=%d,  ",sectOfMap%32);
  */
 void adfSetBlockUsed(struct Volume* vol, SECTNUM nSect)
 {
-    ULONG oldValue;
     int sectOfMap = nSect-2;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
 
-    oldValue = vol->bitmapTable[ block ]->map[ indexInMap ];
-
     vol->bitmapTable[ block ]->map[ indexInMap ]
-	    = oldValue & (~bitMask[ sectOfMap%32 ]);
+	    &= (~(1UL << (sectOfMap & 0x1f)));
     vol->bitmapBlocksChg[ block ] = TRUE;
 }
 
@@ -231,7 +212,7 @@ void adfSetBlockUsed(struct Volume* vol, SECTNUM nSect)
 SECTNUM adfGet1FreeBlock(struct Volume *vol) {
     SECTNUM block[1];
     if (!adfGetFreeBlocks(vol,1,block))
-        return(-1);
+        return((SECTNUM)-1);
     else
         return(block[0]);
 }
@@ -262,7 +243,7 @@ BOOL adfGetFreeBlocks(struct Volume* vol, int nbSect, SECTNUM* sectList)
         {
             block++;
             if (block == vol->rootBlock)
-                endSearch = TRUE;
+                return FALSE;
         }
     }
 
@@ -323,7 +304,7 @@ RETCODE adfCreateBitmap(struct Volume *vol)
         }
     }
 
-    for(i=vol->firstBlock+2; i<=(vol->lastBlock - vol->firstBlock); i++)
+    for(i=2; i<=(vol->lastBlock - vol->firstBlock); i++)
         adfSetBlockFree(vol, i);
 
     return RC_OK;
