@@ -53,13 +53,9 @@ static void RemoveDisk (struct DiskImageUnit *unit);
 static void DiskChange (struct DiskImageUnit *unit);
 
 #ifdef __AROS__
-AROS_UFH3(LONG, UnitProcEntry,
-	AROS_UFHA(STRPTR, argstr, A0),
-	AROS_UFHA(ULONG, arglen, D0),
-	AROS_UFHA(struct Library *, SysBase, A6)
-)
+AROS_PROCH(UnitProcEntry, argstr, arglen, SysBase)
 {
-	AROS_USERFUNC_INIT
+	AROS_PROCFUNC_INIT
 #else
 int UnitProcEntry (void) {
 #endif
@@ -87,7 +83,7 @@ int UnitProcEntry (void) {
 	ReplyMsg(&dm->dm_Msg);
 	return dm->dm_ReturnCode;
 #ifdef __AROS__
-	AROS_USERFUNC_EXIT
+	AROS_PROCFUNC_EXIT
 #endif
 }
 
