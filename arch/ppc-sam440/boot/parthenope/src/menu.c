@@ -23,6 +23,7 @@
 #include "menu.h"
 #include "ext2.h"
 #include "sfs.h"
+#include "dos.h"
 #include "rdb.h"
 
 static struct EntryObject *EntryObject_new(char *name, char *args,
@@ -609,8 +610,11 @@ static int magic_load(menu_t *self)
 		partition = RdbPartitionTable_get(0, i);
 		if(partition == NULL)
 			break;
-		if((dev = ext2_create(partition)) == NULL)
-			dev = sfs_create(partition);
+		dev = ext2_create(partition);
+		if (dev == NULL)
+		    dev = sfs_create(partition);
+		if (dev == NULL)
+		    dev = dos_create(partition);
 		if(dev == NULL)
 			continue;
 		n += dev_load(self, dev);
