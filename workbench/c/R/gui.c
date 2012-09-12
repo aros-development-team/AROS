@@ -371,6 +371,89 @@ BOOL handle_gui(struct Req *req)
     return req->do_execute;
 }
 
+// combine string array to a single string with quoted entries
+static STRPTR build_quoted_string(STRPTR *strings)
+{
+    LONG i;
+    LONG size = 1;
+    STRPTR str;
+
+    for (i = 0; strings[i]; i++)
+    {
+        size += strlen(strings[i]) + 3;
+    }
+    str = AllocPooled(poolmem, size);
+    if (str == NULL)
+    {
+        return NULL;
+    }
+
+    for (i = 0; strings[i]; i++)
+    {
+        strcat(str, "\"");
+        strcat(str, strings[i]);
+        strcat(str, "\" ");
+    }
+    // string will be '\0' terminated because AllocPooled has MEMF_CLEAR
+    return str;
+}
+
+
+// fill the gadgets with the values which were given by the
+// command line argument ARGUMENTS
+BOOL set_defaults(struct Req *req)
+{
+    struct RDArgs *rda;
+    IPTR *array;
+    LONG i;
+    BOOL success = FALSE;
+
+    if (req->arguments == NULL || req->arguments[0] == '\0')
+    {
+        // we're done if shell parameter 'argument' wasn't given
+        return TRUE;
+    }
+
+    array = AllocPooled(poolmem, sizeof (IPTR) * req->arg_cnt);
+    if (array)
+    {
+        rda = AllocDosObject(DOS_RDARGS, NULL);
+        if (rda)
+        {
+            rda->RDA_Source.CS_Buffer = req->arguments;
+            rda->RDA_Source.CS_Length = strlen(req->arguments);
+            rda->RDA_Source.CS_CurChr = 0;
+            if (ReadArgs(req->cmd_template, array, rda))
+            {
+                for (i = 0; i < req->arg_cnt; i++)
+                {
+                    if (req->cargs[i].s_flag || req->cargs[i].t_flag)
+                    {
+                        SET(req->cargs[i].object, MUIA_Selected, array[i] ? TRUE : FALSE);
+                    }
+                    else if (req->cargs[i].n_flag && array[i])
+                    {
+                        SET(req->cargs[i].object, MUIA_String_Integer, *(LONG *)array[i]);
+                    }
+                    else if (req->cargs[i].m_flag && array[i])
+                    {
+                        SET(req->cargs[i].object, MUIA_String_Contents, build_quoted_string((STRPTR *)array[i]));
+                    }
+                    else if (array[i])
+                    {
+                        SET(req->cargs[i].object, MUIA_String_Contents, array[i]);
+                    }
+                }
+                success = TRUE; 
+                FreeArgs(rda);
+            }
+            FreeDosObject(DOS_RDARGS, rda);
+        }
+        FreePooled(poolmem, array, sizeof (IPTR) * req->arg_cnt);
+    }
+    return success;
+}
+
 
 BOOL get_gui_bool(struct CArg *carg)
 {

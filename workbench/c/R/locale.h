@@ -2,9 +2,8 @@
 #define _LOCALE_H
 
 /*
-    Copyright © 2004, The AROS Development Team. All rights reserved.
-    This file is part of the LoadResource program, which is distributed under
-    the terms of version 2 of the GNU General Public License.
+    Copyright © 2012, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #include <exec/types.h>

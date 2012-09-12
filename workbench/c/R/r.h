@@ -48,7 +48,8 @@ BOOL handle_gui(struct Req *req);
 void cleanup_gui(void);
 BOOL get_gui_bool(struct CArg *carg);
 CONST_STRPTR get_gui_string(struct CArg *carg);
+BOOL set_defaults(struct Req *req);
 
-#define VERSION "$VER: R 1.1 (04.06.2012)"
+#define VERSION "$VER: R 1.2 (12.09.2012)"
 
 #endif // R_H

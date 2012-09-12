@@ -40,3 +40,6 @@ Failed to parse the template\n
 MSG_ERROR_GUI (//)
 Failed to create application object\n
 ;
+MSG_ERROR_DEFAULTS (//)
+Failed to set the default values\n
+;
