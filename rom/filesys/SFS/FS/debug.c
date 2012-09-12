@@ -62,7 +62,7 @@ void END(UBYTE *name) {
               args=(ULONG *)&fmt;
               args++;
     
-              RawDoFmt(fmt,args,putChProc,dest);
+              RawDoFmt(fmt,args,putChFunc,dest);
     
               PutMsg(port,msg);
             }

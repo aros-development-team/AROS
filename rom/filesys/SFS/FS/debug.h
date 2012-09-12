@@ -2,6 +2,7 @@
 #define _DEBUG_H
 
 #include <exec/types.h>
+#include <proto/debug.h>
 #include <proto/dos.h>
 
 #include "debug_protos.h"
@@ -23,18 +24,16 @@
 #endif
 
 #ifdef DEBUGCODE
-
-#ifdef __AROS__
         
 #define _TDEBUG(x)                                  \
 do {                                                \
     struct DateStamp ds;                            \
     DateStamp(&ds);                                 \
-    bug("%4ld.%4ld ", ds.ds_Minute, ds.ds_Tick*2);  \
-    bug x;                                          \
+    KPrintF("%4ld.%4ld ", ds.ds_Minute, ds.ds_Tick*2);  \
+    KPrintF x;                                          \
 } while (0)
 
-#define _DEBUG(x) bug("[SFS] "); bug x
+#define _DEBUG(x) KPrintF("[SFS] "); KPrintF x
 
 #define xdebug(type,x...)                                                                                 \
 do {                                                                                                      \
@@ -42,28 +41,12 @@ do {                                                                            
     ULONG debugdetailed=globals->mask_debug & ~(DEBUG_CACHEBUFFER|DEBUG_NODES|DEBUG_LOCK|DEBUG_BITMAP);   \
     if((debugdetailed & type)!=0 || ((type & 1)==0 && (debug & type)!=0))                                 \
     {                                                                                                     \
-        bug(x);                                                                                           \
+        KPrintF(x);                                                                                       \
     }                                                                                                     \
 } while (0)
   
 #define _XDEBUG(x) xdebug x
 
-#else
-
-#ifndef DEBUGKPRINTF
-    
-#define _TDEBUG(x) tdebug x
-#define _DEBUG(x) debug x
-#define _XDEBUG(x) xdebug x
-    
-#else
-#define _TDEBUG(x) kprintf x
-#define _DEBUG(x) kprintf x
-#define _XDEBUG(x) xkprintf x
-    
-#endif
-      
-#endif
 #else
 
 #define _TDEBUG(x)

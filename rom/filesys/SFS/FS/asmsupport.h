@@ -66,9 +66,9 @@ ULONG bmcntz(ULONG *bitmap, LONG bitoffset, LONG bits);
 ULONG CALCCHECKSUM(ULONG, ULONG *);
 
 #ifdef RAWFMTFUNC_STRING
-#define putChProc   RAWFMTFUNC_STRING
+#define putChFunc   RAWFMTFUNC_STRING
 #else
-#define putChProc   (void (*)())"\x16\xC0\x4E\x75"
+#define putChFunc   (void (*)())"\x16\xC0\x4E\x75"
 #endif
 
 #ifdef SFS_BE
