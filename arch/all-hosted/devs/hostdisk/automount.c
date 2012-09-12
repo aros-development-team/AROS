@@ -70,7 +70,7 @@ static int Automount(struct HostDiskBase *hdskBase)
             pp[DE_NUMBUFFERS   + 4] = 10;
             pp[DE_BUFMEMTYPE   + 4] = MEMF_PUBLIC;
             pp[DE_MAXTRANSFER  + 4] = 0x00200000;
-            pp[DE_MASK         + 4] = -1;
+            pp[DE_MASK         + 4] = -2; /* On Windows Host_Read() fails with ERROR_INVALID_PARAMETER on odd addresses */
             pp[DE_BOOTPRI      + 4] = 0;
             pp[DE_DOSTYPE      + 4] = AROS_MAKE_ID('D','O','S','\001');
             pp[DE_CONTROL      + 4] = 0;
