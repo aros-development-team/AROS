@@ -59,7 +59,7 @@ static BOOL handle_args(struct Req *req, int argc, char **argv)
 {
     if (argc)
     {
-        IPTR args[ARG_COUNT] = {0};
+        IPTR args[ARG_COUNT] = {(IPTR)"R", 0, 0, 0};
         
         req->rda = ReadArgs(ARG_TEMPLATE, args, NULL);
         if (!req->rda)
