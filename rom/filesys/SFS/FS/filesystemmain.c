@@ -1911,7 +1911,8 @@ void mainloop(void) {
                         BLCK ebn_next=BE2L(ebn->be_next);
                         UWORD ebn_blocks=BE2W(ebn->be_blocks);
 
-                        _XDEBUG((DEBUG_IO,"ACTION_READ: bytesleft = %ld, offsetinblock = %ld, ExtentBNode = %ld, ebn->data = %ld, ebn->blocks = %ld\n",bytesleft,offsetinblock,lock->curextent,BE2L(ebn->be_key),BE2W(ebn->be_blocks)));
+                        _XDEBUG((DEBUG_IO,"ACTION_READ: buffer = 0x%p bytesleft = %ld, offsetinblock = %ld, ExtentBNode = %ld, ebn->data = %ld, ebn->blocks = %ld\n",
+                                 buffer, bytesleft, offsetinblock, lock->curextent, BE2L(ebn->be_key), BE2W(ebn->be_blocks)));
 
                         if(offsetinblock!=0 || bytesleft<globals->bytes_block) {
 
@@ -3152,7 +3153,7 @@ void dreqArgs(UBYTE *fmt, APTR params)
 
     if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
       _DEBUG(("\nREQUESTER\n\n"));
-      RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",args,putChProc,fmt2);
+      RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
 
       if (requestArgs(PROGRAMNAME, fmt2, "Continue|No more requesters", params) == 0)
         globals->debugreqs=FALSE;
@@ -3193,10 +3194,10 @@ LONG reqArgs(UBYTE *fmt, UBYTE *gads, APTR params)
   if((fmt2=AllocVec(strlen(fmt)+100,0))!=0) {
 
     if(globals->volumenode!=0) {
-      RawDoFmt("Volume '%s' (%s: %s, unit %ld)\n\n%s",args,putChProc,fmt2);
+      RawDoFmt("Volume '%s' (%s: %s, unit %ld)\n\n%s",args,putChFunc,fmt2);
     }
     else {
-      RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",args,putChProc,fmt2);
+      RawDoFmt("Device %s: (%s, unit %ld)\n\n%s",args,putChFunc,fmt2);
     }
 
     gadget = requestArgs(PROGRAMNAME " request", fmt2, gads, params);
@@ -3226,7 +3227,7 @@ LONG req_unusualArgs(UBYTE *fmt, APTR params)
 
   if((fmt2=AllocVec(strlen(fmt)+400,0))!=0) {
 
-    RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",args,putChProc,fmt2);
+    RawDoFmt("SmartFilesystem %s: (%s, unit %ld)\n\n%s\n\n%s",args,putChFunc,fmt2);
     gadget = requestArgs(PROGRAMNAME " request", fmt2, "Continue", params);
     FreeVec(fmt2);
   }
