@@ -40,22 +40,10 @@ inline int getc(void)
 	return context->c_getc();
 }
 
-/* bogus uboot */
-static char *scan_list[7] = {
-	"s4sii",
-	"s4siicdrom",
-	"net",
-	"ssii",
-	"ssiicdrom",
-	NULL,
-	NULL
-};
-
 /* devices functions */
 inline void *get_scan_list(void)
 {
-	return scan_list;
-/* 	return context->c_scan_list; */
+ 	return context->c_scan_list;
 }
 
 inline list_t *get_devices_list(void)
