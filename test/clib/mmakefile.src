@@ -36,6 +36,7 @@ FILES := \
         strchr \
         strptime \
         strtod \
+        strtol \
         strtoul \
         strtoull \
         system \
