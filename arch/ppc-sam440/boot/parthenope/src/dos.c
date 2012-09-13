@@ -336,7 +336,7 @@ boot_dev_t *dos_create(struct RdbPartition *partition)
     }
 
     boot->capabilities = ((uint8_t *)buffer)[3];
-    boot->rootblock = (boot->partition->info->size+1)/2;
+    boot->rootblock = DBB(buffer)->rootblock;
     boot->blocksize = boot->partition->info->blksz;
 
     dos_loadsector(boot, boot->rootblock, buffer);
