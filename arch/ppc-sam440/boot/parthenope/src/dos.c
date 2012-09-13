@@ -241,6 +241,10 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
                 return -1;
             }
             total = size = DFB(buff)->byte_size;
+
+            if (filebuffer == NULL)
+                return total;
+
             sector = DFB(buff)->first_data;
 
             /* FIXME: OFS support - this code is FFS only! */
