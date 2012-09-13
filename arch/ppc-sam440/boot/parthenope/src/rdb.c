@@ -47,6 +47,16 @@ static block_dev_desc_t *get_dev(int dev)
 	SCAN_HANDLE hnd;
 	uint32_t blocksize;
 
+	hnd = get_curr_device();
+	if (open_specific_unit(hnd) &&
+	    hnd->ush_device.type == DEV_TYPE_HARDDISK) {
+	    bdev = malloc(sizeof(block_dev_desc_t));
+	    memmove(bdev, &hnd->ush_device, sizeof(block_dev_desc_t));
+	    printf("* using specific unit %d.%d\n", bdev->type, bdev->dev);
+	    return bdev;
+	}
+
+
 	for (hnd = start_unit_scan(get_scan_list(), &blocksize);
 	     hnd != NULL; hnd = next_unit_scan(hnd, &blocksize)) {
 		if (hnd->ush_device.type == DEV_TYPE_HARDDISK) {
