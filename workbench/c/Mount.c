@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2011 The AROS Development Team
+    (C) 1995-2012 The AROS Development Team
     (C) 2002-2005 Harry Sintonen
     (C) 2005-2007 Pavel Fedin
     $Id$
@@ -623,70 +623,20 @@ void FreeStuff(void)
 static long GetValue(IPTR bufp, char **end)
 {
 	char *buf = (char *)bufp;
-        int base;
         char *c = buf;
 
-	/* I decided to leave this routine in order to prevent reading numbers starting from '0'
-           as octal. Probably this is not needed, or octal support would not do any harm, in this
-           case this routine is not needed at all - Pavel Fedin */
-        if ((c[0]=='-') || (c[1]=='+'))
+        if ((c[0]=='-') || (c[0]=='+'))
 		c++;
+        /*
+         * If it's a hexadecimal number, use strtoul(), otherwise we can lose our 31th bit.
+         * Should be okay since i've never seen any usage of minus sign with hexadecimals.
+         * For decimals we do support sign, because it makes it very convenient to use negative
+         * masks for sign extension on 64 bits.
+         */
         if ((c[0] == '0') && (((c[1])=='x') || (c[1])=='X'))
-        	base = 16;
+        	return strtoul(buf, end, 16);
         else
-        	base = 10;
-        return strtol(buf,end,base);
-/* Left for reference - Pavel Fedin
-ULONG	Value;
-ULONG	Sign;
-  Value = 0;
-  Sign = 1;
-  if (buf[0]=='-')
-  {
-    Sign = -1;
-    buf++;
-  }
-  else
-  if (buf[0]=='+')
-  {
-    buf++;
-  }
-
-  if ((buf[0] == '0') && (((buf[1])=='x') || (buf[1])=='X'))
-  {
-    int num;
-
-    // base = hex
-    buf+=2;
-    while(*buf)
-    {
-      Value<<=4;
-      num=*buf++;
-    
-      if((num >= 0x30) && (num <= 0x39))
-      {
-        num-=0x30;
-        Value+=num;
-      }
-      else
-      {
-        num |= 0x20;
-    
-        if((num >= 0x61) && (num <= 0x66))
-        {
-          num-=(0x61-10);
-          Value+=num;
-        }
-      }
-    }
-  }
-  else
-  {
-    // base = dev
-    Value=atoi(buf);
-  }
-  return Value * Sign;
-*/
+        	return strtol(buf, end, 10);
 }
 
 /************************************************************************************************/
@@ -888,7 +838,11 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
 
     if (args[ARG_MASK] != 0)
+    {
+        KPrintF("Mask string is %s\n", args[ARG_MASK]);
 	vec->de_Mask = GetValue(args[ARG_MASK], NULL);
+        KPrintF("de_Mask set to 0x%p\n", vec->de_Mask);
+    }
 
     if (args[ARG_DOSTYPE] != 0)
 	vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
