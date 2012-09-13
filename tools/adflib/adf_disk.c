@@ -167,7 +167,7 @@ struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
         return NULL;
     }
 
-    nBlock = vol->lastBlock - vol->firstBlock +1 - 2;
+    nBlock = (vol->lastBlock - vol->firstBlock+1) - vol->bootBlocks;
 
 	adfReadBitmap( vol, nBlock, &root );
     vol->curDirPtr = vol->rootBlock;
@@ -227,7 +227,7 @@ struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len,
     vol->dev = dev;
     vol->firstBlock = (dev->heads * dev->sectors)*start;
     vol->lastBlock = (vol->firstBlock + (dev->heads * dev->sectors)*len)-1;
-    vol->rootBlock = ((vol->lastBlock - vol->firstBlock+1)-1+2)/2;
+    vol->rootBlock = ((vol->lastBlock - vol->firstBlock+1)-1+vol->bootBlocks)/2;
 /*printf("first=%ld last=%ld root=%ld\n",vol->firstBlock,
  vol->lastBlock, vol->rootBlock);
 */

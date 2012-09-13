@@ -153,10 +153,11 @@ RETCODE adfMountHdFile(struct Device *dev)
     dev->sectors = 1;
 
     vol->firstBlock = 0;
+    vol->bootBlocks = 2;
 
     size = dev->size + 512-(dev->size%512);
 //printf("size=%ld\n",size);
-    vol->rootBlock = ((size/512)-1+2)/2;
+    vol->rootBlock = ((size/512)-1+vol->bootBlocks)/2;
 //printf("root=%ld\n",vol->rootBlock);
     do {
         adfReadDumpSector(dev, vol->rootBlock, 512, buf);
@@ -226,6 +227,7 @@ RETCODE adfMountHd(struct Device *dev)
         vol->lastBlock = (part.highCyl+1)*rdsk.cylBlocks -1 ;
         vol->rootBlock = (vol->lastBlock - vol->firstBlock+1)/2;
         vol->blockSize = part.blockSize*4;
+        vol->bootBlocks = part.bootBlocks;
 
         len = min(31, part.nameLen);
         vol->volName = (char*)malloc(len+1);
@@ -493,6 +495,7 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
         part.vectorSize = 16;
         part.blockSize = 128;
         part.sectorsPerBlock = 1;
+        part.bootBlocks = 2;
 
         memcpy(part.dosType, partList[i]->volType, 4);
             
