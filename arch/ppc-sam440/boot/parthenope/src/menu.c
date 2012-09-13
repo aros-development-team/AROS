@@ -610,11 +610,11 @@ static int magic_load(menu_t *self)
 		partition = RdbPartitionTable_get(0, i);
 		if(partition == NULL)
 			break;
-		dev = ext2_create(partition);
+		dev = dos_create(partition);
 		if (dev == NULL)
 		    dev = sfs_create(partition);
 		if (dev == NULL)
-		    dev = dos_create(partition);
+		    dev = ext2_create(partition);
 		if(dev == NULL)
 			continue;
 		n += dev_load(self, dev);
