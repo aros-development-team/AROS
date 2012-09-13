@@ -901,10 +901,11 @@ RETCODE adfCreateFile(struct Volume* vol, SECTNUM nParent, char *name,
 		return RC_ERROR;
 
     /* -1 : do not use a specific, already allocated sector */
-    nSect = adfCreateEntry(vol, &parent, name, -1);
+    nSect = adfCreateEntry(vol, &parent, name, (SECTNUM)-1);
     if (nSect==-1) return RC_ERROR;
 /*printf("new fhdr=%d\n",nSect);*/
     memset(fhdr,0,512);
+    memset(fhdr->fileName, 0xff, MAXNAMELEN+1);
     fhdr->nameLen = min(MAXNAMELEN, strlen(name));
     memcpy(fhdr->fileName,name,fhdr->nameLen);
     fhdr->headerKey = nSect;
@@ -945,7 +946,10 @@ RETCODE adfReadEntryBlock(struct Volume* vol, SECTNUM nSect, struct bEntryBlock 
 
     memcpy(ent, buf, 512);
 #ifdef LITT_ENDIAN
-    swapEndian((UBYTE *)ent, SWBL_ENTRY);
+    if (nSect == vol->rootBlock)
+        swapEndian((UBYTE *)ent, SWBL_ROOT);
+    else
+        swapEndian((UBYTE *)ent, SWBL_ENTRY);
 #endif
 /*printf("readentry=%d\n",nSect);*/
     if (ent->checkSum!=adfNormalSum(buf,20,512)) {
@@ -979,7 +983,10 @@ RETCODE adfWriteEntryBlock(struct Volume* vol, SECTNUM nSect, struct bEntryBlock
     memcpy(buf, ent, sizeof(struct bEntryBlock));
 
 #ifdef LITT_ENDIAN
-    swapEndian(buf, SWBL_ENTRY);
+    if (nSect == vol->rootBlock)
+        swapEndian(buf, SWBL_ROOT);
+    else
+        swapEndian(buf, SWBL_ENTRY);
 #endif
     newSum = adfNormalSum(buf,20,sizeof(struct bEntryBlock));
     swLong(buf+20, newSum);

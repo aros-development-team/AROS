@@ -13,8 +13,8 @@ PREFIX     struct Device*
 adfCreateDumpDevice(char* filename, long cyl, long heads, long sec);
 PREFIX RETCODE adfCreateHdFile(struct Device* dev, char* volName, int volType);
 BOOL adfInitDumpDevice(struct Device* dev, char* name,BOOL);
-BOOL adfReadDumpSector(struct Device *dev, long n, int size, unsigned char* buf);
-BOOL adfWriteDumpSector(struct Device *dev, long n, int size, unsigned char* buf);
+BOOL adfReadDumpSector(struct Device *dev, SECTNUM n, int size, unsigned char* buf);
+BOOL adfWriteDumpSector(struct Device *dev, SECTNUM n, int size, unsigned char* buf);
 void adfReleaseDumpDevice(struct Device *dev);
 
 

@@ -6,6 +6,8 @@
  * Amiga Dump File specific routines
  */
 
+#define _FILE_OFFSET_BITS 64
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -58,7 +60,7 @@ RETCODE adfInitDumpDevice(struct Device* dev, char* name, BOOL ro)
 
     /* determines size */
     fseek(nDev->fd, 0, SEEK_END);
-	size = ftell(nDev->fd);
+    size = ftell(nDev->fd);
     fseek(nDev->fd, 0, SEEK_SET);
 
     /* Let's make some guesses about geometry...
@@ -81,13 +83,15 @@ RETCODE adfInitDumpDevice(struct Device* dev, char* name, BOOL ro)
  * adfReadDumpSector
  *
  */
-RETCODE adfReadDumpSector(struct Device *dev, long n, int size, unsigned char* buf)
+RETCODE adfReadDumpSector(struct Device *dev, SECTNUM n, int size, unsigned char* buf)
 {
     struct nativeDevice* nDev;
     int r;
-//puts("adfReadDumpSector");
+    long seek = 512 * (long)n;
+
+// printf("R 0x%08lx\n", seek);
     nDev = (struct nativeDevice*)dev->nativeDev;
-    r = fseek(nDev->fd, 512*n, SEEK_SET);
+    r = fseek(nDev->fd, seek, SEEK_SET);
 //printf("nnn=%ld size=%d\n",n,size);
     if (r==-1)
         return RC_ERROR;
@@ -106,20 +110,22 @@ RETCODE adfReadDumpSector(struct Device *dev, long n, int size, unsigned char* b
  * adfWriteDumpSector
  *
  */
-RETCODE adfWriteDumpSector(struct Device *dev, long n, int size, unsigned char* buf)
+RETCODE adfWriteDumpSector(struct Device *dev, SECTNUM n, int size, unsigned char* buf)
 {
     struct nativeDevice* nDev;
     int r;
+    long seek = 512 * (long)n;
 
     nDev = (struct nativeDevice*)dev->nativeDev;
 
-    r=fseek(nDev->fd, 512*n, SEEK_SET);
+// printf("W 0x%08lx\n", seek);
+    r=fseek(nDev->fd, seek, SEEK_SET);
     if (r==-1)
         return RC_ERROR;
 
     if ( fwrite(buf, 1, size, nDev->fd)!=(unsigned int)(size) )
         return RC_ERROR;
-//puts("adfWriteDumpSector");
+
     return RC_OK;
 }
 

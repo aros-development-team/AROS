@@ -24,6 +24,7 @@
 #endif
 
 #define BOOL    int
+#define UQUAD   uint64_t
 #define ULONG   uint32_t
 #define USHORT  uint16_t
 #define UCHAR   uint8_t

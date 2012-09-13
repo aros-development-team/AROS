@@ -53,7 +53,7 @@ RETCODE adfInstallBootBlock(struct Volume *vol, unsigned char* code)
  */
 BOOL isSectNumValid(struct Volume *vol, SECTNUM nSect)
 {
-    return( 0<=nSect && nSect<=(vol->lastBlock - vol->firstBlock) );
+    return( 0<=nSect && nSect < vol->totalBlocks);
 }	
 	
 
@@ -85,11 +85,11 @@ void adfVolumeInfo(struct Volume *vol)
 			break;
 		case DEVTYPE_HARDDISK:
 			printf ("Hard Disk partition : %3.1f KBytes\n", 
-				(vol->lastBlock - vol->firstBlock +1) * 512.0/1024.0);
+				(vol->totalBlocks) * 512.0/1024.0);
 			break;
 		case DEVTYPE_HARDFILE:
 			printf ("HardFile : %3.1f KBytes\n", 
-				(vol->lastBlock - vol->firstBlock +1) * 512.0/1024.0);
+				(vol->totalBlocks) * 512.0/1024.0);
 			break;
 		default:
 			printf ("Unknown devType!\n");
@@ -129,10 +129,9 @@ void adfVolumeInfo(struct Volume *vol)
  */
 struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
 {
-    ULONG nBlock;
     struct bRootBlock root;
-	struct bBootBlock boot;
-	struct Volume* vol;
+    struct bBootBlock boot;
+    struct Volume* vol;
 
     if (dev==NULL || nPart<nPart || nPart >= dev->nVol) {
         (*adfEnv.eFct)("adfMount : invalid parameter(s)");
@@ -140,36 +139,33 @@ struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly )
     }
 
     vol = dev->volList[nPart];
-	vol->dev = dev;
+    vol->dev = dev;
     vol->mounted = TRUE;
 
-/*printf("first=%ld last=%ld root=%ld\n",vol->firstBlock,
- vol->lastBlock, vol->rootBlock);
-*/
     if (adfReadBootBlock(vol, &boot)!=RC_OK) {
         (*adfEnv.wFct)("adfMount : BootBlock invalid");
         return NULL;
     }       
     
-	vol->dosType = boot.dosType[3];
-	if (isFFS(vol->dosType))
-		vol->datablockSize=512;
-	else
-		vol->datablockSize=488;
+    vol->dosType = boot.dosType[3];
+    if (isFFS(vol->dosType))
+        vol->datablockSize=512;
+    else
+        vol->datablockSize=488;
 
     if (dev->readOnly /*|| isDIRCACHE(vol->dosType)*/)
        vol->readOnly = TRUE;
     else
        vol->readOnly = readOnly;
-	   	
-	if (adfReadRootBlock(vol, vol->rootBlock, &root)!=RC_OK) {
+
+    vol->rootBlock = boot.rootBlock;
+
+    if (adfReadRootBlock(vol, vol->rootBlock, &root)!=RC_OK) {
         (*adfEnv.wFct)("adfMount : RootBlock invalid");       
         return NULL;
     }
 
-    nBlock = (vol->lastBlock - vol->firstBlock+1) - vol->bootBlocks;
-
-	adfReadBitmap( vol, nBlock, &root );
+    adfReadBitmap( vol, &root );
     vol->curDirPtr = vol->rootBlock;
 
 //printf("blockSize=%d\n",vol->blockSize);
@@ -206,7 +202,7 @@ void adfUnMount(struct Volume *vol)
  * 
  */
 struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len, 
-    char* volName, int volType )
+    char* volName, int dosType )
 {
     struct bBootBlock boot;
     struct bRootBlock root;
@@ -226,12 +222,10 @@ struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len,
 	
     vol->dev = dev;
     vol->firstBlock = (dev->heads * dev->sectors)*start;
-    vol->lastBlock = (vol->firstBlock + (dev->heads * dev->sectors)*len)-1;
-    vol->rootBlock = ((vol->lastBlock - vol->firstBlock+1)-1+vol->bootBlocks)/2;
-/*printf("first=%ld last=%ld root=%ld\n",vol->firstBlock,
- vol->lastBlock, vol->rootBlock);
-*/
+    vol->totalBlocks = (dev->heads * dev->sectors)*len;
+    vol->rootBlock = (vol->totalBlocks+1)/2;
     vol->curDirPtr = vol->rootBlock;
+    vol->dosType = dosType;
 
     vol->readOnly = dev->readOnly;
 
@@ -249,11 +243,7 @@ struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len,
     if (adfEnv.useProgressBar)
         (*adfEnv.progressBar)(25);
 
-    memset(&boot, 0, 1024);
-    boot.dosType[3] = (UBYTE)volType;
-/*printf("first=%d last=%d\n", vol->firstBlock, vol->lastBlock);
-printf("name=%s root=%d\n", vol->volName, vol->rootBlock);
-*/
+    memset(&boot, 0, sizeof(boot));
     if (adfWriteBootBlock(vol, &boot)!=RC_OK) {
         free(vol->volName); free(vol);
         return NULL;
@@ -274,15 +264,13 @@ printf("name=%s root=%d\n", vol->volName, vol->rootBlock);
 /*for(i=0; i<127; i++)
 printf("%3d %x, ",i,vol->bitmapTable[0]->map[i]);
 */
-    if ( isDIRCACHE(volType) )
-        adfGetFreeBlocks( vol, 2, blkList );
-    else
+    if ( isDIRCACHE(dosType) )
         adfGetFreeBlocks( vol, 1, blkList );
 
 
 /*printf("[0]=%d [1]=%d\n",blkList[0],blkList[1]);*/
 
-    memset(&root, 0, LOGICAL_BLOCK_SIZE);
+    memset(&root, 0, sizeof(root));
 
     if (strlen(volName)>MAXNAMELEN)
         volName[MAXNAMELEN]='\0';
@@ -291,16 +279,16 @@ printf("%3d %x, ",i,vol->bitmapTable[0]->map[i]);
     adfTime2AmigaTime(adfGiveCurrentTime(),&(root.coDays),&(root.coMins),&(root.coTicks));
 
     /* dircache block */
-    if ( isDIRCACHE(volType) ) {
+    if ( isDIRCACHE(dosType) ) {
         root.extension = 0L;
         root.secType = ST_ROOT; /* needed by adfCreateEmptyCache() */
-        adfCreateEmptyCache(vol, (struct bEntryBlock*)&root, blkList[1]);
+        adfCreateEmptyCache(vol, (struct bEntryBlock*)&root, blkList[0]);
     }
 
     if (adfEnv.useProgressBar)
         (*adfEnv.progressBar)(60);
 
-    if (adfWriteRootBlock(vol, blkList[0], &root)!=RC_OK) {
+    if (adfWriteRootBlock(vol, vol->rootBlock, &root)!=RC_OK) {
         free(vol->volName); free(vol);
         return NULL;
     }
@@ -348,6 +336,9 @@ adfReadBlock(struct Volume* vol, ULONG nSect, unsigned char* buf)
         return RC_ERROR;
     }
 
+    if (nSect >= vol->totalBlocks)
+        (*adfEnv.wFct)("adfReadBlock : nSect out of range");
+
     /* translate logical sect to physical sect */
     pSect = nSect+vol->firstBlock;
 
@@ -358,14 +349,14 @@ adfReadBlock(struct Volume* vol, ULONG nSect, unsigned char* buf)
 /*    sprintf(strBuf,"ReadBlock : accessing logical block #%ld", nSect);	
     (*adfEnv.vFct)(strBuf);
 */
-    if (pSect<vol->firstBlock || pSect>vol->lastBlock) {
-        (*adfEnv.wFct)("adfReadBlock : nSect out of range");
-        
-    }
 //printf("pSect R =%ld\n",pSect);
     nFct = adfEnv.nativeFct;
-    rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
+    if (vol->dev->isNativeDev)
+        rc = (*nFct->adfNativeReadSector)(vol->dev, pSect, 512, buf);
+    else
+        rc = adfReadDumpSector(vol->dev, pSect, 512, buf);
 //printf("rc=%ld\n",rc);
+
     if (rc!=RC_OK) {
         (*adfEnv.wFct)("adfReadBlock : Can't read sector");
         return RC_ERROR;
@@ -394,19 +385,21 @@ RETCODE adfWriteBlock(struct Volume* vol, ULONG nSect, unsigned char *buf)
         return RC_ERROR;
     }
 
+    if (nSect >= vol->totalBlocks) {
+        (*adfEnv.wFct)("adfWriteBlock : nSect out of range");
+    }
+
     pSect = nSect+vol->firstBlock;
 //printf("write nsect=%ld psect=%ld\n",nSect,pSect);
 
     if (adfEnv.useRWAccess)
         (*adfEnv.rwhAccess)(pSect,nSect,TRUE);
  
-    if (pSect<vol->firstBlock || pSect>vol->lastBlock) {
-        (*adfEnv.wFct)("adfWriteBlock : nSect out of range");
-    }
-
     nFct = adfEnv.nativeFct;
-//printf("nativ=%d\n",vol->dev->isNativeDev);
-    rc = (*nFct->adfNativeWriteSector)(vol->dev, pSect, 512, buf);
+    if (vol->dev->isNativeDev)
+        rc = (*nFct->adfNativeWriteSector)(vol->dev, pSect, 512, buf);
+    else
+        rc = adfWriteDumpSector(vol->dev, pSect, 512, buf);
 
     if (rc!=RC_OK)
         return RC_ERROR;

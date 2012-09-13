@@ -144,16 +144,16 @@ RETCODE adfWriteRootBlock(struct Volume* vol, ULONG nSect, struct bRootBlock* ro
     root->secType = ST_ROOT;
 
     memcpy(buf, root, LOGICAL_BLOCK_SIZE);
+
 #ifdef LITT_ENDIAN
     swapEndian(buf, SWBL_ROOT);
 #endif
 
-	newSum = adfNormalSum(buf,20,LOGICAL_BLOCK_SIZE);
+    newSum = adfNormalSum(buf,20,LOGICAL_BLOCK_SIZE);
     swLong(buf+20, newSum);
-//	*(ULONG*)(buf+20) = swapLong((unsigned char*)&newSum);
 
-// 	dumpBlock(buf);
-	if (adfWriteBlock(vol, nSect, buf)!=RC_OK)
+// dumpBlock(buf);
+    if (adfWriteBlock(vol, nSect, buf)!=RC_OK)
         return RC_ERROR;
 //printf("adfWriteRootBlock %ld\n",nSect);
     return RC_OK;
@@ -209,7 +209,11 @@ adfWriteBootBlock(struct Volume* vol, struct bBootBlock* boot)
     boot->dosType[0] = 'D';
     boot->dosType[1] = 'O';
     boot->dosType[2] = 'S';
-	memcpy(buf, boot, LOGICAL_BLOCK_SIZE*2);
+    boot->dosType[3] = vol->dosType;
+
+    boot->rootBlock = vol->rootBlock;
+
+    memcpy(buf, boot, LOGICAL_BLOCK_SIZE*2);
 #ifdef LITT_ENDIAN
     swapEndian(buf, SWBL_BOOTBLOCK);
 #endif

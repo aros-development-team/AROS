@@ -18,7 +18,7 @@ RETCODE adfWriteBitmapExtBlock(struct Volume*, SECTNUM, struct bBitmapExtBlock* 
 SECTNUM adfGet1FreeBlock(struct Volume *vol);
 RETCODE adfUpdateBitmap(struct Volume *vol);
 PREFIX uint32_t adfCountFreeBlocks(struct Volume* vol);
-RETCODE adfReadBitmap(struct Volume* , SECTNUM nBlock, struct bRootBlock* root);
+RETCODE adfReadBitmap(struct Volume* , struct bRootBlock* root);
 BOOL adfIsBlockFree(struct Volume* vol, SECTNUM nSect);
 void adfSetBlockFree(struct Volume* vol, SECTNUM nSect);
 void adfSetBlockUsed(struct Volume* vol, SECTNUM nSect);
