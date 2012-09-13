@@ -21,20 +21,6 @@
 #include "rdb.h"
 #include "dos.h"
 
-typedef struct {
-    int (*load_file) (void *this, char *filename, void *buffer);
-    void (*destroy) (void *this);
-    struct RdbPartition *partition;
-    char *buff;
-    uint32_t rootblock;
-    uint32_t blocksize;
-    int      capabilities;
-} dos_boot_dev_t;
-
-#define isDIRCACHE(self) ((self)->capabilities & 4) 
-#define isINTL(self)     ((self)->capabilities & 2)
-#define isFFS(self)      ((self)->capabilities & 1)
-
 #define DOS_ID  (('D' << 24) | ('O' << 16) | ('S' << 8))
 
 struct DosBootBlock {
@@ -123,7 +109,34 @@ struct DosFileBlock {
     uint32_t    sub_type;
 };
 
+struct DosDataBlock {
+    uint32_t    type;
+    uint32_t    header_key;
+    uint32_t    seq_num;
+    uint32_t    data_size;      /* in bytes */
+    uint32_t    next_data;
+    uint32_t    check_sum;
+    uint8_t     data[];
+};
+
 #define DFB(buf)        ((struct DosFileBlock *)(buf))
+
+typedef struct {
+    int (*load_file) (void *this, char *filename, void *buffer);
+    void (*destroy) (void *this);
+    struct RdbPartition *partition;
+    char *buff;
+    struct DosDataBlock *data;
+    uint32_t rootblock;
+    uint32_t blocksize;
+    int      capabilities;
+} dos_boot_dev_t;
+
+#define isDIRCACHE(self) ((self)->capabilities & 4) 
+#define isINTL(self)     ((self)->capabilities & 2)
+#define isFFS(self)      ((self)->capabilities & 1)
+#define isOFS(self)      (!isFFS(self))
+
 
 static int dos_loadsector(dos_boot_dev_t *self, uint32_t block, void *buffer)
 {
@@ -194,6 +207,8 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
     strncpy(path, filename, sizeof(path));
     path[sizeof(path)-1] = 0;
 
+    printf("Load %s -> 0x%lx\n", filename, (unsigned long)filebuffer);
+
     dp = path;
 
     buff = self->buff;
@@ -235,32 +250,42 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
 
         /* Header is in 'buff' at this point */
         if (DDB(buff)->sub_type == ST_FILE) {
-            int total, size, block, blocks;
+            int total = 0, size, block;
             if (fp != NULL) {
                 printf(".. was expecting a directory\n");
                 return -1;
             }
-            total = size = DFB(buff)->byte_size;
+            size = DFB(buff)->byte_size;
+
+            printf(".. %lu bytes\n", (unsigned long)size);
 
             if (filebuffer == NULL)
-                return total;
+                return size;
 
-            sector = DFB(buff)->first_data;
+            for (block = 0; size > 0; block++) {
+                int tocopy;
+                void *data;
 
-            /* FIXME: OFS support - this code is FFS only! */
-            dos_loadsector(self, sector, filebuffer);
-            filebuffer += self->blocksize;
-            size -= self->blocksize;
-
-            blocks = (size + self->blocksize - 1) / self->blocksize;
-            for (block = 0; block < blocks; block++) {
                 if (block == MAX_DATABLK) {
-                    blocks -= MAX_DATABLK;
                     block = 0;
                     dos_loadsector(self, DFB(buff)->extension, buff);
                 }
-                dos_loadsector(self, DFB(buff)->data_blocks[(MAX_DATABLK - 1) - block], filebuffer);
-                filebuffer += self->blocksize;
+
+                dos_loadsector(self, DFB(buff)->data_blocks[(MAX_DATABLK - 1) - block], self->data);
+
+                if (isOFS(self)) {
+                    tocopy = (size > self->data->data_size) ? self->data->data_size : size;
+                    data = &self->data->data[0];
+
+                } else {
+                    tocopy = (size > self->blocksize) ? self->blocksize : size;
+                    data = self->data;
+                }
+
+                memcpy(filebuffer, data, tocopy);
+                filebuffer += tocopy;
+                size -= tocopy;
+                total += tocopy;
             }
             return total;
         }
@@ -278,7 +303,6 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
 
 static int dos_destroy(dos_boot_dev_t * this)
 {
-    free(this->buff);
     free(this);
 
     return 0;
@@ -290,21 +314,28 @@ boot_dev_t *dos_create(struct RdbPartition *partition)
     dos_boot_dev_t *boot;
     void *buffer;
 
+    boot = malloc(sizeof(dos_boot_dev_t) + partition->info->blksz * 2);
+    if (boot == NULL) {
+        printf("** dos_create: out of memory\n");
+        return NULL;
+    }
 
-    boot = malloc(sizeof(dos_boot_dev_t));
     boot->partition = partition;
 
-    boot->buff = buffer = malloc(64 * 512);
+    boot->buff = (void *)&boot[1];
+    boot->data = (void *)(boot->buff + partition->info->blksz);
+
+    buffer = boot->buff;
     loadsector(boot->partition->info->start, boot->partition->info->blksz, 
-           16, buffer);
+           1, buffer);
     if ((DBB(buffer)->id & 0xffffff00) != DOS_ID) {
         printf("** Bad dos partition or disk - %d:%d **\n",
                boot->partition->disk, boot->partition->partition);
-        free(buffer);
         free(boot);
         return NULL;
     }
 
+    boot->capabilities = ((uint8_t *)buffer)[3];
     boot->rootblock = (boot->partition->info->size+1)/2;
     boot->blocksize = boot->partition->info->blksz;
 
@@ -315,12 +346,11 @@ boot_dev_t *dos_create(struct RdbPartition *partition)
     if (DDB(buffer)->type != T_HEADER || DDB(buffer)->sub_type != ST_ROOT) {
         printf("** Root node not found - %d:%d **\n",
                boot->partition->disk, boot->partition->partition);
-        free(buffer);
         free(boot);
         return NULL;
     }
 
-    printf("Found dos partition! Name: %*s\n",
+    printf("Found DOS\\%2x partition! Name: %*s\n", boot->capabilities,
            DDB(buffer)->name_len, (char *)DDB(buffer)->name);
 
     boot->load_file = (int (*)(void *, char *, void *))dos_loadfile;
