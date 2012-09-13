@@ -19,9 +19,9 @@ struct Volume {
     struct Device* dev;
 
     SECTNUM firstBlock;     /* first block of data area (from beginning of device) */
-    SECTNUM lastBlock;      /* last block of data area  (from beginning of device) */
+    ULONG totalBlocks;    /* number of blocks in data area */
     SECTNUM rootBlock;      /* root block (from firstBlock) */
-    int bootBlocks;         /* boot blocks */
+    ULONG reservedBlocks;     /* reserved blocks */
 
     char dosType;           /* FFS/OFS, DIRCACHE, INTERNATIONAL */
     BOOL bootCode;
@@ -37,6 +37,7 @@ struct Volume {
     SECTNUM *bitmapBlocks;       /* bitmap blocks pointers */
     struct bBitmapBlock **bitmapTable;
     BOOL *bitmapBlocksChg;
+    SECTNUM lastAlloc;          /* last allocated block */
 
     SECTNUM curDirPtr;
 };
@@ -59,7 +60,7 @@ struct Partition {
 struct Device {
     int   devType;               /* see below */
     BOOL  readOnly;
-    ULONG size;                  /* in bytes */
+    UQUAD size;                  /* in bytes */
 
     int   nVol;                  /* partitions */
     struct Volume** volList;  

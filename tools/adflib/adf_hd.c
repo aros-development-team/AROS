@@ -85,12 +85,12 @@ void adfDeviceInfo(struct Device *dev)
         if (dev->volList[i]->volName)
             printf("%2d :  %7ld ->%7ld, \"%s\"", i,
             (long)dev->volList[i]->firstBlock,
-            (long)dev->volList[i]->lastBlock,
+            (long)dev->volList[i]->firstBlock + dev->volList[i]->totalBlocks - 1,
             dev->volList[i]->volName);
         else
             printf("%2d :  %7ld ->%7ld\n", i,
             (long)dev->volList[i]->firstBlock,
-            (long)dev->volList[i]->lastBlock);
+            (long)dev->volList[i]->firstBlock + dev->volList[i]->totalBlocks - 1);
         if (dev->volList[i]->mounted)
             printf(", mounted");
         putchar('\n');
@@ -153,11 +153,11 @@ RETCODE adfMountHdFile(struct Device *dev)
     dev->sectors = 1;
 
     vol->firstBlock = 0;
-    vol->bootBlocks = 2;
+    vol->reservedBlocks = 2;
 
     size = dev->size + 512-(dev->size%512);
 //printf("size=%ld\n",size);
-    vol->rootBlock = ((size/512)-1+vol->bootBlocks)/2;
+    vol->rootBlock = ((size/512)-1+vol->reservedBlocks)/2;
 //printf("root=%ld\n",vol->rootBlock);
     do {
         adfReadDumpSector(dev, vol->rootBlock, 512, buf);
@@ -170,7 +170,7 @@ RETCODE adfMountHdFile(struct Device *dev)
         (*adfEnv.eFct)("adfMountHdFile : rootblock not found");
         return RC_ERROR;
     }
-    vol->lastBlock = vol->rootBlock*2 - 1 ;
+    vol->totalBlocks = vol->rootBlock*2;
 
     return RC_OK;
 }
@@ -224,10 +224,10 @@ RETCODE adfMountHd(struct Device *dev)
         dev->nVol++;
 
         vol->firstBlock = rdsk.cylBlocks * part.lowCyl;
-        vol->lastBlock = (part.highCyl+1)*rdsk.cylBlocks -1 ;
-        vol->rootBlock = (vol->lastBlock - vol->firstBlock+1)/2;
+        vol->totalBlocks = (part.highCyl - part.lowCyl + 1)*rdsk.cylBlocks;
+        vol->rootBlock = (vol->totalBlocks + 1)/2;
         vol->blockSize = part.blockSize*4;
-        vol->bootBlocks = part.bootBlocks;
+        vol->reservedBlocks = part.dosReserved;
 
         len = min(31, part.nameLen);
         vol->volName = (char*)malloc(len+1);
@@ -323,8 +323,8 @@ RETCODE adfMountFlop(struct Device* dev)
 
     vol->mounted = TRUE;
     vol->firstBlock = 0;
-    vol->lastBlock =(dev->cylinders * dev->heads * dev->sectors)-1;
-    vol->rootBlock = (vol->lastBlock+1 - vol->firstBlock)/2;
+    vol->totalBlocks =(dev->cylinders * dev->heads * dev->sectors);
+    vol->rootBlock = (vol->totalBlocks+1)/2;
     vol->blockSize = 512;
     vol->dev = dev;
  
@@ -586,11 +586,6 @@ RETCODE adfCreateHd(struct Device* dev, int n, struct Partition** partList )
         dev->volList[i]->blockSize = 512;
     }
     dev->nVol = n;
-/*
-vol=dev->volList[0];
-printf("0first=%ld last=%ld root=%ld\n",vol->firstBlock,
- vol->lastBlock, vol->rootBlock);
-*/
 
     if (adfCreateHdHeader(dev, n, partList )!=RC_OK)
         return RC_ERROR;

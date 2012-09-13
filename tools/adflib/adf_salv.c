@@ -61,7 +61,7 @@ struct List* adfGetDelEnt(struct Volume *vol)
     list = head = NULL;
     block = NULL;
     delEnt = TRUE;
-    for(i=vol->firstBlock; i<=vol->lastBlock; i++) {
+    for(i=0; i < vol->totalBlocks; i++) {
         if (adfIsBlockFree(vol, i)) {
             if (delEnt) {
                 block = (struct GenBlock*)malloc(sizeof(struct GenBlock));

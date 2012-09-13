@@ -290,6 +290,8 @@ struct File* adfOpenFile(struct Volume *vol, char* name, char *mode)
         free(file->fileHdr); free(file); return NULL; 
     }
 
+    memset(file->currentData, 0xff, 512);
+
     file->volume = vol;
     file->pos = 0;
     file->posInExtBlk = 0;
@@ -574,7 +576,7 @@ SECTNUM adfCreateNextFileBlock(struct File* file)
         }
         /* initialize a new data block */
         for(i=0; i<(int)blockSize; i++)
-            data->data[i]=0;
+            data->data[i]=~0;
         data->seqNum = file->nDataBlock+1;
         data->dataSize = blockSize;
         data->nextData = 0L;
@@ -584,7 +586,7 @@ SECTNUM adfCreateNextFileBlock(struct File* file)
         if (file->pos>=blockSize) {
             adfWriteDataBlock(file->volume, file->curDataPtr, file->currentData);
 //printf ("writedata=%d\n",file->curDataPtr);
-            memset(file->currentData,0,512);
+            memset(file->currentData,0xff,512);
         }
             
 //printf("datablk=%d\n",nSect);
