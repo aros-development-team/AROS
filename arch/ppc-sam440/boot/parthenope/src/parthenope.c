@@ -351,11 +351,11 @@ int __startup bootstrap(context_t * ctx)
 						  entry->partition);
 		if(partition == NULL)
 			break;
-		boot = ext2_create(partition);
+		boot = dos_create(partition);
 		if (boot == NULL)
 		    boot = sfs_create(partition);
 		if (boot == NULL)
-		    boot = dos_create(partition);
+		    boot = ext2_create(partition);
 	}
 		break;
 	case TFTP_TYPE:
