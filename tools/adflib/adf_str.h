@@ -21,6 +21,7 @@ struct Volume {
     SECTNUM firstBlock;     /* first block of data area (from beginning of device) */
     SECTNUM lastBlock;      /* last block of data area  (from beginning of device) */
     SECTNUM rootBlock;      /* root block (from firstBlock) */
+    int bootBlocks;         /* boot blocks */
 
     char dosType;           /* FFS/OFS, DIRCACHE, INTERNATIONAL */
     BOOL bootCode;

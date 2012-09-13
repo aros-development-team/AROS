@@ -112,7 +112,10 @@ struct bPARTblock {
 /*0b8*/ ULONG   mask;
 /*0bc*/ ULONG   bootPri;
 /*0c0*/ char    dosType[4];
-/*0c4*/ ULONG   r3[15];
+/*0c4*/ ULONG   baud;
+/*0c8*/ ULONG   control;
+/*0cc*/ ULONG   bootBlocks;
+/*0d0*/ ULONG   r3[12];
 };
 
 

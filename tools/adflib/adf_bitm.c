@@ -62,7 +62,7 @@ ULONG adfCountFreeBlocks(struct Volume* vol)
     int j;
 
 	freeBlocks = 0L;
-    for(j=vol->firstBlock+2; j<=(vol->lastBlock - vol->firstBlock); j++)
+    for(j=vol->firstBlock+vol->bootBlocks; j<=(vol->lastBlock - vol->firstBlock); j++)
         if ( adfIsBlockFree(vol,j) )
             freeBlocks++;
 
@@ -163,7 +163,7 @@ RETCODE adfReadBitmap(struct Volume* vol, SECTNUM nBlock, struct bRootBlock* roo
  */
 BOOL adfIsBlockFree(struct Volume* vol, SECTNUM nSect)
 {
-    int sectOfMap = nSect-2;
+    int sectOfMap = nSect-vol->bootBlocks;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
 
@@ -178,7 +178,7 @@ BOOL adfIsBlockFree(struct Volume* vol, SECTNUM nSect)
  */
 void adfSetBlockFree(struct Volume* vol, SECTNUM nSect)
 {
-    int sectOfMap = nSect-2;
+    int sectOfMap = nSect-vol->bootBlocks;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
 
@@ -195,7 +195,7 @@ void adfSetBlockFree(struct Volume* vol, SECTNUM nSect)
  */
 void adfSetBlockUsed(struct Volume* vol, SECTNUM nSect)
 {
-    int sectOfMap = nSect-2;
+    int sectOfMap = nSect-vol->bootBlocks;
     int block = sectOfMap/(127*32);
     int indexInMap = (sectOfMap/32)%127;
 
@@ -235,10 +235,8 @@ BOOL adfGetFreeBlocks(struct Volume* vol, int nbSect, SECTNUM* sectList)
             sectList[i] = block;
 			i++;
         }
-/*        if ( block==vol->lastBlock )
-            block = vol->firstBlock+2;*/
         if ( (block+vol->firstBlock)==vol->lastBlock )
-            block = 2;
+            block = vol->bootBlocks;
         else
         {
             block++;
@@ -265,7 +263,7 @@ RETCODE adfCreateBitmap(struct Volume *vol)
     ULONG nBlock, mapSize ;
     int i, j;
 
-    nBlock = vol->lastBlock - vol->firstBlock +1 - 2;
+    nBlock = vol->lastBlock - vol->firstBlock +1 - vol->bootBlocks;
 
     mapSize = nBlock / (127*32);
     if ( (nBlock%(127*32))!=0 )
@@ -304,7 +302,7 @@ RETCODE adfCreateBitmap(struct Volume *vol)
         }
     }
 
-    for(i=2; i<=(vol->lastBlock - vol->firstBlock); i++)
+    for(i=vol->bootBlocks; i < nBlock; i++)
         adfSetBlockFree(vol, i);
 
     return RC_OK;
