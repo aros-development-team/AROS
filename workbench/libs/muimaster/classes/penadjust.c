@@ -33,70 +33,71 @@
 extern struct Library *MUIMasterBase;
 
 static void UpdateState(Object *obj, struct Penadjust_DATA *data)
-{  
+{
     zune_pen_spec_to_intern(&data->penspec, &data->intpenspec);
 
-    switch(data->intpenspec.p_type)
+    switch (data->intpenspec.p_type)
     {
-    	case PST_MUI:
-	    set(data->listobj, MUIA_List_Active, data->intpenspec.p_mui);
-	    set(obj, MUIA_Group_ActivePage, 0);
-	    break;
-	    
-    	case PST_CMAP:
-	    set(data->sliderobj, MUIA_Numeric_Value, data->intpenspec.p_cmap);
-	    set(obj, MUIA_Group_ActivePage, 1);
-	    break;
-	    
-    	case PST_RGB:
-	    set(data->coloradjobj, MUIA_Coloradjust_RGB, (IPTR) &data->intpenspec.p_rgb);
-	    set(obj, MUIA_Group_ActivePage, 2);
-	    break;
+    case PST_MUI:
+        set(data->listobj, MUIA_List_Active, data->intpenspec.p_mui);
+        set(obj, MUIA_Group_ActivePage, 0);
+        break;
 
-	case PST_SYS:
-	    break;
-    }  
+    case PST_CMAP:
+        set(data->sliderobj, MUIA_Numeric_Value, data->intpenspec.p_cmap);
+        set(obj, MUIA_Group_ActivePage, 1);
+        break;
+
+    case PST_RGB:
+        set(data->coloradjobj, MUIA_Coloradjust_RGB,
+            (IPTR) & data->intpenspec.p_rgb);
+        set(obj, MUIA_Group_ActivePage, 2);
+        break;
+
+    case PST_SYS:
+        break;
+    }
 }
 
 static void UpdatePenspec(Object *obj, struct Penadjust_DATA *data)
 {
-    IPTR    	    	      val;
+    IPTR val;
 
     val = 0;
     get(obj, MUIA_Group_ActivePage, &val);
 
-    switch(val)
+    switch (val)
     {
-    	case 0:
-	    data->intpenspec.p_type = PST_MUI;
+    case 0:
+        data->intpenspec.p_type = PST_MUI;
 
-	    val = 0;
-	    get(data->listobj, MUIA_List_Active, &val);
-	    data->intpenspec.p_mui = (LONG)val;
-	    break;
-	    
-	case 1:
-	    data->intpenspec.p_type = PST_CMAP;
+        val = 0;
+        get(data->listobj, MUIA_List_Active, &val);
+        data->intpenspec.p_mui = (LONG) val;
+        break;
 
-	    val = 0;
-	    get(data->sliderobj, MUIA_Numeric_Value, &val);
-	    data->intpenspec.p_cmap = (LONG)val;
-	    break;
-	    
-	case 2:
-	    data->intpenspec.p_type = PST_RGB;
-	    
-	    val = 0;
-	    get(data->coloradjobj, MUIA_Coloradjust_Red, &val);
-	    data->intpenspec.p_rgb.red = (ULONG)val;
-	    val = 0;
-	    get(data->coloradjobj, MUIA_Coloradjust_Green, &val);
-	    data->intpenspec.p_rgb.green = (ULONG)val;
-	    val = 0;
-	    get(data->coloradjobj, MUIA_Coloradjust_Blue, &val);
-	    data->intpenspec.p_rgb.blue = (ULONG)val;
+    case 1:
+        data->intpenspec.p_type = PST_CMAP;
+
+        val = 0;
+        get(data->sliderobj, MUIA_Numeric_Value, &val);
+        data->intpenspec.p_cmap = (LONG) val;
+        break;
+
+    case 2:
+        data->intpenspec.p_type = PST_RGB;
+
+        val = 0;
+        get(data->coloradjobj, MUIA_Coloradjust_Red, &val);
+        data->intpenspec.p_rgb.red = (ULONG) val;
+        val = 0;
+        get(data->coloradjobj, MUIA_Coloradjust_Green, &val);
+        data->intpenspec.p_rgb.green = (ULONG) val;
+        val = 0;
+        get(data->coloradjobj, MUIA_Coloradjust_Blue, &val);
+        data->intpenspec.p_rgb.blue = (ULONG) val;
     }
-    
+
     zune_pen_intern_to_spec(&data->intpenspec, &data->penspec);
 
     D(bug(" ## penspec now %s\n", &data->penspec));
@@ -107,9 +108,9 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
     LONG line;
     static char buf[16];
 
-    line = (SIPTR)array[-1];
+    line = (SIPTR) array[-1];
     if (line < 0 || line > 7)
-	line = 0;
+        line = 0;
     snprintf(buf, sizeof(buf), "\033I[2:m%d]", (int)line);
 
     *array++ = buf;
@@ -121,104 +122,110 @@ static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
 
 IPTR Penadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    static const char * const register_labels[]  = {"MUI", "Colormap", "RGB", NULL};
-    static const char * const lv_labels[]        = {"Shine", "Halfshine", "Background", "Halfshadow", "Shadow", "Text", "Fill", "Mark", NULL};
-    static const struct Hook muipen_display_hook = { {NULL, NULL}, HookEntry,  MuipenDisplayFunc, NULL };
+    static const char *const register_labels[] =
+        { "MUI", "Colormap", "RGB", NULL };
+    static const char *const lv_labels[] =
+        { "Shine", "Halfshine", "Background", "Halfshadow", "Shadow",
+            "Text", "Fill", "Mark", NULL };
+    static const struct Hook muipen_display_hook =
+        { {NULL, NULL}, HookEntry, MuipenDisplayFunc, NULL };
 
-    struct Penadjust_DATA   *data;
-    struct TagItem          *tags;
-    struct TagItem  	       *tag;
-    Object  	    	       *listobj, *sliderobj, *coloradjobj;
+    struct Penadjust_DATA *data;
+    struct TagItem *tags;
+    struct TagItem *tag;
+    Object *listobj, *sliderobj, *coloradjobj;
 
     obj = (Object *) DoSuperNewTags
     (
         cl, obj, NULL,
-    	
+            
         MUIA_Register_Titles, (IPTR) register_labels,
-	Child, (IPTR) ListviewObject,
+        Child, (IPTR) ListviewObject,
             MUIA_Listview_List, (IPTR) (listobj = (Object *)ListObject,
                 InputListFrame,
-	        MUIA_List_SourceArray, (IPTR) lv_labels,
-	        MUIA_List_Format,      (IPTR) ",,",
-	        MUIA_List_DisplayHook, (IPTR) &muipen_display_hook,
+                MUIA_List_SourceArray, (IPTR) lv_labels,
+                MUIA_List_Format,      (IPTR) ",,",
+                MUIA_List_DisplayHook, (IPTR) &muipen_display_hook,
             End),
         End,
-	Child, (IPTR) (sliderobj = (Object *)SliderObject,
-	    MUIA_Slider_Horiz, TRUE,
-	    MUIA_Numeric_Min,  -128,
-	    MUIA_Numeric_Max,  127,
+        Child, (IPTR) (sliderobj = (Object *)SliderObject,
+            MUIA_Slider_Horiz, TRUE,
+            MUIA_Numeric_Min,  -128,
+            MUIA_Numeric_Max,  127,
         End),  
-	Child, (IPTR) (coloradjobj = (Object *)ColoradjustObject, End),
-	
+        Child, (IPTR) (coloradjobj = (Object *)ColoradjustObject, End),
+        
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
-    if (!obj) return FALSE;
+    if (!obj)
+        return FALSE;
 
     data = INST_DATA(cl, obj);
 
-    data->listobj   	= listobj;
-    data->sliderobj 	= sliderobj;
-    data->coloradjobj 	= coloradjobj;
-    
+    data->listobj = listobj;
+    data->sliderobj = sliderobj;
+    data->coloradjobj = coloradjobj;
+
     strcpy(data->penspec.ps_buf, "m5");
-    
+
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
-	switch (tag->ti_Tag)
-	{
-	    case MUIA_Penadjust_Spec:
-	    	data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
-		break;		
-   	}
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Penadjust_Spec:
+            data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
+            break;
+        }
     }
-        
+
     UpdateState(obj, data);
 
-    return (IPTR)obj;
+    return (IPTR) obj;
 }
 
 IPTR Penadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem     *tags;
-    struct TagItem  	     *tag;
+    struct TagItem *tags;
+    struct TagItem *tag;
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
-    BOOL    	    	      update = FALSE;
-    
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    BOOL update = FALSE;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
-	switch (tag->ti_Tag)
-	{
-	    case MUIA_Penadjust_Spec:
-	    	data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
-		update = TRUE;
-		break;
- 	}
+        switch (tag->ti_Tag)
+        {
+        case MUIA_Penadjust_Spec:
+            data->penspec = *(struct MUI_PenSpec *)tag->ti_Data;
+            update = TRUE;
+            break;
+        }
     }
 
-    if (update) UpdateState(obj, data);
-    
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    if (update)
+        UpdateState(obj, data);
+
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 IPTR Penadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Penadjust_DATA *data = INST_DATA(cl, obj);
-    IPTR    	    	     *store = msg->opg_Storage;
+    IPTR *store = msg->opg_Storage;
 
-    switch(msg->opg_AttrID)
+    switch (msg->opg_AttrID)
     {
-    	case MUIA_Penadjust_Spec:
-	    UpdatePenspec(obj, data);
-	    *store = (IPTR)&data->penspec;
-	    break;
-	    
-	default:
-    	    return DoSuperMethodA(cl, obj, (Msg) msg);
-	
+    case MUIA_Penadjust_Spec:
+        UpdatePenspec(obj, data);
+        *store = (IPTR) & data->penspec;
+        break;
+
+    default:
+        return DoSuperMethodA(cl, obj, (Msg) msg);
+
     }
-    
+
     return TRUE;
 }
 
@@ -227,19 +234,23 @@ BOOPSI_DISPATCHER(IPTR, Penadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Penadjust__OM_NEW(cl, obj, (struct opSet *)msg);
-	case OM_SET: return Penadjust__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Penadjust__OM_GET(cl,obj,(APTR)msg);
-        default:     return DoSuperMethodA(cl, obj, msg);
-    }    
+    case OM_NEW:
+        return Penadjust__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_SET:
+        return Penadjust__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Penadjust__OM_GET(cl, obj, (APTR) msg);
+    default:
+        return DoSuperMethodA(cl, obj, msg);
+    }
 }
 BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Penadjust_desc =
-{ 
-    MUIC_Penadjust, 
+{
+    MUIC_Penadjust,
     MUIC_Register,
-    sizeof(struct Penadjust_DATA), 
-    (void*)Penadjust_Dispatcher 
+    sizeof(struct Penadjust_DATA),
+    (void *) Penadjust_Dispatcher
 };
 #endif /* ZUNE_BUILTIN_PENADJUST */

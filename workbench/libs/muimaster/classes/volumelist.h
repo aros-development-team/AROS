@@ -10,8 +10,8 @@
 #define MUIC_Volumelist              "Volumelist.mui"
 
 /*** Identifier base (for Zune extensions) **********************************/
-#define MUIB_Volumelist              (MUIB_ZUNE | 0x1600)  
+#define MUIB_Volumelist              (MUIB_ZUNE | 0x1600)
 
-extern const struct __MUIBuiltinClass _MUI_Volumelist_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Volumelist_desc;     /* PRIV */
 
 #endif /* _MUI_CLASSES_VOLUMELIST_H */

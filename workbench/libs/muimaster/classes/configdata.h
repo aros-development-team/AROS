@@ -14,34 +14,34 @@
 
 /* The config items for MUIM_GetConfigItem */
 #define MUICFG_Invalid                  (-1)
-#define MUICFG_Window_Spacing_Left      0x01  /* ULONG, horiz pixels (def=4) */
-#define MUICFG_Window_Spacing_Right     0x02  /* ULONG, horiz pixels (def=4) */
-#define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def=3) */
-#define MUICFG_Window_Spacing_Bottom    0x04  /* ULONG, vert pixels (def=3) */
-#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def=4) */
-#define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def=1) */
-#define MUICFG_Group_HSpacing           0x07  /* ULONG, horiz pixels (def=6) */
-#define MUICFG_Group_VSpacing           0x08  /* ULONG, vertical pixels (def=3) */
-#define MUICFG_Scrollbar_Arrangement    0x09  /* ULONG, top = 0 (def), middle, bottom */
-#define MUICFG_Listview_Refresh         0x0a  /* ULONG, linear, mixed = 1 (def) */
-#define MUICFG_Listview_Font_Leading    0x0b  /* ULONG, vertical pixels (def=1) */
-#define MUICFG_Listview_SmoothVal       0x0c  /* ULONG, ? (def=0) */
-#define MUICFG_Listview_Multi           0x0d  /* ULONG, shifted = 0 (def), always */
-#define MUICFG_GroupTitle_Position      0x0f  /* ULONG, 1=centered */
-#define MUICFG_GroupTitle_Color         0x10  /* ULONG, 0=normal */
-#define MUICFG_Cycle_MenuCtrl_Level     0x11  /* ULONG, num of entries (def=2) */
-#define MUICFG_Cycle_MenuCtrl_Position  0x12  /* ULONG, below = 0 (def), on active */
+#define MUICFG_Window_Spacing_Left      0x01    /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Window_Spacing_Right     0x02    /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Window_Spacing_Top       0x03    /* ULONG, vert pixels (def=3) */
+#define MUICFG_Window_Spacing_Bottom    0x04    /* ULONG, vert pixels (def=3) */
+#define MUICFG_Radio_HSpacing           0x05    /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Radio_VSpacing           0x06    /* ULONG, vertical pixels (def=1) */
+#define MUICFG_Group_HSpacing           0x07    /* ULONG, horiz pixels (def=6) */
+#define MUICFG_Group_VSpacing           0x08    /* ULONG, vertical pixels (def=3) */
+#define MUICFG_Scrollbar_Arrangement    0x09    /* ULONG, top = 0 (def), middle, bottom */
+#define MUICFG_Listview_Refresh         0x0a    /* ULONG, linear, mixed = 1 (def) */
+#define MUICFG_Listview_Font_Leading    0x0b    /* ULONG, vertical pixels (def=1) */
+#define MUICFG_Listview_SmoothVal       0x0c    /* ULONG, ? (def=0) */
+#define MUICFG_Listview_Multi           0x0d    /* ULONG, shifted = 0 (def), always */
+#define MUICFG_GroupTitle_Position      0x0f    /* ULONG, 1=centered */
+#define MUICFG_GroupTitle_Color         0x10    /* ULONG, 0=normal */
+#define MUICFG_Cycle_MenuCtrl_Level     0x11    /* ULONG, num of entries (def=2) */
+#define MUICFG_Cycle_MenuCtrl_Position  0x12    /* ULONG, below = 0 (def), on active */
 #define MUICFG_Frame_Drag               0x18
-#define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, false = 0 (def), true */
-#define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def=0) */
-#define MUICFG_Listview_Smoothed        0x1b  /* ULONG, false = 0 (def), true */
-#define MUICFG_Window_Redraw            0x1d  /* ULONG, no clear, clear = 1 (def) */
+#define MUICFG_Cycle_Menu_Recessed      0x19    /* ULONG, false = 0 (def), true */
+#define MUICFG_Cycle_MenuCtrl_Speed     0x1a    /* ULONG, num of ticks (0..50) (def=0) */
+#define MUICFG_Listview_Smoothed        0x1b    /* ULONG, false = 0 (def), true */
+#define MUICFG_Window_Redraw            0x1d    /* ULONG, no clear, clear = 1 (def) */
 #define MUICFG_Font_Normal              0x1e
 #define MUICFG_Font_List                0x1f
 #define MUICFG_Font_Tiny                0x20
 #define MUICFG_Font_Fixed               0x21
 #define MUICFG_Font_Title               0x22
-#define MUICFG_Font_Big	                0x23
+#define MUICFG_Font_Big                 0x23
 #define MUICFG_PublicScreen             0x24
 #define MUICFG_Frame_Button             0x2b
 #define MUICFG_Frame_ImageButton        0x2c
@@ -118,30 +118,30 @@
 #define MUICFG_Keyboard_Help            0x73
 #define MUICFG_Keyboard_Popup           0x74
 #define MUICFG_Window_Positions         0x7a
-#define MUICFG_Balance_Look             0x7b /* ULONG, frame = 0 (def), object */
+#define MUICFG_Balance_Look             0x7b    /* ULONG, frame = 0 (def), object */
 #define MUICFG_Font_Button              0x80
-#define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (def), newlook, custom */
+#define MUICFG_Scrollbar_Type           0x83    /* ULONG, standard = 0 (def), newlook, custom */
 #define MUICFG_String_Background        0x84
 #define MUICFG_String_Text              0x85
 #define MUICFG_String_ActiveBackground  0x86
 #define MUICFG_String_ActiveText        0x87
 #define MUICFG_Font_Knob                0x88
-#define MUICFG_Drag_LeftButton          0x89 /* ULONG, false, true (def) */
-#define MUICFG_Drag_MiddleButton        0x8a /* ULONG, false (def), true */
-#define MUICFG_Drag_LMBModifier         0x8b /* key desc (def = control) */
-#define MUICFG_Drag_MMBModifier         0x8c /* key desc */
-#define MUICFG_Drag_Autostart           0x8d /* ULONG, false = 0, true (def) */
-#define MUICFG_Drag_Autostart_Length    0x8e /* ULONG, pixels (def = 3) */
-#define MUICFG_ActiveObject_Color       0x8f /* penspec */
+#define MUICFG_Drag_LeftButton          0x89    /* ULONG, false, true (def) */
+#define MUICFG_Drag_MiddleButton        0x8a    /* ULONG, false (def), true */
+#define MUICFG_Drag_LMBModifier         0x8b    /* key desc (def = control) */
+#define MUICFG_Drag_MMBModifier         0x8c    /* key desc */
+#define MUICFG_Drag_Autostart           0x8d    /* ULONG, false = 0, true (def) */
+#define MUICFG_Drag_Autostart_Length    0x8e    /* ULONG, pixels (def = 3) */
+#define MUICFG_ActiveObject_Color       0x8f    /* penspec */
 #define MUICFG_Frame_Knob               0x90
-#define MUICFG_Dragndrop_Look           0x94 /* ULONG, solid, ghosted on obj (def), ... */
+#define MUICFG_Dragndrop_Look           0x94    /* ULONG, solid, ghosted on obj (def), ... */
 #define MUICFG_Background_Page          0x95
 #define MUICFG_Background_ReadList      0x96
 #define MUICFG_String_Cursor            0x400
 #define MUICFG_String_MarkedBackground  0x401
 #define MUICFG_String_MarkedText        0x402
 #define MUICFG_Register_TruncateTitles  0x403
-#define MUICFG_Window_Refresh	    	0x404
+#define MUICFG_Window_Refresh           0x404
 #define MUICFG_Screen_Mode              0x505
 #define MUICFG_Screen_Mode_ID           0x506
 #define MUICFG_Screen_Width             0x507
@@ -180,33 +180,92 @@
 
 
 /*** Methods ****************************************************************/
-#define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000) /* Zune 20030319 */
-#define MUIM_Configdata_GetULong       (MUIB_Configdata | 0x00000001) /* Zune 20030319 */
-#define MUIM_Configdata_SetULong       (MUIB_Configdata | 0x00000002) /* Zune 20030320 */
-#define MUIM_Configdata_SetImspec      (MUIB_Configdata | 0x00000003) /* Zune 20030323 */
-#define MUIM_Configdata_SetFramespec   (MUIB_Configdata | 0x00000004) /* Zune 20030331 */
-#define MUIM_Configdata_SetFont        (MUIB_Configdata | 0x00000005) /* Zune 20030323 */
-#define MUIM_Configdata_Save           (MUIB_Configdata | 0x00000006) /* Zune 20030320 */
-#define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007) /* Zune 20030320 */
-#define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008) /* Zune 20030714 */
-#define MUIM_Configdata_SetString      (MUIB_Configdata | 0x00000009) /* Zune 20030808 */
-struct MUIP_Configdata_GetString       {STACKED ULONG MethodID; STACKED ULONG id; };
-struct MUIP_Configdata_GetULong        {STACKED ULONG MethodID; STACKED ULONG id; };
-struct MUIP_Configdata_SetULong        {STACKED ULONG MethodID; STACKED ULONG id; STACKED ULONG val; };
-struct MUIP_Configdata_SetImspec       {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR imspec; };
-struct MUIP_Configdata_SetFramespec    {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR framespec; };
-struct MUIP_Configdata_SetFont         {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR font; };
-struct MUIP_Configdata_Save            {STACKED ULONG MethodID; STACKED CONST_STRPTR filename; };
-struct MUIP_Configdata_Load            {STACKED ULONG MethodID; STACKED CONST_STRPTR filename; };
-struct MUIP_Configdata_SetPenspec      {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR penspec; };
-struct MUIP_Configdata_SetString       {STACKED ULONG MethodID; STACKED ULONG id; STACKED CONST_STRPTR string; };
+#define MUIM_Configdata_GetString      (MUIB_Configdata | 0x00000000)
+#define MUIM_Configdata_GetULong       (MUIB_Configdata | 0x00000001)
+#define MUIM_Configdata_SetULong       (MUIB_Configdata | 0x00000002)
+#define MUIM_Configdata_SetImspec      (MUIB_Configdata | 0x00000003)
+#define MUIM_Configdata_SetFramespec   (MUIB_Configdata | 0x00000004)
+#define MUIM_Configdata_SetFont        (MUIB_Configdata | 0x00000005)
+#define MUIM_Configdata_Save           (MUIB_Configdata | 0x00000006)
+#define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007)
+#define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008)
+#define MUIM_Configdata_SetString      (MUIB_Configdata | 0x00000009)
+
+struct MUIP_Configdata_GetString
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+};
+
+struct MUIP_Configdata_GetULong
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+};
+
+struct MUIP_Configdata_SetULong
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED ULONG val;
+};
+
+struct MUIP_Configdata_SetImspec
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED CONST_STRPTR imspec;
+};
+
+struct MUIP_Configdata_SetFramespec
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED CONST_STRPTR framespec;
+};
+
+struct MUIP_Configdata_SetFont
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED CONST_STRPTR font;
+};
+
+struct MUIP_Configdata_Save
+{
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR filename;
+};
+
+struct MUIP_Configdata_Load
+{
+    STACKED ULONG MethodID;
+    STACKED CONST_STRPTR filename;
+};
+
+struct MUIP_Configdata_SetPenspec
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED CONST_STRPTR penspec;
+};
+
+struct MUIP_Configdata_SetString
+{
+    STACKED ULONG MethodID;
+    STACKED ULONG id;
+    STACKED CONST_STRPTR string;
+};
 
 /*** Attributes *************************************************************/
-#define MUIA_Configdata_Application     (MUIB_Configdata | 0x00000000) /* ZV1: i..  Object * */
-#define MUIA_Configdata_ZunePrefs       (MUIB_Configdata | 0x00000001) /* ZV1: PRIV .g.  struct ZunePrefsNew * */
-#define MUIA_Configdata_ApplicationBase (MUIB_Configdata | 0x00000002) /* ZV1: i..  Object * */
+#define MUIA_Configdata_Application \
+    (MUIB_Configdata | 0x00000000)  /* ZV1: i..  Object * */
+#define MUIA_Configdata_ZunePrefs \
+    (MUIB_Configdata | 0x00000001)  /* ZV1: PRIV .g.  struct ZunePrefsNew * */
+#define MUIA_Configdata_ApplicationBase \
+    (MUIB_Configdata | 0x00000002)  /* ZV1: i..  Object * */
 
 
-extern const struct __MUIBuiltinClass _MUI_Configdata_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Configdata_desc;     /* PRIV */
 
 #endif /* _MUI_CLASSES_CONFIGDATA_H */

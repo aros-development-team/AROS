@@ -2,6 +2,7 @@
     Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
+
 #include <aros/debug.h>
 
 #include <graphics/gfx.h>
@@ -28,33 +29,43 @@ struct MUI_ListviewData
     BOOL noforward;
 };
 
-ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_LayoutMsg *lm)
+ULONG Listview_Layout_Function(struct Hook *hook, Object *obj,
+    struct MUI_LayoutMsg *lm)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
     switch (lm->lm_Type)
     {
-        case    MUILM_MINMAX:
+    case MUILM_MINMAX:
         {
             /* Calculate the minmax dimension of the group,
-            ** We only have a fixed number of children, so we need no NextObject()
-            */
-            lm->lm_MinMax.MinWidth = _minwidth(data->list) + _minwidth(data->vert);
-            lm->lm_MinMax.DefWidth = _defwidth(data->list) + _defwidth(data->vert);
-            lm->lm_MinMax.MaxWidth = _maxwidth(data->list) + _maxwidth(data->vert);
-            lm->lm_MinMax.MaxWidth = MIN(lm->lm_MinMax.MaxWidth, MUI_MAXMAX);
+             ** We only have a fixed number of children, so we need
+             ** no NextObject()
+             */
+            lm->lm_MinMax.MinWidth =
+                _minwidth(data->list) + _minwidth(data->vert);
+            lm->lm_MinMax.DefWidth =
+                _defwidth(data->list) + _defwidth(data->vert);
+            lm->lm_MinMax.MaxWidth =
+                _maxwidth(data->list) + _maxwidth(data->vert);
+            lm->lm_MinMax.MaxWidth =
+                MIN(lm->lm_MinMax.MaxWidth, MUI_MAXMAX);
 
-            lm->lm_MinMax.MinHeight = MAX(_minheight(data->list), _minheight(data->vert));
-            lm->lm_MinMax.DefHeight = MAX(_defheight(data->list), lm->lm_MinMax.MinHeight);
-            lm->lm_MinMax.MaxHeight = MIN(_maxheight(data->list), _maxheight(data->vert));
-            lm->lm_MinMax.MaxHeight = MIN(lm->lm_MinMax.MaxHeight, MUI_MAXMAX);
+            lm->lm_MinMax.MinHeight =
+                MAX(_minheight(data->list), _minheight(data->vert));
+            lm->lm_MinMax.DefHeight =
+                MAX(_defheight(data->list), lm->lm_MinMax.MinHeight);
+            lm->lm_MinMax.MaxHeight =
+                MIN(_maxheight(data->list), _maxheight(data->vert));
+            lm->lm_MinMax.MaxHeight =
+                MIN(lm->lm_MinMax.MaxHeight, MUI_MAXMAX);
             return 0;
         }
 
-        case MUILM_LAYOUT:
+    case MUILM_LAYOUT:
         {
             /* Now place the objects between
              * (0, 0, lm->lm_Layout.Width - 1, lm->lm_Layout.Height - 1)
-            */
+             */
 
             LONG vert_width = _minwidth(data->vert);
             LONG lay_width = lm->lm_Layout.Width;
@@ -63,11 +74,13 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
             LONG cont_height;
 
             /* We need all scrollbars and the button */
-            set(data->vert, MUIA_ShowMe, TRUE); /* We could also overload MUIM_Show... */
+            set(data->vert, MUIA_ShowMe, TRUE);
+                /* We could also overload MUIM_Show... */
             cont_width = lay_width - vert_width;
             cont_height = lay_height;
 
-            MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,0);
+            MUI_Layout(data->vert, cont_width, 0, vert_width, cont_height,
+                0);
 
             /* Layout the group a second time, note that setting _mwidth() and
                _mheight() should be enough, or we invent a new flag */
@@ -86,24 +99,28 @@ ULONG Listview_Layout_Function(struct Hook *hook, Object *obj, struct MUI_Layout
 ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    SIPTR type = (SIPTR)msg[0];
-    SIPTR val = (SIPTR)msg[1];
+    SIPTR type = (SIPTR) msg[0];
+    SIPTR val = (SIPTR) msg[1];
 
-    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type, val));
+    D(bug("[ListView] List 0x%p, Event %d, value %ld\n", data->list, type,
+            val));
 
     switch (type)
     {
-        case PROP_VERT_FIRST:
-            get(data->vert,MUIA_Prop_First,&val);
-            nnset(data->list,MUIA_List_VertProp_First,val);
-            break;
+    case PROP_VERT_FIRST:
+        get(data->vert, MUIA_Prop_First, &val);
+        nnset(data->list, MUIA_List_VertProp_First, val);
+        break;
 
-        case LIST_VERT_FIRST:
-            nnset(data->vert, MUIA_Prop_First, val); break;
-        case LIST_VERT_VISIBLE:
-            nnset(data->vert, MUIA_Prop_Visible, val); break;
-        case LIST_VERT_ENTRIES:
-            nnset(data->vert, MUIA_Prop_Entries, val); break;
+    case LIST_VERT_FIRST:
+        nnset(data->vert, MUIA_Prop_First, val);
+        break;
+    case LIST_VERT_VISIBLE:
+        nnset(data->vert, MUIA_Prop_Visible, val);
+        break;
+    case LIST_VERT_ENTRIES:
+        nnset(data->vert, MUIA_Prop_Entries, val);
+        break;
     }
     return 0;
 }
@@ -111,8 +128,8 @@ ULONG Listview_Function(struct Hook *hook, APTR dummyobj, void **msg)
 ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
 {
     struct MUI_ListviewData *data = (struct MUI_ListviewData *)hook->h_Data;
-    SIPTR attribute = (SIPTR)msg[0];
-    SIPTR value     = (SIPTR)msg[1];
+    SIPTR attribute = (SIPTR) msg[0];
+    SIPTR value = (SIPTR) msg[1];
 
     /* This allows avoiding notify loops */
     data->noforward = TRUE;
@@ -127,22 +144,27 @@ ULONG SelfNotify_Function(struct Hook *hook, APTR obj, void **msg)
 **************************************************************************/
 IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ListviewData   *data;
+    struct MUI_ListviewData *data;
     struct TagItem *tag, *tags;
     struct Hook *layout_hook;
     Object *group, *vert;
-    Object *list = (Object*)GetTagData(MUIA_Listview_List, (IPTR)NULL, msg->ops_AttrList);
-    IPTR  cyclechain = (IPTR)GetTagData(MUIA_CycleChain, (IPTR)0, msg->ops_AttrList);
-    LONG entries = 0,first = 0,visible = 0;
-    if (!list) return (IPTR)NULL;
+    Object *list =
+        (Object *) GetTagData(MUIA_Listview_List, (IPTR) NULL,
+        msg->ops_AttrList);
+    IPTR cyclechain =
+        (IPTR) GetTagData(MUIA_CycleChain, (IPTR) 0, msg->ops_AttrList);
+    LONG entries = 0, first = 0, visible = 0;
+    if (!list)
+        return (IPTR) NULL;
 
     layout_hook = mui_alloc_struct(struct Hook);
-    if (!layout_hook) return (IPTR)NULL;
+    if (!layout_hook)
+        return (IPTR) NULL;
 
     layout_hook->h_Entry = HookEntry;
-    layout_hook->h_SubEntry = (HOOKFUNC)Listview_Layout_Function;
+    layout_hook->h_SubEntry = (HOOKFUNC) Listview_Layout_Function;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
+    obj = (Object *) DoSuperNewTags(cl, obj, NULL,
         MUIA_Group_Horiz, FALSE,
         MUIA_CycleChain, cyclechain,
         MUIA_InnerLeft, 0,
@@ -152,14 +174,14 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
             MUIA_InnerRight, 0,
             MUIA_Group_LayoutHook, (IPTR) layout_hook,
             Child, (IPTR) list,
-            Child, (IPTR) (vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End),
-            End),
+            Child, (IPTR) (vert =
+                ScrollbarObject, MUIA_Group_Horiz, FALSE, End), End),
         TAG_DONE);
 
     if (!obj)
     {
         mui_free(layout_hook);
-        return (IPTR)NULL;
+        return (IPTR) NULL;
     }
 
     data = INST_DATA(cl, obj);
@@ -170,50 +192,51 @@ IPTR Listview__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     data->layout_hook = layout_hook;
 
     data->hook.h_Entry = HookEntry;
-    data->hook.h_SubEntry = (HOOKFUNC)Listview_Function;
+    data->hook.h_SubEntry = (HOOKFUNC) Listview_Function;
     data->hook.h_Data = data;
 
     data->selfnofity_hook.h_Entry = HookEntry;
-    data->selfnofity_hook.h_SubEntry = (HOOKFUNC)SelfNotify_Function;
+    data->selfnofity_hook.h_SubEntry = (HOOKFUNC) SelfNotify_Function;
     data->selfnofity_hook.h_Data = data;
     data->noforward = FALSE;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
         switch (tag->ti_Tag)
         {
-            }
+        }
     }
 
-    get(list,MUIA_List_VertProp_First,&first);
-    get(list,MUIA_List_VertProp_Visible,&visible);
-    get(list,MUIA_List_VertProp_Entries,&entries);
+    get(list, MUIA_List_VertProp_First, &first);
+    get(list, MUIA_List_VertProp_Visible, &visible);
+    get(list, MUIA_List_VertProp_Entries, &entries);
 
-    D(bug("[ListView 0x%p] List 0x%p, First %ld, Visible %ld, Entries %ld\n", obj, list, first, visible, entries));
+    D(bug
+        ("[ListView 0x%p] List 0x%p, First %ld, Visible %ld, Entries %ld\n",
+            obj, list, first, visible, entries));
 
     SetAttrs(data->vert,
         MUIA_Prop_First, first,
-        MUIA_Prop_Visible, visible,
-        MUIA_Prop_Entries, entries,
-        TAG_DONE);
+        MUIA_Prop_Visible, visible, MUIA_Prop_Entries, entries, TAG_DONE);
 
-    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4,
-             MUIM_CallHook, (IPTR)&data->hook, PROP_VERT_FIRST, MUIV_TriggerValue);
+    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR) obj,
+        4, MUIM_CallHook, (IPTR) & data->hook, PROP_VERT_FIRST,
+        MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime,
-             (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_FIRST,
-             MUIV_TriggerValue);
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) & data->hook, LIST_VERT_FIRST,
+        MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime,
-             (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_VISIBLE,
-             MUIV_TriggerValue);
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) & data->hook,
+        LIST_VERT_VISIBLE, MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime,
-             (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_ENTRIES,
-             MUIV_TriggerValue);
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) & data->hook,
+        LIST_VERT_ENTRIES, MUIV_TriggerValue);
     DoMethod(list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
-            (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->selfnofity_hook, MUIA_List_Active,
-            MUIV_TriggerValue);
+        (IPTR) obj, 4, MUIM_CallHook, (IPTR) & data->selfnofity_hook,
+        MUIA_List_Active, MUIV_TriggerValue);
 
-    return (IPTR)obj;
+    return (IPTR) obj;
 }
 
 /**************************************************************************
@@ -223,7 +246,7 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
-    mui_free(data->layout_hook); /* is always here */
+    mui_free(data->layout_hook);        /* is always here */
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -232,37 +255,38 @@ IPTR Listview__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 void ListView__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem  *tag, *tags;
+    struct TagItem *tag, *tags;
     IPTR no_notify = GetTagData(MUIA_NoNotify, FALSE, msg->ops_AttrList);
     struct MUI_ListviewData *data = INST_DATA(cl, obj);
 
     if (data->noforward)
     {
-        DoSuperMethodA(cl, obj, (Msg)msg);
+        DoSuperMethodA(cl, obj, (Msg) msg);
         return;
     }
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
         switch (tag->ti_Tag)
         {
-            case MUIA_List_CompareHook:
-            case MUIA_List_ConstructHook:
-            case MUIA_List_DestructHook:
-            case MUIA_List_DisplayHook:
-            case MUIA_List_VertProp_First:
-            case MUIA_List_Format:
-            case MUIA_List_VertProp_Entries:
-            case MUIA_List_VertProp_Visible:
-            case MUIA_List_Active:
-            case MUIA_List_First:
-            case MUIA_List_Visible:
-            case MUIA_List_Entries:
-            case MUIA_List_Quiet:
+        case MUIA_List_CompareHook:
+        case MUIA_List_ConstructHook:
+        case MUIA_List_DestructHook:
+        case MUIA_List_DisplayHook:
+        case MUIA_List_VertProp_First:
+        case MUIA_List_Format:
+        case MUIA_List_VertProp_Entries:
+        case MUIA_List_VertProp_Visible:
+        case MUIA_List_Active:
+        case MUIA_List_First:
+        case MUIA_List_Visible:
+        case MUIA_List_Entries:
+        case MUIA_List_Quiet:
             {
                 struct MUI_ListviewData *data = INST_DATA(cl, obj);
-            
-                SetAttrs(data->list, MUIA_NoNotify, no_notify, tag->ti_Tag, tag->ti_Data, TAG_DONE);
+
+                SetAttrs(data->list, MUIA_NoNotify, no_notify, tag->ti_Tag,
+                    tag->ti_Data, TAG_DONE);
             }
         }
     }
@@ -279,25 +303,27 @@ IPTR ListView__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
-        case MUIA_List_CompareHook:
-        case MUIA_List_ConstructHook:
-        case MUIA_List_DestructHook:
-        case MUIA_List_DisplayHook:
-        case MUIA_List_VertProp_First:
-        case MUIA_List_Format:
-        case MUIA_List_VertProp_Entries:
-        case MUIA_List_VertProp_Visible:
-        case MUIA_List_Active:
-        case MUIA_List_First:
-        case MUIA_List_Visible:
-        case MUIA_List_Entries:
-        case MUIA_List_Quiet:
+    case MUIA_List_CompareHook:
+    case MUIA_List_ConstructHook:
+    case MUIA_List_DestructHook:
+    case MUIA_List_DisplayHook:
+    case MUIA_List_VertProp_First:
+    case MUIA_List_Format:
+    case MUIA_List_VertProp_Entries:
+    case MUIA_List_VertProp_Visible:
+    case MUIA_List_Active:
+    case MUIA_List_First:
+    case MUIA_List_Visible:
+    case MUIA_List_Entries:
+    case MUIA_List_Quiet:
         {
             struct MUI_ListviewData *data = INST_DATA(cl, obj);
-            
+
             return GetAttr(msg->opg_AttrID, data->list, msg->opg_Storage);
         }
-        case MUIA_Listview_List: STORE = (IPTR)data->list; return 1;
+    case MUIA_Listview_List:
+        STORE = (IPTR) data->list;
+        return 1;
     }
 
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -308,34 +334,37 @@ BOOPSI_DISPATCHER(IPTR, Listview_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-        case OM_SET:
-            ListView__OM_SET(cl, obj, (struct opSet *)msg);
-            break;
-        case OM_GET:     return ListView__OM_GET(cl, obj, (struct opGet *)msg);
-        case OM_NEW:     return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
-        case OM_DISPOSE: return Listview__OM_DISPOSE(cl,obj,msg);
-        case MUIM_List_Clear:
-        case MUIM_List_CreateImage:
-        case MUIM_List_DeleteImage:
-        case MUIM_List_Exchange:
-        case MUIM_List_GetEntry:
-        case MUIM_List_Insert:
-        case MUIM_List_InsertSingle:
-        case MUIM_List_Jump:
-        case MUIM_List_NextSelected:
-        case MUIM_List_Redraw:
-        case MUIM_List_Remove:
-        case MUIM_List_Select:
-        case MUIM_List_Sort:
-        case MUIM_List_TestPos:
+    case OM_SET:
+        ListView__OM_SET(cl, obj, (struct opSet *)msg);
+        break;
+    case OM_GET:
+        return ListView__OM_GET(cl, obj, (struct opGet *)msg);
+    case OM_NEW:
+        return Listview__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_DISPOSE:
+        return Listview__OM_DISPOSE(cl, obj, msg);
+    case MUIM_List_Clear:
+    case MUIM_List_CreateImage:
+    case MUIM_List_DeleteImage:
+    case MUIM_List_Exchange:
+    case MUIM_List_GetEntry:
+    case MUIM_List_Insert:
+    case MUIM_List_InsertSingle:
+    case MUIM_List_Jump:
+    case MUIM_List_NextSelected:
+    case MUIM_List_Redraw:
+    case MUIM_List_Remove:
+    case MUIM_List_Select:
+    case MUIM_List_Sort:
+    case MUIM_List_TestPos:
         {
             struct MUI_ListviewData *data = INST_DATA(cl, obj);
-            
+
             return DoMethodA(data->list, msg);
         }
-        
+
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
@@ -343,10 +372,10 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUI_Listview_desc = { 
-    MUIC_Listview, 
-    MUIC_Group, 
-    sizeof(struct MUI_ListviewData), 
-    (void*)Listview_Dispatcher 
+const struct __MUIBuiltinClass _MUI_Listview_desc =
+{
+    MUIC_Listview,
+    MUIC_Group,
+    sizeof(struct MUI_ListviewData),
+    (void *) Listview_Dispatcher
 };
-

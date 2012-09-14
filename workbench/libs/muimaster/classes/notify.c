@@ -31,9 +31,9 @@ AROS_UFH2S(void, cpy_func,
     AROS_UFHA(STRPTR *, strPtrPtr, A3))
 {
     AROS_USERFUNC_INIT
-    
+
     *(*strPtrPtr)++ = chr;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -42,9 +42,9 @@ AROS_UFH2S(void, len_func,
     AROS_UFHA(LONG *, lenPtr, A3))
 {
     AROS_USERFUNC_INIT
-    
+
     (*lenPtr)++;
-    
+
     AROS_USERFUNC_EXIT
 }
 
@@ -93,89 +93,95 @@ static const int __revision = 1;
 typedef struct NotifyNode
 {
     struct MinNode nn_Node;
-    BOOL        nn_Active;   /* When TRUE, it means that the notification is currently being handled */
-                             /* It's used to prevent loops */
-    ULONG       nn_TrigAttr;
-    IPTR        nn_TrigVal;
-    APTR        nn_DestObj;
-    ULONG       nn_NumParams;
-    IPTR       *nn_Params; /* FIXME: use nn_Params[1] and tweak stuff below */
-    IPTR       *nn_NewParams; /* For MUIV_EveryTime */
+    BOOL nn_Active;     /* TRUE if notification is currently being handled */
+                        /* It's used to prevent loops */
+    ULONG nn_TrigAttr;
+    IPTR nn_TrigVal;
+    APTR nn_DestObj;
+    ULONG nn_NumParams;
+    IPTR *nn_Params;    /* FIXME: use nn_Params[1] and tweak stuff below */
+    IPTR *nn_NewParams; /* For MUIV_EveryTime */
 } *NNode;
 
 typedef struct NotifyNodeIX
 {
     struct NotifyNode nn;
-    IX	    	      ix;
+    IX ix;
 } *NNodeIX;
 
-static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_Notify *msg)
+static struct NotifyNode *CreateNNode(struct MUI_NotifyData *data,
+    struct MUIP_Notify *msg)
 {
     ULONG i, paramsize;
 
     struct NotifyNode *nnode;
-    
-    if ((msg->TrigAttr == MUIA_Window_InputEvent) && (msg->TrigVal != MUIV_EveryTime))
+
+    if ((msg->TrigAttr == MUIA_Window_InputEvent)
+        && (msg->TrigVal != MUIV_EveryTime))
     {
-    	IX ix = {IX_VERSION};
+        IX ix = { IX_VERSION };
 
-	if (ParseIX((CONST_STRPTR)msg->TrigVal, &ix) != 0) return NULL;
+        if (ParseIX((CONST_STRPTR) msg->TrigVal, &ix) != 0)
+            return NULL;
 
-	if ((nnode = (struct NotifyNode *)mui_alloc_struct(struct NotifyNodeIX)))
-	{
-	    ((struct NotifyNodeIX *)nnode)->ix = ix;
-	}
+        if ((nnode =
+                (struct NotifyNode *)mui_alloc_struct(struct NotifyNodeIX)))
+        {
+            ((struct NotifyNodeIX *)nnode)->ix = ix;
+        }
     }
     else
-    {    
-    	nnode = mui_alloc_struct(struct NotifyNode);
+    {
+        nnode = mui_alloc_struct(struct NotifyNode);
     }
-    
-    if (!nnode) return NULL;
 
-    nnode->nn_Active    = FALSE;
-    nnode->nn_TrigAttr  = msg->TrigAttr;
-    nnode->nn_TrigVal   = msg->TrigVal;
-    nnode->nn_DestObj   = msg->DestObj;
+    if (!nnode)
+        return NULL;
+
+    nnode->nn_Active = FALSE;
+    nnode->nn_TrigAttr = msg->TrigAttr;
+    nnode->nn_TrigVal = msg->TrigVal;
+    nnode->nn_DestObj = msg->DestObj;
     nnode->nn_NumParams = msg->FollowParams;
 
     /* Allocate one more IPTR (FollowParams + 1) as some ext apps/classes
        forget trailing NULLs in methods like MUIM_MultiSet and MUI seems
        like it can live with that (without crashing) */
-    
+
     paramsize = (msg->FollowParams + 1);
     if (msg->TrigVal == MUIV_EveryTime)
     {
-    	paramsize *= 2;
+        paramsize *= 2;
     }
-    
-    if ((nnode->nn_Params = (IPTR *)mui_alloc(paramsize * sizeof(IPTR))))
+
+    if ((nnode->nn_Params = (IPTR *) mui_alloc(paramsize * sizeof(IPTR))))
     {
-      IPTR *par = (IPTR *)&msg->FollowParams;
-      
-	for (i = 0; i < msg->FollowParams; i++)
-	{
-	    nnode->nn_Params[i] = *(par + i + 1);
-	}
+        IPTR *par = (IPTR *) & msg->FollowParams;
+
+        for (i = 0; i < msg->FollowParams; i++)
+        {
+            nnode->nn_Params[i] = *(par + i + 1);
+        }
 
         if (msg->TrigVal == MUIV_EveryTime)
         {
-    	    nnode->nn_NewParams = nnode->nn_Params + msg->FollowParams + 1;
-	    for (i = 0; i < msg->FollowParams; i++)
-	    {
-		nnode->nn_NewParams[i] = *(par + i + 1);
-	    }
+            nnode->nn_NewParams = nnode->nn_Params + msg->FollowParams + 1;
+            for (i = 0; i < msg->FollowParams; i++)
+            {
+                nnode->nn_NewParams[i] = *(par + i + 1);
+            }
         }
 
-	return nnode;
+        return nnode;
     }
-    
+
     mui_free(nnode);
 
     return NULL;
 }
 
-static void DeleteNNode (struct MUI_NotifyData *data, struct NotifyNode *nnode)
+static void DeleteNNode(struct MUI_NotifyData *data,
+    struct NotifyNode *nnode)
 {
     mui_free(nnode->nn_Params);
     mui_free(nnode);
@@ -190,37 +196,38 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg);
 IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data;
-    struct TagItem        *tags = msg->ops_AttrList;
-    struct TagItem        *tag;
+    struct TagItem *tags = msg->ops_AttrList;
+    struct TagItem *tag;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj) return FALSE;
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
+    if (!obj)
+        return FALSE;
 
     data = INST_DATA(cl, obj);
 
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	    case MUIA_HelpLine:
-	        data->mnd_HelpLine = (LONG)tag->ti_Data;
-	        break;
+        switch (tag->ti_Tag)
+        {
+        case MUIA_HelpLine:
+            data->mnd_HelpLine = (LONG) tag->ti_Data;
+            break;
 
-	    case MUIA_HelpNode:
-	        data->mnd_HelpNode = (STRPTR)tag->ti_Data;
-	        break;
+        case MUIA_HelpNode:
+            data->mnd_HelpNode = (STRPTR) tag->ti_Data;
+            break;
 
-	    case MUIA_ObjectID:
-	        data->mnd_ObjectID = (ULONG)tag->ti_Data;
-	        break;
+        case MUIA_ObjectID:
+            data->mnd_ObjectID = (ULONG) tag->ti_Data;
+            break;
 
-	    case MUIA_UserData:
-	        data->mnd_UserData = (IPTR)tag->ti_Data;
-	        break;
-	}
+        case MUIA_UserData:
+            data->mnd_UserData = (IPTR) tag->ti_Data;
+            break;
+        }
     }
 
-    return (IPTR)obj;
+    return (IPTR) obj;
 }
 
 
@@ -234,132 +241,138 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->mnd_NotifyList)
     {
-	for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ ; node = tmp)
-	{
-	    tmp = node->mln_Succ;
-	    DeleteNNode(data, (struct NotifyNode *)node);
-	}
-	mui_free(data->mnd_NotifyList);
+        for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+            node = tmp)
+        {
+            tmp = node->mln_Succ;
+            DeleteNNode(data, (struct NotifyNode *)node);
+        }
+        mui_free(data->mnd_NotifyList);
     }
 
     return DoSuperMethodA(cl, obj, msg);
 }
 
-static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
+static void check_notify(NNode nnode, Object *obj, struct TagItem *tag)
 {
-    IPTR       *params;
-    APTR       destobj;
-    int        i;
-    BOOL       donotify = FALSE;
-    
+    IPTR *params;
+    APTR destobj;
+    int i;
+    BOOL donotify = FALSE;
+
     /* is it the good attribute ? */
     if (tag->ti_Tag != nnode->nn_TrigAttr)
-	return;
+        return;
 
     /* Is the notification already being performed? */
     if (nnode->nn_Active)
     {
-    #if DEBUG
-    	static int counter;
-	
-	D(bug("Notifyloop detected! (#%d)\n", counter++));
-	D(bug("  Source object: 0x%x", obj));
+#if DEBUG
+        static int counter;
 
-	switch((IPTR)nnode->nn_DestObj)
-	{
-	    case MUIV_Notify_Application:
-		D(bug("  Dest object: 0x%x (MUIV_Notify_Application)\n", _app(obj)));
-		break;
-	    case MUIV_Notify_Self:
-		D(bug("  Dest object: 0x%x (MUIV_Notify_Self)\n", obj));
-		destobj = obj;
-		break;
-	    case MUIV_Notify_Window:
-	    	if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
-		{
-    	    	    D(bug("  Dest object: 0x%x (MUIV_Notify_Window)\n", _win(obj)));
-		}
-		else
-		{
-    	    	    D(bug("  Dest object: INVALID (MUIV_Notify_Window, but no muiRenderInfo)\n"));
-		}
-		break;
-	    default:
-		D(bug("  Dest object: 0x%x\n", nnode->nn_DestObj));
-		break;
-	}
-	D(bug("  Attribute: 0x%x   Value: 0x%x\n", tag->ti_Tag, tag->ti_Data));
-	
-    #endif
-            return;
+        D(bug("Notifyloop detected! (#%d)\n", counter++));
+        D(bug("  Source object: 0x%x", obj));
+
+        switch ((IPTR) nnode->nn_DestObj)
+        {
+        case MUIV_Notify_Application:
+            D(bug("  Dest object: 0x%x (MUIV_Notify_Application)\n",
+                    _app(obj)));
+            break;
+        case MUIV_Notify_Self:
+            D(bug("  Dest object: 0x%x (MUIV_Notify_Self)\n", obj));
+            destobj = obj;
+            break;
+        case MUIV_Notify_Window:
+            if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
+            {
+                D(bug("  Dest object: 0x%x (MUIV_Notify_Window)\n",
+                        _win(obj)));
+            }
+            else
+            {
+                D(bug("  Dest object: INVALID "
+                    "(MUIV_Notify_Window, but no muiRenderInfo)\n"));
+            }
+            break;
+        default:
+            D(bug("  Dest object: 0x%x\n", nnode->nn_DestObj));
+            break;
+        }
+        D(bug("  Attribute: 0x%x   Value: 0x%x\n", tag->ti_Tag,
+                tag->ti_Data));
+
+#endif
+        return;
     }
 
     if (nnode->nn_TrigVal == MUIV_EveryTime)
     {
-    	donotify = TRUE;
+        donotify = TRUE;
     }
     else if (nnode->nn_TrigAttr == MUIA_Window_InputEvent)
-    {    
-    	if (MatchIX((struct InputEvent *)tag->ti_Data, &((struct NotifyNodeIX *)nnode)->ix))
-	{
-	    donotify = TRUE;
-	}
+    {
+        if (MatchIX((struct InputEvent *)tag->ti_Data,
+                &((struct NotifyNodeIX *)nnode)->ix))
+        {
+            donotify = TRUE;
+        }
     }
     else if (nnode->nn_TrigVal == tag->ti_Data)
-    {   
-    	donotify = TRUE;
+    {
+        donotify = TRUE;
     }
-    
+
     if (donotify)
     {
-	switch((IPTR)nnode->nn_DestObj)
-	{
-	    case MUIV_Notify_Application:
-		destobj = _app(obj);
-		break;
-	    case MUIV_Notify_Self:
-		destobj = obj;
-		break;
-	    case MUIV_Notify_Window:
-	    	if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
-		{
-		    destobj = _win(obj);
-		}
-		else
-		{
-		    return;
-		}
-		break;
-	    default:
-		destobj = nnode->nn_DestObj;
-	}
+        switch ((IPTR) nnode->nn_DestObj)
+        {
+        case MUIV_Notify_Application:
+            destobj = _app(obj);
+            break;
+        case MUIV_Notify_Self:
+            destobj = obj;
+            break;
+        case MUIV_Notify_Window:
+            if (muiRenderInfo(obj)) /* otherwise _win(obj) does NULL access! */
+            {
+                destobj = _win(obj);
+            }
+            else
+            {
+                return;
+            }
+            break;
+        default:
+            destobj = nnode->nn_DestObj;
+        }
 
-	params = nnode->nn_Params;
-	if (nnode->nn_TrigVal == MUIV_EveryTime)
-	{
-	    params = nnode->nn_NewParams;
+        params = nnode->nn_Params;
+        if (nnode->nn_TrigVal == MUIV_EveryTime)
+        {
+            params = nnode->nn_NewParams;
 
-  	    for (i = 1; i < nnode->nn_NumParams; i++)
-	    {
-	        switch(nnode->nn_Params[i])
-	        {
-		    case MUIV_TriggerValue:
-		        params[i] = tag->ti_Data;
-		        break;
+            for (i = 1; i < nnode->nn_NumParams; i++)
+            {
+                switch (nnode->nn_Params[i])
+                {
+                case MUIV_TriggerValue:
+                    params[i] = tag->ti_Data;
+                    break;
 
-		    case MUIV_NotTriggerValue:
-		        params[i] = !tag->ti_Data;
-		        break;
-	        }
-	    }
-	}
+                case MUIV_NotTriggerValue:
+                    params[i] = !tag->ti_Data;
+                    break;
+                }
+            }
+        }
 
-	nnode->nn_Active = TRUE;
+        nnode->nn_Active = TRUE;
 
-	/* call method */
-	DoMethodA(destobj, (Msg)params);
+        /* call method */
+        DoMethodA(destobj, (Msg) params);
 
-	nnode->nn_Active = FALSE;
+        nnode->nn_Active = FALSE;
     }
 }
 
@@ -369,61 +382,57 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag)
 IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct TagItem        *tags = msg->ops_AttrList;
-    BOOL                   no_notify = FALSE;
-    struct TagItem        *tag;
-    struct MinNode        *node;
+    struct TagItem *tags = msg->ops_AttrList;
+    BOOL no_notify = FALSE;
+    struct TagItem *tag;
+    struct MinNode *node;
 
     /* There are many ways to find out what tag items provided by set()
-    ** we do know. The best way should be using NextTagItem() and simply
-    ** browsing through the list.
-    */
+     ** we do know. The best way should be using NextTagItem() and simply
+     ** browsing through the list.
+     */
     while ((tag = NextTagItem(&tags)) != NULL)
     {
-	switch (tag->ti_Tag)
-	{
-	    case MUIA_HelpLine:
-	        data->mnd_HelpLine = (LONG)tag->ti_Data;
-	        break;
+        switch (tag->ti_Tag)
+        {
+        case MUIA_HelpLine:
+            data->mnd_HelpLine = (LONG) tag->ti_Data;
+            break;
 
-	    case MUIA_HelpNode:
-		data->mnd_HelpNode = (STRPTR)tag->ti_Data;
-	        break;
+        case MUIA_HelpNode:
+            data->mnd_HelpNode = (STRPTR) tag->ti_Data;
+            break;
 
-	    case MUIA_NoNotify:
-	        if (tag->ti_Data == TRUE)
-		    no_notify = TRUE;
-	        break;
+        case MUIA_NoNotify:
+            if (tag->ti_Data == TRUE)
+                no_notify = TRUE;
+            break;
 
-	    case MUIA_ObjectID:
-	        data->mnd_ObjectID = (ULONG)tag->ti_Data;
-	        break;
+        case MUIA_ObjectID:
+            data->mnd_ObjectID = (ULONG) tag->ti_Data;
+            break;
 
-	    case MUIA_UserData:
-	        data->mnd_UserData = tag->ti_Data;
-	        break;
-	}
+        case MUIA_UserData:
+            data->mnd_UserData = tag->ti_Data;
+            break;
+        }
     }
 
     /*
      * check for notifications
      */
     if (!data->mnd_NotifyList || no_notify)
-	return 0;
+        return 0;
 
     tags = msg->ops_AttrList;
     while ((tag = NextTagItem(&tags)))
     {
-	for
-	(
-	    node = data->mnd_NotifyList->mlh_Head;
-	    node->mln_Succ;
-	    node = node->mln_Succ
-	)
-	{
-	    check_notify((NNode)node, obj, tag);
-	}
-   }
+        for (node = data->mnd_NotifyList->mlh_Head;
+            node->mln_Succ; node = node->mln_Succ)
+        {
+            check_notify((NNode) node, obj, tag);
+        }
+    }
 
     return 0;
 }
@@ -443,44 +452,46 @@ IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_ApplicationObject:
-	if (data->mnd_GlobalInfo) STORE = (IPTR)data->mnd_GlobalInfo->mgi_ApplicationObject;
-	else  STORE = 0;
-	return TRUE;
+        if (data->mnd_GlobalInfo)
+            STORE = (IPTR) data->mnd_GlobalInfo->mgi_ApplicationObject;
+        else
+            STORE = 0;
+        return TRUE;
 
-    case MUIA_AppMessage: /* struct AppMessage ? */
-	STORE = 0;
-	return TRUE;
+    case MUIA_AppMessage:      /* struct AppMessage ? */
+        STORE = 0;
+        return TRUE;
 
     case MUIA_HelpLine:
-	STORE = (IPTR)data->mnd_HelpLine;
-	return TRUE;
+        STORE = (IPTR) data->mnd_HelpLine;
+        return TRUE;
 
     case MUIA_HelpNode:
-	STORE = (IPTR)data->mnd_HelpNode;
-	return TRUE;
+        STORE = (IPTR) data->mnd_HelpNode;
+        return TRUE;
 
     case MUIA_ObjectID:
-	STORE = (IPTR)data->mnd_ObjectID;
-	return TRUE;
+        STORE = (IPTR) data->mnd_ObjectID;
+        return TRUE;
 
     case MUIA_Parent:
-	STORE = (IPTR)data->mnd_ParentObject;
-	return TRUE;
+        STORE = (IPTR) data->mnd_ParentObject;
+        return TRUE;
 
     case MUIA_Revision:
-	STORE = __revision;
-	return TRUE;
+        STORE = __revision;
+        return TRUE;
 
     case MUIA_UserData:
-	STORE = data->mnd_UserData;
-	return TRUE;
+        STORE = data->mnd_UserData;
+        return TRUE;
 
     case MUIA_Version:
-	STORE = __version;
-	return TRUE;
+        STORE = __version;
+        return TRUE;
     }
 
-    return DoSuperMethodA(cl,obj,(Msg)msg);
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
 
@@ -488,11 +499,13 @@ IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
  * MUIM_CallHook : Call a standard amiga callback hook, defined by a Hook
  * structure.
  */
-IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook *msg)
+IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj,
+    struct MUIP_CallHook *msg)
 {
     if (msg->Hook->h_Entry)
-	return CallHookPkt(msg->Hook,obj, &msg->param1);
-    else return FALSE;
+        return CallHookPkt(msg->Hook, obj, &msg->param1);
+    else
+        return FALSE;
 }
 
 
@@ -505,13 +518,14 @@ IPTR Notify__MUIM_CallHook(struct IClass *cl, Object *obj, struct MUIP_CallHook 
  * MUIM_FindUData : tests if the MUIA_UserData of the object
  * contains the given <udata> and returns the object pointer in this case.
  */
-IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUData *msg)
+IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj,
+    struct MUIP_FindUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
     if (data->mnd_UserData == msg->udata)
     {
-	return (IPTR)obj;
+        return (IPTR) obj;
     }
     return 0L;
 }
@@ -522,14 +536,15 @@ IPTR Notify__MUIM_FindUData(struct IClass *cl, Object *obj, struct MUIP_FindUDat
  * contains the given <udata> and gets <attr> to <storage> for itself
  * in this case.
  */
-IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData *msg)
+IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj,
+    struct MUIP_GetUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
     if (data->mnd_UserData == msg->udata)
     {
-	get(obj, msg->attr, msg->storage);
-	return TRUE;
+        get(obj, msg->attr, msg->storage);
+        return TRUE;
     }
     return FALSE;
 }
@@ -543,23 +558,26 @@ IPTR Notify__MUIM_GetUData(struct IClass *cl, Object *obj, struct MUIP_GetUData 
 /*
  * MUIM_KillNotify : kills previously given notifications on specific attributes.
  */
-IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj, struct MUIP_KillNotify *msg)
+IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj,
+    struct MUIP_KillNotify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct MinNode        *node;
-    struct NotifyNode     *nnode;
+    struct MinNode *node;
+    struct NotifyNode *nnode;
 
-    if (!data->mnd_NotifyList) return 0;
+    if (!data->mnd_NotifyList)
+        return 0;
 
-    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ; node = node->mln_Succ)
+    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+        node = node->mln_Succ)
     {
-	nnode = (NNode)node;
-	if (msg->TrigAttr == nnode->nn_TrigAttr)
-	{
-	    Remove((struct Node *)node);
-	    DeleteNNode(data, nnode);
-	    return 1;
-	}
+        nnode = (NNode) node;
+        if (msg->TrigAttr == nnode->nn_TrigAttr)
+        {
+            Remove((struct Node *)node);
+            DeleteNNode(data, nnode);
+            return 1;
+        }
     }
     return 0;
 }
@@ -569,24 +587,27 @@ IPTR Notify__MUIM_KillNotify(struct IClass *cl, Object *obj, struct MUIP_KillNot
  * MUIM_KillNotifyObj : originally undocumented !
  * Supposed to kill a notification with a given attr and a given dest.
  */
-IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_KillNotifyObj *msg)
+IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj,
+    struct MUIP_KillNotifyObj *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct MinNode        *node;
-    struct NotifyNode     *nnode;
+    struct MinNode *node;
+    struct NotifyNode *nnode;
 
-    if (!data->mnd_NotifyList) return 0;
+    if (!data->mnd_NotifyList)
+        return 0;
 
-    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ; node = node->mln_Succ)
+    for (node = data->mnd_NotifyList->mlh_Head; node->mln_Succ;
+        node = node->mln_Succ)
     {
-	nnode = (NNode)node;
-	if ((msg->TrigAttr == nnode->nn_TrigAttr)
-	    && (msg->dest == nnode->nn_DestObj))
-	{
-	    Remove((struct Node *)node);
-	    DeleteNNode(data, nnode);
-	    return 1;
-	}
+        nnode = (NNode) node;
+        if ((msg->TrigAttr == nnode->nn_TrigAttr)
+            && (msg->dest == nnode->nn_DestObj))
+        {
+            Remove((struct Node *)node);
+            DeleteNNode(data, nnode);
+            return 1;
+        }
     }
     return 0;
 }
@@ -595,12 +616,13 @@ IPTR Notify__MUIM_KillNotifyObj(struct IClass *cl, Object *obj, struct MUIP_Kill
 /*
  * MUIM_MultiSet : Set an attribute for multiple objects.
  */
-IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet *msg)
+IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj,
+    struct MUIP_MultiSet *msg)
 {
     IPTR *destobj_p;
-    for (destobj_p = (IPTR*)&msg->obj; (*destobj_p) != 0; destobj_p++)
+    for (destobj_p = (IPTR *) & msg->obj; (*destobj_p) != 0; destobj_p++)
     {
-	set((APTR)*destobj_p, msg->attr, msg->val);
+        set((APTR) *destobj_p, msg->attr, msg->val);
     }
     return TRUE;
 }
@@ -609,33 +631,36 @@ IPTR Notify__MUIM_MultiSet(struct IClass *cl, Object *obj, struct MUIP_MultiSet 
 /*
  * MUIM_NoNotifySet : Acts like MUIM_Set but doesn't trigger any notification.
  */
-IPTR Notify__MUIM_NoNotifySet(struct IClass *cl, Object *obj, struct MUIP_NoNotifySet *msg)
+IPTR Notify__MUIM_NoNotifySet(struct IClass *cl, Object *obj,
+    struct MUIP_NoNotifySet *msg)
 {
-    return SetAttrs(obj, MUIA_NoNotify, TRUE, msg->attr, msg->val, TAG_DONE);
+    return SetAttrs(obj, MUIA_NoNotify, TRUE, msg->attr, msg->val,
+        TAG_DONE);
 }
 
 
 /*
  * MUIM_Notify : Add a notification event handler to an object.
  */
-IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
+IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj,
+    struct MUIP_Notify *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
-    struct NotifyNode     *nnode;
+    struct NotifyNode *nnode;
 
     if (msg->FollowParams < 1)
-	return FALSE;
+        return FALSE;
 
     if (data->mnd_NotifyList == NULL)
     {
-	if (!(data->mnd_NotifyList = mui_alloc_struct(struct MinList)))
-	    return FALSE;
-	NewList((struct List*)data->mnd_NotifyList);
+        if (!(data->mnd_NotifyList = mui_alloc_struct(struct MinList)))
+              return FALSE;
+        NewList((struct List *)data->mnd_NotifyList);
     }
 
     nnode = CreateNNode(data, msg);
     if (NULL == nnode)
-	return FALSE;
+        return FALSE;
 
     AddTail((struct List *)data->mnd_NotifyList, (struct Node *)nnode);
     return TRUE;
@@ -645,7 +670,8 @@ IPTR Notify__MUIM_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
 /*
  * MUIM_Set : Set an attribute to a value, useful within a MUIM_Notify method.
  */
-IPTR Notify__MUIM_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
+IPTR Notify__MUIM_Set(struct IClass *cl, Object *obj,
+    struct MUIP_Set *msg)
 {
     return set(obj, msg->attr, msg->val);
 }
@@ -653,27 +679,28 @@ IPTR Notify__MUIM_Set(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
 /*
  * MUIM_SetAsString : Set a (text kind) attribute to a string.
  */
-IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
+IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj,
+    struct MUIP_SetAsString *msg)
 {
     STRPTR txt;
     LONG txt_len;
 
     txt_len = 0;
-    RawDoFmt(msg->format, (ULONG *)&msg->val,
-	     (VOID_FUNC)AROS_ASMSYMNAME(len_func), &txt_len);
+    RawDoFmt(msg->format, (ULONG *) & msg->val,
+        (VOID_FUNC) AROS_ASMSYMNAME(len_func), &txt_len);
 
-/*      D(bug("Notify_SetAsString: fmt=%s, txtlen=%d\n", msg->format, txt_len)); */
+/*  D(bug("Notify_SetAsString: fmt=%s, txtlen=%d\n", msg->format, txt_len)); */
     txt = AllocVec(txt_len + 1, 0);
     if (NULL == txt)
-	return FALSE;
+        return FALSE;
 
     {
-    	STRPTR txtptr = txt;
-	RawDoFmt(msg->format, (ULONG *)&msg->val,
-		 (VOID_FUNC)AROS_ASMSYMNAME(cpy_func), &txtptr);
-    }  
+        STRPTR txtptr = txt;
+        RawDoFmt(msg->format, (ULONG *) & msg->val,
+            (VOID_FUNC) AROS_ASMSYMNAME(cpy_func), &txtptr);
+    }
 
-    set(obj, msg->attr, (IPTR)txt);
+    set(obj, msg->attr, (IPTR) txt);
     FreeVec(txt);
 
     return TRUE;
@@ -684,14 +711,15 @@ IPTR Notify__MUIM_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsS
  * MUIM_SetUData : This method tests if the MUIA_UserData of the object
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  */
-IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
+IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj,
+    struct MUIP_SetUData *msg)
 {
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
     if (data->mnd_UserData == msg->udata)
     {
-	set(obj, msg->attr, msg->val);
-	return TRUE;
+        set(obj, msg->attr, msg->val);
+        return TRUE;
     }
     return FALSE;
 }
@@ -700,7 +728,8 @@ IPTR Notify__MUIM_SetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData 
 /*
  * MUIM_WriteLong : This method simply writes a longword somewhere to memory.
  */
-IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj, struct MUIP_WriteLong *msg)
+IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj,
+    struct MUIP_WriteLong *msg)
 {
     *(msg->memory) = msg->val;
     return TRUE;
@@ -710,7 +739,8 @@ IPTR Notify__MUIM_WriteLong(struct IClass *cl, Object *obj, struct MUIP_WriteLon
 /*
  * MUIM_WriteString : This method simply copies a string somewhere to memory.
  */
-IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj, struct MUIP_WriteString *msg)
+IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj,
+    struct MUIP_WriteString *msg)
 {
     strcpy(msg->memory, msg->str);
     return TRUE;
@@ -719,13 +749,14 @@ IPTR Notify__MUIM_WriteString(struct IClass *cl, Object *obj, struct MUIP_WriteS
 /**************************************************************************
  MUIM_ConnectParent
 **************************************************************************/
-IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj,
+    struct MUIP_ConnectParent *msg)
 {
     //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
-    /* Objects only have parents if they are inside a group or family object, no idea
-    ** why MUIA_Parent belongs to the notify class then
-    */
+    /* Objects only have parents if they are inside a group or family object;
+     ** no idea why MUIA_Parent belongs to the notify class then
+     */
 /*    data->mnd_ParentObject = msg->parent;*/
     muiGlobalInfo(obj) = muiGlobalInfo(msg->parent);
     return TRUE;
@@ -734,11 +765,13 @@ IPTR Notify__MUIM_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Conn
 /**************************************************************************
  MUIM_DisconnectParent
 **************************************************************************/
-IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
+IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj,
+    struct MUIP_DisconnectParent *msg)
 {
     //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 /*    data->mnd_ParentObject = NULL;*/
-#if 0 /* Some apps (YAM) seem to access this even after disconnection (Bernd Roesch) */
+#if 0
+    /* Some apps (YAM) seem to access this even after disconnection */
     muiGlobalInfo(obj) = NULL;
 #endif
     return 0;
@@ -747,18 +780,21 @@ IPTR Notify__MUIM_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_D
 /**************************************************************************
  MUIM_GetConfigItem
 **************************************************************************/
-IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj, struct MUIP_GetConfigItem *msg)
+IPTR Notify__MUIM_GetConfigItem(struct IClass *cl, Object *obj,
+    struct MUIP_GetConfigItem *msg)
 {
-    IPTR found = DoMethod(muiGlobalInfo(obj)->mgi_Configdata,MUIM_Dataspace_Find,msg->id);
-    
+    IPTR found =
+        DoMethod(muiGlobalInfo(obj)->mgi_Configdata, MUIM_Dataspace_Find,
+        msg->id);
+
     if (found)
     {
-    	*msg->storage = found;
-	return TRUE;
+        *msg->storage = found;
+        return TRUE;
     }
     else
     {
-    	return FALSE;
+        return FALSE;
     }
 }
 
@@ -767,43 +803,66 @@ BOOPSI_DISPATCHER(IPTR, Notify_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:                return Notify__OM_NEW(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE:            return Notify__OM_DISPOSE(cl, obj, msg);
-	case OM_SET:                return Notify__OM_SET(cl, obj, (struct opSet *)msg);
-	case OM_GET:                return Notify__OM_GET(cl, obj, (struct opGet *)msg);
-
-	case MUIM_CallHook:         return Notify__MUIM_CallHook(cl, obj, (APTR)msg);
-	case MUIM_Export:           return TRUE;
-	case MUIM_FindUData:        return Notify__MUIM_FindUData(cl, obj, (APTR)msg);
-	case MUIM_GetUData:         return Notify__MUIM_GetUData(cl, obj, (APTR)msg);
-	case MUIM_Import:           return TRUE;
-	case MUIM_KillNotify:       return Notify__MUIM_KillNotify(cl, obj, (APTR)msg);
-	case MUIM_KillNotifyObj:    return Notify__MUIM_KillNotifyObj(cl, obj, (APTR)msg);
-	case MUIM_MultiSet:         return Notify__MUIM_MultiSet(cl, obj, (APTR)msg);
-	case MUIM_NoNotifySet:      return Notify__MUIM_NoNotifySet(cl, obj, (APTR)msg);
-	case MUIM_Notify:           return Notify__MUIM_Notify(cl, obj, (APTR)msg);
-	case MUIM_Set:              return Notify__MUIM_Set(cl, obj, (APTR)msg);
-	case MUIM_SetAsString:      return Notify__MUIM_SetAsString(cl, obj, (APTR)msg);
-	case MUIM_SetUData:         return Notify__MUIM_SetUData(cl, obj, (APTR)msg);
-	case MUIM_SetUDataOnce:	    return Notify__MUIM_SetUData(cl, obj, (APTR)msg);  /* use Notify_SetUData */
-	case MUIM_WriteLong:        return Notify__MUIM_WriteLong(cl, obj, (APTR)msg);
-	case MUIM_WriteString:      return Notify__MUIM_WriteString(cl, obj, (APTR)msg);
-	case MUIM_ConnectParent:    return Notify__MUIM_ConnectParent(cl,obj,(APTR)msg);
-	case MUIM_DisconnectParent: return Notify__MUIM_DisconnectParent(cl,obj,(APTR)msg);
-	case MUIM_GetConfigItem:    return Notify__MUIM_GetConfigItem(cl,obj,(APTR)msg);
+    case OM_NEW:
+        return Notify__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_DISPOSE:
+        return Notify__OM_DISPOSE(cl, obj, msg);
+    case OM_SET:
+        return Notify__OM_SET(cl, obj, (struct opSet *)msg);
+    case OM_GET:
+        return Notify__OM_GET(cl, obj, (struct opGet *)msg);
+    case MUIM_CallHook:
+        return Notify__MUIM_CallHook(cl, obj, (APTR) msg);
+    case MUIM_Export:
+        return TRUE;
+    case MUIM_FindUData:
+        return Notify__MUIM_FindUData(cl, obj, (APTR) msg);
+    case MUIM_GetUData:
+        return Notify__MUIM_GetUData(cl, obj, (APTR) msg);
+    case MUIM_Import:
+        return TRUE;
+    case MUIM_KillNotify:
+        return Notify__MUIM_KillNotify(cl, obj, (APTR) msg);
+    case MUIM_KillNotifyObj:
+        return Notify__MUIM_KillNotifyObj(cl, obj, (APTR) msg);
+    case MUIM_MultiSet:
+        return Notify__MUIM_MultiSet(cl, obj, (APTR) msg);
+    case MUIM_NoNotifySet:
+        return Notify__MUIM_NoNotifySet(cl, obj, (APTR) msg);
+    case MUIM_Notify:
+        return Notify__MUIM_Notify(cl, obj, (APTR) msg);
+    case MUIM_Set:
+        return Notify__MUIM_Set(cl, obj, (APTR) msg);
+    case MUIM_SetAsString:
+        return Notify__MUIM_SetAsString(cl, obj, (APTR) msg);
+    case MUIM_SetUData:
+        return Notify__MUIM_SetUData(cl, obj, (APTR) msg);
+    case MUIM_SetUDataOnce:
+        return Notify__MUIM_SetUData(cl, obj, (APTR) msg);
+            /* use Notify_SetUData */
+    case MUIM_WriteLong:
+        return Notify__MUIM_WriteLong(cl, obj, (APTR) msg);
+    case MUIM_WriteString:
+        return Notify__MUIM_WriteString(cl, obj, (APTR) msg);
+    case MUIM_ConnectParent:
+        return Notify__MUIM_ConnectParent(cl, obj, (APTR) msg);
+    case MUIM_DisconnectParent:
+        return Notify__MUIM_DisconnectParent(cl, obj, (APTR) msg);
+    case MUIM_GetConfigItem:
+        return Notify__MUIM_GetConfigItem(cl, obj, (APTR) msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
 
-
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUI_Notify_desc = {
-    MUIC_Notify,                        /* Class name */
-    ROOTCLASS,                          /* super class name */
+const struct __MUIBuiltinClass _MUI_Notify_desc =
+{
+    MUIC_Notify,                /* Class name */
+    ROOTCLASS,                  /* super class name */
     sizeof(struct MUI_NotifyData),      /* size of class own datas */
-    (void*)Notify_Dispatcher            /* class dispatcher */
+    (void *) Notify_Dispatcher   /* class dispatcher */
 };

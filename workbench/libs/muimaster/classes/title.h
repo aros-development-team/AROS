@@ -15,6 +15,6 @@
 /*** Attributes *************************************************************/
 
 
-extern const struct __MUIBuiltinClass _MUI_Title_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Title_desc;  /* PRIV */
 
 #endif /* _MUI_CLASSES_TITLE_H */

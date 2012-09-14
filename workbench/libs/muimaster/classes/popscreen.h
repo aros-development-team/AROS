@@ -14,6 +14,6 @@
 #define MUIB_Popscreen              (MUIB_ZUNE | 0x00002600)
 
 
-extern const struct __MUIBuiltinClass _MUI_Popscreen_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Popscreen_desc;      /* PRIV */
 
 #endif /* _MUI_CLASSES_POPSCREEN_H */

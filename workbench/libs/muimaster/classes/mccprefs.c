@@ -20,7 +20,7 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_MccprefsData
 {
-    LONG    dummy;
+    LONG dummy;
 };
 
 /**************************************************************************
@@ -28,22 +28,22 @@ struct MUI_MccprefsData
 **************************************************************************/
 IPTR Mccprefs__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct TagItem  	       *tag, *tags;
+    struct TagItem *tag, *tags;
 
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+    obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (!obj)
-	return FALSE;
+        return FALSE;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
-	switch (tag->ti_Tag)
-	{
-   	}
+        switch (tag->ti_Tag)
+        {
+        }
     }
 
-    return (IPTR)obj;
+    return (IPTR) obj;
 }
 
 
@@ -51,9 +51,10 @@ BOOPSI_DISPATCHER(IPTR, Mccprefs_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Mccprefs__OM_NEW(cl, obj, (struct opSet *)msg);
+    case OM_NEW:
+        return Mccprefs__OM_NEW(cl, obj, (struct opSet *)msg);
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 BOOPSI_DISPATCHER_END
@@ -61,10 +62,10 @@ BOOPSI_DISPATCHER_END
 /*
  * Class descriptor.
  */
-const struct __MUIBuiltinClass _MUI_Mccprefs_desc = { 
-    MUIC_Mccprefs, 
+const struct __MUIBuiltinClass _MUI_Mccprefs_desc =
+{
+    MUIC_Mccprefs,
     MUIC_Group,
-    sizeof(struct MUI_MccprefsData), 
-    (void*)Mccprefs_Dispatcher 
+    sizeof(struct MUI_MccprefsData),
+    (void *) Mccprefs_Dispatcher
 };
-

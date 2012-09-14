@@ -14,10 +14,14 @@
 
 
 /*** Attributes *************************************************************/
-#define MUIA_Popasl_Active     (MUIB_MUI|0x00421b37) /* MUI: V7  ..g BOOL          */
-#define MUIA_Popasl_StartHook  (MUIB_MUI|0x0042b703) /* MUI: V7  isg struct Hook * */
-#define MUIA_Popasl_StopHook   (MUIB_MUI|0x0042d8d2) /* MUI: V7  isg struct Hook * */
-#define MUIA_Popasl_Type       (MUIB_MUI|0x0042df3d) /* MUI: V7  i.g ULONG         */
+#define MUIA_Popasl_Active \
+    (MUIB_MUI | 0x00421b37)    /* MUI: V7  ..g BOOL          */
+#define MUIA_Popasl_StartHook \
+    (MUIB_MUI | 0x0042b703)    /* MUI: V7  isg struct Hook * */
+#define MUIA_Popasl_StopHook \
+    (MUIB_MUI | 0x0042d8d2)    /* MUI: V7  isg struct Hook * */
+#define MUIA_Popasl_Type \
+    (MUIB_MUI | 0x0042df3d)    /* MUI: V7  i.g ULONG         */
 
 
 extern const struct __MUIBuiltinClass _MUI_Popasl_desc; /* PRIV */

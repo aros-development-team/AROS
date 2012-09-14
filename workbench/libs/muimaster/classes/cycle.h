@@ -13,8 +13,8 @@
 #define MUIB_Cycle         (MUIB_ZUNE | 0x00000a00)
 
 /*** Attributes *************************************************************/
-#define MUIA_Cycle_Active  (MUIB_MUI|0x00421788) /* MUI:V4  isg LONG      */
-#define MUIA_Cycle_Entries (MUIB_MUI|0x00420629) /* MUI:V4  i.. STRPTR    */
+#define MUIA_Cycle_Active  (MUIB_MUI | 0x00421788) /* MUI:V4  isg LONG      */
+#define MUIA_Cycle_Entries (MUIB_MUI | 0x00420629) /* MUI:V4  i.. STRPTR    */
 
 enum
 {
