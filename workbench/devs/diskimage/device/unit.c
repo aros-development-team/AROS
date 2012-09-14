@@ -159,7 +159,7 @@ int UnitProcMain (struct DiskImageUnit *unit) {
 					return RETURN_OK;
 
 				case DICMD_TAGLIST:
-					if ((tstate = msg->dim_Tags)) {
+					if ((tstate = (struct TagItem *)msg->dim_Tags)) {
 						BPTR curr_dir = ZERO;
 						struct DiskImagePlugin *plugin = NULL;
 

@@ -335,7 +335,7 @@ LONG DAX_Read (struct DiskImagePlugin *Self, APTR image_ptr, struct IOStdReq *io
 		to_read = min(size, DAX_FRAME_SIZE - to_skip);
 		if (frame->comp) {
 			if (image->frame_in_buf != frame) {
-				ULONG bytes;
+				uLongf bytes;
 				image->frame_in_buf = NULL;
 				if (!ChangeFilePosition(file, frame->offset, OFFSET_BEGINNING) ||
 					Read(file, image->in_buf, frame->size) != frame->size)
