@@ -66,15 +66,17 @@ static int copyToVolume(struct Volume *vol, const char *path, int depth)
     DIR *dir = opendir(path);
     char here[PATH_MAX];
     SECTNUM acd = adfCurrentDir(vol);
-    int files = 0, rc;
+    int files = 0, rc = 0;
 
-    if (dir == NULL)
+    if (dir == NULL) {
+        perror(path);
         return -1;
+    }
 
     getcwd(here, sizeof(here));
     chdir(path);
 
-    while ((de = readdir(dir))) {
+    while (rc >= 0 && (de = readdir(dir))) {
         struct stat st;
         if (strcmp(de->d_name,".") == 0 ||
             strcmp(de->d_name,"..") == 0)
@@ -109,11 +111,13 @@ static int copyToVolume(struct Volume *vol, const char *path, int depth)
                         adfCloseFile(file);
                         files++;
                     }
+                    close(fd);
                 }
             }
         }
     }
 
+    closedir(dir);
     chdir(here);
 
     return files;
