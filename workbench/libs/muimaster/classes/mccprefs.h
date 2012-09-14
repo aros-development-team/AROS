@@ -8,6 +8,6 @@
 
 #define MUIC_Mccprefs "Mccprefs.mui"
 
-extern const struct __MUIBuiltinClass _MUI_Mccprefs_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Mccprefs_desc;       /* PRIV */
 
 #endif

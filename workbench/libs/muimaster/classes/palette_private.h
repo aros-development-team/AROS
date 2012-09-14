@@ -7,7 +7,7 @@
 /*** Instance data **********************************************************/
 struct MUI_PaletteData
 {
-    const char      	      	**names;
+    const char                  **names;
     struct  MUI_Palette_Entry   *entries;
     struct IClass               *notifyclass;
     Object                      *list, *coloradjust;
@@ -16,6 +16,6 @@ struct MUI_PaletteData
     ULONG                       rgb[3];
     struct Hook                 display_hook;
     struct Hook                 setcolor_hook;
-    char    	    	    	buf[20];
+    char                        buf[20];
 };
 #endif /* _PALETTE_PRIVATE_H_ */

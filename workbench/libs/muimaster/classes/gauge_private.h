@@ -9,7 +9,7 @@ struct Gauge_DATA
    BOOL horiz;
    BOOL dupinfo;
 
-   ULONG current; /* (dlc) LONG in MUI, (sba) but MUI seems to handle it like ULONG */
+   ULONG current; /* LONG in MUI, but MUI seems to handle it like ULONG */
    ULONG max;
    ULONG divide;
    STRPTR info;

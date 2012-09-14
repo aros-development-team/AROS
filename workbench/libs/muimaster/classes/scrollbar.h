@@ -13,7 +13,7 @@
 #define MUIB_Scrollbar       (MUIB_ZUNE | 0x00002e00)
 
 /*** Attributes *************************************************************/
-#define MUIA_Scrollbar_Type  (MUIB_MUI|0x0042fb6b) /* V11 i.. LONG */
+#define MUIA_Scrollbar_Type  (MUIB_MUI | 0x0042fb6b)      /* V11 i.. LONG */
 
 enum
 {
@@ -24,6 +24,6 @@ enum
 };
 
 
-extern const struct __MUIBuiltinClass _MUI_Scrollbar_desc; /* PRIV */
+extern const struct __MUIBuiltinClass _MUI_Scrollbar_desc;      /* PRIV */
 
 #endif /* _MUI_CLASSES_SCROLLBAR_H */

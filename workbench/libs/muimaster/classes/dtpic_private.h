@@ -4,11 +4,11 @@
 /*** Instance data **********************************************************/
 struct Dtpic_DATA
 {
-    struct Library  	*datatypesbase;
-    STRPTR  	    	 name;
-    APTR    	    	 dto;
+    struct Library *datatypesbase;
+    STRPTR name;
+    APTR dto;
     struct BitMapHeader *bmhd;
-    struct BitMap   	*bm;
+    struct BitMap *bm;
 };
 
 #endif /* _DTPIC_PRIVATE_H_ */

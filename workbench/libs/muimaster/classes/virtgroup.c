@@ -26,11 +26,8 @@ extern struct Library *MUIMasterBase;
 IPTR Virtgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     return DoSuperNewTags
-    (
-        cl, obj, NULL, 
-        MUIA_Group_Virtual, TRUE, 
-        TAG_MORE, (IPTR) msg->ops_AttrList
-    );
+        (cl, obj, NULL,
+        MUIA_Group_Virtual, TRUE, TAG_MORE, (IPTR) msg->ops_AttrList);
 }
 
 #if ZUNE_BUILTIN_VIRTGROUP
@@ -38,17 +35,19 @@ BOOPSI_DISPATCHER(IPTR, Virtgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Virtgroup__OM_NEW(cl, obj, (struct opSet *)msg);
-        default:     return DoSuperMethodA(cl, obj, msg);
+    case OM_NEW:
+        return Virtgroup__OM_NEW(cl, obj, (struct opSet *)msg);
+    default:
+        return DoSuperMethodA(cl, obj, msg);
     }
 }
 BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Virtgroup_desc =
-{ 
-    MUIC_Virtgroup, 
-    MUIC_Group, 
-    0, 
-    (void*)Virtgroup_Dispatcher 
+{
+    MUIC_Virtgroup,
+    MUIC_Group,
+    0,
+    (void *) Virtgroup_Dispatcher
 };
 #endif /* ZUNE_BUILTIN_VIRTGROUP */
