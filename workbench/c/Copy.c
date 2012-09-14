@@ -176,9 +176,9 @@
     DONTOVR=DONTOVERWRITE:
     This option prevents overwriting of destination files.
 
-	NEWER:
-	This option scans the version strings of the source and destination files and
-	only overwrites if the source file is newer than the destination file.
+    NEWER:
+    This option scans the version strings of the source and destination files and
+    only overwrites if the source file is newer than the destination file.
 
     RESULT
 
@@ -398,7 +398,7 @@ struct IptrArgs
     IPTR  forceoverwrite;
     IPTR  dontoverwrite;
     IPTR  force;
-	IPTR  newer;
+    IPTR  newer;
 };
 
 
@@ -428,7 +428,7 @@ struct Args
     LONG    forceoverwrite;
     LONG    dontoverwrite;
     LONG    force;
-	LONG    newer;
+    LONG    newer;
 };
 
 
@@ -463,13 +463,13 @@ struct CopyData
 #define VDNAMESIZE 96
 
 struct VersionData {
-	UBYTE  vd_Name[VDNAMESIZE];
-	LONG   vd_Version;
-	LONG   vd_Revision;
+    UBYTE  vd_Name[VDNAMESIZE];
+    LONG   vd_Version;
+    LONG   vd_Revision;
 
-	LONG   vd_Day;
-	LONG   vd_Month;
-	LONG   vd_Year;
+    LONG   vd_Day;
+    LONG   vd_Month;
+    LONG   vd_Year;
 };
 
 #ifndef MIN
@@ -542,10 +542,10 @@ void  SetData(STRPTR, struct CopyData *);
 LONG  TestDest(STRPTR, ULONG, struct CopyData *);
 ULONG TestLoop(BPTR, BPTR, struct CopyData *);
 static LONG CheckVersion( struct CopyData *cd );
-static void	makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyData *cd);
+static void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyData *cd);
 static STRPTR skipspaces( STRPTR buffer);
 static STRPTR skipnonspaces( STRPTR buffer);
-static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
+static BOOL VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd);
 
 #ifdef __MORPHOS__
 #define BNULL NULL
@@ -623,8 +623,8 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                 "FODEL    delete protected files also\n"
                 "FOOVR    also overwrite protected files\n"
                 "DONTOVR  do never overwrite destination\n"
-				"FORCE    DO NOT USE. Call compatibility only.\n"
-				"NEWER    will compare version strings and only overwrites older files\n";
+                "FORCE    DO NOT USE. Call compatibility only.\n"
+                "NEWER    will compare version strings and only overwrites older files\n";
 
             if (ReadArgs(PARAM, (IPTR *)&iArgs, rda))
             {
@@ -660,7 +660,7 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                 args.forceoverwrite = (LONG)iArgs.forceoverwrite;
                 args.dontoverwrite = (LONG)iArgs.dontoverwrite;
                 args.force = (LONG)iArgs.force;
-				args.newer = (LONG)iArgs.newer;
+                args.newer = (LONG)iArgs.newer;
 
                 if (args.quiet) /* when QUIET, SILENT and NOREQ are also
                                    true! */
@@ -731,9 +731,9 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                     cd->Flags |= COPYFLAG_DONTOVERWRITE;
                 }
 
-				if (args.newer)
+                if (args.newer)
                 {
-					cd->Flags |= COPYFLAG_NEWER|COPYFLAG_DONTOVERWRITE;
+                    cd->Flags |= COPYFLAG_NEWER|COPYFLAG_DONTOVERWRITE;
                 }
 
                 if (args.errwarn)
@@ -861,7 +861,7 @@ __startup static AROS_PROCH(Start, argstr, argsize, SysBase)
                 else if (cd->Mode == COPYMODE_MAKEDIR)
                 {
                     LONG i;
-		    BPTR dir;
+                    BPTR dir;
                     cd->RetVal2 = RETURN_OK;
 
 #if !USE_ALWAYSVERBOSE
@@ -1322,13 +1322,13 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 #if USE_SOFTLINKCHECK
 
 #define BUFFERSIZE 512
-		    if (APath->ap_Info.fib_DirEntryType == ST_SOFTLINK)
-		    {
+                    if (APath->ap_Info.fib_DirEntryType == ST_SOFTLINK)
+                    {
                         UBYTE *buffer = AllocMem(BUFFERSIZE, MEMF_PUBLIC);
 
-			D(Printf("%s is a softlink\n", APath->ap_Info.fib_FileName));
-			enter = FALSE;
-			doit = FALSE;
+                        D(Printf("%s is a softlink\n", APath->ap_Info.fib_FileName));
+                        enter = FALSE;
+                        doit = FALSE;
     
                         if (buffer)
                         {
@@ -1342,32 +1342,32 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                                 buffer[BUFFERSIZE - 1] = '\0';
                                 D(Printf("Softlink target: %s\n", buffer));
 
-				dir = CurrentDir(APath->ap_Current->an_Lock);
+                                dir = CurrentDir(APath->ap_Current->an_Lock);
                                 lock = Lock(buffer, SHARED_LOCK);
                                 if (lock)
                                 {
                                     struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
 
-				    if (fib)
-				    {
-                                    	if (Examine(lock, fib))
-                    	    	    	{
-                    	    	            link_ok = TRUE;
-                    	    	    	    D(Printf("Target type: %ld\n", fib->fib_DirEntryType));
+                                    if (fib)
+                                    {
+                                        if (Examine(lock, fib))
+                                        {
+                                            link_ok = TRUE;
+                                            D(Printf("Target type: %ld\n", fib->fib_DirEntryType));
 
-                    	    	    	    if (fib->fib_DirEntryType > 0)
-                    	    	    	    	enter = TRUE;
-                    	    	    	    else
-                    	    	    	        /*
-                    	    	    	         * FIXME: This currently just prevents treating symlinks to files as
-                    	    	    	         * directories during copying.
-                    	    	    	         * DoWork() should be extended to handle symlinks correctly. BTW, how exactly ?
-                    	    	    	         */
-                    	    	    	    	doit = FALSE;
-                    	    	    	}
-                    	    	    	FreeDosObject(DOS_FIB, fib);
-                    	    	    }
-                    	    	    UnLock(lock);
+                                            if (fib->fib_DirEntryType > 0)
+                                                enter = TRUE;
+                                            else
+                                                /*
+                                                 * FIXME: This currently just prevents treating symlinks to files as
+                                                 * directories during copying.
+                                                 * DoWork() should be extended to handle symlinks correctly. BTW, how exactly ?
+                                                 */
+                                                doit = FALSE;
+                                        }
+                                        FreeDosObject(DOS_FIB, fib);
+                                    }
+                                    UnLock(lock);
                                 }
 
                                 CurrentDir(dir);
@@ -1381,10 +1381,10 @@ void PatCopy(STRPTR name, struct CopyData *cd)
                             FreeDeviceProc(dvp);
                             FreeMem(buffer, BUFFERSIZE);
                         }
-		    }
-		    else
+                    }
+                    else
 #endif /* USE_SOFTLINKCHECK */
-		    	enter = TRUE;
+                        enter = TRUE;
 
                     if (enter)
                     {
@@ -1562,13 +1562,13 @@ BPTR OpenDestDir(STRPTR name, struct CopyData *cd)
 
         *ptr = as;
 
-	/* 26-Oct-2003 bugfix: Don't scan past end of the string.
-	 * as is the old char, if '\0' we've reached the end of the
-	 * string. - Piru
-	 */
+        /* 26-Oct-2003 bugfix: Don't scan past end of the string.
+         * as is the old char, if '\0' we've reached the end of the
+         * string. - Piru
+         */
         if (as)
         {
-	    ptr++;
+            ptr++;
         }
     }
 
@@ -1721,7 +1721,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
     if (cd->Flags & (COPYFLAG_SRCNOFILESYS|COPYFLAG_DESNOFILESYS))
     {
         ULONG res = 0;
-	BPTR in, out;
+        BPTR in, out;
         CONST_STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 
 #if DEBUG
@@ -1863,7 +1863,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
     }
     else if (cd->Fib.fib_DirEntryType > 0)
     {
-		LONG a;
+                LONG a;
 
         if ((cd->Flags & COPYFLAG_ALL || cd->Mode == COPYMODE_LINK ||
              cd->Mode == COPYMODE_MOVE) && TestLoop(lock, cd->CurDest, cd))
@@ -2027,7 +2027,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
         else
         {
             ULONG res = 0, h;
-	    BPTR in, out;
+            BPTR in, out;
             CONST_STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 
             if ((out = Open(cd->DestName, MODE_NEWFILE)))
@@ -2344,26 +2344,26 @@ LONG TestDest(STRPTR name, ULONG type, struct CopyData *cd)
                     }
                 }
                 else if (cd->Flags & COPYFLAG_DONTOVERWRITE)
-				{
-					if (cd->Flags & COPYFLAG_NEWER)
-					{
-						if(	CheckVersion( cd ) == CHECKVER_DESTOLDER )
-						{
-							if (KillFile(name, cd->Flags & COPYFLAG_FORCEOVERWRITE, cd))
-							{
-								ret = TESTDEST_DELETED;
-							}
-						}
-						else
-						{
-							ret = TESTDEST_CANTDELETE;
-						}
-					}
-					else /* normal "dont overwrite mode" */
-					{
-						ret = TESTDEST_CANTDELETE;
-					}
-				}
+                {
+                    if (cd->Flags & COPYFLAG_NEWER)
+                    {
+                        if (CheckVersion( cd ) == CHECKVER_DESTOLDER )
+                        {
+                            if (KillFile(name, cd->Flags & COPYFLAG_FORCEOVERWRITE, cd))
+                            {
+                                ret = TESTDEST_DELETED;
+                            }
+                        }
+                        else
+                        {
+                            ret = TESTDEST_CANTDELETE;
+                        }
+                    }
+                    else /* normal "dont overwrite mode" */
+                    {
+                        ret = TESTDEST_CANTDELETE;
+                    }
+                }
                 else if (KillFile(name, cd->Flags & COPYFLAG_FORCEOVERWRITE, cd))
                 {
                     ret = TESTDEST_DELETED;
@@ -2407,78 +2407,78 @@ struct VersionData vdd;
 LONG resversion = CHECKVER_EQUAL;
 LONG resdate = CHECKVER_EQUAL;
 
-	if( VersionFind( cd->FileName, &vds, cd ) )
-	{
-		if( VersionFind( cd->DestName, &vdd, cd ) )
-		{
+    if( VersionFind( cd->FileName, &vds, cd ) )
+    {
+        if( VersionFind( cd->DestName, &vdd, cd ) )
+        {
 /* version and revision must be available to ensure a proper operation */
-			if( ((vdd.vd_Version != -1) && (vds.vd_Version != -1) && (vdd.vd_Revision != -1) && (vds.vd_Revision != -1)) )
-			{
+            if( ((vdd.vd_Version != -1) && (vds.vd_Version != -1) && (vdd.vd_Revision != -1) && (vds.vd_Revision != -1)) )
+            {
 /* first we make the stuff comparable. If one component is missing we reset both */
-				if( vdd.vd_Year == -1 || vds.vd_Year == -1 )
-				{
-					vdd.vd_Year = 0;
-					vds.vd_Year = 0;
-				}
-				if( vdd.vd_Month == -1 || vds.vd_Month == -1 )
-				{
-					vdd.vd_Month = 0;
-					vds.vd_Month = 0;
-				}
-				if( vdd.vd_Day == -1 || vds.vd_Day == -1 )
-				{
-					vdd.vd_Day = 0;
-					vds.vd_Day = 0;
-				}
+                if( vdd.vd_Year == -1 || vds.vd_Year == -1 )
+                {
+                    vdd.vd_Year = 0;
+                    vds.vd_Year = 0;
+                }
+                if( vdd.vd_Month == -1 || vds.vd_Month == -1 )
+                {
+                    vdd.vd_Month = 0;
+                    vds.vd_Month = 0;
+                }
+                if( vdd.vd_Day == -1 || vds.vd_Day == -1 )
+                {
+                    vdd.vd_Day = 0;
+                    vds.vd_Day = 0;
+                }
 
 /* check version */
-				resversion = CHECKVER_DESTOLDER;
-				if( ((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision == vds.vd_Revision ) )
-				{
-					resversion = CHECKVER_EQUAL;
-				}
-				else if(  (vdd.vd_Version  > vds.vd_Version) ||
-						((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision > vds.vd_Revision ) )
-				{
-					resversion = CHECKVER_DESTNEWER;
-				}
+                resversion = CHECKVER_DESTOLDER;
+                if( ((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision == vds.vd_Revision ) )
+                {
+                    resversion = CHECKVER_EQUAL;
+                }
+                else if( (vdd.vd_Version  > vds.vd_Version) ||
+                        ((vdd.vd_Version == vds.vd_Version) && vdd.vd_Revision > vds.vd_Revision ) )
+                {
+                    resversion = CHECKVER_DESTNEWER;
+                }
 /* check date */
 
-				resdate = CHECKVER_DESTOLDER;
-				if( ((vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month) && (vdd.vd_Day == vds.vd_Day) ) )
-				{
-					resdate = CHECKVER_EQUAL;
-				}
-				else
-				{
-					if( ( (vdd.vd_Year  > vds.vd_Year ) ||
-						( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month  > vds.vd_Month ) ) ||
-						( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month ) && (vdd.vd_Day  > vds.vd_Day ) ) ))
-					{
-						resdate = CHECKVER_DESTNEWER;
-					}
-				}
+                resdate = CHECKVER_DESTOLDER;
+                if( ((vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month) && (vdd.vd_Day == vds.vd_Day) ) )
+                {
+                    resdate = CHECKVER_EQUAL;
+                }
+                else
+                {
+                    if( ( (vdd.vd_Year  > vds.vd_Year ) ||
+                        ( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month  > vds.vd_Month ) ) ||
+                        ( (vdd.vd_Year == vds.vd_Year) && (vdd.vd_Month == vds.vd_Month ) && (vdd.vd_Day  > vds.vd_Day ) ) ))
+                    {
+                        resdate = CHECKVER_DESTNEWER;
+                    }
+                }
 
 /* plausible check */
-				if( ((resversion == CHECKVER_DESTNEWER) && (resdate == CHECKVER_DESTOLDER)) || /* newer version with older date */
-					((resversion == CHECKVER_DESTOLDER) && (resdate == CHECKVER_DESTNEWER)) )  /* older version with newer date */
-				{
-					/* we maybe should inform the user about this */
-					return( CHECKVER_EQUAL );
-				}
-			}
-		}
-	}
+                if( ((resversion == CHECKVER_DESTNEWER) && (resdate == CHECKVER_DESTOLDER)) || /* newer version with older date */
+                    ((resversion == CHECKVER_DESTOLDER) && (resdate == CHECKVER_DESTNEWER)) )  /* older version with newer date */
+                {
+                    /* we maybe should inform the user about this */
+                    return( CHECKVER_EQUAL );
+                }
+            }
+        }
+    }
 /* compose result */
 
-	if( (resversion == resdate) || (resversion == CHECKVER_EQUAL) )
-	{
-		return( resdate );
-	}
-	else
-	{
-		return( resversion );
-	}
+    if( (resversion == resdate) || (resversion == CHECKVER_EQUAL) )
+    {
+        return( resdate );
+    }
+    else
+    {
+        return( resversion );
+    }
 }
 
 
@@ -2491,41 +2491,41 @@ LONG resdate = CHECKVER_EQUAL;
 
 #define VERSBUFFERSIZE 4096 /* must be as big as the biggest version string we want to handle. */
 
-static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd)
+static BOOL VersionFind( CONST_STRPTR path, struct VersionData *vds, struct CopyData *cd)
 {
-	BPTR handle;
-	STRPTR buf;
-	ULONG i, rc;
+    BPTR handle;
+    STRPTR buf;
+    ULONG i, rc;
 
-	rc = FALSE;
+    rc = FALSE;
 
-	if ( (buf = AllocVec(VERSBUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR)) )
-	{
-		if ( (handle = Open(path, MODE_OLDFILE)) )
-		{
-			long index = 0;
+    if ( (buf = AllocVec(VERSBUFFERSIZE, MEMF_PUBLIC | MEMF_CLEAR)) )
+    {
+        if ( (handle = Open(path, MODE_OLDFILE)) )
+        {
+            long index = 0;
 
-			while( ( (index += Read(handle, &buf[index], VERSBUFFERSIZE-index)) > 5) && !rc )
-			{
-				for (i = 0; i < index-5; i++) {
-					if( buf[i] == '$' && buf[i+1] == 'V' && buf[i+2] == 'E' && buf[i+3] == 'R' && buf[i+4] == ':' ) {
-						CopyMem( &buf[i], buf, index-i );
-						index -= i;
-						(index += Read(handle, &buf[index], VERSBUFFERSIZE-index));
-						/* now the version string is aligned and complete in buffer */
-						makeversionfromstring( buf, vds, cd );
-						rc = TRUE;
-						break;
-					}
-				}
-				CopyMem( &buf[index-5], &buf[0], 5 );
-				index = 5;
-			}
-			Close(handle);
-		}
-		FreeVec(buf);
-	}
-	return (rc);
+            while( ( (index += Read(handle, &buf[index], VERSBUFFERSIZE-index)) > 5) && !rc )
+            {
+                for (i = 0; i < index-5; i++) {
+                    if( buf[i] == '$' && buf[i+1] == 'V' && buf[i+2] == 'E' && buf[i+3] == 'R' && buf[i+4] == ':' ) {
+                        CopyMem( &buf[i], buf, index-i );
+                        index -= i;
+                        (index += Read(handle, &buf[index], VERSBUFFERSIZE-index));
+                        /* now the version string is aligned and complete in buffer */
+                        makeversionfromstring( buf, vds, cd );
+                        rc = TRUE;
+                        break;
+                    }
+                }
+                CopyMem( &buf[index-5], &buf[0], 5 );
+                index = 5;
+            }
+            Close(handle);
+        }
+        FreeVec(buf);
+    }
+    return (rc);
 }
 
 
@@ -2541,86 +2541,86 @@ static BOOL	VersionFind( CONST_STRPTR path, struct VersionData *vds, struct Copy
 static
 void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyData *cd)
 {
-	LONG  pos;
-	ULONG tmp;
-	STRPTR name;
+    LONG  pos;
+    ULONG tmp;
+    STRPTR name;
 
 /* reset data field */
 
-	vd->vd_Name[0]  = '\0';
-	vd->vd_Version  = -1;
-	vd->vd_Revision = -1;
-	vd->vd_Day      = -1;
-	vd->vd_Month    = -1;
-	vd->vd_Year     = -1;
+    vd->vd_Name[0]  = '\0';
+    vd->vd_Version  = -1;
+    vd->vd_Revision = -1;
+    vd->vd_Day      = -1;
+    vd->vd_Month    = -1;
+    vd->vd_Year     = -1;
 
-	buffer = skipspaces( buffer ); /* skip before $VER: */
-	buffer = skipnonspaces( buffer ); /* skip $VER: */
-	buffer = skipspaces( buffer ); /* skip spaces before tool name */
-	name = buffer;
-	buffer = skipnonspaces( buffer ); /* skip name of tool */
+    buffer = skipspaces( buffer ); /* skip before $VER: */
+    buffer = skipnonspaces( buffer ); /* skip $VER: */
+    buffer = skipspaces( buffer ); /* skip spaces before tool name */
+    name = buffer;
+    buffer = skipnonspaces( buffer ); /* skip name of tool */
 
-	if( (tmp = ((long) buffer - (long) name) ) && *buffer )
-	{
-		CopyMem( name, vd->vd_Name, MIN( tmp, VDNAMESIZE-1) );
-		vd->vd_Name[MIN( tmp, VDNAMESIZE-1)] = '\0'; /* terminate name string inside target buffer */
+    if( (tmp = ((long) buffer - (long) name) ) && *buffer )
+    {
+        CopyMem( name, vd->vd_Name, MIN( tmp, VDNAMESIZE-1) );
+        vd->vd_Name[MIN( tmp, VDNAMESIZE-1)] = '\0'; /* terminate name string inside target buffer */
 
-		buffer = skipspaces( buffer ); /* skip spaces before version */
-		if( *buffer ) {
+        buffer = skipspaces( buffer ); /* skip spaces before version */
+        if( *buffer ) {
 
-		/* Do version */
+        /* Do version */
 
-			if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
-			{
-				vd->vd_Version = tmp;
+            if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+            {
+                vd->vd_Version = tmp;
 
-				/* Do revision */
+                /* Do revision */
 
-				buffer += pos;
-				buffer = skipspaces(buffer);
-				if (*buffer++ == '.')
-				{
-					if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
-					{
-						vd->vd_Revision = tmp;
-						buffer += pos;
-						buffer = skipspaces(buffer);
-						if (*buffer++ == '(')
-						{
-							if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
-							{
-								vd->vd_Day = tmp;
-								buffer += pos;
-								if (*buffer++ == '.')
-								{
-									if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
-									{
-										vd->vd_Month = tmp;
-										buffer += pos;
-										if (*buffer++ == '.')
-										{
-											if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
-											{
-												if( (tmp >= 70) && (tmp <= 99) )
-												{
-													tmp += 1900;
-												}
-												if( (tmp < 70) )
-												{
-													tmp += 2000;
-												}
-												vd->vd_Year = tmp;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                buffer += pos;
+                buffer = skipspaces(buffer);
+                if (*buffer++ == '.')
+                {
+                    if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+                    {
+                        vd->vd_Revision = tmp;
+                        buffer += pos;
+                        buffer = skipspaces(buffer);
+                        if (*buffer++ == '(')
+                        {
+                            if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+                            {
+                                vd->vd_Day = tmp;
+                                buffer += pos;
+                                if (*buffer++ == '.')
+                                {
+                                    if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+                                    {
+                                        vd->vd_Month = tmp;
+                                        buffer += pos;
+                                        if (*buffer++ == '.')
+                                        {
+                                            if( (pos = StrToLong((STRPTR) buffer, &tmp)) != -1 )
+                                            {
+                                                if( (tmp >= 70) && (tmp <= 99) )
+                                                {
+                                                    tmp += 1900;
+                                                }
+                                                if( (tmp < 70) )
+                                                {
+                                                    tmp += 2000;
+                                                }
+                                                vd->vd_Year = tmp;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 /* Return a pointer to a string, stripped by all leading space characters
@@ -2629,13 +2629,13 @@ void makeversionfromstring( STRPTR buffer, struct VersionData *vd, struct CopyDa
 static
 STRPTR skipspaces( STRPTR buffer)
 {
-	for (;; buffer++)
-	{
-		if (buffer[0] == '\0' || buffer[0] != ' ')
-		{
-			return( buffer );
-		}
-	}
+    for (;; buffer++)
+    {
+        if (buffer[0] == '\0' || buffer[0] != ' ')
+        {
+            return( buffer );
+        }
+    }
 }
 
 /* Return a pointer to a string, stripped by all non space characters
@@ -2644,11 +2644,11 @@ STRPTR skipspaces( STRPTR buffer)
 static
 STRPTR skipnonspaces( STRPTR buffer)
 {
-	for (;; buffer++)
-	{
-		if (buffer[0] == '\0' || buffer[0] == ' ')
-		{
-			return( buffer );
-		}
-	}
+    for (;; buffer++)
+    {
+        if (buffer[0] == '\0' || buffer[0] == ' ')
+        {
+            return( buffer );
+        }
+    }
 }
