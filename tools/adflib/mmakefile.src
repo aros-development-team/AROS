@@ -57,7 +57,8 @@ HOST_INCLUDES := $(CROSSTOOLSDIR)/include
 
 %build_linklib mmake=host-linklibs-adf libname=adf files=$(FILES) \
                      cflags="-I$(SRCDIR)/$(CURDIR)/Generic -I$(HOST_INCLUDES) -g3 -Wall -Werror" \
-                     compiler=host libdir="$(CROSSTOOLSDIR)/lib"
+                     compiler=host libdir="$(CROSSTOOLSDIR)/lib" \
+                     objdir=$(OBJDIR)/host
 
 
 #MM
