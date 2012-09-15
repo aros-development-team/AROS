@@ -4,6 +4,7 @@ EXTRA_DIST += geninit.sh
 EXTRA_DIST += gentpl.py
 EXTRA_DIST += Makefile.tpl
 EXTRA_DIST += Makefile.util.def
+EXTRA_DIST += Makefile.utilgcry.def
 
 EXTRA_DIST += unicode
 
@@ -29,6 +30,24 @@ EXTRA_DIST += grub-core/lib/libgcrypt/cipher
 EXTRA_DIST += $(shell find $(top_srcdir)/include -name '*.h')
 EXTRA_DIST += $(shell find $(top_srcdir)/grub-core/lib -name '*.h')
 EXTRA_DIST += $(shell find $(top_srcdir)/grub-core/gnulib -name '*.h')
-EXTRA_DIST += $(shell find $(top_srcdir)/grub-core/efiemu -name '*.h')
+EXTRA_DIST += grub-core/efiemu/runtime/config.h
+
+EXTRA_DIST += grub-core/lib/LzmaDec.c
+
+EXTRA_DIST += BUGS
+EXTRA_DIST += util/i386/efi/grub-dumpdevtree
 
 EXTRA_DIST += m4/gnulib-cache.m4
+EXTRA_DIST += m4/glibc2.m4
+EXTRA_DIST += m4/gnulib-tool.m4
+EXTRA_DIST += m4/intdiv0.m4
+EXTRA_DIST += m4/intl.m4
+EXTRA_DIST += m4/intldir.m4
+EXTRA_DIST += m4/intmax.m4
+EXTRA_DIST += m4/inttypes-pri.m4
+EXTRA_DIST += m4/lcmessage.m4
+EXTRA_DIST += m4/lock.m4
+EXTRA_DIST += m4/printf-posix.m4
+EXTRA_DIST += m4/threadlib.m4
+EXTRA_DIST += m4/uintmax_t.m4
+EXTRA_DIST += m4/visibility.m4

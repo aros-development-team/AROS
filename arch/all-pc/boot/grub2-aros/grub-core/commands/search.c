@@ -31,11 +31,23 @@
 #include <grub/disk.h>
 #include <grub/partition.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
+struct cache_entry
+{
+  struct cache_entry *next;
+  char *key;
+  char *value;
+};
+
+static struct cache_entry *cache;
+
 void
 FUNC_NAME (const char *key, const char *var, int no_floppy,
 	   char **hints, unsigned nhints)
 {
   int count = 0;
+  int is_cache = 0;
   grub_fs_autoload_hook_t saved_autoload;
 
   auto int iterate_device (const char *name);
@@ -47,6 +59,12 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
     if (no_floppy &&
 	name[0] == 'f' && name[1] == 'd' && name[2] >= '0' && name[2] <= '9')
       return 0;
+
+#ifdef DO_SEARCH_FS_UUID
+#define compare_fn grub_strcasecmp
+#else
+#define compare_fn grub_strcmp
+#endif
 
 #ifdef DO_SEARCH_FILE
       {
@@ -79,10 +97,8 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
 	    fs = grub_fs_probe (dev);
 
 #ifdef DO_SEARCH_FS_UUID
-#define compare_fn grub_strcasecmp
 #define read_fn uuid
 #else
-#define compare_fn grub_strcmp
 #define read_fn label
 #endif
 
@@ -103,6 +119,31 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
 	  }
       }
 #endif
+
+    if (!is_cache && found && count == 0)
+      {
+	struct cache_entry *cache_ent;
+	cache_ent = grub_malloc (sizeof (*cache_ent));
+	if (cache_ent)
+	  {
+	    cache_ent->key = grub_strdup (key);
+	    cache_ent->value = grub_strdup (name);
+	    if (cache_ent->value && cache_ent->key)
+	      {
+		cache_ent->next = cache;
+		cache = cache_ent;
+	      }
+	    else
+	      {
+		grub_free (cache_ent->value);
+		grub_free (cache_ent->key);
+		grub_free (cache_ent);
+		grub_errno = GRUB_ERR_NONE;
+	      }
+	  }
+	else
+	  grub_errno = GRUB_ERR_NONE;
+      }
 
     if (found)
       {
@@ -141,6 +182,32 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
   void try (void)    
   {
     unsigned i;
+    struct cache_entry **prev;
+    struct cache_entry *cache_ent;
+
+    for (prev = &cache, cache_ent = *prev; cache_ent;
+	 prev = &cache_ent->next, cache_ent = *prev)
+      if (compare_fn (cache_ent->key, key) == 0)
+	break;
+    if (cache_ent)
+      {
+	is_cache = 1;
+	if (iterate_device (cache_ent->value))
+	  {
+	    is_cache = 0;
+	    return;
+	  }
+	is_cache = 0;
+	/* Cache entry was outdated. Remove it.  */
+	if (!count)
+	  {
+	    grub_free (cache_ent->key);
+	    grub_free (cache_ent->value);
+	    grub_free (cache_ent);
+	    *prev = cache_ent->next;
+	  }
+      }
+
     for (i = 0; i < nhints; i++)
       {
 	char *end;
@@ -162,17 +229,20 @@ FUNC_NAME (const char *key, const char *var, int no_floppy,
 	    dev = grub_device_open (hints[i]);
 	    if (!dev)
 	      {
-		*end = ',';
+		if (!*end)
+		  *end = ',';
 		continue;
 	      }
 	    if (!dev->disk)
 	      {
 		grub_device_close (dev);
-		*end = ',';
+		if (!*end)
+		  *end = ',';
 		continue;
 	      }
 	    ret = grub_partition_iterate (dev->disk, part_hook);
-	    *end = ',';
+	    if (!*end)
+	      *end = ',';
 	    grub_device_close (dev);
 	    if (ret)
 	      return;
@@ -207,7 +277,7 @@ grub_cmd_do_search (grub_command_t cmd __attribute__ ((unused)), int argc,
 		    char **args)
 {
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no argument specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   FUNC_NAME (args[0], argc == 1 ? 0 : args[1], 0, (args + 2),
 	     argc > 2 ? argc - 2 : 0);

@@ -22,6 +22,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 int
 grub_apm_get_info (struct grub_apm_info *info)
 {
@@ -70,29 +72,29 @@ grub_cmd_lsapm (grub_command_t cmd __attribute__ ((unused)),
 {
   struct grub_apm_info info;
   if (!grub_apm_get_info (&info))
-    return grub_error (GRUB_ERR_IO, "no APM found");
+    return grub_error (GRUB_ERR_IO, N_("no APM found"));
 
-  grub_printf ("Vesion %u.%u\n"
-	       "32-bit CS = 0x%x, len = 0x%x, offset = 0x%x\n"
-	       "16-bit CS = 0x%x, len = 0x%x\n"
-	       "DS = 0x%x, len = 0x%x\n",
-	       info.version >> 8, info.version & 0xff,
-	       info.cseg, info.cseg_len, info.offset,
-	       info.cseg_16, info.cseg_16_len,
-	       info.dseg, info.dseg_len);
+  grub_printf_ (N_("Version %u.%u\n"
+		   "32-bit CS = 0x%x, len = 0x%x, offset = 0x%x\n"
+		   "16-bit CS = 0x%x, len = 0x%x\n"
+		   "DS = 0x%x, len = 0x%x\n"),
+		info.version >> 8, info.version & 0xff,
+		info.cseg, info.cseg_len, info.offset,
+		info.cseg_16, info.cseg_16_len,
+		info.dseg, info.dseg_len);
   grub_xputs (info.flags & GRUB_APM_FLAGS_16BITPROTECTED_SUPPORTED
-	      ? "16-bit protected interface supported\n"
-	      : "16-bit protected interface unsupported\n");
+	      ? _("16-bit protected interface supported\n")
+	      : _("16-bit protected interface unsupported\n"));
   grub_xputs (info.flags & GRUB_APM_FLAGS_32BITPROTECTED_SUPPORTED
-	      ? "32-bit protected interface supported\n"
-	      : "32-bit protected interface unsupported\n");
+	      ? _("32-bit protected interface supported\n")
+	      : _("32-bit protected interface unsupported\n"));
   grub_xputs (info.flags & GRUB_APM_FLAGS_CPUIDLE_SLOWS_DOWN
-	      ? "CPU Idle slows down processor\n"
-	      : "CPU Idle doesn't slow down processor\n");
+	      ? _("CPU Idle slows down processor\n")
+	      : _("CPU Idle doesn't slow down processor\n"));
   grub_xputs (info.flags & GRUB_APM_FLAGS_DISABLED
-	      ? "APM disabled\n" : "APM enabled\n");
+	      ? _("APM disabled\n") : _("APM enabled\n"));
   grub_xputs (info.flags & GRUB_APM_FLAGS_DISENGAGED
-	      ? "APM disengaged\n" : "APM engaged\n");
+	      ? _("APM disengaged\n") : _("APM engaged\n"));
 
   return GRUB_ERR_NONE;
 }

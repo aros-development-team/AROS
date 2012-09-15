@@ -46,7 +46,10 @@ struct grub_relocator16_state
   grub_uint16_t ss;
   grub_uint16_t sp;
   grub_uint16_t ip;
+  grub_uint32_t ebx;
   grub_uint32_t edx;
+  grub_uint32_t esi;
+  int a20;
 };
 
 struct grub_relocator64_state
@@ -65,7 +68,8 @@ grub_err_t grub_relocator16_boot (struct grub_relocator *rel,
 				  struct grub_relocator16_state state);
 
 grub_err_t grub_relocator32_boot (struct grub_relocator *rel,
-				  struct grub_relocator32_state state);
+				  struct grub_relocator32_state state,
+				  int avoid_efi_bootservices);
 
 grub_err_t grub_relocator64_boot (struct grub_relocator *rel,
 				  struct grub_relocator64_state state,

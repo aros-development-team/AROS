@@ -31,12 +31,12 @@ struct grub_unicode_bidi_pair
 
 struct grub_unicode_compact_range
 {
-  grub_uint32_t start:21;
-  grub_uint32_t end:21;
-  grub_uint8_t bidi_type:5;
-  grub_uint8_t comb_type;
-  grub_uint8_t bidi_mirror:1;
-  grub_uint8_t join_type:3;
+  unsigned start:21;
+  unsigned len:9;
+  unsigned bidi_type:5;
+  unsigned comb_type:8;
+  unsigned bidi_mirror:1;
+  unsigned join_type:3;
 } __attribute__ ((packed));
 
 /* Old-style Arabic shaping. Used for "visual UTF-8" and
@@ -167,6 +167,8 @@ struct grub_unicode_glyph
 
 enum
   {
+    GRUB_UNICODE_DOTLESS_LOWERCASE_I       = 0x0131,
+    GRUB_UNICODE_DOTLESS_LOWERCASE_J       = 0x0237,
     GRUB_UNICODE_COMBINING_GRAPHEME_JOINER = 0x034f,
     GRUB_UNICODE_HEBREW_WAW                = 0x05d5,
     GRUB_UNICODE_ARABIC_START              = 0x0600,
@@ -206,8 +208,11 @@ enum
     GRUB_UNICODE_BLACK_LEFT_TRIANGLE       = 0x25c4,
     GRUB_UNICODE_VARIATION_SELECTOR_1      = 0xfe00,
     GRUB_UNICODE_VARIATION_SELECTOR_16     = 0xfe0f,
+    GRUB_UNICODE_TAG_START                 = 0xe0000,
+    GRUB_UNICODE_TAG_END                   = 0xe007f,
     GRUB_UNICODE_VARIATION_SELECTOR_17     = 0xe0100,
-    GRUB_UNICODE_VARIATION_SELECTOR_256    = 0xe01ef
+    GRUB_UNICODE_VARIATION_SELECTOR_256    = 0xe01ef,
+    GRUB_UNICODE_LAST_VALID                = 0x10ffff
   };
 
 extern struct grub_unicode_compact_range grub_unicode_compact[];
@@ -240,13 +245,14 @@ grub_unicode_glyph_dup (const struct grub_unicode_glyph *in)
   grub_memcpy (out, in, sizeof (*in));
   if (in->combining)
     {
-      out->combining = grub_malloc (in->ncomb * sizeof (*in));
+      out->combining = grub_malloc (in->ncomb * sizeof (out->combining[0]));
       if (!out->combining)
 	{
 	  grub_free (out);
 	  return NULL;
 	}
-      grub_memcpy (out->combining, in->combining, in->ncomb * sizeof (*in));
+      grub_memcpy (out->combining, in->combining,
+		   in->ncomb * sizeof (out->combining[0]));
     }
   return out;
 }

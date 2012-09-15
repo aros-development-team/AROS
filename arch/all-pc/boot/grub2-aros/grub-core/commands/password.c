@@ -26,6 +26,8 @@
 #include <grub/dl.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_dl_t my_mod;
 
 static grub_err_t
@@ -70,7 +72,7 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
 		   int argc, char **args)
 {
   if (argc != 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "two arguments expected");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
   return grub_normal_set_password (args[0], args[1]);
 }
 

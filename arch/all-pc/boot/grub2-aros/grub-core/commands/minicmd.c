@@ -29,6 +29,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 /* cat FILE */
 static grub_err_t
 grub_mini_cmd_cat (struct grub_command *cmd __attribute__ ((unused)),
@@ -39,7 +41,7 @@ grub_mini_cmd_cat (struct grub_command *cmd __attribute__ ((unused)),
   grub_ssize_t size;
 
   if (argc < 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   file = grub_file_open (argv[0]);
   if (! file)
@@ -81,32 +83,12 @@ grub_mini_cmd_help (struct grub_command *cmd __attribute__ ((unused)),
 
   for (p = grub_command_list; p; p = p->next)
     grub_printf ("%s (%d%c)\t%s\n", p->name,
-		 p->prio & GRUB_PRIO_LIST_PRIO_MASK,
-		 (p->prio & GRUB_PRIO_LIST_FLAG_ACTIVE) ? '+' : '-',
+		 p->prio & GRUB_COMMAND_PRIO_MASK,
+		 (p->prio & GRUB_COMMAND_FLAG_ACTIVE) ? '+' : '-',
 		 p->description);
 
   return 0;
 }
-
-#if 0
-static void
-grub_rescue_cmd_info (void)
-{
-  extern void grub_disk_cache_get_performance (unsigned long *,
-					       unsigned long *);
-  unsigned long hits, misses;
-
-  grub_disk_cache_get_performance (&hits, &misses);
-  grub_printf ("Disk cache: hits = %u, misses = %u ", hits, misses);
-  if (hits + misses)
-    {
-      unsigned long ratio = hits * 10000 / (hits + misses);
-      grub_printf ("(%u.%u%%)\n", ratio / 100, ratio % 100);
-    }
-  else
-    grub_printf ("(N/A)\n");
-}
-#endif
 
 /* dump ADDRESS [SIZE] */
 static grub_err_t
@@ -163,7 +145,12 @@ grub_mini_cmd_lsmod (struct grub_command *cmd __attribute__ ((unused)),
 {
   grub_dl_t mod;
 
-  grub_printf ("Name\tRef Count\tDependencies\n");
+  /* TRANSLATORS: this is module list header.  Name
+     is module name, Ref Count is a reference counter
+     (how many modules or open descriptors use it).
+     Dependencies are the other modules it uses.
+   */
+  grub_printf_ (N_("Name\tRef Count\tDependencies\n"));
   FOR_DL_MODULES (mod)
   {
     grub_dl_dep_t dep;
@@ -183,13 +170,13 @@ grub_mini_cmd_lsmod (struct grub_command *cmd __attribute__ ((unused)),
 }
 
 /* exit */
-static grub_err_t
+static grub_err_t __attribute__ ((noreturn))
 grub_mini_cmd_exit (struct grub_command *cmd __attribute__ ((unused)),
 		    int argc __attribute__ ((unused)),
 		    char *argv[] __attribute__ ((unused)))
 {
   grub_exit ();
-  return 0;
+  /* Not reached.  */
 }
 
 static grub_command_t cmd_cat, cmd_help;
@@ -205,7 +192,7 @@ GRUB_MOD_INIT(minicmd)
 			   0, N_("Show this message."));
   cmd_dump =
     grub_register_command ("dump", grub_mini_cmd_dump,
-			   N_("ADDR"), N_("Dump memory."));
+			   N_("ADDR [SIZE]"), N_("Show memory contents."));
   cmd_rmmod =
     grub_register_command ("rmmod", grub_mini_cmd_rmmod,
 			   N_("MODULE"), N_("Remove a module."));

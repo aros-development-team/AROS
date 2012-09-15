@@ -97,7 +97,7 @@ grub_usb_control_msg (grub_usb_device_t dev,
   if (! transfer)
     {
       grub_dma_free (data_chunk);
-      return grub_errno;
+      return GRUB_USB_ERR_INTERNAL;
     }
 
   setupdata_chunk = grub_memalign_dma32 (32, sizeof (*setupdata));
@@ -105,7 +105,7 @@ grub_usb_control_msg (grub_usb_device_t dev,
     {
       grub_free (transfer);
       grub_dma_free (data_chunk);
-      return grub_errno;
+      return GRUB_USB_ERR_INTERNAL;
     }
 
   setupdata = grub_dma_get_virt (setupdata_chunk);
@@ -139,7 +139,7 @@ grub_usb_control_msg (grub_usb_device_t dev,
       grub_free (transfer);
       grub_dma_free (setupdata_chunk);
       grub_dma_free (data_chunk);
-      return grub_errno;
+      return GRUB_USB_ERR_INTERNAL;
     }
 
   /* Build a Setup packet.  XXX: Endianness.  */

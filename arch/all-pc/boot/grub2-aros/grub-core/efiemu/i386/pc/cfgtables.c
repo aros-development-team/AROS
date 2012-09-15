@@ -24,7 +24,7 @@
 #include <grub/acpi.h>
 
 grub_err_t
-grub_machine_efiemu_init_tables ()
+grub_machine_efiemu_init_tables (void)
 {
   grub_uint8_t *ptr;
   void *table;
@@ -67,7 +67,8 @@ grub_machine_efiemu_init_tables ()
   if (ptr < (grub_uint8_t *) 0x100000)
     {
       grub_dprintf ("efiemu", "Registering SMBIOS\n");
-      if ((err = grub_efiemu_register_configuration_table (smbios, 0, 0, ptr)))
+      err = grub_efiemu_register_configuration_table (smbios, 0, 0, ptr);
+      if (err)
 	return err;
     }
 

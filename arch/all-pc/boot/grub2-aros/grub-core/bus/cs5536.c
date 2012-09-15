@@ -21,6 +21,13 @@
 #include <grub/pci.h>
 #include <grub/time.h>
 #include <grub/ata.h>
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+#include <grub/machine/kernel.h>
+#endif
+
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 int
 grub_cs5536_find (grub_pci_device_t *devp)
@@ -90,8 +97,6 @@ grub_cs5536_smbus_wait (grub_port_t smbbase)
       if (grub_get_time_ms () > start + 40)
 	return grub_error (GRUB_ERR_IO, "SM stalled");
     }
-
-  return GRUB_ERR_NONE;
 }
 
 grub_err_t
@@ -213,26 +218,6 @@ grub_cs5536_read_spd (grub_port_t smbbase, grub_uint8_t dev,
   return GRUB_ERR_NONE;
 }
 
-/* Dump of GPIO connections. FIXME: Remove useless and macroify.  */
-static grub_uint32_t gpiodump[] = {
-  0xffff0000, 0x2ffdd002, 0xffff0000, 0xffff0000,
-  0x2fffd000, 0xffff0000, 0x1000efff, 0xefff1000,
-  0x3ffbc004, 0xffff0000, 0xffff0000, 0xffff0000,
-  0x3ffbc004, 0x3ffbc004, 0xffff0000, 0x00000000,
-  0xffff0000, 0xffff0000, 0x3ffbc004, 0x3f9bc064,
-  0x00000000, 0x00000000, 0x00000000, 0x00000000,
-  0x00000000, 0x00000000, 0x00000000, 0x00000000,
-  0x00000000, 0x00000000, 0x00000000, 0x00000000,
-  0xffff0000, 0xffff0000, 0xffff0000, 0xffff0000,
-  0xffff0000, 0xffff0000, 0x0000ffff, 0xffff0000,
-  0xefff1000, 0xffff0000, 0xffff0000, 0xffff0000,
-  0xefff1000, 0xefff1000, 0xffff0000, 0x00000000,
-  0xffff0000, 0xffff0000, 0xefff1000, 0xffff0000,
-  0x00000000, 0x00000000, 0x00000000, 0x00000000,
-  0x00000000, 0x00000000, 0x00000000, 0x00000000,
-  0x00000000, 0x50000000, 0x00000000, 0x00000000,
-};
-
 static inline void
 set_io_space (grub_pci_device_t dev, int num, grub_uint16_t start,
 	      grub_uint16_t len)
@@ -273,17 +258,6 @@ set_p2d (grub_pci_device_t dev, int num, int dest, grub_uint32_t start)
 void
 grub_cs5536_init_geode (grub_pci_device_t dev)
 {
-  int i;
-
-  /* Make sure GPIO is where we expect it to be.  */
-  grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_GPIO_BAR,
-			 GRUB_CS5536_LBAR_TURN_ON | GRUB_CS5536_LBAR_GPIO);
-
-  /* Setup GPIO.  */
-  for (i = 0; i < (int) ARRAY_SIZE (gpiodump); i++)
-    ((volatile grub_uint32_t *) (GRUB_MACHINE_PCI_IO_BASE 
-				 + GRUB_CS5536_LBAR_GPIO)) [i] = gpiodump[i];
-
   /* Enable more BARs.  */
   grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_IRQ_MAP_BAR,
 			 GRUB_CS5536_LBAR_TURN_ON | GRUB_CS5536_LBAR_IRQ_MAP);
@@ -295,11 +269,27 @@ grub_cs5536_init_geode (grub_pci_device_t dev)
 			 GRUB_CS5536_LBAR_TURN_ON | GRUB_CS5536_LBAR_PM);
 
   /* Setup DIVIL.  */
-  grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_DIVIL_LEG_IO,
-			 GRUB_CS5536_MSR_DIVIL_LEG_IO_MODE_X86
-			 | GRUB_CS5536_MSR_DIVIL_LEG_IO_F_REMAP
-			 | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE0
-			 | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE1);
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+  switch (grub_arch_machine)
+    {
+    case GRUB_ARCH_MACHINE_YEELOONG:
+      grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_DIVIL_LEG_IO,
+			     GRUB_CS5536_MSR_DIVIL_LEG_IO_MODE_X86
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_F_REMAP
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE0
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE1);
+      break;
+    case GRUB_ARCH_MACHINE_FULOONG2F:
+      grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_DIVIL_LEG_IO,
+			     GRUB_CS5536_MSR_DIVIL_LEG_IO_UART2_COM3
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_UART1_COM1
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_MODE_X86
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_F_REMAP
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE0
+			     | GRUB_CS5536_MSR_DIVIL_LEG_IO_RTC_ENABLE1);
+      break;
+    }
+#endif
   grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_DIVIL_IRQ_MAPPER_PRIMARY_MASK,
 			 (~GRUB_CS5536_DIVIL_LPC_INTERRUPTS) & 0xffff);
   grub_cs5536_write_msr (dev, GRUB_CS5536_MSR_DIVIL_IRQ_MAPPER_LPC_MASK,

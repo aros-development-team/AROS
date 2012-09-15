@@ -24,6 +24,11 @@ exec_prefix=@exec_prefix@
 bindir=@bindir@
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_VERSION=@PACKAGE_VERSION@
+datarootdir="@datarootdir@"
+datadir="@datadir@"
+if [ "x$pkgdatadir" = x ]; then
+    pkgdatadir="${datadir}/@PACKAGE@"
+fi
 
 self=`basename $0`
 
@@ -32,22 +37,25 @@ rootdir=
 bootdir=
 grubdir=`echo "/@bootdirname@/@grubdirname@" | sed 's,//*,/,g'`
 
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR="@localedir@"
+
+. "${pkgdatadir}/grub-mkconfig_lib"
+
 # Usage: usage
 # Print the usage.
 usage () {
-    cat <<EOF
-Usage: $self [OPTION] entry
-Set the default boot entry for GRUB, for the next boot only.
-
-  -h, --help              print this message and exit
-  -v, --version           print the version information and exit
-  --boot-directory=DIR    expect GRUB images under the directory DIR/@grubdirname@
-                          instead of the $grubdir directory
-
-ENTRY is a number or a menu item title.
-
-Report bugs to <bug-grub@gnu.org>.
-EOF
+    gettext_printf "Usage: %s [OPTION] MENU_ENTRY\n" "$self"
+    gettext "Set the default boot menu entry for GRUB, for the next boot only."; echo
+    echo
+    print_option_help "-h, --help" "$(gettext "print this message and exit")"
+    print_option_help "-v, --version" "$(gettext "print the version information and exit")"
+    dirmsg="$(gettext_printf "expect GRUB images under the directory DIR/%s instead of the %s directory" "@grubdirname@" "$grubdir")"
+    print_option_help "--boot-directory=$(gettext "DIR")" "$dirmsg"
+    echo
+    gettext "MENU_ENTRY is a number, a menu item title or a menu item identifier."; echo
+    echo
+    gettext "Report bugs to <bug-grub@gnu.org>."; echo
 }
 
 argument () {
@@ -55,7 +63,7 @@ argument () {
   shift
 
   if test $# -eq 0; then
-      echo "$0: option requires an argument -- '$opt'" 1>&2
+      gettext_printf "%s: option requires an argument -- \`%s'\n" "$0" "$opt" 1>&2
       exit 1
   fi
   echo $1
@@ -87,13 +95,14 @@ do
     bootdir=`echo "$option" | sed 's/--boot-directory=//'` ;;
 
     -*)
-	echo "Unrecognized option \`$option'" 1>&2
+	gettext_printf "Unrecognized option \`%s'\n" "$option" 1>&2
 	usage
 	exit 1
 	;;
     *)
 	if test "x$entry" != x; then
-	    echo "More than one entry?" 1>&2
+	    gettext "More than one menu entry?" 1>&2
+	    echo >&2
 	    usage
 	    exit 1
 	fi
@@ -102,7 +111,8 @@ do
 done
 
 if test "x$entry" = x; then
-    echo "entry not specified." 1>&2
+    gettext "Menu entry not specified." 1>&2
+    echo >&2
     usage
     exit 1
 fi

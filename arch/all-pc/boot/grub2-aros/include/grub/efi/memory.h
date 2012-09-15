@@ -24,15 +24,8 @@
 
 #define GRUB_MMAP_REGISTER_BY_FIRMWARE  1
 
-grub_err_t grub_machine_mmap_iterate (int NESTED_FUNC_ATTR (*hook) (grub_uint64_t,
-								    grub_uint64_t,
-								    grub_uint32_t));
 grub_err_t grub_machine_mmap_register (grub_uint64_t start, grub_uint64_t size,
 				       int type, int handle);
 grub_err_t grub_machine_mmap_unregister (int handle);
-
-grub_uint64_t grub_mmap_get_post64 (void);
-grub_uint64_t grub_mmap_get_upper (void);
-grub_uint64_t grub_mmap_get_lower (void);
 
 #endif /* ! GRUB_MEMORY_MACHINE_HEADER */

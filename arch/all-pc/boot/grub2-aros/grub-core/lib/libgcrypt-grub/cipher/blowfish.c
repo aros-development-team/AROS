@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* blowfish.c  -  Blowfish encryption
  *	Copyright (C) 1998, 2001, 2002, 2003 Free Software Foundation, Inc.
  *
@@ -572,6 +574,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_blowfish =
     "BLOWFISH", NULL, NULL, BLOWFISH_BLOCKSIZE, 128,
     sizeof (BLOWFISH_context),
     bf_setkey, encrypt_block, decrypt_block
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_blowfish",
+#endif
   };
 
 

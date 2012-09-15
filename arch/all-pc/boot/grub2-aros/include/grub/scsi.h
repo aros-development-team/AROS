@@ -19,6 +19,8 @@
 #ifndef	GRUB_SCSI_H
 #define	GRUB_SCSI_H	1
 
+#include <grub/disk.h>
+
 typedef struct grub_scsi_dev *grub_scsi_dev_t;
 
 void grub_scsi_dev_register (grub_scsi_dev_t dev);
@@ -29,8 +31,12 @@ struct grub_scsi;
 enum
   {
     GRUB_SCSI_SUBSYSTEM_USBMS,
-    GRUB_SCSI_SUBSYSTEM_ATAPI
+    GRUB_SCSI_SUBSYSTEM_PATA,
+    GRUB_SCSI_SUBSYSTEM_AHCI,
+    GRUB_SCSI_NUM_SUBSYSTEMS
   };
+
+extern const char grub_scsi_names[GRUB_SCSI_NUM_SUBSYSTEMS][5];
 
 #define GRUB_SCSI_ID_SUBSYSTEM_SHIFT 24
 #define GRUB_SCSI_ID_BUS_SHIFT 8
@@ -45,16 +51,12 @@ grub_make_scsi_id (int subsystem, int bus, int lun)
 
 struct grub_scsi_dev
 {
-  /* The device name.  */
-  const char *name;
-
-  grub_uint8_t id;
-
   /* Call HOOK with each device name, until HOOK returns non-zero.  */
-  int (*iterate) (int (*hook) (int bus, int luns));
+  int (*iterate) (int NESTED_FUNC_ATTR (*hook) (int id, int bus, int luns),
+		  grub_disk_pull_t pull);
 
   /* Open the device named NAME, and set up SCSI.  */
-  grub_err_t (*open) (int bus, struct grub_scsi *scsi);
+  grub_err_t (*open) (int id, int bus, struct grub_scsi *scsi);
 
   /* Close the scsi device SCSI.  */
   void (*close) (struct grub_scsi *scsi);
@@ -67,7 +69,7 @@ struct grub_scsi_dev
   /* Write SIZE  bytes from BUF to  the device SCSI  after sending the
      command CMD of size CMDSIZE.  */
   grub_err_t (*write) (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
-		       grub_size_t size, char *buf);
+		       grub_size_t size, const char *buf);
 
   /* The next scsi device.  */
   struct grub_scsi_dev *next;
@@ -92,11 +94,11 @@ struct grub_scsi
   /* Set to 0 when not removable, 1 when removable.  */
   int removable;
 
-  /* Size of the device in blocks.  */
-  int size;
+  /* Size of the device in blocks - 1.  */
+  grub_uint64_t last_block;
 
   /* Size of one block.  */
-  int blocksize;
+  grub_uint32_t blocksize;
 
   /* Device-specific data.  */
   void *data;

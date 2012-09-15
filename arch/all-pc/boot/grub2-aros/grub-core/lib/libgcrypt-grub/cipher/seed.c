@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* SEED for libgcrypt
  *	Copyright (C) 2006 Free Software Foundation, Inc.
  *
@@ -442,6 +444,9 @@ gcry_cipher_spec_t _gcry_cipher_spec_seed =
   {
     "SEED", NULL, seed_oids, 16, 128, sizeof (SEED_context),
     seed_setkey, seed_encrypt, seed_decrypt,
+#ifdef GRUB_UTIL
+    .modname = "gcry_seed",
+#endif
   };
 
 

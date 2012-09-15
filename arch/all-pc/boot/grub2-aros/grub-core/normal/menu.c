@@ -30,6 +30,8 @@
 #include <grub/i18n.h>
 #include <grub/term.h>
 #include <grub/script_sh.h>
+#include <grub/gfxterm.h>
+#include <grub/dl.h>
 
 /* Time to delay after displaying an error message about a default/fallback
    entry failing to boot.  */
@@ -50,12 +52,8 @@ grub_wait_after_message (void)
 
   endtime = grub_get_time_ms () + 10000;
 
-  while (grub_get_time_ms () < endtime)
-    if (grub_checkkey () >= 0)
-      {
-	grub_getkey ();
-	break;
-      }
+  while (grub_get_time_ms () < endtime
+	 && grub_getkey_noblock () == GRUB_TERM_NO_KEY);
 
   grub_xputs ("\n");
 }
@@ -77,7 +75,7 @@ grub_menu_get_entry (grub_menu_t menu, int no)
 int
 grub_menu_get_timeout (void)
 {
-  char *val;
+  const char *val;
   int timeout;
 
   val = grub_env_get ("timeout");
@@ -122,7 +120,7 @@ grub_menu_set_timeout (int timeout)
 static int
 get_and_remove_first_entry_number (const char *name)
 {
-  char *val;
+  const char *val;
   char *tail;
   int entry;
 
@@ -154,12 +152,15 @@ get_and_remove_first_entry_number (const char *name)
 }
 
 /* Run a menu entry.  */
-void
-grub_menu_execute_entry(grub_menu_entry_t entry)
+static void
+grub_menu_execute_entry(grub_menu_entry_t entry, int auto_boot)
 {
   grub_err_t err = GRUB_ERR_NONE;
   int errs_before;
-  grub_menu_t menu;
+  grub_menu_t menu = NULL;
+  char *optr, *buf, *oldchosen = NULL, *olddefault = NULL;
+  const char *ptr, *chosen, *def;
+  grub_size_t sz = 0;
 
   if (entry->restricted)
     err = grub_auth_check_authentication (entry->users);
@@ -173,6 +174,9 @@ grub_menu_execute_entry(grub_menu_entry_t entry)
 
   errs_before = grub_err_printed_errors;
 
+  chosen = grub_env_get ("chosen");
+  def = grub_env_get ("default");
+
   if (entry->submenu)
     {
       grub_env_context_open ();
@@ -180,9 +184,67 @@ grub_menu_execute_entry(grub_menu_entry_t entry)
       if (! menu)
 	return;
       grub_env_set_menu (menu);
+      if (auto_boot)
+	grub_env_set ("timeout", "0");
     }
 
-  grub_env_set ("chosen", entry->title);
+  for (ptr = entry->id; *ptr; ptr++)
+    sz += (*ptr == '>') ? 2 : 1;
+  if (chosen)
+    {
+      oldchosen = grub_strdup (chosen);
+      if (!oldchosen)
+	grub_print_error ();
+    }
+  if (def)
+    {
+      olddefault = grub_strdup (def);
+      if (!olddefault)
+	grub_print_error ();
+    }
+  sz++;
+  if (chosen)
+    sz += grub_strlen (chosen);
+  sz++;
+  buf = grub_malloc (sz);
+  if (!buf)
+    grub_print_error ();
+  else
+    {
+      optr = buf;
+      if (chosen)
+	{
+	  optr = grub_stpcpy (optr, chosen);
+	  *optr++ = '>';
+	}
+      for (ptr = entry->id; *ptr; ptr++)
+	{
+	  if (*ptr == '>')
+	    *optr++ = '>';
+	  *optr++ = *ptr;
+	}
+      *optr = 0;
+      grub_env_set ("chosen", buf);
+      grub_env_export ("chosen");
+      grub_free (buf);
+    }
+
+  for (ptr = def; ptr && *ptr; ptr++)
+    {
+      if (ptr[0] == '>' && ptr[1] == '>')
+	{
+	  ptr++;
+	  continue;
+	}
+      if (ptr[0] == '>')
+	break;
+    }
+
+  if (ptr && ptr[0] && ptr[1])
+    grub_env_set ("default", ptr + 1);
+  else
+    grub_env_unset ("default");
+
   grub_script_execute_sourcecode (entry->sourcecode, entry->argc, entry->args);
 
   if (errs_before != grub_err_printed_errors)
@@ -196,20 +258,30 @@ grub_menu_execute_entry(grub_menu_entry_t entry)
     {
       if (menu && menu->size)
 	{
-	  grub_show_menu (menu, 1);
+	  grub_show_menu (menu, 1, auto_boot);
 	  grub_normal_free_menu (menu);
 	}
       grub_env_context_close ();
     }
+  if (oldchosen)
+    grub_env_set ("chosen", oldchosen);
+  else
+    grub_env_unset ("chosen");
+  if (olddefault)
+    grub_env_set ("default", olddefault);
+  else
+    grub_env_unset ("default");
+  grub_env_unset ("timeout");
 }
 
 /* Execute ENTRY from the menu MENU, falling back to entries specified
    in the environment variable "fallback" if it fails.  CALLBACK is a
    pointer to a struct of function pointers which are used to allow the
    caller provide feedback to the user.  */
-void
+static void
 grub_menu_execute_with_fallback (grub_menu_t menu,
 				 grub_menu_entry_t entry,
+				 int autobooted,
 				 grub_menu_execute_callback_t callback,
 				 void *callback_data)
 {
@@ -217,7 +289,7 @@ grub_menu_execute_with_fallback (grub_menu_t menu,
 
   callback->notify_booting (entry, callback_data);
 
-  grub_menu_execute_entry (entry);
+  grub_menu_execute_entry (entry, 1);
 
   /* Deal with fallback entries.  */
   while ((fallback_entry = get_and_remove_first_entry_number ("fallback"))
@@ -228,14 +300,15 @@ grub_menu_execute_with_fallback (grub_menu_t menu,
 
       entry = grub_menu_get_entry (menu, fallback_entry);
       callback->notify_fallback (entry, callback_data);
-      grub_menu_execute_entry (entry);
+      grub_menu_execute_entry (entry, 1);
       /* If the function call to execute the entry returns at all, then this is
 	 taken to indicate a boot failure.  For menu entries that do something
 	 other than actually boot an operating system, this could assume
 	 incorrectly that something failed.  */
     }
 
-  callback->notify_failure (callback_data);
+  if (!autobooted)
+    callback->notify_failure (callback_data);
 }
 
 static struct grub_menu_viewer *viewers;
@@ -273,18 +346,46 @@ static void
 menu_init (int entry, grub_menu_t menu, int nested)
 {
   struct grub_term_output *term;
+  int gfxmenu = 0;
+
+  FOR_ACTIVE_TERM_OUTPUTS(term)
+    if (term->fullscreen)
+      {
+	if (grub_env_get ("theme"))
+	  {
+	    if (!grub_gfxmenu_try_hook)
+	      {
+		grub_dl_load ("gfxmenu");
+		grub_print_error ();
+	      }
+	    if (grub_gfxmenu_try_hook)
+	      {
+		grub_err_t err;
+		err = grub_gfxmenu_try_hook (entry, menu, nested);
+		if(!err)
+		  {
+		    gfxmenu = 1;
+		    break;
+		  }
+	      }
+	    else
+	      grub_error (GRUB_ERR_BAD_MODULE,
+			  N_("module `%s' isn't loaded"),
+			  "gfxmenu");
+	    grub_print_error ();
+	    grub_wait_after_message ();
+	  }
+	grub_errno = GRUB_ERR_NONE;
+	term->fullscreen ();
+	break;
+      }
 
   FOR_ACTIVE_TERM_OUTPUTS(term)
   {
     grub_err_t err;
 
-    if (grub_gfxmenu_try_hook && grub_strcmp (term->name, "gfxterm") == 0)
-      {
-	err = grub_gfxmenu_try_hook (entry, menu, nested);
-	if(!err)
-	  continue;
-	grub_errno = GRUB_ERR_NONE;
-      }
+    if (grub_strcmp (term->name, "gfxterm") == 0 && gfxmenu)
+      continue;
 
     err = grub_menu_try_text (term, entry, menu, nested);
     if(!err)
@@ -309,11 +410,35 @@ grub_menu_register_viewer (struct grub_menu_viewer *viewer)
   viewers = viewer;
 }
 
+static int
+menuentry_eq (const char *id, const char *spec)
+{
+  const char *ptr1, *ptr2;
+  ptr1 = id;
+  ptr2 = spec;
+  while (1)
+    {
+      if (*ptr2 == '>' && ptr2[1] != '>' && *ptr1 == 0)
+	return 1;
+      if (*ptr2 == '>' && ptr2[1] != '>')
+	return 0;
+      if (*ptr2 == '>')
+	ptr2++;
+      if (*ptr1 != *ptr2)
+	return 0;
+      if (*ptr1 == 0)
+	return 1;
+      ptr1++;
+      ptr2++;
+    }
+}
+
+
 /* Get the entry number from the variable NAME.  */
 static int
 get_entry_number (grub_menu_t menu, const char *name)
 {
-  char *val;
+  const char *val;
   int entry;
 
   val = grub_env_get (name);
@@ -334,7 +459,8 @@ get_entry_number (grub_menu_t menu, const char *name)
 
       for (i = 0; e; i++)
 	{
-	  if (grub_strcmp (e->title, val) == 0)
+	  if (menuentry_eq (e->title, val)
+	      || menuentry_eq (e->id, val))
 	    {
 	      entry = i;
 	      break;
@@ -431,10 +557,10 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot)
 	  return default_entry;
 	}
 
-      if (grub_checkkey () >= 0 || timeout < 0)
-	{
-	  c = grub_getkey ();
+      c = grub_getkey_noblock ();
 
+      if (c != GRUB_TERM_NO_KEY)
+	{
 	  if (timeout >= 0)
 	    {
 	      grub_env_unset ("timeout");
@@ -539,7 +665,6 @@ run_menu (grub_menu_t menu, int nested, int *auto_boot)
     }
 
   /* Never reach here.  */
-  return -1;
 }
 
 /* Callback invoked immediately before a menu entry is executed.  */
@@ -548,7 +673,7 @@ notify_booting (grub_menu_entry_t entry,
 		void *userdata __attribute__((unused)))
 {
   grub_printf ("  ");
-  grub_printf_ (N_("Booting \'%s\'"), entry->title);
+  grub_printf_ (N_("Booting `%s'"), entry->title);
   grub_printf ("\n\n");
 }
 
@@ -560,7 +685,7 @@ notify_fallback (grub_menu_entry_t entry,
 		 void *userdata __attribute__((unused)))
 {
   grub_printf ("\n   ");
-  grub_printf_ (N_("Falling back to \'%s\'"), entry->title);
+  grub_printf_ (N_("Falling back to `%s'"), entry->title);
   grub_printf ("\n\n");
   grub_millisleep (DEFAULT_ENTRY_ERROR_DELAY_MS);
 }
@@ -590,7 +715,7 @@ static struct grub_menu_execute_callback execution_callback =
 };
 
 static grub_err_t
-show_menu (grub_menu_t menu, int nested)
+show_menu (grub_menu_t menu, int nested, int autobooted)
 {
   while (1)
     {
@@ -609,22 +734,26 @@ show_menu (grub_menu_t menu, int nested)
       grub_cls ();
 
       if (auto_boot)
-	grub_menu_execute_with_fallback (menu, e, &execution_callback, 0);
+	grub_menu_execute_with_fallback (menu, e, autobooted,
+					 &execution_callback, 0);
       else
-	grub_menu_execute_entry (e);
+	grub_menu_execute_entry (e, 0);
+      if (autobooted)
+	break;
     }
 
   return GRUB_ERR_NONE;
 }
 
 grub_err_t
-grub_show_menu (grub_menu_t menu, int nested)
+grub_show_menu (grub_menu_t menu, int nested, int autoboot)
 {
   grub_err_t err1, err2;
 
   while (1)
     {
-      err1 = show_menu (menu, nested);
+      err1 = show_menu (menu, nested, autoboot);
+      autoboot = 0;
       grub_print_error ();
 
       if (grub_normal_exit_level)

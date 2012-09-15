@@ -25,6 +25,8 @@
 #include <grub/mm.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 struct pci_register
 {
   const char *name;
@@ -32,7 +34,7 @@ struct pci_register
   unsigned size;
 };
 
-struct pci_register pci_registers[] =
+static struct pci_register pci_registers[] =
   {
     {"VENDOR_ID",       GRUB_PCI_REG_VENDOR      , 2},
     {"DEVICE_ID",       GRUB_PCI_REG_DEVICE      , 2},
@@ -64,12 +66,12 @@ struct pci_register pci_registers[] =
 
 static const struct grub_arg_option options[] =
   {
-    {0, 'd', 0, "Select device by vendor and device IDs.",
-     "[vendor]:[device]", ARG_TYPE_STRING},
-    {0, 's', 0, "Select device by its position on the bus.",
-     "[bus]:[slot][.func]", ARG_TYPE_STRING},
-    {0, 'v', 0, "Save read value into variable VARNAME.",
-     "VARNAME", ARG_TYPE_STRING},
+    {0, 'd', 0, N_("Select device by vendor and device IDs."),
+     N_("[vendor]:[device]"), ARG_TYPE_STRING},
+    {0, 's', 0, N_("Select device by its position on the bus."),
+     N_("[bus]:[slot][.func]"), ARG_TYPE_STRING},
+    {0, 'v', 0, N_("Save read value into variable VARNAME."),
+     N_("VARNAME"), ARG_TYPE_STRING},
     {0, 0, 0, 0, 0, 0}
   };
 
@@ -126,7 +128,7 @@ grub_setpci_iter (grub_pci_device_t dev, grub_pci_id_t pciid)
 
   if (!write_mask)
     {
-      grub_printf ("Register %x of %d:%d.%d is %x\n", regaddr,
+      grub_printf (_("Register %x of %d:%d.%d is %x\n"), regaddr,
 		   grub_pci_get_bus (dev),
 		   grub_pci_get_device (dev),
 		   grub_pci_get_function (dev),
@@ -177,7 +179,7 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
       if (grub_errno)
 	return grub_errno;
       if (*ptr != ':')
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "Colon expected.");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("missing `%c' symbol"), ':');
       ptr++;
       pciid_check_value |= (grub_strtoul (ptr, (char **) &ptr, 16) & 0xffff)
 	<< 16;
@@ -208,7 +210,7 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
       if (grub_errno)
 	return grub_errno;
       if (*ptr != ':')
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "Colon expected.");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("missing `%c' symbol"), ':');
       ptr++;
       optr = ptr;
       device = grub_strtoul (ptr, (char **) &ptr, 16);
@@ -236,11 +238,8 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
 
   write_mask = 0;
 
-  if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Command expected.");
-
-  if (argc > 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Only one command is supported.");
+  if (argc != 1)
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   ptr = argv[0];
 
@@ -255,7 +254,7 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
       regsize = 0;
       regaddr = grub_strtoul (ptr, (char **) &ptr, 16);
       if (grub_errno)
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "Unknown register");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown register");
     }
   else
     {
@@ -296,7 +295,7 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
 
   if (!regsize)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "Unknown register size.");
+		       "unknown register size");
 
   write_mask = 0;
   if (*ptr == '=')
@@ -319,7 +318,7 @@ grub_cmd_setpci (grub_extcmd_context_t ctxt, int argc, char **argv)
 
   if (write_mask && varname)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "Option -v isn't valid for writes.");
+		       "option -v isn't valid for writes");
 
   grub_pci_iterate (grub_setpci_iter);
   return GRUB_ERR_NONE;

@@ -745,7 +745,7 @@ tparam_internal(const char *string, va_list ap)
     return (out_buff);
 }
 
-char *
+const char *
 grub_terminfo_tparm (const char *string, ...)
 {
     va_list ap;

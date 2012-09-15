@@ -26,6 +26,8 @@
 #include <grub/dl.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_dl_t my_mod;
 
 struct pbkdf2_password
@@ -88,11 +90,11 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
   struct pbkdf2_password *pass;
 
   if (argc != 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Two arguments expected.");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
 
   if (grub_memcmp (args[1], "grub.pbkdf2.sha512.",
 		   sizeof ("grub.pbkdf2.sha512.") - 1) != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Incorrect PBKDF2 password.");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("invalid PBKDF2 password"));
 
   ptr = args[1] + sizeof ("grub.pbkdf2.sha512.") - 1;
 
@@ -101,10 +103,12 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
     return grub_errno;
 
   pass->c = grub_strtoul (ptr, &ptr, 0);
+  if (grub_errno)
+    return grub_errno;
   if (*ptr != '.')
     {
       grub_free (pass);
-      return grub_error (GRUB_ERR_BAD_ARGUMENT, "Incorrect PBKDF2 password.");
+      return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("invalid PBKDF2 password"));
     }
   ptr++;
 
@@ -112,7 +116,7 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
   if (!ptr2 || ((ptr2 - ptr) & 1) || grub_strlen (ptr2 + 1) & 1)
     {
       grub_free (pass);
-      return grub_error (GRUB_ERR_BAD_ARGUMENT, "Incorrect PBKDF2 password.");
+      return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("invalid PBKDF2 password"));
     }
 
   pass->saltlen = (ptr2 - ptr) >> 1;
@@ -135,7 +139,11 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
 	  grub_free (pass->salt);
 	  grub_free (pass);
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			     "Incorrect PBKDF2 password.");
+			     /* TRANSLATORS: it means that the string which
+				was supposed to be a password hash doesn't
+				have a correct format, not to password
+				mismatch.  */
+			     N_("invalid PBKDF2 password"));
 	}
 
       *ptro = (hex1 << 4) | hex2;
@@ -164,7 +172,7 @@ grub_cmd_password (grub_command_t cmd __attribute__ ((unused)),
 	  grub_free (pass->salt);
 	  grub_free (pass);
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			     "Incorrect PBKDF2 password.");
+			     N_("invalid PBKDF2 password"));
 	}
 
       *ptro = (hex1 << 4) | hex2;

@@ -28,6 +28,8 @@
 #include <grub/pci.h>
 #include <grub/vga.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static struct
 {
   struct grub_video_mode_info mode_info;
@@ -235,7 +237,8 @@ grub_video_cirrus_set_palette (unsigned int start, unsigned int count,
 
 static grub_err_t
 grub_video_cirrus_setup (unsigned int width, unsigned int height,
-			 unsigned int mode_type, unsigned int mode_mask)
+			 grub_video_mode_type_t mode_type,
+			 grub_video_mode_type_t mode_mask)
 {
   int depth;
   grub_err_t err;

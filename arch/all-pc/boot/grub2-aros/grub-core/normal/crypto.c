@@ -31,14 +31,21 @@ struct load_spec
   char *modname;
 };
 
-struct load_spec *crypto_specs = NULL;
+static struct load_spec *crypto_specs = NULL;
 
 static void 
 grub_crypto_autoload (const char *name)
 {
   struct load_spec *cur;
   grub_dl_t mod;
-  
+  static int depth = 0;
+
+  /* Some bufio of filesystems may want some crypto modules.
+     It may result in infinite recursion. Hence this check.  */
+  if (depth)
+    return;
+  depth++;
+
   for (cur = crypto_specs; cur; cur = cur->next)
     if (grub_strcasecmp (name, cur->name) == 0)
       {
@@ -47,6 +54,7 @@ grub_crypto_autoload (const char *name)
 	  grub_dl_ref (mod);
 	grub_errno = GRUB_ERR_NONE;
       }
+  depth--;
 }
 
 static void 
@@ -78,7 +86,8 @@ read_crypto_list (const char *prefix)
       return;
     }
   
-  filename = grub_xasprintf ("%s/crypto.lst", prefix);
+  filename = grub_xasprintf ("%s/" GRUB_TARGET_CPU "-" GRUB_PLATFORM
+			     "/crypto.lst", prefix);
   if (!filename)
     {
       grub_errno = GRUB_ERR_NONE;
@@ -107,14 +116,17 @@ read_crypto_list (const char *prefix)
 	break;
       
       name = buf;
-            
+      while (grub_isspace (name[0]))
+	name++;
+
       p = grub_strchr (name, ':');
       if (! p)
 	continue;
       
       *p = '\0';
-      while (*++p == ' ')
-	;
+      p++;
+      while (*p == ' ' || *p == '\t')
+	p++;
 
       cur = grub_malloc (sizeof (*cur));
       if (!cur)

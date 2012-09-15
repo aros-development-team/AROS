@@ -1,5 +1,6 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
 /* bithelp.h  -  Some bit manipulation helpers
  *	Copyright (C) 1999, 2002 Free Software Foundation, Inc.
  *

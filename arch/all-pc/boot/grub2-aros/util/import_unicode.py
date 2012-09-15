@@ -130,9 +130,13 @@ for line in infile:
         if begincode != -2 and (lastbiditype != "L" or lastcombtype != 0 or \
                                     lastmirrortype):
             outfile.write (("{0x%x, 0x%x, GRUB_BIDI_TYPE_%s, %d, %d, GRUB_JOIN_TYPE_%s},\n" \
-                                % (begincode, lastcode, lastbiditype, \
+                                % (begincode, lastcode - begincode + 1, \
+                                       lastbiditype, \
                                        lastcombtype, lastmirrortype, \
                                        lastjoin)))
+            if lastcode - begincode + 1 >= 0x200:
+                print ("Too long range")
+                raise
         begincode = curcode
     lastcode = curcode
     lastjoin = curjoin

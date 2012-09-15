@@ -87,11 +87,11 @@ struct grub_gfxmenu_view
   grub_font_t title_font;
   grub_font_t message_font;
   char *terminal_font_name;
-  grub_gui_color_t title_color;
-  grub_gui_color_t message_color;
-  grub_gui_color_t message_bg_color;
+  grub_video_rgba_color_t title_color;
+  grub_video_rgba_color_t message_color;
+  grub_video_rgba_color_t message_bg_color;
   struct grub_video_bitmap *desktop_image;
-  grub_gui_color_t desktop_color;
+  grub_video_rgba_color_t desktop_color;
   grub_gfxmenu_box_t terminal_box;
   char *title_text;
   char *progress_message_text;

@@ -36,6 +36,7 @@ struct grub_gfxmenu_box
   void (*draw) (grub_gfxmenu_box_t self, int x, int y);
   void (*set_content_size) (grub_gfxmenu_box_t self,
                             int width, int height);
+  int (*get_border_width) (grub_gfxmenu_box_t self);
   int (*get_left_pad) (grub_gfxmenu_box_t self);
   int (*get_top_pad) (grub_gfxmenu_box_t self);
   int (*get_right_pad) (grub_gfxmenu_box_t self);

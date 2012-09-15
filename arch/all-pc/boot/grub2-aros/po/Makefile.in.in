@@ -67,10 +67,11 @@ GMOFILES = @GMOFILES@
 UPDATEPOFILES = @UPDATEPOFILES@
 DUMMYPOFILES = @DUMMYPOFILES@
 DISTFILES.common = Makefile.in.in remove-potcdate.sin \
-$(DISTFILES.common.extra1) $(DISTFILES.common.extra2) $(DISTFILES.common.extra3)
-DISTFILES = $(DISTFILES.common) Makevars POTFILES.in \
+$(DISTFILES.common.extra1) $(DISTFILES.common.extra2) \
+$(DISTFILES.common.extra3) $(DISTFILES.common.extra4)
+DISTFILES = $(DISTFILES.common) Makevars POTFILES.in POTFILES-shell.in \
 $(POFILES) $(GMOFILES) \
-$(DISTFILES.extra1) $(DISTFILES.extra2) $(DISTFILES.extra3)
+$(DISTFILES.extra1) $(DISTFILES.extra2) $(DISTFILES.extra3) $(DISTFILES.extra4) grub.d.sed README
 
 POTFILES = \
 
@@ -83,13 +84,13 @@ CATALOGS = @CATALOGS@
 
 .po.mo:
 	@echo "$(MSGFMT) -c -o $@ $<"; \
-	$(MSGFMT) -c -o t-$@ $< && mv t-$@ $@
+	$(MSGFMT) --endianness=little -c -o t-$@ $< && mv t-$@ $@
 
 .po.gmo:
 	@lang=`echo $* | sed -e 's,.*/,,'`; \
 	test "$(srcdir)" = . && cdcmd="" || cdcmd="cd $(srcdir) && "; \
-	echo "$${cdcmd}rm -f $${lang}.gmo && $(GMSGFMT) -c --statistics --verbose -o $${lang}.gmo $${lang}.po"; \
-	cd $(srcdir) && rm -f $${lang}.gmo && $(GMSGFMT) -c --statistics --verbose -o t-$${lang}.gmo $${lang}.po && mv t-$${lang}.gmo $${lang}.gmo
+	echo "$${cdcmd}rm -f $${lang}.gmo && $(GMSGFMT) --endianness=little -c --statistics --verbose -o $${lang}.gmo $${lang}.po"; \
+	cd $(srcdir) && rm -f $${lang}.gmo && $(GMSGFMT) --endianness=little -c --statistics --verbose -o t-$${lang}.gmo $${lang}.po && mv t-$${lang}.gmo $${lang}.gmo
 
 .sin.sed:
 	sed -e '/^#/d' $< > t-$@
@@ -165,7 +166,7 @@ $(DOMAIN).pot-update: $(POTFILES) $(srcdir)/POTFILES.in $(srcdir)/POTFILES-shell
 	      --package-version='@VERSION@' \
 	      --msgid-bugs-address="$$msgid_bugs_address" \
 	    ;; \
-	esac
+	esac; \
 	case `$(XGETTEXT) --version | sed 1q | sed -e 's,^[^0-9]*,,'` in \
 	  '' | 0.[0-9] | 0.[0-9].* | 0.1[0-5] | 0.1[0-5].* | 0.16 | 0.16.[0-1]*) \
 	    $(XGETTEXT) --default-domain=$(DOMAIN) --directory=$(top_srcdir) \
@@ -187,7 +188,7 @@ $(DOMAIN).pot-update: $(POTFILES) $(srcdir)/POTFILES.in $(srcdir)/POTFILES-shell
 	      --join-existing --language=Shell \
 	      --keyword=gettext_quoted --keyword=gettext_printf \
 	    ;; \
-	esac
+	esac ; \
 	test ! -f $(DOMAIN).po || { \
 	  sed -f grub.d.sed < $(DOMAIN).po > $(DOMAIN).1po && \
 	  mv $(DOMAIN).1po $(DOMAIN).po; \

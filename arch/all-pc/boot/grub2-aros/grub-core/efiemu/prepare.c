@@ -97,10 +97,9 @@ SUFFIX (grub_efiemu_prepare) (struct grub_efiemu_prepare_hook *prepare_hooks,
       grub_memcpy (&(conftables[i].vendor_guid), &(cur->guid),
 		       sizeof (cur->guid));
       if (cur->get_table)
-	conftables[i].vendor_table
-	  = PTR_TO_UINT64 (cur->get_table (cur->data));
+	conftables[i].vendor_table = (grub_addr_t) cur->get_table (cur->data);
       else
-	conftables[i].vendor_table = PTR_TO_UINT64 (cur->data);
+	conftables[i].vendor_table = (grub_addr_t) cur->data;
     }
 
   err = SUFFIX (grub_efiemu_crc) ();
@@ -134,6 +133,7 @@ SUFFIX (grub_efiemu_crc) (void)
   runtime_services = (struct SUFFIX (grub_efiemu_runtime_services) *)
 	((grub_uint8_t *) grub_efiemu_mm_obtain_request (handle) + off);
 
+  runtime_services->hdr.crc32 = 0;
   GRUB_MD_CRC32->init(crc32_context);
   GRUB_MD_CRC32->write(crc32_context, runtime_services, runtime_services->hdr.header_size);
   GRUB_MD_CRC32->final(crc32_context);
@@ -146,6 +146,7 @@ SUFFIX (grub_efiemu_crc) (void)
     return err;
 
   /* compute CRC32 of system table */
+  SUFFIX (grub_efiemu_system_table)->hdr.crc32 = 0;
   GRUB_MD_CRC32->init(crc32_context);
   GRUB_MD_CRC32->write(crc32_context, SUFFIX (grub_efiemu_system_table),
 		      SUFFIX (grub_efiemu_system_table)->hdr.header_size);

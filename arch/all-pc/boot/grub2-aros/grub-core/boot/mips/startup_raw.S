@@ -20,6 +20,7 @@
 #include <grub/symbol.h>
 #include <grub/offsets.h>
 #include <grub/machine/memory.h>
+#include <grub/machine/kernel.h>
 #include <grub/offsets.h>
 
 #define BASE_ADDR 8
@@ -37,11 +38,14 @@ start:
 	bal codestart
 	 nop
 base:	
-	. = _start + GRUB_KERNEL_MACHINE_COMPRESSED_SIZE
+	. = _start + GRUB_DECOMPRESSOR_MACHINE_COMPRESSED_SIZE
 compressed_size:
 	.long 0
-	. = _start + GRUB_KERNEL_MACHINE_UNCOMPRESSED_SIZE
+	. = _start + GRUB_DECOMPRESSOR_MACHINE_UNCOMPRESSED_SIZE
 uncompressed_size:
+	.long 0
+	. = _start + GRUB_DECOMPRESSOR_MACHINE_UNCOMPRESSED_ADDR
+uncompressed_addr:
 	.long 0
 codestart:
 	/* Save our base.  */
@@ -49,15 +53,36 @@ codestart:
 
 	/* Parse arguments. Has to be done before relocation.
 	So need to do it in asm.  */
-#ifdef GRUB_MACHINE_MIPS_YEELOONG
+#ifdef GRUB_MACHINE_MIPS_QEMU_MIPS
+	lui $t0, %hi (((16 << 20) - 264 + 4) | 0x80000000)
+	lw $t1, %lo (((16 << 20) - 264 + 4) | 0x80000000) ($t0)
+
+	lui $t2, 0x1234
+	ori $t2, 0x5678
+
+	bne $t1, $t2, 1f
+	 nop
+
+	lui $t0, %hi (((16 << 20) - 264) | 0x80000000)
+	b 2f
+	 lw $s4, %lo (((16 << 20) - 264) | 0x80000000) ($t0)
+	
+1:
+	li $s4, 0
+2:	
+#endif
+
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
 	move $s2, $zero
 	move $s3, $zero
 	move $s4, $zero
 	move $s5, $zero
+	move $s7, $zero
 
 	/* $a2 has the environment.  */
-	addiu $t0, $a2, 1
-	beq $t0, $zero, argdone
+	addiu $t0, $zero, -0x10
+	and $t1, $a2, $t0
+	beq $t0, $t1, argfw
 	 nop
 	move $t0, $a2	
 argcont:	
@@ -72,11 +97,19 @@ argcont:
 	 nop		  ;\
 	b 2f;\
 	 move reg, $v0;	 \
-1:	
+1:
+#define DO_CHECKT1(str, val)				 \
+	move $t6, $t1					;\
+	addiu $t7, $s0, (str - base);\
+	bal do_check				       ;\
+	 li $t2, val
+
 	DO_PARSE (busclockstr, $s2)
 	DO_PARSE (cpuclockstr, $s3)
 	DO_PARSE (memsizestr, $s4)
 	DO_PARSE (highmemsizestr, $s5)
+	DO_CHECKT1 (pmon_yeeloong_verstr, GRUB_ARCH_MACHINE_YEELOONG)
+	DO_CHECKT1 (pmon_fuloong2f_verstr, GRUB_ARCH_MACHINE_FULOONG2F)
 2:	
 	b argcont
 	 addiu $t0, $t0, 4	 
@@ -120,8 +153,49 @@ busclockstr:	.asciiz "busclock="
 cpuclockstr:	.asciiz "cpuclock="
 memsizestr:	.asciiz "memsize="
 highmemsizestr:	.asciiz "highmemsize="
+machtype_yeeloong_str1:	.asciiz "machtype=8.9"
+machtype_yeeloong_str2:	.asciiz "machtype=lemote-yeeloong-"
+machtype_fuloong2f_str:	.asciiz "machtype=lemote-fuloong-2f"
+machtype_fuloong2e_str:	.asciiz "machtype=lemote-fuloong-2e"
+pmon_yeeloong_str:	.asciiz "PMON_VER=LM8"
+pmon_fuloong2f_str:	.asciiz "PMON_VER=LM6"
+pmon_yeeloong_verstr:	.asciiz "Version=LM8"
+pmon_fuloong2f_verstr:	.asciiz "Version=LM6"
 	.p2align 2
+
 argdone:
+	beq $a0, $zero, cmdlinedone
+	 nop
+#define DO_CHECKA1(str, val)				 \
+	lw $t6, 0($a1)					;\
+	addiu $t7, $s0, (str - base);\
+	bal do_check				       ;\
+	 li $t2, val
+	DO_CHECKA1 (machtype_yeeloong_str1, GRUB_ARCH_MACHINE_YEELOONG)
+	DO_CHECKA1 (machtype_yeeloong_str2, GRUB_ARCH_MACHINE_YEELOONG)
+	DO_CHECKA1 (pmon_yeeloong_str, GRUB_ARCH_MACHINE_YEELOONG)
+	DO_CHECKA1 (machtype_fuloong2f_str, GRUB_ARCH_MACHINE_FULOONG2F)
+	DO_CHECKA1 (machtype_fuloong2e_str, GRUB_ARCH_MACHINE_FULOONG2E)
+	DO_CHECKA1 (pmon_fuloong2f_str, GRUB_ARCH_MACHINE_FULOONG2F)
+	addiu $a0, $a0, -1
+	b argdone
+  	 addiu $a1, $a1, 4
+do_check:
+	lb $t4, 0($t7)
+	beq $t4, $zero, 1f
+	 lb $t3, 0($t6)
+	bne $t3, $t4, 2f
+	 addiu $t6, $t6, 1
+	b do_check
+	 addiu $t7, $t7, 1
+1:
+	move $s7, $t2
+2:
+	jr $ra
+	 nop
+argfw:
+	not $s7, $a2
+cmdlinedone:	
 #endif
 	/* Copy the decompressor. */
 	lui $t1, %hi(base)
@@ -150,6 +224,13 @@ argdone:
 	b 1b
 	 addiu $t1, $t1, 1
 2:
+	lui $a0, %hi(base)
+	addiu $a0, $a0, %lo(base)
+	lui $a1, %hi(_end)
+	addiu $a1, %lo(_end)
+	subu $a1,$a1,$a0
+
+#include "../../kern/mips/cache_flush.S"
 
 	/* Decompress the payload. */
 	lui $a0, %hi(__bss_start)
@@ -159,10 +240,9 @@ argdone:
 	subu $a0, $a0, $t0
 	addu $a0, $a0, $s0
 
-	lui $a1, %hi(GRUB_MACHINE_LINK_ADDR)
-	addiu $a1, %lo(GRUB_MACHINE_LINK_ADDR)
-	lw $a2, (GRUB_KERNEL_MACHINE_COMPRESSED_SIZE - BASE_ADDR)($s0)
-	lw $a3, (GRUB_KERNEL_MACHINE_UNCOMPRESSED_SIZE - BASE_ADDR)($s0)
+	lw $a1, (GRUB_DECOMPRESSOR_MACHINE_UNCOMPRESSED_ADDR - BASE_ADDR)($s0)
+	lw $a2, (GRUB_DECOMPRESSOR_MACHINE_COMPRESSED_SIZE - BASE_ADDR)($s0)
+	lw $a3, (GRUB_DECOMPRESSOR_MACHINE_UNCOMPRESSED_SIZE - BASE_ADDR)($s0)
 	move $s1, $a1
 
 	/* $a0 contains source compressed address, $a1 is destination,
@@ -170,9 +250,11 @@ argdone:
 	*/
 	move $s6, $a3
 
-	lui $sp, %hi(_start - 256)
+	lui $t0, %hi(EXT_C(grub_decompress_core))
+	addiu $t0, $t0, %lo(EXT_C(grub_decompress_core))
 
-	bal EXT_C(grub_decompress_core)
+	lui $sp, %hi(_start - 256)
+	jalr $t0
 	 addiu $sp, $sp, %lo(_start - 256)
 	
 	move $a0, $s1

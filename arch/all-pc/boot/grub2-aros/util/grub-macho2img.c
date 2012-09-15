@@ -25,6 +25,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+/* Please don't internationalise this file. It's pointless.  */
+
 /* XXX: this file assumes particular Mach-O layout and does no checks. */
 /* However as build system ensures correct usage of this tool this
    shouldn't be a problem. */

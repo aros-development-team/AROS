@@ -20,6 +20,7 @@
 #include <grub/script_sh.h>
 #include <grub/parser.h>
 #include <grub/mm.h>
+#include <grub/charset.h>
 
 grub_script_function_t grub_script_function_list;
 
@@ -99,7 +100,14 @@ grub_script_function_find (char *functionname)
       break;
 
   if (! func)
-    grub_error (GRUB_ERR_UNKNOWN_COMMAND, "unknown command `%.20s'", functionname);
+    {
+      char tmp[21];
+      grub_strncpy (tmp, functionname, 20);
+      tmp[20] = 0;
+      /* Avoid truncating inside UTF-8 character.  */
+      tmp[grub_getend (tmp, tmp + grub_strlen (tmp))] = 0;
+      grub_error (GRUB_ERR_UNKNOWN_COMMAND, N_("can't find command `%s'"), tmp);
+    }
 
   return func;
 }

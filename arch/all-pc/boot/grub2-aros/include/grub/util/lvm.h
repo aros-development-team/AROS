@@ -1,7 +1,7 @@
 /* lvm.h - LVM support for GRUB utils.  */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2006,2007  Free Software Foundation, Inc.
+ *  Copyright (C) 2006,2007,2011  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,14 @@
 #ifndef GRUB_LVM_UTIL_HEADER
 #define GRUB_LVM_UTIL_HEADER	1
 
+#if defined(__linux__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+
 #ifdef __linux__
+#define LVM_DEV_MAPPER_STRING "/dev/mapper/"
+#else
+#define LVM_DEV_MAPPER_STRING "/dev/linux_lvm/"
+#endif
+
 int grub_util_lvm_isvolume (char *name);
 #endif
 

@@ -27,6 +27,32 @@
 #include <grub/script_sh.h>
 #include <grub/i18n.h>
 
+grub_command_t
+grub_dyncmd_get_cmd (grub_command_t cmd)
+{
+  grub_extcmd_t extcmd = cmd->data;
+  char *modname;
+  char *name;
+  grub_dl_t mod;
+
+  modname = extcmd->data;
+  mod = grub_dl_load (modname);
+  if (!mod)
+    return NULL;
+
+  grub_free (modname);
+  grub_dl_ref (mod);
+
+  name = (char *) cmd->name;
+  grub_unregister_extcmd (extcmd);
+
+  cmd = grub_command_find (name);
+
+  grub_free (name);
+
+  return cmd;
+}
+
 static grub_err_t
 grub_dyncmd_dispatcher (struct grub_extcmd_context *ctxt,
 			int argc, char **args)
@@ -36,35 +62,32 @@ grub_dyncmd_dispatcher (struct grub_extcmd_context *ctxt,
   grub_err_t ret;
   grub_extcmd_t extcmd = ctxt->extcmd;
   grub_command_t cmd = extcmd->cmd;
+  char *name;
 
   modname = extcmd->data;
   mod = grub_dl_load (modname);
-  if (mod)
+  if (!mod)
+    return grub_errno;
+
+  grub_free (modname);
+  grub_dl_ref (mod);
+
+  name = (char *) cmd->name;
+  grub_unregister_extcmd (extcmd);
+
+  cmd = grub_command_find (name);
+  if (cmd)
     {
-      char *name;
-
-      grub_free (modname);
-      grub_dl_ref (mod);
-
-      name = (char *) cmd->name;
-      grub_unregister_extcmd (extcmd);
-
-      cmd = grub_command_find (name);
-      if (cmd)
-	{
-	  if (cmd->flags & GRUB_COMMAND_FLAG_BLOCKS &&
-	      cmd->flags & GRUB_COMMAND_FLAG_EXTCMD)
-	    ret = grub_extcmd_dispatcher (cmd, argc, args, ctxt->script);
-	  else
-	    ret = (cmd->func) (cmd, argc, args);
-	}
+      if (cmd->flags & GRUB_COMMAND_FLAG_BLOCKS &&
+	  cmd->flags & GRUB_COMMAND_FLAG_EXTCMD)
+	ret = grub_extcmd_dispatcher (cmd, argc, args, ctxt->script);
       else
-	ret = grub_errno;
-
-      grub_free (name);
+	ret = (cmd->func) (cmd, argc, args);
     }
   else
     ret = grub_errno;
+
+  grub_free (name);
 
   return ret;
 }
@@ -77,7 +100,8 @@ read_command_list (const char *prefix)
     {
       char *filename;
 
-      filename = grub_xasprintf ("%s/command.lst", prefix);
+      filename = grub_xasprintf ("%s/" GRUB_TARGET_CPU "-" GRUB_PLATFORM
+				 "/command.lst", prefix);
       if (filename)
 	{
 	  grub_file_t file;
@@ -98,8 +122,8 @@ read_command_list (const char *prefix)
 			last->next = ptr->next;
 		      else
 			grub_command_list = ptr->next;
-		      grub_free (ptr);
 		      grub_free (ptr->data); /* extcmd struct */
+		      grub_free (ptr);
 		    }
 		  else
 		    last = ptr;
@@ -117,6 +141,9 @@ read_command_list (const char *prefix)
 		    break;
 
 		  name = buf;
+		  while (grub_isspace (name[0]))
+		    name++;
+
 		  if (*name == '*')
 		    {
 		      name++;
@@ -131,8 +158,9 @@ read_command_list (const char *prefix)
 		    continue;
 
 		  *p = '\0';
-		  while (*++p == ' ')
-		    ;
+		  p++;
+		  while (*p == ' ' || *p == '\t')
+		    p++;
 
 		  if (! grub_isgraph (*p))
 		    continue;
@@ -156,8 +184,8 @@ read_command_list (const char *prefix)
 						   GRUB_COMMAND_FLAG_BLOCKS
 						   | GRUB_COMMAND_FLAG_EXTCMD
 						   | GRUB_COMMAND_FLAG_DYNCMD,
-						   0, N_("not loaded"), 0,
-						   prio);
+						   0, N_("module isn't loaded"),
+						   0, prio);
 		  if (! cmd)
 		    {
 		      grub_free (name);

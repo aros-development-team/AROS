@@ -135,11 +135,11 @@ theme_set_string (grub_gfxmenu_view_t view,
         return grub_errno;
     }
   else if (! grub_strcmp ("title-color", name))
-    grub_gui_parse_color (value, &view->title_color);
+    grub_video_parse_color (value, &view->title_color);
   else if (! grub_strcmp ("message-color", name))
-    grub_gui_parse_color (value, &view->message_color);
+    grub_video_parse_color (value, &view->message_color);
   else if (! grub_strcmp ("message-bg-color", name))
-    grub_gui_parse_color (value, &view->message_bg_color);
+    grub_video_parse_color (value, &view->message_bg_color);
   else if (! grub_strcmp ("desktop-image", name))
     {
       struct grub_video_bitmap *raw_bitmap;
@@ -170,7 +170,7 @@ theme_set_string (grub_gfxmenu_view_t view,
       view->desktop_image = scaled_bitmap;
     }
   else if (! grub_strcmp ("desktop-color", name))
-     grub_gui_parse_color (value, &view->desktop_color);
+     grub_video_parse_color (value, &view->desktop_color);
   else if (! grub_strcmp ("terminal-box", name))
     {
         grub_err_t err;

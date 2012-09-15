@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* md4.c - MD4 Message-Digest Algorithm
  * Copyright (C) 2002, 2003 Free Software Foundation, Inc.
  *
@@ -99,7 +101,8 @@ transform ( MD4_CONTEXT *ctx, const unsigned char *data )
 #ifdef WORDS_BIGENDIAN
   {
     int i;
-    byte *p2, *p1;
+    byte *p2;
+    const byte *p1;
     for(i=0, p1=data, p2=(byte*)in; i < 16; i++, p2 += 4 )
       {
 	p2[3] = *p1++;
@@ -323,6 +326,9 @@ gcry_md_spec_t _gcry_digest_spec_md4 =
     md4_init, md4_write, md4_final, md4_read,
     sizeof (MD4_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_md4",
+#endif
     .blocksize = 64
   };
 

@@ -85,7 +85,10 @@ grub_relocator_firmware_fill_events (struct grub_relocator_mmap_event *events)
 int
 grub_relocator_firmware_alloc_region (grub_addr_t start, grub_size_t size)
 {
-  return (grub_claimmap (start, size) >= 0);
+  grub_err_t err;
+  err = grub_claimmap (start, size);
+  grub_errno = 0;
+  return (err == 0);
 }
 
 void

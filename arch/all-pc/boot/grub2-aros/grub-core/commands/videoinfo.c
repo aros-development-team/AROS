@@ -25,7 +25,10 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static unsigned height, width, depth; 
+static struct grub_video_mode_info *current_mode;
 
 static int
 hook (const struct grub_video_mode_info *info)
@@ -39,42 +42,82 @@ hook (const struct grub_video_mode_info *info)
   if (info->mode_number == GRUB_VIDEO_MODE_NUMBER_INVALID)
     grub_printf ("        ");
   else
-    grub_printf ("  0x%03x ", info->mode_number);
-  grub_printf ("%4d x %4d x %2d  ", info->width, info->height, info->bpp);
+    {
+      if (current_mode && info->mode_number == current_mode->mode_number)
+	grub_printf ("*");
+      else
+	grub_printf (" ");
+      grub_printf (" 0x%03x ", info->mode_number);
+    }
+  grub_printf ("%4d x %4d x %2d (%4d)  ", info->width, info->height, info->bpp,
+	       info->pitch);
 
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_PURE_TEXT)
-    grub_printf ("Text-only ");
+    grub_xputs (_("Text-only "));
   /* Show mask and position details for direct color modes.  */
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_RGB)
-    grub_printf ("Direct, mask: %d/%d/%d/%d  pos: %d/%d/%d/%d",
-		 info->red_mask_size,
-		 info->green_mask_size,
-		 info->blue_mask_size,
-		 info->reserved_mask_size,
-		 info->red_field_pos,
-		 info->green_field_pos,
-		 info->blue_field_pos,
-		 info->reserved_field_pos);
+    /* TRANSLATORS: "Direct color" is a mode when the color components
+       are written dirrectly into memory.  */
+    grub_printf_ (N_("Direct color, mask: %d/%d/%d/%d  pos: %d/%d/%d/%d"),
+		  info->red_mask_size,
+		  info->green_mask_size,
+		  info->blue_mask_size,
+		  info->reserved_mask_size,
+		  info->red_field_pos,
+		  info->green_field_pos,
+		  info->blue_field_pos,
+		  info->reserved_field_pos);
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_INDEX_COLOR)
-    grub_printf ("Packed ");
+    /* TRANSLATORS: In "packed pixel" mode you write the index of the color
+       in the palette. Synonyms include "paletted color".  */
+    grub_xputs (_("Packed pixel "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_YUV)
-    grub_printf ("YUV ");
+    grub_xputs (_("YUV "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_PLANAR)
-    grub_printf ("Planar ");
+    /* TRANSLATORS: "Planar" is the video memory where you have to write
+       in several different banks "plans" to control the different color
+       components of the same pixel.  */
+    grub_xputs (_("Planar "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_HERCULES)
-    grub_printf ("Hercules ");
+    grub_xputs (_("Hercules "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_CGA)
-    grub_printf ("CGA ");
+    grub_xputs (_("CGA "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_NONCHAIN4)
-    grub_printf ("Non-chain 4 ");
+    /* TRANSLATORS: Non-chain 4 is a 256-color planar
+       (unchained) video memory mode.  */
+    grub_xputs (_("Non-chain 4 "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_1BIT_BITMAP)
-    grub_printf ("Monochrome ");
+    grub_xputs (_("Monochrome "));
   if (info->mode_type & GRUB_VIDEO_MODE_TYPE_UNKNOWN)
-    grub_printf ("Unknown ");
+    grub_xputs (_("Unknown video mode "));
 
-  grub_printf ("\n");
+  grub_xputs ("\n");
 
   return 0;
+}
+
+static void
+print_edid (struct grub_video_edid_info *edid_info)
+{
+  unsigned int edid_width, edid_height;
+
+  if (grub_video_edid_checksum (edid_info))
+    {
+      grub_puts_ (N_("  EDID checksum invalid"));
+      grub_errno = GRUB_ERR_NONE;
+      return;
+    }
+
+  grub_printf_ (N_("  EDID version: %u.%u\n"),
+		edid_info->version, edid_info->revision);
+  if (grub_video_edid_preferred_mode (edid_info, &edid_width, &edid_height)
+	== GRUB_ERR_NONE)
+    grub_printf_ (N_("    Preferred mode: %ux%u\n"), edid_width, edid_height);
+  else
+    {
+      grub_printf_ (N_("    No preferred mode available\n"));
+      grub_errno = GRUB_ERR_NONE;
+    }
 }
 
 static grub_err_t
@@ -93,7 +136,9 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
       if (grub_errno)
 	return grub_errno;
       if (*ptr != 'x')
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid mode specification");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			   N_("invalid video mode specification `%s'"),
+			   args[0]);
       ptr++;
       height = grub_strtoul (ptr, &ptr, 0);
       if (grub_errno)
@@ -114,25 +159,37 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
 
   id = grub_video_get_driver_id ();
 
-  grub_printf ("List of supported video modes:\n");
-  grub_printf ("Legend: P=Packed pixel, D=Direct color, "
-	       "mask/pos=R/G/B/reserved\n");
+  grub_puts_ (N_("List of supported video modes:"));
+  grub_puts_ (N_("Legend: mask/position=red/green/blue/reserved"));
 
   FOR_VIDEO_ADAPTERS (adapter)
   {
-    grub_printf ("Adapter '%s':\n", adapter->name);
+    struct grub_video_mode_info info;
+    struct grub_video_edid_info edid_info;
+
+    grub_printf_ (N_("Adapter `%s':\n"), adapter->name);
 
     if (!adapter->iterate)
       {
-	grub_printf ("  No info available\n");
+	grub_puts_ (N_("  No info available"));
 	continue;
       }
 
-    if (adapter->id != id)
+    current_mode = NULL;
+
+    if (adapter->id == id)
+      {
+	if (grub_video_get_info (&info) == GRUB_ERR_NONE)
+	  current_mode = &info;
+	else
+	  /* Don't worry about errors.  */
+	  grub_errno = GRUB_ERR_NONE;
+      }
+    else
       {
 	if (adapter->init ())
 	  {
-	    grub_printf ("  Failed\n");
+	    grub_puts_ (N_("  Failed to initialize video adapter"));
 	    grub_errno = GRUB_ERR_NONE;
 	    continue;
 	  }
@@ -142,6 +199,13 @@ grub_cmd_videoinfo (grub_command_t cmd __attribute__ ((unused)),
       adapter->print_adapter_specific_info ();
 
     adapter->iterate (hook);
+
+    if (adapter->get_edid && adapter->get_edid (&edid_info) == GRUB_ERR_NONE)
+      print_edid (&edid_info);
+    else
+      grub_errno = GRUB_ERR_NONE;
+
+    current_mode = NULL;
 
     if (adapter->id != id)
       {
@@ -162,12 +226,20 @@ static grub_command_t cmd_vbe;
 
 GRUB_MOD_INIT(videoinfo)
 {
-  cmd = grub_register_command ("videoinfo", grub_cmd_videoinfo, "[WxH[xD]]",
+  cmd = grub_register_command ("videoinfo", grub_cmd_videoinfo,
+			       /* TRANSLATORS: "x" has to be entered in,
+				  like an identifier, so please don't
+				  use better Unicode codepoints.  */
+			       N_("[WxH[xD]]"),
 			       N_("List available video modes. If "
 				     "resolution is given show only modes"
 				     " matching it."));
 #ifdef GRUB_MACHINE_PCBIOS
-  cmd_vbe = grub_register_command ("vbeinfo", grub_cmd_videoinfo, "[WxH[xD]]",
+  cmd_vbe = grub_register_command ("vbeinfo", grub_cmd_videoinfo,
+				   /* TRANSLATORS: "x" has to be entered in,
+				      like an identifier, so please don't
+				      use better Unicode codepoints.  */
+				   N_("[WxH[xD]]"),
 				   N_("List available video modes. If "
 				      "resolution is given show only modes"
 				      " matching it."));

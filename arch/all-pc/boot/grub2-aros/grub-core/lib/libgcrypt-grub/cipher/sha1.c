@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* sha1.c - SHA1 hash function
  * Copyright (C) 1998, 2001, 2002, 2003, 2008 Free Software Foundation, Inc.
  *
@@ -31,7 +33,6 @@
 
 
 #ifdef HAVE_STDINT_H 
-# include <stdint.h>
 #endif
 
 #include "g10lib.h"
@@ -400,6 +401,9 @@ gcry_md_spec_t _gcry_digest_spec_sha1 =
     sha1_init, sha1_write, sha1_final, sha1_read,
     sizeof (SHA1_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_sha1",
+#endif
     .blocksize = 64
   };
 

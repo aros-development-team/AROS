@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = subdir-objects
+AUTOMAKE_OPTIONS = subdir-objects -Wno-portability
 
 DEPDIR = .deps-util
 SUBDIRS = grub-core/gnulib . grub-core po docs util/bash-completion.d
@@ -62,9 +62,30 @@ CLEANFILES += grub_fstest_init.c
 
 if COND_GRUB_MKFONT
 if COND_HAVE_FONT_SOURCE
-grubdata_DATA = unicode.pf2 ascii.pf2 euro.pf2 ascii.h widthspec.h
+pkgdata_DATA += unicode.pf2 ascii.pf2 euro.pf2 ascii.h widthspec.h
 endif
 endif
+
+starfield_theme_files = $(srcdir)/themes/starfield/blob_w.png $(srcdir)/themes/starfield/boot_menu_c.png $(srcdir)/themes/starfield/boot_menu_e.png $(srcdir)/themes/starfield/boot_menu_ne.png $(srcdir)/themes/starfield/boot_menu_n.png $(srcdir)/themes/starfield/boot_menu_nw.png $(srcdir)/themes/starfield/boot_menu_se.png $(srcdir)/themes/starfield/boot_menu_s.png $(srcdir)/themes/starfield/boot_menu_sw.png $(srcdir)/themes/starfield/boot_menu_w.png $(srcdir)/themes/starfield/slider_c.png $(srcdir)/themes/starfield/slider_n.png $(srcdir)/themes/starfield/slider_s.png $(srcdir)/themes/starfield/starfield.png $(srcdir)/themes/starfield/terminal_box_c.png $(srcdir)/themes/starfield/terminal_box_e.png $(srcdir)/themes/starfield/terminal_box_ne.png $(srcdir)/themes/starfield/terminal_box_n.png $(srcdir)/themes/starfield/terminal_box_nw.png $(srcdir)/themes/starfield/terminal_box_se.png $(srcdir)/themes/starfield/terminal_box_s.png $(srcdir)/themes/starfield/terminal_box_sw.png $(srcdir)/themes/starfield/terminal_box_w.png $(srcdir)/themes/starfield/theme.txt $(srcdir)/themes/starfield/README $(srcdir)/themes/starfield/COPYING.CC-BY-SA-3.0
+
+if COND_STARFIELD
+starfield_DATA = dejavu_10.pf2 dejavu_12.pf2 dejavu_bold_14.pf2 dejavu_14.pf2 dejavu_16.pf2 $(starfield_theme_files)
+dejavu_10.pf2: $(DJVU_FONT_SOURCE) grub-mkfont
+	$(builddir)/grub-mkfont -s 10 -o $@ $(DJVU_FONT_SOURCE)
+dejavu_12.pf2: $(DJVU_FONT_SOURCE) grub-mkfont
+	$(builddir)/grub-mkfont -s 12 -o $@ $(DJVU_FONT_SOURCE)
+dejavu_14.pf2: $(DJVU_FONT_SOURCE) grub-mkfont
+	$(builddir)/grub-mkfont -s 14 -o $@ $(DJVU_FONT_SOURCE)
+dejavu_bold_14.pf2: $(DJVU_FONT_SOURCE) grub-mkfont
+	$(builddir)/grub-mkfont -b -s 14 -o $@ $(DJVU_FONT_SOURCE)
+dejavu_16.pf2: $(DJVU_FONT_SOURCE) grub-mkfont
+	$(builddir)/grub-mkfont -s 16 -o $@ $(DJVU_FONT_SOURCE)
+else
+starfield_DATA = 
+endif
+
+EXTRA_DIST += $(starfield_theme_files)
+EXTRA_DIST += $(srcdir)/themes/starfield/src/slider_s.xcf $(srcdir)/themes/starfield/src/slider_n.xcf $(srcdir)/themes/starfield/src/slider_c.xcf $(srcdir)/themes/starfield/src/blob_nw.xcf $(srcdir)/themes/starfield/src/bootmenu/center.xcf $(srcdir)/themes/starfield/src/bootmenu/corner.xcf $(srcdir)/themes/starfield/src/bootmenu/side.xcf $(srcdir)/themes/starfield/src/terminalbox/side.xcf $(srcdir)/themes/starfield/src/terminalbox/corner.xcf $(srcdir)/themes/starfield/src/terminalbox/center.xcf
 
 unicode.pf2: $(FONT_SOURCE) grub-mkfont
 	$(builddir)/grub-mkfont -o $@ $(FONT_SOURCE)
@@ -101,43 +122,35 @@ CLEANFILES += widthspec.h
 # Install config.h into platformdir
 platform_HEADERS = config.h
 
-pkglib_DATA += grub-mkconfig_lib
-pkglib_DATA += update-grub_lib
+pkgdata_DATA += grub-mkconfig_lib
 
 
 if COND_i386_coreboot
-BOOTTARGET=coreboot
 QEMU32=qemu-system-i386
 endif
 
 if COND_i386_multiboot
-BOOTTARGET=cd
 QEMU32=qemu-system-i386
 endif
 
 if COND_i386_ieee1275
-BOOTTARGET=cd
 QEMU32=qemu-system-i386
 endif
 
 if COND_i386_qemu
-BOOTTARGET=qemu
 QEMU32=qemu-system-i386
 endif
 
 if COND_i386_pc
-BOOTTARGET=cd
 QEMU32=qemu-system-i386
 endif
 
 if COND_i386_efi
 QEMU32=qemu-system-i386
-BOOTTARGET=cd
 endif
 
 if COND_x86_64_efi
 QEMU32=qemu-system-x86_64
-BOOTTARGET=cd
 endif
 
 linux.init.x86_64: $(srcdir)/grub-core/tests/boot/linux.init-x86_64.S
@@ -146,29 +159,41 @@ linux.init.x86_64: $(srcdir)/grub-core/tests/boot/linux.init-x86_64.S
 linux.init.i386: $(srcdir)/grub-core/tests/boot/linux.init-i386.S
 	$(TARGET_CC) -o $@ $< -m32 -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\"
 
+linux.init.mips: $(srcdir)/grub-core/tests/boot/linux.init-mips.S
+	$(TARGET_CC) -o $@ $< -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\"
+
+linux.init.ppc: $(srcdir)/grub-core/tests/boot/linux.init-ppc.S
+	$(TARGET_CC) -o $@ $< -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\"
+
+linux.init.mipsel: $(srcdir)/grub-core/tests/boot/linux.init-mips.S
+	$(TARGET_CC) -o $@ $< -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\"
+
+linux.init.loongson: $(srcdir)/grub-core/tests/boot/linux.init-mips.S
+	$(TARGET_CC) -o $@ $< -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -DREBOOT=1
+
 multiboot.elf: $(srcdir)/grub-core/tests/boot/kernel-i386.S
-	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -DTARGET_MULTIBOOT=1 -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include
+	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -DTARGET_MULTIBOOT=1 -Wl,--build-id=none -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include
 
 kfreebsd.elf: $(srcdir)/grub-core/tests/boot/kernel-i386.S
-	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include
+	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,--build-id=none -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include
 
 kfreebsd.aout: kfreebsd.elf
-	$(OBJCOPY) -O a.out-i386-linux $< $@ -R .note.gnu.build-id
+	$(OBJCOPY) -O a.out-i386-linux $< $@ -R .note.gnu.build-id -R .note.gnu.gold-version
 
 pc-chainloader.elf: $(srcdir)/grub-core/tests/boot/kernel-8086.S
-	$(TARGET_CC) -o $@ $< -DTARGET_CHAINLOADER=1 -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,-N -Wl,-Ttext,0x7c00 -m32
+	$(TARGET_CC) -o $@ $< -DTARGET_CHAINLOADER=1 -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,--build-id=none -Wl,-N -Wl,-Ttext,0x7c00 -m32
 
 pc-chainloader.bin: pc-chainloader.elf
-	$(OBJCOPY) -O binary --strip-unneeded -R .note -R .comment -R .note.gnu.build-id -R .reginfo -R .rel.dyn $< $@;
+	$(OBJCOPY) -O binary --strip-unneeded -R .note -R .comment -R .note.gnu.build-id -R .reginfo -R .rel.dyn -R .note.gnu.gold-version $< $@;
 
 ntldr.elf: $(srcdir)/grub-core/tests/boot/kernel-8086.S
-	$(TARGET_CC) -o $@ $< -DTARGET_NTLDR=1 -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,-N -Wl,-Ttext,0 -m32
+	$(TARGET_CC) -o $@ $< -DTARGET_NTLDR=1 -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,--build-id=none -Wl,-N -Wl,-Ttext,0 -m32
 
 ntldr.bin: ntldr.elf
-	$(OBJCOPY) -O binary --strip-unneeded -R .note -R .comment -R .note.gnu.build-id -R .reginfo -R .rel.dyn $< $@;
+	$(OBJCOPY) -O binary --strip-unneeded -R .note -R .comment -R .note.gnu.build-id -R .reginfo -R .rel.dyn -R .note.gnu.gold-version $< $@;
 
 multiboot2.elf: $(srcdir)/grub-core/tests/boot/kernel-i386.S
-	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include -DTARGET_MULTIBOOT2=1
+	$(TARGET_CC) -o $@ $< -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" -ffreestanding -nostdlib -nostdinc -Wl,--build-id=none -Wl,-N -Wl,-Ttext,0x100000 -m32 -I$(srcdir)/include -DTARGET_MULTIBOOT2=1
 
 kfreebsd.init.x86_64: $(srcdir)/grub-core/tests/boot/kfreebsd.init-x86_64.S
 	$(TARGET_CC) -o $@ $< -m64 -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\" && freebsd-brandelf -t FreeBSD $@
@@ -187,6 +212,18 @@ knetbsd.init.x86_64: $(srcdir)/grub-core/tests/boot/kbsd.init-x86_64.S
 
 kopenbsd.init.x86_64: $(srcdir)/grub-core/tests/boot/kbsd.init-x86_64.S
 	$(TARGET_CC) -o $@ $< -m64 -DTARGET_OPENBSD=1 -nostdlib -nostdinc -DSUCCESSFUL_BOOT_STRING=\"$(SUCCESSFUL_BOOT_STRING)\"
+
+linux-initramfs.mips: linux.init.mips Makefile
+	TDIR=`mktemp -d "$${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` && cp $< $$TDIR/init && (cd $$TDIR && echo ./init | cpio --quiet --dereference -o -H newc) | gzip > $@ && rm -rf $$TDIR
+
+linux-initramfs.ppc: linux.init.ppc Makefile
+	TDIR=`mktemp -d "$${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` && cp $< $$TDIR/init && (cd $$TDIR && echo ./init | cpio --quiet --dereference -o -H newc) | gzip > $@ && rm -rf $$TDIR
+
+linux-initramfs.mipsel: linux.init.mipsel Makefile
+	TDIR=`mktemp -d "$${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` && cp $< $$TDIR/init && (cd $$TDIR && echo ./init | cpio --quiet --dereference -o -H newc) | gzip > $@ && rm -rf $$TDIR
+
+linux-initramfs.loongson: linux.init.loongson Makefile
+	TDIR=`mktemp -d "$${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` && cp $< $$TDIR/init && (cd $$TDIR && echo ./init | cpio --quiet --dereference -o -H newc) | gzip > $@ && rm -rf $$TDIR
 
 linux-initramfs.i386: linux.init.i386 Makefile
 	TDIR=`mktemp -d "$${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` && cp $< $$TDIR/init && (cd $$TDIR && echo ./init | cpio --quiet --dereference -o -H newc) | gzip > $@ && rm -rf $$TDIR
@@ -224,97 +261,128 @@ kfreebsd-mfsroot.i386.gz: kfreebsd-mfsroot.i386.img
 	gzip < $< > $@
 
 bootcheck-kfreebsd-i386: kfreebsd-mfsroot.i386.gz $(GRUB_PAYLOADS_DIR)/kfreebsd.i386 $(GRUB_PAYLOADS_DIR)/kfreebsd_env.i386 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/mfsroot.gz=kfreebsd-mfsroot.i386.gz --files=/kfreebsd=$(GRUB_PAYLOADS_DIR)/kfreebsd.i386 --files=/kfreebsd_env=$(GRUB_PAYLOADS_DIR)/kfreebsd_env.i386 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/mfsroot.gz=kfreebsd-mfsroot.i386.gz --files=/kfreebsd=$(GRUB_PAYLOADS_DIR)/kfreebsd.i386 --files=/kfreebsd_env=$(GRUB_PAYLOADS_DIR)/kfreebsd_env.i386 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 kfreebsd-mfsroot.x86_64.gz: kfreebsd-mfsroot.x86_64.img
 	gzip < $< > $@
 
 bootcheck-kfreebsd-x86_64: kfreebsd-mfsroot.x86_64.gz $(GRUB_PAYLOADS_DIR)/kfreebsd.x86_64 $(GRUB_PAYLOADS_DIR)/kfreebsd_env.x86_64 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=qemu-system-x86_64 --files=/mfsroot.gz=kfreebsd-mfsroot.x86_64.gz --files=/kfreebsd=$(GRUB_PAYLOADS_DIR)/kfreebsd.x86_64 --files=/kfreebsd_env=$(GRUB_PAYLOADS_DIR)/kfreebsd_env.x86_64 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=qemu-system-x86_64 --files=/mfsroot.gz=kfreebsd-mfsroot.x86_64.gz --files=/kfreebsd=$(GRUB_PAYLOADS_DIR)/kfreebsd.x86_64 --files=/kfreebsd_env=$(GRUB_PAYLOADS_DIR)/kfreebsd_env.x86_64 $(srcdir)/grub-core/tests/boot/kfreebsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 knetbsd.miniroot-image.i386.gz: knetbsd.miniroot-image.i386.img
 	gzip < $< > $@
 
 bootcheck-knetbsd-i386: knetbsd.miniroot-image.i386.gz $(GRUB_PAYLOADS_DIR)/knetbsd.i386 $(srcdir)/grub-core/tests/boot/knetbsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/miniroot.gz=knetbsd.miniroot-image.i386.gz --files=/knetbsd=$(GRUB_PAYLOADS_DIR)/knetbsd.i386 $(srcdir)/grub-core/tests/boot/knetbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/miniroot.gz=knetbsd.miniroot-image.i386.gz --files=/knetbsd=$(GRUB_PAYLOADS_DIR)/knetbsd.i386 $(srcdir)/grub-core/tests/boot/knetbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-kopenbsd-i386: kopenbsd.image.i386 $(GRUB_PAYLOADS_DIR)/kopenbsd.i386 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/ramdisk=kopenbsd.image.i386 --files=/kopenbsd=$(GRUB_PAYLOADS_DIR)/kopenbsd.i386 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/ramdisk=kopenbsd.image.i386 --files=/kopenbsd=$(GRUB_PAYLOADS_DIR)/kopenbsd.i386 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-kopenbsd-x86_64: kopenbsd.image.x86_64 $(GRUB_PAYLOADS_DIR)/kopenbsd.x86_64 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=qemu-system-x86_64 --files=/ramdisk=kopenbsd.image.x86_64 --files=/kopenbsd=$(GRUB_PAYLOADS_DIR)/kopenbsd.x86_64 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=qemu-system-x86_64 --files=/ramdisk=kopenbsd.image.x86_64 --files=/kopenbsd=$(GRUB_PAYLOADS_DIR)/kopenbsd.x86_64 $(srcdir)/grub-core/tests/boot/kopenbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 knetbsd.miniroot-image.x86_64.gz: knetbsd.miniroot-image.x86_64.img
 	gzip < $< > $@
 
 bootcheck-knetbsd-x86_64: knetbsd.miniroot-image.x86_64.gz $(GRUB_PAYLOADS_DIR)/knetbsd.x86_64 $(srcdir)/grub-core/tests/boot/knetbsd.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=qemu-system-x86_64 --files=/miniroot.gz=knetbsd.miniroot-image.x86_64.gz --files=/knetbsd=$(GRUB_PAYLOADS_DIR)/knetbsd.x86_64 $(srcdir)/grub-core/tests/boot/knetbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=qemu-system-x86_64 --files=/miniroot.gz=knetbsd.miniroot-image.x86_64.gz --files=/knetbsd=$(GRUB_PAYLOADS_DIR)/knetbsd.x86_64 $(srcdir)/grub-core/tests/boot/knetbsd.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-linux-i386: linux-initramfs.i386 $(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/initrd=linux-initramfs.i386 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/initrd=linux-initramfs.i386 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-linux-x86_64: linux-initramfs.x86_64 $(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=qemu-system-x86_64 --files=/initrd=linux-initramfs.x86_64 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=qemu-system-x86_64 --files=/initrd=linux-initramfs.x86_64 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+
+bootcheck-linux-mips: linux-initramfs.mips $(GRUB_PAYLOADS_DIR)/linux.mips $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --files=/initrd=linux-initramfs.mips --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.mips $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+
+bootcheck-linux-ppc: linux-initramfs.ppc $(GRUB_PAYLOADS_DIR)/linux.ppc $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --files=/initrd=linux-initramfs.ppc --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.ppc $(srcdir)/grub-core/tests/boot/linux-ppc.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+
+bootcheck-linux-mipsel: linux-initramfs.mipsel $(GRUB_PAYLOADS_DIR)/linux.mipsel $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --files=/initrd=linux-initramfs.mipsel --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.mipsel $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+
+bootcheck-linux-loongson: linux-initramfs.loongson $(GRUB_PAYLOADS_DIR)/linux.loongson $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --files=/initrd=linux-initramfs.loongson --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.loongson $(srcdir)/grub-core/tests/boot/linux.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-linux16-i386: linux-initramfs.i386 $(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/initrd=linux-initramfs.i386 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux16.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/initrd=linux-initramfs.i386 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.i386 $(srcdir)/grub-core/tests/boot/linux16.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-linux16-x86_64: linux-initramfs.x86_64 $(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=qemu-system-x86_64 --files=/initrd=linux-initramfs.x86_64 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux16.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=qemu-system-x86_64 --files=/initrd=linux-initramfs.x86_64 --files=/linux=$(GRUB_PAYLOADS_DIR)/linux.x86_64 $(srcdir)/grub-core/tests/boot/linux16.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-multiboot: multiboot.elf $(srcdir)/grub-core/tests/boot/multiboot.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/multiboot.elf=multiboot.elf $(srcdir)/grub-core/tests/boot/multiboot.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/multiboot.elf=multiboot.elf $(srcdir)/grub-core/tests/boot/multiboot.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-multiboot2: multiboot2.elf $(srcdir)/grub-core/tests/boot/multiboot2.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/multiboot2.elf=multiboot2.elf $(srcdir)/grub-core/tests/boot/multiboot2.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/multiboot2.elf=multiboot2.elf $(srcdir)/grub-core/tests/boot/multiboot2.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-kfreebsd-aout: kfreebsd.aout $(srcdir)/grub-core/tests/boot/kfreebsd-aout.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/kfreebsd.aout=kfreebsd.aout $(srcdir)/grub-core/tests/boot/kfreebsd-aout.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/kfreebsd.aout=kfreebsd.aout $(srcdir)/grub-core/tests/boot/kfreebsd-aout.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-pc-chainloader: pc-chainloader.bin $(srcdir)/grub-core/tests/boot/pc-chainloader.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/pc-chainloader.bin=pc-chainloader.bin $(srcdir)/grub-core/tests/boot/pc-chainloader.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/pc-chainloader.bin=pc-chainloader.bin $(srcdir)/grub-core/tests/boot/pc-chainloader.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
 bootcheck-ntldr: ntldr.bin $(srcdir)/grub-core/tests/boot/ntldr.cfg grub-shell
-	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu-opts="$(GRUB_QEMU_OPTS)" --boot=$(BOOTTARGET) --qemu=$(QEMU32) --files=/ntldr.bin=ntldr.bin $(srcdir)/grub-core/tests/boot/ntldr.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
+	timeout -s KILL $(BOOTCHECK_TIMEOUT) ./grub-shell --qemu=$(QEMU32) --files=/ntldr.bin=ntldr.bin $(srcdir)/grub-core/tests/boot/ntldr.cfg | grep $(SUCCESSFUL_BOOT_STRING) > /dev/null
 
-BOOTCHECKS= 
+if COND_i386_efi
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64 bootcheck-knetbsd-x86_64 bootcheck-kfreebsd-x86_64 bootcheck-kfreebsd-i386
+endif
+
+if COND_x86_64_efi
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64 bootcheck-knetbsd-x86_64 bootcheck-kfreebsd-x86_64 bootcheck-kfreebsd-i386
+endif
+
+if COND_i386_multiboot
+# Freebsd crashes because memory at 0-0x1000 is occupied and requires ACPI
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64 bootcheck-knetbsd-x86_64
+endif
+
+if COND_i386_coreboot
+# 64-bit NetBSD crashes because memory at 0-0x1000 is occupied
+# Freebsd crashes because memory at 0-0x1000 is occupied and requires ACPI
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64
+endif
+
+if COND_i386_qemu
+# Freebsd crashes because memory at 0-0x1000 is occupied and requires ACPI
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64 bootcheck-knetbsd-x86_64
+endif
 
 if COND_i386_pc
 #pc chainloader by definition is only for i386-pc
-BOOTCHECKS += bootcheck-pc-chainloader
 #ntldr and bootmgr require BIOS.
-BOOTCHECKS += bootcheck-ntldr
 #legacy protocol makes early BIOS calls.
-BOOTCHECKS += bootcheck-linux16-i386 bootcheck-linux16-x86_64
-# Crashes early on non-BIOS
-BOOTCHECKS += bootcheck-knetbsd-i386
+# NetBSD crashes early on non-BIOS
+BOOTCHECKS = bootcheck-kfreebsd-aout bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64 bootcheck-multiboot bootcheck-multiboot2 bootcheck-linux-i386 bootcheck-linux-x86_64 bootcheck-knetbsd-x86_64 bootcheck-kfreebsd-x86_64 bootcheck-kfreebsd-i386 bootcheck-pc-chainloader bootcheck-ntldr bootcheck-linux16-i386 bootcheck-linux16-x86_64 bootcheck-knetbsd-i386
 endif
 
-if !COND_i386_coreboot
-# Crashes because memory at 0-0x1000 is occupied
-BOOTCHECKS += bootcheck-knetbsd-x86_64
-
-# Likewise and require ACPI.
-if !COND_i386_multiboot
-if !COND_i386_qemu
-BOOTCHECKS += bootcheck-kfreebsd-x86_64
-BOOTCHECKS += bootcheck-kfreebsd-i386
-endif
-endif
+if COND_mips_loongson
+BOOTCHECKS = bootcheck-linux-loongson
 endif
 
-BOOTCHECKS += bootcheck-kfreebsd-aout
+if COND_mipsel
+if COND_mips_qemu_mips
+BOOTCHECKS = bootcheck-linux-mipsel
+endif
+endif
+if COND_mipseb
+if COND_mips_qemu_mips
+BOOTCHECKS = bootcheck-linux-mips
+endif
+endif
 
-BOOTCHECKS += bootcheck-kopenbsd-i386 bootcheck-kopenbsd-x86_64
+if COND_powerpc_ieee1275
+BOOTCHECKS = bootcheck-linux-ppc
+endif
 
-BOOTCHECKS += bootcheck-multiboot bootcheck-multiboot2
-
-BOOTCHECKS += bootcheck-linux-i386 bootcheck-linux-x86_64
-
+EXTRA_DIST += grub-core/tests/boot/kbsd.init-i386.S grub-core/tests/boot/kbsd.init-x86_64.S grub-core/tests/boot/kbsd.spec.txt grub-core/tests/boot/kernel-8086.S grub-core/tests/boot/kernel-i386.S grub-core/tests/boot/kfreebsd-aout.cfg grub-core/tests/boot/kfreebsd.cfg grub-core/tests/boot/kfreebsd.init-i386.S grub-core/tests/boot/kfreebsd.init-x86_64.S grub-core/tests/boot/knetbsd.cfg grub-core/tests/boot/kopenbsd.cfg grub-core/tests/boot/kopenbsdlabel.txt grub-core/tests/boot/linux16.cfg grub-core/tests/boot/linux.cfg grub-core/tests/boot/linux.init-i386.S grub-core/tests/boot/linux.init-x86_64.S grub-core/tests/boot/multiboot2.cfg grub-core/tests/boot/multiboot.cfg grub-core/tests/boot/ntldr.cfg grub-core/tests/boot/pc-chainloader.cfg
 
 .PHONY: bootcheck-linux-i386 bootcheck-linux-x86_64 \
        bootcheck-kfreebsd-i386 bootcheck-kfreebsd-x86_64 \
-       bootcheck-knetbsd-i386 bootcheck-knetbsd-x86_64
+       bootcheck-knetbsd-i386 bootcheck-knetbsd-x86_64 \
+	bootcheck-linux-mips
 
 # Randomly generated
 SUCCESSFUL_BOOT_STRING=3e49994fd5d82b7c9298d672d774080d

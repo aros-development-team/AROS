@@ -17,6 +17,9 @@
  */
 
 /* We need to include config-util.h.in for HAVE_*.  */
+#ifndef __STDC_VERSION__
+#define __STDC_VERSION__ 0
+#endif
 #include <config-util.h>
 
 /* On x86 these functions aren't really needed. Save some space.  */
@@ -39,7 +42,41 @@ void EXPORT_FUNC (__bswapsi2) (void);
 # ifdef HAVE___BSWAPDI2
 void EXPORT_FUNC (__bswapdi2) (void);
 # endif
+# ifdef HAVE___UDIVSI3
+void EXPORT_FUNC (__udivsi3) (void);
+# endif
+# ifdef HAVE___UMODSI3
+void EXPORT_FUNC (__umodsi3) (void);
+# endif
+# ifdef HAVE___UMODDI3
+void EXPORT_FUNC (__umoddi3) (void);
+# endif
+# ifdef HAVE___UDIVDI3
+void EXPORT_FUNC (__udivdi3) (void);
+# endif
+# ifdef HAVE___MODDI3
+void EXPORT_FUNC (__moddi3) (void);
+# endif
+# ifdef HAVE___DIVDI3
+void EXPORT_FUNC (__divdi3) (void);
+# endif
+# ifdef HAVE___DIVSI3
+void EXPORT_FUNC (__divsi3) (void);
+# endif
+# ifdef HAVE___MODSI3
+void EXPORT_FUNC (__modsi3) (void);
+# endif
+# ifdef HAVE___CTZDI2
+void EXPORT_FUNC (__ctzdi2) (void);
+# endif
+# ifdef HAVE___CTZSI2
+void EXPORT_FUNC (__ctzsi2) (void);
+# endif
 #endif
+
+# ifdef HAVE___IA64_TRAMPOLINE
+void EXPORT_FUNC (__ia64_trampoline) (void);
+# endif
 
 #ifdef HAVE___TRAMPOLINE_SETUP
 void EXPORT_FUNC (__trampoline_setup) (void);

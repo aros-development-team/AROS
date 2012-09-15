@@ -23,6 +23,9 @@
 #include <grub/charset.h>
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static void
 disp_sal (void *table)

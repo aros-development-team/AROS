@@ -6,8 +6,11 @@
 #include "./sparc64/setjmp.S"
 #elif defined(__mips__)
 #include "./mips/setjmp.S"
-#elif defined(__powerpc__)
+#elif defined(__powerpc__) || defined(__PPC__)
 #include "./powerpc/setjmp.S"
+#elif defined(__ia64__)
+#include "./ia64/setjmp.S"
+#include "./ia64/longjmp.S"
 #else
-#error "Unknwon target cpu type"
+#error "Unknown target cpu type"
 #endif

@@ -33,12 +33,10 @@ struct grub_efidisk_data
   grub_efi_device_path_t *device_path;
   grub_efi_device_path_t *last_device_path;
   grub_efi_block_io_t *block_io;
-  grub_efi_disk_io_t *disk_io;
   struct grub_efidisk_data *next;
 };
 
-/* GUIDs.  */
-static grub_efi_guid_t disk_io_guid = GRUB_EFI_DISK_IO_GUID;
+/* GUID.  */
 static grub_efi_guid_t block_io_guid = GRUB_EFI_BLOCK_IO_GUID;
 
 static struct grub_efidisk_data *fd_devices;
@@ -86,54 +84,6 @@ find_last_device_path (const grub_efi_device_path_t *dp)
   return p;
 }
 
-/* Compare device paths.  */
-static int
-compare_device_paths (const grub_efi_device_path_t *dp1,
-		      const grub_efi_device_path_t *dp2)
-{
-  if (! dp1 || ! dp2)
-    /* Return non-zero.  */
-    return 1;
-
-  while (1)
-    {
-      grub_efi_uint8_t type1, type2;
-      grub_efi_uint8_t subtype1, subtype2;
-      grub_efi_uint16_t len1, len2;
-      int ret;
-
-      type1 = GRUB_EFI_DEVICE_PATH_TYPE (dp1);
-      type2 = GRUB_EFI_DEVICE_PATH_TYPE (dp2);
-
-      if (type1 != type2)
-	return (int) type2 - (int) type1;
-
-      subtype1 = GRUB_EFI_DEVICE_PATH_SUBTYPE (dp1);
-      subtype2 = GRUB_EFI_DEVICE_PATH_SUBTYPE (dp2);
-
-      if (subtype1 != subtype2)
-	return (int) subtype1 - (int) subtype2;
-
-      len1 = GRUB_EFI_DEVICE_PATH_LENGTH (dp1);
-      len2 = GRUB_EFI_DEVICE_PATH_LENGTH (dp2);
-
-      if (len1 != len2)
-	return (int) len1 - (int) len2;
-
-      ret = grub_memcmp (dp1, dp2, len1);
-      if (ret != 0)
-	return ret;
-
-      if (GRUB_EFI_END_ENTIRE_DEVICE_PATH (dp1))
-	break;
-
-      dp1 = (grub_efi_device_path_t *) ((char *) dp1 + len1);
-      dp2 = (grub_efi_device_path_t *) ((char *) dp2 + len2);
-    }
-
-  return 0;
-}
-
 static struct grub_efidisk_data *
 make_devices (void)
 {
@@ -143,7 +93,7 @@ make_devices (void)
   struct grub_efidisk_data *devices = 0;
 
   /* Find handles which support the disk io interface.  */
-  handles = grub_efi_locate_handle (GRUB_EFI_BY_PROTOCOL, &disk_io_guid,
+  handles = grub_efi_locate_handle (GRUB_EFI_BY_PROTOCOL, &block_io_guid,
 				    0, &num_handles);
   if (! handles)
     return 0;
@@ -155,7 +105,6 @@ make_devices (void)
       grub_efi_device_path_t *ldp;
       struct grub_efidisk_data *d;
       grub_efi_block_io_t *bio;
-      grub_efi_disk_io_t *dio;
 
       dp = grub_efi_get_device_path (*handle);
       if (! dp)
@@ -168,9 +117,7 @@ make_devices (void)
 
       bio = grub_efi_open_protocol (*handle, &block_io_guid,
 				    GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-      dio = grub_efi_open_protocol (*handle, &disk_io_guid,
-				    GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-      if (! bio || ! dio)
+      if (! bio)
 	/* This should not happen... Why?  */
 	continue;
 
@@ -186,7 +133,6 @@ make_devices (void)
       d->device_path = dp;
       d->last_device_path = ldp;
       d->block_io = bio;
-      d->disk_io = dio;
       d->next = devices;
       devices = d;
     }
@@ -220,14 +166,8 @@ find_parent_device (struct grub_efidisk_data *devices,
       if (parent == d)
 	continue;
 
-      if (compare_device_paths (parent->device_path, dp) == 0)
-	{
-	  /* Found.  */
-	  if (! parent->last_device_path)
-	    parent = 0;
-
-	  break;
-	}
+      if (grub_efi_compare_device_paths (parent->device_path, dp) == 0)
+	break;
     }
 
   grub_free (dp);
@@ -255,7 +195,7 @@ iterate_child_devices (struct grub_efidisk_data *devices,
       ldp->length[0] = sizeof (*ldp);
       ldp->length[1] = 0;
 
-      if (compare_device_paths (dp, d->device_path) == 0)
+      if (grub_efi_compare_device_paths (dp, d->device_path) == 0)
 	if (hook (p))
 	  {
 	    grub_free (dp);
@@ -279,11 +219,11 @@ add_device (struct grub_efidisk_data **devices, struct grub_efidisk_data *d)
     {
       int ret;
 
-      ret = compare_device_paths (find_last_device_path ((*p)->device_path),
-				  find_last_device_path (d->device_path));
+      ret = grub_efi_compare_device_paths (find_last_device_path ((*p)->device_path),
+					   find_last_device_path (d->device_path));
       if (ret == 0)
-	ret = compare_device_paths ((*p)->device_path,
-				    d->device_path);
+	ret = grub_efi_compare_device_paths ((*p)->device_path,
+					     d->device_path);
       if (ret == 0)
 	return;
       else if (ret > 0)
@@ -325,40 +265,72 @@ name_devices (struct grub_efidisk_data *devices)
 	      /* Fall through by intention.  */
 	    case GRUB_EFI_CDROM_DEVICE_PATH_SUBTYPE:
 	      {
-		struct grub_efidisk_data *parent;
+		struct grub_efidisk_data *parent, *parent2;
 
 		parent = find_parent_device (devices, d);
-		if (parent)
+		if (!parent)
 		  {
-		    if (is_hard_drive)
-		      {
-#if 0
-			grub_printf ("adding a hard drive by a partition: ");
-			grub_print_device_path (parent->device_path);
+#ifdef DEBUG_NAMES
+		    grub_printf ("skipping orphaned partition: ");
+		    grub_efi_print_device_path (d->device_path);
 #endif
-			add_device (&hd_devices, parent);
-		      }
-		    else
-		      {
-#if 0
-			grub_printf ("adding a cdrom by a partition: ");
-			grub_print_device_path (parent->device_path);
-#endif
-			add_device (&cd_devices, parent);
-		      }
-
-		    /* Mark the parent as used.  */
-		    parent->last_device_path = 0;
+		    break;
 		  }
+		parent2 = find_parent_device (devices, parent);
+		if (parent2)
+		  {
+#ifdef DEBUG_NAMES
+		    grub_printf ("skipping subpartition: ");
+		    grub_efi_print_device_path (d->device_path);
+#endif
+		    /* Mark itself as used.  */
+		    d->last_device_path = 0;
+		    break;
+		  }
+		if (!parent->last_device_path)
+		  {
+		    d->last_device_path = 0;
+		    break;
+		  }
+		if (is_hard_drive)
+		  {
+#ifdef DEBUG_NAMES
+		    grub_printf ("adding a hard drive by a partition: ");
+		    grub_efi_print_device_path (parent->device_path);
+#endif
+		    add_device (&hd_devices, parent);
+		  }
+		else
+		  {
+#ifdef DEBUG_NAMES
+		    grub_printf ("adding a cdrom by a partition: ");
+		    grub_efi_print_device_path (parent->device_path);
+#endif
+		    add_device (&cd_devices, parent);
+		  }
+
+		/* Mark the parent as used.  */
+		parent->last_device_path = 0;
 	      }
 	      /* Mark itself as used.  */
 	      d->last_device_path = 0;
 	      break;
 
 	    default:
+#ifdef DEBUG_NAMES
+	      grub_printf ("skipping other type: ");
+	      grub_efi_print_device_path (d->device_path);
+#endif
 	      /* For now, ignore the others.  */
 	      break;
 	    }
+	}
+      else
+	{
+#ifdef DEBUG_NAMES
+	  grub_printf ("skipping non-media: ");
+	  grub_efi_print_device_path (d->device_path);
+#endif
 	}
     }
 
@@ -377,9 +349,9 @@ name_devices (struct grub_efidisk_data *devices)
 	{
 	  /* Only one partition in a non-media device. Assume that this
 	     is a floppy drive.  */
-#if 0
+#ifdef DEBUG_NAMES
 	  grub_printf ("adding a floppy by guessing: ");
-	  grub_print_device_path (d->device_path);
+	  grub_efi_print_device_path (d->device_path);
 #endif
 	  add_device (&fd_devices, d);
 	}
@@ -387,18 +359,18 @@ name_devices (struct grub_efidisk_data *devices)
 	{
 	  /* This check is too heuristic, but assume that this is a
 	     CDROM drive.  */
-#if 0
+#ifdef DEBUG_NAMES
 	  grub_printf ("adding a cdrom by guessing: ");
-	  grub_print_device_path (d->device_path);
+	  grub_efi_print_device_path (d->device_path);
 #endif
 	  add_device (&cd_devices, d);
 	}
       else
 	{
 	  /* The default is a hard drive.  */
-#if 0
+#ifdef DEBUG_NAMES
 	  grub_printf ("adding a hard drive by guessing: ");
-	  grub_print_device_path (d->device_path);
+	  grub_efi_print_device_path (d->device_path);
 #endif
 	  add_device (&hd_devices, d);
 	}
@@ -432,34 +404,43 @@ enumerate_disks (void)
 }
 
 static int
-grub_efidisk_iterate (int (*hook) (const char *name))
+grub_efidisk_iterate (int (*hook) (const char *name),
+		      grub_disk_pull_t pull)
 {
   struct grub_efidisk_data *d;
   char buf[16];
   int count;
 
-  for (d = fd_devices, count = 0; d; d = d->next, count++)
+  switch (pull)
     {
-      grub_snprintf (buf, sizeof (buf), "fd%d", count);
-      grub_dprintf ("efidisk", "iterating %s\n", buf);
-      if (hook (buf))
-	return 1;
-    }
+    case GRUB_DISK_PULL_NONE:
+      for (d = hd_devices, count = 0; d; d = d->next, count++)
+	{
+	  grub_snprintf (buf, sizeof (buf), "hd%d", count);
+	  grub_dprintf ("efidisk", "iterating %s\n", buf);
+	  if (hook (buf))
+	    return 1;
+	}
+      break;
+    case GRUB_DISK_PULL_REMOVABLE:
+      for (d = fd_devices, count = 0; d; d = d->next, count++)
+	{
+	  grub_snprintf (buf, sizeof (buf), "fd%d", count);
+	  grub_dprintf ("efidisk", "iterating %s\n", buf);
+	  if (hook (buf))
+	    return 1;
+	}
 
-  for (d = hd_devices, count = 0; d; d = d->next, count++)
-    {
-      grub_snprintf (buf, sizeof (buf), "hd%d", count);
-      grub_dprintf ("efidisk", "iterating %s\n", buf);
-      if (hook (buf))
-	return 1;
-    }
-
-  for (d = cd_devices, count = 0; d; d = d->next, count++)
-    {
-      grub_snprintf (buf, sizeof (buf), "cd%d", count);
-      grub_dprintf ("efidisk", "iterating %s\n", buf);
-      if (hook (buf))
-	return 1;
+      for (d = cd_devices, count = 0; d; d = d->next, count++)
+	{
+	  grub_snprintf (buf, sizeof (buf), "cd%d", count);
+	  grub_dprintf ("efidisk", "iterating %s\n", buf);
+	  if (hook (buf))
+	    return 1;
+	}
+      break;
+    default:
+      return 0;
     }
 
   return 0;
@@ -536,8 +517,13 @@ grub_efidisk_open (const char *name, struct grub_disk *disk)
      and total sectors should be replaced with total blocks.  */
   grub_dprintf ("efidisk", "m = %p, last block = %llx, block size = %x\n",
 		m, (unsigned long long) m->last_block, m->block_size);
-  disk->total_sectors = (m->last_block
-			 * (m->block_size >> GRUB_DISK_SECTOR_BITS));
+  disk->total_sectors = m->last_block + 1;
+  if (m->block_size & (m->block_size - 1) || !m->block_size)
+    return grub_error (GRUB_ERR_IO, "invalid sector size %d",
+		       m->block_size);
+  for (disk->log_sector_size = 0;
+       (1U << disk->log_sector_size) < m->block_size;
+       disk->log_sector_size++);
   disk->data = d;
 
   grub_dprintf ("efidisk", "opening %s succeeded\n", name);
@@ -558,24 +544,25 @@ grub_efidisk_read (struct grub_disk *disk, grub_disk_addr_t sector,
 {
   /* For now, use the disk io interface rather than the block io's.  */
   struct grub_efidisk_data *d;
-  grub_efi_disk_io_t *dio;
   grub_efi_block_io_t *bio;
   grub_efi_status_t status;
 
   d = disk->data;
-  dio = d->disk_io;
   bio = d->block_io;
 
   grub_dprintf ("efidisk",
 		"reading 0x%lx sectors at the sector 0x%llx from %s\n",
 		(unsigned long) size, (unsigned long long) sector, disk->name);
 
-  status = efi_call_5 (dio->read, dio, bio->media->media_id,
-		      (grub_efi_uint64_t) sector << GRUB_DISK_SECTOR_BITS,
-		      (grub_efi_uintn_t) size << GRUB_DISK_SECTOR_BITS,
-		      buf);
+  status = efi_call_5 (bio->read_blocks, bio, bio->media->media_id,
+		       (grub_efi_uint64_t) sector,
+		       (grub_efi_uintn_t) size << disk->log_sector_size,
+		       buf);
   if (status != GRUB_EFI_SUCCESS)
-    return grub_error (GRUB_ERR_READ_ERROR, "efidisk read error");
+    return grub_error (GRUB_ERR_READ_ERROR,
+		       N_("failure reading sector 0x%llx from `%s'"),
+		       (unsigned long long) sector,
+		       disk->name);
 
   return GRUB_ERR_NONE;
 }
@@ -586,24 +573,24 @@ grub_efidisk_write (struct grub_disk *disk, grub_disk_addr_t sector,
 {
   /* For now, use the disk io interface rather than the block io's.  */
   struct grub_efidisk_data *d;
-  grub_efi_disk_io_t *dio;
   grub_efi_block_io_t *bio;
   grub_efi_status_t status;
 
   d = disk->data;
-  dio = d->disk_io;
   bio = d->block_io;
 
   grub_dprintf ("efidisk",
 		"writing 0x%lx sectors at the sector 0x%llx to %s\n",
 		(unsigned long) size, (unsigned long long) sector, disk->name);
 
-  status = efi_call_5 (dio->write, dio, bio->media->media_id,
-		       (grub_efi_uint64_t) sector << GRUB_DISK_SECTOR_BITS,
-		       (grub_efi_uintn_t) size << GRUB_DISK_SECTOR_BITS,
+  status = efi_call_5 (bio->write_blocks, bio, bio->media->media_id,
+		       (grub_efi_uint64_t) sector,
+		       (grub_efi_uintn_t) size << disk->log_sector_size,
 		       (void *) buf);
   if (status != GRUB_EFI_SUCCESS)
-    return grub_error (GRUB_ERR_WRITE_ERROR, "efidisk write error");
+    return grub_error (GRUB_ERR_WRITE_ERROR,
+		       N_("failure writing sector 0x%llx to `%s'"),
+		       (unsigned long long) sector, disk->name);
 
   return GRUB_ERR_NONE;
 }
@@ -708,10 +695,52 @@ grub_efidisk_get_device_handle (grub_disk_t disk)
   return 0;
 }
 
+#define NEEDED_BUFLEN sizeof ("XdXXXXXXXXXX")
+static inline int
+get_diskname_from_path_real (const grub_efi_device_path_t *path,
+			     struct grub_efidisk_data *head,
+			     char *buf)
+{
+  int count = 0;
+  struct grub_efidisk_data *d;
+  for (d = head, count = 0; d; d = d->next, count++)
+    if (grub_efi_compare_device_paths (d->device_path, path) == 0)
+      {
+	grub_snprintf (buf, NEEDED_BUFLEN - 1, "d%d", count);
+	return 1;
+      }
+  return 0;
+}
+
+static inline int
+get_diskname_from_path (const grub_efi_device_path_t *path,
+			char *buf)
+{
+  if (get_diskname_from_path_real (path, hd_devices, buf + 1))
+    {
+      buf[0] = 'h';
+      return 1;
+    }
+
+  if (get_diskname_from_path_real (path, fd_devices, buf + 1))
+    {
+      buf[0] = 'f';
+      return 1;
+    }
+
+  if (get_diskname_from_path_real (path, cd_devices, buf + 1))
+    {
+      buf[0] = 'c';
+      return 1;
+    }
+  return 0;
+}
+
 char *
 grub_efidisk_get_device_name (grub_efi_handle_t *handle)
 {
   grub_efi_device_path_t *dp, *ldp;
+  char device_name[NEEDED_BUFLEN];
 
   dp = grub_efi_get_device_path (handle);
   if (! dp)
@@ -725,39 +754,13 @@ grub_efidisk_get_device_name (grub_efi_handle_t *handle)
       && (GRUB_EFI_DEVICE_PATH_SUBTYPE (ldp)
 	  == GRUB_EFI_HARD_DRIVE_DEVICE_PATH_SUBTYPE))
     {
-      /* This is a hard disk partition.  */
-      grub_disk_t parent = 0;
-      grub_partition_t tpart = NULL;
-      char *device_name;
+      char *partition_name = NULL;
+      char *dev_name;
       grub_efi_device_path_t *dup_dp, *dup_ldp;
       grub_efi_hard_drive_device_path_t hd;
-      auto int find_parent_disk (const char *name);
+      grub_disk_t parent = 0;
+
       auto int find_partition (grub_disk_t disk, const grub_partition_t part);
-
-      /* Find the disk which is the parent of a given hard disk partition.  */
-      int find_parent_disk (const char *name)
-	{
-	  grub_disk_t disk;
-
-	  disk = grub_disk_open (name);
-	  if (! disk)
-	    return 1;
-
-	  if (disk->dev->id == GRUB_DISK_DEVICE_EFIDISK_ID)
-	    {
-	      struct grub_efidisk_data *d;
-
-	      d = disk->data;
-	      if (compare_device_paths (d->device_path, dup_dp) == 0)
-		{
-		  parent = disk;
-		  return 1;
-		}
-	    }
-
-	  grub_disk_close (disk);
-	  return 0;
-	}
 
       /* Find the identical partition.  */
       int find_partition (grub_disk_t disk __attribute__ ((unused)),
@@ -766,7 +769,7 @@ grub_efidisk_get_device_name (grub_efi_handle_t *handle)
 	  if (grub_partition_get_start (part) == hd.partition_start
 	      && grub_partition_get_len (part) == hd.partition_size)
 	    {
-	      tpart = part;
+	      partition_name = grub_partition_get_name (part);
 	      return 1;
 	    }
 
@@ -785,7 +788,9 @@ grub_efidisk_get_device_name (grub_efi_handle_t *handle)
       dup_ldp->length[0] = sizeof (*dup_ldp);
       dup_ldp->length[1] = 0;
 
-      grub_efidisk_iterate (find_parent_disk);
+      if (!get_diskname_from_path (dup_dp, device_name))
+	return 0;
+      parent = grub_disk_open (device_name);
       grub_free (dup_dp);
 
       if (! parent)
@@ -793,58 +798,33 @@ grub_efidisk_get_device_name (grub_efi_handle_t *handle)
 
       /* Find a partition which matches the hard drive device path.  */
       grub_memcpy (&hd, ldp, sizeof (hd));
-      grub_partition_iterate (parent, find_partition);
-
-      if (! tpart)
+      if (hd.partition_start == 0
+	  && hd.partition_size == grub_disk_get_size (parent))
 	{
-	  grub_disk_close (parent);
-	  return 0;
+	  dev_name = grub_strdup (parent->name);
 	}
+      else
+	{
+	  grub_partition_iterate (parent, find_partition);
 
-      {
-	char *partition_name = grub_partition_get_name (tpart);
-	device_name = grub_xasprintf ("%s,%s", parent->name, partition_name);
-	grub_free (partition_name);
-      }
+	  if (! partition_name)
+	    {
+	      grub_disk_close (parent);
+	      return 0;
+	    }
+
+	  dev_name = grub_xasprintf ("%s,%s", parent->name, partition_name);
+	  grub_free (partition_name);
+	}
       grub_disk_close (parent);
 
-      return device_name;
+      return dev_name;
     }
   else
     {
       /* This should be an entire disk.  */
-      auto int find_disk (const char *name);
-      char *device_name = 0;
-
-      int find_disk (const char *name)
-	{
-	  grub_disk_t disk;
-
-	  disk = grub_disk_open (name);
-	  if (! disk)
-	    return 1;
-
-	  if (disk->dev->id == GRUB_DISK_DEVICE_EFIDISK_ID)
-	    {
-	      struct grub_efidisk_data *d;
-
-	      d = disk->data;
-	      if (compare_device_paths (d->device_path, dp) == 0)
-		{
-		  device_name = grub_strdup (disk->name);
-		  grub_disk_close (disk);
-		  return 1;
-		}
-	    }
-
-	  grub_disk_close (disk);
-	  return 0;
-
-	}
-
-      grub_efidisk_iterate (find_disk);
-      return device_name;
+      if (!get_diskname_from_path (dp, device_name))
+	return 0;
+      return grub_strdup (device_name);
     }
-
-  return 0;
 }

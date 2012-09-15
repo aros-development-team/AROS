@@ -27,6 +27,8 @@
 #include <grub/video_fb.h>
 #include <SDL/SDL.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static SDL_Surface *window = 0;
 static struct grub_video_render_target *sdl_render_target;
 static struct grub_video_mode_info mode_info;

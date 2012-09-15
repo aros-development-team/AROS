@@ -25,14 +25,11 @@
 #include <grub/i18n.h>
 
 /* Built-in parser for default options.  */
-#define SHORT_ARG_HELP	-100
-#define SHORT_ARG_USAGE	-101
-
 static const struct grub_arg_option help_options[] =
   {
-    {"help", SHORT_ARG_HELP, 0,
+    {"help", 0, 0,
      N_("Display this help and exit."), 0, ARG_TYPE_NONE},
-    {"usage", SHORT_ARG_USAGE, 0,
+    {"usage", 0, 0,
      N_("Display the usage of this command and exit."), 0, ARG_TYPE_NONE},
     {0, 0, 0, 0, 0, 0}
   };
@@ -125,9 +122,9 @@ grub_arg_show_help (grub_extcmd_t cmd)
 
 	  if (opt->shortarg && grub_isgraph (opt->shortarg))
 	    grub_printf ("-%c%c ", opt->shortarg, opt->longarg ? ',':' ');
-	  else if (opt->shortarg == SHORT_ARG_HELP && ! h_is_used)
+	  else if (opt == help_options && ! h_is_used)
 	    grub_printf ("-h, ");
-	  else if (opt->shortarg == SHORT_ARG_USAGE && ! u_is_used)
+	  else if (opt == help_options + 1 && ! u_is_used)
 	    grub_printf ("-u, ");
 	  else
 	    grub_printf ("    ");
@@ -180,50 +177,34 @@ grub_arg_show_help (grub_extcmd_t cmd)
 
 
 static int
-parse_option (grub_extcmd_t cmd, int key, char *arg, struct grub_arg_list *usr)
+parse_option (grub_extcmd_t cmd, const struct grub_arg_option *opt,
+	      char *arg, struct grub_arg_list *usr)
 {
-  switch (key)
+  if (opt == help_options)
     {
-    case SHORT_ARG_HELP:
       grub_arg_show_help (cmd);
       return -1;
+    }
 
-    case SHORT_ARG_USAGE:
+  if (opt == help_options + 1)
+    {
       show_usage (cmd);
       return -1;
-
-    default:
-      {
-	int found = -1;
-	int i = 0;
-	const struct grub_arg_option *opt = cmd->options;
-
-	while (opt->doc)
-	  {
-	    if (opt->shortarg && key == opt->shortarg)
-	      {
-		found = i;
-		break;
-	      }
-	    opt++;
-	    i++;
-	  }
-
-	if (found == -1)
-	  return -1;
-
-	if (opt->flags & GRUB_ARG_OPTION_REPEATABLE)
-	  {
-	    usr[found].args[usr[found].set++] = arg;
-	    usr[found].args[usr[found].set] = NULL;
-	  }
-	else
-	  {
-	    usr[found].set = 1;
-	    usr[found].arg = arg;
-	  }
-      }
     }
+  {
+    int found = opt - cmd->options;
+
+    if (opt->flags & GRUB_ARG_OPTION_REPEATABLE)
+      {
+	usr[found].args[usr[found].set++] = arg;
+	usr[found].args[usr[found].set] = NULL;
+      }
+    else
+      {
+	usr[found].set = 1;
+	usr[found].arg = arg;
+      }
+  }
 
   return 0;
 }
@@ -296,8 +277,9 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 
 	      if (! opt)
 		{
+		  char tmp[3] = { '-', *curshort, 0 };
 		  grub_error (GRUB_ERR_BAD_ARGUMENT,
-			      "unknown argument `-%c'", *curshort);
+			      N_("unknown argument `%s'"), tmp);
 		  goto fail;
 		}
 
@@ -307,7 +289,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 		 it can have an argument value.  */
 	      if (*curshort)
 		{
-		  if (parse_option (cmd, opt->shortarg, 0, usr) || grub_errno)
+		  if (parse_option (cmd, opt, 0, usr) || grub_errno)
 		    goto fail;
 		}
 	      else
@@ -351,7 +333,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 	  opt = find_long (cmd->options, arg + 2, arglen);
 
 	  if (!option && argv[curarg + 1] && argv[curarg + 1][0] != '-'
-	      && opt->type != ARG_TYPE_NONE)
+	      && opt && opt->type != ARG_TYPE_NONE)
 	    option = argv[++curarg];
 
 	  if (!opt && (cmd->cmd->flags & GRUB_COMMAND_ACCEPT_DASH))
@@ -363,7 +345,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 
 	  if (! opt)
 	    {
-	      grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown argument `%s'", arg);
+	      grub_error (GRUB_ERR_BAD_ARGUMENT, N_("unknown argument `%s'"), arg);
 	      goto fail;
 	    }
 	}
@@ -374,7 +356,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 	  if (! option)
 	    {
 	      grub_error (GRUB_ERR_BAD_ARGUMENT,
-			  "missing mandatory option for `%s'", opt->longarg);
+			  N_("missing mandatory option for `%s'"), opt->longarg);
 	      goto fail;
 	    }
 
@@ -396,7 +378,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 		if (tail == 0 || tail == option || *tail != '\0' || grub_errno)
 		  {
 		    grub_error (GRUB_ERR_BAD_ARGUMENT,
-				"the argument `%s' requires an integer",
+				N_("the argument `%s' requires an integer"),
 				arg);
 
 		    goto fail;
@@ -411,7 +393,7 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 	      /* XXX: Not implemented.  */
 	      break;
 	    }
-	  if (parse_option (cmd, opt->shortarg, option, usr) || grub_errno)
+	  if (parse_option (cmd, opt, option, usr) || grub_errno)
 	    goto fail;
 	}
       else
@@ -419,12 +401,12 @@ grub_arg_parse (grub_extcmd_t cmd, int argc, char **argv,
 	  if (option)
 	    {
 	      grub_error (GRUB_ERR_BAD_ARGUMENT,
-			  "a value was assigned to the argument `%s' while it "
-			  "doesn't require an argument", arg);
+			  N_("a value was assigned to the argument `%s' while it "
+			     "doesn't require an argument"), arg);
 	      goto fail;
 	    }
 
-	  if (parse_option (cmd, opt->shortarg, 0, usr) || grub_errno)
+	  if (parse_option (cmd, opt, 0, usr) || grub_errno)
 	    goto fail;
 	}
     }

@@ -22,10 +22,17 @@
 #include <grub/dl.h>
 #include <grub/misc.h>
 #include <grub/terminfo.h>
+#if !defined (GRUB_MACHINE_EMU) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
 #include <grub/cpu/io.h>
+#endif
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 #include <grub/list.h>
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+#include <grub/machine/kernel.h>
+#endif
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #define FOR_SERIAL_PORTS(var) FOR_LIST_ELEMENTS((var), (grub_serial_ports))
 
@@ -41,7 +48,7 @@ static const struct grub_arg_option options[] =
   {0, 0, 0, 0, 0, 0}
 };
 
-struct grub_serial_port *grub_serial_ports;
+static struct grub_serial_port *grub_serial_ports;
 
 struct grub_serial_output_state
 {
@@ -69,7 +76,7 @@ serial_fetch (grub_term_input_t term)
   return data->port->driver->fetch (data->port);
 }
 
-const struct grub_serial_input_state grub_serial_terminfo_input_template =
+static const struct grub_serial_input_state grub_serial_terminfo_input_template =
   {
     .tinfo =
     {
@@ -77,7 +84,7 @@ const struct grub_serial_input_state grub_serial_terminfo_input_template =
     }
   };
 
-const struct grub_serial_output_state grub_serial_terminfo_output_template =
+static const struct grub_serial_output_state grub_serial_terminfo_output_template =
   {
     .tinfo =
     {
@@ -87,11 +94,11 @@ const struct grub_serial_output_state grub_serial_terminfo_output_template =
     }
   };
 
-struct grub_serial_input_state grub_serial_terminfo_input;
+static struct grub_serial_input_state grub_serial_terminfo_input;
 
-struct grub_serial_output_state grub_serial_terminfo_output;
+static struct grub_serial_output_state grub_serial_terminfo_output;
 
-int registered = 0;
+static int registered = 0;
 
 static struct grub_term_input grub_serial_term_input =
 {
@@ -120,8 +127,8 @@ static struct grub_term_output grub_serial_term_output =
 
 
 
-static struct grub_serial_port *
-grub_serial_find (char *name)
+struct grub_serial_port *
+grub_serial_find (const char *name)
 {
   struct grub_serial_port *port;
 
@@ -129,9 +136,9 @@ grub_serial_find (char *name)
     if (grub_strcmp (port->name, name) == 0)
       break;
 
-#ifndef GRUB_MACHINE_EMU
+#if (defined(__mips__) || defined (__i386__) || defined (__x86_64__)) && !defined(GRUB_MACHINE_EMU)
   if (!port && grub_memcmp (name, "port", sizeof ("port") - 1) == 0
-      && grub_isdigit (name [sizeof ("port") - 1]))
+      && grub_isxdigit (name [sizeof ("port") - 1]))
     {
       name = grub_serial_ns8250_add_port (grub_strtoul (&name[sizeof ("port") - 1],
 							0, 16));
@@ -152,7 +159,7 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
 {
   struct grub_arg_list *state = ctxt->state;
   char pname[40];
-  char *name = NULL;
+  const char *name = NULL;
   struct grub_serial_port *port;
   struct grub_serial_config config;
   grub_err_t err;
@@ -179,7 +186,9 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
 
   port = grub_serial_find (name);
   if (!port)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "unknown serial port");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, 
+		       N_("serial port `%s' isn't found"),
+		       name);
 
   config = port->config;
 
@@ -198,7 +207,8 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
       else if (! grub_strcmp (state[4].arg, "even"))
 	config.parity = GRUB_SERIAL_PARITY_EVEN;
       else
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad parity");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			   N_("unsupported serial port parity"));
     }
 
   if (state[5].set)
@@ -207,15 +217,19 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
 	config.stop_bits = GRUB_SERIAL_STOP_BITS_1;
       else if (! grub_strcmp (state[5].arg, "2"))
 	config.stop_bits = GRUB_SERIAL_STOP_BITS_2;
+      else if (! grub_strcmp (state[5].arg, "1.5"))
+	config.stop_bits = GRUB_SERIAL_STOP_BITS_1_5;
       else
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad number of stop bits");
+	return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			   N_("unsupported serial port stop bits number"));
     }
 
   /* Initialize with new settings.  */
   err = port->driver->configure (port, &config);
   if (err)
     return err;
-#ifndef GRUB_MACHINE_EMU
+#if !defined (GRUB_MACHINE_EMU) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
+
   /* Compatibility kludge.  */
   if (port->driver == &grub_ns8250_driver)
     {
@@ -233,6 +247,15 @@ grub_cmd_serial (grub_extcmd_context_t ctxt, int argc, char **args)
 #endif
   return GRUB_ERR_NONE;
 }
+
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+const char loongson_defserial[][6] =
+  {
+    [GRUB_ARCH_MACHINE_YEELOONG] = "com0",
+    [GRUB_ARCH_MACHINE_FULOONG2F]  = "com2",
+    [GRUB_ARCH_MACHINE_FULOONG2E]  = "com1"
+  };
+#endif
 
 grub_err_t
 grub_serial_register (struct grub_serial_port *port)
@@ -295,18 +318,21 @@ grub_serial_register (struct grub_serial_port *port)
   port->term_in = in;
   port->term_out = out;
   grub_terminfo_output_register (out, "vt100");
-#ifdef GRUB_MACHINE_MIPS_YEELOONG
-  if (grub_strcmp (port->name, "com0") == 0)
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+  if (grub_strcmp (port->name, loongson_defserial[grub_arch_machine]) == 0)
     {
       grub_term_register_input_active ("serial_*", in);
       grub_term_register_output_active ("serial_*", out);
     }
   else
-#endif
     {
-      grub_term_register_input ("serial_*", in);
-      grub_term_register_output ("serial_*", out);
+      grub_term_register_input_inactive ("serial_*", in);
+      grub_term_register_output_inactive ("serial_*", out);
     }
+#else
+  grub_term_register_input ("serial_*", in);
+  grub_term_register_output ("serial_*", out);
+#endif
 
   return GRUB_ERR_NONE;
 }
@@ -322,7 +348,7 @@ grub_serial_unregister (struct grub_serial_port *port)
   if (port->term_out)
     grub_term_unregister_output (port->term_out);
 
-  grub_list_remove (GRUB_AS_LIST_P (&grub_serial_ports), GRUB_AS_LIST (port));
+  grub_list_remove (GRUB_AS_LIST (port));
 }
 
 void
@@ -339,7 +365,11 @@ grub_serial_unregister_driver (struct grub_serial_driver *driver)
 
 static grub_extcmd_t cmd;
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_serial_init (void)
+#else
 GRUB_MOD_INIT(serial)
+#endif
 {
   cmd = grub_register_extcmd ("serial", grub_cmd_serial, 0,
 			      N_("[OPTIONS...]"),
@@ -351,13 +381,23 @@ GRUB_MOD_INIT(serial)
   grub_memcpy (&grub_serial_terminfo_input,
 	       &grub_serial_terminfo_input_template,
 	       sizeof (grub_serial_terminfo_input));
-	       
-#ifndef GRUB_MACHINE_EMU
+
+#if !defined (GRUB_MACHINE_EMU) && (defined(__mips__) || defined (__i386__) || defined (__x86_64__))
   grub_ns8250_init ();
+#endif
+#ifdef GRUB_MACHINE_IEEE1275
+  grub_ofserial_init ();
+#endif
+#ifdef GRUB_MACHINE_EFI
+  grub_efiserial_init ();
 #endif
 }
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_serial_fini (void)
+#else
 GRUB_MOD_FINI(serial)
+#endif
 {
   while (grub_serial_ports)
     grub_serial_unregister (grub_serial_ports);

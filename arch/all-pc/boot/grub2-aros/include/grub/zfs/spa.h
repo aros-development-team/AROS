@@ -20,26 +20,24 @@
 #ifndef GRUB_ZFS_SPA_HEADER
 #define	GRUB_ZFS_SPA_HEADER 1
 
-typedef enum grub_zfs_endian
-  {
-    UNKNOWN_ENDIAN = -2,
-    LITTLE_ENDIAN = -1,
-    BIG_ENDIAN = 0
-  } grub_zfs_endian_t;
-
-#define grub_zfs_to_cpu16(x,a) (((a) == BIG_ENDIAN) ? grub_be_to_cpu16(x) \
+#define grub_zfs_to_cpu16(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) ? \
+				grub_be_to_cpu16(x)	       \
 				: grub_le_to_cpu16(x))
-#define grub_cpu_to_zfs16(x,a) (((a) == BIG_ENDIAN) ? grub_cpu_to_be16(x) \
+#define grub_cpu_to_zfs16(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) ? \
+				grub_cpu_to_be16(x)	       \
 				: grub_cpu_to_le16(x))
 
-#define grub_zfs_to_cpu32(x,a) (((a) == BIG_ENDIAN) ? grub_be_to_cpu32(x) \
+#define grub_zfs_to_cpu32(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) ? \
+				grub_be_to_cpu32(x)	       \
 				: grub_le_to_cpu32(x))
-#define grub_cpu_to_zfs32(x,a) (((a) == BIG_ENDIAN) ? grub_cpu_to_be32(x) \
+#define grub_cpu_to_zfs32(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) ? \
+				grub_cpu_to_be32(x)	       \
 				: grub_cpu_to_le32(x))
 
-#define grub_zfs_to_cpu64(x,a) (((a) == BIG_ENDIAN) ? grub_be_to_cpu64(x) \
+#define grub_zfs_to_cpu64(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) \
+				? grub_be_to_cpu64(x)	     \
 				: grub_le_to_cpu64(x))
-#define grub_cpu_to_zfs64(x,a) (((a) == BIG_ENDIAN) ? grub_cpu_to_be64(x) \
+#define grub_cpu_to_zfs64(x,a) (((a) == GRUB_ZFS_BIG_ENDIAN) ? grub_cpu_to_be64(x) \
 				: grub_cpu_to_le64(x))
 
 /*
@@ -68,17 +66,8 @@ typedef enum grub_zfs_endian
 #define	BF64_SET_SB(x, low, len, shift, bias, val)	\
 	BF64_SET(x, low, len, ((val) >> (shift)) - (bias))
 
-/*
- * We currently support nine block sizes, from 512 bytes to 128K.
- * We could go higher, but the benefits are near-zero and the cost
- * of COWing a giant block to modify one byte would become excessive.
- */
 #define	SPA_MINBLOCKSHIFT	9
-#define	SPA_MAXBLOCKSHIFT	17
 #define	SPA_MINBLOCKSIZE	(1ULL << SPA_MINBLOCKSHIFT)
-#define	SPA_MAXBLOCKSIZE	(1ULL << SPA_MAXBLOCKSHIFT)
-
-#define	SPA_BLOCKSIZES		(SPA_MAXBLOCKSHIFT - SPA_MINBLOCKSHIFT + 1)
 
 /*
  * Size of block to hold the configuration data (a packed nvlist)

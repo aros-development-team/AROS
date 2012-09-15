@@ -33,6 +33,7 @@
 #include <grub/env.h>
 #include <grub/video.h>
 #include <grub/acpi.h>
+#include <grub/i18n.h>
 
 #if defined (GRUB_MACHINE_EFI)
 #include <grub/efi/efi.h>
@@ -54,7 +55,7 @@ struct module
   int cmdline_size;
 };
 
-struct module *modules, *modules_last;
+static struct module *modules, *modules_last;
 static grub_size_t cmdline_size;
 static grub_size_t total_modcmd;
 static unsigned modcnt;
@@ -76,9 +77,9 @@ grub_multiboot_add_elfsyms (grub_size_t num, grub_size_t entsize,
 }
 
 grub_err_t
-grub_multiboot_load (grub_file_t file)
+grub_multiboot_load (grub_file_t file, const char *filename)
 {
-  char *buffer;
+  grub_properly_aligned_t *buffer;
   grub_ssize_t len;
   struct multiboot_header *header;
   grub_err_t err;
@@ -98,14 +99,16 @@ grub_multiboot_load (grub_file_t file)
   if (len < 32)
     {
       grub_free (buffer);
-      return grub_error (GRUB_ERR_BAD_OS, "file too small");
+      return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"), filename);
     }
+
+  COMPILE_TIME_ASSERT (MULTIBOOT_HEADER_ALIGN % 4 == 0);
 
   /* Look for the multiboot header in the buffer.  The header should
      be at least 12 bytes and aligned on a 4-byte boundary.  */
   for (header = (struct multiboot_header *) buffer;
-       ((char *) header <= buffer + len - 12) || (header = 0);
-       header = (struct multiboot_header *) ((char *) header + MULTIBOOT_HEADER_ALIGN))
+       ((char *) header <= (char *) buffer + len - 12) || (header = 0);
+       header = (struct multiboot_header *) ((grub_uint32_t *) header + MULTIBOOT_HEADER_ALIGN / 4))
     {
       if (header->magic == MULTIBOOT_HEADER_MAGIC
 	  && !(header->magic + header->architecture
@@ -120,9 +123,11 @@ grub_multiboot_load (grub_file_t file)
       return grub_error (GRUB_ERR_BAD_ARGUMENT, "no multiboot header found");
     }
 
+  COMPILE_TIME_ASSERT (MULTIBOOT_TAG_ALIGN % 4 == 0);
+
   for (tag = (struct multiboot_header_tag *) (header + 1);
        tag->type != MULTIBOOT_TAG_TYPE_END;
-       tag = (struct multiboot_header_tag *) ((char *) tag + tag->size))
+       tag = (struct multiboot_header_tag *) ((grub_uint32_t *) tag + ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN) / 4))
     switch (tag->type)
       {
       case MULTIBOOT_HEADER_TAG_INFORMATION_REQUEST:
@@ -208,7 +213,7 @@ grub_multiboot_load (grub_file_t file)
  
   if (addr_tag)
     {
-      int offset = ((char *) header - buffer -
+      int offset = ((char *) header - (char *) buffer -
 		    (addr_tag->header_addr - addr_tag->load_addr));
       int load_size = ((addr_tag->load_end_addr == 0) ? file->size - offset :
 		       addr_tag->load_end_addr - addr_tag->load_addr);
@@ -251,7 +256,7 @@ grub_multiboot_load (grub_file_t file)
     }
   else
     {
-      err = grub_multiboot_load_elf (file, buffer);
+      err = grub_multiboot_load_elf (file, filename, buffer);
       if (err)
 	{
 	  grub_free (buffer);
@@ -415,7 +420,7 @@ fill_vbe_tag (struct multiboot_tag_vbe *tag)
 #endif
 
 static grub_err_t
-retrieve_video_parameters (grub_uint8_t **ptrorig)
+retrieve_video_parameters (grub_properly_aligned_t **ptrorig)
 {
   grub_err_t err;
   struct grub_video_mode_info mode_info;
@@ -493,7 +498,8 @@ retrieve_video_parameters (grub_uint8_t **ptrorig)
 	  tag->common.framebuffer_type = MULTIBOOT_FRAMEBUFFER_TYPE_EGA_TEXT;
 	  tag->common.size = sizeof (tag->common);
 	  tag->common.reserved = 0;
-	  *ptrorig += ALIGN_UP (tag->common.size, MULTIBOOT_TAG_ALIGN);
+	  *ptrorig += ALIGN_UP (tag->common.size, MULTIBOOT_TAG_ALIGN)
+	    / sizeof (grub_properly_aligned_t);
 	}
       return GRUB_ERR_NONE;
     }
@@ -508,7 +514,8 @@ retrieve_video_parameters (grub_uint8_t **ptrorig)
 
     fill_vbe_tag (tag_vbe);
 
-    *ptrorig += ALIGN_UP (tag_vbe->size, MULTIBOOT_TAG_ALIGN);
+    *ptrorig += ALIGN_UP (tag_vbe->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 #endif
 
@@ -559,7 +566,8 @@ retrieve_video_parameters (grub_uint8_t **ptrorig)
 
       tag->common.size = sizeof (struct multiboot_tag_framebuffer_common) + 6;
     }
-  *ptrorig += ALIGN_UP (tag->common.size, MULTIBOOT_TAG_ALIGN);
+  *ptrorig += ALIGN_UP (tag->common.size, MULTIBOOT_TAG_ALIGN)
+    / sizeof (grub_properly_aligned_t);
 
   return GRUB_ERR_NONE;
 }
@@ -567,18 +575,20 @@ retrieve_video_parameters (grub_uint8_t **ptrorig)
 grub_err_t
 grub_multiboot_make_mbi (grub_uint32_t *target)
 {
-  grub_uint8_t *ptrorig;
-  grub_uint8_t *mbistart;
+  grub_properly_aligned_t *ptrorig;
+  grub_properly_aligned_t *mbistart;
   grub_err_t err;
   grub_size_t bufsize;
   grub_relocator_chunk_t ch;
 
   bufsize = grub_multiboot_get_mbi_size ();
 
+  COMPILE_TIME_ASSERT (MULTIBOOT_TAG_ALIGN % sizeof (grub_properly_aligned_t) == 0);
+
   err = grub_relocator_alloc_chunk_align (grub_multiboot_relocator, &ch,
 					  0, 0xffffffff - bufsize,
 					  bufsize, MULTIBOOT_TAG_ALIGN,
-					  GRUB_RELOCATOR_PREFERENCE_NONE);
+					  GRUB_RELOCATOR_PREFERENCE_NONE, 0);
   if (err)
     return err;
 
@@ -592,14 +602,19 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
 #endif
 
   mbistart = ptrorig;
-  ptrorig += 2 * sizeof (grub_uint32_t);
+  COMPILE_TIME_ASSERT ((2 * sizeof (grub_uint32_t))
+		       % sizeof (grub_properly_aligned_t) == 0);
+  COMPILE_TIME_ASSERT (MULTIBOOT_TAG_ALIGN
+		       % sizeof (grub_properly_aligned_t) == 0);
+  ptrorig += (2 * sizeof (grub_uint32_t)) / sizeof (grub_properly_aligned_t);
 
   {
     struct multiboot_tag_string *tag = (struct multiboot_tag_string *) ptrorig;
     tag->type = MULTIBOOT_TAG_TYPE_CMDLINE;
     tag->size = sizeof (struct multiboot_tag_string) + cmdline_size; 
     grub_memcpy (tag->string, cmdline, cmdline_size);
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+       / sizeof (grub_properly_aligned_t);
   }
 
   {
@@ -607,7 +622,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     tag->type = MULTIBOOT_TAG_TYPE_BOOT_LOADER_NAME;
     tag->size = sizeof (struct multiboot_tag_string) + sizeof (PACKAGE_STRING); 
     grub_memcpy (tag->string, PACKAGE_STRING, sizeof (PACKAGE_STRING));
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 
 #ifdef GRUB_MACHINE_PCBIOS
@@ -630,7 +646,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
 	tag->cseg_16_len = info.cseg_16_len;
 	tag->version = info.version;
 
-	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+	  / sizeof (grub_properly_aligned_t);
       }
   }
 #endif
@@ -648,14 +665,16 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
 	tag->mod_start = cur->start;
 	tag->mod_end = tag->mod_start + cur->size;
 	grub_memcpy (tag->cmdline, cur->cmdline, cur->cmdline_size);
-	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+	  / sizeof (grub_properly_aligned_t);
       }
   }
 
   {
     struct multiboot_tag_mmap *tag = (struct multiboot_tag_mmap *) ptrorig;
     grub_fill_multiboot_mmap (tag);
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 
   {
@@ -668,7 +687,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     tag->num = elf_sec_num;
     tag->entsize = elf_sec_entsize;
     tag->shndx = elf_sec_shstrndx;
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 
   {
@@ -680,7 +700,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     /* Convert from bytes to kilobytes.  */
     tag->mem_lower = grub_mmap_get_lower () / 1024;
     tag->mem_upper = grub_mmap_get_upper () / 1024;
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+       / sizeof (grub_properly_aligned_t);
   }
 
   if (bootdev_set)
@@ -693,7 +714,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
       tag->biosdev = biosdev;
       tag->slice = slice;
       tag->part = part;
-      ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+      ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+	/ sizeof (grub_properly_aligned_t);
     }
 
   {
@@ -711,7 +733,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     tag->type = MULTIBOOT_TAG_TYPE_EFI64;
     tag->size = sizeof (*tag);
     tag->pointer = (grub_addr_t) grub_efi_system_table;
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 #endif
 
@@ -721,7 +744,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     tag->type = MULTIBOOT_TAG_TYPE_EFI32;
     tag->size = sizeof (*tag);
     tag->pointer = (grub_addr_t) grub_efi_system_table;
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 #endif
 
@@ -735,7 +759,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
 	tag->type = MULTIBOOT_TAG_TYPE_ACPI_OLD;
 	tag->size = sizeof (*tag) + sizeof (*a);
 	grub_memcpy (tag->rsdp, a, sizeof (*a));
-	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+	  / sizeof (grub_properly_aligned_t);
       }
   }
 
@@ -748,7 +773,8 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
 	tag->type = MULTIBOOT_TAG_TYPE_ACPI_NEW;
 	tag->size = sizeof (*tag) + a->length;
 	grub_memcpy (tag->rsdp, a, a->length);
-	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+	ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+	  / sizeof (grub_properly_aligned_t);
       }
   }
 #endif
@@ -757,10 +783,11 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
     struct multiboot_tag *tag = (struct multiboot_tag *) ptrorig;
     tag->type = MULTIBOOT_TAG_TYPE_END;
     tag->size = sizeof (struct multiboot_tag);
-    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN);
+    ptrorig += ALIGN_UP (tag->size, MULTIBOOT_TAG_ALIGN)
+      / sizeof (grub_properly_aligned_t);
   }
 
-  ((grub_uint32_t *) mbistart)[0] = ptrorig - mbistart;
+  ((grub_uint32_t *) mbistart)[0] = (char *) ptrorig - (char *) mbistart;
   ((grub_uint32_t *) mbistart)[1] = 0;
 
   return GRUB_ERR_NONE;

@@ -23,6 +23,7 @@
 #include <grub/err.h>
 #include <grub/cpu/types.h>
 #include <grub/mm.h>
+#include <grub/i18n.h>
 
 /* Dummy __gnu_local_gp. Resolved by linker.  */
 static char __gnu_local_gp_dummy;
@@ -34,7 +35,7 @@ grub_arch_dl_check_header (void *ehdr)
   Elf_Ehdr *e = ehdr;
 
   /* Check the magic numbers.  */
-#ifdef WORDS_BIGENDIAN
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
   if (e->e_ident[EI_CLASS] != ELFCLASS32
       || e->e_ident[EI_DATA] != ELFDATA2MSB
       || e->e_machine != EM_MIPS)
@@ -43,10 +44,12 @@ grub_arch_dl_check_header (void *ehdr)
       || e->e_ident[EI_DATA] != ELFDATA2LSB
       || e->e_machine != EM_MIPS)
 #endif
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch specific ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
 
   return GRUB_ERR_NONE;
 }
+
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 /* Relocate symbols.  */
 grub_err_t
@@ -69,7 +72,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
       break;
 
   if (i == e->e_shnum)
-    return grub_error (GRUB_ERR_BAD_MODULE, "no symtab found");
+    return grub_error (GRUB_ERR_BAD_MODULE, N_("no symbol table"));
 
   entsize = s->sh_entsize;
 
@@ -144,14 +147,14 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		 rel < max;
 		 rel++)
 	      {
-		Elf_Word *addr;
+		grub_uint8_t *addr;
 		Elf_Sym *sym;
 
 		if (seg->size < rel->r_offset)
 		  return grub_error (GRUB_ERR_BAD_MODULE,
 				     "reloc offset is out of the segment");
 
-		addr = (Elf_Word *) ((char *) seg->addr + rel->r_offset);
+		addr = (grub_uint8_t *) ((char *) seg->addr + rel->r_offset);
 		sym = (Elf_Sym *) ((char *) mod->symtab
 				     + entsize * ELF_R_SYM (rel->r_info));
 		if (sym->st_value == (grub_addr_t) &__gnu_local_gp_dummy)
@@ -163,7 +166,11 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		    {
 		      grub_uint32_t value;
 		      Elf_Rel *rel2;
-		      
+
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+		      addr += 2;
+#endif
+
 		      /* Handle partner lo16 relocation. Lower part is
 			 treated as signed. Hence add 0x8000 to compensate. 
 		       */
@@ -175,13 +182,20 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 			    && ELF_R_TYPE (rel2->r_info) == R_MIPS_LO16)
 			  {
 			    value += *(grub_int16_t *)
-			      ((char *) seg->addr + rel2->r_offset);
+			      ((char *) seg->addr + rel2->r_offset
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+			       + 2
+#endif
+			       );
 			    break;
 			  }
 		      *(grub_uint16_t *) addr = (value >> 16) & 0xffff;
 		    }
 		    break;
 		  case R_MIPS_LO16:
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+		    addr += 2;
+#endif
 		    *(grub_uint16_t *) addr += (sym->st_value) & 0xffff;
 		    break;
 		  case R_MIPS_32:
@@ -208,16 +222,21 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		  case R_MIPS_GOT16:
 		  case R_MIPS_CALL16:
 		    /* FIXME: reuse*/
+#ifdef GRUB_CPU_WORDS_BIGENDIAN
+		    addr += 2;
+#endif
 		    *gpptr = sym->st_value + *(grub_uint16_t *) addr;
 		    *(grub_uint16_t *) addr
 		      = sizeof (grub_uint32_t) * (gpptr - gp);
 		    gpptr++;
 		    break;
+		  case R_MIPS_JALR:
+		    break;
 		  default:
 		    {
 		      grub_free (gp);
 		      return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-					 "Unknown relocation type %d\n",
+					 N_("relocation 0x%x is not implemented yet"),
 					 ELF_R_TYPE (rel->r_info));
 		    }
 		    break;
@@ -232,6 +251,6 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 void 
 grub_arch_dl_init_linker (void)
 {
-  grub_dl_register_symbol ("__gnu_local_gp", &__gnu_local_gp_dummy, 0);
+  grub_dl_register_symbol ("__gnu_local_gp", &__gnu_local_gp_dummy, 0, 0);
 }
 

@@ -29,11 +29,15 @@ loadfont_command (grub_command_t cmd __attribute__ ((unused)),
 		  char **args)
 {
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no font specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   while (argc--)
     if (grub_font_load (*args++) != 0)
-      return GRUB_ERR_BAD_FONT;
+      {
+	if (!grub_errno)
+	  return grub_error (GRUB_ERR_BAD_FONT, "invalid font");
+	return grub_errno;
+      }
 
   return GRUB_ERR_NONE;
 }
@@ -45,7 +49,7 @@ lsfonts_command (grub_command_t cmd __attribute__ ((unused)),
 {
   struct grub_font_node *node;
 
-  grub_printf ("Loaded fonts:\n");
+  grub_puts_ (N_("Loaded fonts:"));
   for (node = grub_font_list; node; node = node->next)
     {
       grub_font_t font = node->value;
@@ -57,7 +61,11 @@ lsfonts_command (grub_command_t cmd __attribute__ ((unused)),
 
 static grub_command_t cmd_loadfont, cmd_lsfonts;
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_font_init (void)
+#else
 GRUB_MOD_INIT(font)
+#endif
 {
   grub_font_loader_init ();
 
@@ -70,7 +78,11 @@ GRUB_MOD_INIT(font)
 			   0, N_("List the loaded fonts."));
 }
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_font_fini (void)
+#else
 GRUB_MOD_FINI(font)
+#endif
 {
   /* TODO: Determine way to free allocated resources.
      Warning: possible pointer references could be in use.  */

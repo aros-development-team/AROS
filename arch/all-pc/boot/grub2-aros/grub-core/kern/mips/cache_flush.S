@@ -9,15 +9,32 @@
 	subu $t1, $t3, $t2
 1:
 	cache 1, 0($t0)
-	addiu $t1, $t1, 0xffff
+	/* All four ways.  */
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+	cache 1, 1($t0)
+	cache 1, 2($t0)
+	cache 1, 3($t0)
+	addiu $t1, $t1, -0x20
 	bne $t1, $zero, 1b
-	 addiu $t0, $t0, 0x1
+	 addiu $t0, $t0, 0x20
+
+#else
+	addiu $t1, $t1, -0x4
+	bne $t1, $zero, 1b
+	 addiu $t0, $t0, 0x4
+#endif
 	sync
 	move $t0, $t2
 	subu $t1, $t3, $t2
 2:
 	cache 0, 0($t0)
-	addiu $t1, $t1, 0xffff
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+	addiu $t1, $t1, -0x20
 	bne $t1, $zero, 2b
-	 addiu $t0, $t0, 0x1
+	 addiu $t0, $t0, 0x20
+#else
+	addiu $t1, $t1, -0x4
+	bne $t1, $zero, 2b
+	 addiu $t0, $t0, 0x4
+#endif
 	sync

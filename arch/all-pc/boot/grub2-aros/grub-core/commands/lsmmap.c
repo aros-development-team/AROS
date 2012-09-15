@@ -22,15 +22,21 @@
 #include <grub/i18n.h>
 #include <grub/memory.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const char *names[] =
   {
-    [GRUB_MEMORY_AVAILABLE] = "available", 
-    [GRUB_MEMORY_RESERVED] = "reserved",
-    [GRUB_MEMORY_ACPI] = "ACPI reclamaible",
-    [GRUB_MEMORY_NVS] = "NVS",
-    [GRUB_MEMORY_BADRAM] = "BadRAM",
-    [GRUB_MEMORY_CODE] = "firmware code",
-    [GRUB_MEMORY_HOLE] = "hole"
+    [GRUB_MEMORY_AVAILABLE] = N_("available RAM"),
+    [GRUB_MEMORY_RESERVED] = N_("reserved RAM"),
+    /* TRANSLATORS: this refers to memory where ACPI tables are stored
+       and which can be used by OS once it loads ACPI tables.  */
+    [GRUB_MEMORY_ACPI] = N_("ACPI reclaimable RAM"),
+    /* TRANSLATORS: this refers to memory which ACPI-compliant OS
+       is required to save accross hibernations.  */
+    [GRUB_MEMORY_NVS] = N_("ACPI non-volatile storage RAM"),
+    [GRUB_MEMORY_BADRAM] = N_("faulty RAM (BadRAM)"),
+    [GRUB_MEMORY_CODE] = N_("RAM holding firmware code"),
+    [GRUB_MEMORY_HOLE] = N_("Address range not associated with RAM")
   };
 
 static grub_err_t
@@ -44,11 +50,11 @@ grub_cmd_lsmmap (grub_command_t cmd __attribute__ ((unused)),
 			     grub_memory_type_t type)
     {
       if (type < ARRAY_SIZE (names) && names[type])
-	grub_printf ("base_addr = 0x%llx, length = 0x%llx, %s\n",
-		     (long long) addr, (long long) size, names[type]);
+	grub_printf_ (N_("base_addr = 0x%llx, length = 0x%llx, %s\n"),
+		      (long long) addr, (long long) size, _(names[type]));
       else
-	grub_printf ("base_addr = 0x%llx, length = 0x%llx, type = 0x%x\n",
-		     (long long) addr, (long long) size, type);
+	grub_printf_ (N_("base_addr = 0x%llx, length = 0x%llx, type = 0x%x\n"),
+		      (long long) addr, (long long) size, type);
       return 0;
     }
 #ifndef GRUB_MACHINE_EMU

@@ -1,7 +1,21 @@
-# List of files which contain translatable strings.  Only files written in
-# Shell language are included here.
+util/grub.d/00_header.in
 util/grub.d/10_hurd.in
+util/grub.d/10_illumos.in
 util/grub.d/10_kfreebsd.in
 util/grub.d/10_linux.in
 util/grub.d/10_netbsd.in
+util/grub.d/10_windows.in
 util/grub.d/20_linux_xen.in
+util/grub.d/30_os-prober.in
+util/grub.d/40_custom.in
+util/grub.d/41_custom.in
+util/grub-install.in
+util/grub-kbdcomp.in
+util/grub-mkconfig.in
+util/grub-mkconfig_lib.in
+util/grub-mknetdir.in
+util/grub-mkrescue.in
+util/grub-mkstandalone.in
+util/grub-reboot.in
+util/grub-set-default.in
+util/powerpc/ieee1275/grub-mkrescue.in

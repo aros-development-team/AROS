@@ -24,6 +24,8 @@
 #include <grub/usb.h>
 #include <grub/dl.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 
 static struct grub_usb_controller_dev usb_controller =
 {

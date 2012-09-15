@@ -1,2 +1,4 @@
 [NAME]
 grub-mkpasswd-pbkdf2 \- generate hashed password for GRUB
+[SEE ALSO]
+.BR grub-mkconfig (8)

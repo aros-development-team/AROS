@@ -1,0 +1,4 @@
+[NAME]
+grub-mkstandalone \- make a memdisk-based GRUB image
+[SEE ALSO]
+.BR grub-mkimage (1)

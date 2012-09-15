@@ -28,14 +28,19 @@
 #include <grub/file.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
+#include <grub/i18n.h>
 
 grub_err_t
 grub_macho_close (grub_macho_t macho)
 {
   grub_file_t file = macho->file;
 
-  grub_free (macho->cmds32);
-  grub_free (macho->cmds64);
+  if (!macho->uncompressed32)
+    grub_free (macho->cmds32);
+  grub_free (macho->uncompressed32);
+  if (!macho->uncompressed64)
+    grub_free (macho->cmds64);
+  grub_free (macho->uncompressed64);
 
   grub_free (macho);
 
@@ -46,7 +51,7 @@ grub_macho_close (grub_macho_t macho)
 }
 
 grub_macho_t
-grub_macho_file (grub_file_t file)
+grub_macho_file (grub_file_t file, const char *filename, int is_64bit)
 {
   grub_macho_t macho;
   union grub_macho_filestart filestart;
@@ -62,6 +67,10 @@ grub_macho_file (grub_file_t file)
   macho->end64 = -1;
   macho->cmds32 = 0;
   macho->cmds64 = 0;
+  macho->uncompressed32 = 0;
+  macho->uncompressed64 = 0;
+  macho->compressed32 = 0;
+  macho->compressed64 = 0;
 
   if (grub_file_seek (macho->file, 0) == (grub_off_t) -1)
     goto fail;
@@ -69,8 +78,9 @@ grub_macho_file (grub_file_t file)
   if (grub_file_read (macho->file, &filestart, sizeof (filestart))
       != sizeof (filestart))
     {
-      grub_error_push ();
-      grub_error (GRUB_ERR_READ_ERROR, "cannot read Mach-O header");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+		    filename);
       goto fail;
     }
 
@@ -90,25 +100,26 @@ grub_macho_file (grub_file_t file)
 	goto fail;
       if (grub_file_read (macho->file, archs,
 			  sizeof (struct grub_macho_fat_arch) * narchs)
-	  != (grub_ssize_t)sizeof(struct grub_macho_fat_arch) * narchs)
+	  != (grub_ssize_t) sizeof(struct grub_macho_fat_arch) * narchs)
 	{
 	  grub_free (archs);
-	  grub_error_push ();
-	  grub_error (GRUB_ERR_READ_ERROR, "cannot read Mach-O header");
+	  if (!grub_errno)
+	    grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			filename);
 	  goto fail;
 	}
 
       for (i = 0; i < narchs; i++)
 	{
 	  if (GRUB_MACHO_CPUTYPE_IS_HOST32
-	      (grub_be_to_cpu32 (archs[i].cputype)))
+	      (grub_be_to_cpu32 (archs[i].cputype)) && !is_64bit)
 	    {
 	      macho->offset32 = grub_be_to_cpu32 (archs[i].offset);
 	      macho->end32 = grub_be_to_cpu32 (archs[i].offset)
 		+ grub_be_to_cpu32 (archs[i].size);
 	    }
 	  if (GRUB_MACHO_CPUTYPE_IS_HOST64
-	      (grub_be_to_cpu32 (archs[i].cputype)))
+	      (grub_be_to_cpu32 (archs[i].cputype)) && is_64bit)
 	    {
 	      macho->offset64 = grub_be_to_cpu32 (archs[i].offset);
 	      macho->end64 = grub_be_to_cpu32 (archs[i].offset)
@@ -119,31 +130,61 @@ grub_macho_file (grub_file_t file)
     }
 
   /* Is it a thin 32-bit file? */
-  if (filestart.thin32.magic == GRUB_MACHO_MAGIC32)
+  if (filestart.thin32.magic == GRUB_MACHO_MAGIC32 && !is_64bit)
     {
       macho->offset32 = 0;
       macho->end32 = grub_file_size (file);
     }
 
   /* Is it a thin 64-bit file? */
-  if (filestart.thin64.magic == GRUB_MACHO_MAGIC64)
+  if (filestart.thin64.magic == GRUB_MACHO_MAGIC64 && is_64bit)
     {
       macho->offset64 = 0;
       macho->end64 = grub_file_size (file);
     }
 
-  grub_macho_parse32 (macho);
-  grub_macho_parse64 (macho);
+  if (grub_memcmp (filestart.lzss.magic, GRUB_MACHO_LZSS_MAGIC,
+		   sizeof (filestart.lzss.magic)) == 0 && !is_64bit)
+    {
+      macho->offset32 = 0;
+      macho->end32 = grub_file_size (file);
+    }
+
+  /* Is it a thin 64-bit file? */
+  if (grub_memcmp (filestart.lzss.magic, GRUB_MACHO_LZSS_MAGIC,
+		   sizeof (filestart.lzss.magic)) == 0 && is_64bit)
+    {
+      macho->offset64 = 0;
+      macho->end64 = grub_file_size (file);
+    }
+
+  grub_macho_parse32 (macho, filename);
+  grub_macho_parse64 (macho, filename);
+
+  if (macho->offset32 == -1 && !is_64bit)
+    {
+      grub_error (GRUB_ERR_BAD_OS,
+		  "Mach-O doesn't contain suitable 32-bit architecture");
+      goto fail;
+    }
+
+  if (macho->offset64 == -1 && is_64bit)
+    {
+      grub_error (GRUB_ERR_BAD_OS,
+		  "Mach-O doesn't contain suitable 64-bit architecture");
+      goto fail;
+    }
 
   return macho;
 
 fail:
+  macho->file = 0;
   grub_macho_close (macho);
   return 0;
 }
 
 grub_macho_t
-grub_macho_open (const char *name)
+grub_macho_open (const char *name, int is_64bit)
 {
   grub_file_t file;
   grub_macho_t macho;
@@ -152,7 +193,7 @@ grub_macho_open (const char *name)
   if (! file)
     return 0;
 
-  macho = grub_macho_file (file);
+  macho = grub_macho_file (file, name, is_64bit);
   if (! macho)
     grub_file_close (file);
 

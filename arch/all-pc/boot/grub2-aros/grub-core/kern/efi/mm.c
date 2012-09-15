@@ -22,6 +22,10 @@
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
 
+#if defined (__i386__) || defined (__x86_64__)
+#include <grub/pci.h>
+#endif
+
 #define NEXT_MEMORY_DESCRIPTOR(desc, size)	\
   ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
 
@@ -52,13 +56,13 @@ grub_efi_allocate_pages (grub_efi_physical_address_t address,
   grub_efi_status_t status;
   grub_efi_boot_services_t *b;
 
-#if GRUB_TARGET_SIZEOF_VOID_P < 8
+#if 1
   /* Limit the memory access to less than 4GB for 32-bit platforms.  */
   if (address > 0xffffffff)
     return 0;
 #endif
 
-#if GRUB_TARGET_SIZEOF_VOID_P < 8 || defined (MCMODEL_SMALL)
+#if 1
   if (address == 0)
     {
       type = GRUB_EFI_ALLOCATE_MAX_ADDRESS;
@@ -103,6 +107,43 @@ grub_efi_free_pages (grub_efi_physical_address_t address,
   efi_call_2 (b->free_pages, address, pages);
 }
 
+#if defined (__i386__) || defined (__x86_64__)
+
+static void
+stop_broadcom (void)
+{
+  auto int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
+				       grub_pci_id_t pciid);
+
+  int NESTED_FUNC_ATTR find_card (grub_pci_device_t dev,
+				  grub_pci_id_t pciid)
+    {
+      grub_pci_address_t addr;
+      grub_uint8_t cap;
+      grub_uint16_t pm_state;
+
+      if ((pciid & 0xffff) != GRUB_PCI_VENDOR_BROADCOM)
+	return 0;
+
+      addr = grub_pci_make_address (dev, GRUB_PCI_REG_CLASS);
+      if (grub_pci_read (addr) >> 24 != GRUB_PCI_CLASS_NETWORK)
+	return 0;
+      cap = grub_pci_find_capability (dev, GRUB_PCI_CAP_POWER_MANAGEMENT);
+      if (!cap)
+	return 0;
+      addr = grub_pci_make_address (dev, cap + 4);
+      pm_state = grub_pci_read_word (addr);
+      pm_state = pm_state | 0x03;
+      grub_pci_write_word (addr, pm_state);
+      grub_pci_read_word (addr);
+      return 0;
+    }
+
+  grub_pci_iterate (find_card);
+}
+
+#endif
+
 grub_err_t
 grub_efi_finish_boot_services (grub_efi_uintn_t *outbuf_size, void *outbuf,
 			       grub_efi_uintn_t *map_key,
@@ -111,6 +152,14 @@ grub_efi_finish_boot_services (grub_efi_uintn_t *outbuf_size, void *outbuf,
 {
   grub_efi_boot_services_t *b;
   grub_efi_status_t status;
+
+#if defined (__i386__) || defined (__x86_64__)
+  const grub_uint16_t apple[] = { 'A', 'p', 'p', 'l', 'e' };
+  int is_apple;
+
+  is_apple = (grub_memcmp (grub_efi_system_table->firmware_vendor,
+			   apple, sizeof (apple)) == 0);
+#endif
 
   if (grub_efi_get_memory_map (&finish_mmap_size, finish_mmap_buf, &finish_key,
 			       &finish_desc_size, &finish_desc_version) < 0)
@@ -144,6 +193,11 @@ grub_efi_finish_boot_services (grub_efi_uintn_t *outbuf_size, void *outbuf,
     *efi_desc_size = finish_desc_size;
   if (efi_desc_version)
     *efi_desc_version = finish_desc_version;
+
+#if defined (__i386__) || defined (__x86_64__)
+  if (is_apple)
+    stop_broadcom ();
+#endif
 
   return GRUB_ERR_NONE;
 }
@@ -251,7 +305,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
        desc = NEXT_MEMORY_DESCRIPTOR (desc, desc_size))
     {
       if (desc->type == GRUB_EFI_CONVENTIONAL_MEMORY
-#if GRUB_TARGET_SIZEOF_VOID_P < 8 || defined (MCMODEL_SMALL)
+#if 1
 	  && desc->physical_start <= 0xffffffff
 #endif
 	  && desc->physical_start + PAGES_TO_BYTES (desc->num_pages) > 0x100000
@@ -267,7 +321,7 @@ filter_memory_map (grub_efi_memory_descriptor_t *memory_map,
 	      desc->physical_start = 0x100000;
 	    }
 
-#if GRUB_TARGET_SIZEOF_VOID_P < 8 || defined (MCMODEL_SMALL)
+#if 1
 	  if (BYTES_TO_PAGES (filtered_desc->physical_start)
 	      + filtered_desc->num_pages
 	      > BYTES_TO_PAGES (0x100000000LL))

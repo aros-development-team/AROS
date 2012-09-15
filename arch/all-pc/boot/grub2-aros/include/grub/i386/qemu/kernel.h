@@ -28,12 +28,6 @@
 
 extern grub_addr_t grub_core_entry_addr;
 
-/* The size of kernel image.  */
-extern grub_int32_t grub_kernel_image_size;
-
-/* The total size of module images following the kernel.  */
-extern grub_int32_t grub_total_module_size;
-
 void grub_qemu_init_cirrus (void);
 
 #endif /* ! ASM_FILE */

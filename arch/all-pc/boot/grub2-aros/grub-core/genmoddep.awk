@@ -57,6 +57,14 @@ END {
     for (depmod in uniqmods) {
       modlist = modlist " " depmod;
     }
+    if (mod == "all_video") {
+	continue;
+    }
     printf "%s:%s\n", mod, modlist;
   }
+  modlist = ""
+  while (getline <"video.lst") {
+      modlist = modlist " " $1;
+  }
+  printf "all_video:%s\n", modlist;
 }

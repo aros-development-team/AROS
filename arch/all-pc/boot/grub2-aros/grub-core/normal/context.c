@@ -31,8 +31,8 @@ struct menu_pointer
   struct menu_pointer *prev;
 };
 
-struct menu_pointer initial_menu;
-struct menu_pointer *current_menu = &initial_menu;
+static struct menu_pointer initial_menu;
+static struct menu_pointer *current_menu = &initial_menu;
 
 void
 grub_env_unset_menu (void)
@@ -148,7 +148,7 @@ grub_env_context_close (void)
 grub_err_t
 grub_env_extractor_close (int source)
 {
-  grub_menu_t menu, menu2;
+  grub_menu_t menu = NULL;
   grub_menu_entry_t *last;
   grub_err_t err;
 
@@ -159,8 +159,9 @@ grub_env_extractor_close (int source)
     }
   err = grub_env_context_close ();
 
-  if (source)
+  if (source && menu)
     {
+      grub_menu_t menu2;
       menu2 = grub_env_get_menu ();
       
       last = &menu2->entry_list;
@@ -175,26 +176,6 @@ grub_env_extractor_close (int source)
   return err;
 }
 
-grub_err_t
-grub_env_export (const char *name)
-{
-  struct grub_env_var *var;
-
-  var = grub_env_find (name);
-  if (! var)
-    {
-      grub_err_t err;
-      
-      err = grub_env_set (name, "");
-      if (err)
-	return err;
-      var = grub_env_find (name);
-    }    
-  var->global = 1;
-
-  return GRUB_ERR_NONE;
-}
-
 static grub_command_t export_cmd;
 
 static grub_err_t
@@ -205,7 +186,7 @@ grub_cmd_export (struct grub_command *cmd __attribute__ ((unused)),
 
   if (argc < 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "no environment variable specified");
+		       N_("one argument expected"));
 
   for (i = 0; i < argc; i++)
     grub_env_export (args[i]);
@@ -216,9 +197,6 @@ grub_cmd_export (struct grub_command *cmd __attribute__ ((unused)),
 void
 grub_context_init (void)
 {
-  grub_env_export ("root");
-  grub_env_export ("prefix");
-
   export_cmd = grub_register_command ("export", grub_cmd_export,
 				      N_("ENVVAR [ENVVAR] ..."),
 				      N_("Export variables."));

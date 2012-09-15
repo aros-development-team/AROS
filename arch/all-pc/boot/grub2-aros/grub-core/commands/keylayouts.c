@@ -28,6 +28,8 @@
 #include <grub/i18n.h>
 #include <grub/file.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static struct grub_keyboard_layout layout_us = {
   .keyboard_map = {
     /* Keyboard errors. Handled by driver.  */
@@ -205,7 +207,7 @@ grub_cmd_keymap (struct grub_command *cmd __attribute__ ((unused)),
     {
       const char *prefix = grub_env_get ("prefix");
       if (!prefix)
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "No prefix set");	
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("variable `%s' isn't set"), "prefix");	
       filename = grub_xasprintf ("%s/layouts/%s.gkb", prefix, argv[0]);
       if (!filename)
 	return grub_errno;
@@ -220,7 +222,8 @@ grub_cmd_keymap (struct grub_command *cmd __attribute__ ((unused)),
   if (grub_file_read (file, magic, sizeof (magic)) != sizeof (magic))
     {
       if (!grub_errno)
-	grub_error (GRUB_ERR_BAD_ARGUMENT, "file is too short");
+	grub_error (GRUB_ERR_BAD_ARGUMENT, N_("premature end of file %s"),
+		    filename);
       goto fail;
     }
 
@@ -234,7 +237,8 @@ grub_cmd_keymap (struct grub_command *cmd __attribute__ ((unused)),
   if (grub_file_read (file, &version, sizeof (version)) != sizeof (version))
     {
       if (!grub_errno)
-	grub_error (GRUB_ERR_BAD_ARGUMENT, "file is too short");
+	grub_error (GRUB_ERR_BAD_ARGUMENT, N_("premature end of file %s"),
+		    filename);
       goto fail;
     }
 
@@ -251,7 +255,8 @@ grub_cmd_keymap (struct grub_command *cmd __attribute__ ((unused)),
   if (grub_file_read (file, newmap, sizeof (*newmap)) != sizeof (*newmap))
     {
       if (!grub_errno)
-	grub_error (GRUB_ERR_BAD_ARGUMENT, "file is too short");
+	grub_error (GRUB_ERR_BAD_ARGUMENT, N_("premature end of file %s"),
+		    filename);
       goto fail;
     }
 
@@ -285,13 +290,21 @@ grub_cmd_keymap (struct grub_command *cmd __attribute__ ((unused)),
 
 static grub_command_t cmd;
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_keylayouts_init (void)
+#else
 GRUB_MOD_INIT(keylayouts)
+#endif
 {
   cmd = grub_register_command ("keymap", grub_cmd_keymap,
 			       0, N_("Load a keyboard layout."));
 }
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_keylayouts_fini (void)
+#else
 GRUB_MOD_FINI(keylayouts)
+#endif
 {
   grub_unregister_command (cmd);
 }

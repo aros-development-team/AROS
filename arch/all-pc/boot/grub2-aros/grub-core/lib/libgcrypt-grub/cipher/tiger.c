@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* tiger.c  -  The TIGER hash function
  *	Copyright (C) 1998, 2001, 2002, 2003 Free Software Foundation, Inc.
  *
@@ -845,6 +847,9 @@ gcry_md_spec_t _gcry_digest_spec_tiger =
     tiger_init, tiger_write, tiger_final, tiger_read,
     sizeof (TIGER_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_tiger",
+#endif
     .blocksize = 64
   };
 

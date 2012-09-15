@@ -24,8 +24,10 @@
 #include <grub/list.h>
 #include <grub/term.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_usb_controller_dev_t grub_usb_list;
-struct grub_usb_attach_desc *attach_hooks;
+static struct grub_usb_attach_desc *attach_hooks;
 
 void
 grub_usb_controller_dev_register (grub_usb_controller_dev_t usb)
@@ -183,6 +185,12 @@ grub_usb_device_initialize (grub_usb_device_t dev)
   for (i = 0; i < 8; i++)
     dev->config[i].descconf = NULL;
 
+  if (descdev->configcnt == 0)
+    {
+      err = GRUB_USB_ERR_BADDEVICE;
+      goto fail;
+    }    
+
   for (i = 0; i < descdev->configcnt; i++)
     {
       int pos;
@@ -332,7 +340,7 @@ grub_usb_register_attach_hook_class (struct grub_usb_attach_desc *desc)
 void
 grub_usb_unregister_attach_hook_class (struct grub_usb_attach_desc *desc)
 {
-  grub_list_remove (GRUB_AS_LIST_P (&attach_hooks), GRUB_AS_LIST (desc));  
+  grub_list_remove (GRUB_AS_LIST (desc));  
 }
 
 

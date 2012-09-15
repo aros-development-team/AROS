@@ -32,6 +32,9 @@
 #include <grub/video.h>
 #include <grub/mm.h>
 #include <grub/cpu/relocator.h>
+#include <grub/machine/chainloader.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_dl_t my_mod;
 static struct grub_relocator *rel;
@@ -51,7 +54,8 @@ grub_ntldr_boot (void)
     .gs = 0,
     .ss = 0,
     .sp = 0x7c00,
-    .edx = edx
+    .edx = edx,
+    .a20 = 1
   };
   grub_video_set_mode ("text", 0, 0);
 
@@ -78,7 +82,7 @@ grub_cmd_ntldr (grub_command_t cmd __attribute__ ((unused)),
   grub_device_t dev;
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   grub_dl_ref (my_mod);
 
@@ -110,6 +114,7 @@ grub_cmd_ntldr (grub_command_t cmd __attribute__ ((unused)),
 	  grub_device_close (dev);
 	  goto fail;
 	}
+      grub_chainloader_patch_bpb (bs, dev, edx);
     }
 
   if (dev)

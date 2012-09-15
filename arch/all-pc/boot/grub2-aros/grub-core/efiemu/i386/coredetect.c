@@ -26,7 +26,7 @@
 
 #define bit_LM (1 << 29)
 
-char *
+const char *
 grub_efiemu_get_default_core_name (void)
 {
 

@@ -30,7 +30,7 @@
 typedef struct zio_eck {
 	grub_uint64_t	zec_magic;	/* for validation, endianness	*/
 	zio_cksum_t	zec_cksum;	/* 256-bit checksum		*/
-} zio_eck_t;
+} __attribute__ ((packed)) zio_eck_t;
 
 /*
  * Gang block headers are self-checksumming and contain an array
@@ -65,6 +65,7 @@ enum zio_checksum {
 	ZIO_CHECKSUM_FLETCHER_4,
 	ZIO_CHECKSUM_SHA256,
 	ZIO_CHECKSUM_ZILOG2,
+	ZIO_CHECKSUM_SHA256_MAC,
 	ZIO_CHECKSUM_FUNCTIONS
 };
 
@@ -77,7 +78,16 @@ enum zio_compress {
 	ZIO_COMPRESS_OFF,
 	ZIO_COMPRESS_LZJB,
 	ZIO_COMPRESS_EMPTY,
-	ZIO_COMPRESS_GZIP,
+	ZIO_COMPRESS_GZIP1,
+	ZIO_COMPRESS_GZIP2,
+	ZIO_COMPRESS_GZIP3,
+	ZIO_COMPRESS_GZIP4,
+	ZIO_COMPRESS_GZIP5,
+	ZIO_COMPRESS_GZIP6,
+	ZIO_COMPRESS_GZIP7,
+	ZIO_COMPRESS_GZIP8,
+	ZIO_COMPRESS_GZIP9,
+	ZIO_COMPRESS_ZLE,
 	ZIO_COMPRESS_FUNCTIONS
 };
 

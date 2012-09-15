@@ -1,2 +1,4 @@
 [NAME]
 grub-ofpathname \- find OpenBOOT path for a device
+[SEE ALSO]
+.BR grub-probe (8)

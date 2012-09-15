@@ -21,6 +21,7 @@
 #include <grub/elf.h>
 #include <grub/misc.h>
 #include <grub/err.h>
+#include <grub/i18n.h>
 
 /* Check if EHDR is a valid ELF header.  */
 grub_err_t
@@ -32,11 +33,67 @@ grub_arch_dl_check_header (void *ehdr)
   if (e->e_ident[EI_CLASS] != ELFCLASS32
       || e->e_ident[EI_DATA] != ELFDATA2MSB
       || e->e_machine != EM_PPC)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch specific ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
 
   return GRUB_ERR_NONE;
 }
 
+void
+grub_arch_dl_get_tramp_got_size (const void *ehdr, grub_size_t *tramp,
+				 grub_size_t *got)
+{
+  const Elf_Ehdr *e = ehdr;
+  const Elf_Shdr *s;
+  unsigned i;
+
+  *tramp = 0;
+  *got = 0;
+
+  /* Find a symbol table.  */
+  for (i = 0, s = (const Elf_Shdr *) ((const char *) e + e->e_shoff);
+       i < e->e_shnum;
+       i++, s = (const Elf_Shdr *) ((const char *) s + e->e_shentsize))
+    if (s->sh_type == SHT_SYMTAB)
+      break;
+
+  if (i == e->e_shnum)
+    return;
+
+  for (i = 0, s = (const Elf_Shdr *) ((const char *) e + e->e_shoff);
+       i < e->e_shnum;
+       i++, s = (const Elf_Shdr *) ((const char *) s + e->e_shentsize))
+    if (s->sh_type == SHT_RELA)
+      {
+	const Elf_Rela *rel, *max;
+	
+	for (rel = (const Elf_Rela *) ((const char *) e + s->sh_offset),
+	       max = rel + s->sh_size / s->sh_entsize;
+	     rel < max;
+	     rel++)
+	  if (ELF_R_TYPE (rel->r_info) == GRUB_ELF_R_PPC_REL24)
+	    (*tramp)++;
+	
+      }
+
+  return;
+}
+
+/* For low-endian reverse lis and addr_high as well as ori and addr_low. */
+struct trampoline
+{
+  grub_uint32_t lis;
+  grub_uint32_t ori;
+  grub_uint32_t mtctr;
+  grub_uint32_t bctr;
+};
+
+static const struct trampoline trampoline_template = 
+  {
+    0x3d800000,
+    0x618c0000,
+    0x7d8903a6,
+    0x4e800420,
+  };
 
 /* Relocate symbols.  */
 grub_err_t
@@ -46,6 +103,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
   Elf_Shdr *s;
   Elf_Word entsize;
   unsigned i;
+  struct trampoline *tptr = mod->tramp;
 
   /* Find a symbol table.  */
   for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
@@ -55,7 +113,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
       break;
 
   if (i == e->e_shnum)
-    return grub_error (GRUB_ERR_BAD_MODULE, "no symtab found");
+    return grub_error (GRUB_ERR_BAD_MODULE, N_("no symbol table"));
 
   entsize = s->sh_entsize;
 
@@ -97,35 +155,48 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		value = sym->st_value + rel->r_addend;
 		switch (ELF_R_TYPE (rel->r_info))
 		  {
-		  case R_PPC_ADDR16_LO:
+		  case GRUB_ELF_R_PPC_ADDR16_LO:
 		    *(Elf_Half *) addr = value;
 		    break;
 
-		  case R_PPC_REL24:
+		  case GRUB_ELF_R_PPC_REL24:
 		    {
 		      Elf_Sword delta = value - (Elf_Word) addr;
 
 		      if (delta << 6 >> 6 != delta)
-			return grub_error (GRUB_ERR_BAD_MODULE, "relocation overflow");
+			{
+			  COMPILE_TIME_ASSERT (sizeof (struct trampoline)
+					       == GRUB_ARCH_DL_TRAMP_SIZE);
+			  grub_memcpy (tptr, &trampoline_template,
+				       sizeof (*tptr));
+			  delta = (grub_uint8_t *) tptr - (grub_uint8_t *) addr;
+			  tptr->lis |= (((value) >> 16) & 0xffff);
+			  tptr->ori |= ((value) & 0xffff);
+			  tptr++;
+			}
+			
+		      if (delta << 6 >> 6 != delta)
+			return grub_error (GRUB_ERR_BAD_MODULE,
+					   "relocation overflow");
 		      *addr = (*addr & 0xfc000003) | (delta & 0x3fffffc);
 		      break;
 		    }
 
-		  case R_PPC_ADDR16_HA:
+		  case GRUB_ELF_R_PPC_ADDR16_HA:
 		    *(Elf_Half *) addr = (value + 0x8000) >> 16;
 		    break;
 
-		  case R_PPC_ADDR32:
+		  case GRUB_ELF_R_PPC_ADDR32:
 		    *addr = value;
 		    break;
 
-		  case R_PPC_REL32:
+		  case GRUB_ELF_R_PPC_REL32:
 		    *addr = value - (Elf_Word) addr;
 		    break;
 
 		  default:
 		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-				       "this relocation (%d) is not implemented yet",
+				       N_("relocation 0x%x is not implemented yet"),
 				       ELF_R_TYPE (rel->r_info));
 		  }
 	      }

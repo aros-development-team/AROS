@@ -25,6 +25,8 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] = {
   {"skip", 's', 0, N_("Skip offset bytes from the beginning of file."), 0,
    ARG_TYPE_INT},
@@ -42,7 +44,7 @@ grub_cmd_hexdump (grub_extcmd_context_t ctxt, int argc, char **args)
   int namelen;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   namelen = grub_strlen (args[0]);
   skip = (state[0].set) ? grub_strtoull (state[0].arg, 0, 0) : 0;
@@ -121,7 +123,7 @@ GRUB_MOD_INIT (hexdump)
 {
   cmd = grub_register_extcmd ("hexdump", grub_cmd_hexdump, 0,
 			      N_("[OPTIONS] FILE_OR_DEVICE"),
-			      N_("Dump the contents of a file or memory."),
+			      N_("Show raw contents of a file or memory."),
 			      options);
 }
 

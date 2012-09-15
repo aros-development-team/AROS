@@ -39,8 +39,8 @@ struct grub_file
   /* The file size.  */
   grub_off_t size;
 
-  /* If file is not easly seekable. Should be set by underlying layer.  */
-  int not_easly_seekable;
+  /* If file is not easily seekable. Should be set by underlying layer.  */
+  int not_easily_seekable;
 
   /* Filesystem-specific data.  */
   void *data;
@@ -56,9 +56,10 @@ typedef enum grub_file_filter_id
   {
     GRUB_FILE_FILTER_GZIO,
     GRUB_FILE_FILTER_XZIO,
+    GRUB_FILE_FILTER_LZOPIO,
     GRUB_FILE_FILTER_MAX,
     GRUB_FILE_FILTER_COMPRESSION_FIRST = GRUB_FILE_FILTER_GZIO,
-    GRUB_FILE_FILTER_COMPRESSION_LAST = GRUB_FILE_FILTER_XZIO,
+    GRUB_FILE_FILTER_COMPRESSION_LAST = GRUB_FILE_FILTER_LZOPIO,
   } grub_file_filter_id_t;
 
 typedef grub_file_t (*grub_file_filter_t) (grub_file_t in);
@@ -123,7 +124,7 @@ grub_file_tell (const grub_file_t file)
 static inline int
 grub_file_seekable (const grub_file_t file)
 {
-  return !file->not_easly_seekable;
+  return !file->not_easily_seekable;
 }
 
 #endif /* ! GRUB_FILE_HEADER */

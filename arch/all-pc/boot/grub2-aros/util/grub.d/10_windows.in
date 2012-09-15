@@ -17,10 +17,14 @@ set -e
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-. ${libdir}/grub/grub-mkconfig_lib
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
+
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR="@localedir@"
+
+. "@datadir@/@PACKAGE@/grub-mkconfig_lib"
 
 case "`uname 2>/dev/null`" in
   CYGWIN*)  ;;
@@ -41,14 +45,14 @@ get_os_name_from_boot_ini ()
     sort | uniq | wc -l`" = 1 || return 1
 
   # Search 'default=PARTITION'
-  local part=`sed -n 's,^default=,,p' "$1" | sed 's,\\\\,/,g;s,[ \t\r]*$,,;1q'`
-  test -n "$part" || return 1
+  get_os_name_from_boot_ini_part=`sed -n 's,^default=,,p' "$1" | sed 's,\\\\,/,g;s,[ \t\r]*$,,;1q'`
+  test -n "$get_os_name_from_boot_ini_part" || return 1
 
   # Search 'PARTITION="NAME" ...'
-  local name=`sed -n 's,\\\\,/,g;s,^'"$part"'="\([^"]*\)".*$,\1,p' "$1" | sed 1q`
-  test -n "$name" || return 1
+  get_os_name_from_boot_ini_name=`sed -n 's,\\\\,/,g;s,^'"$get_os_name_from_boot_ini_part"'="\([^"]*\)".*$,\1,p' "$1" | sed 1q`
+  test -n "$get_os_name_from_boot_ini_name" || return 1
 
-  echo "$name"
+  echo "$get_os_name_from_boot_ini_name"
 }
 
 
@@ -59,26 +63,28 @@ for drv in $drives ; do
   test -n "$dir" || continue
 
   needmap=
+  osid=
 
   # Check for Vista bootmgr.
   if [ -f "$dir"/bootmgr -a -f "$dir"/boot/bcd ] ; then
-    OS="Windows Vista bootmgr"
-
+    OS="$(gettext "Windows Vista/7 (loader)")"
+    osid=bootmgr
   # Check for NTLDR.
   elif [ -f "$dir"/ntldr -a -f "$dir"/ntdetect.com -a -f "$dir"/boot.ini ] ; then
-    OS=`get_os_name_from_boot_ini "$dir"/boot.ini` || OS="Windows NT/2000/XP loader"
+    OS=`get_os_name_from_boot_ini "$dir"/boot.ini` || OS="$(gettext "Windows NT/2000/XP (loader)")"
+    osid=ntldr
     needmap=t
 
   else
     continue
   fi
 
-  # Get boot /dev/ice.
+  # Get boot device.
   dev=`${grub_probe} -t device "$dir" 2>/dev/null` || continue
 
-  echo "Found $OS on $drv ($dev)" >&2
+  gettext_printf "Found %s on %s (%s)\n" "$OS" "$drv" "$dev" >&2
   cat << EOF
-menuentry "$OS" {
+menuentry '$(echo "$OS" | grub_quote)' \$menuentry_id_option '$osid-$(grub_get_device_id "${dev}")' {
 EOF
 
   save_default_entry | sed -e 's,^,\t,'

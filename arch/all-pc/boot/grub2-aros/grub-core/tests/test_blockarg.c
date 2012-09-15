@@ -24,6 +24,8 @@
 #include <grub/extcmd.h>
 #include <grub/script_sh.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 test_blockarg (grub_extcmd_context_t ctxt, int argc, char **args)
 {
@@ -42,6 +44,8 @@ GRUB_MOD_INIT(test_blockarg)
   cmd = grub_register_extcmd ("test_blockarg", test_blockarg,
 			      GRUB_COMMAND_FLAG_BLOCKS,
 			      N_("BLOCK"),
+			      /* TRANSLATORS: this is the BLOCK-argument, not
+			       environment block.  */
 			      N_("Print and execute block argument."), 0);
 }
 

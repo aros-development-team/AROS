@@ -80,7 +80,10 @@ struct grub_partition_bsd_entry
 struct grub_partition_bsd_disk_label
 {
   grub_uint32_t magic;
-  grub_uint8_t padding[128];
+  grub_uint16_t type;
+  grub_uint8_t unused1[18];
+  grub_uint8_t packname[16];
+  grub_uint8_t unused2[92];
   grub_uint32_t magic2;
   grub_uint16_t checksum;
   grub_uint16_t num_partitions;

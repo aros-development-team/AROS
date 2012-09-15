@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* camellia-glue.c - Glue for the Camellia cipher
  * Copyright (C) 2007 Free Software Foundation, Inc.
  *
@@ -167,18 +169,30 @@ gcry_cipher_spec_t _gcry_cipher_spec_camellia128 =
   {
     "CAMELLIA128",NULL,camellia128_oids,CAMELLIA_BLOCK_SIZE,128,
     sizeof(CAMELLIA_context),camellia_setkey,camellia_encrypt,camellia_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_camellia",
+#endif
   };
 
 gcry_cipher_spec_t _gcry_cipher_spec_camellia192 =
   {
     "CAMELLIA192",NULL,camellia192_oids,CAMELLIA_BLOCK_SIZE,192,
     sizeof(CAMELLIA_context),camellia_setkey,camellia_encrypt,camellia_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_camellia",
+#endif
   };
 
 gcry_cipher_spec_t _gcry_cipher_spec_camellia256 =
   {
     "CAMELLIA256",NULL,camellia256_oids,CAMELLIA_BLOCK_SIZE,256,
     sizeof(CAMELLIA_context),camellia_setkey,camellia_encrypt,camellia_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_camellia",
+#endif
   };
 
 

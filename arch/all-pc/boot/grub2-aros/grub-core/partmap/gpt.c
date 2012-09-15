@@ -24,6 +24,9 @@
 #include <grub/dl.h>
 #include <grub/msdos_partition.h>
 #include <grub/gpt_partition.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_uint8_t grub_gpt_magic[8] =
   {
@@ -43,10 +46,10 @@ static struct grub_partition_map grub_gpt_partition_map;
 
 
 
-static grub_err_t
-gpt_partition_map_iterate (grub_disk_t disk,
-			   int (*hook) (grub_disk_t disk,
-					const grub_partition_t partition))
+grub_err_t
+grub_gpt_partition_map_iterate (grub_disk_t disk,
+				int (*hook) (grub_disk_t disk,
+					     const grub_partition_t partition))
 {
   struct grub_partition part;
   struct grub_gpt_header gpt;
@@ -66,7 +69,10 @@ gpt_partition_map_iterate (grub_disk_t disk,
     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no signature");
 
   /* Make sure the MBR is a protective MBR and not a normal MBR.  */
-  if (mbr.entries[0].type != GRUB_PC_PARTITION_TYPE_GPT_DISK)
+  for (i = 0; i < 4; i++)
+    if (mbr.entries[i].type == GRUB_PC_PARTITION_TYPE_GPT_DISK)
+      break;
+  if (i == 4)
     return grub_error (GRUB_ERR_BAD_PART_TABLE, "no GPT partition map found");
 
   /* Read the GPT header.  */
@@ -124,7 +130,8 @@ gpt_partition_map_iterate (grub_disk_t disk,
 
 #ifdef GRUB_UTIL
 static grub_err_t
-gpt_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
+gpt_partition_map_embed (struct grub_disk *disk_, unsigned int *nsectors,
+			 unsigned int max_nsectors,
 			 grub_embed_type_t embed_type,
 			 grub_disk_addr_t **sectors)
 {
@@ -138,11 +145,17 @@ gpt_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 					   const grub_partition_t p)
   {
     struct grub_gpt_partentry gptdata;
+    grub_partition_t p2;
 
+    p2 = disk->partition;
     disk->partition = p->parent;
     if (grub_disk_read (disk, p->offset, p->index,
 			sizeof (gptdata), &gptdata))
-      return 0;
+      {
+	disk->partition = p2;
+	return 0;
+      }
+    disk->partition = p2;
 
     /* If there's an embed region, it is in a dedicated partition.  */
     if (! grub_memcmp (&gptdata.type, &grub_gpt_partition_type_bios_boot, 16))
@@ -157,23 +170,25 @@ gpt_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 
   if (embed_type != GRUB_EMBED_PCBIOS)
     return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-		       "GPT curently supports only PC-BIOS embedding");
+		       "GPT currently supports only PC-BIOS embedding");
 
-  err = gpt_partition_map_iterate (disk, find_usable_region);
+  err = grub_gpt_partition_map_iterate (disk_, find_usable_region);
   if (err)
     return err;
 
   if (len == 0)
     return grub_error (GRUB_ERR_FILE_NOT_FOUND,
-		       "This GPT partition label has no BIOS Boot Partition;"
-		       " embedding won't be possible!");
+		       N_("this GPT partition label contains no BIOS Boot Partition;"
+			  " embedding won't be possible"));
 
   if (len < *nsectors)
     return grub_error (GRUB_ERR_OUT_OF_RANGE,
-		       "Your BIOS Boot Partition is too small;"
-		       " embedding won't be possible!");
+		       N_("your BIOS Boot Partition is too small;"
+			  " embedding won't be possible"));
 
   *nsectors = len;
+  if (*nsectors > max_nsectors)
+    *nsectors = max_nsectors;
   *sectors = grub_malloc (*nsectors * sizeof (**sectors));
   if (!*sectors)
     return grub_errno;
@@ -189,7 +204,7 @@ gpt_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 static struct grub_partition_map grub_gpt_partition_map =
   {
     .name = "gpt",
-    .iterate = gpt_partition_map_iterate,
+    .iterate = grub_gpt_partition_map_iterate,
 #ifdef GRUB_UTIL
     .embed = gpt_partition_map_embed
 #endif

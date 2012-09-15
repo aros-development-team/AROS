@@ -43,6 +43,8 @@
 #include <grub/memory.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #ifdef GRUB_MACHINE_EFI
 #include <grub/efi/efi.h>
 #endif
@@ -88,7 +90,9 @@ grub_multiboot_set_video_mode (void)
   grub_err_t err;
   const char *modevar;
 
-  if (accepts_video || !GRUB_MACHINE_HAS_VGA_TEXT)
+#if GRUB_MACHINE_HAS_VGA_TEXT
+  if (accepts_video)
+#endif
     {
       modevar = grub_env_get ("gfxpayload");
       if (! modevar || *modevar == 0)
@@ -103,8 +107,10 @@ grub_multiboot_set_video_mode (void)
 	  grub_free (tmp);
 	}
     }
+#if GRUB_MACHINE_HAS_VGA_TEXT
   else
     err = grub_video_set_mode ("text", 0, 0);
+#endif
 
   return err;
 }
@@ -128,7 +134,11 @@ grub_multiboot_boot (void)
     return err;
 #endif
 
+#if defined (__i386__) || defined (__x86_64__)
+  grub_relocator32_boot (grub_multiboot_relocator, state, 0);
+#else
   grub_relocator32_boot (grub_multiboot_relocator, state);
+#endif
 
   /* Not reached.  */
   return GRUB_ERR_NONE;
@@ -157,14 +167,15 @@ grub_multiboot_unload (void)
 
 /* Load ELF32 or ELF64.  */
 grub_err_t
-grub_multiboot_load_elf (grub_file_t file, void *buffer)
+grub_multiboot_load_elf (grub_file_t file, const char *filename,
+			 void *buffer)
 {
   if (grub_multiboot_is_elf32 (buffer))
-    return grub_multiboot_load_elf32 (file, buffer);
+    return grub_multiboot_load_elf32 (file, filename, buffer);
   else if (grub_multiboot_is_elf64 (buffer))
-    return grub_multiboot_load_elf64 (file, buffer);
+    return grub_multiboot_load_elf64 (file, filename, buffer);
 
-  return grub_error (GRUB_ERR_UNKNOWN_OS, "unknown ELF class");
+  return grub_error (GRUB_ERR_UNKNOWN_OS, N_("invalid arch-dependent ELF magic"));
 }
 
 grub_err_t
@@ -180,7 +191,7 @@ grub_multiboot_set_console (int console_type, int accepted_consoles,
       if (console_required)
 	return grub_error (GRUB_ERR_BAD_OS,
 			   "OS requires a console but none is available");
-      grub_printf ("WARNING: no console will be available to OS");
+      grub_puts_ (N_("WARNING: no console will be available to OS"));
       accepts_video = 0;
       accepts_ega_text = 0;
       return GRUB_ERR_NONE;
@@ -204,7 +215,7 @@ grub_multiboot_set_console (int console_type, int accepted_consoles,
     }
  else
 
-/*
+/* 
  * AROS FIX
  * Our kernel (secondary level bootstrap) supports both framebuffer and text.
  * Its preferred mode is text (otherwise we will always run in VESA mode and
@@ -246,11 +257,11 @@ grub_cmd_multiboot (grub_command_t cmd __attribute__ ((unused)),
   grub_loader_unset ();
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no kernel specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   file = grub_file_open (argv[0]);
   if (! file)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "couldn't open file");
+    return grub_errno;
 
   grub_dl_ref (my_mod);
 
@@ -263,7 +274,7 @@ grub_cmd_multiboot (grub_command_t cmd __attribute__ ((unused)),
   if (!grub_multiboot_relocator)
     goto fail;
 
-  err = grub_multiboot_load (file);
+  err = grub_multiboot_load (file, argv[0]);
   if (err)
     goto fail;
 
@@ -297,7 +308,7 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
   int nounzip = 0;
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no module specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   if (grub_strcmp (argv[0], "--nounzip") == 0)
     {
@@ -307,11 +318,11 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
     }
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no module specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   if (!grub_multiboot_relocator)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "you need to load the multiboot kernel first");
+		       N_("you need to load the kernel first"));
 
   if (nounzip)
     grub_file_filter_disable_compression ();
@@ -326,14 +337,14 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
     err = grub_relocator_alloc_chunk_align (grub_multiboot_relocator, &ch,
 					    0, (0xffffffff - size) + 1,
 					    size, MULTIBOOT_MOD_ALIGN,
-					    GRUB_RELOCATOR_PREFERENCE_NONE);
+					    GRUB_RELOCATOR_PREFERENCE_NONE, 0);
     if (err)
       {
 	grub_file_close (file);
 	return err;
       }
     module = get_virtual_current_address (ch);
-    target = (grub_addr_t) get_virtual_current_address (ch);
+    target = get_physical_target_address (ch);
   }
 
   err = grub_multiboot_add_module (target, size, argc - 1, argv + 1);
@@ -346,7 +357,10 @@ grub_cmd_module (grub_command_t cmd __attribute__ ((unused)),
   if (grub_file_read (file, module, size) != size)
     {
       grub_file_close (file);
-      return grub_error (GRUB_ERR_FILE_READ_ERROR, "couldn't read file");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+		    argv[0]);
+      return grub_errno;
     }
 
   grub_file_close (file);

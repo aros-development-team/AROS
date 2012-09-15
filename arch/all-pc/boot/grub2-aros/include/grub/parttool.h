@@ -21,8 +21,8 @@
 
 struct grub_parttool_argdesc
 {
-  char *name;
-  char *desc;
+  const char *name;
+  const char *desc;
   enum {GRUB_PARTTOOL_ARG_END, GRUB_PARTTOOL_ARG_BOOL, GRUB_PARTTOOL_ARG_VAL}
     type;
 };

@@ -1,5 +1,6 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
 /* rmd.h - RIPE-MD hash functions
  *	Copyright (C) 1998, 2001, 2002 Free Software Foundation, Inc.
  *

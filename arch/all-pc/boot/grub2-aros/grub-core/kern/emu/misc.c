@@ -46,14 +46,6 @@
 # include <libdevmapper.h>
 #endif
 
-#ifdef HAVE_LIBZFS
-# include <grub/util/libzfs.h>
-#endif
-
-#ifdef HAVE_LIBNVPAIR
-# include <grub/util/libnvpair.h>
-#endif
-
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
 #endif
@@ -78,7 +70,7 @@ grub_util_warn (const char *fmt, ...)
 {
   va_list ap;
 
-  fprintf (stderr, _("%s: warn:"), program_name);
+  fprintf (stderr, _("%s: warning:"), program_name);
   fprintf (stderr, " ");
   va_start (ap, fmt);
   vfprintf (stderr, fmt, ap);
@@ -125,7 +117,7 @@ xmalloc (grub_size_t size)
 
   p = malloc (size);
   if (! p)
-    grub_util_error ("out of memory");
+    grub_util_error ("%s", _("out of memory"));
 
   return p;
 }
@@ -135,7 +127,7 @@ xrealloc (void *ptr, grub_size_t size)
 {
   ptr = realloc (ptr, size);
   if (! ptr)
-    grub_util_error ("out of memory");
+    grub_util_error ("%s", _("out of memory"));
 
   return ptr;
 }
@@ -193,7 +185,7 @@ xasprintf (const char *fmt, ...)
   if (vasprintf (&result, fmt, ap) < 0)
     { 
       if (errno == ENOMEM)
-        grub_util_error ("out of memory");
+        grub_util_error ("%s", _("out of memory"));
       return NULL;
     }
   
@@ -232,244 +224,17 @@ char *
 canonicalize_file_name (const char *path)
 {
   char *ret;
-#ifdef PATH_MAX
+#ifdef __MINGW32__
+  ret = xmalloc (PATH_MAX);
+  if (!_fullpath (ret, path, PATH_MAX))
+    return NULL;
+#elif defined (PATH_MAX)
   ret = xmalloc (PATH_MAX);
   if (!realpath (path, ret))
     return NULL;
 #else
   ret = realpath (path, NULL);
 #endif
-  return ret;
-}
-
-#ifdef __CYGWIN__
-/* Convert POSIX path to Win32 path,
-   remove drive letter, replace backslashes.  */
-static char *
-get_win32_path (const char *path)
-{
-  char winpath[PATH_MAX];
-  if (cygwin_conv_path (CCP_POSIX_TO_WIN_A, path, winpath, sizeof(winpath)))
-    grub_util_error ("cygwin_conv_path() failed");
-
-  int len = strlen (winpath);
-  int offs = (len > 2 && winpath[1] == ':' ? 2 : 0);
-
-  int i;
-  for (i = offs; i < len; i++)
-    if (winpath[i] == '\\')
-      winpath[i] = '/';
-  return xstrdup (winpath + offs);
-}
-#endif
-
-#ifdef HAVE_LIBZFS
-static libzfs_handle_t *__libzfs_handle;
-
-static void
-fini_libzfs (void)
-{
-  libzfs_fini (__libzfs_handle);
-}
-
-libzfs_handle_t *
-grub_get_libzfs_handle (void)
-{
-  if (! __libzfs_handle)
-    {
-      __libzfs_handle = libzfs_init ();
-
-      if (__libzfs_handle)
-	atexit (fini_libzfs);
-    }
-
-  return __libzfs_handle;
-}
-#endif /* HAVE_LIBZFS */
-
-#if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
-/* ZFS has similar problems to those of btrfs (see above).  */
-void
-grub_find_zpool_from_dir (const char *dir, char **poolname, char **poolfs)
-{
-  char *slash;
-
-  *poolname = *poolfs = NULL;
-
-#if defined(HAVE_STRUCT_STATFS_F_FSTYPENAME) && defined(HAVE_STRUCT_STATFS_F_MNTFROMNAME)
-  /* FreeBSD and GNU/kFreeBSD.  */
-  {
-    struct statfs mnt;
-
-    if (statfs (dir, &mnt) != 0)
-      return;
-
-    if (strcmp (mnt.f_fstypename, "zfs") != 0)
-      return;
-
-    *poolname = xstrdup (mnt.f_mntfromname);
-  }
-#elif defined(HAVE_GETEXTMNTENT)
-  /* Solaris.  */
-  {
-    struct stat st;
-    struct extmnttab mnt;
-
-    if (stat (dir, &st) != 0)
-      return;
-
-    FILE *mnttab = fopen ("/etc/mnttab", "r");
-    if (! mnttab)
-      return;
-
-    while (getextmntent (mnttab, &mnt, sizeof (mnt)) == 0)
-      {
-	if (makedev (mnt.mnt_major, mnt.mnt_minor) == st.st_dev
-	    && !strcmp (mnt.mnt_fstype, "zfs"))
-	  {
-	    *poolname = xstrdup (mnt.mnt_special);
-	    break;
-	  }
-      }
-
-    fclose (mnttab);
-  }
-#endif
-
-  if (! *poolname)
-    return;
-
-  slash = strchr (*poolname, '/');
-  if (slash)
-    {
-      *slash = '\0';
-      *poolfs = xstrdup (slash + 1);
-    }
-  else
-    *poolfs = xstrdup ("");
-}
-#endif
-
-/* This function never prints trailing slashes (so that its output
-   can be appended a slash unconditionally).  */
-char *
-grub_make_system_path_relative_to_its_root (const char *path)
-{
-  struct stat st;
-  char *p, *buf, *buf2, *buf3, *ret;
-  uintptr_t offset = 0;
-  dev_t num;
-  size_t len;
-
-#if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
-  char *poolfs = NULL;
-#endif
-
-  /* canonicalize.  */
-  p = canonicalize_file_name (path);
-  if (p == NULL)
-    grub_util_error ("failed to get canonical path of %s", path);
-
-#if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
-  /* For ZFS sub-pool filesystems, could be extended to others (btrfs?).  */
-  {
-    char *dummy;
-    grub_find_zpool_from_dir (p, &dummy, &poolfs);
-  }
-#endif
-
-  len = strlen (p) + 1;
-  buf = xstrdup (p);
-  free (p);
-
-  if (stat (buf, &st) < 0)
-    grub_util_error ("cannot stat %s: %s", buf, strerror (errno));
-
-  buf2 = xstrdup (buf);
-  num = st.st_dev;
-
-  /* This loop sets offset to the number of chars of the root
-     directory we're inspecting.  */
-  while (1)
-    {
-      p = strrchr (buf, '/');
-      if (p == NULL)
-	/* This should never happen.  */
-	grub_util_error ("FIXME: no / in buf. (make_system_path_relative_to_its_root)");
-      if (p != buf)
-	*p = 0;
-      else
-	*++p = 0;
-
-      if (stat (buf, &st) < 0)
-	grub_util_error ("cannot stat %s: %s", buf, strerror (errno));
-
-      /* buf is another filesystem; we found it.  */
-      if (st.st_dev != num)
-	{
-	  /* offset == 0 means path given is the mount point.
-	     This works around special-casing of "/" in Un*x.  This function never
-	     prints trailing slashes (so that its output can be appended a slash
-	     unconditionally).  Each slash in is considered a preceding slash, and
-	     therefore the root directory is an empty string.  */
-	  if (offset == 0)
-	    {
-	      free (buf);
-	      free (buf2);
-#if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
-	      if (poolfs)
-		return xasprintf ("/%s/@", poolfs);
-#endif
-	      return xstrdup ("");
-	    }
-	  else
-	    break;
-	}
-
-      offset = p - buf;
-      /* offset == 1 means root directory.  */
-      if (offset == 1)
-	{
-	  /* Include leading slash.  */
-	  offset = 0;
-	  break;
-	}
-    }
-  free (buf);
-  buf3 = xstrdup (buf2 + offset);
-  free (buf2);
-
-#ifdef __CYGWIN__
-  if (st.st_dev != (DEV_CYGDRIVE_MAJOR << 16))
-    {
-      /* Reached some mount point not below /cygdrive.
-	 GRUB does not know Cygwin's emulated mounts,
-	 convert to Win32 path.  */
-      grub_util_info ("Cygwin path = %s\n", buf3);
-      char * temp = get_win32_path (buf3);
-      free (buf3);
-      buf3 = temp;
-    }
-#endif
-
-  /* Remove trailing slashes, return empty string if root directory.  */
-  len = strlen (buf3);
-  while (len > 0 && buf3[len - 1] == '/')
-    {
-      buf3[len - 1] = '\0';
-      len--;
-    }
-
-#if defined(HAVE_LIBZFS) && defined(HAVE_LIBNVPAIR)
-  if (poolfs)
-    {
-      ret = xasprintf ("/%s/@%s", poolfs, buf3);
-      free (buf3);
-    }
-  else
-#endif
-    ret = buf3;
-
   return ret;
 }
 

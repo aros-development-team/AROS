@@ -46,12 +46,10 @@ realloc (void *ptr, grub_size_t size)
   return grub_realloc (ptr, size);
 }
 
-static inline void
-abort (void)
+static inline int
+abs (int c)
 {
-  grub_abort ();
+  return (c >= 0) ? c : -c;
 }
-
-#define MB_CUR_MAX 6
 
 #endif

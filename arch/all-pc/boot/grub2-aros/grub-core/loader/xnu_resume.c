@@ -25,6 +25,7 @@
 #include <grub/cpu/xnu.h>
 #include <grub/mm.h>
 #include <grub/loader.h>
+#include <grub/i18n.h>
 
 static void *grub_xnu_hibernate_image;
 
@@ -59,11 +60,13 @@ grub_xnu_resume (char *imagename)
 
   /* Read the header. */
   if (grub_file_read (file, &hibhead, sizeof (hibhead))
-      !=sizeof (hibhead))
+      != sizeof (hibhead))
     {
       grub_file_close (file);
-      return grub_error (GRUB_ERR_READ_ERROR,
-			 "cannot read the hibernate header");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_READ_ERROR,
+		    N_("premature end of file %s"), imagename);
+      return grub_errno;
     }
 
   /* Check the header. */
@@ -122,7 +125,7 @@ grub_xnu_resume (char *imagename)
 					    (0xffffffff - hibhead.image_size) + 1,
 					    hibhead.image_size,
 					    GRUB_XNU_PAGESIZE,
-					    GRUB_RELOCATOR_PREFERENCE_NONE);
+					    GRUB_RELOCATOR_PREFERENCE_NONE, 0);
     if (err)
       {
 	grub_file_close (file);
@@ -138,7 +141,10 @@ grub_xnu_resume (char *imagename)
       != (grub_ssize_t) codesize)
     {
       grub_file_close (file);
-      return grub_error (GRUB_ERR_READ_ERROR, "cannot read resume image");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_READ_ERROR,
+		    N_("premature end of file %s"), imagename);
+      return grub_errno;
     }
 
   /* Read image. */
@@ -147,7 +153,10 @@ grub_xnu_resume (char *imagename)
       != (grub_ssize_t) hibhead.image_size)
     {
       grub_file_close (file);
-      return grub_error (GRUB_ERR_READ_ERROR, "cannot read resume image");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_READ_ERROR,
+		    N_("premature end of file %s"), imagename);
+      return grub_errno;
     }
   grub_file_close (file);
 

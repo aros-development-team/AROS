@@ -29,20 +29,12 @@
 #include <grub/symbol.h>
 #include <grub/types.h>
 
-/* The size of kernel image.  */
-extern grub_int32_t grub_kernel_image_size;
-
 /* The total size of module images following the kernel.  */
 extern grub_int32_t grub_total_module_size;
 
-/* The DOS partition number of the installed partition.  */
-extern grub_int32_t grub_install_dos_part;
+extern grub_uint32_t EXPORT_VAR(grub_boot_device);
 
-/* The BSD partition number of the installed partition.  */
-extern grub_int32_t grub_install_bsd_part;
-
-/* The boot BIOS drive number.  */
-extern grub_uint8_t EXPORT_VAR(grub_boot_drive);
+extern void (*EXPORT_VAR(grub_pc_net_config)) (char **device, char **path);
 
 #endif /* ! ASM_FILE */
 

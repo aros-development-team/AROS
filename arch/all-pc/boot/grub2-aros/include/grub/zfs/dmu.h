@@ -88,6 +88,7 @@ typedef enum dmu_object_type {
 	DMU_OT_SA_MASTER_NODE,		/* ZAP */
 	DMU_OT_SA_ATTR_REGISTRATION,	/* ZAP */
 	DMU_OT_SA_ATTR_LAYOUTS,		/* ZAP */
+	DMU_OT_DSL_KEYCHAIN = 54,
 	DMU_OT_NUMTYPES
 } dmu_object_type_t;
 

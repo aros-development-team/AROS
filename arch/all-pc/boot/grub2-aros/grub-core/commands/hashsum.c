@@ -26,17 +26,20 @@
 #include <grub/normal.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] = {
   {"hash", 'h', 0, N_("Specify hash to use."), N_("HASH"), ARG_TYPE_STRING},
-  {"check", 'c', 0, N_("Check hash list file."), N_("FILE"), ARG_TYPE_STRING},
-  {"prefix", 'p', 0, N_("Base directory for hash list."), N_("DIRECTORY"),
+  {"check", 'c', 0, N_("Check hashes of files with hash list FILE."),
+   N_("FILE"), ARG_TYPE_STRING},
+  {"prefix", 'p', 0, N_("Base directory for hash list."), N_("DIR"),
    ARG_TYPE_STRING},
   {"keep-going", 'k', 0, N_("Don't stop after first error."), 0, 0},
   {"uncompress", 'u', 0, N_("Uncompress file before checksumming."), 0, 0},
   {0, 0, 0, 0, 0, 0}
 };
 
-struct { const char *name; const char *hashname; } aliases[] = 
+static struct { const char *name; const char *hashname; } aliases[] = 
   {
     {"sha256sum", "sha256"},
     {"sha512sum", "sha512"},
@@ -100,6 +103,8 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
   while (grub_free (buf), (buf = grub_file_getline (hashlist)))
     {
       const char *p = buf;
+      while (grub_isspace (p[0]))
+	p++;
       for (i = 0; i < hash->mdlen; i++)
 	{
 	  int high, low;
@@ -109,8 +114,9 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
 	    return grub_error (GRUB_ERR_BAD_FILE_TYPE, "invalid hash list");
 	  expected[i] = (high << 4) | low;
 	}
-      if (*p++ != ' ' || *p++ != ' ')
+      if ((p[0] != ' ' && p[0] != '\t') || (p[1] != ' ' && p[1] != '\t'))
 	return grub_error (GRUB_ERR_BAD_FILE_TYPE, "invalid hash list");
+      p += 2;
       if (prefix)
 	{
 	  char *filename;
@@ -139,7 +145,7 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
       grub_file_close (file);
       if (err)
 	{
-	  grub_printf ("%s: READ ERROR\n", p);
+	  grub_printf_ (N_("%s: READ ERROR\n"), p);
 	  if (!keep)
 	    {
 	      grub_file_close (hashlist);
@@ -153,7 +159,7 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
 	}
       if (grub_crypto_memcmp (expected, actual, hash->mdlen) != 0)
 	{
-	  grub_printf ("%s: HASH MISMATCH\n", p);
+	  grub_printf_ (N_("%s: HASH MISMATCH\n"), p);
 	  if (!keep)
 	    {
 	      grub_file_close (hashlist);
@@ -164,7 +170,7 @@ check_list (const gcry_md_spec_t *hash, const char *hashfilename,
 	  mismatch++;
 	  continue;	  
 	}
-      grub_printf ("%s: OK\n", p);
+      grub_printf_ (N_("%s: OK\n"), p);
     }
   if (mismatch || unread)
     return grub_error (GRUB_ERR_TEST_FAILURE,
@@ -212,7 +218,7 @@ grub_cmd_hashsum (struct grub_extcmd_context *ctxt,
 
   for (i = 0; i < (unsigned) argc; i++)
     {
-      grub_uint8_t result[hash->mdlen];
+      GRUB_PROPERLY_ALIGNED_ARRAY (result, hash->mdlen);
       grub_file_t file;
       grub_err_t err;
       unsigned j;
@@ -240,12 +246,12 @@ grub_cmd_hashsum (struct grub_extcmd_context *ctxt,
 	  continue;
 	}
       for (j = 0; j < hash->mdlen; j++)
-	grub_printf ("%02x", result[j]);
+	grub_printf ("%02x", ((grub_uint8_t *) result)[j]);
       grub_printf ("  %s\n", args[i]);
     }
 
   if (unread)
-    return grub_error (GRUB_ERR_TEST_FAILURE, "%d files couldn't be read.",
+    return grub_error (GRUB_ERR_TEST_FAILURE, "%d files couldn't be read",
 		       unread);
   return GRUB_ERR_NONE;
 }
@@ -255,8 +261,11 @@ static grub_extcmd_t cmd, cmd_md5, cmd_sha1, cmd_sha256, cmd_sha512, cmd_crc;
 GRUB_MOD_INIT(hashsum)
 {
   cmd = grub_register_extcmd ("hashsum", grub_cmd_hashsum, 0,
-			      "hashsum -h HASH [-c FILE [-p PREFIX]] "
-			      "[FILE1 [FILE2 ...]]",
+			      N_("-h HASH [-c FILE [-p PREFIX]] "
+				 "[FILE1 [FILE2 ...]]"),
+			      /* TRANSLATORS: "hash checksum" is just to
+				 be a bit more precise, you can treat it as
+				 just "hash".  */
 			      N_("Compute or check hash checksum."),
 			      options);
   cmd_md5 = grub_register_extcmd ("md5sum", grub_cmd_hashsum, 0,

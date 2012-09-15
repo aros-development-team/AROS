@@ -22,6 +22,9 @@
 #include <grub/mm.h>
 #include <grub/dl.h>
 #include <grub/ieee1275/ieee1275.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 struct grub_nand_data
 {
@@ -30,19 +33,23 @@ struct grub_nand_data
 };
 
 static int
-grub_nand_iterate (int (*hook) (const char *name))
+grub_nand_iterate (int (*hook) (const char *name),
+		   grub_disk_pull_t pull)
 {
   auto int dev_iterate (struct grub_ieee1275_devalias *alias);
   int dev_iterate (struct grub_ieee1275_devalias *alias)
-    {
-      if (! grub_strcmp (alias->name, "nand"))
-        {
-          hook (alias->name);
-          return 1;
-        }
+  {
+    if (grub_strcmp (alias->name, "nand") == 0)
+      {
+	hook (alias->name);
+	return 1;
+      }
+    
+    return 0;
+  }
 
-      return 0;
-    }
+  if (pull != GRUB_DISK_PULL_NONE)
+    return 0;
 
   return grub_devalias_iterate (dev_iterate);
 }
@@ -56,6 +63,7 @@ grub_nand_open (const char *name, grub_disk_t disk)
 {
   grub_ieee1275_ihandle_t dev_ihandle = 0;
   struct grub_nand_data *data = 0;
+  const char *devname;
   struct size_args
     {
       struct grub_ieee1275_common_hdr common;
@@ -66,14 +74,18 @@ grub_nand_open (const char *name, grub_disk_t disk)
       grub_ieee1275_cell_t size2;
     } args;
 
-  if (! grub_strstr (name, "nand"))
-    return  grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a NAND device");
+  if (grub_memcmp (name, "nand/", sizeof ("nand/") - 1) == 0)
+    devname = name + sizeof ("nand/") - 1;
+  else if (grub_strcmp (name, "nand") == 0)
+    devname = name;
+  else
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "not a NAND device");
 
   data = grub_malloc (sizeof (*data));
   if (! data)
     goto fail;
 
-  grub_ieee1275_open (name, &dev_ihandle);
+  grub_ieee1275_open (devname, &dev_ihandle);
   if (! dev_ihandle)
     {
       grub_error (GRUB_ERR_UNKNOWN_DEVICE, "can't open device");
@@ -171,7 +183,10 @@ grub_nand_read (grub_disk_t disk, grub_disk_addr_t sector,
       args.result = 1;
 
       if ((IEEE1275_CALL_ENTRY_FN (&args) == -1) || (args.result))
-        return grub_error (GRUB_ERR_READ_ERROR, "read error");
+        return grub_error (GRUB_ERR_READ_ERROR, N_("failure reading sector 0x%llx "
+						   "from `%s'"),
+			   (unsigned long long) sector,
+			   disk->name);
 
       ofs = 0;
       size -= len;

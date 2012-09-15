@@ -26,27 +26,27 @@
 
 /* Enable BCJ filter decoders. */
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(GRUB_TARGET_CPU_I386) || defined(GRUB_TARGET_CPU_X86_64)
   #define XZ_DEC_X86
 #endif
 
-#ifdef __powerpc__
+#ifdef GRUB_TARGET_CPU_POWERPC
   #define XZ_DEC_POWERPC
 #endif
 
-#ifdef __ia64__
+#ifdef GRUB_TARGET_CPU_IA64
   #define XZ_DEC_IA64
 #endif
 
-#ifdef __arm__
+#ifdef GRUB_TARGET_CPU_ARM
   #define XZ_DEC_ARM
 #endif
 
-#ifdef __thumb__
+#if 0
   #define XZ_DEC_ARMTHUMB
 #endif
 
-#ifdef __sparc__
+#ifdef GRUB_TARGET_CPU_SPARC
   #define XZ_DEC_SPARC
 #endif
 

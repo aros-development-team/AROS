@@ -935,7 +935,7 @@ weak_alias (__argp_parse, argp_parse)
 void *
 __argp_input (const struct argp *argp, const struct argp_state *state)
 {
-  if (state)
+  if (state && state->pstate)
     {
       struct group *group;
       struct parser *parser = state->pstate;

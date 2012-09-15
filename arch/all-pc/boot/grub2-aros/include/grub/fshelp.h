@@ -73,7 +73,8 @@ EXPORT_FUNC(grub_fshelp_read_file) (grub_disk_t disk, grub_fshelp_node_t node,
 				    grub_off_t pos, grub_size_t len, char *buf,
 				    grub_disk_addr_t (*get_block) (grub_fshelp_node_t node,
                                                                    grub_disk_addr_t block),
-				    grub_off_t filesize, int log2blocksize);
+				    grub_off_t filesize, int log2blocksize,
+				    grub_disk_addr_t blocks_start);
 
 unsigned int
 EXPORT_FUNC(grub_fshelp_log2blksize) (unsigned int blksize,

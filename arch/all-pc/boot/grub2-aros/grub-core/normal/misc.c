@@ -61,7 +61,10 @@ grub_normal_print_device_info (const char *name)
 
       if (fs)
 	{
-	  grub_printf_ (N_("Filesystem type %s"), fs->name);
+	  const char *fsname = fs->name;
+	  if (grub_strcmp (fsname, "ext2") == 0)
+	    fsname = "ext*";
+	  grub_printf_ (N_("Filesystem type %s"), fsname);
 	  if (fs->label)
 	    {
 	      char *label;
@@ -71,7 +74,7 @@ grub_normal_print_device_info (const char *name)
 		  if (label && grub_strlen (label))
 		    {
 		      grub_xputs (" ");
-		      grub_printf_ (N_("- Label \"%s\""), label);
+		      grub_printf_ (N_("- Label `%s'"), label);
 		    }
 		  grub_free (label);
 		}
@@ -86,6 +89,8 @@ grub_normal_print_device_info (const char *name)
 		{
 		  grub_unixtime2datetime (tm, &datetime);
 		  grub_xputs (" ");
+		  /* TRANSLATORS: Arguments are year, month, day, hour, minute,
+		     second, day of the week (translated).  */
 		  grub_printf_ (N_("- Last modification time %d-%02d-%02d "
 			       "%02d:%02d:%02d %s"),
 			       datetime.year, datetime.month, datetime.day,
@@ -109,17 +114,16 @@ grub_normal_print_device_info (const char *name)
 	    }
 	}
       else
-	grub_printf ("%s", _("Not a known filesystem"));
+	grub_printf ("%s", _("No known filesystem detected"));
 
       if (dev->disk->partition)
-	grub_printf (_(" - Partition start at %u"),
-		     grub_partition_get_start (dev->disk->partition));
+	grub_printf (_(" - Partition start at %llu"),
+		     (unsigned long long) grub_partition_get_start (dev->disk->partition));
       if (grub_disk_get_size (dev->disk) == GRUB_DISK_SIZE_UNKNOWN)
-	grub_printf (_(" - Total size unknown"),
-		     grub_disk_get_size (dev->disk));
+	grub_puts_ (N_(" - Total size unknown"));
       else
-	grub_printf (_(" - Total size %u sectors"),
-		     grub_disk_get_size (dev->disk));
+	grub_printf (_(" - Total size %llu sectors"),
+		     (unsigned long long) grub_disk_get_size (dev->disk));
 
       grub_device_close (dev);
     }

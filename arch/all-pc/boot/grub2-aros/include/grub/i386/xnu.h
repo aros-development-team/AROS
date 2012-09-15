@@ -28,10 +28,8 @@
 #define GRUB_XNU_PAGESIZE 4096
 typedef grub_uint32_t grub_xnu_ptr_t;
 
-struct grub_xnu_boot_params
+struct grub_xnu_boot_params_common
 {
-  grub_uint16_t verminor;
-  grub_uint16_t vermajor;
   /* Command line passed to xnu. */
   grub_uint8_t cmdline[1024];
 
@@ -59,17 +57,50 @@ struct grub_xnu_boot_params
   grub_xnu_ptr_t heap_start;
   /* Last used address by kernel or boot structures minus previous value. */
   grub_uint32_t heap_size;
-
   /* First memory page containing runtime code or data. */
   grub_uint32_t efi_runtime_first_page;
   /* First memory page containing runtime code or data minus previous value. */
   grub_uint32_t efi_runtime_npages;
+} __attribute__ ((packed));
+
+struct grub_xnu_boot_params_v1
+{
+  grub_uint16_t verminor;
+  grub_uint16_t vermajor;
+  struct grub_xnu_boot_params_common common;
+
   grub_uint32_t efi_system_table;
   /* Size of grub_efi_uintn_t in bits. */
   grub_uint8_t efi_uintnbits;
 } __attribute__ ((packed));
-#define GRUB_XNU_BOOTARGS_VERMINOR 5
-#define GRUB_XNU_BOOTARGS_VERMAJOR 1
+#define GRUB_XNU_BOOTARGSV1_VERMINOR 5
+#define GRUB_XNU_BOOTARGSV1_VERMAJOR 1
+
+struct grub_xnu_boot_params_v2
+{
+  grub_uint16_t verminor;
+  grub_uint16_t vermajor;
+
+  /* Size of grub_efi_uintn_t in bits. */
+  grub_uint8_t efi_uintnbits;
+  grub_uint8_t unused[3];
+
+  struct grub_xnu_boot_params_common common;
+
+  grub_uint64_t efi_runtime_first_page_virtual;
+  grub_uint32_t efi_system_table;
+  grub_uint32_t unused2[11];
+  grub_uint64_t fsbfreq;
+  grub_uint32_t unused3[734];
+} __attribute__ ((packed));
+#define GRUB_XNU_BOOTARGSV2_VERMINOR 0
+#define GRUB_XNU_BOOTARGSV2_VERMAJOR 2
+
+union grub_xnu_boot_params_any
+{
+  struct grub_xnu_boot_params_v1 v1;
+  struct grub_xnu_boot_params_v2 v2;
+};
 
 struct grub_xnu_devprop_header
 {
@@ -114,5 +145,4 @@ extern grub_uint32_t grub_xnu_stack;
 extern grub_uint32_t grub_xnu_arg1;
 extern char grub_xnu_cmdline[1024];
 grub_err_t grub_xnu_boot (void);
-grub_err_t grub_cpu_xnu_fill_devicetree (void);
 #endif

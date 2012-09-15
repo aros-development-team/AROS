@@ -109,7 +109,12 @@ VARIABLE(grub_relocator64_rdx)
 	   payload and makes this implementation easier.  */
 	cld
 
+#ifdef __APPLE__
+	.byte 0xff, 0x25
+	.quad 0
+#else
 	jmp *LOCAL(jump_addr) (%rip)
+#endif
 
 LOCAL(jump_addr):
 VARIABLE(grub_relocator64_rip)

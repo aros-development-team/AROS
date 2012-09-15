@@ -61,6 +61,7 @@
 #define OPENBSD_BOOTARG_END	-1
 
 #define	OPENBSD_BOOTARG_MMAP	0
+#define	OPENBSD_BOOTARG_PCIBIOS 4
 #define	OPENBSD_BOOTARG_CONSOLE 5
 
 struct grub_openbsd_bootargs
@@ -74,6 +75,14 @@ struct grub_openbsd_bootarg_console
 {
   grub_uint32_t device;
   grub_uint32_t speed;
+};
+
+struct grub_openbsd_bootarg_pcibios
+{
+  grub_uint32_t characteristics;
+  grub_uint32_t revision;
+  grub_uint32_t pm_entry;
+  grub_uint32_t last_bus;
 };
 
 #define GRUB_OPENBSD_COM_MAJOR 8

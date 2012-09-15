@@ -20,8 +20,15 @@
 #include <grub/datetime.h>
 #include <grub/ieee1275/ieee1275.h>
 #include <grub/misc.h>
+#include <grub/dl.h>
+#if defined (__powerpc__) || defined (__sparc__)
+#include <grub/cmos.h>
+#endif
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static char *rtc = 0;
+static int no_ieee1275_rtc = 0;
 
 static void
 find_rtc (void)
@@ -39,6 +46,8 @@ find_rtc (void)
   }
   
   grub_ieee1275_devices_iterate (hook);
+  if (!rtc)
+    no_ieee1275_rtc = 1;
 }
 
 grub_err_t
@@ -61,10 +70,12 @@ grub_get_datetime (struct grub_datetime *datetime)
   int status;
   grub_ieee1275_ihandle_t ihandle;
 
+  if (no_ieee1275_rtc)
+    return grub_get_datetime_cmos (datetime);
   if (!rtc)
     find_rtc ();
   if (!rtc)
-    return grub_error (GRUB_ERR_IO, "no RTC found");
+    return grub_get_datetime_cmos (datetime);
 
   status = grub_ieee1275_open (rtc, &ihandle);
   if (status == -1)
@@ -111,10 +122,12 @@ grub_set_datetime (struct grub_datetime *datetime)
   int status;
   grub_ieee1275_ihandle_t ihandle;
 
+  if (no_ieee1275_rtc)
+    return grub_set_datetime_cmos (datetime);
   if (!rtc)
     find_rtc ();
   if (!rtc)
-    return grub_error (GRUB_ERR_IO, "no RTC found");
+    return grub_set_datetime_cmos (datetime);
 
   status = grub_ieee1275_open (rtc, &ihandle);
   if (status == -1)

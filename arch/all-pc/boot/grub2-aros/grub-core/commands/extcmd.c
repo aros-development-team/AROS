@@ -22,6 +22,9 @@
 #include <grub/misc.h>
 #include <grub/extcmd.h>
 #include <grub/script_sh.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 grub_err_t
 grub_extcmd_dispatcher (struct grub_command *cmd, int argc, char **args,

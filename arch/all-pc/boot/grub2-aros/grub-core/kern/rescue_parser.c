@@ -23,6 +23,7 @@
 #include <grub/parser.h>
 #include <grub/misc.h>
 #include <grub/command.h>
+#include <grub/i18n.h>
 
 grub_err_t
 grub_rescue_parse_line (char *line, grub_reader_getline_t getline)
@@ -63,7 +64,7 @@ grub_rescue_parse_line (char *line, grub_reader_getline_t getline)
     }
   else
     {
-      grub_printf ("Unknown command `%s'\n", name);
+      grub_printf_ (N_("Unknown command `%s'.\n"), name);
       if (grub_command_find ("help"))
 	grub_printf ("Try `help' for usage\n");
     }

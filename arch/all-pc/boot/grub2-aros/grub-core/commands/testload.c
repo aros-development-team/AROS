@@ -29,6 +29,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
 		   int argc, char *argv[])
@@ -48,7 +50,7 @@ grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
     }
 
   if (argc < 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   file = grub_file_open (argv[0]);
   if (! file)
@@ -75,19 +77,24 @@ grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
   grub_printf ("Reading %s sequentially again", argv[0]);
   grub_file_seek (file, 0);
 
-  for (pos = 0; pos < size; pos += GRUB_DISK_SECTOR_SIZE)
+  for (pos = 0; pos < size;)
     {
       char sector[GRUB_DISK_SECTOR_SIZE];
+      grub_size_t curlen = GRUB_DISK_SECTOR_SIZE;
 
-      if (grub_file_read (file, sector, GRUB_DISK_SECTOR_SIZE)
-	  != GRUB_DISK_SECTOR_SIZE)
+      if (curlen > size - pos)
+	curlen = size - pos;
+
+      if (grub_file_read (file, sector, curlen)
+	  != (grub_ssize_t) curlen)
 	goto fail;
 
-      if (grub_memcmp (sector, buf + pos, GRUB_DISK_SECTOR_SIZE) != 0)
+      if (grub_memcmp (sector, buf + pos, curlen) != 0)
 	{
 	  grub_printf ("\nDiffers in %lld\n", (unsigned long long) pos);
 	  goto fail;
 	}
+      pos += curlen;
     }
   grub_printf (" Done.\n");
 
@@ -98,7 +105,10 @@ grub_cmd_testload (struct grub_command *cmd __attribute__ ((unused)),
     {
       char sector[GRUB_DISK_SECTOR_SIZE];
 
-      pos -= GRUB_DISK_SECTOR_SIZE;
+      if (pos >= GRUB_DISK_SECTOR_SIZE)
+	pos -= GRUB_DISK_SECTOR_SIZE;
+      else
+	pos = 0;
 
       grub_file_seek (file, pos);
 

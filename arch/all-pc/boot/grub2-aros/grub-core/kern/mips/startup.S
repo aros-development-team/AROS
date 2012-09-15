@@ -20,6 +20,7 @@
 #include <grub/symbol.h>
 #include <grub/offsets.h>
 #include <grub/machine/memory.h>
+#include <grub/machine/kernel.h>
 #include <grub/offsets.h>
 
 #define BASE_ADDR 8	
@@ -35,22 +36,10 @@ start:
 	bal cont
 	 nop
 
-	. = _start + GRUB_KERNEL_MIPS_YEELOONG_TOTAL_MODULE_SIZE
-total_module_size:
+	. = _start + GRUB_KERNEL_MACHINE_TOTAL_MODULE_SIZE
+VARIABLE(grub_total_modules_size)
 	.long 0
 
-	. = _start + GRUB_KERNEL_MACHINE_PREFIX
-
-VARIABLE(grub_prefix)
-
-	/* to be filled by grub-mkimage */
-
-	/*
-	 *  Leave some breathing room for the prefix.
-	 */
-
-	. = _start + GRUB_KERNEL_MACHINE_PREFIX_END
-#ifdef GRUB_MACHINE_MIPS_YEELOONG
 VARIABLE (grub_arch_busclock)
 	.long 0
 VARIABLE (grub_arch_cpuclock)
@@ -59,21 +48,32 @@ VARIABLE (grub_arch_memsize)
 	.long 0
 VARIABLE (grub_arch_highmemsize)
 	.long 0
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
+VARIABLE (grub_arch_machine)
+	.long GRUB_ARCH_MACHINE_FULOONG2F
 #endif
 cont:
 	/* Save our base.  */
 	move $s0, $ra
 
-#ifdef GRUB_MACHINE_MIPS_YEELOONG
+#ifdef GRUB_MACHINE_MIPS_QEMU_MIPS
+	lui $t1, %hi(grub_arch_busclock)
+	addiu $t1, %lo(grub_arch_busclock)
+	sw $s4, 8($t1)
+#endif
+
+#ifdef GRUB_MACHINE_MIPS_LOONGSON
 	lui $t1, %hi(grub_arch_busclock)
 	addiu $t1, %lo(grub_arch_busclock)
 	sw $s2, 0($t1)
 	sw $s3, 4($t1)
 	sw $s4, 8($t1)
 	sw $s5, 12($t1)
+	sw $s7, 16($t1)
 #endif
 
 	/* Move the modules out of BSS.  */
+#ifndef GRUB_MACHINE_ARC
 	lui $t2, %hi(__bss_start)
 	addiu $t2, %lo(__bss_start)
 	
@@ -103,6 +103,7 @@ modulesmovcont:
 	b modulesmovcont
 	 addiu $t3, $t3, -1
 modulesmovdone:
+#endif
 
 	/* Clean BSS.  */
 	

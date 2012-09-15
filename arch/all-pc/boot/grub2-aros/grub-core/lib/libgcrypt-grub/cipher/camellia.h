@@ -1,5 +1,17 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+#include <grub/misc.h>
+void camellia_setup128(const unsigned char *key, grub_uint32_t *subkey);
+void camellia_setup192(const unsigned char *key, grub_uint32_t *subkey);
+void camellia_setup256(const unsigned char *key, grub_uint32_t *subkey);
+void camellia_encrypt128(const grub_uint32_t *subkey, grub_uint32_t *io);
+void camellia_encrypt192(const grub_uint32_t *subkey, grub_uint32_t *io);
+void camellia_encrypt256(const grub_uint32_t *subkey, grub_uint32_t *io);
+void camellia_decrypt128(const grub_uint32_t *subkey, grub_uint32_t *io);
+void camellia_decrypt192(const grub_uint32_t *subkey, grub_uint32_t *io);
+void camellia_decrypt256(const grub_uint32_t *subkey, grub_uint32_t *io);
+#define memcpy grub_memcpy
 /* camellia.h	ver 1.2.0
  *
  * Copyright (C) 2006,2007

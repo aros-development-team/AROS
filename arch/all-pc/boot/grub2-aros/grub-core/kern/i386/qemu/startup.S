@@ -32,16 +32,6 @@ _start:
 	. = _start + GRUB_KERNEL_I386_QEMU_CORE_ENTRY_ADDR
 VARIABLE(grub_core_entry_addr)
 	.long	0
-VARIABLE(grub_kernel_image_size)
-	.long	0
-VARIABLE(grub_prefix)
-	/* to be filled by grub-mkimage */
-
-	/*
-	 *  Leave some breathing room for the prefix.
-	 */
-
-	. = _start + GRUB_KERNEL_MACHINE_PREFIX_END
 
 codestart:
 	/* Relocate to low memory.  First we figure out our location.
@@ -53,11 +43,7 @@ codestart:
 	   value of `grub_core_entry_addr' in %esi.  */
 	xorw	%si, %si
 
-	/* ... which allows us to access `grub_kernel_image_size'
-	   before relocation.  */
-	movl	(grub_kernel_image_size - _start)(%esi), %ecx
-
-
+	movl    $(_edata - _start), %ecx
 	movl	$_start, %edi
 	cld
 	rep
@@ -65,24 +51,12 @@ codestart:
 	ljmp	$GRUB_MEMORY_MACHINE_PROT_MODE_CSEG, $1f
 1:
 
-#ifdef APPLE_CC
-	/* clean out the bss */
-	bss_start_abs = ABS (bss_start)
-	bss_end_abs = ABS (bss_end)
-
-	movl    bss_start_abs, %edi
-
-	/* compute the bss length */
-	movl	bss_end_abs, %ecx
-	subl	%edi, %ecx
-#else
 	/* clean out the bss */
 	movl	$BSS_START_SYMBOL, %edi
 
 	/* compute the bss length */
 	movl	$END_SYMBOL, %ecx
 	subl	%edi, %ecx
-#endif
 		
 	/* clean out */
 	xorl	%eax, %eax

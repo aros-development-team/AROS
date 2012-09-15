@@ -39,9 +39,3 @@ grub_machine_fini (void)
 {
   grub_efi_fini ();
 }
-
-void
-grub_machine_set_prefix (void)
-{
-  grub_efi_set_prefix ();
-}

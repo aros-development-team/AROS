@@ -55,10 +55,15 @@ grub_ieee1275_find_options (void)
   grub_ieee1275_phandle_t bootrom;
   int rc;
   grub_uint32_t realmode = 0;
-  char tmp[32];
+  char tmp[256];
   int is_smartfirmware = 0;
   int is_olpc = 0;
   int is_qemu = 0;
+  grub_ssize_t actual;
+
+#ifdef __sparc__
+  grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_NO_PARTITION_0);
+#endif
 
   grub_ieee1275_finddevice ("/", &root);
   grub_ieee1275_finddevice ("/options", &options);
@@ -83,6 +88,39 @@ grub_ieee1275_find_options (void)
 				   tmp,	sizeof (tmp), 0);
   if (rc >= 0 && !grub_strcmp (tmp, "Emulated PC"))
     is_qemu = 1;
+
+  if (rc >= 0 && grub_strncmp (tmp, "IBM", 3) == 0)
+    grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_NO_TREE_SCANNING_FOR_DISKS);
+
+  /* Old Macs have no key repeat, newer ones have fully working one.
+     The ones inbetween when repeated key generates an escaoe sequence
+     only the escape is repeated. With this workaround however a fast
+     e.g. down arrow-ESC is perceived as down arrow-down arrow which is
+     also annoying but is less so than the original bug of exiting from
+     the current window on arrow repeat. To avoid unaffected users suffering
+     from this workaround match only exact models known to have this bug.
+   */
+  if (rc >= 0 && grub_strcmp (tmp, "PowerBook3,3") == 0)
+    grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_BROKEN_REPEAT);
+
+  rc = grub_ieee1275_get_property (root, "compatible",
+				   tmp,	sizeof (tmp), &actual);
+  if (rc >= 0)
+    {
+      char *ptr;
+      for (ptr = tmp; ptr - tmp < actual; ptr += grub_strlen (ptr) + 1)
+	{
+	  if (grub_memcmp (ptr, "MacRISC", sizeof ("MacRISC") - 1) == 0
+	      && (ptr[sizeof ("MacRISC") - 1] == 0
+		  || grub_isdigit (ptr[sizeof ("MacRISC") - 1])))
+	    {
+	      grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_BROKEN_ADDRESS_CELLS);
+	      grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_NO_OFNET_SUFFIX);
+	      grub_ieee1275_set_flag (GRUB_IEEE1275_FLAG_VIRT_TO_REAL_BROKEN);
+	      break;
+	    }
+	}
+    }
 
   if (is_smartfirmware)
     {

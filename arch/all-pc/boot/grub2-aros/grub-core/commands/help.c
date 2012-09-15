@@ -26,6 +26,8 @@
 #include <grub/normal.h>
 #include <grub/charset.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 grub_cmd_help (grub_extcmd_context_t ctxt __attribute__ ((unused)), int argc,
 	       char **args)
@@ -38,14 +40,14 @@ grub_cmd_help (grub_extcmd_context_t ctxt __attribute__ ((unused)), int argc,
       grub_command_t cmd;
       FOR_COMMANDS(cmd)
       {
-	if ((cmd->prio & GRUB_PRIO_LIST_FLAG_ACTIVE))
+	if ((cmd->prio & GRUB_COMMAND_FLAG_ACTIVE))
 	  {
 	    struct grub_term_output *term;
 	    const char *summary_translated = _(cmd->summary);
 	    char *command_help;
 	    grub_uint32_t *unicode_command_help;
 	    grub_uint32_t *unicode_last_position;
-	  			      
+
 	    command_help = grub_xasprintf ("%s %s", cmd->name, summary_translated);
 	    if (!command_help)
 	      break;
@@ -97,28 +99,37 @@ grub_cmd_help (grub_extcmd_context_t ctxt __attribute__ ((unused)), int argc,
   else
     {
       int i;
-      grub_command_t cmd;
+      grub_command_t cmd_iter, cmd;
 
       for (i = 0; i < argc; i++)
 	{
 	  currarg = args[i];
-	  FOR_COMMANDS(cmd)
+	  FOR_COMMANDS(cmd_iter)
 	  {
-	    if (cmd->prio & GRUB_PRIO_LIST_FLAG_ACTIVE)
-	      {
-		if (! grub_strncmp (cmd->name, currarg, grub_strlen (currarg)))
-		  {
-		    if (cnt++ > 0)
-		      grub_printf ("\n\n");
+	    if (!(cmd_iter->prio & GRUB_COMMAND_FLAG_ACTIVE))
+	      continue;
 
-		    if ((cmd->flags & GRUB_COMMAND_FLAG_EXTCMD) &&
-			! (cmd->flags & GRUB_COMMAND_FLAG_DYNCMD))
-		      grub_arg_show_help ((grub_extcmd_t) cmd->data);
-		    else
-		      grub_printf ("%s %s %s\n%s\n", _("Usage:"), cmd->name, _(cmd->summary),
-				   _(cmd->description));
-		  }
+	    if (grub_strncmp (cmd_iter->name, currarg,
+			      grub_strlen (currarg)) != 0)
+	      continue;
+	    if (cmd_iter->flags & GRUB_COMMAND_FLAG_DYNCMD)
+	      cmd = grub_dyncmd_get_cmd (cmd_iter);
+	    else
+	      cmd = cmd_iter;
+	    if (!cmd)
+	      {
+		grub_print_error ();
+		continue;
 	      }
+	    if (cnt++ > 0)
+	      grub_printf ("\n\n");
+
+	    if ((cmd->flags & GRUB_COMMAND_FLAG_EXTCMD) &&
+		! (cmd->flags & GRUB_COMMAND_FLAG_DYNCMD))
+	      grub_arg_show_help ((grub_extcmd_t) cmd->data);
+	    else
+	      grub_printf ("%s %s %s\n%s\n", _("Usage:"), cmd->name,
+			   _(cmd->summary), _(cmd->description));
 	  }
 	}
     }

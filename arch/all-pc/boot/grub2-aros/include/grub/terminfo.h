@@ -27,11 +27,15 @@ char *EXPORT_FUNC(grub_terminfo_get_current) (struct grub_term_output *term);
 grub_err_t EXPORT_FUNC(grub_terminfo_set_current) (struct grub_term_output *term,
 												const char *);
 
-#define GRUB_TERMINFO_READKEY_MAX_LEN 4
+#define GRUB_TERMINFO_READKEY_MAX_LEN 6
 struct grub_terminfo_input_state
 {
   int input_buf[GRUB_TERMINFO_READKEY_MAX_LEN];
   int npending;
+#ifdef __powerpc__
+  int last_key;
+  grub_uint64_t last_key_time;
+#endif
   int (*readkey) (struct grub_term_input *term);
 };
 
@@ -77,5 +81,10 @@ grub_uint16_t EXPORT_FUNC (grub_terminfo_getwh) (struct grub_term_output *term);
 grub_err_t EXPORT_FUNC (grub_terminfo_output_register) (struct grub_term_output *term,
 							const char *type);
 grub_err_t EXPORT_FUNC (grub_terminfo_output_unregister) (struct grub_term_output *term);
+
+#ifndef GRUB_MACHINE_EMU
+void grub_terminfo_init (void);
+void grub_terminfo_fini (void);
+#endif
 
 #endif /* ! GRUB_TERMINFO_HEADER */

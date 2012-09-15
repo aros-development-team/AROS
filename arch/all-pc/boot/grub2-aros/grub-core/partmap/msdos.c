@@ -23,9 +23,80 @@
 #include <grub/mm.h>
 #include <grub/misc.h>
 #include <grub/dl.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static struct grub_partition_map grub_msdos_partition_map;
 
+
+#ifdef GRUB_UTIL
+#include <grub/emu/misc.h>
+
+struct embed_signature
+{
+  const char *name;
+  const char *signature;
+  int signature_len;
+  enum { TYPE_SOFTWARE, TYPE_RAID } type;
+};
+
+const char message_warn[][200] = {
+  /* TRANSLATORS: MBR gap and boot track is the same thing and is the space
+     between MBR and first partitition. If your language translates well only
+     "boot track", you can just use it everywhere. Next two messages are about
+     RAID controllers/software bugs which GRUB has to live with. Please spread
+     the message that these are bugs in other software and not merely
+     suboptimal behaviour.  */
+  [TYPE_RAID] = N_("Sector %llu is already in use by raid controller `%s';"
+		   " avoiding it.  "
+		   "Please ask the manufacturer not to store data in MBR gap"),
+  [TYPE_SOFTWARE] = N_("Sector %llu is already in use by the program `%s';"
+		       " avoiding it.  "
+		       "This software may cause boot or other problems in "
+		       "future.  Please ask its authors not to store data "
+		       "in the boot track") 
+};
+
+
+/* Signatures of other software that may be using sectors in the embedding
+   area.  */
+struct embed_signature embed_signatures[] =
+  {
+    {
+      .name = "ZISD",
+      .signature = "ZISD",
+      .signature_len = 4,
+      .type = TYPE_SOFTWARE
+    },
+    {
+      .name = "FlexNet",
+      .signature = "\xd4\x41\xa0\xf5\x03\x00\x03\x00",
+      .signature_len = 8,
+      .type = TYPE_SOFTWARE
+    },
+    {
+      .name = "FlexNet",
+      .signature = "\xd8\x41\xa0\xf5\x02\x00\x02\x00",
+      .signature_len = 8,
+      .type = TYPE_SOFTWARE
+    },
+    {
+      /* from Ryan Perkins */
+      .name = "HP Backup and Recovery Manager (?)",
+      .signature = "\x70\x8a\x5d\x46\x35\xc5\x1b\x93"
+		   "\xae\x3d\x86\xfd\xb1\x55\x3e\xe0",
+      .signature_len = 16,
+      .type = TYPE_SOFTWARE
+    },
+    {
+      .name = "HighPoint RAID controller",
+      .signature = "ycgl",
+      .signature_len = 4,
+      .type = TYPE_RAID
+    }
+  };
+#endif
 
 grub_err_t
 grub_partition_msdos_iterate (grub_disk_t disk,
@@ -65,6 +136,12 @@ grub_partition_msdos_iterate (grub_disk_t disk,
       if (grub_disk_read (disk, p.offset, 0, sizeof (mbr), &mbr))
 	goto finish;
 
+      /* If this is a GPT partition, this MBR is just a dummy.  */
+      if (p.offset == 0)
+	for (i = 0; i < 4; i++)
+	  if (mbr.entries[i].type == GRUB_PC_PARTITION_TYPE_GPT_DISK)
+	    return grub_error (GRUB_ERR_BAD_PART_TABLE, "dummy mbr");
+
       /* This is our loop-detection algorithm. It works the following way:
 	 It saves last position which was a power of two. Then it compares the
 	 saved value with a current one. This way it's guaranteed that the loop
@@ -90,8 +167,11 @@ grub_partition_msdos_iterate (grub_disk_t disk,
 	{
 	  e = mbr.entries + p.index;
 
-	  p.start = p.offset + grub_le_to_cpu32 (e->start) - delta;
-	  p.len = grub_le_to_cpu32 (e->length);
+	  p.start = p.offset
+	    + (grub_le_to_cpu32 (e->start)
+	       << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS)) - delta;
+	  p.len = grub_le_to_cpu32 (e->length)
+	    << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS);
 	  p.msdostype = e->type;
 
 	  grub_dprintf ("partition",
@@ -99,10 +179,6 @@ grub_partition_msdos_iterate (grub_disk_t disk,
 			p.index, e->flag, e->type,
 			(unsigned long long) p.start,
 			(unsigned long long) p.len);
-
-	  /* If this is a GPT partition, this MBR is just a dummy.  */
-	  if (e->type == GRUB_PC_PARTITION_TYPE_GPT_DISK && p.index == 0)
-	    return grub_error (GRUB_ERR_BAD_PART_TABLE, "dummy mbr");
 
 	  /* If this partition is a normal one, call the hook.  */
 	  if (! grub_msdos_partition_is_empty (e->type)
@@ -126,7 +202,9 @@ grub_partition_msdos_iterate (grub_disk_t disk,
 
 	  if (grub_msdos_partition_is_extended (e->type))
 	    {
-	      p.offset = ext_offset + grub_le_to_cpu32 (e->start);
+	      p.offset = ext_offset
+		+ (grub_le_to_cpu32 (e->start)
+		   << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS));
 	      if (! ext_offset)
 		ext_offset = p.offset;
 
@@ -146,6 +224,7 @@ grub_partition_msdos_iterate (grub_disk_t disk,
 #ifdef GRUB_UTIL
 static grub_err_t
 pc_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
+			unsigned int max_nsectors,
 			grub_embed_type_t embed_type,
 			grub_disk_addr_t **sectors)
 {
@@ -204,8 +283,11 @@ pc_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 	  e = mbr.entries + i;
 
 	  if (!grub_msdos_partition_is_empty (e->type)
-	      && end > offset + grub_le_to_cpu32 (e->start))
-	    end = offset + grub_le_to_cpu32 (e->start);
+	      && end > offset
+	      + (grub_le_to_cpu32 (e->start)
+		 << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS)))
+	    end = offset + (grub_le_to_cpu32 (e->start)
+			    << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS));
 
 	  /* If this is a GPT partition, this MBR is just a dummy.  */
 	  if (e->type == GRUB_PC_PARTITION_TYPE_GPT_DISK && i == 0)
@@ -219,7 +301,9 @@ pc_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 
 	  if (grub_msdos_partition_is_extended (e->type))
 	    {
-	      offset = ext_offset + grub_le_to_cpu32 (e->start);
+	      offset = ext_offset 
+		+ (grub_le_to_cpu32 (e->start) 
+		   << (disk->log_sector_size - GRUB_DISK_SECTOR_BITS));
 	      if (! ext_offset)
 		ext_offset = offset;
 
@@ -232,31 +316,83 @@ pc_partition_map_embed (struct grub_disk *disk, unsigned int *nsectors,
 	break;
     }
 
-  if (end >= *nsectors + 1)
+  if (end >= *nsectors + 2)
     {
-      int i;
-      *nsectors = end - 1;
+      unsigned i, j;
+      char *embed_signature_check;
+      unsigned int orig_nsectors, avail_nsectors;
+
+      orig_nsectors = *nsectors;
+      *nsectors = end - 2;
+      avail_nsectors = *nsectors;
+      if (*nsectors > max_nsectors)
+	*nsectors = max_nsectors;
       *sectors = grub_malloc (*nsectors * sizeof (**sectors));
       if (!*sectors)
 	return grub_errno;
       for (i = 0; i < *nsectors; i++)
 	(*sectors)[i] = 1 + i;
+
+      /* Check for software that is already using parts of the embedding
+       * area.
+       */
+      embed_signature_check = grub_malloc (GRUB_DISK_SECTOR_SIZE);
+      for (i = 0; i < *nsectors; i++)
+	{
+	  if (grub_disk_read (disk, (*sectors)[i], 0, GRUB_DISK_SECTOR_SIZE,
+			      embed_signature_check))
+	    continue;
+
+	  for (j = 0; j < ARRAY_SIZE (embed_signatures); j++)
+	    if (! grub_memcmp (embed_signatures[j].signature,
+			       embed_signature_check,
+			       embed_signatures[j].signature_len))
+	      break;
+	  if (j == ARRAY_SIZE (embed_signatures))
+	    continue;
+	  grub_util_warn (_(message_warn[embed_signatures[j].type]),
+			  (*sectors)[i], embed_signatures[j].name);
+	  avail_nsectors--;
+	  if (avail_nsectors < *nsectors)
+	    *nsectors = avail_nsectors;
+
+	  /* Avoid this sector.  */
+	  for (j = i; j < *nsectors; j++)
+	    (*sectors)[j]++;
+
+	  /* Have we run out of space?  */
+	  if (avail_nsectors < orig_nsectors)
+	    break;
+
+	  /* Make sure to check the next sector.  */
+	  i--;
+	}
+      grub_free (embed_signature_check);
+
+      if (*nsectors < orig_nsectors)
+	return grub_error (GRUB_ERR_OUT_OF_RANGE,
+			   N_("other software is using the embedding area, and "
+			      "there is not enough room for core.img.  Such "
+			      "software is often trying to store data in a way "
+			      "that avoids detection.  We recommend you "
+			      "investigate"));
+
       return GRUB_ERR_NONE;
     }
 
   if (end <= 1)
     return grub_error (GRUB_ERR_FILE_NOT_FOUND,
-		       "This msdos-style partition label has no "
-		       "post-MBR gap; embedding won't be possible!");
+		       N_("this msdos-style partition label has no "
+			  "post-MBR gap; embedding won't be possible"));
 
   if (*nsectors > 62)
     return grub_error (GRUB_ERR_OUT_OF_RANGE,
-		       "Your core.img is unusually large.  "
-		       "It won't fit in the embedding area.");
+		       N_("your core.img is unusually large.  "
+			  "It won't fit in the embedding area"));
 
   return grub_error (GRUB_ERR_OUT_OF_RANGE,
-		     "Your embedding area is unusually small.  "
-		     "core.img won't fit in it.");
+		     N_("your embedding area is unusually small.  "
+			"core.img won't fit in it."));
 }
 #endif
 

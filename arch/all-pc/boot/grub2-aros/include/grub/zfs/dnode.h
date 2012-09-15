@@ -29,12 +29,8 @@
  * Fixed constants.
  */
 #define	DNODE_SHIFT		9	/* 512 bytes */
-#define	DN_MIN_INDBLKSHIFT	10	/* 1k */
-#define	DN_MAX_INDBLKSHIFT	14	/* 16k */
 #define	DNODE_BLOCK_SHIFT	14	/* 16k */
 #define	DNODE_CORE_SIZE		64	/* 64 bytes for dnode sans blkptrs */
-#define	DN_MAX_OBJECT_SHIFT	48	/* 256 trillion (zfs_fid_t limit) */
-#define	DN_MAX_OFFSET_SHIFT	64	/* 2^64 bytes in a dnode */
 
 /*
  * Derived constants.
@@ -42,11 +38,9 @@
 #define	DNODE_SIZE	(1 << DNODE_SHIFT)
 #define	DN_MAX_NBLKPTR	((DNODE_SIZE - DNODE_CORE_SIZE) >> SPA_BLKPTRSHIFT)
 #define	DN_MAX_BONUSLEN	(DNODE_SIZE - DNODE_CORE_SIZE - (1 << SPA_BLKPTRSHIFT))
-#define	DN_MAX_OBJECT	(1ULL << DN_MAX_OBJECT_SHIFT)
 
 #define	DNODES_PER_BLOCK_SHIFT	(DNODE_BLOCK_SHIFT - DNODE_SHIFT)
 #define	DNODES_PER_BLOCK	(1ULL << DNODES_PER_BLOCK_SHIFT)
-#define	DNODES_PER_LEVEL_SHIFT	(DN_MAX_INDBLKSHIFT - SPA_BLKPTRSHIFT)
 
 #define	DNODE_FLAG_SPILL_BLKPTR (1<<2)
 

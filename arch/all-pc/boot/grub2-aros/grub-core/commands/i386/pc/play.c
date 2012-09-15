@@ -24,12 +24,14 @@
 #include <grub/disk.h>
 #include <grub/term.h>
 #include <grub/misc.h>
-#include <grub/machine/time.h>
 #include <grub/cpu/io.h>
 #include <grub/command.h>
 #include <grub/i18n.h>
+#include <grub/time.h>
 
-#define BASE_TEMPO (60 * GRUB_TICKS_PER_SECOND)
+GRUB_MOD_LICENSE ("GPLv3+");
+
+#define BASE_TEMPO (60 * 1000)
 
 /* The speaker port.  */
 #define SPEAKER			0x61
@@ -147,9 +149,9 @@ beep_on (grub_uint16_t pitch)
 static int
 play (unsigned tempo, struct note *note)
 {
-  unsigned int to;
+  grub_uint64_t to;
 
-  if (note->pitch == T_FINE || grub_checkkey () >= 0)
+  if (note->pitch == T_FINE || grub_getkey_noblock () != GRUB_TERM_NO_KEY)
     return 1;
 
   grub_dprintf ("play", "pitch = %d, duration = %d\n", note->pitch,
@@ -166,9 +168,9 @@ play (unsigned tempo, struct note *note)
         break;
     }
 
-  to = grub_get_rtc () + BASE_TEMPO * note->duration / tempo;
-  while (((unsigned int) grub_get_rtc () <= to) && (grub_checkkey () < 0))
-    ;
+  to = grub_get_time_ms () + BASE_TEMPO * note->duration / tempo;
+  while ((grub_get_time_ms () <= to)
+	 && (grub_getkey_noblock () == GRUB_TERM_NO_KEY));
 
   return 0;
 }
@@ -179,7 +181,12 @@ grub_cmd_play (grub_command_t cmd __attribute__ ((unused)),
 {
 
   if (argc < 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name or tempo and notes required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, 
+		       /* TRANSLATORS: It's musical notes, not the notes
+			  you take. Play command expects arguments which can
+			  be either a filename or tempo+notes.
+			  This error happens if none is specified.  */
+		       N_("filename or tempo and notes expected"));
 
   if (argc == 1)
     {
@@ -190,13 +197,15 @@ grub_cmd_play (grub_command_t cmd __attribute__ ((unused)),
       file = grub_file_open (args[0]);
 
       if (! file)
-        return grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+        return grub_errno;
 
       if (grub_file_read (file, &tempo, sizeof (tempo)) != sizeof (tempo))
         {
           grub_file_close (file);
-          return grub_error (GRUB_ERR_FILE_READ_ERROR,
-                             "file doesn't even contains a full tempo record");
+	  if (!grub_errno)
+	    grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+			args[0]);
+          return grub_errno;
         }
 
       tempo = grub_le_to_cpu32 (tempo);
@@ -225,23 +234,27 @@ grub_cmd_play (grub_command_t cmd __attribute__ ((unused)),
 
       if (*end)
         /* Was not a number either, assume it was supposed to be a file name.  */
-        return grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+        return grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), args[0]);
 
       grub_dprintf ("play","tempo = %d\n", tempo);
 
       for (i = 1; i + 1 < argc; i += 2)
         {
           note.pitch = grub_strtoul (args[i], &end, 0);
+	  if (grub_errno)
+	    break;
           if (*end)
             {
-              grub_error (GRUB_ERR_BAD_NUMBER, "bogus pitch number");
+              grub_error (GRUB_ERR_BAD_NUMBER, N_("unrecognized number"));
               break;
             }
 
           note.duration = grub_strtoul (args[i + 1], &end, 0);
+	  if (grub_errno)
+	    break;
           if (*end)
             {
-              grub_error (GRUB_ERR_BAD_NUMBER, "bogus duration number");
+              grub_error (GRUB_ERR_BAD_NUMBER, N_("unrecognized number"));
               break;
             }
 
@@ -251,9 +264,6 @@ grub_cmd_play (grub_command_t cmd __attribute__ ((unused)),
     }
 
   beep_off ();
-
-  while (grub_checkkey () > 0)
-    grub_getkey ();
 
   return 0;
 }

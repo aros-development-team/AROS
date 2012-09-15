@@ -18,7 +18,6 @@
  */
 
 #include <grub/symbol.h>
-#include <grub/boot.h>
 #include <grub/machine/boot.h>
 
 /*

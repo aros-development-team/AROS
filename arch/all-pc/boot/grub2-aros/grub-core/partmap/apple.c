@@ -22,6 +22,8 @@
 #include <grub/mm.h>
 #include <grub/partition.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define GRUB_APPLE_HEADER_MAGIC	0x4552
 #define GRUB_APPLE_PART_MAGIC	0x504D
 

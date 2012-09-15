@@ -29,7 +29,7 @@ grub_get_tsc (void)
 
   /* The CPUID instruction is a 'serializing' instruction, and
      avoids out-of-order execution of the RDTSC instruction. */
-#ifdef APPLE_CC
+#ifdef __APPLE__
   __asm__ __volatile__ ("xorl %%eax, %%eax\n\t"
 #ifdef __x86_64__
 			"push %%rbx\n"
@@ -109,7 +109,7 @@ grub_cpu_is_tsc_supported (void)
     return 0;
 
   grub_uint32_t features;
-#ifdef APPLE_CC
+#ifdef __APPLE__
   __asm__ ("movl $1, %%eax\n\t"
 #ifdef __x86_64__
 	   "push %%rbx\n"

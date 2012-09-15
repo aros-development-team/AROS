@@ -37,13 +37,12 @@ struct grub_gui_progress_bar
   int start;
   int end;
   int value;
-  int show_text;
   char *template;
   grub_font_t font;
-  grub_gui_color_t text_color;
-  grub_gui_color_t border_color;
-  grub_gui_color_t bg_color;
-  grub_gui_color_t fg_color;
+  grub_video_rgba_color_t text_color;
+  grub_video_rgba_color_t border_color;
+  grub_video_rgba_color_t bg_color;
+  grub_video_rgba_color_t fg_color;
 
   char *theme_dir;
   int need_to_recreate_pixmaps;
@@ -109,7 +108,7 @@ draw_filled_rect_bar (grub_gui_progress_bar_t self)
   f.height = self->bounds.height - 2;
 
   /* Border.  */
-  grub_video_fill_rect (grub_gui_map_color (self->border_color),
+  grub_video_fill_rect (grub_video_map_rgba_color (self->border_color),
                         f.x - 1, f.y - 1,
                         f.width + 2, f.height + 2);
 
@@ -117,12 +116,12 @@ draw_filled_rect_bar (grub_gui_progress_bar_t self)
   int barwidth = (f.width
                   * (self->value - self->start)
                   / (self->end - self->start));
-  grub_video_fill_rect (grub_gui_map_color (self->bg_color),
+  grub_video_fill_rect (grub_video_map_rgba_color (self->bg_color),
                         f.x + barwidth, f.y,
                         f.width - barwidth, f.height);
 
   /* Bar foreground.  */
-  grub_video_fill_rect (grub_gui_map_color (self->fg_color),
+  grub_video_fill_rect (grub_video_map_rgba_color (self->fg_color),
                         f.x, f.y,
                         barwidth, f.height);
 }
@@ -161,7 +160,8 @@ draw_text (grub_gui_progress_bar_t self)
   if (self->template)
     {
       grub_font_t font = self->font;
-      grub_video_color_t text_color = grub_gui_map_color (self->text_color);
+      grub_video_color_t text_color =
+	grub_video_map_rgba_color (self->text_color);
       int width = self->bounds.width;
       int height = self->bounds.height;
       char *text;
@@ -298,19 +298,19 @@ progress_bar_set_property (void *vself, const char *name, const char *value)
     }
   else if (grub_strcmp (name, "text_color") == 0)
     {
-      grub_gui_parse_color (value, &self->text_color);
+      grub_video_parse_color (value, &self->text_color);
     }
   else if (grub_strcmp (name, "border_color") == 0)
     {
-       grub_gui_parse_color (value, &self->border_color);
+       grub_video_parse_color (value, &self->border_color);
     }
   else if (grub_strcmp (name, "bg_color") == 0)
     {
-       grub_gui_parse_color (value, &self->bg_color);
+       grub_video_parse_color (value, &self->bg_color);
     }
   else if (grub_strcmp (name, "fg_color") == 0)
     {
-      grub_gui_parse_color (value, &self->fg_color);
+      grub_video_parse_color (value, &self->fg_color);
     }
   else if (grub_strcmp (name, "bar_style") == 0)
     {
@@ -340,8 +340,8 @@ progress_bar_set_property (void *vself, const char *name, const char *value)
         self->id = grub_strdup (value);
       else
         self->id = 0;
-      /*      if (self->id && grub_strcmp (self->id, GRUB_GFXMENU_TIMEOUT_COMPONENT_ID)
-	      == 0)*/
+      if (self->id && grub_strcmp (self->id, GRUB_GFXMENU_TIMEOUT_COMPONENT_ID)
+	  == 0)
 	grub_gfxmenu_timeout_register ((grub_gui_component_t) self,
 				       progress_bar_set_state);
     }
@@ -379,9 +379,9 @@ grub_gui_progress_bar_new (void)
   self->progress.component.ops = &progress_bar_ops;
   self->visible = 1;
   self->font = grub_font_get ("Unknown Regular 16");
-  grub_gui_color_t black = { .red = 0, .green = 0, .blue = 0, .alpha = 255 };
-  grub_gui_color_t gray = { .red = 128, .green = 128, .blue = 128, .alpha = 255 };
-  grub_gui_color_t lightgray = { .red = 200, .green = 200, .blue = 200, .alpha = 255 };
+  grub_video_rgba_color_t black = { .red = 0, .green = 0, .blue = 0, .alpha = 255 };
+  grub_video_rgba_color_t gray = { .red = 128, .green = 128, .blue = 128, .alpha = 255 };
+  grub_video_rgba_color_t lightgray = { .red = 200, .green = 200, .blue = 200, .alpha = 255 };
   self->text_color = black;
   self->border_color = black;
   self->bg_color = gray;

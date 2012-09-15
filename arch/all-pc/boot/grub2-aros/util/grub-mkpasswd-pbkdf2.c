@@ -20,6 +20,7 @@
 
 #include <grub/types.h>
 #include <grub/crypto.h>
+#include <grub/auth.h>
 #include <grub/emu/misc.h>
 #include <grub/util/misc.h>
 #include <grub/i18n.h>
@@ -28,37 +29,59 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
-#include <termios.h>
+
+#define _GNU_SOURCE	1
+
+#include <argp.h>
 
 #include "progname.h"
 
-static struct option options[] =
-  {
-    {"iteration_count", required_argument, 0, 'c'},
-    {"buflen", required_argument, 0, 'l'},
-    {"saltlen", required_argument, 0, 's'},
-    {"help", no_argument, 0, 'h'},
-    {"version", no_argument, 0, 'V'},
-  };
+static struct argp_option options[] = {
+  {"iteration-count",  'c', N_("NUM"), 0, N_("Number of PBKDF2 iterations"), 0},
+  {"buflen",  'l', N_("NUM"), 0, N_("Length of generated hash"), 0},
+  {"salt",  's', N_("NUM"), 0, N_("Length of salt"), 0},
+  { 0, 0, 0, 0, 0, 0 }
+};
 
-static void
-usage (int status)
+struct arguments
 {
-  if (status)
-    fprintf (stderr, "Try `%s --help' for more information.\n", program_name);
-  else
-    printf ("\
-Usage: %s [OPTIONS]\n\
-\nOptions:\n\
-     -c number, --iteration-count=number  Number of PBKDF2 iterations\n\
-     -l number, --buflen=number           Length of generated hash\n\
-     -s number, --salt=number             Length of salt\n\
-\n\
-Report bugs to <%s>.\n", program_name, PACKAGE_BUGREPORT);
+  unsigned int count;
+  unsigned int buflen;
+  unsigned int saltlen;
+};
 
-  exit (status);
+static error_t
+argp_parser (int key, char *arg, struct argp_state *state)
+{
+  /* Get the input argument from argp_parse, which we
+     know is a pointer to our arguments structure. */
+  struct arguments *arguments = state->input;
+
+  switch (key)
+    {
+    case 'c':
+      arguments->count = strtoul (arg, NULL, 0);
+      break;
+
+    case 'l':
+      arguments->buflen = strtoul (arg, NULL, 0);
+      break;
+
+    case 's':
+      arguments->saltlen = strtoul (arg, NULL, 0);
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
 }
+
+static struct argp argp = {
+  options, argp_parser, N_("[OPTIONS]"),
+  N_("Generate PBKDF2 password hash."),
+  NULL, NULL, NULL
+};
+
 
 static void
 hexify (char *hex, grub_uint8_t *bin, grub_size_t n)
@@ -84,229 +107,133 @@ hexify (char *hex, grub_uint8_t *bin, grub_size_t n)
 int
 main (int argc, char *argv[])
 {
-  unsigned int count = 10000, buflen = 64, saltlen = 64;
-  char *pass1, *pass2;
-  char *bufhex, *salthex;
+  struct arguments arguments = {
+    .count = 10000,
+    .buflen = 64,
+    .saltlen = 64
+  };
+  char *bufhex, *salthex, *result;
   gcry_err_code_t gcry_err;
   grub_uint8_t *buf, *salt;
-  ssize_t nr;
-  FILE *in, *out;
-  struct termios s, t;
-  int tty_changed;
+  char pass1[GRUB_AUTH_MAX_PASSLEN];
+  char pass2[GRUB_AUTH_MAX_PASSLEN];
 
   set_program_name (argv[0]);
 
   grub_util_init_nls ();
 
   /* Check for options.  */
-  while (1)
+  if (argp_parse (&argp, argc, argv, 0, 0, &arguments) != 0)
     {
-      int c = getopt_long (argc, argv, "c:l:s:hvV", options, 0);
-
-      if (c == -1)
-	break;
-
-      switch (c)
-	{
-	case 'c':
-	  count = strtoul (optarg, NULL, 0);
-	  break;
-
-	case 'l':
-	  buflen = strtoul (optarg, NULL, 0);
-	  break;
-
-	case 's':
-	  saltlen = strtoul (optarg, NULL, 0);
-	  break;
-
-	case 'h':
-	  usage (0);
-	  return 0;
-	  
-	case 'V':
-	  printf ("%s (%s) %s\n", program_name,
-		  PACKAGE_NAME, PACKAGE_VERSION);
-	  return 0;
-	    
-	default:
-	  usage (1);
-	  return 1;
-	}
+      fprintf (stderr, "%s", _("Error in parsing command line arguments\n"));
+      exit(1);
     }
 
-  bufhex = malloc (buflen * 2 + 1);
-  if (!bufhex)
-    grub_util_error ("out of memory");
-  buf = malloc (buflen);
-  if (!buf)
-    {
-      free (bufhex);
-      grub_util_error ("out of memory");
-    }
-
-  salt = malloc (saltlen);
-  if (!salt)
-    {
-      free (bufhex);
-      free (buf);
-      grub_util_error ("out of memory");
-    }
-  salthex = malloc (saltlen * 2 + 1);
-  if (!salthex)
-    {
-      free (salt);
-      free (bufhex);
-      free (buf);
-      grub_util_error ("out of memory");
-    }
-
-  /* Disable echoing. Based on glibc.  */
-  in = fopen ("/dev/tty", "w+c");
-  if (in == NULL)
-    {
-      in = stdin;
-      out = stderr;
-    }
-  else
-    out = in;
-
-  if (tcgetattr (fileno (in), &t) == 0)
-    {
-      /* Save the old one. */
-      s = t;
-      /* Tricky, tricky. */
-      t.c_lflag &= ~(ECHO|ISIG);
-      tty_changed = (tcsetattr (fileno (in), TCSAFLUSH, &t) == 0);
-    }
-  else
-    tty_changed = 0;
+  bufhex = xmalloc (arguments.buflen * 2 + 1);
+  buf = xmalloc (arguments.buflen);
+  salt = xmalloc (arguments.saltlen);
+  salthex = xmalloc (arguments.saltlen * 2 + 1);
   
-  printf ("Enter password: ");
-  pass1 = NULL;
-  {
-    grub_size_t n;
-    nr = getline (&pass1, &n, stdin);
-  }
-  if (nr < 0 || !pass1)
+  printf ("%s", _("Enter password: "));
+  if (!grub_password_get (pass1, GRUB_AUTH_MAX_PASSLEN))
     {
       free (buf);
       free (bufhex);
       free (salthex);
       free (salt);
-      /* Restore the original setting.  */
-      if (tty_changed)
-	(void) tcsetattr (fileno (in), TCSAFLUSH, &s);
-      grub_util_error ("failure to read password");
+      grub_util_error ("%s", _("failure to read password"));
     }
-  if (nr >= 1 && pass1[nr-1] == '\n')
-    pass1[nr-1] = 0;
-
-  printf ("\nReenter password: ");
-  pass2 = NULL;
-  {
-    grub_size_t n;
-    nr = getline (&pass2, &n, stdin);
-  }
-  /* Restore the original setting.  */
-  if (tty_changed)
-    (void) tcsetattr (fileno (in), TCSAFLUSH, &s);
-  printf ("\n");
-
-  if (nr < 0 || !pass2)
+  printf ("\n%s", _("Reenter password: "));
+  if (!grub_password_get (pass2, GRUB_AUTH_MAX_PASSLEN))
     {
-      memset (pass1, 0, strlen (pass1));
-      free (pass1);
       free (buf);
       free (bufhex);
       free (salthex);
       free (salt);
-      grub_util_error ("failure to read password");
+      grub_util_error ("%s", _("failure to read password"));
     }
-  if (nr >= 1 && pass2[nr-1] == '\n')
-    pass2[nr-1] = 0;
 
   if (strcmp (pass1, pass2) != 0)
     {
-      memset (pass1, 0, strlen (pass1));
-      memset (pass2, 0, strlen (pass2));
-      free (pass1);
-      free (pass2);
+      memset (pass1, 0, sizeof (pass1));
+      memset (pass2, 0, sizeof (pass2));
       free (buf);
       free (bufhex);
       free (salthex);
       free (salt);
-      grub_util_error ("passwords don't match");
+      grub_util_error ("%s", _("passwords don't match"));
     }
-  memset (pass2, 0, strlen (pass2));
-  free (pass2);
+  memset (pass2, 0, sizeof (pass2));
 
 #if ! defined (__linux__) && ! defined (__FreeBSD__)
-  printf ("WARNING: your random generator isn't known to be secure\n");
+  /* TRANSLATORS: The generator might still be secure just GRUB isn't sure about it.  */
+  printf ("%s", _("WARNING: your random generator isn't known to be secure\n"));
 #endif
 
   {
     FILE *f;
     size_t rd;
-    f = fopen ("/dev/random", "rb");
+    f = fopen ("/dev/urandom", "rb");
     if (!f)
       {
-	memset (pass1, 0, strlen (pass1));
-	free (pass1);
+	memset (pass1, 0, sizeof (pass1));
 	free (buf);
 	free (bufhex);
 	free (salthex);
 	free (salt);
 	fclose (f);
-	grub_util_error ("couldn't retrieve random data for salt");
+	grub_util_error ("%s", _("couldn't retrieve random data for salt"));
       }
-    rd = fread (salt, 1, saltlen, f);
-    if (rd != saltlen)
+    rd = fread (salt, 1, arguments.saltlen, f);
+    if (rd != arguments.saltlen)
       {
 	fclose (f);
-	memset (pass1, 0, strlen (pass1));
-	free (pass1);
+	memset (pass1, 0, sizeof (pass1));
 	free (buf);
 	free (bufhex);
 	free (salthex);
 	free (salt);
-	fclose (f);
-	grub_util_error ("couldn't retrieve random data for salt");
+	grub_util_error ("%s", _("couldn't retrieve random data for salt"));
       }
     fclose (f);
   }
 
   gcry_err = grub_crypto_pbkdf2 (GRUB_MD_SHA512,
 				 (grub_uint8_t *) pass1, strlen (pass1),
-				 salt, saltlen,
-				 count, buf, buflen);
-  memset (pass1, 0, strlen (pass1));
-  free (pass1);
+				 salt, arguments.saltlen,
+				 arguments.count, buf, arguments.buflen);
+  memset (pass1, 0, sizeof (pass1));
 
   if (gcry_err)
     {
-      memset (buf, 0, buflen);
-      memset (bufhex, 0, 2 * buflen);
+      memset (buf, 0, arguments.buflen);
+      memset (bufhex, 0, 2 * arguments.buflen);
       free (buf);
       free (bufhex);
-      memset (salt, 0, saltlen);
-      memset (salthex, 0, 2 * saltlen);
+      memset (salt, 0, arguments.saltlen);
+      memset (salthex, 0, 2 * arguments.saltlen);
       free (salt);
       free (salthex);
-      grub_util_error ("cryptographic error number %d", gcry_err);
+      grub_util_error (_("cryptographic error number %d"), gcry_err);
     }
 
-  hexify (bufhex, buf, buflen);
-  hexify (salthex, salt, saltlen);
+  hexify (bufhex, buf, arguments.buflen);
+  hexify (salthex, salt, arguments.saltlen);
 
-  printf ("Your PBKDF2 is grub.pbkdf2.sha512.%d.%s.%s\n",
-	  count, salthex, bufhex);
-  memset (buf, 0, buflen);
-  memset (bufhex, 0, 2 * buflen);
+  result = xmalloc (sizeof ("grub.pbkdf2.sha512.XXXXXXXXXXXXXXXXXXX.S.S")
+		    + arguments.buflen * 2 + arguments.saltlen * 2);
+  snprintf (result, sizeof ("grub.pbkdf2.sha512.XXXXXXXXXXXXXXXXXXX.S.S")
+	    + arguments.buflen * 2 + arguments.saltlen * 2,
+	    "grub.pbkdf2.sha512.%d.%s.%s",
+	    arguments.count, salthex, bufhex);
+
+  printf (_("PBKDF2 hash of your password is %s\n"), result);
+  memset (buf, 0, arguments.buflen);
+  memset (bufhex, 0, 2 * arguments.buflen);
   free (buf);
   free (bufhex);
-  memset (salt, 0, saltlen);
-  memset (salthex, 0, 2 * saltlen);
+  memset (salt, 0, arguments.saltlen);
+  memset (salthex, 0, 2 * arguments.saltlen);
   free (salt);
   free (salthex);
 

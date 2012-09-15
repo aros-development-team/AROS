@@ -42,20 +42,25 @@ isdigit (int c)
 static inline int
 islower (int c)
 {
-  return (c >= 'a' && c <= 'z');
+  return grub_islower (c);
+}
+
+static inline int
+isascii (int c)
+{
+  return !(c & ~0x7f);
 }
 
 static inline int
 isupper (int c)
 {
-  return (c >= 'A' && c <= 'Z');
+  return grub_isupper (c);
 }
 
 static inline int
 isxdigit (int c)
 {
-  return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
-    || (c >= '0' && c <= '9');
+  return grub_isxdigit (c);
 }
 
 static inline int 

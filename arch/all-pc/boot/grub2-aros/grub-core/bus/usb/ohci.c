@@ -29,6 +29,8 @@
 #include <grub/cs5536.h>
 #include <grub/loader.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 struct grub_ohci_hcca
 {
   /* Pointers to Interrupt Endpoint Descriptors.  Not used by
@@ -292,13 +294,15 @@ grub_ohci_pci_iter (grub_pci_device_t dev,
                 o->hcca_chunk, o->hcca, o->hcca_addr);
 
   /* Reserve memory for ctrl EDs.  */
-  o->ed_ctrl_chunk = grub_memalign_dma32 (16, sizeof(struct grub_ohci_ed)*GRUB_OHCI_CTRL_EDS);
+  o->ed_ctrl_chunk = grub_memalign_dma32 (16, sizeof(struct grub_ohci_ed)
+					  * GRUB_OHCI_CTRL_EDS);
   if (! o->ed_ctrl_chunk)
     goto fail;
   o->ed_ctrl = grub_dma_get_virt (o->ed_ctrl_chunk);
   o->ed_ctrl_addr = grub_dma_get_phys (o->ed_ctrl_chunk);
   /* Preset EDs */
-  grub_memset ((void*)o->ed_ctrl, 0, sizeof(struct grub_ohci_ed) * GRUB_OHCI_CTRL_EDS);
+  grub_memset ((void *) o->ed_ctrl, 0, sizeof (struct grub_ohci_ed)
+	       * GRUB_OHCI_CTRL_EDS);
   for (j=0; j < GRUB_OHCI_CTRL_EDS; j++)
     o->ed_ctrl[j].target = grub_cpu_to_le32 (1 << 14); /* skip */
     
@@ -306,7 +310,8 @@ grub_ohci_pci_iter (grub_pci_device_t dev,
                 o->ed_ctrl_chunk, o->ed_ctrl, o->ed_ctrl_addr);
 
   /* Reserve memory for bulk EDs.  */
-  o->ed_bulk_chunk = grub_memalign_dma32 (16, sizeof(struct grub_ohci_ed)*GRUB_OHCI_BULK_EDS);
+  o->ed_bulk_chunk = grub_memalign_dma32 (16, sizeof (struct grub_ohci_ed)
+					  * GRUB_OHCI_BULK_EDS);
   if (! o->ed_bulk_chunk)
     goto fail;
   o->ed_bulk = grub_dma_get_virt (o->ed_bulk_chunk);
@@ -452,10 +457,12 @@ grub_ohci_pci_iter (grub_pci_device_t dev,
 
  fail:
   if (o)
-    grub_dma_free (o->td_chunk);
-    grub_dma_free (o->ed_bulk_chunk);
-    grub_dma_free (o->ed_ctrl_chunk);
-    grub_dma_free (o->hcca_chunk);
+    {
+      grub_dma_free (o->td_chunk);
+      grub_dma_free (o->ed_bulk_chunk);
+      grub_dma_free (o->ed_ctrl_chunk);
+      grub_dma_free (o->hcca_chunk);
+    }
   grub_free (o);
 
   return 0;
@@ -1148,8 +1155,8 @@ grub_ohci_check_transfer (grub_usb_controller_t dev,
     return parse_halt (dev, transfer, actual);
 
   /* Finished ED detection */
-  if ( (grub_le_to_cpu32 (cdata->ed_virt->td_head) & ~0xf) ==
-       (grub_le_to_cpu32 (cdata->ed_virt->td_tail) & ~0xf) ) /* Empty ED */
+  if ( (grub_le_to_cpu32 (cdata->ed_virt->td_head) & ~0xfU) ==
+       (grub_le_to_cpu32 (cdata->ed_virt->td_tail) & ~0xfU) ) /* Empty ED */
     {
       /* Check the HALT bit */
       /* It looks like nonsense - it was tested previously...
@@ -1422,18 +1429,22 @@ static struct grub_usb_controller_dev usb_controller =
   .detect_dev = grub_ohci_detect_dev
 };
 
+static struct grub_preboot *fini_hnd;
+
 GRUB_MOD_INIT(ohci)
 {
   COMPILE_TIME_ASSERT (sizeof (struct grub_ohci_td) == 32);
   COMPILE_TIME_ASSERT (sizeof (struct grub_ohci_ed) == 16);
   grub_ohci_inithw ();
   grub_usb_controller_dev_register (&usb_controller);
-  grub_loader_register_preboot_hook (grub_ohci_fini_hw, grub_ohci_restore_hw,
-				     GRUB_LOADER_PREBOOT_HOOK_PRIO_DISK);
+  fini_hnd = grub_loader_register_preboot_hook (grub_ohci_fini_hw,
+						grub_ohci_restore_hw,
+						GRUB_LOADER_PREBOOT_HOOK_PRIO_DISK);
 }
 
 GRUB_MOD_FINI(ohci)
 {
   grub_ohci_fini_hw (0);
+  grub_loader_unregister_preboot_hook (fini_hnd);
   grub_usb_controller_dev_unregister (&usb_controller);
 }

@@ -115,10 +115,6 @@ grub_video_fb_get_active_render_target (struct grub_video_fbrender_target **targ
 grub_err_t
 grub_video_fb_set_active_render_target (struct grub_video_fbrender_target *target);
 
-typedef grub_err_t
-(*grub_video_fb_doublebuf_update_screen_t) (struct grub_video_fbrender_target *front,
-					  struct grub_video_fbrender_target *back);
-
 typedef grub_err_t (*grub_video_fb_set_page_t) (int page);
 
 grub_err_t

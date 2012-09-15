@@ -1,7 +1,7 @@
 /* grub-setup.c - make GRUB usable */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011  Free Software Foundation, Inc.
  *
  *  GRUB is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,14 +28,16 @@
 #include <grub/partition.h>
 #include <grub/env.h>
 #include <grub/emu/hostdisk.h>
-#include <grub/machine/boot.h>
-#include <grub/machine/kernel.h>
 #include <grub/term.h>
 #include <grub/i18n.h>
-#include <grub/util/raid.h>
 #include <grub/util/lvm.h>
-#ifdef GRUB_MACHINE_IEEE1275
+#ifdef GRUB_SETUP_SPARC64
 #include <grub/util/ofpath.h>
+#include <grub/sparc64/ieee1275/boot.h>
+#include <grub/sparc64/ieee1275/kernel.h>
+#else
+#include <grub/i386/pc/boot.h>
+#include <grub/i386/pc/kernel.h>
 #endif
 
 #include <stdio.h>
@@ -50,6 +52,13 @@
 #include "progname.h"
 #include <grub/reed_solomon.h>
 #include <grub/msdos_partition.h>
+#include <include/grub/crypto.h>
+
+#ifdef __linux__
+#include <sys/ioctl.h>
+#include <linux/fs.h>
+#include <linux/fiemap.h>
+#endif
 
 #define _GNU_SOURCE	1
 #include <argp.h>
@@ -77,14 +86,14 @@
 #define DEFAULT_BOOT_FILE	"boot.img"
 #define DEFAULT_CORE_FILE	"core.img"
 
-#ifdef GRUB_MACHINE_SPARC64
+#ifdef GRUB_SETUP_SPARC64
 #define grub_target_to_host16(x)	grub_be_to_cpu16(x)
 #define grub_target_to_host32(x)	grub_be_to_cpu32(x)
 #define grub_target_to_host64(x)	grub_be_to_cpu64(x)
 #define grub_host_to_target16(x)	grub_cpu_to_be16(x)
 #define grub_host_to_target32(x)	grub_cpu_to_be32(x)
 #define grub_host_to_target64(x)	grub_cpu_to_be64(x)
-#elif defined (GRUB_MACHINE_PCBIOS)
+#elif defined (GRUB_SETUP_BIOS)
 #define grub_target_to_host16(x)	grub_le_to_cpu16(x)
 #define grub_target_to_host32(x)	grub_le_to_cpu32(x)
 #define grub_target_to_host64(x)	grub_le_to_cpu64(x)
@@ -99,76 +108,31 @@ static void
 write_rootdev (char *core_img, grub_device_t root_dev,
 	       char *boot_img, grub_uint64_t first_sector)
 {
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   {
-    grub_int32_t *install_dos_part, *install_bsd_part;
-    grub_int32_t dos_part, bsd_part;
     grub_uint8_t *boot_drive;
-    grub_disk_addr_t *kernel_sector;
+    void *kernel_sector;
     boot_drive = (grub_uint8_t *) (boot_img + GRUB_BOOT_MACHINE_BOOT_DRIVE);
-    kernel_sector = (grub_disk_addr_t *) (boot_img
-					  + GRUB_BOOT_MACHINE_KERNEL_SECTOR);
-
-
-    install_dos_part = (grub_int32_t *) (core_img + GRUB_DISK_SECTOR_SIZE
-					 + GRUB_KERNEL_MACHINE_INSTALL_DOS_PART);
-    install_bsd_part = (grub_int32_t *) (core_img + GRUB_DISK_SECTOR_SIZE
-					 + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART);
-
-    /* If we hardcoded drive as part of prefix, we don't want to
-       override the current setting.  */
-    if (*install_dos_part != -2)
-      {
-	/* Embed information about the installed location.  */
-	if (root_dev->disk->partition)
-	  {
-	    if (root_dev->disk->partition->parent)
-	      {
-		if (root_dev->disk->partition->parent->parent)
-		  grub_util_error ("Installing on doubly nested partitions is "
-				   "not supported");
-		dos_part = root_dev->disk->partition->parent->number;
-		bsd_part = root_dev->disk->partition->number;
-	      }
-	    else
-	      {
-		dos_part = root_dev->disk->partition->number;
-		bsd_part = -1;
-	      }
-	  }
-	else
-	  dos_part = bsd_part = -1;
-      }
-    else
-      {
-	dos_part = grub_le_to_cpu32 (*install_dos_part);
-	bsd_part = grub_le_to_cpu32 (*install_bsd_part);
-      }
-
-    grub_util_info ("dos partition is %d, bsd partition is %d",
-		    dos_part, bsd_part);
-
-    *install_dos_part = grub_cpu_to_le32 (dos_part);
-    *install_bsd_part = grub_cpu_to_le32 (bsd_part);
+    kernel_sector = (boot_img + GRUB_BOOT_MACHINE_KERNEL_SECTOR);
 
     /* FIXME: can this be skipped?  */
     *boot_drive = 0xFF;
 
-    *kernel_sector = grub_cpu_to_le64 (first_sector);
+    grub_set_unaligned64 (kernel_sector, grub_cpu_to_le64 (first_sector));
   }
 #endif
-#ifdef GRUB_MACHINE_IEEE1275
+#ifdef GRUB_SETUP_SPARC64
   {
-    grub_disk_addr_t *kernel_byte;
-    kernel_byte = (grub_disk_addr_t *) (boot_img
-					+ GRUB_BOOT_AOUT_HEADER_SIZE
-					+ GRUB_BOOT_MACHINE_KERNEL_BYTE);
-    *kernel_byte = grub_cpu_to_be64 (first_sector << GRUB_DISK_SECTOR_BITS);
+    void *kernel_byte;
+    kernel_byte = (boot_img + GRUB_BOOT_AOUT_HEADER_SIZE
+		   + GRUB_BOOT_MACHINE_KERNEL_BYTE);
+    grub_set_unaligned64 (kernel_byte,
+			  grub_cpu_to_be64 (first_sector << GRUB_DISK_SECTOR_BITS));
   }
 #endif
 }
 
-#ifdef GRUB_MACHINE_IEEE1275
+#ifdef GRUB_SETUP_SPARC64
 #define BOOT_SECTOR 1
 #else
 #define BOOT_SECTOR 0
@@ -177,24 +141,23 @@ write_rootdev (char *core_img, grub_device_t root_dev,
 static void
 setup (const char *dir,
        const char *boot_file, const char *core_file,
-       const char *root, const char *dest, int must_embed, int force,
+       const char *dest, int force,
        int fs_probe, int allow_floppy)
 {
   char *boot_path, *core_path, *core_path_dev, *core_path_dev_full;
   char *boot_img, *core_img;
+  char *root = 0;
   size_t boot_size, core_size;
   grub_uint16_t core_sectors;
-  grub_device_t root_dev, dest_dev;
+  grub_device_t root_dev = 0, dest_dev, core_dev;
   struct grub_boot_blocklist *first_block, *block;
   char *tmp_img;
-  int i;
   grub_disk_addr_t first_sector;
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   grub_uint16_t current_segment
-    = GRUB_BOOT_MACHINE_KERNEL_SEG + (GRUB_DISK_SECTOR_SIZE >> 4);
+    = GRUB_BOOT_I386_PC_KERNEL_SEG + (GRUB_DISK_SECTOR_SIZE >> 4);
 #endif
   grub_uint16_t last_length = GRUB_DISK_SECTOR_SIZE;
-  grub_file_t file;
   FILE *fp;
 
   auto void NESTED_FUNC_ATTR save_first_sector (grub_disk_addr_t sector,
@@ -208,11 +171,11 @@ setup (const char *dir,
 					   unsigned offset,
 					   unsigned length)
     {
-      grub_util_info ("the first sector is <%llu,%u,%u>",
+      grub_util_info ("the first sector is <%" PRIuGRUB_UINT64_T ",%u,%u>",
 		      sector, offset, length);
 
       if (offset != 0 || length != GRUB_DISK_SECTOR_SIZE)
-	grub_util_error (_("the first sector of the core file is not sector-aligned"));
+	grub_util_error ("%s", _("the first sector of the core file is not sector-aligned"));
 
       first_sector = sector;
     }
@@ -223,30 +186,34 @@ setup (const char *dir,
     {
       struct grub_boot_blocklist *prev = block + 1;
 
-      grub_util_info ("saving <%llu,%u,%u>", sector, offset, length);
+      grub_util_info ("saving <%" PRIuGRUB_UINT64_T ",%u,%u>",
+		      sector, offset, length);
 
       if (offset != 0 || last_length != GRUB_DISK_SECTOR_SIZE)
-	grub_util_error (_("non-sector-aligned data is found in the core file"));
+	grub_util_error ("%s", _("non-sector-aligned data is found in the core file"));
 
       if (block != first_block
 	  && (grub_target_to_host64 (prev->start)
 	      + grub_target_to_host16 (prev->len)) == sector)
-	prev->len = grub_host_to_target16 (grub_target_to_host16 (prev->len) + 1);
+	{
+	  grub_uint16_t t = grub_target_to_host16 (prev->len) + 1;
+	  prev->len = grub_host_to_target16 (t);
+	}
       else
 	{
 	  block->start = grub_host_to_target64 (sector);
 	  block->len = grub_host_to_target16 (1);
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
 	  block->segment = grub_host_to_target16 (current_segment);
 #endif
 
 	  block--;
 	  if (block->len)
-	    grub_util_error (_("the sectors of the core file are too fragmented"));
+	    grub_util_error ("%s", _("the sectors of the core file are too fragmented"));
 	}
 
       last_length = length;
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
       current_segment += GRUB_DISK_SECTOR_SIZE >> 4;
 #endif
     }
@@ -266,7 +233,7 @@ setup (const char *dir,
 		  >> GRUB_DISK_SECTOR_BITS);
   if (core_size < GRUB_DISK_SECTOR_SIZE)
     grub_util_error (_("the size of `%s' is too small"), core_path);
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   if (core_size > 0xFFFF * GRUB_DISK_SECTOR_SIZE)
     grub_util_error (_("the size of `%s' is too large"), core_path);
 #endif
@@ -279,32 +246,73 @@ setup (const char *dir,
 						- sizeof (*block));
   grub_util_info ("root is `%s', dest is `%s'", root, dest);
 
-  /* Open the root device and the destination device.  */
-  grub_util_info ("Opening root");
-  root_dev = grub_device_open (root);
-  if (! root_dev)
-    grub_util_error ("%s", grub_errmsg);
-
   grub_util_info ("Opening dest");
   dest_dev = grub_device_open (dest);
   if (! dest_dev)
     grub_util_error ("%s", grub_errmsg);
 
+  core_dev = dest_dev;
+
+  {
+    char **root_devices = grub_guess_root_devices (dir);
+    char **cur;
+    int found = 0;
+
+    for (cur = root_devices; *cur; cur++)
+      {
+	char *drive;
+	grub_device_t try_dev;
+
+	drive = grub_util_get_grub_dev (*cur);
+	if (!drive)
+	  continue;
+	try_dev = grub_device_open (drive);
+	if (! try_dev)
+	  continue;
+	if (!found && try_dev->disk->id == dest_dev->disk->id
+	    && try_dev->disk->dev->id == dest_dev->disk->dev->id)
+	  {
+	    if (root_dev)
+	      grub_device_close (root_dev);
+	    free (root);
+	    root_dev = try_dev;
+	    root = drive;
+	    found = 1;
+	    continue;
+	  }
+	if (!root_dev)
+	  {
+	    root_dev = try_dev;
+	    root = drive;
+	    continue;
+	  }
+	grub_device_close (try_dev);	
+	free (drive);
+      }
+    if (!root_dev)
+      {
+	grub_util_error ("guessing the root device failed, because of `%s'",
+			 grub_errmsg);
+      }
+    grub_util_info ("guessed root_dev `%s' from "
+		    "dir `%s'", root_dev->disk->name, dir);
+  }
+
   grub_util_info ("setting the root device to `%s'", root);
   if (grub_env_set ("root", root) != GRUB_ERR_NONE)
     grub_util_error ("%s", grub_errmsg);
 
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   /* Read the original sector from the disk.  */
   tmp_img = xmalloc (GRUB_DISK_SECTOR_SIZE);
   if (grub_disk_read (dest_dev->disk, 0, 0, GRUB_DISK_SECTOR_SIZE, tmp_img))
     grub_util_error ("%s", grub_errmsg);
 #endif
 
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   {
-    grub_uint16_t *boot_drive_check;
-    boot_drive_check = (grub_uint16_t *) (boot_img
+    grub_uint8_t *boot_drive_check;
+    boot_drive_check = (grub_uint8_t *) (boot_img
 					  + GRUB_BOOT_MACHINE_DRIVE_CHECK);
     /* Copy the possible DOS BPB.  */
     memcpy (boot_img + GRUB_BOOT_MACHINE_BPB_START,
@@ -315,21 +323,25 @@ setup (const char *dir,
        for buggy BIOSes which don't pass boot drive correctly. Instead,
        they pass 0x00 or 0x01 even when booted from 0x80.  */
     if (!allow_floppy && !grub_util_biosdisk_is_floppy (dest_dev->disk))
-      /* Replace the jmp (2 bytes) with double nop's.  */
-      *boot_drive_check = 0x9090;
+      {
+	/* Replace the jmp (2 bytes) with double nop's.  */
+	boot_drive_check[0] = 0x90;
+	boot_drive_check[1] = 0x90;
+      }
   }
 #endif
 
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
   {
     grub_partition_map_t dest_partmap = NULL;
     grub_partition_t container = dest_dev->disk->partition;
     int multiple_partmaps = 0;
+    int is_ldm;
     grub_err_t err;
     grub_disk_addr_t *sectors;
     int i;
     grub_fs_t fs;
-    unsigned int nsec;
+    unsigned int nsec, maxsec;
 
     /* Unlike root_dev, with dest_dev we're interested in the partition map even
        if dest_dev itself is a whole disk.  */
@@ -364,7 +376,7 @@ setup (const char *dir,
 	&& (container->msdostype == GRUB_PC_PARTITION_TYPE_NETBSD
 	    || container->msdostype == GRUB_PC_PARTITION_TYPE_OPENBSD))
       {
-	grub_util_warn (_("Attempting to install GRUB to a disk with multiple partition labels or both partition label and filesystem.  This is not supported yet."));
+	grub_util_warn ("%s", _("Attempting to install GRUB to a disk with multiple partition labels or both partition label and filesystem.  This is not supported yet."));
 	goto unable_to_embed;
       }
 
@@ -372,13 +384,16 @@ setup (const char *dir,
     if (!fs)
       grub_errno = GRUB_ERR_NONE;
 
-#ifdef GRUB_MACHINE_PCBIOS
+    is_ldm = grub_util_is_ldm (dest_dev->disk);
+
+#ifdef GRUB_SETUP_BIOS
     if (fs_probe)
       {
 	if (!fs && !dest_partmap)
 	  grub_util_error (_("unable to identify a filesystem in %s; safety check can't be performed"),
 			   dest_dev->disk->name);
 	if (fs && !fs->reserved_first_sector)
+	  /* TRANSLATORS: Filesystem may reserve the space just GRUB isn't sure about it.  */
 	  grub_util_error (_("%s appears to contain a %s filesystem which isn't known to "
 			     "reserve space for DOS-style boot.  Installing GRUB there could "
 			     "result in FILESYSTEM DESTRUCTION if valuable data is overwritten "
@@ -391,45 +406,83 @@ setup (const char *dir,
 	    && strcmp (dest_partmap->name, "netbsd") != 0
 	    && strcmp (dest_partmap->name, "openbsd") != 0
 	    && strcmp (dest_partmap->name, "sunpc") != 0)
+	  /* TRANSLATORS: Partition map may reserve the space just GRUB isn't sure about it.  */
 	  grub_util_error (_("%s appears to contain a %s partition map which isn't known to "
 			     "reserve space for DOS-style boot.  Installing GRUB there could "
 			     "result in FILESYSTEM DESTRUCTION if valuable data is overwritten "
 			     "by grub-setup (--skip-fs-probe disables this "
 			     "check, use at your own risk)"), dest_dev->disk->name, dest_partmap->name);
+	if (is_ldm && dest_partmap && strcmp (dest_partmap->name, "msdos") != 0
+	    && strcmp (dest_partmap->name, "gpt") != 0)
+	  grub_util_error (_("%s appears to contain a %s partition map and "
+			     "LDM which isn't known to be a safe combination."
+			     "  Installing GRUB there could "
+			     "result in FILESYSTEM DESTRUCTION if valuable data"
+			     " is overwritten "
+			     "by grub-setup (--skip-fs-probe disables this "
+			     "check, use at your own risk)"),
+			   dest_dev->disk->name, dest_partmap->name);
+
       }
 #endif
 
-    if (! dest_partmap)
-      {
-	grub_util_warn (_("Attempting to install GRUB to a partitionless disk or to a partition.  This is a BAD idea."));
-	goto unable_to_embed;
-      }
-    if (multiple_partmaps || fs)
-      {
-	grub_util_warn (_("Attempting to install GRUB to a disk with multiple partition labels or both partition label and filesystem.  This is not supported yet."));
-	goto unable_to_embed;
-      }
-
     /* Copy the partition table.  */
-    if (dest_partmap)
+    if (dest_partmap ||
+        (!allow_floppy && !grub_util_biosdisk_is_floppy (dest_dev->disk)))
       memcpy (boot_img + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC,
 	      tmp_img + GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC,
 	      GRUB_BOOT_MACHINE_PART_END - GRUB_BOOT_MACHINE_WINDOWS_NT_MAGIC);
 
     free (tmp_img);
     
-    if (!dest_partmap->embed)
+    if (! dest_partmap && ! fs && !is_ldm)
       {
-	grub_util_warn ("Partition style '%s' doesn't support embeding",
+	grub_util_warn ("%s", _("Attempting to install GRUB to a partitionless disk or to a partition.  This is a BAD idea."));
+	goto unable_to_embed;
+      }
+    if (multiple_partmaps || (dest_partmap && fs) || (is_ldm && fs))
+      {
+	grub_util_warn ("%s", _("Attempting to install GRUB to a disk with multiple partition labels.  This is not supported yet."));
+	goto unable_to_embed;
+      }
+
+    if (dest_partmap && !dest_partmap->embed)
+      {
+	grub_util_warn (_("Partition style `%s' doesn't support embedding"),
 			dest_partmap->name);
 	goto unable_to_embed;
       }
 
+    if (fs && !fs->embed)
+      {
+	grub_util_warn (_("File system `%s' doesn't support embedding"),
+			fs->name);
+	goto unable_to_embed;
+      }
+
     nsec = core_sectors;
-    err = dest_partmap->embed (dest_dev->disk, &nsec,
-			       GRUB_EMBED_PCBIOS, &sectors);
-    if (nsec > 2 * core_sectors)
-      nsec = 2 * core_sectors;
+
+    maxsec = 2 * core_sectors;
+    if (maxsec > ((0x78000 - GRUB_KERNEL_I386_PC_LINK_ADDR)
+		>> GRUB_DISK_SECTOR_BITS))
+      maxsec = ((0x78000 - GRUB_KERNEL_I386_PC_LINK_ADDR)
+		>> GRUB_DISK_SECTOR_BITS);
+
+    if (is_ldm)
+      err = grub_util_ldm_embed (dest_dev->disk, &nsec, maxsec,
+				 GRUB_EMBED_PCBIOS, &sectors);
+    else if (dest_partmap)
+      err = dest_partmap->embed (dest_dev->disk, &nsec, maxsec,
+				 GRUB_EMBED_PCBIOS, &sectors);
+    else
+      err = fs->embed (dest_dev, &nsec, maxsec,
+		       GRUB_EMBED_PCBIOS, &sectors);
+    if (!err && nsec < core_sectors)
+      {
+	err = grub_error (GRUB_ERR_OUT_OF_RANGE,
+			  N_("Your embedding area is unusually small.  "
+			     "core.img won't fit in it."));
+      }
     
     if (err)
       {
@@ -437,6 +490,8 @@ setup (const char *dir,
 	grub_errno = GRUB_ERR_NONE;
 	goto unable_to_embed;
       }
+
+    assert (nsec <= maxsec);
 
     /* Clean out the blocklists.  */
     block = first_block;
@@ -447,7 +502,7 @@ setup (const char *dir,
 	block--;
 
 	if ((char *) block <= core_img)
-	  grub_util_error ("No terminator in the core image");
+	  grub_util_error ("%s", _("no terminator in the core image"));
       }
 
     save_first_sector (sectors[0] + grub_partition_get_start (container),
@@ -458,6 +513,13 @@ setup (const char *dir,
       save_blocklists (sectors[i] + grub_partition_get_start (container),
 		       0, GRUB_DISK_SECTOR_SIZE);
 
+    /* Make sure that the last blocklist is a terminator.  */
+    if (block == first_block)
+      block--;
+    block->start = 0;
+    block->len = 0;
+    block->segment = 0;
+
     write_rootdev (core_img, root_dev, boot_img, first_sector);
 
     core_img = realloc (core_img, nsec * GRUB_DISK_SECTOR_SIZE);
@@ -465,20 +527,26 @@ setup (const char *dir,
 						  + GRUB_DISK_SECTOR_SIZE
 						  - sizeof (*block));
 
-    *(grub_uint32_t *) (core_img + GRUB_DISK_SECTOR_SIZE
-			+ GRUB_KERNEL_I386_PC_REED_SOLOMON_REDUNDANCY)
-      = grub_host_to_target32 (nsec * GRUB_DISK_SECTOR_SIZE - core_size);
+    grub_size_t no_rs_length;
+    grub_set_unaligned32 ((core_img + GRUB_DISK_SECTOR_SIZE
+			   + GRUB_KERNEL_I386_PC_REED_SOLOMON_REDUNDANCY),
+			  grub_host_to_target32 (nsec * GRUB_DISK_SECTOR_SIZE - core_size));
+    no_rs_length = grub_target_to_host16 
+      (grub_get_unaligned16 (core_img
+			     + GRUB_DISK_SECTOR_SIZE
+			     + GRUB_KERNEL_I386_PC_NO_REED_SOLOMON_LENGTH));
 
-    grub_reed_solomon_add_redundancy (core_img + GRUB_KERNEL_I386_PC_NO_REED_SOLOMON_PART + GRUB_DISK_SECTOR_SIZE,
-				      core_size - GRUB_KERNEL_I386_PC_NO_REED_SOLOMON_PART - GRUB_DISK_SECTOR_SIZE,
+    if (no_rs_length == 0xffff)
+      grub_util_error ("%s", _("core.img version mismatch"));
+
+    void *tmp = xmalloc (core_size);
+    grub_memcpy (tmp, core_img, core_size);
+    grub_reed_solomon_add_redundancy (core_img + no_rs_length + GRUB_DISK_SECTOR_SIZE,
+				      core_size - no_rs_length - GRUB_DISK_SECTOR_SIZE,
 				      nsec * GRUB_DISK_SECTOR_SIZE
 				      - core_size);
-
-    /* Make sure that the second blocklist is a terminator.  */
-    block = first_block - 1;
-    block->start = 0;
-    block->len = 0;
-    block->segment = 0;
+    assert (grub_memcmp (tmp, core_img, core_size) == 0);
+    free (tmp);
 
     /* Write the core image onto the disk.  */
     for (i = 0; i < nsec; i++)
@@ -490,25 +558,42 @@ setup (const char *dir,
 
     goto finish;
   }
-#endif
 
 unable_to_embed:
-
-  if (must_embed)
-    grub_util_error (_("embedding is not possible, but this is required when "
-		       "the root device is on a RAID array or LVM volume"));
-
-#ifdef GRUB_MACHINE_PCBIOS
-  if (dest_dev->disk->id != root_dev->disk->id)
-    grub_util_error (_("embedding is not possible, but this is required for "
-		       "cross-disk install"));
 #endif
 
-  grub_util_warn (_("Embedding is not possible.  GRUB can only be installed in this "
-		    "setup by using blocklists.  However, blocklists are UNRELIABLE and "
-		    "their use is discouraged."));
+  if (dest_dev->disk->dev->id != root_dev->disk->dev->id)
+    grub_util_error ("%s", _("embedding is not possible, but this is required for "
+			     "RAID and LVM install"));
+
+  {
+    grub_fs_t fs;
+    fs = grub_fs_probe (root_dev);
+    if (!fs)
+      grub_util_error (_("can't determine filesystem on %s"), root);
+
+    if (!fs->blocklist_install)
+      grub_util_error (_("filesystem `%s' doesn't support blocklists"),
+		       fs->name);
+  }
+
+#ifdef GRUB_SETUP_BIOS
+  if (dest_dev->disk->id != root_dev->disk->id
+      || dest_dev->disk->dev->id != root_dev->disk->dev->id)
+    /* TRANSLATORS: cross-disk refers to /boot being on one disk
+       but MBR on another.  */
+    grub_util_error ("%s", _("embedding is not possible, but this is required for "
+			     "cross-disk install"));
+#else
+  core_dev = root_dev;
+#endif
+
+  grub_util_warn ("%s", _("Embedding is not possible.  GRUB can only be installed in this "
+			  "setup by using blocklists.  However, blocklists are UNRELIABLE and "
+			  "their use is discouraged."));
   if (! force)
-    grub_util_error (_("will not proceed with blocklists"));
+    /* TRANSLATORS: Here GRUB refuses to continue with blocklist install.  */
+    grub_util_error ("%s", _("will not proceed with blocklists"));
 
   /* The core image must be put on a filesystem unfortunately.  */
   grub_util_info ("will leave the core image on the filesystem");
@@ -519,75 +604,81 @@ unable_to_embed:
   core_path_dev = grub_make_system_path_relative_to_its_root (core_path_dev_full);
   free (core_path_dev_full);
 
-  /* It is a Good Thing to sync two times.  */
-  sync ();
-  sync ();
+  grub_util_biosdisk_flush (root_dev->disk);
+
+#ifndef __linux__
 
 #define MAX_TRIES	5
+  {
+    int i;
+    for (i = 0; i < MAX_TRIES; i++)
+      {
+	grub_file_t file;
 
-  for (i = 0; i < MAX_TRIES; i++)
-    {
-      grub_util_info ((i == 0) ? _("attempting to read the core image `%s' from GRUB")
-		      : _("attempting to read the core image `%s' from GRUB again"),
-		      core_path_dev);
+	grub_util_info ((i == 0) ? _("attempting to read the core image `%s' from GRUB")
+			: _("attempting to read the core image `%s' from GRUB again"),
+			core_path_dev);
 
-      grub_disk_cache_invalidate_all ();
+	grub_disk_cache_invalidate_all ();
 
-      grub_file_filter_disable_compression ();
-      file = grub_file_open (core_path_dev);
-      if (file)
-	{
-	  if (grub_file_size (file) != core_size)
-	    grub_util_info ("succeeded in opening the core image but the size is different (%d != %d)",
-			    (int) grub_file_size (file), (int) core_size);
-	  else if (grub_file_read (file, tmp_img, core_size)
-		   != (grub_ssize_t) core_size)
-	    grub_util_info ("succeeded in opening the core image but cannot read %d bytes",
-			    (int) core_size);
-	  else if (memcmp (core_img, tmp_img, core_size) != 0)
-	    {
+	grub_file_filter_disable_compression ();
+	file = grub_file_open (core_path_dev);
+	if (file)
+	  {
+	    if (grub_file_size (file) != core_size)
+	      grub_util_info ("succeeded in opening the core image but the size is different (%d != %d)",
+			      (int) grub_file_size (file), (int) core_size);
+	    else if (grub_file_read (file, tmp_img, core_size)
+		     != (grub_ssize_t) core_size)
+	      grub_util_info ("succeeded in opening the core image but cannot read %d bytes",
+			      (int) core_size);
+	    else if (memcmp (core_img, tmp_img, core_size) != 0)
+	      {
 #if 0
-	      FILE *dump;
-	      FILE *dump2;
+		FILE *dump;
+		FILE *dump2;
 
-	      dump = fopen ("dump.img", "wb");
-	      if (dump)
-		{
-		  fwrite (tmp_img, 1, core_size, dump);
-		  fclose (dump);
-		}
+		dump = fopen ("dump.img", "wb");
+		if (dump)
+		  {
+		    fwrite (tmp_img, 1, core_size, dump);
+		    fclose (dump);
+		  }
 
-	      dump2 = fopen ("dump2.img", "wb");
-	      if (dump2)
-		{
-		  fwrite (core_img, 1, core_size, dump2);
-		  fclose (dump2);
-		}
+		dump2 = fopen ("dump2.img", "wb");
+		if (dump2)
+		  {
+		    fwrite (core_img, 1, core_size, dump2);
+		    fclose (dump2);
+		  }
 
 #endif
-	      grub_util_info ("succeeded in opening the core image but the data is different");
-	    }
-	  else
-	    {
-	      grub_file_close (file);
-	      break;
-	    }
+		grub_util_info ("succeeded in opening the core image but the data is different");
+	      }
+	    else
+	      {
+		grub_file_close (file);
+		break;
+	      }
 
-	  grub_file_close (file);
-	}
-      else
-	grub_util_info ("couldn't open the core image");
+	    grub_file_close (file);
+	  }
+	else
+	  grub_util_info ("couldn't open the core image");
 
-      if (grub_errno)
-	grub_util_info ("error message = %s", grub_errmsg);
+	if (grub_errno)
+	  grub_util_info ("error message = %s", grub_errmsg);
 
-      grub_errno = GRUB_ERR_NONE;
-      sync ();
-      sleep (1);
-    }
+	grub_errno = GRUB_ERR_NONE;
+	grub_util_biosdisk_flush (root_dev->disk);
+	sleep (1);
+      }
 
-  if (i == MAX_TRIES)
-    grub_util_error (_("cannot read `%s' correctly"), core_path_dev);
+    if (i == MAX_TRIES)
+      grub_util_error (_("cannot read `%s' correctly"), core_path_dev);
+  }
+
+#endif
 
   /* Clean out the blocklists.  */
   block = first_block;
@@ -595,46 +686,161 @@ unable_to_embed:
     {
       block->start = 0;
       block->len = 0;
-#ifdef GRUB_MACHINE_PCBIOS
+#ifdef GRUB_SETUP_BIOS
       block->segment = 0;
 #endif
 
       block--;
 
       if ((char *) block <= core_img)
-	grub_util_error (_("no terminator in the core image"));
+	grub_util_error ("%s", _("no terminator in the core image"));
     }
 
-  /* Now read the core image to determine where the sectors are.  */
-  grub_file_filter_disable_compression ();
-  file = grub_file_open (core_path_dev);
-  if (! file)
-    grub_util_error ("%s", grub_errmsg);
-
-  file->read_hook = save_first_sector;
-  if (grub_file_read (file, tmp_img, GRUB_DISK_SECTOR_SIZE)
-      != GRUB_DISK_SECTOR_SIZE)
-    grub_util_error (_("failed to read the first sector of the core image"));
-
   block = first_block;
-  file->read_hook = save_blocklists;
-  if (grub_file_read (file, tmp_img, core_size - GRUB_DISK_SECTOR_SIZE)
-      != (grub_ssize_t) core_size - GRUB_DISK_SECTOR_SIZE)
-    grub_util_error (_("failed to read the rest sectors of the core image"));
 
-#ifdef GRUB_MACHINE_IEEE1275
+#ifdef __linux__
+  {
+    grub_partition_t container = root_dev->disk->partition;
+    grub_uint64_t container_start = grub_partition_get_start (container);
+    struct fiemap fie1;
+    int fd;
+
+    /* Write the first two sectors of the core image onto the disk.  */
+    grub_util_info ("opening the core image `%s'", core_path);
+    fp = fopen (core_path, "rb");
+    if (! fp)
+      grub_util_error (_("cannot open `%s': %s"), core_path,
+		       strerror (errno));
+    fd = fileno (fp);
+
+    grub_memset (&fie1, 0, sizeof (fie1));
+    fie1.fm_length = core_size;
+    fie1.fm_flags = FIEMAP_FLAG_SYNC;
+
+    if (ioctl (fd, FS_IOC_FIEMAP, &fie1) < 0)
+      {
+	int nblocks, i, j;
+	int bsize;
+	int mul;
+
+	grub_util_info ("FIEMAP failed. Reverting to FIBMAP");
+
+	if (ioctl (fd, FIGETBSZ, &bsize) < 0)
+	  grub_util_error (_("can't retrieve blocklists: %s"),
+			   strerror (errno));
+	if (bsize & (GRUB_DISK_SECTOR_SIZE - 1))
+	  grub_util_error ("%s", _("blocksize is not divisible by 512"));
+	mul = bsize >> GRUB_DISK_SECTOR_BITS;
+	nblocks = (core_size + bsize - 1) / bsize;
+	for (i = 0; i < nblocks; i++)
+	  {
+	    unsigned blk = i;
+	    if (ioctl (fd, FIBMAP, &blk) < 0)
+	      grub_util_error (_("can't retrieve blocklists: %s"),
+			       strerror (errno));
+	    
+	    for (j = 0; j < mul; j++)
+	      {
+		int rest = core_size - ((i * mul + j) << GRUB_DISK_SECTOR_BITS);
+		if (rest <= 0)
+		  break;
+		if (rest > GRUB_DISK_SECTOR_SIZE)
+		  rest = GRUB_DISK_SECTOR_SIZE;
+		if (i == 0 && j == 0)
+		  save_first_sector (((grub_uint64_t) blk) * mul
+				     + container_start,
+				     0, rest);
+		else
+		  save_blocklists (((grub_uint64_t) blk) * mul + j
+				   + container_start,
+				   0, rest);
+	      }
+	  }
+      }
+    else
+      {
+	struct fiemap *fie2;
+	int i, j;
+	fie2 = xmalloc (sizeof (*fie2)
+			+ fie1.fm_mapped_extents
+			* sizeof (fie1.fm_extents[1]));
+	memset (fie2, 0, sizeof (*fie2)
+		+ fie1.fm_mapped_extents * sizeof (fie2->fm_extents[1]));
+	fie2->fm_length = core_size;
+	fie2->fm_flags = FIEMAP_FLAG_SYNC;
+	fie2->fm_extent_count = fie1.fm_mapped_extents;
+	if (ioctl (fd, FS_IOC_FIEMAP, fie2) < 0)
+	  grub_util_error (_("can't retrieve blocklists: %s"),
+			   strerror (errno));
+	for (i = 0; i < fie2->fm_mapped_extents; i++)
+	  {
+	    for (j = 0;
+		 j < ((fie2->fm_extents[i].fe_length
+		       + GRUB_DISK_SECTOR_SIZE - 1)
+		      >> GRUB_DISK_SECTOR_BITS);
+		 j++)
+	      {
+		size_t len = (fie2->fm_extents[i].fe_length
+			      - j * GRUB_DISK_SECTOR_SIZE);
+		if (len > GRUB_DISK_SECTOR_SIZE)
+		  len = GRUB_DISK_SECTOR_SIZE;
+		if (i == 0 && j == 0)
+		  save_first_sector ((fie2->fm_extents[i].fe_physical
+				      >> GRUB_DISK_SECTOR_BITS)
+				     + j + container_start,
+				     fie2->fm_extents[i].fe_physical
+				     & (GRUB_DISK_SECTOR_SIZE - 1), len);
+		else
+		  save_blocklists ((fie2->fm_extents[i].fe_physical
+				    >> GRUB_DISK_SECTOR_BITS)
+				   + j + container_start,
+				   fie2->fm_extents[i].fe_physical
+				   & (GRUB_DISK_SECTOR_SIZE - 1), len);
+
+
+	      }
+	  }
+      }
+    fclose (fp);
+  }
+#else
+  {
+    grub_file_t file;
+    /* Now read the core image to determine where the sectors are.  */
+    grub_file_filter_disable_compression ();
+    file = grub_file_open (core_path_dev);
+    if (! file)
+      grub_util_error ("%s", grub_errmsg);
+
+    file->read_hook = save_first_sector;
+    if (grub_file_read (file, tmp_img, GRUB_DISK_SECTOR_SIZE)
+	!= GRUB_DISK_SECTOR_SIZE)
+      grub_util_error ("%s", _("failed to read the first sector of the core image"));
+
+    block = first_block;
+    file->read_hook = save_blocklists;
+    if (grub_file_read (file, tmp_img, core_size - GRUB_DISK_SECTOR_SIZE)
+	!= (grub_ssize_t) core_size - GRUB_DISK_SECTOR_SIZE)
+      grub_util_error ("%s", _("failed to read the rest sectors of the core image"));
+    grub_file_close (file);
+  }
+#endif
+
+#ifdef GRUB_SETUP_SPARC64
   {
     char *boot_devpath;
     boot_devpath = (char *) (boot_img
 			     + GRUB_BOOT_AOUT_HEADER_SIZE
 			     + GRUB_BOOT_MACHINE_BOOT_DEVPATH);
-    if (file->device->disk->id != dest_dev->disk->id)
+    if (dest_dev->disk->id != root_dev->disk->id
+	|| dest_dev->disk->dev->id != root_dev->disk->dev->id)
       {
 	const char *dest_ofpath;
 	dest_ofpath
-	  = grub_util_devname_to_ofpath (grub_util_biosdisk_get_osdev (file->device->disk));
+	  = grub_util_devname_to_ofpath (grub_util_biosdisk_get_osdev (root_dev->disk));
 	grub_util_info ("dest_ofpath is `%s'", dest_ofpath);
-	strncpy (boot_devpath, dest_ofpath, GRUB_BOOT_MACHINE_BOOT_DEVPATH_END
+	strncpy (boot_devpath, dest_ofpath,
+		 GRUB_BOOT_MACHINE_BOOT_DEVPATH_END
 		 - GRUB_BOOT_MACHINE_BOOT_DEVPATH - 1);
 	boot_devpath[GRUB_BOOT_MACHINE_BOOT_DEVPATH_END
 		   - GRUB_BOOT_MACHINE_BOOT_DEVPATH - 1] = 0;
@@ -649,8 +855,6 @@ unable_to_embed:
   }
 #endif
 
-  grub_file_close (file);
-
   free (core_path_dev);
   free (tmp_img);
 
@@ -660,21 +864,77 @@ unable_to_embed:
   grub_util_info ("opening the core image `%s'", core_path);
   fp = fopen (core_path, "r+b");
   if (! fp)
-    grub_util_error (_("cannot open `%s'"), core_path);
+    grub_util_error (_("cannot open `%s': %s"), core_path,
+		     strerror (errno));
 
-  grub_util_write_image (core_img, GRUB_DISK_SECTOR_SIZE * 2, fp);
+  grub_util_write_image (core_img, GRUB_DISK_SECTOR_SIZE * 2, fp, core_path);
+  fflush (fp);
+  fsync (fileno (fp));
   fclose (fp);
+  grub_util_biosdisk_flush (root_dev->disk);
 
+  grub_disk_cache_invalidate_all ();
+
+  {
+    char *buf, *ptr = core_img;
+    size_t len = core_size;
+    grub_uint64_t blk;
+    grub_partition_t container = core_dev->disk->partition;
+    grub_err_t err;
+
+    core_dev->disk->partition = 0;
+
+    buf = xmalloc (core_size);
+    blk = first_sector;
+    err = grub_disk_read (core_dev->disk, blk, 0, GRUB_DISK_SECTOR_SIZE, buf);
+    if (err)
+      grub_util_error (_("cannot read `%s': %s"), core_dev->disk->name,
+		       grub_errmsg);
+    if (grub_memcmp (buf, ptr, GRUB_DISK_SECTOR_SIZE) != 0)
+      grub_util_error ("%s", _("blocklists are invalid"));
+
+    ptr += GRUB_DISK_SECTOR_SIZE;
+    len -= GRUB_DISK_SECTOR_SIZE;
+
+    block = first_block;
+    while (block->len)
+      {
+	size_t cur = grub_target_to_host16 (block->len) << GRUB_DISK_SECTOR_BITS;
+	blk = grub_target_to_host64 (block->start);
+
+	if (cur > len)
+	  cur = len;
+
+	err = grub_disk_read (core_dev->disk, blk, 0, cur, buf);
+	if (err)
+	  grub_util_error (_("cannot read `%s': %s"), core_dev->disk->name,
+			   grub_errmsg);
+
+	if (grub_memcmp (buf, ptr, cur) != 0)
+	  grub_util_error ("%s", _("blocklists are invalid"));
+
+	ptr += cur;
+	len -= cur;
+	block--;
+	
+	if ((char *) block <= core_img)
+	  grub_util_error ("%s", _("no terminator in the core image"));
+      }
+    core_dev->disk->partition = container;
+    free (buf);
+  }
+
+#ifdef GRUB_SETUP_BIOS
  finish:
+#endif
 
   /* Write the boot image onto the disk.  */
   if (grub_disk_write (dest_dev->disk, BOOT_SECTOR,
 		       0, GRUB_DISK_SECTOR_SIZE, boot_img))
     grub_util_error ("%s", grub_errmsg);
 
-
-  /* Sync is a Good Thing.  */
-  sync ();
+  grub_util_biosdisk_flush (root_dev->disk);
+  grub_util_biosdisk_flush (dest_dev->disk);
 
   free (core_path);
   free (core_img);
@@ -685,23 +945,22 @@ unable_to_embed:
 
 static struct argp_option options[] = {
   {"boot-image",  'b', N_("FILE"), 0,
-   N_("Use FILE as the boot image [default=%s]"), 0},
+   N_("use FILE as the boot image [default=%s]"), 0},
   {"core-image",  'c', N_("FILE"), 0,
-   N_("Use FILE as the core image [default=%s]"), 0},
+   N_("use FILE as the core image [default=%s]"), 0},
   {"directory",   'd', N_("DIR"),  0,
-   N_("Use GRUB files in the directory DIR [default=%s]"), 0},
+   N_("use GRUB files in the directory DIR [default=%s]"), 0},
   {"device-map",  'm', N_("FILE"), 0,
-   N_("Use FILE as the device map [default=%s]"), 0},
-  {"root-device", 'r', N_("DEV"),  0,
-   N_("Use DEV as the root device [default=guessed]"), 0},
+   N_("use FILE as the device map [default=%s]"), 0},
   {"force",       'f', 0,      0,
-   N_("Install even if problems are detected"), 0},
+   N_("install even if problems are detected"), 0},
   {"skip-fs-probe",'s',0,      0,
-   N_("Do not probe for filesystems in DEVICE"), 0},
-  {"verbose",     'v', 0,      0,
-   N_("Print verbose messages."), 0},
+   N_("do not probe for filesystems in DEVICE"), 0},
+  {"verbose",     'v', 0,      0, N_("print verbose messages."), 0},
   {"allow-floppy", 'a', 0,      0,
-   N_("Make the drive also bootable as floppy (default for fdX devices). May break on some BIOSes."), 0},
+   /* TRANSLATORS: The potential breakage isn't limited to floppies but it's
+      likely to make the install unbootable from HDD.  */
+   N_("make the drive also bootable as floppy (default for fdX devices). May break on some BIOSes."), 0},
 
   { 0, 0, 0, 0, 0, 0 }
 };
@@ -734,23 +993,11 @@ struct arguments
   char *core_file;
   char *dir;
   char *dev_map;
-  char *root_dev;
   int  force;
   int  fs_probe;
   int allow_floppy;
   char *device;
 };
-
-/* Print the version information.  */
-static void
-print_version (FILE *stream, struct argp_state *state)
-{
-  fprintf (stream, "%s (%s) %s\n", program_name, PACKAGE_NAME, PACKAGE_VERSION);
-}
-void (*argp_program_version_hook) (FILE *, struct argp_state *) = print_version;
-
-/* Set the bug report address */
-const char *argp_program_bug_address = "<"PACKAGE_BUGREPORT">";
 
 static error_t
 argp_parser (int key, char *arg, struct argp_state *state)
@@ -758,8 +1005,6 @@ argp_parser (int key, char *arg, struct argp_state *state)
   /* Get the input argument from argp_parse, which we
      know is a pointer to our arguments structure. */
   struct arguments *arguments = state->input;
-
-  char *p;
 
   switch (key)
     {
@@ -795,13 +1040,6 @@ argp_parser (int key, char *arg, struct argp_state *state)
         arguments->dev_map = xstrdup (arg);
         break;
 
-      case 'r':
-        if (arguments->root_dev)
-          free (arguments->root_dev);
-
-        arguments->root_dev = xstrdup (arg);
-        break;
-
       case 'f':
         arguments->force = 1;
         break;
@@ -820,7 +1058,8 @@ argp_parser (int key, char *arg, struct argp_state *state)
         else
           {
             /* Too many arguments. */
-            fprintf (stderr, _("Unknown extra argument `%s'.\n"), arg);
+	    fprintf (stderr, _("Unknown extra argument `%s'."), arg);
+	    fprintf (stderr, "\n");
             argp_usage (state);
           }
         break;
@@ -828,6 +1067,7 @@ argp_parser (int key, char *arg, struct argp_state *state)
       case ARGP_KEY_NO_ARGS:
           fprintf (stderr, "%s", _("No device is specified.\n"));
           argp_usage (state);
+	  exit (1);
           break;
 
       default:
@@ -865,7 +1105,6 @@ main (int argc, char *argv[])
 {
   char *root_dev = NULL;
   char *dest_dev = NULL;
-  int must_embed = 0;
   struct arguments arguments;
 
   set_program_name (argv[0]);
@@ -883,7 +1122,7 @@ main (int argc, char *argv[])
       exit(1);
     }
 
-#ifdef GRUB_MACHINE_IEEE1275
+#ifdef GRUB_SETUP_SPARC64
   arguments.force = 1;
 #endif
 
@@ -895,12 +1134,13 @@ main (int argc, char *argv[])
 
   /* Initialize all modules. */
   grub_init_all ();
+  grub_gcry_init_all ();
 
   grub_lvm_fini ();
   grub_mdraid09_fini ();
   grub_mdraid1x_fini ();
-  grub_raid_fini ();
-  grub_raid_init ();
+  grub_diskfilter_fini ();
+  grub_diskfilter_init ();
   grub_mdraid09_init ();
   grub_mdraid1x_init ();
   grub_lvm_init ();
@@ -928,70 +1168,12 @@ main (int argc, char *argv[])
       grub_util_info ("Using `%s' as GRUB device", dest_dev);
     }
 
-  if (arguments.root_dev)
-    {
-      root_dev = get_device_name (arguments.root_dev);
-
-      if (! root_dev)
-        grub_util_error (_("invalid root device `%s'"), arguments.root_dev);
-
-      root_dev = xstrdup (root_dev);
-    }
-  else
-    {
-      char *root_device =
-        grub_guess_root_device (arguments.dir ? : DEFAULT_DIRECTORY);
-
-      root_dev = grub_util_get_grub_dev (root_device);
-      if (! root_dev)
-	{
-	  grub_util_info ("guessing the root device failed, because of `%s'",
-			  grub_errmsg);
-          grub_util_error (_("cannot guess the root device. Specify the option "
-                             "`--root-device'"));
-	}
-      grub_util_info ("guessed root device `%s' and root_dev `%s' from "
-                      "dir `%s'", root_device, root_dev,
-                      arguments.dir ? : DEFAULT_DIRECTORY);
-    }
-
-#ifdef __linux__
-  if (grub_util_lvm_isvolume (root_dev))
-    must_embed = 1;
-
-  if (root_dev[0] == 'm' && root_dev[1] == 'd'
-      && ((root_dev[2] >= '0' && root_dev[2] <= '9') || root_dev[2] == '/'))
-    {
-      /* FIXME: we can avoid this on RAID1.  */
-      must_embed = 1;
-    }
-
-  if (dest_dev[0] == 'm' && dest_dev[1] == 'd'
-      && ((dest_dev[2] >= '0' && dest_dev[2] <= '9') || dest_dev[2] == '/'))
-    {
-      char **devicelist;
-      int i;
-
-      devicelist = grub_util_raid_getmembers (dest_dev);
-
-      for (i = 0; devicelist[i]; i++)
-        {
-          setup (arguments.dir ? : DEFAULT_DIRECTORY,
-                 arguments.boot_file ? : DEFAULT_BOOT_FILE,
-                 arguments.core_file ? : DEFAULT_CORE_FILE,
-                 root_dev, grub_util_get_grub_dev (devicelist[i]), 1,
-                 arguments.force, arguments.fs_probe,
-		 arguments.allow_floppy);
-        }
-    }
-  else
-#endif
-    /* Do the real work.  */
-    setup (arguments.dir ? : DEFAULT_DIRECTORY,
-           arguments.boot_file ? : DEFAULT_BOOT_FILE,
-           arguments.core_file ? : DEFAULT_CORE_FILE,
-           root_dev, dest_dev, must_embed, arguments.force,
-	   arguments.fs_probe, arguments.allow_floppy);
+  /* Do the real work.  */
+  setup (arguments.dir ? : DEFAULT_DIRECTORY,
+	 arguments.boot_file ? : DEFAULT_BOOT_FILE,
+	 arguments.core_file ? : DEFAULT_CORE_FILE,
+	 dest_dev, arguments.force,
+	 arguments.fs_probe, arguments.allow_floppy);
 
   /* Free resources.  */
   grub_fini_all ();
@@ -1000,7 +1182,6 @@ main (int argc, char *argv[])
   free (arguments.boot_file);
   free (arguments.core_file);
   free (arguments.dir);
-  free (arguments.root_dev);
   free (arguments.dev_map);
   free (arguments.device);
   free (root_dev);

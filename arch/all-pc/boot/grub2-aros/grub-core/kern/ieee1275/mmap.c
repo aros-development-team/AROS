@@ -50,6 +50,12 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
     return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
 		       "couldn't examine /memory/available property");
 
+  if (grub_ieee1275_test_flag (GRUB_IEEE1275_FLAG_BROKEN_ADDRESS_CELLS))
+    {
+      address_cells = 1;
+      size_cells = 1;
+    }
+
   /* Decode each entry and call `hook'.  */
   i = 0;
   available_size /= sizeof (grub_uint32_t);

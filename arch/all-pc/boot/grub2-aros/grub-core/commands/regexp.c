@@ -27,10 +27,21 @@
 #include <grub/script_sh.h>
 #include <regex.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
     { "set", 's', GRUB_ARG_OPTION_REPEATABLE,
-      N_("Variable names to update with matches."),
+      /* TRANSLATORS: in regexp you can mark some
+	 groups with parentheses. These groups are
+	 then numbered and you can save some of
+	 them in variables. In other programs
+	 those components aree often referenced with
+	 back slash, e.g. \1. Compare
+	 sed -e 's,\([a-z][a-z]*\),lowercase=\1,g'
+	 The whole matching component is saved in VARNAME, not its number.
+       */
+      N_("Store matched component NUMBER in VARNAME."),
       N_("[NUMBER:]VARNAME"), ARG_TYPE_STRING },
     { 0, 0, 0, 0, 0, 0 }
   };
@@ -40,7 +51,6 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
 	     regmatch_t *matches)
 {
   int i;
-  char ch;
   char *p;
   char *q;
   grub_err_t err;
@@ -49,6 +59,7 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
   auto void setvar (char *v, regmatch_t *m);
   void setvar (char *v, regmatch_t *m)
   {
+    char ch;
     ch = str[m->rm_eo];
     str[m->rm_eo] = '\0';
     err = grub_env_set (v, str + m->rm_so);
@@ -57,7 +68,8 @@ set_matches (char **varnames, char *str, grub_size_t nmatches,
 
   for (i = 0; varnames && varnames[i]; i++)
     {
-      if (! (p = grub_strchr (varnames[i], ':')))
+      p = grub_strchr (varnames[i], ':');
+      if (! p)
 	{
 	  /* varname w/o index defaults to 1 */
 	  if (nmatches < 2 || matches[1].rm_so == -1)
@@ -95,7 +107,7 @@ grub_cmd_regexp (grub_extcmd_context_t ctxt, int argc, char **args)
   regmatch_t *matches = 0;
 
   if (argc != 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "2 arguments expected");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
 
   ret = regcomp (&regex, args[0], REG_EXTENDED);
   if (ret)
@@ -135,7 +147,11 @@ static grub_extcmd_t cmd;
 
 GRUB_MOD_INIT(regexp)
 {
-  cmd = grub_register_extcmd ("regexp", grub_cmd_regexp, 0, N_("REGEXP STRING"),
+  cmd = grub_register_extcmd ("regexp", grub_cmd_regexp, 0,
+			      /* TRANSLATORS: This are two arguments. So it's
+				 two separate units to translate and pay
+				 attention not to reverse them.  */
+			      N_("REGEXP STRING"),
 			      N_("Test if REGEXP matches STRING."), options);
 
   /* Setup GRUB script wildcard translator.  */

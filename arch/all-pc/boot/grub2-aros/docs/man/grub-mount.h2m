@@ -1,0 +1,2 @@
+[NAME]
+grub-mount \- export GRUB filesystem with FUSE

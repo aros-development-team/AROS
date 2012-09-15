@@ -1,2 +1,4 @@
 [NAME]
 grub-mkrescue \- make a GRUB rescue image
+[SEE ALSO]
+.BR grub-mkimage (1)

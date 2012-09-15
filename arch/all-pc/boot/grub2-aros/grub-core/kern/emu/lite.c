@@ -15,6 +15,8 @@
 #include "../mips/dl.c"
 #elif defined(__powerpc__)
 #include "../powerpc/dl.c"
+#elif defined(__ia64__)
+#include "../ia64/dl.c"
 #else
 #error "No target cpu type is defined"
 #endif

@@ -25,15 +25,19 @@
 #include <grub/types.h>
 
 #include <grub/list.h>
+/* For embedding types.  */
+#ifdef GRUB_UTIL
+#include <grub/partition.h>
+#endif
 
 /* Forward declaration is required, because of mutual reference.  */
 struct grub_file;
 
 struct grub_dirhook_info
 {
-  int dir:1;
-  int mtimeset:1;
-  int case_insensitive:1;
+  unsigned dir:1;
+  unsigned mtimeset:1;
+  unsigned case_insensitive:1;
   grub_int32_t mtime;
 };
 
@@ -42,6 +46,7 @@ struct grub_fs
 {
   /* The next filesystem.  */
   struct grub_fs *next;
+  struct grub_fs **prev;
 
   /* My name.  */
   const char *name;
@@ -74,8 +79,17 @@ struct grub_fs
   grub_err_t (*mtime) (grub_device_t device, grub_int32_t *timebuf);
 
 #ifdef GRUB_UTIL
+  /* Determine sectors available for embedding.  */
+  grub_err_t (*embed) (grub_device_t device, unsigned int *nsectors,
+		       unsigned int max_nsectors,
+		       grub_embed_type_t embed_type,
+		       grub_disk_addr_t **sectors);
+
   /* Whether this filesystem reserves first sector for DOS-style boot.  */
   int reserved_first_sector;
+
+  /* Whether blocklist installs have a chance to work.  */
+  int blocklist_install;
 #endif
 };
 typedef struct grub_fs *grub_fs_t;
@@ -102,7 +116,7 @@ grub_fs_register (grub_fs_t fs)
 static inline void
 grub_fs_unregister (grub_fs_t fs)
 {
-  grub_list_remove (GRUB_AS_LIST_P (&grub_fs_list), GRUB_AS_LIST (fs));
+  grub_list_remove (GRUB_AS_LIST (fs));
 }
 
 #define FOR_FILESYSTEMS(var) FOR_LIST_ELEMENTS((var), (grub_fs_list))

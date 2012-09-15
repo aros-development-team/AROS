@@ -31,7 +31,7 @@ static struct option options[] =
     {0, 0, 0, 0 }
   };
 
-static void
+static void __attribute__ ((noreturn))
 usage (int status)
 {
   if (status)

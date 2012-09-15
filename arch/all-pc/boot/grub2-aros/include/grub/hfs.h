@@ -39,7 +39,9 @@ typedef struct grub_hfs_extent grub_hfs_datarecord_t[3];
 struct grub_hfs_sblock
 {
   grub_uint16_t magic;
-  grub_uint8_t unused[18];
+  grub_uint32_t ctime;
+  grub_uint32_t mtime;
+  grub_uint8_t unused[10];
   grub_uint32_t blksz;
   grub_uint8_t unused2[4];
   grub_uint16_t first_block;

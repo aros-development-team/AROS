@@ -21,8 +21,11 @@
 #include <grub/file.h>
 #include <grub/disk.h>
 #include <grub/misc.h>
+#include <grub/mm.h>
 #include <grub/dl.h>
 #include <grub/util/misc.h>
+#include <grub/emu/hostdisk.h>
+#include <grub/i18n.h>
 
 #include <dirent.h>
 #include <stdio.h>
@@ -54,6 +57,12 @@ is_dir (const char *path, const char *name)
   return S_ISDIR (st.st_mode);
 }
 
+struct grub_hostfs_data
+{
+  char *filename;
+  FILE *f;
+};
+
 static grub_err_t
 grub_hostfs_dir (grub_device_t device, const char *path,
 		 int (*hook) (const char *filename,
@@ -68,7 +77,8 @@ grub_hostfs_dir (grub_device_t device, const char *path,
   dir = opendir (path);
   if (! dir)
     return grub_error (GRUB_ERR_BAD_FILENAME,
-		       "can't open the hostfs directory `%s'", path);
+		       N_("can't open `%s': %s"), path,
+		       strerror (errno));
 
   while (1)
     {
@@ -95,19 +105,35 @@ static grub_err_t
 grub_hostfs_open (struct grub_file *file, const char *name)
 {
   FILE *f;
+  struct grub_hostfs_data *data;
 
   f = fopen (name, "rb");
   if (! f)
     return grub_error (GRUB_ERR_BAD_FILENAME,
-		       "can't open `%s'", name);
-  file->data = f;
+		       N_("can't open `%s': %s"), name,
+		       strerror (errno));
+  data = grub_malloc (sizeof (*data));
+  if (!data)
+    {
+      fclose (f);
+      return grub_errno;
+    }
+  data->filename = grub_strdup (name);
+  if (!data->filename)
+    {
+      grub_free (data);
+      fclose (f);
+      return grub_errno;
+    }
+
+  data->f = f;  
+
+  file->data = data;
 
 #ifdef __MINGW32__
   file->size = grub_util_get_disk_size (name);
 #else
-  fseeko (f, 0, SEEK_END);
-  file->size = ftello (f);
-  fseeko (f, 0, SEEK_SET);
+  file->size = grub_util_get_fd_size (fileno (f), name, NULL);
 #endif
 
   return GRUB_ERR_NONE;
@@ -116,18 +142,20 @@ grub_hostfs_open (struct grub_file *file, const char *name)
 static grub_ssize_t
 grub_hostfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
-  FILE *f;
+  struct grub_hostfs_data *data;
 
-  f = (FILE *) file->data;
-  if (fseeko (f, file->offset, SEEK_SET) != 0)
+  data = file->data;
+  if (fseeko (data->f, file->offset, SEEK_SET) != 0)
     {
-      grub_error (GRUB_ERR_OUT_OF_RANGE, "fseeko: %s", strerror (errno));
+      grub_error (GRUB_ERR_OUT_OF_RANGE, N_("cannot seek `%s': %s"),
+		  data->filename, strerror (errno));
       return -1;
     }
 
-  unsigned int s = fread (buf, 1, len, f);
+  unsigned int s = fread (buf, 1, len, data->f);
   if (s != len)
-    grub_error (GRUB_ERR_FILE_READ_ERROR, "fread: %s", strerror (errno));
+    grub_error (GRUB_ERR_FILE_READ_ERROR, N_("cannot read `%s': %s"),
+		data->filename, strerror (errno));
 
   return (signed) s;
 }
@@ -135,10 +163,12 @@ grub_hostfs_read (grub_file_t file, char *buf, grub_size_t len)
 static grub_err_t
 grub_hostfs_close (grub_file_t file)
 {
-  FILE *f;
+  struct grub_hostfs_data *data;
 
-  f = (FILE *) file->data;
-  fclose (f);
+  data = file->data;
+  fclose (data->f);
+  grub_free (data->filename);
+  grub_free (data);
 
   return GRUB_ERR_NONE;
 }

@@ -53,8 +53,8 @@ struct grub_arg_option
   const char *longarg;
   int shortarg;
   int flags;
-  char *doc;
-  char *arg;
+  const char *doc;
+  const char *arg;
   grub_arg_type_t type;
 };
 

@@ -42,12 +42,14 @@ static struct grub_parser_state_transition state_transitions[] = {
   {GRUB_PARSER_STATE_VAR, GRUB_PARSER_STATE_VARNAME2, '{', 0},
   {GRUB_PARSER_STATE_VAR, GRUB_PARSER_STATE_VARNAME, 0, 1},
   {GRUB_PARSER_STATE_VARNAME, GRUB_PARSER_STATE_TEXT, ' ', 1},
+  {GRUB_PARSER_STATE_VARNAME, GRUB_PARSER_STATE_TEXT, '\t', 1},
   {GRUB_PARSER_STATE_VARNAME2, GRUB_PARSER_STATE_TEXT, '}', 0},
 
   {GRUB_PARSER_STATE_QVAR, GRUB_PARSER_STATE_QVARNAME2, '{', 0},
   {GRUB_PARSER_STATE_QVAR, GRUB_PARSER_STATE_QVARNAME, 0, 1},
   {GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_TEXT, '\"', 0},
   {GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_DQUOTE, ' ', 1},
+  {GRUB_PARSER_STATE_QVARNAME, GRUB_PARSER_STATE_DQUOTE, '\t', 1},
   {GRUB_PARSER_STATE_QVARNAME2, GRUB_PARSER_STATE_DQUOTE, '}', 0},
 
   {0, 0, 0, 0}
@@ -73,7 +75,7 @@ grub_parser_cmdline_state (grub_parser_state_t state, char c, char *result)
       if (transition->input == c)
 	break;
 
-      if (transition->input == ' ' && !grub_isalpha (c)
+      if (grub_isspace (transition->input) && !grub_isalpha (c)
 	  && !grub_isdigit (c) && c != '_')
 	break;
 
@@ -123,7 +125,7 @@ grub_parser_split_cmdline (const char *cmdline, grub_reader_getline_t getline,
 
   void add_var (grub_parser_state_t newstate)
   {
-    char *val;
+    const char *val;
 
     /* Check if a variable was being read in and the end of the name
        was reached.  */
@@ -175,7 +177,7 @@ grub_parser_split_cmdline (const char *cmdline, grub_reader_getline_t getline,
 	  else
 	    {
 	      if (newstate == GRUB_PARSER_STATE_TEXT
-		  && state != GRUB_PARSER_STATE_ESC && use == ' ')
+		  && state != GRUB_PARSER_STATE_ESC && grub_isspace (use))
 		{
 		  /* Don't add more than one argument if multiple
 		     spaces are used.  */

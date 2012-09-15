@@ -23,6 +23,7 @@
 #include <grub/efiemu/efiemu.h>
 #include <grub/cpu/efiemu.h>
 #include <grub/elf.h>
+#include <grub/i18n.h>
 
 /* Check if EHDR is a valid ELF header.  */
 int
@@ -86,23 +87,29 @@ grub_arch_efiemu_relocate_symbols32 (grub_efiemu_segment_t segs,
 		switch (ELF32_R_TYPE (rel->r_info))
 		  {
 		  case R_386_32:
-		    if ((err = grub_efiemu_write_value
-			 (addr, sym.off + *addr, sym.handle, 0,
-			  seg->ptv_rel_needed, sizeof (grub_uint32_t))))
+		    err = grub_efiemu_write_value (addr, sym.off + *addr,
+						   sym.handle, 0,
+						   seg->ptv_rel_needed,
+						   sizeof (grub_uint32_t));
+		    if (err)
 		      return err;
 
 		    break;
 
 		  case R_386_PC32:
-		    if ((err = grub_efiemu_write_value
-			 (addr, sym.off + *addr - rel->r_offset
-			  - seg->off, sym.handle, seg->handle,
-			  seg->ptv_rel_needed, sizeof (grub_uint32_t))))
+		    err = grub_efiemu_write_value (addr, sym.off + *addr
+						   - rel->r_offset
+						   - seg->off, sym.handle,
+						   seg->handle,
+						   seg->ptv_rel_needed,
+						   sizeof (grub_uint32_t));
+		    if (err)
 		      return err;
 		    break;
 		  default:
-		    return grub_error (GRUB_ERR_BAD_OS,
-				       "unrecognised relocation");
+		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+				       N_("relocation 0x%x is not implemented yet"),
+				       ELF_R_TYPE (rel->r_info));
 		  }
 	      }
 	  }

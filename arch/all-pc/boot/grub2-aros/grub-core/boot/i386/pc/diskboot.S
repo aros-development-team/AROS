@@ -56,7 +56,7 @@ _start:
 	popw	%si
 
 	/* this sets up for the first run through "bootloop" */
-	movw	$(firstlist - GRUB_BOOT_MACHINE_LIST_SIZE), %di
+	movw	$LOCAL(firstlist), %di
 
 	/* save the sector number of the second sector in %ebp */
 	movl	(%di), %ebp
@@ -363,7 +363,7 @@ LOCAL(message):
 	.word 0
 
 	. = _start + 0x200 - GRUB_BOOT_MACHINE_LIST_SIZE
-
+LOCAL(firstlist):	/* this label has to be before the first list entry!!! */
         /* fill the first data listing with the default */
 blocklist_default_start:
 	/* this is the sector start parameter, in logical sectors from
@@ -376,5 +376,3 @@ blocklist_default_len:
 blocklist_default_seg:
 	/* this is the segment of the starting address to load the data into */
 	.word (GRUB_BOOT_MACHINE_KERNEL_SEG + 0x20)
-
-firstlist:	/* this label has to be after the list data!!! */

@@ -24,7 +24,9 @@
 #include <grub/normal.h>
 #include <grub/datetime.h>
 
-static char *grub_datetime_names[] =
+GRUB_MOD_LICENSE ("GPLv3+");
+
+static const char *grub_datetime_names[] =
 {
   "YEAR",
   "MONTH",
@@ -35,7 +37,7 @@ static char *grub_datetime_names[] =
   "WEEKDAY",
 };
 
-static char *
+static const char *
 grub_read_hook_datetime (struct grub_env_var *var,
                          const char *val __attribute__ ((unused)))
 {
@@ -48,7 +50,7 @@ grub_read_hook_datetime (struct grub_env_var *var,
       int i;
 
       for (i = 0; i < 7; i++)
-        if (! grub_strcmp (var->name, grub_datetime_names[i]))
+        if (grub_strcmp (var->name, grub_datetime_names[i]) == 0)
           {
             int n;
 
@@ -86,18 +88,21 @@ grub_read_hook_datetime (struct grub_env_var *var,
 
 GRUB_MOD_INIT(datehook)
 {
-  int i;
+  unsigned i;
 
-  for (i = 0; i < 7; i++)
-    grub_register_variable_hook (grub_datetime_names[i],
-                                 grub_read_hook_datetime, 0);
+  for (i = 0; i < ARRAY_SIZE (grub_datetime_names); i++)
+    {
+      grub_register_variable_hook (grub_datetime_names[i],
+				   grub_read_hook_datetime, 0);
+      grub_env_export (grub_datetime_names[i]);
+    }
 }
 
 GRUB_MOD_FINI(datehook)
 {
-  int i;
+  unsigned i;
 
-  for (i = 0; i < 7; i++)
+  for (i = 0; i < ARRAY_SIZE (grub_datetime_names); i++)
     {
       grub_register_variable_hook (grub_datetime_names[i], 0, 0);
       grub_env_unset (grub_datetime_names[i]);

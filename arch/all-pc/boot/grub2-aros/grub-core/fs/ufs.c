@@ -24,6 +24,9 @@
 #include <grub/disk.h>
 #include <grub/dl.h>
 #include <grub/types.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #ifdef MODE_UFS2
 #define GRUB_UFS_MAGIC		0x19540119
@@ -48,22 +51,20 @@
 
 /* Calculate in which group the inode can be found.  */
 #define UFS_BLKSZ(sblock) (grub_le_to_cpu32 (sblock->bsize))
+#define UFS_LOG_BLKSZ(sblock) (data->log2_blksz)
 
-#define INODE(data,field) data->inode.  field
 #ifdef MODE_UFS2
 #define INODE_ENDIAN(data,field,bits1,bits2) grub_le_to_cpu##bits2 (data->inode.field)
 #else
 #define INODE_ENDIAN(data,field,bits1,bits2) grub_le_to_cpu##bits1 (data->inode.field)
 #endif
 
-#define INODE_SIZE(data) INODE_ENDIAN (data,size,32,64)
-#define INODE_NBLOCKS(data) INODE_ENDIAN (data,nblocks,32,64)
-
-#define INODE_MODE(data) INODE_ENDIAN (data,mode,16,16)
+#define INODE_SIZE(data) grub_le_to_cpu64 (data->inode.size)
+#define INODE_MODE(data) grub_le_to_cpu16 (data->inode.mode)
 #ifdef MODE_UFS2
-#define INODE_BLKSZ 8
+#define LOG_INODE_BLKSZ 3
 #else
-#define INODE_BLKSZ 4
+#define LOG_INODE_BLKSZ 2
 #endif
 #ifdef MODE_UFS2
 #define UFS_INODE_PER_BLOCK 2
@@ -132,7 +133,7 @@ struct grub_ufs_inode
   grub_uint32_t uid;
   grub_uint32_t gid;
   grub_uint32_t blocksize;
-  grub_int64_t size;
+  grub_uint64_t size;
   grub_int64_t nblocks;
   grub_uint64_t atime;
   grub_uint64_t mtime;
@@ -167,7 +168,7 @@ struct grub_ufs_inode
   grub_uint16_t nlinks;
   grub_uint16_t uid;
   grub_uint16_t gid;
-  grub_int64_t size;
+  grub_uint64_t size;
   grub_uint64_t atime;
   grub_uint64_t mtime;
   grub_uint64_t ctime;
@@ -212,6 +213,7 @@ struct grub_ufs_data
   struct grub_ufs_inode inode;
   int ino;
   int linknest;
+  int log2_blksz;
 };
 
 static grub_dl_t my_mod;
@@ -222,11 +224,11 @@ static grub_err_t grub_ufs_find_file (struct grub_ufs_data *data,
 
 
 static grub_disk_addr_t
-grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
+grub_ufs_get_file_block (struct grub_ufs_data *data, grub_disk_addr_t blk)
 {
   struct grub_ufs_sblock *sblock = &data->sblock;
-  unsigned int indirsz;
-  int log2_blksz;
+  unsigned long indirsz;
+  int log2_blksz, log_indirsz;
 
   /* Direct.  */
   if (blk < GRUB_UFS_DIRBLKS)
@@ -236,7 +238,8 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
 
   blk -= GRUB_UFS_DIRBLKS;
 
-  indirsz = UFS_BLKSZ (sblock) / INODE_BLKSZ;
+  log_indirsz = data->log2_blksz - LOG_INODE_BLKSZ;
+  indirsz = 1 << log_indirsz;
   /* Single indirect block.  */
   if (blk < indirsz)
     {
@@ -245,14 +248,16 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
 #else
       grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
 #endif
-      grub_disk_read (data->disk, INODE_INDIRBLOCKS (data, 0) << log2_blksz,
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 0))
+		      << log2_blksz,
 		      0, sizeof (indir), indir);
       return indir[blk];
     }
   blk -= indirsz;
 
   /* Double indirect block.  */
-  if (blk < indirsz * indirsz)
+  if (blk < (grub_disk_addr_t) indirsz * (grub_disk_addr_t) indirsz)
     {
 #ifdef MODE_UFS2
       grub_uint64_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint64_t)];
@@ -260,19 +265,49 @@ grub_ufs_get_file_block (struct grub_ufs_data *data, unsigned int blk)
       grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
 #endif
 
-      grub_disk_read (data->disk, INODE_INDIRBLOCKS (data, 1) << log2_blksz,
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 1))
+		      << log2_blksz,
 		      0, sizeof (indir), indir);
       grub_disk_read (data->disk,
-		      (indir [blk / indirsz])
+		      ((grub_disk_addr_t) indir [blk >> log_indirsz])
 		      << log2_blksz,
 		      0, sizeof (indir), indir);
 
-      return indir[blk % indirsz];
+      return indir[blk & ((1 << log_indirsz) - 1)];
     }
 
+  blk -= (grub_disk_addr_t) indirsz * (grub_disk_addr_t) indirsz;
+
+  /* Triple indirect block.  */
+  if (!(blk >> (3 * log_indirsz)))
+    {
+#ifdef MODE_UFS2
+      grub_uint64_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint64_t)];
+#else
+      grub_uint32_t indir[UFS_BLKSZ (sblock) / sizeof (grub_uint32_t)];
+#endif
+
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) INODE_INDIRBLOCKS (data, 2))
+		      << log2_blksz,
+		      0, sizeof (indir), indir);
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) indir [blk >> (2 * log_indirsz)])
+		      << log2_blksz,
+		      0, sizeof (indir), indir);
+
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) indir [(blk >> log_indirsz)
+						 & ((1 << log_indirsz) - 1)])
+		      << log2_blksz,
+		      0, sizeof (indir), indir);
+
+      return indir[blk & ((1 << log_indirsz) - 1)];
+    }
 
   grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-	      "ufs does not support triple indirect blocks");
+	      "ufs does not support quadruple indirect blocks");
   return 0;
 }
 
@@ -283,25 +318,27 @@ static grub_ssize_t
 grub_ufs_read_file (struct grub_ufs_data *data,
 		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		    int pos, grub_size_t len, char *buf)
+		    grub_off_t pos, grub_size_t len, char *buf)
 {
   struct grub_ufs_sblock *sblock = &data->sblock;
-  int i;
-  int blockcnt;
+  grub_off_t i;
+  grub_off_t blockcnt;
 
   /* Adjust len so it we can't read past the end of the file.  */
   if (len + pos > INODE_SIZE (data))
     len = INODE_SIZE (data) - pos;
 
-  blockcnt = (len + pos + UFS_BLKSZ (sblock) - 1) / UFS_BLKSZ (sblock);
+  blockcnt = (len + pos + UFS_BLKSZ (sblock) - 1) >> UFS_LOG_BLKSZ (sblock);
 
-  for (i = pos / UFS_BLKSZ (sblock); i < blockcnt; i++)
+  for (i = pos >> UFS_LOG_BLKSZ (sblock); i < blockcnt; i++)
     {
-      int blknr;
-      int blockoff = pos % UFS_BLKSZ (sblock);
-      int blockend = UFS_BLKSZ (sblock);
+      grub_disk_addr_t blknr;
+      grub_off_t blockoff;
+      grub_off_t blockend = UFS_BLKSZ (sblock);
 
       int skipfirst = 0;
+
+      blockoff = pos & (UFS_BLKSZ (sblock) - 1);
 
       blknr = grub_ufs_get_file_block (data, i);
       if (grub_errno)
@@ -310,14 +347,14 @@ grub_ufs_read_file (struct grub_ufs_data *data,
       /* Last block.  */
       if (i == blockcnt - 1)
 	{
-	  blockend = (len + pos) % UFS_BLKSZ (sblock);
+	  blockend = (len + pos) & (UFS_BLKSZ (sblock) - 1);
 
 	  if (!blockend)
 	    blockend = UFS_BLKSZ (sblock);
 	}
 
       /* First block.  */
-      if (i == (pos / (int) UFS_BLKSZ (sblock)))
+      if (i == (pos >> UFS_LOG_BLKSZ (sblock)))
 	{
 	  skipfirst = blockoff;
 	  blockend -= skipfirst;
@@ -389,21 +426,22 @@ grub_ufs_read_inode (struct grub_ufs_data *data, int ino, char *inode)
 static grub_err_t
 grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
 {
-  char symlink[INODE_SIZE (data)];
+  char symlink[INODE_SIZE (data) + 1];
 
   if (++data->linknest > GRUB_UFS_MAX_SYMLNK_CNT)
-    return grub_error (GRUB_ERR_SYMLINK_LOOP, "too deep nesting of symlinks");
+    return grub_error (GRUB_ERR_SYMLINK_LOOP, N_("too deep nesting of symlinks"));
 
-  if (INODE_NBLOCKS (data) == 0)
-    grub_strcpy (symlink, (char *) INODE (data, symlink));
+  /* Normally we should just check that data->inode.nblocks == 0.
+     However old Linux doesn't maintain nblocks correctly and so it's always
+     0. If size is bigger than inline space then the symlink is surely not
+     inline.  */
+  /* Check against zero is paylindromic, no need to swap.  */
+  if (data->inode.nblocks == 0
+      && INODE_SIZE (data) <= sizeof (data->inode.symlink))
+    grub_strcpy (symlink, (char *) data->inode.symlink);
   else
-    {
-      grub_disk_read (data->disk,
-		      (INODE_DIRBLOCKS (data, 0)
-		       << grub_le_to_cpu32 (data->sblock.log2_blksz)),
-		      0, INODE_SIZE (data), symlink);
-      symlink[INODE_SIZE (data)] = '\0';
-    }
+    grub_ufs_read_file (data, 0, 0, INODE_SIZE (data), symlink);
+  symlink[INODE_SIZE (data)] = '\0';
 
   /* The symlink is an absolute path, go back to the root inode.  */
   if (symlink[0] == '/')
@@ -414,8 +452,6 @@ grub_ufs_lookup_symlink (struct grub_ufs_data *data, int ino)
     return grub_errno;
 
   grub_ufs_find_file (data, symlink);
-  if (grub_errno)
-    grub_error (grub_errno, "cannot follow symlink `%s'", symlink);
 
   return grub_errno;
 }
@@ -435,12 +471,10 @@ grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
   grub_strcpy (fpath, path);
 
   /* Skip the first slash.  */
-  if (name[0] == '/')
-    {
-      name++;
-      if (!*name)
-	return 0;
-    }
+  while (*name == '/')
+    name++;
+  if (!*name)
+    return 0;
 
   /* Extract the actual part from the pathname.  */
   next = grub_strchr (name, '/');
@@ -448,6 +482,8 @@ grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
     {
       next[0] = '\0';
       next++;
+      while (*next == '/')
+	next++;
     }
 
   do
@@ -500,10 +536,12 @@ grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
 	      {
 		next[0] = '\0';
 		next++;
+		while (*next == '/')
+		  next++;
 	      }
 
 	    if ((INODE_MODE(data) & GRUB_UFS_ATTR_TYPE) != GRUB_UFS_ATTR_DIR)
-	      return grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+	      return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
 
 	    continue;
 	  }
@@ -512,7 +550,7 @@ grub_ufs_find_file (struct grub_ufs_data *data, const char *path)
       pos += grub_le_to_cpu16 (dirent.direntlen);
     } while (pos < INODE_SIZE (data));
 
-  grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
   return grub_errno;
 }
 
@@ -536,8 +574,16 @@ grub_ufs_mount (grub_disk_t disk)
       if (grub_errno)
 	goto fail;
 
-      if (grub_le_to_cpu32 (data->sblock.magic) == GRUB_UFS_MAGIC)
+      /* No need to byteswap bsize in this check. It works the same on both
+	 endiannesses.  */
+      if (grub_le_to_cpu32 (data->sblock.magic) == GRUB_UFS_MAGIC
+	  && data->sblock.bsize != 0
+	  && ((data->sblock.bsize & (data->sblock.bsize - 1)) == 0))
 	{
+	  for (data->log2_blksz = 0; 
+	       (1U << data->log2_blksz) < grub_le_to_cpu32 (data->sblock.bsize);
+	       data->log2_blksz++);
+
 	  data->disk = disk;
 	  data->linknest = 0;
 	  return data;
@@ -580,7 +626,7 @@ grub_ufs_dir (grub_device_t device, const char *path,
 
   if (!path || path[0] != '/')
     {
-      grub_error (GRUB_ERR_BAD_FILENAME, "bad filename");
+      grub_error (GRUB_ERR_BAD_FILENAME, N_("invalid file name `%s'"), path);
       return grub_errno;
     }
 
@@ -590,7 +636,7 @@ grub_ufs_dir (grub_device_t device, const char *path,
 
   if ((INODE_MODE (data) & GRUB_UFS_ATTR_TYPE) != GRUB_UFS_ATTR_DIR)
     {
-      grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+      grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
       goto fail;
     }
 
@@ -660,7 +706,7 @@ grub_ufs_open (struct grub_file *file, const char *name)
 
   if (!name || name[0] != '/')
     {
-      grub_error (GRUB_ERR_BAD_FILENAME, "bad filename");
+      grub_error (GRUB_ERR_BAD_FILENAME, N_("invalid file name `%s'"), name);
       return grub_errno;
     }
 
@@ -696,8 +742,6 @@ grub_ufs_close (grub_file_t file)
   return GRUB_ERR_NONE;
 }
 
-
-#ifdef MODE_UFS2
 static grub_err_t
 grub_ufs_label (grub_device_t device, char **label)
 {
@@ -717,7 +761,6 @@ grub_ufs_label (grub_device_t device, char **label)
 
   return grub_errno;
 }
-#endif
 
 static grub_err_t
 grub_ufs_uuid (grub_device_t device, char **uuid)
@@ -755,11 +798,13 @@ grub_ufs_mtime (grub_device_t device, grub_int32_t *tm)
   if (!data)
     *tm = 0;
   else
+    {
+      *tm = grub_le_to_cpu32 (data->sblock.mtime);
 #ifdef MODE_UFS2
-    *tm = grub_le_to_cpu64 (data->sblock.mtime2);
-#else
-    *tm = grub_le_to_cpu32 (data->sblock.mtime);
+      if (*tm < (grub_int64_t) grub_le_to_cpu64 (data->sblock.mtime2))
+	*tm = grub_le_to_cpu64 (data->sblock.mtime2);
 #endif
+    }
 
   grub_dl_unref (my_mod);
 
@@ -781,11 +826,13 @@ static struct grub_fs grub_ufs_fs =
     .open = grub_ufs_open,
     .read = grub_ufs_read,
     .close = grub_ufs_close,
-#ifdef MODE_UFS2
     .label = grub_ufs_label,
-#endif
     .uuid = grub_ufs_uuid,
     .mtime = grub_ufs_mtime,
+    /* FIXME: set reserved_first_sector.  */
+#ifdef GRUB_UTIL
+    .blocklist_install = 1,
+#endif
     .next = 0
   };
 

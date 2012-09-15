@@ -1,5 +1,6 @@
-#! /bin/sh -e
-#
+#! /bin/sh
+set -e
+
 # Copyright (C) 2010  Free Software Foundation, Inc.
 #
 # GRUB is free software: you can redistribute it and/or modify
@@ -15,23 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-parted=/sbin/parted
+parted=parted
 grubshell=@builddir@/grub-shell
 
+. "@builddir@/grub-core/modinfo.sh"
+
 create_disk_image () {
-    name=$1
+    name="$1"
     size=$2
-    qemu-img create ${name} ${size} >/dev/null
+    rm -f "${name}"
+    dd if=/dev/zero of="${name}" bs=512 count=1 seek=$((size * 2048 - 1)) status=noxfer > /dev/null
 }
 
 check_output () {
     outfile=$1
     shift
 
-    for disk in $@; do
-	if ! grep "($disk)" ${outfile} >/dev/null
+    for dsk in $@; do
+	if ! grep "($dsk)" "${outfile}" >/dev/null
 	then
-	    echo "($disk): disk/partiton not found"
+	    echo "($dsk): disk/partiton not found"
 	    exit 1
 	fi
     done
@@ -40,19 +44,32 @@ check_output () {
 list_parts () {
     mod=$1;
     shift;
-    imgfile=$1
+    imgfile="$1"
     shift
-    outfile=$1
+    outfile="$1"
     shift
 
-    echo ls | ${grubshell} --boot=cd --qemu-opts="-hda ${imgfile}" \
-	--modules=$mod | tr -d "\n\r" > ${outfile}
-    cat ${outfile}
+    echo ls | "${grubshell}" --qemu-opts="-hda ${imgfile}" \
+	--modules=$mod | tr -d "\n\r" > "${outfile}"
+    cat "${outfile}"
     echo
 }
 
-imgfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
-outfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
+case "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" in
+    mips-qemu_mips | mipsel-qemu_mips | i386-qemu | i386-multiboot | i386-coreboot | mipsel-loongson)
+	disk=ata0
+	;;
+    powerpc-ieee1275)
+	disk=ieee1275//pci@80000000/mac-io@4/ata-3@20000/disk@0
+	# QEMU firmware has bugs which prevent it from accessing hard disk.
+	exit 0
+	;;
+    *)
+	disk=hd0
+	;;
+esac
+imgfile="`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"`" || exit 1
+outfile="`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"`" || exit 1
 
 #
 # MSDOS partition types
@@ -61,64 +78,64 @@ outfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
 echo "Checking MSDOS partition types..."
 
 # 0 primary
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel msdos
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel msdos
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk
 
 # 1 primary
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M 
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M 
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1
 
 # 2 primary
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos2
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos2
 
 # 3 primary
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart primary 20M 30M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos2 hd0,msdos3
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart primary 20M 30M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos2 $disk,msdos3
 
 # 4 primary
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos2 hd0,msdos3 hd0,msdos4
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart primary 20M 30M mkpart primary 30M 40M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos2 $disk,msdos3 $disk,msdos4
 
 # 1 primary, 1 extended
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100%
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100%
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1
 
 # 1 primary, 1 extended, 1 logical
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos5
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos5
 
 # 1 primary, 1 extended, 2 logical
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos5 hd0,msdos6
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos5 $disk,msdos6
 
 # 1 primary, 1 extended, 3 logical
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M mkpart logical 40M 50M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos5 hd0,msdos6 hd0,msdos7
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M mkpart logical 40M 50M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos5 $disk,msdos6 $disk,msdos7
 
 # 1 primary, 1 extended, 4 logical
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M mkpart logical 40M 50M mkpart logical 50M 60M
-list_parts part_msdos ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,msdos1 hd0,msdos5 hd0,msdos6 hd0,msdos7 hd0,msdos8
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel msdos mkpart primary 0 10M mkpart primary 10M 20M mkpart extended 20M 100% mkpart logical 20M 30M mkpart logical 30M 40M mkpart logical 40M 50M mkpart logical 50M 60M
+list_parts part_msdos "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,msdos1 $disk,msdos5 $disk,msdos6 $disk,msdos7 $disk,msdos8
 
 
 #
@@ -128,46 +145,46 @@ check_output ${outfile} hd0 hd0,msdos1 hd0,msdos5 hd0,msdos6 hd0,msdos7 hd0,msdo
 echo "Checking GPT partition types..."
 
 # 0 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel gpt
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel gpt
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk
 
 # 1 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M 
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M 
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1
 
 # 2 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1 $disk,gpt2
 
 # 3 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2 hd0,gpt3
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1 $disk,gpt2 $disk,gpt3
 
 # 4 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 4 20M 30M mkpart 5 30M 40M
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2 hd0,gpt3 hd0,gpt4
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 4 20M 30M mkpart 5 30M 40M
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1 $disk,gpt2 $disk,gpt3 $disk,gpt4
 
 # 5 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M mkpart 4 30M 40M mkpart 5 40M 50M
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2 hd0,gpt3 hd0,gpt4 hd0,gpt5
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M mkpart 4 30M 40M mkpart 5 40M 50M
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1 $disk,gpt2 $disk,gpt3 $disk,gpt4 $disk,gpt5
 
 # 6 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M mkpart 4 30M 40M mkpart 5 40M 50M mkpart 6 50M 60M
-list_parts part_gpt ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2 hd0,gpt3 hd0,gpt4 hd0,gpt5 hd0,gpt6
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel gpt mkpart 1 0 10M mkpart 2 10M 20M mkpart 3 20M 30M mkpart 4 30M 40M mkpart 5 40M 50M mkpart 6 50M 60M
+list_parts part_gpt "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,gpt1 $disk,gpt2 $disk,gpt3 $disk,gpt4 $disk,gpt5 $disk,gpt6
 
 
 #
@@ -179,46 +196,46 @@ check_output ${outfile} hd0 hd0,gpt1 hd0,gpt2 hd0,gpt3 hd0,gpt4 hd0,gpt5 hd0,gpt
 echo "Checking SUN partition types..."
 
 # 0 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel sun
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel sun
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk
 
 # 1 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M 
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M 
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1
 
 # 2 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M mkpart 10M 20M
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1 hd0,sun2
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2
 
 # 3 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1 hd0,sun2 hd0,sun4
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4
 
 # 4 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1 hd0,sun2 hd0,sun4 hd0,sun5
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4 $disk,sun5
 
 # 5 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M mkpart 40M 50M
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1 hd0,sun2 hd0,sun4 hd0,sun5 hd0,sun6
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M mkpart 40M 50M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4 $disk,sun5 $disk,sun6
 
 # 6 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M mkpart 40M 50M mkpart 50M 60M
-list_parts part_sun ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,sun1 hd0,sun2 hd0,sun4 hd0,sun5 hd0,sun6 hd0,sun7
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel sun mkpart 0 10M mkpart 10M 20M mkpart 20M 30M mkpart 30M 40M mkpart 40M 50M mkpart 50M 60M
+list_parts part_sun "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,sun1 $disk,sun2 $disk,sun4 $disk,sun5 $disk,sun6 $disk,sun7
 
 
 #
@@ -232,43 +249,43 @@ check_output ${outfile} hd0 hd0,sun1 hd0,sun2 hd0,sun4 hd0,sun5 hd0,sun6 hd0,sun
 echo "Checking APPLE partition types..."
 
 # 0 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel mac
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel mac
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2
 
 # 1 parts
-create_disk_image ${imgfile} 64M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple3
+create_disk_image "${imgfile}" 64
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple3
 
 # 2 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M mkpart b 10M 20M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple3 hd0,apple4
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple3 $disk,apple4
 
 # 3 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple4 hd0,apple5
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple4 $disk,apple5
 
 # 4 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple4 hd0,apple5 hd0,apple6
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple4 $disk,apple5 $disk,apple6
 
 # 5 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M mkpart e 40M 50M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple4 hd0,apple5 hd0,apple6 hd0,apple7
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M mkpart e 40M 50M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple4 $disk,apple5 $disk,apple6 $disk,apple7
 
 # 6 parts
-create_disk_image ${imgfile} 128M
-${parted} -a none -s ${imgfile} mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M mkpart e 40M 50M mkpart f 50M 60M
-list_parts part_apple ${imgfile} ${outfile}
-check_output ${outfile} hd0 hd0,apple1 hd0,apple2 hd0,apple4 hd0,apple5 hd0,apple6 hd0,apple7 hd0,apple8
+create_disk_image "${imgfile}" 128
+${parted} -a none -s "${imgfile}" mklabel mac mkpart a 1M 10M mkpart b 10M 20M mkpart c 20M 30M mkpart d 30M 40M mkpart e 40M 50M mkpart f 50M 60M
+list_parts part_apple "${imgfile}" "${outfile}"
+check_output "${outfile}" $disk $disk,apple1 $disk,apple2 $disk,apple4 $disk,apple5 $disk,apple6 $disk,apple7 $disk,apple8

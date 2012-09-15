@@ -25,7 +25,6 @@
 
 struct grub_disk;
 struct grub_net;
-struct grub_fs;
 
 struct grub_device
 {

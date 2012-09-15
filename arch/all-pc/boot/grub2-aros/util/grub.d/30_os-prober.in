@@ -17,11 +17,14 @@ set -e
 # You should have received a copy of the GNU General Public License
 # along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
 
-. ${libdir}/grub/grub-mkconfig_lib
+export TEXTDOMAIN=@PACKAGE@
+export TEXTDOMAINDIR="@localedir@"
+
+. "@datadir@/@PACKAGE@/grub-mkconfig_lib"
 
 if [ "x${GRUB_DISABLE_OS_PROBER}" = "xtrue" ]; then
   exit 0
@@ -39,8 +42,17 @@ if [ -z "${OSPROBED}" ] ; then
 fi
 
 osx_entry() {
+    if [ x$2 = x32 ]; then
+        # TRANSLATORS: it refers to kernel architecture (32-bit)
+	bitstr="$(gettext "(32-bit)")"
+    else
+        # TRANSLATORS: it refers to kernel architecture (64-bit)
+	bitstr="$(gettext "(64-bit)")"
+    fi
+    # TRANSLATORS: it refers on the OS residing on device %s
+    onstr="$(gettext_printf "(on %s)" "${DEVICE}")"
         cat << EOF
-menuentry "${LONGNAME} (${2}-bit) (on ${DEVICE})" --class osx --class darwin --class os {
+menuentry '$(echo "${LONGNAME} $bitstr $onstr" | grub_quote)' --class osx --class darwin --class os \$menuentry_id_option 'osprober-xnu-$2-$(grub_get_device_id "${DEVICE}")'  {
 EOF
 	save_default_entry | sed -e "s/^/\t/"
 	prepare_grub_to_access_device ${DEVICE} | sed -e "s/^/\t/"
@@ -57,11 +69,15 @@ EOF
            if [ -f /Extra/DSDT.aml ]; then
               acpi -e /Extra/DSDT.aml
            fi
-           $1 /mach_kernel boot-uuid=\${uuid} rd=*uuid
-           if [ /System/Library/Extensions.mkext -nt /System/Library/Extensions ]; then
-              xnu_mkext /System/Library/Extensions.mkext
+           if [ /kernelcache -nt /System/Library/Extensions ]; then
+              $1 /kernelcache boot-uuid=\${uuid} rd=*uuid
            else
-              xnu_kextdir /System/Library/Extensions
+              $1 /mach_kernel boot-uuid=\${uuid} rd=*uuid
+              if [ /System/Library/Extensions.mkext -nt /System/Library/Extensions ]; then
+                xnu_mkext /System/Library/Extensions.mkext
+              else
+                xnu_kextdir /System/Library/Extensions
+              fi
            fi
            if [ -f /Extra/Extensions.mkext ]; then
               xnu_mkext /Extra/Extensions.mkext
@@ -89,6 +105,8 @@ EOF
 EOF
 }
 
+used_osprober_linux_ids=
+
 for OS in ${OSPROBED} ; do
   DEVICE="`echo ${OS} | cut -d ':' -f 1`"
   LONGNAME="`echo ${OS} | cut -d ':' -f 2 | tr '^' ' '`"
@@ -99,13 +117,14 @@ for OS in ${OSPROBED} ; do
     LONGNAME="${LABEL}"
   fi
 
-  echo "Found ${LONGNAME} on ${DEVICE}" >&2
+  gettext_printf "Found %s on %s\n" "${LONGNAME}" "${DEVICE}" >&2
 
   case ${BOOT} in
     chain)
 
+	  onstr="$(gettext_printf "(on %s)" "${DEVICE}")"
       cat << EOF
-menuentry "${LONGNAME} (on ${DEVICE})" --class windows --class os {
+menuentry '$(echo "${LONGNAME} $onstr" | grub_quote)' --class windows --class os \$menuentry_id_option 'osprober-chain-$(grub_get_device_id "${DEVICE}")' {
 EOF
       save_default_entry | sed -e "s/^/\t/"
       prepare_grub_to_access_device ${DEVICE} | sed -e "s/^/\t/"
@@ -128,6 +147,10 @@ EOF
     linux)
       LINUXPROBED="`linux-boot-prober ${DEVICE} 2> /dev/null | tr ' ' '^' | paste -s -d ' '`"
       prepare_boot_cache=
+      boot_device_id=
+      is_first_entry=true
+      title_correction_code=
+      OS="${LONGNAME}"
 
       for LINUX in ${LINUXPROBED} ; do
         LROOT="`echo ${LINUX} | cut -d ':' -f 1`"
@@ -146,35 +169,79 @@ EOF
 	  LINITRD="${LINITRD#/boot}"
 	fi
 
-        cat << EOF
-menuentry "${LLABEL} (on ${DEVICE})" --class gnu-linux --class gnu --class os {
-EOF
-	save_default_entry | sed -e "s/^/\t/"
+	onstr="$(gettext_printf "(on %s)" "${DEVICE}")"
+	recovery_params="$(echo "${LPARAMS}" | grep single)" || true
+	counter=1
+	while echo "$used_osprober_linux_ids" | grep 'osprober-gnulinux-$LKERNEL-${recovery_params}-$counter-$boot_device_id' > /dev/null; do
+	    counter=$((counter+1));
+	done
+	if [ -z "$boot_device_id" ]; then
+	    boot_device_id="$(grub_get_device_id "${DEVICE}")"
+	fi
+	used_osprober_linux_ids="$used_osprober_linux_ids 'osprober-gnulinux-$LKERNEL-${recovery_params}-$counter-$boot_device_id'"
+
 	if [ -z "${prepare_boot_cache}" ]; then
 	  prepare_boot_cache="$(prepare_grub_to_access_device ${LBOOT} | sed -e "s/^/\t/")"
 	fi
-	printf '%s\n' "${prepare_boot_cache}"
-	cat <<  EOF
+
+	if [ "x$is_first_entry" = xtrue ]; then
+            cat << EOF
+menuentry '$(echo "$OS" | grub_quote)' --class gnu-linux --class gnu --class os \$menuentry_id_option 'osprober-gnulinux-simple-$boot_device_id' {
+EOF
+	    save_default_entry | sed -e "s/^/\t/"
+	    printf '%s\n' "${prepare_boot_cache}"
+	    cat <<  EOF
 	linux ${LKERNEL} ${LPARAMS}
 EOF
-        if [ -n "${LINITRD}" ] ; then
+            if [ -n "${LINITRD}" ] ; then
           cat << EOF
 	initrd ${LINITRD}
 EOF
-        fi
+            fi
         cat << EOF
 }
 EOF
+	    echo "submenu '$(gettext_printf "Advanced options for %s" "${OS}" | grub_quote)' \$menuentry_id_option 'osprober-gnulinux-advanced-$boot_device_id' {"
+	    is_first_entry=false
+	fi
+	title="${LLABEL} $onstr"
+        cat << EOF
+	menuentry '$(echo "$title" | grub_quote)' --class gnu-linux --class gnu --class os \$menuentry_id_option 'osprober-gnulinux-$LKERNEL-${recovery_params}-$boot_device_id' {
+EOF
+	save_default_entry | sed -e "s/^/\t\t/"
+	printf '%s\n' "${prepare_boot_cache}" | sed -e "s/^/\t/"
+	cat <<  EOF
+		linux ${LKERNEL} ${LPARAMS}
+EOF
+        if [ -n "${LINITRD}" ] ; then
+            cat << EOF
+		initrd ${LINITRD}
+EOF
+        fi
+        cat << EOF
+	}
+EOF
+	if [ x"$title" = x"$GRUB_ACTUAL_DEFAULT" ] || [ x"Previous Linux versions>$title" = x"$GRUB_ACTUAL_DEFAULT" ]; then
+	    replacement_title="$(echo "Advanced options for ${OS}" | sed 's,>,>>,g')>$(echo "$title" | sed 's,>,>>,g')"
+	    quoted="$(echo "$GRUB_ACTUAL_DEFAULT" | grub_quote)"
+	    title_correction_code="${title_correction_code}if [ \"x\$default\" = '$quoted' ]; then default='$(echo "$replacement_title" | grub_quote)'; fi;"
+	    grub_warn "$(gettext_printf "Please don't use old title \`%s' for GRUB_DEFAULT, use \`%s' (for versions before 2.00) or \`%s' (for 2.00 or later)" "$GRUB_ACTUAL_DEFAULT" "$replacement_title" "gnulinux-advanced-$boot_device_id>gnulinux-$version-$type-$boot_device_id")"
+	fi
       done
+      if [ x"$is_first_entry" != xtrue ]; then
+	  echo '}'
+      fi
+      echo "$title_correction_code"
     ;;
     macosx)
-      OSXUUID="`grub-probe --target=fs_uuid --device ${DEVICE} 2> /dev/null`"
+      OSXUUID="`${grub_probe} --target=fs_uuid --device ${DEVICE} 2> /dev/null`"
       osx_entry xnu_kernel 32
       osx_entry xnu_kernel64 64
     ;;
     hurd)
+      onstr="$(gettext_printf "(on %s)" "${DEVICE}")"
       cat << EOF
-menuentry "${LONGNAME} (on ${DEVICE})" --class hurd --class gnu --class os {
+menuentry '$(echo "${LONGNAME} $onstr" | grub_quote)' --class hurd --class gnu --class os \$menuentry_id_option 'osprober-gnuhurd-/boot/gnumach.gz-false-$(grub_get_device_id "${DEVICE}")' {
 EOF
       save_default_entry | sed -e "s/^/\t/"
       prepare_grub_to_access_device ${DEVICE} | sed -e "s/^/\t/"
@@ -198,7 +265,9 @@ EOF
 EOF
     ;;
     *)
-      echo "  ${LONGNAME} is not yet supported by grub-mkconfig." >&2
+      echo -n "  "
+      # TRANSLATORS: %s is replaced by OS name.
+      gettext_printf "%s is not yet supported by grub-mkconfig.\n" "${LONGNAME}" >&2
     ;;
   esac
 done

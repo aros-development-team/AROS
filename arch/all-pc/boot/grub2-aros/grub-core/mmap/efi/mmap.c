@@ -29,7 +29,7 @@
   ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
 
 grub_err_t
-grub_machine_mmap_iterate (grub_memory_hook_t hook)
+grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services)
 {
   grub_efi_uintn_t mmap_size = 0;
   grub_efi_memory_descriptor_t *map_buf = 0;
@@ -65,6 +65,13 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
 		    + desc->num_pages * 4096, desc->type);
       switch (desc->type)
 	{
+	case GRUB_EFI_BOOT_SERVICES_CODE:
+	  if (!avoid_efi_boot_services)
+	    {
+	      hook (desc->physical_start, desc->num_pages * 4096,
+		    GRUB_MEMORY_AVAILABLE);
+	      break;
+	    }
 	case GRUB_EFI_RUNTIME_SERVICES_CODE:
 	  hook (desc->physical_start, desc->num_pages * 4096,
 		GRUB_MEMORY_CODE);
@@ -79,6 +86,13 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
 	  grub_printf ("Unknown memory type %d, considering reserved\n",
 		       desc->type);
 
+	case GRUB_EFI_BOOT_SERVICES_DATA:
+	  if (!avoid_efi_boot_services)
+	    {
+	      hook (desc->physical_start, desc->num_pages * 4096,
+		    GRUB_MEMORY_AVAILABLE);
+	      break;
+	    }
 	case GRUB_EFI_RESERVED_MEMORY_TYPE:
 	case GRUB_EFI_RUNTIME_SERVICES_DATA:
 	case GRUB_EFI_MEMORY_MAPPED_IO:
@@ -90,8 +104,6 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
 
 	case GRUB_EFI_LOADER_CODE:
 	case GRUB_EFI_LOADER_DATA:
-	case GRUB_EFI_BOOT_SERVICES_CODE:
-	case GRUB_EFI_BOOT_SERVICES_DATA:
 	case GRUB_EFI_CONVENTIONAL_MEMORY:
 	  hook (desc->physical_start, desc->num_pages * 4096,
 		GRUB_MEMORY_AVAILABLE);
@@ -110,6 +122,12 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
     }
 
   return GRUB_ERR_NONE;
+}
+
+grub_err_t
+grub_machine_mmap_iterate (grub_memory_hook_t hook)
+{
+  return grub_efi_mmap_iterate (hook, 0);
 }
 
 static inline grub_efi_memory_type_t
@@ -194,7 +212,6 @@ grub_mmap_unregister (int handle)
 {
   struct overlay *curover, *prevover;
   grub_efi_boot_services_t *b;
-  grub_efi_status_t status;
 
   b = grub_efi_system_table->boot_services;
 
@@ -204,7 +221,7 @@ grub_mmap_unregister (int handle)
     {
       if (curover->handle == handle)
 	{
-	  status = efi_call_2 (b->free_pages, curover->address, curover->pages);
+	  efi_call_2 (b->free_pages, curover->address, curover->pages);
 	  if (prevover != 0)
 	    prevover->next = curover->next;
 	  else
@@ -213,7 +230,7 @@ grub_mmap_unregister (int handle)
 	  return GRUB_ERR_NONE;
 	}
     }
-  return grub_error (GRUB_ERR_BAD_ARGUMENT, "handle %d not found", handle);
+  return grub_error (GRUB_ERR_BUG, "handle %d not found", handle);
 }
 
 /* Result is always page-aligned. */
@@ -273,7 +290,7 @@ grub_mmap_malign_and_register (grub_uint64_t align __attribute__ ((unused)),
   overlays = curover;
   *handle = curover->handle;
 
-  return UINT_TO_PTR (curover->address);
+  return (void *) (grub_addr_t) curover->address;
 }
 
 void

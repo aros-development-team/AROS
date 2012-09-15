@@ -21,49 +21,10 @@
 #define GRUB_LVM_H	1
 
 #include <grub/types.h>
+#include <grub/diskfilter.h>
 
 /* Length of ID string, excluding terminating zero. */
 #define GRUB_LVM_ID_STRLEN 38
-
-struct grub_lvm_vg {
-  char id[GRUB_LVM_ID_STRLEN+1];
-  char *name;
-  int extent_size;
-  struct grub_lvm_pv *pvs;
-  struct grub_lvm_lv *lvs;
-  struct grub_lvm_vg *next;
-};
-
-struct grub_lvm_pv {
-  char id[GRUB_LVM_ID_STRLEN+1];
-  char *name;
-  grub_disk_t disk;
-  int start; /* Sector number where the data area starts. */
-  struct grub_lvm_pv *next;
-};
-
-struct grub_lvm_lv {
-  char *name;
-  unsigned int number;
-  unsigned int segment_count;
-  grub_uint64_t size;
-  struct grub_lvm_segment *segments; /* Pointer to segment_count segments. */
-  struct grub_lvm_vg *vg;
-  struct grub_lvm_lv *next;
-};
-
-struct grub_lvm_segment {
-  unsigned int start_extent;
-  unsigned int extent_count;
-  unsigned int stripe_count;
-  unsigned int stripe_size;
-  struct grub_lvm_stripe *stripes; /* Pointer to stripe_count stripes. */
-};
-
-struct grub_lvm_stripe {
-  int start;
-  struct grub_lvm_pv *pv;
-};
 
 #define GRUB_LVM_LABEL_SIZE GRUB_DISK_SECTOR_SIZE
 #define GRUB_LVM_LABEL_SCAN_SECTORS 4L

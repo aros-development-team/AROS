@@ -64,6 +64,7 @@ struct grub_pe32_coff_header
 };
 
 #define GRUB_PE32_MACHINE_I386		0x14c
+#define GRUB_PE32_MACHINE_IA64		0x200
 #define GRUB_PE32_MACHINE_X86_64	0x8664
 
 #define GRUB_PE32_RELOCS_STRIPPED		0x0001

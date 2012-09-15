@@ -29,6 +29,9 @@
 #include <grub/charset.h>
 #include <grub/unicode.h>
 #include <grub/fontformat.h>
+#include <grub/env.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #ifdef USE_ASCII_FAILBACK
 #include "ascii.h"
@@ -190,7 +193,8 @@ grub_font_loader_init (void)
 
   /* Initialize the null font.  */
   font_init (&null_font);
-  null_font.name = "<No Font>";
+  /* FIXME: Fix this slightly improper cast.  */
+  null_font.name = (char *) "<No Font>";
   null_font.ascent = unknown_glyph->height - 3;
   null_font.descent = 3;
   null_font.max_char_width = unknown_glyph->width;
@@ -248,8 +252,7 @@ open_section (grub_file_t file, struct font_file_section *section)
     }
   else if (retval < 0)
     {
-      grub_error (GRUB_ERR_BAD_FONT,
-		  "font format error: can't read section name");
+      /* Read error.  */
       return 1;
     }
 
@@ -263,8 +266,7 @@ open_section (grub_file_t file, struct font_file_section *section)
     }
   else if (retval < 0)
     {
-      grub_error (GRUB_ERR_BAD_FONT,
-		  "font format error: can't read section length");
+      /* Read error.  */
       return 1;
     }
 
@@ -314,10 +316,7 @@ load_font_index (grub_file_t file, grub_uint32_t sect_length, struct
     return 1;
   font->bmp_idx = grub_malloc (0x10000 * sizeof (grub_uint16_t));
   if (!font->bmp_idx)
-    {
-      grub_free (font->char_index);
-      return 1;
-    }
+    return 1;
   grub_memset (font->bmp_idx, 0xff, 0x10000 * sizeof (grub_uint16_t));
 
 
@@ -435,7 +434,30 @@ grub_font_load (const char *filename)
   grub_printf ("add_font(%s)\n", filename);
 #endif
 
-  file = grub_buffile_open (filename, 1024);
+  if (filename[0] == '(' || filename[0] == '/' || filename[0] == '+')
+    file = grub_buffile_open (filename, 1024);
+  else
+    {
+      const char *prefix = grub_env_get ("prefix");
+      char *fullname, *ptr;
+      if (!prefix)
+	{
+	  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("variable `%s' isn't set"),
+		      "prefix");
+	  goto fail;
+	}
+      fullname = grub_malloc (grub_strlen (prefix) + grub_strlen (filename) + 1
+			      + sizeof ("/fonts/") + sizeof (".pf2"));
+      if (!fullname)
+	goto fail;
+      ptr = grub_stpcpy (fullname, prefix);
+      ptr = grub_stpcpy (ptr, "/fonts/");
+      ptr = grub_stpcpy (ptr, filename);
+      ptr = grub_stpcpy (ptr, ".pf2");
+      *ptr = 0;
+      file = grub_buffile_open (fullname, 1024);
+      grub_free (fullname);
+    }
   if (!file)
     goto fail;
 
@@ -492,7 +514,7 @@ grub_font_load (const char *filename)
 #endif
 
   /* Allocate the font object.  */
-  font = (grub_font_t) grub_malloc (sizeof (struct grub_font));
+  font = (grub_font_t) grub_zalloc (sizeof (struct grub_font));
   if (!font)
     goto fail;
 
@@ -609,7 +631,7 @@ grub_font_load (const char *filename)
 
   if (!font->name)
     {
-      grub_printf ("Note: Font has no name.\n");
+      grub_dprintf ("font", "Font has no name.\n");
       font->name = grub_strdup ("Unknown");
     }
 
@@ -638,6 +660,11 @@ grub_font_load (const char *filename)
   return 0;
 
 fail:
+  if (file)
+    grub_file_close (file);
+  if (font)
+    font->file = 0;
+
   free_font (font);
   return 1;
 }
@@ -797,6 +824,7 @@ free_font (grub_font_t font)
       grub_free (font->name);
       grub_free (font->family);
       grub_free (font->char_index);
+      grub_free (font->bmp_idx);
       grub_free (font);
     }
 }
@@ -1278,6 +1306,14 @@ blit_comb (const struct grub_unicode_glyph *glyph_id,
 	    min_devwidth = combining_glyphs[i]->width;
 	  break;
 
+	case GRUB_UNICODE_COMB_HEBREW_DAGESH:
+	  do_blit (combining_glyphs[i], targetx,
+		   -(bounds.height / 2 + bounds.y
+		     + combining_glyphs[i]->height / 2));
+	  if (min_devwidth < combining_glyphs[i]->width)
+	    min_devwidth = combining_glyphs[i]->width;
+	  break;
+
 	case GRUB_UNICODE_COMB_HEBREW_SHEVA:
 	case GRUB_UNICODE_COMB_HEBREW_HIRIQ:
 	case GRUB_UNICODE_COMB_HEBREW_QAMATS:
@@ -1365,6 +1401,8 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
   struct grub_font_glyph *main_glyph = NULL;
   struct grub_font_glyph **combining_glyphs;
   grub_uint32_t desired_attributes = 0;
+  unsigned i;
+  grub_uint32_t base = glyph_id->base;
 
   if (combining_glyphs_out)
     *combining_glyphs_out = NULL;
@@ -1375,16 +1413,28 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
   if (glyph_id->attributes & GRUB_UNICODE_GLYPH_ATTRIBUTE_LEFT_JOINED)
     desired_attributes |= GRUB_FONT_CODE_LEFT_JOINED;
 
-  main_glyph = grub_font_get_glyph_with_fallback (hinted_font, glyph_id->base
+
+  if (base == 'i' || base == 'j')
+    {
+      for (i = 0; i < glyph_id->ncomb; i++)
+	if (glyph_id->combining[i].type == GRUB_UNICODE_STACK_ABOVE)
+	  break;
+      if (i < glyph_id->ncomb && base == 'i')
+	base = GRUB_UNICODE_DOTLESS_LOWERCASE_I;
+      if (i < glyph_id->ncomb && base == 'j')
+	base = GRUB_UNICODE_DOTLESS_LOWERCASE_J;
+    }
+
+  main_glyph = grub_font_get_glyph_with_fallback (hinted_font, base
 						  | desired_attributes);
 
   if (!main_glyph)
     main_glyph = grub_font_get_glyph_with_fallback (hinted_font,
-						    glyph_id->base);
+						    base);
 
   /* Glyph not available in any font.  Use ASCII fallback.  */
   if (!main_glyph)
-    main_glyph = ascii_glyph_lookup (glyph_id->base);
+    main_glyph = ascii_glyph_lookup (base);
 
   /* Glyph not available in any font.  Return unknown glyph.  */
   if (!main_glyph)
@@ -1404,13 +1454,10 @@ grub_font_construct_dry_run (grub_font_t hinted_font,
       return main_glyph;
     }
 
-  {
-    unsigned i;
-    for (i = 0; i < glyph_id->ncomb; i++)
-      combining_glyphs[i]
-	= grub_font_get_glyph_with_fallback (main_glyph->font,
-					     glyph_id->combining[i].code);
-  }
+  for (i = 0; i < glyph_id->ncomb; i++)
+    combining_glyphs[i]
+      = grub_font_get_glyph_with_fallback (main_glyph->font,
+					   glyph_id->combining[i].code);
 
   blit_comb (glyph_id, NULL, bounds, main_glyph, combining_glyphs,
 	     device_width);

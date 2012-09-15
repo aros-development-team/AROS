@@ -46,7 +46,8 @@ grub_relocator_alloc_chunk_align (struct grub_relocator *rel,
 				  grub_phys_addr_t min_addr,
 				  grub_phys_addr_t max_addr,
 				  grub_size_t size, grub_size_t align,
-				  int preference);
+				  int preference,
+				  int avoid_efi_boot_services);
 
 #define GRUB_RELOCATOR_PREFERENCE_NONE 0
 #define GRUB_RELOCATOR_PREFERENCE_LOW 1

@@ -27,6 +27,8 @@
 #include <grub/search.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
     {"file",		'f', 0, N_("Search devices by a file."), 0, 0},
@@ -35,11 +37,32 @@ static const struct grub_arg_option options[] =
     {"fs-uuid",		'u', 0, N_("Search devices by a filesystem UUID."),
      0, 0},
     {"set",		's', GRUB_ARG_OPTION_OPTIONAL,
-     N_("Set a variable to the first device found."), "VAR", ARG_TYPE_STRING},
+     N_("Set a variable to the first device found."), N_("VARNAME"),
+     ARG_TYPE_STRING},
     {"no-floppy",	'n', 0, N_("Do not probe any floppy drive."), 0, 0},
     {"hint",	        'h', GRUB_ARG_OPTION_REPEATABLE,
      N_("First try the device HINT. If HINT ends in comma, "
 	"also try subpartitions"), N_("HINT"), ARG_TYPE_STRING},
+    {"hint-ieee1275",   0, GRUB_ARG_OPTION_REPEATABLE,
+     N_("First try the device HINT if currently running on IEEE1275. "
+	"If HINT ends in comma, also try subpartitions"),
+     N_("HINT"), ARG_TYPE_STRING},
+    {"hint-bios",   0, GRUB_ARG_OPTION_REPEATABLE,
+     N_("First try the device HINT if currently running on BIOS. "
+	"If HINT ends in comma, also try subpartitions"),
+     N_("HINT"), ARG_TYPE_STRING},
+    {"hint-baremetal",   0, GRUB_ARG_OPTION_REPEATABLE,
+     N_("First try the device HINT if direct hardware access is supported. "
+	"If HINT ends in comma, also try subpartitions"),
+     N_("HINT"), ARG_TYPE_STRING},
+    {"hint-efi",   0, GRUB_ARG_OPTION_REPEATABLE,
+     N_("First try the device HINT if currently running on EFI. "
+	"If HINT ends in comma, also try subpartitions"),
+     N_("HINT"), ARG_TYPE_STRING},
+    {"hint-arc",   0, GRUB_ARG_OPTION_REPEATABLE,
+     N_("First try the device HINT if currently running on ARC."
+	" If HINT ends in comma, also try subpartitions"),
+     N_("HINT"), ARG_TYPE_STRING},
     {0, 0, 0, 0, 0, 0}
   };
 
@@ -50,7 +73,12 @@ enum options
     SEARCH_FS_UUID,
     SEARCH_SET,
     SEARCH_NO_FLOPPY,
-    SEARCH_HINT
+    SEARCH_HINT,
+    SEARCH_HINT_IEEE1275,
+    SEARCH_HINT_BIOS,
+    SEARCH_HINT_BAREMETAL,
+    SEARCH_HINT_EFI,
+    SEARCH_HINT_ARC,
  };
 
 static grub_err_t
@@ -58,27 +86,106 @@ grub_cmd_search (grub_extcmd_context_t ctxt, int argc, char **args)
 {
   struct grub_arg_list *state = ctxt->state;
   const char *var = 0;
-  int nhints = 0;
+  const char *id = 0;
+  int i = 0, j = 0, nhints = 0;
+  char **hints = NULL;
 
   if (state[SEARCH_HINT].set)
-    while (state[SEARCH_HINT].args[nhints])
+    for (i = 0; state[SEARCH_HINT].args[i]; i++)
       nhints++;
 
-  if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no argument specified");
+#ifdef GRUB_MACHINE_IEEE1275
+  if (state[SEARCH_HINT_IEEE1275].set)
+    for (i = 0; state[SEARCH_HINT_IEEE1275].args[i]; i++)
+      nhints++;
+#endif
+
+#ifdef GRUB_MACHINE_EFI
+  if (state[SEARCH_HINT_EFI].set)
+    for (i = 0; state[SEARCH_HINT_EFI].args[i]; i++)
+      nhints++;
+#endif
+
+#ifdef GRUB_MACHINE_PCBIOS
+  if (state[SEARCH_HINT_BIOS].set)
+    for (i = 0; state[SEARCH_HINT_BIOS].args[i]; i++)
+      nhints++;
+#endif
+
+#ifdef GRUB_MACHINE_ARC
+  if (state[SEARCH_HINT_ARC].set)
+    for (i = 0; state[SEARCH_HINT_ARC].args[i]; i++)
+      nhints++;
+#endif
+
+  if (state[SEARCH_HINT_BAREMETAL].set)
+    for (i = 0; state[SEARCH_HINT_BAREMETAL].args[i]; i++)
+      nhints++;
+
+  hints = grub_malloc (sizeof (hints[0]) * nhints);
+  if (!hints)
+    return grub_errno;
+  j = 0;
+
+  if (state[SEARCH_HINT].set)
+    for (i = 0; state[SEARCH_HINT].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT].args[i];
+
+#ifdef GRUB_MACHINE_IEEE1275
+  if (state[SEARCH_HINT_IEEE1275].set)
+    for (i = 0; state[SEARCH_HINT_IEEE1275].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT_IEEE1275].args[i];
+#endif
+
+#ifdef GRUB_MACHINE_EFI
+  if (state[SEARCH_HINT_EFI].set)
+    for (i = 0; state[SEARCH_HINT_EFI].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT_EFI].args[i];
+#endif
+
+#ifdef GRUB_MACHINE_ARC
+  if (state[SEARCH_HINT_ARC].set)
+    for (i = 0; state[SEARCH_HINT_ARC].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT_ARC].args[i];
+#endif
+
+#ifdef GRUB_MACHINE_PCBIOS
+  if (state[SEARCH_HINT_BIOS].set)
+    for (i = 0; state[SEARCH_HINT_BIOS].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT_BIOS].args[i];
+#endif
+
+  if (state[SEARCH_HINT_BAREMETAL].set)
+    for (i = 0; state[SEARCH_HINT_BAREMETAL].args[i]; i++)
+      hints[j++] = state[SEARCH_HINT_BAREMETAL].args[i];
+
+  /* Skip hints for future platforms.  */
+  for (j = 0; j < argc; j++)
+    if (grub_memcmp (args[j], "--hint-", sizeof ("--hint-") - 1) != 0)
+      break;
 
   if (state[SEARCH_SET].set)
     var = state[SEARCH_SET].arg ? state[SEARCH_SET].arg : "root";
 
+  if (argc != j)
+    id = args[j];
+  else if (state[SEARCH_SET].set && state[SEARCH_SET].arg)
+    {
+      id = state[SEARCH_SET].arg;
+      var = "root";
+    }
+  else
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
+
   if (state[SEARCH_LABEL].set)
-    grub_search_label (args[0], var, state[SEARCH_NO_FLOPPY].set, 
-		       state[SEARCH_HINT].args, nhints);
+    grub_search_label (id, var, state[SEARCH_NO_FLOPPY].set, 
+		       hints, nhints);
   else if (state[SEARCH_FS_UUID].set)
-    grub_search_fs_uuid (args[0], var, state[SEARCH_NO_FLOPPY].set,
-			 state[SEARCH_HINT].args, nhints);
+    grub_search_fs_uuid (id, var, state[SEARCH_NO_FLOPPY].set,
+			 hints, nhints);
   else if (state[SEARCH_FILE].set)
-    grub_search_fs_file (args[0], var, state[SEARCH_NO_FLOPPY].set, 
-			 state[SEARCH_HINT].args, nhints);
+    grub_search_fs_file (id, var, state[SEARCH_NO_FLOPPY].set, 
+			 hints, nhints);
   else
     return grub_error (GRUB_ERR_INVALID_COMMAND, "unspecified search type");
 
@@ -90,14 +197,15 @@ static grub_extcmd_t cmd;
 GRUB_MOD_INIT(search)
 {
   cmd =
-    grub_register_extcmd ("search", grub_cmd_search, GRUB_COMMAND_FLAG_EXTRACTOR,
+    grub_register_extcmd ("search", grub_cmd_search,
+			  GRUB_COMMAND_FLAG_EXTRACTOR | GRUB_COMMAND_ACCEPT_DASH,
 			  N_("[-f|-l|-u|-s|-n] [--hint HINT [--hint HINT] ...]"
 			     " NAME"),
 			  N_("Search devices by file, filesystem label"
 			     " or filesystem UUID."
 			     " If --set is specified, the first device found is"
 			     " set to a variable. If no variable name is"
-			     " specified, \"root\" is used."),
+			     " specified, `root' is used."),
 			  options);
 }
 

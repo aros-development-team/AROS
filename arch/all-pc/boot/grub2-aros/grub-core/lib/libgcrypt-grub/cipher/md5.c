@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* md5.c - MD5 Message-Digest Algorithm
  * Copyright (C) 1995,1996,1998,1999,2001,2002,
  *               2003  Free Software Foundation, Inc.
@@ -90,7 +92,8 @@ transform ( MD5_CONTEXT *ctx, const unsigned char *data )
 #ifdef WORDS_BIGENDIAN
   { 
     int i;
-    byte *p2, *p1;
+    byte *p2;
+    const byte *p1;
     for(i=0, p1=data, p2=(byte*)correct_words; i < 16; i++, p2 += 4 )
       {
         p2[3] = *p1++;
@@ -351,6 +354,9 @@ gcry_md_spec_t _gcry_digest_spec_md5 =
     md5_init, md5_write, md5_final, md5_read,
     sizeof (MD5_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_md5",
+#endif
     .blocksize = 64
   };
 

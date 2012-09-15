@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* Rijndael (AES) for GnuPG
  * Copyright (C) 2000, 2001, 2002, 2003, 2007,
  *               2008 Free Software Foundation, Inc.
@@ -701,6 +703,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_aes =
   {
     "AES", rijndael_names, rijndael_oids, 16, 128, sizeof (RIJNDAEL_context),
     rijndael_setkey, rijndael_encrypt, rijndael_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_rijndael",
+#endif
   };
 
 static const char *rijndael192_names[] =
@@ -723,6 +729,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_aes192 =
   {
     "AES192", rijndael192_names, rijndael192_oids, 16, 192, sizeof (RIJNDAEL_context),
     rijndael_setkey, rijndael_encrypt, rijndael_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_rijndael",
+#endif
   };
 
 static const char *rijndael256_names[] =
@@ -746,6 +756,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_aes256 =
     "AES256", rijndael256_names, rijndael256_oids, 16, 256,
     sizeof (RIJNDAEL_context),
     rijndael_setkey, rijndael_encrypt, rijndael_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_rijndael",
+#endif
   };
 
 

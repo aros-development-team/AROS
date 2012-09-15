@@ -25,6 +25,9 @@ grub_decompress_core (void *src, void *dest, unsigned long n,
   char *d = (char *) dest;
   const char *s = (const char *) src;
 
+  if (d == s)
+    return;
+
   if (d < s)
     while (n--)
       *d++ = *s++;

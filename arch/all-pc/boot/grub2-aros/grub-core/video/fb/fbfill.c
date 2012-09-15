@@ -64,7 +64,7 @@ grub_video_fbfill_direct32 (struct grub_video_fbblit_info *dst,
   rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
 
   /* Get the start address.  */
-  dstptr = (grub_uint32_t *) grub_video_fb_get_video_ptr (dst, x, y);
+  dstptr = grub_video_fb_get_video_ptr (dst, x, y);
 
   for (j = 0; j < height; j++)
     {
@@ -72,7 +72,7 @@ grub_video_fbfill_direct32 (struct grub_video_fbblit_info *dst,
         *dstptr++ = color;
 
       /* Advance the dest pointer to the right location on the next line.  */
-      dstptr = (grub_uint32_t *) (((char *) dstptr) + rowskip);
+      GRUB_VIDEO_FB_ADVANCE_POINTER (dstptr, rowskip);
     }
 }
 
@@ -96,7 +96,7 @@ grub_video_fbfill_direct24 (struct grub_video_fbblit_info *dst,
   rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
 
   /* Get the start address.  */
-  dstptr = (grub_uint8_t *) grub_video_fb_get_video_ptr (dst, x, y);
+  dstptr = grub_video_fb_get_video_ptr (dst, x, y);
 
   for (j = 0; j < height; j++)
     {
@@ -131,7 +131,7 @@ grub_video_fbfill_direct16 (struct grub_video_fbblit_info *dst,
   rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
 
   /* Get the start address.  */
-  dstptr = (grub_uint8_t *) grub_video_fb_get_video_ptr (dst, x, y);
+  dstptr = grub_video_fb_get_video_ptr (dst, x, y);
 
   for (j = 0; j < height; j++)
     {
@@ -164,7 +164,7 @@ grub_video_fbfill_direct8 (struct grub_video_fbblit_info *dst,
   rowskip = dst->mode_info->pitch - dst->mode_info->bytes_per_pixel * width;
 
   /* Get the start address.  */
-  dstptr = (grub_uint8_t *) grub_video_fb_get_video_ptr (dst, x, y);
+  dstptr = grub_video_fb_get_video_ptr (dst, x, y);
 
   for (j = 0; j < height; j++)
     {

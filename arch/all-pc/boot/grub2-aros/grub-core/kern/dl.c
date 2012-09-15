@@ -31,17 +31,27 @@
 #include <grub/file.h>
 #include <grub/env.h>
 #include <grub/cache.h>
+#include <grub/i18n.h>
 
 /* Platforms where modules are in a readonly area of memory.  */
 #if defined(GRUB_MACHINE_QEMU)
 #define GRUB_MODULES_MACHINE_READONLY
 #endif
 
+#ifdef GRUB_MACHINE_EMU
+#include <sys/mman.h>
+#endif
+
 
+
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 grub_dl_t grub_dl_head = 0;
 
-static grub_err_t
+grub_err_t
+grub_dl_add (grub_dl_t mod);
+
+grub_err_t
 grub_dl_add (grub_dl_t mod)
 {
   if (grub_dl_get (mod->name))
@@ -86,6 +96,7 @@ struct grub_symbol
   struct grub_symbol *next;
   const char *name;
   void *addr;
+  int isfunc;
   grub_dl_t mod;	/* The module to which this symbol belongs.  */
 };
 typedef struct grub_symbol *grub_symbol_t;
@@ -110,21 +121,22 @@ grub_symbol_hash (const char *s)
 
 /* Resolve the symbol name NAME and return the address.
    Return NULL, if not found.  */
-static void *
+static grub_symbol_t
 grub_dl_resolve_symbol (const char *name)
 {
   grub_symbol_t sym;
 
   for (sym = grub_symtab[grub_symbol_hash (name)]; sym; sym = sym->next)
     if (grub_strcmp (sym->name, name) == 0)
-      return sym->addr;
+      return sym;
 
   return 0;
 }
 
 /* Register a symbol with the name NAME and the address ADDR.  */
 grub_err_t
-grub_dl_register_symbol (const char *name, void *addr, grub_dl_t mod)
+grub_dl_register_symbol (const char *name, void *addr, int isfunc,
+			 grub_dl_t mod)
 {
   grub_symbol_t sym;
   unsigned k;
@@ -147,6 +159,7 @@ grub_dl_register_symbol (const char *name, void *addr, grub_dl_t mod)
 
   sym->addr = addr;
   sym->mod = mod;
+  sym->isfunc = isfunc;
 
   k = grub_symbol_hash (name);
   sym->next = grub_symtab[k];
@@ -201,20 +214,24 @@ static grub_err_t
 grub_dl_check_header (void *ehdr, grub_size_t size)
 {
   Elf_Ehdr *e = ehdr;
+  grub_err_t err;
 
   /* Check the header size.  */
   if (size < sizeof (Elf_Ehdr))
     return grub_error (GRUB_ERR_BAD_OS, "ELF header smaller than expected");
 
   /* Check the magic numbers.  */
-  if (grub_arch_dl_check_header (ehdr)
-      || e->e_ident[EI_MAG0] != ELFMAG0
+  if (e->e_ident[EI_MAG0] != ELFMAG0
       || e->e_ident[EI_MAG1] != ELFMAG1
       || e->e_ident[EI_MAG2] != ELFMAG2
       || e->e_ident[EI_MAG3] != ELFMAG3
       || e->e_ident[EI_VERSION] != EV_CURRENT
       || e->e_version != EV_CURRENT)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch independent ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-independent ELF magic"));
+
+  err = grub_arch_dl_check_header (ehdr);
+  if (err)
+    return err;
 
   return GRUB_ERR_NONE;
 }
@@ -225,6 +242,49 @@ grub_dl_load_segments (grub_dl_t mod, const Elf_Ehdr *e)
 {
   unsigned i;
   Elf_Shdr *s;
+  grub_size_t tsize = 0, talign = 1;
+#if defined (__ia64__) || defined (__powerpc__)
+  grub_size_t tramp;
+  grub_size_t got;
+#endif
+  char *ptr;
+
+  for (i = 0, s = (Elf_Shdr *)((char *) e + e->e_shoff);
+       i < e->e_shnum;
+       i++, s = (Elf_Shdr *)((char *) s + e->e_shentsize))
+    {
+      tsize = ALIGN_UP (tsize, s->sh_addralign) + s->sh_size;
+      if (talign < s->sh_addralign)
+	talign = s->sh_addralign;
+    }
+
+#if defined (__ia64__) || defined (__powerpc__)
+  grub_arch_dl_get_tramp_got_size (e, &tramp, &got);
+  tramp *= GRUB_ARCH_DL_TRAMP_SIZE;
+  got *= sizeof (grub_uint64_t);
+  tsize += ALIGN_UP (tramp, GRUB_ARCH_DL_TRAMP_ALIGN);
+  if (talign < GRUB_ARCH_DL_TRAMP_ALIGN)
+    talign = GRUB_ARCH_DL_TRAMP_ALIGN;
+  tsize += ALIGN_UP (got, GRUB_ARCH_DL_GOT_ALIGN);
+  if (talign < GRUB_ARCH_DL_GOT_ALIGN)
+    talign = GRUB_ARCH_DL_GOT_ALIGN;
+#endif
+
+#ifdef GRUB_MACHINE_EMU
+  if (talign < 8192 * 16)
+    talign = 8192 * 16;
+  tsize = ALIGN_UP (tsize, 8192 * 16);
+#endif
+
+  mod->base = grub_memalign (talign, tsize);
+  if (!mod->base)
+    return grub_errno;
+  mod->sz = tsize;
+  ptr = mod->base;
+
+#ifdef GRUB_MACHINE_EMU
+  mprotect (mod->base, tsize, PROT_READ | PROT_WRITE | PROT_EXEC);
+#endif
 
   for (i = 0, s = (Elf_Shdr *)((char *) e + e->e_shoff);
        i < e->e_shnum;
@@ -242,12 +302,9 @@ grub_dl_load_segments (grub_dl_t mod, const Elf_Ehdr *e)
 	    {
 	      void *addr;
 
-	      addr = grub_memalign (s->sh_addralign, s->sh_size);
-	      if (! addr)
-		{
-		  grub_free (seg);
-		  return grub_errno;
-		}
+	      ptr = (char *) ALIGN_UP ((grub_addr_t) ptr, s->sh_addralign);
+	      addr = ptr;
+	      ptr += s->sh_size;
 
 	      switch (s->sh_type)
 		{
@@ -270,6 +327,14 @@ grub_dl_load_segments (grub_dl_t mod, const Elf_Ehdr *e)
 	  mod->segment = seg;
 	}
     }
+#if defined (__ia64__) || defined (__powerpc__)
+  ptr = (char *) ALIGN_UP ((grub_addr_t) ptr, GRUB_ARCH_DL_TRAMP_ALIGN);
+  mod->tramp = ptr;
+  ptr += tramp;
+  ptr = (char *) ALIGN_UP ((grub_addr_t) ptr, GRUB_ARCH_DL_GOT_ALIGN);
+  mod->got = ptr;
+  ptr += got;
+#endif
 
   return GRUB_ERR_NONE;
 }
@@ -290,7 +355,7 @@ grub_dl_resolve_symbols (grub_dl_t mod, Elf_Ehdr *e)
       break;
 
   if (i == e->e_shnum)
-    return grub_error (GRUB_ERR_BAD_MODULE, "no symbol table");
+    return grub_error (GRUB_ERR_BAD_MODULE, N_("no symbol table"));
 
 #ifdef GRUB_MODULES_MACHINE_READONLY
   mod->symtab = grub_malloc (s->sh_size);
@@ -320,17 +385,20 @@ grub_dl_resolve_symbols (grub_dl_t mod, Elf_Ehdr *e)
 	  /* Resolve a global symbol.  */
 	  if (sym->st_name != 0 && sym->st_shndx == 0)
 	    {
-	      sym->st_value = (Elf_Addr) grub_dl_resolve_symbol (name);
-	      if (! sym->st_value)
+	      grub_symbol_t nsym = grub_dl_resolve_symbol (name);
+	      if (! nsym)
 		return grub_error (GRUB_ERR_BAD_MODULE,
-				   "symbol not found: `%s'", name);
+				   N_("symbol `%s' not found"), name);
+	      sym->st_value = (Elf_Addr) nsym->addr;
+	      if (nsym->isfunc)
+		sym->st_info = ELF_ST_INFO (bind, STT_FUNC);
 	    }
 	  else
 	    {
 	      sym->st_value += (Elf_Addr) grub_dl_get_section_addr (mod,
 								    sym->st_shndx);
 	      if (bind != STB_LOCAL)
-		if (grub_dl_register_symbol (name, (void *) sym->st_value, mod))
+		if (grub_dl_register_symbol (name, (void *) sym->st_value, 0, mod))
 		  return grub_errno;
 	    }
 	  break;
@@ -338,10 +406,21 @@ grub_dl_resolve_symbols (grub_dl_t mod, Elf_Ehdr *e)
 	case STT_FUNC:
 	  sym->st_value += (Elf_Addr) grub_dl_get_section_addr (mod,
 								sym->st_shndx);
+#ifdef __ia64__
+	  {
+	      /* FIXME: free descriptor once it's not used anymore. */
+	      char **desc;
+	      desc = grub_malloc (2 * sizeof (char *));
+	      if (!desc)
+		return grub_errno;
+	      desc[0] = (void *) sym->st_value;
+	      desc[1] = mod->base;
+	      sym->st_value = (grub_addr_t) desc;
+	  }
+#endif
 	  if (bind != STB_LOCAL)
-	    if (grub_dl_register_symbol (name, (void *) sym->st_value, mod))
+	    if (grub_dl_register_symbol (name, (void *) sym->st_value, 1, mod))
 	      return grub_errno;
-
 	  if (grub_strcmp (name, "grub_mod_init") == 0)
 	    mod->init = (void (*) (grub_dl_t)) sym->st_value;
 	  else if (grub_strcmp (name, "grub_mod_fini") == 0)
@@ -371,6 +450,38 @@ grub_dl_call_init (grub_dl_t mod)
 {
   if (mod->init)
     (mod->init) (mod);
+}
+
+/* Me, Vladimir Serbinenko, hereby I add this module check as per new
+   GNU module policy. Note that this license check is informative only.
+   Modules have to be licensed under GPLv3 or GPLv3+ (optionally
+   multi-licensed under other licences as well) independently of the
+   presence of this check and solely by linking (module loading in GRUB
+   constitutes linking) and GRUB core being licensed under GPLv3+.
+   Be sure to understand your license obligations.
+*/
+static grub_err_t
+grub_dl_check_license (Elf_Ehdr *e)
+{
+  Elf_Shdr *s;
+  const char *str;
+  unsigned i;
+
+  s = (Elf_Shdr *) ((char *) e + e->e_shoff + e->e_shstrndx * e->e_shentsize);
+  str = (char *) e + s->sh_offset;
+
+  for (i = 0, s = (Elf_Shdr *) ((char *) e + e->e_shoff);
+       i < e->e_shnum;
+       i++, s = (Elf_Shdr *) ((char *) s + e->e_shentsize))
+    if (grub_strcmp (str + s->sh_name, ".module_license") == 0)
+      {
+	if (grub_strcmp ((char *) e + s->sh_offset, "LICENSE=GPLv3") == 0
+	    || grub_strcmp ((char *) e + s->sh_offset, "LICENSE=GPLv3+") == 0
+	    || grub_strcmp ((char *) e + s->sh_offset, "LICENSE=GPLv2+") == 0)
+	  return GRUB_ERR_NONE;
+      }
+
+  return grub_error (GRUB_ERR_BAD_MODULE, "incompatible license");
 }
 
 static grub_err_t
@@ -475,15 +586,9 @@ grub_dl_unref (grub_dl_t mod)
 static void
 grub_dl_flush_cache (grub_dl_t mod)
 {
-  grub_dl_segment_t seg;
-
-  for (seg = mod->segment; seg; seg = seg->next) {
-    if (seg->size) {
-      grub_dprintf ("modules", "flushing 0x%lx bytes at %p\n",
-		    (unsigned long) seg->size, seg->addr);
-      grub_arch_sync_caches (seg->addr, seg->size);
-    }
-  }
+  grub_dprintf ("modules", "flushing 0x%lx bytes at %p\n",
+		(unsigned long) mod->sz, mod->base);
+  grub_arch_sync_caches (mod->base, mod->sz);
 }
 
 /* Load a module from core memory.  */
@@ -501,7 +606,7 @@ grub_dl_load_core (void *addr, grub_size_t size)
 
   if (e->e_type != ET_REL)
     {
-      grub_error (GRUB_ERR_BAD_MODULE, "invalid ELF file type");
+      grub_error (GRUB_ERR_BAD_MODULE, N_("this ELF file is not of the right type"));
       return 0;
     }
 
@@ -519,7 +624,16 @@ grub_dl_load_core (void *addr, grub_size_t size)
   mod->ref_count = 1;
 
   grub_dprintf ("modules", "relocating to %p\n", mod);
-  if (grub_dl_resolve_name (mod, e)
+  /* Me, Vladimir Serbinenko, hereby I add this module check as per new
+     GNU module policy. Note that this license check is informative only.
+     Modules have to be licensed under GPLv3 or GPLv3+ (optionally
+     multi-licensed under other licences as well) independently of the
+     presence of this check and solely by linking (module loading in GRUB
+     constitutes linking) and GRUB core being licensed under GPLv3+.
+     Be sure to understand your license obligations.
+  */
+  if (grub_dl_check_license (e)
+      || grub_dl_resolve_name (mod, e)
       || grub_dl_resolve_dependencies (mod, e)
       || grub_dl_load_segments (mod, e)
       || grub_dl_resolve_symbols (mod, e)
@@ -579,13 +693,11 @@ grub_dl_load_file (const char *filename)
   grub_file_close (file);
 
   mod = grub_dl_load_core (core, size);
+  grub_free (core);
   if (! mod)
-    {
-      grub_free (core);
-      return 0;
-    }
+    return 0;
 
-  mod->ref_count = 0;
+  mod->ref_count--;
   return mod;
 }
 
@@ -595,18 +707,19 @@ grub_dl_load (const char *name)
 {
   char *filename;
   grub_dl_t mod;
-  char *grub_dl_dir = grub_env_get ("prefix");
+  const char *grub_dl_dir = grub_env_get ("prefix");
 
   mod = grub_dl_get (name);
   if (mod)
     return mod;
 
   if (! grub_dl_dir) {
-    grub_error (GRUB_ERR_FILE_NOT_FOUND, "\"prefix\" is not set");
+    grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("variable `%s' isn't set"), "prefix");
     return 0;
   }
 
-  filename = grub_xasprintf ("%s/%s.mod", grub_dl_dir, name);
+  filename = grub_xasprintf ("%s/" GRUB_TARGET_CPU "-" GRUB_PLATFORM "/%s.mod",
+			     grub_dl_dir, name);
   if (! filename)
     return 0;
 
@@ -627,7 +740,6 @@ int
 grub_dl_unload (grub_dl_t mod)
 {
   grub_dl_dep_t dep, depn;
-  grub_dl_segment_t seg, segn;
 
   if (mod->ref_count > 0)
     return 0;
@@ -642,19 +754,12 @@ grub_dl_unload (grub_dl_t mod)
     {
       depn = dep->next;
 
-      if (! grub_dl_unref (dep->mod))
-	grub_dl_unload (dep->mod);
+      grub_dl_unload (dep->mod);
 
       grub_free (dep);
     }
 
-  for (seg = mod->segment; seg; seg = segn)
-    {
-      segn = seg->next;
-      grub_free (seg->addr);
-      grub_free (seg);
-    }
-
+  grub_free (mod->base);
   grub_free (mod->name);
 #ifdef GRUB_MODULES_MACHINE_READONLY
   grub_free (mod->symtab);

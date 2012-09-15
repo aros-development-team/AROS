@@ -17,7 +17,6 @@
  *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <grub/boot.h>
 #include <grub/machine/boot.h>
 
 	.text
@@ -28,9 +27,6 @@ _start:
 pic_base:
 	call	boot_continue
 	 mov	%o4, CIF_REG
-
-	. = _start + GRUB_BOOT_MACHINE_VER_MAJ
-boot_version:		.byte	GRUB_BOOT_VERSION_MAJOR, GRUB_BOOT_VERSION_MINOR
 
 	/* The offsets to these locations are defined by the
 	 * GRUB_BOOT_MACHINE_foo macros in include/grub/sparc/ieee1275/boot.h,
@@ -44,6 +40,7 @@ boot_version:		.byte	GRUB_BOOT_VERSION_MAJOR, GRUB_BOOT_VERSION_MINOR
 	 * After loading in that block we will execute it by jumping to the
 	 * load address plus the size of the prepended A.OUT header (32 bytes).
 	 */
+	. = _start + GRUB_BOOT_MACHINE_BOOT_DEVPATH
 boot_path:
 	. = _start + GRUB_BOOT_MACHINE_KERNEL_BYTE
 boot_path_end:

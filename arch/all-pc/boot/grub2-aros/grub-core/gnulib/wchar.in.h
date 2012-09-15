@@ -402,7 +402,7 @@ _GL_WARN_ON_USE (wcsnrtombs, "wcsnrtombs is unportable - "
 # if @REPLACE_WCWIDTH@
 #  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
 #   undef wcwidth
-#   define wcwidth rpl_wcwidth
+#   define wcwidth(A) (1)
 #  endif
 _GL_FUNCDECL_RPL (wcwidth, int, (wchar_t));
 _GL_CXXALIAS_RPL (wcwidth, int, (wchar_t));

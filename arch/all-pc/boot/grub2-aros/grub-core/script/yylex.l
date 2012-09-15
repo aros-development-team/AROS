@@ -22,7 +22,13 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/script_sh.h>
+#include <grub/i18n.h>
 #include "grub_script.tab.h"
+
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
 
 #define yyfree    grub_lexer_yyfree
 #define yyalloc   grub_lexer_yyalloc
@@ -34,7 +40,7 @@
  */
 #define YY_FATAL_ERROR(msg)                     \
   do {                                          \
-    grub_printf ("fatal error: %s\n", msg);     \
+    grub_printf (_("fatal error: %s\n"), _(msg));     \
   } while (0)
 
 #define COPY(str, hint)                         \
@@ -127,15 +133,18 @@ ESC             \\(.|\n)
 SQCHR           [^\']
 DQCHR           {ESC}|[^\\\"]
 DQSTR           \"{DQCHR}*\"
+I18NSTR         \$\"{DQCHR}*\"
 SQSTR           \'{SQCHR}*\'
 SPECIAL         \?|\#|\*|\@
 VARIABLE        ${NAME}|$\{{NAME}\}|${DIGITS}|$\{{DIGITS}\}|${SPECIAL}|$\{{SPECIAL}\}
-WORD            ({CHAR}|{DQSTR}|{SQSTR}|{ESC}|{VARIABLE})+
+WORD            ({CHAR}|{DQSTR}|{SQSTR}|{ESC}|{VARIABLE}|{I18NSTR})+
 
-MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
+MULTILINE       {WORD}?((\"{DQCHR}*)|(\$\"{DQCHR}*)|(\'{SQCHR}*))
+POS_MULTILINE   {WORD}?\\\n
 
 %x              SPLIT
 %x              DQUOTE
+%x              I18NQUOTE
 %x              SQUOTE
 %x              VAR
 
@@ -161,7 +170,6 @@ MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
 "}"             { RECORD; return GRUB_PARSER_TOKEN_RBR;       }
 "[["            { RECORD; return GRUB_PARSER_TOKEN_RSQBR2;    }
 "]]"            { RECORD; return GRUB_PARSER_TOKEN_LSQBR2;    }
-"time"          { RECORD; return GRUB_PARSER_TOKEN_TIME;      }
 "case"          { RECORD; return GRUB_PARSER_TOKEN_CASE;      }
 "do"            { RECORD; return GRUB_PARSER_TOKEN_DO;        }
 "done"          { RECORD; return GRUB_PARSER_TOKEN_DONE;      }
@@ -183,6 +191,26 @@ MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
 		    return GRUB_PARSER_TOKEN_BAD;
 		}
 
+{POS_MULTILINE} {
+                  if (yyg->yy_c_buf_p + 1 == &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars + 1] )
+		    {
+		      if (grub_lexer_unput (yytext, yyscanner))
+			return GRUB_PARSER_TOKEN_BAD;
+		    }
+		  else
+		    {
+		      RECORD;
+		      yypush_buffer_state (YY_CURRENT_BUFFER, yyscanner);
+		      if (grub_lexer_resplit (yytext, yyscanner))
+			{
+			  yypop_buffer_state (yyscanner);
+			  return GRUB_PARSER_TOKEN_WORD;
+			}
+		      yyextra->lexerstate->resplit = 1;
+		    }
+		}
+
+
 {NAME}          { RECORD; return GRUB_PARSER_TOKEN_NAME; }
 {WORD}          {
                   RECORD;
@@ -202,7 +230,7 @@ MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
  /* Split word into multiple args */
 
 <SPLIT>{
-  \\.           { COPY (yytext + 1, yyleng - 1); }
+  \\.           { COPY (yytext, yyleng); }
   \\\n          { /* ignore */ }
   \"            {
                   yy_push_state (DQUOTE, yyscanner);
@@ -211,6 +239,10 @@ MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
   \'            {
                   yy_push_state (SQUOTE, yyscanner);
                   ARG (GRUB_SCRIPT_ARG_TYPE_TEXT);
+                }
+  "\$\""        {
+                  yy_push_state (I18NQUOTE, yyscanner);
+                  ARG (GRUB_SCRIPT_ARG_TYPE_GETTEXT);
                 }
   \$            {
                   yy_push_state (VAR, yyscanner);
@@ -277,6 +309,19 @@ MULTILINE       {WORD}?((\"{DQCHR}*)|(\'{SQCHR}*)|(\\\n))
   (.|\n)        { COPY (yytext, yyleng); }
 }
 
+<I18NQUOTE>{
+  \\\\          { COPY ("\\\\", 2); }
+  \\\"          { COPY ("\"", 1); }
+  \\\n          { /* ignore */ }
+  [^\"\\\n]+    { COPY (yytext, yyleng); }
+  \"            {
+                  yy_pop_state (yyscanner);
+                  ARG (GRUB_SCRIPT_ARG_TYPE_GETTEXT);
+                }
+  \\            { COPY ("\\", 1); }
+  (.|\n)        { COPY (yytext, yyleng); }
+}
+
 <<EOF>>         {
                   yypop_buffer_state (yyscanner);
 		  yyextra->lexerstate->eof = 1;
@@ -314,14 +359,16 @@ grub_lexer_yyrealloc (void *ptr, yy_size_t size,
 
 static void copy_string (struct grub_parser_param *parser, const char *str, unsigned hint)
 {
-  int size;
+  grub_size_t size;
   char *ptr;
   unsigned len;
 
   len = hint ? hint : grub_strlen (str);
   if (parser->lexerstate->used + len >= parser->lexerstate->size)
     {
-      size = grub_max (len, parser->lexerstate->size) * 2;
+      size = len * 2;
+      if (size < parser->lexerstate->size * 2)
+        size = parser->lexerstate->size * 2;
       ptr = grub_realloc (parser->lexerstate->text, size);
       if (!ptr)
         {
@@ -355,13 +402,12 @@ grub_lexer_unput (const char *text, yyscan_t yyscanner)
 {
   struct grub_lexer_param *lexerstate = yyget_extra (yyscanner)->lexerstate;
 
-  if (lexerstate->prefix)
-    grub_free (lexerstate->prefix);
+  grub_free (lexerstate->prefix);
 
   lexerstate->prefix = grub_strdup (text);
   if (! lexerstate->prefix)
     {
-      grub_script_yyerror (yyget_extra (yyscanner), "out of memory");
+      grub_script_yyerror (yyget_extra (yyscanner), N_("out of memory"));
       return 1;
     }
   return 0;

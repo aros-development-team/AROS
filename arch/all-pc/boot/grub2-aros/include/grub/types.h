@@ -20,7 +20,9 @@
 #define GRUB_TYPES_HEADER	1
 
 #include <config.h>
+#ifndef GRUB_UTIL
 #include <grub/cpu/types.h>
+#endif
 
 #ifdef GRUB_UTIL
 # define GRUB_CPU_SIZEOF_VOID_P	SIZEOF_VOID_P
@@ -48,7 +50,7 @@
 # error "This architecture is not supported because sizeof(void *) != 4 and sizeof(void *) != 8"
 #endif
 
-#ifndef GRUB_TARGET_WORDSIZE
+#if !defined (GRUB_UTIL) & !defined (GRUB_TARGET_WORDSIZE)
 # if GRUB_TARGET_SIZEOF_VOID_P == 4
 #  define GRUB_TARGET_WORDSIZE 32
 # elif GRUB_TARGET_SIZEOF_VOID_P == 8
@@ -82,15 +84,6 @@ typedef unsigned long long	grub_uint64_t;
 #endif
 
 /* Misc types.  */
-#if GRUB_TARGET_SIZEOF_VOID_P == 8
-typedef grub_uint64_t	grub_target_addr_t;
-typedef grub_uint64_t	grub_target_size_t;
-typedef grub_int64_t	grub_target_ssize_t;
-#else
-typedef grub_uint32_t	grub_target_addr_t;
-typedef grub_uint32_t	grub_target_size_t;
-typedef grub_int32_t	grub_target_ssize_t;
-#endif
 
 #if GRUB_CPU_SIZEOF_VOID_P == 8
 typedef grub_uint64_t	grub_addr_t;
@@ -98,11 +91,15 @@ typedef grub_uint64_t	grub_size_t;
 typedef grub_int64_t	grub_ssize_t;
 
 # if GRUB_CPU_SIZEOF_LONG == 8
-#  define PRIxGRUB_SIZE	"lx"
-#  define PRIuGRUB_SIZE	"lu"
+#  define PRIxGRUB_SIZE	 "lx"
+#  define PRIxGRUB_ADDR	 "lx"
+#  define PRIuGRUB_SIZE	 "lu"
+#  define PRIdGRUB_SSIZE "ld"
 # else
-#  define PRIxGRUB_SIZE	"llx"
-#  define PRIuGRUB_SIZE	"llu"
+#  define PRIxGRUB_SIZE	 "llx"
+#  define PRIxGRUB_ADDR	 "llx"
+#  define PRIuGRUB_SIZE  "llu"
+#  define PRIdGRUB_SSIZE "lld"
 # endif
 #else
 typedef grub_uint32_t	grub_addr_t;
@@ -110,8 +107,16 @@ typedef grub_uint32_t	grub_size_t;
 typedef grub_int32_t	grub_ssize_t;
 
 # define PRIxGRUB_SIZE	"x"
+# define PRIxGRUB_ADDR	"x"
 # define PRIuGRUB_SIZE	"u"
+# define PRIdGRUB_SSIZE	"d"
 #endif
+
+#define GRUB_UCHAR_MAX 0xFF
+#define GRUB_USHRT_MAX 65535
+#define GRUB_SHRT_MAX 0x7fff
+#define GRUB_UINT_MAX 4294967295U
+#define GRUB_INT_MAX 0x7fffffff
 
 #if GRUB_CPU_SIZEOF_LONG == 8
 # define GRUB_ULONG_MAX 18446744073709551615UL
@@ -123,15 +128,9 @@ typedef grub_int32_t	grub_ssize_t;
 # define GRUB_LONG_MIN (-2147483647L - 1)
 #endif
 
-#if GRUB_CPU_SIZEOF_VOID_P == 4
-#define UINT_TO_PTR(x) ((void*)(grub_uint32_t)(x))
-#define PTR_TO_UINT64(x) ((grub_uint64_t)(grub_uint32_t)(x))
-#define PTR_TO_UINT32(x) ((grub_uint32_t)(x))
-#else
-#define UINT_TO_PTR(x) ((void*)(grub_uint64_t)(x))
-#define PTR_TO_UINT64(x) ((grub_uint64_t)(x))
-#define PTR_TO_UINT32(x) ((grub_uint32_t)(grub_uint64_t)(x))
-#endif
+typedef grub_uint64_t grub_properly_aligned_t;
+
+#define GRUB_PROPERLY_ALIGNED_ARRAY(name, size) grub_properly_aligned_t name[((size) + sizeof (grub_properly_aligned_t) - 1) / sizeof (grub_properly_aligned_t)]
 
 /* The type for representing a file offset.  */
 typedef grub_uint64_t	grub_off_t;
@@ -148,6 +147,18 @@ typedef grub_uint64_t	grub_disk_addr_t;
 
 #define grub_swap_bytes16_compile_time(x) ((((x) & 0xff) << 8) | (((x) & 0xff00) >> 8))
 #define grub_swap_bytes32_compile_time(x) ((((x) & 0xff) << 24) | (((x) & 0xff00) << 8) | (((x) & 0xff0000) >> 8) | (((x) & 0xff000000UL) >> 24))
+#define grub_swap_bytes64_compile_time(x)	\
+({ \
+   grub_uint64_t _x = (x); \
+   (grub_uint64_t) ((_x << 56) \
+                    | ((_x & (grub_uint64_t) 0xFF00ULL) << 40) \
+                    | ((_x & (grub_uint64_t) 0xFF0000ULL) << 24) \
+                    | ((_x & (grub_uint64_t) 0xFF000000ULL) << 8) \
+                    | ((_x & (grub_uint64_t) 0xFF00000000ULL) >> 8) \
+                    | ((_x & (grub_uint64_t) 0xFF0000000000ULL) >> 24) \
+                    | ((_x & (grub_uint64_t) 0xFF000000000000ULL) >> 40) \
+                    | (_x >> 56)); \
+})
 
 #if defined(__GNUC__) && (__GNUC__ > 3) && (__GNUC__ > 4 || __GNUC_MINOR__ >= 3)
 static inline grub_uint32_t grub_swap_bytes32(grub_uint32_t x)
@@ -196,7 +207,12 @@ static inline grub_uint64_t grub_swap_bytes64(grub_uint64_t x)
 # define grub_be_to_cpu16(x)	((grub_uint16_t) (x))
 # define grub_be_to_cpu32(x)	((grub_uint32_t) (x))
 # define grub_be_to_cpu64(x)	((grub_uint64_t) (x))
+# define grub_cpu_to_be16_compile_time(x)	((grub_uint16_t) (x))
+# define grub_cpu_to_be32_compile_time(x)	((grub_uint32_t) (x))
+# define grub_cpu_to_be64_compile_time(x)	((grub_uint64_t) (x))
+# define grub_be_to_cpu64_compile_time(x)	((grub_uint64_t) (x))
 # define grub_cpu_to_le32_compile_time(x)	grub_swap_bytes32_compile_time(x)
+# define grub_cpu_to_le64_compile_time(x)	grub_swap_bytes64_compile_time(x)
 # define grub_cpu_to_le16_compile_time(x)	grub_swap_bytes16_compile_time(x)
 #else /* ! WORDS_BIGENDIAN */
 # define grub_cpu_to_le16(x)	((grub_uint16_t) (x))
@@ -211,8 +227,77 @@ static inline grub_uint64_t grub_swap_bytes64(grub_uint64_t x)
 # define grub_be_to_cpu16(x)	grub_swap_bytes16(x)
 # define grub_be_to_cpu32(x)	grub_swap_bytes32(x)
 # define grub_be_to_cpu64(x)	grub_swap_bytes64(x)
+# define grub_cpu_to_be16_compile_time(x)	grub_swap_bytes16_compile_time(x)
+# define grub_cpu_to_be32_compile_time(x)	grub_swap_bytes32_compile_time(x)
+# define grub_cpu_to_be64_compile_time(x)	grub_swap_bytes64_compile_time(x)
+# define grub_be_to_cpu64_compile_time(x)	grub_swap_bytes64_compile_time(x)
 # define grub_cpu_to_le16_compile_time(x)	((grub_uint16_t) (x))
 # define grub_cpu_to_le32_compile_time(x)	((grub_uint32_t) (x))
+# define grub_cpu_to_le64_compile_time(x)	((grub_uint64_t) (x))
+
 #endif /* ! WORDS_BIGENDIAN */
+
+static inline grub_uint16_t grub_get_unaligned16 (const void *ptr)
+{
+  struct grub_unaligned_uint16_t
+  {
+    grub_uint16_t d;
+  } __attribute__ ((packed));
+  const struct grub_unaligned_uint16_t *dd
+    = (const struct grub_unaligned_uint16_t *) ptr;
+  return dd->d;
+}
+
+static inline void grub_set_unaligned16 (void *ptr, grub_uint16_t val)
+{
+  struct grub_unaligned_uint16_t
+  {
+    grub_uint16_t d;
+  } __attribute__ ((packed));
+  struct grub_unaligned_uint16_t *dd = (struct grub_unaligned_uint16_t *) ptr;
+  dd->d = val;
+}
+
+static inline grub_uint32_t grub_get_unaligned32 (const void *ptr)
+{
+  struct grub_unaligned_uint32_t
+  {
+    grub_uint32_t d;
+  } __attribute__ ((packed));
+  const struct grub_unaligned_uint32_t *dd
+    = (const struct grub_unaligned_uint32_t *) ptr;
+  return dd->d;
+}
+
+static inline void grub_set_unaligned32 (void *ptr, grub_uint32_t val)
+{
+  struct grub_unaligned_uint32_t
+  {
+    grub_uint32_t d;
+  } __attribute__ ((packed));
+  struct grub_unaligned_uint32_t *dd = (struct grub_unaligned_uint32_t *) ptr;
+  dd->d = val;
+}
+
+static inline grub_uint64_t grub_get_unaligned64 (const void *ptr)
+{
+  struct grub_unaligned_uint64_t
+  {
+    grub_uint64_t d;
+  } __attribute__ ((packed));
+  const struct grub_unaligned_uint64_t *dd
+    = (const struct grub_unaligned_uint64_t *)ptr;
+  return dd->d;
+}
+
+static inline void grub_set_unaligned64 (void *ptr, grub_uint64_t val)
+{
+  struct grub_unaligned_uint64_t
+  {
+    grub_uint64_t d;
+  } __attribute__ ((packed));
+  struct grub_unaligned_uint64_t *dd = (struct grub_unaligned_uint64_t *) ptr;
+  dd->d = val;
+}
 
 #endif /* ! GRUB_TYPES_HEADER */

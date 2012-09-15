@@ -28,7 +28,12 @@ VARIABLE(grub_machine_mmaphook_int12)
 	push %ds
 	push %cs
 	pop %ds
+#ifdef __APPLE__
+	LOCAL(kblow_offset) = DS (LOCAL (kblow))
+	movw LOCAL(kblow_offset), %ax
+#else
 	movw DS (LOCAL (kblow)), %ax
+#endif
 	pop %ds
 	iret
 
@@ -53,8 +58,15 @@ LOCAL (e801):
 	push %ds
 	push %cs
 	pop %ds
+#ifdef __APPLE__
+	LOCAL(kbin16mb_offset) = DS (LOCAL (kbin16mb))
+	LOCAL(m64kbin4gb_offset) = DS (LOCAL (m64kbin4gb))
+	movw LOCAL(kbin16mb_offset), %ax
+	movw LOCAL(m64kbin4gb_offset), %bx
+#else
 	movw DS (LOCAL (kbin16mb)), %ax
 	movw DS (LOCAL (m64kbin4gb)), %bx
+#endif
 	movw %ax, %cx
 	movw %bx, %dx
 	pop %ds
@@ -66,7 +78,11 @@ LOCAL (h88):
 	push %ds
 	push %cs
 	pop %ds
+#ifdef __APPLE__
+	movw LOCAL(kbin16mb_offset), %ax
+#else
 	movw DS (LOCAL (kbin16mb)), %ax
+#endif
 	pop %ds
 	clc
 	jmp LOCAL (iret_cf)
@@ -78,14 +94,24 @@ LOCAL (e820):
 	pop %ds
 	cmpw $20, %cx
 	jb LOCAL (errexit)
+#ifdef __APPLE__
+	LOCAL(mmap_num_offset) = DS (LOCAL (mmap_num))
+	cmpw LOCAL(mmap_num_offset), %bx
+#else
 	cmpw DS (LOCAL (mmap_num)), %bx
+#endif
 	jae LOCAL (errexit)
 	cmp $0x534d4150, %edx
 	jne LOCAL (errexit)
 	push %si
 	push %di
 	movw $20, %cx
+#ifdef __APPLE__
+	LOCAL(mmaphook_map_offset) = DS(LOCAL (mmaphook_mmap))
+	movw $LOCAL(mmaphook_map_offset), %si
+#else
 	movw $(DS(LOCAL (mmaphook_mmap))), %si
+#endif
 	mov %bx, %ax
 	imul $20, %ax
 	add %ax, %si
@@ -94,7 +120,11 @@ LOCAL (e820):
 	pop %si
 	movl $20, %ecx
 	inc %bx
+#ifdef __APPLE__
+	cmpw LOCAL(mmap_num_offset), %bx
+#else
 	cmpw DS(LOCAL (mmap_num)), %bx
+#endif
 	jb LOCAL (noclean)
 	xor %bx, %bx
 LOCAL (noclean):

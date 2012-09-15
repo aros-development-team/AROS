@@ -31,16 +31,6 @@
    status changes.  */
 #define GRUB_GFXMENU_TIMEOUT_COMPONENT_ID "__timeout__"
 
-/* A representation of a color.  Unlike grub_video_color_t, this
-   representation is independent of any video mode specifics.  */
-typedef struct grub_gui_color
-{
-  grub_uint8_t red;
-  grub_uint8_t green;
-  grub_uint8_t blue;
-  grub_uint8_t alpha;
-} grub_gui_color_t;
-
 typedef struct grub_gui_component *grub_gui_component_t;
 typedef struct grub_gui_container *grub_gui_container_t;
 typedef struct grub_gui_list *grub_gui_list_t;
@@ -240,23 +230,6 @@ grub_gui_set_viewport (const grub_video_rect_t *r, grub_video_rect_t *old)
                            old->y + r->y,
                            r->width,
                            r->height);
-}
-
-static __inline grub_gui_color_t
-grub_gui_color_rgb (int r, int g, int b)
-{
-  grub_gui_color_t c;
-  c.red = r;
-  c.green = g;
-  c.blue = b;
-  c.alpha = 255;
-  return c;
-}
-
-static __inline grub_video_color_t
-grub_gui_map_color (grub_gui_color_t c)
-{
-  return grub_video_map_rgba (c.red, c.green, c.blue, c.alpha);
 }
 
 static inline int

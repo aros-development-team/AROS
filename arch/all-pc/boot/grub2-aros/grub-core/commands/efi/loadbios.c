@@ -25,6 +25,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_efi_guid_t acpi_guid = GRUB_EFI_ACPI_TABLE_GUID;
 static grub_efi_guid_t acpi2_guid = GRUB_EFI_ACPI_20_TABLE_GUID;
 static grub_efi_guid_t smbios_guid = GRUB_EFI_SMBIOS_TABLE_GUID;
@@ -47,7 +49,7 @@ enable_rom_area (void)
   rom_ptr = (grub_uint32_t *) VBIOS_ADDR;
   if (*rom_ptr != BLANK_MEM)
     {
-      grub_printf ("ROM image is present.\n");
+      grub_puts_ (N_("ROM image is present."));
       return 0;
     }
 
@@ -65,7 +67,7 @@ enable_rom_area (void)
   *rom_ptr = 0;
   if (*rom_ptr != 0)
     {
-      grub_printf ("Can\'t enable ROM area.\n");
+      grub_puts_ (N_("Can\'t enable ROM area."));
       return 0;
     }
 
@@ -163,7 +165,7 @@ grub_cmd_loadbios (grub_command_t cmd __attribute__ ((unused)),
   int size;
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no ROM image specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   if (argc > 1)
     {
@@ -204,10 +206,12 @@ static grub_command_t cmd_fakebios, cmd_loadbios;
 GRUB_MOD_INIT(loadbios)
 {
   cmd_fakebios = grub_register_command ("fakebios", grub_cmd_fakebios,
-					0, N_("Fake BIOS."));
+					0, N_("Create BIOS-like structures for"
+					      " backward compatibility with"
+					      " existing OS."));
 
   cmd_loadbios = grub_register_command ("loadbios", grub_cmd_loadbios,
-					"BIOS_DUMP [INT10_DUMP]",
+					N_("BIOS_DUMP [INT10_DUMP]"),
 					N_("Load BIOS dump."));
 }
 

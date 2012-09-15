@@ -27,6 +27,8 @@
 #include <grub/time.h>
 #include <grub/keyboard_layouts.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 
 
 enum
@@ -435,7 +437,7 @@ grub_usb_keyboard_getkeystatus (struct grub_term_input *term)
   return interpret_status (termdata->status) | termdata->mods;
 }
 
-struct grub_usb_attach_desc attach_hook =
+static struct grub_usb_attach_desc attach_hook =
 {
   .class = GRUB_USB_CLASS_HID,
   .hook = grub_usb_keyboard_attach

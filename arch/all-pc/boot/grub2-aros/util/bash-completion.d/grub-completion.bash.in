@@ -402,7 +402,7 @@ unset __grub_mkimage_program
 #
 # grub-mkpasswd-pbkdf2
 #
-_grub_mkpasswd-pbkdf2 () {
+_grub_mkpasswd_pbkdf2 () {
     local cur
 
     COMPREPLY=()
@@ -417,7 +417,7 @@ _grub_mkpasswd-pbkdf2 () {
 }
 __grub_mkpasswd_pbkdf2_program=$( echo grub-mkpasswd-pbkdf2 | sed "@program_transform_name@" )
 have ${__grub_mkpasswd_pbkdf2_program} && \
- complete -F _grub_mkpasswd-pbkdf2 -o filenames ${__grub_mkpasswd_pbkdf2_program}
+ complete -F _grub_mkpasswd_pbkdf2 -o filenames ${__grub_mkpasswd_pbkdf2_program}
 unset __grub_mkpasswd_pbkdf2_program
 
 
@@ -462,7 +462,7 @@ unset __grub_probe_program
 #
 # grub-script-check
 #
-_grub_script-check () {
+_grub_script_check () {
     local cur
 
     COMPREPLY=()
@@ -477,7 +477,7 @@ _grub_script-check () {
 }
 __grub_script_check_program=$( echo grub-script-check | sed "@program_transform_name@" )
 have ${__grub_script_check_program} && \
- complete -F _grub_script-check -o filenames ${__grub_script_check_program}
+ complete -F _grub_script_check -o filenames ${__grub_script_check_program}
 
 
 # Local variables:

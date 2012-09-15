@@ -1,4 +1,5 @@
-#! /bin/sh -e
+#! /bin/sh
+set -e
 
 # Run GRUB script in a Qemu instance
 # Copyright (C) 2009,2010  Free Software Foundation, Inc.
@@ -19,20 +20,19 @@
 # Initialize some variables.
 transform="@program_transform_name@"
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-bindir=@bindir@
-libdir=@libdir@
-builddir=@builddir@
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
+builddir="@builddir@"
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_TARNAME=@PACKAGE_TARNAME@
 PACKAGE_VERSION=@PACKAGE_VERSION@
-target_cpu=@target_cpu@
-platform=@platform@
 
 # Force build directory components
-PATH=${builddir}:$PATH
+PATH="${builddir}:$PATH"
 export PATH
+
+trim=0
 
 # Usage: usage
 # Print the usage.
@@ -48,6 +48,7 @@ Run GRUB script in a Qemu instance.
   --qemu=FILE             Name of qemu binary
   --qemu-opts=OPTIONS     extra options to pass to Qemu instance
   --files=FILES           add files to the image
+  --trim                  trim firmware output
 
 $0 runs input GRUB script or SOURCE file in a Qemu instance and prints
 its output.
@@ -56,8 +57,82 @@ Report bugs to <bug-grub@gnu.org>.
 EOF
 }
 
-boot=hd
-qemu=qemu-system-i386
+. "${builddir}/grub-core/modinfo.sh"
+qemuopts="${GRUB_QEMU_OPTS}"
+serial_port=com0
+serial_null=
+halt_cmd=halt
+case "${grub_modinfo_target_cpu}-${grub_modinfo_platform}" in
+    powerpc-ieee1275)
+	boot=cd
+	qemu=qemu-system-ppc
+	console=console
+	serial_port=escc-ch-a
+	serial_null="-serial null"
+	;;
+
+    mips-qemu_mips)
+	boot=mips_qemu
+	qemu=qemu-system-mips
+	qemuopts="$qemuopts -M mips"
+	console=vga_text
+	;;
+    mipsel-qemu_mips)
+	boot=mipsel_qemu
+	qemu=qemu-system-mipsel
+	qemuopts="$qemuopts -M mips"
+	console=vga_text
+	;;
+    mipsel-loongson)
+	boot=mipsel_fulong2e
+	qemu=qemu-system-mips64el
+	qemuopts="$qemuopts -no-reboot -M fulong2e"
+	console=
+	halt_cmd=reboot
+	trim=1
+	;;
+    i386-coreboot)
+	boot=coreboot
+	qemu=qemu-system-i386
+	console=vga_text
+	;;
+    i386-multiboot)
+	boot=cd
+	qemu=qemu-system-i386
+	console=vga_text;;
+
+    i386-ieee1275)
+	boot=cd
+	qemu=qemu-system-i386
+	console=console;;
+
+    i386-qemu)
+	boot=qemu
+	qemu=qemu-system-i386
+	console=vga_text;;
+
+    i386-pc)
+	boot=cd
+	qemu=qemu-system-i386
+	console=console;;
+
+    i386-efi)
+	qemu=qemu-system-i386
+	boot=cd
+	console=console
+	trim=1
+	;;
+    x86_64-efi)
+	qemu=qemu-system-x86_64
+	boot=cd
+	console=console
+	trim=1
+	;;
+    *)
+	boot=hd
+	qemu=qemu-system-i386
+	console=console;;
+esac
 
 # Check the arguments.
 for option in "$@"; do
@@ -68,6 +143,9 @@ for option in "$@"; do
     -v | --version)
 	echo "$0 (GNU GRUB ${PACKAGE_VERSION})"
 	exit 0 ;;
+    --trim)
+	trim=1
+	;;
     --modules=*)
 	ms=`echo "$option" | sed -e 's/--modules=//' -e 's/,/ /g'`
 	modules="$modules $ms" ;;
@@ -87,6 +165,9 @@ for option in "$@"; do
 	elif [ "$dev" = "net" ] ; then boot=net;
 	elif [ "$dev" = "qemu" ] ; then boot=qemu;
 	elif [ "$dev" = "coreboot" ] ; then boot=coreboot;
+	elif [ "$dev" = "mips_qemu" ] ; then boot=mips_qemu;
+	elif [ "$dev" = "mipsel_qemu" ] ; then boot=mipsel_qemu;
+	elif [ "$dev" = "mipsel_fulong2e" ] ; then boot=mipsel_fulong2e;
 	else
 	    echo "Unrecognized boot method \`$dev'" 1>&2
 	    usage
@@ -118,11 +199,17 @@ cfgfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
 cat <<EOF >${cfgfile}
 grubshell=yes
 insmod serial
-serial
-terminfo serial dumb
-terminal_input serial
-terminal_output serial
+serial ${serial_port}
+terminfo serial_${serial_port} dumb
+terminal_input serial_${serial_port}
+terminal_output serial_${serial_port}
 EOF
+
+trim_head=664cbea8-132f-4770-8aa4-1696d59ac35c
+
+if [ $trim = 1 ]; then
+    echo "echo $trim_head" >>${cfgfile}
+fi
 
 rom_directory=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
 
@@ -134,15 +221,17 @@ done
 cat <<EOF >>${cfgfile}
 source /boot/grub/testcase.cfg
 # Stop serial output to suppress "ACPI shutdown failed" error.
-terminal_output console
-halt
 EOF
+if [ x$console != x ]; then
+    echo "terminal_output $console" >>${cfgfile}
+fi
+echo "${halt_cmd}" >>${cfgfile}
 
 isofile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
 if [ x$boot != xnet ]; then
-    sh @builddir@/grub-mkrescue --grub-mkimage=${builddir}/grub-mkimage --output=${isofile} --override-directory=${builddir}/grub-core \
+    pkgdatadir="@builddir@" sh "@builddir@/grub-mkrescue" "--grub-mkimage=${builddir}/grub-mkimage" "--output=${isofile}" "--override-directory=${builddir}/grub-core" \
 	--rom-directory="${rom_directory}" \
-	/boot/grub/grub.cfg=${cfgfile} /boot/grub/testcase.cfg=${source} \
+	"/boot/grub/grub.cfg=${cfgfile}" "/boot/grub/testcase.cfg=${source}" \
 	${files} >/dev/null 2>&1
 fi
 if [ x$boot = xhd ]; then
@@ -163,6 +252,21 @@ if [ x$boot = xqemu ]; then
     device=cdrom
 fi
 
+if [ x$boot = xmipsel_qemu ]; then
+    bootdev="-kernel ${rom_directory}/mipsel-qemu_mips.elf"
+    device=cdrom
+fi
+
+if [ x$boot = xmipsel_fulong2e ]; then
+    bootdev="-kernel ${rom_directory}/mipsel-loongson.elf -append machtype=lemote-fuloong-2e"
+    device=cdrom
+fi
+
+if [ x$boot = xmips_qemu ]; then
+    bootdev="-kernel ${rom_directory}/mips-qemu_mips.elf"
+    device=cdrom
+fi
+
 if [ x$boot = xcoreboot ]; then
     imgfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
     cp "${GRUB_COREBOOT_ROM}" "${imgfile}"
@@ -171,14 +275,23 @@ if [ x$boot = xcoreboot ]; then
     device=cdrom
 fi
 
+do_trim ()
+{
+    if [ $trim = 1 ]; then
+	awk '{ if (have_head == 1) print $0; } /664cbea8-132f-4770-8aa4-1696d59ac35c/ { have_head=1; }'
+    else
+	cat
+    fi
+}
+
 if [ x$boot = xnet ]; then
     netdir=`mktemp -d "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
-    sh @builddir@/grub-mknetdir --grub-mkimage=${builddir}/grub-mkimage --override-directory=${builddir}/grub-core --net-directory=$netdir
-    cp ${cfgfile} $netdir/boot/grub/grub.cfg
-    cp ${source} $netdir/boot/grub/testcase.cfg
-    ${qemu} ${qemuopts} -nographic -serial file:/dev/stdout -monitor file:/dev/null -boot n -net user,tftp=$netdir,bootfile=/boot/grub/$target_cpu-$platform/core.0  -net nic  | cat | tr -d "\r"
+    pkgdatadir="@builddir@" sh "@builddir@/grub-mknetdir" "--grub-mkimage=${builddir}/grub-mkimage" "--directory=${builddir}/grub-core" "--net-directory=$netdir"
+    cp "${cfgfile}" "$netdir/boot/grub/grub.cfg"
+    cp "${source}" "$netdir/boot/grub/testcase.cfg"
+    "${qemu}" ${qemuopts} -nographic ${serial_null} -serial file:/dev/stdout -monitor file:/dev/null -boot n -net "user,tftp=$netdir,bootfile=/boot/grub/${grub_modinfo_target_cpu}-${grub_modinfo_platform}/core.0"  -net nic  | cat | tr -d "\r" | do_trim
 else
-    ${qemu} ${qemuopts} -nographic -serial file:/dev/stdout -monitor file:/dev/null -${device} ${isofile} ${bootdev} | cat | tr -d "\r"
+    "${qemu}" ${qemuopts} -nographic ${serial_null} -serial file:/dev/stdout -monitor file:/dev/null -${device} ${isofile} ${bootdev} | cat | tr -d "\r" | do_trim
 fi
 rm -f "${isofile}" "${imgfile}"
 rm -rf "${rom_directory}"

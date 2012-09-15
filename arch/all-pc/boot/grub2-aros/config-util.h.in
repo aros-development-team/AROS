@@ -301,6 +301,9 @@
 /* Define to 1 if you have the `funlockfile' function. */
 #undef HAVE_FUNLOCKFILE
 
+/* Define to 1 if you have the <fuse/fuse.h> header file. */
+#undef HAVE_FUSE_FUSE_H
+
 /* Define to 1 if you have the `getdelim' function. */
 #undef HAVE_GETDELIM
 
@@ -353,6 +356,12 @@
 /* Define to 1 if you have the `devmapper' library (-ldevmapper). */
 #undef HAVE_LIBDEVMAPPER
 
+/* Define to 1 if you have the `fuse' library (-lfuse). */
+#undef HAVE_LIBFUSE
+
+/* Define to 1 if you have the `geom' library (-lgeom). */
+#undef HAVE_LIBGEOM
+
 /* Define to 1 if you have the <libintl.h> header file. */
 #undef HAVE_LIBINTL_H
 
@@ -370,6 +379,9 @@
 
 /* Define to 1 if you have the <libzfs.h> header file. */
 #undef HAVE_LIBZFS_H
+
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
 
 /* Define to 1 if you have the <linewrap.h> header file. */
 #undef HAVE_LINEWRAP_H
@@ -956,14 +968,47 @@
 /* Define to 1 if you have the `__bswapsi2' function. */
 #undef HAVE___BSWAPSI2
 
+/* Define to 1 if you have the `__ctzdi2' function. */
+#undef HAVE___CTZDI2
+
+/* Define to 1 if you have the `__ctzsi2' function. */
+#undef HAVE___CTZSI2
+
+/* Define to 1 if you have the `__divdi3' function. */
+#undef HAVE___DIVDI3
+
+/* Define to 1 if you have the `__divsi3' function. */
+#undef HAVE___DIVSI3
+
+/* Define to 1 if you have the `__ia64_trampoline' function. */
+#undef HAVE___IA64_TRAMPOLINE
+
 /* Define to 1 if you have the `__lshrdi3' function. */
 #undef HAVE___LSHRDI3
+
+/* Define to 1 if you have the `__moddi3' function. */
+#undef HAVE___MODDI3
+
+/* Define to 1 if you have the `__modsi3' function. */
+#undef HAVE___MODSI3
 
 /* Define to 1 if you have the `__trampoline_setup' function. */
 #undef HAVE___TRAMPOLINE_SETUP
 
 /* Define to 1 if you have the `__ucmpdi2' function. */
 #undef HAVE___UCMPDI2
+
+/* Define to 1 if you have the `__udivdi3' function. */
+#undef HAVE___UDIVDI3
+
+/* Define to 1 if you have the `__udivsi3' function. */
+#undef HAVE___UDIVSI3
+
+/* Define to 1 if you have the `__umoddi3' function. */
+#undef HAVE___UMODDI3
+
+/* Define to 1 if you have the `__umodsi3' function. */
+#undef HAVE___UMODSI3
 
 #if FILE_SYSTEM_BACKSLASH_IS_FILE_NAME_SEPARATOR
 # define ISSLASH(C) ((C) == '/' || (C) == '\\')

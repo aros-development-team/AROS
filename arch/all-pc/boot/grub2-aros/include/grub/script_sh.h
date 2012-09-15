@@ -53,6 +53,7 @@ typedef enum
 {
   GRUB_SCRIPT_ARG_TYPE_VAR,
   GRUB_SCRIPT_ARG_TYPE_TEXT,
+  GRUB_SCRIPT_ARG_TYPE_GETTEXT,
   GRUB_SCRIPT_ARG_TYPE_DQVAR,
   GRUB_SCRIPT_ARG_TYPE_DQSTR,
   GRUB_SCRIPT_ARG_TYPE_SQSTR,
@@ -84,8 +85,6 @@ struct grub_script_argv
 /* Pluggable wildcard translator.  */
 struct grub_script_wildcard_translator
 {
-  char *(*escape) (const char *str);
-  char *(*unescape) (const char *str);
   grub_err_t (*expand) (const char *str, char ***expansions);
 };
 extern struct grub_script_wildcard_translator *grub_wildcard_translator;
@@ -245,8 +244,9 @@ void grub_script_mem_free (struct grub_script_mem *mem);
 void grub_script_argv_free    (struct grub_script_argv *argv);
 int grub_script_argv_make     (struct grub_script_argv *argv, int argc, char **args);
 int grub_script_argv_next     (struct grub_script_argv *argv);
-int grub_script_argv_append   (struct grub_script_argv *argv, const char *s);
-int grub_script_argv_split_append (struct grub_script_argv *argv, char *s);
+int grub_script_argv_append   (struct grub_script_argv *argv, const char *s,
+			       grub_size_t slen);
+int grub_script_argv_split_append (struct grub_script_argv *argv, const char *s);
 
 struct grub_script_arglist *
 grub_script_create_arglist (struct grub_parser_param *state);

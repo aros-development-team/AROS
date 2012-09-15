@@ -24,6 +24,8 @@
 #include <grub/machine/int.h>
 #include <grub/acpi.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
     {"no-apm", 'n', 0, N_("Do not use APM to halt the computer."), 0, 0},
@@ -42,7 +44,7 @@ stop (void)
  * Halt the system, using APM if possible. If NO_APM is true, don't use
  * APM even if it is available.
  */
-void 
+void  __attribute__ ((noreturn))
 grub_halt (int no_apm)
 {
   struct grub_bios_int_registers regs;
@@ -95,7 +97,7 @@ grub_halt (int no_apm)
   stop ();
 }
 
-static grub_err_t
+static grub_err_t __attribute__ ((noreturn))
 grub_cmd_halt (grub_extcmd_context_t ctxt,
 	       int argc __attribute__ ((unused)),
 	       char **args __attribute__ ((unused)))
@@ -107,7 +109,6 @@ grub_cmd_halt (grub_extcmd_context_t ctxt,
   if (state[0].set)
     no_apm = 1;
   grub_halt (no_apm);
-  return 0;
 }
 
 static grub_extcmd_t cmd;

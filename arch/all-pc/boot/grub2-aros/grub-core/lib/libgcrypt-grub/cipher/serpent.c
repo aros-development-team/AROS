@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* serpent.c - Implementation of the Serpent encryption algorithm.
  *	Copyright (C) 2003, 2004, 2005 Free Software Foundation, Inc.
  *
@@ -584,22 +586,19 @@ serpent_key_prepare (const byte *key, unsigned int key_length,
   int i;
 
   /* Copy key.  */
-  for (i = 0; i < key_length / 4; i++)
-    {
+  memcpy (key_prepared, key, key_length);
 #ifdef WORDS_BIGENDIAN
-      key_prepared[i] = byte_swap_32 (((u32 *) key)[i]);
-#else
-      key_prepared[i] = ((u32 *) key)[i];
+  for (i = 0; i < key_length / 4; i++)
+    key_prepared[i] = byte_swap_32 (key_prepared[i]);
 #endif
-    }
 
-  if (i < 8)
+  if (key_length < 32)
     {
       /* Key must be padded according to the Serpent
 	 specification.  */
-      key_prepared[i] = 0x00000001;
+      key_prepared[key_length / 4] = 0x00000001;
 
-      for (i++; i < 8; i++)
+      for (i = key_length / 4 + 1; i < 8; i++)
 	key_prepared[i] = 0;
     }
 }
@@ -706,21 +705,17 @@ serpent_setkey (void *ctx,
 
 static void
 serpent_encrypt_internal (serpent_context_t *context,
-			  const serpent_block_t input, serpent_block_t output)
+			  const byte *input, byte *output)
 {
   serpent_block_t b, b_next;
   int round = 0;
 
+  memcpy (b, input, sizeof (b));
 #ifdef WORDS_BIGENDIAN
-  b[0] = byte_swap_32 (input[0]);
-  b[1] = byte_swap_32 (input[1]);
-  b[2] = byte_swap_32 (input[2]);
-  b[3] = byte_swap_32 (input[3]);
-#else
-  b[0] = input[0];
-  b[1] = input[1];
-  b[2] = input[2];
-  b[3] = input[3];
+  b[0] = byte_swap_32 (b[0]);
+  b[1] = byte_swap_32 (b[1]);
+  b[2] = byte_swap_32 (b[2]);
+  b[3] = byte_swap_32 (b[3]);
 #endif
 
   ROUND (0, context->keys, b, b_next);
@@ -758,35 +753,27 @@ serpent_encrypt_internal (serpent_context_t *context,
   ROUND_LAST (7, context->keys, b, b_next);
 
 #ifdef WORDS_BIGENDIAN
-  output[0] = byte_swap_32 (b_next[0]);
-  output[1] = byte_swap_32 (b_next[1]);
-  output[2] = byte_swap_32 (b_next[2]);
-  output[3] = byte_swap_32 (b_next[3]);
-#else
-  output[0] = b_next[0];
-  output[1] = b_next[1];
-  output[2] = b_next[2];
-  output[3] = b_next[3];
+  b_next[0] = byte_swap_32 (b_next[0]);
+  b_next[1] = byte_swap_32 (b_next[1]);
+  b_next[2] = byte_swap_32 (b_next[2]);
+  b_next[3] = byte_swap_32 (b_next[3]);
 #endif
+  memcpy (output, b_next, sizeof (b_next));
 }
 
 static void
 serpent_decrypt_internal (serpent_context_t *context,
-			  const serpent_block_t input, serpent_block_t output)
+			  const byte *input, byte *output)
 {
   serpent_block_t b, b_next;
   int round = ROUNDS;
 
+  memcpy (b, input, sizeof (b));
 #ifdef WORDS_BIGENDIAN
-  b_next[0] = byte_swap_32 (input[0]);
-  b_next[1] = byte_swap_32 (input[1]);
-  b_next[2] = byte_swap_32 (input[2]);
-  b_next[3] = byte_swap_32 (input[3]);
-#else
-  b_next[0] = input[0];
-  b_next[1] = input[1];
-  b_next[2] = input[2];
-  b_next[3] = input[3];
+  b[0] = byte_swap_32 (b[0]);
+  b[1] = byte_swap_32 (b[1]);
+  b[2] = byte_swap_32 (b[2]);
+  b[3] = byte_swap_32 (b[3]);
 #endif
 
   ROUND_FIRST_INVERSE (7, context->keys, b_next, b);
@@ -823,18 +810,13 @@ serpent_decrypt_internal (serpent_context_t *context,
   ROUND_INVERSE (1, context->keys, b, b_next);
   ROUND_INVERSE (0, context->keys, b, b_next);
 
-
 #ifdef WORDS_BIGENDIAN
-  output[0] = byte_swap_32 (b_next[0]);
-  output[1] = byte_swap_32 (b_next[1]);
-  output[2] = byte_swap_32 (b_next[2]);
-  output[3] = byte_swap_32 (b_next[3]);
-#else
-  output[0] = b_next[0];
-  output[1] = b_next[1];
-  output[2] = b_next[2];
-  output[3] = b_next[3];
+  b_next[0] = byte_swap_32 (b_next[0]);
+  b_next[1] = byte_swap_32 (b_next[1]);
+  b_next[2] = byte_swap_32 (b_next[2]);
+  b_next[3] = byte_swap_32 (b_next[3]);
 #endif
+  memcpy (output, b_next, sizeof (b_next));
 }
 
 static void
@@ -842,8 +824,7 @@ serpent_encrypt (void *ctx, byte *buffer_out, const byte *buffer_in)
 {
   serpent_context_t *context = ctx;
 
-  serpent_encrypt_internal (context,
-			    (const u32 *) buffer_in, (u32 *) buffer_out);
+  serpent_encrypt_internal (context, buffer_in, buffer_out);
   _gcry_burn_stack (2 * sizeof (serpent_block_t));
 }
 
@@ -852,9 +833,7 @@ serpent_decrypt (void *ctx, byte *buffer_out, const byte *buffer_in)
 {
   serpent_context_t *context = ctx;
 
-  serpent_decrypt_internal (context,
-			    (const u32 *) buffer_in,
-			    (u32 *) buffer_out);
+  serpent_decrypt_internal (context, buffer_in, buffer_out);
   _gcry_burn_stack (2 * sizeof (serpent_block_t));
 }
 
@@ -862,89 +841,7 @@ serpent_decrypt (void *ctx, byte *buffer_out, const byte *buffer_in)
 
 /* Serpent test.  */
 
-static const char *
-serpent_test (void)
-{
-  serpent_context_t context;
-  unsigned char scratch[16];
-  unsigned int i;
-
-  static struct test
-  {
-    int key_length;
-    unsigned char key[32];
-    unsigned char text_plain[16];
-    unsigned char text_cipher[16];
-  } test_data[] =
-    {
-      {
-	16,
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-	"\xD2\x9D\x57\x6F\xCE\xA3\xA3\xA7\xED\x90\x99\xF2\x92\x73\xD7\x8E",
-	"\xB2\x28\x8B\x96\x8A\xE8\xB0\x86\x48\xD1\xCE\x96\x06\xFD\x99\x2D"
-      },
-      {
-	24,
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00\x00\x00\x00\x00",
-	"\xD2\x9D\x57\x6F\xCE\xAB\xA3\xA7\xED\x98\x99\xF2\x92\x7B\xD7\x8E",
-	"\x13\x0E\x35\x3E\x10\x37\xC2\x24\x05\xE8\xFA\xEF\xB2\xC3\xC3\xE9"
-      },
-      {
-	32,
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-	"\xD0\x95\x57\x6F\xCE\xA3\xE3\xA7\xED\x98\xD9\xF2\x90\x73\xD7\x8E",
-	"\xB9\x0E\xE5\x86\x2D\xE6\x91\x68\xF2\xBD\xD5\x12\x5B\x45\x47\x2B"
-      },
-      {
-	32,
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-	"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
-	"\x00\x00\x00\x00\x01\x00\x00\x00\x02\x00\x00\x00\x03\x00\x00\x00",
-	"\x20\x61\xA4\x27\x82\xBD\x52\xEC\x69\x1E\xC3\x83\xB0\x3B\xA7\x7C"
-      },
-      {
-	0
-      },
-    };
-
-  for (i = 0; test_data[i].key_length; i++)
-    {
-      serpent_setkey_internal (&context, test_data[i].key,
-                               test_data[i].key_length);
-      serpent_encrypt_internal (&context,
-				(const u32 *) test_data[i].text_plain,
-				(u32 *) scratch);
-
-      if (memcmp (scratch, test_data[i].text_cipher, sizeof (serpent_block_t)))
-	switch (test_data[i].key_length)
-	  {
-	  case 16:
-	    return "Serpent-128 test encryption failed.";
-	  case  24:
-	    return "Serpent-192 test encryption failed.";
-	  case 32:
-	    return "Serpent-256 test encryption failed.";
-	  }
-
-    serpent_decrypt_internal (&context,
-			      (const u32 *) test_data[i].text_cipher,
-			      (u32 *) scratch);
-    if (memcmp (scratch, test_data[i].text_plain, sizeof (serpent_block_t)))
-      switch (test_data[i].key_length)
-	{
-	case 16:
-	  return "Serpent-128 test decryption failed.";
-	case  24:
-	  return "Serpent-192 test decryption failed.";
-	case 32:
-	  return "Serpent-256 test decryption failed.";
-	}
-    }
-
-  return NULL;
-}
+static const char *serpent_test (void) { return 0; }
 
 
 
@@ -960,6 +857,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_serpent128 =
     "SERPENT128", cipher_spec_serpent128_aliases, NULL, 16, 128,
     sizeof (serpent_context_t),
     serpent_setkey, serpent_encrypt, serpent_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_serpent",
+#endif
   };
 
 gcry_cipher_spec_t _gcry_cipher_spec_serpent192 =
@@ -967,6 +868,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_serpent192 =
     "SERPENT192", NULL, NULL, 16, 192,
     sizeof (serpent_context_t),
     serpent_setkey, serpent_encrypt, serpent_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_serpent",
+#endif
   };
 
 gcry_cipher_spec_t _gcry_cipher_spec_serpent256 =
@@ -974,6 +879,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_serpent256 =
     "SERPENT256", NULL, NULL, 16, 256,
     sizeof (serpent_context_t),
     serpent_setkey, serpent_encrypt, serpent_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_serpent",
+#endif
   };
 
 

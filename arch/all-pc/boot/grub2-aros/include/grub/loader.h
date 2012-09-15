@@ -28,11 +28,16 @@
 /* Check if a loader is loaded.  */
 int EXPORT_FUNC (grub_loader_is_loaded) (void);
 
-/* Set loader functions. NORETURN must be set to true, if BOOT won't return
-   to the original state.  */
+/* Set loader functions.  */
+enum
+{
+  GRUB_LOADER_FLAG_NORETURN = 1,
+  GRUB_LOADER_FLAG_PXE_NOT_UNLOAD = 2,
+};
+
 void EXPORT_FUNC (grub_loader_set) (grub_err_t (*boot) (void),
-					 grub_err_t (*unload) (void),
-					 int noreturn);
+				    grub_err_t (*unload) (void),
+				    int flags);
 
 /* Unset current loader, if any.  */
 void EXPORT_FUNC (grub_loader_unset) (void);
@@ -56,11 +61,18 @@ typedef enum {
 } grub_loader_preboot_hook_prio_t;
 
 /* Register a preboot hook. */
-void *EXPORT_FUNC(grub_loader_register_preboot_hook) (grub_err_t (*preboot_func) (int noret),
-					 grub_err_t (*preboot_rest_func) (void),
-					 grub_loader_preboot_hook_prio_t prio);
+struct grub_preboot;
+
+struct grub_preboot *EXPORT_FUNC(grub_loader_register_preboot_hook) (grub_err_t (*preboot_func) (int noret),
+								     grub_err_t (*preboot_rest_func) (void),
+								     grub_loader_preboot_hook_prio_t prio);
 
 /* Unregister given preboot hook. */
-void grub_loader_unregister_preboot_hook (void *hnd);
+void EXPORT_FUNC (grub_loader_unregister_preboot_hook) (struct grub_preboot *hnd);
+
+#ifndef GRUB_MACHINE_EMU
+void grub_boot_init (void);
+void grub_boot_fini (void);
+#endif
 
 #endif /* ! GRUB_LOADER_HEADER */

@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* crc.c - Cyclic redundancy checks.
  * Copyright (C) 2003 Free Software Foundation, Inc.
  *
@@ -277,6 +279,9 @@ gcry_md_spec_t _gcry_digest_spec_crc32 =
     crc32_init, crc32_write, crc32_final, crc32_read,
     sizeof (CRC_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_crc",
+#endif
     .blocksize = 64
   };
 
@@ -287,6 +292,9 @@ gcry_md_spec_t _gcry_digest_spec_crc32_rfc1510 =
     crc32rfc1510_final, crc32_read,
     sizeof (CRC_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_crc",
+#endif
     .blocksize = 64
   };
 
@@ -297,6 +305,9 @@ gcry_md_spec_t _gcry_digest_spec_crc24_rfc2440 =
     crc24rfc2440_final, crc32_read,
     sizeof (CRC_CONTEXT)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_crc",
+#endif
     .blocksize = 64
   };
 

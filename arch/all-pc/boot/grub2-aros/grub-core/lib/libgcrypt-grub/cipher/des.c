@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* des.c - DES and Triple-DES encryption/decryption Algorithm
  * Copyright (C) 1998, 1999, 2001, 2002, 2003,
  *               2008  Free Software Foundation, Inc.
@@ -888,6 +890,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_des =
   {
     "DES", NULL, NULL, 8, 64, sizeof (struct _des_ctx),
     do_des_setkey, do_des_encrypt, do_des_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_des",
+#endif
   };
 
 static gcry_cipher_oid_spec_t oids_tripledes[] =
@@ -904,6 +910,10 @@ gcry_cipher_spec_t _gcry_cipher_spec_tripledes =
   {
     "3DES", NULL, oids_tripledes, 8, 192, sizeof (struct _tripledes_ctx),
     do_tripledes_setkey, do_tripledes_encrypt, do_tripledes_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_des",
+#endif
   };
 
 

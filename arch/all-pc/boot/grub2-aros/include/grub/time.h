@@ -27,8 +27,6 @@
 #define GRUB_TICKS_PER_SECOND 100000
 /* Return the real time in ticks.  */
 grub_uint32_t EXPORT_FUNC (grub_get_rtc) (void);
-#else
-#include <grub/machine/time.h>
 #endif
 
 void EXPORT_FUNC(grub_millisleep) (grub_uint32_t ms);

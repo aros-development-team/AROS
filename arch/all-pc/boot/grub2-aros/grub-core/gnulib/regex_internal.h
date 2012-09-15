@@ -413,10 +413,6 @@ struct re_string_t
 };
 typedef struct re_string_t re_string_t;
 
-
-struct re_dfa_t;
-typedef struct re_dfa_t re_dfa_t;
-
 #ifndef _LIBC
 # if defined __i386__ && !defined __EMX__
 #  define internal_function   __attribute ((regparm (3), stdcall))

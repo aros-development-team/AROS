@@ -27,7 +27,7 @@ static inline void
 assert_real (const char *file, int line, int cond)
 {
   if (!cond)
-    grub_fatal ("Assertion failed at %s:%d\n", file, line);
+    grub_printf ("Assertion failed at %s:%d\n", file, line);
 }
 
 #endif

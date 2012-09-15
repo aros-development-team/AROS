@@ -41,13 +41,15 @@ cat <<EOF
 
 #define COMPILE_TIME_ASSERT(cond) switch (0) { case 1: case !(cond): ; }
 
+#pragma GCC diagnostic ignored "-Wmissing-format-attribute"
+
 void
 grub_register_exported_symbols (void)
 {
 EOF
 
 cat <<EOF
-  struct symtab { const char *name; void *addr; };
+  struct symtab { const char *name; void *addr; int isfunc; };
   struct symtab *p;
   static struct symtab tab[] =
     {
@@ -56,16 +58,16 @@ EOF
 (while read LINE; do echo $LINE; done) \
   | grep -v '^#' \
   | sed -n \
-        -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/      {"\1", \1},/;p;}' \
-        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/      {"\1", \&\1},/;p;}' \
+        -e '/EXPORT_FUNC *([a-zA-Z0-9_]*)/{s/.*EXPORT_FUNC *(\([a-zA-Z0-9_]*\)).*/      {"\1", \1, 1},/;p;}' \
+        -e '/EXPORT_VAR *([a-zA-Z0-9_]*)/{s/.*EXPORT_VAR *(\([a-zA-Z0-9_]*\)).*/      {"\1", \&\1, 0},/;p;}' \
   | sort -u
 
 cat <<EOF
-      {0, 0}
+      {0, 0, 0}
     };
 
   COMPILE_TIME_ASSERT (sizeof (tab) > sizeof (tab[0]));
   for (p = tab; p->name; p++)
-    grub_dl_register_symbol (p->name, p->addr, 0);
+    grub_dl_register_symbol (p->name, p->addr, p->isfunc, 0);
 }
 EOF
