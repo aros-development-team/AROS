@@ -128,7 +128,7 @@ static const char KMsgProceed[] =
 static const char KMsgNotAllFilesCopied[] =
 "Not all files in '%s'\n"
 "were copied.\n"
-"Should the instalation continue?\n";
+"Should the installation continue?\n";
 
 static const char KMsgPartitioningFailed[] =
 "Partitioning of disk failed. InstallAROS\n"
