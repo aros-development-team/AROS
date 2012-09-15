@@ -16,7 +16,7 @@
 #define MUIA_Penadjust_PSIMode \
     (MUIB_MUI | 0x00421cbb)    /* MUI: V11  i.. BOOL       */
 
-#define MUIA_Penadjust_Spec \
+#define MUIA_Penadjust_Spec                                          /* PRIV */ \
     (MUIB_Penadjust | 0x00000000)    /* ZUNE isg  struct MUI_Penspec *  PRIV */
 
 

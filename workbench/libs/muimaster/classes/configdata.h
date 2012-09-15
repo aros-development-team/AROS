@@ -260,7 +260,7 @@ struct MUIP_Configdata_SetString
 /*** Attributes *************************************************************/
 #define MUIA_Configdata_Application \
     (MUIB_Configdata | 0x00000000)  /* ZV1: i..  Object * */
-#define MUIA_Configdata_ZunePrefs \
+#define MUIA_Configdata_ZunePrefs   /* PRIV */ \
     (MUIB_Configdata | 0x00000001)  /* ZV1: PRIV .g.  struct ZunePrefsNew * */
 #define MUIA_Configdata_ApplicationBase \
     (MUIB_Configdata | 0x00000002)  /* ZV1: i..  Object * */

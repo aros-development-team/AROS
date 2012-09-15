@@ -27,7 +27,7 @@
     (MUIB_MUI | 0x00424f3d)       /* MUI: V4  i.. struct Image *      */
 #define MUIA_Image_Spec \
     (MUIB_MUI | 0x004233d5)       /* MUI: V4  i.. char *              */
-#define MUIA_Image_Prop \
+#define MUIA_Image_Prop           /* PRIV */ \
     (MUIB_MUI | 0x004233d6)       /* MUI: V4  i.. Object * (PRIVATE!) */
 #define MUIA_Image_State \
     (MUIB_MUI | 0x0042a3ad)       /* MUI: V4  is. LONG                */

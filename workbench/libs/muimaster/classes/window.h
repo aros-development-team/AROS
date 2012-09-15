@@ -90,24 +90,23 @@ struct MUIP_Window_ToFront
     STACKED ULONG MethodID;
 };
 
-#define MUIM_Window_AddControlCharHandler \
+#define MUIM_Window_AddControlCharHandler  /* PRIV */ \
     (MUIB_Window | 0x00000000)   /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_AllocGadgetID \
     (MUIB_Window | 0x00000001)   /* Zune: V1 - allocate a GadgetID for
                                   * BOOPSI gadgets */
-#define MUIM_Window_DrawBackground \
-    (MUIB_Window | 0x00000002)   /* Zune: V1 - like MUIM_DrawBackground
-                                  * but PRIV */
-#define MUIM_Window_DragObject \
+#define MUIM_Window_DrawBackground  /* PRIV */ \
+    (MUIB_Window | 0x00000002)   /* Zune: V1 - like MUIM_DrawBackground but PRIV */
+#define MUIM_Window_DragObject   /* PRIV */ \
     (MUIB_Window | 0x00000003)   /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_FreeGadgetID \
     (MUIB_Window | 0x00000004)   /* Zune: V1 - free the GadgetID for
                                   * BOOPSI gadgets */
-#define MUIM_Window_RecalcDisplay \
+#define MUIM_Window_RecalcDisplay /* PRIV */ \
     (MUIB_Window | 0x00000005)   /* Zune: V1, PRIV don't use it! */
-#define MUIM_Window_RemControlCharHandler \
+#define MUIM_Window_RemControlCharHandler /* PRIV */ \
     (MUIB_Window | 0x00000006)   /* Zune: V1, PRIV don't use it! */
-#define MUIM_Window_UpdateMenu \
+#define MUIM_Window_UpdateMenu   /* PRIV */ \
     (MUIB_Window | 0x00000007)   /* Zune: V1, PRIV dont' use it! */
 
 struct MUIP_Window_AddControlCharHandler
@@ -437,8 +436,8 @@ struct MUI_EventHandlerNode
 #define MUI_EHF_ALWAYSKEYS  (1<<0)
 #define MUI_EHF_GUIMODE     (1<<1)      /* handler will not be called if object
                                          * is not visible or disabled */
-#define MUI_EHF_HANDLEINPUT (1<<15)     /* ZUNEPRIV: Send MUIM_HandleInput
-                                         * instead of MUIM_HandleEvent */
+#define MUI_EHF_HANDLEINPUT (1<<15)     /* ZUNEPRIV: Send MUIM_HandleInput */
+                                        /* ZUNEPRIV: instead of MUIM_HandleEvent */
 
 /* MUIM_HandleEvent must return a bitmask where following bits can be set
  * (all others must be 0) */
