@@ -16,16 +16,16 @@
 #define MUIM_Popimage_OpenWindow   (MUIB_Popimage | 0x00000000) /* PRIV */
 #define MUIM_Popimage_CloseWindow  (MUIB_Popimage | 0x00000001) /* PRIV */
 
-struct MUIP_Popimage_OpenWindow
-{
-    STACKED ULONG MethodID;
+struct MUIP_Popimage_OpenWindow /* PRIV */
+{                               /* PRIV */
+    STACKED ULONG MethodID;     /* PRIV */
 };                              /* PRIV */
 
-struct MUIP_Popimage_CloseWindow
-{
-    STACKED ULONG MethodID;
-    STACKED LONG ok;
-};                              /* PRIV */
+struct MUIP_Popimage_CloseWindow /* PRIV */
+{                                /* PRIV */
+    STACKED ULONG MethodID;      /* PRIV */
+    STACKED LONG ok;             /* PRIV */
+};                               /* PRIV */
 
 
 extern const struct __MUIBuiltinClass _MUI_Popimage_desc;       /* PRIV */

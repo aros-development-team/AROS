@@ -19,9 +19,9 @@
 #define MUIA_Virtgroup_Top      (MUIB_MUI | 0x00425200)   /* V6  isg LONG */
 #define MUIA_Virtgroup_Width    (MUIB_MUI | 0x00427c49)   /* V6  ..g LONG */
 
-#define MUIA_Virtgroup_MinWidth \
+#define MUIA_Virtgroup_MinWidth                            /* PRIV */ \
     (MUIB_Virtgroup | 0x00000001)        /* Zune: V1 ..g BOOL PRIV */
-#define MUIA_Virtgroup_MinHeight \
+#define MUIA_Virtgroup_MinHeight                           /* PRIV */ \
     (MUIB_Virtgroup | 0x00000002)        /* Zune: V1 ..g BOOL PRIV */
 
 

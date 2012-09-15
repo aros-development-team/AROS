@@ -166,7 +166,7 @@ struct MUIP_List_TestPos
     STACKED struct MUI_List_TestPos_Result *res;
 };
 
-#define MUIM_List_SelectChange \
+#define MUIM_List_SelectChange  /* PRIV */ \
     (MUIB_List | 0x00000004)  /* Zune: V1 same like NLIST, PRIV for now! */
 
 struct MUIP_List_SelectChange
@@ -226,24 +226,24 @@ struct MUIP_List_SelectChange
     (MUIB_MUI | 0x00423e66)     /* MUI: V6  isg char *        */
 #define MUIA_List_Visible \
     (MUIB_MUI | 0x0042191f)     /* MUI: V4  ..g LONG          */
-#define MUIA_List_Prop_Entries \
+#define MUIA_List_Prop_Entries  /* PRIV */ \
     (MUIB_MUI | 0x0042a8f5)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_Visible \
+#define MUIA_List_Prop_Visible  /* PRIV */ \
     (MUIB_MUI | 0x004273e9)     /* .sg LONG  PRIV */
-#define MUIA_List_Prop_First \
+#define MUIA_List_Prop_First    /* PRIV */ \
     (MUIB_MUI | 0x00429df3)     /* .sg LONG  PRIV */
 
-#define MUIA_List_VertProp_Entries \
+#define MUIA_List_VertProp_Entries  /* PRIV */ \
     MUIA_List_Prop_Entries     /* PRIV */
-#define MUIA_List_VertProp_Visible \
+#define MUIA_List_VertProp_Visible  /* PRIV */ \
     MUIA_List_Prop_Visible     /* PRIV */
-#define MUIA_List_VertProp_First \
+#define MUIA_List_VertProp_First  /* PRIV */ \
     MUIA_List_Prop_First       /* PRIV */
-#define MUIA_List_HorizProp_Entries \
+#define MUIA_List_HorizProp_Entries  /* PRIV */ \
     (MUIB_List | 0x00000000)   /* ... LONG  PRIV */
-#define MUIA_List_HorizProp_Visible \
+#define MUIA_List_HorizProp_Visible  /* PRIV */ \
     (MUIB_List | 0x00000001)   /* ... LONG  PRIV */
-#define MUIA_List_HorizProp_First \
+#define MUIA_List_HorizProp_First  /* PRIV */ \
     (MUIB_List | 0x00000002)   /* ... LONG  PRIV */
 
 /* Structure of the List Position Text (MUIM_List_TestPos) */

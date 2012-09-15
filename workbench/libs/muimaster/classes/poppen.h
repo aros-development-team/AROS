@@ -16,15 +16,15 @@
 #define MUIM_Poppen_OpenWindow   (MUIB_Poppen | 0x00000000)     /* PRIV */
 #define MUIM_Poppen_CloseWindow  (MUIB_Poppen | 0x00000001)     /* PRIV */
 
-struct MUIP_Poppen_OpenWindow
-{
-    STACKED ULONG MethodID;
+struct MUIP_Poppen_OpenWindow   /* PRIV */
+{                               /* PRIV */
+    STACKED ULONG MethodID;     /* PRIV */
 };                              /* PRIV */
 
-struct MUIP_Poppen_CloseWindow
-{
-    STACKED ULONG MethodID;
-    STACKED LONG ok;
+struct MUIP_Poppen_CloseWindow  /* PRIV */
+{                               /* PRIV */
+    STACKED ULONG MethodID;     /* PRIV */
+    STACKED LONG ok;            /* PRIV */
 };                              /* PRIV */
 
 

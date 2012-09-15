@@ -38,7 +38,7 @@
 #define MUIA_Boopsi_TagWindow \
     (MUIB_MUI | 0x0042e11d) /* V4  isg ULONG           */
 
-#define MUIA_Boopsi_OnlyTrigger \
+#define MUIA_Boopsi_OnlyTrigger /* PRIV */ \
     (MUIB_Boopsi | 0x00000000) /* ZV1 .s. BOOL  PRIV (for notification) */
 
 

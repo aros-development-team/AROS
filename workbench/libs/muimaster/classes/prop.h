@@ -42,7 +42,7 @@ struct MUIP_Prop_Increase
 #define MUIA_Prop_Visible \
     (MUIB_MUI | 0x0042fea6)  /* MUI: V4  isg LONG */
 
-#define MUIA_Prop_OnlyTrigger \
+#define MUIA_Prop_OnlyTrigger      /* PRIV */ \
     (MUIB_Prop | 0x00000000)       /* Zune: PRIV .s. BOOL */
 
 enum
@@ -53,7 +53,7 @@ enum
     MUIV_Prop_UseWinBorder_Bottom,
 };
 
-#define MUIA_Prop_Release \
+#define MUIA_Prop_Release    /* PRIV */ \
     (MUIB_MUI | 0x00429839)  /* MUI:    ..g BOOL  PRIV */
 #define MUIA_Prop_DeltaFactor \
     (MUIB_MUI | 0x00427c5e)  /* MUI:    is. LONG */

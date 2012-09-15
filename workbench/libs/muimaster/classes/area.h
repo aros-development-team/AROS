@@ -284,15 +284,15 @@ struct MUIP_Show
     (MUIB_Area | 0x00000000)
 #define MUIM_DrawParentBackground \
     (MUIB_Area | 0x00000001)
-#define MUIM_DragQueryExtended \
+#define MUIM_DragQueryExtended  /* PRIV */ \
     (MUIB_Area | 0x00000002)    /* PRIV - returns a object or NULL */
-#define MUIM_Timer \
+#define MUIM_Timer              /* PRIV */ \
     (MUIB_Area | 0x00000003)    /* PRIV */
-#define MUIM_UpdateInnerSizes \
+#define MUIM_UpdateInnerSizes   /* PRIV */ \
     (MUIB_Area | 0x00000004)    /* PRIV for now */
-#define MUIM_FindAreaObject \
+#define MUIM_FindAreaObject     /* PRIV */ \
     (MUIB_Area | 0x00000005)    /* PRIV */
-#define MUIM_DrawBackgroundBuffered \
+#define MUIM_DrawBackgroundBuffered /* PRIV */ \
     (MUIB_Area | 0x00000006)    /* PRIV */
 
 struct MUIP_Layout
@@ -312,29 +312,29 @@ struct MUIP_DrawParentBackground
     STACKED LONG flags;
 };
 
-struct MUIP_DragQueryExtended
-{
-    STACKED ULONG MethodID;
-    STACKED Object *obj;
-    STACKED LONG x;
-    STACKED LONG y;
-};                              /* PRIV */
+struct MUIP_DragQueryExtended /* PRIV */
+{                             /* PRIV */
+    STACKED ULONG MethodID;   /* PRIV */
+    STACKED Object *obj;      /* PRIV */
+    STACKED LONG x;           /* PRIV */
+    STACKED LONG y;           /* PRIV */
+};                            /* PRIV */
 
-struct MUIP_Timer
-{
-    STACKED ULONG MethodID;
-};                              /* PRIV */
+struct MUIP_Timer             /* PRIV */
+{                             /* PRIV */
+    STACKED ULONG MethodID;   /* PRIV */
+};                            /* PRIV */
 
-struct MUIP_UpdateInnerSizes
-{
-    STACKED ULONG MethodID;
-};                              /* PRIV */
+struct MUIP_UpdateInnerSizes  /* PRIV */
+{                             /* PRIV */
+    STACKED ULONG MethodID;   /* PRIV */
+};                            /* PRIV */
 
-struct MUIP_FindAreaObject
-{
-    STACKED ULONG MethodID;
-    STACKED Object *obj;
-};                              /* PRIV */
+struct MUIP_FindAreaObject    /* PRIV */
+{                             /* PRIV */
+    STACKED ULONG MethodID;   /* PRIV */
+    STACKED Object *obj;      /* PRIV */
+};                            /* PRIV */
 
 struct MUI_DragImage
 {
@@ -616,12 +616,12 @@ enum
 #define MUIV_CreateBubble_DontHidePointer (1<<0)
 
 /* A private functions and macros */
-void __area_finish_minmax(Object * obj, struct MUI_MinMax *MinMaxInfo);
+void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo); /* PRIV */
 
 /*#define DRAW_BG_RECURSIVE (1<<1)*/
-#define _vweight(obj) \
+#define _vweight(obj)                                              /* PRIV */ \
     (muiAreaData(obj)->mad_VertWeight)    /* accesses private members PRIV */
-#define _hweight(obj) \
+#define _hweight(obj)                                              /* PRIV */ \
     (muiAreaData(obj)->mad_HorizWeight)   /* accesses private members PRIV */
 
 extern const struct __MUIBuiltinClass _MUI_Area_desc;   /* PRIV */
