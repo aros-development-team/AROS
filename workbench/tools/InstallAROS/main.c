@@ -1,5 +1,5 @@
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -104,12 +104,14 @@ while (files[file_count] != NULL && data->inst_success == MUIV_Inst_InProgress) 
     }                                                                           \
 }
 
+#if 0
 #define OPTION_PREPDRIVES           1
 #define OPTION_FORMAT               2
 #define OPTION_LANGUAGE             3
 #define OPTION_CORE                 4
 #define OPTION_EXTRAS               5
 #define OPTION_BOOTLOADER           6
+#endif
 
 #define INSTV_TITLE                 101001
 #define INSTV_LOGO                  101002
@@ -132,7 +134,7 @@ enum BootLoaderTypes
 /* Files to check for. Must be in the same order as enum values before */
 STRPTR BootLoaderFiles[] = {
     "boot/grub/stage1",
-    "boot/grub/core.img",
+    "boot/grub/i386-pc/core.img",
     NULL
 };
 
@@ -2194,6 +2196,10 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
     GET(data->instc_options_main->opt_bootloader, MUIA_Selected, &option);
     if (option && (data->inst_success == MUIV_Inst_InProgress))
     {
+        CONST_STRPTR grub2_dirs[] = {
+            "grub", "grub",
+            NULL
+        };
         int numgrubfiles = 0, file_count = 0;
         LONG part_no;
         ULONG srcLen =
@@ -2213,9 +2219,6 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         strcpy(srcPath, source_Path);
         AddPart(srcPath, BOOT_PATH, srcLen);
         sprintf(dstPath, "%s:%s", dest_Path, BOOT_PATH);
-        AddPart(srcPath, GRUB_PATH, srcLen);
-        AddPart(dstPath, GRUB_PATH, dstLen);
-        /* Warning: do not modify srcPath or dstPath beyond this point */
 
         /* Get drive chosen to install GRUB bootblock to */
         GET(grub_device, MUIA_String_Contents, &option);
@@ -2226,23 +2229,16 @@ IPTR Install__MUIM_IC_Install(Class * CLASS, Object * self, Msg message)
         {
         case BOOTLOADER_GRUB2:
 
-            DoMethod(self, MUIM_IC_CopyFiles, srcPath, dstPath, "#?.mod",
-                FALSE);
+            /* Copying Core system Files */
+            D(bug("[INSTALLER] Copying Core files...\n"));
+            SET(data->label, MUIA_Text_Contents,
+                "Copying bootloader files...");
+            CopyDirArray(CLASS, self, srcPath, dstPath, grub2_dirs);
 
-            TEXT *grub2_files[] = {
-                "boot.img", "boot.img",
-                "core.img", "core.img",
-                "grub.cfg", "grub.cfg",
-                "splash.png", "splash.png",
-                "_unicode.pf2", "_unicode.pf2",
-                "command.lst", "command.lst",
-                "fs.lst", "fs.lst",
-                "moddep.lst", "moddep.lst",
-                NULL
-            };
-            numgrubfiles = (sizeof(grub2_files) / sizeof(TEXT *) - 1) / 2;
+            AddPart(srcPath, GRUB_PATH, srcLen);
+            AddPart(dstPath, GRUB_PATH, dstLen);
 
-            GRUB_COPY_FILE_LOOP(grub2_files);
+            /* Warning: do not modify srcPath or dstPath beyond this point */
 
             /* Grub 2 text/gfx mode */
             GET(data->instc_options_grub->gopt_grub2mode, MUIA_Cycle_Active,
@@ -3168,8 +3164,9 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
 
     return 0;
 }
+BOOPSI_DISPATCHER_END
 
-BOOPSI_DISPATCHER_END void FindBootLoader(void)
+void FindBootLoader(void)
 {
     ULONG newSrcLen = strlen(source_Path) + BOOTLOADER_PATH_LEN;
     TEXT srcFile[newSrcLen];
@@ -3425,8 +3422,8 @@ int main(int argc, char *argv[])
 
     Object *app = ApplicationObject,
         MUIA_Application_Title,       (IPTR) "AROS Installer",
-        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.12 (16.12.2011)",
-        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2011, The AROS Development Team. All rights reserved.",
+        MUIA_Application_Version,     (IPTR) "$VER: InstallAROS 1.13 (15.9.2012)",
+        MUIA_Application_Copyright,   (IPTR) "Copyright © 2003-2012, The AROS Development Team. All rights reserved.",
         MUIA_Application_Author,      (IPTR) "John \"Forgoil\" Gustafsson, Nic Andrews & Neil Cafferkey",
         MUIA_Application_Description, (IPTR) "Installs AROS on to a PC.",
         MUIA_Application_Base,        (IPTR) "INSTALLER",
