@@ -23,6 +23,10 @@
 #include <grub/file.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
+#include <grub/dl.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* Check if EHDR is a valid ELF header.  */
 static grub_err_t
@@ -36,7 +40,7 @@ grub_elf_check_header (grub_elf_t elf)
       || e->e_ident[EI_MAG3] != ELFMAG3
       || e->e_ident[EI_VERSION] != EV_CURRENT
       || e->e_version != EV_CURRENT)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch independent ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-independent ELF magic"));
 
   return GRUB_ERR_NONE;
 }
@@ -56,7 +60,7 @@ grub_elf_close (grub_elf_t elf)
 }
 
 grub_elf_t
-grub_elf_file (grub_file_t file)
+grub_elf_file (grub_file_t file, const char *filename)
 {
   grub_elf_t elf;
 
@@ -72,8 +76,9 @@ grub_elf_file (grub_file_t file)
   if (grub_file_read (elf->file, &elf->ehdr, sizeof (elf->ehdr))
       != sizeof (elf->ehdr))
     {
-      grub_error_push ();
-      grub_error (GRUB_ERR_READ_ERROR, "cannot read ELF header");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+		    filename);
       goto fail;
     }
 
@@ -98,7 +103,7 @@ grub_elf_open (const char *name)
   if (! file)
     return 0;
 
-  elf = grub_elf_file (file);
+  elf = grub_elf_file (file, name);
   if (! elf)
     grub_file_close (file);
 
@@ -115,7 +120,7 @@ grub_elf_is_elf32 (grub_elf_t elf)
 }
 
 static grub_err_t
-grub_elf32_load_phdrs (grub_elf_t elf)
+grub_elf32_load_phdrs (grub_elf_t elf, const char *filename)
 {
   grub_ssize_t phdrs_size;
 
@@ -132,8 +137,10 @@ grub_elf32_load_phdrs (grub_elf_t elf)
   if ((grub_file_seek (elf->file, elf->ehdr.ehdr32.e_phoff) == (grub_off_t) -1)
       || (grub_file_read (elf->file, elf->phdrs, phdrs_size) != phdrs_size))
     {
-      grub_error_push ();
-      return grub_error (GRUB_ERR_READ_ERROR, "cannot read program headers");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+		    filename);
+      return grub_errno;
     }
 
   return GRUB_ERR_NONE;
@@ -141,6 +148,7 @@ grub_elf32_load_phdrs (grub_elf_t elf)
 
 grub_err_t
 grub_elf32_phdr_iterate (grub_elf_t elf,
+			 const char *filename,
 			 int NESTED_FUNC_ATTR (*hook) (grub_elf_t, Elf32_Phdr *, void *),
 			 void *hook_arg)
 {
@@ -148,7 +156,7 @@ grub_elf32_phdr_iterate (grub_elf_t elf,
   unsigned int i;
 
   if (! elf->phdrs)
-    if (grub_elf32_load_phdrs (elf))
+    if (grub_elf32_load_phdrs (elf, filename))
       return grub_errno;
   phdrs = elf->phdrs;
 
@@ -171,7 +179,8 @@ grub_elf32_phdr_iterate (grub_elf_t elf,
 
 /* Calculate the amount of memory spanned by the segments.  */
 grub_size_t
-grub_elf32_size (grub_elf_t elf, Elf32_Addr *base, grub_uint32_t *max_align)
+grub_elf32_size (grub_elf_t elf, const char *filename,
+		 Elf32_Addr *base, grub_uint32_t *max_align)
 {
   Elf32_Addr segments_start = (Elf32_Addr) -1;
   Elf32_Addr segments_end = 0;
@@ -198,7 +207,7 @@ grub_elf32_size (grub_elf_t elf, Elf32_Addr *base, grub_uint32_t *max_align)
       return 0;
     }
 
-  grub_elf32_phdr_iterate (elf, calcsize, 0);
+  grub_elf32_phdr_iterate (elf, filename, calcsize, 0);
 
   if (base)
     *base = 0;
@@ -225,7 +234,8 @@ grub_elf32_size (grub_elf_t elf, Elf32_Addr *base, grub_uint32_t *max_align)
 
 /* Load every loadable segment into memory specified by `_load_hook'.  */
 grub_err_t
-grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
+grub_elf32_load (grub_elf_t _elf, const char *filename,
+		 grub_elf32_load_hook_t _load_hook,
 		 grub_addr_t *base, grub_size_t *size)
 {
   grub_addr_t load_base = (grub_addr_t) -1ULL;
@@ -254,11 +264,7 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
 		  (unsigned long long) phdr->p_memsz);
 
     if (grub_file_seek (elf->file, phdr->p_offset) == (grub_off_t) -1)
-      {
-	grub_error_push ();
-	return grub_error (GRUB_ERR_BAD_OS,
-			   "invalid offset in program header");
-      }
+      return grub_errno;
 
     if (phdr->p_filesz)
       {
@@ -267,11 +273,10 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
 	if (read != (grub_ssize_t) phdr->p_filesz)
 	  {
 	    /* XXX How can we free memory from `load_hook'? */
-	    grub_error_push ();
-	    return grub_error (GRUB_ERR_BAD_OS,
-			       "couldn't read segment from file: "
-			       "wanted 0x%lx bytes; read 0x%lx bytes",
-			       phdr->p_filesz, read);
+	    if (!grub_errno)
+	      grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+			  filename);
+	    return grub_errno;
 	  }
       }
 
@@ -284,7 +289,8 @@ grub_elf32_load (grub_elf_t _elf, grub_elf32_load_hook_t _load_hook,
     return 0;
   }
 
-  err = grub_elf32_phdr_iterate (_elf, grub_elf32_load_segment, _load_hook);
+  err = grub_elf32_phdr_iterate (_elf, filename,
+				 grub_elf32_load_segment, _load_hook);
 
   if (base)
     *base = load_base;
@@ -304,7 +310,7 @@ grub_elf_is_elf64 (grub_elf_t elf)
 }
 
 static grub_err_t
-grub_elf64_load_phdrs (grub_elf_t elf)
+grub_elf64_load_phdrs (grub_elf_t elf, const char *filename)
 {
   grub_ssize_t phdrs_size;
 
@@ -321,8 +327,10 @@ grub_elf64_load_phdrs (grub_elf_t elf)
   if ((grub_file_seek (elf->file, elf->ehdr.ehdr64.e_phoff) == (grub_off_t) -1)
       || (grub_file_read (elf->file, elf->phdrs, phdrs_size) != phdrs_size))
     {
-      grub_error_push ();
-      return grub_error (GRUB_ERR_READ_ERROR, "cannot read program headers");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+		    filename);
+      return grub_errno;
     }
 
   return GRUB_ERR_NONE;
@@ -330,6 +338,7 @@ grub_elf64_load_phdrs (grub_elf_t elf)
 
 grub_err_t
 grub_elf64_phdr_iterate (grub_elf_t elf,
+			 const char *filename,
 			 int NESTED_FUNC_ATTR (*hook) (grub_elf_t, Elf64_Phdr *, void *),
 			 void *hook_arg)
 {
@@ -337,7 +346,7 @@ grub_elf64_phdr_iterate (grub_elf_t elf,
   unsigned int i;
 
   if (! elf->phdrs)
-    if (grub_elf64_load_phdrs (elf))
+    if (grub_elf64_load_phdrs (elf, filename))
       return grub_errno;
   phdrs = elf->phdrs;
 
@@ -360,7 +369,8 @@ grub_elf64_phdr_iterate (grub_elf_t elf,
 
 /* Calculate the amount of memory spanned by the segments.  */
 grub_size_t
-grub_elf64_size (grub_elf_t elf, Elf64_Addr *base, grub_uint64_t *max_align)
+grub_elf64_size (grub_elf_t elf, const char *filename,
+		 Elf64_Addr *base, grub_uint64_t *max_align)
 {
   Elf64_Addr segments_start = (Elf64_Addr) -1;
   Elf64_Addr segments_end = 0;
@@ -387,7 +397,7 @@ grub_elf64_size (grub_elf_t elf, Elf64_Addr *base, grub_uint64_t *max_align)
       return 0;
     }
 
-  grub_elf64_phdr_iterate (elf, calcsize, 0);
+  grub_elf64_phdr_iterate (elf, filename, calcsize, 0);
 
   if (base)
     *base = 0;
@@ -414,7 +424,8 @@ grub_elf64_size (grub_elf_t elf, Elf64_Addr *base, grub_uint64_t *max_align)
 
 /* Load every loadable segment into memory specified by `_load_hook'.  */
 grub_err_t
-grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
+grub_elf64_load (grub_elf_t _elf, const char *filename,
+		 grub_elf64_load_hook_t _load_hook,
 		 grub_addr_t *base, grub_size_t *size)
 {
   grub_addr_t load_base = (grub_addr_t) -1ULL;
@@ -444,11 +455,7 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
 		  (unsigned long long) phdr->p_memsz);
 
     if (grub_file_seek (elf->file, phdr->p_offset) == (grub_off_t) -1)
-      {
-	grub_error_push ();
-	return grub_error (GRUB_ERR_BAD_OS,
-			   "invalid offset in program header");
-      }
+      return grub_errno;
 
     if (phdr->p_filesz)
       {
@@ -457,11 +464,10 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
 	if (read != (grub_ssize_t) phdr->p_filesz)
           {
 	    /* XXX How can we free memory from `load_hook'?  */
-	    grub_error_push ();
-	    return grub_error (GRUB_ERR_BAD_OS,
-			      "couldn't read segment from file: "
-			      "wanted 0x%lx bytes; read 0x%lx bytes",
-			      phdr->p_filesz, read);
+	    if (!grub_errno)
+	      grub_error (GRUB_ERR_FILE_READ_ERROR, N_("premature end of file %s"),
+			  filename);
+	    return grub_errno;
           }
       }
 
@@ -474,7 +480,8 @@ grub_elf64_load (grub_elf_t _elf, grub_elf64_load_hook_t _load_hook,
     return 0;
   }
 
-  err = grub_elf64_phdr_iterate (_elf, grub_elf64_load_segment, _load_hook);
+  err = grub_elf64_phdr_iterate (_elf, filename,
+				 grub_elf64_load_segment, _load_hook);
 
   if (base)
     *base = load_base;

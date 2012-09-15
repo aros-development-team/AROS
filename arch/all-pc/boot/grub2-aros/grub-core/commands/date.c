@@ -24,6 +24,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define GRUB_DATETIME_SET_YEAR		1
 #define GRUB_DATETIME_SET_MONTH		2
 #define GRUB_DATETIME_SET_DAY		4
@@ -137,7 +139,7 @@ GRUB_MOD_INIT(date)
   cmd =
     grub_register_command ("date", grub_cmd_date,
 			   N_("[[year-]month-day] [hour:minute[:second]]"),
-			   N_("Command to display/set current datetime."));
+			   N_("Display/set current datetime."));
 }
 
 GRUB_MOD_FINI(date)

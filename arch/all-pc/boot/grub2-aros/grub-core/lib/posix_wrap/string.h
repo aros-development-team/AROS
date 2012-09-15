@@ -39,4 +39,67 @@ strcasecmp (const char *s1, const char *s2)
   return grub_strcasecmp (s1, s2);
 }
 
+#ifdef GRUB_UTIL
+static inline void *
+memcpy (void *dest, const void *src, grub_size_t n)
+{
+  return grub_memcpy (dest, src, n);
+}
+
+static inline int
+memcmp (const void *s1, const void *s2, size_t n)
+{
+  return grub_memcmp (s1, s2, n);
+}
+
+#endif
+
+static inline char *
+strcpy (char *dest, const char *src)
+{
+  return grub_strcpy (dest, src);
+}
+
+static inline char *
+strstr (const char *haystack, const char *needle)
+{
+  return grub_strstr (haystack, needle);
+}
+
+static inline char *
+strchr (const char *s, int c)
+{
+  return grub_strchr (s, c);
+}
+
+static inline char *
+strncpy (char *dest, const char *src, size_t n)
+{
+  return grub_strncpy (dest, src, n);
+}
+
+static inline char *
+strcat (char *dest, const char *src)
+{
+  return grub_strcat (dest, src);
+}
+
+static inline char *
+strncat (char *dest, const char *src, size_t n)
+{
+  return grub_strncat (dest, src, n);
+}
+
+static inline int
+strcoll (const char *s1, const char *s2)
+{
+  return grub_strcmp (s1, s2);
+}
+
+static inline void *
+memchr (const void *s, int c, size_t n)
+{
+  return grub_memchr (s, c, n);
+}
+
 #endif

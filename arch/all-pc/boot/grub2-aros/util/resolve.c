@@ -22,10 +22,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <grub/emu/misc.h>
+#include <grub/misc.h>
 #include <grub/util/misc.h>
 #include <grub/util/resolve.h>
+#include <grub/i18n.h>
 
 /* Module.  */
 struct mod_list
@@ -87,7 +90,7 @@ read_dep_list (FILE *fp)
       /* Get the target name.  */
       p = strchr (buf, ':');
       if (! p)
-	grub_util_error ("invalid line format: %s", buf);
+	grub_util_error (_("invalid line format: %s"), buf);
 
       *p++ = '\0';
 
@@ -105,7 +108,7 @@ read_dep_list (FILE *fp)
 	  char *name;
 
 	  /* Skip whitespace.  */
-	  while (*p && isspace (*p))
+	  while (*p && grub_isspace (*p))
 	    p++;
 
 	  if (! *p)
@@ -114,7 +117,7 @@ read_dep_list (FILE *fp)
 	  name = p;
 
 	  /* Skip non-whitespace.  */
-	  while (*p && ! isspace (*p))
+	  while (*p && ! grub_isspace (*p))
 	    p++;
 
 	  *p++ = '\0';
@@ -240,7 +243,7 @@ grub_util_resolve_dependencies (const char *prefix,
   path = grub_util_get_path (prefix, dep_list_file);
   fp = fopen (path, "r");
   if (! fp)
-    grub_util_error ("cannot open %s", path);
+    grub_util_error (_("cannot open `%s': %s"), path, strerror (errno));
 
   free (path);
   dep_list = read_dep_list (fp);

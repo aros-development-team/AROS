@@ -33,14 +33,18 @@
 #include <grub/efi/api.h>
 #endif
 
+#pragma GCC diagnostic ignored "-Wcast-align"
+
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] = {
   {"exclude", 'x', 0,
    N_("Don't load host tables specified by comma-separated list."),
    0, ARG_TYPE_STRING},
   {"load-only", 'n', 0,
    N_("Load only tables specified by comma-separated list."), 0, ARG_TYPE_STRING},
-  {"v1", '1', 0, N_("Expose v1 tables."), 0, ARG_TYPE_NONE},
-  {"v2", '2', 0, N_("Expose v2 and v3 tables."), 0, ARG_TYPE_NONE},
+  {"v1", '1', 0, N_("Export version 1 tables to the OS."), 0, ARG_TYPE_NONE},
+  {"v2", '2', 0, N_("Export version 2 and version 3 tables to the OS."), 0, ARG_TYPE_NONE},
   {"oemid", 'o', 0, N_("Set OEMID of RSDP, XSDT and RSDT."), 0, ARG_TYPE_STRING},
   {"oemtable", 't', 0,
    N_("Set OEMTABLE ID of RSDP, XSDT and RSDT."), 0, ARG_TYPE_STRING},
@@ -50,8 +54,9 @@ static const struct grub_arg_option options[] = {
    N_("Set creator field of RSDP, XSDT and RSDT."), 0, ARG_TYPE_STRING},
   {"oemtablecreatorrev", 'd', 0,
    N_("Set creator revision of RSDP, XSDT and RSDT."), 0, ARG_TYPE_INT},
-  {"no-ebda", 'e', 0, N_("Don't update EBDA. May fix failures or hangs on some."
-   " BIOSes but makes it ineffective with OS not receiving RSDP from GRUB."),
+  /* TRANSLATORS: "hangs" here is a noun, not a verb.  */
+  {"no-ebda", 'e', 0, N_("Don't update EBDA. May fix failures or hangs on some "
+   "BIOSes but makes it ineffective with OS not receiving RSDP from GRUB."),
    0, ARG_TYPE_NONE},
   {0, 0, 0, 0, 0, 0}
 };
@@ -136,6 +141,7 @@ iszero (grub_uint8_t *reg, int size)
   return 1;
 }
 
+#if defined (__i386__) || defined (__x86_64__)
 grub_err_t
 grub_acpi_create_ebda (void)
 {
@@ -163,7 +169,7 @@ grub_acpi_create_ebda (void)
     return 0;
   }
 
-  ebda = (grub_uint8_t *) UINT_TO_PTR ((*((grub_uint16_t *)0x40e)) << 4);
+  ebda = (grub_uint8_t *) (grub_addr_t) ((*((grub_uint16_t *)0x40e)) << 4);
   ebda_kb_len = *(grub_uint16_t *) ebda;
   if (! ebda || ebda_kb_len > 16)
     ebda_kb_len = 0;
@@ -171,14 +177,14 @@ grub_acpi_create_ebda (void)
 
   /* FIXME: use low-memory mm allocation once it's available. */
   grub_mmap_iterate (find_hook);
-  targetebda = (grub_uint8_t *) UINT_TO_PTR (highestlow);
+  targetebda = (grub_uint8_t *) (grub_addr_t) highestlow;
   grub_dprintf ("acpi", "creating ebda @%llx\n",
 		(unsigned long long) highestlow);
   if (! highestlow)
     return grub_error (GRUB_ERR_OUT_OF_MEMORY,
 		       "couldn't find space for the new EBDA");
 
-  mmapregion = grub_mmap_register (PTR_TO_UINT64 (targetebda), ebda_len,
+  mmapregion = grub_mmap_register ((grub_addr_t) targetebda, ebda_len,
 				   GRUB_MEMORY_RESERVED);
   if (! mmapregion)
     return grub_errno;
@@ -295,6 +301,7 @@ grub_acpi_create_ebda (void)
 
   return GRUB_ERR_NONE;
 }
+#endif
 
 /* Create tables common to ACPIv1 and ACPIv2+ */
 static void
@@ -326,13 +333,13 @@ setup_common_tables (void)
       if (grub_memcmp (fadt->hdr.signature, GRUB_ACPI_FADT_SIGNATURE,
 		       sizeof (fadt->hdr.signature)) == 0)
 	{
-	  fadt->dsdt_addr = PTR_TO_UINT32 (table_dsdt);
+	  fadt->dsdt_addr = (grub_addr_t) table_dsdt;
 	  fadt->facs_addr = facs_addr;
 
 	  /* Does a revision 2 exist at all? */
 	  if (fadt->hdr.revision >= 3)
 	    {
-	      fadt->dsdt_xaddr = PTR_TO_UINT64 (table_dsdt);
+	      fadt->dsdt_xaddr = (grub_addr_t) table_dsdt;
 	      fadt->facs_xaddr = facs_addr;
 	    }
 
@@ -363,7 +370,7 @@ setup_common_tables (void)
   rsdt->creator_rev = root_creator_rev;
 
   for (cur = acpi_tables; cur; cur = cur->next)
-    *(rsdt_entry++) = PTR_TO_UINT32 (cur->addr);
+    *(rsdt_entry++) = (grub_addr_t) cur->addr;
 
   /* Recompute checksum. */
   rsdt->checksum = 0;
@@ -381,7 +388,7 @@ setv1table (void)
 	       sizeof (rsdpv1_new->signature));
   grub_memcpy (&(rsdpv1_new->oemid), root_oemid, sizeof  (rsdpv1_new->oemid));
   rsdpv1_new->revision = 0;
-  rsdpv1_new->rsdt_addr = PTR_TO_UINT32 (rsdt_addr);
+  rsdpv1_new->rsdt_addr = (grub_addr_t) rsdt_addr;
   rsdpv1_new->checksum = 0;
   rsdpv1_new->checksum = 1 + ~grub_byte_checksum (rsdpv1_new,
 						  sizeof (*rsdpv1_new));
@@ -406,7 +413,7 @@ setv2table (void)
 
   xsdt_entry = (grub_uint64_t *)(xsdt + 1);
   for (cur = acpi_tables; cur; cur = cur->next)
-    *(xsdt_entry++) = PTR_TO_UINT64 (cur->addr);
+    *(xsdt_entry++) = (grub_addr_t) cur->addr;
   grub_memcpy (&(xsdt->signature), "XSDT", 4);
   xsdt->length = sizeof (struct grub_acpi_table_header) + 8 * numoftables;
   xsdt->revision = 1;
@@ -426,12 +433,12 @@ setv2table (void)
   grub_memcpy (&(rsdpv2_new->rsdpv1.oemid), root_oemid,
 	       sizeof (rsdpv2_new->rsdpv1.oemid));
   rsdpv2_new->rsdpv1.revision = rev2;
-  rsdpv2_new->rsdpv1.rsdt_addr = PTR_TO_UINT32 (rsdt_addr);
+  rsdpv2_new->rsdpv1.rsdt_addr = (grub_addr_t) rsdt_addr;
   rsdpv2_new->rsdpv1.checksum = 0;
   rsdpv2_new->rsdpv1.checksum = 1 + ~grub_byte_checksum
     (&(rsdpv2_new->rsdpv1), sizeof (rsdpv2_new->rsdpv1));
   rsdpv2_new->length = sizeof (*rsdpv2_new);
-  rsdpv2_new->xsdt_addr = PTR_TO_UINT64 (xsdt);
+  rsdpv2_new->xsdt_addr = (grub_addr_t) xsdt;
   rsdpv2_new->checksum = 0;
   rsdpv2_new->checksum = 1 + ~grub_byte_checksum (rsdpv2_new,
 						  rsdpv2_new->length);
@@ -461,7 +468,6 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
   struct grub_arg_list *state = ctxt->state;
   struct grub_acpi_rsdp_v10 *rsdp;
   struct efiemu_acpi_table *cur, *t;
-  grub_err_t err;
   int i, mmapregion;
   int numoftables;
 
@@ -504,7 +510,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
       /* Set revision variables to replicate the same version as host. */
       rev1 = ! rsdp->revision;
       rev2 = rsdp->revision;
-      rsdt = (struct grub_acpi_table_header *) UINT_TO_PTR (rsdp->rsdt_addr);
+      rsdt = (struct grub_acpi_table_header *) (grub_addr_t) rsdp->rsdt_addr;
       /* Load host tables. */
       for (entry_ptr = (grub_uint32_t *) (rsdt + 1);
 	   entry_ptr < (grub_uint32_t *) (((grub_uint8_t *) rsdt)
@@ -514,7 +520,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	  char signature[5];
 	  struct efiemu_acpi_table *table;
 	  struct grub_acpi_table_header *curtable
-	    = (struct grub_acpi_table_header *) UINT_TO_PTR (*entry_ptr);
+	    = (struct grub_acpi_table_header *) (grub_addr_t) *entry_ptr;
 	  signature[4] = 0;
 	  for (i = 0; i < 4;i++)
 	    signature[i] = grub_tolower (curtable->signature[i]);
@@ -538,7 +544,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 
 	      /* Load DSDT if not excluded. */
 	      dsdt = (struct grub_acpi_table_header *)
-		UINT_TO_PTR (fadt->dsdt_addr);
+		(grub_addr_t) fadt->dsdt_addr;
 	      if (dsdt && (! exclude || ! grub_strword (exclude, "dsdt"))
 		  && (! load_only || grub_strword (load_only, "dsdt"))
 		  && dsdt->length >= sizeof (*dsdt))
@@ -550,8 +556,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 		      free_tables ();
 		      grub_free (exclude);
 		      grub_free (load_only);
-		      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-					 "couldn't allocate table");
+		      return grub_errno;
 		    }
 		  grub_memcpy (table_dsdt, dsdt, dsdt->length);
 		}
@@ -577,8 +582,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	      free_tables ();
 	      grub_free (exclude);
 	      grub_free (load_only);
-	      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-				 "couldn't allocate table structure");
+	      return grub_errno;
 	    }
 	  table->size = curtable->length;
 	  table->addr = grub_malloc (table->size);
@@ -586,8 +590,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	  if (! table->addr)
 	    {
 	      free_tables ();
-	      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-				 "couldn't allocate table");
+	      return grub_errno;
 	    }
 	  table->next = acpi_tables;
 	  acpi_tables = table;
@@ -630,7 +633,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
       if (! file)
 	{
 	  free_tables ();
-	  return grub_error (GRUB_ERR_BAD_OS, "couldn't open file %s", args[i]);
+	  return grub_errno;
 	}
 
       size = grub_file_size (file);
@@ -638,7 +641,8 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	{
 	  grub_file_close (file);
 	  free_tables ();
-	  return grub_error (GRUB_ERR_BAD_OS, "file %s is too small", args[i]);
+	  return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			     args[i]);
 	}
 
       buf = (char *) grub_malloc (size);
@@ -646,15 +650,17 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	{
 	  grub_file_close (file);
 	  free_tables ();
-	  return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-			     "couldn't read file %s", args[i]);
+	  return grub_errno;
 	}
 
       if (grub_file_read (file, buf, size) != (int) size)
 	{
 	  grub_file_close (file);
 	  free_tables ();
-	  return grub_error (GRUB_ERR_BAD_OS, "couldn't read file %s", args[i]);
+	  if (!grub_errno)
+	    grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			args[i]);
+	  return grub_errno;
 	}
       grub_file_close (file);
 
@@ -673,8 +679,7 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
 	  if (! table)
 	    {
 	      free_tables ();
-	      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-				 "couldn't allocate table structure");
+	      return grub_errno;
 	    }
 
 	  table->size = size;
@@ -730,13 +735,20 @@ grub_cmd_acpi (struct grub_extcmd_context *ctxt, int argc, char **args)
     }
   acpi_tables = 0;
 
-  if (! state[9].set && (err = grub_acpi_create_ebda ()))
+#if defined (__i386__) || defined (__x86_64__)
+  if (! state[9].set)
     {
-      rsdpv1_new = 0;
-      rsdpv2_new = 0;
-      grub_mmap_free_and_unregister (mmapregion);
-      return err;
+      grub_err_t err;
+      err = grub_acpi_create_ebda ();
+      if (err)
+	{
+	  rsdpv1_new = 0;
+	  rsdpv2_new = 0;
+	  grub_mmap_free_and_unregister (mmapregion);
+	  return err;
+	}
     }
+#endif
 
 #ifdef GRUB_MACHINE_EFI
   {
@@ -759,7 +771,7 @@ GRUB_MOD_INIT(acpi)
 {
   cmd = grub_register_extcmd ("acpi", grub_cmd_acpi, 0,
 			      N_("[-1|-2] [--exclude=TABLE1,TABLE2|"
-			      "--load-only=table1,table2] FILE1"
+			      "--load-only=TABLE1,TABLE2] FILE1"
 			      " [FILE2] [...]"),
 			      N_("Load host ACPI tables and tables "
 			      "specified by arguments."),

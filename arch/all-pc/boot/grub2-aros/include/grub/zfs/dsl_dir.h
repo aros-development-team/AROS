@@ -42,7 +42,9 @@ typedef struct dsl_dir_phys {
 	grub_uint64_t dd_reserved;
 	grub_uint64_t dd_props_zapobj;
 	grub_uint64_t dd_deleg_zapobj;	/* dataset permissions */
-	grub_uint64_t dd_pad[20]; /* pad out to 256 bytes for good measure */
+	grub_uint64_t unused[7];
+        grub_uint64_t keychain;
+	grub_uint64_t unused2[12];
 } dsl_dir_phys_t;
 
 #endif /* _SYS_DSL_DIR_H */

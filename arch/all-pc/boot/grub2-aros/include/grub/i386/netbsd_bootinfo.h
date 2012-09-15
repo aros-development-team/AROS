@@ -51,9 +51,11 @@
 
 #define NETBSD_BTINFO_BOOTPATH		0
 #define NETBSD_BTINFO_ROOTDEVICE	1
+#define NETBSD_BTINFO_BOOTDISK		3
 #define NETBSD_BTINFO_CONSOLE		6
 #define NETBSD_BTINFO_SYMTAB		8
 #define NETBSD_BTINFO_MEMMAP		9
+#define NETBSD_BTINFO_BOOTWEDGE		10
 #define NETBSD_BTINFO_MODULES		11
 #define NETBSD_BTINFO_FRAMEBUF		12
 
@@ -82,6 +84,15 @@ struct grub_netbsd_btinfo_bootdisk
   grub_uint32_t biosdev;
   grub_uint32_t partition;
 };
+
+struct grub_netbsd_btinfo_bootwedge {
+  grub_uint32_t biosdev;
+  grub_disk_addr_t startblk;
+  grub_uint64_t nblks;
+  grub_disk_addr_t matchblk;
+  grub_uint64_t matchnblks;
+  grub_uint8_t matchhash[16];  /* MD5 hash */
+} __attribute__ ((packed));
 
 struct grub_netbsd_btinfo_symtab
 {

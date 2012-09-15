@@ -33,6 +33,8 @@
 #include <grub/relocator.h>
 #include <grub/video.h>
 #include <grub/file.h>
+#include <grub/net.h>
+#include <grub/i18n.h>
 
 /* The bits in the required part of flags field we don't support.  */
 #define UNSUPPORTED_FLAGS			0x0000fff8
@@ -46,7 +48,7 @@ struct module
   int cmdline_size;
 };
 
-struct module *modules, *modules_last;
+static struct module *modules, *modules_last;
 static grub_size_t cmdline_size;
 static grub_size_t total_modcmd;
 static unsigned modcnt;
@@ -59,7 +61,7 @@ static void *elf_sections;
 
 
 grub_err_t
-grub_multiboot_load (grub_file_t file)
+grub_multiboot_load (grub_file_t file, const char *filename)
 {
   char *buffer;
   grub_ssize_t len;
@@ -74,7 +76,10 @@ grub_multiboot_load (grub_file_t file)
   if (len < 32)
     {
       grub_free (buffer);
-      return grub_error (GRUB_ERR_BAD_OS, "file too small");
+      if (!grub_errno)
+	grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+		    filename);
+      return grub_errno;
     }
 
   /* Look for the multiboot header in the buffer.  The header should
@@ -148,7 +153,7 @@ grub_multiboot_load (grub_file_t file)
     }
   else
     {
-      err = grub_multiboot_load_elf (file, buffer);
+      err = grub_multiboot_load_elf (file, filename, buffer);
       if (err)
 	{
 	  grub_free (buffer);
@@ -194,7 +199,10 @@ grub_multiboot_load (grub_file_t file)
 static grub_size_t
 grub_multiboot_get_mbi_size (void)
 {
-  return sizeof (struct multiboot_info) + ALIGN_UP (cmdline_size, 4)
+  grub_size_t ret;
+  struct grub_net_network_level_interface *net;
+
+  ret = sizeof (struct multiboot_info) + ALIGN_UP (cmdline_size, 4)
     + modcnt * sizeof (struct multiboot_mod_list) + total_modcmd
     + ALIGN_UP (sizeof(PACKAGE_STRING), 4) 
     + grub_get_multiboot_mmap_count () * sizeof (struct multiboot_mmap_entry)
@@ -205,6 +213,15 @@ grub_multiboot_get_mbi_size (void)
     + sizeof (struct grub_vbe_mode_info_block)
 #endif
     + ALIGN_UP (sizeof (struct multiboot_apm_info), 4);
+
+  FOR_NET_NETWORK_LEVEL_INTERFACES(net)
+    if (net->dhcp_ack)
+      {
+	ret += net->dhcp_acklen;
+	break;
+      }
+
+  return ret;
 }
 
 /* Fill previously allocated Multiboot mmap.  */
@@ -435,9 +452,9 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
   bufsize = grub_multiboot_get_mbi_size ();
 
   err = grub_relocator_alloc_chunk_align (grub_multiboot_relocator, &ch,
-					  0, 0xffffffff - bufsize,
+					  0x10000, 0x100000 - bufsize,
 					  bufsize, 4,
-					  GRUB_RELOCATOR_PREFERENCE_NONE);
+					  GRUB_RELOCATOR_PREFERENCE_NONE, 0);
   if (err)
     return err;
   ptrorig = get_virtual_current_address (ch);
@@ -530,6 +547,20 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
       mbi->flags |= MULTIBOOT_INFO_BOOTDEV;
     }
 
+  {
+    struct grub_net_network_level_interface *net;
+    FOR_NET_NETWORK_LEVEL_INTERFACES(net)
+      if (net->dhcp_ack)
+	{
+	  grub_memcpy (ptrorig, net->dhcp_ack, net->dhcp_acklen);
+	  mbi->drives_addr = ptrdest;
+	  mbi->drives_length = net->dhcp_acklen;
+	  ptrorig += net->dhcp_acklen;
+	  ptrdest += net->dhcp_acklen;
+	  break;
+	}
+  }
+
   if (elf_sec_num)
     {
       mbi->u.elf_sec.addr = ptrdest;
@@ -539,6 +570,9 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
       mbi->u.elf_sec.shndx = elf_sec_shstrndx;
 
       mbi->flags |= MULTIBOOT_INFO_ELF_SHDR;
+
+      ptrorig += elf_sec_entsize * elf_sec_num;
+      ptrdest += elf_sec_entsize * elf_sec_num;
     }
 
   err = retrieve_video_parameters (mbi, ptrorig, ptrdest);
@@ -547,6 +581,16 @@ grub_multiboot_make_mbi (grub_uint32_t *target)
       grub_print_error ();
       grub_errno = GRUB_ERR_NONE;
     }
+
+  if ((mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER_INFO)
+      && mbi->framebuffer_type == MULTIBOOT_FRAMEBUFFER_TYPE_INDEXED)
+    {
+      ptrorig += mbi->framebuffer_palette_num_colors
+	* sizeof (struct multiboot_color);
+      ptrdest += mbi->framebuffer_palette_num_colors
+	* sizeof (struct multiboot_color);
+    }
+
 #if GRUB_MACHINE_HAS_VBE
   ptrorig += sizeof (struct grub_vbe_info_block);
   ptrdest += sizeof (struct grub_vbe_info_block);

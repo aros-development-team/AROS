@@ -129,7 +129,7 @@ zio_checksum_SHA256(const void *buf, grub_uint64_t size,
   for (i = 0; i < 8; i++)
     pad[padsize++] = (size << 3) >> (56 - 8 * i);
   
-  for (i = 0; i < padsize; i += 64)
+  for (i = 0; i < padsize && i <= 64; i += 64)
     SHA256Transform(H, pad + i);
   
   zcp->zc_word[0] = grub_cpu_to_zfs64 ((grub_uint64_t)H[0] << 32 | H[1], 

@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* arcfour.c  -  The arcfour stream cipher
  *	Copyright (C) 2000, 2001, 2002, 2003 Free Software Foundation, Inc.
  *
@@ -124,6 +126,9 @@ gcry_cipher_spec_t _gcry_cipher_spec_arcfour =
   {
     "ARCFOUR", NULL, NULL, 1, 128, sizeof (ARCFOUR_context),
     arcfour_setkey, NULL, NULL, encrypt_stream, encrypt_stream,
+#ifdef GRUB_UTIL
+    .modname = "gcry_arcfour",
+#endif
   };
 
 

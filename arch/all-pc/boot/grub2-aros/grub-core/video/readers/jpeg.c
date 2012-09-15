@@ -24,6 +24,8 @@
 #include <grub/misc.h>
 #include <grub/bufio.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 /* Uncomment following define to enable JPEG debug.  */
 //#define JPEG_DEBUG
 
@@ -37,6 +39,15 @@
 #define JPEG_MARKER_DQT		0xdb
 #define JPEG_MARKER_SOF0	0xc0
 #define JPEG_MARKER_SOS		0xda
+#define JPEG_MARKER_DRI		0xdd
+#define JPEG_MARKER_RST0	0xd0
+#define JPEG_MARKER_RST1	0xd1
+#define JPEG_MARKER_RST2	0xd2
+#define JPEG_MARKER_RST3	0xd3
+#define JPEG_MARKER_RST4	0xd4
+#define JPEG_MARKER_RST5	0xd5
+#define JPEG_MARKER_RST6	0xd6
+#define JPEG_MARKER_RST7	0xd7
 
 #define SHIFT_BITS		8
 #define CONST(x)		((int) ((x) * (1L << SHIFT_BITS) + 0.5))
@@ -64,6 +75,7 @@ struct grub_jpeg_data
 {
   grub_file_t file;
   struct grub_video_bitmap **bitmap;
+  grub_uint8_t *bitmap_ptr;
 
   int image_width;
   int image_height;
@@ -80,6 +92,8 @@ struct grub_jpeg_data
   jpeg_data_unit_t cbdu;
 
   int vs, hs;
+  int dri;
+  int r1;
 
   int dc_value[3];
 
@@ -313,6 +327,18 @@ grub_jpeg_decode_sof (struct grub_jpeg_data *data)
   return grub_errno;
 }
 
+static grub_err_t
+grub_jpeg_decode_dri (struct grub_jpeg_data *data)
+{
+  if (grub_jpeg_get_word (data) != 4)
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+	"jpeg: DRI marker length must be 4");
+
+  data->dri = grub_jpeg_get_word (data);
+
+  return grub_errno;
+}
+
 static void
 grub_jpeg_idct_transform (jpeg_data_unit_t du)
 {
@@ -524,8 +550,7 @@ grub_jpeg_ycrcb_to_rgb (int yy, int cr, int cb, grub_uint8_t * rgb)
 static grub_err_t
 grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 {
-  int i, cc, r1, c1, nr1, nc1, vb, hb;
-  grub_uint8_t *ptr1;
+  int i, cc;
   grub_uint32_t data_offset;
 
   data_offset = data->file->offset;
@@ -561,17 +586,25 @@ grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 				GRUB_VIDEO_BLIT_FORMAT_RGB_888))
     return grub_errno;
 
-  data->bit_mask = 0x0;
+  data->bitmap_ptr = (*data->bitmap)->data;
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+grub_jpeg_decode_data (struct grub_jpeg_data *data)
+{
+  int c1, vb, hb, nr1, nc1;
+  int rst = data->dri;
 
   vb = data->vs * 8;
   hb = data->hs * 8;
   nr1 = (data->image_height + vb - 1) / vb;
   nc1 = (data->image_width + hb - 1) / hb;
 
-  ptr1 = (*data->bitmap)->data;
-  for (r1 = 0; r1 < nr1;
-       r1++, ptr1 += (vb * data->image_width - hb * nc1) * 3)
-    for (c1 = 0; c1 < nc1; c1++, ptr1 += hb * 3)
+  for (; data->r1 < nr1 && (!data->dri || rst);
+       data->r1++, data->bitmap_ptr += (vb * data->image_width - hb * nc1) * 3)
+    for (c1 = 0;  c1 < nc1 && (!data->dri || rst);
+	c1++, rst--, data->bitmap_ptr += hb * 3)
       {
 	int r2, c2, nr2, nc2;
 	grub_uint8_t *ptr2;
@@ -586,10 +619,10 @@ grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 	if (grub_errno)
 	  return grub_errno;
 
-	nr2 = (r1 == nr1 - 1) ? (data->image_height - r1 * vb) : vb;
+	nr2 = (data->r1 == nr1 - 1) ? (data->image_height - data->r1 * vb) : vb;
 	nc2 = (c1 == nc1 - 1) ? (data->image_width - c1 * hb) : hb;
 
-	ptr2 = ptr1;
+	ptr2 = data->bitmap_ptr;
 	for (r2 = 0; r2 < nr2; r2++, ptr2 += (data->image_width - nc2) * 3)
 	  for (c2 = 0; c2 < nc2; c2++, ptr2 += 3)
 	    {
@@ -598,14 +631,23 @@ grub_jpeg_decode_sos (struct grub_jpeg_data *data)
 	      i0 = (r2 / data->vs) * 8 + (c2 / data->hs);
 	      cr = data->crdu[i0];
 	      cb = data->cbdu[i0];
-	      yy =
-		data->ydu[(r2 / 8) * 2 + (c2 / 8)][(r2 % 8) * 8 + (c2 % 8)];
+	      yy = data->ydu[(r2 / 8) * 2 + (c2 / 8)][(r2 % 8) * 8 + (c2 % 8)];
 
 	      grub_jpeg_ycrcb_to_rgb (yy, cr, cb, ptr2);
 	    }
       }
 
   return grub_errno;
+}
+
+static void
+grub_jpeg_reset (struct grub_jpeg_data *data)
+{
+  data->bit_mask = 0x0;
+
+  data->dc_value[0] = 0;
+  data->dc_value[1] = 0;
+  data->dc_value[2] = 0;
 }
 
 static grub_uint8_t
@@ -653,8 +695,22 @@ grub_jpeg_decode_jpeg (struct grub_jpeg_data *data)
 	case JPEG_MARKER_SOF0:	/* Start Of Frame 0.  */
 	  grub_jpeg_decode_sof (data);
 	  break;
+	case JPEG_MARKER_DRI:	/* Define Restart Interval.  */
+	  grub_jpeg_decode_dri (data);
+	  break;
 	case JPEG_MARKER_SOS:	/* Start Of Scan.  */
-	  grub_jpeg_decode_sos (data);
+	  if (grub_jpeg_decode_sos (data))
+	    break;
+	case JPEG_MARKER_RST0:	/* Restart.  */
+	case JPEG_MARKER_RST1:
+	case JPEG_MARKER_RST2:
+	case JPEG_MARKER_RST3:
+	case JPEG_MARKER_RST4:
+	case JPEG_MARKER_RST5:
+	case JPEG_MARKER_RST6:
+	case JPEG_MARKER_RST7:
+	  grub_jpeg_decode_data (data);
+	  grub_jpeg_reset (data);
 	  break;
 	case JPEG_MARKER_EOI:	/* End Of Image.  */
 	  return grub_errno;
@@ -694,8 +750,7 @@ grub_video_reader_jpeg (struct grub_video_bitmap **bitmap,
       grub_jpeg_decode_jpeg (data);
 
       for (i = 0; i < 4; i++)
-	if (data->huff_value[i])
-	  grub_free (data->huff_value[i]);
+	grub_free (data->huff_value[i]);
 
       grub_free (data);
     }
@@ -718,7 +773,7 @@ grub_cmd_jpegtest (grub_command_t cmd __attribute__ ((unused)),
   struct grub_video_bitmap *bitmap = 0;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   grub_video_reader_jpeg (&bitmap, args[0]);
   if (grub_errno != GRUB_ERR_NONE)

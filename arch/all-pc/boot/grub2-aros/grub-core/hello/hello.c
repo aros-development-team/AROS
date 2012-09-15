@@ -26,12 +26,14 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 grub_cmd_hello (grub_extcmd_context_t ctxt __attribute__ ((unused)),
 		int argc __attribute__ ((unused)),
 		char **args __attribute__ ((unused)))
 {
-  grub_printf ("Hello World\n");
+  grub_printf ("%s\n", _("Hello World"));
   return 0;
 }
 
@@ -40,7 +42,7 @@ static grub_extcmd_t cmd;
 GRUB_MOD_INIT(hello)
 {
   cmd = grub_register_extcmd ("hello", grub_cmd_hello, 0, 0,
-			      N_("Say \"Hello World\"."), 0);
+			      N_("Say `Hello World'."), 0);
 }
 
 GRUB_MOD_FINI(hello)

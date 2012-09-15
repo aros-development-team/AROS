@@ -18,17 +18,27 @@
 
 #include <grub/kernel.h>
 #include <grub/env.h>
+#include <grub/cpu/time.h>
+#include <grub/cpu/mips.h>
 
-void
-grub_machine_set_prefix (void)
+/* FIXME: use interrupt to count high.  */
+grub_uint64_t
+grub_get_rtc (void)
 {
-  grub_env_set ("prefix", grub_prefix);
+  static grub_uint32_t high = 0;
+  static grub_uint32_t last = 0;
+  grub_uint32_t low;
+
+  asm volatile ("mfc0 %0, " GRUB_CPU_MIPS_COP0_TIMER_COUNT : "=r" (low));
+  if (low < last)
+    high++;
+  last = low;
+
+  return (((grub_uint64_t) high) << 32) | low;
 }
 
-extern char _end[];
-
-grub_addr_t
-grub_arch_modules_addr (void)
+void
+grub_machine_get_bootlocation (char **device __attribute__ ((unused)),
+			       char **path __attribute__ ((unused)))
 {
-  return (grub_addr_t) _end;
 }

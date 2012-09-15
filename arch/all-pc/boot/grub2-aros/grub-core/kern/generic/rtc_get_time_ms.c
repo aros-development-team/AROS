@@ -21,6 +21,7 @@
 
 #include <grub/time.h>
 #include <grub/misc.h>
+#include <grub/machine/time.h>
 
 /* Calculate the time in milliseconds since the epoch based on the RTC. */
 grub_uint64_t

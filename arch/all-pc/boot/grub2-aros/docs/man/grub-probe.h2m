@@ -1,2 +1,4 @@
 [NAME]
 grub-probe \- probe device information for GRUB
+[SEE ALSO]
+.BR grub-fstest (1)

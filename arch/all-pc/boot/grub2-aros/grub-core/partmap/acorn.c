@@ -23,6 +23,8 @@
 #include <grub/partition.h>
 #include <grub/acorn_filecore.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define LINUX_NATIVE_MAGIC grub_cpu_to_le32 (0xdeafa1de)
 #define LINUX_SWAP_MAGIC   grub_cpu_to_le32 (0xdeafab1e)
 #define LINUX_MAP_ENTRIES  (512 / 12)
@@ -32,11 +34,18 @@
 
 struct grub_acorn_boot_block
 {
-  grub_uint8_t misc[0x1C0];
-  struct grub_filecore_disc_record disc_record;
-  grub_uint8_t flags;
-  grub_uint16_t start_cylinder;
-  grub_uint8_t checksum;
+  union
+  {
+    struct
+    {
+      grub_uint8_t misc[0x1C0];
+      struct grub_filecore_disc_record disc_record;
+      grub_uint8_t flags;
+      grub_uint16_t start_cylinder;
+      grub_uint8_t checksum;
+    } __attribute__ ((packed, aligned));
+    grub_uint8_t bin[0x200];
+  };
 } __attribute__ ((packed, aligned));
 
 struct linux_part
@@ -69,7 +78,7 @@ acorn_partition_map_find (grub_disk_t disk, struct linux_part *m,
     goto fail;
 
   for (i = 0; i != 0x1ff; ++i)
-    checksum = (checksum & 0xff) + (checksum >> 8) + boot.misc[i];
+    checksum = ((checksum & 0xff) + (checksum >> 8) + boot.bin[i]);
 
   if ((grub_uint8_t) checksum != boot.checksum)
     goto fail;

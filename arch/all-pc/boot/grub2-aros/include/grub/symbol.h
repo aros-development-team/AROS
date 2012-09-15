@@ -25,13 +25,19 @@
 #define LOCAL(sym)	L_ ## sym
 
 /* Add an underscore to a C symbol in assembler code if needed. */
+#ifndef GRUB_UTIL
+
 #if HAVE_ASM_USCORE
+#ifdef ASM_FILE
 # define EXT_C(sym)	_ ## sym
+#else
+# define EXT_C(sym)	"_" sym
+#endif
 #else
 # define EXT_C(sym)	sym
 #endif
 
-#if defined (APPLE_CC)
+#if defined (__APPLE__)
 #define FUNCTION(x)	.globl EXT_C(x) ; EXT_C(x):
 #define VARIABLE(x)	.globl EXT_C(x) ; EXT_C(x):
 #elif ! defined (__CYGWIN__) && ! defined (__MINGW32__)
@@ -41,6 +47,7 @@
 /* .type not supported for non-ELF targets.  XXX: Check this in configure? */
 #define FUNCTION(x)	.globl EXT_C(x) ; .def EXT_C(x); .scl 2; .type 32; .endef; EXT_C(x):
 #define VARIABLE(x)	.globl EXT_C(x) ; .def EXT_C(x); .scl 2; .type 0; .endef; EXT_C(x):
+#endif
 #endif
 
 /* Mark an exported symbol.  */

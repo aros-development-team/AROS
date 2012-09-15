@@ -23,7 +23,7 @@
 #include <grub/i18n.h>
 
 /* Borrowed from GRUB Legacy */
-static char *color_list[16] =
+static const char *color_list[16] =
 {
   "black",
   "blue",

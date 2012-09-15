@@ -111,7 +111,8 @@ grub_efiemu_loadcore_unload(void)
 
 /* Load runtime file and do some initial preparations */
 grub_err_t
-grub_efiemu_loadcore_init (grub_file_t file)
+grub_efiemu_loadcore_init (grub_file_t file,
+			   const char *filename)
 {
   grub_err_t err;
 
@@ -140,8 +141,10 @@ grub_efiemu_loadcore_init (grub_file_t file)
   switch (grub_efiemu_mode)
     {
     case GRUB_EFIEMU32:
-      if ((err = grub_efiemu_loadcore_init32 (efiemu_core, efiemu_core_size,
-					      &efiemu_segments)))
+      err = grub_efiemu_loadcore_init32 (efiemu_core, filename,
+					 efiemu_core_size,
+					 &efiemu_segments);
+      if (err)
 	{
 	  grub_free (efiemu_core);
 	  efiemu_core = 0;
@@ -151,8 +154,10 @@ grub_efiemu_loadcore_init (grub_file_t file)
       break;
 
     case GRUB_EFIEMU64:
-      if ((err = grub_efiemu_loadcore_init64 (efiemu_core, efiemu_core_size,
-					      &efiemu_segments)))
+      err = grub_efiemu_loadcore_init64 (efiemu_core, filename,
+					 efiemu_core_size,
+					 &efiemu_segments);
+      if (err)
 	{
 	  grub_free (efiemu_core);
 	  efiemu_core = 0;
@@ -162,7 +167,7 @@ grub_efiemu_loadcore_init (grub_file_t file)
       break;
 
     default:
-      return grub_error (GRUB_ERR_BAD_OS, "unknown EFI runtime");
+      return grub_error (GRUB_ERR_BUG, "unknown EFI runtime");
     }
   return GRUB_ERR_NONE;
 }
@@ -174,16 +179,18 @@ grub_efiemu_loadcore_load (void)
   switch (grub_efiemu_mode)
     {
     case GRUB_EFIEMU32:
-      if ((err = grub_efiemu_loadcore_load32 (efiemu_core, efiemu_core_size,
-					      efiemu_segments)))
-	  grub_efiemu_loadcore_unload ();
+      err = grub_efiemu_loadcore_load32 (efiemu_core, efiemu_core_size,
+					 efiemu_segments);
+      if (err)
+	grub_efiemu_loadcore_unload ();
       return err;
     case GRUB_EFIEMU64:
-      if ((err = grub_efiemu_loadcore_load64 (efiemu_core, efiemu_core_size,
-					      efiemu_segments)))
-	  grub_efiemu_loadcore_unload ();
+      err = grub_efiemu_loadcore_load64 (efiemu_core, efiemu_core_size,
+					 efiemu_segments);
+      if (err)
+	grub_efiemu_loadcore_unload ();
       return err;
     default:
-      return grub_error (GRUB_ERR_BAD_OS, "unknown EFI runtime");
+      return grub_error (GRUB_ERR_BUG, "unknown EFI runtime");
     }
 }

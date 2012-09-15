@@ -23,6 +23,9 @@
 #include <grub/bitmap.h>
 #include <grub/bitmap_scale.h>
 #include <grub/types.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* Prototypes for module-local functions.  */
 static grub_err_t scale_nn (struct grub_video_bitmap *dst,
@@ -51,22 +54,22 @@ grub_video_bitmap_create_scaled (struct grub_video_bitmap **dst,
 
   /* Verify the simplifying assumptions. */
   if (src == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+    return grub_error (GRUB_ERR_BUG,
                        "null src bitmap in grub_video_bitmap_create_scaled");
   if (src->mode_info.red_field_pos % 8 != 0
       || src->mode_info.green_field_pos % 8 != 0
       || src->mode_info.blue_field_pos % 8 != 0
       || src->mode_info.reserved_field_pos % 8 != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
                        "src format not supported for scale");
   if (src->mode_info.width == 0 || src->mode_info.height == 0)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
                        "source bitmap has a zero dimension");
   if (dst_width <= 0 || dst_height <= 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+    return grub_error (GRUB_ERR_BUG,
                        "requested to scale to a size w/ a zero dimension");
   if (src->mode_info.bytes_per_pixel * 8 != src->mode_info.bpp)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+    return grub_error (GRUB_ERR_BUG,
                        "bitmap to scale has inconsistent Bpp and bpp");
 
   /* Create the new bitmap. */
@@ -87,7 +90,7 @@ grub_video_bitmap_create_scaled (struct grub_video_bitmap **dst,
       ret = scale_bilinear (*dst, src);
       break;
     default:
-      ret = grub_error (GRUB_ERR_BAD_ARGUMENT, "Invalid scale_method value");
+      ret = grub_error (GRUB_ERR_BUG, "Invalid scale_method value");
       break;
     }
 
@@ -120,17 +123,19 @@ scale_nn (struct grub_video_bitmap *dst, struct grub_video_bitmap *src)
 {
   /* Verify the simplifying assumptions. */
   if (dst == 0 || src == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "null bitmap in scale_nn");
+    return grub_error (GRUB_ERR_BUG, "null bitmap in scale_nn");
   if (dst->mode_info.red_field_pos % 8 != 0
       || dst->mode_info.green_field_pos % 8 != 0
       || dst->mode_info.blue_field_pos % 8 != 0
       || dst->mode_info.reserved_field_pos % 8 != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst format not supported");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		       "dst format not supported");
   if (src->mode_info.red_field_pos % 8 != 0
       || src->mode_info.green_field_pos % 8 != 0
       || src->mode_info.blue_field_pos % 8 != 0
       || src->mode_info.reserved_field_pos % 8 != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "src format not supported");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		       "src format not supported");
   if (dst->mode_info.red_field_pos != src->mode_info.red_field_pos
       || dst->mode_info.red_mask_size != src->mode_info.red_mask_size
       || dst->mode_info.green_field_pos != src->mode_info.green_field_pos
@@ -141,12 +146,14 @@ scale_nn (struct grub_video_bitmap *dst, struct grub_video_bitmap *src)
       src->mode_info.reserved_field_pos
       || dst->mode_info.reserved_mask_size !=
       src->mode_info.reserved_mask_size)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst and src not compatible");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		       "dst and src not compatible");
   if (dst->mode_info.bytes_per_pixel != src->mode_info.bytes_per_pixel)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst and src not compatible");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		       "dst and src not compatible");
   if (dst->mode_info.width == 0 || dst->mode_info.height == 0
       || src->mode_info.width == 0 || src->mode_info.height == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "bitmap has a zero dimension");
+    return grub_error (GRUB_ERR_BUG, "bitmap has a zero dimension");
 
   grub_uint8_t *ddata = dst->data;
   grub_uint8_t *sdata = src->data;
@@ -203,17 +210,17 @@ scale_bilinear (struct grub_video_bitmap *dst, struct grub_video_bitmap *src)
 {
   /* Verify the simplifying assumptions. */
   if (dst == 0 || src == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "null bitmap in scale func");
+    return grub_error (GRUB_ERR_BUG, "null bitmap in scale func");
   if (dst->mode_info.red_field_pos % 8 != 0
       || dst->mode_info.green_field_pos % 8 != 0
       || dst->mode_info.blue_field_pos % 8 != 0
       || dst->mode_info.reserved_field_pos % 8 != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst format not supported");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, "dst format not supported");
   if (src->mode_info.red_field_pos % 8 != 0
       || src->mode_info.green_field_pos % 8 != 0
       || src->mode_info.blue_field_pos % 8 != 0
       || src->mode_info.reserved_field_pos % 8 != 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "src format not supported");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, "src format not supported");
   if (dst->mode_info.red_field_pos != src->mode_info.red_field_pos
       || dst->mode_info.red_mask_size != src->mode_info.red_mask_size
       || dst->mode_info.green_field_pos != src->mode_info.green_field_pos
@@ -224,12 +231,12 @@ scale_bilinear (struct grub_video_bitmap *dst, struct grub_video_bitmap *src)
       src->mode_info.reserved_field_pos
       || dst->mode_info.reserved_mask_size !=
       src->mode_info.reserved_mask_size)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst and src not compatible");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, "dst and src not compatible");
   if (dst->mode_info.bytes_per_pixel != src->mode_info.bytes_per_pixel)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "dst and src not compatible");
+    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET, "dst and src not compatible");
   if (dst->mode_info.width == 0 || dst->mode_info.height == 0
       || src->mode_info.width == 0 || src->mode_info.height == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "bitmap has a zero dimension");
+    return grub_error (GRUB_ERR_BUG, "bitmap has a zero dimension");
 
   grub_uint8_t *ddata = dst->data;
   grub_uint8_t *sdata = src->data;

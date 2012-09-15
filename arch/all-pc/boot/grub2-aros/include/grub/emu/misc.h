@@ -54,15 +54,17 @@ void grub_find_zpool_from_dir (const char *dir,
 
 char *grub_make_system_path_relative_to_its_root (const char *path)
   __attribute__ ((warn_unused_result));
+int
+grub_util_device_is_mapped (const char *dev);
 
 void * EXPORT_FUNC(xmalloc) (grub_size_t size) __attribute__ ((warn_unused_result));
 void * EXPORT_FUNC(xrealloc) (void *ptr, grub_size_t size) __attribute__ ((warn_unused_result));
 char * EXPORT_FUNC(xstrdup) (const char *str) __attribute__ ((warn_unused_result));
-char * EXPORT_FUNC(xasprintf) (const char *fmt, ...) __attribute__ ((warn_unused_result));
+char * EXPORT_FUNC(xasprintf) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2))) __attribute__ ((warn_unused_result));
 
-void EXPORT_FUNC(grub_util_warn) (const char *fmt, ...);
-void EXPORT_FUNC(grub_util_info) (const char *fmt, ...);
-void EXPORT_FUNC(grub_util_error) (const char *fmt, ...) __attribute__ ((noreturn));
+void EXPORT_FUNC(grub_util_warn) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void EXPORT_FUNC(grub_util_info) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void EXPORT_FUNC(grub_util_error) (const char *fmt, ...) __attribute__ ((format (printf, 1, 2), noreturn));
 
 #ifndef HAVE_VASPRINTF
 int EXPORT_FUNC(vasprintf) (char **buf, const char *fmt, va_list ap);

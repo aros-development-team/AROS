@@ -51,16 +51,25 @@ void
 grub_script_init (void)
 {
   cmd_break = grub_register_command ("break", grub_script_break,
-				     N_("[n]"), N_("Exit from loops"));
+				     N_("[NUM]"), N_("Exit from loops"));
   cmd_continue = grub_register_command ("continue", grub_script_break,
-					N_("[n]"), N_("Continue loops"));
+					N_("[NUM]"), N_("Continue loops"));
   cmd_shift = grub_register_command ("shift", grub_script_shift,
-				     N_("[n]"), N_("Shift positional parameters."));
+				     N_("[NUM]"),
+				     /* TRANSLATORS: Positional arguments are
+					arguments $0, $1, $2, ...  */
+				     N_("Shift positional parameters."));
   cmd_setparams = grub_register_command ("setparams", grub_script_setparams,
 					 N_("[VALUE]..."),
 					 N_("Set positional parameters."));
   cmd_return = grub_register_command ("return", grub_script_return,
-				      N_("[n]"), N_("Return from a function."));
+				      N_("[NUM]"),
+				      /* TRANSLATORS: It's a command description
+					 and "Return" is a verb, not a noun. The
+					 command in question is "return" and
+					 has exactly the same semanics as bash
+					 equivalent.  */
+				      N_("Return from a function."));
 }
 
 void

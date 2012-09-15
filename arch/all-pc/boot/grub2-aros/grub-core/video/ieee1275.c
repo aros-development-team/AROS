@@ -27,6 +27,8 @@
 #include <grub/video_fb.h>
 #include <grub/ieee1275/ieee1275.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 /* Only 8-bit indexed color is supported for now.  */
 
 static unsigned old_width, old_height;
@@ -38,7 +40,6 @@ static int have_setcolors = 0;
 static struct
 {
   struct grub_video_mode_info mode_info;
-  struct grub_video_render_target *render_target;
   grub_uint8_t *ptr;
 } framebuffer;
 
@@ -184,44 +185,17 @@ grub_video_ieee1275_setup (unsigned int width, unsigned int height,
   grub_dprintf ("video", "IEEE1275: initialising FB @ %p %dx%dx%d\n",
 		framebuffer.ptr, framebuffer.mode_info.width,
 		framebuffer.mode_info.height, framebuffer.mode_info.bpp);
-  
-  err = grub_video_fb_create_render_target_from_pointer 
-    (&framebuffer.render_target, &framebuffer.mode_info, framebuffer.ptr);
 
+  err = grub_video_fb_setup (mode_type, mode_mask,
+			     &framebuffer.mode_info,
+			     framebuffer.ptr, NULL, NULL);
   if (err)
-    {
-      grub_dprintf ("video", "IEEE1275: Couldn't create FB target\n");
-      return err;
-    }
-  
-  err = grub_video_fb_set_active_render_target (framebuffer.render_target);
-  
-  if (err)
-    {
-      grub_dprintf ("video", "IEEE1275: Couldn't set FB target\n");
-      return err;
-    }
+    return err;
 
   grub_video_ieee1275_set_palette (0, GRUB_VIDEO_FBSTD_NUMCOLORS,
 				   grub_video_fbstd_colors);
     
   return err;
-}
-
-static grub_err_t
-grub_video_ieee1275_swap_buffers (void)
-{
-  /* TODO: Implement buffer swapping.  */
-  return GRUB_ERR_NONE;
-}
-
-static grub_err_t
-grub_video_ieee1275_set_active_render_target (struct grub_video_render_target *target)
-{
-  if (target == GRUB_VIDEO_RENDER_TARGET_DISPLAY)
-    target = framebuffer.render_target;
-
-  return grub_video_fb_set_active_render_target (target);
 }
 
 static grub_err_t
@@ -285,10 +259,10 @@ static struct grub_video_adapter grub_video_ieee1275_adapter =
     .blit_bitmap = grub_video_fb_blit_bitmap,
     .blit_render_target = grub_video_fb_blit_render_target,
     .scroll = grub_video_fb_scroll,
-    .swap_buffers = grub_video_ieee1275_swap_buffers,
+    .swap_buffers = grub_video_fb_swap_buffers,
     .create_render_target = grub_video_fb_create_render_target,
     .delete_render_target = grub_video_fb_delete_render_target,
-    .set_active_render_target = grub_video_ieee1275_set_active_render_target,
+    .set_active_render_target = grub_video_fb_set_active_render_target,
     .get_active_render_target = grub_video_fb_get_active_render_target,
 
     .next = 0

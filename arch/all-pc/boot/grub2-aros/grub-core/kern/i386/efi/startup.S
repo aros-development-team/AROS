@@ -19,40 +19,12 @@
 
 #include <config.h>
 #include <grub/symbol.h>
-#include <grub/boot.h>
 
         .file   "startup.S"
         .text
         .globl  start, _start
 start:
 _start:
-	jmp codestart
-
-        /*
-         *  Compatibility version number
-         *
-         *  These MUST be at byte offset 6 and 7 of the executable
-         *  DO NOT MOVE !!!
-         */
-        . = _start + 0x6
-        .byte   GRUB_BOOT_VERSION_MAJOR, GRUB_BOOT_VERSION_MINOR
-
-        /*
-         *  This is a special data area 8 bytes from the beginning.
-         */
-
-        . = _start + 0x8
-
-VARIABLE(grub_prefix)
-	/* to be filled by grub-mkimage */
-
-        /*
-         *  Leave some breathing room for the prefix.
-         */
-
-        . = _start + 0x50
-
-codestart:
 	/*
 	 *  EFI_SYSTEM_TABLE * and EFI_HANDLE are passed on the stack.
 	 */
@@ -62,5 +34,3 @@ codestart:
 	movl	%eax, EXT_C(grub_efi_system_table)
 	call	EXT_C(grub_main)
 	ret
-
-#include "../realmode.S"

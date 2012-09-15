@@ -2,6 +2,10 @@
 
 set -e
 
+export LC_CTYPE=C
+export LC_COLLATE=C
+unset LC_ALL
+
 autogen --version >/dev/null || exit 1
 
 echo "Importing unicode..."
@@ -22,7 +26,7 @@ if [ "x${GRUB_CONTRIB}" != x ]; then
   [ "${GRUB_CONTRIB}" = grub-core/contrib ] || ln -s ../contrib grub-core/contrib
 fi
 
-UTIL_DEFS=Makefile.util.def
+UTIL_DEFS='Makefile.util.def Makefile.utilgcry.def'
 CORE_DEFS='grub-core/Makefile.core.def grub-core/Makefile.gcry.def'
 
 for extra in contrib/*/Makefile.util.def; do

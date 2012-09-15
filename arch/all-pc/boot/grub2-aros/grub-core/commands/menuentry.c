@@ -28,19 +28,27 @@
 static const struct grub_arg_option options[] =
   {
     {"class", 1, GRUB_ARG_OPTION_REPEATABLE,
-     N_("Menu entry type."), "STRING", ARG_TYPE_STRING},
+     N_("Menu entry type."), N_("STRING"), ARG_TYPE_STRING},
     {"users", 2, 0,
-     N_("Users allowed to boot this entry."), "USERNAME", ARG_TYPE_STRING},
+     N_("List of users allowed to boot this entry."), N_("USERNAME[,USERNAME]"),
+     ARG_TYPE_STRING},
     {"hotkey", 3, 0,
-     N_("Keyboard key for this entry."), "KEY", ARG_TYPE_STRING},
+     N_("Keyboard key to quickly boot this entry."), N_("KEYBOARD_KEY"), ARG_TYPE_STRING},
     {"source", 4, 0,
-     N_("Menu entry definition as a string."), "STRING", ARG_TYPE_STRING},
+     N_("Use STRING as menu entry body."), N_("STRING"), ARG_TYPE_STRING},
+    {"id", 0, 0, N_("Menu entry identifier."), N_("STRING"), ARG_TYPE_STRING},
+    /* TRANSLATORS: menu entry can either be bootable by anyone or only by
+       handful of users. By default when security is active only superusers can
+       boot a given menu entry. With --unrestricted (this option)
+       anyone can boot it.  */
+    {"unrestricted", 0, 0, N_("This entry can be booted by any user."),
+     0, ARG_TYPE_NONE},
     {0, 0, 0, 0, 0, 0}
   };
 
 static struct
 {
-  char *name;
+  const char *name;
   int key;
 } hotkey_aliases[] =
   {
@@ -66,7 +74,8 @@ static struct
    variable data slot `menu').  As the configuration file is read, the script
    parser calls this when a menu entry is to be created.  */
 grub_err_t
-grub_normal_add_menu_entry (int argc, const char **args, char **classes,
+grub_normal_add_menu_entry (int argc, const char **args,
+			    char **classes, const char *id,
 			    const char *users, const char *hotkey,
 			    const char *prefix, const char *sourcecode,
 			    int submenu)
@@ -76,6 +85,7 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
   char *menu_users = NULL;
   char *menu_title = NULL;
   char *menu_sourcecode = NULL;
+  char *menu_id = NULL;
   struct grub_menu_entry_class *menu_classes = NULL;
 
   grub_menu_t menu;
@@ -91,11 +101,12 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
   if (! menu_sourcecode)
     return grub_errno;
 
-  if (classes)
+  if (classes && classes[0])
     {
       int i;
       for (i = 0; classes[i]; i++); /* count # of menuentry classes */
-      menu_classes = grub_zalloc (sizeof (struct grub_menu_entry_class) * i);
+      menu_classes = grub_zalloc (sizeof (struct grub_menu_entry_class)
+				  * (i + 1));
       if (! menu_classes)
 	goto fail;
 
@@ -138,6 +149,10 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
   if (! menu_title)
     goto fail;
 
+  menu_id = grub_strdup (id ? : menu_title);
+  if (! menu_id)
+    goto fail;
+
   /* Save argc, args to pass as parameters to block arg later. */
   menu_args = grub_malloc (sizeof (char*) * (argc + 1));
   if (! menu_args)
@@ -163,6 +178,7 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
     goto fail;
 
   (*last)->title = menu_title;
+  (*last)->id = menu_id;
   (*last)->hotkey = menu_hotkey;
   (*last)->classes = menu_classes;
   if (menu_users)
@@ -195,6 +211,7 @@ grub_normal_add_menu_entry (int argc, const char **args, char **classes,
 
   grub_free (menu_users);
   grub_free (menu_title);
+  grub_free (menu_id);
   return grub_errno;
 }
 
@@ -243,6 +260,7 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
   char *prefix;
   unsigned len;
   grub_err_t r;
+  const char *users;
 
   if (! argc)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "missing arguments");
@@ -253,9 +271,19 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
   if (! ctxt->state[3].set && ! ctxt->script)
     return grub_error (GRUB_ERR_BAD_ARGUMENT, "no menuentry definition");
 
+  if (ctxt->state[1].set)
+    users = ctxt->state[1].arg;
+  else if (ctxt->state[5].set)
+    users = NULL;
+  else
+    users = "";
+
   if (! ctxt->script)
     return grub_normal_add_menu_entry (argc, (const char **) args,
-				       ctxt->state[0].args, ctxt->state[1].arg,
+				       (ctxt->state[0].set ? ctxt->state[0].args
+					: NULL),
+				       ctxt->state[4].arg,
+				       users,
 				       ctxt->state[2].arg, 0,
 				       ctxt->state[3].arg,
 				       ctxt->extcmd->cmd->name[0] == 's');
@@ -272,7 +300,8 @@ grub_cmd_menuentry (grub_extcmd_context_t ctxt, int argc, char **args)
     return grub_errno;
 
   r = grub_normal_add_menu_entry (argc - 1, (const char **) args,
-				  ctxt->state[0].args, ctxt->state[1].arg,
+				  ctxt->state[0].args, ctxt->state[4].arg,
+				  users,
 				  ctxt->state[2].arg, prefix, src + 1,
 				  ctxt->extcmd->cmd->name[0] == 's');
 
@@ -289,10 +318,12 @@ grub_menu_init (void)
 {
   cmd = grub_register_extcmd ("menuentry", grub_cmd_menuentry,
 			      GRUB_COMMAND_FLAG_BLOCKS
+			      | GRUB_COMMAND_ACCEPT_DASH
 			      | GRUB_COMMAND_FLAG_EXTRACTOR,
-			      N_("BLOCK"), N_("Define a menuentry."), options);
+			      N_("BLOCK"), N_("Define a menu entry."), options);
   cmd_sub = grub_register_extcmd ("submenu", grub_cmd_menuentry,
 				  GRUB_COMMAND_FLAG_BLOCKS
+				  | GRUB_COMMAND_ACCEPT_DASH
 				  | GRUB_COMMAND_FLAG_EXTRACTOR,
 				  N_("BLOCK"), N_("Define a submenu."),
 				  options);

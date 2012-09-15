@@ -26,9 +26,12 @@
 #include <grub/mm.h>
 #include <grub/kernel.h>
 
+grub_addr_t grub_modbase;
+
 void
 grub_efi_init (void)
 {
+  grub_modbase = grub_efi_modules_addr ();
   /* First of all, initialize the console so that GRUB can display
      messages.  */
   grub_console_init ();
@@ -42,84 +45,28 @@ grub_efi_init (void)
   grub_efidisk_init ();
 }
 
+void (*grub_efi_net_config) (grub_efi_handle_t hnd, 
+			     char **device,
+			     char **path);
+
 void
-grub_efi_set_prefix (void)
+grub_machine_get_bootlocation (char **device, char **path)
 {
   grub_efi_loaded_image_t *image = NULL;
-  char *device = NULL;
-  char *path = NULL;
+  char *p;
 
-  {
-    char *pptr = NULL;
-    if (grub_prefix[0] == '(')
-      {
-	pptr = grub_strrchr (grub_prefix, ')');
-	if (pptr)
-	  {
-	    device = grub_strndup (grub_prefix + 1, pptr - grub_prefix - 1);
-	    pptr++;
-	  }
-      }
-    if (!pptr)
-      pptr = grub_prefix;
-    if (pptr[0])
-      path = grub_strdup (pptr);
-  }
+  image = grub_efi_get_loaded_image (grub_efi_image_handle);
+  if (!image)
+    return;
+  *device = grub_efidisk_get_device_name (image->device_handle);
+  *path = grub_efi_get_filename (image->file_path);
+  if (!*device && grub_efi_net_config)
+    grub_efi_net_config (image->device_handle, device, path);
 
-  if ((!device || device[0] == ',' || !device[0]) || !path)
-    image = grub_efi_get_loaded_image (grub_efi_image_handle);
-  if (image)
-    {
-      if (!device)
-	device = grub_efidisk_get_device_name (image->device_handle);
-      else if (device[0] == ',' || !device[0])
-	{
-	  /* We have a partition, but still need to fill in the drive.  */
-	  char *image_device, *comma, *new_device;
-
-	  image_device = grub_efidisk_get_device_name (image->device_handle);
-	  comma = grub_strchr (image_device, ',');
-	  if (comma)
-	    {
-	      char *drive = grub_strndup (image_device, comma - image_device);
-	      new_device = grub_xasprintf ("%s%s", drive, device);
-	      grub_free (drive);
-	    }
-	  else
-	    new_device = grub_xasprintf ("%s%s", image_device, device);
-
-	  grub_free (image_device);
-	  grub_free (device);
-	  device = new_device;
-	}
-    }
-
-  if (image && !path)
-    {
-      char *p;
-
-      path = grub_efi_get_filename (image->file_path);
-
-      /* Get the directory.  */
-      p = grub_strrchr (path, '/');
-      if (p)
-	*p = '\0';
-    }
-
-  if (device && path)
-    {
-      char *prefix;
-
-      prefix = grub_xasprintf ("(%s)%s", device, path);
-      if (prefix)
-	{
-	  grub_env_set ("prefix", prefix);
-	  grub_free (prefix);
-	}
-    }
-
-  grub_free (device);
-  grub_free (path);
+  /* Get the directory.  */
+  p = grub_strrchr (*path, '/');
+  if (p)
+    *p = '\0';
 }
 
 void

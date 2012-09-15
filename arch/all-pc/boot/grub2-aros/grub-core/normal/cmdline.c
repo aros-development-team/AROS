@@ -49,13 +49,13 @@ grub_set_history (int newsize)
       /* Remove the lines that don't fit in the new buffer.  */
       if (newsize < hist_used)
 	{
-	  int i;
-	  int delsize = hist_used - newsize;
+	  grub_size_t i;
+	  grub_size_t delsize = hist_used - newsize;
 	  hist_used = newsize;
 
-	  for (i = 1; i <= delsize; i++)
+	  for (i = 1; i < delsize + 1; i++)
 	    {
-	      int pos = hist_end - i;
+	      grub_ssize_t pos = hist_end - i;
 	      if (pos < 0)
 		pos += hist_size;
 	      grub_free (old_hist_lines[pos]);
@@ -186,6 +186,9 @@ print_completion (const char *item, grub_completion_type_t type, int count)
 	  grub_puts_ (N_("Possible arguments are:"));
 	  break;
 	default:
+	  /* TRANSLATORS: this message is used if none of above matches.
+	     This shouldn't happen but please use the general term for
+	     "thing" or "object".  */
 	  grub_puts_ (N_("Possible things are:"));
 	  break;
 	}
@@ -204,6 +207,7 @@ print_completion (const char *item, grub_completion_type_t type, int count)
 struct cmdline_term
 {
   unsigned xpos, ypos, ystart, width, height;
+  unsigned prompt_len;
   struct grub_term_output *term;
 };
 
@@ -211,10 +215,9 @@ struct cmdline_term
    otherwise return command line.  */
 /* FIXME: The dumb interface is not supported yet.  */
 char *
-grub_cmdline_get (const char *prompt)
+grub_cmdline_get (const char *prompt_translated)
 {
   grub_size_t lpos, llen;
-  grub_size_t plen;
   grub_uint32_t *buf;
   grub_size_t max_len = 256;
   int key;
@@ -228,19 +231,19 @@ grub_cmdline_get (const char *prompt)
   auto void cl_set_pos_all (void);
   auto void init_clterm (struct cmdline_term *cl_term_cur);
   auto void init_clterm_all (void);
-  const char *prompt_translated = _(prompt);
   struct cmdline_term *cl_terms;
   char *ret;
   unsigned nterms;
 
   void cl_set_pos (struct cmdline_term *cl_term)
   {
-    cl_term->xpos = (plen + lpos) % (cl_term->width - 1);
-    cl_term->ypos = cl_term->ystart + (plen + lpos) / (cl_term->width - 1);
+    cl_term->xpos = (cl_term->prompt_len + lpos) % (cl_term->width - 1);
+    cl_term->ypos = cl_term->ystart
+      + (cl_term->prompt_len + lpos) / (cl_term->width - 1);
     grub_term_gotoxy (cl_term->term, cl_term->xpos, cl_term->ypos);
   }
 
-  void cl_set_pos_all ()
+  void cl_set_pos_all (void)
   {
     unsigned i;
     for (i = 0; i < nterms; i++)
@@ -332,7 +335,7 @@ grub_cmdline_get (const char *prompt)
 
   void init_clterm (struct cmdline_term *cl_term_cur)
   {
-    cl_term_cur->xpos = plen;
+    cl_term_cur->xpos = cl_term_cur->prompt_len;
     cl_term_cur->ypos = (grub_term_getxy (cl_term_cur->term) & 0xFF);
     cl_term_cur->ystart = cl_term_cur->ypos;
     cl_term_cur->width = grub_term_width (cl_term_cur->term);
@@ -350,7 +353,6 @@ grub_cmdline_get (const char *prompt)
   if (!buf)
     return 0;
 
-  plen = grub_strlen (prompt_translated) + sizeof (" ") - 1;
   lpos = llen = 0;
   buf[0] = '\0';
 
@@ -361,12 +363,16 @@ grub_cmdline_get (const char *prompt)
       if ((grub_term_getxy (term) >> 8) != 0)
 	grub_putcode ('\n', term);
   }
-  grub_printf ("%s ", prompt_translated);
+  grub_xputs (prompt_translated);
+  grub_xputs (" ");
   grub_normal_reset_more ();
 
   {
     struct cmdline_term *cl_term_cur;
     struct grub_term_output *cur;
+    grub_uint32_t *unicode_msg;
+    grub_size_t msg_len = grub_strlen (prompt_translated) + 3;
+
     nterms = 0;
     FOR_ACTIVE_TERM_OUTPUTS(cur)
       nterms++;
@@ -375,12 +381,24 @@ grub_cmdline_get (const char *prompt)
     if (!cl_terms)
       return 0;
     cl_term_cur = cl_terms;
+
+    unicode_msg = grub_malloc (msg_len * sizeof (grub_uint32_t));
+    if (!unicode_msg)
+      return 0;;
+    msg_len = grub_utf8_to_ucs4 (unicode_msg, msg_len - 1,
+				 (grub_uint8_t *) prompt_translated, -1, 0);
+    unicode_msg[msg_len++] = ' ';
+
     FOR_ACTIVE_TERM_OUTPUTS(cur)
     {
       cl_term_cur->term = cur;
+      cl_term_cur->prompt_len = grub_getstringwidth (unicode_msg,
+						     unicode_msg + msg_len,
+						     cur);
       init_clterm (cl_term_cur);
       cl_term_cur++;
     }
+    grub_free (unicode_msg);
   }
 
   if (hist_used == 0)
@@ -451,7 +469,9 @@ grub_cmdline_get (const char *prompt)
 	    if (restore)
 	      {
 		/* Restore the prompt.  */
-		grub_printf ("\n%s ", prompt_translated);
+		grub_xputs ("\n");
+		grub_xputs (prompt_translated);
+		grub_xputs (" ");
 		init_clterm_all ();
 		cl_print_all (0, 0);
 	      }
@@ -500,8 +520,7 @@ grub_cmdline_get (const char *prompt)
 	case GRUB_TERM_CTRL | 'k':
 	  if (lpos < llen)
 	    {
-	      if (kill_buf)
-		grub_free (kill_buf);
+	      grub_free (kill_buf);
 
 	      kill_buf = grub_malloc ((llen - lpos + 1)
 				      * sizeof (grub_uint32_t));
@@ -566,8 +585,7 @@ grub_cmdline_get (const char *prompt)
 	    {
 	      grub_size_t n = lpos;
 
-	      if (kill_buf)
-		grub_free (kill_buf);
+	      grub_free (kill_buf);
 
 	      kill_buf = grub_malloc (n + 1);
 	      if (grub_errno)
@@ -630,11 +648,6 @@ grub_cmdline_get (const char *prompt)
   grub_xputs ("\n");
   grub_refresh ();
 
-  /* Remove leading spaces.  */
-  lpos = 0;
-  while (buf[lpos] == ' ')
-    lpos++;
-
   histpos = 0;
   if (strlen_ucs4 (buf) > 0)
     {
@@ -643,7 +656,7 @@ grub_cmdline_get (const char *prompt)
       grub_history_add (empty, 0);
     }
 
-  ret = grub_ucs4_to_utf8_alloc (buf + lpos, llen - lpos + 1);
+  ret = grub_ucs4_to_utf8_alloc (buf, llen + 1);
   grub_free (buf);
   grub_free (cl_terms);
   return ret;

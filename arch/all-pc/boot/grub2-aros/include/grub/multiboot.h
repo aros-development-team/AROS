@@ -80,10 +80,11 @@ grub_multiboot_set_console (int console_type, int accepted_consoles,
 			    int width, int height, int depth,
 			    int console_required);
 grub_err_t
-grub_multiboot_load (grub_file_t file);
+grub_multiboot_load (grub_file_t file, const char *filename);
 /* Load ELF32 or ELF64.  */
 grub_err_t
-grub_multiboot_load_elf (grub_file_t file, void *buffer);
+grub_multiboot_load_elf (grub_file_t file, const char *filename,
+			 void *buffer);
 extern grub_size_t grub_multiboot_pure_size;
 extern grub_size_t grub_multiboot_alloc_mbi;
 extern grub_uint32_t grub_multiboot_payload_eip;

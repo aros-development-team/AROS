@@ -37,4 +37,14 @@ grub_arch_sync_caches (void *address __attribute__ ((unused)),
 void EXPORT_FUNC(grub_arch_sync_caches) (void *address, grub_size_t len);
 #endif
 
+#ifdef _mips
+void EXPORT_FUNC(grub_arch_sync_dma_caches) (void *address, grub_size_t len);
+#else
+static inline void
+grub_arch_sync_dma_caches (void *address __attribute__ ((unused)),
+			   grub_size_t len __attribute__ ((unused)))
+{
+}
+#endif
+
 #endif /* ! GRUB_CACHE_HEADER */

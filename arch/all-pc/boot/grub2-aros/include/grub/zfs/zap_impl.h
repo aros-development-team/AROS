@@ -28,8 +28,6 @@
 #define	ZAP_HASHBITS		28
 #define	MZAP_ENT_LEN		64
 #define	MZAP_NAME_LEN		(MZAP_ENT_LEN - 8 - 4 - 2)
-#define	MZAP_MAX_BLKSHIFT	SPA_MAXBLOCKSHIFT
-#define	MZAP_MAX_BLKSZ		(1 << MZAP_MAX_BLKSHIFT)
 
 typedef struct mzap_ent_phys {
 	grub_uint64_t mze_value;

@@ -21,6 +21,7 @@
 #include <grub/elf.h>
 #include <grub/misc.h>
 #include <grub/err.h>
+#include <grub/i18n.h>
 
 /* Check if EHDR is a valid ELF header.  */
 grub_err_t
@@ -32,11 +33,12 @@ grub_arch_dl_check_header (void *ehdr)
   if (e->e_ident[EI_CLASS] != ELFCLASS64
       || e->e_ident[EI_DATA] != ELFDATA2MSB
       || e->e_machine != EM_SPARCV9)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch specific ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
 
   return GRUB_ERR_NONE;
 }
 
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 /* Relocate symbols.  */
 grub_err_t
@@ -55,7 +57,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
       break;
 
   if (i == e->e_shnum)
-    return grub_error (GRUB_ERR_BAD_MODULE, "no symtab found");
+    return grub_error (GRUB_ERR_BAD_MODULE, N_("no symbol table"));
 
   entsize = s->sh_entsize;
 
@@ -111,10 +113,13 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
                       (((grub_int32_t) ((value - (Elf_Addr) addr) >> 2)) &
                        0x3FFFFFFF);
                     break;
+                  case R_SPARC_HH22: /* 9 V-imm22 */
+                    *addr = (*addr & 0xFFC00000) | ((value >> 42) & 0x3FFFFF);
+                    break;
+                  case R_SPARC_HM10: /* 12 T-simm13 */
+                    *addr = (*addr & 0xFFFFFC00) | ((value >> 32) & 0x3FF);
+                    break;
                   case R_SPARC_HI22: /* 9 V-imm22 */
-                    if (((grub_int32_t) value) & 0xFF00000000)
-                      return grub_error (GRUB_ERR_BAD_MODULE,
-                                         "high address out of 22 bits range");
                     *addr = (*addr & 0xFFC00000) | ((value >> 10) & 0x3FFFFF);
                     break;
                   case R_SPARC_LO10: /* 12 T-simm13 */
@@ -131,7 +136,7 @@ grub_arch_dl_relocate_symbols (grub_dl_t mod, void *ehdr)
 		    break;
 		  default:
 		    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-				       "this relocation (%d) is not implemented yet",
+				       N_("relocation 0x%x is not implemented yet"),
 				       ELF_R_TYPE (rel->r_info));
 		  }
 	      }

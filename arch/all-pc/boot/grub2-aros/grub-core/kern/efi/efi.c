@@ -23,7 +23,7 @@
 #include <grub/efi/efi.h>
 #include <grub/efi/console_control.h>
 #include <grub/efi/pe32.h>
-#include <grub/machine/time.h>
+#include <grub/time.h>
 #include <grub/term.h>
 #include <grub/kernel.h>
 #include <grub/mm.h>
@@ -162,18 +162,6 @@ grub_exit (void)
   for (;;) ;
 }
 
-/* On i386, a firmware-independant grub_reboot() is provided by realmode.S.  */
-#ifndef __i386__
-void
-grub_reboot (void)
-{
-  grub_efi_fini ();
-  efi_call_4 (grub_efi_system_table->runtime_services->reset_system,
-              GRUB_EFI_RESET_COLD, GRUB_EFI_SUCCESS, 0, NULL);
-  for (;;) ;
-}
-#endif
-
 grub_err_t
 grub_efi_set_virtual_address_map (grub_efi_uintn_t memory_map_size,
 				  grub_efi_uintn_t descriptor_size,
@@ -193,26 +181,60 @@ grub_efi_set_virtual_address_map (grub_efi_uintn_t memory_map_size,
   return grub_error (GRUB_ERR_IO, "set_virtual_address_map failed");
 }
 
-grub_uint32_t
-grub_get_rtc (void)
+void *
+grub_efi_get_variable (const char *var, const grub_efi_guid_t *guid,
+		       grub_size_t *datasize_out)
 {
-  grub_efi_time_t time;
+  grub_efi_status_t status;
+  grub_efi_uintn_t datasize = 0;
   grub_efi_runtime_services_t *r;
+  grub_efi_char16_t *var16;
+  void *data;
+  grub_size_t len, len16;
+
+  *datasize_out = 0;
+
+  len = grub_strlen (var);
+  len16 = len * GRUB_MAX_UTF16_PER_UTF8;
+  var16 = grub_malloc ((len16 + 1) * sizeof (var16[0]));
+  if (!var16)
+    return NULL;
+  len16 = grub_utf8_to_utf16 (var16, len16, (grub_uint8_t *) var, len, NULL);
+  var16[len16] = 0;
 
   r = grub_efi_system_table->runtime_services;
-  if (efi_call_2 (r->get_time, &time, 0) != GRUB_EFI_SUCCESS)
-    /* What is possible in this case?  */
-    return 0;
 
-  return (((time.minute * 60 + time.second) * 1000
-	   + time.nanosecond / 1000000)
-	  * GRUB_TICKS_PER_SECOND / 1000);
+  status = efi_call_5 (r->get_variable, var16, guid, NULL, &datasize, NULL);
+
+  if (!datasize)
+    return NULL;
+
+  data = grub_malloc (datasize);
+  if (!data)
+    {
+      grub_free (var16);
+      return NULL;
+    }
+
+  status = efi_call_5 (r->get_variable, var16, guid, NULL, &datasize, data);
+  grub_free (var16);
+
+  if (status == GRUB_EFI_SUCCESS)
+    {
+      *datasize_out = datasize;
+      return data;
+    }
+
+  grub_free (data);
+  return NULL;
 }
+
+#pragma GCC diagnostic ignored "-Wcast-align"
 
 /* Search the mods section from the PE32/PE32+ image. This code uses
    a PE32 header, but should work with PE32+ as well.  */
 grub_addr_t
-grub_arch_modules_addr (void)
+grub_efi_modules_addr (void)
 {
   grub_efi_loaded_image_t *image;
   struct grub_pe32_header *header;
@@ -251,6 +273,8 @@ grub_arch_modules_addr (void)
 
   return (grub_addr_t) info;
 }
+
+#pragma GCC diagnostic error "-Wcast-align"
 
 char *
 grub_efi_get_filename (grub_efi_device_path_t *dp)
@@ -739,4 +763,52 @@ grub_efi_print_device_path (grub_efi_device_path_t *dp)
 
       dp = (grub_efi_device_path_t *) ((char *) dp + len);
     }
+}
+
+/* Compare device paths.  */
+int
+grub_efi_compare_device_paths (const grub_efi_device_path_t *dp1,
+			       const grub_efi_device_path_t *dp2)
+{
+  if (! dp1 || ! dp2)
+    /* Return non-zero.  */
+    return 1;
+
+  while (1)
+    {
+      grub_efi_uint8_t type1, type2;
+      grub_efi_uint8_t subtype1, subtype2;
+      grub_efi_uint16_t len1, len2;
+      int ret;
+
+      type1 = GRUB_EFI_DEVICE_PATH_TYPE (dp1);
+      type2 = GRUB_EFI_DEVICE_PATH_TYPE (dp2);
+
+      if (type1 != type2)
+	return (int) type2 - (int) type1;
+
+      subtype1 = GRUB_EFI_DEVICE_PATH_SUBTYPE (dp1);
+      subtype2 = GRUB_EFI_DEVICE_PATH_SUBTYPE (dp2);
+
+      if (subtype1 != subtype2)
+	return (int) subtype1 - (int) subtype2;
+
+      len1 = GRUB_EFI_DEVICE_PATH_LENGTH (dp1);
+      len2 = GRUB_EFI_DEVICE_PATH_LENGTH (dp2);
+
+      if (len1 != len2)
+	return (int) len1 - (int) len2;
+
+      ret = grub_memcmp (dp1, dp2, len1);
+      if (ret != 0)
+	return ret;
+
+      if (GRUB_EFI_END_ENTIRE_DEVICE_PATH (dp1))
+	break;
+
+      dp1 = (grub_efi_device_path_t *) ((char *) dp1 + len1);
+      dp2 = (grub_efi_device_path_t *) ((char *) dp2 + len2);
+    }
+
+  return 0;
 }

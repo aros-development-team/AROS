@@ -68,7 +68,7 @@ grub_core_cmd_unset (struct grub_command *cmd __attribute__ ((unused)),
 {
   if (argc < 1)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "no environment variable specified");
+		       N_("one argument expected"));
 
   grub_env_unset (argv[0]);
   return 0;
@@ -79,17 +79,15 @@ static grub_err_t
 grub_core_cmd_insmod (struct grub_command *cmd __attribute__ ((unused)),
 		      int argc, char *argv[])
 {
-  char *p;
   grub_dl_t mod;
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no module specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
-  p = grub_strchr (argv[0], '/');
-  if (! p)
-    mod = grub_dl_load (argv[0]);
-  else
+  if (argv[0][0] == '/' || argv[0][0] == '(' || argv[0][0] == '+')
     mod = grub_dl_load_file (argv[0]);
+  else
+    mod = grub_dl_load (argv[0]);
 
   if (mod)
     grub_dl_ref (mod);
@@ -128,11 +126,13 @@ grub_core_cmd_ls (struct grub_command *cmd __attribute__ ((unused)),
   else
     {
       char *device_name;
-      grub_device_t dev;
+      grub_device_t dev = 0;
       grub_fs_t fs;
       char *path;
 
       device_name = grub_file_get_device_name (argv[0]);
+      if (grub_errno)
+	goto fail;
       dev = grub_device_open (device_name);
       if (! dev)
 	goto fail;

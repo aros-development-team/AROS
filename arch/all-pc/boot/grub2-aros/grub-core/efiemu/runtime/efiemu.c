@@ -21,6 +21,12 @@
    As it emulates only runtime serviceit isn't able
    to chainload EFI bootloader on non-EFI system (TODO) */
 
+#ifdef __i386__
+#include <grub/i386/types.h>
+#else
+#include <grub/x86_64/types.h>
+#endif
+
 #include <grub/symbol.h>
 #include <grub/types.h>
 #include <grub/efi/api.h>
@@ -40,7 +46,7 @@ grub_efi_status_t
 efiemu_set_wakeup_time (grub_efi_boolean_t enabled,
 			grub_efi_time_t *time);
 
-#ifdef APPLE_CC
+#ifdef __APPLE__
 #define PHYSICAL_ATTRIBUTE __attribute__ ((section("_text-physical, _text-physical")));
 #else
 #define PHYSICAL_ATTRIBUTE __attribute__ ((section(".text-physical")));
@@ -60,7 +66,7 @@ efiemu_convert_pointer (grub_efi_uintn_t debug_disposition,
 
 grub_efi_status_t
 efiemu_get_variable (grub_efi_char16_t *variable_name,
-		     grub_efi_guid_t *vendor_guid,
+		     const grub_efi_guid_t *vendor_guid,
 		     grub_efi_uint32_t *attributes,
 		     grub_efi_uintn_t *data_size,
 		     void *data);
@@ -149,7 +155,7 @@ efiemu_str16len (grub_uint16_t *a)
 }
 
 static int
-efiemu_memequal (void *a, void *b, grub_size_t n)
+efiemu_memequal (const void *a, const void *b, grub_size_t n)
 {
   grub_uint8_t *ptr1, *ptr2;
   for (ptr1 = (grub_uint8_t *) a, ptr2 = (grub_uint8_t *)b;
@@ -369,16 +375,16 @@ grub_efi_status_t EFI_FUNC
       switch (cur_relloc->size)
 	{
 	case 8:
-	  *((grub_uint64_t *) UINT_TO_PTR (cur_relloc->addr)) += corr;
+	  *((grub_uint64_t *) (grub_addr_t) cur_relloc->addr) += corr;
 	  break;
 	case 4:
-	  *((grub_uint32_t *) UINT_TO_PTR (cur_relloc->addr)) += corr;
+	  *((grub_uint32_t *) (grub_addr_t) cur_relloc->addr) += corr;
 	  break;
 	case 2:
-	  *((grub_uint16_t *) UINT_TO_PTR (cur_relloc->addr)) += corr;
+	  *((grub_uint16_t *) (grub_addr_t) cur_relloc->addr) += corr;
 	  break;
 	case 1:
-	  *((grub_uint8_t *) UINT_TO_PTR (cur_relloc->addr)) += corr;
+	  *((grub_uint8_t *) (grub_addr_t) cur_relloc->addr) += corr;
 	  break;
 	}
     }
@@ -410,7 +416,7 @@ EFI_FUNC (efiemu_convert_pointer) (grub_efi_uintn_t debug_disposition,
 
 /* Find variable by name and GUID. */
 static struct efi_variable *
-find_variable (grub_efi_guid_t *vendor_guid,
+find_variable (const grub_efi_guid_t *vendor_guid,
 	       grub_efi_char16_t *variable_name)
 {
   grub_uint8_t *ptr;
@@ -432,10 +438,10 @@ find_variable (grub_efi_guid_t *vendor_guid,
 
 grub_efi_status_t
 EFI_FUNC (efiemu_get_variable) (grub_efi_char16_t *variable_name,
-				   grub_efi_guid_t *vendor_guid,
-				   grub_efi_uint32_t *attributes,
-				   grub_efi_uintn_t *data_size,
-				   void *data)
+				const grub_efi_guid_t *vendor_guid,
+				grub_efi_uint32_t *attributes,
+				grub_efi_uintn_t *data_size,
+				void *data)
 {
   struct efi_variable *efivar;
   LOG ('g');

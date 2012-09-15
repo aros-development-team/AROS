@@ -25,6 +25,10 @@
 #include <grub/i18n.h>
 #include <grub/dl.h>
 
+#pragma GCC diagnostic ignored "-Wcast-align"
+
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static void
 print_strn (grub_uint8_t *str, grub_size_t len)
 {
@@ -128,13 +132,15 @@ disp_acpi_xsdt_table (struct grub_acpi_table_header *t)
   disp_acpi_table (t);
   len = t->length - sizeof (*t);
   desc = (grub_uint64_t *) (t + 1);
-  for (; len > 0; desc++, len -= sizeof (*desc))
+  for (; len >= sizeof (*desc); desc++, len -= sizeof (*desc))
     {
-      if (sizeof (grub_addr_t) == 4 && *desc >= (1ULL << 32))
+#if GRUB_CPU_SIZEOF_VOID_P == 4
+      if (*desc >= (1ULL << 32))
 	{
 	  grub_printf ("Unreachable table\n");
 	  continue;
 	}
+#endif
       t = (struct grub_acpi_table_header *) (grub_addr_t) *desc;
 
       if (t == NULL)
@@ -157,7 +163,7 @@ disp_acpi_rsdt_table (struct grub_acpi_table_header *t)
   disp_acpi_table (t);
   len = t->length - sizeof (*t);
   desc = (grub_uint32_t *) (t + 1);
-  for (; len > 0; desc++, len -= sizeof (*desc))
+  for (; len >= sizeof (*desc); desc++, len -= sizeof (*desc))
     {
       t = (struct grub_acpi_table_header *) (grub_addr_t) *desc;
 
@@ -191,8 +197,9 @@ disp_acpi_rsdpv2 (struct grub_acpi_rsdp_v20 *rsdp)
 }
 
 static const struct grub_arg_option options[] = {
-  {"v1", '1', 0, N_("Show v1 tables only."), 0, ARG_TYPE_NONE},
-  {"v2", '2', 0, N_("Show v2 and v3 tablesv only."), 0, ARG_TYPE_NONE}
+  {"v1", '1', 0, N_("Show version 1 tables only."), 0, ARG_TYPE_NONE},
+  {"v2", '2', 0, N_("Show version 2 and version 3 tables only."), 0, ARG_TYPE_NONE},
+  {0, 0, 0, 0, 0, 0}
 };
 
 static grub_err_t
@@ -220,9 +227,11 @@ grub_cmd_lsacpi (struct grub_extcmd_context *ctxt,
 	grub_printf ("No RSDPv2\n");
       else
 	{
-	  if (sizeof (grub_addr_t) == 4 && rsdp2->xsdt_addr >= (1ULL << 32))
-	      grub_printf ("Unreachable RSDPv2\n");
+#if GRUB_CPU_SIZEOF_VOID_P == 4
+	  if (rsdp2->xsdt_addr >= (1ULL << 32))
+	    grub_printf ("Unreachable RSDPv2\n");
 	  else
+#endif
 	    {
 	      grub_printf ("RSDPv2 signature:");
 	      disp_acpi_rsdpv2 (rsdp2);
@@ -238,7 +247,7 @@ static grub_extcmd_t cmd;
 
 GRUB_MOD_INIT(lsapi)
 {
-  cmd = grub_register_extcmd ("lsacpi", grub_cmd_lsacpi, 0, N_("[-1|-2]"),
+  cmd = grub_register_extcmd ("lsacpi", grub_cmd_lsacpi, 0, "[-1|-2]",
 			      N_("Show ACPI information."), options);
 }
 

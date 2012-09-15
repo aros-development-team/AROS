@@ -21,10 +21,7 @@
 
 #include <grub/dl.h>
 
-/* Common function for normal and rescue mode commands. */
-typedef enum
-  {
-    GRUB_CHAINLOADER_FORCE = 0x1
-  } grub_chainloader_flags_t;
+void
+grub_chainloader_patch_bpb (void *bs, grub_device_t dev, grub_uint8_t dl);
 
 #endif /* GRUB_CHAINLOADER_MACHINE_HEADER */

@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* Twofish for GPG
  * Copyright (C) 1998, 2002, 2003 Free Software Foundation, Inc.
  * Written by Matthew Skala <mskala@ansuz.sooke.bc.ca>, July 26, 1998
@@ -969,12 +971,20 @@ gcry_cipher_spec_t _gcry_cipher_spec_twofish =
   {
     "TWOFISH", NULL, NULL, 16, 256, sizeof (TWOFISH_context),
     twofish_setkey, twofish_encrypt, twofish_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_twofish",
+#endif
   };
 
 gcry_cipher_spec_t _gcry_cipher_spec_twofish128 =
   {
     "TWOFISH128", NULL, NULL, 16, 128, sizeof (TWOFISH_context),
     twofish_setkey, twofish_encrypt, twofish_decrypt
+    ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_twofish",
+#endif
   };
 
 

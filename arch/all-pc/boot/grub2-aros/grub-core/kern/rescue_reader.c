@@ -74,7 +74,7 @@ grub_rescue_read_line (char **line, int cont)
   return 0;
 }
 
-void
+void __attribute__ ((noreturn))
 grub_rescue_run (void)
 {
   grub_printf ("Entering rescue mode...\n");

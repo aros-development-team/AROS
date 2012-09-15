@@ -24,6 +24,7 @@
 #include <grub/err.h>
 #include <grub/emu/misc.h>
 #include <grub/emu/hostdisk.h>
+#include <grub/emu/getroot.h>
 #include <grub/misc.h>
 #include <grub/i18n.h>
 #include <grub/list.h>
@@ -42,6 +43,7 @@
 
 #ifdef __linux__
 # include <sys/ioctl.h>         /* ioctl */
+# include <sys/mount.h>
 # if !defined(__GLIBC__) || \
         ((__GLIBC__ < 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ < 1)))
 /* Maybe libc doesn't have large file support.  */
@@ -66,32 +68,24 @@ struct hd_geometry
 # ifndef BLKGETSIZE64
 #  define BLKGETSIZE64  _IOR(0x12,114,size_t)    /* return device size */
 # endif /* ! BLKGETSIZE64 */
-# ifndef MAJOR
-#  ifndef MINORBITS
-#   define MINORBITS	8
-#  endif /* ! MINORBITS */
-#  define MAJOR(dev)	((unsigned) ((dev) >> MINORBITS))
-# endif /* ! MAJOR */
-# ifndef FLOPPY_MAJOR
-#  define FLOPPY_MAJOR	2
-# endif /* ! FLOPPY_MAJOR */
-# ifndef LOOP_MAJOR
-#  define LOOP_MAJOR	7
-# endif /* ! LOOP_MAJOR */
 #endif /* __linux__ */
 
 #ifdef __CYGWIN__
 # include <sys/ioctl.h>
 # include <cygwin/fs.h> /* BLKGETSIZE64 */
 # include <cygwin/hdreg.h> /* HDIO_GETGEO */
-# define MAJOR(dev)	((unsigned) ((dev) >> 16))
-# define FLOPPY_MAJOR	2
 #endif
 
 #if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
 # include <sys/disk.h> /* DIOCGMEDIASIZE */
 # include <sys/param.h>
 # include <sys/sysctl.h>
+# include <sys/mount.h>
+#include <libgeom.h>
+#endif
+
+#if defined (__sun__)
+# include <sys/dkio.h>
 #endif
 
 #if defined(__APPLE__)
@@ -102,10 +96,11 @@ struct hd_geometry
 # include <libdevmapper.h>
 #endif
 
-#if defined(__NetBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+#if defined(__NetBSD__)
 # define HAVE_DIOCGDINFO
 # include <sys/ioctl.h>
 # include <sys/disklabel.h>    /* struct disklabel */
+# include <sys/disk.h>    /* struct dkwedge_info */
 #else /* !defined(__NetBSD__) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) */
 # undef HAVE_DIOCGDINFO
 #endif /* defined(__NetBSD__) || defined(__FreeBSD__) || defined(__FreeBSD_kernel__) */
@@ -115,18 +110,16 @@ struct hd_geometry
 #  include <util.h>    /* getrawpartition */
 # endif /* HAVE_GETRAWPARTITION */
 # include <sys/fdio.h>
-# ifndef FLOPPY_MAJOR
-#  define FLOPPY_MAJOR	2
-# endif /* ! FLOPPY_MAJOR */
 # ifndef RAW_FLOPPY_MAJOR
 #  define RAW_FLOPPY_MAJOR	9
 # endif /* ! RAW_FLOPPY_MAJOR */
 #endif /* defined(__NetBSD__) */
 
-struct
+static struct
 {
   char *drive;
   char *device;
+  int device_map;
 } map[256];
 
 struct grub_util_biosdisk_data
@@ -134,6 +127,8 @@ struct grub_util_biosdisk_data
   char *dev;
   int access_mode;
   int fd;
+  int is_disk;
+  int device_map;
 };
 
 #ifdef __linux__
@@ -180,6 +175,27 @@ configure_device_driver (int fd)
 #endif /* defined(__NetBSD__) */
 
 static int
+unescape_cmp (const char *a, const char *b_escaped)
+{
+  while (*a || *b_escaped)
+    {
+      if (*b_escaped == '\\' && b_escaped[1] != 0)
+	b_escaped++;
+      if (*a < *b_escaped)
+	return -1;
+      if (*a > *b_escaped)
+	return +1;
+      a++;
+      b_escaped++;
+    }
+  if (*a)
+    return +1;
+  if (*b_escaped)
+    return -1;
+  return 0;
+}
+
+static int
 find_grub_drive (const char *name)
 {
   unsigned int i;
@@ -187,7 +203,7 @@ find_grub_drive (const char *name)
   if (name)
     {
       for (i = 0; i < ARRAY_SIZE (map); i++)
-	if (map[i].drive && ! strcmp (map[i].drive, name))
+	if (map[i].drive && unescape_cmp (map[i].drive, name) == 0)
 	  return i;
     }
 
@@ -207,9 +223,13 @@ find_free_slot (void)
 }
 
 static int
-grub_util_biosdisk_iterate (int (*hook) (const char *name))
+grub_util_biosdisk_iterate (int (*hook) (const char *name),
+			    grub_disk_pull_t pull)
 {
   unsigned i;
+
+  if (pull != GRUB_DISK_PULL_NONE)
+    return 0;
 
   for (i = 0; i < sizeof (map) / sizeof (map[0]); i++)
     if (map[i].drive && hook (map[i].drive))
@@ -217,6 +237,104 @@ grub_util_biosdisk_iterate (int (*hook) (const char *name))
 
   return 0;
 }
+
+#if !defined(__MINGW32__)
+grub_uint64_t
+grub_util_get_fd_size (int fd, const char *name, unsigned *log_secsize)
+{
+#if !defined (__GNU__)
+# if defined(__NetBSD__)
+  struct disklabel label;
+# elif defined (__sun__)
+  struct dk_minfo minfo;
+# else
+  unsigned long long nr;
+# endif
+#endif
+  unsigned sector_size, log_sector_size;
+  struct stat st;
+
+  if (fstat (fd, &st) < 0)
+    /* TRANSLATORS: "stat" comes from the name of POSIX function.  */
+    grub_util_error (_("cannot stat `%s': %s"), name, strerror (errno));
+
+#if defined(__linux__) || defined(__CYGWIN__) || defined(__FreeBSD__) || \
+  defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__NetBSD__) \
+  || defined (__sun__)
+
+# if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__NetBSD__) || defined (__sun__)
+  if (! S_ISCHR (st.st_mode))
+# else
+  if (! S_ISBLK (st.st_mode))
+# endif
+    goto fail;
+
+# if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+    if (ioctl (fd, DIOCGMEDIASIZE, &nr))
+# elif defined(__APPLE__)
+    if (ioctl (fd, DKIOCGETBLOCKCOUNT, &nr))
+# elif defined(__NetBSD__)
+    configure_device_driver (fd);
+    if (ioctl (fd, DIOCGDINFO, &label) == -1)
+# elif defined (__sun__)
+    if (!ioctl (fd, DKIOCGMEDIAINFO, &minfo))
+# else
+    if (ioctl (fd, BLKGETSIZE64, &nr))
+# endif
+      goto fail;
+
+# if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+    if (ioctl (fd, DIOCGSECTORSIZE, &sector_size))
+      goto fail;
+# elif defined(__APPLE__)
+    if (ioctl (fd, DKIOCGETBLOCKSIZE, &sector_size))
+      goto fail;
+# elif defined(__sun__)
+    sector_size = minfo.dki_lbsize;
+# elif defined(__NetBSD__)
+    sector_size = label.d_secsize;
+# else
+    if (ioctl (fd, BLKSSZGET, &sector_size))
+      goto fail;
+# endif
+    if (sector_size & (sector_size - 1) || !sector_size)
+      goto fail;
+    for (log_sector_size = 0;
+	 (1 << log_sector_size) < sector_size;
+	 log_sector_size++);
+
+    if (log_secsize)
+      *log_secsize = log_sector_size;
+
+# if defined (__APPLE__)
+    return nr << log_sector_size;
+# elif defined(__NetBSD__)
+    return (grub_uint64_t) label.d_secperunit << log_sector_size;
+# elif defined (__sun__)
+    return minfo.dki_capacity << log_sector_size;
+# else
+    if (nr & ((1 << log_sector_size) - 1))
+      grub_util_error ("%s", _("unaligned device size"));
+
+    return nr;
+# endif
+
+ fail:
+
+  /* In GNU/Hurd, stat() will return the right size.  */
+#elif !defined (__GNU__)
+# warning "No special routine to get the size of a block device is implemented for your OS. This is not possibly fatal."
+#endif
+
+  sector_size = 512;
+  log_sector_size = 9;
+
+  if (log_secsize)
+   *log_secsize = 9;
+
+  return st.st_size;
+}
+#endif
 
 static grub_err_t
 grub_util_biosdisk_open (const char *name, grub_disk_t disk)
@@ -235,6 +353,8 @@ grub_util_biosdisk_open (const char *name, grub_disk_t disk)
   data->dev = NULL;
   data->access_mode = 0;
   data->fd = -1;
+  data->is_disk = 0;
+  data->device_map = map[drive].device_map;
 
   /* Get the size.  */
 #if defined(__MINGW32__)
@@ -244,7 +364,7 @@ grub_util_biosdisk_open (const char *name, grub_disk_t disk)
     size = grub_util_get_disk_size (map[drive].device);
 
     if (size % 512)
-      grub_util_error ("unaligned device size");
+      grub_util_error (_("unaligned device size"));
 
     disk->total_sectors = size >> 9;
 
@@ -252,188 +372,258 @@ grub_util_biosdisk_open (const char *name, grub_disk_t disk)
 
     return GRUB_ERR_NONE;
   }
-#elif defined(__linux__) || defined(__CYGWIN__) || defined(__FreeBSD__) || \
-      defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__NetBSD__)
+#else
   {
-# if defined(__NetBSD__)
-    struct disklabel label;
-# else
-    unsigned long long nr;
-# endif
     int fd;
 
     fd = open (map[drive].device, O_RDONLY);
     if (fd == -1)
-      return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "cannot open `%s' while attempting to get disk size", map[drive].device);
+      return grub_error (GRUB_ERR_UNKNOWN_DEVICE, N_("cannot open `%s': %s"),
+			 map[drive].device, strerror (errno));
+
+    disk->total_sectors = grub_util_get_fd_size (fd, map[drive].device,
+						 &disk->log_sector_size);
+    disk->total_sectors >>= disk->log_sector_size;
 
 # if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__NetBSD__)
     if (fstat (fd, &st) < 0 || ! S_ISCHR (st.st_mode))
 # else
     if (fstat (fd, &st) < 0 || ! S_ISBLK (st.st_mode))
 # endif
-      {
-	close (fd);
-	goto fail;
-      }
-
-# if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-    if (ioctl (fd, DIOCGMEDIASIZE, &nr))
-# elif defined(__APPLE__)
-    if (ioctl (fd, DKIOCGETBLOCKCOUNT, &nr))
-# elif defined(__NetBSD__)
-    configure_device_driver (fd);
-    if (ioctl (fd, DIOCGDINFO, &label) == -1)
-# else
-    if (ioctl (fd, BLKGETSIZE64, &nr))
-# endif
-      {
-	close (fd);
-	goto fail;
-      }
+      data->is_disk = 1;
 
     close (fd);
 
-# if defined (__APPLE__)
-    disk->total_sectors = nr;
-# elif defined(__NetBSD__)
-    disk->total_sectors = label.d_secperunit;
-# else
-    disk->total_sectors = nr / 512;
-
-    if (nr % 512)
-      grub_util_error ("unaligned device size");
-# endif
-
-    grub_util_info ("the size of %s is %llu", name, disk->total_sectors);
+    grub_util_info ("the size of %s is %" PRIuGRUB_UINT64_T,
+		    name, disk->total_sectors);
 
     return GRUB_ERR_NONE;
   }
-
- fail:
-  /* In GNU/Hurd, stat() will return the right size.  */
-#elif !defined (__GNU__)
-# warning "No special routine to get the size of a block device is implemented for your OS. This is not possibly fatal."
 #endif
-  if (stat (map[drive].device, &st) < 0)
-    return grub_error (GRUB_ERR_UNKNOWN_DEVICE, "cannot stat `%s'", map[drive].device);
-
-  disk->total_sectors = st.st_size >> GRUB_DISK_SECTOR_BITS;
-
-  grub_util_info ("the size of %s is %lu", name, disk->total_sectors);
-
-  return GRUB_ERR_NONE;
 }
 
-#ifdef HAVE_DEVICE_MAPPER
-static int
-device_is_mapped (const char *dev)
+int
+grub_util_device_is_mapped (const char *dev)
 {
+#ifdef HAVE_DEVICE_MAPPER
   struct stat st;
+
+  if (!grub_device_mapper_supported ())
+    return 0;
 
   if (stat (dev, &st) < 0)
     return 0;
 
   return dm_is_dm_major (major (st.st_rdev));
-}
+#else
+  return 0;
 #endif /* HAVE_DEVICE_MAPPER */
+}
 
-#if defined(__linux__) || defined(__CYGWIN__) || defined(HAVE_DIOCGDINFO)
-static grub_disk_addr_t
-find_partition_start (const char *dev)
+#ifdef HAVE_DEVICE_MAPPER
+int
+grub_util_get_dm_node_linear_info (const char *dev,
+				   int *maj, int *min,
+				   grub_disk_addr_t *st)
+{
+  struct dm_task *dmt;
+  void *next = NULL;
+  uint64_t length, start;
+  char *target, *params;
+  char *ptr;
+  int major, minor;
+  int first = 1;
+  grub_disk_addr_t partstart = 0;
+
+  while (1)
+    {
+      dmt = dm_task_create(DM_DEVICE_TABLE);
+      if (!dmt)
+	break;
+      
+      if (! (first ? dm_task_set_name (dmt, dev)
+	     : dm_task_set_major_minor (dmt, major, minor, 0)))
+	{
+	  dm_task_destroy (dmt);
+	  break;
+	}
+      dm_task_no_open_count(dmt);
+      if (!dm_task_run(dmt))
+	{
+	  dm_task_destroy (dmt);
+	  break;
+	}
+      next = dm_get_next_target(dmt, next, &start, &length,
+				&target, &params);
+      if (grub_strcmp (target, "linear") != 0)
+	{
+	  dm_task_destroy (dmt);
+	  break;
+	}
+      major = grub_strtoul (params, &ptr, 10);
+      if (grub_errno)
+	{
+	  dm_task_destroy (dmt);
+	  grub_errno = GRUB_ERR_NONE;
+	  return 0;
+	}
+      if (*ptr != ':')
+	{
+	  dm_task_destroy (dmt);
+	  return 0;
+	}
+      ptr++;
+      minor = grub_strtoul (ptr, &ptr, 10);
+      if (grub_errno)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  dm_task_destroy (dmt);
+	  return 0;
+	}
+
+      if (*ptr != ' ')
+	{
+	  dm_task_destroy (dmt);
+	  return 0;
+	}
+      ptr++;
+      partstart += grub_strtoull (ptr, &ptr, 10);
+      if (grub_errno)
+	{
+	  grub_errno = GRUB_ERR_NONE;
+	  dm_task_destroy (dmt);
+	  return 0;
+	}
+
+      dm_task_destroy (dmt);
+      first = 0;
+    }
+  if (first)
+    return 0;
+  if (maj)
+    *maj = major;
+  if (min)
+    *min = minor;
+  if (st)
+    *st = partstart;
+  return 1;
+}
+#endif
+
+#if defined (__FreeBSD__) || defined(__FreeBSD_kernel__)
+
+/* FIXME: geom actually gives us the whole container hierarchy.
+   It can be used more efficiently than this.  */
+void
+grub_util_follow_gpart_up (const char *name, grub_disk_addr_t *off_out, char **name_out)
+{
+  struct gmesh mesh;
+  struct gclass *class;
+  int error;
+  struct ggeom *geom;
+
+  grub_util_info ("following geom '%s'", name);
+
+  error = geom_gettree (&mesh);
+  if (error != 0)
+    /* TRANSLATORS: geom is the name of (k)FreeBSD device framework.
+       Usually left untranslated.
+     */
+    grub_util_error ("%s", _("couldn't open geom"));
+
+  LIST_FOREACH (class, &mesh.lg_class, lg_class)
+    if (strcasecmp (class->lg_name, "part") == 0)
+      break;
+  if (!class)
+    /* TRANSLATORS: geom is the name of (k)FreeBSD device framework.
+       Usually left untranslated. "part" is the identifier of one of its
+       classes.  */
+    grub_util_error ("%s", _("couldn't find geom `part' class"));
+
+  LIST_FOREACH (geom, &class->lg_geom, lg_geom)
+    { 
+      struct gprovider *provider;
+      LIST_FOREACH (provider, &geom->lg_provider, lg_provider)
+	if (strcmp (provider->lg_name, name) == 0)
+	  {
+	    char *name_tmp = xstrdup (geom->lg_name);
+	    grub_disk_addr_t off = 0;
+	    struct gconfig *config;
+	    grub_util_info ("geom '%s' has parent '%s'", name, geom->lg_name);
+
+	    grub_util_follow_gpart_up (name_tmp, &off, name_out);
+	    free (name_tmp);
+	    LIST_FOREACH (config, &provider->lg_config, lg_config)
+	      if (strcasecmp (config->lg_name, "start") == 0)
+		off += strtoull (config->lg_val, 0, 10);
+	    if (off_out)
+	      *off_out = off;
+	    return;
+	  }
+    }
+  grub_util_info ("geom '%s' has no parent", name);
+  if (name_out)
+    *name_out = xstrdup (name);
+  if (off_out)
+    *off_out = 0;
+}
+
+grub_disk_addr_t
+grub_hostdisk_find_partition_start (const char *dev)
+{
+  grub_disk_addr_t out;
+  if (strncmp (dev, "/dev/", sizeof ("/dev/") - 1) != 0)
+    return 0;
+  grub_util_follow_gpart_up (dev + sizeof ("/dev/") - 1, &out, NULL);
+
+  return out;
+}
+
+#elif defined(__linux__) || defined(__CYGWIN__) || defined(HAVE_DIOCGDINFO) || defined (__sun__)
+grub_disk_addr_t
+grub_hostdisk_find_partition_start (const char *dev)
 {
   int fd;
-# if !defined(HAVE_DIOCGDINFO)
+#ifdef __sun__
+  struct extpart_info pinfo;
+# elif !defined(HAVE_DIOCGDINFO)
   struct hd_geometry hdg;
 # else /* defined(HAVE_DIOCGDINFO) */
+#  if defined(__NetBSD__)
+  struct dkwedge_info dkw;
+#  endif /* defined(__NetBSD__) */
   struct disklabel label;
   int p_index;
 # endif /* !defined(HAVE_DIOCGDINFO) */
 
 # ifdef HAVE_DEVICE_MAPPER
-  if (grub_device_mapper_supported () && device_is_mapped (dev)) {
-    struct dm_task *task = NULL;
-    grub_uint64_t start, length;
-    char *target_type, *params, *space;
-    grub_disk_addr_t partition_start;
-
-    /* If any device-mapper operation fails, we fall back silently to
-       HDIO_GETGEO.  */
-    task = dm_task_create (DM_DEVICE_TABLE);
-    if (! task)
-      {
-	grub_dprintf ("hostdisk", "dm_task_create failed\n");
-	goto devmapper_fail;
-      }
-
-    if (! dm_task_set_name (task, dev))
-      {
-	grub_dprintf ("hostdisk", "dm_task_set_name failed\n");
-	goto devmapper_fail;
-      }
-
-    if (! dm_task_run (task))
-      {
-	grub_dprintf ("hostdisk", "dm_task_run failed\n");
-	goto devmapper_fail;
-      }
-
-    dm_get_next_target (task, NULL, &start, &length, &target_type, &params);
-    if (! target_type)
-      {
-	grub_dprintf ("hostdisk", "no dm target\n");
-	goto devmapper_fail;
-      }
-    if (strcmp (target_type, "linear") != 0)
-      {
-	grub_dprintf ("hostdisk", "ignoring dm target %s (not linear)\n",
-		      target_type);
-	goto devmapper_fail;
-      }
-    if (! params)
-      {
-	grub_dprintf ("hostdisk", "no dm params\n");
-	goto devmapper_fail;
-      }
-
-    /* The params string for a linear target looks like this:
-         DEVICE-NAME START-SECTOR
-       Parse this out.  */
-    space = strchr (params, ' ');
-    if (! space)
-      goto devmapper_fail;
-    errno = 0;
-    partition_start = strtoull (space + 1, NULL, 10);
-    if (errno == 0)
-      {
-	grub_dprintf ("hostdisk", "dm %s starts at %llu\n",
-		      dev, (unsigned long long) partition_start);
-	dm_task_destroy (task);
-	return partition_start;
-      }
-
-devmapper_fail:
-    if (task)
-      dm_task_destroy (task);
-  }
+  grub_disk_addr_t partition_start;
+  if (grub_util_device_is_mapped (dev)
+      && grub_util_get_dm_node_linear_info (dev, 0, 0, &partition_start))
+    return partition_start;
 # endif /* HAVE_DEVICE_MAPPER */
 
   fd = open (dev, O_RDONLY);
   if (fd == -1)
     {
-      grub_error (GRUB_ERR_BAD_DEVICE,
-# if !defined(HAVE_DIOCGDINFO)
-		  "cannot open `%s' while attempting to get disk geometry", dev);
-# else /* defined(HAVE_DIOCGDINFO) */
-		  "cannot open `%s' while attempting to get disk label", dev);
-# endif /* !defined(HAVE_DIOCGDINFO) */
+      grub_error (GRUB_ERR_BAD_DEVICE, N_("cannot open `%s': %s"),
+		  dev, strerror (errno));
       return 0;
     }
 
-# if !defined(HAVE_DIOCGDINFO)
+#if defined(__sun__)
+  if (ioctl (fd, DKIOCEXTPARTINFO, &pinfo))
+# elif !defined(HAVE_DIOCGDINFO)
   if (ioctl (fd, HDIO_GETGEO, &hdg))
 # else /* defined(HAVE_DIOCGDINFO) */
 #  if defined(__NetBSD__)
   configure_device_driver (fd);
+  /* First handle the case of disk wedges.  */
+  if (ioctl (fd, DIOCGWEDGEINFO, &dkw) == 0)
+    {
+      close (fd);
+      return (grub_disk_addr_t) dkw.dkw_offset;
+    }
 #  endif /* defined(__NetBSD__) */
   if (ioctl (fd, DIOCGDINFO, &label) == -1)
 # endif /* !defined(HAVE_DIOCGDINFO) */
@@ -450,12 +640,17 @@ devmapper_fail:
 
   close (fd);
 
-# if !defined(HAVE_DIOCGDINFO)
+#ifdef __sun__
+  return pinfo.p_start;
+# elif !defined(HAVE_DIOCGDINFO)
   return hdg.start;
 # else /* defined(HAVE_DIOCGDINFO) */
-  p_index = dev[strlen(dev) - 1] - 'a';
-
-  if (p_index >= label.d_npartitions)
+  if (dev[0])
+    p_index = dev[strlen(dev) - 1] - 'a';
+  else
+    p_index = -1;
+  
+  if (p_index >= label.d_npartitions || p_index < 0)
     {
       grub_error (GRUB_ERR_BAD_DEVICE,
 		  "no disk label entry for `%s'", dev);
@@ -471,6 +666,7 @@ devmapper_fail:
 struct linux_partition_cache
 {
   struct linux_partition_cache *next;
+  struct linux_partition_cache **prev;
   char *dev;
   unsigned long start;
   int partno;
@@ -479,7 +675,7 @@ struct linux_partition_cache
 struct linux_partition_cache *linux_partition_cache_list;
 
 static int
-linux_find_partition (char *dev, unsigned long sector)
+linux_find_partition (char *dev, grub_disk_addr_t sector)
 {
   size_t len = strlen (dev);
   const char *format;
@@ -487,6 +683,7 @@ linux_find_partition (char *dev, unsigned long sector)
   int i;
   char real_dev[PATH_MAX];
   struct linux_partition_cache *cache;
+  int missing = 0;
 
   strcpy(real_dev, dev);
 
@@ -494,6 +691,12 @@ linux_find_partition (char *dev, unsigned long sector)
     {
       p = real_dev + len - 4;
       format = "part%d";
+    }
+  else if (strncmp (real_dev, "/dev/disk/by-id/",
+		    sizeof ("/dev/disk/by-id/") - 1) == 0)
+    {
+      p = real_dev + len;
+      format = "-part%d";
     }
   else if (real_dev[len - 1] >= '0' && real_dev[len - 1] <= '9')
     {
@@ -525,10 +728,16 @@ linux_find_partition (char *dev, unsigned long sector)
 
       fd = open (real_dev, O_RDONLY);
       if (fd == -1)
-	return 0;
+	{
+	  if (missing++ < 10)
+	    continue;
+	  else
+	    return 0;
+	}
+      missing = 0;
       close (fd);
 
-      start = find_partition_start (real_dev);
+      start = grub_hostdisk_find_partition_start (real_dev);
       /* We don't care about errors here.  */
       grub_errno = GRUB_ERR_NONE;
 
@@ -552,11 +761,89 @@ linux_find_partition (char *dev, unsigned long sector)
 }
 #endif /* __linux__ */
 
+#if defined(__linux__) && (!defined(__GLIBC__) || \
+        ((__GLIBC__ < 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ < 1))))
+  /* Maybe libc doesn't have large file support.  */
+grub_err_t
+grub_util_fd_seek (int fd, const char *name, grub_uint64_t off)
+{
+  loff_t offset, result;
+  static int _llseek (uint filedes, ulong hi, ulong lo,
+		      loff_t *res, uint wh);
+  _syscall5 (int, _llseek, uint, filedes, ulong, hi, ulong, lo,
+	     loff_t *, res, uint, wh);
+
+  offset = (loff_t) off;
+  if (_llseek (fd, offset >> 32, offset & 0xffffffff, &result, SEEK_SET))
+    return grub_error (GRUB_ERR_BAD_DEVICE, N_("cannot seek `%s': %s"),
+		       name, strerror (errno));
+  return GRUB_ERR_NONE;
+}
+#else
+grub_err_t
+grub_util_fd_seek (int fd, const char *name, grub_uint64_t off)
+{
+  off_t offset = (off_t) off;
+
+  if (lseek (fd, offset, SEEK_SET) != offset)
+    return grub_error (GRUB_ERR_BAD_DEVICE, N_("cannot seek `%s': %s"),
+		       name, strerror (errno));
+  return 0;
+}
+#endif
+
+static void
+flush_initial_buffer (const char *os_dev __attribute__ ((unused)))
+{
+#ifdef __linux__
+  int fd;
+  struct stat st;
+
+  fd = open (os_dev, O_RDONLY);
+  if (fd >= 0 && fstat (fd, &st) >= 0 && S_ISBLK (st.st_mode))
+    ioctl (fd, BLKFLSBUF, 0);
+  if (fd >= 0)
+    close (fd);
+#endif
+}
+
+const char *
+grub_hostdisk_os_dev_to_grub_drive (const char *os_disk, int add)
+{
+  unsigned int i;
+
+  for (i = 0; i < ARRAY_SIZE (map); i++)
+    if (! map[i].device)
+      break;
+    else if (strcmp (map[i].device, os_disk) == 0)
+      return map[i].drive;
+
+  if (!add)
+    return NULL;
+
+  if (i == ARRAY_SIZE (map))
+    /* TRANSLATORS: it refers to the lack of free slots.  */
+    grub_util_error ("%s", _("device count exceeds limit"));
+
+  map[i].device = xstrdup (os_disk);
+  map[i].drive = xmalloc (sizeof ("hostdisk/") + strlen (os_disk));
+  strcpy (map[i].drive, "hostdisk/");
+  strcpy (map[i].drive + sizeof ("hostdisk/") - 1, os_disk);
+  map[i].device_map = 0;
+
+  flush_initial_buffer (os_disk);
+
+  return map[i].drive;
+}
+
 static int
-open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
+open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags,
+	     grub_disk_addr_t *max)
 {
   int fd;
   struct grub_util_biosdisk_data *data = disk->data;
+
+  *max = ~0ULL;
 
 #ifdef O_LARGEFILE
   flags |= O_LARGEFILE;
@@ -582,9 +869,16 @@ open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
     part_start = grub_partition_get_start (disk->partition);
 
     strcpy (dev, map[disk->id].device);
-    if (disk->partition && sector >= part_start
+    if (disk->partition
 	&& strncmp (map[disk->id].device, "/dev/", 5) == 0)
-      is_partition = linux_find_partition (dev, part_start);
+      {
+	if (sector >= part_start)
+	  is_partition = linux_find_partition (dev, part_start);
+	else
+	  *max = part_start - sector;
+      }
+
+  reopen:
 
     if (data->dev && strcmp (data->dev, dev) == 0 &&
 	data->access_mode == (flags & O_ACCMODE))
@@ -595,29 +889,58 @@ open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
     else
       {
 	free (data->dev);
+	data->dev = 0;
 	if (data->fd != -1)
-	  close (data->fd);
+	  {
+	    if (data->access_mode == O_RDWR || data->access_mode == O_WRONLY)
+	      {
+		fsync (data->fd);
+#ifdef __linux__
+		if (data->is_disk)
+		  ioctl (data->fd, BLKFLSBUF, 0);
+#endif
+	      }
+
+	    close (data->fd);
+	    data->fd = -1;
+	  }
 
 	/* Open the partition.  */
 	grub_dprintf ("hostdisk", "opening the device `%s' in open_device()\n", dev);
 	fd = open (dev, flags);
 	if (fd < 0)
 	  {
-	    grub_error (GRUB_ERR_BAD_DEVICE, "cannot open `%s'", dev);
+	    grub_error (GRUB_ERR_BAD_DEVICE, N_("cannot open `%s': %s"),
+			dev, strerror (errno));
 	    return -1;
 	  }
-
-	/* Flush the buffer cache to the physical disk.
-	   XXX: This also empties the buffer cache.  */
-	ioctl (fd, BLKFLSBUF, 0);
 
 	data->dev = xstrdup (dev);
 	data->access_mode = (flags & O_ACCMODE);
 	data->fd = fd;
+
+#ifdef __linux__
+	if (data->is_disk)
+	  ioctl (data->fd, BLKFLSBUF, 0);
+#endif
       }
 
     if (is_partition)
-      sector -= part_start;
+      {
+	*max = grub_util_get_fd_size (fd, dev, 0);
+	*max >>= disk->log_sector_size;
+	if (sector - part_start >= *max)
+	  {
+	    *max = disk->partition->len - (sector - part_start);
+	    if (*max == 0)
+	      *max = ~0ULL;
+	    is_partition = 0;
+	    strcpy (dev, map[disk->id].device);
+	    goto reopen;
+	  }
+	sector -= part_start;
+	*max -= sector;
+      }
   }
 #else /* ! __linux__ */
 #if defined (__FreeBSD__) || defined(__FreeBSD_kernel__)
@@ -647,8 +970,20 @@ open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
   else
     {
       free (data->dev);
+      data->dev = 0;
       if (data->fd != -1)
-	close (data->fd);
+	{
+	    if (data->access_mode == O_RDWR || data->access_mode == O_WRONLY)
+	      {
+		fsync (data->fd);
+#ifdef __linux__
+		if (data->is_disk)
+		  ioctl (data->fd, BLKFLSBUF, 0);
+#endif
+	      }
+	    close (data->fd);
+	    data->fd = -1;
+	}
 
       fd = open (map[disk->id].device, flags);
       if (fd >= 0)
@@ -676,7 +1011,8 @@ open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
 
   if (fd < 0)
     {
-      grub_error (GRUB_ERR_BAD_DEVICE, "cannot open `%s' in open_device()", map[disk->id].device);
+      grub_error (GRUB_ERR_BAD_DEVICE, N_("cannot open `%s': %s"),
+		  map[disk->id].device, strerror (errno));
       return -1;
     }
 #endif /* ! __linux__ */
@@ -685,44 +1021,20 @@ open_device (const grub_disk_t disk, grub_disk_addr_t sector, int flags)
   configure_device_driver (fd);
 #endif /* defined(__NetBSD__) */
 
-#if defined(__linux__) && (!defined(__GLIBC__) || \
-        ((__GLIBC__ < 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ < 1))))
-  /* Maybe libc doesn't have large file support.  */
-  {
-    loff_t offset, result;
-    static int _llseek (uint filedes, ulong hi, ulong lo,
-                        loff_t *res, uint wh);
-    _syscall5 (int, _llseek, uint, filedes, ulong, hi, ulong, lo,
-               loff_t *, res, uint, wh);
-
-    offset = (loff_t) sector << GRUB_DISK_SECTOR_BITS;
-    if (_llseek (fd, offset >> 32, offset & 0xffffffff, &result, SEEK_SET))
-      {
-	grub_error (GRUB_ERR_BAD_DEVICE, "cannot seek `%s'", map[disk->id].device);
-	close (fd);
-	return -1;
-      }
-  }
-#else
-  {
-    off_t offset = (off_t) sector << GRUB_DISK_SECTOR_BITS;
-
-    if (lseek (fd, offset, SEEK_SET) != offset)
-      {
-	grub_error (GRUB_ERR_BAD_DEVICE, "cannot seek `%s'", map[disk->id].device);
-	close (fd);
-	return -1;
-      }
-  }
-#endif
+  if (grub_util_fd_seek (fd, map[disk->id].device,
+			 sector << disk->log_sector_size))
+    {
+      close (fd);
+      return -1;
+    }
 
   return fd;
 }
 
 /* Read LEN bytes from FD in BUF. Return less than or equal to zero if an
    error occurs, otherwise return LEN.  */
-static ssize_t
-nread (int fd, char *buf, size_t len)
+ssize_t
+grub_util_fd_read (int fd, char *buf, size_t len)
 {
   ssize_t size = len;
 
@@ -747,8 +1059,8 @@ nread (int fd, char *buf, size_t len)
 
 /* Write LEN bytes from BUF to FD. Return less than or equal to zero if an
    error occurs, otherwise return LEN.  */
-static ssize_t
-nwrite (int fd, const char *buf, size_t len)
+ssize_t
+grub_util_fd_write (int fd, const char *buf, size_t len)
 {
   ssize_t size = len;
 
@@ -775,87 +1087,91 @@ static grub_err_t
 grub_util_biosdisk_read (grub_disk_t disk, grub_disk_addr_t sector,
 			 grub_size_t size, char *buf)
 {
-  int fd;
-
-  /* Split pre-partition and partition reads.  */
-  if (disk->partition && sector < disk->partition->start
-      && sector + size > disk->partition->start)
+  while (size)
     {
-      grub_err_t err;
-      err = grub_util_biosdisk_read (disk, sector,
-				     disk->partition->start - sector,
-				     buf);
-      if (err)
-	return err;
-
-      return grub_util_biosdisk_read (disk, disk->partition->start,
-				      size - (disk->partition->start - sector),
-				      buf + ((disk->partition->start - sector)
-					     << GRUB_DISK_SECTOR_BITS));
-    }
-
-  fd = open_device (disk, sector, O_RDONLY);
-  if (fd < 0)
-    return grub_errno;
+      int fd;
+      grub_disk_addr_t max = ~0ULL;
+      fd = open_device (disk, sector, O_RDONLY, &max);
+      if (fd < 0)
+	return grub_errno;
 
 #ifdef __linux__
-  if (sector == 0 && size > 1)
-    {
-      /* Work around a bug in Linux ez remapping.  Linux remaps all
-	 sectors that are read together with the MBR in one read.  It
-	 should only remap the MBR, so we split the read in two
-	 parts. -jochen  */
-      if (nread (fd, buf, GRUB_DISK_SECTOR_SIZE) != GRUB_DISK_SECTOR_SIZE)
-	{
-	  grub_error (GRUB_ERR_READ_ERROR, "cannot read `%s'", map[disk->id].device);
-	  close (fd);
-	  return grub_errno;
-	}
-
-      buf += GRUB_DISK_SECTOR_SIZE;
-      size--;
-    }
+      if (sector == 0)
+	/* Work around a bug in Linux ez remapping.  Linux remaps all
+	   sectors that are read together with the MBR in one read.  It
+	   should only remap the MBR, so we split the read in two
+	   parts. -jochen  */
+	max = 1;
 #endif /* __linux__ */
 
-  if (nread (fd, buf, size << GRUB_DISK_SECTOR_BITS)
-      != (ssize_t) (size << GRUB_DISK_SECTOR_BITS))
-    grub_error (GRUB_ERR_READ_ERROR, "cannot read from `%s'", map[disk->id].device);
+      if (max > size)
+	max = size;
 
-  return grub_errno;
+      if (grub_util_fd_read (fd, buf, max << disk->log_sector_size)
+	  != (ssize_t) (max << disk->log_sector_size))
+	return grub_error (GRUB_ERR_READ_ERROR, N_("cannot read `%s': %s"),
+			   map[disk->id].device, strerror (errno));
+      size -= max;
+      buf += (max << disk->log_sector_size);
+      sector += max;
+    }
+  return GRUB_ERR_NONE;
 }
 
 static grub_err_t
 grub_util_biosdisk_write (grub_disk_t disk, grub_disk_addr_t sector,
 			  grub_size_t size, const char *buf)
 {
-  int fd;
-
-  /* Split pre-partition and partition writes.  */
-  if (disk->partition && sector < disk->partition->start
-      && sector + size > disk->partition->start)
+  while (size)
     {
-      grub_err_t err;
-      err = grub_util_biosdisk_write (disk, sector,
-				      disk->partition->start - sector,
-				      buf);
-      if (err)
-	return err;
+      int fd;
+      grub_disk_addr_t max = ~0ULL;
+      fd = open_device (disk, sector, O_WRONLY, &max);
+      if (fd < 0)
+	return grub_errno;
 
-      return grub_util_biosdisk_write (disk, disk->partition->start,
-				       size - (disk->partition->start - sector),
-				       buf + ((disk->partition->start - sector)
-					      << GRUB_DISK_SECTOR_BITS));
+#ifdef __linux__
+      if (sector == 0)
+	/* Work around a bug in Linux ez remapping.  Linux remaps all
+	   sectors that are write together with the MBR in one write.  It
+	   should only remap the MBR, so we split the write in two
+	   parts. -jochen  */
+	max = 1;
+#endif /* __linux__ */
+
+      if (max > size)
+	max = size;
+
+      if (grub_util_fd_write (fd, buf, max << disk->log_sector_size)
+	  != (ssize_t) (max << disk->log_sector_size))
+	return grub_error (GRUB_ERR_WRITE_ERROR, N_("cannot write to `%s': %s"),
+			   map[disk->id].device, strerror (errno));
+      size -= max;
+      buf += (max << disk->log_sector_size);
     }
+  return GRUB_ERR_NONE;
+}
 
-  fd = open_device (disk, sector, O_WRONLY);
-  if (fd < 0)
-    return grub_errno;
+grub_err_t
+grub_util_biosdisk_flush (struct grub_disk *disk)
+{
+  struct grub_util_biosdisk_data *data = disk->data;
 
-  if (nwrite (fd, buf, size << GRUB_DISK_SECTOR_BITS)
-      != (ssize_t) (size << GRUB_DISK_SECTOR_BITS))
-    grub_error (GRUB_ERR_WRITE_ERROR, "cannot write to `%s'", map[disk->id].device);
-
-  return grub_errno;
+  if (disk->dev->id != GRUB_DISK_DEVICE_BIOSDISK_ID)
+    return GRUB_ERR_NONE;
+  if (data->fd == -1)
+    {
+      grub_disk_addr_t max;
+      data->fd = open_device (disk, 0, O_RDONLY, &max);
+      if (data->fd < 0)
+	return grub_errno;
+    }
+  fsync (data->fd);
+#ifdef __linux__
+  if (data->is_disk)
+    ioctl (data->fd, BLKFLSBUF, 0);
+#endif
+  return GRUB_ERR_NONE;
 }
 
 static void
@@ -865,14 +1181,18 @@ grub_util_biosdisk_close (struct grub_disk *disk)
 
   free (data->dev);
   if (data->fd != -1)
-    close (data->fd);
+    {
+      if (data->access_mode == O_RDWR || data->access_mode == O_WRONLY)
+	grub_util_biosdisk_flush (disk);
+      close (data->fd);
+    }
   free (data);
 }
 
 static struct grub_disk_dev grub_util_biosdisk_dev =
   {
-    .name = "biosdisk",
-    .id = GRUB_DISK_DEVICE_BIOSDISK_ID,
+    .name = "hostdisk",
+    .id = GRUB_DISK_DEVICE_HOSTDISK_ID,
     .iterate = grub_util_biosdisk_iterate,
     .open = grub_util_biosdisk_open,
     .close = grub_util_biosdisk_close,
@@ -889,16 +1209,23 @@ read_device_map (const char *dev_map)
   int lineno = 0;
   struct stat st;
 
-  auto void show_error (const char *msg);
-  void show_error (const char *msg)
+  auto void show_error (const char *msg)
+    __attribute__ ((noreturn));
+  void __attribute__ ((noreturn)) show_error (const char *msg)
     {
       grub_util_error ("%s:%d: %s", dev_map, lineno, msg);
+    }
+
+  if (dev_map[0] == '\0')
+    {
+      grub_util_info ("no device.map");
+      return;
     }
 
   fp = fopen (dev_map, "r");
   if (! fp)
     {
-      grub_util_info (_("cannot open `%s'"), dev_map);
+      grub_util_info (_("cannot open `%s': %s"), dev_map, strerror (errno));
       return;
     }
 
@@ -906,12 +1233,13 @@ read_device_map (const char *dev_map)
     {
       char *p = buf;
       char *e;
+      char *drive_e, *drive_p;
       int drive;
 
       lineno++;
 
       /* Skip leading spaces.  */
-      while (*p && isspace (*p))
+      while (*p && grub_isspace (*p))
 	p++;
 
       /* If the first character is `#' or NUL, skip this line.  */
@@ -919,34 +1247,74 @@ read_device_map (const char *dev_map)
 	continue;
 
       if (*p != '(')
-	show_error ("No open parenthesis found");
+	{
+	  char *tmp;
+	  tmp = xasprintf (_("missing `%c' symbol"), '(');
+	  show_error (tmp);
+	}
 
       p++;
       /* Find a free slot.  */
       drive = find_free_slot ();
       if (drive < 0)
-	show_error ("Map table size exceeded");
+	show_error (_("device count exceeds limit"));
 
       e = p;
       p = strchr (p, ')');
       if (! p)
-	show_error ("No close parenthesis found");
+	{
+	  char *tmp;
+	  tmp = xasprintf (_("missing `%c' symbol"), ')');
+	  show_error (tmp);
+	}
 
-      map[drive].drive = xmalloc (p - e + sizeof ('\0'));
-      strncpy (map[drive].drive, e, p - e + sizeof ('\0'));
-      map[drive].drive[p - e] = '\0';
+      map[drive].drive = 0;
+      if ((e[0] == 'f' || e[0] == 'h' || e[0] == 'c') && e[1] == 'd')
+	{
+	  char *ptr;
+	  for (ptr = e + 2; ptr < p; ptr++)
+	    if (!grub_isdigit (*ptr))
+	      break;
+	  if (ptr == p)
+	    {
+	      map[drive].drive = xmalloc (p - e + sizeof ('\0'));
+	      strncpy (map[drive].drive, e, p - e + sizeof ('\0'));
+	      map[drive].drive[p - e] = '\0';
+	    }
+	  if (*ptr == ',')
+	    {
+	      *p = 0;
+
+	      /* TRANSLATORS: Only one entry is ignored. However the suggestion
+		 is to correct/delete the whole file.
+		 device.map is a file indicating which
+		 devices are available at boot time. Fedora populated it with
+		 entries like (hd0,1) /dev/sda1 which would mean that every
+		 partition is a separate disk for BIOS. Such entries were
+		 inactive in GRUB due to its bug which is now gone. Without
+		 this additional check these entries would be harmful now.
+	      */
+	      grub_util_warn (_("the device.map entry `%s' is invalid. "
+				"Ignoring it. Please correct or "
+				"delete your device.map"), e);
+	      continue;
+	    }
+	}
+      drive_e = e;
+      drive_p = p;
+      map[drive].device_map = 1;
 
       p++;
       /* Skip leading spaces.  */
-      while (*p && isspace (*p))
+      while (*p && grub_isspace (*p))
 	p++;
 
       if (*p == '\0')
-	show_error ("No filename found");
+	show_error (_("filename expected"));
 
       /* NUL-terminate the filename.  */
       e = p;
-      while (*e && ! isspace (*e))
+      while (*e && ! grub_isspace (*e))
 	e++;
       *e = '\0';
 
@@ -971,11 +1339,33 @@ read_device_map (const char *dev_map)
 	{
 	  map[drive].device = xmalloc (PATH_MAX);
 	  if (! realpath (p, map[drive].device))
-	    grub_util_error ("cannot get the real path of `%s'", p);
+	    grub_util_error (_("failed to get canonical path of %s"), p);
 	}
       else
 #endif
       map[drive].device = xstrdup (p);
+      if (!map[drive].drive)
+	{
+	  char c;
+	  map[drive].drive = xmalloc (sizeof ("hostdisk/") + strlen (p));
+	  memcpy (map[drive].drive, "hostdisk/", sizeof ("hostdisk/") - 1);
+	  strcpy (map[drive].drive + sizeof ("hostdisk/") - 1, p);
+	  c = *drive_p;
+	  *drive_p = 0;
+	  /* TRANSLATORS: device.map is a filename. Not to be translated.
+	     device.map specifies disk correspondance overrides. Previously
+	     one could create any kind of device name with this. Due to
+	     some problems we decided to limit it to just a handful
+	     possibilities.  */
+	  grub_util_warn (_("the drive name `%s' in device.map is incorrect. "
+			    "Using %s instead. "
+			    "Please use the form [hfc]d[0-9]* "
+			    "(E.g. `hd0' or `cd')"),
+			  drive_e, map[drive].drive);
+	  *drive_p = c;
+	}
+
+      flush_initial_buffer (map[drive].device);
     }
 
   fclose (fp);
@@ -1005,645 +1395,19 @@ grub_util_biosdisk_fini (void)
   grub_disk_dev_unregister (&grub_util_biosdisk_dev);
 }
 
-/*
- * Note: we do not use the new partition naming scheme as dos_part does not
- * necessarily correspond to an msdos partition.
- */
-static char *
-make_device_name (int drive, int dos_part, int bsd_part)
+const char *
+grub_util_biosdisk_get_compatibility_hint (grub_disk_t disk)
 {
-  char *ret;
-  char *dos_part_str = NULL;
-  char *bsd_part_str = NULL;
-
-  if (dos_part >= 0)
-    dos_part_str = xasprintf (",%d", dos_part + 1);
-
-  if (bsd_part >= 0)
-    bsd_part_str = xasprintf (",%d", bsd_part + 1);
-
-  ret = xasprintf ("%s%s%s", map[drive].drive,
-                   dos_part_str ? : "",
-                   bsd_part_str ? : "");
-
-  if (dos_part_str)
-    free (dos_part_str);
-
-  if (bsd_part_str)
-    free (bsd_part_str);
-
-  return ret;
-}
-
-static char *
-convert_system_partition_to_system_disk (const char *os_dev, struct stat *st)
-{
-#if defined(__linux__)
-  char *path = xmalloc (PATH_MAX);
-  if (! realpath (os_dev, path))
-    return NULL;
-
-  if (strncmp ("/dev/", path, 5) == 0)
-    {
-      char *p = path + 5;
-
-      /* If this is an IDE disk.  */
-      if (strncmp ("ide/", p, 4) == 0)
-	{
-	  p = strstr (p, "part");
-	  if (p)
-	    strcpy (p, "disc");
-
-	  return path;
-	}
-
-      /* If this is a SCSI disk.  */
-      if (strncmp ("scsi/", p, 5) == 0)
-	{
-	  p = strstr (p, "part");
-	  if (p)
-	    strcpy (p, "disc");
-
-	  return path;
-	}
-
-      /* If this is a DAC960 disk.  */
-      if (strncmp ("rd/c", p, 4) == 0)
-	{
-	  /* /dev/rd/c[0-9]+d[0-9]+(p[0-9]+)? */
-	  p = strchr (p, 'p');
-	  if (p)
-	    *p = '\0';
-
-	  return path;
-	}
-
-      /* If this is a Mylex AcceleRAID Array.  */
-      if (strncmp ("rs/c", p, 4) == 0)
-	{
-	  /* /dev/rd/c[0-9]+d[0-9]+(p[0-9]+)? */
-	  p = strchr (p, 'p');
-	  if (p)
-	    *p = '\0';
-
-	  return path;
-	}
-      /* If this is a CCISS disk.  */
-      if (strncmp ("cciss/c", p, sizeof ("cciss/c") - 1) == 0)
-	{
-	  /* /dev/cciss/c[0-9]+d[0-9]+(p[0-9]+)? */
-	  p = strchr (p, 'p');
-	  if (p)
-	    *p = '\0';
-
-	  return path;
-	}
-
-      /* If this is a Compaq Intelligent Drive Array.  */
-      if (strncmp ("ida/c", p, sizeof ("ida/c") - 1) == 0)
-	{
-	  /* /dev/ida/c[0-9]+d[0-9]+(p[0-9]+)? */
-	  p = strchr (p, 'p');
-	  if (p)
-	    *p = '\0';
-
-	  return path;
-	}
-
-      /* If this is an I2O disk.  */
-      if (strncmp ("i2o/hd", p, sizeof ("i2o/hd") - 1) == 0)
-      	{
-	  /* /dev/i2o/hd[a-z]([0-9]+)? */
-	  p[sizeof ("i2o/hda") - 1] = '\0';
-	  return path;
-	}
-
-      /* If this is a MultiMediaCard (MMC).  */
-      if (strncmp ("mmcblk", p, sizeof ("mmcblk") - 1) == 0)
-	{
-	  /* /dev/mmcblk[0-9]+(p[0-9]+)? */
-	  p = strchr (p, 'p');
-	  if (p)
-	    *p = '\0';
-
-	  return path;
-	}
-
-      if (strncmp ("md", p, 2) == 0
-	  && p[2] >= '0' && p[2] <= '9')
-	{
-	  char *ptr = p + 2;
-	  while (*ptr >= '0' && *ptr <= '9')
-	    ptr++;
-	  *ptr = 0;
-	  return path;
-	}
-
-      /* If this is an IDE, SCSI or Virtio disk.  */
-      if (strncmp ("vdisk", p, 5) == 0
-	  && p[5] >= 'a' && p[5] <= 'z')
-	{
-	  /* /dev/vdisk[a-z][0-9]* */
-	  p[6] = '\0';
-	  return path;
-	}
-      if ((strncmp ("hd", p, 2) == 0
-	   || strncmp ("vd", p, 2) == 0
-	   || strncmp ("sd", p, 2) == 0)
-	  && p[2] >= 'a' && p[2] <= 'z')
-	{
-	  char *pp = p + 2;
-	  while (*pp >= 'a' && *pp <= 'z')
-	    pp++;
-	  /* /dev/[hsv]d[a-z]+[0-9]* */
-	  *pp = '\0';
-	  return path;
-	}
-
-      /* If this is a Xen virtual block device.  */
-      if ((strncmp ("xvd", p, 3) == 0) && p[3] >= 'a' && p[3] <= 'z')
-	{
-	  char *pp = p + 3;
-	  while (*pp >= 'a' && *pp <= 'z')
-	    pp++;
-	  /* /dev/xvd[a-z]+[0-9]* */
-	  *pp = '\0';
-	  return path;
-	}
-
-#ifdef HAVE_DEVICE_MAPPER
-      /* If this is a DM-RAID device.
-         Compare os_dev rather than path here, since nodes under
-         /dev/mapper/ are often symlinks.  */
-      if ((strncmp ("/dev/mapper/", os_dev, 12) == 0))
-	{
-	  struct dm_tree *tree;
-	  uint32_t maj, min;
-	  struct dm_tree_node *node = NULL, *child;
-	  void *handle;
-	  const char *node_uuid, *mapper_name = NULL, *child_uuid, *child_name;
-
-	  tree = dm_tree_create ();
-	  if (! tree)
-	    {
-	      grub_dprintf ("hostdisk", "dm_tree_create failed\n");
-	      goto devmapper_out;
-	    }
-
-	  maj = major (st->st_rdev);
-	  min = minor (st->st_rdev);
-	  if (! dm_tree_add_dev (tree, maj, min))
-	    {
-	      grub_dprintf ("hostdisk", "dm_tree_add_dev failed\n");
-	      goto devmapper_out;
-	    }
-
-	  node = dm_tree_find_node (tree, maj, min);
-	  if (! node)
-	    {
-	      grub_dprintf ("hostdisk", "dm_tree_find_node failed\n");
-	      goto devmapper_out;
-	    }
-	  node_uuid = dm_tree_node_get_uuid (node);
-	  if (! node_uuid)
-	    {
-	      grub_dprintf ("hostdisk", "%s has no DM uuid\n", path);
-	      node = NULL;
-	      goto devmapper_out;
-	    }
-	  else if (strncmp (node_uuid, "DMRAID-", 7) != 0)
-	    {
-	      grub_dprintf ("hostdisk", "%s is not DM-RAID\n", path);
-	      node = NULL;
-	      goto devmapper_out;
-	    }
-
-	  handle = NULL;
-	  /* Counter-intuitively, device-mapper refers to the disk-like
-	     device containing a DM-RAID partition device as a "child" of
-	     the partition device.  */
-	  child = dm_tree_next_child (&handle, node, 0);
-	  if (! child)
-	    {
-	      grub_dprintf ("hostdisk", "%s has no DM children\n", path);
-	      goto devmapper_out;
-	    }
-	  child_uuid = dm_tree_node_get_uuid (child);
-	  if (! child_uuid)
-	    {
-	      grub_dprintf ("hostdisk", "%s child has no DM uuid\n", path);
-	      goto devmapper_out;
-	    }
-	  else if (strncmp (child_uuid, "DMRAID-", 7) != 0)
-	    {
-	      grub_dprintf ("hostdisk", "%s child is not DM-RAID\n", path);
-	      goto devmapper_out;
-	    }
-	  child_name = dm_tree_node_get_name (child);
-	  if (! child_name)
-	    {
-	      grub_dprintf ("hostdisk", "%s child has no DM name\n", path);
-	      goto devmapper_out;
-	    }
-	  mapper_name = child_name;
-
-devmapper_out:
-	  if (! mapper_name && node)
-	    {
-	      /* This is a DM-RAID disk, not a partition.  */
-	      mapper_name = dm_tree_node_get_name (node);
-	      if (! mapper_name)
-		grub_dprintf ("hostdisk", "%s has no DM name\n", path);
-	    }
-	  if (tree)
-	    dm_tree_free (tree);
-	  free (path);
-	  if (mapper_name)
-	    return xasprintf ("/dev/mapper/%s", mapper_name);
-	  else
-	    return NULL;
-	}
-#endif /* HAVE_DEVICE_MAPPER */
-    }
-
-  return path;
-
-#elif defined(__GNU__)
-  char *path = xstrdup (os_dev);
-  if (strncmp ("/dev/sd", path, 7) == 0 || strncmp ("/dev/hd", path, 7) == 0)
-    {
-      char *p = strchr (path + 7, 's');
-      if (p)
-	*p = '\0';
-    }
-  return path;
-
-#elif defined(__CYGWIN__)
-  char *path = xstrdup (os_dev);
-  if (strncmp ("/dev/sd", path, 7) == 0 && 'a' <= path[7] && path[7] <= 'z')
-    path[8] = 0;
-  return path;
-
-#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__)
-  char *path = xstrdup (os_dev);
-  if (strncmp ("/dev/", path, 5) == 0)
-    {
-      char *p;
-      for (p = path + 5; *p; ++p)
-        if (grub_isdigit(*p))
-          {
-            p = strpbrk (p, "sp");
-            if (p)
-              *p = '\0';
-            break;
-          }
-    }
-  return path;
-
-#elif defined(__NetBSD__)
-  /* NetBSD uses "/dev/r[a-z]+[0-9][a-z]".  */
-  char *path = xstrdup (os_dev);
-  if (strncmp ("/dev/r", path, sizeof("/dev/r") - 1) == 0 &&
-      (path[sizeof("/dev/r") - 1] >= 'a' && path[sizeof("/dev/r") - 1] <= 'z') &&
-      strncmp ("fd", path + sizeof("/dev/r") - 1, sizeof("fd") - 1) != 0)    /* not a floppy device name */
-    {
-      char *p;
-      for (p = path + sizeof("/dev/r"); *p >= 'a' && *p <= 'z'; p++);
-      if (grub_isdigit(*p))
-	{
-	  p++;
-	  if ((*p >= 'a' && *p <= 'z') && (*(p+1) == '\0'))
-	    {
-	      /* path matches the required regular expression and
-		 p points to its last character.  */
-	      int rawpart = -1;
-# ifdef HAVE_GETRAWPARTITION
-	      rawpart = getrawpartition();
-# endif /* HAVE_GETRAWPARTITION */
-	      if (rawpart >= 0)
-		*p = 'a' + rawpart;
-	    }
-        }
-    }
-  return path;
-
-#else
-# warning "The function `convert_system_partition_to_system_disk' might not work on your OS correctly."
-  return xstrdup (os_dev);
-#endif
-}
-
-#if defined(__linux__) || defined(__CYGWIN__)
-static int
-device_is_wholedisk (const char *os_dev)
-{
-  int len = strlen (os_dev);
-
-  if (os_dev[len - 1] < '0' || os_dev[len - 1] > '9')
-    return 1;
+  if (disk->dev != &grub_util_biosdisk_dev || map[disk->id].device_map)
+    return disk->name;
   return 0;
-}
-#endif
-
-#if defined(__NetBSD__)
-/* Try to determine whether a given device name corresponds to a whole disk.
-   This function should give in most cases a definite answer, but it may
-   actually give an approximate one in the following sense: if the return
-   value is 0 then the device name does not correspond to a whole disk.  */
-static int
-device_is_wholedisk (const char *os_dev)
-{
-  int len = strlen (os_dev);
-  int rawpart = -1;
-
-# ifdef HAVE_GETRAWPARTITION
-  rawpart = getrawpartition();
-# endif /* HAVE_GETRAWPARTITION */
-  if (rawpart < 0)
-    return 1;
-  return (os_dev[len - 1] == ('a' + rawpart));
-}
-#endif /* defined(__NetBSD__) */
-
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
-static int
-device_is_wholedisk (const char *os_dev)
-{
-  const char *p;
-
-  if (strncmp (os_dev, "/dev/", sizeof ("/dev/") - 1) != 0)
-    return 0;
-
-  for (p = os_dev + sizeof ("/dev/") - 1; *p; ++p)
-    if (grub_isdigit (*p))
-      {
-	if (strchr (p, 's'))
-	  return 0;
-	break;
-      }
-
-  return 1;
-}
-#endif /* defined(__FreeBSD__) || defined(__FreeBSD_kernel__) */
-
-static int
-find_system_device (const char *os_dev, struct stat *st, int convert, int add)
-{
-  unsigned int i;
-  char *os_disk;
-
-  if (convert)
-    os_disk = convert_system_partition_to_system_disk (os_dev, st);
-  else
-    os_disk = xstrdup (os_dev);
-  if (! os_disk)
-    return -1;
-
-  for (i = 0; i < ARRAY_SIZE (map); i++)
-    if (! map[i].device)
-      break;
-    else if (strcmp (map[i].device, os_disk) == 0)
-      {
-	free (os_disk);
-	return i;
-      }
-
-  if (!add)
-    return -1;
-
-  if (i == ARRAY_SIZE (map))
-    grub_util_error (_("device count exceeds limit"));
-
-  map[i].device = os_disk;
-  map[i].drive = xstrdup (os_disk);
-
-  return i;
-}
-
-int
-grub_util_biosdisk_is_present (const char *os_dev)
-{
-  struct stat st;
-
-  if (stat (os_dev, &st) < 0)
-    return 0;
-
-  return find_system_device (os_dev, &st, 1, 0) != -1;
-}
-
-char *
-grub_util_biosdisk_get_grub_dev (const char *os_dev)
-{
-  struct stat st;
-  int drive;
-
-  if (stat (os_dev, &st) < 0)
-    {
-      grub_error (GRUB_ERR_BAD_DEVICE, "cannot stat `%s'", os_dev);
-      return 0;
-    }
-
-  drive = find_system_device (os_dev, &st, 1, 1);
-  if (drive < 0)
-    {
-      grub_error (GRUB_ERR_UNKNOWN_DEVICE,
-		  "no mapping exists for `%s'", os_dev);
-      return 0;
-    }
-
-  if (grub_strcmp (os_dev,
-		   convert_system_partition_to_system_disk (os_dev, &st)) == 0)
-    return make_device_name (drive, -1, -1);
-
-#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__APPLE__) || defined(__NetBSD__)
-  if (! S_ISCHR (st.st_mode))
-#else
-  if (! S_ISBLK (st.st_mode))
-#endif
-    return make_device_name (drive, -1, -1);
-
-#if defined(__linux__) || defined(__CYGWIN__) || defined(HAVE_DIOCGDINFO)
-  /* Linux counts partitions uniformly, whether a BSD partition or a DOS
-     partition, so mapping them to GRUB devices is not trivial.
-     Here, get the start sector of a partition by HDIO_GETGEO, and
-     compare it with each partition GRUB recognizes.
-
-     Cygwin /dev/sdXN emulation uses Windows partition mapping. It
-     does not count the extended partition and missing primary
-     partitions.  Use same method as on Linux here.
-
-     For NetBSD and FreeBSD, proceed as for Linux, except that the start
-     sector is obtained from the disk label.  */
-  {
-    char *name, *partname;
-    grub_disk_t disk;
-    grub_disk_addr_t start;
-    auto int find_partition (grub_disk_t dsk,
-			     const grub_partition_t partition);
-
-    int find_partition (grub_disk_t dsk __attribute__ ((unused)),
-			const grub_partition_t partition)
-      {
-	grub_disk_addr_t part_start = 0;
-	grub_util_info ("Partition %d starts from %lu",
-			partition->number, partition->start);
-
-	part_start = grub_partition_get_start (partition);
-
-	if (start == part_start)
-	  {
-	    partname = grub_partition_get_name (partition);
-	    return 1;
-	  }
-
-	return 0;
-      }
-
-    name = make_device_name (drive, -1, -1);
-
-# if !defined(HAVE_DIOCGDINFO)
-    if (MAJOR (st.st_rdev) == FLOPPY_MAJOR)
-      return name;
-# else /* defined(HAVE_DIOCGDINFO) */
-    /* Since os_dev and convert_system_partition_to_system_disk (os_dev) are
-     * different, we know that os_dev cannot be a floppy device.  */
-# endif /* !defined(HAVE_DIOCGDINFO) */
-
-    start = find_partition_start (os_dev);
-    if (grub_errno != GRUB_ERR_NONE)
-      {
-	free (name);
-	return 0;
-      }
-
-    grub_util_info ("%s starts from %lu", os_dev, start);
-
-    if (start == 0 && device_is_wholedisk (os_dev))
-      return name;
-
-    grub_util_info ("opening the device %s", name);
-    disk = grub_disk_open (name);
-    free (name);
-
-    if (! disk)
-      {
-	/* We already know that the partition exists.  Given that we already
-	   checked the device map above, we can only get
-	   GRUB_ERR_UNKNOWN_DEVICE at this point if the disk does not exist.
-	   This can happen on Xen, where disk images in the host can be
-	   assigned to devices that have partition-like names in the guest
-	   but are really more like disks.  */
-	if (grub_errno == GRUB_ERR_UNKNOWN_DEVICE)
-	  {
-	    grub_util_warn
-	      ("disk does not exist, so falling back to partition device %s",
-	       os_dev);
-
-	    drive = find_system_device (os_dev, &st, 0, 1);
-	    if (drive < 0)
-	      {
-		grub_error (GRUB_ERR_UNKNOWN_DEVICE,
-			    "no mapping exists for `%s'", os_dev);
-		return 0;
-	      }
-
-	    return make_device_name (drive, -1, -1);
-	  }
-	else
-	  return 0;
-      }
-
-    partname = NULL;
-    grub_partition_iterate (disk, find_partition);
-    if (grub_errno != GRUB_ERR_NONE)
-      {
-	grub_disk_close (disk);
-	return 0;
-      }
-
-    if (partname == NULL)
-      {
-	grub_disk_close (disk);
-	grub_error (GRUB_ERR_BAD_DEVICE,
-		    "cannot find the partition of `%s'", os_dev);
-	return 0;
-      }
-
-    name = grub_xasprintf ("%s,%s", disk->name, partname);
-    free (partname);
-    return name;
-  }
-
-#elif defined(__GNU__)
-  /* GNU uses "/dev/[hs]d[0-9]+(s[0-9]+[a-z]?)?".  */
-  {
-    char *p;
-    int dos_part = -1;
-    int bsd_part = -1;
-
-    p = strrchr (os_dev, 's');
-    if (p)
-      {
-	long int n;
-	char *q;
-
-	p++;
-	n = strtol (p, &q, 10);
-	if (p != q && n != GRUB_LONG_MIN && n != GRUB_LONG_MAX)
-	  {
-	    dos_part = (int) n - 1;
-
-	    if (*q >= 'a' && *q <= 'g')
-	      bsd_part = *q - 'a';
-	  }
-      }
-
-    return make_device_name (drive, dos_part, bsd_part);
-  }
-
-#else
-# warning "The function `grub_util_biosdisk_get_grub_dev' might not work on your OS correctly."
-  return make_device_name (drive, -1, -1);
-#endif
 }
 
 const char *
 grub_util_biosdisk_get_osdev (grub_disk_t disk)
 {
+  if (disk->dev != &grub_util_biosdisk_dev)
+    return 0;
+
   return map[disk->id].device;
-}
-
-int
-grub_util_biosdisk_is_floppy (grub_disk_t disk)
-{
-  struct stat st;
-  int fd;
-
-  fd = open (map[disk->id].device, O_RDONLY);
-  /* Shouldn't happen.  */
-  if (fd == -1)
-    return 0;
-
-  /* Shouldn't happen either.  */
-  if (fstat (fd, &st) < 0)
-    return 0;
-
-#if defined(__NetBSD__)
-  if (major(st.st_rdev) == RAW_FLOPPY_MAJOR)
-    return 1;
-#endif
-
-#if defined(FLOPPY_MAJOR)
-  if (major(st.st_rdev) == FLOPPY_MAJOR)
-#else
-  /* Some kernels (e.g. kFreeBSD) don't have a static major number
-     for floppies, but they still use a "fd[0-9]" pathname.  */
-  if (map[disk->id].device[5] == 'f'
-      && map[disk->id].device[6] == 'd'
-      && map[disk->id].device[7] >= '0'
-      && map[disk->id].device[7] <= '9')
-#endif
-    return 1;
-
-  return 0;
 }

@@ -21,26 +21,6 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 
-void
-grub_list_push (grub_list_t *head, grub_list_t item)
-{
-  item->next = *head;
-  *head = item;
-}
-
-void
-grub_list_remove (grub_list_t *head, grub_list_t item)
-{
-  grub_list_t *p, q;
-
-  for (p = head, q = *p; q; p = &(q->next), q = q->next)
-    if (q == item)
-      {
-	*p = q->next;
-	break;
-      }
-}
-
 void *
 grub_named_list_find (grub_named_list_t head, const char *name)
 {
@@ -54,34 +34,22 @@ grub_named_list_find (grub_named_list_t head, const char *name)
 }
 
 void
-grub_prio_list_insert (grub_prio_list_t *head, grub_prio_list_t nitem)
+grub_list_push (grub_list_t *head, grub_list_t item)
 {
-  int inactive = 0;
+  item->prev = head;
+  if (*head)
+    (*head)->prev = &item->next;
+  item->next = *head;
+  *head = item;
+}
 
-  grub_prio_list_t *p, q;
-    
-  for (p = head, q = *p; q; p = &(q->next), q = q->next)
-    {
-      int r;
-
-      r = grub_strcmp (nitem->name, q->name);
-      if (r < 0)
-	break;
-      if (r > 0)
-	continue;
-
-      if (nitem->prio >= (q->prio & GRUB_PRIO_LIST_PRIO_MASK))
-	{
-	  q->prio &= ~GRUB_PRIO_LIST_FLAG_ACTIVE;
-	  break;
-	}
-
-      inactive = 1;
-    }
-
-  *p = nitem;
-  nitem->next = q;
-
-  if (! inactive)
-    nitem->prio |= GRUB_PRIO_LIST_FLAG_ACTIVE;
+void
+grub_list_remove (grub_list_t item)
+{
+  if (item->prev)
+    *item->prev = item->next;
+  if (item->next)
+    item->next->prev = item->prev;
+  item->next = 0;
+  item->prev = 0;
 }

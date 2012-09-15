@@ -21,6 +21,8 @@
 #include <grub/misc.h>
 #include <grub/aout.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 int
 grub_aout_get_type (union grub_aout_header *header)
 {

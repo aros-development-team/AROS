@@ -69,6 +69,10 @@ grub_tsc_init (void)
     }
   else
     {
+#if defined (GRUB_MACHINE_PCBIOS) || defined (GRUB_MACHINE_IEEE1275)
       grub_install_get_time_ms (grub_rtc_get_time_ms);
+#else
+      grub_fatal ("no TSC found");
+#endif
     }
 }

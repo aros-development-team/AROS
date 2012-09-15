@@ -38,7 +38,7 @@ write_bases (void)
   for (i = 0; i < GRUB_MACHINE_PCI_NUM_WIN; i++) 
     reg |= (((base_win[i] >> GRUB_MACHINE_PCI_WIN_SHIFT) 
 	     & GRUB_MACHINE_PCI_WIN_MASK) 
-	    >> (i * GRUB_MACHINE_PCI_WIN_MASK_SIZE));
+	    << (i * GRUB_MACHINE_PCI_WIN_MASK_SIZE));
   GRUB_MACHINE_PCI_IO_CTRL_REG = reg;
 }
 
@@ -73,15 +73,24 @@ grub_pci_device_map_range (grub_pci_device_t dev __attribute__ ((unused)),
   grub_fatal ("Out of PCI windows.");
 }
 
+void *
+grub_pci_device_map_range_cached (grub_pci_device_t dev,
+				  grub_addr_t base, grub_size_t size)
+{
+  return (void *) (((grub_addr_t) grub_pci_device_map_range (dev, base, size))
+		   & ~0x20000000);
+}
+
 void
 grub_pci_device_unmap_range (grub_pci_device_t dev __attribute__ ((unused)),
-			     volatile void *mem __attribute__ ((unused)),
+			     volatile void *mem,
 			     grub_size_t size __attribute__ ((unused)))
 {
   int i;
   for (i = 0; i < GRUB_MACHINE_PCI_NUM_WIN; i++)
     if (usage_win[i] && addr_win[i] 
-	== (((grub_addr_t) mem) & ~GRUB_MACHINE_PCI_WIN_OFFSET_MASK))
+	== (((grub_addr_t) mem | 0x20000000)
+	    & ~GRUB_MACHINE_PCI_WIN_OFFSET_MASK))
       {
 	usage_win[i]--;
 	return;

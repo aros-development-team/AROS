@@ -119,7 +119,7 @@ grub_relocator32_boot (struct grub_relocator *rel,
 					  (0xffffffff - stateset_size)
 					  + 1, stateset_size,
 					  sizeof (grub_uint32_t),
-					  GRUB_RELOCATOR_PREFERENCE_NONE);
+					  GRUB_RELOCATOR_PREFERENCE_NONE, 0);
   if (err)
     return err;
 

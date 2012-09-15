@@ -25,10 +25,12 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
     {"verbose", 'v', 0, N_("Verbose countdown."), 0, 0},
-    {"interruptible", 'i', 0, N_("Interruptible with ESC."), 0, 0},
+    {"interruptible", 'i', 0, N_("Allow to interrupt with ESC."), 0, 0},
     {0, 0, 0, 0, 0, 0}
   };
 
@@ -41,6 +43,7 @@ do_print (int n)
   /* NOTE: Do not remove the trailing space characters.
      They are required to clear the line.  */
   grub_printf ("%d    ", n);
+  grub_refresh ();
 }
 
 /* Based on grub_millisleep() from kern/generic/millisleep.c.  */
@@ -52,7 +55,7 @@ grub_interruptible_millisleep (grub_uint32_t ms)
   start = grub_get_time_ms ();
 
   while (grub_get_time_ms () - start < ms)
-    if (grub_checkkey () >= 0 && grub_getkey () == GRUB_TERM_ESC)
+    if (grub_getkey_noblock () == GRUB_TERM_ESC)
       return 1;
 
   return 0;
@@ -65,7 +68,7 @@ grub_cmd_sleep (grub_extcmd_context_t ctxt, int argc, char **args)
   int n;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "missing operand");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   n = grub_strtoul (args[0], 0, 10);
 

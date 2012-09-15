@@ -18,6 +18,9 @@
 
 #include <grub/serial.h>
 #include <grub/usbserial.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 void
 grub_usbserial_fini (struct grub_serial_port *port)

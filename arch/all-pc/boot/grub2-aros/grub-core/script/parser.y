@@ -21,6 +21,7 @@
 #include <grub/script_sh.h>
 #include <grub/mm.h>
 #include <grub/misc.h>
+#include <grub/i18n.h>
 
 #define YYFREE          grub_free
 #define YYMALLOC        grub_malloc
@@ -28,6 +29,11 @@
 #define YYENABLE_NLS    0
 
 #include "grub_script.tab.h"
+
+#pragma GCC diagnostic ignored "-Wunreachable-code"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+
 %}
 
 %union {
@@ -74,7 +80,6 @@
 %token <arg> GRUB_PARSER_TOKEN_THEN      "then"
 %token <arg> GRUB_PARSER_TOKEN_UNTIL     "until"
 %token <arg> GRUB_PARSER_TOKEN_WHILE     "while"
-%token <arg> GRUB_PARSER_TOKEN_TIME      "time"
 %token <arg> GRUB_PARSER_TOKEN_FUNCTION  "function"
 %token <arg> GRUB_PARSER_TOKEN_NAME      "name"
 %token <arg> GRUB_PARSER_TOKEN_WORD      "word"
@@ -108,7 +113,7 @@ script: newlines0
       | error
         {
           $$ = 0;
-          yyerror (state, "Incorrect command");
+          yyerror (state, N_("Incorrect command"));
           yyerrok;
         }
 ;

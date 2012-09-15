@@ -32,6 +32,9 @@ struct grub_menu_entry
   /* The title name.  */
   const char *title;
 
+  /* The identifier.  */
+  const char *id;
+
   /* If set means not everybody is allowed to boot this entry.  */
   int restricted;
 
@@ -94,11 +97,6 @@ typedef struct grub_menu_execute_callback
 grub_menu_entry_t grub_menu_get_entry (grub_menu_t menu, int no);
 int grub_menu_get_timeout (void);
 void grub_menu_set_timeout (int timeout);
-void grub_menu_execute_entry (grub_menu_entry_t entry);
-void grub_menu_execute_with_fallback (grub_menu_t menu,
-				      grub_menu_entry_t entry,
-				      grub_menu_execute_callback_t callback,
-				      void *callback_data);
 void grub_menu_entry_run (grub_menu_entry_t entry);
 int grub_menu_get_default_entry_index (grub_menu_t menu);
 

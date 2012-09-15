@@ -23,6 +23,8 @@
 #include <grub/partition.h>
 #include <grub/dl.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 struct grub_amiga_rdsk
 {
   /* "RDSK".  */
@@ -37,7 +39,7 @@ struct grub_amiga_rdsk
   grub_uint32_t partitionlst;
   grub_uint32_t fslst;
 
-  /* The other information is not important for us.  */
+  grub_uint32_t unused[128 - 9];
 } __attribute__ ((packed));
 
 struct grub_amiga_partition
@@ -65,11 +67,23 @@ struct grub_amiga_partition
   grub_uint32_t highcyl;
 
   grub_uint32_t firstcyl;
+  grub_uint32_t unused[128 - 44];
 } __attribute__ ((packed));
 
 static struct grub_partition_map grub_amiga_partition_map;
 
 
+
+static grub_uint32_t
+amiga_partition_map_checksum (void *buf, grub_size_t sz)
+{
+  grub_uint32_t *ptr = buf;
+  grub_uint32_t r = 0;
+  sz /= sizeof (grub_uint32_t);
+  for (; sz; sz--, ptr++)
+    r += grub_be_to_cpu32 (*ptr);
+  return r;
+}
 
 static grub_err_t
 amiga_partition_map_iterate (grub_disk_t disk,
@@ -90,7 +104,8 @@ amiga_partition_map_iterate (grub_disk_t disk,
 	return grub_errno;
 
       if (grub_memcmp (rdsk.magic, GRUB_AMIGA_RDSK_MAGIC,
-		       sizeof (rdsk.magic)) == 0)
+		       sizeof (rdsk.magic)) == 0
+	  && amiga_partition_map_checksum (&rdsk, sizeof (rdsk)) == 0)
 	{
 	  /* Found the first PART block.  */
 	  next = grub_be_to_cpu32 (rdsk.partitionlst);
@@ -112,8 +127,10 @@ amiga_partition_map_iterate (grub_disk_t disk,
 	return grub_errno;
 
       if (grub_memcmp (apart.magic, GRUB_AMIGA_PART_MAGIC,
-		       sizeof (apart.magic)) == 0)
-
+		       sizeof (apart.magic)) != 0
+	  || amiga_partition_map_checksum (&apart, sizeof (apart)) != 0)
+	return grub_error (GRUB_ERR_BAD_PART_TABLE,
+			   "invalid Amiga partition map");
       /* Calculate the first block and the size of the partition.  */
       part.start = (grub_be_to_cpu32 (apart.lowcyl)
 		    * grub_be_to_cpu32 (apart.heads)

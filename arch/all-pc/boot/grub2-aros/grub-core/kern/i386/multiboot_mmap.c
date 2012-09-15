@@ -34,7 +34,7 @@ static struct multiboot_info kern_multiboot_info;
 static grub_uint8_t mmap_entries[sizeof (struct multiboot_mmap_entry) * 32];
 
 void
-grub_machine_mmap_init ()
+grub_machine_mmap_init (void)
 {
   if (! startup_multiboot_info)
     grub_fatal ("Unable to find Multiboot Information (is CONFIG_MULTIBOOT disabled in coreboot?)");

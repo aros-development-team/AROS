@@ -92,7 +92,8 @@ transform ( MD5_CONTEXT *ctx, const unsigned char *data )
 #ifdef WORDS_BIGENDIAN
   { 
     int i;
-    byte *p2, *p1;
+    byte *p2;
+    const byte *p1;
     for(i=0, p1=data, p2=(byte*)correct_words; i < 16; i++, p2 += 4 )
       {
         p2[3] = *p1++;

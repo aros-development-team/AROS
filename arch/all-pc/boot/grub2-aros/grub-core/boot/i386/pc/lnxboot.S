@@ -19,7 +19,6 @@
 
 #include <config.h>
 #include <grub/symbol.h>
-#include <grub/boot.h>
 #include <grub/machine/boot.h>
 #include <grub/machine/kernel.h>
 #include <multiboot.h>
@@ -178,15 +177,21 @@ real_code_2:
 	pushw	%es
 	popw	%ds
 
-	movl	$0x200, %ecx
-	addl	%ecx, %esi
+	movl	$0x1000, %ecx
+	addl	$0x200, %esi
 	movl	$DATA_ADDR, %edi
 
 	call	LOCAL(move_memory)
 
 	/* Check for multiboot signature.  */
-	cmpl	$MULTIBOOT_HEADER_MAGIC, %ss:(DATA_ADDR + GRUB_KERNEL_I386_PC_NO_REED_SOLOMON_PART)
+	movl	$DATA_ADDR, %edi
+3:
+	movl	%ss:(%edi), %eax
+	cmpl	$MULTIBOOT_HEADER_MAGIC, %eax
 	jz	1f
+	addl	$4, %edi
+	cmpl	$(DATA_ADDR + 0x1000), %edi
+	jne     3b
 
 	movl	(ramdisk_image - start), %esi
 	movl	(ramdisk_size - start), %ecx
@@ -195,16 +200,12 @@ real_code_2:
 
 1:
 
-	movl	%ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_COMPRESSED_SIZE), %ecx
-	addl	$(GRUB_KERNEL_MACHINE_RAW_SIZE - 0x200), %ecx
+	movl	$(DATA_ADDR + 0x1000), %edi
+	movl	%ss:(DATA_ADDR + GRUB_DECOMPRESSOR_MACHINE_COMPRESSED_SIZE), %ecx
+	addl	$GRUB_DECOMPRESSOR_I386_PC_MAX_DECOMPRESSOR_SIZE, %ecx
 
 2:
 	call	LOCAL(move_memory)
-
-	movsbl	%dh, %eax
-	movl	%eax, %ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_INSTALL_DOS_PART)
-	movsbl	(reg_edx + 2 - start), %eax
-	movl	%eax, %ss:(DATA_ADDR + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART)
 
 	movb	$0xFF, %dh
 

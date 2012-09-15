@@ -27,27 +27,66 @@
 #include <grub/video_fb.h>
 #include <grub/efi/api.h>
 #include <grub/efi/efi.h>
+#include <grub/efi/edid.h>
 #include <grub/efi/graphics_output.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_efi_guid_t graphics_output_guid = GRUB_EFI_GOP_GUID;
+static grub_efi_guid_t active_edid_guid = GRUB_EFI_EDID_ACTIVE_GUID;
+static grub_efi_guid_t discovered_edid_guid = GRUB_EFI_EDID_DISCOVERED_GUID;
+static grub_efi_guid_t efi_var_guid = GRUB_EFI_GLOBAL_VARIABLE_GUID;
 static struct grub_efi_gop *gop;
 static unsigned old_mode;
 static int restore_needed;
+static grub_efi_handle_t gop_handle;
+
+static int
+grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info));
 
 static struct
 {
   struct grub_video_mode_info mode_info;
   struct grub_video_render_target *render_target;
   grub_uint8_t *ptr;
+  grub_uint8_t *offscreen;
 } framebuffer;
 
 
 static int
 check_protocol (void)
 {
-  gop = grub_efi_locate_protocol (&graphics_output_guid, 0);
-  if (gop)
+  grub_efi_handle_t *handles;
+  grub_efi_uintn_t num_handles, i;
+  int have_usable_mode = 0;
+
+  auto int hook (const struct grub_video_mode_info *info);
+  int hook (const struct grub_video_mode_info *info __attribute__ ((unused)))
+  {
+    have_usable_mode = 1;
     return 1;
+  }
+
+  handles = grub_efi_locate_handle (GRUB_EFI_BY_PROTOCOL,
+				    &graphics_output_guid, NULL, &num_handles);
+  if (!handles || num_handles == 0)
+    return 0;
+
+  for (i = 0; i < num_handles; i++)
+    {
+      gop_handle = handles[i];
+      gop = grub_efi_open_protocol (gop_handle, &graphics_output_guid,
+				    GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+      grub_video_gop_iterate (hook);
+      if (have_usable_mode)
+	{
+	  grub_free (handles);
+	  return 1;
+	}
+    }
+
+  gop = 0;
+  gop_handle = 0;
 
   return 0;
 }
@@ -67,6 +106,8 @@ grub_video_gop_fini (void)
       efi_call_2 (gop->set_mode, gop, old_mode);
       restore_needed = 0;
     }
+  grub_free (framebuffer.offscreen);
+  framebuffer.offscreen = 0;
   return grub_video_fb_fini ();
 }
 
@@ -127,9 +168,9 @@ grub_video_gop_get_bitmask (grub_uint32_t mask, unsigned int *mask_size,
 }
 
 static grub_err_t
-grub_video_gop_fill_mode_info (unsigned mode,
-			       struct grub_efi_gop_mode_info *in,
-			       struct grub_video_mode_info *out)
+grub_video_gop_fill_real_mode_info (unsigned mode,
+				    struct grub_efi_gop_mode_info *in,
+				    struct grub_video_mode_info *out)
 {
   out->mode_number = mode;
   out->number_of_colors = 256;
@@ -185,6 +226,35 @@ grub_video_gop_fill_mode_info (unsigned mode,
   return GRUB_ERR_NONE;
 }
 
+static grub_err_t
+grub_video_gop_fill_mode_info (unsigned mode,
+			       struct grub_efi_gop_mode_info *in,
+			       struct grub_video_mode_info *out)
+{
+  out->mode_number = mode;
+  out->number_of_colors = 256;
+  out->width = in->width;
+  out->height = in->height;
+  out->mode_type = GRUB_VIDEO_MODE_TYPE_RGB;
+  out->bytes_per_pixel = sizeof (struct grub_efi_gop_blt_pixel);
+  out->bpp = out->bytes_per_pixel << 3;
+  out->pitch = in->width * out->bytes_per_pixel;
+  out->red_mask_size = 8;
+  out->red_field_pos = 16;
+  out->green_mask_size = 8;
+  out->green_field_pos = 8;
+  out->blue_mask_size = 8;
+  out->blue_field_pos = 0;
+  out->reserved_mask_size = 8;
+  out->reserved_field_pos = 24;
+
+  out->blit_format = GRUB_VIDEO_BLIT_FORMAT_BGRA_8888;
+  out->mode_type |= (GRUB_VIDEO_MODE_TYPE_DOUBLE_BUFFERED
+		     | GRUB_VIDEO_MODE_TYPE_UPDATING_SWAP);
+
+  return GRUB_ERR_NONE;
+}
+
 static int
 grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info))
 {
@@ -219,6 +289,64 @@ grub_video_gop_iterate (int (*hook) (const struct grub_video_mode_info *info))
 }
 
 static grub_err_t
+grub_video_gop_get_edid (struct grub_video_edid_info *edid_info)
+{
+  struct grub_efi_active_edid *edid;
+  grub_size_t copy_size;
+
+  grub_memset (edid_info, 0, sizeof (*edid_info));
+
+  edid = grub_efi_open_protocol (gop_handle, &active_edid_guid,
+				 GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+  if (!edid || edid->size_of_edid == 0)
+    edid = grub_efi_open_protocol (gop_handle, &discovered_edid_guid,
+				   GRUB_EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+
+  if (!edid || edid->size_of_edid == 0)
+    {
+      char edidname[] = "agp-internal-edid";
+      grub_size_t datasize;
+      grub_uint8_t *data;
+      data = grub_efi_get_variable (edidname, &efi_var_guid, &datasize);
+      if (data && datasize > 16)
+	{
+	  copy_size = datasize - 16;
+	  if (copy_size > sizeof (*edid_info))
+	    copy_size = sizeof (*edid_info);
+	  grub_memcpy (edid_info, data + 16, copy_size);
+	  grub_free (data);
+	  return GRUB_ERR_NONE;
+	}
+      return grub_error (GRUB_ERR_BAD_DEVICE, "EDID information not available");
+    }
+
+  copy_size = edid->size_of_edid;
+  if (copy_size > sizeof (*edid_info))
+    copy_size = sizeof (*edid_info);
+  grub_memcpy (edid_info, edid->edid, copy_size);
+
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+grub_gop_get_preferred_mode (unsigned int *width, unsigned int *height)
+{
+  struct grub_video_edid_info edid_info;
+  grub_err_t err;
+
+  err = grub_video_gop_get_edid (&edid_info);
+  if (err)
+    return err;
+  err = grub_video_edid_checksum (&edid_info);
+  if (err)
+    return err;
+  err = grub_video_edid_preferred_mode (&edid_info, width, height);
+  if (err)
+    return err;
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
 grub_video_gop_setup (unsigned int width, unsigned int height,
 		      unsigned int mode_type,
 		      unsigned int mode_mask __attribute__ ((unused)))
@@ -230,9 +358,23 @@ grub_video_gop_setup (unsigned int width, unsigned int height,
   unsigned bpp;
   int found = 0;
   unsigned long long best_volume = 0;
+  unsigned int preferred_width = 0, preferred_height = 0;
+  grub_uint8_t *buffer;
 
   depth = (mode_type & GRUB_VIDEO_MODE_TYPE_DEPTH_MASK)
     >> GRUB_VIDEO_MODE_TYPE_DEPTH_POS;
+
+  if (width == 0 && height == 0)
+    {
+      err = 1;
+      grub_gop_get_preferred_mode (&preferred_width, &preferred_height);
+      if (err || preferred_width >= 4096 || preferred_height >= 4096)
+	{
+	  preferred_width = 800;
+	  preferred_height = 600;
+	  grub_errno = GRUB_ERR_NONE;
+	}
+    }
 
   /* Keep current mode if possible.  */
   if (gop->mode->info)
@@ -267,6 +409,13 @@ grub_video_gop_setup (unsigned int width, unsigned int height,
 
 	  grub_dprintf ("video", "GOP: mode %d: %dx%d\n", mode, info->width,
 			info->height);
+
+	  if (preferred_width && (info->width > preferred_width
+				  || info->height > preferred_height))
+	    {
+	      grub_dprintf ("video", "GOP: mode %d: too large\n", mode);
+	      continue;
+	    }
 
 	  bpp = grub_video_gop_get_bpp (info);
 	  if (!bpp)
@@ -326,13 +475,28 @@ grub_video_gop_setup (unsigned int width, unsigned int height,
     }
 
   framebuffer.ptr = (void *) (grub_addr_t) gop->mode->fb_base;
+  framebuffer.offscreen
+    = grub_malloc (framebuffer.mode_info.height
+		   * framebuffer.mode_info.width 
+		   * sizeof (struct grub_efi_gop_blt_pixel));
 
+  buffer = framebuffer.offscreen;
+      
+  if (!buffer)
+    {
+      grub_dprintf ("video", "GOP: couldn't allocate shadow\n");
+      grub_errno = 0;
+      err = grub_video_gop_fill_mode_info (gop->mode->mode, info,
+					   &framebuffer.mode_info);
+      buffer = framebuffer.ptr;
+    }
+    
   grub_dprintf ("video", "GOP: initialising FB @ %p %dx%dx%d\n",
 		framebuffer.ptr, framebuffer.mode_info.width,
 		framebuffer.mode_info.height, framebuffer.mode_info.bpp);
  
   err = grub_video_fb_create_render_target_from_pointer
-    (&framebuffer.render_target, &framebuffer.mode_info, framebuffer.ptr);
+    (&framebuffer.render_target, &framebuffer.mode_info, buffer);
 
   if (err)
     {
@@ -362,7 +526,13 @@ grub_video_gop_setup (unsigned int width, unsigned int height,
 static grub_err_t
 grub_video_gop_swap_buffers (void)
 {
-  /* TODO: Implement buffer swapping.  */
+  if (framebuffer.offscreen)
+    {
+      efi_call_10 (gop->blt, gop, framebuffer.offscreen,
+		   GRUB_EFI_BLT_BUFFER_TO_VIDEO, 0, 0, 0, 0,
+		   framebuffer.mode_info.width, framebuffer.mode_info.height,
+		   framebuffer.mode_info.width * 4);
+    }
   return GRUB_ERR_NONE;
 }
 
@@ -379,10 +549,22 @@ static grub_err_t
 grub_video_gop_get_info_and_fini (struct grub_video_mode_info *mode_info,
 				  void **framebuf)
 {
-  grub_memcpy (mode_info, &(framebuffer.mode_info), sizeof (*mode_info));
+  grub_err_t err;
+
+  err = grub_video_gop_fill_real_mode_info (gop->mode->mode, gop->mode->info,
+					    mode_info);
+  if (err)
+    {
+      grub_dprintf ("video", "GOP: couldn't fill mode info\n");
+      return err;
+    }
+
   *framebuf = (char *) framebuffer.ptr;
 
   grub_video_fb_fini ();
+
+  grub_free (framebuffer.offscreen);
+  framebuffer.offscreen = 0;
 
   return GRUB_ERR_NONE;
 }
@@ -399,6 +581,7 @@ static struct grub_video_adapter grub_video_gop_adapter =
     .setup = grub_video_gop_setup,
     .get_info = grub_video_fb_get_info,
     .get_info_and_fini = grub_video_gop_get_info_and_fini,
+    .get_edid = grub_video_gop_get_edid,
     .set_palette = grub_video_fb_set_palette,
     .get_palette = grub_video_fb_get_palette,
     .set_viewport = grub_video_fb_set_viewport,

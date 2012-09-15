@@ -37,6 +37,22 @@ struct grub_machine_mmap_entry
 
 
 /*
+ *
+ * grub_get_conv_memsize(i) :  return the conventional memory size in KB.
+ *	BIOS call "INT 12H" to get conventional memory size
+ *      The return value in AX.
+ */
+static inline grub_uint16_t
+grub_get_conv_memsize (void)
+{
+  struct grub_bios_int_registers regs;
+
+  regs.flags = GRUB_CPU_INT_FLAGS_DEFAULT;
+  grub_bios_interrupt (0x12, &regs);
+  return regs.eax & 0xffff;
+}
+
+/*
  * grub_get_ext_memsize() :  return the extended memory size in KB.
  *	BIOS call "INT 15H, AH=88H" to get extended memory size
  *	The return value in AX.
@@ -155,6 +171,10 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
     {
       grub_uint32_t eisa_mmap = grub_get_eisa_mmap ();
 
+      if (hook (0x0, ((grub_uint32_t) grub_get_conv_memsize ()) << 10,
+		GRUB_MEMORY_AVAILABLE))
+	return 0;
+
       if (eisa_mmap)
 	{
 	  if (hook (0x100000, (eisa_mmap & 0xFFFF) << 10,
@@ -162,7 +182,8 @@ grub_machine_mmap_iterate (grub_memory_hook_t hook)
 	    hook (0x1000000, eisa_mmap & ~0xFFFF, GRUB_MEMORY_AVAILABLE);
 	}
       else
-	hook (0x100000, grub_get_ext_memsize () << 10, GRUB_MEMORY_AVAILABLE);
+	hook (0x100000, ((grub_uint32_t) grub_get_ext_memsize ()) << 10,
+	      GRUB_MEMORY_AVAILABLE);
     }
 
   return 0;

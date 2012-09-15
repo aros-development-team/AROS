@@ -20,6 +20,9 @@
 echo one two three
 echo "one two three"
 echo 'one two three'
+ echo "one two three"
+   echo "one two three"
+	echo "one two three"
 
 # empty arguments
 echo a "" b
@@ -87,6 +90,13 @@ echo one'two
 echo one'two
 \'three
 
+echo "one\
+"
+echo "one\
+\""
+echo "one\
+two"
+
 # echo "one\
 # two"
 # echo 'one\
@@ -98,4 +108,76 @@ echo one'two
 # echo "one
 #
 # two"
+
+echo "one
+ "
+echo "one
+ \""
+echo "one
+ two"
+
+echo one"two
+ "three
+echo one"two
+ \""three
+echo one"two
+\"three\"
+ four"
+	
+echo 'one
+ '
+echo 'one
+ \'
+echo 'one
+ two'
+echo one'two
+ '
+echo one'two
+ \'
+echo one'two
+ \'three
+
+echo "one\
+ "
+echo "one\
+ \""
+echo "one\
+ two"
+
+echo one \
+ two
+
+echo one x\
+ two
+
+echo one x\
+"x" two
+echo one x\
+'x' two
+echo one x\
+\\ two
+
+echo one x\
+\
+x
+
+echo one x\
+
+
+
+echo one x\
+;
+
+echo one x\
+$var
+
+
+if test x$grubshell = xyes; then insmod regexp; fi
+echo /boot/grub/i386-pc/normal.mod
+echo x\\y
+echo x\*y
+echo x\\
+echo x\\\\
+echo x\\\\y
+
 

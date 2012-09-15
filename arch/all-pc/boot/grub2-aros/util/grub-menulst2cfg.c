@@ -23,6 +23,8 @@
 #include <string.h>
 #include <errno.h>
 #include <grub/util/misc.h>
+#include <grub/misc.h>
+#include <grub/i18n.h>
 
 int
 main (int argc, char **argv)
@@ -33,10 +35,11 @@ main (int argc, char **argv)
   size_t bufsize = 0;
   char *suffix = xstrdup ("");
   int suffixlen = 0;
+  const char *out_fname = 0;
 
   if (argc >= 2 && argv[1][0] == '-')
     {
-      fprintf (stdout, "Usage: %s [INFILE [OUTFILE]]\n", argv[0]);
+      fprintf (stdout, _("Usage: %s [INFILE [OUTFILE]]\n"), argv[0]);
       return 0;
     }
 
@@ -45,7 +48,7 @@ main (int argc, char **argv)
       in = fopen (argv[1], "r");
       if (!in)
 	{
-	  fprintf (stderr, "Couldn't open %s for reading: %s\n",
+	  fprintf (stderr, _("cannot open `%s': %s"),
 		   argv[1], strerror (errno));
 	  return 1;
 	}
@@ -60,10 +63,11 @@ main (int argc, char **argv)
 	{					
 	  if (in != stdin)
 	    fclose (in);
-	  fprintf (stderr, "Couldn't open %s for writing: %s\n",
+	  fprintf (stderr, _("cannot open `%s': %s"),
 		   argv[2], strerror (errno));
 	  return 1;
 	}
+      out_fname = argv[2];
     }
   else
     out = stdout;
@@ -107,7 +111,14 @@ main (int argc, char **argv)
   if (entryname)
     fprintf (out, "}\n\n");
 
-  fwrite (suffix, 1, suffixlen, out);
+  if (fwrite (suffix, 1, suffixlen, out) != suffixlen)
+    {
+      if (out_fname)
+	grub_util_error ("cannot write to `%s': %s",
+			 out_fname, strerror (errno));
+      else
+	grub_util_error ("cannot write to the stdout: %s", strerror (errno));
+    }
 
   free (buf);
   free (suffix);

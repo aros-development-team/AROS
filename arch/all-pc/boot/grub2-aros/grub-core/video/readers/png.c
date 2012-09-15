@@ -24,6 +24,8 @@
 #include <grub/misc.h>
 #include <grub/bufio.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 /* Uncomment following define to enable PNG debug.  */
 //#define PNG_DEBUG
 
@@ -623,8 +625,7 @@ grub_png_output_byte (struct grub_png_data *data, grub_uint8_t n)
 	  }
 	}
 
-      if (blank_line)
-	grub_free (blank_line);
+      grub_free (blank_line);
 
       data->cur_column = 0;
       data->first_line = 0;
@@ -876,7 +877,7 @@ grub_cmd_pngtest (grub_command_t cmd __attribute__ ((unused)),
   struct grub_video_bitmap *bitmap = 0;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   grub_video_reader_png (&bitmap, args[0]);
   if (grub_errno != GRUB_ERR_NONE)

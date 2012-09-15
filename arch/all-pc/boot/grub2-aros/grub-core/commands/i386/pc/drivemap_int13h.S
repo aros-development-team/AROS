@@ -36,7 +36,12 @@ LOCAL (base):
 	/* Map the drive number (always in DL).  */
 	push	%ax
 	push	%bx
+#ifdef __APPLE__
+	LOCAL(mapstart_offset) = INT13H_OFFSET(LOCAL (mapstart)) 
+	movw	$LOCAL(mapstart_offset), %bx
+#else
 	movw	$INT13H_OFFSET(LOCAL (mapstart)), %bx
+#endif
 
 more_remaining:
 	movw	%cs:(%bx), %ax
@@ -62,7 +67,12 @@ not_found:
 	popf
 	pushf
 
+#ifdef __APPLE__
+	LOCAL(oldhandler_offset) = INT13H_OFFSET (LOCAL (oldhandler))
+	lcall *%cs:LOCAL(oldhandler_offset)
+#else
 	lcall *%cs:INT13H_OFFSET (LOCAL (oldhandler))
+#endif
 
 	push	%bp
 	mov	%sp, %bp
@@ -85,7 +95,11 @@ norestore:
 	popf
 	pushf
 
+#ifdef __APPLE__
+	lcall *%cs:LOCAL(oldhandler_offset)
+#else
 	lcall *%cs:INT13H_OFFSET (LOCAL (oldhandler))
+#endif
 
 	push	%bp
 	mov	%sp, %bp

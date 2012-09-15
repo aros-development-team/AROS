@@ -1,2 +1,4 @@
 [NAME]
 grub-script-check \- check grub.cfg for syntax errors
+[SEE ALSO]
+.BR grub-mkconfig (8)

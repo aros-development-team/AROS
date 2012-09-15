@@ -53,8 +53,8 @@ grub_memmove (void *dest, const void *src, grub_size_t n)
 int
 grub_memcmp (const void *s1, const void *s2, grub_size_t n)
 {
-  const char *t1 = s1;
-  const char *t2 = s2;
+  const unsigned char *t1 = s1;
+  const unsigned char *t2 = s2;
 
   while (n--)
     {

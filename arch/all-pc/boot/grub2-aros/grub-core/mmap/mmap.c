@@ -26,6 +26,8 @@
 #include <grub/dl.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #ifndef GRUB_MMAP_REGISTER_BY_FIRMWARE
 
 struct grub_mmap_region *grub_mmap_overlays = 0;
@@ -137,10 +139,7 @@ grub_mmap_iterate (grub_memory_hook_t hook)
     grub_malloc (sizeof (struct grub_mmap_scan) * 2 * mmap_num);
 
   if (! scanline_events)
-    {
-      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-			 "couldn't allocate space for new memory map");
-    }
+    return grub_errno;
 
   i = 0;
 #ifndef GRUB_MMAP_REGISTER_BY_FIRMWARE
@@ -235,11 +234,7 @@ grub_mmap_register (grub_uint64_t start, grub_uint64_t size, int type)
   cur = (struct grub_mmap_region *)
     grub_malloc (sizeof (struct grub_mmap_region));
   if (! cur)
-    {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY,
-		  "couldn't allocate memory map overlay");
-      return 0;
-    }
+    return 0;
 
   cur->next = grub_mmap_overlays;
   cur->start = start;
@@ -263,11 +258,12 @@ grub_mmap_unregister (int handle)
 {
   struct grub_mmap_region *cur, *prev;
 
-  for (cur = grub_mmap_overlays, prev = 0; cur; prev= cur, cur = cur->next)
+  for (cur = grub_mmap_overlays, prev = 0; cur; prev = cur, cur = cur->next)
     if (handle == cur->handle)
       {
 	grub_err_t err;
-	if ((err = grub_machine_mmap_unregister (handle)))
+	err = grub_machine_mmap_unregister (handle);
+	if (err)
 	  return err;
 
 	if (prev)
@@ -277,7 +273,7 @@ grub_mmap_unregister (int handle)
 	grub_free (cur);
 	return GRUB_ERR_NONE;
       }
-  return grub_error (GRUB_ERR_BAD_ARGUMENT, "mmap overlay not found");
+  return grub_error (GRUB_ERR_BUG, "mmap overlay not found");
 }
 
 #endif /* ! GRUB_MMAP_REGISTER_BY_FIRMWARE */
@@ -365,7 +361,7 @@ grub_cmd_badram (grub_command_t cmd __attribute__ ((unused)),
   }
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "badram string required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   grub_dprintf ("badram", "executing badram\n");
 
@@ -447,7 +443,7 @@ grub_cmd_cutmem (grub_command_t cmd __attribute__ ((unused)),
   }
 
   if (argc != 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "argements required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
 
   from = parsemem (args[0]);
   if (grub_errno)
@@ -469,7 +465,7 @@ GRUB_MOD_INIT(mmap)
 {
   cmd = grub_register_command ("badram", grub_cmd_badram,
 			       N_("ADDR1,MASK1[,ADDR2,MASK2[,...]]"),
-			       N_("Declare memory regions as badram."));
+			       N_("Declare memory regions as faulty (badram)."));
   cmd_cut = grub_register_command ("cutmem", grub_cmd_cutmem,
 				   N_("FROM[K|M|G] TO[K|M|G]"),
 				   N_("Remove any memory regions in specified range."));

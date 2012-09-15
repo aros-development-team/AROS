@@ -27,7 +27,7 @@ static void
 example_test (void)
 {
   /* Check if 1st argument is true and report with default error message.  */
-  grub_test_assert (1 == 1);
+  grub_test_assert (1 == 1, "1 equal 1 expected");
 
   /* Check if 1st argument is true and report with custom error message.  */
   grub_test_assert (2 == 2, "2 equal 2 expected");

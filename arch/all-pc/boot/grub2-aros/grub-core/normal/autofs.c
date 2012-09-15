@@ -57,7 +57,8 @@ read_fs_list (const char *prefix)
     {
       char *filename;
 
-      filename = grub_xasprintf ("%s/fs.lst", prefix);
+      filename = grub_xasprintf ("%s/" GRUB_TARGET_CPU "-" GRUB_PLATFORM
+				 "/fs.lst", prefix);
       if (filename)
 	{
 	  grub_file_t file;
@@ -103,13 +104,20 @@ read_fs_list (const char *prefix)
 
 		  /* If the line is empty, skip it.  */
 		  if (p >= q)
-		    continue;
+		    {
+		      grub_free (buf);
+		      continue;
+		    }
 
 		  fs_mod = grub_malloc (sizeof (*fs_mod));
 		  if (! fs_mod)
-		    continue;
+		    {
+		      grub_free (buf);
+		      continue;
+		    }
 
 		  fs_mod->name = grub_strdup (p);
+		  grub_free (buf);
 		  if (! fs_mod->name)
 		    {
 		      grub_free (fs_mod);

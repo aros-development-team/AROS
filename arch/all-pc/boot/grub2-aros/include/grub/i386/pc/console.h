@@ -26,16 +26,6 @@
 #include <grub/term.h>
 #include <grub/i386/vga_common.h>
 
-/* These are global to share code between C and asm.  */
-int grub_console_getkey (struct grub_term_input *term);
-grub_uint16_t grub_console_getxy (struct grub_term_output *term);
-void grub_console_gotoxy (struct grub_term_output *term,
-			  grub_uint8_t x, grub_uint8_t y);
-void grub_console_cls (struct grub_term_output *term);
-void grub_console_setcursor (struct grub_term_output *term, int on);
-void grub_console_putchar (struct grub_term_output *term,
-			   const struct grub_unicode_glyph *c);
-
 /* Initialize the console system.  */
 void grub_console_init (void);
 

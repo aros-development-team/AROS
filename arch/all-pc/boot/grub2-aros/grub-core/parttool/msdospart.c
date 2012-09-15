@@ -27,13 +27,16 @@
 #include <grub/disk.h>
 #include <grub/partition.h>
 #include <grub/parttool.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv2+");
 
 static int activate_table_handle = -1;
 static int type_table_handle = -1;
 
 static struct grub_parttool_argdesc grub_pcpart_bootargs[] =
 {
-  {"boot", "Make partition active", GRUB_PARTTOOL_ARG_BOOL},
+  {"boot", N_("Make partition active"), GRUB_PARTTOOL_ARG_BOOL},
   {0, 0, 0}
 };
 
@@ -45,7 +48,7 @@ static grub_err_t grub_pcpart_boot (const grub_device_t dev,
   struct grub_msdos_partition_mbr mbr;
 
   if (dev->disk->partition->offset)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "not a primary partition");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("not a primary partition"));
 
   index = dev->disk->partition->index;
   part = dev->disk->partition;
@@ -63,12 +66,12 @@ static grub_err_t grub_pcpart_boot (const grub_device_t dev,
       for (i = 0; i < 4; i++)
 	mbr.entries[i].flag = 0x0;
       mbr.entries[index].flag = 0x80;
-      grub_printf ("Partition %d is active now. \n", index);
+      grub_printf_ (N_("Partition %d is active now. \n"), index);
     }
   else
     {
       mbr.entries[index].flag = 0x0;
-      grub_printf ("Cleared active flag on %d. \n", index);
+      grub_printf (N_("Cleared active flag on %d. \n"), index);
     }
 
    /* Write the MBR.  */
@@ -81,8 +84,8 @@ static grub_err_t grub_pcpart_boot (const grub_device_t dev,
 
 static struct grub_parttool_argdesc grub_pcpart_typeargs[] =
 {
-  {"type", "Change partition type", GRUB_PARTTOOL_ARG_VAL},
-  {"hidden", "Make partition hidden", GRUB_PARTTOOL_ARG_BOOL},
+  {"type", N_("Change partition type"), GRUB_PARTTOOL_ARG_VAL},
+  {"hidden", N_("Set `hidden' flag in partition type"), GRUB_PARTTOOL_ARG_BOOL},
   {0, 0, 0}
 };
 
@@ -123,11 +126,15 @@ static grub_err_t grub_pcpart_type (const grub_device_t dev,
       || grub_msdos_partition_is_extended (type))
     {
       dev->disk->partition = part;
-      return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid type");
+      return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			 N_("the partition type 0x%x isn't "
+			    "valid"));
     }
 
   mbr.entries[index].type = type;
-  grub_printf ("Setting partition type to 0x%x\n", type);
+  /* TRANSLATORS: In this case we're actually writing to the disk and actively
+     modifying partition type rather than just defining it.  */
+  grub_printf_ (N_("Setting partition type to 0x%x\n"), type);
 
    /* Write the parttable.  */
   grub_disk_write (dev->disk, part->offset, 0,

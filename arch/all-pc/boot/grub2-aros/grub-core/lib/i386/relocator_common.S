@@ -42,12 +42,40 @@ LOCAL(base):
 	/* %rax contains now our new 'base'.  */
 	mov	RAX, RSI
 
+#ifdef __APPLE__
+	LOCAL(cont0_offset) = LOCAL(cont0) - LOCAL(base)
+	add	$LOCAL(cont0_offset), RAX
+#else
 	add	$(LOCAL(cont0) - LOCAL(base)), RAX
+#endif
 	jmp	*RAX
 LOCAL(cont0):
 	.endm
 
 	.macro RELOAD_GDT
+#ifdef __APPLE__
+	LOCAL(cont1_offset) = LOCAL(cont1) - LOCAL(base)
+	LOCAL(jump_vector_offset) = LOCAL(jump_vector) - LOCAL(base)
+	LOCAL(gdt_offset) = LOCAL(gdt) - LOCAL(base)
+	LOCAL(gdt_addr_offset) = LOCAL(gdt_addr) - LOCAL(base)
+	LOCAL(gdtdesc_offset) = LOCAL(gdtdesc) - LOCAL(base)
+
+	lea	LOCAL(cont1_offset) (RSI, 1), RAX
+	movl	%eax, LOCAL(jump_vector_offset) (RSI, 1)
+
+	lea	LOCAL(gdt_offset) (RSI, 1), RAX
+	mov	RAX, (LOCAL(gdt_addr_offset)) (RSI, 1)
+	
+	/* Switch to compatibility mode. */
+	lgdt	(LOCAL(gdtdesc_offset)) (RSI, 1)
+
+	/* Update %cs.  */
+	ljmp	*(LOCAL(jump_vector_offset)) (RSI, 1)
+	.p2align	4
+LOCAL(gdtdesc):
+	LOCAL(gdtsize) = LOCAL(gdt_end) - LOCAL(gdt)
+	.word	LOCAL(gdtsize)
+#else
 	lea	(LOCAL(cont1) - LOCAL(base)) (RSI, 1), RAX
 	movl	%eax, (LOCAL(jump_vector) - LOCAL(base)) (RSI, 1)
 
@@ -63,6 +91,7 @@ LOCAL(cont0):
 	.p2align	4
 LOCAL(gdtdesc):
 	.word	LOCAL(gdt_end) - LOCAL(gdt)
+#endif
 LOCAL(gdt_addr):
 #ifdef __x86_64__
 	/* Filled by the code. */

@@ -20,6 +20,9 @@
 #include <grub/misc.h>
 #include <grub/extcmd.h>
 #include <grub/test.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_err_t
 grub_functional_test (grub_extcmd_context_t ctxt __attribute__ ((unused)),

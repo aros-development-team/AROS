@@ -61,6 +61,18 @@ grub_err_t EXPORT_FUNC (grub_efi_set_virtual_address_map) (grub_efi_uintn_t memo
 							   grub_efi_uintn_t descriptor_size,
 							   grub_efi_uint32_t descriptor_version,
 							   grub_efi_memory_descriptor_t *virtual_map);
+void *EXPORT_FUNC (grub_efi_get_variable) (const char *variable,
+					   const grub_efi_guid_t *guid,
+					   grub_size_t *datasize_out);
+int
+EXPORT_FUNC (grub_efi_compare_device_paths) (const grub_efi_device_path_t *dp1,
+					     const grub_efi_device_path_t *dp2);
+
+extern void (*EXPORT_VAR(grub_efi_net_config)) (grub_efi_handle_t hnd, 
+						char **device,
+						char **path);
+
+grub_addr_t grub_efi_modules_addr (void);
 
 void grub_efi_mm_init (void);
 void grub_efi_mm_fini (void);
@@ -73,5 +85,10 @@ extern grub_efi_system_table_t *EXPORT_VAR(grub_efi_system_table);
 extern grub_efi_handle_t EXPORT_VAR(grub_efi_image_handle);
 
 extern int EXPORT_VAR(grub_efi_is_finished);
+
+struct grub_net_card;
+
+grub_efi_handle_t
+grub_efinet_get_device_handle (struct grub_net_card *card);
 
 #endif /* ! GRUB_EFI_EFI_HEADER */

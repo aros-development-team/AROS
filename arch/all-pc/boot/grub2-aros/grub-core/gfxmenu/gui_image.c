@@ -101,6 +101,9 @@ image_get_parent (void *vself)
 static grub_err_t
 rescale_image (grub_gui_image_t self)
 {
+  signed width;
+  signed height;
+
   if (! self->raw_bitmap)
     {
       if (self->bitmap)
@@ -111,12 +114,12 @@ rescale_image (grub_gui_image_t self)
       return grub_errno;
     }
 
-  unsigned width = self->bounds.width;
-  unsigned height = self->bounds.height;
+  width = self->bounds.width;
+  height = self->bounds.height;
 
   if (self->bitmap
-      && (grub_video_bitmap_get_width (self->bitmap) == width)
-      && (grub_video_bitmap_get_height (self->bitmap) == height))
+      && ((signed) grub_video_bitmap_get_width (self->bitmap) == width)
+      && ((signed) grub_video_bitmap_get_height (self->bitmap) == height))
     {
       /* Nothing to do; already the right size.  */
       return grub_errno;
@@ -131,15 +134,15 @@ rescale_image (grub_gui_image_t self)
 
   /* Create a scaled bitmap, unless the requested size is the same
      as the raw size -- in that case a reference is made.  */
-  if (grub_video_bitmap_get_width (self->raw_bitmap) == width
-      && grub_video_bitmap_get_height (self->raw_bitmap) == height)
+  if ((signed) grub_video_bitmap_get_width (self->raw_bitmap) == width
+      && (signed) grub_video_bitmap_get_height (self->raw_bitmap) == height)
     {
       self->bitmap = self->raw_bitmap;
       return grub_errno;
     }
 
   /* Don't scale to an invalid size.  */
-  if (width == 0 || height == 0)
+  if (width <= 0 || height <= 0)
     return grub_errno;
 
   /* Create the scaled bitmap.  */
@@ -148,11 +151,6 @@ rescale_image (grub_gui_image_t self)
                                    height,
                                    self->raw_bitmap,
                                    GRUB_VIDEO_BITMAP_SCALE_METHOD_BEST);
-  if (grub_errno != GRUB_ERR_NONE)
-    {
-      grub_error_push ();
-      grub_error (grub_errno, "failed to scale bitmap for image component");
-    }
   return grub_errno;
 }
 
@@ -221,7 +219,7 @@ image_set_property (void *vself, const char *name, const char *value)
 
       /* Resolve to an absolute path.  */
       if (! self->theme_dir)
-	return grub_error (GRUB_ERR_BAD_ARGUMENT, "unspecified theme_dir");
+	return grub_error (GRUB_ERR_BUG, "unspecified theme_dir");
       absvalue = grub_resolve_relative_path (self->theme_dir, value);
       if (! absvalue)
 	return grub_errno;

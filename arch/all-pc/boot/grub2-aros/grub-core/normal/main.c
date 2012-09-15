@@ -33,6 +33,8 @@
 #include <grub/charset.h>
 #include <grub/script_sh.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define GRUB_DEFAULT_HISTORY_SIZE	50
 
 static int nested_level = 0;
@@ -43,10 +45,10 @@ char *
 grub_file_getline (grub_file_t file)
 {
   char c;
-  int pos = 0;
-  int literal = 0;
+  grub_size_t pos = 0;
   char *cmdline;
-  int max_len = 64;
+  int have_newline = 0;
+  grub_size_t max_len = 64;
 
   /* Initially locate some space.  */
   cmdline = grub_malloc (max_len);
@@ -62,59 +64,32 @@ grub_file_getline (grub_file_t file)
       if (c == '\r')
 	continue;
 
-      /* Replace tabs with spaces.  */
-      if (c == '\t')
-	c = ' ';
 
-      /* The previous is a backslash, then...  */
-      if (literal)
+      if (pos + 1 >= max_len)
 	{
-	  /* If it is a newline, replace it with a space and continue.  */
-	  if (c == '\n')
+	  char *old_cmdline = cmdline;
+	  max_len = max_len * 2;
+	  cmdline = grub_realloc (cmdline, max_len);
+	  if (! cmdline)
 	    {
-	      c = ' ';
-
-	      /* Go back to overwrite the backslash.  */
-	      if (pos > 0)
-		pos--;
+	      grub_free (old_cmdline);
+	      return 0;
 	    }
-
-	  literal = 0;
 	}
 
-      if (c == '\\')
-	literal = 1;
-
-      if (pos == 0)
+      if (c == '\n')
 	{
-	  if (! grub_isspace (c))
-	    cmdline[pos++] = c;
+	  have_newline = 1;
+	  break;
 	}
-      else
-	{
-	  if (pos >= max_len)
-	    {
-	      char *old_cmdline = cmdline;
-	      max_len = max_len * 2;
-	      cmdline = grub_realloc (cmdline, max_len);
-	      if (! cmdline)
-		{
-		  grub_free (old_cmdline);
-		  return 0;
-		}
-	    }
 
-	  if (c == '\n')
-	    break;
-
-	  cmdline[pos++] = c;
-	}
+      cmdline[pos++] = c;
     }
 
   cmdline[pos] = '\0';
 
   /* If the buffer is empty, don't return anything at all.  */
-  if (pos == 0)
+  if (pos == 0 && !have_newline)
     {
       grub_free (cmdline);
       cmdline = 0;
@@ -131,7 +106,25 @@ grub_normal_free_menu (grub_menu_t menu)
   while (entry)
     {
       grub_menu_entry_t next_entry = entry->next;
+      grub_size_t i;
 
+      if (entry->classes)
+	{
+	  struct grub_menu_entry_class *class;
+	  for (class = entry->classes; class; class = class->next)
+	    grub_free (class->name);
+	  grub_free (entry->classes);
+	}
+
+      if (entry->args)
+	{
+	  for (i = 0; entry->args[i]; i++)
+	    grub_free (entry->args[i]);
+	  grub_free (entry->args);
+	}
+
+      grub_free ((void *) entry->id);
+      grub_free ((void *) entry->users);
       grub_free ((void *) entry->title);
       grub_free ((void *) entry->sourcecode);
       entry = next_entry;
@@ -145,6 +138,8 @@ static grub_menu_t
 read_config_file (const char *config)
 {
   grub_file_t file;
+  const char *old_file, *old_dir;
+  char *config_dir, *ptr = 0;
 
   auto grub_err_t getline (char **line, int cont);
   grub_err_t getline (char **line, int cont __attribute__ ((unused)))
@@ -183,6 +178,19 @@ read_config_file (const char *config)
   if (! file)
     return 0;
 
+  old_file = grub_env_get ("config_file");
+  old_dir = grub_env_get ("config_directory");
+  grub_env_set ("config_file", config);
+  config_dir = grub_strdup (config);
+  if (config_dir)
+    ptr = grub_strrchr (config_dir, '/');
+  if (ptr)
+    *ptr = 0;
+  grub_env_set ("config_directory", config_dir);
+
+  grub_env_export ("config_file");
+  grub_env_export ("config_directory");
+
   while (1)
     {
       char *line;
@@ -198,6 +206,15 @@ read_config_file (const char *config)
       grub_free (line);
     }
 
+  if (old_file)
+    grub_env_set ("config_file", old_file);
+  else
+    grub_env_unset ("config_file");
+  if (old_dir)
+    grub_env_set ("config_directory", old_dir);
+  else
+    grub_env_unset ("config_directory");
+
   grub_file_close (file);
 
   return newmenu;
@@ -207,7 +224,7 @@ read_config_file (const char *config)
 void
 grub_normal_init_page (struct grub_term_output *term)
 {
-  int msg_len;
+  grub_ssize_t msg_len;
   int posx;
   const char *msg = _("GNU GRUB  version %s");
   char *msg_formatted;
@@ -249,6 +266,7 @@ read_lists (const char *val)
       read_crypto_list (val);
       read_terminal_list (val);
     }
+  grub_gettext_reread_prefix (val);
 }
 
 static char *
@@ -272,7 +290,6 @@ grub_normal_execute (const char *config, int nested, int batch)
       prefix = grub_env_get ("prefix");
       read_lists (prefix);
       grub_register_variable_hook ("prefix", NULL, read_lists_hook);
-      grub_command_execute ("parser.grub", 0, 0);
     }
 
   if (config)
@@ -287,7 +304,7 @@ grub_normal_execute (const char *config, int nested, int batch)
     {
       if (menu && menu->size)
 	{
-	  grub_show_menu (menu, nested);
+	  grub_show_menu (menu, nested, 0);
 	  if (nested)
 	    grub_normal_free_menu (menu);
 	}
@@ -384,9 +401,11 @@ grub_normal_read_line_real (char **line, int cont, int nested)
   const char *prompt;
 
   if (cont)
-    prompt = ">";
+    /* TRANSLATORS: it's command line prompt.  */
+    prompt = _(">");
   else
-    prompt = "grub>";
+    /* TRANSLATORS: it's command line prompt.  */
+    prompt = _("grub>");
 
   if (!prompt)
     return grub_errno;
@@ -395,7 +414,7 @@ grub_normal_read_line_real (char **line, int cont, int nested)
     {
       *line = grub_cmdline_get (prompt);
       if (*line)
-	break;
+	return 0;
 
       if (cont || nested)
 	{
@@ -404,8 +423,7 @@ grub_normal_read_line_real (char **line, int cont, int nested)
 	  return grub_errno;
 	}
     }
-  
-  return 0;
+ 
 }
 
 static grub_err_t
@@ -471,11 +489,19 @@ grub_mini_cmd_clear (struct grub_command *cmd __attribute__ ((unused)),
 static grub_command_t cmd_clear;
 
 static void (*grub_xputs_saved) (const char *str);
+static const char *features[] = {
+  "feature_chainloader_bpb", "feature_ntldr", "feature_platform_search_hint",
+  "feature_default_font_path", "feature_all_video_module",
+  "feature_menuentry_id", "feature_menuentry_options", "feature_200_final"
+};
 
 GRUB_MOD_INIT(normal)
 {
+  unsigned i;
+
   /* Previously many modules depended on gzio. Be nice to user and load it.  */
   grub_dl_load ("gzio");
+  grub_errno = 0;
 
   grub_normal_auth_init ();
   grub_context_init ();
@@ -496,6 +522,7 @@ GRUB_MOD_INIT(normal)
   grub_set_history (GRUB_DEFAULT_HISTORY_SIZE);
 
   grub_register_variable_hook ("pager", 0, grub_env_write_pager);
+  grub_env_export ("pager");
 
   /* Register a command "normal" for the rescue mode.  */
   grub_register_command ("normal", grub_cmd_normal,
@@ -514,6 +541,16 @@ GRUB_MOD_INIT(normal)
   /* Set default color names.  */
   grub_env_set ("color_normal", "white/black");
   grub_env_set ("color_highlight", "black/white");
+
+  for (i = 0; i < ARRAY_SIZE (features); i++)
+    {
+      grub_env_set (features[i], "y");
+      grub_env_export (features[i]);
+    }
+  grub_env_set ("grub_cpu", GRUB_TARGET_CPU);
+  grub_env_export ("grub_cpu");
+  grub_env_set ("grub_platform", GRUB_PLATFORM);
+  grub_env_export ("grub_platform");
 }
 
 GRUB_MOD_FINI(normal)

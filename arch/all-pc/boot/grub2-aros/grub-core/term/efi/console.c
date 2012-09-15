@@ -234,6 +234,7 @@ grub_console_setcursor (struct grub_term_output *term __attribute__ ((unused)),
 static grub_err_t
 grub_efi_console_init (struct grub_term_output *term)
 {
+  grub_efi_set_text_mode (1);
   grub_console_setcursor (term, 1);
   return 0;
 }
@@ -242,6 +243,7 @@ static grub_err_t
 grub_efi_console_fini (struct grub_term_output *term)
 {
   grub_console_setcursor (term, 0);
+  grub_efi_set_text_mode (0);
   return 0;
 }
 

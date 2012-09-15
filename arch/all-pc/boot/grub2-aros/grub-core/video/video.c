@@ -21,6 +21,9 @@
 #include <grub/dl.h>
 #include <grub/misc.h>
 #include <grub/mm.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* The list of video adapters registered to system.  */
 grub_video_adapter_t grub_video_adapter_list = NULL;
@@ -374,6 +377,51 @@ grub_video_get_active_render_target (struct grub_video_render_target **target)
   return grub_video_adapter_active->get_active_render_target (target);
 }
 
+grub_err_t
+grub_video_edid_checksum (struct grub_video_edid_info *edid_info)
+{
+  const char *edid_bytes = (const char *) edid_info;
+  int i;
+  char checksum = 0;
+
+  /* Check EDID checksum.  */
+  for (i = 0; i < 128; ++i)
+    checksum += edid_bytes[i];
+
+  if (checksum != 0)
+    return grub_error (GRUB_ERR_BAD_DEVICE,
+		       "invalid EDID checksum %d", checksum);
+
+  grub_errno = GRUB_ERR_NONE;
+  return grub_errno;
+}
+
+grub_err_t
+grub_video_edid_preferred_mode (struct grub_video_edid_info *edid_info,
+				unsigned int *width, unsigned int *height)
+{
+  /* Bit 1 in the Feature Support field indicates that the first
+     Detailed Timing Description is the preferred timing mode.  */
+  if (edid_info->version == 1 /* we don't understand later versions */
+      && (edid_info->feature_support
+	  & GRUB_VIDEO_EDID_FEATURE_PREFERRED_TIMING_MODE)
+      && edid_info->detailed_timings[0].pixel_clock)
+    {
+      *width = edid_info->detailed_timings[0].horizontal_active_lo
+	       | (((unsigned int)
+		   (edid_info->detailed_timings[0].horizontal_hi & 0xf0))
+		  << 4);
+      *height = edid_info->detailed_timings[0].vertical_active_lo
+		| (((unsigned int)
+		    (edid_info->detailed_timings[0].vertical_hi & 0xf0))
+		   << 4);
+      if (*width && *height)
+	return GRUB_ERR_NONE;
+    }
+
+  return grub_error (GRUB_ERR_BAD_DEVICE, "no preferred mode available");
+}
+
 /* Parse <width>x<height>[x<depth>]*/
 static grub_err_t
 parse_modespec (const char *current_mode, int *width, int *height, int *depth)
@@ -394,7 +442,7 @@ parse_modespec (const char *current_mode, int *width, int *height, int *depth)
   param = grub_strchr(param, 'x');
   if (param == NULL)
     return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		       "Invalid mode: %s\n",
+		       N_("invalid video mode specification `%s'"),
 		       current_mode);
 
   param++;
@@ -402,7 +450,7 @@ parse_modespec (const char *current_mode, int *width, int *height, int *depth)
   *width = grub_strtoul (value, 0, 0);
   if (grub_errno != GRUB_ERR_NONE)
       return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			 "Invalid mode: %s\n",
+			 N_("invalid video mode specification `%s'"),
 			 current_mode);
   
   /* Find height value.  */
@@ -413,7 +461,7 @@ parse_modespec (const char *current_mode, int *width, int *height, int *depth)
       *height = grub_strtoul (value, 0, 0);
       if (grub_errno != GRUB_ERR_NONE)
 	return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			   "Invalid mode: %s\n",
+			   N_("invalid video mode specification `%s'"),
 			   current_mode);
     }
   else
@@ -424,7 +472,7 @@ parse_modespec (const char *current_mode, int *width, int *height, int *depth)
       *height = grub_strtoul (value, 0, 0);
       if (grub_errno != GRUB_ERR_NONE)
 	return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			   "Invalid mode: %s\n",
+			   N_("invalid video mode specification `%s'"),
 			   current_mode);
       
       /* Convert color depth value.  */
@@ -432,7 +480,7 @@ parse_modespec (const char *current_mode, int *width, int *height, int *depth)
       *depth = grub_strtoul (value, 0, 0);
       if (grub_errno != GRUB_ERR_NONE)
 	return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			   "Invalid mode: %s\n",
+			   N_("invalid video mode specification `%s'"),
 			   current_mode);
     }
   return GRUB_ERR_NONE;
@@ -457,8 +505,7 @@ grub_video_set_mode (const char *modestring,
   next_mode = modevar;
 
   if (! modevar)
-    return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-		       "couldn't allocate space for local modevar copy");
+    return grub_errno;
 
   if (grub_memcmp (next_mode, "keep", sizeof ("keep")) == 0
       || grub_memcmp (next_mode, "keep,", sizeof ("keep,") - 1) == 0
@@ -494,8 +541,11 @@ grub_video_set_mode (const char *modestring,
 	{
 	  grub_free (modevar);
 
+	  /* TRANSLATORS: This doesn't imply that there is no available video
+	     mode at all. All modes may have been filtered out by some criteria.
+	   */
 	  return grub_error (GRUB_ERR_BAD_ARGUMENT,
-			     "no suitable mode found");
+			     N_("no suitable video mode found"));
 	}
 
       /* Skip separator. */
@@ -659,15 +709,5 @@ grub_video_set_mode (const char *modestring,
   grub_free (modevar);
 
   return grub_error (GRUB_ERR_BAD_ARGUMENT,
-		     "no suitable mode found");
-}
-
-/* Initialize Video API module.  */
-GRUB_MOD_INIT(video)
-{
-}
-
-/* Finalize Video API module.  */
-GRUB_MOD_FINI(video)
-{
+		     N_("no suitable video mode found"));
 }

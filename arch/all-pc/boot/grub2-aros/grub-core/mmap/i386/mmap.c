@@ -54,7 +54,7 @@ grub_mmap_malign_and_register (grub_uint64_t align, grub_uint64_t size,
     {
       /* FIXME: use low-memory mm allocation once it's available. */
       grub_mmap_iterate (find_hook);
-      ret = UINT_TO_PTR (highestlow);
+      ret = (void *) (grub_addr_t) highestlow;
     }
   else
     ret = grub_memalign (align, size);
@@ -65,7 +65,7 @@ grub_mmap_malign_and_register (grub_uint64_t align, grub_uint64_t size,
       return 0;
     }
 
-  *handle = grub_mmap_register (PTR_TO_UINT64 (ret), size, type);
+  *handle = grub_mmap_register ((grub_addr_t) ret, size, type);
   if (! *handle)
     {
       grub_free (ret);
@@ -93,7 +93,7 @@ grub_mmap_free_and_unregister (int handle)
   grub_mmap_unregister (handle);
 
   if (addr >= 0x100000)
-    grub_free (UINT_TO_PTR (addr));
+    grub_free ((void *) (grub_addr_t) addr);
 }
 
 #endif

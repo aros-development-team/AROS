@@ -28,7 +28,9 @@ void
 grub_halt (void)
 {
   grub_machine_fini ();
+#ifndef __ia64__
   grub_acpi_halt ();
+#endif
   efi_call_4 (grub_efi_system_table->runtime_services->reset_system,
               GRUB_EFI_RESET_SHUTDOWN, GRUB_EFI_SUCCESS, 0, NULL);
 

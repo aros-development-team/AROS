@@ -46,10 +46,16 @@
  *  This is the area for all of the special variables.
  */
 
-	.p2align	2	/* force 4-byte alignment */
-
 protstack:
 	.long	GRUB_MEMORY_MACHINE_PROT_STACK
+
+	.macro PROT_TO_REAL
+	call	prot_to_real
+	.endm
+
+	.macro REAL_TO_PROT
+	DATA32	call	real_to_prot
+	.endm
 
 /*
  * This is the Global Descriptor Table
@@ -71,7 +77,7 @@ protstack:
  *  description.
  */
 
-	.p2align	2	/* force 4-byte alignment */
+	.p2align	5	/* force 4-byte alignment */
 gdt:
 	.word	0, 0
 	.byte	0, 0, 0, 0
@@ -105,10 +111,17 @@ gdt:
 	.byte	0, 0x92, 0, 0
 
 
+	.p2align 5
 /* this is the GDT descriptor */
 gdtdesc:
 	.word	0x27			/* limit */
 	.long	gdt			/* addr */
+LOCAL(realidt):
+	.word 0x400
+	.long 0
+protidt:
+	.word 0
+	.long 0
 
 /*
  *  These next two routines, "real_to_prot" and "prot_to_real" are structured
@@ -160,12 +173,37 @@ protcseg:
 	/* zero %eax */
 	xorl	%eax, %eax
 
+	sidt LOCAL(realidt)
+	lidt protidt
+
 	/* return on the old (or initialized) stack! */
 	ret
+/*
+ *  GRUB  --  GRand Unified Bootloader
+ *  Copyright (C) 1999,2000,2001,2002,2003,2005,2006,2007,2009,2010 Free Software Foundation, Inc.
+ *
+ *  GRUB is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  GRUB is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with GRUB.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <grub/i386/pc/memory.h>
 
 prot_to_real:
 	/* just in case, set GDT */
 	lgdt	gdtdesc
+
+	sidt    protidt
+	lidt    LOCAL(realidt)
 
 	/* save the protected mode stack */
 	movl	%esp, %eax
@@ -224,19 +262,4 @@ realcseg:
 	/* return on new stack! */
 	DATA32	ret
 
-	.code32
-
-/*
- * grub_reboot()
- *
- * Reboot the system. At the moment, rely on BIOS.
- */
-FUNCTION(grub_reboot)
-	call	prot_to_real
-	.code16
-cold_reboot:
-	/* set 0x472 to 0x0000 for cold boot (0x1234 for warm boot) */
-	movw	$0x0472, %di
-	movw	%ax, (%di)
-	ljmp	$0xf000, $0xfff0
 	.code32

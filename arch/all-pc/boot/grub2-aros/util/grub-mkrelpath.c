@@ -20,88 +20,82 @@
 #include <config.h>
 
 #include <stdio.h>
+#include <string.h>
 #include <grub/util/misc.h>
 #include <grub/emu/misc.h>
 #include <grub/i18n.h>
-#include <getopt.h>
+
+#define _GNU_SOURCE	1
+#include <argp.h>
 
 #include "progname.h"
 
-static struct option options[] =
-  {
-    {"help", no_argument, 0, 'h'},
-    {"version", no_argument, 0, 'V'},
-    {0, 0, 0, 0},
-  };
-
-static void
-usage (int status)
+struct arguments
 {
-  if (status)
-    fprintf (stderr, "Try `%s --help' for more information.\n", program_name);
-  else
-    printf ("\
-Usage: %s [OPTIONS] PATH\n\
-\n\
-Make a system path relative to its root.\n\
-\n\
-Options:\n\
-  -h, --help                display this message and exit\n\
-  -V, --version             print version information and exit\n\
-\n\
-Report bugs to <%s>.\n", program_name, PACKAGE_BUGREPORT);
+  char *pathname;
+};
 
-  exit (status);
+static struct argp_option options[] = {
+  { 0, 0, 0, 0, 0, 0 }
+};
+
+static error_t
+argp_parser (int key, char *arg, struct argp_state *state)
+{
+  /* Get the input argument from argp_parse, which we
+     know is a pointer to our arguments structure. */
+  struct arguments *arguments = state->input;
+
+  switch (key)
+    {
+    case ARGP_KEY_ARG:
+      if (state->arg_num == 0)
+	arguments->pathname = xstrdup (arg);
+      else
+	{
+	  /* Too many arguments. */
+	  fprintf (stderr, _("Unknown extra argument `%s'."), arg);
+	  fprintf (stderr, "\n");
+	  argp_usage (state);
+	}
+      break;
+    case ARGP_KEY_NO_ARGS:
+      fprintf (stderr, "%s", _("No path is specified.\n"));
+      argp_usage (state);
+      exit (1);
+      break;
+    default:
+      return ARGP_ERR_UNKNOWN;
+    }
+  return 0;
 }
+
+static struct argp argp = {
+  options, argp_parser, N_("PATH"),
+  N_("Transform a system filename into GRUB one."),
+  NULL, NULL, NULL
+};
 
 int
 main (int argc, char *argv[])
 {
-  char *argument, *relpath;
+  char *relpath;
+  struct arguments arguments;
 
   set_program_name (argv[0]);
 
   grub_util_init_nls ();
 
+  memset (&arguments, 0, sizeof (struct arguments));
+
   /* Check for options.  */
-  while (1)
+  if (argp_parse (&argp, argc, argv, 0, 0, &arguments) != 0)
     {
-      int c = getopt_long (argc, argv, "hV", options, 0);
-
-      if (c == -1)
-	break;
-      else
-	switch (c)
-	  {
-	  case 'h':
-	    usage (0);
-	    break;
-
-	  case 'V':
-	    printf ("%s (%s) %s\n", program_name, PACKAGE_NAME, PACKAGE_VERSION);
-	    return 0;
-
-	  default:
-	    usage (1);
-	    break;
-	  }
+      fprintf (stderr, "%s", _("Error in parsing command line arguments\n"));
+      exit(1);
     }
 
-  if (optind >= argc)
-    {
-      fprintf (stderr, "No path is specified.\n");
-      usage (1);
-    }
-
-  if (optind + 1 != argc)
-    {
-      fprintf (stderr, "Unknown extra argument `%s'.\n", argv[optind + 1]);
-      usage (1);
-    }
-
-  argument = argv[optind];
-
-  relpath = grub_make_system_path_relative_to_its_root (argument);
+  relpath = grub_make_system_path_relative_to_its_root (arguments.pathname);
   printf ("%s\n", relpath);
   free (relpath);
 

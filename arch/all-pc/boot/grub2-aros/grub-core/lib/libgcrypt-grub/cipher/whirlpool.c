@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* whirlpool.c - Whirlpool hashing algorithm
  * Copyright (C) 2005 Free Software Foundation, Inc.
  *
@@ -1402,6 +1404,9 @@ gcry_md_spec_t _gcry_digest_spec_whirlpool =
     whirlpool_init, whirlpool_write, whirlpool_final, whirlpool_read,
     sizeof (whirlpool_context_t)
     ,
+#ifdef GRUB_UTIL
+    .modname = "gcry_whirlpool",
+#endif
     .blocksize = 64
   };
 

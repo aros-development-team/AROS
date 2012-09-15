@@ -19,31 +19,48 @@
 
 #include <grub/datetime.h>
 #include <grub/cmos.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
+
+#if !defined (__powerpc__) && !defined (__sparc__)
+#define grub_get_datetime_cmos grub_get_datetime
+#define grub_set_datetime_cmos grub_set_datetime
+#endif
 
 grub_err_t
-grub_get_datetime (struct grub_datetime *datetime)
+grub_get_datetime_cmos (struct grub_datetime *datetime)
 {
   int is_bcd, is_12hour;
   grub_uint8_t value, flag;
+  grub_err_t err;
 
-  flag = grub_cmos_read (GRUB_CMOS_INDEX_STATUS_B);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_STATUS_B, &flag);
+  if (err)
+    return err;
 
   is_bcd = ! (flag & GRUB_CMOS_STATUS_B_BINARY);
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_YEAR);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_YEAR, &value);
+  if (err)
+    return err;
   if (is_bcd)
     value = grub_bcd_to_num (value);
 
   datetime->year = value;
   datetime->year += (value < 80) ? 2000 : 1900;
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_MONTH);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_MONTH, &value);
+  if (err)
+    return err;
   if (is_bcd)
     value = grub_bcd_to_num (value);
 
   datetime->month = value;
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_DAY_OF_MONTH);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_DAY_OF_MONTH, &value);
+  if (err)
+    return err;
   if (is_bcd)
     value = grub_bcd_to_num (value);
 
@@ -51,7 +68,9 @@ grub_get_datetime (struct grub_datetime *datetime)
 
   is_12hour = ! (flag & GRUB_CMOS_STATUS_B_24HOUR);
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_HOUR);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_HOUR, &value);
+  if (err)
+    return err;
   if (is_12hour)
     {
       is_12hour = (value & 0x80);
@@ -68,13 +87,18 @@ grub_get_datetime (struct grub_datetime *datetime)
 
   datetime->hour = value;
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_MINUTE);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_MINUTE, &value);
+  if (err)
+    return err;
+
   if (is_bcd)
     value = grub_bcd_to_num (value);
 
   datetime->minute = value;
 
-  value = grub_cmos_read (GRUB_CMOS_INDEX_SECOND);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_SECOND, &value);
+  if (err)
+    return err;
   if (is_bcd)
     value = grub_bcd_to_num (value);
 
@@ -84,12 +108,15 @@ grub_get_datetime (struct grub_datetime *datetime)
 }
 
 grub_err_t
-grub_set_datetime (struct grub_datetime *datetime)
+grub_set_datetime_cmos (struct grub_datetime *datetime)
 {
   int is_bcd, is_12hour;
   grub_uint8_t value, flag;
+  grub_err_t err;
 
-  flag = grub_cmos_read (GRUB_CMOS_INDEX_STATUS_B);
+  err = grub_cmos_read (GRUB_CMOS_INDEX_STATUS_B, &flag);
+  if (err)
+    return err;
 
   is_bcd = ! (flag & GRUB_CMOS_STATUS_B_BINARY);
 
@@ -99,21 +126,27 @@ grub_set_datetime (struct grub_datetime *datetime)
   if (is_bcd)
     value = grub_num_to_bcd (value);
 
-  grub_cmos_write (GRUB_CMOS_INDEX_YEAR, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_YEAR, value);
+  if (err)
+    return err;
 
   value = datetime->month;
 
   if (is_bcd)
     value = grub_num_to_bcd (value);
 
-  grub_cmos_write (GRUB_CMOS_INDEX_MONTH, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_MONTH, value);
+  if (err)
+    return err;
 
   value = datetime->day;
 
   if (is_bcd)
     value = grub_num_to_bcd (value);
 
-  grub_cmos_write (GRUB_CMOS_INDEX_DAY_OF_MONTH, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_DAY_OF_MONTH, value);
+  if (err)
+    return err;
 
   value = datetime->hour;
 
@@ -135,21 +168,27 @@ grub_set_datetime (struct grub_datetime *datetime)
   if (is_12hour)
     value |= 0x80;
 
-  grub_cmos_write (GRUB_CMOS_INDEX_HOUR, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_HOUR, value);
+  if (err)
+    return err;
 
   value = datetime->minute;
 
   if (is_bcd)
     value = grub_num_to_bcd (value);
 
-  grub_cmos_write (GRUB_CMOS_INDEX_MINUTE, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_MINUTE, value);
+  if (err)
+    return err;
 
   value = datetime->second;
 
   if (is_bcd)
     value = grub_num_to_bcd (value);
 
-  grub_cmos_write (GRUB_CMOS_INDEX_SECOND, value);
+  err = grub_cmos_write (GRUB_CMOS_INDEX_SECOND, value);
+  if (err)
+    return err;
 
   return 0;
 }

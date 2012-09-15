@@ -4,11 +4,12 @@
 #include <grub/elf.h>
 #include <grub/misc.h>
 #include <grub/i386/relocator.h>
+#include <grub/i18n.h>
 
 #define ALIGN_PAGE(a)	ALIGN_UP (a, 4096)
 
 static inline grub_err_t
-load (grub_file_t file, void *where, grub_off_t off, grub_size_t size)
+load (grub_file_t file, const char *filename, void *where, grub_off_t off, grub_size_t size)
 {
   if (grub_file_seek (file, off) == (grub_off_t) -1)
     return grub_errno;
@@ -16,14 +17,14 @@ load (grub_file_t file, void *where, grub_off_t off, grub_size_t size)
     {
       if (grub_errno)
 	return grub_errno;
-      else
-	return grub_error (GRUB_ERR_BAD_OS, "file is truncated");
+      return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			 filename);
     }
   return GRUB_ERR_NONE;
 }
 
 static inline grub_err_t
-read_headers (grub_file_t file, Elf_Ehdr *e, char **shdr)
+read_headers (grub_file_t file, const char *filename, Elf_Ehdr *e, char **shdr)
 {
  if (grub_file_seek (file, 0) == (grub_off_t) -1)
     return grub_errno;
@@ -32,8 +33,8 @@ read_headers (grub_file_t file, Elf_Ehdr *e, char **shdr)
     {
       if (grub_errno)
 	return grub_errno;
-      else
-	return grub_error (GRUB_ERR_BAD_OS, "file is too short");
+      return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			 filename);
     }
 
   if (e->e_ident[EI_MAG0] != ELFMAG0
@@ -42,10 +43,10 @@ read_headers (grub_file_t file, Elf_Ehdr *e, char **shdr)
       || e->e_ident[EI_MAG3] != ELFMAG3
       || e->e_ident[EI_VERSION] != EV_CURRENT
       || e->e_version != EV_CURRENT)
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch independent ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-independent ELF magic"));
 
   if (e->e_ident[EI_CLASS] != SUFFIX (ELFCLASS))
-    return grub_error (GRUB_ERR_BAD_OS, "invalid arch dependent ELF magic");
+    return grub_error (GRUB_ERR_BAD_OS, N_("invalid arch-dependent ELF magic"));
 
   *shdr = grub_malloc (e->e_shnum * e->e_shentsize);
   if (! *shdr)
@@ -59,8 +60,8 @@ read_headers (grub_file_t file, Elf_Ehdr *e, char **shdr)
     {
       if (grub_errno)
 	return grub_errno;
-      else
-	return grub_error (GRUB_ERR_BAD_OS, "file is truncated");
+      return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			 filename);
     }
 
   return GRUB_ERR_NONE;
@@ -83,7 +84,7 @@ SUFFIX (grub_freebsd_load_elfmodule_obj) (struct grub_relocator *relocator,
   grub_size_t chunk_size = 0;
   void *chunk_src;
 
-  err = read_headers (file, &e, &shdr);
+  err = read_headers (file, argv[0], &e, &shdr);
   if (err)
     return err;
 
@@ -131,7 +132,7 @@ SUFFIX (grub_freebsd_load_elfmodule_obj) (struct grub_relocator *relocator,
 	{
 	default:
 	case SHT_PROGBITS:
-	  err = load (file, (grub_uint8_t *) chunk_src + curload - *kern_end,
+	  err = load (file, argv[0], (grub_uint8_t *) chunk_src + curload - *kern_end,
 		      s->sh_offset, s->sh_size);
 	  if (err)
 	    return err;
@@ -176,7 +177,7 @@ SUFFIX (grub_freebsd_load_elfmodule) (struct grub_relocator *relocator,
   grub_size_t chunk_size = 0;
   void *chunk_src;
 
-  err = read_headers (file, &e, &shdr);
+  err = read_headers (file, argv[0], &e, &shdr);
   if (err)
     return err;
 
@@ -194,6 +195,11 @@ SUFFIX (grub_freebsd_load_elfmodule) (struct grub_relocator *relocator,
       if (chunk_size < s->sh_addr + s->sh_size)
 	chunk_size = s->sh_addr + s->sh_size;
     }
+
+  if (chunk_size < sizeof (e))
+    chunk_size = sizeof (e);
+  chunk_size += e.e_phnum * e.e_phentsize;
+  chunk_size += e.e_shnum * e.e_shentsize;
 
   {
     grub_relocator_chunk_t ch;
@@ -224,7 +230,8 @@ SUFFIX (grub_freebsd_load_elfmodule) (struct grub_relocator *relocator,
 	{
 	default:
 	case SHT_PROGBITS:
-	  err = load (file, (grub_uint8_t *) chunk_src + module
+	  err = load (file, argv[0],
+		      (grub_uint8_t *) chunk_src + module
 		      + s->sh_addr - *kern_end,
 		      s->sh_offset, s->sh_size);
 	  if (err)
@@ -239,16 +246,16 @@ SUFFIX (grub_freebsd_load_elfmodule) (struct grub_relocator *relocator,
 	curload = module + s->sh_addr + s->sh_size;
     }
 
-  load (file, UINT_TO_PTR (module), 0, sizeof (e));
+  load (file, argv[0], (grub_uint8_t *) chunk_src + module - *kern_end, 0, sizeof (e));
   if (curload < module + sizeof (e))
     curload = module + sizeof (e);
 
-  load (file, UINT_TO_PTR (curload), e.e_shoff,
+  load (file, argv[0], (grub_uint8_t *) chunk_src + curload - *kern_end, e.e_shoff,
 	e.e_shnum * e.e_shentsize);
   e.e_shoff = curload - module;
   curload +=  e.e_shnum * e.e_shentsize;
 
-  load (file, UINT_TO_PTR (curload), e.e_phoff,
+  load (file, argv[0], (grub_uint8_t *) chunk_src + curload - *kern_end, e.e_phoff,
 	e.e_phnum * e.e_phentsize);
   e.e_phoff = curload - module;
   curload +=  e.e_phnum * e.e_phentsize;
@@ -258,14 +265,16 @@ SUFFIX (grub_freebsd_load_elfmodule) (struct grub_relocator *relocator,
   grub_freebsd_add_meta_module (argv[0], FREEBSD_MODTYPE_ELF_MODULE,
 				argc - 1, argv + 1, module,
 				curload - module);
-  return SUFFIX (grub_freebsd_load_elf_meta) (relocator, file, kern_end);
+  return SUFFIX (grub_freebsd_load_elf_meta) (relocator, file, argv[0], kern_end);
 }
 
 #endif
 
 grub_err_t
 SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
-				     grub_file_t file, grub_addr_t *kern_end)
+				     grub_file_t file,
+				     const char *filename,
+				     grub_addr_t *kern_end)
 {
   grub_err_t err;
   Elf_Ehdr e;
@@ -281,7 +290,7 @@ SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
   unsigned i;
   grub_size_t chunk_size;
 
-  err = read_headers (file, &e, &shdr);
+  err = read_headers (file, filename, &e, &shdr);
   if (err)
     return err;
 
@@ -298,7 +307,7 @@ SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
 	break;
   if (s >= (Elf_Shdr *) ((char *) shdr
 			+ e.e_shnum * e.e_shentsize))
-    return grub_error (GRUB_ERR_BAD_OS, "no symbol table");
+    return grub_error (GRUB_ERR_BAD_OS, N_("no symbol table"));
   symoff = s->sh_offset;
   symsize = s->sh_size;
   symentsize = s->sh_entsize;
@@ -333,7 +342,8 @@ SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
   if (grub_file_read (file, curload, symsize) != (grub_ssize_t) symsize)
     {
       if (! grub_errno)
-	return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			   filename);
       return grub_errno;
     }
   curload += symsize;
@@ -346,7 +356,8 @@ SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
   if (grub_file_read (file, curload, strsize) != (grub_ssize_t) strsize)
     {
       if (! grub_errno)
-	return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			   filename);
       return grub_errno;
     }
 
@@ -389,7 +400,8 @@ SUFFIX (grub_freebsd_load_elf_meta) (struct grub_relocator *relocator,
 
 grub_err_t
 SUFFIX (grub_netbsd_load_elf_meta) (struct grub_relocator *relocator,
-				    grub_file_t file, grub_addr_t *kern_end)
+				    grub_file_t file, const char *filename,
+				    grub_addr_t *kern_end)
 {
   grub_err_t err;
   Elf_Ehdr e;
@@ -403,7 +415,7 @@ SUFFIX (grub_netbsd_load_elf_meta) (struct grub_relocator *relocator,
   struct grub_netbsd_btinfo_symtab symtab;
   grub_addr_t symtarget;
 
-  err = read_headers (file, &e, &shdr);
+  err = read_headers (file, filename, &e, &shdr);
   if (err)
     return err;
 
@@ -474,7 +486,8 @@ SUFFIX (grub_netbsd_load_elf_meta) (struct grub_relocator *relocator,
   if (grub_file_read (file, curload, symsize) != (grub_ssize_t) symsize)
     {
       if (! grub_errno)
-	return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			   filename);
       return grub_errno;
     }
   curload += ALIGN_UP (symsize, sizeof (grub_freebsd_addr_t));
@@ -484,7 +497,8 @@ SUFFIX (grub_netbsd_load_elf_meta) (struct grub_relocator *relocator,
   if (grub_file_read (file, curload, strsize) != (grub_ssize_t) strsize)
     {
       if (! grub_errno)
-	return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			   filename);
       return grub_errno;
     }
 
@@ -501,6 +515,7 @@ SUFFIX (grub_netbsd_load_elf_meta) (struct grub_relocator *relocator,
 
 grub_err_t
 SUFFIX(grub_openbsd_find_ramdisk) (grub_file_t file,
+				   const char *filename,
 				   grub_addr_t kern_start,
 				   void *kern_chunk_src,
 				   struct grub_openbsd_ramdisk_descriptor *desc)
@@ -513,7 +528,7 @@ SUFFIX(grub_openbsd_find_ramdisk) (grub_file_t file,
     Elf_Shdr *s;
     char *shdr = NULL;
     
-    err = read_headers (file, &e, &shdr);
+    err = read_headers (file, filename, &e, &shdr);
     if (err)
       return err;
 
@@ -555,7 +570,8 @@ SUFFIX(grub_openbsd_find_ramdisk) (grub_file_t file,
       {
 	grub_free (syms);
 	if (! grub_errno)
-	  return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	  return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			     filename);
 	return grub_errno;
       }
 
@@ -573,7 +589,8 @@ SUFFIX(grub_openbsd_find_ramdisk) (grub_file_t file,
 	grub_free (syms);
 	grub_free (strs);
 	if (! grub_errno)
-	  return grub_error (GRUB_ERR_BAD_OS, "invalid ELF");
+	  return grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+			     filename);
 	return grub_errno;
       }
 

@@ -139,4 +139,9 @@ typedef enum grub_keyboard_key
 
 unsigned EXPORT_FUNC(grub_term_map_key) (grub_keyboard_key_t code, int status);
 
+#ifndef GRUB_MACHINE_EMU
+extern void grub_keylayouts_init (void);
+extern void grub_keylayouts_fini (void);
+#endif
+
 #endif /* GRUB_KEYBOARD_LAYOUTS  */

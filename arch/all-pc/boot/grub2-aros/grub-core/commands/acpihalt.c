@@ -33,6 +33,12 @@ typedef uint8_t grub_uint8_t;
 #endif
 
 #include <grub/acpi.h>
+#ifndef GRUB_DSDT_TEST
+#include <grub/i18n.h>
+#else
+#define _(x) x
+#define N_(x) x
+#endif
 
 #ifndef GRUB_DSDT_TEST
 #include <grub/misc.h>
@@ -98,6 +104,7 @@ skip_data_ref_object (const grub_uint8_t *ptr, const grub_uint8_t *end)
   switch (*ptr)
     {
     case GRUB_ACPI_OPCODE_PACKAGE:
+    case GRUB_ACPI_OPCODE_BUFFER:
       return 1 + decode_length (ptr + 1, 0);
     case GRUB_ACPI_OPCODE_ZERO:
     case GRUB_ACPI_OPCODE_ONES:
@@ -109,6 +116,14 @@ skip_data_ref_object (const grub_uint8_t *ptr, const grub_uint8_t *end)
       return 3;
     case GRUB_ACPI_OPCODE_DWORD_CONST:
       return 5;
+    case GRUB_ACPI_OPCODE_STRING_CONST:
+      {
+	const grub_uint8_t *ptr0 = ptr;
+	for (ptr++; ptr < end && *ptr; ptr++);
+	if (ptr == end)
+	  return 0;
+	return ptr - ptr0 + 1;
+      }
     default:
       if (*ptr == '^' || *ptr == '\\' || *ptr == '_'
 	  || (*ptr >= 'A' && *ptr <= 'Z'))
@@ -175,6 +190,16 @@ get_sleep_type (grub_uint8_t *table, grub_uint8_t *end)
 	  if (!add)
 	    return -1;
 	  break;
+	case GRUB_ACPI_OPCODE_CREATE_WORD_FIELD:
+	case GRUB_ACPI_OPCODE_CREATE_BYTE_FIELD:
+	  {
+	    ptr += 5;
+	    ptr += add = skip_data_ref_object (ptr, end);
+	    if (!add)
+	      return -1;
+	    ptr += 4;
+	    break;
+	  }
 	case GRUB_ACPI_OPCODE_NAME:
 	  ptr++;
 	  if (memcmp (ptr, "_S5_", 4) == 0 || memcmp (ptr, "\\_S5_", 4) == 0)
@@ -223,6 +248,9 @@ get_sleep_type (grub_uint8_t *table, grub_uint8_t *end)
 	    ptr += decode_length (ptr, 0);
 	    break;
 	  }
+	default:
+	  grub_printf ("Unknown opcode 0x%x\n", *ptr);
+	  return -1;	  
 	}
     }
 
@@ -327,6 +355,7 @@ grub_acpi_halt (void)
 
   grub_millisleep (1500);
 
-  grub_printf ("ACPI shutdown failed\n");
+  /* TRANSLATORS: It's computer shutdown using ACPI, not disabling ACPI.  */
+  grub_puts_ (N_("ACPI shutdown failed"));
 }
 #endif

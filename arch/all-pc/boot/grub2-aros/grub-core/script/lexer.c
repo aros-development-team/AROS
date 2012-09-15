@@ -23,7 +23,9 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/script_sh.h>
+#include <grub/i18n.h>
 
+#define yytext_ptr char *
 #include "grub_script.tab.h"
 #include "grub_script.yy.h"
 
@@ -106,7 +108,9 @@ grub_script_lexer_record (struct grub_parser_param *parser, char *str)
   if (lexer->recordpos + len + 1 > lexer->recordlen)
     {
       old = lexer->recording;
-      lexer->recordlen = grub_max (len, lexer->recordlen) * 2;
+      if (lexer->recordlen < len)
+	lexer->recordlen = len;
+      lexer->recordlen *= 2;
       lexer->recording = grub_realloc (lexer->recording, lexer->recordlen);
       if (!lexer->recording)
 	{
@@ -126,7 +130,7 @@ int
 grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 			  const char *input)
 {
-  int len;
+  grub_size_t len = 0;
   char *p = 0;
   char *line = 0;
   YY_BUFFER_STATE buffer;
@@ -137,7 +141,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 
   if (! lexerstate->getline && ! input)
     {
-      grub_script_yyerror (parserstate, "unexpected end of file");
+      grub_script_yyerror (parserstate, N_("unexpected end of file"));
       return 1;
     }
 
@@ -147,14 +151,21 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
   else
     line = grub_strdup (input);
 
+  if (! line)
+    {
+      grub_script_yyerror (parserstate, N_("out of memory"));
+      return 1;
+    }
+
+  len = grub_strlen (line);
+
   /* Ensure '\n' at the end.  */
-  if (line && line[0] == '\0')
+  if (line[0] == '\0')
     {
       grub_free (line);
       line = grub_strdup ("\n");
     }
-
-  if (line && (len = grub_strlen(line)) && line[len - 1] != '\n')
+  else if (len && line[len - 1] != '\n')
     {
       p = grub_realloc (line, len + 2);
       if (p)
@@ -167,7 +178,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 
   if (! line)
     {
-      grub_script_yyerror (parserstate, "out of memory");
+      grub_script_yyerror (parserstate, N_("out of memory"));
       return 1;
     }
 
@@ -205,7 +216,7 @@ grub_script_lexer_yywrap (struct grub_parser_param *parserstate,
 
 struct grub_lexer_param *
 grub_script_lexer_init (struct grub_parser_param *parser, char *script,
-			grub_reader_getline_t getline)
+			grub_reader_getline_t arg_getline)
 {
   struct grub_lexer_param *lexerstate;
 
@@ -221,7 +232,7 @@ grub_script_lexer_init (struct grub_parser_param *parser, char *script,
       return 0;
     }
 
-  lexerstate->getline = getline;	/* rest are all zeros already */
+  lexerstate->getline = arg_getline;	/* rest are all zeros already */
   if (yylex_init (&lexerstate->yyscanner))
     {
       grub_free (lexerstate->text);

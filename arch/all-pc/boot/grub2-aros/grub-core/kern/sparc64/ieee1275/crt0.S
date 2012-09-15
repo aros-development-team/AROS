@@ -31,18 +31,6 @@ _start:
 
 VARIABLE(grub_total_module_size)
 	.word	0
-VARIABLE(grub_kernel_image_size)
-	.word	0
-VARIABLE(grub_compressed_size)
-	.word	0
-VARIABLE(grub_prefix)
-	/* to be filled by grub-mkimage */
-
-	/*
-	 *  Leave some breathing room for the prefix.
-	 */
-
-	. = EXT_C(_start) + GRUB_KERNEL_MACHINE_PREFIX_END
 
 codestart:
 	/* Copy the modules past the end of the kernel image.

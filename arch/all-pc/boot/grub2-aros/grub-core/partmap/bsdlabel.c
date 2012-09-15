@@ -24,9 +24,12 @@
 #include <grub/misc.h>
 #include <grub/dl.h>
 #include <grub/msdos_partition.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #ifdef GRUB_UTIL
-#include <grub/util/misc.h>
+#include <grub/emu/misc.h>
 #endif
 
 static struct grub_partition_map grub_bsdlabel_partition_map;
@@ -101,9 +104,11 @@ iterate_real (grub_disk_t disk, grub_disk_addr_t sector, int freebsd,
 #ifdef GRUB_UTIL
 	  char *partname;
 	  /* disk->partition != NULL as 0 < delta */
-	  partname = grub_partition_get_name (disk->partition);
-	  grub_util_warn ("Discarding improperly nested partition (%s,%s,%s%d)",
-			  disk->name, partname, p.partmap->name, p.number + 1);
+	  partname = disk->partition ? grub_partition_get_name (disk->partition)
+	    : 0;
+	  grub_util_warn (_("Discarding improperly nested partition (%s,%s,%s%d)"),
+			  disk->name, partname ? : "", p.partmap->name,
+			  p.number + 1);
 	  grub_free (partname);
 #endif
 	  continue;

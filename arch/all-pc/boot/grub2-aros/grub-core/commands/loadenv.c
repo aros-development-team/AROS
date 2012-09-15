@@ -28,8 +28,12 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
+    /* TRANSLATORS: This option is used to override default filename
+       for loading and storing environment.  */
     {"file", 'f', 0, N_("Specify filename."), 0, ARG_TYPE_PATHNAME},
     {0, 0, 0, 0, 0, 0}
   };
@@ -41,7 +45,7 @@ open_envblk_file (char *filename)
 
   if (! filename)
     {
-      char *prefix;
+      const char *prefix;
 
       prefix = grub_env_get ("prefix");
       if (prefix)
@@ -63,7 +67,7 @@ open_envblk_file (char *filename)
         }
       else
         {
-          grub_error (GRUB_ERR_FILE_NOT_FOUND, "prefix is not found");
+          grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("variable `%s' isn't set"), "prefix");
           return 0;
         }
     }
@@ -91,8 +95,6 @@ read_envblk_file (grub_file_t file)
       ret = grub_file_read (file, buf + offset, size);
       if (ret <= 0)
         {
-          if (grub_errno == GRUB_ERR_NONE)
-            grub_error (GRUB_ERR_FILE_READ_ERROR, "cannot read");
           grub_free (buf);
           return 0;
         }
@@ -344,7 +346,7 @@ grub_cmd_save_env (grub_extcmd_context_t ctxt, int argc, char **args)
 
   while (argc)
     {
-      char *value;
+      const char *value;
 
       value = grub_env_get (args[0]);
       if (value)

@@ -23,6 +23,8 @@
 #include <grub/i18n.h>
 #include <grub/term.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
     {0, 'n', 0, N_("Do not output the trailing newline."), 0, 0},

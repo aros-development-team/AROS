@@ -25,21 +25,23 @@
 #include <grub/mm.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t (*grub_loader_boot_func) (void);
 static grub_err_t (*grub_loader_unload_func) (void);
-static int grub_loader_noreturn;
+static int grub_loader_flags;
 
-struct grub_preboot_t
+struct grub_preboot
 {
   grub_err_t (*preboot_func) (int);
   grub_err_t (*preboot_rest_func) (void);
   grub_loader_preboot_hook_prio_t prio;
-  struct grub_preboot_t *next;
-  struct grub_preboot_t *prev;
+  struct grub_preboot *next;
+  struct grub_preboot *prev;
 };
 
 static int grub_loader_loaded;
-static struct grub_preboot_t *preboots_head = 0,
+static struct grub_preboot *preboots_head = 0,
   *preboots_tail = 0;
 
 int
@@ -49,23 +51,20 @@ grub_loader_is_loaded (void)
 }
 
 /* Register a preboot hook. */
-void *
-grub_loader_register_preboot_hook (grub_err_t (*preboot_func) (int noreturn),
+struct grub_preboot *
+grub_loader_register_preboot_hook (grub_err_t (*preboot_func) (int flags),
 				   grub_err_t (*preboot_rest_func) (void),
 				   grub_loader_preboot_hook_prio_t prio)
 {
-  struct grub_preboot_t *cur, *new_preboot;
+  struct grub_preboot *cur, *new_preboot;
 
   if (! preboot_func && ! preboot_rest_func)
     return 0;
 
-  new_preboot = (struct grub_preboot_t *)
-    grub_malloc (sizeof (struct grub_preboot_t));
+  new_preboot = (struct grub_preboot *)
+    grub_malloc (sizeof (struct grub_preboot));
   if (! new_preboot)
-    {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, "hook not added");
-      return 0;
-    }
+    return 0;
 
   new_preboot->preboot_func = preboot_func;
   new_preboot->preboot_rest_func = preboot_rest_func;
@@ -94,9 +93,9 @@ grub_loader_register_preboot_hook (grub_err_t (*preboot_func) (int noreturn),
 }
 
 void
-grub_loader_unregister_preboot_hook (void *hnd)
+grub_loader_unregister_preboot_hook (struct grub_preboot *hnd)
 {
-  struct grub_preboot_t *preb = hnd;
+  struct grub_preboot *preb = hnd;
 
   if (preb->next)
     preb->next->prev = preb->prev;
@@ -113,14 +112,14 @@ grub_loader_unregister_preboot_hook (void *hnd)
 void
 grub_loader_set (grub_err_t (*boot) (void),
 		 grub_err_t (*unload) (void),
-		 int noreturn)
+		 int flags)
 {
   if (grub_loader_loaded && grub_loader_unload_func)
     grub_loader_unload_func ();
 
   grub_loader_boot_func = boot;
   grub_loader_unload_func = unload;
-  grub_loader_noreturn = noreturn;
+  grub_loader_flags = flags;
 
   grub_loader_loaded = 1;
 }
@@ -141,17 +140,18 @@ grub_err_t
 grub_loader_boot (void)
 {
   grub_err_t err = GRUB_ERR_NONE;
-  struct grub_preboot_t *cur;
+  struct grub_preboot *cur;
 
   if (! grub_loader_loaded)
-    return grub_error (GRUB_ERR_NO_KERNEL, "no loaded kernel");
+    return grub_error (GRUB_ERR_NO_KERNEL,
+		       N_("you need to load the kernel first"));
 
-  if (grub_loader_noreturn)
+  if (grub_loader_flags & GRUB_LOADER_FLAG_NORETURN)
     grub_machine_fini ();
 
   for (cur = preboots_head; cur; cur = cur->next)
     {
-      err = cur->preboot_func (grub_loader_noreturn);
+      err = cur->preboot_func (grub_loader_flags);
       if (err)
 	{
 	  for (cur = cur->prev; cur; cur = cur->prev)
@@ -183,14 +183,22 @@ grub_cmd_boot (struct grub_command *cmd __attribute__ ((unused)),
 
 static grub_command_t cmd_boot;
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_boot_init (void)
+#else
 GRUB_MOD_INIT(boot)
+#endif
 {
   cmd_boot =
     grub_register_command ("boot", grub_cmd_boot,
 			   0, N_("Boot an operating system."));
 }
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_boot_fini (void)
+#else
 GRUB_MOD_FINI(boot)
+#endif
 {
   grub_unregister_command (cmd_boot);
 }

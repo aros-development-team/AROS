@@ -25,6 +25,9 @@
 #include <grub/mm.h>
 #include <grub/dl.h>
 #include <grub/env.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static inline void
 print_tabs (int n)
@@ -42,32 +45,33 @@ print_state (char *nvlist, int tab)
   int isok = 1;
 
   print_tabs (tab);
-  grub_printf ("State: ");
 
   if (grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_REMOVED, &ival))
     {
-      grub_printf ("removed ");
+      grub_puts_ (N_("Virtual device is removed"));
       isok = 0;
     }
 
   if (grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_FAULTED, &ival))
     {
-      grub_printf ("faulted ");
+      grub_puts_ (N_("Virtual device is faulted"));
       isok = 0;
     }
 
   if (grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_OFFLINE, &ival))
     {
-      grub_printf ("offline ");
+      grub_puts_ (N_("Virtual device is offline"));
       isok = 0;
     }
 
   if (grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_FAULTED, &ival))
-    grub_printf ("degraded ");
+    /* TRANSLATORS: degraded doesn't mean broken but that some of
+       component are missing but virtual device as whole is still usable.  */
+    grub_puts_ (N_("Virtual device is degraded"));
 
   if (isok)
-    grub_printf ("online");
-  grub_printf ("\n");
+    grub_puts_ (N_("Virtual device is online"));
+  grub_xputs ("\n");
 
   return GRUB_ERR_NONE;
 }
@@ -82,7 +86,7 @@ print_vdev_info (char *nvlist, int tab)
   if (!type)
     {
       print_tabs (tab);
-      grub_printf ("Incorrect VDEV: no type available\n");
+      grub_puts_ (N_("Incorrect virtual device: no type available"));
       return grub_errno;
     }
 
@@ -93,7 +97,12 @@ print_vdev_info (char *nvlist, int tab)
       char *devid = 0;
 
       print_tabs (tab);
-      grub_printf ("Leaf VDEV\n");
+      /* TRANSLATORS: The virtual devices form a tree (in graph-theoretical
+	 sense). The nodes like mirror or raidz have children: member devices.
+	 The "real" devices which actually store data are called "leafs"
+	 (again borrowed from graph theory) and can be either disks
+	 (or partitions) or files.  */
+      grub_puts_ (N_("Leaf virtual device (file or disk)"));
 
       print_state (nvlist, tab);
 
@@ -101,23 +110,23 @@ print_vdev_info (char *nvlist, int tab)
 	grub_zfs_nvlist_lookup_string (nvlist, ZPOOL_CONFIG_PHYS_PATH);
       print_tabs (tab);
       if (!bootpath)
-	grub_printf ("Bootpath: unavailable\n");
+	grub_puts_ (N_("Bootpath: unavailable\n"));
       else
-	grub_printf ("Bootpath: %s\n", bootpath);
+	grub_printf_ (N_("Bootpath: %s\n"), bootpath);
 
       path = grub_zfs_nvlist_lookup_string (nvlist, "path");
       print_tabs (tab);
       if (!path)
-	grub_printf ("Path: unavailable\n");
+	grub_puts_ (N_("Path: unavailable"));
       else
-	grub_printf ("Path: %s\n", path);
+	grub_printf_ (N_("Path: %s\n"), path);
 
       devid = grub_zfs_nvlist_lookup_string (nvlist, ZPOOL_CONFIG_DEVID);
       print_tabs (tab);
       if (!devid)
-	grub_printf ("Devid: unavailable\n");
+	grub_puts_ (N_("Devid: unavailable"));
       else
-	grub_printf ("Devid: %s\n", devid);
+	grub_printf_ (N_("Devid: %s\n"), devid);
       grub_free (bootpath);
       grub_free (devid);
       grub_free (path);
@@ -134,12 +143,11 @@ print_vdev_info (char *nvlist, int tab)
       print_tabs (tab);
       if (nelm <= 0)
 	{
-	  grub_printf ("Incorrect mirror VDEV\n");
+	  grub_puts_ (N_("Incorrect mirror"));
 	  return GRUB_ERR_NONE;
 	}
-      grub_printf ("Mirror VDEV with %d children\n", nelm);
+      grub_printf_ (N_("Mirror with %d children\n"), nelm);
       print_state (nvlist, tab);
-
       for (i = 0; i < nelm; i++)
 	{
 	  char *child;
@@ -150,19 +158,27 @@ print_vdev_info (char *nvlist, int tab)
 	  print_tabs (tab);
 	  if (!child)
 	    {
-	      grub_printf ("Mirror VDEV element %d isn't correct\n", i);
+	      /* TRANSLATORS: it's the element carying the number %d, not
+		 total element number. And the number itself is fine,
+		 only the element isn't.
+	      */
+	      grub_printf_ (N_("Mirror element number %d isn't correct\n"), i);
 	      continue;
 	    }
 
-	  grub_printf ("Mirror VDEV element %d:\n", i);
+	  /* TRANSLATORS: it's the element carying the number %d, not
+	     total element number. This is used in enumeration
+	     "Element number 1", "Element number 2", ... */
+	  grub_printf_ (N_("Mirror element number %d:\n"), i);
 	  print_vdev_info (child, tab + 1);
 
 	  grub_free (child);
 	}
+      return GRUB_ERR_NONE;
     }
 
   print_tabs (tab);
-  grub_printf ("Unknown VDEV type: %s\n", type);
+  grub_printf_ (N_("Unknown virtual device type: %s\n"), type);
 
   return GRUB_ERR_NONE;
 }
@@ -219,15 +235,18 @@ get_bootpath (char *nvlist, char **bootpath, char **devid)
   return GRUB_ERR_NONE;
 }
 
-static char *poolstates[] = {
-  [POOL_STATE_ACTIVE] = "active",
-  [POOL_STATE_EXPORTED] = "exported",
-  [POOL_STATE_DESTROYED] = "destroyed",
-  [POOL_STATE_SPARE] = "reserved for hot spare",
-  [POOL_STATE_L2CACHE] = "level 2 ARC device",
-  [POOL_STATE_UNINITIALIZED] = "uninitialized",
-  [POOL_STATE_UNAVAIL] = "unavailable",
-  [POOL_STATE_POTENTIALLY_ACTIVE] = "potentially active"
+static const char *poolstates[] = {
+  /* TRANSLATORS: Here we speak about ZFS pools it's semi-marketing,
+     semi-technical term by Sun/Oracle and should be translated in sync with
+     other ZFS-related software and documentation.  */
+  [POOL_STATE_ACTIVE] = N_("Pool state: active"),
+  [POOL_STATE_EXPORTED] = N_("Pool state: exported"),
+  [POOL_STATE_DESTROYED] = N_("Pool state: destroyed"),
+  [POOL_STATE_SPARE] = N_("Pool state: reserved for hot spare"),
+  [POOL_STATE_L2CACHE] = N_("Pool state: level 2 ARC device"),
+  [POOL_STATE_UNINITIALIZED] = N_("Pool state: uninitialized"),
+  [POOL_STATE_UNAVAIL] = N_("Pool state: unavailable"),
+  [POOL_STATE_POTENTIALLY_ACTIVE] = N_("Pool state: potentially active")
 };
 
 static grub_err_t
@@ -245,7 +264,7 @@ grub_cmd_zfsinfo (grub_command_t cmd __attribute__ ((unused)), int argc,
   int found;
 
   if (argc < 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "device name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   if (args[0][0] == '(' && args[0][grub_strlen (args[0]) - 1] == ')')
     {
@@ -272,30 +291,33 @@ grub_cmd_zfsinfo (grub_command_t cmd __attribute__ ((unused)), int argc,
 
   poolname = grub_zfs_nvlist_lookup_string (nvlist, ZPOOL_CONFIG_POOL_NAME);
   if (!poolname)
-    grub_printf ("Pool name: unavailable\n");
+    grub_puts_ (N_("Pool name: unavailable"));
   else
-    grub_printf ("Pool name: %s\n", poolname);
+    grub_printf_ (N_("Pool name: %s\n"), poolname);
 
   found =
     grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_POOL_GUID, &guid);
   if (!found)
-    grub_printf ("Pool GUID: unavailable\n");
+    grub_puts_ (N_("Pool GUID: unavailable"));
   else
-    grub_printf ("Pool GUID: %016llx\n", (long long unsigned) guid);
+    grub_printf_ (N_("Pool GUID: %016llx\n"), (long long unsigned) guid);
 
   found = grub_zfs_nvlist_lookup_uint64 (nvlist, ZPOOL_CONFIG_POOL_STATE,
 					 &pool_state);
   if (!found)
-    grub_printf ("Unable to retrieve pool state\n");
+    grub_puts_ (N_("Unable to retrieve pool state"));
   else if (pool_state >= ARRAY_SIZE (poolstates))
-    grub_printf ("Unrecognized pool state\n");
+    grub_puts_ (N_("Unrecognized pool state"));
   else
-    grub_printf ("Pool state: %s\n", poolstates[pool_state]);
+    grub_puts_ (poolstates[pool_state]);
 
   nv = grub_zfs_nvlist_lookup_nvlist (nvlist, ZPOOL_CONFIG_VDEV_TREE);
 
   if (!nv)
-    grub_printf ("No vdev tree available\n");
+    /* TRANSLATORS: There are undetermined number of virtual devices
+       in a device tree, not just one.
+     */
+    grub_puts_ (N_("No virtual device tree available"));
   else
     print_vdev_info (nv, 1);
 
@@ -321,7 +343,7 @@ grub_cmd_zfs_bootfs (grub_command_t cmd __attribute__ ((unused)), int argc,
   grub_uint64_t mdnobj;
 
   if (argc < 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "filesystem name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   devname = grub_file_get_device_name (args[0]);
   if (grub_errno)
@@ -364,21 +386,16 @@ grub_cmd_zfs_bootfs (grub_command_t cmd __attribute__ ((unused)), int argc,
   grub_free (nv);
   grub_free (nvlist);
 
-  if (bootpath && devid)
-    {
-      bootfs = grub_xasprintf ("zfs-bootfs=%s/%llu bootpath=%s diskdevid=%s",
-			       poolname, (unsigned long long) mdnobj,
-			       bootpath, devid);
-      if (!bootfs)
-	return grub_errno;
-    }
-  else
-    {
-      bootfs = grub_xasprintf ("zfs-bootfs=%s/%llu",
-			       poolname, (unsigned long long) mdnobj);
-      if (!bootfs)
-	return grub_errno;
-    }
+  bootfs = grub_xasprintf ("zfs-bootfs=%s/%llu%s%s%s%s%s%s",
+			   poolname, (unsigned long long) mdnobj,
+			   bootpath ? ",bootpath=\"" : "",
+			   bootpath ? : "",
+			   bootpath ? "\"" : "",
+			   devid ? ",diskdevid=\"" : "",
+			   devid ? : "",
+			   devid ? "\"" : "");
+  if (!bootfs)
+    return grub_errno;
   if (argc >= 2)
     grub_env_set (args[1], bootfs);
   else
@@ -398,11 +415,11 @@ static grub_command_t cmd_info, cmd_bootfs;
 GRUB_MOD_INIT (zfsinfo)
 {
   cmd_info = grub_register_command ("zfsinfo", grub_cmd_zfsinfo,
-				    "zfsinfo DEVICE",
-				    "Print ZFS info about DEVICE.");
+				    N_("DEVICE"),
+				    N_("Print ZFS info about DEVICE."));
   cmd_bootfs = grub_register_command ("zfs-bootfs", grub_cmd_zfs_bootfs,
-				      "zfs-bootfs FILESYSTEM [VARIABLE]",
-				      "Print ZFS-BOOTFSOBJ or set it to VARIABLE");
+				      N_("FILESYSTEM [VARIABLE]"),
+				      N_("Print ZFS-BOOTFSOBJ or store it into VARIABLE"));
 }
 
 GRUB_MOD_FINI (zfsinfo)

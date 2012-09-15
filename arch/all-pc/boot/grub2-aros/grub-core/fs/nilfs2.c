@@ -35,6 +35,8 @@
 #include <grub/types.h>
 #include <grub/fshelp.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define NILFS_INODE_BMAP_SIZE	7
 
 #define NILFS_SUPORT_REV	2
@@ -47,7 +49,6 @@
 /* nilfs btree node level. */
 #define NILFS_BTREE_LEVEL_DATA          0
 #define NILFS_BTREE_LEVEL_NODE_MIN      (NILFS_BTREE_LEVEL_DATA + 1)
-#define NILFS_BTREE_LEVEL_MAX           14
 
 /* nilfs 1st super block posission from beginning of the partition
    in 512 block size */
@@ -56,6 +57,7 @@
    in 512 block size */
 #define NILFS_2ND_SUPER_BLOCK(devsize)	(((devsize >> 3) - 1) << 3)
 
+#define LOG_INODE_SIZE 7
 struct grub_nilfs2_inode
 {
   grub_uint64_t i_blocks;
@@ -124,8 +126,7 @@ struct grub_nilfs2_super_block
   grub_uint16_t s_checkpoint_size;
   grub_uint16_t s_segment_usage_size;
   grub_uint8_t s_uuid[16];
-  char s_volume_name[16];
-  char s_last_mounted[64];
+  char s_volume_name[80];
   grub_uint32_t s_c_interval;
   grub_uint32_t s_c_block_max;
   grub_uint32_t s_reserved[192];
@@ -205,6 +206,7 @@ struct grub_nilfs2_btree_node
   grub_uint8_t bn_level;
   grub_uint16_t bn_nchildren;
   grub_uint32_t bn_pad;
+  grub_uint64_t keys[0];
 };
 
 struct grub_nilfs2_palloc_group_desc
@@ -212,6 +214,7 @@ struct grub_nilfs2_palloc_group_desc
   grub_uint32_t pg_nfrees;
 };
 
+#define LOG_NILFS_DAT_ENTRY_SIZE 5
 struct grub_nilfs2_dat_entry
 {
   grub_uint64_t de_blocknr;
@@ -294,17 +297,17 @@ static grub_dl_t my_mod;
 
 
 static inline unsigned long
-grub_nilfs2_palloc_entries_per_group (struct grub_nilfs2_data *data)
+grub_nilfs2_log_palloc_entries_per_group (struct grub_nilfs2_data *data)
 {
-  return 1UL << (LOG2_BLOCK_SIZE (data) + 3);
+  return LOG2_BLOCK_SIZE (data) + 3;
 }
 
 static inline grub_uint64_t
 grub_nilfs2_palloc_group (struct grub_nilfs2_data *data,
-			  grub_uint64_t nr, grub_uint32_t * offset)
+			  grub_uint64_t nr, grub_uint64_t * offset)
 {
-  return grub_divmod64 (nr, grub_nilfs2_palloc_entries_per_group (data),
-			offset);
+  *offset = nr & ((1 << grub_nilfs2_log_palloc_entries_per_group (data)) - 1);
+  return nr >> grub_nilfs2_log_palloc_entries_per_group (data);
 }
 
 static inline grub_uint32_t
@@ -315,64 +318,68 @@ grub_nilfs2_palloc_groups_per_desc_block (struct grub_nilfs2_data *data)
 }
 
 static inline grub_uint32_t
-grub_nilfs2_entries_per_block (struct grub_nilfs2_data *data,
-			       unsigned long entry_size)
+grub_nilfs2_log_entries_per_block_log (struct grub_nilfs2_data *data,
+				       unsigned long log_entry_size)
 {
-  return NILFS2_BLOCK_SIZE (data) / entry_size;
+  return LOG2_BLOCK_SIZE (data) - log_entry_size;
 }
 
 
 static inline grub_uint32_t
-grub_nilfs2_blocks_per_group (struct grub_nilfs2_data *data,
-			      unsigned long entry_size)
+grub_nilfs2_blocks_per_group_log (struct grub_nilfs2_data *data,
+				  unsigned long log_entry_size)
 {
-  return grub_div_roundup (grub_nilfs2_palloc_entries_per_group (data),
-			   grub_nilfs2_entries_per_block (data,
-							  entry_size)) + 1;
+  return (1 << (grub_nilfs2_log_palloc_entries_per_group (data)
+		- grub_nilfs2_log_entries_per_block_log (data,
+							 log_entry_size))) + 1;
 }
 
 static inline grub_uint32_t
-grub_nilfs2_blocks_per_desc_block (struct grub_nilfs2_data *data,
-				   unsigned long entry_size)
+grub_nilfs2_blocks_per_desc_block_log (struct grub_nilfs2_data *data,
+				       unsigned long log_entry_size)
 {
   return grub_nilfs2_palloc_groups_per_desc_block (data) *
-    grub_nilfs2_blocks_per_group (data, entry_size) + 1;
+    grub_nilfs2_blocks_per_group_log (data, log_entry_size) + 1;
 }
 
 static inline grub_uint32_t
-grub_nilfs2_palloc_desc_block_offset (struct grub_nilfs2_data *data,
-				      unsigned long group,
-				      unsigned long entry_size)
+grub_nilfs2_palloc_desc_block_offset_log (struct grub_nilfs2_data *data,
+					  unsigned long group,
+					  unsigned long log_entry_size)
 {
   grub_uint32_t desc_block =
     group / grub_nilfs2_palloc_groups_per_desc_block (data);
-  return desc_block * grub_nilfs2_blocks_per_desc_block (data, entry_size);
+  return desc_block * grub_nilfs2_blocks_per_desc_block_log (data,
+							     log_entry_size);
 }
 
 static inline grub_uint32_t
 grub_nilfs2_palloc_bitmap_block_offset (struct grub_nilfs2_data *data,
 					unsigned long group,
-					unsigned long entry_size)
+					unsigned long log_entry_size)
 {
   unsigned long desc_offset = group %
     grub_nilfs2_palloc_groups_per_desc_block (data);
 
-  return grub_nilfs2_palloc_desc_block_offset (data, group, entry_size) + 1 +
-    desc_offset * grub_nilfs2_blocks_per_group (data, entry_size);
+  return grub_nilfs2_palloc_desc_block_offset_log (data, group, log_entry_size)
+    + 1
+    + desc_offset * grub_nilfs2_blocks_per_group_log (data, log_entry_size);
 }
 
 static inline grub_uint32_t
-grub_nilfs2_palloc_entry_offset (struct grub_nilfs2_data *data,
-				 grub_uint64_t nr, unsigned long entry_size)
+grub_nilfs2_palloc_entry_offset_log (struct grub_nilfs2_data *data,
+				     grub_uint64_t nr,
+				     unsigned long log_entry_size)
 {
   unsigned long group;
-  grub_uint32_t group_offset;
+  grub_uint64_t group_offset;
 
   group = grub_nilfs2_palloc_group (data, nr, &group_offset);
 
   return grub_nilfs2_palloc_bitmap_block_offset (data, group,
-						 entry_size) + 1 +
-    group_offset / grub_nilfs2_entries_per_block (data, entry_size);
+						 log_entry_size) + 1 +
+    (group_offset >> grub_nilfs2_log_entries_per_block_log (data,
+							    log_entry_size));
 
 }
 
@@ -391,9 +398,9 @@ grub_nilfs2_btree_get_level (struct grub_nilfs2_btree_node *node)
 static inline grub_uint64_t *
 grub_nilfs2_btree_node_dkeys (struct grub_nilfs2_btree_node *node)
 {
-  return (grub_uint64_t *) ((char *) (node + 1) +
-			    ((node->bn_flags & NILFS_BTREE_NODE_ROOT) ?
-			     0 : NILFS_BTREE_NODE_EXTRA_PAD_SIZE));
+  return (node->keys +
+	  ((node->bn_flags & NILFS_BTREE_NODE_ROOT) ?
+	   0 : (NILFS_BTREE_NODE_EXTRA_PAD_SIZE / sizeof (grub_uint64_t))));
 }
 
 static inline grub_uint64_t
@@ -494,7 +501,7 @@ grub_nilfs2_btree_lookup (struct grub_nilfs2_data *data,
 			  grub_uint64_t key, int need_translate)
 {
   struct grub_nilfs2_btree_node *node;
-  unsigned char block[NILFS2_BLOCK_SIZE (data)];
+  GRUB_PROPERLY_ALIGNED_ARRAY (block, NILFS2_BLOCK_SIZE (data));
   grub_uint64_t ptr;
   int level, found, index;
 
@@ -575,15 +582,14 @@ grub_nilfs2_dat_translate (struct grub_nilfs2_data *data, grub_uint64_t key)
   struct grub_nilfs2_dat_entry entry;
   grub_disk_t disk = data->disk;
   grub_uint64_t pptr;
-  grub_uint32_t blockno, offset;
+  grub_uint64_t blockno, offset;
   unsigned int nilfs2_block_count = (1 << LOG2_NILFS2_BLOCK_SIZE (data));
 
-  blockno = grub_nilfs2_palloc_entry_offset (data, key,
-					     sizeof (struct
-						     grub_nilfs2_dat_entry));
+  blockno = grub_nilfs2_palloc_entry_offset_log (data, key,
+						 LOG_NILFS_DAT_ENTRY_SIZE);
 
-  grub_divmod64 (key * sizeof (struct grub_nilfs2_dat_entry),
-		 NILFS2_BLOCK_SIZE (data), &offset);
+  offset = ((key * sizeof (struct grub_nilfs2_dat_entry))
+	    & ((1 << LOG2_BLOCK_SIZE (data)) - 1));
 
   pptr = grub_nilfs2_bmap_lookup (data, &data->sroot.sr_dat, blockno, 0);
   if (pptr == (grub_uint64_t) - 1)
@@ -624,12 +630,12 @@ grub_nilfs2_read_file (grub_fshelp_node_t node,
 							   sector,
 							   unsigned offset,
 							   unsigned length),
-		       int pos, grub_size_t len, char *buf)
+		       grub_off_t pos, grub_size_t len, char *buf)
 {
   return grub_fshelp_read_file (node->data->disk, node, read_hook,
 				pos, len, buf, grub_nilfs2_read_block,
 				grub_le_to_cpu64 (node->inode.i_size),
-				LOG2_NILFS2_BLOCK_SIZE (node->data));
+				LOG2_NILFS2_BLOCK_SIZE (node->data), 0);
 
 }
 
@@ -639,7 +645,7 @@ grub_nilfs2_read_checkpoint (struct grub_nilfs2_data *data,
 			     struct grub_nilfs2_checkpoint *cpp)
 {
   grub_uint64_t blockno;
-  grub_uint32_t offset;
+  grub_uint64_t offset;
   grub_uint64_t pptr;
   grub_disk_t disk = data->disk;
   unsigned int nilfs2_block_count = (1 << LOG2_NILFS2_BLOCK_SIZE (data));
@@ -648,8 +654,8 @@ grub_nilfs2_read_checkpoint (struct grub_nilfs2_data *data,
      sizeof(struct grub_nilfs2_checkpoint).
    */
   blockno = grub_divmod64 (cpno, NILFS2_BLOCK_SIZE (data) /
-			   sizeof (struct grub_nilfs2_checkpoint), &offset);
-
+                          sizeof (struct grub_nilfs2_checkpoint), &offset);
+  
   pptr = grub_nilfs2_bmap_lookup (data, &data->sroot.sr_cpfile, blockno, 1);
   if (pptr == (grub_uint64_t) - 1)
     {
@@ -677,17 +683,16 @@ grub_nilfs2_read_inode (struct grub_nilfs2_data *data,
 			grub_uint64_t ino, struct grub_nilfs2_inode *inodep)
 {
   grub_uint64_t blockno;
-  unsigned int offset;
+  grub_uint64_t offset;
   grub_uint64_t pptr;
   grub_disk_t disk = data->disk;
   unsigned int nilfs2_block_count = (1 << LOG2_NILFS2_BLOCK_SIZE (data));
 
-  blockno = grub_nilfs2_palloc_entry_offset (data, ino,
-					     sizeof (struct
-						     grub_nilfs2_inode));
+  blockno = grub_nilfs2_palloc_entry_offset_log (data, ino,
+						 LOG_INODE_SIZE);
 
-  grub_divmod64 (sizeof (struct grub_nilfs2_inode) * ino,
-		 NILFS2_BLOCK_SIZE (data), &offset);
+  offset = ((sizeof (struct grub_nilfs2_inode) * ino)
+	    & ((1 << LOG2_BLOCK_SIZE (data)) - 1));
   pptr = grub_nilfs2_bmap_lookup (data, &data->ifile, blockno, 1);
   if (pptr == (grub_uint64_t) - 1)
     {
@@ -728,7 +733,11 @@ grub_nilfs2_load_sb (struct grub_nilfs2_data *data)
   /* Make sure if 1st super block is valid.  */
   valid[0] = grub_nilfs2_valid_sb (&data->sblock);
 
-  partition_size = grub_disk_get_size (disk);
+  if (valid[0])
+    partition_size = (grub_le_to_cpu64 (data->sblock.s_dev_size)
+		      >> GRUB_DISK_SECTOR_BITS);
+  else
+    partition_size = grub_disk_get_size (disk);
   if (partition_size != GRUB_DISK_SIZE_UNKNOWN)
     {
       /* Read second super block. */
@@ -862,7 +871,7 @@ grub_nilfs2_iterate_dir (grub_fshelp_node_t dir,
 				  enum grub_fshelp_filetype filetype,
 				  grub_fshelp_node_t node))
 {
-  unsigned int fpos = 0;
+  grub_off_t fpos = 0;
   struct grub_fshelp_node *diro = (struct grub_fshelp_node *) dir;
 
   if (!diro->inode_read)
@@ -1089,7 +1098,8 @@ grub_nilfs2_label (grub_device_t device, char **label)
 
   data = grub_nilfs2_mount (disk);
   if (data)
-    *label = grub_strndup (data->sblock.s_volume_name, 14);
+    *label = grub_strndup (data->sblock.s_volume_name,
+			   sizeof (data->sblock.s_volume_name));
   else
     *label = NULL;
 
@@ -1113,7 +1123,7 @@ grub_nilfs2_uuid (grub_device_t device, char **uuid)
     {
       *uuid =
 	grub_xasprintf
-	("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%0x-%02x%02x%02x%02x%02x%02x",
+	("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 	 data->sblock.s_uuid[0], data->sblock.s_uuid[1],
 	 data->sblock.s_uuid[2], data->sblock.s_uuid[3],
 	 data->sblock.s_uuid[4], data->sblock.s_uuid[5],
@@ -1146,7 +1156,7 @@ grub_nilfs2_mtime (grub_device_t device, grub_int32_t * tm)
   if (!data)
     *tm = 0;
   else
-    *tm = (grub_int32_t) grub_le_to_cpu64 (data->sblock.s_mtime);
+    *tm = (grub_int32_t) grub_le_to_cpu64 (data->sblock.s_wtime);
 
   grub_dl_unref (my_mod);
 
@@ -1168,12 +1178,18 @@ static struct grub_fs grub_nilfs2_fs = {
   .mtime = grub_nilfs2_mtime,
 #ifdef GRUB_UTIL
   .reserved_first_sector = 1,
+  .blocklist_install = 0,
 #endif
   .next = 0
 };
 
 GRUB_MOD_INIT (nilfs2)
 {
+  COMPILE_TIME_ASSERT ((1 << LOG_NILFS_DAT_ENTRY_SIZE)
+		       == sizeof (struct
+				  grub_nilfs2_dat_entry));
+  COMPILE_TIME_ASSERT (1 << LOG_INODE_SIZE
+		       == sizeof (struct grub_nilfs2_inode));
   grub_fs_register (&grub_nilfs2_fs);
   my_mod = mod;
 }

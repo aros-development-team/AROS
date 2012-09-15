@@ -62,12 +62,17 @@ grub_efiemu_add_to_mmap (grub_uint64_t start, grub_uint64_t size,
   /* Extend map if necessary*/
   if (mmap_num >= mmap_reserved_size)
     {
+      void *old;
+      mmap_reserved_size = 2 * (mmap_reserved_size + 1);
+      old = efiemu_mmap;
       efiemu_mmap = (grub_efi_memory_descriptor_t *)
-	grub_realloc (efiemu_mmap, (++mmap_reserved_size)
+	grub_realloc (efiemu_mmap, mmap_reserved_size
 		      * sizeof (grub_efi_memory_descriptor_t));
       if (!efiemu_mmap)
-	return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-			   "not enough space for memory map");
+	{
+	  grub_free (old);
+	  return grub_errno;
+	}
     }
 
   /* Fill slot*/
@@ -176,8 +181,7 @@ efiemu_alloc_requests (void)
   /* Allocate the whole memory in one block */
   resident_memory = grub_memalign (GRUB_EFIEMU_PAGESIZE, total_alloc);
   if (!resident_memory)
-    return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-		       "couldn't allocate resident memory");
+    return grub_errno;
 
   /* Split the memory into blocks by type */
   curptr = resident_memory;
@@ -201,10 +205,10 @@ efiemu_alloc_requests (void)
 	- (requested_memory[reqorder[i]] % GRUB_EFIEMU_PAGESIZE);
       if (align_overhead == GRUB_EFIEMU_PAGESIZE)
 	align_overhead = 0;
-      curptr = ((grub_uint8_t *)curptr) + align_overhead;
+      curptr = ((grub_uint8_t *) curptr) + align_overhead;
 
       /* Add the region to memory map */
-      grub_efiemu_add_to_mmap (PTR_TO_UINT64 (typestart),
+      grub_efiemu_add_to_mmap ((grub_addr_t) typestart,
 			       curptr - typestart, reqorder[i]);
     }
 
@@ -404,7 +408,8 @@ grub_efiemu_mmap_fill (void)
 					  GRUB_EFI_ACPI_MEMORY_NVS);
 
 	default:
-	  grub_printf ("Unknown memory type %d. Assuming unusable\n", type);
+	  grub_dprintf ("efiemu",
+			"Unknown memory type %d. Assuming unusable\n", type);
 	case GRUB_MEMORY_RESERVED:
 	  return grub_efiemu_add_to_mmap (addr, size,
 					  GRUB_EFI_UNUSABLE_MEMORY);
@@ -539,8 +544,7 @@ grub_efiemu_mmap_sort_and_uniq (void)
     {
       grub_free (result);
       grub_free (scanline_events);
-      return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-			 "couldn't allocate space for new memory map");
+      return grub_errno;
     }
 
   /* Register scanline events */
@@ -641,12 +645,14 @@ grub_efiemu_mm_do_alloc (void)
   if (!efiemu_mmap)
     {
       grub_efiemu_unload ();
-      return grub_error (GRUB_ERR_OUT_OF_MEMORY, "couldn't initialize mmap");
+      return grub_errno;
     }
 
-  if ((err = efiemu_alloc_requests ()))
+  err = efiemu_alloc_requests ();
+  if (err)
     return err;
-  if ((err = grub_efiemu_mmap_fill ()))
+  err = grub_efiemu_mmap_fill ();
+  if (err)
     return err;
   return grub_efiemu_mmap_sort_and_uniq ();
 }

@@ -152,17 +152,12 @@
 #define GRUB_PXE_BOOTP_BCAST	0x8000
 
 #if 1
-#define GRUB_PXE_BOOTP_DHCPVEND	1024	/* DHCP extended vendor field size.  */
+#define GRUB_PXE_BOOTP_SIZE	(1024 + 236)	/* DHCP extended vendor field size.  */
 #else
-#define GRUB_PXE_BOOTP_DHCPVEND	312	/* DHCP standard vendor field size.  */
+#define GRUB_PXE_BOOTP_SIZE	(312 + 236)	/* DHCP standard vendor field size.  */
 #endif
 
-#define GRUB_PXE_MIN_BLKSIZE	512
-#define GRUB_PXE_MAX_BLKSIZE	1432
-
 #define GRUB_PXE_TFTP_PORT	69
-
-#define	GRUB_PXE_VM_RFC1048	0x63825363L
 
 #define GRUB_PXE_ERR_LEN	0xFFFFFFFF
 
@@ -212,38 +207,6 @@ struct grub_pxenv_get_cached_info
   grub_uint16_t buffer_size;
   grub_uint32_t buffer;
   grub_uint16_t buffer_limit;
-} __attribute__ ((packed));
-
-#define GRUB_PXE_MAC_ADDR_LEN	16
-
-typedef grub_uint8_t grub_pxe_mac_addr_t[GRUB_PXE_MAC_ADDR_LEN];
-
-struct grub_pxenv_boot_player
-{
-  grub_uint8_t opcode;
-  grub_uint8_t hw_type;		/* hardware type.  */
-  grub_uint8_t hw_len;		/* hardware addr len.  */
-  grub_uint8_t gate_hops;	/* zero it.  */
-  grub_uint32_t ident;		/* random number chosen by client.  */
-  grub_uint16_t seconds;	/* seconds since did initial bootstrap.  */
-  grub_uint16_t flags;
-  grub_uint32_t	client_ip;
-  grub_uint32_t your_ip;
-  grub_uint32_t	server_ip;
-  grub_uint32_t	gateway_ip;
-  grub_pxe_mac_addr_t mac_addr;
-  grub_uint8_t server_name[64];
-  grub_uint8_t boot_file[128];
-  union
-  {
-    grub_uint8_t d[GRUB_PXE_BOOTP_DHCPVEND];	/* raw array of vendor/dhcp options.  */
-    struct
-    {
-      grub_uint32_t magic;	/* DHCP magic cookie.  */
-      grub_uint32_t flags;	/* bootp flags/opcodes.  */
-      grub_uint8_t padding[56];
-    } v;
-  } vendor;
 } __attribute__ ((packed));
 
 struct grub_pxenv_tftp_open
@@ -321,7 +284,8 @@ int EXPORT_FUNC(grub_pxe_call) (int func, void * data, grub_uint32_t pxe_rm_entr
 
 extern struct grub_pxe_bangpxe *grub_pxe_pxenv;
 
-void grub_pxe_unload (void);
+void *
+grub_pxe_get_cached (grub_uint16_t type);
 
 #endif
 

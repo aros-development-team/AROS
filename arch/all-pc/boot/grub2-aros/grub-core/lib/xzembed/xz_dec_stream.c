@@ -32,9 +32,12 @@ struct xz_dec_hash {
 	vli_type unpadded;
 	vli_type uncompressed;
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	uint8_t *crc32_context;
+	uint64_t *hash_context;
 #endif
 };
+
+/* Enough for up to 512 bits.  */
+#define MAX_HASH_SIZE 64
 
 struct xz_dec {
 	/* Position in dec_main() */
@@ -62,11 +65,22 @@ struct xz_dec {
 	size_t out_start;
 
 	/* CRC32 value in Block or Index */
-	uint32_t crc32_temp; /* need for crc32_validate*/
-	uint8_t *crc32_context;
+#ifndef GRUB_EMBED_DECOMPRESSOR
+	uint8_t hash_value[MAX_HASH_SIZE]; /* need for crc32_validate*/
+#endif
+	int have_hash_value;
+#ifndef GRUB_EMBED_DECOMPRESSOR
+	uint64_t *hash_context;
+	uint64_t *crc32_context;
+#endif
 
-	/* True if CRC32 is calculated from uncompressed data */
-	bool has_crc32;
+	/* Hash function calculated from uncompressed data */
+#ifndef GRUB_EMBED_DECOMPRESSOR
+        const gcry_md_spec_t *hash;
+        const gcry_md_spec_t *crc32;
+	grub_uint8_t hash_id;
+#endif
+	grub_size_t hash_size;
 
 	/* True if we are operating in single-call mode. */
 	bool single_call;
@@ -250,9 +264,12 @@ static enum xz_ret dec_block(struct xz_dec *s, struct xz_buf *b)
 		return XZ_DATA_ERROR;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	if (s->has_crc32)
-	  GRUB_MD_CRC32->write(s->crc32_context,b->out + s->out_start,
-				b->out_pos - s->out_start);
+	if (s->hash)
+	  s->hash->write(s->hash_context,b->out + s->out_start,
+			 b->out_pos - s->out_start);
+	if (s->crc32)
+	  s->crc32->write(s->crc32_context,b->out + s->out_start,
+			  b->out_pos - s->out_start);
 #endif
 
 	if (ret == XZ_STREAM_END) {
@@ -268,14 +285,15 @@ static enum xz_ret dec_block(struct xz_dec *s, struct xz_buf *b)
 
 		s->block.hash.unpadded += s->block_header.size
 				+ s->block.compressed;
-		if (s->has_crc32)
-			s->block.hash.unpadded += 4;
+		s->block.hash.unpadded += s->hash_size;
 
 		s->block.hash.uncompressed += s->block.uncompressed;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		GRUB_MD_CRC32->write(s->block.hash.crc32_context,
-				(const uint8_t *)&s->block.hash, 2 * sizeof(vli_type));
+		if (s->hash)
+			s->hash->write(s->block.hash.hash_context,
+				       (const uint8_t *)&s->block.hash,
+				       2 * sizeof(vli_type));
 #endif
 
 		++s->block.count;
@@ -290,7 +308,10 @@ static void index_update(struct xz_dec *s, const struct xz_buf *b)
 	size_t in_used = b->in_pos - s->in_start;
 	s->index.size += in_used;
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	GRUB_MD_CRC32->write(s->crc32_context,b->in + s->in_start, in_used);
+	if (s->hash)
+		s->hash->write(s->hash_context,b->in + s->in_start, in_used);
+	if (s->crc32)
+		s->crc32->write(s->crc32_context,b->in + s->in_start, in_used);
 #endif
 }
 
@@ -337,8 +358,9 @@ static enum xz_ret dec_index(struct xz_dec *s, struct xz_buf *b)
 			s->index.hash.uncompressed += s->vli;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-			GRUB_MD_CRC32->write(s->index.hash.crc32_context,
-					(const uint8_t *)&s->index.hash, 2 * sizeof(vli_type));
+			if (s->hash)
+				s->hash->write(s->index.hash.hash_context,
+					       (const uint8_t *)&s->index.hash, 2 * sizeof(vli_type));
 #endif
 
 			--s->index.count;
@@ -354,13 +376,30 @@ static enum xz_ret dec_index(struct xz_dec *s, struct xz_buf *b)
  * Validate that the next four input bytes match the value of s->crc32.
  * s->pos must be zero when starting to validate the first byte.
  */
-static enum xz_ret crc32_validate(struct xz_dec *s, struct xz_buf *b)
+static enum xz_ret hash_validate(struct xz_dec *s, struct xz_buf *b,
+	int crc32)
 {
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	if(s->crc32_temp == 0)
+	const gcry_md_spec_t *hash = crc32 ? s->crc32 : s->hash;
+	void *hash_context = crc32 ? s->crc32_context 
+		: s->hash_context;
+	if(!s->have_hash_value && hash
+		&& sizeof (s->hash_value) >= hash->mdlen)
 	{
-	  GRUB_MD_CRC32->final(s->crc32_context);
-		s->crc32_temp = get_unaligned_be32(GRUB_MD_CRC32->read(s->crc32_context));
+		hash->final(hash_context);
+		grub_memcpy (s->hash_value, hash->read(hash_context),
+			     hash->mdlen);
+		s->have_hash_value = 1;
+		if (s->hash_id == 1 || crc32)
+		{
+			grub_uint8_t t;
+			t = s->hash_value[0];
+			s->hash_value[0] = s->hash_value[3];
+			s->hash_value[3] = t;
+			t = s->hash_value[1];
+			s->hash_value[1] = s->hash_value[2];
+			s->hash_value[2] = t;
+		}
 	}
 #endif
 
@@ -369,22 +408,35 @@ static enum xz_ret crc32_validate(struct xz_dec *s, struct xz_buf *b)
 			return XZ_OK;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		if (((s->crc32_temp >> s->pos) & 0xFF) != b->in[b->in_pos++])
+		if (hash && s->hash_value[s->pos / 8] != b->in[b->in_pos++])
 			return XZ_DATA_ERROR;
 #endif
 
 		s->pos += 8;
 
-	} while (s->pos < 32);
+	} while (s->pos < (crc32 ? 32 : s->hash_size * 8));
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	GRUB_MD_CRC32->init(s->crc32_context);
+	if (s->hash)
+		s->hash->init(s->hash_context);
+	if (s->crc32)
+		s->crc32->init(s->crc32_context);
 #endif
-	s->crc32_temp = 0;
+	s->have_hash_value = 0;
 	s->pos = 0;
 
 	return XZ_STREAM_END;
 }
+
+static const struct
+{
+	const char *name;
+	grub_size_t size;
+} hashes[] = {
+	[0x01] = { "CRC32", 4},
+	[0x04] = { "CRC64", 8},
+	[0x0A] = { "SHA256", 32},
+};
 
 /* Decode the Stream Header field (the first 12 bytes of the .xz Stream). */
 static enum xz_ret dec_stream_header(struct xz_dec *s)
@@ -393,28 +445,104 @@ static enum xz_ret dec_stream_header(struct xz_dec *s)
 		return XZ_FORMAT_ERROR;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	uint8_t crc32_context[GRUB_MD_CRC32->contextsize];
+	s->crc32 = grub_crypto_lookup_md_by_name ("CRC32");
 
-	GRUB_MD_CRC32->init(crc32_context);
-	GRUB_MD_CRC32->write(crc32_context,s->temp.buf + HEADER_MAGIC_SIZE, 2);
-	GRUB_MD_CRC32->final(crc32_context);
+	if (s->crc32)
+	{
+		uint64_t hash_context[(s->crc32->contextsize + 7) / 8];
+		uint8_t resulthash[s->crc32->mdlen];
+		uint8_t readhash[4];
 
-	uint32_t resultcrc = get_unaligned_be32(GRUB_MD_CRC32->read(crc32_context));
-	uint32_t readcrc = get_unaligned_le32(s->temp.buf + HEADER_MAGIC_SIZE + 2);
+		s->crc32->init(hash_context);
+		s->crc32->write(hash_context,s->temp.buf + HEADER_MAGIC_SIZE, 2);
+		s->crc32->final(hash_context);
 
-	if(resultcrc != readcrc)
-		return XZ_DATA_ERROR;
+		grub_memcpy (resulthash, s->crc32->read(hash_context),
+			     s->crc32->mdlen);
+		readhash[0] = s->temp.buf[HEADER_MAGIC_SIZE + 5];
+		readhash[1] = s->temp.buf[HEADER_MAGIC_SIZE + 4];
+		readhash[2] = s->temp.buf[HEADER_MAGIC_SIZE + 3];
+		readhash[3] = s->temp.buf[HEADER_MAGIC_SIZE + 2];
+
+		if(4 != s->crc32->mdlen
+		   || grub_memcmp (readhash, resulthash, s->crc32->mdlen) != 0)
+			return XZ_DATA_ERROR;
+	}
 #endif
 
+#ifndef GRUB_EMBED_DECOMPRESSOR
 	/*
-	 * Decode the Stream Flags field. Of integrity checks, we support
-	 * only none (Check ID = 0) and CRC32 (Check ID = 1).
+	 * Decode the Stream Flags field.
 	 */
 	if (s->temp.buf[HEADER_MAGIC_SIZE] != 0
-			|| s->temp.buf[HEADER_MAGIC_SIZE + 1] > 1)
+	    || s->temp.buf[HEADER_MAGIC_SIZE + 1] >= ARRAY_SIZE (hashes)
+	    || (hashes[s->temp.buf[HEADER_MAGIC_SIZE + 1]].name == 0
+		&& s->temp.buf[HEADER_MAGIC_SIZE + 1] != 0))
 		return XZ_OPTIONS_ERROR;
 
-	s->has_crc32 = s->temp.buf[HEADER_MAGIC_SIZE + 1];
+	s->hash_id = s->temp.buf[HEADER_MAGIC_SIZE + 1];
+
+	if (s->crc32)
+	{
+		s->crc32_context = kmalloc(s->crc32->contextsize, GFP_KERNEL);
+		if (s->crc32_context == NULL)
+			return XZ_MEMLIMIT_ERROR;
+		s->crc32->init(s->crc32_context);
+	}
+#endif
+
+	if (s->temp.buf[HEADER_MAGIC_SIZE + 1])
+	{
+		s->hash_size = hashes[s->temp.buf[HEADER_MAGIC_SIZE + 1]].size;
+#ifndef GRUB_EMBED_DECOMPRESSOR
+		s->hash = grub_crypto_lookup_md_by_name (hashes[s->temp.buf[HEADER_MAGIC_SIZE + 1]].name);
+		if (s->hash)
+		{
+			if (s->hash->mdlen != s->hash_size)
+				return XZ_OPTIONS_ERROR;
+			s->hash_context = kmalloc(s->hash->contextsize, GFP_KERNEL);
+			if (s->hash_context == NULL)
+			{
+				kfree(s->crc32_context);
+				return XZ_MEMLIMIT_ERROR;
+			}
+			
+			s->index.hash.hash_context = kmalloc(s->hash->contextsize,
+							     GFP_KERNEL);
+			if (s->index.hash.hash_context == NULL)
+			{
+				kfree(s->hash_context);
+				kfree(s->crc32_context);
+				return XZ_MEMLIMIT_ERROR;
+			}
+			
+			s->block.hash.hash_context = kmalloc(s->hash->contextsize, GFP_KERNEL);
+			if (s->block.hash.hash_context == NULL)
+			{
+				kfree(s->index.hash.hash_context);
+				kfree(s->hash_context);
+				kfree(s->crc32_context);
+				return XZ_MEMLIMIT_ERROR;
+			}
+
+			s->hash->init(s->hash_context);
+			s->hash->init(s->index.hash.hash_context);
+ 			s->hash->init(s->block.hash.hash_context);
+		}
+		if (!s->hash)
+			return XZ_OPTIONS_ERROR;
+#endif
+	}
+	else
+	{
+#ifndef GRUB_EMBED_DECOMPRESSOR
+		s->hash = 0;
+#endif
+		s->hash_size = 0;
+	}
+
+	s->have_hash_value = 0;
+
 
 	return XZ_OK;
 }
@@ -426,18 +554,29 @@ static enum xz_ret dec_stream_footer(struct xz_dec *s)
 		return XZ_DATA_ERROR;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	uint8_t crc32_context[GRUB_MD_CRC32->contextsize];
+	if (s->crc32)
+	{
+		uint64_t hash_context[(s->crc32->contextsize + 7) / 8];
+		uint8_t resulthash[s->crc32->mdlen];
+		uint8_t readhash[4];
 
-	GRUB_MD_CRC32->init(crc32_context);
-	GRUB_MD_CRC32->write(crc32_context, s->temp.buf + 4, 6);
-	GRUB_MD_CRC32->final(crc32_context);
+		s->crc32->init(hash_context);
+		s->crc32->write(hash_context,s->temp.buf + 4, 6);
+		s->crc32->final(hash_context);
 
-	uint32_t resultcrc = get_unaligned_be32(GRUB_MD_CRC32->read(crc32_context));
-	uint32_t readcrc = get_unaligned_le32(s->temp.buf);
+		grub_memcpy (resulthash, s->crc32->read(hash_context),
+			     s->crc32->mdlen);
+		readhash[0] = s->temp.buf[3];
+		readhash[1] = s->temp.buf[2];
+		readhash[2] = s->temp.buf[1];
+		readhash[3] = s->temp.buf[0];
 
-	if(resultcrc != readcrc)
-		return XZ_DATA_ERROR;
+		if(4 != s->crc32->mdlen
+		   || grub_memcmp (readhash, resulthash, s->crc32->mdlen) != 0)
+			return XZ_DATA_ERROR;
+	}
 #endif
+
 
 	/*
 	 * Validate Backward Size. Note that we never added the size of the
@@ -447,8 +586,10 @@ static enum xz_ret dec_stream_footer(struct xz_dec *s)
 	if ((s->index.size >> 2) != get_le32(s->temp.buf + 4))
 		return XZ_DATA_ERROR;
 
-	if (s->temp.buf[8] != 0 || s->temp.buf[9] != s->has_crc32)
+#ifndef GRUB_EMBED_DECOMPRESSOR
+	if (s->temp.buf[8] != 0 || s->temp.buf[9] != s->hash_id)
 		return XZ_DATA_ERROR;
+#endif
 
 	/*
 	 * Use XZ_STREAM_END instead of XZ_OK to be more convenient
@@ -468,17 +609,27 @@ static enum xz_ret dec_block_header(struct xz_dec *s)
 	 */
 	s->temp.size -= 4;
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	uint8_t crc32_context[GRUB_MD_CRC32->contextsize];
+	if (s->crc32)
+	{
+		uint64_t hash_context[(s->crc32->contextsize + 7) / 8];
+		uint8_t resulthash[s->crc32->mdlen];
+		uint8_t readhash[4];
 
-	GRUB_MD_CRC32->init(crc32_context);
-	GRUB_MD_CRC32->write(crc32_context, s->temp.buf, s->temp.size);
-	GRUB_MD_CRC32->final(crc32_context);
+		s->crc32->init(hash_context);
+		s->crc32->write(hash_context,s->temp.buf, s->temp.size);
+		s->crc32->final(hash_context);
 
-	uint32_t resultcrc = get_unaligned_be32(GRUB_MD_CRC32->read(crc32_context));
-	uint32_t readcrc = get_unaligned_le32(s->temp.buf + s->temp.size);
+		grub_memcpy (resulthash, s->crc32->read(hash_context),
+			     s->crc32->mdlen);
+		readhash[3] = s->temp.buf[s->temp.size];
+		readhash[2] = s->temp.buf[s->temp.size + 1];
+		readhash[1] = s->temp.buf[s->temp.size + 2];
+		readhash[0] = s->temp.buf[s->temp.size + 3];
 
-	if (resultcrc != readcrc)
-		return XZ_DATA_ERROR;
+		if(4 != s->crc32->mdlen
+		   || grub_memcmp (readhash, resulthash, s->crc32->mdlen) != 0)
+			return XZ_DATA_ERROR;
+	}
 #endif
 
 	s->temp.pos = 2;
@@ -659,11 +810,9 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			s->sequence = SEQ_BLOCK_CHECK;
 
 		case SEQ_BLOCK_CHECK:
-			if (s->has_crc32) {
-				ret = crc32_validate(s, b);
-				if (ret != XZ_STREAM_END)
-					return ret;
-			}
+			ret = hash_validate(s, b, 0);
+			if (ret != XZ_STREAM_END)
+				return ret;
 
 			s->sequence = SEQ_BLOCK_START;
 			break;
@@ -691,24 +840,31 @@ static enum xz_ret dec_main(struct xz_dec *s, struct xz_buf *b)
 			index_update(s, b);
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-			/* Compare the hashes to validate the Index field. */
-			GRUB_MD_CRC32->final(s->block.hash.crc32_context);
-			GRUB_MD_CRC32->final(s->index.hash.crc32_context);
-			uint32_t block_crc = *(uint32_t*)GRUB_MD_CRC32->read(s->block.hash.crc32_context);
-			uint32_t index_crc = *(uint32_t*)GRUB_MD_CRC32->read(s->index.hash.crc32_context);
-
-			if (s->block.hash.unpadded != s->index.hash.unpadded
-			    || s->block.hash.uncompressed != s->index.hash.uncompressed
-			    || block_crc != index_crc)
+			if (s->hash)
 			{
-				return XZ_DATA_ERROR;
+				uint8_t block_hash[s->hash->mdlen];
+				uint8_t index_hash[s->hash->mdlen];
+				/* Compare the hashes to validate the Index field. */
+				s->hash->final(s->block.hash.hash_context);
+				s->hash->final(s->index.hash.hash_context);
+				grub_memcpy (block_hash,
+					     s->hash->read(s->block.hash.hash_context),
+					s->hash->mdlen);
+				grub_memcpy (index_hash,
+					     s->hash->read(s->index.hash.hash_context),
+					s->hash->mdlen);
+
+				if (s->block.hash.unpadded != s->index.hash.unpadded
+				    || s->block.hash.uncompressed != s->index.hash.uncompressed
+				    || grub_memcmp (block_hash, index_hash, s->hash->mdlen) != 0)
+					return XZ_DATA_ERROR;
 			}
 #endif
 
 			s->sequence = SEQ_INDEX_CRC32;
 
 		case SEQ_INDEX_CRC32:
-			ret = crc32_validate(s, b);
+			ret = hash_validate(s, b, 1);
 			if (ret != XZ_STREAM_END)
 				return ret;
 
@@ -802,45 +958,7 @@ struct xz_dec * xz_dec_init(uint32_t dict_max)
 		return NULL;
 #endif
 
-#ifndef GRUB_EMBED_DECOMPRESSOR
-	/* prepare CRC32 calculators */
-	if(GRUB_MD_CRC32 == NULL)
-	{
-		kfree(s);
-		return NULL;
-	}
-
-	s->crc32_context = kmalloc(GRUB_MD_CRC32->contextsize, GFP_KERNEL);
-	if (s->crc32_context == NULL)
-	{
-		kfree(s);
-		return NULL;
-	}
-
-	s->index.hash.crc32_context = kmalloc(GRUB_MD_CRC32->contextsize, GFP_KERNEL);
-	if (s->index.hash.crc32_context == NULL)
-	{
-		kfree(s->crc32_context);
-		kfree(s);
-		return NULL;
-	}
-
-	s->block.hash.crc32_context = kmalloc(GRUB_MD_CRC32->contextsize, GFP_KERNEL);
-	if (s->block.hash.crc32_context == NULL)
-	{
-		kfree(s->index.hash.crc32_context);
-		kfree(s->crc32_context);
-		kfree(s);
-		return NULL;
-	}
-
-
-	GRUB_MD_CRC32->init(s->crc32_context);
-	GRUB_MD_CRC32->init(s->index.hash.crc32_context);
-	GRUB_MD_CRC32->init(s->block.hash.crc32_context);
-#endif
-
-	s->crc32_temp = 0;
+	memset (s, 0, sizeof (*s));
 
 	s->single_call = dict_max == 0;
 
@@ -876,28 +994,31 @@ void xz_dec_reset(struct xz_dec *s)
 
 	{
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		uint8_t *t;
-		t = s->block.hash.crc32_context;
+		uint64_t *t;
+		t = s->block.hash.hash_context;
 #endif
 		memzero(&s->block, sizeof(s->block));
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		s->block.hash.crc32_context = t;
-		t = s->index.hash.crc32_context;
+		s->block.hash.hash_context = t;
+		t = s->index.hash.hash_context;
 #endif
 		memzero(&s->index, sizeof(s->index));
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		s->index.hash.crc32_context = t;
+		s->index.hash.hash_context = t;
 #endif
 	}
 	s->temp.pos = 0;
 	s->temp.size = STREAM_HEADER_SIZE;
 
 #ifndef GRUB_EMBED_DECOMPRESSOR
-	GRUB_MD_CRC32->init(s->crc32_context);
-	GRUB_MD_CRC32->init(s->index.hash.crc32_context);
-	GRUB_MD_CRC32->init(s->block.hash.crc32_context);
+	if (s->hash)
+	{
+		s->hash->init(s->hash_context);
+		s->hash->init(s->index.hash.hash_context);
+		s->hash->init(s->block.hash.hash_context);
+	}
 #endif
-	s->crc32_temp = 0;
+	s->have_hash_value = 0;
 }
 
 void xz_dec_end(struct xz_dec *s)
@@ -905,8 +1026,9 @@ void xz_dec_end(struct xz_dec *s)
 	if (s != NULL) {
 		xz_dec_lzma2_end(s->lzma2);
 #ifndef GRUB_EMBED_DECOMPRESSOR
-		kfree(s->index.hash.crc32_context);
-		kfree(s->block.hash.crc32_context);
+		kfree(s->index.hash.hash_context);
+		kfree(s->block.hash.hash_context);
+		kfree(s->hash_context);
 		kfree(s->crc32_context);
 #endif
 #ifdef XZ_DEC_BCJ

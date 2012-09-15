@@ -26,10 +26,13 @@
 #endif
 
 #ifndef STANDALONE
+#include <assert.h>
+#endif
+
+#ifndef STANDALONE
 #ifdef TEST
 typedef unsigned int grub_size_t;
 typedef unsigned char grub_uint8_t;
-typedef unsigned short grub_uint16_t;
 #else
 #include <grub/types.h>
 #include <grub/reed_solomon.h>
@@ -38,11 +41,13 @@ typedef unsigned short grub_uint16_t;
 #endif
 #endif
 
+#define SECTOR_SIZE 512
+#define MAX_BLOCK_SIZE (200 * SECTOR_SIZE)
+
 #ifdef STANDALONE
 #ifdef TEST
 typedef unsigned int grub_size_t;
 typedef unsigned char grub_uint8_t;
-typedef unsigned short grub_uint16_t;
 #else
 #include <grub/types.h>
 #include <grub/misc.h>
@@ -53,65 +58,80 @@ grub_reed_solomon_recover (void *ptr_, grub_size_t s, grub_size_t rs);
 
 #define GF_SIZE 8
 typedef grub_uint8_t gf_single_t;
-typedef grub_uint16_t gf_double_t;
 #define GF_POLYNOMIAL 0x1d
 #define GF_INVERT2 0x8e
 #if defined (STANDALONE) && !defined (TEST)
-static char *gf_invert __attribute__ ((section(".text"))) = (void *) 0x100000;
-static char *scratch __attribute__ ((section(".text"))) = (void *) 0x100100;
+static gf_single_t * const gf_powx __attribute__ ((section(".text"))) = (void *) 0x100000;
+static gf_single_t * const gf_powx_inv __attribute__ ((section(".text"))) = (void *) 0x100200;
+static int *const chosenstat __attribute__ ((section(".text"))) = (void *) 0x100300;
+static gf_single_t *const sigma __attribute__ ((section(".text"))) = (void *) 0x100700;
+static gf_single_t *const errpot __attribute__ ((section(".text"))) = (void *) 0x100800;
+static int *const errpos __attribute__ ((section(".text"))) = (void *) 0x100900;
+static gf_single_t *const sy __attribute__ ((section(".text"))) = (void *) 0x100d00;
+static gf_single_t *const mstat __attribute__ ((section(".text"))) = (void *) 0x100e00;
+static gf_single_t *const errvals __attribute__ ((section(".text"))) = (void *) 0x100f00;
+static gf_single_t *const eqstat __attribute__ ((section(".text"))) = (void *) 0x101000;
+/* Next available address: (void *) 0x112000.  */
 #else
-#if defined (STANDALONE)
-static char *scratch;
-#endif
-static grub_uint8_t gf_invert[256];
-#endif
 
-#define SECTOR_SIZE 512
-#define MAX_BLOCK_SIZE (200 * SECTOR_SIZE)
-
-static gf_single_t
-gf_reduce (gf_double_t a)
-{
-  int i;
-  for (i = GF_SIZE - 1; i >= 0; i--)
-    if (a & (1ULL << (i + GF_SIZE)))
-      a ^= (((gf_double_t) GF_POLYNOMIAL) << i);
-  return a & ((1ULL << GF_SIZE) - 1);
-}
+static gf_single_t gf_powx[255 * 2];
+static gf_single_t gf_powx_inv[256];
+static int chosenstat[256];
+static gf_single_t sigma[256];
+static gf_single_t errpot[256];
+static int errpos[256];
+static gf_single_t sy[256];
+static gf_single_t mstat[256];
+static gf_single_t errvals[256];
+static gf_single_t eqstat[65536 + 256];
+#endif
 
 static gf_single_t
 gf_mul (gf_single_t a, gf_single_t b)
 {
-  gf_double_t res = 0;
-  int i;
-  for (i = 0; i < GF_SIZE; i++)
-    if (b & (1 << i))
-      res ^= ((gf_double_t) a) << i;
-  return gf_reduce (res);
+  if (a == 0 || b == 0)
+    return 0;
+  return gf_powx[(int) gf_powx_inv[a] + (int) gf_powx_inv[b]];
+}
+
+static inline gf_single_t
+gf_invert (gf_single_t a)
+{
+  return gf_powx[255 - (int) gf_powx_inv[a]];
 }
 
 static void
-init_inverts (void)
+init_powx (void)
 {
-  gf_single_t a = 1, ai = 1;
-  do
+  int i;
+  grub_uint8_t cur = 1;
+
+  gf_powx_inv[0] = 0;
+  for (i = 0; i < 255; i++)
     {
-      a = gf_mul (a, 2);
-      ai = gf_mul (ai, GF_INVERT2);
-      gf_invert[a] = ai;
+      gf_powx[i] = cur;
+      gf_powx[i + 255] = cur;
+      gf_powx_inv[cur] = i;
+      if (cur & (1ULL << (GF_SIZE - 1)))
+	cur = (cur << 1) ^ GF_POLYNOMIAL;
+      else
+	cur <<= 1;
     }
-  while (a != 1);
 }
 
 static gf_single_t
-pol_evaluate (gf_single_t *pol, grub_size_t degree, gf_single_t x)
+pol_evaluate (gf_single_t *pol, grub_size_t degree, int log_x)
 {
   int i;
-  gf_single_t xn = 1, s = 0;
+  gf_single_t s = 0;
+  int log_xn = 0;
   for (i = degree; i >= 0; i--)
     {
-      s ^= gf_mul (pol[i], xn);
-      xn = gf_mul (x, xn);
+      if (pol[i])
+	s ^= gf_powx[(int) gf_powx_inv[pol[i]] + log_xn];
+      log_xn += log_x;
+      if (log_xn >= ((1 << GF_SIZE) - 1))
+	log_xn -= ((1 << GF_SIZE) - 1);
     }
   return s;
 }
@@ -120,7 +140,7 @@ pol_evaluate (gf_single_t *pol, grub_size_t degree, gf_single_t x)
 static void
 rs_encode (gf_single_t *data, grub_size_t s, grub_size_t rs)
 {
-  gf_single_t *rs_polynomial, a = 1;
+  gf_single_t *rs_polynomial;
   int i, j;
   gf_single_t *m;
   m = xmalloc ((s + rs) * sizeof (gf_single_t));
@@ -132,16 +152,14 @@ rs_encode (gf_single_t *data, grub_size_t s, grub_size_t rs)
   /* Multiply with X - a^r */
   for (j = 0; j < rs; j++)
     {
-      if (a & (1 << (GF_SIZE - 1)))
-	{
-	  a <<= 1;
-	  a ^= GF_POLYNOMIAL;
-	}
-      else
-	a <<= 1;
       for (i = 0; i < rs; i++)
-	rs_polynomial[i] = rs_polynomial[i + 1] ^ gf_mul (a, rs_polynomial[i]);
-      rs_polynomial[rs] = gf_mul (a, rs_polynomial[rs]);
+	if (rs_polynomial[i])
+	  rs_polynomial[i] = (rs_polynomial[i + 1]
+			      ^ gf_powx[j + (int) gf_powx_inv[rs_polynomial[i]]]);
+	else
+	  rs_polynomial[i] = rs_polynomial[i + 1];
+      if (rs_polynomial[rs])
+	rs_polynomial[rs] = gf_powx[j + (int) gf_powx_inv[rs_polynomial[rs]]];
     }
   for (j = 0; j < s; j++)
     if (m[j])
@@ -155,25 +173,6 @@ rs_encode (gf_single_t *data, grub_size_t s, grub_size_t rs)
   free (m);
 }
 #endif
-
-static void
-syndroms (gf_single_t *m, grub_size_t s, grub_size_t rs,
-	  gf_single_t *sy)
-{
-  gf_single_t xn = 1;
-  unsigned i;
-  for (i = 0; i < rs; i++)
-    {
-      if (xn & (1 << (GF_SIZE - 1)))
-	{
-	  xn <<= 1;
-	  xn ^= GF_POLYNOMIAL;
-	}
-      else
-	xn <<= 1;
-      sy[i] = pol_evaluate (m, s + rs - 1, xn);
-    }
-}
 
 static void
 gauss_eliminate (gf_single_t *eq, int n, int m, int *chosen)
@@ -190,7 +189,7 @@ gauss_eliminate (gf_single_t *eq, int n, int m, int *chosen)
       if (nzidx == m)
 	continue;
       chosen[i] = nzidx;
-      r = gf_invert [eq[i * (m + 1) + nzidx]];
+      r = gf_invert (eq[i * (m + 1) + nzidx]);
       for (j = 0; j < m + 1; j++)
 	eq[i * (m + 1) + j] = gf_mul (eq[i * (m + 1) + j], r);
       for (j = i + 1; j < n; j++)
@@ -205,162 +204,79 @@ gauss_eliminate (gf_single_t *eq, int n, int m, int *chosen)
 static void
 gauss_solve (gf_single_t *eq, int n, int m, gf_single_t *sol)
 {
-  int *chosen;
   int i, j;
 
-#ifndef STANDALONE
-  chosen = xmalloc (n * sizeof (int));
-#else
-  chosen = (void *) scratch;
-  scratch += n * sizeof (int);
-#endif
   for (i = 0; i < n; i++)
-    chosen[i] = -1;
+    chosenstat[i] = -1;
   for (i = 0; i < m; i++)
     sol[i] = 0;
-  gauss_eliminate (eq, n, m, chosen);
+  gauss_eliminate (eq, n, m, chosenstat);
   for (i = n - 1; i >= 0; i--)
     {
       gf_single_t s = 0;
-      if (chosen[i] == -1)
+      if (chosenstat[i] == -1)
 	continue;
       for (j = 0; j < m; j++)
 	s ^= gf_mul (eq[i * (m + 1) + j], sol[j]);
       s ^= eq[i * (m + 1) + m];
-      sol[chosen[i]] = s;
+      sol[chosenstat[i]] = s;
     }
-#ifndef STANDALONE
-  free (chosen);
-#else
-  scratch -= n * sizeof (int);
-#endif
 }
 
 static void
-rs_recover (gf_single_t *m, grub_size_t s, grub_size_t rs)
+rs_recover (gf_single_t *mm, grub_size_t s, grub_size_t rs)
 {
   grub_size_t rs2 = rs / 2;
-  gf_single_t *sigma;
-  gf_single_t *errpot;
-  int *errpos;
-  gf_single_t *sy;
   int errnum = 0;
   int i, j;
 
-#ifndef STANDALONE
-  sigma = xmalloc (rs2 * sizeof (gf_single_t));
-  errpot = xmalloc (rs2 * sizeof (gf_single_t));
-  errpos = xmalloc (rs2 * sizeof (int));
-  sy = xmalloc (rs * sizeof (gf_single_t));
-#else
-  sigma = (void *) scratch;
-  scratch += rs2 * sizeof (gf_single_t);
-  errpot = (void *) scratch;
-  scratch += rs2 * sizeof (gf_single_t);
-  errpos = (void *) scratch;
-  scratch += rs2 * sizeof (int);
-  sy = (void *) scratch;
-  scratch += rs * sizeof (gf_single_t);
-#endif
+  for (i = 0; i < (int) rs; i++)
+    sy[i] = pol_evaluate (mm, s + rs - 1, i);
 
-  syndroms (m, s, rs, sy);
+  for (i = 0; i < (int) rs; i++)
+    if (sy[i] != 0)
+      break;
+
+  /* No error detected.  */
+  if (i == (int) rs)
+    return;
 
   {
-    gf_single_t *eq;
-
-#ifndef STANDALONE
-    eq = xmalloc (rs2 * (rs2 + 1) * sizeof (gf_single_t));
-#else
-    eq = (void *) scratch;
-    scratch += rs2 * (rs2 + 1) * sizeof (gf_single_t);
-#endif
-
-    for (i = 0; i < (int) rs; i++)
-      if (sy[i] != 0)
-	break;
-
-    /* No error detected.  */
-    if (i == (int) rs)
-      return;
 
     for (i = 0; i < (int) rs2; i++)
       for (j = 0; j < (int) rs2 + 1; j++)
-	eq[i * (rs2 + 1) + j] = sy[i+j];
+	eqstat[i * (rs2 + 1) + j] = sy[i+j];
 
     for (i = 0; i < (int) rs2; i++)
       sigma[i] = 0;
 
-    gauss_solve (eq, rs2, rs2, sigma);
-
-#ifndef STANDALONE
-    free (eq);
-#else
-    scratch -= rs2 * (rs2 + 1) * sizeof (gf_single_t);
-#endif
+    gauss_solve (eqstat, rs2, rs2, sigma);
   } 
 
-  {
-    gf_single_t xn = 1, yn = 1;
-    for (i = 0; i < (int) (rs + s); i++)
+  for (i = 0; i < (int) (rs + s); i++)
+    if (pol_evaluate (sigma, rs2 - 1, 255 - i) == gf_powx[i])
       {
-	gf_single_t ev = (gf_mul (pol_evaluate (sigma, rs2 - 1, xn), xn) ^ 1);
-	if (ev == 0)
-	  {
-	    errpot[errnum] = yn;
-	    errpos[errnum++] = s + rs - i - 1;
-	  }
-	yn = gf_mul (yn, 2);
-	xn = gf_mul (xn, GF_INVERT2);
+	errpot[errnum] = gf_powx[i];
+	errpos[errnum++] = s + rs - i - 1;
       }
-  }
   {
-    gf_single_t *errvals;
-    gf_single_t *eq;
-
-#ifndef STANDALONE
-    eq = xmalloc (rs * (errnum + 1) * sizeof (gf_single_t));
-    errvals = xmalloc (errnum * sizeof (int));
-#else
-    eq = (void *) scratch;
-    scratch += rs * (errnum + 1) * sizeof (gf_single_t);
-    errvals = (void *) scratch;
-    scratch += errnum * sizeof (int);
-#endif
-
     for (j = 0; j < errnum; j++)
-      eq[j] = errpot[j];
-    eq[errnum] = sy[0];
+      eqstat[j] = 1;
+    eqstat[errnum] = sy[0];
     for (i = 1; i < (int) rs; i++)
       {
 	for (j = 0; j < (int) errnum; j++)
-	  eq[(errnum + 1) * i + j] = gf_mul (errpot[j],
-					     eq[(errnum + 1) * (i - 1) + j]);
-	eq[(errnum + 1) * i + errnum] = sy[i];
+	  eqstat[(errnum + 1) * i + j] = gf_mul (errpot[j],
+						 eqstat[(errnum + 1) * (i - 1)
+							+ j]);
+	eqstat[(errnum + 1) * i + errnum] = sy[i];
       }
 
-    gauss_solve (eq, rs, errnum, errvals);
+    gauss_solve (eqstat, rs, errnum, errvals);
 
     for (i = 0; i < (int) errnum; i++)
-      m[errpos[i]] ^= errvals[i];
-#ifndef STANDALONE
-    free (eq);
-    free (errvals);
-#else
-    scratch -= rs * (errnum + 1) * sizeof (gf_single_t);
-    scratch -= errnum * sizeof (int);
-#endif
+      mm[errpos[i]] ^= errvals[i];
   }
-#ifndef STANDALONE
-  free (sigma);
-  free (errpot);
-  free (errpos);
-  free (sy);
-#else
-  scratch -= rs2 * sizeof (gf_single_t);
-  scratch -= rs2 * sizeof (gf_single_t);
-  scratch -= rs2 * sizeof (int);
-  scratch -= rs * sizeof (gf_single_t);
-#endif
 }
 
 static void
@@ -372,21 +288,20 @@ decode_block (gf_single_t *ptr, grub_size_t s,
     {
       grub_size_t ds = (s + SECTOR_SIZE - 1 - i) / SECTOR_SIZE;
       grub_size_t rr = (rs + SECTOR_SIZE - 1 - i) / SECTOR_SIZE;
-      gf_single_t m[ds + rr];
 
       /* Nothing to do.  */
       if (!ds || !rr)
 	continue;
 
       for (j = 0; j < (int) ds; j++)
-	m[j] = ptr[SECTOR_SIZE * j + i];
+	mstat[j] = ptr[SECTOR_SIZE * j + i];
       for (j = 0; j < (int) rr; j++)
-	m[j + ds] = rptr[SECTOR_SIZE * j + i];
+	mstat[j + ds] = rptr[SECTOR_SIZE * j + i];
 
-      rs_recover (m, ds, rr);
+      rs_recover (mstat, ds, rr);
 
       for (j = 0; j < (int) ds; j++)
-	ptr[SECTOR_SIZE * j + i] = m[j];
+	ptr[SECTOR_SIZE * j + i] = mstat[j];
     }
 }
 
@@ -400,12 +315,18 @@ encode_block (gf_single_t *ptr, grub_size_t s,
     {
       grub_size_t ds = (s + SECTOR_SIZE - 1 - i) / SECTOR_SIZE;
       grub_size_t rr = (rs + SECTOR_SIZE - 1 - i) / SECTOR_SIZE;
-      gf_single_t m[ds + rr];
+      gf_single_t *m;
+
+      if (!ds || !rr)
+	continue;
+
+      m = xmalloc (ds + rr);
       for (j = 0; j < ds; j++)
 	m[j] = ptr[SECTOR_SIZE * j + i];
       rs_encode (m, ds, rr);
       for (j = 0; j < rr; j++)      
 	rptr[SECTOR_SIZE * j + i] = m[j + ds];
+      free (m);
     }
 }
 #endif
@@ -419,10 +340,16 @@ grub_reed_solomon_add_redundancy (void *buffer, grub_size_t data_size,
   grub_size_t rs = redundancy;
   gf_single_t *ptr = buffer;
   gf_single_t *rptr = ptr + s;
+  void *tmp;
+
+  tmp = xmalloc (data_size);
+  grub_memcpy (tmp, buffer, data_size);
 
   /* Nothing to do.  */
   if (!rs)
     return;
+
+  init_powx ();
 
   while (s > 0)
     {
@@ -442,6 +369,11 @@ grub_reed_solomon_add_redundancy (void *buffer, grub_size_t data_size,
       s -= cs;
       rs -= crs;
     }
+
+#ifndef TEST
+  assert (grub_memcmp (tmp, buffer, data_size) == 0);
+#endif
+  free (tmp);
 }
 #endif
 
@@ -455,9 +387,7 @@ grub_reed_solomon_recover (void *ptr_, grub_size_t s, grub_size_t rs)
   if (!rs)
     return;
 
-#if defined (STANDALONE)
-  init_inverts ();
-#endif
+  init_powx ();
 
   while (s > 0)
     {
@@ -487,31 +417,45 @@ main (int argc, char **argv)
   grub_size_t s, rs;
   char *buf;
 
-#ifdef STANDALONE
-  scratch = xmalloc (1048576);
+  grub_memset (gf_powx, 0xee, sizeof (gf_powx));
+  grub_memset (gf_powx_inv, 0xdd, sizeof (gf_powx_inv));
+
+#ifndef STANDALONE
+  init_powx ();
 #endif
 
 #ifndef STANDALONE
-  init_inverts ();
-#endif
-
   in = fopen ("tst.bin", "rb");
   if (!in)
     return 1;
   fseek (in, 0, SEEK_END);
   s = ftell (in);
   fseek (in, 0, SEEK_SET);
-  rs = s / 3;
+  rs = 0x7007;
   buf = xmalloc (s + rs + SECTOR_SIZE);
   fread (buf, 1, s, in);
+  fclose (in);
 
   grub_reed_solomon_add_redundancy (buf, s, rs);
 
   out = fopen ("tst_rs.bin", "wb");
   fwrite (buf, 1, s + rs, out);
   fclose (out);
+#else
+  out = fopen ("tst_rs.bin", "rb");
+  fseek (out, 0, SEEK_END);
+  s = ftell (out);
+  fseek (out, 0, SEEK_SET);
+  rs = 0x7007;
+  s -= rs;
 
+  buf = xmalloc (s + rs + SECTOR_SIZE);
+  fread (buf, 1, s + rs, out);
+  fclose (out);  
+#endif
+#if 1
   grub_memset (buf + 512 * 15, 0, 512);
+#endif
 
   out = fopen ("tst_dam.bin", "wb");
   fwrite (buf, 1, s + rs, out);

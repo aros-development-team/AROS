@@ -21,6 +21,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 grub_cmd_true (struct grub_command *cmd __attribute__ ((unused)),
 	       int argc __attribute__ ((unused)),
@@ -34,7 +36,7 @@ grub_cmd_false (struct grub_command *cmd __attribute__ ((unused)),
 		int argc __attribute__ ((unused)),
 		char *argv[] __attribute__ ((unused)))
 {
-  return grub_error (GRUB_ERR_TEST_FAILURE, "false");
+  return grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
 }
 
 static grub_command_t cmd_true, cmd_false;
@@ -44,9 +46,11 @@ GRUB_MOD_INIT(true)
 {
   cmd_true =
     grub_register_command ("true", grub_cmd_true,
+			   /* TRANSLATORS: it's a command description.  */
 			   0, N_("Do nothing, successfully."));
   cmd_false =
     grub_register_command ("false", grub_cmd_false,
+			   /* TRANSLATORS: it's a command description.  */
 			   0, N_("Do nothing, unsuccessfully."));
 }
 

@@ -23,22 +23,6 @@
 #ifndef _SYS_ZIO_CHECKSUM_H
 #define	_SYS_ZIO_CHECKSUM_H
 
-/*
- * Signature for checksum functions.
- */
-typedef void zio_checksum_t(const void *data, grub_uint64_t size, 
-			    grub_zfs_endian_t endian, zio_cksum_t *zcp);
-
-/*
- * Information about each checksum function.
- */
-typedef struct zio_checksum_info {
-	zio_checksum_t	*ci_func; /* checksum function for each byteorder */
-	int		ci_correctable;	/* number of correctable bits	*/
-	int		ci_eck;		/* uses zio embedded checksum? */
-	char		*ci_name;	/* descriptive name */
-} zio_checksum_info_t;
-
 extern void zio_checksum_SHA256 (const void *, grub_uint64_t,
 				 grub_zfs_endian_t endian, zio_cksum_t *);
 extern void fletcher_2 (const void *, grub_uint64_t, grub_zfs_endian_t endian,

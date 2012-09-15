@@ -37,8 +37,6 @@ void grub_gfxterm_set_repaint_callback (grub_gfxterm_repaint_callback_t func);
 
 void EXPORT_FUNC (grub_gfxterm_schedule_repaint) (void);
 
-grub_err_t EXPORT_FUNC (grub_gfxterm_fullscreen) (void);
-
 extern void (*EXPORT_VAR (grub_gfxterm_decorator_hook)) (void);
 
 #endif /* ! GRUB_GFXTERM_HEADER */

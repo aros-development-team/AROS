@@ -19,6 +19,8 @@
 #ifndef GRUB_VBE_MACHINE_HEADER
 #define GRUB_VBE_MACHINE_HEADER	1
 
+#include <grub/video.h>
+
 /* Default video mode to be used.  */
 #define GRUB_VBE_DEFAULT_VIDEO_MODE     0x101
 
@@ -169,6 +171,21 @@ struct grub_vbe_palette_data
   grub_uint8_t alignment;
 } __attribute__ ((packed));
 
+struct grub_vbe_flat_panel_info
+{
+  grub_uint16_t horizontal_size;
+  grub_uint16_t vertical_size;
+  grub_uint16_t panel_type;
+  grub_uint8_t red_bpp;
+  grub_uint8_t green_bpp;
+  grub_uint8_t blue_bpp;
+  grub_uint8_t reserved_bpp;
+  grub_uint32_t reserved_offscreen_mem_size;
+  grub_vbe_farptr_t reserved_offscreen_mem_ptr;
+
+  grub_uint8_t reserved[14];
+} __attribute__ ((packed));
+
 /* Prototypes for helper functions.  */
 /* Call VESA BIOS 0x4f00 to get VBE Controller Information, return status.  */
 grub_vbe_status_t 
@@ -204,8 +221,6 @@ grub_vbe_status_t grub_vbe_bios_getset_dac_palette_width (int set, int *width);
 #define grub_vbe_bios_set_dac_palette_width(width)	grub_vbe_bios_getset_dac_palette_width(1, (width))
 
 grub_err_t grub_vbe_probe (struct grub_vbe_info_block *info_block);
-grub_err_t grub_vbe_set_video_mode (grub_uint32_t mode,
-                                    struct grub_vbe_mode_info_block *mode_info);
 grub_err_t grub_vbe_get_video_mode (grub_uint32_t *mode);
 grub_err_t grub_vbe_get_video_mode_info (grub_uint32_t mode,
                                          struct grub_vbe_mode_info_block *mode_info);

@@ -13,17 +13,13 @@ SECTIONS
     __data_start__ = . ;
     *(.data)
     __data_end__ = . ;
-  }
-  .rdata :
-  {
     __rdata_start__ = . ;
     *(.rdata)
     __rdata_end__ = . ;
-  }
-  .pdata :
-  {
     *(.pdata)
     edata = . ;
+    _edata = . ;
+    __edata = . ;
   }
   .bss :
   {

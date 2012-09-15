@@ -24,7 +24,15 @@
 #include <grub/scsicmd.h>
 #include <grub/misc.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define GRUB_USBMS_DIRECTION_BIT	7
+
+/* Length of CBI command should be always 12 bytes */
+#define GRUB_USBMS_CBI_CMD_SIZE         12
+/* CBI class-specific USB request ADSC - it sends CBI (scsi) command to
+ * device in DATA stage */
+#define GRUB_USBMS_CBI_ADSC_REQ         0x00
 
 /* The USB Mass Storage Command Block Wrapper.  */
 struct grub_usbms_cbw
@@ -57,8 +65,9 @@ struct grub_usbms_dev
   struct grub_usb_desc_endp *in;
   struct grub_usb_desc_endp *out;
 
-  int in_maxsz;
-  int out_maxsz;
+  int subclass;
+  int protocol;
+  struct grub_usb_desc_endp *intrpt;
 };
 typedef struct grub_usbms_dev *grub_usbms_dev_t;
 
@@ -68,9 +77,54 @@ static grub_usbms_dev_t grub_usbms_devices[MAX_USBMS_DEVICES];
 static int first_available_slot = 0;
 
 static grub_err_t
-grub_usbms_reset (grub_usb_device_t dev, int interface)
+grub_usbms_cbi_cmd (grub_usb_device_t dev, int interface,
+                    grub_uint8_t *cbicb)
 {
-  return grub_usb_control_msg (dev, 0x21, 255, 0, interface, 0, 0);
+  return grub_usb_control_msg (dev,
+                               GRUB_USB_REQTYPE_CLASS_INTERFACE_OUT,
+                               GRUB_USBMS_CBI_ADSC_REQ, 0, interface,
+                               GRUB_USBMS_CBI_CMD_SIZE, (char*)cbicb);
+}
+
+static grub_err_t
+grub_usbms_cbi_reset (grub_usb_device_t dev, int interface)
+{
+  /* Prepare array with Command Block Reset (=CBR) */
+  /* CBI specific communication reset command should be send to device
+   * via CBI USB class specific request ADCS */
+  struct grub_cbi_reset
+    {
+      grub_uint8_t opcode; /* 0x1d = SEND DIAGNOSTIC */
+      grub_uint8_t lun; /* 7-5 LUN, 4-0 flags - for CBR always = 0x04 */
+      grub_uint8_t pad[10];
+      /* XXX: There is collision between CBI and UFI specifications:
+       *      CBI says 0xff, UFI says 0x00 ... probably it does
+       *      not matter ... (?) */
+    } cbicb = { 0x1d, 0x04,
+                { 0xff, 0xff, 0xff, 0xff, 0xff,
+                  0xff, 0xff, 0xff, 0xff, 0xff }
+              };
+  
+  return grub_usbms_cbi_cmd (dev, interface, (grub_uint8_t *)&cbicb);
+}
+
+static grub_err_t
+grub_usbms_bo_reset (grub_usb_device_t dev, int interface)
+{
+  grub_usb_err_t u;
+  u = grub_usb_control_msg (dev, 0x21, 255, 0, interface, 0, 0);
+  if (u)
+    return grub_error (GRUB_ERR_IO, "USB error %d", u);
+  return GRUB_ERR_NONE;
+}
+
+static grub_err_t
+grub_usbms_reset (grub_usbms_dev_t dev)
+{
+  if (dev->protocol == GRUB_USBMS_PROTOCOL_BULK)
+    return grub_usbms_bo_reset (dev->dev, dev->interface);
+  else
+    return grub_usbms_cbi_reset (dev->dev, dev->interface);
 }
 
 static void
@@ -95,7 +149,7 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
   int j;
   grub_uint8_t luns = 0;
   unsigned curnum;
-  grub_usb_err_t err;
+  grub_usb_err_t err = GRUB_ERR_NONE;
 
   if (first_available_slot == ARRAY_SIZE (grub_usbms_devices))
     return 0;
@@ -111,7 +165,9 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
        && interf->subclass != GRUB_USBMS_SUBCLASS_MMC2
        && interf->subclass != GRUB_USBMS_SUBCLASS_UFI 
        && interf->subclass != GRUB_USBMS_SUBCLASS_SFF8070 )
-      || interf->protocol != GRUB_USBMS_PROTOCOL_BULK)
+      || (interf->protocol != GRUB_USBMS_PROTOCOL_BULK
+          && interf->protocol != GRUB_USBMS_PROTOCOL_CBI
+          && interf->protocol != GRUB_USBMS_PROTOCOL_CB))
     return 0;
 
   grub_usbms_devices[curnum] = grub_zalloc (sizeof (struct grub_usbms_dev));
@@ -120,6 +176,8 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
 
   grub_usbms_devices[curnum]->dev = usbdev;
   grub_usbms_devices[curnum]->interface = interfno;
+  grub_usbms_devices[curnum]->subclass = interf->subclass;
+  grub_usbms_devices[curnum]->protocol = interf->protocol;
 
   grub_dprintf ("usbms", "alive\n");
 
@@ -131,24 +189,19 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
       endp = &usbdev->config[0].interf[interfno].descendp[j];
 
       if ((endp->endp_addr & 128) && (endp->attrib & 3) == 2)
-	{
-	  /* Bulk IN endpoint.  */
-	  grub_usbms_devices[curnum]->in = endp;
-	  /* Clear Halt is not possible yet! */
-	  /* grub_usb_clear_halt (usbdev, endp->endp_addr); */
-	  grub_usbms_devices[curnum]->in_maxsz = endp->maxpacket;
-	}
+	/* Bulk IN endpoint.  */
+	grub_usbms_devices[curnum]->in = endp;
       else if (!(endp->endp_addr & 128) && (endp->attrib & 3) == 2)
-	{
-	  /* Bulk OUT endpoint.  */
-	  grub_usbms_devices[curnum]->out = endp;
-	  /* Clear Halt is not possible yet! */
-	  /* grub_usb_clear_halt (usbdev, endp->endp_addr); */
-	  grub_usbms_devices[curnum]->out_maxsz = endp->maxpacket;
-	}
+        /* Bulk OUT endpoint.  */
+	grub_usbms_devices[curnum]->out = endp;
+      else if ((endp->endp_addr & 128) && (endp->attrib & 3) == 3)
+        /* Interrupt (IN) endpoint.  */
+	grub_usbms_devices[curnum]->intrpt = endp;
     }
 
-  if (!grub_usbms_devices[curnum]->in || !grub_usbms_devices[curnum]->out)
+  if (!grub_usbms_devices[curnum]->in || !grub_usbms_devices[curnum]->out
+      || ((grub_usbms_devices[curnum]->protocol == GRUB_USBMS_PROTOCOL_CBI)
+          && !grub_usbms_devices[curnum]->intrpt))
     {
       grub_free (grub_usbms_devices[curnum]);
       grub_usbms_devices[curnum] = 0;
@@ -161,27 +214,34 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
   grub_usb_set_configuration (usbdev, 1);
 
   /* Query the amount of LUNs.  */
-  err = grub_usb_control_msg (usbdev, 0xA1, 254, 0, interfno, 1, (char *) &luns);
-		
-  if (err)
-    {
-      /* In case of a stall, clear the stall.  */
-      if (err == GRUB_USB_ERR_STALL)
-	{
-	  grub_usb_clear_halt (usbdev, grub_usbms_devices[curnum]->in->endp_addr);
-	  grub_usb_clear_halt (usbdev, grub_usbms_devices[curnum]->out->endp_addr);
-	}
-      /* Just set the amount of LUNs to one.  */
-      grub_errno = GRUB_ERR_NONE;
-      grub_usbms_devices[curnum]->luns = 1;
+  if (grub_usbms_devices[curnum]->protocol == GRUB_USBMS_PROTOCOL_BULK)
+    { /* Only Bulk only devices support Get Max LUN command */
+      err = grub_usb_control_msg (usbdev, 0xA1, 254, 0, interfno, 1, (char *) &luns);
+  		
+      if (err)
+        {
+          /* In case of a stall, clear the stall.  */
+          if (err == GRUB_USB_ERR_STALL)
+	    {
+	      grub_usb_clear_halt (usbdev, grub_usbms_devices[curnum]->in->endp_addr);
+	      grub_usb_clear_halt (usbdev, grub_usbms_devices[curnum]->out->endp_addr);
+	    }
+          /* Just set the amount of LUNs to one.  */
+          grub_errno = GRUB_ERR_NONE;
+          grub_usbms_devices[curnum]->luns = 1;
+        }
+      else
+        /* luns = 0 means one LUN with ID 0 present ! */
+        /* We get from device not number of LUNs but highest
+         * LUN number. LUNs are numbered from 0, 
+         * i.e. number of LUNs is luns+1 ! */
+        grub_usbms_devices[curnum]->luns = luns + 1;
     }
   else
-    /* luns = 0 means one LUN with ID 0 present ! */
-    /* We get from device not number of LUNs but highest
-     * LUN number. LUNs are numbered from 0, 
-     * i.e. number of LUNs is luns+1 ! */
-    grub_usbms_devices[curnum]->luns = luns + 1;
-
+    /* XXX: Does CBI devices support multiple LUNs ?
+     * I.e., should we detect number of device's LUNs ? (How?) */
+    grub_usbms_devices[curnum]->luns = 1;
+    
   grub_dprintf ("usbms", "alive\n");
 
   usbdev->config[configno].interf[interfno].detach_hook = grub_usbms_detach;
@@ -205,16 +265,20 @@ grub_usbms_attach (grub_usb_device_t usbdev, int configno, int interfno)
 
 
 static int
-grub_usbms_iterate (int (*hook) (int bus, int luns))
+grub_usbms_iterate (int NESTED_FUNC_ATTR (*hook) (int id, int bus, int luns),
+		    grub_disk_pull_t pull)
 {
   unsigned i;
+
+  if (pull != GRUB_DISK_PULL_NONE)
+    return 0;
 
   grub_usb_poll_devices ();
 
   for (i = 0; i < ARRAY_SIZE (grub_usbms_devices); i++)
     if (grub_usbms_devices[i])
       {
-	if (hook (i, grub_usbms_devices[i]->luns))
+	if (hook (GRUB_SCSI_SUBSYSTEM_USBMS, i, grub_usbms_devices[i]->luns))
 	  return 1;
       }
 
@@ -222,8 +286,8 @@ grub_usbms_iterate (int (*hook) (int bus, int luns))
 }
 
 static grub_err_t
-grub_usbms_transfer (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
-		     grub_size_t size, char *buf, int read_write)
+grub_usbms_transfer_bo (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
+		        grub_size_t size, char *buf, int read_write)
 {
   struct grub_usbms_cbw cbw;
   grub_usbms_dev_t dev = (grub_usbms_dev_t) scsi->data;
@@ -232,7 +296,7 @@ grub_usbms_transfer (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
   grub_usb_err_t err = GRUB_USB_ERR_NONE;
   grub_usb_err_t errCSW = GRUB_USB_ERR_NONE;
   int retrycnt = 3 + 1;
-
+  
  retry:
   retrycnt--;
   if (retrycnt == 0)
@@ -333,7 +397,7 @@ CheckCSW:
       if (errCSW)
         { /* Bulk-only reset device. */
           grub_dprintf ("usb", "Bulk-only reset device - errCSW\n");
-          grub_usbms_reset (dev->dev, dev->interface);
+          grub_usbms_reset (dev);
           grub_usb_clear_halt (dev->dev, dev->in->endp_addr);
           grub_usb_clear_halt (dev->dev, dev->out->endp_addr);
 	  goto retry;
@@ -350,7 +414,7 @@ CheckCSW:
       (status.signature != grub_cpu_to_le32(0x53425355)))
     { /* Bulk-only reset device. */
       grub_dprintf ("usb", "Bulk-only reset device - bad status\n");
-      grub_usbms_reset (dev->dev, dev->interface);
+      grub_usbms_reset (dev);
       grub_usb_clear_halt (dev->dev, dev->in->endp_addr);
       grub_usb_clear_halt (dev->dev, dev->out->endp_addr);
 
@@ -368,6 +432,158 @@ CheckCSW:
   return GRUB_ERR_NONE;
 }
 
+static grub_err_t
+grub_usbms_transfer_cbi (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
+		        grub_size_t size, char *buf, int read_write)
+{
+  grub_usbms_dev_t dev = (grub_usbms_dev_t) scsi->data;
+  int retrycnt = 3 + 1;
+  grub_usb_err_t err = GRUB_USB_ERR_NONE;
+  grub_uint8_t cbicb[GRUB_USBMS_CBI_CMD_SIZE];
+  grub_uint16_t status;
+  
+ retry:
+  retrycnt--;
+  if (retrycnt == 0)
+    return grub_error (GRUB_ERR_IO, "USB Mass Storage CBI failed");
+
+  /* Setup the request.  */
+  grub_memset (cbicb, 0, sizeof (cbicb));
+  grub_memcpy (cbicb, cmd,
+               cmdsize >= GRUB_USBMS_CBI_CMD_SIZE
+                 ? GRUB_USBMS_CBI_CMD_SIZE
+                 : cmdsize);
+  
+  /* Debug print of CBIcb content. */
+  grub_dprintf ("usb", "cbicb:\n %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
+  	cbicb[ 0], cbicb[ 1], cbicb[ 2], cbicb[ 3],
+  	cbicb[ 4], cbicb[ 5], cbicb[ 6], cbicb[ 7],
+  	cbicb[ 8], cbicb[ 9], cbicb[10], cbicb[11]);
+
+  /* Write the request.
+   * XXX: Error recovery is maybe not correct. */
+  err = grub_usbms_cbi_cmd (dev->dev, dev->interface, cbicb);
+  if (err)
+    {
+      grub_dprintf ("usb", "CBI cmdcb setup err=%d\n", err);
+      if (err == GRUB_USB_ERR_STALL)
+	{
+	  /* Stall in this place probably means bad or unsupported
+	   * command, so we will not try it again. */
+         return grub_error (GRUB_ERR_IO, "USB Mass Storage CBI request failed");
+	}
+      else if (dev->protocol == GRUB_USBMS_PROTOCOL_CBI)
+        {
+          /* Try to get status from interrupt pipe */
+          err = grub_usb_bulk_read (dev->dev, dev->intrpt->endp_addr,
+                                    2, (char*)&status);
+          grub_dprintf ("usb", "CBI cmdcb setup status: err=%d, status=0x%x\n", err, status);
+        }
+        /* Any other error could be transport problem, try it again */
+        goto retry;
+    }
+
+  /* Read/write the data, (maybe) according to specification.  */
+  if (size && (read_write == 0))
+    {
+      err = grub_usb_bulk_read (dev->dev, dev->in->endp_addr, size, buf);
+      grub_dprintf ("usb", "read: %d\n", err); 
+      if (err)
+        {
+          if (err == GRUB_USB_ERR_STALL)
+            grub_usb_clear_halt (dev->dev, dev->in->endp_addr);
+          goto retry;
+        }
+    }
+  else if (size)
+    {
+      err = grub_usb_bulk_write (dev->dev, dev->out->endp_addr, size, buf);
+      grub_dprintf ("usb", "write: %d\n", err);
+      if (err)
+        {
+          if (err == GRUB_USB_ERR_STALL)
+	    grub_usb_clear_halt (dev->dev, dev->out->endp_addr);
+          goto retry;
+        }
+    }
+
+  /* XXX: It is not clear to me yet, how to check status of CBI
+   * data transfer on devices without interrupt pipe.
+   * AFAIK there is probably no status phase to indicate possibly
+   * bad transported data.
+   * Maybe we should do check on higher level, i.e. issue RequestSense
+   * command (we do it already in scsi.c) and check returned values
+   * (we do not it yet) - ? */
+  if (dev->protocol == GRUB_USBMS_PROTOCOL_CBI)
+    { /* Check status in interrupt pipe */
+      err = grub_usb_bulk_read (dev->dev, dev->intrpt->endp_addr,
+                                2, (char*)&status);
+      grub_dprintf ("usb", "read status: %d\n", err);
+      if (err)
+        {
+          /* Try to reset device, because it is probably not standard
+           * situation */
+          grub_usbms_reset (dev);
+          grub_usb_clear_halt (dev->dev, dev->in->endp_addr);
+          grub_usb_clear_halt (dev->dev, dev->out->endp_addr);
+          grub_usb_clear_halt (dev->dev, dev->intrpt->endp_addr);
+          goto retry;
+        }
+      if (dev->subclass == GRUB_USBMS_SUBCLASS_UFI)
+        {
+          /* These devices should return bASC and bASCQ */
+          if (status != 0)
+            /* Some error, currently we don't care what it is... */
+            goto retry;
+        }
+      else if (dev->subclass == GRUB_USBMS_SUBCLASS_RBC)
+        {
+          /* XXX: I don't understand what returns RBC subclass devices,
+           * so I don't check it - maybe somebody helps ? */
+        }
+      else
+        {
+          /* Any other device should return bType = 0 and some bValue */
+          if (status & 0xff)
+            return grub_error (GRUB_ERR_IO, "USB Mass Storage CBI status type != 0");
+          status = (status & 0x0300) >> 8;
+          switch (status)
+            {
+              case 0 : /* OK */
+                break;
+              case 1 : /* Fail */
+                goto retry;
+                break;
+              case 2 : /* Phase error */
+              case 3 : /* Persistent Failure */
+                grub_dprintf ("usb", "CBI reset device - phase error or persistent failure\n");
+                grub_usbms_reset (dev);
+                grub_usb_clear_halt (dev->dev, dev->in->endp_addr);
+                grub_usb_clear_halt (dev->dev, dev->out->endp_addr);
+                grub_usb_clear_halt (dev->dev, dev->intrpt->endp_addr);
+                goto retry;
+                break;
+            }
+        }
+    }
+    
+  return err;
+}
+
+
+static grub_err_t
+grub_usbms_transfer (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
+		        grub_size_t size, char *buf, int read_write)
+{
+  grub_usbms_dev_t dev = (grub_usbms_dev_t) scsi->data;
+
+  if (dev->protocol == GRUB_USBMS_PROTOCOL_BULK)
+    return grub_usbms_transfer_bo (scsi, cmdsize, cmd, size, buf,
+                                   read_write);
+  else
+    return grub_usbms_transfer_cbi (scsi, cmdsize, cmd, size, buf,
+                                    read_write);
+}
 
 static grub_err_t
 grub_usbms_read (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
@@ -378,14 +594,18 @@ grub_usbms_read (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
 
 static grub_err_t
 grub_usbms_write (struct grub_scsi *scsi, grub_size_t cmdsize, char *cmd,
-		  grub_size_t size, char *buf)
+		  grub_size_t size, const char *buf)
 {
-  return grub_usbms_transfer (scsi, cmdsize, cmd, size, buf, 1);
+  return grub_usbms_transfer (scsi, cmdsize, cmd, size, (char *) buf, 1);
 }
 
 static grub_err_t
-grub_usbms_open (int devnum, struct grub_scsi *scsi)
+grub_usbms_open (int id, int devnum, struct grub_scsi *scsi)
 {
+  if (id != GRUB_SCSI_SUBSYSTEM_USBMS)
+    return grub_error (GRUB_ERR_UNKNOWN_DEVICE,
+		       "not USB Mass Storage device");
+
   grub_usb_poll_devices ();
 
   if (!grub_usbms_devices[devnum])
@@ -400,15 +620,13 @@ grub_usbms_open (int devnum, struct grub_scsi *scsi)
 
 static struct grub_scsi_dev grub_usbms_dev =
   {
-    .name = "usb",
-    .id = GRUB_SCSI_SUBSYSTEM_USBMS,
     .iterate = grub_usbms_iterate,
     .open = grub_usbms_open,
     .read = grub_usbms_read,
     .write = grub_usbms_write
   };
 
-struct grub_usb_attach_desc attach_hook =
+static struct grub_usb_attach_desc attach_hook =
 {
   .class = GRUB_USB_CLASS_MASS_STORAGE,
   .hook = grub_usbms_attach

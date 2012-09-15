@@ -171,12 +171,6 @@ nvram_set (void * data __attribute__ ((unused)))
 			      (nvramsize - (nvramptr - nvram)) / 2,
 			      (grub_uint8_t *) varname, len, NULL);
 
-    if (len < 0)
-      {
-	grub_error (GRUB_ERR_BAD_ARGUMENT, "broken UTF-8 in variable name");
-	return 1;
-      }
-
     nvramptr += 2 * len;
     *((grub_uint16_t *) nvramptr) = 0;
     nvramptr += 2;

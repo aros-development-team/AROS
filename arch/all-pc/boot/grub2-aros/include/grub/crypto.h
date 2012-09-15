@@ -26,6 +26,7 @@
 #include <grub/symbol.h>
 #include <grub/types.h>
 #include <grub/err.h>
+#include <grub/mm.h>
 
 typedef enum 
   {
@@ -126,6 +127,9 @@ typedef struct gcry_cipher_spec
   gcry_cipher_decrypt_t decrypt;
   gcry_cipher_stencrypt_t stencrypt;
   gcry_cipher_stdecrypt_t stdecrypt;
+#ifdef GRUB_UTIL
+  const char *modname;
+#endif
   struct gcry_cipher_spec *next;
 } gcry_cipher_spec_t;
 
@@ -161,6 +165,9 @@ typedef struct gcry_md_spec
   grub_size_t contextsize; /* allocate this amount of context */
   /* Block size, needed for HMAC.  */
   grub_size_t blocksize;
+#ifdef GRUB_UTIL
+  const char *modname;
+#endif
   struct gcry_md_spec *next;
 } gcry_md_spec_t;
 
@@ -185,26 +192,61 @@ grub_crypto_cipher_set_key (grub_crypto_cipher_handle_t cipher,
 			    const unsigned char *key,
 			    unsigned keylen);
 
-void
-grub_crypto_cipher_close (grub_crypto_cipher_handle_t cipher);
+static inline void
+grub_crypto_cipher_close (grub_crypto_cipher_handle_t cipher)
+{
+  grub_free (cipher);
+}
 
-void
-grub_crypto_xor (void *out, const void *in1, const void *in2, grub_size_t size);
+static inline void
+grub_crypto_xor (void *out, const void *in1, const void *in2, grub_size_t size)
+{
+  const grub_uint8_t *in1ptr = in1, *in2ptr = in2;
+  grub_uint8_t *outptr = out;
+  while (size && (((grub_addr_t) in1ptr & (sizeof (grub_uint64_t) - 1))
+		  || ((grub_addr_t) in2ptr & (sizeof (grub_uint64_t) - 1))
+		  || ((grub_addr_t) outptr & (sizeof (grub_uint64_t) - 1))))
+    {
+      *outptr = *in1ptr ^ *in2ptr;
+      in1ptr++;
+      in2ptr++;
+      outptr++;
+      size--;
+    }
+  while (size >= sizeof (grub_uint64_t))
+    {
+      *(grub_uint64_t *) (void *) outptr
+	= (*(grub_uint64_t *) (void *) in1ptr
+	   ^ *(grub_uint64_t *) (void *) in2ptr);
+      in1ptr += sizeof (grub_uint64_t);
+      in2ptr += sizeof (grub_uint64_t);
+      outptr += sizeof (grub_uint64_t);
+      size -= sizeof (grub_uint64_t);
+    }
+  while (size)
+    {
+      *outptr = *in1ptr ^ *in2ptr;
+      in1ptr++;
+      in2ptr++;
+      outptr++;
+      size--;
+    }
+}
 
 gcry_err_code_t
 grub_crypto_ecb_decrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size);
+			 void *out, const void *in, grub_size_t size);
 
 gcry_err_code_t
 grub_crypto_ecb_encrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size);
+			 void *out, const void *in, grub_size_t size);
 gcry_err_code_t
 grub_crypto_cbc_encrypt (grub_crypto_cipher_handle_t cipher,
 			 void *out, void *in, grub_size_t size,
 			 void *iv_in);
 gcry_err_code_t
 grub_crypto_cbc_decrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size,
+			 void *out, const void *in, grub_size_t size,
 			 void *iv);
 void 
 grub_cipher_register (gcry_cipher_spec_t *cipher);
@@ -229,7 +271,8 @@ struct grub_crypto_hmac_handle *
 grub_crypto_hmac_init (const struct gcry_md_spec *md,
 		       const void *key, grub_size_t keylen);
 void
-grub_crypto_hmac_write (struct grub_crypto_hmac_handle *hnd, void *data,
+grub_crypto_hmac_write (struct grub_crypto_hmac_handle *hnd,
+			const void *data,
 			grub_size_t datalen);
 gcry_err_code_t
 grub_crypto_hmac_fini (struct grub_crypto_hmac_handle *hnd, void *out);
@@ -237,18 +280,20 @@ grub_crypto_hmac_fini (struct grub_crypto_hmac_handle *hnd, void *out);
 gcry_err_code_t
 grub_crypto_hmac_buffer (const struct gcry_md_spec *md,
 			 const void *key, grub_size_t keylen,
-			 void *data, grub_size_t datalen, void *out);
+			 const void *data, grub_size_t datalen, void *out);
 
 extern gcry_md_spec_t _gcry_digest_spec_md5;
 extern gcry_md_spec_t _gcry_digest_spec_sha1;
 extern gcry_md_spec_t _gcry_digest_spec_sha256;
 extern gcry_md_spec_t _gcry_digest_spec_sha512;
 extern gcry_md_spec_t _gcry_digest_spec_crc32;
+extern gcry_cipher_spec_t _gcry_cipher_spec_aes;
 #define GRUB_MD_MD5 ((const gcry_md_spec_t *) &_gcry_digest_spec_md5)
 #define GRUB_MD_SHA1 ((const gcry_md_spec_t *) &_gcry_digest_spec_sha1)
 #define GRUB_MD_SHA256 ((const gcry_md_spec_t *) &_gcry_digest_spec_sha256)
 #define GRUB_MD_SHA512 ((const gcry_md_spec_t *) &_gcry_digest_spec_sha512)
 #define GRUB_MD_CRC32 ((const gcry_md_spec_t *) &_gcry_digest_spec_crc32)
+#define GRUB_CIPHER_AES ((const gcry_cipher_spec_t *) &_gcry_cipher_spec_aes)
 
 /* Implement PKCS#5 PBKDF2 as per RFC 2898.  The PRF to use is HMAC variant
    of digest supplied by MD.  Inputs are the password P of length PLEN,
@@ -270,8 +315,14 @@ int
 grub_password_get (char buf[], unsigned buf_size);
 
 /* For indistinguishibility.  */
-#define GRUB_ACCESS_DENIED grub_error (GRUB_ERR_ACCESS_DENIED, "Access denied.")
+#define GRUB_ACCESS_DENIED grub_error (GRUB_ERR_ACCESS_DENIED, N_("access denied"))
 
 extern void (*grub_crypto_autoload_hook) (const char *name);
+
+#ifdef GRUB_UTIL
+void grub_gcry_init_all (void);
+void grub_gcry_fini_all (void);
+#endif
+
 
 #endif

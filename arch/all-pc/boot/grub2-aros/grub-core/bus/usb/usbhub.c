@@ -39,12 +39,14 @@ struct grub_usb_hub
   grub_usb_device_t dev;
 };
 
-struct grub_usb_hub *hubs;
+static struct grub_usb_hub *hubs;
 
 /* Add a device that currently has device number 0 and resides on
    CONTROLLER, the Hub reported that the device speed is SPEED.  */
 static grub_usb_device_t
-grub_usb_hub_add_dev (grub_usb_controller_t controller, grub_usb_speed_t speed)
+grub_usb_hub_add_dev (grub_usb_controller_t controller,
+                      grub_usb_speed_t speed,
+                      int port, int hubaddr)
 {
   grub_usb_device_t dev;
   int i;
@@ -56,6 +58,8 @@ grub_usb_hub_add_dev (grub_usb_controller_t controller, grub_usb_speed_t speed)
 
   dev->controller = *controller;
   dev->speed = speed;
+  dev->port = port;
+  dev->hubaddr = hubaddr;
 
   err = grub_usb_device_initialize (dev);
   if (err)
@@ -97,6 +101,11 @@ grub_usb_hub_add_dev (grub_usb_controller_t controller, grub_usb_speed_t speed)
   dev->initialized = 1;
   grub_usb_devs[i] = dev;
 
+  grub_dprintf ("usb", "Added new usb device: %p, addr=%d\n",
+		dev, i);
+  grub_dprintf ("usb", "speed=%d, port=%d, hubaddr=%d\n",
+		speed, port, hubaddr);
+
   /* Wait "recovery interval", spec. says 2ms */
   grub_millisleep (2);
   
@@ -110,7 +119,7 @@ static grub_usb_err_t
 grub_usb_add_hub (grub_usb_device_t dev)
 {
   struct grub_usb_usb_hubdesc hubdesc;
-  grub_err_t err;
+  grub_usb_err_t err;
   int i;
   
   err = grub_usb_control_msg (dev, (GRUB_USB_REQTYPE_IN
@@ -158,11 +167,13 @@ grub_usb_add_hub (grub_usb_device_t dev)
       if ((endp->endp_addr & 128) && grub_usb_get_ep_type(endp)
 	  == GRUB_USB_EP_INTERRUPT)
 	{
+	  grub_size_t len;
 	  dev->hub_endpoint = endp;
+	  len = endp->maxpacket;
+	  if (len > sizeof (dev->statuschange))
+	    len = sizeof (dev->statuschange);
 	  dev->hub_transfer
-	    = grub_usb_bulk_read_background (dev, endp->endp_addr,
-					     grub_min (endp->maxpacket,
-						       sizeof (dev->statuschange)),
+	    = grub_usb_bulk_read_background (dev, endp->endp_addr, len,
 					     (char *) &dev->statuschange);
 	  break;
 	}
@@ -215,8 +226,10 @@ attach_root_port (struct grub_usb_hub *hub, int portno,
     return;
   hub->controller->dev->pending_reset = grub_get_time_ms () + 5000;
 
+  grub_millisleep (10);
+
   /* Enable the port and create a device.  */
-  dev = grub_usb_hub_add_dev (hub->controller, speed);
+  dev = grub_usb_hub_add_dev (hub->controller, speed, portno, 0);
   hub->controller->dev->pending_reset = 0;
   if (! dev)
     return;
@@ -312,7 +325,7 @@ poll_nonroot_hub (grub_usb_device_t dev)
   grub_usb_err_t err;
   unsigned i;
   grub_uint8_t changed;
-  grub_size_t actual;
+  grub_size_t actual, len;
   int j, total;
 
   if (!dev->hub_transfer)
@@ -325,10 +338,11 @@ poll_nonroot_hub (grub_usb_device_t dev)
 
   changed = dev->statuschange;
 
+  len = dev->hub_endpoint->maxpacket;
+  if (len > sizeof (dev->statuschange))
+    len = sizeof (dev->statuschange);
   dev->hub_transfer
-    = grub_usb_bulk_read_background (dev, dev->hub_endpoint->endp_addr,
-				     grub_min (dev->hub_endpoint->maxpacket,
-					       sizeof (dev->statuschange)),
+    = grub_usb_bulk_read_background (dev, dev->hub_endpoint->endp_addr, len,
 				     (char *) &dev->statuschange);
 
   if (err || actual == 0 || changed == 0)
@@ -350,7 +364,7 @@ poll_nonroot_hub (grub_usb_device_t dev)
 				  GRUB_USB_REQ_GET_STATUS,
 				  0, i, sizeof (status), (char *) &status);
 
-      grub_printf ("dev = %p, i = %d, status = %08x\n",
+      grub_dprintf ("usb", "dev = %p, i = %d, status = %08x\n",
                    dev, i, status);
 
       if (err)
@@ -470,7 +484,7 @@ poll_nonroot_hub (grub_usb_device_t dev)
 	      grub_millisleep (10);
 
 	      /* Add the device and assign a device address to it.  */
-	      next_dev = grub_usb_hub_add_dev (&dev->controller, speed);
+	      next_dev = grub_usb_hub_add_dev (&dev->controller, speed, i, dev->addr);
 	      dev->controller.dev->pending_reset = 0;
 	      if (! next_dev)
 		continue;

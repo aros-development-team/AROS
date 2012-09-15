@@ -31,14 +31,13 @@
 #include <grub/emu/misc.h>
 
 char *grub_util_get_path (const char *dir, const char *file);
-size_t grub_util_get_fp_size (FILE *fp);
 size_t grub_util_get_image_size (const char *path);
-void grub_util_read_at (void *img, size_t len, off_t offset, FILE *fp);
 char *grub_util_read_image (const char *path);
 void grub_util_load_image (const char *path, char *buf);
-void grub_util_write_image (const char *img, size_t size, FILE *out);
+void grub_util_write_image (const char *img, size_t size, FILE *out,
+			    const char *name);
 void grub_util_write_image_at (const void *img, size_t size, off_t offset,
-			       FILE *out);
+			       FILE *out, const char *name);
 
 #ifdef __MINGW32__
 
@@ -47,7 +46,6 @@ void grub_util_write_image_at (const void *img, size_t size, off_t offset,
 
 void sync (void);
 int fsync (int fno);
-void sleep(int s);
 
 grub_int64_t grub_util_get_disk_size (char *name);
 

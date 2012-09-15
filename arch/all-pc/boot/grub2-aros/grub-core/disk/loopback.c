@@ -25,6 +25,8 @@
 #include <grub/extcmd.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 struct grub_loopback
 {
   char *devname;
@@ -36,7 +38,9 @@ static struct grub_loopback *loopback_list;
 
 static const struct grub_arg_option options[] =
   {
-    {"delete", 'd', 0, N_("Delete the loopback device entry."), 0, 0},
+    /* TRANSLATORS: The disk is simply removed from the list of available ones,
+       not wiped, avoid to scare user.  */
+    {"delete", 'd', 0, N_("Delete the specified loopback drive."), 0, 0},
     {0, 0, 0, 0, 0, 0}
   };
 
@@ -84,7 +88,7 @@ grub_cmd_loopback (grub_extcmd_context_t ctxt, int argc, char **args)
       return delete_loopback (args[0]);
 
   if (argc < 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   file = grub_file_open (args[1]);
   if (! file)
@@ -97,10 +101,6 @@ grub_cmd_loopback (grub_extcmd_context_t ctxt, int argc, char **args)
 
   if (newdev)
     {
-      char *newname = grub_strdup (args[1]);
-      if (! newname)
-	goto fail;
-
       grub_file_close (newdev->file);
       newdev->file = file;
 
@@ -135,9 +135,12 @@ fail:
 
 
 static int
-grub_loopback_iterate (int (*hook) (const char *name))
+grub_loopback_iterate (int (*hook) (const char *name),
+		    grub_disk_pull_t pull)
 {
   struct grub_loopback *d;
+  if (pull != GRUB_DISK_PULL_NONE)
+    return 0;
   for (d = loopback_list; d; d = d->next)
     {
       if (hook (d->devname))
@@ -166,7 +169,7 @@ grub_loopback_open (const char *name, grub_disk_t disk)
     disk->total_sectors = GRUB_DISK_SIZE_UNKNOWN;
   disk->id = (unsigned long) dev;
 
-  disk->data = dev->file;
+  disk->data = dev;
 
   return 0;
 }
@@ -175,7 +178,7 @@ static grub_err_t
 grub_loopback_read (grub_disk_t disk, grub_disk_addr_t sector,
 		    grub_size_t size, char *buf)
 {
-  grub_file_t file = (grub_file_t) disk->data;
+  grub_file_t file = ((struct grub_loopback *) disk->data)->file;
   grub_off_t pos;
 
   grub_file_seek (file, sector << GRUB_DISK_SECTOR_BITS);
@@ -222,8 +225,10 @@ static grub_extcmd_t cmd;
 GRUB_MOD_INIT(loopback)
 {
   cmd = grub_register_extcmd ("loopback", grub_cmd_loopback, 0,
-			      N_("[-d|-p] DEVICENAME FILE."),
-			      N_("Make a device of a file."), options);
+			      N_("[-d] DEVICENAME FILE."),
+			      /* TRANSLATORS: The file itself is not destroyed
+				 or transformed into drive.  */
+			      N_("Make a virtual drive from a file."), options);
   grub_disk_dev_register (&grub_loopback_dev);
 }
 

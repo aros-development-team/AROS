@@ -20,6 +20,7 @@
 #define GRUB_GPT_PARTITION_HEADER	1
 
 #include <grub/types.h>
+#include <grub/partition.h>
 
 struct grub_gpt_part_type
 {
@@ -36,8 +37,17 @@ typedef struct grub_gpt_part_type grub_gpt_part_type_t;
   }
 
 #define GRUB_GPT_PARTITION_TYPE_BIOS_BOOT \
-  { grub_cpu_to_le32_compile_time (0x21686148), grub_cpu_to_le16_compile_time (0x6449), grub_cpu_to_le16_compile_time (0x6e6f), \
+  { grub_cpu_to_le32_compile_time (0x21686148), \
+      grub_cpu_to_le16_compile_time (0x6449), \
+      grub_cpu_to_le16_compile_time (0x6e6f),	       \
     { 0x74, 0x4e, 0x65, 0x65, 0x64, 0x45, 0x46, 0x49 } \
+  }
+
+#define GRUB_GPT_PARTITION_TYPE_LDM \
+  { grub_cpu_to_le32_compile_time (0x5808C8AAU),\
+      grub_cpu_to_le16_compile_time (0x7E8F), \
+      grub_cpu_to_le16_compile_time (0x42E0),	       \
+	{ 0x85, 0xD2, 0xE1, 0xE9, 0x04, 0x34, 0xCF, 0xB3 }	\
   }
 
 struct grub_gpt_header
@@ -67,5 +77,11 @@ struct grub_gpt_partentry
   grub_uint64_t attrib;
   char name[72];
 } __attribute__ ((packed));
+
+grub_err_t
+grub_gpt_partition_map_iterate (grub_disk_t disk,
+				int (*hook) (grub_disk_t disk,
+					     const grub_partition_t partition));
+
 
 #endif /* ! GRUB_GPT_PARTITION_HEADER */

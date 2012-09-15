@@ -335,6 +335,9 @@ __argp_fmtstream_point (argp_fmtstream_t __fs)
   return __fs->point_col >= 0 ? __fs->point_col : 0;
 }
 
+size_t
+__argp_get_display_len (const char *beg, const char *end);
+
 #if !_LIBC
 #undef __argp_fmtstream_putc
 #undef __argp_fmtstream_puts

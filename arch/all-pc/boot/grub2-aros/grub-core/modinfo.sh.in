@@ -1,0 +1,4 @@
+#!/bin/sh
+
+grub_modinfo_target_cpu=@target_cpu@
+grub_modinfo_platform=@platform@

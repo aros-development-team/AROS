@@ -21,8 +21,9 @@
 #include <grub/misc.h>
 #include <grub/disk.h>
 #include <grub/dl.h>
-#include <grub/fshelp.h>
 #include <grub/ntfs.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_err_t
 decomp_nextvcn (struct grub_ntfs_comp *cc)
@@ -31,12 +32,12 @@ decomp_nextvcn (struct grub_ntfs_comp *cc)
     return grub_error (GRUB_ERR_BAD_FS, "compression block overflown");
   if (grub_disk_read
       (cc->disk,
-       (cc->comp_table[cc->comp_head][1] -
-	(cc->comp_table[cc->comp_head][0] - cc->cbuf_vcn)) * cc->spc, 0,
-       cc->spc << BLK_SHR, cc->cbuf))
+       (cc->comp_table[cc->comp_head].next_lcn -
+	(cc->comp_table[cc->comp_head].next_vcn - cc->cbuf_vcn)) * cc->spc, 0,
+       cc->spc << GRUB_NTFS_BLK_SHR, cc->cbuf))
     return grub_errno;
   cc->cbuf_vcn++;
-  if ((cc->cbuf_vcn >= cc->comp_table[cc->comp_head][0]))
+  if ((cc->cbuf_vcn >= cc->comp_table[cc->comp_head].next_vcn))
     cc->comp_head++;
   cc->cbuf_ofs = 0;
   return 0;
@@ -45,7 +46,7 @@ decomp_nextvcn (struct grub_ntfs_comp *cc)
 static grub_err_t
 decomp_getch (struct grub_ntfs_comp *cc, unsigned char *res)
 {
-  if (cc->cbuf_ofs >= (cc->spc << BLK_SHR))
+  if (cc->cbuf_ofs >= (cc->spc << GRUB_NTFS_BLK_SHR))
     {
       if (decomp_nextvcn (cc))
 	return grub_errno;
@@ -85,7 +86,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 	  bits = copied = tag = 0;
 	  while (cnt > 0)
 	    {
-	      if (copied > COM_LEN)
+	      if (copied > GRUB_NTFS_COM_LEN)
 		return grub_error (GRUB_ERR_BAD_FS,
 				   "compression block too large");
 
@@ -148,7 +149,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 	}
       else
 	{
-	  if (cnt != COM_LEN)
+	  if (cnt != GRUB_NTFS_COM_LEN)
 	    return grub_error (GRUB_ERR_BAD_FS,
 			       "invalid compression block size");
 	}
@@ -158,7 +159,7 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
     {
       int n;
 
-      n = (cc->spc << BLK_SHR) - cc->cbuf_ofs;
+      n = (cc->spc << GRUB_NTFS_BLK_SHR) - cc->cbuf_ofs;
       if (n > cnt)
 	n = cnt;
       if ((dest) && (n))
@@ -175,22 +176,23 @@ decomp_block (struct grub_ntfs_comp *cc, char *dest)
 }
 
 static grub_err_t
-read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
+read_block (struct grub_ntfs_rlst *ctx, char *buf, grub_size_t num)
 {
-  int cpb = COM_SEC / ctx->comp.spc;
+  int cpb = GRUB_NTFS_COM_SEC / ctx->comp.spc;
 
   while (num)
     {
-      int nn;
+      grub_size_t nn;
 
       if ((ctx->target_vcn & 0xF) == 0)
 	{
 
-	  if (ctx->comp.comp_head != ctx->comp.comp_tail)
+	  if (ctx->comp.comp_head != ctx->comp.comp_tail
+	      && !(ctx->flags & GRUB_NTFS_RF_BLNK))
 	    return grub_error (GRUB_ERR_BAD_FS, "invalid compression block");
 	  ctx->comp.comp_head = ctx->comp.comp_tail = 0;
 	  ctx->comp.cbuf_vcn = ctx->target_vcn;
-	  ctx->comp.cbuf_ofs = (ctx->comp.spc << BLK_SHR);
+	  ctx->comp.cbuf_ofs = (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
 	  if (ctx->target_vcn >= ctx->next_vcn)
 	    {
 	      if (grub_ntfs_read_run_list (ctx))
@@ -198,10 +200,10 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 	    }
 	  while (ctx->target_vcn + 16 > ctx->next_vcn)
 	    {
-	      if (ctx->flags & RF_BLNK)
+	      if (ctx->flags & GRUB_NTFS_RF_BLNK)
 		break;
-	      ctx->comp.comp_table[ctx->comp.comp_tail][0] = ctx->next_vcn;
-	      ctx->comp.comp_table[ctx->comp.comp_tail][1] =
+	      ctx->comp.comp_table[ctx->comp.comp_tail].next_vcn = ctx->next_vcn;
+	      ctx->comp.comp_table[ctx->comp.comp_tail].next_lcn =
 		ctx->curr_lcn + ctx->next_vcn - ctx->curr_vcn;
 	      ctx->comp.comp_tail++;
 	      if (grub_ntfs_read_run_list (ctx))
@@ -214,15 +216,15 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 	nn = num;
       num -= nn;
 
-      if (ctx->flags & RF_BLNK)
+      if (ctx->flags & GRUB_NTFS_RF_BLNK)
 	{
 	  ctx->target_vcn += nn * cpb;
 	  if (ctx->comp.comp_tail == 0)
 	    {
 	      if (buf)
 		{
-		  grub_memset (buf, 0, nn * COM_LEN);
-		  buf += nn * COM_LEN;
+		  grub_memset (buf, 0, nn * GRUB_NTFS_COM_LEN);
+		  buf += nn * GRUB_NTFS_COM_LEN;
 		}
 	    }
 	  else
@@ -232,7 +234,7 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 		  if (decomp_block (&ctx->comp, buf))
 		    return grub_errno;
 		  if (buf)
-		    buf += COM_LEN;
+		    buf += GRUB_NTFS_COM_LEN;
 		  nn--;
 		}
 	    }
@@ -242,10 +244,10 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 	  nn *= cpb;
 	  while ((ctx->comp.comp_head < ctx->comp.comp_tail) && (nn))
 	    {
-	      int tt;
+	      grub_disk_addr_t tt;
 
 	      tt =
-		ctx->comp.comp_table[ctx->comp.comp_head][0] -
+		ctx->comp.comp_table[ctx->comp.comp_head].next_vcn -
 		ctx->target_vcn;
 	      if (tt > nn)
 		tt = nn;
@@ -254,16 +256,16 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 		{
 		  if (grub_disk_read
 		      (ctx->comp.disk,
-		       (ctx->comp.comp_table[ctx->comp.comp_head][1] -
-			(ctx->comp.comp_table[ctx->comp.comp_head][0] -
+		       (ctx->comp.comp_table[ctx->comp.comp_head].next_lcn -
+			(ctx->comp.comp_table[ctx->comp.comp_head].next_vcn -
 			 ctx->target_vcn)) * ctx->comp.spc, 0,
-		       tt * (ctx->comp.spc << BLK_SHR), buf))
+		       tt * (ctx->comp.spc << GRUB_NTFS_BLK_SHR), buf))
 		    return grub_errno;
-		  buf += tt * (ctx->comp.spc << BLK_SHR);
+		  buf += tt * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
 		}
 	      nn -= tt;
 	      if (ctx->target_vcn >=
-		  ctx->comp.comp_table[ctx->comp.comp_head][0])
+		  ctx->comp.comp_table[ctx->comp.comp_head].next_vcn)
 		ctx->comp.comp_head++;
 	    }
 	  if (nn)
@@ -274,9 +276,9 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 		      (ctx->comp.disk,
 		       (ctx->target_vcn - ctx->curr_vcn +
 			ctx->curr_lcn) * ctx->comp.spc, 0,
-		       nn * (ctx->comp.spc << BLK_SHR), buf))
+		       nn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR), buf))
 		    return grub_errno;
-		  buf += nn * (ctx->comp.spc << BLK_SHR);
+		  buf += nn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
 		}
 	      ctx->target_vcn += nn;
 	    }
@@ -286,13 +288,13 @@ read_block (struct grub_ntfs_rlst *ctx, char *buf, int num)
 }
 
 static grub_err_t
-ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_uint32_t ofs,
-	  grub_uint32_t len, struct grub_ntfs_rlst *ctx, grub_uint32_t vcn)
+ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_disk_addr_t ofs,
+	  grub_size_t len, struct grub_ntfs_rlst *ctx, grub_disk_addr_t vcn)
 {
   grub_err_t ret;
 
   ctx->comp.comp_head = ctx->comp.comp_tail = 0;
-  ctx->comp.cbuf = grub_malloc ((ctx->comp.spc) << BLK_SHR);
+  ctx->comp.cbuf = grub_malloc ((ctx->comp.spc) << GRUB_NTFS_BLK_SHR);
   if (!ctx->comp.cbuf)
     return 0;
 
@@ -302,17 +304,17 @@ ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_uint32_t ofs,
 
   if ((vcn > ctx->target_vcn) &&
       (read_block
-       (ctx, NULL, ((vcn - ctx->target_vcn) * ctx->comp.spc) / COM_SEC)))
+       (ctx, NULL, ((vcn - ctx->target_vcn) * ctx->comp.spc) / GRUB_NTFS_COM_SEC)))
     {
       ret = grub_errno;
       goto quit;
     }
 
-  if (ofs % COM_LEN)
+  if (ofs % GRUB_NTFS_COM_LEN)
     {
       grub_uint32_t t, n, o;
 
-      t = ctx->target_vcn * (ctx->comp.spc << BLK_SHR);
+      t = ctx->target_vcn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
       if (read_block (ctx, at->sbuf, 1))
 	{
 	  ret = grub_errno;
@@ -321,8 +323,8 @@ ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_uint32_t ofs,
 
       at->save_pos = t;
 
-      o = ofs % COM_LEN;
-      n = COM_LEN - o;
+      o = ofs % GRUB_NTFS_COM_LEN;
+      n = GRUB_NTFS_COM_LEN - o;
       if (n > len)
 	n = len;
       grub_memcpy (dest, &at->sbuf[o], n);
@@ -332,19 +334,19 @@ ntfscomp (struct grub_ntfs_attr *at, char *dest, grub_uint32_t ofs,
       len -= n;
     }
 
-  if (read_block (ctx, dest, len / COM_LEN))
+  if (read_block (ctx, dest, len / GRUB_NTFS_COM_LEN))
     {
       ret = grub_errno;
       goto quit;
     }
 
-  dest += (len / COM_LEN) * COM_LEN;
-  len = len % COM_LEN;
+  dest += (len / GRUB_NTFS_COM_LEN) * GRUB_NTFS_COM_LEN;
+  len = len % GRUB_NTFS_COM_LEN;
   if (len)
     {
       grub_uint32_t t;
 
-      t = ctx->target_vcn * (ctx->comp.spc << BLK_SHR);
+      t = ctx->target_vcn * (ctx->comp.spc << GRUB_NTFS_BLK_SHR);
       if (read_block (ctx, at->sbuf, 1))
 	{
 	  ret = grub_errno;

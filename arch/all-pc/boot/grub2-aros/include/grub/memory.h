@@ -42,6 +42,11 @@ typedef int NESTED_FUNC_ATTR (*grub_memory_hook_t) (grub_uint64_t,
 
 grub_err_t grub_mmap_iterate (grub_memory_hook_t hook);
 
+#ifdef GRUB_MACHINE_EFI
+grub_err_t
+grub_efi_mmap_iterate (grub_memory_hook_t hook, int avoid_efi_boot_services);
+#endif
+
 #if !defined (GRUB_MACHINE_EMU) && !defined (GRUB_MACHINE_EFI)
 grub_err_t EXPORT_FUNC(grub_machine_mmap_iterate) (grub_memory_hook_t hook);
 #else

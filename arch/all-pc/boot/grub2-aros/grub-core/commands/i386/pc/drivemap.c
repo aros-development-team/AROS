@@ -29,12 +29,17 @@
 #include <grub/memory.h>
 #include <grub/machine/memory.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* Real mode IVT slot (seg:off far pointer) for interrupt 0x13.  */
-static grub_uint32_t *const int13slot = UINT_TO_PTR (4 * 0x13);
+static grub_uint32_t *const int13slot = (grub_uint32_t *) (4 * 0x13);
 
 /* Remember to update enum opt_idxs accordingly.  */
 static const struct grub_arg_option options[] = {
+  /* TRANSLATORS: In this file "mapping" refers to a change GRUB makes so if
+     your language doesn't have an equivalent of "mapping" you can
+     use the word like "rerouting".
+   */
   {"list", 'l', 0, N_("Show the current mappings."), 0, 0},
   {"reset", 'r', 0, N_("Reset all mappings to the default values."), 0, 0},
   {"swap", 's', 0, N_("Perform both direct and reverse mappings."), 0, 0},
@@ -106,8 +111,7 @@ drivemap_set (grub_uint8_t newdrive, grub_uint8_t redirto)
     {
       mapping = grub_malloc (sizeof (drivemap_node_t));
       if (! mapping)
-	return grub_error (GRUB_ERR_OUT_OF_MEMORY,
-			   "cannot allocate map entry, not enough memory");
+	return grub_errno;
       mapping->newdrive = newdrive;
       mapping->redirto = redirto;
       mapping->next = map_head;
@@ -177,11 +181,14 @@ list_mappings (void)
   /* Show: list mappings.  */
   if (! map_head)
     {
-      grub_printf ("No drives have been remapped\n");
+      grub_puts_ (N_("No drives have been remapped"));
       return GRUB_ERR_NONE;
     }
 
-  grub_printf ("OS disk #num ------> GRUB/BIOS device\n");
+  /* TRANSLATORS:  This is the header of mapping list. 
+     On the left is how OS will see the disks and
+     on the right current GRUB vision.  */
+  grub_puts_ (N_("OS disk #num ------> GRUB/BIOS device"));
   drivemap_node_t *curnode = map_head;
   while (curnode)
     {
@@ -229,7 +236,7 @@ grub_cmd_drivemap (struct grub_extcmd_context *ctxt, int argc, char **args)
   grub_err_t err;
 
   if (argc != 2)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "two arguments required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
 
   err = tryparse_diskstring (args[0], &mapfrom);
   if (err != GRUB_ERR_NONE)
@@ -305,7 +312,7 @@ install_int13_handler (int noret __attribute__ ((unused)))
   total_size = INT13H_OFFSET (&grub_drivemap_mapstart)
     + (entries + 1) * sizeof (int13map_node_t);
   grub_dprintf ("drivemap", "Payload is %u bytes long\n", total_size);
-  handler_base = grub_mmap_malign_and_register (16, total_size,
+  handler_base = grub_mmap_malign_and_register (16, ALIGN_UP (total_size, 16),
 						&drivemap_mmap,
 						GRUB_MEMORY_RESERVED,
 						GRUB_MMAP_MALLOC_LOW);
@@ -362,7 +369,7 @@ uninstall_int13_handler (void)
 static int
 grub_get_root_biosnumber_drivemap (void)
 {
-  char *biosnum;
+  const char *biosnum;
   int ret = -1;
   grub_device_t dev;
 

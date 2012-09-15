@@ -85,7 +85,7 @@ struct grub_scsi_request_sense_data
   /* there can be additional sense field */
 } __attribute__((packed));
 
-struct grub_scsi_read_capacity
+struct grub_scsi_read_capacity10
 {
   grub_uint8_t opcode;
   grub_uint8_t lun; /* 7-5 LUN, 4-1 reserved, 0 reserved */
@@ -97,10 +97,27 @@ struct grub_scsi_read_capacity
   grub_uint16_t pad; /* To be ATAPI compatible */
 } __attribute__((packed));
 
-struct grub_scsi_read_capacity_data
+struct grub_scsi_read_capacity10_data
 {
-  grub_uint32_t size;
+  grub_uint32_t last_block;
   grub_uint32_t blocksize;
+} __attribute__((packed));
+
+struct grub_scsi_read_capacity16
+{
+  grub_uint8_t opcode;
+  grub_uint8_t lun; /* 7-5 LUN, 4-0 0x10 */
+  grub_uint64_t logical_block_addr; /* only if PMI=1 */
+  grub_uint32_t alloc_len;
+  grub_uint8_t PMI;
+  grub_uint8_t control;
+} __attribute__((packed));
+
+struct grub_scsi_read_capacity16_data
+{
+  grub_uint64_t last_block;
+  grub_uint32_t blocksize;
+  grub_uint8_t pad[20];
 } __attribute__((packed));
 
 struct grub_scsi_read10
@@ -119,6 +136,16 @@ struct grub_scsi_read12
   grub_uint8_t opcode;
   grub_uint8_t lun;
   grub_uint32_t lba;
+  grub_uint32_t size;
+  grub_uint8_t reserved;
+  grub_uint8_t control;
+} __attribute__((packed));
+
+struct grub_scsi_read16
+{
+  grub_uint8_t opcode;
+  grub_uint8_t lun;
+  grub_uint64_t lba;
   grub_uint32_t size;
   grub_uint8_t reserved;
   grub_uint8_t control;
@@ -145,14 +172,27 @@ struct grub_scsi_write12
   grub_uint8_t control;
 } __attribute__((packed));
 
+struct grub_scsi_write16
+{
+  grub_uint8_t opcode;
+  grub_uint8_t lun;
+  grub_uint64_t lba;
+  grub_uint32_t size;
+  grub_uint8_t reserved;
+  grub_uint8_t control;
+} __attribute__((packed));
+
 typedef enum
   {
     grub_scsi_cmd_test_unit_ready = 0x00,
     grub_scsi_cmd_request_sense = 0x03,
     grub_scsi_cmd_inquiry = 0x12,
-    grub_scsi_cmd_read_capacity = 0x25,
+    grub_scsi_cmd_read_capacity10 = 0x25,
     grub_scsi_cmd_read10 = 0x28,
     grub_scsi_cmd_write10 = 0x2a,
+    grub_scsi_cmd_read16 = 0x88,
+    grub_scsi_cmd_write16 = 0x8a,
+    grub_scsi_cmd_read_capacity16 = 0x9e,
     grub_scsi_cmd_read12 = 0xa8,
     grub_scsi_cmd_write12 = 0xaa,
   } grub_scsi_cmd_t;

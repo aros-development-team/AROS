@@ -41,7 +41,6 @@
 #define GRUB_LINUX_VID_MODE_ASK		0xFFFD
 #define GRUB_LINUX_VID_MODE_VESA_START	0x0300
 
-#define GRUB_LINUX_SETUP_MOVE_SIZE	0x9100
 #define GRUB_LINUX_CL_MAGIC		0xA33F
 
 #ifdef __x86_64__
@@ -70,8 +69,6 @@
 #define GRUB_E820_NVS        4
 #define GRUB_E820_BADRAM     5
 
-#define GRUB_E820_MAX_ENTRY  128
-
 struct grub_e820_mmap
 {
   grub_uint64_t addr;
@@ -79,11 +76,15 @@ struct grub_e820_mmap
   grub_uint32_t type;
 } __attribute__((packed));
 
-#define GRUB_VIDEO_LINUX_TYPE_TEXT	0x01
-#define GRUB_VIDEO_LINUX_TYPE_VESA	0x23    /* VESA VGA in graphic mode.  */
-#define GRUB_VIDEO_LINUX_TYPE_SIMPLE	0x70    /* Linear framebuffer without any additional functions.  */
+enum
+  {
+    GRUB_VIDEO_LINUX_TYPE_TEXT = 0x01,
+    GRUB_VIDEO_LINUX_TYPE_VESA = 0x23,    /* VESA VGA in graphic mode.  */
+    GRUB_VIDEO_LINUX_TYPE_EFIFB = 0x70,    /* EFI Framebuffer.  */
+    GRUB_VIDEO_LINUX_TYPE_SIMPLE = 0x70    /* Linear framebuffer without any additional functions.  */
+  };
 
-/* For the Linux/i386 boot protocol version 2.03.  */
+/* For the Linux/i386 boot protocol version 2.10.  */
 struct linux_kernel_header
 {
   grub_uint8_t code1[0x0020];
@@ -126,6 +127,18 @@ struct linux_kernel_header
   grub_uint16_t pad1;			/* Unused */
   grub_uint32_t cmd_line_ptr;		/* Points to the kernel command line */
   grub_uint32_t initrd_addr_max;        /* Highest address for initrd */
+  grub_uint32_t kernel_alignment;
+  grub_uint8_t relocatable;
+  grub_uint8_t min_alignment;
+  grub_uint8_t pad[2];
+  grub_uint32_t cmdline_size;
+  grub_uint32_t hardware_subarch;
+  grub_uint64_t hardware_subarch_data;
+  grub_uint32_t payload_offset;
+  grub_uint32_t payload_length;
+  grub_uint64_t setup_data;
+  grub_uint64_t pref_address;
+  grub_uint32_t init_size;
 } __attribute__ ((packed));
 
 /* Boot parameters for Linux based on 2.6.12. This is used by the setup
@@ -231,9 +244,20 @@ struct linux_kernel_params
           grub_uint32_t efi_mem_desc_version;	/* 1cc */
           grub_uint32_t efi_mmap;		/* 1d0 */
           grub_uint32_t efi_mmap_size;		/* 1d4 */
+	} v0206;
+      struct
+        {
+          grub_uint32_t padding7_1;		/* 1b8 */
+          grub_uint32_t padding7_2;		/* 1bc */
+          grub_uint32_t efi_signature;		/* 1c0 */
+          grub_uint32_t efi_system_table;	/* 1c4 */
+          grub_uint32_t efi_mem_desc_size;	/* 1c8 */
+          grub_uint32_t efi_mem_desc_version;	/* 1cc */
+          grub_uint32_t efi_mmap;		/* 1d0 */
+          grub_uint32_t efi_mmap_size;		/* 1d4 */
           grub_uint32_t efi_system_table_hi;	/* 1d8 */
           grub_uint32_t efi_mmap_hi;		/* 1dc */
-        } v0206;
+        } v0208;
     };
 
   grub_uint32_t alt_mem;		/* 1e0 */
@@ -269,11 +293,21 @@ struct linux_kernel_params
   grub_uint32_t ramdisk_size;		/* initrd size */
   grub_uint32_t bootsect_kludge;	/* obsolete */
   grub_uint16_t heap_end_ptr;		/* Free memory after setup end */
-  grub_uint16_t pad1;			/* Unused */
+  grub_uint8_t ext_loader_ver;		/* Extended loader version */
+  grub_uint8_t ext_loader_type;		/* Extended loader type */  
   grub_uint32_t cmd_line_ptr;		/* Points to the kernel command line */
-
-  grub_uint8_t pad2[164];		/* 22c */
-  struct grub_e820_mmap e820_map[GRUB_E820_MAX_ENTRY];	/* 2d0 */
+  grub_uint32_t initrd_addr_max;	/* Maximum initrd address */
+  grub_uint32_t kernel_alignment;	/* Alignment of the kernel */
+  grub_uint8_t relocatable_kernel;	/* Is the kernel relocatable */
+  grub_uint8_t pad1[3];
+  grub_uint32_t cmdline_size;		/* Size of the kernel command line */
+  grub_uint32_t hardware_subarch;
+  grub_uint64_t hardware_subarch_data;
+  grub_uint32_t payload_offset;
+  grub_uint32_t payload_length;
+  grub_uint64_t setup_data;
+  grub_uint8_t pad2[120];		/* 258 */
+  struct grub_e820_mmap e820_map[(0x400 - 0x2d0) / 20];	/* 2d0 */
 
 } __attribute__ ((packed));
 #endif /* ! ASM_FILE */

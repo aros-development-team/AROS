@@ -19,6 +19,7 @@
 #include <grub/cpu/io.h>
 #include <grub/misc.h>
 #include <grub/acpi.h>
+#include <grub/i18n.h>
 
 const char bochs_shutdown[] = "Shutdown";
 
@@ -52,7 +53,7 @@ grub_halt (void)
   for (i = 0; i < sizeof (bochs_shutdown) - 1; i++)
     grub_outb (bochs_shutdown[i], 0x8900);
 
-  grub_printf ("GRUB doesn't know how to halt this machine yet!\n");
+  grub_puts_ (N_("GRUB doesn't know how to halt this machine yet!"));
 
   /* In order to return we'd have to check what the previous status of IF
      flag was.  But user most likely doesn't want to return anyway ...  */

@@ -23,8 +23,12 @@
 #include <grub/term.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static const struct grub_arg_option options[] =
   {
+    /* TRANSLATORS: "Check" in a sense that if this key is pressed then
+       "true" is returned, otherwise "false".  */
     {"shift", 's', 0, N_("Check Shift key."), 0, 0},
     {"ctrl", 'c', 0, N_("Check Control key."), 0, 0},
     {"alt", 'a', 0, N_("Check Alt key."), 0, 0},
@@ -76,11 +80,11 @@ grub_cmd_keystatus (grub_extcmd_context_t ctxt,
 
       FOR_ACTIVE_TERM_INPUTS (term)
 	if (!term->getkeystatus)
-	  return grub_error (GRUB_ERR_TEST_FAILURE, "false");
+	  return grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
 	else
 	  nterms++;
       if (!nterms)
-	return grub_error (GRUB_ERR_TEST_FAILURE, "false");
+	return grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
       return 0;
     }
 
@@ -89,7 +93,7 @@ grub_cmd_keystatus (grub_extcmd_context_t ctxt,
   if (mods >= 0 && (mods & expect_mods) != 0)
     return 0;
   else
-    return grub_error (GRUB_ERR_TEST_FAILURE, "false");
+    return grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
 }
 
 static grub_extcmd_t cmd;
@@ -97,7 +101,8 @@ static grub_extcmd_t cmd;
 GRUB_MOD_INIT(keystatus)
 {
   cmd = grub_register_extcmd ("keystatus", grub_cmd_keystatus, 0,
-			      N_("[--shift] [--ctrl] [--alt]"),
+			      "[--shift] [--ctrl] [--alt]",
+			      /* TRANSLATORS: there are 3 modifiers.  */
 			      N_("Check key modifier status."),
 			      options);
 }

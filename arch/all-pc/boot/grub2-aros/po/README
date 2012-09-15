@@ -6,7 +6,7 @@ that will hopefully clarify the situation.
   - If you're a user or a distributor, simply fill the po directory by
     importing translations from the Translation Project:
 
-      rsync -Lrtvz  translationproject.org::tp/latest/grub/ po
+    	 ./linguas.sh
 
     GRUB's build system will automatically detect those and include them
     in your install.

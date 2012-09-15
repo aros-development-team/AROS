@@ -41,7 +41,7 @@ grub_env_hashval (const char *s)
   return i % HASHSZ;
 }
 
-struct grub_env_var *
+static struct grub_env_var *
 grub_env_find (const char *name)
 {
   struct grub_env_var *var;
@@ -109,9 +109,6 @@ grub_env_set (const char *name, const char *val)
   if (! var)
     return grub_errno;
 
-  /* This is not necessary. But leave this for readability.  */
-  var->global = 0;
-
   var->name = grub_strdup (name);
   if (! var->name)
     goto fail;
@@ -132,7 +129,7 @@ grub_env_set (const char *name, const char *val)
   return grub_errno;
 }
 
-char *
+const char *
 grub_env_get (const char *name)
 {
   struct grub_env_var *var;
@@ -237,6 +234,26 @@ grub_register_variable_hook (const char *name,
 
   var->read_hook = read_hook;
   var->write_hook = write_hook;
+
+  return GRUB_ERR_NONE;
+}
+
+grub_err_t
+grub_env_export (const char *name)
+{
+  struct grub_env_var *var;
+
+  var = grub_env_find (name);
+  if (! var)
+    {
+      grub_err_t err;
+      
+      err = grub_env_set (name, "");
+      if (err)
+	return err;
+      var = grub_env_find (name);
+    }    
+  var->global = 1;
 
   return GRUB_ERR_NONE;
 }

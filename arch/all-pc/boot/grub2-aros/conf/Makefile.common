@@ -2,15 +2,19 @@
 
 CFLAGS_PLATFORM=
 
+export LC_COLLATE := C
+export LC_CTYPE := C
+unexport LC_ALL
+
 # Platform specific options
 if COND_i386_pc
   CFLAGS_PLATFORM += -mrtd -mregparm=3
 endif
 if COND_i386_efi
-  LDFLAGS_PLATFORM = -melf_i386
+  LDFLAGS_PLATFORM = -Wl,-melf_i386
 endif
 if COND_x86_64_efi
-  LDFLAGS_PLATFORM = -melf_x86_64
+  LDFLAGS_PLATFORM = -Wl,-melf_x86_64
 endif
 if COND_i386_qemu
   CFLAGS_PLATFORM += -mrtd -mregparm=3
@@ -21,17 +25,17 @@ endif
 if COND_i386_ieee1275
   CFLAGS_PLATFORM += -mrtd -mregparm=3
 endif
-if COND_mips_yeeloong
+if COND_mips_loongson
   CFLAGS_PLATFORM += -mexplicit-relocs
   CPPFLAGS_PLATFORM = -DUSE_ASCII_FAILBACK
-  CCASFLAGS_PLATFORM = -march=mips3
 endif
 if COND_mips
   CFLAGS_PLATFORM += -mflush-func=grub_cpu_flush_cache
+  CCASFLAGS_PLATFORM = -march=mips3
 endif
 if COND_sparc64_ieee1275
   CFLAGS_PLATFORM += -mno-app-regs
-  LDFLAGS_PLATFORM = -melf64_sparc -mno-relax
+  LDFLAGS_PLATFORM = -Wl,-melf64_sparc -mno-relax
 endif
 
 # Other options
@@ -64,18 +68,22 @@ endif
 endif
 
 CFLAGS_KERNEL = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
-LDFLAGS_KERNEL = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N -static-libgcc
+LDFLAGS_KERNEL = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -static-libgcc
 CPPFLAGS_KERNEL = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
 CCASFLAGS_KERNEL = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
-STRIPFLAGS_KERNEL = -R .rel.dyn -R .reginfo -R .note -R .comment
+if COND_CYGWIN
+STRIPFLAGS_KERNEL = -F elf32-i386 -R .rel.dyn -R .reginfo -R .note -R .comment -R .drectve -R .note.gnu.gold-version
+else
+STRIPFLAGS_KERNEL = -R .rel.dyn -R .reginfo -R .note -R .comment -R .note.gnu.gold-version
+endif
 
 CFLAGS_MODULE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -ffreestanding
-LDFLAGS_MODULE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N,-r,-d
+LDFLAGS_MODULE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-r,-d
 CPPFLAGS_MODULE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
 CCASFLAGS_MODULE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
 
 CFLAGS_IMAGE = $(CFLAGS_CPU) $(CFLAGS_PLATFORM) -fno-builtin
-LDFLAGS_IMAGE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib -Wl,-N,-S
+LDFLAGS_IMAGE = $(LDFLAGS_CPU) $(LDFLAGS_PLATFORM) -nostdlib $(TARGET_LDFLAGS_OLDMAGIC) -Wl,-S
 CPPFLAGS_IMAGE = $(CPPFLAGS_CPU) $(CPPFLAGS_PLATFORM)
 CCASFLAGS_IMAGE = $(CCASFLAGS_CPU) $(CCASFLAGS_PLATFORM)
 
@@ -91,13 +99,13 @@ CCASFLAGS_LIBRARY =
 # Other variables
 
 grubconfdir = $(sysconfdir)/grub.d
-grubdatadir = $(datadir)/`echo @PACKAGE_TARNAME@ | sed '$(transform)'`
-platformdir = $(pkglibrootdir)/$(target_cpu)-$(platform)
+platformdir = $(pkglibdir)/$(target_cpu)-$(platform)
+starfielddir = $(pkgdatadir)/themes/starfield
 
 CFLAGS_GCRY = -Wno-error -Wno-missing-field-initializers
 CPPFLAGS_GCRY = -I$(top_srcdir)/grub-core/lib/libgcrypt_wrap
 
-CFLAGS_GNULIB = -Wno-undef -Wno-sign-compare -Wno-unused -Wno-unused-parameter
+CFLAGS_GNULIB = -Wno-undef -Wno-sign-compare -Wno-unused -Wno-unused-parameter -Wno-redundant-decls -Wno-unreachable-code -Wno-conversion -Wno-old-style-definition -Wno-unsafe-loop-optimizations
 CPPFLAGS_GNULIB = -I$(top_builddir)/grub-core/gnulib -I$(top_srcdir)/grub-core/gnulib
 
 CFLAGS_POSIX = -fno-builtin
@@ -129,7 +137,7 @@ KERNEL_HEADER_FILES =
 
 man_MANS =
 noinst_DATA =
-pkglib_DATA =
+pkgdata_DATA =
 bin_SCRIPTS =
 sbin_SCRIPTS =
 bin_PROGRAMS =
@@ -139,11 +147,12 @@ check_SCRIPTS =
 grubconf_DATA =
 check_PROGRAMS =
 noinst_SCRIPTS =
-pkglib_SCRIPTS =
 noinst_PROGRAMS =
 grubconf_SCRIPTS =
 noinst_LIBRARIES =
 dist_noinst_DATA =
+platform_SCRIPTS =
+platform_PROGRAMS =
 
 TESTS =
 EXTRA_DIST =

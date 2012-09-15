@@ -316,14 +316,14 @@ fi
 dnl Check if the C compiler generates calls to `__enable_execute_stack()'.
 AC_DEFUN([grub_CHECK_ENABLE_EXECUTE_STACK],[
 AC_MSG_CHECKING([whether `$CC' generates calls to `__enable_execute_stack()'])
-AC_LANG_CONFTEST([[
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
 void f (int (*p) (void));
 void g (int i)
 {
   int nestedfunc (void) { return i; }
   f (nestedfunc);
 }
-]])
+]])])
 if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} -S conftest.c]) && test -s conftest.s; then
   true
 else
@@ -346,7 +346,9 @@ AC_DEFUN([grub_CHECK_STACK_PROTECTOR],[
 ssp_possible=yes]
 AC_MSG_CHECKING([whether `$CC' accepts `-fstack-protector'])
 # Is this a reliable test case?
-AC_LANG_CONFTEST([[void foo (void) { volatile char a[8]; a[3]; }]])
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+void foo (void) { volatile char a[8]; a[3]; }
+]])])
 [# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
 # `ac_compile' like this correct, after all?
 if eval "$ac_compile -S -fstack-protector -o conftest.s" 2> /dev/null; then]
@@ -364,7 +366,9 @@ AC_DEFUN([grub_CHECK_STACK_ARG_PROBE],[
 [# Smashing stack arg probe.
 sap_possible=yes]
 AC_MSG_CHECKING([whether `$CC' accepts `-mstack-arg-probe'])
-AC_LANG_CONFTEST([[void foo (void) { volatile char a[8]; a[3]; }]])
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+void foo (void) { volatile char a[8]; a[3]; }
+]])])
 [if eval "$ac_compile -S -mstack-arg-probe -o conftest.s" 2> /dev/null; then]
   AC_MSG_RESULT([yes])
   [# Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
@@ -399,7 +403,7 @@ AC_DEFUN([grub_CHECK_PIE],[
 pie_possible=yes]
 AC_MSG_CHECKING([whether `$CC' has `-fPIE' as default])
 # Is this a reliable test case?
-AC_LANG_CONFTEST([[
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
 #ifdef __PIE__
 int main() {
 	return 0;
@@ -407,7 +411,7 @@ int main() {
 #else
 #error NO __PIE__ DEFINED
 #endif
-]])
+]])])
 
 [# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
 # `ac_compile' like this correct, after all?
@@ -417,6 +421,34 @@ if eval "$ac_compile -S -o conftest.s" 2> /dev/null; then]
   rm -f conftest.s
 else
   pie_possible=no]
+  AC_MSG_RESULT([no])
+[fi]
+])
+
+dnl Check if the C compiler supports `-fPIC'.
+AC_DEFUN([grub_CHECK_PIC],[
+[# Position independent executable.
+pic_possible=yes]
+AC_MSG_CHECKING([whether `$CC' has `-fPIC' as default])
+# Is this a reliable test case?
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+#ifdef __PIC__
+int main() {
+	return 0;
+}
+#else
+#error NO __PIC__ DEFINED
+#endif
+]])])
+
+[# `$CC -c -o ...' might not be portable.  But, oh, well...  Is calling
+# `ac_compile' like this correct, after all?
+if eval "$ac_compile -S -o conftest.s" 2> /dev/null; then]
+  AC_MSG_RESULT([yes])
+  [# Should we clear up other files as well, having called `AC_LANG_CONFTEST'?
+  rm -f conftest.s
+else
+  pic_possible=no]
   AC_MSG_RESULT([no])
 [fi]
 ])

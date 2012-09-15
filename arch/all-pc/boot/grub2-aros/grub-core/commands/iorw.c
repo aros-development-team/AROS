@@ -24,6 +24,8 @@
 #include <grub/cpu/io.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_extcmd_t cmd_read_byte, cmd_read_word, cmd_read_dword;
 static grub_command_t cmd_write_byte, cmd_write_word, cmd_write_dword;
 
@@ -38,11 +40,11 @@ static const struct grub_arg_option options[] =
 static grub_err_t
 grub_cmd_read (grub_extcmd_context_t ctxt, int argc, char **argv)
 {
-  grub_target_addr_t addr;
+  grub_port_t addr;
   grub_uint32_t value = 0;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Invalid number of arguments");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
 
   addr = grub_strtoul (argv[0], 0, 0);
   switch (ctxt->extcmd->cmd->name[sizeof ("in") - 1])
@@ -75,12 +77,12 @@ grub_cmd_read (grub_extcmd_context_t ctxt, int argc, char **argv)
 static grub_err_t
 grub_cmd_write (grub_command_t cmd, int argc, char **argv)
 {
-  grub_target_addr_t addr;
+  grub_port_t addr;
   grub_uint32_t value;
   grub_uint32_t mask = 0xffffffff;
 
   if (argc != 2 && argc != 3)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "Invalid number of arguments");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("two arguments expected"));
 
   addr = grub_strtoul (argv[0], 0, 0);
   value = grub_strtoul (argv[1], 0, 0);
@@ -118,25 +120,28 @@ GRUB_MOD_INIT(memrw)
 {
   cmd_read_byte =
     grub_register_extcmd ("inb", grub_cmd_read, 0,
-			  N_("PORT"), N_("Read byte from PORT."), options);
+			  N_("PORT"), N_("Read 8-bit value from PORT."),
+			  options);
   cmd_read_word =
     grub_register_extcmd ("inw", grub_cmd_read, 0,
-			  N_("PORT"), N_("Read word from PORT."), options);
+			  N_("PORT"), N_("Read 16-bit value from PORT."),
+			  options);
   cmd_read_dword =
     grub_register_extcmd ("inl", grub_cmd_read, 0,
-			  N_("PORT"), N_("Read dword from PORT."), options);
+			  N_("PORT"), N_("Read 32-bit value from PORT."),
+			  options);
   cmd_write_byte =
     grub_register_command ("outb", grub_cmd_write,
 			   N_("PORT VALUE [MASK]"),
-			   N_("Write byte VALUE to PORT."));
+			   N_("Write 8-bit VALUE to PORT."));
   cmd_write_word =
     grub_register_command ("outw", grub_cmd_write,
 			   N_("PORT VALUE [MASK]"),
-			   N_("Write word VALUE to PORT."));
+			   N_("Write 16-bit VALUE to PORT."));
   cmd_write_dword =
     grub_register_command ("outl", grub_cmd_write,
 			   N_("ADDR VALUE [MASK]"),
-			   N_("Write dword VALUE to PORT."));
+			   N_("Write 32-bit VALUE to PORT."));
 }
 
 GRUB_MOD_FINI(memrw)

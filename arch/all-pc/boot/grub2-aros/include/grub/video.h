@@ -27,6 +27,15 @@
    specific coding format.  */
 typedef grub_uint32_t grub_video_color_t;
 
+/* Video color in hardware independent format.  */
+typedef struct grub_video_rgba_color
+{
+  grub_uint8_t red;
+  grub_uint8_t green;
+  grub_uint8_t blue;
+  grub_uint8_t alpha;
+} grub_video_rgba_color_t;
+
 /* This structure is driver specific and should not be accessed directly by
    outside code.  */
 struct grub_video_render_target;
@@ -201,6 +210,66 @@ struct grub_video_palette_data
   grub_uint8_t a; /* Reserved bits value (0-255).  */
 };
 
+struct grub_video_edid_info
+{
+  grub_uint8_t header[8];
+  grub_uint16_t manufacturer_id;
+  grub_uint16_t product_id;
+  grub_uint32_t serial_number;
+  grub_uint8_t week_of_manufacture;
+  grub_uint8_t year_of_manufacture;
+  grub_uint8_t version;
+  grub_uint8_t revision;
+
+  grub_uint8_t video_input_definition;
+  grub_uint8_t max_horizontal_image_size;
+  grub_uint8_t max_vertical_image_size;
+  grub_uint8_t display_gamma;
+  grub_uint8_t feature_support;
+#define GRUB_VIDEO_EDID_FEATURE_PREFERRED_TIMING_MODE	(1 << 1)
+
+  grub_uint8_t red_green_lo;
+  grub_uint8_t blue_white_lo;
+  grub_uint8_t red_x_hi;
+  grub_uint8_t red_y_hi;
+  grub_uint8_t green_x_hi;
+  grub_uint8_t green_y_hi;
+  grub_uint8_t blue_x_hi;
+  grub_uint8_t blue_y_hi;
+  grub_uint8_t white_x_hi;
+  grub_uint8_t white_y_hi;
+
+  grub_uint8_t established_timings_1;
+  grub_uint8_t established_timings_2;
+  grub_uint8_t manufacturer_reserved_timings;
+
+  grub_uint16_t standard_timings[8];
+
+  struct {
+    grub_uint16_t pixel_clock;
+    /* Only valid if the pixel clock is non-null.  */
+    grub_uint8_t horizontal_active_lo;
+    grub_uint8_t horizontal_blanking_lo;
+    grub_uint8_t horizontal_hi;
+    grub_uint8_t vertical_active_lo;
+    grub_uint8_t vertical_blanking_lo;
+    grub_uint8_t vertical_hi;
+    grub_uint8_t horizontal_sync_offset_lo;
+    grub_uint8_t horizontal_sync_pulse_width_lo;
+    grub_uint8_t vertical_sync_lo;
+    grub_uint8_t sync_hi;
+    grub_uint8_t horizontal_image_size_lo;
+    grub_uint8_t vertical_image_size_lo;
+    grub_uint8_t image_size_hi;
+    grub_uint8_t horizontal_border;
+    grub_uint8_t vertical_border;
+    grub_uint8_t flags;
+  } detailed_timings[4];
+
+  grub_uint8_t extension_flag;
+  grub_uint8_t checksum;
+} __attribute__ ((packed));
+
 typedef enum grub_video_driver_id
   {
     GRUB_VIDEO_DRIVER_NONE,
@@ -211,7 +280,9 @@ typedef enum grub_video_driver_id
     GRUB_VIDEO_DRIVER_VGA,
     GRUB_VIDEO_DRIVER_CIRRUS,
     GRUB_VIDEO_DRIVER_BOCHS,
-    GRUB_VIDEO_DRIVER_SDL
+    GRUB_VIDEO_DRIVER_SDL,
+    GRUB_VIDEO_DRIVER_SIS315PRO,
+    GRUB_VIDEO_DRIVER_RADEON_FULOONG2E,
   } grub_video_driver_id_t;
 
 typedef enum grub_video_adapter_prio
@@ -227,6 +298,7 @@ struct grub_video_adapter
 {
   /* The next video adapter.  */
   struct grub_video_adapter *next;
+  struct grub_video_adapter **prev;
 
   /* The video adapter name.  */
   const char *name;
@@ -302,6 +374,8 @@ struct grub_video_adapter
 
   int (*iterate) (int (*hook) (const struct grub_video_mode_info *info));
 
+  grub_err_t (*get_edid) (struct grub_video_edid_info *edid_info);
+
   void (*print_adapter_specific_info) (void);
 };
 typedef struct grub_video_adapter *grub_video_adapter_t;
@@ -325,8 +399,7 @@ grub_video_register (grub_video_adapter_t adapter)
 static inline void
 grub_video_unregister (grub_video_adapter_t adapter)
 {
-  grub_list_remove (GRUB_AS_LIST_P (&grub_video_adapter_list),
-		    GRUB_AS_LIST (adapter));
+  grub_list_remove (GRUB_AS_LIST (adapter));
 }
 
 #define FOR_VIDEO_ADAPTERS(var) FOR_LIST_ELEMENTS((var), (grub_video_adapter_list))
@@ -414,6 +487,11 @@ grub_err_t EXPORT_FUNC (grub_video_set_active_render_target) (struct grub_video_
 
 grub_err_t grub_video_get_active_render_target (struct grub_video_render_target **target);
 
+grub_err_t EXPORT_FUNC (grub_video_edid_checksum) (struct grub_video_edid_info *edid_info);
+grub_err_t EXPORT_FUNC (grub_video_edid_preferred_mode) (struct grub_video_edid_info *edid_info,
+					   unsigned int *width,
+					   unsigned int *height);
+
 grub_err_t EXPORT_FUNC (grub_video_set_mode) (const char *modestring,
 					      unsigned int modemask,
 					      unsigned int modevalue);
@@ -427,5 +505,41 @@ grub_video_check_mode_flag (grub_video_mode_type_t flags,
 }
 
 grub_video_driver_id_t EXPORT_FUNC (grub_video_get_driver_id) (void);
+
+static __inline grub_video_rgba_color_t
+grub_video_rgba_color_rgb (int r, int g, int b)
+{
+  grub_video_rgba_color_t c;
+  c.red = r;
+  c.green = g;
+  c.blue = b;
+  c.alpha = 255;
+  return c;
+}
+
+static __inline grub_video_color_t
+grub_video_map_rgba_color (grub_video_rgba_color_t c)
+{
+  return grub_video_map_rgba (c.red, c.green, c.blue, c.alpha);
+}
+
+int EXPORT_FUNC (grub_video_get_named_color) (const char *name,
+					      grub_video_rgba_color_t *color);
+
+grub_err_t EXPORT_FUNC (grub_video_parse_color) (const char *s,
+						 grub_video_rgba_color_t *color);
+
+#ifndef GRUB_MACHINE_EMU
+extern void grub_font_init (void);
+extern void grub_font_fini (void);
+extern void grub_gfxterm_init (void);
+extern void grub_gfxterm_fini (void);
+extern void grub_video_sm712_init (void);
+extern void grub_video_sm712_fini (void);
+extern void grub_video_sis315pro_init (void);
+extern void grub_video_radeon_fuloong2e_init (void);
+extern void grub_video_sis315pro_fini (void);
+extern void grub_video_radeon_fuloong2e_fini (void);
+#endif
 
 #endif /* ! GRUB_VIDEO_HEADER */

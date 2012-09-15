@@ -101,8 +101,8 @@ preboot (int noreturn __attribute__ ((unused)))
   grub_memcpy (hooktarget, &grub_machine_mmaphook_start,
 	       &grub_machine_mmaphook_end - &grub_machine_mmaphook_start);
 
-  *((grub_uint16_t *) 0x4a) = PTR_TO_UINT32 (hooktarget) >> 4;
-  *((grub_uint16_t *) 0x56) = PTR_TO_UINT32 (hooktarget) >> 4;
+  *((grub_uint16_t *) 0x4a) = ((grub_addr_t) hooktarget) >> 4;
+  *((grub_uint16_t *) 0x56) = ((grub_addr_t) hooktarget) >> 4;
   *((grub_uint16_t *) 0x48) = &grub_machine_mmaphook_int12
     - &grub_machine_mmaphook_start;
   *((grub_uint16_t *) 0x54) = &grub_machine_mmaphook_int15
@@ -171,7 +171,7 @@ malloc_hook (void)
 
   reentry = 1;
   hooktarget
-    = grub_mmap_malign_and_register (16, hooksize, &mmapregion,
+    = grub_mmap_malign_and_register (16, ALIGN_UP (hooksize, 16), &mmapregion,
 				     GRUB_MEMORY_RESERVED,
 				     GRUB_MMAP_MALLOC_LOW);
   reentry = 0;
@@ -191,7 +191,7 @@ grub_machine_mmap_register (grub_uint64_t start __attribute__ ((unused)),
 			    int handle  __attribute__ ((unused)))
 {
   grub_err_t err;
-  static void *preb_handle = 0;
+  static struct grub_preboot *preb_handle = 0;
 
   err = malloc_hook ();
   if (err)

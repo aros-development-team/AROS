@@ -25,6 +25,9 @@
 #include <grub/dl.h>
 #include <grub/types.h>
 #include <grub/fshelp.h>
+#include <grub/charset.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* The common header for a block.  */
 struct grub_sfs_bheader
@@ -39,13 +42,20 @@ struct grub_sfs_rblock
 {
   struct grub_sfs_bheader header;
   grub_uint32_t version;
-  grub_uint8_t unused1[36];
+  grub_uint32_t createtime;
+  grub_uint8_t flags;
+  grub_uint8_t unused1[31];
   grub_uint32_t blocksize;
   grub_uint8_t unused2[40];
   grub_uint8_t unused3[8];
   grub_uint32_t rootobject;
   grub_uint32_t btree;
 } __attribute__ ((packed));
+
+enum
+  {
+    FLAGS_CASE_SENSITIVE = 0x80
+  };
 
 /* A SFS object container.  */
 struct grub_sfs_obj
@@ -66,7 +76,7 @@ struct grub_sfs_obj
       grub_uint32_t dir_objc;
     } dir __attribute__ ((packed));
   } file_dir;
-  grub_uint8_t unused3[4];
+  grub_uint32_t mtime;
   grub_uint8_t type;
   grub_uint8_t filename[1];
   grub_uint8_t comment[1];
@@ -114,11 +124,23 @@ struct grub_sfs_btree
 
 
 
+struct cache_entry
+{
+  grub_uint32_t off;
+  grub_uint32_t block;
+};
+
 struct grub_fshelp_node
 {
   struct grub_sfs_data *data;
-  int block;
-  int size;
+  grub_uint32_t block;
+  grub_uint32_t size;
+  grub_uint32_t mtime;
+  grub_uint32_t cache_off;
+  grub_uint32_t next_extent;
+  grub_size_t cache_allocated;
+  grub_size_t cache_size;
+  struct cache_entry *cache;
 };
 
 /* Information about a "mounted" sfs filesystem.  */
@@ -128,8 +150,10 @@ struct grub_sfs_data
   struct grub_fshelp_node diropen;
   grub_disk_t disk;
 
-  /* Blocksize in sectors.  */
-  unsigned int blocksize;
+  /* Log of blocksize in sectors.  */
+  int log_blocksize;
+
+  int fshelp_flags;
 
   /* Label of the filesystem.  */
   char *label;
@@ -143,14 +167,14 @@ static grub_dl_t my_mod;
    in NEXTEXT.  */
 static grub_err_t
 grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
-		      int *size, int *nextext)
+		      grub_uint32_t *size, grub_uint32_t *nextext)
 {
   char *treeblock;
   struct grub_sfs_btree *tree;
   int i;
-  int next;
+  grub_uint32_t next;
 
-  treeblock = grub_malloc (data->blocksize);
+  treeblock = grub_malloc (GRUB_DISK_SECTOR_SIZE << data->log_blocksize);
   if (!block)
     return 0;
 
@@ -160,7 +184,10 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
   /* Handle this level in the btree.  */
   do
     {
-      grub_disk_read (data->disk, next, 0, data->blocksize, treeblock);
+      grub_disk_read (data->disk,
+		      ((grub_disk_addr_t) next) << data->log_blocksize,
+		      0, GRUB_DISK_SECTOR_SIZE << data->log_blocksize,
+		      treeblock);
       if (grub_errno)
 	{
 	  grub_free (treeblock);
@@ -209,27 +236,100 @@ grub_sfs_read_extent (struct grub_sfs_data *data, unsigned int block,
 static grub_disk_addr_t
 grub_sfs_read_block (grub_fshelp_node_t node, grub_disk_addr_t fileblock)
 {
-  int blk = node->block;
-  int size = 0;
-  int next = 0;
+  grub_uint32_t blk;
+  grub_uint32_t size = 0;
+  grub_uint32_t next = 0;
+  grub_disk_addr_t off;
+  struct grub_sfs_data *data = node->data;
+
+  /* In case of the first block we don't have to lookup the
+     extent, the minimum size is always 1.  */
+  if (fileblock == 0)
+    return node->block;
+
+  if (!node->cache)
+    {
+      grub_size_t cache_size;
+      /* Assume half-max extents (32768 sectors).  */
+      cache_size = ((node->size >> (data->log_blocksize + GRUB_DISK_SECTOR_BITS
+				    + 15))
+		    + 3);
+      if (cache_size < 8)
+	cache_size = 8;
+
+      node->cache_off = 0;
+      node->next_extent = node->block;
+      node->cache_size = 0;
+
+      node->cache = grub_malloc (sizeof (node->cache[0]) * cache_size);
+      if (!node->cache)
+	{
+	  grub_errno = 0;
+	  node->cache_allocated = 0;
+	}
+      else
+	{
+	  node->cache_allocated = cache_size;
+	  node->cache[0].off = 0;
+	  node->cache[0].block = node->block;
+	}
+    }
+
+  if (fileblock < node->cache_off)
+    {
+      unsigned int i = 0;
+      int j, lg;
+      for (lg = 0; node->cache_size >> lg; lg++);
+
+      for (j = lg - 1; j >= 0; j--)
+	if ((i | (1 << j)) < node->cache_size
+	    && node->cache[(i | (1 << j))].off <= fileblock)
+	  i |= (1 << j);
+      return node->cache[i].block + fileblock - node->cache[i].off;
+    }
+
+  off = node->cache_off;
+  blk = node->next_extent;
 
   while (blk)
     {
       grub_err_t err;
 
-      /* In case of the first block we don't have to lookup the
-	 extent, the minimum size is always 1.  */
-      if (fileblock == 0)
-	return blk;
-
       err = grub_sfs_read_extent (node->data, blk, &size, &next);
       if (err)
 	return 0;
 
-      if (fileblock < (unsigned int) size)
-	return fileblock + blk;
+      if (node->cache && node->cache_size >= node->cache_allocated)
+	{
+	  struct cache_entry *e = node->cache;
+	  e = grub_realloc (node->cache,node->cache_allocated * 2
+			    * sizeof (e[0]));
+	  if (!e)
+	    {
+	      grub_errno = 0;
+	      grub_free (node->cache);
+	      node->cache = 0;
+	    }
+	  else
+	    {
+	      node->cache_allocated *= 2;
+	      node->cache = e;
+	    }
+	}
 
-      fileblock -= size;
+      if (node->cache)
+	{
+	  node->cache_off = off + size;
+	  node->next_extent = next;
+	  node->cache[node->cache_size].off = off;
+	  node->cache[node->cache_size].block = blk;
+	  node->cache_size++;
+	}
+
+      if (fileblock - off < size)
+	return fileblock - off + blk;
+
+      off += size;
 
       blk = next;
     }
@@ -247,11 +347,11 @@ static grub_ssize_t
 grub_sfs_read_file (grub_fshelp_node_t node,
 		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		    int pos, grub_size_t len, char *buf)
+		    grub_off_t pos, grub_size_t len, char *buf)
 {
   return grub_fshelp_read_file (node->data->disk, node, read_hook,
 				pos, len, buf, grub_sfs_read_block,
-				node->size, 0);
+				node->size, node->data->log_blocksize, 0);
 }
 
 
@@ -261,7 +361,7 @@ grub_sfs_mount (grub_disk_t disk)
   struct grub_sfs_data *data;
   struct grub_sfs_objc *rootobjc;
   char *rootobjc_data = 0;
-  unsigned int blk;
+  grub_uint32_t blk;
 
   data = grub_malloc (sizeof (*data));
   if (!data)
@@ -274,20 +374,31 @@ grub_sfs_mount (grub_disk_t disk)
     goto fail;
 
   /* Make sure this is a sfs filesystem.  */
-  if (grub_strncmp ((char *) (data->rblock.header.magic), "SFS", 4))
+  if (grub_strncmp ((char *) (data->rblock.header.magic), "SFS", 4)
+      || data->rblock.blocksize == 0
+      || (data->rblock.blocksize & (data->rblock.blocksize - 1)) != 0
+      || (data->rblock.blocksize & grub_cpu_to_be32_compile_time (0xf00001ff)))
     {
       grub_error (GRUB_ERR_BAD_FS, "not a SFS filesystem");
       goto fail;
     }
 
-  data->blocksize = grub_be_to_cpu32 (data->rblock.blocksize);
-  rootobjc_data = grub_malloc (data->blocksize);
+  for (data->log_blocksize = 9;
+       (1U << data->log_blocksize) < grub_be_to_cpu32 (data->rblock.blocksize);
+       data->log_blocksize++);
+  data->log_blocksize -= GRUB_DISK_SECTOR_BITS;
+  if (data->rblock.flags & FLAGS_CASE_SENSITIVE)
+    data->fshelp_flags = 0;
+  else
+    data->fshelp_flags = GRUB_FSHELP_CASE_INSENSITIVE;
+  rootobjc_data = grub_malloc (GRUB_DISK_SECTOR_SIZE << data->log_blocksize);
   if (! rootobjc_data)
     goto fail;
 
   /* Read the root object container.  */
-  grub_disk_read (disk, grub_be_to_cpu32 (data->rblock.rootobject), 0,
-		  data->blocksize, rootobjc_data);
+  grub_disk_read (disk, ((grub_disk_addr_t) grub_be_to_cpu32 (data->rblock.rootobject))
+		  << data->log_blocksize, 0,
+		  GRUB_DISK_SECTOR_SIZE << data->log_blocksize, rootobjc_data);
   if (grub_errno)
     goto fail;
 
@@ -297,9 +408,11 @@ grub_sfs_mount (grub_disk_t disk)
   data->diropen.size = 0;
   data->diropen.block = blk;
   data->diropen.data = data;
+  data->diropen.cache = 0;
   data->disk = disk;
   data->label = grub_strdup ((char *) (rootobjc->objects[0].filename));
 
+  grub_free (rootobjc_data);
   return data;
 
  fail:
@@ -319,11 +432,13 @@ grub_sfs_read_symlink (grub_fshelp_node_t node)
   char *symlink;
   char *block;
 
-  block = grub_malloc (data->blocksize);
+  block = grub_malloc (GRUB_DISK_SECTOR_SIZE << data->log_blocksize);
   if (!block)
     return 0;
 
-  grub_disk_read (data->disk, node->block, 0, data->blocksize, block);
+  grub_disk_read (data->disk, ((grub_disk_addr_t) node->block)
+		  << data->log_blocksize,
+		  0, GRUB_DISK_SECTOR_SIZE << data->log_blocksize, block);
   if (grub_errno)
     {
       grub_free (block);
@@ -332,11 +447,16 @@ grub_sfs_read_symlink (grub_fshelp_node_t node)
 
   /* This is just a wild guess, but it always worked for me.  How the
      SLNK block looks like is not documented in the SFS docs.  */
-  symlink = grub_strdup (&block[24]);
-  grub_free (block);
+  symlink = grub_malloc (((GRUB_DISK_SECTOR_SIZE << data->log_blocksize)
+			  - 24) * GRUB_MAX_UTF8_PER_LATIN1 + 1);
   if (!symlink)
-    return 0;
-
+    {
+      grub_free (block);
+      return 0;
+    }
+  *grub_latin1_to_utf8 ((grub_uint8_t *) symlink, (grub_uint8_t *) &block[24],
+			(GRUB_DISK_SECTOR_SIZE << data->log_blocksize) - 24) = '\0';
+  grub_free (block);
   return symlink;
 }
 
@@ -352,26 +472,49 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
   char *objc_data;
   struct grub_sfs_objc *objc;
   unsigned int next = dir->block;
-  int pos;
+  grub_uint32_t pos;
 
-  auto int NESTED_FUNC_ATTR grub_sfs_create_node (const char *name, int block,
-						  int size, int type);
+  auto int NESTED_FUNC_ATTR grub_sfs_create_node (const char *name,
+						  grub_uint32_t block,
+						  grub_uint32_t size, int type,
+						  grub_uint32_t mtime);
 
-  int NESTED_FUNC_ATTR grub_sfs_create_node (const char *name, int block,
-					     int size, int type)
+  int NESTED_FUNC_ATTR grub_sfs_create_node (const char *name,
+					     grub_uint32_t block,
+					     grub_uint32_t size, int type,
+					     grub_uint32_t mtime)
     {
+      grub_size_t len = grub_strlen (name);
+      grub_uint8_t *name_u8;
+      int ret;
       node = grub_malloc (sizeof (*node));
       if (!node)
 	return 1;
+      name_u8 = grub_malloc (len * GRUB_MAX_UTF8_PER_LATIN1 + 1);
+      if (!name_u8)
+	{
+	  grub_free (node);
+	  return 1;
+	}
 
       node->data = data;
       node->size = size;
       node->block = block;
+      node->mtime = mtime;
+      node->cache = 0;
+      node->cache_off = 0;
+      node->next_extent = block;
+      node->cache_size = 0;
+      node->cache_allocated = 0;
 
-      return hook (name, type, node);
+      *grub_latin1_to_utf8 (name_u8, (const grub_uint8_t *) name, len) = '\0';
+
+      ret = hook ((char *) name_u8, type | data->fshelp_flags, node);
+      grub_free (name_u8);
+      return ret;
     }
 
-  objc_data = grub_malloc (data->blocksize);
+  objc_data = grub_malloc (GRUB_DISK_SECTOR_SIZE << data->log_blocksize);
   if (!objc_data)
     goto fail;
 
@@ -379,7 +522,9 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
      every block.  */
   while (next)
     {
-      grub_disk_read (data->disk, next, 0, data->blocksize, objc_data);
+      grub_disk_read (data->disk, ((grub_disk_addr_t) next)
+		      << data->log_blocksize, 0,
+		      GRUB_DISK_SECTOR_SIZE << data->log_blocksize, objc_data);
       if (grub_errno)
 	goto fail;
 
@@ -388,14 +533,15 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
       pos = (char *) &objc->objects[0] - (char *) objc;
 
       /* Iterate over all entries in this block.  */
-      while (pos + sizeof (struct grub_sfs_obj) < data->blocksize)
+      while (pos + sizeof (struct grub_sfs_obj)
+	     < (1U << (GRUB_DISK_SECTOR_BITS + data->log_blocksize)))
 	{
 	  struct grub_sfs_obj *obj;
 	  obj = (struct grub_sfs_obj *) ((char *) objc + pos);
-	  char *filename = (char *) (obj->filename);
-	  int len;
+	  const char *filename = (const char *) obj->filename;
+	  grub_size_t len;
 	  enum grub_fshelp_filetype type;
-	  unsigned int block;
+	  grub_uint32_t block;
 
 	  /* The filename and comment dynamically increase the size of
 	     the object.  */
@@ -406,7 +552,7 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
 	  /* Round up to a multiple of two bytes.  */
 	  pos = ((pos + 1) >> 1) << 1;
 
-	  if (grub_strlen (filename) == 0)
+	  if (filename[0] == 0)
 	    continue;
 
 	  /* First check if the file was not deleted.  */
@@ -426,7 +572,7 @@ grub_sfs_iterate_dir (grub_fshelp_node_t dir,
 
 	  if (grub_sfs_create_node (filename, block,
 				    grub_be_to_cpu32 (obj->file_dir.file.size),
-				    type))
+				    type, grub_be_to_cpu32 (obj->mtime)))
 	    {
 	      grub_free (objc_data);
 	      return 1;
@@ -485,7 +631,11 @@ grub_sfs_open (struct grub_file *file, const char *name)
 static grub_err_t
 grub_sfs_close (grub_file_t file)
 {
-  grub_free (file->data);
+  struct grub_sfs_data *data = (struct grub_sfs_data *) file->data;
+
+  grub_free (data->diropen.cache);
+  grub_free (data->label);
+  grub_free (data);
 
   grub_dl_unref (my_mod);
 
@@ -499,10 +649,8 @@ grub_sfs_read (grub_file_t file, char *buf, grub_size_t len)
 {
   struct grub_sfs_data *data = (struct grub_sfs_data *) file->data;
 
-  int size = grub_sfs_read_file (&data->diropen, file->read_hook,
-				 file->offset, len, buf);
-
-  return size;
+  return grub_sfs_read_file (&data->diropen, file->read_hook,
+			     file->offset, len, buf);
 }
 
 
@@ -525,6 +673,9 @@ grub_sfs_dir (grub_device_t device, const char *path,
       struct grub_dirhook_info info;
       grub_memset (&info, 0, sizeof (info));
       info.dir = ((filetype & GRUB_FSHELP_TYPE_MASK) == GRUB_FSHELP_DIR);
+      info.mtime = node->mtime + 8 * 365 * 86400 + 86400 * 2;
+      info.mtimeset = 1;
+      grub_free (node->cache);
       grub_free (node);
       return hook (filename, &info);
     }
@@ -563,8 +714,15 @@ grub_sfs_label (grub_device_t device, char **label)
 
   data = grub_sfs_mount (disk);
   if (data)
-    *label = data->label;
-
+    {
+      grub_size_t len = grub_strlen (data->label);
+      *label = grub_malloc (len * GRUB_MAX_UTF8_PER_LATIN1 + 1);
+      if (*label)
+	*grub_latin1_to_utf8 ((grub_uint8_t *) *label,
+			      (const grub_uint8_t *) data->label,
+			      len) = '\0';
+      grub_free (data->label);
+    }
   grub_free (data);
 
   return grub_errno;
@@ -581,6 +739,7 @@ static struct grub_fs grub_sfs_fs =
     .label = grub_sfs_label,
 #ifdef GRUB_UTIL
     .reserved_first_sector = 0,
+    .blocklist_install = 1,
 #endif
     .next = 0
   };

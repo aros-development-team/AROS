@@ -12,6 +12,9 @@ BOOT_EFI  := $(AROSDIR)/EFI/BOOT/grub
 $(BOOT_GRUB):
 	%mkdirs_q $@
 
+$(BOOT_GRUB)/i386-pc:
+	%mkdirs_q $@
+
 $(BOOT_EFI):
 	%mkdirs_q $@
 
@@ -85,14 +88,14 @@ endif
 grub2-iso-setup: grub2-pc-iso-setup grub2-efi-iso-setup
 
 #MM
-grub2-pc-iso-setup: $(BOOT_GRUB)
+grub2-pc-iso-setup: $(BOOT_GRUB)/i386-pc
 	@$(ECHO) Creating $(BOOT_GRUB)...
 	@cd $(HOSTGENDIR)/$(CURDIR)/pc/grub-core                           	&& \
 	../grub-mkimage $(MKIMG_OPTS) -d . -o core.img $(PC_MODS) $(GRUB2_MODS) && \
-	$(CP) *.img $(BOOT_GRUB)                                        	&& \
-	$(CP) *.mod $(BOOT_GRUB)                                        	&& \
-	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)               	&& \
-	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/grub2_eltorito
+	$(CP) *.img $(BOOT_GRUB)/i386-pc                                  	&& \
+	$(CP) *.mod $(BOOT_GRUB)/i386-pc                                  	&& \
+	$(CP) $(addsuffix .lst,$(LST_FILES)) $(BOOT_GRUB)/i386-pc         	&& \
+	$(CAT) cdboot.img core.img > $(BOOT_GRUB)/i386-pc/grub2_eltorito
 
 #MM
 grub2-efi-iso-setup: $(BOOT_EFI)

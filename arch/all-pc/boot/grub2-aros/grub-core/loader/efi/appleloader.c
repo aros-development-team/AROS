@@ -27,6 +27,8 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_dl_t my_mod;
 
 static grub_efi_handle_t image_handle;
@@ -67,169 +69,67 @@ struct piwg_full_device_path
   struct grub_efi_device_path end;
 };
 
-/* early 2006 Core Duo / Core Solo models  */
-static struct piwg_full_device_path devpath_1 =
-{
-  .comp1 =
-  {
-    .header = {
-      .type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_memory_mapped_device_path), 0}
-    },
-    .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,
-    .start_address = 0xffe00000,
-    .end_address = 0xfff9ffff
-  },
-  .comp2 =
-  {
-    .header = {
-      .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_piwg_device_path), 0}
-    },
-    .guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,
-					  0x01, 0xAE, 0xF2, 0xB7}}
-  },
-  .end =
-  {
-    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,
-    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    .length = {sizeof (struct grub_efi_device_path), 0}
+#define MAKE_PIWG_PATH(st, en)						\
+  {									\
+  .comp1 =								\
+    {									\
+      .header = {							\
+	.type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,			\
+	.subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,		\
+	.length = {sizeof (struct grub_efi_memory_mapped_device_path), 0} \
+      },								\
+      .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,				\
+      .start_address = st,						\
+      .end_address = en							\
+    },									\
+    .comp2 =								\
+      {									\
+	.header = {							\
+	  .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,			\
+	  .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,			\
+	  .length = {sizeof (struct grub_efi_piwg_device_path), 0}	\
+	},								\
+	.guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,	\
+					      0x01, 0xAE, 0xF2, 0xB7}}	\
+      },								\
+       .end =								\
+	  {								\
+	    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,			\
+	    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,		\
+	    .length = {sizeof (struct grub_efi_device_path), 0}		\
+	  }								\
   }
-};
+
+/* early 2006 Core Duo / Core Solo models  */
+static struct piwg_full_device_path devpath_1 = MAKE_PIWG_PATH (0xffe00000,
+								0xfff9ffff);
 
 /* mid-2006 Mac Pro (and probably other Core 2 models)  */
-static struct piwg_full_device_path devpath_2 =
-{
-  .comp1 =
-  {
-    .header = {
-      .type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_memory_mapped_device_path), 0}
-    },
-    .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,
-    .start_address = 0xffe00000,
-    .end_address = 0xfff7ffff
-  },
-  .comp2 =
-  {
-    .header = {
-      .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_piwg_device_path), 0}
-    },
-    .guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,
-					  0x01, 0xAE, 0xF2, 0xB7}}
-  },
-  .end =
-  {
-    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,
-    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    .length = {sizeof (struct grub_efi_device_path), 0}
-  }
-};
+static struct piwg_full_device_path devpath_2 = MAKE_PIWG_PATH (0xffe00000,
+								0xfff7ffff);
 
 /* mid-2007 MBP ("Santa Rosa" based models)  */
-static struct piwg_full_device_path devpath_3 =
-{
-  .comp1 =
-  {
-    .header = {
-      .type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_memory_mapped_device_path), 0}
-    },
-    .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,
-    .start_address = 0xffe00000,
-    .end_address = 0xfff8ffff
-  },
-  .comp2 =
-  {
-    .header = {
-      .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_piwg_device_path), 0}
-    },
-    .guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,
-					  0x01, 0xAE, 0xF2, 0xB7}}
-  },
-  .end =
-  {
-    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,
-    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    .length = {sizeof (struct grub_efi_device_path), 0}
-  }
-};
+static struct piwg_full_device_path devpath_3 = MAKE_PIWG_PATH (0xffe00000,
+								0xfff8ffff);
 
 /* early-2008 MBA  */
-static struct piwg_full_device_path devpath_4 =
-{
-  .comp1 =
-  {
-    .header = {
-      .type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_memory_mapped_device_path), 0}
-    },
-    .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,
-    .start_address = 0xffc00000,
-    .end_address = 0xfff8ffff
-  },
-  .comp2 =
-  {
-    .header = {
-      .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_piwg_device_path), 0}
-    },
-    .guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,
-					  0x01, 0xAE, 0xF2, 0xB7}}
-  },
-  .end =
-  {
-    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,
-    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    .length = {sizeof (struct grub_efi_device_path), 0}
-  }
-};
+static struct piwg_full_device_path devpath_4 = MAKE_PIWG_PATH (0xffc00000,
+								0xfff8ffff);
 
 /* late-2008 MB/MBP (NVidia chipset)  */
-static struct piwg_full_device_path devpath_5 =
-{
-  .comp1 =
-  {
-    .header = {
-      .type = GRUB_EFI_HARDWARE_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_MEMORY_MAPPED_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_memory_mapped_device_path), 0}
-    },
-    .memory_type = GRUB_EFI_MEMORY_MAPPED_IO,
-    .start_address = 0xffcb4000,
-    .end_address = 0xffffbfff
-  },
-  .comp2 =
-  {
-    .header = {
-      .type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE,
-      .subtype = GRUB_EFI_PIWG_DEVICE_PATH_SUBTYPE,
-      .length = {sizeof (struct grub_efi_piwg_device_path), 0}
-    },
-    .guid = {0x2B0585EB, 0xD8B8, 0x49A9, {0x8B, 0x8C, 0xE2, 0x1B,
-					  0x01, 0xAE, 0xF2, 0xB7}}
-  },
-  .end =
-  {
-    .type = GRUB_EFI_END_DEVICE_PATH_TYPE,
-    .subtype = GRUB_EFI_END_ENTIRE_DEVICE_PATH_SUBTYPE,
-    .length = {sizeof (struct grub_efi_device_path), 0}
-  }
-};
+static struct piwg_full_device_path devpath_5 = MAKE_PIWG_PATH (0xffcb4000,
+								0xffffbfff);
+
+/* mid-2010 MB/MBP (NVidia chipset)  */
+static struct piwg_full_device_path devpath_6 = MAKE_PIWG_PATH (0xffcc4000,
+								0xffffbfff);
+
+static struct piwg_full_device_path devpath_7 = MAKE_PIWG_PATH (0xff981000,
+								0xffc8ffff);
 
 struct devdata
 {
-  char *model;
+  const char *model;
   grub_efi_device_path_t *devpath;
 };
 
@@ -240,6 +140,8 @@ struct devdata devs[] =
   {"MBP", (grub_efi_device_path_t *) &devpath_3},
   {"MBA", (grub_efi_device_path_t *) &devpath_4},
   {"MB NV", (grub_efi_device_path_t *) &devpath_5},
+  {"MB NV2", (grub_efi_device_path_t *) &devpath_6},
+  {"MBP2011", (grub_efi_device_path_t *) &devpath_7},
   {NULL, NULL},
 };
 
@@ -269,7 +171,7 @@ grub_cmd_appleloader (grub_command_t cmd __attribute__ ((unused)),
       goto fail;
     }
 
-  grub_printf ("Model : %s\n", pdev->model);
+  grub_dprintf ("appleload", "Model: %s\n", pdev->model);
 
   loaded_image = grub_efi_get_loaded_image (image_handle);
   if (! loaded_image)
@@ -322,7 +224,11 @@ static grub_command_t cmd;
 GRUB_MOD_INIT(appleloader)
 {
   cmd = grub_register_command ("appleloader", grub_cmd_appleloader,
-			       "[OPTS]", N_("Boot legacy system."));
+			       N_("[OPTS]"),
+			       /* TRANSLATORS: This command is used on EFI to
+				switch to BIOS mode and boot the OS requiring
+				BIOS.  */
+			       N_("Boot BIOS-based system."));
   my_mod = mod;
 }
 

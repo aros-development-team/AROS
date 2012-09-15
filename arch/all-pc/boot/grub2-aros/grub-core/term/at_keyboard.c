@@ -26,6 +26,8 @@
 #include <grub/time.h>
 #include <grub/loader.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static short at_keyboard_status = 0;
 static int e0_received = 0;
 static int f0_received = 0;
@@ -109,12 +111,12 @@ static const struct
     {0x38, GRUB_KEYBOARD_KEY_RIGHT_ALT},
     {0x47, GRUB_KEYBOARD_KEY_HOME}, 
     {0x48, GRUB_KEYBOARD_KEY_UP},
-    {0x49, GRUB_KEYBOARD_KEY_NPAGE},
+    {0x49, GRUB_KEYBOARD_KEY_PPAGE}, 
     {0x4b, GRUB_KEYBOARD_KEY_LEFT},
     {0x4d, GRUB_KEYBOARD_KEY_RIGHT},
     {0x4f, GRUB_KEYBOARD_KEY_END}, 
     {0x50, GRUB_KEYBOARD_KEY_DOWN},
-    {0x51, GRUB_KEYBOARD_KEY_PPAGE}, 
+    {0x51, GRUB_KEYBOARD_KEY_NPAGE},
     {0x52, GRUB_KEYBOARD_KEY_INSERT},
     {0x53, GRUB_KEYBOARD_KEY_DELETE}, 
   };
@@ -257,7 +259,7 @@ grub_keyboard_controller_write (grub_uint8_t c)
   grub_outb (c, KEYBOARD_REG_DATA);
 }
 
-#if !defined (GRUB_MACHINE_MIPS_YEELOONG) && !defined (GRUB_MACHINE_QEMU)
+#if !defined (GRUB_MACHINE_MIPS_LOONGSON) && !defined (GRUB_MACHINE_QEMU) && !defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
 
 static grub_uint8_t
 grub_keyboard_controller_read (void)
@@ -330,6 +332,11 @@ set_scancodes (void)
       return;
     }
 
+#if !(defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS))
+  current_set = 1;
+  return;
+#else
+
   grub_keyboard_controller_write (grub_keyboard_controller_orig
 				  & ~KEYBOARD_AT_TRANSLATE);
 
@@ -345,6 +352,7 @@ set_scancodes (void)
   if (current_set == 1)
     return;
   grub_printf ("No supported scancode set found\n");
+#endif
 }
 
 static void
@@ -424,11 +432,11 @@ fetch_key (int *is_break)
   if (!ret)
     {
       if (was_ext)
-	grub_printf ("Unknown key 0xe0+0x%02x from set %d\n",
-		     at_key, current_set);
+	grub_dprintf ("atkeyb", "Unknown key 0xe0+0x%02x from set %d\n",
+		      at_key, current_set);
       else
-	grub_printf ("Unknown key 0x%02x from set %d\n",
-		     at_key, current_set);
+	grub_dprintf ("atkeyb", "Unknown key 0x%02x from set %d\n",
+		      at_key, current_set);
       return -1;
     }
   return ret;
@@ -494,7 +502,7 @@ static int
 grub_keyboard_getkey (void)
 {
   int key;
-  int is_break;
+  int is_break = 0;
 
   key = fetch_key (&is_break);
   if (key == -1)
@@ -562,7 +570,7 @@ grub_keyboard_controller_init (struct grub_term_input *term __attribute__ ((unus
       keyboard_controller_wait_until_ready ();
       grub_inb (KEYBOARD_REG_DATA);
     }
-#if defined (GRUB_MACHINE_MIPS_YEELOONG) || defined (GRUB_MACHINE_QEMU)
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_QEMU) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
   grub_keyboard_controller_orig = 0;
   grub_keyboard_orig_set = 2;
 #else
@@ -617,14 +625,22 @@ static struct grub_term_input grub_at_keyboard_term =
     .getkey = grub_at_keyboard_getkey
   };
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_at_keyboard_init (void)
+#else
 GRUB_MOD_INIT(at_keyboard)
+#endif
 {
   grub_term_register_input ("at_keyboard", &grub_at_keyboard_term);
   grub_loader_register_preboot_hook (grub_at_fini_hw, grub_at_restore_hw,
 				     GRUB_LOADER_PREBOOT_HOOK_PRIO_CONSOLE);
 }
 
+#if defined (GRUB_MACHINE_MIPS_LOONGSON) || defined (GRUB_MACHINE_MIPS_QEMU_MIPS)
+void grub_at_keyboard_fini (void)
+#else
 GRUB_MOD_FINI(at_keyboard)
+#endif
 {
   grub_keyboard_controller_fini (NULL);
   grub_term_unregister_input (&grub_at_keyboard_term);

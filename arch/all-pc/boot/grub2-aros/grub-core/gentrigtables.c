@@ -30,6 +30,14 @@ main (int argc __attribute__ ((unused)),
   int i;
 
   printf ("#include <grub/types.h>\n");
+  printf ("#include <grub/dl.h>\n");
+  printf ("\n");
+
+  printf ("/* Under copyright legislature such automated output isn't\n");
+  printf ("covered by any copyright. Hence it's public domain. Public\n");
+  printf ("domain works can be dual-licenced with any license. */\n");
+  printf ("GRUB_MOD_LICENSE (\"GPLv3+\");");
+  printf ("GRUB_MOD_DUAL_LICENSE (\"Public Domain\");");
 
 #define TAB(op) \
   printf ("grub_int16_t grub_trig_" #op "tab[] =\n{"); \

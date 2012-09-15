@@ -32,6 +32,24 @@ typedef enum
   }
   grub_efi_gop_pixel_format_t;
 
+typedef enum
+  {
+    GRUB_EFI_BLT_VIDEO_FILL,
+    GRUB_EFI_BLT_VIDEO_TO_BLT_BUFFER,
+    GRUB_EFI_BLT_BUFFER_TO_VIDEO,
+    GRUB_EFI_BLT_VIDEO_TO_VIDEO,
+    GRUB_EFI_BLT_OPERATION_MAX
+  }
+  grub_efi_gop_blt_operation_t;
+
+struct grub_efi_gop_blt_pixel
+{
+  grub_uint8_t blue;
+  grub_uint8_t green;
+  grub_uint8_t red;
+  grub_uint8_t reserved;
+};
+
 struct grub_efi_gop_pixel_bitmask
 {
   grub_uint32_t r;

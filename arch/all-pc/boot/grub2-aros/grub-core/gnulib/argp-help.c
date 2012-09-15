@@ -1448,7 +1448,7 @@ argp_args_usage (const struct argp *argp, const struct argp_state *state,
 
       /* Manually do line wrapping so that it (probably) won't get wrapped at
          any embedded spaces.  */
-      space (stream, 1 + nl - cp);
+      space (stream, 1 + __argp_get_display_len (cp, nl));
 
       __argp_fmtstream_write (stream, cp, nl - cp);
     }

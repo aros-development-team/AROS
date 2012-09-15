@@ -22,6 +22,9 @@
 #include <grub/dl.h>
 #include <grub/mm.h>
 #include <grub/misc.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* List of bitmap readers registered to system.  */
 static grub_video_bitmap_reader_t bitmap_readers_list;
@@ -58,12 +61,12 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
   unsigned int size;
 
   if (!bitmap)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid argument");
+    return grub_error (GRUB_ERR_BUG, "invalid argument");
 
   *bitmap = 0;
 
   if (width == 0 || height == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid argument");
+    return grub_error (GRUB_ERR_BUG, "invalid argument");
 
   *bitmap = (struct grub_video_bitmap *)grub_malloc (sizeof (struct grub_video_bitmap));
   if (! *bitmap)
@@ -128,7 +131,7 @@ grub_video_bitmap_create (struct grub_video_bitmap **bitmap,
         grub_free (*bitmap);
         *bitmap = 0;
 
-        return grub_error (GRUB_ERR_BAD_ARGUMENT,
+        return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
                            "unsupported bitmap format");
     }
 
@@ -177,7 +180,7 @@ match_extension (const char *filename, const char *ext)
 
   pos -= ext_len;
 
-  return grub_strcmp (filename + pos, ext) == 0;
+  return grub_strcasecmp (filename + pos, ext) == 0;
 }
 
 /* Loads bitmap using registered bitmap readers.  */
@@ -188,7 +191,7 @@ grub_video_bitmap_load (struct grub_video_bitmap **bitmap,
   grub_video_bitmap_reader_t reader = bitmap_readers_list;
 
   if (!bitmap)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "invalid argument");
+    return grub_error (GRUB_ERR_BUG, "invalid argument");
 
   *bitmap = 0;
 
@@ -200,7 +203,11 @@ grub_video_bitmap_load (struct grub_video_bitmap **bitmap,
       reader = reader->next;
     }
 
-  return grub_error(GRUB_ERR_BAD_FILE_TYPE, "unsupported bitmap format");
+  return grub_error (GRUB_ERR_BAD_FILE_TYPE,
+		     /* TRANSLATORS: We're speaking about bitmap images like
+			JPEG or PNG.  */
+		     N_("bitmap file `%s' is of"
+			" unsupported format"), filename);
 }
 
 /* Return bitmap width.  */
@@ -242,12 +249,3 @@ void *grub_video_bitmap_get_data (struct grub_video_bitmap *bitmap)
   return bitmap->data;
 }
 
-/* Initialize bitmap module.  */
-GRUB_MOD_INIT(bitmap)
-{
-}
-
-/* Finalize bitmap module.  */
-GRUB_MOD_FINI(bitmap)
-{
-}

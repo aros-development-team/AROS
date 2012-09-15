@@ -39,10 +39,13 @@ extern char _end[];
 static grub_uint64_t mem_size, above_4g;
 
 void
-grub_machine_mmap_init ()
+grub_machine_mmap_init (void)
 {
-  mem_size = ((grub_uint64_t) grub_cmos_read (QEMU_CMOS_MEMSIZE_HIGH)) << 24
-    | ((grub_uint64_t) grub_cmos_read (QEMU_CMOS_MEMSIZE_LOW)) << 16;
+  grub_uint8_t high, low, b, c, d;
+  grub_cmos_read (QEMU_CMOS_MEMSIZE_HIGH, &high);
+  grub_cmos_read (QEMU_CMOS_MEMSIZE_LOW, &low);
+  mem_size = ((grub_uint64_t) high) << 24
+    | ((grub_uint64_t) low) << 16;
   if (mem_size > 0)
     {
       /* Don't ask... */
@@ -50,15 +53,19 @@ grub_machine_mmap_init ()
     }
   else
     {
+      grub_cmos_read (QEMU_CMOS_MEMSIZE2_HIGH, &high);
+      grub_cmos_read (QEMU_CMOS_MEMSIZE2_LOW, &low);
       mem_size
-	= ((((grub_uint64_t) grub_cmos_read (QEMU_CMOS_MEMSIZE2_HIGH)) << 18)
-	   | ((grub_uint64_t) (grub_cmos_read (QEMU_CMOS_MEMSIZE2_LOW)) << 10))
+	= ((((grub_uint64_t) high) << 18) | (((grub_uint64_t) low) << 10))
 	+ 1024 * 1024;
     }
 
-  above_4g = (((grub_uint64_t) grub_cmos_read (0x5b)) << 16)
-    | (((grub_uint64_t) grub_cmos_read (0x5c)) << 24)
-    | (((grub_uint64_t) grub_cmos_read (0x5d)) << 32);
+  grub_cmos_read (0x5b, &b);
+  grub_cmos_read (0x5c, &c);
+  grub_cmos_read (0x5d, &d);
+  above_4g = (((grub_uint64_t) b) << 16)
+    | (((grub_uint64_t) c) << 24)
+    | (((grub_uint64_t) d) << 32);
 }
 
 grub_err_t

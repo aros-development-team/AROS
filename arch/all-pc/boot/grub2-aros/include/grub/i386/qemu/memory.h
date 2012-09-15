@@ -33,10 +33,4 @@
 #define GRUB_MEMORY_MACHINE_UPPER_START			0x100000	/* 1 MiB */
 #define GRUB_MEMORY_MACHINE_LOWER_SIZE			GRUB_MEMORY_MACHINE_UPPER_START
 
-#ifndef ASM_FILE
-
-void grub_machine_mmap_init (void);
-
-#endif
-
 #endif /* ! _GRUB_MEMORY_MACHINE_HEADER */

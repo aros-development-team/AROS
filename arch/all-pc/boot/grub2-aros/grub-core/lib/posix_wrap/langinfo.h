@@ -23,7 +23,7 @@
 
 typedef enum { CODESET } nl_item;
 
-static inline char *
+static inline const char *
 nl_langinfo (nl_item item)
 {
   switch (item)

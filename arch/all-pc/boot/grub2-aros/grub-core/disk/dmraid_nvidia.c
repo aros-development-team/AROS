@@ -22,7 +22,9 @@
 #include <grub/mm.h>
 #include <grub/err.h>
 #include <grub/misc.h>
-#include <grub/raid.h>
+#include <grub/diskfilter.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #define NV_SIGNATURES		4
 
@@ -88,70 +90,85 @@ struct grub_nv_super
   struct grub_nv_array array;	/* Array information */
 } __attribute__ ((packed));
 
-static grub_err_t
-grub_dmraid_nv_detect (grub_disk_t disk, struct grub_raid_array *array,
-                       grub_disk_addr_t *start_sector)
+static struct grub_diskfilter_vg *
+grub_dmraid_nv_detect (grub_disk_t disk,
+			struct grub_diskfilter_pv_id *id,
+                        grub_disk_addr_t *start_sector)
 {
   grub_disk_addr_t sector;
   struct grub_nv_super sb;
+  int level;
+  int layout;
+  grub_uint64_t disk_size;
+  char *uuid;
 
   if (disk->partition)
-    return grub_error (GRUB_ERR_OUT_OF_RANGE, "skip partition");
+    /* Skip partition.  */
+    return NULL;
 
-  sector = grub_disk_get_size (disk) - 2;
-
+  sector = grub_disk_get_size (disk);
+  if (sector == GRUB_DISK_SIZE_UNKNOWN)
+    /* Not raid.  */
+    return NULL;
+  sector -= 2;
   if (grub_disk_read (disk, sector, 0, sizeof (sb), &sb))
-    return grub_errno;
+    return NULL;
 
   if (grub_memcmp (sb.vendor, NV_ID_STRING, 6))
-    return grub_error (GRUB_ERR_OUT_OF_RANGE, "not raid");
+    /* Not raid.  */
+    return NULL;
 
   if (sb.version != NV_VERSION)
-    return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-                       "unknown version: %d.%d", sb.version);
+    {
+      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		  "unknown version: %d.%d", sb.version);
+      return NULL;
+    }
 
   switch (sb.array.raid_level)
     {
     case NV_LEVEL_0:
-      array->level = 0;
-      array->disk_size = sb.capacity / sb.array.total_volumes;
+      level = 0;
+      disk_size = sb.capacity / sb.array.total_volumes;
       break;
 
     case NV_LEVEL_1:
-      array->level = 1;
-      array->disk_size = sb.capacity;
+      level = 1;
+      disk_size = sb.capacity;
       break;
 
     case NV_LEVEL_5:
-      array->level = 5;
-      array->layout = GRUB_RAID_LAYOUT_LEFT_ASYMMETRIC;
-      array->disk_size = sb.capacity / (sb.array.total_volumes - 1);
+      level = 5;
+      layout = GRUB_RAID_LAYOUT_LEFT_ASYMMETRIC;
+      disk_size = sb.capacity / (sb.array.total_volumes - 1);
       break;
 
     default:
-      return grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
-                         "unsupported RAID level: %d", sb.array.raid_level);
+      grub_error (GRUB_ERR_NOT_IMPLEMENTED_YET,
+		  "unsupported RAID level: %d", sb.array.raid_level);
+      return NULL;
     }
 
-  array->name = NULL;
-  array->number = 0;
-  array->total_devs = sb.array.total_volumes;
-  array->chunk_size = sb.array.stripe_block_size;
-  array->index = sb.unit_number;
-  array->uuid_len = sizeof (sb.array.signature);
-  array->uuid = grub_malloc (sizeof (sb.array.signature));
-  if (! array->uuid)
-    return grub_errno;
+  uuid = grub_malloc (sizeof (sb.array.signature));
+  if (! uuid)
+    return NULL;
 
-  grub_memcpy (array->uuid, (char *) &sb.array.signature,
+  grub_memcpy (uuid, (char *) &sb.array.signature,
                sizeof (sb.array.signature));
+
+  id->uuidlen = 0;
+  id->id = sb.unit_number;
 
   *start_sector = 0;
 
-  return 0;
+  return grub_diskfilter_make_raid (sizeof (sb.array.signature),
+				    uuid, sb.array.total_volumes,
+				    NULL, disk_size,
+				    sb.array.stripe_block_size, layout,
+				    level);
 }
 
-static struct grub_raid grub_dmraid_nv_dev =
+static struct grub_diskfilter grub_dmraid_nv_dev =
 {
   .name = "dmraid_nv",
   .detect = grub_dmraid_nv_detect,
@@ -160,10 +177,10 @@ static struct grub_raid grub_dmraid_nv_dev =
 
 GRUB_MOD_INIT(dm_nv)
 {
-  grub_raid_register (&grub_dmraid_nv_dev);
+  grub_diskfilter_register_front (&grub_dmraid_nv_dev);
 }
 
 GRUB_MOD_FINI(dm_nv)
 {
-  grub_raid_unregister (&grub_dmraid_nv_dev);
+  grub_diskfilter_unregister (&grub_dmraid_nv_dev);
 }

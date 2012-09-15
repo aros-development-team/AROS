@@ -448,12 +448,15 @@ typedef enum
    compiled, the `re_nsub' field is available.  All other fields are
    private to the regex routines.  */
 
+struct re_dfa_t;
+typedef struct re_dfa_t re_dfa_t;
+
 struct re_pattern_buffer
 {
   /* Space that holds the compiled pattern.  It is declared as
      `unsigned char *' because its elements are sometimes used as
      array indexes.  */
-  unsigned char *_REG_RE_NAME (buffer);
+  re_dfa_t *_REG_RE_NAME (buffer);
 
   /* Number of bytes to which `buffer' points.  */
   __re_long_size_t _REG_RE_NAME (allocated);

@@ -1,5 +1,7 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
+GRUB_MOD_LICENSE ("GPLv3+");
 /* camellia.h	ver 1.2.0
  *
  * Copyright (C) 2006,2007
@@ -27,7 +29,6 @@
 
 
 #include "camellia.h"
-#include "grub/misc.h"
 
 /* u32 must be 32bit word */
 typedef unsigned int u32;

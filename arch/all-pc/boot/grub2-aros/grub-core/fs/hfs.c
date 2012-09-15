@@ -28,6 +28,9 @@
 #include <grub/dl.h>
 #include <grub/types.h>
 #include <grub/hfs.h>
+#include <grub/i18n.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 #define	GRUB_HFS_SBLOCK		2
 #define GRUB_HFS_EMBED_HFSPLUS_SIG 0x482B
@@ -131,6 +134,8 @@ struct grub_hfs_dirrec
   grub_uint8_t type;
   grub_uint8_t unused[5];
   grub_uint32_t dirid;
+  grub_uint32_t ctime;
+  grub_uint32_t mtime;
 } __attribute__ ((packed));
 
 /* Information about a file.  */
@@ -142,7 +147,9 @@ struct grub_hfs_filerec
   grub_uint32_t fileid;
   grub_uint8_t unused2[2];
   grub_uint32_t size;
-  grub_uint8_t unused3[44];
+  grub_uint8_t unused3[18];
+  grub_uint32_t mtime;
+  grub_uint8_t unused4[22];
 
   /* The first 3 extents of the file.  The other extents can be found
      in the extent overflow file.  */
@@ -238,21 +245,23 @@ static grub_ssize_t
 grub_hfs_read_file (struct grub_hfs_data *data,
 		    void NESTED_FUNC_ATTR (*read_hook) (grub_disk_addr_t sector,
 				       unsigned offset, unsigned length),
-		     int pos, grub_size_t len, char *buf)
+		    grub_off_t pos, grub_size_t len, char *buf)
 {
-  int i;
-  int blockcnt;
+  grub_off_t i;
+  grub_off_t blockcnt;
 
-  blockcnt = ((len + pos)
-	      + data->blksz - 1) / data->blksz;
+  blockcnt = grub_divmod64 (((len + pos)
+			     + data->blksz - 1), data->blksz, 0);
 
-  for (i = pos / data->blksz; i < blockcnt; i++)
+  for (i = grub_divmod64 (pos, data->blksz, 0); i < blockcnt; i++)
     {
-      int blknr;
-      int blockoff = pos % data->blksz;
-      int blockend = data->blksz;
+      grub_disk_addr_t blknr;
+      grub_off_t blockoff;
+      grub_off_t blockend = data->blksz;
 
       int skipfirst = 0;
+
+      grub_divmod64 (pos, data->blksz, &blockoff);
 
       blknr = grub_hfs_block (data, data->extents, data->fileid, i, 1);
       if (grub_errno)
@@ -261,7 +270,7 @@ grub_hfs_read_file (struct grub_hfs_data *data,
       /* Last block.  */
       if (i == blockcnt - 1)
 	{
-	  blockend = (len + pos) % data->blksz;
+	  grub_divmod64 ((len + pos), data->blksz, &blockend);
 
 	  /* The last portion is exactly EXT2_BLOCK_SIZE (data).  */
 	  if (! blockend)
@@ -269,7 +278,7 @@ grub_hfs_read_file (struct grub_hfs_data *data,
 	}
 
       /* First block.  */
-      if (i == pos / data->blksz)
+      if (i == grub_divmod64 (pos, data->blksz, 0))
 	{
 	  skipfirst = blockoff;
 	  blockend -= skipfirst;
@@ -319,7 +328,8 @@ grub_hfs_mount (grub_disk_t disk)
     goto fail;
 
   /* Check if this is a HFS filesystem.  */
-  if (grub_be_to_cpu16 (data->sblock.magic) != GRUB_HFS_MAGIC)
+  if (grub_be_to_cpu16 (data->sblock.magic) != GRUB_HFS_MAGIC
+      || (data->sblock.blksz & grub_cpu_to_be32_compile_time (0xc00001ff)))
     {
       grub_error (GRUB_ERR_BAD_FS, "not an HFS filesystem");
       goto fail;
@@ -742,10 +752,7 @@ grub_hfs_find_node (struct grub_hfs_data *data, char *key,
 	 entry.  In case of a non-leaf mode it will be used to lookup
 	 the rest of the tree.  */
       if (cmp <= 0)
-	{
-	  grub_uint32_t *node = (grub_uint32_t *) rec->data;
-	  found = grub_be_to_cpu32 (*node);
-	}
+	found = grub_be_to_cpu32 (grub_get_unaligned32 (rec->data));
       else /* The key can not be found in the tree. */
 	return 1;
 
@@ -809,7 +816,7 @@ grub_hfs_iterate_dir (struct grub_hfs_data *data, grub_uint32_t root_idx,
       struct grub_hfs_catalog_key *ckey = rec->key;
 
       if (grub_hfs_cmp_catkeys (rec->key, (void *) &key) <= 0)
-	found = grub_be_to_cpu32 (*(grub_uint32_t *) rec->data);
+	found = grub_be_to_cpu32 (grub_get_unaligned32 (rec->data));
 
       if (hnd->type == 0xFF && ckey->strlen > 0)
 	{
@@ -857,6 +864,204 @@ grub_hfs_iterate_dir (struct grub_hfs_data *data, grub_uint32_t root_idx,
   return grub_errno;
 }
 
+#define MAX_UTF8_PER_MAC_ROMAN 3
+
+static const char macroman[0x80][MAX_UTF8_PER_MAC_ROMAN + 1] =
+  {
+    /* 80 */ "\xc3\x84",
+    /* 81 */ "\xc3\x85",
+    /* 82 */ "\xc3\x87",
+    /* 83 */ "\xc3\x89",
+    /* 84 */ "\xc3\x91",
+    /* 85 */ "\xc3\x96",
+    /* 86 */ "\xc3\x9c",
+    /* 87 */ "\xc3\xa1",
+    /* 88 */ "\xc3\xa0",
+    /* 89 */ "\xc3\xa2",
+    /* 8A */ "\xc3\xa4",
+    /* 8B */ "\xc3\xa3",
+    /* 8C */ "\xc3\xa5",
+    /* 8D */ "\xc3\xa7",
+    /* 8E */ "\xc3\xa9",
+    /* 8F */ "\xc3\xa8",
+    /* 90 */ "\xc3\xaa",
+    /* 91 */ "\xc3\xab",
+    /* 92 */ "\xc3\xad",
+    /* 93 */ "\xc3\xac",
+    /* 94 */ "\xc3\xae",
+    /* 95 */ "\xc3\xaf",
+    /* 96 */ "\xc3\xb1",
+    /* 97 */ "\xc3\xb3",
+    /* 98 */ "\xc3\xb2",
+    /* 99 */ "\xc3\xb4",
+    /* 9A */ "\xc3\xb6",
+    /* 9B */ "\xc3\xb5",
+    /* 9C */ "\xc3\xba",
+    /* 9D */ "\xc3\xb9",
+    /* 9E */ "\xc3\xbb",
+    /* 9F */ "\xc3\xbc",
+    /* A0 */ "\xe2\x80\xa0",
+    /* A1 */ "\xc2\xb0",
+    /* A2 */ "\xc2\xa2",
+    /* A3 */ "\xc2\xa3",
+    /* A4 */ "\xc2\xa7",
+    /* A5 */ "\xe2\x80\xa2",
+    /* A6 */ "\xc2\xb6",
+    /* A7 */ "\xc3\x9f",
+    /* A8 */ "\xc2\xae",
+    /* A9 */ "\xc2\xa9",
+    /* AA */ "\xe2\x84\xa2",
+    /* AB */ "\xc2\xb4",
+    /* AC */ "\xc2\xa8",
+    /* AD */ "\xe2\x89\xa0",
+    /* AE */ "\xc3\x86",
+    /* AF */ "\xc3\x98",
+    /* B0 */ "\xe2\x88\x9e",
+    /* B1 */ "\xc2\xb1",
+    /* B2 */ "\xe2\x89\xa4",
+    /* B3 */ "\xe2\x89\xa5",
+    /* B4 */ "\xc2\xa5",
+    /* B5 */ "\xc2\xb5",
+    /* B6 */ "\xe2\x88\x82",
+    /* B7 */ "\xe2\x88\x91",
+    /* B8 */ "\xe2\x88\x8f",
+    /* B9 */ "\xcf\x80",
+    /* BA */ "\xe2\x88\xab",
+    /* BB */ "\xc2\xaa",
+    /* BC */ "\xc2\xba",
+    /* BD */ "\xce\xa9",
+    /* BE */ "\xc3\xa6",
+    /* BF */ "\xc3\xb8",
+    /* C0 */ "\xc2\xbf",
+    /* C1 */ "\xc2\xa1",
+    /* C2 */ "\xc2\xac",
+    /* C3 */ "\xe2\x88\x9a",
+    /* C4 */ "\xc6\x92",
+    /* C5 */ "\xe2\x89\x88",
+    /* C6 */ "\xe2\x88\x86",
+    /* C7 */ "\xc2\xab",
+    /* C8 */ "\xc2\xbb",
+    /* C9 */ "\xe2\x80\xa6",
+    /* CA */ "\xc2\xa0",
+    /* CB */ "\xc3\x80",
+    /* CC */ "\xc3\x83",
+    /* CD */ "\xc3\x95",
+    /* CE */ "\xc5\x92",
+    /* CF */ "\xc5\x93",
+    /* D0 */ "\xe2\x80\x93",
+    /* D1 */ "\xe2\x80\x94",
+    /* D2 */ "\xe2\x80\x9c",
+    /* D3 */ "\xe2\x80\x9d",
+    /* D4 */ "\xe2\x80\x98",
+    /* D5 */ "\xe2\x80\x99",
+    /* D6 */ "\xc3\xb7",
+    /* D7 */ "\xe2\x97\x8a",
+    /* D8 */ "\xc3\xbf",
+    /* D9 */ "\xc5\xb8",
+    /* DA */ "\xe2\x81\x84",
+    /* DB */ "\xe2\x82\xac",
+    /* DC */ "\xe2\x80\xb9",
+    /* DD */ "\xe2\x80\xba",
+    /* DE */ "\xef\xac\x81",
+    /* DF */ "\xef\xac\x82",
+    /* E0 */ "\xe2\x80\xa1",
+    /* E1 */ "\xc2\xb7",
+    /* E2 */ "\xe2\x80\x9a",
+    /* E3 */ "\xe2\x80\x9e",
+    /* E4 */ "\xe2\x80\xb0",
+    /* E5 */ "\xc3\x82",
+    /* E6 */ "\xc3\x8a",
+    /* E7 */ "\xc3\x81",
+    /* E8 */ "\xc3\x8b",
+    /* E9 */ "\xc3\x88",
+    /* EA */ "\xc3\x8d",
+    /* EB */ "\xc3\x8e",
+    /* EC */ "\xc3\x8f",
+    /* ED */ "\xc3\x8c",
+    /* EE */ "\xc3\x93",
+    /* EF */ "\xc3\x94",
+    /* F0 */ "\xef\xa3\xbf",
+    /* F1 */ "\xc3\x92",
+    /* F2 */ "\xc3\x9a",
+    /* F3 */ "\xc3\x9b",
+    /* F4 */ "\xc3\x99",
+    /* F5 */ "\xc4\xb1",
+    /* F6 */ "\xcb\x86",
+    /* F7 */ "\xcb\x9c",
+    /* F8 */ "\xc2\xaf",
+    /* F9 */ "\xcb\x98",
+    /* FA */ "\xcb\x99",
+    /* FB */ "\xcb\x9a",
+    /* FC */ "\xc2\xb8",
+    /* FD */ "\xcb\x9d",
+    /* FE */ "\xcb\x9b",
+    /* FF */ "\xcb\x87",
+  };
+
+static void
+macroman_to_utf8 (char *to, const grub_uint8_t *from, grub_size_t len,
+		  int translate_slash)
+{
+  char *optr = to;
+  const grub_uint8_t *iptr;
+
+  for (iptr = from; iptr < from + len && *iptr; iptr++)
+    {
+      /* Translate '/' to ':' as per HFS spec.  */
+      if (*iptr == '/' && translate_slash)
+	{
+	  *optr++ = ':';
+	  continue;
+	}	
+      if (!(*iptr & 0x80))
+	{
+	  *optr++ = *iptr;
+	  continue;
+	}
+      optr = grub_stpcpy (optr, macroman[*iptr & 0x7f]);
+    }
+  *optr = 0;
+}
+
+static grub_ssize_t
+utf8_to_macroman (grub_uint8_t *to, const char *from)
+{
+  grub_uint8_t *end = to + 31;
+  grub_uint8_t *optr = to;
+  const char *iptr = from;
+  
+  while (*iptr && optr < end)
+    {
+      int i, clen;
+      /* Translate ':' to '/' as per HFS spec.  */
+      if (*iptr == ':')
+	{
+	  *optr++ = '/';
+	  iptr++;
+	  continue;
+	}	
+      if (!(*iptr & 0x80))
+	{
+	  *optr++ = *iptr++;
+	  continue;
+	}
+      clen = 2;
+      if ((*iptr & 0xf0) == 0xe0)
+	clen++;
+      for (i = 0; i < 0x80; i++)
+	if (grub_memcmp (macroman[i], iptr, clen) == 0)
+	  break;
+      if (i == 0x80)
+	break;
+      *optr++ = i | 0x80;
+      iptr += clen;
+    }
+  /* Too long or not encodable.  */
+  if (*iptr)
+    return -1;
+  return optr - to;
+}
+
 
 /* Find a file or directory with the pathname PATH in the filesystem
    DATA.  Return the file record in RETDATA when it is non-zero.
@@ -877,7 +1082,7 @@ grub_hfs_find_dir (struct grub_hfs_data *data, const char *path,
 
   if (path[0] != '/')
     {
-      grub_error (GRUB_ERR_BAD_FILENAME, "bad filename");
+      grub_error (GRUB_ERR_BAD_FILENAME, N_("invalid file name `%s'"), path);
       return 0;
     }
 
@@ -891,9 +1096,10 @@ grub_hfs_find_dir (struct grub_hfs_data *data, const char *path,
 
   while (path && grub_strlen (path))
     {
+      grub_ssize_t slen;
       if (fdrec.frec.type != GRUB_HFS_FILETYPE_DIR)
 	{
-	  grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+	  grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
 	  goto fail;
 	}
 
@@ -908,14 +1114,19 @@ grub_hfs_find_dir (struct grub_hfs_data *data, const char *path,
       struct grub_hfs_catalog_key key;
 
       key.parent_dir = grub_cpu_to_be32 (inode);
-      key.strlen = grub_strlen (path);
-      grub_strcpy ((char *) (key.str), path);
+      slen = utf8_to_macroman (key.str, path);
+      if (slen < 0)
+	{
+	  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
+	  goto fail;
+	}
+      key.strlen = slen;
 
       /* Lookup this node.  */
       if (! grub_hfs_find_node (data, (char *) &key, data->cat_root,
 				0, (char *) &fdrec.frec, sizeof (fdrec.frec)))
 	{
-	  grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+	  grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), origpath);
 	  goto fail;
 	}
 
@@ -950,20 +1161,39 @@ grub_hfs_dir (grub_device_t device, const char *path,
 
   int dir_hook (struct grub_hfs_record *rec)
     {
-      char fname[32] = { 0 };
-      char *filetype = rec->data;
+      struct grub_hfs_dirrec *drec = rec->data;
+      struct grub_hfs_filerec *frec = rec->data;
       struct grub_hfs_catalog_key *ckey = rec->key;
+      char fname[sizeof (ckey->str) * MAX_UTF8_PER_MAC_ROMAN + 1];
       struct grub_dirhook_info info;
+      grub_size_t len;
+
+      grub_memset (fname, 0, sizeof (fname));
+
       grub_memset (&info, 0, sizeof (info));
 
-      grub_strncpy (fname, (char *) (ckey->str), ckey->strlen);
+      len = ckey->strlen;
+      if (len > sizeof (ckey->str))
+	len = sizeof (ckey->str);
+      macroman_to_utf8 (fname, ckey->str, len, 1);
 
-      if (*filetype == GRUB_HFS_FILETYPE_DIR
-	  || *filetype == GRUB_HFS_FILETYPE_FILE)
+      info.case_insensitive = 1;
+
+      if (drec->type == GRUB_HFS_FILETYPE_DIR)
 	{
-	  info.dir = (*filetype == GRUB_HFS_FILETYPE_DIR);
+	  info.dir = 1;
+	  info.mtimeset = 1;
+	  info.mtime = grub_be_to_cpu32 (drec->mtime) - 2082844800;
 	  return hook (fname, &info);
 	}
+      if (frec->type == GRUB_HFS_FILETYPE_FILE)
+	{
+	  info.dir = 0;
+	  info.mtimeset = 1;
+	  info.mtime = grub_be_to_cpu32 (frec->mtime) - 2082844800;
+	  return hook (fname, &info);
+	}
+
       return 0;
     }
 
@@ -982,7 +1212,7 @@ grub_hfs_dir (grub_device_t device, const char *path,
 
   if (frec.type != GRUB_HFS_FILETYPE_DIR)
     {
-      grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+      grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
       goto fail;
     }
 
@@ -1018,7 +1248,7 @@ grub_hfs_open (struct grub_file *file, const char *name)
   if (frec.type != GRUB_HFS_FILETYPE_FILE)
     {
       grub_free (data);
-      grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a file");
+      grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a regular file"));
       grub_dl_unref (my_mod);
       return grub_errno;
     }
@@ -1063,10 +1293,33 @@ grub_hfs_label (grub_device_t device, char **label)
   data = grub_hfs_mount (device->disk);
 
   if (data)
-    *label = grub_strndup ((char *) (data->sblock.volname + 1),
-			   *data->sblock.volname);
+    {
+      grub_size_t len = data->sblock.volname[0];
+      if (len > sizeof (data->sblock.volname) - 1)
+	len = sizeof (data->sblock.volname) - 1;
+      *label = grub_malloc (len * MAX_UTF8_PER_MAC_ROMAN + 1);
+      if (*label)
+	macroman_to_utf8 (*label, data->sblock.volname + 1,
+			  len + 1, 0);
+    }
   else
     *label = 0;
+
+  grub_free (data);
+  return grub_errno;
+}
+
+static grub_err_t
+grub_hfs_mtime (grub_device_t device, grub_int32_t *tm)
+{
+  struct grub_hfs_data *data;
+
+  data = grub_hfs_mount (device->disk);
+
+  if (data)
+    *tm = grub_be_to_cpu32 (data->sblock.mtime) - 2082844800;
+  else
+    *tm = 0;
 
   grub_free (data);
   return grub_errno;
@@ -1107,6 +1360,11 @@ static struct grub_fs grub_hfs_fs =
     .close = grub_hfs_close,
     .label = grub_hfs_label,
     .uuid = grub_hfs_uuid,
+    .mtime = grub_hfs_mtime,
+#ifdef GRUB_UTIL
+    .reserved_first_sector = 1,
+    .blocklist_install = 1,
+#endif
     .next = 0
   };
 

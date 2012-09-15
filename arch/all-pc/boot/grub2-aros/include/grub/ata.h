@@ -22,6 +22,7 @@
 
 #include <grub/misc.h>
 #include <grub/symbol.h>
+#include <grub/disk.h>
 /* XXX: For now this only works on i386.  */
 #include <grub/cpu/io.h>
 
@@ -82,6 +83,9 @@ enum grub_ata_commands
     GRUB_ATA_CMD_PACKET			= 0xa0,
     GRUB_ATA_CMD_READ_SECTORS		= 0x20,
     GRUB_ATA_CMD_READ_SECTORS_EXT	= 0x24,
+    GRUB_ATA_CMD_READ_SECTORS_DMA	= 0xc8,
+    GRUB_ATA_CMD_READ_SECTORS_DMA_EXT	= 0x25,
+
     GRUB_ATA_CMD_SECURITY_FREEZE_LOCK	= 0xf5,
     GRUB_ATA_CMD_SET_FEATURES		= 0xef,
     GRUB_ATA_CMD_SLEEP			= 0xe6,
@@ -89,29 +93,76 @@ enum grub_ata_commands
     GRUB_ATA_CMD_STANDBY_IMMEDIATE	= 0xe0,
     GRUB_ATA_CMD_WRITE_SECTORS		= 0x30,
     GRUB_ATA_CMD_WRITE_SECTORS_EXT	= 0x34,
+    GRUB_ATA_CMD_WRITE_SECTORS_DMA_EXT	= 0x35,
+    GRUB_ATA_CMD_WRITE_SECTORS_DMA	= 0xca,
   };
 
 enum grub_ata_timeout_milliseconds
   {
     GRUB_ATA_TOUT_STD  =  1000,  /* 1s standard timeout.  */
-    GRUB_ATA_TOUT_DATA = 10000   /* 10s DATA I/O timeout.  */
+    GRUB_ATA_TOUT_DATA = 10000,   /* 10s DATA I/O timeout.  */
+    GRUB_ATA_TOUT_SPINUP  =  10000,  /* Give the device 10s on first try to spinon.  */
   };
 
-struct grub_ata_device
+typedef union
 {
-  /* IDE port to use.  */
-  int port;
+  grub_uint8_t raw[11];
+  struct
+  {
+    union
+    {
+      grub_uint8_t features;
+      grub_uint8_t error;
+    };
+    union
+    {
+      grub_uint8_t sectors;
+      grub_uint8_t atapi_ireason;
+    };
+    union
+    {
+      grub_uint8_t lba_low;
+      grub_uint8_t sectnum;
+    };
+    union
+    {
+      grub_uint8_t lba_mid;
+      grub_uint8_t cyllsb;
+      grub_uint8_t atapi_cntlow;
+    };
+    union
+    {
+      grub_uint8_t lba_high;
+      grub_uint8_t cylmsb;
+      grub_uint8_t atapi_cnthigh;
+    };
+    grub_uint8_t disk;
+    union
+    {
+      grub_uint8_t cmd;
+      grub_uint8_t status;
+    };
+    grub_uint8_t sectors48;
+    grub_uint8_t lba48_low;
+    grub_uint8_t lba48_mid;
+    grub_uint8_t lba48_high;
+  };
+} grub_ata_regs_t;
 
-  /* IO addresses on which the registers for this device can be
-     found.  */
-  grub_port_t ioaddress;
-  grub_port_t ioaddress2;
+/* ATA pass through parameters and function.  */
+struct grub_disk_ata_pass_through_parms
+{
+  grub_ata_regs_t taskfile;
+  void * buffer;
+  grub_size_t size;
+  int write;
+  void *cmd;
+  int cmdsize;
+  int dma;
+};
 
-  /* Two devices can be connected to a single cable.  Use this field
-     to select device 0 (commonly known as "master") or device 1
-     (commonly known as "slave").  */
-  int device;
-
+struct grub_ata
+{
   /* Addressing methods available for accessing this device.  If CHS
      is only available, use that.  Otherwise use LBA, except for the
      high sectors.  In that case use LBA48.  */
@@ -119,6 +170,7 @@ struct grub_ata_device
 
   /* Sector count.  */
   grub_uint64_t size;
+  grub_uint32_t log_sector_size;
 
   /* CHS maximums.  */
   grub_uint16_t cylinders;
@@ -128,47 +180,44 @@ struct grub_ata_device
   /* Set to 0 for ATA, set to 1 for ATAPI.  */
   int atapi;
 
-  struct grub_ata_device *next;
+  int dma;
+
+  grub_size_t maxbuffer;
+
+  int *present;
+
+  void *data;
+
+  struct grub_ata_dev *dev;
 };
 
-grub_err_t EXPORT_FUNC(grub_ata_wait_not_busy) (struct grub_ata_device *dev,
-                                                int milliseconds);
-grub_err_t EXPORT_FUNC(grub_ata_wait_drq) (struct grub_ata_device *dev,
-					   int rw, int milliseconds);
-void EXPORT_FUNC(grub_ata_pio_read) (struct grub_ata_device *dev,
-				     char *buf, grub_size_t size);
+typedef struct grub_ata *grub_ata_t;
 
-static inline void
-grub_ata_regset (struct grub_ata_device *dev, int reg, int val)
+struct grub_ata_dev
 {
-  grub_outb (val, dev->ioaddress + reg);
-}
+  /* Call HOOK with each device name, until HOOK returns non-zero.  */
+  int (*iterate) (int (*hook) (int id, int bus),
+		  grub_disk_pull_t pull);
 
-static inline grub_uint8_t
-grub_ata_regget (struct grub_ata_device *dev, int reg)
-{
-  return grub_inb (dev->ioaddress + reg);
-}
+  /* Open the device named NAME, and set up SCSI.  */
+  grub_err_t (*open) (int id, int bus, struct grub_ata *scsi);
 
-static inline void
-grub_ata_regset2 (struct grub_ata_device *dev, int reg, int val)
-{
-  grub_outb (val, dev->ioaddress2 + reg);
-}
+  /* Close the scsi device SCSI.  */
+  void (*close) (struct grub_ata *ata);
 
-static inline grub_uint8_t
-grub_ata_regget2 (struct grub_ata_device *dev, int reg)
-{
-  return grub_inb (dev->ioaddress2 + reg);
-}
+  /* Read SIZE bytes from the device SCSI into BUF after sending the
+     command CMD of size CMDSIZE.  */
+  grub_err_t (*readwrite) (struct grub_ata *ata,
+			   struct grub_disk_ata_pass_through_parms *parms,
+			   int spinup);
 
-static inline grub_err_t
-grub_ata_check_ready (struct grub_ata_device *dev)
-{
-  if (grub_ata_regget (dev, GRUB_ATA_REG_STATUS) & GRUB_ATA_STATUS_BUSY)
-    return grub_ata_wait_not_busy (dev, GRUB_ATA_TOUT_STD);
+  /* The next scsi device.  */
+  struct grub_ata_dev *next;
+};
 
-  return GRUB_ERR_NONE;
-}
+typedef struct grub_ata_dev *grub_ata_dev_t;
+
+void grub_ata_dev_register (grub_ata_dev_t dev);
+void grub_ata_dev_unregister (grub_ata_dev_t dev);
 
 #endif /* ! GRUB_ATA_HEADER */

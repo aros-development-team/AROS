@@ -18,13 +18,16 @@
 
 /* All tests need to include test.h for GRUB testing framework.  */
 #include <grub/test.h>
+#include <grub/dl.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* Functional test main method.  */
 static void
 example_test (void)
 {
   /* Check if 1st argument is true and report with default error message.  */
-  grub_test_assert (1 == 1);
+  grub_test_assert (1 == 1, "1 equal 1 expected");
 
   /* Check if 1st argument is true and report with custom error message.  */
   grub_test_assert (2 == 2, "2 equal 2 expected");
@@ -32,4 +35,4 @@ example_test (void)
 }
 
 /* Register example_test method as a functional test.  */
-GRUB_FUNCTIONAL_TEST (example_functional_test, example_test);
+GRUB_FUNCTIONAL_TEST (exfctest, example_test);

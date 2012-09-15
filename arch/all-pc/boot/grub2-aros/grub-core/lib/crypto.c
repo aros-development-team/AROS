@@ -21,6 +21,17 @@
 #include <grub/misc.h>
 #include <grub/mm.h>
 #include <grub/term.h>
+#include <grub/dl.h>
+#include <grub/i18n.h>
+
+#ifdef GRUB_UTIL
+#include <termios.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#endif
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 struct grub_crypto_hmac_handle
 {
@@ -159,33 +170,12 @@ grub_crypto_cipher_set_key (grub_crypto_cipher_handle_t cipher,
   return cipher->cipher->setkey (cipher->ctx, key, keylen);
 }
 
-
-void
-grub_crypto_cipher_close (grub_crypto_cipher_handle_t cipher)
-{
-  grub_free (cipher);
-}
-
-
-void
-grub_crypto_xor (void *out, const void *in1, const void *in2, grub_size_t size)
-{
-  const grub_uint8_t *in1ptr = in1, *in2ptr = in2;
-  grub_uint8_t *outptr = out;
-  while (size--)
-    {
-      *outptr = *in1ptr ^ *in2ptr;
-      in1ptr++;
-      in2ptr++;
-      outptr++;
-    }
-}
-
 gcry_err_code_t
 grub_crypto_ecb_decrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size)
+			 void *out, const void *in, grub_size_t size)
 {
-  grub_uint8_t *inptr, *outptr, *end;
+  const grub_uint8_t *inptr;
+  grub_uint8_t *outptr, *end;
   if (!cipher->cipher->decrypt)
     return GPG_ERR_NOT_SUPPORTED;
   if (size % cipher->cipher->blocksize != 0)
@@ -199,9 +189,10 @@ grub_crypto_ecb_decrypt (grub_crypto_cipher_handle_t cipher,
 
 gcry_err_code_t
 grub_crypto_ecb_encrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size)
+			 void *out, const void *in, grub_size_t size)
 {
-  grub_uint8_t *inptr, *outptr, *end;
+  const grub_uint8_t *inptr;
+  grub_uint8_t *outptr, *end;
   if (!cipher->cipher->encrypt)
     return GPG_ERR_NOT_SUPPORTED;
   if (size % cipher->cipher->blocksize != 0)
@@ -239,10 +230,11 @@ grub_crypto_cbc_encrypt (grub_crypto_cipher_handle_t cipher,
 
 gcry_err_code_t
 grub_crypto_cbc_decrypt (grub_crypto_cipher_handle_t cipher,
-			 void *out, void *in, grub_size_t size,
+			 void *out, const void *in, grub_size_t size,
 			 void *iv)
 {
-  grub_uint8_t *inptr, *outptr, *end;
+  const grub_uint8_t *inptr;
+  grub_uint8_t *outptr, *end;
   grub_uint8_t ivt[cipher->cipher->blocksize];
   if (!cipher->cipher->decrypt)
     return GPG_ERR_NOT_SUPPORTED;
@@ -333,7 +325,8 @@ grub_crypto_hmac_init (const struct gcry_md_spec *md,
 }
 
 void
-grub_crypto_hmac_write (struct grub_crypto_hmac_handle *hnd, void *data,
+grub_crypto_hmac_write (struct grub_crypto_hmac_handle *hnd,
+			const void *data,
 			grub_size_t datalen)
 {
   hnd->md->write (hnd->ctx, data, datalen);
@@ -375,7 +368,7 @@ grub_crypto_hmac_fini (struct grub_crypto_hmac_handle *hnd, void *out)
 gcry_err_code_t
 grub_crypto_hmac_buffer (const struct gcry_md_spec *md,
 			 const void *key, grub_size_t keylen,
-			 void *data, grub_size_t datalen, void *out)
+			 const void *data, grub_size_t datalen, void *out)
 {
   struct grub_crypto_hmac_handle *hnd;
 
@@ -411,10 +404,43 @@ grub_crypto_memcmp (const void *a, const void *b, grub_size_t n)
   return !!counter;
 }
 
-#ifndef GRUB_MKPASSWD
 int
 grub_password_get (char buf[], unsigned buf_size)
 {
+#ifdef GRUB_UTIL
+  FILE *in;
+  struct termios s, t;
+  int tty_changed = 0;
+  char *ptr;
+
+  /* Disable echoing. Based on glibc.  */
+  in = fopen ("/dev/tty", "w+c");
+  if (in == NULL)
+    in = stdin;
+
+  if (tcgetattr (fileno (in), &t) == 0)
+    {
+      /* Save the old one. */
+      s = t;
+      /* Tricky, tricky. */
+      t.c_lflag &= ~(ECHO|ISIG);
+      tty_changed = (tcsetattr (fileno (in), TCSAFLUSH, &t) == 0);
+    }
+  else
+    tty_changed = 0;
+  fgets (buf, buf_size, stdin);
+  ptr = buf + strlen (buf) - 1;
+  while (buf <= ptr && (*ptr == '\n' || *ptr == '\r'))
+    *ptr-- = 0;
+  /* Restore the original setting.  */
+  if (tty_changed)
+    (void) tcsetattr (fileno (in), TCSAFLUSH, &s);
+
+  grub_xputs ("\n");
+  grub_refresh ();
+
+  return 1;
+#else
   unsigned cur_len = 0;
   int key;
 
@@ -449,5 +475,5 @@ grub_password_get (char buf[], unsigned buf_size)
   grub_refresh ();
 
   return (key != '\e');
-}
 #endif
+}

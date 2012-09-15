@@ -140,9 +140,6 @@ grub_term_color_state;
 /* The X position of the left border.  */
 #define GRUB_TERM_LEFT_BORDER_X	GRUB_TERM_MARGIN
 
-/* The number of lines of messages at the bottom.  */
-#define GRUB_TERM_MESSAGE_HEIGHT	8
-
 /* The Y position of the first entry.  */
 #define GRUB_TERM_FIRST_ENTRY_Y	(GRUB_TERM_TOP_BORDER_Y + 1)
 
@@ -150,6 +147,7 @@ struct grub_term_input
 {
   /* The next terminal.  */
   struct grub_term_input *next;
+  struct grub_term_input **prev;
 
   /* The terminal name.  */
   const char *name;
@@ -174,6 +172,7 @@ struct grub_term_output
 {
   /* The next terminal.  */
   struct grub_term_output *next;
+  struct grub_term_output **prev;
 
   /* The terminal name.  */
   const char *name;
@@ -216,6 +215,9 @@ struct grub_term_output
   /* Update the screen.  */
   void (*refresh) (struct grub_term_output *term);
 
+  /* gfxterm only: put in fullscreen mode.  */
+  grub_err_t (*fullscreen) (void);
+
   /* The feature flags defined above.  */
   grub_uint32_t flags;
 
@@ -252,6 +254,14 @@ grub_term_register_input (const char *name __attribute__ ((unused)),
 }
 
 static inline void
+grub_term_register_input_inactive (const char *name __attribute__ ((unused)),
+				   grub_term_input_t term)
+{
+  grub_list_push (GRUB_AS_LIST_P (&grub_term_inputs_disabled),
+		  GRUB_AS_LIST (term));
+}
+
+static inline void
 grub_term_register_input_active (const char *name __attribute__ ((unused)),
 				 grub_term_input_t term)
 {
@@ -276,6 +286,14 @@ grub_term_register_output (const char *name __attribute__ ((unused)),
 }
 
 static inline void
+grub_term_register_output_inactive (const char *name __attribute__ ((unused)),
+				    grub_term_output_t term)
+{
+  grub_list_push (GRUB_AS_LIST_P (&grub_term_outputs_disabled),
+		  GRUB_AS_LIST (term));
+}
+
+static inline void
 grub_term_register_output_active (const char *name __attribute__ ((unused)),
 				  grub_term_output_t term)
 {
@@ -287,17 +305,15 @@ grub_term_register_output_active (const char *name __attribute__ ((unused)),
 static inline void
 grub_term_unregister_input (grub_term_input_t term)
 {
-  grub_list_remove (GRUB_AS_LIST_P (&grub_term_inputs), GRUB_AS_LIST (term));
-  grub_list_remove (GRUB_AS_LIST_P (&grub_term_inputs_disabled),
-		    GRUB_AS_LIST (term));
+  grub_list_remove (GRUB_AS_LIST (term));
+  grub_list_remove (GRUB_AS_LIST (term));
 }
 
 static inline void
 grub_term_unregister_output (grub_term_output_t term)
 {
-  grub_list_remove (GRUB_AS_LIST_P (&grub_term_outputs), GRUB_AS_LIST (term));
-  grub_list_remove (GRUB_AS_LIST_P (&(grub_term_outputs_disabled)),
-		    GRUB_AS_LIST (term));
+  grub_list_remove (GRUB_AS_LIST (term));
+  grub_list_remove (GRUB_AS_LIST (term));
 }
 
 #define FOR_ACTIVE_TERM_INPUTS(var) FOR_LIST_ELEMENTS((var), (grub_term_inputs))
@@ -307,7 +323,7 @@ grub_term_unregister_output (grub_term_output_t term)
 
 void grub_putcode (grub_uint32_t code, struct grub_term_output *term);
 int EXPORT_FUNC(grub_getkey) (void);
-int EXPORT_FUNC(grub_checkkey) (void);
+int EXPORT_FUNC(grub_getkey_noblock) (void);
 void grub_cls (void);
 void EXPORT_FUNC(grub_refresh) (void);
 void grub_puts_terminal (const char *str, struct grub_term_output *term);
@@ -337,29 +353,6 @@ static inline int
 grub_term_entry_width (struct grub_term_output *term)
 {
   return grub_term_border_width (term) - 2 - GRUB_TERM_MARGIN * 2 - 1;
-}
-
-/* The height of the border.  */
-
-static inline unsigned
-grub_term_border_height (struct grub_term_output *term)
-{
-  return grub_term_height (term) - GRUB_TERM_TOP_BORDER_Y
-    - GRUB_TERM_MESSAGE_HEIGHT;
-}
-
-/* The number of entries shown at a time.  */
-static inline int
-grub_term_num_entries (struct grub_term_output *term)
-{
-  return grub_term_border_height (term) - 2;
-}
-
-static inline int
-grub_term_cursor_x (struct grub_term_output *term)
-{
-  return (GRUB_TERM_LEFT_BORDER_X + grub_term_border_width (term) 
-	  - GRUB_TERM_MARGIN - 1);
 }
 
 static inline grub_uint16_t
@@ -445,10 +438,15 @@ grub_unicode_estimate_width (const struct grub_unicode_glyph *c __attribute__ ((
 
 #endif
 
+#define GRUB_TERM_TAB_WIDTH 8
+
 static inline grub_ssize_t 
 grub_term_getcharwidth (struct grub_term_output *term,
 			const struct grub_unicode_glyph *c)
 {
+  if (c->base == '\t')
+    return GRUB_TERM_TAB_WIDTH;
+
   if (term->getcharwidth)
     return term->getcharwidth (term, c);
   else if (((term->flags & GRUB_TERM_CODE_TYPE_MASK)

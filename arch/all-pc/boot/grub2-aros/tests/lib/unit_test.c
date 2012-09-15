@@ -30,9 +30,6 @@ main (int argc __attribute__ ((unused)),
 {
   int status = 0;
 
-  extern void grub_unit_test_init (void);
-  extern void grub_unit_test_fini (void);
-
   grub_test_t test;
 
   grub_unit_test_init ();

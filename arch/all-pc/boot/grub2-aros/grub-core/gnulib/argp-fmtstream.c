@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <wchar.h>
 
 #include "argp-fmtstream.h"
 #include "argp-namefrob.h"
@@ -116,6 +117,54 @@ weak_alias (__argp_fmtstream_free, argp_fmtstream_free)
 #endif
 #endif
 
+
+size_t
+__argp_get_display_len (const char *beg, const char *end)
+{
+  const char *ptr;
+  size_t r = 0;
+  mbstate_t ps;
+
+  memset (&ps, 0, sizeof (ps));
+
+  for (ptr = beg; ptr < end && *ptr; )
+    {
+      wchar_t wc;
+      size_t s;
+
+      s = mbrtowc (&wc, ptr, end - ptr, &ps);
+      if (s == (size_t) -1)
+	break;
+      r += wcwidth (wc);
+      ptr += s;
+    }
+  return r;
+}
+
+static inline char *
+add_length (char *ptr, char *end, size_t l)
+{
+  mbstate_t ps;
+
+  memset (&ps, 0, sizeof (ps));
+
+  while (ptr < end && *ptr)
+    {
+      wchar_t wc;
+      size_t s, k;
+
+      s = mbrtowc (&wc, ptr, end - ptr, &ps);
+      if (s == (size_t) -1)
+	break;
+      k = wcwidth (wc);
+      if (k >= l)
+	break;
+      l -= k;
+      ptr += s;
+    }
+  return ptr;
+}
+
 /* Process FS's buffer so that line wrapping is done from POINT_OFFS to the
    end of its buffer.  This code is mostly from glibc stdio/linewrap.c.  */
 void
@@ -168,14 +217,15 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
 
       if (!nl)
         {
+	  size_t display_len = __argp_get_display_len (buf, fs->p);
           /* The buffer ends in a partial line.  */
 
-          if (fs->point_col + len < fs->rmargin)
+          if (fs->point_col + display_len < fs->rmargin)
             {
               /* The remaining buffer text is a partial line and fits
                  within the maximum line width.  Advance point for the
                  characters to be written and stop scanning.  */
-              fs->point_col += len;
+              fs->point_col += display_len;
               break;
             }
           else
@@ -183,14 +233,18 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
                the end of the buffer.  */
             nl = fs->p;
         }
-      else if (fs->point_col + (nl - buf) < (ssize_t) fs->rmargin)
-        {
-          /* The buffer contains a full line that fits within the maximum
-             line width.  Reset point and scan the next line.  */
-          fs->point_col = 0;
-          buf = nl + 1;
-          continue;
-        }
+      else
+	{
+	  size_t display_len = __argp_get_display_len (buf, nl);
+	  if (display_len < (ssize_t) fs->rmargin)
+	    {
+	      /* The buffer contains a full line that fits within the maximum
+		 line width.  Reset point and scan the next line.  */
+	      fs->point_col = 0;
+	      buf = nl + 1;
+	      continue;
+	    }
+	}
 
       /* This line is too long.  */
       r = fs->rmargin - 1;
@@ -226,7 +280,7 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
           char *p, *nextline;
           int i;
 
-          p = buf + (r + 1 - fs->point_col);
+	  p = add_length (buf, fs->p, (r + 1 - fs->point_col));
           while (p >= buf && !isblank ((unsigned char) *p))
             --p;
           nextline = p + 1;     /* This will begin the next line.  */
@@ -244,7 +298,7 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
             {
               /* A single word that is greater than the maximum line width.
                  Oh well.  Put it on an overlong line by itself.  */
-              p = buf + (r + 1 - fs->point_col);
+              p = add_length (buf, fs->p, (r + 1 - fs->point_col));
               /* Find the end of the long word.  */
               if (p < nl)
                 do
@@ -278,7 +332,7 @@ __argp_fmtstream_update (argp_fmtstream_t fs)
               && fs->p > nextline)
             {
               /* The margin needs more blanks than we removed.  */
-              if (fs->end - fs->p > fs->wmargin + 1)
+              if (__argp_get_display_len (fs->p, fs->end) > fs->wmargin + 1)
                 /* Make some space for them.  */
                 {
                   size_t mv = fs->p - nextline;

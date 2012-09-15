@@ -26,6 +26,7 @@
 #include <grub/lib/arg.h>
 #include <grub/normal.h>
 #include <grub/extcmd.h>
+#include <grub/i18n.h>
 
 /* Max digits for a char is 3 (0xFF is 255), similarly for an int it
    is sizeof (int) * 3, and one extra for a possible -ve sign.  */
@@ -50,6 +51,55 @@ static struct grub_script_scope *scope = 0;
 
 /* Wildcard translator for GRUB script.  */
 struct grub_script_wildcard_translator *grub_wildcard_translator;
+
+static char*
+wildcard_escape (const char *s)
+{
+  int i;
+  int len;
+  char ch;
+  char *p;
+
+  len = grub_strlen (s);
+  p = grub_malloc (len * 2 + 1);
+  if (! p)
+    return NULL;
+
+  i = 0;
+  while ((ch = *s++))
+    {
+      if (ch == '*' || ch == '\\' || ch == '?')
+	p[i++] = '\\';
+      p[i++] = ch;
+    }
+  p[i] = '\0';
+  return p;
+}
+
+static char*
+wildcard_unescape (const char *s)
+{
+  int i;
+  int len;
+  char ch;
+  char *p;
+
+  len = grub_strlen (s);
+  p = grub_malloc (len + 1);
+  if (! p)
+    return NULL;
+
+  i = 0;
+  while ((ch = *s++))
+    {
+      if (ch == '\\')
+	p[i++] = *s++;
+      else
+	p[i++] = ch;
+    }
+  p[i] = '\0';
+  return p;
+}
 
 static void
 replace_scope (struct grub_script_scope *new_scope)
@@ -76,13 +126,26 @@ grub_script_break (grub_command_t cmd, int argc, char *argv[])
 
   if (argc == 0)
     count = 1;
-
-  else if ((argc > 1) || (count = grub_strtoul (argv[0], &p, 10)) == 0 ||
-	   (*p != '\0'))
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad break");
+  else if (argc > 1)
+    return  grub_error (GRUB_ERR_BAD_ARGUMENT, N_("one argument expected"));
+  else
+    {
+      count = grub_strtoul (argv[0], &p, 10);
+      if (grub_errno)
+	return grub_errno;
+      if (*p != '\0')
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("unrecognized number"));
+      if (count == 0)
+	/* TRANSLATORS: 0 is a quantifier. "break" (similar to bash)
+	   can be used e.g. to break 3 loops at once.
+	   But asking it to break 0 loops makes no sense. */
+	return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("can't break 0 loops"));
+    }
 
   is_continue = grub_strcmp (cmd->name, "break") ? 1 : 0;
-  active_breaks = grub_min (active_loops, count);
+  active_breaks = count;
+  if (active_breaks > active_loops)
+    active_breaks = active_loops;
   return GRUB_ERR_NONE;
 }
 
@@ -155,20 +218,32 @@ grub_script_return (grub_command_t cmd __attribute__((unused)),
   unsigned long n;
 
   if (! scope || argc > 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "not in function scope");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+		       /* TRANSLATORS: It's about not being
+			  inside a function. "return" can be used only
+			  in a function and this error occurs if it's used
+			  anywhere else.  */
+		       N_("not in function body"));
 
   if (argc == 0)
     {
+      const char *t;
       function_return = 1;
-      return grub_strtoul (grub_env_get ("?"), NULL, 10);
+      t = grub_env_get ("?");
+      if (!t)
+	return GRUB_ERR_NONE;
+      return grub_strtoul (t, NULL, 10);
     }
 
   n = grub_strtoul (argv[0], &p, 10);
+  if (grub_errno)
+    return grub_errno;
   if (*p != '\0')
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad argument");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+		       N_("unrecognized number"));
 
   function_return = 1;
-  return n ? grub_error (GRUB_ERR_TEST_FAILURE, "false") : GRUB_ERR_NONE;
+  return n ? grub_error (n, N_("false")) : GRUB_ERR_NONE;
 }
 
 static int
@@ -193,7 +268,7 @@ grub_script_env_get (const char *name, grub_script_arg_type_t type)
 
   if (! grub_env_special (name))
     {
-      char *v = grub_env_get (name);
+      const char *v = grub_env_get (name);
       if (v && v[0])
 	{
 	  if (type == GRUB_SCRIPT_ARG_TYPE_VAR)
@@ -202,20 +277,20 @@ grub_script_env_get (const char *name, grub_script_arg_type_t type)
 		goto fail;
 	    }
 	  else
-	    if (grub_script_argv_append (&result, v))
+	    if (grub_script_argv_append (&result, v, grub_strlen (v)))
 	      goto fail;
 	}
     }
   else if (! scope)
     {
-      if (grub_script_argv_append (&result, 0))
+      if (grub_script_argv_append (&result, 0, 0))
 	goto fail;
     }
   else if (grub_strcmp (name, "#") == 0)
     {
       char buffer[ERRNO_DIGITS_MAX + 1];
       grub_snprintf (buffer, sizeof (buffer), "%u", scope->argv.argc);
-      if (grub_script_argv_append (&result, buffer))
+      if (grub_script_argv_append (&result, buffer, grub_strlen (buffer)))
 	goto fail;
     }
   else if (grub_strcmp (name, "*") == 0)
@@ -231,10 +306,11 @@ grub_script_env_get (const char *name, grub_script_arg_type_t type)
 	  }
 	else
 	  {
-	    if (i != 0 && grub_script_argv_append (&result, " "))
+	    if (i != 0 && grub_script_argv_append (&result, " ", 1))
 	      goto fail;
 
-	    if (grub_script_argv_append (&result, scope->argv.args[i]))
+	    if (grub_script_argv_append (&result, scope->argv.args[i],
+					 grub_strlen (scope->argv.args[i])))
 	      goto fail;
 	  }
     }
@@ -251,7 +327,8 @@ grub_script_env_get (const char *name, grub_script_arg_type_t type)
 		goto fail;
 	    }
 	  else
-	    if (grub_script_argv_append (&result, scope->argv.args[i]))
+	    if (grub_script_argv_append (&result, scope->argv.args[i],
+					 grub_strlen (scope->argv.args[i])))
 	      goto fail;
 	}
     }
@@ -270,7 +347,9 @@ grub_script_env_get (const char *name, grub_script_arg_type_t type)
 		goto fail;
 	    }
 	  else
-	    if (grub_script_argv_append (&result, scope->argv.args[num - 1]))
+	    if (grub_script_argv_append (&result, scope->argv.args[num - 1],
+					 grub_strlen (scope->argv.args[num - 1])
+					 ))
 	      goto fail;
 	}
     }
@@ -287,9 +366,212 @@ static grub_err_t
 grub_script_env_set (const char *name, const char *val)
 {
   if (grub_env_special (name))
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "bad variable name");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT,
+		       N_("invalid variable name `%s'"), name);
 
   return grub_env_set (name, val);
+}
+
+static int
+parse_string (const char *str,
+	      int (*hook) (const char *var, grub_size_t varlen),
+	      char **put)
+{
+  const char *ptr;
+  int escaped = 0;
+  const char *optr;
+
+  for (ptr = str; ptr && *ptr; )
+    switch (*ptr)
+      {
+      case '\\':
+	escaped = !escaped;
+	if (!escaped && put)
+	  *((*put)++) = '\\';
+	ptr++;
+	break;
+      case '$':
+	if (escaped)
+	  {
+	    escaped = 0;
+	    if (put)
+	      *((*put)++) = *ptr;
+	    ptr++;
+	    break;
+	  }
+
+	ptr++;
+	switch (*ptr)
+	  {
+	  case '{':
+	    {
+	      optr = ptr + 1;
+	      ptr = grub_strchr (optr, '}');
+	      if (!ptr)
+		break;
+	      if (hook (optr, ptr - optr))
+		return 1;
+	      ptr++;
+	      break;
+	    }
+	  case '0' ... '9':
+	    optr = ptr;
+	    while (*ptr >= '0' && *ptr <= '9')
+	      ptr++;
+	    if (hook (optr, ptr - optr))
+	      return 1;
+	    break;
+	  case 'a' ... 'z':
+	  case 'A' ... 'Z':
+	  case '_':
+	    optr = ptr;
+	    while ((*ptr >= '0' && *ptr <= '9')
+		   || (*ptr >= 'a' && *ptr <= 'z')
+		   || (*ptr >= 'A' && *ptr <= 'Z')
+		   || *ptr == '_')
+	      ptr++;
+	    if (hook (optr, ptr - optr))
+	      return 1;
+	    break;
+	  case '?':
+	  case '#':
+	    if (hook (ptr, 1))
+	      return 1;
+	    ptr++;
+	    break;
+	  default:
+	    if (put)
+	      *((*put)++) = '$';
+	  }
+	break;
+      default:
+	if (escaped && put)
+	  *((*put)++) = '\\';
+	escaped = 0;
+	if (put)
+	  *((*put)++) = *ptr;
+	ptr++;
+	break;
+      }
+  return 0;
+}
+
+static int
+gettext_append (struct grub_script_argv *result, const char *orig_str)
+{
+  const char *template;
+  char *res = 0, *ptr;
+  char **allowed_strings;
+  grub_size_t nallowed_strings = 0;
+  grub_size_t additional_len = 1;
+  int rval = 1;
+  const char *iptr;
+
+  auto int save_allow (const char *str, grub_size_t len);
+  int save_allow (const char *str, grub_size_t len)
+  {
+    allowed_strings[nallowed_strings++] = grub_strndup (str, len);
+    if (!allowed_strings[nallowed_strings - 1])
+      return 1;
+    return 0;
+  }
+
+  auto int getlen (const char *str, grub_size_t len);
+  int getlen (const char *str, grub_size_t len)
+  {
+    const char *var;
+    grub_size_t i;
+
+    for (i = 0; i < nallowed_strings; i++)
+      if (grub_strncmp (allowed_strings[i], str, len) == 0
+	  && allowed_strings[i][len] == 0)
+	break;
+    if (i == nallowed_strings)
+      return 0;
+
+    /* Enough for any number.  */
+    if (len == 1 && str[0] == '#')
+      {
+	additional_len += 30;
+	return 0;
+      }
+    var = grub_env_get (allowed_strings[i]);
+    if (var)
+      additional_len += grub_strlen (var);
+    return 0;
+  }
+
+  auto int putvar (const char *str, grub_size_t len);
+  int putvar (const char *str, grub_size_t len)
+  {
+    const char *var;
+    grub_size_t i;
+
+    for (i = 0; i < nallowed_strings; i++)
+      if (grub_strncmp (allowed_strings[i], str, len) == 0
+	  && allowed_strings[i][len] == 0)
+       	{
+	  break;
+	}
+    if (i == nallowed_strings)
+      return 0;
+
+    /* Enough for any number.  */
+    if (len == 1 && str[0] == '#')
+      {
+	grub_snprintf (ptr, 30, "%u", scope->argv.argc);
+	ptr += grub_strlen (ptr);
+	return 0;
+      }
+    var = grub_env_get (allowed_strings[i]);
+    if (var)
+      ptr = grub_stpcpy (ptr, var);
+    return 0;
+  }
+
+  grub_size_t dollar_cnt = 0;
+
+  for (iptr = orig_str; *iptr; iptr++)
+    if (*iptr == '$')
+      dollar_cnt++;
+  allowed_strings = grub_malloc (sizeof (allowed_strings[0]) * dollar_cnt);
+
+  if (parse_string (orig_str, save_allow, 0))
+    goto fail;
+
+  template = _(orig_str);
+
+  if (parse_string (template, getlen, 0))
+    goto fail;
+
+  res = grub_malloc (grub_strlen (template) + additional_len);
+  if (!res)
+    goto fail;
+  ptr = res;
+
+  if (parse_string (template, putvar, &ptr))
+    goto fail;
+
+  *ptr = 0;
+  char *escaped = 0;
+  escaped = wildcard_escape (res);
+  if (grub_script_argv_append (result, escaped, grub_strlen (escaped)))
+    {
+      grub_free (escaped);
+      goto fail;
+    }
+  grub_free (escaped);
+
+  rval = 0;
+ fail:
+  grub_free (res);
+  {
+    grub_size_t i;
+    for (i = 0; i < nallowed_strings; i++)
+      grub_free (allowed_strings[i]);
+  }
+  grub_free (allowed_strings);
+  return rval;
 }
 
 /* Convert arguments in ARGLIST into ARGV form.  */
@@ -302,24 +584,24 @@ grub_script_arglist_to_argv (struct grub_script_arglist *arglist,
   struct grub_script_arg *arg = 0;
   struct grub_script_argv result = { 0, 0, 0 };
 
-  auto int append (char *s, int escape_type);
-  int append (char *s, int escape_type)
+  auto int append (const char *s, int escape_type);
+  int append (const char *s, int escape_type)
   {
     int r;
     char *p = 0;
 
-    if (! grub_wildcard_translator || escape_type == 0)
-      return grub_script_argv_append (&result, s);
+    if (escape_type == 0)
+      return grub_script_argv_append (&result, s, grub_strlen (s));
 
     if (escape_type > 0)
-      p = grub_wildcard_translator->escape (s);
+      p = wildcard_escape (s);
     else if (escape_type < 0)
-      p = grub_wildcard_translator->unescape (s);
+      p = wildcard_unescape (s);
 
     if (! p)
       return 1;
 
-    r = grub_script_argv_append (&result, p);
+    r = grub_script_argv_append (&result, p, grub_strlen (p));
     grub_free (p);
     return r;
   }
@@ -344,7 +626,8 @@ grub_script_arglist_to_argv (struct grub_script_arglist *arglist,
 
 		  if (arg->type == GRUB_SCRIPT_ARG_TYPE_VAR)
 		    {
-		      if (grub_script_argv_append (&result, values[i]))
+		      if (grub_script_argv_append (&result, values[i],
+						   grub_strlen (values[i])))
 			goto fail;
 		    }
 		  else
@@ -359,17 +642,38 @@ grub_script_arglist_to_argv (struct grub_script_arglist *arglist,
 	      break;
 
 	    case GRUB_SCRIPT_ARG_TYPE_BLOCK:
-	      if (grub_script_argv_append (&result, "{") ||
-		  grub_script_argv_append (&result, arg->str) ||
-		  grub_script_argv_append (&result, "}"))
-		goto fail;
+	      {
+		char *p;
+		if (grub_script_argv_append (&result, "{", 1))
+		  goto fail;
+		p = wildcard_escape (arg->str);
+		if (!p)
+		  goto fail;
+		if (grub_script_argv_append (&result, p,
+					     grub_strlen (p)))
+		  {
+		    grub_free (p);
+		    goto fail;
+		  }
+		grub_free (p);
+		if (grub_script_argv_append (&result, "}", 1))
+		  goto fail;
+	      }
 	      result.script = arg->script;
 	      break;
 
 	    case GRUB_SCRIPT_ARG_TYPE_TEXT:
-	      if (grub_strlen (arg->str) &&
-		  grub_script_argv_append (&result, arg->str))
+	      if (arg->str[0] &&
+		  grub_script_argv_append (&result, arg->str,
+					   grub_strlen (arg->str)))
 		goto fail;
+	      break;
+
+	    case GRUB_SCRIPT_ARG_TYPE_GETTEXT:
+	      {
+		if (gettext_append (&result, arg->str))
+		  goto fail;
+	      }
 	      break;
 
 	    case GRUB_SCRIPT_ARG_TYPE_DQSTR:
@@ -387,48 +691,46 @@ grub_script_arglist_to_argv (struct grub_script_arglist *arglist,
 
   /* Perform wildcard expansion.  */
 
-  if (grub_wildcard_translator)
-    {
-      int j;
-      int failed = 0;
-      char **expansions = 0;
-      struct grub_script_argv unexpanded = result;
+  int j;
+  int failed = 0;
+  struct grub_script_argv unexpanded = result;
 
-      result.argc = 0;
-      result.args = 0;
-      for (i = 0; unexpanded.args[i]; i++)
+  result.argc = 0;
+  result.args = 0;
+  for (i = 0; unexpanded.args[i]; i++)
+    {
+      char **expansions = 0;
+      if (grub_wildcard_translator
+	  && grub_wildcard_translator->expand (unexpanded.args[i],
+					       &expansions))
 	{
-	  if (grub_wildcard_translator->expand (unexpanded.args[i],
-						&expansions))
+	  grub_script_argv_free (&unexpanded);
+	  goto fail;
+	}
+
+      if (! expansions)
+	{
+	  grub_script_argv_next (&result);
+	  append (unexpanded.args[i], -1);
+	}
+      else
+	{
+	  for (j = 0; expansions[j]; j++)
+	    {
+	      failed = (failed || grub_script_argv_next (&result) ||
+			append (expansions[j], 0));
+	      grub_free (expansions[j]);
+	    }
+	  grub_free (expansions);
+	  
+	  if (failed)
 	    {
 	      grub_script_argv_free (&unexpanded);
 	      goto fail;
 	    }
-
-	  if (! expansions)
-	    {
-	      grub_script_argv_next (&result);
-	      append (unexpanded.args[i], -1);
-	    }
-	  else
-	    {
-	      for (j = 0; expansions[j]; j++)
-		{
-		  failed = (failed || grub_script_argv_next (&result) ||
-			    append (expansions[j], -1));
-		  grub_free (expansions[j]);
-		}
-	      grub_free (expansions);
-
-	      if (failed)
-		{
-		  grub_script_argv_free (&unexpanded);
-		  goto fail;
-		}
-	    }
 	}
-      grub_script_argv_free (&unexpanded);
     }
+  grub_script_argv_free (&unexpanded);
 
   *argv = result;
   return 0;
@@ -566,7 +868,8 @@ grub_script_execute_cmdline (struct grub_script_cmd *cmd)
       if (argv.argc < 2 || ! argv.args[1])
 	{
 	  grub_script_argv_free (&argv);
-	  return grub_error (GRUB_ERR_BAD_ARGUMENT, "missing arguments");
+	  return grub_error (GRUB_ERR_BAD_ARGUMENT,
+			     N_("no command is specified"));
 	}
 
       invert = 1;
@@ -631,7 +934,7 @@ grub_script_execute_cmdline (struct grub_script_cmd *cmd)
       if (ret == GRUB_ERR_TEST_FAILURE)
 	grub_errno = ret = GRUB_ERR_NONE;
       else if (ret == GRUB_ERR_NONE)
-	ret = grub_error (GRUB_ERR_TEST_FAILURE, "false");
+	ret = grub_error (GRUB_ERR_TEST_FAILURE, N_("false"));
       else
 	{
 	  grub_print_error ();
@@ -680,7 +983,7 @@ grub_err_t
 grub_script_execute_cmdif (struct grub_script_cmd *cmd)
 {
   int ret;
-  char *result;
+  const char *result;
   struct grub_script_cmdif *cmdif = (struct grub_script_cmdif *) cmd;
 
   /* Check if the commands results in a true or a false.  The value is

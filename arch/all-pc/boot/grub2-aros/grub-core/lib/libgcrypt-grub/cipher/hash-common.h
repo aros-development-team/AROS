@@ -1,5 +1,6 @@
 /* This file was automatically imported with 
    import_gcry.py. Please don't modify it */
+#include <grub/dl.h>
 /* hash-common.h - Declarations of common code for hash algorithms.
  * Copyright (C) 2008 Free Software Foundation, Inc.
  *

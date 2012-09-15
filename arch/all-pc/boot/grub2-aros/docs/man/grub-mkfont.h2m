@@ -1,2 +1,4 @@
 [NAME]
 grub-mkfont \- make GRUB font files
+[SEE ALSO]
+.BR grub-mkconfig (8)

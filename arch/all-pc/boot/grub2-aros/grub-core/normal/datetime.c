@@ -18,16 +18,17 @@
  */
 
 #include <grub/datetime.h>
+#include <grub/i18n.h>
 
-static char *grub_weekday_names[] =
+static const char *const grub_weekday_names[] =
 {
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  N_("Sunday"),
+  N_("Monday"),
+  N_("Tuesday"),
+  N_("Wednesday"),
+  N_("Thursday"),
+  N_("Friday"),
+  N_("Saturday"),
 };
 
 int
@@ -42,10 +43,10 @@ grub_get_weekday (struct grub_datetime *datetime)
   return (datetime->day + y + y / 4 - y / 100 + y / 400 + (31 * m / 12)) % 7;
 }
 
-char *
+const char *
 grub_get_weekday_name (struct grub_datetime *datetime)
 {
-  return grub_weekday_names[grub_get_weekday (datetime)];
+  return _ (grub_weekday_names[grub_get_weekday (datetime)]);
 }
 
 #define SECPERMIN 60

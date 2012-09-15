@@ -31,7 +31,7 @@
 #include <grub/types.h>
 #include <grub/video.h>
 
-grub_uint8_t *
+void *
 grub_video_fb_get_video_ptr (struct grub_video_fbblit_info *source,
               unsigned int x, unsigned int y)
 {

@@ -23,6 +23,8 @@
 #include <grub/efi/efi.h>
 #include <grub/command.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 #define ADD_MEMORY_DESCRIPTOR(desc, size)	\
   ((grub_efi_memory_descriptor_t *) ((char *) (desc) + (size)))
 

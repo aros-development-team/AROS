@@ -24,13 +24,15 @@
 #include <grub/command.h>
 #include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
+
 static grub_err_t
 grub_cmd_source (grub_command_t cmd, int argc, char **args)
 {
   int new_env, extractor;
 
   if (argc != 1)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "file name required");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
 
   extractor = (cmd->name[0] == 'e');
   new_env = (cmd->name[extractor ? sizeof ("extract_entries_") - 1 : 0] == 'c');
@@ -70,13 +72,13 @@ GRUB_MOD_INIT(configfile)
   cmd_extractor_source =
     grub_register_command ("extract_entries_source", grub_cmd_source,
 			   N_("FILE"),
-			   N_("Load another config file without changing context but take only menuentries.")
+			   N_("Load another config file without changing context but take only menu entries.")
 			   );
 
   cmd_extractor_configfile =
     grub_register_command ("extract_entries_configfile", grub_cmd_source,
 			   N_("FILE"),
-			   N_("Load another config file without changing context but take only menuentries.")
+			   N_("Load another config file without changing context but take only menu entries.")
 			   );
 
   cmd_dot =

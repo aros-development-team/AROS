@@ -22,7 +22,10 @@
 #include <grub/misc.h>
 #include <grub/disk.h>
 #include <grub/fshelp.h>
+#include <grub/dl.h>
+#include <grub/i18n.h>
 
+GRUB_MOD_LICENSE ("GPLv3+");
 
 /* Lookup the node PATH.  The node ROOTNODE describes the root of the
    directory tree.  The node found is returned in FOUNDNODE, which is
@@ -59,7 +62,6 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
       char fpath[grub_strlen (currpath) + 1];
       char *name = fpath;
       char *next;
-      //  unsigned int pos = 0;
       enum grub_fshelp_filetype type = GRUB_FSHELP_DIR;
       grub_fshelp_node_t currnode = currroot;
       grub_fshelp_node_t oldnode = currroot;
@@ -83,7 +85,7 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 	  if (filetype == GRUB_FSHELP_UNKNOWN ||
               (grub_strcmp (name, filename) &&
                (! (filetype & GRUB_FSHELP_CASE_INSENSITIVE) ||
-                grub_strncasecmp (name, filename, GRUB_LONG_MAX))))
+                grub_strcasecmp (name, filename))))
 	    {
 	      grub_free (node);
 	      return 0;
@@ -127,13 +129,16 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 	  if (type != GRUB_FSHELP_DIR)
 	    {
 	      free_node (currnode);
-	      return grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+	      currnode = 0;
+	      return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
 	    }
 
 	  /* Iterate over the directory.  */
 	  found = iterate_dir (currnode, iterate);
 	  if (! found)
 	    {
+	      free_node (currnode);
+	      currnode = 0;
 	      if (grub_errno)
 		return grub_errno;
 
@@ -150,12 +155,14 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 		{
 		  free_node (currnode);
 		  free_node (oldnode);
+		  currnode = 0;
 		  return grub_error (GRUB_ERR_SYMLINK_LOOP,
-                                     "too deep nesting of symlinks");
+                                     N_("too deep nesting of symlinks"));
 		}
 
 	      symlink = read_symlink (currnode);
 	      free_node (currnode);
+	      currnode = 0;
 
 	      if (!symlink)
 		{
@@ -182,7 +189,8 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 		}
 	    }
 
-	  free_node (oldnode);
+	  if (oldnode != currnode)
+	    free_node (oldnode);
 
 	  /* Found the node!  */
 	  if (! next || *next == '\0')
@@ -195,12 +203,12 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 	  name = next;
 	}
 
-      return grub_error (GRUB_ERR_FILE_NOT_FOUND, "file not found");
+      return grub_error (GRUB_ERR_FILE_NOT_FOUND, N_("file `%s' not found"), path);
     }
 
   if (!path || path[0] != '/')
     {
-      grub_error (GRUB_ERR_BAD_FILENAME, "bad filename");
+      grub_error (GRUB_ERR_BAD_FILENAME, N_("invalid file name `%s'"), path);
       return grub_errno;
     }
 
@@ -210,9 +218,9 @@ grub_fshelp_find_file (const char *path, grub_fshelp_node_t rootnode,
 
   /* Check if the node that was found was of the expected type.  */
   if (expecttype == GRUB_FSHELP_REG && foundtype != expecttype)
-    return grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a regular file");
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a regular file"));
   else if (expecttype == GRUB_FSHELP_DIR && foundtype != expecttype)
-    return grub_error (GRUB_ERR_BAD_FILE_TYPE, "not a directory");
+    return grub_error (GRUB_ERR_BAD_FILE_TYPE, N_("not a directory"));
 
   return 0;
 }
@@ -230,7 +238,8 @@ grub_fshelp_read_file (grub_disk_t disk, grub_fshelp_node_t node,
 		       grub_off_t pos, grub_size_t len, char *buf,
 		       grub_disk_addr_t (*get_block) (grub_fshelp_node_t node,
                                                       grub_disk_addr_t block),
-		       grub_off_t filesize, int log2blocksize)
+		       grub_off_t filesize, int log2blocksize,
+		       grub_disk_addr_t blocks_start)
 {
   grub_disk_addr_t i, blockcnt;
   int blocksize = 1 << (log2blocksize + GRUB_DISK_SECTOR_BITS);
@@ -278,7 +287,7 @@ grub_fshelp_read_file (grub_disk_t disk, grub_fshelp_node_t node,
 	{
 	  disk->read_hook = read_hook;
 
-	  grub_disk_read (disk, blknr, skipfirst,
+	  grub_disk_read (disk, blknr + blocks_start, skipfirst,
 			  blockend, buf);
 	  disk->read_hook = 0;
 	  if (grub_errno)

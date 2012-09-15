@@ -1,4 +1,5 @@
-#! /bin/sh -e
+#! /bin/sh
+set -e
 
 # Compares GRUB script output with BASH output.
 # Copyright (C) 2009,2010  Free Software Foundation, Inc.
@@ -19,18 +20,16 @@
 # Initialize some variables.
 transform="@program_transform_name@"
 
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-bindir=@bindir@
-libdir=@libdir@
-builddir=@builddir@
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+datarootdir="@datarootdir@"
+builddir="@builddir@"
 PACKAGE_NAME=@PACKAGE_NAME@
 PACKAGE_TARNAME=@PACKAGE_TARNAME@
 PACKAGE_VERSION=@PACKAGE_VERSION@
-target_cpu=@target_cpu@
 
 # Force build directory components
-PATH=${builddir}:$PATH
+PATH="${builddir}:$PATH"
 export PATH
 
 # Usage: usage
@@ -85,23 +84,23 @@ done
 if [ "x${source}" = x ] ; then
   tmpfile=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
   while read REPLY; do
-    echo $REPLY >> ${tmpfile}
+    echo $REPLY >> "${tmpfile}"
   done
-  source=${tmpfile}
+  source="${tmpfile}"
 fi
 
 outfile1=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
-@builddir@/grub-shell --qemu-opts="${qemuopts}" --modules=${modules} ${source} >${outfile1}
+"@builddir@/grub-shell" --qemu-opts="${qemuopts}" --modules=${modules} "${source}" >"${outfile1}"
 
 outfile2=`mktemp "${TMPDIR:-/tmp}/tmp.XXXXXXXXXX"` || exit 1
-bash ${source} >${outfile2}
+bash "${source}" >"${outfile2}"
 
-if ! diff -q ${outfile1} ${outfile2} >/dev/null
+if ! diff -q "${outfile1}" "${outfile2}" >/dev/null
 then
   echo "${source}: GRUB and BASH outputs did not match (see diff -u ${outfile1} ${outfile2})"
   status=1
 else
-    rm -f ${outfile1} ${outfile2}
+    rm -f "${outfile1}" "${outfile2}"
 fi
 
 exit $status

@@ -34,6 +34,9 @@
 #include <grub/efi/disk.h>
 #include <grub/command.h>
 #include <grub/i18n.h>
+#include <grub/net.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_dl_t my_mod;
 
@@ -55,6 +58,7 @@ grub_chainloader_unload (void)
   grub_free (file_path);
   grub_free (cmdline);
   cmdline = 0;
+  file_path = 0;
 
   grub_dl_unref (my_mod);
   return GRUB_ERR_NONE;
@@ -66,7 +70,7 @@ grub_chainloader_boot (void)
   grub_efi_boot_services_t *b;
   grub_efi_status_t status;
   grub_efi_uintn_t exit_data_size;
-  grub_efi_char16_t *exit_data;
+  grub_efi_char16_t *exit_data = NULL;
 
   b = grub_efi_system_table->boot_services;
   status = efi_call_3 (b->start_image, image_handle, &exit_data_size, &exit_data);
@@ -85,15 +89,15 @@ grub_chainloader_boot (void)
 	      grub_error (GRUB_ERR_BAD_OS, buf);
 	      grub_free (buf);
 	    }
-	  else
-	    grub_error (GRUB_ERR_BAD_OS, "unknown error");
 	}
+      else
+	grub_error (GRUB_ERR_BAD_OS, "unknown error");
     }
 
   if (exit_data)
     efi_call_1 (b->free_pool, exit_data);
 
-  grub_chainloader_unload ();
+  grub_loader_unset ();
 
   return grub_errno;
 }
@@ -107,14 +111,16 @@ copy_file_path (grub_efi_file_path_device_path_t *fp,
 
   fp->header.type = GRUB_EFI_MEDIA_DEVICE_PATH_TYPE;
   fp->header.subtype = GRUB_EFI_FILE_PATH_DEVICE_PATH_SUBTYPE;
-  size = len * sizeof (grub_efi_char16_t) + sizeof (*fp);
+
+  size = grub_utf8_to_utf16 (fp->path_name, len * GRUB_MAX_UTF16_PER_UTF8,
+			     (const grub_uint8_t *) str, len, 0);
+  for (p = fp->path_name; p < fp->path_name + size; p++)
+    if (*p == '/')
+      *p = '\\';
+
+  size = size * sizeof (grub_efi_char16_t) + sizeof (*fp);
   fp->header.length[0] = (grub_efi_uint8_t) (size & 0xff);
   fp->header.length[1] = (grub_efi_uint8_t) (size >> 8);
-  for (p = fp->path_name; len > 0; len--, p++, str++)
-    {
-      /* FIXME: this assumes that the path is in ASCII.  */
-      *p = (grub_efi_char16_t) (*str == '/' ? '\\' : *str);
-    }
 }
 
 static grub_efi_device_path_t *
@@ -150,6 +156,7 @@ make_file_path (grub_efi_device_path_t *dp, const char *filename)
 
   file_path = grub_malloc (size
 			   + ((grub_strlen (dir_start) + 1)
+			      * GRUB_MAX_UTF16_PER_UTF8
 			      * sizeof (grub_efi_char16_t))
 			   + sizeof (grub_efi_file_path_device_path_t) * 2);
   if (! file_path)
@@ -187,14 +194,14 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
   grub_ssize_t size;
   grub_efi_status_t status;
   grub_efi_boot_services_t *b;
-  grub_efi_handle_t dev_handle = 0;
   grub_device_t dev = 0;
   grub_efi_device_path_t *dp = 0;
   grub_efi_loaded_image_t *loaded_image;
   char *filename;
+  grub_efi_handle_t dev_handle = 0;
 
   if (argc == 0)
-    return grub_error (GRUB_ERR_BAD_ARGUMENT, "no file specified");
+    return grub_error (GRUB_ERR_BAD_ARGUMENT, N_("filename expected"));
   filename = argv[0];
 
   grub_dl_ref (my_mod);
@@ -216,13 +223,29 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
     goto fail;
 
   if (dev->disk)
+    dev_handle = grub_efidisk_get_device_handle (dev->disk);
+  else if (dev->net && dev->net->server)
     {
-      dev_handle = grub_efidisk_get_device_handle (dev->disk);
-      if (dev_handle)
-	dp = grub_efi_get_device_path (dev_handle);
+      grub_net_network_level_address_t addr;
+      struct grub_net_network_level_interface *inf;
+      grub_net_network_level_address_t gateway;
+      grub_err_t err;
+
+      err = grub_net_resolve_address (dev->net->server, &addr);
+      if (err)
+	goto fail;
+
+      err = grub_net_route_address (addr, &gateway, &inf);
+      if (err)
+	goto fail;
+
+      dev_handle = grub_efinet_get_device_handle (inf->card);
     }
 
-  if (! dev->disk || ! dev_handle || ! dp)
+  if (dev_handle)
+    dp = grub_efi_get_device_path (dev_handle);
+
+  if (! dp)
     {
       grub_error (GRUB_ERR_BAD_DEVICE, "not a valid root device");
       goto fail;
@@ -236,6 +259,12 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
   grub_efi_print_device_path (file_path);
 
   size = grub_file_size (file);
+  if (!size)
+    {
+      grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+		  filename);
+      goto fail;
+    }
   pages = (((grub_efi_uintn_t) size + ((1 << 12) - 1)) >> 12);
 
   status = efi_call_4 (b->allocate_pages, GRUB_EFI_ALLOCATE_ANY_PAGES,
@@ -243,14 +272,17 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
 			      pages, &address);
   if (status != GRUB_EFI_SUCCESS)
     {
-      grub_error (GRUB_ERR_OUT_OF_MEMORY, "cannot allocate %u pages", pages);
+      grub_dprintf ("chain", "Failed to allocate %u pages\n",
+		    (unsigned int) pages);
+      grub_error (GRUB_ERR_OUT_OF_MEMORY, N_("out of memory"));
       goto fail;
     }
 
   if (grub_file_read (file, (void *) ((grub_addr_t) address), size) != size)
     {
       if (grub_errno == GRUB_ERR_NONE)
-	grub_error (GRUB_ERR_BAD_OS, "too small");
+	grub_error (GRUB_ERR_BAD_OS, N_("premature end of file %s"),
+		    filename);
 
       goto fail;
     }
@@ -321,8 +353,7 @@ grub_cmd_chainloader (grub_command_t cmd __attribute__ ((unused)),
   if (file)
     grub_file_close (file);
 
-  if (file_path)
-    grub_free (file_path);
+  grub_free (file_path);
 
   if (address)
     efi_call_2 (b->free_pages, address, pages);

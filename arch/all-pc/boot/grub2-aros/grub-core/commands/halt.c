@@ -22,13 +22,14 @@
 #include <grub/misc.h>
 #include <grub/i18n.h>
 
-static grub_err_t
+GRUB_MOD_LICENSE ("GPLv3+");
+
+static grub_err_t __attribute__ ((noreturn))
 grub_cmd_halt (grub_command_t cmd __attribute__ ((unused)),
 	       int argc __attribute__ ((unused)),
 	       char **args __attribute__ ((unused)))
 {
   grub_halt ();
-  return 0;
 }
 
 static grub_command_t cmd;

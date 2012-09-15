@@ -22,11 +22,14 @@
 #include <grub/mm.h>
 #include <grub/err.h>
 #include <grub/misc.h>
-#include <grub/raid.h>
+#include <grub/diskfilter.h>
+#include <grub/crypto.h>
+
+GRUB_MOD_LICENSE ("GPLv3+");
 
 static grub_err_t
-grub_raid5_recover (struct grub_raid_array *array, int disknr,
-                    char *buf, grub_disk_addr_t sector, int size)
+grub_raid5_recover (struct grub_diskfilter_segment *array, int disknr,
+                    char *buf, grub_disk_addr_t sector, grub_size_t size)
 {
   char *buf2;
   int i;
@@ -38,16 +41,15 @@ grub_raid5_recover (struct grub_raid_array *array, int disknr,
 
   grub_memset (buf, 0, size);
 
-  for (i = 0; i < (int) array->total_devs; i++)
+  for (i = 0; i < (int) array->node_count; i++)
     {
       grub_err_t err;
 
       if (i == disknr)
         continue;
 
-      err = grub_disk_read (array->members[i].device,
-			    array->members[i].start_sector + sector,
-			    0, size, buf2);
+      err = grub_diskfilter_read_node (&array->nodes[i], sector,
+				       size >> GRUB_DISK_SECTOR_BITS, buf2);
 
       if (err)
         {
@@ -55,7 +57,7 @@ grub_raid5_recover (struct grub_raid_array *array, int disknr,
           return err;
         }
 
-      grub_raid_block_xor (buf, buf2, size);
+      grub_crypto_xor (buf, buf, buf2, size);
     }
 
   grub_free (buf2);

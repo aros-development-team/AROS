@@ -22,6 +22,7 @@
 #include <grub/err.h>
 #include <grub/legacy_parse.h>
 #include <grub/i386/pc/vesa_modes_table.h>
+#include <grub/i18n.h>
 
 struct legacy_command
 {
@@ -42,7 +43,8 @@ struct legacy_command
     TYPE_BOOL,
     TYPE_INT,
     TYPE_REST_VERBATIM,
-    TYPE_VBE_MODE
+    TYPE_VBE_MODE,
+    TYPE_WITH_CONFIGFILE_OPTION
   } argt[4];
   enum {
     FLAG_IGNORE_REST        =  0x001,
@@ -58,13 +60,22 @@ struct legacy_command
   const char *longdesc;
 };
 
-struct legacy_command legacy_commands[] =
+/* Help texts are kept here mostly for reference. They are never shown. So
+   no need to gettextize.
+ */
+static struct legacy_command legacy_commands[] =
   {
     {"blocklist", "blocklist '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
      "Print the blocklist notation of the file FILE."},
     {"boot", "boot\n", NULL, 0, 0, {}, 0, 0,
      "Boot the OS/chain-loader which has been loaded."},
-    /* FIXME: bootp unsupported.  */
+    {"bootp", "net_bootp; net_ls_addr; if [ x%s = x--with-configfile ]; then "
+     "if net_get_dhcp_option configfile_name pxe 150 string; then "
+     "configfile $configfile_name; fi; fi\n", NULL, 0, 1,
+     {TYPE_WITH_CONFIGFILE_OPTION}, FLAG_IGNORE_REST, "[--with-configfile]",
+     "Initialize a network device via BOOTP. If the option `--with-configfile'"
+     " is given, try to load a configuration file specified by the 150 vendor"
+     " tag."},
     {"cat", "cat '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILE",
      "Print the contents of the file FILE."},
     {"chainloader", "chainloader %s '%s'\n", NULL, 0,
@@ -102,7 +113,13 @@ struct legacy_command legacy_commands[] =
      "[NUM | `saved']",
      "Set the default entry to entry number NUM (if not specified, it is"
      " 0, the first entry) or the entry number saved by savedefault."},
-    /* FIXME: dhcp unsupported.  */
+    {"dhcp", "net_bootp; net_ls_addr; if [ x%s = x--with-configfile ]; then "
+     "if net_get_dhcp_option configfile_name pxe 150 string; then "
+     "configfile $configfile_name; fi; fi\n", NULL, 0, 1,
+     {TYPE_WITH_CONFIGFILE_OPTION}, FLAG_IGNORE_REST, "[--with-configfile]",
+     "Initialize a network device via BOOTP. If the option `--with-configfile'"
+     " is given, try to load a configuration file specified by the 150 vendor"
+     " tag."},
     {"displayapm", "lsapm\n", NULL, 0, 0, {}, 0, 0,
      "Display APM BIOS information."},
     {"displaymem", "lsmmap\n", NULL, 0, 0, {}, 0, 0, 
@@ -116,7 +133,7 @@ struct legacy_command legacy_commands[] =
      " immediately starts over using the NUM entry (same numbering as the"
      " `default' command). This obviously won't help if the machine"
      " was rebooted by a kernel that GRUB loaded."},
-    {"find", "search -sf '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILENAME",
+    {"find", "search -f '%s'\n", NULL, 0, 1, {TYPE_FILE}, 0, "FILENAME",
      "Search for the filename FILENAME in all of partitions and print the list of"
      " the devices which contain the file."},
     /* FIXME: fstest unsupported.  */
@@ -399,7 +416,7 @@ adjust_file (const char *in, grub_size_t len)
 }
 
 static int
-check_option (const char *a, char *b, grub_size_t len)
+check_option (const char *a, const char *b, grub_size_t len)
 {
   if (grub_strlen (b) != len)
     return 0;
@@ -411,6 +428,8 @@ is_option (enum arg_type opt, const char *curarg, grub_size_t len)
 {
   switch (opt)
     {
+    case TYPE_WITH_CONFIGFILE_OPTION:
+      return check_option (curarg, "--with-configfile", len);
     case TYPE_NOAPM_OPTION:
       return check_option (curarg, "--no-apm", len);
     case TYPE_FORCE_OPTION:
@@ -662,6 +681,7 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
 	  case TYPE_VERBATIM:
 	    args[i] = grub_legacy_escape (curarg, curarglen);
 	    break;
+	  case TYPE_WITH_CONFIGFILE_OPTION:
 	  case TYPE_FORCE_OPTION:
 	  case TYPE_NOAPM_OPTION:
 	  case TYPE_TYPE_OR_NOMEM_OPTION:
@@ -680,7 +700,10 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
 	      int base = 10;
 	      brk = curarg;
 	      if (brk[0] == '0' && brk[1] == 'x')
-		base = 16;
+		{
+		  base = 16;
+		  brk += 2;
+		}
 	      else if (brk[0] == '0')
 		base = 8;
 	      for (; *brk && brk < curarg + curarglen; brk++)
@@ -753,6 +776,7 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
       case TYPE_FILE:
       case TYPE_REST_VERBATIM:
       case TYPE_VERBATIM:
+      case TYPE_WITH_CONFIGFILE_OPTION:
       case TYPE_FORCE_OPTION:
       case TYPE_NOAPM_OPTION:
       case TYPE_TYPE_OR_NOMEM_OPTION:
@@ -778,7 +802,7 @@ grub_legacy_parse (const char *buf, char **entryname, char **suffix)
       len = grub_strlen (corig);
       if (!slash)
 	{
-	  grub_error (GRUB_ERR_BAD_ARGUMENT, "bad color specification %s",
+	  grub_error (GRUB_ERR_BAD_ARGUMENT, N_("invalid color specification `%s'"),
 		      args[0]);
 	  return NULL;
 	}
