@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2009, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 /******************************************************************************
@@ -79,8 +79,7 @@
 #define GRUB_BOOT_MACHINE_DRIVE_CHECK       0x66
 
 /* core.img pointers */
-#define GRUB_KERNEL_MACHINE_INSTALL_DOS_PART 0x14
-#define GRUB_KERNEL_MACHINE_INSTALL_BSD_PART 0x18
+#define GRUB_DECOMPRESSOR_I386_PC_BOOT_DEVICE 0x18
 
 /* BIOS drive flag */
 #define BIOS_HDISK_FLAG		0x80
@@ -118,9 +117,9 @@ struct BlockNode
     UWORD seg_adr;
 };
 
-const TEXT version[] = "$VER: Install-grub2-i386-pc 41.3 (3.9.2009)";
+const TEXT version[] = "$VER: Install-grub2-i386-pc 41.4 (15.9.2012)";
 
-CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
+CONST_STRPTR CORE_IMG_FILE_NAME = "i386-pc/core.img";
 
 STRPTR template =
     (STRPTR) ("DEVICE/A," "UNIT/N/K/A," "PARTITIONNUMBER=PN/K/N," "GRUB/K/A,"
@@ -1235,20 +1234,15 @@ BOOL writeCoreIMG(BPTR fh, UBYTE *buffer, struct Volume *volume)
 			if (Read(fh, buffer, 512) == 512)
 			{
 				/* set partition number where core.img is on */
-		        LONG dos_part = 0;
-		        LONG bsd_part = 0; /*?? to fix = RDB part number of DH? */
-		        LONG *install_dos_part = 
-                    (LONG *) (buffer + GRUB_KERNEL_MACHINE_INSTALL_DOS_PART);
-		        LONG *install_bsd_part =
-			    (LONG *) (buffer + GRUB_KERNEL_MACHINE_INSTALL_BSD_PART);
+		        /* FIXME: set RDB part number of DH? */
+		        UBYTE *install_boot_device = 
+                    buffer + GRUB_DECOMPRESSOR_I386_PC_BOOT_DEVICE;
 
-			    dos_part = volume->partnum;
+		        D(bug("[install] set dos part = %d\n", volume->partnum));
 
-		        D(bug("[install] set dos part = %d\n", dos_part));
-		        D(bug("[install] set bsd part = %d\n", bsd_part));
-
-		        *install_dos_part = dos_part;
-		        *install_bsd_part = bsd_part;
+		        install_boot_device[0] = 0;
+		        install_boot_device[1] = 0;
+		        install_boot_device[2] = volume->partnum;
 
 				/* write second core.img block back */
 				if (Seek(fh, -512, OFFSET_CURRENT) != -1)
@@ -1369,7 +1363,7 @@ BOOL installGrubFiles(struct Volume *coreimgvol,	/* core.img volume */
     if (block)
     {
 	    AddPart(bootimgpath, grubpath, 256);
-	    AddPart(bootimgpath, (CONST_STRPTR) "boot.img", 256);
+	    AddPart(bootimgpath, (CONST_STRPTR) "i386-pc/boot.img", 256);
 	    if (writeBootIMG(bootimgpath, bootimgvol, coreimgvol, block, unit))
 	        retval = TRUE;
     }
