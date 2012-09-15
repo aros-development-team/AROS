@@ -561,7 +561,6 @@ static void __fill_statbuffer(
     int                  fallback_to_defaults,
     BPTR                 lock)
 {
-    struct aroscbase __unused *aroscbase = __aros_getbase();
     uint64_t hash;
     uint32_t pc = 1, pb = 1; /* initial hash values */
 
