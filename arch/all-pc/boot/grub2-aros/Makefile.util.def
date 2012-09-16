@@ -36,7 +36,7 @@ library = {
 
 library = {
   name = libgrubmods.a;
-  cflags = '$(CFLAGS_POSIX) -Wno-undef -Wno-error=missing-noreturn';
+  cflags = '$(CFLAGS_POSIX) -Wno-undef';
   cppflags = '-I$(top_srcdir)/grub-core/lib/minilzo -I$(srcdir)/grub-core/lib/xzembed -DMINILZO_HAVE_CONFIG_H';
 
   common_nodist = grub_script.tab.c;
