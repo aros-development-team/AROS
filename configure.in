@@ -2243,6 +2243,8 @@ dnl things specifically required for hosted flavours
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
     if test "x-$need_dlopen" != "x-no" ; then
+      save_libs="$LIBS"
+      LIBS=""
       dnl some kind of dynamic library access system is required for hostlib.resource
       AC_CHECK_FUNC(dlopen, have_dl="yes", have_dl="no")
       if test "x-$have_dl" = "x-no" ; then
@@ -2253,6 +2255,7 @@ if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" 
       if test "x-$have_dl" = "x-no" ; then
           AC_MSG_ERROR([dlopen() dynamic linker functions not available])
       fi
+      LIBS="$save_libs"
     fi
 
 

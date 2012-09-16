@@ -13404,6 +13404,8 @@ fi
 if test "x-$aros_flavour" = "x-emulation" -o "x-$aros_flavour" = "x-emulcompat" ; then
 
     if test "x-$need_dlopen" != "x-no" ; then
+      save_libs="$LIBS"
+      LIBS=""
             ac_fn_c_check_func "$LINENO" "dlopen" "ac_cv_func_dlopen"
 if test "x$ac_cv_func_dlopen" = xyes; then :
   have_dl="yes"
@@ -13459,6 +13461,7 @@ fi
       if test "x-$have_dl" = "x-no" ; then
           as_fn_error $? "dlopen() dynamic linker functions not available" "$LINENO" 5
       fi
+      LIBS="$save_libs"
     fi
 
 
