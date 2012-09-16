@@ -56,6 +56,7 @@
 
 #ifdef __linux__
 #include <sys/ioctl.h>
+#include <linux/types.h>
 #include <linux/fs.h>
 #include <linux/fiemap.h>
 #endif
