@@ -443,7 +443,7 @@ static char *NextWord(char *s)
                 DecodeLocationA(ptr, tags);
             }
 
-            kprintf("%p-%p %s.%s\n", sym_l, sym_h, modname, symname);
+            kprintf("%p %s %s+0x%x\n", sym_l, sym_h, modname, symname, (APTR)ptr - (APTR)sym_l);
         } 
         else if (strcmp(comm, "QT") == 0 && strcmp(data, "00000000") == 0)
         {
