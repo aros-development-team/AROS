@@ -11,7 +11,7 @@ static inline struct OhciED * ohciAllocED(struct PCIController *hc)
     if(!oed)
     {
         // out of QHs!
-        KPRINTF(20, ("Out of EDs!\n"));
+        KPRINTF(200, ("Out of EDs!\n"));
         return NULL;
     }
 
@@ -43,7 +43,7 @@ static inline struct OhciTD * ohciAllocTD(struct PCIController *hc)
     if(!otd)
     {
         // out of TDs!
-        KPRINTF(20, ("Out of TDs!\n"));
+        KPRINTF(200, ("Out of TDs!\n"));
         return NULL;
     }
 
