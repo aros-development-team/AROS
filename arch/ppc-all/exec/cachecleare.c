@@ -11,6 +11,8 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 
+#include "kernel_syscall.h"
+
 /*****************************************************************************
 
     NAME */
@@ -78,7 +80,7 @@
     char *end = (char*)(((IPTR)address + length + 31) & 0xffffffe0);
     char *ptr;
     
-    /* Flush data caches and mark cacke lines invalid */
+    /* Flush data caches and mark cache lines invalid */
     if (caches & CACRF_ClearD)
     {
         for (ptr = start; ptr < end; ptr +=32)
@@ -93,7 +95,7 @@
     {
         register APTR addr asm ("r4") = address;
         register ULONG len asm ("r5") = length;
-        asm volatile("li %%r3,%0; sc"::"i"(8 /*SC_INVALIDATED*/),"r"(addr),"r"(len):"memory","r3");
+        asm volatile("li %%r3,%0; sc"::"i"(SC_INVALIDATED),"r"(addr),"r"(len):"memory","r3");
     }
 #endif
 
