@@ -18,8 +18,7 @@ PREFIX BOOL isSectNumValid(struct Volume *vol, SECTNUM nSect);
 PREFIX struct Volume* adfMount( struct Device *dev, int nPart, BOOL readOnly );
 PREFIX void adfUnMount(struct Volume *vol);
 PREFIX void adfVolumeInfo(struct Volume *vol);
-struct Volume* adfCreateVol( struct Device* dev, ULONG startCyl, ULONG lenCyl, 
-    char* volName, int volType );
+struct Volume* adfCreateVol( struct Device* dev, ULONG startCyl, ULONG lenCyl, int reserved, char* volName, int volType );
 
 /*void adfReadBitmap(struct Volume* , ULONG nBlock, struct bRootBlock* root);
 void adfUpdateBitmap(struct Volume*);
