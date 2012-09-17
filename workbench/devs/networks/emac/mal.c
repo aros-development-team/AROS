@@ -71,6 +71,7 @@ static void MALIRQHandler(struct EMACBase *EMACBase, uint8_t inttype)
     }
 }
 
+extern ULONG GetPVR(void);
 
 void EMAC_MAL_Init(struct EMACBase *EMACBase)
 {
@@ -87,11 +88,19 @@ void EMAC_MAL_Init(struct EMACBase *EMACBase)
 
     KernelBase = OpenResource("kernel.resource");
 
-    EMACBase->emb_MALHandlers[0] = KrnAddIRQHandler(INTR_MTE,   MALIRQHandler, EMACBase, (APTR)INTR_MTE);
-    EMACBase->emb_MALHandlers[1] = KrnAddIRQHandler(INTR_MRE,   MALIRQHandler, EMACBase, (APTR)INTR_MRE);
-    EMACBase->emb_MALHandlers[2] = KrnAddIRQHandler(INTR_MTDE,  MALIRQHandler, EMACBase, (APTR)INTR_MTDE);
-    EMACBase->emb_MALHandlers[3] = KrnAddIRQHandler(INTR_MRDE,  MALIRQHandler, EMACBase, (APTR)INTR_MRDE);
-    EMACBase->emb_MALHandlers[4] = KrnAddIRQHandler(INTR_MS,    MALIRQHandler, EMACBase, (APTR)INTR_MS);
+    if (GetPVR() == PVR_PPC460EX_B) {
+        EMACBase->emb_MALHandlers[0] = KrnAddIRQHandler(INTR_UIC2_MAL_TX_EOB,   MALIRQHandler, EMACBase, (APTR)INTR_MTE);
+        EMACBase->emb_MALHandlers[1] = KrnAddIRQHandler(INTR_UIC2_MAL_RX_EOB,   MALIRQHandler, EMACBase, (APTR)INTR_MRE);
+        EMACBase->emb_MALHandlers[2] = KrnAddIRQHandler(INTR_UIC2_MAL_TXDE,  MALIRQHandler, EMACBase, (APTR)INTR_MTDE);
+        EMACBase->emb_MALHandlers[3] = KrnAddIRQHandler(INTR_UIC2_MAL_RXDE,  MALIRQHandler, EMACBase, (APTR)INTR_MRDE);
+        EMACBase->emb_MALHandlers[4] = KrnAddIRQHandler(INTR_UIC2_MAL_SERR,  MALIRQHandler, EMACBase, (APTR)INTR_MS);
+    } else {
+        EMACBase->emb_MALHandlers[0] = KrnAddIRQHandler(INTR_MTE,   MALIRQHandler, EMACBase, (APTR)INTR_MTE);
+        EMACBase->emb_MALHandlers[1] = KrnAddIRQHandler(INTR_MRE,   MALIRQHandler, EMACBase, (APTR)INTR_MRE);
+        EMACBase->emb_MALHandlers[2] = KrnAddIRQHandler(INTR_MTDE,  MALIRQHandler, EMACBase, (APTR)INTR_MTDE);
+        EMACBase->emb_MALHandlers[3] = KrnAddIRQHandler(INTR_MRDE,  MALIRQHandler, EMACBase, (APTR)INTR_MRDE);
+        EMACBase->emb_MALHandlers[4] = KrnAddIRQHandler(INTR_MS,    MALIRQHandler, EMACBase, (APTR)INTR_MS);
+    }
 
     intptr_t buffers = (intptr_t)AllocPooled(EMACBase->emb_Pool,
                                             32 + 4 * (RX_RING_SIZE + TX_RING_SIZE) * ((RXTX_ALLOC_BUFSIZE+31)& ~31));
