@@ -63,6 +63,7 @@
 #include "types.h"
 #endif
 #include <SDI_compiler.h>
+#include <SDI_stdarg.h>
 #include <string.h>
 
 #ifndef __AROS__
@@ -86,12 +87,17 @@ void FreeVecPooled(APTR pool, APTR mem);
 /* asprintf_os3.s / asprintf_aros.c */
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...);
 VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...);
+#ifdef __AROS__
+void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args);
+STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args);
+#else
 void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, CONST_APTR args);
 STRPTR VASPrintf (CONST_STRPTR fmt, CONST_APTR args);
+#endif
 
 /* asprintfpooled_aros.c */
 VARARGS68K STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...);
-STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, CONST_APTR args);
+STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, VA_LIST args);
 
 /* checklib.c */
 BOOL CheckLib (struct Library *lib, ULONG ver, ULONG rev);

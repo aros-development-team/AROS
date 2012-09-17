@@ -619,8 +619,13 @@ static void DiskChange (struct DiskImageUnit *unit) {
 	ReleaseSemaphore(libBase->DiskChangeSemaphore);
 }
 
+#ifdef __AROS__
+void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
+	LONG error_string, VA_LIST error_args)
+#else
 void SetDiskImageErrorA (APTR Self, struct DiskImageUnit *unit, LONG error,
 	LONG error_string, CONST_APTR error_args)
+#endif
 {
 	struct DiskImageBase *libBase = unit->LibBase;
 	if (error != NO_ERROR) {
@@ -645,6 +650,10 @@ VARARGS68K void SetDiskImageError (APTR Self, struct DiskImageUnit *unit, LONG e
 {
 	VA_LIST args;
 	VA_START(args, error_string);
+#ifdef __AROS__
+	SetDiskImageErrorA(Self, unit, error, error_string, args);
+#else
 	SetDiskImageErrorA(Self, unit, error, error_string, VA_ARG(args, CONST_APTR));
+#endif
 	VA_END(args);
 }

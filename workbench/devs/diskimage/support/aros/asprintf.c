@@ -29,27 +29,13 @@
 #include <proto/exec.h>
 #include <SDI_stdarg.h>
 
-AROS_UFH2(void, CountPutCh,
-	AROS_UFHA(UBYTE, c, D0),
-	AROS_UFHA(ULONG *, s, A3)
-)
-{
-	AROS_USERFUNC_INIT
-	(*s)++;
-	AROS_USERFUNC_EXIT
-}
-
 typedef struct {
 	STRPTR Target;
 	ULONG TargetSize;
 } SNPrintfStream;
 
-AROS_UFH2(void, SNPrintfPutCh,
-	AROS_UFHA(UBYTE, c, D0),
-	AROS_UFHA(SNPrintfStream *, s, A3)
-)
+void SNPrintfPutCh(SNPrintfStream * s, UBYTE c)
 {
-	AROS_USERFUNC_INIT
 	if (s->TargetSize > 0) {
 		if (s->TargetSize > 1) {
 			*s->Target++ = c;
@@ -58,13 +44,12 @@ AROS_UFH2(void, SNPrintfPutCh,
 		}
 		s->TargetSize--;
 	}
-	AROS_USERFUNC_EXIT
 }
 
 VARARGS68K void SNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, ...) {
 	VA_LIST args;
 	VA_START(args, fmt);
-	VSNPrintf(buf, len, fmt, VA_ARG(args, CONST_APTR));
+	VSNPrintf(buf, len, fmt, args);
 	VA_END(args);
 }
 
@@ -72,24 +57,24 @@ VARARGS68K STRPTR ASPrintf (CONST_STRPTR fmt, ...) {
 	VA_LIST args;
 	STRPTR res;
 	VA_START(args, fmt);
-	res = VASPrintf(fmt, VA_ARG(args, CONST_APTR));
+	res = VASPrintf(fmt, args);
 	VA_END(args);
 	return res;
 }
 
-void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, CONST_APTR args) {
+void VSNPrintf (STRPTR buf, LONG len, CONST_STRPTR fmt, VA_LIST args) {
 	SNPrintfStream s = { buf, len };
-	RawDoFmt(fmt, (APTR)args, (VOID_FUNC)SNPrintfPutCh, &s);
+	VNewRawDoFmt(fmt, (VOID_FUNC)SNPrintfPutCh, &s, args);
 }
 
-STRPTR VASPrintf (CONST_STRPTR fmt, CONST_APTR args) {
+STRPTR VASPrintf (CONST_STRPTR fmt, VA_LIST args) {
 	STRPTR buf;
 	ULONG len = 0;
-	RawDoFmt(fmt, (APTR)args, (VOID_FUNC)CountPutCh, &len);
+	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, args);
 	buf = AllocVec(len, MEMF_ANY);
 	if (buf) {
 		SNPrintfStream s = { buf, len };
-		RawDoFmt(fmt, (APTR)args, (VOID_FUNC)SNPrintfPutCh, &s);
+		VNewRawDoFmt(fmt, (VOID_FUNC)SNPrintfPutCh, &s, args);
 	}
 	return buf;
 }

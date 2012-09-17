@@ -29,38 +29,30 @@
 #include <proto/exec.h>
 #include <SDI_stdarg.h>
 
-AROS_UFP2(void, CountPutCh,
-	AROS_UFPA(UBYTE, c, D0),
-	AROS_UFPA(ULONG *, s, A3)
-);
-
 typedef struct {
 	STRPTR Target;
 	ULONG TargetSize;
 } SNPrintfStream;
 
-AROS_UFP2(void, SNPrintfPutCh,
-	AROS_UFPA(UBYTE, c, D0),
-	AROS_UFPA(SNPrintfStream *, s, A3)
-);
+void SNPrintfPutCh(SNPrintfStream * s, UBYTE c);
 
 VARARGS68K STRPTR ASPrintfPooled (APTR pool, CONST_STRPTR fmt, ...) {
 	VA_LIST args;
 	STRPTR res;
 	VA_START(args, fmt);
-	res = VASPrintfPooled(pool, fmt, VA_ARG(args, CONST_APTR));
+	res = VASPrintfPooled(pool, fmt, args);
 	VA_END(args);
 	return res;
 }
 
-STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, CONST_APTR args) {
+STRPTR VASPrintfPooled (APTR pool, CONST_STRPTR fmt, VA_LIST args) {
 	STRPTR buf;
 	ULONG len = 0;
-	RawDoFmt(fmt, (APTR)args, (VOID_FUNC)CountPutCh, &len);
+	VNewRawDoFmt(fmt, RAWFMTFUNC_COUNT, &len, args);
 	buf = AllocVecPooled(pool, len);
 	if (buf) {
 		SNPrintfStream s = { buf, len };
-		RawDoFmt(fmt, (APTR)args, (VOID_FUNC)SNPrintfPutCh, &s);
+		VNewRawDoFmt(fmt, (VOID_FUNC)SNPrintfPutCh, &s, args);
 	}
 	return buf;
 }
