@@ -954,7 +954,7 @@ WORD cmdControlXFerRootHub(struct IOUsbHWReq *ioreq,
                                         return(0);
                                     } else {
                                         newval &= ~EHPF_PORTRESET;
-                                        WRITEREG16_LE(hc->hc_RegBase, portreg, newval);
+                                        WRITEREG32_LE(hc->hc_RegBase, portreg, newval);
                                         hc->hc_PortChangeMap[hciport] |= UPSF_PORT_RESET; // manually fake reset change
                                         uhwDelayMS(10, unit);
                                         cnt = 100;
