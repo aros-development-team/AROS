@@ -50,6 +50,10 @@ LONG checkValid(struct AFSBase *afs, struct Volume *vol)
 {
 #ifdef __AROS__
     struct BlockCache *blockbuffer;
+
+    if (vol == NULL)
+    	return 0;
+
     blockbuffer = getBlock(afs, vol, vol->rootblock);
     UBYTE  n[MAX_NAME_LENGTH];
     STRPTR name;
