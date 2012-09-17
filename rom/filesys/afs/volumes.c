@@ -43,7 +43,6 @@ BOOL gotdostype = FALSE;
 LONG error;
 ULONG dostype;
 UBYTE dosflags;
-ULONG rootblock;
 
 	/* Check validity of root block first, since boot block may be left over
 	   from an overwritten partition of a different size
@@ -56,9 +55,6 @@ ULONG rootblock;
 		gotdostype = TRUE;
 		dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 		dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
-		rootblock = OS_BE2LONG(blockbuffer->buffer[2]);
-		if (rootblock != 0)
-			volume->rootblock = rootblock;
 	}
 
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
