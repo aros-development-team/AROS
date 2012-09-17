@@ -43,6 +43,7 @@ BOOL gotdostype = FALSE;
 LONG error;
 ULONG dostype;
 UBYTE dosflags;
+ULONG rootblock;
 
 	/* Check validity of root block first, since boot block may be left over
 	   from an overwritten partition of a different size
@@ -55,6 +56,9 @@ UBYTE dosflags;
 		gotdostype = TRUE;
 		dostype = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFFFFFF00;
 		dosflags = OS_BE2LONG(blockbuffer->buffer[0]) & 0xFF;
+		rootblock = OS_BE2LONG(blockbuffer->buffer[2]);
+		if (rootblock != 0)
+			volume->rootblock = rootblock;
 	}
 
 	blockbuffer=getBlock(afsbase, volume,volume->rootblock);
@@ -63,6 +67,7 @@ UBYTE dosflags;
 		return ERROR_UNKNOWN;
 	}
 	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer) != 0 ||
+		OS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE]) != T_SHORT ||
 		OS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]) != ST_ROOT)
 	{
 		D(bug("[afs] newMedium: incorrect checksum or root block type (%ld)\n",
