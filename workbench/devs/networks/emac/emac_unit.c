@@ -816,7 +816,7 @@ static const struct UnitInfo {
         { INTR_UIC2_BASE + INTR_UIC2_EMAC0, EMAC_TASK2_NAME, EMAC1_BASE, 25 },
 };
 
-static inline ULONG GetPVR(void)
+ULONG GetPVR(void)
 {
     struct Library *ProcessorBase = OpenResource(PROCESSORNAME);
     ULONG pvr = 0;
