@@ -159,14 +159,12 @@ RETCODE adfMountHdFile(struct Device *dev)
 //printf("size=%ld\n",size);
     vol->rootBlock = ((size/512)-1+vol->reservedBlocks)/2;
 //printf("root=%ld\n",vol->rootBlock);
-    do {
-        adfReadDumpSector(dev, vol->rootBlock, 512, buf);
-        found = swapLong(buf)==T_HEADER && swapLong(buf+508)==ST_ROOT;
-        if (!found)
-            (vol->rootBlock)--;
-    }while (vol->rootBlock>1 && !found);
+    adfReadDumpSector(dev, 0, 512, buf);
+    vol->rootBlock = swapLong(buf+8);
 
-    if (vol->rootBlock==1) {
+    adfReadDumpSector(dev, vol->rootBlock, 512, buf);
+    found = swapLong(buf)==T_HEADER && swapLong(buf+508)==ST_ROOT;
+    if (!found) {
         (*adfEnv.eFct)("adfMountHdFile : rootblock not found");
         return RC_ERROR;
     }
@@ -225,9 +223,9 @@ RETCODE adfMountHd(struct Device *dev)
 
         vol->firstBlock = rdsk.cylBlocks * part.lowCyl;
         vol->totalBlocks = (part.highCyl - part.lowCyl + 1)*rdsk.cylBlocks;
-        vol->rootBlock = (vol->totalBlocks + 1)/2;
-        vol->blockSize = part.blockSize*4;
         vol->reservedBlocks = part.dosReserved;
+        vol->rootBlock = (vol->totalBlocks-1 + vol->reservedBlocks)/2;
+        vol->blockSize = part.blockSize*4;
 
         len = min(31, part.nameLen);
         vol->volName = (char*)malloc(len+1);
@@ -324,7 +322,8 @@ RETCODE adfMountFlop(struct Device* dev)
     vol->mounted = TRUE;
     vol->firstBlock = 0;
     vol->totalBlocks =(dev->cylinders * dev->heads * dev->sectors);
-    vol->rootBlock = (vol->totalBlocks+1)/2;
+    vol->reservedBlocks = 2;
+    vol->rootBlock = (vol->totalBlocks-1 + vol->reservedBlocks)/2;
     vol->blockSize = 512;
     vol->dev = dev;
  
@@ -473,6 +472,8 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
 
     j=1;
     for(i=0; i<dev->nVol; i++) {
+        ULONG reserved;
+
         memset(&part, 0, sizeof(struct bPARTblock));
 
         if (i<dev->nVol-1)
@@ -484,18 +485,25 @@ RETCODE adfCreateHdHeader(struct Device* dev, int n, struct Partition** partList
         part.nameLen = len;
         strncpy(part.name, partList[i]->volName, len);
 
+        if (partList[i]->reserved >= 1)
+            reserved = partList[i]->reserved;
+        else
+            reserved = 2;
+
         part.surfaces = dev->heads;
         part.blocksPerTrack = dev->sectors;
         part.lowCyl = partList[i]->startCyl;
         part.highCyl = partList[i]->startCyl + partList[i]->lenCyl -1;
         part.maxTransfer = 0x00ffffff;
         part.mask = 0xfffffffe;
-        part.dosReserved = 2;
+        part.dosReserved = reserved;
         part.numBuffer = 100;
         part.vectorSize = 16;
         part.blockSize = 128;
         part.sectorsPerBlock = 1;
-        part.bootBlocks = 2;
+        part.bootBlocks = (reserved < 2) ? reserved : 2;
+        part.flags = (partList[i]->bootable ? 1 : 0) |
+                     (partList[i]->nomount  ? 2 : 0);
 
         memcpy(part.dosType, partList[i]->volType, 4);
             
@@ -525,7 +533,7 @@ RETCODE adfCreateFlop(struct Device* dev, char* volName, int volType )
         (*adfEnv.eFct)("adfCreateFlop : unknown device type");
         return RC_ERROR;
     }
-    dev->volList[0] = adfCreateVol( dev, 0L, 80L, volName, volType );
+    dev->volList[0] = adfCreateVol( dev, 0L, 80L, 2, volName, volType );
     if (dev->volList[0]==NULL) {
         free(dev->volList);
         return RC_ERROR;
@@ -573,6 +581,7 @@ RETCODE adfCreateHd(struct Device* dev, int n, struct Partition** partList )
         dev->volList[i] = adfCreateVol( dev, 
                     partList[i]->startCyl, 
                     partList[i]->lenCyl, 
+                    partList[i]->reserved,
                     partList[i]->volName, 
                     partList[i]->volType[3] );
         if (dev->volList[i]==NULL) {

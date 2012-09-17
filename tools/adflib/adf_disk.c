@@ -34,7 +34,7 @@ RETCODE adfInstallBootBlock(struct Volume *vol, unsigned char* code)
     if (adfReadBootBlock(vol, &boot)!=RC_OK)
         return RC_ERROR;
 
-    boot.rootBlock = 880;
+    boot.rootBlock = vol->rootBlock;
     for(i=0; i<1024-12; i++)         /* bootcode */
         boot.data[i] = code[i+12];
 
@@ -201,7 +201,7 @@ void adfUnMount(struct Volume *vol)
  *
  * 
  */
-struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len, 
+struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len, int reserved,
     char* volName, int dosType )
 {
     struct bBootBlock boot;
@@ -219,11 +219,16 @@ struct Volume* adfCreateVol( struct Device* dev, ULONG start, ULONG len,
 		(*adfEnv.eFct)("adfCreateVol : malloc vol");
         return NULL;
     }
-	
+
+    /* It is illegal to have 0 reserved blocks */
+    if (reserved <= 0)
+        reserved = 2;
+
     vol->dev = dev;
     vol->firstBlock = (dev->heads * dev->sectors)*start;
     vol->totalBlocks = (dev->heads * dev->sectors)*len;
-    vol->rootBlock = (vol->totalBlocks+1)/2;
+    vol->reservedBlocks = reserved;
+    vol->rootBlock = (vol->totalBlocks-1 + reserved)/2;
     vol->curDirPtr = vol->rootBlock;
     vol->dosType = dosType;
 

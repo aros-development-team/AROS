@@ -48,6 +48,9 @@ struct Partition {
     ULONG lenCyl;
     char* volName;
     UBYTE volType[4];
+    int   reserved;
+    BOOL  nomount;
+    BOOL  bootable;
 };
 
 /* ----- DEVICES ----- */
