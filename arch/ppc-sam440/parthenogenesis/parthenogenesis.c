@@ -132,6 +132,7 @@ int main(int argc, char **argv)
     struct Partition part_boot = {
         .volName = "DH0",
         .volType = { 'D', 'O', 'S', 3 },  /* DOS\03 */
+        .bootable = TRUE,
     };
     struct Partition part_work = {
         .volName = "DH1",
