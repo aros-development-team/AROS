@@ -250,14 +250,12 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
 
         /* Header is in 'buff' at this point */
         if (DDB(buff)->sub_type == ST_FILE) {
-            int total = 0, size, block;
+            int total = 0, size, block, count = 0;
             if (fp != NULL) {
                 printf(".. was expecting a directory\n");
                 return -1;
             }
-            size = DFB(buff)->byte_size;
-
-            printf(".. %lu bytes\n", (unsigned long)size);
+            size = total = DFB(buff)->byte_size;
 
             if (filebuffer == NULL)
                 return size;
@@ -272,6 +270,9 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
                 }
 
                 dos_loadsector(self, DFB(buff)->data_blocks[(MAX_DATABLK - 1) - block], self->data);
+                if ((count & 0xf) == 0)
+                    printf("%d%%\r", (total - size)*100/total);
+                count++;
 
                 if (isOFS(self)) {
                     tocopy = (size > self->data->data_size) ? self->data->data_size : size;
@@ -285,8 +286,8 @@ static int dos_loadfile(dos_boot_dev_t * self, char *filename, void *filebuffer)
                 memcpy(filebuffer, data, tocopy);
                 filebuffer += tocopy;
                 size -= tocopy;
-                total += tocopy;
             }
+            printf(".. %lu bytes\n", (unsigned long)total);
             return total;
         }
 
