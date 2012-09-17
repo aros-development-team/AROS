@@ -284,7 +284,7 @@ void testboot_aos(menu_t * menu, void *kernel, boot_dev_t * boot)
 	video_draw_text(7, 9, 0, menu->kernel, 66);
 
 	module = malloc(sizeof(struct module));
-	void *buffer = malloc(5 * 1024 * 1024);
+	void *buffer = malloc(16 * 1024 * 1024);
 	for (i = 0; i < menu->modules_cnt; i++) {
 		video_draw_text(7, 9, 0, menu->modules[i]->name, 66);
 		if ((length = boot->load_file(boot, menu->modules[i]->name,
