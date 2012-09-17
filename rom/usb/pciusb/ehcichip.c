@@ -1242,6 +1242,7 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
     ULONG extcapoffset;
     ULONG legsup;
     ULONG timeout;
+    ULONG tmp;
 
     ULONG cnt;
 
@@ -1438,8 +1439,31 @@ BOOL ehciInit(struct PCIController *hc, struct PCIUnit *hu) {
         KPRINTF(10, ("RegBase = 0x%p\n", hc->hc_RegBase));
 
         KPRINTF(10, ("Resetting EHCI HC\n"));
-        CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, EHUF_HCRESET|(1UL<<EHUS_INTTHRESHOLD));
-        uhwDelayMS(10, hu);
+        KPRINTF(10, ("EHCI CMD: 0x%08x STS: 0x%08x\n", READREG32_LE(hc->hc_RegBase, EHCI_USBCMD), READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS)));
+        /* Step 1: Stop the HC */
+        tmp = READREG32_LE(hc->hc_RegBase, EHCI_USBCMD);
+        tmp &= ~EHUF_RUNSTOP;
+        CONSTWRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, tmp);
+
+        /* Step 2. Wait for the controller to halt */
+        cnt = 100;
+        do
+        {
+            uhwDelayMS(10, hu);
+            if(READREG32_LE(hc->hc_RegBase, EHCI_USBSTATUS) & EHSF_HCHALTED)
+            {
+                break;
+            }
+        } while (cnt--);
+        if (cnt == 0)
+        {
+            KPRINTF(200, ("EHCI: Timeout waiting for controller to halt\n"));
+        }
+
+        /* Step 3. Reset the controller */
+        WRITEREG32_LE(hc->hc_RegBase, EHCI_USBCMD, tmp | EHUF_HCRESET);
+
+        /* Step 4. Wait for the reset bit to clear */
         cnt = 100;
         do
         {
