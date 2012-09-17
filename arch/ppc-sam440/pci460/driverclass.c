@@ -130,10 +130,12 @@ ULONG ReadConfigLong(struct pci_staticdata *psd, UBYTE bus, UBYTE dev, UBYTE sub
         /* Simulated PCI OHCI device, mapped to OHCI0 */
         temp = ohci0[reg>>2];
     }
+#if 0
     if (bus == 0 && dev == 0 && sub == 1) {
         /* Simulated PCI EHCI device, mapped to EHCI0 */
         temp = ehci0[reg>>2];
     }
+#endif
 
     return temp;
 }
