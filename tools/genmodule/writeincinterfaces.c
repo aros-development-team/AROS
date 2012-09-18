@@ -244,7 +244,8 @@ static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
 
         for (arg = funclistit->arguments; arg; arg = arg->next)
         {
-            const char *name, *ptr;
+            const char *ptr;
+            char *name;
 
             ptr = arg->arg + strlen(arg->arg) - 1;
             while (isspace(*ptr))
@@ -253,13 +254,27 @@ static void writeincinterface(struct config *cfg, struct interfaceinfo *in)
             while (isalnum(*ptr) || (*ptr == '_'))
                 ptr--;
 
-            name = ptr + 1;
+            if (*ptr == ')') {
+                /* Function prototype */
+                const char *cp;
+                ptr = strchr(arg->arg, '(');
+                while (!(isalnum(*ptr) || (*ptr == '_'))) ptr++;
+                cp = ptr;
+                while (isalnum(*ptr) || (*ptr == '_')) ptr++;
+                name = malloc(ptr - cp + 1);
+                memcpy(name, cp, ptr - cp);
+                name[ptr-cp] = 0;
+            } else {
+                name = strdup(ptr + 1);
+            }
 
             fprintf(out,
                     "    p.%s = %s;\n"
                     , name
                     , name
             );
+
+            free(name);
         }
 
         fprintf(out,
