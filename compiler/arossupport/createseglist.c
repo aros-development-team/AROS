@@ -5,6 +5,8 @@
     Desc: Create a seglist for ROM code.
 */
 
+#define AROS_LIBREQ(base,ver)   /* We test for versions manually */
+
 #include <aros/debug.h>
 #include <proto/exec.h>
 
@@ -62,7 +64,8 @@ struct phony_segment
     segtmp->Next = (BPTR)0;
     __AROS_SET_FULLJMP(&segtmp->Code, function);
 
-    CacheClearE(&segtmp->Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
+    if (SysBase->LibNode.lib_Version >= 36)
+        CacheClearE(&segtmp->Code, sizeof(struct FullJumpVec), CACRF_ClearI | CACRF_ClearD);
 
     D(bug("[CreateSegList] Created jump segment 0x%p, code 0x%p, target 0x%p\n", MKBADDR(&segtmp->Next), &segtmp->Code, function));
 
