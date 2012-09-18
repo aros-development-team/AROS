@@ -4,6 +4,8 @@
     $Id$
 */
 
+#define AROS_LIBREQ(base,ver)   /* We test for versions manually */
+
 #include "pool.h"
 
 /*****************************************************************************
