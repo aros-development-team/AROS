@@ -134,10 +134,12 @@ ADD2SET(__aros_rellibset_##bname, RELLIBS, 0)
 AROS_LIBSET(name, btype, bname)           \
 const LONG const __aros_libreq_##bname = ver;
 
+#ifndef AROS_LIBREQ
 #define AROS_LIBREQ(bname, ver) \
     asm volatile ( \
                   ".global __aros_libreq_" #bname "." #ver "\n" \
                   "__aros_libreq_" #bname "." #ver "=" #ver);
+#endif
 
 #define SETRELLIBOFFSET(bname, libbasetype, fname) \
 const IPTR __aros_rellib_offset_##bname = offsetof(libbasetype, fname); \
