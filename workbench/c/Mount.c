@@ -838,11 +838,7 @@ ULONG ReadMountArgs(IPTR *params, struct RDArgs	*rda)
 	vec->de_MaxTransfer = GetValue(args[ARG_MAXTRANSFER], NULL);
 
     if (args[ARG_MASK] != 0)
-    {
-        KPrintF("Mask string is %s\n", args[ARG_MASK]);
 	vec->de_Mask = GetValue(args[ARG_MASK], NULL);
-        KPrintF("de_Mask set to 0x%p\n", vec->de_Mask);
-    }
 
     if (args[ARG_DOSTYPE] != 0)
 	vec->de_DosType	= (IPTR)GetValue(args[ARG_DOSTYPE], NULL);
