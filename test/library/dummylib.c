@@ -10,6 +10,9 @@
 #include <aros/libcall.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#define DUMMY_NOLIBINLINE
+#define DUMMY_NOLIBDEFINES
+#include <proto/dummy.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -39,7 +42,7 @@ AROS_LH2(ULONG, __int_asl,
 
 LONG printx(LONG nargs, ...)
 {
-    struct DummyBase *DummyBase = __aros_getbase();
+    struct DummyBase *DummyBase = __aros_getbase_DummyBase();
     struct Library *DOSBase = OpenLibrary("dos.library", 0);
     va_list args;
     LONG i;

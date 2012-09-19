@@ -30,14 +30,14 @@ void writegetlibbase(struct config *cfg, int is_rel)
     if (!is_rel)
     {
         fprintf(out,
-                "extern void *%s;\n"
+                "extern %s%s;\n"
                 "\n"
-                "void *__aros_getbase_%s(void)\n"
+                "%s__aros_getbase_%s(void)\n"
                 "{\n"
                 "    return %s;\n"
                 "}\n",
-                cfg->libbase,
-                cfg->libbase,
+                cfg->libbasetypeptrextern, cfg->libbase,
+                cfg->libbasetypeptrextern, cfg->libbase,
                 cfg->libbase
         );
     }
@@ -45,16 +45,16 @@ void writegetlibbase(struct config *cfg, int is_rel)
     {
         fprintf(out,
                 "#include <exec/types.h>\n"
-                "void *__aros_getbase(void);\n"
+                "char *__aros_getoffsettable(void);\n"
                 "extern IPTR __aros_rellib_offset_%s;\n"
                 "\n"
-                "void *__aros_getbase_%s(void)\n"
+                "%s__aros_getbase_%s(void)\n"
                 "{\n"
-                "    return *((void **)((char *)__aros_getbase()+__aros_rellib_offset_%s));\n"
+                "    return *((%s*)(__aros_getoffsettable()+__aros_rellib_offset_%s));\n"
                 "}\n",
                 cfg->libbase,
-                cfg->libbase,
-                cfg->libbase
+                cfg->libbasetypeptrextern, cfg->libbase,
+                cfg->libbasetypeptrextern, cfg->libbase
          );
     }
     fclose(out);

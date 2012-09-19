@@ -53,7 +53,7 @@
         asm volatile( \
             ".weak " #fname "\n" \
             #fname " :\n" \
-            "\tjsr __aros_getbase\n" \
+            "\tjsr __aros_getoffsettable\n" \
             "\tmove.l __aros_rellib_offset_" #libbasename ", %%a0\n" \
             "\tmove.l %%a0@(%%d0), %%a0\n" \
             "\tjmp %%a0@(%c0)\n" \
@@ -90,7 +90,7 @@
         asm volatile( \
             "\t" __GM_STRINGIZE(libfuncname) " :\n" \
             "\tmove.l %a0,%sp@-\n" \
-            "\tjsr __aros_setbase\n" \
+            "\tjsr __aros_setoffsettable\n" \
             "\taddq.l #4,%sp\n"     \
             "\tjmp  " #fname "\n"  \
         ); \

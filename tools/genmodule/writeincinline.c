@@ -10,13 +10,13 @@ static void writeinlineregister(FILE *, struct functionhead *, struct config *);
 static void writeinlinevararg(FILE *, struct functionhead *, struct config *);
 static void writealiases(FILE *, struct functionhead *, struct config *);
 
-void writeincinline(struct config *cfg, int is_rel)
+void writeincinline(struct config *cfg)
 {
     FILE *out;
     char line[256], *banner;
     struct functionhead *funclistit;
 
-    snprintf(line, 255, "%s/inline/%s%s.h", cfg->gendir, cfg->modulename, is_rel ? "_rel" : "");
+    snprintf(line, 255, "%s/inline/%s.h", cfg->gendir, cfg->modulename);
     out = fopen(line, "w");
 
     if (out == NULL)
@@ -67,7 +67,7 @@ void writeincinline(struct config *cfg, int is_rel)
             else /* libcall == STACK */
             {
 		/* This is the same as in defines */
-		writedefinestack(out, funclistit, cfg, is_rel);
+		writedefinestack(out, funclistit, cfg);
             }
 
             writealiases(out, funclistit, cfg);
@@ -221,7 +221,7 @@ writeinlineregister(FILE *out, struct functionhead *funclistit, struct config *c
 	 arglistit = arglistit->next, count++
     )
 	fprintf(out, "(arg%d), ", count);
-    fprintf(out, "(APTR)%s)\n", cfg->libbase);
+    fprintf(out, "__aros_getbase_%s())\n", cfg->libbase);
 }
 
 void

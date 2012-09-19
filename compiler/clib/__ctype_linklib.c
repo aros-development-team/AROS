@@ -10,8 +10,6 @@
 
 #include "__arosc_privdata.h"
 
-void *__aros_getbase_aroscbase(void);
-
 const unsigned short int *__ctype_b;
 const unsigned char *__ctype_toupper;
 const unsigned char *__ctype_tolower;

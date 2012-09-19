@@ -6,11 +6,11 @@
  * It does not call a function in pertask.library so that a good optimizing
  * compiler with link time function inlining can optimize this well.
  */
-#include "pertaskbase.h"
+#include <proto/pertask.h>
 
-struct PertaskBase *__aros_getbase_PertaskBase(void);
+#include "pertaskbase.h"
 
 int *__pertask_getvalueptr(void)
 {
-    return &(__aros_getbase_PertaskBase()->value);
+    return &(((struct PertaskBase *)__aros_getbase_PertaskBase())->value);
 }

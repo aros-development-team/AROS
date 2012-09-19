@@ -56,7 +56,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     int len;
 
     D(bug("Initializing POSIX environ emulation\n"));

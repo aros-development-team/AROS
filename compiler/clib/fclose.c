@@ -49,7 +49,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     FILENODE * fn;
 
     if (close(stream->fd) == -1)

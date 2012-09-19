@@ -54,7 +54,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     struct Process *me = (struct Process *)FindTask(NULL);
 
     D(bug("[__arosc_program_startup] aroscbase 0x%p\n", aroscbase));
@@ -106,7 +106,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     D(bug("[__arosc_program_end]\n"));
 
     if (!(aroscbase->acb_flags & ABNORMAL_EXIT))
@@ -143,7 +143,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     int *old = aroscbase->acb_startup_error_ptr;
 
     aroscbase->acb_startup_error_ptr = errorptr;
@@ -182,7 +182,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
    
     *previousjmp = *aroscbase->acb_exit_jmp_buf;
     *aroscbase->acb_exit_jmp_buf = *exitjmp;
@@ -225,7 +225,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
     /* No __arosc_progam_startup() called; Alert()
     */

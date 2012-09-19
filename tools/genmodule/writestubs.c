@@ -34,7 +34,7 @@ void writestubs(struct config *cfg, int is_rel)
             "#undef  NOLIBDEFINES\n"
             "#define NOLIBINLINE\n"
             "#define NOLIBDEFINES\n"
-            "void *__aros_getbase(void);\n"
+            "char *__aros_getoffsettable(void);\n"
             "#ifndef __%s_NOLIBBASE__\n"
             "/* Do not include the libbase */\n"
             "#define __%s_NOLIBBASE__\n"
@@ -60,15 +60,9 @@ void writestubs(struct config *cfg, int is_rel)
 
     if (!(cfg->options & OPTION_NOINCLUDES))
     {
-        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
         if (is_rel)
-            fprintf(out,
-                    "extern IPTR __aros_rellib_offset_%s;\n"
-                    "#define AROS_RELLIB_OFFSET_%s __aros_rellib_offset_%s\n"
-                    , cfg->libbase
-                    , cfg->modulenameupper
-                    , cfg->libbase
-                    );
+            fprintf(out, "#define __%s_RELLIBBASE__\n", cfg->modulenameupper);
+        fprintf(out, "#include <proto/%s.h>\n", cfg->modulename);
     }
     
     fprintf
@@ -119,13 +113,6 @@ void writestubs(struct config *cfg, int is_rel)
                         ")\n"
                         "{\n"
                 );
-                if (is_rel) {
-                    fprintf(out,
-                        "    %s %s = __aros_getbase() + __aros_rellib_offset_%s;\n",
-                        cfg->libbasetypeptrextern, cfg->libbase,
-                        cfg->libbase
-                    );
-                }
                 if (nquad == 0) {
                     fprintf(out,
                             "    %sAROS_LC%d%s(%s, %s,\n",
@@ -201,7 +188,7 @@ void writestubs(struct config *cfg, int is_rel)
                     }
                 }
  
-                fprintf(out, "                    %s, %s, %u, %s);\n}\n",
+                fprintf(out, "                    %s, __aros_getbase_%s(), %u, %s);\n}\n",
                         cfg->libbasetypeptrextern, cfg->libbase, funclistit->lvo, cfg->basename
                 );
             }

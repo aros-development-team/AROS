@@ -145,9 +145,9 @@ struct aroscbase
 
 /* !acb_flags */
 
-/* This function is added by genmodule and returns the current active
+/* This function is added by genmodule and returns the current arosc
    libbase.
 */
-void *__aros_getbase(void);
+struct aroscbase *__aros_getbase_aroscbase(void);
 
 #endif /* !___AROSC_PRIVDATA_H */

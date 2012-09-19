@@ -20,7 +20,7 @@ static struct aroscbase *aroscbase;
 struct arosc_userdata *__get_arosc_userdata(void)
 {
 #ifdef AROSC_SHARED
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 #endif
 #ifdef AROSC_STATIC
     static int __init = 0;

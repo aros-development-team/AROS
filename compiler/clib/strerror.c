@@ -47,7 +47,7 @@ extern const char * _errstrings[];
 {
     if (n > MAX_ERRNO)
     {
-        struct aroscbase *aroscbase = __aros_getbase();
+        struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
 	Fault(n - MAX_ERRNO, NULL, aroscbase->acb_fault_buf, sizeof(aroscbase->acb_fault_buf));
 
