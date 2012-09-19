@@ -30,7 +30,7 @@ static struct MinList __fdreglist;
 
 void __getfdarray(APTR *arrayptr, int *slotsptr)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
     *arrayptr = aroscbase->acb_fd_array;
     *slotsptr = aroscbase->acb_numslots;
@@ -38,14 +38,14 @@ void __getfdarray(APTR *arrayptr, int *slotsptr)
 
 void __setfdarray(APTR array, int slots)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     aroscbase->acb_fd_array = array;
     aroscbase->acb_numslots = slots;
 }
 
 void __setfdarraybase(struct aroscbase *aroscbase2)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
     aroscbase->acb_fd_array = aroscbase2->acb_fd_array;
     aroscbase->acb_numslots = aroscbase2->acb_numslots;
@@ -53,26 +53,26 @@ void __setfdarraybase(struct aroscbase *aroscbase2)
 
 int __getfdslots(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     return aroscbase->acb_numslots;
 }
 
 fdesc *__getfdesc(register int fd)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     return ((aroscbase->acb_numslots>fd) && (fd>=0))?aroscbase->acb_fd_array[fd]:NULL;
 }
 
 void __setfdesc(register int fd, fdesc *desc)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     /* FIXME: Check if fd is in valid range... */
     aroscbase->acb_fd_array[fd] = desc;
 }
 
 int __getfirstfd(register int startfd)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     /* FIXME: Check if fd is in valid range... */
     for (
 	;
@@ -85,7 +85,7 @@ int __getfirstfd(register int startfd)
 
 int __getfdslot(int wanted_fd)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     if (wanted_fd>=aroscbase->acb_numslots)
     {
         void *tmp;
@@ -151,7 +151,7 @@ LONG __oflags2amode(int flags)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     BPTR fh = BNULL, lock = BNULL;
     fdesc *currdesc = NULL;
     fcb *cblock = NULL;
@@ -329,7 +329,7 @@ err:
 
 fdesc *__alloc_fdesc(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     fdesc * desc;
     
     desc = AllocPooled(aroscbase->acb_internalpool, sizeof(fdesc));
@@ -341,7 +341,7 @@ fdesc *__alloc_fdesc(void)
 
 void __free_fdesc(fdesc *desc)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     D(bug("Freeing fdesc %x from %x pool\n", desc, aroscbase->acb_internalpool));
     FreePooled(aroscbase->acb_internalpool, desc, sizeof(fdesc));
 }
@@ -455,7 +455,7 @@ int __init_stdfiles(struct aroscbase *aroscbase)
 
 static int __copy_fdarray(fdesc **__src_fd_array, int numslots)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     int i;
     
     for(i = numslots - 1; i >= 0; i--)
@@ -522,7 +522,7 @@ void __exit_fd(struct aroscbase *aroscbase)
 
 void __close_on_exec_fdescs(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
 
     int i;
     fdesc *fd;
@@ -545,7 +545,7 @@ void __close_on_exec_fdescs(void)
 
 void __updatestdio(void)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     struct Process *me;
 
     me = (struct Process *)FindTask(NULL);

@@ -41,7 +41,7 @@
 
 ******************************************************************************/
 {
-  struct aroscbase *aroscbase = __aros_getbase();
+  struct aroscbase *aroscbase = __aros_getbase_aroscbase();
   struct Task *ParentTask;
   struct ETask *eThisTask;
   struct ETask *et;

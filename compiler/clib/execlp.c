@@ -50,7 +50,7 @@
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     va_list args;
     char *const *argv;
     char **environ = (aroscbase->acb_environptr) ? *aroscbase->acb_environptr : NULL;

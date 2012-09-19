@@ -21,7 +21,7 @@ AROS_LH0(struct Library *, GetParentBase,
 
 struct Library *GetParentBase2(void)
 {
-    struct PertaskBase *PertaskBase = __aros_getbase();
+    struct PertaskBase *PertaskBase = (struct PertaskBase *)__aros_getbase_PertaskBase();
 
     return (struct Library *)__GM_GetBaseParent(PertaskBase);
 }

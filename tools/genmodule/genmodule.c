@@ -36,13 +36,10 @@ int main(int argc, char **argv)
     case INCLUDES:
         if (cfg->options & OPTION_INCLUDES)
         {
-            writeincproto(cfg, 0); /* normal */
-            writeincproto(cfg, 1); /* relbase */
+            writeincproto(cfg);
             writeincclib(cfg);
-            writeincdefines(cfg, 0); /* normal */
-            writeincdefines(cfg, 1); /* relbase */
-            writeincinline(cfg, 0); /* normal */
-            writeincinline(cfg, 1); /* relbase */
+            writeincdefines(cfg);
+            writeincinline(cfg);
         }
         if (cfg->interfacelist)
             writeincinterfaces(cfg);

@@ -77,9 +77,6 @@ void writemakefile(struct config *cfg)
 		"clib/%s_protos.h inline/%s.h defines/%s.h proto/%s.h",
 		cfg->modulename, cfg->modulename, cfg->modulename, cfg->modulename
 	);
-        if (cfg->modtype == LIBRARY)
-            fprintf(out, " inline/%s_rel.h defines/%s_rel.h proto/%s_rel.h",
-                cfg->modulename, cfg->modulename, cfg->modulename);
     }
     if (cfg->interfacelist)
     {

@@ -52,7 +52,7 @@ static int system_no_sh(const char *string);
 
 ******************************************************************************/
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     BPTR lock;
     APTR old_proc_window;
     struct Process *me;
@@ -84,7 +84,7 @@ static int system_no_sh(const char *string);
 
 static int system_sh(const char *string)
 {
-    struct aroscbase *aroscbase = __aros_getbase();
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
     pid_t pid = vfork();
     int status;
 

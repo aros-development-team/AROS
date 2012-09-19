@@ -58,8 +58,8 @@
             /* return address is in lr register */                      \
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
             "\tpush {r0, r1, r2, r3, lr}\n"                             \
-            /* r0 = __aros_getbase() */                                   \
-            "\tbl  __aros_getbase\n"                                      \
+            /* r0 = __aros_getoffsettable() */                          \
+            "\tbl  __aros_getoffsettable\n"                             \
             /* r12 = libbase */                                         \
             "\tldr r1, 1f\n"                                            \
             "\tldr r1, [r1]\n"                                          \
@@ -69,7 +69,7 @@
             /* Compute function address and jump */                     \
             "\tldr pc, [r12, #%c0]\n"                                   \
 	    "1:	.word __aros_rellib_offset_" #libbasename "\n"                        \
-            "2: .word __aros_getbase\n"                             \
+            "2: .word __aros_getoffsettable\n"                          \
             ".fnend\n"                                                  \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
@@ -105,7 +105,7 @@
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
             "\tpush {r0, r1, r2, r3, lr}\n"                             \
             "\tmov  r0, r12\n"                                          \
-            "\tbl   __aros_setbase\n"                                     \
+            "\tbl   __aros_setoffsettable\n"                            \
             "\tpop  {r0, r1, r2, r3, lr}\n"                             \
             "\tb   " #fname "\n"                                        \
         );                                                              \

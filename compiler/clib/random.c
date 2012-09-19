@@ -187,7 +187,7 @@ static struct random_state *get_random_state(void)
 {
     struct random_state *rs;
 
-    struct aroscbase *base = __aros_getbase();
+    struct aroscbase *base = __aros_getbase_aroscbase();
 
     if (base->acb_random)
         return base->acb_random;

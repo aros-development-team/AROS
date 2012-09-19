@@ -9,7 +9,8 @@ int main (int argc, char ** argv)
 {
     FPuts(Output(), (STRPTR)"\nTesting pertask.library in child\n");
 
-    FPrintf(Output(), (STRPTR)"base=%lx, parent=%lx, parent2=%lx\n", PertaskBase,
+    FPrintf(Output(), (STRPTR)"base=%lx, parent=%lx, parent2=%lx\n",
+            __aros_getbase_PertaskBase(),
             GetParentBase(), GetParentBase2()
     );
     

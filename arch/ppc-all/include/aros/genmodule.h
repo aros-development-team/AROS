@@ -62,7 +62,7 @@
 	    "\tstw  %%r8,28(%%r1)\n"   /* Arg 6                */\
 	    "\tstw  %%r9,32(%%r1)\n"   /* Arg 7                */\
 	    "\tstw  %%r10,36(%%r1)\n"  /* Arg 8                */\
-	    "\tbl   __aros_getbase\n"  /* base is in r3        */\
+	    "\tbl   __aros_getoffsettable\n"  /* base is in r3 */\
 	    "\tlis  %%r12,__aros_rellib_offset_" #libbasename "@ha\n" \
 	    "\tlwz  %%r12,__aros_rellib_offset_" #libbasename "@l(%%r12)\n" \
             "\tlwzx %%r12, %%r12, %%r3\n" /* Offset of library in base */\
@@ -125,7 +125,7 @@
 	    "\tstw  %%r10,36(%%r1)\n"  /* Arg 8                */\
 	    "\tstw  %%r12,44(%%r1)\n"  /* current r12          */\
 	    "\tmr   %%r3,%%r12\n"                                \
-	    "\tbl   __aros_setbase\n"  /* base is in r3        */\
+	    "\tbl   __aros_setoffsettable\n"  /* base is in r3 */\
 	    "\tlwz  %%r3,52(%%r1)\n"   /* LR (r3)              */\
 	    "\tmtlr %%r3\n"            /* Restore LR from r3   */\
 	    "\tlwz  %%r3,8(%%r1)\n"    /* Arg 1                */\
