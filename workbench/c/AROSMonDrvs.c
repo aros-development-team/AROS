@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Code that loads and initializes necessary HIDDs.
@@ -146,7 +146,6 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
     struct Library *IconBase;
     BPTR dir, olddir;
     BOOL res = TRUE;
-    IPTR args[2] = {FALSE, FALSE};
 
     dir = Lock(MONITORS_DIR, SHARED_LOCK);
     D(bug("[LoadMonDrvs] Monitors directory 0x%p\n", dir));
@@ -154,14 +153,14 @@ AROS_SH2H(AROSMonDrvs, 1.0, "Load AROS Monitor and Compositor drivers",
     {
         olddir = CurrentDir(dir);
 
-	if (!args[0])
+	if (!SHArg(NOCOMPOSITION))
 	{
 	    /* Software composition driver is ran first */
 	    D(bug("[LoadMonDrvs] Loading composition driver...\n"));
 	    Execute(COMPOSITING_NAME, BNULL, BNULL);
 	}
 	
-	if (!args[1])
+	if (!SHArg(ONLYCOMPOSITION))
 	{
             pool = CreatePool(MEMF_ANY, sizeof(struct MonitorNode) * 10, sizeof(struct MonitorNode) * 5);
 	    DB2(bug("[LoadMonDrvs] Created pool 0x%p\n", pool));
