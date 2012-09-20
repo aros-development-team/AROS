@@ -28,7 +28,6 @@
             ".weak " #fname "\n"                                        \
             ".type " #fname ", %%function\n"                            \
             #fname " :\n"                                               \
-            ".fnstart\n"                                                \
             /* r12 = libbase */                                         \
             "\tldr r12, 1f\n"                                           \
             "\tldr r12, [r12]\n"                                        \
@@ -36,7 +35,6 @@
             "\tldr pc, [r12, #%c0]\n"                                   \
             ".align 2\n"                                                \
             "1: .word " #libbasename "\n"                               \
-            ".fnend\n"                                                  \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
     }
@@ -54,7 +52,6 @@
             ".weak " #fname "\n"                                        \
             ".type " #fname ", %%function\n"                            \
             #fname " :\n"                                               \
-            ".fnstart\n"                                                \
             /* return address is in lr register */                      \
             /* Up to four parameters are in r0 - r3 , the rest are on stack */ \
             "\tpush {r0, r1, r2, r3, lr}\n"                             \
@@ -70,7 +67,6 @@
             "\tldr pc, [r12, #%c0]\n"                                   \
 	    "1:	.word __aros_rellib_offset_" #libbasename "\n"                        \
             "2: .word __aros_getoffsettable\n"                          \
-            ".fnend\n"                                                  \
             : : "i" ((-lvo*LIB_VECTSIZE))                               \
         );                                                              \
     }
