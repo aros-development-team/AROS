@@ -89,6 +89,9 @@ AC_PROG_CC_STDC
 AC_PROG_CXX
 AC_PROG_CPP
 
+# Make sure g++ is available.
+AROS_REQUIRED(g++,$CXX)
+
 # Check for a compatible awk
 AC_CHECK_PROGS(AWK,[gawk nawk])
 AROS_REQUIRED(gawk,$AWK)

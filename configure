@@ -4256,6 +4256,11 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+# Make sure g++ is available.
+if test "$CXX" = ""; then
+    as_fn_error $? "g++ is required to build AROS. Please install and run configure again." "$LINENO" 5
+fi
+
 # Check for a compatible awk
 for ac_prog in gawk nawk
 do
