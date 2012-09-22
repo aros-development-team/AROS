@@ -84,13 +84,12 @@ dnl copying files around and the like.
 
 # The first step is to find the host binaries.
 # Check for a compiler.
+# Due to a bug in autoconf check for c++ compiler first.
+# For mor info see, http://osdir.com/ml/bug-autoconf-gnu/2010-05/msg00001.html.
+AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_CC_STDC
-AC_PROG_CXX
 AC_PROG_CPP
-
-# Make sure g++ is available.
-AROS_REQUIRED(g++,$CXX)
 
 # Check for a compatible awk
 AC_CHECK_PROGS(AWK,[gawk nawk])
