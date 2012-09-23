@@ -498,11 +498,14 @@ static void writedecl(FILE *out, struct config *cfg)
 
 static void writedeclsets(FILE *out, struct config *cfg)
 {
+    /* PROGRAM_ENTRIES is marked as handled but are just ignored in modules */
     fprintf(out,
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(INIT)\n"
 	    "THIS_PROGRAM_HANDLES_SYMBOLSET(EXIT)\n"
 	    "DECLARESET(INIT)\n"
 	    "DECLARESET(EXIT)\n"
+            "THIS_PROGRAM_HANDLES_SYMBOLSET(PROGRAM_ENTRIES)\n"
+            "DECLARESET(PROGRAM_ENTRIES)\n"
     );
     if (cfg->modtype != HANDLER)
         fprintf(out,
