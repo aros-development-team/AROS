@@ -154,6 +154,40 @@
 /*****************************************************************************
 
     NAME */
+	int *__arosc_get_errorptr(
+
+/*  SYNOPSIS */
+        void)
+
+/*  FUNCTION
+        This function gets the pointer to store error return value for
+        program exit.
+
+    INPUTS
+        -
+
+    RESULT
+        pointer to return value
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+******************************************************************************/
+{
+    struct aroscbase *aroscbase = __aros_getbase_aroscbase();
+    return aroscbase->acb_startup_error_ptr;
+}
+
+/*****************************************************************************
+
+    NAME */
 	 void __arosc_set_exitjmp(
 
 /*  SYNOPSIS */
