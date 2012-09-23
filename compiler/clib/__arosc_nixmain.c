@@ -37,6 +37,7 @@ static void update_PATH(void);
 int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
 {
     struct aroscbase *aroscbase = __aros_getbase_aroscbase(), *paroscbase;
+    int *errorptr = __arosc_get_errorptr();
     char *old_argv0 = NULL;
     char *new_argv0 = NULL;
     struct MinList old_vars;
@@ -74,7 +75,8 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         D(bug("__arosc_nixmain: Cloning LocalVars"));
         if (!clone_vars(&old_vars))
 	{
-            *aroscbase->acb_startup_error_ptr = RETURN_FAIL;
+            if (errorptr)
+                *errorptr = RETURN_FAIL;
 	    goto err_vars;
 	}
     }
@@ -85,9 +87,16 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
         update_PATH();
 
     /* Call the real main.  */
-    if (setjmp(aroscbase->acb_exit_jmp_buf) == 0)
+    jmp_buf exitjmp, dummyjmp;
+    if (setjmp(exitjmp) == 0)
     {
-        *aroscbase->acb_startup_error_ptr = (*main)(argc, argv);
+        int ret;
+
+        __arosc_set_exitjmp(exitjmp, dummyjmp);
+
+        ret = (*main)(argc, argv);
+        if (errorptr)
+            *errorptr = ret;
     }
     else
         D(bug("__arosc_nixmain: setjmp() != 0\n"));
@@ -107,7 +116,7 @@ err_vars:
 
     D(bug("__arosc_nixmain: @end, Task=%x\n", FindTask(NULL)));
 
-    return *aroscbase->acb_startup_error_ptr;
+    return (errorptr != NULL) ? *errorptr : 0;
 }
 
 /* Clone the process' environment variables list. Once this function returns,
