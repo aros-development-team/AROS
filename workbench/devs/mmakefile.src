@@ -14,7 +14,7 @@ include $(TOP)/config/make.cfg
 #MM    workbench-devs-ramdrive \
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
-#MM    workbench-devs-networks-drivers \
+#MM    workbench-devs-networks \
 #MM    workbench-devs-AHI \
 #MM    workbench-devs-diskimage
 
@@ -23,7 +23,7 @@ include $(TOP)/config/make.cfg
 #MM    workbench-devs-ramdrive-quick \
 #MM    workbench-devs-monitors \
 #MM    workbench-devs-mountlist \
-#MM    workbench-devs-networks-drivers \
+#MM    workbench-devs-networks \
 #MM    workbench-devs-AHI-quick \
 #MM    workbench-devs-diskimage-quick
 
