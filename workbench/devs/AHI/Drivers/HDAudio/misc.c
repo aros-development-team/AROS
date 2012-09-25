@@ -1118,7 +1118,7 @@ static BOOL perform_via_specific_settings(struct HDAudioChip *card, UWORD device
 {
     bug("Found VIA codec\n");
         
-    if (!(device == 0xE721))
+    if (!(device == 0xE721 || device == 0x0397))
     {
         bug("Unknown VIA codec.\n");
         return FALSE;
