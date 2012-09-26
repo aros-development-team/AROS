@@ -27,6 +27,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
+#include <hidd/unixio_inline.h>
 
 #include LC_LIBDEFS_FILE
 
@@ -38,7 +39,7 @@ static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
     struct TagItem gfx_attrs[] =
     {
         {aHidd_LinuxFB_File, 0},
-        {TAG_DONE	   , 0}
+        {TAG_DONE          , 0}
     };
 
     D(bug("[LinuxFB] LinuxFB_Startup()\n"));
@@ -49,11 +50,11 @@ static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
         return FALSE;
 
     /* TODO: In future we will support more framebuffers */
-    gfx_attrs[0].ti_Data = LIBBASE->lsd.SysIFace->open("/dev/fb0", O_RDWR);
+    gfx_attrs[0].ti_Data = Hidd_UnixIO_OpenFile(LIBBASE->lsd.unixio, "/dev/fb0", O_RDWR, 0, NULL);
     if (gfx_attrs[0].ti_Data == -1)
     {
-	CloseLibrary(&GfxBase->LibNode);
-	return FALSE;
+        CloseLibrary(&GfxBase->LibNode);
+        return FALSE;
     }
 
     /*
@@ -66,9 +67,9 @@ static int LinuxFB_Startup(LIBBASETYPEPTR LIBBASE)
 
     if (!err)
     {
-	res = TRUE;
-	/* We use ourselves, and noone else */
-	LIBBASE->library.lib_OpenCnt = 1;
+        res = TRUE;
+        /* We use ourselves, and noone else */
+        LIBBASE->library.lib_OpenCnt = 1;
     }
 
     CloseLibrary(&GfxBase->LibNode);

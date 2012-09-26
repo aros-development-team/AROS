@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := startup linux_init gfxclass bmclass
+FILES := startup linuxfb_init gfxclass bmclass
 
 USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
 
