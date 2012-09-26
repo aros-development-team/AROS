@@ -1,0 +1,12 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES := linuxinput_init startup linuxinput_inputtask mouseclass kbdclass
+
+USER_INCLUDES := -isystem $(GENINCDIR) $(KERNEL_INCLUDES)
+
+%build_module mmake=kernel-hidd-linuxinput \
+  modname=linuxinput modtype=hidd \
+  files=$(FILES) uselibs="oop"
+
+%common
