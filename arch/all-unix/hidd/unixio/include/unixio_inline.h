@@ -165,4 +165,38 @@ static inline int __inline_Hidd_UnixIO_Poll(OOP_MethodID base, OOP_Object *o, in
 #define Hidd_UnixIO_Poll(o, fd, mode, errno_ptr) \
     ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_Poll(HiddUnixIOMethodBase, __obj, fd, mode, errno_ptr); })
 
+static inline void * __inline_Hidd_UnixIO_MemoryMap(OOP_MethodID base, OOP_Object *o, void * addr, int len, int prot, int flags, int fd, int offset, int *errno_ptr)
+{
+    struct uioMsgMemoryMap p;
+
+    p.um_MethodID = base + moHidd_UnixIO_MemoryMap;
+    p.um_FD       = (APTR)fd;
+    p.um_Address  = addr;
+    p.um_Length   = len;
+    p.um_Prot     = prot;
+    p.um_Flags    = flags;
+    p.um_Offset   = offset;
+    p.um_ErrNoPtr = errno_ptr;
+
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
+}
+
+#define Hidd_UnixIO_MemoryMap(o, addr, len, prot, flags, fd, offset, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_MemoryMap(HiddUnixIOMethodBase, __obj, addr, len, prot, flags, fd, offset, errno_ptr); })
+
+static inline int __inline_Hidd_UnixIO_MemoryUnMap(OOP_MethodID base, OOP_Object *o, void * addr, int len, int *errno_ptr)
+{
+    struct uioMsgMemoryUnMap p;
+
+    p.um_MethodID = base + moHidd_UnixIO_MemoryUnMap;
+    p.um_Address  = addr;
+    p.um_Length   = len;
+    p.um_ErrNoPtr = errno_ptr;
+
+    return OOP_DoMethod(o, (OOP_MethodID *)&p.um_MethodID);
+}
+
+#define Hidd_UnixIO_MemoryUnMap(o, addr, len, errno_ptr) \
+    ({OOP_Object *__obj = o; __inline_Hidd_UnixIO_MemoryUnMap(HiddUnixIOMethodBase, __obj, addr, len, errno_ptr); })
+
 #endif

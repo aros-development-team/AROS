@@ -974,6 +974,122 @@ ULONG UXIO__Hidd_UnixIO__Poll(OOP_Class *cl, OOP_Object *o, struct uioMsgPoll *m
     return ret;
 }
 
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_MemoryMap
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgMemoryMap *msg);
+
+        int Hidd_UnixIO_MemoryMap(OOP_Object *obj, OOP_Object *o, void *addr, int len, int prot, int flags, int fd, int offset, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Maps address into file descriptor.
+
+    INPUTS
+        obj   - A pointer to a UnixIO object.
+        fd    - A file descriptor to check.
+    errno_ptr - An optional pointer to a location where error code (a value of UNIX
+            errno variable) will be written.
+
+    RESULT
+        Actuall mapping address or MAP_FAILED for errors.
+
+    NOTES
+        This method can be called from within interrupts.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+APTR UXIO__Hidd_UnixIO__MemoryMap(OOP_Class *cl, OOP_Object *o, struct uioMsgMemoryMap *msg)
+{
+    struct unixio_base *data = UD(cl);
+    int user = !KrnIsSuper();
+    APTR ret;
+
+    if (user)
+        HostLib_Lock();
+
+    ret = data->SysIFace->mmap(msg->um_Address, msg->um_Length, msg->um_Prot, msg->um_Flags,  (int)(IPTR)msg->um_FD, msg->um_Offset);
+    if (msg->um_ErrNoPtr)
+        *msg->um_ErrNoPtr = *data->uio_Public.uio_ErrnoPtr;
+
+    if (user)
+        HostLib_Unlock();
+
+    return ret;
+}
+
+/*****************************************************************************************
+
+    NAME
+        moHidd_UnixIO_MemoryUnMap
+
+    SYNOPSIS
+        OOP_DoMethod(OOP_Object *obj, struct uioMsgMemoryUnMap *msg);
+
+        int Hidd_UnixIO_MemoryUnMap(OOP_Object *obj, OOP_Object *o, void *addr, int len, int *errno_ptr);
+
+    LOCATION
+        unixio.hidd
+
+    FUNCTION
+        Unmaps memory
+
+    INPUTS
+        obj   - A pointer to a UnixIO object.
+    errno_ptr - An optional pointer to a location where error code (a value of UNIX
+            errno variable) will be written.
+
+    RESULT
+        0 for success, -1 for failure
+
+    NOTES
+        This method can be called from within interrupts.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+*****************************************************************************************/
+IPTR UXIO__Hidd_UnixIO__MemoryUnMap(OOP_Class *cl, OOP_Object *o, struct uioMsgMemoryUnMap *msg)
+{
+    struct unixio_base *data = UD(cl);
+    int user = !KrnIsSuper();
+    IPTR ret;
+
+    if (user)
+        HostLib_Lock();
+
+    ret = data->SysIFace->munmap(msg->um_Address, msg->um_Length);
+    if (msg->um_ErrNoPtr)
+        *msg->um_ErrNoPtr = *data->uio_Public.uio_ErrnoPtr;
+
+    if (user)
+        HostLib_Unlock();
+
+    return ret;
+}
+
+
 /* This is the initialisation code for the HIDD class itself. */
 
 static const char *libc_symbols[] =
@@ -995,6 +1111,8 @@ static const char *libc_symbols[] =
     "__error",
 #endif
 #endif
+    "mmap",
+    "munmap",
     NULL
 };
 

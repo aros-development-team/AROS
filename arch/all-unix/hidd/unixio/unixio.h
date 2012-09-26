@@ -56,6 +56,8 @@ struct LibCInterface
     ssize_t (*write)(int fildes, const void *buf, size_t nbyte);
     pid_t   (*getpid)(void);
     int	   *(*__error)(void);
+    void    *(*mmap)(void *addr, size_t len, int prot, int flags, int fd, __off_t offset);
+    int     (*munmap)(void *addr, size_t len);
 };
 
 /* For simplicity, our library base is our static data */

@@ -57,6 +57,8 @@ enum {
     moHidd_UnixIO_AddInterrupt,
     moHidd_UnixIO_RemInterrupt,
     moHidd_UnixIO_Poll,
+    moHidd_UnixIO_MemoryMap,
+    moHidd_UnixIO_MemoryUnMap,
     num_Hidd_UnixIO_Methods
 };
 
@@ -139,6 +141,26 @@ struct uioMsgPoll
     STACKED APTR   um_FD;
     STACKED ULONG  um_Mode;
     STACKED int   *um_ErrNoPtr;
+};
+
+struct uioMsgMemoryMap
+{
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_FD;
+    STACKED APTR   um_Address;
+    STACKED ULONG  um_Length;
+    STACKED LONG   um_Prot;
+    STACKED LONG   um_Flags;
+    STACKED ULONG  um_Offset;
+    STACKED int    *um_ErrNoPtr;
+};
+
+struct uioMsgMemoryUnMap
+{
+    STACKED ULONG  um_MethodID;
+    STACKED APTR   um_Address;
+    STACKED ULONG  um_Length;
+    STACKED int    *um_ErrNoPtr;
 };
 
 /* I/O mode flags */
