@@ -182,6 +182,8 @@ VOID InitAllocation (struct volumedata *volume, globaldata *g)
 		}
 
 		alloc_data.numreserved = (rootblock->lastreserved - rootblock->firstreserved + 1)/(volume->rescluster);
+		alloc_data.reservedtobefreed = NULL;
+		alloc_data.rtbf_size = 0;
 		alloc_data.rtbf_index = 0;
 		alloc_data.res_alert = 0;
 	}

@@ -109,9 +109,10 @@
 #include <exec/execbase.h>
 #include <exec/resident.h>
 #include <devices/timer.h>
+#include <devices/keyboard.h>
 #include <dos/filehandler.h>
 #include <resources/filesysres.h>
-#include <clib/alib_protos.h> 
+#include <clib/alib_protos.h>
 
 #include <string.h>
 #include "debug.h"
@@ -130,15 +131,27 @@
 /* external globals
  */
 extern CONST UBYTE *version;
+#if defined(__SASC)
+extern void __asm ResetHandler(void);
+#elif defined(__AROS__)
 extern AROS_INTP(DiskChangeHandler);
+extern AROS_INTP(ResetHandler);
+#else
+extern void ResetHandler(void);
+#endif
 
 /* prototypes
  */
 static BOOL OpenDiskDevice(struct FileSysStartupMsg * , struct MsgPort ** , struct IOExtTD **, BOOL *, globaldata *);
+static BOOL init_device_unit_sema(struct FileSysStartupMsg *, globaldata *);
 static BOOL OpenTimerDevice(struct MsgPort ** , struct timerequest ** , ULONG, globaldata * );
 static BOOL TestRemovability(globaldata *);
 static void InstallDiskChangeHandler(globaldata *);
+static void InstallResetHandler(struct globaldata *);
+#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
+/* MorphOS ROM build uses other means to add the filesystem.resource entry */
 static BOOL AddToFSResource(ULONG, BPTR, globaldata *);
+#endif
 #if VERSION23
 static void DoPostponed (struct volumedata *volume, globaldata *g);
 #endif
@@ -258,6 +271,9 @@ Removed because of problems with Phase 5 boards
 
 	DB(Trace(4,"Init","result = %ld",(ULONG)g->trackdisk));
 
+	if (!init_device_unit_sema(fssm, g))
+		return FALSE;
+
 	/* mode now always big */
 	g->harddiskmode = TRUE;
 
@@ -267,7 +283,7 @@ Removed because of problems with Phase 5 boards
 	g->dc.roving = 0;
 	g->dc.ref = AllocMemR (DATACACHELEN * sizeof(struct reftable), MEMF_CLEAR, g);
 	g->dc.data = AllocMemR (DATACACHELEN * BLOCKSIZE, g->dosenvec->de_BufMemType, g);
-	if (!g->dc.data)
+	if (!g->dc.ref || !g->dc.data)
 		return FALSE;
 
 	/* check memory against mask */
@@ -284,7 +300,11 @@ Removed because of problems with Phase 5 boards
 	if(g->removable)
 		InstallDiskChangeHandler(g);
 
+	InstallResetHandler(g);
+
+#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
 	AddToFSResource (g->dosenvec->de_DosType, ((struct DosList *)devnode)->dol_misc.dol_handler.dol_SegList, g);
+#endif
 
 #if EXTRAPACKETS
 	g->sleepport = CreateMsgPort();
@@ -299,7 +319,7 @@ Removed because of problems with Phase 5 boards
 /* added from HDVersion7.0B 11-4-94 */
 static BOOL TestRemovability(globaldata *g)
 {
-#ifdef TRACKDISK
+#if 0
 
   struct DriveGeometry *geom = g->geom;
   struct IOExtTD *request = g->request;
@@ -310,8 +330,8 @@ static BOOL TestRemovability(globaldata *g)
 		request->iotd_Req.io_Data = g->geom;
 		request->iotd_Req.io_Command = TD_GETGEOMETRY;
 		request->iotd_Req.io_Length = sizeof(struct DriveGeometry);
-	
-		if(DoIO((struct IORequest *)request) == NULL)
+
+		if(DoIO((struct IORequest *)request) == 0)
 			result = geom->dg_Flags & DGF_REMOVABLE;
 		else
 			result = 1;     /* trackdisk assumed to be removable */
@@ -338,7 +358,6 @@ static void InstallDiskChangeHandler(struct globaldata *g)
 {
   struct IOExtTD *request;
   struct Interrupt *di;
-  BYTE signal;
   UBYTE *intname;
   static const UBYTE *intext = "_interrupt";
 
@@ -353,8 +372,8 @@ static void InstallDiskChangeHandler(struct globaldata *g)
 	di->is_Data = (APTR)g;
 	di->is_Code = (VOID_FUNC)DiskChangeHandler;
 
-	signal = AllocSignal(-1);
-	g->diskchangesignal = 1 << signal;
+	g->diskchangesigbit = AllocSignal(-1);
+	g->diskchangesignal = 1 << g->diskchangesigbit;
 
 	/* make special request structure for inthandler */
 	request = g->handlrequest = (struct IOExtTD *)
@@ -367,7 +386,147 @@ static void InstallDiskChangeHandler(struct globaldata *g)
 	SendIO((struct IORequest *)request);
 }
 
-#endif  
+void UninstallDiskChangeHandler(struct globaldata *g)
+{
+	struct IOExtTD *request = g->handlrequest;
+
+    if (!g->diskinterrupt)
+    	return;
+	request->iotd_Req.io_Length  = sizeof(struct Interrupt);
+	request->iotd_Req.io_Data    = (APTR)g->diskinterrupt;
+	request->iotd_Req.io_Command = TD_REMCHANGEINT;
+	DoIO ((struct IORequest *)request);
+	FreeVec (request);
+	FreeVec (g->diskinterrupt->is_Node.ln_Name);
+	FreeVec (g->diskinterrupt);
+	FreeSignal (g->diskchangesigbit);
+}
+
+static void InstallResetHandler(struct globaldata *g)
+{
+	static const char handlername[] = "_resethandler";
+	struct Interrupt *ri;
+	ri = AllocMemR( sizeof(*ri) + g->mountname[0] + sizeof(handlername), MEMF_PUBLIC, g);
+	if (ri)
+	{
+		LONG sigbit = AllocSignal(-1);
+		if (sigbit != -1)
+		{
+			ri->is_Node.ln_Type = NT_INTERRUPT;
+			ri->is_Node.ln_Pri  = -32; /* Lowest possible priority, after everything else */
+			ri->is_Node.ln_Name = (char *) (ri + 1);
+			ri->is_Data = (APTR) g;
+			ri->is_Code = (void (*)(void)) ResetHandler;
+			CopyMem(g->mountname + 1, ri->is_Node.ln_Name, g->mountname[0]);
+			CopyMem((APTR)handlername, ri->is_Node.ln_Name + g->mountname[0], sizeof(handlername));
+#if defined(__MORPHOS__) && defined(SYSTEM_PRIVATE)
+			AddResetHandler(ri);
+			g->resethandlerinterrupt = ri;
+			g->resethandlersigbit    = sigbit;
+			g->resethandlersignal    = 1L << sigbit;
+			ri = 0;
+			sigbit = -1;
+#else
+			{
+			struct MsgPort mp;
+			struct IOStdReq *ioreq;
+			mp.mp_Node.ln_Type = NT_MSGPORT;
+			mp.mp_Flags = PA_SIGNAL;
+			mp.mp_SigBit = sigbit;
+			mp.mp_SigTask = FindTask(0);
+			NewList(&mp.mp_MsgList);
+
+			ioreq = CreateIORequest(&mp, sizeof(*ioreq));
+			if (ioreq)
+			{
+				if (OpenDevice("keyboard.device", 0, (APTR) ioreq, 0) == 0)
+				{
+					ioreq->io_Command = KBD_ADDRESETHANDLER;
+					ioreq->io_Data    = ri;
+					ioreq->io_Length  = sizeof(struct Interrupt);
+					if (DoIO((APTR) ioreq) == 0)
+					{
+						g->resethandlerioreq     = ioreq;
+						g->resethandlerinterrupt = ri;
+						g->resethandlersigbit    = sigbit;
+						g->resethandlersignal    = 1L << sigbit;
+						SetSignal(0, g->resethandlersignal);
+						ioreq->io_Message.mn_ReplyPort = 0;
+						ioreq = 0;
+						ri = 0;
+						sigbit = -1;
+					}
+				}
+				DeleteIORequest(ioreq);
+			}
+			}
+#endif
+			FreeSignal(sigbit);
+		}
+		FreeVec(ri);
+	}
+}
+
+void HandshakeResetHandler(struct globaldata *g)
+{
+	struct Interrupt *ri = g->resethandlerinterrupt;
+	if (ri)
+	{
+#if defined(__MORPHOS__) && defined(SYSTEM_PRIVATE)
+		FinishResetHandler(ri);
+#else
+		struct IOStdReq *ioreq = g->resethandlerioreq;
+		struct MsgPort mp;
+
+		mp.mp_Node.ln_Type = NT_MSGPORT;
+		mp.mp_Flags = PA_SIGNAL;
+		mp.mp_SigBit = g->resethandlersigbit;
+		mp.mp_SigTask = FindTask(0);
+		NewList(&mp.mp_MsgList);
+
+		ioreq->io_Message.mn_ReplyPort = &mp;
+		ioreq->io_Command = KBD_RESETHANDLERDONE;
+		ioreq->io_Data    = ri;
+		ioreq->io_Length  = sizeof(struct Interrupt);
+		DoIO((APTR) ioreq);
+
+		ioreq->io_Message.mn_ReplyPort = 0;
+		SetSignal(0, g->resethandlersignal);
+#endif
+	}
+}
+
+void UninstallResetHandler(struct globaldata *g)
+{
+	struct Interrupt *ri = g->resethandlerinterrupt;
+	g->resethandlerinterrupt = 0;
+	if (ri)
+	{
+#if defined(__MORPHOS__) && defined(SYSTEM_PRIVATE)
+		RemResetHandler(ri);
+#else
+		struct IOStdReq *ioreq = g->resethandlerioreq;
+		struct MsgPort mp;
+		mp.mp_Node.ln_Type = NT_MSGPORT;
+		mp.mp_Flags = PA_SIGNAL;
+		mp.mp_SigBit = g->resethandlersigbit;
+		mp.mp_SigTask = FindTask(0);
+		NewList(&mp.mp_MsgList);
+
+		ioreq->io_Message.mn_ReplyPort = &mp;
+		ioreq->io_Command = KBD_REMRESETHANDLER;
+		ioreq->io_Data    = ri;
+		ioreq->io_Length  = sizeof(struct Interrupt);
+		DoIO((APTR) ioreq);
+		CloseDevice((APTR) ioreq);
+		DeleteIORequest((APTR) ioreq);
+#endif
+		FreeVec(ri);
+		FreeSignal(g->resethandlersigbit);
+	}
+}
+
+#endif
 
 /* OpenDiskDevice
 **
@@ -402,10 +561,67 @@ static BOOL OpenDiskDevice(struct FileSysStartupMsg *startup, struct MsgPort **p
 			if(OpenDevice(name, startup->fssm_Unit, (struct IORequest *)*request,
 				startup->fssm_Flags) == 0)
 				return TRUE;
+			DeleteIORequest(*request);
+			*request = 0;
 		}
+		DeleteMsgPort(*port);
+		*port = 0;
 	}
 	return FALSE;
 }
+
+static BOOL init_device_unit_sema(struct FileSysStartupMsg *startup, globaldata *g)
+{
+	struct {
+		struct SignalSemaphore ss;
+		char   name[1];
+	} *sema;
+	sema = AllocVec(sizeof(*sema) + 4 + ((UBYTE *)BADDR(startup->fssm_Device))[0] + 14, MEMF_PUBLIC);
+	if (sema)
+	{
+		strcpy(sema->name, "PFS_");
+		BCPLtoCString(&sema->name[4], (UBYTE *)BADDR(startup->fssm_Device));
+		strcat(sema->name, "/");
+		stcu_d(&sema->name[strlen(sema->name)], startup->fssm_Unit);
+
+		Forbid();
+		g->device_unit_lock_sema = FindSemaphore(sema->name);
+		if (g->device_unit_lock_sema)
+		{
+			FreeVec(sema);
+		}
+		else
+		{
+			memset(&sema->ss, 0, sizeof(sema->ss));
+			InitSemaphore(&sema->ss);
+			sema->ss.ss_Link.ln_Name = sema->name;
+			sema->ss.ss_Link.ln_Pri  = -128;
+			sema->ss.ss_Link.ln_Type = NT_SIGNALSEM;
+			AddSemaphore(&sema->ss);
+			g->device_unit_lock_sema = &sema->ss;
+		}
+		Permit();
+		g->device_unit_lock_count = 0;
+		return TRUE;
+	}
+	return FALSE;
+}
+
+void lock_device_unit(struct globaldata *g)
+{
+	if (g->device_unit_lock_count++ == 0)
+		ObtainSemaphore(g->device_unit_lock_sema);
+}
+
+void unlock_device_unit(struct globaldata *g)
+{
+	if (g->device_unit_lock_count)
+	{
+		if (--g->device_unit_lock_count == 0)
+			ReleaseSemaphore(g->device_unit_lock_sema);
+	}
+}
+
 
 static BOOL OpenTimerDevice(struct MsgPort **port, struct timerequest **request,
 	ULONG unit, globaldata *g)
@@ -424,6 +640,7 @@ static BOOL OpenTimerDevice(struct MsgPort **port, struct timerequest **request,
 	return(FALSE);
 }
 
+#if !defined(__MORPHOS__) || defined(DISK_BASED_FILESYSTEM)
 /* AddToFSResource
 **
 ** function supplied by Nicola Salmoria
@@ -469,6 +686,7 @@ static BOOL AddToFSResource(ULONG dostype, BPTR seglist, globaldata *g)
 
 	return TRUE;
 }
+#endif
 
 
 /* Reconfigure the filesystem from a rootblock

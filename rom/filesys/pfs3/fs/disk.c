@@ -1611,7 +1611,7 @@ retry_read:
 }
 
 
-#if TRACKDISK
+#if 0
 static ULONG TD_Format(UBYTE *buffer, ULONG blocks, ULONG blocknr, globaldata *g)
 {
 	struct IOExtTD *request;

@@ -1170,6 +1170,12 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 			break;
 
 		case ED_OWNER:
+#if defined(__MORPHOS__)
+			size = offsetof(struct ExAllData, ed_Size64);
+			break;
+
+		case ED_SIZE64:
+#endif
 			size = sizeof(struct ExAllData);
 			break;
 
@@ -1203,6 +1209,15 @@ static ULONG FillInData(struct ExAllData *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
+#if defined(__MORPHOS__)
+		case ED_SIZE64:
+#if ROLLOVER
+			if (direntry->type == ST_ROLLOVERFILE)
+				buffer->ed_Size64 = extrafields.virtualsize;
+			else
+#endif
+				buffer->ed_Size64 = direntry->size;
+#endif
 		case ED_OWNER:
 			buffer->ed_OwnerUID = extrafields.uid;
 			buffer->ed_OwnerGID = extrafields.gid;
@@ -1266,7 +1281,11 @@ BOOL ExamineAll(lockentry_t *object, UBYTE *buffer, ULONG buflen,
 	}
 
 	/* check type field */
+#if defined(__MORPHOS__)
+	if (type > ED_SIZE64 || type < ED_NAME)
+#else
 	if (type > ED_OWNER || type < ED_NAME)
+#endif
 	{
 		*error = ERROR_BAD_NUMBER;
 		return DOSFALSE;
@@ -3733,7 +3752,7 @@ static struct deldirentry *SearchInDeldir(STRPTR delname, union objectinfo *resu
 	ENTER("SearchInDeldir");
 	if (!(delnumptr = strrchr(delname, DELENTRY_SEP)))
 		return FALSE;               /* no delentry seperator */
-	slotnr = atoi(delnumptr + 1);   /* retrieve the slotnr  */
+	stcd_i(delnumptr + 1, (int *) &slotnr);  /* retrieve the slotnr  */
 
 	*delnumptr = 0;             /* patch string to get filename part  */
 	ctodstr(delname, intl_name);
@@ -3967,6 +3986,11 @@ static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 			size = offsetof(struct ExAllData, ed_OwnerUID);
 			break;
 		case ED_OWNER:
+#if defined(__MORPHOS__)
+			size = offsetof(struct ExAllData, ed_Size64);
+			break;
+		case ED_SIZE64:
+#endif
 			size = sizeof(struct ExAllData);
 			break;
 		default:
@@ -3994,6 +4018,11 @@ static ULONG FillInDDEData(struct ExAllData *buffer, LONG type,
 	buffer->ed_Next = NULL;
 	switch (type)
 	{
+#if defined(__MORPHOS__)
+		case ED_SIZE64:
+			buffer->ed_Size64 = dde->size;
+#endif
+
 		case ED_OWNER:
 			buffer->ed_OwnerUID = g->currentvolume->rblkextension->blk.dd_uid;
 			buffer->ed_OwnerGID = g->currentvolume->rblkextension->blk.dd_gid;

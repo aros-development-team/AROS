@@ -73,7 +73,6 @@ LONG wrapper_stackswap(LONG (*func)(struct ExecBase *), struct ExecBase *sysBase
 
     stack = AllocMem(sizeof(struct StackSwapStruct) + MIN_STACKSIZE, MEMF_CLEAR | MEMF_PUBLIC);
     if (!stack) {
-        wrapper_free();
         Alert(AT_DeadEnd | AG_NoMemory);
         return RETURN_FAIL;
     }
@@ -187,7 +186,10 @@ APTR AllocVec(ULONG size, ULONG flags)
 {
     ULONG *mem;
     
-    mem = AllocMem(size + sizeof(ULONG), flags);
+    if (!size)
+    	return NULL;
+    size += sizeof(ULONG);
+    mem = AllocMem(size, flags);
     if (!mem)
     	return NULL;
     mem[0] = size;
@@ -377,7 +379,7 @@ LONG RemDosEntry(struct DosList *dlist)
 
     dl = getdoslist(SysBase);
 
-    while(TRUE)
+    while(dl->dol_Next)
     {
         struct DosList *dl2 = BADDR(dl->dol_Next);
 
@@ -510,85 +512,6 @@ LONG SysReqHandler(struct Window *window, ULONG *IDCMPFlagsPtr, BOOL WaitInput)
 		AROS_LCA(BOOL, WaitInput, D0),
 		APTR, IntuitionBase, 100, );
     return 0;
-}
-
-#endif
-
-#include <exec/types.h>
-#include <exec/memory.h>
-#include <proto/exec.h>
-
-#ifdef KS13COMPATIBLE
-
-APTR AllocVec(ULONG size, ULONG flags)
-{
-    APTR mem;
-    
-    mem = AllocMem(size + sizeof(ULONG), flags);
-    if (!mem)
-    	return NULL;
-    ((ULONG*)mem)[0] = size;
-    mem += sizeof(ULONG);
-    return mem;
-}
-void FreeVec(APTR mem)
-{
-    if (!mem)
-    	return;
-    mem -= sizeof(ULONG);
-    FreeMem(mem, ((ULONG*)mem)[0]);
-}
-
-APTR CreateIORequest(struct MsgPort *ioReplyPort, ULONG size)
-{
-    struct IORequest *ret=NULL;
-    if(ioReplyPort==NULL)
-	return NULL;
-    ret=(struct IORequest *)AllocMem(size,MEMF_PUBLIC|MEMF_CLEAR);
-    if(ret!=NULL)
-    {
-	ret->io_Message.mn_ReplyPort=ioReplyPort;
-	ret->io_Message.mn_Length=size;
-    }
-    return ret;
-}
-
-void DeleteIORequest(APTR iorequest)
-{
-    if(iorequest != NULL)
-    /* Just free the memory */
-    FreeMem(iorequest, ((struct Message *)iorequest)->mn_Length);
-}
-
-struct MsgPort *CreateMsgPort(void)
-{
-    struct MsgPort *ret;
-    ret=(struct MsgPort *)AllocMem(sizeof(struct MsgPort),MEMF_PUBLIC|MEMF_CLEAR);
-    if(ret!=NULL)
-    {
-	BYTE sb;
-	sb=AllocSignal(-1);
-	if (sb != -1)
-	{
-	    ret->mp_Flags = PA_SIGNAL;
-	    ret->mp_Node.ln_Type = NT_MSGPORT;
-	    NEWLIST(&ret->mp_MsgList);
-	    ret->mp_SigBit=sb;
-	    ret->mp_SigTask=SysBase->ThisTask;
-	    return ret;
-	}
-	FreeMem(ret,sizeof(struct MsgPort));
-    }
-    return NULL;
-}
-
-void DeleteMsgPort(struct MsgPort *port)
-{
-    if(port!=NULL)
-    {
-	FreeSignal(port->mp_SigBit);
-	FreeMem(port,sizeof(struct MsgPort));
-    }
 }
 
 #endif
