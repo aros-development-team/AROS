@@ -124,6 +124,7 @@
 #include "anodes_protos.h"
 #include "lru_protos.h"
 #include "ass_protos.h"
+#include "init_protos.h"
 
 /*
  * prototypes
@@ -176,6 +177,13 @@ BOOL UpdateDisk (globaldata *g)
 	 */
 	if (volume && g->dirty && !g->softprotect)
 	{
+		/*
+		 * For performance reasons avoid concurrent access to same physical
+		 * device. Note that the lock can be broken safely, it's only used
+		 * to avoid excessive seeking due to competing updates.
+		 */
+		lock_device_unit(g);
+
 		g->uip = TRUE;
 		updateok = TRUE;
 		UpdateDataCache (g);            /* flush DiskRead DiskWrite cache */
@@ -222,7 +230,7 @@ BOOL UpdateDisk (globaldata *g)
 			rext->blk.volume_date[1] = (UWORD)time.ds_Minute;
 			rext->blk.volume_date[2] = (UWORD)time.ds_Tick;
 			rext->blk.datestamp = volume->rootblk->datestamp;
-			
+
 			updateok &= UpdateDirtyBlock ((struct cachedblock *)rext, g);
 		}
 #endif
@@ -254,6 +262,8 @@ BOOL UpdateDisk (globaldata *g)
 		}
 
 		g->uip = FALSE;
+
+		unlock_device_unit(g);
 	}
 	else
 	{
@@ -448,7 +458,7 @@ static BOOL UpdateList (struct cachedblock *blk, globaldata *g)
 
 		blk=blk->next;
 	}
-	
+
 	return TRUE;
 
   update_error:

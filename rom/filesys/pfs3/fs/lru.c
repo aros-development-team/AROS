@@ -131,7 +131,7 @@ BOOL InitLRU (globaldata *g)
 
 	return TRUE;
 }
-		
+
 
 
 /* Allocate a block from the LRU chain and make
@@ -145,7 +145,7 @@ struct cachedblock *AllocLRU (globaldata *g)
 
 	ENTER("AllocLRU");
 
-	/* Use free block from pool or flush lru unused 
+	/* Use free block from pool or flush lru unused
 	** block (there MUST be one!)
 	*/
 //  retry:
@@ -200,12 +200,28 @@ void ResToBeFreed(ULONG blocknr, globaldata *g)
 	if (blocknr)
 	{
 		/* check if cache has space left */
-		if ((alloc_data.rtbf_index) < RTBF_CACHE_SIZE)
+		if (alloc_data.rtbf_index < alloc_data.rtbf_size)
 		{
-			alloc_data.reservedtobefreed[alloc_data.rtbf_index++] = blocknr; 
+			alloc_data.reservedtobefreed[alloc_data.rtbf_index++] = blocknr;
 		}
 		else
 		{
+			/* reallocate cache */
+			ULONG newsize = alloc_data.rtbf_size ? alloc_data.rtbf_size * 2 : RTBF_CACHE_SIZE;
+			ULONG *newbuffer = AllocMem(sizeof(*newbuffer) * newsize, MEMF_ANY);
+			if (newbuffer)
+			{
+				if (alloc_data.reservedtobefreed)
+				{
+					CopyMem(alloc_data.reservedtobefreed, newbuffer, sizeof(*newbuffer) * alloc_data.rtbf_index);
+					FreeMem(alloc_data.reservedtobefreed, sizeof(*newbuffer) * alloc_data.rtbf_size);
+				}
+				alloc_data.reservedtobefreed = newbuffer;
+				alloc_data.rtbf_size = newsize;
+				alloc_data.reservedtobefreed[alloc_data.rtbf_index++] = blocknr;
+				return;
+			}
+
 			/* this should never happen */
 			DB(Trace(10,"ResToBeFreed","reserved to be freed cache full\n"));
 			ErrorMsg (AFS_BETA_WARNING_1, NULL, g);
@@ -235,7 +251,7 @@ void FlushBlock (struct cachedblock *block, globaldata *g)
 	MinRemove(block);
 
 	/* decouple references */
-	if (IsDirBlock(block)) 
+	if (IsDirBlock(block))
 	{
 		/* check fileinfo references */
 		for (le = (lockentry_t *)HeadOf(&block->volume->fileentries); le->le.next; le = (lockentry_t *)le->le.next)
@@ -330,9 +346,9 @@ void UpdateLE (listentry_t *le, globaldata *g)
 
 	MakeLRU (le->info.file.dirblock);
 	LOCK(le->info.file.dirblock);
-}       
+}
 
-void UpdateLE_exa (lockentry_t *le, globaldata *g)  
+void UpdateLE_exa (lockentry_t *le, globaldata *g)
 {
 	//DB(Trace(1,"UpdateLE_exa","LE %lx\n", le));
 
@@ -355,7 +371,7 @@ void UpdateLE_exa (lockentry_t *le, globaldata *g)
 		}
 	}
 }
-	
+
 /*
  * Cache check ..
  * The 'mask' is used as a fast modulo operator for the hash table size.

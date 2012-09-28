@@ -298,14 +298,43 @@ void NormalCommands(struct DosPacket *action, globaldata *g)
 		case ACTION_SET_DELDIR:
 			action->dp_Res1 = dd_SetDeldir(action, g);
 			break;
-		
+
 		case ACTION_SET_FNSIZE:
 			action->dp_Res1 = dd_SetFileSize(action, g);
 			break;
 
+#if defined(__MORPHOS__)
+		/*
+		 * Note: If we ever support file sizes between 2^31 to 2^32-2 then SEEK64 needs
+		 * to be implemented. - Piru
+		 */
+		case ACTION_SEEK64:
+		case ACTION_SET_FILE_SIZE64:
+		case ACTION_LOCK_RECORD64:
+		case ACTION_FREE_RECORD64:
+		case ACTION_EXAMINE_OBJECT64:
+		case ACTION_EXAMINE_NEXT64:
+		case ACTION_EXAMINE_FH64:
+			action->dp_Res1 = NotKnown(action, g);
+			break;
+
+		case ACTION_NEW_READ_LINK:
+			/*
+			 * This really ought to be implemented at some point.
+			 * It'd mostly require support for reading hardlink destination.
+			 * - Piru
+			 */
+			action->dp_Res1 = NotKnown(action, g);
+			break;
+
+		case ACTION_QUERY_ATTR:
+			action->dp_Res1 = dd_MorphOSQueryAttr(action, g);
+			break;
+#endif
 		case ACTION_SERIALIZE_DISK: // Inhibited only
 		default:
 			action->dp_Res1 = NotKnown(action, g);
+			break;
 	}
 }
 
@@ -406,6 +435,23 @@ void InhibitedCommands(struct DosPacket *action, globaldata *g)
 			action->dp_Res2 = ERROR_NOT_A_DOS_DISK;
 			action->dp_Res1 = -1;
 			break;
+
+#if defined(__MORPHOS__)
+		case ACTION_SEEK64:
+		case ACTION_SET_FILE_SIZE64:
+		case ACTION_LOCK_RECORD64:
+		case ACTION_FREE_RECORD64:
+		case ACTION_EXAMINE_OBJECT64:
+		case ACTION_EXAMINE_NEXT64:
+		case ACTION_EXAMINE_FH64:
+		case ACTION_NEW_READ_LINK:
+			action->dp_Res2 = ERROR_NOT_A_DOS_DISK;
+			action->dp_Res1 = DOSFALSE;
+			break;
+		case ACTION_QUERY_ATTR:
+			action->dp_Res1 = dd_MorphOSQueryAttr(action, g);
+			break;
+#endif
 
 		default:
 			NotKnown(action, g);

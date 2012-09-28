@@ -367,7 +367,8 @@ struct allocation_data_s
 	ULONG res_roving;                   /* reserved roving pointer (0 at startup)           */
 	UWORD rovingbit;                    /* bitnumber (within LW) of main roving pointer     */
 	ULONG numreserved;                  /* total # reserved blocks (== lastreserved+1)      */
-	ULONG reservedtobefreed[RTBF_CACHE_SIZE];       /* tbf cache for flush reserved blocks  */
+	ULONG *reservedtobefreed;           /* tbf cache for flush reserved blocks  */
+	ULONG rtbf_size;                    /* size of the allocated cache */
 	ULONG rtbf_index;                   /* current index in reserved tobefreed cache        */
 	BOOL res_alert;                     /* TRUE if low on available reserved blocks         */
 };
@@ -578,6 +579,17 @@ struct globaldata
 	struct allocation_data_s glob_allocdata;
 
 	BOOL updateok;
+
+	struct SignalSemaphore *device_unit_lock_sema;
+	LONG device_unit_lock_count;
+
+#if !defined(__MORPHOS__) || !defined(SYSTEM_PRIVATE)
+	struct IOStdReq *resethandlerioreq;
+#endif
+	LONG   diskchangesigbit;
+	LONG   resethandlersigbit;
+	ULONG  resethandlersignal;
+	struct Interrupt *resethandlerinterrupt;
 };
 
 typedef struct globaldata globaldata;

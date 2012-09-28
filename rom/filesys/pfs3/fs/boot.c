@@ -1,3 +1,4 @@
+
 /* $Id: boot.c 13.5 1999/05/14 11:31:34 Michiel Exp Michiel $ */
 /* $Log: boot.c $
  * Revision 13.5  1999/05/14  11:31:34  Michiel
@@ -165,15 +166,15 @@ static void Quit(globaldata *);
 
 /* vars */
 #ifdef BETAVERSION
-CONST UBYTE *version = "$VER: PFS-III " REVISION " BETA (" REVDATE ") "
-	"written by Michiel Pelt and copyright (c) 1994-2011 Peltin BV";
+CONST UBYTE version[] = "$VER: PFS-III " REVISION " BETA (" REVDATE ") "
+	"written by Michiel Pelt and copyright (c) 1994-2012 Peltin BV";
 #else
 #if MULTIUSER
-CONST UBYTE *version = "$VER: " "Professional-File-System-III " REVISION " MULTIUSER-VERSION (" REVDATE ") "
-	 "written by Michiel Pelt and copyright (c) 1994-2011 Peltin BV";
+CONST UBYTE version[] = "$VER: " "Professional-File-System-III " REVISION " MULTIUSER-VERSION (" REVDATE ") "
+	 "written by Michiel Pelt and copyright (c) 1994-2012 Peltin BV";
 #else
-CONST UBYTE *version = "$VER: " "Professional-File-System-III " REVISION " PROFESSIONAL-VERSION (" REVDATE ") "
-	 "written by Michiel Pelt and copyright (c) 1994-2011 Peltin BV";
+CONST UBYTE version[] = "$VER: " "Professional-File-System-III " REVISION " PROFESSIONAL-VERSION (" REVDATE ") "
+	 "written by Michiel Pelt and copyright (c) 1994-2012 Peltin BV";
 #endif
 #endif
 
@@ -268,13 +269,13 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	/* The startpakket contains:
 	 *
 	 * ARG1 = BSTR to mount name
-	 * ARG2 = Value from dn_Startup 
+	 * ARG2 = Value from dn_Startup
 	 * ARG3 = BPTR to DeviceNode
 	 */
 	mountname = (UBYTE *)BADDR(pkt->dp_Arg1);
 	fssm = (struct FileSysStartupMsg *)BADDR(pkt->dp_Arg2);
 	devnode = (struct DeviceNode *)BADDR(pkt->dp_Arg3);
-	
+
 	/* Enter Process ID, so that following references
 	 * to our handler do not generate new processes
 	 */
@@ -314,9 +315,9 @@ LONG EntryPoint(struct ExecBase *SysBase)
 	notifysig = 1 << g->notifyport->mp_SigBit;
 #if EXTRAPACKETS
 	sleepsig = 1 << g->sleepport->mp_SigBit;
-	waitmask = sleepsig | dossig | timesig | notifysig | g->diskchangesignal;
+	waitmask = sleepsig | dossig | timesig | notifysig | g->diskchangesignal | g->resethandlersignal;
 #else
-	waitmask = dossig | timesig | notifysig | g->diskchangesignal;
+	waitmask = dossig | timesig | notifysig | g->diskchangesignal | g->resethandlersignal;
 #endif
 	g->timeout = 0;
 
@@ -451,9 +452,25 @@ LONG EntryPoint(struct ExecBase *SysBase)
 #if EXTRAPACKETS
 		if (signal & sleepsig)
 		{
-			HandleSleepMsg (g); 
+			HandleSleepMsg (g);
 		}
 #endif
+
+		if (signal & g->resethandlersignal)
+		{
+			if (g->inhibitcount == 0)
+			{
+				/* Update pending changes to disk before letting the system to reboot */
+				UpdateDisk(g);
+			}
+
+			/* Make sure any disk buffers have been flushed to disk */
+			g->request->iotd_Req.io_Command = CMD_UPDATE;
+			DoIO((struct IORequest *)g->request);
+
+			/* Mark the reset handler as done (system might reboot right after) */
+			HandshakeResetHandler(g);
+		}
 	}
 
 	terminate:
@@ -503,7 +520,6 @@ static BOOL FindInLibraryList (CONST_STRPTR name, globaldata *g)
 static void Quit (globaldata *g)
 {
   struct volumedata *volume;
-  struct IOExtTD *request = g->handlrequest;
   struct NotifyMessage *nmsg;
   struct NotifyRequest *nr;
   struct Message *msg;
@@ -518,21 +534,25 @@ static void Quit (globaldata *g)
 		return;
 #endif
 
+	//DebugPutStr("Removing volume..\n");
 	/* 'remove' disk */
 	volume = g->currentvolume;
 	if (volume)
 		DiskRemoveSequence(g);
 
-	/* remove diskchangehandler */
-	request->iotd_Req.io_Length  = sizeof(struct Interrupt);
-	request->iotd_Req.io_Data    = (APTR)g->diskinterrupt;
-	request->iotd_Req.io_Command = TD_REMCHANGEINT;
-	DoIO ((struct IORequest *)request);
-	FreeVec (request);
+	//DebugPutStr("Uninstalling ResetHandler..\n");
+	UninstallResetHandler(g);
 
+	//DebugPutStr("Uninstalling DiskChangeHandler..\n");
+	/* remove diskchangehandler */
+	UninstallDiskChangeHandler(g);
+
+#if 0
 	/* wait for wb to return locks */
 	Delay(50);
+#endif
 
+	//DebugPutStr("Answering queued packets\n");
 	/* check if packets queued */
 	while ((msg = GetMsg(g->msgport)))
 	{
@@ -542,6 +562,7 @@ static void Quit (globaldata *g)
 		ReturnPacket (g->action, g->msgport, g);
 	}
 
+	//DebugPutStr("Answering queued notifications\n");
 	/* check if notifypackets queued */
 	while ((nmsg = (struct NotifyMessage *)GetMsg (g->notifyport)))
 	{
@@ -558,12 +579,15 @@ static void Quit (globaldata *g)
 		}
 	}
 
+	//DebugPutStr("Forbid()..\n");
+
 	Forbid ();
 
 	/* remove devicenode */
 	RemDosEntry ((struct DosList *)g->devnode);
 //  FreeDosEntry ((struct DosList *)g->devnode);
 
+	//DebugPutStr("Freeing timer request\n");
 	/* cleanup timer device (OK) */
 	/* FreeSignal wil even niet..(signalnr!) */
 	if(!(CheckIO((struct IORequest *)g->trequest)))
@@ -573,6 +597,7 @@ static void Quit (globaldata *g)
 	DeleteIORequest((struct IORequest *)g->trequest);
 	DeleteMsgPort(g->timeport);
 
+	//DebugPutStr("Freeing device request\n");
 	/* clean up device */
 	if(!(CheckIO((struct IORequest *)g->request)))
 		AbortIO((struct IORequest *)g->request);
@@ -581,26 +606,31 @@ static void Quit (globaldata *g)
 	DeleteIORequest((struct IORequest *)g->request);
 	DeleteMsgPort(g->port);
 
+	//DebugPutStr("Freeing ports\n");
 	DeleteMsgPort(g->notifyport);
 #if EXTRAPACKETS
 	DeleteMsgPort(g->sleepport);
 #endif
 
-	/* Don't CloseLibrary(UtilityBase); this is reentrant code */
-
+	//DebugPutStr("Freeing misc structures\n");
 	FreeVec (g->mountname);
 	FreeMemP (g->geom, g);
 	FreeVec (g->dc.ref);
 	FreeVec (g->dc.data);
 	FreeVec (g->glob_lrudata.LRUarray);
+	if (alloc_data.reservedtobefreed)
+		FreeMem (alloc_data.reservedtobefreed, sizeof(*alloc_data.reservedtobefreed) * alloc_data.rtbf_size);
 
+	//DebugPutStr("Permit()\n");
 	Permit ();
 
+#if UNSAFEQUIT
 	/* wait 'till all locks freed */
 	while (volume && !IsMinListEmpty(&volume->fileentries))
 	{
 		listentry_t *listentry;
 
+		//DebugPutStr("Locks still remaining... Waiting..\n");
 		Wait (1 << g->msgport->mp_SigBit);
 		msg = GetMsg (g->msgport);
 		g->action = (struct DosPacket *)msg->mn_Node.ln_Name;
@@ -626,10 +656,26 @@ static void Quit (globaldata *g)
 
 		ReturnPacket (g->action, g->msgport, g);
 	}
+	//DebugPutStr("All locks freed.\n");
+	//Delay (5);
+	g->devnode->dn_Task = NULL;
+#endif
 
-	Delay (5);
 	LibDeletePool (g->bufferPool);
 	LibDeletePool (g->mainPool);
+
+#if MULTIUSER
+	if (muBase)
+		CloseLibrary((struct Library *) muBase);
+#endif
+#ifndef KS13WRAPPER
+	CloseLibrary(UtilityBase);
+#endif
+	CloseLibrary((struct Library *) DOSBase);
+	CloseLibrary((struct Library *) IntuitionBase);
+
+	EXIT("dd_Quit");
+
 	FreeVec (g);
 	AfsDie ();
 }

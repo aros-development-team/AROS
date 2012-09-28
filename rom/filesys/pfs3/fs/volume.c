@@ -881,6 +881,15 @@ static const CONST_STRPTR gadgets[] =
 LONG _NormalErrorMsg(CONST_STRPTR melding, APTR arg, ULONG notargets, globaldata *g)
 {
   struct EasyStruct req;
+
+	/*
+	 * Make sure we don't hold the performance semaphore while displaying
+	 * a requester. Note that unlock_device_unit is safe to call multiple
+	 * times, and even when not holding a lock. Unlock also is safe to call
+	 * before init has been called.
+	 */
+	unlock_device_unit(g);
+
 	req.es_StructSize   = sizeof(req);
 	req.es_Flags        = 0;
 	req.es_Title        = "PFS-III Error Requester";

@@ -117,6 +117,9 @@ static SIPTR dd_SetRollover(struct DosPacket *pkt, globaldata *g);
 static SIPTR dd_SetDeldir(struct DosPacket *pkt, globaldata *g);
 #endif
 #endif /* ExtraPackets */
+#if defined(__MORPHOS__)
+static LONG dd_MorphOSQueryAttr(struct DosPacket *pkt, globaldata *g);
+#endif
 
 
 /**********************
@@ -145,8 +148,23 @@ static SIPTR dd_IsFileSystem(struct DosPacket *pkt, globaldata * g)
  */
 static SIPTR dd_Quit(struct DosPacket *pkt, globaldata * g)
 {
+#if UNSAFEQUIT
 	g->dieing = TRUE;
 	return DOSTRUE;
+#else
+	struct volumedata *volume = g->currentvolume;
+
+	if (!volume || (IsMinListEmpty(&volume->fileentries) && IsMinListEmpty(&volume->notifylist)))
+	{
+		g->dieing = TRUE;
+		return DOSTRUE;
+	}
+	else
+	{
+		pkt->dp_Res2 = ERROR_OBJECT_IN_USE;
+		return DOSFALSE;
+	}
+#endif
 }
 
 static SIPTR dd_CurrentVolume(struct DosPacket *pkt, globaldata * g)
@@ -1038,8 +1056,12 @@ static SIPTR dd_Info(struct DosPacket *pkt, globaldata * g)
 			- g->rootblock->alwaysfree - 1;
 		info->id_NumBlocksUsed = info->id_NumBlocks - alloc_data.alloc_available;
 		info->id_BytesPerBlock = volume->bytesperblock;
+#ifdef KS13WRAPPER
+		// 1.x C:Info only understands DOS\0
+		info->id_DiskType = DOSBase->dl_lib.lib_Version >= 37 ? ID_INTER_FFS_DISK : ID_DOS_DISK;
+#else
 		info->id_DiskType = ID_INTER_FFS_DISK;  // c:Info does not like this
-
+#endif
 		info->id_VolumeNode = MKBADDR(volume->devlist);
 		info->id_InUse = !IsMinListEmpty(&volume->fileentries);
 
@@ -2025,3 +2047,68 @@ static SIPTR dd_SetFileSize(struct DosPacket *pkt, globaldata *g)
 	return DOSFALSE;
 }
 
+#if defined(__MORPHOS__)
+static LONG dd_MorphOSQueryAttr(struct DosPacket *pkt, globaldata *g)
+{
+	// ACTION_QUERY_ATTR 26407
+	// ARG1 = LONG attr, which attribute you want to know about
+	// ARG2 = void *storage, memory to hold the return value
+	// ARG3 = LONG storagesize, size of storage reserved for
+	// RES1 = success
+	// RES2 = failure code
+	//   ERROR_BAD_NUMBER for unimplemented/unknown attributes
+	//   ERROR_LINE_TOO_LONG for buffer too small to hold the result
+
+	APTR storage = (APTR) pkt->dp_Arg2;
+	LONG storage_size = pkt->dp_Arg3;
+
+	switch (pkt->dp_Arg1)
+	{
+		case FQA_MaxFileNameLength:
+			if (storage_size >= sizeof(LONG))
+			{
+				*(LONG *)storage = FILENAMESIZE - 1;
+				return DOSTRUE;
+			}
+			break;
+
+		case FQA_MaxVolumeNameLength:
+			if (storage_size >= sizeof(LONG))
+			{
+				*(LONG *)storage = DNSIZE - 1;
+				return DOSTRUE;
+			}
+			break;
+
+		case FQA_IsCaseSensitive:
+			if (storage_size >= sizeof(LONG))
+			{
+				*(LONG *)storage = FALSE;
+				return DOSTRUE;
+			}
+			break;
+
+		case FQA_MaxFileSize:
+			if (storage_size >= sizeof(QUAD))
+			{
+				*(QUAD *)storage = 0x7fffffffLL;
+				return DOSTRUE;
+			}
+			break;
+
+		/* let dos.library handle these - fall thru */
+		case FQA_DeviceType:
+		case FQA_NumBlocks:
+		case FQA_NumBlocksUsed:
+
+		/* unknown/unhandled attribute */
+		default:
+			pkt->dp_Res2 = ERROR_BAD_NUMBER;
+			return DOSFALSE;
+	}
+
+	/* Not enough buffer storage */
+	pkt->dp_Res2 = ERROR_LINE_TOO_LONG;
+	return DOSFALSE;
+}
+#endif

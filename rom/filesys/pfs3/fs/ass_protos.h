@@ -9,3 +9,7 @@ void ctodstr(void *, void *);
 void intltoupper(void *);
 BOOL intlcmp(void*, void *);
 BOOL intlcdcmp(void*, void *);
+#ifndef __SASC
+int stcd_i(const char *in, int *ivalue);
+int stcu_d(char *out, unsigned int val);
+#endif

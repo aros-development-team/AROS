@@ -63,6 +63,30 @@ int stcu_d(char *out, unsigned int val)
 	return len;
 }
 
+/*
+ * Note: Since the value converted in directory.c is always positive without sign,
+ * I disabled the sign support. - Piru
+ */
+int stcd_i(const char *in, int *ivalue)
+{
+	const char *orig_in = in;
+	/*int n = 0;*/
+	int v = 0;
+
+	/*if (*in == '-' || *in == '+')
+		n = *in++ == '-';*/
+
+	while (*in)
+	{
+		if (*in < '0' || *in > '9')
+			break;
+		v = v * 10 + (*in++ - '0');
+	}
+	/* *ivalue = (n ? (v == 0 ? -2147483648L : -v) : v);*/
+	*ivalue = v;
+	return (in - orig_in);
+}
+
 /* SAS/C function - similar to strcpy but return ptr to terminating \0 */
 char *stpcpy(char *dst, const char *src)
 {

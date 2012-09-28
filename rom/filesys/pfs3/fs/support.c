@@ -116,7 +116,6 @@ VOID *AllocMemR (ULONG size, ULONG flags, globaldata *g)
 	while (!(buffer=AllocVec (size, flags)))
 	{
 		OutOfMemory (g);
-		NormalErrorMsg (AFS_ERROR_PLEASE_FREE_MEM, NULL, 1);	// I MUST have memory!
 	}
 
 	return buffer;
@@ -127,8 +126,8 @@ static void OutOfMemory (globaldata *g)
 	FreeUnusedResources (g->currentvolume, g);
 	NormalErrorMsg (AFS_ERROR_PLEASE_FREE_MEM, NULL, 1);	// I MUST have memory!
 }
-	
-	
+
+
 /* SUPPORTFUNCTION dstricmp
 ** TRUE: dstring == cstring
 ** FALSE: cstring <> cstring
