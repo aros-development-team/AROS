@@ -48,7 +48,8 @@ AROS_UFH3(void, pciEnumerator,
     AROS_UFHA(OOP_Object *, pciDevice, A2), AROS_UFHA(APTR, message, A1))
 {
     AROS_USERFUNC_INIT
-        struct PCIDevice *hd = (struct PCIDevice *)hook->h_Data;
+
+    struct PCIDevice *hd = (struct PCIDevice *)hook->h_Data;
     struct PCIController *hc;
     IPTR bus;
     IPTR dev;
@@ -100,7 +101,8 @@ AROS_UFH3(void, pciEnumerator,
         }
     }
 
-AROS_USERFUNC_EXIT}
+    AROS_USERFUNC_EXIT
+}
 
 /* /// "pciInit()" */
 BOOL pciInit(struct PCIDevice *hd)
