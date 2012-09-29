@@ -14,12 +14,17 @@
 
 const struct PTFunctionTable * const PartitionSupport[] =
 {
-    &PartitionRDB,
     &PartitionGPT, /* The order of these two is important, GPT must be checked before MBR */
     &PartitionMBR,
     &PartitionEBR,
+    &PartitionRDB,
     NULL
 };
+
+/* Keep RDB last. RDB scans up to 16 blocks and in case of
+ * MBR->EBR->RDB having RDB first detects RDB as root and
+ * causes MBR and EBR offsets not be taken into account
+ */
 
 /* get geometry */
 LONG PartitionGetGeometry
