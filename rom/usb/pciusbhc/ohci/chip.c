@@ -205,12 +205,14 @@ static void PrintED(const char *txt, struct EDNode *ed,
 static AROS_INTH1(ResetHandler, struct PCIController *, hc)
 {
     AROS_INTFUNC_INIT
-        // reset controller
-        CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
+
+    // reset controller
+    CONSTWRITEREG32_LE(hc->hc_RegBase, OHCI_CMDSTATUS, OCSF_HCRESET);
 
     return FALSE;
 
-AROS_INTFUNC_EXIT}
+    AROS_INTFUNC_EXIT
+}
 /* \\\ */
 
 /* /// "AddTailTD()" */
@@ -1034,7 +1036,9 @@ void UpdateFrameCounter(struct PCIController *hc)
 /* /// "CompleteInt()" */
 static AROS_INTH1(CompleteInt, struct PCIController *, hc)
 {
-    AROS_INTFUNC_INIT ULONG restartmask = 0;
+    AROS_INTFUNC_INIT
+
+    ULONG restartmask = 0;
 
     KPRINTF(1, ("CompleteInt!\n"));
 
@@ -1091,13 +1095,16 @@ static AROS_INTH1(CompleteInt, struct PCIController *, hc)
 
     return 0;
 
-AROS_INTFUNC_EXIT}
+    AROS_INTFUNC_EXIT
+}
 /* \\\ */
 
 /* /// "IntCode()" */
 static AROS_INTH1(IntCode, struct PCIController *, hc)
 {
-    AROS_INTFUNC_INIT struct PCIUnit *unit = hc->hc_Unit;
+    AROS_INTFUNC_INIT
+
+    struct PCIUnit *unit = hc->hc_Unit;
     ULONG intr = 0;
     ULONG donehead;
     ULONG dma_size;
@@ -1282,7 +1289,8 @@ static AROS_INTH1(IntCode, struct PCIController *, hc)
 
     return FALSE;
 
-AROS_INTFUNC_EXIT}
+    AROS_INTFUNC_EXIT
+}
 /* \\\ */
 
 /* /// "AbortRequest()" */

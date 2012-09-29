@@ -737,7 +737,9 @@ void CheckSpecialCtrlTransfers(struct PCIController *hc,
 /* /// "NakTimeoutInt()" */
 AROS_INTH1(NakTimeoutInt, struct PCIUnit *, unit)
 {
-    AROS_INTFUNC_INIT struct PCIController *hc;
+    AROS_INTFUNC_INIT
+
+    struct PCIController *hc;
     struct IOUsbHWReq *ioreq;
     UWORD target;
     ULONG framecnt;
@@ -814,5 +816,6 @@ AROS_INTH1(NakTimeoutInt, struct PCIUnit *, unit)
 
     return FALSE;
 
-AROS_INTFUNC_EXIT}
+    AROS_INTFUNC_EXIT
+}
 /* \\\ */

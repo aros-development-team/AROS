@@ -137,19 +137,21 @@ static int devExpunge(LIBBASETYPEPTR base)
 ADD2INITLIB(devInit, 0)
 ADD2OPENDEV(devOpen, 0)
 ADD2CLOSEDEV(devClose, 0) ADD2EXPUNGELIB(devExpunge, 0)
-    /*
-     *===========================================================
-     * devBeginIO(ioreq, base)
-     *===========================================================
-     *
-     * This is the DEV_BEGINIO vector of the device.
-     *
-     */
-    AROS_LH1(void, devBeginIO,
+
+/*
+ *===========================================================
+ * devBeginIO(ioreq, base)
+ *===========================================================
+ *
+ * This is the DEV_BEGINIO vector of the device.
+ *
+ */
+AROS_LH1(void, devBeginIO,
     AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, base, 5, ohci)
 {
     AROS_LIBFUNC_INIT
-        struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
+
+    struct PCIUnit *unit = (struct PCIUnit *)ioreq->iouh_Req.io_Unit;
     WORD ret;
 
     ioreq->iouh_Req.io_Message.mn_Node.ln_Type = NT_MESSAGE;
@@ -234,7 +236,8 @@ ADD2CLOSEDEV(devClose, 0) ADD2EXPUNGELIB(devExpunge, 0)
         TermIO(ioreq, base);
     }
 
-AROS_LIBFUNC_EXIT}
+    AROS_LIBFUNC_EXIT
+}
 
 /*
  *===========================================================
@@ -249,9 +252,10 @@ AROS_LH1(LONG, devAbortIO,
     AROS_LHA(struct IOUsbHWReq *, ioreq, A1), LIBBASETYPEPTR, base, 6, ohci)
 {
     AROS_LIBFUNC_INIT
-        KPRINTF(50, ("devAbortIO ioreq: 0x%p, command %ld, status %ld\n",
-            ioreq, ioreq->iouh_Req.io_Command,
-            ioreq->iouh_Req.io_Message.mn_Node.ln_Type));
+
+    KPRINTF(50, ("devAbortIO ioreq: 0x%p, command %ld, status %ld\n",
+        ioreq, ioreq->iouh_Req.io_Command,
+        ioreq->iouh_Req.io_Message.mn_Node.ln_Type));
 
     /* Is it pending? */
     if (ioreq->iouh_Req.io_Message.mn_Node.ln_Type == NT_MESSAGE)
@@ -263,4 +267,5 @@ AROS_LH1(LONG, devAbortIO,
     }
     return -1;
 
-AROS_LIBFUNC_EXIT}
+    AROS_LIBFUNC_EXIT
+}
