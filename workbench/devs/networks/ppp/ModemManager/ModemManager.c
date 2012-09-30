@@ -46,7 +46,7 @@ Object *IN_Info,*OUT_Info;
 struct EasyBitmap *SignalBM=0;
 
 UBYTE *PortName = "ModemManager";
-const TEXT version_string[] = "$VER: ModemManager 1.2 (1.3.2012)";
+const TEXT version_string[] = "$VER: ModemManager 1.3 (30.9.2012)";
 
 ULONG exPhase,exstate;
 BOOL exSer;
@@ -132,7 +132,11 @@ struct EasyGraph *MakeGraph(ULONG x,ULONG y,Object *MUIwindow,Object *MUIbitmap)
 void UpdateGraph(struct EasyGraph *egr,FLOAT value){
 	LONG i;
 	LONG h;
-	if(egr){
+	ULONG iconified=0;
+
+	get(application, MUIA_Application_Iconified, &iconified);
+
+	if( !iconified && egr ){
 
 		for( i= egr->Xsize-1 ; i > 0 ; i-- ){
 			egr->value[i] = egr->value[i-1];
@@ -254,7 +258,11 @@ void UpdateModemInfo(struct EasyBitmap *ebm,struct Conf *c)
 {
 	ULONG i;
 	ULONG sig;
-	if( ebm ){
+	ULONG iconified=0;
+
+	get(application, MUIA_Application_Iconified, &iconified);
+
+	if( !iconified && ebm ){
 
 		SetRast(ebm->rp,0);
 		if( c->signal >= 0 && c->signal != 99 ){
@@ -615,8 +623,9 @@ int main(void)
 			ConnectHook.h_SubEntry = (HOOKFUNC) ConnectFunc;
 
 			application = ApplicationObject,
+			MUIA_Application_Title, (IPTR) "ModemManager",
 			SubWindow, window = WindowObject,
-				MUIA_Window_Title,	(IPTR) "ModemManager",
+				MUIA_Window_Title, (IPTR) "ModemManager",
 				MUIA_Window_Activate,TRUE,
 					WindowContents, (IPTR) VGroup,
 
