@@ -78,6 +78,8 @@
     cd.mday = getbcd(p, reg);
     cd.month = getbcd(p, reg + 2);
     cd.year = getbcd(p, reg + 4) + 1900;
+    if (cd.year < 1978)
+    	cd.year += 100;
     cd.wday = 0;
     t = Date2Amiga(&cd);
     D(bug("%02d:%02d %02d.%02d.%d = %d\n", cd.hour, cd.min, cd.mday, cd.month, cd.year, t));
