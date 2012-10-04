@@ -439,11 +439,11 @@ static LONG PartitionMBRGetPartitionAttr(struct Library *PartitionBase, struct P
         return TRUE;
 
     case PT_STARTBLOCK:
-	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector);
+	*((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector);
 	return TRUE;
 
     case PT_ENDBLOCK:
-	*((ULONG *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector) + AROS_LE2LONG(data->entry->count_sector) - 1;
+	*((UQUAD *)tag->ti_Data) = AROS_LE2LONG(data->entry->first_sector) + AROS_LE2LONG(data->entry->count_sector) - 1;
 	return TRUE;
     }
 

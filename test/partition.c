@@ -13,13 +13,13 @@ struct PartitionBase *PartitionBase;
 
 LONG PrintPartitionTable(struct PartitionHandle *root, ULONG i);
 
-static ULONG getStartBlock(struct PartitionHandle *ph)
+static UQUAD getStartBlock(struct PartitionHandle *ph)
 {
     ULONG ret = 0;
 
     while (ph)
     {
-        ULONG start;
+        UQUAD start;
 
         GetPartitionAttrsTags(ph, PT_STARTBLOCK, &start, TAG_DONE);
         ret += start;
@@ -55,7 +55,7 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
     UBYTE name[32];
     struct PartitionType type;
     ULONG a;
-    ULONG start, end, abs;
+    UQUAD start, end, abs;
 
     GetPartitionAttrsTags(ph,
                           PT_DOSENVEC  , &de,
@@ -80,18 +80,18 @@ void PrintPInfo(struct PartitionHandle *ph, ULONG i)
 
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("StartBlock     = %d\n", (int)start);
+    printf("StartBlock     = %llu\n", start);
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("EndBlock       = %d\n", (int)end);
+    printf("EndBlock       = %llu\n", end);
 
     abs = getStartBlock(ph->root);
     for (a = i + 1; a; a--)
         printf("  ");
-    printf("Abs StartBlock = %d\n", (int)(start + abs));
+    printf("Abs StartBlock = %llu\n", start + abs);
     for (a = i + 1; a; a--)
         printf("  ");    
-    printf("Abs EndBlock   = %d\n", (int)(end + abs));
+    printf("Abs EndBlock   = %llu\n", end + abs);
 
     PrintPartitionTable(ph, i + 1);
 }

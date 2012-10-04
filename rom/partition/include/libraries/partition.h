@@ -2,7 +2,7 @@
 #define PARTITION_H
 
 /*
-    Copyright © 2003-2011, The AROS Development Team. All rights reserved.
+    Copyright © 2003-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -90,8 +90,8 @@ struct PartitionType
 #define PT_NAME       (TAG_USER | 34L) /* STRPTR - name of partition */
 #define PT_BOOTABLE   (TAG_USER | 35L) /* BOOL - partition is bootable */
 #define PT_AUTOMOUNT  (TAG_USER | 36L) /* BOOL - partition will be auto mounted */
-#define PT_STARTBLOCK (TAG_USER | 37L) /* ULONG - Number of partition's start block */
-#define PT_ENDBLOCK   (TAG_USER | 38L) /* ULONG - Number of partition's end block */
+#define PT_STARTBLOCK (TAG_USER | 37L) /* UQUAD - Number of partition's start block */
+#define PT_ENDBLOCK   (TAG_USER | 38L) /* UQUAD - Number of partition's end block */
 
 /* Tags for filesystems */
 #define FST_ID		(TAG_USER | 1L)	/* ULONG 		 - filesystem ID   	*/
