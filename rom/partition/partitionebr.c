@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -378,11 +378,11 @@ static LONG PartitionEBRGetPartitionAttr(struct Library *PartitionBase, struct P
         return TRUE;
 
     case PT_STARTBLOCK:
-	*((ULONG *)tag->ti_Data) = data->block_no;
+	*((UQUAD *)tag->ti_Data) = data->block_no;
 	return TRUE;
 
     case PT_ENDBLOCK:
-	*((ULONG *)tag->ti_Data) = data->block_no + data->block_count - 1;
+	*((UQUAD *)tag->ti_Data) = data->block_no + data->block_count - 1;
 	return TRUE;
     }
 

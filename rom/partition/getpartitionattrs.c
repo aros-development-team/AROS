@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 
 */
@@ -41,8 +41,8 @@
         PT_BOOTABLE   - LONG *			; Get value of "bootable" flag
         PT_AUTOMOUNT  - LONG *			; Get value of "automount" flag
         PT_NAME       - STRPTR    		; Get name of partition (max 31 Bytes + NULL-byte)
-        PT_STARTBLOCK - ULONG *			; Get number of starting block for the partition (V2)
-        PT_ENDBLOCK   - ULONG *			; Get number of ending block for the partition (V2)
+        PT_STARTBLOCK - UQUAD *			; Get number of starting block for the partition (V2)
+        PT_ENDBLOCK   - UQUAD *			; Get number of ending block for the partition (V2)
 
     RESULT
     	Currently reserved, always zero.
@@ -168,11 +168,11 @@
 	    	break;
 
 	    case PT_STARTBLOCK:
-	    	*((ULONG *)tag->ti_Data) = ph->de.de_LowCyl * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack;
+	    	*((UQUAD *)tag->ti_Data) = (UQUAD)ph->de.de_LowCyl * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack;
 	    	break;
 
 	    case PT_ENDBLOCK:
-	    	*((ULONG *)tag->ti_Data) = (ph->de.de_HighCyl + 1) * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack - 1;
+	    	*((UQUAD *)tag->ti_Data) = ((UQUAD)ph->de.de_HighCyl + 1) * ph->de.de_Surfaces * ph->de.de_BlocksPerTrack - 1;
 	    	break;
             }
         }

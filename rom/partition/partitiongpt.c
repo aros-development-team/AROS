@@ -575,11 +575,11 @@ static LONG PartitionGPTGetPartitionAttr(struct Library *PartitionBase, struct P
         return TRUE;
 
     case PT_STARTBLOCK:
-        *((ULONG *)tag->ti_Data) = AROS_LE2LONG(part->StartBlock);
+        *((UQUAD *)tag->ti_Data) = AROS_LE2QUAD(part->StartBlock);
         return TRUE;
 
     case PT_ENDBLOCK:
-        *((ULONG *)tag->ti_Data) = AROS_LE2LONG(part->EndBlock);
+        *((UQUAD *)tag->ti_Data) = AROS_LE2QUAD(part->EndBlock);
         return TRUE;
     }
 
