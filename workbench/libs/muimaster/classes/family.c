@@ -23,7 +23,7 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_FamilyData
 {
-    struct List childs;
+    struct List children;
 };
 
 /*
@@ -86,7 +86,7 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_FamilyData *data;
     struct TagItem *tags;
     struct TagItem *tag;
-    BOOL bad_childs = FALSE;
+    BOOL bad_children = FALSE;
 
     obj = (Object *) DoSuperMethodA(cl, obj, (Msg) msg);
     if (!obj)
@@ -95,7 +95,7 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
      * Initial local instance data
      */
     data = INST_DATA(cl, obj);
-    NewList(&(data->childs));
+    NewList(&(data->children));
 
     /*
      * parse initial taglist
@@ -107,14 +107,14 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
         {
             if (tag->ti_Data)   /* add child */
                 DoMethod(obj, MUIM_Family_AddTail, tag->ti_Data);
-            else                /* fail and dispose childs */
+            else                /* fail and dispose children */
             {
-                bad_childs = TRUE;
+                bad_children = TRUE;
             }
         }
     }
 
-    if (bad_childs)
+    if (bad_children)
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
         return 0;
@@ -130,7 +130,7 @@ IPTR Family__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 IPTR Family__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     while ((child = NextObject(&cstate)))
@@ -154,7 +154,7 @@ IPTR Family__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
     case MUIA_Family_List:
-        *store = (IPTR) & data->childs;
+        *store = (IPTR) & data->children;
         return TRUE;
 
     case MUIA_Version:
@@ -167,7 +167,7 @@ IPTR Family__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 
     case MUIA_Family_ChildCount:
         {
-            Object *cstate = (Object *) data->childs.lh_Head;
+            Object *cstate = (Object *) data->children.lh_Head;
             *store = 0;
             while (NextObject(&cstate))
                 (*store)++;
@@ -189,7 +189,7 @@ IPTR Family__MUIM_AddHead(struct IClass *cl, Object *obj,
 
     if (msg->obj)
     {
-        AddHead(&(data->childs), (struct Node *)_OBJECT(msg->obj));
+        AddHead(&(data->children), (struct Node *)_OBJECT(msg->obj));
         return TRUE;
     }
     else
@@ -209,7 +209,7 @@ IPTR Family__MUIM_AddTail(struct IClass *cl, Object *obj,
     {
         D(bug("Family_AddTail(%p): obj=%p node=%p\n", obj, msg->obj,
                 _OBJECT(msg->obj)));
-        DoMethod(msg->obj, OM_ADDTAIL, (IPTR) & data->childs);
+        DoMethod(msg->obj, OM_ADDTAIL, (IPTR) & data->children);
         return TRUE;
     }
     else
@@ -227,7 +227,7 @@ IPTR Family__MUIM_Insert(struct IClass *cl, Object *obj,
 
     if (msg->obj)
     {
-        Insert(&(data->childs), (struct Node *)_OBJECT(msg->obj),
+        Insert(&(data->children), (struct Node *)_OBJECT(msg->obj),
             (struct Node *)_OBJECT(msg->pred));
         return TRUE;
     }
@@ -265,10 +265,10 @@ IPTR Family__MUIM_Sort(struct IClass *cl, Object *obj,
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
     int i;
 
-    NewList(&(data->childs));
+    NewList(&(data->children));
     for (i = 0; msg->obj[i]; i++)
     {
-        AddTail(&(data->childs), (struct Node *)_OBJECT(msg->obj[i]));
+        AddTail(&(data->children), (struct Node *)_OBJECT(msg->obj[i]));
     }
     return TRUE;
 }
@@ -282,7 +282,7 @@ IPTR Family__MUIM_Transfer(struct IClass *cl, Object *obj,
     struct MUIP_Family_Transfer *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     while ((child = NextObject(&cstate)))
@@ -302,7 +302,7 @@ IPTR Family__MUIM_FindUData(struct IClass *cl, Object *obj,
     struct MUIP_FindUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
@@ -327,7 +327,7 @@ IPTR Family__MUIM_GetUData(struct IClass *cl, Object *obj,
     struct MUIP_GetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
@@ -351,7 +351,7 @@ IPTR Family__MUIM_SetUData(struct IClass *cl, Object *obj,
     struct MUIP_SetUData *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
@@ -372,7 +372,7 @@ IPTR Family__MUIM_SetUDataOnce(struct IClass *cl, Object *obj,
     struct MUIP_SetUDataOnce *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child;
 
     if (muiNotifyData(obj)->mnd_UserData == msg->udata)
@@ -391,7 +391,7 @@ IPTR Family__MUIM_GetChild(struct IClass *cl, Object *obj,
     struct MUIP_Family_GetChild *msg)
 {
     struct MUI_FamilyData *data = INST_DATA(cl, obj);
-    Object *cstate = (Object *) data->childs.lh_Head;
+    Object *cstate = (Object *) data->children.lh_Head;
     Object *child, *prev = NULL;
     LONG counter = 0;
 
