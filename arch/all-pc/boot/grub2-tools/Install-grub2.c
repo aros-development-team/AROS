@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2011, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 /******************************************************************************
@@ -85,17 +85,15 @@
 
 struct Volume
 {
-    struct MsgPort *mp;
-    struct IOExtTD *iotd;
-    ULONG readcmd;
-    ULONG writecmd;
-    ULONG startblock;
+    struct PartitionHandle *root; /* Device root handle              */
+    struct PartitionHandle *part; /* The actual partition            */
+    ULONG startblock;             /* Offset, for stage volume        */
     ULONG countblock;
-    CONST_STRPTR device;
+    CONST_STRPTR device;          /* Informative, for error messages */
     ULONG unitnum;
-    UWORD SizeBlock;
+    UWORD SizeBlock;              /* In bytes                        */
     UBYTE flags;
-    BYTE partnum;
+    LONG partnum;                 /* -1 for device root              */
     ULONG *blockbuffer;
     ULONG dos_id;
 };
@@ -116,6 +114,7 @@ const TEXT version[] = "$VER: Install-grub2 41.3 " ADATE;
 static CONST_STRPTR CORE_IMG_FILE_NAME = "core.img";
 static CONST_STRPTR template ="DEVICE/A,UNIT/N/K/A,PARTITIONNUMBER=PN/K/N,GRUB/K/A,FORCELBA/S";
 
+struct PartitionBase *PartitionBase;
 IPTR myargs[7] = { 0, 0, 0, 0, 0, 0 };
 
 struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
@@ -158,7 +157,18 @@ struct FileSysStartupMsg *getDiskFSSM(CONST_STRPTR path)
     return 0;
 }
 
-void fillGeometry(struct Volume *volume, struct DosEnvec *de)
+static BOOL AllocBuffer(struct Volume *volume)
+{
+    volume->blockbuffer = AllocMem(volume->SizeBlock, MEMF_PUBLIC | MEMF_CLEAR);
+    if (!volume->blockbuffer)
+    {
+        Printf("Failed to allocate data buffer!\n");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+BOOL fillGeometry(struct Volume *volume, struct DosEnvec *de)
 {
     ULONG spc;
 
@@ -168,117 +178,44 @@ void fillGeometry(struct Volume *volume, struct DosEnvec *de)
     volume->SizeBlock = de->de_SizeBlock;
     volume->startblock = de->de_LowCyl * spc;
     volume->countblock =
-    ((de->de_HighCyl - de->de_LowCyl + 1) * spc) - 1 + de->de_Reserved;
+	((de->de_HighCyl - de->de_LowCyl + 1) * spc) - 1 + de->de_Reserved;
+    volume->part = volume->root;
+    return AllocBuffer(volume);
 }
 
-void nsdCheck(struct Volume *volume)
-{
-    struct NSDeviceQueryResult nsdq;
-    UWORD *cmdcheck;
-
-    D(bug("[install] nsdCheck(%x)\n", volume));
-
-    if (((volume->startblock + volume->countblock) *    /* last block */
-     ((volume->SizeBlock << 2) / 512)   /* 1 portion (block) equals 512 (bytes) */
-    ) > 8388608)
-    {
-    nsdq.SizeAvailable = 0;
-    nsdq.DevQueryFormat = 0;
-    volume->iotd->iotd_Req.io_Command = NSCMD_DEVICEQUERY;
-    volume->iotd->iotd_Req.io_Data = &nsdq;
-    volume->iotd->iotd_Req.io_Length = sizeof(struct NSDeviceQueryResult);
-    if (DoIO((struct IORequest *) &volume->iotd->iotd_Req) == IOERR_NOCMD)
-    {
-        Printf("Device doesn't understand NSD-Query\n");
-    }
-    else
-    {
-        if ((volume->iotd->iotd_Req.io_Actual >
-         sizeof(struct NSDeviceQueryResult))
-        || (volume->iotd->iotd_Req.io_Actual == 0)
-        || (volume->iotd->iotd_Req.io_Actual != nsdq.SizeAvailable))
-        {
-        Printf("WARNING wrong io_Actual using NSD\n");
-        }
-        else
-        {
-        if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-            Printf("WARNING no trackdisk type\n");
-        for (cmdcheck = nsdq.SupportedCommands; *cmdcheck; cmdcheck++)
-        {
-            if (*cmdcheck == NSCMD_TD_READ64)
-            volume->readcmd = NSCMD_TD_READ64;
-            if (*cmdcheck == NSCMD_TD_WRITE64);
-            volume->writecmd = NSCMD_TD_WRITE64;
-        }
-        if ((volume->readcmd != NSCMD_TD_READ64) ||
-            (volume->writecmd != NSCMD_TD_WRITE64))
-            Printf("WARNING no READ64/WRITE64\n");
-        }
-    }
-    }
-}
-
-struct Volume *initVolume(CONST_STRPTR device, ULONG unit, ULONG flags,
-              struct DosEnvec *de)
+struct Volume *initVolume(CONST_STRPTR device, ULONG unit)
 {
     struct Volume *volume;
-    LONG error = 0;
 
     D(bug("[install] initVolume(%s:%d)\n", device, unit));
 
-    volume = AllocVec(sizeof(struct Volume), MEMF_PUBLIC | MEMF_CLEAR);
+    volume = AllocMem(sizeof(struct Volume), MEMF_PUBLIC | MEMF_CLEAR);
     if (volume)
     {
-    volume->mp = CreateMsgPort();
-    if (volume->mp)
-    {
-        volume->iotd =
-        (struct IOExtTD *) CreateIORequest(volume->mp,
-                           sizeof(struct IOExtTD));
-        if (volume->iotd)
+        volume->root = OpenRootPartition(device, unit);
+        if (volume->root)
         {
-        volume->blockbuffer =
-            AllocVec(de->de_SizeBlock << 2, MEMF_PUBLIC | MEMF_CLEAR);
-        if (volume->blockbuffer)
-        {
-            if (OpenDevice
-            (device,
-             unit, (struct IORequest *) volume->iotd, flags) == 0)
-            {
             if (strcmp((const char *) device, TD_NAME) == 0)
                 volume->flags |= VF_IS_TRACKDISK;
             else
                 volume->flags |= VF_IS_RDB; /* just assume we have RDB */
-            volume->readcmd = CMD_READ;
-            volume->writecmd = CMD_WRITE;
-            volume->device = device;
-            volume->unitnum = unit;
-            volume->dos_id = 0;
-            fillGeometry(volume, de);
-            nsdCheck(volume);
-            return volume;
-            }
-            else
-            error = ERROR_NO_FREE_STORE;
-            FreeVec(volume->blockbuffer);
-        }
-        else
-            error = ERROR_NO_FREE_STORE;
-        DeleteIORequest((struct IORequest *) volume->iotd);
-        }
-        else
-        error = ERROR_NO_FREE_STORE;
-        DeleteMsgPort(volume->mp);
-    }
-    else
-        error = ERROR_NO_FREE_STORE;
-    FreeVec(volume);
-    }
-    else
-    error = ERROR_NO_FREE_STORE;
 
-    PrintFault(error, NULL);
+            volume->device     = device;
+            volume->unitnum    = unit;
+            volume->startblock = 0;
+            volume->partnum    = -1;
+            volume->dos_id     = 0;
+
+            return volume;
+        }
+        else
+            Printf("Failed to open device %s unit %ld!\n", device, unit);
+
+        FreeMem(volume, sizeof(struct Volume));
+    }
+    else
+        PrintFault(ERROR_NO_FREE_STORE, NULL);
+
     return NULL;
 }
 
@@ -286,34 +223,14 @@ void uninitVolume(struct Volume *volume)
 {
     D(bug("[install] uninitVolume(%x)\n", volume));
 
-    CloseDevice((struct IORequest *) volume->iotd);
-    FreeVec(volume->blockbuffer);
-    DeleteIORequest((struct IORequest *) volume->iotd);
-    DeleteMsgPort(volume->mp);
-    FreeVec(volume);
-}
-
-static ULONG _readwriteBlock(struct Volume *volume,
-                 ULONG block, APTR buffer, ULONG length,
-                 ULONG command)
-{
-    UQUAD offset;
-    ULONG retval = 0;
-
-    volume->iotd->iotd_Req.io_Command = command;
-    volume->iotd->iotd_Req.io_Length = length;
-    volume->iotd->iotd_Req.io_Data = buffer;
-    offset = (UQUAD) (volume->startblock + block) * (volume->SizeBlock << 2);
-    volume->iotd->iotd_Req.io_Offset = offset & 0xFFFFFFFF;
-    volume->iotd->iotd_Req.io_Actual = offset >> 32;
-    retval = DoIO((struct IORequest *) &volume->iotd->iotd_Req);
-    if (volume->flags & VF_IS_TRACKDISK)
+    if (volume->blockbuffer)
+        FreeMem(volume->blockbuffer, volume->SizeBlock);
+    if (volume->root)
     {
-        volume->iotd->iotd_Req.io_Command = TD_MOTOR;
-        volume->iotd->iotd_Req.io_Length = 0;
-        DoIO((struct IORequest *) &volume->iotd->iotd_Req);
+        ClosePartitionTable(volume->root);
+        CloseRootPartition(volume->root);
     }
-    return retval;
+    FreeMem(volume, sizeof (struct Volume));
 }
 
 ULONG readBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
@@ -321,7 +238,7 @@ ULONG readBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
     D(bug("[install] readBlock(vol:%x, block:%d, %d bytes)\n",
       volume, block, size));
 
-    return _readwriteBlock(volume, block, buffer, size, volume->readcmd);
+    return ReadPartitionData(volume->startblock + block, volume->part, buffer, size);
 }
 
 ULONG writeBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
@@ -329,7 +246,7 @@ ULONG writeBlock(struct Volume * volume, ULONG block, APTR buffer, ULONG size)
     D(bug("[install] writeBlock(vol:%x, block:%d, %d bytes)\n",
       volume, block, size));
 
-    return _readwriteBlock(volume, block, buffer, size, volume->writecmd);
+    return WritePartitionData(volume->startblock + block, volume->part, buffer, size);
 }
 
 static BOOL isKnownFs(ULONG dos_id)
@@ -349,20 +266,51 @@ static BOOL isKnownFs(ULONG dos_id)
     return FALSE;
 }
 
-BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
-               ULONG unit)
+static BOOL GetPartitionNum(struct Volume *volume, struct PartitionTableHandler *table,
+                            struct PartitionHandle **extph)
+{
+    struct PartitionHandle *pn;
+    UQUAD start, end;
+
+    for (pn = (struct PartitionHandle *) table->list.lh_Head;
+         pn->ln.ln_Succ;
+         pn = (struct PartitionHandle *) pn->ln.ln_Succ)
+    {
+        if (extph)
+        {
+            struct PartitionType ptype = { };
+
+            GetPartitionAttrsTags(pn, PT_TYPE, &ptype, TAG_DONE);
+            if (ptype.id[0] == MBRT_EXTENDED || ptype.id[0] == MBRT_EXTENDED2)
+            {
+                *extph = pn;
+                continue;
+            }
+        }
+
+        GetPartitionAttrsTags(pn, PT_STARTBLOCK, &start, PT_ENDBLOCK, &end, TAG_DONE);
+        if ((volume->startblock >= start) && (volume->startblock <= end))
+        {
+            GetPartitionAttrsTags(pn, PT_POSITION, &volume->partnum, TAG_DONE);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+BOOL isvalidFileSystem(struct Volume *volume)
 {
     BOOL retval = FALSE;
     struct PartitionBase *PartitionBase;
     struct PartitionHandle *ph;
     ULONG dos_id;
 
-    D(bug("[install] isvalidFileSystem(%x, %s, %d)\n", volume, device, unit));
+    D(bug("[install] isvalidFileSystem(%s, %d)\n", volume->device, volume->unit));
 
-    if (readBlock(volume, 0, volume->blockbuffer, 512))
+    if (readBlock(volume, 0, volume->blockbuffer, volume->SizeBlock))
     {
-    Printf("Read Error\n");
-    return FALSE;
+        Printf("Read Error\n");
+        return FALSE;
     }
 
     dos_id = AROS_BE2LONG(volume->blockbuffer[0]);
@@ -371,7 +319,7 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
     {
         /* first block has no DOS\x so we don't have RDB for sure */
         volume->flags &= ~VF_IS_RDB;
-        if (readBlock(volume, 1, volume->blockbuffer, 512))
+        if (readBlock(volume, 1, volume->blockbuffer, volume->SizeBlock))
         {
             Printf("Read Error\n");
             return FALSE;
@@ -387,146 +335,58 @@ BOOL isvalidFileSystem(struct Volume * volume, CONST_STRPTR device,
     else
         volume->dos_id = dos_id;
 
-    volume->partnum = -1;
-
-    PartitionBase =
-    (struct PartitionBase *) OpenLibrary((CONST_STRPTR)
-                         "partition.library", 1);
-    if (PartitionBase)
+    if (OpenPartitionTable(volume->root) == 0)
     {
-    ph = OpenRootPartition(device, unit);
-    if (ph)
-    {
-        if (OpenPartitionTable(ph) == 0)
-        {
-        struct TagItem tags[3];
-        IPTR type;
+        struct TagItem tags[2];
+        ULONG type;
 
         tags[1].ti_Tag = TAG_DONE;
         tags[0].ti_Tag = PTT_TYPE;
         tags[0].ti_Data = (STACKIPTR) & type;
-        GetPartitionTableAttrs(ph, tags);
+        GetPartitionTableAttrs(volume->root, tags);
+
         if (type == PHPTT_MBR)
         {
-            struct PartitionHandle *pn;
-            struct DosEnvec de;
             struct PartitionHandle *extph = NULL;
-            struct PartitionType ptype = { };
 
-            tags[0].ti_Tag = PT_DOSENVEC;
-            tags[0].ti_Data = (STACKIPTR) & de;
-            tags[1].ti_Tag = PT_TYPE;
-            tags[1].ti_Data = (STACKIPTR) & ptype;
-            tags[2].ti_Tag = TAG_DONE;
-            pn = (struct PartitionHandle *) ph->table->list.lh_Head;
-            while (pn->ln.ln_Succ)
+            if (GetPartitionNum(volume, volume->root->table, &extph))
             {
-            ULONG scp;
-
-            GetPartitionAttrs(pn, tags);
-            if (ptype.id[0] == MBRT_EXTENDED
-                || ptype.id[0] == MBRT_EXTENDED2)
-                extph = pn;
-            else
-            {
-                scp = de.de_Surfaces * de.de_BlocksPerTrack;
-                if ((volume->startblock >= (de.de_LowCyl * scp))
-                && (volume->startblock <=
-                    (((de.de_HighCyl + 1) * scp) - 1)))
-                break;
-            }
-            pn = (struct PartitionHandle *) pn->ln.ln_Succ;
-            }
-            if (pn->ln.ln_Succ)
-            {
-            tags[0].ti_Tag = PT_POSITION;
-            tags[0].ti_Data = (STACKIPTR) & type;
-            tags[1].ti_Tag = TAG_DONE;
-            GetPartitionAttrs(pn, tags);
-            volume->partnum = (UBYTE) type;
-            retval = TRUE;
-            D(bug
-              ("[install] Primary partition found: partnum=%d\n",
-               volume->partnum));
+                retval = TRUE;
+                D(bug("[install] Primary partition found: partnum=%d\n", volume->partnum));
             }
             else if (extph != NULL)
             {
-            if (OpenPartitionTable(extph) == 0)
-            {
-                tags[0].ti_Tag = PTT_TYPE;
-                tags[0].ti_Data = (STACKIPTR) & type;
-                tags[1].ti_Tag = TAG_DONE;
-                GetPartitionTableAttrs(extph, tags);
-                if (type == PHPTT_EBR)
+                if (OpenPartitionTable(extph) == 0)
                 {
-                tags[0].ti_Tag = PT_DOSENVEC;
-                tags[0].ti_Data = (STACKIPTR) & de;
-                tags[1].ti_Tag = TAG_DONE;
-                pn = (struct PartitionHandle *) extph->table->
-                    list.lh_Head;
-                while (pn->ln.ln_Succ)
-                {
-                    ULONG offset, scp;
-
-                    offset = extph->de.de_LowCyl
-                    * extph->de.de_Surfaces
-                    * extph->de.de_BlocksPerTrack;
-                    GetPartitionAttrs(pn, tags);
-                    scp =
-                    de.de_Surfaces * de.de_BlocksPerTrack;
-                    if ((volume->startblock >=
-                     offset + (de.de_LowCyl * scp))
-                    && (volume->startblock <=
-                        offset +
-                        (((de.de_HighCyl + 1) * scp) -
-                         1)))
-                    break;
-                    pn = (struct PartitionHandle *) pn->ln.
-                    ln_Succ;
+                    GetPartitionTableAttrs(extph, tags);
+                    if (type == PHPTT_EBR)
+                    {
+                        if (GetPartitionNum(volume, extph->table, NULL))
+                        {
+                            volume->partnum += MBR_MAX_PARTITIONS;
+                            retval = TRUE;
+                            D(bug("[install] Logical partition found: partnum=%d\n", volume->partnum));
+                        }
+                    }
+                    ClosePartitionTable(extph);
                 }
-                if (pn->ln.ln_Succ)
-                {
-                    tags[0].ti_Tag = PT_POSITION;
-                    tags[0].ti_Data = (STACKIPTR) & type;
-                    GetPartitionAttrs(pn, tags);
-                    volume->partnum =
-                    MBR_MAX_PARTITIONS + (UBYTE) type;
-                    retval = TRUE;
-                    D(bug
-                      ("[install] Logical partition found: partnum=%d\n",
-                       (int) volume->partnum));
-                }
-                }
-                ClosePartitionTable(extph);
-            }
             }
         }
-        else
+        else if (type == PHPTT_RDB)
         {
-            if (type == PHPTT_RDB)
-            {
             /* just use whole hard disk */
             retval = TRUE;
-            }
-            else
-            Printf
-                ("only MBR and RDB partition tables are supported\n");
-        }
-        ClosePartitionTable(ph);
         }
         else
-        {
+            Printf("only MBR and RDB partition tables are supported\n");
+    
+        ClosePartitionTable(ph);
+    }
+    else
+    {
         /* just use whole hard disk */
         retval = TRUE;
-        }
-        CloseRootPartition(ph);
     }
-    else
-        Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
-    CloseLibrary((struct Library *) PartitionBase);
-    }
-    else
-    Printf("Couldn't open partition.library\n");
     return retval;
 }
 
@@ -535,158 +395,126 @@ struct Volume *getGrubStageVolume(CONST_STRPTR device, ULONG unit,
 {
     struct Volume *volume;
 
-    volume = initVolume(device, unit, flags, de);
+    volume = initVolume(device, unit);
 
     D(bug("[install] getGrubStageVolume(): volume=%x\n", volume));
 
     if (volume)
     {
-    if (isvalidFileSystem(volume, device, unit))
-        return volume;
-    else
-    {
-        Printf("stage2 is on an unsupported file system\n");
-        PrintFault(ERROR_OBJECT_WRONG_TYPE, NULL);
-    }
-    uninitVolume(volume);
+        if (fillGeometry(volume, de))
+        {
+            if (isvalidFileSystem(volume))
+                return volume;
+            else
+            {
+                Printf("stage2 is on an unsupported file system\n");
+                PrintFault(ERROR_OBJECT_WRONG_TYPE, NULL);
+            }
+        }
+        uninitVolume(volume);
     }
     return 0;
 }
 
-BOOL isvalidPartition(CONST_STRPTR device, ULONG unit, LONG * pnum,
-              struct DosEnvec * de)
+BOOL isvalidPartition(struct Volume *volume, LONG *pnum)
 {
-    struct PartitionBase *PartitionBase;
-    struct PartitionHandle *ph;
     ULONG type;
+    struct TagItem tags[2];
     BOOL retval = FALSE;
 
-    D(bug
-      ("[install] isvalidPartition(%s:%d, part:%d)\n", device, unit, pnum));
+    D(bug("[install] isvalidPartition(%d)\n", pnum));
 
-    PartitionBase =
-    (struct PartitionBase *) OpenLibrary((CONST_STRPTR)
-                         "partition.library", 1);
-    if (PartitionBase)
-    {
-    ph = OpenRootPartition(device, unit);
-    if (ph)
-    {
-        struct TagItem tags[2];
+    tags[1].ti_Tag = TAG_DONE;
 
-        tags[1].ti_Tag = TAG_DONE;
+    if (pnum)
+    {
+        /* install into partition bootblock */
         /* is there a partition table? */
-        if (OpenPartitionTable(ph) == 0)
+        if (OpenPartitionTable(volume->root) == 0)
         {
-        if (pnum)
-        {
-            /* install into partition bootblock */
             tags[0].ti_Tag = PTT_TYPE;
             tags[0].ti_Data = (STACKIPTR) & type;
-            GetPartitionTableAttrs(ph, tags);
+            GetPartitionTableAttrs(volume->root, tags);
             if (type == PHPTT_MBR)
             {
-            struct PartitionHandle *pn;
+                struct PartitionHandle *pn;
 
-            /* search for partition */
-            tags[0].ti_Tag = PT_POSITION;
-            tags[0].ti_Data = (STACKIPTR) & type;
-            pn = (struct PartitionHandle *) ph->table->list.
-                lh_Head;
-            while (pn->ln.ln_Succ)
-            {
-                GetPartitionAttrs(pn, tags);
-                if (type == *pnum)
-                break;
-                pn = (struct PartitionHandle *) pn->ln.ln_Succ;
-            }
-            if (pn->ln.ln_Succ)
-            {
-                struct PartitionType ptype;
-
-                /* is it an AROS partition? */
-                tags[0].ti_Tag = PT_TYPE;
-                tags[0].ti_Data = (STACKIPTR) & ptype;
-                GetPartitionAttrs(pn, tags);
-                if (ptype.id[0] == 0x30)
+                /* search for partition */
+                tags[0].ti_Tag = PT_POSITION;
+                tags[0].ti_Data = (STACKIPTR) & type;
+                pn = (struct PartitionHandle *) volume->root->table->list.lh_Head;
+                while (pn->ln.ln_Succ)
                 {
-                tags[0].ti_Tag = PT_DOSENVEC;
-                tags[0].ti_Data = (STACKIPTR) de;
-                GetPartitionAttrs(pn, tags);
-                retval = TRUE;
+                    GetPartitionAttrs(pn, tags);
+                    if (type == *pnum)
+                        break;
+                    pn = (struct PartitionHandle *) pn->ln.ln_Succ;
+                }
+                if (pn->ln.ln_Succ)
+                {
+                    struct PartitionType ptype;
+
+                    /* is it an AROS partition? */
+                    tags[0].ti_Tag = PT_TYPE;
+                    tags[0].ti_Data = (STACKIPTR) & ptype;
+                    GetPartitionAttrs(pn, tags);
+                    if (ptype.id[0] == 0x30)
+                    {
+                        volume->part = pn;
+                        retval = TRUE;
+                    }
+                    else
+                        Printf("partition is not of type AROS (0x30)\n");
                 }
                 else
-                Printf
-                    ("partition is not of type AROS (0x30)\n");
+                    Printf("partition %ld not found on device %s unit %lu\n", *pnum, volume->device, volume->unitnum);
             }
             else
-            {
-                Printf
-                ("partition %ld not found on device %s unit %lu\n",
-                 (long)*pnum, device, (long)unit);
-            }
-            }
-            else
-            Printf
-                ("you can only install in partitions which are MBR partitioned\n");
+                Printf("you can only install in partitions which are MBR partitioned\n");
         }
         else
-        {
-            /* install into MBR */
-            tags[0].ti_Tag = PTT_TYPE;
-            tags[0].ti_Data = (STACKIPTR) & type;
-            GetPartitionTableAttrs(ph, tags);
-            if ((type == PHPTT_MBR) || (type == PHPTT_RDB))
-            {
-            tags[0].ti_Tag = PT_DOSENVEC;
-            tags[0].ti_Data = (STACKIPTR) de;
-            GetPartitionAttrs(ph, tags);
-            retval = TRUE;
-            }
-            else
-            Printf
-                ("partition table type must be either MBR or RDB\n");
-        }
-        ClosePartitionTable(ph);
-        }
-        else
-        {
-        /* FIXME: GetPartitionAttr() should always work for root partition */
-        CopyMem(&ph->de, de, sizeof(struct DosEnvec));
+            Printf("Failed to open partition table on device %s unit %lu\n", *pnum, volume->device, volume->unitnum);
+    }
+    else
+    {
+        /* install into MBR */
+        volume->part = volume->root;
         retval = TRUE;
-        }
-        CloseRootPartition(ph);
     }
-    else
-        Printf("Error OpenRootPartition(%s,%lu)\n", device, (long)unit);
-    CloseLibrary((struct Library *) PartitionBase);
+
+    if (retval)
+    {
+        volume->SizeBlock = volume->part->de.de_SizeBlock << 2;
+        retval = AllocBuffer(volume);
     }
-    else
-    Printf("Couldn't open partition.library\n");
+
     return retval;
 }
 
 struct Volume *getBBVolume(CONST_STRPTR device, ULONG unit, LONG * partnum)
 {
     struct Volume *volume;
-    struct DosEnvec de;
 
     D(bug("[install] getBBVolume(%s:%d, %d)\n", device, unit, partnum));
 
-    if (isvalidPartition(device, unit, partnum, &de))
+    volume = initVolume(device, unit);
+    if (!volume)
+        return NULL;
+
+    if (isvalidPartition(volume, partnum))
     {
-    volume = initVolume(device, unit, 0, &de);
-    volume->partnum = partnum ? *partnum : -1;
-    readBlock(volume, 0, volume->blockbuffer, 512);
-    if (AROS_BE2LONG(volume->blockbuffer[0]) != IDNAME_RIGIDDISK)
-    {
-        /* Clear the boot sector region! */
-        memset(volume->blockbuffer, 0x00, 446);
-        return volume;
+        volume->partnum = partnum ? *partnum : -1;
+        readBlock(volume, 0, volume->blockbuffer, volume->SizeBlock);
+        if (AROS_BE2LONG(volume->blockbuffer[0]) != IDNAME_RIGIDDISK)
+        {
+            /* Clear the boot sector region! */
+            memset(volume->blockbuffer, 0x00, 446);
+            return volume;
+        }
+        else
+            Printf("no space for bootblock (RDB is on block 0)\n");
     }
-    else
-        Printf("no space for bootblock (RDB is on block 0)\n");
-    }
+    uninitVolume(volume);
     return NULL;
 }
 
@@ -814,8 +642,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *
         so skip the first filekey in the first loop
     */
 
-    retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
-            volume->readcmd);
+    retval = readBlock(volume, block, volume->blockbuffer, volume->SizeBlock);
 
     if (retval)
     {
@@ -833,8 +660,7 @@ ULONG collectBlockListFFS(struct Volume *volume, ULONG block, struct BlockNode *
     
     do
     {
-        retval = _readwriteBlock(volume, block, volume->blockbuffer, volume->SizeBlock<<2,
-                volume->readcmd);
+        retval = readBlock(volume, block, volume->blockbuffer, volume->SizeBlock);
         if (retval)
         {
             D(bug("[install] collectBlockListFFS: ERROR reading block (error: %ld)\n", retval));
@@ -939,8 +765,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
      */
  
     /* Read root block */
-    retval = _readwriteBlock(volume, 0, volume->blockbuffer, volume->SizeBlock<<2,
-            volume->readcmd);
+    retval = readBlock(volume, 0, volume->blockbuffer, volume->SizeBlock);
 
     if (retval)
     {
@@ -965,8 +790,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
         nextblock, objectnode));
     while(1)
     {
-        _readwriteBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock<<2,
-            volume->readcmd);
+        readBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock);
     
         /* If nodes == 1, we are at the correct nodecontainer, else go to next nodecontainer */
         if (AROS_BE2LONG(volume->blockbuffer[4]) == 1)
@@ -1002,8 +826,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
     while((block_sfsobjectcontainer != 0) && (first_block == 0))
     {
         /* Read next SFS container block */
-        retval = _readwriteBlock(volume, block_sfsobjectcontainer, volume->blockbuffer, volume->SizeBlock<<2,
-                volume->readcmd);
+        retval = readBlock(volume, block_sfsobjectcontainer, volume->blockbuffer, volume->SizeBlock);
 
         if (retval)
         {
@@ -1078,8 +901,7 @@ ULONG collectBlockListSFS(struct Volume *volume, ULONG objectnode, struct BlockN
             UBYTE * BTreeContainerPtr = NULL;
             BNodePtr = NULL;
 
-            _readwriteBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock<<2,
-                volume->readcmd);
+            readBlock(volume, nextblock, volume->blockbuffer, volume->SizeBlock);
             
             BTreeContainerPtr = (UBYTE*)(volume->blockbuffer + 3); /* Starts right after the header */
 
@@ -1377,6 +1199,13 @@ int main(int argc, char **argv)
     struct FileSysStartupMsg *fssm;
     int ret = RETURN_OK;
 
+    PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 3);
+    if (!PartitionBase)
+    {
+        Printf("Failed to open partition.library v3!\n");
+        return 20;
+    }
+
     D(bug("[install] main()\n"));
 
     rdargs = ReadArgs(template, myargs, NULL);
@@ -1450,5 +1279,6 @@ int main(int argc, char **argv)
     else
         PrintFault(IoErr(), (STRPTR) argv[0]);
 
+    CloseLibrary(&PartitionBase->lib);
     return ret;
 }
