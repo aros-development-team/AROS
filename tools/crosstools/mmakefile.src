@@ -66,12 +66,11 @@ gcc-installflag      := $(CROSSTOOLSDIR)/.installflag-gcc-$(GCC_VERSION)-$(AROS_
 #MM
 tools-crosstools-gmp :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
-	    || ! $(TEST) -f $(gmp-installflag) \
-	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gmp-installflag))" ; then \
+	    || ! $(TEST) -f $(gmp-installflag) ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gmp/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-gmp--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-gmp--build_and_install-quick \
-	    && $(ECHO) $(AROS_DEVELOPMENT) > $(gmp-installflag) ; \
+	    && $(TOUCH) $(gmp-installflag) ; \
 	fi
 
 
@@ -84,12 +83,11 @@ tools-crosstools-gmp :
 #MM
 tools-crosstools-mpfr :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
-	    || ! $(TEST) -f $(mpfr-installflag) \
-	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(mpfr-installflag))" ; then \
+	    || ! $(TEST) -f $(mpfr-installflag) ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/mpfr/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-mpfr--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-mpfr--build_and_install-quick \
-	    && $(ECHO) $(AROS_DEVELOPMENT) > $(mpfr-installflag) ; \
+	    && $(TOUCH) $(mpfr-installflag) ; \
 	fi
 
 
@@ -102,12 +100,11 @@ tools-crosstools-mpfr :
 #MM
 tools-crosstools-mpc :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
-	    || ! $(TEST) -f $(mpc-installflag) \
-	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(mpc-installflag))" ; then \
+	    || ! $(TEST) -f $(mpc-installflag) ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/mpc/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-mpc--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-mpc--build_and_install-quick \
-	    && $(ECHO) $(AROS_DEVELOPMENT) > $(mpc-installflag) ; \
+	    && $(TOUCH) $(mpc-installflag) ; \
 	fi
 
 
@@ -120,12 +117,11 @@ tools-crosstools-mpc :
 #MM
 tools-crosstools-binutils :
 	@$(IF) ! $(TEST) -d $(CROSSTOOLSDIR) \
-	    || ! $(TEST) -f $(binutils-installflag) \
-	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(binutils-installflag))" ; then \
+	    || ! $(TEST) -f $(binutils-installflag) ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/binutils/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-binutils--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-binutils--build_and_install-quick \
-	    && $(ECHO) $(AROS_DEVELOPMENT) > $(binutils-installflag) ; \
+	    && $(TOUCH) $(binutils-installflag) ; \
 	fi
 
 
@@ -139,14 +135,13 @@ HOST_CFLAGS := $(HOST_CFLAGS) $(HOST_GNU89_INLINE)
 
 #MM
 tools-crosstools-gcc :
-	@$(IF) ! $(TEST) -f $(gcc-installflag) \
-	    || $(TEST) "$(AROS_DEVELOPMENT)" != "$(shell $(CAT) 2>/dev/null $(gcc-installflag))" ; then \
+	@$(IF) ! $(TEST) -f $(gcc-installflag) ; then \
 	       $(RM) $(HOSTGENDIR)/$(CURDIR)/gcc/.files-touched \
 	    && $(MAKE) -f ./mmakefile crosstools-gcc--fetch \
 	    && $(MAKE) -f ./mmakefile crosstools-gcc--configure \
 	    && $(MAKE) -C $(HOSTGENDIR)/$(CURDIR)/gcc all-gcc \
 	    && $(MAKE) -j1 -C $(HOSTGENDIR)/$(CURDIR)/gcc install-gcc \
-	    && $(ECHO) $(AROS_DEVELOPMENT) > $(gcc-installflag) ; \
+	    && $(TOUCH) $(gcc-installflag) ; \
 	fi
 	@$(IF) $(TEST) -f $(gcc-installflag); then \
 	    $(SED) -i -e "s|@aros_target_cc_path@|$(GCC_PATH)|g" $(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-ld ; \
