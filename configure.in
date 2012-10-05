@@ -1621,7 +1621,8 @@ fi
 #   kernel_tool_version    {"",[version]}
 #   aros_gcc_version       {"",[version]}
 #   kernel_tool_prefix     {none,[some-arch-os-]}
-#   aros_tool_prefix       ${target_cpu}-aros-
+#   target_tool_prefix     ${aros_target_cpu}-aros-
+#   aros_tool_prefix       ${aros_target_cpu}-aros-
 #
 # The output is
 #   aros_kernel_{cpp,cc,ar,ld,as,ranlib,nm,strip}
@@ -1658,7 +1659,7 @@ fi
 #      fi
 #   fi
 #
-target_tool_prefix="${target_cpu}-aros-"
+target_tool_prefix="${aros_target_cpu}-aros-"
 
 AC_MSG_CHECKING([which kernel tools])
 AC_MSG_RESULT([$kernel_tool_prefix]);
@@ -1670,7 +1671,7 @@ if test "$kernel_tool_prefix" = "none" ; then
     fi
 else
     # Kernel tools required - find them
-    # Note that 'normally', aros_kernel_* overrides will
+    # Note that 'normally', aros_kernel_* overrides will be
     # empty, unless specified in the per-arch sections above.
     if test "x$aros_kernel_cpp" = "x"; then
         aros_kernel_cpp=${kernel_tool_prefix}cpp
