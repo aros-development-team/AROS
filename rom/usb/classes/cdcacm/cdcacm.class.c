@@ -320,6 +320,12 @@ struct NepClassSerial * usbAttemptInterfaceBinding(struct NepSerialBase *nh, str
 			}
         }
 
+        // Novatel (Toshiba) wireless HSDPA modem
+        if( (vendid == 0x0930) && (prodid == 0x1302) )
+        {
+            return(usbForceInterfaceBinding(nh, pif));
+        }
+
         if((ifclass == CDCCTRL_CLASSCODE) &&
            (subclass == CDC_ACM_SUBCLASS) &&
            //(proto == CDC_PROTO_HAYES)
