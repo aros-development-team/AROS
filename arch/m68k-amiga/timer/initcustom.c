@@ -76,7 +76,7 @@ void InitCustom(struct GfxBase *gfx)
    		if (deniseid == 0xfc)
    			chipflags |= GFXF_HR_DENISE;
    		if (deniseid == 0xf8)
-   			chipflags |= GFXF_AA_LISA;
+   			chipflags |= GFXF_AA_LISA | GFXF_HR_DENISE;
    	}
 
    	Enable();
