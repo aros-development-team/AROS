@@ -2,7 +2,7 @@
 #define _MUI_CLASSES_NOTIFY_H
 
 /*
-    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -13,10 +13,10 @@ struct MUI_NotifyData
     ULONG mnd_ObjectID;
 
     /* private starts here */
-    struct MinList *mnd_NotifyList;     /* priv1 */
-    Object *mnd_ParentObject;   /* priv2 */
-    STRPTR mnd_HelpNode;        /* priv3 */
-    LONG mnd_HelpLine;          /* priv4 */
+    struct MinList *mnd_NotifyList; /* priv1 */
+    Object *mnd_ParentObject;       /* priv2 */
+    struct MUI_NotifyAttributes *mnd_Attributes; /* priv3 */
+    IPTR mnd_Dummy;                 /* priv4 */
 };
 
 /*** Name *******************************************************************/

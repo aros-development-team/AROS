@@ -1,5 +1,5 @@
 /*
-    Copyright © 2002-2006, The AROS Development Team. All rights reserved.
+    Copyright © 2002-2012, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -55,7 +55,7 @@ AROS_UFH2S(void, len_func,
 
 /*
 MUIA_ApplicationObject [..G]   done
-MUIA_AppMessage [..G]          dummy, no struct AppMessage
+MUIA_AppMessage [..G]          done
 MUIA_HelpLine [ISG]            done
 MUIA_HelpNode [ISG]            done
 MUIA_NoNotify [.S.]            done
@@ -86,6 +86,13 @@ MUIM_WriteString               done
 
 static const int __version = 1;
 static const int __revision = 1;
+
+struct MUI_NotifyAttributes
+{
+    STRPTR                 na_HelpNode;
+    LONG                   na_HelpLine;
+    struct AppMessage     *na_AppMessage;
+};
 
 /*
  * Notification handler
@@ -205,16 +212,23 @@ IPTR Notify__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
 
+    data->mnd_Attributes = mui_alloc_struct(struct MUI_NotifyAttributes);
+    if (data->mnd_Attributes == NULL)
+    {
+        CoerceMethod(cl, obj, OM_DISPOSE);
+        return FALSE;
+    }
+
     while ((tag = NextTagItem(&tags)) != NULL)
     {
         switch (tag->ti_Tag)
         {
         case MUIA_HelpLine:
-            data->mnd_HelpLine = (LONG) tag->ti_Data;
+            data->mnd_Attributes->na_HelpLine = (LONG) tag->ti_Data;
             break;
 
         case MUIA_HelpNode:
-            data->mnd_HelpNode = (STRPTR) tag->ti_Data;
+            data->mnd_Attributes->na_HelpNode = (STRPTR) tag->ti_Data;
             break;
 
         case MUIA_ObjectID:
@@ -238,6 +252,8 @@ IPTR Notify__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MinNode *node, *tmp;
     struct MUI_NotifyData *data = INST_DATA(cl, obj);
+
+    mui_free(data->mnd_Attributes);
 
     if (data->mnd_NotifyList)
     {
@@ -395,12 +411,16 @@ IPTR Notify__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     {
         switch (tag->ti_Tag)
         {
+      case MUIA_AppMessage:
+          data->mnd_Attributes->na_AppMessage = (struct AppMessage *)tag->ti_Data;
+          break;
+
         case MUIA_HelpLine:
-            data->mnd_HelpLine = (LONG) tag->ti_Data;
+            data->mnd_Attributes->na_HelpLine = (LONG) tag->ti_Data;
             break;
 
         case MUIA_HelpNode:
-            data->mnd_HelpNode = (STRPTR) tag->ti_Data;
+            data->mnd_Attributes->na_HelpNode = (STRPTR) tag->ti_Data;
             break;
 
         case MUIA_NoNotify:
@@ -458,16 +478,16 @@ IPTR Notify__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
             STORE = 0;
         return TRUE;
 
-    case MUIA_AppMessage:      /* struct AppMessage ? */
-        STORE = 0;
+    case MUIA_AppMessage:
+        STORE = (IPTR) data->mnd_Attributes->na_AppMessage;
         return TRUE;
 
     case MUIA_HelpLine:
-        STORE = (IPTR) data->mnd_HelpLine;
+        STORE = (IPTR) data->mnd_Attributes->na_HelpLine;
         return TRUE;
 
     case MUIA_HelpNode:
-        STORE = (IPTR) data->mnd_HelpNode;
+        STORE = (IPTR) data->mnd_Attributes->na_HelpNode;
         return TRUE;
 
     case MUIA_ObjectID:

@@ -564,6 +564,7 @@ IPTR Group__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
             case MUIA_Weight:
             case MUIA_Virtgroup_Left:
             case MUIA_Virtgroup_Top:
+            case MUIA_AppMessage:
                 tag->ti_Tag = TAG_IGNORE;
                 break;
             case MUIA_Selected:
